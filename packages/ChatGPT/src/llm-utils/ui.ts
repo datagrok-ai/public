@@ -14,7 +14,7 @@ import {Plan} from '../prompt-engine/interfaces';
 import {AssistantRenderer} from '../prompt-engine/rendering-tools';
 import {dartLike, fireAIAbortEvent, getAIPanelToggleSubscription} from '../utils';
 import {generateAISqlQueryWithTools} from './sql-tools';
-import {DBAIPanel, ModelType} from './panel';
+import {DBAIPanel, ModelType, UIMessageOptions} from './panel';
 
 
 export async function askWiki(question: string, useOpenAI: boolean = true) {
@@ -169,7 +169,7 @@ export async function setupAIQueryEditorUI(v: DG.ViewBase, connectionID: string,
             session.addAIMessage(aiMessage, title, content);
           },
           addEngineMessage: (aiMessage) => session.addAIMessage(aiMessage, '', '', true),
-          addUiMessage: (msg: string, fromUser: boolean) => session.addUIMessage(msg, fromUser),
+          addUiMessage: (msg: string, fromUser: boolean, messageOptions?: UIMessageOptions) => session.addUIMessage(msg, fromUser, messageOptions),
           addUserMessage: (aiMsg, content) => session.addUserMessage(aiMsg, content),
         }, modelName: ModelType[panel.getCurrentInputs().model],
       });

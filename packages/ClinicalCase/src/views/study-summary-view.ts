@@ -12,7 +12,7 @@ import $ from 'cash-dom';
 import {checkDateFormat} from '../data-preparation/utils';
 import {removeExtension, updateDivInnerHTML} from '../utils/utils';
 import {TRT_ARM_FIELD} from '../views-config';
-import {checkColumnsAndCreateViewer} from '../utils/views-validation-utils';
+import {checkColumnsAndCreateViewer, setupValidationErrorIndicators} from '../utils/views-validation-utils';
 import {CDISC_STANDARD} from '../utils/types';
 import {studies} from '../utils/app-utils';
 
@@ -85,7 +85,8 @@ export class StudySummaryView extends ClinicalCaseViewBase {
         menu.item(domainName, () => {
           const df = domain.clone();
           df.name = `${this.studyId}_${domainName}`;
-          grok.shell.addTableView(df);
+          const tableView = grok.shell.addTableView(df);
+          setupValidationErrorIndicators(tableView, df);
         });
       }
       menu.show();

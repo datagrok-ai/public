@@ -68,6 +68,7 @@ export type DBConnectionMeta = CommentedEntity & {
     relations: DBRelationMeta[];
 };
 
+
 export type DBRelationMeta = CommentedEntity & {
     fromSchema: string;
     fromTable: string;
@@ -75,7 +76,7 @@ export type DBRelationMeta = CommentedEntity & {
     toSchema: string;
     toTable: string;
     toColumns: string[];
-    cardinality?: 'one-to-one' | 'one-to-many' | 'many-to-one' | 'many-to-many';
+    cardinality?: typeof DG.DbRelationInfo.prototype.cardinality;
    // comment         // from DB FK comment if exists
  // LLMComment      // "Each activity belongs to one assay; one assay has many activities"
     IsPrimaryPath?: boolean // recommended join vs weird legacy join

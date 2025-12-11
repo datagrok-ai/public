@@ -8,6 +8,7 @@ import {CampaignIdKey, CampaignJsonName, CampaignTableName,
   HTQueryPrefix, HTScriptPrefix, HitDesignCampaignIdKey,
   HitDesignMolColName, HitDesignerFunctionTag, TileCategoriesColName, ViDColName, i18n} from './consts';
 import {calculateColumns, calculateCellValues, getNewVid} from './utils/calculate-single-cell';
+// @ts-ignore
 import '../../css/hit-triage.css';
 import {_package} from '../package';
 import {addBreadCrumbsToRibbons, checkFileExists, checkRibbonsHaveSubmit, editableTableField, modifyUrl, toFormatedDateString} from './utils';
@@ -20,6 +21,7 @@ import {Observable, Subscription} from 'rxjs';
 import {filter} from 'rxjs/operators';
 import {defaultPermissions, PermissionsDialog} from './dialogs/permissions-dialog';
 import {getDefaultCampaignStorageSettings, getDefaultSharingSettings} from '../packageSettingsEditor';
+import * as api from '../package-api';
 
 export class HitDesignApp<T extends HitDesignTemplate = HitDesignTemplate> extends HitAppBase<T> {
   multiView: DG.MultiView;
@@ -43,10 +45,11 @@ export class HitDesignApp<T extends HitDesignTemplate = HitDesignTemplate> exten
     super(c, an);
     this._infoView = infoViewConstructor(this);
     this.multiView = new DG.MultiView({viewFactories: {[this._infoView.name]: () => this._infoView}});
-    this.multiView.tabs.onTabChanged.subscribe((_) => {
+    this.multiView.subs.push(this.multiView.tabs.onTabChanged.subscribe((_) => {
       if (this.multiView.currentView instanceof HitBaseView)
         (this.multiView.currentView as HitBaseView<T, typeof this>).onActivated();
-    });
+    }));
+
     this.multiView.parentCall = c;
 
     this.mainView = this.multiView;
@@ -266,6 +269,23 @@ export class HitDesignApp<T extends HitDesignTemplate = HitDesignTemplate> exten
     await this.saveCampaign(true);
   }
 
+  private _refreshIconTooltip = 'Refresh Campaign';
+  protected async refreshCampaign() {
+    if (!this._campaignId || !this.template) {
+      grok.shell.warning('No campaign to refresh');
+      return; // should not happen
+    }
+    if (this._isSaving) {
+      grok.shell.info('Campaign is being saved. Please wait a moment and try again.');
+      return;
+    }
+    clearInterval(this._updateCheckIntervalId);
+    this._refreshIconTooltip = 'Refresh Campaign';
+    await this.setTemplate(this.template, this._campaignId);
+  }
+
+  private _updateCheckIntervalId: any = null;
+  private _needsRefresh: boolean = false;
   public async setTemplate(template: T, campaignId?: string) {
     if (!campaignId) {
       this._designView?.dataFrame && grok.shell.closeTable(this._designView.dataFrame);
@@ -298,7 +318,9 @@ export class HitDesignApp<T extends HitDesignTemplate = HitDesignTemplate> exten
     }
 
     if (!this.dataFrame) {
-      console.error('DataFrame is empty');
+      grok.shell.error('DataFrame is empty');
+      clearInterval(this._updateCheckIntervalId);
+      this._updateCheckIntervalId = null;
       return;
     }
     await this.dataFrame.meta.detectSemanticTypes();
@@ -318,7 +340,54 @@ export class HitDesignApp<T extends HitDesignTemplate = HitDesignTemplate> exten
     modifyUrl(CampaignIdKey, this._campaignId ?? this._campaign?.name ?? '');
     if (this.campaign)
       this.campaign.template = template;
+
+    // get the last saved time
+    api.queries.getLastModified(this.appName, this._campaignId!).then((timeDf) => {
+      const timeStr = timeDf?.col('updated_at')?.getString(0);
+      this._lastExpiresTimeString = timeStr ?? null;
+      this._needsRefresh = false;
+      // add the interval to check for updates
+      clearInterval(this._updateCheckIntervalId);
+      let isChecking = false;
+      this._updateCheckIntervalId = setInterval(async () => {
+        if (isChecking || this._needsRefresh)
+          return;
+        isChecking = true;
+        // first, check if this view is still active
+        if (this._designView && !Array.from(grok.shell.tableViews).some((tv) => tv === this._designView)) {
+          clearInterval(this._updateCheckIntervalId);
+          console.log('Clearing campaign update check interval');
+          this._updateCheckIntervalId = null;
+          isChecking = false;
+          return;
+        }
+        if (!this._campaignId || !this.template || this._isSaving || this.isJoining || !this._designView || grok.shell.v !== this._designView) {
+          isChecking = false;
+          return;
+        }
+        try {
+          const timeDf = await api.queries.getLastModified(this.appName, this._campaignId);
+          const timeStr = timeDf?.col('updated_at')?.getString(0);
+          if (!timeStr) {
+            isChecking = false;
+            return;
+          }
+          if (this._lastExpiresTimeString !== timeStr && this._refreshCampaignIcon) {
+            this._lastExpiresTimeString = timeStr;
+            ui.hints.addHintIndicator(this._refreshCampaignIcon, true, 10000);
+            this._refreshIconTooltip = 'New changes available. Click to refresh campaign.';
+            this._lastExpiresTimeString = timeStr;
+            this._needsRefresh = true;
+          }
+        } catch (e) {
+          console.error(e);
+        }
+        isChecking = false;
+      }, 3000);
+    }).catch((e) => console.error(e));
   }
+
+  private _lastExpiresTimeString: string | null = null;
 
   get campaignId(): string | undefined {return this._campaignId;}
 
@@ -390,6 +459,7 @@ export class HitDesignApp<T extends HitDesignTemplate = HitDesignTemplate> exten
           this.saveCampaign(false);
   }
 
+  private _refreshCampaignIcon: HTMLElement | null = null;
   protected initDesignViewRibbons(view: DG.TableView, subs: Subscription[], addDesignerButton = false) {
     const onRemoveSub = grok.events.onViewRemoved.subscribe((v) => {
       if (v.id === view?.id) {
@@ -495,6 +565,8 @@ export class HitDesignApp<T extends HitDesignTemplate = HitDesignTemplate> exten
         const calculateRibbon = ui.iconFA('wrench', getComputeDialog, 'Calculate additional properties');
         const addNewRowButton = ui.icons.add(() => {this.dataFrame?.rows.addNew(null, true);}, 'Add new row');
         const applyLayoutButton = ui.iconSvg('view-layout', () => {this.applyTemplateLayout(view);}, `Apply template layout ${this.template?.localLayoutPath ? '(Loaded from mounted file storage)' : '(Static)'}`);
+        this._refreshCampaignIcon = ui.icons.sync(async () => {this.refreshCampaign();});
+        ui.tooltip.bind(this._refreshCampaignIcon, () => this._refreshIconTooltip);
         const permissionsButton = ui.iconFA('share', async () => {
           await (new PermissionsDialog(this.campaign?.permissions)).show((res) => {
             this.campaign!.permissions = res;
@@ -522,6 +594,7 @@ export class HitDesignApp<T extends HitDesignTemplate = HitDesignTemplate> exten
           ribbonButtons.unshift(applyLayoutButton);
         if (this.hasEditPermission)
           ribbonButtons.unshift(permissionsButton);
+
         if (designerFuncs.length > 0 && addDesignerButton) {
           // TODO: Support multiple functions
           const designerFunc = designerFuncs[0];
@@ -563,7 +636,7 @@ export class HitDesignApp<T extends HitDesignTemplate = HitDesignTemplate> exten
         }
         ribbonButtons.unshift(calculateRibbon);
         ribbonButtons.unshift(addNewRowButton);
-
+        ribbonButtons.unshift(this._refreshCampaignIcon);
 
         ribbons.push(ribbonButtons);
         // remove project save button from the ribbon
@@ -913,8 +986,32 @@ export class HitDesignApp<T extends HitDesignTemplate = HitDesignTemplate> exten
     };
   }
 
+  private _isSaving: boolean = false;
+
   async saveCampaign(notify = true, isCreating = false, customProps?: Partial<HitDesignCampaign>): Promise<HitDesignCampaign> {
+    this._isSaving = true;
     const campaignId = this.campaignId!;
+    const someoneElseEditingLoaderTimeout = setTimeout(() => {
+      if (this._designView?.grid)
+        ui.setUpdateIndicator(this._designView.grid.root, true, 'Someone else is saving the campaign. Please wait...');
+    }, 500);
+    try {
+      const lock = await this.aquireAndWaitCampaignLock(campaignId);
+      if (!lock?.aquired) // could not acquire lock
+        throw new Error('Could not acquire lock for campaign during 30 seconds');
+    } catch (e) {
+      clearTimeout(someoneElseEditingLoaderTimeout);
+      if (this._designView?.grid)
+        ui.setUpdateIndicator(this._designView.grid.root, false);
+      grok.shell.error('Failed to acquire campaign lock. Someone else might be editing the campaign. Please try again later.');
+      this._isSaving = false;
+      return this.campaign!;
+    }
+    clearTimeout(someoneElseEditingLoaderTimeout);
+    if (this._designView?.grid)
+      ui.setUpdateIndicator(this._designView.grid.root, true, 'Saving Campaign...');
+    // await DG.delay(3000); // artificial delay to simulate long save
+
     const templateName = this.template!.name;
     const enrichedDf = this.dataFrame!;
     const campaignName = campaignId;
@@ -964,6 +1061,10 @@ export class HitDesignApp<T extends HitDesignTemplate = HitDesignTemplate> exten
     };
     if (!this.hasEditPermission) {
       grok.shell.error('You do not have permission to modify this campaign');
+      if (this._designView?.grid)
+        ui.setUpdateIndicator(this._designView.grid.root, false);
+      await this.releaseCampaignLock(campaignId);
+      this._isSaving = false;
       return campaign;
     }
     const campaignPath = `${this.appName}/campaigns/${campaignId}/${CampaignJsonName}`;
@@ -1002,6 +1103,12 @@ export class HitDesignApp<T extends HitDesignTemplate = HitDesignTemplate> exten
     !notify && isCreating && grok.shell.info('Campaign created successfully.');
     this.campaign = campaign;
     this.designViewName = campaign.friendlyName ?? campaign.name;
+    const updatedAt = await this.releaseCampaignLock(campaignId);
+    this._lastExpiresTimeString = updatedAt;
+    if (this._designView?.grid)
+      ui.setUpdateIndicator(this._designView.grid.root, false);
+    this._isSaving = false;
+    this._refreshIconTooltip = 'Refresh Campaign';
     return campaign;
   }
 }

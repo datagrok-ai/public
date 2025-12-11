@@ -16,6 +16,10 @@ export class ScriptingTutorial extends Tutorial {
   }
   get steps() { return 11; }
 
+  get icon() {
+    return '📜💻';
+  }
+
   demoTable: string = '';
   helpUrl: string = 'https://datagrok.ai/help/compute/scripting';
   prerequisites: TutorialPrerequisites = {jupyter: true};

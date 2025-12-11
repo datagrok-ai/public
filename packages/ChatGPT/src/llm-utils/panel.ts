@@ -34,6 +34,12 @@ const actionButtionValues = {
   stop: 'Stop AI Generation',
 } as const;
 
+export type UIMessageOptions = {
+  result?: {
+    finalResult?: string;
+  }
+}
+
 export class AIPanel<T extends MessageType = OpenAI.Chat.ChatCompletionMessageParam, K extends AIPanelInputs = AIPanelInputs> {
   private root: HTMLElement;
   private inputArea: HTMLElement;
@@ -43,6 +49,7 @@ export class AIPanel<T extends MessageType = OpenAI.Chat.ChatCompletionMessagePa
   private runButton: HTMLElement;
   private modelInput: DG.InputBase<ModelOption>;
   private newChatButton: HTMLElement;
+  private copyConversationButton: HTMLElement;
   private historyButton: HTMLElement;
   private tryAgainButton: HTMLElement;
   private _onRunRequest = new rxjs.Subject<{prevMessages: T[], currentPrompt: K}>();
@@ -88,6 +95,13 @@ export class AIPanel<T extends MessageType = OpenAI.Chat.ChatCompletionMessagePa
     ui.tooltip.bind(this.runButton, () => this.runButtonTooltip, 'left');
     this.tryAgainButton = ui.icons.sync(() => this.tryAgain(), 'Try Again');
     this.historyButton = ui.iconFA('history', () => this.showHistory(), 'Chat History...');
+    this.copyConversationButton = ui.iconFA('copy', async () => {
+      const success = await this.copyConversationToClipboard();
+      if (success)
+        grok.shell.info('Conversation copied to clipboard');
+      else
+        grok.shell.error('Failed to copy conversation to clipboard');
+    }, 'Copy Conversation to Clipboard');
 
     this.newChatButton = ui.icons.add(async () => {
       ui.setUpdateIndicator(this.root, true, 'Saving conversation...');
@@ -129,6 +143,7 @@ export class AIPanel<T extends MessageType = OpenAI.Chat.ChatCompletionMessagePa
     this.header.appendChild(headerTitle);
     const rightHeaderDiv = ui.divH([], 'd4-ai-panel-header-right-buttons');
     rightHeaderDiv.appendChild(this.newChatButton);
+    rightHeaderDiv.appendChild(this.copyConversationButton);
     rightHeaderDiv.appendChild(this.historyButton);
     this.header.appendChild(rightHeaderDiv);
   }
@@ -150,8 +165,31 @@ export class AIPanel<T extends MessageType = OpenAI.Chat.ChatCompletionMessagePa
 
   hide() {
     // save history before hiding
-    this.saveCurrentConversation().catch((e) => console.error('Failed to save conversation before hiding panel:', e));
     grok.shell.dockManager.close(this.root);
+  }
+
+  formatConversation() {
+    let previousFromAI = false;
+    return this._uiMessages.map((msg) => {
+      const prefix = msg.fromUser ? 'USER:' : 'Datagrok AI:';
+      const separator = '-'.repeat(50);
+      const isContinuation = !msg.fromUser && previousFromAI;
+      previousFromAI = !msg.fromUser;
+      const actualPrefix = isContinuation ? '\n' : `${separator}\n${prefix}\n`;
+      return `${actualPrefix}${msg.text}\n`;
+    }).join('\n');
+  }
+
+  async copyConversationToClipboard() {
+    const formattedText = this.formatConversation();
+
+    try {
+      await navigator.clipboard.writeText(formattedText);
+      return true;
+    } catch (err) {
+      console.error('Failed to copy:', err);
+      return false;
+    }
   }
 
   toggle() {
@@ -173,7 +211,7 @@ export class AIPanel<T extends MessageType = OpenAI.Chat.ChatCompletionMessagePa
   }
 
   private _aiMessagesAccordionPane: HTMLElement | null = null;
-  protected appendMessage(aiMessage: T, uiMessage: {title: string, content: string, fromUser: boolean, onlyAddToMessages?: boolean, uiOnly?: boolean}, loader?: HTMLElement) {
+  protected appendMessage(aiMessage: T, uiMessage: {title: string, content: string, fromUser: boolean, onlyAddToMessages?: boolean, uiOnly?: boolean, finalMessage?: string}, loader?: HTMLElement) {
     if (!uiMessage.uiOnly)
       this._messages.push(aiMessage);
     if (uiMessage.onlyAddToMessages)
@@ -195,8 +233,8 @@ export class AIPanel<T extends MessageType = OpenAI.Chat.ChatCompletionMessagePa
       }
       const markDown = ui.markdown(uiMessage.content);
       // if there is code block, make it copyable
+      markDown.style.position = 'relative';
       if (markDown.querySelector('pre > code')) {
-        markDown.style.position = 'relative';
         const copyButton = ui.icons.copy(() => {}, 'Copy Code');
         //dartLike(copyButton.style).set('position', 'absolute').set('top', '5px').set('right', '5px').set('width', '20px').set('height', '20px').set('opacity', '0.6').set('cursor', 'pointer');
         copyButton.classList.add('d4-ai-copy-code-button');
@@ -220,6 +258,39 @@ export class AIPanel<T extends MessageType = OpenAI.Chat.ChatCompletionMessagePa
             });
           }
         });
+      }
+
+      if (uiMessage.finalMessage && !uiMessage.fromUser) {
+        // if it is a final message from AI, add thumbs up/down,
+        const feedbackDiv = ui.divH([], 'd4-ai-panel-feedback-div');
+        const thumbsUp = ui.iconFA('thumbs-up', () => {
+          grok.shell.info('Thanks for your feedback!');
+          handleFeedback(true);
+        }, 'Helpful');
+        const thumbsDown = ui.iconFA('thumbs-down', () => {
+          grok.shell.info('Thanks for your feedback!');
+          handleFeedback(false);
+        }, 'Not Helpful');
+        [thumbsUp, thumbsDown].forEach((el) => {
+          dartLike(el.style).set('padding', '2px').set('borderRadius', '6px');
+        });
+
+        const that = this;
+        function handleFeedback(helpful: boolean) {
+          [thumbsUp, thumbsDown].forEach((el) => {
+            el.style.backgroundColor = '';
+          });
+          (helpful ? thumbsUp : thumbsDown).style.backgroundColor = helpful ? 'rgba(0, 150, 30, 0.2)' : 'rgba(200, 0, 0, 0.2)';
+          receiveFeedback(
+            that._uiMessages[0]?.text ?? '',
+            uiMessage.finalMessage!,
+            helpful
+          );
+        }
+        feedbackDiv.appendChild(thumbsUp);
+        feedbackDiv.appendChild(thumbsDown);
+        dartLike(feedbackDiv.style).set('gap', '8px').set('alignItems', 'center').set('width', '100%').set('paddingBottom', '8px').set('paddingLeft', '4px');
+        markDown.appendChild(feedbackDiv);
       }
       dartLike(markDown.style).set('userSelect', 'text').set('maxWidth', '100%');
       const titleText = uiMessage.title ? [ui.h3(uiMessage.title, 'd4-ai-assistant-response-title')] : [];
@@ -247,14 +318,15 @@ export class AIPanel<T extends MessageType = OpenAI.Chat.ChatCompletionMessagePa
       addAIMessage: (message: T, title: string, content: string, onlyAddToMessages?: boolean) => {
         this.appendMessage(message, {title: title, content: content, fromUser: false, onlyAddToMessages}, loader);
       },
-      addUIMessage: (content: string, fromUser: boolean) => {
-        this.appendMessage('' as any, {title: '', content: content, fromUser: fromUser, uiOnly: true}, loader);
+      addUIMessage: (content: string, fromUser: boolean, messageOptions?: UIMessageOptions) => {
+        this.appendMessage('' as any, {title: '', content: content, fromUser: fromUser, uiOnly: true, finalMessage: messageOptions?.result?.finalResult}, loader);
       },
       endSession: () => {
         this.runButton.classList.remove('fas', 'fa-stop');
         this.runButton.classList.add('fal', 'fa-paper-plane');
         this.runButton.style.color = 'var(--blue-1)';
         this.runButtonTooltip = actionButtionValues.run;
+        this.saveCurrentConversation().catch((e) => console.error('Failed to save conversation before hiding panel:', e));
         loader.remove();
       }
     };
@@ -291,11 +363,13 @@ export class AIPanel<T extends MessageType = OpenAI.Chat.ChatCompletionMessagePa
   protected showContentIcons() {
     this.newChatButton.style.display = 'flex';
     this.tryAgainButton.style.display = 'flex';
+    this.copyConversationButton.style.display = 'flex';
   }
 
   protected hideContentIcons() {
     this.newChatButton.style.display = 'none';
     this.tryAgainButton.style.display = 'none';
+    this.copyConversationButton.style.display = 'none';
   }
 
   private handleClear() {
@@ -411,4 +485,9 @@ export class DBAIPanel<T extends MessageType = OpenAI.Chat.ChatCompletionMessage
       schemaName: this.schemaInput.value!,
     };
   }
+}
+
+
+function receiveFeedback(userPrompt: string, aiResponse: string, helpful: boolean) {
+  // not implemented yet
 }

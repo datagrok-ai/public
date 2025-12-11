@@ -1,10 +1,11 @@
 import {Column, DataFrame} from "./dataframe";
-import {toDart, toJs} from "./wrappers";
+import {toJs} from "./wrappers";
 import {FuncCall, Functions} from "./functions";
 import {CsvImportOptions, DemoDatasetName, JOIN_TYPE, JoinType, StringPredicate, SyncType, TYPE} from "./const";
-import {DataConnection, TableQueryBuilder} from "./entities";
+import {ColumnInfo, DataConnection, TableInfo, TableQueryBuilder} from "./entities";
 import {IDartApi} from "./api/grok_api.g";
 import { Grid } from "./grid";
+import {Tags} from "./api/ddt.api.g";
 
 const api: IDartApi = (typeof window !== 'undefined' ? window : global.window) as any;
 
@@ -122,6 +123,10 @@ export class Db {
    */
   buildQuery(connectionId: string, tableName: string): TableQueryBuilder {
     return TableQueryBuilder.from(tableName, connectionId);
+  }
+
+  async getInfo(connection: DataConnection): Promise<DbInfo> {
+    return grok.dapi.connections.getDatabaseInfo(connection);
   }
 }
 
@@ -311,5 +316,397 @@ export class Detector {
     }
 
     return true;
+  }
+}
+
+/**
+ * Represents metadata for a specific database schema in Datagrok.
+ *
+ * `DbSchemaInfo` provides access to schema-level information such as tables,
+ * user and LLM comments, and utilities for annotating tables and columns.
+ *
+ * Mutation methods do not modify underlying database, they just create metadata in Datagrok.
+ */
+export class DbSchemaInfo {
+  public dart: any;
+
+  /**
+   * Creates a new `DbSchemaInfo` wrapper.
+   *
+   * @param dart - The underlying Dart object representing a database schema.
+   */
+  constructor(dart: any) {
+    this.dart = dart;
+  }
+
+  // ─────────────────────────────── GETTERS ───────────────────────────────
+
+  /**
+   * Schema name (e.g., `"public"`, `"dbo"`).
+   *
+   * @returns The name of this schema.
+   */
+  get name(): string {
+    return api.grok_DbSchemaInfo_Get_Name(this.dart);
+  }
+
+  /**
+   * @returns A comment string, or an empty string if none exists.
+   */
+  get comment(): string | undefined {
+    return api.grok_DbSchemaInfo_Get_Prop(this.dart, Tags.DbComment);
+  }
+
+  /**
+   * @returns User-defined comment used by AI query builder.
+   */
+  get llmComment(): string | undefined {
+    return api.grok_DbSchemaInfo_Get_Prop(this.dart, Tags.LlmComment);
+  }
+
+  /**
+   * The parent `DataConnection` this schema belongs to.
+   *
+   * @returns A {@link DataConnection} instance.
+   */
+  get connection(): DataConnection {
+    return api.grok_DbSchemaInfo_Get_Connection(this.dart);
+  }
+
+  /**
+   * Lists all tables belonging to this schema.
+   *
+   * @returns A promise resolving to an array of {@link TableInfo} objects.
+   */
+  getTables(): Promise<TableInfo[]> {
+    return api.grok_DbSchemaInfo_Get_Tables(this.dart);
+  }
+
+  // ─────────────────────────────── SETTERS ───────────────────────────────
+
+  setComment(comment: string): Promise<void> {
+    return api.grok_DbSchemaInfo_Set_Prop(this.dart, Tags.DbComment, comment);
+  }
+
+  setLlmComment(llmComment: string): Promise<void> {
+    return api.grok_DbSchemaInfo_Set_Prop(this.dart, Tags.LlmComment, llmComment);
+  }
+
+  // ─────────────────────────────── ANNOTATION METHODS ───────────────────────────────
+
+  /**
+   * Adds or updates metadata for a specific table in this schema.
+   * It's just only meta annotation which is stored in Datagrok and real database is not affected.
+   *
+   * @param table - Either a {@link TableInfo} instance or a table name.
+   * @param props - Table-level properties such as comments, row counts, and domains.
+   *
+   * @returns A promise that resolves when the annotation is saved.
+   *
+   * @example
+   * ```ts
+   * await schema.annotateTable("customers", {
+   *   comment: "Master table containing customer profiles",
+   *   rowCount: 120345,
+   * });
+   * ```
+   */
+  annotateTable(
+      table: TableInfo | string,
+      props: DbTableProperties,
+  ): Promise<void> {
+    return api.grok_DbSchemaInfo_AnnotateTable(
+        this.dart,
+        table instanceof TableInfo ? table.friendlyName : table,
+        props,
+    );
+  }
+
+  /**
+   * Adds or updates metadata for a column within a table.
+   * It's just only meta annotation which is stored in Datagrok and real database is not affected.
+   *
+   * @param table - A {@link TableInfo} instance or table name.
+   * @param column - A {@link ColumnInfo} instance or column name.
+   * @param props - Column-level annotations such as uniqueness, min/max values, and comments.
+   *
+   * @returns A promise that resolves when the annotation is saved.
+   *
+   * @example
+   * ```ts
+   * await schema.annotateColumn("orders", "order_id", {
+   *   isUnique: true,
+   *   comment: "Primary key for the orders table",
+   * });
+   * ```
+   */
+  annotateColumn(
+      table: TableInfo | string,
+      column: ColumnInfo | string,
+      props: DbColumnProperties,
+  ): Promise<void> {
+    return api.grok_DbSchemaInfo_AnnotateColumn(
+        this.dart,
+        table instanceof TableInfo ? table.friendlyName : table, //  table.friendlyName corresponds to real db table name
+        column instanceof ColumnInfo ? column.name : column, // column.name corresponds to real db col name
+        props,
+    );
+  }
+}
+
+
+/**
+ * Represents metadata for a database relation in Datagrok.
+ *
+ * `DbRelationInfo` describes how two tables are connected, including the
+ * schema/table pairs, participating columns, cardinality, and whether this
+ * relation is considered a primary navigation path.
+ *
+ * Mutation methods do not modify underlying database, they just create metadata in Datagrok.
+ */
+export class DbRelationInfo implements DbRelationProperties {
+  public dart: any;
+
+  /**
+   * Creates a new `DbRelationInfo` wrapper.
+   *
+   * @param dart - The underlying Dart object representing a relation.
+   */
+  constructor(dart: any) {
+    this.dart = dart;
+  }
+
+  // ─────────────────────────────── GETTERS ───────────────────────────────
+
+  /**
+   * User-defined comment describing this relation.
+   */
+  get comment(): string | undefined {
+    return api.grok_DbRelationInfo_Get_Prop(this.dart, Tags.DbComment);
+  }
+
+  /**
+   * LLM-generated annotation or AI summary for this relation.
+   */
+  get llmComment(): string | undefined {
+    return api.grok_DbRelationInfo_Get_Prop(this.dart, Tags.LlmComment);
+  }
+
+  /**
+   * The relation cardinality (e.g., `"one-to-many"`, `"many-to-one"`).
+   */
+  get cardinality(): 'one-to-one' | 'one-to-many' | 'many-to-one' | 'many-to-many' | undefined {
+    return api.grok_DbRelationInfo_Get_Prop(this.dart, Tags.DbRelCardinality);
+  }
+
+  /**
+   * Indicates whether this relation is treated as a primary navigation path
+   * (e.g., preferred for automated join suggestions).
+   */
+  get isPrimaryPath(): boolean | undefined {
+    return api.grok_DbRelationInfo_Get_Prop(this.dart, Tags.DbRelIsPrimaryPath);
+  }
+
+  /**
+   * Connection object this relation belongs to.
+   */
+  get connection(): DataConnection {
+    return toJs(api.grok_DbRelationInfo_Get_Connection(this.dart));
+  }
+
+  /**
+   * Schema name of the source table of this relation.
+   */
+  get fromSchema(): string | undefined {
+    return api.grok_DbRelationInfo_Get_Prop(this.dart, Tags.DbRelFromSchema);
+  }
+
+  /**
+   * Source table name of this relation.
+   */
+  get fromTable(): string | undefined {
+      return api.grok_DbRelationInfo_Get_Prop(this.dart, Tags.DbRelFromTable);
+  }
+
+  /**
+   * List of source table columns participating in the relation.
+   */
+  get fromColumns(): string[] | undefined {
+    return api.grok_DbRelationInfo_Get_Prop(this.dart, Tags.DbRelFromColumns);
+  }
+
+  /**
+   * Schema name of the target table of this relation.
+   */
+  get toSchema(): string | undefined {
+    return api.grok_DbRelationInfo_Get_Prop(this.dart, Tags.DbRelToSchema);
+  }
+
+  /**
+   * Target table name of this relation.
+   */
+  get toTable(): string | undefined {
+    return api.grok_DbRelationInfo_Get_Prop(this.dart, Tags.DbRelToTable);
+  }
+
+  /**
+   * List of target table columns participating in the relation.
+   */
+  get toColumns(): string[] | undefined {
+    return api.grok_DbRelationInfo_Get_Prop(this.dart, Tags.DbRelToColumns);
+  }
+}
+
+
+export interface DbRelationProperties {
+  comment?: string;
+  llmComment?: string;
+  cardinality?: 'one-to-one' | 'one-to-many' | 'many-to-one' | 'many-to-many';
+  isPrimaryPath?: boolean;
+  fromSchema?: string;
+  toSchema?: string;
+}
+
+export interface DbColumnProperties {
+  comment?: string;
+  llmComment?: string;
+  isUnique?: boolean;
+  min?: number;
+  max?: number;
+  values?: string[];
+  sampleValues?: string[];
+  uniqueCount?: number;
+}
+
+export interface DbTableProperties {
+  comment?: string;
+  llmComment?: string;
+  domains?: string;
+  rowCount?: number;
+}
+
+/**
+ * Represents metadata for a database connection in Datagrok.
+ *
+ * Provides access to high-level database metadata such as schemas,
+ * relations, comments, and LLM-generated annotations. It also allows updating
+ * connection-level annotations and adding new relation metadata.
+ *
+ * Mutation methods do not modify underlying database, they just create metadata in Datagrok.
+ */
+export class DbInfo {
+  public dart: any;
+
+  /**
+   * Creates a new `DbInfo` wrapper.
+   *
+   * @param dart - The underlying Dart object representing a database connection.
+   */
+  constructor(dart: any) {
+    this.dart = dart;
+  }
+
+  // ─────────────────────────────── GETTERS ───────────────────────────────
+
+  /**
+   * The name of the database.
+   *
+   * @returns The database name.
+   */
+  get name(): string {
+    return api.grok_DbInfo_Get_Name(this.dart);
+  }
+
+  /**
+   * @returns Connection comment text, or an empty string if none exists.
+   */
+  get comment(): string | undefined {
+    return api.grok_DbInfo_Get_Prop(this.dart, Tags.DbComment);
+  }
+
+  /**
+   * @returns User-defined comment used by AI query builder.
+   */
+  get llmComment(): string | undefined {
+    return api.grok_DbInfo_Get_Prop(this.dart, Tags.LlmComment);
+  }
+
+  /**
+   * Lists all schemas available for this database connection.
+   *
+   * @returns A promise resolving to an array of {@link DbSchemaInfo} objects.
+   */
+  getSchemas(): Promise<DbSchemaInfo[]> {
+    return api.grok_DbInfo_Get_Schemas(this.dart);
+  }
+
+  /**
+   * Lists all known relations for this connection.
+   *
+   * @returns A promise resolving to an array of {@link DbRelationInfo} objects.
+   */
+  getRelations(): Promise<DbRelationInfo[]> {
+    return api.grok_DbInfo_Get_Relations(this.dart);
+  }
+
+  /**
+   * The underlying `DataConnection` object.
+   *
+   * @returns A {@link DataConnection} wrapper.
+   */
+  get connection(): DataConnection {
+    return toJs(api.grok_DbInfo_Get_Connection(this.dart));
+  }
+
+  // ─────────────────────────────── SETTERS ───────────────────────────────
+
+  setComment(comment: string): Promise<void> {
+    return api.grok_DbInfo_Set_Prop(this.dart, Tags.DbComment, comment);
+  }
+
+  setLlmComment(comment: string): Promise<void> {
+    return api.grok_DbInfo_Set_Prop(this.dart, Tags.LlmComment, comment);
+  }
+
+
+  /**
+   * Creates and registers a logical (metadata-only) relation between two tables
+   * within this database connection.
+   *
+   * This method does **not** modify the physical database schema. The relation is
+   * stored only as a Datagrok metadata annotation and is used for navigation,
+   * visualization, and AI-assisted features.
+   *
+   * @param fromTable - Source (child) table name.
+   * @param fromColumns - Column(s) in the source table that participate in the relation.
+   * @param toTable - Target (parent) table name.
+   * @param toColumns - Column(s) in the target table that are referenced.
+   * @param props - Optional relation metadata (e.g., cardinality, comments, primary path flag).
+   *
+   * @returns A promise that resolves to the newly created {@link DbRelationInfo}.
+   *
+   * @example
+   * ```ts
+   * const rel = await dbInfo.addRelation(
+   *   'orders',
+   *   ['customer_id'],
+   *   'customers',
+   *   ['id'],
+   *   {
+   *     cardinality: 'many-to-one'
+   *   }
+   * );
+   * ```
+   */
+  addRelation(fromTable: string, fromColumns: string[], toTable: string, toColumns: string[],
+              props?: DbRelationProperties): Promise<DbRelationInfo> {
+    return api.grok_DbInfo_AddRelation(this.dart, fromTable, fromColumns, toTable, toColumns, props);
+  }
+
+  /**
+   * Removes all the meta data associated with the connection in Datagrok.
+   */
+  clearProperties(): Promise<void> {
+    return api.grok_DbInfo_ClearProperties(this.dart);
   }
 }

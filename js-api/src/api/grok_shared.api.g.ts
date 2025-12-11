@@ -11,6 +11,8 @@ export class DataSourceType {
 
   static Cassandra = 'Cassandra';
 
+  static Databricks = 'Databricks';
+
   static DB2 = 'DB2';
 
   static Excel = 'Excel';

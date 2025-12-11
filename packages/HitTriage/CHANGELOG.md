@@ -1,5 +1,10 @@
 # HitTriage changelog
 
+## 1.8.0 (2025-12-09)
+
+* Improved collaboration support
+* Automatic sygnaling of changes in campaigns between multiple users.
+
 ## 1.7.7 (2025-09-19)
 
 * Sortable campaigns table columns via doubleclick.

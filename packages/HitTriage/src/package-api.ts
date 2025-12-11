@@ -7,6 +7,29 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
 
+export namespace queries {
+  /**
+  Acquire a lock for a campaign. If the lock is expired, it will be removed and a new lock will be created.
+  */
+  export async function acquireCampaignLock(appName: string , campaignId: string , lockedBy?: string | null): Promise<DG.DataFrame> {
+    return await grok.data.query('HitTriage:AcquireCampaignLock', { appName, campaignId, lockedBy });
+  }
+
+  /**
+  Release a lock for a campaign.
+  */
+  export async function releaseCampaignLock(appName: string , campaignId: string ): Promise<DG.DataFrame> {
+    return await grok.data.query('HitTriage:ReleaseCampaignLock', { appName, campaignId });
+  }
+
+  /**
+  Get the last modified time of a campaign lock release (same as save).
+  */
+  export async function getLastModified(appName: string , campaignId: string ): Promise<DG.DataFrame> {
+    return await grok.data.query('HitTriage:GetLastModified', { appName, campaignId });
+  }
+}
+
 export namespace funcs {
   export async function hitTriageAppTreeBrowser(treeNode: any ): Promise<void> {
     return await grok.functions.call('HitTriage:HitTriageAppTreeBrowser', { treeNode });

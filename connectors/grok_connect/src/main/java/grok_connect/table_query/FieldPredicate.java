@@ -21,6 +21,7 @@ public class FieldPredicate {
         String[] split = field
                 .replaceAll("\\.", "_")
                 .replaceAll(" ", "_")
+                .replaceAll("[()]", "_")
                 .toLowerCase()
                 .split("_");
         if (split.length > 1)

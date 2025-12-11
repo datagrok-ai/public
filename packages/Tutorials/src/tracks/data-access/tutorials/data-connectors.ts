@@ -15,6 +15,10 @@ export class DataConnectorsTutorial extends Tutorial {
   }
   get steps() { return 12; }
 
+  get icon() {
+    return '💾🔗';
+  }
+
   demoTable: string = '';
   helpUrl: string = '';
   prerequisites: TutorialPrerequisites = {grokConnect: true};

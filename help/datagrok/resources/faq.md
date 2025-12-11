@@ -50,6 +50,15 @@ Datagrok supports multiple modalities, including:
   - [ADMET predictions](../solutions/domains/chem/chem.md#admet-predictions)
   - [Molecular docking](../solutions/domains/chem/chem.md#docking)
 
+##### <b>Q: Can Datagrok handle chemical mixtures?</b>
+
+Yes. Datagrok automatically detects mixtures in the Mixfile format 
+and displays them directly in grid cells. Clicking a mixture shows its 
+components in the **Context Panel**, including structures and component 
+quantities or ratios from the Mixfile. The **Context Panel** also lets you 
+explore mixtures in table or tree views.    
+[Exploring chemical data](../solutions/domains/chem/chem.md#exploring-chemical-data) | [Supported info panes](../navigation/info-pane-reference.md#structure-and-visualization)
+
 ##### <b>Q: Is there a sample dashboard for chemists?</b>
 
 * [This dashboard](https://public.datagrok.ai/p/oahadzhaniandatagrokai.spgi100_2/spgi-100) has multiple visualizations, including chemical spreadsheet, multiple scatterplot views, R-groups, and molecule cards
@@ -152,6 +161,10 @@ Yes. Power users (e.g., modelers) can create or edit queries and share them with
 ##### <b>Q: Can users create data queries in Datagrok without prior knowledge of data sources, structures, or SQL?</b>
 
 Yes. Users can build queries using the [Visual Query Editor](../../access/databases/databases.md#visual-query-editor) or the [AI Query Builder](../../access/databases/databases.md#ai-query-builder).
+
+##### <b>Q: Can we connect our own OpenAI or enterprise LLM to the AI Query Builder?</b>
+
+Yes. You can use your own API key or token. The AI assistant uses database schema, existing relations and user set comments to iteratively generate SQL queries based on user prompts.
 
 ##### <b>Q: Can data queries in Datagrok be exported for storage, sharing, or reuse?</b>
 
@@ -346,6 +359,12 @@ Datagrok supports rich visualization for both chemical and general data, includi
 * Table view integration for visualization, including [charts in cells](https://github.com/datagrok-ai/public/blob/master/help/visualize/viewers/charts-in-cells.md) 
 
 See also: [Viewer gallery](https://github.com/datagrok-ai/public/blob/master/help/visualize/viewers/viewer-gallery.md), [Table view](../../visualize/table-view-1.md), [Grid](../../visualize/viewers/grid.md).
+
+##### <b>Q: Does Datagrok support analytical chemistry plots such as spectrograms?</b>
+
+The [Spectra viewer](https://github.com/datagrok-ai/chem-spectra-viewer/tree/main) plugin is specifically designed for analytical chemistry data and handles common spectral file format (JDX). For custom analytical chemistry visualizations you can create specialized viewers tailored to specific analytical techniques.  
+[Can I create custom visualizations](#q-can-i-create-custom-visualizations)| [Scripting viewer](../../visualize/viewers/scripting-viewer.md) | [Custom viewers](../../develop/how-to/viewers/develop-custom-viewer.md)
+
 
 ##### <b>Q: Can I create custom visualizations?</b>
 

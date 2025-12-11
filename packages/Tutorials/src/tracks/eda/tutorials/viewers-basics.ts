@@ -15,6 +15,10 @@ export class ViewersTutorial extends Tutorial {
   }
   get steps() { return 14; }
 
+  get icon() {
+    return '📊👁️';
+  }
+
   helpUrl: string = 'https://datagrok.ai/help/visualize/viewers';
   platform: Platform = getPlatform();
 

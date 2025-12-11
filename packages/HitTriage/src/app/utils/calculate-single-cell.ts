@@ -92,9 +92,13 @@ export async function calculateCellValues(
 };
 
 export function getNewVid(vidCol: DG.Column<any>) {
+  return getNewVidFromArray(vidCol.categories ?? []);
+}
+
+export function getNewVidFromArray(vidArray: string[]) {
   let maxId = 0;
-  if (vidCol.length > 1) {
-    for (const vid of vidCol.toList()) {
+  if (vidArray.length > 1) {
+    for (const vid of vidArray) {
       if (!vid || !vid.startsWith(ViDColFormat[0]) || vid.length !== ViDColFormat.length)
         continue;
       const num = parseInt(vid.substring(1));
@@ -105,6 +109,10 @@ export function getNewVid(vidCol: DG.Column<any>) {
   }
 
   return `V${''.concat(...new Array(ViDColFormat.length - 1 - (maxId +1).toString().length).fill('0'))}${maxId + 1}`;
+}
+
+export function getNextVid(maxVid: number) {
+  return `V${''.concat(...new Array(ViDColFormat.length - 1 - (maxVid +1).toString().length).fill('0'))}${maxVid + 1}`;
 }
 
 export async function calculateColumns(resultMap: IComputeDialogResult, dataFrame: DG.DataFrame, molColName: string) {

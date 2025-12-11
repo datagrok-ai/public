@@ -49,7 +49,7 @@ category('vector functions', () => {
     });
 
     test('convertMoleculeNotation', async () => {
-        await testVectorFunc('Chem:convertMoleculeNotation(${smiles}, \'molblock\')', 'molblock', [0], [mol1]);
+        await testVectorFunc('Chem:convertMoleculeNotation(${smiles}, \'molblock\', false)', 'molblock', [0], [mol1]);
     });
 
     test('getProperties', async () => {

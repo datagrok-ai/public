@@ -58,7 +58,7 @@ export async function demoFileIngest1() : Promise<any> {
 
 //name: Demo Molecules variable
 //tags: HitTriageDataSource
-//input: int numberOfMolecules { description: Molecules counts }
+//input: int numberOfMolecules  { description: Molecules counts }
 //output: dataframe result
 export async function demoFileIngest2(numberOfMolecules: number) : Promise<any> {
   return await PackageFunctions.demoFileIngest2(numberOfMolecules);
@@ -66,8 +66,8 @@ export async function demoFileIngest2(numberOfMolecules: number) : Promise<any> 
 
 //name: Demo File Submit
 //tags: HitTriageSubmitFunction
-//input: dataframe df { description: Dataframe }
-//input: string molecules { description: Molecules column name }
+//input: dataframe df  { description: Dataframe }
+//input: string molecules  { description: Molecules column name }
 export async function demoFileSubmit(df: DG.DataFrame, molecules: string) : Promise<void> {
   await PackageFunctions.demoFileSubmit(df, molecules);
 }

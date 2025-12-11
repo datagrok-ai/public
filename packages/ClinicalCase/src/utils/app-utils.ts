@@ -76,7 +76,7 @@ export async function openApp(standard: CDISC_STANDARD): Promise<DG.ViewBase | v
     });
     dialog.add(filesInput.root).show({resizable: true})
       .onOK(() => {
-        setTimeout(() => {
+        setTimeout(async () => {
           ui.setUpdateIndicator(importStudyDiv, true, `Loading data for study ${studyConfig.name}`);
           const sub = studyLoadedSubject.subscribe((data) => {
             if (data.name === studyConfig.name) {
@@ -89,8 +89,14 @@ export async function openApp(standard: CDISC_STANDARD): Promise<DG.ViewBase | v
               ui.setUpdateIndicator(importStudyDiv, false);
             }
           });
-            // eslint-disable-next-line max-len
-          grok.dapi.files.writeAsText(`System:AppData/ClinicalCase/studies/${studyConfig.name}/${studyConfigJsonFileName}`,
+          //save all selected files into study directory since all .xpt files are needed to perform validation
+          for (const file of filesInput.value) {
+            await grok.dapi.files.write(
+              `System:AppData/ClinicalCase/${studyConfig.standard}/${studyConfig.name}/${file.name}`,
+              Array.from(file.data));
+          }
+          // eslint-disable-next-line max-len
+          grok.dapi.files.writeAsText(`System:AppData/ClinicalCase/${studyConfig.standard}/${studyConfig.name}/${studyConfigJsonFileName}`,
             JSON.stringify(studyConfig));
           addStudyToBrowseTree(studies[studyConfig.name], clinicalCaseNode, filesInput.value);
           openStudy(clinicalCaseNode, studyConfig.standard, studyConfig.name, SUMMARY_VIEW_NAME);
@@ -113,7 +119,7 @@ export async function openApp(standard: CDISC_STANDARD): Promise<DG.ViewBase | v
 
 
 export async function createStudiesFromAppData(treeNode: DG.TreeViewGroup, standard: CDISC_STANDARD) {
-  const folders = await _package.files.list(`${standard}/studies`);
+  const folders = await _package.files.list(`${standard}`);
   for (const folder of folders) {
     try {
       const filesList = await _package.files.list(folder);
@@ -207,7 +213,8 @@ async function createStudyWithConfig(files: DG.FileInfo[], treeNode: DG.TreeView
       studies[config.name].domains.ts = tsDf;
       //write config file into folder
       if (!doNotAddToTree) {
-        grok.dapi.files.writeAsText(`System:AppData/ClinicalCase/studies/${config.name}/${studyConfigJsonFileName}`,
+        grok.dapi.files.writeAsText(
+          `System:AppData/ClinicalCase/${config.standard}/${config.name}/${studyConfigJsonFileName}`,
           JSON.stringify(config));
         addStudyToBrowseTree(studies[config.name], treeNode, files);
       }
@@ -358,7 +365,7 @@ export async function readClinicalData(study: ClinicalStudy, importedFiles?: DG.
   const pb = DG.TaskBarProgressIndicator
     .create(`Reading data for ${study.config.name}...`);
   try {
-    const studyFiles = importedFiles ?? await _package.files.list(`studies/${study.studyId}`);
+    const studyFiles = importedFiles ?? await _package.files.list(`${study.config.standard}/${study.studyId}`);
     const domainsList = domains(study.studyId);
 
     //look for d42 file and read it in case it exists
@@ -386,7 +393,8 @@ export async function readClinicalData(study: ClinicalStudy, importedFiles?: DG.
       }
 
       //saving .d42 format for further fast reading
-      const d42FileDirectory = `System:AppData/ClinicalCase/studies/${study.studyId}/${study.studyId}.d42`;
+      const d42FileDirectory =
+        `System:AppData/ClinicalCase/${study.config.standard}/${study.studyId}/${study.studyId}.d42`;
       const dfsList = studies[study.studyId].domains.all();
       grok.dapi.files.writeBinaryDataFrames(d42FileDirectory, dfsList)
         .then(() => grok.shell.info(`.d42 file has been saved for study ${study.studyId}`));
@@ -396,14 +404,22 @@ export async function readClinicalData(study: ClinicalStudy, importedFiles?: DG.
         //save define.xml, if we have it. Otherwise, save study.json
         const defineXml = importedFiles.filter((it) => it.name === defineXmlFileName);
         if (defineXml.length) {
-          grok.dapi.files.writeAsText(`System:AppData/ClinicalCase/studies/${study.studyId}/define.xml`,
+          grok.dapi.files.writeAsText(
+            `System:AppData/ClinicalCase/${study.config.standard}/${study.studyId}/define.xml`,
             await defineXml[0].readAsString());
         } else {
-          grok.dapi.files.writeAsText(`System:AppData/ClinicalCase/studies/${study.studyId}/study.json`,
+          grok.dapi.files.writeAsText(
+            `System:AppData/ClinicalCase/${study.config.standard}/${study.studyId}/study.json`,
             JSON.stringify(study.config));
         }
       }
     }
+
+    // Ensure validation columns are added to domains
+    // If validation is already completed, adds columns immediately
+    // If validation is not completed yet, subscribes to add columns when validation completes
+    study.ensureValidationColumnsAdded();
+
     return true;
   } finally {
     pb.close();

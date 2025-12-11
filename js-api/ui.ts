@@ -1780,6 +1780,7 @@ export function splitH(items: HTMLElement[], options: ElementOptions | null = nu
         spliterResize(divider, items[i], items[i + 1], true);
       }
     });
+    const ratios: number[] = items.map((_) => 1);
 
     tools.waitForElementInDom(b).then((x)=>{
       const rootWidth = x.getBoundingClientRect().width;
@@ -1794,34 +1795,40 @@ export function splitH(items: HTMLElement[], options: ElementOptions | null = nu
           } else {
             noWidthCount++;
           }
-        }else{
+        } else {
           element.style.width = '4px';
         }
       });
-
+      let firstWidth: number | null = null;
+      let counter = 0;
       childs.forEach((element) => {
         if (!element.classList.contains('ui-split-h-divider')) {
           if (element.style.width == '') {
-            let width = (rootWidth-defaultWidth-($(b).find('.ui-split-h-divider').length*4))/noWidthCount;
+            let width = (rootWidth-defaultWidth-($(b).find('.ui-split-h-divider').length * 4))/noWidthCount;
             element.style.width = String(width)+'px';
           }
+          const w = Number(element.style.width.replace(/px$/, ''));
+          firstWidth ??= w + 1; // to avoid where 1st element is excecively resized
+          if (firstWidth) // 0 also not allowed
+            ratios[counter] = w / firstWidth;
+          element.style.flexGrow = `${ratios[counter]}`;
+          counter++;
         }
-      })
-
+      });
     });
 
     tools.handleResize(b, (w,h)=>{
       const rootWidth = b.getBoundingClientRect().width;
-
+      if (!document.contains(b))
+        return;
       for (let i = 0; i < b.children.length; i++){
         if (!$(b.childNodes[i]).hasClass('ui-split-h-divider')){
-          let width = (w-rootWidth)/b.children.length+$(b.childNodes[i]).width();
+          const width = (w-rootWidth)/b.children.length+$(b.childNodes[i]).width();
           $(b.childNodes[i]).css('width', String(width)+'px');
         } else {
           $(b.childNodes[i]).css('width', 4);
         }
       }
-
     });
 
   } else {
@@ -1889,6 +1896,13 @@ function onMouseMove(e: any) {
       let newNextWidth = md.rightWidth - delta.x;
       previousSibling.style.width = String(newPrevWidth)+'px';
       nextSibling.style.width = String(newNextWidth)+'px';
+
+      // handle flex-grow values
+      const sumFlexGrow = Number(previousSibling.style.flexGrow ?? '0.99') + Number(nextSibling.style.flexGrow ?? '1');
+      const totalWidth = newPrevWidth + newNextWidth;
+      previousSibling.style.flexGrow = String((newPrevWidth / totalWidth) * sumFlexGrow);
+      nextSibling.style.flexGrow = String((newNextWidth / totalWidth) * sumFlexGrow);
+
       //previousSibling.setAttribute('style',`width: ${(md.leftWidth + delta.x)}px;`);
       //nextSibling.setAttribute('style',`width:${(md.rightWidth - delta.x)}px;`);
   } else {
