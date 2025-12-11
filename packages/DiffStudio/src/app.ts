@@ -989,6 +989,7 @@ export class DiffStudio {
         '#language: ivp',
         '#tags: model',
         '#editor: Compute2:RichFunctionViewEditor',
+        '#meta.runOnInput: true',
         '#meta.features: {"fitting": true, "sens-analysis": true}'
       ].join('\n');
 
