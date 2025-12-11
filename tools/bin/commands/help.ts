@@ -193,6 +193,7 @@ Options:
 --tags              Filter tests by tag name for run
 --testRepeat        Set amount of tests repeats
 --browsers-count    Set amount of browsers for tests run
+--migrate           Migrates tags to roles in meta
 
 Run tests of all or specified packages 
 
@@ -235,4 +236,5 @@ export const help = {
   test: HELP_TEST,
   testall: HELP_TESTALL,
   help: HELP,
+  migrate: '',
 };
