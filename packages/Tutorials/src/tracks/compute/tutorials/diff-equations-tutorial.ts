@@ -43,16 +43,16 @@ export const POPULATION_MODEL = `#name: Lotka-Volterra
 #argument: t
   initial = 0 {min: 0; max: 2; caption: Start; category: Time}    [Simulation start.]
   final = 15  {min: 2; max: 150; caption: Finish; category: Time} [Simulation end.]
-  step = 0.1  {min: 0.1; max: 1; caption: Step; category: Time}   [Solution grid step.]
+  step = 0.1  {min: 0.1; max: 1; caption: Step; category: Time}   [Grid step.]
 
 #inits:  
   x = 20 {min: 2; max: 40; category: Seed; caption: Prey}
   y = 2  {min: 2; max: 10; category: Seed; caption: Predator}
 
 #parameters:
-  alpha = 1.1 {min: 0.1; max: 1.5; category: Parameters} [The maximum prey per capita growth rate.]
+  alpha = 1.1 {min: 0.1; max: 1.5; category: Parameters} [Maximum prey growth rate.]
   beta = 0.4  {min: 0.1; max: 1; category: Parameters}   [Predator impact on prey death rate.]
-  gamma = 1.1 {min: 0.1; max: 1.5; category: Parameters} [The predator's per capita death rate.]
+  gamma = 1.1 {min: 0.1; max: 1.5; category: Parameters} [Predator mortality rate.]
   delta = 0.4 {min: 0.1; max: 1; category: Parameters}   [Effect of prey on predator growth.]
 
 #output:
@@ -198,31 +198,42 @@ export class DifferentialEquationsTutorial extends Tutorial {
         root: dsViewRoot.parentElement ?? dsViewRoot,
         description: '# App\n\nThis is the main view of Diff Studio.', 
         position: 'left',
-        elementsToHighlight: [dsViewRoot.parentElement ?? dsViewRoot],
+        elements: {
+          major: dsViewRoot.parentElement ?? dsViewRoot,
+        },
       },
       { // Line charts
         root: lineChartRoot,
         description: this.getLegendDiv(),
         position: 'left',
-        elementsToHighlight: [lineChartRoot],
+        elements: {
+          major: lineChartRoot,
+        },
       },
       { // Grid
         root: gridRoot,
         description: '# Dataframe 🧮\n\nThe outcomes of the numerical simulation.',
         position: 'top',
-        elementsToHighlight: [gridRoot],
+        elements: {
+          major: gridRoot,
+        },
       },
       { // Inputs panel
         root: inputsPanel,
         description: '# Inputs 3️⃣7️⃣\n\nYou can enter the model inputs here.',
         position: isTutorialPanelWide ? 'left' : 'right',
-        elementsToHighlight: [inputsPanel],
+        elements: {
+          major: inputsPanel,
+        },
       },
       { // Single input
         root: isTutorialPanelWide ? (inputRoots[1] as HTMLElement) : (inputRoots[1].querySelector('label') ?? inputRoots[1] as HTMLElement),
         description: this.getInputDescription(), 
         position: isTutorialPanelWide ? 'left' : 'top', 
-        elementsToHighlight: [getRect(inputRoots[1] as HTMLElement, {paddingBottom: 3}), lineChartRoot],
+        elements: {
+          major: getRect(inputRoots[1] as HTMLElement, {paddingBottom: 3}),
+          extra: lineChartRoot,
+        },
       },
     ]});
     await this.action(
@@ -327,7 +338,9 @@ export class DifferentialEquationsTutorial extends Tutorial {
         root: lineChartRoot,
         description: this.getUpdatesDescription(),
         position: 'left',
-        elementsToHighlight: [lineChartRoot],
+        elements: {
+          major: lineChartRoot,
+        },
       }],
       btnsText: {done: 'clear', next: '', prev: ''},
     });  
@@ -422,18 +435,22 @@ export class DifferentialEquationsTutorial extends Tutorial {
   private getCodeDescriptionPages(lineRoots: HTMLElement[], viewRoot: HTMLElement): DescriptionPage[] {
     const isWide = window.innerWidth >= SIZE_LIMITS.WINDOW_MIN_WIDTH;
 
-    const pages = [
+    const pages: DescriptionPage[] = [
       { // Equations block
         root: lineRoots[1],
         description: editorInfo.get('eqs')!,
         position: 'left',
-        elementsToHighlight: [isWide ? getRect(lineRoots[0], {width: 162, height: 57}) : viewRoot],
+        elements: {
+          major: isWide ? getRect(lineRoots[0], {width: 162, height: 57}) : viewRoot
+        },
       },
       { // Argument block
         root: lineRoots[4],
         description: editorInfo.get('arg')!,
         position: 'left',
-        elementsToHighlight: [isWide ? getRect(lineRoots[4], {width: 105, height: 76}) : viewRoot],
+        elements: {
+          major: isWide ? getRect(lineRoots[4], {width: 105, height: 76}) : viewRoot,
+        },
       },      
     ];
     
@@ -443,13 +460,17 @@ export class DifferentialEquationsTutorial extends Tutorial {
           root: lineRoots[4],
           description: editorInfo.get('annot')!,
           position: 'left',
-          elementsToHighlight: [isWide ? getRect(lineRoots[4], {width: 477, height: 76}) : viewRoot],
+          elements: {
+            major: isWide ? getRect(lineRoots[4], {width: 477, height: 76}) : viewRoot
+          },
         },
         { // Annotation with hint block
           root: lineRoots[4],
           description: editorInfo.get('hint')!,
           position: 'left',
-          elementsToHighlight: [isWide ? getRect(lineRoots[4], {width: 627, height: 76}) : viewRoot],
+          elements: {
+            major: isWide ? getRect(lineRoots[4], {width: 627, height: 76}) : viewRoot,
+          },
         },
       ]);
     }
@@ -459,13 +480,17 @@ export class DifferentialEquationsTutorial extends Tutorial {
         root: lineRoots[9],
         description: editorInfo.get('inits')!,
         position: 'left',
-        elementsToHighlight: [isWide ? getRect(lineRoots[9], {width: 455, height: 57}) : viewRoot],
+        elements: {
+          major: isWide ? getRect(lineRoots[9], {width: 455, height: 57}) : viewRoot,
+        },
       },
       { // Parameters block
         root: lineRoots[13],
         description: editorInfo.get('params')!,
         position: 'left',
-        elementsToHighlight: [isWide ? getRect(lineRoots[13], {width: 412, height: 95}) : viewRoot],
+        elements: {
+          major: isWide ? getRect(lineRoots[13], {width: 412, height: 95}) : viewRoot,
+        },
       }
     ]);  
     
@@ -474,7 +499,9 @@ export class DifferentialEquationsTutorial extends Tutorial {
         root: lineRoots[19],
         description: editorInfo.get('out')!,
         position: 'left',
-        elementsToHighlight: [isWide ? getRect(lineRoots[19], {width: 185, height: 76}) : viewRoot],
+        elements: {
+          major: isWide ? getRect(lineRoots[19], {width: 185, height: 76}) : viewRoot,
+        },
       });
     }
 
