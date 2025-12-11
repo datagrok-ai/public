@@ -8,8 +8,6 @@ const toCamelCase = (str: string) =>
 export function migrate(argv?: string[]) {
   const FILE_PATH = path.resolve(process.cwd(), 'src/package.ts');
 
-  console.log('Object.values(FUNC_TYPES): ', Object.values(FUNC_TYPES));
-
   const project = new Project({
     manipulationSettings: {
       quoteKind: QuoteKind.Single,
