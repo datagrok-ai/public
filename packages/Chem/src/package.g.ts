@@ -24,11 +24,11 @@ export async function initChemAutostart() : Promise<void> {
 
 //name: Recalculate Coordinates
 //description: Recalculates 2D coordinates for molecules in the column using Open Chem Lib
-//tags: Transform
 //input: dataframe table 
 //input: column molecules { semType: Molecule }
 //input: bool join = true 
 //output: column result
+//meta.roles: transform
 //top-menu: Chem | Transform | Recalculate Coordinates...
 export async function recalculateCoordsViaOCL(table: DG.DataFrame, molecules: DG.Column, join: boolean) : Promise<any> {
   return await PackageFunctions.recalculateCoordsViaOCL(table, molecules, join);
@@ -427,9 +427,9 @@ export async function activityCliffsTransform(table: DG.DataFrame, molecules: DG
 }
 
 //name: To InchI
-//tags: Transform
 //input: dataframe table 
 //input: column molecules { semType: Molecule }
+//meta.roles: transform
 //top-menu: Chem | Calculate | To InchI...
 export function addInchisTopMenu(table: DG.DataFrame, col: DG.Column) : void {
   PackageFunctions.addInchisTopMenu(table, col);
@@ -443,9 +443,9 @@ export function getInchis(molecules: DG.Column) : any {
 }
 
 //name: To InchI Keys
-//tags: Transform
 //input: dataframe table { description: Input data table }
 //input: column molecules { semType: Molecule }
+//meta.roles: transform
 //top-menu: Chem | Calculate | To InchI Keys...
 export function addInchisKeysTopMenu(table: DG.DataFrame, col: DG.Column) : void {
   PackageFunctions.addInchisKeysTopMenu(table, col);
@@ -460,7 +460,6 @@ export function getInchiKeys(molecules: DG.Column) : any {
 
 //name: Structural Alerts
 //description: Highlights the fragments that could lead to potential chemical hazards
-//tags: HitTriageFunction
 //input: dataframe table { description: Input data table; caption: Table }
 //input: column molecules { caption: Molecules; semType: Molecule; type: categorical }
 //input: bool pains = true { caption: PAINS; description: "Pan Assay Interference Compounds filters" }
@@ -472,6 +471,7 @@ export function getInchiKeys(molecules: DG.Column) : any {
 //input: bool lint = false { caption: LINT; description: "Pfizer LINT filters" }
 //input: bool glaxo = false { caption: Glaxo; description: "Glaxo Wellcome Hard filters" }
 //output: dataframe result
+//meta.roles: hitTriageFunction
 //top-menu: Chem | Analyze | Structural Alerts...
 export async function structuralAlertsTopMenu(table: DG.DataFrame, molecules: DG.Column, pains: boolean, bms: boolean, sureChembl: boolean, mlsmr: boolean, dundee: boolean, inpharmatica: boolean, lint: boolean, glaxo: boolean) : Promise<any> {
   return await PackageFunctions.structuralAlertsTopMenu(table, molecules, pains, bms, sureChembl, mlsmr, dundee, inpharmatica, lint, glaxo);
@@ -627,7 +627,6 @@ export function convertMolNotation(molecule: string, sourceNotation: any, target
 }
 
 //name: Convert Notation
-//tags: Transform
 //input: dataframe data 
 //input: column molecules { semType: Molecule }
 //input: string targetNotation = 'smiles' { choices: ["smiles","smarts","molblock","v3Kmolblock"] }
@@ -635,6 +634,7 @@ export function convertMolNotation(molecule: string, sourceNotation: any, target
 //input: bool join = true 
 //input: bool kekulize = false { optional: true; nullable: true }
 //output: column result
+//meta.roles: transform
 //top-menu: Chem | Transform | Convert Notation...
 export async function convertNotation(data: DG.DataFrame, molecules: DG.Column<any>, targetNotation: any, overwrite: boolean, join: boolean, kekulize?: boolean) : Promise<any> {
   return await PackageFunctions.convertNotation(data, molecules, targetNotation, overwrite, join, kekulize);
@@ -823,7 +823,6 @@ export async function callChemDiversitySearch(col: DG.Column, metricName: any, f
 
 //name: Chemical Properties
 //description: Calculates chemical properties and adds them as columns to the input table. properties include Molecular Weight (MW), Hydrogen Bond Acceptors (HBA), Hydrogen Bond Donors (HBD), LogP (Partition), LogS (Solubility), Polar Surface Area (PSA), Rotatable Bonds, Stereo Centers, Molecule Charge.
-//tags: HitTriageFunction, Transform
 //input: dataframe table { description: Input data table }
 //input: column molecules { semType: Molecule }
 //input: bool MW = true 
@@ -839,6 +838,7 @@ export async function callChemDiversitySearch(col: DG.Column, metricName: any, f
 //meta.method_info.author: Open Chem Lib Team
 //meta.method_info.year: 2024
 //meta.method_info.github: https://github.com/actelion/openchemlib
+//meta.roles: hitTriageFunction,transform
 //top-menu: Chem | Calculate | Chemical Properties...
 export async function addChemPropertiesColumns(table: DG.DataFrame, molecules: DG.Column, MW?: boolean, HBA?: boolean, HBD?: boolean, logP?: boolean, logS?: boolean, PSA?: boolean, rotatableBonds?: boolean, stereoCenters?: boolean, moleculeCharge?: boolean) : Promise<void> {
   await PackageFunctions.addChemPropertiesColumns(table, molecules, MW, HBA, HBD, logP, logS, PSA, rotatableBonds, stereoCenters, moleculeCharge);
@@ -853,13 +853,13 @@ export async function getProperties(molecules: DG.Column, selected?: string[]) :
 }
 
 //name: Toxicity Risks
-//tags: HitTriageFunction, Transform
 //input: dataframe table { description: Input data table }
 //input: column molecules { semType: Molecule }
 //input: bool mutagenicity = true 
 //input: bool tumorigenicity = false 
 //input: bool irritatingEffects = false 
 //input: bool reproductiveEffects = false 
+//meta.roles: hitTriageFunction,transform
 //top-menu: Chem | Calculate | Toxicity Risks...
 export async function addChemRisksColumns(table: DG.DataFrame, molecules: DG.Column, mutagenicity?: boolean, tumorigenicity?: boolean, irritatingEffects?: boolean, reproductiveEffects?: boolean) : Promise<void> {
   await PackageFunctions.addChemRisksColumns(table, molecules, mutagenicity, tumorigenicity, irritatingEffects, reproductiveEffects);
@@ -989,9 +989,9 @@ export async function demoScaffold() : Promise<void> {
 }
 
 //name: Names To Smiles
-//tags: Transform
 //input: dataframe data 
 //input: column names 
+//meta.roles: transform
 //top-menu: Chem | Transform | Names To Smiles...
 export async function namesToSmiles(data: DG.DataFrame, names: DG.Column<any>) : Promise<void> {
   await PackageFunctions.namesToSmiles(data, names);
@@ -1079,10 +1079,10 @@ export async function isInteractiveNN(df: DG.DataFrame, predictColumn: DG.Column
 
 //name: Deprotect
 //description: Removes drawn protecting groups / fragments from molecules
-//tags: Transform
 //input: dataframe table { description: Input data table }
 //input: column molecules { semType: Molecule }
 //input: string fragment = 'O=C([N:1])OCC1c2ccccc2-c2ccccc21' { semType: Molecule }
+//meta.roles: transform
 //top-menu: Chem | Transform | Deprotect...
 //editor: Chem:DeprotectEditor
 export async function deprotect(table: DG.DataFrame, molecules: DG.Column, fragment: string) : Promise<void> {

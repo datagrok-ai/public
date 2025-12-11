@@ -165,8 +165,12 @@ async function initChemInt(): Promise<void> {
     storedSketcherType = PREVIOUS_SKETCHER_NAMES[storedSketcherType];
   if (!storedSketcherType && _properties.Sketcher)
     storedSketcherType = SKETCHER_FUNCS_FRIENDLY_NAMES[_properties.Sketcher];
-  const sketcherFunc = DG.Func.find({tags: ['moleculeSketcher']})
-    .find((e) => e.name === storedSketcherType || e.friendlyName === storedSketcherType);
+
+  const tags = DG.Func.find({tags: ['moleculeSketcher']});
+  const meta = DG.Func.find({meta: {roles: 'moleculeSketcher'}});
+  const sketcherFuncs = tags.length > 0 ? tags : meta;
+  const sketcherFunc = sketcherFuncs.find((e) => e.name === storedSketcherType || e.friendlyName === storedSketcherType);
+
   if (sketcherFunc)
     DG.chem.currentSketcherType = sketcherFunc.friendlyName;
   else {
@@ -209,7 +213,8 @@ export class PackageFunctions {
   static async initChemAutostart(): Promise<void> { }
 
   @grok.decorators.func({'top-menu': 'Chem | Transform | Recalculate Coordinates...', 'name': 'Recalculate Coordinates',
-    'description': 'Recalculates 2D coordinates for molecules in the column using Open Chem Lib', 'tags': ['Transform'],
+    'description': 'Recalculates 2D coordinates for molecules in the column using Open Chem Lib',
+    'meta': {'roles': ['transform']},
   })
   static async recalculateCoordsViaOCL(@grok.decorators.param({}) table: DG.DataFrame,
   @grok.decorators.param({options: {semType: 'Molecule'}}) molecules: DG.Column,
@@ -1134,7 +1139,7 @@ export class PackageFunctions {
   @grok.decorators.func({
     'top-menu': 'Chem | Calculate | To InchI...',
     'name': 'To InchI',
-    'tags': ['Transform'],
+    'meta': {'roles': ['transform']},
   })
   static addInchisTopMenu(
     table: DG.DataFrame,
@@ -1156,7 +1161,7 @@ export class PackageFunctions {
   @grok.decorators.func({
     'top-menu': 'Chem | Calculate | To InchI Keys...',
     'name': 'To InchI Keys',
-    'tags': ['Transform'],
+    'meta': {'roles': ['transform']},
   })
   static addInchisKeysTopMenu(
     @grok.decorators.param({options: {description: 'Input data table'}}) table: DG.DataFrame,
@@ -1179,7 +1184,7 @@ export class PackageFunctions {
     'top-menu': 'Chem | Analyze | Structural Alerts...',
     'name': 'Structural Alerts',
     'description': 'Highlights the fragments that could lead to potential chemical hazards',
-    'tags': ['HitTriageFunction'],
+    'meta': {'roles': ['hitTriageFunction']},
   })
   static async structuralAlertsTopMenu(
     @grok.decorators.param({options: {description: 'Input data table', caption: 'Table'}}) table: DG.DataFrame,
@@ -1436,7 +1441,7 @@ export class PackageFunctions {
   @grok.decorators.func({
     'top-menu': 'Chem | Transform | Convert Notation...',
     'name': 'Convert Notation',
-    'tags': ['Transform'],
+    'meta': {'roles': ['transform']},
   })
   static async convertNotation(
     data: DG.DataFrame,
@@ -1877,13 +1882,7 @@ export class PackageFunctions {
     'top-menu': 'Chem | Calculate | Chemical Properties...',
     'name': 'Chemical Properties',
     'description': 'Calculates chemical properties and adds them as columns to the input table. properties include Molecular Weight (MW), Hydrogen Bond Acceptors (HBA), Hydrogen Bond Donors (HBD), LogP (Partition), LogS (Solubility), Polar Surface Area (PSA), Rotatable Bonds, Stereo Centers, Molecule Charge.',
-    'tags': ['HitTriageFunction', 'Transform'],
-    'meta': {
-      'function_family': 'biochem-calculator',
-      'method_info.author': 'Open Chem Lib Team',
-      'method_info.year': '2024',
-      'method_info.github': 'https://github.com/actelion/openchemlib',
-    }})
+    'meta': {'function_family': 'biochem-calculator', 'method_info.author': 'Open Chem Lib Team', 'method_info.year': '2024', 'method_info.github': 'https://github.com/actelion/openchemlib', 'roles': ['hitTriageFunction', 'transform']}})
   static async addChemPropertiesColumns(
     @grok.decorators.param({type: 'dataframe', options: {description: 'Input data table'}}) table: DG.DataFrame,
     @grok.decorators.param({type: 'column', options: {semType: 'Molecule'}}) molecules: DG.Column,
@@ -1934,7 +1933,8 @@ export class PackageFunctions {
   @grok.decorators.func({
     'top-menu': 'Chem | Calculate | Toxicity Risks...',
     'name': 'Toxicity Risks',
-    'tags': ['HitTriageFunction', 'Transform']})
+    'meta': {'roles': ['hitTriageFunction', 'transform']},
+  })
   static async addChemRisksColumns(
     @grok.decorators.param({options: {description: 'Input data table'}}) table: DG.DataFrame,
     @grok.decorators.param({options: {semType: 'Molecule'}}) molecules: DG.Column,
@@ -2168,7 +2168,8 @@ export class PackageFunctions {
   @grok.decorators.func({
     'name': 'Names To Smiles',
     'top-menu': 'Chem | Transform | Names To Smiles...',
-    'tags': ['Transform']})
+    'meta': {'roles': ['transform']},
+  })
   static async namesToSmiles(
     data: DG.DataFrame,
     @grok.decorators.param({type: 'column'}) names: DG.Column<string>): Promise<void> {
@@ -2416,9 +2417,9 @@ export class PackageFunctions {
   @grok.decorators.func({
     'top-menu': 'Chem | Transform | Deprotect...',
     'name': 'Deprotect',
-    'tags': ['Transform'],
     'description': 'Removes drawn protecting groups / fragments from molecules',
     'editor': 'Chem:DeprotectEditor',
+    'meta': {'roles': ['transform']},
   })
   static async deprotect(
     @grok.decorators.param({options: {description: 'Input data table'}}) table: DG.DataFrame,

@@ -5,6 +5,20 @@ import { FUNC_TYPES } from 'datagrok-api/src/const';
 export const toCamelCase = (str: string) =>
   str.replace(/[-_ ]+(\w)/g, (_, c) => c.toUpperCase()).replace(/^[A-Z]/, (c) => c.toLowerCase());
 
+
+function getProp(obj: ObjectLiteralExpression, name: string) {
+  return obj.getProperties().find(p => {
+    if (p.getKind() !== SyntaxKind.PropertyAssignment &&
+        p.getKind() !== SyntaxKind.ShorthandPropertyAssignment)
+      return false;
+
+    const n = (p as any).getName?.();
+    if (!n) return false;
+
+    return n.replace(/['"`]/g, '') === name;
+  });
+}
+
 export function migrate(argv?: string[]) {
   const FILE_PATH = path.resolve(process.cwd(), 'src/package.ts');
 
@@ -29,7 +43,7 @@ export function migrate(argv?: string[]) {
     if (!arg || !arg.asKind(SyntaxKind.ObjectLiteralExpression)) return;
 
     const obj = arg as ObjectLiteralExpression;
-    const tagsProp = obj.getProperty('tags');
+    const tagsProp = getProp(obj, 'tags');
 
     if (tagsProp) {
       const tagsArray = tagsProp.getFirstDescendantByKind(SyntaxKind.ArrayLiteralExpression);
@@ -47,7 +61,7 @@ export function migrate(argv?: string[]) {
       }
 
       if (validTags.length > 0) {
-        const metaProp = obj.getProperty('meta');
+        const metaProp = getProp(obj, 'meta');
 
         if (!metaProp) {
           obj.addPropertyAssignment({
