@@ -1,5 +1,9 @@
 # db-explorer changelog
 
+## 1.3.4 (2025-12-11)
+
+* In place registration of regexp detectors for semantic types
+
 ## 1.3.0 (2025-10-16)
 
 * Lazy loading of schemas and references

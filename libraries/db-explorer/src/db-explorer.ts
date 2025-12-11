@@ -123,6 +123,9 @@ export class DBExplorer {
       schemaPromise,
       this.schemaName
     );
+    // if the matching regexp is also provided, register it
+    if (options?.matchRegexp)
+      DG.SemanticValue.registerRegExpDetector(semanticType, options.matchRegexp);
     DG.ObjectHandler.register(handler);
     this.objHandlers.push(handler);
     return this;
@@ -169,7 +172,7 @@ export class DBExplorer {
   public static initFromConfig(config: DBExplorerConfig) {
     const exp = new DBExplorer(config.connectionName, config.schemaName, config.nqName, config.dataSourceName);
     for (const [semType, entry] of Object.entries(config.entryPoints))
-      exp.addEntryPoint(semType, entry.table, entry.column, {regexpExample: entry.regexpExample});
+      exp.addEntryPoint(semType, entry.table, entry.column, {regexpExample: entry.regexpExample, matchRegexp: entry.matchRegexp});
     if (config.joinOptions)
       exp.addJoinOptions(config.joinOptions);
     if (config.headerNames)

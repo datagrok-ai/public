@@ -17,6 +17,7 @@ export type EntryPointOptions = {
   valueConverter: (value: string | number) => string | number;
   joinOptions: QueryJoinOptions[];
   regexpExample?: (typeof DG.ObjectHandler.prototype.regexpExample)
+  matchRegexp?: string;
 };
 export type QueryJoinOptions = {
   fromTable: string;
@@ -35,6 +36,7 @@ export type DBExplorerConfig = {
         table: string;
         column: string;
         regexpExample?: EntryPointOptions['regexpExample'];
+        matchRegexp?: string;
     }}
     joinOptions?: QueryJoinOptions[];
     headerNames?: {[tableName: string]: string};
