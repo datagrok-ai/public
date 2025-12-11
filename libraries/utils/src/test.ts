@@ -1,7 +1,5 @@
-import type * as _grok from 'datagrok-api/grok';
-import type * as _DG from 'datagrok-api/dg';
-declare let grok: typeof _grok, DG: typeof _DG;
-
+import * as grok from 'datagrok-api/grok';
+import * as DG from 'datagrok-api/dg';
 import { Observable } from 'rxjs';
 import { testData } from './dataframe-utils';
 import Timeout = NodeJS.Timeout;
@@ -46,22 +44,22 @@ export interface TestOptions {
   tags?: string[];
 }
 
-export interface TestResult {
-  date: string;
-  category: string;
-  name: string;
-  success: boolean;
-  result: any;
-  ms: number;
-  skipped: boolean;
-  logs: string;
-  owner: string;
+export interface TestResult { 
+  date: string; 
+  category: string; 
+  name: string; 
+  success: boolean; 
+  result: any; 
+  ms: number; 
+  skipped: boolean; 
+  logs: string; 
+  owner: string; 
   package: string;
   flaking: boolean;
 }
 
 
-export interface TestResultExtended extends TestResult{
+export interface TestResultExtended extends TestResult{ 
   widgetsDifference: number;
 }
 
@@ -102,12 +100,12 @@ export class Test {
         try {
           if (DG.Test.isInDebug)
             debugger;
-
+          
           let res = await test();
           try {
             result = res?.toString() ?? '';
           }
-          catch (e) {
+          catch (e) { 
             result = 'Can\'t convert test\'s result to string';
             console.error(`Can\'t convert test\'s result to string in the ${this.category}:${this.name} test`);
           }
@@ -135,10 +133,6 @@ export class Category {
   owner?: string;
 }
 
-export class NodeTestExecutionOptions {
-  package!: _DG.Package;
-}
-
 export class TestExecutionOptions {
   category?: string;
   test?: string;
@@ -147,7 +141,6 @@ export class TestExecutionOptions {
   verbose?: boolean;
   stressTest?: boolean;
   tags?: string[];
-  nodeOptions?: NodeTestExecutionOptions
 }
 
 export async function testEvent<T>(event: Observable<T>,
@@ -225,7 +218,7 @@ export function expectFloat(actual: number, expected: number, tolerance = 0.001,
     throw new Error(`Expected ${expected}, got ${actual} (tolerance = ${tolerance})`);
 }
 
-export function expectTable(actual: _DG.DataFrame, expected: _DG.DataFrame, error?: string): void {
+export function expectTable(actual: DG.DataFrame, expected: DG.DataFrame, error?: string): void {
   const expectedRowCount = expected.rowCount;
   const actualRowCount = actual.rowCount;
   expect(actualRowCount, expectedRowCount, `${error ?? ''}, row count`);
@@ -312,11 +305,11 @@ export function after(after: () => Promise<void>): void {
   tests[currentCategory].after = after;
 }
 
-function addNamespace(s: string, f: _DG.Func): string {
+function addNamespace(s: string, f: DG.Func): string {
   return s.replace(new RegExp(f.name, 'gi'), f.nqName);
 }
 
-export async function initAutoTests(package_: _DG.Package, module?: any) {
+export async function initAutoTests(package_: DG.Package, module?: any) {
   const packageId = package_.id;
   if (wasRegistered[packageId]) return;
   const moduleTests = module ? module.tests : tests;
@@ -449,11 +442,8 @@ function resetConsole(): void {
 
 export async function runTests(options?: TestExecutionOptions) : Promise<TestResultExtended[]>{
   console.log('--------------------')
-  const package_: _DG.Package = options?.nodeOptions ? options.nodeOptions.package : grok.functions.getCurrentCall().func.package;
-  if (!package_)
-    throw new Error('Can\'t run tests outside of the package');
-  const match = package_.packageOwner?.match(/<([^>]*)>/);
-  const packageOwner = match ? match[1] : '';
+  const package_ = grok.functions.getCurrentCall()?.func?.package!;
+  const packageOwner = ((package_?.packageOwner ?? '').match(new RegExp('[^<]*<([^>]*)>')) ?? ['', ''])[1];
   await initAutoTests(package_);
   const results:TestResultExtended[] = [];
   console.log(`Running tests`);
@@ -514,13 +504,7 @@ export async function runTests(options?: TestExecutionOptions) : Promise<TestRes
         // if (isGBEnable)
         //   await (window as any).gc();
         // memoryUsageBefore = (window?.performance as any)?.memory?.usedJSHeapSize;
-        let testRun = await execTest(
-            test,
-            options?.test,
-            logs, DG.Test.isInBenchmark ? t[i].options?.benchmarkTimeout ?? BENCHMARK_TIMEOUT : t[i].options?.timeout ?? STANDART_TIMEOUT,
-            package_.name,
-            options.verbose
-        );
+        let testRun = await execTest(test, options?.test, logs, DG.Test.isInBenchmark ? t[i].options?.benchmarkTimeout ?? BENCHMARK_TIMEOUT : t[i].options?.timeout ?? STANDART_TIMEOUT, package_.name, options.verbose);
 
         // if (isGBEnable)
         //   await (window as any).gc();
@@ -528,10 +512,8 @@ export async function runTests(options?: TestExecutionOptions) : Promise<TestRes
           res.push({ ...testRun,  widgetsDifference: getWidgetsCountSafe() - widgetsBefore });
         // res.push({ ...testRun, memoryDelta: (window?.performance as any)?.memory?.usedJSHeapSize - memoryUsageBefore, widgetsDelta: getWidgetsCountSafe() - widgetsBefore });
 
-        if (!options.nodeOptions) {
-          grok.shell.closeAll();
-          DG.Balloon.closeAll();
-        }
+        grok.shell.closeAll();
+        DG.Balloon.closeAll();
       }
     } else {
       for (let i = 0; i < t.length; i++) {
@@ -548,18 +530,11 @@ export async function runTests(options?: TestExecutionOptions) : Promise<TestRes
         // if (isGBEnable)
         //   await (window as any).gc();
         // memoryUsageBefore = (window?.performance as any)?.memory?.usedJSHeapSize;
-        let testRun = await execTest(
-            test,
-            options?.test,
-            logs,
-            DG.Test.isInBenchmark ? t[i].options?.benchmarkTimeout ?? BENCHMARK_TIMEOUT : t[i].options?.timeout,
-            package_.name,
-            options.verbose
-        );
+        let testRun = await execTest(test, options?.test, logs, DG.Test.isInBenchmark ? t[i].options?.benchmarkTimeout ?? BENCHMARK_TIMEOUT : t[i].options?.timeout, package_.name, options.verbose);
 
         // if (isGBEnable)
         //   await (window as any).gc();
-
+        
         if (testRun)
           res.push({ ...testRun, widgetsDifference: getWidgetsCountSafe() - widgetsBefore });
         // res.push({ ...testRun, memoryDelta: (window?.performance as any)?.memory?.usedJSHeapSize - memoryUsageBefore, widgetsDifference: getWidgetsCountSafe() - widgetsBefore });
@@ -570,8 +545,6 @@ export async function runTests(options?: TestExecutionOptions) : Promise<TestRes
   }
 
   function getWidgetsCountSafe() {
-    if (typeof process !== 'undefined')
-      return 0;
     let length = -1;
     try {
       length = DG.Widget.getAll().length;
@@ -584,7 +557,7 @@ export async function runTests(options?: TestExecutionOptions) : Promise<TestRes
   async function invokeTests(categoriesToInvoke: { [key: string]: Category }, options: TestExecutionOptions) {
     try {
       for (const [key, value] of Object.entries(categoriesToInvoke)) {
-        if (!options?.category || options.exclude?.some((c) => key.startsWith(c)))
+        if ((!options?.category || options.exclude?.some((c) => key.startsWith(c))))
           continue;
         if (!(key.toLowerCase().startsWith(`${options?.category.toLowerCase().trim()} :`) && !options.test) && key.toLowerCase().trim() !== options?.category.toLowerCase().trim())
           continue;
@@ -610,12 +583,9 @@ export async function runTests(options?: TestExecutionOptions) : Promise<TestRes
         let res: TestResultExtended[];
         if (value.beforeStatus) {
           res = Array.from(t.map((testElem) => {
-            return {
-              date: new Date().toISOString(), category: key, name: testElem.name, success: false, result: 'before() failed', ms: 0, skipped: false, logs: '',
-              owner: packageOwner, package: package_.name, widgetsDifference:  0, flaking: DG.Test.isReproducing
-            };
+            return {  date: new Date().toISOString(), category: key, name: testElem.name, success: false, result: 'before() failed', ms: 0, skipped: false, logs: '',owner: package_?.packageOwner, package: package_.name, widgetsDifference:  0, flaking: DG.Test.isReproducing };
           }));
-          res.forEach(async (test) => await grok.shell.reportTest('package', test));
+          res.forEach(async (test) => reportTest('package', test));
         }
         else
           res = await invokeTestsInCategory(value, options);
@@ -628,15 +598,9 @@ export async function runTests(options?: TestExecutionOptions) : Promise<TestRes
         // grok.shell.closeAll();
         // DG.Balloon.closeAll();
         if (value.afterStatus)
-          data.push({
-            date: new Date().toISOString(), category: key, name: 'after', success: false, result: value.afterStatus, ms: 0, skipped: false, logs: '',
-            owner: packageOwner, package: package_.name, widgetsDifference:  0, flaking: DG.Test.isReproducing
-          });
+          data.push({ date: new Date().toISOString(), category: key, name: 'after', success: false, result: value.afterStatus, ms: 0, skipped: false, logs: '',owner: package_?.packageOwner, package: package_.name, widgetsDifference:  0, flaking: DG.Test.isReproducing });
         if (value.beforeStatus)
-          data.push({
-            date: new Date().toISOString(), category: key, name: 'before', success: false, result: value.beforeStatus, ms: 0, skipped: false, logs: '',
-            owner: packageOwner, package: package_.name, widgetsDifference:  0, flaking: DG.Test.isReproducing
-          });
+          data.push({ date: new Date().toISOString(), category: key, name: 'before', success: false, result: value.beforeStatus, ms: 0, skipped: false, logs: '',owner: package_?.packageOwner, package: package_.name, widgetsDifference:  0, flaking: DG.Test.isReproducing});
         results.push(...data);
       }
     } finally {
@@ -650,19 +614,31 @@ export async function runTests(options?: TestExecutionOptions) : Promise<TestRes
         date: new Date().toISOString(),
         category: 'Unhandled exceptions',
         name: 'Exception',
-        result: error ?? '',
-        success: !error,
-        ms: 0,
+        result: error ?? '', 
+        success: !error, 
+        ms: 0, 
         skipped: false,
         owner: packageOwner ?? '',
         'package': package_.name,
         widgetsDifference: 0
       };
-
+        
       results.push({...params, 'flaking': DG.Test.isReproducing && !error});
       (<any>params).package = package_.name;
-      await grok.shell.reportTest('package', params);
+      await reportTest('package', params);
     }
+  }
+}
+
+async function reportTest(type: string, params: any): Promise<void> {
+  if ((<any>grok.shell).reportTest != null)
+    await (<any>grok.shell).reportTest(type, params);
+  else {
+    await fetch(`${grok.dapi.root}/log/tests/${type}`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      credentials: 'same-origin',
+      body: JSON.stringify(params)
+    });
   }
 }
 
@@ -671,8 +647,7 @@ async function getResult(x: any): Promise<string> {
 }
 
 async function execTest(t: Test, predicate: string | undefined, logs: any[],
-  testTimeout?: number, packageName?: string, verbose?: boolean
-): Promise<TestResult | undefined> {
+  testTimeout?: number, packageName?: string, verbose?: boolean): Promise<TestResult | undefined> {
   logs.length = 0;
   let r: TestResult;
   let type: string = 'package';
@@ -743,7 +718,8 @@ async function execTest(t: Test, predicate: string | undefined, logs: any[],
 
     if (params.result instanceof DG.DataFrame)
       params.result = JSON.stringify(params.result?.toJson()) || '';
-    await grok.shell.reportTest(type, params);
+
+    await reportTest(type, params);
   }
   return r;
 }
@@ -830,7 +806,7 @@ const catDF = DG.DataFrame.fromColumns([DG.Column.fromStrings('col', ['val1', 'v
 /**
  * Universal test for viewers. It search viewers in DOM by tags: canvas, svg, img, input, h1, a
  * @param  {string} v Viewer name
- * @param  {_DG.DataFrame} df Dataframe to use. Should have at least 3 rows
+ * @param  {DG.DataFrame} df Dataframe to use. Should have at least 3 rows
  * @param  {boolean} options.detectSemanticTypes Specify whether to detect semantic types or not
  * @param  {boolean} options.readOnly If set to true, the dataframe will not be modified during the test
  * @param  {boolean} options.arbitraryDfTest If set to false, test on arbitrary dataframe
@@ -838,9 +814,9 @@ const catDF = DG.DataFrame.fromColumns([DG.Column.fromStrings('col', ['val1', 'v
  * @param  {object} options List of options (optional)
  * @return {Promise<void>} The test is considered successful if it completes without errors
  */
-export async function testViewer(v: string, df: _DG.DataFrame, options?: {
+export async function testViewer(v: string, df: DG.DataFrame, options?: {
   detectSemanticTypes?: boolean, readOnly?: boolean, arbitraryDfTest?: boolean,
-  packageName?: string, awaitViewer?: (viewer: _DG.Viewer) => Promise<void>
+  packageName?: string, awaitViewer?: (viewer: DG.Viewer) => Promise<void>
 }): Promise<void> {
   const packageName = options?.packageName ?? '';
   if (options?.detectSemanticTypes)
