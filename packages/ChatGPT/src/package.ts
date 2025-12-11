@@ -13,9 +13,11 @@ import {OpenAIHelpClient} from './llm-utils/openAI-client';
 import {LLMCredsManager} from './llm-utils/creds';
 import {CombinedAISearchAssistant} from './llm-utils/combined-search';
 import {JsonSchema} from './prompt-engine/interfaces';
-import {genDBConnectionMeta} from './llm-utils/db-index-tools';
+import {genDBConnectionMeta, moveDBMetaToStickyMetaOhCoolItEvenRhymes} from './llm-utils/db-index-tools';
 import * as rxjs from 'rxjs';
 import {embedConnectionQueries} from './llm-utils/embeddings';
+import { biologicsIndex } from './llm-utils/indexes/biologics-index';
+import { chemblIndex } from './llm-utils/indexes/chembl-index';
 
 export * from './package.g';
 export const _package = new DG.Package();
@@ -183,6 +185,12 @@ export class PackageFunctions {
   @grok.decorators.func({})
   static async setupAIQueryEditor(view: DG.ViewBase, connectionID: string, queryEditorRoot: HTMLElement, @grok.decorators.param({type: 'dynamic'}) setAndRunFunc: Function): Promise<boolean> {
     return setupAIQueryEditorUI(view, connectionID, queryEditorRoot, setAndRunFunc as (query: string) => void);
+  }
+
+  @grok.decorators.func({})
+  static async moveMetaToDB(@grok.decorators.param({type: 'string', options: {choices: ['biologics', 'chembl']}})dbName: string): Promise<void> {
+    const meta = dbName === 'biologics' ? biologicsIndex : chemblIndex;
+    await moveDBMetaToStickyMetaOhCoolItEvenRhymes(meta);
   }
 
   @grok.decorators.func({})

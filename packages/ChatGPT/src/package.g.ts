@@ -92,16 +92,6 @@ export async function askDocumentationCached(prompt: string) : Promise<string> {
   return await PackageFunctions.askDocumentationCached(prompt);
 }
 
-//input: string prompt 
-//input: string connectionID 
-//input: string schemaName 
-//output: string result
-//meta.cache: all
-//meta.cache.invalidateOn: 0 0 1 * *
-export async function generateSqlQuery(prompt: string, connectionID: string, schemaName: string) : Promise<string> {
-  return await PackageFunctions.generateSqlQuery(prompt, connectionID, schemaName);
-}
-
 //input: view view 
 //input: string connectionID 
 //input: dynamic queryEditorRoot 
@@ -109,6 +99,11 @@ export async function generateSqlQuery(prompt: string, connectionID: string, sch
 //output: bool result
 export async function setupAIQueryEditor(view: DG.ViewBase, connectionID: string, queryEditorRoot: any, setAndRunFunc: any) : Promise<boolean> {
   return await PackageFunctions.setupAIQueryEditor(view, connectionID, queryEditorRoot, setAndRunFunc);
+}
+
+//input: string dbName { choices: ["biologics","chembl"] }
+export async function moveMetaToDB(dbName: string) : Promise<void> {
+  await PackageFunctions.moveMetaToDB(dbName);
 }
 
 //name: indexDatabaseSchema
