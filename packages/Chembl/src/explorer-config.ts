@@ -10,7 +10,8 @@ export const explorerConfig = {
         'example': 'CHEMBL1234',
         'nonVariablePart': 'CHEMBL',
         'regexpMarkup': 'CHEMBL[0-9]+'
-      }
+      },
+      'matchRegexp': 'CHEMBL\\d+'
     },
     'molregno': {
       'table': 'molecule_dictionary',
