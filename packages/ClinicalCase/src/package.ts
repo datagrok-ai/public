@@ -33,7 +33,7 @@ import '../css/clinical-case.css';
 import {scripts} from './package-api';
 import dayjs from 'dayjs';
 import {createInitialSatistics} from './utils/initial-statistics-widget';
-import {cdiscAppTB, CLINICAL_CASE_APP_PATH, createStudiesFromAppData, domains,
+import {cdiscAppTB, CLINICAL_CASE_APP_PATH, createStudiesFromAppData,
   openApp, PRECLINICAL_CASE_APP_PATH,
   studies} from './utils/app-utils';
 
@@ -224,8 +224,9 @@ export class PackageFunctions {
           ui.divText(`Study ID: ${studyId}`)]),
         ui.button('Run ClinicalCase', async () => {
           studies[studyId] = new ClinicalStudy(studyId);
+          const domainsNames = Object.keys(studies[studyId].domains).filter((it) => it !== 'supp');
           await Promise.all(files.map(async (file) => {
-            if (domains(studyId).includes(file.fileName.toLowerCase())) {
+            if (domainsNames.includes(file.fileName.toLowerCase())) {
               const df = await grok.data.files.openTable(`${folder.fullPath}/${file.fileName.toLowerCase()}`);
               grok.shell.addTableView(df);
             }

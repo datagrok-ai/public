@@ -16,71 +16,88 @@ import {Subject} from 'rxjs';
 import {ValidationResult, IssueDetail} from './types/validation-result';
 
 export class ClinicalDomains {
-  ae: DG.DataFrame = null;
-  ce: DG.DataFrame = null;
-  ds: DG.DataFrame = null;
-  dv: DG.DataFrame = null;
-  ho: DG.DataFrame = null;
-  mh: DG.DataFrame = null;
-  cv: DG.DataFrame = null;
-  da: DG.DataFrame = null;
-  dd: DG.DataFrame = null;
-  eg: DG.DataFrame = null;
-  fa: DG.DataFrame = null;
-  ft: DG.DataFrame = null;
-  ie: DG.DataFrame = null;
-  is: DG.DataFrame = null;
-  lb: DG.DataFrame = null;
-  mb: DG.DataFrame = null;
-  mi: DG.DataFrame = null;
-  mk: DG.DataFrame = null;
-  mo: DG.DataFrame = null;
-  ms: DG.DataFrame = null;
-  nv: DG.DataFrame = null;
-  oe: DG.DataFrame = null;
-  pc: DG.DataFrame = null;
-  pe: DG.DataFrame = null;
-  pp: DG.DataFrame = null;
-  qs: DG.DataFrame = null;
-  re: DG.DataFrame = null;
-  rp: DG.DataFrame = null;
-  rs: DG.DataFrame = null;
-  sc: DG.DataFrame = null;
-  sr: DG.DataFrame = null;
-  ss: DG.DataFrame = null;
-  tr: DG.DataFrame = null;
-  tu: DG.DataFrame = null;
-  ur: DG.DataFrame = null;
-  vs: DG.DataFrame = null;
-  ag: DG.DataFrame = null;
-  cm: DG.DataFrame = null;
-  ec: DG.DataFrame = null;
-  ex: DG.DataFrame = null;
-  ml: DG.DataFrame = null;
-  pr: DG.DataFrame = null;
-  su: DG.DataFrame = null;
-  co: DG.DataFrame = null;
-  dm: DG.DataFrame = null;
-  se: DG.DataFrame = null;
-  sm: DG.DataFrame = null;
-  sv: DG.DataFrame = null;
-  ta: DG.DataFrame = null;
-  td: DG.DataFrame = null;
-  te: DG.DataFrame = null;
-  ti: DG.DataFrame = null;
-  tm: DG.DataFrame = null;
-  ts: DG.DataFrame = null;
-  tv: DG.DataFrame = null;
-  bw: DG.DataFrame = null;
-  bg: DG.DataFrame = null;
-  cl: DG.DataFrame = null;
+  // Domains listed in alphabetical order
+  ae: DG.DataFrame = null; // Adverse Events (SDTM-IG v3.4, Clinical)
+  ag: DG.DataFrame = null; // Additional Genetic Tests (Custom/Extension, Genomics)
+  apce: DG.DataFrame = null; // Associated Persons Clinical Events (SDTM-IG v3.4, Associated Persons)
+  apcm: DG.DataFrame = null; // Associated Persons Concomitant Medications (SDTM-IG v3.4, Associated Persons)
+  apeg: DG.DataFrame = null; // Associated Persons Electrocardiograms (SDTM-IG v3.4, Associated Persons)
+  aplb: DG.DataFrame = null; // Associated Persons Laboratory Tests (SDTM-IG v3.4, Associated Persons)
+  apmh: DG.DataFrame = null; // Associated Persons Medical History (SDTM-IG v3.4, Associated Persons)
+  apvs: DG.DataFrame = null; // Associated Persons Vital Signs (SDTM-IG v3.4, Associated Persons)
+  bg: DG.DataFrame = null; // Background Genetics (SEND-IG v3.2, SEND)
+  bw: DG.DataFrame = null; // Body Weights (SEND-IG v3.2, SEND)
+  ce: DG.DataFrame = null; // Clinical Events (SDTM-IG v3.4, Clinical)
+  cg: DG.DataFrame = null; // Cardiovascular System Findings (SEND-IG v3.2, SEND)
+  cl: DG.DataFrame = null; // Clinical Observations (SEND-IG v3.2, SEND)
+  cm: DG.DataFrame = null; // Concomitant Medications (SDTM-IG v3.4, Clinical)
+  co: DG.DataFrame = null; // Comments (SDTM-IG v3.4, Special Purpose)
+  cv: DG.DataFrame = null; // Cardiovascular System Findings (SEND-IG v3.2, SEND)
+  da: DG.DataFrame = null; // Drug Accountability (SDTM-IG v3.4, Clinical)
+  dd: DG.DataFrame = null; // Death Details (SDTM-IG v3.4, Clinical)
+  dm: DG.DataFrame = null; // Demographics (SDTM-IG v3.4, Special Purpose)
+  ds: DG.DataFrame = null; // Disposition (SDTM-IG v3.4, Clinical)
+  dv: DG.DataFrame = null; // Protocol Deviations (SDTM-IG v3.4, Clinical)
+  ec: DG.DataFrame = null; // Exposure as Collected (SDTM-IG v3.4, Clinical)
+  eg: DG.DataFrame = null; // Electrocardiograms (SDTM-IG v3.4, Clinical)
+  ex: DG.DataFrame = null; // Exposure (SDTM-IG v3.4, Clinical)
+  ey: DG.DataFrame = null; // Eye Examinations (SEND-IG v3.2, SEND)
+  fa: DG.DataFrame = null; // Findings About (SDTM-IG v3.4, Clinical)
+  ft: DG.DataFrame = null; // Functional Tests (SDTM-IG v3.4, Clinical)
+  fw: DG.DataFrame = null; // Food and Water Consumption (SEND-IG v3.2, SEND)
+  gf: DG.DataFrame = null; // Genetic Features (SDTM v2.0, Genomics)
+  ho: DG.DataFrame = null; // Healthcare Encounters (SDTM-IG v3.4, Clinical)
+  hp: DG.DataFrame = null; // Hematology Findings (SEND-IG v3.2, SEND)
+  ie: DG.DataFrame = null; // Inclusion/Exclusion Criteria Not Met (SDTM-IG v3.4, Clinical)
+  ig: DG.DataFrame = null; // In-Life Gestational Findings (SEND-IG v3.2, SEND)
+  is: DG.DataFrame = null; // Immunogenicity Specimen Assessments (SDTM-IG v3.4, Clinical)
+  la: DG.DataFrame = null; // Laboratory Findings (SEND-IG v3.2, SEND)
+  lb: DG.DataFrame = null; // Laboratory Test Results (SDTM-IG v3.4, Clinical)
+  ma: DG.DataFrame = null; // Macropathology Findings (SEND-IG v3.2, SEND)
+  mb: DG.DataFrame = null; // Microbiology Findings (SDTM-IG v3.4, Clinical)
+  mh: DG.DataFrame = null; // Medical History (SDTM-IG v3.4, Clinical)
+  mi: DG.DataFrame = null; // Microbiology Findings (SEND-IG v3.2, SEND)
+  mk: DG.DataFrame = null; // Microscopic Findings (SEND-IG v3.2, SEND)
+  ml: DG.DataFrame = null; // Morphology/Localization (Custom/Extension, Genomics)
+  mo: DG.DataFrame = null; // Morphology Findings (SEND-IG v3.2, SEND)
+  ms: DG.DataFrame = null; // Microbiology Susceptibility (SDTM-IG v3.4, Clinical)
+  nc: DG.DataFrame = null; // Neurobehavioral/Cognitive Findings (SEND-IG v3.2, SEND)
+  nv: DG.DataFrame = null; // Nervous System Findings (SEND-IG v3.2, SEND)
+  oe: DG.DataFrame = null; // Objective Evidence (SDTM-IG v3.4, Clinical)
+  om: DG.DataFrame = null; // Organ Measurements (SEND-IG v3.2, SEND)
+  pc: DG.DataFrame = null; // Pharmacogenetics/Genomics (SDTM-IG v3.4, Clinical)
+  pe: DG.DataFrame = null; // Physical Examination (SDTM-IG v3.4, Clinical)
+  po: DG.DataFrame = null; // Physical Observations (SEND-IG v3.2, SEND)
+  pp: DG.DataFrame = null; // Pharmacokinetic Parameters (SDTM-IG v3.4, Clinical)
+  pr: DG.DataFrame = null; // Procedures (SDTM-IG v3.4, Clinical)
+  qs: DG.DataFrame = null; // Questionnaires (SDTM-IG v3.4, Clinical)
+  re: DG.DataFrame = null; // Reproductive System Findings (SEND-IG v3.2, SEND)
+  relrec: DG.DataFrame = null; // Related Records (SDTM-IG v3.4, Special Purpose)
+  rp: DG.DataFrame = null; // Reproductive System Findings (SDTM-IG v3.4, Clinical)
+  rs: DG.DataFrame = null; // Disease Response/Clinical Classification (SDTM-IG v3.4, Clinical)
+  sc: DG.DataFrame = null; // Subject Characteristics (SDTM-IG v3.4, Clinical)
+  se: DG.DataFrame = null; // Subject Elements (SDTM-IG v3.4, Special Purpose)
+  sm: DG.DataFrame = null; // Subject Milestones (SDTM-IG v3.4, Special Purpose)
+  sr: DG.DataFrame = null; // Short-Term Routine Observations (SEND-IG v3.2, SEND)
+  su: DG.DataFrame = null; // Substance Use (SDTM-IG v3.4, Clinical)
+  sv: DG.DataFrame = null; // Subject Visits (SDTM-IG v3.4, Special Purpose)
+  ta: DG.DataFrame = null; // Trial Arms (SDTM-IG v3.4, Trial Design)
+  td: DG.DataFrame = null; // Trial Disease Assessments (SDTM-IG v3.4, Trial Design)
+  te: DG.DataFrame = null; // Trial Elements (SDTM-IG v3.4, Trial Design)
+  ti: DG.DataFrame = null; // Trial Inclusion/Exclusion Criteria (SDTM-IG v3.4, Trial Design)
+  tm: DG.DataFrame = null; // Trial Disease Milestones (SDTM-IG v3.4, Trial Design)
+  tr: DG.DataFrame = null; // Tumor/Lesion Results (SDTM-IG v3.4, Clinical)
+  ts: DG.DataFrame = null; // Trial Summary (SDTM-IG v3.4, Trial Design)
+  tu: DG.DataFrame = null; // Tumor/Lesion Identification (SDTM-IG v3.4, Clinical)
+  tv: DG.DataFrame = null; // Trial Visits (SDTM-IG v3.4, Trial Design)
+  tx: DG.DataFrame = null; // SEND Trial Summary (SEND-IG v3.2, SEND)
+  ur: DG.DataFrame = null; // Urinalysis Findings (Custom/Extension, Clinical)
+  vs: DG.DataFrame = null; // Vital Signs (SDTM-IG v3.4, Clinical)
+  supp: DG.DataFrame[] = [];
 
   all(): DG.DataFrame[] {
-    return Object.keys(this).map((k) => this[k]).filter((v) => v != null);
-  }
-
-  static allClinicalDomainsNames(): string[] {
-    return Object.keys(this);
+    const dfs = Object.keys(this).filter((it) => it !== 'supp').map((k) => this[k]).filter((v) => v != null);
+    return dfs.concat(this.supp);
   }
 }
 

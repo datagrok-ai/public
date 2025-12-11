@@ -71,7 +71,7 @@ export function setupValidationErrorIndicators(tableView: DG.TableView, df: DG.D
         // Create cell content with value and error icon
         const cellDiv = ui.div([
           ui.span([cellValue], {style: {paddingRight: '4px'}}),
-          ui.iconFA('exclamation-triangle', () => {}, 'Validation errors'),
+          errorMark,
         ], 'clinical-case-validation-error-cell');
 
         // Add tooltip to icon

@@ -28,11 +28,18 @@ export async function cdiscAppTB(treeNode: DG.TreeViewGroup, standard: string,
   const loaderDiv = ui.div([], {style: {width: '50px', height: '24px', position: 'relative'}});
   loaderDiv.innerHTML = `<div class="grok-loader"><div></div><div></div><div></div><div></div></div>`;
   const loaderItem = treeNode.item(loaderDiv);
+  //create import study view
+  const importStudyItem = treeNode.item('Import study');
+  importStudyItem.onSelected.subscribe(() => createImportStudyView(standard));
   //this creates studies objects and tree view nodes
   await createStudiesFromAppData(treeNode, standard as CDISC_STANDARD);
   //opens exact study and view
   openStudy(treeNode, standard, currentStudy, currentViewName);
   loaderItem.remove();
+}
+
+export function createImportStudyView(standard: string) {
+  
 }
 
 export async function openApp(standard: CDISC_STANDARD): Promise<DG.ViewBase | void> {
@@ -358,15 +365,13 @@ export async function initClinicalStudyData(study: ClinicalStudy, studyFiles?: D
   }
 }
 
-export const domains = (studyId: string, exactDomains?: string[]) =>
-  (exactDomains ?? Object.keys(studies[studyId].domains)).map((it) => it.toLocaleLowerCase());
 
 export async function readClinicalData(study: ClinicalStudy, importedFiles?: DG.FileInfo[]): Promise<boolean> {
   const pb = DG.TaskBarProgressIndicator
     .create(`Reading data for ${study.config.name}...`);
   try {
     const studyFiles = importedFiles ?? await _package.files.list(`${study.config.standard}/${study.studyId}`);
-    const domainsList = domains(study.studyId);
+    const domainsNames = Object.keys(study.domains).filter((it) => it !== 'supp');
 
     //look for d42 file and read it in case it exists
     const d42DataFrames = studyFiles
@@ -382,11 +387,15 @@ export async function readClinicalData(study: ClinicalStudy, importedFiles?: DG.
         const domainNameWithExt = studyFiles[i].fileName.toLowerCase();
         const domainNameWithoutExt = removeExtension(domainNameWithExt);
         pb.update(i / studyFiles.length * 100, `Reading ${domainNameWithExt}...`);
-        if (!studies[study.studyId].domains[domainNameWithoutExt] && domainsList.includes(domainNameWithoutExt)) {
+        if (!studies[study.studyId].domains[domainNameWithoutExt] &&
+          (domainsNames.includes(domainNameWithoutExt) || domainNameWithoutExt.startsWith('supp'))) {
           const df = await readClinicalFile(studyFiles[i]);
           if (df) {
             df.name = domainNameWithoutExt;
-            if (!studies[study.studyId].domains[domainNameWithoutExt])
+            if (domainNameWithoutExt.startsWith('supp') &&
+              !studies[study.studyId].domains.supp.filter((it) => it.name == domainNameWithoutExt).length)
+              studies[study.studyId].domains.supp.push(df);
+            else if (!studies[study.studyId].domains[domainNameWithoutExt])
               studies[study.studyId].domains[domainNameWithoutExt] = df;
           }
         }
