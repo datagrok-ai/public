@@ -389,8 +389,7 @@ export const reservedDecorators : ReservedDecorator = {
   },
   autostart: {
     metadata: {
-      tags: [FUNC_TYPES.AUTOSTART],
-      // meta: {roles: [toCamelCase(FUNC_TYPES.AUTOSTART)]},
+      meta: {roles: [toCamelCase(FUNC_TYPES.AUTOSTART)]},
       inputs: [],
       outputs: [],
     },
@@ -398,8 +397,7 @@ export const reservedDecorators : ReservedDecorator = {
   },
   init: {
     metadata: {
-      tags: [FUNC_TYPES.INIT],
-      // meta: {roles: [toCamelCase(FUNC_TYPES.INIT)]},
+      meta: {roles: [toCamelCase(FUNC_TYPES.INIT)]},
       inputs: [],
       outputs: [],
     },

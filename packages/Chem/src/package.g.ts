@@ -12,12 +12,12 @@ export function getMolFileHandler(molString: string) : any {
   return PackageFunctions.getMolFileHandler(molString);
 }
 
-//tags: init
+//meta.roles: init
 export async function init() : Promise<void> {
   await PackageFunctions.init();
 }
 
-//tags: autostart
+//meta.roles: autostart
 export async function initChemAutostart() : Promise<void> {
   await PackageFunctions.initChemAutostart();
 }
