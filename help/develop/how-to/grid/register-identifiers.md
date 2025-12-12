@@ -140,7 +140,7 @@ Setting up the DB-explorer library for your database involves creating a plugin,
 Before you begin, ensure you have:
 
 * A database connection configured in Datagrok
-* [Datagrok Tools](../../develop/develop.md) installed for plugin development
+* [Datagrok Tools](../../../develop/develop.md) installed for plugin development
 * Basic knowledge of TypeScript/JavaScript
 
 #### Step 1: Create a plugin
@@ -152,7 +152,7 @@ If you don't already have a plugin, create one:
    grok create <package-name>
    ```
 2. Follow the prompts to set up your plugin structure.
-3. For detailed instructions on plugin creation and publishing, see [Develop](../../develop/develop.md) and [Creating a new package](../packages/create-package.md).
+3. For detailed instructions on plugin creation and publishing, see [Develop](../../../develop/develop.md) and [Creating a new package](../packages/create-package.md).
 
 #### Step 2: Install the DB-explorer library
 
@@ -267,7 +267,7 @@ export const explorerConfig = {
 * **schemaName**: The database schema containing your tables (e.g., `public`, `dbo`,).
 * **dataSourceName**: The type of database (e.g., `postgres`, `oracle`, `mysql`, `mssql`).
 * **entryPoints**: Defines the identifiers that trigger database exploration:
-  * **Key**: The semantic type name (used internally by Datagrok to categorize data) (see [Semantic types](../../govern/catalog/semantic-types.md)).
+  * **Key**: The semantic type name (used internally by Datagrok to categorize data) (see [Semantic types](../../../govern/catalog/semantic-types.md)).
   * **table/column**: Specifies where this identifier lives in the database.
   * **regexpExample**: Human-readable documentation of the pattern.
   * **matchRegexp**: JavaScript regular expression to detect this identifier in data.
@@ -367,10 +367,10 @@ To verify your DB-explorer is working:
 1. Open any dataframe containing your identifiers or just type in your identifier in "Search Everywhere" box.
 2. Click on a cell containing an identifier (e.g., `CHEMBL1234`).
 3. Make sure the **Context Panel** on the right side is open (if not, click on F4)
-3. Check the context panel, should see:
+4. Check the context panel, should see:
    - The primary entity information
    - Associated records from related tables (under *links*)
-4. Click on related identifiers to navigate through the database.
+5. Click on related identifiers to navigate through the database.
 
 #### Advanced customization
 
