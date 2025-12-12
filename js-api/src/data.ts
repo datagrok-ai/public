@@ -576,6 +576,7 @@ export interface DbColumnProperties {
   values?: string[];
   sampleValues?: string[];
   uniqueCount?: number;
+  quality?: string; // Semantic type of this column
 }
 
 export interface DbTableProperties {
