@@ -509,7 +509,7 @@ export const functionRoles: FuncRoleDescription[] = [
     role: FUNC_TYPES.DASHBOARD,
     description: 'Makes a widget appear on the welcome screen.',
     header: 'tags',
-    signature: 'dashboard(): DG.Widget'
+    signature: 'dashboard(): Widget'
   },
   {
     role: FUNC_TYPES.FUNCTION_ANALYSIS,
