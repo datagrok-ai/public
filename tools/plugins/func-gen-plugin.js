@@ -132,6 +132,16 @@ class FuncGeneratorPlugin {
       ...(reservedDecorators[name]['metadata']['tags'] ?? []),
       ...(decoratorOptions.get('tags') ?? []),
     ]);
+    
+    const existingMeta = decoratorOptions.get('meta') ?? {};
+    const reservedRoles = reservedDecorators[name].metadata.meta?.roles ?? [];
+    const userRoles = existingMeta.roles ?? [];
+    const mergedRoles = Array.from(new Set([...reservedRoles, ...userRoles]));
+
+    decoratorOptions.set('meta', {
+      ...existingMeta,
+      ...(mergedRoles.length > 0 ? {roles: mergedRoles} : {}),
+    });
 
     if ((reservedDecorators[name]['metadata']['role']?.length > 0) ) {
       if (!decoratorOptions.get('meta'))

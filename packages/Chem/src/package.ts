@@ -1292,7 +1292,8 @@ export class PackageFunctions {
 
   @grok.decorators.panel({
     name: 'Chemistry | Descriptors',
-    tags: ['chem', 'widgets'],
+    tags: ['chem'],
+    meta: {roles: ['widgets']},
   })
   static descriptorsWidget(
     @grok.decorators.param({options: {semType: 'Molecule'}}) smiles: string): DG.Widget {
@@ -1307,7 +1308,8 @@ export class PackageFunctions {
     'name': 'Biology | Drug Likeness',
     'description': 'Drug Likeness score, with explanations on molecule fragments contributing to the score. OCL.',
     'help-url': '/help/domains/chem/info-panels/drug-likeness.md',
-    'tags': ['chem', 'widgets'],
+    'tags': ['chem'],
+    meta: {roles: ['widgets']},
   })
   static drugLikeness(
     @grok.decorators.param({options: {semType: 'Molecule'}}) smiles: DG.SemanticValue): DG.Widget {
@@ -1320,7 +1322,8 @@ export class PackageFunctions {
   @grok.decorators.panel({
     name: 'Chemistry | Properties',
     description: 'Basic molecule properties',
-    tags: ['chem', 'widgets'],
+    tags: ['chem'],
+    meta: {roles: ['widgets']},
   })
   static properties(
     @grok.decorators.param({options: {semType: 'Molecule'}}) smiles: DG.SemanticValue): DG.Widget {
@@ -1343,7 +1346,8 @@ export class PackageFunctions {
     'name': 'Biology | Structural Alerts',
     'description': 'Screening drug candidates against structural alerts i.e. fragments associated to a toxicological response',
     'help-url': '/help/domains/chem/info-panels/structural-alerts.md',
-    'tags': ['chem', 'widgets'],
+    'tags': ['chem'],
+    meta: {roles: ['widgets']},
   })
   static async structuralAlerts(
     @grok.decorators.param({options: {semType: 'Molecule'}}) smiles: string): Promise<DG.Widget> {
@@ -1354,7 +1358,8 @@ export class PackageFunctions {
 
   @grok.decorators.panel({
     name: 'Structure | Identifiers',
-    tags: ['chem', 'widgets'],
+    tags: ['chem'],
+    meta: {roles: ['widgets']},
   })
   static async identifiers(
     @grok.decorators.param({options: {semType: 'Molecule'}}) smiles: string): Promise<DG.Widget> {
@@ -1366,7 +1371,8 @@ export class PackageFunctions {
   @grok.decorators.panel({
     name: 'Structure | 3D Structure',
     description: '3D molecule representation',
-    tags: ['chem', 'widgets'],
+    tags: ['chem'],
+    meta: {roles: ['widgets']},
   })
   static async structure3D(
     @grok.decorators.param({options: {semType: 'Molecule'}}) molecule: string): Promise<DG.Widget> {
@@ -1378,7 +1384,8 @@ export class PackageFunctions {
   @grok.decorators.panel({
     name: 'Structure | 2D Structure',
     description: '2D molecule representation',
-    tags: ['chem', 'widgets'],
+    tags: ['chem'],
+    meta: {roles: ['widgets']},
   })
   static structure2d(
     @grok.decorators.param({options: {semType: 'Molecule'}}) molecule: string): DG.Widget {
@@ -1390,7 +1397,8 @@ export class PackageFunctions {
     'name': 'Biology | Toxicity',
     'description': 'Toxicity prediction. Calculated by openchemlib',
     'help-url': '/help/domains/chem/info-panels/toxicity-risks.md',
-    'tags': ['chem', 'widgets'],
+    'tags': ['chem'],
+    meta: {roles: ['widgets']},
   })
   static toxicity(
     @grok.decorators.param({options: {semType: 'Molecule'}}) smiles: DG.SemanticValue): DG.Widget {
@@ -2536,7 +2544,8 @@ export class PackageFunctions {
 
   @grok.decorators.panel({
     name: 'Chemistry | Mixture',
-    tags: ['chem', 'widgets'],
+    tags: ['chem'],
+    meta: {roles: ['widgets']},
   })
   static async mixtureWidget(
     @grok.decorators.param({type: 'string', options: {semType: 'ChemicalMixture'}}) mixture: string): Promise<DG.Widget> {
@@ -2545,7 +2554,8 @@ export class PackageFunctions {
 
   @grok.decorators.panel({
     name: 'Chemistry | MixtureTree',
-    tags: ['chem', 'widgets'],
+    tags: ['chem'],
+    meta: {roles: ['widgets']},
   })
   static async mixtureTreeWidget(
     @grok.decorators.param({options: {semType: 'ChemicalMixture'}}) mixture: string): Promise<DG.Widget> {

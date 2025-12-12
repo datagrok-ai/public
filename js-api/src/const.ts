@@ -406,6 +406,7 @@ export const FUNC_TYPES = {
   CONVERTER: 'converter',
 
   WIDGET: 'widget',
+  WIDGETS: 'widgets',
   EDITOR: 'editor',
   TRANSFORM: 'Transform',
   FILTER: 'filter',
@@ -472,13 +473,13 @@ export const functionRoles: FuncRoleDescription[] = [
     role: FUNC_TYPES.SEM_TYPE_DETECTOR,
     description: 'Semantic type detector for a column. Gets invoked when a new dataframe is imported into the platform.\n   *  Implementation should either set column.semType directly, or return the semantic type that will get assigned.',
     header: 'tags',
-    signature: 'semTypeDetector(Column): string'
+    signature: 'semTypeDetector(col: Column): string'
   },
   {
     role: FUNC_TYPES.FILE_VIEWER,
     header: 'tags',
     description: 'Creates a viewer (or editor) for a file with the specified extension.\n   *  The extension is derived from the `fileViewer-[extension]` tag.\n   *  Used in the file system browser.',
-    signature: 'fileViewer(FileInfo): View'
+    signature: 'fileViewer(file: FileInfo): View'
   },
   {
     role: FUNC_TYPES.FILE_EXPORTER,
@@ -529,6 +530,12 @@ export const functionRoles: FuncRoleDescription[] = [
     signature: 'widget(...args): Widget',
   },
   {
+    role: FUNC_TYPES.WIDGETS,
+    description: 'Creates a custom widget.',
+    header: 'tags',
+    signature: 'widgets(...args): Widget',
+  },
+  {
     role: FUNC_TYPES.EDITOR,
     description: 'Creates a custom editor for a function call',
     header: 'tags',
@@ -556,13 +563,13 @@ export const functionRoles: FuncRoleDescription[] = [
     role: FUNC_TYPES.VALUE_EDITOR,
     description: 'Custom editor for specific input types',
     header: 'tags',
-    signature: 'valueeditor(...args): any',
+    signature: 'valueEditor(...args): any',
   },
   {
     role: FUNC_TYPES.CELL_EDITOR,
     description: 'CCustom editor for grid cells',
     header: 'tags',
-    signature: 'celleditor(cell: GridCell): void',
+    signature: 'cellEditor(cell: GridCell): void',
   },
   {
     role: FUNC_TYPES.UNIT_CONVERTER,

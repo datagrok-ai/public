@@ -520,20 +520,20 @@ export function molColumnHighlights(molColumn: DG.Column) : any {
 }
 
 //name: Chemistry | Descriptors
-//tags: chem, widgets
+//tags: chem
 //input: string smiles { semType: Molecule }
 //output: widget result
-//meta.roles: panel
+//meta.roles: panel,widgets
 export function descriptorsWidget(smiles: string) : any {
   return PackageFunctions.descriptorsWidget(smiles);
 }
 
 //name: Biology | Drug Likeness
 //description: Drug Likeness score, with explanations on molecule fragments contributing to the score. OCL.
-//tags: chem, widgets
+//tags: chem
 //input: semantic_value smiles { semType: Molecule }
 //output: widget result
-//meta.roles: panel
+//meta.roles: panel,widgets
 //help-url: /help/domains/chem/info-panels/drug-likeness.md
 export function drugLikeness(smiles: DG.SemanticValue) : any {
   return PackageFunctions.drugLikeness(smiles);
@@ -541,10 +541,10 @@ export function drugLikeness(smiles: DG.SemanticValue) : any {
 
 //name: Chemistry | Properties
 //description: Basic molecule properties
-//tags: chem, widgets
+//tags: chem
 //input: semantic_value smiles { semType: Molecule }
 //output: widget result
-//meta.roles: panel
+//meta.roles: panel,widgets
 export function properties(smiles: DG.SemanticValue) : any {
   return PackageFunctions.properties(smiles);
 }
@@ -558,50 +558,50 @@ export function getChemPropertyFunction(name: string) : any {
 
 //name: Biology | Structural Alerts
 //description: Screening drug candidates against structural alerts i.e. fragments associated to a toxicological response
-//tags: chem, widgets
+//tags: chem
 //input: string smiles { semType: Molecule }
 //output: widget result
-//meta.roles: panel
+//meta.roles: panel,widgets
 //help-url: /help/domains/chem/info-panels/structural-alerts.md
 export async function structuralAlerts(smiles: string) : Promise<any> {
   return await PackageFunctions.structuralAlerts(smiles);
 }
 
 //name: Structure | Identifiers
-//tags: chem, widgets
+//tags: chem
 //input: string smiles { semType: Molecule }
 //output: widget result
-//meta.roles: panel
+//meta.roles: panel,widgets
 export async function identifiers(smiles: string) : Promise<any> {
   return await PackageFunctions.identifiers(smiles);
 }
 
 //name: Structure | 3D Structure
 //description: 3D molecule representation
-//tags: chem, widgets
+//tags: chem
 //input: string molecule { semType: Molecule }
 //output: widget result
-//meta.roles: panel
+//meta.roles: panel,widgets
 export async function structure3D(molecule: string) : Promise<any> {
   return await PackageFunctions.structure3D(molecule);
 }
 
 //name: Structure | 2D Structure
 //description: 2D molecule representation
-//tags: chem, widgets
+//tags: chem
 //input: string molecule { semType: Molecule }
 //output: widget result
-//meta.roles: panel
+//meta.roles: panel,widgets
 export function structure2d(molecule: string) : any {
   return PackageFunctions.structure2d(molecule);
 }
 
 //name: Biology | Toxicity
 //description: Toxicity prediction. Calculated by openchemlib
-//tags: chem, widgets
+//tags: chem
 //input: semantic_value smiles { semType: Molecule }
 //output: widget result
-//meta.roles: panel
+//meta.roles: panel,widgets
 //help-url: /help/domains/chem/info-panels/toxicity-risks.md
 export function toxicity(smiles: DG.SemanticValue) : any {
   return PackageFunctions.toxicity(smiles);
@@ -1142,19 +1142,19 @@ export function checkJsonMpoProfile(content: string) {
 }
 
 //name: Chemistry | Mixture
-//tags: chem, widgets
+//tags: chem
 //input: string mixture { semType: ChemicalMixture }
 //output: widget result
-//meta.roles: panel
+//meta.roles: panel,widgets
 export async function mixtureWidget(mixture: string) : Promise<any> {
   return await PackageFunctions.mixtureWidget(mixture);
 }
 
 //name: Chemistry | MixtureTree
-//tags: chem, widgets
+//tags: chem
 //input: string mixture { semType: ChemicalMixture }
 //output: widget result
-//meta.roles: panel
+//meta.roles: panel,widgets
 export async function mixtureTreeWidget(mixture: string) : Promise<any> {
   return await PackageFunctions.mixtureTreeWidget(mixture);
 }
