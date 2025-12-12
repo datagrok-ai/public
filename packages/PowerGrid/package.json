@@ -1,7 +1,7 @@
 {
   "name": "@datagrok/power-grid",
   "friendlyName": "Power Grid",
-  "version": "1.7.18",
+  "version": "1.7.19",
   "author": {
     "name": "Andrew Skalkin",
     "email": "askalkin@datagrok.ai"
@@ -18,7 +18,7 @@
     "@datagrok-libraries/utils": "^4.6.13",
     "@types/wu": "^2.1.44",
     "cash-dom": "^8.1.5",
-    "datagrok-api": "^1.26.8",
+    "datagrok-api": "^1.26.2",
     "dayjs": "^1.11.13",
     "wu": "^2.1.0"
   },
