@@ -23,7 +23,7 @@ export class FormsViewer extends DG.JsViewer {
   sortByColumnName?: string;
   sortAscending: boolean;
 
-  indexes: number[] | Int32Array<any>;
+  indexes: number[] | Int32Array;
   columnHeadersDiv: HTMLDivElement;
   virtualView: DG.VirtualView;
   columnLabelWidth: number = 0;
@@ -55,8 +55,13 @@ export class FormsViewer extends DG.JsViewer {
   protected getRendererSize(renderer: DG.GridCellRenderer): DG.Point {
     let width = renderer.defaultWidth;
     let height = renderer.defaultHeight;
+    const isMolecule = [DG.SEMTYPE.MOLECULE, DG.SEMTYPE.MACROMOLECULE].includes(renderer.cellType);
+
     if (!width || !height)
-      return this.getMoleculeSize();
+      return isMolecule ? this.getMoleculeSize() : new DG.Point(120, 60);
+    
+    if (!isMolecule)
+      return new DG.Point(width, height);
 
     switch (this.moleculeSize) {
       case 'normal': return new DG.Point(width, height);
