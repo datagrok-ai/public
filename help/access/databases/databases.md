@@ -662,7 +662,28 @@ connection also deletes a query.
 
 :::
 
+## Database explorer
 
+The **Database Explorer** enables Datagrok to automatically detect and explore company-specific identifiers within relational databases. By linking identifier patterns to database columns, this library creates an intelligent exploration system that allows users to drill down through database relationships and discover all related data with a single click.
+
+![DB-explorer](img/db-explorer.gif)
+
+### How it works
+
+When you configure the explorer for your database, the system:
+
+1. **Detects identifiers**: Automatically recognizes identifier patterns (e.g., `CHEMBL1234`, `DRUG_ID_5678`) in your data using regular expressions.
+2. **Maps to semantic types**: Associates each identifier pattern with a semantic type and links it to a specific column in a specific table within your database.
+3. **Leverages database relationships**: Uses the database's foreign key relationships and reference information to understand how tables connect.
+4. **Enables drill-down exploration**: When you click an identifier anywhere in Datagrok, the system automatically:
+   - Queries the database for the entity associated with that identifier
+   - Displays all related information from the primary table
+   - Shows all associated records from related tables (using foreign keys)
+   - Renders custom visualizations (molecules, images, etc.) where applicable
+
+This creates a seamless exploration experience where users can navigate complex database schemas without writing queries or understanding the underlying table relationships.
+
+For detailed instructions on setting up and using the DB-explorer library, refer to the [Developers Guide](../../develop/how-to/grid/register-identifiers.md).
 
 <!--
 
