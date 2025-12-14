@@ -496,7 +496,10 @@ export function tableFromProperties(items: any[], properties: Property[]) {
     properties.map((p) => p.name));
 }
 
-/** Creates a visual table based on [items] and [renderer]. */
+/** Creates a visual table based on [items] and [renderer].
+ * BE WARE: Indexing in the renderer function, due to HTML being totally awesome starts from 1, not 0.
+ * Because... What's a better way to make developers life miserable, right? 
+*/
 export function table<T>(items: T[], renderer: ((item: T, ind: number) => any) | null, columnNames: string[] | null = null): HTMLTableElement {
   return toJs(api.grok_HtmlTable(items, renderer !== null ? (object: any, ind: number) => renderer(toJs(object), ind) : null, columnNames)).root;
 }
