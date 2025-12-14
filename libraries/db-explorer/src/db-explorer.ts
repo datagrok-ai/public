@@ -85,6 +85,8 @@ export class DBExplorer {
       console.warn('Failed to load DB schema, Object handlers not registered');
       console.error(_e);
     }
+    if (this.connection)
+      this.objHandlers.forEach((handler) => handler.connectionID = this.connection!.id); // set for detection in isApplicable
   }
 
   public async addCustomRelation(tableName: string, columnName: string, refTable: string, refColumn: string) {

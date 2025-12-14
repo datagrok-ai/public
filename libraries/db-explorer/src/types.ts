@@ -53,6 +53,8 @@ export type DBExplorerConfig = {
 
 export class DBValueObject {
   constructor(
+    public connectionID: string,
+    public schemaName: string,
     public table: string,
     public column: string,
     public value: string | number,

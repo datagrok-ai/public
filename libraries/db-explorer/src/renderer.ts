@@ -124,14 +124,14 @@ export function rawImageRenderer(rawImage: string) {
   return host;
 }
 
-export function ownIdRenderer(id: string | number, tableName: string, colName: string) {
+export function ownIdRenderer(id: string | number, tableName: string, colName: string, connectionID: string, schemaName: string) {
   const nameHost = textRenderer(id.toString(), false);
   nameHost.style.color = 'var(--blue-1)';
   nameHost.style.cursor = 'pointer';
   ui.tooltip.bind(nameHost, 'Click to explore');
   nameHost.addEventListener('click', (e) => {
     e.stopImmediatePropagation();
-    grok.shell.o = new DBValueObject(tableName, colName, id);
+    grok.shell.o = new DBValueObject(connectionID, schemaName, tableName, colName, id);
   });
   return nameHost;
 }
@@ -246,7 +246,10 @@ export class DBExplorerRenderer {
           ui.tooltip.bind(nameHost, () => ui.wait(async () => await this.renderDataFrame(clearedDF, tableName)));
           nameHost.addEventListener('click', (e) => {
             e.stopImmediatePropagation();
-            grok.shell.o = new DBValueObject(tableName, colName, id);
+            this.schemaInfoPromise().then((schemaAndConnection) => {
+              if (schemaAndConnection && schemaAndConnection.connection && schemaAndConnection.schema)
+                grok.shell.o = new DBValueObject(schemaAndConnection.connection.id, this.schemaName, tableName, colName, id);
+            });
           });
           nameHost.style.color = 'var(--blue-1)';
           nameHost.style.cursor = 'pointer';
@@ -349,7 +352,7 @@ export class DBExplorerRenderer {
         return [textRenderer(colName), this.refIdRenderer( schemaAndConnection.connection, value, refInfo.refTable, refInfo.refColumn)];
       const isUnqueCol = this.uniqueColNames[tableName] === colName;
       if (isUnqueCol)
-        return [textRenderer(colName), ownIdRenderer(value, tableName, colName)];
+        return [textRenderer(colName), ownIdRenderer(value, tableName, colName, schemaAndConnection.connection.id, this.schemaName)];
 
 
       return [textRenderer(colName), textRenderer(value)];

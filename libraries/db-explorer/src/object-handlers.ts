@@ -10,15 +10,16 @@ export class DBExplorerObjectHandler extends DG.ObjectHandler {
   get type(): string {
     return 'db-explorer-value';
   }
+  connectionID: string | null = null; // expected to be set by derived classes or from outside
   private renderer: DBExplorerRenderer;
   isApplicable(x: any): boolean {
-    return x instanceof DBValueObject;
+    return x instanceof DBValueObject && this.connectionID !== null && x.connectionID === this.connectionID;
   }
 
   constructor(
     public options: EntryPointOptions,
-    private schemaInfoPromise: () => Promise<SchemaAndConnection | null>,
-    schemaName: string
+    protected schemaInfoPromise: () => Promise<SchemaAndConnection | null>,
+    protected schemaName: string
   ) {
     super();
     this.renderer = new DBExplorerRenderer(schemaInfoPromise, schemaName, options);
@@ -127,14 +128,41 @@ export class SemValueObjectHandler extends DBExplorerObjectHandler {
   }
 
   renderCard(x: any, context?: any): HTMLElement {
-    return super.renderCard(new DBValueObject(this.tableName, this.columnName, this.options.valueConverter(x.value ?? ''), x), context);
+    if (this.connectionID)
+      return super.renderCard(new DBValueObject(this.connectionID!, this.schemaName, this.tableName, this.columnName, this.options.valueConverter(x.value ?? ''), x), context);
+    const wait = ui.wait(async () => {
+      const schemaAndConnection = await this.schemaInfoPromise();
+      if (schemaAndConnection && schemaAndConnection.connection && schemaAndConnection.schema)
+        return super.renderCard(new DBValueObject(this.connectionID!, this.schemaName, this.tableName, this.columnName, this.options.valueConverter(x.value ?? ''), x), context);
+      return ui.divText('Schema or connection not available');
+    });
+    wait.style.flexGrow = 'unset';
+    return wait;
   }
 
   renderTooltip(x: any, context?: any): HTMLElement {
-    return super.renderTooltip(new DBValueObject(this.tableName, this.columnName, this.options.valueConverter(x.value ?? ''), x), context);
+    if (this.connectionID)
+      return super.renderTooltip(new DBValueObject(this.connectionID!, this.schemaName, this.tableName, this.columnName, this.options.valueConverter(x.value ?? ''), x), context);
+    const wait = ui.wait(async () => {
+      const schemaAndConnection = await this.schemaInfoPromise();
+      if (schemaAndConnection && schemaAndConnection.connection && schemaAndConnection.schema)
+        return super.renderTooltip(new DBValueObject(this.connectionID!, this.schemaName, this.tableName, this.columnName, this.options.valueConverter(x.value ?? ''), x), context);
+      return ui.divText('Schema or connection not available');
+    });
+    wait.style.flexGrow = 'unset';
+    return wait;
   }
 
   renderProperties(x: any, context?: any): HTMLElement {
-    return super.renderProperties(new DBValueObject(this.tableName, this.columnName, this.options.valueConverter(x.value ?? ''), x), context);
+    if (this.connectionID)
+      return super.renderProperties(new DBValueObject(this.connectionID!, this.schemaName, this.tableName, this.columnName, this.options.valueConverter(x.value ?? ''), x), context);
+    const wait = ui.wait(async () => {
+      const schemaAndConnection = await this.schemaInfoPromise();
+      if (schemaAndConnection && schemaAndConnection.connection && schemaAndConnection.schema)
+        return super.renderProperties(new DBValueObject(this.connectionID!, this.schemaName, this.tableName, this.columnName, this.options.valueConverter(x.value ?? ''), x), context);
+      return ui.divText('Schema or connection not available');
+    });
+    wait.style.flexGrow = 'unset';
+    return wait;
   }
 }
