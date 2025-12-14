@@ -308,7 +308,7 @@ export async function generateAISqlQueryWithTools(
 
     // Function calling loop
     let iterations = 0;
-    const maxIterations = 15; // Prevent infinite loops
+    let maxIterations = 15; // Prevent infinite loops
 
     while (iterations < maxIterations) {
       if (aborted) {
@@ -458,6 +458,18 @@ export async function generateAISqlQueryWithTools(
       // Check finish reason
       if (choice.finish_reason === 'stop')
         break;
+      if (iterations >= maxIterations) {
+        // ask user if they want to continue
+        ui.dialog('Continue SQL Generation?')
+          .add(ui.divText('Maximum iterations reached. Do you want to continue generating the SQL query?'))
+          .onOK(() => {
+            maxIterations += 10; // reset max iterations to continue
+          })
+          .onCancel(() => {
+            iterations = maxIterations; // will cause exit
+          })
+          .show();
+      }
     }
     // If we exhausted iterations or didn't get a proper response
     throw new Error('Failed to generate SQL query: Maximum iterations reached or no valid SQL returned');

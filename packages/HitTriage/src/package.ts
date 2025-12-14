@@ -62,7 +62,6 @@ async function hitAppTB(treeNode: DG.TreeViewGroup, name: AppName) {
     });
 
     DG.debounce(node.onSelected, 200).subscribe(async (_) => {
-      console.log('selected');
       try {
         const savePath = 'ingest' in camp ? camp.ingest.query : camp.savePath;
         if (!savePath || !(await grok.dapi.files.exists(savePath))) {

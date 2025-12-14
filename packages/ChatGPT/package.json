@@ -12,7 +12,7 @@
     "cash-dom": "latest",
     "datagrok-api": "../../js-api",
     "dayjs": "latest",
-    "openai": "^6.9.0"
+    "openai": "^6.10.0"
   },
   "devDependencies": {
     "@types/dom-speech-recognition": "^0.0.7",
