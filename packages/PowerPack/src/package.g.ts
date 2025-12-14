@@ -14,6 +14,11 @@ export function _welcomeView() : any {
   return PackageFunctions._welcomeView();
 }
 
+//name: getDBExplorerEditor
+export async function getDBExplorerEditor() : Promise<void> {
+  await PackageFunctions.getDBExplorerEditor();
+}
+
 //name: Activity dashboard
 //tags: dashboard
 //output: widget result

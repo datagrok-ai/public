@@ -23,6 +23,8 @@ import {newUsersSearch, registerDGUserHandler} from './dg-db';
 import {merge} from 'rxjs';
 import {HelpObjectHandler} from './search/help-entity';
 import {ActivityDashboardWidget} from './widgets/activity-dashboard-widget';
+import {DBExplorerEditor} from '@datagrok-libraries/db-explorer/src/editor';
+import {setupGlobalDBExplorer} from './utils';
 export * from './package.g';
 export const _package = new DG.Package();
 export let _properties: { [propertyName: string]: any };
@@ -291,6 +293,7 @@ export class PackageFunctions {
   @grok.decorators.init()
   static async powerPackInit() {
     DG.ObjectHandler.register(new HelpObjectHandler());
+    setupGlobalDBExplorer(); // lazy without await
     initSearch();
 
     _properties = await _package.getProperties();
