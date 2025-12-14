@@ -13,6 +13,8 @@ export type SchemaAndConnection = {
   connection: DG.DataConnection;
 }
 
+export type SupportedRenderer = 'rawImage' | 'imageURL' | 'molecule' | 'helm';
+
 export type EntryPointOptions = {
   valueConverter: (value: string | number) => string | number;
   joinOptions: QueryJoinOptions[];
@@ -42,6 +44,11 @@ export type DBExplorerConfig = {
     headerNames?: {[tableName: string]: string};
     uniqueColumns?: {[tableName: string]: string};
     customSelectedColumns?: {[tableName: string]: string[]};
+    customRenderers?: {
+        table: string,
+        column: string,
+        renderer: SupportedRenderer;
+    }[];
 }
 
 export class DBValueObject {

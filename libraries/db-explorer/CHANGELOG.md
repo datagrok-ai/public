@@ -1,5 +1,10 @@
 # db-explorer changelog
 
+## 1.4.0 (2026-12-14)
+
+* Refactoring
+* Added visual editor for explorer configs
+
 ## 1.3.4 (2025-12-11)
 
 * In place registration of regexp detectors for semantic types

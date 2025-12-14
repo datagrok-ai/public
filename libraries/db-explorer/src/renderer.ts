@@ -2,7 +2,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {DBValueObject, EntryPointOptions, QueryJoinOptions, SchemaAndConnection} from './types';
+import {DBExplorerConfig, DBValueObject, EntryPointOptions, QueryJoinOptions, SchemaAndConnection, SupportedRenderer} from './types';
 import {queryDB} from './query';
 
 export const MAX_MULTIROW_VALUES = 10;
@@ -74,6 +74,27 @@ export function imageRenderer(fullUrl: string, useProxy: boolean = true) {
   return host;
 }
 
+export function helmRenderer(value: string): HTMLElement {
+  return ui.wait(async () => {
+    //@ts-ignore
+    const helmInput = await ui.input.helmAsync('helm', {
+      editable: false,
+    });
+    helmInput.setStringValue(value);
+    await DG.delay(200); // wait for proper sizing
+    helmInput.getInput().addEventListener('click', () => {
+      grok.shell.o = helmInput.getValue();
+    });
+    helmInput.getInput().addEventListener('dblclick', () => {
+      helmInput.showEditorDialog();
+    });
+
+    helmInput.getInput().style.width = '100%';
+    helmInput.getInput().style.setProperty('height', '300px', 'important');
+    return helmInput.getInput();
+  });
+}
+
 export function rawImageRenderer(rawImage: string) {
   const nameHost = textRenderer('image');
   const loaderDiv = getLoaderDiv();
@@ -138,14 +159,31 @@ export class DBExplorerRenderer {
     renderer: (value: string | number, connection: DG.DataConnection) => HTMLElement;
   }[] = [];
 
+  private semtypeRenderers = [{
+    check: (col?: DG.Column) => col?.semType === DG.SEMTYPE.MOLECULE,
+    renderer: (value: any) => moleculeRenderer(value),
+  }, {
+    check: (col?: DG.Column) => col?.semType === DG.SEMTYPE.MACROMOLECULE && col?.meta?.units === 'helm',
+    renderer: (value: any) => helmRenderer(value),
+  },
+  {
+    check: (col?: DG.Column) => col?.semType === 'rawPng',
+    renderer: (value: any) => rawImageRenderer(value),
+  },
+  {
+    check: (col?: DG.Column) => col?.semType === 'ImageUrl',
+    renderer: (value: any) => imageRenderer(value),
+  }
+  ];
+
   private headerReplacers: {[tableName: string]: string} = {};
   private uniqueColNames: {[tableName: string]: string} = {};
   private customSelectedColumns: {[tableName: string]: Set<string>} = {};
   private defaultHeaderReplacerColumns: string[] = ['name'];
   constructor(
-    private schemaInfoPromise: () => Promise<SchemaAndConnection | null>,
-    private schemaName: string,
-    private entryPointOptions: EntryPointOptions
+    protected schemaInfoPromise: () => Promise<SchemaAndConnection | null>,
+    protected schemaName: string,
+    protected entryPointOptions: EntryPointOptions
   ) {}
 
   addHeaderReplacers(replacers: {[tableName: string]: string}) {
@@ -188,6 +226,10 @@ export class DBExplorerRenderer {
     function unableToRetrieve(reason: string = `Unable to retrieve ${tableName} information`) {
       loaderDiv.remove();
       ui.tooltip.bind(nameHost, reason);
+    }
+    if (id == null || id === '') {
+      unableToRetrieve('ID is empty');
+      return host;
     }
 
     try {
@@ -265,15 +307,20 @@ export class DBExplorerRenderer {
   ) {
     const df = await this.getTable(tableName, match, matchValue, joinOptions);
     if (df.rowCount < 1) return ui.divText('ID not found');
+    await df.meta.detectSemanticTypes();
     return this.renderDataFrame(df, tableName);
   }
 
-  async renderDataFrame(df: DG.DataFrame, tableName: string) {
+  async renderDataFrame(df: DG.DataFrame, tableName: string, keepEmptyValues: boolean = false) {
     const schemaAndConnection = await this.schemaInfoPromise();
     if (!schemaAndConnection)
       return ui.divText('Schema information is not available');
-    const clearedDF = removeEmptyCols(df);
-    let entries = Object.entries(clearedDF.toJson()[0]) as [string, string | number][];
+    if (df.rowCount === 0)
+      return ui.divText('No data');
+
+    const clearedDF = !keepEmptyValues ? removeEmptyCols(df) : df;
+    let entries = clearedDF.columns.names()
+      .map((colName) => [colName, clearedDF.col(colName)!.isNone(0) ? '' : clearedDF.col(colName)!.getString(0)]) as [string, string | number][];
 
     if (this.customSelectedColumns[tableName]) {
       entries = entries.filter(([key]) => this.customSelectedColumns[tableName].has(key));
@@ -286,20 +333,26 @@ export class DBExplorerRenderer {
 
 
     const mainTable = ui.table(entries, (entry) => {
-      const key = entry[0];
+      const colName = entry[0];
       const value = entry[1];
-      const cutomRenderer = this.customRenderers.find((renderer) => renderer.check(tableName, key, value));
-      if (cutomRenderer) return [textRenderer(key), cutomRenderer.renderer(value, schemaAndConnection.connection)];
+      const cutomRenderer = this.customRenderers.find((renderer) => renderer.check(tableName, colName, value));
+      if (cutomRenderer) return [textRenderer(colName), cutomRenderer.renderer(value, schemaAndConnection.connection)];
+      // if its autodetected as a molecule or helm or something else in the future
+      const semTypeRenderer = this.semtypeRenderers.find((renderer) => {
+        const col = clearedDF.col(colName);
+        return renderer.check(col ?? undefined);
+      });
+      if (semTypeRenderer) return [textRenderer(colName), semTypeRenderer.renderer(value)];
 
-      const refInfo = schemaAndConnection.schema.references?.[tableName]?.[key];
+      const refInfo = schemaAndConnection.schema.references?.[tableName]?.[colName];
       if (refInfo)
-        return [textRenderer(key), this.refIdRenderer( schemaAndConnection.connection, value, refInfo.refTable, refInfo.refColumn)];
-      const isUnqueCol = this.uniqueColNames[tableName] === key;
+        return [textRenderer(colName), this.refIdRenderer( schemaAndConnection.connection, value, refInfo.refTable, refInfo.refColumn)];
+      const isUnqueCol = this.uniqueColNames[tableName] === colName;
       if (isUnqueCol)
-        return [textRenderer(key), ownIdRenderer(value, tableName, key)];
+        return [textRenderer(colName), ownIdRenderer(value, tableName, colName)];
 
 
-      return [textRenderer(key), textRenderer(value)];
+      return [textRenderer(colName), textRenderer(value)];
     });
     return ui.divV([mainTable]);
   }
@@ -410,5 +463,101 @@ export class DBExplorerRenderer {
 
       return linksAcc.root;
     });
+  }
+}
+
+
+export class ExampleExplorerRenderer extends DBExplorerRenderer {
+  private static schemaCache: Map<string, Promise<SchemaAndConnection | null>> = new Map();
+
+  constructor(
+    connection: DG.DataConnection,
+    shemaName: string,
+    entryPointOptions: EntryPointOptions
+  ) {
+    const cacheKey = `${connection.id}||${shemaName}`;
+    if (ExampleExplorerRenderer.schemaCache.has(cacheKey)) {
+      const schemaPromise = ExampleExplorerRenderer.schemaCache.get(cacheKey)!;
+      super(() => schemaPromise, shemaName, entryPointOptions);
+    } else {
+      const schemaPromise: Promise<SchemaAndConnection> = grok.dapi.connections.getSchema(connection, shemaName).then((tables) => {
+        const references: {[tableName: string]: {[colName: string]: {refTable: string; refColumn: string}}} = {};
+        const referencedBy: {[tableName: string]: {[colName: string]: {refTable: string; refColumn: string}[]}} = {};
+        tables.forEach((table) => {
+          const tableName = table.friendlyName ?? table.name;
+
+          references[tableName] = {};
+          const t = references[tableName];
+          table.columns.forEach((column) => {
+            const ref = column.referenceInfo;
+            if (ref && ref.table && ref.column) {
+              t[column.name] = {refTable: ref.table, refColumn: ref.column};
+              if (!referencedBy[ref.table])
+                referencedBy[ref.table] = {};
+
+              if (!referencedBy[ref.table][ref.column])
+                referencedBy[ref.table][ref.column] = [];
+
+              referencedBy[ref.table][ref.column].push({refTable: tableName, refColumn: column.name});
+            }
+          });
+        });
+        return {
+          schema: {references, referencedBy},
+          connection,
+        };
+      });
+      ExampleExplorerRenderer.schemaCache.set(cacheKey, schemaPromise);
+      super(() => schemaPromise, shemaName, entryPointOptions);
+    }
+  }
+
+  override async renderDataFrame(df: DG.DataFrame, tableName: string, keepEmptyValues?: boolean): Promise<HTMLDivElement> {
+    return super.renderDataFrame(df, tableName, true);
+  }
+
+  override async renderTable(tableName: string, match: string, matchValue: string | number, joinOptions?: QueryJoinOptions[]): Promise<HTMLDivElement> {
+    const schemaAndConnection = await this.schemaInfoPromise();
+    if (!schemaAndConnection)
+      return ui.divText('Schema information is not available');
+    const df = await queryDB(schemaAndConnection.connection, tableName, '', '', this.schemaName, joinOptions, true);
+    if (df.rowCount < 1) return ui.divText('ID not found');
+    await df.meta.detectSemanticTypes();
+    return this.renderDataFrame(df, tableName);
+  }
+}
+
+export function renderExampleCard(connection: DG.DataConnection, schemaName: string, tableName: string,
+  config: Partial<DBExplorerConfig>): HTMLElement {
+  const ex = new ExampleExplorerRenderer(
+    connection,
+    schemaName,
+    {joinOptions: config.joinOptions ?? [], valueConverter: (a) => a}
+  );
+  ex.addCustomSelectedColumns(config.customSelectedColumns ?? {});
+  (config.customRenderers ?? []).forEach((cr) =>
+    ex.addCustomRenderer((t, c, _v) => t === cr.table && c === cr.column, (v) => getDefaultRendererByName(cr.renderer)(v))
+  );
+  (config.uniqueColumns) && ex.addUniqueColNames(config.uniqueColumns);
+  (config.customSelectedColumns) && ex.addCustomSelectedColumns(config.customSelectedColumns);
+  const c = ui.card(ui.wait(async () => {
+    return await ex.renderTable(tableName, '', '', config.joinOptions ?? []);
+  }));
+  c.style.width = 'unset';
+  return c;
+}
+
+export function getDefaultRendererByName(rendererName: SupportedRenderer): (value: string | number) => HTMLElement {
+  switch (rendererName) {
+    case 'rawImage':
+      return (v) => rawImageRenderer(v as string);
+    case 'imageURL':
+      return (v) => imageRenderer(v as string, true);
+    case 'molecule':
+      return (v) => moleculeRenderer(v as string);
+    case 'helm':
+      return (v) => helmRenderer(v as string);
+    default:
+      return (v) => textRenderer(v as string, true);
   }
 }

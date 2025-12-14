@@ -5,6 +5,7 @@ import * as DG from 'datagrok-api/dg';
 import {DBExplorerConfig, EntryPointOptions,
   QueryJoinOptions, ReferencedByObject, ReferenceObject, SchemaAndConnection} from './types';
 import {DBExplorerObjectHandler, SemValueObjectHandler} from './object-handlers';
+import {getDefaultRendererByName, helmRenderer, imageRenderer, moleculeRenderer, rawImageRenderer, textRenderer} from './renderer';
 
 export class DBExplorer {
   private schemasLoaded: boolean = false;
@@ -181,6 +182,15 @@ export class DBExplorer {
       exp.addUniqueColumns(config.uniqueColumns);
     if (config.customSelectedColumns)
       exp.addCustomSelectedColumns(config.customSelectedColumns);
+    if (config.customRenderers) {
+      config.customRenderers.forEach((r) => {
+        const rendererFunc = getDefaultRendererByName(r.renderer);
+        const checkFunc = (tableName: string, colName: string, _value: string | number) => {
+          return tableName === r.table && colName === r.column;
+        };
+        exp.addCustomRenderer(checkFunc, rendererFunc);
+      });
+    }
     return exp;
   }
 

@@ -1,15 +1,28 @@
+/* eslint-disable max-len */
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import {QueryJoinOptions} from './types';
 
+/**
+ *
+ * @param connection
+ * @param tableName
+ * @param match - Pass the @match and @matchValue as empty strings to get 1 random row (for example queries)
+ * @param matchValue
+ * @param schemaName
+ * @param joinOptions
+ * @param max1
+ * @returns
+ */
 export async function queryDB(
   connection: DG.DataConnection | null,
   tableName: string,
   match: string,
   matchValue: string | number,
   schemaName: string,
-  joinOptions: QueryJoinOptions[] = []
+  joinOptions: QueryJoinOptions[] = [],
+  max1: boolean = false
 ): Promise<DG.DataFrame> {
   if (connection == null)
     return DG.DataFrame.create(0);
@@ -23,24 +36,42 @@ export async function queryDB(
     applicableJoins
       .map((opt, i) => {
         const alias = tableAliases[i];
-        return opt.select.map((col) => `${alias}.${col}`).join(', ');
+        return opt.select.map((col) => {
+          // if the col is confugured with alias, make sure it has quotes
+          if (col.includes(' as ') || col.includes(' AS ')) {
+            const parts = col.split(/ as | AS /);
+            return `${alias}."${parts[0].trim()}" as "${parts[1].trim()}"`;
+          }
+          return `${alias}."${col}"`;
+        }).join(', ');
       })
-      .join(', ') + (applicableJoins.length > 0 ? ', ' : '');
+      .join(', ');
   const joinStr = applicableJoins
     .map((opt, i) => {
       const alias = tableAliases[i];
-      return `left join "${schemaName}".${opt.tableName} ${alias} on a.${opt.columnName} = ${alias}.${opt.onColumn}`;
+      return `left join "${schemaName}"."${opt.tableName}" ${alias} on a."${opt.columnName}" = ${alias}."${opt.onColumn}"`;
     })
     .join(' ');
+
+  // let qb = connection.buildQuery(`"${schemaName}".${tableName}`).selectAll();
+  // applicableJoins.forEach((opt, i) => {
+  //   const alias = tableAliases[i];
+  //   qb = qb.leftJoin(`${schemaName}.${opt.tableName}`, [opt.columnName], [opt.onColumn], alias);
+  // });
+  // qb = qb.where(match, ` = ${matchValueStr}`);
+  // console.log(qb.build().query);
+  const isExampleQuery = match === '' && matchValue === ''; // used for setup editor, will not happen otherwise if not intentionally
+
   const q = connection.query(
     'getDBValueInfo',
     `
         --name: getDBValueInfo
         --output: dataframe result
-        select ${otherCols} a.* 
+        select a.* ${(applicableJoins.length > 0 ? ',' : '')} ${otherCols} 
         from "${schemaName}".${tableName} a
         ${joinStr}
-        where a.${match} = ${matchValueStr}
+        ${isExampleQuery ? '' : `where a.${match} = ${matchValueStr}`}
+        ${max1 || isExampleQuery ? 'limit 1' : ''}
     `
   );
   return (await q.apply({})) ?? DG.DataFrame.create(0);
