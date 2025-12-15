@@ -1381,7 +1381,7 @@ class CreationControl {
 export class FormulaLinesDialog {
   public dialog: DG.Dialog = ui.dialog({
     title: 'Formula Lines',
-    helpUrl: '/help/develop/how-to/show-formula-lines.md',
+    helpUrl: '/help/develop/how-to/viewers/show-formula-lines.md',
   });
 
   private host: Host;
