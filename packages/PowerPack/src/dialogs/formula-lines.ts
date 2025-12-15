@@ -769,15 +769,7 @@ class Editor {
         const oldFormula = item.formula!;
         item.formula = value;
         const resultOk = this.onItemChangedAction(itemIdx, true);
-        elFormula.classList.toggle('d4-forced-invalid', !resultOk);
-        if (!resultOk) {
-          const splitValues = value?.split('=');
-          if (splitValues?.length > 1 && (!splitValues[0].includes('${') || !splitValues[1].includes('${')))
-            ibFormula.setTooltip('Line formula should contain columns from both sides of the "=" sign');
-        }
-        else
-          ibFormula.setTooltip('');
-        this.onFormulaValidation(resultOk);
+        this.setFormulaValidationResult(resultOk, value, ibFormula);
         this.setTitleIfEmpty(oldFormula, item.formula);
       }});
 
@@ -951,13 +943,28 @@ class Editor {
     const ibHeader = ui.input.string(title === 'formula1' ? 'Formula 1' : 'Formula 2', {value: item[title] ? item[title] as string : '',
       onValueChanged: (value) => {
         (item as any)[title] = value;
-        this.onItemChangedAction(itemIdx, false);
+        const resultOk = this.onItemChangedAction(itemIdx, false);
+        this.setFormulaValidationResult(resultOk, value, ibHeader);
       }});
 
     const elHeader = ibHeader.input as HTMLInputElement;
     elHeader.setAttribute('style', 'width: 204px; max-width: none;');
 
     return ui.divH([ibHeader.root]);
+  }
+
+  private setFormulaValidationResult(resultOk: boolean, value: string, ibHeader: DG.InputBase<string>): void {
+    const elHeader = ibHeader.input as HTMLInputElement;
+    elHeader.classList.toggle('d4-forced-invalid', !resultOk);
+    if (!resultOk) {
+      const splitValues = value?.split('=');
+      if (splitValues?.length > 1 && (!splitValues[0].includes('${') || !splitValues[1].includes('${')))
+        ibHeader.setTooltip('Line formula should contain columns from both sides of the "=" sign');
+    }
+    else
+      ibHeader.setTooltip('');
+
+    this.onFormulaValidation(resultOk);
   }
 
   /** Creates text input for item title */
@@ -1034,22 +1041,57 @@ class Editor {
     return iShowLabels.root;
   }
 
+  private setPointsValidationResult(resultOk: boolean, value: string, ibPoints: DG.InputBase<string>): void {
+    const elPoints = ibPoints.input as HTMLInputElement;
+    elPoints.classList.toggle('d4-forced-invalid', !resultOk);
+    if (!resultOk) {
+      try {
+        const parsed = JSON.parse(`[${value}]`);
+        if (Array.isArray(parsed)) {
+          const validPoints = parsed.filter((p) => Array.isArray(p) && p.length === 2 && typeof p[0] === 'number' && typeof p[1] === 'number');
+          if (validPoints.length < 3) {
+            ibPoints.setTooltip('Area must have at least 3 points');
+          } else {
+            ibPoints.setTooltip('Points should be a list of [x, y] pairs, e.g., [1, 2], [3, 4]');
+          }
+        } else {
+          ibPoints.setTooltip('Points should be a list of [x, y] pairs, e.g., [1, 2], [3, 4]');
+        }
+      } catch {
+        ibPoints.setTooltip('Invalid JSON format for points');
+      }
+    } else {
+      ibPoints.setTooltip('');
+    }
+    this.onFormulaValidation(resultOk);
+  }
+
   private areaPointsInput(itemIdx: number): HTMLElement {
     const item = this.annotationRegionItems[itemIdx] as DG.AreaAnnotationRegion;
     const value = item.area ? JSON.stringify(item.area).replaceAll(',', ', ') :  '';
     const textArea = ui.input.textArea('Points', {
       value: value.substring(1, value.length - 1),
       onValueChanged: (value) => {
+        let resultOk = true;
         try {
           var parsed = JSON.parse(`[${value}]`);
-          if (!Array.isArray(parsed))
-            return;
-          
-          item.area = parsed.filter((p) => Array.isArray(p) && p.length === 2
-            && typeof p[0] === 'number' && typeof p[1] === 'number');
+          if (!Array.isArray(parsed)) {
+            resultOk = false;
+          } else {
+            const filtered = parsed.filter((p) => Array.isArray(p) && p.length === 2
+              && typeof p[0] === 'number' && typeof p[1] === 'number');
+            if (filtered.length !== parsed.length || filtered.length < 3) {
+              resultOk = false;
+            } else {
+              item.area = filtered;
+              this.onItemChangedAction(itemIdx, false);
+            }
+          }
+        } catch {
+          resultOk = false;
+        }
 
-          this.onItemChangedAction(itemIdx, false);
-        } catch { /** Invalid input isn't handled */ }
+        this.setPointsValidationResult(resultOk, value, textArea);
       }});
 
     const elDescription = textArea.input as HTMLInputElement;
