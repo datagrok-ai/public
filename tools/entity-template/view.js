@@ -1,7 +1,7 @@
 
 //name: #{NAME}
 //description: Creates #{NAME} view
-//tags: view
+//meta.roles: view
 //input: map params
 //input: string path
 //output: view result
