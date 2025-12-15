@@ -90,7 +90,7 @@ export class FormsViewer extends DG.JsViewer {
     this.useGridSort = this.bool('useGridSort', true, {description: 'Sort values the same way as in the spreadsheet'});
     this.sortByColumnName = this.column('sortBy');
     this.sortAscending = false;
-    this.rendererSize = this.string('rendererSize', 'small', {choices: ['small', 'normal', 'large']}) as 'small' | 'normal' | 'large';
+    this.rendererSize = this.string('rendererSize', 'small', {choices: ['small', 'normal', 'large'], description: 'Sets the display size of rendered content'}) as 'small' | 'normal' | 'large';
 
     //fields
     this.indexes = [];
