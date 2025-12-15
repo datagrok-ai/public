@@ -88,10 +88,7 @@ export class DBExplorerObjectHandler extends DG.ObjectHandler {
     bs.set(tableRow.idx, true);
     const df = tableRow.table.clone(bs);
     const acc = ui.accordion(dbTableName);
-    const colTableMap: {[colName: string]: string} = {};
-    for (const col of tableRow.table.columns)
-      colTableMap[col.name] = col.getTag(DG.Tags.DbTable) ?? dbTableName;
-    acc.addPane('Properties', () => ui.wait(async () => this.renderer.renderDataFrame(df, dbTableName, {keepEmptyValues: true, columnTablesMap: colTableMap, skipCustomSelected: true})), true);
+    acc.addPane('Properties', () => ui.wait(async () => this.renderer.renderDataFrame(df, dbTableName, {keepEmptyValues: true, skipCustomSelected: true})), true);
     this.renderer.renderAssociations(acc, this.schemaInfoPromise, dbTableName, df);
     return acc.root;
   }

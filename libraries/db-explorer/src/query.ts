@@ -28,6 +28,7 @@ export async function queryDB(
     return DG.DataFrame.create(0);
   const matchValueStr = typeof matchValue === 'string' ? `'${matchValue}'` : matchValue;
   const startCharCode = 98; // ascii b
+  const [nbs, nbe] = getConnectionNameBrackets(connection);
 
   const applicableJoins = joinOptions.filter((opt) => opt.fromTable === tableName);
 
@@ -38,21 +39,21 @@ export async function queryDB(
         const alias = tableAliases[i];
         return opt.select.map((col) => {
           // if the col is confugured with alias, make sure it has quotes
-          if (col.includes(' as ') || col.includes(' AS ')) {
-            const parts = col.split(/ as | AS /);
-            return `${alias}."${parts[0].trim()}" as "${parts[1].trim()}"`;
-          }
-          return `${alias}."${col}"`;
+          // split cace insensitive way
+          const parts = col.split(/ as /i);
+          if (parts.length > 1)
+            return `${alias}.${nbs}${parts[0].trim()}${nbe} as ${nbs}${parts[1].trim()}${nbe}`;
+
+          return `${alias}.${nbs}${col}${nbe}`;
         }).join(', ');
       })
       .join(', ');
   const joinStr = applicableJoins
     .map((opt, i) => {
       const alias = tableAliases[i];
-      return `left join "${schemaName}"."${opt.tableName}" ${alias} on a."${opt.columnName}" = ${alias}."${opt.onColumn}"`;
+      return `left join ${nbs}${schemaName}${nbe}.${nbs}${opt.tableName}${nbe} ${alias} on a.${nbs}${opt.columnName}${nbe} = ${alias}.${nbs}${opt.onColumn}${nbe}`;
     })
     .join(' ');
-
   // let qb = connection.buildQuery(`"${schemaName}".${tableName}`).selectAll();
   // applicableJoins.forEach((opt, i) => {
   //   const alias = tableAliases[i];
@@ -68,7 +69,7 @@ export async function queryDB(
         --name: getDBValueInfo
         --output: dataframe result
         select a.* ${(applicableJoins.length > 0 ? ',' : '')} ${otherCols} 
-        from "${schemaName}".${tableName} a
+        from ${nbs}${schemaName}${nbe}.${nbs}${tableName}${nbe} a
         ${joinStr}
         ${isExampleQuery ? '' : `where a.${match} = ${matchValueStr}`}
         ${max1 || isExampleQuery ? 'limit 1' : ''}
@@ -76,6 +77,20 @@ export async function queryDB(
   );
   return (await q.apply({})) ?? DG.DataFrame.create(0);
 }
+
+export function getConnectionNameBrackets(connection: DG.DataConnection): [string, string] {
+  // in future - substitute with direct api call
+  const providerType = connection.dataSource?.toLowerCase();
+  switch (providerType) {
+    case 'bigquery':
+    case 'databricks':
+    case 'mysql':
+      return ['`', '`'];
+    default:
+      return ['"', '"']; // most common
+  }
+}
+
 
 export async function queryDBMultiple(
   connection: DG.DataConnection | null,

@@ -1,5 +1,9 @@
 # db-explorer changelog
 
+## 1.6.0 (2025-12-15)
+
+* Support other providers than default PG provider in connection details
+
 ## 1.5.0 (2025-12-15)
 
 * Support generic db exploration without registered schema

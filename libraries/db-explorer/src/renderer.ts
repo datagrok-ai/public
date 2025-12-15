@@ -179,7 +179,7 @@ export class DBExplorerRenderer {
   private headerReplacers: {[tableName: string]: string} = {};
   private uniqueColNames: {[tableName: string]: string} = {};
   private customSelectedColumns: {[tableName: string]: Set<string>} = {};
-  private defaultHeaderReplacerColumns: string[] = ['name'];
+  private defaultHeaderReplacerColumns: string[] = ['name', 'type', 'standard_type'];
   constructor(
     protected schemaInfoPromise: () => Promise<SchemaAndConnection | null>,
     protected schemaName: string,
@@ -323,7 +323,7 @@ export class DBExplorerRenderer {
    * @param options
    * @returns
    */
-  async renderDataFrame(df: DG.DataFrame, tableName: string, options?: {keepEmptyValues: boolean, columnTablesMap?: {[colName: string]: string}, skipCustomSelected?: boolean}) {
+  async renderDataFrame(df: DG.DataFrame, tableName: string, options?: {keepEmptyValues: boolean, skipCustomSelected?: boolean}) {
     const schemaAndConnection = await this.schemaInfoPromise();
     if (!schemaAndConnection)
       return ui.divText('Schema information is not available');
@@ -342,13 +342,25 @@ export class DBExplorerRenderer {
         return cols.indexOf(a[0]) - cols.indexOf(b[0]);
       });
     }
+    // similarly here, the column name in the df might not match the db column name if the df is a result of a query joining multiple tables
+    const dbColumnNames: {[colName: string]: string} = {};
+    const dbColTableNames: {[colName: string]: string} = {};
+    entries.forEach(([colName, _]) => {
+      const col = clearedDF.col(colName);
+      if (col?.getTag(DG.Tags.DbColumn))
+        dbColumnNames[colName] = col.getTag(DG.Tags.DbColumn)!;
+      if (col?.getTag(DG.Tags.DbTable))
+        dbColTableNames[colName] = col.getTag(DG.Tags.DbTable)!;
+    });
 
+    const isAggregatedFromMultipleTables = Object.keys(dbColTableNames).some((colName) => dbColTableNames[colName] !== tableName);
 
     const mainTable = ui.table(entries, (entry) => {
       const colName = entry[0];
+      const dbColName = dbColumnNames[colName] ?? colName;
       const value = entry[1];
-      const actTableName = options?.columnTablesMap?.[colName] ?? tableName;
-      const cutomRenderer = this.customRenderers.find((renderer) => renderer.check(actTableName, colName, value));
+      const dbTableName = dbColTableNames[colName] ?? tableName; // here, it is mapped from the df column, not its db name
+      const cutomRenderer = this.customRenderers.find((renderer) => renderer.check(dbTableName, dbColName, value));
       if (cutomRenderer) return [textRenderer(colName), cutomRenderer.renderer(value, schemaAndConnection.connection)];
       // if its autodetected as a molecule or helm or something else in the future
       const semTypeRenderer = this.semtypeRenderers.find((renderer) => {
@@ -357,12 +369,20 @@ export class DBExplorerRenderer {
       });
       if (semTypeRenderer) return [textRenderer(colName), semTypeRenderer.renderer(value)];
 
-      const refInfo = schemaAndConnection.schema.references?.[actTableName]?.[colName];
+      const refInfo = schemaAndConnection.schema.references?.[dbTableName]?.[dbColName];
       if (refInfo)
-        return [textRenderer(colName), this.refIdRenderer( schemaAndConnection.connection, value, refInfo.refTable, refInfo.refColumn)];
-      const isUnqueCol = this.uniqueColNames[actTableName] === colName;
-      if (isUnqueCol)
-        return [textRenderer(colName), ownIdRenderer(value, actTableName, colName, schemaAndConnection.connection.nqName, this.schemaName)];
+        return [textRenderer(colName), this.refIdRenderer(schemaAndConnection.connection, value, refInfo.refTable, refInfo.refColumn)];
+      // if the given column is referenced by other tables, then also use refIdRenderer
+      const refedByInfo = schemaAndConnection.schema.referencedBy?.[dbTableName]?.[dbColName];
+      if (refedByInfo && refedByInfo.length > 0)
+        return [textRenderer(colName), this.refIdRenderer(schemaAndConnection.connection, value, dbTableName, dbColName)];
+
+      const isUnqueCol = this.uniqueColNames[dbTableName] === dbColName;
+      if (isUnqueCol) {
+        if (!isAggregatedFromMultipleTables) // if its not aggregated, the tooltip in of the id will be the exact same as card, so we use simpler ownerIdRenderer
+          return [textRenderer(colName), ownIdRenderer(value, dbTableName, dbColName, schemaAndConnection.connection.nqName, this.schemaName)];
+        return [textRenderer(colName), this.refIdRenderer(schemaAndConnection.connection, value, dbTableName, dbColName)]; // otherwise use refIdRenderer
+      }
 
 
       return [textRenderer(colName), textRenderer(value)];

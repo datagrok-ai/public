@@ -49,7 +49,10 @@ export class DBExplorer {
 
   private async loadDbSchema() {
     try {
-      const connections = await grok.dapi.connections.filter(`name="${this.connectionName}"`).list();
+      const nqNameSplit = this.nqName?.split(':');
+      const connections = nqNameSplit?.length === 2 ?
+        await grok.dapi.connections.filter(`namespace = "${nqNameSplit[0]}:" and shortName = "${nqNameSplit[1]}"`).list() :
+        await grok.dapi.connections.filter(`name="${this.connectionName}" or shortName = "${this.connectionName}"`).list();
 
       this.connection = connections.find((c) => (!this.nqName || c.nqName?.toLowerCase() === this.nqName.toLowerCase()) && (!this.dataSourceName || c.dataSource?.toLowerCase() === this.dataSourceName.toLowerCase())) ?? null;
 
