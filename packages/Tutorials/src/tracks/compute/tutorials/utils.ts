@@ -231,3 +231,16 @@ export function getBallFlightModelLegend(): HTMLElement {
     '* max height and distance'      
   ]);
 }  
+
+export function buildToggleOverlay(toggle: HTMLElement): HTMLElement {
+  const overlay = document.createElement('div');
+  overlay.style.position = 'absolute';
+  overlay.style.left = '1px';
+  overlay.style.width = '28px';
+  overlay.style.height = '28px';
+  overlay.style.background = 'transparent';
+  overlay.style.pointerEvents = 'none';
+  toggle.appendChild(overlay);
+
+  return overlay;
+}

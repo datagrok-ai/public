@@ -6,7 +6,7 @@ import * as ui from 'datagrok-api/ui';
 import {filter, map} from 'rxjs/operators';
 import {Tutorial} from '@datagrok-libraries/tutorials/src/tutorial';
 import {fromEvent} from 'rxjs';
-import {getElement, getView, closeWindows, describeElements, PAUSE, getBallFlightModelLegend} from './utils';
+import {getElement, getView, closeWindows, describeElements, PAUSE, getBallFlightModelLegend, buildToggleOverlay} from './utils';
 import { runDescriber } from './ui-describer';
 
 /** Fitting results info */
@@ -113,8 +113,7 @@ export class FittingTutorial extends Tutorial {
       return;
     }
 
-    await this.action(
-      'Run the "Ball flight" model',
+    await this.action('Run the "Ball flight" model',
       fromEvent(modelIconRoot, 'dblclick'),
       modelIconRoot,
       'Double click <b>Ball flight</b>.',
@@ -188,21 +187,31 @@ export class FittingTutorial extends Tutorial {
 
     this.describe('Let\'s find the initial velocity and angle.');
 
+    // Build 'fake' overlay to prevent wide hint for the case of narrow input form
+    const velocityOverlay = buildToggleOverlay(velocityToggle);
+
     await this.action(
       'Toggle the "Velocity" parameter',
       fromEvent(velocityToggle, 'click'),
-      velocityToggle,
+      velocityOverlay,
     );
+
+    velocityOverlay.remove();
 
     // 7. Switch Angle    
     const angleSwitcher = switchers[4] as HTMLElement;
     const angleToggle = angleSwitcher.querySelector('div.ui-input-editor') as HTMLElement;
 
+    // Build 'fake' overlay to prevent wide hint for the case of narrow input form
+    const angleOverlay = buildToggleOverlay(angleToggle);
+
     await this.action(
       'Toggle the "Angle" parameter',
       fromEvent(angleToggle, 'click'),
-      angleToggle,
+      angleOverlay,
     );
+
+    angleOverlay.remove();
 
     // 8. Target value
     const distFitInputRoot = fitFormRoot!.children[38] as HTMLElement;
@@ -271,21 +280,31 @@ export class FittingTutorial extends Tutorial {
     const maxDistRoot = fitFormRoot!.children[37] as HTMLElement;
     const maxDistSwitcher = maxDistRoot.querySelector('div.ui-input-editor') as HTMLElement;
 
+    // Build 'fake' overlay to prevent wide hint for the case of narrow input form
+    const maxDistOverlay = buildToggleOverlay(maxDistSwitcher);
+    
     await this.action(
       'Disable "Max distance"',
       fromEvent(maxDistSwitcher, 'click'),
-      maxDistSwitcher,
+      maxDistOverlay,
     );
+
+    maxDistOverlay.remove();
 
     // 12. Switch on Trajectory
     const trajectoryRoot = fitFormRoot!.children[41] as HTMLElement;
     const trajectorySwitcher = trajectoryRoot.querySelector('div.ui-input-editor') as HTMLElement;
 
+    // Build 'fake' overlay to prevent wide hint for the case of narrow input form
+    const trajectoryOverlay = buildToggleOverlay(trajectorySwitcher);
+
     await this.action(
       'Toggle "Trajectory"',
       fromEvent(trajectorySwitcher, 'click'),
-      trajectorySwitcher,
+      trajectoryOverlay,
     );
+
+    trajectoryOverlay.remove();
 
     // 13. Select table
     const tableInputRoot = fitFormRoot!.querySelector('div.ui-input-choice.ui-input-table.ui-input-root') as HTMLElement;
