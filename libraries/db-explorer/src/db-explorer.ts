@@ -15,22 +15,24 @@ export class DBExplorer {
   private _dbLoadPromise?: Promise<void>;
   private objHandlers: DBExplorerObjectHandler[] = [];
   private loadingFailed: boolean = false;
+  public genericValueHandler: DBExplorerObjectHandler;
   constructor(
     private connectionName: string,
     private schemaName: string,
     private nqName?: string,
     private dataSourceName?: string
   ) {
-    const handler = new DBExplorerObjectHandler(
+    this.genericValueHandler = new DBExplorerObjectHandler(
       {valueConverter: (a) => a,
         joinOptions: []},
       async () => {
         return await this.dbSchema;
       },
+      nqName ?? connectionName,
       this.schemaName
     );
-    DG.ObjectHandler.register(handler);
-    this.objHandlers.push(handler);
+    DG.ObjectHandler.register(this.genericValueHandler);
+    this.objHandlers.push(this.genericValueHandler);
   }
 
   public get dbSchema(): Promise<SchemaAndConnection | null> {
@@ -86,7 +88,7 @@ export class DBExplorer {
       console.error(_e);
     }
     if (this.connection)
-      this.objHandlers.forEach((handler) => handler.connectionID = this.connection!.id); // set for detection in isApplicable
+      this.objHandlers.forEach((handler) => handler.connectionNqName = this.connection!.nqName); // set for detection in isApplicable
   }
 
   public async addCustomRelation(tableName: string, columnName: string, refTable: string, refColumn: string) {
@@ -124,7 +126,8 @@ export class DBExplorer {
       columnName,
       fullOpts,
       schemaPromise,
-      this.schemaName
+      this.schemaName,
+      this.nqName ?? this.connectionName
     );
     // if the matching regexp is also provided, register it
     if (options?.matchRegexp)

@@ -2,7 +2,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {DBExplorerConfig, DBValueObject, EntryPointOptions, QueryJoinOptions, SchemaAndConnection, SupportedRenderer} from './types';
+import {DBExplorerConfig, DBValueObject, EntryPointOptions, QueryJoinOptions, ReferencedByObject, SchemaAndConnection, SupportedRenderer} from './types';
 import {queryDB} from './query';
 
 export const MAX_MULTIROW_VALUES = 10;
@@ -124,14 +124,14 @@ export function rawImageRenderer(rawImage: string) {
   return host;
 }
 
-export function ownIdRenderer(id: string | number, tableName: string, colName: string, connectionID: string, schemaName: string) {
+export function ownIdRenderer(id: string | number, tableName: string, colName: string, connectionNqName: string, schemaName: string) {
   const nameHost = textRenderer(id.toString(), false);
   nameHost.style.color = 'var(--blue-1)';
   nameHost.style.cursor = 'pointer';
   ui.tooltip.bind(nameHost, 'Click to explore');
   nameHost.addEventListener('click', (e) => {
     e.stopImmediatePropagation();
-    grok.shell.o = new DBValueObject(connectionID, schemaName, tableName, colName, id);
+    grok.shell.o = new DBValueObject(connectionNqName, schemaName, tableName, colName, id);
   });
   return nameHost;
 }
@@ -248,7 +248,7 @@ export class DBExplorerRenderer {
             e.stopImmediatePropagation();
             this.schemaInfoPromise().then((schemaAndConnection) => {
               if (schemaAndConnection && schemaAndConnection.connection && schemaAndConnection.schema)
-                grok.shell.o = new DBValueObject(schemaAndConnection.connection.id, this.schemaName, tableName, colName, id);
+                grok.shell.o = new DBValueObject(schemaAndConnection.connection.nqName, this.schemaName, tableName, colName, id);
             });
           });
           nameHost.style.color = 'var(--blue-1)';
@@ -314,18 +314,27 @@ export class DBExplorerRenderer {
     return this.renderDataFrame(df, tableName);
   }
 
-  async renderDataFrame(df: DG.DataFrame, tableName: string, keepEmptyValues: boolean = false) {
+  /**
+   * Renders dataframe as a card with all associated references clickable
+   * In cases where your table is aggregated from different db tables, you can pass columnTablesMap property to specify
+   * which column belongs to which table in the database schema
+   * @param df
+   * @param tableName
+   * @param options
+   * @returns
+   */
+  async renderDataFrame(df: DG.DataFrame, tableName: string, options?: {keepEmptyValues: boolean, columnTablesMap?: {[colName: string]: string}, skipCustomSelected?: boolean}) {
     const schemaAndConnection = await this.schemaInfoPromise();
     if (!schemaAndConnection)
       return ui.divText('Schema information is not available');
     if (df.rowCount === 0)
       return ui.divText('No data');
 
-    const clearedDF = !keepEmptyValues ? removeEmptyCols(df) : df;
+    const clearedDF = options?.keepEmptyValues ? df: removeEmptyCols(df);
     let entries = clearedDF.columns.names()
       .map((colName) => [colName, clearedDF.col(colName)!.isNone(0) ? '' : clearedDF.col(colName)!.getString(0)]) as [string, string | number][];
 
-    if (this.customSelectedColumns[tableName]) {
+    if (!options?.skipCustomSelected && this.customSelectedColumns[tableName]) {
       entries = entries.filter(([key]) => this.customSelectedColumns[tableName].has(key));
       // reorder entries according to customSelectedColumns if present
       const cols = Array.from(this.customSelectedColumns[tableName]);
@@ -338,7 +347,8 @@ export class DBExplorerRenderer {
     const mainTable = ui.table(entries, (entry) => {
       const colName = entry[0];
       const value = entry[1];
-      const cutomRenderer = this.customRenderers.find((renderer) => renderer.check(tableName, colName, value));
+      const actTableName = options?.columnTablesMap?.[colName] ?? tableName;
+      const cutomRenderer = this.customRenderers.find((renderer) => renderer.check(actTableName, colName, value));
       if (cutomRenderer) return [textRenderer(colName), cutomRenderer.renderer(value, schemaAndConnection.connection)];
       // if its autodetected as a molecule or helm or something else in the future
       const semTypeRenderer = this.semtypeRenderers.find((renderer) => {
@@ -347,12 +357,12 @@ export class DBExplorerRenderer {
       });
       if (semTypeRenderer) return [textRenderer(colName), semTypeRenderer.renderer(value)];
 
-      const refInfo = schemaAndConnection.schema.references?.[tableName]?.[colName];
+      const refInfo = schemaAndConnection.schema.references?.[actTableName]?.[colName];
       if (refInfo)
         return [textRenderer(colName), this.refIdRenderer( schemaAndConnection.connection, value, refInfo.refTable, refInfo.refColumn)];
-      const isUnqueCol = this.uniqueColNames[tableName] === colName;
+      const isUnqueCol = this.uniqueColNames[actTableName] === colName;
       if (isUnqueCol)
-        return [textRenderer(colName), ownIdRenderer(value, tableName, colName, schemaAndConnection.connection.id, this.schemaName)];
+        return [textRenderer(colName), ownIdRenderer(value, actTableName, colName, schemaAndConnection.connection.nqName, this.schemaName)];
 
 
       return [textRenderer(colName), textRenderer(value)];
@@ -408,59 +418,85 @@ export class DBExplorerRenderer {
       });
       addIconToPane(pane, tableName, colName, value);
     };
+    // columns in the passed dataframe might be from different tables in the db schema (as a result of queries)
+    // depending on from where this dataFrame come from
 
-    const refTable = schemaAndConnection.schema.referencedBy[curTable];
-    if (!refTable || Object.keys(refTable).length == 0) return;
+    const colList = curDf.columns.names();
+    const dbTableNameSet = new Set<string>();
+    dbTableNameSet.add(curTable);
+    // build map of actual column name to db column name
+    const dbNameToActColNameMap: {[tableName: string]: {[colName: string]: string}} = {};
+    colList.forEach((colName) => {
+      const dbTableName = curDf.col(colName)!.getTag(DG.Tags.DbTable);
+      if (dbTableName)
+        dbTableNameSet.add(dbTableName);
+      const dbColName = curDf.col(colName)!.getTag(DG.Tags.DbColumn);
+      if (dbColName) {
+        const actTableName = dbTableName ?? curTable;
+        if (!dbNameToActColNameMap[actTableName])
+          dbNameToActColNameMap[actTableName] = {};
+        dbNameToActColNameMap[actTableName][dbColName] = colName;
+      }
+    });
+    // all references to all tables referencing any of the db tables in the current dataframe
+    const refTables = Array.from(dbTableNameSet).map((t) => [t, schemaAndConnection.schema.referencedBy[t]] as [string, ReferencedByObject[string]]).filter((t) => t[1] != null && Object.keys(t[1]).length > 0);
+    if (refTables.length === 0)
+      return;
+
     const _linksPane = acc.addPane('Links', () => {
       const linksAcc = ui.accordion(`Links to ${curTable}`);
       if ((curDf?.rowCount ?? 0) === 0)
         return ui.divText('No data');
-      Object.entries(refTable).forEach(([refedColumn, refInfo]) => {
-        const val = curDf.col(refedColumn)?.get(0);
-        if (!val) return;
-        const _pane = linksAcc.addPane(refedColumn, () => {
-          const colAcc = ui.accordion(`Links to ${curTable}_${refedColumn}`);
-          // there can be cases when same column is referneced by two or more columns in other table.
-          // example is chembl table molecule_hiearchy where all 3 columns are referencing to molregno
-          // need to account for such cases
-          const tableRefs = new Map<string, { refTable: string; refColumn: string }[]>();
-          refInfo.forEach((ref) => {
-            if (!tableRefs.has(ref.refTable)) tableRefs.set(ref.refTable, []);
+      refTables.forEach(([actTableName, refTable]) => {
+        const prefix = refTables.length > 1 ? `${actTableName}.` : '';
+        Object.entries(refTable).forEach(([refedColumn, refInfo]) => {
+          const tableColActName = dbNameToActColNameMap[actTableName][refedColumn] ?? refedColumn;
+          const val = curDf.col(tableColActName)?.get(0);
+          if (!val) return;
+          const _pane = linksAcc.addPane(prefix + refedColumn, () => {
+            const colAcc = ui.accordion(`Links to ${actTableName}_${refedColumn}`);
+            // there can be cases when same column is referneced by two or more columns in other table.
+            // example is chembl table molecule_hiearchy where all 3 columns are referencing to molregno
+            // need to account for such cases
+            const tableRefs = new Map<string, { refTable: string; refColumn: string }[]>();
+            refInfo.forEach((ref) => {
+              if (!tableRefs.has(ref.refTable)) tableRefs.set(ref.refTable, []);
             tableRefs.get(ref.refTable)!.push(ref);
-          });
+            });
 
-          tableRefs.forEach((refInfos, refTable) => {
-            const singleColPane = colAcc.addPane(refTable, () => {
-              if (refInfos.length === 1) {
-                return ui.wait(async () => {
-                  const res = await this.renderMultiRowTable(refInfos[0].refTable, refInfos[0].refColumn, val, this.entryPointOptions.joinOptions);
-                  if (res.rowCount > MAX_MULTIROW_VALUES) {
-                    singleColPane.name = `${singleColPane.name} (${MAX_MULTIROW_VALUES} / ${res.rowCount})`;
-                    addIconToPane(singleColPane, refInfos[0].refTable, refInfos[0].refColumn, val);
-                  }
-                  return res.root;
-                });
-              }
-              const multiTableAcc = ui.accordion(`Multiple links to ${refTable}`);
-              refInfos.forEach((ref) => {
-                const colPane = multiTableAcc.addPane(ref.refColumn, () => {
+            tableRefs.forEach((refInfos, refTable) => {
+              const singleColPane = colAcc.addPane(refTable, () => {
+                if (refInfos.length === 1) {
                   return ui.wait(async () => {
-                    const res = await this.renderMultiRowTable(ref.refTable, ref.refColumn, val, this.entryPointOptions.joinOptions);
+                    const res = await this.renderMultiRowTable(refInfos[0].refTable, refInfos[0].refColumn, val, this.entryPointOptions.joinOptions);
                     if (res.rowCount > MAX_MULTIROW_VALUES) {
-                      colPane.name = `${singleColPane.name} (${MAX_MULTIROW_VALUES} / ${res.rowCount})`;
-                      addIconToPane(colPane, ref.refTable, ref.refColumn, val);
+                      singleColPane.name = `${singleColPane.name} (${MAX_MULTIROW_VALUES} / ${res.rowCount})`;
+                      addIconToPane(singleColPane, refInfos[0].refTable, refInfos[0].refColumn, val);
                     }
                     return res.root;
                   });
+                }
+                const multiTableAcc = ui.accordion(`Multiple links to ${refTable}`);
+                refInfos.forEach((ref) => {
+                  const colPane = multiTableAcc.addPane(ref.refColumn, () => {
+                    return ui.wait(async () => {
+                      const res = await this.renderMultiRowTable(ref.refTable, ref.refColumn, val, this.entryPointOptions.joinOptions);
+                      if (res.rowCount > MAX_MULTIROW_VALUES) {
+                        colPane.name = `${singleColPane.name} (${MAX_MULTIROW_VALUES} / ${res.rowCount})`;
+                        addIconToPane(colPane, ref.refTable, ref.refColumn, val);
+                      }
+                      return res.root;
+                    });
+                  });
+                  attachOpenInWorkspaceMenu(ref.refTable, ref.refColumn, val, colPane);
                 });
-                attachOpenInWorkspaceMenu(ref.refTable, ref.refColumn, val, colPane);
+                return multiTableAcc.root;
               });
-              return multiTableAcc.root;
+              if (refInfos.length === 1)
+                attachOpenInWorkspaceMenu(refInfos[0].refTable, refInfos[0].refColumn, val, singleColPane);
             });
-            if (refInfos.length === 1)
-              attachOpenInWorkspaceMenu(refInfos[0].refTable, refInfos[0].refColumn, val, singleColPane);
+            return colAcc.root;
           });
-          return colAcc.root;
         });
       });
 
@@ -515,8 +551,8 @@ export class ExampleExplorerRenderer extends DBExplorerRenderer {
     }
   }
 
-  override async renderDataFrame(df: DG.DataFrame, tableName: string, keepEmptyValues?: boolean): Promise<HTMLDivElement> {
-    return super.renderDataFrame(df, tableName, true);
+  override async renderDataFrame(df: DG.DataFrame, tableName: string, _opts?: {keepEmptyValues: boolean, columnTablesMap?: {[colName: string]: string}, skipCustomSelected?: boolean}): Promise<HTMLDivElement> {
+    return super.renderDataFrame(df, tableName, {keepEmptyValues: true});
   }
 
   override async renderTable(tableName: string, match: string, matchValue: string | number, joinOptions?: QueryJoinOptions[]): Promise<HTMLDivElement> {

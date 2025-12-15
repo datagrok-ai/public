@@ -51,7 +51,7 @@ export class DBExplorerEditor {
   private schemaInput!: DG.ChoiceInput<string | null>;
   private accordionDiv!: HTMLDivElement;
 
-  constructor(onSave?: (config: any) => void) {
+  constructor(onSave?: (config: any) => void, private showConnectionSection: boolean = true) {
     this.onSave = onSave;
   }
 
@@ -189,6 +189,8 @@ export class DBExplorerEditor {
     connectionForm.appendChild(this.schemaInput.root);
 
     this.rootDiv.appendChild(connectionForm);
+    if (!this.showConnectionSection)
+      connectionForm.style.display = 'none';
   }
 
   private async loadSchemaInfo(): Promise<void> {
@@ -213,14 +215,14 @@ export class DBExplorerEditor {
   private async buildAdvancedSections(): Promise<void> {
     this.accordionDiv.innerHTML = '';
 
-    const accordion = ui.accordion();
+    const accordion = ui.accordion('db-explorer-advanced-accordion');
     const tryGetPaneHeaderRoot = (paneRoot: HTMLElement) => paneRoot.getElementsByClassName('d4-accordion-pane-header')?.item(0) as HTMLElement ?? paneRoot;
     // Entry Points Section
     const entryPane = accordion.addPane('Identifiers', () => this.createEntryPointsSection(), true, null, false);
     ui.tooltip.bind(tryGetPaneHeaderRoot(entryPane.root), 'Define identifiers that trigger exploration');
 
     // Join Options Section
-    const joinPane = accordion.addPane('Joins', () => this.createJoinOptionsSection(), false, null, false);
+    const joinPane = accordion.addPane('Joins', () => this.createJoinOptionsSection(), true, null, false);
     ui.tooltip.bind(tryGetPaneHeaderRoot(joinPane.root), 'Define how to include data from related tables');
 
     // Header Names Section

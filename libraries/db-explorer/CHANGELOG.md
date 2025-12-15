@@ -1,6 +1,10 @@
 # db-explorer changelog
 
-## 1.4.0 (2026-12-14)
+## 1.5.0 (2025-12-15)
+
+* Support generic db exploration without registered schema
+
+## 1.4.0 (2025-12-14)
 
 * Refactoring
 * Added visual editor for explorer configs
