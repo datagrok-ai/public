@@ -1,5 +1,9 @@
 # Power Grid changelog
 
+## 1.7.20 (2025-12-15)
+
+* GROK-19378: Forms viewer: Non-molecule semantic type is incorrectly treated as Molecule
+
 ## 1.7.18 (2025-12-07)
 
 * #3546: Forms viewer: support sorting by specific columns
