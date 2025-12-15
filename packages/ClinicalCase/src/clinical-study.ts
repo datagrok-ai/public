@@ -265,22 +265,30 @@ export class ClinicalStudy {
       issuesByDomain[domain][rowNum].push(issue);
     }
 
-    // Process each domain and add columns
-    for (const domainName of Object.keys(this.domains)) {
-      const domain = this.domains[domainName];
-      if (!domain || !domainName)
-        continue;
-
+    const addValidationColumns = (domainName: string, domain: DG.DataFrame) => {
       const domainLower = domainName.toLowerCase();
       const domainIssues = issuesByDomain[domainLower];
 
       if (!domainIssues) {
         // No issues for this domain, but still add columns with false/empty values
         this.addValidationColumnsToDomain(domain, {});
-        continue;
+        return;
       }
 
       this.addValidationColumnsToDomain(domain, domainIssues);
+    };
+
+    // Process each domain and add columns
+    for (const domainName of Object.keys(this.domains)) {
+      const domain = this.domains[domainName];
+      if (!domain || !domainName || (Array.isArray(domain) && !domain.length))
+        continue;
+      if (domainName !== 'supp')
+        addValidationColumns(domainName, domain);
+      else {
+        for (const suppDomain of domain)
+          addValidationColumns(domainName, suppDomain);
+      }
     }
   }
 
@@ -293,28 +301,72 @@ export class ClinicalStudy {
     domain: DG.DataFrame,
     issuesByRow: {[row: number]: IssueDetail[]},
   ): void {
-    const rowCount = domain.rowCount;
-    const hasErrorsColName = 'HasValidationErrors';
-    const violatedRulesColName = 'ViolatedRules';
-
     // Create boolean column for validation errors
-    const hasErrorsCol = domain.columns.addNewBool(hasErrorsColName);
-    hasErrorsCol.init(false);
+    const hasErrorsCol = domain.columns.addNewBool('HasValidationErrors');
 
     // Create string column for violated rules (stored as JSON array of IssueDetail objects)
-    const violatedRulesCol = domain.columns.addNewString(violatedRulesColName);
-    violatedRulesCol.init('');
+    const violatedRulesCol = domain.columns.addNewString('ViolatedRules');
+    violatedRulesCol.semType = 'sdisc-rule-violation';
 
-    // Set values for each row
-    for (let i = 0; i < rowCount; i++) {
-      const rowIssues = issuesByRow[i];
-      if (rowIssues && rowIssues.length > 0) {
-        hasErrorsCol.set(i, true);
-        // Serialize IssueDetail objects as JSON array string
-        violatedRulesCol.set(i, JSON.stringify(rowIssues));
-      } else {
-        hasErrorsCol.set(i, false);
-        violatedRulesCol.set(i, '');
+
+    // Maps to track variable columns (created lazily as we encounter variables)
+    const variableErrorColumns: {[variable: string]: DG.Column} = {};
+    const variableHasErrorsColumns: {[variable: string]: DG.Column} = {};
+
+    // Helper function to create columns for a variable if they don't exist
+    const ensureVariableColumns = (variable: string): void => {
+      if (!variableErrorColumns[variable] && domain.col(variable)) {
+        const hasErrorsColName = `${variable}_hasErrors`;
+        const hasErrorsCol = domain.columns.addNewBool(hasErrorsColName);
+        variableHasErrorsColumns[variable] = hasErrorsCol;
+
+        const errorColName = `${variable}_errors`;
+        const errorCol = domain.columns.addNewString(errorColName);
+        variableErrorColumns[variable] = errorCol;
+      }
+    };
+
+    // Iterate through rows that have issues
+    for (const [rowIndexStr, rowIssues] of Object.entries(issuesByRow)) {
+      const rowIndex = parseInt(rowIndexStr, 10) - 1; //rows in issues are numbered starting from 1
+      if (isNaN(rowIndex) || !rowIssues || rowIssues.length === 0)
+        continue;
+
+      hasErrorsCol.set(rowIndex, true);
+      // Serialize IssueDetail objects as JSON array string
+      violatedRulesCol.set(rowIndex, JSON.stringify(rowIssues));
+
+      // Process issues, collect errors by variable, create columns, and set values in one loop
+      const errorsByVariable: {[variable: string]: Array<{ruleID: string, message: string, value: string}>} = {};
+
+      for (const issue of rowIssues) {
+        if (issue.variables && issue.values) {
+          // Iterate through variables and values arrays
+          for (let varIndex = 0; varIndex < issue.variables.length; varIndex++) {
+            const variable = issue.variables[varIndex];
+            const value = varIndex < issue.values.length ? issue.values[varIndex] : '';
+
+            // Create columns for this variable if they don't exist
+            ensureVariableColumns(variable);
+
+            // Only process if this variable has an error column (exists in domain)
+            if (variableErrorColumns[variable]) {
+              if (!errorsByVariable[variable])
+                errorsByVariable[variable] = [];
+              errorsByVariable[variable].push({
+                ruleID: issue.core_id,
+                message: issue.message,
+                value: value,
+              });
+
+              // Set values immediately - update JSON string and set boolean flag
+              const errorCol = variableErrorColumns[variable];
+              const varHasErrorsCol = variableHasErrorsColumns[variable];
+              errorCol.set(rowIndex, JSON.stringify(errorsByVariable[variable]));
+              varHasErrorsCol.set(rowIndex, true);
+            }
+          }
+        }
       }
     }
   }

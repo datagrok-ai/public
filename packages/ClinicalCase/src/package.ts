@@ -36,6 +36,8 @@ import {createInitialSatistics} from './utils/initial-statistics-widget';
 import {cdiscAppTB, CLINICAL_CASE_APP_PATH, createStudiesFromAppData,
   openApp, PRECLINICAL_CASE_APP_PATH,
   studies} from './utils/app-utils';
+// Import renderer to ensure it's registered
+import './utils/rule-violation-cell-renderer';
 
 export * from './package.g';
 

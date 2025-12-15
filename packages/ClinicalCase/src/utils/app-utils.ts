@@ -7,7 +7,7 @@ import {CDISC_STANDARD, ClinCaseTableView, ClinStudyConfig} from './types';
 import {defineXmlFileName, STENDTC, STSTDTC, StudyConfigFileName,
   studyConfigJsonFileName} from '../constants/constants';
 import X2JS from 'x2js';
-import {readClinicalFile, removeExtension} from './utils';
+import {readClinicalFile, removeExtension, studyConfigToMap} from './utils';
 import {SUBJECT_ID, TSPARM, TSPARMCD, TSVAL} from '../constants/columns-constants';
 import {ClinicalStudy} from '../clinical-study';
 import {SUMMARY_VIEW_NAME, VALIDATION_VIEW_NAME} from '../constants/view-names-constants';
@@ -39,7 +39,98 @@ export async function cdiscAppTB(treeNode: DG.TreeViewGroup, standard: string,
 }
 
 export function createImportStudyView(standard: string) {
-  
+  const view = DG.View.create();
+  view.name = `Import Study - ${standard === CDISC_STANDARD.SDTM ? 'Clinical Case' : 'Preclinical Case'}`;
+
+  const fileNamesDiv = ui.div('', {style: {marginTop: '10px'}});
+  const errorDiv = ui.div('', {style: {marginTop: '10px', color: 'red'}});
+  const filesSection = ui.divV([
+    fileNamesDiv,
+    errorDiv,
+  ], {style: {marginTop: '10px'}});
+
+  // Create Study Summary accordion upfront
+  const acc = ui.accordion();
+  const statisticsPaneContent = ui.div();
+  const validationPaneContent = ui.div();
+  statisticsPaneContent.append(ui.divText('No study selected'));
+  acc.addPane('Study Summary', () => statisticsPaneContent, false);
+  acc.addPane('Validation', () => validationPaneContent, false);
+  const statisticsDiv = ui.div('', {style: {marginTop: '10px'}});
+  statisticsDiv.append(acc.root);
+
+  const filesInput = ui.input.files('Import study files', {
+    onValueChanged: async () => {
+      // Clear previous content
+      ui.empty(fileNamesDiv);
+      ui.empty(errorDiv);
+      ui.empty(statisticsPaneContent);
+
+      // Show list of loaded file names as tags in horizontal flex container
+      if (filesInput.value && filesInput.value.length > 0) {
+        const fileTagsContainer = ui.div(
+          filesInput.value.map((file) => {
+            const tag = ui.div(file.name, {
+              style: {
+                display: 'inline-block',
+                padding: '4px 8px',
+                marginRight: '8px',
+                marginBottom: '4px',
+                backgroundColor: '#E7F0F3',
+                color: 'var(--blue-6)',
+                borderRadius: '4px',
+                fontSize: '12px',
+              },
+            });
+            return tag;
+          }),
+          {style: {display: 'flex', flexWrap: 'wrap', marginTop: '10px', marginLeft: '20px'}},
+        );
+        fileNamesDiv.append(fileTagsContainer);
+
+        try {
+          ui.setUpdateIndicator(statisticsPaneContent, true, 'Collecting study summary...');
+
+          // Get the tree node for creating study config
+          const clinicalCaseNode = grok.shell.browsePanel.mainTree.getOrCreateGroup('Apps').
+            getOrCreateGroup(standard === CDISC_STANDARD.SDTM ? 'Clinical Case' : 'Preclinical Case');
+
+          // Create study config from files
+          const studyConfig = await createStudyWithConfig(filesInput.value, clinicalCaseNode, true);
+
+          // Show basic study statistics from configuration
+          if (studyConfig) {
+            const configMap = studyConfigToMap(studyConfig);
+            const statsTable = ui.tableFromMap(configMap);
+            statisticsPaneContent.append(statsTable);
+            ui.setUpdateIndicator(statisticsPaneContent, false);
+          }
+        } catch (e: any) {
+          const errorMessage = e?.message ?? String(e);
+          errorDiv.append(ui.divText(`Error: ${errorMessage}`, {style: {color: 'red', marginLeft: '20px'}}));
+          ui.empty(statisticsPaneContent);
+          statisticsPaneContent.append(ui.divText(`Error: ${errorMessage}`, {style: {color: 'red'}}));
+          grok.shell.error(e);
+        }
+      } else {
+        // No files selected
+        statisticsPaneContent.append(ui.divText('No study selected'));
+      }
+    },
+  });
+
+  const importStudyButton = ui.button('Import', () => {});
+  importStudyButton.style.justifyContent = 'flex-start';
+  importStudyButton.style.marginLeft = '8px';
+
+  view.root.append(ui.divV([
+    ui.div(filesInput.root, {style: {marginLeft: '20px'}}),
+    filesSection,
+    statisticsDiv,
+    importStudyButton,
+  ]));
+
+  grok.shell.addView(view);
 }
 
 export async function openApp(standard: CDISC_STANDARD): Promise<DG.ViewBase | void> {

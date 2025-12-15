@@ -1,3 +1,4 @@
+import {SdiscRuleViolationCellRenderer} from './utils/rule-violation-cell-renderer';
 import {PackageFunctions} from './package';
 import * as DG from 'datagrok-api/dg';
 
@@ -71,3 +72,11 @@ export async function xptFileHandler(file: DG.FileInfo) : Promise<any> {
 export async function runCoreValidate(standard: string, dataPath: string, version?: string, outputFormat?: string, options?: any) : Promise<string> {
   return await PackageFunctions.runCoreValidate(standard, dataPath, version, outputFormat, options);
 }
+//name: sdiscRuleViolationRenderer
+//tags: cellRenderer
+//output: grid_cell_renderer renderer
+//meta.cellType: sdisc-rule-violation
+export function _SdiscRuleViolationCellRenderer() {
+  return new SdiscRuleViolationCellRenderer();
+}
+

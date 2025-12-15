@@ -1,6 +1,7 @@
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 import {scripts} from '../package-api';
+import {ClinStudyConfig} from './types';
 
 export function updateDivInnerHTML(div: HTMLElement, content: any) {
   div.innerHTML = '';
@@ -29,4 +30,18 @@ export async function readClinicalFile(file: DG.FileInfo): Promise<DG.DataFrame>
     grok.shell.error(`Error loading ${file.name}: ${e?.message ?? e}`);
   }
   return df;
+}
+
+export function studyConfigToMap(studyConfig: ClinStudyConfig): {[key: string]: any} {
+  const map: {[key: string]: any} = {};
+  for (const key of Object.keys(studyConfig)) {
+    if (key !== 'other')
+      map[key] = studyConfig[key];
+    else {
+      const obj = studyConfig.other;
+      if (obj)
+        Object.keys(obj).forEach((otherKey) => map[otherKey] = studyConfig.other![otherKey]);
+    }
+  }
+  return map;
 }

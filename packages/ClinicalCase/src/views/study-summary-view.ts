@@ -10,7 +10,7 @@ import {AGE, BW_RES_N, CLORRES, RACE, SEX, SPECIES, SUBJECT_ID, SUBJ_REF_STDT,
 import {ClinicalCaseViewBase} from '../model/ClinicalCaseViewBase';
 import $ from 'cash-dom';
 import {checkDateFormat} from '../data-preparation/utils';
-import {removeExtension, updateDivInnerHTML} from '../utils/utils';
+import {removeExtension, studyConfigToMap, updateDivInnerHTML} from '../utils/utils';
 import {TRT_ARM_FIELD} from '../views-config';
 import {checkColumnsAndCreateViewer, setupValidationErrorIndicators} from '../utils/views-validation-utils';
 import {CDISC_STANDARD} from '../utils/types';
@@ -257,17 +257,8 @@ export class StudySummaryView extends ClinicalCaseViewBase {
   override async propertyPanel() {
     const acc = this.createAccWithTitle(this.studyId);
     acc.addPane('General', () => {
-      const map = {};
-      for (const key of Object.keys(studies[this.studyId].config)) {
-        if (key !== 'other')
-          map[key] = studies[this.studyId].config[key];
-        else {
-          const obj = studies[this.studyId].config.other;
-          if (obj)
-            Object.keys(obj).forEach((key) => map[key] = studies[this.studyId].config!.other[key]);
-        }
-      }
-      return ui.tableFromMap(map);
+      const configMap = studyConfigToMap(studies[this.studyId].config);
+      return ui.tableFromMap(configMap);
     });
     if (!this.isSend)
       this.getDataFromClinicalTrialsGov(acc);
