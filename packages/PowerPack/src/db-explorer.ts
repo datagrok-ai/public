@@ -315,13 +315,11 @@ export async function setupDBQueryCellHandler() {
     explorePanelRoot.appendChild(ui.divText('Select a cell to explore its value...'));
     acc.addPane('Explore', () => explorePanelRoot);
     // if there is a current cell and its in the given column, process it
-    console.log('Accordion constructed event received in db-explorer setup.');
     if (col.dataFrame.currentCell && col.dataFrame.currentCell.column === col)
       processCell(col.dataFrame.currentCell!);
   });
 
   grok.events.onCurrentCellChanged.subscribe((cell?: DG.Cell) => {
-    console.log('Current cell changed event received in db-explorer setup.');
     if (!cell?.dart || !cell.column?.dart || !cell.dataFrame?.dart || grok.shell.o != cell.column)
       return;
     const col = cell.column;
