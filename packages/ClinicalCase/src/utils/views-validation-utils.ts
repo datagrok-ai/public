@@ -14,17 +14,19 @@ import {CDISC_STANDARD} from './types';
 import {VISIT} from '../constants/columns-constants';
 import {studies} from './app-utils';
 import {IssueDetail} from '../types/validation-result';
+import {Subscription} from 'rxjs';
 
 const ERROR_ICON_SIZE = 9;
 const ERROR_ICON_MARGIN = 2;
+const COLUMNS_WITH_VALIDATION_ERRORS_TAG = 'columnsWithErrors';
 
-export function setupValidationErrorIndicators(tableView: DG.TableView, df: DG.DataFrame): void {
+export function setupValidationErrorColumns(tableView: DG.TableView, df: DG.DataFrame) {
   const grid = tableView.grid;
   if (!grid)
-    return;
+    df.setTag(COLUMNS_WITH_VALIDATION_ERRORS_TAG, '');
 
   // Find all columns that have corresponding _hasErrors columns
-  const columnsWithErrors: {[colName: string]: {hasErrorsCol: DG.Column, errorsCol: DG.Column}} = {};
+  const columnsWithErrors: {[colName: string]: {hasErrorsCol: string, errorsCol: string}} = {};
 
   for (const colName of df.columns.names()) {
     if (colName.endsWith('_hasErrors')) {
@@ -36,20 +38,41 @@ export function setupValidationErrorIndicators(tableView: DG.TableView, df: DG.D
         // Set semantic type on the errors column to enable custom renderer
         errorsCol.semType = 'sdisc-rule-violation';
         columnsWithErrors[baseColName] = {
-          hasErrorsCol: df.columns.byName(colName)!,
-          errorsCol: errorsCol,
+          hasErrorsCol: colName,
+          errorsCol: `${baseColName}_errors`,
         };
       }
     }
   }
 
   if (Object.keys(columnsWithErrors).length === 0)
-    return;
+    df.setTag(COLUMNS_WITH_VALIDATION_ERRORS_TAG, '');
 
-  // Store columnsWithErrors on grid for tooltip handler access
-  (grid as any).__validationColumnsWithErrors = columnsWithErrors;
+  // Store columnsWithErrors on df for tooltip handler access
+  df.setTag(COLUMNS_WITH_VALIDATION_ERRORS_TAG, JSON.stringify(columnsWithErrors));
+}
 
-  grid.onCellRendered.subscribe((args: DG.GridCellRenderArgs) => {
+// Track current cell with errors state
+let currentErrorCell: {
+    tableColName: string,
+    tableRowIndex: number,
+    errors: Array<{ruleID: string, message: string, value: string}>,
+    iconX: number,
+    iconY: number,
+    iconRight: number,
+    iconBottom: number
+  } | null = null;
+
+export function setupValidationErrorIndicators(tableView: DG.TableView, df: DG.DataFrame): Subscription[] {
+  const columnsWithErrorsString = df.getTag(COLUMNS_WITH_VALIDATION_ERRORS_TAG);
+  if (!columnsWithErrorsString)
+    return [];
+
+  const columnsWithErrors = JSON.parse(columnsWithErrorsString);
+
+  const grid = tableView.grid;
+
+  const onCellRenderedSub = grid.onCellRendered.subscribe((args: DG.GridCellRenderArgs) => {
     const cell = args.cell;
     const tableColName = cell.tableColumn?.name;
     const tableRowIndex = cell.tableRowIndex!;
@@ -57,19 +80,23 @@ export function setupValidationErrorIndicators(tableView: DG.TableView, df: DG.D
     if (!cell.isTableCell || !tableColName || tableRowIndex === undefined || tableRowIndex === null)
       return;
 
-    const errorCols = columnsWithErrors[tableColName];
-    if (!errorCols)
+    const errorColsNames: {hasErrorsCol: string, errorsCol: string} = columnsWithErrors[tableColName];
+    if (!errorColsNames)
+      return;
+    const hasErrorsCol = tableView.dataFrame.col(errorColsNames.hasErrorsCol);
+    const errorsCol = tableView.dataFrame.col(errorColsNames.errorsCol);
+    if (!hasErrorsCol || !errorsCol)
       return;
 
     // Check if row index is valid
-    if (tableRowIndex < 0 || tableRowIndex >= errorCols.hasErrorsCol.length)
+    if (tableRowIndex < 0 || tableRowIndex >= hasErrorsCol.length)
       return;
 
-    const hasErrors = errorCols.hasErrorsCol.get(tableRowIndex);
+    const hasErrors = hasErrorsCol.get(tableRowIndex);
 
     if (hasErrors) {
       // Parse errors for this specific column
-      const errorsStr = errorCols.errorsCol.get(tableRowIndex);
+      const errorsStr = errorsCol.get(tableRowIndex);
       let errors: Array<{ruleID: string, message: string, value: string}> = [];
       if (errorsStr) {
         try {
@@ -117,41 +144,27 @@ export function setupValidationErrorIndicators(tableView: DG.TableView, df: DG.D
     }
   });
 
-  // Track current cell with errors state
-  let currentErrorCell: {
-    tableColName: string,
-    tableRowIndex: number,
-    errors: Array<{ruleID: string, message: string, value: string}>,
-    iconX: number,
-    iconY: number,
-    iconRight: number,
-    iconBottom: number
-  } | null = null;
-
-
   // Subscribe to cell mouse enter - use hitTest to identify cell and check if it has errors
-  grid.onCellMouseEnter.subscribe((cell: DG.GridCell) => {
+  const onCellMouseEnterSub = grid.onCellMouseEnter.subscribe((cell: DG.GridCell) => {
     // Use hitTest to identify which cell we're over at the moment
     //const cell = grid.hitTest(lastMouseX, lastMouseY);
-    if (!cell || !cell.isTableCell) {
+    if (!cell || !cell.isTableCell || !cell.tableColumn?.name) {
       currentErrorCell = null;
       return;
     }
 
-    const errorCols = cell.tableColumn?.name ? columnsWithErrors[cell.tableColumn!.name] : null;
-    if (!errorCols) {
-      currentErrorCell = null;
+    const errorColsNames: {hasErrorsCol: string, errorsCol: string} = columnsWithErrors[cell.tableColumn.name];
+    if (!errorColsNames)
       return;
-    }
-
-    const hasErrors = errorCols.hasErrorsCol.get(cell.tableRowIndex);
-    if (!hasErrors) {
+    const hasErrorsCol = tableView.dataFrame.col(errorColsNames.hasErrorsCol);
+    const errorsCol = tableView.dataFrame.col(errorColsNames.errorsCol);
+    if (!hasErrorsCol || !errorsCol) {
       currentErrorCell = null;
       return;
     }
 
     // Parse errors for this specific column
-    const errorsStr = errorCols.errorsCol.get(cell.tableRowIndex);
+    const errorsStr = errorsCol.get(cell.tableRowIndex);
     let errors: Array<{ruleID: string, message: string, value: string}> = [];
     if (errorsStr) {
       try {
@@ -183,31 +196,35 @@ export function setupValidationErrorIndicators(tableView: DG.TableView, df: DG.D
   });
 
   // Subscribe to mouse move on overlay - track position and check coordinates
-  grid.overlay.addEventListener('mousemove', (e: MouseEvent) => {
-    // Check if we're in a cell with errors
-    if (!currentErrorCell) {
-      ui.tooltip.hide();
-      return;
-    }
-
-    // Check if mouse is within icon area (with tolerance)
-    const tolerance = 3;
-    if (e.offsetX >= currentErrorCell.iconX - tolerance && e.offsetX <= currentErrorCell.iconRight + tolerance &&
-        e.offsetY >= currentErrorCell.iconY - tolerance && e.offsetY <= currentErrorCell.iconBottom + tolerance) {
-      // Show tooltip
-      const tooltipContent = createColumnValidationTooltip(currentErrorCell.errors);
-      ui.tooltip.show(tooltipContent, e.clientX, e.clientY);
-    } else {
-      // Mouse moved outside icon area, hide tooltip
-      ui.tooltip.hide();
-    }
-  });
+  grid.overlay.addEventListener('mousemove', handleMouseMoveOverErrorCell);
 
   // Clear state when mouse leaves a cell
-  grid.onCellMouseLeave.subscribe(() => {
+  const onCellMouseLeave = grid.onCellMouseLeave.subscribe(() => {
     currentErrorCell = null;
     ui.tooltip.hide();
   });
+
+  return [onCellRenderedSub, onCellMouseEnterSub, onCellMouseLeave];
+}
+
+export function handleMouseMoveOverErrorCell(e: MouseEvent) {
+  // Check if we're in a cell with errors
+  if (!currentErrorCell) {
+    ui.tooltip.hide();
+    return;
+  }
+
+  // Check if mouse is within icon area (with tolerance)
+  const tolerance = 3;
+  if (e.offsetX >= currentErrorCell.iconX - tolerance && e.offsetX <= currentErrorCell.iconRight + tolerance &&
+        e.offsetY >= currentErrorCell.iconY - tolerance && e.offsetY <= currentErrorCell.iconBottom + tolerance) {
+    // Show tooltip
+    const tooltipContent = createColumnValidationTooltip(currentErrorCell.errors);
+    ui.tooltip.show(tooltipContent, e.clientX, e.clientY);
+  } else {
+    // Mouse moved outside icon area, hide tooltip
+    ui.tooltip.hide();
+  }
 }
 
 export function createColumnValidationTooltip(

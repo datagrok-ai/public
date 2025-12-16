@@ -12,9 +12,10 @@ import $ from 'cash-dom';
 import {checkDateFormat} from '../data-preparation/utils';
 import {removeExtension, studyConfigToMap, updateDivInnerHTML} from '../utils/utils';
 import {TRT_ARM_FIELD} from '../views-config';
-import {checkColumnsAndCreateViewer, setupValidationErrorIndicators} from '../utils/views-validation-utils';
+import {checkColumnsAndCreateViewer, handleMouseMoveOverErrorCell, setupValidationErrorColumns, setupValidationErrorIndicators} from '../utils/views-validation-utils';
 import {CDISC_STANDARD} from '../utils/types';
 import {studies} from '../utils/app-utils';
+import { Subscription } from 'rxjs';
 
 
 export class StudySummaryView extends ClinicalCaseViewBase {
@@ -86,7 +87,22 @@ export class StudySummaryView extends ClinicalCaseViewBase {
           const df = domain.clone();
           df.name = `${this.studyId}_${domainName}`;
           const tableView = grok.shell.addTableView(df);
-          setupValidationErrorIndicators(tableView, df);
+          setupValidationErrorColumns(tableView, df);
+          let errorSubs: Subscription[] = [];
+          const ribbons = tableView.getRibbonPanels();
+          const showErrors = ui.input.bool('Show validation errors', {
+            value: false,
+            onValueChanged: () => {
+              if (!showErrors.value) {
+                errorSubs.forEach((sub) => sub.unsubscribe());
+                tableView.grid.overlay.removeEventListener('mousemove', handleMouseMoveOverErrorCell);
+              } else
+                errorSubs = setupValidationErrorIndicators(tableView, df);
+              tableView.grid.invalidate();
+            },
+          });
+          ribbons.push([showErrors.root]);
+          tableView.setRibbonPanels(ribbons);
         });
       }
       menu.show();
