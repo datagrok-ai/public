@@ -3,7 +3,6 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import OpenAI from 'openai';
-import {LLMCredsManager} from './creds';
 import {getAIAbortSubscription} from '../utils';
 import * as _rxjs from 'rxjs';
 import {getTopKSimilarQueries, getVectorEmbedding} from './embeddings';
@@ -11,6 +10,7 @@ import {SemValueObjectHandler} from '@datagrok-libraries/db-explorer/src/object-
 import {ChatModel} from 'openai/resources/index';
 import {UIMessageOptions} from './panel';
 import {BuiltinDBInfoMeta, getDBColumnMetaData, getDBTableMetaData} from './query-meta-utils';
+import {OpenAIClient} from './openAI-client';
 
 type AIPanelFuncs = {
   addUserMessage: (aiMsg: OpenAI.Chat.ChatCompletionMessageParam, msg: string) => void,
@@ -69,11 +69,7 @@ export async function generateAISqlQueryWithTools(
   });
   try {
   // Initialize OpenAI client
-    const openai = new OpenAI({
-      apiKey: LLMCredsManager.getApiKey(),
-      dangerouslyAllowBrowser: true,
-    });
-
+    const openai = OpenAIClient.getInstance().openai;
 
     // Initial system message
     const systemMessage = `You are an expert SQL query generator. You have access to tools to explore a database schema and generate SQL queries.

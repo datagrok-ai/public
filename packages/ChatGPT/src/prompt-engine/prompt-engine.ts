@@ -1,4 +1,4 @@
-import {OpenAIHelpClient} from '../llm-utils/openAI-client';
+import {OpenAIClient} from '../llm-utils/openAI-client';
 import {JsonSchema} from './interfaces';
 export interface PromptEngine {
   generate(prompt: string, system: string, schema?: JsonSchema): Promise<string>;
@@ -18,7 +18,7 @@ export class ChatGPTPromptEngine implements PromptEngine {
   }
 
   async generate(prompt: string, system: string, schema?: JsonSchema): Promise<string> {
-    const res = OpenAIHelpClient.getInstance();
+    const res = OpenAIClient.getInstance();
     return await res.generalPromptCached(this.model, system, prompt, schema);
   }
 }

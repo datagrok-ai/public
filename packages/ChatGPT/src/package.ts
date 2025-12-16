@@ -9,7 +9,7 @@ import {getAiPanelVisibility, initAiPanel, setAiPanelVisibility} from './ai-pane
 import {findBestFunction, tableQueriesFunctionsSearchLlm} from './prompts/find-best-function';
 import {askWiki, setupAIQueryEditorUI, setupSearchUI, smartExecution} from './llm-utils/ui';
 import {Plan} from './prompt-engine/interfaces';
-import {OpenAIHelpClient} from './llm-utils/openAI-client';
+import {OpenAIClient} from './llm-utils/openAI-client';
 import {LLMCredsManager} from './llm-utils/creds';
 import {CombinedAISearchAssistant} from './llm-utils/combined-search';
 import {JsonSchema} from './prompt-engine/interfaces';
@@ -118,7 +118,7 @@ export class PackageFunctions {
     prompt: string,
     schema?: JsonSchema
   ): Promise<string> {
-    const client = OpenAIHelpClient.getInstance();
+    const client = OpenAIClient.getInstance();
     // this is used only here to provide caching
     return await client.generalPrompt(model, systemPrompt, prompt, schema);
   }
@@ -132,7 +132,7 @@ export class PackageFunctions {
   static async ask(
     question: string,
   ): Promise<string> {
-    const client = OpenAIHelpClient.getInstance();
+    const client = OpenAIClient.getInstance();
     // this is used only here to provide caching
     return await client.generalPrompt(modelName, 'You are a helpful assistant.', question);
   }
@@ -169,7 +169,7 @@ export class PackageFunctions {
     }
   })
   static async askDocumentationCached(prompt: string): Promise<string> {
-    const client = OpenAIHelpClient.getInstance();
+    const client = OpenAIClient.getInstance();
     return await client.getHelpAnswer(prompt);
   }
 
