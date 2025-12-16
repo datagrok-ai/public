@@ -1712,6 +1712,17 @@ export interface IDartApi {
   grok_DbSchemaInfo_Get_Connection(info: any): any;
   grok_DbSchemaInfo_AnnotateTable(info: any, tableName: String, props: any): Promise<any>;
   grok_DbSchemaInfo_AnnotateColumn(info: any, tableName: String, colName: String, props: any): Promise<any>;
+  grok_ConnectionDataSource_ByType(type: String): any;
+  grok_ConnectionDataSource_Type(ds: any): any;
+  grok_ConnectionDataSource_Category(ds: any): any;
+  grok_ConnectionDataSource_RequiresServer(ds: any): any;
+  grok_ConnectionDataSource_Description(ds: any): any;
+  grok_ConnectionDataSource_CommentStart(ds: any): any;
+  grok_ConnectionDataSource_NameBrackets(ds: any): any;
+  grok_ConnectionDataSource_CanBrowseSchema(ds: any): any;
+  grok_ConnectionDataSource_QueryLanguage(ds: any): any;
+  grok_ConnectionDataSource_ConnectionTemplate(ds: any): any;
+  grok_ConnectionDataSource_CredentialsTemplate(ds: any): any;
 
   // Generated from ../grok_shared/lib/grok_shared.api.g.dart
   grok_DataSourceType_Create(): any;
