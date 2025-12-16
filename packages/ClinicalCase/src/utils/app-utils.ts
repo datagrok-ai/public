@@ -40,31 +40,29 @@ export async function cdiscAppTB(treeNode: DG.TreeViewGroup, standard: string,
 
 export function createImportStudyView(standard: string) {
   const view = DG.View.create();
+  view.root.classList.add('clinical-case-study-import-view');
   view.name = `Import Study - ${standard === CDISC_STANDARD.SDTM ? 'Clinical Case' : 'Preclinical Case'}`;
 
-  const fileNamesDiv = ui.div('', {style: {marginTop: '10px'}});
-  const errorDiv = ui.div('', {style: {marginTop: '10px', color: 'red'}});
+  let studyConfig: ClinStudyConfig | null = null;
+  // Get the tree node for creating study config
+  const clinicalCaseNode = grok.shell.browsePanel.mainTree.getOrCreateGroup('Apps').
+    getOrCreateGroup(standard === CDISC_STANDARD.SDTM ? 'Clinical Case' : 'Preclinical Case');
+
+  const fileNamesDiv = ui.div();
+  const errorDiv = ui.div();
   const filesSection = ui.divV([
     fileNamesDiv,
     errorDiv,
   ], {style: {marginTop: '10px'}});
+  const statisticsDiv = ui.div('', {style: {marginLeft: '10px', marginTop: '10px', position: 'relative'}});
+  const importStudyStatusDiv = ui.div('', {style: {position: 'relative', height: '30px'}});
 
-  // Create Study Summary accordion upfront
-  const acc = ui.accordion();
-  const statisticsPaneContent = ui.div();
-  const validationPaneContent = ui.div();
-  statisticsPaneContent.append(ui.divText('No study selected'));
-  acc.addPane('Study Summary', () => statisticsPaneContent, false);
-  acc.addPane('Validation', () => validationPaneContent, false);
-  const statisticsDiv = ui.div('', {style: {marginTop: '10px'}});
-  statisticsDiv.append(acc.root);
-
-  const filesInput = ui.input.files('Import study files', {
+  const filesInput = ui.input.files('', {
     onValueChanged: async () => {
       // Clear previous content
       ui.empty(fileNamesDiv);
       ui.empty(errorDiv);
-      ui.empty(statisticsPaneContent);
+      ui.empty(statisticsDiv);
 
       // Show list of loaded file names as tags in horizontal flex container
       if (filesInput.value && filesInput.value.length > 0) {
@@ -89,45 +87,66 @@ export function createImportStudyView(standard: string) {
         fileNamesDiv.append(fileTagsContainer);
 
         try {
-          ui.setUpdateIndicator(statisticsPaneContent, true, 'Collecting study summary...');
-
-          // Get the tree node for creating study config
-          const clinicalCaseNode = grok.shell.browsePanel.mainTree.getOrCreateGroup('Apps').
-            getOrCreateGroup(standard === CDISC_STANDARD.SDTM ? 'Clinical Case' : 'Preclinical Case');
+          ui.setUpdateIndicator(statisticsDiv, true, 'Collecting study summary...');
+          importStudyButton.disabled = true;
 
           // Create study config from files
-          const studyConfig = await createStudyWithConfig(filesInput.value, clinicalCaseNode, true);
+          studyConfig = await createStudyWithConfig(filesInput.value, clinicalCaseNode, true);
 
           // Show basic study statistics from configuration
           if (studyConfig) {
             const configMap = studyConfigToMap(studyConfig);
             const statsTable = ui.tableFromMap(configMap);
-            statisticsPaneContent.append(statsTable);
-            ui.setUpdateIndicator(statisticsPaneContent, false);
+            statisticsDiv.append(ui.divText('Summary', {style: {marginLeft: '10px'}}));
+            statisticsDiv.append(statsTable);
+            ui.setUpdateIndicator(statisticsDiv, false);
+            importStudyButton.disabled = false;
           }
         } catch (e: any) {
           const errorMessage = e?.message ?? String(e);
-          errorDiv.append(ui.divText(`Error: ${errorMessage}`, {style: {color: 'red', marginLeft: '20px'}}));
-          ui.empty(statisticsPaneContent);
-          statisticsPaneContent.append(ui.divText(`Error: ${errorMessage}`, {style: {color: 'red'}}));
+          errorDiv.append(ui.divText(`Error: ${errorMessage}`,
+            {style: {color: 'red', marginLeft: '20px', marginTop: '10px'}}));
+          ui.empty(statisticsDiv);
+          importStudyButton.disabled = true;
           grok.shell.error(e);
         }
-      } else {
-        // No files selected
-        statisticsPaneContent.append(ui.divText('No study selected'));
       }
     },
   });
+  filesInput.root.style.paddingTop = '6px';
 
-  const importStudyButton = ui.button('Import', () => {});
-  importStudyButton.style.justifyContent = 'flex-start';
-  importStudyButton.style.marginLeft = '8px';
+  const importStudyButton = ui.button('Import', async () => {
+    ui.setUpdateIndicator(importStudyStatusDiv, true, `Loading data for study ${studyConfig.name}`);
+    const sub = studyLoadedSubject.subscribe((data) => {
+      if (data.name === studyConfig.name) {
+        sub.unsubscribe();
+        if (data.loaded) {
+          //show info that study has been imported
+        }
+        ui.setUpdateIndicator(importStudyStatusDiv, false);
+      }
+    });
+    //save all selected files into study directory since all .xpt files are needed to perform validation
+    for (const file of filesInput.value) {
+      await grok.dapi.files.write(
+        `System:AppData/ClinicalCase/${studyConfig.standard}/${studyConfig.name}/${file.name}`,
+        Array.from(file.data));
+    }
+    // eslint-disable-next-line max-len
+    grok.dapi.files.writeAsText(`System:AppData/ClinicalCase/${studyConfig.standard}/${studyConfig.name}/${studyConfigJsonFileName}`,
+      JSON.stringify(studyConfig));
+    addStudyToBrowseTree(studies[studyConfig.name], clinicalCaseNode, filesInput.value);
+    openStudy(clinicalCaseNode, studyConfig.standard, studyConfig.name, SUMMARY_VIEW_NAME);
+  });
+
+  importStudyButton.disabled = true;
 
   view.root.append(ui.divV([
-    ui.div(filesInput.root, {style: {marginLeft: '20px'}}),
+    ui.divH([ui.h3('Import study files'),
+      filesInput.root, importStudyButton], {style: {gap: '10px', marginLeft: '20px'}}),
     filesSection,
     statisticsDiv,
-    importStudyButton,
+    importStudyStatusDiv,
   ]));
 
   grok.shell.addView(view);
