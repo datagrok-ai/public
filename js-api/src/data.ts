@@ -715,7 +715,7 @@ export class DbInfo {
 /**
  * Represents data source, such as PostgreSQL, Oracle, S3, etc.
  */
-class ConnectionDataSource {
+export class ConnectionDataSource {
   public dart: any;
 
   constructor(dart: any) {
