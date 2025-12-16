@@ -20,7 +20,7 @@ export const validationNodes: {[key: string]: DG.TreeViewNode} = {};
 export let currentOpenedView: DG.ViewBase | null = null;
 export const CLINICAL_CASE_APP_PATH: string = '/apps/ClinicalCase';
 export const PRECLINICAL_CASE_APP_PATH: string = '/apps/PreclinicalCase';
-export const studyLoadedSubject = new Subject<{name: string, loaded: boolean}>();
+export const studyLoadedSubject = new Subject<{name: string, loaded: boolean, errorDomains?: string[]}>();
 export const studies: {[key: string]: ClinicalStudy} = {};
 
 export async function cdiscAppTB(treeNode: DG.TreeViewGroup, standard: string,
@@ -55,7 +55,7 @@ export function createImportStudyView(standard: string) {
     errorDiv,
   ], {style: {marginTop: '10px'}});
   const statisticsDiv = ui.div('', {style: {marginLeft: '10px', marginTop: '10px', position: 'relative'}});
-  const importStudyStatusDiv = ui.div('', {style: {position: 'relative', height: '30px'}});
+  const importStudyStatusDiv = ui.div('', {style: {position: 'relative', marginLeft: '20px'}});
 
   const filesInput = ui.input.files('', {
     onValueChanged: async () => {
@@ -63,6 +63,7 @@ export function createImportStudyView(standard: string) {
       ui.empty(fileNamesDiv);
       ui.empty(errorDiv);
       ui.empty(statisticsDiv);
+      ui.empty(importStudyStatusDiv);
 
       // Show list of loaded file names as tags in horizontal flex container
       if (filesInput.value && filesInput.value.length > 0) {
@@ -80,6 +81,7 @@ export function createImportStudyView(standard: string) {
                 fontSize: '12px',
               },
             });
+            tag.classList.add('clinical-case-import-study-file-tag');
             return tag;
           }),
           {style: {display: 'flex', flexWrap: 'wrap', marginTop: '10px', marginLeft: '20px'}},
@@ -116,13 +118,28 @@ export function createImportStudyView(standard: string) {
   filesInput.root.style.paddingTop = '6px';
 
   const importStudyButton = ui.button('Import', async () => {
+    importStudyStatusDiv.classList.add('clinical-case-study-import-in-progress-div');
     ui.setUpdateIndicator(importStudyStatusDiv, true, `Loading data for study ${studyConfig.name}`);
     const sub = studyLoadedSubject.subscribe((data) => {
       if (data.name === studyConfig.name) {
         sub.unsubscribe();
         if (data.loaded) {
-          //show info that study has been imported
+          importStudyButton.disabled = true;
+          importStudyStatusDiv.append(ui.divText(`Study ${studyConfig.name} loaded successfully`,
+            {style: {color: 'green'}}));
+          const tags = Array.from(fileNamesDiv.querySelectorAll('.clinical-case-import-study-file-tag'));
+          if (data.errorDomains) {
+            for (const errorDomain of data.errorDomains) {
+              const tag = tags.filter((it) => it.textContent.toLocaleLowerCase() === errorDomain.toLowerCase());
+              if (tag.length)
+                (tag[0] as HTMLElement).style.color = 'red';
+            }
+          }
+        } else {
+          importStudyStatusDiv.append(ui.divText(`Error loading study ${studyConfig.name}`,
+            {style: {color: 'red'}}));
         }
+        importStudyStatusDiv.classList.remove('clinical-case-study-import-in-progress-div');
         ui.setUpdateIndicator(importStudyStatusDiv, false);
       }
     });
@@ -144,9 +161,9 @@ export function createImportStudyView(standard: string) {
   view.root.append(ui.divV([
     ui.divH([ui.h3('Import study files'),
       filesInput.root, importStudyButton], {style: {gap: '10px', marginLeft: '20px'}}),
+    importStudyStatusDiv,
     filesSection,
     statisticsDiv,
-    importStudyStatusDiv,
   ]));
 
   grok.shell.addView(view);
@@ -174,54 +191,6 @@ export async function openApp(standard: CDISC_STANDARD): Promise<DG.ViewBase | v
   studiesDiv.append(createInitialSatistics(clinicalCaseNode,
     Object.values(studies).filter((it) => it.config.standard === standard).map((it) => it.config)));
 
-  const importStudyDiv = ui.div('', {style: {position: 'relative'}});
-  const importStudyButton = ui.button('Import study...', () => {
-    const dialog = ui.dialog('Import study');
-    let studyConfig: ClinStudyConfig | null = null;
-    const filesInput = ui.input.files('Files', {
-      onValueChanged: async () => {
-        //check if configuration file is present in the folder
-        try {
-          dialog.getButton('OK').disabled = true;
-          studyConfig = await createStudyWithConfig(filesInput.value, clinicalCaseNode, true);
-          dialog.getButton('OK').disabled = false;
-        } catch (e) {
-          grok.shell.error(e);
-        }
-        dialog.getButton('OK').disabled = !filesInput.validate();
-      },
-    });
-    dialog.add(filesInput.root).show({resizable: true})
-      .onOK(() => {
-        setTimeout(async () => {
-          ui.setUpdateIndicator(importStudyDiv, true, `Loading data for study ${studyConfig.name}`);
-          const sub = studyLoadedSubject.subscribe((data) => {
-            if (data.name === studyConfig.name) {
-              sub.unsubscribe();
-              if (data.loaded) {
-                ui.empty(studiesDiv);
-                studiesDiv.append(createInitialSatistics(clinicalCaseNode,
-                  Object.values(studies).map((it) => it.config)));
-              }
-              ui.setUpdateIndicator(importStudyDiv, false);
-            }
-          });
-          //save all selected files into study directory since all .xpt files are needed to perform validation
-          for (const file of filesInput.value) {
-            await grok.dapi.files.write(
-              `System:AppData/ClinicalCase/${studyConfig.standard}/${studyConfig.name}/${file.name}`,
-              Array.from(file.data));
-          }
-          // eslint-disable-next-line max-len
-          grok.dapi.files.writeAsText(`System:AppData/ClinicalCase/${studyConfig.standard}/${studyConfig.name}/${studyConfigJsonFileName}`,
-            JSON.stringify(studyConfig));
-          addStudyToBrowseTree(studies[studyConfig.name], clinicalCaseNode, filesInput.value);
-          openStudy(clinicalCaseNode, studyConfig.standard, studyConfig.name, SUMMARY_VIEW_NAME);
-        }, 100);
-      });
-  });
-  importStudyButton.classList.add('clinical-case-import-study-button');
-  importStudyDiv.append(importStudyButton);
   const view = DG.View.create();
   view.name = standard === CDISC_STANDARD.SDTM ? 'Clinical Case' : 'Preclinical Case';
   view.path = CDISC_STANDARD.SDTM ? CLINICAL_CASE_APP_PATH : PRECLINICAL_CASE_APP_PATH;
@@ -229,7 +198,6 @@ export async function openApp(standard: CDISC_STANDARD): Promise<DG.ViewBase | v
     appHeader,
     studiesHeader,
     studiesDiv,
-    importStudyDiv,
   ]));
   return view;
 }
@@ -458,7 +426,7 @@ export async function initClinicalStudyData(study: ClinicalStudy, studyFiles?: D
       studies[study.studyId].loadingStudyData = true;
       const progressBar = DG.TaskBarProgressIndicator.create(`Reading data for study ${study.studyId}`);
       const dataLoaded = await readClinicalData(study, studyFiles);
-      if (!dataLoaded) {
+      if (!dataLoaded.loaded) {
         studies[study.studyId].loadingStudyData = false;
         studyLoadedSubject.next({name: study.studyId, loaded: false});
       }
@@ -466,7 +434,7 @@ export async function initClinicalStudyData(study: ClinicalStudy, studyFiles?: D
       progressBar.close();
       grok.shell.info(`Data for study ${study.studyId} is ready`);
       studies[study.studyId].loadingStudyData = false;
-      studyLoadedSubject.next({name: study.studyId, loaded: true});
+      studyLoadedSubject.next({name: study.studyId, loaded: true, errorDomains: dataLoaded.errorDomains});
     } catch (e: any) {
       studies[study.studyId].loadingStudyData = false;
       studyLoadedSubject.next({name: study.studyId, loaded: false});
@@ -476,7 +444,9 @@ export async function initClinicalStudyData(study: ClinicalStudy, studyFiles?: D
 }
 
 
-export async function readClinicalData(study: ClinicalStudy, importedFiles?: DG.FileInfo[]): Promise<boolean> {
+export async function readClinicalData(study: ClinicalStudy, importedFiles?: DG.FileInfo[]):
+  Promise<{loaded: boolean, errorDomains: string[]}> {
+  const notLoadedDomains: string[] = [];
   const pb = DG.TaskBarProgressIndicator
     .create(`Reading data for ${study.config.name}...`);
   try {
@@ -507,7 +477,8 @@ export async function readClinicalData(study: ClinicalStudy, importedFiles?: DG.
               studies[study.studyId].domains.supp.push(df);
             else if (!studies[study.studyId].domains[domainNameWithoutExt])
               studies[study.studyId].domains[domainNameWithoutExt] = df;
-          }
+          } else
+            notLoadedDomains.push(domainNameWithExt);
         }
       }
 
@@ -539,7 +510,7 @@ export async function readClinicalData(study: ClinicalStudy, importedFiles?: DG.
     // If validation is not completed yet, subscribes to add columns when validation completes
     study.ensureValidationColumnsAdded();
 
-    return true;
+    return {loaded: true, errorDomains: notLoadedDomains};
   } finally {
     pb.close();
   }
