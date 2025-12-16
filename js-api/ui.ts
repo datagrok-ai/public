@@ -760,7 +760,7 @@ export namespace input {
 
   const optionsMap: {[key: string]: (input: InputBase, option: any) => void} = {
     value: (input, x) => input.value = input.inputType === d4.InputType.File ? toDart(x) :
-      input.inputType === d4.InputType.Files ? x.map((elem: FileInfo) => toDart(elem)) : x,
+      [d4.InputType.Files, d4.InputType.Columns].includes(input.inputType) ? x.map((elem) => toDart(elem)) : x,
     nullable: (input, x) => input.nullable = x, // finish it?
     property: (input, x) => input.property = x,
     tooltipText: (input, x) => input.setTooltip(x),
@@ -776,6 +776,8 @@ export namespace input {
     icon: (input, x) => api.grok_StringInput_AddIcon(input.dart, x),
     available: (input, x) => api.grok_ColumnsInput_ChangeAvailableColumns(input.dart, x),
     checked: (input, x) => api.grok_ColumnsInput_ChangeCheckedColumns(input.dart, x),
+    additionalColumns: (input, x) => setInputAdditionalColumns(input, x),
+    onAdditionalColumnsChanged: (input, x) => setInputAdditionalColumnsOnChanged(input, x),
     showSelectedColsOnTop: (input, x) => api.grok_ColumnsInput_SetShowSelectedColsOnTop(input.dart, x),
     showOnlyColorBox: (input, x) => api.grok_ColorInput_SetShowOnlyColorBox(input.dart, x),
   };
@@ -798,24 +800,12 @@ export namespace input {
       }
       if (key !== 'nullable' && optionsMap[key] !== undefined)
         optionsMap[key](input, (specificOptions as IIndexable)[key]);
-
-      if (inputType === d4.InputType.Columns) {
-        if (key === 'additionalColumns') {
-          const additionalCols = options.additionalColumns as { [key: string]: Column[] } | undefined;
-          if (additionalCols)
-            setInputAdditionalColumns(input, additionalCols);
-        }
-        if (key === 'onAdditionalColumnsChanged') {
-          const onAdditionalColsChanged = options.onAdditionalColumnsChanged as((additionalColumns: { [key: string]: Column[] }) => void) | undefined;
-          if (onAdditionalColsChanged)
-            setInputAdditionalColumnsOnChanged(input, onAdditionalColsChanged);
-        }
-      }
     }
     const baseOptions = (({value, nullable, property, onCreated, onValueChanged}) => ({value, nullable, property, onCreated, onValueChanged}))(options);
     for (let key of Object.keys(baseOptions)) {
       if (key === 'value' && baseOptions[key] !== undefined)
-        options.property ? options.property.defaultValue = toDart(baseOptions[key]) : optionsMap[key](input, (baseOptions as IIndexable)[key]);
+        options.property ? options.property.defaultValue = Array.isArray(baseOptions[key]) ? (baseOptions[key] as unknown[]).map((elem) => toDart(elem)) :
+          toDart(baseOptions[key]) : optionsMap[key](input, (baseOptions as IIndexable)[key]);
       if (key === 'nullable' && baseOptions[key] !== undefined)
         options.property ? options.property.nullable = baseOptions[key]! : optionsMap[key](input, (baseOptions as IIndexable)[key]);
       if ((baseOptions as IIndexable)[key] !== undefined && optionsMap[key] !== undefined)
@@ -831,8 +821,6 @@ export namespace input {
     tooltipText?: string;
     onCreated?: (input: InputBase<T>) => void;
     onValueChanged?: (value: T, input: InputBase<T>) => void;
-    additionalColumns?: { [key: string]: Column[] };
-    onAdditionalColumnsChanged?: (additionalColumns: { [key: string]: Column[] }) => void;
   }
 
   export interface INumberInputInitOptions<T> extends IInputInitOptions<T> {
@@ -894,20 +882,22 @@ export namespace input {
 
   /** Sets additional columns for the columns input */
   export function setInputAdditionalColumns(input: InputBase, additionalColumns: { [key: string]: Column[] }): void {
+    if (!additionalColumns)
+      return;
     const mapToSet: { [key: string]: any } = {};
     for (const [key, columns] of Object.entries(additionalColumns))
       mapToSet[key] = columns.map(c => c.dart);
-
     api.grok_ColumnsInput_SetAdditionalColumns(input.dart, toDart(mapToSet));
   }
 
-  /** Sets additional columns on change event */
+  /** Sets additional columns on change event for the columns input */
   export function setInputAdditionalColumnsOnChanged(input: InputBase, onChange: (values: { [key: string]: Column[] }) => void): void {
+    if (!onChange)
+      return;
     api.grok_ColumnsInput_SetOnAdditionalColumnsChanged(input.dart, !onChange ? null : toDart((values: any) => {
       values = toJs(values);
       for (const key of Object.keys(values))
         values[key] = values[key].map(toJs);
-
       onChange(values);
     }));
   }
