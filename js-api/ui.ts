@@ -776,6 +776,7 @@ export namespace input {
     icon: (input, x) => api.grok_StringInput_AddIcon(input.dart, x),
     available: (input, x) => api.grok_ColumnsInput_ChangeAvailableColumns(input.dart, x),
     checked: (input, x) => api.grok_ColumnsInput_ChangeCheckedColumns(input.dart, x),
+    showSelectedColsOnTop: (input, x) => api.grok_ColumnsInput_SetShowSelectedColsOnTop(input.dart, x),
     showOnlyColorBox: (input, x) => api.grok_ColorInput_SetShowOnlyColorBox(input.dart, x),
   };
 
@@ -872,6 +873,7 @@ export namespace input {
     checked?: string[];
     additionalColumns?: { [key: string]: Column[] };
     onAdditionalColumnsChanged?: (additionalColumns: { [key: string]: Column[] }) => void;
+    showSelectedColsOnTop?: boolean;
   }
 
   export interface IColorInputInitOptions<T> extends IInputInitOptions<T> {
