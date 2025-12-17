@@ -259,7 +259,7 @@ export function checkFuncSignatures(packagePath: string, files: string[]): [stri
     for (const f of functions.meta) {
       const allRoles = [
         ...(f.tags || []),
-        ...(f.meta?.roles || []),
+        ...(f.meta?.role?.split(',').map((r) => r.trim()) ?? []),
       ];
 
       const roles = Array.from(roleMap.keys()).filter((role) => allRoles.includes(role));
@@ -559,9 +559,9 @@ function getFuncMetadata(script: string, fileExtention: string): { meta: FuncMet
       else if (param === 'tags') 
         data.tags = match.input && match[3] ? match.input.split(':')[1].split(',').map((t) => t.trim()) : [match[2]];
 
-      else if (param === 'meta.roles') {
+      else if (param === 'meta.role') {
         data.meta = data.meta || {};
-        data.meta.roles = match[2].split(',').map((role) => role.trim());
+        data.meta.role = match[2];
       } else if (param === 'meta.cache') 
         data.cache = line.split(':').pop()?.trim();
       
