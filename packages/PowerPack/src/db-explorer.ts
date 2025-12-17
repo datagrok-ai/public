@@ -7,6 +7,8 @@ import {DBExplorerConfig} from '@datagrok-libraries/db-explorer/src/types';
 import {DBExplorer} from '@datagrok-libraries/db-explorer/src/db-explorer';
 import {DBExplorerEditor} from '@datagrok-libraries/db-explorer/src/editor';
 import {DB_EXPLORER_OBJ_HANDLER_TYPE, DBExplorerObjectHandler} from '@datagrok-libraries/db-explorer/src/object-handlers';
+import {TableInfo, VisualDbQueryEditor} from "datagrok-api/dg";
+import {tooltip} from "datagrok-api/ui";
 
 
 /** Sets up editing of the db explorers config(s) */
@@ -331,4 +333,122 @@ export async function setupDBQueryCellHandler() {
       return;
     processCell(cell);
   });
+}
+
+export function setupEnrichHandler() {
+  grok.events.onAccordionConstructed.subscribe((acc) => {
+    if (!(acc.context instanceof DG.Column))
+      return;
+    const col = acc.context as DG.Column;
+    const df = col.dart ? col.dataFrame : null;
+    if (!df || df.rowCount === 0)
+      return;
+
+    const schemaName = df.tags.get(DG.Tags.DbSchema);
+    const connId = df.tags.get(DG.Tags.DataConnectionId);
+    const dbColName = col.tags.get(DG.Tags.DbColumn);
+    const tableName = col.tags.get(DG.Tags.DbTable);
+
+    if (!connId || !dbColName || !tableName)
+      return;
+
+    grok.dapi.connections.find(connId).then((conn: DG.DataConnection) => {
+      if (!conn)
+        return;
+      acc.addPane(conn.friendlyName, () => {
+        return ui.wait(async () => {
+          const tables: TableInfo[] = await grok.dapi.connections.getSchema(conn, schemaName, tableName);
+          if (tables.length === 0)
+            return ui.info('Could not find a main table used for SQL query. Please, try to specify full "<schema>.<table>" name in SQL query.');
+          if (tables.length > 1)
+            return ui.info('Ambiguous table name — specify full "<schema>.<table>" name in SQL query.');
+
+          return ui.div([ui.actionLink('Enrich...', () => showEnrichDialog(tables[0], df, dbColName))]);
+        });
+      });
+    });
+  });
+}
+
+function showEnrichDialog(mainTable: DG.TableInfo, df: DG.DataFrame, dbColName: string) {
+  let pivotView: DG.VisualDbQueryEditor;
+  const root = ui.wait(async () => {
+    const tq = DG.TableQuery.fromTable(mainTable).build();
+    tq.fields = [dbColName];
+    pivotView = DG.VisualDbQueryEditor.fromQuery(tq);
+    pivotView.showAddToWorkspaceBtn = false;
+    await pivotView.isInit();
+    ui.setDisplay(pivotView.groupByTag.root.parentElement!, false);
+    ui.setDisplay(pivotView.orderTag.root.parentElement!, false);
+    ui.setDisplay(pivotView.whereTag.root.parentElement!, false);
+    ui.setDisplay(pivotView.aggregateTag.root.parentElement!, false);
+    ui.setDisplay(pivotView.pivotTag.root.parentElement!, false);
+    ui.setDisplay(pivotView.havingTag.root.parentElement!, false);
+    ui.setDisplay(pivotView.root.querySelector('.grok-pivot-grid')!, false);
+
+    pivotView.root.style.flexGrow = 'initial';
+    pivotView.root.style.minHeight = '50px';
+    pivotView.mainTag.root.children[pivotView.mainTag.root.children.length - 1].classList.add('d4-tag-disabled');
+    tooltip.bind(pivotView.mainTag.root, `Enrich supports joining using only a single column. Selected column: “${dbColName}”.`);
+    pivotView.grid.root.style.width = '100%';
+    return ui.divV([
+      pivotView.root,
+      pivotView.grid.root
+    ]);
+  });
+
+  const dialog = ui.dialog({title: `Enrich ${dbColName}`})
+      .add(root)
+      .onOK(async () => {
+        const progress = DG.TaskBarProgressIndicator.create('Enriching...');
+        try {
+          pivotView.refreshQuery();
+          await executeEnrichQuery(pivotView.query, df, dbColName);
+        } catch (e: any) {
+          grok.shell.error(`Failed to enrich:\n ${e}`);
+        } finally {
+          progress.close();
+        }
+      });
+
+  dialog.root.style.height = '600px';
+  dialog.root.style.width = '800px';
+  const button = dialog.getButton('OK');
+  button.querySelector('span')!.textContent = 'ENRICH';
+  dialog.show();
+}
+
+async function executeEnrichQuery(query: DG.TableQuery, df: DG.DataFrame, keyCol: string): Promise<void> {
+  query.limit = undefined;
+  const keyColValues = df.getCol(keyCol).toList();
+  let res: DG.DataFrame | undefined;
+  for (let i = 0; i < keyColValues.length; i += 200) {
+    const inValues = keyColValues.slice(i, i + 200);
+    query.where = [{field: keyCol, pattern: `in (${inValues.join(',')})`, dataType: df.getCol(keyCol).type}];
+    const queryCall = query.prepare();
+    const run = await queryCall.call(false, undefined,
+        {processed: true, report: false});
+    const queryResult = run.getOutputParamValue();
+    if (!res)
+      res = queryResult;
+    else
+      res.append(queryResult, true);
+  }
+  if (!res)
+    throw new Error('Something went wrong and query result returned null.')
+
+  await grok.data.detectSemanticTypes(res);
+  const joinTable = DG.Func.byName('JoinTables');
+  const previousName = df.name;
+  joinTable.applySync({
+    'table1': df,
+    'table2': res,
+    'keys1': [keyCol],
+    'keys2': [keyCol],
+    'values1': df.columns.names(),
+    'values2': res.columns.names().filter((n) => n !== keyCol),
+    'joinType': 'left',
+    'inPlace': true
+  });
+  df.name = previousName;
 }

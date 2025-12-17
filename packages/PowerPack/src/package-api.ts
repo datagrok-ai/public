@@ -26,10 +26,6 @@ export namespace funcs {
     return await grok.functions.call('PowerPack:WelcomeView', {});
   }
 
-  export async function getDBExplorerEditor(): Promise<void> {
-    return await grok.functions.call('PowerPack:GetDBExplorerEditor', {});
-  }
-
   export async function activityDashboardWidget(): Promise<any> {
     return await grok.functions.call('PowerPack:ActivityDashboardWidget', {});
   }
