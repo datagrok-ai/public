@@ -257,18 +257,18 @@ export function checkFuncSignatures(packagePath: string, files: string[]): [stri
     const functions = getFuncMetadata(content, file.split('.').pop() ?? 'ts');
 
     for (const f of functions.meta) {
-      const allRoles = [
-        ...(f.tags || []),
+      const allRoles = new Set<string>([
+        ...(f.tags ?? []),
         ...(f.meta?.role?.split(',').map((r) => r.trim()) ?? []),
-      ];
+      ]);
 
-      const roles = Array.from(roleMap.keys()).filter((role) => allRoles.includes(role));
+      const roles = [...allRoles].filter((r) => roleMap.has(r));
 
-      if (roles.length > 1) warnings.push(`File ${file}, function ${f.name}: several function roles are used (${roles.join(', ')})`);
-      else if (roles.length === 1) {
-        const roleDesc = roleMap.get(roles[0])!;
+      for (const role of roles) {
+        const roleDesc = roleMap.get(role)!;
         const vr = validateFunctionSignature(f, roleDesc);
-        if (!vr.value) warnings.push(`File ${file}, function ${f.name}:\n${vr.message}`);
+        if (!vr.value)
+          warnings.push(`File ${file}, function ${f.name}:\n${vr.message}`);
       }
 
       const invalidNames = f.inputs.filter((e) => forbiddenNames.includes(e?.name ?? ''));
