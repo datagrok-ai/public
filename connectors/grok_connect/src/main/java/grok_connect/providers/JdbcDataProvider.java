@@ -534,6 +534,7 @@ public abstract class JdbcDataProvider extends DataProvider {
         }
         return result;
     }
+
     protected String getInQuery(PatternMatcher matcher, String names) {
         return String.format("(%s %s (%s))", matcher.colName, matcher.op, names);
     }
