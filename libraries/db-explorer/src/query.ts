@@ -33,6 +33,7 @@ export async function queryDB(
   const applicableJoins = joinOptions.filter((opt) => opt.fromTable === tableName);
 
   const tableAliases = applicableJoins.map((_, i) => String.fromCharCode(startCharCode + i));
+  const colNamesToTablesMap: {[colName: string]: string} = {};
   const otherCols =
     applicableJoins
       .map((opt, i) => {
@@ -41,9 +42,11 @@ export async function queryDB(
           // if the col is confugured with alias, make sure it has quotes
           // split cace insensitive way
           const parts = col.split(/ as /i);
-          if (parts.length > 1)
+          if (parts.length > 1) {
+            colNamesToTablesMap[parts[1].trim()] = opt.tableName;
             return `${alias}.${nbs}${parts[0].trim()}${nbe} as ${nbs}${parts[1].trim()}${nbe}`;
-
+          }
+          colNamesToTablesMap[col] = opt.tableName;
           return `${alias}.${nbs}${col}${nbe}`;
         }).join(', ');
       })
@@ -75,7 +78,37 @@ export async function queryDB(
         ${max1 || isExampleQuery ? 'limit 1' : ''}
     `
   );
-  return (await q.apply({})) ?? DG.DataFrame.create(0);
+
+  const res: DG.DataFrame = await q.apply({});
+  if (!res || !res.rowCount)
+    return DG.DataFrame.create(0);
+  // add correct tags for dbschema and dbTables.
+  for (const col of res.columns) {
+    const colName = col.name?.trim();
+    if (!colName)
+      continue; // should not happen
+    col.setTag(DG.Tags.DbSchema, schemaName);
+    const existingTableTag = col.getTag(DG.Tags.DbTable);
+    if (!!existingTableTag && existingTableTag !== 'null') {
+      // do nothing, the table is already set
+      continue;
+    }
+    const tableForCol = colNamesToTablesMap[colName];
+    if (tableForCol) {
+      col.setTag(DG.Tags.DbTable, tableForCol);
+    } else if (applicableJoins
+      .some(
+        (tn) => /\(\d\)$/.test(colName) ||
+          (colName.startsWith(tn.tableName) && colName.length > tn.tableName.length + 1 && tn.select.includes(colName.substring(tn.tableName.length + 1)))
+      )
+    ) {
+      // not sure in this case, but try to avoid setting wrong table
+      continue;
+    } else {
+      col.setTag(DG.Tags.DbTable, tableName); // main table, everything else should be there
+    }
+  }
+  return res ?? DG.DataFrame.create(0);
 }
 
 export function getConnectionNameBrackets(connection: DG.DataConnection): [string, string] {
