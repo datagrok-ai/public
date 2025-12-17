@@ -20,10 +20,9 @@ const ERROR_ICON_SIZE = 9;
 const ERROR_ICON_MARGIN = 2;
 const COLUMNS_WITH_VALIDATION_ERRORS_TAG = 'columnsWithErrors';
 
-export function setupValidationErrorColumns(tableView: DG.TableView, df: DG.DataFrame) {
-  const grid = tableView.grid;
-  if (!grid)
-    df.setTag(COLUMNS_WITH_VALIDATION_ERRORS_TAG, '');
+export function setupValidationErrorColumns(df: DG.DataFrame) {
+  if (df.getTag(COLUMNS_WITH_VALIDATION_ERRORS_TAG))
+    return;
 
   // Find all columns that have corresponding _hasErrors columns
   const columnsWithErrors: {[colName: string]: {hasErrorsCol: string, errorsCol: string}} = {};
@@ -63,14 +62,13 @@ let currentErrorCell: {
     iconBottom: number
   } | null = null;
 
-export function setupValidationErrorIndicators(tableView: DG.TableView, df: DG.DataFrame): Subscription[] {
+export function setupValidationErrorIndicators(grid: DG.Grid, df: DG.DataFrame, ruleId?: string): Subscription[] {
   const columnsWithErrorsString = df.getTag(COLUMNS_WITH_VALIDATION_ERRORS_TAG);
   if (!columnsWithErrorsString)
     return [];
 
   const columnsWithErrors = JSON.parse(columnsWithErrorsString);
 
-  const grid = tableView.grid;
 
   const onCellRenderedSub = grid.onCellRendered.subscribe((args: DG.GridCellRenderArgs) => {
     const cell = args.cell;
@@ -83,8 +81,8 @@ export function setupValidationErrorIndicators(tableView: DG.TableView, df: DG.D
     const errorColsNames: {hasErrorsCol: string, errorsCol: string} = columnsWithErrors[tableColName];
     if (!errorColsNames)
       return;
-    const hasErrorsCol = tableView.dataFrame.col(errorColsNames.hasErrorsCol);
-    const errorsCol = tableView.dataFrame.col(errorColsNames.errorsCol);
+    const hasErrorsCol = df.col(errorColsNames.hasErrorsCol);
+    const errorsCol = df.col(errorColsNames.errorsCol);
     if (!hasErrorsCol || !errorsCol)
       return;
 
@@ -104,6 +102,13 @@ export function setupValidationErrorIndicators(tableView: DG.TableView, df: DG.D
         } catch (e) {
           console.error('Failed to parse column errors:', e);
         }
+      }
+
+      if (ruleId) {
+        const filteredRule = errors.filter((it) => it.ruleID === ruleId);
+        if (!filteredRule.length)
+          return;
+        errors = filteredRule;
       }
 
       // Get bounds and canvas context
@@ -156,8 +161,8 @@ export function setupValidationErrorIndicators(tableView: DG.TableView, df: DG.D
     const errorColsNames: {hasErrorsCol: string, errorsCol: string} = columnsWithErrors[cell.tableColumn.name];
     if (!errorColsNames)
       return;
-    const hasErrorsCol = tableView.dataFrame.col(errorColsNames.hasErrorsCol);
-    const errorsCol = tableView.dataFrame.col(errorColsNames.errorsCol);
+    const hasErrorsCol = df.col(errorColsNames.hasErrorsCol);
+    const errorsCol = df.col(errorColsNames.errorsCol);
     if (!hasErrorsCol || !errorsCol) {
       currentErrorCell = null;
       return;
@@ -174,6 +179,13 @@ export function setupValidationErrorIndicators(tableView: DG.TableView, df: DG.D
         currentErrorCell = null;
         return;
       }
+    }
+
+    if (ruleId) {
+      const filteredRule = errors.filter((it) => it.ruleID === ruleId);
+      if (!filteredRule.length)
+        return;
+      errors = filteredRule;
     }
 
     // Get cell bounds and calculate icon position (same as in rendering code)

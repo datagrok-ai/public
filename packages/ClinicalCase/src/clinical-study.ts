@@ -66,6 +66,7 @@ export class ClinicalDomains {
   oe: DG.DataFrame = null; // Objective Evidence (SDTM-IG v3.4, Clinical)
   om: DG.DataFrame = null; // Organ Measurements (SEND-IG v3.2, SEND)
   pc: DG.DataFrame = null; // Pharmacogenetics/Genomics (SDTM-IG v3.4, Clinical)
+  pm: DG.DataFrame = null; // Pharmacometrics
   pe: DG.DataFrame = null; // Physical Examination (SDTM-IG v3.4, Clinical)
   po: DG.DataFrame = null; // Physical Observations (SEND-IG v3.2, SEND)
   pp: DG.DataFrame = null; // Pharmacokinetic Parameters (SDTM-IG v3.4, Clinical)
