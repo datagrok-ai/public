@@ -1,3 +1,4 @@
+import { migrate } from "./migrate";
 import { testAll } from "./test-all";
 
 const HELP = `
@@ -16,6 +17,7 @@ Commands:
     publish   Upload a package
     test      Run package tests
     testall      Run packages tests
+    migrate   Migrate legacy tags to meta.role
 
 To get help on a particular command, use:
     grok <command> --help
@@ -193,7 +195,6 @@ Options:
 --tags              Filter tests by tag name for run
 --testRepeat        Set amount of tests repeats
 --browsers-count    Set amount of browsers for tests run
---migrate           Migrates tags to roles in meta
 
 Run tests of all or specified packages 
 
@@ -217,6 +218,17 @@ Options:
 --all               Links all available packages(run in packages directory)
 `;
 
+const HELP_MIGRATE = `
+Usage: grok migrate
+
+Migrates legacy function tags into the meta.role field.
+
+Example:
+  tags: ['viewer', 'ml']
+  ⟶
+  meta: { role: 'viewer,ml' }
+`;
+
 // const HELP_MIGRATE = `
 // Usage: grok migrate
 
@@ -235,6 +247,6 @@ export const help = {
   publish: HELP_PUBLISH,
   test: HELP_TEST,
   testall: HELP_TESTALL,
+  migrate: HELP_MIGRATE,
   help: HELP,
-  migrate: '',
 };
