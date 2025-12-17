@@ -137,7 +137,6 @@ export namespace decorators {
     fileViewer?: string;
     keywords?: string;
     role?: string;
-    roles?: string[];
     mlname?: string;
     mlrole?: string;
     inputRegex?: string;
