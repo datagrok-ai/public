@@ -972,6 +972,8 @@ The Pareto front represents a set of non-dominated solutions in multi-objective 
 
 ![Pareto front](mpo-pareto-front.png)
 
+Launch an interactive Pareto Front [application](../../../../visualize/viewers/pareto-front-viewer.md#application) that enables real-time exploration of optimization results.
+
 </details>
 
 ## Generative chemistry
