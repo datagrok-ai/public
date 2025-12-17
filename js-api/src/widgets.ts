@@ -2,7 +2,7 @@ import {toDart, toJs} from "./wrappers";
 import {__obs, _sub, EventData, InputArgs, observeStream, StreamSubscription} from "./events";
 import * as rxjs from "rxjs";
 import {fromEvent, Observable, Subject, Subscription} from "rxjs";
-import {Func, Property, IProperty, Entity, Group, ProgressIndicator} from "./entities";
+import {Func, Property, IProperty, Entity, Group, ProgressIndicator, TableInfo, TableQuery} from "./entities";
 import {Cell, Column, DataFrame} from "./dataframe";
 import {LegendPosition, Type} from "./const";
 import {filter, map} from 'rxjs/operators';
@@ -22,7 +22,7 @@ import '../css/tags-input.css';
 import {FuncCall} from "./functions";
 import {IDartApi} from "./api/grok_api.g";
 import {HttpDataSource} from "./dapi";
-import {ColumnGrid} from "./grid";
+import {ColumnGrid, Grid} from "./grid";
 
 declare let grok: any;
 declare let DG: any;
@@ -2390,5 +2390,79 @@ export class Favorites extends DartWidget {
 
   static async remove(entity: Entity, group?: Group): Promise<void> {
     await api.grok_Favorites_Remove(entity.dart, group?.dart);
+  }
+}
+
+export class VisualDbQueryEditor extends DartWidget {
+  constructor(dart: any) {
+    super(dart);
+  }
+
+  static fromDbTable(table: TableInfo): VisualDbQueryEditor {
+    return api.grok_VisualDbQueryEditor_FromDbTable(toDart(table));
+  }
+
+  static fromQuery(query: TableQuery): VisualDbQueryEditor {
+    return api.grok_VisualDbQueryEditor_FromQuery(toDart(query));
+  }
+
+  get grid(): Grid {
+    return api.grok_VisualDbQueryEditor_Get_Grid(this.dart);
+  }
+
+  get query(): TableQuery {
+    return api.grok_VisualDbQueryEditor_Get_Query(this.dart);
+  }
+
+  get inputSchemas(): {[key: string]: TableInfo[]} {
+    return api.grok_VisualDbQueryEditor_Get_InputSchemas(this.dart);
+  }
+
+  get pivotTag(): TagEditor {
+    return api.grok_VisualDbQueryEditor_Get_PivotTag(this.dart);
+  }
+
+  get havingTag(): TagEditor {
+    return api.grok_VisualDbQueryEditor_Get_HavingTag(this.dart);
+  }
+
+  get orderTag(): TagEditor {
+    return api.grok_VisualDbQueryEditor_Get_OrderTag(this.dart);
+  }
+
+  get whereTag(): TagEditor {
+    return api.grok_VisualDbQueryEditor_Get_WhereTag(this.dart);
+  }
+
+  get groupByTag(): TagEditor {
+    return api.grok_VisualDbQueryEditor_Get_GroupByTag(this.dart);
+  }
+
+  get aggregateTag(): TagEditor {
+    return api.grok_VisualDbQueryEditor_Get_AggrTag(this.dart);
+  }
+
+  get mainTag(): TagEditor {
+    return api.grok_VisualDbQueryEditor_Get_MainTag(this.dart);
+  }
+
+  getTableInfoName(table: TableInfo): string {
+    return api.grok_VisualDbQueryEditor_Get_TableInfoName(this.dart, toDart(table));
+  }
+
+  getTableInfoByName(name: string): TableInfo {
+    return api.grok_VisualDbQueryEditor_Get_TableInfoByName(this.dart, name);
+  }
+
+  refreshQuery(): void {
+    api.grok_VisualDbQueryEditor_RefreshQuery(this.dart);
+  }
+
+  isInit(): Promise<void> {
+    return api.grok_VisualDbQueryEditor_IsInit(this.dart);
+  }
+
+  set showAddToWorkspaceBtn(show: boolean) {
+    api.grok_VisualDbQueryEditor_Set_ShowAddToWorkspaceBtn(this.dart, show);
   }
 }

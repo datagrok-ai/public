@@ -70,7 +70,7 @@ export interface DataConnectionProperties extends DatabaseConnectionProperties, 
   [x: string]: any;
 }
 
-type FieldPredicate = {field: string, pattern: string};
+type FieldPredicate = {field: string, pattern: string, dataType: string};
 type FieldOrder = {field: string, asc?: boolean};
 type GroupAggregation = {aggType: string, colName: string, resultColName?: string, function?: string};
 type DockerContainerStatus = 'stopped' | 'started' | 'pending change' | 'changing' | 'error' | 'checking';
@@ -507,6 +507,9 @@ export class TableQuery extends DataQuery {
   /** Order By clauses */
   get orderBy(): FieldOrder[] { return toJs(api.grok_TableQuery_GetOrderByDB(this.dart)); }
   set orderBy(wl: FieldOrder[]) { api.grok_TableQuery_SetOrderByDB(this.dart, wl.map(param => toDart(param))); }
+
+  set limit(rows: number | undefined) { api.grok_TableQuery_SetLimit(this.dart, rows); }
+  get limit(): number | undefined { return api.grok_TableQuery_GetLimit(this.dart); }
 
   /** Creates {@link TableQueryBuilder} from table name
    * @param {string} table - Table name

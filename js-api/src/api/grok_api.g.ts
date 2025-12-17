@@ -907,6 +907,23 @@ export interface IDartApi {
   grok_Sticky_SetAllValues(schema: any, col: any, values: any): Promise<any>;
   grok_Favorites_Add(x: any, group: any): Promise<any>;
   grok_Favorites_Remove(x: any, group: any): Promise<any>;
+  grok_VisualDbQueryEditor_FromDbTable(t: any): any;
+  grok_VisualDbQueryEditor_FromQuery(t: any): any;
+  grok_VisualDbQueryEditor_Get_Grid(t: any): any;
+  grok_VisualDbQueryEditor_Get_Query(t: any): any;
+  grok_VisualDbQueryEditor_Get_InputSchemas(t: any): any;
+  grok_VisualDbQueryEditor_Get_PivotTag(t: any): any;
+  grok_VisualDbQueryEditor_Get_HavingTag(t: any): any;
+  grok_VisualDbQueryEditor_Get_OrderTag(t: any): any;
+  grok_VisualDbQueryEditor_Get_WhereTag(t: any): any;
+  grok_VisualDbQueryEditor_Get_GroupByTag(t: any): any;
+  grok_VisualDbQueryEditor_Get_AggrTag(t: any): any;
+  grok_VisualDbQueryEditor_Get_MainTag(t: any): any;
+  grok_VisualDbQueryEditor_Get_TableInfoName(t: any, table: any): any;
+  grok_VisualDbQueryEditor_Get_TableInfoByName(t: any, name: String): any;
+  grok_VisualDbQueryEditor_RefreshQuery(t: any): any;
+  grok_VisualDbQueryEditor_IsInit(t: any): Promise<any>;
+  grok_VisualDbQueryEditor_Set_ShowAddToWorkspaceBtn(t: any, show: Bool): any;
 
   // Generated from ../grok_shared/lib/src/interop/grok_api.dart
   grok_Test_Error(s: any): any;
@@ -974,7 +991,7 @@ export interface IDartApi {
   grok_DataConnectionsDataSource_Save(s: any, c: any, saveCredentials: Bool): Promise<any>;
   grok_DataConnectionsDataSource_SubDir(s: any, c: any, dir: String): Promise<any>;
   grok_DataConnectionsDataSource_Get_Schemas(s: any, c: any): Promise<any>;
-  grok_DataConnectionsDataSource_Get_Schema(s: any, c: any, schema: String): Promise<any>;
+  grok_DataConnectionsDataSource_Get_Schema(s: any, c: any, schema: String, table: String): Promise<any>;
   grok_DataConnectionsDataSource_Get_Unique_Columns(s: any, c: any, schema: String, table: String): Promise<any>;
   grok_DataConnectionsDataSource_Get_Db_Info(s: any, c: any): Promise<any>;
   grok_GroupsDataSource_Save(s: any, e: any): Promise<any>;
@@ -1463,6 +1480,8 @@ export interface IDartApi {
   grok_TableQuery_SetHavingDB(tc: any, wl: any): any;
   grok_TableQuery_GetOrderByDB(tc: any): any;
   grok_TableQuery_SetOrderByDB(tc: any, wl: any): any;
+  grok_TableQuery_GetLimit(tc: any): any;
+  grok_TableQuery_SetLimit(tc: any, limit: Num): any;
   grok_TableQuery_From(table: String): any;
   grok_TableQuery_FromTable(table: any): any;
   grok_DbTableQueryBuilder_From(table: String, connection: any): any;
