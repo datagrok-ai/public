@@ -1,3 +1,4 @@
+/* eslint-disable max-len */
 /* Do not change these import lines. Datagrok will import API library in exactly the same manner */
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
@@ -10,7 +11,8 @@ import {AppName, CampaignsType} from './app';
 import {PeptiHitApp} from './app/pepti-hit-app';
 import {CampaignJsonName, PeptiHitHelmColName} from './app/consts';
 import {htPackageSettingsEditorWidget} from './packageSettingsEditor';
-
+import {deobfuscateSmiles, registerAllCampaignMols} from './app/utils/molreg';
+import * as api from './package-api';
 export * from './package.g';
 
 export class HTPackage extends DG.Package {
@@ -226,6 +228,45 @@ export class PackageFunctions {
     grok.shell.info(molecules);
   }
 
+  @grok.decorators.func({})
+  static async registerMoleculesToViD() {
+    registerAllCampaignMols();
+  }
+
+  @grok.decorators.panel({name: 'Hit Design V-iD'})
+  static hitDesignVidPanel(@grok.decorators.param({type: 'semantic_value', options: {semType: 'HIT_DESIGN_VID'}}) vid: DG.SemanticValue): DG.Widget {
+    return DG.Widget.fromRoot(ui.card(ui.wait(async () => {
+      if (!vid?.value)
+        return ui.divText('No V-iD provided');
+      const res = await api.queries.getCampaignsByVid(vid.value, null);
+      if (!res || res.rowCount === 0)
+        return ui.divText(`No campaigns found for V-iD: ${vid.value}`);
+      const moleculeSmiles = await api.queries.getMoleculeByVid(vid.value);
+      if (!moleculeSmiles || moleculeSmiles.rowCount === 0)
+        return ui.divText(`No molecule found for V-iD: ${vid.value}`);
+      const smiles = deobfuscateSmiles(moleculeSmiles.col('mh_string')!.get(0));
+      const smilesDiv = grok.chem.drawMolecule(smiles, 300, 300);
+      const appCampaignMap = new Map<string, {campaignId: string, createdBy: string}[]>();
+      for (let i = 0; i < res.rowCount; i++) {
+        const appName = res.col('app_name')!.get(i);
+        const campaignId = res.col('campaign_id')!.get(i);
+        const createdBy = res.col('created_by')!.get(i);
+        if (!appCampaignMap.has(appName))
+          appCampaignMap.set(appName, []);
+        appCampaignMap.get(appName)!.push({campaignId, createdBy});
+      }
+      const outDiv = ui.divV([smilesDiv], {style: {gap: '10px', justifyContent: 'center'}});
+      for (const [appName, campaigns] of appCampaignMap.entries()) {
+        const table = ui.table(campaigns.map((c) => [c.campaignId, c.createdBy]), (r) => [r[0], r[1]], ['Campaigns', 'Created By']);
+        const appDiv = ui.divV([
+          ui.h3(`${appName} Campaigns`),
+          table,
+        ], {style: {gap: '4px'}});
+        outDiv.appendChild(appDiv);
+      }
+      return outDiv;
+    })));
+  }
 
   @grok.decorators.func({
     meta: {
@@ -234,7 +275,7 @@ export class PackageFunctions {
     },
     tags: ['cellRenderer'],
     name: 'gasteigerRenderer',
-    outputs: [{type: 'grid_cell_renderer', name: 'result'}]
+    outputs: [{type: 'grid_cell_renderer', name: 'result'}],
   })
   static gasteigerCellRenderer(): GasteigerPngRenderer {
     return new GasteigerPngRenderer();

@@ -72,6 +72,19 @@ export async function demoFileSubmit(df: DG.DataFrame, molecules: string) : Prom
   await PackageFunctions.demoFileSubmit(df, molecules);
 }
 
+//name: registerMoleculesToViD
+export async function registerMoleculesToViD() : Promise<void> {
+  await PackageFunctions.registerMoleculesToViD();
+}
+
+//name: Hit Design V-iD
+//tags: panel
+//input: semantic_value vid  { semType: HIT_DESIGN_VID }
+//output: widget result
+export function hitDesignVidPanel(vid: DG.SemanticValue) : any {
+  return PackageFunctions.hitDesignVidPanel(vid);
+}
+
 //name: gasteigerRenderer
 //tags: cellRenderer
 //output: grid_cell_renderer result

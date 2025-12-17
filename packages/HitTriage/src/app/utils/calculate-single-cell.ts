@@ -3,7 +3,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {HitTriageTemplateFunction, HitTriageTemplateScript, IComputeDialogResult} from '../types';
-import {funcTypeNames, HitDesignMolColName, ViDColFormat} from '../consts';
+import {funcTypeNames, HitDesignMolColName} from '../consts';
 import {joinQueryResults} from '../utils';
 import {_package} from '../../package';
 
@@ -90,30 +90,6 @@ export async function calculateCellValues(
   }
   return table;
 };
-
-export function getNewVid(vidCol: DG.Column<any>) {
-  return getNewVidFromArray(vidCol.categories ?? []);
-}
-
-export function getNewVidFromArray(vidArray: string[]) {
-  let maxId = 0;
-  if (vidArray.length > 1) {
-    for (const vid of vidArray) {
-      if (!vid || !vid.startsWith(ViDColFormat[0]) || vid.length !== ViDColFormat.length)
-        continue;
-      const num = parseInt(vid.substring(1));
-      if (isNaN(num))
-        continue;
-      maxId = Math.max(num, maxId);
-    };
-  }
-
-  return `V${''.concat(...new Array(ViDColFormat.length - 1 - (maxId +1).toString().length).fill('0'))}${maxId + 1}`;
-}
-
-export function getNextVid(maxVid: number) {
-  return `V${''.concat(...new Array(ViDColFormat.length - 1 - (maxVid +1).toString().length).fill('0'))}${maxVid + 1}`;
-}
 
 export async function calculateColumns(resultMap: IComputeDialogResult, dataFrame: DG.DataFrame, molColName: string) {
   const pg = DG.TaskBarProgressIndicator.create('Calculating ...');
