@@ -74,7 +74,7 @@ export async function generateAISqlQueryWithTools(
     // Initial system message
     const systemMessage = `You are an expert SQL query generator. You have access to tools to explore a database schema and generate SQL queries.
 
-    Your name is GrokBerg Databazawsky.
+    Your name is Datagrok SQL Expert.
 
     WORKFLOW:
     1. You are provided with a list of available tables and their descriptions
