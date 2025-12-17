@@ -760,7 +760,7 @@ export namespace input {
 
   const optionsMap: {[key: string]: (input: InputBase, option: any) => void} = {
     value: (input, x) => input.value = input.inputType === d4.InputType.File ? toDart(x) :
-      [d4.InputType.Files, d4.InputType.Columns].includes(input.inputType) ? x.map((elem) => toDart(elem)) : x,
+      [d4.InputType.Files, d4.InputType.Columns].includes(input.inputType) ? x.map((elem: FileInfo | Column) => toDart(elem)) : x,
     nullable: (input, x) => input.nullable = x, // finish it?
     property: (input, x) => input.property = x,
     tooltipText: (input, x) => input.setTooltip(x),
