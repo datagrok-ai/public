@@ -1,3 +1,3 @@
-//meta.roles: init
+//meta.role: init
 export async function #{NAME}() {
 }

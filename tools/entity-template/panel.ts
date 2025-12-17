@@ -1,7 +1,7 @@
 
 //name: #{NAME}
 //description: Creates an info panel
-//meta.roles: panel
+//meta.role: panel
 //input: string smiles {semType: Molecule}
 //output: widget result
 //condition: true

@@ -102,8 +102,8 @@ export function add(args: { _: string[] }) {
     if (tag) {
       const isJs = ['javascript', 'nodejs'].includes(lang);
       const comment = isJs ?
-        '//meta.roles: panel' :
-        '#meta.roles: panel';
+        '//meta.role: panel' :
+        '#meta.role: panel';
 
       const nameLineRe = /^(#|\/\/)\s*name:.*$/m;
 

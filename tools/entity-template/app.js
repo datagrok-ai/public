@@ -1,6 +1,6 @@
 
 //name: #{NAME}
-//meta.roles: app
+//meta.role: app
 export function #{NAME}() {
   grok.shell.info('Hello!');
 }
