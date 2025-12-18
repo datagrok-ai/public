@@ -272,7 +272,8 @@ export function checkFuncSignatures(packagePath: string, files: string[]): [stri
   const roleMap = new Map(functionRoles.map((r) => [r.role, r]));
 
   for (const file of files) {
-    if (file.includes('.min.')) continue;
+    if (file.includes('.min.'))
+      continue;
 
     const content = fs.readFileSync(path.join(packagePath, file), 'utf-8');
     const functions = getFuncMetadata(content, file.split('.').pop() ?? 'ts');
@@ -297,7 +298,8 @@ export function checkFuncSignatures(packagePath: string, files: string[]): [stri
         errors.push(`File ${file}, function ${f.name}: Wrong input names: (${invalidNames.map((e) => e.name).join(', ')})`);
 
       if (f.name && f.name !== 'postprocess') {
-        if (!namesInFiles.has(f.name)) namesInFiles.set(f.name, []);
+        if (!namesInFiles.has(f.name))
+          namesInFiles.set(f.name, []);
         namesInFiles.get(f.name)!.push(file);
       }
 
