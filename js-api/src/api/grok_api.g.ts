@@ -924,6 +924,8 @@ export interface IDartApi {
   grok_VisualDbQueryEditor_RefreshQuery(t: any): any;
   grok_VisualDbQueryEditor_IsInit(t: any): Promise<any>;
   grok_VisualDbQueryEditor_Set_ShowAddToWorkspaceBtn(t: any, show: Bool): any;
+  grok_VisualDbQueryEditor_OnChanged(t: any): any;
+  grok_VisualDbQueryEditor_Set_SingleColumnMode(t: any, colName: String): Promise<any>;
   grok_AI_OpenAiConfigured(): any;
   grok_AI_EntityIndexingEnabled(): any;
 
@@ -1474,16 +1476,18 @@ export interface IDartApi {
   grok_TableQuery_SetFields(tc: any, fields: any): any;
   grok_TableQuery_GetFields(tc: any): any;
   grok_TableQuery_ExecuteTable(tc: any): Promise<any>;
-  grok_TableQuery_GetWhereClausesDB(tc: any): any;
-  grok_TableQuery_SetWhereClausesDB(tc: any, wl: any): any;
-  grok_TableQuery_GetAggregationsDB(tc: any): any;
-  grok_TableQuery_SetAggregationsDB(tc: any, wl: any): any;
-  grok_TableQuery_GetHavingDB(tc: any): any;
-  grok_TableQuery_SetHavingDB(tc: any, wl: any): any;
-  grok_TableQuery_GetOrderByDB(tc: any): any;
-  grok_TableQuery_SetOrderByDB(tc: any, wl: any): any;
-  grok_TableQuery_GetLimit(tc: any): any;
-  grok_TableQuery_SetLimit(tc: any, limit: Num): any;
+  grok_TableQuery_Get_WhereClausesDB(tc: any): any;
+  grok_TableQuery_Set_WhereClausesDB(tc: any, wl: any): any;
+  grok_TableQuery_Get_AggregationsDB(tc: any): any;
+  grok_TableQuery_Set_AggregationsDB(tc: any, wl: any): any;
+  grok_TableQuery_Get_HavingDB(tc: any): any;
+  grok_TableQuery_Set_HavingDB(tc: any, wl: any): any;
+  grok_TableQuery_Get_OrderByDB(tc: any): any;
+  grok_TableQuery_Set_OrderByDB(tc: any, wl: any): any;
+  grok_TableQuery_Get_Limit(tc: any): any;
+  grok_TableQuery_Set_Limit(tc: any, limit: Num): any;
+  grok_TableQuery_Get_Joins(tc: any): any;
+  grok_TableQuery_Set_Joins(tc: any, joins: any): any;
   grok_TableQuery_From(table: String): any;
   grok_TableQuery_FromTable(table: any): any;
   grok_DbTableQueryBuilder_From(table: String, connection: any): any;

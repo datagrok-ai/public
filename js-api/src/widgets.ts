@@ -2462,7 +2462,13 @@ export class VisualDbQueryEditor extends DartWidget {
     return api.grok_VisualDbQueryEditor_IsInit(this.dart);
   }
 
+  get onChanged(): Observable<any> { return api.grok_VisualDbQueryEditor_OnChanged(this.dart); }
+
   set showAddToWorkspaceBtn(show: boolean) {
     api.grok_VisualDbQueryEditor_Set_ShowAddToWorkspaceBtn(this.dart, show);
+  }
+
+  setSingleColumnMode(column: string): Promise<void> {
+    return api.grok_VisualDbQueryEditor_Set_SingleColumnMode(this.dart, column);
   }
 }
