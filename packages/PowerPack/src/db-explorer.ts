@@ -245,7 +245,7 @@ class DBExplorerConfigWrapper {
 export async function setupDBQueryCellHandler() {
   const explorePanelRoot = ui.div([], {style: {minHeight: '30px', width: '100%'}});
   let processTimer: any = null;
-  const conIdToNqName = new Map<string, {name?: string, nqName?: string} | null>();
+  const conIdToNqName = new Map<string, {name?: string, nqName?: string, friendlyName?: string} | null>();
 
   function processCell(cell: DG.Cell) {
     ui.empty(explorePanelRoot);
@@ -272,7 +272,7 @@ export async function setupDBQueryCellHandler() {
       if (!conIdToNqName.has(cId)) {
         const connection = await grok.dapi.connections.find(cId);
         const perm = connection ? await grok.dapi.permissions.check(connection, 'View') : false;
-        conIdToNqName.set(cId, connection && perm ? {name: connection.name, nqName: connection.nqName} : null);
+        conIdToNqName.set(cId, connection && perm ? {name: connection.name, nqName: connection.nqName, friendlyName: connection.friendlyName ?? connection.name} : null);
       }
       const nqNameInfo = conIdToNqName.get(cId);
       if (!nqNameInfo || !nqNameInfo?.nqName || !nqNameInfo?.name) {
@@ -317,7 +317,12 @@ export async function setupDBQueryCellHandler() {
       return;
     ui.empty(explorePanelRoot);
     explorePanelRoot.appendChild(ui.divText('Select a cell to explore its value...'));
-    acc.addPane(conIdToNqName.get(df.tags.get(DG.Tags.DataConnectionId))?.name ?? 'Explore', () => explorePanelRoot);
+    acc.addPane(conIdToNqName.get(df.tags.get(DG.Tags.DataConnectionId))?.friendlyName ?? 'Explore', () => {
+      return ui.divV([
+        getEnrichDiv(col),
+        explorePanelRoot
+      ], {style: {width: '100%'}});
+    });
     // if there is a current cell and its in the given column, process it
     if (col.dataFrame.currentCell && col.dataFrame.currentCell.column === col)
       processCell(col.dataFrame.currentCell!);
@@ -337,14 +342,12 @@ export async function setupDBQueryCellHandler() {
   });
 }
 
-export function setupEnrichHandler() {
-  grok.events.onAccordionConstructed.subscribe((acc) => {
-    if (!(acc.context instanceof DG.Column))
-      return;
-    const col = acc.context as DG.Column;
+function getEnrichDiv(col: DG.Column): HTMLElement {
+  const enrichAcc = ui.accordion('Enrich Column');
+  enrichAcc.addPane('Enrich', () => {
     const df = col.dart ? col.dataFrame : null;
     if (!df || df.rowCount === 0)
-      return;
+      return ui.info('Data frame is empty or not available.');
 
     const schemaName = df.tags.get(DG.Tags.DbSchema);
     const connId = df.tags.get(DG.Tags.DataConnectionId);
@@ -352,24 +355,22 @@ export function setupEnrichHandler() {
     const tableName = col.tags.get(DG.Tags.DbTable);
 
     if (!connId || !dbColName || !tableName)
-      return;
+      return ui.info('Column is not linked to database table.');
 
-    grok.dapi.connections.find(connId).then((conn: DG.DataConnection) => {
-      if (!conn)
-        return;
-      acc.addPane(conn.friendlyName, () => {
-        return ui.wait(async () => {
-          const tables: TableInfo[] = await grok.dapi.connections.getSchema(conn, schemaName, tableName);
-          if (tables.length === 0)
-            return ui.info('Could not find a main table used for SQL query. Please, try to specify full "<schema>.<table>" name in SQL query.');
-          if (tables.length > 1)
-            return ui.info('Ambiguous table name — specify full "<schema>.<table>" name in SQL query.');
+    return ui.wait(async () => {
+      const con = await grok.dapi.connections.find(connId);
+      if (!con)
+        return ui.info('Failed to find connection for this column.');
+      const tables: TableInfo[] = await grok.dapi.connections.getSchema(con, schemaName, tableName);
+      if (tables.length === 0)
+        return ui.info('Could not find a main table used for SQL query. Please, try to specify full "<schema>.<table>" name in SQL query.');
+      if (tables.length > 1)
+        return ui.info('Ambiguous table name — specify full "<schema>.<table>" name in SQL query.');
 
-          return ui.div([ui.actionLink('Enrich...', () => showEnrichDialog(tables[0], df, dbColName))]);
-        });
-      });
+      return ui.div([ui.actionLink('Enrich...', () => showEnrichDialog(tables[0], df, dbColName))], {style: {marginLeft: '12px'}});
     });
   });
+  return enrichAcc.root;
 }
 
 function showEnrichDialog(mainTable: DG.TableInfo, df: DG.DataFrame, dbColName: string) {

@@ -24,7 +24,7 @@ import {merge} from 'rxjs';
 import {HelpObjectHandler} from './search/help-entity';
 import {ActivityDashboardWidget} from './widgets/activity-dashboard-widget';
 import {DBExplorerEditor} from '@datagrok-libraries/db-explorer/src/editor';
-import {setupDBQueryCellHandler, setupGlobalDBExplorer, setupEnrichHandler} from './db-explorer';
+import {setupDBQueryCellHandler, setupGlobalDBExplorer} from './db-explorer';
 export * from './package.g';
 export const _package = new DG.Package();
 export let _properties: { [propertyName: string]: any };
@@ -295,7 +295,6 @@ export class PackageFunctions {
     DG.ObjectHandler.register(new HelpObjectHandler());
     setupGlobalDBExplorer(); // lazy without await
     setupDBQueryCellHandler(); // db-explorer for any query result - lazy without await
-    setupEnrichHandler();
     initSearch();
 
     _properties = await _package.getProperties();
