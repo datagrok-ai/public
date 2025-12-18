@@ -4,24 +4,24 @@ sidebar_position: 5
 ---
 
 A package can contain functions that get discovered and integrated with the platform at runtime.
-Typically, each function type has a special role denoting what the function does, for example:
+Typically, each function type has a special tag denoting what the function does, for example:
 
-* `app` for [applications](#applications)
-* `dashboard` for [dashboards](../datagrok/concepts/project/dashboard.md)
-* `panel` for [info panels](#info-panels)
-* `init` for [package initialization](#package-initialization)
-* `autostart` for [automatic execution at platform startup](#autostart)
-* `semTypeDetector` for [semantic types detectors](#semantic-type-detectors)
-* `cellRenderer` for custom [cell renderers](#cell-renderers)
-* `fileViewer` and `fileExporter` for [file viewers](#file-viewers)
+* `#app` for [applications](#applications)
+* `#dashboard` for [dashboards](../datagrok/concepts/project/dashboard.md)
+* `#panel` for [info panels](#info-panels)
+* `#init` for [package initialization](#package-initialization)
+* `#autostart` for [automatic execution at platform startup](#autostart)
+* `#semTypeDetector` for [semantic types detectors](#semantic-type-detectors)
+* `#cellRenderer` for custom [cell renderers](#cell-renderers)
+* `#fileViewer` and `#fileExporter` for [file viewers](#file-viewers)
   and [exporters](#file-exporters)
-* `packageSettingsEditor` for [settings editors](#settings-editors)
+* `#packageSettingsEditor` for [settings editors](#settings-editors)
 
-You can use these roles to search for certain functions either from the platform's interface
+You can use these tags to search for certain functions either from the platform's interface
 ([https://public.datagrok.ai/functions?q](https://public.datagrok.ai/functions?q)) or from within your code:
 
 ```js
-const applications = DG.Func.find({meta: {roles: [DG.FUNC_TYPES.APP]}});
+const applications = DG.Func.find({tags: [DG.FUNC_TYPES.APP]});
 ```
 
 **TIP** To disable all package functions (for debug purposes), use the
@@ -30,7 +30,7 @@ const applications = DG.Func.find({meta: {roles: [DG.FUNC_TYPES.APP]}});
 
 ## Applications
 
-Applications are [functions](../datagrok/concepts/functions/functions.md) with the `app` role. Use `datagrok-tools` to get
+Applications are [functions](../datagrok/concepts/functions/functions.md) tagged with the `#app` tag. Use `datagrok-tools` to get
 a template:
 
 ```shell
@@ -42,7 +42,7 @@ grok add app <name>
 
 ## Info panels
 
-Functions with the role `panel` extend the context panel with additional content for the current object.
+Functions tagged as `#panel` extend the context panel with additional content for the current object.
 Use `datagrok-tools` to get a template:
 
 ```shell
@@ -92,7 +92,7 @@ plugin that introduces a "Welcome" view at startup:
 
 ```js
 //name: welcomeView
-//meta.roles: autostart
+//tags: autostart
 //meta.autostartImmediate: true
 export function _welcomeView(): void {
   if (_properties['showWelcomeView'])
@@ -102,7 +102,7 @@ export function _welcomeView(): void {
 
 ## Semantic type detectors
 
-Functions that define semantic types have the `semTypeDetector` role. Use `datagrok-tools` to get a template:
+Functions that define semantic types have the `#semTypeDetector` tag. Use `datagrok-tools` to get a template:
 
 ```shell
 cd <package-name>
@@ -114,7 +114,7 @@ grok add detector <semantic-type-name>
 ## Cell renderers
 
 Cell renderers allow customizing the appearance of cells in the [grid](../visualize/viewers/grid.md). These functions
-are annotated with a special `cellRenderer` role.
+are annotated with two special tags: `cellRenderer` and `cellRenderer-<type>`.
 
 *Details:* [How to develop custom cell renderers](how-to/grid/custom-cell-renderers.md)
 
@@ -122,13 +122,13 @@ are annotated with a special `cellRenderer` role.
 
 File viewers are used in Datagrok's [file share browser](../access/files/files.md). The platform provides a way
 to define custom viewers (or editors) in addition to the native ones. These functions work on files with a specific
-extension.
+extension, which is derived from the `fileViewer-<extension>` tag.
 
 *Details:* [How to develop custom file viewers](how-to/files/create-custom-file-viewers.md)
 
 ## File exporters
 
-A file exporter is a function used for loading data from the platform. It has the `fileExporter` role.
+A file exporter is a function used for loading data from the platform. It is annotated with the `#fileExporter` tag.
 Exporters reside in the platform's top menu "export" section.
 
 *Details:* [How to create file exporters](how-to/files/file-exporters.md)
