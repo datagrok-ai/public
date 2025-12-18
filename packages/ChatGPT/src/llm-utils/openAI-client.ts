@@ -1,4 +1,5 @@
 /* eslint-disable max-len */
+import * as grok from 'datagrok-api/grok';
 import OpenAI from 'openai';
 import * as api from '../package-api';
 import {LLMCredsManager} from './creds';
@@ -6,19 +7,34 @@ import {ChatCompletionParseParams} from 'openai/resources/chat/completions';
 import {JsonSchema} from '../prompt-engine/interfaces';
 export class OpenAIClient {
   public openai: OpenAI;
-  private constructor(private apiKey: string, private vectorStoreId: string) {
-    this.openai = new OpenAI({
-      apiKey: this.apiKey, dangerouslyAllowBrowser: true
+  private constructor(private vectorStoreId: string) {
+    if (!grok.ai.openAiConfigured)
+      throw new Error('OpenAI is not configured. Please set the API key in the AI settings under Admin section.');
+
+    this.openai = new OpenAI({baseURL: grok.ai.openAiProxyUrl, dangerouslyAllowBrowser: true,
+      apiKey: 'unused',
+      fetch: async (input, init) => {
+        const url = typeof input === 'string' ? input : input.toString();
+        return fetch(url, {
+          ...init,
+          headers: {
+            ...init?.headers,
+            Authorization: grok.ai.openAiProxyToken,
+          },
+        });
+      },
     });
   }
 
   private static _instance: OpenAIClient | null = null;
   static getInstance(): OpenAIClient {
-    OpenAIClient._instance ??= new OpenAIClient(LLMCredsManager.getApiKey(), LLMCredsManager.getVectorStoreId());
+    OpenAIClient._instance ??= new OpenAIClient(LLMCredsManager.getVectorStoreId());
     return OpenAIClient._instance;
   }
 
   async getHelpAnswer(question: string): Promise<string> {
+    if (!this.vectorStoreId)
+      throw new Error('Vector Store ID is not set. Please set it in the package settings.');
     const storageIDs = [this.vectorStoreId];
     const response = await this.openai.responses.create({
       model: 'gpt-4o-mini',

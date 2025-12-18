@@ -151,7 +151,6 @@ export class AIPanel<T extends MessageType = OpenAI.Chat.ChatCompletionMessagePa
   private static _lastDockedPanel: DG.DockNode | null = null;
   show() {
     grok.shell.windows.showHelp = false;
-    grok.shell.windows.showContextPanel = false;
     // grok.shell.windows.context.root?.style
     // grok.shell.o = this.root;
     // grok.shell.setCurrentObject(this.root, true, true);
@@ -160,7 +159,9 @@ export class AIPanel<T extends MessageType = OpenAI.Chat.ChatCompletionMessagePa
         return;
       grok.shell.dockManager.close(AIPanel._lastDockedPanel);
     }
-    AIPanel._lastDockedPanel = grok.shell.dockManager.dock(this.root, 'right', null, undefined, 0.25);
+    const contextRoot = grok.shell.windows.context?.root;
+    const contextNode = contextRoot && document.contains(contextRoot) ? grok.shell.dockManager.findNode(contextRoot) : null;
+    AIPanel._lastDockedPanel = grok.shell.dockManager.dock(this.root, contextNode ? 'down' : 'right', contextNode, '', contextNode ? 0.5 : 0.25);
   }
 
   hide() {

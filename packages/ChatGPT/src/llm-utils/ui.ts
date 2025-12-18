@@ -12,7 +12,7 @@ import {ChatGptAssistant} from '../prompt-engine/chatgpt-assistant';
 import * as api from '../package-api';
 import {Plan} from '../prompt-engine/interfaces';
 import {AssistantRenderer} from '../prompt-engine/rendering-tools';
-import {dartLike, fireAIAbortEvent, getAIPanelToggleSubscription} from '../utils';
+import {fireAIAbortEvent, getAIPanelToggleSubscription} from '../utils';
 import {generateAISqlQueryWithTools} from './sql-tools';
 import {DBAIPanel, ModelType, UIMessageOptions} from './panel';
 
@@ -30,7 +30,7 @@ export async function askWiki(question: string, useOpenAI: boolean = true) {
 }
 
 export async function smartExecution(prompt: string, modelName: string) {
-  const gptEngine = ChatGPTPromptEngine.getInstance(LLMCredsManager.getApiKey(), modelName);
+  const gptEngine = ChatGPTPromptEngine.getInstance(modelName);
   const gptAssistant = new ChatGptAssistant(gptEngine);
 
   const mainWaitDiv = ui.wait(async () => {
@@ -50,7 +50,7 @@ export async function smartExecution(prompt: string, modelName: string) {
 
 // sets up the ui button for the input
 export function setupSearchUI() {
-  if (!LLMCredsManager.getApiKey()) {
+  if (!grok.ai.openAiConfigured) {
     console.warn('LLM API key is not set up. Search UI will not have AI assistance.');
     return;
   }
@@ -117,7 +117,7 @@ async function aiCombinedSearch(prompt: string) {
 }
 
 export async function setupAIQueryEditorUI(v: DG.ViewBase, connectionID: string, queryEditorRoot: HTMLElement, setAndRunFunc: (query: string) => void): Promise<boolean> {
-  if (!LLMCredsManager.getApiKey())
+  if (!grok.ai.openAiConfigured)
     return false;
   const connection = await grok.dapi.connections.find(connectionID);
   if (!connection) { // should not happen but just in case

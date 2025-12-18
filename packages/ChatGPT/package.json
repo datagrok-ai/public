@@ -1,7 +1,7 @@
 {
   "name": "@datagrok/chatgpt",
   "friendlyName": "ChatGPT",
-  "version": "0.0.31",
+  "version": "1.0.0",
   "description": "ChatGPT integration",
   "author": "oserhiienko@datagrok.ai",
   "dependencies": {
@@ -10,7 +10,7 @@
     "@types/dom-chromium-ai": "^0.0.10",
     "@datagrok-libraries/db-explorer": "^1.6.0",
     "cash-dom": "latest",
-    "datagrok-api": "../../js-api",
+    "datagrok-api": "^1.27.0",
     "dayjs": "latest",
     "openai": "^6.10.0"
   },
@@ -56,21 +56,11 @@
   ],
   "properties": [
     {
-      "name": "apiKey",
-      "propertyType": "string",
-      "defaultValue": "Enter ChatGPT API key",
-      "nullable": false
-    },
-    {
       "name": "vectorStoreId",
       "propertyType": "string",
-      "defaultValue": "Enter Vector Store ID",
+      "description": "Vector Store ID with Datagrok documentation",
+      "defaultValue": "",
       "nullable": false
-    },
-    {
-      "name": "claudeApiKey",
-      "propertyType": "string",
-      "nullable": true
     }
   ]
 }

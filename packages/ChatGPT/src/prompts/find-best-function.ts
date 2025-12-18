@@ -100,7 +100,7 @@ User request:
       engine = GeminiPromptEngine.getInstance(geminiDownloadMonitor);
     } else {
       _package.logger.info('Using GPT engine for fuzzy matching.');
-      engine = ChatGPTPromptEngine.getInstance(LLMCredsManager.getApiKey(), modelName);
+      engine = ChatGPTPromptEngine.getInstance(modelName);
     }
 
     const responseText = await engine.generate(userPrompt, systemPrompt, schema);

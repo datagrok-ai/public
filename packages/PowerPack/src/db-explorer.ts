@@ -151,6 +151,8 @@ export async function setupGlobalDBExplorer() {
   async function getSavedConfigs(): Promise<DBExplorerConfig[]> {
     let configs: DBExplorerConfig[] = [];
     try {
+      if (!await _package.files.exists('db-explorer/configs.json'))
+        return configs;
       const saved = await _package.files.readAsText('db-explorer/configs.json');
       if (saved)
         configs = JSON.parse(saved);

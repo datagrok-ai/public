@@ -61,6 +61,7 @@ export class PackageFunctions {
 
   @grok.decorators.func({tags: ['searchProvider']})
   static combinedLLMSearchProvider(): DG.SearchProvider {
+    const isAiConfigured = grok.ai.openAiConfigured;
     return {
       'home': {
         name: 'Ask AI Assistant',
@@ -69,10 +70,10 @@ export class PackageFunctions {
           return null;
         },
         getSuggestions: (_query: string) => [],
-        isApplicable: (query: string) => LLMCredsManager.getApiKey() ? query?.trim().length >= 2 : false,
+        isApplicable: (query: string) => isAiConfigured ? query?.trim().length >= 2 : false,
         description: 'Get answers form AI assistant',
         onValueEnter: async (query) => {
-          LLMCredsManager.getApiKey() && query?.trim().length >= 2 &&
+          isAiConfigured && query?.trim().length >= 2 &&
             await CombinedAISearchAssistant.instance.searchUI(query);
         }
       }
@@ -144,7 +145,7 @@ export class PackageFunctions {
     }
   })
   static async getExecutionPlan(userGoal: string): Promise<string> {
-    const gptEngine = ChatGPTPromptEngine.getInstance(LLMCredsManager.getApiKey(), modelName);
+    const gptEngine = ChatGPTPromptEngine.getInstance(modelName);
     const gptAssistant = new ChatGptAssistant(gptEngine);
     const plan: Plan = await gptAssistant.plan(userGoal);
     // Cache only works with scalar values, so we serialize the plan to a string
