@@ -7,8 +7,6 @@ import {DBExplorerConfig} from '@datagrok-libraries/db-explorer/src/types';
 import {DBExplorer} from '@datagrok-libraries/db-explorer/src/db-explorer';
 import {DBExplorerEditor} from '@datagrok-libraries/db-explorer/src/editor';
 import {DB_EXPLORER_OBJ_HANDLER_TYPE, DBExplorerObjectHandler} from '@datagrok-libraries/db-explorer/src/object-handlers';
-import {TableInfo, VisualDbQueryEditor} from 'datagrok-api/dg';
-import {tooltip} from 'datagrok-api/ui';
 
 
 /** Sets up editing of the db explorers config(s) */
@@ -225,7 +223,7 @@ export async function setupGlobalDBExplorer() {
       _package.logger.error('Failed to save db-explorer configs:' + e);
       grok.shell.error('Failed to save identifier configurations:');
     }
-  };
+  }
 
   savedConfigs = await getSavedConfigs();
   // after this, we process any deferred nodes
@@ -312,19 +310,19 @@ export async function setupDBQueryCellHandler() {
       return;
     const col = acc.context as DG.Column;
     const df = col.dart ? col.dataFrame : null;
-    if (!df || !df.tags.get(DG.Tags.DataConnectionId) || !col.tags.get(DG.Tags.DbSchema) ||
-            !col.tags.get(DG.Tags.DbTable) || !col.tags.get(DG.Tags.DbColumn))
+    if (!df || !df.tags.get(DG.Tags.DataConnectionId) || !col.tags.get(DG.Tags.DbTable)
+        || !col.tags.get(DG.Tags.DbColumn))
       return;
     ui.empty(explorePanelRoot);
     explorePanelRoot.appendChild(ui.divText('Select a cell to explore its value...'));
     acc.addPane(conIdToNqName.get(df.tags.get(DG.Tags.DataConnectionId))?.friendlyName ?? 'Explore', () => {
-      return ui.divV([
-        getEnrichDiv(col),
-        explorePanelRoot
-      ], {style: {width: '100%'}});
+      const children = [getEnrichDiv(col)];
+      if (df.tags.get(DG.Tags.DbSchema))
+        children.push(explorePanelRoot);
+      return ui.divV([children], {style: {width: '100%'}});
     });
     // if there is a current cell and its in the given column, process it
-    if (col.dataFrame.currentCell && col.dataFrame.currentCell.column === col)
+    if (col.tags.get(DG.Tags.DbSchema) && col.dataFrame.currentCell && col.dataFrame.currentCell.column === col)
       processCell(col.dataFrame.currentCell!);
   });
 
@@ -349,7 +347,7 @@ function getEnrichDiv(col: DG.Column): HTMLElement {
     if (!df || df.rowCount === 0)
       return ui.info('Data frame is empty or not available.');
 
-    const schemaName = df.tags.get(DG.Tags.DbSchema);
+    const schemaName = col.tags.get(DG.Tags.DbSchema);
     const connId = df.tags.get(DG.Tags.DataConnectionId);
     const dbColName = col.tags.get(DG.Tags.DbColumn);
     const tableName = col.tags.get(DG.Tags.DbTable);
@@ -358,29 +356,93 @@ function getEnrichDiv(col: DG.Column): HTMLElement {
       return ui.info('Column is not linked to database table.');
 
     return ui.wait(async () => {
-      const con = await grok.dapi.connections.find(connId);
-      if (!con)
+      const conn = await grok.dapi.connections.find(connId);
+      if (!conn)
         return ui.info('Failed to find connection for this column.');
-      const tables: TableInfo[] = await grok.dapi.connections.getSchema(con, schemaName, tableName);
+      const tables: DG.TableInfo[] = await grok.dapi.connections.getSchema(conn, schemaName, tableName);
       if (tables.length === 0)
         return ui.info('Could not find a main table used for SQL query. Please, try to specify full "<schema>.<table>" name in SQL query.');
       if (tables.length > 1)
         return ui.info('Ambiguous table name — specify full "<schema>.<table>" name in SQL query.');
 
-      return ui.div([ui.actionLink('Enrich...', () => showEnrichDialog(tables[0], df, dbColName))], {style: {marginLeft: '12px'}});
+      const mainTable: DG.TableInfo = tables[0];
+      const enrichmentsRoot = getEnrichmentsDiv(conn, mainTable.tags.get(DG.Tags.TableSchema), mainTable.friendlyName, dbColName, df);
+      const addEnrichBtn = document.createElement('button');
+      addEnrichBtn.append(ui.icons.add(() => {}), ui.span(['Add enrichment']));
+      addEnrichBtn.classList.add('power-pack-enrich-add');
+      addEnrichBtn.onclick = () => showEnrichDialog(mainTable, df, dbColName, () => {
+        enrichmentsRoot.replaceWith(getEnrichmentsDiv(conn, mainTable.tags.get(DG.Tags.TableSchema), mainTable.friendlyName, dbColName, df));
+      });
+      return ui.div([
+        enrichmentsRoot,
+        addEnrichBtn
+      ]);
     });
   });
   return enrichAcc.root;
 }
 
-function showEnrichDialog(mainTable: DG.TableInfo, df: DG.DataFrame, dbColName: string) {
-  let pivotView: DG.VisualDbQueryEditor;
+function getEnrichmentsDiv(conn: DG.DataConnection, schema: string, table: string, column: string, df: DG.DataFrame) {
+  return ui.wait(async () => {
+    const names = await getEnrichConfigsNames(conn.id, schema, table, column);
+    const empty = ui.div([
+      ui.divText('No enrichments yet.', 'power-pack-enrich-empty-title'),
+      ui.divText('Add an enrichment for the column to extend this table.', 'power-pack-enrich-empty-sub')
+    ], 'power-pack-enrich-empty');
+    if (names.length === 0)
+      return empty;
+    let root: HTMLDivElement | undefined;
+    root = ui.divV(names.map((n) => {
+      let parent: HTMLDivElement | undefined;
+      const deleteLink = ui.iconFA('times', () => {
+        deleteEnrichment(conn.id, schema, table, column, n).then((b) => {
+          if (b)
+            parent?.remove();
+          if (root?.children?.length === 0)
+            root.replaceWith(empty);
+        });
+      }, 'Click to delete enrichment.');
+
+      const editLink = ui.iconFA('pencil', async () => {
+        const enrichment = await readEnrichConfig(conn.id, schema, table, column, n);
+        if (!enrichment) {
+          grok.shell.error('Something went wrong when opening enrichment. Please try again.');
+          return;
+        }
+        const tables: DG.TableInfo[] = await grok.dapi.connections.getSchema(conn, schema, table);
+        if (tables.length === 0 || tables.length > 1) {
+          grok.shell.error('Could not find key table or table name is ambiguous. Please check the connection and database schema and try again.');
+          return;
+        }
+        const tq = DG.TableQuery.fromTable(tables[0]).build();
+        tq.fields = enrichment.fields;
+        tq.joins = enrichment.joins;
+        showEnrichDialog(tables[0], df, column, () => {
+          root?.replaceWith(getEnrichmentsDiv(conn, schema, table, column, df));
+        }, n, tq);
+      }, 'Click to edit enrichment.');
+
+      const runLink = ui.link(n, () => runFromConfig(conn, schema, table, column, n, df), 'Click to apply enrichment.');
+
+      parent = ui.divH([runLink, ui.divH([editLink, deleteLink], 'power-pack-enrichment-actions')], 'power-pack-enrichment-row');
+      return parent;
+    }));
+    return root;
+  });
+}
+
+function showEnrichDialog(mainTable: DG.TableInfo, df: DG.DataFrame, dbColName: string, onSave: Function, enrichName?: string, tableQuery?: DG.TableQuery) {
+  if (!tableQuery) {
+    tableQuery = DG.TableQuery.fromTable(mainTable).build();
+    tableQuery.fields = [dbColName];
+  }
+  const pivotView: DG.VisualDbQueryEditor = DG.VisualDbQueryEditor.fromQuery(tableQuery);
+  pivotView.showAddToWorkspaceBtn = false;
+
+  let nameInput: DG.InputBase = ui.input.string('Name', {nullable: false, tooltipText: 'Provide name for the enrichment.', value: enrichName});
   const root = ui.wait(async () => {
-    const tq = DG.TableQuery.fromTable(mainTable).build();
-    tq.fields = [dbColName];
-    pivotView = DG.VisualDbQueryEditor.fromQuery(tq);
-    pivotView.showAddToWorkspaceBtn = false;
     await pivotView.isInit();
+    await pivotView.setSingleColumnMode(dbColName);
     ui.setDisplay(pivotView.groupByTag.root.parentElement!, false);
     ui.setDisplay(pivotView.orderTag.root.parentElement!, false);
     ui.setDisplay(pivotView.whereTag.root.parentElement!, false);
@@ -392,7 +454,7 @@ function showEnrichDialog(mainTable: DG.TableInfo, df: DG.DataFrame, dbColName: 
     pivotView.root.style.flexGrow = 'initial';
     pivotView.root.style.minHeight = '50px';
     pivotView.mainTag.root.children[pivotView.mainTag.root.children.length - 1].classList.add('d4-tag-disabled');
-    tooltip.bind(pivotView.mainTag.root, `Enrich supports joining using only a single column. Selected column: “${dbColName}”.`);
+    ui.tooltip.bind(pivotView.mainTag.root, `Enrich supports joining using only a single column. Selected column: “${dbColName}”.`);
     pivotView.grid.root.style.width = '100%';
     return ui.divV([
       pivotView.root,
@@ -400,58 +462,165 @@ function showEnrichDialog(mainTable: DG.TableInfo, df: DG.DataFrame, dbColName: 
     ]);
   });
 
+  const isValidInput = ui.input.string('');
+  isValidInput.nullable = false;
+  isValidInput.root.hidden = true;
+
   const dialog = ui.dialog({title: `Enrich ${dbColName}`})
-    .add(root)
-    .onOK(async () => {
-      const progress = DG.TaskBarProgressIndicator.create('Enriching...');
-      try {
+      .add(nameInput)
+      .add(isValidInput)
+      .add(root)
+      .onOK(async () => {
         pivotView.refreshQuery();
-        await executeEnrichQuery(pivotView.query, df, dbColName);
-      } catch (e: any) {
-        grok.shell.error(`Failed to enrich:\n ${e}`);
-      } finally {
-        progress.close();
-      }
-    });
+        const enrichment = convertTableQueryToEnrichment(pivotView.query, nameInput.value,
+            mainTable.tags.get(DG.Tags.TableSchema), mainTable.friendlyName, dbColName);
+        await saveEnrichment(enrichment, pivotView.query.connection.id);
+        if (enrichName && enrichment.name != enrichName)
+          await deleteEnrichment(pivotView.query.connection.id, enrichment.keySchema,
+              enrichment.keyTable, enrichment.keyColumn, enrichName);
+        onSave();
+      });
+
+
+  dialog.addButton('ENRICH', async () => {
+    pivotView.refreshQuery();
+    await executeEnrichQuery(pivotView.query, df, dbColName);
+  });
 
   dialog.root.style.height = '600px';
   dialog.root.style.width = '800px';
-  const button = dialog.getButton('OK');
-  button.querySelector('span')!.textContent = 'ENRICH';
+  const saveButton = dialog.getButton('OK');
+  saveButton.querySelector('span')!.textContent = 'SAVE';
+  const enrichButton = dialog.getButton('ENRICH');
+  const isNotValidPivot = () => pivotView.query.joins.length === 0;
+  pivotView.onChanged.subscribe((_) => {
+    const isNotValid = isNotValidPivot();
+    ui.setClass(enrichButton, 'disabled', isNotValid);
+    isValidInput.value = isNotValid ? '' : 'not empty';
+  });
+
+  const isPivotNotValid = isNotValidPivot();
+  ui.setClass(enrichButton, 'disabled', isPivotNotValid);
+  isValidInput.value = isPivotNotValid ? '' : 'non empty';
   dialog.show();
 }
 
-async function executeEnrichQuery(query: DG.TableQuery, df: DG.DataFrame, keyCol: string): Promise<void> {
-  query.limit = undefined;
-  const keyColValues = df.getCol(keyCol).toList();
-  let res: DG.DataFrame | undefined;
-  for (let i = 0; i < keyColValues.length; i += 200) {
-    const inValues = keyColValues.slice(i, i + 200);
-    query.where = [{field: keyCol, pattern: `in (${inValues.join(',')})`, dataType: df.getCol(keyCol).type}];
-    const queryCall = query.prepare();
-    const run = await queryCall.call(false, undefined,
-      {processed: true, report: false});
-    const queryResult = run.getOutputParamValue();
-    if (!res)
-      res = queryResult;
-    else
-      res.append(queryResult, true);
+async function getEnrichConfigsNames(connectionId: string, schema: string, table: string, column: string): Promise<string[]> {
+  try {
+    const files = await grok.dapi.files
+        .list(`System:AppData/PowerPack/enrichments/${connectionId}/${schema}/${table}/${column}`);
+    return files.map(f => f.name.substring(0, f.name.lastIndexOf('.')));
+  } catch (_: any) {
+    return [];
   }
-  if (!res)
-    throw new Error('Something went wrong and query result returned null.');
-
-  await grok.data.detectSemanticTypes(res);
-  const joinTable = DG.Func.byName('JoinTables');
-  const previousName = df.name;
-  joinTable.applySync({
-    'table1': df,
-    'table2': res,
-    'keys1': [keyCol],
-    'keys2': [keyCol],
-    'values1': df.columns.names(),
-    'values2': res.columns.names().filter((n) => n !== keyCol),
-    'joinType': 'left',
-    'inPlace': true
-  });
-  df.name = previousName;
 }
+
+async function deleteEnrichment(connectionId: string, schema: string, table: string, column: string, name: string): Promise<boolean> {
+  try {
+    await grok.dapi.files
+        .delete(`System:AppData/PowerPack/enrichments/${connectionId}/${schema}/${table}/${column}/${name}.json`);
+    return true;
+  } catch (_: any) {
+    new DG.Balloon().error('Something went wrong while deleting enrichment. Please, try again.');
+    return false;
+  }
+}
+
+async function readEnrichConfig(connectionId: string, schema: string, table: string, column: string, name: string): Promise<Enrichment | null> {
+  try {
+    const data = await grok.dapi.files
+        .readAsText(`System:AppData/PowerPack/enrichments/${connectionId}/${schema}/${table}/${column}/${name}.json`);
+    return JSON.parse(data);
+  } catch (_: any) {
+    return null;
+  }
+}
+
+async function saveEnrichment(e: Enrichment, connectionId: string): Promise<void> {
+  try {
+    await grok.dapi.files
+        .writeAsText(`System:AppData/PowerPack/enrichments/${connectionId}/${e.keySchema}/${e.keyTable}/${e.keyColumn}/${e.name}.json`,
+            JSON.stringify(e));
+  } catch (_: any) {
+    new DG.Balloon().error('Could not save enrichment config. Please try again.');
+  }
+}
+
+function convertTableQueryToEnrichment(query: DG.TableQuery, name: string, keySchema: string, keyTable: string, keyColumn: string): Enrichment {
+  return {name: name, keySchema: keySchema, keyTable: keyTable, keyColumn: keyColumn, fields: query.fields, joins: query.joins};
+}
+
+function convertEnrichmentToQuery(e: Enrichment, conn: DG.DataConnection): DG.TableQuery {
+  const query = conn.tableQuery();
+  query.table = `${e.keySchema}.${e.keyTable}`;
+  query.fields = e.fields;
+  query.joins = e.joins;
+  return query;
+}
+
+async function runFromConfig(conn: DG.DataConnection, schema: string, table: string, column: string, name: string, df: DG.DataFrame): Promise<void> {
+  const config = await readEnrichConfig(conn.id, schema, table, column, name);
+  if (!config) {
+    new DG.Balloon().error('Could not find enrichment. Please try again or create a new one.');
+    return;
+  }
+  const query = convertEnrichmentToQuery(config, conn);
+  await executeEnrichQuery(query, df, column);
+}
+
+async function executeEnrichQuery(query: DG.TableQuery, df: DG.DataFrame, keyCol: string): Promise<void> {
+  const progress = DG.TaskBarProgressIndicator.create('Enriching...');
+  try {
+    query.limit = undefined;
+    const keyColValues = df.getCol(keyCol).toList();
+    let res: DG.DataFrame | undefined;
+    for (let i = 0; i < keyColValues.length; i += 200) {
+      const inValues = keyColValues.slice(i, i + 200);
+      query.where = [{field: keyCol, pattern: `in (${inValues.join(',')})`, dataType: df.getCol(keyCol).type}];
+      const queryCall = query.prepare();
+      const run = await queryCall.call(false, undefined,
+          {processed: true, report: false});
+      const queryResult = run.getOutputParamValue();
+      if (!queryResult)
+        break;
+      if (!res)
+        res = queryResult;
+      else
+        res.append(queryResult, true);
+    }
+    if (!res) {
+      grok.shell.error('Something went wrong and query result returned null.');
+      return ;
+    }
+
+    await grok.data.detectSemanticTypes(res);
+    const joinTable = DG.Func.byName('JoinTables');
+    const previousName = df.name;
+    joinTable.applySync({
+      'table1': df,
+      'table2': res,
+      'keys1': [keyCol],
+      'keys2': [keyCol],
+      'values1': df.columns.names(),
+      'values2': res.columns.names().filter((n) => n !== keyCol),
+      'joinType': 'left',
+      'inPlace': true
+    });
+    df.name = previousName;
+  } catch (e: any) {
+    grok.shell.error(`Failed to enrich:\n ${e}`);
+  } finally {
+    progress.close();
+  }
+}
+
+interface Enrichment {
+  name: string;
+  keySchema: string;
+  keyTable: string,
+  keyColumn: string;
+  fields: string[];
+  joins: DG.TableJoin[];
+}
+
+
