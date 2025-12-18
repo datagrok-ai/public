@@ -924,6 +924,8 @@ export interface IDartApi {
   grok_VisualDbQueryEditor_RefreshQuery(t: any): any;
   grok_VisualDbQueryEditor_IsInit(t: any): Promise<any>;
   grok_VisualDbQueryEditor_Set_ShowAddToWorkspaceBtn(t: any, show: Bool): any;
+  grok_AI_OpenAiConfigured(): any;
+  grok_AI_EntityIndexingEnabled(): any;
 
   // Generated from ../grok_shared/lib/src/interop/grok_api.dart
   grok_Test_Error(s: any): any;
@@ -1636,6 +1638,7 @@ export interface IDartApi {
   grok_Dapi_Set_Token(token: String): any;
   grok_Dapi_Get_Token(): any;
   grok_Dapi_WS_Root(): any;
+  grok_Dapi_OpenAI_Proxy(): any;
   grok_Clear_LastError(): any;
   grok_CloseAll(): any;
   grok_Get_LastError(): Promise<any>;
@@ -1732,6 +1735,7 @@ export interface IDartApi {
   grok_DbSchemaInfo_Get_Connection(info: any): any;
   grok_DbSchemaInfo_AnnotateTable(info: any, tableName: String, props: any): Promise<any>;
   grok_DbSchemaInfo_AnnotateColumn(info: any, tableName: String, colName: String, props: any): Promise<any>;
+  grok_AI_SearchEntities(text: String, threshold: Num, limit: Num, types: any): Promise<any>;
   grok_ConnectionDataSource_ByType(type: String): any;
   grok_ConnectionDataSource_Type(ds: any): any;
   grok_ConnectionDataSource_Category(ds: any): any;
