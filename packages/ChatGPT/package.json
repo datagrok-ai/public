@@ -10,7 +10,7 @@
     "@types/dom-chromium-ai": "^0.0.10",
     "@datagrok-libraries/db-explorer": "^1.6.0",
     "cash-dom": "latest",
-    "datagrok-api": "^1.27.0",
+    "datagrok-api": "../../js-api",
     "dayjs": "latest",
     "openai": "^6.10.0"
   },
