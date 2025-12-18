@@ -103,7 +103,10 @@ export class DimReductionBaseEditor {
       if (this.editorSettings.enableMCL)
         this.methods.push(MCLMethodName as any);
 
-      const preporcessingFuncs = DG.Func.find({tags: [DIM_RED_PREPROCESSING_FUNCTION_TAG]});
+      const tags = DG.Func.find({tags: [DIM_RED_PREPROCESSING_FUNCTION_TAG]});
+      const meta = DG.Func.find({meta: {role: DIM_RED_PREPROCESSING_FUNCTION_TAG}});
+      const preporcessingFuncs = [...tags, ...meta];
+
       // map that contains all preprocessing functions and their metadata
       preporcessingFuncs.forEach((f) => {
         const semTypes: string = f.options.get(SUPPORTED_SEMTYPES_TAG) ?? '';
