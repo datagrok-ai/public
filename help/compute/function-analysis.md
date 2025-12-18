@@ -110,7 +110,9 @@ let y = x + 3;
 
 ## See also
 
-Tutorials:
+* Tutorials:
 
-* [Parameter optimization](https://public.datagrok.ai/apps/tutorials/Tutorials/Scientificcomputing/Parameteroptimization)
-* [Sensitivity analysis](https://public.datagrok.ai/apps/tutorials/Tutorials/Scientificcomputing/Sensitivityanalysis)
+  * [Parameter optimization](https://public.datagrok.ai/apps/tutorials/Tutorials/Scientificcomputing/Parameteroptimization)
+  * [Sensitivity analysis](https://public.datagrok.ai/apps/tutorials/Tutorials/Scientificcomputing/Sensitivityanalysis)
+
+* [Community](https://community.datagrok.ai/t/input-parameter-optimization/873)
