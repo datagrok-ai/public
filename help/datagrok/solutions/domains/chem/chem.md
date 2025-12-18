@@ -26,6 +26,7 @@ keywords:
   - cdd vault integration
   - compound registration system
   - mixtures
+  - multi-parameter optimization
 ---
 
 ```mdx-code-block
@@ -963,6 +964,17 @@ Medicinal chemistry is a balancing act: potency must rise while properties like 
 * **Active/Bayesian multi-objective optimization.** Use surrogate models to propose new compounds that efficiently move the Pareto front (or a scalarized objective), reducing screening cost and focusing make/test cycles. 
 
 * **Desirability-based QSAR/MQSAR.** Use the built-in [predictive modeling capabilities](#predictive-modeling) to predict property desirabilities directly (or predict properties first, then score). 
+
+<details>
+<summary> Pareto front </summary>
+
+The Pareto front represents a set of non-dominated solutions in multi-objective optimization, where improving one objective necessarily degrades at least one other, revealing optimal trade-offs between conflicting goals. Use the [Pareto front viewer](../../../../visualize/viewers/pareto-front-viewer.md) to display these Pareto-optimal points on an interactive scatterplot:
+
+![Pareto front](mpo-pareto-front.png)
+
+Launch an interactive Pareto Front [application](../../../../visualize/viewers/pareto-front-viewer.md#application) that enables real-time exploration of optimization results.
+
+</details>
 
 ## Generative chemistry
 
