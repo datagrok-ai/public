@@ -449,25 +449,25 @@ export const functionRoles: FuncRoleDescription[] = [
     role: FUNC_TYPES.APP,
     description: 'An application that gets shown in the app store.',
     header: 'tags',
-    signature: 'app()'
+    signature: 'app(): void'
   },
   {
     role: FUNC_TYPES.PANEL,
     description: 'Context-specific widget that appears on the context panel.',
     header: 'tags',
-    signature: 'panel(x: any): Widget'
+    signature: 'panel(x: any): Widget | graphics'
   },
   {
     role: FUNC_TYPES.INIT,
     description: 'Gets invoked when the containing package is initialized.',
     header: 'tags',
-    signature: 'init()'
+    signature: 'init(): void'
   },
   {
     role: FUNC_TYPES.AUTOSTART,
     description: 'Gets invoked at platform startup. Use it wisely as the whole package will get initialized.',
     header: 'tags',
-    signature: 'autostart()'
+    signature: 'autostart(): void'
   },
   {
     role: FUNC_TYPES.SEM_TYPE_DETECTOR,
@@ -485,7 +485,7 @@ export const functionRoles: FuncRoleDescription[] = [
     role: FUNC_TYPES.FILE_EXPORTER,
     header: 'tags',
     description: 'Exports a file. Gets added to the "export" menu at startup.',
-    signature: 'fileExporter()'
+    signature: 'fileExporter(): void'
   },
   {
     role: FUNC_TYPES.FILE_IMPORTER,
@@ -515,7 +515,7 @@ export const functionRoles: FuncRoleDescription[] = [
     role: FUNC_TYPES.FUNCTION_ANALYSIS,
     description: 'Function analysis that gets added to the function view. Examples: sensitivity analysis, parameter editor',
     header: 'tags',
-    signature: 'functionAnalysis(x:func):View'
+    signature: 'functionAnalysis(x:func): View'
   },
   {
     role: FUNC_TYPES.CONVERTER,
@@ -539,7 +539,7 @@ export const functionRoles: FuncRoleDescription[] = [
     role: FUNC_TYPES.EDITOR,
     description: 'Creates a custom editor for a function call',
     header: 'tags',
-    signature: 'editor(call: FuncCall): Widget',
+    signature: 'editor(call: FuncCall): Widget | void',
   },
   {
     role: FUNC_TYPES.TRANSFORM,
@@ -599,7 +599,7 @@ export const functionRoles: FuncRoleDescription[] = [
     role: FUNC_TYPES.HIT_TRIAGE_FUNCTION,
     description: 'Compute function for Hit Triage campaigns.',
     header: 'tags',
-    signature: 'hitTriageFunction(table: DataFrame, moleculeCol: Column): DataFrame)'
+    signature: 'hitTriageFunction(table: DataFrame, moleculeCol: Column): DataFrame'
   },
   {
     role: FUNC_TYPES.HIT_TRIAGE_DATA_SOURCE,

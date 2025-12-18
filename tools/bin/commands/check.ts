@@ -187,61 +187,82 @@ function parseSignature(sig: string): { inputs: FuncParam[]; outputs: FuncParam[
 
 function validateFunctionSignature(func: FuncMetadata, roleDesc: FuncRoleDescription): ValidationResult {
   let valid = true;
-  let message = '';
+  const messages: string[] = [];
 
   const addError = (msg: string) => {
-    valid = false;
-    message += msg + '\n';
+    valid = false; 
+    messages.push(msg);
+  };
+
+  const normalize = (t?: string) => t?.toLowerCase();
+
+  const fmtParam = (p?: {name?: string; type?: string}) =>
+    p ? `${p.name ?? '<unnamed>'}: ${p.type ?? '<unknown>'}` : '<missing>';
+
+  const fmtTypes = (types: string[]) => types.join(' | ');
+
+  const matchesExpected = (actual?: string, expected?: string) => {
+    if (!actual || !expected)
+      return false;
+    const actualType = normalize(actual)!;
+    const expectedTypes = expected.split('|').map((t) => normalize(t.trim())!);
+    return expectedTypes.some((t) => t === 'any' || typesMatch(actualType, t));
   };
 
   if (roleDesc.role === 'app' && func.name) {
-    const lower = func.name.toLowerCase();
-    if (lower.startsWith('app'))
+    const name = func.name.toLowerCase();
+    if (name.startsWith('app'))
       addError('Prefix "App" is not needed. Consider removing it.');
-    if (lower.endsWith('app'))
+    if (name.endsWith('app'))
       addError('Postfix "App" is not needed. Consider removing it.');
   }
 
-  if (roleDesc.role === 'fileExporter' && (!func.description || func.description === '')) 
+  if (roleDesc.role === 'fileExporter' && (!func.description || func.description === ''))
     addError('File exporters should have a description parameter');
-  
+
   if (roleDesc.role === 'fileViewer') {
-    if (!func.tags || func.tags.length !== 1 || func.tags[0] !== 'fileViewer') 
+    if (!func.tags || func.tags.length !== 1 || func.tags[0] !== 'fileViewer')
       addError('File viewers must have only one tag: "fileViewer"');
   }
 
   const parsed = parseSignature(roleDesc.signature!);
-  const maxIndex = parsed.variadicIndex >= 0 ? parsed.variadicIndex : parsed.inputs.length;
+  const maxInputs = parsed.variadicIndex >= 0 ? parsed.variadicIndex : parsed.inputs.length;
 
-  for (let i = 0; i < maxIndex; i++) {
+  for (let i = 0; i < maxInputs; i++) {
     const expected = parsed.inputs[i];
     const actual = func.inputs[i];
 
     if (!actual) {
-      addError(`Input ${i} missing`);
+      addError(`Input ${i} missing: expected ${fmtParam(expected)}`);
       continue;
     }
 
-    if (expected.type!.toLowerCase() !== 'any' && !typesMatch(actual.type!, expected.type!)) 
-      addError(`Input ${i} type mismatch: expected ${expected.type}, got ${actual.type}`);
+    if (!matchesExpected(actual.type, expected?.type))
+      addError(`Input ${i} mismatch: expected ${fmtTypes(expected?.type?.split('|').map((t) => t.trim()) ?? [])}, got ${actual.type}`);
   }
 
-  parsed.outputs.forEach((expected, i) => {
-    const actual = func.outputs[i];
-    if (!actual) 
-      addError(`Output ${i} missing`);
-    else if (expected.type!.toLowerCase() !== 'any' && !typesMatch(actual.type!, expected.type!)) 
-      addError(`Output ${i} type mismatch: expected ${expected.type}, got ${actual.type}`);
-    
+  if (parsed.outputs.length > 0) {
+    if (!func.outputs?.length) {
+      if (!parsed.outputs.some((o) => o.type === 'void'))
+        addError(`Output missing: expected one of (${fmtTypes(parsed.outputs.map((o) => o.type!))})`); 
+    } else {
+      const matches = func.outputs.some((actual) =>
+        parsed.outputs.some((expected) => matchesExpected(actual.type, expected.type)),
+      );
+
+      if (!matches) {
+        addError(`Output mismatch: expected one of (${fmtTypes(parsed.outputs.map((o) => o.type!))}),
+          got (${fmtTypes(func.outputs.map((o) => o.type!))})`);
+      }
+    }
+  }
+
+  [...func.inputs, ...(func.outputs ?? [])].forEach((p, i) => {
+    if (!p.name || !p.type)
+      addError(`Parameter ${i} is incomplete: name=${p.name ?? '<missing>'}, type=${p.type ?? '<missing>'}`);
   });
 
-  [...func.inputs, ...func.outputs].forEach((p) => {
-    if (!p.name || !p.type) 
-      addError(`Parameter missing name or type: ${p.name ?? '<unnamed>'} (${p.type ?? '<undefined>'})`);
-    
-  });
-
-  return {value: valid, message};
+  return {value: valid, message: messages.join('\n')};
 }
 
 export function checkFuncSignatures(packagePath: string, files: string[]): [string[], string[]] {
