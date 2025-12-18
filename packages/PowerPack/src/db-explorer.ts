@@ -7,8 +7,8 @@ import {DBExplorerConfig} from '@datagrok-libraries/db-explorer/src/types';
 import {DBExplorer} from '@datagrok-libraries/db-explorer/src/db-explorer';
 import {DBExplorerEditor} from '@datagrok-libraries/db-explorer/src/editor';
 import {DB_EXPLORER_OBJ_HANDLER_TYPE, DBExplorerObjectHandler} from '@datagrok-libraries/db-explorer/src/object-handlers';
-import {TableInfo, VisualDbQueryEditor} from "datagrok-api/dg";
-import {tooltip} from "datagrok-api/ui";
+import {TableInfo, VisualDbQueryEditor} from 'datagrok-api/dg';
+import {tooltip} from 'datagrok-api/ui';
 
 
 /** Sets up editing of the db explorers config(s) */
@@ -315,7 +315,7 @@ export async function setupDBQueryCellHandler() {
       return;
     ui.empty(explorePanelRoot);
     explorePanelRoot.appendChild(ui.divText('Select a cell to explore its value...'));
-    acc.addPane('Explore', () => explorePanelRoot);
+    acc.addPane(conIdToNqName.get(df.tags.get(DG.Tags.DataConnectionId))?.name ?? 'Explore', () => explorePanelRoot);
     // if there is a current cell and its in the given column, process it
     if (col.dataFrame.currentCell && col.dataFrame.currentCell.column === col)
       processCell(col.dataFrame.currentCell!);
@@ -398,18 +398,18 @@ function showEnrichDialog(mainTable: DG.TableInfo, df: DG.DataFrame, dbColName: 
   });
 
   const dialog = ui.dialog({title: `Enrich ${dbColName}`})
-      .add(root)
-      .onOK(async () => {
-        const progress = DG.TaskBarProgressIndicator.create('Enriching...');
-        try {
-          pivotView.refreshQuery();
-          await executeEnrichQuery(pivotView.query, df, dbColName);
-        } catch (e: any) {
-          grok.shell.error(`Failed to enrich:\n ${e}`);
-        } finally {
-          progress.close();
-        }
-      });
+    .add(root)
+    .onOK(async () => {
+      const progress = DG.TaskBarProgressIndicator.create('Enriching...');
+      try {
+        pivotView.refreshQuery();
+        await executeEnrichQuery(pivotView.query, df, dbColName);
+      } catch (e: any) {
+        grok.shell.error(`Failed to enrich:\n ${e}`);
+      } finally {
+        progress.close();
+      }
+    });
 
   dialog.root.style.height = '600px';
   dialog.root.style.width = '800px';
@@ -427,7 +427,7 @@ async function executeEnrichQuery(query: DG.TableQuery, df: DG.DataFrame, keyCol
     query.where = [{field: keyCol, pattern: `in (${inValues.join(',')})`, dataType: df.getCol(keyCol).type}];
     const queryCall = query.prepare();
     const run = await queryCall.call(false, undefined,
-        {processed: true, report: false});
+      {processed: true, report: false});
     const queryResult = run.getOutputParamValue();
     if (!res)
       res = queryResult;
@@ -435,7 +435,7 @@ async function executeEnrichQuery(query: DG.TableQuery, df: DG.DataFrame, keyCol
       res.append(queryResult, true);
   }
   if (!res)
-    throw new Error('Something went wrong and query result returned null.')
+    throw new Error('Something went wrong and query result returned null.');
 
   await grok.data.detectSemanticTypes(res);
   const joinTable = DG.Func.byName('JoinTables');
