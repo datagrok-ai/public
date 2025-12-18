@@ -26,7 +26,7 @@ export function createInitialSatistics(clinicalCaseNode: DG.TreeViewGroup, confi
     return [
       ui.link(item.name, async () => {
         openStudy(clinicalCaseNode, studies[item.name].config.standard, item.name, SUMMARY_VIEW_NAME);
-      }, 'Click to run the study'),
+      }, 'Open study'),
       item.standard,
       item.protocol,
       item.totalSubjects,

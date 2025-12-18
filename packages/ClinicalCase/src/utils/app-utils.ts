@@ -39,9 +39,9 @@ export async function cdiscAppTB(treeNode: DG.TreeViewGroup, standard: string,
 }
 
 export function createImportStudyView(standard: string) {
-  const view = DG.View.create();
-  view.root.classList.add('clinical-case-study-import-view');
-  view.name = `Import Study - ${standard === CDISC_STANDARD.SDTM ? 'Clinical Case' : 'Preclinical Case'}`;
+  currentOpenedView = DG.View.create();
+  currentOpenedView.root.classList.add('clinical-case-study-import-view');
+  currentOpenedView.name = `Import Study - ${standard === CDISC_STANDARD.SDTM ? 'Clinical Case' : 'Preclinical Case'}`;
 
   let studyConfig: ClinStudyConfig | null = null;
   // Get the tree node for creating study config
@@ -158,7 +158,7 @@ export function createImportStudyView(standard: string) {
 
   importStudyButton.disabled = true;
 
-  view.root.append(ui.divV([
+  currentOpenedView.root.append(ui.divV([
     ui.divH([ui.h3('Import study files'),
       filesInput.root, importStudyButton], {style: {gap: '10px', marginLeft: '20px'}}),
     importStudyStatusDiv,
@@ -166,7 +166,7 @@ export function createImportStudyView(standard: string) {
     statisticsDiv,
   ]));
 
-  grok.shell.addView(view);
+  grok.shell.addView(currentOpenedView);
 }
 
 export async function openApp(standard: CDISC_STANDARD): Promise<DG.ViewBase | void> {
@@ -185,21 +185,31 @@ export async function openApp(standard: CDISC_STANDARD): Promise<DG.ViewBase | v
   const studiesHeader = ui.h1('Studies');
   const clinicalCaseNode = grok.shell.browsePanel.mainTree.getOrCreateGroup('Apps').
     getOrCreateGroup(standard === CDISC_STANDARD.SDTM ? 'Clinical Case' : 'Preclinical Case');
-    //this creates studies objects and tree view nodes
+  clinicalCaseNode.currentItem = null;
+  //this creates studies objects and tree view nodes
   await createStudiesFromAppData(clinicalCaseNode, standard);
   const studiesDiv = ui.div();
   studiesDiv.append(createInitialSatistics(clinicalCaseNode,
     Object.values(studies).filter((it) => it.config.standard === standard).map((it) => it.config)));
-
-  const view = DG.View.create();
-  view.name = standard === CDISC_STANDARD.SDTM ? 'Clinical Case' : 'Preclinical Case';
-  view.path = CDISC_STANDARD.SDTM ? CLINICAL_CASE_APP_PATH : PRECLINICAL_CASE_APP_PATH;
-  view.root.append(ui.divV([
+  const importStudyDiv = ui.div('', {style: {position: 'relative'}});
+  const importStudyButton = ui.button('Import study...', () => {
+    currentOpenedView?.close();
+    const item = clinicalCaseNode.items.find((it) => it.text === 'Import study');
+    clinicalCaseNode.currentItem = item;
+  });
+  importStudyButton.classList.add('clinical-case-import-study-button');
+  importStudyDiv.append(importStudyButton);
+  currentOpenedView?.close();
+  currentOpenedView = DG.View.create();
+  currentOpenedView.name = standard === CDISC_STANDARD.SDTM ? 'Clinical Case' : 'Preclinical Case';
+  currentOpenedView.path = CDISC_STANDARD.SDTM ? CLINICAL_CASE_APP_PATH : PRECLINICAL_CASE_APP_PATH;
+  currentOpenedView.root.append(ui.divV([
     appHeader,
     studiesHeader,
     studiesDiv,
+    importStudyDiv,
   ]));
-  return view;
+  return currentOpenedView;
 }
 
 
@@ -312,10 +322,9 @@ async function createStudyWithConfig(files: DG.FileInfo[], treeNode: DG.TreeView
 
 function addStudyToBrowseTree(study: ClinicalStudy, treeNode: DG.TreeViewGroup, studyFiles?: DG.FileInfo[]) {
   const node = treeNode.getOrCreateGroup(study.config.name, null, false);
-
   node.onSelected.subscribe(async (_) => {
     studies[study.studyId].currentViewName = SUMMARY_VIEW_NAME;
-    if (!node.expanded && !studies[study.studyId].initCompleted)
+    if (!node.expanded)
       node.expanded = true;
     else
       await openStudyNode(study, node, SUMMARY_VIEW_NAME);
@@ -324,7 +333,6 @@ function addStudyToBrowseTree(study: ClinicalStudy, treeNode: DG.TreeViewGroup, 
   node.onNodeExpanding.subscribe(async (_) => {
     if (studies[study.studyId].loadingStudyData === true)
       return;
-
     for (const viewName of SUPPORTED_VIEWS[study.config.standard]) {
       const viewNode = node.item(viewName);
       if (viewName === VALIDATION_VIEW_NAME)
@@ -407,9 +415,9 @@ export function openStudy(treeNode: DG.TreeViewGroup, standard: string,
       currentViewName = SUMMARY_VIEW_NAME;
     studies[currentStudyName].currentViewName = currentViewName;
     //this will trigger onNodeExpanding
-    if (!studyNode.expanded)
-      studyNode.expanded = true;
-    else
+    if (treeNode.currentItem !== studyNode)
+      treeNode.currentItem = studyNode;
+    if (studyNode.expanded)
       openStudyNode(studies[currentStudyName], studyNode, currentViewName);
   }
 }
