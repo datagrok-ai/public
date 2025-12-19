@@ -12,9 +12,10 @@ import {ChatGptAssistant} from '../prompt-engine/chatgpt-assistant';
 import * as api from '../package-api';
 import {Plan} from '../prompt-engine/interfaces';
 import {AssistantRenderer} from '../prompt-engine/rendering-tools';
-import {fireAIAbortEvent, getAIPanelToggleSubscription} from '../utils';
+import {fireAIAbortEvent, fireAIPanelToggleEvent, getAIPanelToggleSubscription} from '../utils';
 import {generateAISqlQueryWithTools} from './sql-tools';
-import {DBAIPanel, ModelType, UIMessageOptions} from './panel';
+import {processTableViewAIRequest} from './tableview-tools';
+import {DBAIPanel, ModelType, TVAIPanel, UIMessageOptions} from './panel';
 
 
 export async function askWiki(question: string, useOpenAI: boolean = true) {
@@ -128,35 +129,8 @@ export async function setupAIQueryEditorUI(v: DG.ViewBase, connectionID: string,
   const schemas = await grok.dapi.connections.getSchemas(connection);
   const defaultSchema = schemas.includes('public') ? 'public' : schemas[0];
 
-  const panel = new DBAIPanel(schemas, defaultSchema, connectionID);
+  const panel = new DBAIPanel(schemas, defaultSchema, connectionID, v);
   panel.show();
-
-  // do some subscriptions
-  let wasShown = true;
-  const sub = grok.events.onCurrentViewChanged.subscribe(() => {
-    if (grok.shell.v != v) {
-      wasShown = panel.isShown;
-      if (wasShown)
-        panel.hide();
-    } else {
-      if (wasShown)
-        panel.show();
-    }
-  });
-
-  const toggleSub = getAIPanelToggleSubscription().subscribe((rv) => {
-    if (rv == v)
-      panel.toggle();
-  });
-  const closeSub = grok.events.onViewRemoved.subscribe((view) => {
-    if (view == v) {
-      sub.unsubscribe();
-      closeSub.unsubscribe();
-      panel.hide();
-      panel.dispose();
-      toggleSub.unsubscribe();
-    }
-  });
 
   panel.onRunRequest.subscribe(async (args) => {
     ui.setUpdateIndicator(queryEditorRoot, true, 'Grokking Query...', () => { fireAIAbortEvent(); });
@@ -184,4 +158,56 @@ export async function setupAIQueryEditorUI(v: DG.ViewBase, connectionID: string,
     session.endSession();
   });
   return true;
+}
+
+export async function setupTableViewAIPanelUI() {
+  if (!grok.ai.openAiConfigured)
+    return;
+  const handleView = (tableView: DG.TableView) => {
+    // setup ribbon panel icon
+    const iconFse = ui.iconSvg('ai.svg', () => fireAIPanelToggleEvent(tableView), 'Ask AI \n Ctrl+I');
+    iconFse.style.width = iconFse.style.height = '18px';
+    tableView.setRibbonPanels([...tableView.getRibbonPanels(), [iconFse]]);
+    // setup the panel itself
+    const panel = new TVAIPanel(tableView);
+    panel.hide();
+
+    // Setup request handler
+    panel.onRunRequest.subscribe(async (args) => {
+      const session = panel.startChatSession();
+      try {
+        await processTableViewAIRequest(
+          args.currentPrompt.prompt,
+          tableView,
+          args.currentPrompt.mode,
+          {
+            oldMessages: args.prevMessages,
+            aiPanel: {
+              addAIMessage: (aiMessage, title, content) => {
+                session.addAIMessage(aiMessage, title, content);
+              },
+              addEngineMessage: (aiMessage) => session.addAIMessage(aiMessage, '', '', true),
+              addUiMessage: (msg: string, fromUser: boolean, messageOptions?: UIMessageOptions) =>
+                session.addUIMessage(msg, fromUser, messageOptions),
+              addUserMessage: (aiMsg, content) => session.addUserMessage(aiMsg, content),
+            },
+            modelName: ModelType[panel.getCurrentInputs().model],
+          }
+        );
+      } catch (error: any) {
+        grok.shell.error('Error during AI table view processing');
+        console.error('Error during AI table view processing:', error);
+      }
+      session.endSession();
+    });
+  };
+  // also handle already opened views
+  Array.from(grok.shell.tableViews).filter((v) => v.dataFrame != null).forEach((view) => {
+    handleView(view as DG.TableView);
+  });
+
+  grok.events.onViewAdded.subscribe((view) => {
+    if (view.type === DG.VIEW_TYPE.TABLE_VIEW)
+      handleView(view as DG.TableView);
+  });
 }

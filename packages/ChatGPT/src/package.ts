@@ -7,7 +7,7 @@ import {ChatGptAssistant} from './prompt-engine/chatgpt-assistant';
 import {ChatGPTPromptEngine} from './prompt-engine/prompt-engine';
 import {getAiPanelVisibility, initAiPanel, setAiPanelVisibility} from './ai-panel';
 import {findBestFunction, tableQueriesFunctionsSearchLlm} from './prompts/find-best-function';
-import {askWiki, setupAIQueryEditorUI, setupSearchUI, smartExecution} from './llm-utils/ui';
+import {askWiki, setupAIQueryEditorUI, setupSearchUI, setupTableViewAIPanelUI, smartExecution} from './llm-utils/ui';
 import {Plan} from './prompt-engine/interfaces';
 import {OpenAIClient} from './llm-utils/openAI-client';
 import {LLMCredsManager} from './llm-utils/creds';
@@ -29,34 +29,35 @@ export class PackageFunctions {
   static async init() {
     LLMCredsManager.init(_package);
     setupSearchUI();
+    setupTableViewAIPanelUI();
   }
 
 
   @grok.decorators.autostart()
   static autostart() {
-    try {
-      grok.events.onViewAdded.subscribe((view) => {
-        if (view.type === DG.VIEW_TYPE.TABLE_VIEW) {
-          const tableView = view as DG.TableView;
-          const iconFse = ui.iconSvg('ai.svg', () => setAiPanelVisibility(true), 'Ask AI \n Ctrl+I');
-          tableView.setRibbonPanels([...tableView.getRibbonPanels(), [iconFse]]);
-        }
-      });
+    // try {
+    //   grok.events.onViewAdded.subscribe((view) => {
+    //     if (view.type === DG.VIEW_TYPE.TABLE_VIEW) {
+    //       const tableView = view as DG.TableView;
+    //       const iconFse = ui.iconSvg('ai.svg', () => setAiPanelVisibility(true), 'Ask AI \n Ctrl+I');
+    //       tableView.setRibbonPanels([...tableView.getRibbonPanels(), [iconFse]]);
+    //     }
+    //   });
 
-      initAiPanel();
-      // Add keyboard shortcut for toggling AI panel
-      document.addEventListener('keydown', (event) => {
-        // Check for Ctrl+I (Ctrl key + I key)
-        if (event.ctrlKey && event.key === 'i') {
-          event.preventDefault(); // Prevent default browser behavior
-          const isVisible = getAiPanelVisibility();
-          setAiPanelVisibility(!isVisible);
-        }
-      });
-    } catch (e) {
-      console.log('AI autostart failed.');
-      console.log(e);
-    }
+    //   initAiPanel();
+    //   // Add keyboard shortcut for toggling AI panel
+    //   document.addEventListener('keydown', (event) => {
+    //     // Check for Ctrl+I (Ctrl key + I key)
+    //     if (event.ctrlKey && event.key === 'i') {
+    //       event.preventDefault(); // Prevent default browser behavior
+    //       const isVisible = getAiPanelVisibility();
+    //       setAiPanelVisibility(!isVisible);
+    //     }
+    //   });
+    // } catch (e) {
+    //   console.log('AI autostart failed.');
+    //   console.log(e);
+    // }
   }
 
   @grok.decorators.func({tags: ['searchProvider']})

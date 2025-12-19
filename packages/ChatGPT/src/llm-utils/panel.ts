@@ -7,7 +7,7 @@ import {OpenAI} from 'openai';
 // @ts-ignore .... idk why it does not like it
 import '../../css/ai.css';
 import {ChatModel} from 'openai/resources/shared';
-import {dartLike, fireAIAbortEvent} from '../utils';
+import {dartLike, fireAIAbortEvent, getAIPanelToggleSubscription} from '../utils';
 import {ConversationStorage, StoredConversationWithContext, UIMessage} from './storage';
 
 export type ModelOption = 'Fast' | 'Deep Research';
@@ -29,6 +29,10 @@ type DBAIPanelInputs = AIPanelInputs & {
     schemaName: string,
 }
 
+type TVAIPanelInputs = AIPanelInputs & {
+    mode: 'agent' | 'ask',
+}
+
 const actionButtionValues = {
   run: 'Run AI Prompt',
   stop: 'Stop AI Generation',
@@ -42,16 +46,21 @@ export type UIMessageOptions = {
 
 export class AIPanel<T extends MessageType = OpenAI.Chat.ChatCompletionMessageParam, K extends AIPanelInputs = AIPanelInputs> {
   private root: HTMLElement;
+  private view: DG.View | DG.ViewBase;
   private inputArea: HTMLElement;
   protected header: HTMLElement;
   private outputArea: HTMLElement;
   private textArea: HTMLTextAreaElement;
+  private textAreaDiv: HTMLElement;
   private runButton: HTMLElement;
   private modelInput: DG.InputBase<ModelOption>;
   private newChatButton: HTMLElement;
   private copyConversationButton: HTMLElement;
   private historyButton: HTMLElement;
   private tryAgainButton: HTMLElement;
+  private micButton: HTMLElement;
+  private recognition: SpeechRecognition | null = null;
+  private isRecognizing: boolean = false;
   private _onRunRequest = new rxjs.Subject<{prevMessages: T[], currentPrompt: K}>();
   private _messages: T[] = [];
   private _uiMessages: UIMessage[] = [];
@@ -71,7 +80,8 @@ export class AIPanel<T extends MessageType = OpenAI.Chat.ChatCompletionMessagePa
 
 
   private currentConversationId: string | null = null;
-  constructor(private _contextID: string = 'global-ai-panel') {
+  constructor(private _contextID: string = 'global-ai-panel', view: DG.View | DG.ViewBase) {
+    this.view = view;
     this.root = ui.divV([], 'd4-ai-generation-panel');
     this.inputArea = ui.divV([], 'd4-ai-panel-input-area');
     this.outputArea = ui.divV([], 'd4-ai-panel-output-area');
@@ -95,6 +105,7 @@ export class AIPanel<T extends MessageType = OpenAI.Chat.ChatCompletionMessagePa
     ui.tooltip.bind(this.runButton, () => this.runButtonTooltip, 'left');
     this.tryAgainButton = ui.icons.sync(() => this.tryAgain(), 'Try Again');
     this.historyButton = ui.iconFA('history', () => this.showHistory(), 'Chat History...');
+    this.micButton = ui.iconFA('microphone', () => this.toggleSpeechRecognition(), 'Voice Input');
     this.copyConversationButton = ui.iconFA('copy', async () => {
       const success = await this.copyConversationToClipboard();
       if (success)
@@ -124,14 +135,15 @@ export class AIPanel<T extends MessageType = OpenAI.Chat.ChatCompletionMessagePa
     }) as DG.InputBase<ModelOption>;
     this.hideContentIcons();
     this.inputControlsDiv = ui.divH([
-      this.historyButton,
+      this.micButton,
       this.modelInput.input
     ], 'd4-ai-panel-input-controls');
     this.runButton.style.color = 'var(--blue-1)';
     const inputControlsRight = ui.divH([this.tryAgainButton, this.runButton], 'd4-ai-panel-run-controls');
     inputControlsRight.style.marginLeft = 'auto';
     const controlsDiv = ui.divH([this.inputControlsDiv, inputControlsRight], 'd4-ai-panel-controls-container');
-    this.inputArea.appendChild(this.textArea);
+    this.textAreaDiv = ui.divV([this.textArea], {classes: 'd4-ai-input-textarea-div', style: {position: 'relative'}});
+    this.inputArea.appendChild(this.textAreaDiv);
     this.inputArea.appendChild(controlsDiv);
     this.root.appendChild(this.header);
     this.root.appendChild(this.outputArea);
@@ -146,6 +158,47 @@ export class AIPanel<T extends MessageType = OpenAI.Chat.ChatCompletionMessagePa
     rightHeaderDiv.appendChild(this.copyConversationButton);
     rightHeaderDiv.appendChild(this.historyButton);
     this.header.appendChild(rightHeaderDiv);
+    this.setupSubscriptions();
+  }
+
+  protected setupSubscriptions() {
+    // do some subscriptions
+    let wasShown = false;
+    const sub = grok.events.onCurrentViewChanged.subscribe(() => {
+      if (grok.shell.v != this.view) {
+        wasShown = this.isShown;
+        if (wasShown)
+          this.hide();
+      } else {
+        if (wasShown)
+          this.show();
+      }
+    });
+
+    const toggleSub = getAIPanelToggleSubscription().subscribe((rv) => {
+      if (rv == this.view)
+        this.toggle();
+    });
+    const that = this;
+    function onKeyDownHandler(event: KeyboardEvent) {
+      if (grok.shell.v === that.view && event.ctrlKey && event.key === 'i') {
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        that.toggle();
+      }
+    }
+    document.addEventListener('keydown', onKeyDownHandler);
+
+    const closeSub = grok.events.onViewRemoved.subscribe((view) => {
+      if (view == this.view) {
+        sub.unsubscribe();
+        closeSub.unsubscribe();
+        this.hide();
+        this.dispose();
+        toggleSub.unsubscribe();
+        document.removeEventListener('keydown', onKeyDownHandler);
+      }
+    });
   }
 
   private static _lastDockedPanel: DG.DockNode | null = null;
@@ -198,6 +251,7 @@ export class AIPanel<T extends MessageType = OpenAI.Chat.ChatCompletionMessagePa
   }
 
   dispose() {
+    this.stopRecognition();
     this.root.remove();
     this._messages = [];
     this._uiMessages = [];
@@ -285,6 +339,7 @@ export class AIPanel<T extends MessageType = OpenAI.Chat.ChatCompletionMessagePa
           receiveFeedback(
             that._uiMessages[0]?.text ?? '',
             uiMessage.finalMessage!,
+            that.contextId,
             helpful
           );
         }
@@ -343,7 +398,7 @@ export class AIPanel<T extends MessageType = OpenAI.Chat.ChatCompletionMessagePa
     const inputs = this.getCurrentInputs();
     inputs.prompt = 'Please try again. ';
     this._onRunRequest.next({
-      prevMessages: this._messages,
+      prevMessages: [...this._messages],
       currentPrompt: inputs,
     });
   }
@@ -440,6 +495,7 @@ export class AIPanel<T extends MessageType = OpenAI.Chat.ChatCompletionMessagePa
       conv.uiMessages.forEach((msg) => {
         this.appendMessage(null as any, {title: msg.title ?? '', content: msg.text, fromUser: msg.fromUser, uiOnly: true}); // no loader
       });
+      this.afterConversationLoad(conv);
       //grok.shell.info(`Loaded conversation: ${conv.initialPrompt.substring(0, 50)}...`);
     } catch (error) {
       console.error('Failed to load conversation:', error);
@@ -447,28 +503,135 @@ export class AIPanel<T extends MessageType = OpenAI.Chat.ChatCompletionMessagePa
     }
   }
 
+  protected afterConversationLoad(conversation: StoredConversationWithContext<T>) {
+    // do nothing in base class
+  }
+
+  protected getConversationMeta(): any {
+    return undefined;
+  }
+
   public async saveCurrentConversation(initialPrompt?: string) {
     if (this._messages.length === 0) return;
 
     try {
       if (this.currentConversationId)
-        await ConversationStorage.updateConversation(this.currentConversationId, this._messages, this._uiMessages);
+        await ConversationStorage.updateConversation(this.currentConversationId, this._messages, this._uiMessages, this.getConversationMeta());
       else {
         this.currentConversationId = await ConversationStorage.saveConversation(
-          this._messages, this._uiMessages, initialPrompt ?? this._uiMessages[0]?.text ?? 'No Title', this.contextId
+          this._messages, this._uiMessages, initialPrompt ?? this._uiMessages[0]?.text ?? 'No Title', this.contextId, this.getConversationMeta()
         );
       }
     } catch (error) {
       console.error('Failed to save conversation:', error);
     }
   }
+
+  private toggleSpeechRecognition() {
+    if (this.isRecognizing)
+      this.stopRecognition();
+    else
+      this.startRecognition();
+  }
+
+  private startRecognition() {
+    try {
+      this.recognition = new SpeechRecognition();
+      this.recognition.continuous = false;
+      this.recognition.interimResults = false;
+      this.recognition.lang = 'en-US';
+
+      // Update UI to show recording state
+      this.isRecognizing = true;
+      this.micButton.classList.remove('fa-microphone');
+      this.micButton.classList.add('fa-stop');
+      this.micButton.style.color = 'orangered';
+      ui.setUpdateIndicator(this.textAreaDiv, true, 'Listening...');
+
+      this.recognition.onresult = (event) => {
+        const transcript = event.results[0][0].transcript;
+        this.textArea.value = transcript;
+        this.textArea.focus();
+        ui.setUpdateIndicator(this.textAreaDiv, false);
+      };
+
+      this.recognition.onerror = (event) => {
+        console.error('Speech recognition error:', event.error);
+        ui.setUpdateIndicator(this.textAreaDiv, false);
+
+        let errorMessage = 'Speech recognition error';
+        switch (event.error) {
+        case 'no-speech':
+          errorMessage = 'No speech detected. Please try again.';
+          break;
+        case 'audio-capture':
+          errorMessage = 'No microphone found or access denied';
+          break;
+        case 'not-allowed':
+          errorMessage = 'Microphone access denied. Please enable microphone permissions.';
+          break;
+        case 'network':
+          errorMessage = 'Network error during speech recognition';
+          break;
+        case 'aborted':
+          // User stopped intentionally, no error message needed
+          break;
+        default:
+          errorMessage = `Speech recognition error: ${event.error}`;
+        }
+
+        if (event.error !== 'aborted')
+          grok.shell.error(errorMessage);
+
+
+        this.stopRecognition();
+      };
+
+      this.recognition.onend = () => {
+        this.isRecognizing = false;
+        this.micButton.classList.remove('fa-stop');
+        this.micButton.classList.add('fa-microphone');
+        this.micButton.style.color = '';
+        ui.setUpdateIndicator(this.textAreaDiv, false);
+      };
+
+      this.recognition.start();
+    } catch (error) {
+      console.error('Failed to start speech recognition:', error);
+      grok.shell.error('Failed to start speech recognition');
+      this.stopRecognition();
+    }
+  }
+
+  private stopRecognition() {
+    if (this.recognition) {
+      try {
+        this.recognition.stop();
+      } catch (error) {
+        console.error('Error stopping recognition:', error);
+      }
+      this.recognition = null;
+    }
+
+    this.isRecognizing = false;
+    this.micButton.classList.remove('fa-stop');
+    this.micButton.classList.add('fa-microphone');
+    this.micButton.style.color = '';
+    ui.setUpdateIndicator(this.textAreaDiv, false);
+  }
 }
+
+
+function receiveFeedback(userPrompt: string, aiResponse: string, contextId: string, helpful: boolean) {
+  // not implemented yet
+}
+
 
 export class DBAIPanel<T extends MessageType = OpenAI.Chat.ChatCompletionMessageParam> extends AIPanel<T, DBAIPanelInputs> {
   protected get placeHolder() { return 'Ask your database, like "Total sales by regions"'; }
   protected schemaInput: DG.InputBase<string>;
-  constructor(schemas: string[], defaultSchema: string, connectionID: string) {
-    super(connectionID); // context ID is connection ID
+  constructor(schemas: string[], defaultSchema: string, connectionID: string, view: DG.View | DG.ViewBase) {
+    super(connectionID, view); // context ID is connection ID
     this.schemaInput = ui.input.choice('Schema', {
       items: schemas,
       value: defaultSchema,
@@ -488,7 +651,39 @@ export class DBAIPanel<T extends MessageType = OpenAI.Chat.ChatCompletionMessage
   }
 }
 
+export class TVAIPanel<T extends MessageType = OpenAI.Chat.ChatCompletionMessageParam> extends AIPanel<T, TVAIPanelInputs> {
+  protected get placeHolder() { return 'Ask about your table data...'; }
+  protected modeInput: DG.InputBase<'agent' | 'ask'>;
+  protected tableView: DG.TableView;
+  constructor(view: DG.TableView) {
+    super(view.dataFrame?.name ?? view.name ?? 'AI-Table-context', view); // context ID is table name
+    this.tableView = view;
+    this.modeInput = ui.input.choice('Mode', {
+      items: ['agent', 'ask'] as ('agent' | 'ask')[],
+      value: 'agent',
+      nullable: false,
+      tooltipText: 'Agent: Full task execution | Ask: Quick answers and guidance',
+    }) as DG.InputBase<'agent' | 'ask'>;
+    this.inputControlsDiv.appendChild(this.modeInput.input);
+    ui.tooltip.bind(this.modeInput.input, 'Agent mode for full task execution, Ask mode for quick answers and UI guidance');
+  }
 
-function receiveFeedback(userPrompt: string, aiResponse: string, helpful: boolean) {
-  // not implemented yet
+  public getCurrentInputs(): TVAIPanelInputs {
+    const baseInputs = super.getCurrentInputs();
+    return {
+      ...baseInputs,
+      mode: this.modeInput.value,
+    };
+  }
+  // meta of TVAIPanel will store the layout of the table view
+  protected getConversationMeta() {
+    return this.tableView.saveLayout().viewState;
+  }
+
+  protected afterConversationLoad(conversation: StoredConversationWithContext<T>) {
+    if (!!conversation.meta) {
+      const layout = DG.ViewLayout.fromViewState(conversation.meta);
+      this.tableView.loadLayout(layout, true);
+    }
+  }
 }
