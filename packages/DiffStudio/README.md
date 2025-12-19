@@ -2,7 +2,6 @@
 
 [![Documentation](https://img.shields.io/badge/docs-online-blue.svg)](https://datagrok.ai/help/compute/diff-studio)
 [![License: MIT](https://img.shields.io/badge/License-MIT-success.svg)](https://github.com/datagrok-ai/diff-grok/blob/main/LICENSE)
-[![Packages](https://github.com/datagrok-ai/public/actions/workflows/packages.yaml/badge.svg)](https://github.com/datagrok-ai/public/actions/workflows/packages.yaml)
 
 Diff Studio is a [package](https://datagrok.ai/help/develop/#packages) for the [Datagrok](https://datagrok.ai) platform. It provides in-browser tools for solving [initial value problem](https://en.wikipedia.org/wiki/Initial_value_problem) for systems of ordinary differential equations (ODE) and its interactive exploration.
 
