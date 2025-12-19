@@ -778,6 +778,7 @@ export namespace input {
     checked: (input, x) => api.grok_ColumnsInput_ChangeCheckedColumns(input.dart, x),
     additionalColumns: (input, x) => setInputAdditionalColumns(input, x),
     onAdditionalColumnsChanged: (input, x) => setInputAdditionalColumnsOnChanged(input, x),
+    additionalColumnProperties: (input, x) => setAdditionalColumnProperties(input, x),
     showSelectedColsOnTop: (input, x) => api.grok_ColumnsInput_SetShowSelectedColsOnTop(input.dart, x),
     showOnlyColorBox: (input, x) => api.grok_ColorInput_SetShowOnlyColorBox(input.dart, x),
     acceptExtensions: (input, x) => api.grok_FilesInput_Set_AcceptExtensions(input.dart, x),
@@ -862,6 +863,7 @@ export namespace input {
     checked?: string[];
     additionalColumns?: { [key: string]: Column[] };
     onAdditionalColumnsChanged?: (additionalColumns: { [key: string]: Column[] }) => void;
+    additionalColumnProperties?: Property[];
     showSelectedColsOnTop?: boolean;
   }
 
@@ -905,6 +907,10 @@ export namespace input {
         values[key] = values[key].map(toJs);
       onChange(values);
     }));
+  }
+
+  export function setAdditionalColumnProperties(input: InputBase, properties: Property[]): void {
+    api.grok_ColumnsInput_SetAdditionalColumnProperties(input.dart, properties.map((toDart)));
   }
 
   /** Creates input for the specified property, and optionally binds it to the specified object */

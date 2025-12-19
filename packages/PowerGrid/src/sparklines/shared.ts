@@ -34,6 +34,8 @@ export interface SummarySettingsBase {
   columnNames: string[];
   logColumnNames: string[];
   invertColumnNames: string[];
+  minValues: Map<string, number>;
+  maxValues: Map<string, number>;
   colorCode: SummaryColumnColoringType;
   normalization: NormalizationType;
 }
@@ -165,10 +167,25 @@ export function createBaseInputs(gridColumn: DG.GridColumn, settings: SummarySet
     });
   }
 
+  settings.minValues = new Map<string, number>();
+  settings.maxValues = new Map<string, number>();
+  for (const column of gridColumn.grid.dataFrame.columns) {
+    settings.minValues.set(column.name, column.min);
+    settings.maxValues.set(column.name, column.max);
+  }
+
   return [
     ui.input.columns('Columns', {
       value: gridColumn.grid.dataFrame.columns.byNames(columnNames),
       table: gridColumn.grid.dataFrame,
+      additionalColumnProperties: [
+        DG.Property.create('min', DG.TYPE.FLOAT,
+          (col: string) => settings.minValues.get(col),
+          (col: string, value: number) => settings.minValues.set(col, value)),
+        DG.Property.create('max', DG.TYPE.FLOAT,
+          (col: string) => settings.maxValues.get(col),
+          (col: string, value: number) => settings.maxValues.set(col, value)),
+      ],
       onValueChanged: (value) => {
         settings.columnNames = names(value);
         gridColumn.grid.invalidate();
