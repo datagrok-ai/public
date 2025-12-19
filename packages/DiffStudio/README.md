@@ -1,6 +1,6 @@
 # Diff Studio
 
-[![Run: Diff Studio](https://img.shields.io/badge/app-%20Diff%20Studio-orange.svg)](https://public.datagrok.ai/apps/DiffStudio)
+[![Run: Diff Studio](https://img.shields.io/badge/app-%20Diff%20Studio-red.svg)](https://public.datagrok.ai/apps/DiffStudio)
 [![Tutorial: Differential equations](https://img.shields.io/badge/tutorial-Differential%20Equations-yellow.svg)](https://public.datagrok.ai/apps/tutorials/Tutorials/Scientificcomputing/Differentialequations)
 [![Documentation](https://img.shields.io/badge/docs-online-blue.svg)](https://datagrok.ai/help/compute/diff-studio)
 [![License: MIT](https://img.shields.io/badge/license-MIT-success.svg)](https://github.com/datagrok-ai/diff-grok/blob/main/LICENSE)
