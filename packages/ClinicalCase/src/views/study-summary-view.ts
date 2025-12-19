@@ -10,7 +10,7 @@ import {AGE, BW_RES_N, RACE, SEX, SPECIES, SUBJECT_ID, SUBJ_REF_STDT,
 import {ClinicalCaseViewBase} from '../model/ClinicalCaseViewBase';
 import $ from 'cash-dom';
 import {checkDateFormat} from '../data-preparation/utils';
-import {removeExtension, studyConfigToMap, updateDivInnerHTML} from '../utils/utils';
+import {addDomainAsTableView, removeExtension, studyConfigToMap, updateDivInnerHTML} from '../utils/utils';
 import {TRT_ARM_FIELD} from '../views-config';
 import {checkColumnsAndCreateViewer, handleMouseMoveOverErrorCell, setupValidationErrorColumns,
   setupValidationErrorIndicators} from '../utils/views-validation-utils';
@@ -85,25 +85,7 @@ export class StudySummaryView extends ClinicalCaseViewBase {
       for (const domain of studies[this.studyId].domains.all()) {
         const domainName = removeExtension(domain.name);
         menu.item(domainName, () => {
-          const df = domain.clone();
-          df.name = `${this.studyId}_${domainName}`;
-          const tableView = grok.shell.addTableView(df);
-          setupValidationErrorColumns(df);
-          let errorSubs: Subscription[] = [];
-          const ribbons = tableView.getRibbonPanels();
-          const showErrors = ui.input.bool('Show validation errors', {
-            value: false,
-            onValueChanged: () => {
-              if (!showErrors.value) {
-                errorSubs.forEach((sub) => sub.unsubscribe());
-                tableView.grid.overlay.removeEventListener('mousemove', handleMouseMoveOverErrorCell);
-              } else
-                errorSubs = setupValidationErrorIndicators(tableView.grid, df);
-              tableView.grid.invalidate();
-            },
-          });
-          ribbons.push([showErrors.root]);
-          tableView.setRibbonPanels(ribbons);
+          addDomainAsTableView(domain);
         });
       }
       menu.show();

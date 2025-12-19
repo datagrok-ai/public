@@ -7,7 +7,7 @@ import {CDISC_STANDARD, ClinCaseTableView, ClinStudyConfig} from './types';
 import {defineXmlFileName, STENDTC, STSTDTC, StudyConfigFileName,
   studyConfigJsonFileName} from '../constants/constants';
 import X2JS from 'x2js';
-import {readClinicalFile, removeExtension, studyConfigToMap} from './utils';
+import {addDomainAsTableView, readClinicalFile, removeExtension, studyConfigToMap} from './utils';
 import {SUBJECT_ID, TSPARM, TSPARMCD, TSVAL} from '../constants/columns-constants';
 import {ClinicalStudy} from '../clinical-study';
 import {SUMMARY_VIEW_NAME, VALIDATION_VIEW_NAME} from '../constants/view-names-constants';
@@ -352,13 +352,27 @@ function addStudyToBrowseTree(study: ClinicalStudy, treeNode: DG.TreeViewGroup, 
       const sub = studyLoadedSubject.subscribe((data) => {
         if (data.name === study.studyId) {
           sub.unsubscribe();
-          if (data.loaded)
+          if (data.loaded) {
+            addDomainsToTree(study, node);
             openStudyNode(studies[study.studyId], node, studies[study.studyId].currentViewName);
+          }
         }
       });
       initClinicalStudyData(studies[study.studyId], studyFiles);
-    }
+    } else
+      addDomainsToTree(study, node);
   });
+}
+
+function addDomainsToTree(study: ClinicalStudy, treeNode: DG.TreeViewGroup) {
+  const domains = study.domains.all();
+  const domainsNode = treeNode.group('Domains');
+  for (const domain of domains) {
+    const domainItem = domainsNode.item(domain.name);
+    domainItem.onSelected.subscribe(() => {
+      addDomainAsTableView(domain);
+    });
+  }
 }
 
 async function openStudyNode(study: ClinicalStudy, node: DG.TreeViewGroup, currentViewName: string) {

@@ -1,7 +1,10 @@
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
+import * as ui from 'datagrok-api/ui';
 import {scripts} from '../package-api';
 import {ClinStudyConfig} from './types';
+import { handleMouseMoveOverErrorCell, setupValidationErrorColumns, setupValidationErrorIndicators } from './views-validation-utils';
+import { Subscription } from 'rxjs';
 
 export function updateDivInnerHTML(div: HTMLElement, content: any) {
   div.innerHTML = '';
@@ -64,4 +67,24 @@ export function studyConfigToMap(studyConfig: ClinStudyConfig): {[key: string]: 
       map[key] = studyConfig.other[key];
   }
   return map;
+}
+
+export function addDomainAsTableView(df: DG.DataFrame) {
+  const tableView = grok.shell.addTableView(df);
+  setupValidationErrorColumns(df);
+  let errorSubs: Subscription[] = [];
+  const ribbons = tableView.getRibbonPanels();
+  const showErrors = ui.input.bool('Show validation errors', {
+    value: false,
+    onValueChanged: () => {
+      if (!showErrors.value) {
+        errorSubs.forEach((sub) => sub.unsubscribe());
+        tableView.grid.overlay.removeEventListener('mousemove', handleMouseMoveOverErrorCell);
+      } else
+        errorSubs = setupValidationErrorIndicators(tableView.grid, df);
+      tableView.grid.invalidate();
+    },
+  });
+  ribbons.push([showErrors.root]);
+  tableView.setRibbonPanels(ribbons);
 }

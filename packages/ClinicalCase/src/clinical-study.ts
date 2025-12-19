@@ -4,7 +4,7 @@ import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 import {vaidateAEDomain, vaidateDMDomain} from './sdtm-validation/services/validation-service';
 import {createValidationDataFrame} from './sdtm-validation/validation-utils';
-import {SITE_ID, STUDY_ID} from './constants/columns-constants';
+import {SITE_ID, STUDY_ID, SUBJECT_ID} from './constants/columns-constants';
 import {addVisitDayFromTvDomain, createEventStartEndDaysCol} from './data-preparation/data-preparation';
 import {createFilters, removeExtension} from './utils/utils';
 import {createErrorsByDomainMap} from './utils/views-validation-utils';
@@ -152,27 +152,37 @@ export class ClinicalStudy {
 
 
   private process(): void {
-    if (!this.subjSitesCountsProcessed)
-      this.processSitesAndSubjectCount();
-    createEventStartEndDaysCol(this.studyId);
-    addVisitDayFromTvDomain(this.studyId);
-    if (this.domains.dm) {
-      this.dmFilters = createFilters(this.domains.dm);
-      this.domains.dm.onFilterChanged.subscribe(() => {
-      });
-      grok.shell.topMenu
-        .group('Cohort')
-        .item('Filter', () => {
-          const dialog = ui.dialog({title: ''})
-            .add(ui.div(this.dmFilters.root))
-          //@ts-ignore
-            .onOK(() => {})
-            .show();
-          dialog.root.addEventListener('mouseenter', (event) => {
-            this.dmFilters.root.removeAttribute('data-widget');
-          });
+    if (this.config.standard === CDISC_STANDARD.SDTM) {
+      if (!this.subjSitesCountsProcessed)
+        this.processSitesAndSubjectCount();
+      createEventStartEndDaysCol(this.studyId);
+      addVisitDayFromTvDomain(this.studyId);
+      if (this.domains.dm) {
+        this.dmFilters = createFilters(this.domains.dm);
+        this.domains.dm.onFilterChanged.subscribe(() => {
         });
+        grok.shell.topMenu
+          .group('Cohort')
+          .item('Filter', () => {
+            const dialog = ui.dialog({title: ''})
+              .add(ui.div(this.dmFilters.root))
+            //@ts-ignore
+              .onOK(() => {})
+              .show();
+            dialog.root.addEventListener('mouseenter', (event) => {
+              this.dmFilters.root.removeAttribute('data-widget');
+            });
+          });
+      }
     }
+    this.domains.all().forEach((it) => {
+      if (it.name !== 'dm' && it.columns.names().includes(SUBJECT_ID)) {
+        const savedName = it.name;
+        grok.data.joinTables(it, this.domains.dm, [SUBJECT_ID], [SUBJECT_ID], null,
+          this.domains.dm.columns.names().filter((it) => it !== SUBJECT_ID), DG.JOIN_TYPE.LEFT, true);
+        it.name = savedName;
+      }
+    });
   }
 
 
