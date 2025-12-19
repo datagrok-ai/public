@@ -26,11 +26,44 @@ typing words, separating them with a comma, then the filter will show only those
 
 It is also allowed to paste multi-line text from the clipboard into the search field. In this case, the filter will also
 display those values that exactly match each word. The checkbox on the left of the search field controls weather to select
-filtered out values only. If this checkbox is enabled, upon searching for value(or values), filter will automatically select
+filtered out values only. If this checkbox is enabled, upon searching for value (or values), filter will automatically select
 only those values that match the search criteria. In contrary case if the checkbox is disabled, search will only filter out values
 and not select them.
 
 ![Filter](../../uploads/gifs/filter-checkbox.gif "Filter")
+
+## Structure filter
+
+Structure filter lets you filter molecules by structural patterns or similarity. 
+It works on molecular columns and supports the following search types:
+
+* **Contains**: filters molecules that contain the sketched structure.  
+* **Included in**: filters molecules where the sketched structure is a superstructure.  
+* **Not contains**: filters out molecules that contain the sketched structure.  
+* **Not included in**: filters out molecules where the sketched structure is a superstructure.  
+* **Exact match**: filters molecules that exactly match the sketched structure.  
+* **Similar**: filters molecules similar to the sketched structure; supports a similarity threshold.
+ 
+:::note Use current molecule as filter
+
+To quickly filter the dataset by the selected molecule, right-click the molecule cell in the grid and select **Current value > Use as filter**.
+
+:::
+
+### Categorical mode
+
+You can switch the structure filter to categorical mode, which treats each unique molecule as a separate, selectable category in the **Filter Panel**. To do that, click the column header, go to the **Context Panel** > **Chemistry** > **Rendering**, and set **Filter type** to `Categorical`. Alternalively, use [column tags](#column-tags) to set the categorical structure filter mode.
+
+
+## Scaffold tree filter
+
+Scaffold tree filter lets you filter molecules based on their scaffolds.  
+The scaffold hierarchy is displayed as a tree, where you can:
+
+* Select one or more scaffolds to filter the dataset.  
+* Switch the **AND/OR** control to define filter logic.  
+* Exclude selected scaffolds using the **≠** icon.  
+* Color scaffolds to highlight relationships; colors are shown in both the dataset column and the scaffold tree.
 
 ## Text filter
 
