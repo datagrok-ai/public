@@ -243,7 +243,28 @@ class DBExplorerConfigWrapper {
 export async function setupDBQueryCellHandler() {
   const explorePanelRoot = ui.div([], {style: {minHeight: '30px', width: '100%'}});
   let processTimer: any = null;
-  const conIdToNqName = new Map<string, {name?: string, nqName?: string, friendlyName?: string} | null>();
+  const conInfoCache = new Map<string, Promise<{name: string, nqName: string, friendlyName: string} | null>>();
+  const getConnectionInfo = async (connectionId: string) => {
+    if (conInfoCache.has(connectionId))
+      return conInfoCache.get(connectionId)!;
+    conInfoCache.set(connectionId, (async () => {
+      try {
+        const connection = await grok.dapi.connections.find(connectionId);
+        if (connection)
+          return {name: connection.name, nqName: connection.nqName, friendlyName: connection.friendlyName ?? connection.name};
+      } catch (e) {
+        console.error('Failed to get connection info for id ' + connectionId, e);
+      }
+      return null;
+    })());
+    return conInfoCache.get(connectionId)!;
+  };
+
+  const isValidCurrentObject = (cell: DG.Cell) => {
+    return (cell?.dart && (cell.rowIndex ?? -1) >= 0 && cell.column?.dart &&
+      cell.dataFrame?.dart) && (grok.shell.o == cell.column || // cell equivalency does not work
+        (grok.shell.o instanceof DG.SemanticValue && grok.shell.o.cell?.dart && grok.shell.o.cell.column === cell.column && grok.shell.o.cell.rowIndex === cell.rowIndex));
+  };
 
   function processCell(cell: DG.Cell) {
     ui.empty(explorePanelRoot);
@@ -252,9 +273,7 @@ export async function setupDBQueryCellHandler() {
     if (processTimer != null)
       clearTimeout(processTimer);
     processTimer = setTimeout(async () => {
-      if (!cell?.dart || (cell.rowIndex ?? -1) < 0 || !cell.column?.dart ||
-        !cell.dataFrame?.dart || grok.shell.o != cell.column
-      ) { // no need to process anything
+      if (!isValidCurrentObject(cell)) { // no need to process anything
         ui.setUpdateIndicator(explorePanelRoot, false);
         return;
       }
@@ -267,19 +286,14 @@ export async function setupDBQueryCellHandler() {
         ui.setUpdateIndicator(explorePanelRoot, false);
         return;
       }
-      if (!conIdToNqName.has(cId)) {
-        const connection = await grok.dapi.connections.find(cId);
-        const perm = connection ? await grok.dapi.permissions.check(connection, 'View') : false;
-        conIdToNqName.set(cId, connection && perm ? {name: connection.name, nqName: connection.nqName, friendlyName: connection.friendlyName ?? connection.name} : null);
-      }
-      const nqNameInfo = conIdToNqName.get(cId);
-      if (!nqNameInfo || !nqNameInfo?.nqName || !nqNameInfo?.name) {
+      const conInfo = await getConnectionInfo(cId);
+      if (!conInfo || !conInfo?.nqName || !conInfo?.name) {
         ui.setUpdateIndicator(explorePanelRoot, false);
         return;
       }
       const handler = DG.ObjectHandler.list().find((h) => { // for entity method does not work, because of instanceof checks.
         // need to do it manually// underneeth, its doing the same with listing all handlers
-        return h.type === DB_EXPLORER_OBJ_HANDLER_TYPE && (h as DBExplorerObjectHandler).connectionNqName === nqNameInfo.nqName! && (h as DBExplorerObjectHandler).schemaName === schemaName;
+        return h.type === DB_EXPLORER_OBJ_HANDLER_TYPE && (h as DBExplorerObjectHandler).connectionNqName === conInfo.nqName! && (h as DBExplorerObjectHandler).schemaName === schemaName;
       });
       if (handler) {
         const acc = (handler as DBExplorerObjectHandler).renderPropertiesFromDfRow(cell.row, tableName);
@@ -287,10 +301,10 @@ export async function setupDBQueryCellHandler() {
         explorePanelRoot.appendChild(acc);
       } else {
         // if there is no handler, at this point we can just register it
-        console.log('Registering generic handler for ', nqNameInfo.nqName, schemaName);
+        console.log('Registering generic handler for ', conInfo.nqName, schemaName);
         const exp = DBExplorer.initFromConfig({
-          connectionName: nqNameInfo.name!,
-          nqName: nqNameInfo.nqName!,
+          connectionName: conInfo.name!,
+          nqName: conInfo.nqName!,
           schemaName: schemaName,
           joinOptions: [],
           entryPoints: {},
@@ -304,22 +318,36 @@ export async function setupDBQueryCellHandler() {
     }, 300);
   }
 
-
   grok.events.onAccordionConstructed.subscribe((acc) => {
-    if (!(acc.context instanceof DG.Column))
+    if (!(acc.context instanceof DG.Column) && !(acc.context instanceof DG.SemanticValue))
       return;
-    const col = acc.context as DG.Column;
-    const df = col.dart ? col.dataFrame : null;
-    if (!df || !df.tags.get(DG.Tags.DataConnectionId) || !col.tags.get(DG.Tags.DbTable)
-        || !col.tags.get(DG.Tags.DbColumn))
+    const getCol = () => {
+      if (acc.context instanceof DG.Column)
+        return acc.context as DG.Column;
+      const sv = acc.context as DG.SemanticValue;
+      if (sv.cell && sv.cell.dart && sv.cell.column)
+        return sv.cell.column;
+      return null;
+    };
+
+    const col = getCol();
+    if (!col)
+      return;
+    const df = col?.dart ? col.dataFrame : null;
+    if (!df || !df.tags.get(DG.Tags.DataConnectionId) || !col.tags.get(DG.Tags.DbTable) ||
+        !col.tags.get(DG.Tags.DbColumn))
       return;
     ui.empty(explorePanelRoot);
     explorePanelRoot.appendChild(ui.divText('Select a cell to explore its value...'));
-    acc.addPane(conIdToNqName.get(df.tags.get(DG.Tags.DataConnectionId))?.friendlyName ?? 'Explore', () => {
+    const pane = acc.addPane('Explore', () => {
       const children = [getEnrichDiv(col)];
-      if (df.tags.get(DG.Tags.DbSchema))
+      if (col.tags.get(DG.Tags.DbSchema))
         children.push(explorePanelRoot);
       return ui.divV([children], {style: {width: '100%'}});
+    });
+    getConnectionInfo(df.tags.get(DG.Tags.DataConnectionId)!).then((conInfo) => {
+      if (conInfo) // this way is better than making subscription async...
+        pane.name = conInfo.friendlyName;
     });
     // if there is a current cell and its in the given column, process it
     if (col.tags.get(DG.Tags.DbSchema) && col.dataFrame.currentCell && col.dataFrame.currentCell.column === col)
@@ -327,7 +355,7 @@ export async function setupDBQueryCellHandler() {
   });
 
   grok.events.onCurrentCellChanged.subscribe((cell?: DG.Cell) => {
-    if (!cell?.dart || !cell.column?.dart || !cell.dataFrame?.dart || grok.shell.o != cell.column)
+    if (!cell || !isValidCurrentObject(cell))
       return;
     const col = cell.column;
     const connectionID = col.dataFrame.tags.get(DG.Tags.DataConnectionId)!;
@@ -379,7 +407,7 @@ function getEnrichDiv(col: DG.Column): HTMLElement {
       ]);
     });
   });
-  return enrichAcc.root;
+  return ui.divV([enrichAcc.root]); // wraping in div for consistent styling
 }
 
 function getEnrichmentsDiv(conn: DG.DataConnection, schema: string, table: string, column: string, df: DG.DataFrame) {
@@ -391,9 +419,9 @@ function getEnrichmentsDiv(conn: DG.DataConnection, schema: string, table: strin
     ], 'power-pack-enrich-empty');
     if (names.length === 0)
       return empty;
-    let root: HTMLDivElement | undefined;
+    let root: HTMLDivElement | null = null;
     root = ui.divV(names.map((n) => {
-      let parent: HTMLDivElement | undefined;
+      let parent: HTMLDivElement | undefined = undefined;
       const deleteLink = ui.iconFA('times', () => {
         deleteEnrichment(conn.id, schema, table, column, n).then((b) => {
           if (b)
@@ -439,7 +467,7 @@ function showEnrichDialog(mainTable: DG.TableInfo, df: DG.DataFrame, dbColName: 
   const pivotView: DG.VisualDbQueryEditor = DG.VisualDbQueryEditor.fromQuery(tableQuery);
   pivotView.showAddToWorkspaceBtn = false;
 
-  let nameInput: DG.InputBase = ui.input.string('Name', {nullable: false, tooltipText: 'Provide name for the enrichment.', value: enrichName});
+  const nameInput: DG.InputBase = ui.input.string('Name', {nullable: false, tooltipText: 'Provide name for the enrichment.', value: enrichName});
   const root = ui.wait(async () => {
     await pivotView.isInit();
     await pivotView.setSingleColumnMode(dbColName);
@@ -467,19 +495,20 @@ function showEnrichDialog(mainTable: DG.TableInfo, df: DG.DataFrame, dbColName: 
   isValidInput.root.hidden = true;
 
   const dialog = ui.dialog({title: `Enrich ${dbColName}`})
-      .add(nameInput)
-      .add(isValidInput)
-      .add(root)
-      .onOK(async () => {
-        pivotView.refreshQuery();
-        const enrichment = convertTableQueryToEnrichment(pivotView.query, nameInput.value,
-            mainTable.tags.get(DG.Tags.TableSchema), mainTable.friendlyName, dbColName);
-        await saveEnrichment(enrichment, pivotView.query.connection.id);
-        if (enrichName && enrichment.name != enrichName)
-          await deleteEnrichment(pivotView.query.connection.id, enrichment.keySchema,
-              enrichment.keyTable, enrichment.keyColumn, enrichName);
-        onSave();
-      });
+    .add(nameInput)
+    .add(isValidInput)
+    .add(root)
+    .onOK(async () => {
+      pivotView.refreshQuery();
+      const enrichment = convertTableQueryToEnrichment(pivotView.query, nameInput.value,
+        mainTable.tags.get(DG.Tags.TableSchema), mainTable.friendlyName, dbColName);
+      await saveEnrichment(enrichment, pivotView.query.connection.id);
+      if (enrichName && enrichment.name != enrichName) {
+        await deleteEnrichment(pivotView.query.connection.id, enrichment.keySchema,
+          enrichment.keyTable, enrichment.keyColumn, enrichName);
+      }
+      onSave();
+    });
 
 
   dialog.addButton('ENRICH', async () => {
@@ -508,8 +537,8 @@ function showEnrichDialog(mainTable: DG.TableInfo, df: DG.DataFrame, dbColName: 
 async function getEnrichConfigsNames(connectionId: string, schema: string, table: string, column: string): Promise<string[]> {
   try {
     const files = await grok.dapi.files
-        .list(`System:AppData/PowerPack/enrichments/${connectionId}/${schema}/${table}/${column}`);
-    return files.map(f => f.name.substring(0, f.name.lastIndexOf('.')));
+      .list(`System:AppData/PowerPack/enrichments/${connectionId}/${schema}/${table}/${column}`);
+    return files.map((f) => f.name.substring(0, f.name.lastIndexOf('.')));
   } catch (_: any) {
     return [];
   }
@@ -518,7 +547,7 @@ async function getEnrichConfigsNames(connectionId: string, schema: string, table
 async function deleteEnrichment(connectionId: string, schema: string, table: string, column: string, name: string): Promise<boolean> {
   try {
     await grok.dapi.files
-        .delete(`System:AppData/PowerPack/enrichments/${connectionId}/${schema}/${table}/${column}/${name}.json`);
+      .delete(`System:AppData/PowerPack/enrichments/${connectionId}/${schema}/${table}/${column}/${name}.json`);
     return true;
   } catch (_: any) {
     new DG.Balloon().error('Something went wrong while deleting enrichment. Please, try again.');
@@ -529,7 +558,7 @@ async function deleteEnrichment(connectionId: string, schema: string, table: str
 async function readEnrichConfig(connectionId: string, schema: string, table: string, column: string, name: string): Promise<Enrichment | null> {
   try {
     const data = await grok.dapi.files
-        .readAsText(`System:AppData/PowerPack/enrichments/${connectionId}/${schema}/${table}/${column}/${name}.json`);
+      .readAsText(`System:AppData/PowerPack/enrichments/${connectionId}/${schema}/${table}/${column}/${name}.json`);
     return JSON.parse(data);
   } catch (_: any) {
     return null;
@@ -539,8 +568,8 @@ async function readEnrichConfig(connectionId: string, schema: string, table: str
 async function saveEnrichment(e: Enrichment, connectionId: string): Promise<void> {
   try {
     await grok.dapi.files
-        .writeAsText(`System:AppData/PowerPack/enrichments/${connectionId}/${e.keySchema}/${e.keyTable}/${e.keyColumn}/${e.name}.json`,
-            JSON.stringify(e));
+      .writeAsText(`System:AppData/PowerPack/enrichments/${connectionId}/${e.keySchema}/${e.keyTable}/${e.keyColumn}/${e.name}.json`,
+        JSON.stringify(e));
   } catch (_: any) {
     new DG.Balloon().error('Could not save enrichment config. Please try again.');
   }
@@ -576,10 +605,10 @@ async function executeEnrichQuery(query: DG.TableQuery, df: DG.DataFrame, keyCol
     let res: DG.DataFrame | undefined;
     for (let i = 0; i < keyColValues.length; i += 200) {
       const inValues = keyColValues.slice(i, i + 200);
-      query.where = [{field: keyCol, pattern: `in (${inValues.join(',')})`, dataType: df.getCol(keyCol).type}];
+      query.where = [{field: `${query.table}.${keyCol}`, pattern: `in (${inValues.join(',')})`, dataType: df.getCol(keyCol).type}];
       const queryCall = query.prepare();
       const run = await queryCall.call(false, undefined,
-          {processed: true, report: false});
+        {processed: true, report: false});
       const queryResult = run.getOutputParamValue();
       if (!queryResult)
         break;
@@ -590,7 +619,7 @@ async function executeEnrichQuery(query: DG.TableQuery, df: DG.DataFrame, keyCol
     }
     if (!res) {
       grok.shell.error('Something went wrong and query result returned null.');
-      return ;
+      return;
     }
 
     await grok.data.detectSemanticTypes(res);
