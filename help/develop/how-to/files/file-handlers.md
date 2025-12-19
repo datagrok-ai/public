@@ -2,7 +2,7 @@
 title: "Develop custom file handlers"
 ---
 
-To handle custom file formats, register a function with the `file-handler` tag, and specify the comma-separated
+To handle custom file formats, register a function with the `fileHandler` role, and specify the comma-separated
 extensions in the `meta.ext` parameter. Function's input is either a string or a list of bytes, the output is list of
 [tables](../../../datagrok/concepts/table.md).
 
@@ -12,7 +12,7 @@ extension:
 ```javascript
 //input: string content
 //output: list tables
-//tags: file-handler
+//meta.role: fileHandler
 //meta.ext: fasta
 function fastaFileHandler(content) {
     // ... processing files ...

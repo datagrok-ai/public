@@ -3,7 +3,7 @@
 
 # Function types
 
-A package can contain various functions, and each function is annotated with a tag that defines what this function does:
+A package can contain various functions, and each function is annotated with a role that defines what this function does:
 
 * `#app` for [applications](#applications)
 * `#dashboard` for [dashboards](../../datagrok/concepts/project/dashboard.md)
@@ -15,19 +15,19 @@ A package can contain various functions, and each function is annotated with a t
 * `#fileExporter` for [exporters](#file-exporters)
 * `#packageSettingsEditor` for [settings editors](#package-settings-editors)
 
-You can use the tags to search for certain functions from [Datagrok > Functions] or from within your code:
+You can use the roles to search for certain functions from [Datagrok > Functions] or from within your code:
 
 ```js
-const applications = DG.Func.find({ tags: [DG.FUNC_TYPES.APP] });
+const applications = DG.Func.find({ meta: {role: DG.FUNC_TYPES.APP}});
 ```
 
 ## Applications
 
-Applications are [functions](../../datagrok/functions/function.md) tagged with `app`:
+Applications are [functions](../../datagrok/functions/function.md) with the role `app`:
 
 ```js
 //name: Test Application
-//tags: app
+//meta.role: app
 export function app() {
   grok.shell.info('This is Test Application!');
 }
@@ -63,7 +63,7 @@ data from an API, subscribing to global events, changing the user interface afte
 external services with refined configuration parameters, and so on.
 
 There are two types of functions that can prepare the package for execution &mdash; `init`
-and `autostart`. A function tagged with `#init` gets invoked when the package is initialized. This happens the first
+and `autostart`. A function with the `#init` role gets invoked when the package is initialized. This happens the first
 time any of the functions in the package is called. It is guaranteed that the `#init` function is invoked _once_ before
 the execution of the rest of the code and will not be re-executed on subsequent calls.
 
@@ -71,7 +71,7 @@ An `autostart` function is similar to the the `init` function, but is called at 
 when a package function is invoked. Another difference between `#autostart`
 and `#init` is that when you call a regular function from the package, there's no guarantee that its code will wait
 until the `autostart` completes. Another caveat is that the whole package will get initialized along with `autostart`,
-so use this type of functions wisely. If possible, stick to the `init` tag while developing your programs.
+so use this type of functions wisely. If possible, stick to the `init` role while developing your programs.
 
 To generate an `init` function, from your package directory, run:
 
@@ -97,7 +97,7 @@ extension, which is derived from the `fileViewer-<extension>` tag.
 
 ## File exporters
 
-A file exporter is a function used for loading data from the platform. It is annotated with the `#fileExporter` tag.
+A file exporter is a function used for loading data from the platform. It is annotated with the `#fileExporter` role.
 Exporters reside in the platform's top menu "export" section.
 
 *See more:* [How to Create File Exporters](../how-to/files/file-exporters.md)

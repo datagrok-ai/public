@@ -45,7 +45,6 @@ populated default values, and created popups with help text.
 #name: DataframeIdDemo
 #description: Adding ID column to a dataframe
 #language: python
-#tags: demo, dataframe
 #input: dataframe table [Data table]
 #input: string id_column = 'ID' [Name of ID column]
 #input: string id_prefix = 'id_' [Prefix for ID column]
@@ -69,7 +68,6 @@ last_row = len(new_table)
 #name: DataframeDemo
 #description: Adding a new column to a dataframe
 #language: r
-#tags: demo, dataframe
 #input: dataframe table [Data table]
 #input: string id_column = 'ID' [Name of ID column]
 #input: string id_prefix = 'id_' [Prefix for ID column]
@@ -91,7 +89,6 @@ last_row <- nrow(new_table)
 //name: DataframeIdDemo
 //description: Adding ID column to a dataframe
 //language: javascript
-//tags: demo, dataframe
 //sample: cars.csv
 //input: dataframe table [Data table]
 //input: string id_column = 'model' [Name of ID column]
@@ -163,7 +160,6 @@ to choose a dataframe.
 #name: ColumnSelectorDemo
 #description: Using column selectors
 #language: python
-#tags: demo, dataframe, column_selector
 #input: dataframe table [Data table]
 #input: column id_column [Fill this column with auto-d=generated ID]
 #input: column_list data_columns [Keep this column and drop all others]
@@ -184,7 +180,6 @@ new_table = new_table[ [id_column] + data_columns ]
 //name: ColumnSelectorDemo
 //description: Using column selectors
 //language: javascript
-//tags: demo, dataframe, column_selector
 //input: dataframe table [Data table]
 //input: column id_column [Fill this column with auto-d=generated ID]
 //input: column_list data_columns [Keep this column and drop all others]
@@ -231,7 +226,6 @@ Datagrok creates an interface to load the file.
 #name: DfFromJSON
 #description: Loads a dataframe from JSON file
 #language: python
-#tags: template, demo, FileIo
 #input: file json_file {caption:JSON file} [A JSON file to load a dataframe]
 #output: dataframe df 
 
@@ -247,7 +241,6 @@ df = pd.read_json(json_file)
 //name: DfFromJSON
 //description: Loads a file and returns first sheet name
 //language: javascript
-//tags: template, demo, FileIo
 //input: file uploadedFile {caption:Excel file}
 //output: string first_sheet_name 
 
@@ -273,7 +266,6 @@ The `blob` input works in a very similar way but provides the binary stream inst
 #name: BlobTest
 #description: Example of Blob usage
 #language: python
-#tags: template, demo
 #input: blob array_blob 
 #output: string typeofblob
 
@@ -305,7 +297,6 @@ For example, let's save a dataframe to a JSON file:
 #name: DfToJSON
 #description: Saves a dataframe to JSON file
 #language: python
-#tags: template, demo, FileIo
 #input: dataframe df [Dataframe to convert to JSON]
 #output: file json_file
 

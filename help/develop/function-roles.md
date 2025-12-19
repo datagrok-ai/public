@@ -4,7 +4,7 @@ sidebar_position: 5
 ---
 
 A package can contain functions that get discovered and integrated with the platform at runtime.
-Typically, each function type has a special tag denoting what the function does, for example:
+Typically, each function type has a special role denoting what the function does, for example:
 
 * `#app` for [applications](#applications)
 * `#dashboard` for [dashboards](../datagrok/concepts/project/dashboard.md)
@@ -17,11 +17,11 @@ Typically, each function type has a special tag denoting what the function does,
   and [exporters](#file-exporters)
 * `#packageSettingsEditor` for [settings editors](#settings-editors)
 
-You can use these tags to search for certain functions either from the platform's interface
+You can use these roles to search for certain functions either from the platform's interface
 ([https://public.datagrok.ai/functions?q](https://public.datagrok.ai/functions?q)) or from within your code:
 
 ```js
-const applications = DG.Func.find({tags: [DG.FUNC_TYPES.APP]});
+const applications = DG.Func.find({meta: {role: DG.FUNC_TYPES.APP}});
 ```
 
 **TIP** To disable all package functions (for debug purposes), use the
@@ -30,7 +30,7 @@ const applications = DG.Func.find({tags: [DG.FUNC_TYPES.APP]});
 
 ## Applications
 
-Applications are [functions](../datagrok/concepts/functions/functions.md) tagged with the `#app` tag. Use `datagrok-tools` to get
+Applications are [functions](../datagrok/concepts/functions/functions.md) with the `#app` role. Use `datagrok-tools` to get
 a template:
 
 ```shell
@@ -42,7 +42,7 @@ grok add app <name>
 
 ## Info panels
 
-Functions tagged as `#panel` extend the context panel with additional content for the current object.
+Functions with the `#panel` role extend the context panel with additional content for the current object.
 Use `datagrok-tools` to get a template:
 
 ```shell
@@ -92,7 +92,7 @@ plugin that introduces a "Welcome" view at startup:
 
 ```js
 //name: welcomeView
-//tags: autostart
+//meta.role: autostart
 //meta.autostartImmediate: true
 export function _welcomeView(): void {
   if (_properties['showWelcomeView'])
@@ -102,7 +102,7 @@ export function _welcomeView(): void {
 
 ## Semantic type detectors
 
-Functions that define semantic types have the `#semTypeDetector` tag. Use `datagrok-tools` to get a template:
+Functions that define semantic types have the `#semTypeDetector` role. Use `datagrok-tools` to get a template:
 
 ```shell
 cd <package-name>
@@ -114,7 +114,7 @@ grok add detector <semantic-type-name>
 ## Cell renderers
 
 Cell renderers allow customizing the appearance of cells in the [grid](../visualize/viewers/grid.md). These functions
-are annotated with two special tags: `cellRenderer` and `cellRenderer-<type>`.
+are annotated with a special `cellRenderer` role.
 
 *Details:* [How to develop custom cell renderers](how-to/grid/custom-cell-renderers.md)
 
@@ -128,7 +128,7 @@ extension, which is derived from the `fileViewer-<extension>` tag.
 
 ## File exporters
 
-A file exporter is a function used for loading data from the platform. It is annotated with the `#fileExporter` tag.
+A file exporter is a function used for loading data from the platform. It is annotated with the `#fileExporter` role.
 Exporters reside in the platform's top menu "export" section.
 
 *Details:* [How to create file exporters](how-to/files/file-exporters.md)
@@ -136,7 +136,7 @@ Exporters reside in the platform's top menu "export" section.
 ## Settings editors
 
 Settings editors work with [package properties](develop.md#package-settings) and define how they will be displayed in
-the `Settings` pane of the context panel. An editor function should return a widget (`DG.Widget`) and be tagged as
-`#packageSettingsEditor`.
+the `Settings` pane of the context panel. An editor function should return a widget (`DG.Widget`) and have a
+`#packageSettingsEditor` role.
 
 *Details:* [How to write custom package settings editors](how-to/packages/custom-package-settings-editors.md)

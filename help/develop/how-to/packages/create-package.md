@@ -34,7 +34,7 @@ Add the actual panel's code at `TextStats/src/package.ts`:
 
 ```typescript
 //name: TextStats
-//tags: panel, widgets
+//meta.role: panel, widgets
 //input: string str {semType: text}
 //output: widget result
 export function textStats(str: string) {

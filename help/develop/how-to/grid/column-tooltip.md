@@ -4,13 +4,13 @@ title: "Develop column tooltips"
 
 Developers can extend Datagrok with column tooltips. This could be done by defining a function annotated with special
 comments. It should take a column with specified  `semType`,
-return [DG.Widget](https://datagrok.ai/api/js/dg/classes/Widget) and have a tag `tooltip`. This is it!
+return [DG.Widget](https://datagrok.ai/api/js/dg/classes/Widget) and have a role `tooltip`. This is it!
 
 The following example defines a tooltip for the column that has `semType: Macromolecule`.
 
 ```typescript
 //name: sequenceTooltip
-//tags: tooltip
+//meta.role: tooltip
 //input: column col {semType: Macromolecule}
 //output: widget result
 export async function sequenceTooltip(col: DG.Column) {

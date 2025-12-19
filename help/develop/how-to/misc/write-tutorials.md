@@ -36,7 +36,7 @@ more detailed description.
 Tutorials from outside the public
 [Tutorials](https://github.com/datagrok-ai/public/tree/master/packages/Tutorials)
 package should be registered. To do that, add a function to your `package.ts`
-file. It should have the `tutorial` tag and the `meta.name` parameter. As it
+file. It should have the `tutorial` role and the `meta.name` parameter. As it
 should return a tutorial instance, the output type must be `object`. There are
 also optional parameters that you may use: `meta.track` specifies the track
 the tutorial belongs to; `meta.icon` contains the icon path relative to the
@@ -46,7 +46,7 @@ package root; `description` contents are displayed in the UI.
 import { CustomTutorial } from './tutorials/custom-tutorial';
 
 
-//tags: tutorial
+//meta.role: tutorial
 //meta.icon: images/custom-tutorial.png
 //meta.name: Custom Tutorial
 //meta.track: Test Track
@@ -66,7 +66,7 @@ no description for the tutorial, it gets added with empty description.
 It is also possible to register a track:
 
 ```typescript
-//tags: track
+//meta.role: track
 //help-url: https://datagrok.ai/help
 //output: object
 //meta.name: Test Track
@@ -75,7 +75,7 @@ export function registerTrack() {
 }
 ```
 
-The function should have the `track` tag, parameters `help-url` and `meta.name`,
+The function should have the `track` role, parameters `help-url` and `meta.name`,
 and it should return a `Track` instance (marked as `output: object` in the
 function header).
 

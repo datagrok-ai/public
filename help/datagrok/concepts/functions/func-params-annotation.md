@@ -804,7 +804,7 @@ Custom editors enhance the user experience by allowing you to tailor how functio
 A custom editor is a function that:
 - Accepts a `DG.FuncCall` object as input
 - Returns a `DG.Widget`
-- Is marked with `//tags: editor` and an `//output: widget <name>` annotation
+- Is marked with `//meta.role: editor` and an `//output: widget <name>` annotation
 
 > **Note:** While extending `DG.FuncCallEditor` is optional, the returned widget must expose certain properties to support validation and input change tracking.
 
@@ -856,7 +856,7 @@ class MyDummyEditor extends DG.FuncCallEditor {
 }
 
 //name: dummyEditor
-//tags: editor
+//meta.role: editor
 //input: funccall call
 //output: widget dialog
 export function dummyEditor(call: DG.FuncCall): DG.Widget {
@@ -929,7 +929,6 @@ export function getLength(s: string): number {
 #name: Template
 #description: Calculates number of cells in the table
 #language: python
-#tags: template, demo
 #sample: cars.csv
 #input: dataframe table [Data table]
 #output: int count [Number of cells in table]

@@ -44,7 +44,6 @@ You can define any number of functions inside your Python files. Functions must 
 # file: logic.py
 
 #name: add
-#tags: task
 #input: int x
 #input: int y
 #output: int z

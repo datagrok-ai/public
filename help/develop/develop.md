@@ -154,7 +154,7 @@ Below, there is an example of a package `Sequence` containing a single detector 
 ```js
 class SequencePackageDetectors extends DG.Package {
 
-  //tags: semTypeDetector
+  //meta.role: semTypeDetector
   //input: column col
   //output: string semType
   detectNucleotides(col) {

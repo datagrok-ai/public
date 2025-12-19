@@ -32,7 +32,7 @@ script or from a panel function written in JavaScript.
 ```python
 # name: string length
 # language: python
-# tags: panel
+# meta.role: panel
 # input: string s {semType: text}
 # output: int length
 # condition: true
@@ -65,7 +65,7 @@ function for auto-detection<!--, as done in our demo package [Pedometer](https:/
 
 ### Scripts
 
-To create a panel script, you should tag it as `panel` and specify conditions
+To create a panel script, add the `panel` role and specify conditions
 for the panel to be shown in the `condition` header parameter:
 
 ```python
@@ -74,7 +74,7 @@ for the panel to be shown in the `condition` header parameter:
 # language: python
 # input: file file
 # output: bool hascats
-# tags: demo, files, panel, ml, opencv
+# meta.role: panel
 # condition: file.isfile && file.size < 1e6 && file.path.contains("/cats/") && (file.name.endsWith("jpg") || file.name.endswith("jpeg"))
 
 import cv2
@@ -90,12 +90,12 @@ Regardless of a script's language, conditions are written in [Grok script](../..
 ### Functions
 
 A different approach is used to introduce an info panel in a JavaScript file. In
-addition to the `panel` tag indication and `condition`, the function should be
+addition to the `panel` role indication and `condition`, the function should be
 properly annotated to return a widget. A simplified example is shown below:
 
 ```javascript
 //name: Translation
-//tags: panel, widgets
+//meta.role: panel, widgets
 //input: file file
 //output: widget result
 //condition: isTextFile(file)
@@ -112,7 +112,7 @@ The following code demonstrates how to get the column that contains the value.
 
 ```javascript
 //name: get_column
-//tags: panel, widgets
+//meta.role: panel, widgets
 //input: semantic_value smiles { semType: Molecule }
 //output: widget result
 export function valueWidget(value) {
@@ -192,7 +192,7 @@ columns, and adds a regression line.
 #name: Scatter plot
 #description: Panel that contains an interactive Scatter plot
 #language: grok
-#tags: panel
+#meta.role: panel
 #input: dataframe table
 #condition: table.name == "demog" && table.columns.containsAll(["height", "weight", "age", "sex"])
 #output: viewer plot
@@ -223,7 +223,8 @@ See the following info pane (spectrogram-panel.grok) in action by opening (proje
 #name: Spectrogram info panel
 #description: Panel that contains graphics produced by the R script
 #language: grok
-#tags: panel,dsp
+#meta.role: panel
+#tags: dsp
 #input: column signal {type:numerical}
 #output: graphics pic
 #condition: "F3" == signal.name
@@ -241,7 +242,7 @@ user, or update a record in the database.
 #name: Transaction review panel
 #description: Actions available for the credit card transaction
 #language: grok
-#tags: panel
+#meta.role: panel
 #input: row activity
 #output: string actions {action: markup}
 #condition: activity.table.name = "credit card transactions"
@@ -261,7 +262,7 @@ clicks on a structure.
 #name: Solubility prediction
 #description: Predicts solubility by molecule descriptors ("Ipc", "MolWt", "NumValenceElectrons", "MolLogP", "LabuteASA", "TPSA", "HeavyAtomCount", "NumhAcceptors", "NumHDonors", "NumRotatableBonds", "RingCount")
 #language: grok
-#tags: panel, prediction, chem
+#meta.role: panel
 #condition: smiles.semtype == "Molecule"
 #input: dataframe table
 #input: column smiles {semtype: Molecule} [Column with molecules, in smiles format]

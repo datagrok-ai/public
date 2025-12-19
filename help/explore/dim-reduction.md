@@ -43,7 +43,7 @@ For example, for biological sequences, you can choose encoding function to conve
 The dimensionality reduction process consists of the following steps:
 
 1. **Encoding**: Each value in the column is encoded using the specified encoding function. For example, molecules can be converted to fingerprints, sequences can be converted to big molecules or hashed representations, etc. The encoding functions can be added from any package to add support for other types/semantic types of data. Encoding function needs to have given annotations:
-    * `dim-red-preprocessing-function` tag, which specifies that this function can be used for preprocessing in dimensionality reduction.
+    * `dimRedPreprocessingFunction` role, which specifies that this function can be used for preprocessing in dimensionality reduction.
     * `meta.supportedTypes` annotation, listing the supported types of columns that can be encoded using this function.
     * `meta.supportedSemTypes` (**optional**) annotation, listing the supported semantic types of columns that can be encoded using this function.
     * `meta.supportedUnits` (**optional**) annotation, listing the supported units of columns that can be encoded using this function (for example, there is an encoding function that only supports HELM columns, which is a **Unit** of Macromolecule semtype columns).
@@ -64,7 +64,7 @@ The dimensionality reduction process consists of the following steps:
     For example, this is how the encoding function for macromolecules looks like:
     ```typescript
     //name: Encode Sequences
-    //tags: dim-red-preprocessing-function
+    //meta.role: dimRedPreprocessingFunction
     //meta.supportedSemTypes: Macromolecule
     //meta.supportedTypes: string
     //meta.supportedUnits: fasta,separator,helm

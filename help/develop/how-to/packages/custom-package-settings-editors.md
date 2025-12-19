@@ -7,12 +7,12 @@ the properties in the package.json file, and the platform takes care of the rest
 and settings could be edited either individually or in a centralized manner.
 
 However, sometimes you need to provide a custom UI for the settings editor. To do it, define a function that returns
-a `widget` and is tagged as `packageSettingsEditor`. This is all!
+a `widget` and has the `packageSettingsEditor` role. This is all!
 Now, when a user clicks on the package and expands the "Settings" pane on the right, our custom UI gets shown.
 
 ```javascript
 //output: widget kpi
-//tags: packageSettingsEditor
+//meta.role: packageSettingsEditor
 export function powerPackSettingsEditor(): DG.Widget {
   return new PowerPackSettingsEditor();
 }

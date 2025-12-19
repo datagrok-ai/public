@@ -121,7 +121,7 @@ You will learn: how to write semantic type detectors, how to develop context-spe
     ```javascript
    class <yourFirstName>SequencePackageDetectors extends DG.Package {
 
-     //tags: semTypeDetector
+     //meta.role: semTypeDetector
      //input: column col
      //output: string semType
      detectNucleotides(col) {
@@ -165,13 +165,13 @@ You will learn: how to write semantic type detectors, how to develop context-spe
 
    ```javascript
     //name: complementWidget
-    //tags: panel, widgets
+    //meta.role: panel, widgets
     //input: string nucleotides {semType: dna_nucleotide}
     //output: widget result
     //condition: true
    ```
 
-   The `panel` and `widgets` tags and output type `widget` allows Datagrok to determine how the result of
+   The `panel` and `widgets` roles and output type `widget` allows Datagrok to determine how the result of
    `complementWidget` function will appear in the system. Listed above block of comments will instruct the platform to
    use the `complementWidget` function for providing additional information for string values of the `dna_nucleotide`
    semantic type. To test it, simply open our test file, click on any cell in the `sequence` column, and find the
@@ -805,7 +805,7 @@ of the `fuzzyJoin` function and run the test again. Repeat this process until th
 
    ```typescript
     //name: nucleotideBoxCellRenderer
-    //tags: cellRenderer
+    //meta.role: cellRenderer
     //meta.cellType: dna_nucleotide
     //output: grid_cell_renderer result
     export function nucleotideBoxCellRenderer() {
@@ -882,7 +882,7 @@ contained in a currently selected grid cell.
    form and sets a proper semantic type to column:
 
    ```javascript
-   //tags: semTypeDetector
+   //meta.role: semTypeDetector
    //input: column col
    //output: string semType
    detectENAID(col) {
@@ -897,7 +897,7 @@ contained in a currently selected grid cell.
 
    ```typescript
     //name: ENA Sequence
-    //tags: panel, widgets
+    //meta.role: panel, widgets
     //input: string cellText {semType: EnaID}
     //output: widget result
     //condition: true

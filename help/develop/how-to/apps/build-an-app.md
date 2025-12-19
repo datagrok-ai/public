@@ -11,11 +11,11 @@ executing database queries, accessing web services, or running
 * [Structure-activity relationship analysis for peptides](https://github.com/datagrok-ai/public/tree/master/packages/Peptides)
 
 From the technical perspective, an app is a [function](../../../datagrok/concepts/functions/functions.md)
-that resides in a [package](../../develop.md#packages) and is tagged with the `#app` tag. Similarly to the `main` function
+that resides in a [package](../../develop.md#packages) and has the `#app` role. Similarly to the `main` function
 in C++, this is an entry point that gets executed when the app is [launched](#launching-applications).
 
 A [Datagrok package](../../develop.md#packages) may contain any number of applications; an application is just a function
-tagged as `app`. To get the template for an `app` function, use the following `datagrok-tools` command from your package
+with the `app` role. To get the template for an `app` function, use the following `datagrok-tools` command from your package
 directory:
 
 ```
@@ -46,7 +46,7 @@ import * as grok from 'datagrok-api/grok';
 export let _package = new DG.Package();
 
 //name: TestApp
-//tags: app
+//meta.role: app
 export function test() {
   grok.shell.info('An app test');
 }
@@ -781,13 +781,13 @@ import {TestUI2} from './test-app-02.js';
 export let _package = new DG.Package();
 
 //name: Test 1
-//tags: app
+//meta.role: app
 export function test01() {
     return makeTest01();
 }
 
 //name: Test 2
-//tags: app
+//meta.role: app
 export function test02() {
     return makeTest02();
 }

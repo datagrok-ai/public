@@ -5,14 +5,14 @@ title: "Develop custom cell renderers"
 Datagrok provides an opportunity to use custom visualization for cells in data
 [grid/table](../../../visualize/viewers/grid.md). This could be done by defining a function annotated with special
 comments. It should take no args, return an instance of class derived from DG.GridCellRenderer, and have at least
-two tags: `cellRenderer` and `cellRenderer-<type>` (specify the cell type here). This is it!
+one tag `cellRenderer`. This is it!
 
 The following example defines a cell renderer for summary column visualized as bar chart. This is real code from the
 ["PowerGrid" public package](https://github.com/datagrok-ai/public/blob/master/packages/PowerGrid/src/package.ts).
 
 ```typescript
 //name: piechartCellRender
-//tags: cellRenderer
+//meta.role: cellRenderer
 //meta.cellType: piechart
 //meta.virtual: true
 //output: grid_cell_renderer result

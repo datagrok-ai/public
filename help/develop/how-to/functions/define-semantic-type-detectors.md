@@ -10,7 +10,7 @@ viewers to info panels and predictive models.
 
 ## Function annotation
 
-Semantic types detectors have a tag `semTypeDetector`, take a single `column`
+Semantic types detectors have a `semTypeDetector` role, take a single `column`
 as input, and return either a `string` containing the semantic type or `null`. Their names typically start with
 the `detect` prefix, e.g., `detectNucleotides`
 or `detectRDSmiles`. These functions should live in `detectors.js`, a special file inside
@@ -21,7 +21,7 @@ and add one or more detectors:
 ```javascript
 class SequencePackageDetectors extends DG.Package {
 
-  //tags: semTypeDetector
+  //meta.role: semTypeDetector
   //input: column col
   //output: string semType
   detectNucleotides(col) {
@@ -58,7 +58,7 @@ advanced check. For instance, the following example makes use of column statisti
 ```javascript
 class ViewersPackageDetectors extends DG.Package {
 
-  //tags: semTypeDetector
+  //meta.role: semTypeDetector
   //input: column col
   //output: string semType
   detectMagnitude(col) {
@@ -93,7 +93,7 @@ Every Semantic type detector has its own test in Datagrok, so when you create a 
 specified test data for detector tests, but sometimes this data doesn't fit the detector. In this case, you can easily skip tests for your detector by using the `meta.skipTest` tag. 
 
 ```  javascript
-//tags: semTypeDetector
+//meta.role: semTypeDetector
 //input: column col
 //output: string semType
 //meta.skipTest: #2596, Fix for test data in the utils library
@@ -120,7 +120,7 @@ detectPdb(col) {
 Also, if you have a specified dataset in the detector package, you can use it to test the detector. You need to set `//meta.testData` to define the dataset for the detector.
 There should be only one column that fits the detector. If you want to ensure that the detector chooses it correctly you can use `//meta.testDataColumnName` to set the column's name for the test.
 ```  javascript
-//tags: semTypeDetector
+//meta.role: semTypeDetector
 //input: column col
 //output: string semType
 //meta.testData: pdb_data.csv
