@@ -114,6 +114,7 @@ export function createImportStudyView(standard: string) {
         }
       }
     },
+    acceptExtensions: ['.xpt', '.csv', '.xml', '.json'],
   });
   filesInput.root.style.paddingTop = '6px';
 

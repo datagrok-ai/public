@@ -48,18 +48,20 @@ export function studyConfigToMap(studyConfig: ClinStudyConfig): {[key: string]: 
       map[formattedKey] = studyConfig[key];
     }
   }
-  const otherSection = Object.assign({}, studyConfig.other);
   const otherKeys = Object.keys(studyConfig.other);
-  for (const key of Object.keys(otherSection)) {
+  const keysToSkip: string[] = [];
+  for (const key of Object.keys(studyConfig.other)) {
+    if (keysToSkip.includes(key))
+      continue;
     const keySplitted = key.split(' ');
     const unitsKey = otherKeys
       .filter((it) => it.toLowerCase() === `${keySplitted[0]} units`.toLocaleLowerCase() ||
           it.toLowerCase() === `${keySplitted[0]} unit`.toLowerCase());
     if (unitsKey.length) {
       map[keySplitted[0]] = `${studyConfig.other[key]} ${studyConfig.other[unitsKey[0]]}`;
-      delete otherSection[unitsKey[0]];
+      keysToSkip.push(unitsKey[0]);
     } else
-      map[key] = otherSection[key];
+      map[key] = studyConfig.other[key];
   }
   return map;
 }
