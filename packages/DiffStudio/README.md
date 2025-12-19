@@ -1,5 +1,8 @@
 # Diff Studio
 
+[![Documentation](https://img.shields.io/badge/docs-online-blue.svg)](https://datagrok.ai/help/compute/diff-studio)
+[![License: MIT](https://img.shields.io/badge/License-MIT-success.svg)](https://github.com/datagrok-ai/diff-grok/blob/main/LICENSE)
+
 Diff Studio is a [package](https://datagrok.ai/help/develop/#packages) for the [Datagrok](https://datagrok.ai) platform. It provides in-browser tools for solving [initial value problem](https://en.wikipedia.org/wiki/Initial_value_problem) for systems of ordinary differential equations (ODE) and its interactive exploration.
 
 * Go to **Apps > Compute** and run **Diff Studio**
@@ -261,10 +264,13 @@ Apply [scripting](https://datagrok.ai/help/compute/scripting) tools to get:
 * non-elementary and special functions' use
 * Datagrok packages' functions call
 
+## Links
+
+Run Diff Studio online [here](https://public.datagrok.ai/apps/DiffStudio), or complete an interactive [tutorial](https://public.datagrok.ai/apps/tutorials/Tutorials/Scientificcomputing/Differentialequations).
 Find more features in Diff Studio [docs](https://datagrok.ai/help/compute/diff-studio).
 
 See also
 
 * [Sensitivity analysis](https://datagrok.ai/help/compute/function-analysis#sensitivity-analysis)
 * [Parameter optimization](https://datagrok.ai/help/compute/function-analysis#parameter-optimization)
-* [Scripting](https://datagrok.ai/help/compute/scripting)
+* [Community](https://community.datagrok.ai/t/solving-differential-equations/878)
