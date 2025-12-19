@@ -35,13 +35,31 @@ export async function readClinicalFile(file: DG.FileInfo): Promise<DG.DataFrame>
 export function studyConfigToMap(studyConfig: ClinStudyConfig): {[key: string]: any} {
   const map: {[key: string]: any} = {};
   for (const key of Object.keys(studyConfig)) {
-    if (key !== 'other')
-      map[key] = studyConfig[key];
-    else {
-      const obj = studyConfig.other;
-      if (obj)
-        Object.keys(obj).forEach((otherKey) => map[otherKey] = studyConfig.other![otherKey]);
+    if (key !== 'other') {
+      let formattedKey = '';
+      if (key === 'totalSubjects')
+        formattedKey = 'Total subjects';
+      else if (key === 'startDate')
+        formattedKey = 'Start date';
+      else if (key === 'endDate')
+        formattedKey = 'End date';
+      else
+        formattedKey = key[0].toUpperCase() + key.slice(1);
+      map[formattedKey] = studyConfig[key];
     }
+  }
+  const otherSection = Object.assign({}, studyConfig.other);
+  const otherKeys = Object.keys(studyConfig.other);
+  for (const key of Object.keys(otherSection)) {
+    const keySplitted = key.split(' ');
+    const unitsKey = otherKeys
+      .filter((it) => it.toLowerCase() === `${keySplitted[0]} units`.toLocaleLowerCase() ||
+          it.toLowerCase() === `${keySplitted[0]} unit`.toLowerCase());
+    if (unitsKey.length) {
+      map[keySplitted[0]] = `${studyConfig.other[key]} ${studyConfig.other[unitsKey[0]]}`;
+      delete otherSection[unitsKey[0]];
+    } else
+      map[key] = otherSection[key];
   }
   return map;
 }
