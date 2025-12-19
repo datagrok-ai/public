@@ -780,6 +780,7 @@ export namespace input {
     onAdditionalColumnsChanged: (input, x) => setInputAdditionalColumnsOnChanged(input, x),
     showSelectedColsOnTop: (input, x) => api.grok_ColumnsInput_SetShowSelectedColsOnTop(input.dart, x),
     showOnlyColorBox: (input, x) => api.grok_ColorInput_SetShowOnlyColorBox(input.dart, x),
+    acceptExtensions: (input, x) => api.grok_FilesInput_Set_AcceptExtensions(input.dart, x),
   };
 
   function setInputOptions(input: InputBase, inputType: d4.InputType, options?: IInputInitOptions, ignoreProp: boolean = false): void {
@@ -866,6 +867,10 @@ export namespace input {
 
   export interface IColorInputInitOptions<T> extends IInputInitOptions<T> {
     showOnlyColorBox?: boolean;
+  }
+
+  export interface IFilesInputInitOptions<T> extends IInputInitOptions<T> {
+    acceptExtensions?: string[];
   }
 
   /** Set the table specifically for the column input */
@@ -990,7 +995,7 @@ export namespace input {
     return _create(d4.InputType.File, name, options);
   }
 
-  export function files(name: string, options?: IInputInitOptions<FileInfo[]>): InputBase<FileInfo[] | null> {
+  export function files(name: string, options?: IFilesInputInitOptions<FileInfo[]>): InputBase<FileInfo[] | null> {
     return _create(d4.InputType.Files, name, options);
   }
 
