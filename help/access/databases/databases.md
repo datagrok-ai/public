@@ -155,11 +155,6 @@ Datagrok provides several tools for creating, exploring, and editing queries.
 
 * [_AI Query Builder_](#ai-query-builder): lets users build queries using natural language. To access AI Query Builder, install the [ChatGPT](https://github.com/datagrok-ai/public/tree/master/packages/ChatGPT) plugin.
 
-:::note
-
-  The ability to query tables is connector-specific and may not be available for all.
-
-:::
 
 When you successfully create a query, it appears in the **Database Manager**
 under the corresponding connection or table. From there, you can run it, share
@@ -333,11 +328,15 @@ without saving.
 
 ### AI Query Builder
 
-**AI Query Builder** lets you ask questions in natural language and automatically 
-generates precise queries. You can then continue working with the query in 
-the **Query Editor**—manually edit, debug, add layouts, and more. 
+**AI Query Builder** lets you ask questions in natural language and  
+generates database queries. You can then continue working with the query in 
+the **Query Editor** — manually edit, debug, add layouts, and more. 
 
-To open the AI panel, click the **Brain** icon on the menu ribbon of the **Query** tab.
+To open the AI panel, click the **AI** icon on the menu ribbon of the **Query** tab.
+In the AI panel, use the conversational style to create or modify your query. For
+instance, you might start with "Give me the identifiers of molecules active 
+against the target X" and then, after the AI builds and executes the query, continue
+with "Include chemical structures as well".
 
 ![AI Query Builder](img/query-editor-ai.gif)
 
