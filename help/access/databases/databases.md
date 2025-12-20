@@ -662,13 +662,31 @@ connection also deletes a query.
 
 :::
 
+## Data enrichment
+
+When working with database-linked data (either retrieved directly from the database, or containing the 
+[identifiers](#database-explorer) from that database), a popular need is to "enrich" existing rows in the
+spreadsheet with certain information from the database. For instance, given a column with SMILES, medicinal
+chemists might want to quickly access their ADME properties. Datagrok makes it possible to do in one click.
+
+To enrich a dataset, click on a column that was retrieved from the database. On the context panel, 
+expand the pane with the name of the database this column came from (such as "ChEMBL"), and click
+"Enrich...". In the dialog that appears, choose the columns that should be joined to the 
+source columns. This dialog uses [visual query editor](#visual-query-editor) that automatically 
+constructs the way columns should be joined, if this can be inferred from the database schema; if not,
+you can specify joins manually.
+
+You can save the enrichment configuration by giving it a name, and clicking "SAVE". After that,
+you would see this next to the "Enrich..." button, allowing you to retrieve the necessary data
+in one click.
+
+![](img/db-data-enrichment.gif)
+
 ## Database explorer
 
 The **Database Explorer** enables Datagrok to automatically detect and explore company-specific identifiers within relational databases. By linking identifier patterns to database columns, this library creates an intelligent exploration system that allows users to drill down through database relationships and discover all related data with a single click.
 
 ![DB-explorer](img/db-explorer.gif)
-
-### How it works
 
 When you configure the explorer for your database, the system:
 
