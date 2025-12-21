@@ -182,6 +182,10 @@ export class ClinicalStudy {
           this.domains.dm.columns.names().filter((it) => it !== SUBJECT_ID), DG.JOIN_TYPE.LEFT, true);
         it.name = savedName;
       }
+      for (const col of it.columns.names()) {
+        if (this.config.fieldsDefinitions && this.config.fieldsDefinitions[col])
+          it.col(col)!.setTag('Description', this.config.fieldsDefinitions[col]);
+      }
     });
   }
 

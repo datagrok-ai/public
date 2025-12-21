@@ -255,6 +255,19 @@ async function createStudyWithConfig(files: DG.FileInfo[], treeNode: DG.TreeView
         // eslint-disable-next-line max-len
         if (defineJson?.ODM?.Study?.MetaDataVersion?.['_def:StandardName'] && defineJson?.ODM?.Study.MetaDataVersion?.['_def:StandardName'].toLowerCase().includes('send'))
           config.standard = CDISC_STANDARD.SEND;
+        //create fields descriptions
+        if (defineJson?.ODM?.Study?.MetaDataVersion?.ItemDef &&
+          Array.isArray(defineJson?.ODM?.Study?.MetaDataVersion?.ItemDef)) {
+          config.fieldsDefinitions = {};
+          for (const field of defineJson?.ODM?.Study?.MetaDataVersion?.ItemDef) {
+            if (field._Name) {
+              if (field.Description?.__text)
+                config.fieldsDefinitions[field._Name] = field.Description.__text;
+              else if (field.Description?.TranslatedText?.__text)
+                config.fieldsDefinitions[field._Name] = field.Description?.TranslatedText?.__text;
+            }
+          }
+        }
       } else {
       //if define.xml not found or there is no id in it - look for study.json
         const configFile = files.filter((it) => it.name === StudyConfigFileName);

@@ -38,7 +38,7 @@ export async function readClinicalFile(file: DG.FileInfo): Promise<DG.DataFrame>
 export function studyConfigToMap(studyConfig: ClinStudyConfig): {[key: string]: any} {
   const map: {[key: string]: any} = {};
   for (const key of Object.keys(studyConfig)) {
-    if (key !== 'other') {
+    if (key !== 'other' && key !== 'fieldsDefinitions') {
       let formattedKey = '';
       if (key === 'totalSubjects')
         formattedKey = 'Total subjects';
