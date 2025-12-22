@@ -252,7 +252,7 @@ jobs:
           npm config set fetch-retry-factor 2
           npm config set fetch-retry-mintimeout 20000
           npm config set fetch-retry-maxtimeout 120000
-          npm install --build-from-source=sharp
+          npm install
         id: install
         working-directory: packages/${{ matrix.package }}
       - name: Get build info
