@@ -244,7 +244,16 @@ jobs:
         run: grep -q '\.\./\.\./' package-lock.json && rm -f package-lock.json || true
         working-directory: packages/${{ matrix.package }}
       - name: npm install
-        run: npm install
+        env:
+          SHARP_IGNORE_GLOBAL_LIBVIPS: 1
+          SHARP_FORCE_GLOBAL_LIBVIPS: false
+          npm_config_build_from_source: false
+        run: |
+          npm config set fetch-retries 5
+          npm config set fetch-retry-factor 2
+          npm config set fetch-retry-mintimeout 20000
+          npm config set fetch-retry-maxtimeout 120000
+          npm install
         id: install
         working-directory: packages/${{ matrix.package }}
       - name: Get build info
