@@ -94,7 +94,7 @@ export async function saveInstanceState(
   if (metaData?.tags) metaCall.options['tags'] = metaData.tags;
   if (version) metaCall.options['version'] = version;
   metaCall.newId();
-  await metaCall.call(undefined, undefined, {processed:true, report:false});
+  await metaCall.call(undefined, undefined, {processed: true, report: false});
   metaCall.started = dayjs();
   await historyUtils.saveRun(metaCall);
   await saveIsFavorite(metaCall, metaData?.isFavorite ?? false);

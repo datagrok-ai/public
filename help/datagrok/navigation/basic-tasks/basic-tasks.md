@@ -39,7 +39,7 @@ must share it explicitly.
 ### Saving a dashboard
 
 When you open a CSV file or run a [function](../../concepts/functions/functions.md)
-that produces a table, it opens a [Table View](../views/table-view.md) resembling Excel. Here, you can edit both the data
+that produces a table, it opens a [Table View](../../../visualize/table-view-1.md) resembling Excel. Here, you can edit both the data
 (the [table](../../concepts/objects.md)) and its visual representation (the
 [layout](../../../visualize/view-layout.md)).
 
@@ -69,7 +69,7 @@ To save:
 
 :::note
 
-Moving tables between projects impacts their hierarchy, name, and privileges. [Learn more](../../concepts/project/project.md).
+Moving tables between spaces impacts their hierarchy, name, and privileges. [Learn more](../../concepts/project/space.md).
 
 :::
 

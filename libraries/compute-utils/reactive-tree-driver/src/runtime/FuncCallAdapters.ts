@@ -4,6 +4,7 @@ import {BehaviorSubject, Observable, defer, of} from 'rxjs';
 import {StateItem} from '../config/PipelineConfiguration';
 import {delay, map, mapTo, startWith, switchMap, tap} from 'rxjs/operators';
 import {RestrictionType} from '../data/common-types';
+import dayjs from 'dayjs';
 
 export interface IRunnableWrapper {
   id?: string;
@@ -19,6 +20,7 @@ export interface IStateStore {
   getStateChanges<T = any>(name: string, includeDataFrameMutations: boolean): Observable<T | undefined>;
   getState<T = any>(name: string): T | undefined;
   setState<T = any>(name: string, value: T | undefined, restrictionType?: RestrictionType): void;
+  hasState(name: string): boolean;
   editState<T = any>(name: string, value: T | undefined): void; // for tests
   getStateNames(): string[];
 }
@@ -33,7 +35,10 @@ export class FuncCallAdapter implements IFuncCallAdapter {
   constructor(public instance: DG.FuncCall, public readonly isReadonly: boolean) {}
 
   run() {
-    return defer(() => this.instance.call(undefined, undefined, {processed:true, report:false}));
+    return defer(() => {
+      this.instance.started = dayjs();
+      return this.instance.call(undefined, undefined, {processed: true, report: false});
+    });
   }
 
   getStateChanges<T = any>(
@@ -64,6 +69,12 @@ export class FuncCallAdapter implements IFuncCallAdapter {
   setState<T = any>(name: string, value: T | undefined, _restrictionType?: RestrictionType) {
     if (!this.isReadonly)
       this.instance.inputs[name] = value;
+  }
+
+  hasState(name: string) {
+    const ptype = this.getPtype(name);
+    const prop = this.instance[ptype][name];
+    return !!prop;
   }
 
   editState<T = any>(name: string, value: T | undefined) {
@@ -117,6 +128,11 @@ export class MemoryStore implements IStateStore {
   setState<T = any>(name: string, value: T | undefined, _restrictionType?: RestrictionType) {
     if (!this.isReadonly)
       this.states[name]?.next(value);
+  }
+
+  hasState(name: string) {
+    const subj= this.states[name];
+    return !!subj;
   }
 
   editState<T = any>(name: string, value: T | undefined) {

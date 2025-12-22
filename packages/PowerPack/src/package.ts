@@ -1,3 +1,4 @@
+/* eslint-disable max-len */
 /* Do not change these import lines. Datagrok will import API library in exactly the same manner */
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
@@ -17,11 +18,13 @@ import {KpiWidget} from './widgets/kpi-widget';
 import {HtmlWidget} from './widgets/html-widget';
 import {viewersDialog} from './viewers-gallery';
 import {windowsManagerPanel} from './windows-manager';
-import {initSearch} from './search/power-search';
+import {initSearch, createFuncTableViewWidget} from './search/power-search';
 import {newUsersSearch, registerDGUserHandler} from './dg-db';
 import {merge} from 'rxjs';
 import {HelpObjectHandler} from './search/help-entity';
 import {ActivityDashboardWidget} from './widgets/activity-dashboard-widget';
+import {DBExplorerEditor} from '@datagrok-libraries/db-explorer/src/editor';
+import {setupDBQueryCellHandler, setupGlobalDBExplorer} from './db-explorer';
 export * from './package.g';
 export const _package = new DG.Package();
 export let _properties: { [propertyName: string]: any };
@@ -191,6 +194,11 @@ export class PackageFunctions {
     return widget;
   }
 
+  @grok.decorators.func({})
+  static getFuncTableViewWidget(func: DG.Func, inputParams: Record<string, any>): DG.Widget {
+    return DG.Widget.fromRoot(createFuncTableViewWidget(func, inputParams));
+  }
+
   @grok.decorators.func({tags: ['searchProvider']})
   static powerPackSearchProvider(): DG.SearchProvider {
     const providers: DG.SearchProvider = {
@@ -234,11 +242,7 @@ export class PackageFunctions {
         search: (s: string) => pubChemSearch(s).then((r) => ({priority: 10, results: r})),
       }, {
         name: 'Wiki', description: 'Wikipedia Search', options: {widgetHeight: 500},
-        getSuggestions: (s) => s.length > 4 && !s.startsWith('wiki:') ? [{
-          suggestionValue: `wiki:${s}`,
-          suggestionText: `Search in Wikipedia`,
-          priority: 999,
-        }] : null,
+        getSuggestions: (s) => null,
         search: (s: string) => wikiSearch(s).then((r) => ({priority: 10, results: r})),
       }, {
         name: 'Apps', description: 'Apps Search', options: {relatedViewName: 'apps'},
@@ -269,17 +273,28 @@ export class PackageFunctions {
     outputs: [],
   })
   static formulaLinesDialog(
-    @grok.decorators.param({type: 'dataframe', options: {optional: true}}) src: DG.DataFrame | DG.Viewer): void {
+    @grok.decorators.param({type: 'dataframe', options: {optional: true}}) src: DG.DataFrame | DG.Viewer,
+    @grok.decorators.param({type: 'int', options: {optional: true}}) currentIndexToSet?: number,
+    @grok.decorators.param({type: 'bool', options: {optional: true}}) isDataFrameValue?: boolean,
+    @grok.decorators.param({type: 'bool', options: {optional: true}}) isAnnotationArea?: boolean,
+  ): void {
     const options = Object.keys(_properties)
       .filter((k) => k in DEFAULT_OPTIONS)
       .reduce((opts, k) => (opts[k] = _properties[k], opts), <EditorOptions>{});
     //TODO: use property's 'category' or 'tags' to distinguish relevant properties
-    new FormulaLinesDialog(src, options);
+
+    new FormulaLinesDialog(src, options, {
+      index: currentIndexToSet,
+      isDataFrame: isDataFrameValue,
+      isAnnotationArea: isAnnotationArea,
+    });
   }
 
   @grok.decorators.init()
   static async powerPackInit() {
     DG.ObjectHandler.register(new HelpObjectHandler());
+    setupGlobalDBExplorer(); // lazy without await
+    setupDBQueryCellHandler(); // db-explorer for any query result - lazy without await
     initSearch();
 
     _properties = await _package.getProperties();
@@ -373,8 +388,9 @@ grok.events.onContextMenu.subscribe((args) => {
       src.getOptions().look['viewerType'] == DG.VIEWER.SCATTER_PLOT)
     menu = args.args.menu.find(DG.VIEWER.SCATTER_PLOT).find('Tools');
 
-  if (menu != null)
-    menu.item('Formula Lines...', () => {PackageFunctions.formulaLinesDialog(src);});
+  menu?.item('Formula Lines...', () => {
+    PackageFunctions.formulaLinesDialog(src);
+  });
 });
 
 function _viewerGallery(view: DG.ViewBase): void {

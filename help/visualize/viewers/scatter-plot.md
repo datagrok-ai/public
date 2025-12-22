@@ -125,10 +125,22 @@ You can [add formula lines programmatically](https://datagrok.ai/help/develop/ho
 
 By default, a scatterplot inherits the tooltip from the grid. However, you can
 customize the scatterplot's tooltip to show the data you want using the
-**Tooltip** info panel or via the context menu.
+**Tooltip** info pane on the **Context Panel**. To configure a custom tooltip:
+
+1. **Enable custom tooltip**: Set **Show Tooltip** to `Show custom tooltip`.
+
+2. **Choose which columns to display**: In **Row Tooltip**, select the columns whose values you want to show in the tooltip.
+
+3. **Control axis values in the tooltip**: In **Data Values**, specify how axis values should appear:  
+   * To exclude axis values from the tooltip, choose `Do not add`.  
+   * To show only axis values, choose `Data values only`.  
+   * To add axis values, choose `Merge`.
+
+![Scatterplot Custom Tooltip](img/scatterplot-custom-tooltip.gif)
+
 
 In addition, a scatterplot itself can be used as a 
-[group tooltip](../../datagrok/navigation/views/table-view.md#group-tooltips), which may be especially useful when 
+[group tooltip](../table-view-1.md#group-tooltips), which may be especially useful when 
 dealing with grouped or clustered data or when the screen space is limited.
 
 To make scatterplot appear in a tooltip when you hover over a row group, 
@@ -193,5 +205,5 @@ See also:
 * [3D Scatterplot](3d-scatter-plot.md)
 * [Column selectors](column-selectors.md)
 * [Viewers](viewers.md)
-* [Table view](../../datagrok/navigation/views/table-view.md)
+* [Table view](../table-view-1.md)
 * [JS API: Scatterplot](https://public.datagrok.ai/js/samples/ui/viewers/types/scatter-plot)

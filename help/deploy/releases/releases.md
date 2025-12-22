@@ -9,6 +9,43 @@ keywords:
 
 See details: [issues](release-history.md), [plugin changelogs](plugins/plugins.mdx), [JS API compatibility](compatibility/compatibility.mdx)
 
+## 1.26.7 || 2025-Nov
+
+### Developer updates
+
+* Fixed Databrics schema browser
+
+### Service compatible versions
+
+| Service                | Version          |
+|------------------------|------------------|
+| Grok Connect           | 2.5.3 or higher  |
+| Grok Pipe              | 1.0.1 or higher  |
+| Grok Spawner           | 1.11.7 or higher |
+| RabbitMQ               | 4.0.5-management |
+| Jupyter Kernel Gateway | 1.16.2 or higher |
+
+## 1.26.6 || 2025-Oct
+
+### Developer updates
+
+* Added support for IAP short token format.
+* Added the ability to move and copy files in Google Cloud Storage.
+* Fixed:
+  * CSV parsing issue in Google Cloud Storage
+  * OpenID autologin behavior
+  * GPU machine selection priority for Docker containers
+
+### Service compatible versions
+
+| Service                | Version          |
+|------------------------|------------------|
+| Grok Connect           | 2.5.2   |
+| Grok Pipe              | 1.0.1   |
+| Grok Spawner           | 1.11.7 |
+| RabbitMQ               | 4.0.5-management |
+| Jupyter Kernel Gateway | 1.16.2  |
+
 ## 1.26.5 || 2025-Oct
 
 ### Developer updates
@@ -16,6 +53,16 @@ See details: [issues](release-history.md), [plugin changelogs](plugins/plugins.m
 * Added support for SAML authentication
 * Introduced support for user account impersonation in Google Cloud Storage
 * Projects: Added support for saving projects created via custom scripts with data synchronization
+
+### Service compatible versions
+
+| Service                | Version          |
+|------------------------|------------------|
+| Grok Connect           | 2.5.2  |
+| Grok Pipe              | 1.0.1  |
+| Grok Spawner           | 1.11.4  |
+| RabbitMQ               | 4.0.5-management |
+| Jupyter Kernel Gateway | 1.16.2 |
 
 ## 1.26 || 2025-Jul
 
@@ -29,7 +76,7 @@ See details: [issues](release-history.md), [plugin changelogs](plugins/plugins.m
 
 |<div style={{ width:220 }}></div>| <div style={{ width:500 }}></div> |
 |----------------- | -----------------------------------|
-| **Smarter file viewers**: Previously, viewer selection was based solely on file format (e.g., XLSX). Now, Datagrok also analyzes file content to choose the appropriate viewer.<br/><br/>For example, XLSX files with regular data open in the [table view](../../datagrok/navigation/views/table-view.md), while XLSX files with plate-like content open using the [plate reader](https://github.com/datagrok-ai/public/tree/master/packages/Curves#plate-readers) | ![Smarter file viewer](img/1.25-file-viewer-xlsx-format.gif) |
+| **Smarter file viewers**: Previously, viewer selection was based solely on file format (e.g., XLSX). Now, Datagrok also analyzes file content to choose the appropriate viewer.<br/><br/>For example, XLSX files with regular data open in the [table view](../../visualize/table-view-1.md), while XLSX files with plate-like content open using the [plate reader](https://github.com/datagrok-ai/public/tree/master/packages/Curves#plate-readers) | ![Smarter file viewer](img/1.25-file-viewer-xlsx-format.gif) |
 
 ### Developer updates
 

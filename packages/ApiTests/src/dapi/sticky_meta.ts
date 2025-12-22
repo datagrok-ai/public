@@ -1,18 +1,18 @@
-import * as grok from 'datagrok-api/grok';
-// import * as ui from 'datagrok-api/ui';
-import * as DG from 'datagrok-api/dg';
+import type * as _grok from 'datagrok-api/grok';
+import type * as _DG from 'datagrok-api/dg';
+declare let grok: typeof _grok, DG: typeof _DG;
 
 //@ts-ignore
 import {assure, before, category, expect, test} from '@datagrok-libraries/utils/src/test';
 
 category('Dapi: sticky meta', () => { 
-  let schema: DG.Schema;
-  let entityType: DG.EntityType;
-  let property: DG.EntityProperty;
+  let schema: _DG.Schema;
+  let entityType: _DG.EntityType;
+  let property: _DG.EntityProperty;
   let handle = 'api-test';
   let value = 'val';
-  let col: DG.Column<String>;
-  let valDf: DG.DataFrame;
+  let col: _DG.Column<String>;
+  let valDf: _DG.DataFrame;
 
   before(async () => {
     let schemas = await grok.dapi.stickyMeta.getSchemas();
@@ -34,7 +34,7 @@ category('Dapi: sticky meta', () => {
     }
     if (entityType == undefined) {
       entityType = DG.EntityType.create('apiTest', 'semtype=test');
-      var et = schema.entityTypes;
+      const et = schema.entityTypes;
       et.push(entityType);
       schema.entityTypes = et;
       await grok.dapi.stickyMeta.saveSchema(schema);
@@ -46,7 +46,7 @@ category('Dapi: sticky meta', () => {
     }
     if (property == undefined) {
       property = DG.EntityProperty.create('apiTest', 'string');
-      var props = schema.properties;
+      const props = schema.properties;
       props.push(property);
       schema.properties = props;
       await grok.dapi.stickyMeta.saveSchema(schema);
@@ -67,9 +67,9 @@ category('Dapi: sticky meta', () => {
   }, {stressTest: true});
 
   test('get values', async () => {
-    var col = DG.Column.string('key', 1);
+    const col = DG.Column.string('key', 1);
     col.set(0, handle);
-    var df = await grok.dapi.stickyMeta.getAllValues(schema, col);
+    const df = await grok.dapi.stickyMeta.getAllValues(schema, col);
     expect(df.columns.length, schema.properties.length);  
     expect(df.col(property.name)?.name ?? "", property.name);
     expect(df.col(property.name)?.get(0), value);

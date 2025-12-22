@@ -1,5 +1,5 @@
 ---
-title: "Molecular descriptors"
+title: "Supported descriptors"
 ---
 
 Datagrok supports calculation of the following descriptors:

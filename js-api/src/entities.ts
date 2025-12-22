@@ -70,9 +70,10 @@ export interface DataConnectionProperties extends DatabaseConnectionProperties, 
   [x: string]: any;
 }
 
-type FieldPredicate = {field: string, pattern: string};
+type FieldPredicate = {field: string, pattern: string, dataType: string};
 type FieldOrder = {field: string, asc?: boolean};
 type GroupAggregation = {aggType: string, colName: string, resultColName?: string, function?: string};
+export type TableJoin = {leftTableName: string, rightTableName: string, rightTableAlias?: string, joinType: JoinType, leftTableKeys: string[], rightTableKeys: string[]};
 type DockerContainerStatus = 'stopped' | 'started' | 'pending change' | 'changing' | 'error' | 'checking';
 
 /** @class
@@ -280,6 +281,11 @@ export class Func extends Entity {
     return toJs(api.grok_Func_Prepare(this.dart, parameters));
   };
 
+  async prepareAsync(parameters: {[name: string]: any} = {}): Promise<FuncCall> {
+    const call = await api.grok_Func_PrepareAsync(this.dart, parameters);
+    return toJs(call);
+  };
+
   /** Input parameters */
   get inputs(): Property[] {
     return toJs(api.grok_Func_Get_InputParams(this.dart));
@@ -454,6 +460,8 @@ export class DataQuery extends Func {
   get connection(): DataConnection { return toJs(api.grok_Query_Get_Connection(this.dart)); }
   set connection(c: DataConnection) { api.grok_Query_Set_Connection(this.dart, toDart(c)); }
 
+  get postProcessScript(): string {return api.grok_Query_Get_PostProcessScript(this.dart);}
+  set postProcessScript(script: string) { api.grok_Query_Set_PostProcessScript(this.dart, script);}
   /** Executes query
    * @returns {Promise<DataFrame>} */
   async executeTable(): Promise<DataFrame> { return toJs(await api.grok_Query_ExecuteTable(this.dart)); }
@@ -486,20 +494,26 @@ export class TableQuery extends DataQuery {
   async executeTable(): Promise<DataFrame> { return toJs(await api.grok_TableQuery_ExecuteTable(this.dart)); }
 
   /** Where clauses */
-  get where(): FieldPredicate[] { return toJs(api.grok_TableQuery_GetWhereClausesDB(this.dart)); }
-  set where(wl: FieldPredicate[]) { api.grok_TableQuery_SetWhereClausesDB(this.dart, wl.map(param => toDart(param))); }
+  get where(): FieldPredicate[] { return toJs(api.grok_TableQuery_Get_WhereClausesDB(this.dart)); }
+  set where(wl: FieldPredicate[]) { api.grok_TableQuery_Set_WhereClausesDB(this.dart, wl.map(param => toDart(param))); }
 
   /** Aggregation clauses {queryPartParams} */
-  get aggregations(): GroupAggregation[] { return toJs(api.grok_TableQuery_GetAggregationsDB(this.dart)); }
-  set aggregations(wl: GroupAggregation[]) { api.grok_TableQuery_SetAggregationsDB(this.dart, wl.map(param => toDart(param))); }
+  get aggregations(): GroupAggregation[] { return toJs(api.grok_TableQuery_Get_AggregationsDB(this.dart)); }
+  set aggregations(wl: GroupAggregation[]) { api.grok_TableQuery_Set_AggregationsDB(this.dart, wl.map(param => toDart(param))); }
+
+  get joins(): TableJoin[] { return toJs(api.grok_TableQuery_Get_Joins(this.dart)); }
+  set joins(j: TableJoin[]) { api.grok_TableQuery_Set_Joins(this.dart, j.map(join => toDart(join))); }
 
   /** Having clauses */
-  get having(): FieldPredicate[] { return toJs(api.grok_TableQuery_GetHavingDB(this.dart)); }
-  set having(wl: FieldPredicate[]) { api.grok_TableQuery_SetHavingDB(this.dart, wl.map(param => toDart(param))); }
+  get having(): FieldPredicate[] { return toJs(api.grok_TableQuery_Get_HavingDB(this.dart)); }
+  set having(wl: FieldPredicate[]) { api.grok_TableQuery_Set_HavingDB(this.dart, wl.map(param => toDart(param))); }
 
   /** Order By clauses */
-  get orderBy(): FieldOrder[] { return toJs(api.grok_TableQuery_GetOrderByDB(this.dart)); }
-  set orderBy(wl: FieldOrder[]) { api.grok_TableQuery_SetOrderByDB(this.dart, wl.map(param => toDart(param))); }
+  get orderBy(): FieldOrder[] { return toJs(api.grok_TableQuery_Get_OrderByDB(this.dart)); }
+  set orderBy(wl: FieldOrder[]) { api.grok_TableQuery_Set_OrderByDB(this.dart, wl.map(param => toDart(param))); }
+
+  set limit(rows: number | undefined) { api.grok_TableQuery_Set_Limit(this.dart, rows); }
+  get limit(): number | undefined { return api.grok_TableQuery_Get_Limit(this.dart); }
 
   /** Creates {@link TableQueryBuilder} from table name
    * @param {string} table - Table name
@@ -783,7 +797,7 @@ export class DataConnection extends Entity {
     return TableQueryBuilder.from(table, this);
   }
 
-  tableQuery(tableName: string): TableQuery {
+  tableQuery(): TableQuery {
     return toJs(api.grok_TableQuery_Create(this.dart));
   }
 

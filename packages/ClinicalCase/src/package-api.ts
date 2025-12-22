@@ -7,16 +7,52 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
 
+export namespace scripts {
+  export async function readSas(fileInput: DG.FileInfo ): Promise<DG.DataFrame> {
+    return await grok.functions.call('ClinicalCase:ReadSas', { fileInput });
+  }
+}
+
 export namespace funcs {
   export async function clinicalCaseApp(): Promise<DG.View> {
     return await grok.functions.call('ClinicalCase:ClinicalCaseApp', {});
+  }
+
+  export async function preclinicalCaseApp(): Promise<DG.View> {
+    return await grok.functions.call('ClinicalCase:PreclinicalCaseApp', {});
   }
 
   export async function clinicalCaseAppTreeBrowser(treeNode: any ): Promise<void> {
     return await grok.functions.call('ClinicalCase:ClinicalCaseAppTreeBrowser', { treeNode });
   }
 
+  export async function preclinicalCaseAppTreeBrowser(treeNode: any ): Promise<void> {
+    return await grok.functions.call('ClinicalCase:PreclinicalCaseAppTreeBrowser', { treeNode });
+  }
+
+  /**
+  Return list of clinical and preclinical studies loaded into Clinical Case application
+  */
+  export async function getListOfStudies(name?: string , description?: string , numSubjects?: number , numSubjectsOperator?: string , startDate?: any , startDateOperator?: string , endDate?: any , endDateOperator?: string , ongoing?: boolean , standard?: string ): Promise<any> {
+    return await grok.functions.call('ClinicalCase:GetListOfStudies', { name, description, numSubjects, numSubjectsOperator, startDate, startDateOperator, endDate, endDateOperator, ongoing, standard });
+  }
+
   export async function clinicalCaseFolderLauncher(folder: DG.FileInfo , files: any ): Promise<any> {
     return await grok.functions.call('ClinicalCase:ClinicalCaseFolderLauncher', { folder, files });
+  }
+
+  export async function xptFileHandler(file: any ): Promise<any> {
+    return await grok.functions.call('ClinicalCase:XptFileHandler', { file });
+  }
+
+  /**
+  Run CDISC CORE validation on datasets
+  */
+  export async function runCoreValidate(standard: string , dataPath: string , version: string , outputFormat: string , options: any ): Promise<string> {
+    return await grok.functions.call('ClinicalCase:RunCoreValidate', { standard, dataPath, version, outputFormat, options });
+  }
+
+  export async function sdiscRuleViolationCellRenderer(): Promise<any> {
+    return await grok.functions.call('ClinicalCase:SdiscRuleViolationCellRenderer', {});
   }
 }

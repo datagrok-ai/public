@@ -29,7 +29,7 @@ public class QueryManager {
     private static final int MIN_FETCH_SIZE = 100;
     private static final Logger LOGGER = LoggerFactory.getLogger(QueryManager.class);
     public boolean isDebug;
-    private final JdbcDataProvider provider;
+    public final JdbcDataProvider provider;
     private final FuncCall query;
     private final ResultSetManager resultSetManager;
     private int currentFetchSize = MIN_FETCH_SIZE;
@@ -115,6 +115,10 @@ public class QueryManager {
             }
             df.tags = new LinkedHashMap<>();
             df.tags.put(CHUNK_NUMBER_TAG, String.valueOf(dfNumber));
+            if (dfNumber == 1)
+                try {
+                    SqlAnnotator.annotate(query.func, df);
+                } catch (Exception ignore) {}
         }
         return df;
     }

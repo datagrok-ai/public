@@ -22,6 +22,18 @@ export async function initChemAutostart() : Promise<void> {
   await PackageFunctions.initChemAutostart();
 }
 
+//name: Recalculate Coordinates
+//description: Recalculates 2D coordinates for molecules in the column using Open Chem Lib
+//tags: Transform
+//input: dataframe table 
+//input: column molecules { semType: Molecule }
+//input: bool join = true 
+//output: column result
+//top-menu: Chem | Transform | Recalculate Coordinates...
+export async function recalculateCoordsViaOCL(table: DG.DataFrame, molecules: DG.Column, join: boolean) : Promise<any> {
+  return await PackageFunctions.recalculateCoordsViaOCL(table, molecules, join);
+}
+
 //name: Chemistry | Most Diverse Structures
 //tags: tooltip
 //input: column col { semType: Molecule }
@@ -196,6 +208,14 @@ export async function calculateDescriptorsTransform(table: DG.DataFrame, molecul
   await PackageFunctions.calculateDescriptorsTransform(table, molecules, selected);
 }
 
+//input: column molecules { semType: Molecule }
+//input: list<string> selected { optional: true }
+//output: dataframe result
+//meta.vectorFunc: true
+export async function getDescriptors(molecules: DG.Column, selected?: string[]) : Promise<any> {
+  return await PackageFunctions.getDescriptors(molecules, selected);
+}
+
 //output: object descriptors
 export async function chemDescriptorsTree() : Promise<any> {
   return await PackageFunctions.chemDescriptorsTree();
@@ -218,14 +238,6 @@ export async function freeTextToSmiles(molfile: string) : Promise<any> {
 //input: list<string> descriptors 
 export async function chemDescriptors(table: DG.DataFrame, molecules: DG.Column, descriptors: string[]) : Promise<void> {
   await PackageFunctions.chemDescriptors(table, molecules, descriptors);
-}
-
-//input: column molecules { semType: Molecule }
-//input: string descriptor 
-//output: column result
-//meta.vectorFunc: true
-export async function chemDescriptor(molecules: DG.Column, descriptor: string) : Promise<any> {
-  return await PackageFunctions.chemDescriptor(molecules, descriptor);
 }
 
 //name: SearchSubstructureEditor
@@ -482,11 +494,11 @@ export async function runStructuralAlerts(table: DG.DataFrame, molecules: DG.Col
 }
 
 //input: column<string> molecules { semType: Molecule }
-//input: string alert 
-//output: column res
+//input: list<string> alerts { optional: true }
+//output: dataframe result
 //meta.vectorFunc: true
-export async function runStructuralAlert(molecules: DG.Column, alert: any) : Promise<any> {
-  return await PackageFunctions.runStructuralAlert(molecules, alert);
+export async function getStructuralAlerts(molecules: DG.Column, alerts?: string[]) : Promise<any> {
+  return await PackageFunctions.getStructuralAlerts(molecules, alerts);
 }
 
 //name: Chemistry | Rendering
@@ -587,10 +599,11 @@ export function toxicity(smiles: DG.SemanticValue) : any {
 
 //input: column molecule { semType: Molecule }
 //input: string targetNotation 
+//input: bool kekulize = false { optional: true; nullable: true }
 //output: column result
 //meta.vectorFunc: true
-export async function convertMoleculeNotation(molecule: DG.Column, targetNotation: any) : Promise<any> {
-  return await PackageFunctions.convertMoleculeNotation(molecule, targetNotation);
+export async function convertMoleculeNotation(molecule: DG.Column, targetNotation: any, kekulize?: boolean) : Promise<any> {
+  return await PackageFunctions.convertMoleculeNotation(molecule, targetNotation, kekulize);
 }
 
 //description: RDKit-based conversion for SMILES, SMARTS, InChi, Molfile V2000 and Molfile V3000
@@ -610,10 +623,11 @@ export function convertMolNotation(molecule: string, sourceNotation: any, target
 //input: string targetNotation = 'smiles' { choices: ["smiles","smarts","molblock","v3Kmolblock"] }
 //input: bool overwrite = false 
 //input: bool join = true 
+//input: bool kekulize = false { optional: true; nullable: true }
 //output: column result
 //top-menu: Chem | Transform | Convert Notation...
-export async function convertNotation(data: DG.DataFrame, molecules: DG.Column<any>, targetNotation: any, overwrite: boolean, join: boolean) : Promise<any> {
-  return await PackageFunctions.convertNotation(data, molecules, targetNotation, overwrite, join);
+export async function convertNotation(data: DG.DataFrame, molecules: DG.Column<any>, targetNotation: any, overwrite: boolean, join: boolean, kekulize?: boolean) : Promise<any> {
+  return await PackageFunctions.convertNotation(data, molecules, targetNotation, overwrite, join, kekulize);
 }
 
 //name: Convert Notation...
@@ -798,6 +812,7 @@ export async function callChemDiversitySearch(col: DG.Column, metricName: any, f
 }
 
 //name: Chemical Properties
+//description: Calculates chemical properties and adds them as columns to the input table. properties include Molecular Weight (MW), Hydrogen Bond Acceptors (HBA), Hydrogen Bond Donors (HBD), LogP (Partition), LogS (Solubility), Polar Surface Area (PSA), Rotatable Bonds, Stereo Centers, Molecule Charge.
 //tags: HitTriageFunction, Transform
 //input: dataframe table { description: Input data table }
 //input: column molecules { semType: Molecule }
@@ -820,11 +835,11 @@ export async function addChemPropertiesColumns(table: DG.DataFrame, molecules: D
 }
 
 //input: column molecules { semType: Molecule }
-//input: string property { choices: ["MW","HBA","HBD","LogP","LogS","PSA","Rotatable bonds","Stereo centers","Molecule charge"] }
-//output: column result
+//input: list<string> selected { optional: true }
+//output: dataframe result
 //meta.vectorFunc: true
-export async function getMolProperty(molecules: DG.Column, property: string) : Promise<any> {
-  return await PackageFunctions.getMolProperty(molecules, property);
+export async function getProperties(molecules: DG.Column, selected?: string[]) : Promise<any> {
+  return await PackageFunctions.getProperties(molecules, selected);
 }
 
 //name: Toxicity Risks
@@ -838,6 +853,14 @@ export async function getMolProperty(molecules: DG.Column, property: string) : P
 //top-menu: Chem | Calculate | Toxicity Risks...
 export async function addChemRisksColumns(table: DG.DataFrame, molecules: DG.Column, mutagenicity?: boolean, tumorigenicity?: boolean, irritatingEffects?: boolean, reproductiveEffects?: boolean) : Promise<void> {
   await PackageFunctions.addChemRisksColumns(table, molecules, mutagenicity, tumorigenicity, irritatingEffects, reproductiveEffects);
+}
+
+//input: column molecules { semType: Molecule }
+//input: list<string> risks { optional: true }
+//output: dataframe result
+//meta.vectorFunc: true
+export async function getToxicityRisks(molecules: DG.Column, risks?: string[]) : Promise<any> {
+  return await PackageFunctions.getToxicityRisks(molecules, risks);
 }
 
 //description: Generates a hierarchical tree based on the scaffolds presented in dataset
@@ -878,6 +901,7 @@ export async function mmpAnalysis(table: DG.DataFrame, molecules: DG.Column, act
 //tags: filter
 //output: filter result
 //meta.semType: Molecule
+//meta.allowMultipleFiltersForColumn: false
 export function scaffoldTreeFilter() : any {
   return PackageFunctions.scaffoldTreeFilter();
 }
@@ -1044,13 +1068,23 @@ export async function isInteractiveNN(df: DG.DataFrame, predictColumn: DG.Column
 }
 
 //name: Deprotect
-//description: Generates the new dataset based on the given structure
+//description: Removes drawn protecting groups / fragments from molecules
+//tags: Transform
 //input: dataframe table { description: Input data table }
 //input: column molecules { semType: Molecule }
 //input: string fragment = 'O=C([N:1])OCC1c2ccccc2-c2ccccc21' { semType: Molecule }
 //top-menu: Chem | Transform | Deprotect...
+//editor: Chem:DeprotectEditor
 export async function deprotect(table: DG.DataFrame, molecules: DG.Column, fragment: string) : Promise<void> {
   await PackageFunctions.deprotect(table, molecules, fragment);
+}
+
+//name: Deprotect Editor
+//tags: editor
+//input: funccall call 
+//output: widget result
+export function deprotectEditor(call: DG.FuncCall) : any {
+  return PackageFunctions.deprotectEditor(call);
 }
 
 //description: Beautifies the list of molecules and returns the list of beautified molecules
@@ -1077,8 +1111,9 @@ export async function _mpo() : Promise<void> {
 //tags: Transform
 //input: dataframe df 
 //input: object currentProperties 
-export async function mpoTransformFunction(df: DG.DataFrame, currentProperties: any) : Promise<void> {
-  await PackageFunctions.mpoTransformFunction(df, currentProperties);
+//output: list res
+export async function mpoTransformFunction(df: DG.DataFrame, currentProperties: any) : Promise<string[]> {
+  return await PackageFunctions.mpoTransformFunction(df, currentProperties);
 }
 
 //tags: fileViewer

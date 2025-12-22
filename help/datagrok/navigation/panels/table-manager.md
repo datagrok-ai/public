@@ -1,5 +1,6 @@
 ---
 title: "Table Manager"
+unlisted: true
 sidebar_position: 3
 ---
 
@@ -17,7 +18,7 @@ Usage:
 | Ctrl+click           | Toggle table selection |
 | Esc                  | Clear table selection |
 | Right-click          | Show popup menu |
-| Popup: Show \        | x | Toggle visibility of the property "x" |
+| Popup: Show \        | Toggle visibility of the property "x" |
 | Popup: Open as table | Add tables to workspace (tables in rows) |
 
 If a context menu is open when multiple columns are selected, user will be present with a choice to apply commands to

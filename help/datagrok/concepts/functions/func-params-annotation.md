@@ -299,7 +299,7 @@ The `pattern` _option_ specifies that the actual data type is a `double`. In the
 |                    | `after`       | `after March 2001`           |
 |                    | `min-max`     | `Range: 1941-1945`           |
 
-To learn more, see [search patterns](../../navigation/views/table-view#search-patterns).
+To learn more, see [search patterns](../../../visualize/table-view-1.md#search-patterns).
 </details>
 
 ### Choices

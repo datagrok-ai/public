@@ -6,8 +6,9 @@ import {AppName, HitDesignCampaign, HitDesignTemplate, IFunctionArgs, TriagePerm
 import {HitDesignInfoView} from './hit-design-views/info-view';
 import {CampaignIdKey, CampaignJsonName, CampaignTableName,
   HTQueryPrefix, HTScriptPrefix, HitDesignCampaignIdKey,
-  HitDesignMolColName, HitDesignerFunctionTag, TileCategoriesColName, ViDColName, i18n} from './consts';
-import {calculateColumns, calculateCellValues, getNewVid} from './utils/calculate-single-cell';
+  HitDesignMolColName, HitDesignerFunctionTag, TileCategoriesColName, ViDColName, ViDSemType, i18n} from './consts';
+import {calculateColumns, calculateCellValues} from './utils/calculate-single-cell';
+// @ts-ignore
 import '../../css/hit-triage.css';
 import {_package} from '../package';
 import {addBreadCrumbsToRibbons, checkFileExists, checkRibbonsHaveSubmit, editableTableField, modifyUrl, toFormatedDateString} from './utils';
@@ -20,6 +21,8 @@ import {Observable, Subscription} from 'rxjs';
 import {filter} from 'rxjs/operators';
 import {defaultPermissions, PermissionsDialog} from './dialogs/permissions-dialog';
 import {getDefaultCampaignStorageSettings, getDefaultSharingSettings} from '../packageSettingsEditor';
+import * as api from '../package-api';
+import {registerMol, registerMolsBatch} from './utils/molreg';
 
 export class HitDesignApp<T extends HitDesignTemplate = HitDesignTemplate> extends HitAppBase<T> {
   multiView: DG.MultiView;
@@ -43,31 +46,59 @@ export class HitDesignApp<T extends HitDesignTemplate = HitDesignTemplate> exten
     super(c, an);
     this._infoView = infoViewConstructor(this);
     this.multiView = new DG.MultiView({viewFactories: {[this._infoView.name]: () => this._infoView}});
-    this.multiView.tabs.onTabChanged.subscribe((_) => {
+    this.multiView.subs.push(this.multiView.tabs.onTabChanged.subscribe((_) => {
       if (this.multiView.currentView instanceof HitBaseView)
         (this.multiView.currentView as HitBaseView<T, typeof this>).onActivated();
-    });
+    }));
+
     this.multiView.parentCall = c;
 
     this.mainView = this.multiView;
     this._initViewSubs();
   }
 
+  /**
+   * Correctly joins the incoming dataframe with the existing campaign dataframe
+   * @param df Dataframe to be joined into existing campaign dataframe
+   */
   async handleJoiningDataframe(df: DG.DataFrame) {
     const molCols = df.columns.bySemTypeAll(DG.SEMTYPE.MOLECULE);
     if (!molCols || molCols.length === 0) {
       grok.shell.error('No molecule column found');
       return;
     }
-    const molCol = molCols.find((c) => c?.name?.toLowerCase() === 'smiles' || c?.name?.toLowerCase() === 'molecule') ?? molCols[0];
-    if (!molCol) {
+
+    let chosenMolColName: string | null = null;
+    if (molCols.length > 1) {
+      const molColNames = molCols.map((c) => c.name);
+      const likelyMolCol = molCols.find((c) => c?.name?.toLowerCase() === 'smiles' || c?.name?.toLowerCase() === 'molecule') ?? molCols[0];
+      const molColInput = ui.input.choice('Primary Molecule Column', {items: molColNames, value: likelyMolCol.name, nullable: false});
+      const promise = new Promise<string | null>((resolve) => {
+        ui.dialog('Select Primary Molecule Column')
+          .add(ui.divText('Multiple molecule columns found. Please select the primary molecule column to be used for calculations.'))
+          .add(molColInput)
+          .onOK(() => resolve(molColInput.value!))
+          .onCancel(() => resolve(null))
+          .show();
+      });
+      chosenMolColName = await promise;
+      if (!chosenMolColName) {
+        grok.shell.info('Operation cancelled by user');
+        return;
+      }
+    } else
+      chosenMolColName = molCols[0]!.name!;
+
+
+    const molCol = df.col(chosenMolColName);
+    if (!molCol) { // should not happen, but oh well
       grok.shell.error('No molecule column found');
       return;
     }
 
     const compute = this.campaign?.template?.compute ?? this.template?.compute;
     if (!compute) {
-      grok.shell.error('No compute functions found');
+      grok.shell.warning('No compute functions found');
       return;
     }
     const mols = molCol.toList();
@@ -84,43 +115,27 @@ export class HitDesignApp<T extends HitDesignTemplate = HitDesignTemplate> exten
       }
     }
 
+    // handle the VID column for new table
+    // joining data is not allowed to have the VID column, so remove it if it exists
+    if (df.columns.contains(ViDColName))
+      df.columns.remove(ViDColName);
+
+    const vidCol = df.columns.addNewString(ViDColName);
+    // batch register the molecules
+    const registeredVids = await registerMolsBatch(mols, this._campaignId!, this.appName);
+    for (let i = 0; i < df.rowCount; i++) {
+      const mol = molCol.get(i);
+      const vid = registeredVids.get(mol);
+      if (vid)
+        vidCol.set(i, vid);
+    }
     //merge changes into existing dataframe
     this.unionDataframes(df, this.dataFrame!, molCol.name, this.molColName);
-    this.updateAllVids();
     this.saveCampaign(false);
   }
 
   public get submitParams() {
     return this.campaign?.template?.submit ?? this.template?.submit;
-  }
-
-  private updateAllVids() {
-    const molCol = this.dataFrame!.col(this.molColName);
-    const vidCol = this.dataFrame!.col(ViDColName);
-    if (!molCol || !vidCol)
-      return;
-    const molSmiles = molCol.toList().map((m) => _package.convertToSmiles(m));
-    const molVidMap = new Map<string, string>();
-    for (let i = 0; i < molSmiles.length; i++) {
-      const mol = molSmiles[i];
-      if (!mol)
-        continue;
-      const vid = vidCol.isNone(i) ? null : vidCol.get(i);
-      if (vid) {
-        if (molVidMap.has(mol)) {
-          if (vid === molVidMap.get(mol))
-            continue;
-          else
-            vidCol.set(i, molVidMap.get(mol), false);
-        } else
-          molVidMap.set(mol, vid);
-      } else
-        vidCol.set(i, molVidMap.get(mol) ?? getNewVid(vidCol), false);
-    }
-    //force invalidation of VID column
-    const oldValue = vidCol.get(0);
-    vidCol.set(0, null, false);
-    vidCol.set(0, oldValue, true);
   }
 
   _initViewSubs() {
@@ -266,6 +281,23 @@ export class HitDesignApp<T extends HitDesignTemplate = HitDesignTemplate> exten
     await this.saveCampaign(true);
   }
 
+  private _refreshIconTooltip = 'Refresh Campaign';
+  protected async refreshCampaign() {
+    if (!this._campaignId || !this.template) {
+      grok.shell.warning('No campaign to refresh');
+      return; // should not happen
+    }
+    if (this._isSaving) {
+      grok.shell.info('Campaign is being saved. Please wait a moment and try again.');
+      return;
+    }
+    clearInterval(this._updateCheckIntervalId);
+    this._refreshIconTooltip = 'Refresh Campaign';
+    await this.setTemplate(this.template, this._campaignId);
+  }
+
+  private _updateCheckIntervalId: any = null;
+  private _needsRefresh: boolean = false;
   public async setTemplate(template: T, campaignId?: string) {
     if (!campaignId) {
       this._designView?.dataFrame && grok.shell.closeTable(this._designView.dataFrame);
@@ -298,7 +330,9 @@ export class HitDesignApp<T extends HitDesignTemplate = HitDesignTemplate> exten
     }
 
     if (!this.dataFrame) {
-      console.error('DataFrame is empty');
+      grok.shell.error('DataFrame is empty');
+      clearInterval(this._updateCheckIntervalId);
+      this._updateCheckIntervalId = null;
       return;
     }
     await this.dataFrame.meta.detectSemanticTypes();
@@ -318,7 +352,54 @@ export class HitDesignApp<T extends HitDesignTemplate = HitDesignTemplate> exten
     modifyUrl(CampaignIdKey, this._campaignId ?? this._campaign?.name ?? '');
     if (this.campaign)
       this.campaign.template = template;
+
+    // get the last saved time
+    api.queries.getLastModified(this.appName, this._campaignId!).then((timeDf) => {
+      const timeStr = timeDf?.col('updated_at')?.getString(0);
+      this._lastExpiresTimeString = timeStr ?? null;
+      this._needsRefresh = false;
+      // add the interval to check for updates
+      clearInterval(this._updateCheckIntervalId);
+      let isChecking = false;
+      this._updateCheckIntervalId = setInterval(async () => {
+        if (isChecking || this._needsRefresh)
+          return;
+        isChecking = true;
+        // first, check if this view is still active
+        if (this._designView && !Array.from(grok.shell.tableViews).some((tv) => tv === this._designView)) {
+          clearInterval(this._updateCheckIntervalId);
+          console.log('Clearing campaign update check interval');
+          this._updateCheckIntervalId = null;
+          isChecking = false;
+          return;
+        }
+        if (!this._campaignId || !this.template || this._isSaving || this.isJoining || !this._designView || grok.shell.v !== this._designView) {
+          isChecking = false;
+          return;
+        }
+        try {
+          const timeDf = await api.queries.getLastModified(this.appName, this._campaignId);
+          const timeStr = timeDf?.col('updated_at')?.getString(0);
+          if (!timeStr) {
+            isChecking = false;
+            return;
+          }
+          if (this._lastExpiresTimeString !== timeStr && this._refreshCampaignIcon) {
+            this._lastExpiresTimeString = timeStr;
+            ui.hints.addHintIndicator(this._refreshCampaignIcon, true, 10000);
+            this._refreshIconTooltip = 'New changes available. Click to refresh campaign.';
+            this._lastExpiresTimeString = timeStr;
+            this._needsRefresh = true;
+          }
+        } catch (e) {
+          console.error(e);
+        }
+        isChecking = false;
+      }, 3000);
+    }).catch((e) => console.error(e));
   }
+
+  private _lastExpiresTimeString: string | null = null;
 
   get campaignId(): string | undefined {return this._campaignId;}
 
@@ -355,7 +436,7 @@ export class HitDesignApp<T extends HitDesignTemplate = HitDesignTemplate> exten
     }
     const colVersion = col.version;
     const valueCounts = new Uint32Array(col.categories.length).fill(0);
-    const indexes = (col.getRawData() as Uint32Array).subarray(0, col.length);
+    const indexes = (col.getRawData() as Uint32Array).subarray(0, col.length); // because for small data DG returns list of length min 16
     indexes.forEach((v) => valueCounts[v]++);
     this._duplicateVidCache = {colVersion, valueCounts, indexes};
   }
@@ -390,6 +471,7 @@ export class HitDesignApp<T extends HitDesignTemplate = HitDesignTemplate> exten
           this.saveCampaign(false);
   }
 
+  private _refreshCampaignIcon: HTMLElement | null = null;
   protected initDesignViewRibbons(view: DG.TableView, subs: Subscription[], addDesignerButton = false) {
     const onRemoveSub = grok.events.onViewRemoved.subscribe((v) => {
       if (v.id === view?.id) {
@@ -495,6 +577,8 @@ export class HitDesignApp<T extends HitDesignTemplate = HitDesignTemplate> exten
         const calculateRibbon = ui.iconFA('wrench', getComputeDialog, 'Calculate additional properties');
         const addNewRowButton = ui.icons.add(() => {this.dataFrame?.rows.addNew(null, true);}, 'Add new row');
         const applyLayoutButton = ui.iconSvg('view-layout', () => {this.applyTemplateLayout(view);}, `Apply template layout ${this.template?.localLayoutPath ? '(Loaded from mounted file storage)' : '(Static)'}`);
+        this._refreshCampaignIcon = ui.icons.sync(async () => {this.refreshCampaign();});
+        ui.tooltip.bind(this._refreshCampaignIcon, () => this._refreshIconTooltip);
         const permissionsButton = ui.iconFA('share', async () => {
           await (new PermissionsDialog(this.campaign?.permissions)).show((res) => {
             this.campaign!.permissions = res;
@@ -522,6 +606,7 @@ export class HitDesignApp<T extends HitDesignTemplate = HitDesignTemplate> exten
           ribbonButtons.unshift(applyLayoutButton);
         if (this.hasEditPermission)
           ribbonButtons.unshift(permissionsButton);
+
         if (designerFuncs.length > 0 && addDesignerButton) {
           // TODO: Support multiple functions
           const designerFunc = designerFuncs[0];
@@ -563,7 +648,7 @@ export class HitDesignApp<T extends HitDesignTemplate = HitDesignTemplate> exten
         }
         ribbonButtons.unshift(calculateRibbon);
         ribbonButtons.unshift(addNewRowButton);
-
+        ribbonButtons.unshift(this._refreshCampaignIcon);
 
         ribbons.push(ribbonButtons);
         // remove project save button from the ribbon
@@ -636,6 +721,14 @@ export class HitDesignApp<T extends HitDesignTemplate = HitDesignTemplate> exten
       grok.functions.call('Chem:editMoleculeCell', {cell: view.grid.cell(this._molColName, 0)});
 
     this.initGridSubs(view, subs);
+    // make VID column non-editable
+    const vidGridCol = view.grid?.col(ViDColName);
+    if (vidGridCol)
+      vidGridCol.editable = false;
+    // set the semType of vidCol
+    const vidCol = this.dataFrame!.col(ViDColName);
+    if (vidCol)
+      vidCol.semType = ViDSemType;
 
     subs.push(this.dataFrame!.onRowsAdded.pipe(filter(() => !this.isJoining))
       .subscribe(() => { // TODO, insertion of rows in the middle
@@ -747,47 +840,20 @@ export class HitDesignApp<T extends HitDesignTemplate = HitDesignTemplate> exten
           return;
         const newValue = gc.cell.value;
         const newValueIdx = gc.tableRowIndex!;
-        let newVid = this.dataFrame!.col(ViDColName)?.get(newValueIdx);
-        let foundMatch = false;
-        // try to find existing molecule
+
         if (newValue) {
           try {
-            const canonicals = gc.tableColumn.toList().map((cv) => {
-              try {
-                return _package.convertToSmiles(cv);
-              } catch (e) {
-                return '';
-              }
-            },
-            );
-            const canonicalNewValue =
-              _package.convertToSmiles(newValue);
-            if (canonicals?.length === this.dataFrame!.rowCount) {
-              for (let i = 0; i < canonicals.length; i++) {
-                if (canonicals[i] === canonicalNewValue &&
-                      i !== newValueIdx && this.dataFrame!.col(ViDColName)?.get(i)) {
-                  newVid = this.dataFrame!.col(ViDColName)?.get(i);
-                  foundMatch = true;
-                  break;
-                }
-              }
-            }
+            const newVid = await registerMol(newValue, this._campaignId!, this.appName);
+            this.dataFrame!.col(ViDColName)!.set(newValueIdx, newVid, true);
           } catch (e) {
-            console.error(e);
+            console.error('Failed to register molecule');
           }
         }
-        // if the vid was duplicated, generate a new one
-        if (this.duplicateVidCache && !foundMatch &&
-            this.duplicateVidCache.valueCounts[this.duplicateVidCache.indexes[newValueIdx]] > 1)
-          newVid = null;
 
-        if (!newVid || newVid === '')
-          newVid = getNewVid(this.dataFrame!.col(ViDColName)!);
 
-          this.dataFrame!.col(ViDColName)!.set(newValueIdx, newVid, false);
-
-          this.performSingleCellCalculations(newValueIdx, newValue);
+        await this.performSingleCellCalculations(newValueIdx, newValue);
       } catch (e) {
+        grok.shell.error('Failed to process molecule edit, check console for details');
         console.error(e);
       }
     }));
@@ -796,13 +862,14 @@ export class HitDesignApp<T extends HitDesignTemplate = HitDesignTemplate> exten
       try {
         // color duplicate vid values
         const cell = args.cell;
-        if (!cell || !cell.isTableCell || !cell.tableColumn || !this.duplicateVidCache ||
+        const vdCache = this.duplicateVidCache;
+        if (!cell || !cell.isTableCell || !cell.tableColumn || !vdCache ||
             cell.tableColumn.name !== ViDColName || (cell.tableRowIndex ?? -1) < 0)
           return;
 
-        if (this.duplicateVidCache.valueCounts[this.duplicateVidCache.indexes[cell.tableRowIndex!]] > 1) {
+        if (vdCache.valueCounts[vdCache.indexes[cell.tableRowIndex!]] > 1) {
           args.cell.style.backColor =
-              DG.Color.setAlpha(DG.Color.getCategoricalColor(this.duplicateVidCache.indexes[cell.tableRowIndex!])
+              DG.Color.setAlpha(DG.Color.getCategoricalColor(vdCache.indexes[cell.tableRowIndex!])
                 , 150);
         }
       } catch (e) {}
@@ -913,8 +980,32 @@ export class HitDesignApp<T extends HitDesignTemplate = HitDesignTemplate> exten
     };
   }
 
+  private _isSaving: boolean = false;
+
   async saveCampaign(notify = true, isCreating = false, customProps?: Partial<HitDesignCampaign>): Promise<HitDesignCampaign> {
+    this._isSaving = true;
     const campaignId = this.campaignId!;
+    const someoneElseEditingLoaderTimeout = setTimeout(() => {
+      if (this._designView?.grid)
+        ui.setUpdateIndicator(this._designView.grid.root, true, 'Someone else is saving the campaign. Please wait...');
+    }, 500);
+    try {
+      const lock = await this.aquireAndWaitCampaignLock(campaignId);
+      if (!lock?.aquired) // could not acquire lock
+        throw new Error('Could not acquire lock for campaign during 30 seconds');
+    } catch (e) {
+      clearTimeout(someoneElseEditingLoaderTimeout);
+      if (this._designView?.grid)
+        ui.setUpdateIndicator(this._designView.grid.root, false);
+      grok.shell.error('Failed to acquire campaign lock. Someone else might be editing the campaign. Please try again later.');
+      this._isSaving = false;
+      return this.campaign!;
+    }
+    clearTimeout(someoneElseEditingLoaderTimeout);
+    if (this._designView?.grid)
+      ui.setUpdateIndicator(this._designView.grid.root, true, 'Saving Campaign...');
+    // await DG.delay(3000); // artificial delay to simulate long save
+
     const templateName = this.template!.name;
     const enrichedDf = this.dataFrame!;
     const campaignName = campaignId;
@@ -964,6 +1055,10 @@ export class HitDesignApp<T extends HitDesignTemplate = HitDesignTemplate> exten
     };
     if (!this.hasEditPermission) {
       grok.shell.error('You do not have permission to modify this campaign');
+      if (this._designView?.grid)
+        ui.setUpdateIndicator(this._designView.grid.root, false);
+      await this.releaseCampaignLock(campaignId);
+      this._isSaving = false;
       return campaign;
     }
     const campaignPath = `${this.appName}/campaigns/${campaignId}/${CampaignJsonName}`;
@@ -1002,6 +1097,12 @@ export class HitDesignApp<T extends HitDesignTemplate = HitDesignTemplate> exten
     !notify && isCreating && grok.shell.info('Campaign created successfully.');
     this.campaign = campaign;
     this.designViewName = campaign.friendlyName ?? campaign.name;
+    const updatedAt = await this.releaseCampaignLock(campaignId);
+    this._lastExpiresTimeString = updatedAt;
+    if (this._designView?.grid)
+      ui.setUpdateIndicator(this._designView.grid.root, false);
+    this._isSaving = false;
+    this._refreshIconTooltip = 'Refresh Campaign';
     return campaign;
   }
 }

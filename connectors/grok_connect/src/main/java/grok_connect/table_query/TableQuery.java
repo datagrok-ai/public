@@ -26,15 +26,40 @@ public class TableQuery extends DataQuery {
     List<TableJoin> joins = new ArrayList<>();
     public String tableName;
     public String schema;
+    public String catalog;
     public Integer limit;
 
     public TableQuery() {
     }
 
     private String getFullTableName(String tableName, JdbcDataProvider provider) {
+        if (tableName == null || provider == null)
+            throw new IllegalArgumentException("tableName and provider must not be null");
+
         tableName = provider.addBrackets(tableName);
-        return GrokConnectUtil.isNotEmpty(schema) && !connection.dataSource.equals("SQLite")  && !connection.dataSource.equals("Databricks") && !tableName.contains(".")
-                ? provider.addBrackets(schema) + "." + tableName : tableName;
+
+        boolean hasSchema = GrokConnectUtil.isNotEmpty(schema);
+        boolean hasCatalog = GrokConnectUtil.isNotEmpty(catalog);
+        boolean hasDot = tableName.contains(".");
+        boolean isSQLite = "SQLite".equalsIgnoreCase(connection.dataSource);
+
+        if (provider.descriptor.requiresFullyQualifiedTable && hasCatalog) {
+            if (hasSchema && !hasDot)
+                return String.format("%s.%s.%s",
+                        provider.addBrackets(catalog),
+                        provider.addBrackets(schema),
+                        tableName);
+            if (hasDot)
+                return String.format("%s.%s",
+                        provider.addBrackets(catalog),
+                        tableName);
+        }
+
+
+        if (hasSchema && !isSQLite && !hasDot)
+            return String.format("%s.%s", provider.addBrackets(schema), tableName);
+
+        return tableName;
     }
 
     public String toSql() {
@@ -43,7 +68,7 @@ public class TableQuery extends DataQuery {
         StringBuilder sqlHeader = new StringBuilder();
         String table = tableName;
         if (table.contains(".")) {
-            int idx = table.indexOf(".");
+            int idx = table.lastIndexOf(".");
             schema = table.substring(0, idx);
             table = table.substring(idx + 1);
         }
@@ -222,7 +247,7 @@ public class TableQuery extends DataQuery {
         params.removeIf((p) -> p.name.equals(paramName));
         params.addAll(result.params);
         for (FuncParam p: result.params) {
-            sqlHeader.append(String.format("--input: %s %s", p.propertyType, p.name));
+            sqlHeader.append(String.format("%sinput: %s %s", provider.descriptor.commentStart, p.propertyType, p.name));
             sqlHeader.append(System.lineSeparator());
         }
 

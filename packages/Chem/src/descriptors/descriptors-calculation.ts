@@ -1,7 +1,7 @@
 import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
-import {getDescriptorsPy} from '../scripts-api';
+import {Chem} from '../scripts-api';
 import {getRdKitModule} from '../utils/chem-common-rdkit';
 import {_convertMolNotation} from '../utils/convert-notation-utils';
 import {addCopyIcon} from '../utils/ui-utils';
@@ -130,7 +130,7 @@ export function getDescriptorsApp(): void {
   }, defaultSmiles);
   const addButton = ui.bigButton('ADD', async () => {
     getSelected().then((selected) => {
-      getDescriptorsPy(
+      Chem.getDescriptorsPy(
         'smiles', DG.DataFrame.fromCsv(`smiles\n${sketcherValue}`), 'selected',
         DG.DataFrame.fromColumns([DG.Column.fromList('string', 'selected', selected)]),
       ).then((t) => {

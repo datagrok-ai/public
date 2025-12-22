@@ -3,6 +3,7 @@ import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
 import {Observable, Subject} from 'rxjs';
 import {filter} from 'rxjs/operators';
+// @ts-ignore
 import '../../css/forms.css';
 
 const COLS_LIMIT_EXCEEDED_WARNING = `Number of columns is more than 20. First 20 columns are shown`;
@@ -10,14 +11,19 @@ const BOOLEAN_INPUT_TOP_MARGIN = 15;
 
 export class FormsViewer extends DG.JsViewer {
   get type(): string { return 'FormsViewer'; }
-  moleculeSize: 'small' | 'normal' | 'large';
+
+  rendererSize: 'small' | 'normal' | 'large';
   fieldsColumnNames: string[];
   colorCode: boolean;
   showCurrentRow: boolean;
   showMouseOverRow: boolean;
   showSelectedRows: boolean;
   showFixedRows = false;
-  indexes: number[];
+  useGridSort = true;
+  sortByColumnName?: string;
+  sortAscending: boolean;
+
+  indexes: number[] | Int32Array;
   columnHeadersDiv: HTMLDivElement;
   virtualView: DG.VirtualView;
   columnLabelWidth: number = 0;
@@ -49,10 +55,11 @@ export class FormsViewer extends DG.JsViewer {
   protected getRendererSize(renderer: DG.GridCellRenderer): DG.Point {
     let width = renderer.defaultWidth;
     let height = renderer.defaultHeight;
-    if (!width || !height)
-      return this.getMoleculeSize();
 
-    switch (this.moleculeSize) {
+    if (!width || !height)
+      return this.getSize();
+
+    switch (this.rendererSize) {
       case 'normal': return new DG.Point(width, height);
       case 'large': return new DG.Point(Math.floor(width * 1.5), Math.floor(height * 1.5));
       case 'small':
@@ -60,8 +67,8 @@ export class FormsViewer extends DG.JsViewer {
     }
   }
 
-  protected getMoleculeSize(): DG.Point {
-    switch (this.moleculeSize) {
+  protected getSize(): DG.Point {
+    switch (this.rendererSize) {
       case 'normal': return new DG.Point(200, 100);
       case 'large': return new DG.Point(300, 150);
       case 'small':
@@ -80,7 +87,10 @@ export class FormsViewer extends DG.JsViewer {
     this.showCurrentRow = this.bool('showCurrentRow', true);
     this.showMouseOverRow = this.bool('showMouseOverRow', true);
     this.showSelectedRows = this.bool('showSelectedRows', true);
-    this.moleculeSize = this.string('moleculeSize', 'small', {choices: ['small', 'normal', 'large']}) as 'small' | 'normal' | 'large';
+    this.useGridSort = this.bool('useGridSort', true, {description: 'Sort values the same way as in the spreadsheet'});
+    this.sortByColumnName = this.column('sortBy');
+    this.sortAscending = false;
+    this.rendererSize = this.string('rendererSize', 'small', {choices: ['small', 'normal', 'large'], description: 'Sets the display size of rendered content'}) as 'small' | 'normal' | 'large';
 
     //fields
     this.indexes = [];
@@ -100,22 +110,21 @@ export class FormsViewer extends DG.JsViewer {
     ui.tooltip.bind(this.mouseOverRowIndicator, 'Mouse over row');
 
     ui.tools.waitForElementInDom(this.root).then((_) => {
-      this.columnHeadersDiv.style.cssText = `
-        oveflow:hidden!important;
-        min-width: 150px;
-        flex-shrink: 0;
-      `;
-      this.splitColLeft.style.cssText = `
-        overflow: hidden!important;
-      `;
-      columnHeadersBox.style.cssText = `
-        box-sizing: content-box;
-        width:100%;
-        position:relative;
-        display:flex;
-        padding-right:17px;
-        overflow: scroll!important;
-      `;
+      this.columnHeadersDiv.style.setProperty('overflow', 'hidden', 'important');
+      Object.assign(this.columnHeadersDiv.style, {
+        // oveflow:'hidden !important',
+        minWidth: '150px',
+        flexShrink: '0'
+      });
+
+      this.splitColLeft.style.setProperty('overflow', 'hidden', 'important');
+      columnHeadersBox.style.setProperty('overflow', 'scroll', 'important');
+      Object.assign(columnHeadersBox.style, {
+        boxSizing: 'content-box',
+        width: '100%',
+        position: 'relative',
+        display: 'flex',
+        paddingRight: '17px'});
 
       columnHeadersBox.addEventListener('scroll', (e: Event) => {
         this.virtualView.root.scrollTop = columnHeadersBox.scrollTop;
@@ -152,8 +161,15 @@ export class FormsViewer extends DG.JsViewer {
 
     sub(this.dataFrame.selection.onChanged, () => this.render());
     sub(this.dataFrame.filter.onChanged, () => this.render());
-
     sub(this.dataFrame.onMetadataChanged, () => this.render());
+
+    setTimeout(() => {
+      const grid = this.getGrid();
+      if (grid)
+        sub(grid.onRowsSorted, () => {
+          setTimeout(() => this.render());
+        });
+    })
 
     sub(this.dataFrame.onColumnsRemoved, () => {
       this.updateFieldsColumnNames();
@@ -208,13 +224,31 @@ export class FormsViewer extends DG.JsViewer {
           this.render();
         });
         const columnLabelContainer = ui.div([columnLabel, closeIcon], 'd4-multi-form-column-name d4-flex-row');
+        const idx = this.getSortByColumns().indexOf(name);
+        if (idx > -1)
+          columnLabelContainer.append(ui.divText(this.getSortByTypes()[idx] ? '↑' : '↓', 'd4-multi-form-column-sort-indicator'));
+
         const offsetTop = formField.type === 'checkbox' ?
           formField.offsetTop - BOOLEAN_INPUT_TOP_MARGIN : formField.offsetTop;
         columnLabelContainer.style.top = `${offsetTop + 10}px`;
         this.columnHeadersDiv.appendChild(columnLabelContainer);
-        columnLabel.onclick = (e: MouseEvent) => {
+
+        columnLabel.onclick = (_: MouseEvent) => {
           this.dataFrame.currentCol = this.dataFrame.col(name)!;
         };
+
+        columnLabel.ondblclick = (_: MouseEvent) => {
+          if (!this.sortByColumnName) {
+            this.sortByColumnName = name;
+            this.sortAscending = false;
+          }
+          else if (this.sortAscending)
+            this.sortByColumnName = undefined;
+          else
+            this.sortAscending = true;
+          this.render();
+        };
+
         if (columnLabel.getBoundingClientRect().width > this.columnLabelWidth)
           this.columnLabelWidth = columnLabel.getBoundingClientRect().width;
         columnLabelContainer.onmouseenter = (e: MouseEvent) => closeIcon.style.visibility = 'visible';
@@ -240,7 +274,9 @@ export class FormsViewer extends DG.JsViewer {
   }
 
   renderForm(row: number, header?: boolean) {
+    const grid = this.getGrid();
     const savedIdx = row;
+
     if (header)
       row = 0;
     else {
@@ -259,13 +295,12 @@ export class FormsViewer extends DG.JsViewer {
           return resDiv;
 
         try {
-          const grid = this.getGrid();
           // for molecules, use the gridCol renderer instead of inputBase
           const col = this.dataFrame.col(name)!;
-          if (col.semType && grid?.col(name)?.renderer) {
-            const renderer = grid.col(name)!.renderer!;
+          if (col.semType && col.meta.cellRenderer && grid?.col(name)?.renderer) {
+            const renderer = grid!.col(name)!.renderer!;
             const rendererSize = this.getRendererSize(renderer);
-            const gridCell = DG.GridCell.fromColumnRow(grid, name, grid.tableRowToGrid(row));
+            const gridCell = DG.GridCell.fromColumnRow(grid!, name, grid!.tableRowToGrid(row));
             const canvas = ui.canvas(rendererSize.x, rendererSize.y);
             canvas.width = rendererSize.x * window.devicePixelRatio;
             canvas.height = rendererSize.y * window.devicePixelRatio;
@@ -288,23 +323,37 @@ export class FormsViewer extends DG.JsViewer {
             const input = DG.InputBase.forColumn(col);
             if (input) {
               if (this.dataFrame.col(name)!.semType === DG.SEMTYPE.MOLECULE)
-                input.input.classList.add(`d4-multi-form-molecule-input-${this.moleculeSize}`);
+                input.input.classList.add(`d4-multi-form-molecule-input-${this.rendererSize}`);
               input.input.setAttribute('column', name);
-              input.value = this.dataFrame.get(name, row);
+              input.value = this.dataFrame.col(name)?.isNone(row) ? null : this.dataFrame.get(name, row);
               input.readOnly = true;
 
               if (this.colorCode) {
                 if (grid) {
+                  const gc = grid.col(name);
+
                   const color = this.dataFrame.col(name)?.meta.colors.getColor(row);
-                  if (color) {
-                    if (grid.col(name)?.isTextColorCoded)
-                      input.input.setAttribute('style', `color:${DG.Color.toHtml(color)}!important;`);
+                  if (color && color != 4294967295) {
+                    if (gc?.isTextColorCoded)
+                      input.input.style.color = `${DG.Color.toHtml(color)}!important;`;
                     else {
-                      input.input.setAttribute('style',
-                        `color:${DG.Color.toHtml(DG.Color.getContrastColor(color))}!important;`);
+                      input.input.style.color = `${DG.Color.toHtml(DG.Color.getContrastColor(color))}!important;`;
                       input.input.style.backgroundColor = DG.Color.toHtml(color);
                     }
                   }
+                  else {
+                    if (gc?.contentCellStyle?.textColor)
+                      input.input.style.color = DG.Color.toHtml(gc!.contentCellStyle!.textColor);
+
+                    if (gc?.contentCellStyle?.backColor)
+                      input.input.style.backgroundColor = DG.Color.toHtml(gc!.contentCellStyle!.backColor);
+                  }
+
+                  if (gc?.contentCellStyle?.horzAlign == "center" || gc?.contentCellStyle?.horzAlign == "right")
+                    input.input.style.textAlign = gc!.contentCellStyle.horzAlign!;
+
+                  if (gc!.contentCellStyle?.font)
+                    input.input.style.font = gc!.contentCellStyle.font;
                 }
               }
               input.input.onclick = (e: MouseEvent) => {
@@ -332,14 +381,17 @@ export class FormsViewer extends DG.JsViewer {
       if (event.ctrlKey && event.shiftKey) {
         for (let i = 0; i <= row; i++)
           this.dataFrame.selection.set(i, false);
-      } else {
+      }
+      else {
         if (event.ctrlKey) {
           const currentSelection = this.dataFrame.selection.get(row);
           this.dataFrame.selection.set(row, !currentSelection);
-        } else if (event.shiftKey) {
+        }
+        else if (event.shiftKey) {
           for (let i = 0; i <= this.dataFrame.rowCount; i++)
             this.dataFrame.selection.set(i, i <= row);
-        } else {
+        }
+        else {
           if (!this.showCurrentRow || savedIdx !== this.currentRowPos)
             this.dataFrame.currentRowIdx = row;
         }
@@ -352,14 +404,40 @@ export class FormsViewer extends DG.JsViewer {
     return form;
   }
 
+  getSortByColumns(): string[] {
+    const grid = this.getGrid();
+    if (this.sortByColumnName && this.dataFrame.columns.contains(this.sortByColumnName))
+      return [this.sortByColumnName];
+    else if (grid && grid?.sortByColumns?.length > 0)
+      return grid.sortByColumns.map((c) => c.name);
+    else
+      return [];
+  }
+
+  getSortByTypes(): boolean[] {
+    const grid = this.getGrid();
+    if (this.sortByColumnName && this.dataFrame.columns.contains(this.sortByColumnName))
+      return [this.sortAscending];
+    else if (grid && grid?.sortByColumns?.length > 0)
+      return grid.sortTypes;
+    else
+      return [];
+  }
+
   render() {
+    const grid = this.getGrid();
+
     if (!this.showFixedRows) {
-      if (this.showSelectedRows) {
-        this.indexes = this.dataFrame.selection.trueCount > 0 ?
-          Array.from(this.dataFrame.selection.getSelectedIndexes()) : [];
+      this.indexes = [];
+      if (this.showSelectedRows && this.dataFrame.selection.trueCount > 0) {
+        const selectionAndFilter = this.dataFrame.selection.clone().and(this.dataFrame.filter);
+        if (this.sortByColumnName && this.dataFrame.columns.contains(this.sortByColumnName))
+          this.indexes = this.dataFrame.getSortedOrder([this.sortByColumnName], [this.sortAscending], selectionAndFilter);
+        else if (grid && grid?.sortByColumns?.length > 0)
+          this.indexes = this.dataFrame.getSortedOrder(grid.sortByColumns, grid.sortTypes, selectionAndFilter);
+        else
+          this.indexes = selectionAndFilter.getSelectedIndexes();
       }
-      else
-        this.indexes = [];
     }
 
     ui.empty(this.columnHeadersDiv);

@@ -296,7 +296,7 @@ export async function _demoRgroupAnalysis(): Promise<void> {
     }, {description: 'Load dataset with molecule columns', delay: 2000})
     .step('Specify scaffold', async () => {
       await delay(1000);
-      rGroupAnalysis(table.col('smiles')!, true);
+      rGroupAnalysis(table.col('smiles')!);
       await delay(3000);
       sketcher = document.getElementsByClassName('d4-dialog')[0];
       sketcherInput = sketcher!.getElementsByClassName('grok-sketcher-input')[0]?.children[0] as HTMLInputElement;
@@ -430,9 +430,9 @@ export async function _demoChemicalSpace(): Promise<void> {
     linkage: 'average',
   });
   //for dendrogram to render correctly
-  const sub = grok.shell.tv.grid.onAfterDrawOverlay.subscribe(() => {
+  const sub = grok.shell.tv?.grid?.onAfterDrawOverlay?.subscribe(() => {
     sub.unsubscribe();
-    setTimeout(() => grok.shell.tv.grid.invalidate(), 100);
+    setTimeout(() => grok.shell.tv?.grid?.invalidate(), 100);
   });
   setTimeout(() => grok.shell.windows.help.showHelp('/help/datagrok/solutions/domains/chem/chem#chemical-space'), 1000);
 }

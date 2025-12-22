@@ -131,7 +131,9 @@ export class TreeViewer extends EChartViewer {
             rotate: this.labelRotate,
             fontSize: this.fontSize,
           },
-
+          labelLayout: {
+            hideOverlap: true,
+          },
           leaves: {
             label: {
               position: 'right',
@@ -866,8 +868,10 @@ export class TreeViewer extends EChartViewer {
     this.eligibleHierarchyNames = this.hierarchyColumnNames?.filter((name) => {
       if (name.startsWith('~'))
         return false;
-      if (this.filter.trueCount >= CATEGORIES_NUMBER)
-        return this.dataFrame.getCol(name).categories.length <= CATEGORIES_NUMBER;
+      if (this.filter.trueCount >= CATEGORIES_NUMBER) {
+        const col = this.dataFrame.col(name);
+        return col ? col.categories.length <= CATEGORIES_NUMBER : false;
+      }
       return true;
     }) ?? [];
 

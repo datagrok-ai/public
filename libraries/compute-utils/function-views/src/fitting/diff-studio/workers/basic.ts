@@ -1,14 +1,18 @@
 // Worker for optimization of parameters of Diff Studio model
 
-import {Extremum} from '../../optimizer-misc';
+import {Extremum, ValueBoundsData} from '../../optimizer-misc';
 import {fit} from '../fitting-utils';
 import {NO_ERRORS, NelderMeadInput, RESULT_CODE} from '../defs';
 import {COST_FUNC_THRESH, STOP_AFTER_DEFAULT} from '../../constants';
 
-onmessage = async function(evt) {
+export interface FittingWorkerData {
+  task: NelderMeadInput,
+  startPoints: Float64Array[],
+}
+
+onmessage = async function(evt: MessageEvent<FittingWorkerData>) {
   try {
-    const task = evt.data.task as NelderMeadInput;
-    const startPoints = evt.data.startPoints as Float64Array[];
+    const {task, startPoints} = evt.data;
     const pointsCount = startPoints.length;
     const fitRes = new Array<string>(pointsCount);
     const extremums: Extremum[] = [];

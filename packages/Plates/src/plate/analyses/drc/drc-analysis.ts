@@ -1,4 +1,5 @@
 /* eslint-disable max-len */
+import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 import {Plate} from '../../plate';
@@ -10,6 +11,7 @@ import {Subscription} from 'rxjs';
 import {PlateWidget} from '../../plate-widget/plate-widget';
 import {getDoseResponseSeries} from './utils';
 import './../plate-analyses.css';
+
 
 export class DrcAnalysis extends AnalysisBase {
   readonly name: string = 'DRC';
@@ -48,15 +50,14 @@ export class DrcAnalysis extends AnalysisBase {
 
       try {
         const properties = JSON.parse(propsJson);
-        const groupArray = row.get('group_combination');
-        const compound = Array.isArray(groupArray) && groupArray.length > 0 ? groupArray[0] : null;
+        const groupCombinationValue = row.get('group_combination');
 
         finalRows.push({
           'run_id': row.get('run_id'),
           'plate_id': row.get('plate_id'),
           'barcode': row.get('barcode'),
-          'Compound': compound,
-          'group_combination': groupArray,
+          'Sample ID': groupCombinationValue,
+          'group_combination': groupCombinationValue,
           'Curve': properties.Curve,
           'IC50': properties.IC50,
           'Hill Slope': properties['Hill Slope'],
@@ -79,9 +80,21 @@ export class DrcAnalysis extends AnalysisBase {
     if (curveCol)
       curveCol.semType = 'fit';
 
-    const ic50Col = resultDf.col('IC50');
-    if (ic50Col)
-      ic50Col.meta.format = '0.00e0';
+    const columnFormats: Record<string, string> = {
+      'IC50': '0.000',
+      'Hill Slope': '0.00',
+      'R Squared': '0.000',
+      'Min': '0.00',
+      'Max': '0.00',
+      'AUC': '0.00',
+    };
+
+    for (const [name, format] of Object.entries(columnFormats)) {
+      const col = resultDf.col(name);
+      if (col)
+        col.meta.format = format;
+    }
+
     return resultDf;
   }
 
@@ -167,8 +180,21 @@ export class DrcAnalysis extends AnalysisBase {
 
     for (const [statName, colName] of Object.entries(statsToAdd)) {
       if (this.outputs.some((o) => o.name === colName)) {
-        const funcParams = {table: resultsDf, colName: 'Curve', propName: statName, seriesNumber: 0};
-        const col = (DG.Func.find({name: 'addStatisticsColumn'})[0].prepare(funcParams).callSync({processed: false})).getOutputParamValue();
+        // this previosuly called:
+        // const funcParams = {table: resultsDf, colName: 'Curve', propName: statName, seriesNumber: 0};
+        // const col = (DG.Func.find({name: 'AddStatisticsColumn'})[0].prepare(funcParams).callSync({processed: false})).getOutputParamValue();
+
+        // tried this after splitting the package. neither works:
+        //  "Unable to get project asset 'addStatisticsColumn'"
+        //  OR
+        // logger.ts:105 TypeError: Cannot read properties of undefined (reading 'prepare')
+        // Translating stack trace... Look below, ID = vnaYVV
+        const col = await grok.functions.call('Curves:AddStatisticsColumn', {
+          table: resultsDf,
+          colName: 'Curve',
+          propName: statName,
+          seriesNumber: 0
+        });
         col.name = colName;
       }
     }

@@ -1,3 +1,4 @@
+/* eslint-disable max-params */
 /* eslint-disable rxjs/no-ignored-subscription */
 /* eslint-disable max-lines */
 /* eslint-disable max-len */
@@ -11,7 +12,7 @@ import {MonomerPlacer} from '@datagrok-libraries/bio/src/utils/cell-renderer-mon
 import {ALPHABET, TAGS as bioTAGS} from '@datagrok-libraries/bio/src/utils/macromolecule';
 import {_package} from '../package';
 import {ISeqHandler} from '@datagrok-libraries/bio/src/utils/macromolecule/seq-handler';
-import * as RxJs from 'rxjs';
+import * as rxjs from 'rxjs';
 import {filter} from 'rxjs/operators';
 import {IMonomerLib, getMonomerLibHelper} from '@datagrok-libraries/bio/src/types/monomer-library';
 import wu from 'wu';
@@ -322,6 +323,11 @@ class LazyConservationTrack extends ConservationTrack {
 //  MAIN HANDLER
 // ============================================================================
 
+export const MSA_HEADER_INITIALIZED_FLAG = '__msa-scroller-initialized';
+export const MSA_SCROLLER_GRID_SUBSCRIPTIONS = '__msa-scroller-subscription';
+
+type Unsubscibable = { unsubscribe: () => void };
+
 export function handleSequenceHeaderRendering() {
   const handleGrid = (grid: DG.Grid) => {
     setTimeout(() => {
@@ -330,215 +336,232 @@ export function handleSequenceHeaderRendering() {
       const df = grid.dataFrame;
       if (!df) return;
 
+      if (!grid.temp[MSA_SCROLLER_GRID_SUBSCRIPTIONS])
+        grid.temp[MSA_SCROLLER_GRID_SUBSCRIPTIONS] = [] as Unsubscibable[];
+      let headerSubs = grid.temp[MSA_SCROLLER_GRID_SUBSCRIPTIONS] as Unsubscibable[];
+      headerSubs.forEach((s) => s.unsubscribe());
+      grid.temp[MSA_SCROLLER_GRID_SUBSCRIPTIONS] = headerSubs = [];
+
+      const sub = (s: Unsubscibable) => {
+        headerSubs.push(s);
+      };
       const seqCols = df.columns.bySemTypeAll(DG.SEMTYPE.MACROMOLECULE);
+      sub(DG.debounce(rxjs.merge(df.onColumnsAdded, df.onColumnsRemoved, df.onSemanticTypeDetected, grid.onEvent('d4-data-frame-changed')), 200).subscribe(() => handleGrid(grid)));
 
       for (const seqCol of seqCols) {
+        // first check if the column was already processed
+        const gCol = grid.col(seqCol.name);
+        if (!gCol) continue;
+
+        // if (gCol.temp[MSA_HEADER_INITIALIZED_FLAG])
+        //   continue;
+        const wasInitialized = gCol.temp[MSA_HEADER_INITIALIZED_FLAG] === true;
+        gCol.temp[MSA_HEADER_INITIALIZED_FLAG] = true;
+
+
         let sh: ISeqHandler | null = null;
 
         try {
           sh = _package.seqHelper.getSeqHandler(seqCol);
         } catch (_e) {
+          console.warn(`Failed to get SeqHandler for column ${seqCol.name}`);
           continue;
         }
-        if (!sh) continue;
-        if (sh.isHelm() || sh.alphabet === ALPHABET.UN) continue;
-
-        const gCol = grid.col(seqCol.name);
-        if (!gCol) continue;
+        if (!sh)
+          continue;
+        if (sh.isHelm() || sh.alphabet === ALPHABET.UN)
+          continue; // Skip HELM and unknown alphabet, only works for sequences where we know positions of each monomers
 
         let positionStatsViewerAddedOnce = !!grid.tableView &&
           Array.from(grid.tableView.viewers).some((v) => v.type === 'Sequence Position Statistics');
 
-        const isMSA = sh.isMsa();
 
-        if (isMSA) {
-          const ifNan = (a: number, els: number) => (Number.isNaN(a) ? els : a);
-          const getStart = () => ifNan(Math.max(Number.parseInt(seqCol.getTag(bioTAGS.positionShift) ?? '0'), 0), 0) + 1;
-          const getCurrent = () => ifNan(Number.parseInt(seqCol.getTag(bioTAGS.selectedPosition) ?? '-2'), -2);
-          const getFontSize = () => MonomerPlacer.getFontSettings(seqCol).fontWidth;
+        const ifNan = (a: number, els: number) => (Number.isNaN(a) || a == null ? els : a);
+        const getStart = () => ifNan(Math.max(Number.parseInt(seqCol.getTag(bioTAGS.positionShift) ?? '0'), 0), 0) + 1;
+        const getCurrent = () => ifNan(Number.parseInt(seqCol.getTag(bioTAGS.selectedPosition) ?? '-2'), -2);
+        const getFontSize = () => MonomerPlacer.getFontSettings(seqCol).fontWidth;
 
-          // Get maximum sequence length. since this scroller is only applicable to Single character monomeric sequences,
-          // we do not need to check every single sequence and split it, instead, max length will coorelate with length of the longest string
-          let pseudoMaxLenIndex = 0;
-          let pseudoMaxLength = 0;
-          const cats = seqCol.categories;
-          for (let i = 0; i < cats.length; i++) {
-            const seq = cats[i];
-            if (seq && seq.length > pseudoMaxLength) {
-              pseudoMaxLength = seq.length;
-              pseudoMaxLenIndex = i;
-            }
+        // Get maximum sequence length. since this scroller is only applicable to Single character monomeric sequences,
+        // we do not need to check every single sequence and split it, instead, max length will coorelate with length of the longest string
+        let pseudoMaxLenIndex = 0;
+        let pseudoMaxLength = 0;
+        const cats = seqCol.categories;
+        for (let i = 0; i < cats.length; i++) {
+          const seq = cats[i];
+          if (seq && seq.length > pseudoMaxLength) {
+            pseudoMaxLength = seq.length;
+            pseudoMaxLenIndex = i;
           }
-          const seq = cats[pseudoMaxLenIndex];
-          const split = sh.splitter(seq);
-          const maxSeqLen = split ? split.length : 30;
+        }
+        const seq = cats[pseudoMaxLenIndex];
+        const split = sh.splitter(seq);
+        const maxSeqLen = split ? split.length : 30;
 
-          // Do not Skip if sequences are too short, rather, just don't render the tracks by default
+        // Do not Skip if sequences are too short, rather, just don't render the tracks by default
 
-          const STRICT_THRESHOLDS = {
-            WITH_TITLE: 58, // BASE + TITLE_HEIGHT(16) + TRACK_GAP(4)
-            WITH_WEBLOGO: 107, // WITH_TITLE + DEFAULT_TRACK_HEIGHT(45) + TRACK_GAP(4)
-            WITH_BOTH: 156 // WITH_WEBLOGO + DEFAULT_TRACK_HEIGHT(45) + TRACK_GAP(4)
-          };
+        const STRICT_THRESHOLDS = {
+          WITH_TITLE: 58, // BASE + TITLE_HEIGHT(16) + TRACK_GAP(4)
+          WITH_WEBLOGO: 107, // WITH_TITLE + DEFAULT_TRACK_HEIGHT(45) + TRACK_GAP(4)
+          WITH_BOTH: 156 // WITH_WEBLOGO + DEFAULT_TRACK_HEIGHT(45) + TRACK_GAP(4)
+        };
 
-          let initialHeaderHeight: number;
-          if (seqCol.length > 100_000 || maxSeqLen < 50) {
-            // Single sequence: just dotted cells
-            initialHeaderHeight = STRICT_THRESHOLDS.WITH_TITLE;
-          } else {
-            if (seqCol.length > 50_000)
-              initialHeaderHeight = STRICT_THRESHOLDS.WITH_WEBLOGO;
-            else
-              initialHeaderHeight = STRICT_THRESHOLDS.WITH_BOTH;
+        let initialHeaderHeight: number;
+        if (seqCol.length > 100_000 || maxSeqLen < 50) {
+          // Single sequence: just dotted cells
+          initialHeaderHeight = STRICT_THRESHOLDS.WITH_TITLE;
+        } else {
+          if (seqCol.length > 50_000)
+            initialHeaderHeight = STRICT_THRESHOLDS.WITH_WEBLOGO;
+          else
+            initialHeaderHeight = STRICT_THRESHOLDS.WITH_BOTH;
+        }
+
+        let webLogoTrackRef: LazyWebLogoTrack | null = null;
+        let conservationTrackRef: LazyConservationTrack | null = null;
+        const filterChangeSub = DG.debounce(
+          rxjs.merge(df.onFilterChanged, df.onDataChanged.pipe(filter((a) => a?.args?.column === seqCol))), 100
+        ).subscribe(() => {
+          MSAViewportManager.clearAllCaches();
+
+          if (webLogoTrackRef) {
+            webLogoTrackRef.resetViewportTracking();
+            webLogoTrackRef.forceUpdate();
+          }
+          if (conservationTrackRef) {
+            conservationTrackRef.resetViewportTracking();
+            conservationTrackRef.forceUpdate();
+          }
+          setTimeout(() => {
+            if (!grid.isDetached)
+              grid.invalidate();
+          }, 50);
+        });
+
+        sub(filterChangeSub);
+
+        const initializeHeaders = (monomerLib: IMonomerLib) => {
+          const tracks: { id: string, track: MSAHeaderTrack, priority: number }[] = [];
+
+          // Create lazy tracks only for MSA sequences
+
+          // OPTIMIZED: Pass seqHandler directly instead of column/splitter
+          const conservationTrack = new LazyConservationTrack(
+            sh,
+            maxSeqLen,
+            45, // DEFAULT_TRACK_HEIGHT
+            'default',
+            'Conservation'
+          );
+          conservationTrackRef = conservationTrack; // Store reference
+          tracks.push({id: 'conservation', track: conservationTrack, priority: 1});
+
+          // OPTIMIZED: Pass seqHandler directly
+          const webLogoTrack = new LazyWebLogoTrack(
+            sh,
+            maxSeqLen,
+            45, // DEFAULT_TRACK_HEIGHT
+            'WebLogo'
+          );
+          webLogoTrackRef = webLogoTrack; // Store reference
+
+          if (monomerLib) {
+            webLogoTrack.setMonomerLib(monomerLib);
+            webLogoTrack.setBiotype(sh.defaultBiotype || 'HELM_AA');
           }
 
-          let webLogoTrackRef: LazyWebLogoTrack | null = null;
-          let conservationTrackRef: LazyConservationTrack | null = null;
-          const filterChangeSub = DG.debounce(
-            RxJs.merge(df.onFilterChanged, df.onDataChanged.pipe(filter((a) => a?.args?.column === seqCol))), 100
-          ).subscribe(() => {
-            MSAViewportManager.clearAllCaches();
+          webLogoTrack.setupDefaultTooltip();
+          tracks.push({id: 'weblogo', track: webLogoTrack, priority: 2});
 
-            if (webLogoTrackRef) {
-              webLogoTrackRef.resetViewportTracking();
-              webLogoTrackRef.forceUpdate();
-            }
-            if (conservationTrackRef) {
-              conservationTrackRef.resetViewportTracking();
-              conservationTrackRef.forceUpdate();
-            }
-            setTimeout(() => {
-              if (!grid.isDetached)
-                grid.invalidate();
-            }, 50);
+          // Create the scrolling header
+          const scroller = new MSAScrollingHeader({
+            canvas: grid.overlay,
+            headerHeight: initialHeaderHeight,
+            totalPositions: maxSeqLen + 1,
+            onPositionChange: (scrollerCur, scrollerRange) => {
+              setTimeout(() => {
+                const start = getStart();
+                const cur = getCurrent();
+                if (start !== scrollerRange.start)
+                  seqCol.setTag(bioTAGS.positionShift, (scrollerRange.start - 1).toString());
+
+                if (cur !== scrollerCur) {
+                  seqCol.setTag(bioTAGS.selectedPosition, (scrollerCur).toString());
+                  if (scrollerCur >= 0 && !positionStatsViewerAddedOnce && grid.tableView && wu(grid.dataFrame?.columns.numerical).find((_c) => true)) {
+                    positionStatsViewerAddedOnce = true;
+                    const v = grid.tableView.addViewer('Sequence Position Statistics', {sequenceColumnName: seqCol.name});
+                    grid.tableView.dockManager.dock(v, DG.DOCK_TYPE.DOWN, null, 'Sequence Position Statistics', 0.4);
+                  }
+                }
+              });
+            },
+            onHeaderHeightChange: (_newHeight) => {
+              // Update grid header height
+              if (grid.isDetached || _newHeight < STRICT_THRESHOLDS.WITH_TITLE) return;
+              setTimeout(() => grid.props.colHeaderHeight = _newHeight);
+            },
+          }, gCol);
+
+          scroller.setupTooltipHandling();
+
+          // Add tracks to scroller
+          tracks.forEach(({id, track}) => {
+            scroller.addTrack(id, track);
           });
 
-          grid.sub(filterChangeSub);
+          scroller.setSelectionData(df, seqCol, sh);
 
-          const initializeHeaders = (monomerLib: IMonomerLib) => {
-            const tracks: { id: string, track: MSAHeaderTrack, priority: number }[] = [];
+          if (maxSeqLen > 50 && !wasInitialized) {
+            grid.props.colHeaderHeight = initialHeaderHeight;
 
-            // Create lazy tracks only for MSA sequences
+            // Set column width
+            setTimeout(() => {
+              if (grid.isDetached) return;
+              gCol.width = 400;
+            }, 300);
+          }
 
-            // OPTIMIZED: Pass seqHandler directly instead of column/splitter
-            const conservationTrack = new LazyConservationTrack(
-              sh,
-              maxSeqLen,
-              45, // DEFAULT_TRACK_HEIGHT
-              'default',
-              'Conservation'
+          sub({unsubscribe: () => scroller.detach()}); // Ensure proper cleanup
+          // Handle cell rendering for MSA
+          const tableCol = gCol.column;
+          sub(grid.onCellRender.subscribe((e) => {
+            const cell = e.cell;
+            if (!cell || !cell.isColHeader || cell?.tableColumn?.dart !== tableCol?.dart)
+              return;
+
+            const cellBounds = e.bounds;
+            if (!cellBounds) return;
+
+            // Set dynamic properties
+            scroller.headerHeight = cellBounds.height;
+            const font = getFontSize();
+            scroller.positionWidth = font + 8; // MSA always has padding
+
+            const start = getStart();
+
+
+            scroller.draw(
+              cellBounds.x,
+              cellBounds.y,
+              cellBounds.width,
+              cellBounds.height,
+              getCurrent(),
+              start,
+              e,
+              seqCol.name
             );
-            conservationTrackRef = conservationTrack; // Store reference
-            tracks.push({id: 'conservation', track: conservationTrack, priority: 1});
+          }));
+        };
 
-            // OPTIMIZED: Pass seqHandler directly
-            const webLogoTrack = new LazyWebLogoTrack(
-              sh,
-              maxSeqLen,
-              45, // DEFAULT_TRACK_HEIGHT
-              'WebLogo'
-            );
-            webLogoTrackRef = webLogoTrack; // Store reference
-
-            if (monomerLib) {
-              webLogoTrack.setMonomerLib(monomerLib);
-              webLogoTrack.setBiotype(sh.defaultBiotype || 'HELM_AA');
-            }
-
-            webLogoTrack.setupDefaultTooltip();
-            tracks.push({id: 'weblogo', track: webLogoTrack, priority: 2});
-
-            // Create the scrolling header
-            const scroller = new MSAScrollingHeader({
-              canvas: grid.overlay,
-              headerHeight: initialHeaderHeight,
-              totalPositions: maxSeqLen + 1,
-              onPositionChange: (scrollerCur, scrollerRange) => {
-                setTimeout(() => {
-                  const start = getStart();
-                  const cur = getCurrent();
-                  if (start !== scrollerRange.start)
-                    seqCol.setTag(bioTAGS.positionShift, (scrollerRange.start - 1).toString());
-
-                  if (cur !== scrollerCur) {
-                    seqCol.setTag(bioTAGS.selectedPosition, (scrollerCur).toString());
-                    if (scrollerCur >= 0 && !positionStatsViewerAddedOnce && grid.tableView && wu(grid.dataFrame?.columns.numerical).find((_c) => true)) {
-                      positionStatsViewerAddedOnce = true;
-                      const v = grid.tableView.addViewer('Sequence Position Statistics', {sequenceColumnName: seqCol.name});
-                      grid.tableView.dockManager.dock(v, DG.DOCK_TYPE.DOWN, null, 'Sequence Position Statistics', 0.4);
-                    }
-                  }
-                });
-              },
-              onHeaderHeightChange: (_newHeight) => {
-                // Update grid header height
-                if (grid.isDetached || _newHeight < STRICT_THRESHOLDS.WITH_TITLE) return;
-                setTimeout(() => grid.props.colHeaderHeight = _newHeight);
-              },
-            }, gCol);
-
-            scroller.setupTooltipHandling();
-
-            // Add tracks to scroller
-            tracks.forEach(({id, track}) => {
-              scroller.addTrack(id, track);
-            });
-
-            scroller.setSelectionData(df, seqCol, sh);
-
-            if (maxSeqLen > 50) {
-              grid.props.colHeaderHeight = initialHeaderHeight;
-
-              // Set column width
-              setTimeout(() => {
-                if (grid.isDetached) return;
-                gCol.width = 400;
-              }, 300);
-            }
-
-            // Handle cell rendering for MSA
-            grid.sub(grid.onCellRender.subscribe((e) => {
-              const cell = e.cell;
-              if (!cell || !cell.isColHeader || cell?.gridColumn?.name !== gCol?.name)
-                return;
-
-              const cellBounds = e.bounds;
-              if (!cellBounds) return;
-
-              // Set dynamic properties
-              scroller.headerHeight = cellBounds.height;
-              const font = getFontSize();
-              scroller.positionWidth = font + 8; // MSA always has padding
-
-              const start = getStart();
-
-
-              scroller.draw(
-                cellBounds.x,
-                cellBounds.y,
-                cellBounds.width,
-                cellBounds.height,
-                getCurrent(),
-                start,
-                e,
-                seqCol.name
-              );
-            }));
-          };
-
-          // Initialize with monomer library for MSA sequences
-          getMonomerLibHelper()
-            .then((libHelper) => {
-              const monomerLib = libHelper.getMonomerLib();
-              initializeHeaders(monomerLib);
-            })
-            .catch((error) => {
-              grok.shell.warning(`Failed to initialize monomer library`);
-              console.error('Failed to initialize monomer library:', error);
-            });
-        } else {
-          // For non-MSA sequences, just use standard sequence rendering.
-        }
+        // Initialize with monomer library for MSA sequences
+        getMonomerLibHelper()
+          .then((libHelper) => {
+            const monomerLib = libHelper.getMonomerLib();
+            initializeHeaders(monomerLib);
+          })
+          .catch((error) => {
+            grok.shell.warning(`Failed to initialize monomer library`);
+            console.error('Failed to initialize monomer library:', error);
+          });
       }
     }, 1000);
   };

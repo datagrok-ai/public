@@ -31,6 +31,10 @@ export namespace queries {
   export async function insertStandartization(): Promise<DG.DataFrame> {
     return await grok.data.query('MolTrack:InsertStandartization', {});
   }
+
+  export async function checkDBInitialized(): Promise<DG.DataFrame> {
+    return await grok.data.query('MolTrack:CheckDBInitialized', {});
+  }
 }
 
 export namespace funcs {
@@ -103,6 +107,13 @@ export namespace funcs {
 
   export async function search(query: string , entityEndpoint: string ): Promise<DG.DataFrame> {
     return await grok.functions.call('MolTrack:Search', { query, entityEndpoint });
+  }
+
+  /**
+  Performs a structured MolTrack compound search. The caller must provide the "output": a list of fully-qualified field names to return; "filter": a structured filter tree describing search conditions.
+  */
+  export async function advancedSearch(outputFields: any , filter: any ): Promise<DG.DataFrame> {
+    return await grok.functions.call('MolTrack:AdvancedSearch', { outputFields, filter });
   }
 
   export async function retrieveEntity(scope: string ): Promise<DG.DataFrame> {

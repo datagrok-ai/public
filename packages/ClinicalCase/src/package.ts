@@ -6,8 +6,6 @@ import {StudySummaryView} from './views/study-summary-view';
 import {TimelinesView} from './views/timelines-view';
 import {PatientProfileView} from './views/patient-profile-view';
 import {AdverseEventsView} from './views/adverse-events-view';
-import {ValidationView} from './views/validation-view';
-import {AdverseEventHandler} from './panels/adverse-event-handler';
 import {LaboratoryView} from './views/laboratory-view';
 import {AERiskAssessmentView} from './views/ae-risk-assessment-view';
 import {SurvivalAnalysisView} from './views/survival-analysis-view';
@@ -19,279 +17,195 @@ import {TreeMapView} from './views/tree-map-view';
 import {MedicalHistoryView} from './views/medical-history-view';
 import {VisitsView} from './views/visits-view';
 import {StudyConfigurationView} from './views/study-config-view';
-import {ADVERSE_EVENTS_VIEW_NAME, AE_BROWSER_VIEW_NAME, AE_RISK_ASSESSMENT_VIEW_NAME, COHORT_VIEW_NAME,
+import {ADVERSE_EVENTS_VIEW_NAME, AE_BROWSER_VIEW_NAME, AE_RISK_ASSESSMENT_VIEW_NAME,
+  ANIMAL_PROFILE_VIEW_NAME,
   CORRELATIONS_VIEW_NAME, DISTRIBUTIONS_VIEW_NAME, LABORATORY_VIEW_NAME, MEDICAL_HISTORY_VIEW_NAME,
   PATIENT_PROFILE_VIEW_NAME, QUESTIONNAIRES_VIEW_NAME, STUDY_CONFIGURATIN_VIEW_NAME, SUMMARY_VIEW_NAME,
   SURVIVAL_ANALYSIS_VIEW_NAME, TIMELINES_VIEW_NAME, TIME_PROFILE_VIEW_NAME, TREE_MAP_VIEW_NAME,
   VALIDATION_VIEW_NAME, VISITS_VIEW_NAME} from './constants/view-names-constants';
-import {createClinCaseTableView, TABLE_VIEWS} from './utils/views-creation-utils';
-import {CohortView} from './views/cohort-view';
+import {createClinCaseTableView} from './utils/views-creation-utils';
+//import {CohortView} from './views/cohort-view';
 import {QuestionnaiesView} from './views/questionnaires-view';
-import {ClinCaseTableView, ClinStudyConfig} from './utils/types';
-import {domainsToValidate, StudyJsonName} from './constants/constants';
-import {ClinicalStudy, studies} from './clinical-study';
-import {ClinicalCaseViewBase} from './model/ClinicalCaseViewBase';
+import {CDISC_STANDARD, ClinCaseTableView, ClinStudyConfig} from './utils/types';
+import {ClinicalStudy} from './clinical-study';
 import '../css/clinical-case.css';
-import {u2} from '@datagrok-libraries/utils/src/u2';
+import {scripts} from './package-api';
+import dayjs from 'dayjs';
+import {createInitialSatistics} from './utils/initial-statistics-widget';
+import {cdiscAppTB, CLINICAL_CASE_APP_PATH, createStudiesFromAppData,
+  openApp, PRECLINICAL_CASE_APP_PATH,
+  studies} from './utils/app-utils';
+// Import renderer to ensure it's registered
+import './utils/rule-violation-cell-renderer';
 
 export * from './package.g';
 
 export const _package = new DG.Package();
 
-export let validationRulesList = null;
-
-export const VIEWS: {[key: string]: {[key: string]: DG.ViewBase}} = {};
-
-const loadingStudyData: {[key: string]: boolean} = {};
-
-const CLINICAL_CASE_APP_PATH: string = '/apps/ClinicalCase';
-
-let currentOpenedView: DG.ViewBase | null = null;
+//export let study: ClinicalStudy = new ClinicalStudy();
 
 type CurrentStudyAndView = {
   study: string;
+  standard: string;
   viewName: string;
 }
 
-export let existingStudies: {[key: string]: ClinStudyConfig} | null = null;
-const validationNodes: {[key: string]: DG.TreeViewNode} = {};
-
-const domains = (studyId: string, exactDomains?: string[]) =>
-  (exactDomains ?? Object.keys(studies[studyId].domains)).map((it) => `${it.toLocaleLowerCase()}.csv`);
 export let c: DG.FuncCall;
 
-let cliniclaCaseLaunched = false;
-
 function getCurrentStudyAndView(path: string): CurrentStudyAndView {
+  let currentStandard = '';
   let currentStudy = '';
   let currentViewName = '';
-  if (path && !path.startsWith('/browse')) {
+  if (path) {
     const pathSegments = path.split('/');
-    currentStudy = pathSegments[1];
-    currentViewName = pathSegments.length > 2 ? pathSegments[2] : SUMMARY_VIEW_NAME;
+    currentStandard = pathSegments[1];
+    currentStudy = pathSegments.length > 1 ? pathSegments[2] : '';
+    currentViewName = pathSegments.length > 2 ? pathSegments[3] : SUMMARY_VIEW_NAME;
   }
-  return {study: currentStudy, viewName: currentViewName};
+  return {study: currentStudy, viewName: currentViewName, standard: currentStandard};
 }
 
-async function clinicalCaseAppTB(treeNode: DG.TreeViewGroup,
-  currentStudy: string, currentViewName: string) {
-  const loaderDiv = ui.div([], {style: {width: '50px', height: '24px', position: 'relative'}});
-  loaderDiv.innerHTML = `<div class="grok-loader"><div></div><div></div><div></div><div></div></div>`;
-  const loaderItem = treeNode.item(loaderDiv);
-  await loadStudies([]);
-  openStudy(treeNode, currentStudy, currentViewName);
-  loaderItem.remove();
-}
-
-export function openStudy(treeNode: DG.TreeViewGroup,
-  currentStudy: string, currentViewName: string) {
-  let initialViewSelected = false;
-
-  const openStudyNode = async (study: ClinStudyConfig, node: DG.TreeViewGroup) => {
-    const summaryView = !VIEWS[study.name] ? null : VIEWS[study.name][SUMMARY_VIEW_NAME];
-    if (!summaryView) {
-      if (loadingStudyData[study.name]) {
-        grok.shell.warning(`Loading data for study ${study.name}`);
-        return;
-      }
-      if (!!studies[study.name]) {
-        const dataRead = await readClinicalData(study, domainsToValidate);
-        if (!dataRead)
-          return;
-        studies[study.name].validate();
-        studies[study.name].processSitesAndSubjectCount();
-      }
-    }
-    loadView(study, SUMMARY_VIEW_NAME, node);
-  };
-
-
-  const loadView = async (study: ClinStudyConfig, viewName: string, parentNode: DG.TreeViewGroup) => {
-    let view = VIEWS[study.name][viewName];
-    let helper: any;
-    if (!view) {
-      if (Object.keys(TABLE_VIEWS).includes(viewName)) { //load table view
-        const clinCaseTableView = VIEW_CREATE_FUNC[viewName](study.name, viewName) as ClinCaseTableView;
-        view = clinCaseTableView.view;
-        helper = clinCaseTableView.helper;
-      } else { // load view
-        if (viewName === SUMMARY_VIEW_NAME) {
-          const errorLinkHandler = () => {
-            parentNode.expanded = true;
-            parentNode.currentItem = validationNodes[study.name];
-          };
-          view = VIEW_CREATE_FUNC[viewName](study.name, errorLinkHandler) as DG.ViewBase;
-        } else
-          view = VIEW_CREATE_FUNC[viewName](study.name) as DG.ViewBase;
-      }
-    }
-    currentOpenedView?.close();
-    currentOpenedView = grok.shell.addPreview(view);
-    if (view.hasOwnProperty('loaded') && !(view as ClinicalCaseViewBase).loaded)
-      (view as ClinicalCaseViewBase).load();
-    else
-      helper?.propertyPanel();
-    view.path =
-        `browse${CLINICAL_CASE_APP_PATH}/${study.name}/${viewName.replaceAll(' ', '')}`;
-  };
-
-  for (const [_, study] of Object.entries(existingStudies)) {
-    const node = treeNode.getOrCreateGroup(study.friendlyName ?? study.name, null, false);
-    if (!studies[study.name]) {
-      studies[study.name] = new ClinicalStudy(study.name);
-      VIEWS[study.name] = {};
-    }
-
-    node.onSelected.subscribe(async (_) => {
-      await openStudyNode(study, node);
-    });
-
-    node.onNodeExpanding.subscribe(async (_) => {
-      if (loadingStudyData[study.name])
-        return;
-      for (const viewName of Object.keys(VIEW_CREATE_FUNC)) {
-        const viewNode = node.item(viewName);
-        if (viewName === VALIDATION_VIEW_NAME)
-          validationNodes[study.name] = viewNode;
-        viewNode.onSelected.subscribe(() => {
-          if (loadingStudyData[study.name]) {
-            grok.shell.warning(`Loading data for study ${study.name}`);
-            treeNode.currentItem = node;
-            return;
-          }
-          loadView(study, viewName, node);
-        });
-      }
-      await initClinicalStudy(study);
-      const viewItem = node.items
-        .find((node) => node.text === (initialViewSelected ? currentViewName : SUMMARY_VIEW_NAME))?.root;
-      viewItem?.click();
-      initialViewSelected = false;
-    });
-  }
-
-  if (currentStudy && !Object.keys(existingStudies).includes(currentStudy))
-    grok.shell.error(`Study ${currentStudy} doesn't exist`);
-  else if (currentStudy) {
-    const studyNode = treeNode.getOrCreateGroup(currentStudy);
-    if (currentViewName && !Object.keys(VIEW_CREATE_FUNC).includes(currentViewName)) {
-      grok.shell.warning(`${currentViewName} view doesn't exist, opening summary view`);
-      currentViewName = SUMMARY_VIEW_NAME;
-    } else if (!currentViewName)
-      currentViewName = SUMMARY_VIEW_NAME;
-    initialViewSelected = true;
-    if (studyNode.expanded)
-      openStudyNode(existingStudies[currentStudy], studyNode);
-    else
-      studyNode.expanded = true;
-  }
-}
-
-
-export async function initClinicalStudy(study: ClinStudyConfig) {
-  if (!studies[study.name].initCompleted) {
-    try {
-      loadingStudyData[study.name] = true;
-      const progressBar = DG.TaskBarProgressIndicator.create(`Reading data for study ${study.name}`);
-      await readClinicalData(study);
-      studies[study.name].init();
-      progressBar.close();
-      grok.shell.info(`Data for study ${study.name} is ready`);
-    } finally {
-      delete loadingStudyData[study.name];
-    }
-  }
-}
-
-
-export async function readClinicalData(study: ClinStudyConfig, domainsToDownLoad?: string[]): Promise<boolean> {
-  const studyFiles = await _package.files.list(`studies/${study.name}`);
-  const domainsList = domains(study.name, domainsToDownLoad);
-  await Promise.all(studyFiles.map(async (file) => {
-    const domainName = file.fileName.toLowerCase();
-    if (!studies[study.name].domains[domainName] && domainsList.includes(domainName)) {
-      const df = await _package.files.readCsv(`studies/${study.name}/${domainName}`);
-      studies[study.name].domains[domainName.replace('.csv', '')] = df;
-    }
-  }));
-  if (!studies[study.name].domains.dm) {
-    grok.shell.error(`No demographic data found for study ${study.name}`);
-    return false;
-  }
-  return true;
-}
-
-
-export async function loadStudies(deletedCampaigns: string[]): Promise<{[name: string]: ClinStudyConfig}> {
-  if (!existingStudies) {
-    const studiesFolders = (await _package.files.list(`studies`))
-      .filter((f) => deletedCampaigns.indexOf(f.name) === -1);
-    const studiesNamesMap: {[name: string]: ClinStudyConfig} = {};
-    for (const folder of studiesFolders) {
-      try {
-        const studyJson: ClinStudyConfig = JSON.parse(await _package.files
-          .readAsText(`studies/${folder.name}/${StudyJsonName}`));
-        studiesNamesMap[studyJson.name] = studyJson;
-      } catch (e) {
-        continue;
-      }
-    }
-    existingStudies = studiesNamesMap;
-  }
-  return existingStudies;
-}
 
 export class PackageFunctions {
   @grok.decorators.app({
-    'browsePath': 'Clinical',
     'name': 'Clinical Case',
+    'icon': '/img/clin_case_icon.png',
   })
   static async clinicalCaseApp(): Promise<DG.ViewBase | void> {
-    const appHeader = u2.appHeader({
-      iconPath: _package.webRoot + '/img/clin_case_icon.png',
-      learnMoreUrl: 'https://github.com/datagrok-ai/public/blob/master/packages/ClinicalCase/README.md',
-      description:
-      '-  Visualize and explore your SDTM data\n' +
-      '-  Find patterns and trends in your data\n' +
-      '-  Explore data on patient specific and trial specific levels\n' +
-      '-  Browse through AEs and related data\n' +
-      '-  Validate your SDTM data',
-    });
+    return await openApp(CDISC_STANDARD.SDTM);
+  }
 
-    const studiesHeader = ui.h1('Studies');
-    const existingStudies = await loadStudies([]);
-    const existingStudiesNames = Object.keys(existingStudies);
-    const studiesDiv = ui.divV([]);
-    for (const studyName of existingStudiesNames) {
-      const studyLink = ui.link(studyName, async () => {
-        const clinicalCaseNode = grok.shell.browsePanel.mainTree.getOrCreateGroup('Apps')
-          .getOrCreateGroup('Clinical').getOrCreateGroup('Clinical Case');
-        openStudy(clinicalCaseNode, studyName, SUMMARY_VIEW_NAME);
-      }, 'Click to run the study');
-      studyLink.style.paddingBottom = '10px';
-      studiesDiv.append(studyLink);
-    }
-    const view = DG.View.create();
-    view.name = 'Clinical Case';
-    view.path = CLINICAL_CASE_APP_PATH;
-    view.root.append(ui.divV([
-      appHeader,
-      studiesHeader,
-      studiesDiv,
-    ]));
-    cliniclaCaseLaunched = true;
-    return view;
+  @grok.decorators.app({
+    'name': 'Preclinical Case',
+    'icon': '/img/preclinical_case_icon.png',
+  })
+  static async PreclinicalCaseApp(): Promise<DG.ViewBase | void> {
+    return await openApp(CDISC_STANDARD.SEND);
   }
 
   @grok.decorators.func()
   static async clinicalCaseAppTreeBrowser(treeNode: DG.TreeViewGroup) {
-    if (!validationRulesList)
-      validationRulesList = await grok.data.loadTable(`${_package.webRoot}tables/validation-rules.csv`);
     const url = new URL(window.location.href);
-    const currentStudyAndViewPath = url.pathname.includes(`/browse${CLINICAL_CASE_APP_PATH}`) ?
-      url.pathname.replace(`/browse${CLINICAL_CASE_APP_PATH}`, ``) : '';
+    const currentStudyAndViewPath = url.pathname.includes(`${CLINICAL_CASE_APP_PATH}`) ?
+      url.pathname.replace(`${CLINICAL_CASE_APP_PATH}`, ``) : '';
     const studyAndView = getCurrentStudyAndView(currentStudyAndViewPath);
-    await clinicalCaseAppTB(treeNode, studyAndView.study, studyAndView.viewName);
+    await cdiscAppTB(treeNode, CDISC_STANDARD.SDTM, studyAndView.study, studyAndView.viewName);
+  }
+
+  @grok.decorators.func()
+  static async preclinicalCaseAppTreeBrowser(treeNode: DG.TreeViewGroup) {
+    const url = new URL(window.location.href);
+    const currentStudyAndViewPath = url.pathname.includes(`${PRECLINICAL_CASE_APP_PATH}`) ?
+      url.pathname.replace(`${PRECLINICAL_CASE_APP_PATH}`, ``) : '';
+    const studyAndView = getCurrentStudyAndView(currentStudyAndViewPath);
+    await cdiscAppTB(treeNode, CDISC_STANDARD.SEND, studyAndView.study, studyAndView.viewName);
+  }
+
+
+  @grok.decorators.func({
+    'name': 'Get list of studies',
+    'description': 'Return list of clinical and preclinical studies loaded into Clinical Case application',
+  })
+  static async getListOfStudies(
+    @grok.decorators.param({type: 'string', options: {optional: true}}) name?: string,
+    // eslint-disable-next-line max-len
+    @grok.decorators.param({type: 'string', options: {optional: true, description: 'More detailed study information including species, drug, dosing'}}) description?: string,
+    @grok.decorators.param({type: 'int', options: {optional: true}}) numSubjects?: number,
+    // eslint-disable-next-line max-len
+    @grok.decorators.param({type: 'string', options: {optional: true, description: '>, <, ='}}) numSubjectsOperator?: string,
+    @grok.decorators.param({type: 'datetime', options: {optional: true}}) startDate?: dayjs.Dayjs,
+    // eslint-disable-next-line max-len
+    @grok.decorators.param({type: 'string', options: {optional: true, description: '>, <, ='}}) startDateOperator?: string,
+    @grok.decorators.param({type: 'datetime', options: {optional: true}}) endDate?: dayjs.Dayjs,
+    // eslint-disable-next-line max-len
+    @grok.decorators.param({type: 'string', options: {optional: true, description: '>, <, ='}}) endDateOperator?: string,
+    // eslint-disable-next-line max-len
+    @grok.decorators.param({type: 'bool', options: {optional: true}}) ongoing?: boolean,
+    // eslint-disable-next-line max-len
+    @grok.decorators.param({type: 'string', options: {optional: true, description: 'CDISC data format, either SDTM or SEND'}})
+      standard?: CDISC_STANDARD): Promise<DG.Widget> {
+    const clinicalCaseNode = grok.shell.browsePanel.mainTree.getOrCreateGroup('Apps')
+      .getOrCreateGroup(standard === CDISC_STANDARD.SEND ? 'Preclinical Case' : 'Clinical Case');
+    await createStudiesFromAppData(clinicalCaseNode, standard ?? CDISC_STANDARD.SDTM);
+    const filterConfig: ClinStudyConfig = {
+      name: name ? name : undefined,
+      description: description ? description : undefined,
+      totalSubjects: numSubjects,
+      startDate,
+      endDate,
+      standard: standard ? standard : undefined,
+    };
+    let filteredStudies: ClinicalStudy[] = [];
+    for (const study of Object.values(studies)) {
+      let dateFieldProcessed = false;
+      let matched = true;
+      for (const key of Object.keys(filterConfig)) {
+        if (filterConfig[key]) {
+          if ((key === 'startDate' || key === 'endDate') && !dateFieldProcessed) {
+            dateFieldProcessed = true;
+            const compareDates = (studyValue?: dayjs.Dayjs, filterValue?: dayjs.Dayjs | null, operator?: string) => {
+              if (!studyValue || !filterValue)
+                return false;
+              const op = (operator ?? '>').trim();
+              if (op === '<')
+                return studyValue.isBefore(filterValue, 'day');
+              if (op === '=')
+                return studyValue.isSame(filterValue, 'day');
+              return studyValue.isAfter(filterValue, 'day');
+            };
+            let studyMatch = false;
+            if (startDate) {
+              const startMatches = compareDates(study.config.startDate ?
+                dayjs(study.config.startDate) : undefined, startDate, startDateOperator);
+              if (endDate) {
+                const endMathes = compareDates(study.config.endDate ?
+                  dayjs(study.config.endDate) : undefined, endDate, endDateOperator);
+                studyMatch = startMatches && endMathes;
+              } else
+                studyMatch = startMatches;
+            } else if (endDate) {
+              studyMatch = compareDates(study.config.endDate ?
+                dayjs(study.config.endDate) : undefined, endDate, endDateOperator);
+            }
+            if (!studyMatch) {
+              matched = false;
+              break;
+            }
+          } else if (typeof(filterConfig[key]) === 'string') {
+            if (!study.config[key]?.toLowerCase().includes(filterConfig[key]?.toLowerCase())) {
+              matched = false;
+              break;
+            }
+          } else if (typeof(filterConfig[key]) === 'number') {
+            const op = (numSubjectsOperator ?? '=').trim();
+            switch (op) {
+            case '>':
+              matched = study.config[key] && study.config[key] > filterConfig[key];
+              break;
+            case '<':
+              matched = study.config[key] && study.config[key] < filterConfig[key];
+              break;
+            case '=':
+              matched = study.config[key] && study.config[key] === filterConfig[key];
+              break;
+            }
+            if (!matched)
+              break;
+          } else {
+            if (!study.config[key] === filterConfig[key]) {
+              matched = false;
+              break;
+            }
+          }
+        }
+      }
+      if (matched)
+        filteredStudies.push(study);
+    }
+    if (ongoing)
+      filteredStudies = filteredStudies.filter((it) => !it.config.endDate);
+    const studiesDiv = createInitialSatistics(clinicalCaseNode, filteredStudies.map((it) => it.config));
+    return new DG.Widget(studiesDiv);
   }
 
   @grok.decorators.folderViewer({
@@ -311,8 +225,9 @@ export class PackageFunctions {
           ui.divText(`Study ID: ${studyId}`)]),
         ui.button('Run ClinicalCase', async () => {
           studies[studyId] = new ClinicalStudy(studyId);
+          const domainsNames = Object.keys(studies[studyId].domains).filter((it) => it !== 'supp');
           await Promise.all(files.map(async (file) => {
-            if (domains(studyId).includes(file.fileName.toLowerCase())) {
+            if (domainsNames.includes(file.fileName.toLowerCase())) {
               const df = await grok.data.files.openTable(`${folder.fullPath}/${file.fileName.toLowerCase()}`);
               grok.shell.addTableView(df);
             }
@@ -322,7 +237,67 @@ export class PackageFunctions {
       ]));
     }
   }
+
+  @grok.decorators.fileHandler({
+    'ext': 'xpt',
+  })
+  static async xptFileHandler(
+    @grok.decorators.param({'type': 'list'}) file: DG.FileInfo): Promise<DG.DataFrame[]> {
+    const res: DG.DataFrame = await scripts.readSas(file);
+    res.name = file.name;
+    return [res];
+  }
+
+  @grok.decorators.func({
+    'name': 'Run CDISC CORE Validation',
+    'description': 'Run CDISC CORE validation on datasets',
+  })
+  static async runCoreValidate(
+    @grok.decorators.param({
+      'name': 'standard',
+      'description': 'CDISC standard (e.g., sendig, sdtmig)',
+    }) standard: string,
+    @grok.decorators.param({
+      'name': 'dataPath',
+      'description': 'Path to datasets directory (local path in container or remote System:AppData path)',
+    }) dataPath: string,
+    @grok.decorators.param({
+      'name': 'version',
+      'description': 'Standard version (e.g., 3.1)',
+    }) version?: string,
+    @grok.decorators.param({
+      'name': 'outputFormat',
+      'description': 'Output format (json, csv, xlsx)',
+      'optional': true,
+    }) outputFormat?: string,
+    @grok.decorators.param({
+      'name': 'options',
+      'description': 'Additional validation options as JSON string',
+      'optional': true,
+    }) options?: any,
+  ): Promise<string> {
+    const result = await grok.functions.call('ClinicalCase:run_core_validate', {
+      standard,
+      version,
+      data_path: dataPath,
+      output_format: outputFormat || 'json',
+      options: options ? JSON.stringify(options) : undefined,
+    });
+    return result;
+  }
 }
+
+export const SUPPORTED_VIEWS: {[key: string]: string[]} = {
+  [CDISC_STANDARD.SDTM]: [SUMMARY_VIEW_NAME, TIMELINES_VIEW_NAME, LABORATORY_VIEW_NAME, PATIENT_PROFILE_VIEW_NAME,
+    ADVERSE_EVENTS_VIEW_NAME, AE_RISK_ASSESSMENT_VIEW_NAME, SURVIVAL_ANALYSIS_VIEW_NAME, DISTRIBUTIONS_VIEW_NAME,
+    CORRELATIONS_VIEW_NAME, TIME_PROFILE_VIEW_NAME, TREE_MAP_VIEW_NAME, MEDICAL_HISTORY_VIEW_NAME,
+    VISITS_VIEW_NAME, STUDY_CONFIGURATIN_VIEW_NAME, VALIDATION_VIEW_NAME, QUESTIONNAIRES_VIEW_NAME,
+    AE_BROWSER_VIEW_NAME],
+
+  [CDISC_STANDARD.SEND]: [SUMMARY_VIEW_NAME, TIMELINES_VIEW_NAME, LABORATORY_VIEW_NAME, ANIMAL_PROFILE_VIEW_NAME,
+    DISTRIBUTIONS_VIEW_NAME, CORRELATIONS_VIEW_NAME, TIME_PROFILE_VIEW_NAME, STUDY_CONFIGURATIN_VIEW_NAME,
+    VALIDATION_VIEW_NAME],
+};
 
 export const VIEW_CREATE_FUNC: {[key: string]: (studyId: string, args?: any) => DG.ViewBase | ClinCaseTableView} = {
 
@@ -331,6 +306,7 @@ export const VIEW_CREATE_FUNC: {[key: string]: (studyId: string, args?: any) => 
   [TIMELINES_VIEW_NAME]: (studyId) => new TimelinesView(TIMELINES_VIEW_NAME, studyId),
   [LABORATORY_VIEW_NAME]: (studyId) => new LaboratoryView(LABORATORY_VIEW_NAME, studyId),
   [PATIENT_PROFILE_VIEW_NAME]: (studyId) => new PatientProfileView(PATIENT_PROFILE_VIEW_NAME, studyId),
+  [ANIMAL_PROFILE_VIEW_NAME]: (studyId) => new PatientProfileView(ANIMAL_PROFILE_VIEW_NAME, studyId),
   [ADVERSE_EVENTS_VIEW_NAME]: (studyId) => new AdverseEventsView(ADVERSE_EVENTS_VIEW_NAME, studyId),
   [AE_RISK_ASSESSMENT_VIEW_NAME]: (studyId) => new AERiskAssessmentView(AE_RISK_ASSESSMENT_VIEW_NAME, studyId),
   [SURVIVAL_ANALYSIS_VIEW_NAME]: (studyId) => new SurvivalAnalysisView(SURVIVAL_ANALYSIS_VIEW_NAME, studyId),
@@ -342,7 +318,7 @@ export const VIEW_CREATE_FUNC: {[key: string]: (studyId: string, args?: any) => 
   [VISITS_VIEW_NAME]: (studyId) => new VisitsView(VISITS_VIEW_NAME, studyId),
   [STUDY_CONFIGURATIN_VIEW_NAME]: (studyId, addView?: boolean) =>
     new StudyConfigurationView(STUDY_CONFIGURATIN_VIEW_NAME, studyId, addView),
-  [VALIDATION_VIEW_NAME]: (studyId) => new ValidationView(VALIDATION_VIEW_NAME, studyId),
+  [VALIDATION_VIEW_NAME]: (studyId) => createClinCaseTableView(studyId, VALIDATION_VIEW_NAME),
   [QUESTIONNAIRES_VIEW_NAME]: (studyId) => new QuestionnaiesView(QUESTIONNAIRES_VIEW_NAME, studyId),
   [AE_BROWSER_VIEW_NAME]: (studyId, viewName) => createClinCaseTableView(studyId, viewName),
 };

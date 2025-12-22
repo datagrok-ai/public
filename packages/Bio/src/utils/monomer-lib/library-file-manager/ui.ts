@@ -1,3 +1,5 @@
+/* eslint-disable rxjs/no-async-subscribe */
+/* eslint-disable rxjs/no-ignored-subscription */
 /* eslint-disable max-lines */
 /* Do not change these import lines to match external modules in webpack configuration */
 import * as grok from 'datagrok-api/grok';
@@ -5,7 +7,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import $ from 'cash-dom';
-import {Subject} from 'rxjs';
+import {Subject, Subscription} from 'rxjs';
 
 import {
   getUserLibSettings, setUserLibSettings
@@ -67,10 +69,12 @@ class MonomerLibraryManagerWidget {
     instance._widget = await instance.createWidget();
   }
 
+  private _fileUploadSubscription: Subscription | null = null;
   private async createWidget() {
     const content = await this.getWidgetContent();
     const monomerLibHelper = await getMonomerLibHelper();
-    // eslint-disable-next-line rxjs/no-ignored-subscription
+    this._fileUploadSubscription?.unsubscribe();
+    this._fileUploadSubscription =
     monomerLibHelper.fileUploadRequested.subscribe(
       () => this.promptToAddLibraryFiles()
     );
@@ -92,14 +96,29 @@ class MonomerLibraryManagerWidget {
       accept: '.json',
       open: async (selectedFile) => {
         const doAdd = async (provider: IMonomerLibProvider) => {
-          const content = await selectedFile.text();
           const name = selectedFile.name;
+          const existingLibs = await provider.listLibraries();
+          // chech if library already exists
+          if (existingLibs.includes(name)) {
+            const confirm = await new Promise<boolean>((resolve) => {
+              ui.dialog('Confirm Library Update')
+                .add(ui.divText(`Library '${name}' already exists. Do you want to overwrite it?`))
+                .onOK(() => resolve(true))
+                .onCancel(() => resolve(false))
+                .show();
+            });
+            if (!confirm)
+              return;
+          }
+
+          const content = await selectedFile.text();
           const progressIndicator = DG.TaskBarProgressIndicator.create(`Adding ${name} as a monomer library`);
           try {
             await provider.addOrUpdateLibraryString(name, content);
           // this.eventManager.updateLibrarySelectionStatus(name, true);
           } catch (e) {
             grok.shell.error(`File ${name} is not a valid monomer library, verify it is aligned to HELM JSON schema.`);
+            console.error(e);
           } finally {
             progressIndicator.close();
           }
@@ -122,7 +141,7 @@ class MonomerLibraryManagerWidget {
           .onOK(async () => {
             const provider = providers.find((p) => p.name === providersInput.value)!; // should not be null
             await doAdd(provider);
-          });
+          }).show();
       },
     });
   }

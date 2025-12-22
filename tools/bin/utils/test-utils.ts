@@ -167,14 +167,40 @@ export const recorderConfig = {
   // aspectRatio: '16:9',
 };
 
+export async function loadPackage(
+    packageDir: string,
+    dirName: string,
+    hostString: string,
+    skipPublish?: boolean,
+    skipBuild?: boolean,
+    linkPackage?: boolean,
+    release?: boolean
+): Promise<void> {
+  try {
+    if (skipPublish != true) {
+      process.stdout.write(`Building and publishing ${dirName}...`);
+      await utils.runScript(`npm install`, packageDir);
+      if (linkPackage)
+        await utils.runScript(`grok link`, packageDir);
+      if (skipBuild != true)
+        await utils.runScript(`npm run build`, packageDir);
+      await utils.runScript(`grok publish ${hostString}${release ? ' --release' : ''}`, packageDir);
+      process.stdout.write(` success!\n`);
+    }
+  } catch (e: any) {
+    process.stdout.write(` failed to load package ${dirName}!\n`);
+  }
+}
+
 export async function loadPackages(
-  packagesDir: string, 
-  packagesToLoad?: string, 
-  host?: string, 
-  skipPublish?: boolean, 
-  skipBuild?: boolean, 
-  linkPackage?: boolean, 
-  release?: boolean): Promise<string[]> {
+    packagesDir: string,
+    packagesToLoad?: string,
+    host?: string,
+    skipPublish?: boolean,
+    skipBuild?: boolean,
+    linkPackage?: boolean,
+    release?: boolean
+): Promise<string[]> {
   const packagesToRun = new Map<string, boolean>();
   const hostString = host === undefined ? `` : `${host}`;
   if (packagesToLoad && packagesToLoad !== 'all') {
@@ -193,43 +219,30 @@ export async function loadPackages(
   for (const dirName of fs.readdirSync(packagesDir)) {
     const packageDir = path.join(packagesDir, dirName);
     if (!fs.lstatSync(packageDir).isFile()) {
-
       try {
         const packageJsonData = JSON.parse(fs.readFileSync(path.join(packageDir, 'package.json'), {encoding: 'utf-8'}));
-        const packageFriendlyName = 
-        packagesToRun.get(
-          spaceToCamelCase(packageJsonData['friendlyName'] ?? 
-            packageJsonData['name'].split('/')[1] ?? packageJsonData['name'] ?? '').toLocaleLowerCase() ?? '') ?? 
-        packagesToRun.get(dirName);
+        const packageFriendlyName =
+            packagesToRun.get(
+                spaceToCamelCase(packageJsonData['friendlyName'] ??
+                    packageJsonData['name'].split('/')[1] ?? packageJsonData['name'] ?? '').toLocaleLowerCase() ?? ''
+            ) ?? packagesToRun.get(dirName);
 
         if (utils.isPackageDir(packageDir) && (packageFriendlyName !== undefined || packagesToLoad === 'all')) {
-          try {
-            process.stdout.write(`Building and publishing ${dirName}...`);
-            if (skipPublish != true) {
-              await utils.runScript(`npm install`, packageDir);
-              if (linkPackage)
-                await utils.runScript(`grok link`, packageDir);
-              if (skipBuild != true)
-                await utils.runScript(`npm run build`, packageDir);
-              await utils.runScript(`grok publish ${hostString}${release ? ' --release' : ''}`, packageDir);
-            }
-            packagesToRun.set(dirName, true);
-            process.stdout.write(` success!\n`);
-          } catch (e: any) {
-            process.stdout.write(` fail!\n`);
-          }
+          await loadPackage(packageDir, dirName, hostString, skipPublish, skipBuild, linkPackage, release);
+          packagesToRun.set(dirName, true);
         }
       } catch (e: any) {
-        if (utils.isPackageDir(packageDir) && 
-        (packagesToRun.get(spaceToCamelCase(dirName).toLocaleLowerCase()) !== undefined || packagesToLoad === 'all'))
+        if (utils.isPackageDir(packageDir) &&
+            (packagesToRun.get(spaceToCamelCase(dirName).toLocaleLowerCase()) !== undefined || packagesToLoad === 'all'))
           console.log(`Couldn't read package.json  ${dirName}`);
       }
     }
   }
+
   console.log();
   return Array.from(packagesToRun)
-    .filter(([_, value]) => value)
-    .map(([key, _]) => key);
+      .filter(([_, value]) => value)
+      .map(([key, _]) => key);
 }
 
 export async function loadTestsList(packages: string[], core: boolean = false, record: boolean = false): Promise<Test[]> {

@@ -5,6 +5,10 @@ public class GrokConnectException extends Exception {
         super(message);
     }
 
+    public GrokConnectException(String message, Throwable cause) {
+        super(message, cause);
+    }
+
     public GrokConnectException(Throwable cause) {
         super(cause);
     }

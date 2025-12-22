@@ -2,7 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {Observable, defer, of, merge, Subject, BehaviorSubject, from, combineLatest} from 'rxjs';
-import {finalize, map, mapTo, toArray, concatMap, tap, takeUntil, debounceTime, scan} from 'rxjs/operators';
+import {finalize, map, mapTo, toArray, concatMap, tap, takeUntil, debounceTime, scan, withLatestFrom, filter} from 'rxjs/operators';
 import {NodePath, BaseTree, TreeNode} from '../data/BaseTree';
 import {getPipelineRef, PipelineConfigurationProcessed} from '../config/config-processing-utils';
 import {isFuncCallSerializedState, PipelineInstanceConfig, PipelineSerializedState, PipelineState} from '../config/PipelineInstance';
@@ -237,6 +237,7 @@ export class StateTree {
         mutationRootPath: ppath,
         addIdx: newIdx,
         removeIdx: oldIdx,
+        id: node.getItem().config.id,
       }];
       return of([{isMutation: true, details}]);
     });
@@ -247,12 +248,13 @@ export class StateTree {
       const data = this.nodeTree.find((item) => item.uuid === uuid);
       if (data == null)
         throw new Error(`Node uuid ${uuid} not found`);
-      const [, path] = data;
+      const [node, path] = data;
       this.nodeTree.removeBrunch(path);
       const [mutationRootPath, removeIdx] = this.getMutationSlice(path);
       const details: TreeUpdateMutationPayload[] = [{
         mutationRootPath,
         removeIdx,
+        id: node.getItem().config.id,
       }];
       return of([{isMutation: true, details}]);
     });
@@ -280,6 +282,7 @@ export class StateTree {
       const details: TreeUpdateMutationPayload[] = [{
         mutationRootPath: ppath,
         addIdx: pos,
+        id,
       }];
       return StateTree.loadOrCreateCalls(this, this.mockMode).pipe(mapTo([{isMutation: true, details}]));
     });
@@ -310,6 +313,7 @@ export class StateTree {
       const details: TreeUpdateMutationPayload[] =[{
         mutationRootPath: ppath,
         addIdx: pos,
+        id,
       }];
       return tree.pipe(mapTo([{isMutation: true, details}]));
     });
@@ -341,16 +345,19 @@ export class StateTree {
         return of(undefined);
       return from(nodesSeq.slice(startIdx)).pipe(
         concatMap((node) => {
-          if (!isFuncCallNode(node) || node.pendingDependencies$.value?.length ||
-            !node.getStateStore().isRunable$.value || (!node.getStateStore().isOutputOutdated$.value && !rerunWithConsistent))
+          if (!isFuncCallNode(node) || node.pendingDependencies$.value?.length)
             return of(undefined);
           if (rerunWithConsistent) {
             return node.getStateStore().overrideToConsistent().pipe(
               concatMap(() => this.linksState.waitForLinks()),
+              withLatestFrom(node.getStateStore().isRunable$, node.getStateStore().isOutputOutdated$),
+              filter(([, runable, outdated]) => runable && outdated),
               concatMap(() => node.getStateStore().run()),
               concatMap(() => this.linksState.waitForLinks()),
             );
           } else {
+            if (!node.getStateStore().isRunable$.value || !node.getStateStore().isOutputOutdated$.value)
+              return of(undefined);
             return node.getStateStore().run().pipe(
               concatMap(() => this.linksState.waitForLinks()),
             );
@@ -393,7 +400,8 @@ export class StateTree {
               const mutationData: TreeUpdateMutationPayload = last ? {
                 mutationRootPath: ppath,
                 addIdx: last.idx,
-              } : {mutationRootPath: []};
+                id: last.id,
+              } : {mutationRootPath: [], id: subTree.nodeTree.root.getItem().config.id};
               return StateTree.loadOrCreateCalls(subTree, this.mockMode).pipe(mapTo(mutationData));
             })),
           ),
@@ -403,7 +411,7 @@ export class StateTree {
       });
     } else if (action.spec.type === 'funccall') {
       return this.withTreeLock(() => action.exec(additionalParams).pipe(
-        finalize(() => this.makeStateRequests$.next(true))
+        finalize(() => this.makeStateRequests$.next(true)),
       ));
     } else
       return action.exec(additionalParams);
@@ -433,7 +441,7 @@ export class StateTree {
       item.setOutdatedStatus(false);
       return of(item);
     }).pipe(
-      finalize(() => this.makeStateRequests$.next(true))
+      finalize(() => this.makeStateRequests$.next(true)),
     );
   }
 

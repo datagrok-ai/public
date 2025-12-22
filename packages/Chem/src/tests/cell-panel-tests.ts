@@ -18,11 +18,9 @@ import * as CONST from './const';
 import {structure2dWidget} from '../widgets/structure2d';
 import {structure3dWidget} from '../widgets/structure3d';
 import {molV2000, molV3000} from './utils';
-import {EMPTY_MOLECULE_MESSAGE} from '../constants';
 import {checkPackage} from '../utils/elemental-analysis-utils';
 import {PackageFunctions} from '../package';
-import {getDescriptorsPy} from '../scripts-api';
-import { calculateDescriptors } from '../docker/api';
+import {calculateDescriptors} from '../docker/api';
 
 const identifiersVals: {[key: string]: string} = {
   'Smiles': 'c1ccc2ccccc2c1',

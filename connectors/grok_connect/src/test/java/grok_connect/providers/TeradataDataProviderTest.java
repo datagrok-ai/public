@@ -85,7 +85,7 @@ class TeradataDataProviderTest {
     @MethodSource("grok_connect.providers.arguments_provider.TeradataObjectsMother#getSchema_ok")
     public void getSchema_ok(DataFrame expected) {
         DataFrame actual = Assertions.assertDoesNotThrow(() -> provider.getSchema(connection,
-                "TEST", "MOCK_DATA"));
+                "TEST", "MOCK_DATA", false));
         Assertions.assertTrue(dataFrameComparator.isDataFramesEqual(expected, actual));
     }
 

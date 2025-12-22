@@ -75,7 +75,7 @@ public class SQLiteDataProvider extends JdbcDataProvider {
     }
 
     @Override
-    public DataFrame getSchema(DataConnection connection, String schema, String table) throws QueryCancelledByUser,
+    public DataFrame getSchema(DataConnection connection, String schema, String table, boolean includeKeyInfo) throws QueryCancelledByUser,
             GrokConnectException {
         try (Connection dbConnection = getConnection(connection);
              ResultSet columns = dbConnection.getMetaData().getColumns(null, schema, table, null)) {

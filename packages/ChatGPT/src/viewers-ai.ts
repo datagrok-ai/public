@@ -1,8 +1,9 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import { getDataFrameDescription, getViewerDescriptionsString } from './utils';
-import { askImpl } from './package';
+import {getCurrentViewersString, getDataFrameDescription, getViewerDescriptionsString} from './utils';
+import {OpenAIClient} from './llm-utils/openAI-client';
+import {modelName} from './package';
 
 type IViewerResponse = {
   viewerType: string;
@@ -22,11 +23,13 @@ type IViewerResponse = {
 export async function askAiTableView(view: DG.TableView, question: string) {
   const prompt = getPrompt(view, question);
   //console.log(prompt);
-  const answer = await askImpl(prompt);
+  // TODO: substitute with the OpenAI client call
+  const res = OpenAIClient.getInstance();
+  const answer = await res.generalPromptCached(modelName, '', prompt);
   //console.log(answer);
   //grok.shell.info(answer);
 
-  const response: IViewerResponse = JSON.parse(answer.message!.content!);
+  const response: IViewerResponse = JSON.parse(answer);
   if (DG.Viewer.CORE_VIEWER_TYPES.includes(response.viewerType))
     view.addViewer(response.viewerType, response.properties);
 }
@@ -43,12 +46,16 @@ export function askAiTableViewDialog(view: DG.TableView) {
 }
 
 const getPrompt = (view: DG.TableView, question: string) => {
-  return `Below is the structure of the dataframe a user is working with, and the interfaces for Datagrok visualizations. 
+  return `
+  Below is the structure of the dataframe a user is working with, and the interfaces for Datagrok visualizations. 
 Your task is to identify which visualization to use, and which properties to set for what the user asks.
 For column name properties, you can only use names from the dataframe.
-Give the answer in the JSON format with the "viewerType" identifying viewer type, and
+Give the answer in the JSON format that can be directly parsed (no annotations or anything like that)
+ with the "viewerType" identifying viewer type, and
 "properties" containing properties, like in this example: 
 {"viewerType": "Histogram", "properties": {"valueColumnName": "Age", "markerSize": 15}}
+
+${getCurrentViewersString(view)}
 
 User question: ${question}
 
@@ -56,6 +63,6 @@ DataFrame structure:
 ${JSON.stringify(getDataFrameDescription(view.dataFrame))}
 
 Viewers:
-${getViewerDescriptionsString()}`
-}
+${getViewerDescriptionsString()}`;
+};
 

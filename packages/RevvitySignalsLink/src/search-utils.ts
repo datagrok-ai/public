@@ -3,14 +3,15 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import { ComplexCondition, Operators, QueryBuilder, QueryBuilderLayout, SUGGESTIONS_FUNCTION } from '@datagrok-libraries/utils/src/query-builder/query-builder';
-import { convertComplexConditionToSignalsSearchQuery, SignalsSearchQuery } from './signals-search-query';
-import { getConditionForLibAndType, materialsCondition, retrieveQueriesMap } from './compounds';
+import { convertComplexConditionToSignalsSearchQuery, SignalsSearchField, SignalsSearchParams, SignalsSearchQuery } from './signals-search-query';
+import { addMoleculeStructures, getConditionForLibAndType, materialsCondition, retrieveQueriesMap } from './compounds';
 import { createLibsObjectForStatistics, getRevvityLibraries, RevvityLibrary } from './libraries';
 import { getDefaultProperties, REVVITY_FIELD_TO_PROP_TYPE_MAPPING } from './properties';
 import { getTermsForField } from './package';
 import { createPath, createViewFromPreDefinedQuery, openedView, openRevvityNode, updateView } from './view-utils';
 import { getAppHeader, getCompoundTypeByViewName, getViewNameByCompoundType } from './utils';
 import { funcs } from './package-api';
+import { HIDDEN_ID_COL_NAME, ID_COL_NAME, MAX_RETURN_ROWS, MOL_COL_NAME, REVVITY_SEARCH_RES_TOTAL_COUNT } from './constants';
 
 export type QueryBuilderConfig = {
   libId: string,
@@ -24,7 +25,7 @@ export let currentQueryBuilderConfig: QueryBuilderConfig | undefined = undefined
 export const filterProperties: {[key: string]: DG.Property[]} = {};
 
 export async function runSearchQuery(libId: string, compoundType: string,
-  queryBuilderCondition?: ComplexCondition): Promise<DG.DataFrame> {
+  queryBuilderCondition?: ComplexCondition, params?: SignalsSearchParams, withoutStructures?: boolean): Promise<DG.DataFrame> {
 
   const cond: ComplexCondition = {
     logicalOperator: Operators.Logical.and,
@@ -49,8 +50,15 @@ export async function runSearchQuery(libId: string, compoundType: string,
   if (queryBuilderCondition && queryBuilderCondition.conditions.length > 0)
     cond.conditions.push(queryBuilderCondition);
   const signalsQuery: SignalsSearchQuery = convertComplexConditionToSignalsSearchQuery(cond);
+  if (!signalsQuery.options?.sort) {
+    signalsQuery.options ??= {};
+    signalsQuery.options.sort = {
+      [SignalsSearchField.MODIFIED_AT]: "desc"
+    }
+  }
   console.log(signalsQuery);
-  const resultDf = await funcs.searchEntitiesWithStructures(JSON.stringify(signalsQuery), '{}');
+  const resultDf = await funcs.searchEntitiesWithStructures(JSON.stringify(signalsQuery),
+    params ? JSON.stringify(params) : '{}', libId, compoundType, withoutStructures);
   return resultDf;
 }
 
@@ -112,8 +120,10 @@ export async function initializeFilters(treeNode: DG.TreeViewGroup, tv: DG.Table
     });
 
     const runSearchButton = ui.button('Search', async () => {
-      runSearch(qb, tv, filtersDiv, selectedLib[0].id, compoundType, libName, true);
+      runSearch(qb, tv, filtersDiv, loadAllResultsDiv, selectedLib[0].id, compoundType, libName, true);
     });
+
+    const loadAllResultsDiv = ui.div('', 'revvity-load-all-search-results');
 
     //set initial validation status
     runSearchButton.disabled = qb.invalid;
@@ -122,23 +132,98 @@ export async function initializeFilters(treeNode: DG.TreeViewGroup, tv: DG.Table
     filtersDiv.append(ui.divH([saveButton, loadButton], 'revvity-saved-searches-icons-div'));
     filtersDiv.append(qb.root);
     filtersDiv.append(ui.div(runSearchButton, { style: { paddingLeft: '4px' } }));
+    filtersDiv.append(loadAllResultsDiv);
+
 
     ui.onSizeChanged(filtersDiv).subscribe(() => {
       updateQueryBuilderLayout(qb, filtersDiv.clientWidth, selectedLib[0].id, compoundType);
     });
 
     if (initialSearchQuery)
-      runSearch(qb, tv, filtersDiv, selectedLib[0].id, compoundType, libName, changePath);
+      runSearch(qb, tv, filtersDiv, loadAllResultsDiv, selectedLib[0].id, compoundType, libName, changePath);
   }
 }
 
-export async function runSearch(qb: QueryBuilder, tv: DG.TableView, filtersDiv: HTMLDivElement, libId: string, compoundType: string,
+export async function runSearch(qb: QueryBuilder, tv: DG.TableView, filtersDiv: HTMLDivElement, loadAllResDiv: HTMLDivElement, libId: string, compoundType: string,
   libName: string, changePath?: boolean) {
+  ui.empty(loadAllResDiv);
   if (qb.condition.conditions.length)
     qb.saveConditionToHistory();
   ui.setUpdateIndicator(tv.grid.root, true, 'Searching...');
   const condition = qb.condition;
   const resultDf = await runSearchQuery(libId, compoundType, condition);
+  const totalCount = resultDf.getTag(REVVITY_SEARCH_RES_TOTAL_COUNT);
+  const loadAllResults = async (count: number) => {
+    const pb = DG.TaskBarProgressIndicator.create(`Loading results`, {cancelable: true});
+    let totalDf: DG.DataFrame | null = null;
+    const batchSize = MAX_RETURN_ROWS;
+    const calls = Math.ceil(count / MAX_RETURN_ROWS);
+    for (let i = 0; i < calls; i++) {
+       if (pb.canceled)
+        break;
+      const resDf = await runSearchQuery(libId, compoundType, condition, { "page[limit]": batchSize, "page[offset]": i * batchSize }, true);
+      if (!totalDf)
+        totalDf = resDf;
+      else
+        totalDf.append(resDf, true);
+      pb.update(((i + 1) * batchSize / count) * batchSize, i + 1 === calls ? `Finished loading` : `Loaded ${(i + 1) * batchSize} of ${count}`);
+    }
+    pb.close();
+    if (totalDf) {
+
+      let idCol = totalDf.col(HIDDEN_ID_COL_NAME) ?? totalDf.col(ID_COL_NAME);
+      if (idCol) {
+
+        const moleculeIds = idCol.toList();
+        const moleculeColumn = totalDf.col(MOL_COL_NAME);
+
+        if (moleculeColumn)
+          addMoleculeStructures(moleculeIds, moleculeColumn);
+      }
+    }
+    return totalDf ?? DG.DataFrame.create();
+  }
+  
+  // if total number of results are more then 100, add ability to load them all
+  if (totalCount) {
+    let countInt: number | undefined = undefined;
+    try {
+      countInt = parseInt(totalCount)
+    } catch (e: any) { }
+    if (countInt) {
+      const infoDiv = ui.divH([]);
+      infoDiv.append(ui.divText(`${resultDf.rowCount} of ${countInt} rows`, 'revvity-search-results-count'));
+      loadAllResDiv.append(infoDiv);
+      if (countInt > resultDf.rowCount) {
+        const loadResButton = ui.button(`Load all`, async () => {
+          loadResButton.style.display = 'none';
+          ui.setUpdateIndicator(loadAllResDiv, true, `Loading ${totalCount} results`);
+          loadAllResults(countInt).then((res: DG.DataFrame) => {
+            ui.setUpdateIndicator(loadAllResDiv, false);
+            const openResButton = ui.button(`Open ${res.rowCount} results`, () => {
+              ui.empty(infoDiv);
+              openResButton.style.display = 'none';
+              updateView(openedView as DG.TableView, res, compoundType, libName, libId, filtersDiv);
+              infoDiv.append(ui.divText(`${res.rowCount} of ${countInt} rows`, 'revvity-search-results-count'));
+              if (res.rowCount < countInt) {
+                loadResButton.style.display = 'flex';
+                infoDiv.append(loadResButton);
+              }
+            });
+            openResButton.classList.add('revvity-load-all-search-results-button');
+            infoDiv.append(openResButton);
+          }).catch((e: any) => {
+            ui.empty(loadAllResDiv);
+            grok.shell.error(e?.message ?? e);
+          })
+        });
+        loadResButton.classList.add('revvity-load-all-search-results-button');
+        infoDiv.append(loadResButton);
+      }
+
+    }
+  }
+
   updateView(openedView as DG.TableView, resultDf, compoundType, libName, libId, filtersDiv);
   if (changePath)
     tv.path = createPath([libName, getViewNameByCompoundType(compoundType), 'search', JSON.stringify(condition)]);
@@ -151,9 +236,10 @@ export async function getPropertiesForLibAndEntityType(libId: string, compoundTy
     const tagsStr = await funcs.getTags(compoundType, libId);
     const tags: { [key: string]: string } = JSON.parse(tagsStr);
     Object.keys(tags).forEach((tagName) => {
+      const propType = REVVITY_FIELD_TO_PROP_TYPE_MAPPING[tags[tagName]] ?? DG.TYPE.STRING;
       const propOptions: { [key: string]: any } = {
         name: tagName,
-        type: REVVITY_FIELD_TO_PROP_TYPE_MAPPING[tags[tagName]],
+        type: propType,
       };
       const nameArr = tagName.split('.');
       if (nameArr.length > 1)
@@ -321,7 +407,7 @@ function getSavedSearchesNode(treeNode: DG.TreeViewGroup, libName: string, compo
 }
 
 
-export async function createSavedSearchesSatistics(statsDiv: HTMLElement, libName?: string, entityType?: string) {
+export async function createSavedSearchesSatistics(statsDiv: HTMLElement, libName?: string, entityType?: string): Promise<HTMLDivElement> {
 
   const searchesDiv = ui.divV([getAppHeader()]);
   statsDiv.append(searchesDiv);
@@ -350,6 +436,7 @@ export async function createSavedSearchesSatistics(statsDiv: HTMLElement, libNam
     tableDiv.append(statsElement);
     ui.setUpdateIndicator(tableDiv, false);
   });
+  return tableDiv;
 }
 
 async function createSavedSearchStats(savedSearchesForTable: any[], libName?: string, libType?: string): Promise<HTMLElement> {

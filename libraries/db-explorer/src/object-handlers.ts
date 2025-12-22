@@ -6,19 +6,21 @@ import {DBValueObject, EntryPointOptions, SchemaAndConnection} from './types';
 import {DBExplorerRenderer} from './renderer';
 
 
+export const DB_EXPLORER_OBJ_HANDLER_TYPE = 'db-explorer-value';
 export class DBExplorerObjectHandler extends DG.ObjectHandler {
   get type(): string {
-    return 'db-explorer-value';
+    return DB_EXPLORER_OBJ_HANDLER_TYPE;
   }
   private renderer: DBExplorerRenderer;
   isApplicable(x: any): boolean {
-    return x instanceof DBValueObject;
+    return x instanceof DBValueObject && this.connectionNqName !== null && x.connectionNqName === this.connectionNqName && x.schemaName === this.schemaName;
   }
 
   constructor(
     public options: EntryPointOptions,
-    private schemaInfoPromise: () => Promise<SchemaAndConnection | null>,
-    schemaName: string
+    protected schemaInfoPromise: () => Promise<SchemaAndConnection | null>,
+    public connectionNqName: string,
+    public schemaName: string
   ) {
     super();
     this.renderer = new DBExplorerRenderer(schemaInfoPromise, schemaName, options);
@@ -80,6 +82,17 @@ export class DBExplorerObjectHandler extends DG.ObjectHandler {
     return acc;
   }
 
+  /** Use this from outside to render single rows from the dataframe */
+  renderPropertiesFromDfRow(tableRow: DG.Row, dbTableName: string): HTMLElement {
+    const bs = DG.BitSet.create(tableRow.table.rowCount);
+    bs.set(tableRow.idx, true);
+    const df = tableRow.table.clone(bs);
+    const acc = ui.accordion(dbTableName);
+    acc.addPane('Properties', () => ui.wait(async () => this.renderer.renderDataFrame(df, dbTableName, {keepEmptyValues: true, skipCustomSelected: true})), true);
+    this.renderer.renderAssociations(acc, this.schemaInfoPromise, dbTableName, df);
+    return acc.root;
+  }
+
   renderProperties(x: DBValueObject, _context?: any): HTMLElement {
     const acc = this.renderInnerProperties(x.table, x, this.options.valueConverter(x.value ?? '').toString());
     if (x.semValue) {
@@ -109,28 +122,33 @@ export class SemValueObjectHandler extends DBExplorerObjectHandler {
     return x instanceof DG.SemanticValue && x.semType == this.semanticType;
   }
 
+  get entryPoint() {
+    return {table: this.tableName, column: this.columnName};
+  }
+
   constructor(
     private semanticType: string,
     private tableName: string,
     private columnName: string,
     options: EntryPointOptions,
     schemaInfoPromise: () => Promise<SchemaAndConnection | null>,
-    schemaName: string
+    schemaName: string,
+    connectionNqName: string
   ) {
-    super(options, schemaInfoPromise, schemaName);
+    super(options, schemaInfoPromise, connectionNqName, schemaName);
     if (options && options.regexpExample && options.regexpExample.nonVariablePart && options.regexpExample.regexpMarkup)
       this._rgExample = options.regexpExample;
   }
 
   renderCard(x: any, context?: any): HTMLElement {
-    return super.renderCard(new DBValueObject(this.tableName, this.columnName, this.options.valueConverter(x.value ?? ''), x), context);
+    return super.renderCard(new DBValueObject(this.connectionNqName!, this.schemaName, this.tableName, this.columnName, this.options.valueConverter(x.value ?? ''), x), context);
   }
 
   renderTooltip(x: any, context?: any): HTMLElement {
-    return super.renderTooltip(new DBValueObject(this.tableName, this.columnName, this.options.valueConverter(x.value ?? ''), x), context);
+    return super.renderTooltip(new DBValueObject(this.connectionNqName!, this.schemaName, this.tableName, this.columnName, this.options.valueConverter(x.value ?? ''), x), context);
   }
 
   renderProperties(x: any, context?: any): HTMLElement {
-    return super.renderProperties(new DBValueObject(this.tableName, this.columnName, this.options.valueConverter(x.value ?? ''), x), context);
+    return super.renderProperties(new DBValueObject(this.connectionNqName!, this.schemaName, this.tableName, this.columnName, this.options.valueConverter(x.value ?? ''), x), context);
   }
 }

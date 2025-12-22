@@ -1,165 +1,242 @@
+/* eslint-disable max-len */
 /* Do not change these import lines to match external modules in webpack configuration */
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
+import {ChatGptAssistant} from './prompt-engine/chatgpt-assistant';
+import {ChatGPTPromptEngine} from './prompt-engine/prompt-engine';
 import {getAiPanelVisibility, initAiPanel, setAiPanelVisibility} from './ai-panel';
+import {findBestFunction, tableQueriesFunctionsSearchLlm} from './prompts/find-best-function';
+import {askWiki, setupAIQueryEditorUI, setupSearchUI, setupTableViewAIPanelUI, smartExecution} from './llm-utils/ui';
+import {Plan} from './prompt-engine/interfaces';
+import {OpenAIClient} from './llm-utils/openAI-client';
+import {LLMCredsManager} from './llm-utils/creds';
+import {CombinedAISearchAssistant} from './llm-utils/combined-search';
+import {JsonSchema} from './prompt-engine/interfaces';
+import {genDBConnectionMeta, moveDBMetaToStickyMetaOhCoolItEvenRhymes} from './llm-utils/db-index-tools';
+import * as rxjs from 'rxjs';
+import {embedConnectionQueries} from './llm-utils/embeddings';
+import {biologicsIndex} from './llm-utils/indexes/biologics-index';
+import {chemblIndex} from './llm-utils/indexes/chembl-index';
 
 export * from './package.g';
 export const _package = new DG.Package();
 
-type ChatGptFuncParams = { [name: string]: { type: string, description: string } };
-
-type IChatGptResponse = {
-  finish_reason?: string;
-  index?: number;
-  logprobs?: any;
-  message?: {
-    function_call?: any;
-    role?: string;
-    content?: string;
-    refusal?: any;
-  }
-}
-
-let apiKey: string = '';
-let model: string = 'gpt-4';
-let temperature = 0.7;
-const url = 'https://api.openai.com/v1/chat/completions';
-
-
-export async function chatGpt(chatRequest: any): Promise<IChatGptResponse> {
-  const response = await fetch(url, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${apiKey}`
-    },
-    body: JSON.stringify(chatRequest)
-  });
-
-  if (!response.ok) {
-    grok.shell.error('ChatGPT error: ' + response.statusText);
-    throw new Error('Failed to communicate with ChatGPT');
-  }
-
-  const data = await response.json();
-  return data.choices[0];
-}
-
-export async function askImpl(question: string): Promise<IChatGptResponse> {
-  const request: any = {
-    model: model,
-    messages: [{ role: 'user', content: question }],
-    max_tokens: 100,
-    temperature: temperature
-  }
-
-  return await chatGpt(request);
-}
-
-
-async function executeFunction(functionName: string, parameters: any) {
-  const func = DG.Func.find({name: functionName})[0];
-  if (func) {
-    return await func.apply(parameters);
-  }
-  throw new Error(`Function ${functionName} not found`);
-}
+export const modelName: string = 'gpt-4o-mini';
 
 export class PackageFunctions {
-
   @grok.decorators.init()
   static async init() {
-    apiKey = _package.settings['apiKey'];
+    LLMCredsManager.init(_package);
+    setupSearchUI();
+    setupTableViewAIPanelUI();
   }
 
 
   @grok.decorators.autostart()
   static autostart() {
-    // grok.shell.info('started')
-    //
-    grok.events.onViewAdded.subscribe((view) => {
-      if (view.type === DG.VIEW_TYPE.TABLE_VIEW) {
-        const tableView = view as DG.TableView;
-        const iconFse = ui.iconFA('brain', () => setAiPanelVisibility(true), 'Ask AI');
-        tableView.setRibbonPanels([...tableView.getRibbonPanels(), [iconFse]]);
-      }
-    });
+    // try {
+    //   grok.events.onViewAdded.subscribe((view) => {
+    //     if (view.type === DG.VIEW_TYPE.TABLE_VIEW) {
+    //       const tableView = view as DG.TableView;
+    //       const iconFse = ui.iconSvg('ai.svg', () => setAiPanelVisibility(true), 'Ask AI \n Ctrl+I');
+    //       tableView.setRibbonPanels([...tableView.getRibbonPanels(), [iconFse]]);
+    //     }
+    //   });
 
-    initAiPanel();
-    // Add keyboard shortcut for toggling AI panel
-    document.addEventListener('keydown', (event) => {
-      // Check for Ctrl+I (Ctrl key + I key)
-      if (event.ctrlKey && event.key === 'i') {
-        event.preventDefault(); // Prevent default browser behavior
-        const isVisible = getAiPanelVisibility();
-        setAiPanelVisibility(!isVisible);
-      }
-    });
+    //   initAiPanel();
+    //   // Add keyboard shortcut for toggling AI panel
+    //   document.addEventListener('keydown', (event) => {
+    //     // Check for Ctrl+I (Ctrl key + I key)
+    //     if (event.ctrlKey && event.key === 'i') {
+    //       event.preventDefault(); // Prevent default browser behavior
+    //       const isVisible = getAiPanelVisibility();
+    //       setAiPanelVisibility(!isVisible);
+    //     }
+    //   });
+    // } catch (e) {
+    //   console.log('AI autostart failed.');
+    //   console.log(e);
+    // }
   }
 
-
-  @grok.decorators.func()
-  static async ask(question: string): Promise<string> {
-    let result = await askImpl(question);
-    return result.message!.content!;
+  @grok.decorators.func({tags: ['searchProvider']})
+  static combinedLLMSearchProvider(): DG.SearchProvider {
+    const isAiConfigured = grok.ai.openAiConfigured;
+    return {
+      'home': {
+        name: 'Ask AI Assistant',
+        search: async (_query: string) => {
+          CombinedAISearchAssistant.instance.resetSearchUI();
+          return null;
+        },
+        getSuggestions: (_query: string) => [],
+        isApplicable: (query: string) => isAiConfigured ? query?.trim().length >= 2 : false,
+        description: 'Get answers form AI assistant',
+        onValueEnter: async (query) => {
+          isAiConfigured && query?.trim().length >= 2 &&
+            await CombinedAISearchAssistant.instance.searchUI(query);
+        }
+      }
+    } satisfies DG.SearchProvider;
   }
 
+  @grok.decorators.func({meta: {
+    role: 'aiSearchProvider',
+    useWhen: 'If the user is asking questions about how to do something, how to write the code on platform, how to execute tasks, or any other questions related to Datagrok platform functionalities and capabilities. The tone of the prompt should generally sound like "how do I do this" / "what is this". for example, "what sequence notations are supported?'
+  }, name: 'Help',
+  description: 'Get answers from DeepGROK AI assistant based on Datagrok documentation and public code.', result: {type: 'widget', name: 'result'}})
+  static async askHelpLLMProvider(@grok.decorators.param({type: 'string'})prompt: string): Promise<DG.Widget | null> {
+    return await askWiki(prompt);
+  }
 
-  @grok.decorators.func()
-  static async askFun(question: string): Promise<string> {
-    function getType(type: string): string {
-      switch (type) {
-        case DG.TYPE.STRING:
-          return 'string';
-        case DG.TYPE.INT:
-          return 'integer';
-        case DG.TYPE.FLOAT:
-          return 'number';
-        case DG.TYPE.BOOL:
-          return 'boolean';
-        default:
-          return 'object';
-      }
+ @grok.decorators.func({meta: {
+   role: 'aiSearchProvider',
+   useWhen: 'If the prompt looks like a user has a goal to achieve something with concrete input(s), and wants the system to plan and execute a series of steps/functions to achieve that goal. for example, adme properties of CHEMBL1234, enumerate some peptide, etc.. . Also, if the tone of the prompt sounds like "Do something", use this function'
+ }, name: 'Execute',
+ description: 'Plans and executes function steps to achieve needed results', result: {type: 'widget', name: 'result'}})
+  static async smartChainExecutionProvider(@grok.decorators.param({type: 'string'})prompt: string): Promise<DG.Widget | null> {
+    return await smartExecution(prompt, modelName);
+  }
+
+  @grok.decorators.func({meta: {
+    role: 'aiSearchProvider',
+    useWhen: 'if the prompt suggest that the user is looking for a data table result and the prompt resembles a query pattern. for example, "bioactivity data for shigella" or "compounds similar to aspirin" or first 100 chembl compounds. there should be some parts of user prompt that could match parameters in some query, like shigella, aspirin, first 100 etc.'
+  }, name: 'Query',
+  description: 'Tries to find a query which has the similar pattern as the prompt user entered and executes it', result: {type: 'widget', name: 'result'}})
+ static async llmSearchQueryProvider(@grok.decorators.param({type: 'string'})prompt: string): Promise<DG.Widget | null> {
+   return await tableQueriesFunctionsSearchLlm(prompt);
+ }
+
+  @grok.decorators.func({
+    'meta': {
+      'cache': 'all',
+      'cache.invalidateOn': '0 0 1 * *'
     }
+  })
+  static async askAIGeneralCached(
+    model: string,
+    systemPrompt: string,
+    prompt: string,
+    schema?: JsonSchema
+  ): Promise<string> {
+    const client = OpenAIClient.getInstance();
+    // this is used only here to provide caching
+    return await client.generalPrompt(model, systemPrompt, prompt, schema);
+  }
 
-    function getProperties(f: DG.Func): ChatGptFuncParams {
-      let props: ChatGptFuncParams = {};
-      for (const p of f.inputs) {
-        props[p.name] = {
-          type: getType(p.propertyType),
-          description: p.description
-        }
-      }
-      return props;
+  @grok.decorators.func({
+    'meta': {
+      'cache': 'all',
+      'cache.invalidateOn': '0 0 1 * *'
     }
+  })
+  static async ask(
+    question: string,
+  ): Promise<string> {
+    const client = OpenAIClient.getInstance();
+    // this is used only here to provide caching
+    return await client.generalPrompt(modelName, 'You are a helpful assistant.', question);
+  }
 
-    const functions = DG.Func.find({package: 'Admetica'}).map((f) => {
-      return {
-        name: f.name,
-        description: f.description,
-        parameters: {
-          type: "object",
-          properties: getProperties(f)
-        }
-      }
-    });
-
-    const result = await chatGpt({
-      model: 'gpt-4',
-      messages: [
-        {role: 'system', content: 'You are a helpful assistant that can call JavaScript functions when needed.'},
-        {role: 'user', content: question}
-      ],
-      functions: functions,
-      function_call: "auto"
-    });
-
-    if (result.message?.function_call) {
-      const functionName = result.message.function_call.name;
-      const parameters = result.message.function_call.arguments;
-      return await executeFunction(functionName, JSON.parse(parameters));
+  @grok.decorators.func({
+    'meta': {
+      'cache': 'all',
+      'cache.invalidateOn': '0 0 1 * *'
     }
-    return JSON.stringify(result);
+  })
+  static async getExecutionPlan(userGoal: string): Promise<string> {
+    const gptEngine = ChatGPTPromptEngine.getInstance(modelName);
+    const gptAssistant = new ChatGptAssistant(gptEngine);
+    const plan: Plan = await gptAssistant.plan(userGoal);
+    // Cache only works with scalar values, so we serialize the plan to a string
+    return JSON.stringify(plan);
+  }
+
+  @grok.decorators.func({
+    'meta': {
+      'cache': 'all',
+      'cache.invalidateOn': '0 0 1 * *'
+    }
+  })
+  static async fuzzyMatch(prompt: string, searchPatterns: string[], descriptions: string[]): Promise<string> {
+    const queryMatchResult = await findBestFunction(prompt, searchPatterns, descriptions);
+    return JSON.stringify(queryMatchResult);
+  }
+
+  @grok.decorators.func({
+    'meta': {
+      'cache': 'all',
+      'cache.invalidateOn': '0 0 1 * *'
+    }
+  })
+  static async askDocumentationCached(prompt: string): Promise<string> {
+    const client = OpenAIClient.getInstance();
+    return await client.getHelpAnswer(prompt);
+  }
+
+  // @grok.decorators.func({
+  //   'meta': {
+  //     'cache': 'all',
+  //     'cache.invalidateOn': '0 0 1 * *'
+  //   }
+  // })
+  // static async generateSqlQuery(prompt: string, connectionID: string, schemaName: string): Promise<string> {
+  //   return await generateAISqlQuery(prompt, connectionID, schemaName);
+  // }
+  @grok.decorators.func({})
+  static async setupAIQueryEditor(view: DG.ViewBase, connectionID: string, queryEditorRoot: HTMLElement, @grok.decorators.param({type: 'dynamic'}) setAndRunFunc: Function): Promise<boolean> {
+    return setupAIQueryEditorUI(view, connectionID, queryEditorRoot, setAndRunFunc as (query: string) => void);
+  }
+
+  @grok.decorators.func({})
+  static async moveMetaToDB(@grok.decorators.param({type: 'string', options: {choices: ['biologics', 'chembl']}})dbName: string): Promise<void> {
+    const meta = dbName === 'biologics' ? biologicsIndex : chemblIndex;
+    await moveDBMetaToStickyMetaOhCoolItEvenRhymes(meta);
+  }
+
+  @grok.decorators.func({})
+  static async indexDatabaseSchema() {
+    grok.shell.info('Do not touch this function if you are not a developer. :D :D :D');
+    return;
+    const connections = await grok.dapi.connections.list();
+    const connectionsInput = ui.input.choice('Connection', {items: connections.map((c) => c.nqName), value: connections[0].nqName, nullable: false});
+    const getConnectionByName = (): DG.DataConnection => {
+      return connections.find((c) => c.nqName === connectionsInput.value)!;
+    };
+    const schemaInputRoot = ui.div([]);
+    let schemaInput: DG.ChoiceInput<string>;
+    const createSchemaInput = async () => {
+      ui.empty(schemaInputRoot);
+      const connection = getConnectionByName();
+      const schemas = await grok.dapi.connections.getSchemas(connection);
+      schemaInput = ui.input.choice('Schema', {items: schemas, value: schemas[0], nullable: false}) as DG.ChoiceInput<string>;
+      schemaInputRoot.append(schemaInput.root);
+    };
+    connectionsInput.onChanged.subscribe(() => createSchemaInput());
+    await createSchemaInput();
+    ui.dialog('Index Database Schema')
+      .add(connectionsInput)
+      .add(schemaInputRoot)
+      .onOK(async () => {
+        const res = await genDBConnectionMeta(getConnectionByName(), [schemaInput.value]);
+        grok.shell.info('Database schema indexed successfully.');
+        console.log(res);
+        DG.Utils.download(`${connectionsInput.value}_${schemaInput.value}_db_index.json`, JSON.stringify(res, (_, v) => typeof v === 'bigint' ? Number(v) : v, 2));
+      }).show();
+  }
+
+  @grok.decorators.func({})
+  static async embedConnectionQueries() {
+    const connections = await grok.dapi.connections.list();
+    const connectionsInput = ui.input.choice('Connection', {items: connections.map((c) => c.nqName), value: connections[0].nqName, nullable: false});
+    ui.dialog('Embed Connection Queries')
+      .add(connectionsInput)
+      .onOK(async () => {
+        const connection = connections.find((c) => c.nqName === connectionsInput.value)!;
+        const embedRes = await embedConnectionQueries(connection.id);
+        console.log(embedRes);
+        DG.Utils.download(`${connectionsInput.value}_queries_embeddings.json`, JSON.stringify(embedRes, null, 2));
+      }).show();
   }
 }

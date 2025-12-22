@@ -1,4 +1,4 @@
-import { GITHUB_BASE_URL, Scope } from './constants';
+import {GITHUB_BASE_URL, Scope} from './constants';
 
 export async function fetchSchema(fileName: string): Promise<any> {
   const url = `${GITHUB_BASE_URL}${fileName}`;
@@ -6,7 +6,7 @@ export async function fetchSchema(fileName: string): Promise<any> {
   const response = await fetch(url);
   if (!response.ok)
     throw new Error(`Failed to fetch schema for ${fileName}: ${response.statusText}`);
-  return await response.json();
+  return await response.text();
 }
 
 export async function fetchCsv(scope: Scope): Promise<string> {

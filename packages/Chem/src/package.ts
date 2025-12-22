@@ -1,3 +1,4 @@
+/* eslint-disable camelcase */
 /* eslint-disable guard-for-in */
 /* eslint-disable max-params */
 /* eslint-disable max-len */
@@ -5,7 +6,6 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import '../css/chem.css';
 import * as chemSearches from './chem-searches';
 import {GridCellRendererProxy, RDKitCellRenderer} from './rendering/rdkit-cell-renderer';
 import {assure} from '@datagrok-libraries/utils/src/test';
@@ -58,14 +58,14 @@ import {MatchedMolecularPairsViewer} from './analysis/molecular-matched-pairs/mm
 import {_importTripos} from './file-importers/mol2-importer';
 import {_importSmi} from './file-importers/smi-importer';
 
-import {generateScaffoldTree} from './scripts-api';
+import {Chem} from './scripts-api';
 import {renderMolecule} from './rendering/render-molecule';
 import {RDKitReactionRenderer} from './rendering/rdkit-reaction-renderer';
 import {structure3dWidget} from './widgets/structure3d';
 import {BitArrayMetrics, BitArrayMetricsNames} from '@datagrok-libraries/ml/src/typed-metrics';
 import {_demoActivityCliffs, _demoActivityCliffsLayout, _demoChemicalSpace, _demoChemOverview, _demoMMPA,
   _demoRgroupAnalysis, _demoRGroups, _demoScaffoldTree, _demoSimilarityDiversitySearch} from './demo/demo';
-import {getStructuralAlertsByRules, RuleId, RuleSet, STRUCT_ALERTS_RULES_NAMES} from './panels/structural-alerts';
+import {getStructuralAlertsByRules, RuleSet, STRUCT_ALERTS_RULES_NAMES} from './panels/structural-alerts';
 import {getmolColumnHighlights} from './widgets/col-highlights';
 import {RDLog, RDModule, RDMol} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 import {malformedDataWarning} from './utils/malformed-data-utils';
@@ -81,7 +81,6 @@ import {MolfileHandler} from '@datagrok-libraries/chem-meta/src/parsing-utils/mo
 import {MolfileHandlerBase} from '@datagrok-libraries/chem-meta/src/parsing-utils/molfile-handler-base';
 import {fetchWrapper} from '@datagrok-libraries/utils/src/fetch-utils';
 import {CHEM_PROP_MAP} from './open-chem/ocl-service/calculations';
-import {cutFragments} from './analysis/molecular-matched-pairs/mmp-viewer/mmp-react-toolkit';
 import {oclMol} from './utils/chem-common-ocl';
 import {MpoProfileEditor} from '@datagrok-libraries/statistics/src/mpo/mpo-profile-editor';
 import {OCLService} from './open-chem/ocl-service';
@@ -94,7 +93,9 @@ import {createComponentPane, createMixtureWidget, Mixfile} from './utils/mixfile
 import {biochemicalPropertiesDialog} from './widgets/biochem-properties-widget';
 import {checkCurrentView} from './utils/ui-utils';
 import {mpo, PropertyDesirability} from '@datagrok-libraries/statistics/src/mpo/mpo';
-
+//@ts-ignore
+import '../css/chem.css';
+import {addDeprotectedColumn, DeprotectEditor} from './analysis/deprotect';
 
 export {getMCS};
 export * from './package.g';
@@ -102,11 +103,11 @@ export * from './package.g';
 /** Temporary polyfill */
 
 function getDecoratorFunc() {
-  return function(args: any) {
+  return function(_args: any) {
     return function(
-      target: any,
-      propertyKey: string,
-      descriptor: PropertyDescriptor
+      _target: any,
+      _propertyKey: string,
+      _descriptor: PropertyDescriptor,
     ) { };
   };
 }
@@ -119,7 +120,7 @@ const decorators = [
   'func', 'init', 'param', 'panel', 'editor', 'demo', 'app',
   'appTreeBrowser', 'fileHandler', 'fileExporter', 'model', 'viewer', 'filter', 'cellRenderer', 'autostart',
   'dashboard', 'folderViewer', 'semTypeDetector', 'packageSettingsEditor', 'functionAnalysis', 'converter',
-  'fileViewer', 'model', 'treeBrowser', 'polyfill'
+  'fileViewer', 'model', 'treeBrowser', 'polyfill',
 ];
 
 decorators.forEach((decorator) => {
@@ -1406,7 +1407,9 @@ export class PackageFunctions {
   })
   static async convertMoleculeNotation(
     @grok.decorators.param({options: {semType: 'Molecule'}}) molecule: DG.Column,
-    @grok.decorators.param({type: 'string'}) targetNotation: DG.chem.Notation): Promise<DG.Column> {
+    @grok.decorators.param({type: 'string'}) targetNotation: DG.chem.Notation,
+    @grok.decorators.param({options: {initialValue: 'false', optional: true, nullable: true}}) kekulize?: boolean,
+  ): Promise<DG.Column> {
     let col: DG.Column;
     let newColName = `${molecule.name}_${targetNotation}`;
     try {
@@ -1415,7 +1418,7 @@ export class PackageFunctions {
     } catch (e) {}
 
     try {
-      const res = await convertNotationForColumn(molecule, targetNotation);
+      const res = await convertNotationForColumn(molecule, targetNotation, kekulize ?? false);
       col = DG.Column.fromStrings(newColName, res);
       col.semType = DG.SEMTYPE.MOLECULE;
     } catch (e: any) {
@@ -1447,8 +1450,9 @@ export class PackageFunctions {
     @grok.decorators.param({type: 'column', options: {semType: 'Molecule'}}) molecules: DG.Column<string>,
     @grok.decorators.param({type: 'string', options: {choices: ['smiles', 'smarts', 'molblock', 'v3Kmolblock'], initialValue: 'smiles'}}) targetNotation: DG.chem.Notation,
     @grok.decorators.param({options: {initialValue: 'false'}}) overwrite: boolean = false,
-    @grok.decorators.param({options: {initialValue: 'true'}}) join: boolean = true): Promise<DG.Column<string> | void> {
-    const res = await convertNotationForColumn(molecules, targetNotation);
+    @grok.decorators.param({options: {initialValue: 'true'}}) join: boolean = true,
+    @grok.decorators.param({options: {initialValue: 'false', optional: true, nullable: true}}) kekulize?: boolean): Promise<DG.Column<string> | void> {
+    const res = await convertNotationForColumn(molecules, targetNotation, kekulize ?? false);
     const units = targetNotation === DG.chem.Notation.MolBlock ? DG.UNITS.Molecule.MOLBLOCK :
       targetNotation === DG.chem.Notation.V3KMolBlock ? DG.UNITS.Molecule.V3K_MOLBLOCK : DG.UNITS.Molecule.SMILES;
     if (overwrite) {
@@ -1879,6 +1883,7 @@ export class PackageFunctions {
   @grok.decorators.func({
     'top-menu': 'Chem | Calculate | Chemical Properties...',
     'name': 'Chemical Properties',
+    'description': 'Calculates chemical properties and adds them as columns to the input table. properties include Molecular Weight (MW), Hydrogen Bond Acceptors (HBA), Hydrogen Bond Donors (HBD), LogP (Partition), LogS (Solubility), Polar Surface Area (PSA), Rotatable Bonds, Stereo Centers, Molecule Charge.',
     'tags': ['HitTriageFunction', 'Transform'],
     'meta': {
       'function_family': 'biochem-calculator',
@@ -2053,7 +2058,7 @@ export class PackageFunctions {
     description: 'Scaffold Tree filter',
     tags: ['filter'],
     outputs: [{name: 'result', type: 'filter'}],
-    meta: {semType: 'Molecule'},
+    meta: {semType: 'Molecule', allowMultipleFiltersForColumn: 'false'},
   })
   static scaffoldTreeFilter(): ScaffoldTreeFilter {
     return new ScaffoldTreeFilter();
@@ -2085,7 +2090,7 @@ export class PackageFunctions {
     }
     const smilesColumn: DG.Column = DG.Column.fromStrings('smiles', smilesList);
     const dataFrame: DG.DataFrame = DG.DataFrame.fromColumns([smilesColumn]);
-    const scriptBlob = await generateScaffoldTree(dataFrame, smilesColumn!.name, ringCutoff, dischargeAndDeradicalize);
+    const scriptBlob = await Chem.generateScaffoldTree(dataFrame, smilesColumn!.name, ringCutoff, dischargeAndDeradicalize);
     const scriptRes = new TextDecoder().decode(scriptBlob.data);
     return scriptRes;
   }
@@ -2420,19 +2425,24 @@ export class PackageFunctions {
   @grok.decorators.func({
     'top-menu': 'Chem | Transform | Deprotect...',
     'name': 'Deprotect',
-    'description': 'Generates the new dataset based on the given structure',
+    'tags': ['Transform'],
+    'description': 'Removes drawn protecting groups / fragments from molecules',
+    'editor': 'Chem:DeprotectEditor',
   })
   static async deprotect(
     @grok.decorators.param({options: {description: 'Input data table'}}) table: DG.DataFrame,
     @grok.decorators.param({options: {semType: 'Molecule'}}) molecules: DG.Column,
     @grok.decorators.param({options: {semType: 'Molecule', initialValue: 'O=C([N:1])OCC1c2ccccc2-c2ccccc21'}}) fragment: string): Promise<void> {
-    const module = PackageFunctions.getRdKitModule();
-    const cut = cutFragments(module, molecules.toList(), fragment);
-    const res = cut.map((c) => c[0]);
-    const columnName = table.columns.getUnusedName('deprotected');
-    const col = DG.Column.fromStrings(columnName, res);
-    col.semType = DG.SEMTYPE.MOLECULE;
-    table.columns.add(col);
+    const rdModule = PackageFunctions.getRdKitModule();
+    addDeprotectedColumn(table, molecules, fragment, rdModule);
+  }
+
+  @grok.decorators.editor({
+    name: 'Deprotect Editor',
+    outputs: [{name: 'result', type: 'widget'}],
+  })
+  static deprotectEditor(call: DG.FuncCall): DG.Widget {
+    return new DeprotectEditor(call);
   }
 
   @grok.decorators.func({
@@ -2465,12 +2475,14 @@ export class PackageFunctions {
 
   @grok.decorators.func({
     tags: ['Transform'],
+    outputs: [{name: 'res', type: 'list'}],
   })
   static async mpoTransformFunction(
     df: DG.DataFrame,
     @grok.decorators.param({type: 'object'}) currentProperties: { [key: string]: PropertyDesirability },
-  ) {
+  ): Promise<string[]> {
     const columns: DG.Column[] = [];
+    let resultCol: DG.Column | null = null;
     for (const propertyName in currentProperties) {
       const column = df.columns.byName(propertyName);
       if (!column) {
@@ -2483,18 +2495,19 @@ export class PackageFunctions {
 
     if (columns.length === 0) {
       grok.shell.error('No valid columns found matching the template properties. Cannot calculate MPO score.');
-      return;
+      return [];
     }
 
     try {
-      const resultCol = mpo(df, columns);
+      resultCol = mpo(df, columns);
       grok.shell.info(`MPO score calculated in column '${resultCol.name}'.`);
     } catch (e) {
       console.error('MPO Calculation Error:', e);
       grok.shell.error(`MPO calculation failed: ${e instanceof Error ? e.message : String(e)}`);
     }
-  }
 
+    return resultCol ? [resultCol.name] : [];
+  }
 
   @grok.decorators.fileViewer({
     fileViewer: 'json',

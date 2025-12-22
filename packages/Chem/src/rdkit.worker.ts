@@ -31,7 +31,7 @@ ctx.addEventListener('message', async (e: any) => {
     } else if (op === WORKER_CALL.GET_FINGERPRINTS)
       result = await _rdKitServiceWorker!.getFingerprints(args[0], args[1], args[2]);
     else if (op === WORKER_CALL.CONVERT_MOL_NOTATION)
-      result = await _rdKitServiceWorker!.convertMolNotation(args[0], args[1]);
+      result = await _rdKitServiceWorker!.convertMolNotation(args[0], args[1], args[2]);
     else if (op === WORKER_CALL.GET_STRUCTURAL_ALERTS)
       result = _rdKitServiceWorker!.getStructuralAlerts(args[0], args[1]);
     else if (op === WORKER_CALL.R_GROUP_ANALYSIS) {

@@ -87,7 +87,7 @@ class VirtuosoDataProviderTest {
     @MethodSource("grok_connect.providers.arguments_provider.VirtuosoObjectsMother#getSchema_ok")
     public void getSchema_ok(DataFrame expected) {
         DataFrame actual = Assertions.assertDoesNotThrow(() -> provider.getSchema(connection,
-                "DBA", "MOCK_DATA"));
+                "DBA", "MOCK_DATA", false));
         Assertions.assertTrue(dataFrameComparator.isDataFramesEqual(expected, actual));
     }
 

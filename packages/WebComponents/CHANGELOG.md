@@ -1,5 +1,10 @@
 # WebComponents changelog
 
+## 1.2.10 (2025-11-20)
+
+- Tweak consistency icons in forms
+- Tweak dock spawn webcomponent api
+
 ## 1.2.9 (2025-10-30)
 
 - Update deps

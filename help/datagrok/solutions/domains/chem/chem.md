@@ -26,6 +26,7 @@ keywords:
   - cdd vault integration
   - compound registration system
   - mixtures
+  - multi-parameter optimization
 ---
 
 ```mdx-code-block
@@ -391,7 +392,7 @@ To clear the filter, use the checkbox provided. To remove the filter altogether,
 
 </details>
 
-To learn more about filtering, watch this [video](https://www.youtube.com/watch?v=GM3XixUFFUs&t=2688s) or read [this article](../../../../datagrok/navigation/views/table-view.md#select-and-filter).
+To learn more about filtering, watch this [video](https://www.youtube.com/watch?v=GM3XixUFFUs&t=2688s) or read [this article](../../../../visualize/table-view-1.md#select-and-filter).
 
 ### Similarity and diversity search
 
@@ -439,7 +440,7 @@ To see the full list, see [Plugins](../../../plugins.md#chem).
 
 To run a substructure or similarity search, either [sketch](#sketching) or click a molecule in your
 dataset and expand the **Databases** section of the **Context Panel** to view
-matches for your target molecule. You can also open the results in a separate [Table View](../../../navigation/views/table-view.md) by clicking the plus (**+**) icon within the relevant info pane.
+matches for your target molecule. You can also open the results in a separate [Table View](../../../../visualize/table-view-1.md) by clicking the plus (**+**) icon within the relevant info pane.
 
 :::note Developers
 
@@ -641,7 +642,7 @@ To explore retrosynthesis pathways for a compound:
 1. **Interact with the results**: 
    * Click any precursor or intermediate to view its details in the **Context Panel**
    * Hover over a pathway to reveal action icons, then click the **Add to
-     workspace** (**+**) icon to open the entire pathway in a separate [Table View](../../../navigation/views/table-view.md)
+     workspace** (**+**) icon to open the entire pathway in a separate [Table View](../../../../visualize/table-view-1.md)
  
 You can use custom models, stock databases, and
 display parameters (e.g., route length). 
@@ -963,6 +964,17 @@ Medicinal chemistry is a balancing act: potency must rise while properties like 
 * **Active/Bayesian multi-objective optimization.** Use surrogate models to propose new compounds that efficiently move the Pareto front (or a scalarized objective), reducing screening cost and focusing make/test cycles. 
 
 * **Desirability-based QSAR/MQSAR.** Use the built-in [predictive modeling capabilities](#predictive-modeling) to predict property desirabilities directly (or predict properties first, then score). 
+
+<details>
+<summary> Pareto front </summary>
+
+The Pareto front represents a set of non-dominated solutions in multi-objective optimization, where improving one objective necessarily degrades at least one other, revealing optimal trade-offs between conflicting goals. Use the [Pareto front viewer](../../../../visualize/viewers/pareto-front-viewer.md) to display these Pareto-optimal points on an interactive scatterplot:
+
+![Pareto front](mpo-pareto-front.png)
+
+Launch an interactive Pareto Front [application](../../../../visualize/viewers/pareto-front-viewer.md#application) that enables real-time exploration of optimization results.
+
+</details>
 
 ## Generative chemistry
 

@@ -3,9 +3,9 @@ import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
 
-import { EntityBaseView } from '../views/registration-entity-base';
-import { compoundView } from '../utils/view-utils';
-import { getBatchInfoBySynonym } from '../utils/utils';
+import {EntityBaseView} from '../views/registration-entity-base';
+import {compoundView} from '../utils/view-utils';
+import {getBatchInfoBySynonym} from '../utils/utils';
 
 function extractPropValue(prop: Record<string, any>): any {
   return prop?.value_uuid ?? prop?.value_num ?? prop?.value_string ?? prop?.value_qualifier ?? prop?.value_datetime ?? null;
@@ -60,7 +60,7 @@ export async function molTrackPropPanel(
   column: DG.Column,
   initialStructure?: string,
 ): Promise<DG.Widget> {
-  const { canonical_smiles: smiles, detail, properties = [] } = retrievedCompound;
+  const {detail, properties = []} = retrievedCompound;
 
   if (detail) {
     const registerButton = ui.bigButton('Register', async () => {

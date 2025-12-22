@@ -21,6 +21,10 @@ export class GridTutorial extends Tutorial {
     return 31;
   }
 
+  get icon(): string {
+    return '📊🛠️';
+  }
+
   helpUrl: string = 'https://datagrok.ai/help/visualize/viewers/grid';
   platform: Platform = getPlatform();
 

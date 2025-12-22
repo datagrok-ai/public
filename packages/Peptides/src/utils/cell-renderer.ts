@@ -127,7 +127,7 @@ export function renderMutationCliffCell(canvasContext: CanvasRenderingContext2D,
   } else if (viewer instanceof MostPotentResidues) {
     // in case of most potent residues viewer, we render the invariant of monomer-position. i.e. how many sequences there are with that monomer at that position
     // same as in invariant map viewer
-    const positionStats = viewer.monomerPositionStats ?? viewer?.model?.monomerPositionStats;
+    const positionStats = viewer.monomerPositionStats;
     const count = positionStats?.[currentPosition]?.[currentMonomer]?.count;
     if (count)
       canvasContext.fillText(count.toString(), midX + halfWidth - 5, midY, halfWidth - 5);
@@ -410,7 +410,10 @@ export function setWebLogoRenderer(grid: DG.Grid, monomerPositionStats: MonomerP
         return;
       }
       tooltipOptions.monomerPosition = monomerPosition;
-      requestWebLogoAction(ev, monomerPosition, df, activityCol, options, tooltipOptions);
+      const isDfFiltered = df.filter.anyFalse;
+      const actionDf = isDfFiltered ? df.clone(df.filter) : df;
+      const actionActivityCol = actionDf.getCol(activityCol.name) as DG.Column<number>;
+      requestWebLogoAction(ev, monomerPosition, actionDf, actionActivityCol, options, tooltipOptions);
       if (!options.isSelectionTable && options.highlightCallback != null)
         options.highlightCallback(monomerPosition, df, monomerPositionStats);
     } else if (options.unhighlightCallback != null)

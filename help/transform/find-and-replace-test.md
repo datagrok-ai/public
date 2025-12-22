@@ -4,7 +4,7 @@
 # Tests: find and replace
 
 This typical ["Find and Replace"](find-and-replace-test.md) dialog that you see in every text editor, except that it
-supports specifying the columns to run against, and [search patterns](../datagrok/navigation/views/table-view#search-patterns) for matching non-textual columns.
+supports specifying the columns to run against, and [search patterns](../visualize/table-view-1.md#search-patterns) for matching non-textual columns.
 
 ## Testing scenario
 
@@ -98,21 +98,21 @@ supports specifying the columns to run against, and [search patterns](../datagro
 
 1. Open **Find and Replace** dialog (<kbd>Ctrl+H</kbd>)
 
-1. Use search [patterns](../datagrok/navigation/views/table-view.md#search-patterns)  for numerical values (*">"*, *"<"*
+1. Use search [patterns](../visualize/table-view-1.md#search-patterns)  for numerical values (*">"*, *"<"*
    . *"\<="*, *">="*, *"range"*) in "Find what" field
 
-* Numerical values   found correspond to the entered [pattern](../datagrok/navigation/views/table-view.md#search-patterns)
+* Numerical values   found correspond to the entered [pattern](../visualize/table-view-1.md#search-patterns)
 
-1. Use search [patterns](../datagrok/navigation/views/table-view.md#search-patterns)  for string values (*"starts with"*, *"
+1. Use search [patterns](../visualize/table-view-1.md#search-patterns)  for string values (*"starts with"*, *"
    ends with"*. *"contains"*, *"regex"*)
 
-* String values found correspond to the entered [pattern](../datagrok/navigation/views/table-view.md#search-patterns)
+* String values found correspond to the entered [pattern](.../visualize/table-view-1.md#search-patterns)
 
-1. Use search [patterns](../datagrok/navigation/views/table-view.md#search-patterns) for datetime values (eg, *"1990-1991"*
+1. Use search [patterns](../visualize/table-view-1.md#search-patterns) for datetime values (eg, *"1990-1991"*
    , *"June 1990"*. *"Oct 17, 1990"*, *"before 10/17/1990"*, *"after 10/17/1990"*, *"today"*, "this week", *"regex"*, *"
    yesterday"* and etc. )
 
-* Datetime values   found correspond to the entered [pattern](.../datagrok/navigation/views/table-view.md#search-patterns)
+* Datetime values   found correspond to the entered [pattern](../visualize/table-view-1.md#search-patterns)
 
 1. Test non-functional modules (help, navigation, UI, UX)
 

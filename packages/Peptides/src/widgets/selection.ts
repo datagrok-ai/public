@@ -104,7 +104,7 @@ export function getSelectionWidget(table: DG.DataFrame, options: SelectionWidget
   }, 500);
 
   const mpStats = calculateMonomerPositionStatistics(options.activityColumn, newTable.filter,
-    options.positionColumns, {isFiltered: newTable.filter.anyTrue || newTable.filter.anyFalse});
+    options.positionColumns, {isFiltered: true});
 
   const cachedWebLogoTooltip: () => CachedWebLogoTooltip = () => {
     return {bar: '', tooltip: null};

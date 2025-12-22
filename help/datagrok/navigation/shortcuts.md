@@ -1,10 +1,10 @@
 ---
-title: Controls
+title: Keyboard shortcuts
 keywords:
  - shortcuts
  - controls
  - hot keys
-sidebar position: 5
+sidebar position: 3
 format: mdx
 ---
 

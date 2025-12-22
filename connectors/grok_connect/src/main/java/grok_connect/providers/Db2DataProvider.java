@@ -14,7 +14,6 @@ import grok_connect.connectors_info.DbCredentials;
 import grok_connect.connectors_info.FuncParam;
 import grok_connect.table_query.AggrFunctionInfo;
 import grok_connect.table_query.Stats;
-import grok_connect.utils.Property;
 
 public class Db2DataProvider extends JdbcDataProvider {
     public Db2DataProvider() {
@@ -71,7 +70,7 @@ public class Db2DataProvider extends JdbcDataProvider {
     }
 
     @Override
-    public String getSchemaSql(String db, String schema, String table) {
+    public String getSchemaSql(String db, String schema, String table, boolean includeKeyInfo) {
         return String.format("SELECT C.TABSCHEMA as table_schema, C.TABNAME as table_name, C.COLNAME as column_name, "
                 + "C.TYPENAME as data_type, case when T.TYPE = 'V' then 1 else 0 end as is_view FROM SYSCAT.COLUMNS C "
                 + "JOIN SYSCAT.TABLES T ON C.TABNAME = T.TABNAME AND C.TABSCHEMA = T.TABSCHEMA WHERE C.TABSCHEMA = '%s'%s ORDER BY C.COLNAME;",

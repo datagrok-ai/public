@@ -17,4 +17,4 @@ To configure your pivot table, use these fields:
    * A column to aggregate (e.g., `avg(AGE)`) 
 * **Pivot**: Select one or more columns whose unique values will become columns in the pivot table
 
-For general viewer controls and interactions, see the [Table View](../../datagrok/navigation/views/table-view.md) page.
+For general viewer controls and interactions, see the [Table View](../table-view-1.md) page.

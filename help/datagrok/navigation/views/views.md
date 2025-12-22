@@ -8,6 +8,7 @@ keywords:
  - Flex View
  - Toolbox
 format: mdx
+unlisted: true
 ---
 
 ```mdx-code-block
@@ -16,7 +17,7 @@ import TabItem from '@theme/TabItem';
 ```
 
 A **View** takes up most of the screen and is your primary work area. Commonly
-used views include [Browse](browse.md) and [Table View](table-view.md).
+used views include [Browse](browse.md) and [Table View](../../../visualize/table-view-1.md).
 Additionally, there are views for specialized tasks, like data access or
 scripting, and [plugins](../../plugins.md) can introduce custom views. For more
 information on such views, see the appropriate sections in our documentation.
@@ -56,7 +57,7 @@ icon on the right and select **Split right** or **Split down**.
 
 ## Embedding views
 
-For saved [projects](../../concepts/project/project.md), you can also embed views into an external site as an iframe.
+For saved [dashboards](../../concepts/project/dashboard.md), you can also embed views into an external site as an iframe.
 Embedded views remain fully interactive and maintain the connection with the
 data from which it was created inside Datagrok.
 
@@ -73,8 +74,8 @@ A **Toolbox** is a panel associated with a view. The content of the **Toolbox** 
 <Tabs>
 <TabItem value="table-view" label="Table View" default>
 
-In the [Table View](table-view.md), the **Toolbox** lets you add viewers, refresh dynamic
-dashboards, [filter](table-view.md#select-and-filter), [search](table-view.md#search), and do more. The upper part of the **Toolbox** acts
+In the [Table View](../../../visualize/table-view-1.md), the **Toolbox** lets you add viewers, refresh dynamic
+dashboards, [filter](../../../visualize/table-view-1.md#select-and-filter), [search](../../../visualize/table-view-1.md#search), and do more. The upper part of the **Toolbox** acts
 as a navigation tool, displaying a list of all open tables. From here, you can
 easily switch between different tables by simply clicking on the desired table. 
 

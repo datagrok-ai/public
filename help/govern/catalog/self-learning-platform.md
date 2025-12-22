@@ -24,4 +24,5 @@ See also:
 
 * [Predictive modeling](../../learn/learn.md)
 * [Data queries](../../access/access.md#data-query)
-* [Projects](../../datagrok/concepts/project/project.md)
+* [Dashboards](../../datagrok/concepts/project/dashboard.md)
+* [Spaces](../../datagrok/concepts/project/space.md)

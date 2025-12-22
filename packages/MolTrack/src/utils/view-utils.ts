@@ -1,11 +1,14 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import { _package, getBatchByCorporateId, getCompoundByCorporateId } from '../package';
-import { excludedScopes, MOLTRACK_APP_PATH, Scope } from './constants';
-import { EntityBaseView } from '../views/registration-entity-base';
-import { RegistrationView } from '../views/registration-tab';
-import { u2 } from '@datagrok-libraries/utils/src/u2';
+import {_package, getBatchByCorporateId, getCompoundByCorporateId} from '../package';
+import {IViewContainer, MOLTRACK_APP_PATH, Scope, SEARCH_NODE} from './constants';
+import {EntityBaseView} from '../views/registration-entity-base';
+import {RegistrationView} from '../views/registration-tab';
+import {u2} from '@datagrok-libraries/utils/src/u2';
+import {AssayRegistrationView} from '../views/registration-assay-tab';
+import {PropertySchemaView} from '../views/schema-view';
+import {createSearchExpandableNode, createSearchView} from '../views/search';
 
 export function createPath(viewName: string) {
   let path = `${MOLTRACK_APP_PATH}/`;
@@ -34,7 +37,7 @@ export async function buildRegistrationView({
   batchSection: boolean,
   path: string,
 }) {
-  const registrationView = new EntityBaseView(false);
+  const registrationView = new EntityBaseView(false, title);
   registrationView.initialSmiles = smiles;
   registrationView.singleRetrieved = true;
   registrationView.title = title;
@@ -62,7 +65,7 @@ export async function buildRegistrationView({
 
 export async function compoundView(corporateCompoundId: string) {
   const compound = await getCompoundByCorporateId(corporateCompoundId);
-  const { canonical_smiles: smiles, properties = [] } = compound;
+  const {canonical_smiles: smiles, properties = []} = compound;
   return buildRegistrationView({
     title: `Compound: ${corporateCompoundId}`,
     smiles,
@@ -75,7 +78,7 @@ export async function compoundView(corporateCompoundId: string) {
 
 export async function batchView(corporateBatchId: string) {
   const batch = await getBatchByCorporateId(corporateBatchId);
-  const { canonical_smiles: smiles, properties: compoundProps } = batch.compound;
+  const {canonical_smiles: smiles, properties: compoundProps} = batch.compound;
   const combinedPropsMap = new Map(
     [...compoundProps, ...batch.properties].map((prop: any) => [prop.name, prop]),
   );
@@ -105,15 +108,26 @@ export function initRegisterView(entity: 'Compound' | 'Batch', setPath: boolean 
   view.view.name = `Register a ${entity.toLowerCase()}`;
   if (setPath) view.view.path = createPath(entity);
 
-  view.show();
-  return view.view;
+  return view;
 }
 
-export function initBulkRegisterView(setPath: boolean = true) {
+export function initBulkRegisterView() {
   const registrationView = new RegistrationView();
   registrationView.view.path = createPath('Bulk');
-  registrationView.show();
-  return registrationView.view;
+  return registrationView;
+}
+
+export function initAssayRegisterView() {
+  const registrationView = new AssayRegistrationView();
+  registrationView.view.path = createPath('Assay');
+  return registrationView;
+}
+
+export async function initSchemaView() {
+  const schemaView = new PropertySchemaView();
+  await schemaView.init();
+  schemaView.view.path = createPath('Schema');
+  return schemaView;
 }
 
 export function getAppHeader(): HTMLElement {
@@ -140,7 +154,7 @@ export async function getStatisticsWidget(
   const rows: (string | HTMLElement)[][] = await Promise.all(
     scopes.map(async (entity) => {
       try {
-        const df = await grok.functions.call('MolTrack:retrieveEntity', { scope: entity, flatten: true });
+        const df = await grok.functions.call('MolTrack:retrieveEntity', {scope: entity, flatten: true});
         const count = df?.rowCount ?? 0;
         const entityTitle = snakeCaseToTitleCase(entity);
 
@@ -170,26 +184,44 @@ export function getQuickActionsWidget(): HTMLElement {
   const quickActionsTitle = ui.divH([boltIcon, quickActionsLabel]);
   quickActionsTitle.classList.add('moltrack-quick-actions');
 
-  const linksConfig: { label: string; createView: () => DG.View }[] = [
+  const linksConfig: { label: string; createView: () => Promise<IViewContainer>}[] = [
     {
       label: 'Register compound',
-      createView: () => initRegisterView('Compound', true),
+      createView: async () => initRegisterView('Compound', true),
     },
     {
       label: 'Register batch',
-      createView: () => initRegisterView('Batch', true),
+      createView: async () => initRegisterView('Batch', true),
+    },
+    {
+      label: 'Register assay',
+      createView: async () => initAssayRegisterView(),
     },
     {
       label: 'Register bulk',
-      createView: () => initBulkRegisterView(true),
+      createView: async () => initBulkRegisterView(),
+    },
+    {
+      label: 'Search',
+      createView: async () => {
+        const view = await createSearchExpandableNode(
+          [SEARCH_NODE],
+          () => getStatisticsWidget(createSearchView),
+        );
+        return {
+          show: () => {},
+          view: view,
+        };
+      },
     },
   ];
 
   const quickLinks = ui.divV(
     linksConfig.map((cfg) =>
-      ui.link(cfg.label, () => {
+      ui.link(cfg.label, async () => {
         grok.shell.v.close();
-        cfg.createView();
+        const view = await cfg.createView();
+        view.show();
       }),
     ),
   );

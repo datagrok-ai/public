@@ -1,17 +1,29 @@
 {
   "name": "@datagrok/chatgpt",
   "friendlyName": "ChatGPT",
-  "version": "0.0.31",
+  "version": "1.0.0",
   "description": "ChatGPT integration",
   "author": "oserhiienko@datagrok.ai",
   "dependencies": {
     "@datagrok-libraries/utils": "^4.6.5",
+    "@modelcontextprotocol/sdk": "^1.21.1",
+    "@types/dom-chromium-ai": "^0.0.10",
+    "@datagrok-libraries/db-explorer": "^1.6.0",
     "cash-dom": "latest",
-    "datagrok-api": "^1.26.0",
-    "dayjs": "latest"
+    "datagrok-api": "../../js-api",
+    "dayjs": "latest",
+    "openai": "^6.10.0"
   },
   "devDependencies": {
-    "datagrok-tools": "^4.14.55",
+    "@types/dom-speech-recognition": "^0.0.7",
+    "@typescript-eslint/eslint-plugin": "^8.8.1",
+    "@typescript-eslint/parser": "^8.8.1",
+    "css-loader": "^7.1.2",
+    "datagrok-tools": "^4.14.69",
+    "eslint": "^8.57.1",
+    "eslint-config-google": "^0.14.0",
+    "eslint-plugin-rxjs": "^5.0.3",
+    "style-loader": "^4.0.0",
     "ts-loader": "latest",
     "typescript": "latest",
     "webpack": "latest",
@@ -39,17 +51,16 @@
     "url": "https://github.com/datagrok-ai/public.git",
     "directory": "packages/ChatGPT"
   },
+  "sources": [
+    "css/ai.css"
+  ],
   "properties": [
     {
-      "name": "apiKey",
+      "name": "vectorStoreId",
       "propertyType": "string",
-      "defaultValue": "Enter ChatGPT API key",
+      "description": "Vector Store ID with Datagrok documentation",
+      "defaultValue": "",
       "nullable": false
-    },
-    {
-      "name": "claudeApiKey",
-      "propertyType": "string",
-      "nullable": true
     }
   ]
 }

@@ -46,6 +46,10 @@ import {IDartApi} from "./src/api/grok_api.g";
 let api: IDartApi = (typeof window !== 'undefined' ? window : global.window) as any;
 declare let grok: any;
 
+interface IRoot {
+  root: Element;
+}
+
 /** Creates an instance of the element for the specified tag, and optionally assigns it a CSS class.
  * @param {string} tagName The name of an element.
  * @param {string | null} className
@@ -253,11 +257,23 @@ export function iconImage(name: string, path: string,
   return _options(i, options);
 }
 
+
+/** Creates an icon for the SVG image
+ * Usage:
+ * - iconSvg('ai.svg') would map to /images/ai.svg
+ * - iconSvg('ai') would map to the `svg-ai` class
+ *  */
 export function iconSvg(name: string, handler: ((this: HTMLElement, ev: MouseEvent) => any) | null = null, tooltipMsg: string | null = null): HTMLElement {
-  let i = element('i');
+  const i: HTMLElement = element('i');
   i.classList.add('svg-icon');
   i.classList.add('grok-icon');
-  i.classList.add(`svg-${name}`);
+
+  i.dataset['name'] = (name.includes('.') ? name.split('.')[0] : name);
+  if (name.includes('.svg'))
+    i.style.backgroundImage = `url('/images/${name}')`;
+  else
+    i.classList.add(`svg-${name}`);
+
   if (handler !== null)
     i.addEventListener('click', handler);
   if (tooltipMsg !== null)
@@ -426,8 +442,8 @@ export function loader(): any {
  * @param {boolean} updating - whether the indicator should be shown
  * @param {string} message
  */
-export function setUpdateIndicator(element: HTMLElement, updating: boolean = true, message: string = 'Updating...'): void {
-  return api.grok_UI_SetUpdateIndicator(element, updating, message);
+export function setUpdateIndicator(element: HTMLElement, updating: boolean = true, message: string = 'Updating...', onCancel?: Function): void {
+  return api.grok_UI_SetUpdateIndicator(element, updating, message, onCancel);
 }
 
 /**
@@ -480,7 +496,10 @@ export function tableFromProperties(items: any[], properties: Property[]) {
     properties.map((p) => p.name));
 }
 
-/** Creates a visual table based on [items] and [renderer]. */
+/** Creates a visual table based on [items] and [renderer].
+ * BE WARE: Indexing in the renderer function, due to HTML being totally awesome starts from 1, not 0.
+ * Because... What's a better way to make developers life miserable, right? 
+*/
 export function table<T>(items: T[], renderer: ((item: T, ind: number) => any) | null, columnNames: string[] | null = null): HTMLTableElement {
   return toJs(api.grok_HtmlTable(items, renderer !== null ? (object: any, ind: number) => renderer(toJs(object), ind) : null, columnNames)).root;
 }
@@ -628,7 +647,25 @@ export function virtualView(length: number, renderer: (index: number) => HTMLEle
   return view;
 }
 
-export function popupMenu(items: any): void {
+
+interface IPopupMenuOptions {
+  show?: boolean;
+}
+
+/** Functions for items, object initializers for groups */
+type IMenuInit = () => void | { [key: string]: IMenuInit; };
+
+/**
+ * Example:
+ *  ui.popupMenu({
+ *     'About': () => grok.shell.info('About'),
+ *     'File': {
+ *       'Open': () => grok.shell.info('Open'),
+ *       'Close': () => grok.shell.info('Close'),
+ *     }
+ *   });
+ *  */
+export function popupMenu(items?: IMenuInit, options?: IPopupMenuOptions): Menu {
   function populate(menu: Menu, item: { [key: string]: any; }) {
     for (let key of Object.keys(item)) {
       let value = item[key];
@@ -640,8 +677,13 @@ export function popupMenu(items: any): void {
   }
 
   let menu = Menu.popup();
-  populate(menu, items);
-  menu.show();
+  if (items)
+    populate(menu, items);
+
+  if (options?.show !== false)
+    menu.show();
+
+  return menu;
 }
 
 /**
@@ -678,8 +720,8 @@ export function makeDroppable<T>(e: Element,
       doDrop?: (dragObject: T, copying: boolean) => void
     }): void {
   api.grok_UI_MakeDroppable(e,
-      options?.acceptDrop ? (dragObject: T) => options.acceptDrop!(toJs(dragObject)) : null,
-      options?.doDrop ? (dragObject: T, copying: boolean) => options.doDrop!(toJs(dragObject), toJs(copying)) : null,
+      options?.acceptDrop ? (dragObject: T) => options?.acceptDrop!(toJs(dragObject)) : null,
+      options?.doDrop ? (dragObject: T, copying: boolean) => options?.doDrop!(toJs(dragObject), toJs(copying)) : null,
   );
 }
 
@@ -717,8 +759,8 @@ export namespace input {
   }
 
   const optionsMap: {[key: string]: (input: InputBase, option: any) => void} = {
-    value: (input, x) => input.value = input.inputType === d4.InputType.File ? toDart(x) : 
-      input.inputType === d4.InputType.Tags ? x.map((elem: any) => toDart(elem)) : x,
+    value: (input, x) => input.value = input.inputType === d4.InputType.File ? toDart(x) :
+      [d4.InputType.Files, d4.InputType.Columns, d4.InputType.Tags].includes(input.inputType) ? x.map((elem: any) => toDart(elem)) : x,
     nullable: (input, x) => input.nullable = x, // finish it?
     property: (input, x) => input.property = x,
     tooltipText: (input, x) => input.setTooltip(x),
@@ -736,9 +778,14 @@ export namespace input {
     icon: (input, x) => api.grok_StringInput_AddIcon(input.dart, x),
     available: (input, x) => api.grok_ColumnsInput_ChangeAvailableColumns(input.dart, x),
     checked: (input, x) => api.grok_ColumnsInput_ChangeCheckedColumns(input.dart, x),
+    additionalColumns: (input, x) => setInputAdditionalColumns(input, x),
+    onAdditionalColumnsChanged: (input, x) => setInputAdditionalColumnsOnChanged(input, x),
+    additionalColumnProperties: (input, x) => setAdditionalColumnProperties(input, x),
+    showSelectedColsOnTop: (input, x) => api.grok_ColumnsInput_SetShowSelectedColsOnTop(input.dart, x),
     showOnlyColorBox: (input, x) => api.grok_ColorInput_SetShowOnlyColorBox(input.dart, x),
     allowNew: (input, x) => api.grok_TagsInput_Set_Allow_New(input.dart, x),
     multiValue: (input, x) => api.grok_TagsInput_Set_Multi_Value(input.dart, x),
+    acceptExtensions: (input, x) => api.grok_FilesInput_Set_AcceptExtensions(input.dart, x),
   };
 
   function setInputOptions(input: InputBase, inputType: d4.InputType, options?: IInputInitOptions, ignoreProp: boolean = false): void {
@@ -763,7 +810,8 @@ export namespace input {
     const baseOptions = (({value, nullable, property, onCreated, onValueChanged}) => ({value, nullable, property, onCreated, onValueChanged}))(options);
     for (let key of Object.keys(baseOptions)) {
       if (key === 'value' && baseOptions[key] !== undefined)
-        options.property ? options.property.defaultValue = toDart(baseOptions[key]) : optionsMap[key](input, (baseOptions as IIndexable)[key]);
+        options.property ? options.property.defaultValue = Array.isArray(baseOptions[key]) ? (baseOptions[key] as unknown[]).map((elem) => toDart(elem)) :
+          toDart(baseOptions[key]) : optionsMap[key](input, (baseOptions as IIndexable)[key]);
       if (key === 'nullable' && baseOptions[key] !== undefined)
         options.property ? options.property.nullable = baseOptions[key]! : optionsMap[key](input, (baseOptions as IIndexable)[key]);
       if ((baseOptions as IIndexable)[key] !== undefined && optionsMap[key] !== undefined)
@@ -826,10 +874,18 @@ export namespace input {
   export interface IColumnsInputInitOptions<T> extends IColumnInputInitOptions<T> {
     available?: string[];
     checked?: string[];
+    additionalColumns?: { [key: string]: Column[] };
+    onAdditionalColumnsChanged?: (additionalColumns: { [key: string]: Column[] }) => void;
+    additionalColumnProperties?: Property[];
+    showSelectedColsOnTop?: boolean;
   }
 
   export interface IColorInputInitOptions<T> extends IInputInitOptions<T> {
     showOnlyColorBox?: boolean;
+  }
+
+  export interface IFilesInputInitOptions<T> extends IInputInitOptions<T> {
+    acceptExtensions?: string[];
   }
 
   /** Set the table specifically for the column input */
@@ -842,6 +898,32 @@ export namespace input {
   export function setColumnsInputTable(input: InputBase, table: DataFrame, filter?: Function) {
     const columnsFilter = typeof filter === 'function' ? (x: any) => filter!(toJs(x)) : null;
     api.grok_ColumnsInput_ChangeTable(input.dart, table.dart, columnsFilter);
+  }
+
+  /** Sets additional columns for the columns input */
+  export function setInputAdditionalColumns(input: InputBase, additionalColumns: { [key: string]: Column[] }): void {
+    if (!additionalColumns)
+      return;
+    const mapToSet: { [key: string]: any } = {};
+    for (const [key, columns] of Object.entries(additionalColumns))
+      mapToSet[key] = columns.map(c => c.dart);
+    api.grok_ColumnsInput_SetAdditionalColumns(input.dart, toDart(mapToSet));
+  }
+
+  /** Sets additional columns on change event for the columns input */
+  export function setInputAdditionalColumnsOnChanged(input: InputBase, onChange: (values: { [key: string]: Column[] }) => void): void {
+    if (!onChange)
+      return;
+    api.grok_ColumnsInput_SetOnAdditionalColumnsChanged(input.dart, !onChange ? null : toDart((values: any) => {
+      values = toJs(values);
+      for (const key of Object.keys(values))
+        values[key] = values[key].map(toJs);
+      onChange(values);
+    }));
+  }
+
+  export function setAdditionalColumnProperties(input: InputBase, properties: Property[]): void {
+    api.grok_ColumnsInput_SetAdditionalColumnProperties(input.dart, properties.map((toDart)));
   }
 
   /** Creates input for the specified property, and optionally binds it to the specified object */
@@ -932,6 +1014,10 @@ export namespace input {
     return _create(d4.InputType.File, name, options);
   }
 
+  export function files(name: string, options?: IFilesInputInitOptions<FileInfo[]>): InputBase<FileInfo[] | null> {
+    return _create(d4.InputType.Files, name, options);
+  }
+
   export function list(name: string, options?: IInputInitOptions<Array<any>>): InputBase<Array<any> | null> {
     return _create(d4.InputType.List, name, options);
   }
@@ -998,7 +1084,7 @@ export namespace input {
   }
 
   export async function markdownPreview(markdown: string): Promise<HTMLDivElement> {
-    await Utils.loadJsCss(['js/common/quill/marked.min.js']);
+    await Utils.loadJsCss(['/js/common/quill/marked.min.js']);
     const markdownPreview = div([], { style: { padding: '12px' } });
     //@ts-ignore
     markdownPreview.innerHTML = marked.parse(markdown ?? '');
@@ -1094,6 +1180,32 @@ export class tools {
     let host = div([]);
     host.innerHTML = htmlString.trim();
     return host;
+  }
+
+  static sendKeyboardEvent(el: HTMLElement , keyCode: number) {
+    const opts = {
+      keyCode: 37,
+      bubbles: true,
+      cancelable: true,
+    };
+
+    el.dispatchEvent(new KeyboardEvent('keydown', opts));
+    el.dispatchEvent(new KeyboardEvent('keypress', opts));
+    el.dispatchEvent(new KeyboardEvent('keyup', opts));
+  }
+
+  /** Initialized onClick and sets the tooltip for the element. */
+  static bind(e: HTMLElement, onClick: Function | null = null, tooltipMsg: string | null = null): HTMLElement {
+    if (onClick)
+      e?.addEventListener('click', (e) => onClick(e));
+    tooltip.bind(e, tooltipMsg);
+    return e;
+  }
+
+  static parseHtml(html: string): HTMLElement {
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(html, 'text/html');
+    return doc.body!.firstChild! as HTMLElement;
   }
 
   static initFormulaAccelerators(textInput: InputBase, table: DataFrame): void {
@@ -1264,8 +1376,9 @@ export class tools {
         });
         let e = $(element).find('select')[0];
         if (e != undefined) {
-          e.style.maxWidth = `${width + 30}px`;
-          e.style.width = `${width + 30}px`;
+          width += 30;
+          e.style.maxWidth = `${width}px`;
+          e.style.width = `${width}px`;
         }
       }
       let optionsWidth = 0;
@@ -1277,14 +1390,15 @@ export class tools {
           element.classList.contains('ui-input-text')) {
           (options[i] as HTMLElement).style.marginLeft = `-${optionsWidth}px`;
         }
-        if (optionsWidth > 0) {
-          let inputs = $(element).find('.ui-input-editor');
-          inputs.each((i) => {
-            inputs[i]!.style.paddingRight = `${optionsWidth}px`;
-          });
-        }
-        // width += optionsWidth;
+
       });
+      if (optionsWidth > 0) {
+        let inputs = $(element).find('.ui-input-editor');
+        inputs.each((i) => {
+          inputs[i]!.style.paddingRight = `${optionsWidth}px`;
+        });
+      }
+      width += optionsWidth;
       // todo: analyze content(?) and metadata
       // todo: analyze more types
       widths.push(width);
@@ -1641,12 +1755,12 @@ export function splitV(items: HTMLElement[], options: ElementOptions | null = nu
         if (!element.classList.contains('ui-split-v-divider')) {
           if (element.style.height != '') {
             defaultHeigh += Number(element.style.height.replace(/px$/, ''));
-          } else {
-            noHeightCount++;
           }
-        }else{
-          element.style.height = '4px';
+          else
+            noHeightCount++;
         }
+        else
+          element.style.height = '4px';
       });
 
       childs.forEach((element) => {
@@ -1657,7 +1771,6 @@ export function splitV(items: HTMLElement[], options: ElementOptions | null = nu
           }
         }
       })
-
     });
 
     tools.handleResize(b, (w,h)=>{
@@ -1672,10 +1785,9 @@ export function splitV(items: HTMLElement[], options: ElementOptions | null = nu
           $(b.childNodes[i]).css('height', 4);
         }
       }
-
     });
-
-  } else {
+  }
+  else {
     $(b).addClass('ui-split-v').append(items.map(item => box(item)))
   }
   return b;
@@ -1697,6 +1809,7 @@ export function splitH(items: HTMLElement[], options: ElementOptions | null = nu
         spliterResize(divider, items[i], items[i + 1], true);
       }
     });
+    const ratios: number[] = items.map((_) => 1);
 
     tools.waitForElementInDom(b).then((x)=>{
       const rootWidth = x.getBoundingClientRect().width;
@@ -1711,34 +1824,40 @@ export function splitH(items: HTMLElement[], options: ElementOptions | null = nu
           } else {
             noWidthCount++;
           }
-        }else{
+        } else {
           element.style.width = '4px';
         }
       });
-
+      let firstWidth: number | null = null;
+      let counter = 0;
       childs.forEach((element) => {
         if (!element.classList.contains('ui-split-h-divider')) {
           if (element.style.width == '') {
-            let width = (rootWidth-defaultWidth-($(b).find('.ui-split-h-divider').length*4))/noWidthCount;
+            let width = (rootWidth-defaultWidth-($(b).find('.ui-split-h-divider').length * 4))/noWidthCount;
             element.style.width = String(width)+'px';
           }
+          const w = Number(element.style.width.replace(/px$/, ''));
+          firstWidth ??= w + 1; // to avoid where 1st element is excecively resized
+          if (firstWidth) // 0 also not allowed
+            ratios[counter] = w / firstWidth;
+          element.style.flexGrow = `${ratios[counter]}`;
+          counter++;
         }
-      })
-
+      });
     });
 
     tools.handleResize(b, (w,h)=>{
       const rootWidth = b.getBoundingClientRect().width;
-
+      if (!document.contains(b))
+        return;
       for (let i = 0; i < b.children.length; i++){
         if (!$(b.childNodes[i]).hasClass('ui-split-h-divider')){
-          let width = (w-rootWidth)/b.children.length+$(b.childNodes[i]).width();
+          const width = (w-rootWidth)/b.children.length+$(b.childNodes[i]).width();
           $(b.childNodes[i]).css('width', String(width)+'px');
         } else {
           $(b.childNodes[i]).css('width', 4);
         }
       }
-
     });
 
   } else {
@@ -1806,6 +1925,13 @@ function onMouseMove(e: any) {
       let newNextWidth = md.rightWidth - delta.x;
       previousSibling.style.width = String(newPrevWidth)+'px';
       nextSibling.style.width = String(newNextWidth)+'px';
+
+      // handle flex-grow values
+      const sumFlexGrow = Number(previousSibling.style.flexGrow ?? '0.99') + Number(nextSibling.style.flexGrow ?? '1');
+      const totalWidth = newPrevWidth + newNextWidth;
+      previousSibling.style.flexGrow = String((newPrevWidth / totalWidth) * sumFlexGrow);
+      nextSibling.style.flexGrow = String((newNextWidth / totalWidth) * sumFlexGrow);
+
       //previousSibling.setAttribute('style',`width: ${(md.leftWidth + delta.x)}px;`);
       //nextSibling.setAttribute('style',`width:${(md.rightWidth - delta.x)}px;`);
   } else {
@@ -1822,14 +1948,17 @@ function onMouseMove(e: any) {
 }
 }
 
-export function ribbonPanel(items: HTMLElement[] | null): HTMLDivElement {
+
+/** Typically, this is a host for the icons. */
+export function ribbonPanel(items: HTMLElement[] | IRoot[]): HTMLDivElement {
   const root = document.createElement('div');
   $(root).addClass('d4-ribbon');
   if (items != null) {
     $(root).append(items.map(item => {
+      let itemElement = item instanceof Element ? item : item.root;
       let itemBox = document.createElement('div');
       $(itemBox).addClass('d4-ribbon-item');
-      $(itemBox).append(item);
+      $(itemBox).append(itemElement);
       return render(itemBox)
     }));
   }
@@ -1900,7 +2029,7 @@ export function panel(items: HTMLElement[] = [], options?: string | ElementOptio
  */
 export function label(text: string | null, options: {} | null = null): HTMLLabelElement {
   let c = document.createElement('label');
-  c.textContent = text;
+  c.textContent = text ?? '';
   $(c).addClass('ui-label');
   _options(c, options);
   return c;
@@ -2071,6 +2200,10 @@ export let icons = {
   search: (handler: Function, tooltipMsg: string | null = null) => _iconFA('search', handler, tooltipMsg),
   filter: (handler: Function, tooltipMsg: string | null = null) => _iconFA('filter', handler, tooltipMsg),
   play: (handler: Function, tooltipMsg: string | null = null) => _iconFA('play', handler, tooltipMsg),
+  spinner: (handler: Function | null = null, tooltipMsg: string | null = null) =>
+    tools.bind(tools.parseHtml('<i class="fa fa-spinner fa-pulse fa-3x fa-fw"></i>'), handler, tooltipMsg),
+  loader: (handler: Function | null = null, tooltipMsg: string | null = null) =>
+    tools.bind(tools.parseHtml('<div class="grok-loader"><div></div><div></div><div></div><div></div></div>'), handler, tooltipMsg),
 }
 
 export function setDisplayAll(elements: HTMLElement[], show: boolean): void {
@@ -2356,7 +2489,7 @@ export namespace hints {
 
   /** Removes the hint indication from the provided element and returns it. */
   export function remove(el?: HTMLElement): HTMLElement | null {
-    if (el != null) {
+    if (el) {
       const id = el.getAttribute('data-target');
       $(`div.ui-hint-blob[data-target="${id}"]`)[0]?.remove();
       el.classList.remove('ui-hint-target', 'ui-text-hint-target');

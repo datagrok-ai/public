@@ -120,9 +120,161 @@ export function valueWidget(value) {
 }
 ```
 
-## Domain examples
+## Examples
 
-See also:
+### Visibility
+
+#### User condition
+
+You can control access to specific types of info panes based on user attributes
+such as roles, groups, etc. 
+
+<details>
+<summary>Code snippet</summary>
+
+To set the user condition in a script, use the `user` variable like this:
+
+```
+# condition: user.name == "john doe" || user.name == "jack smith"
+# condition: user.hasrole("chemist")
+# condition: user.inteam("high-throughput screening")
+```
+
+</details>
+
+#### Dataset condition
+
+Certain info panes are only relevant when applied to data retrieved from
+specific data sources. You can define the dataset condition to specify the data
+source for the table. 
+
+<details>
+<summary>Code snippet</summary>
+
+To set the dataset condition in a script, use the `table` variable like this:
+
+```
+# condition: table.gettag("database") == "northwind"
+```
+
+</details>
+
+#### Context condition
+
+Info panes accept only one input parameter, which can be a column, a table, a table
+cell, or any other [object](../../../datagrok/concepts/objects.md). A condition
+may check against that object using the parameter name ("x" in a
+sample code snippet below).
+
+<details>
+<summary>Code snippet</summary>
+
+```
+#input: column x
+#condition: x.isnumerical && x.name == "f3" && x.stats.missingvaluecount > 0
+```
+
+</details>
+
+### Using predefined visualizations
+
+Oftentimes, it is beneficial to show users an interactive plot, pre-customized
+based on the structure of the table that is currently open.
+
+See the following info pane (viewer-scatter.grok) in action by opening
+(project:demog). It creates a [Scatterplot](../../../visualize/viewers/scatter-plot.md), sets the axes to the predefined
+columns, and adds a regression line.
+
+<details>
+<summary>Code snippet</summary>
+
+```
+#name: Scatter plot
+#description: Panel that contains an interactive Scatter plot
+#language: grok
+#tags: panel
+#input: dataframe table
+#condition: table.name == "demog" && table.columns.containsAll(["height", "weight", "age", "sex"])
+#output: viewer plot
+
+plot = table.ScatterPlot("height", "weight", "age", "sex")
+plot.showRegressionLine = true
+```
+</details>
+
+### Digital signal processing
+
+Depending on the nature of the data, our platform makes assumptions regarding the ways users would want to analyze it.
+For instance, whenever a scientist working in the digital signal processing domain opens a dataset that contains digital
+signals, it is likely that they would want to easily see certain features from the frequency domain
+(common actions would be analyzing results of the Fourier transform, doing an auto-correlation, or checking out
+spectrogram or scalogram). Typically, when such a need arises, the scientist would fire up Matlab, load that dataset,
+then either write a script or use Matlab's DSP toolbox (along the way, they would need to enter metadata that is often
+not included in the dataset, such as sampling rate).
+
+Within the Datagrok platform, a simple info pane can be developed that would understand when the data is a digital
+signal, perform all of the above-mentioned operations in the background (utilizing the metadata stored within the
+dataset), and push the results to the user. The result of the script below is a "Spectrogram" pane that would get shown
+in the **Context Panel** on the right when user clicks on a column with the digital signal.
+
+See the following info pane (spectrogram-panel.grok) in action by opening (project:eeg)
+
+```
+#name: Spectrogram info panel
+#description: Panel that contains graphics produced by the R script
+#language: grok
+#tags: panel,dsp
+#input: column signal {type:numerical}
+#output: graphics pic
+#condition: "F3" == signal.name
+
+pic = Spectrogram("eeg", signal, 256.0, 1024, 0.1, true)
+```
+
+### Actions
+
+In addition to providing additional information (such as data, graphics, interactive viewers, etc), it is also possible
+to add commands that would do something with the current context. For instance, you might want to send an email to a
+user, or update a record in the database.
+
+```
+#name: Transaction review panel
+#description: Actions available for the credit card transaction
+#language: grok
+#tags: panel
+#input: row activity
+#output: string actions {action: markup}
+#condition: activity.table.name = "credit card transactions"
+
+actions = "#{button("Flag as suspicious", "http.Post(myserver, row.transactionId)")}"
+```
+
+
+### Predicting molecule solubility
+
+The following pane calculates different molecular properties of a given chemical structure. It appears whenever user
+clicks on a structure.
+
+`#{x.ChemScripts:SolubilityPrediction}`
+
+```
+#name: Solubility prediction
+#description: Predicts solubility by molecule descriptors ("Ipc", "MolWt", "NumValenceElectrons", "MolLogP", "LabuteASA", "TPSA", "HeavyAtomCount", "NumhAcceptors", "NumHDonors", "NumRotatableBonds", "RingCount")
+#language: grok
+#tags: panel, prediction, chem
+#condition: smiles.semtype == "Molecule"
+#input: dataframe table
+#input: column smiles {semtype: Molecule} [Column with molecules, in smiles format]
+#output: dataframe predictions {action: join(table)}
+featureNames = ["TPSA", "Ipc", "NumHAcceptors", "NumHDonors", "LabuteASA", "RingCount", "MolWt", "NumValenceElectrons", "HeavyAtomCount", "MolLogP", "NumRotatableBonds"]
+ChemDescriptors(table, smiles, featureNames)
+MissingValuesImputation(table, featureNames, featureNames, 5)
+ApplyModel(Demo:PredictSolubility, table, showProgress=false)
+predictions = ExtractColumns(table, ["outcome"])
+```
+
+
+## See also:
 
 * [Info panels](../../../datagrok/navigation/panels/info-panels.md)
 * [Datagrok JavaScript API](../../packages/js-api.md)

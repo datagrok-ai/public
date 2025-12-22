@@ -64,7 +64,7 @@ export async function runDiffStudioTreeBrowser(treeNode: any) : Promise<void> {
 //name: Ball flight
 //description: Ball flight simulation
 //tags: model
-//input: double dB = 0.01 { category: Ball; caption: Diameter; units: m; min: 0.01; max: 0.3 }
+//input: double dB = 0.01 { category: Ball; caption: Diameter; units: m; min: 0.01; max: 0.3; minFormula: roB / 20000; maxFormula: roB / 4000 }
 //input: double roB = 200 { category: Ball; caption: Density; description: Material density; units: kg/m^3; min: 200; max: 1200 }
 //input: double v = 50 { category: Throw parameters; caption: Velocity; min: 40; max: 60; units: m/sec }
 //input: double a = 45 { category: Throw parameters; caption: Angle; min: 20; max: 70; units: deg }

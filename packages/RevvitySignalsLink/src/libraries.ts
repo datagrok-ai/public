@@ -27,6 +27,10 @@ export async function getRevvityLibraries(): Promise<RevvityLibrary[]> {
     return libraries!;
 }
 
+export function resetRevvityLibraries() {
+  libraries = undefined;
+}
+
 export async function getLibrariesWithEntityTypes(): Promise<RevvityLibrary[]> {
   const data = JSON.parse(await funcs.getLibraries());
   const libraries: RevvityLibrary[] = [];
@@ -67,7 +71,7 @@ export async function getLibrariesWithEntityTypes(): Promise<RevvityLibrary[]> {
   return libraries;
 }
 
-export async function createInitialSatistics(statsDiv: HTMLElement, libName?: string) {
+export async function createInitialSatistics(statsDiv: HTMLElement, libName?: string): Promise<HTMLDivElement> {
 
   const header = getAppHeader();
   statsDiv.append(header);
@@ -75,6 +79,12 @@ export async function createInitialSatistics(statsDiv: HTMLElement, libName?: st
   const tableDiv = ui.div('', {style: {position: 'relative', paddingTop: '15px'}});
   statsDiv.append(tableDiv);
 
+  await refreshStats(tableDiv, libName);
+
+  return tableDiv;
+}
+
+export async function refreshStats(tableDiv: HTMLDivElement, libName?: string) {
   ui.setUpdateIndicator(tableDiv, true, 'Loading statistics...');
   const libObjForTable: any[] = await createLibsObjectForStatistics(libName);
 

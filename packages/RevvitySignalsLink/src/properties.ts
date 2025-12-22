@@ -35,6 +35,7 @@ export const REVVITY_FIELD_TO_PROP_TYPE_MAPPING: {[key: string]: DG.TYPE} = {
     'double': DG.TYPE.FLOAT,
     'text': DG.TYPE.STRING,
     'date': DG.TYPE.DATE_TIME,
+    'boolean': DG.TYPE.BOOL
 }
 
 export class RevvityUserConditionEditor extends BaseConditionEditor<string> {

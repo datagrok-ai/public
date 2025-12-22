@@ -1,3 +1,4 @@
+/* eslint-disable max-len */
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
@@ -17,16 +18,18 @@ import {defaultErrorHandler} from './utils/err-info';
 
 import {polyToolConvert, polyToolConvertUI} from './polytool/pt-dialog';
 import {polyToolEnumerateChemUI} from './polytool/pt-dialog';
-import {polyToolEnumerateHelmUI} from './polytool/pt-enumerate-seq-dialog';
+import {polyToolEnumerateHelmUI, polyToolEnumerateSeq} from './polytool/pt-enumerate-seq-dialog';
 import {_setPeptideColumn} from './polytool/utils';
 import {PolyToolCsvLibHandler} from './polytool/csv-to-json-monomer-lib-converter';
 import {ITranslationHelper} from './types';
 import {PolyToolConvertFuncEditor} from './polytool/pt-convert-editor';
 import {CyclizedNotationProvider} from './utils/cyclized';
 import {getSeqHelper} from '@datagrok-libraries/bio/src/utils/seq-helper';
-import {PolyToolTags} from './consts';
+import {PolyToolDataRole, PolyToolTags} from './consts';
 import {getHelmHelper} from '@datagrok-libraries/bio/src/helm/helm-helper';
 import {getPTCombineDialog} from './polytool/pt-combine-dialog';
+import {PolyToolEnumeratorTypes} from './polytool/types';
+import {splitterAsHelm} from '@datagrok-libraries/bio/src/utils/macromolecule';
 
 export * from './package.g';
 
@@ -220,7 +223,7 @@ export class PackageFunctions {
   @grok.decorators.func({
     'top-menu': 'Bio | PolyTool | Convert...',
     'name': 'polyToolConvert',
-    'description': 'Perform cyclization of polymers'
+    'description': 'editor for Performing conversion of sequences in custom notation to molfiles'
   })
   static async polyToolConvertTopMenu(): Promise<void> {
     await polyToolConvertUI();
@@ -252,7 +255,7 @@ export class PackageFunctions {
   @grok.decorators.func({
     'top-menu': 'Bio | PolyTool | Enumerate HELM...',
     'name': 'polyToolEnumerateHelm',
-    'description': 'Perform cyclization of polymers'
+    'description': 'Dialog for configuring enumeration of a HELM sequence'
   })
   static async polyToolEnumerateHelmTopMenu(): Promise<void> {
     await polyToolEnumerateHelmUI(grok.shell.tv?.dataFrame.currentCell);
@@ -262,7 +265,7 @@ export class PackageFunctions {
   @grok.decorators.func({
     'top-menu': 'Bio | PolyTool | Enumerate Chem...',
     'name': 'polyToolEnumerateChem',
-    'description': 'Perform cyclization of polymers'
+    'description': 'Perform enumeration of a molecule using different fragments at specified positions'
   })
   static async polyToolEnumerateChemTopMenu(): Promise<void> {
     polyToolEnumerateChemUI();
@@ -333,6 +336,41 @@ export class PackageFunctions {
     return polyToolEnumerateChemUI(cell);
   }
 
+  @grok.decorators.func({
+    name: 'Enumerate Single HELM Sequence',
+    description: 'Enumerate provided HELM sequence on provided positions with provided monomers and generates new table',
+    outputs: [{type: 'dataframe', name: 'result'}]
+  })
+  static async enumerateSingleHelmSequence(
+    helmSequence: string, positions: number[], monomerLists: string[][], toAtomicLevel: boolean = false
+  ): Promise<DG.DataFrame> {
+    return await polyToolEnumerateSeq(helmSequence, PolyToolDataRole.macromolecule, null, {
+      type: PolyToolEnumeratorTypes.Single,
+      placeholders: positions.map((pos, i) => ({position: pos, monomers: monomerLists[i]}))
+    }, toAtomicLevel ? {
+      generateHelm: true,
+      chiralityEngine: true,
+      highlightMonomers: false,
+      rules: []
+    } : false, _package.helmHelper);
+  }
+
+  @grok.decorators.func({
+    name: 'Enumerate Single HELM Sequence with natural amino acids',
+    description: 'Enumerate provided HELM sequence on all positions with natural amino acids and generates new table. Generated table has sequence column called "Enumerated", and molecule column called "Molfile(Enumerated) if toAtomicLevel is set to true. Keywords: Optimize, enumerate, HELM optimization, Maximize Minimize property. When you want to optimize certain peptide using for example logS, set toAtomicLevel to true and use generated molecule column to calculate given property using chem package functions.',
+    outputs: [{type: 'dataframe', name: 'result'}]
+  })
+  static async enumerateSingleHelmSequenceWithNaturalAAs(
+    helmSequence: string, toAtomicLevel: boolean = false
+  ): Promise<DG.DataFrame> {
+    const splitt = splitterAsHelm(helmSequence);
+    const l = splitt.length;
+    const positions = Array.from({length: l}, (_, i) => i);
+    const monomerLists = positions.map((_part) => {
+      return [...['A', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'K', 'L', 'M', 'N', 'P', 'Q', 'R', 'S', 'T', 'V', 'W', 'Y']];
+    });
+    return await PackageFunctions.enumerateSingleHelmSequence(helmSequence, positions, monomerLists, toAtomicLevel);
+  }
 
   @grok.decorators.func({
     'name': 'Combine Sequences',

@@ -20,12 +20,12 @@ export namespace funcs {
     return await grok.functions.call('RevvitySignalsLink:RevvitySignalsLinkAppTreeBrowser', { treeNode, browseView });
   }
 
-  export async function searchEntities(query: string , params: string ): Promise<DG.DataFrame> {
-    return await grok.functions.call('RevvitySignalsLink:SearchEntities', { query, params });
+  export async function searchEntities(query: string , params: string , libId: string , entityType: string ): Promise<DG.DataFrame> {
+    return await grok.functions.call('RevvitySignalsLink:SearchEntities', { query, params, libId, entityType });
   }
 
-  export async function searchEntitiesWithStructures(query: string , params: string ): Promise<DG.DataFrame> {
-    return await grok.functions.call('RevvitySignalsLink:SearchEntitiesWithStructures', { query, params });
+  export async function searchEntitiesWithStructures(query: string , params: string , libId: string , entityType: string , doNotAddStructures?: boolean ): Promise<DG.DataFrame> {
+    return await grok.functions.call('RevvitySignalsLink:SearchEntitiesWithStructures', { query, params, libId, entityType, doNotAddStructures });
   }
 
   export async function getUsers(): Promise<string> {
@@ -50,6 +50,10 @@ export namespace funcs {
 
   export async function getTermsForField(fieldName: string , type: string , assetTypeId: string , isMaterial: boolean ): Promise<any> {
     return await grok.functions.call('RevvitySignalsLink:GetTermsForField', { fieldName, type, assetTypeId, isMaterial });
+  }
+
+  export async function getStructureById(id: string ): Promise<string> {
+    return await grok.functions.call('RevvitySignalsLink:GetStructureById', { id });
   }
 
   export async function entityTreeWidget(id: any ): Promise<any> {

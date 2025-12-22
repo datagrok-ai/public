@@ -8,8 +8,8 @@ import {getGPUAdapterDescription} from '@datagrok-libraries/math/src/webGPU/getG
 export type RawData = Int32Array | Uint32Array | Float32Array | Float64Array;
 type MONOMER = string;
 type POSITION = string;
-type INDEX = number;
-type INDEXES = number[] | UTypedArray;
+export type INDEX = number;
+export type INDEXES = number[] | UTypedArray;
 export type UTypedArray = Uint8Array | Uint16Array | Uint32Array;
 //Monomer: (Position: (index: indexList))
 export type MutationCliffs = Map<MONOMER, Map<POSITION, Map<INDEX, INDEXES>>>;

@@ -36,7 +36,7 @@ public class ProviderManager {
             add(new PostgresDataProvider());
             add(new PIDataProvider());
             add(new RedshiftDataProvider());
-            add(new SQLiteDataProvider());
+//            add(new SQLiteDataProvider());
             add(new TeradataDataProvider());
             add(new VerticaDataProvider());
             add(new VirtuosoDataProvider());

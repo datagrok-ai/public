@@ -50,6 +50,15 @@ Datagrok supports multiple modalities, including:
   - [ADMET predictions](../solutions/domains/chem/chem.md#admet-predictions)
   - [Molecular docking](../solutions/domains/chem/chem.md#docking)
 
+##### <b>Q: Can Datagrok handle chemical mixtures?</b>
+
+Yes. Datagrok automatically detects mixtures in the Mixfile format 
+and displays them directly in grid cells. Clicking a mixture shows its 
+components in the **Context Panel**, including structures and component 
+quantities or ratios from the Mixfile. The **Context Panel** also lets you 
+explore mixtures in table or tree views.    
+[Exploring chemical data](../solutions/domains/chem/chem.md#exploring-chemical-data) | [Supported info panes](../navigation/info-pane-reference.md#structure-and-visualization)
+
 ##### <b>Q: Is there a sample dashboard for chemists?</b>
 
 * [This dashboard](https://public.datagrok.ai/p/oahadzhaniandatagrokai.spgi100_2/spgi-100) has multiple visualizations, including chemical spreadsheet, multiple scatterplot views, R-groups, and molecule cards
@@ -70,10 +79,10 @@ Yes. Datagrok supports both:
 [Chemically aware viewers](../../datagrok/solutions/domains/chem/chemically-aware-viewers.md) | 
 [Example: rich chemical dataset](https://public.datagrok.ai/p/skalkin.medchem_1/Med_Chem)
 * Table view (assay-centric): multiple compounds in a table with configurable endpoints  
-[Table view](../../datagrok/navigation/views/table-view.md) | [Forms](../../visualize/viewers/forms.md) 
+[Table view](../../visualize/table-view-1.md) | [Forms](../../visualize/viewers/forms.md) 
 
 Users can configure coloring, highlighting, and switch between compounds as rows or columns, and filter, search, and sort the data.  
-[Common actions](../../datagrok/navigation/views/table-view.md#common-actions) | [Substructure search](../../datagrok/solutions/domains/chem/chem.md#substructure-search--filtering)
+[Common actions](../../visualize/table-view-1.md#common-actions) | [Substructure search](../../datagrok/solutions/domains/chem/chem.md#substructure-search--filtering)
 
 ##### <b>Q: How can I ingest raw assay data into Datagrok?</b>
 
@@ -153,6 +162,10 @@ Yes. Power users (e.g., modelers) can create or edit queries and share them with
 
 Yes. Users can build queries using the [Visual Query Editor](../../access/databases/databases.md#visual-query-editor) or the [AI Query Builder](../../access/databases/databases.md#ai-query-builder).
 
+##### <b>Q: Can we connect our own OpenAI or enterprise LLM to the AI Query Builder?</b>
+
+Yes. You can use your own API key or token. The AI assistant uses database schema, existing relations and user set comments to iteratively generate SQL queries based on user prompts.
+
 ##### <b>Q: Can data queries in Datagrok be exported for storage, sharing, or reuse?</b>
 
 Yes, see [Sharing query results](../../access/databases/databases.md#sharing-query-results).
@@ -206,12 +219,12 @@ GitHub requires all code contributors to enable two-factor authentication (2FA) 
 
 ##### <b>Q: What happens to my data when I open a local file in Datagrok?</b>
 
-When you open a local file in Datagrok (like dragging and dropping a file to your browser), you can analyze it without saving. This data stays in your browser's memory and isn't sent to the server unless you run resource-intensive server-side computations. Your data is gone when you close the browser tab. To save your work, you need to upload it to the server. Note that uploading data does not make it accessible to others. Your data stays private and visible to you only until you explicitly share it. Learn how to [save](../concepts/project/project.md#saving-entities-to-projects) and [share](../navigation/basic-tasks/basic-tasks.md#share) data.
+When you open a local file in Datagrok (like dragging and dropping a file to your browser), you can analyze it without saving. This data stays in your browser's memory and isn't sent to the server unless you run resource-intensive server-side computations. Your data is gone when you close the browser tab. To save your work, you need to upload it to the server. Note that uploading data does not make it accessible to others. Your data stays private and visible to you only until you explicitly share it. Learn how to [share](../concepts/project/space.md#moving-entities-between-spaces) and [share](../navigation/basic-tasks/basic-tasks.md#share) data.
 
 ##### <b>Q: What data or telemetry is sent back to Datagrok? </b>
 
 * No automatic telemetry: Datagrok does not send any data to Datagrok servers by default.
-* Optional error report/feedback: Users can optionally send feedback or error reports to Datagrok by selecting the "Send report to Datagrok" checkbox in the corresponding dialog. This feature can be disabled by the administrator.
+* Optional error report/feedback: Users can optionally send feedback or error reports to Datagrok by selecting the "Email" checkbox in the corresponding dialog. This feature can be disabled by the administrator. For details, see [Feedback](../../govern/bug-reports.md)
 * Package/image pulls: Datagrok can download images from Docker Hub or packages from NPM.
 
 ##### <b>Q: When deployed on-prem, is my data ever gets sent anywhere? </b>
@@ -310,6 +323,13 @@ Datagrok supports a wide range of capabilities, including:
 
 [Multiple complex data types in one interface](#q-can-datagrok-handle-multiple-complex-data-types-in-one-interface) | [Explore data](../../explore/explore.md)
 
+##### <b>Q: Can I save a filtered or selected subset as a new dataset? </b>
+
+Yes. Follow these steps:
+1. In your dataset, select or filter rows.
+1. In the **Status Bar**, click the **Selected: [x]** or **Filtered: [x]** (depending on what you used).
+1. From the context menu, select **Extract rows**. This opens a new **Table View** containing only those rows, which you can continue working with and save as a separate dataset. 
+
 ## Visualize
 
 ##### <b>Q: What are the maximum dataset sizes?</b>
@@ -334,11 +354,17 @@ Datagrok supports rich visualization for both chemical and general data, includi
 * Common chart types: [scatterplot](../../visualize/viewers/scatter-plot.md), [bar chart](../../visualize/viewers/bar-chart.md),  [pie chart](../../visualize/viewers/pie-chart.md), [box plot](../../visualize/viewers/box-plot.md)—[viewers](../../visualize/viewers/viewers.md)
 * [Chemically aware viewers](../../datagrok/solutions/domains/chem/chemically-aware-viewers.md) and [Forms](../../visualize/viewers/forms.md)  
 * Control charting for assay consistency: [line chart](../../visualize/viewers/line-chart.md), [statistical process control](../../visualize/viewers/line-chart.md#statistical-process-control), scatterplot with [formula lines](../../visualize/viewers/scatter-plot.md#formula-lines)  
-* Statistical analysis support: [statistics viewer](../../visualize/viewers/statistics.md), [correlation plot](../../visualize/viewers/correlation-plot.md), scatter plot with [regression lines](../../visualize/viewers/scatter-plot.md#regression-lines), [statistical hypothesis testing](../navigation/views/table-view.md#statistical-hypothesis-testing)
+* Statistical analysis support: [statistics viewer](../../visualize/viewers/statistics.md), [correlation plot](../../visualize/viewers/correlation-plot.md), scatter plot with [regression lines](../../visualize/viewers/scatter-plot.md#regression-lines), [statistical hypothesis testing](../../visualize/table-view-1.md#statistical-hypothesis-testing)
 * Advanced visual features: [coloring](../../visualize/viewers/grid.md#color-code-columns), [shaping and sizing](../../visualize/viewers/grid.md#resizing-columns), [formatting](../../visualize/viewers/grid.md#format-cells), [labeling](../../visualize/viewers/scatter-plot.md#labels), [trellising](../../visualize/viewers/trellis-plot.md)
 * Table view integration for visualization, including [charts in cells](https://github.com/datagrok-ai/public/blob/master/help/visualize/viewers/charts-in-cells.md) 
 
-See also: [Viewer gallery](https://github.com/datagrok-ai/public/blob/master/help/visualize/viewers/viewer-gallery.md), [Table view](../navigation/views/table-view.md), [Grid](../../visualize/viewers/grid.md).
+See also: [Viewer gallery](https://github.com/datagrok-ai/public/blob/master/help/visualize/viewers/viewer-gallery.md), [Table view](../../visualize/table-view-1.md), [Grid](../../visualize/viewers/grid.md).
+
+##### <b>Q: Does Datagrok support analytical chemistry plots such as spectrograms?</b>
+
+The [Spectra viewer](https://github.com/datagrok-ai/chem-spectra-viewer/tree/main) plugin is specifically designed for analytical chemistry data and handles common spectral file format (JDX). For custom analytical chemistry visualizations you can create specialized viewers tailored to specific analytical techniques.  
+[Can I create custom visualizations](#q-can-i-create-custom-visualizations)| [Scripting viewer](../../visualize/viewers/scripting-viewer.md) | [Custom viewers](../../develop/how-to/viewers/develop-custom-viewer.md)
+
 
 ##### <b>Q: Can I create custom visualizations?</b>
 
@@ -388,6 +414,25 @@ Yes. Use [Forms](../../visualize/viewers/forms.md) viewer.
 
 </details>
 
+
+##### <b>Q: How does color coding work in Datagrok?</b>
+
+Datagrok supports several color coding modes applied at the [column](../../visualize/viewers/grid#columns) level, with colors automatically synchronized across viewers: 
+* **Linear**: Maps numeric values to a color gradient. You can configure the color palette, min/max values, below/above min colors, and invert the scheme. Absolute Linear mode allows assigning exact colors to specific numeric values.
+* **Conditional**: Applies colors based on value ranges or rules. You can configure the rules dictionary (ranges or comparison operators) and choose whether to apply colors to text or background.
+* **Categorical**: Assigns colors to categorical values (strings, booleans). You can configure the category-to-color map, fallback color, and select the color scheme via UI or API.
+
+ **Domain-specific color coding**: For chemical data analysis, the [Scaffold tree](https://datagrok.ai/help/datagrok/solutions/domains/chem/#scaffold-tree-analysis) assigns colors to scaffold structures that can be used as the color source in [scatterplot](../../visualize//viewers/scatter-plot.md). Scaffold colors follow inheritance rules where child nodes inherit parent colors unless explicitly overridden.
+
+Color coding remains consistent across the [grid](../../visualize/viewers/grid.md) and all [viewers](../../visualize/viewers/viewers.md) that reference the same column. Color coding persists in saved [projects](../navigation/basic-tasks/basic-tasks.md#saving-a-dashboard) and [layouts](../../visualize/view-layout.md).
+
+<details>
+<summary>See visual</summary>
+
+![Forms viewer](../../visualize/viewers/img/color-coding.gif)
+
+</details>
+
 ### Filtering & search
 
 ##### **Q: How can I search and filter data quickly and intuitively?**
@@ -410,7 +455,7 @@ Datagrok provides advanced and intuitive search and filtering capabilities:
 ##### <b>Q: Can users save and share custom dashboards, analyses, and visualizations in Datagrok?</b>  
 
 Users can create projects that include data, analyses, and dashboards, then share them with others. Dashboards are dynamic and customizable.   
-[Creating and managing projects](../concepts/project/project.md#creating-and-managing-projects) | [Creating dynamic dashboards](../../access/databases/databases.md#creating-dynamic-dashboards-for-query-results)  
+[Creating and managing projects](../concepts/project/dashboard.md) | [Creating dynamic dashboards](../../access/databases/databases.md#creating-dynamic-dashboards-for-query-results)  
 
 ##### <b>Q: How can I link raw data, metadata, and analysis results to compounds or sequences so that this information can be easily recalled and shared across Datagrok dashboards?</b>
 
@@ -423,6 +468,15 @@ collaborative workflows and effective communication between team members.
 ##### <b>Q: Can users subscribe to notifications about new or updated data in Datagrok?</b>
 
 Datagrok keeps you informed about relevant activity.  See [Collaborate](../../collaborate/collaborate.md), [Notifications](../../collaborate/collaborate.md#notifications), and [Discussions](../../collaborate/collaborate.md#discussions).
+
+##### <b>Q: Can colleagues see my notes about the molecules, experiments, or other objects?</b>
+
+Yes. With [sticky meta](../../govern/catalog/sticky-meta.md), you can add
+comments, ratings, tags, or other metadata to any object in Datagrok (molecules,
+experiments, samples, users, etc.). These annotations automatically follow the
+object across the platform. So if you leave a note on a molecule in one table,
+your collaborators will see the same note when that molecule appears in a
+different table or dataset.
 
 ## Develop
 
@@ -535,7 +589,7 @@ Datagrok delivers a high-performance, interactive frontend for handling, visuali
 - 2D/3D structure rendering and interaction.  
 See [Cheminformatics](../../datagrok/solutions/domains/chem/chem.md) for details
 - Interactivity features – live data masking, filter by selection, synchronized updates across viewers, multiple input methods including 2D sketching.  
-See [Common actions](../../datagrok/navigation/views/table-view.md#common-actions), [Structure search](../../datagrok/solutions/domains/chem/chem.md#structure-search), and [Sketching and editing](../solutions/domains/bio/bio.md#sketching-and-editing) for details
+See [Common actions](../../visualize/table-view-1.md#common-actions), [Structure search](../../datagrok/solutions/domains/chem/chem.md#structure-search), and [Sketching and editing](../solutions/domains/bio/bio.md#sketching-and-editing) for details
 - API integration and extensibility. See [JavaScript API](../../develop/packages/js-api.md) for details
 - Frontend scripting scalability. See [Compute](../../compute/compute.md) for details
 

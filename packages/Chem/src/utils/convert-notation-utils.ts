@@ -90,10 +90,10 @@ export function molToSmiles(molStr: string, module: RDModule): string {
   return _convertMolNotation(molStr, MolNotation.Unknown, MolNotation.Smiles, module);
 }
 
-export async function convertNotationForColumn(molecules: DG.Column<string>, targetNotation: MolNotation): Promise<string[]> {
+export async function convertNotationForColumn(molecules: DG.Column<string>, targetNotation: MolNotation, kekulize = false): Promise<string[]> {
   await chemBeginCriticalSection();
   try {
-    const res = await (await getRdKitService()).convertMolNotation(molecules.toList(), targetNotation);
+    const res = await (await getRdKitService()).convertMolNotation(molecules.toList(), targetNotation, kekulize);
     return res;
   } finally {
     chemEndCriticalSection();

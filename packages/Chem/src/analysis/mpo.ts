@@ -13,6 +13,7 @@ export class MpoProfileDialog {
   dataFrame: DG.DataFrame;
   mpoProfileEditor: MpoProfileEditor;
   templateInput: DG.ChoiceInput<string | null>;
+  addParetoFront: DG.InputBase<boolean>;
   mpoFiles: DG.FileInfo[] = [];
   currentTemplate: DesirabilityProfile | null = null;
   currentTemplateFileName: string | null = null;
@@ -25,6 +26,8 @@ export class MpoProfileDialog {
       onValueChanged: async (value) => await this.loadProfile(value),
       nullable: false,
     });
+
+    this.addParetoFront = ui.input.bool('Pareto front');
   }
 
   async init(): Promise<void> {
@@ -67,23 +70,43 @@ export class MpoProfileDialog {
     }
   }
 
+  private addParetoFrontViewer(columnNames: string[]) {
+    const view = grok.shell.getTableView(this.dataFrame.name);
+    const paretoFrontViewer = DG.Viewer.fromType('Pareto front', this.dataFrame);
+    view.addViewer(paretoFrontViewer);
+
+    /**
+     * Temporary workaround to ensure the Pareto front viewer applies the provided
+     * column names. The names are not applied immediately after the viewer
+     * is created (issue under investigation).
+    */
+    setTimeout(() => paretoFrontViewer.setOptions({
+      minimizeColumnNames: [],
+      maximizeColumnNames: columnNames,
+    }), 1000);
+  }
+
   private async runMpoCalculation(): Promise<void> {
     try {
       const [func] = await DG.Func.find({name: 'mpoTransformFunction'});
-      await func.prepare({
+      const funcCall = await func.prepare({
         df: this.dataFrame,
         currentProperties: this.currentTemplate?.properties,
       }).call(undefined, undefined, {processed: false});
+
+      const columnNames: string[] = funcCall.getOutputParamValue();
+      if (columnNames.length && this.addParetoFront.value)
+        this.addParetoFrontViewer(columnNames);
     } catch (e) {
       grok.shell.error(`Failed to run MPO calculation: ${e instanceof Error ? e.message : e}`);
     }
   }
 
-
   getEditor(): HTMLElement {
     return ui.divV([
       this.templateInput.root,
       this.mpoProfileEditor.root,
+      this.addParetoFront.root,
     ]);
   }
 

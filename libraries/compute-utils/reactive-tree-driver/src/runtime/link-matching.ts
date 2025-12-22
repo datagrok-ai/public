@@ -89,7 +89,7 @@ function matchLinkInstance(
   const ioData = [...spec.from.map((item) => ['inputs', item] as const), ...spec.to.map((item) => ['outputs', item] as const)];
   for (const [kind, io] of ioData) {
     const skipIO = (spec.type === 'pipeline' && kind === 'outputs') || (!!io.flags?.includes('call'));
-    const useDescriptionsStore = (spec.type === 'selector' && kind === 'outputs');
+    const useDescriptionsStore = ((spec.type === 'nodemeta' || spec.type === 'selector') && kind === 'outputs');
     const paths = matchLinkIO(rnode, currentIO, io, skipIO, useDescriptionsStore);
     if (paths.length == 0) {
       if (io.flags?.includes('optional'))
@@ -98,7 +98,7 @@ function matchLinkInstance(
         return;
     }
     if (currentIO[io.name] != null)
-      throw new Error(`Duplicate io name ${io.name} in link ${rnode.getItem().config.id}`);
+      throw new Error(`Duplicate io name ${io.name} in link ${spec.id}, node: ${rnode.getItem().config.id}`);
     currentIO[io.name] = paths;
     matchInfo[kind][io.name] = paths;
   }

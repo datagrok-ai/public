@@ -1,6 +1,10 @@
 # Compute changelog
 
-## 1.45.5 (2025-10-30)
+## 1.44.6 (2025-11-20)
+
+- Update deps
+
+## 1.44.5 (2025-10-30)
 
 - Fitting with formulas support
 

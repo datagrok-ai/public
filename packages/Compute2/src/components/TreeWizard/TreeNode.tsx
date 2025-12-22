@@ -268,7 +268,7 @@ export const TreeNode = Vue.defineComponent({
             { props.hasInconsistentSubsteps && !isFuncCallState(props.stat.data) && <IconFA
               name='sync'
               class='d4-ribbon-item'
-              tooltip='Rerun substeps with consistent values'
+              tooltip='Update substeps with consistent values'
               animation={props.callState?.isRunning ? 'spin': null}
               onClick={() => {
                 emit('runSubtree', props.stat.data.uuid, true);
@@ -279,7 +279,7 @@ export const TreeNode = Vue.defineComponent({
                 hasInconsistencies(props.consistencyStates) && !(props.callState?.pendingDependencies?.length) &&
                 <IconFA
                   name='sync'
-                  tooltip={'Rerun this step with consistent inputs'}
+                  tooltip={'Update this step with consistent values'}
                   style={{'padding-right': '3px'}}
                   onClick={(e) => {
                     emit('runSubtree', props.stat.data.uuid, true);

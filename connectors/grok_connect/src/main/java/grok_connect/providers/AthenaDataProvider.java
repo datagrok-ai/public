@@ -3,10 +3,7 @@ package grok_connect.providers;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Properties;
+import java.util.*;
 
 import grok_connect.connectors_info.DataConnection;
 import grok_connect.connectors_info.DataSource;
@@ -78,6 +75,13 @@ public class AthenaDataProvider extends JdbcDataProvider {
             put("#row.*", Types.MAP);
             put("#array.*", Types.LIST);
         }};
+
+        descriptor.jdbcPropertiesTemplate = new ArrayList<Property>() {{
+            add(new Property(Property.INT_TYPE, "SocketTimeout",
+                    "The amount of time, in seconds, that the connector waits for data to be transferred\n" +
+                            "over an established, open connection before timing out the connection.\n" +
+                            "A value of 0 indicates that the connector never times out the connection. Default value is 50.", new Prop()));
+        }};
     }
 
     @Override
@@ -99,7 +103,7 @@ public class AthenaDataProvider extends JdbcDataProvider {
 
     @Override
     public Properties getProperties(DataConnection conn) {
-        Properties properties = new Properties();
+        Properties properties = getJdbcProperties(conn);
         String accessKey = (String) conn.credentials.parameters.get(DbCredentials.ACCESS_KEY);
         String secretKey = (String) conn.credentials.parameters.get(DbCredentials.SECRET_KEY);
         if (GrokConnectUtil.isNotEmpty(accessKey) && GrokConnectUtil.isNotEmpty(secretKey)) {
@@ -138,7 +142,7 @@ public class AthenaDataProvider extends JdbcDataProvider {
     }
 
     @Override
-    public String getSchemaSql(String db, String schema, String table) {
+    public String getSchemaSql(String db, String schema, String table, boolean includeKeyInfo) {
         List<String> filters = new ArrayList<>();
         if (GrokConnectUtil.isNotEmpty(db))
             filters.add("c.table_schema = '" + db + "'");

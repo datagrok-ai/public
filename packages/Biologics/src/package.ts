@@ -11,6 +11,7 @@ import {glyphPool} from './glyphs/glyphs';
 import {DBExplorer} from '@datagrok-libraries/db-explorer/src/db-explorer';
 import {moleculeRenderer, imageRenderer, rawImageRenderer} from '@datagrok-libraries/db-explorer/src/renderer';
 import {biologicsConfig} from './config';
+import {helms} from './helms';
 
 export const _package = new DG.Package();
 
@@ -39,6 +40,7 @@ export async function createDemoBiologicsData(): Promise<any> {
     DELETE FROM biologics.linkers;
     DELETE FROM biologics.drugs;
     DELETE FROM biologics.sequences;
+    DELETE FROM biologics.peptides;
   `); // cascade should handle the rest
 
   const getConservedRegion = () => {
@@ -52,6 +54,21 @@ export async function createDemoBiologicsData(): Promise<any> {
     }
     return actCons;
   };
+
+
+  // 0. insert helms into peptides table
+  const insertedHelms: {id: number, helm: string, name: string}[] = [];
+  for (let i = 0; i < helms.length; i++) {
+    const helm = helms[i];
+    const name = `Peptide_${i + 1}`;
+    const df = await exec(`
+      INSERT INTO biologics.peptides(name, helm)
+      VALUES ('${escape(name)}', '${escape(helm)}')
+      RETURNING id
+    `);
+    insertedHelms.push({id: df.get('id', 0), helm, name});
+  }
+
 
   // 1. Generate 500 protein sequences (~1000 length)
   const seqCount = 200;
@@ -254,6 +271,34 @@ export async function createDemoBiologicsData(): Promise<any> {
       `);
     }
   }
+  // 10. add peptide assay results
+  const peptideAssayChunks: string[] = [];
+  const maxPeptideResults = 2000;
+  let peptideAssayInserted = 0;
+  for (const peptide of insertedHelms) {
+    const perPeptideAssays = randInt(3, 10);
+    for (let i = 0; i < perPeptideAssays; i++) {
+      const at = randPick(assayTypes);
+      const org = randPick(organisms);
+      const av = randomAssayValue(at.name);
+      peptideAssayChunks.push(`(${at.id}, ${peptide.id}, ${org}, ${av.val}, '${escape(av.units)}')`);
+      peptideAssayInserted++;
+      if (peptideAssayInserted >= maxPeptideResults) break;
+    }
+    if (peptideAssayInserted >= maxPeptideResults) break;
+  }
+  if (peptideAssayChunks.length) {
+    // Insert in chunks to avoid overly large statements
+    const chunkSize = 200;
+    for (let i = 0; i < peptideAssayChunks.length; i += chunkSize) {
+      const part = peptideAssayChunks.slice(i, i + chunkSize);
+      await exec(`
+        INSERT INTO biologics.assay_results(assay_id, peptide_id, target_organism_id, result_value, units)
+        VALUES ${part.join(',')}
+      `);
+    }
+  }
+
 
   await populateAdcGlyphs(adcCount + 1);
 
@@ -264,7 +309,8 @@ export async function createDemoBiologicsData(): Promise<any> {
     assay_results: inserted,
     purification_batches: purBatchesValues.length,
     expression_batches: exprValues.length,
-    adcs: adcCount
+    adcs: adcCount,
+    peptides: insertedHelms.length,
   };
 }
 
@@ -299,6 +345,27 @@ export async function populateAdcGlyphs(limit: number = 50): Promise<{updated: n
 //name: autostartbiologics
 //tags: autostart
 export async function autostartBiologics() {
+  function renderHelm(value: string): HTMLElement {
+    return ui.wait(async () => {
+    //@ts-ignore
+      const helmInput = await ui.input.helmAsync('helm', {
+        editable: false,
+      });
+      helmInput.setStringValue(value);
+      await DG.delay(200); // wait for proper sizing
+      helmInput.getInput().addEventListener('click', () => {
+        grok.shell.o = helmInput.getValue();
+      });
+      helmInput.getInput().addEventListener('dblclick', () => {
+        helmInput.showEditorDialog();
+      });
+
+      helmInput.getInput().style.width = '400px';
+      helmInput.getInput().style.setProperty('height', '300px', 'important');
+      return helmInput.getInput();
+    });
+  }
+
   const exp = DBExplorer.initFromConfig(biologicsConfig);
   if (!exp) {
     grok.shell.error('Failed to initialize Biologics DB Explorer');
@@ -308,6 +375,10 @@ export async function autostartBiologics() {
     const lc = colName?.toLowerCase() || '';
     return (lc === 'structure' || lc.includes('smiles') || lc.includes('compound_structure')) && typeof value === 'string' && grok.chem.checkSmiles(value);
   }, (value) => moleculeRenderer(value as string));
+
+  exp.addCustomRenderer((_, colName, value) => colName?.toLowerCase()?.includes('helm') && typeof value === 'string' && value?.toLowerCase()?.startsWith('peptide'),
+    (value) => renderHelm(value as string)
+  );
 
   exp.addCustomRenderer((_, colName, value) => {
     const lc = colName?.toLowerCase() || '';

@@ -85,7 +85,7 @@ public class SnowflakeDataProvider extends JdbcDataProvider {
     }
 
     @Override
-    public String getSchemaSql(String db, String schema, String table) {
+    public String getSchemaSql(String db, String schema, String table, boolean includeKeyInfo) {
         boolean isEmptyDb = GrokConnectUtil.isEmpty(db);
         boolean isEmptySchema = GrokConnectUtil.isEmpty(schema);
         boolean isEmptyTable = GrokConnectUtil.isEmpty(table);
@@ -214,8 +214,8 @@ public class SnowflakeDataProvider extends JdbcDataProvider {
                     sfDataSource.setSchema(conn.get(DbCredentials.SCHEMA));
                 if (conn.get(DbCredentials.ROLE) != null)
                     sfDataSource.setRole(conn.get(DbCredentials.ROLE));
-                sfDataSource.setUrl(getConnectionString(conn));
             }
+            sfDataSource.setUrl(getConnectionString(conn));
             return sfDataSource;
         } catch (Exception e) {
             throw new GrokConnectException(e);

@@ -4,6 +4,7 @@ import * as DG from 'datagrok-api/dg';
 import {HitDesignApp} from '../hit-design-app';
 import {_package} from '../../package';
 import {TileCategoriesColName} from '../consts';
+// @ts-ignore
 import './utils.css';
 import {getTileCategoryEditor} from '../accordeons/new-hit-design-template-accordeon';
 
@@ -118,7 +119,7 @@ export function getTilesViewDialog(app: HitDesignApp, getTableView: () => DG.Tab
       hideModal();
   });
 
-
+  const colVersion = app.dataFrame?.col(TileCategoriesColName)?.version;
   const closeSub = modal.onClose.subscribe(() => {
     closeSub.unsubscribe();
     viewChangeSub.unsubscribe();
@@ -136,6 +137,8 @@ export function getTilesViewDialog(app: HitDesignApp, getTableView: () => DG.Tab
       console.error('Failed to save sketch state', e);
     }
     closeViewer();
+    if (colVersion != undefined && app.dataFrame?.col(TileCategoriesColName)?.version !== colVersion)
+      app.saveCampaign();
   });
 
   modal.showModal(true);

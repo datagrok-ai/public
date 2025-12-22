@@ -1,6 +1,23 @@
 # Grok Connect changelog
 
-# 2.5.2 (2025-10-02) WIP
+# 2.5.6 (2025-12-18) WIP
+
+* Databricks: Correction in detection of environment
+* Minor fixes and improvements in TableQueries
+
+# 2.5.5 (2025-12-02)
+
+* Athena: Possibility to set socket timeout property in Properties
+
+# 2.5.4 (2025-11-19)
+
+* Databricks: Use meta tables to get info about schemas and tables instead of JDBC ConnectionMeta
+
+# 2.5.3 (2025-11-03)
+
+* Databricks: Oauth2(M-M) scheme support, driver update, schema browsing and visual query fixes
+
+# 2.5.2 (2025-10-02)
 
 * Athena: Fixed STS token usage
 

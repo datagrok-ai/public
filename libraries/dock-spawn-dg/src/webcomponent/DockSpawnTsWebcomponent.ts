@@ -72,11 +72,11 @@ export class DockSpawnTsWebcomponent extends HTMLElement {
 
         this.observer = new MutationObserver((mutations) => {
             mutations.forEach((mutation) => {
-                mutation.addedNodes.forEach((node) => {
-                    this.handleAddedChildNode(node as HTMLElement);
-                });
                 mutation.removedNodes.forEach((node) => {
                     this.handleRemovedChildNode(node as HTMLElement);
+                });
+                mutation.addedNodes.forEach((node) => {
+                    this.handleAddedChildNode(node as HTMLElement);
                 });
             });
         });
@@ -86,7 +86,7 @@ export class DockSpawnTsWebcomponent extends HTMLElement {
             debounceTime(50),
             takeUntil(this.destroy$)
         ).subscribe(() => this.resize());
-        this.dispatchEvent(new CustomEvent('manager-init-finished'));
+        this.dispatchEvent(new CustomEvent('manager-init-finished', {detail: this.dockManager}));
     }
 
     public set activePanelTitle(panelTitle: string) {
@@ -99,6 +99,20 @@ export class DockSpawnTsWebcomponent extends HTMLElement {
 
     public getElementInSlot(slot: HTMLSlotElement): HTMLElement {
         return this.slotElementMap.get(slot);
+    }
+
+    public saveLayout() {
+        return this.dockManager.saveState();
+    }
+
+    public async loadLayout(layout: string) {
+        this.observer.disconnect();
+        const oldPanels = this.dockManager.getPanels();
+        await this.dockManager.loadState(layout);
+        oldPanels.forEach((panel) => panel.elementContentContainer.remove());
+        this.dockManager.element.firstChild.remove();
+        this.observer.observe(this, { childList: true });
+        this.dockManager.invalidate();
     }
 
     private handleAddedChildNode(element: HTMLElement) {
@@ -151,6 +165,8 @@ export class DockSpawnTsWebcomponent extends HTMLElement {
 
         if ((<HTMLElement>element).style.display == 'none')
             (<HTMLElement>element).style.display = 'block';
+
+        this.dispatchEvent(new CustomEvent('panel-opened', {detail: element}));
     }
 
     private handleRemovedChildNode(element: HTMLElement) {

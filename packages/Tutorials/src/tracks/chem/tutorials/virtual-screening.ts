@@ -26,6 +26,10 @@ export class VirtualScreeningTutorial extends Tutorial {
     return 35;
   }
 
+  get icon() {
+    return '🧬💻';
+  }
+
   prerequisites: TutorialPrerequisites = {packages: ['Chem', 'PowerPack'], jupyter: true, grokCompute: true, h2o: true};
   demoTable: string = 'chem/tutorials/training-data.csv';
   helpUrl: string = 'https://datagrok.ai/help/datagrok/solutions/domains/chem/#curation';

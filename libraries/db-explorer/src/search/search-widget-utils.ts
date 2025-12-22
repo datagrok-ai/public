@@ -1,3 +1,4 @@
+/* eslint-disable max-len */
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
@@ -85,7 +86,8 @@ export function matchAndParseQuery(matchPattern: string, query: string): Record<
       varNames.push(regexPattern.substring(nextIndex + 2, endIndex));
       regexPattern = regexPattern.substring(0, nextIndex) + '(.*)' + regexPattern.substring(endIndex + 1);
 
-      nextIndex = regexPattern.indexOf('${', endIndex);
+      // because we are substituting the string, we need to adjust the starting position of search
+      nextIndex = regexPattern.indexOf('${', endIndex + 4 /** 4 corresponsds */ - varNames[varNames.length - 1].length - 3 /** Corresponding to ${} */);
     }
 
     //const regexPattern = matchPattern.replace(/\$\{\}/g, '(.*)');

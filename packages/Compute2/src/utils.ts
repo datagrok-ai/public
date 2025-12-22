@@ -85,10 +85,27 @@ export function findTreeNodeParrent(uuid: string, state: PipelineState): Pipelin
   }
 };
 
+const suitableForNavStep = (state: PipelineState) => {
+  return (state.type === 'funccall' || state.steps.length === 0 || state.forceNavigate) && !state.isReadonly;
+};
+
+export function findPrevStep(uuid: string, state: PipelineState): NodeWithPath | undefined {
+  let prevUuid = '';
+  const pred = (state: PipelineState) => {
+    if (!suitableForNavStep(state))
+      return false;
+    if (state.uuid === uuid)
+      return true;
+    prevUuid = state.uuid;
+    return false;
+  };
+  return _findTreeNode([state], pred) ? findNodeWithPathByUuid(prevUuid, state) : undefined;
+}
+
 export function findNextStep(uuid: string, state: PipelineState): NodeWithPath | undefined {
   let prevUuid = '';
   const pred = (state: PipelineState) => {
-    if (!isFuncCallState(state))
+    if (!suitableForNavStep(state))
       return false;
     if (prevUuid === uuid)
       return true;
@@ -96,6 +113,10 @@ export function findNextStep(uuid: string, state: PipelineState): NodeWithPath |
     return false;
   };
   return _findTreeNode([state], pred);
+}
+
+export function findNextSubStep(state: PipelineState): NodeWithPath | undefined {
+  return _findTreeNode([state], suitableForNavStep);
 }
 
 export type PipelineWithAdd = PipelineStateSequential<StepFunCallState, PipelineInstanceRuntimeData> |
@@ -178,4 +199,8 @@ export async function reportTree(treeState?: PipelineState, meta: MetaCallInfo =
 
     DG.Utils.download(name, new Blob([zipSync(zipConfig) as any]));
   }
+}
+
+export function setDifference<T>(a: Set<T>, b: Set<T>) {
+  return new Set(Array.from(a).filter((item) => !b.has(item)));
 }

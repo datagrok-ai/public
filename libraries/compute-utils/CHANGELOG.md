@@ -1,5 +1,9 @@
 # compute-utils changelog
 
+## 1.44.11 (2025-11-20)
+
+- Workflows navigation related improvements
+
 ## 1.44.10 (2025-10-30)
 
 - Fitting formulas initial implementation

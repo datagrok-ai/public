@@ -120,8 +120,8 @@ class FilesClient:
         params = {'recursive': str(recursive).lower()}
         if ext:
            params['ext'] = ext 
-
-        response = self._request('POST', endpoint, content_type="application/json", params=params, json=sync_meta_dict)
+    
+        response = self.client.post(endpoint, params=params, json=sync_meta_dict)
 
         def update_sync_meta(content: dict):
             with open (sync_meta_file_path, "w") as f:

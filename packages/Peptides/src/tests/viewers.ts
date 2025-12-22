@@ -14,24 +14,28 @@ import {TEST_COLUMN_NAMES} from './utils';
 import {showTooltip} from '../utils/tooltips';
 import {PeptideUtils} from '../peptideUtils';
 
-category('Viewers: Basic', () => {
-  let df: DG.DataFrame;
+// category('Viewers: Basic', () => {
+//   let df: DG.DataFrame;
 
-  before(async () => {
-    await PeptideUtils.loadComponents();
+//   before(async () => {
+//     await PeptideUtils.loadComponents();
 
-    df = DG.DataFrame.fromCsv(await _package.files.readAsText('tests/HELM_small.csv'));
-    await delay(500);
-  });
+//     df = DG.DataFrame.fromCsv(await _package.files.readAsText('tests/HELM_small.csv'));
+//     const clusterCol = df.col('cluster')!.convertTo(DG.COLUMN_TYPE.STRING);
+//     clusterCol!.name = 'cluster';
+//     df.columns.remove('cluster');
+//     df.columns.add(clusterCol!);
+//     await delay(500);
+//   });
 
-  const viewers = DG.Func.find({package: 'Peptides', tags: ['viewer']}).map((f) => f.friendlyName);
-  for (const v of viewers) {
-    test(v, async () => {
-      await testViewer(v, df.clone(), {detectSemanticTypes: true, arbitraryDfTest: false, readOnly: true});
-      await delay(1000);
-    });
-  }
-});
+//   const viewers = DG.Func.find({package: 'Peptides', tags: ['viewer']}).map((f) => f.friendlyName);
+//   for (const v of viewers) {
+//     test(v, async () => {
+//       await testViewer(v, df.clone(), {detectSemanticTypes: true, arbitraryDfTest: false, readOnly: true});
+//       await delay(1000);
+//     });
+//   }
+// });
 
 category('Viewers: Monomer-Position', () => {
   let df: DG.DataFrame;

@@ -697,7 +697,7 @@ async function getPolyToolEnumerateDialog(
  * @param {DG.SemanticValue} srcValue Source value to enumerate, either of data role
  *                                    {@link PolyToolDataRole.template} or {@link PolyToolDataRole.macromolecule}
  * */
-async function polyToolEnumerateSeq(
+export async function polyToolEnumerateSeq(
   srcHelm: string, dataRole: PolyToolDataRole, srcId: { value: string, colName: string } | null,
   params: PolyToolEnumeratorParams,
   toAtomicLevel: { generateHelm: boolean, chiralityEngine: boolean, highlightMonomers: boolean, rules: string[] } | false,

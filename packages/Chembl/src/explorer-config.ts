@@ -1,7 +1,10 @@
-export const explorerConfig = {
+import {DBExplorerConfig} from '@datagrok-libraries/db-explorer/src/types';
+
+export const explorerConfig: DBExplorerConfig = {
   'connectionName': 'CHEMBL',
   'schemaName': 'public',
   'dataSourceName': 'postgres',
+  'nqName': 'Chembl:Chembl',
   'entryPoints': {
     'CHEMBL_ID': {
       'table': 'molecule_dictionary',
@@ -10,7 +13,8 @@ export const explorerConfig = {
         'example': 'CHEMBL1234',
         'nonVariablePart': 'CHEMBL',
         'regexpMarkup': 'CHEMBL[0-9]+'
-      }
+      },
+      'matchRegexp': 'CHEMBL\\d+'
     },
     'molregno': {
       'table': 'molecule_dictionary',

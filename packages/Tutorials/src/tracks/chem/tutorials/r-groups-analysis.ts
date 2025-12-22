@@ -22,6 +22,10 @@ export class RGroupsAnalysisTutorial extends Tutorial {
 
   get steps() {return 14;}
 
+  get icon() {
+    return '🧬🧩';
+  }
+
   helpUrl: string = 'https://datagrok.ai/help/datagrok/solutions/domains/chem/#r-groups-analysis';
   prerequisites: TutorialPrerequisites = {packages: ['Chem'], jupyter: true};
   demoTable: string = '';

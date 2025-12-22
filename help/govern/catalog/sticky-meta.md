@@ -33,7 +33,7 @@ Metadata schemas are important for several reasons. They:
 To set up a schema:
 
 1. Go to **Browse** > **Platform** > **Sticky Meta** > **Schemas** and click the
-   **CREATE A NEW SCHEMA...** button. A dialog opens.
+   **NEW SCHEMA...** button. A dialog opens.
 1. In the dialog:
    * Enter the name for your schema.
    * In the **Associated with:** field, link the schema to the relevant metadata object.
@@ -54,7 +54,7 @@ Metadata objects can be either Datagrok [entities](../../datagrok/concepts/objec
 To create an entity type:
 
 1. Go to **Browse** > **Platform** > **Sticky Meta** > **Types** and click the
-   **CREATE A NEW ENTITY TYPE...** button. A dialog opens.
+   **NEW ENTITY TYPE...** button. A dialog opens.
 1. In the dialog:
    * Enter the name of your entity type (e.g., `Molecule`).
    * Create a **Matching expression** that defines metadata objects using [tags](tags.md). For tabular data, you would typically use [semantic types](../../govern/catalog/semantic-types.md). For example, to set up a matching expression for an entity type "Molecule", enter `semtype=molecule`. If needed, include several conditions, separating them with commas (e.g., `type=id,belongs=molecule,private=true`).

@@ -202,6 +202,23 @@ public class GrokConnect {
                 DataFrame dataFrame = provider.getSchemas(connection);
                 buffer = packDataFrame(result, dataFrame);
             } catch (QueryCancelledByUser | GrokConnectException ex) {
+                buffer = packException(result, ex.getClass().equals(GrokConnectException.class) && ex.getCause() != null
+                        ? (Exception) ex.getCause() : ex);
+                PARENT_LOGGER.info(DEFAULT_LOG_EXCEPTION_MESSAGE, ex);
+            }
+            prepareResponse(result, response, buffer);
+            return response;
+        });
+
+        post("/comments", (request, response) -> {
+            BufferAccessor buffer;
+            DataQueryRunResult result = new DataQueryRunResult();
+            try {
+                DataConnection connection = gson.fromJson(request.body(), DataConnection.class);
+                JdbcDataProvider provider = providerManager.getByName(connection.dataSource);
+                DataFrame dataFrame = provider.getComments(connection, connection.get("schema"));
+                buffer = packDataFrame(result, dataFrame);
+            } catch (QueryCancelledByUser | GrokConnectException ex) {
                 buffer = packException(result, ex.getClass().equals(GrokConnectException.class)
                         ? (Exception) ex.getCause() : ex);
                 PARENT_LOGGER.info(DEFAULT_LOG_EXCEPTION_MESSAGE, ex);
@@ -214,9 +231,10 @@ public class GrokConnect {
             BufferAccessor buffer;
             DataQueryRunResult result = new DataQueryRunResult();
             try {
+                boolean includeKeyInfo = request.queryParams("includeKeyInfo") != null && request.queryParams("includeKeyInfo").equals("true");
                 DataConnection connection = gson.fromJson(request.body(), DataConnection.class);
                 DataProvider provider = providerManager.getByName(connection.dataSource);
-                DataFrame dataFrame = provider.getSchema(connection, connection.get("schema"), connection.get("table"));
+                DataFrame dataFrame = provider.getSchema(connection, connection.get("schema"), connection.get("table"), includeKeyInfo);
                 buffer = packDataFrame(result, dataFrame);
             } catch (QueryCancelledByUser | GrokConnectException ex) {
                 buffer = packException(result, ex.getClass().equals(GrokConnectException.class)

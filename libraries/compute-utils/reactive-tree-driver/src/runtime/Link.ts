@@ -32,7 +32,7 @@ export class Link {
   public readonly isValidator = this.matchInfo.spec.type === 'validator';
   public readonly isMeta = this.matchInfo.spec.type === 'meta';
   public readonly isMutation = this.matchInfo.spec.type === 'pipeline';
-  public readonly isNodeMeta =  this.matchInfo.spec.type === 'nodemeta' || this.matchInfo.spec.type === 'selector';
+  public readonly isNodeMeta = this.matchInfo.spec.type === 'nodemeta' || this.matchInfo.spec.type === 'selector';
   public readonly isFuncallAction = this.matchInfo.spec.type === 'funccall';
   public readonly isReturn = this.matchInfo.spec.type === 'return';
 
@@ -193,6 +193,7 @@ export class Link {
         prefix: this.prefix,
         id: this.matchInfo.spec.id,
         linkUUID: this.uuid,
+        basePath: this.matchInfo.basePath
       });
     }
     if (this.matchInfo.spec.handler) {
@@ -266,6 +267,7 @@ export class Link {
         prefix: this.prefix,
         id: this.matchInfo.spec.id,
         linkUUID: this.uuid,
+        basePath: this.matchInfo.basePath,
       });
     }
     const outputsEntries = Object.entries(this.matchInfo.outputs).map(([outputAlias, outputItems]) => {
@@ -316,7 +318,10 @@ export class Link {
           if (data) {
             const [state, restriction] = data;
             const item = node.getItem();
-            const nextValue = state instanceof DG.DataFrame ? state.clone() : state;
+            const isDf = state instanceof DG.DataFrame;
+            const nextValue = isDf ? state.clone() : state;
+            if (isDf)
+              (nextValue as DG.DataFrame).id = uuidv4();
             if (isFuncCallNode(item) && !item.instancesWrapper.isOutputOutdated$.value)
               item.instancesWrapper.setRestriction(ioName, nextValue, restriction);
             else

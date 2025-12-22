@@ -71,9 +71,14 @@ For logging, only the metadata associated with the parameters (such as table and
 stored in the database. Additionally, if a table passed as a parameter is already residing on a server, the
 corresponding audit record will contain a reference to it.
 
+## Scheduling
+
+Server-based functions such as [Scripts](../../../compute/scripting/scripting.mdx) and [Data Queries](../../../access/access.md#data-query) support scheduling.
+Specify schedule in Script or Data Query annotation using [cron](https://en.wikipedia.org/wiki/Cron) `//schedule: * * 0 0 0`.
+
 ## Filtering
 
-You can use these fields to filter functions with [smart search](../../navigation/views/table-view#search-patterns):
+You can use these fields to filter functions with [smart search](../../../visualize/table-view-1.md#search-patterns):
 
 | Field       | Description                                 |
 |-------------|---------------------------------------------|

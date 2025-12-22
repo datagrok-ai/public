@@ -1,4 +1,5 @@
 import {ScatterPlotCellRenderer} from './sparklines/scatter-plot';
+import {RawPNGRenderer} from './pngRenderer';
 import {PackageFunctions} from './package';
 import {HtmlTestCellRenderer} from './cell-types/test-cell-renderer';
 import {TagsCellRenderer} from './cell-types/tags-cell-renderer';
@@ -166,6 +167,7 @@ export async function _autoPowerGrid() : Promise<void> {
 //output: viewer result
 //meta.icon: files/icons/formviewer.svg
 //meta.viewerPosition: bottom
+//meta.toolbox: true
 export function formsViewer() {
   return PackageFunctions.formsViewer();
 }
@@ -211,6 +213,14 @@ export function isWebGPUAvailable() : boolean {
 export function isWebGPURenderValid(sc: any) : boolean {
   return PackageFunctions.isWebGPURenderValid(sc);
 }
+//name: rawPng
+//tags: cellRenderer
+//output: grid_cell_renderer renderer
+//meta.cellType: rawPng
+export function _RawPNGRenderer() {
+  return new RawPNGRenderer();
+}
+
 //name: Scatter Plot
 //tags: cellRenderer
 //output: grid_cell_renderer renderer

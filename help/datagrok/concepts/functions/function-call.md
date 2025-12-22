@@ -30,7 +30,7 @@ Those privileges can be given to individuals or to groups (which can be defined 
 
 ## Filtering
 
-You can use these fields to filter action runs with [smart search](../../navigation/views/table-view#search):
+You can use these fields to filter action runs with [smart search](../../../visualize/table-view-1.md#search):
 
 | Field       | Description                                 |
 |-------------|---------------------------------------------|
@@ -44,6 +44,16 @@ You can use these fields to filter action runs with [smart search](../../navigat
 | finished    |                                             |
 | createdOn   |                                             |
 | updatedOn   |                                             |
+
+## Macro recording
+
+Every UI action (filtering, sorting, selecting columns, etc.) corresponds to a function call. The [Console](../../navigation/navigation.md#console) automatically logs these call, allowing you to:
+
+* examine which functions were triggered by UI events
+* copy commands into a script or pipelines 
+* reproduce, audit, and debug your workflow (especially helpful for custom [package](../../../develop/develop.md#packages) functions).
+
+![Recording Macros](console-macros.gif "Console Macros")
 
 See also:
 

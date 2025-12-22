@@ -117,14 +117,26 @@ export class PackageFunctions {
     }
     const csv = values.join('\n');
 
+    // If no properties specified, use all available models
+    const models = (props ?? await this.getModels()).join(',');
     let admeticaResults = await grok.functions.call('Admetica:run_admetica', {
       csv: csv,
-      models: props?.join(',') ?? '',
+      models: models,
       raiseException: false,
     });
 
     admeticaResults = await convertLD50(admeticaResults, molecules);
     return admeticaResults;
+  }
+
+  @grok.decorators.func({
+    name: 'getAdmePropertiesSingle',
+    description: 'Predicts ADME properties for a given molecule.',
+  })
+  static async getAdmePropertiesSingle(
+    @grok.decorators.param({ options: { semType: 'Molecule' } }) molecule: string,
+  ): Promise<DG.DataFrame> {
+    return await PackageFunctions.getAdmeProperties(DG.Column.fromStrings('Molecule', [molecule]));
   }
 
   @grok.decorators.app({name: 'Admetica', meta: {icon: 'images/vlaaivis.png', browsePath: 'Chem'}})

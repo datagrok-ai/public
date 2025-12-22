@@ -16,11 +16,64 @@ export namespace funcs {
     return await grok.functions.call('ChatGPT:Autostart', {});
   }
 
+  export async function combinedLLMSearchProvider(): Promise<any> {
+    return await grok.functions.call('ChatGPT:CombinedLLMSearchProvider', {});
+  }
+
+  /**
+  Get answers from DeepGROK AI assistant based on Datagrok documentation and public code.
+  */
+  export async function askHelpLLMProvider(prompt: string ): Promise<any> {
+    return await grok.functions.call('ChatGPT:AskHelpLLMProvider', { prompt });
+  }
+
+  /**
+  Plans and executes function steps to achieve needed results
+  */
+  export async function smartChainExecutionProvider(prompt: string ): Promise<any> {
+    return await grok.functions.call('ChatGPT:SmartChainExecutionProvider', { prompt });
+  }
+
+  /**
+  Tries to find a query which has the similar pattern as the prompt user entered and executes it
+  */
+  export async function llmSearchQueryProvider(prompt: string ): Promise<any> {
+    return await grok.functions.call('ChatGPT:LlmSearchQueryProvider', { prompt });
+  }
+
+  export async function askAIGeneralCached(model: string , systemPrompt: string , prompt: string , schema: any ): Promise<string> {
+    return await grok.functions.call('ChatGPT:AskAIGeneralCached', { model, systemPrompt, prompt, schema });
+  }
+
   export async function ask(question: string ): Promise<string> {
     return await grok.functions.call('ChatGPT:Ask', { question });
   }
 
-  export async function askFun(question: string ): Promise<string> {
-    return await grok.functions.call('ChatGPT:AskFun', { question });
+  export async function getExecutionPlan(userGoal: string ): Promise<string> {
+    return await grok.functions.call('ChatGPT:GetExecutionPlan', { userGoal });
+  }
+
+  export async function fuzzyMatch(prompt: string , searchPatterns: any , descriptions: any ): Promise<string> {
+    return await grok.functions.call('ChatGPT:FuzzyMatch', { prompt, searchPatterns, descriptions });
+  }
+
+  export async function askDocumentationCached(prompt: string ): Promise<string> {
+    return await grok.functions.call('ChatGPT:AskDocumentationCached', { prompt });
+  }
+
+  export async function setupAIQueryEditor(view: DG.View , connectionID: string , queryEditorRoot: any , setAndRunFunc: any ): Promise<boolean> {
+    return await grok.functions.call('ChatGPT:SetupAIQueryEditor', { view, connectionID, queryEditorRoot, setAndRunFunc });
+  }
+
+  export async function moveMetaToDB(dbName: string ): Promise<void> {
+    return await grok.functions.call('ChatGPT:MoveMetaToDB', { dbName });
+  }
+
+  export async function indexDatabaseSchema(): Promise<void> {
+    return await grok.functions.call('ChatGPT:IndexDatabaseSchema', {});
+  }
+
+  export async function embedConnectionQueries(): Promise<void> {
+    return await grok.functions.call('ChatGPT:EmbedConnectionQueries', {});
   }
 }

@@ -3,7 +3,7 @@ title: "Create a custom view"
 ---
 
 A view is a set of visualizations grouped together. Typically it is associated with a particular dataframe (then it is
-called a [table view](../../../datagrok/navigation/views/table-view.md)). However, essentially a view can contain pretty much anything,
+called a [table view](../../../visualize/table-view-1.md)). However, essentially a view can contain pretty much anything,
 that's what we will discuss in a while. When a view is registered on the platform, you can do the following:
 
 * Open and pass parameters to the view from the URL
@@ -95,6 +95,6 @@ See also:
 * [JavaScript API: ViewBase](https://datagrok.ai/api/js/api/dg/classes/ViewBase)
 * [JavaScript API Samples: Custom view](https://public.datagrok.ai/js/samples/ui/views/views)
 * [JavaScript API Samples: Virtual view](https://public.datagrok.ai/js/samples/ui/virtual-view)
-* [Table view](../../../datagrok/navigation/views/table-view.md)
+* [Table view](../../../visualize/table-view-1.md)
 * [View layout](../../../visualize/view-layout.md)
-* [Routing](../../../datagrok/navigation/routing.md)
+* [Routing](../../../datagrok/navigation/navigation.md#routing)

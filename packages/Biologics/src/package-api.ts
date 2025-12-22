@@ -8,12 +8,39 @@ import * as DG from 'datagrok-api/dg';
 
 
 export namespace queries {
+  /**
+  "Find biologics assays for a specified organism."
+  */
   export async function assaysByOrganism(organism: string ): Promise<DG.DataFrame> {
     return await grok.data.query('Biologics:AssaysByOrganism', { organism });
   }
 
+  /**
+  "Find biologics ADCs with caspase activity higher than a specified value."
+  */
+  export async function adcsWithCapsazeActivityHigherThan(minActivity: number ): Promise<DG.DataFrame> {
+    return await grok.data.query('Biologics:ADCsWithCapsazeActivityHigherThan', { minActivity });
+  }
+
+  /**
+  "Find biologics ADCs with IC50 higher or lower than a specified value. Use 'higher' or 'lower' for valueTarget to indicate the comparison direction."
+  */
+  export async function adcsWithIC50HLThan(value: number , valueTarget: string ): Promise<DG.DataFrame> {
+    return await grok.data.query('Biologics:ADCsWithIC50HLThan', { value, valueTarget });
+  }
+
+  /**
+  "Find ADCs in biologics database linked to a specified drug identifier."
+  */
   export async function adcsLinkedToDrug(drugID: string ): Promise<DG.DataFrame> {
     return await grok.data.query('Biologics:AdcsLinkedToDrug', { drugID });
+  }
+
+  /**
+  "Retrieve the HELM sequence of a biologics peptide given its identifier that should follow the pattern GROKPEP-######."
+  */
+  export async function getBiologicsPeptideHelmByIdentifier(peptideIdentifier: string ): Promise<string> {
+    return await grok.data.query('Biologics:GetBiologicsPeptideHelmByIdentifier', { peptideIdentifier });
   }
 }
 

@@ -4,11 +4,11 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {FileInputUtils} from '@datagrok-libraries/tutorials/src/utils/file-input-utils';
 
-import { ErrorHandlingLabels, MOLTRACK_MAPPING_VALIDATION_CHANGED, MOLTRACK_REQUEST_TITLE_UPDATE, ScopeLabels, ScopeLabelsReduced } from '../utils/constants';
-import { renderMappingEditor, TargetProperty } from '../components/mapping_editor';
-import { MolTrackDockerService } from '../services/moltrack-docker-service';
-import { fetchSchema } from '../package';
-import { Subscription } from 'rxjs';
+import {ErrorHandlingLabels, MOLTRACK_MAPPING_VALIDATION_CHANGED, MOLTRACK_REQUEST_TITLE_UPDATE, ScopeLabels, ScopeLabelsReduced} from '../utils/constants';
+import {renderMappingEditor, TargetProperty} from '../components/mapping_editor';
+import {MolTrackDockerService} from '../services/moltrack-docker-service';
+import {fetchSchema} from '../package';
+import {Subscription} from 'rxjs';
 
 import '../../css/moltrack.css';
 
@@ -236,8 +236,9 @@ export class RegistrationView {
     const successCount = statuses.filter((v) => v === 'success').length;
     const failedCount = statuses.filter((v) => v === 'failed').length;
     const notProcessedCount = statuses.filter((v) => v === 'not_processed').length;
+    const totalFailures = failedCount + notProcessedCount;
 
-    const header = failedCount === 0 ?
+    const header = totalFailures === 0 ?
       `✅ Bulk registration completed` :
       `⚠ Bulk registration completed with errors`;
     const status = failedCount === 0 ? 'success' : 'failed';
@@ -273,14 +274,12 @@ export class RegistrationView {
           type: p.value_type,
           required: false,
         })),
-      { name: 'smiles', required: true, semType: DG.SEMTYPE.MOLECULE },
+      {name: 'smiles', required: true, semType: DG.SEMTYPE.MOLECULE},
     ];
 
     let autoMapping: Map<string, string> = new Map();
-    if (this.uploadedDf) {
-      await MolTrackDockerService.init();
+    if (this.uploadedDf)
       autoMapping = await MolTrackDockerService.getAutoMapping(this.uploadedDf!.columns.names(), 'COMPOUND');
-    }
 
     const sourceColumns = this.uploadedDf ? this.uploadedDf.columns.names() : [''];
     const mappings = new Map<string, string>();
@@ -290,18 +289,16 @@ export class RegistrationView {
       if (exists) mappings.set(source, cleanTarget);
     }
 
-    const handleMap = (target: string, source: string) => {
-      if (!this.uploadedDf) return;
+    const normalizeType = (t: string) =>
+      t.toLowerCase().replace(/(es|s)$/, '');
 
-      const col = this.uploadedDf.col(source);
-      if (col) {
-        if (target === 'smiles') {
-          this.mappingDict[source] = target;
-          return;
-        }
-        const newName = `${this.entityTypeInput?.value.toLowerCase().replace(/(es|s)$/, '')}_details.${target}`;
-        this.mappingDict[source] = newName;
-      }
+    const handleMap = (source: string, target: string) => {
+      if (!this.uploadedDf)
+        return;
+
+      const entityType = normalizeType(this.entityTypeInput?.value ?? '');
+      const isSmiles = source === 'smiles';
+      this.mappingDict[source] = isSmiles ? 'smiles' : `${entityType}_details.${target}`;
     };
 
     const handleUndo = () => grok.shell.info('Mapping undone');

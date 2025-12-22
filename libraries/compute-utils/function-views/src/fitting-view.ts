@@ -176,6 +176,11 @@ export class FittingView {
       const range = this.options.ranges?.[inputProp.name];
       if (range?.[key] != undefined && typeof range?.[key] === 'string')
         return range[key];
+
+      if (key === 'min' && inputProp.options.minFormula)
+        return inputProp.options.minFormula;
+      if (key === 'max' && inputProp.options.maxFormula)
+        return inputProp.options.maxFormula;
     };
 
     const getFormulaInput = (inputProp: DG.Property, key: keyof RangeDescription) => {
@@ -193,7 +198,7 @@ export class FittingView {
       return inp;
     };
 
-    const getFormulaToggleInput = (inputProp: DG.Property, key: keyof RangeDescription, inputNumber: DG.InputBase, inputFormula: DG.InputBase) => {
+    const getFormulaToggleInput = (inputProp: DG.Property, key: 'min' | 'max', inputNumber: DG.InputBase, inputFormula: DG.InputBase) => {
       const formula = getRangeFormula(inputProp, key);
       const it = this;
       const toggleInputs = (val: boolean) => {
@@ -216,6 +221,17 @@ export class FittingView {
         },
       });
       toggleInputs(!!formula);
+
+      const icon = ui.iconFA('question', () => {
+        const avaliableVars = this.getAvaliableVars(inputProp.name).flatMap(([, { prop }]) => [ui.divText(prop.name), ui.divText(prop.caption)]);
+        const varsGrid = ui.div([ui.h3('Variable'), ui.h3('Caption'), ...avaliableVars], {style: {display: 'grid', 'gridTemplateColumns': '50% 50%'}});
+        const popupHeader = `Set formula for ${key} bound for ${inputProp.caption ?? inputProp.name}\n` +
+          `Avaliable variables:\n`;
+        ui.showPopup(ui.div([ui.divText(popupHeader), varsGrid], {
+          style: {maxWidth: '500px', maxHeight: '800px', overflowY: 'auto', userSelect: 'text', padding: '10px'}
+        }), icon);
+      });
+      boolInput.addOptions(icon)
       return boolInput;
     };
 
@@ -353,7 +369,6 @@ export class FittingView {
           }
         });
       } else {
-
         const tempDefault = {
           input: (() => {
             const temp = ui.input.forProperty(inputProp);
@@ -469,6 +484,8 @@ export class FittingView {
 
             isInterest.subscribe((val) => {
               input.input.hidden = !val;
+              if (input.root.lastChild)
+                (input.root.lastChild as HTMLElement).hidden = !val;
               showInfoWidget.hidden = !val;
 
               if (dfInputIcons != null)
@@ -596,8 +613,12 @@ export class FittingView {
 
   private acceptIcon = ui.iconFA('ballot-check', async () => {
     const choiceItems = Array.from({length: this.currentFuncCalls.length}, (_, i) => i + 1);
-    let chosenItem = -1;
-    const input = ui.input.choice('Select fitting', {items: choiceItems, onValueChanged: (x) => chosenItem = x});
+    if (choiceItems.length === 0) {
+      grok.shell.warning('No fittings');
+      return;
+    }
+    let chosenItem = 1;
+    const input = ui.input.choice('Select fitting', {items: choiceItems, value: chosenItem, onValueChanged: (x) => chosenItem = x});
     const confirmed = await new Promise((resolve, _reject) => {
       ui.dialog({title: 'Accept fitting'})
         .add(ui.div([input]))
@@ -659,8 +680,8 @@ export class FittingView {
     units: '%',
   }));
 
-  // Disable formulas, unless annotation says otherwise
-  private allowFormulas = false;
+  // Enable formulas, unless annotation says otherwise
+  private allowFormulas = true;
 
   // Auxiliary dock nodes with results
   private helpDN: DG.DockNode | undefined = undefined;
@@ -1075,8 +1096,6 @@ export class FittingView {
     });
 
     primaryToggle.root.hidden = true;
-    const paddingDiv = ui.div('', {classes: 'sa-switch-input ui-div'});
-    primaryToggle.root.prepend(paddingDiv);
     form.append(primaryToggle.root);
 
     //1. Inputs of the function
@@ -1088,7 +1107,7 @@ export class FittingView {
       const roots = [
         ...(inputConfig.isChangingInput ? [inputConfig.isChangingInput.root] : []),
         ...inputConfig.constForm.map((input) => input.root),
-        ...inputConfig.saForm.map((input) => input.root)
+        ...inputConfig.saForm.map((input) => input.root),
       ];
       const isPrimary = this.options.ranges?.[propName]?.isPrimary;
       if (isPrimary)
@@ -1140,7 +1159,7 @@ export class FittingView {
         roots.push(
           outputConfig.showInfoWidget,
           outputConfig.argColInput.root,
-          outputConfig.funcColsInput.root
+          outputConfig.funcColsInput.root,
         );
       }
       const propName = outputConfig.prop.name;
@@ -1224,16 +1243,15 @@ export class FittingView {
         item.style.height = '0';
         item.style.top = '22px';
         item.style.position = 'relative';
-      } else if(item.classList.contains(SIDE_ICON_CLASS)) {
+      } else if (item.classList.contains(SIDE_ICON_CLASS)) {
         item.style.height = '0';
         item.style.top = '14px';
         item.style.left = '14px';
         item.style.position = 'relative';
-      } else if(item.classList.contains(FORM_TITLE_CLASS) || item.classList.contains(FORM_SECTION_CLASS)) {
+      } else if (item.classList.contains(FORM_TITLE_CLASS) || item.classList.contains(FORM_SECTION_CLASS))
         continue;
-      } else {
+      else
         item.style.marginLeft = '50px';
-      }
     }
 
     this.updateApplicabilityState();
@@ -1280,6 +1298,7 @@ export class FittingView {
     }, {nonFormulaInputs: [], formulaInputs: []} as { nonFormulaInputs: [string, FittingInputsStore][], formulaInputs: [string, FittingInputsStore][] });
   } // splitInputs
 
+
   private getStoreInputsAndBounds(fittingStore: FittingNumericStore, minContext: Record<string, any>, maxContext: Record<string, any>) {
     const minInp = fittingStore.min.useFormula.value ? fittingStore.min.formula : fittingStore.min.input;
     const maxInp = fittingStore.max.useFormula.value ? fittingStore.max.formula : fittingStore.max.input;
@@ -1289,6 +1308,14 @@ export class FittingView {
     const max = fittingStore.max.useFormula.value ? runFormula(maxFormula!, maxContext) : fittingStore.max.input.value;
     return {minInp, maxInp, min, max, minFormula, maxFormula};
   } // getStoreInputsAndBounds
+
+  private getAvaliableVars(name: string) {
+    const {nonFormulaInputs, formulaInputs} = this.splitInputs();
+    const idx = formulaInputs.findIndex(([n]) => n === name);
+    if (idx >= 0)
+      return [...nonFormulaInputs, ...formulaInputs.slice(0, idx)];
+    return nonFormulaInputs;
+  }
 
   /** Check inputs */
   private areInputsReady(): boolean {
@@ -1553,63 +1580,43 @@ export class FittingView {
       const toShowTableName = outputsOfInterest.map((item) => item.prop.propertyType).filter((type) => type === DG.TYPE.DATA_FRAME).length > 1;
 
       /** Get call funcCall with the specified inputs */
-      const getCalledFuncCall = makeGetCalledFuncCall(this.func, inputs, variedInputNames);
+      const getCalledFuncCall = makeGetCalledFuncCall(this.func, inputs, variedInputNames, true);
 
       // get optimizer inputs/outputs config
       const inputBounds = this.makeOptimizerInputsConfig();
       const outputTargets = this.makeOptimizerOutputsConfig();
-      const hasFormulas = Object.values(inputBounds).find(
-        (bound) => bound.type === 'changing' && (bound.top.type === 'formula' || bound.bottom.type === 'formula'));
 
       const costTooltip = this.loss === LOSS.MAD ? 'scaled maximum absolute deviation' : 'scaled root mean square error';
 
       let optResult: OptimizationResult;
 
+      if (this.method !== METHOD.NELDER_MEAD)
+        throw new Error(`Not implemented the '${this.method}' method`);
+
       // Perform optimization
-      if (this.method === METHOD.NELDER_MEAD) {
-        if (this.diffGrok !== undefined && !hasFormulas) {
-          try {
-            const index = INDICES.DIFF_STUDIO_OUTPUT;
-
-            const minVals = new Float64Array(dim);
-            const maxVals = new Float64Array(dim);
-            variedInputs.forEach((name, idx) => {
-              const propConfig = this.store.inputs[name] as FittingNumericStore;
-              minVals[idx] = propConfig.min.value ?? 0;
-              maxVals[idx] = propConfig.max.value ?? 0;
-            });
-
-            optResult = await getFittedParams(
-              this.loss,
-              this.diffGrok.ivp,
-              this.diffGrok.ivpWW,
-              this.diffGrok.pipelineCreator,
-              this.nelderMeadSettings,
-              variedInputNames,
-              minVals,
-              maxVals,
-              inputs,
-              outputsOfInterest[index].argName,
-              outputsOfInterest[index].funcColsInput.value,
-              outputsOfInterest[index].target as DG.DataFrame,
-              this.samplesCount,
-              this.randInputs.settings,
-              this.earlyStoppingInputs.settings,
-            );
-          } catch (err) { // run fitting in the main thread if in-webworker run failed
-            [optResult] = await runOptimizer({
-              lossType: this.loss,
-              func: this.func,
-              inputBounds,
-              outputTargets,
-              samplesCount: this.samplesCount,
-              similarity: this.similarity,
+      if (this.diffGrok !== undefined) {
+        try {
+          const index = INDICES.DIFF_STUDIO_OUTPUT;
+          optResult = await getFittedParams(
+            {
+              loss: this.loss,
+              ivp: this.diffGrok.ivp,
+              ivp2ww: this.diffGrok.ivpWW,
+              pipelineCreator: this.diffGrok.pipelineCreator,
               settings: this.nelderMeadSettings,
+              variedInputNames,
+              bounds: inputBounds,
+              fixedInputs: inputs,
+              argColName: outputsOfInterest[index].argName,
+              funcCols: outputsOfInterest[index].funcColsInput.value,
+              target: outputsOfInterest[index].target as DG.DataFrame,
+              samplesCount: this.samplesCount,
               reproSettings: this.randInputs.settings,
               earlyStoppingSettings: this.earlyStoppingInputs.settings,
-            });
-          }
-        } else {
+            },
+          );
+        } catch (err) { // run fitting in the main thread if in-webworker run failed
+          console.error(err);
           [optResult] = await runOptimizer({
             lossType: this.loss,
             func: this.func,
@@ -1622,8 +1629,19 @@ export class FittingView {
             earlyStoppingSettings: this.earlyStoppingInputs.settings,
           });
         }
-      } else
-        throw new Error(`Not implemented the '${this.method}' method`);
+      } else {
+        [optResult] = await runOptimizer({
+          lossType: this.loss,
+          func: this.func,
+          inputBounds,
+          outputTargets,
+          samplesCount: this.samplesCount,
+          similarity: this.similarity,
+          settings: this.nelderMeadSettings,
+          reproSettings: this.randInputs.settings,
+          earlyStoppingSettings: this.earlyStoppingInputs.settings,
+        });
+      }
 
       const extrema = optResult.extremums;
       const allExtrCount = extrema.length;

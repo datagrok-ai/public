@@ -13,9 +13,6 @@ from datagrok_api import DatagrokClient
 settings = Settings(log_level=logging.DEBUG)
 app = Celery(settings.celery_name, broker=settings.broker_url)
 
-# TODO: Remove it when grok_spawner is updated
-settings.api_url = 'http://host.docker.internal:8082'
-
 
 CONFIGS_DIR = Path.cwd() / "configs"
 CONFIGS_DIR.mkdir(parents=True, exist_ok=True)
@@ -41,12 +38,13 @@ def run_aizynthfind(self, molecule: str, config: str, expansion: str, filter: st
     else:
         self.update_state(meta={"description": "Config synchronization in progress..."})
         config_path = _sync_user_config(config, kwargs.get("USER_API_KEY", None))
-
+    
+    logging.info(f"Config path {config_path}")
     self.update_state(meta={"description": "Calculating retrosynthesis paths..."})
     finder = None
     try:    
         finder = AiZynthFinder(configfile=config_path)
-        _silence_aizynth_logs()
+      #  _silence_aizynth_logs()
         finder.stock.select(finder.stock.items if stock == "" else stock)
         finder.expansion_policy.select_all() if expansion == "" else finder.expansion_policy.select(expansion)
         if filter != "":
@@ -84,8 +82,8 @@ def _sync_user_config(remote_config_path: str, token: str) -> str:
     lock_path = LOCK_DIR / (remote_config_path.replace("/", "_") + ".lock")
 
     with FileLock(str(lock_path), timeout=240):
-        api = DatagrokClient(token, settings.api_url)
-        api.sync_dir("System:AppData", "Retrosynthesis/configs/" + remote_config_path, str(config_path), recursive=False)
+        api = DatagrokClient(api_key=token, base_url=settings.api_url)
+        api.files.sync_dir("System:AppData", "Retrosynthesis/configs/" + remote_config_path, str(config_path), recursive=False)
         logging.info(f"Directory {remote_config_path} synchronized successfully with {config_path}")
 
     config_file = config_path / "config.yml"

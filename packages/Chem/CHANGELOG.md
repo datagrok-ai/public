@@ -1,5 +1,26 @@
 # Chem changelog
 
+## 1.6.12 (2025-12-22)
+
+* GROK-18406: Chem | Scaffold Tree: Disallow multiple filters on the same column
+* Chem: Detector: Extend valid smiles characters to support additional symbols
+
+## 1.16.11 (2025-12-09)
+
+* Add kekulize option to molecule notation conversion functions
+
+## 1.16.10 (2025-12-08)
+
+* R Group analysis: fixed ability to perform analyziz only for certain positions
+
+## 1.16.9 (2025-11-19)
+
+* Validated deprotection feature with more precise reactions.
+
+## 1.16.8 (2025-11-11)
+
+* Support datasync for biochemical functions
+
 ## 1.16.7 (2025-10-22)
 
 * Fix compatibility issues with platform version 1.25.3

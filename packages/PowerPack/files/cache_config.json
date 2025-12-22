@@ -1,0 +1,7 @@
+[
+  {
+    "path": "/enrichments",
+    "invalidateOn": "0 0 * * *",
+    "preflight": true
+  }
+]

@@ -6,7 +6,7 @@ import {ClinicalCaseViewBase} from '../model/ClinicalCaseViewBase';
 import {filetrValueFromDf} from '../data-preparation/utils';
 import {InclusionCriterion} from '../model/InclusionCriteria';
 import {DOMAIN, SUBJECT_ID} from '../constants/columns-constants';
-import {studies} from '../clinical-study';
+import {studies} from '../utils/app-utils';
 
 
 export class CohortView extends ClinicalCaseViewBase {
@@ -167,9 +167,9 @@ export class CohortView extends ClinicalCaseViewBase {
     });
 
 
-    grok.data.linkTables(this.savedCohorts, this.savedInclCriteria,
-      ['Name'], ['Cohort'],
-      [DG.SYNC_TYPE.CURRENT_ROW_TO_FILTER]);
+    // grok.data.linkTables(this.savedCohorts, this.savedInclCriteria,
+    //   ['Name'], ['Cohort'],
+    //   [DG.SYNC_TYPE.CURRENT_ROW_TO_FILTER]);
 
 
     const viewerTitle = {

@@ -1,7 +1,8 @@
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {ClinRow, studies} from '../clinical-study';
+import {ClinRow} from '../clinical-study';
 import {AE_DECOD_TERM, AE_START_DATE, SUBJECT_ID} from '../constants/columns-constants';
+import {studies} from '../utils/app-utils';
 
 export class AdverseEventHandler extends DG.ObjectHandler {
   get type() {return 'Adverse Event';}

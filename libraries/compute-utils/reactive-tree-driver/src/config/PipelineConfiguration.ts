@@ -67,17 +67,20 @@ export type PipelineHandlerConfiguration<P> = PipelineLinkConfigurationBase<P> &
   type?: 'data',
   actions?: undefined;
   handler?: Handler;
+  runOnInit?: boolean;
 };
 
 export type PipelineValidatorConfiguration<P> = PipelineLinkConfigurationBase<P> & {
   type: 'validator'
   handler: Validator;
+  runOnInit?: undefined;
 };
 
 export type PipelineMetaConfiguration<P> = PipelineLinkConfigurationBase<P> & {
   type: 'meta'
   actions?: undefined;
   handler: MetaHandler;
+  runOnInit?: undefined;
 };
 
 export type PipelineInitConfiguration<P> = PipelineLinkConfigurationBase<P> & {
@@ -85,6 +88,7 @@ export type PipelineInitConfiguration<P> = PipelineLinkConfigurationBase<P> & {
   base?: undefined,
   actions?: undefined;
   handler: Handler;
+  runOnInit?: undefined;
 };
 
 export type PipelineReturnConfiguration<P> = PipelineLinkConfigurationBase<P> & {
@@ -92,12 +96,14 @@ export type PipelineReturnConfiguration<P> = PipelineLinkConfigurationBase<P> & 
   base?: undefined,
   actions?: undefined;
   handler: ReturnHandler;
+  runOnInit?: undefined;
 };
 
 export type PipelineSelectorConfiguration<P> = PipelineLinkConfigurationBase<P> & {
   type: 'nodemeta' | 'selector', // selector for API compat
   actions?: undefined;
   handler: SelectorHandler;
+  runOnInit?: undefined;
 };
 
 export type PipelineLinkConfiguration<P> = PipelineHandlerConfiguration<P> | PipelineValidatorConfiguration<P> | PipelineMetaConfiguration<P> | PipelineInitConfiguration<P> | PipelineReturnConfiguration<P> | PipelineSelectorConfiguration<P>;
@@ -110,6 +116,7 @@ export type ActionInfo = {
   menuCategory?: string;
   confirmationMessage?: string;
   icon?: string;
+  runOnInit?: undefined;
 };
 
 export type DataActionConfiguraion<P> = PipelineLinkConfigurationBase<P> & {
@@ -137,6 +144,7 @@ export type PipelineStepConfiguration<P, S> = {
   nqName: NqName;
   friendlyName?: string;
   actions?: (DataActionConfiguraion<P> | FuncCallActionConfiguration<P>)[];
+  states?: StateItem[];
   tags?: string[];
   initialValues?: Record<string, any>;
   inputRestrictions?: Record<string, RestrictionType>;
@@ -162,6 +170,7 @@ export type PipelineConfigurationBase<P> = {
   states?: StateItem[];
   tags?: string[];
   structureCheck?: StructureCheckHook;
+  forceNavigate?: boolean;
   customExports?: CustomExport[];
   disableHistory?: boolean;
   approversGroup?: string; // not used rn

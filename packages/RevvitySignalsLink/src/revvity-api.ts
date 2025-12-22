@@ -3,6 +3,8 @@
 import { getApiKey, getApiUrl } from "./credentials-utils";
 import * as grok from 'datagrok-api/grok';
 import { SignalsSearchParams, SignalsSearchQuery } from "./signals-search-query";
+import { MAX_RETURN_ROWS } from "./constants";
+import { delay } from '@datagrok-libraries/utils/src/test';
 
 // Top-level response interface
 export interface RevvityApiResponse<T = any, I = any> {
@@ -82,34 +84,67 @@ async function request<T>(
   method: string,
   path: string,
   body?: any,
+  customHeaders?: any,
   text?: boolean,
 ): Promise<RevvityApiResponse<T>> {
-  const headers: any = {
-    'x-api-key': await getApiKey(),
-    'Accept': 'application/vnd.api+json',
-  };
-  if (method === 'POST')
-    headers['Content-Type'] = 'application/json';
+  const maxRetries = 9;
+  let lastError: Error | string | undefined;
+  let lastResponseStatus: number | undefined;
+  
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      const headers: any = customHeaders ?? {
+        'x-api-key': await getApiKey(),
+        'Accept': 'application/vnd.api+json',
+      };
+      if (method === 'POST')
+        headers['Content-Type'] = 'application/json';
 
-  const url = `${await getApiUrl()}${path}`;
-  const response = await grok.dapi.fetchProxy(url, {
-    method,
-    headers,
-    body: body ? JSON.stringify(body) : undefined,
-  });
+      const url = `${await getApiUrl()}${path}`;
+      const response = await grok.dapi.fetchProxy(url, {
+        method,
+        headers,
+        body: body ? JSON.stringify(body) : undefined,
+      });
 
-  const res: RevvityApiResponse<T> = text ? await response.bytes() : await response.json();
+      lastResponseStatus = response.status;
 
-  if (!response.ok || res.errors) {
-    if (res.errors) {
-      //check for 403 error to further check in getUsers method
-      if (res.errors.length === 1 && res.errors[0].status === '403')
-        throw '403';
-      throw res.errors.map((error) => error.detail).join(';');
+      // Handle 429 (Too Many Requests) - retry after delay
+      if (response.status === 429 && attempt < maxRetries) {
+       // console.log(`${attempt} attempt for ${path} failed`);
+        await delay(1000);
+        continue; // Retry the request
+      }
+
+      const res: RevvityApiResponse<T> = text ? await response.text() : await response.json();
+
+      if (!response.ok || res.errors) {
+        if (res.errors) {
+          //check for 403 error to further check in getUsers method
+          if (res.errors.length === 1 && res.errors[0].status === '403')
+            throw '403';
+          throw res.errors.map((error) => error.detail).join(';');
+        }
+        throw new Error(`HTTP error!: ${response.status}`, { cause: response.status });
+      }
+      
+    //  console.log(`${attempt} attempt for ${path} succeeded`);
+      return res;
+    } catch (error) {
+      lastError = error as Error | string;
+      
+      // Only retry if we got a 429 error and have retries left
+      if (lastResponseStatus === 429 && attempt < maxRetries) {
+        await delay(1000);
+        continue;
+      }
+      
+      // For any other error or if we've exhausted retries, throw immediately
+      throw lastError;
     }
-    throw new Error(`HTTP error!: ${response.status}`, { cause: response.status });
   }
-  return res;
+  
+  throw lastError || new Error('Request failed after retries');
 }
 
 export async function queryUsers(): Promise<RevvityApiResponse> {
@@ -117,7 +152,10 @@ export async function queryUsers(): Promise<RevvityApiResponse> {
 }
 
 export async function search(body: SignalsSearchQuery, queryParams?: SignalsSearchParams): Promise<RevvityApiResponse> {
-  const paramsStr = queryParams ? `?${encodeURI(paramsStringFromObj(queryParams))}` : '';
+  const params = queryParams ?? {};
+  if (!params['page[limit]'])
+    params['page[limit]'] = MAX_RETURN_ROWS;
+  const paramsStr = `?${encodeURI(paramsStringFromObj(params))}`;
   return request('POST', `/entities/search${paramsStr}`, body);
 }
 
@@ -144,22 +182,12 @@ export async function queryTags(body: SignalsSearchQuery): Promise<RevvityApiRes
 }
 
 
-export async function queryStructureById(id: string): Promise<string> {
-
-  const url = `${await getApiUrl()}/materials/${id}/drawing?format=smiles`;
-  const response = await grok.dapi.fetchProxy(url, {
-    method: 'GET',
-    headers: {
+export async function queryStructureById(id: string): Promise<RevvityApiResponse> {
+  return request('GET', `/materials/${id}/drawing?format=smiles`, undefined,
+    {
       'x-api-key': await getApiKey(),
-    }
-  });
-
-  const res: string = await response.text();
-
-  if (!response.ok) {
-    throw new Error(`HTTP error!: ${response.status}`, { cause: response.status });
-  }
-  return res;
+    },
+    true);
 }
 
 export function paramsStringFromObj(params: any): string {

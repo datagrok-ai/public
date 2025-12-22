@@ -116,6 +116,12 @@ _Optional_
 
 Init hook specification, described [here](./link-types#init-hook).
 
+#### `onReturn`
+
+_Optional_
+
+Return hook specification, described [here](./code-usage).
+
 #### `states`
 
 _Optional_
@@ -144,6 +150,20 @@ input, should return `ValidationResult` or undefined. Could be used to
 check an order of steps and give a user errors/warnings if the current
 dynamic workflow steps state has issues. `ValidationResult` is the
 same as described [here](./link-types#setvalidation).
+
+#### `forceNavigate`
+
+_Optional_
+
+Will force navigate to the workflow view when using back/next
+buttons. By default non-empty workflows views will be skipped.
+
+#### `disableHistory`
+
+_Optional_
+
+Disables workflow history, usefull for nested workflow with nqName set
+to an empty function with a help file.
 
 #### `customExports`
 

@@ -83,13 +83,6 @@ module.exports = (_env, _options) => ({
         },
       },
       {
-        test: /\.worker\.ts$/,
-        loader: 'worker-loader',
-        options: {
-          inline: 'fallback', // this creates a separate file
-        },
-      },
-      {
         test: /\.ts$/,
         loader: 'ts-loader',
         exclude: /node_modules/,

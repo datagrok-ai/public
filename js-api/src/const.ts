@@ -307,6 +307,7 @@ export const TAGS = {
 
   MARKER_CODING: '.marker-coding',
   FORMULA_LINES: '.formula-lines',
+  ANNOTATION_REGIONS: '.annotation-regions',
 
   /** When a dataframe is loaded from a CSV, the maximum number of significant digits
    in the fractional part for each numeric column is determined  */
@@ -533,10 +534,39 @@ export enum VIEWER {
   TREE_MAP = 'Tree map',
   TRELLIS_PLOT = 'Trellis plot',
   WORD_CLOUD = 'Word cloud',
-  TIMELINES = 'TimelinesViewer',
-  RADAR_VIEWER = 'RadarViewer',
-  SURFACE_PLOT = 'SurfacePlot',
+  TIMELINES = 'Timelines',
+  RADAR_VIEWER = 'Radar',
+  SURFACE_PLOT = 'Surface plot',
   SCAFFOLD_TREE = 'Scaffold Tree',
+  PIVOT_TABLE = 'Pivot table',
+  CONFUSION_MATRIX = 'Confusion matrix'
+}
+
+/** @enum {CORE_VIEWER} */
+export enum CORE_VIEWER {
+  HISTOGRAM = 'Histogram',
+  BAR_CHART = 'Bar chart',
+  BOX_PLOT = 'Box plot',
+  CALENDAR = 'Calendar',
+  CORR_PLOT = 'Correlation plot',
+  DENSITY_PLOT = 'Density plot',
+  FILTERS = 'Filters',
+  FORM = 'Form',
+  GRID = 'Grid',
+  HEAT_MAP = 'Heat map',
+  LINE_CHART = 'Line chart',
+  SHAPE_MAP = 'Shape Map',
+  MARKUP = 'Markup',
+  MATRIX_PLOT = 'Matrix plot',
+  NETWORK_DIAGRAM = 'Network diagram',
+  PC_PLOT = 'PC Plot',
+  PIE_CHART = 'Pie chart',
+  SCATTER_PLOT = 'Scatter plot',
+  SCATTER_PLOT_3D = '3d scatter plot',
+  STATISTICS = 'Statistics',
+  TILE_VIEWER = 'Tile Viewer',
+  TREE_MAP = 'Tree map',
+  TRELLIS_PLOT = 'Trellis plot',
   PIVOT_TABLE = 'Pivot table',
   CONFUSION_MATRIX = 'Confusion matrix'
 }

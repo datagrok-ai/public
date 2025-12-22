@@ -27,13 +27,13 @@ export class SequencePositionStatsViewer extends DG.JsViewer {
     this.leftMotifLength = this.int('leftMotifLength', 0, {nullable: false, min: 0, max: 10});
     this.rightMotifLength = this.int('rightMotifLength', 0, {nullable: false, min: 0, max: 10});
     this.showPositionInfo = this.bool('showPositionInfo', true, {nullable: false, defaultValue: true, description: 'Show position and overhangs info in the viewer header'});
-    grok.events.onContextMenu.subscribe((e) => {
+    this.subs.push(grok.events.onContextMenu.subscribe((e) => {
       if (e.causedBy && e.causedBy.target && this._boxPlotViewer?.root.contains(e.causedBy.target)) {
         e.causedBy.preventDefault();
         e.causedBy.stopPropagation();
         e.causedBy.stopImmediatePropagation();
       }
-    });
+    }));
   }
 
   getPositionFromColumn(): number {

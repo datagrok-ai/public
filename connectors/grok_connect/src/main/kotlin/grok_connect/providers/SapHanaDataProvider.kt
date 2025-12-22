@@ -65,7 +65,7 @@ class SapHanaDataProvider() : JdbcDataProvider() {
 
     }
 
-    override fun getSchemaSql(db: String?, schema: String?, table: String?): String {
+    override fun getSchemaSql(db: String?, schema: String?, table: String?, includeKeyInfo: Boolean): String {
         val sysSchemasFilter = getSysSchemasFilter()
         var whereClause = "WHERE $sysSchemasFilter"
         table?.also { whereClause = "$whereClause AND table_name = '$table'" }

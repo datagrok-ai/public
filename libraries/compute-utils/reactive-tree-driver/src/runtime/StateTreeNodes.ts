@@ -64,7 +64,7 @@ export class FuncCallNode implements IStoreProvider {
   public uuid = uuidv4();
   public readonly nodeType = 'funccall';
 
-  public instancesWrapper = new FuncCallInstancesBridge(this.config.io!, this.isReadonly);
+  public instancesWrapper = new FuncCallInstancesBridge(this.config.io!, this.config.states ?? [], this.isReadonly);
   public pendingId?: string;
 
   public consistencyInfo$ = new BehaviorSubject<Record<string, ConsistencyInfo>>({});
@@ -80,6 +80,7 @@ export class FuncCallNode implements IStoreProvider {
     public readonly config: PipelineStepConfigurationProcessed,
     public isReadonly: boolean,
   ) {
+
     this.getConsistencyChanges().pipe(
       takeUntil(this.closed$),
     ).subscribe(this.consistencyInfo$);
@@ -377,6 +378,7 @@ export class PipelineNodeBase implements IStoreProvider {
       approversGroup: this.config.approversGroup,
       disableHistory: !!this.config.disableHistory,
       customExports: this.config.customExports,
+      forceNavigate: !!this.config.forceNavigate,
     };
     return res;
   }

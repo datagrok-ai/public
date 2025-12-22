@@ -13,10 +13,13 @@ export type SchemaAndConnection = {
   connection: DG.DataConnection;
 }
 
+export type SupportedRenderer = 'rawImage' | 'imageURL' | 'molecule' | 'helm';
+
 export type EntryPointOptions = {
   valueConverter: (value: string | number) => string | number;
   joinOptions: QueryJoinOptions[];
   regexpExample?: (typeof DG.ObjectHandler.prototype.regexpExample)
+  matchRegexp?: string;
 };
 export type QueryJoinOptions = {
   fromTable: string;
@@ -35,18 +38,48 @@ export type DBExplorerConfig = {
         table: string;
         column: string;
         regexpExample?: EntryPointOptions['regexpExample'];
+        matchRegexp?: string;
     }}
     joinOptions?: QueryJoinOptions[];
     headerNames?: {[tableName: string]: string};
     uniqueColumns?: {[tableName: string]: string};
     customSelectedColumns?: {[tableName: string]: string[]};
+    customRenderers?: {
+        table: string,
+        column: string,
+        renderer: SupportedRenderer;
+    }[];
 }
 
 export class DBValueObject {
   constructor(
+    public connectionNqName: string,
+    public schemaName: string,
     public table: string,
     public column: string,
     public value: string | number,
     public semValue?: DG.SemanticValue
   ) {}
+}
+
+type COLUMN_TYPE = string;
+type TABLE_COLUMN_SEPARATED_BY_DOT = `${string}.${string}`;
+export type DBConnectionDescriptor = {
+  connectionID: string;
+  name: string;
+  provider?: string;
+  description: string;
+  schemas: {
+    [schemaName: string]: {
+      description: string;
+      tables: {[tableName: string]: {
+        columns: {[columnName: string]: COLUMN_TYPE};
+        }
+      }
+      references: {
+        from: TABLE_COLUMN_SEPARATED_BY_DOT;
+        to: TABLE_COLUMN_SEPARATED_BY_DOT;
+      }[];
+    }
+  }
 }

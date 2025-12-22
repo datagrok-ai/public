@@ -3,8 +3,8 @@ import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
 
 import '../../css/moltrack.css';
-import { requestTitleUpdate } from '../views/registration-tab';
-import { MOLTRACK_MAPPING_VALIDATION_CHANGED } from '../utils/constants';
+import {requestTitleUpdate} from '../views/registration-tab';
+import {MOLTRACK_MAPPING_VALIDATION_CHANGED} from '../utils/constants';
 
 export interface TargetProperty {
   name: string;
@@ -28,7 +28,7 @@ export function renderMappingEditor(
   options: MappingEditorOptions,
   df: DG.DataFrame,
 ): void {
-  const { targetProperties, sourceColumns, mappings, onMap, onUndo } = options;
+  const {targetProperties, sourceColumns, mappings, onMap, onUndo} = options;
 
   ui.empty(host);
 
@@ -42,7 +42,7 @@ export function renderMappingEditor(
     for (const p of targetProperties) allPropsMap.set(p.name, p);
     for (const [targetCol] of mappings) {
       if (!allPropsMap.has(targetCol))
-        allPropsMap.set(targetCol, { name: targetCol, required: false });
+        allPropsMap.set(targetCol, {name: targetCol, required: false});
     }
 
     return Array.from(allPropsMap.values()).sort((a, b) => {
@@ -153,7 +153,7 @@ function validateMapping(
 
   const col = df.col(v);
   if (!col) {
-    issues.push({ message: 'Column not found in the dataframe', severity: 'error' });
+    issues.push({message: 'Column not found in the dataframe', severity: 'error'});
     return issues;
   }
 
@@ -195,12 +195,12 @@ function validateMapping(
   }
 
   if (col.categories?.includes(''))
-    issues.push({ message: 'Contains empty values', severity: 'warning' });
+    issues.push({message: 'Contains empty values', severity: 'warning'});
 
   return issues;
 }
 
 function fireValidationEvent(host: HTMLElement) {
   const hasErrors = host.querySelector('.moltrack-table .fa-times-circle') !== null;
-  grok.events.fireCustomEvent(MOLTRACK_MAPPING_VALIDATION_CHANGED, { hasErrors: hasErrors });
+  grok.events.fireCustomEvent(MOLTRACK_MAPPING_VALIDATION_CHANGED, {hasErrors: hasErrors});
 }

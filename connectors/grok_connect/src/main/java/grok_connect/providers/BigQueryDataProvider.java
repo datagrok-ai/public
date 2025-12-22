@@ -119,7 +119,7 @@ public class BigQueryDataProvider extends JdbcDataProvider {
     }
 
     @Override
-    public DataFrame getSchema(DataConnection connection, String schema, String table) throws
+    public DataFrame getSchema(DataConnection connection, String schema, String table, boolean includeKeyInfo) throws
             QueryCancelledByUser, GrokConnectException {
         try (Connection dbConnection = getConnection(connection);
              ResultSet columns = dbConnection.getMetaData().getColumns(null, schema, table, null)) {
@@ -249,5 +249,52 @@ public class BigQueryDataProvider extends JdbcDataProvider {
         SQLException wrapped = new SQLException(newMessage, e.getSQLState(), e.getErrorCode(), e);
         wrapped.setStackTrace(e.getStackTrace());
         return wrapped;
+    }
+
+    @Override
+    public String getCommentsQuery(DataConnection connection) throws GrokConnectException {
+        Object projectId = connection.get("projectId");
+        if (projectId == null)
+            throw new GrokConnectException("Project id should be provided to get comments");
+
+        return String.format(
+                "--input: string schema\n" +
+                        "-- TABLE and VIEW descriptions\n" +
+                        "(\n" +
+                        "  SELECT\n" +
+                        "      table_schema AS table_schema,\n" +
+                        "      table_name AS object_name,\n" +
+                        "      table_type AS object_type,\n" +
+                        "      NULL AS column_name,\n" +
+                        "      table_catalog,\n" +
+                        "      table_schema,\n" +
+                        "      table_name,\n" +
+                        "      ddl AS full_ddl,           -- sometimes contains COMMENT\n" +
+                        "      option_value AS comment\n" +
+                        "  FROM `%s.@schema.INFORMATION_SCHEMA.TABLE_OPTIONS`\n" +
+                        "  WHERE option_name = 'description'\n" +
+                        ")\n" +
+                        "\n" +
+                        "UNION ALL\n" +
+                        "\n" +
+                        "-- COLUMN descriptions\n" +
+                        "(\n" +
+                        "  SELECT\n" +
+                        "      table_schema AS table_schema,\n" +
+                        "      table_name AS object_name,\n" +
+                        "      'COLUMN' AS object_type,\n" +
+                        "      column_name AS column_name,\n" +
+                        "      NULL AS table_catalog,\n" +
+                        "      table_schema,\n" +
+                        "      table_name,\n" +
+                        "      NULL AS full_ddl,\n" +
+                        "      description AS comment\n" +
+                        "  FROM `%s.@schema.INFORMATION_SCHEMA.COLUMN_FIELD_PATHS`\n" +
+                        ")\n" +
+                        "\n" +
+                        "ORDER BY object_type, object_name, column_name;\n",
+                projectId,
+                projectId
+        );
     }
 }

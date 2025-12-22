@@ -1,5 +1,6 @@
 ---
 title: "Routing"
+unlisted: true
 ---
 
 In this article, we will consider in which cases the Datagrok platform retains the state in which it was before
@@ -15,27 +16,27 @@ available by a URL.
 
 The platform has browsers for the following entities:
 
-| Entity Browser                                 | URL                                                                                |
-|------------------------------------------------|------------------------------------------------------------------------------------|
-| [Projects](../concepts/project/project.md)                         | [https://public.datagrok.ai/projects](https://public.datagrok.ai/projects)         |
-| [Files](../../access/files/files.md)              | [https://public.datagrok.ai/files](https://public.datagrok.ai/files)               |
-| [Queries](../../access/access.md#data-query)             | [https://public.datagrok.ai/queries](https://public.datagrok.ai/queries)           |
-| [Scripts](../../compute/scripting/scripting.mdx)             | [https://public.datagrok.ai/scripts](https://public.datagrok.ai/scripts)           |
-| [Functions](../concepts/functions/functions.md)             | [https://public.datagrok.ai/functions](https://public.datagrok.ai/functions)       |
-| [Applications](../../develop/develop.md)          | [https://public.datagrok.ai/apps](https://public.datagrok.ai/apps)                 |
-| [Models](../../learn/learn.md)      | [https://public.datagrok.ai/models](https://public.datagrok.ai/models)             |
-| [Notebooks](../../compute/jupyter-notebook.md)    | [https://public.datagrok.ai/notebooks](https://public.datagrok.ai/notebooks)       |
-| [Users](../../govern/access-control/users-and-groups#users)                     | [https://public.datagrok.ai/users](https://public.datagrok.ai/users)               |
-| [Groups](../../govern/access-control/users-and-groups#groups)                   | [https://public.datagrok.ai/groups](https://public.datagrok.ai/groups)             |
-| [Connections](../../access/access.md#data-connection)    | [https://public.datagrok.ai/connections](https://public.datagrok.ai/connections)   |
-| Jobs                | [https://public.datagrok.ai/jobs](https://public.datagrok.ai/jobs)                 |
-| [Packages](../../develop/develop.md)              | [https://public.datagrok.ai/packages](https://public.datagrok.ai/packages)         |
-| [Repositories](../../develop/develop.md)          | [https://public.datagrok.ai/repositories](https://public.datagrok.ai/repositories) |
-| [Layouts](../../visualize/view-layout.md)         | [https://public.datagrok.ai/view_layouts](https://public.datagrok.ai/view_layouts) |
+| Entity Browser                                                | URL                                                                                |
+|---------------------------------------------------------------|------------------------------------------------------------------------------------|
+| [Dashboards](../concepts/project/dashboard.md)                | [https://public.datagrok.ai/projects](https://public.datagrok.ai/projects)         |
+| [Files](../../access/files/files.md)                          | [https://public.datagrok.ai/files](https://public.datagrok.ai/files)               |
+| [Queries](../../access/access.md#data-query)                  | [https://public.datagrok.ai/queries](https://public.datagrok.ai/queries)           |
+| [Scripts](../../compute/scripting/scripting.mdx)              | [https://public.datagrok.ai/scripts](https://public.datagrok.ai/scripts)           |
+| [Functions](../concepts/functions/functions.md)               | [https://public.datagrok.ai/functions](https://public.datagrok.ai/functions)       |
+| [Applications](../../develop/develop.md)                      | [https://public.datagrok.ai/apps](https://public.datagrok.ai/apps)                 |
+| [Models](../../learn/learn.md)                                | [https://public.datagrok.ai/models](https://public.datagrok.ai/models)             |
+| [Notebooks](../../compute/jupyter-notebook.md)                | [https://public.datagrok.ai/notebooks](https://public.datagrok.ai/notebooks)       |
+| [Users](../../govern/access-control/users-and-groups#users)   | [https://public.datagrok.ai/users](https://public.datagrok.ai/users)               |
+| [Groups](../../govern/access-control/users-and-groups#groups) | [https://public.datagrok.ai/groups](https://public.datagrok.ai/groups)             |
+| [Connections](../../access/access.md#data-connection)         | [https://public.datagrok.ai/connections](https://public.datagrok.ai/connections)   |
+| Jobs                                                          | [https://public.datagrok.ai/jobs](https://public.datagrok.ai/jobs)                 |
+| [Packages](../../develop/develop.md)                          | [https://public.datagrok.ai/packages](https://public.datagrok.ai/packages)         |
+| [Repositories](../../develop/develop.md)                      | [https://public.datagrok.ai/repositories](https://public.datagrok.ai/repositories) |
+| [Layouts](../../visualize/view-layout.md)                     | [https://public.datagrok.ai/view_layouts](https://public.datagrok.ai/view_layouts) |
 
-## Projects
+## Dashboards
 
-A [project](../concepts/project/project.md) uploaded to the server can be opened via a direct URL. If a project has more than one table
+A [dashboard](../concepts/project/dashboard.md) uploaded to the server can be opened via a direct URL. If a project has more than one table
 view, you can pass the name of a specific view to the URL so that you can see it after opening. Links to projects are
 generated according to the following
 rule: `https://public.datagrok.ai/p/{project.namespace}.{project.name}/{tableView.name}`

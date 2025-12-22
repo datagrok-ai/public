@@ -1,6 +1,16 @@
 # Sequence Translator changelog
 
-## 1.19.5 (2025-05-02)
+## 1.10.3 (2025-11-03)
+
+* Fix synthetic rule application for multiple instances when r group numbering is reversed
+
+## 1.10.2 (2025-11-03)
+
+* Update Bio Lib API
+* Fix synthetic rule errors for missing monomers
+* Fix incosistent R group conneections for reversed rule orders
+
+## 1.9.5 (2025-05-02)
 
 * Fix changing bond numbers when fixing molblocks
 

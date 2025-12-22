@@ -1,5 +1,9 @@
 # compute-api changelog
 
+## 0.6.7 (2025-11-20)
+
+- New workflows config properties added
+
 ## 0.6.5 (2025-10-30)
 
 - Add optimizer runner

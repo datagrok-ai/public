@@ -5,12 +5,11 @@ import {EarlyStoppingSettings, LOSS, ReproSettings} from './constants';
 import {makeConstFunction} from './cost-functions';
 import {performNelderMeadOptimization} from './optimizer';
 import {Extremum, OptimizationResult, OptimizerInputsConfig, OptimizerOutputsConfig,
-  TargetTableOutput, ValueBoundsData} from './optimizer-misc';
+  TargetTableOutput} from './optimizer-misc';
 import {nelderMeadSettingsOpts} from './optimizer-nelder-mead';
 import {defaultEarlyStoppingSettings, defaultRandomSeedSettings, getInputsData,
   makeGetCalledFuncCall} from './fitting-utils';
 import {getNonSimilar} from './similarity-utils';
-import {compileFormula} from './formulas-resolver';
 
 
 // Public API for Compute2 to expose as a platform function
@@ -70,7 +69,7 @@ export async function runOptimizer(
   const extrema = optResult.extremums;
   extrema.sort((a: Extremum, b: Extremum) => a.cost - b.cost);
 
-  const getCalledFuncCall = makeGetCalledFuncCall(func, fixedInputs, variedInputNames);
+  const getCalledFuncCall = makeGetCalledFuncCall(func, fixedInputs, variedInputNames, true);
   const targetDfs: TargetTableOutput[] = outputTargets
     .filter((output) => output.type === DG.TYPE.DATA_FRAME)
     .map((output) => {

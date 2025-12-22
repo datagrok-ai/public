@@ -8,8 +8,7 @@ import {
   RibbonPanel, DockManager, MarkDown,
   RibbonMenu,
   ifOverlapping,
-  tooltip,
-  Button,
+  IconImage,
 } from '@datagrok-libraries/webcomponents-vue';
 import './RichFunctionView.css';
 import * as Utils from '@datagrok-libraries/compute-utils/shared-utils/utils';
@@ -23,10 +22,10 @@ import {BehaviorSubject} from 'rxjs';
 import {ViewersHook} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineConfiguration';
 import {ValidationResult} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/data/common-types';
 import {useViewersHook} from '../../composables/use-viewers-hook';
-import {ViewAction} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineInstance';
 import {startWith, take, map} from 'rxjs/operators';
 import {useHelp} from '../../composables/use-help';
 import {useObservable} from '@vueuse/rxjs';
+import {_package} from '../../package-instance';
 
 interface ScalarsState {
   type: 'scalars',
@@ -38,6 +37,12 @@ interface DataFrameState {
   df: Vue.ShallowRef<DG.DataFrame>,
   type: 'dataframe',
   config: Record<string, any>,
+}
+
+interface DockSpawnConfigItem {
+  'dock-spawn-dock-type'?: 'left' | 'right' | 'up' | 'down',
+  'dock-spawn-dock-to'?: string,
+  'dock-spawn-dock-ratio'?: number,
 }
 
 type TabContent = Map<string, ScalarsState | DataFrameState>;
@@ -56,6 +61,9 @@ const getEmptyTabToProperties = () => ({
 const DEFAULT_FLOAT_PRECISION = 4;
 
 const getScalarContent = (funcCall: DG.FuncCall, prop: DG.Property) => {
+  const isHidden = JSON.parse(prop.options.hidden || 'false');
+  if (isHidden)
+    return;
   const scalarValue = funcCall.outputs[prop.name];
   let formattedScalarValue = scalarValue;
 
@@ -102,29 +110,28 @@ const tabToProperties = (fc: DG.FuncCall) => {
     return;
   };
 
-  func.inputs
-    .forEach((inputProp) => {
-      if (inputProp.propertyType === DG.TYPE.DATA_FRAME) processDf(inputProp, false);
-    });
+  func.inputs.forEach((inputProp) => {
+    if (inputProp.propertyType === DG.TYPE.DATA_FRAME) processDf(inputProp, false);
+  });
 
-  func.outputs
-    .forEach((outputProp) => {
-      if (outputProp.propertyType === DG.TYPE.DATA_FRAME) {
-        processDf(outputProp, true);
-        return;
-      }
+  func.outputs.forEach((outputProp) => {
+    if (outputProp.propertyType === DG.TYPE.DATA_FRAME) {
+      processDf(outputProp, true);
+      return;
+    }
+    const category = outputProp.category === 'Misc' ? 'Output': outputProp.category;
 
-      const category = outputProp.category === 'Misc' ? 'Output': outputProp.category;
-
-      const categoryProps = tabsToProps.outputs.get(category);
-      const [rawValue, formattedValue, units] = getScalarContent(fc, outputProp);
-      const scalarProp = {name: outputProp.name, friendlyName: outputProp.caption || outputProp.name, rawValue, formattedValue, units};
-      if (categoryProps && categoryProps.type === 'scalars')
-        categoryProps.scalarsData.push(scalarProp);
-      else
-        tabsToProps.outputs.set(category, {type: 'scalars', scalarsData: [scalarProp]});
-    });
-
+    const categoryProps = tabsToProps.outputs.get(category);
+    const content = getScalarContent(fc, outputProp);
+    if (!content)
+      return;
+    const [rawValue, formattedValue, units] = content;
+    const scalarProp = {name: outputProp.name, friendlyName: outputProp.caption || outputProp.name, rawValue, formattedValue, units};
+    if (categoryProps && categoryProps.type === 'scalars')
+      categoryProps.scalarsData.push(scalarProp);
+    else
+      tabsToProps.outputs.set(category, {type: 'scalars', scalarsData: [scalarProp]});
+  });
   return tabsToProps;
 };
 
@@ -150,16 +157,6 @@ export const RichFunctionView = Vue.defineComponent({
     consistencyStates: {
       type: Object as Vue.PropType<Record<string, ConsistencyInfo>>,
     },
-    menuActions: {
-      type: Object as Vue.PropType<Record<string, ViewAction[]>>,
-    },
-    buttonActions: {
-      type: Object as Vue.PropType<ViewAction[]>,
-    },
-    isTreeLocked: {
-      type: Boolean,
-      default: false,
-    },
     isReadonly: {
       type: Boolean,
       default: false,
@@ -176,10 +173,6 @@ export const RichFunctionView = Vue.defineComponent({
       type: Boolean,
       default: true,
     },
-    showStepNavigation: {
-      type: Boolean,
-      default: false,
-    },
     skipInit: {
       type: Boolean,
       dafault: true,
@@ -195,14 +188,13 @@ export const RichFunctionView = Vue.defineComponent({
   emits: {
     'update:funcCall': (_call: DG.FuncCall) => true,
     'runClicked': () => true,
-    'nextClicked': () => true,
     'actionRequested': (_actionUuid: string) => true,
     'consistencyReset': (_ioName: string) => true,
     'formValidationChanged': (_isValid: boolean) => true,
     'formInputChanged': (_a: DG.EventData<DG.InputArgs>) => true,
     'formReplaced': (_a: DG.InputForm | undefined) => true,
   },
-  setup(props, {emit}) {
+  setup(props, {emit, slots}) {
     Vue.onRenderTriggered((event) => {
       console.log('RichFunctionView onRenderTriggered', event);
     });
@@ -228,17 +220,17 @@ export const RichFunctionView = Vue.defineComponent({
     const validationState = Vue.computed(() => props.validationStates);
     const consistencyState = Vue.computed(() => props.consistencyStates);
 
-    const menuActions = Vue.computed(() => props.menuActions);
-    const buttonActions = Vue.computed(() => props.buttonActions);
-
     const tabsData = Vue.shallowRef<RenderStateItem[]>([]);
     const tabLabels = Vue.shallowRef<string[]>([]);
     const visibleTabLabels = Vue.shallowRef([] as string[]);
     const activePanelTitle = Vue.shallowRef<string | undefined>(undefined);
+    const dockSpawnConfig = Vue.shallowRef<Record<string, DockSpawnConfigItem>>({});
 
     const isSAenabled = Vue.ref(false);
     const isReportEnabled = Vue.ref(false);
     const isFittingEnabled = Vue.ref(false);
+    const allowRerun = Vue.ref(false);
+    const runLabel = Vue.ref('Run');
 
     const isLocked = Vue.ref(false);
 
@@ -248,6 +240,7 @@ export const RichFunctionView = Vue.defineComponent({
     const historyRef = Vue.shallowRef<InstanceType<typeof History> | undefined>(undefined);
     const helpRef = Vue.shallowRef<HTMLElement | undefined>(undefined);
     const formRef = Vue.shallowRef<HTMLElement | undefined>(undefined);
+    const dockSpawnRef = Vue.shallowRef<InstanceType<typeof DockManager> | undefined>(undefined);
     const inputFormComponentRef = Vue.shallowRef<InstanceType<typeof InputForm> | undefined>(undefined);
 
     ////
@@ -271,6 +264,9 @@ export const RichFunctionView = Vue.defineComponent({
       isSAenabled.value = Utils.getFeature(features, 'sens-analysis', false);
       isReportEnabled.value = Utils.getFeature(features, 'export', true);
       isFittingEnabled.value = Utils.getFeature(features, 'fitting', false);
+      allowRerun.value = Utils.getFeature(features, 'rerun', false);
+      runLabel.value = Utils.getRunLabel(call.func) ?? 'Run';
+      dockSpawnConfig.value = Utils.getDockSpawnConfig(call.func);
     }, {immediate: true});
 
     Vue.watch([currentCall, isOutputOutdated, visibleTabLabels], ([call, isOutputOutdated, visibleTabLabels], [prevCall, prevOutputOutdated, prevLabels]) => {
@@ -290,13 +286,7 @@ export const RichFunctionView = Vue.defineComponent({
       changeHelpFunc(call?.func);
     }, {immediate: true});
 
-    const run = async () => {
-      emit('runClicked');
-    };
-
-    const next = async () => {
-      emit('nextClicked');
-    };
+    const showRun = Vue.computed(() => props.showRunButton && (isOutputOutdated.value || allowRerun.value));
 
     ////
     // DockManager related
@@ -323,7 +313,7 @@ export const RichFunctionView = Vue.defineComponent({
 
       if (currentCall.value)
         sessionStorage.setItem(`opened_tab_${currentCall.value.func?.nqName}`, name ?? '');
-    }
+    };
 
     Vue.watch(currentCall, () => {
       visibleTabLabels.value = [...tabLabels.value];
@@ -428,15 +418,6 @@ export const RichFunctionView = Vue.defineComponent({
             { !historyHidden.value && <IconFA name='check'/>}
           </span> }
         </RibbonMenu>
-        { menuActions.value && Object.entries(menuActions.value).map(([category, actions]) =>
-          <RibbonMenu groupName={category} view={currentView.value}>
-            {
-              actions.map((action) => Vue.withDirectives(<span onClick={() => emit('actionRequested', action.uuid)}>
-                <div> { action.icon && <IconFA name={action.icon} style={menuIconStyle}/> } { action.friendlyName ?? action.id } </div>
-              </span>, [[tooltip, action.description]]))
-            }
-          </RibbonMenu>)
-        }
         <RibbonPanel view={currentView.value}>
           { isReportEnabled.value && !isOutputOutdated.value && <IconFA
             name='arrow-to-bottom'
@@ -451,16 +432,20 @@ export const RichFunctionView = Vue.defineComponent({
             }}
             tooltip='Generate standard report for the current step'
           />}
-          { isSAenabled.value && <IconFA
-            name='analytics'
-            onClick={runSA}
-            tooltip='Run sensitivity analysis'
-          />}
-          { isFittingEnabled.value && <IconFA
-            name='chart-line'
+          { isFittingEnabled.value && <IconImage
+            name='fitting'
+            path={`${_package.webRoot}files/icons/icon-chart-dots.svg`}
             onClick={runFitting}
             tooltip='Fit inputs'
-          />}
+            style={{width: '24px', height: '24px'}}
+          /> }
+          { isSAenabled.value && <IconImage
+            name='sa'
+            path={`${_package.webRoot}files/icons/icon-chart-sensitivity.svg`}
+            onClick={runSA}
+            tooltip='Run sensitivity analysis'
+            style={{width: '24px', height: '24px'}}
+          /> }
           { <IconFA
             name='question'
             tooltip={ helpHidden.value ? 'Open help panel' : 'Close help panel' }
@@ -480,22 +465,23 @@ export const RichFunctionView = Vue.defineComponent({
           onUpdate:activePanelTitle={handlePanelChanged}
           key={currentUuid.value}
           activePanelTitle={activePanelTitle.value}
+          ref={dockSpawnRef}
         >
           { !historyHidden.value && props.historyEnabled &&
             <History
-                key="__HISTORY__"
-                func={currentCall.value.func}
-                onRunChosen={(chosenCall) => emit('update:funcCall', chosenCall)}
-                allowCompare={true}
-                forceHideInputs={false}
-                showIsComplete={true}
-                dock-spawn-dock-type='right'
-                dock-spawn-dock-ratio={0.2}
-                dock-spawn-title='History'
-                dock-spawn-panel-icon='history'
-                ref={historyRef}
-                class='overflow-scroll h-full'
-              /> }
+              key="__HISTORY__"
+              func={currentCall.value.func}
+              onRunChosen={(chosenCall) => emit('update:funcCall', chosenCall)}
+              allowCompare={true}
+              forceHideInputs={false}
+              showIsComplete={true}
+              dock-spawn-dock-type='right'
+              dock-spawn-dock-ratio={0.2}
+              dock-spawn-title='History'
+              dock-spawn-panel-icon='history'
+              ref={historyRef}
+              class='overflow-scroll h-full'
+            /> }
           { !formHidden.value &&
               <div
                 key="__FORM__"
@@ -524,29 +510,14 @@ export const RichFunctionView = Vue.defineComponent({
                   />, [[ifOverlapping, isRunning.value, 'Recalculating...']])
                 }
                 <div class='flex sticky bottom-0 justify-end' style={{'z-index': 1000, 'background-color': 'rgb(255,255,255,0.75)'}}>
-                  {
-                    buttonActions.value?.map((action) => Vue.withDirectives(
-                      <Button onClick={() => emit('actionRequested', action.uuid)}>
-                        { action.icon && <IconFA name={action.icon} /> }
-                        { action.friendlyName ?? action.id }
-                      </Button>
-                      , [[tooltip, action.description]]))
-                  }
-                  {
-                    props.showRunButton &&
+                  { slots.navigation ?
+                    slots.navigation({runLabel: runLabel.value, allowRerun: allowRerun.value}) :
+                    showRun.value &&
                       <BigButton
-                        isDisabled={!isRunnable.value || isRunning.value || props.isTreeLocked || props.isReadonly}
-                        onClick={run}
+                        isDisabled={!isRunnable.value || isRunning.value || props.isReadonly}
+                        onClick={() => emit('runClicked')}
                       >
-                        { isOutputOutdated.value ? 'Run' : 'Rerun' }
-                      </BigButton>
-                  }
-                  {
-                    props.showStepNavigation && !isOutputOutdated.value &&
-                      <BigButton
-                        onClick={next}
-                      >
-                        Next
+                        { isOutputOutdated.value ? runLabel.value : 'Rerun' }
                       </BigButton>
                   }
                 </div>
@@ -554,6 +525,7 @@ export const RichFunctionView = Vue.defineComponent({
           {
             tabsData.value
               .map(({tabLabel, tabContent, isInput}) => {
+                const tabConfig = dockSpawnConfig.value[tabLabel] ?? {};
                 if (tabContent?.type === 'dataframe') {
                   const options = tabContent.config;
                   return <div
@@ -561,6 +533,7 @@ export const RichFunctionView = Vue.defineComponent({
                     dock-spawn-title={tabLabel}
                     dock-spawn-panel-icon={isInput ? 'sign-in-alt': 'sign-out-alt'}
                     key={tabLabel}
+                    {...tabConfig}
                   >
                     {
                       Vue.withDirectives(<Viewer
@@ -584,6 +557,7 @@ export const RichFunctionView = Vue.defineComponent({
                     dock-spawn-panel-icon='sign-out-alt'
                     dock-spawn-title={tabLabel}
                     key={tabLabel}
+                    {...tabConfig}
                   />;
 
                   return Vue.withDirectives(panel, [[ifOverlapping, isRunning.value, 'Recalculating...']]);

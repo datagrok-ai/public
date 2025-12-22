@@ -1,5 +1,5 @@
 import {v4 as uuidv4} from 'uuid';
-import {NodeAddress} from './BaseTree';
+import {NodePath} from './BaseTree';
 import {BehaviorSubject} from 'rxjs';
 
 export type DebugLogType =
@@ -13,7 +13,8 @@ export interface DebugLogBase {
 
 export interface LinkLogPayload {
   linkUUID: string,
-  prefix: NodeAddress,
+  prefix: Readonly<NodePath>,
+  basePath?: Readonly<NodePath>,
   id: string,
 }
 
@@ -48,9 +49,10 @@ export interface TreeUpdateStartedLogItem extends DebugLogBase {
 }
 
 export interface TreeUpdateMutationPayload {
-  mutationRootPath?: NodeAddress,
+  mutationRootPath?: NodePath,
   addIdx?: number,
   removeIdx?: number,
+  id: string,
 }
 
 export interface TreeUpdateMutationLogItem extends DebugLogBase, TreeUpdateMutationPayload {
@@ -84,7 +86,7 @@ export class DriverLogger {
     this.logs$.next(this.log);
   }
 
-  logMutations(data: TreeUpdateMutationPayload = {}) {
+  logMutations(data: TreeUpdateMutationPayload) {
     const uuid = uuidv4();
     const timestamp = new Date();
     this.log = [...this.log, {type: 'treeUpdateMutation', uuid, timestamp, ...data}];

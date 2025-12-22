@@ -115,6 +115,7 @@ export type PipelineInstanceRuntimeData = {
   disableHistory: boolean;
   customExports: CustomExport[] | undefined;
   structureCheckResults?: ValidationResult | undefined;
+  forceNavigate: boolean;
 }
 
 export type PipelineInstanceBase<I, T> = {

@@ -874,6 +874,14 @@ export interface IDensityPlotSettings {
 
   showYSelector: boolean;
 
+  xMin: number;
+
+  yMin: number;
+
+  xMax: number;
+
+  yMax: number;
+
   bins: number;
 
   allowZoom: boolean;
@@ -1776,6 +1784,8 @@ export interface ILineChartSettings {
   /// If false, the specified *X Axis Height*
   autoAxisSize: boolean;
 
+  annotationFont: string;
+
   /// Requires *Auto Axis Size* to be turned off.
   xAxisHeight: number;
 
@@ -1845,6 +1855,15 @@ export interface ILineChartSettings {
   autoAdjustMultiAxisLegendPosition: boolean;
 
   multiAxisLegendPosition: keyof typeof FlexExtendedPosition;
+
+  annotationRegions: string;
+
+  showViewerAnnotationRegions: boolean;
+
+  showDataframeAnnotationRegions: boolean;
+
+  /// Enables lasso region drawing mode (instead of polygon drawing default one).
+  lassoTool: boolean;
 
   categoryCustomColorIndices: Array<number>;
 
@@ -2495,6 +2514,8 @@ export interface IPieChartSettings {
 
   includeNulls: boolean;
 
+  labelPosition: string;
+
   autoLayout: boolean;
 
   segmentAngle: string;
@@ -2823,7 +2844,10 @@ export interface IScatterPlotSettings {
   /// Determines the rows shown on the scatter plot.
   showLabelsFor: keyof typeof RowSet;
 
-  /// Determines how to show marker labels.
+  /// Determines how to show marker label:
+  /// * Always - show labels for all visible markers
+  /// * Auto - show labels only for markers where enough space is available
+  /// * Never - show no labels.
   displayLabels: keyof typeof VisibilityMode;
 
   /// Determines whether to show column names next to label values.
@@ -2926,6 +2950,12 @@ export interface IScatterPlotSettings {
 
   formulaLines: string;
 
+  annotationRegions: string;
+
+  showViewerAnnotationRegions: boolean;
+
+  showDataframeAnnotationRegions: boolean;
+
   viewport: string;
 
   /// Controls scatter plot tooltip visibility
@@ -2960,6 +2990,8 @@ export interface IScatterPlotSettings {
   labelFont: string;
 
   formulaFont: string;
+
+  annotationFont: string;
 
   defaultRenderer: boolean;
 
@@ -3459,17 +3491,25 @@ export interface ITrellisPlotSettings {
 
   innerViewerLooks: {[index: string]: any};
 
-  globalScale: boolean;
-
   showGridlines: string;
 
   showXSelectors: boolean;
 
   showYSelectors: boolean;
 
+  /// Shows horizontal axis for each inner viewer row.
+  /// Depending on selected inner viewer, axis may be hidden automatically.
   showXAxes: keyof typeof VisibilityMode;
 
+  /// Shows vertical axis for each inner viewer column.
+  /// Depending on selected inner viewer, axis may be hidden automatically.
   showYAxes: keyof typeof VisibilityMode;
+
+  /// If checked, all inner viewers use the same axis scales.
+  globalScale: boolean;
+
+  /// Shows range sliders for inner viewer axis. Available only if corresponding axes (X or Y) are shown.
+  showRangeSliders: boolean;
 
   showXLabels: boolean;
 

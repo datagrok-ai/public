@@ -2,9 +2,16 @@ import {PlateGridCellRenderer} from './plate/plate-cell-renderer';
 import {PackageFunctions} from './package';
 import * as DG from 'datagrok-api/dg';
 
+//name: Assay Plates
+//description: Assasy plates with concentration, layout and readout data
+//meta.demoPath: Plates | Assay Plates
+export async function assayPlatesDemo() : Promise<void> {
+  await PackageFunctions.assayPlatesDemo();
+}
+
 //tags: init
-export function _initPlates() : void {
-  PackageFunctions._initPlates();
+export async function _initPlates() : Promise<void> {
+  await PackageFunctions._initPlates();
 }
 
 //tags: folderViewer
@@ -31,6 +38,31 @@ export function previewPlate(file: DG.FileInfo) : any {
 //meta.fileViewerCheck: Plates:checkFileIsPlate
 export async function importPlate(fileContent: string) : Promise<any> {
   return await PackageFunctions.importPlate(fileContent);
+}
+
+//description: Checks if an Excel file contains plate data.
+//input: blob content 
+//output: bool result
+export async function checkExcelIsPlate(content: Uint8Array) : Promise<boolean> {
+  return await PackageFunctions.checkExcelIsPlate(content);
+}
+
+//tags: file-handler
+//input: blob fileContent 
+//meta.ext: xlsx
+//meta.fileViewerCheck: Plates:checkExcelIsPlate
+export async function importPlateXlsx(fileContent: Uint8Array) : Promise<any> {
+  return await PackageFunctions.importPlateXlsx(fileContent);
+}
+
+//name: viewPlateXlsx
+//tags: fileViewer
+//input: file file 
+//output: view result
+//meta.fileViewer: xlsx
+//meta.fileViewerCheck: Plates:checkExcelIsPlate
+export async function previewPlateXlsx(file: DG.FileInfo) : Promise<any> {
+  return await PackageFunctions.previewPlateXlsx(file);
 }
 
 //description: Checks if a CSV file can be parsed as a plate.
@@ -67,11 +99,6 @@ export async function getPlateByBarcode(barcode: string) : Promise<any> {
 //name: createDummyPlateData
 export async function createDummyPlateData() : Promise<void> {
   await PackageFunctions.createDummyPlateData();
-}
-
-//tags: init
-export async function _init() : Promise<void> {
-  await PackageFunctions._init();
 }
 //name: PlateGridCellRenderer
 //tags: cellRenderer

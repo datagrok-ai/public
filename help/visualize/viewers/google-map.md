@@ -27,5 +27,5 @@ See also:
 * \#\{cmd(IpToCoordinates)}
 * \#\{cmd(AddressToCoordinates)}
 * [Viewers](../viewers/viewers.md)
-* [Table View](../../datagrok/navigation/views/table-view.md)
+* [Table View](../table-view-1.md)
 * [JS API: Google Map](https://public.datagrok.ai/js/samples/ui/viewers/types/google-map)

@@ -98,7 +98,7 @@ category('Widgets: Distribution panel', () => {
     await delay(1000);
     const lstViewer = model.findViewer(VIEWER_TYPE.LOGO_SUMMARY_TABLE) as LogoSummaryTable | null;
     getDistributionWidget(model.df, {
-      peptideSelection: DG.BitSet.create(model.df.rowCount), columns: model.settings!.columns!,
+      columns: model.settings!.columns!,
       activityCol: scaledActivityCol, clusterSelection: lstViewer!.clusterSelection, clusterColName: clusterCol.name,
       monomerPositionSelection: model.webLogoSelection,
     });
@@ -146,6 +146,7 @@ category('Widgets: Mutation cliffs', () => {
       sequenceColumnName: sarViewer.sequenceColumnName,
       positionColumns: sarViewer.positionColumns,
       activityCol: scaledActivityCol,
+      mutationCliffStats: sarViewer.cliffStats,
     });
   });
 });

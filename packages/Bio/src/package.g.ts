@@ -264,11 +264,28 @@ export async function sequenceSpaceTopMenu(table: DG.DataFrame, molecules: DG.Co
   return await PackageFunctions.sequenceSpaceTopMenu(table, molecules, methodName, similarityMetric, plotEmbeddings, preprocessingFunction, options, clusterEmbeddings, isDemo);
 }
 
+//name: Molecules to HELM
+//description: Converts Peptide molecules to HELM notation by matching with monomer library
+//input: dataframe table { description: Input data table }
+//input: column molecules { semType: Molecule; description: Molecule column }
+//top-menu: Bio | Transform | Molecules to HELM...
+export async function moleculesToHelmTopMenu(table: DG.DataFrame, molecules: DG.Column) : Promise<void> {
+  await PackageFunctions.moleculesToHelmTopMenu(table, molecules);
+}
+
+//name: Molecule to HELM Single
+//description: Converts a single molecule to HELM notation without requiring a table or column
+//input: string molecule { semType: Molecule; description: Input molecule }
+//output: string result { semType: Macromolecule; units: helm }
+export async function moleculeToHelmSingle(molecule: string) : Promise<string> {
+  return await PackageFunctions.moleculeToHelmSingle(molecule);
+}
+
 //name: To Atomic Level
 //description: Converts sequences to molblocks
 //input: dataframe table { description: Input data table }
 //input: column seqCol { semType: Macromolecule; caption: Sequence }
-//input: bool nonlinear = false { caption: Non-linear; description: Slower mode for cycling/branching HELM structures }
+//input: bool nonlinear = true { caption: Non-linear; description: Slower mode for cycling/branching HELM structures }
 //input: bool highlight = false { caption: Highlight monomers; description: Highlight monomers' substructures of the molecule }
 //top-menu: Bio | Transform | To Atomic Level...
 export async function toAtomicLevel(table: DG.DataFrame, seqCol: DG.Column, nonlinear: boolean, highlight: boolean) : Promise<void> {
@@ -288,6 +305,14 @@ export async function toAtomicLevelAction(seqCol: DG.Column) : Promise<void> {
 //output: widget result
 export async function toAtomicLevelPanel(sequence: DG.SemanticValue) : Promise<any> {
   return await PackageFunctions.toAtomicLevelPanel(sequence);
+}
+
+//name: To Atomic Level Single sequence
+//description: Converts a single sequence to molblock
+//input: string sequence { semType: Macromolecule }
+//output: string molfile { semType: Molecule }
+export async function toAtomicLevelSingleSeq(sequence: string) : Promise<string> {
+  return await PackageFunctions.toAtomicLevelSingleSeq(sequence);
 }
 
 //name: Molecular 3D Structure

@@ -101,18 +101,5 @@ export class ScaffoldTreeFilter extends DG.Filter {
     this.viewer.moleculeColumnName = this.columnName!;
     this.viewer.dataFrame = dataFrame;
     this.root.appendChild(this.viewer.root);
-
-    /** Temporary workaround to avoid setting height to 100% */
-    requestAnimationFrame(() => {
-      const wrapper = this.root.closest('.d4-root.d4-filter-group.d4-viewer.d4-filters.ui-box') as HTMLElement;
-      if (!wrapper) return;
-
-      const viewerContainer = wrapper.querySelector(
-        '.d4-filter-element .ui-box:has(.chem-scaffold-tree-toolbar)',
-      ) as HTMLElement;
-
-      if (viewerContainer)
-        viewerContainer.style.maxHeight = `${wrapper.clientHeight}px`;
-    });
   }
 }

@@ -30,11 +30,6 @@
     min-height: 0;
 }
 
-.assay-plates--create-plate-view .ui-split-h > *:not(.ui-split-h-divider) {
-    flex: 1;
-    min-width: 0;
-}
-
 .assay-plates--create-plate-view .ui-split-v > *:not(.ui-split-v-divider) {
     flex: 1;
     min-height: 0;
@@ -93,9 +88,9 @@
 }
 
 /* ensure all dg inputs in the template panel are responsive */
-.assay-plates--create-plate-view .assay-plates--template-panel .ui-input-root,
-.assay-plates--create-plate-view .assay-plates--template-panel .ui-input-editor,
-.assay-plates--create-plate-view .assay-plates--template-panel input,
+.assay-plates--create-plate-view .assay-plates--template-panel.ui-input-root:not(.ui-input-bool),
+.assay-plates--create-plate-view .assay-plates--template-panel.ui-input-editor:not(.ui-input-bool),
+.assay-plates--create-plate-view .assay-plates--template-panel input:not([type="checkbox"]),
 .assay-plates--create-plate-view .assay-plates--template-panel select {
     width: 100% !important;
     min-width: 0 !important;

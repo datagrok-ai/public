@@ -303,16 +303,16 @@ export class ActivityDashboardWidget extends DG.Widget {
         const item = itemsToShow[i];
         const listChild = list.children[i];
         const sharedNotification = this.sharedNotifications[i];
-        if (item instanceof DG.Project || item instanceof DG.Notebook || item instanceof DG.Model || item instanceof DG.ViewLayout) {
+        if (item instanceof DG.Notebook || item instanceof DG.Model || item instanceof DG.ViewLayout) {
           const parentElem = listChild.firstChild;
-          const iconToPaste = item instanceof DG.Project ? ui.iconSvg('project') : item instanceof DG.Notebook ? ui.iconImage('notebook', '/images/entities/jupyter.png') :
+          const iconToPaste = item instanceof DG.Notebook ? ui.iconImage('notebook', '/images/entities/jupyter.png') :
             item instanceof DG.Model ? ui.iconSvg('model') : ui.iconSvg('view-layout');
           if (parentElem && parentElem.firstChild)
             parentElem.insertBefore(iconToPaste, parentElem.firstChild);
         } else if (item instanceof DG.UserNotification) {
           if (item.createdAt) {
             const timestamp = ui.time.shortTimestamp(item.createdAt);
-            timestamp.style.top = '5px';
+            timestamp.style.top = '3px';
             listChild.prepend(timestamp);
             const timeChild = listChild.querySelector('.d4-time');
             if (timeChild)
@@ -333,11 +333,11 @@ export class ActivityDashboardWidget extends DG.Widget {
             //@ts-ignore
             return this.replaceMarkupSpans(inputText, [userPicture, entityPicture], [user.friendlyName, entity.friendlyName], sharedNotification.createdAt);
           });
-          icon.style.top = '5px';
+          icon.style.top = '3px';
           listChild.prepend(icon);
         } else if (title === SpotlightTabNames.RECENT) {
           const timestamp = ui.time.shortTimestamp(this.recentEntityTimes[i]);
-          timestamp.style.top = '5px';
+          timestamp.style.top = '3px';
           listChild.prepend(timestamp);
         }
       }
@@ -454,6 +454,7 @@ export class ActivityDashboardWidget extends DG.Widget {
     tryDemoAppsList.classList.add('power-pack-activity-widget-subwidget-list-content', 'power-pack-activity-widget-getting-started-subwidget-list-content');
     const tryDemoAppsRoot = ui.divV([ui.h3(ui.span([ui.iconFA('play-circle'), ui.span([' Demo Apps'])]), 'power-pack-activity-widget-spotlight-column-header'),
       tryDemoAppsList], 'power-pack-activity-widget-spotlight-getting-started-column');
+    root.append(gettingStartedRoot, tryDemoAppsRoot);
 
     const dashboardsToShow: HTMLElement[] = [];
     let medChemDashboard: DG.Project | undefined | null = null;
@@ -476,12 +477,13 @@ export class ActivityDashboardWidget extends DG.Widget {
       link.append(ui.iconSvg('project'), ui.span([demo instanceof DG.Project ? demo.friendlyName : getDemoDashboardName(demo)]));
       dashboardsToShow.push(ui.span([link], 'd4-link-label'));
     }
-    const dashboardList = ui.list(dashboardsToShow);
-    dashboardList.classList.add('power-pack-activity-widget-subwidget-list-content', 'power-pack-activity-widget-getting-started-subwidget-list-content');
-    const dashboardsRoot = ui.divV([ui.h3(ui.span([ui.iconFA('table'), ui.span([' Demo Datasets'])]), 'power-pack-activity-widget-spotlight-column-header'),
-      dashboardList], 'power-pack-activity-widget-spotlight-getting-started-column');
-
-    root.append(gettingStartedRoot, tryDemoAppsRoot, dashboardsRoot);
+    if (dashboardsToShow.length > 0) {
+      const dashboardList = ui.list(dashboardsToShow);
+      dashboardList.classList.add('power-pack-activity-widget-subwidget-list-content', 'power-pack-activity-widget-getting-started-subwidget-list-content');
+      const dashboardsRoot = ui.divV([ui.h3(ui.span([ui.iconFA('table'), ui.span([' Demo Datasets'])]), 'power-pack-activity-widget-spotlight-column-header'),
+        dashboardList], 'power-pack-activity-widget-spotlight-getting-started-column');
+      root.append(dashboardsRoot);
+    }
     return root;
   }
 

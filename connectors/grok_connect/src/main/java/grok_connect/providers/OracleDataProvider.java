@@ -18,6 +18,7 @@ import grok_connect.resultset.OracleResultSetManager;
 import grok_connect.resultset.ResultSetManager;
 import grok_connect.table_query.AggrFunctionInfo;
 import grok_connect.table_query.Stats;
+import grok_connect.utils.GrokConnectException;
 import grok_connect.utils.Prop;
 import grok_connect.utils.Property;
 import oracle.jdbc.OracleResultSet;
@@ -163,7 +164,7 @@ public class OracleDataProvider extends JdbcDataProvider {
     }
 
     @Override
-    public String getSchemaSql(String db, String schema, String table) {
+    public String getSchemaSql(String db, String schema, String table, boolean includeKeyInfo) {
         String whereClause = "WHERE " + SYS_SCHEMAS_FILTER;
 
         if (table != null)
@@ -171,13 +172,61 @@ public class OracleDataProvider extends JdbcDataProvider {
         if (schema != null)
             whereClause = whereClause + " AND (COL.OWNER = '" + schema + "')";
 
-        return "SELECT COL.OWNER as TABLE_SCHEMA, COL.TABLE_NAME AS TABLE_NAME, COL.COLUMN_NAME AS COLUMN_NAME, " +
-                "CASE WHEN DATA_PRECISION IS NOT NULL AND DATA_SCALE IS NOT NULL " +
-                "THEN CONCAT(COL.DATA_TYPE, CONCAT(CONCAT(CONCAT(CONCAT('(', DATA_PRECISION), ', '), DATA_SCALE), ')')) ELSE COL.DATA_TYPE END AS DATA_TYPE, " +
-                "CASE WHEN O.OBJECT_TYPE = 'VIEW' THEN 1 ELSE 0 END AS IS_VIEW" +
-                " FROM ALL_TAB_COLUMNS COL INNER JOIN ALL_OBJECTS O ON O.OBJECT_NAME = COL.TABLE_NAME AND O.OWNER = COL.OWNER " + whereClause +
-                " ORDER BY TABLE_NAME";
+        StringBuilder sql = new StringBuilder();
+
+        sql.append(
+                "SELECT " +
+                        "  COL.OWNER AS TABLE_SCHEMA, " +
+                        "  COL.TABLE_NAME AS TABLE_NAME, " +
+                        "  COL.COLUMN_NAME AS COLUMN_NAME, " +
+                        "  CASE " +
+                        "    WHEN DATA_PRECISION IS NOT NULL AND DATA_SCALE IS NOT NULL THEN " +
+                        "      COL.DATA_TYPE || '(' || DATA_PRECISION || ', ' || DATA_SCALE || ')' " +
+                        "    ELSE COL.DATA_TYPE " +
+                        "  END AS DATA_TYPE, " +
+                        "  CASE WHEN O.OBJECT_TYPE = 'VIEW' THEN 1 ELSE 0 END AS IS_VIEW"
+        );
+
+        if (includeKeyInfo) {
+            sql.append(
+                    ", CASE WHEN pk.column_name IS NOT NULL THEN 1 ELSE 0 END AS is_primary_key " +
+                            ", CASE WHEN pk.column_name IS NOT NULL OR uq.column_name IS NOT NULL " +
+                            "       THEN 1 ELSE 0 END AS is_unique"
+            );
+        }
+
+        sql.append(
+                " FROM ALL_TAB_COLUMNS COL " +
+                        " JOIN ALL_OBJECTS O ON O.OBJECT_NAME = COL.TABLE_NAME AND O.OWNER = COL.OWNER "
+        );
+
+        if (includeKeyInfo) {
+            sql.append(
+                    " LEFT JOIN ( " +
+                            "   SELECT acc.owner, acc.table_name, acc.column_name " +
+                            "   FROM ALL_CONSTRAINTS ac " +
+                            "   JOIN ALL_CONS_COLUMNS acc ON ac.constraint_name = acc.constraint_name AND ac.owner = acc.owner " +
+                            "   WHERE ac.constraint_type = 'P' " + // Primary key
+                            " ) pk ON pk.owner = COL.OWNER AND pk.table_name = COL.TABLE_NAME AND pk.column_name = COL.COLUMN_NAME "
+            );
+
+            sql.append(
+                    " LEFT JOIN ( " +
+                            "   SELECT acc.owner, acc.table_name, acc.column_name " +
+                            "   FROM ALL_CONSTRAINTS ac " +
+                            "   JOIN ALL_CONS_COLUMNS acc ON ac.constraint_name = acc.constraint_name AND ac.owner = acc.owner " +
+                            "   WHERE ac.constraint_type = 'U' " + // Unique
+                            " ) uq ON uq.owner = COL.OWNER AND uq.table_name = COL.TABLE_NAME AND uq.column_name = COL.COLUMN_NAME "
+            );
+        }
+
+        sql.append(" ")
+                .append(whereClause)
+                .append(" ORDER BY TABLE_NAME");
+
+        return sql.toString();
     }
+
 
     @Override
     public String limitToSql(String query, Integer limit) {
@@ -191,5 +240,38 @@ public class OracleDataProvider extends JdbcDataProvider {
         defaultManagersMap.put(Types.INT, new OracleSnowflakeIntColumnManager());
         defaultManagersMap.put(Types.BIG_INT, new OracleBigIntColumnManager());
         return new OracleResultSetManager(defaultManagersMap.values());
+    }
+
+    @Override
+    public String getCommentsQuery(DataConnection connection) throws GrokConnectException {
+        return "--input: string schema\n" +
+                "SELECT\n" +
+                "    tc.owner AS table_schema,\n" +
+                "    tc.table_name AS object_name,\n" +
+                "    CASE \n" +
+                "        WHEN t.table_type = 'VIEW' THEN 'view'\n" +
+                "        ELSE 'table'\n" +
+                "    END AS object_type,\n" +
+                "    NULL AS column_name,\n" +
+                "    tc.comments AS comment\n" +
+                "FROM all_tab_comments tc\n" +
+                "JOIN all_objects t\n" +
+                "  ON t.owner = tc.owner\n" +
+                " AND t.object_name = tc.table_name\n" +
+                "WHERE tc.owner = @schema\n" +
+                "\n" +
+                "UNION ALL\n" +
+                "\n" +
+                "-- COLUMN comments\n" +
+                "SELECT\n" +
+                "    cc.owner AS table_schema,\n" +
+                "    cc.table_name AS object_name,\n" +
+                "    'column' AS object_type,\n" +
+                "    cc.column_name AS column_name,\n" +
+                "    cc.comments AS comment\n" +
+                "FROM all_col_comments cc\n" +
+                "WHERE cc.owner = @schema\n" +
+                "\n" +
+                "ORDER BY object_type, object_name, column_name;\n";
     }
 }

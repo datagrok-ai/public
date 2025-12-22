@@ -46,16 +46,21 @@ export const scopeToUrl: { [key: string]: string } = {
 };
 
 export type MolTrackProp = {
+  nullable: boolean;
   name: string;
   value_type: string;
   entity_type?: string;
   description?: string;
   pattern?: string;
+  min?: number;
+  max?: number;
+  unit?: string;
+  choices?: string[];
   friendly_name?: string;
 };
 
 export const GITHUB_BASE_URL =
-  'https://raw.githubusercontent.com/datagrok-ai/mol-track/main/data/black/';
+  'https://raw.githubusercontent.com/datagrok-ai/mol-track/38d3da073bf17ad1ed07aee1c7f710f5bd6dcddd/data/black/';
 
 export const USER_FIELDS = ['created_by', 'updated_by', 'deleted_by'];
 
@@ -71,8 +76,8 @@ export const CORPORATE_COMPOUND_ID_COL_NAME = 'corporate_compound_id';
 export const STRUCTURE_FIELDS = [MOL_COL_NAME, 'original_molfile'];
 export const STRUCTURE_SEARCH_FIELD = 'structure';
 
-export const STRING_AGGREGATIONS = ['CONCAT ALL', 'CONCAT UNIQUE', 'LONGEST', 'SHORTEST', 'MOST FREQUENT'];
-export const NUMERIC_AGGREGATIONS = ['FIRST', 'COUNT', 'VALUES', 'UNIQUE', 'NULLS', 'MIN', 'MAX', 'SUM',
+export const STRING_AGGREGATIONS = ['FIRST', 'CONCAT ALL', 'CONCAT UNIQUE', 'MOST FREQUENT'];
+export const NUMERIC_AGGREGATIONS = ['COUNT', 'VALUES', 'UNIQUE', 'NULLS', 'MIN', 'MAX', 'SUM',
   'MED', 'AVG', 'STDEV', 'VARIANCE', 'Q1', 'Q2', 'Q3'];
 export const PROP_NUM_TYPES = [DG.TYPE.BIG_INT, DG.TYPE.FLOAT, DG.TYPE.INT, DG.TYPE.NUM, DG.TYPE.QNUM];
 
@@ -84,6 +89,7 @@ export const PROPERTIES = 'properties';
 
 export const SEARCH_NODE = 'Search';
 export const SAVED_SEARCHES_NODE = 'Saved Searches';
+export const MOLTRACK_NODE = 'MolTrack';
 
 export const MOLTRACK_APP_PATH: string = 'apps/MolTrack';
 
@@ -92,3 +98,20 @@ export const MOLTRACK_MAPPING_VALIDATION_CHANGED = 'moltrack-mappingValidationCh
 export const excludedScopes = [Scope.ASSAY_RUNS, Scope.ASSAY_RESULTS];
 
 export const LAYOUT_STORAGE = 'MolTrackLayouts';
+
+export interface SchemaProperty extends Partial<MolTrackProp> {
+  type?: string;
+  value_type?: string;
+  entity_type?: string;
+  property_class?: string;
+}
+
+export type GroupedProperties = Record<string, SchemaProperty[]>;
+
+export interface IViewContainer {
+  view: DG.ViewBase;
+  show: () => void;
+}
+
+export const MAX_USER_SETTINGS_STRING_LENGTH = 4000;
+export const CHUNK_KEY_SUFFIX = '__CHUNK__';

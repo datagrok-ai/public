@@ -25,7 +25,7 @@ import {Color} from './color';
 import {FormViewer, Grid} from "./grid";
 import {FilterState, ScatterPlotViewer, Viewer} from "./viewer";
 import {Property, TableInfo} from "./entities";
-import {FormulaLinesHelper} from "./helpers";
+import {FormulaLinesHelper, AnnotationRegionsHelper} from "./helpers";
 import dayjs from "dayjs";
 import {Tags} from "./api/ddt.api.g";
 import {IDartApi} from "./api/grok_api.g";
@@ -88,6 +88,12 @@ export interface CsvExportOptions {
   /** Column-specific formats (column name -> format).
       For format examples, see [dateTimeFormatters]. */
   columnFormats?: ColumnsFormatCsvExportOptions;
+
+  /**
+   * Whether to include UTF-8 BOM marker at the beginning of the file.
+   *   Helps Excel correctly detect UTF-8 encoding for multibyte characters.
+   */
+  includeUtf8Bom?: boolean;
 }
 
 
@@ -2435,6 +2441,7 @@ export class DataFrameMetaHelper {
   df: DataFrame;
 
   readonly formulaLines: DataFrameFormulaLinesHelper;
+  readonly annotationRegions: DataFrameAnnotationRegionsHelper;
 
   async detectSemanticTypes() {
     await grok.data.detectSemanticTypes(this.df);
@@ -2443,6 +2450,7 @@ export class DataFrameMetaHelper {
   constructor(df: DataFrame) {
     this.df = df;
     this.formulaLines = new DataFrameFormulaLinesHelper(this.df);
+    this.annotationRegions = new DataFrameAnnotationRegionsHelper(this.df);
   }
 
   /** This data will be picked up by {@link Grid} to construct groups. */
@@ -2464,6 +2472,17 @@ export class DataFrameFormulaLinesHelper extends FormulaLinesHelper {
   }
 }
 
+export class DataFrameAnnotationRegionsHelper extends AnnotationRegionsHelper {
+  readonly df: DataFrame;
+
+  get storage(): string { return this.df.getTag(DG.TAGS.ANNOTATION_REGIONS) ?? ''; }
+  set storage(value: string) { this.df.setTag(DG.TAGS.ANNOTATION_REGIONS, value); }
+
+  constructor(df: DataFrame) {
+    super();
+    this.df = df;
+  }
+}
 
 export class DataFramePlotHelper {
   private readonly df: DataFrame;
