@@ -8,7 +8,7 @@ import {OpenAI} from 'openai';
 import '../../css/ai.css';
 import {ChatModel} from 'openai/resources/shared';
 import {dartLike, fireAIAbortEvent, getAIPanelToggleSubscription} from '../utils';
-import {ConversationStorage, StoredConversationWithContext, UIMessage} from './storage';
+import {ConversationStorage, StoredConversationWithContext} from './storage';
 
 export type ModelOption = 'Fast' | 'Deep Research';
 export const ModelType: {[type in ModelOption]: ChatModel} = {
@@ -39,9 +39,35 @@ const actionButtionValues = {
 } as const;
 
 export type UIMessageOptions = {
-  result?: {
-    finalResult?: string;
-  }
+  /** if set, will add feedback buttons to the message*/
+  finalResult?: string,
+  /** if set, will show a confirmation dialog with the given message before adding the message */
+  confirm?: {confirmResult?: boolean, message?: string},
+}
+
+export interface UIMessage {
+  fromUser: boolean;
+  text: string;
+  title?: string;
+  messageOptions?: UIMessageOptions;
+}
+
+export type PanleMesageRet = {
+  confirmPromie: Promise<boolean>,
+}
+
+export type AIPanelFuncs<T = OpenAI.Chat.ChatCompletionMessageParam> = {
+  /** Adds @aiMsg to the message stack (from user) and @msg to the UI panel */
+  addUserMessage: (aiMsg: T, msg: string) => void,
+  /** Adds @aiMsg to the message stack (from AI) and @msg with @title to the UI panel*/
+  addAIMessage: (aiMsg: T, title: string, msg: string) => void,
+  /** Adds @aiMsg to the message stack without showing it to the ui  */
+  addEngineMessage: (aiMsg: T) => void,
+  /** Adds @msg to the UI without adding it to the AI message stack */
+  addUiMessage: (msg: string, fromUser: boolean, messageOptions?: UIMessageOptions) => void
+  /**Adds confirmation section to the panel and awaits result */
+  addConfirmMessage: (msg?: string) => Promise<boolean>,
+
 }
 
 export class AIPanel<T extends MessageType = OpenAI.Chat.ChatCompletionMessageParam, K extends AIPanelInputs = AIPanelInputs> {
@@ -266,13 +292,18 @@ export class AIPanel<T extends MessageType = OpenAI.Chat.ChatCompletionMessagePa
   }
 
   private _aiMessagesAccordionPane: HTMLElement | null = null;
-  protected appendMessage(aiMessage: T, uiMessage: {title: string, content: string, fromUser: boolean, onlyAddToMessages?: boolean, uiOnly?: boolean, finalMessage?: string}, loader?: HTMLElement) {
+  protected appendMessage(
+    aiMessage: T, uiMessage: {
+      title: string, content: string, fromUser: boolean, onlyAddToMessages?: boolean, uiOnly?: boolean, messageOptions?: UIMessageOptions
+    }, loader?: HTMLElement
+  ): PanleMesageRet | undefined {
+    let ret: PanleMesageRet | undefined = undefined;
     if (!uiMessage.uiOnly)
       this._messages.push(aiMessage);
     if (uiMessage.onlyAddToMessages)
       return;
     // from this point we know that message is also in the ui.
-    this._uiMessages.push({fromUser: !!uiMessage.fromUser, text: uiMessage.content, title: uiMessage.title});
+    this._uiMessages.push({fromUser: !!uiMessage.fromUser, text: uiMessage.content, title: uiMessage.title, messageOptions: uiMessage.messageOptions});
     if (uiMessage.fromUser) {
       const userDiv = ui.div(ui.divText(uiMessage.content, 'd4-ai-user-prompt-divtext'), 'd4-ai-user-prompt-container');
       this.outputArea.appendChild(userDiv);
@@ -315,7 +346,7 @@ export class AIPanel<T extends MessageType = OpenAI.Chat.ChatCompletionMessagePa
         });
       }
 
-      if (uiMessage.finalMessage && !uiMessage.fromUser) {
+      if (uiMessage?.messageOptions?.finalResult && !uiMessage.fromUser) {
         // if it is a final message from AI, add thumbs up/down,
         const feedbackDiv = ui.divH([], 'd4-ai-panel-feedback-div');
         const thumbsUp = ui.iconFA('thumbs-up', () => {
@@ -338,7 +369,7 @@ export class AIPanel<T extends MessageType = OpenAI.Chat.ChatCompletionMessagePa
           (helpful ? thumbsUp : thumbsDown).style.backgroundColor = helpful ? 'rgba(0, 150, 30, 0.2)' : 'rgba(200, 0, 0, 0.2)';
           receiveFeedback(
             that._uiMessages[0]?.text ?? '',
-            uiMessage.finalMessage!,
+            uiMessage?.messageOptions?.finalResult!,
             that.contextId,
             helpful
           );
@@ -348,6 +379,41 @@ export class AIPanel<T extends MessageType = OpenAI.Chat.ChatCompletionMessagePa
         dartLike(feedbackDiv.style).set('gap', '8px').set('alignItems', 'center').set('width', '100%').set('paddingBottom', '8px').set('paddingLeft', '4px');
         markDown.appendChild(feedbackDiv);
       }
+
+      // if the action from AI requires confirmation, add confirm section with buttons
+      if (uiMessage?.messageOptions?.confirm && !uiMessage.fromUser) {
+        let resolve: (value: boolean) => void = () => {};
+        const confirmPromise = new Promise<boolean>((res) => { resolve = res; });
+        ret = {confirmPromie: confirmPromise};
+        const confirmDiv = ui.divV([], 'd4-ai-panel-confirmation-div');
+        const confirmText = ui.divText(uiMessage?.messageOptions?.confirm.message ?? 'Allow Datagrok to proceed?', 'd4-ai-panel-confirmation-text');
+        const buttonsDiv = ui.divH([], 'd4-ai-panel-confirmation-buttons-div');
+        const confirmButton = ui.iconFA('check', null, 'Confirm');
+        const cancelButton = ui.iconFA('times', null, 'Cancel');
+        dartLike(confirmButton.style).set('padding', '2px').set('borderRadius', '6px').set('marginRight', '2px').set('textAlign', 'center').set('width', '14px');
+        dartLike(cancelButton.style).set('padding', '2px').set('borderRadius', '6px').set('textAlign', 'center').set('width', '14px');
+        // if the result of confirmation is already set, do not subscribe to changes
+        const handleConfirmResult = (confirmed: boolean) => {
+          // make sure the reference of the result is also marked
+          uiMessage?.messageOptions?.confirm && (uiMessage.messageOptions.confirm.confirmResult = confirmed);
+          resolve(confirmed);
+          [confirmButton, cancelButton].forEach((el) => {
+            el.onclick = null;
+            dartLike(el.style).set('backgroundColor', '').set('cursor', 'default').set('opacity', '0.6').set('pointerEvents', 'none');
+          });
+          (confirmed ? confirmButton : cancelButton).style.backgroundColor = confirmed ? 'rgba(0, 150, 30, 0.3)' : 'rgba(200, 0, 0, 0.3)';
+        };
+        confirmButton.onclick = () => handleConfirmResult(true);
+        cancelButton.onclick = () => handleConfirmResult(false);
+        buttonsDiv.appendChild(confirmButton);
+        buttonsDiv.appendChild(cancelButton);
+        confirmDiv.appendChild(confirmText);
+        confirmDiv.appendChild(buttonsDiv);
+        markDown.appendChild(confirmDiv);
+        if (uiMessage?.messageOptions?.confirm.confirmResult != undefined)
+          handleConfirmResult(uiMessage?.messageOptions?.confirm.confirmResult); // already have a result
+      }
+
       dartLike(markDown.style).set('userSelect', 'text').set('maxWidth', '100%');
       const titleText = uiMessage.title ? [ui.h3(uiMessage.title, 'd4-ai-assistant-response-title')] : [];
       const assistantDiv = ui.divV([...titleText, markDown], 'd4-ai-assistant-response-container');
@@ -358,9 +424,10 @@ export class AIPanel<T extends MessageType = OpenAI.Chat.ChatCompletionMessagePa
       this.outputArea.appendChild(loader);
     this.outputArea.scrollTop = this.outputArea.scrollHeight;
     this.showContentIcons();
+    return ret;
   }
 
-  public startChatSession() {
+  public startChatSession(): {session: AIPanelFuncs<T>, endSession: () => void} {
     const loader = ui.icons.loader();
     dartLike(loader.style).set('alignSelf', 'center').set('height', '20px').set('marginTop', '8px');
     this.runButton.classList.remove('fal', 'fa-paper-plane');
@@ -368,14 +435,12 @@ export class AIPanel<T extends MessageType = OpenAI.Chat.ChatCompletionMessagePa
     this.runButton.style.color = 'orangered';
     this.runButtonTooltip = actionButtionValues.stop;
     return {
-      addUserMessage: (message: T, content: string) => {
-        this.appendMessage(message, {title: '', content: content, fromUser: true}, loader);
-      },
-      addAIMessage: (message: T, title: string, content: string, onlyAddToMessages?: boolean) => {
-        this.appendMessage(message, {title: title, content: content, fromUser: false, onlyAddToMessages}, loader);
-      },
-      addUIMessage: (content: string, fromUser: boolean, messageOptions?: UIMessageOptions) => {
-        this.appendMessage('' as any, {title: '', content: content, fromUser: fromUser, uiOnly: true, finalMessage: messageOptions?.result?.finalResult}, loader);
+      session: {
+        addAIMessage: (aiMessage, title, content) => this.appendMessage(aiMessage, {title: title, content: content, fromUser: false}, loader),
+        addEngineMessage: (aiMessage) => this.appendMessage(aiMessage, {title: '', content: '', fromUser: false, onlyAddToMessages: true}, loader),
+        addUiMessage: (msg: string, fromUser: boolean, messageOptions?: UIMessageOptions) => this.appendMessage('' as any, {title: '', content: msg, fromUser: fromUser, uiOnly: true, messageOptions: messageOptions}, loader),
+        addUserMessage: (aiMsg, content) => this.appendMessage(aiMsg, {title: '', content: content, fromUser: true}, loader),
+        addConfirmMessage: (msg?: string) => this.appendMessage('' as any, {title: '', content: '', fromUser: false, uiOnly: true, messageOptions: {confirm: {message: msg}}}, loader)!.confirmPromie,
       },
       endSession: () => {
         this.runButton.classList.remove('fas', 'fa-stop');
@@ -493,7 +558,7 @@ export class AIPanel<T extends MessageType = OpenAI.Chat.ChatCompletionMessagePa
       this.outputArea.innerHTML = '';
       this._uiMessages = [];
       conv.uiMessages.forEach((msg) => {
-        this.appendMessage(null as any, {title: msg.title ?? '', content: msg.text, fromUser: msg.fromUser, uiOnly: true}); // no loader
+        this.appendMessage(null as any, {title: msg.title ?? '', content: msg.text, fromUser: msg.fromUser, uiOnly: true, messageOptions: msg.messageOptions}); // no loader
       });
       this.afterConversationLoad(conv);
       //grok.shell.info(`Loaded conversation: ${conv.initialPrompt.substring(0, 50)}...`);
@@ -653,35 +718,21 @@ export class DBAIPanel<T extends MessageType = OpenAI.Chat.ChatCompletionMessage
 
 export class TVAIPanel<T extends MessageType = OpenAI.Chat.ChatCompletionMessageParam> extends AIPanel<T, TVAIPanelInputs> {
   protected get placeHolder() { return 'Ask about your table data...'; }
-  protected modeInput: DG.InputBase<'agent' | 'ask'>;
   protected tableView: DG.TableView;
   constructor(view: DG.TableView) {
     super(view.dataFrame?.name ?? view.name ?? 'AI-Table-context', view); // context ID is table name
     this.tableView = view;
-    this.modeInput = ui.input.choice('Mode', {
-      items: ['agent', 'ask'] as ('agent' | 'ask')[],
-      value: 'agent',
-      nullable: false,
-      tooltipText: 'Agent: Full task execution | Ask: Quick answers and guidance',
-    }) as DG.InputBase<'agent' | 'ask'>;
-    this.inputControlsDiv.appendChild(this.modeInput.input);
-    ui.tooltip.bind(this.modeInput.input, 'Agent mode for full task execution, Ask mode for quick answers and UI guidance');
   }
 
-  public getCurrentInputs(): TVAIPanelInputs {
-    const baseInputs = super.getCurrentInputs();
-    return {
-      ...baseInputs,
-      mode: this.modeInput.value,
-    };
-  }
   // meta of TVAIPanel will store the layout of the table view
   protected getConversationMeta() {
     return this.tableView.saveLayout().viewState;
   }
 
   protected afterConversationLoad(conversation: StoredConversationWithContext<T>) {
-    if (!!conversation.meta) {
+    const currentViewers = Array.from(this.tableView.viewers);
+    // only apply layout if the view is standard grid and there is layout meta
+    if (!!conversation.meta && currentViewers.length === 1 && currentViewers[0].type === DG.VIEWER.GRID) {
       const layout = DG.ViewLayout.fromViewState(conversation.meta);
       this.tableView.loadLayout(layout, true);
     }

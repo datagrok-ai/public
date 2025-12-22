@@ -138,14 +138,7 @@ export async function setupAIQueryEditorUI(v: DG.ViewBase, connectionID: string,
     try {
       const sqlQuery = await generateAISqlQueryWithTools(args.currentPrompt.prompt, connectionID, args.currentPrompt.schemaName!, {
         oldMessages: args.prevMessages,
-        aiPanel: {
-          addAIMessage: (aiMessage, title, content) => {
-            session.addAIMessage(aiMessage, title, content);
-          },
-          addEngineMessage: (aiMessage) => session.addAIMessage(aiMessage, '', '', true),
-          addUiMessage: (msg: string, fromUser: boolean, messageOptions?: UIMessageOptions) => session.addUIMessage(msg, fromUser, messageOptions),
-          addUserMessage: (aiMsg, content) => session.addUserMessage(aiMsg, content),
-        }, modelName: ModelType[panel.getCurrentInputs().model],
+        aiPanel: session.session, modelName: ModelType[panel.getCurrentInputs().model],
       });
       if (sqlQuery && typeof sqlQuery === 'string' && sqlQuery.trim().length > 0)
         setAndRunFunc(sqlQuery);
@@ -179,18 +172,9 @@ export async function setupTableViewAIPanelUI() {
         await processTableViewAIRequest(
           args.currentPrompt.prompt,
           tableView,
-          args.currentPrompt.mode,
           {
             oldMessages: args.prevMessages,
-            aiPanel: {
-              addAIMessage: (aiMessage, title, content) => {
-                session.addAIMessage(aiMessage, title, content);
-              },
-              addEngineMessage: (aiMessage) => session.addAIMessage(aiMessage, '', '', true),
-              addUiMessage: (msg: string, fromUser: boolean, messageOptions?: UIMessageOptions) =>
-                session.addUIMessage(msg, fromUser, messageOptions),
-              addUserMessage: (aiMsg, content) => session.addUserMessage(aiMsg, content),
-            },
+            aiPanel: session.session,
             modelName: ModelType[panel.getCurrentInputs().model],
           }
         );

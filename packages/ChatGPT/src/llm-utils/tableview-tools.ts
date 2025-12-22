@@ -6,14 +6,8 @@ import {OpenAI} from 'openai';
 import {OpenAIClient} from './openAI-client';
 import {ChatModel} from 'openai/resources/shared';
 import {getAIAbortSubscription} from '../utils';
-import {UIMessageOptions} from './panel';
-
-type AIPanelFuncs = {
-  addUserMessage: (aiMsg: OpenAI.Chat.ChatCompletionMessageParam, msg: string) => void,
-  addAIMessage: (aiMsg: OpenAI.Chat.ChatCompletionMessageParam, title: string, msg: string) => void,
-  addEngineMessage: (aiMsg: OpenAI.Chat.ChatCompletionMessageParam) => void, // one that is not shown in the UI
-  addUiMessage: (msg: string, fromUser: boolean, messageOptions?: UIMessageOptions) => void
-}
+import {AIPanelFuncs} from './panel';
+import {LLMCredsManager} from './creds';
 
 /**
  * Handles AI-assisted table view interactions with ask and agent modes
@@ -26,11 +20,10 @@ type AIPanelFuncs = {
 export async function processTableViewAIRequest(
   prompt: string,
   tableView: DG.TableView,
-  mode: 'ask' | 'agent',
   options: {
     oldMessages?: OpenAI.Chat.ChatCompletionMessageParam[]
     aiPanel?: AIPanelFuncs,
-    modelName?: ChatModel
+    modelName?: ChatModel,
   } = {}
 ): Promise<void> {
   let aborted = false;
@@ -46,7 +39,7 @@ export async function processTableViewAIRequest(
     // Initialize OpenAI client
     const openai = OpenAIClient.getInstance().openai;
     // Always use agent mode workflow with conditional system prompt
-    await processAgentMode(openai, prompt, context, options, () => aborted, mode);
+    await processAgentMode(openai, prompt, context, options, () => aborted);
   } finally {
     abortSub.unsubscribe();
   }
@@ -65,31 +58,14 @@ async function processAgentMode(
     modelName?: ChatModel
   },
   isAborted: () => boolean,
-  mode: 'ask' | 'agent' = 'agent'
 ): Promise<void> {
   let maxIterations = 15;
   let iterations = 0;
 
+  const vectorStoreId = LLMCredsManager.getVectorStoreId();
+
   // Conditional system prompt based on mode
-  const systemMessage = mode === 'ask' ?
-    `You are Datagrok Table View Assistant, an expert in helping users navigate and understand the Datagrok table view interface.
-
-Your name is Datagrok Table View Assistant.
-
-PREFERRED APPROACH:
-- Focus on providing clear, direct answers to user questions
-- When users ask "where is X" or "how do I find Y", use list_ui_elements to see available UI elements, then use highlight_element to guide them
-- Keep responses concise and helpful
-- Prefer answering questions directly over complex viewer manipulations
-- Use reply_to_user to provide explanations and guidance
-
-AVAILABLE TOOLS:
-- list_ui_elements: Get a list of all available UI elements with their IDs and descriptions (use this first when helping users find features)
-- highlight_element: Show users where specific features or controls are located (use after identifying the element from list_ui_elements)
-- reply_to_user: Provide clear explanations and answers
-- Other viewer tools are available but should be used sparingly in ask mode
-
-Your responses should be clear, concise, and user-friendly.` :
+  const systemMessage =
     `You are Datagrok Table View Assistant, an expert in data visualization and analysis using Datagrok viewers.
 
 Your name is Datagrok Table View Assistant.
@@ -113,7 +89,8 @@ CRITICAL RULES:
 - Format your responses in markdown for better readability
 - If the user asks a general question that doesn't require viewer manipulation, just answer it conversationally
 - When user request is ambiguous, ask for clarification
-- ALWAYS use highlight_element to guide users to UI elements when relevant!
+- ALWAYS use highlight_element to guide users to UI elements when relevant!${vectorStoreId ? '\n- DOCUMENTATION SEARCH: Use search_documentation tool IMMEDIATELY when the user asks about any Datagrok features, functionality, or workflows that are not directly related to adding/modifying viewers in the current table. This includes questions like "how do I do X" or "where is feature Y". NEVER invent or assume information about Datagrok features, menu locations, package names, or workflows - ALWAYS search documentation first! If documentation search returns no results, tell the user you cannot find information rather than making assumptions.' : ''}
+- STRICT NO-INVENTION POLICY: Do NOT make up menu locations, feature names, dialog boxes, keyboard shortcuts, package names, or step-by-step instructions unless they come directly from documentation search results or are about the specific table/viewer tools you have access to.
 
 Your responses should be informative, explaining what you're doing and why.`;
 
@@ -284,6 +261,32 @@ Your responses should be informative, explaining what you're doing and why.`;
     }
   ];
 
+  // Add search_documentation tool only if vectorStoreId is provided
+  if (vectorStoreId) {
+    tools.push({
+      type: 'function',
+      function: {
+        name: 'search_documentation',
+        description: 'Search external Datagrok documentation for authoritative information. CRITICAL: Use this tool IMMEDIATELY when user asks ANY question about: 1) How to access Datagrok features/functionality, 2) Where to find menu items or commands, 3) How to perform operations not directly related to viewer manipulation, 4) Package names or requirements, 5) Keyboard shortcuts, 6) Dialogs or workflows. DO NOT make assumptions or invent UI locations, feature names, or steps - ALWAYS search documentation first! If you are even slightly uncertain about something, USE THIS TOOL. Only skip this tool for questions that are purely about manipulating viewers in the current table.',
+        parameters: {
+          type: 'object',
+          properties: {
+            query: {
+              type: 'string',
+              description: 'The search query for finding relevant documentation'
+            },
+            maxResults: {
+              type: 'integer',
+              description: 'Maximum number of results to return (1-50)',
+              default: 5
+            }
+          },
+          required: ['query']
+        }
+      }
+    });
+  }
+
   while (iterations < maxIterations) {
     if (isAborted()) {
       options.aiPanel?.addUiMessage('**Processing aborted by user**', false);
@@ -306,7 +309,7 @@ Your responses should be informative, explaining what you're doing and why.`;
     // Handle text response
     if (assistantMessage.content && assistantMessage.content.trim().length > 0) {
       options.aiPanel?.addUiMessage(assistantMessage.content, false, {
-        result: {finalResult: assistantMessage.content}
+        finalResult: assistantMessage.content
       });
     }
 
@@ -323,11 +326,11 @@ Your responses should be informative, explaining what you're doing and why.`;
           switch (functionName) {
           case 'list_ui_elements':
             result = await context.listUIElements();
-            options.aiPanel?.addUiMessage('Looking for the UI element', false);
+            options.aiPanel?.addUiMessage('🔍 Looking for available UI elements', false);
             break;
           case 'get_available_viewers':
             result = context.getAvailableViewers();
-            options.aiPanel?.addUiMessage('Getting available viewer types', false);
+            options.aiPanel?.addUiMessage('📊 Getting available viewer types', false);
             break;
           case 'highlight_element':
             result = 'Element highlighted';
@@ -341,32 +344,71 @@ Your responses should be informative, explaining what you're doing and why.`;
             break;
           case 'describe_viewer':
             result = await context.describeViewer(args.viewerType);
-            options.aiPanel?.addUiMessage(`Getting available properties for **${args.viewerType}** viewer`, false);
+            options.aiPanel?.addUiMessage(`📋 Getting available properties for **${args.viewerType}** viewer`, false);
             break;
           case 'add_viewer': {
             const viewerProps = args.viewerProperties || args.properties || {};
             result = await context.addViewer(args.viewerType, viewerProps);
-            options.aiPanel?.addUiMessage(`Added **${args.viewerType}** viewer ${viewerProps && Object.keys(viewerProps).length > 0 ? `with properties: \n\`\`\`json\n${JSON.stringify(viewerProps, null, 2)}\n\`\`\`\`` : ''}`, false);
+            options.aiPanel?.addUiMessage(`➕ Added **${args.viewerType}** viewer ${viewerProps && Object.keys(viewerProps).length > 0 ? `with properties: \n\`\`\`json\n${JSON.stringify(viewerProps, null, 2)}\n\`\`\`\`` : ''}`, false);
             break;
           }
           case 'find_viewers_by_type':
             result = await context.findViewersByType(args.viewerType);
-            options.aiPanel?.addUiMessage(`Searching for needed **${args.viewerType}** viewers`, false);
+            options.aiPanel?.addUiMessage(`🔎 Searching for **${args.viewerType}** viewers`, false);
             break;
           case 'adjust_viewer': {
             const viewerProps = args.viewerProperties || args.properties || {};
             result = await context.adjustViewer(args.viewerId, viewerProps);
-            options.aiPanel?.addUiMessage(`Setting properties to the viewer: \n\`\`\`json\n${JSON.stringify(viewerProps, null, 2)}\n\`\`\`\``, false);
+            options.aiPanel?.addUiMessage(`⚙️ Setting properties to the viewer: \n\`\`\`json\n${JSON.stringify(viewerProps, null, 2)}\n\`\`\`\``, false);
             break;
           }
           case 'list_current_viewers':
             result = await context.listCurrentViewers();
-            options.aiPanel?.addUiMessage('Listing currently open viewers', false);
+            options.aiPanel?.addUiMessage('📝 Listing currently open viewers', false);
             break;
           case 'reply_to_user':
             result = 'Message sent to user';
-            options.aiPanel?.addUiMessage(args.message, false);
+            options.aiPanel?.addUiMessage(`💬 ${args.message}`, false);
             break;
+          case 'search_documentation': {
+            // Ask for user confirmation before searching external docs
+            const confirmSearch = options.aiPanel ? await options.aiPanel.addConfirmMessage('Datagrok wants to search platform documentation for additional context. Do you want to allow this action?') : true;
+            if (!confirmSearch) {
+              result = 'Documentation search prohibited by user. Please answer based on the available context without using external documentation.';
+              options.aiPanel?.addUiMessage('⚠️ External documentation search prohibited by user.', false);
+              break;
+            }
+            options.aiPanel?.addUiMessage(`🔍 Searching documentation for: **${args.query}**`, false);
+            try {
+              const searchData = await openai.vectorStores.search(vectorStoreId, {
+                query: args.query,
+                max_num_results: args.maxResults || 4,
+                rewrite_query: false,
+              });
+
+              // Format the search results
+              if (searchData.data && searchData.data.length > 0) {
+                let formattedResults = `Found ${searchData.data.length} relevant documentation sections:\n\n`;
+                for (const item of searchData.data) {
+                  formattedResults += `**Source**: ${item.filename} (score: ${item.score.toFixed(2)})\n`;
+                  for (const content of item.content) {
+                    if (content.type === 'text')
+                      formattedResults += `${content.text}\n\n`;
+                  }
+                  formattedResults += '---\n\n';
+                }
+                result = formattedResults;
+                options.aiPanel?.addUiMessage(`✅ Found ${searchData.data.length} relevant documentation sections`, false);
+              } else {
+                result = 'No relevant documentation found for this query.';
+                options.aiPanel?.addUiMessage('ℹ️ No relevant documentation found', false);
+              }
+            } catch (error: any) {
+              result = `Error searching documentation: ${error.message}`;
+              options.aiPanel?.addUiMessage(`⚠️ Error searching documentation: ${error.message}`, false);
+            }
+            break;
+          }
           default:
             result = `Unknown function: ${functionName}`;
           }
@@ -531,11 +573,25 @@ class TableViewContext {
     {id: 'Add viewer button', description: 'Button that lets you add a new viewer to the table and has a list of all viewers', selector: 'div.d4-ribbon .grok-icon.svg-icon.svg-add-viewer'},
     {id: 'Download button', description: 'Button to download the current table in various formats (csv, excel, json, parquet, sdf, etc.)', selector: 'div.d4-ribbon .grok-icon.fal.fa-arrow-to-bottom'},
     {id: 'Add new column button', description: 'Button to add a new column to the current table using various methods (from formula, from mapping, constant etc.)', selector: 'div.d4-ribbon .grok-icon.svg-icon.svg-add-new-column'},
-  ] as const;
+  ];
+
+  private getUiElements() {
+    const uiElements: {id: string, description: string, element: HTMLElement}[] = this.highlightableElements
+      .map((el) => ({element: document.querySelector(el.selector) as HTMLElement, id: el.id, description: el.description}))
+      .filter((el) => el.element != null);
+    // also add top menu items
+    ['Select', 'Edit', 'View', 'Data', 'ML', 'Bio', 'Chem'].forEach((menuText) => {
+      const menuItem = Array.from(this.tableView.ribbonMenu.root.querySelectorAll(`div.d4-menu-item.d4-menu-group.d4-menu-item-horz`))
+        .find((el) => (el as HTMLDivElement).innerText === menuText);
+      if (menuItem)
+        uiElements.push({id: `${menuText} top menu`, description: `Top menu item: "${menuText}" containing relevant functions `, element: menuItem as HTMLElement});
+    });
+    return uiElements;
+  }
 
   async listUIElements(): Promise<string> {
     // TODO: Populate with actual UI elements from the table view
-    const elements = this.highlightableElements.filter((el) => document.querySelector(el.selector) != null);
+    const elements = this.getUiElements();
 
     let result = 'Available UI elements:\n\n';
     for (const elem of elements)
@@ -544,14 +600,14 @@ class TableViewContext {
     return result;
   }
 
-  async highlightElement(elementId: string, description: string): Promise<string | null> {
-    const element = this.highlightableElements.find((el) => el.id.toLowerCase() === elementId.toLowerCase());
+  async highlightElement(elementId: string, _description: string): Promise<string | null> {
+    const element = this.getUiElements().find((el) => el.id.toLowerCase() === elementId.toLowerCase());
     if (!element)
       return `Element with ID ${elementId} not found or cannot be highlighted.`;
-    const domElement = document.querySelector(element.selector) as HTMLElement;
-    if (!domElement)
+    const domElement = element.element;
+    if (!domElement || !document.body.contains(domElement))
       return `Element with ID ${elementId} not found in the current UI.`;
-    ui.hints.addHintIndicator(domElement, true, 10000);
+    ui.hints.addHintIndicator(domElement, true, 15000);
     return null;
   }
 }

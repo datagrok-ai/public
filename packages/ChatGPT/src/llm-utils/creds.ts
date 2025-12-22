@@ -22,6 +22,9 @@ export class LLMCredsManager {
     return LLMCredsManager._instance!;
   }
   static getVectorStoreId(): string {
-    return LLMCredsManager.getInstance().vectorStoreId;
+    const res = LLMCredsManager.getInstance().vectorStoreId;
+    if (!res || !res.trim())
+      return '';
+    return res;
   }
 }

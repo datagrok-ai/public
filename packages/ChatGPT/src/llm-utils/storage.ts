@@ -1,12 +1,7 @@
 // Create a new file: conversation-storage.ts
 
 import {OpenAI} from 'openai';
-
-export interface UIMessage {
-  fromUser: boolean;
-  text: string;
-  title?: string;
-}
+import {UIMessage} from './panel';
 
 export interface StoredConversation<T = OpenAI.Chat.ChatCompletionMessageParam, TMeta = any> {
   id: string;
