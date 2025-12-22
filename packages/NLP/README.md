@@ -1,6 +1,6 @@
 # NLP
 
-[![Status](https://img.shields.io/github/actions/workflow/status/datagrok-ai/public/packages.yaml?branch=master&event=push&label=NLP&job=NLP:*)]
+![Status](https://img.shields.io/github/actions/workflow/status/datagrok-ai/public/packages.yaml?branch=master&event=push&label=NLP&job=NLP:*)
 
 *NLP* is a [Datagrok package](https://datagrok.ai/help/develop/#packages) for natural language processing. The package provides integration with [AWS Translate](https://aws.amazon.com/translate/), a neural machine translation service, and extends Datagrok with [info panels](https://datagrok.ai/help/explore/data-augmentation/info-panels) for text files.
 
