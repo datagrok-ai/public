@@ -29,25 +29,25 @@ export async function getBaseURL(): Promise<string> {
 }
 
 //name: Alation
-//tags: app
+//meta.role: app
 //top-menu: Admin | Alation @Toolbox Data | Alation
 export function Alation(): void {
   const progressIndicator = DG.TaskBarProgressIndicator.create('Loading Alation...');
   utils.retrieveKeys().then(async () => {
-    let search = new URLSearchParams(window.location.search);
+    const search = new URLSearchParams(window.location.search);
     if (search.toString() !== '') {
       const oid = search.get('id')!;
       switch (search.get('otype')) {
-        case 'table':
-          const tableObj = await alationApi.getTableObject(oid);
-          await openTable(tableObj);
-          break;
-        case 'query':
-          const queryObj = await alationApi.getQueryObject(oid);
-          await runQuery(queryObj);
-          break;
-        default:
-          throw new Error(`AlationError: wrong object type (otype)`);
+      case 'table':
+        const tableObj = await alationApi.getTableObject(oid);
+        await openTable(tableObj);
+        break;
+      case 'query':
+        const queryObj = await alationApi.getQueryObject(oid);
+        await runQuery(queryObj);
+        break;
+      default:
+        throw new Error(`AlationError: wrong object type (otype)`);
       }
       progressIndicator.close();
       return;
