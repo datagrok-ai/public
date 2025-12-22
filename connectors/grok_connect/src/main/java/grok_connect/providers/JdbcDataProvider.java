@@ -558,6 +558,10 @@ public abstract class JdbcDataProvider extends DataProvider {
             result.query = "(" + matcher.colName + " = @" + paramName + ")";
             result.params.add(new FuncParam(Types.BIG_INT, paramName, matcher.values.stream().findFirst().orElse(null)));
         }
+        else if (matcher.op.equals(PatternMatcher.IN) || matcher.op.equals(PatternMatcher.NOT_IN)) {
+            String names = paramToNamesString(paramName, matcher, "bigint", result);
+            result.query = getInQuery(matcher, names);
+        }
         else
             result.query = "(1 = 1)";
         return result;
