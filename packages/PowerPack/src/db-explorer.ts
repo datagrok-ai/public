@@ -371,6 +371,10 @@ export async function setupDBQueryCellHandler() {
 function getEnrichDiv(col: DG.Column): HTMLElement {
   const enrichAcc = ui.accordion('Enrich Column');
   enrichAcc.addPane('Enrich', () => {
+    if ([DG.COLUMN_TYPE.BOOL, DG.COLUMN_TYPE.DATE_TIME].includes(col.type as DG.COLUMN_TYPE))
+      return ui.info(`Cannot use column of ${col.type} type for enrichment. 
+Supported types are ${[DG.COLUMN_TYPE.STRING, DG.COLUMN_TYPE.BIG_INT, DG.COLUMN_TYPE.INT, DG.COLUMN_TYPE.FLOAT].join(', ')}.`);
+
     const df = col.dart ? col.dataFrame : null;
     if (!df || df.rowCount === 0)
       return ui.info('Data frame is empty or not available.');
