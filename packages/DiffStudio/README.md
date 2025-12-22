@@ -1,6 +1,6 @@
 # Diff Studio
 
-[![DiffStudio Build & Test](https://img.shields.io/github/actions/workflow/status/datagrok-ai/public/packages.yaml?branch=master&label=Build%20%26%20Test&job=DiffStudio:%20Build,%20test*)](https://github.com/datagrok-ai/public/actions/workflows/packages.yaml)
+[![DiffStudio Build & Test](https://img.shields.io/github/actions/workflow/status/datagrok-ai/public/packages.yaml?branch=master&event=push&label=Build%20%26%20Test&job=DiffStudio:%20Build,%20test*)](https://github.com/datagrok-ai/public/actions/workflows/packages.yaml?query=branch%3Amaster+event%3Apush)
 [![Run: Diff Studio](https://img.shields.io/badge/app-%20Diff%20Studio-red.svg)](https://public.datagrok.ai/apps/DiffStudio)
 [![Tutorial: Differential equations](https://img.shields.io/badge/tutorial-Differential%20Equations-yellow.svg)](https://public.datagrok.ai/apps/tutorials/Tutorials/Scientificcomputing/Differentialequations)
 [![Documentation](https://img.shields.io/badge/docs-online-blue.svg)](https://datagrok.ai/help/compute/diff-studio)
