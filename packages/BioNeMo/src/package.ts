@@ -127,7 +127,7 @@ export class PackageFunctions {
 
   @grok.decorators.panel({
     name: 'Biology | DiffDock',
-    tags: ['widgets']
+    meta: {role: 'widgets'},
   })
   static async diffDockPanel(
     @grok.decorators.param({ options: { semType: 'Molecule' } })
