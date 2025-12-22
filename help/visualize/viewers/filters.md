@@ -2,6 +2,11 @@
 title: "Filters"
 ---
 
+```mdx-code-block
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+```
+
 A set of controls for quick filtering, selection, and visual assessment of column values.
 
 General:
@@ -54,6 +59,7 @@ To quickly filter the dataset by the selected molecule, right-click the molecule
 
 You can switch the structure filter to categorical mode, which treats each unique molecule as a separate, selectable category in the **Filter Panel**. To do that, click the column header, go to the **Context Panel** > **Chemistry** > **Rendering**, and set **Filter type** to `Categorical`. Alternalively, use [column tags](#column-tags) to set the categorical structure filter mode.
 
+![Structure filter](img/chem-structure-filter.gif)
 
 ## Scaffold tree filter
 
@@ -64,6 +70,40 @@ The scaffold hierarchy is displayed as a tree, where you can:
 * Switch the **AND/OR** control to define filter logic.  
 * Exclude selected scaffolds using the **≠** icon.  
 * Color scaffolds to highlight relationships; colors are shown in both the dataset column and the scaffold tree.
+
+![Scaffold tree filter](img/chem-scaffold-tree-filter.gif)
+
+## Bio substructure filter
+
+Bio substructure filter lets you filter macromolecules based on their subsequences:
+
+* **FASTA sequences**: enter a subsequence.
+* **Separator-based sequences**: enter a subsequence and specify the separator for exact matching.
+* **HELM sequences**: use the visual editor to design complex structures for monomer-level filtering.
+
+```mdx-code-block
+<Tabs>
+<TabItem value="fasta-filtering" label="FASTA" default>
+```
+![FASTA filtering](img/fasta-filtering.gif)
+
+```mdx-code-block
+</TabItem>
+<TabItem value="separator-filtering" label="Separator">
+```
+![Separator filtering](img/separator-filtering.gif)
+
+```mdx-code-block
+</TabItem>
+<TabItem value="helm-filtering" label="HELM">
+```
+
+![HELM filtering](img/helm-filtering.gif)
+
+```mdx-code-block
+</TabItem>
+</Tabs>
+```
 
 ## Text filter
 
