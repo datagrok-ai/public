@@ -1,17 +1,23 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
-import {AE_BROWSER_VIEW_NAME, TIMELINES_VIEW_NAME, VALIDATION_VIEW_NAME} from '../constants/view-names-constants';
+import {AE_BROWSER_VIEW_NAME, TIMELINES_VIEW_NAME, TRELLIS_PLOT_VIEW_NAME,
+  VALIDATION_VIEW_NAME} from '../constants/view-names-constants';
 import * as sdtmCols from '../constants/columns-constants';
 import {AE_START_DAY_FIELD} from '../views-config';
 import {AEBrowserHelper} from '../helpers/ae-browser-helper';
 import {ValidationHelper} from '../helpers/validation-helper';
 import {c} from '../package';
-import {createValidationErrorsDiv, getRequiredColumnsByView, setupValidationErrorColumns, setupValidationErrorIndicators} from './views-validation-utils';
+import {createValidationErrorsDiv, getRequiredColumnsByView, setupValidationErrorColumns,
+  setupValidationErrorIndicators} from './views-validation-utils';
 import {updateDivInnerHTML} from './utils';
-import {ClinCaseTableView} from './types';
+import {CDISC_STANDARD, ClinCaseTableView} from './types';
 import {studies} from './app-utils';
-import {ValidationResult} from '../types/validation-result';
+import {ValidationResult, IssueDetail} from '../types/validation-result';
+import {SUBJECT_ID} from '../constants/columns-constants';
+import {createVisitDayStrCol} from '../data-preparation/data-preparation';
+import {validationFixFunctions} from './validation-fix-utils';
+import {awaitCheck} from '@datagrok-libraries/utils/src/test';
 
 export function createAEBrowserHelper(studyId: string): any {
   const aeBrowserDf = studies[studyId].domains.ae.clone();
@@ -48,14 +54,24 @@ export function createValidationView(studyId: string): any {
   const issueDetailsDf = DG.DataFrame.fromObjects(validationResults.Issue_Details);
   const issueSummaryDf = DG.DataFrame.fromObjects(validationResults.Issue_Summary);
 
+  // Add 'action' column to issue summary
+  // Store core_id in the cell if a fix function exists, otherwise leave empty
+  issueSummaryDf.columns.addNewString('action').init((i) => {
+    const coreId = issueSummaryDf.get('core_id', i);
+    return (coreId && validationFixFunctions[coreId]) ? coreId : '';
+  });
+
   grok.data.linkTables(issueSummaryDf, issueDetailsDf,
     ['dataset', 'core_id'], ['dataset', 'core_id'],
     [DG.SYNC_TYPE.CURRENT_ROW_TO_FILTER]);
 
-  // tv.dockManager.dock(issueDetailsDf.plot.grid(), 'right');
   const errorsGridDiv = ui.div();
-
   let dockNode: DG.DockNode | null = null;
+  let currentDomainDf: DG.DataFrame | null = null;
+  let applyFixesButton: HTMLElement | null = null;
+  let currentTableView: DG.TableView | null = null;
+  let previewDockNode: DG.DockNode | null = null;
+
 
   issueSummaryDf.onCurrentRowChanged.subscribe(() => {
     ui.empty(errorsGridDiv);
@@ -71,11 +87,17 @@ export function createValidationView(studyId: string): any {
       validationResults.Issue_Details[firstIssueDetailsIdx].row === '') {
       grid = issueDetailsDf.plot.grid();
       header = 'Issue details';
-    }
-    else { //collect data from corresponding domain
+      currentDomainDf = null;
+    } else { //collect data from corresponding domain
       const domain: string = issueSummaryDf.get('dataset', issueSummaryDf.currentRowIdx);
       const domainWithoutExtension = domain.replace('.xpt', '').replace('.csv', '');
-      const domainDf: DG.DataFrame = studies[studyId].domains[domainWithoutExtension];
+      let domainDf: DG.DataFrame | null = null;
+      if (domainWithoutExtension.startsWith('supp')) {
+        const domainIdx = studies[studyId].domains.supp.findIndex((it) => it.name === domainWithoutExtension);
+        if (domainIdx !== -1)
+          domainDf = studies[studyId].domains.supp[domainIdx];
+      } else
+        domainDf = studies[studyId].domains[domainWithoutExtension];
       if (domainDf) {
         //check if the violated rule related to metadata (variables in rules do not contain domain variables)
         const colNames = domainDf.columns.names().map((it) => it.toLowerCase());
@@ -84,8 +106,8 @@ export function createValidationView(studyId: string): any {
         if (!ruleContainsDomainCols) {
           grid = issueDetailsDf.plot.grid();
           header = 'Issue details';
-        }
-        else {
+          currentDomainDf = null;
+        } else {
           let columnName = '';
           //find the first variable name to scroll grid to corresponding column
           for (let i = 0; i < validationResults.Issue_Details[firstIssueDetailsIdx].variables.length; i++) {
@@ -110,15 +132,123 @@ export function createValidationView(studyId: string): any {
           setupValidationErrorIndicators(grid, domainDf, issueSummaryDf.get('core_id', issueSummaryDf.currentRowIdx));
           if (domainDf.col(columnName))
             grid.scrollToCell(columnName, 0);
+          currentDomainDf = domainDf;
         }
       }
     }
+
     grid.root.prepend(ui.h1(header, {style: {margin: '0px 0px 10px 10px'}}));
     grid.root.style.width = '100%';
     grid.root.style.height = '95%';
     errorsGridDiv.append(grid.root);
   });
-  return {df: issueSummaryDf};
+
+  // Handler for fix button click
+  const handleFixClick = (
+    fixFunction: (df: DG.DataFrame, issueDetails: IssueDetail[]) => {df: DG.DataFrame, colsToFix: string[],
+      colsOrder: string[]}, rowIdx: number,
+  ) => {
+    if (rowIdx !== currentTableView.dataFrame.currentRowIdx) {
+      grok.shell.warning('Select row to run fixes');
+      return;
+    }
+
+    // Get affected issue details
+    const affectedIssueDetails: IssueDetail[] = [];
+    for (let i = 0; i < issueDetailsDf.rowCount; i++) {
+      if (issueDetailsDf.filter.get(i))
+        affectedIssueDetails.push(validationResults.Issue_Details[i]);
+    }
+
+    if (affectedIssueDetails.length === 0)
+      return;
+
+
+    // Create preview dataframe: clone filtered rows from original dataframe
+    // Use the filter BitSet directly
+    if (currentDomainDf.filter.trueCount === 0) {
+      grok.shell.warning('No filtered rows available for preview');
+      return;
+    }
+
+
+    const fixRes = fixFunction(currentDomainDf, affectedIssueDetails);
+    const previewDf = fixRes.df;
+    const colsOrder = fixRes.colsOrder;
+    const colsToFix = fixRes.colsToFix;
+
+    // Create preview grid and dock it on the right
+    const previewGrid = previewDf.plot.grid();
+    previewGrid.root.prepend(ui.h1('Fixes Preview', {style: {margin: '0px 0px 10px 10px'}}));
+    previewGrid.root.style.width = '100%';
+    previewGrid.root.style.height = '95%';
+    previewGrid.columns.setOrder(colsOrder);
+
+    // Close existing preview if any
+    if (previewDockNode) {
+      grok.shell.tv.dockManager.close(previewDockNode);
+      previewDockNode = null;
+    }
+
+    // Dock preview grid on the right
+    previewDockNode = grok.shell.tv.dockManager.dock(previewGrid.root, 'right');
+
+    // Show 'Apply Fixes' button in ribbon
+    if (!applyFixesButton && currentTableView) {
+      applyFixesButton = ui.button('Apply Fixes', () => {
+        //apply fixes
+        for (const colTofix of colsToFix) {
+          let counter = 0;
+          for (let i = 0; i < currentDomainDf.filter.length; i++) {
+            if (currentDomainDf.filter.get(i)) {
+              currentDomainDf.col(colTofix).set(i, previewDf.get(`${colTofix}_fix`, counter));
+              counter++;
+            }
+          }
+        }
+        //close fixesPreview
+        grok.shell.tv.dockManager.close(previewDockNode);
+        previewDockNode = null;
+      });
+      applyFixesButton.style.margin = '0 5px';
+
+      // Add button to ribbon
+      const panels = currentTableView.getRibbonPanels();
+      if (panels.length === 0)
+        panels.push([]);
+      panels[0].push(applyFixesButton);
+      currentTableView.setRibbonPanels(panels);
+    }
+  };
+
+  // onTableViewAdded function to set up fix button rendering
+  const onTableViewAdded = (tableView: DG.TableView) => {
+    //need to wait for grid to be created
+    awaitCheck(() => tableView.grid !== null, `Validation view hasn't been added`, 5000).then(() => {
+      currentTableView = tableView;
+      const fixCol = tableView.grid.columns.byName('action');
+      fixCol.cellType = 'html';
+
+      tableView.grid.onCellPrepare((gc) => {
+        if (gc.isTableCell && gc.gridColumn.name === 'action') {
+          // Get core_id from the fix column cell value
+          const coreId = gc.cell.value;
+          const fixFunction = coreId ? validationFixFunctions[coreId] : null;
+
+          if (fixFunction) {
+            const button = ui.button('Fix', () => {
+              handleFixClick(fixFunction, gc.cell.rowIndex);
+            });
+            button.style.marginTop = '0px';
+            gc.style.element = button;
+          } else
+            gc.style.element = ui.divText('');
+        }
+      });
+    });
+  };
+
+  return {df: issueSummaryDf, onTableViewAddedFunc: onTableViewAdded};
 }
 
 
@@ -146,15 +276,18 @@ export function createTableView(
   domainsAndColsToCheck: any,
   viewName: string,
   helpUrl: string,
-  createViewHelper: (studyId: string, params: any) => any,
+  createViewHelper: (studyId: string, params: any) => {df: DG.DataFrame, helper?: any,
+    onTableViewAddedFunc?: (tv: DG.TableView) => any},
   paramsForHelper?: any) {
   let tableView: DG.TableView | DG.View;
   let viewHelper;
   const validator = new ValidationHelper(domainsAndColsToCheck, studyId);
   if (validator.validate()) {
-    const {helper, df} = createViewHelper(studyId, paramsForHelper);
+    const {helper, df, onTableViewAddedFunc} = createViewHelper(studyId, paramsForHelper);
     tableView = DG.TableView.create(df, false);
     viewHelper = helper;
+    if (onTableViewAddedFunc)
+      onTableViewAddedFunc(tableView as DG.TableView);
   } else {
     tableView = DG.View.create();
     updateDivInnerHTML(tableView.root, createValidationErrorsDiv(validator.missingDomains,

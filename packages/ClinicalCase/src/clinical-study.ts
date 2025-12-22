@@ -14,6 +14,7 @@ import {SUMMARY_VIEW_NAME} from './constants/view-names-constants';
 import {funcs} from './package-api';
 import {Subject} from 'rxjs';
 import {ValidationResult, IssueDetail} from './types/validation-result';
+import { COLUMN_FROM_DM_TAG } from './constants/constants';
 
 export class ClinicalDomains {
   // Domains listed in alphabetical order
@@ -178,9 +179,17 @@ export class ClinicalStudy {
     this.domains.all().forEach((it) => {
       if (it.name !== 'dm' && it.columns.names().includes(SUBJECT_ID)) {
         const savedName = it.name;
+        const columnsFromDm = this.domains.dm.columns.names();
+        for (const colName of it.columns.names()) {
+          const colIdx = columnsFromDm.findIndex((it) => it === colName);
+          if (colIdx !== -1)
+            columnsFromDm.splice(colIdx, 1);
+        }
         grok.data.joinTables(it, this.domains.dm, [SUBJECT_ID], [SUBJECT_ID], null,
-          this.domains.dm.columns.names().filter((it) => it !== SUBJECT_ID), DG.JOIN_TYPE.LEFT, true);
+          columnsFromDm, DG.JOIN_TYPE.LEFT, true);
         it.name = savedName;
+        for (const col of columnsFromDm)
+          it.col(col)!.setTag(COLUMN_FROM_DM_TAG, 'true');
       }
       for (const col of it.columns.names()) {
         if (this.config.fieldsDefinitions && this.config.fieldsDefinitions[col])
@@ -294,17 +303,8 @@ export class ClinicalStudy {
     };
 
     // Process each domain and add columns
-    for (const domainName of Object.keys(this.domains)) {
-      const domain = this.domains[domainName];
-      if (!domain || !domainName || (Array.isArray(domain) && !domain.length))
-        continue;
-      if (domainName !== 'supp')
-        addValidationColumns(domainName, domain);
-      else {
-        for (const suppDomain of domain)
-          addValidationColumns(domainName, suppDomain);
-      }
-    }
+    for (const domain of this.domains.all())
+      addValidationColumns(domain.name, domain);
   }
 
   /**
@@ -359,6 +359,10 @@ export class ClinicalStudy {
           // Iterate through variables and values arrays
           for (let varIndex = 0; varIndex < issue.variables.length; varIndex++) {
             const variable = issue.variables[varIndex];
+
+            if (domain.col(variable)?.getTag(COLUMN_FROM_DM_TAG))
+              continue;
+
             const value = varIndex < issue.values.length ? issue.values[varIndex] : '';
 
             // Create columns for this variable if they don't exist

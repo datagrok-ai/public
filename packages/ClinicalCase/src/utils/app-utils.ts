@@ -495,7 +495,10 @@ export async function readClinicalData(study: ClinicalStudy, importedFiles?: DG.
     if (d42DataFrames.length) {
       const dfs = await grok.dapi.files.readBinaryDataFrames(d42DataFrames[0]);
       for (const df of dfs) {
-        if (!studies[study.studyId].domains[df.name])
+        if (df.name.startsWith('supp') &&
+              !studies[study.studyId].domains.supp.filter((it) => it.name == df.name).length)
+          studies[study.studyId].domains.supp.push(df);
+        else if (!studies[study.studyId].domains[df.name])
           studies[study.studyId].domains[df.name] = df;
       }
     } else { //if there is no .d42 file with dfs list, reading file by file, looking for xpt or csv
