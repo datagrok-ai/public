@@ -725,6 +725,14 @@ export namespace Test {
 }
 
 export namespace ClickUtils {
+  export function getFullPath(x: Element): string {
+    return api.grok_ClickUtils_GetFullPath(x);
+  }
+
+  export function getElementLoggingName(x: Element): string {
+    return api.grok_ClickUtils_GetElementLoggingName(x);
+  }
+
   export function getClickElementDescription(x: Element): string {
     return api.grok_ClickUtils_GetClickElementDescription(x);
   }

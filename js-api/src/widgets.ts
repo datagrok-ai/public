@@ -1054,6 +1054,12 @@ export interface IMenuItemOptions {
 
   /** Tooltip to be shown on the menu item */
   description?: string;
+
+  /** Gets invoked when the mouse enters the item */
+  onMouseEnter?: () => void;
+
+  /** Gets invoked when the mouse leaves the item */
+  onMouseLeave?: () => void;
 }
 
 
@@ -1221,6 +1227,8 @@ export class Menu {
   get onContextMenuItemClick() {
     return __obs('d4-menu-item-click', this.dart);
   }
+
+  get onClose(): Observable<EventData> { return api.grok_Menu_OnClose(this.dart); }
 
   toString(): string {
     return api.grok_MenuItem_ToString(this.dart);

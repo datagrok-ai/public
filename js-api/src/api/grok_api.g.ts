@@ -201,6 +201,7 @@ export interface IDartApi {
   grok_MenuItem_ToString(mi: any): any;
   grok_Menu_Get_CloseOnClick(m: any): any;
   grok_Menu_Set_CloseOnClick(m: any, closeOnClick: Bool): any;
+  grok_Menu_OnClose(m: any): any;
   grok_Menu_Items(m: any, items: any, onClick: any, isValid: any, isChecked: any, toString: any, describe: any, onMouseEnter: any, radioGroup: String): any;
   grok_Menu_ColorPalette(m: any, colors: any, getInitial: any, onSelect: any, onPreview: any, asGroup: String, visible: Bool, categorical: Bool, resetColorMs: Num, closeOnClick: Bool): any;
   grok_Menu_SingleColumSelector(m: any, dataFrame: any, initialValue: String, onChange: any, asGroup: String, nullable: Bool, visible: Bool, editable: Bool, closeOnClick: Bool, changeOnHover: Bool, columnFilter: any): any;
@@ -663,6 +664,8 @@ export interface IDartApi {
   grok_TreeViewNode_Set_Expanded(node: any, expanded: Bool): any;
   grok_FilesWidget(options: any): any;
   grok_Test_RunViewerTest(viewerName: String): Promise<any>;
+  grok_ClickUtils_GetFullPath(x: any): any;
+  grok_ClickUtils_GetElementLoggingName(x: any): any;
   grok_ClickUtils_GetClickElementDescription(x: any): any;
   grok_ClickUtils_SanitizeCssAttrValue(x: String): any;
   grok_Windows_Get_Sidebar(): any;
