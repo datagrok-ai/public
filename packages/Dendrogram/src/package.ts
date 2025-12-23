@@ -41,17 +41,12 @@ export class PackageFunctions {
 
 
   @grok.decorators.func({
-    'meta': {
-    'icon': 'files/icons/dendrogram-viewer.svg'
-    },
+    'meta': {'icon': 'files/icons/dendrogram-viewer.svg', role: 'viewer'},
     'outputs': [
     {
     'name': 'result',
     'type': 'viewer'
     }
-    ],
-    'tags': [
-    'viewer'
     ],
     'name': 'Dendrogram',
     'description': 'Dendrogram tree visualization'
