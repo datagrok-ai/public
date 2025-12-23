@@ -22,10 +22,8 @@ export async function pubChemPanel(molString: string): Promise<DG.Widget> {
 
 export class PackageFunctions {
   @grok.decorators.panel({
-    'tags': [
-      'widgets',
-    ],
     'name': 'Databases | PubChem | Substructure Search',
+    'meta': {role: 'widgets'},
   })
   static async pubChemSubstructureSearchPanel(
     @grok.decorators.param({'options': {'semType': 'Molecule'}}) molString: string): Promise<DG.Widget> {
@@ -34,10 +32,8 @@ export class PackageFunctions {
 
 
   @grok.decorators.panel({
-    'tags': [
-      'widgets',
-    ],
     'name': 'Databases | PubChem | Similarity Search',
+    'meta': {role: 'widgets'},
   })
   static async pubChemSimilaritySearchPanel(
     @grok.decorators.param({'options': {'semType': 'Molecule'}}) molString: string): Promise<DG.Widget> {
@@ -46,8 +42,8 @@ export class PackageFunctions {
 
 
   @grok.decorators.panel({
-    'tags': ['widgets'],
     'name': 'Databases | PubChem | Identity Search',
+    'meta': {role: 'widgets'},
   })
   static async pubChemIdentitySearch(
     @grok.decorators.param({'options': {'semType': 'Molecule'}}) molString: string): Promise<DG.Widget> {
