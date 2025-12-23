@@ -758,7 +758,8 @@ export class PackageFunctions {
     @grok.decorators.param({type: 'bool', options: {optional: true}}) clusterMCS?: boolean): Promise<DG.Viewer | undefined> {
     //workaround for functions which add viewers to tableView (can be run only on active table view)
     checkCurrentView(table);
-
+    // after this check we are sure that tableView is active
+    const tv = grok.shell.tv;
     if (molecules.semType !== DG.SEMTYPE.MOLECULE) {
       grok.shell.error(`Column ${molecules.name} is not of Molecule semantic type`);
       return;
@@ -778,7 +779,7 @@ export class PackageFunctions {
     let res: DG.ScatterPlotViewer = funcCall.getOutputParamValue();
 
     if (plotEmbeddings) {
-      res = grok.shell.tv.scatterPlot({x: embedColsNames[0], y: embedColsNames[1], title: 'Chemical space'});
+      res = tv.scatterPlot({x: embedColsNames[0], y: embedColsNames[1], title: 'Chemical space'});
       const description = `Molecules column: ${molecules.name}, method: ${methodName}, ${options ? `options: ${JSON.stringify(options)},` : ``} similarity: ${similarityMetric}`;
       res.setOptions({description: description, descriptionVisibilityMode: 'Never'});
       //temporary fix (to save backward compatibility) since labels option type has been changed from string to array in 1.23 platform version

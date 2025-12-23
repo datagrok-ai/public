@@ -109,8 +109,8 @@ export namespace scripts {
   /**
   Implementation of the clustering algorithm published in: Butina JCICS 39 747-750 (1999)
   */
-  export async function butinaMoleculesClustering(data: DG.DataFrame , molecules: DG.Column ): Promise<DG.DataFrame> {
-    return await grok.functions.call('Chem:ButinaMoleculesClustering', { data, molecules });
+  export async function butinaMoleculesClustering(data: DG.DataFrame , molecules: DG.Column , distanceCutoff: number ): Promise<DG.DataFrame> {
+    return await grok.functions.call('Chem:ButinaMoleculesClustering', { data, molecules, distanceCutoff });
   }
 
   /**

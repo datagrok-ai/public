@@ -1,5 +1,9 @@
 # Chem changelog
 
+## 1.6.13 (2025-12-23)
+
+* Butina clustering: Expose Python implementation to top-menu
+
 ## 1.6.12 (2025-12-22)
 
 * GROK-18406: Chem | Scaffold Tree: Disallow multiple filters on the same column
