@@ -18,6 +18,7 @@ interface ClickRecord {
 export class ClicksView extends UaView {
   expanded: {[key: string]: boolean} = {f: true, l: true};
   tabControl?: DG.TabControl;
+  pickModeCleanup: (() => void) | null = null;
 
   constructor(uaToolbox: UaToolbox) {
     super(uaToolbox);
@@ -31,6 +32,7 @@ export class ClicksView extends UaView {
       'Specific clicks': () => this.createWaitElement(this.getSpecificClicksTab, this),
     };
     this.tabControl = ui.tabControl(tabs);
+    this.tabControl.panes[1].header.appendChild(this.getClickAnalysisPanelIcon());
     this.root.appendChild(this.tabControl.root);
   }
 
@@ -455,5 +457,148 @@ export class ClicksView extends UaView {
       gridWrapper,
       lastClickDiv,
     ], {classes: 'grok-inspector', style: {marginLeft: '12px'}});
+  }
+
+  async showElementStats(selector: string) {
+    document.body.style.cursor = 'wait';
+    try {
+      const filter = `eventType.name="click" && description like "%${selector}%"`;
+      const logs = await grok.dapi.log.filter(filter).list();
+      const userIds: Set<string> = new Set<string>();
+      for (const log of logs)
+        if (log.session && log.session instanceof DG.UserSession && log.session.user && log.session.user.id)
+          userIds.add(log.session.user.id);
+      const idToName: Map<string, string> = new Map<string, string>();
+      await Promise.all(Array.from(userIds).map(async (id) => {
+        try {
+          if (!id)
+            return;
+          const user = await grok.dapi.users.find(id);
+          idToName.set(id, user.friendlyName ?? user.firstName ?? user.login ?? 'Unknown');
+        } catch (e) {
+          idToName.set(id!, `Unknown (${id})`);
+        }
+      }));
+
+      const userCounts: {[key: string]: number} = {};
+      for (const log of logs) {
+        if (log.session && log.session instanceof DG.UserSession) {
+          const id = log.session.user?.id;
+          const displayName = (id && idToName.has(id)) ? idToName.get(id)! : 'Unknown';
+          userCounts[displayName] = (userCounts[displayName] || 0) + 1;
+        }
+      }
+      const statsTable = DG.DataFrame.fromColumns([
+        DG.Column.fromStrings('User', Object.keys(userCounts)),
+        DG.Column.fromList(DG.TYPE.INT, 'Clicks', Object.values(userCounts))]);
+
+      ui.dialog('Element Usage')
+        .add(ui.h1(selector))
+        .add(DG.Viewer.grid(statsTable).root)
+        .show();
+    } finally {
+      document.body.style.cursor = 'default';
+    }
+  }
+
+  togglePicker(iconRoot: HTMLElement) {
+    let highlighter: HTMLDivElement | null = null;
+    const removeHighlight = () => {
+      highlighter?.remove();
+      highlighter = null;
+    };
+
+    const drawHighlight = (target: HTMLElement) => {
+      removeHighlight();
+      const rect = target.getBoundingClientRect();
+      highlighter = document.createElement('div');
+      Object.assign(highlighter.style, {
+        position: 'fixed',
+        top: `${rect.top}px`,
+        left: `${rect.left}px`,
+        width: `${rect.width}px`,
+        height: `${rect.height}px`,
+        zIndex: '2147483647',
+        pointerEvents: 'none',
+        boxSizing: 'border-box',
+        border: '2px solid rgba(50, 150, 255, 1)',
+        backgroundColor: 'rgba(50, 150, 255, 0.3)'
+      });
+      document.body.appendChild(highlighter);
+    };
+
+    const disable = () => {
+      if (this.pickModeCleanup) {
+        this.pickModeCleanup();
+        this.pickModeCleanup = null;
+      }
+      document.body.style.cursor = 'default';
+      iconRoot.style.color = '';
+      removeHighlight();
+    };
+
+    if (this.pickModeCleanup)
+      disable();
+    else {
+      document.body.style.cursor = 'crosshair';
+      iconRoot.style.color = 'var(--blue-1)';
+
+      const handleMouseDown = (e: MouseEvent) => {
+        const target = e.target as HTMLElement;
+        if (target === iconRoot || iconRoot.contains(target))
+          return;
+        e.preventDefault();
+        e.stopPropagation();
+        disable();
+
+        const handleClick = (eClick: MouseEvent) => {
+          eClick.preventDefault();
+          eClick.stopPropagation();
+          document.removeEventListener('click', handleClick, true);
+        };
+        document.addEventListener('click', handleClick, true);
+
+        setTimeout(() => {
+          document.removeEventListener('click', handleClick, true);
+        }, 300);
+
+        const menu = DG.Menu.popup();
+        menu.onClose.subscribe(() => removeHighlight());
+        let currentTarget: HTMLElement | null = target;
+        const itemTitles = new Set<string>();
+        while (currentTarget && currentTarget !== document.body) {
+          const logName = DG.ClickUtils.getElementLoggingName(currentTarget!);
+          if (logName && logName !== '' && logName !== 'Shell') {
+            const fullPath = DG.ClickUtils.getFullPath(currentTarget!);
+            const tagName = currentTarget!.tagName.toLowerCase();
+            const elem = currentTarget;
+            const itemTitle = `${logName} (${tagName})`;
+            if (!itemTitles.has(itemTitle)) {
+              itemTitles.add(itemTitle);
+              menu.item(itemTitle, () => this.showElementStats(fullPath), null, {onMouseEnter: () => drawHighlight(elem!),
+                onMouseLeave: () => removeHighlight()});
+            }
+          }
+          currentTarget = currentTarget!.parentElement;
+        }
+        menu.show({causedBy: e});
+      };
+      document.addEventListener('mousedown', handleMouseDown, true);
+      this.pickModeCleanup = () => {
+        document.removeEventListener('mousedown', handleMouseDown, true);
+        document.body.style.cursor = 'default';
+        iconRoot.style.color = '';
+      };
+    }
+  }
+
+  getClickAnalysisPanelIcon(): HTMLElement {
+    const icon = ui.iconFA('crosshairs', (e) => {
+      e.preventDefault();
+      this.togglePicker(e.currentTarget as HTMLElement);
+    }, 'Pick element to analyze usage');
+    icon.style.marginLeft = '5px';
+    icon.style.cursor = 'pointer';
+    return icon;
   }
 }
