@@ -725,6 +725,12 @@ export namespace Test {
 }
 
 export namespace ClickUtils {
+  /// Returns a DataFrame with aggregated click data.
+  /// `UsageAnalysis` package should be installed.
+  export async function getAggregatedClicks(): Promise<DataFrame> {
+    return await grok.data.query('UsageAnalysis:GetAggregatedClicks', {});
+  }
+
   export function getFullPath(x: Element): string {
     return api.grok_ClickUtils_GetFullPath(x);
   }
