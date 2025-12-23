@@ -108,7 +108,7 @@ export class PackageFunctions {
     dataToCurvesUI();
   }
 
-  @grok.decorators.func({meta: {vectorFunc: 'true'}, tags: ['Transform']})
+  @grok.decorators.func({meta: {vectorFunc: 'true', role: 'transform'}})
   static addStatisticsColumn(table: DG.DataFrame, colName: string, propName: string, @grok.decorators.param({type: 'int'}) seriesNumber: number): DG.Column {
     const df = table;
     const col = df.col(colName)!;
@@ -144,7 +144,7 @@ export class PackageFunctions {
     return column;
   }
 
-  @grok.decorators.func({meta: {vectorFunc: 'true'}, tags: ['Transform']})
+  @grok.decorators.func({meta: {vectorFunc: 'true', role: 'transform'}})
   static addAggrStatisticsColumn(table: DG.DataFrame, colName: string, propName: string, aggrType: string): DG.Column {
     const df = table;
     const col = df.col(colName)!;
