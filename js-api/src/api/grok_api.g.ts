@@ -740,7 +740,7 @@ export interface IDartApi {
   grok_Color_FromHtml(htmlColor: String): any;
   grok_Color_FromCell(cell: any): any;
   grok_Color_FromCategory(column: any, category: String): any;
-  grok_Color_ScaleColor(x: Num, min: Num, max: Num, alpha: Num, colorScheme: any): any;
+  grok_Color_ScaleColor(x: Num, min: Num, max: Num, alpha: Num, colorScheme: any, belowMinColor: Num, aboveMaxColor: Num): any;
   grok_Color_Highlight(color: Num): any;
   grok_Color_Darken(color: Num, diff: Num): any;
   grok_Color_GetRowColor(column: any, row: Num): any;
