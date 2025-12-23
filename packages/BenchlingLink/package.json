@@ -1,6 +1,10 @@
 {
-  "name": "benchlinglink",
+  "name": "@datagrok/benchlinglink",
   "friendlyName": "BenchlingLink",
+  "author": {
+    "name": "Maria Dolotova",
+    "email": "mdolotova@datagrok.ai"
+  },
   "version": "0.0.1",
   "description": "",
   "dependencies": {
