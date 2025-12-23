@@ -197,7 +197,9 @@ export class PackageFunctions {
     return DG.Widget.fromRoot(createFuncTableViewWidget(func, inputParams));
   }
 
-  @grok.decorators.func({tags: ['searchProvider']})
+  @grok.decorators.func({
+    meta: {role: 'searchProvider'},
+  })
   static powerPackSearchProvider(): DG.SearchProvider {
     const providers: DG.SearchProvider = {
       'home': [{
