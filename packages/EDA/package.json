@@ -14,6 +14,7 @@
     "datagrok-api": "^1.26.3",
     "dayjs": "^1.11.9",
     "jstat": "^1.9.6",
+    "mathjs": "^15.1.0",
     "source-map-loader": "^4.0.1",
     "umap-js": "^1.3.3",
     "worker-loader": "^3.0.8",
