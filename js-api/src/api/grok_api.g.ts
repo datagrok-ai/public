@@ -1312,6 +1312,7 @@ export interface IDartApi {
   grok_Group_Set_Personal(g: any, x: any): any;
   grok_Group_Get_Hidden(g: any): any;
   grok_Group_Set_Hidden(g: any, x: any): any;
+  grok_Group_Get_User(g: any): any;
   grok_Group_AllUsers(): any;
   grok_Group_Developers(): any;
   grok_Group_NeedToCreate(): any;
