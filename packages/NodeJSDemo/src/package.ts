@@ -13,7 +13,7 @@ export function info() {
 
 
 //name: todoApp
-//tags: app
+//meta.role: app
 //input: string path { optional: true; meta.url: true }
 //output: view result
 //meta.url: /todo
