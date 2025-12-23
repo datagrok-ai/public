@@ -8,7 +8,7 @@ export async function getMonomerDBProvider() : Promise<any> {
   return await PackageFunctions.getMonomerDBProvider();
 }
 
-//tags: init
+//meta.role: init
 export async function init() : Promise<void> {
   await PackageFunctions.init();
 }
