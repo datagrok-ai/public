@@ -1,6 +1,6 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
-import {AE_BROWSER_VIEW_NAME, MATRIX_TABLE_VIEW_NAME, TIMELINES_VIEW_NAME,
+import {AE_BROWSER_VIEW_NAME, MATRIX_TABLE_VIEW_NAME, TIME_PROFILE_TABLE_VIEW_NAME, TIMELINES_VIEW_NAME,
   VALIDATION_VIEW_NAME} from '../constants/view-names-constants';
 import * as sdtmCols from '../constants/columns-constants';
 import {AE_START_DAY_FIELD} from '../views-config';
@@ -13,6 +13,7 @@ import {ClinCaseTableView} from './types';
 import {studies} from './app-utils';
 import {createValidationView} from '../views/validation-table-view';
 import {createMatrixTableView} from '../views/matrix-table-view';
+import {createTimeProfileTableView} from '../views/time-profile-table-view';
 
 
 export function createAEBrowserHelper(studyId: string): any {
@@ -92,5 +93,8 @@ export const TABLE_VIEWS_META = {
   },
   [MATRIX_TABLE_VIEW_NAME]: {
     createViewHelper: createMatrixTableView,
+  },
+  [TIME_PROFILE_TABLE_VIEW_NAME]: {
+    createViewHelper: createTimeProfileTableView,
   },
 };

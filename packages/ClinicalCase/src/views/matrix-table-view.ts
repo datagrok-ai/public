@@ -45,7 +45,7 @@ export function createMatrixTableView(studyId: string): any {
     pivotedDF = matrixDataframe;
   }
 
-  // onTableViewAdded function to set up fix button rendering
+  // onTableViewAdded function to add viewers
   const onTableViewAdded = async (tableView: DG.TableView) => {
     const matrixViewer = await DG.Viewer.fromType(DG.VIEWER.MATRIX_PLOT, pivotedDF, {cellPlotType: 'Scatter plot'});
     matrixViewer.setOptions({
