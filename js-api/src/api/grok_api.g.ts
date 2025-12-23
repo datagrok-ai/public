@@ -864,7 +864,6 @@ export interface IDartApi {
   grok_ColumnGrid_Create_ColumnSelector(dfSource: any, checkAll: Bool, filter: any, isChecked: any): any;
   grok_ColumnGrid_Get_DfColumns(cg: any): any;
   grok_ColumnGrid_Get_DfSource(cg: any): any;
-  grok_ColumnGrid_Get_GridSource(cg: any): any;
   grok_ColumnGrid_Get_Grid(cg: any): any;
   grok_ColumnGrid_Get_NameCol(cg: any): any;
   grok_ColumnGrid_Get_TypeNameCol(cg: any): any;
@@ -884,7 +883,7 @@ export interface IDartApi {
   grok_ColumnGrid_InitTypeColoring(cg: any): any;
   grok_ColumnGrid_InitColumnTooltips(cg: any): any;
   grok_ColumnGrid_InitColumnDragDrop(cg: any): any;
-  grok_ColumnGrid_Init(cg: any, dfSource: any, gridSource: any, filter: any, syncSelections: Bool, order: any, addServiceColumns: Bool): any;
+  grok_ColumnGrid_Init(cg: any, dfSource: any, filter: any, syncSelections: Bool, order: any, addServiceColumns: Bool): any;
   grok_ColumnGrid_InitColumnSelector(cg: any, dfSource: any, checkAll: Bool, filter: any): any;
   grok_ColumnGrid_InitContextMenu(cg: any): any;
   grok_ColumnGrid_InitColumnManager(cg: any, dfSource: any, filter: any): any;
