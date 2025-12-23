@@ -417,6 +417,7 @@ export const FUNC_TYPES = {
   MOLECULE_SKETCHER: 'moleculeSketcher',
   TOOLTIP: 'tooltip',
   FOLDER_VIEWER: 'folderViewer',
+  SCRIPT_HANDLER: 'scriptHandler',
 
   HIT_TRIAGE_FUNCTION: 'HitTriageFunction',
   HIT_TRIAGE_DATA_SOURCE: 'HitTriageDataSource',
@@ -594,6 +595,12 @@ export const functionRoles: FuncRoleDescription[] = [
     description: 'Provides a custom folder content preview.',
     header: 'tags',
     signature: 'folderViewer(folder: File, files: list<file>): Widget',
+  },
+  {
+    role: FUNC_TYPES.SCRIPT_HANDLER,
+    description: 'Provides a custom script handler.',
+    header: 'tags',
+    signature: 'scriptHandler(call: FuncCall): void'
   },
   {
     role: FUNC_TYPES.HIT_TRIAGE_FUNCTION,

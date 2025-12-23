@@ -12,7 +12,7 @@ export function makeVectorCode(script: any) : string {
   return PackageFunctions.makeVectorCode(script);
 }
 
-//tags: scriptHandler
+//meta.role: scriptHandler
 //input: funccall scriptCall 
 //meta.scriptHandler.language: pyodide
 //meta.scriptHandler.extensions: py
