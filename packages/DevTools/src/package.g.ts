@@ -16,7 +16,7 @@ export function _makeInspectorPanel() : any {
 }
 
 //description: DevTools autostart function
-//tags: autostart
+//meta.role: autostart
 export function autostartTools() : void {
   PackageFunctions.autostartTools();
 }
@@ -27,7 +27,7 @@ export function _IconTool() : void {
 }
 
 //name: Test Manager
-//tags: app
+//meta.role: app
 //meta.browsePath: Admin
 //top-menu: Tools | Dev | Test Manager
 export async function testManager() : Promise<void> {
