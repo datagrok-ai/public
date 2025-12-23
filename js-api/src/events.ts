@@ -11,6 +11,7 @@ import {Viewer} from "./viewer";
 import {Column, DataFrame} from "./dataframe";
 import {GridCell} from "./grid";
 import {IDartApi} from "./api/grok_api.g";
+import {LogMessage} from './logger';
 
 const api: IDartApi = (typeof window !== 'undefined' ? window : global.window) as any;
 
@@ -191,6 +192,8 @@ export class Events {
   get onBrowseNodeCreated(): rxjs.Observable<TreeViewNode> {
     return __obs<TreeViewNode>('d4-tree-view-node-added').pipe(filter(n => n.rootNode.tag == 'Browse' ));
   }
+
+  get onLog(): Observable<LogMessage> { return api.grok_Logger_OnLog(); }
 }
 
 /*
