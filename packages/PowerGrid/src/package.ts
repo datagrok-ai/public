@@ -35,9 +35,9 @@ export class PackageFunctions {
   @grok.decorators.func({
     meta: {
       gridChart: 'true',
-      cellType: 'bar'
+      cellType: 'bar',
+      role: 'cellRenderer'
     },
-    tags: ['cellRenderer'],
     outputs: [{type: 'grid_cell_renderer', name: 'result'}]
   })
   static barCellRenderer() {
@@ -49,9 +49,9 @@ export class PackageFunctions {
     meta: {
       cellType: 'sparkline',
       gridChart: 'true',
-      virtual: 'true'
+      virtual: 'true',
+      role: 'cellRenderer'
     },
-    tags: ['cellRenderer'],
     name: 'Sparklines',
     outputs: [{type: 'grid_cell_renderer', name: 'result'}]
   })
@@ -64,9 +64,9 @@ export class PackageFunctions {
     meta: {
       cellType: 'barchart',
       gridChart: 'true',
-      virtual: 'true'
+      virtual: 'true',
+      role: 'cellRenderer'
     },
-    tags: ['cellRenderer'],
     name: 'Bar Chart',
     outputs: [{type: 'grid_cell_renderer', name: 'result'}]
   })
@@ -79,9 +79,9 @@ export class PackageFunctions {
     meta: {
       cellType: 'piechart',
       gridChart: 'true',
-      virtual: 'true'
+      virtual: 'true',
+      role: 'cellRenderer'
     },
-    tags: ['cellRenderer'],
     name: 'Pie Chart',
     outputs: [{type: 'grid_cell_renderer', name: 'result'}]
   })
@@ -94,9 +94,9 @@ export class PackageFunctions {
     meta: {
       cellType: 'radar',
       gridChart: 'true',
-      virtual: 'true'
+      virtual: 'true',
+      role: 'cellRenderer'
     },
-    tags: ['cellRenderer'],
     name: 'Radar',
     outputs: [{type: 'grid_cell_renderer', name: 'result'}]
   })
@@ -109,9 +109,9 @@ export class PackageFunctions {
     meta: {
       cellType: 'smartform',
       gridChart: 'true',
-      virtual: 'true'
+      virtual: 'true',
+      role: 'cellRenderer'
     },
-    tags: ['cellRenderer'],
     name: 'Smart Form',
     outputs: [{type: 'grid_cell_renderer', name: 'result'}]
   })
@@ -206,9 +206,9 @@ export class PackageFunctions {
   @grok.decorators.func({
     meta: {
       cellType: 'testUnitsKg',
-      columnTags: 'foo=bar,units=kg'
+      columnTags: 'foo=bar,units=kg',
+      role: 'cellRenderer'
     },
-    tags: ['cellRenderer'],
     outputs: [{type: 'grid_cell_renderer', name: 'result'}]
   })
   static testUnitsKgCellRenderer() {
@@ -219,9 +219,9 @@ export class PackageFunctions {
   @grok.decorators.func({
     meta: {
       cellType: 'testUnitsTon',
-      columnTags: 'foo=bar,units=ton'
+      columnTags: 'foo=bar,units=ton',
+      role: 'cellRenderer'
     },
-    tags: ['cellRenderer'],
     outputs: [{type: 'grid_cell_renderer', name: 'result'}]
   })
   static testUnitsTonCellRenderer() {
@@ -311,8 +311,8 @@ export class PackageFunctions {
       icon: 'files/icons/formviewer.svg',
       viewerPosition: 'bottom',
       toolbox: 'true',
+      role: 'viewer'
     },
-    tags: ['viewer'],
     name: 'Forms',
     description: 'Forms viewer',
     outputs: [{type: 'viewer', name: 'result'}]
@@ -323,12 +323,10 @@ export class PackageFunctions {
 
 
   @grok.decorators.panel({
-    tags: [
-      'powergrid',
-      'widgets'
-    ],
+    tags: ['powergrid'],
     name: 'Content',
-    description: 'Image content'
+    description: 'Image content',
+    meta: {role: 'widgets'},
   })
   static imgContent(
     @grok.decorators.param({'options': {'semType': 'ImageUrl'}}) imageUrl: string): DG.Widget {
@@ -357,7 +355,7 @@ export class PackageFunctions {
 
 
   @grok.decorators.func({
-    tags: ['scWebGPURender']
+    meta: {role: 'scWebGPURender'},
   })
   static async _scWebGPURender(
     sc: DG.ScatterPlotViewer,
@@ -371,8 +369,8 @@ export class PackageFunctions {
 
 
   @grok.decorators.func({
-    tags: ['scWebGPUPointHitTest'],
-    outputs: [{type: 'int', name: 'result'}]
+    outputs: [{type: 'int', name: 'result'}],
+    meta: {role: 'scWebGPUPointHitTest'},
   })
   static async _scWebGPUPointHitTest(
     sc: DG.ScatterPlotViewer,
@@ -389,14 +387,16 @@ export class PackageFunctions {
   }
 
 
-  @grok.decorators.func({tags: ['isWebGPUAvailable']})
+  @grok.decorators.func({
+    meta: {role: 'isWebGPUAvailable'},
+  })
   static isWebGPUAvailable() : boolean {
     return gpuDevice != null && !gpuErrorCounter;
   }
 
 
   @grok.decorators.func({
-    tags: ['isWebGPURenderValid']
+    meta: {role: 'isWebGPURenderValid'},
   })
   static isWebGPURenderValid(sc: DG.ScatterPlotViewer) : boolean {
     return sc.props.zoomAndFilter != 'pack and zoom by filter' &&
