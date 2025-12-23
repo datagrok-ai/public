@@ -16,7 +16,7 @@ export const VALIDATION_VIEW_NAME = 'Validation';
 export const AE_BROWSER_VIEW_NAME = 'AE Browser';
 export const COHORT_VIEW_NAME = 'Cohort';
 export const QUESTIONNAIRES_VIEW_NAME = 'Questionnaires';
-export const TRELLIS_PLOT_VIEW_NAME = 'Trellis plot';
+export const MATRIX_TABLE_VIEW_NAME = 'Matrix';
 
 //SEND specific names
 export const ANIMAL_PROFILE_VIEW_NAME = 'Animal Profile';
