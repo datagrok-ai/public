@@ -380,8 +380,8 @@ export class PackageFunctions {
     meta: {
       supportedSemTypes: 'Text',
       supportedDistanceFunctions: 'Vector Cosine, Euclidean, Manhattan',
+      role: 'dimRedPreprocessingFunction',
     },
-    tags: ['dim-red-preprocessing-function'],
     name: 'Sentence Embeddings',
     outputs: [{type: 'object', name: 'result'}],
   })
@@ -461,9 +461,8 @@ export class PackageFunctions {
   }
 
   @grok.decorators.func({
-    tags: ['viewer'],
     name: 'Sentence Similarity Search',
-    meta: {showInGallery: 'false'},
+    meta: {showInGallery: 'false', role: 'viewer'},
     outputs: [{type: 'viewer', name: 'result'}],
   })
   static sentenceSearchViewer() : DG.Viewer {
