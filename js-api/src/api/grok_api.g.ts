@@ -663,6 +663,8 @@ export interface IDartApi {
   grok_TreeViewNode_Set_Expanded(node: any, expanded: Bool): any;
   grok_FilesWidget(options: any): any;
   grok_Test_RunViewerTest(viewerName: String): Promise<any>;
+  grok_ClickUtils_GetClickElementDescription(x: any): any;
+  grok_ClickUtils_SanitizeCssAttrValue(x: String): any;
   grok_Windows_Get_Sidebar(): any;
   grok_Windows_Get_ShowSidebar(): any;
   grok_Windows_Set_ShowSidebar(x: Bool): any;
