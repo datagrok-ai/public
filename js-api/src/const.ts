@@ -421,7 +421,7 @@ export const FUNC_TYPES = {
   HIT_TRIAGE_FUNCTION: 'HitTriageFunction',
   HIT_TRIAGE_DATA_SOURCE: 'HitTriageDataSource',
   HIT_TRIAGE_SUBMIT_FUNCTION: 'HitTriageSubmitFunction',
-  HIT_DESIGN_FUNCTION: 'HitDesignFunction',
+  HIT_DESIGN_FUNCTION: 'HitDesignerFunction',
 
   DIM_RED_PREPROCESS: 'dim-red-preprocessing-function',
   DIM_RED_POSTPROCESS: 'dim-red-postprocessing-function',
@@ -617,7 +617,7 @@ export const functionRoles: FuncRoleDescription[] = [
     role: FUNC_TYPES.HIT_DESIGN_FUNCTION,
     description: 'Compute function for Hit Design campaigns.',
     header: 'tags',
-    signature: 'hitDesignFunction(molecule: string): DataFrame'
+    signature: 'hitDesignerFunction(molecule: string): DataFrame'
   },
   {
     role: FUNC_TYPES.DIM_RED_PREPROCESS,
