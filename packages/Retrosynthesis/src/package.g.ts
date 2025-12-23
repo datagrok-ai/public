@@ -2,10 +2,11 @@ import {PackageFunctions} from './package';
 import * as DG from 'datagrok-api/dg';
 
 //name: Chemistry | Retrosynthesis
-//tags: panel, chem, widgets
+//tags: chem
 //input: string smiles { semType: Molecule }
 //output: widget result
 //meta.allowAddAsColumn: false
+//meta.role: widgets,panel
 //condition: true
 export function retroSynthesisPath(molecule: string) : any {
   return PackageFunctions.retroSynthesisPath(molecule);
