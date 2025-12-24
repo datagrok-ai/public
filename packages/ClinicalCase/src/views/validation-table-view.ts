@@ -41,8 +41,6 @@ export function createValidationView(studyId: string): any {
   let currentDomainDf: DG.DataFrame | null = null;
   let applyFixesButton: HTMLElement | null = null;
   let currentTableView: DG.TableView | null = null;
-  let previewDockNode: DG.DockNode | null = null;
-
 
   issueSummaryDf.onCurrentRowChanged.subscribe(() => {
     ui.empty(errorsGridDiv);
@@ -155,14 +153,7 @@ export function createValidationView(studyId: string): any {
     previewGrid.root.style.height = '95%';
     previewGrid.columns.setOrder(colsOrder);
 
-    // Close existing preview if any
-    if (previewDockNode) {
-      grok.shell.tv.dockManager.close(previewDockNode);
-      previewDockNode = null;
-    }
-
-    // Dock preview grid on the right
-    previewDockNode = grok.shell.tv.dockManager.dock(previewGrid.root, 'right');
+    grok.shell.o = previewGrid.root;
 
     // Show 'Apply Fixes' button in ribbon
     if (!applyFixesButton && currentTableView) {
@@ -178,8 +169,8 @@ export function createValidationView(studyId: string): any {
           }
         }
         //close fixesPreview
-        grok.shell.tv.dockManager.close(previewDockNode);
-        previewDockNode = null;
+        if (grok.shell.o === previewGrid.root)
+          grok.shell.o = null;
       });
       applyFixesButton.style.margin = '0 5px';
 
