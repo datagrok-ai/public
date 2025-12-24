@@ -728,9 +728,9 @@ export function useAsSubstructureFilter(value: DG.SemanticValue) : void {
 
 //name: Copy as...
 //description: Copies structure in different formats
-//tags: exclude-current-value-menu
 //input: semantic_value value { semType: Molecule }
 //meta.action: Copy as...
+//meta.exclude-current-value-menu: true
 export function copyAsAction(value: DG.SemanticValue) : void {
   PackageFunctions.copyAsAction(value);
 }

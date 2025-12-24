@@ -1719,8 +1719,7 @@ export class PackageFunctions {
   @grok.decorators.func({
     name: 'Copy as...',
     description: 'Copies structure in different formats',
-    tags: ['exclude-current-value-menu'],
-    meta: {'action': 'Copy as...'},
+    meta: {'action': 'Copy as...', 'exclude-current-value-menu': 'true'},
   })
   static copyAsAction(
     @grok.decorators.param({options: {semType: 'Molecule'}}) value: DG.SemanticValue) {
