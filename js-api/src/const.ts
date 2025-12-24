@@ -429,11 +429,6 @@ export const FUNC_TYPES = {
 
   MONOMER_LIB_PROVIDER: 'monomer-lib-provider',
 
-  SC_WEBGPU_POINT_HIT_TEST: 'scWebGPUPointHitTest',
-  SC_WEBGPU_AVAILABLE: 'isWebGPUAvailable',
-  SC_WEBGPU_RENDER_VALID: 'isWebGPURenderValid',
-  SC_WEBGPU_RENDER: 'scWebGPURender',
-
   SEARCH_PROVIDER: 'searchProvider',
   NOTATION_REFINER: 'notationRefiner',
 }
@@ -645,30 +640,6 @@ export const functionRoles: FuncRoleDescription[] = [
     description: 'Provides a monomer library provider.',
     header: 'tags',
     signature: 'getMonomerLibProvider(): IMonomerLibProvider'
-  },
-  {
-    role: FUNC_TYPES.SC_WEBGPU_POINT_HIT_TEST,
-    description: 'GPU-accelerated hit test for a scatterplot.',
-    header: 'tags',
-    signature: 'scWebGPUPointHitTest(sc: ScatterPlotViewer, pt: Point): number' 
-  },
-  {
-    role: FUNC_TYPES.SC_WEBGPU_AVAILABLE,
-    description: 'Checks whether WebGPU is available.',
-    header: 'tags',
-    signature: 'isWebGPUAvailable(): boolean'
-  },
-  {
-    role: FUNC_TYPES.SC_WEBGPU_RENDER_VALID,
-    description: '',
-    header: 'tags',
-    signature: 'isWebGPURenderValid(sc: ScatterPlotViewer): boolean'
-  },
-  {
-    role: FUNC_TYPES.SC_WEBGPU_RENDER,
-    description: 'Renders a ScatterPlotViewer',
-    header: 'tags',
-    signature: 'scWebGPURender(sc: ScatterPlotViewer, show: boolean): void'
   },
   {
     role: FUNC_TYPES.SEARCH_PROVIDER,

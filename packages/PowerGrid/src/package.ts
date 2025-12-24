@@ -354,9 +354,7 @@ export class PackageFunctions {
   }
 
 
-  @grok.decorators.func({
-    meta: {role: 'scWebGPURender'},
-  })
+  @grok.decorators.func()
   static async _scWebGPURender(
     sc: DG.ScatterPlotViewer,
     show: boolean) {
@@ -369,8 +367,7 @@ export class PackageFunctions {
 
 
   @grok.decorators.func({
-    outputs: [{type: 'int', name: 'result'}],
-    meta: {role: 'scWebGPUPointHitTest'},
+    outputs: [{type: 'int', name: 'result'}]
   })
   static async _scWebGPUPointHitTest(
     sc: DG.ScatterPlotViewer,
@@ -387,17 +384,13 @@ export class PackageFunctions {
   }
 
 
-  @grok.decorators.func({
-    meta: {role: 'isWebGPUAvailable'},
-  })
+  @grok.decorators.func()
   static isWebGPUAvailable() : boolean {
     return gpuDevice != null && !gpuErrorCounter;
   }
 
 
-  @grok.decorators.func({
-    meta: {role: 'isWebGPURenderValid'},
-  })
+  @grok.decorators.func()
   static isWebGPURenderValid(sc: DG.ScatterPlotViewer) : boolean {
     return sc.props.zoomAndFilter != 'pack and zoom by filter' &&
       !sc.props.markersColumnName &&// different markers not yet supported YET

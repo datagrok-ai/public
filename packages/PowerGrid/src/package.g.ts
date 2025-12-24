@@ -189,7 +189,6 @@ export function demoCellTypes() : void {
 
 //input: dynamic sc 
 //input: bool show 
-//meta.role: scWebGPURender
 export async function _scWebGPURender(sc: any, show: boolean) : Promise<void> {
   await PackageFunctions._scWebGPURender(sc, show);
 }
@@ -197,20 +196,17 @@ export async function _scWebGPURender(sc: any, show: boolean) : Promise<void> {
 //input: dynamic sc 
 //input: dynamic pt 
 //output: int result
-//meta.role: scWebGPUPointHitTest
 export async function _scWebGPUPointHitTest(sc: any, pt: any) {
   return await PackageFunctions._scWebGPUPointHitTest(sc, pt);
 }
 
 //output: bool result
-//meta.role: isWebGPUAvailable
 export function isWebGPUAvailable() : boolean {
   return PackageFunctions.isWebGPUAvailable();
 }
 
 //input: dynamic sc 
 //output: bool result
-//meta.role: isWebGPURenderValid
 export function isWebGPURenderValid(sc: any) : boolean {
   return PackageFunctions.isWebGPURenderValid(sc);
 }
