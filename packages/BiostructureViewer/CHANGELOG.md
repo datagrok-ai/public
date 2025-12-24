@@ -1,5 +1,7 @@
 # Biostructure Viewer changelog
 
+## 1.4.4 (2025-11-11)
+
 ## 1.4.3 (2025-09-16)
 
 * Fix caching for PdbGridCellRenderer

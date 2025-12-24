@@ -651,7 +651,7 @@ export const functionRoles: FuncRoleDescription[] = [
     role: FUNC_TYPES.NOTATION_REFINER,
     description: '',
     header: 'tags',
-    signature: 'notationRefiner(column: Column, stats: any, separator: string): boolean'
+    signature: 'notationRefiner(column: Column, stats: any, separator: string): bool'
   }
 ]
 
