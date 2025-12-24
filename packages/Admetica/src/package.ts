@@ -143,7 +143,7 @@ export class PackageFunctions {
   }
 
   @grok.decorators.app({name: 'Admetica', meta: {icon: 'images/vlaaivis.png', browsePath: 'Chem'}})
-  static async admeticaApp(): Promise<DG.ViewBase | null> {
+  static async runAdmeticaApplication(): Promise<DG.ViewBase | null> {
     const parent = grok.functions.getCurrentCall();
     return await initializeAdmeticaApp(true, parent);
   }

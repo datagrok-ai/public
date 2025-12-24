@@ -73,8 +73,8 @@ export async function getAdmePropertiesSingle(molecule: string) : Promise<any> {
 //meta.icon: images/vlaaivis.png
 //meta.browsePath: Chem
 //meta.role: app
-export async function admeticaApp() : Promise<any> {
-  return await PackageFunctions.admeticaApp();
+export async function runAdmeticaApplication() : Promise<any> {
+  return await PackageFunctions.runAdmeticaApplication();
 }
 
 //name: Admetica Demo

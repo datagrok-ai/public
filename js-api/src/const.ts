@@ -447,7 +447,7 @@ export const functionRoles: FuncRoleDescription[] = [
     role: FUNC_TYPES.APP,
     description: 'An application that gets shown in the app store.',
     header: 'tags',
-    signature: 'app(): void'
+    signature: 'app(): void | View'
   },
   {
     role: FUNC_TYPES.PANEL,
