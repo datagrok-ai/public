@@ -427,6 +427,8 @@ export const FUNC_TYPES = {
   DIM_RED_PREPROCESS: 'dim-red-preprocessing-function',
   DIM_RED_POSTPROCESS: 'dim-red-postprocessing-function',
 
+  MONOMER_LIB_PROVIDER: 'monomer-lib-provider',
+
   SC_WEBGPU_POINT_HIT_TEST: 'scWebGPUPointHitTest',
   SC_WEBGPU_AVAILABLE: 'isWebGPUAvailable',
   SC_WEBGPU_RENDER_VALID: 'isWebGPURenderValid',
@@ -637,6 +639,12 @@ export const functionRoles: FuncRoleDescription[] = [
     description: 'Postprocessing function for dimensionality reduction.',
     header: 'tags',
     signature: 'postprocess(data: any): void'
+  },
+  {
+    role: FUNC_TYPES.MONOMER_LIB_PROVIDER,
+    description: 'Provides a monomer library provider.',
+    header: 'tags',
+    signature: 'getMonomerLibProvider(): IMonomerLibProvider'
   },
   {
     role: FUNC_TYPES.SC_WEBGPU_POINT_HIT_TEST,
