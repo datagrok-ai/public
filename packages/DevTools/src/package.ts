@@ -88,7 +88,7 @@ export class PackageFunctions {
 
   @grok.decorators.func({'top-menu': 'Tools | Dev | Test | Detectors Standard'})
   static async TestDetectorsStandard() {
-    const detectorsArray = DG.Func.find({tags: ['semTypeDetector']});
+    const detectorsArray = DG.Func.find({meta: {role: 'semTypeDetector'}});
     const df = await _testDetectorsStandard(detectorsArray);
     grok.shell.addTableView(df);
   }

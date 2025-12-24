@@ -205,7 +205,7 @@ function getViewers(viewers: { [v: string]: { [k: string]: any } }, table: DG.Da
 
 function getJsViewers(jsViewers: { [v: string]: { [k: string]: any } }, table: DG.DataFrame) {
   const skip = ['TestViewerForProperties', 'OutliersSelectionViewer'];
-  const list = DG.Func.find({tags: ['viewer']}).filter((v) => !skip.includes(v.friendlyName));
+  const list = DG.Func.find({meta: {role: 'viewer'}}).filter((v) => !skip.includes(v.friendlyName));
   let i = 0;
   for (const v of list) {
     let isViewerEnabled = true;

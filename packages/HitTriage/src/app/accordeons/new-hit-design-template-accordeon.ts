@@ -30,7 +30,7 @@ export async function newHitDesignTemplateAccordeon(app: HitAppBase<any>,
       console.error(e);
     }
   }
-  const availableSubmitFunctions = DG.Func.find({tags: [C.HitTriageSubmitTag]});
+  const availableSubmitFunctions = DG.Func.find({meta: {role: C.HitTriageSubmitTag}});
   const submitFunctionsMap: {[key: string]: DG.Func} = {};
   availableSubmitFunctions.forEach((func) => {
     submitFunctionsMap[func.friendlyName ?? func.name] = func;
