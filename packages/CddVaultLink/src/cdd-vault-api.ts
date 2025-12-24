@@ -383,30 +383,6 @@ export interface ExportStatus {
   queued_job_position?: number
 }
 
-  async function fetchProxy(url: string, params?: RequestInit, maxAge?: number): Promise<Response> {
-    params ??= {};
-    params.headers ??= {};
-    params.method ??= 'GET';
-    // @ts-ignore
-    params.headers['original-url'] = `${url}`;
-    // @ts-ignore
-    params.headers['original-method'] = params.method;
-    if (params.redirect === 'follow')
-      (params.headers as any)['follow-redirects'] = true;
-    let proxyUrl = `${grok.dapi.root}/connectors/proxy`;
-    if (params.method == 'GET' || params.method == 'HEAD') {
-      if (maxAge) {
-        // @ts-ignore
-        params.headers['dg-cache-control'] = `max-age=${maxAge}`;
-        params.cache = 'default';
-      }
-      proxyUrl = `${proxyUrl}?url=${encodeURI(url)}`;
-    }
-    if (params.method !== 'GET')
-      params.method = 'POST';
-    return fetch(proxyUrl, params);
-  }
-
 async function request<T>(
   method: string,
   path: string,
@@ -429,7 +405,7 @@ async function request<T>(
     if (method === 'POST')
       headers['Content-Type'] = 'application/json';
 
-    const response = await fetchProxy(`https://app.collaborativedrug.com${path}`, {
+    const response = await grok.dapi.fetchProxy(`https://app.collaborativedrug.com${path}`, {
       method,
       headers,
       body: body ? JSON.stringify(body) : undefined,
