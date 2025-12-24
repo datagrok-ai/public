@@ -348,7 +348,8 @@ export function createFuncTableViewWidget(sf: DG.Func, inputParams: Record<strin
       // comma separated list of values, with quotes if its string and without if its number
       const argumentList =
         sf.inputs.map((i: any) => i.propertyType === DG.TYPE.STRING ? `"${inputParams[i.name]}"` : inputParams[i.name]).join(',');
-      tv.dataFrame.setTag(DG.Tags.CreationScript, `Result = ${sf.nqName}(${argumentList})`);
+      if (inputParams && Object.keys(inputParams).length > 0)
+        tv.dataFrame.setTag(DG.Tags.CreationScript, `Result = ${sf.nqName}(${argumentList})`);
       setTimeout(() => {
         processPowerSearchTableView(tv);
         tv._onAdded();

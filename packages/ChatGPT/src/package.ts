@@ -6,7 +6,7 @@ import * as DG from 'datagrok-api/dg';
 import {ChatGptAssistant} from './prompt-engine/chatgpt-assistant';
 import {ChatGPTPromptEngine} from './prompt-engine/prompt-engine';
 import {getAiPanelVisibility, initAiPanel, setAiPanelVisibility} from './ai-panel';
-import {findBestFunction, tableQueriesFunctionsSearchLlm} from './prompts/find-best-function';
+import {findBestMatchingQuery, tableQueriesFunctionsSearchLlm} from './llm-utils/query-matching';
 import {askWiki, setupAIQueryEditorUI, setupSearchUI, setupTableViewAIPanelUI, smartExecution} from './llm-utils/ui';
 import {Plan} from './prompt-engine/interfaces';
 import {OpenAIClient} from './llm-utils/openAI-client';
@@ -92,7 +92,7 @@ export class PackageFunctions {
 
  @grok.decorators.func({meta: {
    role: 'aiSearchProvider',
-   useWhen: 'If the prompt looks like a user has a goal to achieve something with concrete input(s), and wants the system to plan and execute a series of steps/functions to achieve that goal. for example, adme properties of CHEMBL1234, enumerate some peptide, etc.. . Also, if the tone of the prompt sounds like "Do something", use this function'
+   useWhen: 'If the prompt looks like a user has a goal to achieve something with concrete input(s), and wants the system to plan and execute a series of steps/functions to achieve that goal. This relates to functions that analyse or mutate data, not get it. for example, adme properties of CHEMBL1234, enumerate some peptide, etc... Also, if the tone of the prompt sounds like "Do something to something", use this function'
  }, name: 'Execute',
  description: 'Plans and executes function steps to achieve needed results', result: {type: 'widget', name: 'result'}})
   static async smartChainExecutionProvider(@grok.decorators.param({type: 'string'})prompt: string): Promise<DG.Widget | null> {
@@ -101,7 +101,7 @@ export class PackageFunctions {
 
   @grok.decorators.func({meta: {
     role: 'aiSearchProvider',
-    useWhen: 'if the prompt suggest that the user is looking for a data table result and the prompt resembles a query pattern. for example, "bioactivity data for shigella" or "compounds similar to aspirin" or first 100 chembl compounds. there should be some parts of user prompt that could match parameters in some query, like shigella, aspirin, first 100 etc.'
+    useWhen: 'if the prompt suggest that the user is looking for a data table result and the prompt resembles a query pattern. for example, "bioactivity data for shigella" or "compounds similar to aspirin" or first 100 chembl compounds. there should be some parts of user prompt that could match parameters in some query, like shigella, aspirin, first 100 etc. Always use this function when user wants to get the data without any further processing or calculating'
   }, name: 'Query',
   description: 'Tries to find a query which has the similar pattern as the prompt user entered and executes it', result: {type: 'widget', name: 'result'}})
  static async llmSearchQueryProvider(@grok.decorators.param({type: 'string'})prompt: string): Promise<DG.Widget | null> {
@@ -159,8 +159,8 @@ export class PackageFunctions {
       'cache.invalidateOn': '0 0 1 * *'
     }
   })
-  static async fuzzyMatch(prompt: string, searchPatterns: string[], descriptions: string[]): Promise<string> {
-    const queryMatchResult = await findBestFunction(prompt, searchPatterns, descriptions);
+  static async findMatchingPatternQuery(prompt: string): Promise<string> {
+    const queryMatchResult = await findBestMatchingQuery(prompt);
     return JSON.stringify(queryMatchResult);
   }
 

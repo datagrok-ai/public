@@ -1,14 +1,14 @@
 {
   "name": "@datagrok/chatgpt",
   "friendlyName": "ChatGPT",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "ChatGPT integration",
   "author": "oserhiienko@datagrok.ai",
   "dependencies": {
     "@datagrok-libraries/utils": "^4.6.5",
     "@modelcontextprotocol/sdk": "^1.21.1",
     "@types/dom-chromium-ai": "^0.0.10",
-    "@datagrok-libraries/db-explorer": "^1.6.0",
+    "@datagrok-libraries/db-explorer": "^1.6.2",
     "cash-dom": "latest",
     "datagrok-api": "../../js-api",
     "dayjs": "latest",

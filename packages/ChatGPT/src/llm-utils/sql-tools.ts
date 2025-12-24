@@ -28,7 +28,8 @@ export async function generateAISqlQueryWithTools(
   options: {
     oldMessages?: OpenAI.Chat.ChatCompletionMessageParam[]
     aiPanel?: AIPanelFuncs<OpenAI.Chat.ChatCompletionMessageParam>,
-    modelName?: ChatModel
+    modelName?: ChatModel,
+    disableVerbose?: boolean,
   } = {}
 ): Promise<string> {
   let aborted = false;
@@ -342,7 +343,7 @@ export async function generateAISqlQueryWithTools(
             case 'list_all_schemas':
               options.aiPanel?.addUiMessage(`📂 Listing all schemas in the database.`, false);
               result = (await context.listAllSchemas()).join(', ');
-              options.aiPanel?.addUiMessage(`✅ Schemas found: *${result}*`, false);
+              !options.disableVerbose && options.aiPanel?.addUiMessage(`✅ Schemas found: *${result}*`, false);
               break;
             case 'reply_to_user':
               options.aiPanel?.addUiMessage(`💬 ${functionArgs.reply ?? ''}`, false);
@@ -352,7 +353,7 @@ export async function generateAISqlQueryWithTools(
               options.aiPanel?.addUiMessage(`📑 Listing all tables in schema *${functionArgs.schemaName}*.`, false);
               const res = await context.listTables(false, functionArgs.schemaName);
               result = res.description;
-              options.aiPanel?.addUiMessage(res.tableCount ? `✅ Found ${res.tableCount} tables` : '⚠️ No tables found', false);
+              !options.disableVerbose && options.aiPanel?.addUiMessage(res.tableCount ? `✅ Found ${res.tableCount} tables` : '⚠️ No tables found', false);
               break;
             case 'describe_tables':
               options.aiPanel?.addUiMessage(`📋 Getting content of following tables: *${functionArgs.tables.join(', ')}*.`, false);
@@ -365,12 +366,12 @@ export async function generateAISqlQueryWithTools(
             case 'try_sql':
               options.aiPanel?.addUiMessage(`🧪 Testing SQL query:\n${functionArgs.description}\n\`\`\`sql\n${functionArgs.sql}\n\`\`\``, false);
               result = await context.trySql(functionArgs.sql, functionArgs.description);
-              options.aiPanel?.addUiMessage(`📊 SQL Test Result: \n\n${result}`, false);
+              !options.disableVerbose && options.aiPanel?.addUiMessage(`📊 SQL Test Result: \n\n${result}`, false);
               break;
             case 'find_similar_queries':
               options.aiPanel?.addUiMessage(`🔍 Searching for similar queries to help with SQL generation.`, false);
               const similarQueries = await findSimilarQueriesToPrompt(functionArgs.prompt);
-              options.aiPanel?.addUiMessage(similarQueries.n > 0 ? `✅ Found ${similarQueries.n} similar queries.` : `⚠️ ${similarQueries.text}`, false);
+              !options.disableVerbose && options.aiPanel?.addUiMessage(similarQueries.n > 0 ? `✅ Found ${similarQueries.n} similar queries.` : `⚠️ ${similarQueries.text}`, false);
               result = similarQueries.text;
               break;
             default:
@@ -424,11 +425,11 @@ export async function generateAISqlQueryWithTools(
             });
             options.aiPanel?.addUiMessage(!out ? 'User cancelled execution of potentially destructive SQL.' : 'User confirmed execution of potentially destructive SQL.', false);
             if (out)
-              options.aiPanel?.addUiMessage(`Final SQL Query:\n\`\`\`sql\n${out}\n\`\`\``, false, {finalResult: out});
+              !options.disableVerbose && options.aiPanel?.addUiMessage(`Final SQL Query:\n\`\`\`sql\n${out}\n\`\`\``, false, {finalResult: out});
             return out;
           }
           if (res)
-            options.aiPanel?.addUiMessage(`Final SQL Query:\n\`\`\`sql\n${res}\n\`\`\``, false, {finalResult: res});
+            !options.disableVerbose && options.aiPanel?.addUiMessage(`Final SQL Query:\n\`\`\`sql\n${res}\n\`\`\``, false, {finalResult: res});
           return res;
         } else {
           const replyText = contentUpperCase.startsWith('REPLY ONLY:') ? content.substring('REPLY ONLY:'.length).trim() : content;

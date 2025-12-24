@@ -371,13 +371,13 @@ Your responses should be informative, explaining what you're doing and why.`;
             options.aiPanel?.addUiMessage(`💬 ${args.message}`, false);
             break;
           case 'search_documentation': {
-            // Ask for user confirmation before searching external docs
-            const confirmSearch = options.aiPanel ? await options.aiPanel.addConfirmMessage('Datagrok wants to search platform documentation for additional context. Do you want to allow this action?') : true;
-            if (!confirmSearch) {
-              result = 'Documentation search prohibited by user. Please answer based on the available context without using external documentation.';
-              options.aiPanel?.addUiMessage('⚠️ External documentation search prohibited by user.', false);
-              break;
-            }
+            // Ask for user confirmation before searching external docs (example of using confirmations)
+            // const confirmSearch = options.aiPanel ? await options.aiPanel.addConfirmMessage('Datagrok wants to search platform documentation for additional context. Do you want to allow this action?') : true;
+            // if (!confirmSearch) {
+            //   result = 'Documentation search prohibited by user. Please answer based on the available context without using external documentation.';
+            //   options.aiPanel?.addUiMessage('⚠️ External documentation search prohibited by user.', false);
+            //   break;
+            // }
             options.aiPanel?.addUiMessage(`🔍 Searching documentation for: **${args.query}**`, false);
             try {
               const searchData = await openai.vectorStores.search(vectorStoreId, {
