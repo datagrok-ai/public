@@ -181,12 +181,7 @@ export class PackageFunctions {
 
   // Code for testing
 
-  @grok.decorators.func({
-    tags: [
-      'test',
-      'vue',
-    ],
-  })
+  @grok.decorators.func()
   static async ViewerTestApp() {
     const view = new DG.ViewBase();
     const app = Vue.createApp(ViewerAppInstance);
@@ -197,12 +192,7 @@ export class PackageFunctions {
   }
 
 
-  @grok.decorators.func({
-    tags: [
-      'test',
-      'vue',
-    ],
-  })
+  @grok.decorators.func()
   static async FormTestApp() {
     const view = new DG.ViewBase();
     const app = Vue.createApp(FormAppInstance);
@@ -213,12 +203,7 @@ export class PackageFunctions {
   }
 
 
-  @grok.decorators.func({
-    tags: [
-      'test',
-      'vue',
-    ],
-  })
+  @grok.decorators.func()
   static async HistoryTestApp() {
     const view = new DG.ViewBase();
     const app = Vue.createApp(HistoryAppInstance);
@@ -230,10 +215,6 @@ export class PackageFunctions {
   }
 
   @grok.decorators.func({
-    tags: [
-      'test',
-      'compute2',
-    ],
     editor: 'Compute2:TreeWizardEditor',
     outputs: [{type: 'object', name: 'result'}],
   })
@@ -266,10 +247,6 @@ export class PackageFunctions {
 
 
   @grok.decorators.func({
-    tags: [
-      'test',
-      'compute2',
-    ],
     editor: 'Compute2:TreeWizardEditor',
     outputs: [{type: 'object', name: 'result'}],
   })
@@ -447,10 +424,6 @@ export class PackageFunctions {
   }
 
   @grok.decorators.func({
-    tags: [
-      'test',
-      'compute2',
-    ],
     name: 'Custom View (Compute 2 Test)',
     editor: 'Compute2:CustomFunctionViewEditor',
   })
