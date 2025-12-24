@@ -250,3 +250,4 @@ export const validationFixFunctions: {
   // STRESC is populated with a numeric value, but STRESN is not populated
   'CORE-000863': fixSTRESNConversion,
 };
+

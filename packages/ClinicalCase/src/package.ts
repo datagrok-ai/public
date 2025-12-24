@@ -59,8 +59,8 @@ function getCurrentStudyAndView(path: string): CurrentStudyAndView {
   if (path) {
     const pathSegments = path.split('/');
     currentStandard = pathSegments[1];
-    currentStudy = pathSegments.length > 1 ? pathSegments[2] : '';
-    currentViewName = pathSegments.length > 2 ? pathSegments[3] : SUMMARY_VIEW_NAME;
+    currentStudy = pathSegments.length > 2 ? decodeURI(pathSegments[2]) : '';
+    currentViewName = pathSegments.length > 3 ? decodeURI(pathSegments[3]) : SUMMARY_VIEW_NAME;
   }
   return {study: currentStudy, viewName: currentViewName, standard: currentStandard};
 }
@@ -87,7 +87,7 @@ export class PackageFunctions {
   static async clinicalCaseAppTreeBrowser(treeNode: DG.TreeViewGroup) {
     const url = new URL(window.location.href);
     const currentStudyAndViewPath = url.pathname.includes(`${CLINICAL_CASE_APP_PATH}`) ?
-      url.pathname.replace(`${CLINICAL_CASE_APP_PATH}`, ``) : '';
+      url.pathname.replace(`${CLINICAL_CASE_APP_PATH}`, `/${CDISC_STANDARD.SDTM}`) : '';
     const studyAndView = getCurrentStudyAndView(currentStudyAndViewPath);
     await cdiscAppTB(treeNode, CDISC_STANDARD.SDTM, studyAndView.study, studyAndView.viewName);
   }
@@ -96,7 +96,7 @@ export class PackageFunctions {
   static async preclinicalCaseAppTreeBrowser(treeNode: DG.TreeViewGroup) {
     const url = new URL(window.location.href);
     const currentStudyAndViewPath = url.pathname.includes(`${PRECLINICAL_CASE_APP_PATH}`) ?
-      url.pathname.replace(`${PRECLINICAL_CASE_APP_PATH}`, ``) : '';
+      url.pathname.replace(`${PRECLINICAL_CASE_APP_PATH}`, `/${CDISC_STANDARD.SEND}`) : '';
     const studyAndView = getCurrentStudyAndView(currentStudyAndViewPath);
     await cdiscAppTB(treeNode, CDISC_STANDARD.SEND, studyAndView.study, studyAndView.viewName);
   }

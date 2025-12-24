@@ -122,6 +122,7 @@ export class ClinicalStudy {
   currentViewName: string = SUMMARY_VIEW_NAME;
   validationCompleted = new Subject<boolean>();
   private validationColumnsSubscriptionSet = false;
+  changeViewToSummary = true;
 
   constructor(config: ClinStudyConfig) {
     this.config = config;
