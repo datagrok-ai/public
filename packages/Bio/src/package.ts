@@ -184,7 +184,10 @@ export class PackageFunctions {
     return funcEditor.widget();
   }
 
-  @grok.decorators.panel({name: 'Bioinformatics | Manage Monomer Libraries', tags: ['exclude-actions-panel']})
+  @grok.decorators.panel({
+    name: 'Bioinformatics | Manage Monomer Libraries',
+    meta: {'exclude-actions-panel': 'true'}
+  })
   static async libraryPanel(
     @grok.decorators.param({name: 'seqColumn', options: {semType: 'Macromolecule'}}) _seqColumn: DG.Column): Promise<DG.Widget> {
     // return getLibraryPanelUI();

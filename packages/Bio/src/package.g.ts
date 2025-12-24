@@ -55,9 +55,9 @@ export function getRegionPanel(seqCol: DG.Column<any>) : any {
 }
 
 //name: Bioinformatics | Manage Monomer Libraries
-//tags: exclude-actions-panel
 //input: column seqColumn { semType: Macromolecule }
 //output: widget result
+//meta.exclude-actions-panel: true
 //meta.role: panel
 export async function libraryPanel(_seqColumn: DG.Column) : Promise<any> {
   return await PackageFunctions.libraryPanel(_seqColumn);

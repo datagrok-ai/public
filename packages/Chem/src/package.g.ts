@@ -502,18 +502,18 @@ export async function getStructuralAlerts(molecules: DG.Column, alerts?: string[
 }
 
 //name: Chemistry | Rendering
-//tags: exclude-actions-panel
 //input: column molColumn { semType: Molecule }
 //output: widget result
+//meta.exclude-actions-panel: true
 //meta.role: panel
 export function molColumnPropertyPanel(molColumn: DG.Column) : any {
   return PackageFunctions.molColumnPropertyPanel(molColumn);
 }
 
 //name: Chemistry | Highlight
-//tags: exclude-actions-panel
 //input: column molColumn { semType: Molecule }
 //output: widget result
+//meta.exclude-actions-panel: true
 //meta.role: panel
 export function molColumnHighlights(molColumn: DG.Column) : any {
   return PackageFunctions.molColumnHighlights(molColumn);
@@ -737,45 +737,45 @@ export function copyAsAction(value: DG.SemanticValue) : void {
 
 //name: Copy as SMILES
 //description: Copies structure as smiles
-//tags: exclude-actions-panel
 //input: semantic_value value { semType: Molecule }
 //meta.action: Copy as SMILES
+//meta.exclude-actions-panel: true
 export function copyAsSmiles(value: DG.SemanticValue) : void {
   PackageFunctions.copyAsSmiles(value);
 }
 
 //name: Copy as MOLFILE V2000
 //description: Copies structure as molfile V2000
-//tags: exclude-actions-panel
 //input: semantic_value value { semType: Molecule }
 //meta.action: Copy as MOLFILE V2000
+//meta.exclude-actions-panel: true
 export function copyAsMolfileV2000(value: DG.SemanticValue) : void {
   PackageFunctions.copyAsMolfileV2000(value);
 }
 
 //name: Copy as MOLFILE V3000
 //description: Copies structure as molfile V3000
-//tags: exclude-actions-panel
 //input: semantic_value value { semType: Molecule }
 //meta.action: Copy as MOLFILE V3000
+//meta.exclude-actions-panel: true
 export function copyAsMolfileV3000(value: DG.SemanticValue) : void {
   PackageFunctions.copyAsMolfileV3000(value);
 }
 
 //name: Copy as SMARTS
 //description: Copies structure as smarts
-//tags: exclude-actions-panel
 //input: semantic_value value { semType: Molecule }
 //meta.action: Copy as SMARTS
+//meta.exclude-actions-panel: true
 export function copyAsSmarts(value: DG.SemanticValue) : void {
   PackageFunctions.copyAsSmarts(value);
 }
 
 //name: Copy as IMAGE
 //description: Copies structure as Image
-//tags: exclude-actions-panel
 //input: semantic_value value { semType: Molecule }
 //meta.action: Copy as Image
+//meta.exclude-actions-panel: true
 export function copyAsImage(value: DG.SemanticValue) : void {
   PackageFunctions.copyAsImage(value);
 }

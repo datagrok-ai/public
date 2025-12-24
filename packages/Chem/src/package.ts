@@ -1273,7 +1273,7 @@ export class PackageFunctions {
 
   @grok.decorators.panel({
     name: 'Chemistry | Rendering',
-    tags: ['exclude-actions-panel'],
+    meta: {'exclude-actions-panel': 'true'},
   })
   static molColumnPropertyPanel(
     @grok.decorators.param({options: {semType: 'Molecule'}}) molColumn: DG.Column): DG.Widget {
@@ -1282,7 +1282,7 @@ export class PackageFunctions {
 
   @grok.decorators.panel({
     name: 'Chemistry | Highlight',
-    tags: ['exclude-actions-panel'],
+    meta: {'exclude-actions-panel': 'true'},
   })
   static molColumnHighlights(
     @grok.decorators.param({options: {semType: 'Molecule'}}) molColumn: DG.Column): DG.Widget {
@@ -1719,8 +1719,8 @@ export class PackageFunctions {
   @grok.decorators.func({
     name: 'Copy as...',
     description: 'Copies structure in different formats',
-    meta: {action: 'Copy as...'},
     tags: ['exclude-current-value-menu'],
+    meta: {'action': 'Copy as...'},
   })
   static copyAsAction(
     @grok.decorators.param({options: {semType: 'Molecule'}}) value: DG.SemanticValue) {
@@ -1741,8 +1741,7 @@ export class PackageFunctions {
   @grok.decorators.func({
     name: 'Copy as SMILES',
     description: 'Copies structure as smiles',
-    tags: ['exclude-actions-panel'],
-    meta: {action: 'Copy as SMILES'},
+    meta: {'action': 'Copy as SMILES', 'exclude-actions-panel': 'true'},
   })
   static copyAsSmiles(
     @grok.decorators.param({options: {semType: 'Molecule'}}) value: DG.SemanticValue): void {
@@ -1755,8 +1754,7 @@ export class PackageFunctions {
   @grok.decorators.func({
     name: 'Copy as MOLFILE V2000',
     description: 'Copies structure as molfile V2000',
-    tags: ['exclude-actions-panel'],
-    meta: {action: 'Copy as MOLFILE V2000'},
+    meta: {'action': 'Copy as MOLFILE V2000', 'exclude-actions-panel': 'true'},
   })
   static copyAsMolfileV2000(
     @grok.decorators.param({options: {semType: 'Molecule'}}) value: DG.SemanticValue): void {
@@ -1769,8 +1767,7 @@ export class PackageFunctions {
   @grok.decorators.func({
     name: 'Copy as MOLFILE V3000',
     description: 'Copies structure as molfile V3000',
-    tags: ['exclude-actions-panel'],
-    meta: {action: 'Copy as MOLFILE V3000'},
+    meta: {'action': 'Copy as MOLFILE V3000', 'exclude-actions-panel': 'true'},
   })
   static copyAsMolfileV3000(
     @grok.decorators.param({options: {semType: 'Molecule'}}) value: DG.SemanticValue): void {
@@ -1783,8 +1780,7 @@ export class PackageFunctions {
   @grok.decorators.func({
     name: 'Copy as SMARTS',
     description: 'Copies structure as smarts',
-    tags: ['exclude-actions-panel'],
-    meta: {action: 'Copy as SMARTS'},
+    meta: {'action': 'Copy as SMARTS', 'exclude-actions-panel': 'true'},
   })
   static copyAsSmarts(
     @grok.decorators.param({options: {semType: 'Molecule'}})value: DG.SemanticValue): void {
@@ -1797,8 +1793,7 @@ export class PackageFunctions {
   @grok.decorators.func({
     name: 'Copy as IMAGE',
     description: 'Copies structure as Image',
-    tags: ['exclude-actions-panel'],
-    meta: {action: 'Copy as Image'},
+    meta: {'action': 'Copy as Image', 'exclude-actions-panel': 'true'},
   })
   static copyAsImage(
     @grok.decorators.param({options: {semType: 'Molecule'}}) value: DG.SemanticValue): void {
