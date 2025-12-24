@@ -49,10 +49,10 @@ export function isApplicableAutodock(molecule: string) : boolean {
 }
 
 //name: AutoDock
-//tags: chem
 //input: semantic_value molecule { semType: Molecule3D }
 //output: widget result
 //meta.role: widgets,panel
+//meta.domain: chem
 //condition: Docking:isApplicableAutodock(molecule)
 export async function autodockWidget(molecule: DG.SemanticValue) : Promise<any> {
   return await PackageFunctions.autodockWidget(molecule);

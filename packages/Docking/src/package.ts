@@ -146,10 +146,9 @@ export class PackageFunctions{
   }
 
   @grok.decorators.panel({
-    'tags': ['chem'],
     'name': 'AutoDock',
     'condition': 'Docking:isApplicableAutodock(molecule)',
-    meta: {role: 'widgets'},
+    meta: {role: 'widgets', domain: 'chem'},
   })
   static async autodockWidget(
     @grok.decorators.param({'options':{'semType':'Molecule3D'}}) molecule: DG.SemanticValue): Promise<DG.Widget<any> | null> {

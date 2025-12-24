@@ -174,7 +174,6 @@ export function formsViewer() {
 
 //name: Content
 //description: Image content
-//tags: powergrid
 //input: string imageUrl { semType: ImageUrl }
 //output: widget result
 //meta.role: widgets,panel

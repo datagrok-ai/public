@@ -732,8 +732,7 @@ export class PackageFunctions {
 
   @grok.decorators.panel({
     name: '3D Structure',
-    tags: ['bio'],
-    meta: {role: 'widgets'},
+    meta: {role: 'widgets', domain: 'bio'},
   })
   static structure3D(
     @grok.decorators.param({options: {semType: 'Molecule3D'}}) molecule: DG.SemanticValue

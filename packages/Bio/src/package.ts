@@ -354,8 +354,8 @@ export class PackageFunctions {
     return getMacromoleculeColumnPropertyPanel(molColumn);
   }
 
-  @grok.decorators.panel({name: 'Composition analysis', tags: ['bio'],
-    meta: {role: 'widgets'},
+  @grok.decorators.panel({name: 'Composition analysis',
+    meta: {role: 'widgets', domain: 'bio'},
   })
   static compositionAnalysisWidget(
     @grok.decorators.param({options: {semType: 'Macromolecule'}}) sequence: DG.SemanticValue): DG.Widget {
@@ -697,8 +697,7 @@ export class PackageFunctions {
 
   @grok.decorators.panel({
     name: 'Molecular Structure',
-    tags: ['bio'],
-    meta: {role: 'widgets'},
+    meta: {role: 'widgets', domain: 'bio'},
   })
   static async toAtomicLevelPanel(
     @grok.decorators.param({name: 'sequence', type: 'semantic_value', options: {semType: 'Macromolecule'}})
@@ -751,8 +750,7 @@ export class PackageFunctions {
 
   @grok.decorators.panel({
     name: 'Molecular 3D Structure',
-    tags: ['bio'],
-    meta: {role: 'widgets'},
+    meta: {role: 'widgets', domain: 'bio'},
   })
   static async sequence3dStructureWidget(
     @grok.decorators.param({
@@ -767,7 +765,7 @@ export class PackageFunctions {
   @grok.decorators.panel({
     name: 'MSA',
     description: 'Performs multiple sequence alignment',
-    tags: ['bio'],
+    meta: {domain: 'bio'},
     'top-menu': 'Bio | Analyze | MSA...'
   })
   static multipleSequenceAlignmentDialog(): void {
@@ -788,7 +786,7 @@ export class PackageFunctions {
   @grok.decorators.func({
     name: 'Multiple Sequence Alignment',
     description: 'Multiple sequence alignment',
-    tags: ['bio']
+    meta: {domain: 'bio'}
   })
   static async alignSequences(
     @grok.decorators.param({type: 'column', options: {semType: 'Macromolecule'}}) sequenceCol: DG.Column<string> | null = null,

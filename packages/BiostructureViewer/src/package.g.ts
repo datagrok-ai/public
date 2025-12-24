@@ -350,10 +350,10 @@ export function biostructureDataToJson(binary: boolean, data: any, ext: string, 
 }
 
 //name: 3D Structure
-//tags: bio
 //input: semantic_value molecule { semType: Molecule3D }
 //output: widget result
 //meta.role: widgets,panel
+//meta.domain: bio
 export function structure3D(molecule: DG.SemanticValue) : any {
   return PackageFunctions.structure3D(molecule);
 }

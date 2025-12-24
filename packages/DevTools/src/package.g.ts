@@ -1,7 +1,6 @@
 import {PackageFunctions} from './package';
 import * as DG from 'datagrok-api/dg';
 
-//tags: dev-tools
 //input: object ent 
 //output: widget result
 export function renderDevPanel(ent: any) : any {

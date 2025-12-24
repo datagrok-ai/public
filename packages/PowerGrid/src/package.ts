@@ -323,7 +323,6 @@ export class PackageFunctions {
 
 
   @grok.decorators.panel({
-    tags: ['powergrid'],
     name: 'Content',
     description: 'Image content',
     meta: {role: 'widgets'},

@@ -195,9 +195,8 @@ export class PackageFunctions {
 
 
   @grok.decorators.panel({
-    'tags': ['bio', 'helm'],
     'name': 'Properties',
-    'meta': {role: 'widgets'},
+    'meta': {role: 'widgets', domain: 'bio'},
   })
   static propertiesWidget(
     @grok.decorators.param({'options': {'semType': 'Macromolecule'}}) sequence: DG.SemanticValue): DG.Widget {

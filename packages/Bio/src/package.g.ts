@@ -137,10 +137,10 @@ export function macroMolColumnPropertyPanel(molColumn: DG.Column) : any {
 }
 
 //name: Composition analysis
-//tags: bio
 //input: semantic_value sequence { semType: Macromolecule }
 //output: widget result
 //meta.role: widgets,panel
+//meta.domain: bio
 export function compositionAnalysisWidget(sequence: DG.SemanticValue) : any {
   return PackageFunctions.compositionAnalysisWidget(sequence);
 }
@@ -302,10 +302,10 @@ export async function toAtomicLevelAction(seqCol: DG.Column) : Promise<void> {
 }
 
 //name: Molecular Structure
-//tags: bio
 //input: semantic_value sequence { semType: Macromolecule }
 //output: widget result
 //meta.role: widgets,panel
+//meta.domain: bio
 export async function toAtomicLevelPanel(sequence: DG.SemanticValue) : Promise<any> {
   return await PackageFunctions.toAtomicLevelPanel(sequence);
 }
@@ -319,17 +319,17 @@ export async function toAtomicLevelSingleSeq(sequence: string) : Promise<string>
 }
 
 //name: Molecular 3D Structure
-//tags: bio
 //input: semantic_value sequence { semType: Macromolecule }
 //output: widget result
 //meta.role: widgets,panel
+//meta.domain: bio
 export async function sequence3dStructureWidget(sequence: DG.SemanticValue) : Promise<any> {
   return await PackageFunctions.sequence3dStructureWidget(sequence);
 }
 
 //name: MSA
 //description: Performs multiple sequence alignment
-//tags: bio
+//meta.domain: bio
 //meta.role: panel
 //top-menu: Bio | Analyze | MSA...
 export function multipleSequenceAlignmentDialog() : void {
@@ -338,11 +338,11 @@ export function multipleSequenceAlignmentDialog() : void {
 
 //name: Multiple Sequence Alignment
 //description: Multiple sequence alignment
-//tags: bio
 //input: column sequenceCol { semType: Macromolecule }
 //input: column clustersCol 
 //input: object options { optional: true }
 //output: column result
+//meta.domain: bio
 export async function alignSequences(sequenceCol: any, clustersCol: any, options?: any) : Promise<any> {
   return await PackageFunctions.alignSequences(sequenceCol, clustersCol, options);
 }

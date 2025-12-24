@@ -29,8 +29,7 @@ export class PackageFunctions {
 
   @grok.decorators.panel({
     name: 'Biology | Admetica',
-    tags: ['chem'],
-    meta: {role: 'widgets'},
+    meta: {role: 'widgets', domain: 'chem'},
   })
   static async admeticaWidget(
     @grok.decorators.param({ name: 'smiles', options: { semType: 'Molecule' }}) semValue: DG.SemanticValue): Promise<DG.Widget<any>> {

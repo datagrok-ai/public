@@ -7,10 +7,10 @@ export function info() : void {
 }
 
 //name: Biology | Admetica
-//tags: chem
 //input: semantic_value smiles { semType: Molecule }
 //output: widget result
 //meta.role: widgets,panel
+//meta.domain: chem
 export async function admeticaWidget(semValue: DG.SemanticValue) : Promise<any> {
   return await PackageFunctions.admeticaWidget(semValue);
 }

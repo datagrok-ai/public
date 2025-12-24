@@ -37,10 +37,10 @@ export function openEditor(mol: DG.SemanticValue) : void {
 }
 
 //name: Properties
-//tags: bio, helm
 //input: semantic_value sequence { semType: Macromolecule }
 //output: widget result
 //meta.role: widgets,panel
+//meta.domain: bio
 export function propertiesWidget(sequence: DG.SemanticValue) : any {
   return PackageFunctions.propertiesWidget(sequence);
 }

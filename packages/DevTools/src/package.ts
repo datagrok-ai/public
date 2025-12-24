@@ -15,7 +15,7 @@ let minifiedClassNameMap = {};
 export let c: DG.FuncCall;
 
 export class PackageFunctions {
-  @grok.decorators.func({tags: ['dev-tools']})
+  @grok.decorators.func()
   static renderDevPanel(
     @grok.decorators.param({type: 'object'}) ent: EntityType): Promise<DG.Widget> {
     return _renderDevPanel(ent, minifiedClassNameMap);

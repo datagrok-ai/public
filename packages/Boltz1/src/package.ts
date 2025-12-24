@@ -57,12 +57,11 @@ export class PackageFunctions {
 
   @grok.decorators.panel({
     name: 'Boltz-1',
-    tags: ['chem'],
     outputs: [
       {name: 'result', type: 'widget'},
     ],
     condition: 'Boltz1:isApplicableBoltz(molecule)',
-    meta: {role: 'widgets'},
+    meta: {role: 'widgets', domain: 'chem'},
   })
   static async boltzWidget(
     @grok.decorators.param({options: {semType: 'Molecule3D'}}) molecule: DG.SemanticValue,
