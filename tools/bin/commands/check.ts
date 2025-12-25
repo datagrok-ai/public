@@ -221,7 +221,9 @@ function validateFunctionSignature(func: FuncMetadata, roleDesc: FuncRoleDescrip
     addError('File exporters should have a description parameter');
 
   if (roleDesc.role === 'fileViewer') {
-    if (!func.tags || func.tags.length !== 1 || func.tags[0] !== 'fileViewer')
+    const hasFileViewerTag = func.tags?.length === 1 && func.tags[0] === 'fileViewer';
+    const hasFileViewerRole = func.meta?.role === 'fileViewer';
+    if (!(hasFileViewerTag || hasFileViewerRole))
       addError('File viewers must have only one tag: "fileViewer"');
   }
 
