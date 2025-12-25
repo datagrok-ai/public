@@ -33,7 +33,6 @@ export async function init(): Promise<void> {
 }
 
 //name: initDB
-//blalal: ss
 export async function initDB() {
   await updateAllMolTrackSchemas();
   await registerAssayData();
