@@ -654,11 +654,6 @@ or press Alt+C.
   * [Grid](https://dev.datagrok.ai/apps/tutorials/Tutorials/ExploratoryDataAnalysis/GridCustomization)
   * [Viewers](https://dev.datagrok.ai/apps/tutorials/Tutorials/ExploratoryDataAnalysis/Viewers)
 
-* Community: 
-  * [Grid updates](https://community.datagrok.ai/t/grid-updates/616)
-  * [Power Grid: Smart form](https://community.datagrok.ai/t/power-grid-smart-form/774)
-  * [Visualization-related updates](https://community.datagrok.ai/t/visualization-related-updates/521)
-  
 * YouTube:
 
    [![Grid](../../uploads/youtube/visualizations2.png "Open on Youtube")](https://www.youtube.com/watch?v=7MBXWzdC0-I&t=2971s)
@@ -669,4 +664,8 @@ See also:
 * [Table View](../table-view-1.md)
 * [JS API: Grid](https://public.datagrok.ai/js/samples/ui/viewers/types/grid)
 * [PowerGrid package](https://github.com/datagrok-ai/public/blob/master/packages/PowerGrid/README.md) 
+* Community: 
+  * [Grid updates](https://community.datagrok.ai/t/grid-updates/616)
+  * [Power Grid: Smart form](https://community.datagrok.ai/t/power-grid-smart-form/774)
+  * [Visualization-related updates](https://community.datagrok.ai/t/visualization-related-updates/521)
 
