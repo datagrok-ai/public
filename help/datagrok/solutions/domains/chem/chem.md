@@ -1148,7 +1148,10 @@ For a full list of chemical scripts, along with details on their implementation 
 
 * [Cheminformatics tutorial](https://public.datagrok.ai/apps/tutorials/Tutorials/Cheminformatics/VirtualScreening)
 * [Demo app](https://public.datagrok.ai/apps/Tutorials/Demo)
-* Videos
+* Community:
+  * [Cheminformatics updates](https://community.datagrok.ai/t/cheminformatics-updates/457)
+* Videos:
   * [Cheminformatics](https://www.youtube.com/watch?v=k1NVdTRpYOM)
   * [Molecular similarity and diversity](https://www.youtube.com/watch?v=wCdzD64plEo)
+
 <!--* [Package help reference]-->

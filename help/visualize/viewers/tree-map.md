@@ -63,3 +63,4 @@ example, you can:
 * [Viewers](../viewers/viewers.md)
 * [Table view](../table-view-1.md)
 * [JS API: Tree map](https://public.datagrok.ai/js/samples/ui/viewers/types/tree-map)
+* [Community: Visualization-related updates](https://community.datagrok.ai/t/visualization-related-updates/521)

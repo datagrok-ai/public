@@ -723,5 +723,7 @@ or customize any existing [open-source plugins](https://github.com/datagrok-ai/p
 ## Resources
 
 * [Demo app](https://public.datagrok.ai/apps/Tutorials/Demo)
+* Community: 
+  * [Macromolecules updates](https://community.datagrok.ai/t/macromolecules-updates/661)
 * Videos:
   * [Peptides](https://www.youtube.com/watch?v=HNSMSf2ZYsI&ab_channel=Datagrok)

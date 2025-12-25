@@ -44,3 +44,4 @@ See also:
 * [Table View](../table-view-1.md)
 * [Viewers](../viewers/viewers.md)
 * [JS API: Bar Chart](https://public.datagrok.ai/js/samples/ui/viewers/types/bar-chart)
+* [Community: Visualization-related updates](https://community.datagrok.ai/t/visualization-related-updates/521)

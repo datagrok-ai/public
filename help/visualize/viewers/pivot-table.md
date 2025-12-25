@@ -18,3 +18,10 @@ To configure your pivot table, use these fields:
 * **Pivot**: Select one or more columns whose unique values will become columns in the pivot table
 
 For general viewer controls and interactions, see the [Table View](../table-view-1.md) page.
+
+See also:
+
+* [Aggregate rows](../../transform/aggregate-rows.md)
+* [Viewers](../viewers/viewers.md)
+* [Table view](../table-view-1.md)
+* [Community: Visualization-related updates](https://community.datagrok.ai/t/visualization-related-updates/521)

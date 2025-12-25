@@ -244,3 +244,6 @@ See also:
 * [Viewers](../viewers/viewers.md)
 * [Table View](../table-view-1.md)
 * [JS API: Filters](https://public.datagrok.ai/js/samples/ui/viewers/types/filters)
+* Community: 
+   * [Visualization-related updates](https://community.datagrok.ai/t/visualization-related-updates/521)
+   * [Filters updates](https://community.datagrok.ai/t/filters-updates/603)

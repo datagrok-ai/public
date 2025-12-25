@@ -47,3 +47,8 @@ or use the **Sort by** setting (**Context Panel > Data**). A “↓” symbol ap
 to indicate sorting in descending order. Double-click again to sort ascending. The next double-click resets sorting.
 
 ![Forms viewer sorting](img/forms-sorting.gif)
+
+See also:
+* [Viewers](../viewers/viewers.md)
+* [Table View](../table-view-1.md)
+* [Community: Visualization-related updates](https://community.datagrok.ai/t/visualization-related-updates/521)
