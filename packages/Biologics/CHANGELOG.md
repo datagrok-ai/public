@@ -1,8 +1,8 @@
 # Biologics changelog
 
-## 1.0.5 (2025-11-24)
+## 1.0.5 (2025-11-27)
 
-* Placeholder to add changelog
+* Enhance query descriptions to improve integration with ChatGPT
 
 ## 1.0.0 (2025-10-16)
 
