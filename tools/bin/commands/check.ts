@@ -44,8 +44,15 @@ function runChecks(packagePath: string, soft: boolean = false): boolean {
 
   const webpackConfigPath = path.join(packagePath, 'webpack.config.js');
   const isWebpack = fs.existsSync(webpackConfigPath);
+
+  const semver = json.version.split('-')[0];
+  const [major, minor, patch] = semver.split('.').map(Number);
+  let isPre1Version = false;
   let isReleaseCandidateVersion: boolean = false;
   let externals: { [key: string]: string } | null = null;
+
+  if (major === 0) 
+    isPre1Version = true;
 
   if (/\d+.\d+.\d+-rc(.[A-Za-z0-9]*.[A-Za-z0-9]*)?/.test(json.version))
     isReleaseCandidateVersion = true;
@@ -63,7 +70,7 @@ function runChecks(packagePath: string, soft: boolean = false): boolean {
   warnings.push(...signatureWarnings);
   errors.push(...signatureErrors);
   errors.push(...checkPackageFile(packagePath, json, {isWebpack, externals, isReleaseCandidateVersion}));
-  if (!isReleaseCandidateVersion)
+  if (!isReleaseCandidateVersion && !isPre1Version)
     warnings.push(...checkChangelog(packagePath, json));
 
   if (warnings.length) {
