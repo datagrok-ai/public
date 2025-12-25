@@ -4,7 +4,7 @@
 #meta.function_family: biochem-calculator
 #input: dataframe table
 #input: column molecules
-#tags: Transform
+#meta.role: transform
 #meta.method_info.author: RDKit Team
 #meta.method_info.year: 2024
 #meta.method_info.package: rdkit-base

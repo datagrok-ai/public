@@ -9,7 +9,7 @@
 #input: bool pKa_basic_list = true {caption: Basic List}
 #input: bool pKa_strongest_acidic = false {caption: Strongest Acidic}
 #input: bool pKa_strongest_basic = false {caption: Strongest Basic}
-#tags: Transform
+#meta.role: transform
 #meta.method_info.author: Ghiandoni G.M, Frolov A.
 #meta.method_info.year: 2024
 #meta.method_info.package: bio-pichemist-env
