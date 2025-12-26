@@ -353,8 +353,8 @@ Your responses should be informative, explaining what you're doing and why.`;
             break;
           }
           case 'find_viewers_by_type':
-            result = await context.findViewersByType(args.viewerType);
             options.aiPanel?.addUiMessage(`🔎 Searching for **${args.viewerType}** viewers`, false);
+            result = await context.findViewersByType(args.viewerType);
             break;
           case 'adjust_viewer': {
             const viewerProps = args.viewerProperties || args.properties || {};

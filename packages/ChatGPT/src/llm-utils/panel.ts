@@ -13,8 +13,8 @@ import {ConversationStorage, StoredConversationWithContext} from './storage';
 export type ModelOption = 'Fast' | 'Deep Research';
 export const ModelType: {[type in ModelOption]: ChatModel} = {
   Fast: 'gpt-4o-mini',
-  //'Deep Research': 'gpt-5.2' as ChatModel, // hell of a smart model but a bit expensive expensive
-  'Deep Research': 'o4-mini', // good balance between speed, quality and $$$
+  'Deep Research': 'gpt-5.2' as ChatModel, // hell of a smart model but a bit expensive expensive
+  //'Deep Research': 'o4-mini', // good balance between speed, quality and $$$
 } as const;
 
 // in future might extend it with other types for response API
