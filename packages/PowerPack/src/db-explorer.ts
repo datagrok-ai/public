@@ -33,13 +33,16 @@ export async function setupGlobalDBExplorer() {
       tnItem.onSelected.subscribe(async () => {
         let editor: DBExplorerEditor | null = null;
         // no connection section needs to be rendered here
-        editor = new DBExplorerEditor(() => editor ? onSaveAction(editor) : Promise.resolve(), false);
-        const editorUI = await editor.getUI();
-        editor.setConfig(config);
         const view = DG.View.create();
         view.name = `${connection.name}.${config.schemaName} Identifiers`;
-        view.root.appendChild(editorUI);
         grok.shell.addPreview(view);
+        ui.setUpdateIndicator(view.root, true, 'Loading editor...');
+        editor = new DBExplorerEditor(() => onSaveAction(editor!), false);
+        const editorUI = await editor.getUI();
+        view.root.appendChild(editorUI);
+        ui.setUpdateIndicator(view.root, true, 'Initializing configuration...');
+        await editor.setConfig(config);
+        ui.setUpdateIndicator(view.root, false);
       });
       tnItem.root.style.order = '-1'; // make sure it is on top
       if (highlightOnAdd)
@@ -114,33 +117,35 @@ export async function setupGlobalDBExplorer() {
       ui.dialog('Select Schema for Identifiers Configuration')
         .add(ui.form([schemaChoice]))
         .onOK(async () => {
+          const view = DG.View.create();
+          view.name = `${connection.name}.${schemaChoice.value!} Identifiers`;
+          ui.setUpdateIndicator(view.root, true, 'Loading editor...');
+
+          grok.shell.addView(view);
           let editor: DBExplorerEditor | null = null;
           editor = new DBExplorerEditor(() => {
-            editor ? onSaveAction(editor) : Promise.resolve();
+            onSaveAction(editor!);
           }, false); // no connection section needs to be rendered here
 
           const uiEl = await editor.getUI();
+          ui.setUpdateIndicator(view.root, true, 'Initializing configuration...');
           // find if there is an existing config for this connection-schema
           const existingConfig = savedConfigs?.find((c) =>
             c.nqName === connection.nqName && c.dataSourceName === connection.dataSource &&
             c.schemaName === schemaChoice.value!);
           if (existingConfig) {
-            editor.setConfig(existingConfig);
+            await editor.setConfig(existingConfig);
             grok.shell.info('Identifiers configuration for this connection and schema already exists.\n Importing...');
           } else {
-            editor.setConfig({
+            await editor.setConfig({
               connectionName: connection.name,
               nqName: connection.nqName,
               dataSourceName: connection.dataSource,
               schemaName: schemaChoice.value ?? undefined,
             }, false);
           } // no warning because schema is deliberately left empty for user to fill in
-
-          const view = DG.View.create();
-          view.name = `${connection.name}.${schemaChoice.value!} Identifiers`;
+          ui.setUpdateIndicator(view.root, false);
           view.root.appendChild(uiEl);
-
-          grok.shell.addView(view);
         }).show();
     }, 4, {description: 'Configure identifier settings for this database connection'});
   });
@@ -371,9 +376,10 @@ export async function setupDBQueryCellHandler() {
 function getEnrichDiv(col: DG.Column): HTMLElement {
   const enrichAcc = ui.accordion('Enrich Column');
   enrichAcc.addPane('Enrich', () => {
-    if ([DG.COLUMN_TYPE.BOOL, DG.COLUMN_TYPE.DATE_TIME].includes(col.type as DG.COLUMN_TYPE))
+    if ([DG.COLUMN_TYPE.BOOL, DG.COLUMN_TYPE.DATE_TIME].includes(col.type as DG.COLUMN_TYPE)) {
       return ui.info(`Cannot use column of ${col.type} type for enrichment. 
 Supported types are ${[DG.COLUMN_TYPE.STRING, DG.COLUMN_TYPE.BIG_INT, DG.COLUMN_TYPE.INT, DG.COLUMN_TYPE.FLOAT].join(', ')}.`);
+    }
 
     const df = col.dart ? col.dataFrame : null;
     if (!df || df.rowCount === 0)
