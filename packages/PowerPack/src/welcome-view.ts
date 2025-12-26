@@ -51,7 +51,7 @@ export function welcomeView(): DG.View | undefined {
   view.root.appendChild(viewHost);
   view.root.classList.add('power-pack-welcome-view');
 
-  const widgetFunctions = DG.Func.find({meta: {role: 'dashboard'}, returnType: 'widget'});
+  const widgetFunctions = DG.Func.find({meta: {role: DG.FUNC_TYPES.DASHBOARD}, returnType: 'widget'});
   const widgetHosts: {[index: string]: HTMLElement} = {};
   const settings: UserWidgetsSettings = getSettings();
 

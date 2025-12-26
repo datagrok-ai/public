@@ -166,7 +166,7 @@ async function initChemInt(): Promise<void> {
   if (!storedSketcherType && _properties.Sketcher)
     storedSketcherType = SKETCHER_FUNCS_FRIENDLY_NAMES[_properties.Sketcher];
 
-  const sketcherFunctions = DG.Func.find({meta: {role: 'moleculeSketcher'}});
+  const sketcherFunctions = DG.Func.find({meta: {role: DG.FUNC_TYPES.MOLECULE_SKETCHER}});
   const sketcherFunc = sketcherFunctions.find((e) => e.name === storedSketcherType || e.friendlyName === storedSketcherType);
   if (sketcherFunc)
     DG.chem.currentSketcherType = sketcherFunc.friendlyName;

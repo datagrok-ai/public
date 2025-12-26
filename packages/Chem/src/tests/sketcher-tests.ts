@@ -14,7 +14,7 @@ category('sketcher testing', () => {
 
   before(async () => {
     rdkitModule = await grok.functions.call('Chem:getRdKitModule');
-    funcs = DG.Func.find({meta: {role: 'moleculeSketcher'}});
+    funcs = DG.Func.find({meta: {role: DG.FUNC_TYPES.MOLECULE_SKETCHER}});
     await sketchersWarmUp(funcs);
     grok.shell.closeAll();
   });

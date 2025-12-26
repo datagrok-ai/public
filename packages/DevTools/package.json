@@ -16,7 +16,7 @@
     "@datagrok-libraries/compute-api": "^0.6.1",
     "@datagrok-libraries/utils": "^4.6.8",
     "codemirror": "^5.65.15",
-    "datagrok-api": "^1.26.0",
+    "datagrok-api": "../../js-api",
     "rxjs": "^6.5.5"
   },
   "devDependencies": {
@@ -25,7 +25,7 @@
     "@typescript-eslint/parser": "^5.32.0",
     "cash-dom": "^8.1.0",
     "css-loader": "^5.2.4",
-    "datagrok-tools": "^4.14.55",
+    "datagrok-tools": "../../tools",
     "eslint": "^8.21.0",
     "eslint-config-google": "^0.14.0",
     "style-loader": "^2.0.0",

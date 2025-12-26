@@ -11,6 +11,7 @@ import * as ui from '../ui';
 import {SemanticValue} from './grid';
 import $ from 'cash-dom';
 import { FuncCall } from '../dg';
+import { FUNC_TYPES } from './const';
 import '../css/styles.css';
 import { MolfileHandler } from "@datagrok-libraries/chem-meta/src/parsing-utils/molfile-handler";
 import {IDartApi} from "./api/grok_api.g";
@@ -378,7 +379,7 @@ export namespace chem {
     }
 
     createSketcher() {
-      this.sketcherFunctions = Func.find({meta: {role: 'moleculeSketcher'}});
+      this.sketcherFunctions = Func.find({meta: {role: FUNC_TYPES.MOLECULE_SKETCHER}});
       this.setExternalModeForSubstrFilter();
       if (this._mode === SKETCHER_MODE.INPLACE)
         this.root.appendChild(this.createInplaceModeSketcher());
@@ -500,7 +501,7 @@ export namespace chem {
 
       if (extractors == null) {
         try {
-          extractors = Func.find({meta: {role: 'converter'}}).filter(it => it.outputs.filter(o => o.semType == SEMTYPE.MOLECULE).length);
+          extractors = Func.find({meta: {role: FUNC_TYPES.CONVERTER}}).filter(it => it.outputs.filter(o => o.semType == SEMTYPE.MOLECULE).length);
         } catch {
           extractors = [];
         }

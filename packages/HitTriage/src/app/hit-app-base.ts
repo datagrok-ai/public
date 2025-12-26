@@ -20,7 +20,7 @@ export abstract class HitAppBase<T> {
   public static molFileExtReaders: { ext: string; handlerFunc: DG.Func }[] = ['sdf', 'mol', 'smi', 'mol2']
     .map((ext) => {
       const handlerFunc =
-      DG.Func.find({meta: {role: 'file-handler'}})
+      DG.Func.find({meta: {role: DG.FUNC_TYPES.FILE_IMPORTER}})
         .find((f) => f?.options?.ext && typeof f.options.ext === 'string' && f.options.ext.split(',').includes(ext));
       return {ext, handlerFunc: handlerFunc as DG.Func};
     })
