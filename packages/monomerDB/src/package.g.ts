@@ -3,7 +3,7 @@ import * as DG from 'datagrok-api/dg';
 
 //name: Monomers DB Provider
 //output: object result
-//meta.role: monomer-lib-provider
+//meta.role: monomerLibProvider
 export async function getMonomerDBProvider() : Promise<any> {
   return await PackageFunctions.getMonomerDBProvider();
 }

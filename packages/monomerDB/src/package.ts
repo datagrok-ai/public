@@ -20,8 +20,9 @@ export function info() {
 export class PackageFunctions {
   @grok.decorators.func({
     name: 'Monomers DB Provider',
-    meta: {role: 'monomer-lib-provider'},
-    outputs: [{type: 'object', name: 'result'}]})
+    outputs: [{type: 'object', name: 'result'}],
+    meta: {role: 'monomerLibProvider'},
+  })
   static async getMonomerDBProvider(): Promise<MonomerLib.IMonomerLibProvider> {
     return new DBLibraryProvider();
   }
