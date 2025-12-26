@@ -16,7 +16,8 @@ const commands = {
   publish: require('./commands/publish').publish,
   test: require('./commands/test').test,
   testall: require('./commands/test-all').testAll,
-  stresstest: require('./commands/stress-tests').stressTests
+  stresstest: require('./commands/stress-tests').stressTests,
+  migrate: require('./commands/migrate').migrate,
 };
 
 const onPackageCommandNames = ['api', 'check', 'link', 'publish', 'test'];

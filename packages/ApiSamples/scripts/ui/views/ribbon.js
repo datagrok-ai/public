@@ -1,4 +1,3 @@
-//tags: View
 // Creating custom views
 
 let v = DG.View.create();
@@ -8,8 +7,8 @@ v.root.appendChild(ui.divText('Custom body'));
 // ribbons
 v.setRibbonPanels([
   [
-    ui.iconFA('search', () => grok.shell.info("clicked")),
-    ui.iconFA('plus', () => grok.shell.info("plus"))
+    ui.iconFA('search', () => grok.shell.info('clicked')),
+    ui.iconFA('plus', () => grok.shell.info('plus'))
   ],
   [ui.divText('Custom panel')]
 ]);

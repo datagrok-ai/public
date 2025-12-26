@@ -1,4 +1,3 @@
-//tags: DataFrame, Column, construction
 // API References:
 //
 // https://datagrok.ai/js-api/dg/classes/ColumnList

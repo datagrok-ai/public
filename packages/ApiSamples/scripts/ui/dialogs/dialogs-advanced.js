@@ -1,7 +1,6 @@
 // Creating custom dialogs
 
-
-var dlg = ui.dialog({title: 'Boo', helpUrl: 'https://wikipedia.org'});
+let dlg = ui.dialog({title: 'Boo', helpUrl: 'https://wikipedia.org'});
 dlg
   .add(ui.span(['People of Earth, your attention, please… ']))
   .onCancel(() => grok.shell.info('Cancel'))

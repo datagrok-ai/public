@@ -5,8 +5,8 @@ let sp = view.scatterPlot();
 sp.props.xColumnName = 'race';
 grok.shell.info(sp.props.xColumnName);
 
-var descriptions = sp.props.getProperties()
+let descriptions = sp.props.getProperties()
   .map((p) => p.propertyType + ' ' + p.name + ': ' + p.description + ' ' + p.columnFilter)
-  .join('<br>')
+  .join('<br>');
 
 grok.shell.info(descriptions);

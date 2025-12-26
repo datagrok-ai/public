@@ -19,7 +19,7 @@ export enum Fingerprint {
   TopologicalTorsion = 'TopologicalTorsion'
 }
 
-// By https://github.com/mistval/locko
+/* By https://github.com/mistval/locko */
 
 export async function criticalSectionBegin(key: string): Promise<any> {
   if (!lockPromiseForKey[key])

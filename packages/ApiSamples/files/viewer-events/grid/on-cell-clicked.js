@@ -1,1 +1,1 @@
-grok.shell.info('Clicked on ' + args.data.cell.column.name + ' : ' + args.data.cell.rowIndex)
+grok.shell.info('Clicked on ' + args.data.cell.column.name + ' : ' + args.data.cell.rowIndex);

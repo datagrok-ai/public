@@ -6,7 +6,7 @@ let defaultScatterPlotSettings = {
   yColumnName: 'weight',
   sizeColumnName: 'age',
   colorColumnName: 'race',
-}
+};
 
 // now, all newly created viewers attached to df will inherit the specified settings:
 df.tags['.Viewer Template: ' + DG.VIEWER.SCATTER_PLOT] = JSON.stringify(defaultScatterPlotSettings);

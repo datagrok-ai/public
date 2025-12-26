@@ -86,24 +86,33 @@ export function add(args: { _: string[] }) {
     // Script name check
     if (!validateName(name)) return false;
 
-    if (tag && tag !== 'panel') return color.error('Currently, you can only add the `panel` tag');
+    if (tag && tag !== 'panel')
+      return color.error('Currently, you can only add the `panel` tag');
 
     // Create the folder `scripts` if it doesn't exist yet
     if (!fs.existsSync(scriptsDir)) fs.mkdirSync(scriptsDir);
 
-    const scriptPath = path.join(scriptsDir, name + '.' + utils.scriptLangExtMap[lang]);
-    if (fs.existsSync(scriptPath)) 
+    const scriptPath = path.join(scriptsDir, `${name}.${utils.scriptLangExtMap[lang]}`);
+    if (fs.existsSync(scriptPath))
       return color.error(`The file with the script already exists: ${scriptPath}`);
-      
 
     // Copy the script template
-    let templatePath = path.join(templateDir, 'script-template');
-    templatePath = path.join(templatePath, lang + '.' + utils.scriptLangExtMap[lang]);
+    const templatePath = path.join(templateDir, 'script-template', `${lang}.${utils.scriptLangExtMap[lang]}`);
     contents = fs.readFileSync(templatePath, 'utf8');
     if (tag) {
-      const ind = contents.indexOf('tags: ') + 6;
-      contents = contents.slice(0, ind) + 'panel, ' + contents.slice(ind);
+      const isJs = ['javascript', 'nodejs'].includes(lang);
+      const comment = isJs ?
+        '//meta.role: panel' :
+        '#meta.role: panel';
+
+      const nameLineRe = /^(#|\/\/)\s*name:.*$/m;
+
+      if (nameLineRe.test(contents)) 
+        contents = contents.replace(nameLineRe, (match) => `${match}\n${comment}`);
+      else 
+        contents = `${comment}\n${contents}`;
     }
+
     fs.writeFileSync(scriptPath, insertName(name, contents), 'utf8');
 
     // Provide a JS wrapper for the script

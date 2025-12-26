@@ -26,7 +26,7 @@ let strains = {
 t.columns.addNewString('Strain').init((i) => rndCat(strains[species.get(i)]));
 
 // Chemistry
-const chemTags = {quality: 'Molecule', 'cell.renderer': 'Molecule'};
+const chemTags = {'quality': 'Molecule', 'cell.renderer': 'Molecule'};
 addCatColumn('Core', ['n1nc([*:3])n([*:2])c1[*:1]', 'C1C2CN([*:2])CC2CN1[*:1]', 'CC1(N[*:1])CCN([*:2])C1'], chemTags);
 addCatColumn('R1', ['N#Cc1cccc(C[*:1])c1', 'COCC(=O)[*:1]', 'CC(C)N1CCC(N2CCN([*:1])CC2)CC1', 'O=C(C1CC1)[*:1]', 'C#CCN1CCN([*:1])CC1', 'COCCOC(C)[*:1]', 'CCNC(=O)CN1CCN([*:1])CC1', 'COCCOC1CCN([*:1])C1', 'Cc1cnc(C(=O)[*:1])cn1', 'CC(=O)[*:1]'], chemTags);
 addCatColumn('R2', ['N#CC[*:2]', 'O=C(c1ccon1)[*:2]', 'Cn1nnnc1C[*:2]', 'O=C(C[*:2])NCC(F)(F)F', 'CS(=O)(=O)CC(=O)[*:2]', 'O=C(C[*:2])NCC(F)(F)F', 'O=C(C[*:2])NCC(F)(F)F', 'c1csc(C[*:2])n1', 'c1csc(C[*:2])n1', 'c1nonc1C[*:2]', 'O=C(CCOCC(F)(F)F)[*:2]'], chemTags);
@@ -78,23 +78,23 @@ addCatColumn('Plate file', plateFiles).tags['cell.renderer'] = 'File';
 addCatColumn('Plate folder', ['file://System:DemoFiles/hts/']).tags['cell.renderer'] = 'File';
 
 const groups = {
-  'Docking': { columns: ['PDB_ID', 'Pose', 'Affinity'] },
-  'Absorption': { color: '#0b74e1', columns: ['Caco2', 'Lipophilicity', 'Solubility'] },
-  'Distribution': { color: '#9d05c5', columns:  ['PPBR', 'VDss']},
-  'Metabolism': { color: '#03a14f', columns: ['CYP1A2-Inhibitor', 'CYP2C19-Inhibitor', 'CYP2C9-Inhibitor', 'CYP2C9-Substrate', 'CYP2D6-Inhibitor', 'CYP2D6-Substrate']},
-  'Excretion': { color: '#b47b4a', columns:  ['CL-Hepa', 'CL-Micro', 'Half-Life']},
-  'Toxicity': { color: '#ba0f0f', columns:  ['hERG', 'LD50', 'Toxicity']},
-  'Chemspace': { columns: ['Chemspace id', 'Vendor', 'Pack, mg', 'Price, USD', 'Lead time, days']},
-  'DRC': { columns: ['DRC', 'DRC R2', 'DRC AUC', 'Plate', 'Plate file', 'Plate folder'] },
-  'R-Groups': { columns: ['Core', 'R1', 'R2', 'R3'] },
-  'Classifications': {columns: ['BSEP classification', 'HLM CLint classification', 'RLM CLint classification', 'LE-MDCK Classification', 'PAMPA Classification', 'pH6.8 HT Solubility Classification'] },
-  'Ideation': { columns: ['Idea status', 'Idea author', 'Idea created', 'Idea approved', 'Idea synthesized']},
-}
+  'Docking': {columns: ['PDB_ID', 'Pose', 'Affinity']},
+  'Absorption': {color: '#0b74e1', columns: ['Caco2', 'Lipophilicity', 'Solubility']},
+  'Distribution': {color: '#9d05c5', columns: ['PPBR', 'VDss']},
+  'Metabolism': {color: '#03a14f', columns: ['CYP1A2-Inhibitor', 'CYP2C19-Inhibitor', 'CYP2C9-Inhibitor', 'CYP2C9-Substrate', 'CYP2D6-Inhibitor', 'CYP2D6-Substrate']},
+  'Excretion': {color: '#b47b4a', columns: ['CL-Hepa', 'CL-Micro', 'Half-Life']},
+  'Toxicity': {color: '#ba0f0f', columns: ['hERG', 'LD50', 'Toxicity']},
+  'Chemspace': {columns: ['Chemspace id', 'Vendor', 'Pack, mg', 'Price, USD', 'Lead time, days']},
+  'DRC': {columns: ['DRC', 'DRC R2', 'DRC AUC', 'Plate', 'Plate file', 'Plate folder']},
+  'R-Groups': {columns: ['Core', 'R1', 'R2', 'R3']},
+  'Classifications': {columns: ['BSEP classification', 'HLM CLint classification', 'RLM CLint classification', 'LE-MDCK Classification', 'PAMPA Classification', 'pH6.8 HT Solubility Classification']},
+  'Ideation': {columns: ['Idea status', 'Idea author', 'Idea created', 'Idea approved', 'Idea synthesized']},
+};
 
 // settings virtual columns
 const tv = grok.shell.getTableView('Med Chem');
 if (tv) {
-  tv.grid.columns.add({gridColumnName: 'Toxicity risks', cellType: 'Tags'}).settings = { columns: toxicityRisks };
+  tv.grid.columns.add({gridColumnName: 'Toxicity risks', cellType: 'Tags'}).settings = {columns: toxicityRisks};
   tv.grid.columns.add({gridColumnName: 'plate', cellType: 'Plate'})
     .onPrepareValueScript = 'return grok.data.demo.wells(96); ';
 }
