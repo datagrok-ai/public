@@ -1,4 +1,4 @@
-/* Create a new file: conversation-storage.ts */
+// Create a new file: conversation-storage.ts
 
 import {OpenAI} from 'openai';
 

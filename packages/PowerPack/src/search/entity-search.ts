@@ -139,7 +139,7 @@ export async function wikiSearch(s: string): Promise<DG.Widget | null> {
     null;
 }
 
-/* NOTE: this is an easter egg :D */
+// NOTE: this is an easter egg :D
 export async function denialSearch(s: string, w?: DG.Widget): Promise<DG.Widget | null> {
 // This function is a joke :D
 // in the era of web services for everything, god gave us a service for generating deniel messages
