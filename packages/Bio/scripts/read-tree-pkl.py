@@ -1,4 +1,4 @@
-# coding: utf-8
+# This script uses UTF-8 encoding
 
 import ete3
 import numpy as np

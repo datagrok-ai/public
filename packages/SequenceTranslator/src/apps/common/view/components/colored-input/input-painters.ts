@@ -24,7 +24,7 @@ export function demoPainter(input: string): HTMLSpanElement[] {
   return spans;
 }
 
-// todo: port to another place
+/* todo: port to another place */
 export function highlightInvalidSubsequence(input: string, th: ITranslationHelper): HTMLSpanElement[] {
   // validate sequence
   let cutoff = 0;

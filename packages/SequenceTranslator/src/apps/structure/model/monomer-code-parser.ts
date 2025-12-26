@@ -84,7 +84,7 @@ export class MonomerSequenceParser {
   }
 }
 
-// todo: to be eliminated after full helm support
+/* todo: to be eliminated after full helm support */
 function monomerHasLeftPhosphateLinker(monomerSymbol: string): boolean {
   return _package.jsonData.monomersWithPhosphate['left'].includes(monomerSymbol);
 }
