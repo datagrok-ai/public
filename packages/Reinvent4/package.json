@@ -11,12 +11,12 @@
   "dependencies": {
     "@datagrok-libraries/utils": "^4.6.5",
     "cash-dom": "^8.1.5",
-    "datagrok-api": "../../js-api",
+    "datagrok-api": "^1.26.0",
     "dayjs": "^1.11.13",
     "jszip": "3.10.1"
   },
   "devDependencies": {
-    "datagrok-tools": "../../tools",
+    "datagrok-tools": "^4.14.55",
     "ts-loader": "^9.5.1",
     "typescript": "5.6.3",
     "webpack": "^5.95.0",

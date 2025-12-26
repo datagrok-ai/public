@@ -25,7 +25,7 @@
   "devDependencies": {
     "@datagrok/curves": "^1.10.12",
     "css-loader": "^5.0.0",
-    "datagrok-tools": "../../tools",
+    "datagrok-tools": "^4.14.55",
     "source-map-loader": "^4.0.1",
     "style-loader": "^2.0.0",
     "ts-loader": "^9.5.1",
