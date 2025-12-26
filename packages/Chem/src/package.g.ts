@@ -609,8 +609,8 @@ export async function convertMoleculeNotation(molecule: DG.Column, targetNotatio
 //description: RDKit-based conversion for SMILES, SMARTS, InChi, Molfile V2000 and Molfile V3000
 //tags: unitConverter
 //input: string molecule { semType: Molecule }
-//input: string sourceNotation { choices: ["smiles","smarts","molblock","v3Kmolblock"] }
-//input: string targetNotation { choices: ["smiles","smarts","molblock","v3Kmolblock"] }
+//input: string sourceNotation { choices: ["smiles","cxsmiles","smarts","cxsmarts","molblock","v3Kmolblock"] }
+//input: string targetNotation { choices: ["smiles","cxsmiles","smarts","cxsmarts","molblock","v3Kmolblock"] }
 //output: string result { semType: Molecule }
 export function convertMolNotation(molecule: string, sourceNotation: any, targetNotation: any) : string {
   return PackageFunctions.convertMolNotation(molecule, sourceNotation, targetNotation);
@@ -620,7 +620,7 @@ export function convertMolNotation(molecule: string, sourceNotation: any, target
 //tags: Transform
 //input: dataframe data 
 //input: column molecules { semType: Molecule }
-//input: string targetNotation = 'smiles' { choices: ["smiles","smarts","molblock","v3Kmolblock"] }
+//input: string targetNotation = 'smiles' { choices: ["smiles","cxsmiles","smarts","cxsmarts","molblock","v3Kmolblock"] }
 //input: bool overwrite = false 
 //input: bool join = true 
 //input: bool kekulize = false { optional: true; nullable: true }

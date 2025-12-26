@@ -70,6 +70,10 @@ export function _convertMolNotation(
         result = mol.get_v3Kmolblock();
       if (targetNotation === MolNotation.Smarts)
         result = mol.get_smarts();
+      if (targetNotation === MolNotation.CxSmiles)
+        result = mol.get_cxsmiles();
+      if (targetNotation === MolNotation.CxSmarts)
+        result = mol.get_cxsmarts();
       // if (targetNotation === MolNotation.Inchi)
       //   return mol.get_inchi();
     }
