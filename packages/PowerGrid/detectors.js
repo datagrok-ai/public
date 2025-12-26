@@ -16,7 +16,7 @@ class PowerGridPackageDetectors extends DG.Package {
     return (s.startsWith('http') || s.startsWith('system:')) && ['png', 'jpg', 'jpeg'].some((x) => s.endsWith(x));
   }
 
-  //tags: semTypeDetector
+  //meta.role: semTypeDetector
   //input: column col
   //output: string semType
   detectImageColumn(col) {
@@ -24,7 +24,7 @@ class PowerGridPackageDetectors extends DG.Package {
       return 'ImageUrl';
   }
 
-  //tags: semTypeDetector
+  //meta.role: semTypeDetector
   //input: column col
   //output: string semType
   detectByteArrayColumn(col) {
@@ -32,7 +32,7 @@ class PowerGridPackageDetectors extends DG.Package {
       return 'BinaryImage';
   }
 
-  //tags: semTypeDetector
+  //meta.role: semTypeDetector
   //input: column col
   //output: string semType
   detectRawPng(col) {

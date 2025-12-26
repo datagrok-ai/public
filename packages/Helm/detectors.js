@@ -7,7 +7,7 @@
 class HelmPackageDetectors extends DG.Package {
 
   //name: autostart
-  //tags: autostart
+  //meta.role: autostart
   //description: Helm bootstrap
   autostart() {
     this.logger.debug('Helm: detectors.js: autostart()');

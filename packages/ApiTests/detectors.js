@@ -7,7 +7,7 @@
  */
 class ApiTestsPackageDetectors extends DG.Package {
 
-  //tags: semTypeDetector
+  //meta.role: semTypeDetector
   //input: column col
   //output: string semType
   detectCountry(col) {
