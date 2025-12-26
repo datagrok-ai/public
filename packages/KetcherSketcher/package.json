@@ -26,7 +26,7 @@
     "@typescript-eslint/eslint-plugin": "^5.32.0",
     "@typescript-eslint/parser": "^5.32.0",
     "css-loader": "latest",
-    "datagrok-tools": "^4.14.55",
+    "datagrok-tools": "../../tools",
     "eslint": "^8.21.0",
     "eslint-config-google": "^0.14.0",
     "puppeteer": "^13.7.0",

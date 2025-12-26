@@ -18,7 +18,7 @@
   },
   "devDependencies": {
     "@types/wu": "^2.1.44",
-    "datagrok-tools": "^4.14.66",
+    "datagrok-tools": "../../tools",
     "ts-loader": "latest",
     "typescript": "latest",
     "webpack": "^5.95.0",

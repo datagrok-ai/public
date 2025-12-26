@@ -23,11 +23,11 @@
     "nmr-load-save": "^0.37.0",
     "nmr-processing": "^12.12.0",
     "nmrium": "^0.59.0",
+    "openchemlib": "^8.15.0",
+    "openchemlib-utils": "^6.4.1",
     "react-icons": "5.3.0",
     "react-science": "6.0.0",
-    "vite-plugin-pwa": "^0.20.1",
-    "openchemlib": "^8.15.0",
-    "openchemlib-utils": "^6.4.1"
+    "vite-plugin-pwa": "^0.20.1"
   },
   "devDependencies": {
     "@babel/plugin-transform-modules-commonjs": "^7.24.8",
@@ -41,7 +41,7 @@
     "@types/react-router-dom": "^5.3.3",
     "cross-env": "^7.0.3",
     "css-loader": "^6.7.3",
-    "datagrok-tools": "^4.14.55",
+    "datagrok-tools": "../../tools",
     "eslint": "^8.57.0",
     "eslint-config-cheminfo-react": "^13.0.0",
     "eslint-config-cheminfo-typescript": "^15.0.0",
