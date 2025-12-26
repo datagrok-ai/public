@@ -1,0 +1,11 @@
+.eda-pmpo-tooltip-line {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: 6px;
+}
+
+.eda-pmpo-box {
+  width: 10px;
+  height: 10px;
+}

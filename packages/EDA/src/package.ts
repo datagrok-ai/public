@@ -38,6 +38,7 @@ import {initXgboost} from '../wasm/xgbooster';
 import {XGBooster} from './xgbooster';
 import {ParetoOptimizer} from './pareto-optimization/pareto-optimizer';
 import {ParetoFrontViewer} from './pareto-optimization/pareto-front-viewer';
+import {Pmpo} from './probabilistic-scoring/prob-scoring';
 
 export const _package = new DG.Package();
 export * from './package.g';
@@ -990,5 +991,23 @@ export class PackageFunctions {
   })
   static paretoFrontViewer(): DG.Viewer {
     return new ParetoFrontViewer();
+  }
+
+  @grok.decorators.func({
+    'top-menu': 'ML | Probabilistic MPO...',
+    'name': 'pMPO',
+    'description': 'Train a probabilistic multi-parameter optimization model.',
+  })
+  static pMpo(
+    @grok.decorators.param({'type': 'dataframe'}) table: DG.DataFrame,
+    @grok.decorators.param({'type': 'column_list', 'options': {'type': 'numerical', 'nullable': false}}) descriptors: DG.ColumnList,
+    @grok.decorators.param({'type': 'column', 'options': {'type': 'categorical', 'nullable': false}}) desirability: DG.Column,
+    @grok.decorators.param({'type': 'double', 'options': {'caption': 'p-value treshold', 'initialValue': '0.05', 'nullable': false, 'min': '0.01', 'format': '0.00'}}) pValTresh: number,
+  ): void {
+    if (!Pmpo.isApplicable(descriptors, desirability, pValTresh, true))
+      return;
+
+    const pMpo = new Pmpo();
+    pMpo.fit(table, descriptors, desirability, pValTresh);
   }
 }

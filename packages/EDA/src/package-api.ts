@@ -274,4 +274,11 @@ export namespace funcs {
   export async function paretoFrontViewer(): Promise<any> {
     return await grok.functions.call('EDA:ParetoFrontViewer', {});
   }
+
+  /**
+  Train a probabilistic multi-parameter optimization model.
+  */
+  export async function pMpo(table: DG.DataFrame , descriptors: string[] , desirability: DG.Column , pValTresh: number ): Promise<void> {
+    return await grok.functions.call('EDA:PMpo', { table, descriptors, desirability, pValTresh });
+  }
 }

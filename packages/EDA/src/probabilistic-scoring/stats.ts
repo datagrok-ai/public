@@ -1,4 +1,4 @@
-import { erf } from 'mathjs';
+import {erf} from 'mathjs';
 
 /* ---------- Basic stats ---------- */
 
@@ -27,7 +27,7 @@ export function gaussian(x: number, mu: number, sigma: number): number {
 
 export function welchTTest(
   x: number[],
-  y: number[]
+  y: number[],
 ): { t: number; p: number } {
   const mx = mean(x);
   const my = mean(y);
@@ -48,7 +48,7 @@ export function welchTTest(
 
   const p = 2 * (1 - normalCDF(Math.abs(t)));
 
-  return { t, p };
+  return {t, p};
 }
 
 /* ---------- Normal CDF ---------- */
