@@ -3,14 +3,16 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {getDesiredTables, getDescriptorStatistics} from './stat-tools';
-import {MIN_SAMPLES_COUNT, PMPO_NON_APPLICABLE, DescriptorStatistics, P_VAL_TRES_MIN, DESCR_TITLE} from './pmpo-defs';
+import {MIN_SAMPLES_COUNT, PMPO_NON_APPLICABLE, DescriptorStatistics, P_VAL_TRES_MIN, DESCR_TITLE,
+  R2_MIN} from './pmpo-defs';
 import {addSelectedDescriptorsCol, getDescriptorStatisticsGrid, getDescriptorStatisticsTable,
-  getFilteredByPvalue} from './pmpo-utils';
+  getFilteredByPvalue,
+  getFilteredByCorrelations} from './pmpo-utils';
 
 
 export class Pmpo {
   static isApplicable(descriptors: DG.ColumnList, desirability: DG.Column, pValThresh: number,
-    toShowWarning: boolean = false): boolean {
+    r2Tresh: number, toShowWarning: boolean = false): boolean {
     const rows = desirability.length;
 
     const showWarning = (msg: string) => {
@@ -21,6 +23,12 @@ export class Pmpo {
     // Check p-value threshold
     if (pValThresh < P_VAL_TRES_MIN) {
       showWarning(`: too small p-value threshold - ${pValThresh}, minimum - ${P_VAL_TRES_MIN}`);
+      return false;
+    }
+
+    // Check R2 threshold
+    if (r2Tresh < R2_MIN) {
+      showWarning(`: too small R² threshold - ${r2Tresh}, minimum - ${R2_MIN}`);
       return false;
     }
 
@@ -69,8 +77,9 @@ export class Pmpo {
 
   constructor() {};
 
-  public fit(df: DG.DataFrame, descriptors: DG.ColumnList, desirability: DG.Column, pValTresh: number): void {
-    if (!Pmpo.isApplicable(descriptors, desirability, pValTresh))
+  public fit(df: DG.DataFrame, descriptors: DG.ColumnList, desirability: DG.Column,
+    pValTresh: number, r2Tresh: number): void {
+    if (!Pmpo.isApplicable(descriptors, desirability, pValTresh, r2Tresh))
       throw new Error('Failed to train pMPO model: the method is not applicable to the inputs');
 
     const descriptorNames = descriptors.names();
@@ -84,11 +93,15 @@ export class Pmpo {
     const descrStatsTable = getDescriptorStatisticsTable(descrStats);
 
     // Filter by p-value
-    const selected = getFilteredByPvalue(descrStatsTable, pValTresh);
-    addSelectedDescriptorsCol(descrStatsTable, selected);
+    const selectedByPvalue = getFilteredByPvalue(descrStatsTable, pValTresh);
+
+    // Filter by correlations
+    const selectedByCorr = getFilteredByCorrelations(descriptors, selectedByPvalue, descrStats, r2Tresh);
+
+    addSelectedDescriptorsCol(descrStatsTable, selectedByCorr);
 
     // Add viewers
-    const grid = getDescriptorStatisticsGrid(descrStatsTable);
+    const grid = getDescriptorStatisticsGrid(descrStatsTable, selectedByPvalue, selectedByCorr);
     const view = grok.shell.tableView(df.name) ?? grok.shell.addTableView(df);
     const node = view.dockManager.dock(grid, DG.DOCK_TYPE.RIGHT, null, undefined, 0.7);
     const corrPlot = DG.Viewer.correlationPlot(df, {

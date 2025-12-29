@@ -1003,11 +1003,12 @@ export class PackageFunctions {
     @grok.decorators.param({'type': 'column_list', 'options': {'type': 'numerical', 'nullable': false}}) descriptors: DG.ColumnList,
     @grok.decorators.param({'type': 'column', 'options': {'type': 'categorical', 'nullable': false}}) desirability: DG.Column,
     @grok.decorators.param({'type': 'double', 'options': {'caption': 'p-value treshold', 'initialValue': '0.05', 'nullable': false, 'min': '0.01', 'format': '0.00'}}) pValTresh: number,
+    @grok.decorators.param({'type': 'double', 'options': {'caption': 'R² treshold', 'initialValue': '0.5', 'nullable': false, 'min': '0', 'max': '1', 'format': '0.00'}}) r2Tresh: number,
   ): void {
-    if (!Pmpo.isApplicable(descriptors, desirability, pValTresh, true))
+    if (!Pmpo.isApplicable(descriptors, desirability, pValTresh, r2Tresh, true))
       return;
 
     const pMpo = new Pmpo();
-    pMpo.fit(table, descriptors, desirability, pValTresh);
+    pMpo.fit(table, descriptors, desirability, pValTresh, r2Tresh);
   }
 }

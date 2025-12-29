@@ -41,6 +41,7 @@ export const DESCR_TABLE_TITLE = DESCR_TITLE + ' Statistics';
 export const SELECTED = 'Selected';
 
 export const P_VAL_TRES_MIN = 1e-8;
+export const R2_MIN = 0.01;
 
 export enum COLORS {
   SELECTED = '#84d984ff',

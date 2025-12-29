@@ -98,13 +98,14 @@ export function addSelectedDescriptorsCol(descrStats: DG.DataFrame, selected: st
   return descrStats;
 } // addSelectedDescriptorsCol
 
-export function getDescriptorStatisticsGrid(table: DG.DataFrame): DG.Grid {
+export function getDescriptorStatisticsGrid(table: DG.DataFrame,
+  selectedByPvalue: string[], selectedByCorr: string[]): DG.Grid {
   const grid = DG.Viewer.grid(table, {
     showTitle: true,
     title: table.name,
   });
 
-  grid.sort([P_VAL]);
+  grid.sort([SELECTED, P_VAL], [false, true]);
   grid.col(P_VAL)!.format = 'scientific';
 
   // set tooltips
@@ -119,6 +120,25 @@ export function getDescriptorStatisticsGrid(table: DG.DataFrame): DG.Grid {
         }
 
         return false;
+      }
+    } else {
+      if (cell.isTableCell) {
+        const cellCol = cell.tableColumn;
+        if (cellCol) {
+          if (cell.tableColumn.name === DESCR_TITLE) {
+            const value = cell.value;
+            if (selectedByCorr.includes(value))
+              ui.tooltip.show('Selected for model construction.', x, y);
+            else if (selectedByPvalue.includes(value))
+              ui.tooltip.show('Excluded due to a high correlation with other descriptors.', x, y);
+            else
+              ui.tooltip.show('Excluded due to a high p-value.', x, y);
+
+            return true;
+          }
+
+          return false;
+        }
       }
     }
   });
@@ -143,7 +163,7 @@ function getDescrTooltip(): HTMLElement {
   nonSelectedBox.classList.add('eda-pmpo-box');
   nonSelectedBox.style.backgroundColor = COLORS.SKIPPED;
   const nonSelectedLabel = ui.span([]);
-  nonSelectedLabel.textContent = '- filtered';
+  nonSelectedLabel.textContent = '- excluded';
 
   secondLine.appendChild(nonSelectedBox);
   secondLine.appendChild(nonSelectedLabel);
@@ -155,3 +175,49 @@ function getDescrTooltip(): HTMLElement {
     secondLine,
   ]);
 } // getDescrTooltip
+
+export function getFilteredByCorrelations(descriptors: DG.ColumnList, selectedByPvalue: string[],
+  statistics: Map<string, DescriptorStatistics>, r2Tresh: number): string[] {
+  const getCorrelations = () => {
+    const triples: [string, string, number][] = [];
+
+    for (let i = 0; i < selectedByPvalue.length; ++i) {
+      for (let j = i + 1; j < selectedByPvalue.length; ++j) {
+        triples.push([
+          selectedByPvalue[i],
+          selectedByPvalue[j],
+          descriptors.byName(selectedByPvalue[i]).stats.corr(descriptors.byName(selectedByPvalue[j]))**2,
+        ]);
+      }
+    }
+
+    return triples;
+  };
+
+  const correlations = getCorrelations().sort((a, b) => b[2] - a[2]);
+
+  const keep = new Set(selectedByPvalue);
+
+  correlations.filter((triple) => triple[2] > r2Tresh).forEach((triple) => {
+    const [descr1, descr2, _] = triple;
+    const pVal1 = statistics.get(descr1)!.pValue;
+    const pVal2 = statistics.get(descr2)!.pValue;
+    const tStat1 = statistics.get(descr1)!.tstat;
+    const tStat2 = statistics.get(descr2)!.tstat;
+
+    if (pVal1 > pVal2)
+      keep.delete(descr1);
+    else if (pVal1 < pVal2)
+      keep.delete(descr2);
+    else { // process the case of p-value = 0 (or too small)
+      if (Math.abs(tStat1) > Math.abs(tStat2))
+        keep.delete(descr2);
+      else
+        keep.delete(descr1);
+    }
+  });
+
+  console.log(keep);
+
+  return [...keep];
+} // getFilteredByCorrelations

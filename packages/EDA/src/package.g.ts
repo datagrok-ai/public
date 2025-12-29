@@ -545,7 +545,8 @@ export function paretoFrontViewer() : any {
 //input: column_list descriptors { type: numerical; nullable: false }
 //input: column desirability { type: categorical; nullable: false }
 //input: double pValTresh = 0.05 { caption: p-value treshold; nullable: false; min: 0.01; format: 0.00 }
+//input: double r2Tresh = 0.5 { caption: R² treshold; nullable: false; min: 0; max: 1; format: 0.00 }
 //top-menu: ML | Probabilistic MPO...
-export function pMpo(table: DG.DataFrame, descriptors: DG.ColumnList, desirability: DG.Column, pValTresh: number) : void {
-  PackageFunctions.pMpo(table, descriptors, desirability, pValTresh);
+export function pMpo(table: DG.DataFrame, descriptors: DG.ColumnList, desirability: DG.Column, pValTresh: number, r2Tresh: number) : void {
+  PackageFunctions.pMpo(table, descriptors, desirability, pValTresh, r2Tresh);
 }
