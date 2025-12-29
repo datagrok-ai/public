@@ -118,7 +118,7 @@ export class Pmpo {
     // Add viewers
     const grid = getDescriptorStatisticsGrid(descrStatsTable, selectedByPvalue, selectedByCorr);
     const view = grok.shell.tableView(df.name) ?? grok.shell.addTableView(df);
-    const gridNode = view.dockManager.dock(grid, DG.DOCK_TYPE.RIGHT, null, undefined, 0.7);
+    const gridNode = view.dockManager.dock(grid, DG.DOCK_TYPE.RIGHT, null, undefined, 0.5);
 
     const corrPlot = DG.Viewer.correlationPlot(df, {
       xColumnNames: descriptorNames,
@@ -126,7 +126,7 @@ export class Pmpo {
       showTitle: true,
       title: `${DESCR_TITLE} Correlations`,
     });
-    const corrNode = view.dockManager.dock(corrPlot, DG.DOCK_TYPE.RIGHT, gridNode, undefined, 0.3);
+    const corrNode = view.dockManager.dock(corrPlot, DG.DOCK_TYPE.RIGHT, gridNode, undefined, 0.25);
 
     const bars = DG.Viewer.barChart(weightsTable, {
       valueAggrType: DG.AGG.AVG,
@@ -136,7 +136,31 @@ export class Pmpo {
       title: WEIGHT_TABLE_TITLE,
       showStackSelector: false,
     });
-    view.dockManager.dock(bars, DG.DOCK_TYPE.DOWN, gridNode, undefined, 0.5);
+    view.dockManager.dock(bars, DG.DOCK_TYPE.DOWN, corrNode, undefined, 0.5);
+
+    const hist = DG.Viewer.histogram(df, {
+      valueColumnName: prediction.name,
+      splitColumnName: desirability.name,
+      normalizeValues: false,
+      splitStack: true,
+      showSplitSelector: false,
+      title: 'Distribution of pMPO scores',
+      showTitle: true,
+    });
+
+    view.dockManager.dock(hist, DG.DOCK_TYPE.DOWN, gridNode, undefined, 0.5);
+
+    const boxPlot = DG.Viewer.boxPlot(df, {
+      valueColumnName: prediction.name,
+      category1ColumnName: desirability.name,
+      showPValue: false,
+      showSizeSelector: false,
+      showTitle: true,
+      title: `pMPO by ${desirability.name} label`,
+    });
+
+    const mainGridNode = view.dockManager.findNode(view.grid.root);
+    view.dockManager.dock(boxPlot, DG.DOCK_TYPE.DOWN, mainGridNode, undefined, 0.5);
   } // fit
 
   public predict(df: DG.DataFrame): DG.Column {

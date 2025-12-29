@@ -540,7 +540,7 @@ export function paretoFrontViewer() : any {
 }
 
 //name: pMPO
-//description: Train a probabilistic multi-parameter optimization model.
+//description: Probabilistic multi-parameter optimization.
 //input: dataframe table 
 //input: column_list descriptors { type: numerical; nullable: false }
 //input: column desirability { type: categorical; nullable: false }

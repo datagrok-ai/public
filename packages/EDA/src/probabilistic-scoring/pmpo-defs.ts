@@ -63,7 +63,7 @@ export const DESCR_TABLE_TITLE = DESCR_TITLE + ' Statistics';
 export const SELECTED_TITLE = 'Selected';
 export const WEIGHT_TITLE = 'Weights';
 export const WEIGHT_TABLE_TITLE = DESCR_TITLE + ' ' + WEIGHT_TITLE;
-export const SCORES_TITLE = 'pMPO scores';
+export const SCORES_TITLE = 'pMPO score';
 
 export const P_VAL_TRES_MIN = 1e-8;
 export const R2_MIN = 0.01;

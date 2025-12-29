@@ -996,7 +996,7 @@ export class PackageFunctions {
   @grok.decorators.func({
     'top-menu': 'ML | Probabilistic MPO...',
     'name': 'pMPO',
-    'description': 'Train a probabilistic multi-parameter optimization model.',
+    'description': 'Probabilistic multi-parameter optimization.',
   })
   static pMpo(
     @grok.decorators.param({'type': 'dataframe'}) table: DG.DataFrame,
