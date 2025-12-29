@@ -278,7 +278,7 @@ export namespace funcs {
   /**
   Train a probabilistic multi-parameter optimization model.
   */
-  export async function pMpo(table: DG.DataFrame , descriptors: string[] , desirability: DG.Column , pValTresh: number , r2Tresh: number ): Promise<void> {
-    return await grok.functions.call('EDA:PMpo', { table, descriptors, desirability, pValTresh, r2Tresh });
+  export async function pMpo(table: DG.DataFrame , descriptors: string[] , desirability: DG.Column , pValTresh: number , r2Tresh: number , qCutoff: number ): Promise<void> {
+    return await grok.functions.call('EDA:PMpo', { table, descriptors, desirability, pValTresh, r2Tresh, qCutoff });
   }
 }

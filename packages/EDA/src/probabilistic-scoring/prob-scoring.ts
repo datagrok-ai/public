@@ -2,17 +2,16 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {getDesiredTables, getDescriptorStatistics} from './stat-tools';
+import {getDesiredTables, getDescriptorStatistics, normalPdf, sigmoidS} from './stat-tools';
 import {MIN_SAMPLES_COUNT, PMPO_NON_APPLICABLE, DescriptorStatistics, P_VAL_TRES_MIN, DESCR_TITLE,
-  R2_MIN} from './pmpo-defs';
+  R2_MIN, Q_CUTOFF_MIN, WEIGHT_TABLE_TITLE, PmpoParams, SCORES_TITLE} from './pmpo-defs';
 import {addSelectedDescriptorsCol, getDescriptorStatisticsGrid, getDescriptorStatisticsTable,
-  getFilteredByPvalue,
-  getFilteredByCorrelations} from './pmpo-utils';
+  getFilteredByPvalue, getFilteredByCorrelations, getModelParams, getWeightsTable} from './pmpo-utils';
 
 
 export class Pmpo {
   static isApplicable(descriptors: DG.ColumnList, desirability: DG.Column, pValThresh: number,
-    r2Tresh: number, toShowWarning: boolean = false): boolean {
+    r2Tresh: number, qCutoff: number, toShowWarning: boolean = false): boolean {
     const rows = desirability.length;
 
     const showWarning = (msg: string) => {
@@ -29,6 +28,12 @@ export class Pmpo {
     // Check R2 threshold
     if (r2Tresh < R2_MIN) {
       showWarning(`: too small R² threshold - ${r2Tresh}, minimum - ${R2_MIN}`);
+      return false;
+    }
+
+    // Check q-cutoff
+    if (qCutoff < Q_CUTOFF_MIN) {
+      showWarning(`: too small q-cutoff - ${qCutoff}, minimum - ${Q_CUTOFF_MIN}`);
       return false;
     }
 
@@ -75,11 +80,13 @@ export class Pmpo {
     return true;
   }
 
+  private params: Map<string, PmpoParams> | null = null;
+
   constructor() {};
 
   public fit(df: DG.DataFrame, descriptors: DG.ColumnList, desirability: DG.Column,
-    pValTresh: number, r2Tresh: number): void {
-    if (!Pmpo.isApplicable(descriptors, desirability, pValTresh, r2Tresh))
+    pValTresh: number, r2Tresh: number, qCutoff: number): void {
+    if (!Pmpo.isApplicable(descriptors, desirability, pValTresh, r2Tresh, qCutoff))
       throw new Error('Failed to train pMPO model: the method is not applicable to the inputs');
 
     const descriptorNames = descriptors.names();
@@ -100,16 +107,59 @@ export class Pmpo {
 
     addSelectedDescriptorsCol(descrStatsTable, selectedByCorr);
 
+    // Compute pMPO parameters - training
+    this.params = getModelParams(desired, nonDesired, selectedByCorr, qCutoff);
+
+    const weightsTable = getWeightsTable(this.params);
+    const prediction = this.predict(df);
+    df.columns.add(prediction);
+    //grok.shell.addTableView(weightsTable);
+
     // Add viewers
     const grid = getDescriptorStatisticsGrid(descrStatsTable, selectedByPvalue, selectedByCorr);
     const view = grok.shell.tableView(df.name) ?? grok.shell.addTableView(df);
-    const node = view.dockManager.dock(grid, DG.DOCK_TYPE.RIGHT, null, undefined, 0.7);
+    const gridNode = view.dockManager.dock(grid, DG.DOCK_TYPE.RIGHT, null, undefined, 0.7);
+
     const corrPlot = DG.Viewer.correlationPlot(df, {
       xColumnNames: descriptorNames,
       yColumnNames: descriptorNames,
       showTitle: true,
       title: `${DESCR_TITLE} Correlations`,
     });
-    view.dockManager.dock(corrPlot, DG.DOCK_TYPE.RIGHT, node, undefined, 0.3);
+    const corrNode = view.dockManager.dock(corrPlot, DG.DOCK_TYPE.RIGHT, gridNode, undefined, 0.3);
+
+    const bars = DG.Viewer.barChart(weightsTable, {
+      valueAggrType: DG.AGG.AVG,
+      showCategorySelector: false,
+      showValueSelector: false,
+      showTitle: true,
+      title: WEIGHT_TABLE_TITLE,
+      showStackSelector: false,
+    });
+    view.dockManager.dock(bars, DG.DOCK_TYPE.DOWN, gridNode, undefined, 0.5);
   } // fit
+
+  public predict(df: DG.DataFrame): DG.Column {
+    if (this.params == null)
+      throw new Error('Filed to apply pMPO: non-trained model');
+
+    const count = df.rowCount;
+    const scores = new Float64Array(count).fill(0);
+    let x = 0;
+
+    this.params.forEach((param, name) => {
+      const col = df.col(name);
+
+      if (col == null)
+        throw new Error(`'Filed to apply pMPO: inconsistent data, no column "${name}" in the table "${df.name}"`);
+
+      const vals = col.getRawData();
+      for (let i = 0; i < count; ++i) {
+        x = vals[i];
+        scores[i] += param.weight * normalPdf(x, param.desAvg, param.desStd) * sigmoidS(x, param.x0, param.b, param.c);
+      }
+    });
+
+    return DG.Column.fromFloat64Array(SCORES_TITLE, scores);
+  }
 }; // Pmpo

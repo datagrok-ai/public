@@ -1,17 +1,40 @@
 // Probabilistic MPO definitions & constants
 export const MIN_SAMPLES_COUNT = 10;
 export const PMPO_NON_APPLICABLE = 'pMPO is not applicable';
+export const PMPO_COMPUTE_FAILED = 'Failed to compute pMPO parameters';
 
-export type DescriptorStatistics = {
+export type BasicStats = {
   desAvg: number,
   desStd: number,
-  desLen: number,
   nonDesAvg: number,
   nonDesStd: number,
+};
+
+export type DescriptorStatistics = BasicStats & {
+  desLen: number,
   nonSesLen: number,
   tstat: number,
   pValue: number,
+};
+
+export type Cutoff = {
+  cutoff: number,
+  cutoffDesired: number,
+  cutoffNotDesired: number,
+};
+
+export type SigmodParams = {
+  pX0: number,
+  b: number,
+  c: number,
+};
+
+export type PmpoParams = BasicStats & Cutoff & SigmodParams & {
   zScore: number,
+  weight: number,
+  intersections: number[],
+  x0: number,
+  xBound: number,
 };
 
 const DESIRED = 'desired';
@@ -33,17 +56,22 @@ export const STAT_TO_TITLE_MAP = new Map([
   ['nonDesStd', STD_NON_DES],
   ['tstat', T_STAT],
   ['pValue', P_VAL],
-  ['zScore', Z_SCORE],
 ]);
 
 export const DESCR_TITLE = 'Descriptor';
 export const DESCR_TABLE_TITLE = DESCR_TITLE + ' Statistics';
-export const SELECTED = 'Selected';
+export const SELECTED_TITLE = 'Selected';
+export const WEIGHT_TITLE = 'Weights';
+export const WEIGHT_TABLE_TITLE = DESCR_TITLE + ' ' + WEIGHT_TITLE;
+export const SCORES_TITLE = 'pMPO scores';
 
 export const P_VAL_TRES_MIN = 1e-8;
 export const R2_MIN = 0.01;
+export const Q_CUTOFF_MIN = 1e-8;
 
 export enum COLORS {
   SELECTED = '#84d984ff',
   SKIPPED = '#d9979bff',
 };
+
+export const TINY = 1e-8;

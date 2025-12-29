@@ -4,8 +4,9 @@ import * as DG from 'datagrok-api/dg';
 
 import '../../css/pmpo.css';
 
-import {COLORS, DESCR_TABLE_TITLE, DESCR_TITLE, DescriptorStatistics, P_VAL, SELECTED,
-  STAT_TO_TITLE_MAP} from './pmpo-defs';
+import {COLORS, DESCR_TABLE_TITLE, DESCR_TITLE, DescriptorStatistics, P_VAL, PMPO_COMPUTE_FAILED, PmpoParams,
+  SELECTED_TITLE, STAT_TO_TITLE_MAP, TINY, WEIGHT_TITLE} from './pmpo-defs';
+import {computeSigmoidParamsFromX0, getCutoffs, solveNormalIntersection} from './stat-tools';
 
 export function getDescriptorStatisticsTable(stats: Map<string, DescriptorStatistics>): DG.DataFrame {
   const descrCount = stats.size;
@@ -93,7 +94,7 @@ export function addSelectedDescriptorsCol(descrStats: DG.DataFrame, selected: st
   descrCol.colors.setCategorical(colors);
 
   // Added selected column
-  descrStats.columns.add(DG.Column.fromList(DG.COLUMN_TYPE.BOOL, SELECTED, selArr));
+  descrStats.columns.add(DG.Column.fromList(DG.COLUMN_TYPE.BOOL, SELECTED_TITLE, selArr));
 
   return descrStats;
 } // addSelectedDescriptorsCol
@@ -105,7 +106,7 @@ export function getDescriptorStatisticsGrid(table: DG.DataFrame,
     title: table.name,
   });
 
-  grid.sort([SELECTED, P_VAL], [false, true]);
+  grid.sort([SELECTED_TITLE, P_VAL], [false, true]);
   grid.col(P_VAL)!.format = 'scientific';
 
   // set tooltips
@@ -217,7 +218,103 @@ export function getFilteredByCorrelations(descriptors: DG.ColumnList, selectedBy
     }
   });
 
-  console.log(keep);
-
   return [...keep];
 } // getFilteredByCorrelations
+
+export function getModelParams(desired: DG.DataFrame, nonDesired: DG.DataFrame,
+  selected: string[], qCutoff: number): Map<string, PmpoParams> {
+  const params = new Map<string, PmpoParams>();
+
+  let sum = 0;
+
+  // Compute params
+  selected.forEach((name) => {
+    const desLen = desired.rowCount;
+    const nonDesLen = nonDesired.rowCount;
+
+    const desCol = desired.col(name);
+    if (desCol == null)
+      throw new Error(PMPO_COMPUTE_FAILED + `: no column "${name}" in the desired table.`);
+
+    const nonDesCol = nonDesired.col(name);
+    if (nonDesCol == null)
+      throw new Error(PMPO_COMPUTE_FAILED + `: no column "${name}" in the non-desired table.`);
+
+    const muDes = desCol.stats.avg;
+    const sigmaDes = desCol.stats.stdev * Math.sqrt((desLen - 1) / desLen);
+
+    const muNonDes = nonDesCol.stats.avg;
+    const sigmaNonDes = nonDesCol.stats.stdev * Math.sqrt((nonDesLen - 1) / nonDesLen);
+
+    const cutoffs = getCutoffs(muDes, sigmaDes, muNonDes, sigmaNonDes);
+    const intersections = solveNormalIntersection(muDes, sigmaDes, muNonDes, sigmaNonDes);
+
+    let x0: number | null = null;
+
+    if (intersections.length > 0) {
+      for (const r of intersections) {
+        const low = Math.min(muDes, muNonDes);
+        const high = Math.max(muDes, muNonDes);
+
+        if ((low - TINY <= r) && (r <= high + TINY)) {
+          x0 = r;
+          break;
+        }
+      }
+
+      if (x0 == null)
+        x0 = intersections[0];
+    } else
+      x0 = cutoffs.cutoff;
+
+    const xBound = cutoffs.cutoffNotDesired;
+    const sigmoidParams = computeSigmoidParamsFromX0(muDes, sigmaDes, x0, xBound, qCutoff);
+
+    const z = Math.abs(muDes - muNonDes) / (sigmaDes + sigmaNonDes);
+    sum += z;
+
+    params.set(name, {
+      desAvg: muDes,
+      desStd: sigmaDes,
+      nonDesAvg: muNonDes,
+      nonDesStd: sigmaNonDes,
+      cutoff: cutoffs.cutoff,
+      cutoffDesired: cutoffs.cutoffDesired,
+      cutoffNotDesired: cutoffs.cutoffNotDesired,
+      pX0: sigmoidParams.pX0,
+      b: sigmoidParams.b,
+      c: sigmoidParams.c,
+      zScore: z,
+      weight: z,
+      intersections: intersections,
+      x0: x0,
+      xBound: xBound,
+    });
+  });
+
+  // Normalize weights
+  params.forEach((param) => {
+    param.weight = param.zScore / sum;
+  });
+
+  return params;
+} // getModelParams
+
+export function getWeightsTable(params: Map<string, PmpoParams>): DG.DataFrame {
+  const count = params.size;
+  const descriptors = new Array<string>(count);
+  const weights = new Float64Array(count);
+
+  let idx = 0;
+
+  params.forEach((param, name) => {
+    descriptors[idx] = name;
+    weights[idx] = param.weight;
+    ++idx;
+  });
+
+  return DG.DataFrame.fromColumns([
+    DG.Column.fromStrings(DESCR_TITLE, descriptors),
+    DG.Column.fromFloat64Array(WEIGHT_TITLE, weights),
+  ]);
+} // getWeightsTable

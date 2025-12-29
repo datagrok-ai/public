@@ -5,7 +5,9 @@ import * as DG from 'datagrok-api/dg';
 //@ts-ignore: no types
 import * as jStat from 'jstat';
 
-import {DescriptorStatistics} from './pmpo-defs';
+import {Cutoff, DescriptorStatistics, SigmodParams} from './pmpo-defs';
+
+const SQRT_2_PI = Math.sqrt(2 * Math.PI);
 
 export function getDesiredTables(df: DG.DataFrame, desirability: DG.Column) {
   const groups = df.groupBy([desirability.name]).getGroups() as any;
@@ -66,6 +68,92 @@ export function getDescriptorStatistics(des: DG.Column, nonDes: DG.Column): Desc
     nonSesLen: nonDesLen,
     tstat: t,
     pValue: pValue,
-    zScore: Math.abs(desAvg - nonDesAvg) / (desStd + nonDesStd),
   };
 } // getDescriptorStatistics
+
+export function getCutoffs(muDesired: number, stdDesired: number, muNotDesired: number,
+  stdNotDesired: number): Cutoff {
+  if (muDesired < muNotDesired) {
+    return {
+      cutoff: ((muNotDesired - muDesired) / (stdDesired + stdNotDesired)) * stdDesired + muDesired,
+      cutoffDesired: Math.max(muDesired, muNotDesired - stdNotDesired),
+      cutoffNotDesired: Math.max(muDesired + stdDesired, muNotDesired),
+    };
+  } else {
+    return {
+      cutoff: ((muDesired - muNotDesired) / (stdDesired + stdNotDesired)) * stdNotDesired + muNotDesired,
+      cutoffDesired: Math.min(muNotDesired + stdNotDesired, muDesired),
+      cutoffNotDesired: Math.max(muNotDesired, muDesired - stdDesired),
+    };
+  }
+} // getCutoffs
+
+export function solveNormalIntersection(mu1: number, s1: number, mu2: number, s2: number): number[] {
+  const a = 1 / (2 * s1 ** 2) - 1 / (2 * s2 ** 2);
+  const b = mu2 / (s2 ** 2) - mu1 / (s1 ** 2);
+  const c = (mu1 ** 2) / (2 * s1 ** 2) - (mu2 ** 2) / (2 * s2 ** 2) - Math.log(s2 / s1);
+
+  // If a is nearly zero, solve linear equation
+  if (Math.abs(a) < 1e-12) {
+    if (Math.abs(b) < 1e-12) return [];
+    return [-c / b];
+  }
+
+  const disc = b * b - 4 * a * c;
+  if (disc < 0) return [];
+
+  const sqrtDisc = Math.sqrt(disc);
+  const x1 = (-b + sqrtDisc) / (2 * a);
+  const x2 = (-b - sqrtDisc) / (2 * a);
+
+  return [x1, x2];
+} // solveNormalIntersection
+
+export function computeSigmoidParamsFromX0(muDes: number, sigmaDes: number, x0: number, xBound: number,
+  qCutoff: number = 0.05): SigmodParams {
+  let pX0: number;
+
+  if (sigmaDes <= 0)
+    pX0 = x0 === muDes ? 1.0 : 0.0;
+  else {
+    // normal pdf
+    const coef = 1 / (sigmaDes * Math.sqrt(2 * Math.PI));
+    const exponent = -0.5 * ((x0 - muDes) / sigmaDes) ** 2;
+    pX0 = coef * Math.exp(exponent);
+  }
+
+  const eps = 1e-12;
+  pX0 = Math.max(pX0, eps);
+
+  const b = Math.max(1.0 / pX0 - 1.0, eps);
+  const n = 1.0 / qCutoff - 1.0;
+  const dx = xBound - x0;
+
+  let c: number;
+  if (Math.abs(dx) < 1e-12)
+    c = 1.0;
+  else {
+    const ratio = n / b;
+    if (ratio <= 0)
+      c = 1.0;
+    else {
+      try {
+        c = Math.exp(-Math.log(ratio) / dx);
+      } catch {
+        c = 1.0;
+      }
+    }
+  }
+
+  return {pX0: pX0, b: b, c: c};
+} // computeSigmoidParamsFromX0
+
+export function sigmoidS(x: number, x0: number, b: number, c: number): number {
+  if (c > 0)
+    return 1.0 / (1.0 + b * (c ** (-(x - x0))));
+  return 1.0/(1.0 + b);
+}
+
+export function normalPdf(x: number, mu: number, sigma: number): number {
+  return Math.exp(-((x - mu)**2) / (2 * sigma**2)) / (sigma * SQRT_2_PI);
+}
