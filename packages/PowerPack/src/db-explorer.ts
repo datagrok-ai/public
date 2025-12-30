@@ -301,7 +301,7 @@ export async function setupDBQueryCellHandler() {
         return h.type === DB_EXPLORER_OBJ_HANDLER_TYPE && (h as DBExplorerObjectHandler).connectionNqName === conInfo.nqName! && (h as DBExplorerObjectHandler).schemaName === schemaName;
       });
       if (handler) {
-        const acc = (handler as DBExplorerObjectHandler).renderPropertiesFromDfRow(cell.row, tableName);
+        const acc = (handler as DBExplorerObjectHandler).renderPropertiesFromDfRow(cell.row, schemaName, tableName);
         ui.empty(explorePanelRoot);
         explorePanelRoot.appendChild(acc);
       } else {
@@ -315,7 +315,7 @@ export async function setupDBQueryCellHandler() {
           entryPoints: {},
         });
         const newHandler = exp.genericValueHandler; // nex time it will be found
-        const acc = newHandler.renderPropertiesFromDfRow(cell.row, tableName);
+        const acc = newHandler.renderPropertiesFromDfRow(cell.row, schemaName, tableName);
         ui.empty(explorePanelRoot);
         explorePanelRoot.appendChild(acc);
       }
