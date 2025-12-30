@@ -6,11 +6,11 @@ let showMenu = () => {
     .separator()
     .items(['First', 'Second'], showBalloon)
     .group('Group')
-      .item('Inner item', () => grok.shell.info('item click'))
+    .item('Inner item', () => grok.shell.info('item click'))
     .endGroup()
     .show();
 };
 
 let text = ui.divText('Click me');
 text.onclick = () => showMenu();
-text
+grok.shell.newView('Popup Menu', [text]);

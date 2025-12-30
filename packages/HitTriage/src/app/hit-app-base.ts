@@ -30,7 +30,9 @@ export abstract class HitAppBase<T> {
   constructor(public parentCall: DG.FuncCall, appN: AppName) {
     this.baseUrl = new URL(window.location.href).origin + `/apps/HitTriage/${appN.replace(' ', '')}`;
     this._appName = appN;
-    const funcs = DG.Func.find({tags: [HitTriageComputeFunctionTag]});
+    const tags = DG.Func.find({tags: [HitTriageComputeFunctionTag]});
+    const meta = DG.Func.find({meta: {role: 'hitTriageFunction'}});
+    const funcs = [...tags, ...meta];
     const functions = funcs.filter((f) => f.type === funcTypeNames.function);
     const scripts = funcs.filter((f) => f.type === funcTypeNames.script) as DG.Script[];
     const queries = funcs.filter((f) => f.type === funcTypeNames.query) as DG.DataQuery[];

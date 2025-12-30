@@ -1,4 +1,4 @@
-import { category, expect, test } from '@datagrok-libraries/utils/src/test';
+import {category, expect, test} from '@datagrok-libraries/utils/src/test';
 
 
 category('Examples', () => {
@@ -11,6 +11,6 @@ category('Examples', () => {
   });
 
   test('Skipped', async () => {
-    expect(1 === 1 , false);
+    expect(1 === 1, false);
   }, {skipReason: 'TASK-ID'});
 });

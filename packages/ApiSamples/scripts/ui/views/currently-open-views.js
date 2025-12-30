@@ -1,4 +1,3 @@
-//tags: View
 // Table views
 grok.shell.addTableView(grok.data.demo.demog());
 grok.shell.addTableView(grok.data.demo.wells());

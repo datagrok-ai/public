@@ -37,11 +37,6 @@ function radicalToRgroupForm(smiles: string): string {
   });
 }
 
-// export function deprotectEditor(funcCall: DG.FuncCall): DG.Widget {
-//     const
-
-
-// }
 const defaultFramgment = 'O=C(N[*:1])OCC1c2ccccc2-c2ccccc21';
 export class DeprotectEditor extends DG.FuncCallEditor {
   tableInput: DG.InputBase<DG.DataFrame | null>;

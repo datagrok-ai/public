@@ -3,7 +3,7 @@
 let v = grok.shell.newView('palettes');
 
 function getBlock(c) {
-  let block = ui.div([DG.Color.toRgb(c),'  hex:', DG.Color.toHtml(c)]);
+  let block = ui.div([DG.Color.toRgb(c), '  hex:', DG.Color.toHtml(c)]);
   block.style.backgroundColor = DG.Color.toRgb(c);
   block.style.color = DG.Color.toRgb(DG.Color.getContrastColor(c));
   return block;
