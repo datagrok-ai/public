@@ -1,10 +1,19 @@
 import * as DG from 'datagrok-api/dg';
+import {DB_EXPLORER_OBJ_HANDLER_TYPE} from './object-handlers';
 
 export type ReferenceObject = {
-  [tableName: string]: { [columnName: string]: { refTable: string; refColumn: string } };
+  [schemaName: string]: {
+    [tableName: string]: {
+      [columnName: string]: { refSchema: string, refTable: string; refColumn: string }
+    }
+  }
 };
 export type ReferencedByObject = {
-  [tableName: string]: { [columnName: string]: { refTable: string; refColumn: string }[] };
+  [schemaName: string]: {
+    [tableName: string]: {
+      [columnName: string]: { refSchema: string, refTable: string; refColumn: string }[]
+    }
+  }
 };
 export type SchemaInfo = { references: ReferenceObject; referencedBy: ReferencedByObject };
 
@@ -22,6 +31,8 @@ export type EntryPointOptions = {
   matchRegexp?: string;
 };
 export type QueryJoinOptions = {
+  fromSchema?: string;
+  onSchema?: string;
   fromTable: string;
   tableName: string;
   columnName: string;
@@ -29,12 +40,23 @@ export type QueryJoinOptions = {
   select: string[];
 };
 
+export type ExplicitReference = {
+  schema?: string;
+  table: string;
+  column: string;
+  refSchema?: string;
+  refTable: string;
+  refColumn: string;
+}
+
 export type DBExplorerConfig = {
     connectionName: string;
+    /** Primary schema, that can be overriden by schemas in entry points */
     schemaName: string;
     nqName?: string;
     dataSourceName?: string;
     entryPoints: {[semtype: string]: {
+        schama?: string;
         table: string;
         column: string;
         regexpExample?: EntryPointOptions['regexpExample'];
@@ -49,9 +71,11 @@ export type DBExplorerConfig = {
         column: string,
         renderer: SupportedRenderer;
     }[];
+    explicitReferences?: ExplicitReference[];
 }
 
 export class DBValueObject {
+  name: string = DB_EXPLORER_OBJ_HANDLER_TYPE;
   constructor(
     public connectionNqName: string,
     public schemaName: string,

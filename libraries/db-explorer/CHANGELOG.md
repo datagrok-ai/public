@@ -1,5 +1,12 @@
 # db-explorer changelog
 
+## 1.7.0 (2025-12-30)
+
+* Support multi schema exploration in a single connection
+* Map referenced columns to their original tables to extend linked data
+* Fix concurent detection errors
+* Resolve all correct db information from columns
+
 ## 1.6.0 (2025-12-15)
 
 * Support other providers than default PG provider in connection details
