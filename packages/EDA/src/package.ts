@@ -966,7 +966,7 @@ export class PackageFunctions {
   }
 
   @grok.decorators.func({
-    'top-menu': 'ML | Pareto Front...',
+    'top-menu': 'ML | Optimize | Pareto Front...',
     'name': 'Pareto Front',
     'description': 'Perform optimization across multiple objectives: analyze trade-offs between conflicting objectives and identify Pareto-optimal points.',
   })
@@ -994,22 +994,39 @@ export class PackageFunctions {
   }
 
   @grok.decorators.func({
-    'top-menu': 'ML | Probabilistic MPO...',
-    'name': 'pMPO',
-    'description': 'Probabilistic multi-parameter optimization.',
+    'top-menu': 'ML | Optimize | Probabilistic MPO | Train...',
+    'name': 'trainPmpo',
+    'description': 'Train parameters of probabilistic multi-parameter optimization (pMPO) model.',
   })
-  static pMpo(
-    @grok.decorators.param({'type': 'dataframe'}) table: DG.DataFrame,
-    @grok.decorators.param({'type': 'column_list', 'options': {'type': 'numerical', 'nullable': false}}) descriptors: DG.ColumnList,
-    @grok.decorators.param({'type': 'column', 'options': {'type': 'categorical', 'nullable': false}}) desirability: DG.Column,
-    @grok.decorators.param({'type': 'double', 'options': {'caption': 'p-value treshold', 'initialValue': '0.05', 'nullable': false, 'min': '0.01', 'format': '0.00'}}) pValTresh: number,
-    @grok.decorators.param({'type': 'double', 'options': {'caption': 'R² treshold', 'initialValue': '0.5', 'nullable': false, 'min': '0', 'max': '1', 'format': '0.00'}}) r2Tresh: number,
-    @grok.decorators.param({'type': 'double', 'options': {'caption': 'q-cutoff', 'initialValue': '0.05', 'nullable': false, 'min': '0.01', 'max': '1', 'format': '0.00'}}) qCutoff: number,
-  ): void {
-    if (!Pmpo.isApplicable(descriptors, desirability, pValTresh, r2Tresh, qCutoff, true))
+  static trainPmpo(): void {
+    const df = grok.shell.t;
+    if (df === null) {
+      grok.shell.warning('No dataframe is opened');
+      return;
+    }
+
+    if (!Pmpo.isTableValid(df))
       return;
 
-    const pMpo = new Pmpo();
-    pMpo.fit(table, descriptors, desirability, pValTresh, r2Tresh, qCutoff);
+    const pMPO = new Pmpo(df);
+    pMPO.runTrainingApp();
+
+    // if (!Pmpo.isApplicable(descriptors, desirability, pValTresh, r2Tresh, qCutoff, true))
+    //   return;
+
+    // const pMpo = new Pmpo();
+    // pMpo.fit(table, descriptors, desirability, pValTresh, r2Tresh, qCutoff);
+  }
+
+  @grok.decorators.func({
+    'top-menu': 'ML | Optimize | Probabilistic MPO | Apply...',
+    'name': 'applyPmpo',
+    'description': 'Score samples using a trained probabilistic multi-parameter optimization (pMPO) model.',
+    'help-url': '',
+  })
+  static applyPmpo(
+    @grok.decorators.param({'type': 'dataframe'}) table: DG.DataFrame,
+    @grok.decorators.param({'type': 'column_list', 'options': {'type': 'numerical', 'nullable': false}}) descriptors: DG.ColumnList,
+  ): void {
   }
 }

@@ -525,7 +525,7 @@ export function isApplicableXGBooster(df: DG.DataFrame, predictColumn: DG.Column
 
 //name: Pareto Front
 //description: Perform optimization across multiple objectives: analyze trade-offs between conflicting objectives and identify Pareto-optimal points.
-//top-menu: ML | Pareto Front...
+//top-menu: ML | Optimize | Pareto Front...
 export function paretoFront() : void {
   PackageFunctions.paretoFront();
 }
@@ -539,15 +539,17 @@ export function paretoFrontViewer() : any {
   return PackageFunctions.paretoFrontViewer();
 }
 
-//name: pMPO
-//description: Probabilistic multi-parameter optimization.
+//description: Train parameters of probabilistic multi-parameter optimization (pMPO) model.
+//top-menu: ML | Optimize | Probabilistic MPO | Train...
+export function trainPmpo() : void {
+  PackageFunctions.trainPmpo();
+}
+
+//description: Score samples using a trained probabilistic multi-parameter optimization (pMPO) model.
 //input: dataframe table 
 //input: column_list descriptors { type: numerical; nullable: false }
-//input: column desirability { type: categorical; nullable: false }
-//input: double pValTresh = 0.05 { caption: p-value treshold; nullable: false; min: 0.01; format: 0.00 }
-//input: double r2Tresh = 0.5 { caption: R² treshold; nullable: false; min: 0; max: 1; format: 0.00 }
-//input: double qCutoff = 0.05 { caption: q-cutoff; nullable: false; min: 0.01; max: 1; format: 0.00 }
-//top-menu: ML | Probabilistic MPO...
-export function pMpo(table: DG.DataFrame, descriptors: DG.ColumnList, desirability: DG.Column, pValTresh: number, r2Tresh: number, qCutoff: number) : void {
-  PackageFunctions.pMpo(table, descriptors, desirability, pValTresh, r2Tresh, qCutoff);
+//top-menu: ML | Optimize | Probabilistic MPO | Apply...
+//help-url: 
+export function applyPmpo(table: DG.DataFrame, descriptors: DG.ColumnList) : void {
+  PackageFunctions.applyPmpo(table, descriptors);
 }

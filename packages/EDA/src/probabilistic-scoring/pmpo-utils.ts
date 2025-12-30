@@ -99,55 +99,7 @@ export function addSelectedDescriptorsCol(descrStats: DG.DataFrame, selected: st
   return descrStats;
 } // addSelectedDescriptorsCol
 
-export function getDescriptorStatisticsGrid(table: DG.DataFrame,
-  selectedByPvalue: string[], selectedByCorr: string[]): DG.Grid {
-  const grid = DG.Viewer.grid(table, {
-    showTitle: true,
-    title: table.name,
-  });
-
-  grid.sort([SELECTED_TITLE, P_VAL], [false, true]);
-  grid.col(P_VAL)!.format = 'scientific';
-
-  // set tooltips
-  grid.onCellTooltip(function(cell, x, y) {
-    if (cell.isColHeader) {
-      const cellCol = cell.tableColumn;
-      if (cellCol) {
-        if (cell.tableColumn.name === DESCR_TITLE) {
-          ui.tooltip.show(getDescrTooltip(), x, y);
-
-          return true;
-        }
-
-        return false;
-      }
-    } else {
-      if (cell.isTableCell) {
-        const cellCol = cell.tableColumn;
-        if (cellCol) {
-          if (cell.tableColumn.name === DESCR_TITLE) {
-            const value = cell.value;
-            if (selectedByCorr.includes(value))
-              ui.tooltip.show('Selected for model construction.', x, y);
-            else if (selectedByPvalue.includes(value))
-              ui.tooltip.show('Excluded due to a high correlation with other descriptors.', x, y);
-            else
-              ui.tooltip.show('Excluded due to a high p-value.', x, y);
-
-            return true;
-          }
-
-          return false;
-        }
-      }
-    }
-  });
-
-  return grid;
-} // getDescriptorStatisticsGrid
-
-function getDescrTooltip(): HTMLElement {
+export function getDescrTooltip(): HTMLElement {
   const firstLine = ui.div();
   firstLine.classList.add('eda-pmpo-tooltip-line');
   const selectedBox = ui.div();

@@ -65,9 +65,9 @@ export const WEIGHT_TITLE = 'Weights';
 export const WEIGHT_TABLE_TITLE = DESCR_TITLE + ' ' + WEIGHT_TITLE;
 export const SCORES_TITLE = 'pMPO score';
 
-export const P_VAL_TRES_MIN = 1e-8;
+export const P_VAL_TRES_MIN = 0.01;
 export const R2_MIN = 0.01;
-export const Q_CUTOFF_MIN = 1e-8;
+export const Q_CUTOFF_MIN = 0.01;
 
 export enum COLORS {
   SELECTED = '#84d984ff',

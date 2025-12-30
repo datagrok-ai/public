@@ -276,9 +276,16 @@ export namespace funcs {
   }
 
   /**
-  Probabilistic multi-parameter optimization.
+  Train parameters of probabilistic multi-parameter optimization (pMPO) model.
   */
-  export async function pMpo(table: DG.DataFrame , descriptors: string[] , desirability: DG.Column , pValTresh: number , r2Tresh: number , qCutoff: number ): Promise<void> {
-    return await grok.functions.call('EDA:PMpo', { table, descriptors, desirability, pValTresh, r2Tresh, qCutoff });
+  export async function trainPmpo(): Promise<void> {
+    return await grok.functions.call('EDA:TrainPmpo', {});
+  }
+
+  /**
+  Score samples using a trained probabilistic multi-parameter optimization (pMPO) model.
+  */
+  export async function applyPmpo(table: DG.DataFrame , descriptors: string[] ): Promise<void> {
+    return await grok.functions.call('EDA:ApplyPmpo', { table, descriptors });
   }
 }
