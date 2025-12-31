@@ -29,6 +29,16 @@ export const explorerConfig: DBExplorerConfig = {
       'onColumn': 'molregno',
       'select': ['canonical_smiles', 'standard_inchi']
     },
+    // example of join with fromSchema and onSchema
+    // {
+    //   'fromSchema': 'public',
+    //   'fromTable': 'molecule_dictionary',
+    //   'columnName': 'molregno',
+    //   'onSchema': 'rdk',
+    //   'tableName': 'mols',
+    //   'onColumn': 'molregno',
+    //   'select': ['m']
+    // },
     {
       'fromTable': 'compound_structural_alerts',
       'columnName': 'alert_id',
@@ -86,7 +96,7 @@ export const explorerConfig: DBExplorerConfig = {
       'molecule_type',
       'first_approval',
       'indication_class',
-      'chirality'
+      'chirality',
     ]
   }
 };

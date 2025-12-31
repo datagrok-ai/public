@@ -1,14 +1,14 @@
 {
   "name": "@datagrok/biologics",
   "friendlyName": "Biologics",
-  "version": "1.0.8",
+  "version": "1.0.9",
   "description": "Demo Database wrapper for ADCs",
   "author": {
     "name": "Davit Rizhinashvili",
     "email": "drizhinashvili@datagrok.ai"
   },
   "dependencies": {
-    "@datagrok-libraries/db-explorer": "^1.7.0",
+    "@datagrok-libraries/db-explorer": "^1.7.1",
     "@datagrok-libraries/utils": "^4.6.9",
     "cash-dom": "^8.1.5",
     "datagrok-api": "^1.26.0",
