@@ -14,7 +14,7 @@
     "directory": "packages/Chembl"
   },
   "dependencies": {
-    "@datagrok-libraries/db-explorer": "^1.6.1",
+    "@datagrok-libraries/db-explorer": "^1.7.0",
     "@datagrok-libraries/utils": "^4.6.5",
     "@types/react-dom": "^17.0.9",
     "datagrok-api": "^1.26.0",
