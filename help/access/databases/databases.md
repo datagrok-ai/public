@@ -86,7 +86,7 @@ it and select **Clone...**
 
 ## Database Manager
 
-**Database Manager** lets you brows database schemas and other
+**Database Manager** lets you browse database schemas and other
 objects, such as queries, tables, and table columns (if supported by
 the providers). You can perform various operations like adding new connections
 and queries, previewing data, running queries, and managing objects using

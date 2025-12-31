@@ -1732,6 +1732,7 @@ export class HistoryEntry {
   get time(): object { return toJs(api.grok_HistoryEntry_Get_Time(this.dart)); }
 }
 
+
 export class EntityType {
   public dart: any;
 
@@ -1745,37 +1746,47 @@ export class EntityType {
 
   get name(): string { return toJs(api.grok_EntityType_Get_Name(this.dart)); }
   set name(s: string) { api.grok_EntityType_Set_Name(this.dart, toDart(s)); }
+
   get matching(): string { return toJs(api.grok_EntityType_Get_Matching(this.dart)); }
   set matching(s: string) { api.grok_EntityType_Set_Matching(this.dart, toDart(s)); }
 }
 
+
+/** A dynamic property associated with the entity. */
 export class EntityProperty extends Property {
   constructor(dart: any) {
     super(dart);
-  };
+  }
 
   static create(name: string, type: string): EntityProperty {
     return toJs(api.grok_EntityProperty_Create(toDart(name), toDart(type)));
   }
 }
 
+
+/** Represents dynamic property schema, associated with the entity type. */
 export class Schema {
   public dart: any;
 
   constructor(dart: any) {
     this.dart = dart;
-  };
+  }
 
   static create(name: string): Schema {
     return toJs(api.grok_Schema_Create(toDart(name)));
   }
 
   get name(): string { return api.grok_Schema_Get_Name(this.dart); }
+
+  /** Schema properties */
   get properties(): EntityProperty[] { return toJs(api.grok_Schema_Get_Properties(this.dart)); }
   set properties(p: EntityProperty[]) { api.grok_Schema_Set_Properties(this.dart, p); }
+
+  /** Entity types associated with this schema. */
   get entityTypes(): EntityType[] { return toJs(api.grok_Schema_Get_EntityTypes(this.dart)); }
   set entityTypes(et: EntityType[]) { api.grok_Schema_Set_EntityTypes(this.dart, et); }
 }
+
 
 export class UserReport extends Entity {
   constructor(dart: any) {
@@ -1806,6 +1817,7 @@ export class UserReport extends Entity {
     return dayjs(api.grok_UserReport_CreatedOn(this.dart));
   }
 }
+
 
 export class UserReportsRule extends Entity {
   constructor(dart: any) {
