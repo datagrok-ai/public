@@ -4,9 +4,10 @@ import * as DG from 'datagrok-api/dg';
 
 import '../../css/pmpo.css';
 
-import {COLORS, DESCR_TABLE_TITLE, DESCR_TITLE, DescriptorStatistics, FOLDER, P_VAL, PMPO_COMPUTE_FAILED, PmpoParams,
-  SELECTED_TITLE, STAT_TO_TITLE_MAP, TINY, WEIGHT_TITLE} from './pmpo-defs';
-import {computeSigmoidParamsFromX0, getCutoffs, solveNormalIntersection} from './stat-tools';
+import {COLORS, DESCR_TABLE_TITLE, DESCR_TITLE, DescriptorStatistics, DesirabilityProfileProperties,
+  FOLDER, P_VAL, PMPO_COMPUTE_FAILED, PmpoParams, SELECTED_TITLE, STAT_TO_TITLE_MAP, TINY,
+  WEIGHT_TITLE} from './pmpo-defs';
+import {computeSigmoidParamsFromX0, getCutoffs, normalPdf, sigmoidS, solveNormalIntersection} from './stat-tools';
 
 export function getDescriptorStatisticsTable(stats: Map<string, DescriptorStatistics>): DG.DataFrame {
   const descrCount = stats.size;
@@ -280,7 +281,7 @@ export async function loadPmpoParams(file: DG.FileInfo): Promise<Map<string, Pmp
 
 export async function saveModel(params: Map<string, PmpoParams>, modelName: string): Promise<void> {
   let fileName = modelName;
-  const nameInput = ui.input.string('Name', {
+  const nameInput = ui.input.string('File', {
     value: fileName,
     nullable: false,
     onValueChanged: () => {
@@ -308,9 +309,8 @@ export async function saveModel(params: Map<string, PmpoParams>, modelName: stri
   const save = async () => {
     const path = `${folder}/${fileName}.json`;
     try {
-      const obj = Object.fromEntries(params);
-      const json = JSON.stringify(obj, null, 2);
-      await grok.dapi.files.writeAsText(path, json);
+      const jsonString = JSON.stringify(objectToSave(), null, 2);
+      await grok.dapi.files.writeAsText(path, jsonString);
       grok.shell.info(`Saved to ${path}`);
     } catch (err) {
       grok.shell.error(`Failed to save: ${err instanceof Error ? err.message : 'the platform issue'}.`);
@@ -318,9 +318,39 @@ export async function saveModel(params: Map<string, PmpoParams>, modelName: stri
     dlg.close();
   };
 
+  const objectToSave = () => {
+    if (typeInput.value) {
+      return {
+        'type': 'MPO Desirability Profile',
+        'name': nameInput.value,
+        'description': descriptionInput.value,
+        'properties': getDesirabilityProfileProperties(params),
+      };
+    }
+
+    return {
+      'type': 'Probabilistic MPO Model',
+      'name': nameInput.value,
+      'description': descriptionInput.value,
+      'properties': Object.fromEntries(params),
+    };
+  };
+
+  const modelNameInput = ui.input.string('Name', {value: modelName, nullable: true});
+  const descriptionInput = ui.input.textArea('Description', {value: ' ', nullable: true});
+  const typeInput = ui.input.bool('Desirability Profile', {
+    value: true,
+    tooltipText: 'Save the model as an MPO Desirability Profile. If disabled, the model is saved in the pMPO format.',
+  });
+
   const dlg = ui.dialog({title: 'Save model'})
+    .add(ui.h2('Path'))
     .add(folderInput)
     .add(nameInput)
+    .add(ui.h2('Model'))
+    .add(modelNameInput)
+    .add(descriptionInput)
+    .add(typeInput)
     .addButton('Save', async () => {
       const exist = await grok.dapi.files.exists(`${folder}/${fileName}.json`);
       if (!exist)
@@ -335,3 +365,53 @@ export async function saveModel(params: Map<string, PmpoParams>, modelName: stri
     })
     .show();
 } // saveModel
+
+function getDesirabilityProfileProperties(params: Map<string, PmpoParams>) {
+  const props: DesirabilityProfileProperties = {};
+
+  params.forEach((param, name) => {
+    props[name] = {
+      weight: param.weight,
+      line: getLine(param),
+      min: getMin(param),
+      max: getMax(param),
+    };
+  });
+
+  return props;
+}
+
+function getArgsOfGaussFunc(mu: number, sigma: number): number[] {
+  return [
+    mu - 4 * sigma,
+    mu - 3 * sigma,
+    mu - 2.5 * sigma,
+    mu - 2 * sigma,
+    mu - 1.5 * sigma,
+    mu - sigma,
+    mu - 0.5 * sigma,
+    mu - 0.25 * sigma,
+    mu,
+    mu + 0.25 * sigma,
+    mu + 0.5 * sigma,
+    mu + sigma,
+    mu + 1.5 * sigma,
+    mu + 2 * sigma,
+    mu + 2.5 * sigma,
+    mu + 3 * sigma,
+    mu + 4 * sigma,
+  ];
+} // getArgsOfGaussFunc
+
+function getLine(param: PmpoParams): [number, number][] {
+  return getArgsOfGaussFunc(param.desAvg, param.desStd)
+    .map((x) => [x, normalPdf(x, param.desAvg, param.desStd) * sigmoidS(x, param.x0, param.b, param.c)]);
+}
+
+function getMin(param: PmpoParams): number {
+  return param.desAvg - 4 * param.desStd;
+}
+
+function getMax(param: PmpoParams): number {
+  return param.desAvg + 4 * param.desStd;
+}

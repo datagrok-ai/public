@@ -76,4 +76,13 @@ export enum COLORS {
 
 export const TINY = 1e-8;
 
-export const FOLDER = 'System:AppData/Eda';
+export const FOLDER = 'System:AppData/Chem/mpo';
+
+export type DesirabilityProfileProperties = Record<string, {
+  line: [number, number][],
+  weight: number,
+  min?: number,
+  max?: number,
+}>;
+
+export const SCORE_SCALE = 100;

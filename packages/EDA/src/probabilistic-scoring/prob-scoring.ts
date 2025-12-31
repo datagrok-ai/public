@@ -7,7 +7,8 @@ import '../../css/pmpo.css';
 import {getDesiredTables, getDescriptorStatistics, normalPdf, sigmoidS} from './stat-tools';
 import {MIN_SAMPLES_COUNT, PMPO_NON_APPLICABLE, DescriptorStatistics, P_VAL_TRES_MIN, DESCR_TITLE,
   R2_MIN, Q_CUTOFF_MIN, WEIGHT_TABLE_TITLE, PmpoParams, SCORES_TITLE, DESCR_TABLE_TITLE,
-  PMPO_COMPUTE_FAILED, SELECTED_TITLE, P_VAL} from './pmpo-defs';
+  PMPO_COMPUTE_FAILED, SELECTED_TITLE, P_VAL,
+  SCORE_SCALE} from './pmpo-defs';
 import {addSelectedDescriptorsCol, getDescriptorStatisticsTable, getFilteredByPvalue, getFilteredByCorrelations,
   getModelParams, getWeightsTable, getDescrTooltip, saveModel} from './pmpo-utils';
 import {getOutputPalette} from '../pareto-optimization/utils';
@@ -132,7 +133,10 @@ export class Pmpo {
       const vals = col.getRawData();
       for (let i = 0; i < count; ++i) {
         x = vals[i];
-        scores[i] += param.weight * normalPdf(x, param.desAvg, param.desStd) * sigmoidS(x, param.x0, param.b, param.c);
+        scores[i] += param.weight *
+          normalPdf(x, param.desAvg, param.desStd) *
+          sigmoidS(x, param.x0, param.b, param.c) *
+          SCORE_SCALE;
       }
     });
 

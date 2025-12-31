@@ -540,7 +540,7 @@ export function paretoFrontViewer() : any {
 }
 
 //description: Train probabilistic multi-parameter optimization (pMPO) model.
-//top-menu: ML | Probabilistic MPO...
+//top-menu: Chem | Calculate | Train pMPO...
 export function trainPmpo() : void {
   PackageFunctions.trainPmpo();
 }

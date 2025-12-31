@@ -39,7 +39,6 @@ import {XGBooster} from './xgbooster';
 import {ParetoOptimizer} from './pareto-optimization/pareto-optimizer';
 import {ParetoFrontViewer} from './pareto-optimization/pareto-front-viewer';
 import {Pmpo} from './probabilistic-scoring/prob-scoring';
-import {loadPmpoParams} from './probabilistic-scoring/pmpo-utils';
 
 export const _package = new DG.Package();
 export * from './package.g';
@@ -995,7 +994,7 @@ export class PackageFunctions {
   }
 
   @grok.decorators.func({
-    'top-menu': 'ML | Probabilistic MPO...',
+    'top-menu': 'Chem | Calculate | Train pMPO...',
     'name': 'trainPmpo',
     'description': 'Train probabilistic multi-parameter optimization (pMPO) model.',
   })
