@@ -39,6 +39,7 @@ import {XGBooster} from './xgbooster';
 import {ParetoOptimizer} from './pareto-optimization/pareto-optimizer';
 import {ParetoFrontViewer} from './pareto-optimization/pareto-front-viewer';
 import {Pmpo} from './probabilistic-scoring/prob-scoring';
+import {loadPmpoParams} from './probabilistic-scoring/pmpo-utils';
 
 export const _package = new DG.Package();
 export * from './package.g';
@@ -966,7 +967,7 @@ export class PackageFunctions {
   }
 
   @grok.decorators.func({
-    'top-menu': 'ML | Optimize | Pareto Front...',
+    'top-menu': 'ML | Pareto Front...',
     'name': 'Pareto Front',
     'description': 'Perform optimization across multiple objectives: analyze trade-offs between conflicting objectives and identify Pareto-optimal points.',
   })
@@ -994,9 +995,9 @@ export class PackageFunctions {
   }
 
   @grok.decorators.func({
-    'top-menu': 'ML | Optimize | Probabilistic MPO | Train...',
+    'top-menu': 'ML | Probabilistic MPO...',
     'name': 'trainPmpo',
-    'description': 'Train parameters of probabilistic multi-parameter optimization (pMPO) model.',
+    'description': 'Train probabilistic multi-parameter optimization (pMPO) model.',
   })
   static trainPmpo(): void {
     const df = grok.shell.t;
@@ -1010,23 +1011,21 @@ export class PackageFunctions {
 
     const pMPO = new Pmpo(df);
     pMPO.runTrainingApp();
-
-    // if (!Pmpo.isApplicable(descriptors, desirability, pValTresh, r2Tresh, qCutoff, true))
-    //   return;
-
-    // const pMpo = new Pmpo();
-    // pMpo.fit(table, descriptors, desirability, pValTresh, r2Tresh, qCutoff);
   }
 
-  @grok.decorators.func({
-    'top-menu': 'ML | Optimize | Probabilistic MPO | Apply...',
-    'name': 'applyPmpo',
-    'description': 'Score samples using a trained probabilistic multi-parameter optimization (pMPO) model.',
-    'help-url': '',
-  })
-  static applyPmpo(
-    @grok.decorators.param({'type': 'dataframe'}) table: DG.DataFrame,
-    @grok.decorators.param({'type': 'column_list', 'options': {'type': 'numerical', 'nullable': false}}) descriptors: DG.ColumnList,
-  ): void {
-  }
+  // @grok.decorators.func({
+  //   'top-menu': 'ML | Optimize | Probabilistic MPO | Apply...',
+  //   'name': 'applyPmpo',
+  //   'description': 'Score samples using a trained probabilistic multi-parameter optimization (pMPO) model.',
+  //   'help-url': '',
+  // })
+  // static async applyPmpo(
+  //   @grok.decorators.param({'type': 'dataframe'}) table: DG.DataFrame,
+  //   @grok.decorators.param({'type': 'file'}) file: DG.FileInfo,
+  // ): Promise<void> {
+  //   const params = await loadPmpoParams(file);
+  //   const predName = table.columns.getUnusedName('pMPO score');
+  //   const prediction = Pmpo.predict(table, params, predName);
+  //   table.columns.add(prediction, true);
+  // }
 }

@@ -525,7 +525,7 @@ export function isApplicableXGBooster(df: DG.DataFrame, predictColumn: DG.Column
 
 //name: Pareto Front
 //description: Perform optimization across multiple objectives: analyze trade-offs between conflicting objectives and identify Pareto-optimal points.
-//top-menu: ML | Optimize | Pareto Front...
+//top-menu: ML | Pareto Front...
 export function paretoFront() : void {
   PackageFunctions.paretoFront();
 }
@@ -539,17 +539,8 @@ export function paretoFrontViewer() : any {
   return PackageFunctions.paretoFrontViewer();
 }
 
-//description: Train parameters of probabilistic multi-parameter optimization (pMPO) model.
-//top-menu: ML | Optimize | Probabilistic MPO | Train...
+//description: Train probabilistic multi-parameter optimization (pMPO) model.
+//top-menu: ML | Probabilistic MPO...
 export function trainPmpo() : void {
   PackageFunctions.trainPmpo();
-}
-
-//description: Score samples using a trained probabilistic multi-parameter optimization (pMPO) model.
-//input: dataframe table 
-//input: column_list descriptors { type: numerical; nullable: false }
-//top-menu: ML | Optimize | Probabilistic MPO | Apply...
-//help-url: 
-export function applyPmpo(table: DG.DataFrame, descriptors: DG.ColumnList) : void {
-  PackageFunctions.applyPmpo(table, descriptors);
 }

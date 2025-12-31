@@ -4,7 +4,7 @@ import * as DG from 'datagrok-api/dg';
 
 import '../../css/pmpo.css';
 
-import {COLORS, DESCR_TABLE_TITLE, DESCR_TITLE, DescriptorStatistics, P_VAL, PMPO_COMPUTE_FAILED, PmpoParams,
+import {COLORS, DESCR_TABLE_TITLE, DESCR_TITLE, DescriptorStatistics, FOLDER, P_VAL, PMPO_COMPUTE_FAILED, PmpoParams,
   SELECTED_TITLE, STAT_TO_TITLE_MAP, TINY, WEIGHT_TITLE} from './pmpo-defs';
 import {computeSigmoidParamsFromX0, getCutoffs, solveNormalIntersection} from './stat-tools';
 
@@ -270,3 +270,68 @@ export function getWeightsTable(params: Map<string, PmpoParams>): DG.DataFrame {
     DG.Column.fromFloat64Array(WEIGHT_TITLE, weights),
   ]);
 } // getWeightsTable
+
+export async function loadPmpoParams(file: DG.FileInfo): Promise<Map<string, PmpoParams>> {
+  const jsonText = await file.readAsString();
+  const parsedObj = JSON.parse(jsonText);
+
+  return new Map(Object.entries(parsedObj));
+} // loadPmpoParams
+
+export async function saveModel(params: Map<string, PmpoParams>, modelName: string): Promise<void> {
+  let fileName = modelName;
+  const nameInput = ui.input.string('Name', {
+    value: fileName,
+    nullable: false,
+    onValueChanged: () => {
+      if (nameInput.value) {
+        fileName = nameInput.value;
+        dlg.getButton('Save').disabled = (folderInput.value != null);
+      } else
+        dlg.getButton('Save').disabled = true;
+    },
+  });
+
+  let folder = FOLDER;
+  const folderInput = ui.input.string('Folder', {
+    value: folder,
+    nullable: false,
+    onValueChanged: () => {
+      if (nameInput.value) {
+        folder = folderInput.value;
+        dlg.getButton('Save').disabled = (nameInput.value != null);
+      } else
+        dlg.getButton('Save').disabled = true;
+    },
+  });
+
+  const save = async () => {
+    const path = `${folder}/${fileName}.json`;
+    try {
+      const obj = Object.fromEntries(params);
+      const json = JSON.stringify(obj, null, 2);
+      await grok.dapi.files.writeAsText(path, json);
+      grok.shell.info(`Saved to ${path}`);
+    } catch (err) {
+      grok.shell.error(`Failed to save: ${err instanceof Error ? err.message : 'the platform issue'}.`);
+    }
+    dlg.close();
+  };
+
+  const dlg = ui.dialog({title: 'Save model'})
+    .add(folderInput)
+    .add(nameInput)
+    .addButton('Save', async () => {
+      const exist = await grok.dapi.files.exists(`${folder}/${fileName}.json`);
+      if (!exist)
+        await save();
+      else {
+        // Handle overwrite confirmation
+        ui.dialog({title: 'Warning'})
+          .add(ui.label('Overwrite existing file?'))
+          .onOK(async () => await save())
+          .show();
+      }
+    })
+    .show();
+} // saveModel

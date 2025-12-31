@@ -8,9 +8,8 @@ import {getDesiredTables, getDescriptorStatistics, normalPdf, sigmoidS} from './
 import {MIN_SAMPLES_COUNT, PMPO_NON_APPLICABLE, DescriptorStatistics, P_VAL_TRES_MIN, DESCR_TITLE,
   R2_MIN, Q_CUTOFF_MIN, WEIGHT_TABLE_TITLE, PmpoParams, SCORES_TITLE, DESCR_TABLE_TITLE,
   PMPO_COMPUTE_FAILED, SELECTED_TITLE, P_VAL} from './pmpo-defs';
-import {addSelectedDescriptorsCol, getDescriptorStatisticsTable,
-  getFilteredByPvalue, getFilteredByCorrelations, getModelParams, getWeightsTable,
-  getDescrTooltip} from './pmpo-utils';
+import {addSelectedDescriptorsCol, getDescriptorStatisticsTable, getFilteredByPvalue, getFilteredByCorrelations,
+  getModelParams, getWeightsTable, getDescrTooltip, saveModel} from './pmpo-utils';
 import {getOutputPalette} from '../pareto-optimization/utils';
 import {OPT_TYPE} from '../pareto-optimization/defs';
 
@@ -118,6 +117,27 @@ export class Pmpo {
 
     return true;
   } // isTableValid
+
+  static predict(df: DG.DataFrame, params: Map<string, PmpoParams>, predictionName: string): DG.Column {
+    const count = df.rowCount;
+    const scores = new Float64Array(count).fill(0);
+    let x = 0;
+
+    params.forEach((param, name) => {
+      const col = df.col(name);
+
+      if (col == null)
+        throw new Error(`Filed to apply pMPO: inconsistent data, no column "${name}" in the table "${df.name}"`);
+
+      const vals = col.getRawData();
+      for (let i = 0; i < count; ++i) {
+        x = vals[i];
+        scores[i] += param.weight * normalPdf(x, param.desAvg, param.desStd) * sigmoidS(x, param.x0, param.b, param.c);
+      }
+    });
+
+    return DG.Column.fromFloat64Array(predictionName, scores);
+  } // predict
 
   private params: Map<string, PmpoParams> | null = null;
 
@@ -236,7 +256,7 @@ export class Pmpo {
     this.params = getModelParams(desired, nonDesired, selectedByCorr, qCutoff);
 
     const weightsTable = getWeightsTable(this.params);
-    const prediction = this.predict(df);
+    const prediction = Pmpo.predict(df, this.params, this.predictionName);
 
     // Mark predictions with a color
     prediction.colors.setLinear(getOutputPalette(OPT_TYPE.MAX), {min: prediction.stats.min, max: prediction.stats.max});
@@ -280,30 +300,6 @@ export class Pmpo {
       title: `pMPO by ${desirability.name} label`,
     });
   } // fit
-
-  public predict(df: DG.DataFrame): DG.Column {
-    if (this.params == null)
-      throw new Error('Filed to apply pMPO: non-trained model');
-
-    const count = df.rowCount;
-    const scores = new Float64Array(count).fill(0);
-    let x = 0;
-
-    this.params.forEach((param, name) => {
-      const col = df.col(name);
-
-      if (col == null)
-        throw new Error(`'Filed to apply pMPO: inconsistent data, no column "${name}" in the table "${df.name}"`);
-
-      const vals = col.getRawData();
-      for (let i = 0; i < count; ++i) {
-        x = vals[i];
-        scores[i] += param.weight * normalPdf(x, param.desAvg, param.desStd) * sigmoidS(x, param.x0, param.b, param.c);
-      }
-    });
-
-    return DG.Column.fromFloat64Array(this.predictionName, scores);
-  } // predict
 
   public runTrainingApp(): void {
     const dockMng = this.view.dockManager;
@@ -416,9 +412,16 @@ export class Pmpo {
     });
     form.append(qInput.root);
 
-    setTimeout(() => runComputations(), 1000);
+    setTimeout(() => runComputations(), 10);
 
-    const saveBtn = ui.button('Save model', () => {}, 'Save model as platform file.');
+    const saveBtn = ui.button('Save model', async () => {
+      if (this.params == null) {
+        grok.shell.warning('Failed to save pMPO model: null parameters.');
+        return;
+      }
+
+      saveModel(this.params, this.table.name);
+    }, 'Save model as platform file.');
     form.append(saveBtn);
 
     const div = ui.div([form]);

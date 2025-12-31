@@ -75,3 +75,5 @@ export enum COLORS {
 };
 
 export const TINY = 1e-8;
+
+export const FOLDER = 'System:AppData/Eda';
