@@ -990,6 +990,17 @@ Launch an interactive Pareto Front [application](../../../../visualize/viewers/p
 
 </details>
 
+<details>
+<summary> Probabilistic MPO </summary>
+
+Probabilistic MPO ([pMPO](https://pmc.ncbi.nlm.nih.gov/articles/PMC4716604/)) is a data-driven method for constructing desirability profiles from labeled datasets, in which statistically significant and non-redundant molecular descriptors are identified through significance testing and correlation filtering. It then combines these descriptors into weighted desirability functions, enabling robust multi-parameter optimization and compound ranking based on balanced property trade-offs.
+
+Build a desirability profile using the interactive pMPO application available via `Chem -> Calculate -> Train pMPO Score...`:
+
+![Pareto front](mpo-probabilistic.png)
+
+</details>
+
 ## Generative chemistry
 
 Generate novel compounds optimized for specific properties using [Reinvent4](https://github.com/MolecularAI/REINVENT4). 
