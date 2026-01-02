@@ -967,7 +967,18 @@ Medicinal chemistry is a balancing act: potency must rise while properties like 
 
   New numeric columns can be added for immediate charting and filtering such as physical chemical properties (Top menu: Chem → Calculate → Chemical Properties...) or ADME properties with the Admetica plugin (Top menu: Chem → Admetica → Calculate...). Custom properties, like Ligand Efficiency (LE) or Lipophilic Ligand Efficiency (LLE), can be calculated using the [Add New Column](../../../../transform/add-new-column.md) feature.  Viewers, like [parallel coordinates plot](../../../../visualize/viewers/pc-plot.md), [radar](../../../../visualize/viewers/radar.md) or [row-level pie bar charts](../../../../visualize/viewers/grid.md#summary-columns), are especially useful for examining the profile of properties.  
 
-* **Desirability/utility functions & composite scores.** Map each property to a 0–1 “desirability” curve, then combine (sum/mean/weighted) into a single score that encodes the team’s preferences. A well-known example that is included by default is CNS MPO from Pfizer, which combines six physicochemical properties into a 0–6 score and correlates with clinical CNS success. 
+* **Desirability/utility functions & composite scores.** Map each property to a 0–1 “desirability” curve, then combine (sum/mean/weighted) into a single score that encodes the team’s preferences. Desirability functions can be either drawn manually or constructed automatically from a labeled dataset using probabilistic MPO. A well-known example that is included by default is CNS MPO from Pfizer, which combines six physicochemical properties into a 0–6 score and correlates with clinical CNS success. 
+
+  <details>
+  <summary> Probabilistic MPO </summary>
+
+  Probabilistic MPO ([pMPO](https://pmc.ncbi.nlm.nih.gov/articles/PMC4716604/)) is a data-driven method for constructing desirability profiles from labeled datasets, in which statistically significant and non-redundant molecular descriptors are identified through significance testing and correlation filtering. It then combines these descriptors into weighted desirability functions, enabling robust multi-parameter optimization and compound ranking based on balanced property trade-offs.
+
+  Build a desirability profile using the interactive pMPO application available via `Chem -> Calculate -> Train pMPO Score...`:
+
+  ![Pareto front](mpo-probabilistic.png)
+
+  </details>
 
   Available from `Chem -> Calculate -> MPO Score...`:
 
@@ -987,17 +998,6 @@ The Pareto front represents a set of non-dominated solutions in multi-objective 
 ![Pareto front](mpo-pareto-front.png)
 
 Launch an interactive Pareto Front [application](../../../../visualize/viewers/pareto-front-viewer.md#application) that enables real-time exploration of optimization results.
-
-</details>
-
-<details>
-<summary> Probabilistic MPO </summary>
-
-Probabilistic MPO ([pMPO](https://pmc.ncbi.nlm.nih.gov/articles/PMC4716604/)) is a data-driven method for constructing desirability profiles from labeled datasets, in which statistically significant and non-redundant molecular descriptors are identified through significance testing and correlation filtering. It then combines these descriptors into weighted desirability functions, enabling robust multi-parameter optimization and compound ranking based on balanced property trade-offs.
-
-Build a desirability profile using the interactive pMPO application available via `Chem -> Calculate -> Train pMPO Score...`:
-
-![Pareto front](mpo-probabilistic.png)
 
 </details>
 
