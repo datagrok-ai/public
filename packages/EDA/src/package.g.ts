@@ -548,7 +548,6 @@ export function trainPmpo() : void {
 //description: Apply trained probabilistic multi-parameter optimization (pMPO) model to score samples
 //input: dataframe table 
 //input: file file 
-//top-menu: ML | Apply pMPO...
 export async function applyPmpo(table: DG.DataFrame, file: DG.FileInfo) : Promise<void> {
   await PackageFunctions.applyPmpo(table, file);
 }
