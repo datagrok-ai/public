@@ -29,3 +29,4 @@ EDA is a [package](https://datagrok.ai/help/develop/#packages) for the [Datagrok
   * k-nearest neighbors method ([KNN](https://en.wikipedia.org/wiki/K-nearest_neighbors_algorithm))
 * Multi-objective optimization
   * [Pareto front](https://en.wikipedia.org/wiki/Pareto_front) viewer
+  * [Probabilistic MPO](https://pmc.ncbi.nlm.nih.gov/articles/PMC4716604/)
