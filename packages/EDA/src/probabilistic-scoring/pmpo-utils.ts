@@ -276,7 +276,7 @@ export async function loadPmpoParams(file: DG.FileInfo): Promise<Map<string, Pmp
   const jsonText = await file.readAsString();
   const parsedObj = JSON.parse(jsonText);
 
-  return new Map(Object.entries(parsedObj));
+  return new Map(Object.entries(parsedObj.properties));
 } // loadPmpoParams
 
 export async function saveModel(params: Map<string, PmpoParams>, modelName: string): Promise<void> {
@@ -284,30 +284,24 @@ export async function saveModel(params: Map<string, PmpoParams>, modelName: stri
   const nameInput = ui.input.string('File', {
     value: fileName,
     nullable: false,
-    onValueChanged: () => {
-      if (nameInput.value) {
-        fileName = nameInput.value;
-        dlg.getButton('Save').disabled = (folderInput.value != null);
-      } else
-        dlg.getButton('Save').disabled = true;
+    onValueChanged: (val) => {
+      fileName = val;
+      dlg.getButton('Save').disabled = (fileName.length < 1) || (folderName.length < 1);
     },
   });
 
-  let folder = FOLDER;
+  let folderName = FOLDER;
   const folderInput = ui.input.string('Folder', {
-    value: folder,
+    value: folderName,
     nullable: false,
-    onValueChanged: () => {
-      if (nameInput.value) {
-        folder = folderInput.value;
-        dlg.getButton('Save').disabled = (nameInput.value != null);
-      } else
-        dlg.getButton('Save').disabled = true;
+    onValueChanged: (val) => {
+      folderName = val;
+      dlg.getButton('Save').disabled = (fileName.length < 1) || (folderName.length < 1);
     },
   });
 
   const save = async () => {
-    const path = `${folder}/${fileName}.json`;
+    const path = `${folderName}/${fileName}.json`;
     try {
       const jsonString = JSON.stringify(objectToSave(), null, 2);
       await grok.dapi.files.writeAsText(path, jsonString);
@@ -352,7 +346,7 @@ export async function saveModel(params: Map<string, PmpoParams>, modelName: stri
     .add(descriptionInput)
     .add(typeInput)
     .addButton('Save', async () => {
-      const exist = await grok.dapi.files.exists(`${folder}/${fileName}.json`);
+      const exist = await grok.dapi.files.exists(`${folderName}/${fileName}.json`);
       if (!exist)
         await save();
       else {

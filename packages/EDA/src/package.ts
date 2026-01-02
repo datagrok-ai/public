@@ -39,6 +39,7 @@ import {XGBooster} from './xgbooster';
 import {ParetoOptimizer} from './pareto-optimization/pareto-optimizer';
 import {ParetoFrontViewer} from './pareto-optimization/pareto-front-viewer';
 import {Pmpo} from './probabilistic-scoring/prob-scoring';
+import {loadPmpoParams} from './probabilistic-scoring/pmpo-utils';
 
 export const _package = new DG.Package();
 export * from './package.g';
@@ -996,7 +997,7 @@ export class PackageFunctions {
   @grok.decorators.func({
     'top-menu': 'Chem | Calculate | Train pMPO...',
     'name': 'trainPmpo',
-    'description': 'Train probabilistic multi-parameter optimization (pMPO) model.',
+    'description': 'Train probabilistic multi-parameter optimization (pMPO) model',
   })
   static trainPmpo(): void {
     const df = grok.shell.t;
@@ -1012,19 +1013,22 @@ export class PackageFunctions {
     pMPO.runTrainingApp();
   }
 
-  // @grok.decorators.func({
-  //   'top-menu': 'ML | Optimize | Probabilistic MPO | Apply...',
-  //   'name': 'applyPmpo',
-  //   'description': 'Score samples using a trained probabilistic multi-parameter optimization (pMPO) model.',
-  //   'help-url': '',
-  // })
-  // static async applyPmpo(
-  //   @grok.decorators.param({'type': 'dataframe'}) table: DG.DataFrame,
-  //   @grok.decorators.param({'type': 'file'}) file: DG.FileInfo,
-  // ): Promise<void> {
-  //   const params = await loadPmpoParams(file);
-  //   const predName = table.columns.getUnusedName('pMPO score');
-  //   const prediction = Pmpo.predict(table, params, predName);
-  //   table.columns.add(prediction, true);
-  // }
+  @grok.decorators.func({
+    'top-menu': 'ML | Apply pMPO...',
+    'name': 'applyPmpo',
+    'description': 'Apply trained probabilistic multi-parameter optimization (pMPO) model to score samples',
+  })
+  static async applyPmpo(
+    @grok.decorators.param({'type': 'dataframe'}) table: DG.DataFrame,
+    @grok.decorators.param({'type': 'file'}) file: DG.FileInfo,
+  ): Promise<void> {
+    try {
+      const params = await loadPmpoParams(file);
+      const predName = table.columns.getUnusedName('pMPO score');
+      const prediction = Pmpo.predict(table, params, predName);
+      table.columns.add(prediction, true);
+    } catch (err) {
+      grok.shell.warning(`Failed to apply pMPO: ${err instanceof Error ? err.message : 'the platform issue.'}`);
+    }
+  }
 }
