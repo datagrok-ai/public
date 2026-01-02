@@ -539,8 +539,16 @@ export function paretoFrontViewer() : any {
   return PackageFunctions.paretoFrontViewer();
 }
 
-//description: Train probabilistic multi-parameter optimization (pMPO) model.
+//description: Train probabilistic multi-parameter optimization (pMPO) model
 //top-menu: Chem | Calculate | Train pMPO...
 export function trainPmpo() : void {
   PackageFunctions.trainPmpo();
+}
+
+//description: Apply trained probabilistic multi-parameter optimization (pMPO) model to score samples
+//input: dataframe table 
+//input: file file 
+//top-menu: ML | Apply pMPO...
+export async function applyPmpo(table: DG.DataFrame, file: DG.FileInfo) : Promise<void> {
+  await PackageFunctions.applyPmpo(table, file);
 }

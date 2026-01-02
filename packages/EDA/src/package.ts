@@ -1014,7 +1014,7 @@ export class PackageFunctions {
   }
 
   @grok.decorators.func({
-    'top-menu': 'ML | Apply pMPO...',
+    //'top-menu': 'ML | Apply pMPO...',
     'name': 'applyPmpo',
     'description': 'Apply trained probabilistic multi-parameter optimization (pMPO) model to score samples',
   })
