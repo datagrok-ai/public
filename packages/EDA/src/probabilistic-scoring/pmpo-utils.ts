@@ -364,20 +364,21 @@ function getDesirabilityProfileProperties(params: Map<string, PmpoParams>) {
   const props: DesirabilityProfileProperties = {};
 
   params.forEach((param, name) => {
+    const range = significantPoints(param);
+    const scale = getScale(param, range);
     props[name] = {
-      weight: param.weight,
+      weight: param.weight * scale,
       line: getLine(param),
-      min: getMin(param),
-      max: getMax(param),
+      min: Math.min(...range),
+      max: Math.max(...range),
     };
   });
 
   return props;
-}
+} // getDesirabilityProfileProperties
 
 function getArgsOfGaussFunc(mu: number, sigma: number): number[] {
   return [
-    mu - 4 * sigma,
     mu - 3 * sigma,
     mu - 2.5 * sigma,
     mu - 2 * sigma,
@@ -393,19 +394,45 @@ function getArgsOfGaussFunc(mu: number, sigma: number): number[] {
     mu + 2 * sigma,
     mu + 2.5 * sigma,
     mu + 3 * sigma,
-    mu + 4 * sigma,
   ];
 } // getArgsOfGaussFunc
 
+function getScale(param: PmpoParams, range: number[]): number {
+  const values = range.map((x) => basicFunction(x, param));
+
+  return Math.max(...values);
+}
+
+function basicFunction(x: number, param: PmpoParams): number {
+  return normalPdf(x, param.desAvg, param.desStd) * sigmoidS(x, param.x0, param.b, param.c);
+}
+
 function getLine(param: PmpoParams): [number, number][] {
-  return getArgsOfGaussFunc(param.desAvg, param.desStd)
-    .map((x) => [x, normalPdf(x, param.desAvg, param.desStd) * sigmoidS(x, param.x0, param.b, param.c)]);
+  //const range = getArgsOfGaussFunc(param.desAvg, param.desStd);
+  const range = significantPoints(param);
+  const scale = getScale(param, range);
+
+  return range.map((x) => [x, basicFunction(x, param) / scale]);
 }
 
-function getMin(param: PmpoParams): number {
-  return param.desAvg - 4 * param.desStd;
-}
+function significantPoints(param: PmpoParams): number[] {
+  const start = param.desAvg - 10 * param.desStd;
+  const end = param.desAvg + 10 * param.desStd;
+  const steps = 1000;
 
-function getMax(param: PmpoParams): number {
-  return param.desAvg + 4 * param.desStd;
-}
+  let arg = start;
+  let func = basicFunction(arg, param);
+  let x = 0;
+  let y = 0;
+
+  for (let i = 0; i <= steps; i++) {
+    x = start + ((end - start) * i) / steps;
+    y = basicFunction(x, param);
+    if (y > func) {
+      arg = x;
+      func = y;
+    }
+  }
+
+  return getArgsOfGaussFunc(arg, param.desStd);
+} // significantPoints
