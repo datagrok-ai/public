@@ -71,8 +71,8 @@ export class AiPlugin {
      * @param threshold Similarity threshold in the range (0, 1).
      *   Higher values require closer (more similar) matches.
      * @param limit Maximum number of entities to return.
-     * @param types Optional list of entity type IDs to restrict the search. If omitted or empty, all
-     *   entity types are considered.
+     * @param types Optional list of entity types to restrict the search. If omitted or empty, all
+     *   entity types are considered. Use {@link Entity#entityType} to get type name.
      *
      * @returns A list of entities ordered by descending similarity
      *   (1.0 = perfect match).

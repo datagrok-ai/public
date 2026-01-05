@@ -1519,6 +1519,7 @@ export interface IDartApi {
   grok_Entity_Has_Tag(e: any, tag: String): any;
   grok_Entity_Tag(e: any, tag: String): any;
   grok_Entity_UnTag(e: any, tag: String): any;
+  grok_Entity_Get_EntityType(e: any): any;
   grok_Entity_Get_Name(p: any): any;
   grok_Entity_Set_Name(p: any, name: String): any;
   grok_Entity_Get_CreatedOn(p: any): any;

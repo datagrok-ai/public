@@ -124,6 +124,9 @@ export class Entity {
   /** Who created entity **/
   get author(): User { return toJs(api.grok_Entity_Get_Author(this.dart)); }
 
+  /** Entity type name **/
+  get entityType(): string { return api.grok_Entity_Get_EntityType(this.dart); }
+
   /** Gets entity properties */
   getProperties(): Promise<{[index: string]: any}> {
     return api.grok_EntitiesDataSource_GetProperties(grok.dapi.entities.dart, this.dart);
