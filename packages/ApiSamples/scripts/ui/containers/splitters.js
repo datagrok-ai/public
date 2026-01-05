@@ -3,11 +3,11 @@
 
 ui.splitV([
   ui.splitH([
-    ui.divText('Top Left', { style: { width: '100px'}}),
+    ui.divText('Top Left', {style: {width: '100px'}}),
     ui.divText('Top Right'),
-  ], { style: { height: '40px'}}, true),
+  ], {style: {height: '40px'}}, true),
   ui.splitH([
     ui.divText('Panel 1'),
     ui.divText('Panel 2')
   ], {}, true)
-], {}, true)
+], {}, true);

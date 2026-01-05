@@ -165,7 +165,7 @@ export function getFuncAnnotation(data: FuncMetadata, comment: string = '//', se
   for (const input of data.inputs ?? []) {
     if (!input)
       continue;
-    let type = input?.type?.replaceAll(" ", "");
+    let type = input?.type?.replaceAll(' ', '');
     if (type?.includes(`|undefined`)) {
       type = type.replaceAll(`|undefined`, '');
       // modify original payload
@@ -306,7 +306,7 @@ interface ReservedDecorator{
 export const reservedDecorators : ReservedDecorator = {
   viewer: {
     metadata: {
-      tags: [FUNC_TYPES.VIEWER],
+      role: FUNC_TYPES.VIEWER,
       inputs: [],
       outputs: [{name: 'result', type: 'viewer'}],
     },
@@ -314,7 +314,7 @@ export const reservedDecorators : ReservedDecorator = {
   },
   filter: {
     metadata: {
-      tags: [FUNC_TYPES.FILTER],
+      role: FUNC_TYPES.FILTER,
       inputs: [],
       outputs: [{name: 'result', type: 'filter'}],
     },
@@ -322,7 +322,7 @@ export const reservedDecorators : ReservedDecorator = {
   },
   cellRenderer: {
     metadata: {
-      tags: [FUNC_TYPES.CELL_RENDERER],
+      role: FUNC_TYPES.CELL_RENDERER,
       inputs: [],
       outputs: [{name: 'renderer', type: 'grid_cell_renderer'}],
     },
@@ -339,7 +339,7 @@ export const reservedDecorators : ReservedDecorator = {
   },
   fileExporter: {
     metadata: {
-      tags: [FUNC_TYPES.FILE_EXPORTER],
+      role: FUNC_TYPES.FILE_EXPORTER,
       inputs: [],
       outputs: [],
     },
@@ -347,7 +347,7 @@ export const reservedDecorators : ReservedDecorator = {
   },
   fileHandler: {
     metadata: {
-      tags: [FUNC_TYPES.FILE_HANDLER],
+      role: FUNC_TYPES.FILE_HANDLER,
       inputs: [{name: 'content', type: 'string'}],
       outputs: [{name: 'tables', type: 'list'}],
     },
@@ -355,7 +355,7 @@ export const reservedDecorators : ReservedDecorator = {
   },
   fileViewer: {
     metadata: {
-      tags: [FUNC_TYPES.FILE_VIEWER],
+      role: FUNC_TYPES.FILE_VIEWER,
       inputs: [{name: 'f', type: 'file'}],
       outputs: [{name: 'v', type: 'view'}],
     },
@@ -363,7 +363,7 @@ export const reservedDecorators : ReservedDecorator = {
   },
   settingsEditor: {
     metadata: {
-      tags: [FUNC_TYPES.SETTINGS_EDITOR],
+      role: FUNC_TYPES.SETTINGS_EDITOR,
       inputs: [],
       outputs: [{name: 'result', type: 'widget'}],
     },
@@ -379,7 +379,7 @@ export const reservedDecorators : ReservedDecorator = {
   },
   app: {
     metadata: {
-      tags: [FUNC_TYPES.APP],
+      role: FUNC_TYPES.APP,
       inputs: [],
       outputs: [{name: 'result', type: 'view'}],
     },
@@ -387,7 +387,7 @@ export const reservedDecorators : ReservedDecorator = {
   },
   autostart: {
     metadata: {
-      tags: [FUNC_TYPES.AUTOSTART],
+      role: FUNC_TYPES.AUTOSTART,
       inputs: [],
       outputs: [],
     },
@@ -395,7 +395,7 @@ export const reservedDecorators : ReservedDecorator = {
   },
   init: {
     metadata: {
-      tags: [FUNC_TYPES.INIT],
+      role: FUNC_TYPES.INIT,
       inputs: [],
       outputs: [],
     },
@@ -403,7 +403,7 @@ export const reservedDecorators : ReservedDecorator = {
   },
   editor: {
     metadata: {
-      tags: [FUNC_TYPES.EDITOR],
+      role: FUNC_TYPES.EDITOR,
       inputs: [{name: 'call', type: 'funccall'}],
       outputs: [],
     },
@@ -411,7 +411,7 @@ export const reservedDecorators : ReservedDecorator = {
   },
   panel: {
     metadata: {
-      tags: [FUNC_TYPES.PANEL],
+      role: FUNC_TYPES.PANEL,
       inputs: [],
       outputs: [{name: 'result', type: 'widget'}],
     },
@@ -419,7 +419,7 @@ export const reservedDecorators : ReservedDecorator = {
   },
   folderViewer: {
     metadata: {
-      tags: [FUNC_TYPES.FOLDER_VIEWER],
+      role: FUNC_TYPES.FOLDER_VIEWER,
       inputs: [{name: 'folder', type: 'file'}, {name: 'files', type: 'list<file>'}],
       outputs: [{name: 'result', type: 'widget'}],
     },
@@ -427,7 +427,7 @@ export const reservedDecorators : ReservedDecorator = {
   },
   semTypeDetector: {
     metadata: {
-      tags: [FUNC_TYPES.SEM_TYPE_DETECTOR],
+      role: FUNC_TYPES.SEM_TYPE_DETECTOR,
       inputs: [{name: 'col', type: 'column'}],
       outputs: [{name: 'result', type: 'string'}],
     },
@@ -435,7 +435,7 @@ export const reservedDecorators : ReservedDecorator = {
   },
   dashboard: {
     metadata: {
-      tags: [FUNC_TYPES.DASHBOARD],
+      role: FUNC_TYPES.DASHBOARD,
       inputs: [],
       outputs: [{name: 'result', type: 'widget'}],
     },
@@ -443,7 +443,7 @@ export const reservedDecorators : ReservedDecorator = {
   },
   functionAnalysis: {
     metadata: {
-      tags: [FUNC_TYPES.FUNCTION_ANALYSIS],
+      role: FUNC_TYPES.FUNCTION_ANALYSIS,
       inputs: [],
       outputs: [{name: 'result', type: 'view'}],
     },
@@ -451,7 +451,7 @@ export const reservedDecorators : ReservedDecorator = {
   },
   converter: {
     metadata: {
-      tags: [FUNC_TYPES.CONVERTER],
+      role: FUNC_TYPES.CONVERTER,
       inputs: [{name: 'value', type: 'dynamic'}],
       outputs: [{name: 'result', type: 'dynamic'}],
     },
@@ -475,7 +475,7 @@ export const reservedDecorators : ReservedDecorator = {
   },
   model: {
     metadata: {
-      tags: [FUNC_TYPES.MODEL],
+      role: FUNC_TYPES.MODEL,
       inputs: [],
       outputs: [],
     },

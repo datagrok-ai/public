@@ -138,7 +138,9 @@ category('substructure filters', async () => {
       chemCommonRdKit.setRdKitWebRoot(_package.webRoot);
       await chemCommonRdKit.initRdKitModuleLocal();
     }
-    const funcs = DG.Func.find({tags: ['moleculeSketcher']});
+    const tags = DG.Func.find({tags: ['moleculeSketcher']});
+    const meta = DG.Func.find({meta: {role: 'moleculeSketcher'}});
+    const funcs = [...tags, ...meta];
     await sketchersWarmUp(funcs);
   });
 

@@ -1,4 +1,3 @@
-//tags: Column, modification
 // Different ways to initialize the content of the column
 
 let t = DG.DataFrame.fromCsv(

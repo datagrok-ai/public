@@ -1,4 +1,3 @@
-//tags: DataFrame, events
 let df = DG.DataFrame.fromColumns([
   DG.Column.fromList(DG.TYPE.FLOAT, 'x', [1, 2, 3]),
   DG.Column.fromList(DG.TYPE.FLOAT, 'y', [4, 5, 6]),

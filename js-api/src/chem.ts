@@ -380,7 +380,10 @@ export namespace chem {
     }
 
     createSketcher() {
-      this.sketcherFunctions = Func.find({ tags: ['moleculeSketcher'] });
+      const tags = Func.find({tags: ['moleculeSketcher']});
+      const meta = Func.find({meta: {role: 'moleculeSketcher'}});
+      this.sketcherFunctions = [...tags, ...meta];
+
       this.setExternalModeForSubstrFilter();
       if (this._mode === SKETCHER_MODE.INPLACE)
         this.root.appendChild(this.createInplaceModeSketcher());

@@ -28,7 +28,7 @@
   console.log(`list: ${res}`);
 
   //Create Directory
-  await grok.dapi.files.createDirectory('System:AppData/Samples/geo')
+  await grok.dapi.files.createDirectory('System:AppData/Samples/geo');
   
   // Move files 
   await grok.dapi.files.move(['System:AppData/Samples/testFile.txt'], 'Samples/geo');
@@ -36,7 +36,7 @@
   console.log(`testFile.txt was moved to geo: ${res}`);
 
   //Remove Directory
-  await grok.dapi.files.delete('System:AppData/Samples/geo')
+  await grok.dapi.files.delete('System:AppData/Samples/geo');
   
   // Delete files
   await grok.dapi.files.delete('System:AppData/Samples/geo/testFile.txt');

@@ -1,4 +1,3 @@
-//tags: Package
 //help-url: https://datagrok.ai/help/develop/develop#packages
 // Read more about package credentials: https://datagrok.ai/help/develop/how-to/manage-credentials
 

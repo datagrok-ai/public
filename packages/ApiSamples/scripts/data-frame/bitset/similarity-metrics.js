@@ -8,4 +8,4 @@ grok.shell.info(bs1.similarityTo(bs1, 'tanimoto'));
 grok.shell.info(bs1.similarityTo(bs1));
 
 // should be 0:
-grok.shell.info(bs1.similarityTo(bs2, 'tanimoto'))
+grok.shell.info(bs1.similarityTo(bs2, 'tanimoto'));

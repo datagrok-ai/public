@@ -1,8 +1,7 @@
-//tags: DataFrame, construction
 // Creating a DataFrame from a CSV string and checking the formats identified for the columns
 
 let table = DG.DataFrame.fromCsv(
-`country, continent, year,  lifeExp,  pop,       gdpPercap
+  `country, continent, year,  lifeExp,  pop,       gdpPercap
 Angola,   Africa,    1992,  40.647,   8735988,   2627.8457031
 Austria,  Europe,    1992,  76.04,    7914969,   27042.0195313
 Austria,  Europe,    1992,  76.04,    7914969,   27042.0195313

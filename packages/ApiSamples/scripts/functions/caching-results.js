@@ -13,13 +13,13 @@ grok.functions.register({
     grok.shell.info('Evaluating bar(' + x + ')');
     return x * x;
   },
-  options: { cache: 'true',  'cache.invalidateOn': '* * * * *'}  // invalidate every minute
+  options: {'cache': 'true', 'cache.invalidateOn': '* * * * *'} // invalidate every minute
 });
 
 grok.functions.register({
   signature: 'int foo(int x)',
-  run: (x) => { grok.shell.info('Evaluating foo(' + x + ')'); return x; },
-  options: { cache: 'true'}
+  run: (x) => {grok.shell.info('Evaluating foo(' + x + ')'); return x;},
+  options: {cache: 'true'}
 });
 
 // results are cached

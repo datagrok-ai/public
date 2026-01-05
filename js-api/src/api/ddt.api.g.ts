@@ -325,7 +325,7 @@ export class FuncOptions {
 
   static AutostartImmediate = 'autostartImmediate';
 
-  static OmitFromCreationScript = 'omitFromCreationScript';
+  static IncludeInCreationScript = 'includeInCreationScript';
 
   /// Applies to [FuncTypes.CellRenderer].
   /// Comma-separated list of key-value pairs that represent

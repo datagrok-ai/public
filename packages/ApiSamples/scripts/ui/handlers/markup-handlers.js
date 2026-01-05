@@ -1,5 +1,4 @@
 //name: markup-handlers
-//tags: demo
 //language: javascript
 // Custom markup handlers
 // Allows logging and audit of events linked to in-app objects
@@ -15,36 +14,36 @@ class Fruit {
 // Defines the way Datagrok handles entities of the specified type
 // Shortened version of a sample handlers.js
 class FruitHandler extends DG.ObjectHandler {
-  get type() { return 'fruit' }
+  get type() {return 'fruit';}
 
   // Checks whether this is the handler for [x]
-  isApplicable(x) { return x instanceof Fruit; }
+  isApplicable(x) {return x instanceof Fruit;}
 
-  renderIcon(x) { return ui.iconFA(`apple-alt`); }
-  renderMarkup(x) { let m = ui.span([this.renderIcon(x), ui.label(x.name)]); $(m).css('color', x.color); return m; }
+  renderIcon(x) {return ui.iconFA(`apple-alt`);}
+  renderMarkup(x) {let m = ui.span([this.renderIcon(x), ui.label(x.name)]); $(m).css('color', x.color); return m;}
 
   // Is used by platform to detect markup description of Fruit
   get markupRegexp() {
-    return "fruit\\.([a-zA-Z]+)\\.([a-zA-Z]+)";
+    return 'fruit\\.([a-zA-Z]+)\\.([a-zA-Z]+)';
   }
 
   // Converts fruit to markup description
   toMarkup(x) {
-     return `fruit.${x.name}.${x.color}`;
+    return `fruit.${x.name}.${x.color}`;
   }
 
   // Deserialize object from parsed markup
   // Accepts list of strings, that comes from regexp group matches
   // In our case, matches = ["fruit.apple.red", "apple", "red"]
   fromMarkup(matches) {
-    var name = matches[1];
-    var color = matches[2];
+    let name = matches[1];
+    let color = matches[2];
     return new Fruit(name, color);
   }
 }
 
 // Register handler with the platform
-var handler = new FruitHandler();
+let handler = new FruitHandler();
 DG.ObjectHandler.register(handler);
 
 // Create some fruits
