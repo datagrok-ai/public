@@ -31,6 +31,7 @@ zip
 /js-api/grok.js
 /js-api/dg.js
 /js-api/ui.js
+/js-api/src/datagrok/**/*.dart
 
 # JSDoc
 /js-api/docs
