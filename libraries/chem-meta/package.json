@@ -1,5 +1,9 @@
 {
   "name": "@datagrok-libraries/chem-meta",
+  "author": {
+    "name": "Maria Dolotova",
+    "email": "mdolotova@datagrok.ai"
+  },
   "publishConfig": {
     "access": "public"
   },
