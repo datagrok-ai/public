@@ -11,7 +11,7 @@ import * as ui from '../ui';
 import {SemanticValue} from './grid';
 import $ from 'cash-dom';
 import { FuncCall } from '../dg';
-import { FUNC_TYPES } from './const';
+import {FUNC_TYPES} from './const';
 import '../css/styles.css';
 import { MolfileHandler } from "@datagrok-libraries/chem-meta/src/parsing-utils/molfile-handler";
 import {IDartApi} from "./api/grok_api.g";
