@@ -1,5 +1,9 @@
 # Chem changelog
 
+## 1.6.14 (2026-01-05)
+
+* Chem: Rendering: Introduce an option to disable post–R-group analysis highlighting
+
 ## 1.6.13 (2025-12-23)
 
 * Butina clustering: Expose Python implementation to top-menu
