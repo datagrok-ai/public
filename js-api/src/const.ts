@@ -422,7 +422,7 @@ export const FUNC_TYPES = {
   HIT_TRIAGE_FUNCTION: 'HitTriageFunction',
   HIT_TRIAGE_DATA_SOURCE: 'HitTriageDataSource',
   HIT_TRIAGE_SUBMIT_FUNCTION: 'HitTriageSubmitFunction',
-  HIT_DESIGN_FUNCTION: 'HitDesignerFunction',
+  HIT_DESIGNER_FUNCTION: 'HitDesignerFunction',
 
   DIM_RED_PREPROCESS: 'dim-red-preprocessing-function',
   DIM_RED_POSTPROCESS: 'dim-red-postprocessing-function',
@@ -513,7 +513,7 @@ export const functionRoles: FuncRoleDescription[] = [
     role: FUNC_TYPES.FUNCTION_ANALYSIS,
     description: 'Function analysis that gets added to the function view. Examples: sensitivity analysis, parameter editor',
     header: 'tags',
-    signature: 'functionAnalysis(x:func): View'
+    signature: 'functionAnalysis(x: Function): View'
   },
   {
     role: FUNC_TYPES.CONVERTER,
@@ -603,13 +603,13 @@ export const functionRoles: FuncRoleDescription[] = [
     role: FUNC_TYPES.HIT_TRIAGE_FUNCTION,
     description: 'Compute function for Hit Triage campaigns.',
     header: 'tags',
-    signature: 'hitTriageFunction(table: DataFrame, moleculeCol: Column): DataFrame'
+    signature: 'hitTriageFunction(table: DataFrame, moleculeCol: Column, ...args): DataFrame'
   },
   {
     role: FUNC_TYPES.HIT_TRIAGE_DATA_SOURCE,
     description: 'Provides a datasource for Hit Triage campaigns. Must return a dataframe containing molecules.',
     header: 'tags',
-    signature: 'hitTriageDataSource(numberOfMolecules: number]): DataFrame'
+    signature: 'hitTriageDataSource(...args): DataFrame'
   },
   {
     role: FUNC_TYPES.HIT_TRIAGE_SUBMIT_FUNCTION,
@@ -618,22 +618,22 @@ export const functionRoles: FuncRoleDescription[] = [
     signature: 'hitTriageSubmitFunction(df: DG.DataFrame, moleculesCol: string): void'
   },
   {
-    role: FUNC_TYPES.HIT_DESIGN_FUNCTION,
+    role: FUNC_TYPES.HIT_DESIGNER_FUNCTION,
     description: 'Compute function for Hit Design campaigns.',
     header: 'tags',
-    signature: 'hitDesignerFunction(molecule: string): DataFrame'
+    signature: 'hitDesignerFunction(molecule: string, ...args): DataFrame'
   },
   {
     role: FUNC_TYPES.DIM_RED_PREPROCESS,
     description: 'Preprocessing function for dimensionality reduction.',
     header: 'tags',
-    signature: 'preprocess(col: Column, metric: string): any'
+    signature: 'preprocess(col: Column, metric: string, ...args): any'
   },
   {
     role: FUNC_TYPES.DIM_RED_POSTPROCESS,
     description: 'Postprocessing function for dimensionality reduction.',
     header: 'tags',
-    signature: 'postprocess(data: any): void'
+    signature: 'postprocess(xCol: Column, yCol: Column, ...args): void'
   },
   {
     role: FUNC_TYPES.MONOMER_LIB_PROVIDER,
@@ -649,7 +649,7 @@ export const functionRoles: FuncRoleDescription[] = [
   },
   {
     role: FUNC_TYPES.NOTATION_REFINER,
-    description: '',
+    description: 'Refines the biological sequence notation based on company specific rules',
     header: 'tags',
     signature: 'notationRefiner(column: Column, stats: any, separator: string): bool'
   }
