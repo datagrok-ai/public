@@ -316,6 +316,7 @@ export async function rGroupDecomp(col: DG.Column, params: RGroupParams): Promis
         col.dataFrame.columns.add(highlightCol);
         latestAnalysisCols[col.dataFrame.name].push(highlightCol.name);
         col.temp[ChemTemps.SUBSTRUCT_COL] = highlightCol.name;
+        col.temp[ChemTemps.SUBSTRUCT_BACKUP_COL] = highlightCol.name;
       }
       //create boolean column for match/non match
       const matchCol = DG.Column

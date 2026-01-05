@@ -1,6 +1,7 @@
 export const enum ChemTemps {
   SUBSTRUCT_COL = 'substruct-col',
   SUBSTRUCT_PROVIDERS = 'substruct-providers',
+  SUBSTRUCT_BACKUP_COL = 'substruct-backup',
 }
 
 export const enum ChemTags {
