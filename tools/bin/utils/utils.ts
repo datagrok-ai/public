@@ -198,13 +198,6 @@ export const headerTags = [
   'reference', 'editor', 'meta', 'connection', 'friendlyName',
 ];
 
-// export const fileParamRegex = {
-//   py: new RegExp(`^#\\s*([^:]*):\\s+([^\\s\\[\\{]+) ?([^\\s\\[\\{]+)?[^\\n]*$`),
-//   ts: new RegExp(`^//\\s*([^:]*):\\s+([^\\s\\[\\{]+) ?([^\\s\\[\\{]+)?[^\\n]*$`),
-//   js: new RegExp(`^//\\s*([^:]*):\\s+([^\\s\\[\\{]+) ?([^\\s\\[\\{]+)?[^\\n]*$`),
-//   sql: new RegExp(`^--\\s*([^:]*):\\s+([^\\s\\[\\{]+) ?([^\\s\\[\\{]+)?[^\\n]*$`),
-// };
-
 export const fileParamRegex = {
   py: new RegExp(`^#\\s*(?!\\s*#)([^:]+):\\s+([^\\s\\[\\{]+) ?([^\\s\\[\\{]+)?`),
   ts: new RegExp(`^//\\s*(?!\\s*//)([^:]+):\\s+([^\\s\\[\\{]+) ?([^\\s\\[\\{]+)?`),

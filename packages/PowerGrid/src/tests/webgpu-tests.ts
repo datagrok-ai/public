@@ -9,8 +9,8 @@ const types = ['dot', 'circle'];
 const consecutiveLaunches = 3;
 
 category('webgpu', async () => {
-  const render = DG.Func.find({tags: ['scWebGPURender']})[0];
-  const hitTest = DG.Func.find({tags: ['scWebGPUPointHitTest']})[0];
+  const render = DG.Func.byName('_scWebGPURender');
+  const hitTest = DG.Func.byName('_scWebGPUPointHitTest');
   const gpuDevice = await getGPUDevice();
 
   types.forEach((t) => {
