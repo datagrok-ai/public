@@ -67,28 +67,60 @@ Datagrok integrates with your LDAP or Active Directory server enabling the smoot
 
 ## Oauth authentication
 
-Datagrok supports Google, Facebook and GitHub OAUTH authentication.
+Datagrok supports Google, Facebook, and GitHub OAUTH authentication.
 
 1. Go to the Datagrok Settings section 'Users and Sessions'; this section contains all authentication settings.
 2. Enable 'Google authentication' to use the Google Oauth method (or another provider)
 3. Set 'Client Id' and 'Secret' if applicable. You can get it from your OpenID provider
 4. Make sure the correct Web Root is set in 'Admin' section
 
+Consider using a general OpenID authentication as it is more flexible.
+
 ## OpenID authentication
 
+This is the preferred and most powerful way to integrate with an external identity provider.  
 Datagrok supports the OpenID protocol to allow users to be authenticated using OpenID providers, for example, Azure AD.
 
-1. Go to the Datagrok Settings section 'Users and Sessions'; this section contains all authentication settings.
-2. Enable 'Open Id authentication' to use the OpenID method
+1. Go to the Datagrok Settings section `Users and Sessions`; this section contains all authentication settings.
+2. Enable `Open Id authentication` to use the OpenID method
 3. Get a well-known-configuration route and set it to 'Open Id Config Endpoint'. It should look
    like `https://login.datagrok.ai/.well-known/openid-configuration`
-4. Set 'Open Id Client Id' and 'Open Id Secret' as in your OpenId provider
-5. Set the' Open Id Code Challenge method' if you enabled authorization code encryption. In most cases, it is `S256`
-6. Set 'Open Id Login Claim', 'Open Id Email Claim', 'Open Id First Name Claim', and 'Open Id Last Name Claim' to
-   provide optional claims for the application
-7. OpenID auto-login can be enabled using the 'Open Id Auto Login' option
-8. Make sure the correct Web Root is set in 'Admin' section
-9. Check Keep Token if you want to enable seamless integration with services. Datagrok requests offline scope and keeps encrypted external token in session metadata. 
+4. Set `Client Id` and `Client Secret` as in your OpenId provider. 
+Datagrok supports a certificate-based authentication method for Azure AD. If you prefer it against a plain secret, 
+generate a certificate, sign it with a private RSA key, and upload it to the Datagrok. Then upload the certificate to your Azure AD application settings. 
+5. Set the `Code Challenge method` if you enabled authorization code encryption. In most cases, it is `S256`
+6. Enable `Auto Login` option to forward users to authentication automatically without showing the login form.
+7. Make sure the correct Web Root is set in `Admin` section
+8. Enable `Keep Token` mode if you want to enable seamless integration with other services. 
+Datagrok will request `offline_access` scope and keep encrypted external token in session metadata. 
+
+### Keep Token
+
+Default authentication token expiration is 1 hour for OpenID, and it only can be used for validating user identity.
+
+To be able to use the token for accessing external services, enable `Keep Token` in OpenID settings.
+
+When `Keep Token` is enabled, Datagrok requests offline access from the OpenID provider during authentication. 
+This allows Datagrok to securely get a refresh token in addition to the access token.
+
+Datagrok automatically refreshes the external OpenID token together with its own internal session token.
+Datagrok keeps a refresh token in the browser storage.
+Token refresh happens every 10 minutes and when a user session starts, ensuring uninterrupted user sessions and seamless integration with external services.
+
+Datagrok applies different handling strategies depending on the token type, ensuring that server-side actions always require explicit user intent.
+If the external token is a JWT, the token signature is embedded into the Datagrok user token on the client side.
+The JWT payload is encrypted and stored in the database.
+Datagrok cannot perform external actions autonomously without token signature.
+
+If the external token is opaque, the token is stored only inside the user JWT on the client side.
+The server never has direct access to the token contents.
+
+That means, external tokens are never usable by the server without a user-initiated request
+
+Long-lived sessions are supported without exposing privileged credentials, and Datagrok can integrate seamlessly with
+external systems while preserving user-controlled authorization boundaries.
+
+Right now user OpenID authentication is supported by [BigQuery](../../access/databases/connectors/bigquery.md) and [Databricks](../../access/databases/connectors/databricks.md) providers.
 
 ## SAML authentication
 
@@ -100,5 +132,7 @@ Datagrok supports the OpenID protocol to allow users to be authenticated using O
 
 ## IAP authentication
 
-Datagrok supports [Google IAP](https://cloud.google.com/security/products/iap) out of the box. 
+Datagrok supports [Google Identity-Aware Proxy (IAP)](https://cloud.google.com/security/products/iap) out of the box. 
 Configure Identity-Aware Proxy for Datagrok server for automatic login.
+
+Datagrok automatically detects `x-goog-iap-jwt-assertion` header, validates the token using Google keys, and authenticates user.

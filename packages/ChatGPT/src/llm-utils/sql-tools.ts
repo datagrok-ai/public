@@ -3,23 +3,14 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import OpenAI from 'openai';
-import {LLMCredsManager} from './creds';
-import {DBSchemaInfo, DBConnectionMeta, DBTableMeta, DBRelationMeta, DBSchemaMeta} from './db-index-tools';
-import {chemblIndex} from './indexes/chembl-index';
-import {biologicsIndex} from './indexes/biologics-index';
 import {getAIAbortSubscription} from '../utils';
-import * as rxjs from 'rxjs';
+import * as _rxjs from 'rxjs';
 import {getTopKSimilarQueries, getVectorEmbedding} from './embeddings';
 import {SemValueObjectHandler} from '@datagrok-libraries/db-explorer/src/object-handlers';
 import {ChatModel} from 'openai/resources/index';
-import {UIMessageOptions} from './panel';
-
-type AIPanelFuncs = {
-  addUserMessage: (aiMsg: OpenAI.Chat.ChatCompletionMessageParam, msg: string) => void,
-  addAIMessage: (aiMsg: OpenAI.Chat.ChatCompletionMessageParam, title: string, msg: string) => void,
-  addEngineMessage: (aiMsg: OpenAI.Chat.ChatCompletionMessageParam) => void, // one that is not shown in the UI
-  addUiMessage: (msg: string, fromUser: boolean, messageOptions?: UIMessageOptions) => void
-}
+import {AIPanelFuncs, UIMessageOptions} from './panel';
+import {BuiltinDBInfoMeta, getDBColumnMetaData, getDBTableMetaData} from './query-meta-utils';
+import {OpenAIClient} from './openAI-client';
 
 const suspiciousSQlPatterns = ['DROP ', 'DELETE ', 'UPDATE ', 'INSERT ', 'ALTER ', 'CREATE ', 'TRUNCATE ', 'EXEC ', 'MERGE '];
 /**
@@ -36,52 +27,48 @@ export async function generateAISqlQueryWithTools(
   schemaName: string,
   options: {
     oldMessages?: OpenAI.Chat.ChatCompletionMessageParam[]
-    aiPanel?: AIPanelFuncs,
-    modelName?: ChatModel
+    aiPanel?: AIPanelFuncs<OpenAI.Chat.ChatCompletionMessageParam>,
+    modelName?: ChatModel,
+    disableVerbose?: boolean,
   } = {}
 ): Promise<string> {
   let aborted = false;
-  let dbMeta: DBConnectionMeta | undefined = undefined;
+
   options.aiPanel?.addUiMessage(prompt, true);
 
   // Load pre-indexed metadata if available
   const connection = await grok.dapi.connections.find(connectionID);
+  const dbInfo = await BuiltinDBInfoMeta.fromConnection(connection);
   let dbQueryEmbeddings: {query: string, embedding: number[]}[] = [];
-  if (connection.name.toLowerCase() === 'chembl') {
-    dbMeta = chemblIndex;
-    // kind of lazy load to save memory
+  // kind of lazy load to save memory on embedings, switch to proper storage in future
+  if (connection.name.toLowerCase() === 'chembl')
     dbQueryEmbeddings = (await import('./indexes/chembl-query-embeddings')).chemblQueryEmbeddings;
-  } else if (connection.name.toLowerCase() === 'biologics') {
-    dbMeta = biologicsIndex;
+  else if (connection.name.toLowerCase() === 'biologics')
     dbQueryEmbeddings = (await import('./indexes/biologics-query-embeddings')).biologicsQueryEmbeddings;
-  }
   if (connection.name.toLowerCase() === 'datagrok')
     dbQueryEmbeddings = (await import('./indexes/datagrok-query-embeddings')).datagrokQueryEmbeddings;
 
   // Create tool execution context
-  const context = new SQLGenerationContext(connectionID, schemaName, dbMeta, connection);
+  const context = new SQLGenerationContext(connectionID, schemaName, dbInfo, connection);
   const abortSub = getAIAbortSubscription().subscribe(() => {
     aborted = true;
     console.log('Aborting SQL generation as per user request');
     try {
       SQLGenerationContext._lastFc?.cancel();
       SQLGenerationContext._lastFc = null;
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     } catch (_) {
     }
     abortSub.unsubscribe();
   });
   try {
   // Initialize OpenAI client
-    const openai = new OpenAI({
-      apiKey: LLMCredsManager.getApiKey(),
-      dangerouslyAllowBrowser: true,
-    });
-
+    const openai = OpenAIClient.getInstance().openai;
 
     // Initial system message
     const systemMessage = `You are an expert SQL query generator. You have access to tools to explore a database schema and generate SQL queries.
 
-    Your name is GrokBerg Databazawsky.
+    Your name is Datagrok SQL Expert.
 
     WORKFLOW:
     1. You are provided with a list of available tables and their descriptions
@@ -98,7 +85,7 @@ export async function generateAISqlQueryWithTools(
     - ALWAYS Use try_sql to validate your query before finalizing and submitting it
     - Pay attention to semantic types, value ranges, and category values from describe_tables
     - Current Schema name is: ${schemaName}
-    - Always prefix table names with schema name in SQL
+    - ALWAYS prefix table names with schema name in SQL or other functions!!!
     - DO NOT USE 'to' as a table alias
     - If some categorical value is supplied to match (e.g. status value or measurement units), use the information from corresponding column's category values (if any). otherwise, try to use multiple options using OR (for example for micromolar units, try 'uM', 'μM', ets).
     - Some queries might require cartridge use (like RDKIT functions for similarity / substructure search). Use provided query examples and your knowledge of such functions as needed.
@@ -201,7 +188,7 @@ export async function generateAISqlQueryWithTools(
               tables: {
                 type: 'array',
                 items: {type: 'string'},
-                description: 'List of table names (WITH schema prefix) to describe',
+                description: 'List of table names (MANDATORY WITH schema prefix) to describe. ALWAYS provide schema name as prefix, for example public.tableName...',
               },
             },
             required: ['tables'],
@@ -311,7 +298,7 @@ export async function generateAISqlQueryWithTools(
 
     // Function calling loop
     let iterations = 0;
-    const maxIterations = 15; // Prevent infinite loops
+    let maxIterations = 15; // Prevent infinite loops
 
     while (iterations < maxIterations) {
       if (aborted) {
@@ -354,37 +341,37 @@ export async function generateAISqlQueryWithTools(
           try {
             switch (functionName) {
             case 'list_all_schemas':
-              options.aiPanel?.addUiMessage(`Listing all schemas in the database.`, false);
+              options.aiPanel?.addUiMessage(`📂 Listing all schemas in the database.`, false);
               result = (await context.listAllSchemas()).join(', ');
-              options.aiPanel?.addUiMessage(`Schemas found: *${result}*`, false);
+              !options.disableVerbose && options.aiPanel?.addUiMessage(`✅ Schemas found: *${result}*`, false);
               break;
             case 'reply_to_user':
-              options.aiPanel?.addUiMessage(functionArgs.reply ?? '', false);
+              options.aiPanel?.addUiMessage(`💬 ${functionArgs.reply ?? ''}`, false);
               result = 'Reply sent to user.';
               break;
             case 'list_tables_in_schema':
-              options.aiPanel?.addUiMessage(`Listing all tables in schema *${functionArgs.schemaName}*.`, false);
+              options.aiPanel?.addUiMessage(`📑 Listing all tables in schema *${functionArgs.schemaName}*.`, false);
               const res = await context.listTables(false, functionArgs.schemaName);
               result = res.description;
-              options.aiPanel?.addUiMessage(res.tableCount ? `Found ${res.tableCount} tables` : 'No tables found', false);
+              !options.disableVerbose && options.aiPanel?.addUiMessage(res.tableCount ? `✅ Found ${res.tableCount} tables` : '⚠️ No tables found', false);
               break;
             case 'describe_tables':
-              options.aiPanel?.addUiMessage(`Getting content of following tables: *${functionArgs.tables.join(', ')}*.`, false);
+              options.aiPanel?.addUiMessage(`📋 Getting content of following tables: *${functionArgs.tables.join(', ')}*.`, false);
               result = await context.describeTables(functionArgs.tables);
               break;
             case 'list_joins':
-              options.aiPanel?.addUiMessage(`Listing relations for tables: *${functionArgs.tables.join(', ')}*.`, false);
+              options.aiPanel?.addUiMessage(`🔗 Listing relations for tables: *${functionArgs.tables.join(', ')}*.`, false);
               result = await context.listJoins(functionArgs.tables);
               break;
             case 'try_sql':
-              options.aiPanel?.addUiMessage(`Testing SQL query:\n${functionArgs.description}\n\`\`\`sql\n${functionArgs.sql}\n\`\`\``, false);
+              options.aiPanel?.addUiMessage(`🧪 Testing SQL query:\n${functionArgs.description}\n\`\`\`sql\n${functionArgs.sql}\n\`\`\``, false);
               result = await context.trySql(functionArgs.sql, functionArgs.description);
-              options.aiPanel?.addUiMessage(`SQL Test Result: \n\n${result}`, false);
+              !options.disableVerbose && options.aiPanel?.addUiMessage(`📊 SQL Test Result: \n\n${result}`, false);
               break;
             case 'find_similar_queries':
-              options.aiPanel?.addUiMessage(`Searching for similar queries to help with SQL generation.`, false);
+              options.aiPanel?.addUiMessage(`🔍 Searching for similar queries to help with SQL generation.`, false);
               const similarQueries = await findSimilarQueriesToPrompt(functionArgs.prompt);
-              options.aiPanel?.addUiMessage(similarQueries.n > 0 ? `Found ${similarQueries.n} similar queries.` : similarQueries.text, false);
+              !options.disableVerbose && options.aiPanel?.addUiMessage(similarQueries.n > 0 ? `✅ Found ${similarQueries.n} similar queries.` : `⚠️ ${similarQueries.text}`, false);
               result = similarQueries.text;
               break;
             default:
@@ -438,11 +425,11 @@ export async function generateAISqlQueryWithTools(
             });
             options.aiPanel?.addUiMessage(!out ? 'User cancelled execution of potentially destructive SQL.' : 'User confirmed execution of potentially destructive SQL.', false);
             if (out)
-              options.aiPanel?.addUiMessage(`Final SQL Query:\n\`\`\`sql\n${out}\n\`\`\``, false, {result: {finalResult: out}});
+              !options.disableVerbose && options.aiPanel?.addUiMessage(`Final SQL Query:\n\`\`\`sql\n${out}\n\`\`\``, false, {finalResult: out});
             return out;
           }
           if (res)
-            options.aiPanel?.addUiMessage(`Final SQL Query:\n\`\`\`sql\n${res}\n\`\`\``, false, {result: {finalResult: res}});
+            !options.disableVerbose && options.aiPanel?.addUiMessage(`Final SQL Query:\n\`\`\`sql\n${res}\n\`\`\``, false, {finalResult: res});
           return res;
         } else {
           const replyText = contentUpperCase.startsWith('REPLY ONLY:') ? content.substring('REPLY ONLY:'.length).trim() : content;
@@ -461,6 +448,18 @@ export async function generateAISqlQueryWithTools(
       // Check finish reason
       if (choice.finish_reason === 'stop')
         break;
+      if (iterations >= maxIterations) {
+        // ask user if they want to continue
+        ui.dialog('Continue SQL Generation?')
+          .add(ui.divText('Maximum iterations reached. Do you want to continue generating the SQL query?'))
+          .onOK(() => {
+            maxIterations += 10; // reset max iterations to continue
+          })
+          .onCancel(() => {
+            iterations = maxIterations; // will cause exit
+          })
+          .show();
+      }
     }
     // If we exhausted iterations or didn't get a proper response
     throw new Error('Failed to generate SQL query: Maximum iterations reached or no valid SQL returned');
@@ -473,35 +472,15 @@ export async function generateAISqlQueryWithTools(
  * Context class that manages tool execution for SQL generation
  */
 class SQLGenerationContext {
-  private schemas?: DBSchemaMeta[];
-
   constructor(
     private connectionID: string,
     private schemaName: string,
-    private dbMeta: DBConnectionMeta | undefined,
+    private dbMeta: BuiltinDBInfoMeta,
     private connection: DG.DataConnection
-  ) {
-    if (dbMeta && (dbMeta.schemas?.length ?? 0) > 0)
-      this.schemas = dbMeta.schemas;
-  }
-
-  private static schemasCache: {[connectionId: string]: string[]} = {};
+  ) {}
 
   async listAllSchemas(): Promise<string[]> {
-    if (this.schemas)
-      return this.schemas.map((s) => s.name);
-    if (SQLGenerationContext.schemasCache[this.connectionID])
-      return SQLGenerationContext.schemasCache[this.connectionID];
-    let out: string[] = [];
-    try {
-      const connection = await grok.dapi.connections.find(this.connectionID);
-      const schemas = await grok.dapi.connections.getSchemas(connection);
-      out = schemas;
-    } catch (e) {
-      console.log('Error fetching schemas:', e);
-    }
-    SQLGenerationContext.schemasCache[this.connectionID] = out;
-    return out;
+    return (await this.dbMeta.getSchemas()).map((s) => s.name);
   }
 
   /**
@@ -510,27 +489,26 @@ class SQLGenerationContext {
    */
   async listTables(includeAllDescriptions: boolean, schemaName: string): Promise<{description: string, tableCount: number}> {
     schemaName ??= this.schemaName;
-    if (this.schemas && this.dbMeta) {
-      const schema = this.schemas.find((s) => s.name === schemaName);
-      if (!schema)
-        return {description: `Schema ${schemaName} not found in metadata.`, tableCount: 0};
-      const tables = schema.tables.map((table) => {
-        const parts = [`${table.name}`];
-        if (includeAllDescriptions) {
-          if (table.LLMComment)
-            parts.push(`  Description: ${table.LLMComment.substring(0, 200)}...`);
-          else if (table.comment)
-            parts.push(`  Description: ${table.comment.substring(0, 200)}...`);
-        }
-        parts.push(`  Columns: ${table.columns.length}, Rows: ${table.rowCount}`);
-        return parts.join('\n');
-      });
-      return {description: `Tables in ${this.schemaName}:\n\n${tables.join('\n')}`, tableCount: tables.length};
-    }
 
-    // Fallback to schema descriptor
-    const schemaInfo = await DBSchemaInfo.getSchemaInfo(this.connectionID, schemaName);
-    return {description: `Tables in ${this.schemaName}:\n\n${schemaInfo.tableInfos.join('\n')}`, tableCount: schemaInfo.tableInfos.length};
+    const schema = (await this.dbMeta.getSchemas()).find((s) => s.name === schemaName);
+    if (!schema)
+      return {description: `Schema ${schemaName} not found in metadata.`, tableCount: 0};
+
+    const tables = (await schema.getTables());
+    //const parts: string[] = [];
+    const tableDescs = tables.map((table) => {
+      const parts = [`${table.friendlyName ?? table.name}`];
+      const tableMeta = getDBTableMetaData(table);
+      if (includeAllDescriptions) {
+        if (tableMeta?.llmComment)
+          parts.push(`  LLM Comment: ${tableMeta.llmComment.substring(0, 400)}...`);
+        else if (tableMeta.comment)
+          parts.push(`  Description: ${tableMeta.comment.substring(0, 400)}...`);
+      }
+      parts.push(`  Columns: ${table.columns.length}, ${tableMeta?.rowCount ? `Rows: ${tableMeta.rowCount}` : ''}`);
+      return parts.join('\n');
+    });
+    return {description: `Tables in ${schemaName}:\n\n${tableDescs.join('\n')}`, tableCount: tableDescs.length};
   }
 
   /**
@@ -542,32 +520,28 @@ class SQLGenerationContext {
     tableNames = tableNames.map((t) => t.trim()).map((t) => t.indexOf('.') >= 0 ? t.split('.')[1] : t); // Remove schema prefix if present
     const descriptions: string[] = [];
 
-    for (let i = 0; i < tableNames.length; i++) {
-      const tableName = tableNames[i];
-      const schemaName = schemaNames[i];
-      if (this.schemas) {
-        const schema = this.schemas.find((s) => s.name === schemaName);
-        if (!schema) {
-          descriptions.push(`Schema ${schemaName} not found`);
-          continue;
-        }
-        const table = schema.tables.find((t) => t.name === tableName);
-        if (!table) {
-          descriptions.push(`Table ${tableName} not found`);
-          continue;
-        }
-
-        const tableDesc = this.buildDetailedTableDescription(table);
-        descriptions.push(tableDesc);
-      } else {
-        // Fallback: basic info from schema descriptor
-        const schemaInfo = await DBSchemaInfo.getSchemaInfo(this.connectionID, schemaNames[i]);
-        const tableInfo = schemaInfo.tableInfos.find((info) => info.startsWith(`${tableName}:`));
-        if (tableInfo)
-          descriptions.push(tableInfo);
-        else
-          descriptions.push(`Table ${tableName} not found`);
+    const schemas = await this.dbMeta.getSchemas();
+    const schemaTableMap: Map<string, DG.TableInfo[]> = new Map();
+    for (const sn of Array.from(new Set(schemaNames))) {
+      const schema = schemas.find((s) => s.name === sn);
+      if (schema) {
+        const tables = await schema.getTables();
+        schemaTableMap.set(sn, tables);
       }
+    }
+    for (let i = 0; i < tableNames.length; i++) {
+      const tables = schemaTableMap.get(schemaNames[i]);
+      if (!tables) {
+        descriptions.push(`Schema ${schemaNames[i]} not found`);
+        continue;
+      }
+      const table = tables.find((t) => t.friendlyName === tableNames[i] || t.name === tableNames[i]);
+      if (!table) {
+        descriptions.push(`Table ${tableNames[i]} not found`);
+        continue;
+      }
+      const tableDesc = this.buildDetailedTableDescription(table);
+      descriptions.push(tableDesc);
     }
 
     return descriptions.join('\n\n---\n\n');
@@ -585,36 +559,12 @@ class SQLGenerationContext {
     for (let i = 0; i < tableNames.length; i++)
       schemaQualifiedTableSet.add(`${schemaNames[i]}.${tableNames[i]}`);
 
-    const joins: string[] = [];
-    if (this.dbMeta) {
-      for (let i = 0; i < this.dbMeta.relations.length; i++) {
-        const relation = this.dbMeta.relations[i];
-        const fromFullName = `${relation.fromSchema}.${relation.fromTable}`;
-        const toFullName = `${relation.toSchema}.${relation.toTable}`;
-        if (!schemaQualifiedTableSet.has(fromFullName) && !schemaQualifiedTableSet.has(toFullName))
-          continue;
-        const joinDesc = this.buildJoinDescription(relation);
-        joins.push(joinDesc);
-      }
-    } else {
-      // Fallback to schema descriptor
-      const applicableSchemaNames = Array.from(new Set(schemaNames));
-      const applicableSchemas = await Promise.all(applicableSchemaNames.map((sn) => DBSchemaInfo.getSchemaInfo(this.connectionID, sn)));
-      for (let i = 0; i < applicableSchemas.length; i++) {
-        const schemaInfo = applicableSchemas[i];
-        const schemaName = applicableSchemaNames[i];
-        for (const ref of schemaInfo.referenceInfos) {
-          const [from, to] = ref.split('->').map((s) => s.trim());
-          const fromTable = from.split('.')[0];
-          const toTable = to.split('.')[0];
-          const qualifiedFrom = `${schemaName}.${fromTable}`;
-          const qualifiedTo = `${schemaName}.${toTable}`;
-
-          if (schemaQualifiedTableSet.has(qualifiedFrom) || schemaQualifiedTableSet.has(qualifiedTo))
-            joins.push(ref);
-        }
-      }
-    }
+    // const joins: string[] = [];
+    const uniqueSchemas = Array.from(new Set(schemaNames));
+    const relations = (await Promise.all(uniqueSchemas.map(async (sn) => await this.dbMeta.getRelationsForSchema(sn))))
+      .flat()
+      .filter((rel) => schemaQualifiedTableSet.has(`${rel.fromSchema}.${rel.fromTable}`) || schemaQualifiedTableSet.has(`${rel.toSchema}.${rel.toTable}`));
+    const joins = relations.map((rel) => this.buildJoinDescription(rel));
 
     if (joins.length === 0)
       return `No foreign key relationships found for tables: ${tableNames.join(', ')}`;
@@ -700,34 +650,39 @@ class SQLGenerationContext {
   /**
    * Helper: Build detailed table description
    */
-  private buildDetailedTableDescription(table: DBTableMeta): string {
+  private buildDetailedTableDescription(table: DG.TableInfo): string {
     const lines: string[] = [];
-
-    lines.push(`TABLE: ${table.name} (${table.rowCount} rows)`);
-    if (table.comment)
-      lines.push(`Description: ${table.comment}`);
-    if (table.LLMComment)
-      lines.push(`AI Context: ${table.LLMComment}`);
+    const tableMeta = getDBTableMetaData(table);
+    lines.push(`TABLE: ${table.friendlyName ?? table.name} (${tableMeta.rowCount ?? 'Unknown ammount of'} rows)`);
+    if (tableMeta.comment)
+      lines.push(`Comment: ${tableMeta.comment}`);
+    if (tableMeta.llmComment)
+      lines.push(`LLM Comment: ${tableMeta.llmComment}`);
 
     lines.push('\nColumns:');
 
     for (const col of table.columns) {
       const colParts: string[] = [`  ${col.name} (${col.type})`];
+      const colMeta = getDBColumnMetaData(col);
 
-      if (col.semanticType)
-        colParts.push(`[Semantic: ${col.semanticType}]`);
-      if (col.isUnique)
+
+      // not working currently, add back later
+      // if (col.semanticType)
+      //   colParts.push(`[Semantic: ${col.semanticType}]`);
+      if (colMeta.isUnique)
         colParts.push('[UNIQUE]');
-      if (col.LLMComment)
-        colParts.push(`- ${col.LLMComment}`);
-      else if (col.comment)
-        colParts.push(`- ${col.comment}`);
-      if (col.min !== undefined && col.max !== undefined)
-        colParts.push(`Range: ${col.min} to ${col.max}`);
-      if (col.categoryValues && col.categoryValues.length > 0) {
-        const values = col.categoryValues;
-        colParts.push(`Values: ${values.join(', ')}${col.categoryValues.length > 15 ? ', ...' : ''}`);
+      if (colMeta.llmComment)
+        colParts.push(`- ${colMeta.llmComment}`);
+      else if (colMeta.comment)
+        colParts.push(`- ${colMeta.comment}`);
+      if (colMeta.min !== undefined && colMeta.max !== undefined)
+        colParts.push(`Range: ${colMeta.min} to ${colMeta.max}`);
+      if ((colMeta.values && colMeta.values.length > 0) || (colMeta.sampleValues && colMeta.sampleValues.length > 0)) {
+        const values = (Array.isArray(colMeta.values) ? colMeta.values : undefined) ?? colMeta.sampleValues!;
+        colParts.push(`Values: ${values.slice(0, 15).join(', ')}${values.length > 15 ? ', ...' : ''}`);
       }
+      if (colMeta.uniqueCount)
+        colParts.push(`Unique Values Count: ${colMeta.uniqueCount}`);
 
       lines.push(colParts.join(' '));
     }
@@ -738,17 +693,17 @@ class SQLGenerationContext {
   /**
    * Helper: Build join description
    */
-  private buildJoinDescription(relation: DBRelationMeta): string {
+  private buildJoinDescription(relation: DG.DbRelationInfo): string {
     const parts: string[] = [];
 
-    parts.push(`${relation.fromTable}(${relation.fromColumns.join(', ')}) -> ${relation.toTable}(${relation.toColumns.join(', ')})`);
+    parts.push(`${relation.fromSchema}.${relation.fromTable}(${(relation.fromColumns ?? ['Unknown Column']).join(', ')}) -> ${relation.toSchema}.${relation.toTable}(${(relation.toColumns ?? ['Unknown Column']).join(', ')})`);
 
     if (relation.cardinality)
       parts.push(`[${relation.cardinality}]`);
-    if (relation.IsPrimaryPath === false)
+    if (relation.isPrimaryPath === false)
       parts.push('[LEGACY - prefer other paths if available]');
-    if (relation.LLMComment)
-      parts.push(`- ${relation.LLMComment}`);
+    if (relation.llmComment)
+      parts.push(`- ${relation.llmComment}`);
     else if (relation.comment)
       parts.push(`- ${relation.comment}`);
 

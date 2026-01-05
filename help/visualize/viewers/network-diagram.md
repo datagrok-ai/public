@@ -26,3 +26,4 @@ See also:
 * [Viewers](../viewers/viewers.md)
 * [Table view](../table-view-1.md)
 * [JS API: Network diagram](https://public.datagrok.ai/js/samples/ui/viewers/types/network-diagram)
+* [Community: Visualization-related updates](https://community.datagrok.ai/t/visualization-related-updates/521)

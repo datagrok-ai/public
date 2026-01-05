@@ -3,14 +3,13 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import OpenAI from 'openai';
-import {LLMCredsManager} from './creds';
-import {modelName} from '../package';
+import {OpenAIClient} from './openAI-client';
 
 
 export async function embedConnectionQueries(connectionId: string) {
   const queries = (await grok.dapi.queries.filter(`connection.id = "${connectionId}"`).list())
     .filter((q) => q.query?.trim());
-  const openai = new OpenAI({apiKey: LLMCredsManager.getApiKey(), dangerouslyAllowBrowser: true});
+  const openai = OpenAIClient.getInstance().openai;
   const output: {query: string, embedding: number[]}[] = [];
   const pg = DG.TaskBarProgressIndicator.create('Generating embeddings for queries...');
   let count = 0;

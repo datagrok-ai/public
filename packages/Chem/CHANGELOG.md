@@ -1,5 +1,14 @@
 # Chem changelog
 
+## 1.6.13 (2025-12-23)
+
+* Butina clustering: Expose Python implementation to top-menu
+
+## 1.6.12 (2025-12-22)
+
+* GROK-18406: Chem | Scaffold Tree: Disallow multiple filters on the same column
+* Chem: Detector: Extend valid smiles characters to support additional symbols
+
 ## 1.16.11 (2025-12-09)
 
 * Add kekulize option to molecule notation conversion functions

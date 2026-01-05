@@ -40,6 +40,7 @@ For example, you can:
 
 ## See also
   
-- [Clinical Case](https://github.com/datagrok-ai/public/tree/master/packages/ClinicalCase)  
-- [Charts](https://github.com/datagrok-ai/public/tree/master/packages/Charts)  
-- [Viewers](viewers.md)
+* [Clinical Case](https://github.com/datagrok-ai/public/tree/master/packages/ClinicalCase)  
+* [Charts](https://github.com/datagrok-ai/public/tree/master/packages/Charts)
+* [Viewers](viewers.md)
+* [Community: Visualization-related updates](https://community.datagrok.ai/t/visualization-related-updates/521)

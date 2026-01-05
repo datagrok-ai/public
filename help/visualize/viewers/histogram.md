@@ -29,3 +29,4 @@ See also:
 * [Viewers](../viewers/viewers.md)
 * [Table View](../table-view-1.md)
 * [JS API: Histogram](https://public.datagrok.ai/js/samples/ui/viewers/types/histogram)
+* [Community: Visualization-related updates](https://community.datagrok.ai/t/visualization-related-updates/521)

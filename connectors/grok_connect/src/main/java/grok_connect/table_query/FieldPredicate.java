@@ -3,7 +3,6 @@ package grok_connect.table_query;
 import grok_connect.utils.GrokConnectUtil;
 import grok_connect.utils.PatternMatcher;
 
-import java.util.Arrays;
 
 public class FieldPredicate {
     public String field;

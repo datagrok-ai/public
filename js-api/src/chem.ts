@@ -50,6 +50,8 @@ export namespace chem {
 
   export enum Notation {
     Smiles = 'smiles',
+    CxSmiles = 'cxsmiles', // extended smiles
+    CxSmarts = 'cxsmarts', // extended smarts
     Smarts = 'smarts',
     MolBlock = 'molblock', // molblock V2000
     V3KMolBlock = 'v3Kmolblock', // molblock V3000

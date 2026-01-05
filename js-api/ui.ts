@@ -496,7 +496,10 @@ export function tableFromProperties(items: any[], properties: Property[]) {
     properties.map((p) => p.name));
 }
 
-/** Creates a visual table based on [items] and [renderer]. */
+/** Creates a visual table based on [items] and [renderer].
+ * BE WARE: Indexing in the renderer function, due to HTML being totally awesome starts from 1, not 0.
+ * Because... What's a better way to make developers life miserable, right? 
+*/
 export function table<T>(items: T[], renderer: ((item: T, ind: number) => any) | null, columnNames: string[] | null = null): HTMLTableElement {
   return toJs(api.grok_HtmlTable(items, renderer !== null ? (object: any, ind: number) => renderer(toJs(object), ind) : null, columnNames)).root;
 }
@@ -757,7 +760,7 @@ export namespace input {
 
   const optionsMap: {[key: string]: (input: InputBase, option: any) => void} = {
     value: (input, x) => input.value = input.inputType === d4.InputType.File ? toDart(x) :
-      input.inputType === d4.InputType.Files ? x.map((elem: FileInfo) => toDart(elem)) : x,
+      [d4.InputType.Files, d4.InputType.Columns].includes(input.inputType) ? x.map((elem: FileInfo | Column) => toDart(elem)) : x,
     nullable: (input, x) => input.nullable = x, // finish it?
     property: (input, x) => input.property = x,
     tooltipText: (input, x) => input.setTooltip(x),
@@ -773,7 +776,12 @@ export namespace input {
     icon: (input, x) => api.grok_StringInput_AddIcon(input.dart, x),
     available: (input, x) => api.grok_ColumnsInput_ChangeAvailableColumns(input.dart, x),
     checked: (input, x) => api.grok_ColumnsInput_ChangeCheckedColumns(input.dart, x),
+    additionalColumns: (input, x) => setInputAdditionalColumns(input, x),
+    onAdditionalColumnsChanged: (input, x) => setInputAdditionalColumnsOnChanged(input, x),
+    additionalColumnProperties: (input, x) => setAdditionalColumnProperties(input, x),
+    showSelectedColsOnTop: (input, x) => api.grok_ColumnsInput_SetShowSelectedColsOnTop(input.dart, x),
     showOnlyColorBox: (input, x) => api.grok_ColorInput_SetShowOnlyColorBox(input.dart, x),
+    acceptExtensions: (input, x) => api.grok_FilesInput_Set_AcceptExtensions(input.dart, x),
   };
 
   function setInputOptions(input: InputBase, inputType: d4.InputType, options?: IInputInitOptions, ignoreProp: boolean = false): void {
@@ -794,24 +802,12 @@ export namespace input {
       }
       if (key !== 'nullable' && optionsMap[key] !== undefined)
         optionsMap[key](input, (specificOptions as IIndexable)[key]);
-
-      if (inputType === d4.InputType.Columns) {
-        if (key === 'additionalColumns') {
-          const additionalCols = options.additionalColumns as { [key: string]: Column[] } | undefined;
-          if (additionalCols)
-            setInputAdditionalColumns(input, additionalCols);
-        }
-        if (key === 'onAdditionalColumnsChanged') {
-          const onAdditionalColsChanged = options.onAdditionalColumnsChanged as((additionalColumns: { [key: string]: Column[] }) => void) | undefined;
-          if (onAdditionalColsChanged)
-            setInputAdditionalColumnsOnChanged(input, onAdditionalColsChanged);
-        }
-      }
     }
     const baseOptions = (({value, nullable, property, onCreated, onValueChanged}) => ({value, nullable, property, onCreated, onValueChanged}))(options);
     for (let key of Object.keys(baseOptions)) {
       if (key === 'value' && baseOptions[key] !== undefined)
-        options.property ? options.property.defaultValue = toDart(baseOptions[key]) : optionsMap[key](input, (baseOptions as IIndexable)[key]);
+        options.property ? options.property.defaultValue = Array.isArray(baseOptions[key]) ? (baseOptions[key] as unknown[]).map((elem) => toDart(elem)) :
+          toDart(baseOptions[key]) : optionsMap[key](input, (baseOptions as IIndexable)[key]);
       if (key === 'nullable' && baseOptions[key] !== undefined)
         options.property ? options.property.nullable = baseOptions[key]! : optionsMap[key](input, (baseOptions as IIndexable)[key]);
       if ((baseOptions as IIndexable)[key] !== undefined && optionsMap[key] !== undefined)
@@ -827,8 +823,6 @@ export namespace input {
     tooltipText?: string;
     onCreated?: (input: InputBase<T>) => void;
     onValueChanged?: (value: T, input: InputBase<T>) => void;
-    additionalColumns?: { [key: string]: Column[] };
-    onAdditionalColumnsChanged?: (additionalColumns: { [key: string]: Column[] }) => void;
   }
 
   export interface INumberInputInitOptions<T> extends IInputInitOptions<T> {
@@ -869,10 +863,16 @@ export namespace input {
     checked?: string[];
     additionalColumns?: { [key: string]: Column[] };
     onAdditionalColumnsChanged?: (additionalColumns: { [key: string]: Column[] }) => void;
+    additionalColumnProperties?: Property[];
+    showSelectedColsOnTop?: boolean;
   }
 
   export interface IColorInputInitOptions<T> extends IInputInitOptions<T> {
     showOnlyColorBox?: boolean;
+  }
+
+  export interface IFilesInputInitOptions<T> extends IInputInitOptions<T> {
+    acceptExtensions?: string[];
   }
 
   /** Set the table specifically for the column input */
@@ -889,22 +889,28 @@ export namespace input {
 
   /** Sets additional columns for the columns input */
   export function setInputAdditionalColumns(input: InputBase, additionalColumns: { [key: string]: Column[] }): void {
+    if (!additionalColumns)
+      return;
     const mapToSet: { [key: string]: any } = {};
     for (const [key, columns] of Object.entries(additionalColumns))
       mapToSet[key] = columns.map(c => c.dart);
-
     api.grok_ColumnsInput_SetAdditionalColumns(input.dart, toDart(mapToSet));
   }
 
-  /** Sets additional columns on change event */
+  /** Sets additional columns on change event for the columns input */
   export function setInputAdditionalColumnsOnChanged(input: InputBase, onChange: (values: { [key: string]: Column[] }) => void): void {
+    if (!onChange)
+      return;
     api.grok_ColumnsInput_SetOnAdditionalColumnsChanged(input.dart, !onChange ? null : toDart((values: any) => {
       values = toJs(values);
       for (const key of Object.keys(values))
         values[key] = values[key].map(toJs);
-
       onChange(values);
     }));
+  }
+
+  export function setAdditionalColumnProperties(input: InputBase, properties: Property[]): void {
+    api.grok_ColumnsInput_SetAdditionalColumnProperties(input.dart, properties.map((toDart)));
   }
 
   /** Creates input for the specified property, and optionally binds it to the specified object */
@@ -995,7 +1001,7 @@ export namespace input {
     return _create(d4.InputType.File, name, options);
   }
 
-  export function files(name: string, options?: IInputInitOptions<FileInfo[]>): InputBase<FileInfo[] | null> {
+  export function files(name: string, options?: IFilesInputInitOptions<FileInfo[]>): InputBase<FileInfo[] | null> {
     return _create(d4.InputType.Files, name, options);
   }
 
@@ -1056,7 +1062,7 @@ export namespace input {
   }
 
   export async function markdownPreview(markdown: string): Promise<HTMLDivElement> {
-    await Utils.loadJsCss(['js/common/quill/marked.min.js']);
+    await Utils.loadJsCss(['/js/common/quill/marked.min.js']);
     const markdownPreview = div([], { style: { padding: '12px' } });
     //@ts-ignore
     markdownPreview.innerHTML = marked.parse(markdown ?? '');
@@ -1780,6 +1786,7 @@ export function splitH(items: HTMLElement[], options: ElementOptions | null = nu
         spliterResize(divider, items[i], items[i + 1], true);
       }
     });
+    const ratios: number[] = items.map((_) => 1);
 
     tools.waitForElementInDom(b).then((x)=>{
       const rootWidth = x.getBoundingClientRect().width;
@@ -1794,34 +1801,40 @@ export function splitH(items: HTMLElement[], options: ElementOptions | null = nu
           } else {
             noWidthCount++;
           }
-        }else{
+        } else {
           element.style.width = '4px';
         }
       });
-
+      let firstWidth: number | null = null;
+      let counter = 0;
       childs.forEach((element) => {
         if (!element.classList.contains('ui-split-h-divider')) {
           if (element.style.width == '') {
-            let width = (rootWidth-defaultWidth-($(b).find('.ui-split-h-divider').length*4))/noWidthCount;
+            let width = (rootWidth-defaultWidth-($(b).find('.ui-split-h-divider').length * 4))/noWidthCount;
             element.style.width = String(width)+'px';
           }
+          const w = Number(element.style.width.replace(/px$/, ''));
+          firstWidth ??= w + 1; // to avoid where 1st element is excecively resized
+          if (firstWidth) // 0 also not allowed
+            ratios[counter] = w / firstWidth;
+          element.style.flexGrow = `${ratios[counter]}`;
+          counter++;
         }
-      })
-
+      });
     });
 
     tools.handleResize(b, (w,h)=>{
       const rootWidth = b.getBoundingClientRect().width;
-
+      if (!document.contains(b))
+        return;
       for (let i = 0; i < b.children.length; i++){
         if (!$(b.childNodes[i]).hasClass('ui-split-h-divider')){
-          let width = (w-rootWidth)/b.children.length+$(b.childNodes[i]).width();
+          const width = (w-rootWidth)/b.children.length+$(b.childNodes[i]).width();
           $(b.childNodes[i]).css('width', String(width)+'px');
         } else {
           $(b.childNodes[i]).css('width', 4);
         }
       }
-
     });
 
   } else {
@@ -1889,6 +1902,13 @@ function onMouseMove(e: any) {
       let newNextWidth = md.rightWidth - delta.x;
       previousSibling.style.width = String(newPrevWidth)+'px';
       nextSibling.style.width = String(newNextWidth)+'px';
+
+      // handle flex-grow values
+      const sumFlexGrow = Number(previousSibling.style.flexGrow ?? '0.99') + Number(nextSibling.style.flexGrow ?? '1');
+      const totalWidth = newPrevWidth + newNextWidth;
+      previousSibling.style.flexGrow = String((newPrevWidth / totalWidth) * sumFlexGrow);
+      nextSibling.style.flexGrow = String((newNextWidth / totalWidth) * sumFlexGrow);
+
       //previousSibling.setAttribute('style',`width: ${(md.leftWidth + delta.x)}px;`);
       //nextSibling.setAttribute('style',`width:${(md.rightWidth - delta.x)}px;`);
   } else {

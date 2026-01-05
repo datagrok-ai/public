@@ -263,7 +263,7 @@ You can quickly show or hide groups of columns from [filters](filters.md).
 
 You can customize the display of cell data using [cell renderers](#cell-renderers). Grid cells can also contain values from [multiple columns](#summary-columns) or [linked tables](#data-from-linked-tables), and display embedded [images](#images).
 
-![](img/cell-renderers-examples.gif)
+![Cell renderers example](img/cell-renderers-examples.gif)
 
 ### Cell renderers
 
@@ -664,3 +664,8 @@ See also:
 * [Table View](../table-view-1.md)
 * [JS API: Grid](https://public.datagrok.ai/js/samples/ui/viewers/types/grid)
 * [PowerGrid package](https://github.com/datagrok-ai/public/blob/master/packages/PowerGrid/README.md) 
+* Community: 
+  * [Grid updates](https://community.datagrok.ai/t/grid-updates/616)
+  * [Power Grid: Smart form](https://community.datagrok.ai/t/power-grid-smart-form/774)
+  * [Visualization-related updates](https://community.datagrok.ai/t/visualization-related-updates/521)
+

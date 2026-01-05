@@ -753,7 +753,8 @@ export class PackageFunctions {
     @grok.decorators.param({type: 'bool', options: {optional: true}}) clusterMCS?: boolean): Promise<DG.Viewer | undefined> {
     //workaround for functions which add viewers to tableView (can be run only on active table view)
     checkCurrentView(table);
-
+    // after this check we are sure that tableView is active
+    const tv = grok.shell.tv;
     if (molecules.semType !== DG.SEMTYPE.MOLECULE) {
       grok.shell.error(`Column ${molecules.name} is not of Molecule semantic type`);
       return;
@@ -773,7 +774,7 @@ export class PackageFunctions {
     let res: DG.ScatterPlotViewer = funcCall.getOutputParamValue();
 
     if (plotEmbeddings) {
-      res = grok.shell.tv.scatterPlot({x: embedColsNames[0], y: embedColsNames[1], title: 'Chemical space'});
+      res = tv.scatterPlot({x: embedColsNames[0], y: embedColsNames[1], title: 'Chemical space'});
       const description = `Molecules column: ${molecules.name}, method: ${methodName}, ${options ? `options: ${JSON.stringify(options)},` : ``} similarity: ${similarityMetric}`;
       res.setOptions({description: description, descriptionVisibilityMode: 'Never'});
       //temporary fix (to save backward compatibility) since labels option type has been changed from string to array in 1.23 platform version
@@ -1430,8 +1431,8 @@ export class PackageFunctions {
   })
   static convertMolNotation(
     @grok.decorators.param({options: {semType: 'Molecule'}}) molecule: string,
-    @grok.decorators.param({type: 'string', options: {choices: ['smiles', 'smarts', 'molblock', 'v3Kmolblock']}}) sourceNotation: DG.chem.Notation,
-    @grok.decorators.param({type: 'string', options: {choices: ['smiles', 'smarts', 'molblock', 'v3Kmolblock']}}) targetNotation: DG.chem.Notation ): string {
+    @grok.decorators.param({type: 'string', options: {choices: ['smiles', 'cxsmiles', 'smarts', 'cxsmarts', 'molblock', 'v3Kmolblock']}}) sourceNotation: DG.chem.Notation,
+    @grok.decorators.param({type: 'string', options: {choices: ['smiles', 'cxsmiles', 'smarts', 'cxsmarts', 'molblock', 'v3Kmolblock']}}) targetNotation: DG.chem.Notation ): string {
     return _convertMolNotation(molecule, sourceNotation, targetNotation, PackageFunctions.getRdKitModule());
   }
 
@@ -1443,7 +1444,7 @@ export class PackageFunctions {
   static async convertNotation(
     data: DG.DataFrame,
     @grok.decorators.param({type: 'column', options: {semType: 'Molecule'}}) molecules: DG.Column<string>,
-    @grok.decorators.param({type: 'string', options: {choices: ['smiles', 'smarts', 'molblock', 'v3Kmolblock'], initialValue: 'smiles'}}) targetNotation: DG.chem.Notation,
+    @grok.decorators.param({type: 'string', options: {choices: ['smiles', 'cxsmiles', 'smarts', 'cxsmarts', 'molblock', 'v3Kmolblock'], initialValue: 'smiles'}}) targetNotation: DG.chem.Notation,
     @grok.decorators.param({options: {initialValue: 'false'}}) overwrite: boolean = false,
     @grok.decorators.param({options: {initialValue: 'true'}}) join: boolean = true,
     @grok.decorators.param({options: {initialValue: 'false', optional: true, nullable: true}}) kekulize?: boolean): Promise<DG.Column<string> | void> {

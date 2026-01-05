@@ -1,13 +1,11 @@
+import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
-const OPENAIApiKeyName = 'apiKey';
 const OPENAIVectorStoreName = 'vectorStoreId';
 
 export class LLMCredsManager {
-  apiKey: string;
   vectorStoreId: string;
-  private constructor(apiKey: string, vectorStoreId: string) {
-    this.apiKey = apiKey;
+  private constructor(vectorStoreId: string) {
     this.vectorStoreId = vectorStoreId;
   }
 
@@ -15,18 +13,18 @@ export class LLMCredsManager {
   // Initialize the singleton instance
   // TODO: in future this will probably move to credentials manager
   static init(pckg: DG.Package): void {
-    const apiKey = pckg.settings[OPENAIApiKeyName];
+    const hasAIKey = grok.ai.openAiConfigured;
     const vectorStoreId = pckg.settings[OPENAIVectorStoreName];
-    LLMCredsManager._instance = new LLMCredsManager(apiKey, vectorStoreId);
+    LLMCredsManager._instance =
+      new LLMCredsManager(hasAIKey ? vectorStoreId ?? '' : '');
   }
   static getInstance(): LLMCredsManager {
     return LLMCredsManager._instance!;
   }
-
-  static getApiKey(): string {
-    return LLMCredsManager.getInstance().apiKey;
-  }
   static getVectorStoreId(): string {
-    return LLMCredsManager.getInstance().vectorStoreId;
+    const res = LLMCredsManager.getInstance().vectorStoreId;
+    if (!res || !res.trim())
+      return '';
+    return res;
   }
 }

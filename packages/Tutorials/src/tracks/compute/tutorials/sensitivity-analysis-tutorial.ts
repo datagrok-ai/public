@@ -6,40 +6,39 @@ import * as ui from 'datagrok-api/ui';
 import {filter, map} from 'rxjs/operators';
 import {Tutorial} from '@datagrok-libraries/tutorials/src/tutorial';
 import {fromEvent} from 'rxjs';
-import {getElement, getView, describeElements, singleDescription, closeWindows, PAUSE} from './utils';
+import {getElement, getView, describeElements, singleDescription, closeWindows, PAUSE, getLegendDiv, getBallFlightModelLegend} from './utils';
+import {runDescriber, Tour, DescriptionPage} from './ui-describer';
+import '../../../../css/ui-describer.css';
 
 /** Monte Carlo viewers description */
 const monteCarloViewersInfo = [
-  `# Model runs
-  
-  Input and output values for each of the 100 model evaluations.`,
-  `# Correlations
-  
-  A positive value shows direct correlation; a negative, inverse:
-  
-  * the larger **Angle**, the greater **Max height**
-  * the larger **Max distance**, the shorter **Max height**`,
-  `# Variations
+  `# Model runs 🧮\n\nInput and output values for each of the 100 model evaluations.`,
+  getLegendDiv(
+    '# Correlations\n\nA positive value shows direct correlation; a negative, inverse:',
+    [
+      '🔼 the larger **Angle**, the greater **Max height**',
+      '🔽 the larger **Max distance**, the shorter **Max height**',
+    ],
+  ),  
+  `# Variations 🔀
   
    Multidimensional visualization of the relationship between **Angle** and the simulated values of **Max Distance** and **Max Height**.`,
-  `# Graphs
+  `# Graphs 📈
   
   The dependence of **Max distance** and **Max height** on **Angle**.`,
 ];
 
 /** Sobol viewers description */
 const sobolViewersInfo = [
-  `# Scatter
-  
-  Here, **Max distance** specifies markers size and color. Change them to visualize **Max height**.`,
-  `# Max distance
-  
-  The contribution of varying inputs alone: **Angle** has the highest impact.
-
-  (to explore **Max height**, change value in the value selector)`,
-  `# Max distance
-
-  Overall impact of parameters, including their interactions with each other: **Angle** produces greater contribution than **Velocity**.`,
+  `# Scatter\n\nHere, **Max distance** specifies markers size and color. Change them to visualize **Max height**.`,
+  getLegendDiv(
+    '# Max distance\n\nThe contribution of varying inputs alone:',
+    ['↗️ **Angle** has the highest impact.'],
+  ),
+  getLegendDiv(
+    '# Max distance\n\nOverall impact of parameters, including their interactions with each other:',
+    ['⚡ **Angle** produces greater contribution than **Velocity**.'],
+  ),
 ];
 
 /** Help links */
@@ -158,21 +157,17 @@ export class SensitivityAnalysisTutorial extends Tutorial {
       return;
     }
 
-    let okBtn = singleDescription(
-      modelRoot,
-      `# Simulation\n\nThis model takes the ball and thrown parameters, and 
-      computes\n\n* the flight trajectory\n\n* max height and distance`,
-      'Go to the next step',
-    );
+    let btnToClick = runDescriber({
+      pages: [{
+        root: modelRoot,
+        description: getBallFlightModelLegend(),
+        position: 'left',
+        elements: {major: modelView.root},
+      }],
+      btnsText: {done: 'OK', next: '', prev: ''},
+    });
 
-    if (okBtn !== null) {
-      await this.action(
-        'Click "OK"',
-        fromEvent(okBtn, 'click'),
-        undefined,
-        `Click "OK" to go to the next step.`,
-      );
-    }
+    await this.action('Click "OK"', fromEvent(btnToClick, 'click'));
 
     // 5. Run sens.analysis
     this.title('Analysis');
@@ -260,14 +255,18 @@ export class SensitivityAnalysisTutorial extends Tutorial {
     }
 
     let viewerRoots = [...sensAnView.viewers].map((v) => v.root);
-    let doneBtn = describeElements(viewerRoots, monteCarloViewersInfo);
+    btnToClick = runDescriber({
+      pages: viewerRoots.map((root, idx) => {
+        return {
+          root: root,
+          description: monteCarloViewersInfo[idx],
+          position: 'left',
+          elements: {major: root},
+        };
+      }),
+    });
 
-    await this.action(
-      'Explore each viewer',
-      fromEvent(doneBtn, 'click'),
-      undefined,
-      'Click "Next" to switch to the next viewer.',
-    );
+    await this.action('Explore each viewer', fromEvent(btnToClick, 'click'));
 
     // 10. Optimization
     this.title('Optimization');
@@ -283,23 +282,20 @@ export class SensitivityAnalysisTutorial extends Tutorial {
       'Move the bottom slider to the top. Find the maximum of <b>Max distance</b> and the corresponding <b>Angle</b> in the filtered grid.',
     );
 
-    await new Promise((resolve) => setTimeout(resolve, 1000));
+    await new Promise((resolve) => setTimeout(resolve, 1500));
 
     // 11. Check grid
-    okBtn = singleDescription(
-      sensAnView.grid.root,
-      '# Maximum\n\n**Angle** providing the highest **Max distance**',
-      'Go to the next step',
-    );
+    btnToClick = runDescriber({
+      pages: [{
+        root: sensAnView.grid.root,
+        description: '# Maximum ↔️\n\n**Angle** providing the highest **Max distance**',
+        position: 'left',
+        elements: {major: sensAnView.grid.root},
+      }],
+      btnsText: {done: 'ok', next: '', prev: ''},
+    });
 
-    if (okBtn !== null) {
-      await this.action(
-        'Explore solution',
-        fromEvent(okBtn, 'click'),
-        undefined,
-        'Click "OK" to go to the next step.',
-      );
-    }
+    await this.action('Explore the solution', fromEvent(btnToClick, 'click'));
 
     // 12. Parameters' impact
 
@@ -346,32 +342,37 @@ export class SensitivityAnalysisTutorial extends Tutorial {
     }
 
     viewerRoots = [...sensAnView.viewers].map((v) => v.root).slice(3);
-    doneBtn = describeElements(viewerRoots, sobolViewersInfo);
+    btnToClick = runDescriber({
+      pages: [...sensAnView.viewers].map((v) => v.root).slice(3).map((root, idx) => {
+        return {
+          root: root,
+          position: 'left',
+          description: sobolViewersInfo[idx],
+          elements: {major: root},
+        };
+      }),
+    });
 
-    await this.action(
-      'Explore each viewer',
-      fromEvent(doneBtn, 'click'),
-      undefined,
-      'Click "Next" to switch to the next viewer',
-    );
+    await this.action('Explore each viewer', fromEvent(btnToClick, 'click'));
+
+    await new Promise((resolve) => setTimeout(resolve, 2000));
 
     // 16. The Grid  method note
     panelRoot.style.width = '300px';
-    const methodLabelRoot = children[0].querySelector('label.ui-label') as HTMLElement;
-    okBtn = singleDescription(
-      methodLabelRoot,
-      '# Method\n\nThe Monte Carlo and Sobol methods study a model at randomly taken points. Use "Grid" to get exploration at non-random points.',
-      'Complete this tutorial',
-    );
+    const methodLabelRoot = children[0] as HTMLElement;//.querySelector('label.ui-label') as HTMLElement;
+    btnToClick = runDescriber({
+      pages: [{
+        root: methodLabelRoot,
+        position: 'left',
+        description: '# Method 📖\n\n * The Monte Carlo and Sobol methods study a model at randomly taken points.\n\n* Use "Grid" to get exploration at non-random points.',
+        elements: {major: methodLabelRoot},
+      }],
+      btnsText: {done: 'clear', next: '', prev: ''},
+    });
 
-    if (okBtn !== null) {
-      await this.action(
-        'Click "OK"',
-        fromEvent(okBtn, 'click'),
-      );
-    }
+    await this.action('Click "Clear"', fromEvent(btnToClick, 'click'));
 
     this.describe(`Apply ${ui.link('Sensitivity Analysis', LINK.SENS_AN).outerHTML} to both ${name} and 
     ${ui.link('Diff Studio', LINK.DIF_STUDIO).outerHTML} models.`);
-  } // _run
+  } // _run   
 } // SensitivityAnalysisTutorial

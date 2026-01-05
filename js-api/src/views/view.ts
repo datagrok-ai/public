@@ -5,7 +5,7 @@ import {FilterGroup, ScatterPlotViewer, Viewer} from '../viewer';
 import {DockManager, DockNode} from '../docking';
 import {Grid} from '../grid';
 import {DartWidget, Menu, ToolboxPage, TreeViewGroup, Widget} from '../widgets';
-import {ColumnInfo, Entity, Script, TableInfo, ViewLayout, ViewInfo, Property, Func} from '../entities';
+import {ColumnInfo, Entity, Script, TableInfo, ViewLayout, ViewInfo, Property, Func, DataQuery} from '../entities';
 import {toDart, toJs} from '../wrappers';
 import {_options} from '../utils';
 import {_toIterable} from '../utils_convert';
@@ -663,6 +663,15 @@ export class ScriptView extends View {
   }
 }
 
+export class DataQueryView extends View {
+  constructor(dart: any) {
+    super(dart);
+  }
+
+  static create(query: DataQuery): DataQueryView {
+    return new DataQueryView(api.grok_DataQueryView(query.dart));
+  }
+}
 
 export class DockView extends View {
   constructor(dart: any) {

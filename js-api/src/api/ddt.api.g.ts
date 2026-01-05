@@ -215,8 +215,6 @@ export class Tags {
 
   static LlmComment = 'llmComment';
 
-  static DbTableDomains = 'domains';
-
   static DbTableRowCount = 'rowCount';
 
   static DbColumnIsUnique = 'isUnique';
@@ -479,5 +477,12 @@ export class FuncParamOptions {
   /// would trigger propagation of this choice's default values for other parameters.
   /// Example: Compute/cars.js
   static PropagateChoice = 'propagateChoice';
+
+  /// Column-level metadata for dataframe outputs. If the keys are column names and the value is an object,
+  /// the object’s key–value pairs will be set as column tags. Otherwise, the value will be set as a dataframe tag.
+  /// This information can be used by plugins and tools for post-processing or to link a dataframe to a database table,
+  /// even if it was not produced by a database query.
+  /// Example: `meta: {"mol": {"DbTable": "structures", "DbSchema": "public", "DbColumn": "mol"}, ".data-connection": "System:Datagrok"}`
+  static Meta = 'meta';
 
 }

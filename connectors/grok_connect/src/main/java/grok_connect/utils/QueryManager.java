@@ -115,6 +115,10 @@ public class QueryManager {
             }
             df.tags = new LinkedHashMap<>();
             df.tags.put(CHUNK_NUMBER_TAG, String.valueOf(dfNumber));
+            if (dfNumber == 1)
+                try {
+                    SqlAnnotator.annotate(query.func, df);
+                } catch (Exception ignore) {}
         }
         return df;
     }

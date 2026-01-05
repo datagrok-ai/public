@@ -87,6 +87,23 @@ boxes that select columns.
 
 Grid is a special viewer. To learn about how to change its appearance or settings, see [Grid](viewers/grid.md).
 
+#### Common viewer properties
+
+**Table**, **Row Source**, and **Filter** are common for most viewers, defining the source and subset of data to display: 
+
+* **Table** specifies which table to display, defaults to the current **Table View** 
+but can point to any table available in the current context. 
+
+* **Row Source** determines which rows from the table are shown in the viewer. 
+Options include `Filtered` (default), `All`, `Selected`, `SelectedOrCurrent`, 
+`FilteredSelected`, `MouseOverGroup`, `CurrentRow`, and `MouseOverRow`. 
+
+* **Filter** allows additional filtering of rows shown in the viewer using formulas with the `${COLUMN_NAME}` syntax.  
+Examples include:
+  * `${AGE} > 18`
+  * `${SEVERITY} == 'Medium'`
+  * `${RACE}.endsWith('sian')` or `${RACE} in ['Black', 'Asian', 'Other']` 
+
 ![viewer-property-panel](../datagrok/navigation/views/img/viewer-property-panel.gif)
 
 ### Tooltips

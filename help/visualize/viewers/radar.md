@@ -60,3 +60,4 @@ filters.
 * [Barchart](bar-chart.md)
 * [Piechart](pie-chart.md)
 * [Sparklines](grid.md#cell-renderers)
+* [Community: Visualization-related updates](https://community.datagrok.ai/t/visualization-related-updates/521)

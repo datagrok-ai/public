@@ -4,8 +4,8 @@ import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
 import {CampaignFieldTypes, HitDesignTemplate} from '../types';
 import {HitDesignMolColName, PeptiHitHelmColName, TileCategoriesColName, ViDColName, i18n} from '../consts';
+// @ts-ignore
 import '../../../css/hit-triage.css';
-import {getNewVid} from '../utils/calculate-single-cell';
 
 type NewHitDesignCampaignRes = {
     df: DG.DataFrame,
@@ -38,8 +38,7 @@ export function newHitDesignCampaignAccordeon(template: HitDesignTemplate, pepti
     const tileCategoryCol = df.columns.addNew(TileCategoriesColName, DG.TYPE.STRING);
     tileCategoryCol.set(0, template.stages[0]);
   }
-  const vIdCol = df.columns.addNew(ViDColName, DG.TYPE.STRING);
-  vIdCol.set(0, getNewVid(vIdCol));
+  df.columns.addNew(ViDColName, DG.TYPE.STRING);
 
   // campaign properties. each template might have number of additional fields that should
   // be filled by user for the campaign. they are cast into DG.Property objects and displayed as a form

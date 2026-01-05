@@ -59,3 +59,4 @@ the representation of the sankey viewer.
 * [Viewers](../viewers/viewers.md)
 * [Network viewer](network-diagram.md)
 * [Chord viewer](chord.md)
+* [Community: Visualization-related updates](https://community.datagrok.ai/t/visualization-related-updates/521)

@@ -2,7 +2,7 @@ import {Column, DataFrame} from "./dataframe";
 import {toJs} from "./wrappers";
 import {FuncCall, Functions} from "./functions";
 import {CsvImportOptions, DemoDatasetName, JOIN_TYPE, JoinType, StringPredicate, SyncType, TYPE} from "./const";
-import {ColumnInfo, DataConnection, TableInfo, TableQueryBuilder} from "./entities";
+import {ColumnInfo, DataConnection, TableInfo, TableQueryBuilder, Property} from "./entities";
 import {IDartApi} from "./api/grok_api.g";
 import { Grid } from "./grid";
 import {Tags} from "./api/ddt.api.g";
@@ -573,9 +573,10 @@ export interface DbColumnProperties {
   isUnique?: boolean;
   min?: number;
   max?: number;
-  values?: string;
-  sampleValues?: string;
+  values?: string[];
+  sampleValues?: string[];
   uniqueCount?: number;
+  quality?: string; // Semantic type of this column
 }
 
 export interface DbTableProperties {
@@ -708,5 +709,91 @@ export class DbInfo {
    */
   clearProperties(): Promise<void> {
     return api.grok_DbInfo_ClearProperties(this.dart);
+  }
+}
+
+/**
+ * Represents data source, such as PostgreSQL, Oracle, S3, etc.
+ */
+export class ConnectionDataSource {
+  public dart: any;
+
+  constructor(dart: any) {
+    this.dart = dart;
+  }
+
+  /**
+   * Use {@link DataConnection#dataSource} as input.
+   */
+  static byType(type: string): ConnectionDataSource | undefined {
+    return api.grok_ConnectionDataSource_ByType(type);
+  }
+
+  /**
+   * Data source name (such as `'Oracle'`).
+   * {@link DataConnection#dataSource} refers to this value.
+   */
+  get type(): string {
+    return api.grok_ConnectionDataSource_Type(this.dart);
+  }
+
+  /**
+   * Category (such as 'database').
+   */
+  get category(): string | undefined {
+    return api.grok_ConnectionDataSource_Category(this.dart);
+  }
+
+  /**
+   * Free-text description.
+   */
+  get description(): string | undefined {
+    return api.grok_ConnectionDataSource_Description(this.dart);
+  }
+
+  /**
+   * Indicates if this data provider can work right from the browser.
+   * When true, a query always executes on a server. Examples: Oracle, Postgres, MS SQL
+   * When false, a query runs on a server or in a browser, depending on the context (queries initiated
+   * from the browser would run in a browser).
+   */
+  get requiresServer(): boolean {
+    return api.grok_ConnectionDataSource_RequiresServer(this.dart);
+  }
+
+  /**
+   * Comment start, depends on SQL engine. Applicable only to database data sources.
+   */
+  get commentStart(): string | undefined {
+    return api.grok_ConnectionDataSource_CommentStart(this.dart);
+  }
+
+  /**
+   * Name brackets, required if name contains spaces, depends on SQL engine. Applicable only to database data sources.
+   */
+  get nameBrackets(): string | undefined {
+    return api.grok_ConnectionDataSource_NameBrackets(this.dart);
+  }
+
+  /**
+   * Whether database schemas can be browsed from UI. Applicable only to database data sources.
+   */
+  get canBrowseSchema(): boolean {
+    return api.grok_ConnectionDataSource_CanBrowseSchema(this.dart);
+  }
+
+  /**
+   * Applicable only to database data sources.
+   */
+  get queryLanguage(): string | undefined {
+    return api.grok_ConnectionDataSource_QueryLanguage(this.dart);
+  }
+
+  get connectionTemplate(): Property[] {
+    return api.grok_ConnectionDataSource_ConnectionTemplate(this.dart);
+  }
+
+  get credentialsTemplate(): Property[] {
+    return api.grok_ConnectionDataSource_CredentialsTemplate(this.dart);
   }
 }

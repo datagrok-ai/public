@@ -23,3 +23,4 @@ See also:
 * [Scatter Plot](scatter-plot.md)
 * [Table View](../table-view-1.md)
 * [JS API: Density plot](https://public.datagrok.ai/js/samples/ui/viewers/types/density-plot)
+* [Community: Visualization-related updates](https://community.datagrok.ai/t/visualization-related-updates/521)

@@ -594,16 +594,10 @@ export const functionRoles: FuncRoleDescription[] = [
     signature: 'folderViewer(folder: File, files: list<file>): Widget',
   },
   {
-    role: FUNC_TYPES.SCRIPT_HANDLER,
-    description: 'Provides a custom script handler.',
-    header: 'tags',
-    signature: 'scriptHandler(call: FuncCall): void'
-  },
-  {
     role: FUNC_TYPES.HIT_TRIAGE_FUNCTION,
     description: 'Compute function for Hit Triage campaigns.',
     header: 'tags',
-    signature: 'hitTriageFunction(table: DataFrame, moleculeCol: Column, ...args): DataFrame'
+    signature: 'hitTriageFunction(table: DataFrame, moleculeCol: Column): DataFrame'
   },
   {
     role: FUNC_TYPES.HIT_TRIAGE_DATA_SOURCE,

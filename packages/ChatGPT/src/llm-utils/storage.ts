@@ -1,23 +1,19 @@
 /* Create a new file: conversation-storage.ts */
 
 import {OpenAI} from 'openai';
+import {UIMessage} from './panel';
 
-export interface UIMessage {
-  fromUser: boolean;
-  text: string;
-  title?: string;
-}
-
-export interface StoredConversation<T = OpenAI.Chat.ChatCompletionMessageParam> {
+export interface StoredConversation<T = OpenAI.Chat.ChatCompletionMessageParam, TMeta = any> {
   id: string;
   timestamp: number;
   initialPrompt: string;
   messages: T[];
   uiMessages: UIMessage[];
+  meta?: TMeta;
 }
 
-export interface StoredConversationWithContext<T = OpenAI.Chat.ChatCompletionMessageParam>
-  extends StoredConversation<T> {
+export interface StoredConversationWithContext<T = OpenAI.Chat.ChatCompletionMessageParam, TMeta = any>
+  extends StoredConversation<T, TMeta> {
   contextId: string; // can be connection ID, project ID, or whatever context is appropriate
 }
 
@@ -46,11 +42,12 @@ export class ConversationStorage {
     });
   }
 
-  static async saveConversation(
+  static async saveConversation<TMeta = any>(
     messages: OpenAI.Chat.ChatCompletionMessageParam[],
     uiMessages: UIMessage[],
     initialPrompt: string,
-    contextId?: string
+    contextId?: string,
+    meta?: TMeta
   ): Promise<string> {
     const db = await this.openDB();
     const conversationId = `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
@@ -61,6 +58,7 @@ export class ConversationStorage {
       initialPrompt,
       messages,
       uiMessages,
+      ...meta ? {meta} : {},
     };
 
     const conversationWithContext: StoredConversationWithContext | StoredConversation = contextId ?
@@ -83,7 +81,8 @@ export class ConversationStorage {
   static async updateConversation(
     conversationId: string,
     messages: OpenAI.Chat.ChatCompletionMessageParam[],
-    uiMessages: UIMessage[]
+    uiMessages: UIMessage[],
+    meta?: any
   ): Promise<void> {
     const db = await this.openDB();
 
@@ -98,6 +97,8 @@ export class ConversationStorage {
           conversation.messages = messages;
           conversation.uiMessages = uiMessages;
           conversation.timestamp = Date.now(); // Update timestamp
+          if (meta != undefined)
+            conversation.meta = meta;
           const putRequest = store.put(conversation);
           putRequest.onsuccess = () => resolve();
           putRequest.onerror = () => reject(putRequest.error);
