@@ -47,7 +47,7 @@
     "@types/pako": "^2.0.3",
     "@webgpu/types": "^0.1.40",
     "cash-dom": "^8.1.5",
-    "datagrok-api": "^1.25.3",
+    "datagrok-api": "../../js-api",
     "dayjs": "^1.11.13",
     "file-loader": "^6.2.0",
     "jszip": "3.10.1",

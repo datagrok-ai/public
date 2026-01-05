@@ -83,12 +83,10 @@ export class PackageFunctions{
   }
 
   @grok.decorators.func({
-    'tags': [
-      'HitTriageFunction'
-    ],
     'top-menu': 'Chem | Docking | AutoDock...',
     'name': 'AutoDock',
-    'description': 'Autodock plugin UI'
+    'description': 'Autodock plugin UI',
+    meta: {role: 'hitTriageFunction'},
   })
   static async runAutodock(
     @grok.decorators.param({options: {description: '\'Input data table\''}}) table: DG.DataFrame,
@@ -148,12 +146,9 @@ export class PackageFunctions{
   }
 
   @grok.decorators.panel({
-    'tags': [
-      'chem',
-      'widgets'
-    ],
     'name': 'AutoDock',
-    'condition': 'Docking:isApplicableAutodock(molecule)'
+    'condition': 'Docking:isApplicableAutodock(molecule)',
+    meta: {role: 'widgets', domain: 'chem'},
   })
   static async autodockWidget(
     @grok.decorators.param({'options':{'semType':'Molecule3D'}}) molecule: DG.SemanticValue): Promise<DG.Widget<any> | null> {
@@ -218,7 +213,7 @@ export class PackageFunctions{
 
   @grok.decorators.panel({
     'name': 'Biology | AutoDock',
-    'tags': ['widgets']
+    meta: {role: 'widgets'},
   })
   static async autodockPanel(
     @grok.decorators.param({'options':{'semType':'Molecule'}}) smiles: DG.SemanticValue): Promise<DG.Widget> {

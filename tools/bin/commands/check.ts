@@ -44,8 +44,15 @@ function runChecks(packagePath: string, soft: boolean = false): boolean {
 
   const webpackConfigPath = path.join(packagePath, 'webpack.config.js');
   const isWebpack = fs.existsSync(webpackConfigPath);
+
+  const semver = json.version.split('-')[0];
+  const [major, minor, patch] = semver.split('.').map(Number);
+  let isPre1Version = false;
   let isReleaseCandidateVersion: boolean = false;
   let externals: { [key: string]: string } | null = null;
+
+  if (major === 0) 
+    isPre1Version = true;
 
   if (/\d+.\d+.\d+-rc(.[A-Za-z0-9]*.[A-Za-z0-9]*)?/.test(json.version))
     isReleaseCandidateVersion = true;
@@ -63,7 +70,7 @@ function runChecks(packagePath: string, soft: boolean = false): boolean {
   warnings.push(...signatureWarnings);
   errors.push(...signatureErrors);
   errors.push(...checkPackageFile(packagePath, json, {isWebpack, externals, isReleaseCandidateVersion}));
-  if (!isReleaseCandidateVersion)
+  if (!isReleaseCandidateVersion && !isPre1Version)
     warnings.push(...checkChangelog(packagePath, json));
 
   if (warnings.length) {
@@ -221,7 +228,9 @@ function validateFunctionSignature(func: FuncMetadata, roleDesc: FuncRoleDescrip
     addError('File exporters should have a description parameter');
 
   if (roleDesc.role === 'fileViewer') {
-    if (!func.tags || func.tags.length !== 1 || func.tags[0] !== 'fileViewer')
+    const hasFileViewerTag = func.tags?.length === 1 && func.tags[0] === 'fileViewer';
+    const hasFileViewerRole = func.meta?.role === 'fileViewer';
+    if (!(hasFileViewerTag || hasFileViewerRole))
       addError('File viewers must have only one tag: "fileViewer"');
   }
 
@@ -550,66 +559,105 @@ function warn(warnings: string[]): void {
   warnings.forEach((w) => color.warn(w));
 }
 
-function getFuncMetadata(script: string, fileExtention: string): { meta: FuncMetadata[], warnings: string[] } {
+function getFuncMetadata(script: string, fileExtension: string): { meta: FuncMetadata[], warnings: string[] } {
   const funcData: FuncMetadata[] = [];
   const warnings: string[] = [];
-  let isHeader = false;
-  let data: FuncMetadata = {name: '', inputs: [], outputs: []};
+  const lines = script.split('\n');
+  const funcStartRegex = /^\s*function\s+\w+\s*\(|^\s*(export\s+)?(async\s+)?function\s+\w+\s*\(|^\s*(export\s+)?(const|let)\s+\w+\s*=\s*\(.*\)\s*=>/;
 
-  for (const line of script.split('\n')) {
-    if (!line)
-      continue;
-    //@ts-ignore
-    const match = line.match(utils.fileParamRegex[fileExtention]);
-    if (match) {
-      if (!isHeader)
-        isHeader = true;
+  function parseHeaderLines(headerLines: string[]): FuncMetadata | null {
+    const data: FuncMetadata = {name: '', inputs: [], outputs: []};
+    let hasContent = false;
+
+    for (const headerLine of headerLines) {
+      const match = headerLine.match(utils.fileParamRegex[fileExtension]);
+      if (!match)
+        continue;
+
       const param = match[1];
-
-      if (!utils.headerTags.includes(param) && !param.includes('meta.')) {
-        warnings.push(`Unknown header tag: ${param},`);
+      if (!utils.headerTags.includes(param) && !param.startsWith('meta.')) {
+        warnings.push(`Unknown header tag: ${param}`);
         continue;
       }
-      if (param === 'name')
-        data.name = line.match(utils.nameAnnRegex)?.[2]?.toLocaleLowerCase();
-      else if (param === 'description')
-        data.description = match[2];
-      else if (param === 'input') 
-        data.inputs.push({type: match[2], name: match[3]});
-      
-      else if (param === 'output')
-        data.outputs.push({type: match[2], name: match[3]});
-      else if (param === 'tags') 
-        data.tags = match.input && match[3] ? match.input.split(':')[1].split(',').map((t) => t.trim()) : [match[2]];
 
-      else if (param === 'meta.role') {
+      switch (param) {
+      case 'name':
+        data.name = headerLine.match(utils.nameAnnRegex)?.[2]?.toLocaleLowerCase() || '';
+        hasContent = true;
+        break;
+      case 'description':
+        data.description = match[2];
+        hasContent = true;
+        break;
+      case 'input':
+        data.inputs.push({type: match[2], name: match[3]});
+        hasContent = true;
+        break;
+      case 'output':
+        data.outputs.push({type: match[2], name: match[3]});
+        hasContent = true;
+        break;
+      case 'tags':
+        data.tags = match.input && match[3] ?
+          match.input.split(':')[1].split(',').map((t) => t.trim()) :
+          [match[2]];
+        hasContent = true;
+        break;
+      case 'meta.role':
         data.meta = data.meta || {};
         data.meta.role = match[2];
-      } else if (param === 'meta.cache') 
-        data.cache = line.split(':').pop()?.trim();
-      
-      else if (param === 'meta.cache.invalidateOn') 
-        data.invalidateOn = line.split(':').pop()?.trim();
-      
-      else if (param === 'meta.invalidateOn') 
+        hasContent = true;
+        break;
+      case 'meta.cache':
+        data.cache = headerLine.split(':').pop()?.trim();
+        hasContent = true;
+        break;
+      case 'meta.cache.invalidateOn':
+        data.invalidateOn = headerLine.split(':').pop()?.trim();
+        hasContent = true;
+        break;
+      case 'meta.invalidateOn':
         data.isInvalidateOnWithoutCache = true;
-      
-    }
-    if (isHeader) {
-      const nm = line.match(utils.nameRegex);
-      if (data.name === '') {
-        data = {name: '', inputs: [], outputs: []};
-        isHeader = false;
-        continue;
-      }
-      if (nm)
-        data.name = nm[1]?.toLocaleLowerCase();
-      if (data.name && !match) {
-        funcData.push(data);
-        data = {name: '', inputs: [], outputs: []};
-        isHeader = false;
+        hasContent = true;
+        break;
       }
     }
+
+    return hasContent ? data : null;
+  }
+
+  let i = 0;
+  const scriptHeaderLines: string[] = [];
+  while (i < lines.length) {
+    const line = lines[i].trim();
+    if (line.startsWith('//')) 
+      scriptHeaderLines.push(line);
+    else if (line === '') 
+      break;
+    else 
+      break;
+    i++;
+  }
+
+  const scriptData = parseHeaderLines(scriptHeaderLines);
+  if (scriptData)
+    funcData.push(scriptData);
+
+  for (; i < lines.length; i++) {
+    const line = lines[i].trim();
+    if (!line.match(funcStartRegex))
+      continue;
+    const headerLines: string[] = [];
+    for (let j = i - 1; j >= 0; j--) {
+      const prevLine = lines[j].trim();
+      if (!prevLine.startsWith('//'))
+        break;
+      headerLines.unshift(prevLine);
+    }
+
+    const funcMeta = parseHeaderLines(headerLines);
+    if (funcMeta)
+      funcData.push(funcMeta);
   }
 
   return {meta: funcData, warnings};

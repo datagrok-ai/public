@@ -417,19 +417,17 @@ export const FUNC_TYPES = {
   MOLECULE_SKETCHER: 'moleculeSketcher',
   TOOLTIP: 'tooltip',
   FOLDER_VIEWER: 'folderViewer',
+  SCRIPT_HANDLER: 'scriptHandler',
 
   HIT_TRIAGE_FUNCTION: 'HitTriageFunction',
   HIT_TRIAGE_DATA_SOURCE: 'HitTriageDataSource',
   HIT_TRIAGE_SUBMIT_FUNCTION: 'HitTriageSubmitFunction',
-  HIT_DESIGN_FUNCTION: 'HitDesignFunction',
+  HIT_DESIGNER_FUNCTION: 'HitDesignerFunction',
 
   DIM_RED_PREPROCESS: 'dim-red-preprocessing-function',
   DIM_RED_POSTPROCESS: 'dim-red-postprocessing-function',
 
-  SC_WEBGPU_POINT_HIT_TEST: 'scWebGPUPointHitTest',
-  SC_WEBGPU_AVAILABLE: 'isWebGPUAvailable',
-  SC_WEBGPU_RENDER_VALID: 'isWebGPURenderValid',
-  SC_WEBGPU_RENDER: 'scWebGPURender',
+  MONOMER_LIB_PROVIDER: 'monomer-lib-provider',
 
   SEARCH_PROVIDER: 'searchProvider',
   NOTATION_REFINER: 'notationRefiner',
@@ -449,13 +447,13 @@ export const functionRoles: FuncRoleDescription[] = [
     role: FUNC_TYPES.APP,
     description: 'An application that gets shown in the app store.',
     header: 'tags',
-    signature: 'app(): void'
+    signature: 'app(): void | View'
   },
   {
     role: FUNC_TYPES.PANEL,
     description: 'Context-specific widget that appears on the context panel.',
     header: 'tags',
-    signature: 'panel(x: any): Widget | graphics'
+    signature: 'panel(...args): Widget | Viewer | graphics'
   },
   {
     role: FUNC_TYPES.INIT,
@@ -515,7 +513,7 @@ export const functionRoles: FuncRoleDescription[] = [
     role: FUNC_TYPES.FUNCTION_ANALYSIS,
     description: 'Function analysis that gets added to the function view. Examples: sensitivity analysis, parameter editor',
     header: 'tags',
-    signature: 'functionAnalysis(x:func): View'
+    signature: 'functionAnalysis(x: Function): View'
   },
   {
     role: FUNC_TYPES.CONVERTER,
@@ -539,7 +537,7 @@ export const functionRoles: FuncRoleDescription[] = [
     role: FUNC_TYPES.EDITOR,
     description: 'Creates a custom editor for a function call',
     header: 'tags',
-    signature: 'editor(call: FuncCall): Widget | void',
+    signature: 'editor(call: FuncCall): Widget | View | void',
   },
   {
     role: FUNC_TYPES.TRANSFORM,
@@ -605,7 +603,7 @@ export const functionRoles: FuncRoleDescription[] = [
     role: FUNC_TYPES.HIT_TRIAGE_DATA_SOURCE,
     description: 'Provides a datasource for Hit Triage campaigns. Must return a dataframe containing molecules.',
     header: 'tags',
-    signature: 'hitTriageDataSource(numberOfMolecules: number]): DataFrame'
+    signature: 'hitTriageDataSource(...args): DataFrame'
   },
   {
     role: FUNC_TYPES.HIT_TRIAGE_SUBMIT_FUNCTION,
@@ -614,46 +612,28 @@ export const functionRoles: FuncRoleDescription[] = [
     signature: 'hitTriageSubmitFunction(df: DG.DataFrame, moleculesCol: string): void'
   },
   {
-    role: FUNC_TYPES.HIT_DESIGN_FUNCTION,
+    role: FUNC_TYPES.HIT_DESIGNER_FUNCTION,
     description: 'Compute function for Hit Design campaigns.',
     header: 'tags',
-    signature: 'hitDesignFunction(molecule: string): DataFrame'
+    signature: 'hitDesignerFunction(molecule: string, ...args): DataFrame'
   },
   {
     role: FUNC_TYPES.DIM_RED_PREPROCESS,
     description: 'Preprocessing function for dimensionality reduction.',
     header: 'tags',
-    signature: 'preprocess(col: Column, metric: string): any'
+    signature: 'preprocess(col: Column, metric: string, ...args): any'
   },
   {
     role: FUNC_TYPES.DIM_RED_POSTPROCESS,
     description: 'Postprocessing function for dimensionality reduction.',
     header: 'tags',
-    signature: 'postprocess(data: any): void'
+    signature: 'postprocess(xCol: Column, yCol: Column, ...args): void'
   },
   {
-    role: FUNC_TYPES.SC_WEBGPU_POINT_HIT_TEST,
-    description: 'GPU-accelerated hit test for a scatterplot.',
+    role: FUNC_TYPES.MONOMER_LIB_PROVIDER,
+    description: 'Provides a monomer library provider.',
     header: 'tags',
-    signature: 'scWebGPUPointHitTest(sc: ScatterPlotViewer, pt: Point): number' 
-  },
-  {
-    role: FUNC_TYPES.SC_WEBGPU_AVAILABLE,
-    description: 'Checks whether WebGPU is available.',
-    header: 'tags',
-    signature: 'isWebGPUAvailable(): boolean'
-  },
-  {
-    role: FUNC_TYPES.SC_WEBGPU_RENDER_VALID,
-    description: '',
-    header: 'tags',
-    signature: 'isWebGPURenderValid(sc: ScatterPlotViewer): boolean'
-  },
-  {
-    role: FUNC_TYPES.SC_WEBGPU_RENDER,
-    description: 'Renders a ScatterPlotViewer',
-    header: 'tags',
-    signature: 'scWebGPURender(sc: ScatterPlotViewer, show: boolean): void'
+    signature: 'getMonomerLibProvider(): IMonomerLibProvider'
   },
   {
     role: FUNC_TYPES.SEARCH_PROVIDER,
@@ -663,9 +643,9 @@ export const functionRoles: FuncRoleDescription[] = [
   },
   {
     role: FUNC_TYPES.NOTATION_REFINER,
-    description: '',
+    description: 'Refines the biological sequence notation based on company specific rules',
     header: 'tags',
-    signature: 'notationRefiner(column: Column, stats: any, separator: string): boolean'
+    signature: 'notationRefiner(column: Column, stats: any, separator: string): bool'
   }
 ]
 

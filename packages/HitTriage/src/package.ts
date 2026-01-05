@@ -183,8 +183,8 @@ export class PackageFunctions {
 
 
   @grok.decorators.func({
-    tags: ['HitTriageDataSource'],
     name: 'Demo Molecules 100',
+    meta: {role: 'hitTriageDataSource'},
   })
   static async demoFileIngest(): Promise<DG.DataFrame> {
     const df = grok.data.demo.molecules(100);
@@ -194,8 +194,8 @@ export class PackageFunctions {
 
 
   @grok.decorators.func({
-    tags: ['HitTriageDataSource'],
     name: 'Demo Molecules 5000',
+    meta: {role: 'hitTriageDataSource'},
   })
   static async demoFileIngest1(): Promise<DG.DataFrame> {
     const df = grok.data.demo.molecules(5000);
@@ -205,8 +205,8 @@ export class PackageFunctions {
 
 
   @grok.decorators.func({
-    tags: ['HitTriageDataSource'],
     name: 'Demo Molecules variable',
+    meta: {role: 'hitTriageDataSource'},
   })
   static async demoFileIngest2(
     @grok.decorators.param({type: 'int', options: {description: 'Molecules counts'}}) numberOfMolecules: number,
@@ -218,8 +218,8 @@ export class PackageFunctions {
 
 
   @grok.decorators.func({
-    tags: ['HitTriageSubmitFunction'],
     name: 'Demo File Submit',
+    meta: {role: 'hitTriageSubmitFunction'},
   })
   static async demoFileSubmit(
     @grok.decorators.param({options: {description: 'Dataframe'}}) df: DG.DataFrame,
@@ -272,8 +272,8 @@ export class PackageFunctions {
     meta: {
       cellType: 'customGasteigerPNG',
       columnTags: 'quality=customGasteigerPNG',
+      role: 'cellRenderer',
     },
-    tags: ['cellRenderer'],
     name: 'gasteigerRenderer',
     outputs: [{type: 'grid_cell_renderer', name: 'result'}],
   })
@@ -283,8 +283,8 @@ export class PackageFunctions {
 
 
   @grok.decorators.func({
-    tags: ['packageSettingsEditor'],
     name: 'Hit Triage package settings editor',
+    meta: {role: 'packageSettingsEditor'},
   })
   static async htPackageSettingEditor(
     @grok.decorators.param({'name': 'propList', 'type': 'object'}) properties: DG.Property[]) : Promise<DG.Widget> {

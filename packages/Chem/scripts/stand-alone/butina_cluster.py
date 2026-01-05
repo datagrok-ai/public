@@ -3,7 +3,7 @@
 #help-url: https://datagrok.ai/help/domains/chem/functions/butina-cluster
 #language: python
 #sample: chem/smiles_coordinates.csv
-#tags: demo, chem, rdkit
+#meta.domain: chem
 #top-menu: Chem | Analyze | Butina Cluster...
 #input: dataframe data [Input data table]
 #input: column molecules {semType: Molecule} [Molecules, in SMILES and MolBlock format]

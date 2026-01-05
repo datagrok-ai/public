@@ -24,8 +24,8 @@ export namespace funcs {
     return await grok.functions.call('Boltz1:Folding', { table, sequences });
   }
 
-  export async function docking(df: DG.DataFrame , molecules: DG.Column , config: string ): Promise<DG.DataFrame> {
-    return await grok.functions.call('Boltz1:Docking', { df, molecules, config });
+  export async function docking(table: DG.DataFrame , ligands: DG.Column , config: string ): Promise<DG.DataFrame> {
+    return await grok.functions.call('Boltz1:Docking', { table, ligands, config });
   }
 
   export async function boltzWidget(molecule: any ): Promise<any> {

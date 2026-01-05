@@ -1,6 +1,6 @@
 # Notebooks changelog
 
-## 1.4.0. (2025-07-28)
+## 1.4.0 (2025-07-28)
 
 Bug fixes, datagarok-api >= 1.26.0*
 

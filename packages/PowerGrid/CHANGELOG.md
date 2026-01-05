@@ -54,7 +54,7 @@
 
 * GROK-17680: ImageUrl: Supported images with Datagrok paths, added docs
 
-## 1.5.4 (2025-03-03) - 1.4.11
+## 1.5.4 (2025-03-03)
 
 ### Features
 

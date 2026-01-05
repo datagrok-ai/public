@@ -29,7 +29,8 @@ export class PackageFunctions {
 
   @grok.decorators.panel({
     name: 'Biology | Admetica',
-    tags: ['chem', 'widgets']})
+    meta: {role: 'widgets', domain: 'chem'},
+  })
   static async admeticaWidget(
     @grok.decorators.param({ name: 'smiles', options: { semType: 'Molecule' }}) semValue: DG.SemanticValue): Promise<DG.Widget<any>> {
     const smiles = await grok.functions.call('Chem:convertMolNotation',
@@ -46,7 +47,9 @@ export class PackageFunctions {
       .map((model: Model) => model.name);
   }
 
-  @grok.decorators.func({ name: 'AdmeticaHT', tags: ['HitTriageFunction'] })
+  @grok.decorators.func({ name: 'AdmeticaHT',
+    meta: {role: 'hitTriageFunction'},
+  })
   static async admeticaHT(
     table: DG.DataFrame,
     @grok.decorators.param({ options: { semType: 'Molecule' } }) molecules: DG.Column,
@@ -140,7 +143,7 @@ export class PackageFunctions {
   }
 
   @grok.decorators.app({name: 'Admetica', meta: {icon: 'images/vlaaivis.png', browsePath: 'Chem'}})
-  static async admeticaApp(): Promise<DG.ViewBase | null> {
+  static async runAdmeticaApplication(): Promise<DG.ViewBase | null> {
     const parent = grok.functions.getCurrentCall();
     return await initializeAdmeticaApp(true, parent);
   }

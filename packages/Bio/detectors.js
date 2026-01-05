@@ -146,7 +146,7 @@ class BioPackageDetectors extends DG.Package {
   /** Detector MUST NOT be async, causes error:
    *  Concurrent modification during iteration: Instance of 'JSArray<Column>'.
    */
-  //tags: semTypeDetector
+  //meta.role: semTypeDetector
   //input: column col
   //output: string semType
   detectMacromolecule(col) {
@@ -630,7 +630,7 @@ class BioPackageDetectors extends DG.Package {
   // -- autostart --
 
   //name: autostart
-  //tags: autostart
+  //meta.role: autostart
   //description: Bio bootstrap
   autostart() {
     this.logger.debug('Bio: detectors.js: autostart()');

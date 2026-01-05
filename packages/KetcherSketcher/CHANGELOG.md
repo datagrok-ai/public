@@ -1,5 +1,9 @@
 # Ketcher Sketcher changelog
 
+## 2.3.0 (2025-03-29)
+
+* Standardized plugin name to title case in README and changelog
+
 ## 2.2.3 (2025-01-14)
 
 * Some additional styles fixes

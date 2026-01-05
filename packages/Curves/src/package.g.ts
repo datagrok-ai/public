@@ -3,8 +3,8 @@ import {MultiCurveViewer} from './fit/multi-curve-viewer';
 import {FitChartCellRenderer} from './fit/fit-renderer';
 import * as DG from 'datagrok-api/dg';
 //name: Fit
-//tags: cellRenderer
 //output: grid_cell_renderer renderer
+//meta.role: cellRenderer
 //meta.cellType: fit
 //meta.virtual: true
 export function _FitChartCellRenderer() {
@@ -13,8 +13,8 @@ export function _FitChartCellRenderer() {
 
 //name: MultiCurveViewer
 //description: A viewer that superimposes multiple in-cell curves on one chart
-//tags: viewer
 //output: viewer result
+//meta.role: viewer
 //meta.icon: icons/multi-curve-viewer.png
 //meta.trellisable: true
 export function _MultiCurveViewer() {
@@ -30,7 +30,7 @@ export async function curveFitDemo() : Promise<void> {
   await PackageFunctions.curveFitDemo();
 }
 
-//tags: init
+//meta.role: init
 export function _initCurves() : void {
   PackageFunctions._initCurves();
 }
@@ -65,24 +65,24 @@ export async function dataToCurvesTopMenu() {
   return await PackageFunctions.dataToCurvesTopMenu();
 }
 
-//tags: Transform
 //input: dataframe table 
 //input: string colName 
 //input: string propName 
 //input: int seriesNumber 
 //output: column result
 //meta.vectorFunc: true
+//meta.role: transform
 export function addStatisticsColumn(table: DG.DataFrame, colName: string, propName: string, seriesNumber: number) : any {
   return PackageFunctions.addStatisticsColumn(table, colName, propName, seriesNumber);
 }
 
-//tags: Transform
 //input: dataframe table 
 //input: string colName 
 //input: string propName 
 //input: string aggrType 
 //output: column result
 //meta.vectorFunc: true
+//meta.role: transform
 export function addAggrStatisticsColumn(table: DG.DataFrame, colName: string, propName: string, aggrType: string) : any {
   return PackageFunctions.addAggrStatisticsColumn(table, colName, propName, aggrType);
 }

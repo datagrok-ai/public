@@ -113,12 +113,7 @@ export class PackageFunctions {
 
 
   @grok.decorators.func({
-    'meta': {
-      'defaultPostProcessingFunction': 'true',
-    },
-    'tags': [
-      'dim-red-postprocessing-function',
-    ],
+    'meta': {'defaultPostProcessingFunction': 'true', role: 'dimRedPostprocessingFunction'},
     'name': 'DBSCAN clustering',
   })
   static async dbscanPostProcessingFunction(
@@ -148,8 +143,8 @@ export class PackageFunctions {
     'meta': {
       'supportedTypes': 'int,float,double,qnum',
       'supportedDistanceFunctions': 'Difference',
+      'role': 'dimRedPreprocessingFunction'
     },
-    'tags': ['dim-red-preprocessing-function'],
     'name': 'None (number)',
     'outputs': [{name: 'result', type: 'object'}],
   })
@@ -166,8 +161,8 @@ export class PackageFunctions {
     'meta': {
       'supportedTypes': 'string',
       'supportedDistanceFunctions': 'One-Hot,Levenshtein,Hamming',
+      'role': 'dimRedPreprocessingFunction'
     },
-    'tags': ['dim-red-preprocessing-function'],
     'name': 'None (string)',
     'outputs': [{name: 'result', type: 'object'}],
   })
@@ -289,10 +284,7 @@ export class PackageFunctions {
 
   @grok.decorators.func({
     'outputs': [{'name': 'result', 'type': 'viewer'}],
-    'tags': [
-      'viewer',
-    ],
-    'meta': {showInGallery: 'false'},
+    'meta': {showInGallery: 'false', role: 'viewer'},
     'name': 'MCL',
     'description': 'Markov clustering viewer',
   })
@@ -984,9 +976,8 @@ export class PackageFunctions {
   @grok.decorators.func({
     'name': 'Pareto front',
     'description': 'Pareto front viewer',
-    'tags': ['viewer'],
     'outputs': [{'name': 'result', 'type': 'viewer'}],
-    'meta': {'icon': 'icons/pareto-front-viewer.svg'},
+    'meta': {'icon': 'icons/pareto-front-viewer.svg', role: 'viewer'},
   })
   static paretoFrontViewer(): DG.Viewer {
     return new ParetoFrontViewer();

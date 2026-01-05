@@ -1,6 +1,7 @@
-// Aggregate a table with 1 million rows
-//
-// See also: https://datagrok.ai/help/develop/performance
+/**
+ * Aggregate a table with 1 million rows
+ * See also: https://datagrok.ai/help/develop/performance
+ */
 
 let time = function(s, f) {
   let start = new Date();

@@ -68,7 +68,7 @@ export async function _testSetSmarts() {
 }
 
 async function createKetcher(): Promise<any> {
-    const func = await DG.Func.find({tags: ['moleculeSketcher'], name: 'ketcherSketcher'})[0];
+    const func = await DG.Func.find({meta: {role: DG.FUNC_TYPES.MOLECULE_SKETCHER}, name: 'ketcherSketcher'})[0];
     grok.chem.currentSketcherType = func.friendlyName;
     const s = new Sketcher();
     const d = ui.dialog().add(s).show();

@@ -122,7 +122,7 @@ export async function _testDetectorsComprehensive(path: string, detector: DG.Fun
 
 /** UI for _testDetectorsComprehensive function */
 export function _testDetectorsDialog(): void {
-  const funcArray = DG.Func.find({tags: ['semTypeDetector']});
+  const funcArray = DG.Func.find({meta: {role: DG.FUNC_TYPES.SEM_TYPE_DETECTOR}});
   // TODO: consider automatic choice of connections
   const dirsArray = ['Demo:Files/', 'System:AppData/'];
 

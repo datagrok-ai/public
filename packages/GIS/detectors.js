@@ -23,7 +23,7 @@ const SEMTYPEGIS = {
 //TODO: add unit test for Detectors
 
 class GisPackageDetectors extends DG.Package {
-  //tags: semTypeDetector
+  //meta.role: semTypeDetector
   //input: column col
   //output: string semType
   //description: detect longitude/latitude coordinates
@@ -78,7 +78,7 @@ class GisPackageDetectors extends DG.Package {
     return null;
   }
 
-  //tags: semTypeDetector
+  //meta.role: semTypeDetector
   //input: column col
   //output: string semType
   //description: detector of countries
@@ -94,7 +94,7 @@ class GisPackageDetectors extends DG.Package {
     return null;
   }
 
-  // //tags: semTypeDetector
+  // //meta.role: semTypeDetector
   // //input: column col
   // //output: string semType
   // //description: detector of ZIP codes for different countries
@@ -160,7 +160,7 @@ class GisPackageDetectors extends DG.Package {
   //   return null;
   // }
 
-  //tags: semTypeDetector
+  //meta.role: semTypeDetector
   //input: column col
   //output: string semType
   //description: detector address

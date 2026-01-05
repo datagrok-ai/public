@@ -593,7 +593,7 @@ export class HitDesignApp<T extends HitDesignTemplate = HitDesignTemplate> exten
           this._submitView?.render();
         });
 
-        const designerFuncs = DG.Func.find({tags: [HitDesignerFunctionTag]}).filter((f) => f.outputs.length === 1 && f.outputs[0].propertyType === DG.TYPE.DATA_FRAME);
+        const designerFuncs = DG.Func.find({meta: {role: HitDesignerFunctionTag}}).filter((f) => f.outputs.length === 1 && f.outputs[0].propertyType === DG.TYPE.DATA_FRAME);
         submitButton.classList.add('hit-design-submit-button');
         const ribbonButtons: HTMLElement[] = [submitButton];
         if (this.stages.length > 0)

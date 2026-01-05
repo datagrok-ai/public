@@ -20,8 +20,8 @@ export class PackageFunctions {
 
 
   @grok.decorators.func({
-    tags: ['widgets'],
     name: 'chemblSearchWidgetLocalDb',
+    meta: {role: 'widgets'},
   })
   static async chemblSearchWidgetLocalDb(
     @grok.decorators.param({options: {semType: 'Molecule'}}) mol: string,
@@ -96,9 +96,9 @@ export class PackageFunctions {
 
 
   @grok.decorators.panel({
-    tags: ['widgets'],
     name: 'Databases | ChEMBL | Substructure Search (Internal)',
     condition: 'true',
+    meta: {role: 'widgets'},
   })
   static async chemblSubstructureSearchPanel(
   @grok.decorators.param({options: {semType: 'Molecule'}}) mol: string): Promise<DG.Widget> {
@@ -107,9 +107,9 @@ export class PackageFunctions {
 
 
   @grok.decorators.panel({
-    tags: ['widgets'],
     name: 'Databases | ChEMBL | Similarity Search (Internal)',
     condition: 'true',
+    meta: {role: 'widgets'},
   })
   static async chemblSimilaritySearchPanel(
     @grok.decorators.param({options: {semType: 'Molecule'}}) mol: string): Promise<DG.Widget> {
@@ -118,8 +118,8 @@ export class PackageFunctions {
 
 
   @grok.decorators.func({
-    tags: ['HitTriageDataSource'],
     name: 'Chembl targets by organism',
+    meta: {role: 'hitTriageDataSource'},
   })
   static async getChemblCompoundsByOrganism(
     @grok.decorators.param({type: 'int', options: {initialValue: '1000', description: 'Maximum number of rows to return'}}) maxNumberOfMolecules: number,
@@ -130,8 +130,8 @@ export class PackageFunctions {
 
 
   @grok.decorators.func({
-    tags: ['HitTriageDataSource'],
     name: 'Chembl Compounds',
+    meta: {role: 'hitTriageDataSource'},
   })
   static async getChemblCompounds(
     @grok.decorators.param({type: 'int', options: {initialValue: '1000', description: 'Maximum number of rows to return'}}) maxNumberOfMolecules: number): Promise<DG.DataFrame> {
@@ -141,8 +141,8 @@ export class PackageFunctions {
 
 
   @grok.decorators.func({
-    tags: ['HitTriageFunction'],
     name: 'Chembl molregno',
+    meta: {role: 'hitTriageFunction'},
   })
   static async chemblMolregno(
     @grok.decorators.param({options: {caption: 'Table', description: 'Input data table'}}) table: DG.DataFrame,

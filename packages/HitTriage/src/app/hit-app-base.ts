@@ -20,7 +20,7 @@ export abstract class HitAppBase<T> {
   public static molFileExtReaders: { ext: string; handlerFunc: DG.Func }[] = ['sdf', 'mol', 'smi', 'mol2']
     .map((ext) => {
       const handlerFunc =
-      DG.Func.find({tags: ['file-handler']})
+      DG.Func.find({meta: {role: DG.FUNC_TYPES.FILE_IMPORTER}})
         .find((f) => f?.options?.ext && typeof f.options.ext === 'string' && f.options.ext.split(',').includes(ext));
       return {ext, handlerFunc: handlerFunc as DG.Func};
     })
@@ -30,9 +30,7 @@ export abstract class HitAppBase<T> {
   constructor(public parentCall: DG.FuncCall, appN: AppName) {
     this.baseUrl = new URL(window.location.href).origin + `/apps/HitTriage/${appN.replace(' ', '')}`;
     this._appName = appN;
-    const tags = DG.Func.find({tags: [HitTriageComputeFunctionTag]});
-    const meta = DG.Func.find({meta: {role: 'hitTriageFunction'}});
-    const funcs = [...tags, ...meta];
+    const funcs = DG.Func.find({meta: {role: HitTriageComputeFunctionTag}});
     const functions = funcs.filter((f) => f.type === funcTypeNames.function);
     const scripts = funcs.filter((f) => f.type === funcTypeNames.script) as DG.Script[];
     const queries = funcs.filter((f) => f.type === funcTypeNames.query) as DG.DataQuery[];

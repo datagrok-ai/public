@@ -60,7 +60,9 @@ export class PackageFunctions {
     // }
   }
 
-  @grok.decorators.func({tags: ['searchProvider']})
+  @grok.decorators.func({
+    meta: {role: 'searchProvider'},
+  })
   static combinedLLMSearchProvider(): DG.SearchProvider {
     const isAiConfigured = grok.ai.openAiConfigured;
     return {

@@ -1,7 +1,6 @@
 import {PackageFunctions} from './package';
 import * as DG from 'datagrok-api/dg';
 
-//tags: dev-tools
 //input: object ent 
 //output: widget result
 export function renderDevPanel(ent: any) : any {
@@ -16,7 +15,7 @@ export function _makeInspectorPanel() : any {
 }
 
 //description: DevTools autostart function
-//tags: autostart
+//meta.role: autostart
 export function autostartTools() : void {
   PackageFunctions.autostartTools();
 }
@@ -27,7 +26,7 @@ export function _IconTool() : void {
 }
 
 //name: Test Manager
-//tags: app
+//meta.role: app
 //meta.browsePath: Admin
 //top-menu: Tools | Dev | Test Manager
 export async function testManager() : Promise<void> {

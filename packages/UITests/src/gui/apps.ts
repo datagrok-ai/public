@@ -10,7 +10,7 @@ category('Apps', () => {
     grok.shell.windows.showContextPanel = false;
   });
 
-  const apps = DG.Func.find({tags: ['app']});
+  const apps = DG.Func.find({meta: {role: DG.FUNC_TYPES.APP}});
   for (const app of apps) {
     test(app.friendlyName, async () => {
       //@ts-ignore

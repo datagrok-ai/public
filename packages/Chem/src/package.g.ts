@@ -502,38 +502,38 @@ export async function getStructuralAlerts(molecules: DG.Column, alerts?: string[
 }
 
 //name: Chemistry | Rendering
-//tags: exclude-actions-panel
 //input: column molColumn { semType: Molecule }
 //output: widget result
+//meta.exclude-actions-panel: true
 //meta.role: panel
 export function molColumnPropertyPanel(molColumn: DG.Column) : any {
   return PackageFunctions.molColumnPropertyPanel(molColumn);
 }
 
 //name: Chemistry | Highlight
-//tags: exclude-actions-panel
 //input: column molColumn { semType: Molecule }
 //output: widget result
+//meta.exclude-actions-panel: true
 //meta.role: panel
 export function molColumnHighlights(molColumn: DG.Column) : any {
   return PackageFunctions.molColumnHighlights(molColumn);
 }
 
 //name: Chemistry | Descriptors
-//tags: chem
 //input: string smiles { semType: Molecule }
 //output: widget result
 //meta.role: widgets,panel
+//meta.domain: chem
 export function descriptorsWidget(smiles: string) : any {
   return PackageFunctions.descriptorsWidget(smiles);
 }
 
 //name: Biology | Drug Likeness
 //description: Drug Likeness score, with explanations on molecule fragments contributing to the score. OCL.
-//tags: chem
 //input: semantic_value smiles { semType: Molecule }
 //output: widget result
 //meta.role: widgets,panel
+//meta.domain: chem
 //help-url: /help/domains/chem/info-panels/drug-likeness.md
 export function drugLikeness(smiles: DG.SemanticValue) : any {
   return PackageFunctions.drugLikeness(smiles);
@@ -541,10 +541,10 @@ export function drugLikeness(smiles: DG.SemanticValue) : any {
 
 //name: Chemistry | Properties
 //description: Basic molecule properties
-//tags: chem
 //input: semantic_value smiles { semType: Molecule }
 //output: widget result
 //meta.role: widgets,panel
+//meta.domain: chem
 export function properties(smiles: DG.SemanticValue) : any {
   return PackageFunctions.properties(smiles);
 }
@@ -558,50 +558,50 @@ export function getChemPropertyFunction(name: string) : any {
 
 //name: Biology | Structural Alerts
 //description: Screening drug candidates against structural alerts i.e. fragments associated to a toxicological response
-//tags: chem
 //input: string smiles { semType: Molecule }
 //output: widget result
 //meta.role: widgets,panel
+//meta.domain: chem
 //help-url: /help/domains/chem/info-panels/structural-alerts.md
 export async function structuralAlerts(smiles: string) : Promise<any> {
   return await PackageFunctions.structuralAlerts(smiles);
 }
 
 //name: Structure | Identifiers
-//tags: chem
 //input: string smiles { semType: Molecule }
 //output: widget result
 //meta.role: widgets,panel
+//meta.domain: chem
 export async function identifiers(smiles: string) : Promise<any> {
   return await PackageFunctions.identifiers(smiles);
 }
 
 //name: Structure | 3D Structure
 //description: 3D molecule representation
-//tags: chem
 //input: string molecule { semType: Molecule }
 //output: widget result
 //meta.role: widgets,panel
+//meta.domain: chem
 export async function structure3D(molecule: string) : Promise<any> {
   return await PackageFunctions.structure3D(molecule);
 }
 
 //name: Structure | 2D Structure
 //description: 2D molecule representation
-//tags: chem
 //input: string molecule { semType: Molecule }
 //output: widget result
 //meta.role: widgets,panel
+//meta.domain: chem
 export function structure2d(molecule: string) : any {
   return PackageFunctions.structure2d(molecule);
 }
 
 //name: Biology | Toxicity
 //description: Toxicity prediction. Calculated by openchemlib
-//tags: chem
 //input: semantic_value smiles { semType: Molecule }
 //output: widget result
 //meta.role: widgets,panel
+//meta.domain: chem
 //help-url: /help/domains/chem/info-panels/toxicity-risks.md
 export function toxicity(smiles: DG.SemanticValue) : any {
   return PackageFunctions.toxicity(smiles);
@@ -728,54 +728,54 @@ export function useAsSubstructureFilter(value: DG.SemanticValue) : void {
 
 //name: Copy as...
 //description: Copies structure in different formats
-//tags: exclude-current-value-menu
 //input: semantic_value value { semType: Molecule }
 //meta.action: Copy as...
+//meta.exclude-current-value-menu: true
 export function copyAsAction(value: DG.SemanticValue) : void {
   PackageFunctions.copyAsAction(value);
 }
 
 //name: Copy as SMILES
 //description: Copies structure as smiles
-//tags: exclude-actions-panel
 //input: semantic_value value { semType: Molecule }
 //meta.action: Copy as SMILES
+//meta.exclude-actions-panel: true
 export function copyAsSmiles(value: DG.SemanticValue) : void {
   PackageFunctions.copyAsSmiles(value);
 }
 
 //name: Copy as MOLFILE V2000
 //description: Copies structure as molfile V2000
-//tags: exclude-actions-panel
 //input: semantic_value value { semType: Molecule }
 //meta.action: Copy as MOLFILE V2000
+//meta.exclude-actions-panel: true
 export function copyAsMolfileV2000(value: DG.SemanticValue) : void {
   PackageFunctions.copyAsMolfileV2000(value);
 }
 
 //name: Copy as MOLFILE V3000
 //description: Copies structure as molfile V3000
-//tags: exclude-actions-panel
 //input: semantic_value value { semType: Molecule }
 //meta.action: Copy as MOLFILE V3000
+//meta.exclude-actions-panel: true
 export function copyAsMolfileV3000(value: DG.SemanticValue) : void {
   PackageFunctions.copyAsMolfileV3000(value);
 }
 
 //name: Copy as SMARTS
 //description: Copies structure as smarts
-//tags: exclude-actions-panel
 //input: semantic_value value { semType: Molecule }
 //meta.action: Copy as SMARTS
+//meta.exclude-actions-panel: true
 export function copyAsSmarts(value: DG.SemanticValue) : void {
   PackageFunctions.copyAsSmarts(value);
 }
 
 //name: Copy as IMAGE
 //description: Copies structure as Image
-//tags: exclude-actions-panel
 //input: semantic_value value { semType: Molecule }
 //meta.action: Copy as Image
+//meta.exclude-actions-panel: true
 export function copyAsImage(value: DG.SemanticValue) : void {
   PackageFunctions.copyAsImage(value);
 }
@@ -1142,19 +1142,19 @@ export function checkJsonMpoProfile(content: string) {
 }
 
 //name: Chemistry | Mixture
-//tags: chem
 //input: string mixture { semType: ChemicalMixture }
 //output: widget result
 //meta.role: widgets,panel
+//meta.domain: chem
 export async function mixtureWidget(mixture: string) : Promise<any> {
   return await PackageFunctions.mixtureWidget(mixture);
 }
 
 //name: Chemistry | MixtureTree
-//tags: chem
 //input: string mixture { semType: ChemicalMixture }
 //output: widget result
 //meta.role: widgets,panel
+//meta.domain: chem
 export async function mixtureTreeWidget(mixture: string) : Promise<any> {
   return await PackageFunctions.mixtureTreeWidget(mixture);
 }

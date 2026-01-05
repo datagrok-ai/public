@@ -166,9 +166,7 @@ async function initChemInt(): Promise<void> {
   if (!storedSketcherType && _properties.Sketcher)
     storedSketcherType = SKETCHER_FUNCS_FRIENDLY_NAMES[_properties.Sketcher];
 
-  const tags = DG.Func.find({tags: ['moleculeSketcher']});
-  const meta = DG.Func.find({meta: {role: 'moleculeSketcher'}});
-  const sketcherFunctions = [...tags, ...meta];
+  const sketcherFunctions = DG.Func.find({meta: {role: DG.FUNC_TYPES.MOLECULE_SKETCHER}});
   const sketcherFunc = sketcherFunctions.find((e) => e.name === storedSketcherType || e.friendlyName === storedSketcherType);
   if (sketcherFunc)
     DG.chem.currentSketcherType = sketcherFunc.friendlyName;
@@ -1274,7 +1272,7 @@ export class PackageFunctions {
 
   @grok.decorators.panel({
     name: 'Chemistry | Rendering',
-    tags: ['exclude-actions-panel'],
+    meta: {'exclude-actions-panel': 'true'},
   })
   static molColumnPropertyPanel(
     @grok.decorators.param({options: {semType: 'Molecule'}}) molColumn: DG.Column): DG.Widget {
@@ -1283,7 +1281,7 @@ export class PackageFunctions {
 
   @grok.decorators.panel({
     name: 'Chemistry | Highlight',
-    tags: ['exclude-actions-panel'],
+    meta: {'exclude-actions-panel': 'true'},
   })
   static molColumnHighlights(
     @grok.decorators.param({options: {semType: 'Molecule'}}) molColumn: DG.Column): DG.Widget {
@@ -1292,8 +1290,7 @@ export class PackageFunctions {
 
   @grok.decorators.panel({
     name: 'Chemistry | Descriptors',
-    tags: ['chem'],
-    meta: {role: 'widgets'},
+    meta: {role: 'widgets', domain: 'chem'},
   })
   static descriptorsWidget(
     @grok.decorators.param({options: {semType: 'Molecule'}}) smiles: string): DG.Widget {
@@ -1308,8 +1305,7 @@ export class PackageFunctions {
     'name': 'Biology | Drug Likeness',
     'description': 'Drug Likeness score, with explanations on molecule fragments contributing to the score. OCL.',
     'help-url': '/help/domains/chem/info-panels/drug-likeness.md',
-    'tags': ['chem'],
-    'meta': {'role': 'widgets'},
+    'meta': {'role': 'widgets', 'domain': 'chem'},
   })
   static drugLikeness(
     @grok.decorators.param({options: {semType: 'Molecule'}}) smiles: DG.SemanticValue): DG.Widget {
@@ -1322,8 +1318,7 @@ export class PackageFunctions {
   @grok.decorators.panel({
     name: 'Chemistry | Properties',
     description: 'Basic molecule properties',
-    tags: ['chem'],
-    meta: {role: 'widgets'},
+    meta: {role: 'widgets', domain: 'chem'},
   })
   static properties(
     @grok.decorators.param({options: {semType: 'Molecule'}}) smiles: DG.SemanticValue): DG.Widget {
@@ -1346,8 +1341,7 @@ export class PackageFunctions {
     'name': 'Biology | Structural Alerts',
     'description': 'Screening drug candidates against structural alerts i.e. fragments associated to a toxicological response',
     'help-url': '/help/domains/chem/info-panels/structural-alerts.md',
-    'tags': ['chem'],
-    'meta': {'role': 'widgets'},
+    'meta': {'role': 'widgets', 'domain': 'chem'},
   })
   static async structuralAlerts(
     @grok.decorators.param({options: {semType: 'Molecule'}}) smiles: string): Promise<DG.Widget> {
@@ -1358,8 +1352,7 @@ export class PackageFunctions {
 
   @grok.decorators.panel({
     name: 'Structure | Identifiers',
-    tags: ['chem'],
-    meta: {role: 'widgets'},
+    meta: {role: 'widgets', domain: 'chem'},
   })
   static async identifiers(
     @grok.decorators.param({options: {semType: 'Molecule'}}) smiles: string): Promise<DG.Widget> {
@@ -1371,8 +1364,7 @@ export class PackageFunctions {
   @grok.decorators.panel({
     name: 'Structure | 3D Structure',
     description: '3D molecule representation',
-    tags: ['chem'],
-    meta: {role: 'widgets'},
+    meta: {role: 'widgets', domain: 'chem'},
   })
   static async structure3D(
     @grok.decorators.param({options: {semType: 'Molecule'}}) molecule: string): Promise<DG.Widget> {
@@ -1384,8 +1376,7 @@ export class PackageFunctions {
   @grok.decorators.panel({
     name: 'Structure | 2D Structure',
     description: '2D molecule representation',
-    tags: ['chem'],
-    meta: {role: 'widgets'},
+    meta: {role: 'widgets', domain: 'chem'},
   })
   static structure2d(
     @grok.decorators.param({options: {semType: 'Molecule'}}) molecule: string): DG.Widget {
@@ -1397,8 +1388,7 @@ export class PackageFunctions {
     'name': 'Biology | Toxicity',
     'description': 'Toxicity prediction. Calculated by openchemlib',
     'help-url': '/help/domains/chem/info-panels/toxicity-risks.md',
-    'tags': ['chem'],
-    'meta': {'role': 'widgets'},
+    'meta': {'role': 'widgets', 'domain': 'chem'},
   })
   static toxicity(
     @grok.decorators.param({options: {semType: 'Molecule'}}) smiles: DG.SemanticValue): DG.Widget {
@@ -1728,8 +1718,7 @@ export class PackageFunctions {
   @grok.decorators.func({
     name: 'Copy as...',
     description: 'Copies structure in different formats',
-    meta: {action: 'Copy as...'},
-    tags: ['exclude-current-value-menu'],
+    meta: {'action': 'Copy as...', 'exclude-current-value-menu': 'true'},
   })
   static copyAsAction(
     @grok.decorators.param({options: {semType: 'Molecule'}}) value: DG.SemanticValue) {
@@ -1750,8 +1739,7 @@ export class PackageFunctions {
   @grok.decorators.func({
     name: 'Copy as SMILES',
     description: 'Copies structure as smiles',
-    tags: ['exclude-actions-panel'],
-    meta: {action: 'Copy as SMILES'},
+    meta: {'action': 'Copy as SMILES', 'exclude-actions-panel': 'true'},
   })
   static copyAsSmiles(
     @grok.decorators.param({options: {semType: 'Molecule'}}) value: DG.SemanticValue): void {
@@ -1764,8 +1752,7 @@ export class PackageFunctions {
   @grok.decorators.func({
     name: 'Copy as MOLFILE V2000',
     description: 'Copies structure as molfile V2000',
-    tags: ['exclude-actions-panel'],
-    meta: {action: 'Copy as MOLFILE V2000'},
+    meta: {'action': 'Copy as MOLFILE V2000', 'exclude-actions-panel': 'true'},
   })
   static copyAsMolfileV2000(
     @grok.decorators.param({options: {semType: 'Molecule'}}) value: DG.SemanticValue): void {
@@ -1778,8 +1765,7 @@ export class PackageFunctions {
   @grok.decorators.func({
     name: 'Copy as MOLFILE V3000',
     description: 'Copies structure as molfile V3000',
-    tags: ['exclude-actions-panel'],
-    meta: {action: 'Copy as MOLFILE V3000'},
+    meta: {'action': 'Copy as MOLFILE V3000', 'exclude-actions-panel': 'true'},
   })
   static copyAsMolfileV3000(
     @grok.decorators.param({options: {semType: 'Molecule'}}) value: DG.SemanticValue): void {
@@ -1792,8 +1778,7 @@ export class PackageFunctions {
   @grok.decorators.func({
     name: 'Copy as SMARTS',
     description: 'Copies structure as smarts',
-    tags: ['exclude-actions-panel'],
-    meta: {action: 'Copy as SMARTS'},
+    meta: {'action': 'Copy as SMARTS', 'exclude-actions-panel': 'true'},
   })
   static copyAsSmarts(
     @grok.decorators.param({options: {semType: 'Molecule'}})value: DG.SemanticValue): void {
@@ -1806,8 +1791,7 @@ export class PackageFunctions {
   @grok.decorators.func({
     name: 'Copy as IMAGE',
     description: 'Copies structure as Image',
-    tags: ['exclude-actions-panel'],
-    meta: {action: 'Copy as Image'},
+    meta: {'action': 'Copy as Image', 'exclude-actions-panel': 'true'},
   })
   static copyAsImage(
     @grok.decorators.param({options: {semType: 'Molecule'}}) value: DG.SemanticValue): void {
@@ -2544,8 +2528,7 @@ export class PackageFunctions {
 
   @grok.decorators.panel({
     name: 'Chemistry | Mixture',
-    tags: ['chem'],
-    meta: {role: 'widgets'},
+    meta: {role: 'widgets', domain: 'chem'},
   })
   static async mixtureWidget(
     @grok.decorators.param({type: 'string', options: {semType: 'ChemicalMixture'}}) mixture: string): Promise<DG.Widget> {
@@ -2554,8 +2537,7 @@ export class PackageFunctions {
 
   @grok.decorators.panel({
     name: 'Chemistry | MixtureTree',
-    tags: ['chem'],
-    meta: {role: 'widgets'},
+    meta: {role: 'widgets', domain: 'chem'},
   })
   static async mixtureTreeWidget(
     @grok.decorators.param({options: {semType: 'ChemicalMixture'}}) mixture: string): Promise<DG.Widget> {

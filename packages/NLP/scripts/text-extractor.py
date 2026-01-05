@@ -1,7 +1,7 @@
 #name: Text Extractor
 #description: Extracts text from a file
 #language: python
-#tags: nlp, panel, extractor
+#meta.role: panel
 #input: file file [A file that contains text]
 #input: string extension
 #output: string text {semType: text} [Extracted text]

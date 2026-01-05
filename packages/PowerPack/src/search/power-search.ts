@@ -16,7 +16,7 @@ const searchWidgetFunctions = DG.Func.find({tags: ['search'], returnType: 'widge
 const tableQueriesSearchFunctions = DG.Func.find({meta: {searchPattern: null}, returnType: 'dataframe'})
   .filter((f) => f.options['searchPattern']);
 
-const searchProvidersFunctions = DG.Func.find({tags: ['searchProvider']});
+const searchProvidersFunctions = DG.Func.find({meta: {role: DG.FUNC_TYPES.SEARCH_PROVIDER}});
 
 export function initSearch() {
   //grok.dapi.queries.list().then((qs) => queries = qs);

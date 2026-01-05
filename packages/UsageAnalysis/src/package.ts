@@ -420,10 +420,7 @@ export class PackageFunctions {
 
 
   @grok.decorators.func({
-    'tags': [
-      'viewer',
-    ],
-    'meta': {showInGallery: 'false'},
+    'meta': {showInGallery: 'false', role: 'viewer'},
     'outputs': [
       {
         type: 'viewer',

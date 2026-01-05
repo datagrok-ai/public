@@ -21,7 +21,7 @@ import {DrcAnalysis} from './plate/analyses/drc/drc-analysis';
 export const _package = new DG.Package();
 
 
-//tags: autostart
+//meta.role: autostart
 export async function autostart(): Promise<void> {
   await PackageFunctions.createDummyPlateData();
 }

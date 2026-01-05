@@ -2,7 +2,7 @@ import {PackageFunctions} from './package';
 import * as DG from 'datagrok-api/dg';
 
 //name: Tutorials
-//tags: app
+//meta.role: app
 //top-menu: Help | Tutorials @Toolbox Help | Tutorials
 export function trackOverview() : void {
   PackageFunctions.trackOverview();
@@ -13,23 +13,23 @@ export function tutorialWidget() : any {
   return PackageFunctions.tutorialWidget();
 }
 
-//tags: autostart
+//meta.role: autostart
 export function tutorialsAutostart() : void {
   PackageFunctions.tutorialsAutostart();
 }
 
-//tags: init
+//meta.role: init
 export function tutorialsInit() : void {
   PackageFunctions.tutorialsInit();
 }
 
 //name: Demo
 //description: Interactive demo of major Datagrok capabilities
-//tags: app
 //input: string path { meta.url: true; optional: true }
 //input: string filter { optional: true }
 //output: view result
 //meta.browseOnly: true
+//meta.role: app
 //meta.icon: images/icons/demoapp-icon.png
 export function demoApp(path?: string, filter?: string) : any {
   return PackageFunctions.demoApp(path, filter);

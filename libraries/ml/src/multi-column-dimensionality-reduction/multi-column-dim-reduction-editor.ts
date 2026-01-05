@@ -114,7 +114,7 @@ export class MultiColumnDimReductionEditor {
       this.onColumnsChanged = new Subject();
       this.editorSettings = editorSettings;
       this.columnParamsEditorAccordion = ui.accordion();
-      const preporcessingFuncs = DG.Func.find({tags: [DIM_RED_PREPROCESSING_FUNCTION_TAG]});
+      const preporcessingFuncs = DG.Func.find({meta: {role: DIM_RED_PREPROCESSING_FUNCTION_TAG}});
       preporcessingFuncs.forEach((f) => {
         const semTypes: string = f.options.get(SUPPORTED_SEMTYPES_TAG) ?? '';
         const name = f.friendlyName ?? f.name;
@@ -586,7 +586,7 @@ class PostProcessingFuncEditor {
     });
     this._argsElement.style.display = 'none';
 
-    const postProcessingFuncs = DG.Func.find({tags: [DIM_RED_POSTPROCESSING_FUNCTION_TAG]})
+    const postProcessingFuncs = DG.Func.find({meta: {role: DIM_RED_POSTPROCESSING_FUNCTION_TAG}})
       .filter((f) => f.inputs.length >= 2);
     postProcessingFuncs.forEach((f) => {
       const name = f.friendlyName ?? f.name;

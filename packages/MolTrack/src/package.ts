@@ -15,7 +15,7 @@ import {registerSemanticTypes} from './utils/detectors';
 
 export const _package = new DG.Package();
 
-//tags: init
+//meta.role: init
 export async function init(): Promise<void> {
   try {
     await grok.functions.call('Chem:initChemAutostart');
@@ -39,7 +39,7 @@ export async function initDB() {
   await registerAllData();
 }
 
-//tags: app
+//meta.role: app
 //name: MolTrack
 //meta.icon: images/moltrack.png
 //input: string path {meta.url: true; optional: true}
@@ -268,7 +268,7 @@ export async function retrieveEntity(scope: string, flatten: boolean = true): Pr
 
 //name: Databases | MolTrack
 //input: semantic_value id {semType: Grok ID}
-//tags: panel
+//meta.role: panel
 //output: widget res
 export async function getMoltrackPropPanelById(id: DG.SemanticValue): Promise<DG.Widget> {
   const {value: idValue} = id;

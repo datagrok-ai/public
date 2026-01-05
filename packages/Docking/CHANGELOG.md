@@ -1,5 +1,9 @@
 # Docking changelog
 
+## 1.3.2 (2025-04-24)
+
+* Docking: Demo improvements
+
 ## 1.1.2 (2024-10-21)
 
 ### Bug Fixes

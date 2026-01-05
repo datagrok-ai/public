@@ -98,12 +98,10 @@ export class PackageFunctions {
 
 
   @grok.decorators.panel({
-    'tags': [
-      'widgets',
-    ],
     'name': 'Databases | Chemspace',
     'description': 'Chemspace Samples',
     'condition': 'true',
+    meta: {role: 'widgets'},
   })
   static async samplesPanel(
     @grok.decorators.param({'options': {'semType': 'Molecule'}}) smiles: string): Promise<DG.Widget> {
@@ -158,12 +156,10 @@ export class PackageFunctions {
   }
 
   @grok.decorators.panel({
-    'tags': [
-      'widgets',
-    ],
     'name': 'Chemspace Prices',
     'description': 'Chemspace Prices',
     'condition': 'true',
+    meta: {role: 'widgets'},
   })
   static async pricesPanel(
     @grok.decorators.param({'options': {'semType': 'chemspace-id'}}) id: string): Promise<DG.Widget> {

@@ -16,13 +16,13 @@ export async function functionSearch(s: string): Promise<DG.Func[]> {
 
 export async function appSearch(s: string): Promise<DG.Func[]> {
   s = s.toLowerCase().trim();
-  return DG.Func.find({tags: ['app']}).filter((val) => val.name?.toLowerCase().includes(s) ||
+  return DG.Func.find({meta: {role: DG.FUNC_TYPES.APP}}).filter((val) => val.name?.toLowerCase().includes(s) ||
     val.description?.toLowerCase().includes(s) || val.friendlyName?.toLowerCase().includes(s));
 }
 
 export function exactAppFuncSearch(s: string): DG.Func | null {
   s = s.toLowerCase().trim();
-  const apps = DG.Func.find({tags: ['app'], returnType: 'view'}).filter((val) => val.name?.toLowerCase() === s ||
+  const apps = DG.Func.find({meta: {role: DG.FUNC_TYPES.APP}, returnType: 'view'}).filter((val) => val.name?.toLowerCase() === s ||
     val.friendlyName?.toLowerCase() === s);
   if (apps.length > 0)
     return apps[0];
@@ -139,7 +139,7 @@ export async function wikiSearch(s: string): Promise<DG.Widget | null> {
     null;
 }
 
-// NOTE: this is an easter egg :D
+/* NOTE: this is an easter egg :D */
 export async function denialSearch(s: string, w?: DG.Widget): Promise<DG.Widget | null> {
 // This function is a joke :D
 // in the era of web services for everything, god gave us a service for generating deniel messages

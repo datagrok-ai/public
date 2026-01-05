@@ -14,7 +14,7 @@
 #input: bool pI_Thurlkill = false {caption: Thurlkill}
 #input: bool pI_Lehninger = false {caption: Lehninger}
 #input: bool pI_Toseland = false {caption: Toseland}
-#tags: Transform
+#meta.role: transform
 #meta.method_info.author: Kozlova, L., Garbuzynskiy, S.O.
 #meta.method_info.year: 2023
 #meta.method_info.package: bio-pichemist-env
