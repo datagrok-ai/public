@@ -541,7 +541,6 @@ FROM target_dictionary td
 
 </div></details>
 
-
 ### Function inputs
 
 To reuse other "helper" functions along with their editors for your top-level function, specify 
@@ -899,6 +898,68 @@ This tells the platform to render dummyEditor from the DevTools package as the e
 - Do **not** handle result display or side effects
 
 The purpose of the editor is solely to edit function parameters.
+
+---
+
+## Annotating Output DataFrames with Tags
+
+Datagrok functions can annotate **output dataframes** with tags using the `meta` section of the output parameter annotation. This allows function authors to attach semantic information to the resulting table and its columns (for example, database provenance, molecule handling hints, or custom tags).
+
+> **Note:** This mechanism applies **only** to output parameters of type `dataframe`.
+
+---
+
+### Syntax
+
+Annotations are defined in the function signature using the `meta` section of the output parameter.
+
+```js
+//output: dataframe {meta: {...}}
+```
+
+---
+
+### DataFrame-Level Tags
+
+Entries in the `meta` object that do **not** match column names and are **not** a JSON objects are applied to the output dataframe itself. These values are written directly to the dataframe metadata (table tags).
+
+Example:
+
+```js
+//output: dataframe {meta: {".data-connection": "System:Datagrok"}}
+```
+
+This sets a dataframe-level tag:
+
+- `.data-connection = "System:Datagrok"`
+
+---
+
+### Column-Level Tags
+
+If a key in the `meta` object matches a column name and value is valid JSON object, its value is interpreted as metadata for that column. All nested key–value pairs are applied as column tags.
+
+Example:
+
+```js
+//output: dataframe {meta: {"mol": {"DbTable": "structures", "DbSchema": "public", "DbColumn": "mol"}}}
+```
+
+This applies metadata to column `mol`:
+
+- `DbTable = "structures"`
+- `DbSchema = "public"`
+- `DbColumn = "mol"`
+
+---
+
+### Combined Example
+
+Dataframe-level and column-level metadata can be defined together in a single `meta` block.
+
+```js
+//output: dataframe {meta: {".data-connection": "System:Datagrok", "mol": {"DbTable": "structures", "DbSchema": "public", "DbColumn": "mol"}}}
+```
 
 ---
 
