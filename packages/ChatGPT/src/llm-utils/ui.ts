@@ -208,7 +208,7 @@ export async function setupScriptsAIPanelUI() {
     const panel = new ScriptingAIPanel(scriptView);
     panel.hide();
     panel.onRunRequest.subscribe(async (args) => {
-      ui.setUpdateIndicator(scriptView.root, true, 'Vibe-Groking Script...', () => { fireAIAbortEvent(); });
+      ui.setUpdateIndicator(scriptView.root, true, 'Vibe-Grokking Script...', () => { fireAIAbortEvent(); });
       const indicator = scriptView.root.querySelector('.d4-update-shadow') as HTMLElement;
       if (indicator)
         indicator.style.zIndex = '1000';
