@@ -116,6 +116,9 @@ export class RadarChartCellRender extends DG.GridCellRenderer {
         getScaledNumber(cols, row, cols[i], {
           normalization: settings.normalization,
           invertScale: settings.invertColumnNames?.includes(cols[i].name),
+          mode: settings.mode,
+          minValues: settings.minValues,
+          maxValues: settings.maxValues,
         }) :
         0;
       return p(i, value);
