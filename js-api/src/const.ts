@@ -453,7 +453,7 @@ export const functionRoles: FuncRoleDescription[] = [
     role: FUNC_TYPES.PANEL,
     description: 'Context-specific widget that appears on the context panel.',
     header: 'tags',
-    signature: 'panel(...args): Widget | Viewer | graphics'
+    signature: 'panel(...args): Widget | Viewer | graphics | void'
   },
   {
     role: FUNC_TYPES.INIT,
