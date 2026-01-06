@@ -42,6 +42,7 @@
     "build-ts": "tsc && eslint ./src/*.js ./dg.js ./ui.js ./grok.js --fix",
     "build-js-api": "git clean -f -X -d ./src && tsc && webpack",
     "build": "tsc && webpack",
+    "build-docker": "tsc && webpack --config webpack.config.docker.js",
     "build-all": "npm --prefix ./../libraries/chem-meta run build && npm run build"
   }
 }
