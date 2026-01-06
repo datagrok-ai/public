@@ -36,6 +36,18 @@ export async function scriptsSearch(s: string): Promise<DG.Func[]> {
     (value instanceof DG.Script));
 }
 
+export async function entitySimilaritySearch(s: string): Promise<DG.Entity[]> {
+  if (!grok.ai.entityIndexingEnabled)
+    return [];
+  try {
+    const results = await grok.ai.searchEntities(s, 0.3, 20);
+    return results;
+  } catch (e) {
+    console.error('Error during similarity search:', e);
+    return [];
+  }
+}
+
 export async function querySearch(s: string): Promise<DG.Func[]> {
   s = s.toLowerCase().trim();
   return DG.Func.find()
@@ -118,7 +130,7 @@ export async function pdbSearch(s: string): Promise<DG.Widget | null> {
   if (s.length != 4 || !/^[A-Z0-9]+$/.test(s.toUpperCase()))
     return null;
 
-  const response= await grok.dapi.fetchProxy('https://data.rcsb.org/rest/v1/holdings/status/' + s);
+  const response = await grok.dapi.fetchProxy('https://data.rcsb.org/rest/v1/holdings/status/' + s);
   if (!response.ok)
     return null;
 

@@ -11,7 +11,7 @@ import {RecentProjectsWidget} from './widgets/recent-projects-widget';
 import {CommunityWidget} from './widgets/community-widget';
 import {WebWidget} from './widgets/web-widget';
 import {appSearch, connectionsSearch,
-  dockerSearch, filesSearch, functionSearch, groupsSearch,
+  dockerSearch, entitySimilaritySearch, filesSearch, functionSearch, groupsSearch,
   helpSearch, jsSamplesSearch, pdbSearch, pubChemSearch, querySearch,
   scriptsSearch, usersSearch, wikiSearch} from './search/entity-search';
 import {KpiWidget} from './widgets/kpi-widget';
@@ -214,7 +214,12 @@ export class PackageFunctions {
       }, {
         name: 'Scripts', description: 'Scripts Search', options: {relatedViewName: 'scripts'},
         search: (s: string) => scriptsSearch(s).then((r) => ({priority: 10, results: r})),
-      }, {
+      },
+      {
+        name: 'Similarity Search', description: 'Entity Similarity Search',
+        search: (s: string) => entitySimilaritySearch(s).then((r) => ({priority: 10, results: r})),
+      },
+      {
         name: 'Samples', description: 'API Samples Search',
         search: (s: string) => jsSamplesSearch(s).then((r) => ({priority: 9, results: r})),
       }, {
