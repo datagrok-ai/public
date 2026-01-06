@@ -183,20 +183,6 @@ export class Dapi {
   }
 
   /** Proxies URL request via Datagrok server with same interface as "fetch".
-   * @deprecated */
-  async proxyFetch(method: string, url: string, headers: Record<string, string>, body: object = {}): Promise<object> {
-    headers['Accept'] = 'application/json';
-    headers['original-url'] = `${url}`;
-    headers['original-method'] = method;
-    let params = {
-      method: 'POST',
-      headers: headers,
-      body: JSON.stringify(body)
-    };
-    return await fetch('/api/connectors/proxy', params);
-  }
-
-  /** Proxies URL request via Datagrok server with same interface as "fetch".
    * Useful for cicrumventing CORS restrictions, and for caching results.
    * @see [sample](../../../../../packages/ApiSamples/scripts/dapi/fetch.js)
    * @param {number} maxAge - forces server to send Cache-Control in response with configured max-age directive */
