@@ -901,67 +901,45 @@ The purpose of the editor is solely to edit function parameters.
 
 ---
 
-## Annotating Output DataFrames with Tags
+## Annotating output dataframes with tags
 
-Datagrok functions can annotate **output dataframes** with tags using the `meta` section of the output parameter annotation. This allows function authors to attach semantic information to the resulting table and its columns (for example, database provenance, molecule handling hints, or custom tags).
+Datagrok functions can annotate **output dataframes** with tags using the `meta` section of the output parameter annotation. This allows function authors to attach semantic information to the resulting table and its columns, such as database provenance, molecule handling hints, or custom metadata.
 
 > **Note:** This mechanism applies **only** to output parameters of type `dataframe`.
 
----
+Annotations are defined directly in the function signature using the `meta` section of the output parameter:
 
-### Syntax
+    //output: dataframe {meta: {...}}
 
-Annotations are defined in the function signature using the `meta` section of the output parameter.
+The `meta` object can contain both dataframe-level and column-level tags:
 
-```js
-//output: dataframe {meta: {...}}
-```
+- **Dataframe-level tags**  
+  Any entry in the `meta` object whose key does **not** match a column name, and whose value is **not** a JSON object, is treated as metadata for the dataframe itself. These key–value pairs are written directly to the dataframe metadata (table tags).
 
----
+  Example:
 
-### DataFrame-Level Tags
+      //output: dataframe {meta: {".data-connection": "System:Datagrok"}}
 
-Entries in the `meta` object that do **not** match column names and are **not** a JSON objects are applied to the output dataframe itself. These values are written directly to the dataframe metadata (table tags).
+  This sets a dataframe-level tag:
 
-Example:
+  - `.data-connection = "System:Datagrok"`
 
-```js
-//output: dataframe {meta: {".data-connection": "System:Datagrok"}}
-```
+- **Column-level tags**  
+  If a key in the `meta` object matches a column name and its value **is** a JSON object, that object is interpreted as metadata for the corresponding column. All nested key–value pairs are applied as column tags.
 
-This sets a dataframe-level tag:
+  Example:
 
-- `.data-connection = "System:Datagrok"`
+      //output: dataframe {meta: {"mol": {"DbTable": "structures", "DbSchema": "public", "DbColumn": "mol"}}}
 
----
+  This applies the following tags to the `mol` column:
 
-### Column-Level Tags
+  - `DbTable = "structures"`
+  - `DbSchema = "public"`
+  - `DbColumn = "mol"`
 
-If a key in the `meta` object matches a column name and value is valid JSON object, its value is interpreted as metadata for that column. All nested key–value pairs are applied as column tags.
+Dataframe-level and column-level metadata can be combined within a single `meta` block:
 
-Example:
-
-```js
-//output: dataframe {meta: {"mol": {"DbTable": "structures", "DbSchema": "public", "DbColumn": "mol"}}}
-```
-
-This applies metadata to column `mol`:
-
-- `DbTable = "structures"`
-- `DbSchema = "public"`
-- `DbColumn = "mol"`
-
----
-
-### Combined Example
-
-Dataframe-level and column-level metadata can be defined together in a single `meta` block.
-
-```js
-//output: dataframe {meta: {".data-connection": "System:Datagrok", "mol": {"DbTable": "structures", "DbSchema": "public", "DbColumn": "mol"}}}
-```
-
----
+    //output: dataframe {meta: {".data-connection": "System:Datagrok", "mol": {"DbTable": "structures", "DbSchema": "public", "DbColumn": "mol"}}}
 
 ## Examples
 
