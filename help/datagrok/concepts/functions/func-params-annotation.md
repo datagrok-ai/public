@@ -908,18 +908,18 @@ Datagrok functions can annotate **output dataframes** with tags using the `meta`
 > **Note:** This mechanism applies **only** to output parameters of type `dataframe`.
 
 Annotations are defined directly in the function signature using the `meta` section of the output parameter:
-
-    //output: dataframe {meta: {...}}
-
+```javascript 
+//output: dataframe {meta: {...}}
+```
 The `meta` object can contain both dataframe-level and column-level tags:
 
 - **Dataframe-level tags**  
   Any entry in the `meta` object whose key does **not** match a column name, and whose value is **not** a JSON object, is treated as metadata for the dataframe itself. These key–value pairs are written directly to the dataframe metadata (table tags).
 
   Example:
-
-      //output: dataframe {meta: {".data-connection": "System:Datagrok"}}
-
+```javascript 
+//output: dataframe {meta: {".data-connection": "System:Datagrok"}}
+```
   This sets a dataframe-level tag:
 
   - `.data-connection = "System:Datagrok"`
@@ -928,9 +928,9 @@ The `meta` object can contain both dataframe-level and column-level tags:
   If a key in the `meta` object matches a column name and its value **is** a JSON object, that object is interpreted as metadata for the corresponding column. All nested key–value pairs are applied as column tags.
 
   Example:
-
-      //output: dataframe {meta: {"mol": {"DbTable": "structures", "DbSchema": "public", "DbColumn": "mol"}}}
-
+```javascript 
+//output: dataframe {meta: {"mol": {"DbTable": "structures", "DbSchema": "public", "DbColumn": "mol"}}}
+```
   This applies the following tags to the `mol` column:
 
   - `DbTable = "structures"`
@@ -938,8 +938,9 @@ The `meta` object can contain both dataframe-level and column-level tags:
   - `DbColumn = "mol"`
 
 Dataframe-level and column-level metadata can be combined within a single `meta` block:
-
-    //output: dataframe {meta: {".data-connection": "System:Datagrok", "mol": {"DbTable": "structures", "DbSchema": "public", "DbColumn": "mol"}}}
+```javascript 
+//output: dataframe {meta: {".data-connection": "System:Datagrok", "mol": {"DbTable": "structures", "DbSchema": "public", "DbColumn": "mol"}}}
+```
 
 ## Examples
 
