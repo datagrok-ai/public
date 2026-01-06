@@ -6,7 +6,7 @@ import * as DG from 'datagrok-api/dg';
 import {ChatGptAssistant} from './prompt-engine/chatgpt-assistant';
 import {ChatGPTPromptEngine} from './prompt-engine/prompt-engine';
 import {findBestMatchingQuery, tableQueriesFunctionsSearchLlm} from './llm-utils/query-matching';
-import {askWiki, setupAIQueryEditorUI, setupSearchUI, setupTableViewAIPanelUI, smartExecution} from './llm-utils/ui';
+import {askWiki, setupAIQueryEditorUI, setupScriptsAIPanelUI, setupSearchUI, setupTableViewAIPanelUI, smartExecution} from './llm-utils/ui';
 import {Plan} from './prompt-engine/interfaces';
 import {OpenAIClient} from './llm-utils/openAI-client';
 import {LLMCredsManager} from './llm-utils/creds';
@@ -27,6 +27,7 @@ export class PackageFunctions {
     LLMCredsManager.init(_package);
     setupSearchUI();
     setupTableViewAIPanelUI();
+    setupScriptsAIPanelUI();
   }
 
 

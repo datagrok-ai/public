@@ -12,10 +12,11 @@ import {ChatGptAssistant} from '../prompt-engine/chatgpt-assistant';
 import * as api from '../package-api';
 import {Plan} from '../prompt-engine/interfaces';
 import {AssistantRenderer} from '../prompt-engine/rendering-tools';
-import {fireAIAbortEvent, fireAIPanelToggleEvent, getAIPanelToggleSubscription} from '../utils';
+import {fireAIAbortEvent, fireAIPanelToggleEvent} from '../utils';
 import {generateAISqlQueryWithTools} from './sql-tools';
 import {processTableViewAIRequest} from './tableview-tools';
-import {DBAIPanel, ModelType, TVAIPanel, UIMessageOptions} from './panel';
+import {DBAIPanel, ModelType, ScriptingAIPanel, TVAIPanel} from './panel';
+import {generateDatagrokScript} from './script-tools';
 
 
 export async function askWiki(question: string, useOpenAI: boolean = true) {
@@ -193,5 +194,48 @@ export async function setupTableViewAIPanelUI() {
   grok.events.onViewAdded.subscribe((view) => {
     if (view.type === DG.VIEW_TYPE.TABLE_VIEW)
       handleView(view as DG.TableView);
+  });
+}
+
+export async function setupScriptsAIPanelUI() {
+  const handleView = (scriptView: DG.ScriptView) => {
+    // setup ribbon panel icon
+    const iconFse = ui.iconSvg('ai.svg', () => fireAIPanelToggleEvent(scriptView), 'Ask AI \n Ctrl+I');
+    iconFse.style.width = iconFse.style.height = '18px';
+    scriptView.setRibbonPanels([...scriptView.getRibbonPanels(), [iconFse]]);
+    // Setup request handler
+    // setup the panel itself
+    const panel = new ScriptingAIPanel(scriptView);
+    panel.hide();
+    panel.onRunRequest.subscribe(async (args) => {
+      ui.setUpdateIndicator(scriptView.root, true, 'Vibe-Groking Script...', () => { fireAIAbortEvent(); });
+      const indicator = scriptView.root.querySelector('.d4-update-shadow') as HTMLElement;
+      if (indicator)
+        indicator.style.zIndex = '1000';
+      const session = panel.startChatSession();
+      try {
+        const res = await generateDatagrokScript(
+          args.currentPrompt.prompt,
+          panel.getCurrentInputs().language,
+          {
+            oldMessages: args.prevMessages,
+            aiPanel: session.session
+          }
+        );
+        if (res && res.trim().length > 0)
+          scriptView.code = res;
+        console.log('Generated script:', res);
+      } catch (error: any) {
+        grok.shell.error('Error during AI table view processing');
+        console.error('Error during AI table view processing:', error);
+      }
+      ui.setUpdateIndicator(scriptView.root, false);
+      session.endSession();
+    });
+  };
+
+  grok.events.onViewAdded.subscribe((view) => {
+    if (view.type === 'ScriptView')
+      setTimeout(() => handleView(view as DG.ScriptView), 500);
   });
 }

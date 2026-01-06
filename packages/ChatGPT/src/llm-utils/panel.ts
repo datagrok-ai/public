@@ -18,7 +18,7 @@ export const ModelType: {[type in ModelOption]: ChatModel} = {
 } as const;
 
 // in future might extend it with other types for response API
-type MessageType = OpenAI.Chat.ChatCompletionMessageParam;
+export type MessageType = OpenAI.Chat.ChatCompletionMessageParam | OpenAI.Responses.ResponseInputItem;
 
 type AIPanelInputs = {
     prompt: string,
@@ -28,6 +28,11 @@ type AIPanelInputs = {
 type DBAIPanelInputs = AIPanelInputs & {
     schemaName: string,
 }
+
+export type ScriptingAIPanelInputs = AIPanelInputs & {
+  language: DG.ScriptingLanguage
+};
+
 
 type TVAIPanelInputs = AIPanelInputs & {
     mode: 'agent' | 'ask',
@@ -56,7 +61,7 @@ export type PanleMesageRet = {
   confirmPromie: Promise<boolean>,
 }
 
-export type AIPanelFuncs<T = OpenAI.Chat.ChatCompletionMessageParam> = {
+export type AIPanelFuncs<T extends MessageType = OpenAI.Chat.ChatCompletionMessageParam> = {
   /** Adds @aiMsg to the message stack (from user) and @msg to the UI panel */
   addUserMessage: (aiMsg: T, msg: string) => void,
   /** Adds @aiMsg to the message stack (from AI) and @msg with @title to the UI panel*/
@@ -736,5 +741,30 @@ export class TVAIPanel<T extends MessageType = OpenAI.Chat.ChatCompletionMessage
       const layout = DG.ViewLayout.fromViewState(conversation.meta);
       this.tableView.loadLayout(layout, true);
     }
+  }
+}
+
+export class ScriptingAIPanel<T extends MessageType = OpenAI.Responses.ResponseInputItem> extends AIPanel<T, ScriptingAIPanelInputs> {
+  protected get placeHolder() { return 'Ask AI to generate a script...'; }
+  protected languageInput: DG.InputBase<string>;
+
+  constructor(view: DG.View | DG.ViewBase) {
+    super('scripting-ai-panel', view); // context ID is fixed for scripting panel
+    this.languageInput = ui.input.choice('Language', {
+      items: Object.values(DG.SCRIPT_LANGUAGE),
+      value: DG.SCRIPT_LANGUAGE.JAVASCRIPT,
+      nullable: false,
+      tooltipText: 'Select scripting language for the generated script.',
+    }) as DG.InputBase<string>;
+    this.inputControlsDiv.appendChild(this.languageInput.input);
+    ui.tooltip.bind(this.languageInput.input, 'Select scripting language for the generated script.');
+  }
+
+  public getCurrentInputs(): ScriptingAIPanelInputs {
+    const baseInputs = super.getCurrentInputs();
+    return {
+      ...baseInputs,
+      language: this.languageInput.value as DG.ScriptingLanguage,
+    };
   }
 }
