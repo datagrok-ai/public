@@ -105,6 +105,8 @@ export interface IDartApi {
   grok_View_SetIcon(v: any, icon: any): any;
   grok_View_Get_IsPinned(v: any): any;
   grok_View_Pin(v: any): any;
+  grok_ScriptView_Set_Code(v: any, s: String): any;
+  grok_ScriptView_Get_Code(v: any): any;
   grok_TableView(d: any, addToWorkspace: Bool): any;
   grok_TableView_Set_DataFrame(v: any, d: any): any;
   grok_TableView_Get_SyncCurrentObject(tv: any): any;
@@ -936,7 +938,7 @@ export interface IDartApi {
   grok_AI_OpenAiConfigured(): any;
   grok_AI_EntityIndexingEnabled(): any;
 
-  // Generated from ../grok_shared/lib/src/interop/grok_api.dart
+  // Generated from ../../shared/grok_shared/lib/src/interop/grok_api.dart
   grok_Test_Error(s: any): any;
   grok_Unhandled_Error(x: any, s: any): any;
   grok_List_Get_Length(x: any): any;
@@ -1762,7 +1764,7 @@ export interface IDartApi {
   grok_ConnectionDataSource_ConnectionTemplate(ds: any): any;
   grok_ConnectionDataSource_CredentialsTemplate(ds: any): any;
 
-  // Generated from ../grok_shared/lib/grok_shared.api.g.dart
+  // Generated from ../../shared/grok_shared/lib/grok_shared.api.g.dart
   grok_DataSourceType_Create(): any;
   grok_Permission_Create(): any;
   grok_ScriptLanguage_Create(): any;
@@ -1783,7 +1785,7 @@ export interface IDartApi {
   grok_DockerImage_Get_iconStatus(x: any): any;
   grok_DockerImage_Get_dockerFullName(x: any): any;
 
-  // Generated from ../ddt/lib/ddt.api.g.dart
+  // Generated from ../../shared/ddt/lib/ddt.api.g.dart
   grok_Tags_Create(): any;
   grok_FuncOptions_Create(): any;
   grok_FuncParamOptions_Create(): any;

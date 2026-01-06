@@ -661,6 +661,13 @@ export class ScriptView extends View {
   static create(script: Script): ScriptView {
     return new ScriptView(api.grok_ScriptView(script.dart));
   }
+
+  public get code(): string {
+    return api.grok_ScriptView_Get_Code(this.dart);
+  }
+  public set code(s: string) {
+    api.grok_ScriptView_Set_Code(this.dart, s);
+  }
 }
 
 export class DataQueryView extends View {
