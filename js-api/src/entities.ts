@@ -635,7 +635,7 @@ export class TableQueryBuilder {
   /**
    * Performs join operation of main table or table specified in {@link leftTable} to table specified in {@link rightTable}.
    * Specify joining fields of the main table (or table specified in {@link leftTable}) in {@link leftTableKeys} and joining fields of {@link rightTable}
-   * in {@Link rightTableKeys}.
+   * in {@link rightTableKeys}.
    * @param rightTable {string}
    * @param joinType {JoinType}
    * @param leftTableKeys {string[]}
