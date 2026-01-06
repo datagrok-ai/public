@@ -19,7 +19,7 @@ limit @maxRows
 --connection: Chembl
 --meta.batchMode: true
 --input: string pattern {semType: Molecule}
---input: double threshold = 0.6 { min: 0, max: 1 }
+--input: double threshold = 0.6 { min: 0; max: 1 }
 select set_config('rdkit.tanimoto_threshold', @threshold::text, true);
 --batch
 select molregno, m as molecule, similarity from get_mfp2_neighbors(@pattern);
