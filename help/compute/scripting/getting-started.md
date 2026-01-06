@@ -2,11 +2,12 @@
 title: "Getting started with scripting"
 sidebar_position: 0
 format: 'mdx'
+---
+
 ```mdx-code-block
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
 ```
----
 
 This section explains the basic concepts of scripting in Datagrok.
 Code examples are provided in **Python** and **JavaScript**,
