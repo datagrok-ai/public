@@ -1,5 +1,9 @@
 # Power Pack changelog
 
+## 1.7.19 (2025-12-19)
+
+* DBExplorer: Handle semtypes
+
 ## 1.7.15 (2025-10-27)
 
 * Removed recent projects widget

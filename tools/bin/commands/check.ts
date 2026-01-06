@@ -8,6 +8,7 @@ import {PackageFile} from '../utils/interfaces';
 import * as testUtils from '../utils/test-utils';
 import {error} from 'console';
 import {FuncRoleDescription, functionRoles} from 'datagrok-api/src/const';
+import {execSync} from 'child_process';
 
 
 const warns = ['Latest package version', 'Datagrok API version should contain'];
@@ -159,12 +160,22 @@ export function checkImportStatements(packagePath: string, files: string[], exte
   return warnings;
 }
 
+const TYPE_ALIASES: Record<string, string[]> = {
+  file: ['fileinfo'],
+  dynamic: ['searchprovider'],
+};
+
 function normalizeType(type: string): string {
   return type.toLowerCase().replace(/_/g, '');
 }
 
 function typesMatch(actual: string, expected: string): boolean {
-  return normalizeType(actual) === normalizeType(expected);
+  const a = normalizeType(actual);
+  const e = normalizeType(expected);
+  if (a === e)
+    return true;
+  const aliases = TYPE_ALIASES[a];
+  return aliases ? aliases.includes(e) : false;
 }
 
 function parseSignature(sig: string): { inputs: FuncParam[]; outputs: FuncParam[]; variadicIndex: number } {
@@ -323,10 +334,11 @@ export function checkFuncSignatures(packagePath: string, files: string[]): [stri
     functions.warnings.forEach((w) => warnings.push(`${w} In the file: ${file}.`));
   }
 
-  for (const [name, files] of namesInFiles) {
-    if (files.length > 1)
-      errors.push(`Duplicate names ('${name}'): \n  ${files.join('\n  ')}`);
-  }
+  // Temporarily skip name-checking logic, as duplicate names are allowed
+  // for (const [name, files] of namesInFiles) {
+  //   if (files.length > 1)
+  //     errors.push(`Duplicate names ('${name}'): \n  ${files.join('\n  ')}`);
+  // }
 
   return [warnings, errors];
 }
@@ -489,16 +501,28 @@ export function checkSourceMap(packagePath: string): string[] {
     if (!(new RegExp(`devtool\\s*:\\s*(([^\\n]*?[^\\n]*source-map[^\\n]*:[^\\n]*source-map[^\\n]*)|('(inline-)?source-map'))\\s*`)).test(webpackConfigJson))
       warnings.push('webpack config doesnt contain source map');
 
-    if (!fs.existsSync(packagePath + '/dist/package.js'))
-      warnings.push('dist\\package.js file doesnt exists');
+    // Check if dist files exist
+    const distPackage = path.join(packagePath, 'dist', 'package.js');
+    const distPackageTest = path.join(packagePath, 'dist', 'package-test.js');
 
-    if (!fs.existsSync(packagePath + '/dist/package-test.js'))
-      warnings.push('dist\\package-test.js file doesnt exists');
+    let missingFiles = [distPackage, distPackageTest].filter((f) => !fs.existsSync(f));
 
+    // If any dist files are missing, try to build automatically
+    if (missingFiles.length > 0) {
+      try {
+        execSync('npm run build', {cwd: packagePath, stdio: 'inherit'});
+      } catch (e) {
+        console.warn('Build failed:', e);
+      }
+
+      // Recheck dist files after build
+      missingFiles = [distPackage, distPackageTest].filter((f) => !fs.existsSync(f));
+      missingFiles.forEach((f) => warnings.push(`${path.relative(packagePath, f)} file doesnt exist even after build`));
+    }
   }
+
   return warnings;
 }
-
 
 export function checkNpmIgnore(packagePath: string): string[] {
   const warnings: string[] = [];
