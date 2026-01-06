@@ -11,7 +11,7 @@ export class OpenAIClient {
     if (!grok.ai.openAiConfigured)
       throw new Error('OpenAI is not configured. Please set the API key in the AI settings under Admin section.');
 
-    this.openai = new OpenAI({baseURL: grok.ai.openAiProxyUrl, dangerouslyAllowBrowser: true,
+    this.openai = new OpenAI({baseURL: `${grok.ai.openAiProxyUrl}/v1`, dangerouslyAllowBrowser: true,
       apiKey: 'unused',
       fetch: async (input, init) => {
         const url = typeof input === 'string' ? input : input.toString();
