@@ -3,8 +3,9 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import OpenAI from 'openai';
-import {OpenAIClient} from './openAI-client';
+import {OpenAIClient} from '../openAI-client';
 
+// no longer in use, always use core embeddings instead. keeping code for reference
 
 export async function embedConnectionQueries(connectionId: string) {
   const queries = (await grok.dapi.queries.filter(`connection.id = "${connectionId}"`).list())

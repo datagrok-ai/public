@@ -5,10 +5,9 @@ import * as DG from 'datagrok-api/dg';
 import OpenAI from 'openai';
 import {getAIAbortSubscription} from '../utils';
 import * as _rxjs from 'rxjs';
-import {getTopKSimilarQueries, getVectorEmbedding} from './embeddings';
 import {SemValueObjectHandler} from '@datagrok-libraries/db-explorer/src/object-handlers';
 import {ChatModel} from 'openai/resources/index';
-import {AIPanelFuncs, UIMessageOptions} from './panel';
+import {AIPanelFuncs} from './panel';
 import {BuiltinDBInfoMeta, getDBColumnMetaData, getDBTableMetaData} from './query-meta-utils';
 import {OpenAIClient} from './openAI-client';
 
@@ -39,15 +38,6 @@ export async function generateAISqlQueryWithTools(
   // Load pre-indexed metadata if available
   const connection = await grok.dapi.connections.find(connectionID);
   const dbInfo = await BuiltinDBInfoMeta.fromConnection(connection);
-  let dbQueryEmbeddings: {query: string, embedding: number[]}[] = [];
-  // kind of lazy load to save memory on embedings, switch to proper storage in future
-  if (connection.name.toLowerCase() === 'chembl')
-    dbQueryEmbeddings = (await import('./indexes/chembl-query-embeddings')).chemblQueryEmbeddings;
-  else if (connection.name.toLowerCase() === 'biologics')
-    dbQueryEmbeddings = (await import('./indexes/biologics-query-embeddings')).biologicsQueryEmbeddings;
-  if (connection.name.toLowerCase() === 'datagrok')
-    dbQueryEmbeddings = (await import('./indexes/datagrok-query-embeddings')).datagrokQueryEmbeddings;
-
   // Create tool execution context
   const context = new SQLGenerationContext(connectionID, schemaName, dbInfo, connection);
   const abortSub = getAIAbortSubscription().subscribe(() => {
@@ -117,8 +107,9 @@ export async function generateAISqlQueryWithTools(
         }
       }
 
-      if ((dbQueryEmbeddings?.length ?? 0) > 0) {
+      if (grok.ai.entityIndexingEnabled) {
         const similarQueries = await findSimilarQueriesToPrompt(prompt);
+        console.log(`found ${similarQueries.n} similar queries for the prompt`);
         if (similarQueries.n > 0 && similarQueries.text) {
           semTypeWithinPromptInfo += `\n\n Additionally, here are some similar previously executed queries that might help you:
           \n${similarQueries.text}
@@ -255,7 +246,7 @@ export async function generateAISqlQueryWithTools(
     ];
 
     // if we have some embeddings, then also add a tool so that LLM can use it to find similar queries
-    if ((dbQueryEmbeddings?.length ?? 0) > 0) {
+    if (grok.ai.entityIndexingEnabled) {
       tools.push({
         type: 'function',
         function: {
@@ -276,20 +267,17 @@ export async function generateAISqlQueryWithTools(
     }
 
     async function findSimilarQueriesToPrompt(aiPrompt: string) {
-      if ((dbQueryEmbeddings?.length ?? 0) === 0)
-        return {text: 'No queries found', n: 0};
-      if ((dbQueryEmbeddings!.length < 4))
-        return {text: `Only ${dbQueryEmbeddings.length} queries found:\n\n${dbQueryEmbeddings!.map((q) => `- ${q.query}`).join('\n\n')}`, n: dbQueryEmbeddings.length};
       try {
-        const userQueryEmbedding = await getVectorEmbedding(openai, aiPrompt);
-        const topSimilarQueries = getTopKSimilarQueries(userQueryEmbedding, dbQueryEmbeddings!, 3);
-        console.log('Top similar queries:', topSimilarQueries);
-        if (topSimilarQueries.length === 0)
-          return {text: 'No similar queries found', n: 0};
+        const resultEntities = (await grok.ai.searchEntities(aiPrompt, 0.3, 10, ['DataQuery']))
+          .filter((e) => !!e && e instanceof DG.DataQuery && e.connection?.id === connectionID)
+          .filter((_, i) => i < 4) as DG.DataQuery[]; // limit to top 4
+
+        if (resultEntities.length === 0)
+          return {text: 'No similar queries found for this connection', n: 0};
         return {text: `Here are some similar previously executed queries that might help you.
           Note that these queries might have annotations/comments like name descriptions and so on that can help you understand the schema better.\n\n
           Here they are:
-          ${topSimilarQueries.map((q) => `- Query:\n ${q.query} \n (similarity score: ${q.score.toFixed(4)})`).join('\n\n')}`, n: topSimilarQueries.length};
+          ${resultEntities.map((q) => `- Query:\n ${q.query} \n`).join('\n\n')}`, n: resultEntities.length};
       } catch (error) {
         console.error('Error generating embedding for similar query search:', error);
         return {text: 'Error generating embedding for similar query search', n: 0};

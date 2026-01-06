@@ -5,7 +5,6 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {ChatGptAssistant} from './prompt-engine/chatgpt-assistant';
 import {ChatGPTPromptEngine} from './prompt-engine/prompt-engine';
-import {getAiPanelVisibility, initAiPanel, setAiPanelVisibility} from './ai-panel';
 import {findBestMatchingQuery, tableQueriesFunctionsSearchLlm} from './llm-utils/query-matching';
 import {askWiki, setupAIQueryEditorUI, setupSearchUI, setupTableViewAIPanelUI, smartExecution} from './llm-utils/ui';
 import {Plan} from './prompt-engine/interfaces';
@@ -14,8 +13,6 @@ import {LLMCredsManager} from './llm-utils/creds';
 import {CombinedAISearchAssistant} from './llm-utils/combined-search';
 import {JsonSchema} from './prompt-engine/interfaces';
 import {genDBConnectionMeta, moveDBMetaToStickyMetaOhCoolItEvenRhymes} from './llm-utils/db-index-tools';
-import * as rxjs from 'rxjs';
-import {embedConnectionQueries} from './llm-utils/embeddings';
 import {biologicsIndex} from './llm-utils/indexes/biologics-index';
 import {chemblIndex} from './llm-utils/indexes/chembl-index';
 
@@ -225,20 +222,6 @@ export class PackageFunctions {
         grok.shell.info('Database schema indexed successfully.');
         console.log(res);
         DG.Utils.download(`${connectionsInput.value}_${schemaInput.value}_db_index.json`, JSON.stringify(res, (_, v) => typeof v === 'bigint' ? Number(v) : v, 2));
-      }).show();
-  }
-
-  @grok.decorators.func({})
-  static async embedConnectionQueries() {
-    const connections = await grok.dapi.connections.list();
-    const connectionsInput = ui.input.choice('Connection', {items: connections.map((c) => c.nqName), value: connections[0].nqName, nullable: false});
-    ui.dialog('Embed Connection Queries')
-      .add(connectionsInput)
-      .onOK(async () => {
-        const connection = connections.find((c) => c.nqName === connectionsInput.value)!;
-        const embedRes = await embedConnectionQueries(connection.id);
-        console.log(embedRes);
-        DG.Utils.download(`${connectionsInput.value}_queries_embeddings.json`, JSON.stringify(embedRes, null, 2));
       }).show();
   }
 }
