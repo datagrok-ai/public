@@ -105,11 +105,23 @@ export function distance(p1: DG.Point, p2: DG.Point): number {
   return Math.sqrt((p1.x - p2.x) * (p1.x - p2.x) + (p1.y - p2.y) * (p1.y - p2.y));
 }
 
-export function getScaledNumber(cols: DG.Column[], row: number, activeColumn: DG.Column, settings: AxisScaleSettings): number {
+const FLOAT_NONE = 2.6789344063684636e-34;
+
+function toLogSafe(x: number): number {
+  return x > 0 ? Math.log(x) : FLOAT_NONE;
+}
+
+export function getScaledNumber(
+  cols: DG.Column[],
+  row: number,
+  activeColumn: DG.Column,
+  settings: AxisScaleSettings
+): number {
   const {
     normalization,
     zeroScale = false,
     invertScale = false,
+    logScale = false,
     mode = MinMaxMode.Auto,
     minValues,
     maxValues,
@@ -121,14 +133,17 @@ export function getScaledNumber(cols: DG.Column[], row: number, activeColumn: DG
 
   for (const c of cols) {
     const num = c?.getNumber(row);
-    if (num != null) colNumbers.push(num);
+    colNumbers.push(logScale ? toLogSafe(num) : num);
 
     const min = mode === MinMaxMode.Manual ? minValues?.get(c.name) : c.min;
     const max = mode === MinMaxMode.Manual ? maxValues?.get(c.name) : c.max;
-    if (min) colMins.push(min);
-    if (max) colMaxs.push(max);
+    if (min != null)
+      colMins.push(logScale ? toLogSafe(min) : min);
+    if (max != null)
+      colMaxs.push(logScale ? toLogSafe(max) : max);
   }
 
+  const value = logScale ? toLogSafe(activeColumn.getNumber(row)) : activeColumn.getNumber(row);
   let normalized = 0;
 
   if (normalization === NormalizationType.Global || normalization === NormalizationType.Row) {
@@ -138,16 +153,19 @@ export function getScaledNumber(cols: DG.Column[], row: number, activeColumn: DG
     const gmin = zeroScale ? 0 : Math.min(...values);
     const gmax = Math.max(...ranges);
 
-    const value = activeColumn.getNumber(row) ?? 0;
     normalized = gmax === gmin ? 0 : (value - gmin) / (gmax - gmin);
   } else {
-    // const min = mode === MinMaxMode.Manual ? minValues?.get(activeColumn.name) ?? activeColumn.min : activeColumn.min;
-    // const max = mode === MinMaxMode.Manual ? maxValues?.get(activeColumn.name) ?? activeColumn.max : activeColumn.max;
-    // normalized = max === min ? 0 : (row - min) / (max - min);
-    normalized = activeColumn.scale(row) ?? 0;
+    const min = mode === MinMaxMode.Manual ? minValues?.get(activeColumn.name) ?? activeColumn.min : activeColumn.min;
+    const max = mode === MinMaxMode.Manual ? maxValues?.get(activeColumn.name) ?? activeColumn.max : activeColumn.max;
+
+    const minVal = logScale ? toLogSafe(min) : min;
+    const maxVal = logScale ? toLogSafe(max) : max;
+
+    normalized = maxVal === minVal ? 0 : (value - minVal) / (maxVal - minVal);
   }
 
-  if (invertScale) normalized = 1 - normalized;
+  if (invertScale)
+    normalized = 1 - normalized;
 
   return normalized;
 }

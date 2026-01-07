@@ -116,6 +116,7 @@ export class RadarChartCellRender extends DG.GridCellRenderer {
         getScaledNumber(cols, row, cols[i], {
           normalization: settings.normalization,
           invertScale: settings.invertColumnNames?.includes(cols[i].name),
+          logScale: settings.logColumnNames?.includes(cols[i].name),
           mode: settings.mode,
           minValues: settings.minValues,
           maxValues: settings.maxValues,
@@ -143,6 +144,10 @@ export class RadarChartCellRender extends DG.GridCellRenderer {
         const scaledNumber = getScaledNumber(cols, row, cols[i], {
           normalization: settings.normalization,
           invertScale: settings.invertColumnNames?.includes(cols[i].name),
+          logScale: settings.logColumnNames?.includes(cols[i].name),
+          mode: settings.mode,
+          minValues: settings.minValues,
+          maxValues: settings.maxValues,
         });
         const point = p(i, scaledNumber);
         DG.Paint.marker(g, DG.MARKER_TYPE.CIRCLE, point.x, point.y,
