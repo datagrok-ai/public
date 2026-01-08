@@ -13,6 +13,8 @@ export class MpoProfileEditor {
   onChanged = new Subject();
   profile?: DesirabilityProfile;
 
+  columnMapping: Record<string, string | null> = {};
+
   constructor(dataFrame?: DG.DataFrame) {
     this.dataFrame = dataFrame;
     this.setProfile();
@@ -24,6 +26,7 @@ export class MpoProfileEditor {
 
   setProfile(profile?: DesirabilityProfile) {
     this.profile = profile;
+    this.columnMapping = {};
     ui.empty(this.root);
     if (!profile) {
       this.root.append(ui.divText('No profile specified.'));
@@ -73,6 +76,7 @@ export class MpoProfileEditor {
         value: matchedColumnName ?? '',
         onValueChanged: (value) => {
           drawBarsFromColumnValues(value);
+          this.columnMapping[propertyName] = value ?? null;
         },
       });
 

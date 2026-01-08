@@ -92,7 +92,7 @@ import {MixtureCellRenderer} from './rendering/mixture-cell-renderer';
 import {createComponentPane, createMixtureWidget, Mixfile} from './utils/mixfile';
 import {biochemicalPropertiesDialog} from './widgets/biochem-properties-widget';
 import {checkCurrentView} from './utils/ui-utils';
-import {mpo, PropertyDesirability} from '@datagrok-libraries/statistics/src/mpo/mpo';
+import {mpo, PropertyDesirability, WeightedAggregation} from '@datagrok-libraries/statistics/src/mpo/mpo';
 //@ts-ignore
 import '../css/chem.css';
 import {addDeprotectedColumn, DeprotectEditor} from './analysis/deprotect';
@@ -2464,6 +2464,7 @@ export class PackageFunctions {
   static async mpoTransformFunction(
     df: DG.DataFrame,
     profileName: string,
+    aggregation: WeightedAggregation,
     @grok.decorators.param({type: 'object'}) currentProperties: { [key: string]: PropertyDesirability },
   ): Promise<string[]> {
     const columns: DG.Column[] = [];
@@ -2484,7 +2485,7 @@ export class PackageFunctions {
     }
 
     try {
-      resultCol = mpo(df, columns, profileName);
+      resultCol = mpo(df, columns, profileName, aggregation);
       grok.shell.info(`MPO score calculated in column '${resultCol.name}'.`);
     } catch (e) {
       console.error('MPO Calculation Error:', e);
