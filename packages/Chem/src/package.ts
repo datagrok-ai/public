@@ -2463,6 +2463,7 @@ export class PackageFunctions {
   })
   static async mpoTransformFunction(
     df: DG.DataFrame,
+    profileName: string,
     @grok.decorators.param({type: 'object'}) currentProperties: { [key: string]: PropertyDesirability },
   ): Promise<string[]> {
     const columns: DG.Column[] = [];
@@ -2470,7 +2471,7 @@ export class PackageFunctions {
     for (const propertyName in currentProperties) {
       const column = df.columns.byName(propertyName);
       if (!column) {
-        grok.shell.warning(`Column ${propertyName} from template not found in table. Skipping.`);
+        grok.shell.warning(`Column ${propertyName} from profile not found in table. Skipping.`);
         continue;
       }
       column.setTag('desirabilityTemplate', JSON.stringify(currentProperties[propertyName]));
@@ -2478,12 +2479,12 @@ export class PackageFunctions {
     }
 
     if (columns.length === 0) {
-      grok.shell.error('No valid columns found matching the template properties. Cannot calculate MPO score.');
+      grok.shell.error('No valid columns found matching the profile properties. Cannot calculate MPO score.');
       return [];
     }
 
     try {
-      resultCol = mpo(df, columns);
+      resultCol = mpo(df, columns, profileName);
       grok.shell.info(`MPO score calculated in column '${resultCol.name}'.`);
     } catch (e) {
       console.error('MPO Calculation Error:', e);

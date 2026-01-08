@@ -47,12 +47,15 @@ export function desirabilityScore(x: number, desirabilityLine: DesirabilityLine)
 }
 
 /** Calculates the multi parameter optimization score, 0-100, 100 is the maximum */
-export function mpo(dataFrame: DG.DataFrame, columns: DG.Column[]): DG.Column {
+export function mpo(dataFrame: DG.DataFrame, columns: DG.Column[], profileName: string): DG.Column {
   if (columns.length === 0)
     throw new Error('No columns provided for MPO calculation.');
 
-  const resultColumnName = dataFrame.columns.getUnusedName('MPO'); // Ensure unique name
-  const resultColumn = DG.Column.float(resultColumnName, columns[0].length);
+  let resultColumn = dataFrame.col(profileName);
+  const isNew = !resultColumn;
+
+  if (!resultColumn)
+    resultColumn = DG.Column.float(profileName, columns[0].length);
 
   const desirabilityTemplates = columns.map((column) => {
     const tag = column.getTag('desirabilityTemplate');
@@ -75,6 +78,7 @@ export function mpo(dataFrame: DG.DataFrame, columns: DG.Column[]): DG.Column {
   });
 
   // Add the column to the table
-  dataFrame.columns.add(resultColumn);
+  if (isNew)
+    dataFrame.columns.add(resultColumn);
   return resultColumn;
 }

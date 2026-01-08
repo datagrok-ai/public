@@ -91,6 +91,7 @@ export class MpoProfileDialog {
       const [func] = await DG.Func.find({name: 'mpoTransformFunction'});
       const funcCall = await func.prepare({
         df: this.dataFrame,
+        profileName: this.currentProfile?.name ?? 'MPO',
         currentProperties: this.currentProfile?.properties,
       }).call(undefined, undefined, {processed: false});
 
