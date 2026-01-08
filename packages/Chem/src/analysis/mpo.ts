@@ -12,17 +12,17 @@ const MPO_TEMPLATE_PATH = 'System:AppData/Chem/mpo';
 export class MpoProfileDialog {
   dataFrame: DG.DataFrame;
   mpoProfileEditor: MpoProfileEditor;
-  templateInput: DG.ChoiceInput<string | null>;
+  profileInput: DG.ChoiceInput<string | null>;
   addParetoFront: DG.InputBase<boolean>;
   mpoFiles: DG.FileInfo[] = [];
-  currentTemplate: DesirabilityProfile | null = null;
-  currentTemplateFileName: string | null = null;
+  currentProfile: DesirabilityProfile | null = null;
+  currentProfileFileName: string | null = null;
 
   constructor(dataFrame?: DG.DataFrame) {
     this.dataFrame = dataFrame ?? grok.shell.t;
     this.mpoProfileEditor = new MpoProfileEditor(this.dataFrame);
 
-    this.templateInput = ui.input.choice('Template', {
+    this.profileInput = ui.input.choice('Profile', {
       onValueChanged: async (value) => await this.loadProfile(value),
       nullable: false,
     });
@@ -32,41 +32,41 @@ export class MpoProfileDialog {
 
   async init(): Promise<void> {
     this.mpoFiles = await grok.dapi.files.list(MPO_TEMPLATE_PATH);
-    const defaultTemplate = this.mpoFiles.length > 0 ? this.mpoFiles[0].fileName : null;
+    const defaultProfile = this.mpoFiles.length > 0 ? this.mpoFiles[0].fileName : null;
 
-    this.templateInput.items = this.mpoFiles.map((f) => f.fileName);
-    if (defaultTemplate) {
-      this.templateInput.value = defaultTemplate;
-      await this.loadProfile(defaultTemplate);
+    this.profileInput.items = this.mpoFiles.map((f) => f.fileName);
+    if (defaultProfile) {
+      this.profileInput.value = defaultProfile;
+      await this.loadProfile(defaultProfile);
     }
   }
 
   private async loadProfile(fileName: string | null): Promise<void> {
     if (!fileName) return;
-    this.currentTemplateFileName = fileName;
-    const templateFile = this.mpoFiles.find((f) => f.fileName === fileName);
-    if (!templateFile) return;
+    this.currentProfileFileName = fileName;
+    const profileFile = this.mpoFiles.find((f) => f.fileName === fileName);
+    if (!profileFile) return;
 
     try {
-      const templateContent = await templateFile.readAsString();
-      this.currentTemplate = JSON.parse(templateContent) as DesirabilityProfile;
-      this.mpoProfileEditor.setProfile(this.currentTemplate);
+      const profileContent = await profileFile.readAsString();
+      this.currentProfile = JSON.parse(profileContent) as DesirabilityProfile;
+      this.mpoProfileEditor.setProfile(this.currentProfile);
     } catch (e) {
-      grok.shell.error(`Failed to load template '${fileName}': ${e instanceof Error ? e.message : e}`);
+      grok.shell.error(`Failed to load profile '${fileName}': ${e instanceof Error ? e.message : e}`);
     }
   }
 
-  private async saveTemplate(): Promise<void> {
-    if (!this.currentTemplateFileName || !this.currentTemplate) return;
+  private async saveProfile(): Promise<void> {
+    if (!this.currentProfileFileName || !this.currentProfile) return;
     try {
-      const updatedTemplateString = JSON.stringify(this.currentTemplate, null, 2);
+      const updatedProfileString = JSON.stringify(this.currentProfile, null, 2);
       await grok.dapi.files.writeAsText(
-        `${MPO_TEMPLATE_PATH}/${this.currentTemplateFileName}`,
-        updatedTemplateString,
+        `${MPO_TEMPLATE_PATH}/${this.currentProfileFileName}`,
+        updatedProfileString,
       );
-      grok.shell.info(`Template '${this.currentTemplateFileName}' updated.`);
+      grok.shell.info(`Profile '${this.currentProfileFileName}' updated.`);
     } catch (e) {
-      grok.shell.error(`Failed to save template '${this.currentTemplateFileName}': ${e instanceof Error ? e.message : e}`);
+      grok.shell.error(`Failed to save profile '${this.currentProfileFileName}': ${e instanceof Error ? e.message : e}`);
     }
   }
 
@@ -91,7 +91,7 @@ export class MpoProfileDialog {
       const [func] = await DG.Func.find({name: 'mpoTransformFunction'});
       const funcCall = await func.prepare({
         df: this.dataFrame,
-        currentProperties: this.currentTemplate?.properties,
+        currentProperties: this.currentProfile?.properties,
       }).call(undefined, undefined, {processed: false});
 
       const columnNames: string[] = funcCall.getOutputParamValue();
@@ -104,7 +104,7 @@ export class MpoProfileDialog {
 
   getEditor(): HTMLElement {
     return ui.divV([
-      this.templateInput.root,
+      this.profileInput.root,
       this.mpoProfileEditor.root,
       this.addParetoFront.root,
     ]);
@@ -116,7 +116,7 @@ export class MpoProfileDialog {
     ui.dialog('MPO Score')
       .add(this.getEditor())
       .onOK(async () => {
-        await this.saveTemplate();
+        await this.saveProfile();
         await this.runMpoCalculation();
       })
       .show();

@@ -5,6 +5,7 @@ import {DesirabilityProfile} from './mpo';
 import {MpoDesirabilityLineEditor} from './mpo-line-editor';
 import {Subject} from 'rxjs';
 
+import '../../css/styles.css';
 
 export class MpoProfileEditor {
   root = ui.div([]);
@@ -31,15 +32,10 @@ export class MpoProfileEditor {
 
     // Create header row for the table
     const header = ui.divH([
-      ui.divText('Property', {style: {fontWeight: 'bold', width: '150px'}}),
-      ui.divText('Weight', {style: {fontWeight: 'bold', width: '60px'}}),
-      ui.divText('Desirability', {style: {fontWeight: 'bold', flexGrow: '1'}}), // Let editor take space
-    ], {style: {
-      marginTop: '10px',
-      paddingBottom: '5px',
-      borderBottom: '1px solid #ccc',
-    },
-    });
+      ui.divText('Property', 'statistics-mpo-header-property'),
+      ui.divText('Weight', 'statistics-mpo-header-weight'),
+      ui.divText('Desirability', 'statistics-mpo-header-desirability'), // Let editor take space
+    ], 'statistics-mpo-header');
 
     const propertyRows = Object.entries(profile.properties).map(([propertyName, prop]) => {
       const lineEditor = new MpoDesirabilityLineEditor(prop, 300, 80);
@@ -57,9 +53,7 @@ export class MpoProfileEditor {
           }
         },
       });
-
-      weightInput.root.style.width = '60px';
-      weightInput.root.style.marginTop = '21px';
+      weightInput.root.classList.add('statistics-mpo-weight-input');
 
       const matchedColumnName = this.dataFrame ?
         this.dataFrame.columns.names().find((name) => name.toLowerCase() == propertyName.toLowerCase()) :
@@ -72,15 +66,13 @@ export class MpoProfileEditor {
 
       const rowDiv = ui.divH([
         ui.divV([
-          ui.divText(propertyName, {style: {width: '150px', paddingTop: '5px', marginLeft: '4px'}}),
+          ui.divText(propertyName, 'statistics-mpo-property-name'),
           this.dataFrame ? columnInput.root : null,
         ]),
         weightInput.root,
         lineEditor.root, // Add the Konva container div
       ]);
-      rowDiv.style.alignItems = 'center'; // Vertically align items in the row
-      rowDiv.style.marginBottom = '5px'; // Space between rows
-      rowDiv.style.minHeight = '70px'; // Ensure consistent row height even if editor takes time
+      rowDiv.classList.add('statistics-mpo-row');
 
       return rowDiv;
     }).filter((el) => el !== null); // Filter out skipped properties
