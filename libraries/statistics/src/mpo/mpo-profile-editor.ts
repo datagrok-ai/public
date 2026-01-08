@@ -59,10 +59,22 @@ export class MpoProfileEditor {
         this.dataFrame.columns.names().find((name) => name.toLowerCase() == propertyName.toLowerCase()) :
         null;
 
+      const drawBarsFromColumnValues = (columnName: string | null | undefined) => {
+        if (!this.dataFrame || !columnName)
+          return null;
+        const values = this.dataFrame.col(columnName)?.toList();
+        lineEditor.drawBars(values);
+      };
+
+      drawBarsFromColumnValues(matchedColumnName);
       const columnInput = ui.input.choice('', {
         nullable: true,
         items: this.dataFrame?.columns?.names() ?? [''],
-        value: matchedColumnName ?? ''});
+        value: matchedColumnName ?? '',
+        onValueChanged: (value) => {
+          drawBarsFromColumnValues(value);
+        },
+      });
 
       const rowDiv = ui.divH([
         ui.divV([

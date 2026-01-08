@@ -15,9 +15,12 @@ export class MpoDesirabilityLineEditor {
   root = ui.div();
   onChanged = new Subject();
   private _prop: PropertyDesirability;
+  private barsLayer: Konva.Layer;
+  private pendingBarValues?: number[];
 
   constructor(prop: PropertyDesirability, width: number, height: number) {
     this._prop = prop;
+    this.barsLayer = new Konva.Layer();
     this.root.style.width = `${width}px`;
     this.root.style.height = `${height}px`;
     this.root.style.position = 'relative'; // Needed for absolute positioning of Konva stage
@@ -36,7 +39,7 @@ export class MpoDesirabilityLineEditor {
         width: width,
         height: height,
       });
-
+      stage.add(this.barsLayer);
       const layer = new Konva.Layer();
       stage.add(layer);
 
@@ -265,12 +268,70 @@ export class MpoDesirabilityLineEditor {
       stage.on('mouseout', (_) => ui.tooltip.hide());
 
       // Initial draw
+      if (this.pendingBarValues) {
+        this.drawBars(this.pendingBarValues);
+        this.pendingBarValues = undefined;
+      }
       redraw(false);
     }, 0);
   }
 
   get line(): DesirabilityLine {
     return this._prop.line;
+  }
+
+  drawBars(values?: number[]) {
+    if (!this.barsLayer)
+      return;
+    this.barsLayer.destroyChildren();
+
+    if (!values || values.length === 0)
+      return;
+
+    const stage = this.barsLayer.getStage();
+    if (!stage) {
+      this.pendingBarValues = values;
+      return;
+    }
+
+    const width = stage.width();
+    const height = stage.height();
+
+    const minX = this._prop.min ?? Math.min(...this._prop.line.map((p) => p[0]));
+    const maxX = this._prop.max ?? Math.max(...this._prop.line.map((p) => p[0]));
+
+    const numBins = 20;
+    const plotWidth = width - EDITOR_PADDING.left - EDITOR_PADDING.right;
+    const plotHeight = height - EDITOR_PADDING.top - EDITOR_PADDING.bottom;
+    const binWidth = (maxX - minX) / numBins;
+    const bins = new Array(numBins).fill(0);
+
+    values.forEach((v) => {
+      const idx = Math.min(Math.floor((v - minX) / binWidth), numBins - 1);
+      bins[idx]++;
+    });
+
+    const maxCount = Math.max(...bins) || 1;
+
+    bins.forEach((count, i) => {
+      const barX = EDITOR_PADDING.left + (i * binWidth / (maxX - minX)) * plotWidth;
+      const barW = (binWidth / (maxX - minX)) * plotWidth - 1;
+      const barH = (count / maxCount) * plotHeight;
+
+      const rect = new Konva.Rect({
+        x: barX,
+        y: EDITOR_PADDING.top + plotHeight - barH,
+        width: barW,
+        height: barH,
+        fill: 'rgba(160,196,255,0.5)',
+        stroke: '#2077b4',
+        strokeWidth: 0.5,
+      });
+
+      this.barsLayer.add(rect);
+    });
+
+    this.barsLayer.batchDraw();
   }
 }
 
