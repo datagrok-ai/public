@@ -160,7 +160,6 @@ export class DataFrame {
    * number of objects could be big), consider using {@link fromColumns} instead.
    *
    * @param {object[]} list - List of objects.
-   * @returns {DataFrame}
    * {@link https://dev.datagrok.ai/script/samples/javascript/data-frame/construction/create-from-objects}
    * */
   static fromObjects(list: object[]): DataFrame | undefined {
@@ -182,8 +181,6 @@ export class DataFrame {
 
   /** Constructs {@link DataFrame} from a comma-separated values string
    * @param {string} csv - The content of the comma-separated values file.
-   * @param {CsvImportOptions} options
-   * @returns {DataFrame}
    * {@link https://dev.datagrok.ai/script/samples/javascript/data-frame/construction/create-from-csv}
    * */
   static fromCsv(csv: string, options?: CsvImportOptions): DataFrame {
@@ -192,7 +189,6 @@ export class DataFrame {
 
   /** Constructs {@link DataFrame} from the specified JSON string.
    * @param {string} json - JSON document.
-   * @returns {DataFrame}
    * {@link https://dev.datagrok.ai/script/samples/javascript/data-frame/construction/create-from-json}
    * */
   static fromJson(json: string): DataFrame {
@@ -302,15 +298,16 @@ export class DataFrame {
   }
 
   /** Exports the content to comma-separated-values format.
-   * @param {CsvExportOptions} options
+   * @param {CsvExportOptions} options - options for the export
    * @param {Grid} grid - if specified, takes visible columns, column and row order from the grid.
    * */
   toCsv(options?: CsvExportOptions, grid?: Grid): string {
     return api.grok_DataFrame_ToCsv(this.dart, options, grid?.dart);
   }
 
-  /** Exports the content to comma-separated-values format asynchronously with converting the molblock columns to smiles if specified.
-   * @param {CsvExportOptions} options
+  /** Exports the content to comma-separated-values format asynchronously 
+   * with converting the molblock columns to smiles if specified.
+   * @param {CsvExportOptions} options - options for the export
    * @param {Grid} grid - if specified, takes visible columns, column and row order from the grid.
    * */
   async toCsvEx(options?: CsvExportOptions, grid?: Grid): Promise<string> {
@@ -384,8 +381,8 @@ export class DataFrame {
   /** Converts a column with the specified name to [newType],
    * removes the original column from its dataframe and adds the new column to it.
    * @param {string|Column} column
-   * @param {string} newType
-   * @param {string=} format
+   * @param {string} newType - @see {@link COLUMN_TYPE}
+   * @param {string=} format - number format
    * @returns {Column} */
   changeColumnType(column: string | Column, newType: ColumnType, format: string | null = null): Column {
     return toJs(api.grok_DataFrame_ChangeColumnType(this.dart, toDart(column), newType, format));
@@ -417,8 +414,6 @@ export class DataFrame {
    * @param {String[]} copyColumnNames - columns to copy
    * @param {String[]} mergeColumnNames - columns to merge. Column name will become a value in the [categoryColumnName] column,
    *                                      and column value will become a value in the [valueColumnName] column.
-   * @param {String} categoryColumnName
-   * @param {String} valueColumnName
    * */
   unpivot(copyColumnNames: string[], mergeColumnNames: string[], categoryColumnName: string = 'Category', valueColumnName: string = 'Value'): DataFrame {
     return new DataFrame(api.grok_DataFrame_Unpivot(this.dart, copyColumnNames, mergeColumnNames, categoryColumnName, valueColumnName));
@@ -574,9 +569,7 @@ export class Row {
   readonly idx: number;
 
   /**
-   * Creates a {@link Row} from the specified {@link DataFrame} and row index.
-   * @param {DataFrame} table
-   * @param {number} idx */
+   * Creates a {@link Row} from the specified {@link DataFrame} and row index. */
   constructor(table: DataFrame, idx: number) {
 
     /** @member {DataFrame} */
@@ -611,14 +604,10 @@ export class Row {
     return res;
   }
 
-  /** Returns this row's value for the specified column
-   * @param {string} columnName
-   * @returns {Object} */
+  /** Returns this row's value for the specified column */
   [columnName: string]: any
 
-  /** Returns this row's value for the specified column
-   * @param {string} columnName
-   * @returns {Object} */
+  /** Returns this row's value for the specified column */
   get(columnName: string): any {
     return this.table.getCol(columnName).get(this.idx);
   }
@@ -699,9 +688,9 @@ export class Column<T = any, TInit = T> {
 
   /**
    * Creates a {@link Column} from the list of values.
-   * @param {string} type
-   * @param {string} name
-   * @param {object[]} list
+   * @param {string} type - @see {@link COLUMN_TYPE}
+   * @param {string} name - column name
+   * @param {object[]} list - list of values
    * @returns {Column} */
   static fromList(type: ColumnType, name: string, list: any[]): Column {
     if (type === TYPE.DATE_TIME)
@@ -720,57 +709,39 @@ export class Column<T = any, TInit = T> {
   }
 
   /** Creates a {@link Column} from the bitset.
-   * @param {string} name
-   * @param {BitSet} bitset
+   * @param {string} name - column name
+   * @param {BitSet} bitset - bitset. The resulting boolean column will be of length bitset.length
    * @returns {Column} */
   static fromBitSet(name: string, bitset: BitSet): Column<boolean> {
     return toJs(api.grok_Column_FromBitSet(name, bitset.dart));
   }
 
-  /** Creates an integer column with the specified name and length.
-   * @param {string} name
-   * @param {number} length
-   * @returns {Column} */
+  /** Creates an integer column with the specified name and length. */
   static int(name: string, length: number = 0): Column<number> {
     return Column.fromType(TYPE.INT, name, length);
   }
 
-  /** Creates a floating point column with the specified name and length.
-   * @param {string} name
-   * @param {number} length
-   * @returns {Column} */
+  /** Creates a floating point column with the specified name and length. */
   static float(name: string, length: number = 0): Column<number> {
     return Column.fromType(TYPE.FLOAT, name, length);
   }
 
-  /** Creates a string column with the specified name and length.
-   * @param {string} name
-   * @param {number} length
-   * @returns {Column} */
+  /** Creates a string column with the specified name and length. */
   static string(name: string, length: number = 0): Column<string> {
     return Column.fromType(TYPE.STRING, name, length);
   }
 
-  /** Creates a boolean column with the specified name and length.
-   * @param {string} name
-   * @param {number} length
-   * @returns {Column} */
+  /** Creates a boolean column with the specified name and length. */
   static bool(name: string, length: number = 0): Column<boolean> {
     return Column.fromType(TYPE.BOOL, name, length);
   }
 
-  /** Creates a datetime column with the specified name and length.
-   * @param {string} name
-   * @param {number} length
-   * @returns {Column} */
+  /** Creates a datetime column with the specified name and length. */
   static dateTime(name: string, length: number = 0): Column {
     return Column.fromType(TYPE.DATE_TIME, name, length);
   }
 
-  /** Creates a column containing dataframes with the specified name and length.
-   * @param {string} name
-   * @param {number} length
-   * @returns {Column} */
+  /** Creates a column containing dataframes with the specified name and length. */
   static dataFrame(name: string, length: number = 0): Column<DataFrame> {
     return Column.fromType(TYPE.DATA_FRAME, name, length);
   }
@@ -886,7 +857,6 @@ export class Column<T = any, TInit = T> {
   /**
    * Initializes all values in the column to [columnInitializer].
    * @param {string | number | boolean | Function} valueInitializer value, or a function that returns value by index
-   * @returns {Column}
    * */
   init(valueInitializer: string | number | boolean | Date | dayjs.Dayjs | null | ((ind: number) => any)): Column {
     let initType = typeof valueInitializer;
@@ -947,16 +917,12 @@ export class Column<T = any, TInit = T> {
   }
 
   /** Returns i-th value as string, taking into account value format defined for the column.
-   *  An empty string is returned if there is no value.
-   * @param {number} i
-   * @returns {string} */
+   *  An empty string is returned if there is no value. */
   getString(i: number): string {
     return api.grok_Column_GetString(this.dart, i);
   }
 
-  /** Returns i-th value as number
-   * @param {number} i
-   * @returns {number} */
+  /** Returns i-th value as number. None if isNone(i) */
   getNumber(i: number): number {
     return api.grok_Column_GetNumber(this.dart, i);
   }
@@ -965,10 +931,7 @@ export class Column<T = any, TInit = T> {
    *  Returns true if text was successfully parsed and set, otherwise false.
    *  Examples: dateColumn.setString('April 1, 2020');
    *            intColumn.setString('42');
-   * @param {number} i
-   * @param {string} str
-   * @param {boolean} notify - whether DataFrame's `changed` event should be fired
-   * @returns {boolean} */
+   * @param {boolean} notify - whether DataFrame's `changed` event should be fired */
   setString(i: number, str: string, notify: boolean = true): boolean {
     return api.grok_Column_SetString(this.dart, i, str, notify);
   }
@@ -980,8 +943,8 @@ export class Column<T = any, TInit = T> {
 
   /**
    * Sets [i]-th value to [x], and optionally notifies the dataframe about this change.
-   * @param {number} i
-   * @param value
+   * @param {number} i - Row index.
+   * @param {TInit | null} value - Value to set.
    * @param {boolean} notify - whether DataFrame's `changed` event should be fired. Call {@link fireValuesChanged}
    * after you are done modifying the column.
    */
@@ -994,9 +957,7 @@ export class Column<T = any, TInit = T> {
     return this.stats.missingValueCount == this.length;
   }
 
-  /** Returns whether i-th value is missing.
-   * @param {number} i - Row index.
-   * @returns {boolean} */
+  /** Returns whether i-th value is missing. */
   isNone(i: number): boolean {
     return api.grok_Column_IsNone(this.dart, i);
   }
@@ -1333,14 +1294,16 @@ export class ColumnList {
   }
 
   /** Adds a column, and optionally notifies the parent dataframe.
-   * @param {Column} column
-   * @param {boolean} notify - whether DataFrame's `changed` event should be fired
-   * @returns {Column} */
+   * @param {boolean} notify - whether DataFrame's `changed` event should be fired */
   add(column: Column, notify: boolean = true): Column {
     api.grok_ColumnList_Add(this.dart, column.dart, notify);
     return column;
   }
 
+  /** Returns a column with the specified name and type, or creates a new column if it does not exist. 
+  * @param {string} name - column name
+  * @param {string} type - @see {@link COLUMN_TYPE}
+  * @returns {Column} */
   getOrCreate(name: string, type: ColumnType): Column {
     return this.contains(name) ?
       this.byName(name) :
@@ -1348,7 +1311,7 @@ export class ColumnList {
   }
 
   /** Inserts a column, and optionally notifies the parent dataframe.
-   * @param {Column} column
+   * @param {Column} column - column to insert
    * @param {boolean} notify - whether DataFrame's `changed` event should be fired
    * @param {int} index
    * @returns {Column} */
@@ -1357,10 +1320,7 @@ export class ColumnList {
     return column;
   }
 
-  /** Adds an empty column of the specified type.
-   * @param {string} name
-   * @param {ColumnType} type
-   * @returns {Column} */
+  /** Adds an empty column of the specified type. */
   addNew(name: string, type: ColumnType): Column {
     return toJs(api.grok_ColumnList_AddNew(this.dart, name, type));
   }
@@ -1411,7 +1371,7 @@ export class ColumnList {
   addNewBytes(name: string): Column<Uint8Array> { return this.addNew(name, TYPE.BYTE_ARRAY); }
 
   /** Creates and adds a virtual column.
-   * @param {string} name
+   * @param {string} name - column name
    * @param getValue - value constructor function that accepts int index and returns value
    * @param setValue - function that gets invoked when a column cell value is set
    * @param {String} type - column type
@@ -1438,17 +1398,13 @@ export class ColumnList {
     return this;
   }
 
-  /** Checks whether this list contains a column with the specified name. The check is case-insensitive.
-   * @returns {boolean} */
+  /** Checks whether this list contains a column with the specified name. The check is case-insensitive. */
   contains(columnName: string): boolean {
     return api.grok_ColumnList_Contains(this.dart, columnName);
   }
 
   /** Replaces the column with the new column.
-   * @param {Column} columnToReplace
-   * @param {Column} newColumn
-   * @param {boolean} notify
-   * */
+   * @param {boolean} notify */
   replace(columnToReplace: Column | string, newColumn: Column, notify: boolean = true): Column {
     return toJs(api.grok_ColumnList_Replace(this.dart, (typeof columnToReplace === 'string') ? columnToReplace:  columnToReplace.dart, newColumn.dart, notify));
   }
@@ -1596,7 +1552,6 @@ export class RowList {
   }
 
   /** Inserts empty rows at the specified position
-   * @param {number} idx
    * @param {number} [count=1] - Number of rows to insert.
    * @param notify - Whether a change notification should be fired. */
   insertAt(idx: number, count: number = 1, notify: boolean = true): void {
@@ -1611,9 +1566,7 @@ export class RowList {
     return new Row(this.table, api.grok_RowList_AddNew(this.dart, values, notify));
   }
 
-  /** Iterates over all rows.
-   * @returns {Iterable.<Row>}
-   * */
+  /** Iterates over all rows. */
   * [Symbol.iterator]() {
     for (let i = 0; i < this.table.rowCount; i++)
       yield new Row(this.table, i);
@@ -1629,17 +1582,12 @@ export class RowList {
 
   /**
    * Creates a query matcher.
-   * Sample: {@link https://public.datagrok.ai/js/samples/data-frame/row-matching/patterns}
-   * @param {String|Object} query
-   * @returns {RowMatcher}
-   * */
+   * Sample: {@link https://public.datagrok.ai/js/samples/data-frame/row-matching/patterns} */
   match(query: string | object): RowMatcher {
     return toJs(api.grok_RowList_Match(this.dart, query));
   }
 
   /**
-   * @param {BitSet} bitset
-   * @param {RowPredicate} rowPredicate
    * */
   _applyPredicate(bitset: BitSet, rowPredicate: RowPredicate): void {
     for (let row of this) {
@@ -1863,18 +1811,14 @@ export class BitSet {
   }
 
   /** Sets all bits to x
-   * @param {boolean} x
-   * @param {boolean} notify - whether BitSet's `changed` event should be fired
-   * @returns {BitSet} */
+   * @param {boolean} notify - whether BitSet's `changed` event should be fired */
   setAll(x: boolean, notify: boolean = true): BitSet {
     api.grok_BitSet_SetAll(this.dart, x, notify);
     return this;
   }
 
   /** Finds the first index of value x, going forward from i-th position.
-   * @param {number} i - index
-   * @param {boolean} x
-   * @returns {number} */
+   * @param {number} i - index */
   findNext(i: number, x: boolean): number {
     return api.grok_BitSet_FindNext(this.dart, i, x);
   }
@@ -1882,14 +1826,12 @@ export class BitSet {
   /** Finds the first index of value x, going forward from i-th position, or -1 if not found.
    * @param {number} i - Index to start searching from.
    * @param {boolean} x - Value to search for.
-   * @returns {number} */
+   * @returns {number} - index of the first bit set to x, or -1 if not found */
   findPrev(i: number, x: boolean): number {
     return api.grok_BitSet_FindPrev(this.dart, i, x);
   }
 
-  /** Gets i-th bit
-   * @param {number} i
-   * @returns {boolean} */
+  /** Gets i-th bit */
   get(i: number): boolean {
     return api.grok_BitSet_GetBit(this.dart, i);
   }
@@ -1959,12 +1901,12 @@ export class BitSet {
   /** Finds the value of similarity between two BitSets.
    * @param {BitSet} b - second BitSet.
    * @param {SimilarityMetric} metric - similarity metric to use.
-   * @returns {number} */
+   * @returns {number} - similarity value */
   similarityTo(b: BitSet, metric: SimilarityMetric = SIMILARITY_METRIC.TANIMOTO): number {
     return api.grok_BitSet_SimilarityTo(this.dart, b.dart, metric);
   }
 
-  /** @returns {string} */
+  /** @returns {string} - string representation of this bitset, like '0110'. */
   toString(): string {
     return api.grok_Object_ToString(this.dart);
   }
@@ -1984,10 +1926,8 @@ export class Stats {
     this.dart = dart;
   }
 
-  /** Calculates statistics for the specified column.
-   * @param {Column} col
-   * @param {BitSet} mask
-   * @returns {Stats} */
+  /** Calculates statistics for the specified column, optionally filtered by a mask.
+   * @param {BitSet} mask */
   static fromColumn(col: Column, mask: BitSet | null = null): Stats {
     return new Stats(api.grok_Stats_FromColumn(col.dart, toDart(mask)));
   }
@@ -2077,14 +2017,10 @@ export class Stats {
     return api.grok_Stats_Get_Q3(this.dart);
   }
 
-  /** Pearson correlation
-   * @param {Column} otherColumn
-   * @returns {number} */
+  /** Pearson correlation between this column and another column. */
   corr(otherColumn: Column): number { return api.grok_Stats_Corr(this.dart, otherColumn.dart); }
 
-  /** Spearman correlation
-   * @param {Column} otherColumn
-   * @returns {number} */
+  /** Spearman correlation between this column and another column. */
   spearmanCorr(otherColumn: Column): number { return api.grok_Stats_SpearmanCorr(this.dart, otherColumn.dart); }
 
   /** Returns distributions of [valueColumn] for each category in [catColumn]. */
@@ -2129,11 +2065,11 @@ export class GroupByBuilder {
   }
 
   /**
-   * Performs the aggregation
+   * Adds an aggregation to the query.
    * @param {AggregationType} agg - Aggregation type.
    * @param {string} colName - Column name.
    * @param {string} resultColName - Name of the resulting column. Default value is agg(colName).
-   * @returns {GroupByBuilder}
+   * @returns {GroupByBuilder} - this for chaining
    * */
   add(agg: AggregationType, colName?: string | null, resultColName?: string | null): GroupByBuilder {
     api.grok_GroupByBuilder_Add(this.dart, agg, colName, resultColName);
@@ -2144,7 +2080,7 @@ export class GroupByBuilder {
    * Call {@link aggregate} when the query is constructed.
    * @param {string} srcColName - column name in the source table
    * @param {string} [resultColName] - column name in the resulting DataFrame
-   * @returns {GroupByBuilder} */
+   * @returns {GroupByBuilder} - this for chaining */
   key(srcColName: string, resultColName: string | null = null): GroupByBuilder {
     return this.add(AGG.KEY, srcColName, resultColName);
   }
@@ -2153,7 +2089,7 @@ export class GroupByBuilder {
    * Call {@link aggregate} when the query is constructed.
    * @param {string} srcColName - column name in the source table
    * @param {string} [resultColName] - column name in the resulting DataFrame
-   * @returns {GroupByBuilder} */
+   * @returns {GroupByBuilder} - this for chaining */
   pivot(srcColName: string, resultColName: string | null = null): GroupByBuilder {
     return this.add(AGG.PIVOT, srcColName, resultColName);
   }
@@ -2162,7 +2098,7 @@ export class GroupByBuilder {
    * See also {@link count}, {@link valueCount}, {@link uniqueCount}, {@link missingValueCount}
    * Call {@link aggregate} when the query is constructed.
    * @param {string} [resultColName] - column name in the resulting DataFrame
-   * @returns {GroupByBuilder} */
+   * @returns {GroupByBuilder} - this for chaining */
   count(resultColName: string = 'count'): GroupByBuilder {
     return this.add(AGG.TOTAL_COUNT, null, resultColName);
   }
@@ -2172,7 +2108,7 @@ export class GroupByBuilder {
    * Call {@link aggregate} when the query is constructed.
    * @param {string} srcColName - column name in the source table
    * @param {string} [resultColName] - column name in the resulting DataFrame
-   * @returns {GroupByBuilder} */
+   * @returns {GroupByBuilder} - this for chaining */
   uniqueCount(srcColName: string, resultColName: string | null = null): GroupByBuilder {
     return this.add(AGG.UNIQUE_COUNT, srcColName, resultColName);
   }
@@ -2182,7 +2118,7 @@ export class GroupByBuilder {
    * Call {@link aggregate} when the query is constructed.
    * @param {string} srcColName - column name in the source table
    * @param {string} [resultColName] - column name in the resulting DataFrame
-   * @returns {GroupByBuilder} */
+   * @returns {GroupByBuilder} - this for chaining */
   missingValueCount(srcColName: string, resultColName: string | null = null): GroupByBuilder {
     return this.add(AGG.MISSING_VALUE_COUNT, srcColName, resultColName);
   }
@@ -2192,7 +2128,7 @@ export class GroupByBuilder {
    * Call {@link aggregate} when the query is constructed.
    * @param {string} srcColName - column name in the source table
    * @param {string} [resultColName] - column name in the resulting DataFrame
-   * @returns {GroupByBuilder} */
+   * @returns {GroupByBuilder} - this for chaining */
   valueCount(srcColName: string, resultColName: string | null = null): GroupByBuilder {
     return this.add(AGG.VALUE_COUNT, srcColName, resultColName);
   }
@@ -2201,7 +2137,7 @@ export class GroupByBuilder {
    * Call {@link aggregate} when the query is constructed.
    * @param {string} srcColName - column name in the source table
    * @param {string} [resultColName] - column name in the resulting DataFrame
-   * @returns {GroupByBuilder} */
+   * @returns {GroupByBuilder} - this for chaining */
   min(srcColName: string, resultColName: string | null = null): GroupByBuilder {
     return this.add(AGG.MIN, srcColName, resultColName);
   }
@@ -2210,7 +2146,7 @@ export class GroupByBuilder {
    * Call {@link aggregate} when the query is constructed.
    * @param {string} srcColName - column name in the source table
    * @param {string} [resultColName] - column name in the resulting DataFrame
-   * @returns {GroupByBuilder} */
+   * @returns {GroupByBuilder} - this for chaining */
   max(srcColName: string, resultColName: string | null = null): GroupByBuilder {
     return this.add(AGG.MAX, srcColName, resultColName);
   }
@@ -2219,7 +2155,7 @@ export class GroupByBuilder {
    * Call {@link aggregate} when the query is constructed.
    * @param {string} srcColName - column name in the source table
    * @param {string} [resultColName] - column name in the resulting DataFrame
-   * @returns {GroupByBuilder} */
+   * */
   sum(srcColName: string, resultColName: string | null = null): GroupByBuilder {
     return this.add(AGG.SUM, srcColName, resultColName);
   }
@@ -2228,7 +2164,7 @@ export class GroupByBuilder {
    * Call {@link aggregate} when the query is constructed.
    * @param {string} srcColName - column name in the source table
    * @param {string} [resultColName] - column name in the resulting DataFrame
-   * @returns {GroupByBuilder} */
+   * @returns {GroupByBuilder} - this for chaining */
   med(srcColName: string, resultColName: string | null = null): GroupByBuilder {
     return this.add(AGG.MED, srcColName, resultColName);
   }
@@ -2237,7 +2173,7 @@ export class GroupByBuilder {
    * Call {@link aggregate} when the query is constructed.
    * @param {string} srcColName - column name in the source table
    * @param {string} [resultColName] - column name in the resulting DataFrame
-   * @returns {GroupByBuilder} */
+   * */
   avg(srcColName: string, resultColName: string | null = null): GroupByBuilder {
     return this.add(AGG.AVG, srcColName, resultColName);
   }
@@ -2313,8 +2249,7 @@ export class GroupByBuilder {
   }
 
   /**
-   * @param {BitSet} bitset
-   * @returns {GroupByBuilder} */
+   * */
   whereRowMask(bitset: BitSet): GroupByBuilder {
     if (bitset != null)
       api.grok_GroupByBuilder_WhereBitSet(this.dart, bitset.dart);
@@ -2351,8 +2286,6 @@ export class Qnum {
   /**
    * Extracts the qualifier ({@link QNUM_LESS}, {@link QNUM_EXACT}, {@link QNUM_GREATER}).
    * See also {@link getValue}
-   * @param {number} x
-   * @returns {number}
    * */
   static getQ(x: number): number {
     _qnumBuf.setFloat64(0, x);
@@ -2362,8 +2295,6 @@ export class Qnum {
   /**
    * Extracts the value from x, stripping the qualifier .
    * See also {@link getQ}
-   * @param {number} x
-   * @returns {number}
    * */
   static getValue(x: number): number {
     _qnumBuf.setFloat64(0, x);
@@ -2374,9 +2305,6 @@ export class Qnum {
 
   /**
    * Creates a QNum value out of the [value] and qualifier [q].
-   * @param {number} value
-   * @param {number} q
-   * @returns {number}
    * */
   static create(value: number, q: number = QNUM_EXACT): number {
     _qnumBuf.setFloat64(0, value);
@@ -2399,8 +2327,6 @@ export class Qnum {
 
   /**
    * Parses a string into a qualified number.
-   * @param {string} s
-   * @returns {number}
    * */
   static parse(s: string): number {
     return api.grok_Qnum_Parse(s);
@@ -2408,8 +2334,6 @@ export class Qnum {
 
   /**
    * Converts a qualified number to a string representation.
-   * @param {number} x
-   * @returns {string}
    * */
   static toString(x: number): string {
     return api.grok_Qnum_ToString(x);
@@ -2417,8 +2341,6 @@ export class Qnum {
 
   /**
    * Returns the string representation of the qualifier.
-   * @param {number} x
-   * @returns {string}
    * */
   static qualifier(x: number): string {
     return api.grok_Qnum_Qualifier(x);

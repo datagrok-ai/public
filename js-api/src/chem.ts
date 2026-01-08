@@ -757,7 +757,6 @@ export namespace chem {
    * @param {Column} column - Column with molecules to search
    * @param {string} pattern - Pattern, either one of which RDKit supports
    * @param settings
-   * @returns {Promise<BitSet>}
    * */
   export async function searchSubstructure(column: Column, pattern: string = '', settings: {
     molBlockFailover?: string;
@@ -777,7 +776,6 @@ export namespace chem {
    * @param {DataFrame} table - Table.
    * @param {string} column - Column name with molecules to analyze.
    * @param {string} core - Core molecule.
-   * @returns {Promise<DataFrame>}
    * */
   export async function rGroup(table: DataFrame, column: string, core: string): Promise<DataFrame> {
     return await grok.functions.call('Chem:FindRGroups', {
@@ -790,7 +788,6 @@ export namespace chem {
    * See example: {@link https://public.datagrok.ai/js/samples/domains/chem/mcs}
    * @async
    * @param {Column} column - Column with SMILES to analyze.
-   * @returns {Promise<string>}
    * */
   export async function mcs(table: DataFrame, column: string, returnSmarts: boolean = false,
     exactAtomSearch = true, exactBondSearch = true): Promise<string> {
@@ -811,7 +808,6 @@ export namespace chem {
    * @param {DataFrame} table - Table.
    * @param {string} column - Column name with SMILES to calculate descriptors for.
    * @param {string[]} descriptors - RDKit descriptors to calculate.
-   * @returns {Promise<DataFrame>}
    * */
   export async function descriptors(table: DataFrame, column: string, descriptors: string[]): Promise<DataFrame> {
     await grok.functions.call('Chem:chemDescriptors', {'table': table,
@@ -831,10 +827,7 @@ export namespace chem {
    * Renders a molecule to SVG
    * See example: {@link https://public.datagrok.ai/js/samples/domains/chem/mol-rendering}
    * @param {string} smiles - accepts smiles/molfile format
-   * @param {number} width
-   * @param {number} height
    * @param {object} options - OCL.IMoleculeToSVGOptions
-   * @returns {HTMLDivElement}
    * */
   export function svgMol(
     smiles: string, width: number = 300, height: number = 200,
@@ -879,7 +872,6 @@ export namespace chem {
    * Sketches Molecule sketcher.
    * @param {function} onChangedCallback - a function that accepts (smiles, molfile)
    * @param {string} smiles Initial molecule
-   * @returns {HTMLElement}
    * */
   export function sketcher(onChangedCallback: Function, smiles: string = ''): HTMLElement {
     return api.grok_Chem_Sketcher(onChangedCallback, smiles);

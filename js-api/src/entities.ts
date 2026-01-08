@@ -807,7 +807,6 @@ export class DataConnection extends Entity {
   /** Creates a data connection. Note that in order to be used, it has to be saved first using {@link DataConnectionsDataSource}
    * @param {string} name - Connection name
    * @param {DataConnectionProperties} parameters - Connection properties
-   * @returns {DataConnection}
    * */
    static create(name: string, parameters: DataConnectionProperties): DataConnection {
     return toJs(api.grok_DataConnection_Create(name, parameters.dataSource, parameters));
@@ -1131,10 +1130,7 @@ export class ScriptEnvironment extends Entity {
     super(dart);
   }
 
-  /** Create instance of ScriptEnvironment
-   * @param {string} name
-   * @returns {ScriptEnvironment}
-   * */
+  /** Create instance of ScriptEnvironment */
   static create(name: string): ScriptEnvironment {
     return new ScriptEnvironment(api.grok_ScriptEnvironment_Create(name));
   }
