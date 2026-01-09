@@ -84,7 +84,7 @@ import {CHEM_PROP_MAP} from './open-chem/ocl-service/calculations';
 import {oclMol} from './utils/chem-common-ocl';
 import {MpoProfileEditor} from '@datagrok-libraries/statistics/src/mpo/mpo-profile-editor';
 import {OCLService} from './open-chem/ocl-service';
-import {MpoProfileDialog} from './analysis/mpo';
+import {MPO_TEMPLATE_PATH, MpoProfileDialog} from './analysis/mpo';
 import {MmmpFunctionEditor, MmpDiffTypes} from './analysis/molecular-matched-pairs/mmp-function-editor';
 import {SCALING_METHODS} from './analysis/molecular-matched-pairs/mmp-viewer/mmp-constants';
 import {scaleActivity} from './analysis/molecular-matched-pairs/mmp-viewer/mmpa-utils';
@@ -92,10 +92,11 @@ import {MixtureCellRenderer} from './rendering/mixture-cell-renderer';
 import {createComponentPane, createMixtureWidget, Mixfile} from './utils/mixfile';
 import {biochemicalPropertiesDialog} from './widgets/biochem-properties-widget';
 import {checkCurrentView} from './utils/ui-utils';
-import {mpo, PropertyDesirability, WeightedAggregation} from '@datagrok-libraries/statistics/src/mpo/mpo';
+import {DesirabilityProfile, mpo, PropertyDesirability, WeightedAggregation} from '@datagrok-libraries/statistics/src/mpo/mpo';
 //@ts-ignore
 import '../css/chem.css';
 import {addDeprotectedColumn, DeprotectEditor} from './analysis/deprotect';
+import {InfoView} from './apps/mpo-profile-management';
 
 export {getMCS};
 export * from './package.g';
@@ -2562,5 +2563,28 @@ export class PackageFunctions {
   })
   static async biochemPropsWidget(): Promise<void> {
     await biochemicalPropertiesDialog();
+  }
+
+  @grok.decorators.app({
+    'name': 'MPO profiles',
+    'meta': {browsePath: 'Chem'},
+  })
+  static async mpoProfilesApp(): Promise<DG.View> {
+    const infoView = new InfoView();
+    await infoView.init();
+    return DG.View.fromRoot(infoView.root);
+  }
+
+  @grok.decorators.func()
+  static async mpoProfilesAppTreeBrowser(
+    @grok.decorators.param({type: 'dynamic'}) treeNode: DG.TreeViewGroup,
+    @grok.decorators.param({type: 'view'}) browseView: any,
+  ) {
+    const profileFiles = await grok.dapi.files.list(MPO_TEMPLATE_PATH);
+    for (const profile of profileFiles) {
+      const content =
+        JSON.parse(await grok.dapi.files.readAsText(`${MPO_TEMPLATE_PATH}/${profile.name}`)) as DesirabilityProfile;
+      treeNode.item(content.name).onSelected.subscribe(() => grok.shell.addPreview(this.mpoProfileEditor(profile)));
+    }
   }
 }

@@ -7,7 +7,7 @@ import * as DG from 'datagrok-api/dg';
 import {DesirabilityProfile, PropertyDesirability, WeightedAggregation, WEIGHTED_AGGREGATIONS} from '@datagrok-libraries/statistics/src/mpo/mpo';
 import {MpoProfileEditor} from '@datagrok-libraries/statistics/src/mpo/mpo-profile-editor';
 
-const MPO_TEMPLATE_PATH = 'System:AppData/Chem/mpo';
+export const MPO_TEMPLATE_PATH = 'System:AppData/Chem/mpo';
 
 export class MpoProfileDialog {
   dataFrame: DG.DataFrame;
