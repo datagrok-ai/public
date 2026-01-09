@@ -5,7 +5,7 @@ declare let grok: typeof _grok, DG: typeof _DG;
 import {category, expect, test} from '@datagrok-libraries/utils/src/test';
 
 //@ts-ignore
-import { _package } from 'package-test';
+import { _package } from '../package-test';
 
 
 category('Dapi: entities', () => {
