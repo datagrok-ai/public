@@ -160,6 +160,10 @@ export class Dapi {
     return new DockerDataSource();
   }
 
+  get spaces(): SpacesDataSource {
+    return new SpacesDataSource(api.grok_Dapi_Spaces());
+  }
+
   /**
    * @deprecated The UserDataStorage should not be used. Use {@link UserSettingsStorage} instead
    */
@@ -784,7 +788,182 @@ export class ProjectsDataSource extends HttpDataSource<Project> {
     options.saveRelations ??= true;
     return toJs(api.grok_ProjectsDataSource_Save(this.dart, e.dart, options!.saveRelations));
   }
+}
 
+/**
+ * Data source for working with Spaces - hierarchical containers for organizing entities and files.
+ * Spaces support nested subspaces, file storage, and can contain various entities like scripts, queries, etc. */
+export class SpacesDataSource extends HttpDataSource<Project> {
+  constructor(s: any) {
+    super(s, 'Project');
+  }
+
+  createRootSpace(name: string): Promise<Project> {
+    return toJs(api.grok_Dapi_Spaces_CreateRootSpace(this.dart, name));
+  }
+
+  /**
+   * Checks if a root space (top-level space) with the given name already exists.
+   * Use this before creating a new root space to avoid naming conflicts. */
+  rootSpaceExists(name: string): Promise<boolean> {
+    return api.grok_Dapi_Spaces_RootSpaceExists(this.dart, name);
+  }
+
+  /**
+   * Returns a SpaceClient for the space with the specified ID.
+   * Use the returned client to manage subspaces, entities, and files within the space.
+   * @param spaceId - The unique identifier of the space {@link Project.id} */
+  id(spaceId: string): SpaceClient {
+    return new SpaceClient(api.grok_Dapi_Spaces_Id(this.dart, spaceId));
+  }
+}
+
+/**
+ * Client for working with a specific space.
+ * Provides methods for managing subspaces, entities (scripts, queries, connections), and files. */
+export class SpaceClient {
+  dart: any;
+
+  constructor(dart: any) {
+    this.dart = dart;
+  }
+
+  /**
+   * Adds a child space (subspace) under this space.
+   * The subspace will have its own storage with a namespaced path derived from the parent hierarchy
+   * (e.g., 'ParentSpace:ChildSpace:').
+   * You can provide existing space, then based on the {@link link} parameter the subspace will be moved
+   * or reference will be created.
+   * @param childSpace - The subspace name or an existing space.
+   * @param link - If true, creates a link reference instead of moving the subspace (default: false). When only the subspace name is provided,
+   * this parameter is ignored. */
+  addSubspace(childSpace: Project | string, link: boolean = false): Promise<Project> {
+    return toJs(api.grok_SpaceClient_AddSubspace(this.dart, childSpace instanceof Project ? childSpace.dart : childSpace, link));
+  }
+
+  /** Checks if a subspace with the given name exists in the current space. */
+  subspaceExists(name: string): Promise<boolean> {
+    return api.grok_SpaceClient_SubspaceExists(this.dart, name);
+  }
+
+  /**
+   * Adds an entity (script, query, connection, or another space) to this space.
+   * When link is false (default), the entity is moved from its current location to this space.
+   * When link is true, creates a reference without moving - the entity can appear in multiple spaces.
+   * Moving a space preserves all its files, nested subspaces, and contained entities.
+   * @param entityId - The unique identifier of the entity to add
+   * @param link - If true, creates a link reference instead of moving the entity (default: false) */
+  addEntity(entityId: string, link: boolean = false): Promise<void> {
+    return api.grok_SpaceClient_AddEntity(this.dart, entityId, link);
+  }
+
+  /**
+   * Removes an entity from this space.
+   * Note: If the entity is linked, only reference will be deleted.
+   * @param entityId - {@link Entity.id}
+   */
+  removeEntity(entityId: string): Promise<void> {
+    return api.grok_SpaceClient_RemoveEntity(this.dart, entityId);
+  }
+
+  /** Returns a client for accessing children of this space */
+  get children(): SpaceChildrenClient {
+    return new SpaceChildrenClient(api.grok_SpaceClient_Children(this.dart));
+  }
+
+  /** Returns a client for accessing files in this space */
+  get files(): SpaceFilesClient {
+    return new SpaceFilesClient(api.grok_SpaceClient_Files(this.dart));
+  }
+}
+
+/**
+ * Client for querying and filtering children of a space.
+ * Children can include subspaces (Projects), files (FileInfo), and various entities
+ * like scripts, queries, and connections. */
+export class SpaceChildrenClient extends HttpDataSource<Entity> {
+  constructor(s: any) {
+    super(s);
+  }
+
+  /**
+   * Filters the children by entity types and whether to include linked items.
+   * By default, only directly owned children are returned (not links).
+   * @param types - Comma-separated list of entity types to include (e.g., 'Script,DataQuery')
+   * @param includeLinked - If true, includes linked references in addition to owned children (default: false)
+   * @returns A new SpaceChildrenClient with the filter applied
+   */
+  filter(types: string, includeLinked: boolean = false): SpaceChildrenClient {
+    return new SpaceChildrenClient(api.grok_SpaceChildrenClient_Filter(this.dart, types, includeLinked));
+  }
+}
+
+/**
+ * Client for file operations within a space's storage.
+ * Files in a space are stored in the space's dedicated storage connection.
+ * Directory operations are synchronized with the space hierarchy - creating a directory
+ * creates a corresponding subspace, and renaming a directory renames the subspace. */
+export class SpaceFilesClient {
+  dart: any;
+
+  constructor(dart: any) {
+    this.dart = dart;
+  }
+
+  /** Checks if a file exists */
+  exists(file: FileInfo | string): Promise<boolean> {
+    return api.grok_SpaceFilesClient_Exists(this.dart, file instanceof FileInfo ? file.dart : file);
+  }
+
+  /** Reads file content as bytes */
+  readAsBytes(file: FileInfo | string): Promise<Uint8Array> {
+    return api.grok_SpaceFilesClient_ReadAsBytes(this.dart, file instanceof FileInfo ? file.dart : file);
+  }
+
+  /** Reads file content as string */
+  readAsString(file: FileInfo | string): Promise<string> {
+    return api.grok_SpaceFilesClient_ReadAsString(this.dart, file instanceof FileInfo ? file.dart : file);
+  }
+
+  /** Uploads file content */
+  write(file: FileInfo | string, bytes: number[]): Promise<void> {
+    return api.grok_SpaceFilesClient_Upload(this.dart, file instanceof FileInfo ? file.dart : file, bytes);
+  }
+
+  writeString(file: FileInfo | string, data: string): Promise<void> {
+    return api.grok_SpaceFilesClient_UploadString(this.dart, file instanceof FileInfo ? file.dart : file, data);
+  }
+
+  /**
+   * Creates a directory within this space's storage.
+   * This automatically creates a corresponding subspace with the same name (normalized).
+   * The subspace will have its own namespaced storage path. */
+  createDirectory(file: FileInfo | string): Promise<void> {
+    return api.grok_SpaceFilesClient_CreateDirectory(this.dart, file instanceof FileInfo ? file.dart : file);
+  }
+
+  /** Renames a file or directory. If renaming directory, underlying subspace will be renamed. */
+  rename(file: FileInfo | string, newName: string): Promise<void> {
+    return api.grok_SpaceFilesClient_Rename(this.dart, file instanceof FileInfo ? file.dart : file, newName);
+  }
+
+  /** Moves files to a new path */
+  move(files: (FileInfo | string)[], newPath: FileInfo | string): Promise<void> {
+    const filesArg = files.map(f => f instanceof FileInfo ? f.dart : f);
+    const newPathArg = newPath instanceof FileInfo ? newPath.dart : newPath;
+    return api.grok_SpaceFilesClient_Move(this.dart, filesArg, newPathArg);
+  }
+
+  /** Copies files to a destination path */
+  copy(files: (FileInfo | string)[], destinationPath: string): Promise<void> {
+    const filesArg = files.map(f => f instanceof FileInfo ? f.dart : f);
+    return api.grok_SpaceFilesClient_Copy(this.dart, filesArg, destinationPath);
+  }
+
+  /** Deletes a file or directory */
+  delete(file: FileInfo | string): Promise<void> {
+    return api.grok_SpaceFilesClient_Delete(this.dart, file instanceof FileInfo ? file.dart : file);
+  }
 }
 
 /**
