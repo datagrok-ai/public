@@ -96,7 +96,7 @@ import {DesirabilityProfile, mpo, PropertyDesirability, WeightedAggregation} fro
 //@ts-ignore
 import '../css/chem.css';
 import {addDeprotectedColumn, DeprotectEditor} from './analysis/deprotect';
-import {InfoView} from './apps/mpo-profile-management';
+import { MpoProfilesView } from './apps/mpo-profile-management';
 
 export {getMCS};
 export * from './package.g';
@@ -2570,8 +2570,8 @@ export class PackageFunctions {
     'meta': {browsePath: 'Chem'},
   })
   static async mpoProfilesApp(): Promise<DG.View> {
-    const infoView = new InfoView();
-    await infoView.init();
+    const infoView = new MpoProfilesView();
+    await infoView.render();
     return DG.View.fromRoot(infoView.root);
   }
 
