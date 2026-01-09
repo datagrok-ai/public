@@ -38,14 +38,7 @@ export interface SummarySettingsBase {
   maxValues: Map<string, number>;
   colorCode: SummaryColumnColoringType;
   normalization: NormalizationType;
-  mode: MinMaxMode;
 }
-
-export enum MinMaxMode {
-  Auto = 'Auto',
-  Manual = 'Manual',
-}
-
 
 /// Utility method for old summary columns format support
 export function isSummarySettingsBase(obj: any): obj is SummarySettingsBase {
@@ -96,7 +89,6 @@ export const sparklineTypes: string[] = [
 ];
 
 type AxisScaleSettings = ScaleSettings & {
-  mode?: MinMaxMode;
   minValues?: Map<string, number>;
   maxValues?: Map<string, number>;
 };
@@ -106,10 +98,6 @@ export function distance(p1: DG.Point, p2: DG.Point): number {
 }
 
 const FLOAT_NONE = 2.6789344063684636e-34;
-
-function toLogSafe(x: number): number {
-  return x > 0 ? Math.log(x) : FLOAT_NONE;
-}
 
 export function getScaledNumber(
   cols: DG.Column[],
@@ -122,52 +110,58 @@ export function getScaledNumber(
     zeroScale = false,
     invertScale = false,
     logScale = false,
-    mode = MinMaxMode.Auto,
     minValues,
     maxValues,
   } = settings;
 
-  const colNumbers: number[] = [];
+  const toLogSafe = (v: number) => v > 0 ? Math.log(v) : FLOAT_NONE;
+
+  const scaleValue = (v: number): number => logScale ? toLogSafe(v) : v;
+
+  const resolveMinMax = (column: DG.Column): { min: number; max: number } => {
+    const rawMin = minValues?.get(column.name);
+    const rawMax = maxValues?.get(column.name);
+
+    const min = rawMin != null && rawMin !== FLOAT_NONE ? rawMin : column.min;
+    const max = rawMax != null && rawMax !== FLOAT_NONE ? rawMax : column.max;
+
+    return {
+      min: scaleValue(min),
+      max: scaleValue(max),
+    };
+  };
+
+  const normalize = (value: number, min: number, max: number): number =>
+    max === min ? 0 : (value - min) / (max - min);
+
+  const rowValues: number[] = [];
   const colMins: number[] = [];
   const colMaxs: number[] = [];
 
-  for (const c of cols) {
-    const num = c?.getNumber(row);
-    colNumbers.push(logScale ? toLogSafe(num) : num);
+  for (const col of cols) {
+    rowValues.push(scaleValue(col.getNumber(row)));
 
-    const min = mode === MinMaxMode.Manual ? minValues?.get(c.name) : c.min;
-    const max = mode === MinMaxMode.Manual ? maxValues?.get(c.name) : c.max;
-    if (min != null)
-      colMins.push(logScale ? toLogSafe(min) : min);
-    if (max != null)
-      colMaxs.push(logScale ? toLogSafe(max) : max);
+    const {min, max} = resolveMinMax(col);
+    colMins.push(min);
+    colMaxs.push(max);
   }
 
-  const value = logScale ? toLogSafe(activeColumn.getNumber(row)) : activeColumn.getNumber(row);
-  let normalized = 0;
+  const value = scaleValue(activeColumn.getNumber(row));
+  let normalized: number;
 
   if (normalization === NormalizationType.Global || normalization === NormalizationType.Row) {
-    const values = normalization === NormalizationType.Global ? colMins : colNumbers;
-    const ranges = normalization === NormalizationType.Global ? colMaxs : colNumbers;
+    const mins = normalization === NormalizationType.Global ? colMins : rowValues;
+    const maxs = normalization === NormalizationType.Global ? colMaxs : rowValues;
 
-    const gmin = zeroScale ? 0 : Math.min(...values);
-    const gmax = Math.max(...ranges);
-
-    normalized = gmax === gmin ? 0 : (value - gmin) / (gmax - gmin);
+    const globalMin = zeroScale ? 0 : Math.min(...mins);
+    const globalMax = Math.max(...maxs);
+    normalized = normalize(value, globalMin, globalMax);
   } else {
-    const min = mode === MinMaxMode.Manual ? minValues?.get(activeColumn.name) ?? activeColumn.min : activeColumn.min;
-    const max = mode === MinMaxMode.Manual ? maxValues?.get(activeColumn.name) ?? activeColumn.max : activeColumn.max;
-
-    const minVal = logScale ? toLogSafe(min) : min;
-    const maxVal = logScale ? toLogSafe(max) : max;
-
-    normalized = maxVal === minVal ? 0 : (value - minVal) / (maxVal - minVal);
+    const {min, max} = resolveMinMax(activeColumn);
+    normalized = normalize(value, min, max);
   }
 
-  if (invertScale)
-    normalized = 1 - normalized;
-
-  return normalized;
+  return invertScale ? 1 - normalized : normalized;
 }
 
 export function getSparklinesContextPanel(gridCell: DG.GridCell, colNames: string[]): HTMLDivElement {
@@ -230,7 +224,7 @@ export function createBaseInputs(gridColumn: DG.GridColumn, settings: SummarySet
   }
 
   function getMinMaxProperties(): DG.Property[] | null {
-    if (isSmartForm || settings.mode === MinMaxMode.Auto || !settings.minValues?.size || !settings.maxValues?.size)
+    if (isSmartForm || !settings.minValues?.size || !settings.maxValues?.size)
       return null;
 
     return [
@@ -243,22 +237,6 @@ export function createBaseInputs(gridColumn: DG.GridColumn, settings: SummarySet
         (col: string, value: number) => settings.maxValues.set(col, value)
       ),
     ];
-  }
-
-  function createModeInput(): DG.InputBase | null {
-    if (isSmartForm)
-      return null;
-
-    return ui.input.choice<MinMaxMode>('Mode', {
-      value: settings.mode ?? MinMaxMode.Auto,
-      items: [MinMaxMode.Auto, MinMaxMode.Manual],
-      onValueChanged: (value) => {
-        settings.mode = value;
-        invalidate();
-      },
-      tooltipText: 'Auto: system calculates min/max.<br>' +
-      'Manual: user sets min/max explicitly.',
-    });
   }
 
   function getAdditionalColumns() {
@@ -320,7 +298,7 @@ export function createBaseInputs(gridColumn: DG.GridColumn, settings: SummarySet
     });
   }
 
-  return [createColumnsInput(), createModeInput(), createNormalizationInput(), createColorCodeInput()].filter(Boolean) as DG.InputBase[];
+  return [createColumnsInput(), createNormalizationInput(), createColorCodeInput()].filter(Boolean) as DG.InputBase[];
 }
 
 export function getRenderColor(settings: SummarySettingsBase, baseColor: number,

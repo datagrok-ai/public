@@ -117,7 +117,6 @@ export class RadarChartCellRender extends DG.GridCellRenderer {
           normalization: settings.normalization,
           invertScale: settings.invertColumnNames?.includes(cols[i].name),
           logScale: settings.logColumnNames?.includes(cols[i].name),
-          mode: settings.mode,
           minValues: settings.minValues,
           maxValues: settings.maxValues,
         }) :
@@ -145,7 +144,6 @@ export class RadarChartCellRender extends DG.GridCellRenderer {
           normalization: settings.normalization,
           invertScale: settings.invertColumnNames?.includes(cols[i].name),
           logScale: settings.logColumnNames?.includes(cols[i].name),
-          mode: settings.mode,
           minValues: settings.minValues,
           maxValues: settings.maxValues,
         });

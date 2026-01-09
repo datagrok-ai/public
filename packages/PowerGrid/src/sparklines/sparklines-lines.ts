@@ -34,7 +34,6 @@ function getPos(col: number, row: number, constants: getPosConstants): DG.Point 
     zeroScale: settings.zeroScale,
     invertScale: settings.invertColumnNames?.includes(cols[col].name),
     logScale: settings.logColumnNames?.includes(cols[col].name),
-    mode: settings.mode,
     minValues: settings.minValues,
     maxValues: settings.maxValues,
   });

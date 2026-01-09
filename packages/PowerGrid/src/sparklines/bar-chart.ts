@@ -52,7 +52,6 @@ function onHit(gridCell: DG.GridCell, e: MouseEvent): Hit {
     normalization: settings.normalization,
     invertScale: settings.invertColumnNames?.includes(cols[activeColumn].name),
     logScale: settings.logColumnNames?.includes(cols[activeColumn].name),
-    mode: settings.mode,
     minValues: settings.minValues,
     maxValues: settings.maxValues,
   });
@@ -101,7 +100,6 @@ export class BarChartCellRenderer extends DG.GridCellRenderer {
           normalization: settings.normalization,
           invertScale: settings.invertColumnNames?.includes(currentCol.name),
           logScale: settings.logColumnNames?.includes(currentCol.name),
-          mode: settings.mode,
           minValues: settings.minValues,
           maxValues: settings.maxValues,
         });

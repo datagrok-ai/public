@@ -132,7 +132,6 @@ function onHit(gridCell: DG.GridCell, e: MouseEvent): Hit {
         normalization: settings.normalization,
         invertScale: settings.invertColumnNames?.includes(cols[activeColumn].name),
         logScale: settings.logColumnNames?.includes(cols[activeColumn].name),
-        mode: settings.mode,
         minValues: settings.minValues,
         maxValues: settings.maxValues,
       });
@@ -238,7 +237,6 @@ export class PieChartCellRenderer extends DG.GridCellRenderer {
           normalization: settings.normalization,
           invertScale: settings.invertColumnNames?.includes(cols[i].name),
           logScale: settings.logColumnNames?.includes(cols[i].name),
-          mode: settings.mode,
           minValues: settings.minValues,
           maxValues: settings.maxValues,
         });
@@ -318,7 +316,9 @@ export class PieChartCellRenderer extends DG.GridCellRenderer {
         onValueChanged: (value) => {
           settings.style = value;
           ui.empty(elementsDiv);
-          if (value === PieChartStyle.Vlaaivis) { elementsDiv.appendChild(new VlaaiVisManager(settings, gc).createTreeGroup()); } else {
+          if (value === PieChartStyle.Vlaaivis) {
+            elementsDiv.appendChild(new VlaaiVisManager(settings, gc).createTreeGroup());
+          } else {
             delete settings.sectors;
             gc.grid.invalidate();
           }
