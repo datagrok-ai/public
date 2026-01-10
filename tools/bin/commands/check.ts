@@ -6,7 +6,6 @@ import * as color from '../utils/color-utils';
 import {FuncMetadata, FuncParam, FuncValidator, ValidationResult} from '../utils/interfaces';
 import {PackageFile} from '../utils/interfaces';
 import * as testUtils from '../utils/test-utils';
-import {error} from 'console';
 import {FuncRoleDescription, functionRoles} from 'datagrok-api/src/const';
 import {execSync} from 'child_process';
 
@@ -16,8 +15,7 @@ const forbiddenNames = ['function', 'class', 'export'];
 const namesInFiles = new Map<string, string[]>();
 
 export function check(args: CheckArgs): boolean {
-  const nOptions = Object.keys(args).length - 1;
-  const curDir = process.cwd();
+  const curDir = args._.length == 2 ? args._[1] : process.cwd();
 
   if (args.recursive)
     return runChecksRec(curDir, args.soft ?? false);
@@ -85,11 +83,17 @@ function runChecks(packagePath: string, soft: boolean = false, noExit: boolean =
     showError(errors);
     if (soft || json.version.startsWith('0') || (errors.every((w) => warns.some((ww) => w.includes(ww)))))
       return true;
-    if (noExit) return false; else testUtils.exitWithCode(1);
+
+    if (noExit)
+      return false;
+    else
+      testUtils.exitWithCode(1);
   }
   console.log(`Checking package ${path.basename(packagePath)}...\t\t\t\u2713 OK`);
   return true;
 }
+
+
 function runChecksRec(dir: string, soft: boolean = false): boolean {
   const files = fs.readdirSync(dir);
   let allPassed = true;
@@ -101,7 +105,8 @@ function runChecksRec(dir: string, soft: boolean = false): boolean {
       if (utils.isPackageDir(filepath)) {
         const passed = runChecks(filepath, soft, true);
         allPassed = allPassed && passed;
-      } else {
+      }
+      else {
         if (file !== 'node_modules' && !file.startsWith('.')) {
           const passed = runChecksRec(path.join(dir, file), soft);
           allPassed = allPassed && passed;
@@ -191,13 +196,10 @@ export function checkDatagrokApiImports(packagePath: string, files: string[]): s
           const importedPath = pathMatch ? `datagrok-api/${pathMatch[1]}` : 'unknown';
 
           errors.push(
-            `File "${file}": Invalid datagrok-api import.
-` +
-            `  Found: ${match.trim()}
-` +
-            `  Only these paths are allowed: 'datagrok-api/dg', 'datagrok-api/grok', 'datagrok-api/ui'
-` +
-            `  Deep imports like '${importedPath}' are not permitted.`
+            `File "${file}": Invalid datagrok-api import.\n` +
+            `  Found: ${match.trim()} \n` +
+            `  Only these paths are allowed: 'datagrok-api/dg', 'datagrok-api/grok', 'datagrok-api/ui'\n` +
+            `  Deep imports like '${importedPath}' are not permitted.\n`
           );
         }
       }

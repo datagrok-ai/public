@@ -127,7 +127,7 @@ Running \`grok publish\` is the same as running \`grok publish defaultHost --bui
 `;
 
 const HELP_CHECK = `
-Usage: grok check
+Usage: grok check <pluginFolder>
 
 Options:
 [-r | --recursive]
