@@ -63,6 +63,7 @@ function runChecks(packagePath: string, soft: boolean = false, noExit: boolean =
     if (externals)
       errors.push(...checkImportStatements(packagePath, jsTsFiles, externals));
   }
+  errors.push(...checkDatagrokApiImports(packagePath, jsTsFiles));
   if (!soft)
     errors.push(...checkSourceMap(packagePath));
   errors.push(...checkNpmIgnore(packagePath));
@@ -164,6 +165,47 @@ export function checkImportStatements(packagePath: string, files: string[], exte
   return warnings;
 }
 
+
+export function checkDatagrokApiImports(packagePath: string, files: string[]): string[] {
+  const errors: string[] = [];
+
+  // Regex to find all datagrok-api imports/exports (including re-exports)
+  const datagrokApiImportRegex = /^\s*(import|export)\s+.*['"]datagrok-api\/[^'"]+['"]/gm;
+
+  // Regex to validate if import/export is allowed (only dg, grok, ui)
+  const allowedImportRegex = /^\s*(import|export)\s+.*['"]datagrok-api\/(dg|grok|ui)['"]/;
+
+  // Regex to extract the import path for error messages
+  const importPathRegex = /['"]datagrok-api\/([^'"]+)['"]/;
+
+  for (const file of files) {
+    const content = fs.readFileSync(path.join(packagePath, file), {encoding: 'utf-8'});
+    const matchedImports = content.match(datagrokApiImportRegex);
+
+    if (matchedImports) {
+      for (const match of matchedImports) {
+        // Check if this import/export is allowed
+        if (!allowedImportRegex.test(match)) {
+          // Extract the problematic path for error message
+          const pathMatch = match.match(importPathRegex);
+          const importedPath = pathMatch ? `datagrok-api/${pathMatch[1]}` : 'unknown';
+
+          errors.push(
+            `File "${file}": Invalid datagrok-api import.
+` +
+            `  Found: ${match.trim()}
+` +
+            `  Only these paths are allowed: 'datagrok-api/dg', 'datagrok-api/grok', 'datagrok-api/ui'
+` +
+            `  Deep imports like '${importedPath}' are not permitted.`
+          );
+        }
+      }
+    }
+  }
+
+  return errors;
+}
 const TYPE_ALIASES: Record<string, string[]> = {
   file: ['fileinfo'],
   dynamic: ['searchprovider'],
