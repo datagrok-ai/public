@@ -1,7 +1,6 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
-import * as interfaces from "datagrok-api/src/interfaces/d4";
 import * as rx from "rxjs";
 import {delay} from 'rxjs/operators'
 
@@ -10,7 +9,7 @@ export class ReportingApp {
   view: DG.TableView = DG.TableView.create(DG.DataFrame.create());
   users: { [_: string]: any; } = {};
   parentCall: DG.FuncCall;
-  currentFilter?: DG.Viewer<interfaces.IFiltersSettings>;
+  currentFilter?: DG.Viewer;
   isInit: boolean = false;
 
   constructor(parentCall: DG.FuncCall) {
