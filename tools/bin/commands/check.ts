@@ -30,7 +30,7 @@ export function check(args: CheckArgs): boolean {
   }
 }
 
-function runChecks(packagePath: string, soft: boolean = false): boolean {
+function runChecks(packagePath: string, soft: boolean = false, noExit: boolean = false): boolean {
   if (packagePath.includes(`${path.sep}node_modules${path.sep}`))
     return true;
   const files = (walk.sync({path: packagePath, ignoreFiles: ['.npmignore', '.gitignore']})).filter((e) => !e.includes('node_modules'));
@@ -84,27 +84,31 @@ function runChecks(packagePath: string, soft: boolean = false): boolean {
     showError(errors);
     if (soft || json.version.startsWith('0') || (errors.every((w) => warns.some((ww) => w.includes(ww)))))
       return true;
-    testUtils.exitWithCode(1);
+    if (noExit) return false; else testUtils.exitWithCode(1);
   }
   console.log(`Checking package ${path.basename(packagePath)}...\t\t\t\u2713 OK`);
   return true;
 }
-
 function runChecksRec(dir: string, soft: boolean = false): boolean {
   const files = fs.readdirSync(dir);
+  let allPassed = true;
+  
   for (const file of files) {
     const filepath = path.join(dir, file);
     const stats = fs.statSync(filepath);
     if (stats.isDirectory()) {
-      if (utils.isPackageDir(filepath))
-        return runChecks(filepath, soft);
-      else {
-        if (file !== 'node_modules' && !file.startsWith('.'))
-          runChecksRec(path.join(dir, file), soft);
+      if (utils.isPackageDir(filepath)) {
+        const passed = runChecks(filepath, soft, true);
+        allPassed = allPassed && passed;
+      } else {
+        if (file !== 'node_modules' && !file.startsWith('.')) {
+          const passed = runChecksRec(path.join(dir, file), soft);
+          allPassed = allPassed && passed;
+        }
       }
     }
   }
-  return false;
+  return allPassed;
 }
 
 export function extractExternals(config: string): {} | null {

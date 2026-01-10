@@ -1,5 +1,13 @@
 # Datagrok-tools changelog
 
+## 4.14.70 (2026-01-10)
+
+### Bug Fixes
+
+* Grok Check: Fixed `--recursive` flag to check all packages instead of stopping after the first package
+* Grok Check: Fixed process exit behavior in recursive mode to continue checking remaining packages even when errors are found
+
+
 ## 4.14.26 (2025-07-10)
 
 ### Features
