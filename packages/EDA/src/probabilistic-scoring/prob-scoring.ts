@@ -9,7 +9,7 @@ import {MIN_SAMPLES_COUNT, PMPO_NON_APPLICABLE, DescriptorStatistics, P_VAL_TRES
   R2_MIN, Q_CUTOFF_MIN, WEIGHT_TABLE_TITLE, PmpoParams, SCORES_TITLE, DESCR_TABLE_TITLE,
   PMPO_COMPUTE_FAILED, SELECTED_TITLE, P_VAL} from './pmpo-defs';
 import {addSelectedDescriptorsCol, getDescriptorStatisticsTable, getFilteredByPvalue, getFilteredByCorrelations,
-  getModelParams, getWeightsTable, getDescrTooltip, saveModel} from './pmpo-utils';
+  getModelParams, getWeightsTable, getDescrTooltip, saveModel, getScoreTooltip} from './pmpo-utils';
 import {getOutputPalette} from '../pareto-optimization/utils';
 import {OPT_TYPE} from '../pareto-optimization/defs';
 
@@ -183,7 +183,7 @@ export class Pmpo {
     this.predictionName = df.columns.getUnusedName(SCORES_TITLE);
   };
 
-  private updateGrid(table: DG.DataFrame, selectedByPvalue: string[], selectedByCorr: string[]): void {
+  private updateStatisticsGrid(table: DG.DataFrame, selectedByPvalue: string[], selectedByCorr: string[]): void {
     this.statGrid.dataFrame = table;
     this.statGrid.setOptions({
       showTitle: true,
@@ -191,43 +191,68 @@ export class Pmpo {
     });
 
     this.statGrid.sort([SELECTED_TITLE, P_VAL], [false, true]);
-        this.statGrid.col(P_VAL)!.format = 'scientific';
+    this.statGrid.col(P_VAL)!.format = 'scientific';
 
-        // set tooltips
-        this.statGrid.onCellTooltip(function(cell, x, y) {
-          if (cell.isColHeader) {
-            const cellCol = cell.tableColumn;
-            if (cellCol) {
-              if (cell.tableColumn.name === DESCR_TITLE) {
-                ui.tooltip.show(getDescrTooltip(), x, y);
+    // set tooltips
+    this.statGrid.onCellTooltip(function(cell, x, y) {
+      if (cell.isColHeader) {
+        const cellCol = cell.tableColumn;
+        if (cellCol) {
+          if (cell.tableColumn.name === DESCR_TITLE) {
+            ui.tooltip.show(getDescrTooltip(), x, y);
 
-                return true;
-              }
-
-              return false;
-            }
-          } else {
-            if (cell.isTableCell) {
-              const cellCol = cell.tableColumn;
-              if (cellCol) {
-                if (cell.tableColumn.name === DESCR_TITLE) {
-                  const value = cell.value;
-                  if (selectedByCorr.includes(value))
-                    ui.tooltip.show('Selected for model construction.', x, y);
-                  else if (selectedByPvalue.includes(value))
-                    ui.tooltip.show('Excluded due to a high correlation with other descriptors.', x, y);
-                  else
-                    ui.tooltip.show('Excluded due to a high p-value.', x, y);
-
-                  return true;
-                }
-
-                return false;
-              }
-            }
+            return true;
           }
-        });
-  }
+
+          return false;
+        }
+      } else {
+        if (cell.isTableCell) {
+          const cellCol = cell.tableColumn;
+          if (cellCol) {
+            if (cell.tableColumn.name === DESCR_TITLE) {
+              const value = cell.value;
+              if (selectedByCorr.includes(value))
+                ui.tooltip.show('Selected for model construction.', x, y);
+              else if (selectedByPvalue.includes(value))
+                ui.tooltip.show('Excluded due to a high correlation with other descriptors.', x, y);
+              else
+                ui.tooltip.show('Excluded due to a high p-value.', x, y);
+
+              return true;
+            }
+
+            return false;
+          }
+        }
+      }
+    });
+  } // updateGrid
+
+  private updateGrid(): void {
+    const grid = this.view.grid;
+    const name = this.predictionName;
+
+    grid.sort([this.predictionName], [false]);
+
+    grid.col(name)!.format = '0.0000';
+
+    // set tooltips
+    grid.onCellTooltip((cell, x, y) => {
+      if (cell.isColHeader) {
+        const cellCol = cell.tableColumn;
+        if (cellCol) {
+          if (cell.tableColumn.name === name) {
+            ui.tooltip.show(getScoreTooltip(), x, y);
+
+            return true;
+          }
+
+          return false;
+        }
+      }
+    });
+  } // updateGrid
 
   private fitAndUpdateViewers(df: DG.DataFrame, descriptors: DG.ColumnList, desirability: DG.Column,
     pValTresh: number, r2Tresh: number, qCutoff: number): void {
@@ -264,10 +289,10 @@ export class Pmpo {
     df.columns.remove(this.predictionName);
     df.columns.add(prediction);
 
-    // Sort with respect to the scores
-    this.view.grid.sort([prediction.name], [false]);
+    // Update viewers
+    this.updateGrid();
 
-    this.updateGrid(descrStatsTable, selectedByPvalue, selectedByCorr);
+    this.updateStatisticsGrid(descrStatsTable, selectedByPvalue, selectedByCorr);
 
     this.corrPlot.dataFrame = df;
     this.corrPlot.setOptions({
@@ -299,7 +324,7 @@ export class Pmpo {
       showTitle: true,
       title: `pMPO by ${desirability.name} label`,
     });
-  } // fit
+  } // fitAndUpdateViewers
 
   public runTrainingApp(): void {
     const dockMng = this.view.dockManager;

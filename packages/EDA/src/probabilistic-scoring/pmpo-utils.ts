@@ -5,9 +5,11 @@ import * as DG from 'datagrok-api/dg';
 import '../../css/pmpo.css';
 
 import {COLORS, DESCR_TABLE_TITLE, DESCR_TITLE, DescriptorStatistics, DesirabilityProfileProperties,
-  FOLDER, P_VAL, PMPO_COMPUTE_FAILED, PmpoParams, SELECTED_TITLE, STAT_TO_TITLE_MAP, TINY,
+  FOLDER, P_VAL, PMPO_COMPUTE_FAILED, PmpoParams, SCORES_TITLE, SELECTED_TITLE, STAT_TO_TITLE_MAP, TINY,
   WEIGHT_TITLE} from './pmpo-defs';
 import {computeSigmoidParamsFromX0, getCutoffs, normalPdf, sigmoidS, solveNormalIntersection} from './stat-tools';
+import {getColorScaleDiv} from '../pareto-optimization/utils';
+import {OPT_TYPE} from '../pareto-optimization/defs';
 
 export function getDescriptorStatisticsTable(stats: Map<string, DescriptorStatistics>): DG.DataFrame {
   const descrCount = stats.size;
@@ -129,6 +131,14 @@ export function getDescrTooltip(): HTMLElement {
     secondLine,
   ]);
 } // getDescrTooltip
+
+export function getScoreTooltip(): HTMLElement {
+  return ui.divV([
+    ui.h2(SCORES_TITLE),
+    ui.divText('Scores computed using the trained probabilistic multi-parameter optimization (pMPO) model.'),
+    getColorScaleDiv(OPT_TYPE.MAX, false),
+  ]);
+} // getScoreTooltip
 
 export function getFilteredByCorrelations(descriptors: DG.ColumnList, selectedByPvalue: string[],
   statistics: Map<string, DescriptorStatistics>, r2Tresh: number): string[] {

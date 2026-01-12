@@ -13,13 +13,13 @@ export function getOutputPalette(type: OPT_TYPE): number[] {
   return [...PALETTE].reverse();
 }
 
-export function getColorScaleDiv(type: OPT_TYPE): HTMLElement {
+export function getColorScaleDiv(type: OPT_TYPE, useMinMax: boolean = true): HTMLElement {
   const scale = ui.label('Color scale:');
   scale.style.paddingRight = '7px';
   const elems = [scale];
-  const minLbl = ui.label('min');
+  const minLbl = ui.label(useMinMax ? 'min' : 'worst');
   const midLbl = ui.label('. . .');
-  const maxLbl = ui.label('max');
+  const maxLbl = ui.label(useMinMax ? 'max' : 'best');
   const palette = getOutputPalette(type);
 
   const colorElems = [minLbl, midLbl, maxLbl].map((el, idx) => {
