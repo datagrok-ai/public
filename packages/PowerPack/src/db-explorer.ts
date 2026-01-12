@@ -439,7 +439,7 @@ function getEnrichmentsDiv(conn: DG.DataConnection, schema: string, table: strin
           if (root?.children?.length === 0)
             root.replaceWith(empty);
         });
-      }, 'Click to delete enrichment.');
+      }, 'Delete');
 
       const editLink = ui.iconFA('pencil', async () => {
         const enrichment = await readEnrichConfig(conn.id, schema, table, column, n);
@@ -458,9 +458,14 @@ function getEnrichmentsDiv(conn: DG.DataConnection, schema: string, table: strin
         showEnrichDialog(tables[0], df, column, () => {
           root?.replaceWith(getEnrichmentsDiv(conn, schema, table, column, df));
         }, n, tq);
-      }, 'Click to edit enrichment.');
+      }, 'Edit');
 
-      const runLink = ui.link(n, () => runFromConfig(conn, schema, table, column, n, df), 'Click to apply enrichment.');
+      const runLink = ui.link(n, () => {
+        const enrichFunc = DG.Func.find({package: 'PowerPack', name: 'runEnrichment'})[0];
+        const progress = DG.TaskBarProgressIndicator.create('Enriching...');
+        enrichFunc.prepare({'conn': conn, 'schema': schema, 'table': table, 'column': column, 'name': n, 'df': df})
+            .call(false, progress, {report: true, processed: false}).finally(() => progress.close());
+      }, 'Apply enrichment.');
 
       parent = ui.divH([runLink, ui.divH([editLink, deleteLink], 'power-pack-enrichment-actions')], 'power-pack-enrichment-row');
       return parent;
@@ -522,8 +527,13 @@ function showEnrichDialog(mainTable: DG.TableInfo, df: DG.DataFrame, dbColName: 
 
 
   dialog.addButton('ENRICH', async () => {
-    pivotView.refreshQuery();
-    await executeEnrichQuery(pivotView.query, df, dbColName);
+    const progress = DG.TaskBarProgressIndicator.create('Enriching...');
+    try {
+      pivotView.refreshQuery();
+      await executeEnrichQuery(pivotView.query, df, dbColName);
+    } finally {
+      progress.close();
+    }
   });
 
   dialog.root.style.height = '600px';
@@ -597,7 +607,7 @@ function convertEnrichmentToQuery(e: Enrichment, conn: DG.DataConnection): DG.Ta
   return query;
 }
 
-async function runFromConfig(conn: DG.DataConnection, schema: string, table: string, column: string, name: string, df: DG.DataFrame): Promise<void> {
+export async function runEnrichmentFromConfig(conn: DG.DataConnection, schema: string, table: string, column: string, name: string, df: DG.DataFrame): Promise<void> {
   const config = await readEnrichConfig(conn.id, schema, table, column, name);
   if (!config) {
     new DG.Balloon().error('Could not find enrichment. Please try again or create a new one.');
@@ -608,7 +618,6 @@ async function runFromConfig(conn: DG.DataConnection, schema: string, table: str
 }
 
 async function executeEnrichQuery(query: DG.TableQuery, df: DG.DataFrame, keyCol: string): Promise<void> {
-  const progress = DG.TaskBarProgressIndicator.create('Enriching...');
   try {
     query.limit = undefined;
     const keyColValues = df.getCol(keyCol).toList();
@@ -648,8 +657,6 @@ async function executeEnrichQuery(query: DG.TableQuery, df: DG.DataFrame, keyCol
     df.name = previousName;
   } catch (e: any) {
     grok.shell.error(`Failed to enrich:\n ${e}`);
-  } finally {
-    progress.close();
   }
 }
 
