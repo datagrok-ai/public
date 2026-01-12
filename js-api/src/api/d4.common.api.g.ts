@@ -178,6 +178,8 @@ export class InputType {
 
   static Table = 'Table';
 
+  static TablesMultiChoice = 'TablesMultiChoice';
+
   static Molecule = 'Molecule';
 
   static User = 'User';

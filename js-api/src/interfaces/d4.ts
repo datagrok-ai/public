@@ -2905,6 +2905,10 @@ export interface IScatterPlotSettings {
   /// the mouse is currently hovering over).
   showMouseOverRowGroup: boolean;
 
+  /// When true, selected markers are highlighted using the selected rows color.
+  /// When false, selected markers use their regular color coding.
+  showSelectedRows: boolean;
+
   /// Shows tickmarks and labels for minimum and maximum value on each axis.
   showMinMaxTickmarks: boolean;
 
