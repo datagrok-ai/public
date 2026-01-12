@@ -9,10 +9,12 @@ import {MIN_SAMPLES_COUNT, PMPO_NON_APPLICABLE, DescriptorStatistics, P_VAL_TRES
   R2_MIN, Q_CUTOFF_MIN, WEIGHT_TABLE_TITLE, PmpoParams, SCORES_TITLE, DESCR_TABLE_TITLE,
   PMPO_COMPUTE_FAILED, SELECTED_TITLE, P_VAL} from './pmpo-defs';
 import {addSelectedDescriptorsCol, getDescriptorStatisticsTable, getFilteredByPvalue, getFilteredByCorrelations,
-  getModelParams, getWeightsTable, getDescrTooltip, saveModel, getScoreTooltip} from './pmpo-utils';
+  getModelParams, getDescrTooltip, saveModel, getScoreTooltip,
+  getDesirabilityProfileJson} from './pmpo-utils';
 import {getOutputPalette} from '../pareto-optimization/utils';
 import {OPT_TYPE} from '../pareto-optimization/defs';
 
+import {MpoProfileEditor} from '@datagrok-libraries/statistics/src/mpo/mpo-profile-editor';
 
 export class Pmpo {
   static isApplicable(descriptors: DG.ColumnList, desirability: DG.Column, pValThresh: number,
@@ -172,6 +174,8 @@ export class Pmpo {
     title: 'Distribution of pMPO scores',
     showTitle: true,
   });
+  private profileDiv = ui.div();
+  private profileElement: HTMLElement | null = null;
 
   private predictionName = SCORES_TITLE;
 
@@ -254,6 +258,21 @@ export class Pmpo {
     });
   } // updateGrid
 
+  private updateDesirabilityView(): void {
+    if (this.params == null)
+      return;
+
+    if (this.profileElement != null) {
+      this.profileElement.remove();
+      this.profileElement = null;
+    }
+
+    const mpoEditor = new MpoProfileEditor();
+    mpoEditor.setProfile(getDesirabilityProfileJson(this.params, '', ''));
+    this.profileElement = mpoEditor.root;
+    this.profileDiv.append(mpoEditor.root);
+  } // updateDesirabilityView
+
   private fitAndUpdateViewers(df: DG.DataFrame, descriptors: DG.ColumnList, desirability: DG.Column,
     pValTresh: number, r2Tresh: number, qCutoff: number): void {
     if (!Pmpo.isApplicable(descriptors, desirability, pValTresh, r2Tresh, qCutoff))
@@ -280,7 +299,7 @@ export class Pmpo {
     // Compute pMPO parameters - training
     this.params = getModelParams(desired, nonDesired, selectedByCorr, qCutoff);
 
-    const weightsTable = getWeightsTable(this.params);
+    //const weightsTable = getWeightsTable(this.params);
     const prediction = Pmpo.predict(df, this.params, this.predictionName);
 
     // Mark predictions with a color
@@ -302,7 +321,7 @@ export class Pmpo {
       title: `${DESCR_TITLE} Correlations`,
     });
 
-    this.barChart.dataFrame = weightsTable;
+    this.updateDesirabilityView();
 
     this.hist.dataFrame = df;
     this.hist.setOptions({
@@ -339,8 +358,18 @@ export class Pmpo {
       throw new Error('Failed to train pMPO: missing a grid in the table view.');
 
     const statGridNode = dockMng.dock(this.statGrid, DG.DOCK_TYPE.RIGHT, gridNode, undefined, 0.5);
-    const corrNode = dockMng.dock(this.corrPlot, DG.DOCK_TYPE.RIGHT, statGridNode, undefined, 0.25);
-    dockMng.dock(this.barChart, DG.DOCK_TYPE.DOWN, corrNode, undefined, 0.5);
+    const corrNode = dockMng.dock(this.corrPlot, DG.DOCK_TYPE.RIGHT, statGridNode, undefined, 0.35);
+    const profileNode = dockMng.dock(this.profileDiv, DG.DOCK_TYPE.DOWN, corrNode, undefined, 0.5);
+
+    this.profileDiv.style.overflow = 'auto';
+    const titleDiv = profileNode.container.containerElement.querySelector('div.panel-titlebar');
+    if (titleDiv != null) {
+      (titleDiv as HTMLElement).style.position = 'relative';
+      const title = ui.divText('Desirability profile');
+      title.classList.add('eda-pmpo-title');
+      titleDiv.appendChild(title);
+    }
+
     dockMng.dock(this.hist, DG.DOCK_TYPE.DOWN, statGridNode, undefined, 0.5);
     dockMng.dock(this.boxPlot, DG.DOCK_TYPE.DOWN, gridNode, undefined, 0.5);
   } // runTrainingApp

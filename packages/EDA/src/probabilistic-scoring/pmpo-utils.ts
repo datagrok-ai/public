@@ -289,6 +289,15 @@ export async function loadPmpoParams(file: DG.FileInfo): Promise<Map<string, Pmp
   return new Map(Object.entries(parsedObj.properties));
 } // loadPmpoParams
 
+export function getDesirabilityProfileJson(params: Map<string, PmpoParams>, name: string, description: string) {
+  return {
+    'type': 'MPO Desirability Profile',
+    'name': name,
+    'description': description,
+    'properties': getDesirabilityProfileProperties(params),
+  };
+}
+
 export async function saveModel(params: Map<string, PmpoParams>, modelName: string): Promise<void> {
   let fileName = modelName;
   const nameInput = ui.input.string('File', {
@@ -324,12 +333,11 @@ export async function saveModel(params: Map<string, PmpoParams>, modelName: stri
 
   const objectToSave = () => {
     if (typeInput.value) {
-      return {
-        'type': 'MPO Desirability Profile',
-        'name': nameInput.value,
-        'description': descriptionInput.value,
-        'properties': getDesirabilityProfileProperties(params),
-      };
+      return getDesirabilityProfileJson(
+        params,
+        nameInput.value,
+        descriptionInput.value,
+      );
     }
 
     return {
@@ -373,9 +381,13 @@ export async function saveModel(params: Map<string, PmpoParams>, modelName: stri
 function getDesirabilityProfileProperties(params: Map<string, PmpoParams>) {
   const props: DesirabilityProfileProperties = {};
 
+  let maxWeight = 0;
+  params.forEach((param) => maxWeight = Math.max(maxWeight, param.weight));
+
+  const scale = (maxWeight > 0) ? (1 / maxWeight) : 1;
+
   params.forEach((param, name) => {
     const range = significantPoints(param);
-    const scale = getScale(param, range);
     props[name] = {
       weight: param.weight * scale,
       line: getLine(param),

@@ -14,3 +14,13 @@
   padding-left: 10px;
   padding-right: 5px;
 }
+
+.eda-pmpo-title {
+  font-size: 14.5px;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  white-space: nowrap;
+}
