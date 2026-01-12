@@ -1,7 +1,7 @@
 let v = grok.shell.newView('Demo');
 
 //standard tags input
-const tsgsInput = ui.input.tags('Tags', {tags: ['a', 'abb', 'aacc'], value: ['a']});
+const tagsInput = ui.input.tags('Tags', {tags: ['a', 'abb', 'aacc'], value: ['a']});
 
 //user input with predefined list of items
 const u1 = DG.User.create();
@@ -26,7 +26,6 @@ class TagsInputCustom extends DG.TagsInput {
   };
 
   itemToString(item) {return `${item.a}_${item.b}`};
-
   
   async getSuggestions(inputText) { 
     return [{a: 'first', b: 'object'}, {a: 'second', b: 'object'}];
@@ -40,21 +39,27 @@ class TagsInputCustom extends DG.TagsInput {
     }), ui.divText(`${item.a}_${item.b}`)]);
   };
 
-  async gatherItems(selectedItems, selectedItem, findItems) {
+  async collectItems(selectedItems, selectedItem, findItems) {
     if (selectedItem)
       selectedItems.push(selectedItem);
     return selectedItems;
   };
 }
 
-const customTagsInput = ui.input.tags('Custom tags input', {createCustomInputFunc: (dart) => new TagsInputCustom(dart)});
+const customTagsInput = ui.input.tags('Custom tags input', {
+  createCustomInputFunc: (dart) => new TagsInputCustom(dart),
+  allowNew: true,
+  createNewItemFunc: (text) => {
+    return JSON.parse(text);
+  }
+});
 
 v.append(ui.divV([
-  tsgsInput.root,
+  tagsInput.root,
   userInput.root,
   customTagsInput.root,
   ui.button('show value', () => {
-    console.log(tsgsInput.value);
+    console.log(tagsInput.value);
     console.log(userInput.value);
     console.log(customTagsInput.value);
 

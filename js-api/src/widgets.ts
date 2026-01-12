@@ -1538,7 +1538,7 @@ export class TagsInput<T> extends InputBase<T> {
 
   itemToString(item: T): string { return api.grok_TagsInput_ItemToString(this.dart, toDart(item)); };
 
-  async getSuggestions(inputText: string): Promise<T[]> { return (await api.grok_TagsInput_GetSuggestions(this.dart, inputText)) };
+  async getSuggestions(inputText: string): Promise<T[]> { return (await api.grok_TagsInput_GetSuggestionsFunc(this.dart, inputText)) };
 
   createTag(item: T): Element {
     return toJs(api.grok_TagsInput_CreateTag(this.dart, toDart(item)));
@@ -1546,10 +1546,10 @@ export class TagsInput<T> extends InputBase<T> {
 
   createNewItem(inputText: string): T { return toJs(api.grok_TagsInput_CreateNewItem(this.dart, inputText)) };
 
-  shouldFilterItem(item: string): boolean { return api.grok_TagsInput_shouldFilterItem(this.dart, toDart(item)) };
+  shouldFilterItem(item: string): boolean { return api.grok_TagsInput_ShouldFilterItem(this.dart, toDart(item)) };
 
-  async gatherItems(selectedItems: T[], selectedItem: T, findItems: boolean): Promise<T[]> {
-    return  (await api.grok_TagsInput_GatherItems(this.dart, findItems))
+  async collectItems(selectedItems: T[], selectedItem: T, findItems: boolean): Promise<T[]> {
+    return  (await api.grok_TagsInput_CollectItems(this.dart, findItems))
   };
 
   removeItem(item: T) {
