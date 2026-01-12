@@ -305,6 +305,12 @@ Yes. The [Add new column](../../transform/add-new-column.md) feature is very pow
 
 For example, from a SMILES column you can generate molecular properties (e.g., MW, cLogP) or ADMET predictions.
 
+##### <b>Q: Can I append multiple tables from a user interface?</b>
+
+Yes. Use the Table Manager, <kbd>Alt+T</kbd>, to show tables, select two tables, right-click and navigate to `2 tables > Append`.  A result table will be created containing the common columns and associated data.
+
+
+
 ## Explore
 
 ##### <b>Q: Can Datagrok handle complex scientific data types in a single interface?</b>

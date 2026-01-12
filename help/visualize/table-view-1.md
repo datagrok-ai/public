@@ -423,7 +423,7 @@ To embed:
 
 ### Table Manager
 
-Table Manager (<kpd>Alt + T</kpd>), contains a list of currently
+Table Manager (<kbd>Alt + T</kbd>), contains a list of currently
 open tables. Use it to navigate between
 tables, select them, or perform batch actions. It also allows to view metadata
 on multiple tables in a tabular format.
@@ -444,7 +444,7 @@ Usage:
 
 If a context menu is open when multiple columns are selected, user will be
 present with a choice to apply commands to either current table, or all selected
-tables.
+tables, including Append and Compare.
 
 ### Column Manager
 
