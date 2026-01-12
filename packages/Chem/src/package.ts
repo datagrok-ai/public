@@ -2567,7 +2567,7 @@ export class PackageFunctions {
 
   @grok.decorators.app({
     'name': 'MPO profiles',
-    'meta': {browsePath: 'Chem'},
+    'meta': {browsePath: 'Chem', icon: 'images/mpo.png'},
   })
   static async mpoProfilesApp(): Promise<DG.View> {
     const infoView = new MpoProfilesView();

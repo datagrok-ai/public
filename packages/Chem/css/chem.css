@@ -970,3 +970,14 @@
 .chem-mixture-widget-add-table-to-workspace {
   color: #2083d5!important;
 }
+
+.chem-mpo-description {
+  max-width: 300px;
+  white-space: normal;
+  word-break: break-word;
+  overflow: hidden;
+}
+
+.chem-mpo-d-none {
+  display: none!important;
+}

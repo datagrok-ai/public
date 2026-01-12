@@ -39,7 +39,7 @@ export class MpoProfilesView {
           ui.h1('Manage Profiles'),
           await this.buildProfilesTable(),
           ui.h1('New Profile'),
-          this.buildCreateProfileFormContainer(),
+          this.createProfileForm(),
         ]),
       );
     } finally {
@@ -49,15 +49,14 @@ export class MpoProfilesView {
 
   private buildAppHeader(): HTMLElement {
     return u2.appHeader({
-      iconPath: `${_package.webRoot}/images/icons/hit-triage-icon.png`,
+      iconPath: `${_package.webRoot}/images/mpo.png`,
       learnMoreUrl:
-        'https://github.com/datagrok-ai/public/blob/master/packages/HitTriage/README_HT.md',
+        '',
       description:
         '- Create and manage MPO profiles.\n' +
-        '- Lorem ipsum.\n' +
-        '- Lorem ipsum.\n' +
-        '- Lorem ipsum.\n' +
-        '- Lorem ipsum.\n',
+        '- Build profiles manually or train from labeled data.\n' +
+        '- Initialize profiles from scratch or from an existing dataset.\n' +
+        '- Full lifecycle support: create, edit, clone, and delete profiles..\n',
     });
   }
 
@@ -72,74 +71,59 @@ export class MpoProfilesView {
             PackageFunctions.mpoProfileEditor(profile.file),
           ),
         ),
-        profile.description,
-        ui.icons.delete(
-          () => this.confirmAndDeleteProfile(profile),
-          'Delete profile',
-        ),
+        ui.divText(profile.description, 'chem-mpo-description'),
+        (() => {
+          const icon = ui.icons.delete(
+            () => this.confirmAndDeleteProfile(profile),
+            'Delete profile',
+          );
+          icon.style.color = 'var(--blue-1)';
+          return icon;
+        })(),
       ],
       ['Name', 'Description', ''],
     );
-
+    table.style.width = 'fit-content';
     table.style.color = 'var(--grey-5)';
+
     return table;
   }
 
-  private buildCreateProfileFormContainer(): HTMLElement {
-    const container = ui.div([], {classes: 'ui-form'});
-    container.appendChild(this.buildCreateProfileForm());
-    return container;
-  }
-
-  private buildCreateProfileForm(): HTMLElement {
+  private createProfileForm(): HTMLElement {
     const methodInput = ui.input.choice('Method', {
       items: ['Manual', 'Probabilistic'],
       value: 'Manual',
       nullable: false,
       tooltipText: 'Explanation of Manual vs Probabilistic MPO',
+      onValueChanged: (value) => {
+        const isProbabilistic = value === 'Probabilistic';
+        nameInput.classList.toggle('chem-mpo-d-none', isProbabilistic);
+        descriptionInput.classList.toggle('chem-mpo-d-none', isProbabilistic);
+        datasetInput.nullable = !isProbabilistic;
+      },
     });
 
-    const nameInput = ui.input.string('Profile Name', {tooltipText: 'Name of the MPO profile'});
-
-    const descriptionInput = ui.input.string('Description', {tooltipText: 'Optional description'});
-
+    const nameInput = ui.input.string('Profile Name', {tooltipText: 'Name of the MPO profile', nullable: true});
+    const descriptionInput = ui.input.string('Description', {tooltipText: 'Optional description', nullable: true});
     const datasetInput = ui.input.table('Dataset', {nullable: true});
 
     const createButton = ui.button('Create', async () => {
-      if (!datasetInput.value) {
-        ui.dialog('Error').add(ui.divText('Dataset is required')).show();
+      const df = datasetInput.value!;
+      if (methodInput.value === 'Probabilistic') {
+        this.trainPMPOProfile(df);
         return;
       }
-
-      const df = datasetInput.value;
-      const newProfile: DesirabilityProfile = {
-        name: nameInput.value.trim() || 'New Profile',
-        description: descriptionInput.value.trim(),
-        properties: {},
-      };
-
-      Array.from(df.columns.numerical).forEach((col: DG.Column) => {
-        newProfile.properties[col.name] = {
-          weight: 0.5,
-          min: col.min,
-          max: col.max,
-          line: [],
-        };
-      });
-
-      this.openNewProfileView(newProfile, df);
+      this.manualMPOProfile(df, nameInput.value, descriptionInput.value);
     });
 
-    return ui.divV(
-      [
-        methodInput.root,
-        nameInput.root,
-        descriptionInput.root,
-        datasetInput.root,
-        createButton,
-      ],
-      {style: {gap: '10px'}},
-    );
+    const form = ui.form([
+      methodInput,
+      nameInput,
+      descriptionInput,
+      datasetInput,
+    ]);
+
+    return ui.divV([form, createButton], {style: {gap: '10px'}});
   }
 
   private async loadProfiles(): Promise<MpoProfileInfo[]> {
@@ -172,6 +156,36 @@ export class MpoProfilesView {
       .show();
   }
 
+  private async trainPMPOProfile(df: DG.DataFrame): Promise<void> {
+    grok.shell.addTableView(df);
+    try {
+      await grok.functions.call('EDA:trainPmpo', {});
+    } catch (err: any) {
+      console.log(err);
+    }
+  }
+
+  private async manualMPOProfile(
+    df: DG.DataFrame, profileName: string | null, profileDescription: string | null,
+  ): Promise<void> {
+    const newProfile: DesirabilityProfile = {
+      name: profileName ?? '',
+      description: profileDescription ?? '',
+      properties: {},
+    };
+
+    Array.from(df.columns.numerical).forEach((col: DG.Column) => {
+      newProfile.properties[col.name] = {
+        weight: 0.5,
+        min: col.min,
+        max: col.max,
+        line: [],
+      };
+    });
+
+    this.openNewProfileView(newProfile, df);
+  }
+
   private openNewProfileView(profile: DesirabilityProfile, df: DG.DataFrame) {
     const view = DG.View.create();
     view.name = profile.name;
@@ -180,7 +194,7 @@ export class MpoProfilesView {
     saveButton.style.display = 'none';
     view.setRibbonPanels([[saveButton]]);
 
-    const editor = new MpoProfileEditor(df);
+    const editor = new MpoProfileEditor(df, true);
     editor.setProfile(profile);
 
     editor.onChanged.subscribe(() => saveButton.style.display = 'initial');
@@ -188,11 +202,11 @@ export class MpoProfilesView {
     const saveProfile = () => {
       grok.dapi.files.writeAsText(`${profile.name}.json`, JSON.stringify(profile))
         .then(() => {
-          ui.dialog('Saved').add(ui.divText(`Profile saved as ${profile.name}.json`)).show();
+          grok.shell.info(`Profile "${profile.name}" saved successfully.`);
           saveButton.style.display = 'none';
           this.render();
         })
-        .catch((err) => ui.dialog('Error').add(ui.divText(err.message)).show());
+        .catch((err) => grok.shell.error(`Failed to save profile "${profile.name}": ${err}`));
     };
 
     view.append(editor.root);
