@@ -14,6 +14,7 @@ export class MpoProfileDialog {
   mpoProfileEditor: MpoProfileEditor;
   aggregationInput: DG.ChoiceInput<WeightedAggregation | null>;
   profileInput: DG.ChoiceInput<string | null>;
+  designModeInput: DG.InputBase<boolean>;
   addParetoFront: DG.InputBase<boolean>;
   mpoFiles: DG.FileInfo[] = [];
   currentProfile: DesirabilityProfile | null = null;
@@ -30,6 +31,7 @@ export class MpoProfileDialog {
       nullable: false,
     });
 
+    this.designModeInput = ui.input.bool('Design mode', {value: false, onValueChanged: (v) => this.mpoProfileEditor.setDesignMode(!!v)});
     this.addParetoFront = ui.input.bool('Pareto front');
   }
 
@@ -120,6 +122,7 @@ export class MpoProfileDialog {
       this.profileInput.root,
       this.aggregationInput.root,
       this.mpoProfileEditor.root,
+      this.designModeInput.root,
       this.addParetoFront.root,
     ]);
   }
