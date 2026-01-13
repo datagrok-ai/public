@@ -1,7 +1,7 @@
 {
   "name": "@datagrok/genome-browser",
   "friendlyName": "GenomeBrowser",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Provides visualization of genomic data along with its annotations",
   "author": {
     "name": "Stanislav Savenko",
