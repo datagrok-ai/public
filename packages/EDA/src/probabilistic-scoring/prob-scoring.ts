@@ -6,8 +6,8 @@ import '../../css/pmpo.css';
 
 import {getDesiredTables, getDescriptorStatistics, normalPdf, sigmoidS} from './stat-tools';
 import {MIN_SAMPLES_COUNT, PMPO_NON_APPLICABLE, DescriptorStatistics, P_VAL_TRES_MIN, DESCR_TITLE,
-  R2_MIN, Q_CUTOFF_MIN, WEIGHT_TABLE_TITLE, PmpoParams, SCORES_TITLE, DESCR_TABLE_TITLE,
-  PMPO_COMPUTE_FAILED, SELECTED_TITLE, P_VAL} from './pmpo-defs';
+  R2_MIN, Q_CUTOFF_MIN, PmpoParams, SCORES_TITLE, DESCR_TABLE_TITLE, PMPO_COMPUTE_FAILED, SELECTED_TITLE,
+  P_VAL} from './pmpo-defs';
 import {addSelectedDescriptorsCol, getDescriptorStatisticsTable, getFilteredByPvalue, getFilteredByCorrelations,
   getModelParams, getDescrTooltip, saveModel, getScoreTooltip,
   getDesirabilityProfileJson} from './pmpo-utils';
@@ -85,7 +85,7 @@ export class Pmpo {
     }
 
     return true;
-  }
+  } // isApplicable
 
   static isTableValid(df: DG.DataFrame, toShowMsg: boolean = true): boolean {
     if (df.rowCount < 2) {
@@ -151,15 +151,7 @@ export class Pmpo {
   private initTable = grok.data.demo.demog(10);
 
   private statGrid = DG.Viewer.grid(this.initTable, {showTitle: true, title: DESCR_TABLE_TITLE});
-  private corrPlot = DG.Viewer.correlationPlot(this.initTable, {showTitle: true, title: `${DESCR_TITLE} Correlations`});
-  private barChart = DG.Viewer.barChart(this.initTable, {
-    valueAggrType: DG.AGG.AVG,
-    showCategorySelector: false,
-    showValueSelector: false,
-    showTitle: true,
-    title: WEIGHT_TABLE_TITLE,
-    showStackSelector: false,
-  });
+  private corrPlot = DG.Viewer.correlationPlot(this.initTable, {showTitle: true, title: `${DESCR_TITLE} Correlations`});  
   private boxPlot = DG.Viewer.boxPlot(this.initTable, {
     showPValue: false,
     showSizeSelector: false,
