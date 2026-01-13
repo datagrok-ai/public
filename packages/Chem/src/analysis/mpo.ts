@@ -7,6 +7,7 @@ import * as DG from 'datagrok-api/dg';
 import {DesirabilityProfile, PropertyDesirability, WeightedAggregation, WEIGHTED_AGGREGATIONS} from '@datagrok-libraries/statistics/src/mpo/mpo';
 import {MPO_SCORE_CHANGED_EVENT, MpoProfileEditor} from '@datagrok-libraries/statistics/src/mpo/mpo-profile-editor';
 import {MpoScoreViewer} from '../apps/mpo-scores';
+import {MpoContextPanel} from '../apps/mpo-context-panel';
 
 export const MPO_TEMPLATE_PATH = 'System:AppData/Chem/mpo';
 
@@ -21,11 +22,11 @@ export class MpoProfileDialog {
   currentProfile: DesirabilityProfile | null = null;
   currentProfileFileName: string | null = null;
 
-  private mpoHistogramHost: HTMLDivElement = ui.div();
-  private mpoContextPanel?: DG.Accordion;
-  private mpoHistogram?: DG.Viewer;
-  private mpoBestScoreViewer?: MpoScoreViewer;
-  private mpoWorstScoreViewer?: MpoScoreViewer;
+  // private mpoHistogramHost: HTMLDivElement = ui.div();
+  private mpoContextPanel?: MpoContextPanel;
+  // private mpoHistogram?: DG.Viewer;
+  // private mpoBestScoreViewer?: MpoScoreViewer;
+  // private mpoWorstScoreViewer?: MpoScoreViewer;
 
   constructor(dataFrame?: DG.DataFrame) {
     this.dataFrame = dataFrame ?? grok.shell.t;
@@ -56,7 +57,8 @@ export class MpoProfileDialog {
     }
 
     this.listenForProfileChanges();
-    this.mpoContextPanel = this.createMpoContextPanel();
+    // this.mpoContextPanel = this.createMpoContextPanel();
+    this.mpoContextPanel = new MpoContextPanel(this.dataFrame);
   }
 
   private async calculateMpoScores(): Promise<string[]> {
@@ -96,73 +98,82 @@ export class MpoProfileDialog {
   }
 
 
-  private createScoresPanes(mpoColName: string): void {
-    if (!this.mpoBestScoreViewer) {
-      this.mpoBestScoreViewer = new MpoScoreViewer(this.dataFrame, mpoColName);
-      this.mpoBestScoreViewer.dataFrame = this.dataFrame;
-      this.mpoBestScoreViewer.onTableAttached();
-      this.mpoContextPanel?.addPane(
-        'Best scores',
-        () => this.mpoBestScoreViewer!.root,
-        true,
-      );
-    }
+  // private createScoresPanes(mpoColName: string): void {
+  //   if (!this.mpoBestScoreViewer) {
+  //     this.mpoBestScoreViewer = new MpoScoreViewer(this.dataFrame, mpoColName);
+  //     this.mpoBestScoreViewer.dataFrame = this.dataFrame;
+  //     this.mpoBestScoreViewer.onTableAttached();
+  //     this.mpoContextPanel?.addPane(
+  //       'Best scores',
+  //       () => this.mpoBestScoreViewer!.root,
+  //       true,
+  //     );
+  //   }
 
-    if (!this.mpoWorstScoreViewer) {
-      this.mpoWorstScoreViewer = new MpoScoreViewer(this.dataFrame, mpoColName, 'worst');
-      this.mpoWorstScoreViewer.dataFrame = this.dataFrame;
-      this.mpoWorstScoreViewer.onTableAttached();
-      this.mpoContextPanel?.addPane(
-        'Worst scores',
-        () => this.mpoWorstScoreViewer!.root,
-        true,
-      );
-    }
-  }
+  //   if (!this.mpoWorstScoreViewer) {
+  //     this.mpoWorstScoreViewer = new MpoScoreViewer(this.dataFrame, mpoColName, 'worst');
+  //     this.mpoWorstScoreViewer.dataFrame = this.dataFrame;
+  //     this.mpoWorstScoreViewer.onTableAttached();
+  //     this.mpoContextPanel?.addPane(
+  //       'Worst scores',
+  //       () => this.mpoWorstScoreViewer!.root,
+  //       true,
+  //     );
+  //   }
+  // }
 
-  async updateMpoScoresHistogram(): Promise<void> {
-    if (!this.mpoContextPanel) return;
+  // async updateMpoScoresHistogram(): Promise<void> {
+  //   if (!this.mpoContextPanel) return;
 
-    try {
-      const columnNames = await this.calculateMpoScores();
-      if (!columnNames.length)
-        return;
+  //   try {
+  //     const columnNames = await this.calculateMpoScores();
+  //     if (!columnNames.length)
+  //       return;
 
-      const titleSpan = this.mpoContextPanel.root.querySelector('span');
-      if (titleSpan)
-        titleSpan.innerText = 'MPO Context';
+  //     const titleSpan = this.mpoContextPanel.root.querySelector('span');
+  //     if (titleSpan)
+  //       titleSpan.innerText = 'MPO Context';
 
-      if (!this.mpoHistogram) {
-        this.mpoHistogram = DG.Viewer.histogram(this.dataFrame);
-        ui.empty(this.mpoHistogramHost);
-        this.mpoHistogramHost.appendChild(this.mpoHistogram.root);
+  //     if (!this.mpoHistogram) {
+  //       this.mpoHistogram = DG.Viewer.histogram(this.dataFrame);
+  //       ui.empty(this.mpoHistogramHost);
+  //       this.mpoHistogramHost.appendChild(this.mpoHistogram.root);
 
-        this.mpoContextPanel.addPane(
-          'Score distribution',
-          () => this.mpoHistogramHost,
-          true,
-        );
-      }
+  //       this.mpoContextPanel.addPane(
+  //         'Score distribution',
+  //         () => this.mpoHistogramHost,
+  //         true,
+  //       );
+  //     }
 
-      this.mpoHistogram.setOptions({
-        valueColumnName: columnNames[0],
-      });
+  //     this.mpoHistogram.setOptions({
+  //       valueColumnName: columnNames[0],
+  //     });
 
-      this.createScoresPanes(columnNames[0]);
+  //     this.createScoresPanes(columnNames[0]);
 
-      if (this.mpoBestScoreViewer)
-        this.mpoBestScoreViewer.render();
-      if (this.mpoWorstScoreViewer)
-        this.mpoWorstScoreViewer.render();
+  //     if (this.mpoBestScoreViewer)
+  //       this.mpoBestScoreViewer.render();
+  //     if (this.mpoWorstScoreViewer)
+  //       this.mpoWorstScoreViewer.render();
 
-      grok.shell.o = this.mpoContextPanel.root;
-    } catch (e) {
-      grok.shell.error(`Failed to update MPO histogram: ${e instanceof Error ? e.message : e}`);
-    }
-  }
+  //     grok.shell.o = this.mpoContextPanel.root;
+  //   } catch (e) {
+  //     grok.shell.error(`Failed to update MPO histogram: ${e instanceof Error ? e.message : e}`);
+  //   }
+  // }
 
   private async listenForProfileChanges(): Promise<void> {
-    grok.events.onCustomEvent(MPO_SCORE_CHANGED_EVENT).subscribe(async () => this.updateMpoScoresHistogram());
+    grok.events.onCustomEvent(MPO_SCORE_CHANGED_EVENT).subscribe(async () => {
+      // this.updateMpoScoresHistogram();
+      if (this.currentProfile && this.mpoContextPanel) {
+        await this.mpoContextPanel.render(
+          this.currentProfile,
+          this.mpoProfileEditor.columnMapping,
+          this.aggregationInput.value ?? undefined,
+        );
+      }
+    });
   }
 
   private async loadProfile(fileName: string | null): Promise<void> {

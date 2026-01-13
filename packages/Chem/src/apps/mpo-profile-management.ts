@@ -7,7 +7,8 @@ import {u2} from '@datagrok-libraries/utils/src/u2';
 import {_package, PackageFunctions} from '../package';
 import {MPO_TEMPLATE_PATH} from '../analysis/mpo';
 import {DesirabilityProfile, PropertyDesirability} from '@datagrok-libraries/statistics/src/mpo/mpo';
-import {MpoProfileEditor} from '@datagrok-libraries/statistics/src/mpo/mpo-profile-editor';
+import {MPO_SCORE_CHANGED_EVENT, MpoProfileEditor} from '@datagrok-libraries/statistics/src/mpo/mpo-profile-editor';
+import {MpoContextPanel} from './mpo-context-panel';
 
 type MpoProfileInfo = {
   file: DG.FileInfo;
@@ -174,7 +175,9 @@ export class MpoProfilesView {
       properties: {},
     };
 
-    Array.from(df.columns.numerical).forEach((col: DG.Column) => {
+    const numericalColumns = Array.from(df.columns.numerical).slice(0, 3);
+
+    numericalColumns.forEach((col: DG.Column) => {
       newProfile.properties[col.name] = {
         weight: 0.5,
         min: col.min,
@@ -187,8 +190,7 @@ export class MpoProfilesView {
   }
 
   private openNewProfileView(profile: DesirabilityProfile, df: DG.DataFrame) {
-    const view = DG.View.create();
-    view.name = profile.name;
+    const view = grok.shell.addTableView(df);
 
     const saveButton = ui.bigButton('SAVE', () => saveProfile());
     saveButton.style.display = 'none';
@@ -208,8 +210,20 @@ export class MpoProfilesView {
         })
         .catch((err) => grok.shell.error(`Failed to save profile "${profile.name}": ${err}`));
     };
+    const scrollableEditor = ui.divV([editor.root], {style: {overflow: 'auto', height: '100%'}});
+    view.dockManager.dock(scrollableEditor, DG.DOCK_TYPE.DOWN, null, 'MPO Profile Editor', 0.6);
 
-    view.append(editor.root);
-    grok.shell.addView(view);
+
+    const mpoContextPanel = new MpoContextPanel(df);
+    grok.events.onCustomEvent(MPO_SCORE_CHANGED_EVENT).subscribe(async () => {
+      if (profile && mpoContextPanel) {
+        await mpoContextPanel.render(
+          profile,
+          editor.columnMapping,
+          'Average',
+        );
+      }
+    });
+    grok.shell.o = mpoContextPanel.root;
   }
 }

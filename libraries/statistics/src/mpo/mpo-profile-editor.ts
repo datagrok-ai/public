@@ -46,6 +46,8 @@ export class MpoProfileEditor {
       },
     });
     weightInput.root.classList.add('statistics-mpo-weight-input');
+    if (!this.design)
+      weightInput.root.style.marginTop = '21px';
 
     const matchedColumnName = this.dataFrame ?
       this.dataFrame.columns.names().find((name) => name.toLowerCase() == propertyName.toLowerCase()) :
@@ -79,24 +81,28 @@ export class MpoProfileEditor {
     })() : null;
 
     const propertyLabel = this.design ?
-      ui.input.string('', {
-        value: propertyName,
-        onValueChanged: (v) => {
-          if (!v || !this.profile) return;
-          if (v === propertyName) return;
-
-          this.profile.properties[v] = this.profile.properties[propertyName];
-          delete this.profile.properties[propertyName];
-        },
-      }).root :
+      (!this.dataFrame ?
+        ui.input.string('', {
+          value: propertyName,
+          onValueChanged: (v) => {
+            if (!v || !this.profile) return;
+            if (v === propertyName) return;
+            this.profile.properties[v] = this.profile.properties[propertyName];
+            delete this.profile.properties[propertyName];
+          },
+        }).root :
+        null) :
       ui.divText(propertyName, 'statistics-mpo-property-name');
 
+    const columnInputControl = this.dataFrame ?
+      columnInput.root :
+      null;
 
     row.append(
       ui.divV([
         propertyLabel,
-        this.dataFrame ? columnInput.root : null,
-      ]),
+        columnInputControl,
+      ], {style: {gap: '4px'}}),
       weightInput.root,
       lineEditor.root, // Add the Konva container div
     );
