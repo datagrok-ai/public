@@ -38,17 +38,38 @@ Datagrok [package](../../develop.md#packages) might contain zero, one, or more D
 other entities in the package, which the applications may be using, such as [connections](../db/access-data.md#connections),
 [viewers](../viewers/develop-custom-viewer.md), [scripts](../../../compute/scripting/scripting.mdx), etc.
 
-Consider a simple example of a webpack-based package with just one trivial app in a `src/package.js`:
+Modern Datagrok applications use **Decorators** to define the application entry point and its metadata. This is
+typically done using the `@grok.decorators.app` decorator on a static method within a class.
 
-```js
+:::note developers
+
+For a complete list of available decorators and their options, see the [Decorators](../../advanced/decorators.md) page.
+
+:::
+
+Consider a simple example of a webpack-based package with just one trivial app in a `src/package.ts`:
+
+```ts
 import * as grok from 'datagrok-api/grok';
 
-export let _package = new DG.Package();
+export const _package = new DG.Package();
 
-//name: TestApp
-//tags: app
-export function test() {
-  grok.shell.info('An app test');
+export class PackageFunctions {
+    // The @app decorator registers the function as an application.
+    // It supports metadata like name, description, icon, and custom tags.
+    @grok.decorators.app({
+        name: 'Demo',
+        description: 'Interactive demo of major Datagrok capabilities',
+        icon: 'images/icons/demoapp-icon.png',
+    })
+    static demoApp(
+        // The @param decorator allows you to map URL parameters to function arguments.
+        // 'meta.url': true ensures this parameter captures the path after the app name in the URL.
+        @grok.decorators.param({options: {'meta.url': true, 'optional': true}}) path?: string
+    ): void {
+        grok.shell.info(`App launched with path: ${path}`);
+        // Your view initialization logic here
+    }
 }
 ```
 
@@ -74,7 +95,7 @@ to prepare our simple package and deploy it.
       Find this key in your user profile section in the Datagrok UI,
       e.g. [https://public.datagrok.ai/u](https://public.datagrok.ai/u)
 
-3. Add an app to the package by `grok add app <APP_NAME>`, or just copy-paste the above JS snippet into `src/package.js`
+3. Add an app to the package by `grok add app <APP_NAME>`, or just copy-paste the above TS snippet into `src/package.ts`
 
 After deploying this package to `https://public.datagrok.ai`, you'd find the `Test App` app via `Functions | Apps`
 in the Datagrok's sidebar. Run the app and notice the tooltip. You may also call this entry point by a
@@ -84,6 +105,39 @@ package, the corresponding URL is simply `https://public.datagrok.ai/apps/<APP>`
 
 This simple example concludes on the entry point. Yet, trivial popups aren't something one typically builds as an
 application. Let's look at a more UI-rich side of things.
+
+### AppTreeBrowser
+
+For complex applications that require navigation hierarchies, Datagrok provides the `AppTreeBrowser`. This mechanism
+allows you to define a navigation tree that sits alongside your application view.
+
+You define the tree structure using the `@grok.decorators.appTreeBrowser` decorator. This decorator links a specific
+function to an existing `@app` via the `app` property. The platform calls this function, passing in the root `treeNode`,
+which you can then populate with items and event handlers.
+
+Here is how you link a tree browser to the `Demo` app defined above:
+
+```ts
+
+export class PackageFunctions {
+  
+  // ... (demoApp definition)
+
+  // This function populates the navigation tree for the 'Demo' app.
+  @grok.decorators.appTreeBrowser({app: 'Demo'})
+  static async demoAppTreeBrowser(treeNode: DG.TreeViewGroup): Promise<void> {
+    // Add items to the tree
+    treeNode.item('Home').onSelected.subscribe((_) => grok.shell.info('Home selected'));
+    const dataGroup = treeNode.group('Data');
+    dataGroup.item('View 1').onSelected.subscribe((_) => grok.shell.info('View 1 selected'));
+    dataGroup.item('View 2').onSelected.subscribe((_) => grok.shell.info('View 2 selected'));
+  }
+}
+
+```
+
+When the user launches the **Demo** app, the platform automatically detects the associated `appTreeBrowser` and
+executes it to build the side navigation panel.
 
 ### The main view
 
