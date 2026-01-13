@@ -8,6 +8,7 @@ import {DesirabilityProfile, PropertyDesirability, WeightedAggregation, WEIGHTED
 import {MPO_SCORE_CHANGED_EVENT, MpoProfileEditor} from '@datagrok-libraries/statistics/src/mpo/mpo-profile-editor';
 import {MpoScoreViewer} from '../apps/mpo-scores';
 import {MpoContextPanel} from '../apps/mpo-context-panel';
+import {PackageFunctions} from '../package';
 
 export const MPO_TEMPLATE_PATH = 'System:AppData/Chem/mpo';
 
@@ -22,8 +23,11 @@ export class MpoProfileDialog {
   currentProfile: DesirabilityProfile | null = null;
   currentProfileFileName: string | null = null;
 
+  manageButton: HTMLElement;
+
   // private mpoHistogramHost: HTMLDivElement = ui.div();
   private mpoContextPanel?: MpoContextPanel;
+  dialog: DG.Dialog<{}> | undefined;
   // private mpoHistogram?: DG.Viewer;
   // private mpoBestScoreViewer?: MpoScoreViewer;
   // private mpoWorstScoreViewer?: MpoScoreViewer;
@@ -44,6 +48,15 @@ export class MpoProfileDialog {
 
     this.designModeInput = ui.input.bool('Design mode', {value: false, onValueChanged: (v) => this.mpoProfileEditor.setDesignMode(!!v)});
     this.addParetoFront = ui.input.bool('Pareto front');
+
+    this.manageButton = ui.button('Manage', async () => {
+      grok.shell.addView(await PackageFunctions.mpoProfilesApp());
+      if (this.dialog)
+        this.dialog.close();
+    });
+    this.manageButton.style.margin = 'inherit';
+    this.manageButton.style.marginTop = '10px';
+    // manageButton.style.marginRight = '10px';
   }
 
   async init(): Promise<void> {
@@ -233,7 +246,7 @@ export class MpoProfileDialog {
 
   getEditor(): HTMLElement {
     return ui.divV([
-      this.profileInput.root,
+      ui.divH([this.profileInput.root, this.manageButton], {style: {gap: '10px'}}),
       this.aggregationInput.root,
       this.mpoProfileEditor.root,
       this.designModeInput.root,
@@ -244,7 +257,7 @@ export class MpoProfileDialog {
   async showDialog(): Promise<void> {
     await this.init();
 
-    ui.dialog('MPO Score')
+    this.dialog = ui.dialog('MPO Score')
       .add(this.getEditor())
       .onOK(async () => {
         await this.saveProfile();

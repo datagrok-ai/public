@@ -96,7 +96,8 @@ import {DesirabilityProfile, mpo, PropertyDesirability, WeightedAggregation} fro
 //@ts-ignore
 import '../css/chem.css';
 import {addDeprotectedColumn, DeprotectEditor} from './analysis/deprotect';
-import { MpoProfilesView } from './apps/mpo-profile-management';
+import {MpoProfilesView} from './apps/mpo-profile-management';
+import {MpoDesirabilityLineEditor} from '@datagrok-libraries/statistics/src/mpo/mpo-line-editor';
 
 export {getMCS};
 export * from './package.g';
@@ -2508,7 +2509,7 @@ export class PackageFunctions {
     view.setRibbonPanels([[saveButton]]);
 
     file.readAsString().then((s) => {
-      const mpoEditor = new MpoProfileEditor();
+      const mpoEditor = new MpoProfileEditor(undefined, true);
       mpoEditor.setProfile(JSON.parse(s));
       view.append(mpoEditor.root);
 
@@ -2572,7 +2573,9 @@ export class PackageFunctions {
   static async mpoProfilesApp(): Promise<DG.View> {
     const infoView = new MpoProfilesView();
     await infoView.render();
-    return DG.View.fromRoot(infoView.root);
+    const view = DG.View.fromRoot(infoView.root);
+    view.name = 'MPO profiles';
+    return view;
   }
 
   @grok.decorators.func()
@@ -2586,5 +2589,36 @@ export class PackageFunctions {
         JSON.parse(await grok.dapi.files.readAsText(`${MPO_TEMPLATE_PATH}/${profile.name}`)) as DesirabilityProfile;
       treeNode.item(content.name).onSelected.subscribe(() => grok.shell.addPreview(this.mpoProfileEditor(profile)));
     }
+  }
+
+  @grok.decorators.func()
+  static async mpoFunctionEditors(): Promise<DG.View> {
+    const prop: PropertyDesirability = {
+      min: 0,
+      max: 10,
+      weight: 1,
+      line: [],
+    };
+
+    const editor = new MpoDesirabilityLineEditor(prop, 600, 300);
+
+    const minX = 0;
+    const maxX = 10;
+    const points = MpoDesirabilityLineEditor.sigmoid(minX, maxX, 100, 2, 5);
+    prop.line = points;
+    editor.onChanged.next();
+
+    return DG.View.fromRoot(editor.root);
+  }
+
+  @grok.decorators.func()
+  static async mpoGaussianEditor(): Promise<DG.View> {
+    const prop: PropertyDesirability = {min: 0, max: 10, weight: 1, line: []};
+    const editor = new MpoDesirabilityLineEditor(prop, 600, 300);
+
+    const points = MpoDesirabilityLineEditor.gaussian(0, 10, 100, 5, 1.5);
+    prop.line = points;
+    editor.onChanged.next();
+    return DG.View.fromRoot(editor.root);
   }
 }

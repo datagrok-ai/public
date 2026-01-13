@@ -333,6 +333,32 @@ export class MpoDesirabilityLineEditor {
 
     this.barsLayer.batchDraw();
   }
+
+  static sigmoid(minX: number, maxX: number, numPoints: number = 50, k: number = 1, x0: number = 0.5): [number, number][] {
+    const line: [number, number][] = [];
+    for (let i = 0; i < numPoints; i++) {
+      const x = minX + (i / (numPoints - 1)) * (maxX - minX);
+      const y = 1 / (1 + Math.exp(-k * (x - x0)));
+      line.push([x, y]);
+    }
+    return line;
+  }
+
+  static gaussian(
+    minX: number,
+    maxX: number,
+    numPoints: number = 50,
+    mean: number = 0,
+    std: number = 1,
+  ): [number, number][] {
+    const line: [number, number][] = [];
+    for (let i = 0; i < numPoints; i++) {
+      const x = minX + (i / (numPoints - 1)) * (maxX - minX);
+      const y = Math.exp(-Math.pow(x - mean, 2) / (2 * std * std));
+      line.push([x, y]);
+    }
+    return line;
+  }
 }
 
 

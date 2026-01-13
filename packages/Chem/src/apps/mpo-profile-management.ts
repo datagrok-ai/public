@@ -22,6 +22,8 @@ export class MpoProfilesView {
   readonly name = 'MPO Profiles';
   readonly root: HTMLElement = ui.divV([]);
 
+  private profilesTableContainer: HTMLElement = ui.divV([]);
+
   constructor() {
     grok.shell.windows.showHelp = true;
   }
@@ -38,11 +40,15 @@ export class MpoProfilesView {
         ui.divV([
           this.buildAppHeader(),
           ui.h1('Manage Profiles'),
-          await this.buildProfilesTable(),
+          this.profilesTableContainer,
           ui.h1('New Profile'),
           this.createProfileForm(),
         ]),
       );
+
+      ui.setUpdateIndicator(this.profilesTableContainer, true);
+      const table = await this.buildProfilesTable();
+      $(this.profilesTableContainer).empty().append(table);
     } finally {
       ui.setUpdateIndicator(this.root, false);
     }
@@ -108,7 +114,7 @@ export class MpoProfilesView {
     const descriptionInput = ui.input.string('Description', {tooltipText: 'Optional description', nullable: true});
     const datasetInput = ui.input.table('Dataset', {nullable: true});
 
-    const createButton = ui.button('Create', async () => {
+    const createButton = ui.bigButton('Create', async () => {
       const df = datasetInput.value!;
       if (methodInput.value === 'Probabilistic') {
         this.trainPMPOProfile(df);
@@ -117,6 +123,9 @@ export class MpoProfilesView {
       this.manualMPOProfile(df, nameInput.value, descriptionInput.value);
     });
 
+    const buttonContainer = ui.divH([createButton], {style: {justifyContent: 'flex-end'}});
+    buttonContainer.classList.add('d4-ribbon-item');
+
     const form = ui.form([
       methodInput,
       nameInput,
@@ -124,7 +133,7 @@ export class MpoProfilesView {
       datasetInput,
     ]);
 
-    return ui.divV([form, createButton], {style: {gap: '10px'}});
+    return ui.divV([form, buttonContainer], {style: {gap: '10px'}});
   }
 
   private async loadProfiles(): Promise<MpoProfileInfo[]> {
@@ -151,11 +160,25 @@ export class MpoProfilesView {
     ui.dialog('Delete profile')
       .add(ui.divText(`Are you sure you want to delete profile "${profile.name}"?`))
       .onOK(async () => {
-        await grok.dapi.files.delete(`${MPO_TEMPLATE_PATH}/${profile.fileName}`);
-        await this.render();
+        try {
+          await grok.dapi.files.delete(`${MPO_TEMPLATE_PATH}/${profile.fileName}`);
+
+          // Yeah, maybe it is better to remove from the table directly, than re-rendering all
+          const rows = Array.from(this.profilesTableContainer.querySelectorAll('tr'));
+          for (const row of rows) {
+            if (row.textContent?.includes(profile.name)) {
+              row.remove();
+              break;
+            }
+          }
+        } catch (e) {
+          grok.shell.error(`Failed to delete profile "${profile.name}": ${e instanceof Error ? e.message : e}`);
+        } finally {
+        }
       })
       .show();
   }
+
 
   private async trainPMPOProfile(df: DG.DataFrame): Promise<void> {
     grok.shell.addTableView(df);
@@ -167,7 +190,7 @@ export class MpoProfilesView {
   }
 
   private async manualMPOProfile(
-    df: DG.DataFrame, profileName: string | null, profileDescription: string | null,
+    df: DG.DataFrame | null, profileName: string | null, profileDescription: string | null,
   ): Promise<void> {
     const newProfile: DesirabilityProfile = {
       name: profileName ?? '',
@@ -175,18 +198,28 @@ export class MpoProfilesView {
       properties: {},
     };
 
-    const numericalColumns = Array.from(df.columns.numerical).slice(0, 3);
-
-    numericalColumns.forEach((col: DG.Column) => {
-      newProfile.properties[col.name] = {
-        weight: 0.5,
-        min: col.min,
-        max: col.max,
-        line: [],
-      };
-    });
-
-    this.openNewProfileView(newProfile, df);
+    if (df) {
+      const numericalColumns = Array.from(df.columns.numerical).slice(0, 3);
+      numericalColumns.forEach((col: DG.Column) => {
+        newProfile.properties[col.name] = {
+          weight: 0.5,
+          min: col.min,
+          max: col.max,
+          line: [],
+        };
+      });
+      this.openNewProfileView(newProfile, df);
+    } else {
+      const view = DG.View.create();
+      view.name = profileName ?? 'New MPO Profile';
+      for (let i = 1; i <= 3; i++)
+        newProfile.properties[`Property ${i}`] = {weight: 0.5, line: []};
+      const editor = new MpoProfileEditor(undefined, true);
+      editor.setProfile(newProfile);
+      const scrollableEditor = ui.divV([editor.root], {style: {overflow: 'auto', height: '100%'}});
+      view.append(scrollableEditor);
+      grok.shell.addView(view);
+    }
   }
 
   private openNewProfileView(profile: DesirabilityProfile, df: DG.DataFrame) {
@@ -212,7 +245,6 @@ export class MpoProfilesView {
     };
     const scrollableEditor = ui.divV([editor.root], {style: {overflow: 'auto', height: '100%'}});
     view.dockManager.dock(scrollableEditor, DG.DOCK_TYPE.DOWN, null, 'MPO Profile Editor', 0.6);
-
 
     const mpoContextPanel = new MpoContextPanel(df);
     grok.events.onCustomEvent(MPO_SCORE_CHANGED_EVENT).subscribe(async () => {
