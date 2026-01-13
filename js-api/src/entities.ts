@@ -1017,7 +1017,10 @@ export class Group extends Entity {
   get hidden(): boolean { return api.grok_Group_Get_Hidden(this.dart); }
   set hidden(e: boolean) { api.grok_Group_Set_Hidden(this.dart, e); }
 
-  /** Returns associated user */
+  /** Returns associated user.
+   * Returns `null` if the group is not {@link personal}.
+   * See [Groups](https://datagrok.ai/help/govern/access-control/users-and-groups#groups)
+   */
   get user(): User { return new User(api.grok_Group_Get_User(this.dart)); }
 
   static get defaultGroupsIds() {
