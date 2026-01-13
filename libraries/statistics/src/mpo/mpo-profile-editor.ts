@@ -8,6 +8,8 @@ import {Subject} from 'rxjs';
 
 import '../../css/styles.css';
 
+export const MPO_SCORE_CHANGED_EVENT = 'grok-mpo-score-changed';
+
 export class MpoProfileEditor {
   root = ui.div([]);
   dataFrame?: DG.DataFrame;
@@ -26,7 +28,10 @@ export class MpoProfileEditor {
   private buildRow(propertyName: string, prop: PropertyDesirability): HTMLElement {
     const row = ui.divH([], 'statistics-mpo-row');
     const lineEditor = new MpoDesirabilityLineEditor(prop, 300, 80);
-    lineEditor.onChanged.subscribe((_) => this.onChanged.next());
+    lineEditor.onChanged.subscribe((_) => {
+      this.onChanged.next();
+      grok.events.fireCustomEvent(MPO_SCORE_CHANGED_EVENT, {});
+    });
 
     // Input for weight - updates the *copy* of the template data
     const weightInput = ui.input.float('', { // No label needed here
@@ -66,7 +71,10 @@ export class MpoProfileEditor {
 
     const controls = this.design ? (() => {
       const add = ui.icons.add(() => this.insertRowAfter(row));
-      const del = ui.icons.delete(() => this.deleteRow(row, propertyName));
+      const del = ui.icons.delete(() => {
+        this.deleteRow(row, propertyName);
+        grok.events.fireCustomEvent(MPO_SCORE_CHANGED_EVENT, {});
+      });
       return ui.divH([add, del], 'statistics-mpo-control-buttons');
     })() : null;
 

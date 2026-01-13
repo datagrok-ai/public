@@ -5,7 +5,8 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {DesirabilityProfile, PropertyDesirability, WeightedAggregation, WEIGHTED_AGGREGATIONS} from '@datagrok-libraries/statistics/src/mpo/mpo';
-import {MpoProfileEditor} from '@datagrok-libraries/statistics/src/mpo/mpo-profile-editor';
+import {MPO_SCORE_CHANGED_EVENT, MpoProfileEditor} from '@datagrok-libraries/statistics/src/mpo/mpo-profile-editor';
+import {MpoScoreViewer} from '../apps/mpo-scores';
 
 export const MPO_TEMPLATE_PATH = 'System:AppData/Chem/mpo';
 
@@ -20,11 +21,20 @@ export class MpoProfileDialog {
   currentProfile: DesirabilityProfile | null = null;
   currentProfileFileName: string | null = null;
 
+  private mpoHistogramHost: HTMLDivElement = ui.div();
+  private mpoContextPanel?: DG.Accordion;
+  private mpoHistogram?: DG.Viewer;
+  private mpoBestScoreViewer?: MpoScoreViewer;
+  private mpoWorstScoreViewer?: MpoScoreViewer;
+
   constructor(dataFrame?: DG.DataFrame) {
     this.dataFrame = dataFrame ?? grok.shell.t;
     this.mpoProfileEditor = new MpoProfileEditor(this.dataFrame);
 
-    this.aggregationInput = ui.input.choice('Aggregation', {items: [...WEIGHTED_AGGREGATIONS], nullable: false});
+    this.aggregationInput = ui.input.choice('Aggregation', {
+      items: [...WEIGHTED_AGGREGATIONS], nullable: false,
+      onValueChanged: (v) => grok.events.fireCustomEvent(MPO_SCORE_CHANGED_EVENT, {}),
+    });
 
     this.profileInput = ui.input.choice('Profile', {
       onValueChanged: async (value) => await this.loadProfile(value),
@@ -44,6 +54,115 @@ export class MpoProfileDialog {
       this.profileInput.value = defaultProfile;
       await this.loadProfile(defaultProfile);
     }
+
+    this.listenForProfileChanges();
+    this.mpoContextPanel = this.createMpoContextPanel();
+  }
+
+  private async calculateMpoScores(): Promise<string[]> {
+    if (!this.currentProfile)
+      return [];
+
+    const mapping = this.mpoProfileEditor.columnMapping;
+
+    const mappedProperties: Record<string, PropertyDesirability> = {};
+    for (const [propName, prop] of Object.entries(this.currentProfile.properties)) {
+      const columnName = mapping[propName] ?? propName;
+      mappedProperties[columnName] = prop;
+    }
+
+    const [func] = await DG.Func.find({name: 'mpoTransformFunction'});
+    const funcCall = await func.prepare({
+      df: this.dataFrame,
+      profileName: this.currentProfile.name ?? 'MPO',
+      currentProperties: mappedProperties,
+      aggregation: this.aggregationInput.value,
+    }).call(undefined, undefined, {processed: false});
+
+    return funcCall.getOutputParamValue();
+  }
+
+  private createMpoContextPanel(): DG.Accordion {
+    const acc = ui.accordion();
+
+    const icon = ui.element('i');
+    icon.className = 'grok-icon svg-icon svg-histogram';
+
+    const statusLabel = ui.label('MPO not calculated yet');
+    acc.addTitle(ui.span([icon, statusLabel]));
+
+    grok.shell.o = acc.root;
+    return acc;
+  }
+
+
+  private createScoresPanes(mpoColName: string): void {
+    if (!this.mpoBestScoreViewer) {
+      this.mpoBestScoreViewer = new MpoScoreViewer(this.dataFrame, mpoColName);
+      this.mpoBestScoreViewer.dataFrame = this.dataFrame;
+      this.mpoBestScoreViewer.onTableAttached();
+      this.mpoContextPanel?.addPane(
+        'Best scores',
+        () => this.mpoBestScoreViewer!.root,
+        true,
+      );
+    }
+
+    if (!this.mpoWorstScoreViewer) {
+      this.mpoWorstScoreViewer = new MpoScoreViewer(this.dataFrame, mpoColName, 'worst');
+      this.mpoWorstScoreViewer.dataFrame = this.dataFrame;
+      this.mpoWorstScoreViewer.onTableAttached();
+      this.mpoContextPanel?.addPane(
+        'Worst scores',
+        () => this.mpoWorstScoreViewer!.root,
+        true,
+      );
+    }
+  }
+
+  async updateMpoScoresHistogram(): Promise<void> {
+    if (!this.mpoContextPanel) return;
+
+    try {
+      const columnNames = await this.calculateMpoScores();
+      if (!columnNames.length)
+        return;
+
+      const titleSpan = this.mpoContextPanel.root.querySelector('span');
+      if (titleSpan)
+        titleSpan.innerText = 'MPO Context';
+
+      if (!this.mpoHistogram) {
+        this.mpoHistogram = DG.Viewer.histogram(this.dataFrame);
+        ui.empty(this.mpoHistogramHost);
+        this.mpoHistogramHost.appendChild(this.mpoHistogram.root);
+
+        this.mpoContextPanel.addPane(
+          'Score distribution',
+          () => this.mpoHistogramHost,
+          true,
+        );
+      }
+
+      this.mpoHistogram.setOptions({
+        valueColumnName: columnNames[0],
+      });
+
+      this.createScoresPanes(columnNames[0]);
+
+      if (this.mpoBestScoreViewer)
+        this.mpoBestScoreViewer.render();
+      if (this.mpoWorstScoreViewer)
+        this.mpoWorstScoreViewer.render();
+
+      grok.shell.o = this.mpoContextPanel.root;
+    } catch (e) {
+      grok.shell.error(`Failed to update MPO histogram: ${e instanceof Error ? e.message : e}`);
+    }
+  }
+
+  private async listenForProfileChanges(): Promise<void> {
+    grok.events.onCustomEvent(MPO_SCORE_CHANGED_EVENT).subscribe(async () => this.updateMpoScoresHistogram());
   }
 
   private async loadProfile(fileName: string | null): Promise<void> {
@@ -93,23 +212,7 @@ export class MpoProfileDialog {
 
   private async runMpoCalculation(): Promise<void> {
     try {
-      const mapping = this.mpoProfileEditor.columnMapping;
-
-      const mappedProperties: { [key: string]: PropertyDesirability } = {};
-      for (const [propName, prop] of Object.entries(this.currentProfile!.properties)) {
-        const columnName = mapping[propName] ?? propName;
-        mappedProperties[columnName] = prop;
-      }
-
-      const [func] = await DG.Func.find({name: 'mpoTransformFunction'});
-      const funcCall = await func.prepare({
-        df: this.dataFrame,
-        profileName: this.currentProfile?.name ?? 'MPO',
-        currentProperties: mappedProperties,
-        aggregation: this.aggregationInput.value,
-      }).call(undefined, undefined, {processed: false});
-
-      const columnNames: string[] = funcCall.getOutputParamValue();
+      const columnNames = await this.calculateMpoScores();
       if (columnNames.length && this.addParetoFront.value)
         this.addParetoFrontViewer(columnNames);
     } catch (e) {
