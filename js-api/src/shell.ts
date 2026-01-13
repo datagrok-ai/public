@@ -68,6 +68,10 @@ export class Shell {
   get v(): ViewBase { return toJs(api.grok_Get_CurrentView()); }
   set v(view: ViewBase) { api.grok_Set_CurrentView(view.dart); }
 
+  /** Current preview view */
+  get preview(): View | null { return toJs(api.grok_Get_CurrentPreview()); }
+  set preview(view: View | null) { api.grok_Set_CurrentPreview(view ? view.dart : null); }
+
   /** Current table view, or null */
   get tv(): TableView { return toJs(api.grok_Get_CurrentView()); }
 

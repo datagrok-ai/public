@@ -29,6 +29,8 @@ export interface IDartApi {
   grok_CurrentTable(): any;
   grok_Get_CurrentView(): any;
   grok_Set_CurrentView(view: any): any;
+  grok_Get_CurrentPreview(): any;
+  grok_Set_CurrentPreview(view: any): any;
   grok_TableNames(): any;
   grok_TableByName(s: any): any;
   grok_ScriptSync(script: String): any;
