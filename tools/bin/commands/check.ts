@@ -6,7 +6,7 @@ import * as color from '../utils/color-utils';
 import {FuncMetadata, FuncParam, FuncValidator, ValidationResult} from '../utils/interfaces';
 import {PackageFile} from '../utils/interfaces';
 import * as testUtils from '../utils/test-utils';
-import {FuncRoleDescription, functionRoles} from 'datagrok-api/src/const';
+import {FuncRoleDescription, functionRoles} from '../utils/const';
 import {execSync} from 'child_process';
 
 

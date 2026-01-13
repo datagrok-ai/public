@@ -1,6 +1,6 @@
 import {Project, SyntaxKind, ObjectLiteralExpression, QuoteKind, IndentationText} from 'ts-morph';
 import * as path from 'path';
-import {FUNC_TYPES} from 'datagrok-api/src/const';
+import {FUNC_TYPES} from '../utils/const';
 
 const FUNC_TYPE_VALUES = new Set(Object.values(FUNC_TYPES));
 

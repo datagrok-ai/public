@@ -1,5 +1,11 @@
 # Datagrok-tools changelog
 
+## 4.14.72 (2026-01-13)
+
+### Bug Fixes
+
+* Removed local dependency on js-api
+
 ## 4.14.71 (2026-01-10)
 
 ### Features
