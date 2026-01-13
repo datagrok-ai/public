@@ -18,7 +18,7 @@ export function _welcomeView() : any {
 //tags: dashboard
 //output: widget result
 //meta.showName: false
-//meta.order: 1
+//meta.order: -1
 export function activityDashboardWidget() : any {
   return PackageFunctions.activityDashboardWidget();
 }

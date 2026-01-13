@@ -137,7 +137,7 @@ export class PackageFunctions {
     meta: {
       'showName': 'false',
     },
-    order: '1',
+    order: '-1',
     name: 'Activity dashboard',
   })
   static activityDashboardWidget(): DG.Widget {
