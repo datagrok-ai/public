@@ -1,6 +1,6 @@
 {
   "name": "datagrok-tools",
-  "version": "4.14.72",
+  "version": "4.14.73",
   "description": "Utility to upload and publish packages to Datagrok",
   "homepage": "https://github.com/datagrok-ai/public/tree/master/tools#readme",
   "dependencies": {
@@ -25,7 +25,8 @@
     "papaparse": "^5.4.1",
     "path": "^0.12.7",
     "puppeteer": "22.10.0",
-    "puppeteer-screen-recorder": "3.0.3"
+    "puppeteer-screen-recorder": "3.0.3",
+    "ts-morph": "^27.0.2"
   },
   "scripts": {
     "link": "npm link",
@@ -75,7 +76,6 @@
     "@typescript-eslint/parser": "^5.62.0",
     "eslint": "^8.56.0",
     "eslint-config-google": "^0.14.0",
-    "ts-morph": "^27.0.2",
     "typescript": "^5.3.3",
     "webpack": "^5.89.0",
     "webpack-cli": "^5.1.4"
