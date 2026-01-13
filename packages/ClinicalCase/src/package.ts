@@ -83,7 +83,7 @@ export class PackageFunctions {
     return await openApp(CDISC_STANDARD.SEND);
   }
 
-  @grok.decorators.func()
+  @grok.decorators.appTreeBrowser({app: 'Clinical Case'})
   static async clinicalCaseAppTreeBrowser(treeNode: DG.TreeViewGroup) {
     const url = new URL(window.location.href);
     const currentStudyAndViewPath = url.pathname.includes(`${CLINICAL_CASE_APP_PATH}`) ?
@@ -92,7 +92,7 @@ export class PackageFunctions {
     await cdiscAppTB(treeNode, CDISC_STANDARD.SDTM, studyAndView.study, studyAndView.viewName);
   }
 
-  @grok.decorators.func()
+  @grok.decorators.appTreeBrowser({app: 'Preclinical Case'})
   static async preclinicalCaseAppTreeBrowser(treeNode: DG.TreeViewGroup) {
     const url = new URL(window.location.href);
     const currentStudyAndViewPath = url.pathname.includes(`${PRECLINICAL_CASE_APP_PATH}`) ?

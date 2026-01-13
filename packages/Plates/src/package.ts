@@ -262,7 +262,7 @@ static async checkCsvIsPlate(file: DG.FileInfo): Promise<boolean> {
     return platesAppView();
   }
 
-  @grok.decorators.func()
+  @grok.decorators.appTreeBrowser({app: 'Plates'})
   static async platesAppTreeBrowser(treeNode: DG.TreeViewGroup) : Promise<void> {
     await initPlatesAppTree(treeNode);
   }

@@ -161,7 +161,7 @@ export class PackageFunctions {
     return demoView;
   }
 
-  @grok.decorators.func()
+  @grok.decorators.appTreeBrowser({app: 'Demo'})
   static async demoAppTreeBrowser(treeNode: DG.TreeViewGroup) : Promise<void> {
     new DemoView(false);
   }
