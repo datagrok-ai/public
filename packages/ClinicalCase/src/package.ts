@@ -296,7 +296,7 @@ export const SUPPORTED_VIEWS: {[key: string]: string[]} = {
 
   [CDISC_STANDARD.SEND]: [SUMMARY_VIEW_NAME, TIMELINES_VIEW_NAME, LABORATORY_VIEW_NAME, ANIMAL_PROFILE_VIEW_NAME,
     DISTRIBUTIONS_VIEW_NAME, TIME_PROFILE_VIEW_NAME, STUDY_CONFIGURATIN_VIEW_NAME,
-    VALIDATION_VIEW_NAME, MATRIX_TABLE_VIEW_NAME, TIME_PROFILE_TABLE_VIEW_NAME],
+    VALIDATION_VIEW_NAME, MATRIX_TABLE_VIEW_NAME],
 };
 
 export const VIEW_CREATE_FUNC: {[key: string]: (studyId: string, args?: any) => DG.ViewBase | ClinCaseTableView} = {
@@ -312,7 +312,7 @@ export const VIEW_CREATE_FUNC: {[key: string]: (studyId: string, args?: any) => 
   [SURVIVAL_ANALYSIS_VIEW_NAME]: (studyId) => new SurvivalAnalysisView(SURVIVAL_ANALYSIS_VIEW_NAME, studyId),
   [DISTRIBUTIONS_VIEW_NAME]: (studyId) => new BoxPlotsView(DISTRIBUTIONS_VIEW_NAME, studyId),
   [CORRELATIONS_VIEW_NAME]: (studyId) => new MatrixesView(CORRELATIONS_VIEW_NAME, studyId),
-  [TIME_PROFILE_VIEW_NAME]: (studyId) => new TimeProfileView(TIME_PROFILE_VIEW_NAME, studyId),
+ // [TIME_PROFILE_VIEW_NAME]: (studyId) => new TimeProfileView(TIME_PROFILE_VIEW_NAME, studyId),
   [TREE_MAP_VIEW_NAME]: (studyId) => new TreeMapView(TREE_MAP_VIEW_NAME, studyId),
   [MEDICAL_HISTORY_VIEW_NAME]: (studyId) => new MedicalHistoryView(MEDICAL_HISTORY_VIEW_NAME, studyId),
   [VISITS_VIEW_NAME]: (studyId) => new VisitsView(VISITS_VIEW_NAME, studyId),
@@ -322,7 +322,7 @@ export const VIEW_CREATE_FUNC: {[key: string]: (studyId: string, args?: any) => 
   [QUESTIONNAIRES_VIEW_NAME]: (studyId) => new QuestionnaiesView(QUESTIONNAIRES_VIEW_NAME, studyId),
   [AE_BROWSER_VIEW_NAME]: (studyId, viewName) => createClinCaseTableView(studyId, viewName),
   [MATRIX_TABLE_VIEW_NAME]: (studyId) => createClinCaseTableView(studyId, MATRIX_TABLE_VIEW_NAME),
-  [TIME_PROFILE_TABLE_VIEW_NAME]: (studyId) => createClinCaseTableView(studyId, TIME_PROFILE_TABLE_VIEW_NAME),
+  [TIME_PROFILE_VIEW_NAME]: (studyId) => createClinCaseTableView(studyId, TIME_PROFILE_TABLE_VIEW_NAME),
 };
 
 

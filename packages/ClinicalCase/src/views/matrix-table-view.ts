@@ -1,6 +1,5 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
-import * as ui from 'datagrok-api/ui';
 import {studies} from '../utils/app-utils';
 import {CDISC_STANDARD} from '../utils/types';
 import {createVisitDayStrCol} from '../data-preparation/data-preparation';
@@ -61,9 +60,9 @@ export function createMatrixTableView(studyId: string): any {
         innerViewerLook: l,
       });
     }
-    const correlationViewer = await DG.Viewer.fromType(DG.VIEWER.CORR_PLOT, pivotedDF);
+    //const correlationViewer = await DG.Viewer.fromType(DG.VIEWER.CORR_PLOT, pivotedDF);
     tableView.addViewer(matrixViewer);
-    tableView.addViewer(correlationViewer);
+    //tableView.addViewer(correlationViewer);
     tableView.getFiltersGroup();
   };
 

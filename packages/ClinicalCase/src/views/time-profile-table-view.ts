@@ -4,7 +4,7 @@ import * as ui from 'datagrok-api/ui';
 import {studies} from '../utils/app-utils';
 import {CDISC_STANDARD} from '../utils/types';
 import {createVisitDayStrCol} from '../data-preparation/data-preparation';
-import {DOMAIN, SUBJECT_ID, VISIT_DAY_STR} from '../constants/columns-constants';
+import {DOMAIN, PLANNED_TRT_ARM, SUBJECT_ID, VISIT_DAY_STR} from '../constants/columns-constants';
 
 export function createTimeProfileTableView(studyId: string): any {
   const isSend = studies[studyId].config.standard === CDISC_STANDARD.SEND;
@@ -31,23 +31,46 @@ export function createTimeProfileTableView(studyId: string): any {
     }
   });
 
-  //add dm domain fields fro further filtering
+  //add dm domain fields for further filtering
   const columnsFromDm = studies[studyId].domains.dm.columns.names().filter((it) => it !== SUBJECT_ID);
   grok.data.joinTables(resDf, studies[studyId].domains.dm, [SUBJECT_ID], [SUBJECT_ID], null,
     columnsFromDm, DG.JOIN_TYPE.LEFT, true);
 
+  const tests = resDf.col('test')!.categories;
+  let selectedTest = tests[0];
+  resDf.rows.match({test: selectedTest}).filter();
+  const dfFortableView = resDf.clone(resDf.filter);
+  const testChoiceInput = ui.input.choice('Test', {
+    items: tests,
+    value: selectedTest,
+    onValueChanged: () => {
+      selectedTest = testChoiceInput.value;
+      resDf.rows.match({test: selectedTest}).filter();
+      grok.shell.tv.dataFrame = resDf.clone(resDf.filter);
+      //need to set boxPlot options since they are reset after table is changed
+      boxPlot.setOptions({value: 'res_num', category1: PLANNED_TRT_ARM});
+    },
+  });
+  let boxPlot: DG.Viewer | null = null;
   // onTableViewAdded function to add viewers
   const onTableViewAdded = async (tableView: DG.TableView) => {
-    const lineChart = await DG.Viewer.fromType(DG.VIEWER.LINE_CHART, resDf);
-    lineChart.setOptions({yColumnNames: ['res_num'], yAggrTypes: ['avg'], whiskersType: 'Med | Q1, Q3'});
+    const ribbons = tableView.getRibbonPanels();
+    ribbons.push([testChoiceInput.root]);
+    tableView.setRibbonPanels(ribbons);
 
+    const lineChart = await DG.Viewer.fromType(DG.VIEWER.LINE_CHART, tableView.dataFrame);
+    lineChart.setOptions({yColumnNames: ['res_num'], yAggrTypes: ['avg'], whiskersType: 'Med | Q1, Q3'});
     tableView.addViewer(lineChart);
+
+    boxPlot = await DG.Viewer.fromType(DG.VIEWER.BOX_PLOT, tableView.dataFrame);
+    boxPlot.setOptions({value: 'res_num', category1: PLANNED_TRT_ARM});
+    tableView.addViewer(boxPlot);
+
     const fg = tableView.getFiltersGroup();
     fg.updateOrAdd({type: DG.FILTER_TYPE.CATEGORICAL,
       column: 'test',
       selected: [resDf.col('test').categories[0]]});
   };
 
-
-  return {df: resDf, onTableViewAddedFunc: onTableViewAdded};
+  return {df: dfFortableView, onTableViewAddedFunc: onTableViewAdded};
 }
