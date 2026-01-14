@@ -390,7 +390,7 @@ function addStudyToBrowseTree(study: ClinicalStudy, treeNode: DG.TreeViewGroup, 
 
 function addDomainsToTree(study: ClinicalStudy, treeNode: DG.TreeViewGroup) {
   const domains = study.domains.all();
-  const domainsNode = treeNode.group('Domains');
+  const domainsNode = treeNode.group('Domains', null, false);
   for (const domain of domains) {
     const domainItem = domainsNode.item(domain.name);
     domainItem.onSelected.subscribe(() => {
