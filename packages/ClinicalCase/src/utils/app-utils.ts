@@ -15,6 +15,8 @@ import {TABLE_VIEWS_META} from './views-creation-utils';
 import {Subject} from 'rxjs';
 import {createInitialSatistics} from './initial-statistics-widget';
 import {ClinicalCaseViewBase} from '../model/ClinicalCaseViewBase';
+import {ValidationHelper} from '../helpers/validation-helper';
+import {getRequiredColumnsByView} from './views-validation-utils';
 
 export const validationNodes: {[key: string]: DG.TreeViewNode} = {};
 export let currentOpenedView: DG.ViewBase | null = null;
@@ -203,6 +205,8 @@ export async function openApp(standard: CDISC_STANDARD): Promise<DG.ViewBase | v
   currentOpenedView?.close();
   currentOpenedView = DG.View.create();
   currentOpenedView.name = standard === CDISC_STANDARD.SDTM ? 'Clinical Case' : 'Preclinical Case';
+  currentOpenedView.path = standard === CDISC_STANDARD.SEND ? PRECLINICAL_CASE_APP_PATH :
+    CLINICAL_CASE_APP_PATH;
   currentOpenedView.root.append(ui.divV([
     appHeader,
     studiesHeader,
@@ -349,25 +353,30 @@ function addStudyToBrowseTree(study: ClinicalStudy, treeNode: DG.TreeViewGroup, 
   node.onNodeExpanding.subscribe(async (_) => {
     if (studies[study.studyId].loadingStudyData === true)
       return;
-    for (const viewName of SUPPORTED_VIEWS[study.config.standard]) {
-      const viewNode = node.item(viewName);
-      if (viewName === VALIDATION_VIEW_NAME)
-        validationNodes[study.studyId] = viewNode;
-      viewNode.onSelected.subscribe(() => {
-        if (studies[study.studyId].loadingStudyData === true) {
-          grok.shell.warning(`Loading data for study ${study.studyId}`);
-          treeNode.currentItem = node;
-          return;
-        }
-        studies[study.studyId].currentViewName = viewName;
-        loadView(study, viewName, node);
-      });
-    }
     if (!studies[study.studyId].initCompleted) {
       const sub = studyLoadedSubject.subscribe((data) => {
         if (data.name === study.studyId) {
           sub.unsubscribe();
           if (data.loaded) {
+            //adding views to tree only after data is loaded since we need all domains to perform validation
+            for (const viewName of SUPPORTED_VIEWS[study.config.standard]) {
+              //do not add view in case validation not passed
+              const validator = new ValidationHelper(getRequiredColumnsByView(study.studyId)[viewName], study.studyId);
+              if (!validator.validate())
+                continue;
+              const viewNode = node.item(viewName);
+              if (viewName === VALIDATION_VIEW_NAME)
+                validationNodes[study.studyId] = viewNode;
+              viewNode.onSelected.subscribe(() => {
+                if (studies[study.studyId].loadingStudyData === true) {
+                  grok.shell.warning(`Loading data for study ${study.studyId}`);
+                  treeNode.currentItem = node;
+                  return;
+                }
+                studies[study.studyId].currentViewName = viewName;
+                loadView(study, viewName, node);
+              });
+            }
             addDomainsToTree(study, node);
             openStudyNode(studies[study.studyId], node, studies[study.studyId].currentViewName);
           }
