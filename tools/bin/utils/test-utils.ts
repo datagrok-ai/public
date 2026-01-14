@@ -374,7 +374,7 @@ export function saveCsvResults(stringToSave: string[], csvReportDir: string) {
   color.info('Saved `test-report.csv`\n');
 }
 
-async function runTests(testParams: { package: any, params: any }, stopOnFail?: boolean): Promise<any> {
+async function runTests(testParams: { package: any, params: any }): Promise<any> {
     let failed = false;
     let verbosePassed = '';
     let verboseSkipped = '';
@@ -880,7 +880,7 @@ export interface BrowserOptions {
   path?: string, catchUnhandled?: boolean, core?: boolean,
   report?: boolean, record?: boolean, verbose?: boolean, benchmark?: boolean, platform?: boolean, category?: string, test?: string,
   stressTest?: boolean, gui?: boolean, stopOnTimeout?: boolean, reproduce?: boolean, ciCd?: boolean, debug?: boolean,
-  skipToCategory?: string, skipToTest?: string, returnOnFail?: boolean
+  skipToCategory?: string, skipToTest?: string
 }
 
 export type ResultObject = {

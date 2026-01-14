@@ -14,7 +14,7 @@ import {setAlphabeticalOrder} from '../utils/order-functions';
 const testInvocationTimeout = 3600000;
 
 const availableCommandOptions = ['host', 'package', 'csv', 'gui', 'catchUnhandled', 'platform', 'core',
-  'report', 'skip-build', 'skip-publish', 'path', 'record', 'verbose', 'benchmark', 'category', 'test', 'stress-test', 'link', 'tag', 'ci-cd', 'debug'];
+  'report', 'skip-build', 'skip-publish', 'path', 'record', 'verbose', 'benchmark', 'category', 'test', 'stress-test', 'link', 'tag', 'ci-cd', 'debug', 'no-retry'];
 
 const curDir = process.cwd();
 const grokDir = path.join(os.homedir(), '.grok');
@@ -49,7 +49,6 @@ export async function test(args: TestArgs): Promise<boolean> {
       args['skip-publish'],
       args['skip-build'], args.link);
   }
-
   process.env.TARGET_PACKAGE = packageName;
   const res = await runTesting(args);
   if (args.csv) {
@@ -82,7 +81,8 @@ const MAX_RETRIES_PER_SESSION = 10;
 let retryEnabled = true;
 
 async function runTesting(args: TestArgs): Promise<ResultObject> {
-  retryEnabled = !(args['no-retry'] ?? false);
+
+  retryEnabled = args['retry'] ?? true;
   let organized: OrganizedTest = {
     package: process.env.TARGET_PACKAGE ?? '',
     params: {
@@ -110,7 +110,6 @@ async function runTesting(args: TestArgs): Promise<ResultObject> {
     while (shouldRetry || oneLastTry) {
       shouldRetry = false;
         oneLastTry = false;
-
       // On first run, assume retry is supported; after first run, use actual value
       const useRetry = retryEnabled && (retrySupported === undefined || retrySupported);
 
@@ -137,7 +136,6 @@ async function runTesting(args: TestArgs): Promise<ResultObject> {
         debug: args['debug'] ?? false,
         skipToCategory: currentSkipToCategory,
         skipToTest: currentSkipToTest,
-        returnOnFail: useRetry,
       }, browserId, testInvocationTimeout);
 
         if (r.error) {
