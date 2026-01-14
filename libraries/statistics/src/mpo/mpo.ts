@@ -21,7 +21,7 @@ export type DesirabilityProfile = {
   properties: { [key: string]: PropertyDesirability };
 }
 
-export const WEIGHTED_AGGREGATIONS = ['Sum', 'Average', 'Product', 'Geomean'] as const;
+export const WEIGHTED_AGGREGATIONS = ['Average', 'Sum', 'Product', 'Geomean', 'Min', 'Max'] as const;
 export type WeightedAggregation = typeof WEIGHTED_AGGREGATIONS[number];
 
 /// Calculates the desirability score for a given x value
@@ -76,8 +76,7 @@ export function mpo(dataFrame: DG.DataFrame, columns: DG.Column[], profileName: 
       weights[j] = desirability.weight;
     }
 
-    const aggregatedScore = aggregate(scores, weights, aggregation);
-    return 100 * aggregatedScore;
+    return aggregate(scores, weights, aggregation);
   });
 
   // Add the column to the table
@@ -101,6 +100,12 @@ export function aggregate(scores: number[], weights: number[], aggregation: Weig
   case 'Geomean':
     const totalW = weights.reduce((sum, w) => sum + w, 0);
     return scores.reduce((prod, s, idx) => prod * Math.pow(s, weights[idx] / totalW), 1);
+
+  case 'Min':
+    return Math.min(...scores.map((s, idx) => Math.pow(s, weights[idx])));
+
+  case 'Max':
+    return Math.max(...scores.map((s, idx) => Math.pow(s, weights[idx])));
 
   default:
     throw new Error(`Unknown aggregation type: ${aggregation}`);
