@@ -77,10 +77,12 @@ export class TestContext {
   stressTest?: boolean;
   catchUnhandled = true;
   report = false;
+  returnOnFail = false;
 
-  constructor(catchUnhandled?: boolean, report?: boolean) {
+  constructor(catchUnhandled?: boolean, report?: boolean, returnOnFail?: boolean) {
     if (catchUnhandled !== undefined) this.catchUnhandled = catchUnhandled;
     if (report !== undefined) this.report = report;
+    if (returnOnFail !== undefined) this.returnOnFail = returnOnFail;
   };
 }
 
@@ -147,7 +149,10 @@ export class TestExecutionOptions {
   verbose?: boolean;
   stressTest?: boolean;
   tags?: string[];
-  nodeOptions?: NodeTestExecutionOptions
+  nodeOptions?: NodeTestExecutionOptions;
+  skipToCategory?: string;
+  skipToTest?: string;
+  returnOnFail?: boolean;
 }
 
 export async function testEvent<T>(event: Observable<T>,
@@ -448,13 +453,14 @@ function resetConsole(): void {
 }
 
 export async function runTests(options?: TestExecutionOptions) : Promise<TestResultExtended[]>{
-  console.log('--------------------')
+
   const package_: _DG.Package = options?.nodeOptions ? options.nodeOptions.package : grok.functions.getCurrentCall().func.package;
   if (!package_)
     throw new Error('Can\'t run tests outside of the package');
   const match = package_.packageOwner?.match(/<([^>]*)>/);
   const packageOwner = match ? match[1] : '';
-  await initAutoTests(package_);
+  if (package_ != undefined)
+    await initAutoTests(package_);
   const results:TestResultExtended[] = [];
   console.log(`Running tests`);
   console.log(options);
@@ -486,13 +492,14 @@ export async function runTests(options?: TestExecutionOptions) : Promise<TestRes
     return invokationResult
   }
 
-  async function invokeTestsInCategory(category: Category, options: TestExecutionOptions): Promise<TestResultExtended[]> {
+  async function invokeTestsInCategory(category: Category, options: TestExecutionOptions, isTargetCategory: boolean): Promise<TestResultExtended[]> {
     let t = category.tests ?? [];
     const res : TestResultExtended[] = [];
     // let memoryUsageBefore = (window?.performance as any)?.memory?.usedJSHeapSize;
     const widgetsBefore = getWidgetsCountSafe();
 
     if (category.clear) {
+        let skippingTests = isTargetCategory && options.skipToTest != undefined;
       for (let i = 0; i < t.length; i++) {
 
         if (t[i].options) {
@@ -506,6 +513,13 @@ export async function runTests(options?: TestExecutionOptions) : Promise<TestRes
         if (options.test)
           if (options.test.toLowerCase() !== test.name.toLowerCase())
             continue;
+        if (skippingTests) {
+          if (options?.skipToTest != undefined && test.name.toLowerCase().trim() === options?.skipToTest.toLowerCase().trim()) {
+            // Found the target test, stop skipping after this one
+            skippingTests = false;
+          } else
+          continue;
+        }
         if (test?.options) {
           test.options.owner = t[i].options?.owner ?? category?.owner ?? packageOwner ?? '';
         }
@@ -524,8 +538,12 @@ export async function runTests(options?: TestExecutionOptions) : Promise<TestRes
 
         // if (isGBEnable)
         //   await (window as any).gc();
-        if (testRun)
+        if (testRun) {
           res.push({ ...testRun,  widgetsDifference: getWidgetsCountSafe() - widgetsBefore });
+          // Return early if returnOnFail is set and test failed (but ignore failure for the skipToTest test itself)
+          if (options.returnOnFail && options.skipToTest !== test.name && !testRun.success && !testRun.skipped)
+            return res;
+        }
         // res.push({ ...testRun, memoryDelta: (window?.performance as any)?.memory?.usedJSHeapSize - memoryUsageBefore, widgetsDelta: getWidgetsCountSafe() - widgetsBefore });
 
         if (!options.nodeOptions) {
@@ -534,11 +552,19 @@ export async function runTests(options?: TestExecutionOptions) : Promise<TestRes
         }
       }
     } else {
+      let skippingTests = isTargetCategory && options.skipToTest != undefined;
       for (let i = 0; i < t.length; i++) {
         let test = t[i];
         if (options.test)
           if (options.test.toLowerCase() !== test.name.toLowerCase())
             continue;
+        if (skippingTests) {
+          if (options?.skipToTest != undefined && test.name.toLowerCase().trim() === options?.skipToTest.toLowerCase().trim()) {
+            // Found the target test, stop skipping after this one
+            skippingTests = false;
+          }
+          continue;  // Skip this test (including the target)
+        }
 
         if (test?.options) {
           test.options.owner = t[i].options?.owner ?? category?.owner ?? packageOwner ?? '';
@@ -560,8 +586,12 @@ export async function runTests(options?: TestExecutionOptions) : Promise<TestRes
         // if (isGBEnable)
         //   await (window as any).gc();
 
-        if (testRun)
+        if (testRun) {
           res.push({ ...testRun, widgetsDifference: getWidgetsCountSafe() - widgetsBefore });
+          // Return early if returnOnFail is set and test failed (but ignore failure for the skipToTest test itself)
+          if (options.returnOnFail && options.skipToTest !== test.name && !testRun.success && !testRun.skipped)
+            return res;
+        }
         // res.push({ ...testRun, memoryDelta: (window?.performance as any)?.memory?.usedJSHeapSize - memoryUsageBefore, widgetsDifference: getWidgetsCountSafe() - widgetsBefore });
 
       }
@@ -583,61 +613,116 @@ export async function runTests(options?: TestExecutionOptions) : Promise<TestRes
 
   async function invokeTests(categoriesToInvoke: { [key: string]: Category }, options: TestExecutionOptions) {
     try {
+      let skippingCategories = options?.skipToCategory != undefined;
+      let isTargetCategory = false;
       for (const [key, value] of Object.entries(categoriesToInvoke)) {
-        if (!options?.category || options.exclude?.some((c) => key.startsWith(c)))
-          continue;
-        if (!(key.toLowerCase().startsWith(`${options?.category.toLowerCase().trim()} :`) && !options.test) && key.toLowerCase().trim() !== options?.category.toLowerCase().trim())
-          continue;
-        stdLog(`Started ${key} category`);
-        //@ts-ignore
-        const skipped = value.tests?.every((t: Test) => t.options?.skipReason);
-        if (!skipped)
-          value.beforeStatus = await invokeCategoryMethod(value.before, options.category ?? '');
+          if (options.exclude?.some((c) => key.startsWith(c)))
+              continue;
+          if (options?.category != null && !key.toLowerCase().startsWith(`${options?.category.toLowerCase().trim()} :`) &&
+              key.toLowerCase().trim() !== options?.category.toLowerCase().trim())
+              continue;
 
-        let t = value.tests ?? [];
+          if (skippingCategories) {
+              if (isTargetCategory)
+                  skippingCategories = false;
+              else {
+                  if (options?.skipToCategory != null && key.toLowerCase().trim() === options?.skipToCategory.toLowerCase().trim()) {
+                      isTargetCategory = true;
+                  } else {
+                      // Haven't found the target category yet, keep skipping
+                      continue;
+                  }
+              }
+          }
+          stdLog(`Package testing: Started {{${key}}}`);
+          //@ts-ignore
+          const skipped = value.tests?.every((t: Test) => t.options?.skipReason);
+          if (!skipped)
+              value.beforeStatus = await invokeCategoryMethod(value.before, key);
 
-        if (options.stressTest) {
-          t = t.filter((e) => e.options?.stressTest);
-          t = shuffle(t);
-        }
+          let t = value.tests ?? [];
 
-        if ((options.tags?.length ?? 0) > 0) {
-          t = t.filter((e) =>
-            e.options?.tags?.some(tag => (options?.tags ?? []).includes(tag))
-          );
-        }
+          if (options.stressTest) {
+              t = t.filter((e) => e.options?.stressTest);
+              t = shuffle(t);
+          }
 
-        let res: TestResultExtended[];
-        if (value.beforeStatus) {
-          res = Array.from(t.map((testElem) => {
-            return {
-              date: new Date().toISOString(), category: key, name: testElem.name, success: false, result: 'before() failed', ms: 0, skipped: false, logs: '',
-              owner: packageOwner, package: package_.name, widgetsDifference:  0, flaking: DG.Test.isReproducing
-            };
-          }));
-          res.forEach(async (test) => await grok.shell.reportTest('package', test));
-        }
-        else
-          res = await invokeTestsInCategory(value, options);
-        const data : TestResultExtended[] = res.filter((d) => d.result != 'skipped');
+          if ((options.tags?.length ?? 0) > 0) {
+              t = t.filter((e) =>
+                  e.options?.tags?.some(tag => (options?.tags ?? []).includes(tag))
+              );
+          }
 
-        if (!skipped)
-          value.afterStatus = await invokeCategoryMethod(value.after, options.category ?? '');
+          let res: TestResultExtended[];
+          if (value.beforeStatus) {
+              res = Array.from(t.map((testElem) => {
+                  return {
+                      date: new Date().toISOString(),
+                      category: key,
+                      name: testElem.name,
+                      success: false,
+                      result: 'before() failed',
+                      ms: 0,
+                      skipped: false,
+                      logs: '',
+                      owner: packageOwner,
+                      package: package_.name,
+                      widgetsDifference: 0,
+                      flaking: DG.Test.isReproducing
+                  };
+              }));
+              res.forEach(async (test) => await grok.shell.reportTest('package', test));
+          } else
+              res = await invokeTestsInCategory(value, options, skippingCategories);
+          const data: TestResultExtended[] = res.filter((d) => d.result != 'skipped');
 
-        // Clear after category
-        // grok.shell.closeAll();
-        // DG.Balloon.closeAll();
-        if (value.afterStatus)
-          data.push({
-            date: new Date().toISOString(), category: key, name: 'after', success: false, result: value.afterStatus, ms: 0, skipped: false, logs: '',
-            owner: packageOwner, package: package_.name, widgetsDifference:  0, flaking: DG.Test.isReproducing
-          });
-        if (value.beforeStatus)
-          data.push({
-            date: new Date().toISOString(), category: key, name: 'before', success: false, result: value.beforeStatus, ms: 0, skipped: false, logs: '',
-            owner: packageOwner, package: package_.name, widgetsDifference:  0, flaking: DG.Test.isReproducing
-          });
-        results.push(...data);
+          if (!skipped)
+              value.afterStatus = await invokeCategoryMethod(value.after, key);
+
+          // Clear after category
+          // grok.shell.closeAll();
+          // DG.Balloon.closeAll();
+          if (value.afterStatus) {
+              stdLog(`Package testing: Category after() {{${key}}} failed`);
+              stdLog(`Package testing: Result for {{${key}}} after: ${value.afterStatus}`);
+              data.push({
+                  date: new Date().toISOString(),
+                  category: key,
+                  name: 'after',
+                  success: false,
+                  result: value.afterStatus,
+                  ms: 0,
+                  skipped: false,
+                  logs: '',
+                  owner: packageOwner,
+                  package: package_.name,
+                  widgetsDifference: 0,
+                  flaking: DG.Test.isReproducing
+              });
+          }
+          if (value.beforeStatus) {
+              stdLog(`Package testing: Category before() {{${key}}} failed`);
+              stdLog(`Package testing: Result for {{${key}}} before: ${value.beforeStatus}`);
+              data.push({
+                  date: new Date().toISOString(),
+                  category: key,
+                  name: 'before',
+                  success: false,
+                  result: value.beforeStatus,
+                  ms: 0,
+                  skipped: false,
+                  logs: '',
+                  owner: packageOwner,
+                  package: package_.name,
+                  widgetsDifference: 0,
+                  flaking: DG.Test.isReproducing
+              });
+          }
+          results.push(...data);
+
+          // If returnOnFail is set and a test failed (other than skipToTest), stop processing more categories
+          if (options.returnOnFail && data.some((d) => !d.success && !d.skipped && d.name !== options.skipToTest))
+              break;
       }
     } finally {
       resetConsole();
@@ -645,23 +730,26 @@ export async function runTests(options?: TestExecutionOptions) : Promise<TestRes
     if (options.testContext!.catchUnhandled && (!DG.Test.isInBenchmark)) {
       await delay(1000);
       const error = await grok.shell.lastError;
-      const params : any = {
-        logs: '',
-        date: new Date().toISOString(),
-        category: 'Unhandled exceptions',
-        name: 'Exception',
-        result: error ?? '',
-        success: !error,
-        ms: 0,
-        skipped: false,
-        owner: packageOwner ?? '',
-        'package': package_.name,
-        widgetsDifference: 0
-      };
+      if (error != undefined) {
+          const params: any = {
+              logs: '',
+              date: new Date().toISOString(),
+              category: 'Unhandled exceptions',
+              name: 'Exception',
+              result: error ?? '',
+              success: !error,
+              ms: 0,
+              skipped: false,
+              owner: packageOwner ?? '',
+              'package': package_.name,
+              widgetsDifference: 0
+          };
+          stdLog(`Package testing: Unhandled Exception: ${error}`);
 
-      results.push({...params, 'flaking': DG.Test.isReproducing && !error});
-      (<any>params).package = package_.name;
-      await grok.shell.reportTest('package', params);
+          results.push({...params, 'flaking': DG.Test.isReproducing && !error});
+          (<any>params).package = package_.name;
+          await grok.shell.reportTest('package', params);
+      }
     }
   }
 }
@@ -679,15 +767,14 @@ async function execTest(t: Test, predicate: string | undefined, logs: any[],
   const filter = predicate != undefined && (t.name.toLowerCase() !== predicate.toLowerCase());
   let skip = t.options?.skipReason || filter;
   let skipReason = filter ? 'skipped' : t.options?.skipReason;
-  console.log(test.name, skip);
 
   if (DG.Test.isInBenchmark && !t.options?.benchmark) {
-    stdLog(`SKIPPED: ${t.category} ${t.name} doesnt available in benchmark mode`);
+    stdLog(`Package testing: Skipped {{${t.category}}} {{${t.name}}} doesnt available in benchmark mode`);
     return undefined;
   }
 
   if (!skip)
-    stdLog(`Started ${t.category} ${t.name}`);
+    stdLog(`Package testing: Started {{${t.category}}} {{${t.name}}}`);
   const start = Date.now();
   const startDate = new Date(start).toISOString();
   try {
@@ -725,7 +812,10 @@ async function execTest(t: Test, predicate: string | undefined, logs: any[],
   r.logs = logs.join('\n');
   r.ms = Date.now() - start;
   if (!skip)
-    stdLog(`Finished ${t.category} ${t.name} for ${r.ms} ms`);
+    stdLog(`Package testing: Finished {{${t.category}}} {{${t.name}}} with {{${r.success ? 'success' : 'error'}}} for ${r.ms} ms`);
+  if (!r.success) {
+      stdLog(`Package testing: Result for {{${t.category}}} {{${t.name}}}: ${r.result}`);
+  }
   r.category = t.category;
   r.name = t.name;
   r.owner = t.options?.owner ?? '';
