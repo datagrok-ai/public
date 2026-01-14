@@ -45,6 +45,13 @@ export async function getWebUrl(url: string, token: string) {
   return json.settings.webRoot;
 }
 
+export function getWebUrlFromPage(page: Page): string {
+  const url = page.url();
+  // Extract the base URL (protocol + host)
+  const urlObj = new URL(url);
+  return `${urlObj.protocol}//${urlObj.host}`;
+}
+
 export function getDevKey(hostKey: string): { url: string, key: string } {
   const config = yaml.load(fs.readFileSync(confPath, 'utf8')) as utils.Config;
   let host = hostKey == '' ? config.default : hostKey;
@@ -335,31 +342,34 @@ export function addLogsToFile(filePath: string, stringToSave: string) {
 }
 
 export function printBrowsersResult(browserResult: ResultObject, verbose: boolean = false) {
-  if (verbose) {
-    if ((browserResult.passedAmount ?? 0) > 0 && (browserResult.verbosePassed ?? []).length > 0) {
-      console.log('Passed: ');
-      console.log(browserResult.verbosePassed);
+  // Skip detailed summary if modernOutput was used (already printed per-category)
+  if (!browserResult.modernOutput) {
+    if (verbose) {
+      if ((browserResult.passedAmount ?? 0) > 0 && (browserResult.verbosePassed ?? []).length > 0) {
+        console.log('Passed: ');
+        console.log(browserResult.verbosePassed);
+      }
+      if ((browserResult.skippedAmount ?? 0) > 0 && (browserResult.verboseSkipped ?? []).length > 0) {
+        console.log('Skipped: ');
+        console.log(browserResult.verboseSkipped);
+      }
     }
-    if ((browserResult.skippedAmount ?? 0) > 0 && (browserResult.verboseSkipped ?? []).length > 0) {
-      console.log('Skipped: ');
-      console.log(browserResult.verboseSkipped);
-    }
-  }
 
-  if ((browserResult.failedAmount ?? 0) > 0 && (browserResult.verboseFailed ?? []).length > 0) {
-    console.log('Failed: ');
-    console.log(browserResult.verboseFailed);
+    if ((browserResult.failedAmount ?? 0) > 0 && (browserResult.verboseFailed ?? []).length > 0) {
+      console.log('Failed: ');
+      console.log(browserResult.verboseFailed);
+    }
+    console.log('Passed amount:  ' + browserResult?.passedAmount);
+    console.log('Skipped amount: ' + browserResult?.skippedAmount);
+    console.log('Failed amount:  ' + browserResult?.failedAmount);
   }
-  console.log('Passed amount:  ' + browserResult?.passedAmount);
-  console.log('Skipped amount: ' + browserResult?.skippedAmount);
-  console.log('Failed amount:  ' + browserResult?.failedAmount);
 
   if (browserResult.failed) {
     if (browserResult.verboseFailed === 'Package not found')
       color.fail('Tests not found');
     else
       color.fail('Tests failed.');
-  } else 
+  } else
     color.success('Tests passed.');
   
 }
@@ -605,28 +615,53 @@ async function runTests(testParams: { package: any, params: any }): Promise<any>
 
 export async function runBrowser(
   testExecutionData: OrganizedTests,
-  browserOptions: BrowserOptions, 
-  browsersId: number, 
-  testInvocationTimeout: number = 3600000): Promise<ResultObject> {
+  browserOptions: BrowserOptions,
+  browsersId: number,
+  testInvocationTimeout: number = 3600000,
+  existingBrowserSession?: { browser: Browser, page: Page, webUrl: string }): Promise<ResultObject & { browserSession?: { browser: Browser, page: Page, webUrl: string } }> {
   const testsToRun = {
     func: runTests.toString(),
     testParams: testExecutionData,
   };
   return await timeout(async () => {
-    const params = Object.assign({
-      devtools: browserOptions.debug,
-    }, defaultLaunchParameters);
-    if (browserOptions.gui)
-      params['headless'] = false;
-    const out = await getBrowserPage(puppeteer, params);
-    const browser: Browser = out.browser;
-    const page: Page = out.page;
+    let browser: Browser;
+    let page: Page;
+    let webUrl: string;
+
+    if (existingBrowserSession) {
+      // Reuse existing browser - just refresh the page
+      browser = existingBrowserSession.browser;
+      page = existingBrowserSession.page;
+      webUrl = existingBrowserSession.webUrl;
+
+      // Remove old console listeners before refresh to avoid stale state references
+      page.removeAllListeners('console');
+
+      await page.goto(webUrl);
+      try {
+        await page.waitForFunction(() => document.querySelector('.grok-preloader') == null, {timeout: 3600000});
+      } catch (error) {
+        throw error;
+      }
+    } else {
+      // Create new browser
+      const params = Object.assign({
+        devtools: browserOptions.debug,
+      }, defaultLaunchParameters);
+      if (browserOptions.gui)
+        params['headless'] = false;
+      const out = await getBrowserPage(puppeteer, params);
+      browser = out.browser;
+      page = out.page;
+      webUrl = await getWebUrlFromPage(page);
+    }
     const recorder = new PuppeteerScreenRecorder(page, recorderConfig);
     const currentBrowserNum = browsersId;
     const logsDir = `./test-console-output-${currentBrowserNum}.log`;
     const recordDir = `./test-record-${currentBrowserNum}.mp4`;
 
-    if (browserOptions.record) {
+    if (browserOptions.record && !existingBrowserSession) {
+      // Only set up recording on initial browser creation, not on retry
       await recorder.start(recordDir);
       await page.exposeFunction('addLogsToFile', addLogsToFile);
 
@@ -681,6 +716,8 @@ export async function runBrowser(
       pendingAfterFailure = null;
     };
 
+    // Subscribe to page console events for modern output formatting
+    // On retry, old listeners were removed so we need to re-attach
     page.on('console', (msg) => {
       const text = msg.text();
       if (!text.startsWith('Package testing: '))
@@ -820,20 +857,25 @@ export async function runBrowser(
     // Print the final category summary
     printFinalCategorySummary();
 
-    if (browserOptions.record)
+    if (browserOptions.record && !existingBrowserSession)
       await recorder.stop();
-    
 
-    if (browser != null) 
+    if (modernOutput) {
+      testingResults.verbosePassed = '';
+      testingResults.verboseSkipped = '';
+      testingResults.verboseFailed = '';
+    }
+
+    // Only close browser if not keeping it open for retry
+    if (!browserOptions.keepBrowserOpen && browser != null)
       await browser.close();
 
-      if (modernOutput) {
-          testingResults.verbosePassed = '';
-          testingResults.verboseSkipped = '';
-          testingResults.verboseFailed = '';
-      }
-
-    return testingResults;
+    // Return browser session for potential reuse
+    return {
+      ...testingResults,
+      browserSession: browserOptions.keepBrowserOpen ? {browser, page, webUrl} : undefined,
+      modernOutput,
+    };
   }, testInvocationTimeout);
 }
 
@@ -848,6 +890,7 @@ export async function mergeBrowsersResults(browsersResults: ResultObject[]): Pro
     failedAmount: browsersResults[0].failedAmount,
     csv: browsersResults[0].csv,
     error: '',
+    modernOutput: browsersResults.some((r) => r.modernOutput),
   };
 
   for (const browsersResult of browsersResults) {
@@ -880,7 +923,7 @@ export interface BrowserOptions {
   path?: string, catchUnhandled?: boolean, core?: boolean,
   report?: boolean, record?: boolean, verbose?: boolean, benchmark?: boolean, platform?: boolean, category?: string, test?: string,
   stressTest?: boolean, gui?: boolean, stopOnTimeout?: boolean, reproduce?: boolean, ciCd?: boolean, debug?: boolean,
-  skipToCategory?: string, skipToTest?: string
+  skipToCategory?: string, skipToTest?: string, keepBrowserOpen?: boolean
 }
 
 export type ResultObject = {
@@ -894,7 +937,8 @@ export type ResultObject = {
   error?: string,
   csv: string,
   lastFailedTest?: {category: string, test: string},
-  retrySupported?: boolean
+  retrySupported?: boolean,
+  modernOutput?: boolean
 };
 
 export class TestContext {

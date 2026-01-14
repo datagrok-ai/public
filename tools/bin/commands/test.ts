@@ -97,9 +97,10 @@ async function runTesting(args: TestArgs): Promise<ResultObject> {
 
   color.info('Starting tests...');
   const testsResults: ResultObject[] = [];
-  let r: ResultObject;
+  let r: ResultObject & { browserSession?: { browser: any, page: any, webUrl: string } };
   let browserId = 1;
   let retrySupported: boolean | undefined = undefined; // Will be set after first run
+  let browserSession: { browser: any, page: any, webUrl: string } | undefined = undefined;
 
   await timeout(async () => {
     let shouldRetry = true;
@@ -109,7 +110,7 @@ async function runTesting(args: TestArgs): Promise<ResultObject> {
     let oneLastTry = false;
     while (shouldRetry || oneLastTry) {
       shouldRetry = false;
-        oneLastTry = false;
+      oneLastTry = false;
       // On first run, assume retry is supported; after first run, use actual value
       const useRetry = retryEnabled && (retrySupported === undefined || retrySupported);
 
@@ -136,13 +137,23 @@ async function runTesting(args: TestArgs): Promise<ResultObject> {
         debug: args['debug'] ?? false,
         skipToCategory: currentSkipToCategory,
         skipToTest: currentSkipToTest,
-      }, browserId, testInvocationTimeout);
+        keepBrowserOpen: useRetry, // Keep browser open if retry is enabled
+      }, browserId, testInvocationTimeout, browserSession);
 
-        if (r.error) {
-            console.log(`\nexecution error:`);
-            console.log(r.error);
-            return;
-        }
+      // Store browser session for potential reuse
+      if (r.browserSession)
+        browserSession = r.browserSession;
+
+      if (r.error) {
+        console.log(`\nexecution error:`);
+        console.log(r.error);
+        // Close browser on error
+        if (browserSession?.browser)
+          await browserSession.browser.close();
+        // Add the failed result before returning
+        testsResults.push(r);
+        return;
+      }
       // Check retry support from first run result
       if (useRetry && r.failed && r.lastFailedTest && retrySupported === undefined) {
         retrySupported = r.retrySupported === true;
@@ -162,7 +173,8 @@ async function runTesting(args: TestArgs): Promise<ResultObject> {
           // Retry this test
           retriedTests.add(testKey);
           totalRetries++;
-          color.info(`\nRetrying from "${r.lastFailedTest.category}: ${r.lastFailedTest.test}" (retry ${totalRetries}/${MAX_RETRIES_PER_SESSION})...`);
+          console.log('Refreshing page for retry...');
+          color.info(`Retrying from "${r.lastFailedTest.category}: ${r.lastFailedTest.test}" (retry ${totalRetries}/${MAX_RETRIES_PER_SESSION})...`);
 
           // Store results from previous run
           testsResults.push(r);
@@ -180,7 +192,26 @@ async function runTesting(args: TestArgs): Promise<ResultObject> {
       }
 
     }
+
+    // Close browser after all retries are done
+    if (browserSession?.browser)
+      await browserSession.browser.close();
   }, testInvocationTimeout);
+
+  // Handle empty results (shouldn't happen but safety check)
+  if (testsResults.length === 0) {
+    return {
+      failed: true,
+      verbosePassed: '',
+      verboseSkipped: '',
+      verboseFailed: 'No test results collected',
+      passedAmount: 0,
+      skippedAmount: 0,
+      failedAmount: 0,
+      csv: '',
+      error: 'No test results collected',
+    };
+  }
 
   return await mergeBrowsersResults(testsResults);
 }
