@@ -6,6 +6,7 @@ import {OPT_TYPE} from './defs';
 
 export const PALETTE = [DG.Color.darkGreen, DG.Color.yellow, DG.Color.darkRed];
 
+/** Return output color palette w.r.t. the specified type of optimization */
 export function getOutputPalette(type: OPT_TYPE): number[] {
   if (type === OPT_TYPE.MIN)
     return [...PALETTE];
@@ -13,6 +14,7 @@ export function getOutputPalette(type: OPT_TYPE): number[] {
   return [...PALETTE].reverse();
 }
 
+/** Return div with color scale description */
 export function getColorScaleDiv(type: OPT_TYPE, useMinMax: boolean = true): HTMLElement {
   const scale = ui.label('Color scale:');
   scale.style.paddingRight = '7px';
@@ -36,4 +38,4 @@ export function getColorScaleDiv(type: OPT_TYPE, useMinMax: boolean = true): HTM
   elems.push(...colorElems);
 
   return ui.divH(elems);
-}
+} // getColorScaleDiv

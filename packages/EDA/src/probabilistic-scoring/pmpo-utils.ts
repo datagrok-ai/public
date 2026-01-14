@@ -1,3 +1,6 @@
+// Utility functions for probabilistic scoring (pMPO)
+// Link: https://pmc.ncbi.nlm.nih.gov/articles/PMC4716604/
+
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
@@ -11,6 +14,9 @@ import {computeSigmoidParamsFromX0, getCutoffs, normalPdf, sigmoidS, solveNormal
 import {getColorScaleDiv} from '../pareto-optimization/utils';
 import {OPT_TYPE} from '../pareto-optimization/defs';
 
+/** Returns a DataFrame with descriptor statistics.
+ * @param stats Map of descriptor names to their statistics.
+ */
 export function getDescriptorStatisticsTable(stats: Map<string, DescriptorStatistics>): DG.DataFrame {
   const descrCount = stats.size;
   const rawArrs = new Map<string, Float64Array>();
@@ -48,6 +54,10 @@ export function getDescriptorStatisticsTable(stats: Map<string, DescriptorStatis
   return res;
 } // getDescriptorStatisticsTable
 
+/** Returns names of descriptors with p-value below the given threshold.
+ * @param descrStats DataFrame with descriptor statistics.
+ * @param pValThresh P-value threshold.
+ */
 export function getFilteredByPvalue(descrStats: DG.DataFrame, pValThresh: number): string[] {
   const selected: string[] = [];
 
@@ -73,6 +83,10 @@ export function getFilteredByPvalue(descrStats: DG.DataFrame, pValThresh: number
   return selected;
 } // getFilteredByPvalue
 
+/** Adds a boolean column indicating whether each descriptor is selected.
+ * @param descrStats DataFrame with descriptor statistics.
+ * @param selected List of selected descriptor names.
+ */
 export function addSelectedDescriptorsCol(descrStats: DG.DataFrame, selected: string[]): DG.DataFrame {
   if (selected.length < 1)
     throw new Error('Empty list of selected descriptors.');
@@ -102,6 +116,7 @@ export function addSelectedDescriptorsCol(descrStats: DG.DataFrame, selected: st
   return descrStats;
 } // addSelectedDescriptorsCol
 
+/** Returns tooltip element describing descriptor selection colors. */
 export function getDescrTooltip(): HTMLElement {
   const firstLine = ui.div();
   firstLine.classList.add('eda-pmpo-tooltip-line');
@@ -132,6 +147,7 @@ export function getDescrTooltip(): HTMLElement {
   ]);
 } // getDescrTooltip
 
+/** Returns tooltip element describing score colors. */
 export function getScoreTooltip(): HTMLElement {
   return ui.divV([
     ui.h2(SCORES_TITLE),
@@ -140,6 +156,10 @@ export function getScoreTooltip(): HTMLElement {
   ]);
 } // getScoreTooltip
 
+/** Returns names of descriptors filtered by correlation threshold.
+ * @param descriptors Descriptor column list.
+ * @param selectedByPvalue List of descriptor names selected by p-value.
+ */
 export function getFilteredByCorrelations(descriptors: DG.ColumnList, selectedByPvalue: string[],
   statistics: Map<string, DescriptorStatistics>, r2Tresh: number): string[] {
   const getCorrelations = () => {
@@ -184,13 +204,19 @@ export function getFilteredByCorrelations(descriptors: DG.ColumnList, selectedBy
   return [...keep];
 } // getFilteredByCorrelations
 
+/** Computes pMPO model parameters for selected descriptors.
+ * @param desired DataFrame with desired compounds.
+ * @param nonDesired DataFrame with non-desired compounds.
+ * @param selected List of selected descriptor names.
+ * @param qCutoff Q-value cutoff.
+ */
 export function getModelParams(desired: DG.DataFrame, nonDesired: DG.DataFrame,
   selected: string[], qCutoff: number): Map<string, PmpoParams> {
   const params = new Map<string, PmpoParams>();
 
   let sum = 0;
 
-  // Compute params
+  // Compute params for each selected descriptor
   selected.forEach((name) => {
     const desLen = desired.rowCount;
     const nonDesLen = nonDesired.rowCount;
@@ -204,13 +230,20 @@ export function getModelParams(desired: DG.DataFrame, nonDesired: DG.DataFrame,
       throw new Error(PMPO_COMPUTE_FAILED + `: no column "${name}" in the non-desired table.`);
 
     const muDes = desCol.stats.avg;
+
+    // Unbiased standard deviation
     const sigmaDes = desCol.stats.stdev * Math.sqrt((desLen - 1) / desLen);
 
     const muNonDes = nonDesCol.stats.avg;
+
+    // Unbiased standard deviation
     const sigmaNonDes = nonDesCol.stats.stdev * Math.sqrt((nonDesLen - 1) / nonDesLen);
 
+    // Compute cutoffs and intersections
     const cutoffs = getCutoffs(muDes, sigmaDes, muNonDes, sigmaNonDes);
     const intersections = solveNormalIntersection(muDes, sigmaDes, muNonDes, sigmaNonDes);
+
+    // Compute parameters for the generalized sigmoid function
 
     let x0: number | null = null;
 
@@ -236,6 +269,7 @@ export function getModelParams(desired: DG.DataFrame, nonDesired: DG.DataFrame,
     const z = Math.abs(muDes - muNonDes) / (sigmaDes + sigmaNonDes);
     sum += z;
 
+    // Store computed parameters
     params.set(name, {
       desAvg: muDes,
       desStd: sigmaDes,
@@ -263,6 +297,9 @@ export function getModelParams(desired: DG.DataFrame, nonDesired: DG.DataFrame,
   return params;
 } // getModelParams
 
+/** Returns a DataFrame with descriptor weights.
+ * @param params Map of descriptor names to their pMPO parameters.
+ */
 export function getWeightsTable(params: Map<string, PmpoParams>): DG.DataFrame {
   const count = params.size;
   const descriptors = new Array<string>(count);
@@ -282,6 +319,9 @@ export function getWeightsTable(params: Map<string, PmpoParams>): DG.DataFrame {
   ]);
 } // getWeightsTable
 
+/** Loads pMPO model parameters from a file.
+ * @param file FileInfo object pointing to the JSON model file.
+ */
 export async function loadPmpoParams(file: DG.FileInfo): Promise<Map<string, PmpoParams>> {
   const jsonText = await file.readAsString();
   const parsedObj = JSON.parse(jsonText);
@@ -289,6 +329,11 @@ export async function loadPmpoParams(file: DG.FileInfo): Promise<Map<string, Pmp
   return new Map(Object.entries(parsedObj.properties));
 } // loadPmpoParams
 
+/** Returns JSON object representing an MPO Desirability Profile.
+ * @param params Map of descriptor names to their pMPO parameters.
+ * @param name Name of the desirability profile.
+ * @param description Description of the desirability profile.
+ */
 export function getDesirabilityProfileJson(params: Map<string, PmpoParams>, name: string, description: string) {
   return {
     'type': 'MPO Desirability Profile',
@@ -298,6 +343,10 @@ export function getDesirabilityProfileJson(params: Map<string, PmpoParams>, name
   };
 }
 
+/** Saves pMPO model parameters to a file.
+ * @param params Map of descriptor names to their pMPO parameters.
+ * @param modelName Suggested model name (used as default file name).
+ */
 export async function saveModel(params: Map<string, PmpoParams>, modelName: string): Promise<void> {
   let fileName = modelName;
   const nameInput = ui.input.string('File', {
@@ -378,6 +427,9 @@ export async function saveModel(params: Map<string, PmpoParams>, modelName: stri
     .show();
 } // saveModel
 
+/** Returns desirability profile properties for the given pMPO parameters.
+ * @param params Map of descriptor names to their pMPO parameters.
+ */
 function getDesirabilityProfileProperties(params: Map<string, PmpoParams>) {
   const props: DesirabilityProfileProperties = {};
 
@@ -399,6 +451,7 @@ function getDesirabilityProfileProperties(params: Map<string, PmpoParams>) {
   return props;
 } // getDesirabilityProfileProperties
 
+/** Returns array of arguments for Gaussian function centered at mu with stddev sigma. */
 function getArgsOfGaussFunc(mu: number, sigma: number): number[] {
   return [
     mu - 3 * sigma,
@@ -419,16 +472,19 @@ function getArgsOfGaussFunc(mu: number, sigma: number): number[] {
   ];
 } // getArgsOfGaussFunc
 
+/** Returns scale factor for the given pMPO parameters and range of x values. */
 function getScale(param: PmpoParams, range: number[]): number {
   const values = range.map((x) => basicFunction(x, param));
 
   return Math.max(...values);
 }
 
+/** Basic pMPO function combining Gaussian and sigmoid functions. */
 function basicFunction(x: number, param: PmpoParams): number {
   return normalPdf(x, param.desAvg, param.desStd) * sigmoidS(x, param.x0, param.b, param.c);
 }
 
+/** Returns line points for the given pMPO parameters. */
 function getLine(param: PmpoParams): [number, number][] {
   //const range = getArgsOfGaussFunc(param.desAvg, param.desStd);
   const range = significantPoints(param);
@@ -437,6 +493,7 @@ function getLine(param: PmpoParams): [number, number][] {
   return range.map((x) => [x, basicFunction(x, param) / scale]);
 }
 
+/** Returns significant points for the given pMPO parameters. */
 function significantPoints(param: PmpoParams): number[] {
   const start = param.desAvg - 10 * param.desStd;
   const end = param.desAvg + 10 * param.desStd;

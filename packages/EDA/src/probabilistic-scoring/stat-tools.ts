@@ -1,3 +1,6 @@
+// Probabilistic scoring (pMPO) statistical tools
+// Link: https://pmc.ncbi.nlm.nih.gov/articles/PMC4716604/
+
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
@@ -5,10 +8,11 @@ import * as DG from 'datagrok-api/dg';
 //@ts-ignore: no types
 import * as jStat from 'jstat';
 
-import {Cutoff, DescriptorStatistics, SigmodParams} from './pmpo-defs';
+import {Cutoff, DescriptorStatistics, SigmoidParams} from './pmpo-defs';
 
 const SQRT_2_PI = Math.sqrt(2 * Math.PI);
 
+/** Splits the dataframe into desired and non-desired tables based on the desirability column */
 export function getDesiredTables(df: DG.DataFrame, desirability: DG.Column) {
   const groups = df.groupBy([desirability.name]).getGroups() as any;
   let desired: DG.DataFrame;
@@ -71,6 +75,7 @@ export function getDescriptorStatistics(des: DG.Column, nonDes: DG.Column): Desc
   };
 } // getDescriptorStatistics
 
+/** Compute cutoffs for the pMPO method */
 export function getCutoffs(muDesired: number, stdDesired: number, muNotDesired: number,
   stdNotDesired: number): Cutoff {
   if (muDesired < muNotDesired) {
@@ -88,6 +93,7 @@ export function getCutoffs(muDesired: number, stdDesired: number, muNotDesired: 
   }
 } // getCutoffs
 
+/** Solve normal intersection for the pMPO method */
 export function solveNormalIntersection(mu1: number, s1: number, mu2: number, s2: number): number[] {
   const a = 1 / (2 * s1 ** 2) - 1 / (2 * s2 ** 2);
   const b = mu2 / (s2 ** 2) - mu1 / (s1 ** 2);
@@ -109,8 +115,9 @@ export function solveNormalIntersection(mu1: number, s1: number, mu2: number, s2
   return [x1, x2];
 } // solveNormalIntersection
 
+/** Compute sigmoid parameters for the pMPO method */
 export function computeSigmoidParamsFromX0(muDes: number, sigmaDes: number, x0: number, xBound: number,
-  qCutoff: number = 0.05): SigmodParams {
+  qCutoff: number = 0.05): SigmoidParams {
   let pX0: number;
 
   if (sigmaDes <= 0)
@@ -148,12 +155,14 @@ export function computeSigmoidParamsFromX0(muDes: number, sigmaDes: number, x0: 
   return {pX0: pX0, b: b, c: c};
 } // computeSigmoidParamsFromX0
 
+/** Generalized sigmoid function */
 export function sigmoidS(x: number, x0: number, b: number, c: number): number {
   if (c > 0)
     return 1.0 / (1.0 + b * (c ** (-(x - x0))));
   return 1.0/(1.0 + b);
 }
 
+/** Normal probability density function */
 export function normalPdf(x: number, mu: number, sigma: number): number {
   return Math.exp(-((x - mu)**2) / (2 * sigma**2)) / (sigma * SQRT_2_PI);
 }

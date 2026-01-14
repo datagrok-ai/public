@@ -1,6 +1,11 @@
+// Probabilistic scoring (pMPO) features
+// Link: https://pmc.ncbi.nlm.nih.gov/articles/PMC4716604/
+
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
+
+import {MpoProfileEditor} from '@datagrok-libraries/statistics/src/mpo/mpo-profile-editor';
 
 import '../../css/pmpo.css';
 
@@ -14,9 +19,9 @@ import {addSelectedDescriptorsCol, getDescriptorStatisticsTable, getFilteredByPv
 import {getOutputPalette} from '../pareto-optimization/utils';
 import {OPT_TYPE} from '../pareto-optimization/defs';
 
-import {MpoProfileEditor} from '@datagrok-libraries/statistics/src/mpo/mpo-profile-editor';
-
+/** Class implementing probabilistic MPO (pMPO) model training and prediction */
 export class Pmpo {
+  /** Checks if pMPO model can be applied to the given descriptors and desirability column */
   static isApplicable(descriptors: DG.ColumnList, desirability: DG.Column, pValThresh: number,
     r2Tresh: number, qCutoff: number, toShowWarning: boolean = false): boolean {
     const rows = desirability.length;
@@ -87,7 +92,9 @@ export class Pmpo {
     return true;
   } // isApplicable
 
+  /** Validates the input data frame for pMPO applicability */
   static isTableValid(df: DG.DataFrame, toShowMsg: boolean = true): boolean {
+    // Check row count
     if (df.rowCount < 2) {
       if (toShowMsg)
         grok.shell.warning(PMPO_NON_APPLICABLE + `. Not enough of samples: ${df.rowCount}, minimum: 2.`);
@@ -97,6 +104,7 @@ export class Pmpo {
     let boolColsCount = 0;
     let validNumericColsCount = 0;
 
+    // Check numeric columns and boolean columns
     for (const col of df.columns) {
       if (col.isNumerical) {
         if ((col.stats.missingValueCount < 1) && (col.stats.stdev > 0))
@@ -105,12 +113,14 @@ export class Pmpo {
         ++boolColsCount;
     }
 
+    // Check boolean columns count
     if (boolColsCount < 1) {
       if (toShowMsg)
         grok.shell.warning(PMPO_NON_APPLICABLE + ': no boolean columns.');
       return false;
     }
 
+    // Check valid numeric columns count
     if (validNumericColsCount < 1) {
       if (toShowMsg)
         grok.shell.warning(PMPO_NON_APPLICABLE + ': no numeric columns without missing values and non-zero variance.');
@@ -120,11 +130,13 @@ export class Pmpo {
     return true;
   } // isTableValid
 
+  /** Predicts pMPO scores for the given data frame using provided pMPO parameters */
   static predict(df: DG.DataFrame, params: Map<string, PmpoParams>, predictionName: string): DG.Column {
     const count = df.rowCount;
     const scores = new Float64Array(count).fill(0);
     let x = 0;
 
+    // Compute pMPO scores (see https://pmc.ncbi.nlm.nih.gov/articles/PMC4716604/
     params.forEach((param, name) => {
       const col = df.col(name);
 
@@ -133,7 +145,7 @@ export class Pmpo {
 
       const vals = col.getRawData();
       for (let i = 0; i < count; ++i) {
-        x = vals[i];
+        x = vals[i];        
         scores[i] += param.weight * normalPdf(x, param.desAvg, param.desStd) * sigmoidS(x, param.x0, param.b, param.c);
       }
     });
@@ -179,6 +191,7 @@ export class Pmpo {
     this.predictionName = df.columns.getUnusedName(SCORES_TITLE);
   };
 
+  /** Updates the statistics grid viewer with the given statistics table and selected descriptors */
   private updateStatisticsGrid(table: DG.DataFrame, selectedByPvalue: string[], selectedByCorr: string[]): void {
     this.statGrid.dataFrame = table;
     this.statGrid.setOptions({
@@ -225,6 +238,7 @@ export class Pmpo {
     });
   } // updateGrid
 
+  /** Updates the main grid viewer with the pMPO scores column */
   private updateGrid(): void {
     const grid = this.view.grid;
     const name = this.predictionName;
@@ -250,6 +264,7 @@ export class Pmpo {
     });
   } // updateGrid
 
+  /** Updates the desirability profile viewer with the current pMPO parameters */
   private updateDesirabilityView(): void {
     if (this.params == null)
       return;
@@ -265,6 +280,7 @@ export class Pmpo {
     this.profileDiv.append(mpoEditor.root);
   } // updateDesirabilityView
 
+  /** Fits the pMPO model to the given data and updates the viewers accordingly */
   private fitAndUpdateViewers(df: DG.DataFrame, descriptors: DG.ColumnList, desirability: DG.Column,
     pValTresh: number, r2Tresh: number, qCutoff: number): void {
     if (!Pmpo.isApplicable(descriptors, desirability, pValTresh, r2Tresh, qCutoff))
@@ -337,6 +353,7 @@ export class Pmpo {
     });
   } // fitAndUpdateViewers
 
+  /** Runs the pMPO model training application */
   public runTrainingApp(): void {
     const dockMng = this.view.dockManager;
 
@@ -366,11 +383,13 @@ export class Pmpo {
     dockMng.dock(this.boxPlot, DG.DOCK_TYPE.DOWN, gridNode, undefined, 0.5);
   } // runTrainingApp
 
+  /** Creates and returns the input form for pMPO model training */
   private getInputForm(): HTMLElement {
     const form = ui.form([]);
     form.append(ui.h2('Training data'));
     const numericColNames = this.numericCols.map((col) => col.name);
 
+    // Function to run computations on input changes
     const runComputations = () => {
       try {
         this.fitAndUpdateViewers(
@@ -386,6 +405,7 @@ export class Pmpo {
       }
     };
 
+    // Descriptor columns input
     const descrInput = ui.input.columns('Descriptors', {
       table: this.table,
       nullable: false,
@@ -399,6 +419,7 @@ export class Pmpo {
     });
     form.append(descrInput.root);
 
+    // Desirability column input
     const desInput = ui.input.choice('Desirability', {
       nullable: false,
       value: this.boolCols[0].name,
@@ -415,6 +436,7 @@ export class Pmpo {
     ui.tooltip.bind(header, 'Settings of the pMPO model training.');
     form.append(header);
 
+    // p-value threshold input
     const pInput = ui.input.float('p-value', {
       nullable: false,
       min: P_VAL_TRES_MIN,
@@ -429,6 +451,7 @@ export class Pmpo {
     });
     form.append(pInput.root);
 
+    // R² threshold input
     const rInput = ui.input.float('R²', {
       nullable: false,
       min: R2_MIN,
@@ -444,6 +467,7 @@ export class Pmpo {
     });
     form.append(rInput.root);
 
+    // q-cutoff input
     const qInput = ui.input.float('q-cutoff', {
       nullable: false,
       min: Q_CUTOFF_MIN,
@@ -460,6 +484,7 @@ export class Pmpo {
 
     setTimeout(() => runComputations(), 10);
 
+    // Save model button
     const saveBtn = ui.button('Save model', async () => {
       if (this.params == null) {
         grok.shell.warning('Failed to save pMPO model: null parameters.');
@@ -476,6 +501,7 @@ export class Pmpo {
     return div;
   } // getInputForm
 
+  /** Retrieves boolean columns from the data frame */
   private getBoolCols(): DG.Column[] {
     const res: DG.Column[] = [];
 
@@ -487,6 +513,7 @@ export class Pmpo {
     return res;
   } // getBoolCols
 
+  /** Retrieves valid (numerical, no missing values, non-zero standard deviation) numeric columns from the data frame */
   private getValidNumericCols(): DG.Column[] {
     const res: DG.Column[] = [];
 
