@@ -13,6 +13,12 @@ Preclinical Case provides a comprehensive suite of analytical tools specifically
 - Identify patterns and trends in preclinical study results
 - Explore data at both study-wide and individual animal levels
 
+Initial application page contains the list of pre-loaded studies. Click study name to open it. Study summary page is opened. Also study is opened in a tree browser on the left panel. Navigate through available views using tree nodes.
+
+![Initial page](views_help/preclinical_case_initial_page.png)
+
+![Navigation](views_help/navigation.gif)
+
 ### Key Features
 
 #### Data Import
