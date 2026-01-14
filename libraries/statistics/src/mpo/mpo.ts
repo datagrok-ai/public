@@ -50,7 +50,7 @@ export function desirabilityScore(x: number, desirabilityLine: DesirabilityLine)
 }
 
 /** Calculates the multi parameter optimization score, 0-100, 100 is the maximum */
-export function mpo(dataFrame: DG.DataFrame, columns: DG.Column[], profileName: string, aggregation: WeightedAggregation): DG.Column {
+export function mpo(dataFrame: DG.DataFrame, columns: DG.Column[], profileName: string, aggregation: WeightedAggregation, addToDf: boolean = true): DG.Column {
   if (columns.length === 0)
     throw new Error('No columns provided for MPO calculation.');
 
@@ -80,7 +80,7 @@ export function mpo(dataFrame: DG.DataFrame, columns: DG.Column[], profileName: 
   });
 
   // Add the column to the table
-  if (isNew)
+  if (isNew && addToDf)
     dataFrame.columns.add(resultColumn);
   return resultColumn;
 }

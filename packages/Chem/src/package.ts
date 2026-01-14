@@ -92,12 +92,14 @@ import {MixtureCellRenderer} from './rendering/mixture-cell-renderer';
 import {createComponentPane, createMixtureWidget, Mixfile} from './utils/mixfile';
 import {biochemicalPropertiesDialog} from './widgets/biochem-properties-widget';
 import {checkCurrentView} from './utils/ui-utils';
-import {DesirabilityProfile, mpo, PropertyDesirability, WeightedAggregation} from '@datagrok-libraries/statistics/src/mpo/mpo';
+import {DesirabilityProfile, mpo, PropertyDesirability, WEIGHTED_AGGREGATIONS, WeightedAggregation} from '@datagrok-libraries/statistics/src/mpo/mpo';
 //@ts-ignore
 import '../css/chem.css';
 import {addDeprotectedColumn, DeprotectEditor} from './analysis/deprotect';
 import {MpoProfilesView} from './apps/mpo-profile-management';
 import {MpoDesirabilityLineEditor} from '@datagrok-libraries/statistics/src/mpo/mpo-line-editor';
+
+import $ from 'cash-dom';
 
 export {getMCS};
 export * from './package.g';
@@ -2611,14 +2613,137 @@ export class PackageFunctions {
     return DG.View.fromRoot(editor.root);
   }
 
-  @grok.decorators.func()
-  static async mpoGaussianEditor(): Promise<DG.View> {
-    const prop: PropertyDesirability = {min: 0, max: 10, weight: 1, line: []};
-    const editor = new MpoDesirabilityLineEditor(prop, 600, 300);
+  @grok.decorators.panel({
+    name: 'Chemistry | MPO',
+    meta: {role: 'widgets', domain: 'chem'},
+  })
+  static async mpoWidget(
+  @grok.decorators.param({name: 'smiles', options: {semType: 'Molecule'}})
+    semValue: DG.SemanticValue,
+  ): Promise<DG.Widget<any>> {
+    const container = ui.divV([]);
+    const resultDiv = ui.div();
+    const loader = ui.loader();
+    resultDiv.appendChild(loader);
 
-    const points = MpoDesirabilityLineEditor.gaussian(0, 10, 100, 5, 1.5);
-    prop.line = points;
-    editor.onChanged.next();
-    return DG.View.fromRoot(editor.root);
+    const dataFrame = semValue.cell.dataFrame;
+    const dfColumnNames = new Set(dataFrame.columns.names());
+
+    const files = await grok.dapi.files.list(MPO_TEMPLATE_PATH);
+
+    const suitableProfiles: {
+    file: DG.FileInfo,
+    profile: DesirabilityProfile,
+  }[] = [];
+
+    for (const file of files) {
+      try {
+        const profile = JSON.parse(await file.readAsString()) as DesirabilityProfile;
+        const hasIntersection = Object.keys(profile.properties ?? {})
+          .some((prop) => dfColumnNames.has(prop));
+
+        if (hasIntersection)
+          suitableProfiles.push({file, profile});
+      } catch {}
+    }
+
+    if (suitableProfiles.length === 0) {
+      container.appendChild(
+        ui.divText('No suitable profiles available at the moment.'),
+      );
+      return DG.Widget.fromRoot(container);
+    }
+
+    const calculateMpo = async () => {
+      if (!profileInput.value) return;
+
+      const selected = suitableProfiles
+        .find((p) => p.file.fileName === profileInput.value);
+      if (!selected) return;
+
+      const profileContent = selected.profile;
+      const columns: DG.Column[] = [];
+
+      for (const propertyName in profileContent.properties) {
+        const column = dataFrame.columns.byName(propertyName);
+        if (column) {
+          columns.push(column);
+          column.setTag(
+            'desirabilityTemplate',
+            JSON.stringify(profileContent.properties[propertyName]),
+          );
+        }
+      }
+
+      ui.empty(resultDiv);
+      resultDiv.appendChild(loader);
+
+      const score = await mpo(
+        dataFrame,
+        columns,
+        profileContent.name,
+        aggregationInput.value as WeightedAggregation,
+        false,
+      );
+
+      ui.empty(resultDiv);
+
+      const mpoValue = score.get(semValue.cell.rowIndex);
+      const valueHost = ui.divH(
+        [],
+        {style: {position: 'relative', alignItems: 'center'}},
+      );
+
+      // ➕ icon
+      const addColumnIcon = ui.iconFA(
+        'plus',
+        async () => {
+          const mpoCol = await mpo(
+            dataFrame,
+            columns,
+            profileContent.name,
+            aggregationInput.value as WeightedAggregation,
+          );
+        },
+        'Add MPO score as a column',
+      );
+
+      ui.tools.setHoverVisibility(valueHost, [addColumnIcon]);
+
+      $(addColumnIcon)
+        .css('color', '#2083d5')
+        .css('margin-right', '4px');
+
+      valueHost.appendChild(addColumnIcon);
+      valueHost.appendChild(
+        ui.divText(mpoValue != null ? mpoValue.toFixed(2) : 'N/A'),
+      );
+
+      const table = ui.tableFromMap({
+        'MPO Score': valueHost,
+      });
+
+      ui.empty(resultDiv);
+      resultDiv.appendChild(table);
+    };
+
+    const profileInput = ui.input.choice('Profile', {
+      items: suitableProfiles.map((p) => p.file.fileName),
+      value: suitableProfiles[0].file.fileName,
+      onValueChanged: () => calculateMpo(),
+    });
+
+    const aggregationInput = ui.input.choice('Aggregation', {
+      items: [...WEIGHTED_AGGREGATIONS],
+      value: WEIGHTED_AGGREGATIONS[0],
+      onValueChanged: () => calculateMpo(),
+    });
+
+    container.appendChild(
+      ui.divV([profileInput.root, aggregationInput.root, resultDiv]),
+    );
+
+    await calculateMpo();
+    return DG.Widget.fromRoot(container);
   }
 }

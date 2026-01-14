@@ -978,6 +978,22 @@
   overflow: hidden;
 }
 
+/* .chem-mpo-description {
+  max-width: 300px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+} */
+
 .chem-mpo-d-none {
   display: none!important;
+}
+
+.chem-mpo-histogram-compact {
+  height: 150px;
+  width: 100%;
+}
+
+.chem-mpo-histogram-compact .d4-viewer {
+  height: 100% !important;
 }

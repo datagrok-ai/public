@@ -15,6 +15,7 @@ export class MpoScoreViewer extends ChemSearchBaseViewer {
     if (!col) throw new Error(`Column ${mpoColName} not found`);
     this.mpoColumn = col;
     this.mode = mode;
+    this.limit = 5;
 
     this.root.style.display = 'flex';
     this.root.style.flexDirection = 'column';

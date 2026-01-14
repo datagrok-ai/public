@@ -21,12 +21,6 @@
   padding-right: 10px;
 }
 
-.statistics-mpo-row {
-  align-items: center;
-  margin-bottom: 5px;
-  min-height: 70px;
-}
-
 .statistics-mpo-property-name {
   width: 150px;
   padding-top: 5px;
@@ -41,4 +35,32 @@
   gap: 10px;
   margin-left: 10px;
   color: var(--blue-1);
+}
+
+.statistics-mpo-row {
+  display: flex;
+  align-items: center;
+  margin-bottom: 5px;
+  min-height: 70px;
+  flex-wrap: wrap;
+}
+
+.statistics-mpo-row > * {
+  flex: 0 1 auto;
+}
+
+@media (max-width: 500px) {
+  .statistics-mpo-row {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .statistics-mpo-row > * {
+    width: 100% !important;
+    margin-bottom: 5px;
+  }
+
+  .statistics-mpo-weight-input {
+    margin-top: 0 !important;
+  }
 }

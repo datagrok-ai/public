@@ -20,6 +20,7 @@ export class MpoContextPanel {
     icon.className = 'grok-icon svg-icon svg-histogram';
     this.panel.addTitle(ui.span([icon, ui.label('MPO not calculated yet')]));
     this.root = this.panel.root;
+    this.histogramHost.classList.add('chem-mpo-histogram-compact');
     grok.shell.o = this.root;
   }
 
@@ -53,7 +54,14 @@ export class MpoContextPanel {
 
     // Histogram
     if (!this.histogram) {
-      this.histogram = DG.Viewer.histogram(this.df);
+      this.histogram = DG.Viewer.histogram(this.df, {
+        showColumnSelector: false,
+        showSplitSelector: false,
+        showRangeSlider: false,
+        allowColumnSelection: false,
+        showBinSelector: false,
+        showXAxis: true,
+      });
       ui.empty(this.histogramHost);
       this.histogramHost.appendChild(this.histogram.root);
       this.panel.addPane('Score distribution', () => this.histogramHost, true);

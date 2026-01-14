@@ -73,23 +73,56 @@ export class MpoProfilesView {
     const table = ui.table(
       profiles,
       (profile) => [
-        ui.link(profile.name, () =>
-          grok.shell.addPreview(
-            PackageFunctions.mpoProfileEditor(profile.file),
-          ),
+        ui.link(profile.name, () => {
+          const editor = new MpoProfileEditor();
+          editor.setProfile(profile);
+
+          const panel = ui.accordion();
+          const icon = ui.element('i');
+          icon.className = 'grok-icon svg-icon svg-histogram';
+          panel.addTitle(ui.span([icon, ui.label('MPO Profile')]));
+
+          const editButton = ui.bigButton('Edit', () => {
+            const v = grok.shell.addView(PackageFunctions.mpoProfileEditor(profile.file));
+            grok.shell.v = v;
+          });
+
+          const buttonContainer = ui.divH([editButton], {style: {justifyContent: 'flex-end'}});
+          buttonContainer.classList.add('d4-ribbon-item');
+
+          panel.root.appendChild(editor.root);
+          panel.root.appendChild(buttonContainer);
+
+          grok.shell.o = panel.root;
+        },
         ),
-        ui.divText(profile.description, 'chem-mpo-description'),
         (() => {
-          const icon = ui.icons.delete(
-            () => this.confirmAndDeleteProfile(profile),
-            'Delete profile',
-          );
-          icon.style.color = 'var(--blue-1)';
-          return icon;
+          const moreBtn = ui.button('...', () => handleBtnClick(), 'Click to ...');
+          const handleBtnClick = () => {
+            const menu = ui.popupMenu();
+            menu.item('Delete', () => this.confirmAndDeleteProfile(profile));
+            menu.show();
+          };
+          return moreBtn;
         })(),
+        (() => {
+          const descriptionDiv = ui.divText(profile.description, 'chem-mpo-description');
+          descriptionDiv.onmouseenter = (e) => ui.tooltip.show(profile.description, e.x, e.y);
+          descriptionDiv.onmouseleave = () => ui.tooltip.hide();
+          return descriptionDiv;
+        })(),
+        // (() => {
+        //   const icon = ui.icons.delete(
+        //     () => this.confirmAndDeleteProfile(profile),
+        //     'Delete profile',
+        //   );
+        //   icon.style.color = 'var(--blue-1)';
+        //   return icon;
+        // })(),
       ],
-      ['Name', 'Description', ''],
+      ['Name', '', 'Description'/*, ''*/],
     );
+
     table.style.width = 'fit-content';
     table.style.color = 'var(--grey-5)';
 
