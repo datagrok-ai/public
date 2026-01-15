@@ -30,6 +30,7 @@ export function getDescriptorStatisticsTable(stats: Map<string, DescriptorStatis
   const cols = [
     DG.Column.fromStrings(DESCR_TITLE, descrNames),
     DG.Column.fromInt32Array(DESIRABILITY_COL_NAME, new Int32Array(descrCount)),
+    DG.Column.fromFloat32Array(WEIGHT_TITLE, new Float32Array(descrCount).fill(DG.FLOAT_NULL)),
   ];
 
   // Fill stat columns

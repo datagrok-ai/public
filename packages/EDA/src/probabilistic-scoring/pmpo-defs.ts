@@ -69,9 +69,8 @@ export const STAT_TO_TITLE_MAP = new Map([
 
 export const DESCR_TITLE = 'Descriptor';
 export const DESCR_TABLE_TITLE = DESCR_TITLE + ' Statistics';
-export const SELECTED_TITLE = 'Selected';
-export const WEIGHT_TITLE = 'Weights';
-export const WEIGHT_TABLE_TITLE = DESCR_TITLE + ' ' + WEIGHT_TITLE;
+export const SELECTED_TITLE = 'selected';
+export const WEIGHT_TITLE = 'Weight';
 export const SCORES_TITLE = 'pMPO score';
 export const DESIRABILITY_COL_NAME = 'Desirability';
 

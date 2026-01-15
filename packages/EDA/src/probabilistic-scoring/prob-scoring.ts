@@ -16,7 +16,8 @@ import {MIN_SAMPLES_COUNT, PMPO_NON_APPLICABLE, DescriptorStatistics, P_VAL_TRES
   P_VAL,
   DESIRABILITY_COL_NAME,
   STAT_GRID_HEIGHT,
-  DESIRABILITY_COLUMN_WIDTH} from './pmpo-defs';
+  DESIRABILITY_COLUMN_WIDTH,
+  WEIGHT_TITLE} from './pmpo-defs';
 import {addSelectedDescriptorsCol, getDescriptorStatisticsTable, getFilteredByPvalue, getFilteredByCorrelations,
   getModelParams, getDescrTooltip, saveModel, getScoreTooltip,
   getDesirabilityProfileJson} from './pmpo-utils';
@@ -214,51 +215,73 @@ export class Pmpo {
     grid.onCellTooltip((cell, x, y) =>{
       if (cell.isColHeader) {
         const cellCol = cell.tableColumn;
-        if (cellCol) {
-          if (cell.tableColumn.name === DESCR_TITLE) {
-            ui.tooltip.show(getDescrTooltip(), x, y);
-            return true;
-          } else if (cell.tableColumn.name === DESIRABILITY_COL_NAME) {
-            // eslint-disable-next-line max-len
-            ui.tooltip.show('Desirability profile charts for each descriptor. Only profiles for selected descriptors are shown.', x, y);
-            return true;
-          }
 
+        if (cellCol == null)
+          return false;
+
+        const colName = cellCol.name;
+
+        switch (colName) {
+        case DESCR_TITLE:
+          ui.tooltip.show(getDescrTooltip(), x, y);
+          return true;
+
+        case DESIRABILITY_COL_NAME:
+          ui.tooltip.show(ui.divV([
+            ui.h2(DESIRABILITY_COL_NAME),
+            ui.divText('Desirability profile charts for each descriptor. Only profiles for selected descriptors are shown.'),
+          ]), x, y);
+          return true;
+
+        case WEIGHT_TITLE:
+          ui.tooltip.show(ui.divV([
+            ui.h2(WEIGHT_TITLE),
+            ui.divText('Weights of selected descriptors.'),
+          ]), x, y);
+          return true;
+
+        default:
           return false;
         }
       } else {
         if (cell.isTableCell) {
           const cellCol = cell.tableColumn;
-          if (cellCol) {
-            const colName = cell.tableColumn.name;
-            const value = cell.value;
 
-            if (colName === DESCR_TITLE) {
-              if (selectedByCorr.includes(value))
-                ui.tooltip.show('Selected for model construction.', x, y);
-              else if (selectedByPvalue.includes(value))
-                ui.tooltip.show('Excluded due to a high correlation with other descriptors.', x, y);
-              else
-                ui.tooltip.show('Excluded due to a high p-value.', x, y);
+          if (cellCol == null)
+            return false;
 
-              return true;
-            } else if (colName === DESIRABILITY_COL_NAME) {
-              const descriptor = grid.cell(DESCR_TITLE, cell.gridRow).value;
+          const colName = cellCol.name;
+          const value = cell.value;
+
+          if (colName === DESCR_TITLE) {
+            if (selectedByCorr.includes(value))
+              ui.tooltip.show('Selected for model construction.', x, y);
+            else if (selectedByPvalue.includes(value))
+              ui.tooltip.show('Excluded due to a high correlation with other descriptors.', x, y);
+            else
+              ui.tooltip.show('Excluded due to a high p-value.', x, y);
+
+            return true;
+          } else {
+            const descriptor = grid.cell(DESCR_TITLE, cell.gridRow).value;
+
+            if ((colName === DESIRABILITY_COL_NAME) || (colName === WEIGHT_TITLE)) {
+              const startText = (colName === WEIGHT_TITLE) ? 'No weight' : 'No chart shown';
 
               if (!this.desirabilityProfileRoots.has(descriptor)) {
                 if (selectedByPvalue.includes(descriptor))
-                  ui.tooltip.show(`No chart shown: the descriptor "${descriptor}" is excluded due to a high correlation with other descriptors.`, x, y);
+                  ui.tooltip.show(`${startText}: the descriptor "${descriptor}" is excluded due to a high correlation with other descriptors.`, x, y);
                 else
-                  ui.tooltip.show(`No chart shown: the descriptor "${descriptor}" is excluded due to a high p-value.`, x, y);
+                  ui.tooltip.show(`${startText}: the descriptor "${descriptor}" is excluded due to a high p-value.`, x, y);
 
                 return true;
               }
 
               return false;
             }
-
-            return false;
           }
+
+          return false;
         }
       }
     });
@@ -314,8 +337,8 @@ export class Pmpo {
     });
   } // updateGrid
 
-  /** */
-  private updateDesirabilityProfileRoots(): void {
+  /** Updates the desirability profile data */
+  private updateDesirabilityProfileData(descrStatsTable: DG.DataFrame): void {
     if (this.params == null)
       return;
 
@@ -323,9 +346,19 @@ export class Pmpo {
     this.desirabilityProfileRoots.forEach((root) => root.remove());
     this.desirabilityProfileRoots.clear();
 
-    // Set elements
+    const desirabilityProfile = getDesirabilityProfileJson(this.params, '', '');
+
+    // Set weights
+    const descrNames = descrStatsTable.col(DESCR_TITLE)!.toList();
+    const weightsRaw = descrStatsTable.col(WEIGHT_TITLE)!.getRawData();
+    const props = desirabilityProfile.properties;
+
+    for (const name of Object.keys(props))
+      weightsRaw[descrNames.indexOf(name)] = props[name].weight;
+
+    // Set HTML elements
     const mpoEditor = new MpoProfileEditor();
-    mpoEditor.setProfile(getDesirabilityProfileJson(this.params, '', ''));
+    mpoEditor.setProfile(desirabilityProfile);
     const container = mpoEditor.root;
     const rootsCol = container.querySelector('div.d4-flex-col.ui-div');
 
@@ -347,7 +380,7 @@ export class Pmpo {
 
       this.desirabilityProfileRoots.set(descrName, children[2] as HTMLElement);
     });
-  } // updateDesirabilityProfileRoots
+  } // updateDesirabilityProfileData
 
   /** Fits the pMPO model to the given data and updates the viewers accordingly */
   private fitAndUpdateViewers(df: DG.DataFrame, descriptors: DG.ColumnList, desirability: DG.Column,
@@ -389,7 +422,7 @@ export class Pmpo {
     this.updateGrid();
 
     // Update desirability profile roots map
-    this.updateDesirabilityProfileRoots();
+    this.updateDesirabilityProfileData(descrStatsTable);
 
     // Update statistics grid
     this.updateStatisticsGrid(descrStatsTable, selectedByPvalue, selectedByCorr);
