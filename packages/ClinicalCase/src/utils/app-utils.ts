@@ -17,6 +17,7 @@ import {createInitialSatistics} from './initial-statistics-widget';
 import {ClinicalCaseViewBase} from '../model/ClinicalCaseViewBase';
 import {ValidationHelper} from '../helpers/validation-helper';
 import {getRequiredColumnsByView} from './views-validation-utils';
+import {DOMAINS_DESCRIPTIONS} from '../constants/domains-constants';
 
 export const validationNodes: {[key: string]: DG.TreeViewNode} = {};
 export let currentOpenedView: DG.ViewBase | null = null;
@@ -393,6 +394,9 @@ function addDomainsToTree(study: ClinicalStudy, treeNode: DG.TreeViewGroup) {
   const domainsNode = treeNode.group('Domains', null, false);
   for (const domain of domains) {
     const domainItem = domainsNode.item(domain.name);
+    const desc = DOMAINS_DESCRIPTIONS[domain.name];
+    if (desc)
+      ui.tooltip.bind(domainItem.root, desc);
     domainItem.onSelected.subscribe(() => {
       addDomainAsTableView(domain);
     });
