@@ -86,8 +86,8 @@ export const Q_CUTOFF_MIN = 0.01;
 
 /** Colors used for selected and skipped descriptors */
 export enum COLORS {
-  SELECTED = '#84d984ff',
-  SKIPPED = '#d9979bff',
+  SELECTED = 'rgb(26, 146, 26)',
+  SKIPPED = 'rgb(208, 57, 67)',
 };
 
 export const TINY = 1e-8;

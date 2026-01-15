@@ -207,6 +207,9 @@ export class Pmpo {
     grid.sort([SELECTED_TITLE, P_VAL], [false, true]);
     grid.col(P_VAL)!.format = 'scientific';
 
+    const descrCol = grid.col(DESCR_TITLE)!;
+    descrCol.isTextColorCoded = true;
+
     // set tooltips
     grid.onCellTooltip((cell, x, y) =>{
       if (cell.isColHeader) {
@@ -426,7 +429,7 @@ export class Pmpo {
     const dockMng = this.view.dockManager;
 
     // Inputs form
-    dockMng.dock(this.getInputForm(), DG.DOCK_TYPE.LEFT, null, undefined, 0.15);
+    dockMng.dock(this.getInputForm(), DG.DOCK_TYPE.LEFT, null, undefined, 0.1);
 
     // Dock viewers
     const gridNode = dockMng.findNode(this.view.grid.root);
