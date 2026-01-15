@@ -10,13 +10,11 @@ import {AGE, BW_RES_N, RACE, SEX, SPECIES, SUBJECT_ID, SUBJ_REF_STDT,
 import {ClinicalCaseViewBase} from '../model/ClinicalCaseViewBase';
 import $ from 'cash-dom';
 import {checkDateFormat} from '../data-preparation/utils';
-import {addDomainAsTableView, removeExtension, studyConfigToMap, updateDivInnerHTML} from '../utils/utils';
+import {removeExtension, studyConfigToMap, updateDivInnerHTML} from '../utils/utils';
 import {TRT_ARM_FIELD} from '../views-config';
-import {checkColumnsAndCreateViewer, handleMouseMoveOverErrorCell, setupValidationErrorColumns,
-  setupValidationErrorIndicators} from '../utils/views-validation-utils';
+import {checkColumnsAndCreateViewer} from '../utils/views-validation-utils';
 import {CDISC_STANDARD} from '../utils/types';
-import {studies} from '../utils/app-utils';
-import {Subscription} from 'rxjs';
+import {addDomainAsTableView, studies} from '../utils/app-utils';
 
 
 export class StudySummaryView extends ClinicalCaseViewBase {
@@ -85,7 +83,7 @@ export class StudySummaryView extends ClinicalCaseViewBase {
       for (const domain of studies[this.studyId].domains.all()) {
         const domainName = removeExtension(domain.name);
         menu.item(domainName, () => {
-          addDomainAsTableView(domain);
+          addDomainAsTableView(domain, false);
         });
       }
       menu.show();

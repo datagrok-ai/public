@@ -1,11 +1,7 @@
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
-import * as ui from 'datagrok-api/ui';
 import {scripts} from '../package-api';
 import {ClinStudyConfig} from './types';
-import {handleMouseMoveOverErrorCell, setupValidationErrorColumns,
-  setupValidationErrorIndicators} from './views-validation-utils';
-import {Subscription} from 'rxjs';
 import {ACT_TRT_ARM, AGE, AGETXT, COL_HAS_ERRORS_POSTFIX, DEATH_DATE, ERRORS_POSTFIX,
   ETHNIC, HAS_VALIDATION_ERRORS_COL, PLANNED_TRT_ARM, RACE, SEX, SPECIES, SUBJ_REF_ENDT,
   SUBJ_REF_STDT, SUBJECT_ID, VIOLATED_RULES_COL} from '../constants/columns-constants';
@@ -72,28 +68,6 @@ export function studyConfigToMap(studyConfig: ClinStudyConfig): {[key: string]: 
       map[key] = studyConfig.other[key];
   }
   return map;
-}
-
-export function addDomainAsTableView(df: DG.DataFrame) {
-  const tableView = grok.shell.addTableView(df);
-  setupValidationErrorColumns(df);
-  hideValidationColumns(tableView);
-
-  let errorSubs: Subscription[] = [];
-  const ribbons = tableView.getRibbonPanels();
-  const showErrors = ui.input.bool('Show validation errors', {
-    value: false,
-    onValueChanged: () => {
-      if (!showErrors.value) {
-        errorSubs.forEach((sub) => sub.unsubscribe());
-        tableView.grid.overlay.removeEventListener('mousemove', handleMouseMoveOverErrorCell);
-      } else
-        errorSubs = setupValidationErrorIndicators(tableView.grid, df);
-      tableView.grid.invalidate();
-    },
-  });
-  ribbons.push([showErrors.root]);
-  tableView.setRibbonPanels(ribbons);
 }
 
 export function hideValidationColumns(tv: DG.TableView) {

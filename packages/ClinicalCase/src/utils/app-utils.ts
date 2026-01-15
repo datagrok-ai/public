@@ -7,16 +7,18 @@ import {CDISC_STANDARD, ClinCaseTableView, ClinStudyConfig} from './types';
 import {defineXmlFileName, STENDTC, STSTDTC, StudyConfigFileName,
   studyConfigJsonFileName} from '../constants/constants';
 import X2JS from 'x2js';
-import {addDomainAsTableView, readClinicalFile, removeExtension, studyConfigToMap} from './utils';
+import {hideValidationColumns, readClinicalFile,
+  removeExtension, studyConfigToMap} from './utils';
 import {SUBJECT_ID, TSPARM, TSPARMCD, TSVAL} from '../constants/columns-constants';
 import {ClinicalStudy} from '../clinical-study';
 import {SUMMARY_VIEW_NAME, VALIDATION_VIEW_NAME} from '../constants/view-names-constants';
 import {TABLE_VIEWS_META} from './views-creation-utils';
-import {Subject} from 'rxjs';
+import {Subject, Subscription} from 'rxjs';
 import {createInitialSatistics} from './initial-statistics-widget';
 import {ClinicalCaseViewBase} from '../model/ClinicalCaseViewBase';
 import {ValidationHelper} from '../helpers/validation-helper';
-import {getRequiredColumnsByView} from './views-validation-utils';
+import {getRequiredColumnsByView, handleMouseMoveOverErrorCell, setupValidationErrorColumns,
+  setupValidationErrorIndicators} from './views-validation-utils';
 import {DOMAINS_DESCRIPTIONS} from '../constants/domains-constants';
 
 export const validationNodes: {[key: string]: DG.TreeViewNode} = {};
@@ -376,6 +378,8 @@ function addStudyToBrowseTree(study: ClinicalStudy, treeNode: DG.TreeViewGroup, 
                 }
                 studies[study.studyId].currentViewName = viewName;
                 loadView(study, viewName, node);
+                const browseTreeRoot = node.root.closest('.d4-tree-view-root');
+                (browseTreeRoot as HTMLElement).focus();
               });
             }
             addDomainsToTree(study, node);
@@ -399,8 +403,34 @@ function addDomainsToTree(study: ClinicalStudy, treeNode: DG.TreeViewGroup) {
       ui.tooltip.bind(domainItem.root, desc);
     domainItem.onSelected.subscribe(() => {
       addDomainAsTableView(domain);
+      const browseTreeRoot = treeNode.root.closest('.d4-tree-view-root');
+      (browseTreeRoot as HTMLElement).focus();
     });
   }
+}
+
+export function addDomainAsTableView(df: DG.DataFrame, closeCurrentPreview = true) {
+  if (closeCurrentPreview)
+    currentOpenedView?.close();
+  currentOpenedView = grok.shell.addTablePreview(df);
+  setupValidationErrorColumns(df);
+  hideValidationColumns(currentOpenedView as DG.TableView);
+
+  let errorSubs: Subscription[] = [];
+  const ribbons = currentOpenedView.getRibbonPanels();
+  const showErrors = ui.input.bool('Show validation errors', {
+    value: false,
+    onValueChanged: () => {
+      if (!showErrors.value) {
+        errorSubs.forEach((sub) => sub.unsubscribe());
+        (currentOpenedView as DG.TableView).grid.overlay.removeEventListener('mousemove', handleMouseMoveOverErrorCell);
+      } else
+        errorSubs = setupValidationErrorIndicators((currentOpenedView as DG.TableView).grid, df);
+      (currentOpenedView as DG.TableView).grid.invalidate();
+    },
+  });
+  ribbons.push([showErrors.root]);
+  currentOpenedView.setRibbonPanels(ribbons);
 }
 
 async function openStudyNode(study: ClinicalStudy, node: DG.TreeViewGroup, currentViewName: string) {
@@ -437,6 +467,8 @@ async function loadView(study: ClinicalStudy, viewName: string, parentNode: DG.T
   }
   currentOpenedView?.close();
   currentOpenedView = grok.shell.addPreview(view);
+  const browseTreeRoot = parentNode.root.closest('.d4-tree-view-root');
+  (browseTreeRoot as HTMLElement).focus();
   if (view.hasOwnProperty('loaded') && !(view as ClinicalCaseViewBase).loaded)
     (view as ClinicalCaseViewBase).load();
   else
