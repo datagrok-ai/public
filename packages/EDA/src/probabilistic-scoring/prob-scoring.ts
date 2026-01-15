@@ -17,7 +17,8 @@ import {MIN_SAMPLES_COUNT, PMPO_NON_APPLICABLE, DescriptorStatistics, P_VAL_TRES
   DESIRABILITY_COL_NAME,
   STAT_GRID_HEIGHT,
   DESIRABILITY_COLUMN_WIDTH,
-  WEIGHT_TITLE} from './pmpo-defs';
+  WEIGHT_TITLE,
+  COLORS} from './pmpo-defs';
 import {addSelectedDescriptorsCol, getDescriptorStatisticsTable, getFilteredByPvalue, getFilteredByCorrelations,
   getModelParams, getDescrTooltip, saveModel, getScoreTooltip,
   getDesirabilityProfileJson} from './pmpo-utils';
@@ -211,6 +212,9 @@ export class Pmpo {
     const descrCol = grid.col(DESCR_TITLE)!;
     descrCol.isTextColorCoded = true;
 
+    const pValCol = grid.col(P_VAL)!;
+    pValCol.isTextColorCoded = true;
+
     // set tooltips
     grid.onCellTooltip((cell, x, y) =>{
       if (cell.isColHeader) {
@@ -223,7 +227,7 @@ export class Pmpo {
 
         switch (colName) {
         case DESCR_TITLE:
-          ui.tooltip.show(getDescrTooltip(), x, y);
+          ui.tooltip.show(getDescrTooltip(DESCR_TITLE, 'Use of descriptors in model construction:'), x, y);
           return true;
 
         case DESIRABILITY_COL_NAME:
@@ -238,6 +242,10 @@ export class Pmpo {
             ui.h2(WEIGHT_TITLE),
             ui.divText('Weights of selected descriptors.'),
           ]), x, y);
+          return true;
+
+        case P_VAL:
+          ui.tooltip.show(getDescrTooltip(P_VAL, 'Filtering descriptors by p-value:'), x, y);
           return true;
 
         default:
@@ -382,6 +390,19 @@ export class Pmpo {
     });
   } // updateDesirabilityProfileData
 
+  /* Sets color coding for the p-value column in the statistics table */
+  private setPvalColumnColorCoding(table: DG.DataFrame, pValTresh: number): void {
+    const pValCol = table.col(P_VAL);
+    if (pValCol == null)
+      return;
+
+    const rules: Record<string, string> = {};
+    rules[`<${pValTresh}`] = COLORS.SELECTED;
+    rules[`>=${pValTresh}`] = COLORS.SKIPPED;
+
+    pValCol.meta.colors.setConditional(rules);
+  } // setPvalColumnColorCoding
+
   /** Fits the pMPO model to the given data and updates the viewers accordingly */
   private fitAndUpdateViewers(df: DG.DataFrame, descriptors: DG.ColumnList, desirability: DG.Column,
     pValTresh: number, r2Tresh: number, qCutoff: number): void {
@@ -397,6 +418,8 @@ export class Pmpo {
       descrStats.set(name, getDescriptorStatistics(desired.col(name)!, nonDesired.col(name)!));
     });
     const descrStatsTable = getDescriptorStatisticsTable(descrStats);
+
+    this.setPvalColumnColorCoding(descrStatsTable, pValTresh);
 
     // Filter by p-value
     const selectedByPvalue = getFilteredByPvalue(descrStatsTable, pValTresh);

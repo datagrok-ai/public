@@ -121,7 +121,7 @@ export function addSelectedDescriptorsCol(descrStats: DG.DataFrame, selected: st
 } // addSelectedDescriptorsCol
 
 /** Returns tooltip element describing descriptor selection colors. */
-export function getDescrTooltip(): HTMLElement {
+export function getDescrTooltip(title: string, text: string): HTMLElement {
   const firstLine = ui.div();
   firstLine.classList.add('eda-pmpo-tooltip-line');
   const selectedBox = ui.div();
@@ -143,12 +143,7 @@ export function getDescrTooltip(): HTMLElement {
   secondLine.appendChild(nonSelectedBox);
   secondLine.appendChild(nonSelectedLabel);
 
-  return ui.divV([
-    ui.h2(DESCR_TITLE),
-    ui.divText('Use of descriptors in model construction:'),
-    firstLine,
-    secondLine,
-  ]);
+  return ui.divV([ui.h2(title), ui.divText(text), firstLine, secondLine]);
 } // getDescrTooltip
 
 /** Returns tooltip element describing score colors. */

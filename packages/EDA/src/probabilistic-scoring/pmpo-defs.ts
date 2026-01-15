@@ -48,8 +48,8 @@ export type PmpoParams = BasicStats & Cutoff & SigmoidParams & {
 
 const DESIRED = 'desired';
 const NON_DESIRED = 'non-desired';
-const MEAN = 'mean';
-const STD = 'std';
+const MEAN = 'Mean';
+const STD = 'Std';
 const T_STAT = 't-statistics';
 export const P_VAL = 'p-value';
 const MEAN_DES = `${MEAN}(${DESIRED})`;
@@ -69,7 +69,7 @@ export const STAT_TO_TITLE_MAP = new Map([
 
 export const DESCR_TITLE = 'Descriptor';
 export const DESCR_TABLE_TITLE = DESCR_TITLE + ' Statistics';
-export const SELECTED_TITLE = 'selected';
+export const SELECTED_TITLE = 'Selected';
 export const WEIGHT_TITLE = 'Weight';
 export const SCORES_TITLE = 'pMPO score';
 export const DESIRABILITY_COL_NAME = 'Desirability';
