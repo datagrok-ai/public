@@ -21,7 +21,9 @@ import {MIN_SAMPLES_COUNT, PMPO_NON_APPLICABLE, DescriptorStatistics, P_VAL_TRES
   COLORS} from './pmpo-defs';
 import {addSelectedDescriptorsCol, getDescriptorStatisticsTable, getFilteredByPvalue, getFilteredByCorrelations,
   getModelParams, getDescrTooltip, saveModel, getScoreTooltip,
-  getDesirabilityProfileJson} from './pmpo-utils';
+  getDesirabilityProfileJson,
+  getCorrelationTriples,
+  addCorrelationColumns} from './pmpo-utils';
 import {getOutputPalette} from '../pareto-optimization/utils';
 import {OPT_TYPE} from '../pareto-optimization/defs';
 
@@ -169,21 +171,12 @@ export class Pmpo {
   private initTable = grok.data.demo.demog(10);
 
   private statGrid = DG.Viewer.grid(this.initTable, {showTitle: true, title: DESCR_TABLE_TITLE});
-  private corrPlot = DG.Viewer.correlationPlot(this.initTable, {
-    showTitle: true, title: `${DESCR_TITLE} Correlations`});
   private boxPlot = DG.Viewer.boxPlot(this.initTable, {
     showPValue: false,
     showSizeSelector: false,
     showTitle: true,
     showColorSelector: false,
     legendVisibility: 'Always',
-  });
-  private hist = DG.Viewer.histogram(this.initTable, {
-    normalizeValues: false,
-    splitStack: true,
-    showSplitSelector: false,
-    title: 'Distribution of pMPO scores',
-    showTitle: true,
   });
 
   private predictionName = SCORES_TITLE;
@@ -198,7 +191,7 @@ export class Pmpo {
   };
 
   /** Updates the statistics grid viewer with the given statistics table and selected descriptors */
-  private updateStatisticsGrid(table: DG.DataFrame, selectedByPvalue: string[], selectedByCorr: string[]): void {
+  private updateStatisticsGrid(table: DG.DataFrame, descriptorNames: string[], selectedByPvalue: string[], selectedByCorr: string[]): void {
     const grid = this.statGrid;
     grid.dataFrame = table;
     grid.setOptions({
@@ -249,6 +242,15 @@ export class Pmpo {
           return true;
 
         default:
+          if (descriptorNames.includes(colName)) {
+            ui.tooltip.show(
+              getDescrTooltip(`R² (${colName} vs other).`, 'Filtering descriptors by correlation:'),
+              x, y,
+            );
+
+            return true;
+          }
+
           return false;
         }
       } else {
@@ -419,15 +421,30 @@ export class Pmpo {
     });
     const descrStatsTable = getDescriptorStatisticsTable(descrStats);
 
+    // Set p-value column color coding
     this.setPvalColumnColorCoding(descrStatsTable, pValTresh);
 
     // Filter by p-value
     const selectedByPvalue = getFilteredByPvalue(descrStatsTable, pValTresh);
 
-    // Filter by correlations
-    const selectedByCorr = getFilteredByCorrelations(descriptors, selectedByPvalue, descrStats, r2Tresh);
+    // Compute correlation triples
+    const correlationTriples = getCorrelationTriples(descriptors, selectedByPvalue);
 
+    // Filter by correlations
+    const selectedByCorr = getFilteredByCorrelations(descriptors, selectedByPvalue, descrStats, r2Tresh, correlationTriples);
+
+    // Add the Selected column
     addSelectedDescriptorsCol(descrStatsTable, selectedByCorr);
+
+    // descriptorNames.forEach((name) => {
+    //   descrStatsTable.columns.add(DG.Column.fromFloat32Array(
+    //     name,
+    //     new Float32Array(descrStatsTable.rowCount).fill(DG.FLOAT_NULL),
+    //   ));
+    // });
+
+    // Add correlation columns
+    addCorrelationColumns(descrStatsTable, descriptorNames, correlationTriples, selectedByCorr);
 
     // Compute pMPO parameters - training
     this.params = getModelParams(desired, nonDesired, selectedByCorr, qCutoff);
@@ -448,26 +465,7 @@ export class Pmpo {
     this.updateDesirabilityProfileData(descrStatsTable);
 
     // Update statistics grid
-    this.updateStatisticsGrid(descrStatsTable, selectedByPvalue, selectedByCorr);
-
-    this.corrPlot.dataFrame = df;
-    this.corrPlot.setOptions({
-      xColumnNames: descriptorNames,
-      yColumnNames: descriptorNames,
-      showTitle: true,
-      title: `${DESCR_TITLE} Correlations`,
-    });
-
-    this.hist.dataFrame = df;
-    this.hist.setOptions({
-      valueColumnName: prediction.name,
-      splitColumnName: desirability.name,
-      normalizeValues: false,
-      splitStack: true,
-      showSplitSelector: false,
-      title: 'Distribution of pMPO scores',
-      showTitle: true,
-    });
+    this.updateStatisticsGrid(descrStatsTable, descriptorNames, selectedByPvalue, selectedByCorr);
 
     this.boxPlot.dataFrame = df;
     this.boxPlot.setOptions({

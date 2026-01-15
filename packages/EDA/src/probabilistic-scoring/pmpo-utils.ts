@@ -9,7 +9,8 @@ import '../../css/pmpo.css';
 
 import {COLORS, DESCR_TABLE_TITLE, DESCR_TITLE, DescriptorStatistics, DesirabilityProfileProperties,
   DESIRABILITY_COL_NAME, FOLDER, P_VAL, PMPO_COMPUTE_FAILED, PmpoParams, SCORES_TITLE,
-  SELECTED_TITLE, STAT_TO_TITLE_MAP, TINY, WEIGHT_TITLE} from './pmpo-defs';
+  SELECTED_TITLE, STAT_TO_TITLE_MAP, TINY, WEIGHT_TITLE,
+  CorrelationTriple} from './pmpo-defs';
 import {computeSigmoidParamsFromX0, getCutoffs, normalPdf, sigmoidS, solveNormalIntersection} from './stat-tools';
 import {getColorScaleDiv} from '../pareto-optimization/utils';
 import {OPT_TYPE} from '../pareto-optimization/defs';
@@ -155,29 +156,33 @@ export function getScoreTooltip(): HTMLElement {
   ]);
 } // getScoreTooltip
 
+/** Returns list of descriptor correlation triples.
+ * @param descriptors Descriptor column list.
+ * @param selectedByPvalue List of descriptor names selected by p-value.
+ */
+export function getCorrelationTriples(descriptors: DG.ColumnList, selectedByPvalue: string[]): CorrelationTriple[] {
+  const triples: CorrelationTriple[] = [];
+
+  for (let i = 0; i < selectedByPvalue.length; ++i) {
+    for (let j = i + 1; j < selectedByPvalue.length; ++j) {
+      triples.push([
+        selectedByPvalue[i],
+        selectedByPvalue[j],
+        descriptors.byName(selectedByPvalue[i]).stats.corr(descriptors.byName(selectedByPvalue[j]))**2,
+      ]);
+    }
+  }
+
+  return triples;
+} // getCorrelationTriples
+
 /** Returns names of descriptors filtered by correlation threshold.
  * @param descriptors Descriptor column list.
  * @param selectedByPvalue List of descriptor names selected by p-value.
  */
 export function getFilteredByCorrelations(descriptors: DG.ColumnList, selectedByPvalue: string[],
-  statistics: Map<string, DescriptorStatistics>, r2Tresh: number): string[] {
-  const getCorrelations = () => {
-    const triples: [string, string, number][] = [];
-
-    for (let i = 0; i < selectedByPvalue.length; ++i) {
-      for (let j = i + 1; j < selectedByPvalue.length; ++j) {
-        triples.push([
-          selectedByPvalue[i],
-          selectedByPvalue[j],
-          descriptors.byName(selectedByPvalue[i]).stats.corr(descriptors.byName(selectedByPvalue[j]))**2,
-        ]);
-      }
-    }
-
-    return triples;
-  };
-
-  const correlations = getCorrelations().sort((a, b) => b[2] - a[2]);
+  statistics: Map<string, DescriptorStatistics>, r2Tresh: number, correlationTriples: CorrelationTriple[]): string[] {
+  const correlations = correlationTriples.sort((a, b) => b[2] - a[2]);
 
   const keep = new Set(selectedByPvalue);
 
@@ -425,6 +430,40 @@ export async function saveModel(params: Map<string, PmpoParams>, modelName: stri
     })
     .show();
 } // saveModel
+
+/** Adds columns with correlation coefficients between descriptors.
+ * @param df DataFrame to which the columns will be added.
+ * @param descriptorNames List of descriptor names.
+ * @param triples List of descriptor correlation triples.
+ * @param selectedByCorr List of descriptor names selected after correlation filtering.
+ */
+export function addCorrelationColumns(df: DG.DataFrame, descriptorNames: string[],
+  triples: CorrelationTriple[], selectedByCorr: string[]): DG.DataFrame {
+  const raw = new Map<string, Float32Array>();
+  descriptorNames.forEach((name) => {
+    raw.set(name, new Float32Array(descriptorNames.length).fill(DG.FLOAT_NULL));
+  });
+
+  const descrColVals = df.col(DESCR_TITLE)!.toList();
+
+  triples.forEach((triple) => {
+    const [descr1, descr2, r2] = triple;
+
+    raw.get(descr1)![descrColVals.indexOf(descr2)] = r2;
+    raw.get(descr2)![descrColVals.indexOf(descr1)] = r2;
+  });
+
+  selectedByCorr.forEach((name) => {
+    df.columns.add(DG.Column.fromFloat32Array(name, raw.get(name)!));
+  });
+
+  raw.forEach((arr, name) => {
+    if (!selectedByCorr.includes(name))
+      df.columns.add(DG.Column.fromFloat32Array(name, arr));
+  });
+
+  return df;
+} // addCorrelationColumns
 
 /** Returns desirability profile properties for the given pMPO parameters.
  * @param params Map of descriptor names to their pMPO parameters.

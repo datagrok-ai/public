@@ -46,6 +46,8 @@ export type PmpoParams = BasicStats & Cutoff & SigmoidParams & {
   xBound: number,
 };
 
+export type CorrelationTriple = [string, string, number];
+
 const DESIRED = 'desired';
 const NON_DESIRED = 'non-desired';
 const MEAN = 'Mean';
