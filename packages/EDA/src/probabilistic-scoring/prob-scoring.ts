@@ -1,3 +1,4 @@
+/* eslint-disable max-len */
 // Probabilistic scoring (pMPO) features
 // Link: https://pmc.ncbi.nlm.nih.gov/articles/PMC4716604/
 
@@ -12,7 +13,10 @@ import '../../css/pmpo.css';
 import {getDesiredTables, getDescriptorStatistics, normalPdf, sigmoidS} from './stat-tools';
 import {MIN_SAMPLES_COUNT, PMPO_NON_APPLICABLE, DescriptorStatistics, P_VAL_TRES_MIN, DESCR_TITLE,
   R2_MIN, Q_CUTOFF_MIN, PmpoParams, SCORES_TITLE, DESCR_TABLE_TITLE, PMPO_COMPUTE_FAILED, SELECTED_TITLE,
-  P_VAL} from './pmpo-defs';
+  P_VAL,
+  DESIRABILITY_COL_NAME,
+  STAT_GRID_HEIGHT,
+  DESIRABILITY_COLUMN_WIDTH} from './pmpo-defs';
 import {addSelectedDescriptorsCol, getDescriptorStatisticsTable, getFilteredByPvalue, getFilteredByCorrelations,
   getModelParams, getDescrTooltip, saveModel, getScoreTooltip,
   getDesirabilityProfileJson} from './pmpo-utils';
@@ -145,7 +149,7 @@ export class Pmpo {
 
       const vals = col.getRawData();
       for (let i = 0; i < count; ++i) {
-        x = vals[i];        
+        x = vals[i];
         scores[i] += param.weight * normalPdf(x, param.desAvg, param.desStd) * sigmoidS(x, param.x0, param.b, param.c);
       }
     });
@@ -163,7 +167,8 @@ export class Pmpo {
   private initTable = grok.data.demo.demog(10);
 
   private statGrid = DG.Viewer.grid(this.initTable, {showTitle: true, title: DESCR_TABLE_TITLE});
-  private corrPlot = DG.Viewer.correlationPlot(this.initTable, {showTitle: true, title: `${DESCR_TITLE} Correlations`});  
+  private corrPlot = DG.Viewer.correlationPlot(this.initTable, {
+    showTitle: true, title: `${DESCR_TITLE} Correlations`});
   private boxPlot = DG.Viewer.boxPlot(this.initTable, {
     showPValue: false,
     showSizeSelector: false,
@@ -178,11 +183,10 @@ export class Pmpo {
     title: 'Distribution of pMPO scores',
     showTitle: true,
   });
-  private profileDiv = ui.div();
-  private profileElement: HTMLElement | null = null;
 
   private predictionName = SCORES_TITLE;
 
+  private desirabilityProfileRoots = new Map<string, HTMLElement>();
   constructor(df: DG.DataFrame) {
     this.table = df;
     this.view = grok.shell.tableView(df.name) ?? grok.shell.addTableView(df);
@@ -193,23 +197,27 @@ export class Pmpo {
 
   /** Updates the statistics grid viewer with the given statistics table and selected descriptors */
   private updateStatisticsGrid(table: DG.DataFrame, selectedByPvalue: string[], selectedByCorr: string[]): void {
-    this.statGrid.dataFrame = table;
-    this.statGrid.setOptions({
+    const grid = this.statGrid;
+    grid.dataFrame = table;
+    grid.setOptions({
       showTitle: true,
       title: table.name,
     });
 
-    this.statGrid.sort([SELECTED_TITLE, P_VAL], [false, true]);
-    this.statGrid.col(P_VAL)!.format = 'scientific';
+    grid.sort([SELECTED_TITLE, P_VAL], [false, true]);
+    grid.col(P_VAL)!.format = 'scientific';
 
     // set tooltips
-    this.statGrid.onCellTooltip(function(cell, x, y) {
+    grid.onCellTooltip((cell, x, y) =>{
       if (cell.isColHeader) {
         const cellCol = cell.tableColumn;
         if (cellCol) {
           if (cell.tableColumn.name === DESCR_TITLE) {
             ui.tooltip.show(getDescrTooltip(), x, y);
-
+            return true;
+          } else if (cell.tableColumn.name === DESIRABILITY_COL_NAME) {
+            // eslint-disable-next-line max-len
+            ui.tooltip.show('Desirability profile charts for each descriptor. Only profiles for selected descriptors are shown.', x, y);
             return true;
           }
 
@@ -219,8 +227,10 @@ export class Pmpo {
         if (cell.isTableCell) {
           const cellCol = cell.tableColumn;
           if (cellCol) {
-            if (cell.tableColumn.name === DESCR_TITLE) {
-              const value = cell.value;
+            const colName = cell.tableColumn.name;
+            const value = cell.value;
+
+            if (colName === DESCR_TITLE) {
               if (selectedByCorr.includes(value))
                 ui.tooltip.show('Selected for model construction.', x, y);
               else if (selectedByPvalue.includes(value))
@@ -229,12 +239,49 @@ export class Pmpo {
                 ui.tooltip.show('Excluded due to a high p-value.', x, y);
 
               return true;
+            } else if (colName === DESIRABILITY_COL_NAME) {
+              const descriptor = grid.cell(DESCR_TITLE, cell.gridRow).value;
+
+              if (!this.desirabilityProfileRoots.has(descriptor)) {
+                if (selectedByPvalue.includes(descriptor))
+                  ui.tooltip.show(`No chart shown: the descriptor "${descriptor}" is excluded due to a high correlation with other descriptors.`, x, y);
+                else
+                  ui.tooltip.show(`No chart shown: the descriptor "${descriptor}" is excluded due to a high p-value.`, x, y);
+
+                return true;
+              }
+
+              return false;
             }
 
             return false;
           }
         }
       }
+    });
+
+    const desirabilityCol = grid.col(DESIRABILITY_COL_NAME);
+    grid.setOptions({'rowHeight': STAT_GRID_HEIGHT});
+    desirabilityCol!.width = DESIRABILITY_COLUMN_WIDTH;
+    desirabilityCol!.cellType = 'html';
+
+    // show desirability profile
+    grid.onCellPrepare((cell) => {
+      const cellCol = cell.tableColumn;
+      if (cellCol == null)
+        return;
+
+      if (cell.tableColumn == null)
+        return;
+
+      if (!cell.isTableCell)
+        return;
+
+      if (cell.tableColumn.name !== DESIRABILITY_COL_NAME)
+        return;
+
+      const descriptor = grid.cell(DESCR_TITLE, cell.gridRow).value;
+      cell.element = this.desirabilityProfileRoots.get(descriptor) ?? ui.div();
     });
   } // updateGrid
 
@@ -264,21 +311,40 @@ export class Pmpo {
     });
   } // updateGrid
 
-  /** Updates the desirability profile viewer with the current pMPO parameters */
-  private updateDesirabilityView(): void {
+  /** */
+  private updateDesirabilityProfileRoots(): void {
     if (this.params == null)
       return;
 
-    if (this.profileElement != null) {
-      this.profileElement.remove();
-      this.profileElement = null;
-    }
+    // Clear existing roots
+    this.desirabilityProfileRoots.forEach((root) => root.remove());
+    this.desirabilityProfileRoots.clear();
 
+    // Set elements
     const mpoEditor = new MpoProfileEditor();
     mpoEditor.setProfile(getDesirabilityProfileJson(this.params, '', ''));
-    this.profileElement = mpoEditor.root;
-    this.profileDiv.append(mpoEditor.root);
-  } // updateDesirabilityView
+    const container = mpoEditor.root;
+    const rootsCol = container.querySelector('div.d4-flex-col.ui-div');
+
+    if (rootsCol == null)
+      return;
+
+    const rows = rootsCol.querySelectorAll('div.d4-flex-row.ui-div');
+
+    rows.forEach((row) => {
+      const children = row.children;
+      if (children.length < 2) // expecting descriptor name, weight & profile
+        return;
+
+      const descrDivChildren = (children[0] as HTMLElement).children;
+      if (descrDivChildren.length < 1) // expecting 1 div with descriptor name
+        return;
+
+      const descrName = (descrDivChildren[0] as HTMLElement).innerText;
+
+      this.desirabilityProfileRoots.set(descrName, children[2] as HTMLElement);
+    });
+  } // updateDesirabilityProfileRoots
 
   /** Fits the pMPO model to the given data and updates the viewers accordingly */
   private fitAndUpdateViewers(df: DG.DataFrame, descriptors: DG.ColumnList, desirability: DG.Column,
@@ -319,6 +385,10 @@ export class Pmpo {
     // Update viewers
     this.updateGrid();
 
+    // Update desirability profile roots map
+    this.updateDesirabilityProfileRoots();
+
+    // Update statistics grid
     this.updateStatisticsGrid(descrStatsTable, selectedByPvalue, selectedByCorr);
 
     this.corrPlot.dataFrame = df;
@@ -328,8 +398,6 @@ export class Pmpo {
       showTitle: true,
       title: `${DESCR_TITLE} Correlations`,
     });
-
-    this.updateDesirabilityView();
 
     this.hist.dataFrame = df;
     this.hist.setOptions({
@@ -358,7 +426,7 @@ export class Pmpo {
     const dockMng = this.view.dockManager;
 
     // Inputs form
-    dockMng.dock(this.getInputForm(), DG.DOCK_TYPE.LEFT, null, undefined, 0.25);
+    dockMng.dock(this.getInputForm(), DG.DOCK_TYPE.LEFT, null, undefined, 0.15);
 
     // Dock viewers
     const gridNode = dockMng.findNode(this.view.grid.root);
@@ -366,21 +434,23 @@ export class Pmpo {
     if (gridNode == null)
       throw new Error('Failed to train pMPO: missing a grid in the table view.');
 
-    const statGridNode = dockMng.dock(this.statGrid, DG.DOCK_TYPE.RIGHT, gridNode, undefined, 0.5);
-    const corrNode = dockMng.dock(this.corrPlot, DG.DOCK_TYPE.RIGHT, statGridNode, undefined, 0.35);
-    const profileNode = dockMng.dock(this.profileDiv, DG.DOCK_TYPE.DOWN, corrNode, undefined, 0.5);
+    dockMng.dock(this.statGrid, DG.DOCK_TYPE.DOWN, gridNode, undefined, 0.5);
 
-    this.profileDiv.style.overflow = 'auto';
-    const titleDiv = profileNode.container.containerElement.querySelector('div.panel-titlebar');
-    if (titleDiv != null) {
-      (titleDiv as HTMLElement).style.position = 'relative';
-      const title = ui.divText('Desirability profile');
-      title.classList.add('eda-pmpo-title');
-      titleDiv.appendChild(title);
-    }
+    //const statGridNode = dockMng.dock(this.statGrid, DG.DOCK_TYPE.RIGHT, gridNode, undefined, 0.5);
+    //const corrNode = dockMng.dock(this.corrPlot, DG.DOCK_TYPE.RIGHT, statGridNode, undefined, 0.35);
+    //dockMng.dock(this.profileDiv, DG.DOCK_TYPE.RIGHT, node, undefined, 0.5);
 
-    dockMng.dock(this.hist, DG.DOCK_TYPE.DOWN, statGridNode, undefined, 0.5);
-    dockMng.dock(this.boxPlot, DG.DOCK_TYPE.DOWN, gridNode, undefined, 0.5);
+    // this.profileDiv.style.overflow = 'auto';
+    // const titleDiv = profileNode.container.containerElement.querySelector('div.panel-titlebar');
+    // if (titleDiv != null) {
+    //   (titleDiv as HTMLElement).style.position = 'relative';
+    //   const title = ui.divText('Desirability profile');
+    //   title.classList.add('eda-pmpo-title');
+    //   titleDiv.appendChild(title);
+    // }
+
+    //dockMng.dock(this.hist, DG.DOCK_TYPE.DOWN, statGridNode, undefined, 0.5);
+    //dockMng.dock(this.boxPlot, DG.DOCK_TYPE.DOWN, gridNode, undefined, 0.5);
   } // runTrainingApp
 
   /** Creates and returns the input form for pMPO model training */

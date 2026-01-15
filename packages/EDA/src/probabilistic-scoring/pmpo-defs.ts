@@ -73,6 +73,7 @@ export const SELECTED_TITLE = 'Selected';
 export const WEIGHT_TITLE = 'Weights';
 export const WEIGHT_TABLE_TITLE = DESCR_TITLE + ' ' + WEIGHT_TITLE;
 export const SCORES_TITLE = 'pMPO score';
+export const DESIRABILITY_COL_NAME = 'Desirability';
 
 /** Minimum p-value threshold for filtering descriptors */
 export const P_VAL_TRES_MIN = 0.01;
@@ -101,3 +102,6 @@ export type DesirabilityProfileProperties = Record<string, {
   min?: number,
   max?: number,
 }>;
+
+export const STAT_GRID_HEIGHT = 75;
+export const DESIRABILITY_COLUMN_WIDTH = 305;

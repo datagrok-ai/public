@@ -8,8 +8,8 @@ import * as DG from 'datagrok-api/dg';
 import '../../css/pmpo.css';
 
 import {COLORS, DESCR_TABLE_TITLE, DESCR_TITLE, DescriptorStatistics, DesirabilityProfileProperties,
-  FOLDER, P_VAL, PMPO_COMPUTE_FAILED, PmpoParams, SCORES_TITLE, SELECTED_TITLE, STAT_TO_TITLE_MAP, TINY,
-  WEIGHT_TITLE} from './pmpo-defs';
+  DESIRABILITY_COL_NAME, FOLDER, P_VAL, PMPO_COMPUTE_FAILED, PmpoParams, SCORES_TITLE,
+  SELECTED_TITLE, STAT_TO_TITLE_MAP, TINY, WEIGHT_TITLE} from './pmpo-defs';
 import {computeSigmoidParamsFromX0, getCutoffs, normalPdf, sigmoidS, solveNormalIntersection} from './stat-tools';
 import {getColorScaleDiv} from '../pareto-optimization/utils';
 import {OPT_TYPE} from '../pareto-optimization/defs';
@@ -27,7 +27,10 @@ export function getDescriptorStatisticsTable(stats: Map<string, DescriptorStatis
   });
 
   const descrNames = [...stats.keys()];
-  const cols = [DG.Column.fromStrings(DESCR_TITLE, descrNames)];
+  const cols = [
+    DG.Column.fromStrings(DESCR_TITLE, descrNames),
+    DG.Column.fromInt32Array(DESIRABILITY_COL_NAME, new Int32Array(descrCount)),
+  ];
 
   // Fill stat columns
   descrNames.forEach((descr, idx) => {
