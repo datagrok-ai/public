@@ -13,17 +13,12 @@ import '../../css/pmpo.css';
 import {getDesiredTables, getDescriptorStatistics, normalPdf, sigmoidS} from './stat-tools';
 import {MIN_SAMPLES_COUNT, PMPO_NON_APPLICABLE, DescriptorStatistics, P_VAL_TRES_MIN, DESCR_TITLE,
   R2_MIN, Q_CUTOFF_MIN, PmpoParams, SCORES_TITLE, DESCR_TABLE_TITLE, PMPO_COMPUTE_FAILED, SELECTED_TITLE,
-  P_VAL,
-  DESIRABILITY_COL_NAME,
-  STAT_GRID_HEIGHT,
-  DESIRABILITY_COLUMN_WIDTH,
-  WEIGHT_TITLE,
-  COLORS} from './pmpo-defs';
+  P_VAL, DESIRABILITY_COL_NAME, STAT_GRID_HEIGHT, DESIRABILITY_COLUMN_WIDTH, WEIGHT_TITLE, COLORS} from './pmpo-defs';
 import {addSelectedDescriptorsCol, getDescriptorStatisticsTable, getFilteredByPvalue, getFilteredByCorrelations,
-  getModelParams, getDescrTooltip, saveModel, getScoreTooltip,
-  getDesirabilityProfileJson,
-  getCorrelationTriples,
-  addCorrelationColumns} from './pmpo-utils';
+  getModelParams, getDescrTooltip, saveModel, getScoreTooltip, getDesirabilityProfileJson, getCorrelationTriples,
+  addCorrelationColumns,
+  setPvalColumnColorCoding,
+  setCorrColumnColorCoding} from './pmpo-utils';
 import {getOutputPalette} from '../pareto-optimization/utils';
 import {OPT_TYPE} from '../pareto-optimization/defs';
 
@@ -199,14 +194,24 @@ export class Pmpo {
       title: table.name,
     });
 
-    grid.sort([SELECTED_TITLE, P_VAL], [false, true]);
+    grid.sort([SELECTED_TITLE], [false]);
     grid.col(P_VAL)!.format = 'scientific';
 
+    // set color coding
     const descrCol = grid.col(DESCR_TITLE)!;
     descrCol.isTextColorCoded = true;
 
     const pValCol = grid.col(P_VAL)!;
     pValCol.isTextColorCoded = true;
+
+    descriptorNames.forEach((name) => {
+      const col = grid.col(name);
+      if (col == null)
+        return;
+
+      col.isTextColorCoded = true;
+      col.format = '0.000';
+    });
 
     // set tooltips
     grid.onCellTooltip((cell, x, y) =>{
@@ -220,7 +225,12 @@ export class Pmpo {
 
         switch (colName) {
         case DESCR_TITLE:
-          ui.tooltip.show(getDescrTooltip(DESCR_TITLE, 'Use of descriptors in model construction:'), x, y);
+          ui.tooltip.show(getDescrTooltip(
+            DESCR_TITLE,
+            'Use of descriptors in model construction:',
+            'selected',
+            'excluded',
+          ), x, y);
           return true;
 
         case DESIRABILITY_COL_NAME:
@@ -238,15 +248,23 @@ export class Pmpo {
           return true;
 
         case P_VAL:
-          ui.tooltip.show(getDescrTooltip(P_VAL, 'Filtering descriptors by p-value:'), x, y);
+          ui.tooltip.show(getDescrTooltip(
+            P_VAL,
+            'Filtering descriptors by p-value:',
+            'selected',
+            'excluded',
+          ), x, y);
           return true;
 
         default:
           if (descriptorNames.includes(colName)) {
             ui.tooltip.show(
-              getDescrTooltip(`R² (${colName} vs other).`, 'Filtering descriptors by correlation:'),
-              x, y,
-            );
+              getDescrTooltip(
+                colName,
+                `Correlation of ${colName} with other descriptors, measured by R²:`,
+                'weakly correlated',
+                'highly correlated',
+              ), x, y);
 
             return true;
           }
@@ -280,21 +298,26 @@ export class Pmpo {
 
               if (!this.desirabilityProfileRoots.has(descriptor)) {
                 if (selectedByPvalue.includes(descriptor))
-                  ui.tooltip.show(`${startText}: the descriptor "${descriptor}" is excluded due to a high correlation with other descriptors.`, x, y);
+                  ui.tooltip.show(`${startText}: <b>${descriptor}</b> is excluded due to a high correlation with other descriptors.`, x, y);
                 else
-                  ui.tooltip.show(`${startText}: the descriptor "${descriptor}" is excluded due to a high p-value.`, x, y);
+                  ui.tooltip.show(`${startText}: <b>${descriptor}</b> is excluded due to a high p-value.`, x, y);
 
                 return true;
               }
 
               return false;
+            } else {
+              if (descriptorNames.includes(colName) && (!selectedByPvalue.includes(descriptor))) {
+                ui.tooltip.show(`<b>${descriptor}</b> is excluded due to a high p-value; so correlation with <b>${colName}</b> is not needed.`, x, y);
+                return true;
+              }
             }
           }
 
           return false;
         }
       }
-    });
+    }); // grid.onCellTooltip
 
     const desirabilityCol = grid.col(DESIRABILITY_COL_NAME);
     grid.setOptions({'rowHeight': STAT_GRID_HEIGHT});
@@ -318,7 +341,7 @@ export class Pmpo {
 
       const descriptor = grid.cell(DESCR_TITLE, cell.gridRow).value;
       cell.element = this.desirabilityProfileRoots.get(descriptor) ?? ui.div();
-    });
+    }); // grid.onCellPrepare
   } // updateGrid
 
   /** Updates the main grid viewer with the pMPO scores column */
@@ -392,19 +415,6 @@ export class Pmpo {
     });
   } // updateDesirabilityProfileData
 
-  /* Sets color coding for the p-value column in the statistics table */
-  private setPvalColumnColorCoding(table: DG.DataFrame, pValTresh: number): void {
-    const pValCol = table.col(P_VAL);
-    if (pValCol == null)
-      return;
-
-    const rules: Record<string, string> = {};
-    rules[`<${pValTresh}`] = COLORS.SELECTED;
-    rules[`>=${pValTresh}`] = COLORS.SKIPPED;
-
-    pValCol.meta.colors.setConditional(rules);
-  } // setPvalColumnColorCoding
-
   /** Fits the pMPO model to the given data and updates the viewers accordingly */
   private fitAndUpdateViewers(df: DG.DataFrame, descriptors: DG.ColumnList, desirability: DG.Column,
     pValTresh: number, r2Tresh: number, qCutoff: number): void {
@@ -422,7 +432,7 @@ export class Pmpo {
     const descrStatsTable = getDescriptorStatisticsTable(descrStats);
 
     // Set p-value column color coding
-    this.setPvalColumnColorCoding(descrStatsTable, pValTresh);
+    setPvalColumnColorCoding(descrStatsTable, pValTresh);
 
     // Filter by p-value
     const selectedByPvalue = getFilteredByPvalue(descrStatsTable, pValTresh);
@@ -436,15 +446,11 @@ export class Pmpo {
     // Add the Selected column
     addSelectedDescriptorsCol(descrStatsTable, selectedByCorr);
 
-    // descriptorNames.forEach((name) => {
-    //   descrStatsTable.columns.add(DG.Column.fromFloat32Array(
-    //     name,
-    //     new Float32Array(descrStatsTable.rowCount).fill(DG.FLOAT_NULL),
-    //   ));
-    // });
-
     // Add correlation columns
     addCorrelationColumns(descrStatsTable, descriptorNames, correlationTriples, selectedByCorr);
+
+    // Set correlation columns color coding
+    setCorrColumnColorCoding(descrStatsTable, descriptorNames, r2Tresh);
 
     // Compute pMPO parameters - training
     this.params = getModelParams(desired, nonDesired, selectedByCorr, qCutoff);
@@ -492,22 +498,6 @@ export class Pmpo {
       throw new Error('Failed to train pMPO: missing a grid in the table view.');
 
     dockMng.dock(this.statGrid, DG.DOCK_TYPE.DOWN, gridNode, undefined, 0.5);
-
-    //const statGridNode = dockMng.dock(this.statGrid, DG.DOCK_TYPE.RIGHT, gridNode, undefined, 0.5);
-    //const corrNode = dockMng.dock(this.corrPlot, DG.DOCK_TYPE.RIGHT, statGridNode, undefined, 0.35);
-    //dockMng.dock(this.profileDiv, DG.DOCK_TYPE.RIGHT, node, undefined, 0.5);
-
-    // this.profileDiv.style.overflow = 'auto';
-    // const titleDiv = profileNode.container.containerElement.querySelector('div.panel-titlebar');
-    // if (titleDiv != null) {
-    //   (titleDiv as HTMLElement).style.position = 'relative';
-    //   const title = ui.divText('Desirability profile');
-    //   title.classList.add('eda-pmpo-title');
-    //   titleDiv.appendChild(title);
-    // }
-
-    //dockMng.dock(this.hist, DG.DOCK_TYPE.DOWN, statGridNode, undefined, 0.5);
-    //dockMng.dock(this.boxPlot, DG.DOCK_TYPE.DOWN, gridNode, undefined, 0.5);
   } // runTrainingApp
 
   /** Creates and returns the input form for pMPO model training */
@@ -586,7 +576,7 @@ export class Pmpo {
       max: 1,
       step: 0.01,
       // eslint-disable-next-line max-len
-      tooltipText: 'Descriptors with correlation coefficients above this threshold are considered highly correlated; the one with the lower p-value is retained.',
+      tooltipText: 'Descriptors with squared correlation above this threshold are considered highly correlated. Among them, the descriptor with the lower p-value is retained.',
       onValueChanged: (value) => {
         if ((value != null) && (value >= R2_MIN) && (value <= 1))
           runComputations();

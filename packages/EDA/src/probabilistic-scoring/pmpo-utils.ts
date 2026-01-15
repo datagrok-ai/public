@@ -122,14 +122,14 @@ export function addSelectedDescriptorsCol(descrStats: DG.DataFrame, selected: st
 } // addSelectedDescriptorsCol
 
 /** Returns tooltip element describing descriptor selection colors. */
-export function getDescrTooltip(title: string, text: string): HTMLElement {
+export function getDescrTooltip(title: string, text: string, selected: string, excluded: string): HTMLElement {
   const firstLine = ui.div();
   firstLine.classList.add('eda-pmpo-tooltip-line');
   const selectedBox = ui.div();
   selectedBox.classList.add('eda-pmpo-box');
   selectedBox.style.backgroundColor = COLORS.SELECTED;
   const selectedLabel = ui.span([]);
-  selectedLabel.textContent = '- selected';
+  selectedLabel.textContent = `- ${selected}`;
   firstLine.appendChild(selectedBox);
   firstLine.appendChild(selectedLabel);
 
@@ -139,7 +139,7 @@ export function getDescrTooltip(title: string, text: string): HTMLElement {
   nonSelectedBox.classList.add('eda-pmpo-box');
   nonSelectedBox.style.backgroundColor = COLORS.SKIPPED;
   const nonSelectedLabel = ui.span([]);
-  nonSelectedLabel.textContent = '- excluded';
+  nonSelectedLabel.textContent = `- ${excluded}`;
 
   secondLine.appendChild(nonSelectedBox);
   secondLine.appendChild(nonSelectedLabel);
@@ -451,19 +451,44 @@ export function addCorrelationColumns(df: DG.DataFrame, descriptorNames: string[
 
     raw.get(descr1)![descrColVals.indexOf(descr2)] = r2;
     raw.get(descr2)![descrColVals.indexOf(descr1)] = r2;
+    raw.get(descr1)![descrColVals.indexOf(descr1)] = 1;
+    raw.get(descr2)![descrColVals.indexOf(descr2)] = 1;
   });
 
   selectedByCorr.forEach((name) => {
     df.columns.add(DG.Column.fromFloat32Array(name, raw.get(name)!));
   });
 
-  raw.forEach((arr, name) => {
-    if (!selectedByCorr.includes(name))
-      df.columns.add(DG.Column.fromFloat32Array(name, arr));
-  });
-
   return df;
 } // addCorrelationColumns
+
+/* Sets color coding for the p-value column in the statistics table */
+export function setPvalColumnColorCoding(table: DG.DataFrame, pValTresh: number): void {
+  const pValCol = table.col(P_VAL);
+  if (pValCol == null)
+    return;
+
+  const rules: Record<string, string> = {};
+  rules[`<${pValTresh}`] = COLORS.SELECTED;
+  rules[`>=${pValTresh}`] = COLORS.SKIPPED;
+
+  pValCol.meta.colors.setConditional(rules);
+} // setPvalColumnColorCoding
+
+/* Sets color coding for the p-value column in the statistics table */
+export function setCorrColumnColorCoding(table: DG.DataFrame, descriptorNames: string[], r2Tresh: number): void {
+  descriptorNames.forEach((name) => {
+    const col = table.col(name);
+    if (col == null)
+      return;
+
+    const rules: Record<string, string> = {};
+    rules[`>${r2Tresh}`] = COLORS.SKIPPED;
+    rules[`=<${r2Tresh}`] = COLORS.SELECTED;
+
+    col.meta.colors.setConditional(rules);
+  });
+} // setCorrColumnColorCoding
 
 /** Returns desirability profile properties for the given pMPO parameters.
  * @param params Map of descriptor names to their pMPO parameters.
