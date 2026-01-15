@@ -24,6 +24,7 @@ async function testExcelImport(path: string, isBenchmarkTest: boolean) {
 
 category('Excel', () => {
   category('Excel: Import', () => {
+    test('rich text test', async () => await testExcelImport('System:DemoFiles/test/excel/excel-rich-text-test.xlsx', false));
     test('1MB', async () => await testExcelImport('System:DemoFiles/test/excel/excel-1mb.xlsx', false));
     test('5MB', async () => await testExcelImport('System:DemoFiles/test/excel/excel-5mb.xlsx', true), {benchmark: true});
     test('10MB', async () => await testExcelImport('System:DemoFiles/test/excel/excel-10mb.xlsx', true), {benchmark: true});
