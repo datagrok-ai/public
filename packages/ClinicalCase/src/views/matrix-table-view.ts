@@ -4,6 +4,7 @@ import {studies} from '../utils/app-utils';
 import {CDISC_STANDARD} from '../utils/types';
 import {createVisitDayStrCol} from '../data-preparation/data-preparation';
 import {DOMAIN, PLANNED_TRT_ARM, SUBJECT_ID, VISIT_DAY_STR} from '../constants/columns-constants';
+import {addDomainFilters} from '../utils/utils';
 
 export function createMatrixTableView(studyId: string): any {
   const isSend = studies[studyId].config.standard === CDISC_STANDARD.SEND;
@@ -63,7 +64,7 @@ export function createMatrixTableView(studyId: string): any {
     //const correlationViewer = await DG.Viewer.fromType(DG.VIEWER.CORR_PLOT, pivotedDF);
     tableView.addViewer(matrixViewer);
     //tableView.addViewer(correlationViewer);
-    tableView.getFiltersGroup();
+    addDomainFilters(tableView, studyId);
   };
 
   return {df: pivotedDF, onTableViewAddedFunc: onTableViewAdded};

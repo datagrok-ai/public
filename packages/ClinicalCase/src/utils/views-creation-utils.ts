@@ -1,6 +1,6 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
-import {AE_BROWSER_VIEW_NAME, MATRIX_TABLE_VIEW_NAME, TIME_PROFILE_TABLE_VIEW_NAME, TIMELINES_VIEW_NAME,
+import {AE_BROWSER_VIEW_NAME, MATRIX_TABLE_VIEW_NAME, MEASUREMENT_PROFILE_TABLE_VIEW_NAME, TIMELINES_VIEW_NAME,
   VALIDATION_VIEW_NAME} from '../constants/view-names-constants';
 import * as sdtmCols from '../constants/columns-constants';
 import {AE_START_DAY_FIELD} from '../views-config';
@@ -8,12 +8,13 @@ import {AEBrowserHelper} from '../helpers/ae-browser-helper';
 import {ValidationHelper} from '../helpers/validation-helper';
 import {c} from '../package';
 import {createValidationErrorsDiv, getRequiredColumnsByView} from './views-validation-utils';
-import {updateDivInnerHTML} from './utils';
+import {hideValidationColumns, updateDivInnerHTML} from './utils';
 import {ClinCaseTableView} from './types';
 import {studies} from './app-utils';
 import {createValidationView} from '../views/validation-table-view';
 import {createMatrixTableView} from '../views/matrix-table-view';
-import {createTimeProfileTableView} from '../views/time-profile-table-view';
+import {createMeasurementProfileTableView} from '../views/measurement-profile-table-view';
+import {awaitCheck} from '@datagrok-libraries/utils/src/test';
 
 
 export function createAEBrowserHelper(studyId: string): any {
@@ -69,6 +70,10 @@ export function createTableView(
     viewHelper = helper;
     if (onTableViewAddedFunc)
       onTableViewAddedFunc(tableView as DG.TableView);
+    //wait for grid to become available to set validation columns invisible
+    awaitCheck(() => (tableView as DG.TableView).grid !== null, `${viewName} hasn't been added`, 10000)
+      .then(() => hideValidationColumns(tableView as DG.TableView))
+      .catch(() => {});
   } else {
     tableView = DG.View.create();
     updateDivInnerHTML(tableView.root, createValidationErrorsDiv(validator.missingDomains,
@@ -94,7 +99,7 @@ export const TABLE_VIEWS_META = {
   [MATRIX_TABLE_VIEW_NAME]: {
     createViewHelper: createMatrixTableView,
   },
-  [TIME_PROFILE_TABLE_VIEW_NAME]: {
-    createViewHelper: createTimeProfileTableView,
+  [MEASUREMENT_PROFILE_TABLE_VIEW_NAME]: {
+    createViewHelper: createMeasurementProfileTableView,
   },
 };

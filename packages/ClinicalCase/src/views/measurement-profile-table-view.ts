@@ -5,8 +5,9 @@ import {studies} from '../utils/app-utils';
 import {CDISC_STANDARD} from '../utils/types';
 import {createVisitDayStrCol} from '../data-preparation/data-preparation';
 import {DOMAIN, PLANNED_TRT_ARM, SUBJECT_ID, VISIT_DAY_STR} from '../constants/columns-constants';
+import {addDomainFilters} from '../utils/utils';
 
-export function createTimeProfileTableView(studyId: string): any {
+export function createMeasurementProfileTableView(studyId: string): any {
   const isSend = studies[studyId].config.standard === CDISC_STANDARD.SEND;
   let resDf: DG.DataFrame | null = null;
 
@@ -66,10 +67,7 @@ export function createTimeProfileTableView(studyId: string): any {
     boxPlot.setOptions({value: 'res_num', category1: PLANNED_TRT_ARM});
     tableView.addViewer(boxPlot);
 
-    const fg = tableView.getFiltersGroup();
-    fg.updateOrAdd({type: DG.FILTER_TYPE.CATEGORICAL,
-      column: 'test',
-      selected: [resDf.col('test').categories[0]]});
+    addDomainFilters(tableView, studyId);
   };
 
   return {df: dfFortableView, onTableViewAddedFunc: onTableViewAdded};

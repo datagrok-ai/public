@@ -28,17 +28,17 @@ export function setupValidationErrorColumns(df: DG.DataFrame) {
   const columnsWithErrors: {[colName: string]: {hasErrorsCol: string, errorsCol: string}} = {};
 
   for (const colName of df.columns.names()) {
-    if (colName.endsWith('_hasErrors')) {
-      const baseColName = colName.replace('_hasErrors', '');
+    if (colName.endsWith(sdtmCols.COL_HAS_ERRORS_POSTFIX)) {
+      const baseColName = colName.replace(sdtmCols.COL_HAS_ERRORS_POSTFIX, '');
       const baseCol = df.columns.byName(baseColName);
-      const errorsCol = df.columns.byName(`${baseColName}_errors`);
+      const errorsCol = df.columns.byName(`${baseColName}${sdtmCols.ERRORS_POSTFIX}`);
 
       if (baseCol && errorsCol) {
         // Set semantic type on the errors column to enable custom renderer
         errorsCol.semType = 'sdisc-rule-violation';
         columnsWithErrors[baseColName] = {
           hasErrorsCol: colName,
-          errorsCol: `${baseColName}_errors`,
+          errorsCol: `${baseColName}${sdtmCols.ERRORS_POSTFIX}`,
         };
       }
     }
