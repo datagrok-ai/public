@@ -98,7 +98,9 @@ export async function setupGlobalDBExplorer() {
   grok.events.onContextMenu.subscribe((args) => {
     if (!(DG.toJs(args?.args?.item) instanceof DG.TreeViewGroup) ||
     !(DG.toJs(args.args.item.value) instanceof DG.DataConnection) ||
-      !args?.args?.menu)
+      !args?.args?.menu ||
+      (DG.toJs(args.args.item.value) as DG.DataConnection).dataSource === DG.DataSourceType.Files ||
+      DG.DataSourceType.fileDataSources.includes((DG.toJs(args.args.item.value) as DG.DataConnection).dataSource))
       return;
     const connection = DG.toJs(args.args.item.value) as DG.DataConnection;
     const menu = args.args.menu as DG.Menu;
@@ -464,7 +466,7 @@ function getEnrichmentsDiv(conn: DG.DataConnection, schema: string, table: strin
         const enrichFunc = DG.Func.find({package: 'PowerPack', name: 'runEnrichment'})[0];
         const progress = DG.TaskBarProgressIndicator.create('Enriching...');
         enrichFunc.prepare({'conn': conn, 'schema': schema, 'table': table, 'column': column, 'name': n, 'df': df})
-            .call(false, progress, {report: true, processed: false}).finally(() => progress.close());
+          .call(false, progress, {report: true, processed: false}).finally(() => progress.close());
       }, 'Apply enrichment.');
 
       parent = ui.divH([runLink, ui.divH([editLink, deleteLink], 'power-pack-enrichment-actions')], 'power-pack-enrichment-row');
