@@ -271,6 +271,36 @@ Drag-and-drop columns right from the grid to add the corresponding filters:
 | **Data** | | |
 | Table | string |  |
 
+
+| Property | Type | Description |
+|----------|------|-------------|
+| **General** | | |
+| Histogram Look | histogramlook |  |
+| Show Filter Counts Indication | boolean |  |
+| Show Filter Indication | boolean |  |
+| Show Selection Indication | boolean | Indicate the proportion of the selected rows inside each category. |
+| Show Header | boolean |  |
+| Show Histogram | boolean |  |
+| Show Min Max | boolean |  |
+| Show Search Box | boolean |  |
+| Show Mouse Over Row | boolean | shows the current mouse over row in the table using grey vertical bar in corresponding row |
+| Show Current Row | boolean | shows the current row in the table using green vertical bar in corresponding row |
+| Show Mouse Over Group Row | boolean | shouws the mouse over group porportion in the filter (similar to how selection proportion is shown). |
+| Show Bool Combined Filter | boolean | Show a filter that represents all boolean columns in the table. |
+| Column Names | list |  |
+| Filters | list |  |
+| Allow Dynamic Menus | boolean |  |
+| Show Context Menu | boolean | Properties common for all viewers todo: use code generation |
+| Title | string |  |
+| Description | string | Viewer description that gets shown at the *Descriptor Position*. Markup is supported. |
+| Help | string | Help to be shown when user clicks on the ''?'' icon on top. Could either be in markdown, or a URL (starting with ''/'' or ''http''). |
+| Description Position | flexposition |  |
+| Description Visibility Mode | visibilitymode |  |
+| **Description** | | |
+| Show Title | boolean |  |
+| **Data** | | |
+| Table | string |  |
+
 See also:
 
 * [Viewers](../viewers/viewers.md)

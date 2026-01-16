@@ -451,8 +451,8 @@ export interface IBoxPlotSettings {
 
   /// Formula that filters out rows to show.
   /// Examples:
-  ///   ${AGE} > 20 or ${WEIGHT / 2) > 100
-  ///   ${SEVERITY} == 'Medium'
+  ///   ${AGE} > 20 or ${WEIGHT / 2)} > 100,
+  ///   ${SEVERITY} == 'Medium',
   ///   ${RACE}.endsWith('sian')
   filter: string;
 
@@ -523,8 +523,8 @@ export interface ICalendarSettings {
 
   /// Formula that filters out rows to show.
   /// Examples:
-  ///   ${AGE} > 20 or ${WEIGHT / 2) > 100
-  ///   ${SEVERITY} == 'Medium'
+  ///   ${AGE} > 20 or ${WEIGHT / 2)} > 100,
+  ///   ${SEVERITY} == 'Medium',
   ///   ${RACE}.endsWith('sian')
   filter: string;
 
@@ -625,8 +625,8 @@ export interface IConfusionMatrixSettings {
 
   /// Formula that filters out rows to show.
   /// Examples:
-  ///   ${AGE} > 20 or ${WEIGHT / 2) > 100
-  ///   ${SEVERITY} == 'Medium'
+  ///   ${AGE} > 20 or ${WEIGHT / 2)} > 100,
+  ///   ${SEVERITY} == 'Medium',
   ///   ${RACE}.endsWith('sian')
   filter: string;
 
@@ -696,8 +696,8 @@ export interface ICorrelationPlotSettings {
 
   /// Formula that filters out rows to show.
   /// Examples:
-  ///   ${AGE} > 20 or ${WEIGHT / 2) > 100
-  ///   ${SEVERITY} == 'Medium'
+  ///   ${AGE} > 20 or ${WEIGHT / 2)} > 100,
+  ///   ${SEVERITY} == 'Medium',
   ///   ${RACE}.endsWith('sian')
   filter: string;
 
@@ -802,8 +802,8 @@ export interface IDensityPlotSettings {
 
   /// Formula that filters out rows to show.
   /// Examples:
-  ///   ${AGE} > 20 or ${WEIGHT / 2) > 100
-  ///   ${SEVERITY} == 'Medium'
+  ///   ${AGE} > 20 or ${WEIGHT / 2)} > 100,
+  ///   ${SEVERITY} == 'Medium',
   ///   ${RACE}.endsWith('sian')
   filter: string;
 
@@ -1226,8 +1226,8 @@ export interface IGridSettings {
 
   /// Formula that filters out rows to show.
   /// Examples:
-  ///   ${AGE} > 20 or ${WEIGHT / 2) > 100
-  ///   ${SEVERITY} == 'Medium'
+  ///   ${AGE} > 20 or ${WEIGHT / 2)} > 100,
+  ///   ${SEVERITY} == 'Medium',
   ///   ${RACE}.endsWith('sian')
   filter: string;
 
@@ -1464,8 +1464,8 @@ export interface IHistogramSettings {
 
   /// Formula that filters out rows to show.
   /// Examples:
-  ///   ${AGE} > 20 or ${WEIGHT / 2) > 100
-  ///   ${SEVERITY} == 'Medium'
+  ///   ${AGE} > 20 or ${WEIGHT / 2)} > 100,
+  ///   ${SEVERITY} == 'Medium',
   ///   ${RACE}.endsWith('sian')
   filter: string;
 
@@ -1813,8 +1813,8 @@ export interface ILineChartSettings {
 
   /// Formula that filters out rows to show.
   /// Examples:
-  ///   ${AGE} > 20 or ${WEIGHT / 2) > 100
-  ///   ${SEVERITY} == 'Medium'
+  ///   ${AGE} > 20 or ${WEIGHT / 2)} > 100,
+  ///   ${SEVERITY} == 'Medium',
   ///   ${RACE}.endsWith('sian')
   filter: string;
 
@@ -1911,8 +1911,8 @@ export interface IMapViewerSettings {
 
   /// Formula that filters out rows to show.
   /// Examples:
-  ///   ${AGE} > 20 or ${WEIGHT / 2) > 100
-  ///   ${SEVERITY} == 'Medium'
+  ///   ${AGE} > 20 or ${WEIGHT / 2)} > 100,
+  ///   ${SEVERITY} == 'Medium',
   ///   ${RACE}.endsWith('sian')
   filter: string;
 
@@ -2029,8 +2029,8 @@ export interface IMatrixPlotSettings {
 
   /// Formula that filters out rows to show.
   /// Examples:
-  ///   ${AGE} > 20 or ${WEIGHT / 2) > 100
-  ///   ${SEVERITY} == 'Medium'
+  ///   ${AGE} > 20 or ${WEIGHT / 2)} > 100,
+  ///   ${SEVERITY} == 'Medium',
   ///   ${RACE}.endsWith('sian')
   filter: string;
 
@@ -2370,8 +2370,8 @@ export interface IPcPlotSettings {
 
   /// Formula that filters out rows to show.
   /// Examples:
-  ///   ${AGE} > 20 or ${WEIGHT / 2) > 100
-  ///   ${SEVERITY} == 'Medium'
+  ///   ${AGE} > 20 or ${WEIGHT / 2)} > 100,
+  ///   ${SEVERITY} == 'Medium',
   ///   ${RACE}.endsWith('sian')
   filter: string;
 
@@ -2494,8 +2494,8 @@ export interface IPieChartSettings {
 
   /// Formula that filters out rows to show.
   /// Examples:
-  ///   ${AGE} > 20 or ${WEIGHT / 2) > 100
-  ///   ${SEVERITY} == 'Medium'
+  ///   ${AGE} > 20 or ${WEIGHT / 2)} > 100,
+  ///   ${SEVERITY} == 'Medium',
   ///   ${RACE}.endsWith('sian')
   filter: string;
 
@@ -2561,8 +2561,8 @@ export interface IPivotViewerSettings {
 
   /// Formula that filters out rows to show.
   /// Examples:
-  ///   ${AGE} > 20 or ${WEIGHT / 2) > 100
-  ///   ${SEVERITY} == 'Medium'
+  ///   ${AGE} > 20 or ${WEIGHT / 2)} > 100,
+  ///   ${SEVERITY} == 'Medium',
   ///   ${RACE}.endsWith('sian')
   filter: string;
 
@@ -2658,8 +2658,8 @@ export interface IRocCurveSettings {
 
   /// Formula that filters out rows to show.
   /// Examples:
-  ///   ${AGE} > 20 or ${WEIGHT / 2) > 100
-  ///   ${SEVERITY} == 'Medium'
+  ///   ${AGE} > 20 or ${WEIGHT / 2)} > 100,
+  ///   ${SEVERITY} == 'Medium',
   ///   ${RACE}.endsWith('sian')
   filter: string;
 
@@ -3019,8 +3019,8 @@ export interface IScatterPlotSettings {
 
   /// Formula that filters out rows to show.
   /// Examples:
-  ///   ${AGE} > 20 or ${WEIGHT / 2) > 100
-  ///   ${SEVERITY} == 'Medium'
+  ///   ${AGE} > 20 or ${WEIGHT / 2)} > 100,
+  ///   ${SEVERITY} == 'Medium',
   ///   ${RACE}.endsWith('sian')
   filter: string;
 
@@ -3129,8 +3129,8 @@ export interface IScatterPlot3dSettings {
 
   /// Formula that filters out rows to show.
   /// Examples:
-  ///   ${AGE} > 20 or ${WEIGHT / 2) > 100
-  ///   ${SEVERITY} == 'Medium'
+  ///   ${AGE} > 20 or ${WEIGHT / 2)} > 100,
+  ///   ${SEVERITY} == 'Medium',
   ///   ${RACE}.endsWith('sian')
   filter: string;
 
@@ -3232,8 +3232,8 @@ export interface IStatsViewerSettings {
 
   /// Formula that filters out rows to show.
   /// Examples:
-  ///   ${AGE} > 20 or ${WEIGHT / 2) > 100
-  ///   ${SEVERITY} == 'Medium'
+  ///   ${AGE} > 20 or ${WEIGHT / 2)} > 100,
+  ///   ${SEVERITY} == 'Medium',
   ///   ${RACE}.endsWith('sian')
   filter: string;
 
@@ -3361,8 +3361,8 @@ export interface ITileViewerSettings {
 
   /// Formula that filters out rows to show.
   /// Examples:
-  ///   ${AGE} > 20 or ${WEIGHT / 2) > 100
-  ///   ${SEVERITY} == 'Medium'
+  ///   ${AGE} > 20 or ${WEIGHT / 2)} > 100,
+  ///   ${SEVERITY} == 'Medium',
   ///   ${RACE}.endsWith('sian')
   filter: string;
 
@@ -3446,8 +3446,8 @@ export interface ITreeMapSettings {
 
   /// Formula that filters out rows to show.
   /// Examples:
-  ///   ${AGE} > 20 or ${WEIGHT / 2) > 100
-  ///   ${SEVERITY} == 'Medium'
+  ///   ${AGE} > 20 or ${WEIGHT / 2)} > 100,
+  ///   ${SEVERITY} == 'Medium',
   ///   ${RACE}.endsWith('sian')
   filter: string;
 
@@ -3558,8 +3558,8 @@ export interface ITrellisPlotSettings {
 
   /// Formula that filters out rows to show.
   /// Examples:
-  ///   ${AGE} > 20 or ${WEIGHT / 2) > 100
-  ///   ${SEVERITY} == 'Medium'
+  ///   ${AGE} > 20 or ${WEIGHT / 2)} > 100,
+  ///   ${SEVERITY} == 'Medium',
   ///   ${RACE}.endsWith('sian')
   filter: string;
 
