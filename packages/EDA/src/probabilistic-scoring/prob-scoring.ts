@@ -13,12 +13,10 @@ import '../../css/pmpo.css';
 import {getDesiredTables, getDescriptorStatistics, normalPdf, sigmoidS} from './stat-tools';
 import {MIN_SAMPLES_COUNT, PMPO_NON_APPLICABLE, DescriptorStatistics, P_VAL_TRES_MIN, DESCR_TITLE,
   R2_MIN, Q_CUTOFF_MIN, PmpoParams, SCORES_TITLE, DESCR_TABLE_TITLE, PMPO_COMPUTE_FAILED, SELECTED_TITLE,
-  P_VAL, DESIRABILITY_COL_NAME, STAT_GRID_HEIGHT, DESIRABILITY_COLUMN_WIDTH, WEIGHT_TITLE, COLORS} from './pmpo-defs';
+  P_VAL, DESIRABILITY_COL_NAME, STAT_GRID_HEIGHT, DESIRABILITY_COLUMN_WIDTH, WEIGHT_TITLE} from './pmpo-defs';
 import {addSelectedDescriptorsCol, getDescriptorStatisticsTable, getFilteredByPvalue, getFilteredByCorrelations,
   getModelParams, getDescrTooltip, saveModel, getScoreTooltip, getDesirabilityProfileJson, getCorrelationTriples,
-  addCorrelationColumns,
-  setPvalColumnColorCoding,
-  setCorrColumnColorCoding} from './pmpo-utils';
+  addCorrelationColumns, setPvalColumnColorCoding, setCorrColumnColorCoding} from './pmpo-utils';
 import {getOutputPalette} from '../pareto-optimization/utils';
 import {OPT_TYPE} from '../pareto-optimization/defs';
 
@@ -166,13 +164,6 @@ export class Pmpo {
   private initTable = grok.data.demo.demog(10);
 
   private statGrid = DG.Viewer.grid(this.initTable, {showTitle: true, title: DESCR_TABLE_TITLE});
-  private boxPlot = DG.Viewer.boxPlot(this.initTable, {
-    showPValue: false,
-    showSizeSelector: false,
-    showTitle: true,
-    showColorSelector: false,
-    legendVisibility: 'Always',
-  });
 
   private predictionName = SCORES_TITLE;
 
@@ -472,16 +463,6 @@ export class Pmpo {
 
     // Update statistics grid
     this.updateStatisticsGrid(descrStatsTable, descriptorNames, selectedByPvalue, selectedByCorr);
-
-    this.boxPlot.dataFrame = df;
-    this.boxPlot.setOptions({
-      valueColumnName: prediction.name,
-      category1ColumnName: desirability.name,
-      showPValue: false,
-      showSizeSelector: false,
-      showTitle: true,
-      title: `pMPO by ${desirability.name} label`,
-    });
   } // fitAndUpdateViewers
 
   /** Runs the pMPO model training application */

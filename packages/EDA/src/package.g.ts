@@ -6,7 +6,7 @@ export function info() : void {
   PackageFunctions.info();
 }
 
-//meta.role: init
+//tags: init
 export async function init() : Promise<void> {
   await PackageFunctions.init();
 }
@@ -75,8 +75,8 @@ export async function reduceDimensionality() : Promise<void> {
   await PackageFunctions.reduceDimensionality();
 }
 
+//tags: editor
 //input: funccall call 
-//meta.role: editor
 export function GetMCLEditor(call: DG.FuncCall) : void {
   PackageFunctions.GetMCLEditor(call);
 }
