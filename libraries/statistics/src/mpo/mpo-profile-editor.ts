@@ -33,6 +33,38 @@ export class MpoProfileEditor {
       grok.events.fireCustomEvent(MPO_SCORE_CHANGED_EVENT, {});
     });
 
+    let minInput: HTMLElement | null = null;
+    let maxInput: HTMLElement | null = null;
+
+    if (this.design) {
+      minInput = ui.input.float('', {
+        value: prop.min ?? 0,
+        //@ts-ignore
+        format: '#0.000',
+        showSlider: true,
+        onValueChanged: (v) => {
+          if (this.profile && this.profile.properties[propertyName])
+            this.profile.properties[propertyName].min = v ?? 0;
+        },
+      }).root;
+      minInput.style.width = '70px';
+      // minInput.classList.add('statistics-mpo-min-input');
+
+      maxInput = ui.input.float('', {
+        value: prop.max ?? 1,
+        //@ts-ignore
+        format: '#0.000',
+        showSlider: true,
+        onValueChanged: (v) => {
+          if (this.profile && this.profile.properties[propertyName])
+            this.profile.properties[propertyName].max = v ?? 1;
+        },
+      }).root;
+      maxInput.style.width = '70px';
+      // maxInput.classList.add('statistics-mpo-max-input');
+    }
+
+
     // Input for weight - updates the *copy* of the template data
     const weightInput = ui.input.float('', { // No label needed here
       value: prop.weight, min: 0, max: 1,
@@ -70,6 +102,7 @@ export class MpoProfileEditor {
         this.columnMapping[propertyName] = value ?? null;
       },
     });
+    columnInput.root.style.width = '100px';
 
     const controls = this.design ? (() => {
       const add = ui.icons.add(() => this.insertRowAfter(row));
@@ -98,12 +131,17 @@ export class MpoProfileEditor {
       columnInput.root :
       null;
 
+    const weightAndRange = ui.divH([
+      weightInput.root,
+      this.design ? ui.divH([minInput, maxInput], {style: {gap: '4px'}}) : null,
+    ].filter(Boolean));
+
     row.append(
       ui.divV([
         propertyLabel,
         columnInputControl,
       ], {style: {gap: '4px'}}),
-      weightInput.root,
+      weightAndRange,
       lineEditor.root, // Add the Konva container div
     );
 
@@ -149,6 +187,8 @@ export class MpoProfileEditor {
     const header = ui.divH([
       ui.divText('Property', 'statistics-mpo-header-property'),
       ui.divText('Weight', 'statistics-mpo-header-weight'),
+      this.design ? ui.divText('Min', 'statistics-mpo-header-weight') : null,
+      this.design ? ui.divText('Max', 'statistics-mpo-header-weight') : null,
       ui.divText('Desirability', 'statistics-mpo-header-desirability'), // Let editor take space
     ], 'statistics-mpo-header');
 

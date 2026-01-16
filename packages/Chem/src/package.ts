@@ -100,6 +100,7 @@ import {MpoProfilesView} from './apps/mpo-profile-management';
 import {MpoDesirabilityLineEditor} from '@datagrok-libraries/statistics/src/mpo/mpo-line-editor';
 
 import $ from 'cash-dom';
+import { MpoProfileCreateView } from './apps/mpo-create-profile';
 
 export {getMCS};
 export * from './package.g';
@@ -2589,7 +2590,11 @@ export class PackageFunctions {
     for (const profile of profileFiles) {
       const content =
         JSON.parse(await grok.dapi.files.readAsText(`${MPO_TEMPLATE_PATH}/${profile.name}`)) as DesirabilityProfile;
-      treeNode.item(content.name).onSelected.subscribe(() => grok.shell.addPreview(this.mpoProfileEditor(profile)));
+      treeNode.item(content.name).onSelected.subscribe(() => {
+        const editView = new MpoProfileCreateView(content, false);
+        // const v = grok.shell.addView(editView.view);
+        grok.shell.addPreview(editView.view);
+      });
     }
   }
 

@@ -3,6 +3,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {DesirabilityProfile, PropertyDesirability, WeightedAggregation} from '@datagrok-libraries/statistics/src/mpo/mpo';
 import {MpoScoreViewer} from '../apps/mpo-scores';
+import {value} from '../widgets/scaffold-tree';
 
 export class MpoContextPanel {
   root: HTMLElement;
@@ -14,6 +15,7 @@ export class MpoContextPanel {
   private worstScoreViewer?: MpoScoreViewer;
 
   constructor(df: DG.DataFrame) {
+    grok.shell.windows.showHelp = false;
     this.df = df;
     this.panel = ui.accordion();
     const icon = ui.element('i');
@@ -28,6 +30,9 @@ export class MpoContextPanel {
     profile: DesirabilityProfile, columnMapping: Record<string, string | null>, aggregation?: WeightedAggregation,
   ) {
     if (!profile) return;
+
+    if (grok.shell.o !== this.root)
+      grok.shell.o = this.root;
 
     // Prepare mapped properties
     const mappedProperties: Record<string, PropertyDesirability> = {};
@@ -50,7 +55,8 @@ export class MpoContextPanel {
 
     // Update title
     const titleSpan = this.panel.root.querySelector('span');
-    if (titleSpan) titleSpan.innerText = 'MPO Context';
+    if (titleSpan)
+      titleSpan.innerText = 'MPO Profile';
 
     // Histogram
     if (!this.histogram) {
@@ -58,15 +64,24 @@ export class MpoContextPanel {
         showColumnSelector: false,
         showSplitSelector: false,
         showRangeSlider: false,
+        showXAxis: true,
         allowColumnSelection: false,
         showBinSelector: false,
-        showXAxis: true,
+        showCurrentRow: false,
+        showMouseOverRow: false,
+        showMouseOverRowGroup: false,
+        valueColumnName: columnNames[0],
       });
-      ui.empty(this.histogramHost);
+
+      this.histogram.root.addEventListener('mousedown', (e) => e.stopPropagation(), true);
+      this.histogram.root.addEventListener('click', (e) => e.stopPropagation(), true);
+      this.histogram.root.addEventListener('dblclick', (e) => e.stopPropagation(), true);
+
       this.histogramHost.appendChild(this.histogram.root);
-      this.panel.addPane('Score distribution', () => this.histogramHost, true);
+      this.panel.addPane('Scores', () => this.histogramHost, true);
     }
-    this.histogram.setOptions({valueColumnName: columnNames[0]});
+
+    this.histogram.apply({valueColumnName: columnNames[0]});
 
     // Best/Worst Scores
     if (!this.bestScoreViewer) {

@@ -1,6 +1,7 @@
 import {ChemSearchBaseViewer} from '../analysis/chem-search-base-viewer';
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
+import * as grok from 'datagrok-api/grok';
 import $ from 'cash-dom';
 import {renderMolecule} from '../rendering/render-molecule';
 
@@ -10,12 +11,14 @@ export class MpoScoreViewer extends ChemSearchBaseViewer {
   mode: 'best' | 'worst';
 
   constructor(df: DG.DataFrame, mpoColName: string, mode: 'best' | 'worst' = 'best') {
-    super('MPO Scores', df.getCol('molecule'));
+    grok.shell.windows.showHelp = false;
+    const moleculeCol = df.columns.bySemType(DG.SEMTYPE.MOLECULE);
+    super('MPO Scores', moleculeCol!);
     const col = df.col(mpoColName);
     if (!col) throw new Error(`Column ${mpoColName} not found`);
     this.mpoColumn = col;
     this.mode = mode;
-    this.limit = 5;
+    this.limit = 4;
 
     this.root.style.display = 'flex';
     this.root.style.flexDirection = 'column';
@@ -59,8 +62,32 @@ export class MpoScoreViewer extends ChemSearchBaseViewer {
       const propsDiv = ui.divV([scoreDiv], {style: {alignItems: 'center'}});
 
       const grid = ui.div([molDiv, propsDiv], {style: {position: 'relative'}});
-      const divClass = 'd4-flex-col';
+      let divClass = 'd4-flex-col';
+
+    //   if (i === this.curIdx) {
+    //     divClass += ' d4-current';
+    //     grid.style.backgroundColor = '#ddffd9';
+    //   }
+
+    //   if (this.dataFrame.selection.get(i)) {
+    //     divClass += ' d4-selected';
+    //     grid.style.backgroundColor = divClass === 'd4-flex-col d4-selected' ? '#f8f8df' : '#d3f8bd';
+    //   }
+
       $(grid).addClass(divClass);
+
+    //   grid.addEventListener('click', (event: MouseEvent) => {
+    //     if (!this.dataFrame) return;
+    //     if (event.shiftKey || event.altKey)
+    //       this.dataFrame.selection.set(i, true);
+    //     else if (event.metaKey)
+    //       this.dataFrame.selection.set(i, !this.dataFrame.selection.get(i));
+    //     else {
+    //       this.dataFrame.currentRowIdx = i;
+    //       this.gridSelect = true;
+    //     }
+    //     this.renderInternal();
+    //   });
       grids.push(grid);
     }
 

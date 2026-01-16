@@ -989,11 +989,7 @@
   display: none!important;
 }
 
-.chem-mpo-histogram-compact {
-  height: 150px;
-  width: 100%;
-}
-
-.chem-mpo-histogram-compact .d4-viewer {
-  height: 100% !important;
+.chem-mpo-histogram-compact .d4-histogram {
+  height: 180px;
+  max-height: 180px;
 }

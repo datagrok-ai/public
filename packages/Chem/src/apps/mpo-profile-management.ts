@@ -9,6 +9,7 @@ import {MPO_TEMPLATE_PATH} from '../analysis/mpo';
 import {DesirabilityProfile, PropertyDesirability} from '@datagrok-libraries/statistics/src/mpo/mpo';
 import {MPO_SCORE_CHANGED_EVENT, MpoProfileEditor} from '@datagrok-libraries/statistics/src/mpo/mpo-profile-editor';
 import {MpoContextPanel} from './mpo-context-panel';
+import { MpoProfileCreateView } from './mpo-create-profile';
 
 type MpoProfileInfo = {
   file: DG.FileInfo;
@@ -41,8 +42,12 @@ export class MpoProfilesView {
           this.buildAppHeader(),
           ui.h1('Manage Profiles'),
           this.profilesTableContainer,
-          ui.h1('New Profile'),
-          this.createProfileForm(),
+          ui.link('Create new profile', () => {
+            const createdView = new MpoProfileCreateView();
+            const v = grok.shell.addPreview(createdView.view);
+            grok.shell.v = v;
+            // grok.shell.v = view;
+          }),
         ]),
       );
 
@@ -83,8 +88,11 @@ export class MpoProfilesView {
           panel.addTitle(ui.span([icon, ui.label('MPO Profile')]));
 
           const editButton = ui.bigButton('Edit', () => {
-            const v = grok.shell.addView(PackageFunctions.mpoProfileEditor(profile.file));
+            const editView = new MpoProfileCreateView(profile, false);
+            const v = grok.shell.addView(editView.view);
             grok.shell.v = v;
+            // const v = grok.shell.addView(PackageFunctions.mpoProfileEditor(profile.file));
+            // grok.shell.v = v;
           });
 
           const buttonContainer = ui.divH([editButton], {style: {justifyContent: 'flex-end'}});
@@ -129,46 +137,6 @@ export class MpoProfilesView {
     return table;
   }
 
-  private createProfileForm(): HTMLElement {
-    const methodInput = ui.input.choice('Method', {
-      items: ['Manual', 'Probabilistic'],
-      value: 'Manual',
-      nullable: false,
-      tooltipText: 'Explanation of Manual vs Probabilistic MPO',
-      onValueChanged: (value) => {
-        const isProbabilistic = value === 'Probabilistic';
-        nameInput.classList.toggle('chem-mpo-d-none', isProbabilistic);
-        descriptionInput.classList.toggle('chem-mpo-d-none', isProbabilistic);
-        datasetInput.nullable = !isProbabilistic;
-      },
-    });
-
-    const nameInput = ui.input.string('Profile Name', {tooltipText: 'Name of the MPO profile', nullable: true});
-    const descriptionInput = ui.input.string('Description', {tooltipText: 'Optional description', nullable: true});
-    const datasetInput = ui.input.table('Dataset', {nullable: true});
-
-    const createButton = ui.bigButton('Create', async () => {
-      const df = datasetInput.value!;
-      if (methodInput.value === 'Probabilistic') {
-        this.trainPMPOProfile(df);
-        return;
-      }
-      this.manualMPOProfile(df, nameInput.value, descriptionInput.value);
-    });
-
-    const buttonContainer = ui.divH([createButton], {style: {justifyContent: 'flex-end'}});
-    buttonContainer.classList.add('d4-ribbon-item');
-
-    const form = ui.form([
-      methodInput,
-      nameInput,
-      descriptionInput,
-      datasetInput,
-    ]);
-
-    return ui.divV([form, buttonContainer], {style: {gap: '10px'}});
-  }
-
   private async loadProfiles(): Promise<MpoProfileInfo[]> {
     const files = await grok.dapi.files.list(MPO_TEMPLATE_PATH);
 
@@ -210,85 +178,5 @@ export class MpoProfilesView {
         }
       })
       .show();
-  }
-
-
-  private async trainPMPOProfile(df: DG.DataFrame): Promise<void> {
-    grok.shell.addTableView(df);
-    try {
-      await grok.functions.call('EDA:trainPmpo', {});
-    } catch (err: any) {
-      console.log(err);
-    }
-  }
-
-  private async manualMPOProfile(
-    df: DG.DataFrame | null, profileName: string | null, profileDescription: string | null,
-  ): Promise<void> {
-    const newProfile: DesirabilityProfile = {
-      name: profileName ?? '',
-      description: profileDescription ?? '',
-      properties: {},
-    };
-
-    if (df) {
-      const numericalColumns = Array.from(df.columns.numerical).slice(0, 3);
-      numericalColumns.forEach((col: DG.Column) => {
-        newProfile.properties[col.name] = {
-          weight: 0.5,
-          min: col.min,
-          max: col.max,
-          line: [],
-        };
-      });
-      this.openNewProfileView(newProfile, df);
-    } else {
-      const view = DG.View.create();
-      view.name = profileName ?? 'New MPO Profile';
-      for (let i = 1; i <= 3; i++)
-        newProfile.properties[`Property ${i}`] = {weight: 0.5, line: []};
-      const editor = new MpoProfileEditor(undefined, true);
-      editor.setProfile(newProfile);
-      const scrollableEditor = ui.divV([editor.root], {style: {overflow: 'auto', height: '100%'}});
-      view.append(scrollableEditor);
-      grok.shell.addView(view);
-    }
-  }
-
-  private openNewProfileView(profile: DesirabilityProfile, df: DG.DataFrame) {
-    const view = grok.shell.addTableView(df);
-
-    const saveButton = ui.bigButton('SAVE', () => saveProfile());
-    saveButton.style.display = 'none';
-    view.setRibbonPanels([[saveButton]]);
-
-    const editor = new MpoProfileEditor(df, true);
-    editor.setProfile(profile);
-
-    editor.onChanged.subscribe(() => saveButton.style.display = 'initial');
-
-    const saveProfile = () => {
-      grok.dapi.files.writeAsText(`${profile.name}.json`, JSON.stringify(profile))
-        .then(() => {
-          grok.shell.info(`Profile "${profile.name}" saved successfully.`);
-          saveButton.style.display = 'none';
-          this.render();
-        })
-        .catch((err) => grok.shell.error(`Failed to save profile "${profile.name}": ${err}`));
-    };
-    const scrollableEditor = ui.divV([editor.root], {style: {overflow: 'auto', height: '100%'}});
-    view.dockManager.dock(scrollableEditor, DG.DOCK_TYPE.DOWN, null, 'MPO Profile Editor', 0.6);
-
-    const mpoContextPanel = new MpoContextPanel(df);
-    grok.events.onCustomEvent(MPO_SCORE_CHANGED_EVENT).subscribe(async () => {
-      if (profile && mpoContextPanel) {
-        await mpoContextPanel.render(
-          profile,
-          editor.columnMapping,
-          'Average',
-        );
-      }
-    });
-    grok.shell.o = mpoContextPanel.root;
   }
 }
