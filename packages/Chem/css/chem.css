@@ -978,13 +978,6 @@
   overflow: hidden;
 }
 
-/* .chem-mpo-description {
-  max-width: 300px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-} */
-
 .chem-mpo-d-none {
   display: none!important;
 }
@@ -992,4 +985,115 @@
 .chem-mpo-histogram-compact .d4-histogram {
   height: 180px;
   max-height: 180px;
+}
+
+.chem-mpo-profiles-table {
+  width: fit-content;
+  color: var(--grey-5);
+}
+
+.chem-mpo-create-profile-button {
+  display: block !important;
+  text-align: start;
+  margin-left: 0 !important;
+}
+
+.chem-mpo-actions-button {
+  background: transparent;
+  border: none;
+  padding: 4px 6px;
+  border-radius: 4px;
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+  color: #6b7280;
+  opacity: 0;
+  transition: opacity 120ms ease, background-color 120ms ease;
+}
+
+.chem-mpo-profiles-table tr:hover .chem-mpo-actions-button,
+.chem-mpo-actions-button:focus-visible {
+  opacity: 1;
+}
+
+.chem-mpo-actions-button:hover {
+  background-color: rgba(0, 0, 0, 0.06);
+  color: #111827;
+}
+
+.chem-mpo-dialog-manage-button {
+  margin: inherit;
+  margin-top: 10px;
+}
+
+.chem-mpo-scores-viewer {
+  display: flex !important;
+  flex-direction: column;
+  width: 100% !important;
+  height: 100% !important;
+}
+
+.chem-profile-view {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+}
+
+.chem-profile-header {
+  gap: 10px;
+  padding: 5px;
+  flex: 0 0 auto;
+}
+
+.chem-profile-editor-container {
+  flex: 1 1 0;
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  overflow: auto;
+}
+
+.chem-data-grid-container {
+  flex: 1 1 0;
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.chem-data-grid {
+  flex: 1 1 0;
+  width: 100% !important;
+  height: 100% !important;
+  min-width: 0;
+  min-height: 0;
+}
+
+.chem-editor-panel {
+  flex: 1 1 65%;
+  min-width: 0;
+  min-height: 0;
+  height: 100%;
+}
+
+.chem-grid-panel {
+  flex: 1 1 35%;
+  min-width: 0;
+  min-height: 0;
+  height: 100%;
+}
+
+.chem-view-split {
+  flex: 1 1 0;
+  width: 100% !important;
+  height: 100% !important;
+  min-width: 0;
+  min-height: 0;
 }

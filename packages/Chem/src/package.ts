@@ -84,7 +84,7 @@ import {CHEM_PROP_MAP} from './open-chem/ocl-service/calculations';
 import {oclMol} from './utils/chem-common-ocl';
 import {MpoProfileEditor} from '@datagrok-libraries/statistics/src/mpo/mpo-profile-editor';
 import {OCLService} from './open-chem/ocl-service';
-import {MPO_TEMPLATE_PATH, MpoProfileDialog} from './analysis/mpo';
+import {MpoProfileDialog} from './analysis/mpo';
 import {MmmpFunctionEditor, MmpDiffTypes} from './analysis/molecular-matched-pairs/mmp-function-editor';
 import {SCALING_METHODS} from './analysis/molecular-matched-pairs/mmp-viewer/mmp-constants';
 import {scaleActivity} from './analysis/molecular-matched-pairs/mmp-viewer/mmpa-utils';
@@ -96,11 +96,12 @@ import {DesirabilityProfile, mpo, PropertyDesirability, WEIGHTED_AGGREGATIONS, W
 //@ts-ignore
 import '../css/chem.css';
 import {addDeprotectedColumn, DeprotectEditor} from './analysis/deprotect';
-import {MpoProfilesView} from './apps/mpo-profile-management';
+import {MpoProfilesView} from './mpo/mpo-profiles-view';
 import {MpoDesirabilityLineEditor} from '@datagrok-libraries/statistics/src/mpo/mpo-line-editor';
 
 import $ from 'cash-dom';
-import { MpoProfileCreateView } from './apps/mpo-create-profile';
+import {MpoProfileCreateView} from './mpo/mpo-create-profile';
+import {MPO_TEMPLATE_PATH} from './mpo/utils';
 
 export {getMCS};
 export * from './package.g';
