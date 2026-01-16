@@ -1,6 +1,6 @@
 # EDA changelog
 
-## 1.4.12 (WIP)
+## 1.4.12 (2026-01-16)
 
 Implemented
 
