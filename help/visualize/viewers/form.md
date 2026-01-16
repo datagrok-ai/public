@@ -65,33 +65,6 @@ The following keyboard shortcuts work only when the form is in both read-only an
 | **Data** | | |
 | Table | string |  |
 
-
-| Property | Type | Description |
-|----------|------|-------------|
-| **General** | | |
-| Sync Mode | string | Determines what gets shown on the form. |
-| Show Navigation | boolean |  |
-| Show Prev Row Arrow | boolean |  |
-| Show Next Row Arrow | boolean |  |
-| Show Row Selector | boolean |  |
-| Show Field Editor | boolean |  |
-| Show Design Editor | boolean |  |
-| Show Column Selector | boolean |  |
-| Show Save File | boolean |  |
-| Show Open File | boolean |  |
-| Sketch State | map |  |
-| Allow Dynamic Menus | boolean |  |
-| Show Context Menu | boolean | Properties common for all viewers todo: use code generation |
-| Title | string |  |
-| Description | string | Viewer description that gets shown at the *Descriptor Position*. Markup is supported. |
-| Help | string | Help to be shown when user clicks on the ''?'' icon on top. Could either be in markdown, or a URL (starting with ''/'' or ''http''). |
-| Description Position | flexposition |  |
-| Description Visibility Mode | visibilitymode |  |
-| **Description** | | |
-| Show Title | boolean |  |
-| **Data** | | |
-| Table | string |  |
-
 See also:
 
 * [Tile viewer](tile-viewer.md)
