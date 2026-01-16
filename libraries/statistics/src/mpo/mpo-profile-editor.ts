@@ -43,8 +43,10 @@ export class MpoProfileEditor {
         format: '#0.000',
         showSlider: true,
         onValueChanged: (v) => {
-          if (this.profile && this.profile.properties[propertyName])
+          if (this.profile && this.profile.properties[propertyName]) {
             this.profile.properties[propertyName].min = v ?? 0;
+            lineEditor.redrawAll();
+          }
         },
       }).root;
       minInput.style.width = '70px';
@@ -56,14 +58,15 @@ export class MpoProfileEditor {
         format: '#0.000',
         showSlider: true,
         onValueChanged: (v) => {
-          if (this.profile && this.profile.properties[propertyName])
+          if (this.profile && this.profile.properties[propertyName]) {
             this.profile.properties[propertyName].max = v ?? 1;
+            lineEditor.redrawAll();
+          }
         },
       }).root;
       maxInput.style.width = '70px';
       // maxInput.classList.add('statistics-mpo-max-input');
     }
-
 
     // Input for weight - updates the *copy* of the template data
     const weightInput = ui.input.float('', { // No label needed here
@@ -74,6 +77,7 @@ export class MpoProfileEditor {
           let clampedWeight = newValue ?? 0;
           clampedWeight = Math.max(0, Math.min(1, clampedWeight)); // Clamp 0-1
           this.profile.properties[propertyName].weight = clampedWeight;
+          grok.events.fireCustomEvent(MPO_SCORE_CHANGED_EVENT, {});
         }
       },
     });

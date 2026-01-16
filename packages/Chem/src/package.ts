@@ -2657,6 +2657,12 @@ export class PackageFunctions {
       container.appendChild(
         ui.divText('No suitable profiles available at the moment.'),
       );
+      const createButton = ui.button('Create Profile', () => {
+        const view = new MpoProfileCreateView();
+        grok.shell.v = grok.shell.addPreview(view.view);
+      });
+      container.appendChild(createButton);
+
       return DG.Widget.fromRoot(container);
     }
 

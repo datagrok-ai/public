@@ -18,6 +18,13 @@ export class MpoDesirabilityLineEditor {
   private barsLayer: Konva.Layer;
   private pendingBarValues?: number[];
 
+  private stage?: Konva.Stage;
+  private layer?: Konva.Layer;
+  private redrawFn?: (notify?: boolean) => void;
+
+  private konvaLine?: Konva.Line;
+  private pointsGroup?: Konva.Group;
+
   constructor(prop: PropertyDesirability, width: number, height: number) {
     this._prop = prop;
     this.barsLayer = new Konva.Layer();
@@ -34,14 +41,14 @@ export class MpoDesirabilityLineEditor {
         return;
       }
 
-      const stage = new Konva.Stage({
+      this.stage = new Konva.Stage({
         container: this.root, // Use the this.container div
         width: width,
         height: height,
       });
-      stage.add(this.barsLayer);
-      const layer = new Konva.Layer();
-      stage.add(layer);
+      this.stage.add(this.barsLayer);
+      this.layer = new Konva.Layer();
+      this.stage.add(this.layer);
 
       const minX = prop.min ?? Math.min(...prop.line.map((p) => p[0]));
       const maxX = prop.max ?? Math.max(...prop.line.map((p) => p[0]));
@@ -57,7 +64,7 @@ export class MpoDesirabilityLineEditor {
         stroke: 'grey', // Lighter color for axes
         strokeWidth: 1,
       });
-      layer.add(xAxis, yAxis);
+      this.layer.add(xAxis, yAxis);
 
       // --- Draw Axis Labels/Ticks (Simplified) ---
       const minXLabel = new Konva.Text({
@@ -89,25 +96,28 @@ export class MpoDesirabilityLineEditor {
         fontSize: 9,
         fill: 'grey',
       });
-      layer.add(minXLabel, maxXLabel, zeroYLabel, oneYLabel);
+      this.layer.add(minXLabel, maxXLabel, zeroYLabel, oneYLabel);
 
 
       // --- Draw Line and Points ---
-      const konvaLine = new Konva.Line({
+      this.konvaLine = new Konva.Line({
         points: [], // Will be populated by points
         stroke: '#2077b4',
         strokeWidth: 2,
         lineCap: 'round',
         lineJoin: 'round',
       });
-      layer.add(konvaLine);
+      this.layer.add(this.konvaLine);
 
-      const pointsGroup = new Konva.Group(); // Group for draggable points
-      layer.add(pointsGroup);
+      this.pointsGroup = new Konva.Group(); // Group for draggable points
+      this.layer.add(this.pointsGroup);
 
       // Function to redraw everything based on prop.line
-      function redraw(notify: boolean = true) {
-        pointsGroup.destroyChildren(); // Clear old points
+      this.redrawFn = (notify: boolean = true) => {
+        const minX = this._prop.min ?? Math.min(...prop.line.map((p) => p[0]));
+        const maxX = this._prop.max ?? Math.max(...prop.line.map((p) => p[0]));
+
+        this.pointsGroup!.destroyChildren(); // Clear old points
         const konvaPoints: number[] = [];
 
         prop.line.sort((a, b) => a[0] - b[0]); // Ensure sorted
@@ -167,14 +177,14 @@ export class MpoDesirabilityLineEditor {
                 return [c.x, c.y];
               }
             }).flat();
-            konvaLine.points(currentKonvaPoints);
-            layer.batchDraw(); // More efficient redraw
+            this.konvaLine!.points(currentKonvaPoints);
+            this.layer!.batchDraw(); // More efficient redraw
           });
 
           pointCircle.on('dragend', (evt: Konva.KonvaEventObject<DragEvent>) => {
             // Ensure data is sorted after drag, although constraints should handle it
             prop.line.sort((a, b) => a[0] - b[0]);
-            redraw(); // Full redraw on drag end to fix indices and line path
+            this.redrawFn?.(); // Full redraw on drag end to fix indices and line path
           });
 
           // --- Right-click to Remove ---
@@ -190,12 +200,12 @@ export class MpoDesirabilityLineEditor {
             const circle = evt.target as Konva.Circle;
             const indexToRemove = circle.getAttr('_pointIndex');
             prop.line.splice(indexToRemove, 1);
-            redraw(); // Redraw after removal
+            this.redrawFn?.(); // Redraw after removal
           });
 
           // Enhance usability: change cursor on hover and show tooltip
           pointCircle.on('mouseenter', (evt: Konva.KonvaEventObject<MouseEvent>) => {
-            stage.container().style.cursor = 'pointer';
+            this.stage!.container().style.cursor = 'pointer';
             const circle = evt.target as Konva.Circle;
             const pos = circle.position();
             const dataCoords = toDataCoords(pos.x, pos.y, minX, maxX, width, height);
@@ -203,26 +213,26 @@ export class MpoDesirabilityLineEditor {
             ui.tooltip.show(tooltipText, evt.evt.clientX, evt.evt.clientY);
           });
           pointCircle.on('mouseleave', (evt: Konva.KonvaEventObject<MouseEvent>) => {
-            stage.container().style.cursor = 'default';
+            this.stage!.container().style.cursor = 'default';
             ui.tooltip.hide();
           });
 
-          pointsGroup.add(pointCircle);
+          this.pointsGroup!.add(pointCircle);
         });
 
-        konvaLine.points(konvaPoints);
-        layer.batchDraw();
+        this.konvaLine!.points(konvaPoints);
+        this.layer!.batchDraw();
 
         if (notify)
           that.onChanged.next();
-      }
+      };
 
       // --- Left-click to Add Point ---
-      stage.on('click tap', (evt: Konva.KonvaEventObject<PointerEvent>) => {
+      this.stage.on('click tap', (evt: Konva.KonvaEventObject<PointerEvent>) => {
         // Ignore clicks on existing points (circles) or non-left clicks
         if (evt.target instanceof Konva.Circle || evt.evt.button !== 0) return;
 
-        const pos = stage.getPointerPosition();
+        const pos = this.stage?.getPointerPosition();
         if (!pos) return;
 
         // Ensure click is within the plot area boundaries
@@ -235,49 +245,87 @@ export class MpoDesirabilityLineEditor {
         prop.line.push([dataCoords.x, dataCoords.y]);
 
         // No need to sort here, redraw() handles sorting
-        redraw();
+        this.redrawFn?.();
       });
 
       // Change cursor when over the stage plot area for adding points
-      stage.on('mouseenter', (evt: Konva.KonvaEventObject<MouseEvent>) => {
+      this.stage.on('mouseenter', (evt: Konva.KonvaEventObject<MouseEvent>) => {
         if (!(evt.target instanceof Konva.Circle)) {
-          const pos = stage.getPointerPosition();
+          const pos = this.stage?.getPointerPosition();
           if (pos && pos.x >= EDITOR_PADDING.left && pos.x <= width - EDITOR_PADDING.right &&
             pos.y >= EDITOR_PADDING.top && pos.y <= height - EDITOR_PADDING.bottom)
-            stage.container().style.cursor = 'crosshair';
+            this.stage!.container().style.cursor = 'crosshair';
         }
       });
 
-      stage.on('mouseleave', (evt: Konva.KonvaEventObject<MouseEvent>) => {
+      this.stage.on('mouseleave', (evt: Konva.KonvaEventObject<MouseEvent>) => {
         if (!(evt.target instanceof Konva.Circle))
-          stage.container().style.cursor = 'default';
+          this.stage!.container().style.cursor = 'default';
       });
 
-      stage.on('mousemove', (evt: Konva.KonvaEventObject<MouseEvent>) => {
+      this.stage.on('mousemove', (evt: Konva.KonvaEventObject<MouseEvent>) => {
         if (!(evt.target instanceof Konva.Circle)) {
-          const pos = stage.getPointerPosition();
+          const pos = this.stage!.getPointerPosition();
           if (pos && pos.x >= EDITOR_PADDING.left && pos.x <= width - EDITOR_PADDING.right &&
             pos.y >= EDITOR_PADDING.top && pos.y <= height - EDITOR_PADDING.bottom)
-            stage.container().style.cursor = 'crosshair';
+            this.stage!.container().style.cursor = 'crosshair';
 
           else
-            stage.container().style.cursor = 'default';
+            this.stage!.container().style.cursor = 'default';
         }
       });
 
-      stage.on('mouseout', (_) => ui.tooltip.hide());
+      this.stage.on('mouseout', (_) => ui.tooltip.hide());
 
       // Initial draw
       if (this.pendingBarValues) {
         this.drawBars(this.pendingBarValues);
         this.pendingBarValues = undefined;
       }
-      redraw(false);
+      this.redrawFn?.(false);
     }, 0);
   }
 
   get line(): DesirabilityLine {
     return this._prop.line;
+  }
+
+  private drawAxes(minX: number, maxX: number, width: number, height: number) {
+    this.layer!.add(
+      new Konva.Line({
+        points: [EDITOR_PADDING.left, height - EDITOR_PADDING.bottom, width - EDITOR_PADDING.right, height - EDITOR_PADDING.bottom],
+        stroke: 'grey',
+        strokeWidth: 1,
+      }),
+      new Konva.Line({
+        points: [EDITOR_PADDING.left, EDITOR_PADDING.top, EDITOR_PADDING.left, height - EDITOR_PADDING.bottom],
+        stroke: 'grey',
+        strokeWidth: 1,
+      }),
+      new Konva.Text({x: EDITOR_PADDING.left, y: height - EDITOR_PADDING.bottom + 3, text: minX.toFixed(1), fontSize: 9, fill: 'grey'}),
+      new Konva.Text({x: width - EDITOR_PADDING.right - 15, y: height - EDITOR_PADDING.bottom + 3, text: maxX.toFixed(1), fontSize: 9, fill: 'grey'}),
+    );
+  }
+
+  redrawAll(notify: boolean = true): void {
+    if (!this.stage || !this.layer || !this.redrawFn)
+      return;
+
+    const width = this.stage.width();
+    const height = this.stage.height();
+    const minX = this._prop.min ?? Math.min(...this._prop.line.map((p) => p[0]));
+    const maxX = this._prop.max ?? Math.max(...this._prop.line.map((p) => p[0]));
+
+    this.layer.destroyChildren();
+
+    this.drawAxes(minX, maxX, width, height);
+
+    this.layer.add(this.konvaLine!, this.pointsGroup!);
+
+    this.redrawFn(notify);
+
+    if (this.pendingBarValues)
+      this.drawBars(this.pendingBarValues);
   }
 
   drawBars(values?: number[]) {

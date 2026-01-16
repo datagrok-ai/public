@@ -6,20 +6,22 @@ import {DesirabilityProfile, PropertyDesirability} from '@datagrok-libraries/sta
 import {MPO_SCORE_CHANGED_EVENT, MpoProfileEditor} from '@datagrok-libraries/statistics/src/mpo/mpo-profile-editor';
 
 import {MpoContextPanel} from './mpo-context-panel';
+import {MPO_TEMPLATE_PATH} from './utils';
 
 const METHOD_MANUAL = 'Manual';
 const METHOD_PROBABILISTIC = 'Probabilistic';
 
 export class MpoProfileCreateView {
   readonly view: DG.View;
-  private df: DG.DataFrame | null = null;
-  private profile: DesirabilityProfile;
-  private editor: MpoProfileEditor;
-  private mpoContextPanel: MpoContextPanel | null = null;
+  df: DG.DataFrame | null = null;
+  profile: DesirabilityProfile;
+  editor: MpoProfileEditor;
+  mpoContextPanel: MpoContextPanel | null = null;
 
-  private profileEditorContainer: HTMLDivElement;
-  private profileViewContainer: HTMLDivElement = ui.div();
-  private methodInput?: DG.ChoiceInput<string | null>;
+  profileEditorContainer: HTMLDivElement;
+  profileViewContainer: HTMLDivElement = ui.div();
+  methodInput?: DG.ChoiceInput<string | null>;
+  saveButton: HTMLElement | null = null;
 
   constructor(existingProfile?: DesirabilityProfile, showMethod: boolean = true) {
     this.view = DG.View.create();
@@ -33,8 +35,30 @@ export class MpoProfileCreateView {
     this.profileEditorContainer.classList.add('chem-profile-editor-container');
 
     this.initControls(showMethod);
+    this.initSaveButton();
     this.attachLayout();
     this.listenForProfileChanges();
+  }
+
+  private initSaveButton() {
+    this.saveButton = ui.bigButton('Save', async () => {
+      const nameInput = ui.input.string('Name', {value: this.profile.name ?? ''});
+      const descInput = ui.input.string('Description', {value: this.profile.description ?? ''});
+      ui.dialog({title: 'Save MPO Profile'})
+        .add(ui.divV([nameInput, descInput]))
+        .onOK(() => {
+          this.profile.name = nameInput.value || '';
+          this.profile.description = descInput.value || '';
+
+          grok.dapi.files.writeAsText(`${MPO_TEMPLATE_PATH}/new.json`, JSON.stringify(this.profile));
+          this.saveButton!.style.display = 'none';
+          grok.shell.info(`Profile "${this.profile.name || 'Unnamed'}" saved.`);
+        })
+        .show();
+    });
+
+    this.saveButton.style.display = 'none';
+    this.view.setRibbonPanels([[this.saveButton]]);
   }
 
   private initControls(showMethod: boolean) {
@@ -152,6 +176,7 @@ export class MpoProfileCreateView {
 
   private async listenForProfileChanges() {
     grok.events.onCustomEvent(MPO_SCORE_CHANGED_EVENT).subscribe(async () => {
+      this.saveButton!.style.display = 'initial';
       if (!this.df || !this.profile || !this.mpoContextPanel) return;
       await this.mpoContextPanel.render(this.profile, this.editor.columnMapping, 'Average');
     });
