@@ -773,7 +773,7 @@ export namespace input {
     items: (input, x) => input.inputType === d4.InputType.Choice ? (input as ChoiceInput<typeof x>).items = x :
       input.inputType === d4.InputType.Table ? (input as ChoiceInput<typeof x>).items = x.map((elem: DataFrame) => toDart(elem)) :
         input.inputType === d4.InputType.MultiChoice ? api.grok_MultiChoiceInput_Set_Items(input.dart, x) :
-          [d4.InputType.User, d4.InputType.UserGroups, d4.InputType.Tags].includes(input.inputType) ? api.grok_TagsInput_Set_Suggestions(input.dart, x.map((elem: any) => toDart(elem))) :
+          [d4.InputType.User, d4.InputType.UserGroups, d4.InputType.Tags].includes(input.inputType) ? api.grok_TagsInput_Set_Items(input.dart, x.map((elem: any) => toDart(elem))) :
             api.grok_RadioInput_Set_Items(input.dart, x),
     icon: (input, x) => api.grok_StringInput_AddIcon(input.dart, x),
     available: (input, x) => api.grok_ColumnsInput_ChangeAvailableColumns(input.dart, x),
@@ -846,7 +846,6 @@ export namespace input {
     tags?: T[];
     showButton?: boolean;
     allowNew?: boolean;
-    createNewItemFunc?: (text: string) => T;
     multiValue?: boolean;
     createCustomInputFunc?: (dart: any) => any;
   };
@@ -1079,12 +1078,6 @@ export namespace input {
     const tagsBaseInput = _create(d4.InputType.Tags, name, config);
     if (config?.createCustomInputFunc) {
       const customObjInput = config.createCustomInputFunc(tagsBaseInput.dart);
-      if (config.allowNew) {
-        if (!config.createNewItemFunc)
-          throw 'createNewItemFunc parameter must be provided for custom tags input if allowNew is true'
-        else
-          customObjInput.createNewItem = config.createNewItemFunc;
-      }
       return customObjInput;
     }
     return tagsBaseInput;    

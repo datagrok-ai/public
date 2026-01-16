@@ -1524,41 +1524,21 @@ export class DateInput extends InputBase<dayjs.Dayjs | null> {
   set value(x: dayjs.Dayjs | null) { toDart(api.grok_DateInput_Set_Value(this.dart, x?.valueOf())); }
 }
 
-
-export class TagsInput<T> extends InputBase<T> {
+export abstract class TagsInput<T = any> extends InputBase<T> {
 
   constructor(dart: any) {
     super(dart);
     api.grok_TagsInput_Set_JsTagsInput(dart, this);
   };
 
-  get selectedItems(): T[] {
-    return api.grok_TagsInput_Get_Selected_Items(this.dart).map((it: any) => toJs(it));
-  }
+  //convert item to string to show in suggestions
+  abstract itemToString(item: T): string;
 
-  itemToString(item: T): string { return api.grok_TagsInput_ItemToString(this.dart, toDart(item)); };
+  abstract getSuggestions(inputText: string): Promise<T[]>;
 
-  async getSuggestions(inputText: string): Promise<T[]> { return (await api.grok_TagsInput_GetSuggestionsFunc(this.dart, inputText)) };
+  abstract createTagLabel(item: T): Element;
 
-  createTag(item: T): Element {
-    return toJs(api.grok_TagsInput_CreateTag(this.dart, toDart(item)));
-  };
-
-  createNewItem(inputText: string): T { return toJs(api.grok_TagsInput_CreateNewItem(this.dart, inputText)) };
-
-  shouldFilterItem(item: string): boolean { return api.grok_TagsInput_ShouldFilterItem(this.dart, toDart(item)) };
-
-  async collectItems(selectedItems: T[], selectedItem: T, findItems: boolean): Promise<T[]> {
-    return  (await api.grok_TagsInput_CollectItems(this.dart, findItems))
-  };
-
-  removeItem(item: T) {
-     api.grok_TagsInput_RemoveItem(this.dart, toDart(item));
-  }
-
-  removeItemByIdx(idx: number) {
-     api.grok_TagsInput_RemoveItemByIdx(this.dart, idx);
-  }
+  abstract createNewItem(inputText: string): T;
 }
 
 export class ChoiceInput<T> extends InputBase<T> {
