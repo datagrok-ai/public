@@ -52,7 +52,7 @@ For instance, you would get the upper whisker inverted on the following data: [0
 | Category1 Map | string | Time unit map function for *Category 1 Column Names* (applicable to dates only). |
 | Category2 Column Name | string | If defined, sets *Markers Color* the same as the currently selected column. |
 | Category2 Map | string | Time unit map function for *Category 2 Column Names* (applicable to dates only). |
-| Filter | string | Formula that filters out rows to show. Examples: ${AGE} > 20 or ${WEIGHT / 2) > 100 ${SEVERITY} == ''Medium'' ${RACE}.endsWith(''sian'') |
+| Filter | string | Formula that filters out rows to show. Examples: `${AGE}` > 20 or `${WEIGHT / 2) > 100 ${SEVERITY}` == ''Medium'' `${RACE}`.endsWith(''sian'') |
 | Table | string |  |
 | **Statistics** | | |
 | Show Statistics | boolean |  |

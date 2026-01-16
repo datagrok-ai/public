@@ -83,7 +83,7 @@ The system provides interaction with files of the following extensions:
 | Description Position | flexposition |  |
 | Description Visibility Mode | visibilitymode |  |
 | **Data** | | |
-| Filter | string | Formula that filters out rows to show. Examples: ${AGE} > 20 or ${WEIGHT / 2) > 100 ${SEVERITY} == ''Medium'' ${RACE}.endsWith(''sian'') |
+| Filter | string | Formula that filters out rows to show. Examples: `${AGE}` > 20 or `${WEIGHT / 2) > 100 ${SEVERITY}` == ''Medium'' `${RACE}`.endsWith(''sian'') |
 | Table | string |  |
 | **Style** | | |
 | Controls Font | string | Viewer controls elements font. |

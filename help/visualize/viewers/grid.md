@@ -649,6 +649,7 @@ or press Alt+C.
 ![](img/grid-columns-preview.gif)
 
 
+
 ## Properties
 
 | Property | Type | Description |
@@ -658,7 +659,7 @@ or press Alt+C.
 | Show Add New Row Icon | boolean | When [allowEditable] is true, shows the last virtual row that the user can edit. This row gets appended to the underlying table as soon as any value is entered. The grid should also be in the editable mode |
 | Add New Row On Last Row Edit | boolean | Automatically adds a new row in the end of the dataframe when the last row is edited The grid should also be in the editable mode |
 | Show Remove Row Icon | boolean | When [allowEditable] is true, allows user to remove the mouse over row. The grid should also be in the editable mode |
-| Filter | string | Formula that filters out rows to show. Examples: ${AGE} > 20 or ${WEIGHT / 2) > 100 ${SEVERITY} == ''Medium'' ${RACE}.endsWith(''sian'') |
+| Filter | string | Formula that filters out rows to show. Examples: `${AGE}` > 20 or `${WEIGHT / 2) > 100 ${SEVERITY}` == ''Medium'' `${RACE}`.endsWith(''sian'') |
 | Table | string |  |
 | **Columns** | | |
 | Show Column Labels | boolean |  |

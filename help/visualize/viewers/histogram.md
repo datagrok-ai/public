@@ -32,7 +32,7 @@ General:
 | **Data** | | |
 | Show Filtered Out Rows | boolean | Whether the filtered out rows should be shown with the semi-transparent color See also *Filtered Out Color* |
 | Filtering Enabled | boolean | Allows to filter table using the range slider on the bottom. |
-| Filter | string | Formula that filters out rows to show. Examples: ${AGE} > 20 or ${WEIGHT / 2) > 100 ${SEVERITY} == ''Medium'' ${RACE}.endsWith(''sian'') |
+| Filter | string | Formula that filters out rows to show. Examples: `${AGE}` > 20 or `${WEIGHT / 2) > 100 ${SEVERITY}` == ''Medium'' `${RACE}`.endsWith(''sian'') |
 | Table | string |  |
 | **Value** | | |
 | Value Column Name | string | A numerical column used to calculate the distribution of values. |

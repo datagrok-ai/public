@@ -795,6 +795,8 @@ export interface IDensityPlotSettings {
 
   backColor: number;
 
+  viewport: string;
+
   /// Determines the rows shown on the plot.
   rowSource: keyof typeof RowSet;
 
@@ -1437,6 +1439,8 @@ export interface IHistogramSettings {
 
   showCharts: boolean;
 
+  viewport: string;
+
   marginLeft: number;
 
   marginTop: number;
@@ -1783,6 +1787,8 @@ export interface ILineChartSettings {
   outerChartMarginRight: number;
 
   outerChartMarginBottom: number;
+
+  viewport: string;
 
   formulaLines: string;
 
@@ -3540,6 +3546,8 @@ export interface ITrellisPlotSettings {
   autoLayout: boolean;
 
   backColor: number;
+
+  viewport: string;
 
   legendVisibility: keyof typeof VisibilityMode;
 

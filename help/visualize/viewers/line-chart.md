@@ -62,7 +62,7 @@ Line chart supports Statistical Process Control (SPC) features out of the box, i
 | Multi Axis | boolean | When true, multiple *Y Columns* charts get rendered on top of each other, otherwise they are stacked |
 | Whiskers Type | string | Marker type for showing the distribution of the aggregated values when multiple values have the same X value |
 | Aggr Type | string |  |
-| Filter | string | Formula that filters out rows to show. Examples: ${AGE} > 20 or ${WEIGHT / 2) > 100 ${SEVERITY} == ''Medium'' ${RACE}.endsWith(''sian'') |
+| Filter | string | Formula that filters out rows to show. Examples: `${AGE}` > 20 or `${WEIGHT / 2) > 100 ${SEVERITY}` == ''Medium'' `${RACE}`.endsWith(''sian'') |
 | Table | string |  |
 | **General** | | |
 | Pack Categories | boolean |  |

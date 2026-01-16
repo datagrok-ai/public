@@ -67,7 +67,7 @@ Controls:
 | Pie Sort Type | string |  |
 | Pie Sort Order | string |  |
 | Include Nulls | boolean |  |
-| Filter | string | Formula that filters out rows to show. Examples: ${AGE} > 20 or ${WEIGHT / 2) > 100 ${SEVERITY} == ''Medium'' ${RACE}.endsWith(''sian'') |
+| Filter | string | Formula that filters out rows to show. Examples: `${AGE}` > 20 or `${WEIGHT / 2) > 100 ${SEVERITY}` == ''Medium'' `${RACE}`.endsWith(''sian'') |
 | Table | string |  |
 | **Style** | | |
 | Label Position | string |  |

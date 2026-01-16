@@ -38,7 +38,7 @@ General:
 | **Data** | | |
 | Show Filtered Out Lines | boolean | Whether the filtered out values are shown. See also *Filtered Out Line Color* |
 | Transformation | string |  |
-| Filter | string | Formula that filters out rows to show. Examples: ${AGE} > 20 or ${WEIGHT / 2) > 100 ${SEVERITY} == ''Medium'' ${RACE}.endsWith(''sian'') |
+| Filter | string | Formula that filters out rows to show. Examples: `${AGE}` > 20 or `${WEIGHT / 2) > 100 ${SEVERITY}` == ''Medium'' `${RACE}`.endsWith(''sian'') |
 | Table | string |  |
 | **Value** | | |
 | Column Names | list | Columns to use |

@@ -210,7 +210,7 @@ Youtube")](https://www.youtube.com/watch?v=7MBXWzdC0-I&t=214s)
 | Show Filtered Out Points | boolean | When true, filtered out points are rendered using *Filtered Out Rows Color*. |
 | Axes Follow Filter | boolean | When true, scatter plot will zoom to an area defined by the range filters for X and Y columns, even if *Zoom And Filter* property is not set to Zoom by Filter. |
 | Zoom And Filter | string | Determines the relationship between table filter and scatter plot area: * No action: they are disconnected * Filter by zoom: scatter plot acts as a filter; as you zoom in, points get filtered out * Zoom by filter: scatter plot focuses on the filtered points as the filter changes * Pack and zoom by filter: removes filtered out categories and focuses on the filtered points as the filter changes. |
-| Filter | string | Formula that filters out rows to show. Examples: ${AGE} > 20 or ${WEIGHT / 2) > 100 ${SEVERITY} == ''Medium'' ${RACE}.endsWith(''sian'') |
+| Filter | string | Formula that filters out rows to show. Examples: `${AGE}` > 20 or `${WEIGHT / 2) > 100 ${SEVERITY}` == ''Medium'' `${RACE}`.endsWith(''sian'') |
 | Table | string |  |
 | **X** | | |
 | X Column Name | string | A column to use on the X axis. Could be numerical or categorical. |
