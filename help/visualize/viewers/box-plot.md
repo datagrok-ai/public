@@ -158,5 +158,6 @@ See also:
 * [Viewers](../viewers/viewers.md)
 * [Table View](../table-view-1.md)
 * [JS API: Box plot](https://public.datagrok.ai/js/samples/ui/viewers/types/box-plot)
-* [Wikipedia: Welch's t-test](https://en.wikipedia.org/wiki/We
+* [Wikipedia: Welch's t-test](https://en.wikipedia.org/wiki/Welch%27s_t-test)
+* [Community: Visualization-related updates](https://community.datagrok.ai/t/visualization-related-updates/521)
 

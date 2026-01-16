@@ -54,17 +54,6 @@ example, you can:
 | Add node to selection           | Shift+click the node|
 | Toggle node selection           | Ctrl+click the node |
 
-## Videos
-
-[![Tree Map](../../uploads/youtube/visualizations2.png "Open on Youtube")](https://www.youtube.com/watch?v=7MBXWzdC0-I&t=2544s)
-
-## See also
-
-* [Viewers](../viewers/viewers.md)
-* [Table view](../table-view-1.md)
-* [JS API: Tree map](https://public.datagrok.ai/js/samples/ui/viewers/types/tree-map)
-* [Community: Visualization-related updates](https://community.datagrok.ai/t/visualization-related-updates/521)
-
 ## Properties
 
 | Property | Type | Description |
@@ -98,3 +87,13 @@ example, you can:
 | **Description** | | |
 | Show Title | boolean |  |
 
+## Videos
+
+[![Tree Map](../../uploads/youtube/visualizations2.png "Open on Youtube")](https://www.youtube.com/watch?v=7MBXWzdC0-I&t=2544s)
+
+## See also
+
+* [Viewers](../viewers/viewers.md)
+* [Table view](../table-view-1.md)
+* [JS API: Tree map](https://public.datagrok.ai/js/samples/ui/viewers/types/tree-map)
+* [Community: Visualization-related updates](https://community.datagrok.ai/t/visualization-related-updates/521)

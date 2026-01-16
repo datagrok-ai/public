@@ -69,5 +69,5 @@ See also:
 
 * [Tile viewer](tile-viewer.md)
 * [JS API: Form](https://public.datagrok.ai/js/samples/ui/viewers/types/form)
-* [Community: Visualization-related updates]
+* [Community: Visualization-related updates](https://community.datagrok.ai/t/visualization-related-updates/521)
 

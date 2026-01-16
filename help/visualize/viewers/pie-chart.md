@@ -81,5 +81,5 @@ See also:
 * [Column Selectors](column-selectors.md)
 * [Viewers](../viewers/viewers.md)
 * [Table view](../table-view-1.md)
-* [JS API: Pie chart](https://public.datagrok.ai/js/samples/ui/
-
+* [JS API: Pie chart](https://public.datagrok.ai/js/samples/ui/viewers/types/pie-chart)
+* [Community: Visualization-related updates](https://community.datagrok.ai/t/visualization-related-updates/521)

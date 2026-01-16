@@ -48,5 +48,4 @@ See also:
 
 * [Form](form.md)
 * [JS API: Tile viewer](https://public.datagrok.ai/js/samples/ui/viewers/types/tile-viewer)
-* [Community: Visualization-related updates](https://community.datagrok.ai/t/visuali
-
+* [Community: Visualization-related updates](https://community.datagrok.ai/t/visualization-related-updates/521)

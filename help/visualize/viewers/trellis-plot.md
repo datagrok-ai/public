@@ -89,5 +89,5 @@ See also:
 * [Viewers](viewers.md)
 * [Table view](../table-view-1.md)
 * [R-Group analysis](../../datagrok/solutions/domains/chem/chem.md#r-groups-analysis)
-* [JS AP
-
+* [JS API: Trellis plot](https://public.datagrok.ai/js/samples/ui/viewers/types/trellis-plot)
+* [Community: Visualization-related updates](https://community.datagrok.ai/t/visualization-related-updates/521)
