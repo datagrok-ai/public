@@ -176,6 +176,16 @@ export class Pmpo {
     this.predictionName = df.columns.getUnusedName(SCORES_TITLE);
   };
 
+  /** Sets the ribbon panels in the table view (removes the first panel) */
+  private setRibbons(): void {
+    const ribPanel = this.view.getRibbonPanels();
+
+    if (ribPanel.length < 1)
+      return;
+
+    this.view.setRibbonPanels(ribPanel.slice(1));
+  }
+
   /** Updates the statistics grid viewer with the given statistics table and selected descriptors */
   private updateStatisticsGrid(table: DG.DataFrame, descriptorNames: string[], selectedByPvalue: string[], selectedByCorr: string[]): void {
     const grid = this.statGrid;
@@ -479,6 +489,8 @@ export class Pmpo {
       throw new Error('Failed to train pMPO: missing a grid in the table view.');
 
     dockMng.dock(this.statGrid, DG.DOCK_TYPE.DOWN, gridNode, undefined, 0.5);
+
+    this.setRibbons();
   } // runTrainingApp
 
   /** Creates and returns the input form for pMPO model training */
