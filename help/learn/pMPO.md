@@ -39,7 +39,7 @@ Construct a pMPO model from your labeled dataset of pre-computed molecular descr
 To apply the saved pMPO model:
 
 1. Open the table.
-2. Navigate to **Top Menu > Chem > Calculate > Apply pMPO...**. A dialog opens.
+2. Navigate to **Top Menu > Chem > Calculate > MPO Score...**. A dialog opens.
 3. Select the desired model from the **Template** dropdown and click **OK**. The scores are calculated and added to the table in a new column.
 
 ![pMPO apply](pmpo-apply.gif)
