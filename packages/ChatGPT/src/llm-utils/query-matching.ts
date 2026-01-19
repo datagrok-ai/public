@@ -3,11 +3,12 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {ChatGPTPromptEngine, GeminiPromptEngine, PromptEngine} from '../prompt-engine/prompt-engine';
-import {modelName} from '../package';
 import {_package} from '../package';
 import {dartLike, fireAIAbortEvent} from '../utils';
-import {AIPanelFuncs, ModelType} from './panel';
+import {AIPanelFuncs} from './panel';
 import {generateAISqlQueryWithTools} from './sql-tools';
+import {ModelType} from './openAI-client';
+import OpenAI from 'openai';
 
 
 /// Prompt API: https://developer.chrome.com/docs/ai/prompt-api
@@ -154,7 +155,7 @@ Analyze the user request and return a JSON object with:
       engine = GeminiPromptEngine.getInstance(geminiDownloadMonitor);
     } else {
       _package.logger.info('Using GPT engine for fuzzy matching.');
-      engine = ChatGPTPromptEngine.getInstance(modelName);
+      engine = ChatGPTPromptEngine.getInstance(ModelType.Fast);
     }
 
     const responseText = await engine.generate(userPrompt, systemPrompt, schema);
@@ -271,7 +272,7 @@ function runQueryAIprompt(userPrompt: string, connection: DG.DataConnection, tvW
   };
 
 
-  const dummyAIPanelFuncs: AIPanelFuncs = {
+  const dummyAIPanelFuncs: AIPanelFuncs<OpenAI.Responses.ResponseInputItem> = {
     addUserMessage: (_aiMsg: any, _msg: string) => {},
     addAIMessage: (_aiMsg: any, _title: string, _msg: string) => {},
     addEngineMessage: (_aiMsg: any) => {},

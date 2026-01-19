@@ -8,7 +8,7 @@ import {ChatGPTPromptEngine} from './prompt-engine/prompt-engine';
 import {findBestMatchingQuery, tableQueriesFunctionsSearchLlm} from './llm-utils/query-matching';
 import {askWiki, setupAIQueryEditorUI, setupScriptsAIPanelUI, setupSearchUI, setupTableViewAIPanelUI, smartExecution} from './llm-utils/ui';
 import {Plan} from './prompt-engine/interfaces';
-import {OpenAIClient} from './llm-utils/openAI-client';
+import {initModelTypeNames, ModelType, OpenAIClient} from './llm-utils/openAI-client';
 import {LLMCredsManager} from './llm-utils/creds';
 import {CombinedAISearchAssistant} from './llm-utils/combined-search';
 import {JsonSchema} from './prompt-engine/interfaces';
@@ -19,11 +19,11 @@ import {chemblIndex} from './llm-utils/indexes/chembl-index';
 export * from './package.g';
 export const _package = new DG.Package();
 
-export const modelName: string = 'gpt-4o-mini';
 
 export class PackageFunctions {
   @grok.decorators.init()
   static async init() {
+    initModelTypeNames();
     LLMCredsManager.init(_package);
     setupSearchUI();
     setupTableViewAIPanelUI();
@@ -96,7 +96,7 @@ export class PackageFunctions {
  }, name: 'Execute',
  description: 'Plans and executes function steps to achieve needed results', result: {type: 'widget', name: 'result'}})
   static async smartChainExecutionProvider(@grok.decorators.param({type: 'string'})prompt: string): Promise<DG.Widget | null> {
-    return await smartExecution(prompt, modelName);
+    return await smartExecution(prompt, ModelType.Fast);
   }
 
   @grok.decorators.func({meta: {
@@ -136,7 +136,7 @@ export class PackageFunctions {
   ): Promise<string> {
     const client = OpenAIClient.getInstance();
     // this is used only here to provide caching
-    return await client.generalPrompt(modelName, 'You are a helpful assistant.', question);
+    return await client.generalPrompt(ModelType.Fast, 'You are a helpful assistant.', question);
   }
 
   @grok.decorators.func({
@@ -146,7 +146,7 @@ export class PackageFunctions {
     }
   })
   static async getExecutionPlan(userGoal: string): Promise<string> {
-    const gptEngine = ChatGPTPromptEngine.getInstance(modelName);
+    const gptEngine = ChatGPTPromptEngine.getInstance(ModelType['Deep Research']);
     const gptAssistant = new ChatGptAssistant(gptEngine);
     const plan: Plan = await gptAssistant.plan(userGoal);
     // Cache only works with scalar values, so we serialize the plan to a string

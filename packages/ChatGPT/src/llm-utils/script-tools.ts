@@ -4,7 +4,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {AIPanelFuncs} from './panel';
 import {getAIAbortSubscription} from '../utils';
-import {OpenAIClient} from './openAI-client';
+import {ModelType, OpenAIClient} from './openAI-client';
 import {LLMCredsManager} from './creds';
 import type OpenAI from 'openai';
 
@@ -125,7 +125,7 @@ export async function generateDatagrokScript(
 
     // Function calling loop using Responses API
     let iterations = 0;
-    const maxIterations = 20; // Prevent infinite loops
+    let maxIterations = 20; // Prevent infinite loops
 
 
     while (iterations < maxIterations) {
@@ -138,11 +138,10 @@ export async function generateDatagrokScript(
 
       // Use Responses API instead of Chat Completions
       const response = await openai.responses.create({
-        model: 'gpt-5.1-codex-max',
+        model: ModelType.Coding,
         input,
         tools,
-        // temperature: 0.2, // not supported)))
-        reasoning: {effort: 'medium'},
+        ...(ModelType.Coding.startsWith('gpt-5') ? {reasoning: {effort: 'medium'}} : {}),
       });
 
       const outputs = response.output ?? [];
@@ -183,13 +182,19 @@ export async function generateDatagrokScript(
 
           // Clarification is a terminal action: ask the user and stop.
           if (functionName === 'ask_user_for_clarification')
-            throw new ClarificationNeededError();
+            return '';
         }
       }
 
       // If the model called tools, we must continue so it can consume tool outputs.
-      if (hadToolCalls)
+      if (hadToolCalls) {
+        if (iterations >= maxIterations && options.aiPanel) {
+          const cont = await options.aiPanel.addConfirmMessage('Maximum iterations reached. Do you want to continue generating the SQL query?');
+          if (cont)
+            maxIterations += 10; // reset max iterations to continue
+        }
         continue;
+      }
 
       const content = (response.output_text ?? '').trim();
       if (content.length === 0)
@@ -198,7 +203,7 @@ export async function generateDatagrokScript(
       if (content.startsWith('CLARIFICATION NEEDED:')) {
         const clarificationMsg = content.replace('CLARIFICATION NEEDED:', '').trim();
         options.aiPanel?.addUiMessage(clarificationMsg, false);
-        throw new ClarificationNeededError();
+        return '';
       }
 
       if (content.startsWith('REPLY ONLY:')) {
