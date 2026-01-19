@@ -38,7 +38,7 @@ export class MpoProfileEditor {
 
     if (this.design) {
       minInput = ui.input.float('', {
-        value: prop.min ?? 0,
+        value: prop?.min ?? 0,
         //@ts-ignore
         format: '#0.000',
         showSlider: true,
@@ -53,7 +53,7 @@ export class MpoProfileEditor {
       // minInput.classList.add('statistics-mpo-min-input');
 
       maxInput = ui.input.float('', {
-        value: prop.max ?? 1,
+        value: prop?.max ?? 1,
         //@ts-ignore
         format: '#0.000',
         showSlider: true,
@@ -70,7 +70,7 @@ export class MpoProfileEditor {
 
     // Input for weight - updates the *copy* of the template data
     const weightInput = ui.input.float('', { // No label needed here
-      value: prop.weight, min: 0, max: 1,
+      value: prop?.weight, min: 0, max: 1,
       onValueChanged: (newValue) => { // Changed parameter name for clarity
         if (this.profile && this.profile.properties[propertyName]) {
           // Update the weight in the temporary template object
@@ -126,6 +126,7 @@ export class MpoProfileEditor {
             if (v === propertyName) return;
             this.profile.properties[v] = this.profile.properties[propertyName];
             delete this.profile.properties[propertyName];
+            propertyName = v;
           },
         }).root :
         null) :
@@ -157,7 +158,8 @@ export class MpoProfileEditor {
 
   insertRowAfter(afterRow: HTMLElement) {
     if (!this.profile) return;
-    const name = ``;
+    // const name = ``;
+    const name = `NewProperty${Object.keys(this.profile.properties).length + 1}`;
     const prop: PropertyDesirability = {weight: 1, min: 0, max: 1, line: []};
     this.profile.properties[name] = prop;
     afterRow.after(this.buildRow(name, prop));

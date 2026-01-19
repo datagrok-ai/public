@@ -8,7 +8,7 @@ import {
 } from '@datagrok-libraries/statistics/src/mpo/mpo';
 
 export type MpoProfileInfo = {
-  file: DG.FileInfo;
+  file?: DG.FileInfo;
   fileName: string;
   name: string;
   description: string;

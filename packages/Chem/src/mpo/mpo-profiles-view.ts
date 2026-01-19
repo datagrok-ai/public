@@ -91,12 +91,23 @@ export class MpoProfilesView {
       () => {
         ui.popupMenu()
           .item('Edit', () => this.openEditProfile(profile))
+          .item('Clone', () => this.openCloneProfile(profile))
           .item('Delete', () => this.confirmDelete(profile))
           .show();
       },
       'Actions',
     );
     return actionsButton;
+  }
+
+  private openCloneProfile(profile: MpoProfileInfo): void {
+    const clone = {...profile};
+    // TODO: We need to delete file from anywhere since we won't be able to stringify it
+    delete clone.file;
+    clone.name = `${profile.name} (Copy)`;
+
+    const view = new MpoProfileCreateView(clone, false);
+    grok.shell.v = grok.shell.addView(view.view);
   }
 
   private openProfile(profile: MpoProfileInfo): void {
