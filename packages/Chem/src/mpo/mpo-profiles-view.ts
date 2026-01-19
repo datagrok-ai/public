@@ -103,6 +103,9 @@ export class MpoProfilesView {
     const editor = new MpoProfileEditor();
     editor.setProfile(profile);
 
+    // TODO: Move to css styles
+    editor.root.style.pointerEvents = 'none';
+
     const panel = ui.accordion();
     panel.addTitle(ui.label('MPO Profile'));
     panel.root.append(editor.root, this.buildEditRibbon(profile));

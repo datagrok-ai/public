@@ -158,7 +158,7 @@ export class MpoProfileEditor {
   insertRowAfter(afterRow: HTMLElement) {
     if (!this.profile) return;
     const name = ``;
-    const prop: PropertyDesirability = {weight: 0.5, min: 0, max: 1, line: []};
+    const prop: PropertyDesirability = {weight: 1, min: 0, max: 1, line: []};
     this.profile.properties[name] = prop;
     afterRow.after(this.buildRow(name, prop));
   }

@@ -24,6 +24,7 @@ export class MpoDesirabilityLineEditor {
 
   private konvaLine?: Konva.Line;
   private pointsGroup?: Konva.Group;
+  private barValues?: number[];
 
   constructor(prop: PropertyDesirability, width: number, height: number) {
     this._prop = prop;
@@ -50,8 +51,8 @@ export class MpoDesirabilityLineEditor {
       this.layer = new Konva.Layer();
       this.stage.add(this.layer);
 
-      const minX = prop.min ?? Math.min(...prop.line.map((p) => p[0]));
-      const maxX = prop.max ?? Math.max(...prop.line.map((p) => p[0]));
+      const minX = this.getMinX();
+      const maxX = this.getMaxX();
 
       // --- Draw Axes ---
       const xAxis = new Konva.Line({
@@ -114,8 +115,8 @@ export class MpoDesirabilityLineEditor {
 
       // Function to redraw everything based on prop.line
       this.redrawFn = (notify: boolean = true) => {
-        const minX = this._prop.min ?? Math.min(...prop.line.map((p) => p[0]));
-        const maxX = this._prop.max ?? Math.max(...prop.line.map((p) => p[0]));
+        const minX = this.getMinX();
+        const maxX = this.getMaxX();
 
         this.pointsGroup!.destroyChildren(); // Clear old points
         const konvaPoints: number[] = [];
@@ -228,25 +229,31 @@ export class MpoDesirabilityLineEditor {
       };
 
       // --- Left-click to Add Point ---
-      this.stage.on('click tap', (evt: Konva.KonvaEventObject<PointerEvent>) => {
-        // Ignore clicks on existing points (circles) or non-left clicks
+      this.stage.on('click tap', (evt) => {
         if (evt.target instanceof Konva.Circle || evt.evt.button !== 0) return;
 
         const pos = this.stage?.getPointerPosition();
         if (!pos) return;
 
-        // Ensure click is within the plot area boundaries
-        if (pos.x < EDITOR_PADDING.left || pos.x > width - EDITOR_PADDING.right ||
-          pos.y < EDITOR_PADDING.top || pos.y > height - EDITOR_PADDING.bottom)
-          return;
+        const minX = this.getMinX();
+        const maxX = this.getMaxX();
 
-        const dataCoords = toDataCoords(pos.x, pos.y, minX, maxX, width, height);
-        // Add the new point
-        prop.line.push([dataCoords.x, dataCoords.y]);
+        if (
+          pos.x < EDITOR_PADDING.left || pos.x > this.stage!.width() - EDITOR_PADDING.right ||
+    pos.y < EDITOR_PADDING.top || pos.y > this.stage!.height() - EDITOR_PADDING.bottom
+        ) return;
 
-        // No need to sort here, redraw() handles sorting
+        const dataCoords = toDataCoords(
+          pos.x, pos.y,
+          minX, maxX,
+          this.stage!.width(),
+          this.stage!.height(),
+        );
+
+        this._prop.line.push([dataCoords.x, dataCoords.y]);
         this.redrawFn?.();
       });
+
 
       // Change cursor when over the stage plot area for adding points
       this.stage.on('mouseenter', (evt: Konva.KonvaEventObject<MouseEvent>) => {
@@ -307,14 +314,22 @@ export class MpoDesirabilityLineEditor {
     );
   }
 
+  private getMinX(): number {
+    return this._prop.min ?? Math.min(...this._prop.line.map((p) => p[0]));
+  }
+
+  private getMaxX(): number {
+    return this._prop.max ?? Math.max(...this._prop.line.map((p) => p[0]));
+  }
+
   redrawAll(notify: boolean = true): void {
     if (!this.stage || !this.layer || !this.redrawFn)
       return;
 
     const width = this.stage.width();
     const height = this.stage.height();
-    const minX = this._prop.min ?? Math.min(...this._prop.line.map((p) => p[0]));
-    const maxX = this._prop.max ?? Math.max(...this._prop.line.map((p) => p[0]));
+    const minX = this.getMinX();
+    const maxX = this.getMaxX();
 
     this.layer.destroyChildren();
 
@@ -324,8 +339,8 @@ export class MpoDesirabilityLineEditor {
 
     this.redrawFn(notify);
 
-    if (this.pendingBarValues)
-      this.drawBars(this.pendingBarValues);
+    if (this.barValues)
+      this.drawBars();
   }
 
   drawBars(values?: number[]) {
@@ -333,7 +348,10 @@ export class MpoDesirabilityLineEditor {
       return;
     this.barsLayer.destroyChildren();
 
-    if (!values || values.length === 0)
+    if (values)
+      this.barValues = values;
+
+    if (!this.barValues || this.barValues.length === 0)
       return;
 
     const stage = this.barsLayer.getStage();
@@ -345,8 +363,8 @@ export class MpoDesirabilityLineEditor {
     const width = stage.width();
     const height = stage.height();
 
-    const minX = this._prop.min ?? Math.min(...this._prop.line.map((p) => p[0]));
-    const maxX = this._prop.max ?? Math.max(...this._prop.line.map((p) => p[0]));
+    const minX = this.getMinX();
+    const maxX = this.getMaxX();
 
     const numBins = 20;
     const plotWidth = width - EDITOR_PADDING.left - EDITOR_PADDING.right;
@@ -354,7 +372,7 @@ export class MpoDesirabilityLineEditor {
     const binWidth = (maxX - minX) / numBins;
     const bins = new Array(numBins).fill(0);
 
-    values.forEach((v) => {
+    (this.barValues ?? []).forEach((v) => {
       const idx = Math.min(Math.floor((v - minX) / binWidth), numBins - 1);
       bins[idx]++;
     });
