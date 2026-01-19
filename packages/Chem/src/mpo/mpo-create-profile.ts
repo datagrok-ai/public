@@ -13,6 +13,8 @@ const METHOD_PROBABILISTIC = 'Probabilistic';
 
 export class MpoProfileCreateView {
   readonly view: DG.View;
+  readonly showMethod: boolean;
+
   df: DG.DataFrame | null = null;
   profile: DesirabilityProfile;
   editor: MpoProfileEditor;
@@ -26,7 +28,7 @@ export class MpoProfileCreateView {
   constructor(existingProfile?: DesirabilityProfile, showMethod: boolean = true) {
     this.view = DG.View.create();
     this.view.name = existingProfile ? 'Edit MPO Profile' : 'Create MPO Profile';
-
+    this.showMethod = showMethod;
     this.profile = existingProfile ?? this.createDefaultProfile();
 
     this.editor = new MpoProfileEditor(undefined, true);
@@ -98,10 +100,15 @@ export class MpoProfileCreateView {
       this.clearPreviousLayout();
       this.ensureProfile();
 
-      if (this.methodInput?.value === METHOD_MANUAL && this.df) {
-        this.editor.dataFrame = this.df;
+      if (this.methodInput?.value === METHOD_MANUAL || !this.showMethod) {
         this.editor.design = true;
-        this.createProfileForDf();
+        this.editor.dataFrame = this.df ?? null as any;
+
+        if (this.showMethod) {
+          this.profile = this.df ?
+            this.createProfileForDf() :
+            this.createDefaultProfile();
+        }
       }
 
       this.editor.setProfile(this.profile);
