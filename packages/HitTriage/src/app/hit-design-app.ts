@@ -727,8 +727,18 @@ export class HitDesignApp<T extends HitDesignTemplate = HitDesignTemplate> exten
       vidGridCol.editable = false;
     // set the semType of vidCol
     const vidCol = this.dataFrame!.col(ViDColName);
-    if (vidCol)
+    if (vidCol) {
       vidCol.semType = ViDSemType;
+      vidCol.valueComparer = (a: string | null, b: string | null) => {
+        if (a === b) return 0;
+        if (a === null) return -1;
+        if (b === null) return 1;
+        // column is in string format of V######, but at some point it might go beyond 1 million, so remove the 'V' and compare as numbers
+        const aNum = parseInt(a.substring(1));
+        const bNum = parseInt(b.substring(1));
+        return aNum - bNum;
+      };
+    }
 
     subs.push(this.dataFrame!.onRowsAdded.pipe(filter(() => !this.isJoining))
       .subscribe(() => { // TODO, insertion of rows in the middle
