@@ -3,7 +3,7 @@ import dayjs from 'dayjs';
 // import utc from 'dayjs/plugin/utc';
 // dayjs.extend(utc);
 
-import {expect, expectArray, expectFloat, expectObject} from '@datagrok-libraries/utils/src/test';
+import {expect, expectArray, expectFloat, expectObject} from '@datagrok-libraries/test/src/test';
 
 
 export async function check(cases: {[expression: string]: any}): Promise<void> {

@@ -1,5 +1,5 @@
 import * as grok from 'datagrok-api/grok';
-import {category, expect, expectObject, test} from '@datagrok-libraries/utils/src/test';
+import {category, expect, expectObject, test} from '@datagrok-libraries/test/src/test';
 
 category('Packages: Docker', () => {
   const containerName: string = 'Apitests-docker-test1';

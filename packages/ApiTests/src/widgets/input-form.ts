@@ -1,6 +1,6 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
-import {before, category, expect, test, assure, expectArray, expectTable} from '@datagrok-libraries/utils/src/test';
+import {before, category, expect, test, assure, expectArray, expectTable} from '@datagrok-libraries/test/src/test';
 import {take} from 'rxjs/operators';
 
 const createForm = async (withNullable: boolean = false) => {

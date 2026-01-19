@@ -3,8 +3,8 @@
   "friendlyName": "API Tests",
   "version": "1.10.1",
   "author": {
-    "name": "Savenko Stanislav",
-    "email": "ssavenko@datagrok.ai"
+    "name": "Alexander Paramonov",
+    "email": "aparamonov@datagrok.ai"
   },
   "servicePackage": true,
   "description": "Automated tests for the [Datagrok JS API](https://datagrok.ai/js-api)",
@@ -14,19 +14,22 @@
     "directory": "packages/ApiTests"
   },
   "dependencies": {
-    "@datagrok-libraries/utils": "../../libraries/utils",
+    "@datagrok-libraries/utils": "^4.6.14",
+    "@datagrok-libraries/test": "^1.0.0",
     "cash-dom": "^8.1.1",
     "datagrok-api": "../../js-api",
     "dayjs": "^1.11.10",
     "rxjs": "^6.6.7",
     "wu": "^2.1.0"
   },
+  "overrides": {
+    "datagrok-api": "$datagrok-api"
+  },
   "devDependencies": {
     "@types/wu": "^2.1.42",
     "@types/yargs": "^17.0.34",
     "@typescript-eslint/eslint-plugin": "^5.26.0",
     "@typescript-eslint/parser": "^5.26.0",
-    "datagrok-tools": "^4.14.55",
     "eslint": "^8.16.0",
     "eslint-config-google": "^0.14.0",
     "root-require": "^0.3.1",
