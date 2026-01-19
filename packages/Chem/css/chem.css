@@ -998,29 +998,6 @@
   margin-left: 0 !important;
 }
 
-.chem-mpo-actions-button {
-  background: transparent;
-  border: none;
-  padding: 4px 6px;
-  border-radius: 4px;
-  font-size: 16px;
-  line-height: 1;
-  cursor: pointer;
-  color: #6b7280;
-  opacity: 0;
-  transition: opacity 120ms ease, background-color 120ms ease;
-}
-
-.chem-mpo-profiles-table tr:hover .chem-mpo-actions-button,
-.chem-mpo-actions-button:focus-visible {
-  opacity: 1;
-}
-
-.chem-mpo-actions-button:hover {
-  background-color: rgba(0, 0, 0, 0.06);
-  color: #111827;
-}
-
 .chem-mpo-dialog-manage-button {
   margin: inherit;
   margin-top: 10px;

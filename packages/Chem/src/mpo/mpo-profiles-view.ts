@@ -74,11 +74,11 @@ export class MpoProfilesView {
     const table = ui.table(
       this.profiles,
       (profile) => [
-        ui.link(profile.name, () => this.openProfile(profile)),
         this.buildActionsButton(profile),
+        ui.link(profile.name, () => this.openProfile(profile)),
         ui.divText(profile.description, 'chem-mpo-description'),
       ],
-      ['Name', '', 'Description'],
+      ['', 'Name', 'Description'],
     );
 
     table.classList.add('chem-mpo-profiles-table');
@@ -87,7 +87,7 @@ export class MpoProfilesView {
 
   private buildActionsButton(profile: MpoProfileInfo): HTMLElement {
     const actionsButton = ui.button(
-      '⋯',
+      '⋮',
       () => {
         ui.popupMenu()
           .item('Edit', () => this.openEditProfile(profile))
@@ -96,7 +96,6 @@ export class MpoProfilesView {
       },
       'Actions',
     );
-    actionsButton.classList.add('chem-mpo-actions-button');
     return actionsButton;
   }
 
