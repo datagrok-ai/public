@@ -679,6 +679,8 @@ You can save the enrichment configuration by giving it a name, and clicking "SAV
 you would see this next to the "Enrich..." button, allowing you to retrieve the necessary data
 in one click.
 
+You can also [publish enrichments](../../develop/how-to/packages/data-enrichments.md) with plugins.
+
 ![](img/db-data-enrichment.gif)
 
 ## Database explorer
