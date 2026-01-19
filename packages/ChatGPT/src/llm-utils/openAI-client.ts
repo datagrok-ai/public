@@ -22,6 +22,11 @@ export function initModelTypeNames() {
     ModelType['Deep Research'] = _package.settings.defaultDeepResearchModel as ChatModel;
   if (_package.settings.defaultCodingModel)
     ModelType.Coding = _package.settings.defaultCodingModel as ChatModel;
+  if (grok.ai.config?.modelToDeployment) {
+    ModelType.Fast = grok.ai.config.modelToDeployment[ModelType.Fast] as ChatModel ?? ModelType.Fast;
+    ModelType['Deep Research'] = grok.ai.config.modelToDeployment[ModelType['Deep Research']] as ChatModel ?? ModelType['Deep Research'];
+    ModelType.Coding = grok.ai.config.modelToDeployment[ModelType.Coding] as ChatModel ?? ModelType.Coding;
+  }
 }
 
 export class OpenAIClient {

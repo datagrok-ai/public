@@ -583,6 +583,8 @@ function validateScriptHeader(script: string, language: DG.ScriptingLanguage): s
   let hasLanguage = false;
   let hasOutput = false;
   let iter = 0;
+  if (lines[0]?.startsWith('```'))
+    return 'Script should not be enclosed in markdown code fences, there SHOULD BE NO ``` OR ANY MARKDOWN!!! CODE ONLY!!!';
   for (const line of lines.slice(0, 20)) { // Check first 20 lines
     const trimmed = line.trim();
     if (trimmed.startsWith(`${commentPrefix}name:`) && iter === 0) hasName = true;
