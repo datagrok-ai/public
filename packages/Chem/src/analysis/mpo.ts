@@ -1,66 +1,109 @@
-/* eslint-disable guard-for-in */
-/* eslint-disable max-len */
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {DesirabilityProfile, PropertyDesirability, WeightedAggregation, WEIGHTED_AGGREGATIONS} from '@datagrok-libraries/statistics/src/mpo/mpo';
-import {MpoProfileEditor} from '@datagrok-libraries/statistics/src/mpo/mpo-profile-editor';
+import {
+  DesirabilityProfile,
+  WeightedAggregation,
+  WEIGHTED_AGGREGATIONS,
+} from '@datagrok-libraries/statistics/src/mpo/mpo';
+import {MPO_SCORE_CHANGED_EVENT, MpoProfileEditor} from '@datagrok-libraries/statistics/src/mpo/mpo-profile-editor';
 
-const MPO_TEMPLATE_PATH = 'System:AppData/Chem/mpo';
+import {MpoContextPanel} from '../mpo/mpo-context-panel';
+import {PackageFunctions} from '../package';
+import {computeMpo, MPO_TEMPLATE_PATH, loadMpoProfiles, MpoProfileInfo} from '../mpo/utils';
 
 export class MpoProfileDialog {
   dataFrame: DG.DataFrame;
   mpoProfileEditor: MpoProfileEditor;
   aggregationInput: DG.ChoiceInput<WeightedAggregation | null>;
   profileInput: DG.ChoiceInput<string | null>;
+  designModeInput: DG.InputBase<boolean>;
   addParetoFront: DG.InputBase<boolean>;
-  mpoFiles: DG.FileInfo[] = [];
+  mpoProfiles: MpoProfileInfo[] = [];
   currentProfile: DesirabilityProfile | null = null;
   currentProfileFileName: string | null = null;
+  manageButton: HTMLElement;
+
+  private dialog?: DG.Dialog<{}>;
+  private mpoContextPanel?: MpoContextPanel;
 
   constructor(dataFrame?: DG.DataFrame) {
     this.dataFrame = dataFrame ?? grok.shell.t;
     this.mpoProfileEditor = new MpoProfileEditor(this.dataFrame);
 
-    this.aggregationInput = ui.input.choice('Aggregation', {items: [...WEIGHTED_AGGREGATIONS], nullable: false});
+    this.aggregationInput = ui.input.choice('Aggregation', {
+      items: [...WEIGHTED_AGGREGATIONS],
+      nullable: false,
+      onValueChanged: () => grok.events.fireCustomEvent(MPO_SCORE_CHANGED_EVENT, {}),
+    });
 
     this.profileInput = ui.input.choice('Profile', {
-      onValueChanged: async (value) => await this.loadProfile(value),
       nullable: false,
+      onValueChanged: async (value) => await this.loadProfile(value),
+    });
+
+    this.designModeInput = ui.input.bool('Design mode', {
+      value: false,
+      onValueChanged: (v) => this.mpoProfileEditor.setDesignMode(!!v),
     });
 
     this.addParetoFront = ui.input.bool('Pareto front');
+
+    this.manageButton = ui.button('Manage...', async () => {
+      grok.shell.addView(await PackageFunctions.mpoProfilesApp());
+      this.dialog?.close();
+    });
+    this.manageButton.classList.add('chem-mpo-dialog-manage-button');
   }
 
   async init(): Promise<void> {
-    this.mpoFiles = await grok.dapi.files.list(MPO_TEMPLATE_PATH);
-    const defaultProfile = this.mpoFiles.length > 0 ? this.mpoFiles[0].fileName : null;
+    this.mpoProfiles = await loadMpoProfiles();
+    const defaultProfile = this.mpoProfiles.length > 0 ? this.mpoProfiles[0].fileName : null;
 
-    this.profileInput.items = this.mpoFiles.map((f) => f.fileName);
+    this.profileInput.items = this.mpoProfiles.map((p) => p.fileName);
     if (defaultProfile) {
       this.profileInput.value = defaultProfile;
       await this.loadProfile(defaultProfile);
     }
+
+    this.listenForProfileChanges();
+    this.mpoContextPanel = new MpoContextPanel(this.dataFrame);
+  }
+
+  private listenForProfileChanges(): void {
+    grok.events.onCustomEvent(MPO_SCORE_CHANGED_EVENT).subscribe(async () => {
+      if (this.currentProfile && this.mpoContextPanel) {
+        await this.mpoContextPanel.render(
+          this.currentProfile,
+          this.mpoProfileEditor.columnMapping,
+          this.aggregationInput.value ?? undefined,
+        );
+      }
+    });
   }
 
   private async loadProfile(fileName: string | null): Promise<void> {
-    if (!fileName) return;
-    this.currentProfileFileName = fileName;
-    const profileFile = this.mpoFiles.find((f) => f.fileName === fileName);
-    if (!profileFile) return;
+    if (!fileName)
+      return;
 
-    try {
-      const profileContent = await profileFile.readAsString();
-      this.currentProfile = JSON.parse(profileContent) as DesirabilityProfile;
-      this.mpoProfileEditor.setProfile(this.currentProfile);
-    } catch (e) {
-      grok.shell.error(`Failed to load profile '${fileName}': ${e instanceof Error ? e.message : e}`);
-    }
+    const profileInfo = this.mpoProfiles.find((p) => p.fileName === fileName);
+    if (!profileInfo)
+      return;
+
+    this.currentProfileFileName = fileName;
+    this.currentProfile = {
+      name: profileInfo.name,
+      description: profileInfo.description,
+      properties: profileInfo.properties,
+    };
+    this.mpoProfileEditor.setProfile(this.currentProfile);
   }
 
   private async saveProfile(): Promise<void> {
-    if (!this.currentProfileFileName || !this.currentProfile) return;
+    if (!this.currentProfileFileName || !this.currentProfile)
+      return;
+
     try {
       const updatedProfileString = JSON.stringify(this.currentProfile, null, 2);
       await grok.dapi.files.writeAsText(
@@ -69,20 +112,17 @@ export class MpoProfileDialog {
       );
       grok.shell.info(`Profile '${this.currentProfileFileName}' updated.`);
     } catch (e) {
-      grok.shell.error(`Failed to save profile '${this.currentProfileFileName}': ${e instanceof Error ? e.message : e}`);
+      grok.shell.error(
+        `Failed to save profile '${this.currentProfileFileName}': ${e instanceof Error ? e.message : e}`);
     }
   }
 
-  private addParetoFrontViewer(columnNames: string[]) {
+  private addParetoFrontViewer(columnNames: string[]): void {
     const view = grok.shell.getTableView(this.dataFrame.name);
     const paretoFrontViewer = DG.Viewer.fromType('Pareto front', this.dataFrame);
     view.addViewer(paretoFrontViewer);
 
-    /**
-     * Temporary workaround to ensure the Pareto front viewer applies the provided
-     * column names. The names are not applied immediately after the viewer
-     * is created (issue under investigation).
-    */
+    // Temporary workaround: set column names after viewer creation
     setTimeout(() => paretoFrontViewer.setOptions({
       minimizeColumnNames: [],
       maximizeColumnNames: columnNames,
@@ -91,23 +131,13 @@ export class MpoProfileDialog {
 
   private async runMpoCalculation(): Promise<void> {
     try {
-      const mapping = this.mpoProfileEditor.columnMapping;
+      const columnNames = await computeMpo(
+        this.dataFrame,
+        this.currentProfile!,
+        this.mpoProfileEditor.columnMapping,
+        this.aggregationInput.value!,
+      );
 
-      const mappedProperties: { [key: string]: PropertyDesirability } = {};
-      for (const [propName, prop] of Object.entries(this.currentProfile!.properties)) {
-        const columnName = mapping[propName] ?? propName;
-        mappedProperties[columnName] = prop;
-      }
-
-      const [func] = await DG.Func.find({name: 'mpoTransformFunction'});
-      const funcCall = await func.prepare({
-        df: this.dataFrame,
-        profileName: this.currentProfile?.name ?? 'MPO',
-        currentProperties: mappedProperties,
-        aggregation: this.aggregationInput.value,
-      }).call(undefined, undefined, {processed: false});
-
-      const columnNames: string[] = funcCall.getOutputParamValue();
       if (columnNames.length && this.addParetoFront.value)
         this.addParetoFrontViewer(columnNames);
     } catch (e) {
@@ -115,19 +145,30 @@ export class MpoProfileDialog {
     }
   }
 
-  getEditor(): HTMLElement {
+  private getProfileControls(): HTMLElement {
+    return ui.divH([this.profileInput.root, this.manageButton], {style: {gap: '10px'}});
+  }
+
+  private getMpoControls(): HTMLElement {
     return ui.divV([
-      this.profileInput.root,
       this.aggregationInput.root,
       this.mpoProfileEditor.root,
+      this.designModeInput.root,
       this.addParetoFront.root,
+    ]);
+  }
+
+  getEditor(): HTMLElement {
+    return ui.divV([
+      this.getProfileControls(),
+      this.getMpoControls(),
     ]);
   }
 
   async showDialog(): Promise<void> {
     await this.init();
 
-    ui.dialog('MPO Score')
+    this.dialog = ui.dialog('MPO Score')
       .add(this.getEditor())
       .onOK(async () => {
         await this.saveProfile();
