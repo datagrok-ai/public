@@ -31,10 +31,22 @@
   width: 60px;
 }
 
+.statistics-mpo-weight-view {
+  margin-top: 21px;
+}
+
+.statistics-mpo-weight-design {
+  margin-top: 0;
+}
+
 .statistics-mpo-control-buttons {
   gap: 10px;
   margin-left: 10px;
   color: var(--blue-1);
+}
+
+.statistics-mpo-range-input {
+  width: 70px;
 }
 
 .statistics-mpo-row {
@@ -43,6 +55,7 @@
   margin-bottom: 5px;
   min-height: 70px;
   flex-wrap: wrap;
+  gap: 5px;
 }
 
 .statistics-mpo-row > * {
