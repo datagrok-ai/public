@@ -52,7 +52,7 @@ Each file defines one enrichment:
 ### Fields
 
 | Field        | Description                                 |
-| ------------ |---------------------------------------------|
+|--------------|---------------------------------------------|
 | `name`       | Display name shown to users                 |
 | `connection` | Database connection nqName                  |
 | `keySchema`  | Schema of the key table                     |
