@@ -101,7 +101,7 @@ import {MpoDesirabilityLineEditor} from '@datagrok-libraries/statistics/src/mpo/
 
 import $ from 'cash-dom';
 import {MpoProfileCreateView} from './mpo/mpo-create-profile';
-import {MPO_TEMPLATE_PATH} from './mpo/utils';
+import {findSuitableProfiles, loadMpoProfiles, MPO_TEMPLATE_PATH} from './mpo/utils';
 
 export {getMCS};
 export * from './package.g';
@@ -2593,7 +2593,6 @@ export class PackageFunctions {
         JSON.parse(await grok.dapi.files.readAsText(`${MPO_TEMPLATE_PATH}/${profile.name}`)) as DesirabilityProfile;
       treeNode.item(content.name).onSelected.subscribe(() => {
         const editView = new MpoProfileCreateView(content, false);
-        // const v = grok.shell.addView(editView.view);
         grok.shell.addPreview(editView.view);
       });
     }
@@ -2613,30 +2612,11 @@ export class PackageFunctions {
     resultDiv.appendChild(loader);
 
     const dataFrame = semValue.cell.dataFrame;
-    const dfColumnNames = new Set(dataFrame.columns.names());
-
-    const files = await grok.dapi.files.list(MPO_TEMPLATE_PATH);
-
-    const suitableProfiles: {
-    file: DG.FileInfo,
-    profile: DesirabilityProfile,
-  }[] = [];
-
-    for (const file of files) {
-      try {
-        const profile = JSON.parse(await file.readAsString()) as DesirabilityProfile;
-        const hasIntersection = Object.keys(profile.properties ?? {})
-          .some((prop) => dfColumnNames.has(prop));
-
-        if (hasIntersection)
-          suitableProfiles.push({file, profile});
-      } catch {}
-    }
+    const profiles = await loadMpoProfiles();
+    const suitableProfiles = await findSuitableProfiles(dataFrame, profiles);
 
     if (suitableProfiles.length === 0) {
-      container.appendChild(
-        ui.divText('No suitable profiles available at the moment.'),
-      );
+      container.appendChild(ui.divText('No suitable profiles available at the moment.'));
       const createButton = ui.button('Create Profile', () => {
         const view = new MpoProfileCreateView();
         grok.shell.v = grok.shell.addPreview(view.view);
@@ -2646,82 +2626,9 @@ export class PackageFunctions {
       return DG.Widget.fromRoot(container);
     }
 
-    const calculateMpo = async () => {
-      if (!profileInput.value) return;
-
-      const selected = suitableProfiles
-        .find((p) => p.file.fileName === profileInput.value);
-      if (!selected) return;
-
-      const profileContent = selected.profile;
-      const columns: DG.Column[] = [];
-
-      for (const propertyName in profileContent.properties) {
-        const column = dataFrame.columns.byName(propertyName);
-        if (column) {
-          columns.push(column);
-          column.setTag(
-            'desirabilityTemplate',
-            JSON.stringify(profileContent.properties[propertyName]),
-          );
-        }
-      }
-
-      ui.empty(resultDiv);
-      resultDiv.appendChild(loader);
-
-      const score = await mpo(
-        dataFrame,
-        columns,
-        profileContent.name,
-        aggregationInput.value as WeightedAggregation,
-        false,
-      );
-
-      ui.empty(resultDiv);
-
-      const mpoValue = score.get(semValue.cell.rowIndex);
-      const valueHost = ui.divH(
-        [],
-        {style: {position: 'relative', alignItems: 'center'}},
-      );
-
-      // ➕ icon
-      const addColumnIcon = ui.iconFA(
-        'plus',
-        async () => {
-          const mpoCol = await mpo(
-            dataFrame,
-            columns,
-            profileContent.name,
-            aggregationInput.value as WeightedAggregation,
-          );
-        },
-        'Add MPO score as a column',
-      );
-
-      ui.tools.setHoverVisibility(valueHost, [addColumnIcon]);
-
-      $(addColumnIcon)
-        .css('color', '#2083d5')
-        .css('margin-right', '4px');
-
-      valueHost.appendChild(addColumnIcon);
-      valueHost.appendChild(
-        ui.divText(mpoValue != null ? mpoValue.toFixed(2) : 'N/A'),
-      );
-
-      const table = ui.tableFromMap({
-        'MPO Score': valueHost,
-      });
-
-      ui.empty(resultDiv);
-      resultDiv.appendChild(table);
-    };
-
     const profileInput = ui.input.choice('Profile', {
-      items: suitableProfiles.map((p) => p.file.fileName),
-      value: suitableProfiles[0].file.fileName,
+      items: suitableProfiles.map((p) => p.fileName),
+      value: suitableProfiles[0].fileName,
       onValueChanged: () => calculateMpo(),
     });
 
@@ -2731,9 +2638,67 @@ export class PackageFunctions {
       onValueChanged: () => calculateMpo(),
     });
 
-    container.appendChild(
-      ui.divV([profileInput.root, aggregationInput.root, resultDiv]),
-    );
+    async function calculateMpo() {
+      if (!profileInput.value)
+        return;
+
+      const selected = suitableProfiles.find((p) => p.fileName === profileInput.value);
+      if (!selected)
+        return;
+
+      ui.empty(resultDiv);
+      resultDiv.appendChild(loader);
+
+      const columns: DG.Column[] = [];
+
+      for (const propertyName in selected.properties) {
+        const column = dataFrame.columns.byName(propertyName);
+        if (column) {
+          columns.push(column);
+          column.setTag(
+            'desirabilityTemplate',
+            JSON.stringify(selected.properties[propertyName]),
+          );
+        }
+      }
+
+      const score = await mpo(
+        dataFrame,
+        columns,
+        selected.name,
+        aggregationInput.value as WeightedAggregation,
+        false,
+      );
+
+      ui.empty(resultDiv);
+
+      const mpoValue = score.get(semValue.cell.rowIndex);
+      const valueHost = ui.divH([], {style: {position: 'relative', alignItems: 'center'}});
+
+      const addColumnIcon = ui.iconFA(
+        'plus',
+        async () => {
+          await mpo(
+            dataFrame,
+            columns,
+            selected.name,
+            aggregationInput.value as WeightedAggregation,
+          );
+        },
+        'Add MPO score as a column',
+      );
+
+      ui.tools.setHoverVisibility(valueHost, [addColumnIcon]);
+      $(addColumnIcon).css('color', '#2083d5').css('margin-right', '4px');
+
+      valueHost.appendChild(addColumnIcon);
+      valueHost.appendChild(ui.divText(mpoValue != null ? mpoValue.toFixed(2) : 'N/A'));
+
+      const table = ui.tableFromMap({'MPO Score': valueHost});
+      resultDiv.appendChild(table);
+    }
+
+    container.appendChild(ui.divV([profileInput.root, aggregationInput.root, resultDiv]));
 
     await calculateMpo();
     return DG.Widget.fromRoot(container);

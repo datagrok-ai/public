@@ -100,10 +100,14 @@ export class MpoProfilesView {
     return actionsButton;
   }
 
+  private profileForEditing(profile: MpoProfileInfo): MpoProfileInfo {
+    const copy = {...profile};
+    delete (copy as any).file;
+    return copy;
+  }
+
   private openCloneProfile(profile: MpoProfileInfo): void {
-    const clone = {...profile};
-    // TODO: We need to delete file from anywhere since we won't be able to stringify it
-    delete clone.file;
+    const clone = this.profileForEditing(profile);
     clone.name = `${profile.name} (Copy)`;
 
     const view = new MpoProfileCreateView(clone, false);
@@ -113,8 +117,6 @@ export class MpoProfilesView {
   private openProfile(profile: MpoProfileInfo): void {
     const editor = new MpoProfileEditor();
     editor.setProfile(profile);
-
-    // TODO: Move to css styles
     editor.root.style.pointerEvents = 'none';
 
     const panel = ui.accordion();
@@ -133,7 +135,8 @@ export class MpoProfilesView {
   }
 
   private openEditProfile(profile: MpoProfileInfo): void {
-    const view = new MpoProfileCreateView(profile, false);
+    const editable = this.profileForEditing(profile);
+    const view = new MpoProfileCreateView(editable, false);
     grok.shell.v = grok.shell.addView(view.view);
   }
 

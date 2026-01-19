@@ -8,11 +8,11 @@ import {
 } from '@datagrok-libraries/statistics/src/mpo/mpo';
 
 export type MpoProfileInfo = {
-  file?: DG.FileInfo;
   fileName: string;
   name: string;
   description: string;
   properties: Record<string, PropertyDesirability>;
+  file?: DG.FileInfo;
 };
 
 export const MPO_TEMPLATE_PATH = 'System:AppData/Chem/mpo';
@@ -66,4 +66,14 @@ export async function computeMpo(
   }).call(undefined, undefined, {processed: false});
 
   return funcCall.getOutputParamValue() ?? [];
+}
+
+export function findSuitableProfiles(df: DG.DataFrame, profiles: MpoProfileInfo[]): MpoProfileInfo[] {
+  const dfColumnNames = new Set(df.columns.names());
+
+  return profiles.filter((p) => {
+    return Object.keys(p.properties ?? {}).some((prop) =>
+      dfColumnNames.has(prop),
+    );
+  });
 }

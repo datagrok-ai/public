@@ -999,8 +999,8 @@
 }
 
 .chem-mpo-dialog-manage-button {
-  margin: inherit;
-  margin-top: 10px;
+  margin: inherit !important;
+  margin-top: 10px !important;
 }
 
 .chem-mpo-scores-viewer {
