@@ -2599,26 +2599,6 @@ export class PackageFunctions {
     }
   }
 
-  @grok.decorators.func()
-  static async mpoFunctionEditors(): Promise<DG.View> {
-    const prop: PropertyDesirability = {
-      min: 0,
-      max: 10,
-      weight: 1,
-      line: [],
-    };
-
-    const editor = new MpoDesirabilityLineEditor(prop, 600, 300);
-
-    const minX = 0;
-    const maxX = 10;
-    const points = MpoDesirabilityLineEditor.sigmoid(minX, maxX, 100, 2, 5);
-    prop.line = points;
-    editor.onChanged.next();
-
-    return DG.View.fromRoot(editor.root);
-  }
-
   @grok.decorators.panel({
     name: 'Chemistry | MPO',
     meta: {role: 'widgets', domain: 'chem'},
