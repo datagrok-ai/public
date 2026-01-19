@@ -1524,23 +1524,6 @@ export class DateInput extends InputBase<dayjs.Dayjs | null> {
   set value(x: dayjs.Dayjs | null) { toDart(api.grok_DateInput_Set_Value(this.dart, x?.valueOf())); }
 }
 
-export abstract class TagsInput<T = any> extends InputBase<T> {
-
-  constructor(dart: any) {
-    super(dart);
-    api.grok_TagsInput_Set_JsTagsInput(dart, this);
-  };
-
-  //convert item to string to show in suggestions
-  abstract itemToString(item: T): string;
-
-  abstract getSuggestions(inputText: string): Promise<T[]>;
-
-  abstract createTagLabel(item: T): Element;
-
-  abstract createNewItem(inputText: string): T;
-}
-
 export class ChoiceInput<T> extends InputBase<T> {
   declare dart: any;
 

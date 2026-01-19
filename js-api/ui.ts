@@ -786,6 +786,10 @@ export namespace input {
     allowNew: (input, x) => api.grok_TagsInput_Set_Allow_New(input.dart, x),
     multiValue: (input, x) => api.grok_TagsInput_Set_MultiValue(input.dart, x),
     acceptExtensions: (input, x) => api.grok_FilesInput_Set_AcceptExtensions(input.dart, x),
+    itemToString: (input, x) => api.grok_TagsInput_Set_ItemToString(input.dart, x),
+    getSuggestions:(input, x) => api.grok_TagsInput_Set_GetSuggestions(input.dart, x),
+    createTagLabel: (input, x) => api.grok_TagsInput_Set_CreateTagLabel(input.dart, x),
+    createNewItem: (input, x) => api.grok_TagsInput_Set_CreateNewItem(input.dart, x),
   };
 
   function setInputOptions(input: InputBase, inputType: d4.InputType, options?: IInputInitOptions, ignoreProp: boolean = false): void {
@@ -847,7 +851,10 @@ export namespace input {
     showButton?: boolean;
     allowNew?: boolean;
     multiValue?: boolean;
-    createCustomInputFunc?: (dart: any) => any;
+    itemToString?: (item: T) => string;
+    getSuggestions?: (inputText: string) => Promise<T[]>;
+    createTagLabel?: (item: T) => Element;
+    createNewItem?: (inputText: string) => T;
   };
 
   export interface IMultiChoiceInputInitOptions<T> extends Omit<IChoiceInputInitOptions<T>, 'value'> {
@@ -1076,11 +1083,7 @@ export namespace input {
     if (config?.tags && !config.items)
         config.items = config.tags as any[];
     const tagsBaseInput = _create(d4.InputType.Tags, name, config);
-    if (config?.createCustomInputFunc) {
-      const customObjInput = config.createCustomInputFunc(tagsBaseInput.dart);
-      return customObjInput;
-    }
-    return tagsBaseInput;    
+    return _create(d4.InputType.Tags, name, config);  
   }
 
   export async function markdownPreview(markdown: string): Promise<HTMLDivElement> {
