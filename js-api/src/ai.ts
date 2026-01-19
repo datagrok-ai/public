@@ -7,19 +7,15 @@ const api: IDartApi = (typeof window !== 'undefined' ? window : global.window) a
 export type AiProvider = "openai" | "azure";
 export type AzureApiMode = "openai_compat" | "legacy";
 export type AiConfig =
-    | {
+    {
     provider: AiProvider;
     configured: boolean;
     indexEntities: boolean;
-}
-    | {
-    provider: AiProvider;
-    configured: boolean;
-    indexEntities: boolean;
-    apiMode: AzureApiMode;
-    apiVersion?: string;
-    modelToDeployment?: Record<string, string>;
-};
+    } & {
+        apiMode?: AzureApiMode;
+        apiVersion?: string;
+        modelToDeployment?: Record<string, string>;
+    };
 
 
 /**
