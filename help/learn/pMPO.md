@@ -48,3 +48,4 @@ See also:
 
 * [Multiparameter optimization](../datagrok/solutions/domains/chem/chem.md#multiparameter-optimization)
 * [Pareto front viewer](../visualize/viewers/pareto-front-viewer.md)
+* [Community: Multi-Parameter Optimization](https://community.datagrok.ai/t/mpo-multi-parameter-optimization/1120/14)
