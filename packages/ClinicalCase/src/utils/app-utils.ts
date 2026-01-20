@@ -20,6 +20,7 @@ import {ValidationHelper} from '../helpers/validation-helper';
 import {getRequiredColumnsByView, handleMouseMoveOverErrorCell, setupValidationErrorColumns,
   setupValidationErrorIndicators} from './views-validation-utils';
 import {DOMAINS_DESCRIPTIONS} from '../constants/domains-constants';
+import {setupTableViewLayout} from './layout-utils';
 
 export const validationNodes: {[key: string]: DG.TreeViewNode} = {};
 export let currentOpenedView: DG.ViewBase | null = null;
@@ -186,6 +187,7 @@ export async function openApp(standard: CDISC_STANDARD): Promise<DG.ViewBase | v
       '-  Explore data on patient specific and trial specific levels\n' +
       '-  Browse through AEs and related data\n' +
       `-  Validate your ${standard} data`,
+    iconSize: 120,
   });
 
   const studiesHeader = ui.h1('Studies');
@@ -402,19 +404,20 @@ function addDomainsToTree(study: ClinicalStudy, treeNode: DG.TreeViewGroup) {
     if (desc)
       ui.tooltip.bind(domainItem.root, desc);
     domainItem.onSelected.subscribe(() => {
-      addDomainAsTableView(domain);
+      addDomainAsTableView(study.studyId, domain);
       const browseTreeRoot = treeNode.root.closest('.d4-tree-view-root');
       (browseTreeRoot as HTMLElement).focus();
     });
   }
 }
 
-export function addDomainAsTableView(df: DG.DataFrame, closeCurrentPreview = true) {
+export function addDomainAsTableView(studyId: string, df: DG.DataFrame, closeCurrentPreview = true) {
   if (closeCurrentPreview)
     currentOpenedView?.close();
   currentOpenedView = grok.shell.addTablePreview(df);
   setupValidationErrorColumns(df);
   hideValidationColumns(currentOpenedView as DG.TableView);
+  setupTableViewLayout(currentOpenedView as DG.TableView, studyId, df.name);
 
   let errorSubs: Subscription[] = [];
   const ribbons = currentOpenedView.getRibbonPanels();
@@ -445,7 +448,6 @@ async function openStudyNode(study: ClinicalStudy, node: DG.TreeViewGroup, curre
   loadView(study, currentViewName, node);
 }
 
-
 async function loadView(study: ClinicalStudy, viewName: string, parentNode: DG.TreeViewGroup) {
   let view = studies[study.studyId].views[viewName];
   let helper: any;
@@ -467,8 +469,15 @@ async function loadView(study: ClinicalStudy, viewName: string, parentNode: DG.T
   }
   currentOpenedView?.close();
   currentOpenedView = grok.shell.addPreview(view);
+  //return focus to browse tree to enable keyboard navigation
   const browseTreeRoot = parentNode.root.closest('.d4-tree-view-root');
   (browseTreeRoot as HTMLElement).focus();
+
+  //in case of table view search for saved layout
+  if (currentOpenedView.type === DG.TYPE.TABLE_VIEW) {
+    const tableView = currentOpenedView as DG.TableView;
+    await setupTableViewLayout(tableView, study.studyId, viewName);
+  }
   if (view.hasOwnProperty('loaded') && !(view as ClinicalCaseViewBase).loaded)
     (view as ClinicalCaseViewBase).load();
   else

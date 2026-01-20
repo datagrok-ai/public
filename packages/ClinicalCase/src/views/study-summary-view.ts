@@ -64,7 +64,6 @@ export class StudySummaryView extends ClinicalCaseViewBase {
 
     const summary = ui.tableFromMap(summaryObj);
 
-
     const errorsSummary = this.errorsByDomainWithLinks ?
       ui.tableFromMap(this.errorsByDomainWithLinks) :
       ui.divText('No errors found', {style: {marginTop: '8px', marginLeft: '5px'}});
@@ -83,7 +82,7 @@ export class StudySummaryView extends ClinicalCaseViewBase {
       for (const domain of studies[this.studyId].domains.all()) {
         const domainName = removeExtension(domain.name);
         menu.item(domainName, () => {
-          addDomainAsTableView(domain, false);
+          addDomainAsTableView(this.studyId, domain, false);
         });
       }
       menu.show();
