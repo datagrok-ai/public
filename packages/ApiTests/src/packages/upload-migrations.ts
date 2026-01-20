@@ -1,6 +1,6 @@
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
-import {before, category, expect, test, expectTable, expectExceptionAsync, after} from '@datagrok-libraries/utils/src/test';
+import {before, category, expect, test, expectTable, expectExceptionAsync, after} from '@datagrok-libraries/test/src/test';
 import {_package} from '../package-test';
 
 category('Packages: migrations', () => {

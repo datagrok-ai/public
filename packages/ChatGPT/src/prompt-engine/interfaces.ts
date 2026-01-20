@@ -1,4 +1,5 @@
 import * as DG from 'datagrok-api/dg';
+import type OpenAI from 'openai';
 
 export interface FuncParam {
   type: string;
@@ -63,12 +64,10 @@ export interface PackageSelection {
   }[];
 }
 
-export interface JsonSchema {
-  [key: string]: unknown;
-}
+export type JsonSchema = OpenAI.Responses.ResponseFormatTextJSONSchemaConfig['schema'];
 
 /* Schemas defined to enable structured output handling */
-export const PackageSelectionSchema = {
+export const PackageSelectionSchema: JsonSchema = {
   type: 'object',
   properties: {
     selected_packages: {
@@ -94,7 +93,7 @@ export const PackageSelectionSchema = {
   additionalProperties: false,
 };
 
-export const PlanSchema = {
+export const PlanSchema: JsonSchema = {
   type: 'object',
   properties: {
     goal: {
@@ -126,7 +125,12 @@ export const PlanSchema = {
           inputs: {
             type: 'object',
             description: 'Function inputs as a dictionary of key-value pairs.',
-            additionalProperties: true,
+            properties: {},
+            required: [],
+            patternProperties: {
+              '.*': {},
+            },
+            additionalProperties: false,
           },
           outputs: {
             type: 'array',

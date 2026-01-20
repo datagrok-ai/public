@@ -6,16 +6,9 @@ import * as rxjs from 'rxjs';
 import {OpenAI} from 'openai';
 // @ts-ignore .... idk why it does not like it
 import '../../css/ai.css';
-import {ChatModel} from 'openai/resources/shared';
 import {dartLike, fireAIAbortEvent, getAIPanelToggleSubscription} from '../utils';
 import {ConversationStorage, StoredConversationWithContext} from './storage';
-
-export type ModelOption = 'Fast' | 'Deep Research';
-export const ModelType: {[type in ModelOption]: ChatModel} = {
-  Fast: 'gpt-4o-mini',
-  'Deep Research': 'gpt-5.2' as ChatModel, // hell of a smart model but a bit expensive expensive
-  //'Deep Research': 'o4-mini', // good balance between speed, quality and $$$
-} as const;
+import {ModelOption, ModelType} from './openAI-client';
 
 // in future might extend it with other types for response API
 export type MessageType = OpenAI.Chat.ChatCompletionMessageParam | OpenAI.Responses.ResponseInputItem;
@@ -697,7 +690,7 @@ function receiveFeedback(userPrompt: string, aiResponse: string, contextId: stri
 }
 
 
-export class DBAIPanel<T extends MessageType = OpenAI.Chat.ChatCompletionMessageParam> extends AIPanel<T, DBAIPanelInputs> {
+export class DBAIPanel<T extends MessageType = OpenAI.Responses.ResponseInputItem> extends AIPanel<T, DBAIPanelInputs> {
   protected get placeHolder() { return 'Ask your database, like "Total sales by regions"'; }
   protected schemaInput: DG.InputBase<string>;
   constructor(schemas: string[], defaultSchema: string, connectionID: string, view: DG.View | DG.ViewBase) {
@@ -721,7 +714,7 @@ export class DBAIPanel<T extends MessageType = OpenAI.Chat.ChatCompletionMessage
   }
 }
 
-export class TVAIPanel<T extends MessageType = OpenAI.Chat.ChatCompletionMessageParam> extends AIPanel<T, TVAIPanelInputs> {
+export class TVAIPanel<T extends MessageType = OpenAI.Responses.ResponseInputItem> extends AIPanel<T, TVAIPanelInputs> {
   protected get placeHolder() { return 'Ask about your table data...'; }
   protected tableView: DG.TableView;
   constructor(view: DG.TableView) {

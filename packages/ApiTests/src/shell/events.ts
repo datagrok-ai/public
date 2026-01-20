@@ -1,4 +1,4 @@
-import { before, category, delay, expect, expectArray, test } from '@datagrok-libraries/utils/src/test';
+import { before, category, delay, expect, expectArray, test } from '@datagrok-libraries/test/src/test';
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';

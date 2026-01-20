@@ -2,7 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import dayjs from 'dayjs';
 import utc from 'dayjs/plugin/utc';
 
-import {category, expect, test} from '@datagrok-libraries/utils/src/test';
+import {category, expect, test} from '@datagrok-libraries/test/src/test';
 import {check} from './utils';
 
 

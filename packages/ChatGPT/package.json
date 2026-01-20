@@ -61,6 +61,27 @@
       "description": "Vector Store ID with Datagrok documentation",
       "defaultValue": "",
       "nullable": false
+    },
+    {
+      "name": "defaultFastModel",
+      "propertyType": "string",
+      "description": "Fast Model name for simple tasks. This must match the model names supported by OpenAI or name of deployed model.",
+      "defaultValue": "gpt-4o-mini",
+      "nullable": false
+    },
+    {
+      "name": "defaultDeepResearchModel",
+      "propertyType": "string",
+      "description": "Deep Research Model name for complex tasks. This must match the model names supported by OpenAI or name of deployed model.",
+      "defaultValue": "gpt-5.2",
+      "nullable": false
+    },
+    {
+      "name": "defaultCodingModel",
+      "propertyType": "string",
+      "description": "Coding Model name for code generation tasks. This must match the model names supported by OpenAI or name of deployed model.",
+      "defaultValue": "gpt-5.1-codex-max",
+      "nullable": false
     }
   ]
 }

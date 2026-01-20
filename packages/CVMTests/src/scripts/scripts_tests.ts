@@ -8,7 +8,7 @@ import {
   expectTable,
   before,
   after,
-} from '@datagrok-libraries/utils/src/test';
+} from '@datagrok-libraries/test/src/test';
 import dayjs from 'dayjs';
 
 const languages = ['Python', 'R', 'Julia', 'NodeJS', 'Octave', 'Grok', 'JavaScript'];
