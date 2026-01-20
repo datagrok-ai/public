@@ -1,4 +1,3 @@
-//tags: DataFrame, construction
 // Note that the "population" data type becomes int
 
 let t = DG.DataFrame.fromObjects([

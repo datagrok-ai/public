@@ -1,4 +1,3 @@
-//tags: View
 // Custom view toolbox
 
 let v = grok.shell.newView('toolbox demo', [ui.divText('See custom toolbox on the left.')]);

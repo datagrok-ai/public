@@ -20,6 +20,7 @@ export function processPowerSearchTableView(tv: DG.TableView) {
     return;
 
   curRoot.style.setProperty('height', 'calc(100vh - 200px)', 'important');
+  curRoot.style.setProperty('width', '100%', 'important');
   const header: HTMLElement | null = curRoot.querySelector('.d4-dialog-header');
   if (!header)
     return;

@@ -342,7 +342,7 @@ export class PackageFunctions {
   }
 
 
-  @grok.decorators.func()
+  @grok.decorators.appTreeBrowser({app: 'Service Logs'})
   static async serviceLogsAppTreeBrowser(treeNode: DG.TreeViewGroup) {
     const loaderDiv = ui.div([], {style: {width: '50px', height: '24px', position: 'relative'}});
     loaderDiv.innerHTML = `<div class="grok-loader"><div></div><div></div><div></div><div></div></div>`;
@@ -385,7 +385,7 @@ export class PackageFunctions {
     }
   }
 
-  @grok.decorators.func()
+  @grok.decorators.appTreeBrowser({app: 'Reports'})
   static async reportsAppTreeBrowser(treeNode: DG.TreeViewGroup) {
     await treeNode.group('Reports', null, false).loadSources(grok.dapi.reports.by(10));
     await treeNode.group('Rules', null, false).loadSources(grok.dapi.rules.include('actions,actions.assignee').by(10));
@@ -420,10 +420,7 @@ export class PackageFunctions {
 
 
   @grok.decorators.func({
-    'tags': [
-      'viewer',
-    ],
-    'meta': {showInGallery: 'false'},
+    'meta': {showInGallery: 'false', role: 'viewer'},
     'outputs': [
       {
         type: 'viewer',

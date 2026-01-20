@@ -13,16 +13,16 @@ import * as DG from 'datagrok-api/dg';
 
 //name: Timelines
 //description: Creates a timelines viewer
-//tags: viewer
 //output: viewer result
 //meta.showInGallery: false
 //meta.icon: icons/timelines-viewer.svg
+//meta.role: viewer
 export function timelinesViewer() : any {
   return PackageFunctions.timelinesViewer();
 }
 
-//tags: cellRenderer
 //output: grid_cell_renderer result
+//meta.role: cellRenderer
 export function flagCellRenderer() {
   return PackageFunctions.flagCellRenderer();
 }
@@ -84,8 +84,8 @@ export async function wordCloudViewerDemo() : Promise<void> {
 }
 //name: Chord
 //description: Creates a chord viewer
-//tags: viewer
 //output: viewer result
+//meta.role: viewer
 //meta.icon: icons/chord-viewer.svg
 export function _ChordViewer() {
   return new ChordViewer();
@@ -93,8 +93,8 @@ export function _ChordViewer() {
 
 //name: Globe
 //description: Creates a globe viewer
-//tags: viewer
 //output: viewer result
+//meta.role: viewer
 //meta.icon: icons/globe-viewer.svg
 export function _GlobeViewer() {
   return new GlobeViewer();
@@ -102,8 +102,8 @@ export function _GlobeViewer() {
 
 //name: Group Analysis
 //description: Creates a group analysis viewer
-//tags: viewer
 //output: viewer result
+//meta.role: viewer
 //meta.icon: icons/groupanalysis-viewer.svg
 export function _GroupAnalysisViewer() {
   return new GroupAnalysisViewer();
@@ -111,16 +111,16 @@ export function _GroupAnalysisViewer() {
 
 //name: Multiplot
 //description: Creates a multiplot viewer
-//tags: viewer
 //output: viewer result
+//meta.role: viewer
 export function _MultiPlotViewer() {
   return new MultiPlotViewer();
 }
 
 //name: Radar
 //description: Creates a radar viewer
-//tags: viewer
 //output: viewer result
+//meta.role: viewer
 //meta.icon: icons/radar-viewer.svg
 export function _RadarViewer() {
   return new RadarViewer();
@@ -128,8 +128,8 @@ export function _RadarViewer() {
 
 //name: Sankey
 //description: Creates a sankey viewer
-//tags: viewer
 //output: viewer result
+//meta.role: viewer
 //meta.icon: icons/sankey-viewer.svg
 export function _SankeyViewer() {
   return new SankeyViewer();
@@ -137,8 +137,8 @@ export function _SankeyViewer() {
 
 //name: Sunburst
 //description: Creates a sunburst viewer
-//tags: viewer
 //output: viewer result
+//meta.role: viewer
 //meta.icon: icons/sunburst-viewer.svg
 export function _SunburstViewer() {
   return new SunburstViewer();
@@ -146,8 +146,8 @@ export function _SunburstViewer() {
 
 //name: Surface plot
 //description: Creates a surface plot viewer
-//tags: viewer
 //output: viewer result
+//meta.role: viewer
 //meta.icon: icons/surfaceplot-viewer.svg
 export function _SurfacePlot() {
   return new SurfacePlot();
@@ -155,8 +155,8 @@ export function _SurfacePlot() {
 
 //name: Tree
 //description: Creates a tree viewer
-//tags: viewer
 //output: viewer result
+//meta.role: viewer
 //meta.trellisable: false
 //meta.icon: icons/tree-viewer.svg
 export function _TreeViewer() {
@@ -165,8 +165,8 @@ export function _TreeViewer() {
 
 //name: Word cloud
 //description: Creates a word cloud viewer
-//tags: viewer
 //output: viewer result
+//meta.role: viewer
 //meta.icon: icons/wordcloud-viewer.svg
 //meta.toolbox: true
 export function _WordCloudViewer() {

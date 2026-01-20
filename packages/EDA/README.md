@@ -1,5 +1,12 @@
 # EDA
 
+[![Docs: Predictive Modeling](https://img.shields.io/badge/docs-Predictive%20Modeling-blue.svg)](https://datagrok.ai/help/learn/)
+[![Docs: Dimensionality Reduction](https://img.shields.io/badge/docs-Dimensionality%20Reduction-green.svg)](https://datagrok.ai/help/explore/dim-reduction)
+[![Docs: Cluster Data](https://img.shields.io/badge/docs-Cluster%20Data-yellow.svg)](https://datagrok.ai/help/explore/cluster-data)
+[![Docs: Multivariate Analysis](https://img.shields.io/badge/docs-Multivariate%20Analysis-red.svg)](https://datagrok.ai/help/explore/multivariate-analysis)
+[![Docs: ANOVA](https://img.shields.io/badge/docs-ANOVA-purple.svg)](https://datagrok.ai/help/explore/anova)
+[![Tutorial: Multivariate Analysis](https://img.shields.io/badge/tutorial-Multivariate%20Analysis-olive.svg)](https://public.datagrok.ai/apps/tutorials/Tutorials/MachineLearning/MultivariateAnalysis)
+
 EDA is a [package](https://datagrok.ai/help/develop/#packages) for the [Datagrok](https://datagrok.ai) platform. It provides the following exploratory data analysis and machine learning tools:
 
 * Dimensionality reduction
@@ -22,3 +29,4 @@ EDA is a [package](https://datagrok.ai/help/develop/#packages) for the [Datagrok
   * k-nearest neighbors method ([KNN](https://en.wikipedia.org/wiki/K-nearest_neighbors_algorithm))
 * Multi-objective optimization
   * [Pareto front](https://en.wikipedia.org/wiki/Pareto_front) viewer
+  * [Probabilistic MPO](https://pmc.ncbi.nlm.nih.gov/articles/PMC4716604/)

@@ -2,7 +2,7 @@
   "name": "@datagrok/signals-link",
   "friendlyName": "Signals Link",
   "version": "0.0.2",
-  "description": "",
+  "description": "Integration with the Revvity Signals ELN",
   "author": {
     "name": "Andrew Skalkin",
     "email": "askalkin@datagrok.ai"

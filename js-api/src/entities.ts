@@ -70,9 +70,10 @@ export interface DataConnectionProperties extends DatabaseConnectionProperties, 
   [x: string]: any;
 }
 
-type FieldPredicate = {field: string, pattern: string};
+type FieldPredicate = {field: string, pattern: string, dataType: string};
 type FieldOrder = {field: string, asc?: boolean};
 type GroupAggregation = {aggType: string, colName: string, resultColName?: string, function?: string};
+export type TableJoin = {leftTableName: string, rightTableName: string, rightTableAlias?: string, joinType: JoinType, leftTableKeys: string[], rightTableKeys: string[]};
 type DockerContainerStatus = 'stopped' | 'started' | 'pending change' | 'changing' | 'error' | 'checking';
 
 /** @class
@@ -122,6 +123,9 @@ export class Entity {
 
   /** Who created entity **/
   get author(): User { return toJs(api.grok_Entity_Get_Author(this.dart)); }
+
+  /** Entity type name **/
+  get entityType(): string { return api.grok_Entity_Get_EntityType(this.dart); }
 
   /** Gets entity properties */
   getProperties(): Promise<{[index: string]: any}> {
@@ -493,20 +497,26 @@ export class TableQuery extends DataQuery {
   async executeTable(): Promise<DataFrame> { return toJs(await api.grok_TableQuery_ExecuteTable(this.dart)); }
 
   /** Where clauses */
-  get where(): FieldPredicate[] { return toJs(api.grok_TableQuery_GetWhereClausesDB(this.dart)); }
-  set where(wl: FieldPredicate[]) { api.grok_TableQuery_SetWhereClausesDB(this.dart, wl.map(param => toDart(param))); }
+  get where(): FieldPredicate[] { return toJs(api.grok_TableQuery_Get_WhereClausesDB(this.dart)); }
+  set where(wl: FieldPredicate[]) { api.grok_TableQuery_Set_WhereClausesDB(this.dart, wl.map(param => toDart(param))); }
 
   /** Aggregation clauses {queryPartParams} */
-  get aggregations(): GroupAggregation[] { return toJs(api.grok_TableQuery_GetAggregationsDB(this.dart)); }
-  set aggregations(wl: GroupAggregation[]) { api.grok_TableQuery_SetAggregationsDB(this.dart, wl.map(param => toDart(param))); }
+  get aggregations(): GroupAggregation[] { return toJs(api.grok_TableQuery_Get_AggregationsDB(this.dart)); }
+  set aggregations(wl: GroupAggregation[]) { api.grok_TableQuery_Set_AggregationsDB(this.dart, wl.map(param => toDart(param))); }
+
+  get joins(): TableJoin[] { return toJs(api.grok_TableQuery_Get_Joins(this.dart)); }
+  set joins(j: TableJoin[]) { api.grok_TableQuery_Set_Joins(this.dart, j.map(join => toDart(join))); }
 
   /** Having clauses */
-  get having(): FieldPredicate[] { return toJs(api.grok_TableQuery_GetHavingDB(this.dart)); }
-  set having(wl: FieldPredicate[]) { api.grok_TableQuery_SetHavingDB(this.dart, wl.map(param => toDart(param))); }
+  get having(): FieldPredicate[] { return toJs(api.grok_TableQuery_Get_HavingDB(this.dart)); }
+  set having(wl: FieldPredicate[]) { api.grok_TableQuery_Set_HavingDB(this.dart, wl.map(param => toDart(param))); }
 
   /** Order By clauses */
-  get orderBy(): FieldOrder[] { return toJs(api.grok_TableQuery_GetOrderByDB(this.dart)); }
-  set orderBy(wl: FieldOrder[]) { api.grok_TableQuery_SetOrderByDB(this.dart, wl.map(param => toDart(param))); }
+  get orderBy(): FieldOrder[] { return toJs(api.grok_TableQuery_Get_OrderByDB(this.dart)); }
+  set orderBy(wl: FieldOrder[]) { api.grok_TableQuery_Set_OrderByDB(this.dart, wl.map(param => toDart(param))); }
+
+  set limit(rows: number | undefined) { api.grok_TableQuery_Set_Limit(this.dart, rows); }
+  get limit(): number | undefined { return api.grok_TableQuery_Get_Limit(this.dart); }
 
   /** Creates {@link TableQueryBuilder} from table name
    * @param {string} table - Table name
@@ -625,7 +635,7 @@ export class TableQueryBuilder {
   /**
    * Performs join operation of main table or table specified in {@link leftTable} to table specified in {@link rightTable}.
    * Specify joining fields of the main table (or table specified in {@link leftTable}) in {@link leftTableKeys} and joining fields of {@link rightTable}
-   * in {@Link rightTableKeys}.
+   * in {@link rightTableKeys}.
    * @param rightTable {string}
    * @param joinType {JoinType}
    * @param leftTableKeys {string[]}
@@ -790,14 +800,13 @@ export class DataConnection extends Entity {
     return TableQueryBuilder.from(table, this);
   }
 
-  tableQuery(tableName: string): TableQuery {
+  tableQuery(): TableQuery {
     return toJs(api.grok_TableQuery_Create(this.dart));
   }
 
   /** Creates a data connection. Note that in order to be used, it has to be saved first using {@link DataConnectionsDataSource}
    * @param {string} name - Connection name
    * @param {DataConnectionProperties} parameters - Connection properties
-   * @returns {DataConnection}
    * */
    static create(name: string, parameters: DataConnectionProperties): DataConnection {
     return toJs(api.grok_DataConnection_Create(name, parameters.dataSource, parameters));
@@ -1008,6 +1017,12 @@ export class Group extends Entity {
   get hidden(): boolean { return api.grok_Group_Get_Hidden(this.dart); }
   set hidden(e: boolean) { api.grok_Group_Set_Hidden(this.dart, e); }
 
+  /** Returns associated user.
+   * Returns `null` if the group is not {@link personal}.
+   * See [Groups](https://datagrok.ai/help/govern/access-control/users-and-groups#groups)
+   */
+  get user(): User { return new User(api.grok_Group_Get_User(this.dart)); }
+
   static get defaultGroupsIds() {
     return {
       "All users": "a4b45840-9a50-11e6-9cc9-8546b8bf62e6",
@@ -1118,10 +1133,7 @@ export class ScriptEnvironment extends Entity {
     super(dart);
   }
 
-  /** Create instance of ScriptEnvironment
-   * @param {string} name
-   * @returns {ScriptEnvironment}
-   * */
+  /** Create instance of ScriptEnvironment */
   static create(name: string): ScriptEnvironment {
     return new ScriptEnvironment(api.grok_ScriptEnvironment_Create(name));
   }
@@ -1722,6 +1734,7 @@ export class HistoryEntry {
   get time(): object { return toJs(api.grok_HistoryEntry_Get_Time(this.dart)); }
 }
 
+
 export class EntityType {
   public dart: any;
 
@@ -1735,37 +1748,47 @@ export class EntityType {
 
   get name(): string { return toJs(api.grok_EntityType_Get_Name(this.dart)); }
   set name(s: string) { api.grok_EntityType_Set_Name(this.dart, toDart(s)); }
+
   get matching(): string { return toJs(api.grok_EntityType_Get_Matching(this.dart)); }
   set matching(s: string) { api.grok_EntityType_Set_Matching(this.dart, toDart(s)); }
 }
 
+
+/** A dynamic property associated with the entity. */
 export class EntityProperty extends Property {
   constructor(dart: any) {
     super(dart);
-  };
+  }
 
   static create(name: string, type: string): EntityProperty {
     return toJs(api.grok_EntityProperty_Create(toDart(name), toDart(type)));
   }
 }
 
+
+/** Represents dynamic property schema, associated with the entity type. */
 export class Schema {
   public dart: any;
 
   constructor(dart: any) {
     this.dart = dart;
-  };
+  }
 
   static create(name: string): Schema {
     return toJs(api.grok_Schema_Create(toDart(name)));
   }
 
   get name(): string { return api.grok_Schema_Get_Name(this.dart); }
+
+  /** Schema properties */
   get properties(): EntityProperty[] { return toJs(api.grok_Schema_Get_Properties(this.dart)); }
   set properties(p: EntityProperty[]) { api.grok_Schema_Set_Properties(this.dart, p); }
+
+  /** Entity types associated with this schema. */
   get entityTypes(): EntityType[] { return toJs(api.grok_Schema_Get_EntityTypes(this.dart)); }
   set entityTypes(et: EntityType[]) { api.grok_Schema_Set_EntityTypes(this.dart, et); }
 }
+
 
 export class UserReport extends Entity {
   constructor(dart: any) {
@@ -1796,6 +1819,7 @@ export class UserReport extends Entity {
     return dayjs(api.grok_UserReport_CreatedOn(this.dart));
   }
 }
+
 
 export class UserReportsRule extends Entity {
   constructor(dart: any) {

@@ -49,3 +49,11 @@
     display: block;
     min-height: 100%;
 }
+
+.clinical-case-study-import-view .ui-files-input-summary-indicator {
+    padding-bottom: 6px;
+}
+
+.clinical-case-study-import-in-progress-div {
+    height: 30px;
+}

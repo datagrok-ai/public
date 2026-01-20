@@ -12,7 +12,7 @@ import {
   getRenderColor,
   NormalizationType,
   getScaledNumber,
-  getSparklinesContextPanel,
+  getSparklinesContextPanel
 } from './shared';
 
 const minH = 0.05;
@@ -48,7 +48,13 @@ function onHit(gridCell: DG.GridCell, e: MouseEvent): Hit {
   };
   if ((activeColumn >= cols.length) || (activeColumn < 0))
     return answer;
-  const scaled = getScaledNumber(cols, row, cols[activeColumn], {normalization: settings.normalization});
+  const scaled = getScaledNumber(cols, row, cols[activeColumn], {
+    normalization: settings.normalization,
+    invertScale: settings.invertColumnNames?.includes(cols[activeColumn].name),
+    logScale: settings.logColumnNames?.includes(cols[activeColumn].name),
+    minValues: settings.minValues,
+    maxValues: settings.maxValues,
+  });
   const bb = b
     .getLeftPart(cols.length, activeColumn)
     .getBottomScaled(scaled > minH ? scaled : minH)
@@ -89,8 +95,14 @@ export class BarChartCellRenderer extends DG.GridCellRenderer {
     for (let i = 0; i < cols.length; i++) {
       const currentCol = cols[i];
       if (!currentCol.isNone(row)) {
-        g.setFillStyle(DG.Color.toRgb(getRenderColor(settings, DG.Color.fromHtml('#8080ff'),{column: currentCol, colIdx: i, rowIdx: row})));
-        const scaled = getScaledNumber(cols, row, currentCol, {normalization: settings.normalization});
+        g.setFillStyle(DG.Color.toRgb(getRenderColor(settings, DG.Color.fromHtml('#8080ff'), {column: currentCol, colIdx: i, rowIdx: row})));
+        const scaled = getScaledNumber(cols, row, currentCol, {
+          normalization: settings.normalization,
+          invertScale: settings.invertColumnNames?.includes(currentCol.name),
+          logScale: settings.logColumnNames?.includes(currentCol.name),
+          minValues: settings.minValues,
+          maxValues: settings.maxValues,
+        });
         const bb = b
           .getLeftPart(cols.length, i)
           .getBottomScaled(scaled > minH ? scaled : minH)
@@ -109,7 +121,7 @@ export class BarChartCellRenderer extends DG.GridCellRenderer {
   }
 
   hasContextValue(gridCell: DG.GridCell): boolean { return true; }
-  async getContextValue (gridCell: DG.GridCell): Promise<any> {
+  async getContextValue(gridCell: DG.GridCell): Promise<any> {
     return getSparklinesContextPanel(gridCell, getSettings(gridCell.gridColumn).columnNames);
   }
 }

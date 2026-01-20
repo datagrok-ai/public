@@ -102,8 +102,8 @@ export class Color {
     }
 
 
-    static scaleColor(x: number, min: number, max: number, alpha?: number, colorScheme?: number[]): number {
-        return api.grok_Color_ScaleColor(x, min, max, alpha ? alpha : null, colorScheme ? colorScheme : null);
+    static scaleColor(x: number, min: number, max: number, alpha?: number, colorScheme?: number[], belowMinColor?: number, aboveMaxColor?: number): number {
+        return api.grok_Color_ScaleColor(x, min, max, alpha ? alpha : null, colorScheme ? colorScheme : null, belowMinColor ? belowMinColor : null, aboveMaxColor ? aboveMaxColor : null);
     }
 
     static highlight(color: number): number {

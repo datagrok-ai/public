@@ -1,3 +1,5 @@
 # excalidraw changelog
 
-## 0.0.1 (2025-05-01)
+## 1.0.0 (2025-06-19)
+
+* Excalidraw sketcher integration

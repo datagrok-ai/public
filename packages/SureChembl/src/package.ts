@@ -249,11 +249,9 @@ export class PackageFunctions {
 
 
   @grok.decorators.panel({
-    'tags': [
-      'widgets',
-    ],
     'name': 'Databases | SureChEMBL | Substructure Search',
     'condition': 'true',
+    meta: {role: 'widgets'},
   })
   static sureChemblSubstructureSearchWidget(
     @grok.decorators.param({'options': {'semType': 'Molecule'}}) molecule: string): DG.Widget {
@@ -262,12 +260,9 @@ export class PackageFunctions {
 
 
   @grok.decorators.func({
-    'tags': [
-      'panel',
-      'widgets',
-    ],
     'name': 'Databases | SureChEMBL | Similarity Search',
     'condition': 'true',
+    meta: {role: 'panel,widgets'},
   })
   static sureChemblSimilaritySearchWidget(
     @grok.decorators.param({'options': {'semType': 'Molecule'}}) molecule: string): DG.Widget {

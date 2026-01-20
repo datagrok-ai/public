@@ -25,11 +25,9 @@ export class PackageFunctions {
 
 
   @grok.decorators.panel({
-    tags: [
-      'widgets',
-    ],
     name: 'Databases | DrugBank | Substructure Search',
     condition: 'true',
+    meta: {role: 'widgets'},
   })
   static async drugBankSubstructureSearchPanel(
     @grok.decorators.param({'options': {'semType': 'Molecule'}}) mol: string,
@@ -39,9 +37,9 @@ export class PackageFunctions {
 
 
   @grok.decorators.panel({
-    tags: ['widgets'],
     name: 'Databases | DrugBank | Similarity Search',
     condition: 'true',
+    meta: {role: 'widgets'},
   })
   static async drugBankSimilaritySearchPanel(
     @grok.decorators.param({'options': {'semType': 'Molecule'}}) mol: string,

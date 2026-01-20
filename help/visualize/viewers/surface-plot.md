@@ -59,3 +59,4 @@ selecting rows in the grid or other viewers does not modify the surface plot's d
 * [Viewers](../viewers/viewers.md)
 * [Chord viewer](chord.md)
 * [Sankey viewer](sankey.md)
+* [Community: Visualization-related updates](https://community.datagrok.ai/t/visualization-related-updates/521)

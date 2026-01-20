@@ -38,7 +38,7 @@ export class PackageFunctions {
       const protein = DG.Column.fromType(DG.TYPE.STRING, 'Protein', sequences.length);
       for (let i = 0; i < sequences.length; ++i) {
         const colValue = sequences.get(i);
-        const predictedValue = await grok.functions.call('BioNeMo:esmfold', { sequence: colValue, api_key: apiKey });
+        const predictedValue = await grok.functions.call('BioNeMo:esmfoldPython', { sequence: colValue, api_key: apiKey });
         protein.set(i, predictedValue);
       }
       protein.setTag(DG.TAGS.SEMTYPE, DG.SEMTYPE.MOLECULE3D);
@@ -97,7 +97,7 @@ export class PackageFunctions {
   static async diffDockModelScript(ligand: string, target: string, poses: number): Promise<string | undefined> {
     try {
       const apiKey = await getApiKey();
-      const encodedPoses = await grok.functions.call('Bionemo:diffdock', {
+      const encodedPoses = await grok.functions.call('Bionemo:diffdockPython', {
         protein: target,
         ligand: ligand,
         num_poses: poses,
@@ -127,7 +127,7 @@ export class PackageFunctions {
 
   @grok.decorators.panel({
     name: 'Biology | DiffDock',
-    tags: ['widgets']
+    meta: {role: 'widgets'},
   })
   static async diffDockPanel(
     @grok.decorators.param({ options: { semType: 'Molecule' } })

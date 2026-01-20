@@ -6,7 +6,7 @@
  * Follow this naming convention to ensure that your detectors are properly loaded.
  */
 class BiostructureViewerPackageDetectors extends DG.Package {
-  //tags: semTypeDetector
+  //meta.role: semTypeDetector
   //input: column col
   //output: string semType
   //meta.skipTest: #2596, Fix for test data in the utils library
@@ -30,7 +30,7 @@ class BiostructureViewerPackageDetectors extends DG.Package {
     return null;
   }
 
-  //tags: semTypeDetector
+  //meta.role: semTypeDetector
   //input: column col
   //output: string semType
   detectPdbId(col) {
@@ -44,7 +44,7 @@ class BiostructureViewerPackageDetectors extends DG.Package {
   }
 
   //name: autostart
-  //tags: autostart
+  //meta.role: autostart
   //description: BiostructureViewer bootstrap
   autostart() {
     this.logger.debug('BsV: detectors.js: autostart()');

@@ -13,7 +13,7 @@ import {
   getRenderColor,
   NormalizationType,
   getScaledNumber,
-  getSparklinesContextPanel,
+  getSparklinesContextPanel
 } from './shared';
 
 const minDistance = 5;
@@ -29,7 +29,14 @@ function getPos(col: number, row: number, constants: getPosConstants): DG.Point 
   const b = constants.b;
   const settings = constants.settings;
   const cols = constants.cols;
-  const r: number = getScaledNumber(cols, row, cols[col], {normalization: settings.normalization, zeroScale: settings.zeroScale});
+  const r: number = getScaledNumber(cols, row, cols[col], {
+    normalization: settings.normalization,
+    zeroScale: settings.zeroScale,
+    invertScale: settings.invertColumnNames?.includes(cols[col].name),
+    logScale: settings.logColumnNames?.includes(cols[col].name),
+    minValues: settings.minValues,
+    maxValues: settings.maxValues,
+  });
 
   return new DG.Point(
     b.left + b.width * (cols.length == 1 ? 0 : col / (cols.length - 1)),
@@ -175,7 +182,7 @@ export class SparklineCellRenderer extends DG.GridCellRenderer {
   }
 
   hasContextValue(gridCell: DG.GridCell): boolean { return true; }
-  async getContextValue (gridCell: DG.GridCell): Promise<any> {
+  async getContextValue(gridCell: DG.GridCell): Promise<any> {
     return getSparklinesContextPanel(gridCell, getSettings(gridCell.gridColumn).columnNames);
   }
 }

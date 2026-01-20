@@ -343,7 +343,7 @@ export async function populateAdcGlyphs(limit: number = 50): Promise<{updated: n
 }
 
 //name: autostartbiologics
-//tags: autostart
+//meta.role: autostart
 export async function autostartBiologics() {
   function renderHelm(value: string): HTMLElement {
     return ui.wait(async () => {

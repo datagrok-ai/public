@@ -14,7 +14,7 @@ import {setAlphabeticalOrder} from '../utils/order-functions';
 const testInvocationTimeout = 3600000;
 
 const availableCommandOptions = ['host', 'package', 'csv', 'gui', 'catchUnhandled', 'platform', 'core',
-  'report', 'skip-build', 'skip-publish', 'path', 'record', 'verbose', 'benchmark', 'category', 'test', 'stress-test', 'link', 'tag', 'ci-cd', 'debug'];
+  'report', 'skip-build', 'skip-publish', 'path', 'record', 'verbose', 'benchmark', 'category', 'test', 'stress-test', 'link', 'tag', 'ci-cd', 'debug', 'no-retry'];
 
 const curDir = process.cwd();
 const grokDir = path.join(os.homedir(), '.grok');
@@ -49,11 +49,13 @@ export async function test(args: TestArgs): Promise<boolean> {
       args['skip-publish'],
       args['skip-build'], args.link);
   }
-
   process.env.TARGET_PACKAGE = packageName;
   const res = await runTesting(args);
-  if (args.csv)
-    saveCsvResults([res.csv], csvReportDir);
+  if (args.csv) {
+      res.csv = addColumnToCsv(res.csv, 'stress_test', args['stress-test'] ?? false);
+      res.csv = addColumnToCsv(res.csv, 'benchmark', args.benchmark ?? false);
+      saveCsvResults([res.csv], csvReportDir);
+  }
   printBrowsersResult(res, args.verbose);
   if (res.failed) {
     if (res.verboseFailed === 'Package not found')
@@ -72,66 +74,57 @@ function isArgsValid(args: TestArgs): boolean {
   return true;
 }
 
-async function runTesting(args: TestArgs): Promise<ResultObject> {
-  color.info('Loading tests...');
-  const loadedTests = await loadTestsList([process.env.TARGET_PACKAGE ?? ''], args.core);
-  let testsObj: testUtils.Test[] = [];
-  if (args['stress-test'] || args.benchmark) {
-    for (const element of loadedTests) {
-      if ((args.benchmark && !element.options.benchmark) || (args['stress-test'] && !element.options.stressTest))
-        continue;
-      testsObj.push(element);
-    }
-  } else
-    testsObj = loadedTests;
+// Retry state - persists across test runs in the session
+const retriedTests: Set<string> = new Set();
+let totalRetries = 0;
+const MAX_RETRIES_PER_SESSION = 10;
+let retryEnabled = true;
 
-  const parsed: Test[][] = (setAlphabeticalOrder(testsObj, 1, 1));
-  if (parsed.length == 0) {
-    return {
-      failed: true,
-      error: '',
-      verbosePassed: 'Package not found',
-      verboseSkipped: 'Package not found',
-      verboseFailed: 'Package not found',
-      passedAmount: 0,
-      skippedAmount: 0,
-      failedAmount: 0,
-      csv: '',
-    };
-  }
-  let organized: OrganizedTest[] = parsed[0].map((testObj) => ({
-    package: testObj.packageName,
+async function runTesting(args: TestArgs): Promise<ResultObject> {
+
+  retryEnabled = args['retry'] ?? true;
+  let organized: OrganizedTest = {
+    package: process.env.TARGET_PACKAGE ?? '',
     params: {
-      category: testObj.category,
-      test: testObj.name,
+      category: args.category ?? '',
+      test: args.test ?? '',
       options: {
         catchUnhandled: args.catchUnhandled,
         report: args.report,
       },
     },
-  }));
-  const filtered: OrganizedTest[] = [];
-  const categoryRegex = new RegExp(`${args.category?.replaceAll(' ', '')}.*`);
-  if (args.category) {
-    for (const element of organized) {
-      if ((categoryRegex.test(element.params.category.replaceAll(' ', '')))) {
-        if (element.params.test === args.test || !args.test)
-          filtered.push(element);
-      }
-    }
-    organized = filtered;
-  }
-  if (args.verbose) {
-    console.log(organized);
-    console.log(`Tests total: ${organized.length}`);
-  }
+  };
+
   color.info('Starting tests...');
   const testsResults: ResultObject[] = [];
-  let r: ResultObject;
+  let r: ResultObject & { browserSession?: { browser: any, page: any, webUrl: string } };
   let browserId = 1;
+  let retrySupported: boolean | undefined = undefined; // Will be set after first run
+  let browserSession: { browser: any, page: any, webUrl: string } | undefined = undefined;
+
   await timeout(async () => {
-    do {
-      r = await runBrowser(organized, {
+    let shouldRetry = true;
+    let currentSkipToCategory: string | undefined = undefined;
+    let currentSkipToTest: string | undefined = undefined;
+
+    let oneLastTry = false;
+    while (shouldRetry || oneLastTry) {
+      shouldRetry = false;
+      oneLastTry = false;
+      // On first run, assume retry is supported; after first run, use actual value
+      const useRetry = retryEnabled && (retrySupported === undefined || retrySupported);
+
+      const testParams: OrganizedTest = {
+        ...organized,
+        params: {
+          ...organized.params,
+          skipToCategory: currentSkipToCategory,
+          skipToTest: currentSkipToTest,
+          returnOnFail: useRetry,
+        },
+      };
+
+      r = await runBrowser(testParams, {
         benchmark: args.benchmark ?? false,
         stressTest: args['stress-test'] ?? false,
         catchUnhandled: args.catchUnhandled ?? false,
@@ -140,43 +133,86 @@ async function runTesting(args: TestArgs): Promise<ResultObject> {
         report: args.report ?? false,
         verbose: args.verbose ?? false,
         ciCd: args['ci-cd'] ?? false,
-        stopOnTimeout: true,
+        stopOnTimeout: false,
         debug: args['debug'] ?? false,
-      }, browserId, testInvocationTimeout);
-      const testsLeft: OrganizedTest[] = [];
-      const testsToReproduce: OrganizedTest[] = [];
-      for (const testData of organized) {
-        if (!r.verbosePassed.includes(`${testData.params.category}: ${testData.params.test}`) &&
-          !r.verboseSkipped.includes(`${testData.params.category}: ${testData.params.test}`) &&
-          !r.verboseFailed.includes(`${testData.params.category}: ${testData.params.test}`) &&
-          !new RegExp(`${testUtils.escapeRegex(testData.params.category.trim())}[^\n]*: *?(before|after)(\\(\\))?`).test(r.verboseFailed))
-          testsLeft.push(testData);
-        if (r.verboseFailed.includes(`${testData.params.category}: ${testData.params.test} :  Error:`)) 
-          testsToReproduce.push(testData);
-        
-      }
-      if (testsToReproduce.length > 0) {
-        const reproduced = await reproducedTest(args, testsToReproduce);
-        for (const test of testsToReproduce) {
-          const reproducedTest = reproduced.get(test);
-          if (reproducedTest && !reproducedTest.failed)
-            r = await updateResultsByReproduced(r, reproducedTest, test);
-        }
-      }
-      r.csv = addColumnToCsv(r.csv, 'stress_test', args['stress-test'] ?? false);
-      r.csv = addColumnToCsv(r.csv, 'benchmark', args.benchmark ?? false);
-      testsResults.push(r);
-      organized = testsLeft;
-      browserId++;
+        skipToCategory: currentSkipToCategory,
+        skipToTest: currentSkipToTest,
+        keepBrowserOpen: useRetry, // Keep browser open if retry is enabled
+      }, browserId, testInvocationTimeout, browserSession);
+
+      // Store browser session for potential reuse
+      if (r.browserSession)
+        browserSession = r.browserSession;
 
       if (r.error) {
         console.log(`\nexecution error:`);
         console.log(r.error);
-        break;
+        // Close browser on error
+        if (browserSession?.browser)
+          await browserSession.browser.close();
+        // Add the failed result before returning
+        testsResults.push(r);
+        return;
       }
+      // Check retry support from first run result
+      if (useRetry && r.failed && r.lastFailedTest && retrySupported === undefined) {
+        retrySupported = r.retrySupported === true;
+        if (!retrySupported)
+          color.warn('Retry not supported: test() function does not have skipToCategory parameter');
+      }
+
+      // Check if we should retry on failure
+      if (useRetry && r.failed && r.lastFailedTest && retryEnabled && retrySupported) {
+        const testKey = `${r.lastFailedTest.category}::${r.lastFailedTest.test}`;
+
+        if (totalRetries >= MAX_RETRIES_PER_SESSION) {
+          color.warn(`Maximum retries (${MAX_RETRIES_PER_SESSION}) reached. Disabling retries.`);
+          retryEnabled = false;
+          oneLastTry = true;
+        } else {
+          // Retry this test
+          retriedTests.add(testKey);
+          totalRetries++;
+          console.log('Refreshing page for retry...');
+          color.info(`Retrying from "${r.lastFailedTest.category}: ${r.lastFailedTest.test}" (retry ${totalRetries}/${MAX_RETRIES_PER_SESSION})...`);
+
+          // Store results from previous run
+          testsResults.push(r);
+
+          // Set skip params for next run
+          currentSkipToCategory = r.lastFailedTest.category;
+          currentSkipToTest = r.lastFailedTest.test;
+          shouldRetry = true;
+          browserId++;
+        }
+      }
+
+      if (!shouldRetry) {
+        testsResults.push(r);
+      }
+
     }
-    while (r.failed);
+
+    // Close browser after all retries are done
+    if (browserSession?.browser)
+      await browserSession.browser.close();
   }, testInvocationTimeout);
+
+  // Handle empty results (shouldn't happen but safety check)
+  if (testsResults.length === 0) {
+    return {
+      failed: true,
+      verbosePassed: '',
+      verboseSkipped: '',
+      verboseFailed: 'No test results collected',
+      passedAmount: 0,
+      skippedAmount: 0,
+      failedAmount: 0,
+      csv: '',
+      error: 'No test results collected',
+    };
+  }
+
   return await mergeBrowsersResults(testsResults);
 }
 
@@ -253,5 +289,6 @@ interface TestArgs {
   platform?: boolean,
   core?: boolean,
   'stress-test'?: boolean,
-  'ci-cd'?: boolean
+  'ci-cd'?: boolean,
+  'no-retry'?: boolean
 } 

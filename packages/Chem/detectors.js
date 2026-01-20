@@ -15,7 +15,7 @@ class ChemPackageDetectors extends DG.Package {
       ChemPackageDetectors.likelyRegexps.some((regexp) => regexp.test(s));
   }
 
-  static validSmilesChars = new Uint32Array([0, 671083320, 1073741823, 134217726, 0, 0, 0, 0]);
+  static validSmilesChars = new Uint32Array([0, 805305144, 1073741823, 1073741822, 0, 0, 0, 0]);
   static validFirstSmilesChars = new Uint32Array([0, 256, 134857308, 573448, 0, 0, 0, 0]);
   static numberOfMolsToCheck = 100;
   static numberOfMolsToCheckRdKit = 10;
@@ -31,14 +31,18 @@ class ChemPackageDetectors extends DG.Package {
   static likelyValidSmiles(s) {
     if (!ChemPackageDetectors.validFirstChar(s[0].charCodeAt(0)))
       return false;
-    for (let j = 1; j < s.length; ++j)
-      if (!ChemPackageDetectors.validChar(s[j].charCodeAt(0)))
+    for (let j = 1; j < s.length; j++) {
+      const ch = s[j];
+      if (ch === ' ' && j + 1 < s.length && s[j + 1] === '|')
+        continue;
+      if (!ChemPackageDetectors.validChar(ch.charCodeAt(0)))
         return false;
+    }
     return true;
   }
 
   //name: detectMolecules
-  //tags: semTypeDetector
+  //meta.role: semTypeDetector
   //input: column col
   //output: string semType
   //meta.skipTest: GROK-17630
@@ -68,7 +72,7 @@ class ChemPackageDetectors extends DG.Package {
       grok.functions.call('Chem:detectSmiles', { col: col, min: minUnique }).then(() => {});
   }
 
-  //tags: semTypeDetector
+  //meta.role: semTypeDetector
   //input: column col
   //output: string semType
   //meta.skipTest: GROK-17630

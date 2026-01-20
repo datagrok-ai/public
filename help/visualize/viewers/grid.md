@@ -263,7 +263,7 @@ You can quickly show or hide groups of columns from [filters](filters.md).
 
 You can customize the display of cell data using [cell renderers](#cell-renderers). Grid cells can also contain values from [multiple columns](#summary-columns) or [linked tables](#data-from-linked-tables), and display embedded [images](#images).
 
-![](img/cell-renderers-examples.gif)
+![Cell renderers example](img/cell-renderers-examples.gif)
 
 ### Cell renderers
 
@@ -648,15 +648,135 @@ or press Alt+C.
 
 ![](img/grid-columns-preview.gif)
 
+
+
+## Properties
+
+| Property | Type | Description |
+|----------|------|-------------|
+| **Data** | | |
+| Allow Edit | boolean | Indicates whether the grid is editable. See also *Show Add New Row Icon* |
+| Show Add New Row Icon | boolean | When [allowEditable] is true, shows the last virtual row that the user can edit. This row gets appended to the underlying table as soon as any value is entered. The grid should also be in the editable mode |
+| Add New Row On Last Row Edit | boolean | Automatically adds a new row in the end of the dataframe when the last row is edited The grid should also be in the editable mode |
+| Show Remove Row Icon | boolean | When [allowEditable] is true, allows user to remove the mouse over row. The grid should also be in the editable mode |
+| Filter | string | Formula that filters out rows to show. Examples: `${AGE}` > 20 or `${WEIGHT / 2)}` > 100, `${SEVERITY}` == ''Medium'', `${RACE}`.endsWith(''sian'') |
+| Table | string |  |
+| **Columns** | | |
+| Show Column Labels | boolean |  |
+| Col Header Height | number | Column header height. If not specified, it is calculated automatically. See also *Col Labels Orientation*, *Horz Col Labels Height* |
+| Vert Col Labels Height | number | Height of the column labels when the orientation is vertical, and *Col Header Height* is not specified. |
+| Horz Col Labels Height | number | Height of the column labels when the orientation is horizontal, and *Col Header Height* is not specified. |
+| Max Heatmap Columns | number |  |
+| **Rows** | | |
+| Row Height | number | Applicable only to grid |
+| **Selection** | | |
+| Show Mouse Over Row Indicator | boolean | Indicates mouse-over row by drawing a vertical stripe on the row header |
+| Show Current Row Indicator | boolean | Indicates current row with the *Current Row Color*. |
+| **General** | | |
+| Top Level Default Menu | boolean | When set to false, default menu appears under the ''Grid'' submenu. |
+| Show Default Popup Menu | boolean | Whether items applicable to all viewers (such as Pickup Style) should be shown in a popup menu. Also requires *Show Context Menu*. |
+| Allow Block Selection | boolean | Mouse drag on the data cells selects both rows and columns |
+| Allow Col Selection | boolean | Shift+click on a header to select a column Shift+mouse drag on the headers to select multiple columns Ctrl+click to invert selection Ctrl+Shift+click to deselect |
+| Allow Row Reordering | boolean | Mouse drag on the rows header selects rows Reorder rows by dragging them |
+| Allow Sorting | boolean | Whether to sort when user double-clicks on the column header |
+| Allow Row Selection | boolean | Mouse drag on the rows headers selects rows Ctrl+click to invert selection Shift+mouse drag to select multiple rows Ctrl+Shift+mouse drag to unselect |
+| Allow Content Panning | boolean | Right-click and drag to pan content |
+| Show Column Groups | boolean |  |
+| Show Row Header | boolean |  |
+| Show Row Gridlines | boolean |  |
+| Allow Column Menu | boolean | Whether the hamburger menu should be shown for a column when the mouse is over its header |
+| Auto Scroll Column Into View | boolean | Automatically scroll column into view when this column becomes current |
+| Auto Scroll Row Into View | boolean | Automatically scroll current row into view when it is set from outside (for instance, as a result of clicking on a point in a scatter plot) |
+| Auto Resize Column Widths | boolean | Automatically resize column widths when row height is resized |
+| Show Column Gridlines | boolean |  |
+| Allow Col Reordering | boolean | Reordering columns by dragging the header |
+| Allow Change Current Object | boolean | Whether the current object (shown in the context panel) is changed when you click on a column header. |
+| Allow Row Dragging | boolean | Whether row (rows) can be dragged out of the grid. |
+| Allow Row Resizing | boolean | Resize rows by dragging the border between rows on a row header. Applicable only to grid. |
+| Draw Every Row | boolean | Indicates the way colors are sampled in the heatmap mode when there is not enough pixels on the screen for each row: True: each row is draws (but the result is blended and the resulting color might not represent any row) False: a row is sampled and then drawn as one pixel (but non-sampled rows do not get drawn at all) Applicable only to heatmap. |
+| Show Context Menu | boolean | Whether the context menu is shown |
+| Show Read Only Notifications | boolean | Whether to show notifications when the user tries to edit a read-only table |
+| Show Heatmap Scrollbars | boolean | Whether to show scrollbars in the heatmap mode Note that scrollbars will still be visible if they are not expanded |
+| Missing Value Color | number |  |
+| Selected Rows Color | number |  |
+| Selected Cols Color | number |  |
+| Current Row Color | number |  |
+| Mouse Over Row Color | number |  |
+| Mouse Over Row Stripe Color | number |  |
+| Back Color | number |  |
+| Col Header Text Color | number |  |
+| Col Header Back Color | number |  |
+| Col Header Mouse Over Text Color | number |  |
+| Cell Text Color | number |  |
+| Current Cell Text Color | number |  |
+| Row Header Back Color | number |  |
+| Global Color Scaling | boolean | true: colors are scaled based on the global min/max in all numerical columns false: colors are scaled based on the column min/max. Applicable only to heatmap. |
+| Heatmap Colors | boolean | Whether the heatmap should be color-coded (you might want to do it programmatically) See also [globalColorScaling] |
+| Margin Left | number |  |
+| Margin Top | number |  |
+| Margin Right | number |  |
+| Margin Bottom | number |  |
+| Allow Sticky Meta | allowstickymetatype |  |
+| Sync New Columns | boolean | Determines whether newly added columns are added to the grid |
+| Column Header Types | list |  |
+| Cell Style | gridcellstyle |  |
+| Current Row Cell Style | gridcellstyle |  |
+| Columns | list |  |
+| Is Heatmap | boolean |  |
+| Row Source | string | Determines the rows shown on the plot. |
+| Allow Dynamic Menus | boolean |  |
+| Title | string |  |
+| Description | string | Viewer description that gets shown at the *Descriptor Position*. Markup is supported. |
+| Help | string | Help to be shown when user clicks on the ''?'' icon on top. Could either be in markdown, or a URL (starting with ''/'' or ''http''). |
+| Description Position | flexposition |  |
+| Description Visibility Mode | visibilitymode |  |
+| Horz Align | string |  |
+| Vert Align | string |  |
+| Tooltip | string | When defined, overrides the default cell tooltip |
+| Cursor | string |  |
+| Text Wrap | string |  |
+| Text Color | number |  |
+| Back Color | number |  |
+| Text Vertical | boolean |  |
+| Image Scale | number | Applies to image columns only |
+| Opacity | number | Applies to image columns only |
+| Element | element | For ''html'' cell types only |
+| Choices | list | When defined, the cell editor becomes a combo box with the specified values |
+| **Style** | | |
+| Show Current Cell Outline | boolean |  |
+| Color Coding | gridcolorcodingtype | Color-coding that applies to all columns. Additionally, each column can be individually color-coded. |
+| Default Cell Font | string |  |
+| Max Font Size | number |  |
+| Col Header Font | string |  |
+| Col Labels Orientation | textorientation | Orientation of the column header text. In spreadsheet mode, it defaults to horizontal no matter how small the columns are. In heat map mode, it depends on whether the text can fit in the area. |
+| Allow Col Header Resizing | boolean | Resizing column header by dragging the border between the header and the first row |
+| Allow Col Resizing | boolean | Resizing columns by dragging the border between column headers |
+| Linear Color Scheme | list |  |
+| Categorical Color Scheme | list |  |
+| **Tooltip** | | |
+| Show Tooltip | string | Controls grid tooltip visibility |
+| Show Labels | visibilitymode |  |
+| Show Cell Tooltip | boolean |  |
+| Show Visible Columns In Tooltip | boolean | Include currently visible columns in a tooltip |
+| Show Column Tooltip | boolean |  |
+| Row Tooltip | string | Newline-separated list of column names to be used in a tooltip. Requires *showTooltip* to be enabled. |
+| **Description** | | |
+| Show Title | boolean |  |
+| **Margin** | | |
+| Margin Left | number |  |
+| Margin Right | number |  |
+| Margin Top | number |  |
+| Margin Bottom | number |  |
+
 ## Resources
 
 * Tutorials:
-  * [Grid](https://dev.datagrok.ai/apps/tutorials/Tutorials/ExploratoryDataAnalysis/GridCustomization)
-  * [Viewers](https://dev.datagrok.ai/apps/tutorials/Tutorials/ExploratoryDataAnalysis/Viewers)
+    * [Grid](https://dev.datagrok.ai/apps/tutorials/Tutorials/ExploratoryDataAnalysis/GridCustomization)
+    * [Viewers](https://dev.datagrok.ai/apps/tutorials/Tutorials/ExploratoryDataAnalysis/Viewers)
 
 * YouTube:
 
-   [![Grid](../../uploads/youtube/visualizations2.png "Open on Youtube")](https://www.youtube.com/watch?v=7MBXWzdC0-I&t=2971s)
+  [![Grid](../../uploads/youtube/visualizations2.png "Open on Youtube")](https://www.youtube.com/watch?v=7MBXWzdC0-I&t=2971s)
 
 See also:
 
@@ -664,3 +784,8 @@ See also:
 * [Table View](../table-view-1.md)
 * [JS API: Grid](https://public.datagrok.ai/js/samples/ui/viewers/types/grid)
 * [PowerGrid package](https://github.com/datagrok-ai/public/blob/master/packages/PowerGrid/README.md) 
+* Community: 
+  * [Grid updates](https://community.datagrok.ai/t/grid-updates/616)
+  * [Power Grid: Smart form](https://community.datagrok.ai/t/power-grid-smart-form/774)
+  * [Visualization-related updates](https://community.datagrok.ai/t/visualization-related-updates/521)
+

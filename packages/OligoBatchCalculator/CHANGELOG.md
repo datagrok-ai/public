@@ -1,5 +1,10 @@
 # Oligo Batch Calculator changelog
 
+## 1.2.0 (2025-09-19)
+
+* Updated app paths in the Browse tree
+* Standardized plugin name to title case in README and changelog
+
 ## 1.0.7 (2024-07-23)
 
 * Dependency: datgarok-api >= 1.20.0

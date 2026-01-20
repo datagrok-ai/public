@@ -1,27 +1,66 @@
 /* eslint-disable max-len */
+import * as grok from 'datagrok-api/grok';
 import OpenAI from 'openai';
 import * as api from '../package-api';
 import {LLMCredsManager} from './creds';
-import {ChatCompletionParseParams} from 'openai/resources/chat/completions';
 import {JsonSchema} from '../prompt-engine/interfaces';
-export class OpenAIHelpClient {
-  private openai: OpenAI;
-  private constructor(private apiKey: string, private vectorStoreId: string) {
-    this.openai = new OpenAI({
-      apiKey: this.apiKey, dangerouslyAllowBrowser: true
+import {ChatModel} from 'openai/resources/shared';
+import {_package} from '../package';
+
+export type ModelOption = 'Fast' | 'Deep Research' | 'Coding';
+export const ModelType: {[type in ModelOption]: ChatModel} = {
+  Fast: 'gpt-4o-mini',
+  'Deep Research': 'gpt-5.2' as ChatModel, // hell of a smart model but a bit expensive expensive
+  Coding: 'gpt-5.1-codex-max' as ChatModel,
+  //'Deep Research': 'o4-mini', // good balance between speed, quality and $$$
+};
+
+export function initModelTypeNames() {
+  if (_package.settings.defaultFastModel)
+    ModelType.Fast = _package.settings.defaultFastModel;
+  if (_package.settings.defaultDeepResearchModel)
+    ModelType['Deep Research'] = _package.settings.defaultDeepResearchModel as ChatModel;
+  if (_package.settings.defaultCodingModel)
+    ModelType.Coding = _package.settings.defaultCodingModel as ChatModel;
+  if (grok.ai.config?.modelToDeployment) {
+    ModelType.Fast = grok.ai.config.modelToDeployment[ModelType.Fast] as ChatModel ?? ModelType.Fast;
+    ModelType['Deep Research'] = grok.ai.config.modelToDeployment[ModelType['Deep Research']] as ChatModel ?? ModelType['Deep Research'];
+    ModelType.Coding = grok.ai.config.modelToDeployment[ModelType.Coding] as ChatModel ?? ModelType.Coding;
+  }
+}
+
+export class OpenAIClient {
+  public openai: OpenAI;
+  private constructor(private vectorStoreId: string) {
+    if (!grok.ai.openAiConfigured)
+      throw new Error('OpenAI is not configured. Please set the API key in the AI settings under Admin section.');
+    this.openai = new OpenAI({baseURL: `${grok.ai.openAiProxyUrl}/v${grok.ai.config?.apiVersion ?? '1'}`, dangerouslyAllowBrowser: true,
+      apiKey: 'unused',
+      fetch: async (input, init) => {
+        const url = typeof input === 'string' ? input : input.toString();
+        return fetch(url, {
+          ...init,
+          headers: {
+            ...init?.headers,
+            Authorization: grok.ai.openAiProxyToken,
+          },
+        });
+      },
     });
   }
 
-  private static _instance: OpenAIHelpClient | null = null;
-  static getInstance(): OpenAIHelpClient {
-    OpenAIHelpClient._instance ??= new OpenAIHelpClient(LLMCredsManager.getApiKey(), LLMCredsManager.getVectorStoreId());
-    return OpenAIHelpClient._instance;
+  private static _instance: OpenAIClient | null = null;
+  static getInstance(): OpenAIClient {
+    OpenAIClient._instance ??= new OpenAIClient(LLMCredsManager.getVectorStoreId());
+    return OpenAIClient._instance;
   }
 
   async getHelpAnswer(question: string): Promise<string> {
+    if (!this.vectorStoreId)
+      throw new Error('Vector Store ID is not set. Please set it in the package settings.');
     const storageIDs = [this.vectorStoreId];
     const response = await this.openai.responses.create({
-      model: 'gpt-4o',
+      model: ModelType.Fast,
       instructions: `
     You are a helpful assistant with access to documentation for the datagrok platform via file_search tool. Use the available tool to answer questions accurately.
     
@@ -63,30 +102,31 @@ export class OpenAIHelpClient {
     userPrompt: string,
     schema?: JsonSchema
   ): Promise<string> {
-    const request: ChatCompletionParseParams = {
+    const response = await this.openai.responses.create({
       model,
-      temperature: model.startsWith('gpt-5') ? 1 : 0, // 5th models only work with temperature 1
-      messages: [
-        {role: 'system', content: systemPrompt},
-        {role: 'user', content: userPrompt},
-      ],
+      instructions: systemPrompt,
+      input: userPrompt,
       ...(schema && {
-        response_format: {
-          type: 'json_schema',
-          json_schema: {
+        text: {
+          format: {
+            type: 'json_schema',
             name: 'ResponseSchema',
             schema,
-          },
-        },
+            strict: true,
+          }
+        }
       }),
-    };
+    });
 
-    const response = await this.openai.chat.completions.parse(request);
-    const msg = response.choices?.[0]?.message;
+    const text = response.output_text ?? '';
+    if (!schema)
+      return text;
 
-    if (schema)
-      return JSON.stringify(msg?.parsed);
-    return msg?.content ?? '';
+    try {
+      return JSON.stringify(JSON.parse(text));
+    } catch {
+      return text;
+    }
   }
 }
 

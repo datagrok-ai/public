@@ -102,9 +102,9 @@
   min-width: 0; 
 }
 
-.assay-plates--form-row input,
-.assay-plates--form-row select,
-.assay-plates--form-row .ui-input-editor {
+.assay-plates--form-row input:not([type="checkbox"]),
+.ow select,
+.ow .ui-input-editor:not(.ui-input-bool) {
   width: 100% !important;
   min-width: 0 !important;
   max-width: 100% !important;

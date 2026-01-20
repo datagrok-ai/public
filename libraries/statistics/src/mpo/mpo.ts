@@ -21,6 +21,9 @@ export type DesirabilityProfile = {
   properties: { [key: string]: PropertyDesirability };
 }
 
+export const WEIGHTED_AGGREGATIONS = ['Average', 'Sum', 'Product', 'Geomean', 'Min', 'Max'] as const;
+export type WeightedAggregation = typeof WEIGHTED_AGGREGATIONS[number];
+
 /// Calculates the desirability score for a given x value
 /// Returns 0 if x is outside the range of the desirability line
 /// Otherwise, returns the y value of the desirability line at x
@@ -47,12 +50,21 @@ export function desirabilityScore(x: number, desirabilityLine: DesirabilityLine)
 }
 
 /** Calculates the multi parameter optimization score, 0-100, 100 is the maximum */
-export function mpo(dataFrame: DG.DataFrame, columns: DG.Column[]): DG.Column {
+export function mpo(
+  dataFrame: DG.DataFrame,
+  columns: DG.Column[],
+  profileName: string,
+  aggregation: WeightedAggregation,
+  addResultColumn: boolean = true,
+): DG.Column {
   if (columns.length === 0)
     throw new Error('No columns provided for MPO calculation.');
 
-  const resultColumnName = dataFrame.columns.getUnusedName('MPO'); // Ensure unique name
-  const resultColumn = DG.Column.float(resultColumnName, columns[0].length);
+  let resultColumn = dataFrame.col(profileName);
+  const isNew = !resultColumn;
+
+  if (!resultColumn)
+    resultColumn = DG.Column.float(profileName, columns[0].length);
 
   const desirabilityTemplates = columns.map((column) => {
     const tag = column.getTag('desirabilityTemplate');
@@ -60,21 +72,48 @@ export function mpo(dataFrame: DG.DataFrame, columns: DG.Column[]): DG.Column {
   });
 
   resultColumn.init((i) => {
-    let totalScore = 0;
-    let maxScore = 0;
+    const scores: number[] = [];
+    const weights: number[] = [];
 
     for (let j = 0; j < columns.length; j++) {
       const desirability = desirabilityTemplates[j];
       const value = columns[j].get(i);
-      const score = desirabilityScore(value, desirability.line);
-      totalScore += desirability.weight * score;
-      maxScore += desirability.weight;
+      scores[j] = desirabilityScore(value, desirability.line);
+      weights[j] = desirability.weight;
     }
 
-    return 100 * (totalScore / maxScore);
+    return aggregate(scores, weights, aggregation);
   });
 
   // Add the column to the table
-  dataFrame.columns.add(resultColumn);
+  if (isNew && addResultColumn)
+    dataFrame.columns.add(resultColumn);
   return resultColumn;
+}
+
+export function aggregate(scores: number[], weights: number[], aggregation: WeightedAggregation): number {
+  switch (aggregation) {
+  case 'Sum':
+    return scores.reduce((sum, s, idx) => sum + s * weights[idx], 0);
+
+  case 'Average':
+    const totalWeight = weights.reduce((sum, w) => sum + w, 0);
+    return scores.reduce((sum, s, idx) => sum + s * weights[idx], 0) / totalWeight;
+
+  case 'Product':
+    return scores.reduce((prod, s, idx) => prod * Math.pow(s, weights[idx]), 1);
+
+  case 'Geomean':
+    const totalW = weights.reduce((sum, w) => sum + w, 0);
+    return scores.reduce((prod, s, idx) => prod * Math.pow(s, weights[idx] / totalW), 1);
+
+  case 'Min':
+    return Math.min(...scores.map((s, idx) => Math.pow(s, weights[idx])));
+
+  case 'Max':
+    return Math.max(...scores.map((s, idx) => Math.pow(s, weights[idx])));
+
+  default:
+    throw new Error(`Unknown aggregation type: ${aggregation}`);
+  }
 }

@@ -14,7 +14,7 @@ category('Viewers', () => {
     treeHelper = await getTreeHelper();
   });
 
-  const viewers = DG.Func.find({package: 'PhyloTreeViewer', tags: ['viewer']}).map((f) => f.friendlyName);
+  const viewers = DG.Func.find({package: 'PhyloTreeViewer', meta: {role: DG.FUNC_TYPES.VIEWER}}).map((f) => f.friendlyName);
   for (const v of viewers) {
     test(v, async () => {
       await testViewer(v, await (async () => {

@@ -29,7 +29,6 @@ export type table = {base_table_key: null | string, description: string, ds_id: 
   name: string, custom_fields: {value: {otype: string, oid: number}[], field_id: number, field_name: string}[],
   partition_columns: null | string, partition_definition: null | string, schema_id: number, schema_name: string,
   sql: null | string, table_comment: null | string, table_type: string, title: string, url: string};
-// type baseEntity = {id: number, title: string, description: string};
 export type column = {name: string};
 export type baseEntity = dataSource | schema | table | query;
 export type specialType = 'data-source' | 'schema' | 'table' | 'query';

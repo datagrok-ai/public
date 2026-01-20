@@ -2,7 +2,7 @@ import type * as _grok from 'datagrok-api/grok';
 import type * as _DG from 'datagrok-api/dg';
 declare let grok: typeof _grok, DG: typeof _DG;
 
-import { before, category, expect, test, expectArray, after } from '@datagrok-libraries/utils/src/test';
+import { before, category, expect, test, expectArray, after } from '@datagrok-libraries/test/src/test';
 
 
 category('Dapi: connection', () => {
@@ -183,6 +183,7 @@ category('Dapi: TableQuery', () => {
   const whereClauses = [{
     field: 'orderid',
     pattern: '10250',
+    dataType: DG.TYPE.STRING
   }];
   const aggregationsDb = [{
     colName: 'orderid',
@@ -191,6 +192,7 @@ category('Dapi: TableQuery', () => {
   const havingDb = [{
     field: 'COUNT(shipcountry)',
     pattern: '2',
+    dataType: DG.TYPE.STRING
   }];
   const orderByDb = [{
     field: 'orderid',

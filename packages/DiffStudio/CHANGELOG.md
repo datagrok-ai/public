@@ -1,5 +1,9 @@
 # Diff Studio changelog
 
+## 1.4.10 (2026-01-14)
+
+Path update
+
 ## 1.4.9 (2025-10-03)
 
 Updated compute-utils

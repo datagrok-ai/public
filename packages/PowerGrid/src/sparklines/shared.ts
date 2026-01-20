@@ -34,23 +34,41 @@ export interface SummarySettingsBase {
   columnNames: string[];
   logColumnNames: string[];
   invertColumnNames: string[];
+  minValues: Map<string, number>;
+  maxValues: Map<string, number>;
   colorCode: SummaryColumnColoringType;
   normalization: NormalizationType;
 }
-
 
 /// Utility method for old summary columns format support
 export function isSummarySettingsBase(obj: any): obj is SummarySettingsBase {
   return (obj as SummarySettingsBase).columnNames !== undefined;
 }
 
-export function getSettingsBase<T extends SummarySettingsBase>(gc: DG.GridColumn,
-  sparklineType: SparklineType): T {
-  return isSummarySettingsBase(gc.settings) ? (gc.settings as unknown as T) :
+export function getSettingsBase<T extends SummarySettingsBase>(
+  gc: DG.GridColumn,
+  sparklineType: SparklineType
+): T {
+  const settings = isSummarySettingsBase(gc.settings) ?
+    (gc.settings as unknown as T) :
     (gc.settings[sparklineType] ??= {
-      columnNames: names(wu(gc.grid.dataFrame.columns.numerical)
-        .filter((c: DG.Column) => c.type != DG.TYPE.DATE_TIME)).slice(0, 10),
+      columnNames: names(
+        wu(gc.grid.dataFrame.columns.numerical)
+          .filter((c: DG.Column) => c.type !== DG.TYPE.DATE_TIME)
+      ).slice(0, 10),
     } as unknown as T);
+
+  if (!settings.minValues || !settings.maxValues) {
+    settings.minValues = new Map<string, number>();
+    settings.maxValues = new Map<string, number>();
+
+    for (const col of gc.grid.dataFrame.columns) {
+      settings.minValues.set(col.name, col.min);
+      settings.maxValues.set(col.name, col.max);
+    }
+  }
+
+  return settings;
 }
 
 export enum SparklineType {
@@ -70,43 +88,80 @@ export const sparklineTypes: string[] = [
   SparklineType.Form
 ];
 
+type AxisScaleSettings = ScaleSettings & {
+  minValues?: Map<string, number>;
+  maxValues?: Map<string, number>;
+};
+
 export function distance(p1: DG.Point, p2: DG.Point): number {
   return Math.sqrt((p1.x - p2.x) * (p1.x - p2.x) + (p1.y - p2.y) * (p1.y - p2.y));
 }
 
-export function getScaledNumber(cols: DG.Column[], row: number, activeColumn: DG.Column, settings: ScaleSettings): number {
-  const {normalization, zeroScale = false, invertScale = false} = settings;
+const FLOAT_NONE = 2.6789344063684636e-34;
 
-  const colNumbers: number[] = [];
+export function getScaledNumber(
+  cols: DG.Column[],
+  row: number,
+  activeColumn: DG.Column,
+  settings: AxisScaleSettings
+): number {
+  const {
+    normalization,
+    zeroScale = false,
+    invertScale = false,
+    logScale = false,
+    minValues,
+    maxValues,
+  } = settings;
+
+  const toLogSafe = (v: number) => v > 0 ? Math.log(v) : FLOAT_NONE;
+
+  const scaleValue = (v: number): number => logScale ? toLogSafe(v) : v;
+
+  const resolveMinMax = (column: DG.Column): { min: number; max: number } => {
+    const rawMin = minValues?.get(column.name);
+    const rawMax = maxValues?.get(column.name);
+
+    const min = rawMin != null && rawMin !== FLOAT_NONE ? rawMin : column.min;
+    const max = rawMax != null && rawMax !== FLOAT_NONE ? rawMax : column.max;
+
+    return {
+      min: scaleValue(min),
+      max: scaleValue(max),
+    };
+  };
+
+  const normalize = (value: number, min: number, max: number): number =>
+    max === min ? 0 : (value - min) / (max - min);
+
+  const rowValues: number[] = [];
   const colMins: number[] = [];
   const colMaxs: number[] = [];
 
-  for (const c of cols) {
-    const num = c?.getNumber(row);
-    if (num != null) colNumbers.push(num);
+  for (const col of cols) {
+    rowValues.push(scaleValue(col.getNumber(row)));
 
-    if (c?.min != null) colMins.push(c.min);
-    if (c?.max != null) colMaxs.push(c.max);
+    const {min, max} = resolveMinMax(col);
+    colMins.push(min);
+    colMaxs.push(max);
   }
 
-  let normalized = 0;
+  const value = scaleValue(activeColumn.getNumber(row));
+  let normalized: number;
 
   if (normalization === NormalizationType.Global || normalization === NormalizationType.Row) {
-    const values = normalization === NormalizationType.Global ? colMins : colNumbers;
-    const ranges = normalization === NormalizationType.Global ? colMaxs : colNumbers;
+    const mins = normalization === NormalizationType.Global ? colMins : rowValues;
+    const maxs = normalization === NormalizationType.Global ? colMaxs : rowValues;
 
-    const gmin = zeroScale ? 0 : Math.min(...values);
-    const gmax = Math.max(...ranges);
-
-    const value = activeColumn.getNumber(row) ?? 0;
-    normalized = gmax === gmin ? 0 : (value - gmin) / (gmax - gmin);
+    const globalMin = zeroScale ? 0 : Math.min(...mins);
+    const globalMax = Math.max(...maxs);
+    normalized = normalize(value, globalMin, globalMax);
   } else {
-    normalized = activeColumn.scale(row) ?? 0;
+    const {min, max} = resolveMinMax(activeColumn);
+    normalized = normalize(value, min, max);
   }
 
-  if (invertScale) normalized = 1 - normalized;
-
-  return normalized;
+  return invertScale ? 1 - normalized : normalized;
 }
 
 export function getSparklinesContextPanel(gridCell: DG.GridCell, colNames: string[]): HTMLDivElement {
@@ -145,15 +200,18 @@ export function createTooltip(cols: DG.Column[], activeColumn: number, row: numb
 }
 
 export function createBaseInputs(gridColumn: DG.GridColumn, settings: SummarySettingsBase, isSmartForm: boolean = false): DG.InputBase[] {
-  const columnNames = settings?.columnNames ?? names(gridColumn.grid.dataFrame.columns.numerical);
-  const inputs = [];
-  if (!isSmartForm) {
-    inputs[inputs.length] = ui.input.choice<NormalizationType>('Normalization', {
+  const df = gridColumn.grid.dataFrame;
+  const invalidate = () => gridColumn.grid.invalidate();
+
+  function createNormalizationInput(): DG.InputBase | null {
+    if (isSmartForm) return null;
+
+    return ui.input.choice<NormalizationType>('Normalization', {
       value: settings.normalization,
       items: [NormalizationType.Row, NormalizationType.Column, NormalizationType.Global],
       onValueChanged: (value) => {
         settings.normalization = value;
-        gridColumn.grid.invalidate();
+        invalidate();
       },
       tooltipText: 'Defines how values are scaled:<br>' +
         '- ROW: Scales each row individually (row minimum to row maximum). Use for comparing values within a row.<br>' +
@@ -165,39 +223,82 @@ export function createBaseInputs(gridColumn: DG.GridColumn, settings: SummarySet
     });
   }
 
-  return [
-    ui.input.columns('Columns', {
-      value: gridColumn.grid.dataFrame.columns.byNames(columnNames),
-      table: gridColumn.grid.dataFrame,
-      onValueChanged: (value) => {
-        settings.columnNames = names(value);
-        gridColumn.grid.invalidate();
+  function getMinMaxProperties(): DG.Property[] | null {
+    if (isSmartForm || !settings.minValues?.size || !settings.maxValues?.size)
+      return null;
+
+    return [
+      DG.Property.create('min', DG.TYPE.FLOAT,
+        (col: string) => settings.minValues.get(col),
+        (col: string, value: number) => settings.minValues.set(col, value)
+      ),
+      DG.Property.create('max', DG.TYPE.FLOAT,
+        (col: string) => settings.maxValues.get(col),
+        (col: string, value: number) => settings.maxValues.set(col, value)
+      ),
+    ];
+  }
+
+  function getAdditionalColumns() {
+    if (isSmartForm)
+      return null;
+
+    return {
+      additionalColumns: {
+        'log': df.columns.byNames(settings.logColumnNames ?? []),
+        'invert': df.columns.byNames(settings.invertColumnNames ?? []),
       },
-      available: isSmartForm ? names(gridColumn.grid.dataFrame.columns) : names(gridColumn.grid.dataFrame.columns.numerical),
-      ...(!isSmartForm && {
-        additionalColumns: {
-          'log': gridColumn.grid.dataFrame.columns.byNames(settings.logColumnNames ?? []),
-          'invert': gridColumn.grid.dataFrame.columns.byNames(settings.invertColumnNames ?? []),
-        },
-        onAdditionalColumnsChanged: (values: { [key: string]: DG.Column[] }) => {
-          settings.logColumnNames = names(values['log'] ?? []);
-          settings.invertColumnNames = names(values['invert'] ?? []);
-          gridColumn.grid.invalidate();
-        },
-      }),
-    }),
-    ...inputs,
-    ui.input.choice<SummaryColumnColoringType>('Color Code', {
+      onAdditionalColumnsChanged: (values: { [key: string]: DG.Column[] }) => {
+        settings.logColumnNames = names(values['log'] ?? []);
+        settings.invertColumnNames = names(values['invert'] ?? []);
+        invalidate();
+      },
+    };
+  }
+
+  function createColumnsInput(): DG.InputBase {
+    const columnNames = settings?.columnNames ?? names(df.columns.numerical);
+    const options: any = {
+      value: df.columns.byNames(columnNames),
+      table: df,
+      available: isSmartForm ? names(df.columns) : names(df.columns.numerical),
+      onValueChanged: (value: DG.Column[]) => {
+        settings.columnNames = names(value);
+        invalidate();
+      },
+    };
+
+    const minMax = getMinMaxProperties();
+    if (minMax)
+      options.additionalColumnProperties = minMax;
+
+    const additionalCols = getAdditionalColumns();
+    if (additionalCols) {
+      options.additionalColumns = additionalCols.additionalColumns;
+      options.onAdditionalColumnsChanged = additionalCols.onAdditionalColumnsChanged;
+    }
+    return ui.input.columns('Columns', options);
+  }
+
+  function createColorCodeInput(): DG.InputBase {
+    return ui.input.choice<SummaryColumnColoringType>('Color Code', {
       value: settings.colorCode,
-      items: [SummaryColumnColoringType.Auto, SummaryColumnColoringType.Bins, SummaryColumnColoringType.Values, SummaryColumnColoringType.Off],
+      items: [
+        SummaryColumnColoringType.Auto,
+        SummaryColumnColoringType.Bins,
+        SummaryColumnColoringType.Values,
+        SummaryColumnColoringType.Off,
+      ],
       onValueChanged: (value) => {
         settings.colorCode = value;
-        gridColumn.grid.invalidate();
+        invalidate();
       },
       tooltipText: 'Activates color rendering',
-      nullable: false
-    }),
-  ];
+      nullable: false,
+    });
+  }
+
+  return [createColumnsInput(), createNormalizationInput(), createColorCodeInput()].filter(Boolean) as DG.InputBase[];
 }
 
 export function getRenderColor(settings: SummarySettingsBase, baseColor: number,

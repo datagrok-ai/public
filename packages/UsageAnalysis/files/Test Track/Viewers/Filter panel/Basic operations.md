@@ -6,7 +6,7 @@
 1. Apply any filters and verify that the data updates accordingly
 2. Click the **Reset** icon and confirm that all filters are cleared
 3. Apply new filters, disable one of them, and verify that the data updates accordingly
-4. Close the **Filter Panel** — f**iltering should be reset**
+4. Close the **Filter Panel** — **filtering should be reset**
 5. Reopen the **Filter Panel** and verify that:
    - The previously disabled filter remains disabled
    - Other filters are applied correctly

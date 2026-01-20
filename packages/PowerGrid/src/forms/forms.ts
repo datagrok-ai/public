@@ -85,10 +85,20 @@ export class FormCellRenderer extends DG.GridCellRenderer {
       const isLandscape = b.width / b.height > 1.5;
       const molBox = isLandscape ? b.getLeftScaled(0.5) : b.getTopScaled(0.5);
       b = isLandscape ? b.getRightScaled(0.5) : b.getBottomScaled(0.5);
+      const mode = settings.showColumnNames ?? 'Auto';
+      const shouldShowMolLabels = mode === 'Always' || (mode === 'Auto' && molCols.length > 1);
       for (let i = 0; i < molCols.length; i++) {
         const cell = gridCell.grid.cell(molCols[i].name, gridCell.gridRow);
-        const r = molCols.length === 1 ? molBox :
+        let r = molCols.length === 1 ? molBox :
           new DG.Rect(molBox.x, molBox.y + (i * molBox.height / molCols.length), molBox.width, molBox.height / molCols.length);
+        if (shouldShowMolLabels && r.height > 30) {
+          const labelHeight = Math.min(15, Math.max(10, r.height * 0.15));
+          const fontSize = Math.min(11, Math.floor(labelHeight * 0.9));
+          const labelR = r.getTop(labelHeight);
+          const font = `${fontSize}px Roboto, Roboto Local`;
+          scene.elements.push(new LabelElement(labelR, fontSize, molCols[i].name, {horzAlign: 'center', color: 'lightgrey', font: font}));
+          r = r.cutTop(labelHeight);
+        }
         scene.elements.push(new GridCellElement(r, cell));
       }
     }

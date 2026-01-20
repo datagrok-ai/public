@@ -1,5 +1,9 @@
 # HitTriage changelog
 
+## 1.9.0 (2025-12-17)
+
+* Global Vid system and molecule tracking across multiple campaigns.
+
 ## 1.8.0 (2025-12-09)
 
 * Improved collaboration support

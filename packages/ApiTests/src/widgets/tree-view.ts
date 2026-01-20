@@ -1,5 +1,5 @@
 import * as ui from 'datagrok-api/ui';
-import {category, expect, test} from '@datagrok-libraries/utils/src/test';
+import {category, expect, test} from '@datagrok-libraries/test/src/test';
 
 category('TreeView', () => {
   test('Group expanding', async () => {

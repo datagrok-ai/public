@@ -1,7 +1,7 @@
 import {PackageFunctions} from './package';
 import * as DG from 'datagrok-api/dg';
 
-//tags: init
+//meta.role: init
 export async function init() : Promise<void> {
   await PackageFunctions.init();
 }
@@ -26,8 +26,8 @@ export function solveEquations(problem: any, options: any) : any {
 
 //name: Diff Studio
 //description: Solver of ordinary differential equations systems
-//tags: app
 //output: view result
+//meta.role: app
 //meta.browsePath: Compute
 export async function runDiffStudio() : Promise<any> {
   return await PackageFunctions.runDiffStudio();
@@ -41,16 +41,16 @@ export async function runDiffStudioDemo() : Promise<void> {
   await PackageFunctions.runDiffStudioDemo();
 }
 
-//tags: file-handler
 //input: string content 
+//meta.role: fileHandler
 //meta.ext: ipv
 export async function ivpFileHandler(content: string) : Promise<void> {
   await PackageFunctions.ivpFileHandler(content);
 }
 
-//tags: fileViewer
 //input: file file 
 //output: view result
+//meta.role: fileViewer
 //meta.fileViewer: ivp
 export async function previewIvp(file: DG.FileInfo) : Promise<any> {
   return await PackageFunctions.previewIvp(file);

@@ -14,108 +14,267 @@ import {CDISC_STANDARD} from './types';
 import {VISIT} from '../constants/columns-constants';
 import {studies} from './app-utils';
 import {IssueDetail} from '../types/validation-result';
+import {Subscription} from 'rxjs';
 
-export function setupValidationErrorIndicators(tableView: DG.TableView, df: DG.DataFrame): void {
-  const grid = tableView.grid;
-  if (!grid)
+const ERROR_ICON_SIZE = 9;
+const ERROR_ICON_MARGIN = 2;
+const COLUMNS_WITH_VALIDATION_ERRORS_TAG = 'columnsWithErrors';
+
+export function setupValidationErrorColumns(df: DG.DataFrame) {
+  if (df.getTag(COLUMNS_WITH_VALIDATION_ERRORS_TAG))
     return;
 
-  // Find USUBJID column or first string column
-  let targetColumn: DG.GridColumn | null = grid.columns.byName(sdtmCols.SUBJECT_ID);
-  if (!targetColumn) {
-    for (const col of grid.dataFrame.columns.names()) {
-      if (grid.dataFrame.col(col)!.type === DG.TYPE.STRING) {
-        targetColumn = grid.col(col)!;
-        break;
+  // Find all columns that have corresponding _hasErrors columns
+  const columnsWithErrors: {[colName: string]: {hasErrorsCol: string, errorsCol: string}} = {};
+
+  for (const colName of df.columns.names()) {
+    if (colName.endsWith(sdtmCols.COL_HAS_ERRORS_POSTFIX)) {
+      const baseColName = colName.replace(sdtmCols.COL_HAS_ERRORS_POSTFIX, '');
+      const baseCol = df.columns.byName(baseColName);
+      const errorsCol = df.columns.byName(`${baseColName}${sdtmCols.ERRORS_POSTFIX}`);
+
+      if (baseCol && errorsCol) {
+        // Set semantic type on the errors column to enable custom renderer
+        errorsCol.semType = 'sdisc-rule-violation';
+        columnsWithErrors[baseColName] = {
+          hasErrorsCol: colName,
+          errorsCol: `${baseColName}${sdtmCols.ERRORS_POSTFIX}`,
+        };
       }
     }
   }
 
-  if (!targetColumn)
-    return;
+  if (Object.keys(columnsWithErrors).length === 0)
+    df.setTag(COLUMNS_WITH_VALIDATION_ERRORS_TAG, '');
 
-  // Check if HasValidationErrors and ViolatedRules columns exist
-  const hasErrorsCol = df.columns.byName('HasValidationErrors');
-  const violatedRulesCol = df.columns.byName('ViolatedRules');
-
-  if (!hasErrorsCol || !violatedRulesCol)
-    return;
-
-  // Set cell type to html to allow custom rendering
-  targetColumn.cellType = 'html';
-
-  grid.onCellPrepare((gc) => {
-    if (gc.isTableCell && gc.gridColumn.name === targetColumn.name) {
-      const rowIdx = gc.gridRow;
-      const hasErrors = hasErrorsCol.get(rowIdx);
-      const cellValue = gc.cell.value ?? '';
-
-      if (hasErrors) {
-        // Parse violated rules from JSON string
-        const violatedRulesStr = violatedRulesCol.get(rowIdx);
-        let violatedRules: IssueDetail[] = [];
-        if (violatedRulesStr) {
-          try {
-            violatedRules = JSON.parse(violatedRulesStr);
-          } catch (e) {
-            console.error('Failed to parse violated rules:', e);
-          }
-        }
-
-        // Create tooltip content
-        const tooltipContent = createValidationTooltip(violatedRules);
-
-        const errorMark = ui.iconFA('exclamation-triangle', () => {}, 'Validation errors');
-        errorMark.classList.add('clinical-case-validation-error-mark');
-
-        // Create cell content with value and error icon
-        const cellDiv = ui.div([
-          ui.span([cellValue], {style: {paddingRight: '4px'}}),
-          ui.iconFA('exclamation-triangle', () => {}, 'Validation errors'),
-        ], 'clinical-case-validation-error-cell');
-
-        // Add tooltip to icon
-        ui.tooltip.bind(errorMark, () => tooltipContent);
-
-        gc.style.element = cellDiv;
-      } else {
-        // No errors, just show cell value with same padding as other cells
-        gc.style.element = ui.span([cellValue], 'clinical-case-no-validation-error-cell');
-      }
-    }
-  });
+  // Store columnsWithErrors on df for tooltip handler access
+  df.setTag(COLUMNS_WITH_VALIDATION_ERRORS_TAG, JSON.stringify(columnsWithErrors));
 }
 
+// Track current cell with errors state
+let currentErrorCell: {
+    tableColName: string,
+    tableRowIndex: number,
+    errors: Array<{ruleID: string, message: string, value: string}>,
+    iconX: number,
+    iconY: number,
+    iconRight: number,
+    iconBottom: number
+  } | null = null;
 
-export function createValidationTooltip(violatedRules: IssueDetail[]): HTMLElement | string {
-  if (!violatedRules || violatedRules.length === 0)
+export function setupValidationErrorIndicators(grid: DG.Grid, df: DG.DataFrame, ruleId?: string): Subscription[] {
+  const columnsWithErrorsString = df.getTag(COLUMNS_WITH_VALIDATION_ERRORS_TAG);
+  if (!columnsWithErrorsString)
+    return [];
+
+  const columnsWithErrors = JSON.parse(columnsWithErrorsString);
+
+
+  const onCellRenderedSub = grid.onCellRendered.subscribe((args: DG.GridCellRenderArgs) => {
+    const cell = args.cell;
+    const tableColName = cell.tableColumn?.name;
+    const tableRowIndex = cell.tableRowIndex!;
+
+    if (!cell.isTableCell || !tableColName || tableRowIndex === undefined || tableRowIndex === null)
+      return;
+
+    const errorColsNames: {hasErrorsCol: string, errorsCol: string} = columnsWithErrors[tableColName];
+    if (!errorColsNames)
+      return;
+    const hasErrorsCol = df.col(errorColsNames.hasErrorsCol);
+    const errorsCol = df.col(errorColsNames.errorsCol);
+    if (!hasErrorsCol || !errorsCol)
+      return;
+
+    // Check if row index is valid
+    if (tableRowIndex < 0 || tableRowIndex >= hasErrorsCol.length)
+      return;
+
+    const hasErrors = hasErrorsCol.get(tableRowIndex);
+
+    if (hasErrors) {
+      // Parse errors for this specific column
+      const errorsStr = errorsCol.get(tableRowIndex);
+      let errors: Array<{ruleID: string, message: string, value: string}> = [];
+      if (errorsStr) {
+        try {
+          errors = JSON.parse(errorsStr);
+        } catch (e) {
+          console.error('Failed to parse column errors:', e);
+        }
+      }
+
+      if (ruleId) {
+        const filteredRule = errors.filter((it) => it.ruleID === ruleId);
+        if (!filteredRule.length)
+          return;
+        errors = filteredRule;
+      }
+
+      // Get bounds and canvas context
+      const bounds = args.bounds;
+      const g = args.g;
+
+      if (!g || !bounds)
+        return;
+
+      // Draw error indicator on canvas (similar to Peptides approach)
+      g.save();
+      g.beginPath();
+      g.rect(bounds.x, bounds.y, bounds.width, bounds.height);
+      g.clip();
+
+      // Draw error icon in top-right corner with 2px margins
+      const iconSize = ERROR_ICON_SIZE;
+      const margin = ERROR_ICON_MARGIN;
+      const iconX = bounds.x + bounds.width - iconSize - margin;
+      const iconY = bounds.y + margin;
+
+      // Draw red circle border (not filled)
+      g.strokeStyle = '#dc3545';
+      g.lineWidth = 1;
+      g.beginPath();
+      g.arc(iconX + iconSize / 2, iconY + iconSize / 2, iconSize / 2 - 0.5, 0, 2 * Math.PI);
+      g.stroke();
+
+      // Draw red exclamation mark inside
+      g.fillStyle = '#dc3545';
+      g.font = 'bold 6px Arial';
+      g.textAlign = 'center';
+      g.textBaseline = 'middle';
+      g.fillText('!', iconX + iconSize / 2, iconY + iconSize / 2 + 0.5);
+
+      //args.preventDefault();
+      g.restore();
+    }
+  });
+
+  // Subscribe to cell mouse enter - use hitTest to identify cell and check if it has errors
+  const onCellMouseEnterSub = grid.onCellMouseEnter.subscribe((cell: DG.GridCell) => {
+    // Use hitTest to identify which cell we're over at the moment
+    //const cell = grid.hitTest(lastMouseX, lastMouseY);
+    if (!cell || !cell.isTableCell || !cell.tableColumn?.name) {
+      currentErrorCell = null;
+      return;
+    }
+
+    const errorColsNames: {hasErrorsCol: string, errorsCol: string} = columnsWithErrors[cell.tableColumn.name];
+    if (!errorColsNames)
+      return;
+    const hasErrorsCol = df.col(errorColsNames.hasErrorsCol);
+    const errorsCol = df.col(errorColsNames.errorsCol);
+    if (!hasErrorsCol || !errorsCol) {
+      currentErrorCell = null;
+      return;
+    }
+
+    // Parse errors for this specific column
+    const errorsStr = errorsCol.get(cell.tableRowIndex);
+    let errors: Array<{ruleID: string, message: string, value: string}> = [];
+    if (errorsStr) {
+      try {
+        errors = JSON.parse(errorsStr);
+      } catch (e) {
+        console.error('Failed to parse column errors:', e);
+        currentErrorCell = null;
+        return;
+      }
+    }
+
+    if (ruleId) {
+      const filteredRule = errors.filter((it) => it.ruleID === ruleId);
+      if (!filteredRule.length)
+        return;
+      errors = filteredRule;
+    }
+
+    // Get cell bounds and calculate icon position (same as in rendering code)
+    const cellBounds = cell.bounds;
+    if (!cellBounds) {
+      currentErrorCell = null;
+      return;
+    }
+
+    const iconSize = ERROR_ICON_SIZE;
+    const margin = ERROR_ICON_MARGIN;
+    const iconX = cellBounds.x + cellBounds.width - iconSize - margin;
+    const iconY = cellBounds.y + margin;
+    const iconRight = iconX + iconSize;
+    const iconBottom = iconY + iconSize;
+
+    // Store current cell with errors and icon bounds
+    currentErrorCell = {tableColName: cell.tableColumn!.name,
+      tableRowIndex: cell.tableRowIndex, errors, iconX, iconY, iconRight, iconBottom};
+  });
+
+  // Subscribe to mouse move on overlay - track position and check coordinates
+  grid.overlay.addEventListener('mousemove', handleMouseMoveOverErrorCell);
+
+  // Clear state when mouse leaves a cell
+  const onCellMouseLeave = grid.onCellMouseLeave.subscribe(() => {
+    currentErrorCell = null;
+    ui.tooltip.hide();
+  });
+
+  return [onCellRenderedSub, onCellMouseEnterSub, onCellMouseLeave];
+}
+
+export function handleMouseMoveOverErrorCell(e: MouseEvent) {
+  // Check if we're in a cell with errors
+  if (!currentErrorCell) {
+    ui.tooltip.hide();
+    return;
+  }
+
+  // Check if mouse is within icon area (with tolerance)
+  const tolerance = 3;
+  if (e.offsetX >= currentErrorCell.iconX - tolerance && e.offsetX <= currentErrorCell.iconRight + tolerance &&
+        e.offsetY >= currentErrorCell.iconY - tolerance && e.offsetY <= currentErrorCell.iconBottom + tolerance) {
+    // Show tooltip
+    const tooltipContent = createColumnValidationTooltip(currentErrorCell.errors);
+    ui.tooltip.show(tooltipContent, e.clientX, e.clientY);
+  } else {
+    // Mouse moved outside icon area, hide tooltip
+    ui.tooltip.hide();
+  }
+}
+
+export function createColumnValidationTooltip(
+  errors: Array<{ruleID: string, message: string, value: string}>,
+): HTMLElement | string {
+  if (!errors || errors.length === 0)
     return 'No validation errors';
 
   const tooltipDiv = ui.div([], {style: {maxWidth: '400px'}});
-  const createRuleTooltipField = (name: string, value: any, parentDiv: HTMLDivElement, checkLength?: boolean) => {
-    if (value) {
-      if (checkLength && !value.length)
-        return;
-      const ruleIdDiv = ui.div([
-        ui.span([name], {style: {fontWeight: 'bold'}}),
-        ui.span([checkLength ? value.join(', ') : value]),
-      ]);
-      parentDiv.append(ruleIdDiv);
-    }
-  };
-  violatedRules.forEach((rule, index) => {
-    const ruleDiv = ui.div([],
+  errors.forEach((error, index) => {
+    const errorDiv = ui.div([],
       {style: {
         marginBottom: '8px',
         paddingBottom: '8px',
-        borderBottom: index < violatedRules.length - 1 ? '1px solid var(--grey-2)' : 'none',
+        borderBottom: index < errors.length - 1 ? '1px solid var(--grey-2)' : 'none',
       }});
-    createRuleTooltipField('Rule ID: ', rule.core_id, ruleDiv);
-    createRuleTooltipField('Message: ', rule.message, ruleDiv);
-    createRuleTooltipField('Variables: ', rule.variables, ruleDiv, true);
-    createRuleTooltipField('Values: ', rule.values, ruleDiv, true);
 
-    tooltipDiv.append(ruleDiv);
+    const ruleIdDiv = ui.div([
+      ui.span(['Rule ID: '], {style: {fontWeight: 'bold'}}),
+      ui.span([error.ruleID]),
+    ]);
+    errorDiv.append(ruleIdDiv);
+
+    const messageDiv = ui.div([
+      ui.span(['Message: '], {style: {fontWeight: 'bold'}}),
+      ui.span([error.message]),
+    ]);
+    errorDiv.append(messageDiv);
+
+    if (error.value) {
+      const valueDiv = ui.div([
+        ui.span(['Value: '], {style: {fontWeight: 'bold'}}),
+        ui.span([error.value]),
+      ]);
+      errorDiv.append(valueDiv);
+    }
+
+    tooltipDiv.append(errorDiv);
   });
 
   return tooltipDiv;

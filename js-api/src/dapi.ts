@@ -50,122 +50,96 @@ export class Dapi {
   }
 
   /** HTTP root for DAPI */
-  get root(): string {
-    return api.grok_Dapi_Root();
-  }
-  set root(root: string) {
-    // @ts-ignore
-    api.grok_Dapi_Set_Root(root);
-  }
+  get root(): string { return api.grok_Dapi_Root();  }
+  set root(root: string) { api.grok_Dapi_Set_Root(root); }
 
+  /** Session token */
+  get token(): string { return api.grok_Dapi_Get_Token(); }
+  set token(token: string | undefined) { api.grok_Dapi_Set_Token(token); }
 
-  get token(): string {
-    // @ts-ignore
-    return api.grok_Dapi_Get_Token();
-  }
-  // @ts-ignore
-  set token(token?: string | undefined) {
-
-    // @ts-ignore
-
-     api.grok_Dapi_Set_Token(token); }
-
-  /** Retrieves entities from server by list of IDs
-   *  @returns {Promise<Entity[]>} */
+  /** Retrieves entities from server by list of IDs */
   getEntities(ids: string[]): Promise<Entity[]> {
     return api.grok_Dapi_Entities_GetEntities(ids);
   }
 
-  /** Entities API endpoint
-   *  @type {EntitiesDataSource} */
+  /** Entities API */
   get entities(): EntitiesDataSource {
     return new EntitiesDataSource(api.grok_Dapi_Entities());
   }
 
-  /** Data Queries API endpoint
-   *  @type {HttpDataSource<DataQuery>} */
+  /** Data Queries API */
   get queries(): HttpDataSource<DataQuery> {
     return new HttpDataSource(api.grok_Dapi_Queries(), 'Function');
   }
 
+  /** Functions API (finding functions and historical function calls) */
   get functions(): FuncsDataSource {
     return new FuncsDataSource(api.grok_Dapi_Functions());
   }
 
-  /** Data Connections API endpoint
-   *  @type {HttpDataSource<DataConnection>} */
+  /** Data Connections API (finding, saving, sharing data connections 
+   * and folders, getting database schemas) */
   get connections(): DataConnectionsDataSource {
     return new DataConnectionsDataSource(api.grok_Dapi_Connections());
   }
 
-  /** Credentials API endpoint
-   *  @type {CredentialsDataSource} */
+  /** Credentials API (search, saving, deleting credentials)  */
   get credentials(): CredentialsDataSource {
     return new CredentialsDataSource(api.grok_Dapi_Credentials());
   }
 
-  /** Data Jobs API endpoint
-   *  @type {HttpDataSource<DataJob>} */
+  /** Data Jobs API */
   get jobs(): HttpDataSource<DataJob> {
     return new HttpDataSource(api.grok_Dapi_Jobs(), 'Function');
   }
 
-  /** Jupyter Notebooks API endpoint
-   *  @type {HttpDataSource<Notebook>} */
+  /** Jupyter Notebooks API */
   get notebooks(): HttpDataSource<Notebook> {
     return new HttpDataSource(api.grok_Dapi_Notebooks());
   }
 
-  /** Predictive Models API endpoint
-   *  @type {HttpDataSource<Model>} */
+  /** Predictive Models API endpoint */
   get models(): HttpDataSource<Model> {
     return new HttpDataSource(api.grok_Dapi_Models());
   }
 
-  /** Packages API endpoint
-   *  @type {HttpDataSource<Package>} */
+  /** Packages API endpoint */
   get packages(): HttpDataSource<Package> {
     return new HttpDataSource(api.grok_Dapi_Packages());
   }
 
-  /** View Layouts API endpoint
-   *  @type {LayoutsDataSource} */
+  /** View Layouts API (getting applicable view layouts for a dataframe) */
   get layouts(): LayoutsDataSource {
     return new LayoutsDataSource(api.grok_Dapi_Layouts());
   }
 
-  /** View Views API endpoint
-   *  @type {LayoutsDataSource} */
+  /** View Views API endpoint */
   get views(): ViewsDataSource {
     return new ViewsDataSource(api.grok_Dapi_Views());
   }
 
-  /** Data Table Infos API endpoint
-   *  @type {TablesDataSource} */
+  /** Data Table Infos API (finding, uploadeing, deleting tables) */
   get tables(): TablesDataSource {
     return new TablesDataSource(api.grok_Dapi_Tables());
   }
 
-  /** Users API endpoint
-   *  @type {UsersDataSource} */
+  /** Users API (finding, saving, deleting users, notifications).
+   * Also, current user and current session. */
   get users(): UsersDataSource {
     return new UsersDataSource(api.grok_Dapi_Users());
   }
 
-  /** Groups API endpoint
-   *  @type {GroupsDataSource} */
+  /** Groups API (finding, saving, deleting groups, adding members, adding admins, including to parent groups, excluding from parent groups) */
   get groups(): GroupsDataSource {
     return new GroupsDataSource(api.grok_Dapi_Groups(), 'Group');
   }
 
-  /** Permissions API endpoint
-   * @type {PermissionsDataSource} */
+  /** Permissions API (checking, granting, revoking permissions on entities) */
   get permissions(): PermissionsDataSource {
     return new PermissionsDataSource();
   }
 
-  /** Scripts API endpoint
-   *  @type {HttpDataSource<Script>} */
+  /** Scripts API (finding, saving, deleting scripts) */
   get scripts(): HttpDataSource<Script> {
     return new HttpDataSource(api.grok_Dapi_Scripts(), 'Function');
   }
@@ -184,6 +158,10 @@ export class Dapi {
 
   get docker(): DockerDataSource {
     return new DockerDataSource();
+  }
+
+  get spaces(): SpacesDataSource {
+    return new SpacesDataSource(api.grok_Dapi_Spaces());
   }
 
   /**
@@ -209,29 +187,9 @@ export class Dapi {
   }
 
   /** Proxies URL request via Datagrok server with same interface as "fetch".
-   * @deprecated
-   * @param {string} method
-   * @param {string} url
-   * @param {Object} headers
-   * @param {Object} body
-   * @returns `{Promise<Object>}` */
-  async proxyFetch(method: string, url: string, headers: Record<string, string>, body: object = {}): Promise<object> {
-    headers['Accept'] = 'application/json';
-    headers['original-url'] = `${url}`;
-    headers['original-method'] = method;
-    let params = {
-      method: 'POST',
-      headers: headers,
-      body: JSON.stringify(body)
-    };
-    return await fetch('/api/connectors/proxy', params);
-  }
-
-  /** Proxies URL request via Datagrok server with same interface as "fetch".
-   * @param {String} url
-   * @param {Object} params
-   * @param {number} maxAge - forces server to send Cache-Control in response with configured max-age directive
-   * @returns `{Promise<Object>}` */
+   * Useful for cicrumventing CORS restrictions, and for caching results.
+   * @see [sample](../../../../../packages/ApiSamples/scripts/dapi/fetch.js)
+   * @param {number} maxAge - forces server to send Cache-Control in response with configured max-age directive */
   async fetchProxy(url: string, params?: RequestInit, maxAge?: number): Promise<Response> {
     params ??= {};
     params.headers ??= {};
@@ -315,8 +273,7 @@ export class HttpDataSource<T> {
     return api.grok_DataSource_Count(this.dart);
   }
 
-  /** Returns fist entity that satisfies the filtering criteria (see {@link filter}).
-   *  @returns `Promise<object>`  */
+  /** Returns fist entity that satisfies the filtering criteria (see {@link filter}). */
   first(): Promise<T> {
     return api.grok_DataSource_First(this.dart);
   }
@@ -359,8 +316,7 @@ export class HttpDataSource<T> {
 
   /** Returns next page of all entities that satisfy the filtering criteria (see {@link filter}).
    *  Works only if pageSize was set during previous list() call
-   *  See examples: {@link https://public.datagrok.ai/js/samples/dapi/projects-list}
-   *  @returns {HttpDataSource} */
+   *  See examples: {@link https://public.datagrok.ai/js/samples/dapi/projects-list} */
   nextPage(): HttpDataSource<T> {
     this.dart = api.grok_DataSource_NextPage(this.dart);
     return this;
@@ -369,26 +325,19 @@ export class HttpDataSource<T> {
   /** Applies filter to current request.
    *  Also can be set with {@link list} method "options" parameter
    *  See example: {@link https://public.datagrok.ai/js/samples/dapi/projects-list}
-   *  Smart filter: {@link https://datagrok.ai/help/datagrok/navigation/views/browse#entity-search}
-   *  @param {string} w
-   *  @returns {HttpDataSource} */
+   *  Smart filter: {@link https://datagrok.ai/help/datagrok/navigation/views/browse#entity-search} */
   filter(w: string): HttpDataSource<T> {
     this.dart = api.grok_DataSource_WhereSmart(this.dart, w);
     return this;
   }
 
-  /** Instructs data source to return results in the specified order.
-   * @param {string} fieldName
-   * @param {boolean} desc
-   * @returns {HttpDataSource} */
+  /** Instructs data source to return results in the specified order. */
   order(fieldName: string, desc: boolean = false): HttpDataSource<T> {
     this.dart = api.grok_DataSource_Order(this.dart, fieldName, desc);
     return this;
   }
 
-  /** Includes entity in the result
-   * @param {string} include
-   * @returns {HttpDataSource} */
+  /** Includes entity in the result */
   include(include: string): HttpDataSource<T> {
     this.dart = api.grok_DataSource_Include(this.dart, _propsToDart(include, this.clsName));
     return this;
@@ -403,26 +352,23 @@ export class HttpDataSource<T> {
  * @extends HttpDataSource
  * */
 export class UsersDataSource extends HttpDataSource<User> {
-  /** @constructs UsersDataSource*/
+
   constructor(s: any) {
     super(s);
   }
 
-  /** Notifications API endpoint
-   *  @type {NotificationsDataSource} */
+  /** Notifications API endpoint */
   get notifications(): NotificationsDataSource {
     return new NotificationsDataSource(api.grok_Dapi_Notifications());
   }
 
-  /** Returns current user
-   * @returns {Promise<User>} */
+  /** Returns current user */
   current(): Promise<User> {
     return toJs(api.grok_UsersDataSource_Current(this.dart));
     //return new Promise((resolve, reject) => api.grok_UsersDataSource_Current(this.dart, (q: any) => resolve(s(q)), (e: any) => reject(e)));
   }
 
-  /** Returns current session
-   * @returns {Promise<UserSession>} */
+  /** Returns current session */
   currentSession(): Promise<UserSession> {
     return api.grok_UsersDataSource_CurrentSession(this.dart);
   }
@@ -436,8 +382,7 @@ export class AdminDataSource {
   }
 
   /** Returns information about the services.
-   * Sample: {@link https://public.datagrok.ai/js/samples/dapi/admin}
-   *  @returns {Promise<Map>} */
+   * Sample: {@link https://public.datagrok.ai/js/samples/dapi/admin} */
   getServiceInfos(): Promise<ServiceInfo[]> {
     return api.grok_Dapi_Admin_GetServiceInfos(this.dart);
   }
@@ -503,7 +448,6 @@ export class GroupsDataSource extends HttpDataSource<Group> {
   }
 
   /** Creates a new group
-   *  @param {String}  name
    *  @returns {Promise<Group>} - Group. */
   createNew(name: string): Promise<Group> {
     let g = new Group(api.grok_Group(name));
@@ -511,46 +455,33 @@ export class GroupsDataSource extends HttpDataSource<Group> {
   }
 
   /** Returns group user
-   *  @param {Group} group
    *  @returns {Promise<Group>} - Group. */
   getUser(group: Group): Promise<Group> {
     return api.grok_Dapi_Get_GroupUser(group.dart);
   }
 
-  /** Adds a member to the group
-   * @param {Group} g
-   * @param {Group} m
-   * @returns {Promise} */
+  /** Adds a member to the group */
   async addMember(g: Group, m: Group): Promise<void> {
     g = await this.find(g.id);
     g.addMember(m);
     await this.saveRelations(g);
   }
 
-  /** Adds an admin member to the group
-   * @param {Group} g
-   * @param {Group} m
-   * @returns {Promise} */
+  /** Adds an admin member to the group */
   async addAdminMember(g: Group, m: Group): Promise<void> {
     g = await this.find(g.id);
     g.addAdminMember(m);
     await this.saveRelations(g);
   }
 
-  /** Removes a member from the group
-   * @param {Group} g
-   * @param {Group} m
-   * @returns {Promise} */
+  /** Removes a member from the group */
   async removeMember(g: Group, m: Group): Promise<void> {
     g = await this.find(g.id);
     g.removeMember(m);
     await this.saveRelations(g);
   }
 
-  /** Adds the group to another one
-   * @param {Group} g
-   * @param {Group} parent
-   * @returns {Promise} */
+  /** Adds the group to another one */
   async includeTo(g: Group, parent: Group): Promise<void> {
     g = await this.find(g.id);
     g.includeTo(parent);
@@ -558,20 +489,14 @@ export class GroupsDataSource extends HttpDataSource<Group> {
   }
 
 
-  /** Adds the group to another one as admin
-   * @param {Group} g
-   * @param {Group} parent
-   * @returns {Promise} */
+  /** Adds the group to another one as admin */
   async includeAdminTo(g: Group, parent: Group): Promise<void> {
     g = await this.find(g.id);
     g.includeAdminTo(parent);
     await this.saveRelations(g);
   }
 
-  /** Removes a membership from the group
-   * @param {Group} g
-   * @param {Group} parent
-   * @returns {Promise} */
+  /** Removes a membership from the group */
   async excludeFrom(g: Group, parent: Group): Promise<void> {
     g = await this.find(g.id);
     g.excludeFrom(parent);
@@ -579,7 +504,6 @@ export class GroupsDataSource extends HttpDataSource<Group> {
   }
 
   /** Saves a group with relations
-   *  @param {Group} e
    *  @returns {Promise<Group>} - Group. */
   saveRelations(e: Group): Promise<Group> {
     return api.grok_GroupsDataSource_Save(this.dart, e.dart);
@@ -608,23 +532,18 @@ export class EntitiesDataSource extends HttpDataSource<Entity> {
     return toJs(api.grok_EntitiesDataSource_GetRecent(this.dart));
   }
 
-  /** Allows to set properties for entities
-   * @param {Map[]} props
-   * @returns {Promise} */
+  /** Allows to set properties for entities */
   saveProperties(props: Map<Property, any>): Promise<void> {
     return api.grok_EntitiesDataSource_SaveProperties(this.dart, props);
   }
 
   /** Returns entity properties
-   * @param {Entity} entity
    * @returns {Promise<Map>} props */
   getProperties(entity: Entity): Promise<Map<Property, any>> {
     return api.grok_EntitiesDataSource_GetProperties(this.dart, entity.dart);
   }
 
-  /** Deletes entity properties
-   * @param {Map[]} props
-   * @returns {Promise} */
+  /** Deletes entity properties */
   deleteProperties(props: Map<Property, any>): Promise<void> {
     return api.grok_EntitiesDataSource_DeleteProperties(this.dart, props);
   }
@@ -658,8 +577,8 @@ export class DataConnectionsDataSource extends HttpDataSource<DataConnection> {
     return toJs(await api.grok_DataConnectionsDataSource_Get_Schemas(this.dart, e.dart));
   }
 
-  async getSchema(e: DataConnection, schemaName: string | null = null): Promise<TableInfo[]> {
-    return toJs(await api.grok_DataConnectionsDataSource_Get_Schema(this.dart, e.dart, schemaName ?? null));
+  async getSchema(e: DataConnection, schemaName: string | null = null, tableName: string | null = null): Promise<TableInfo[]> {
+    return toJs(await api.grok_DataConnectionsDataSource_Get_Schema(this.dart, e.dart, schemaName ?? null, tableName ?? null));
   }
 
   async getUniqueColumnsNames(c: DataConnection, schema: string, table: string): Promise<string[]> {
@@ -685,7 +604,6 @@ export class FuncsDataSource extends HttpDataSource<Func> {
   public get calls() {
     return new HttpDataSource<FuncCall>(api.grok_Dapi_Function_Calls());
   }
-
 }
 
 /**
@@ -700,9 +618,7 @@ export class CredentialsDataSource extends HttpDataSource<Credentials> {
     super(s);
   }
 
-  /** Returns credentials for entity
-   * @param {Entity} e
-   * @returns {Promise<Credentials>} */
+  /** Returns credentials for entity */
   forEntity(e: Entity): Promise<Credentials> {
     return api.grok_CredentialsDataSource_ForEntity(this.dart, e.dart);
   }
@@ -728,9 +644,7 @@ export class LayoutsDataSource extends HttpDataSource<ViewLayout> {
     super(s);
   }
 
-  /** Returns layouts that applicable to the table
-   * @param {DataFrame} t
-   * @returns {Promise<ViewLayout[]>} */
+  /** Returns layouts that applicable to the table */
   getApplicable(t: DataFrame): Promise<ViewLayout[]> {
     return api.grok_LayoutsDataSource_Applicable(this.dart, t.dart);
   }
@@ -753,7 +667,6 @@ export class PermissionsDataSource {
   };
 
   /** Gets all the permissions granted on entity
-   * @param {Entity} e
    * @returns {Promise<Map>} permissions
    * */
   // { [key:string]:number; }
@@ -773,19 +686,13 @@ export class PermissionsDataSource {
   }
 
   /** Grants permission on entity to the group
-   * @param {Entity} e
-   * @param {Group} g
    * @param {boolean} edit allow to edit entity
-   * @returns {Promise}
    * */
   grant(e: Entity, g: Group, edit: boolean): Promise<any> {
     return api.grok_Dapi_Set_Permission(e.dart, g.dart, edit);
   }
 
   /** Revokes permission on entity from the group
-   * @param {Entity} e
-   * @param {Group} g
-   * @returns {Promise}
    * */
   revoke(g: Group, e: Entity): Promise<any> {
     return api.grok_Dapi_Delete_Permission(e.dart, g.dart);
@@ -803,34 +710,24 @@ export class UserDataStorage {
 
   /** Saves a single value to Users Data Storage
    * @param {string} name Storage name
-   * @param {string} key
-   * @param {string} value
-   * @param {boolean} currentUser Value should be available only for current user. If false, shared storage is used.
-   * @returns {Promise}*/
+   * @param {boolean} currentUser Value should be available only for current user. If false, shared storage is used. */
   postValue(name: string, key: string, value: string, currentUser: boolean = true): Promise<void> {
     return api.grok_Dapi_UserDataStorage_PostValue(name, key, value, currentUser);
   }
 
   /** Saves a map to Users Data Storage, will be appended to existing data
-   * @param {string} name Storage name
-   * @param {Map} data
-   * @param {boolean} currentUser Value should be available only for current user. If false, shared storage is used.
-   * @returns {Promise}*/
+   * @param {boolean} currentUser Value should be available only for current user. If false, shared storage is used. */
   post(name: string, data: any, currentUser: boolean = true): Promise<void> {
     return api.grok_Dapi_UserDataStorage_Post(name, data, currentUser);
   }
 
   /** Saves a map to Users Data Storage, will replace existing data
-   * @param {string} name Storage name
-   * @param {Map} data
-   * @param {boolean} currentUser Value should be available only for current user. If false, shared storage is used.
-   * @returns {Promise}*/
+   * @param {boolean} currentUser Value should be available only for current user. If false, shared storage is used. */
   put(name: string, data: any, currentUser: boolean = true): Promise<void> {
     return api.grok_Dapi_UserDataStorage_Put(name, data, currentUser);
   }
 
   /** Retrieves a map from Users Data Storage
-   * @param {string} name - Storage name
    * @param {boolean} currentUser - get a value from a current user storage. If false, shared storage is used.
    * @returns {Promise<Map>} */
   get(name: string, currentUser: boolean = true): Promise<any> {
@@ -868,8 +765,7 @@ export class ProjectsDataSource extends HttpDataSource<Project> {
     this.include('children');
   }
 
-  /** Gets recent projects datasource
-   * @returns {HttpDataSource<Project>} */
+  /** Gets recent projects datasource */
   get recent(): HttpDataSource<Project> {
      return new HttpDataSource<Project>(api.grok_Dapi_RecentProjects());
   }
@@ -892,7 +788,182 @@ export class ProjectsDataSource extends HttpDataSource<Project> {
     options.saveRelations ??= true;
     return toJs(api.grok_ProjectsDataSource_Save(this.dart, e.dart, options!.saveRelations));
   }
+}
 
+/**
+ * Data source for working with Spaces - hierarchical containers for organizing entities and files.
+ * Spaces support nested subspaces, file storage, and can contain various entities like scripts, queries, etc. */
+export class SpacesDataSource extends HttpDataSource<Project> {
+  constructor(s: any) {
+    super(s, 'Project');
+  }
+
+  createRootSpace(name: string): Promise<Project> {
+    return toJs(api.grok_Dapi_Spaces_CreateRootSpace(this.dart, name));
+  }
+
+  /**
+   * Checks if a root space (top-level space) with the given name already exists.
+   * Use this before creating a new root space to avoid naming conflicts. */
+  rootSpaceExists(name: string): Promise<boolean> {
+    return api.grok_Dapi_Spaces_RootSpaceExists(this.dart, name);
+  }
+
+  /**
+   * Returns a SpaceClient for the space with the specified ID.
+   * Use the returned client to manage subspaces, entities, and files within the space.
+   * @param spaceId - The unique identifier of the space {@link Project.id} */
+  id(spaceId: string): SpaceClient {
+    return new SpaceClient(api.grok_Dapi_Spaces_Id(this.dart, spaceId));
+  }
+}
+
+/**
+ * Client for working with a specific space.
+ * Provides methods for managing subspaces, entities (scripts, queries, connections), and files. */
+export class SpaceClient {
+  dart: any;
+
+  constructor(dart: any) {
+    this.dart = dart;
+  }
+
+  /**
+   * Adds a child space (subspace) under this space.
+   * The subspace will have its own storage with a namespaced path derived from the parent hierarchy
+   * (e.g., 'ParentSpace:ChildSpace:').
+   * You can provide existing space, then based on the {@link link} parameter the subspace will be moved
+   * or reference will be created.
+   * @param childSpace - The subspace name or an existing space.
+   * @param link - If true, creates a link reference instead of moving the subspace (default: false). When only the subspace name is provided,
+   * this parameter is ignored. */
+  addSubspace(childSpace: Project | string, link: boolean = false): Promise<Project> {
+    return toJs(api.grok_SpaceClient_AddSubspace(this.dart, childSpace instanceof Project ? childSpace.dart : childSpace, link));
+  }
+
+  /** Checks if a subspace with the given name exists in the current space. */
+  subspaceExists(name: string): Promise<boolean> {
+    return api.grok_SpaceClient_SubspaceExists(this.dart, name);
+  }
+
+  /**
+   * Adds an entity (script, query, connection, or another space) to this space.
+   * When link is false (default), the entity is moved from its current location to this space.
+   * When link is true, creates a reference without moving - the entity can appear in multiple spaces.
+   * Moving a space preserves all its files, nested subspaces, and contained entities.
+   * @param entityId - The unique identifier of the entity to add
+   * @param link - If true, creates a link reference instead of moving the entity (default: false) */
+  addEntity(entityId: string, link: boolean = false): Promise<void> {
+    return api.grok_SpaceClient_AddEntity(this.dart, entityId, link);
+  }
+
+  /**
+   * Removes an entity from this space.
+   * Note: If the entity is linked, only reference will be deleted.
+   * @param entityId - {@link Entity.id}
+   */
+  removeEntity(entityId: string): Promise<void> {
+    return api.grok_SpaceClient_RemoveEntity(this.dart, entityId);
+  }
+
+  /** Returns a client for accessing children of this space */
+  get children(): SpaceChildrenClient {
+    return new SpaceChildrenClient(api.grok_SpaceClient_Children(this.dart));
+  }
+
+  /** Returns a client for accessing files in this space */
+  get files(): SpaceFilesClient {
+    return new SpaceFilesClient(api.grok_SpaceClient_Files(this.dart));
+  }
+}
+
+/**
+ * Client for querying and filtering children of a space.
+ * Children can include subspaces (Projects), files (FileInfo), and various entities
+ * like scripts, queries, and connections. */
+export class SpaceChildrenClient extends HttpDataSource<Entity> {
+  constructor(s: any) {
+    super(s);
+  }
+
+  /**
+   * Filters the children by entity types and whether to include linked items.
+   * By default, only directly owned children are returned (not links).
+   * @param types - Comma-separated list of entity types to include (e.g., 'Script,DataQuery')
+   * @param includeLinked - If true, includes linked references in addition to owned children (default: false)
+   * @returns A new SpaceChildrenClient with the filter applied
+   */
+  filter(types: string, includeLinked: boolean = false): SpaceChildrenClient {
+    return new SpaceChildrenClient(api.grok_SpaceChildrenClient_Filter(this.dart, types, includeLinked));
+  }
+}
+
+/**
+ * Client for file operations within a space's storage.
+ * Files in a space are stored in the space's dedicated storage connection.
+ * Directory operations are synchronized with the space hierarchy - creating a directory
+ * creates a corresponding subspace, and renaming a directory renames the subspace. */
+export class SpaceFilesClient {
+  dart: any;
+
+  constructor(dart: any) {
+    this.dart = dart;
+  }
+
+  /** Checks if a file exists */
+  exists(file: FileInfo | string): Promise<boolean> {
+    return api.grok_SpaceFilesClient_Exists(this.dart, file instanceof FileInfo ? file.dart : file);
+  }
+
+  /** Reads file content as bytes */
+  readAsBytes(file: FileInfo | string): Promise<Uint8Array> {
+    return api.grok_SpaceFilesClient_ReadAsBytes(this.dart, file instanceof FileInfo ? file.dart : file);
+  }
+
+  /** Reads file content as string */
+  readAsString(file: FileInfo | string): Promise<string> {
+    return api.grok_SpaceFilesClient_ReadAsString(this.dart, file instanceof FileInfo ? file.dart : file);
+  }
+
+  /** Uploads file content */
+  write(file: FileInfo | string, bytes: number[]): Promise<void> {
+    return api.grok_SpaceFilesClient_Upload(this.dart, file instanceof FileInfo ? file.dart : file, bytes);
+  }
+
+  writeString(file: FileInfo | string, data: string): Promise<void> {
+    return api.grok_SpaceFilesClient_UploadString(this.dart, file instanceof FileInfo ? file.dart : file, data);
+  }
+
+  /**
+   * Creates a directory within this space's storage.
+   * This automatically creates a corresponding subspace with the same name (normalized).
+   * The subspace will have its own namespaced storage path. */
+  createDirectory(file: FileInfo | string): Promise<void> {
+    return api.grok_SpaceFilesClient_CreateDirectory(this.dart, file instanceof FileInfo ? file.dart : file);
+  }
+
+  /** Renames a file or directory. If renaming directory, underlying subspace will be renamed. */
+  rename(file: FileInfo | string, newName: string): Promise<void> {
+    return api.grok_SpaceFilesClient_Rename(this.dart, file instanceof FileInfo ? file.dart : file, newName);
+  }
+
+  /** Moves files to a new path */
+  move(files: (FileInfo | string)[], newPath: FileInfo | string): Promise<void> {
+    const filesArg = files.map(f => f instanceof FileInfo ? f.dart : f);
+    const newPathArg = newPath instanceof FileInfo ? newPath.dart : newPath;
+    return api.grok_SpaceFilesClient_Move(this.dart, filesArg, newPathArg);
+  }
+
+  /** Copies files to a destination path */
+  copy(files: (FileInfo | string)[], destinationPath: string): Promise<void> {
+    const filesArg = files.map(f => f instanceof FileInfo ? f.dart : f);
+    return api.grok_SpaceFilesClient_Copy(this.dart, filesArg, destinationPath);
+  }
+
+  /** Deletes a file or directory */
+  delete(file: FileInfo | string): Promise<void> {
+    return api.grok_SpaceFilesClient_Delete(this.dart, file instanceof FileInfo ? file.dart : file);
+  }
 }
 
 /**
@@ -906,17 +977,14 @@ export class TablesDataSource extends HttpDataSource<TableInfo> {
   }
 
   /** Saves a dataframe remotely.
-   * Sample: {@link https://public.datagrok.ai/js/samples/data-access/save-and-load-df}
-   * @param {DataFrame} dataFrame
-   * @returns {Promise<string>} */
+   * Sample: {@link https://public.datagrok.ai/js/samples/data-access/save-and-load-df} */
   uploadDataFrame(dataFrame: DataFrame): Promise<string> {
     return api.grok_Dapi_TablesDataSource_UploadDataFrame(this.dart, dataFrame.dart);
   }
 
   /** Loads a dataframe by id.
    * Sample: {@link https://public.datagrok.ai/js/samples/data-access/save-and-load-df}
-   * @param {string} id - dataframe id
-   * @returns {Promise<DataFrame>} */
+   * @param {string} id - dataframe id */
   getTable(id: string): Promise<DataFrame> {
     return api.grok_Dapi_TablesDataSource_GetTable(this.dart, id);
   }
@@ -1193,9 +1261,7 @@ export class FileSource {
   };
 
   /** Checks if a file exists.
-   * Sample: {@link https://public.datagrok.ai/js/samples/dapi/files}
-   * @param {FileInfo | string} file
-   * @returns {Promise<Boolean>} */
+   * Sample: {@link https://public.datagrok.ai/js/samples/dapi/files} */
   exists(file: FileInfo | string): Promise<boolean> {
     file = this.setRoot(file);
     return api.grok_Dapi_UserFiles_Exists(file);
@@ -1211,19 +1277,14 @@ export class FileSource {
   }
 
   /** Deletes a file.
-   * Sample: {@link https://public.datagrok.ai/js/samples/dapi/files}
-   * @param {FileInfo | string} file
-   * @returns {Promise} */
+   * Sample: {@link https://public.datagrok.ai/js/samples/dapi/files} */
   delete(file: FileInfo | string): Promise<void> {
     file = this.setRoot(file);
     return api.grok_Dapi_UserFiles_Delete(file);
   }
 
   /** Moves a file.
-   * Sample: {@link https://public.datagrok.ai/js/samples/dapi/files}
-   * @param {FileInfo[] | string[]} files
-   * @param {string} newPath
-   * @returns {Promise} */
+   * Sample: {@link https://public.datagrok.ai/js/samples/dapi/files} */
   move(files: FileInfo[] | string[], newPath: string): Promise<void> {
     for (let i = 0; i < files.length; i++)
       files[i] = this.setRoot(files[i]);
@@ -1233,10 +1294,7 @@ export class FileSource {
   }
 
   /** Renames a file.
-   * Sample: {@link https://public.datagrok.ai/js/samples/dapi/files}
-   * @param { FileInfo | string} file
-   * @param {string} newName
-   * @returns {Promise} */
+   * Sample: {@link https://public.datagrok.ai/js/samples/dapi/files} */
   rename(file: FileInfo | string, newName: string): Promise<void> {
     file = this.setRoot(file);
     newName = this.setRoot(newName);
@@ -1248,8 +1306,7 @@ export class FileSource {
    * Sample: {@link https://public.datagrok.ai/js/samples/dapi/files}
    * @param {FileInfo | string} file - folder
    * @param {boolean} recursive - whether to search in folders recursively
-   * @param {string} searchPattern - search pattern, such as part of a filename or extension, e.g., "filename-prefix" and "csv"
-   * @returns {Promise<FileInfo[]>} */
+   * @param {string} searchPattern - search pattern, such as part of a filename or extension, e.g., "filename-prefix" and "csv" */
   async list(file: FileInfo | string, recursive: boolean = false, searchPattern: string | null = null): Promise<FileInfo[]> {
     file = this.setRoot(file);
     return toJs(await api.grok_Dapi_UserFiles_List(file, recursive, searchPattern, this.root));
@@ -1258,7 +1315,6 @@ export class FileSource {
   /**
    * Reads the entire contents of a folder and returns an object.
    * The resulting object's keys are the file names relative to the folder path, and the corresponding values are of the Blob type.
-   * @param {FileInfo | string} folder
    * @param recursive - whether to read files in folders recursively
    * @param ext - files extension
    */
@@ -1289,7 +1345,6 @@ export class FileSource {
    * Reads the entire contents of a folder and returns an object.
    * The resulting object's keys are the file names relative to the folder path, and the corresponding values are JSON objects.
    * If conversion to a JSON fails, the file will be skipped.
-   * @param {FileInfo | string} folder
    * @param recursive - whether to read files in folders recursively
    * @param ext - files extension
    */
@@ -1308,7 +1363,6 @@ export class FileSource {
    * Reads the entire contents of a folder and returns an object.
    * The resulting object's keys are the file names relative to the folder path, and the corresponding values are strings.
    * If conversion to a string fails, the file will be skipped.
-   * @param {FileInfo | string} folder
    * @param recursive - whether to read files in folders recursively
    * @param ext - files extension
    */
@@ -1325,61 +1379,46 @@ export class FileSource {
 
 
   /** Reads a file as string.
-   * Sample: {@link https://public.datagrok.ai/js/samples/dapi/files}
-   * @param {FileInfo | string} file
-   * @returns {Promise<String>} */
+   * Sample: {@link https://public.datagrok.ai/js/samples/dapi/files} */
   readAsText(file: FileInfo | string): Promise<string> {
     file = this.setRoot(file);
     return api.grok_Dapi_UserFiles_ReadAsText(file);
   }
 
   /** Reads CSV as DataFrame.
-   * Sample: {@link https://public.datagrok.ai/js/samples/dapi/files}
-   * @param {FileInfo | string} file
-   * @param {CsvImportOptions} options
-   * @returns {Promise<DataFrame>} */
+   * Sample: {@link https://public.datagrok.ai/js/samples/dapi/files} */
   async readCsv(file: FileInfo | string, options?: CsvImportOptions): Promise<DataFrame> {
     return DataFrame.fromCsv(await this.readAsText(file), options);
   }
 
   /** Reads a file as bytes.
-   * Sample: {@link https://public.datagrok.ai/js/samples/dapi/files}
-   * @param {FileInfo | string} file
-   * @returns {Promise<Uint8Array>} */
+   * Sample: {@link https://public.datagrok.ai/js/samples/dapi/files} */
   readAsBytes(file: FileInfo | string): Promise<Uint8Array> {
     file = this.setRoot(file);
     return api.grok_Dapi_UserFiles_ReadAsBytes(file);
   }
 
-  /** Reads a d42 file as a list of dataframes.
-   * @param {FileInfo | string} file
-   * @returns {Promise<DataFrame[]>} */
+  /** Reads a d42 file as a list of dataframes. */
   async readBinaryDataFrames(file: FileInfo | string): Promise<DataFrame[]> {
     file = this.setRoot(file);
     return api.grok_Dapi_UserFiles_ReadBinaryDataFrames(file);
   }
 
-  /** Writes a list of dataframes as a d42 file.
-   * @param {FileInfo | string} file
-   * @param {DataFrame[]} dataFrames */
+  /** Writes a list of dataframes as a d42 file. */
   async writeBinaryDataFrames(file: FileInfo | string, dataFrames: DataFrame[]): Promise<void> {
     file = this.setRoot(file);
     return api.grok_Dapi_UserFiles_WriteBinaryDataFrames(file, dataFrames.map((df) => df.dart));
   }
 
   /** Creates directory
-   * Sample: {@link https://public.datagrok.ai/js/samples/dapi/files}
-   * @param {FileInfo | string} file*/
+   * Sample: {@link https://public.datagrok.ai/js/samples/dapi/files} */
   async createDirectory(file: FileInfo | string): Promise<void> {
     file = this.setRoot(file);
     return api.grok_Dapi_UserFiles_CreateDirectory(file);
   }
 
   /** Writes a file.
-   * Sample: {@link https://public.datagrok.ai/js/samples/dapi/files}
-   * @param {FileInfo | string} file
-   * @param {Array<number>} blob
-   * @returns {Promise} */
+   * Sample: {@link https://public.datagrok.ai/js/samples/dapi/files} */
   write(file: FileInfo | string, blob?: number[]): Promise<void> {
     if (!blob && ((file instanceof FileInfo && !file.data) || typeof file === 'string'))
       throw new Error('blob parameter should be presented');
@@ -1387,10 +1426,7 @@ export class FileSource {
   }
 
   /** Writes a text file.
-   * Sample: {@link https://public.datagrok.ai/js/samples/dapi/files}
-   * @param {FileInfo | string} file
-   * @param {string} data
-   * @returns {Promise} */
+   * Sample: {@link https://public.datagrok.ai/js/samples/dapi/files} */
   writeAsText(file: FileInfo | string, data: string): Promise<void> {
     file = this.setRoot(file);
 

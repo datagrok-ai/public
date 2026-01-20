@@ -13,20 +13,20 @@ export const _package = new DG.Package();
 
 export class PackageFunctions {
   @grok.decorators.func({
-    tags: ['filter'],
     name: 'Single Choice',
     description: 'A filter that lets you select exactly one category',
     outputs: [{type: 'filter', name: 'result'}],
+    meta: {role: 'filter'},
   })
   static radioButtonFilter() {
     return new RadioButtonFilter();
   }
 
   @grok.decorators.func({
-    tags: ['filter'],
     name: 'Multi Choice',
     description: 'A filter that works with columns of multi-value cells (such as lists of identifiers)',
     outputs: [{type: 'filter', name: 'result'}],
+    meta: {role: 'filter'},
   })
   static multiValueFilter() {
     return new MultiValueFilter();
@@ -42,9 +42,8 @@ export class PackageFunctions {
 
 
   @grok.decorators.func({
-    tags: ['viewer'],
     name: 'TableSummary',
-    meta: {showInGallery: 'false'},
+    meta: {showInGallery: 'false', role: 'viewer'},
     outputs: [{type: 'viewer', name: 'result'}],
   })
   static tableSummary() {
@@ -67,8 +66,8 @@ export class PackageFunctions {
     meta: {
       propertyType: 'string',
       semType: 'foo',
+      role: 'valueEditor',
     },
-    tags: ['valueEditor'],
     outputs: [{type: 'object', name: 'result'}],
   })
   static fooInput(): DG.InputBase {

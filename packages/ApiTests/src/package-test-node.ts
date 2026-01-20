@@ -179,7 +179,7 @@ async function loadTestFiles(): Promise<void> {
 }
 
 async function run(concurrentRun: number, categories: Set<string>, concurrency: number): Promise<_DG.DataFrame | null> {
-    const { runTests, tests} = await import('@datagrok-libraries/utils/src/test');
+    const { runTests, tests} = await import('@datagrok-libraries/test/src/test');
     const data = [];
     const runAll = categories.has('all');
     for (const key of Object.keys(tests))

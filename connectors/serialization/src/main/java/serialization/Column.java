@@ -42,4 +42,12 @@ public abstract class Column<T> {
                 return new StringColumn(initColumnSize);
         }
     }
+
+    public void setTag(String key, String value) {
+        tags.put(key, value);
+    }
+
+    public String getTag(String key) {
+        return tags.get(key);
+    }
 }

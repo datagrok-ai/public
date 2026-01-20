@@ -3,7 +3,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {getSchemaDescriptor} from '@datagrok-libraries/db-explorer/src/utils';
-import {OpenAIHelpClient} from './openAI-client';
+import {OpenAIClient} from './openAI-client';
 import {JsonSchema} from '../prompt-engine/interfaces';
 
 type DBIDWithSchema = `${string}.${string}`;
@@ -322,7 +322,7 @@ const HiddenRelationsSchema: JsonSchema = {
  * @param openAIModel - The OpenAI model to use (e.g., 'gpt-4o')
  */
 export async function postProcessDBConnectionMeta(connectionMeta: DBConnectionMeta, openAIModel: string): Promise<DBConnectionMeta> {
-  const llmClient = OpenAIHelpClient.getInstance();
+  const llmClient = OpenAIClient.getInstance();
   const result = {...connectionMeta};
 
   // Step 1: Generate connection-level comment
@@ -514,4 +514,129 @@ function generateHiddenRelationsContext(conn: DBConnectionMeta): string {
   ).join('\n');
 
   return `${context}\n\nExisting relations:\n${existingRels}`;
+}
+
+
+/**
+ * ############################################################################################################################################
+ * Up until now is the code for meta generation and post-processing using LLMs
+ * ###########################################################################################################################################
+ * Bellow is tool to upload these annotations to the sticky meta :3
+ */
+
+export async function moveDBMetaToStickyMetaOhCoolItEvenRhymes(connectionMeta: DBConnectionMeta) {
+  const connection = await grok.dapi.connections.filter(`name="${connectionMeta.name}"`).first();
+  if (!connection)
+    throw new Error(`Connection ${connectionMeta.name} not found`);
+  const dbInfo = await grok.data.db.getInfo(connection);
+
+  await dbInfo.clearProperties();
+  console.log(`Cleared existing metadata for connection ${connectionMeta.name}`);
+  // connection-level comments
+  if (connectionMeta.comment) {
+    await failable('Setting connection comment', async () => {
+      await dbInfo.setComment(connectionMeta.comment!);
+    });
+  }
+  if (connectionMeta.LLMComment) {
+    await failable('Setting connection LLMComment', async () => {
+      await dbInfo.setLlmComment(connectionMeta.LLMComment!);
+    });
+  }
+  // relation-level annotations
+  const relations = connectionMeta.relations ?? [];
+
+  for (const rel of relations) {
+    await failable(`adding relation ${rel.fromSchema}.${rel.fromTable} -> ${rel.toSchema}.${rel.toTable}`, async () => {
+      await dbInfo.addRelation(rel.fromTable, rel.fromColumns, rel.toTable, rel.toColumns, {
+        fromSchema: rel.fromSchema,
+        toSchema: rel.toSchema,
+        comment: rel.comment,
+        llmComment: rel.LLMComment,
+        cardinality: rel.cardinality,
+        isPrimaryPath: rel.IsPrimaryPath,
+      });
+    });
+  }
+  const schemas = await dbInfo.getSchemas();
+  for (const schemaMeta of connectionMeta.schemas) {
+    const dbSchema = schemas.find((s) => s.name === schemaMeta.name);
+    if (!dbSchema) {
+      console.warn(`Schema ${schemaMeta.name} not found in connection ${connectionMeta.name}, skipping`);
+      continue;
+    }
+    // schema-level comments
+    if (schemaMeta.comment) {
+      await failable(`Setting schema ${schemaMeta.name} comment`, async () => {
+        await dbSchema.setComment(schemaMeta.comment!);
+      });
+    }
+    if (schemaMeta.LLMComment) {
+      await failable(`Setting schema ${schemaMeta.name} LLMComment`, async () => {
+        await dbSchema.setLlmComment(schemaMeta.LLMComment!);
+      });
+    }
+    // moving to tables
+    const tables = await dbSchema.getTables();
+    for (const tableMeta of schemaMeta.tables) {
+      const dbTable = tables.find((t) => t.friendlyName === tableMeta.name || t.name === tableMeta.name);
+      if (!dbTable) {
+        console.warn(`Table ${tableMeta.name} not found in schema ${schemaMeta.name}, skipping`);
+        continue;
+      }
+      // table-level comments
+
+      await failable(`Setting table ${schemaMeta.name}.${tableMeta.name} annotations`, async () => {
+        await dbSchema.annotateTable(dbTable, removeUndefinesFromObject({
+          comment: tableMeta.comment,
+          llmComment: tableMeta.LLMComment,
+          domains: tableMeta.domains?.join(',') ?? undefined,
+          rowCount: tableMeta.rowCount ?? undefined,
+        }));
+      });
+      // move to columns
+      const columns = dbTable.columns;
+      for (const columnMeta of tableMeta.columns) {
+        const dbColumn = columns.find((c) => c.name === columnMeta.name);
+        if (!dbColumn) {
+          console.warn(`Column ${columnMeta.name} not found in table ${tableMeta.name}, skipping`);
+          continue;
+        }
+        await failable(`Setting column ${schemaMeta.name}.${tableMeta.name}.${columnMeta.name} annotations`, async () => {
+          await dbSchema.annotateColumn(dbTable, dbColumn, removeUndefinesFromObject({
+            comment: columnMeta.comment ?? undefined,
+            llmComment: columnMeta.LLMComment ?? undefined,
+            isUnique: columnMeta.isUnique ?? undefined,
+            sampleValues: columnMeta.categoryValues?.slice(0, 10) ?? undefined,
+            values: columnMeta.categoryValues ?? undefined,
+            max: columnMeta.max ?? undefined,
+            min: columnMeta.min ?? undefined,
+            uniqueCount: columnMeta.uniqueValueCount ?? undefined,
+          }));
+        });
+      }
+    }
+  }
+  console.log(`Finished moving metadata to sticky meta for connection ${connectionMeta.name}`);
+}
+
+async function failable(desc: string, f: () => Promise<void>) {
+  try {
+    console.log(desc);
+    await f();
+    console.log(`${desc} - done`);
+    return;
+  } catch (e) {
+    console.error('Failable function error:', e);
+    return null;
+  }
+}
+
+function removeUndefinesFromObject<T>(obj: T): T {
+  const keys = Object.keys(obj as Object) as (keyof T)[];
+  for (const key of keys) {
+    if (obj[key] == undefined)
+      delete obj[key];
+  }
+  return obj;
 }

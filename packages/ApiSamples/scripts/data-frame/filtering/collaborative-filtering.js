@@ -1,4 +1,4 @@
-// collaborative filtering: we are filtering out everything but sex=M
+// collaborative filtering - we are filtering out everything but sex=M
 
 demog = grok.data.demo.demog();
 let view = grok.shell.addTableView(demog);

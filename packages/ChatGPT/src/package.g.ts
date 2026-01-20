@@ -1,18 +1,18 @@
 import {PackageFunctions} from './package';
 import * as DG from 'datagrok-api/dg';
 
-//tags: init
+//meta.role: init
 export async function init() : Promise<void> {
   await PackageFunctions.init();
 }
 
-//tags: autostart
+//meta.role: autostart
 export function autostart() : void {
   PackageFunctions.autostart();
 }
 
-//tags: searchProvider
 //output: dynamic result
+//meta.role: searchProvider
 export function combinedLLMSearchProvider() : any {
   return PackageFunctions.combinedLLMSearchProvider();
 }
@@ -32,7 +32,7 @@ export async function askHelpLLMProvider(prompt: string) : Promise<any> {
 //input: string prompt 
 //output: widget result
 //meta.role: aiSearchProvider
-//meta.useWhen: If the prompt looks like a user has a goal to achieve something with concrete input(s), and wants the system to plan and execute a series of steps/functions to achieve that goal. for example, adme properties of CHEMBL1234, enumerate some peptide, etc.. . Also, if the tone of the prompt sounds like "Do something", use this function
+//meta.useWhen: If the prompt looks like a user has a goal to achieve something with concrete input(s), and wants the system to plan and execute a series of steps/functions to achieve that goal. This relates to functions that analyse or mutate data, not get it. for example, adme properties of CHEMBL1234, enumerate some peptide, etc... Also, if the tone of the prompt sounds like "Do something to something", use this function
 export async function smartChainExecutionProvider(prompt: string) : Promise<any> {
   return await PackageFunctions.smartChainExecutionProvider(prompt);
 }
@@ -42,7 +42,7 @@ export async function smartChainExecutionProvider(prompt: string) : Promise<any>
 //input: string prompt 
 //output: widget result
 //meta.role: aiSearchProvider
-//meta.useWhen: if the prompt suggest that the user is looking for a data table result and the prompt resembles a query pattern. for example, "bioactivity data for shigella" or "compounds similar to aspirin" or first 100 chembl compounds. there should be some parts of user prompt that could match parameters in some query, like shigella, aspirin, first 100 etc.
+//meta.useWhen: if the prompt suggest that the user is looking for a data table result and the prompt resembles a query pattern. for example, "bioactivity data for shigella" or "compounds similar to aspirin" or first 100 chembl compounds. there should be some parts of user prompt that could match parameters in some query, like shigella, aspirin, first 100 etc. Always use this function when user wants to get the data without any further processing or calculating
 export async function llmSearchQueryProvider(prompt: string) : Promise<any> {
   return await PackageFunctions.llmSearchQueryProvider(prompt);
 }
@@ -75,13 +75,11 @@ export async function getExecutionPlan(userGoal: string) : Promise<string> {
 }
 
 //input: string prompt 
-//input: list<string> searchPatterns 
-//input: list<string> descriptions 
 //output: string result
 //meta.cache: all
 //meta.cache.invalidateOn: 0 0 1 * *
-export async function fuzzyMatch(prompt: string, searchPatterns: string[], descriptions: string[]) : Promise<string> {
-  return await PackageFunctions.fuzzyMatch(prompt, searchPatterns, descriptions);
+export async function findMatchingPatternQuery(prompt: string) : Promise<string> {
+  return await PackageFunctions.findMatchingPatternQuery(prompt);
 }
 
 //input: string prompt 
@@ -92,16 +90,6 @@ export async function askDocumentationCached(prompt: string) : Promise<string> {
   return await PackageFunctions.askDocumentationCached(prompt);
 }
 
-//input: string prompt 
-//input: string connectionID 
-//input: string schemaName 
-//output: string result
-//meta.cache: all
-//meta.cache.invalidateOn: 0 0 1 * *
-export async function generateSqlQuery(prompt: string, connectionID: string, schemaName: string) : Promise<string> {
-  return await PackageFunctions.generateSqlQuery(prompt, connectionID, schemaName);
-}
-
 //input: view view 
 //input: string connectionID 
 //input: dynamic queryEditorRoot 
@@ -109,6 +97,11 @@ export async function generateSqlQuery(prompt: string, connectionID: string, sch
 //output: bool result
 export async function setupAIQueryEditor(view: DG.ViewBase, connectionID: string, queryEditorRoot: any, setAndRunFunc: any) : Promise<boolean> {
   return await PackageFunctions.setupAIQueryEditor(view, connectionID, queryEditorRoot, setAndRunFunc);
+}
+
+//input: string dbName { choices: ["biologics","chembl"] }
+export async function moveMetaToDB(dbName: string) : Promise<void> {
+  await PackageFunctions.moveMetaToDB(dbName);
 }
 
 //name: indexDatabaseSchema

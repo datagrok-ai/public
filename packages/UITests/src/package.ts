@@ -11,10 +11,10 @@ export class PackageFunctions {
   // -- Viewers --
 
   @grok.decorators.panel({
-    tags: ['viewer'],
     name: 'TestViewerForProperties',
     description: 'Viewer to test properties and others',
     outputs: [{type: 'viewer', name: 'result'}],
+    meta: {role: 'viewer'},
   })
   static testViewerForProperties() : DG.Viewer {
     return new TestViewerForProperties();
@@ -24,9 +24,9 @@ export class PackageFunctions {
   // -- Filters --
 
   @grok.decorators.func({
-    tags: ['filter'],
     description: 'Test custom filter',
     outputs: [{type: 'filter', name: 'result'}],
+    meta: {role: 'filter'},
   })
   static testCustomFilter(): DG.Filter {
     return new TestCustomFilter();

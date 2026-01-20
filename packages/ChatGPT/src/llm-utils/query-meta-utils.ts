@@ -2,64 +2,61 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {DBConnectionMeta, DBSchemaInfo} from './db-index-tools';
+import {DBSchemaInfo} from './db-index-tools';
 
-/** Gathers the information about connection metadata, tables, schemas, columns, relations, comments, embeddings, etc
- * @param connection DataConnection to gather the metadata for
+
+/**
+ * a subclass of DG.DbInfo that adds support for built-in DB relations that might not be indexed yet
  */
-export async function getConnectionMeta(connection: DG.DataConnection) {
-  // temporary filler for certain databases
-//   let dbMeta: DBConnectionMeta | undefined = undefined;
+export class BuiltinDBInfoMeta extends DG.DbInfo {
+  constructor(dart: any) {
+    super(dart);
+  }
 
-  // kind of lazy load to save memory
-  //   if (connection.name.toLowerCase() === 'chembl')
-  //     dbMeta = (await import('./indexes/chembl-index')).chemblIndex;
-  //   else if (connection.name.toLowerCase() === 'biologics')
-  //     dbMeta = (await import('./indexes/biologics-index')).biologicsIndex;
+  public static async fromConnection(connection: DG.DataConnection): Promise<BuiltinDBInfoMeta> {
+    const dbInfo = await grok.data.db.getInfo(connection);
+    return new BuiltinDBInfoMeta(dbInfo.dart);
+  }
 
-  const dbInfo = await grok.data.db.getInfo(connection);
+  private _cachedRelations: Map<string, DG.DbRelationInfo[]> = new Map();
+  async getRelationsForSchema(schemaName: string): Promise<DG.DbRelationInfo[]> {
+    if (this._cachedRelations.has(schemaName))
+      return this._cachedRelations.get(schemaName)!;
+    // for dbs without schemas, return all relations
+    const annotatedRelations: DG.DbRelationInfo[] = (await super.getRelations())
+      .filter((rel) => (!rel.fromSchema && !rel.toSchema) ||
+              (rel.fromSchema == schemaName || rel.toSchema == schemaName));
 
-  return {
-    getSchemas: async () => await dbInfo.getSchemas(),
-    getSchemaNames: async () => (await dbInfo.getSchemas()).map((s) => s.name),
-    getRelationsForTable: async (schemaName: string, tableName: string) => {
-      const conInfo = await DBSchemaInfo.getSchemaInfo(connection.id, schemaName);
-      const annotatedRelations = (await dbInfo.getRelations())
-        .filter((rel) => (rel.fromSchema == schemaName && rel.fromTable == tableName) ||
-                (rel.toSchema == schemaName && rel.toTable == tableName));
-      const annotatedRelationsSet = new Set<string>();
-      annotatedRelations.forEach((rel) => {
-        annotatedRelationsSet.add(`${rel.fromSchema}.${rel.fromTable}.${(rel.fromColumns ?? []).join(',')}->${rel.toSchema}.${rel.toTable}.${(rel.toColumns ?? []).join(',')}`);
+    this._cachedRelations.set(schemaName, annotatedRelations);
+    // this._relations = annotatedRelations;
+    const annotatedRelationsSet = new Set<string>();
+    annotatedRelations.forEach((rel) => {
+      annotatedRelationsSet.add(`${rel.fromSchema}.${rel.fromTable}.${(rel.fromColumns ?? []).join(',')}->${rel.toSchema}.${rel.toTable}.${(rel.toColumns ?? []).join(',')}`);
+    });
+    // collect builtin relations here and add to _relations. remove this chunk in future once everything is indexed
+    const conInfo = await DBSchemaInfo.getSchemaInfo(this.connection.id, schemaName);
+    conInfo.descriptor.references
+      .forEach((ref) => {
+        const f = ref.from.split('.');
+        const t = ref.to.split('.');
+        const ft = f[0];
+        const fc = f[1];
+        const tt = t[0];
+        const tc = t[1];
+        if (annotatedRelationsSet.has(`${schemaName}.${ft}.${fc}->${schemaName}.${tt}.${tc}`))
+          return;
+        const meta = new BuiltinRelationMeta(
+          schemaName,
+          ft,
+          [fc],
+          schemaName,
+          tt,
+          [tc],
+        );
+        annotatedRelations.push(meta);
       });
-      conInfo.descriptor.references
-        .filter((obj) => obj.from.split('.')[0] === tableName || obj.to.split('.')[0] === tableName)
-        .forEach((ref) => {
-          const f = ref.from.split('.');
-          const t = ref.to.split('.');
-          const ft = f[0];
-          const fc = f[1];
-          const tt = t[0];
-          const tc = t[1];
-          if (annotatedRelationsSet.has(`${schemaName}.${ft}.${fc}->${schemaName}.${tt}.${tc}`))
-            return;
-          const meta = new BuiltinRelationMeta(
-            schemaName,
-            ft,
-            [fc],
-            schemaName,
-            tt,
-            [tc],
-          );
-          annotatedRelations.push(meta);
-        });
-    },
-    getTablesInSchema: async (schemaName: string) => { 
-        const schema = (await dbInfo.getSchemas()).find((s) => s.name === schemaName)!;
-        return [await schema.getTables
-    },
-
-
-  };
+    return annotatedRelations;
+  }
 }
 
 class BuiltinRelationMeta implements DG.DbRelationInfo {
@@ -89,4 +86,14 @@ class BuiltinRelationMeta implements DG.DbRelationInfo {
         public toColumns: string[],
   ) {
   }
+}
+
+export function getDBTableMetaData(table: DG.TableInfo): DG.DbTableProperties {
+  const props: (keyof DG.DbTableProperties)[] = ['comment', 'llmComment', 'domains', 'rowCount'];
+  return Object.fromEntries(props.map((key) => ([key, table.tags.get(key) ?? undefined])));
+}
+
+export function getDBColumnMetaData(column: DG.ColumnInfo): DG.DbColumnProperties {
+  const props: (keyof DG.DbColumnProperties)[] = ['comment', 'llmComment', 'isUnique', 'min', 'max', 'values', 'sampleValues', 'uniqueCount'];
+  return Object.fromEntries(props.map((key) => ([key, column.tags.get(key) ?? undefined])));
 }

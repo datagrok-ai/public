@@ -20,7 +20,7 @@ export abstract class HitAppBase<T> {
   public static molFileExtReaders: { ext: string; handlerFunc: DG.Func }[] = ['sdf', 'mol', 'smi', 'mol2']
     .map((ext) => {
       const handlerFunc =
-      DG.Func.find({tags: ['file-handler']})
+      DG.Func.find({meta: {role: DG.FUNC_TYPES.FILE_IMPORTER}})
         .find((f) => f?.options?.ext && typeof f.options.ext === 'string' && f.options.ext.split(',').includes(ext));
       return {ext, handlerFunc: handlerFunc as DG.Func};
     })
@@ -30,7 +30,7 @@ export abstract class HitAppBase<T> {
   constructor(public parentCall: DG.FuncCall, appN: AppName) {
     this.baseUrl = new URL(window.location.href).origin + `/apps/HitTriage/${appN.replace(' ', '')}`;
     this._appName = appN;
-    const funcs = DG.Func.find({tags: [HitTriageComputeFunctionTag]});
+    const funcs = DG.Func.find({meta: {role: HitTriageComputeFunctionTag}});
     const functions = funcs.filter((f) => f.type === funcTypeNames.function);
     const scripts = funcs.filter((f) => f.type === funcTypeNames.script) as DG.Script[];
     const queries = funcs.filter((f) => f.type === funcTypeNames.query) as DG.DataQuery[];
@@ -100,14 +100,17 @@ export abstract class HitAppBase<T> {
     const prevCol1Name = molColName1;
     df1.col(molColName1)!.name = molColName2;
     molColName1 = molColName2;
-    const df1MolCol: string[] | undefined = df1.col(molColName1)?.toList()?.filter((it) => !!it)
-      .map((it) => DG.chem.convert(it, DG.chem.Notation.Unknown, DG.chem.Notation.Smiles));
-    const df2MolCol: string[] | undefined = df2.col(molColName2)?.toList()?.filter((it) => !!it)
-      .map((it) => DG.chem.convert(it, DG.chem.Notation.Unknown, DG.chem.Notation.Smiles));
+    const df1MolCol: string[] | undefined = df1.col(molColName1)?.toList()
+      ?.map((it) => _package.convertToSmiles(it));
+    const df2MolCol: string[] | undefined = df2.col(molColName2)?.toList()
+      ?.map((it) => _package.convertToSmiles(it)); // here we do not filter out invalid molecules, because we need original indexes
     if (!df1MolCol || !df2MolCol)
       throw new Error('Molecule column not found'); // should not happen, but just in case
     const df2MolMap = new Map<string, number>();
-    df2MolCol.forEach((it, i) => df2MolMap.set(it, i));
+    df2MolCol.forEach((it, i) => {
+      if (!!it && it !== 'MALFORMED_INPUT_VALUE')
+        df2MolMap.set(it, i);
+    });
     // const existingVidValues = new Set<string>();
     // const vidCol2 = df2.col(ViDColName);
     // vidCol2?.categories?.forEach((v) => existingVidValues.add(v));
@@ -124,6 +127,8 @@ export abstract class HitAppBase<T> {
         }
       }
       for (let i = 0; i < df1MolCol.length; i++) {
+        if (!df1MolCol[i] || df1MolCol[i] === 'MALFORMED_INPUT_VALUE')
+          continue; // skip invalid molecules
         if (!df2MolMap.has(df1MolCol[i])) {
           df2.rows.addNew(null, true);
           for (const col of df1.columns) {

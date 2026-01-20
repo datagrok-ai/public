@@ -1,7 +1,10 @@
-export const explorerConfig = {
+import {DBExplorerConfig} from '@datagrok-libraries/db-explorer/src/types';
+
+export const explorerConfig: DBExplorerConfig = {
   'connectionName': 'CHEMBL',
   'schemaName': 'public',
   'dataSourceName': 'postgres',
+  'nqName': 'Chembl:Chembl',
   'entryPoints': {
     'CHEMBL_ID': {
       'table': 'molecule_dictionary',
@@ -10,7 +13,8 @@ export const explorerConfig = {
         'example': 'CHEMBL1234',
         'nonVariablePart': 'CHEMBL',
         'regexpMarkup': 'CHEMBL[0-9]+'
-      }
+      },
+      'matchRegexp': 'CHEMBL\\d+'
     },
     'molregno': {
       'table': 'molecule_dictionary',
@@ -25,6 +29,16 @@ export const explorerConfig = {
       'onColumn': 'molregno',
       'select': ['canonical_smiles', 'standard_inchi']
     },
+    // example of join with fromSchema and onSchema
+    // {
+    //   'fromSchema': 'public',
+    //   'fromTable': 'molecule_dictionary',
+    //   'columnName': 'molregno',
+    //   'onSchema': 'rdk',
+    //   'tableName': 'mols',
+    //   'onColumn': 'molregno',
+    //   'select': ['m']
+    // },
     {
       'fromTable': 'compound_structural_alerts',
       'columnName': 'alert_id',
@@ -45,8 +59,27 @@ export const explorerConfig = {
     'frac_classification': 'active_ingredient',
     'molecule_synonyms': 'synonyms',
     'compound_records': 'record_id',
-    'compound_structural_alerts': 'alert_name'
+    'compound_structural_alerts': 'alert_name',
   },
+  explicitReferences: [
+    {
+      schema: 'rdk',
+      table: 'mols',
+      column: 'molregno',
+      refSchema: 'public',
+      refTable: 'molecule_dictionary',
+      refColumn: 'molregno'
+    },
+    {
+      schema: 'rdk',
+      table: 'fps',
+      column: 'molregno',
+      refSchema: 'public',
+      refTable: 'molecule_dictionary',
+      refColumn: 'molregno'
+    }
+  ],
+
   'uniqueColumns': {
     'activities': 'activity_id',
     'compound_records': 'record_id',
@@ -63,7 +96,7 @@ export const explorerConfig = {
       'molecule_type',
       'first_approval',
       'indication_class',
-      'chirality'
+      'chirality',
     ]
   }
 };
