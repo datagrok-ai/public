@@ -19,7 +19,7 @@ import {ClinicalCaseViewBase} from '../model/ClinicalCaseViewBase';
 import {ValidationHelper} from '../helpers/validation-helper';
 import {getRequiredColumnsByView, handleMouseMoveOverErrorCell, setupValidationErrorColumns,
   setupValidationErrorIndicators} from './views-validation-utils';
-import {DOMAINS_DESCRIPTIONS} from '../constants/domains-constants';
+import {DOMAINS_CATEGORIES_LIST, DOMAINS_DESCRIPTIONS, SUPP_DOMAIN_CATEGORY} from '../constants/domains-constants';
 import {setupTableViewLayout} from './layout-utils';
 
 export const validationNodes: {[key: string]: DG.TreeViewNode} = {};
@@ -398,16 +398,35 @@ function addStudyToBrowseTree(study: ClinicalStudy, treeNode: DG.TreeViewGroup, 
 function addDomainsToTree(study: ClinicalStudy, treeNode: DG.TreeViewGroup) {
   const domains = study.domains.all();
   const domainsNode = treeNode.group('Domains', null, false);
+
+  // Group domains by category
+  const domainsByCategory: {[category: string]: typeof domains} = {};
   for (const domain of domains) {
-    const domainItem = domainsNode.item(domain.name);
-    const desc = DOMAINS_DESCRIPTIONS[domain.name];
-    if (desc)
-      ui.tooltip.bind(domainItem.root, desc);
-    domainItem.onSelected.subscribe(() => {
-      addDomainAsTableView(study.studyId, domain);
-      const browseTreeRoot = treeNode.root.closest('.d4-tree-view-root');
-      (browseTreeRoot as HTMLElement).focus();
-    });
+    const domainInfo = DOMAINS_DESCRIPTIONS[domain.name];
+    let category = domainInfo?.category;
+    if (!category)
+      category = domain.name.startsWith('supp') ? SUPP_DOMAIN_CATEGORY : 'Other';
+    if (!domainsByCategory[category])
+      domainsByCategory[category] = [];
+    domainsByCategory[category].push(domain);
+  }
+
+  // Add domains grouped by category
+  for (const category of DOMAINS_CATEGORIES_LIST) {
+    const categoryNode = domainsNode.group(category, null, false);
+    if (domainsByCategory[category]) {
+      for (const domain of domainsByCategory[category]) {
+        const domainItem = categoryNode.item(domain.name);
+        const domainInfo = DOMAINS_DESCRIPTIONS[domain.name];
+        if (domainInfo?.description)
+          ui.tooltip.bind(domainItem.root, domainInfo.description);
+        domainItem.onSelected.subscribe(() => {
+          addDomainAsTableView(study.studyId, domain);
+          const browseTreeRoot = treeNode.root.closest('.d4-tree-view-root');
+          (browseTreeRoot as HTMLElement).focus();
+        });
+      }
+    }
   }
 }
 
