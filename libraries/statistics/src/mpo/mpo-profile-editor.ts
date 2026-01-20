@@ -2,7 +2,7 @@ import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
 
-import {DesirabilityProfile, PropertyDesirability} from './mpo';
+import {DesirabilityMode, DesirabilityProfile, PropertyDesirability} from './mpo';
 import {MpoDesirabilityLineEditor} from './mpo-line-editor';
 import {Subject} from 'rxjs';
 
@@ -47,6 +47,11 @@ export class MpoProfileEditor {
       return;
     }
 
+    // Ensure default mode exists
+    Object.values(profile.properties).forEach((p) => {
+      p.mode ??= 'freeform';
+    });
+
     const header = this.buildHeader();
     const rows = Object.entries(profile.properties).map(([name, prop]) => this.buildRow(name, prop));
 
@@ -67,12 +72,13 @@ export class MpoProfileEditor {
     const propertyCell = this.buildPropertyCell(propertyName);
     const weightCell = this.buildWeightAndRangeCell(propertyName, prop, lineEditor);
     const columnCell = this.buildColumnSelector(propertyName, lineEditor);
+    const modeControl = this.design ? this.buildModeControl(propertyName, prop, lineEditor) : null;
     const controls = this.design ? this.buildRowControls(row, propertyName) : null;
 
     row.append(
       ui.divV([propertyCell, columnCell].filter(Boolean)),
       weightCell,
-      lineEditor.root,
+      ui.divV([modeControl, lineEditor.root].filter(Boolean)),
     );
 
     if (controls)
@@ -118,7 +124,6 @@ export class MpoProfileEditor {
       this.design ? 'statistics-mpo-weight-design' : 'statistics-mpo-weight-view',
     );
 
-
     if (!this.design)
       return weightInput.root;
 
@@ -150,6 +155,27 @@ export class MpoProfileEditor {
     return ui.divH(
       [weightInput.root, ui.divH([minInput, maxInput])],
     );
+  }
+
+  private buildModeControl(
+    propertyName: string,
+    prop: PropertyDesirability,
+    lineEditor: MpoDesirabilityLineEditor,
+  ): HTMLElement {
+    const items: DesirabilityMode[] = ['freeform', 'gaussian', 'sigmoid'];
+    const input = ui.input.choice('', {
+      items: items,
+      value: prop.mode ?? 'freeform',
+      onValueChanged: (v) => {
+        this.updateProperty(propertyName, (p) => {
+          p.mode = v ?? 'freeform';
+        });
+        lineEditor.redrawAll();
+      },
+    });
+
+    input.root.style.width = '100px';
+    return input.root;
   }
 
   private buildColumnSelector(
@@ -246,7 +272,13 @@ export class MpoProfileEditor {
       return;
 
     const name = `NewProperty${Object.keys(this.profile.properties).length + 1}`;
-    this.profile.properties[name] = {weight: 1, min: 0, max: 1, line: []};
+    this.profile.properties[name] = {
+      weight: 1,
+      min: 0,
+      max: 1,
+      line: [],
+      mode: 'freeform',
+    };
 
     this.setProfile(this.profile);
     this.notifyChanged();

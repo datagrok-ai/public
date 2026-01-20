@@ -6,12 +6,26 @@ import * as DG from 'datagrok-api/dg';
 /// [x, y] pairs are sorted by x in ascending order
 export type DesirabilityLine = number[][];
 
+export type DesirabilityMode = 'freeform' | 'gaussian' | 'sigmoid';
+
 /// A desirability line with its weight
 export type PropertyDesirability = {
   line: DesirabilityLine;
   min?: number; /// min value of the property (optional; used for editing the line)
   max?: number; /// max value of the property (optional; used for editing the line)
   weight: number; /// 0-1
+
+  mode?: DesirabilityMode;
+
+  /// Gaussian mode parameters
+  mean?: number;
+  sigma?: number;
+
+  /// Sigmoid mode parameters
+  x0?: number;
+  k?: number;
+
+  freeformLine?: DesirabilityLine;
 }
 
 /// A map of desirability lines with their weights

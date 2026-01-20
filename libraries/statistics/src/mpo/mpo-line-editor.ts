@@ -166,10 +166,21 @@ export class MpoDesirabilityLineEditor {
       const minX = this.getMinX();
       const maxX = this.getMaxX();
 
+      // Restore freeform line if switching back
+      if (this._prop.mode === 'freeform' && this._prop.freeformLine)
+        this._prop.line = this._prop.freeformLine;
+
+      // Save freeform line before switching to generated mode
+      if (this._prop.mode !== 'freeform') {
+        if (!this._prop.freeformLine)
+          this._prop.freeformLine = [...this._prop.line];
+        this._prop.line = this.computeLine();
+      }
+
       this.pointsGroup!.destroyChildren(); // Clear old points
       const konvaPoints: number[] = [];
 
-      const sortedLine = [...this._prop.line].sort((a, b) => a[0] - b[0]);
+      const sortedLine = [...this.computeLine()].sort((a, b) => a[0] - b[0]);
       sortedLine.forEach((p, index) => {
         const mapper = new CoordMapper(minX, maxX, width, height);
         const coords = mapper.toCanvasCoords([p[0], p[1]]);
@@ -182,7 +193,7 @@ export class MpoDesirabilityLineEditor {
           fill: '#d72f30',
           stroke: 'black',
           strokeWidth: 1,
-          draggable: true, // Make points draggable
+          draggable: this._prop.mode === 'freeform',
           hitStrokeWidth: 5, // Easier to hit for dragging/clicking
         });
 
@@ -191,6 +202,8 @@ export class MpoDesirabilityLineEditor {
 
         // --- Dragging Logic ---
         pointCircle.on('dragmove', (evt: Konva.KonvaEventObject<DragEvent>) => {
+          if (this._prop.mode !== 'freeform') return;
+
           const circle = evt.target as Konva.Circle;
           const pos = circle.position();
           const currentPointIndex = circle.getAttr('_pointIndex');
@@ -200,7 +213,7 @@ export class MpoDesirabilityLineEditor {
           const nextX = currentPointIndex < sortedLine.length - 1 ? sortedLine[currentPointIndex + 1][0] : maxX;
 
           // Add a small buffer to avoid points overlapping exactly
-          const buffer = (maxX - minX === 0) ? 0 : 0.001 * (maxX - minX); // Avoid NaN if minX === maxX
+          const buffer = (maxX - minX === 0) ? 0 : 0.001 * (maxX - minX);
           const minCanvasX = mapper.toCanvasCoords([prevX + (currentPointIndex > 0 ? buffer : 0), 0]).x;
           const maxCanvasX = mapper.toCanvasCoords([nextX - (currentPointIndex < sortedLine.length - 1 ? buffer : 0), 0]).x;
 
@@ -233,6 +246,8 @@ export class MpoDesirabilityLineEditor {
         });
 
         pointCircle.on('dragend', () => {
+          if (this._prop.mode !== 'freeform') return;
+
           // Ensure data is sorted after drag, although constraints should handle it
           this._prop.line.sort((a, b) => a[0] - b[0]);
           this.redrawFn?.(); // Full redraw on drag end to fix indices and line path
@@ -240,10 +255,11 @@ export class MpoDesirabilityLineEditor {
 
         // --- Right-click to Remove ---
         pointCircle.on('contextmenu', (evt: Konva.KonvaEventObject<MouseEvent>) => {
+          if (this._prop.mode !== 'freeform') return;
+
           evt.evt.preventDefault(); // Prevent browser context menu
           // Keep at least 2 points for a line segment
           if (this._prop.line.length <= 2) {
-            // Use DG tooltip or simple alert/warning
             grok.shell.warning('Cannot remove points, minimum of 2 required.');
             return;
           }
@@ -256,6 +272,8 @@ export class MpoDesirabilityLineEditor {
 
         // Enhance usability: change cursor on hover and show tooltip
         pointCircle.on('mouseenter', (evt: Konva.KonvaEventObject<MouseEvent>) => {
+          if (this._prop.mode !== 'freeform') return;
+
           this.stage!.container().style.cursor = 'pointer';
           const circle = evt.target as Konva.Circle;
           const pos = circle.position();
@@ -265,6 +283,8 @@ export class MpoDesirabilityLineEditor {
         });
 
         pointCircle.on('mouseleave', () => {
+          if (this._prop.mode !== 'freeform') return;
+
           this.stage!.container().style.cursor = 'default';
           ui.tooltip.hide();
         });
@@ -275,12 +295,13 @@ export class MpoDesirabilityLineEditor {
       this.konvaLine!.points(konvaPoints);
       this.layer!.batchDraw();
 
-      if (notify)
+      if (notify && this._prop.mode === 'freeform')
         this.onChanged.next(this._prop.line);
     };
 
     // --- Left-click to Add Point ---
     this.stage.on('click tap', (evt) => {
+      if (this._prop.mode !== 'freeform') return;
       if (evt.target instanceof Konva.Circle || evt.evt.button !== 0) return;
 
       const pos = this.stage?.getPointerPosition();
@@ -340,6 +361,38 @@ export class MpoDesirabilityLineEditor {
 
   get line(): DesirabilityLine {
     return this._prop.line;
+  }
+
+  private computeLine(): DesirabilityLine {
+    if (this._prop.mode === 'freeform')
+      return this._prop.line;
+
+    const minX = this.getMinX();
+    const maxX = this.getMaxX();
+    const n = 60;
+    const line: DesirabilityLine = [];
+
+    for (let i = 0; i <= n; i++) {
+      const x = minX + (maxX - minX) * (i / n);
+      let y = 0;
+
+      if (this._prop.mode === 'gaussian') {
+        const mean = this._prop.mean ?? (minX + maxX) / 2;
+        const sigma = this._prop.sigma ?? (maxX - minX) / 6;
+        const z = (x - mean) / sigma;
+        y = Math.exp(-0.5 * z * z);
+      }
+
+      if (this._prop.mode === 'sigmoid') {
+        const x0 = this._prop.x0 ?? (minX + maxX) / 2;
+        const k = this._prop.k ?? 10;
+        y = 1 / (1 + Math.exp(-k * (x - x0)));
+      }
+
+      line.push([x, y]);
+    }
+
+    return line;
   }
 
   private drawAxes(minX: number, maxX: number, width: number, height: number) {
