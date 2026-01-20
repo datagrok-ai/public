@@ -359,11 +359,11 @@ export class MpoDesirabilityLineEditor {
     );
   }
 
-  private getMinX(): number {
+  getMinX(): number {
     return this._prop.min ?? Math.min(...this._prop.line.map((p) => p[0]));
   }
 
-  private getMaxX(): number {
+  getMaxX(): number {
     return this._prop.max ?? Math.max(...this._prop.line.map((p) => p[0]));
   }
 
