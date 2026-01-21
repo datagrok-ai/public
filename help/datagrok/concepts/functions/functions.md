@@ -74,7 +74,28 @@ corresponding audit record will contain a reference to it.
 ## Scheduling
 
 Server-based functions such as [Scripts](../../../compute/scripting/scripting.mdx) and [Data Queries](../../../access/access.md#data-query) support scheduling.
-Specify schedule in Script or Data Query annotation using [cron](https://en.wikipedia.org/wiki/Cron) `//schedule: * * 0 0 0`.
+Specify schedule in the function annotation using [cron](https://en.wikipedia.org/wiki/Cron) syntax:
+
+```python
+#schedule: 0 * * * *
+```
+
+### Run as group
+
+By default, scheduled functions run with "All users" permissions. Use `schedule.runAs` to run with a specific [group or role's](../../../govern/access-control/users-and-groups#groups) permissions:
+
+```python
+#name: DailyReport
+#language: python
+#schedule: 0 8 * * *
+#schedule.runAs: Administrators
+
+# This script runs with Administrator permissions
+```
+
+**Requirements:**
+- You must be a member of the specified group or role to use `schedule.runAs`
+- Only applies to server-based functions (scripts and queries)
 
 ## Filtering
 

@@ -60,6 +60,9 @@ Some parameters are specific to script language and/or technology:
   * `condition`: GrokScript condition that gets evaluated to decide whether to show the panel for the object
 * Query
   * `connection`: Name of the db connection that the query should use
+* Scheduling (server-based functions only)
+  * `schedule`: [Cron expression](https://en.wikipedia.org/wiki/Cron) for automatic execution (e.g., `0 8 * * *` for daily at 8am)
+  * `schedule.runAs`: Group or role for execution context. You must be a member of the specified group. See [Scheduling](functions.md#scheduling).
 
 To add additional parameters, use the `meta.` prefix. They can be used for dynamically searching for
 the functions of interest.
