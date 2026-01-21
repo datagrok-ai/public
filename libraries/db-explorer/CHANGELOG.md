@@ -1,5 +1,10 @@
 # db-explorer changelog
 
+## 1.7.2 (2026-01-21)
+
+* Fix tooltip texts in join editor
+* Add explicit references editor in the configurator, with ability to specify schemas in joins
+
 ## 1.7.0 (2025-12-30)
 
 * Support multi schema exploration in a single connection

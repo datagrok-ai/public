@@ -8,7 +8,7 @@
     "access": "public"
   },
   "friendlyName": "Datagrok database explorer library",
-  "version": "1.7.1",
+  "version": "1.7.2",
   "description": "Library for exploring databases",
   "dependencies": {
     "datagrok-api": "^1.26.0",
