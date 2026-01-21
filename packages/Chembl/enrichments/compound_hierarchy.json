@@ -1,0 +1,21 @@
+{
+  "name": "Add hierarchy",
+  "connection": "Chembl:Chembl",
+  "keySchema": "public",
+  "keyTable": "molecule_dictionary",
+  "keyColumn": "molregno",
+  "fields": [
+    "public.molecule_dictionary.molregno",
+    "public.molecule_hierarchy.parent_molregno",
+    "public.molecule_hierarchy.active_molregno"
+  ],
+  "joins": [
+    {
+      "leftTableName": "public.molecule_dictionary",
+      "rightTableName": "public.molecule_hierarchy",
+      "joinType": "left",
+      "leftTableKeys": ["molregno"],
+      "rightTableKeys": ["molregno"]
+    }
+  ]
+}

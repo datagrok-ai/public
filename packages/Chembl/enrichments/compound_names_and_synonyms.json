@@ -1,0 +1,22 @@
+{
+  "name": "Add synonyms",
+  "connection": "Chembl:Chembl",
+  "keySchema": "public",
+  "keyTable": "molecule_dictionary",
+  "keyColumn": "molregno",
+  "fields": [
+    "public.molecule_dictionary.molregno",
+    "public.molecule_synonyms.synonyms",
+    "public.molecule_synonyms.syn_type"
+  ],
+  "joins": [
+    {
+      "leftTableName": "public.molecule_dictionary",
+      "rightTableName": "public.molecule_synonyms",
+      "joinType": "left",
+      "leftTableKeys": ["molregno"],
+      "rightTableKeys": ["molregno"]
+    }
+  ]
+}
+

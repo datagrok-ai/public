@@ -1,0 +1,22 @@
+{
+  "name": "Add alerts",
+  "connection": "Chembl:Chembl",
+  "keySchema": "public",
+  "keyTable": "compound_structural_alerts",
+  "keyColumn": "alert_id",
+  "fields": [
+    "public.compound_structural_alerts.alert_id",
+    "public.structural_alerts.alert_name",
+    "public.structural_alerts.set_name",
+    "public.structural_alerts.smarts"
+  ],
+  "joins": [
+    {
+      "leftTableName": "public.compound_structural_alerts",
+      "rightTableName": "public.structural_alerts",
+      "joinType": "left",
+      "leftTableKeys": ["alert_id"],
+      "rightTableKeys": ["alert_id"]
+    }
+  ]
+}

@@ -1,0 +1,22 @@
+{
+  "name": "Add compound info",
+  "connection": "Chembl:Chembl",
+  "keySchema": "public",
+  "keyTable": "activities",
+  "keyColumn": "molregno",
+  "fields": [
+    "public.activities.molregno",
+    "public.molecule_dictionary.chembl_id",
+    "public.molecule_dictionary.pref_name",
+    "public.molecule_dictionary.max_phase"
+  ],
+  "joins": [
+    {
+      "leftTableName": "public.activities",
+      "rightTableName": "public.molecule_dictionary",
+      "joinType": "left",
+      "leftTableKeys": ["molregno"],
+      "rightTableKeys": ["molregno"]
+    }
+  ]
+}
