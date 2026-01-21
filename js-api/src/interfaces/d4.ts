@@ -808,6 +808,10 @@ export interface IHistogramSettings {
   /// Number of bins on the histogram
   bins: number;
 
+  valueMin: number;
+
+  valueMax: number;
+
   /// A categorical column to split data on (each bar represents a category)
   split: string;
   splitColumnName: string;
