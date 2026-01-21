@@ -88,7 +88,6 @@ export class InputType {
 
   static Tags = 'Tags';
 
-
   static Table = 'Table';
 
   static Molecule = 'Molecule';
