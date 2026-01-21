@@ -227,7 +227,7 @@ export class PackageFunctions {
     const table = grok.shell.t;
     const textCols = table?.columns?.bySemTypeAll('Text');
     if (!table || !textCols || textCols.length === 0) {
-      grok.shell.warning('Please open table with text columns');
+      grok.shell.warning('Import a dataset containing String columns');
       return;
     }
     const colInput = ui.input.column('Text Column', {table: table, value: textCols[0], filter: (col) => col.semType === 'Text'});
