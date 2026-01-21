@@ -622,6 +622,14 @@ export interface IDartApi {
   grok_ChoiceInput_Set_Items(input: any, x: any): any;
   grok_RadioInput_Set_Items(input: any, x: any): any;
   grok_MultiChoiceInput_Set_Items(input: any, x: any): any;
+  grok_TagsInput_Set_Items(input: any, x: any): any;
+  grok_TagsInput_Get_Items(input: any, x: any): any;
+  grok_TagsInput_Set_Allow_New(input: any, x: any): any;
+  grok_TagsInput_Set_MultiValue(input: any, x: any): any;
+  grok_TagsInput_Set_ItemToString(input: any, x: any): any;
+  grok_TagsInput_Set_CreateTagLabel(input: any, x: any): any;
+  grok_TagsInput_Set_GetSuggestions(input: any, x: any): any;
+  grok_TagsInput_Set_CreateNewItem(input: any, x: any): any;
   grok_StringInput_AddClearIcon(input: any, x: any): any;
   grok_StringInput_AddEscClears(input: any, x: any): any;
   grok_StringInput_AddIcon(input: any, x: any): any;
