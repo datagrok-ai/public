@@ -32,19 +32,23 @@ export function initModelTypeNames() {
 export class OpenAIClient {
   public openai: OpenAI;
   private constructor(private vectorStoreId: string) {
-    if (!grok.ai.openAiConfigured)
+    if (!grok.ai.openAiConfigured || !grok.ai.openAiProxyToken)
       throw new Error('OpenAI is not configured. Please set the API key in the AI settings under Admin section.');
     this.openai = new OpenAI({baseURL: `${grok.ai.openAiProxyUrl}/v${grok.ai.config?.apiVersion ?? '1'}`, dangerouslyAllowBrowser: true,
       apiKey: 'unused',
       fetch: async (input, init) => {
         const url = typeof input === 'string' ? input : input.toString();
-        return fetch(url, {
+        const prms = {
           ...init,
-          headers: {
-            ...init?.headers,
-            Authorization: grok.ai.openAiProxyToken,
-          },
-        });
+          // headers: {
+          //   ...in
+          //   Authorization: grok.ai.openAiProxyToken,
+          // },
+        };
+        const headers = new Headers(prms.headers);
+        headers.set('Authorization', grok.ai.openAiProxyToken);
+        prms.headers = headers;
+        return fetch(url, prms);
       },
     });
   }

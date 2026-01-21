@@ -7,6 +7,7 @@ import {getAIAbortSubscription} from '../utils';
 import {ModelType, OpenAIClient} from './openAI-client';
 import {LLMCredsManager} from './creds';
 import type OpenAI from 'openai';
+import {ComparisonFilter, CompoundFilter} from 'openai/resources/shared';
 
 class ClarificationNeededError extends Error {
   constructor() {
@@ -280,9 +281,13 @@ WORKFLOW:
 6. (JavaScript only) Before using any DG/grok/ui member that is NOT directly present in the examples you found, verify it exists:
   - Call list_js_members on the parent object/namespace (e.g., list_js_members("grok.chem") before using grok.chem.sketcher)
   - If the member is not present, do NOT use it; pick an alternative from docs/examples or ask for clarification.
+6.1 (JavaScript only, if available) Before using any Datagrok JS API method/property (e.g., grok.data.demo, DG.DataFrame.fromCsv, ui.dialog), you ALWAYS MUST (!!!!!) check it exists with search_js_api_sources.
+  - This tool returns source code chunks from the datagrok js-api; use it to verify the API surface.
+  - If the member does not appear in the returned source chunks, do NOT use it; pick an alternative or ask for clarification.
 7. Generate the complete script with proper header comments
 8. Validate the script has all required annotations
 9. Return ONLY the complete script code (plain text; no markdown, no code fences, no explanations)
+
 
 CRITICAL RULES:
 - ALWAYS include proper header comments with #name, #description, #language, #input, and #output annotations
@@ -298,9 +303,12 @@ CRITICAL RULES:
   * Analysis: input dataframe → output string/value
 - Use precise semantic types: Molecule, Sequence, Cell Line, etc.
 - ALWAYS test your understanding by searching documentation before implementation
-- If you cannot generate a valid script after research, use ask_user_for_clarification${vectorStoreId ? '\n- Documentation search is MANDATORY for any Datagrok-specific functionality' : ''}
+- If you cannot generate a valid script after research, use ask_user_for_clarification${vectorStoreId ? '\n- Documentation search is MANDATORY for any Datagrok-specific functionality' : ''}${vectorStoreId && language === 'javascript' ? '\n- For JavaScript, you MUST use search_js_api_sources to verify JS API members before use' : ''}
 - If the user is just asking a question or chatting (not requesting a script), respond with "REPLY ONLY: [your response]"
 - Final output MUST be only the script code. Do not include markdown, bullets, backticks, headings, or any extra text.
+- THE SCRIPT YOU GENERATE MUST BE a script that is run directly, not a function.
+- MAKE SURE YOU DO NOT REDECLARE THE VARIABLES THAT ARE ALREADY DECLARED IN THE HEADER COMMENTS AS INPUTS (the output variable you MUST DECLARE). you can assume that input variables are already declared!!!!.
+- Avalialable Variable types: dataframe, column, string, int, double, boolean, graphics, viewer, list, dynamic. DO NOT USE ANY OTHER VARIABLE TYPES (except if seen in examples)!!!!
 
 RESPONSE MODES:
 1. SCRIPT MODE (default): Return complete script code with header comments
@@ -485,7 +493,7 @@ function getTools(language: DG.ScriptingLanguage, vectorStoreId: string | null):
     });
   }
 
-  // Add JS API sample search for any language
+  // Add API sample search for any language
   tools.push({
     type: 'function',
     name: 'find_similar_script_samples',
@@ -505,6 +513,30 @@ function getTools(language: DG.ScriptingLanguage, vectorStoreId: string | null):
   });
 
   if (language === 'javascript') {
+    if (vectorStoreId) {
+      tools.push({
+        type: 'function',
+        name: 'search_js_api_sources',
+        description: 'Search Datagrok JavaScript API source code (js-api) to verify that a method/property exists. Use this before calling any grok/ui/DG members that are not already confirmed by examples. Returns relevant source chunks.',
+        parameters: {
+          type: 'object',
+          properties: {
+            query: {
+              type: 'string',
+              description: 'Search query for the JS API source code (e.g., "grok.data.demo", "DG.DataFrame.fromCsv", "ui.dialog")'
+            },
+            maxResults: {
+              type: ['integer', 'null'],
+              description: 'Maximum number of results to return (1-50)',
+              default: 4
+            }
+          },
+          required: ['query', 'maxResults'],
+          additionalProperties: false
+        },
+        strict: true
+      });
+    }
     tools.push({
       type: 'function',
       name: 'list_js_members',
@@ -546,6 +578,10 @@ async function executeFunction(
   case 'find_similar_script_samples':
     aiPanel?.addUiMessage('Looking for similar JavaScript samples...', false);
     return await context.findSimilarScriptSamples(getStringProp(args, 'description') ?? '', language);
+
+  case 'search_js_api_sources':
+    aiPanel?.addUiMessage(`Searching JS API resources for "${getStringProp(args, 'query') ?? ''}"...`, false);
+    return await context.searchJsApiSources(getStringProp(args, 'query') ?? '', getNumberProp(args, 'maxResults'));
 
   case 'list_js_members':
     aiPanel?.addUiMessage(`Checking JS members for "${getStringProp(args, 'expression') ?? ''}"...`, false);
@@ -617,7 +653,11 @@ class ScriptGenerationContext {
     // Cleanup if needed
   }
 
-  async searchDocumentation(query: string, maxResults: number | null): Promise<string> {
+  async searchDocumentation(query: string, maxResults: number | null, filterOptions?: {
+    fileExtension?: string,
+    firstFolder?: string, // useful for specific searches, like "js-api", "libraries", "packages" etc.
+    secondFolder?: string, // useful for specific searches, inside of the firstFolder, like specific plugin, library, etc.
+  }): Promise<string> {
     if (!this.vectorStoreId)
       return 'Documentation search is not available. Vector store ID not configured.';
 
@@ -626,10 +666,35 @@ class ScriptGenerationContext {
 
     try {
       const openai = OpenAIClient.getInstance().openai;
+      const filterObject = {filters: [] as ComparisonFilter[], type: 'and'} satisfies CompoundFilter;
+      if (filterOptions) {
+        if (filterOptions.fileExtension) {
+          filterObject.filters.push({
+            key: 'originalExtension',
+            value: filterOptions.fileExtension,
+            type: 'eq',
+          });
+        }
+        if (filterOptions.firstFolder) {
+          filterObject.filters.push({
+            key: 'firstParentFolder',
+            value: filterOptions.firstFolder,
+            type: 'eq',
+          });
+        }
+        if (filterOptions.secondFolder) {
+          filterObject.filters.push({
+            key: 'secondParentFolder',
+            value: filterOptions.secondFolder,
+            type: 'eq',
+          });
+        }
+      }
       const searchData = await openai.vectorStores.search(this.vectorStoreId, {
         query,
         max_num_results: maxResults ?? 4,
         rewrite_query: false,
+        filters: filterObject.filters.length > 0 ? filterObject : undefined,
       });
 
       if (!searchData.data || searchData.data.length === 0)
@@ -668,12 +733,24 @@ class ScriptGenerationContext {
     return result;
   }
 
+  async searchJsApiSources(query: string, maxResults: number | null): Promise<string> {
+    if (!this.vectorStoreId)
+      return 'JS API source search is not available. Vector store ID not configured.';
+
+    if (!query || query.trim().length === 0)
+      return 'Error: empty JS API source search query.';
+
+    return await this.searchDocumentation(query, maxResults, {
+      firstFolder: 'js-api',
+    });
+  }
+
   listJsMembers(expression: string): string {
     if (!expression || expression.trim().length === 0)
       return 'Error: expression is required.';
     const expr = expression.trim();
     if (!isSafeJsMemberExpression(expr))
-      return 'Error: unsafe expression. Only dotted identifiers like "grok.chem" are allowed.';
+      return 'Error: unsafe expression. Only dotted identifiers like "grok.chem" are allowed. consider use js-api search instead';
 
     try {
       // eslint-disable-next-line no-eval
