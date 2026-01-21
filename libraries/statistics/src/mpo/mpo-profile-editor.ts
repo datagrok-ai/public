@@ -72,7 +72,7 @@ export class MpoProfileEditor {
     const propertyCell = this.buildPropertyCell(propertyName);
     const weightCell = this.buildWeightAndRangeCell(propertyName, prop, lineEditor);
     const columnCell = this.buildColumnSelector(propertyName, lineEditor);
-    const modeControl = this.design ? this.buildModeControl(propertyName, prop, lineEditor) : null;
+    const modeControl = this.design ? this.buildModeGear(propertyName, prop, lineEditor) : null;
     const controls = this.design ? this.buildRowControls(row, propertyName) : null;
 
     row.append(
@@ -85,6 +85,55 @@ export class MpoProfileEditor {
       row.append(controls);
 
     return row;
+  }
+
+  private buildColumnSelector(
+    propertyName: string,
+    lineEditor: MpoDesirabilityLineEditor,
+  ): HTMLElement | null {
+    if (!this.dataFrame)
+      return null;
+
+    const columnNames = this.dataFrame.columns.names();
+    const matched = columnNames.find(
+      (c) => c.toLowerCase() === propertyName.toLowerCase(),
+    ) ?? null;
+
+    const drawFromColumn = (name: string | null) => {
+      if (!name)
+        return;
+
+      const values = this.dataFrame!.col(name)?.toList();
+      lineEditor.drawBars(values);
+    };
+
+    drawFromColumn(matched);
+
+    const input = ui.input.choice('', {
+      items: columnNames,
+      nullable: true,
+      value: matched ?? '',
+      onValueChanged: (v) => {
+        this.columnMapping[propertyName] = v ?? null;
+        drawFromColumn(v ?? null);
+      },
+    });
+
+    input.root.style.width = '100px';
+    return input.root;
+  }
+
+  private buildModeGear(
+    propertyName: string,
+    prop: PropertyDesirability,
+    lineEditor: MpoDesirabilityLineEditor,
+  ): HTMLElement {
+    const gear = ui.icons.settings(() => {
+      this.openModeDialog(propertyName, prop, lineEditor);
+    });
+
+    gear.classList.add('statistics-mpo-gear');
+    return gear;
   }
 
   private buildPropertyCell(propertyName: string): HTMLElement | null {
@@ -155,63 +204,6 @@ export class MpoProfileEditor {
     return ui.divH(
       [weightInput.root, ui.divH([minInput, maxInput])],
     );
-  }
-
-  private buildModeControl(
-    propertyName: string,
-    prop: PropertyDesirability,
-    lineEditor: MpoDesirabilityLineEditor,
-  ): HTMLElement {
-    const items: DesirabilityMode[] = ['freeform', 'gaussian', 'sigmoid'];
-    const input = ui.input.choice('', {
-      items: items,
-      value: prop.mode ?? 'freeform',
-      onValueChanged: (v) => {
-        this.updateProperty(propertyName, (p) => {
-          p.mode = v ?? 'freeform';
-        });
-        lineEditor.redrawAll();
-      },
-    });
-
-    input.root.style.width = '100px';
-    return input.root;
-  }
-
-  private buildColumnSelector(
-    propertyName: string,
-    lineEditor: MpoDesirabilityLineEditor,
-  ): HTMLElement | null {
-    if (!this.dataFrame)
-      return null;
-
-    const columnNames = this.dataFrame.columns.names();
-    const matched = columnNames.find(
-      (c) => c.toLowerCase() === propertyName.toLowerCase(),
-    ) ?? null;
-
-    const drawFromColumn = (name: string | null) => {
-      if (!name)
-        return;
-
-      const values = this.dataFrame!.col(name)?.toList();
-      lineEditor.drawBars(values);
-    };
-
-    drawFromColumn(matched);
-
-    const input = ui.input.choice('', {
-      items: columnNames,
-      nullable: true,
-      value: matched ?? '',
-      onValueChanged: (v) => {
-        this.columnMapping[propertyName] = v ?? null;
-        drawFromColumn(v ?? null);
-      },
-    });
-
-    input.root.style.width = '100px';
-    return input.root;
   }
 
   private buildRowControls(row: HTMLElement, propertyName: string): HTMLElement {
@@ -287,5 +279,124 @@ export class MpoProfileEditor {
   private notifyChanged(): void {
     this.onChanged.next();
     grok.events.fireCustomEvent(MPO_SCORE_CHANGED_EVENT, {});
+  }
+
+  private openModeDialog(
+    propertyName: string,
+    prop: PropertyDesirability,
+    mainLineEditor: MpoDesirabilityLineEditor,
+  ) {
+    const dialog = ui.dialog({title: `Desirability Settings: ${propertyName}`});
+
+    const modeChoice = ui.input.choice('Mode', {
+      items: ['freeform', 'gaussian', 'sigmoid'],
+      value: prop.mode ?? 'freeform',
+      onValueChanged: (v) => {
+        this.updateProperty(propertyName, (p) => {
+          p.mode = (v ?? 'freeform') as DesirabilityMode;
+        });
+        updatePanel();
+        dialogLineEditor.redrawAll();
+        mainLineEditor.redrawAll();
+      },
+    });
+
+    const meanInput = ui.input.float('Mean', {
+      value: prop.mean ?? 0,
+      //@ts-ignore
+      format: '#0.000',
+      onValueChanged: (v) => {
+        this.updateProperty(propertyName, (p) => {
+          p.mean = v ?? 0;
+        });
+        dialogLineEditor.redrawAll();
+        mainLineEditor.redrawAll();
+      },
+    });
+
+    const sigmaInput = ui.input.float('Sigma', {
+      value: prop.sigma ?? 1,
+      //@ts-ignore
+      format: '#0.000',
+      onValueChanged: (v) => {
+        this.updateProperty(propertyName, (p) => {
+          p.sigma = Math.max(0.01, v ?? 1);
+        });
+        dialogLineEditor.redrawAll();
+        mainLineEditor.redrawAll();
+      },
+    });
+
+    const x0Input = ui.input.float('x0', {
+      value: prop.x0 ?? 0,
+      //@ts-ignore
+      format: '#0.000',
+      onValueChanged: (v) => {
+        this.updateProperty(propertyName, (p) => {
+          p.x0 = v ?? 0;
+        });
+        dialogLineEditor.redrawAll();
+        mainLineEditor.redrawAll();
+      },
+    });
+
+    const kInput = ui.input.float('k', {
+      value: prop.k ?? 10,
+      //@ts-ignore
+      format: '#0.000',
+      onValueChanged: (v) => {
+        this.updateProperty(propertyName, (p) => {
+          p.k = Math.max(0.1, v ?? 10);
+        });
+        dialogLineEditor.redrawAll();
+        mainLineEditor.redrawAll();
+      },
+    });
+
+    const paramPanel = ui.divV([]);
+
+    const updatePanel = () => {
+      ui.empty(paramPanel);
+
+      if (prop.mode === 'freeform')
+        return;
+
+      paramPanel.append(ui.h3('Parameters'));
+
+      if (prop.mode === 'gaussian')
+        paramPanel.append(ui.form([meanInput, sigmaInput]));
+      else
+        paramPanel.append(ui.form([x0Input, kInput]));
+    };
+
+    updatePanel();
+
+    const dialogLineEditor = new MpoDesirabilityLineEditor(prop, 300, 80);
+
+    dialogLineEditor.onParamsChanged = (p) => {
+      meanInput.value = p.mean ?? 0;
+      sigmaInput.value = p.sigma ?? 1;
+      x0Input.value = p.x0 ?? 0;
+      kInput.value = p.k ?? 10;
+
+      this.updateProperty(propertyName, (prop) => {
+        Object.assign(prop, p);
+      });
+
+      mainLineEditor.redrawAll();
+      this.notifyChanged();
+    };
+
+
+    dialog.add(
+      ui.divV([
+        modeChoice.root,
+        paramPanel,
+        dialogLineEditor.root,
+      ]),
+    );
+
+    dialog.addButton('Close', () => dialog.close());
+    dialog.show();
   }
 }
