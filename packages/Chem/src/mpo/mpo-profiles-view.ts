@@ -101,6 +101,7 @@ export class MpoProfilesView {
       },
       'Actions',
     );
+    actionsButton.classList.add('chem-mpo-actions-button');
     return actionsButton;
   }
 
