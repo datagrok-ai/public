@@ -1,4 +1,4 @@
-import {category, expect, test, before} from '@datagrok-libraries/utils/src/test';
+import {category, expect, test, before} from '@datagrok-libraries/test/src/test';
 import * as DG from 'datagrok-api/dg';
 
 category('ProgressIndicator', () => {

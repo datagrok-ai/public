@@ -2,22 +2,22 @@ import {PackageFunctions} from './package';
 import * as DG from 'datagrok-api/dg';
 
 //name: Oligo Toolkit
-//tags: app
 //output: view result
+//meta.role: app
 //meta.icon: img/icons/toolkit.png
 //meta.browsePath: Peptides | Oligo Toolkit
 export async function oligoToolkitApp() : Promise<any> {
   return await PackageFunctions.oligoToolkitApp();
 }
 
-//tags: init
+//meta.role: init
 export async function init() : Promise<void> {
   await PackageFunctions.init();
 }
 
 //name: Oligo Translator
-//tags: app
 //output: view result
+//meta.role: app
 //meta.icon: img/icons/translator.png
 //meta.browsePath: Peptides | Oligo Toolkit
 export async function oligoTranslatorApp() : Promise<any> {
@@ -25,8 +25,8 @@ export async function oligoTranslatorApp() : Promise<any> {
 }
 
 //name: Oligo Pattern
-//tags: app
 //output: view result
+//meta.role: app
 //meta.icon: img/icons/pattern.png
 //meta.browsePath: Peptides | Oligo Toolkit
 export async function oligoPatternApp() : Promise<any> {
@@ -34,8 +34,8 @@ export async function oligoPatternApp() : Promise<any> {
 }
 
 //name: Oligo Structure
-//tags: app
 //output: view result
+//meta.role: app
 //meta.icon: img/icons/structure.png
 //meta.browsePath: Peptides | Oligo Toolkit
 export async function oligoStructureApp() : Promise<any> {
@@ -110,9 +110,9 @@ export async function polyToolConvertTopMenu() : Promise<void> {
   await PackageFunctions.polyToolConvertTopMenu();
 }
 
-//tags: editor
 //input: funccall call 
 //output: column result
+//meta.role: editor
 export async function getPolyToolConvertEditor(call: DG.FuncCall) : Promise<any> {
   return await PackageFunctions.getPolyToolConvertEditor(call);
 }
@@ -154,17 +154,17 @@ export async function createMonomerLibraryForPolyTool(file: DG.FileInfo) : Promi
 }
 
 //name: HELM Enumerator
-//tags: app
 //meta.icon: img/icons/structure.png
 //meta.browsePath: Peptides | PolyTool
+//meta.role: app
 export async function ptEnumeratorHelmApp() : Promise<void> {
   await PackageFunctions.ptEnumeratorHelmApp();
 }
 
 //name: Chem Enumerator
-//tags: app
 //meta.icon: img/icons/structure.png
 //meta.browsePath: Peptides | PolyTool
+//meta.role: app
 export async function ptEnumeratorChemApp() : Promise<void> {
   await PackageFunctions.ptEnumeratorChemApp();
 }

@@ -1,5 +1,9 @@
 # MLflow changelog
 
+## 1.1.1 (2025-04-24)
+
+Standardized plugin name to title case in README and changelog
+
 ## 1.0.1 (2025-02-12)
 
 Adds boto dependency to the MLFlow container

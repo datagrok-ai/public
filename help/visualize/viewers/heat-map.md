@@ -50,3 +50,4 @@ Heatmap responds to the row selection and data filtering.
 
 * [Grid](grid.md)
 * [JS API: heatmap](https://public.datagrok.ai/js/samples/ui/viewers/types/heat-map)
+* [Community: Visualization-related updates](https://community.datagrok.ai/t/visualization-related-updates/521)

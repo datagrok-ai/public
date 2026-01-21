@@ -1,4 +1,4 @@
-// Grid.autoSize: Resizes the grid to fit the content
+// Grid.autoSize resizes the grid to fit the content
 
 const grid = grok.data.demo.demog(5).plot.grid();
 grid.autoSize(300, 300);

@@ -3,15 +3,15 @@
 let view = grok.shell.addTableView(grok.data.demo.demog());
 
 view.addViewer(DG.VIEWER.TRELLIS_PLOT, {
-  "viewerType": "Histogram",
-  "xColumnNames": [
-    "site"
+  'viewerType': 'Histogram',
+  'xColumnNames': [
+    'site'
   ],
-  "yColumnNames": [
-    "race"
+  'yColumnNames': [
+    'race'
   ],
-  "innerViewerLook": {
-    "#type": "HistogramLook",
-    "valueColumnName": "age"
+  'innerViewerLook': {
+    '#type': 'HistogramLook',
+    'valueColumnName': 'age'
   }
 });

@@ -44,7 +44,7 @@ Datagrok lets you work with macromolecules both on the macro (sequence) level an
 
 * Data visualization and exploration
   * [Formats](#formats): such as FASTA (DNA/RNA/protein), delimiter-separated FASTA, [HELM](https://en.wikipedia.org/wiki/Hierarchical_editing_language_for_macromolecules), [BILN](https://pubs.acs.org/doi/10.1021/acs.jcim.2c00703), [PDB](https://en.wikipedia.org/wiki/Protein_Data_Bank_(file_format)), and [others](../../../../access/files/supported-formats.md). Handles nucleotides, natural and non-natural peptides, 3D-structures, and other modalities.
-  * [Format conversion](#format-conversion): SMILES to HELM, HELM to SMILES, etc
+  * [Format conversion](#format-conversion): SMILES to HELM, HELM to SMILES, [Polytool notation](polytool.md), etc
   * [Automatic detection of sequences](../../../../govern/catalog/semantic-types.md) upon data import.
   * Flexible and fast [spreadsheet](#spreadsheet) that shows both macro and small molecules.
   * [Interactive visualization of biological data](#exploring-biological-data).
@@ -292,40 +292,78 @@ You can create and edit macromolecules:
 
 Datagrok offers an intuitive searching and filtering functionality for exploring datasets.
 
-For sequence-based filtering of macromolecules, Datagrok uses [integrated HELM editor](#sketching-and-editing) for HELM notations and text-based filter for linear notations. All filters are interactive. Hovering over categories or distributions in the **Filter Panel**  instantly highlights relevant data points across all viewers.
+### Filtering
 
-The search feature provides another way to analyze your dataset. The search results are presented as a new column in the table, where checkboxes indicate whether each sequence is a match or not. You can color-code the search results for quick visual profiling. In addition, like any other column in the table, this column can be used as a filter. This means you can create and apply additional filters based on the search results, facilitating further analysis and exploration of the dataset.
-
-![Sequence filter and search](img/sequence-filter-search.gif)
+For sequence-based filtering, Datagrok uses an [integrated HELM editor](#sketching-and-editing) for HELM notations and text-based filter for linear notations. All filters are interactive — hovering over categories or distributions in the **Filter Panel** instantly highlights relevant data points across all viewers.
 
 <details>
 <summary>How to filter</summary>
 
-To filter by sequence, do the following:
+To filter by sequence:
 
 1. On the **Top Menu**, click the **Filter** icon to open the **Filter Panel**. The panel shows filters for all dataset columns. By default, the subsequence filter is displayed on top but you can rearrange, add, or remove filter columns by using available controls.
-1. To enter a subsequence, **Click to edit** button.
+1. To enter a subsequence, click the **Click to edit** button.
 1. Once finished, click **OK** to apply the filter.
 
 To clear the filter, use the checkbox provided. To remove the filter altogether, use the **Close** (**x**) icon.
 
 </details>
 
+### Substructure Search
+
+The substructure search feature finds sequences containing a specific pattern or motif and filters the dataset. Search results can be also presented as a new boolean column in the table, where checkboxes indicate matches. You can color-code results for visual profiling or use the column as an additional filter for further analysis.
+
 <details>
-<summary>How to search</summary>
+<summary>How to use</summary>
 
-To search a dataset for matching sequences, do the following:
-
-1. In the **Top Menu**, select **Bio** > **Substructure Search...** A dialog opens.
-1. In the dialog, paste or type the sequence in the field provided and click **OK**. A new column is added to the table.
+1. In the **Top Menu**, select **Bio** > **Search** > **Substructure Search...**. Filter panel will open with Sequence column filter.
+1. Enter or paste the sequence pattern in the provided substructure field. This will filter the dataset based on prompt. 
 
 </details>
+
+### Similarity Search
+
+Similarity search identifies sequences most similar to a target sequence using configurable distance metrics (Needleman-Wunsch, Hamming, Levenshtein, or monomer chemical distance). This is useful for finding close homologs or variants of a known sequence.
+
+The tool generates an interactive results grid showing similar sequences ranked by similarity score, with visual highlighting of differences between the target and matches. You can adjust the similarity cutoff and choose different distance metrics and fingerprint types for comparison.
+
+<details>
+<summary>How to use</summary>
+
+1. In the **Top Menu**, select **Bio** > **Search** > **Similarity Search**. A similarity search viewer is added to the view.
+2. Click on any sequence in the main grid to see top similar sequences to it.
+3. Configure parameters:
+   * **Cutoff**: Similarity threshold (0-1)
+   * **Distance metric**: Choose from Needleman-Wunsch, Hamming, Levenshtein, or monomer chemical distance
+   * **Fingerprint type**: For monomer chemical distance (Morgan, RDKit, etc.)
+   * **Number of neighbors**: How many similar sequences to return
+4. Results appear in an interactive grid, sorted by similarity. Click any result to highlight differences on the context panel.
+
+</details>
+
+### Diversity Search
+
+Diversity search finds the most diverse subset of sequences in your dataset, useful for selecting representative samples or reducing redundancy while maintaining coverage of sequence space. The algorithm uses distance-based metrics to identify sequences that are maximally different from each other.
+
+<details>
+<summary>How to use</summary>
+
+1. In the **Top Menu**, select **Bio** > **Search** > **Diversity Search**. A diversity search viewer is added to the view.
+1. Configure parameters:
+   * **Number of diverse sequences**: How many sequences to select
+   * **Distance metric**: Choose the metric for calculating diversity
+   * **Fingerprint type**: For chemical distance calculations
+1. Results appear in a new table containing the most diverse sequences from your dataset.
+
+</details>
+
+![Sequence filter and search](img/sequence-filter-search.gif)
 
 To learn more about filtering, watch this [video](https://www.youtube.com/watch?v=GM3XixUFFUs&t=2688s) or read [this article](../../../../visualize/table-view-1.md#select-and-filter).
 
 ## Manage monomer libraries
 
-Datagrok enables you to manage monomer libraries for various macromolecule types, including DNA, RNA, peptides, and custom structures. These libraries define the building blocks, or monomers, that compose polymers and store detailed metadata about each monomer, such as properties, labels, and molecular structures. This metadata supports flexible and accurate functionality across the platform, such as the [To Atomic Level](#convert-to-atomic-level) conversion, sequence analysis, and polymer enumeration in tools like PolyTool. By managing monomer libraries, users can select specific monomers for custom analyses and workflows, ensuring precise control over macromolecule representation and manipulation.
+Datagrok enables you to manage monomer libraries for various macromolecule types, including DNA, RNA, peptides, and custom structures. These libraries define the building blocks, or monomers, that compose polymers and store detailed metadata about each monomer, such as properties, labels, and molecular structures. This metadata supports flexible and accurate functionality across the platform, such as the [To Atomic Level](#convert-to-atomic-level) conversion, sequence analysis, and polymer enumeration in tools like [Polytool](polytool.md). By managing monomer libraries, users can select specific monomers for custom analyses and workflows, ensuring precise control over macromolecule representation and manipulation.
 
 
 The default [HELM monomer library](https://github.com/datagrok-ai/public/blob/master/packages/Bio/files/monomer-libraries/HELMCoreLibrary.json) is pre-installed with the [Bio package](https://github.com/datagrok-ai/public/tree/master/packages/Bio). You can add your own monomer libraries using the view accessible from **Top Menu** > **Bio** > **Manage** > **Monomer Libraries**:
@@ -388,7 +426,7 @@ A common use is to visualize protein-binding sites in DNA or functional motives 
 <summary>How to use</summary>
 
 1. In the **Top Menu**, select **Bio** > **Composition Analysis**. The sequence logo viewer is added to the **Table View**.
-1. To edit parameters, hover over the viewer's top and click the **Gear** icon.
+2. To edit parameters, hover over the viewer's top and click the **Gear** icon.
 
 </details>
 
@@ -410,12 +448,12 @@ The dialog has the following inputs:
 
 * **Table**: The table containing the column of sequences.
 * **Column**: The column containing the sequences.
-* **Encoding function**: The encoding function that will be used for pre-processing of sequences. For non-helm notation sequences, only one encoding function is available, that will encode them in single charachter form and calculate the substitution matrix for each individual monomer. For [Helm](https://en.wikipedia.org/wiki/Hierarchical_editing_language_for_macromolecules) sequences, apart from prior function, another one is offered that will use [chemical fingerprint](https://www.rdkit.org/UGM/2012/Landrum_RDKit_UGM.Fingerprints.Final.pptx.pdf) distances between each macromolecule to calculate distance matrix. The `Encode sequences` function has 3 parameter which you can adjust using the gear (⚙️) button next to the encoding function selection: 
-    * Gap open penalty: The penalty for opening a gap in the alignment (used for [Needleman-Wunsch](https://en.wikipedia.org/wiki/Needleman%E2%80%93Wunsch_algorithm) algorythm).
-    * Gap extend penalty: The penalty for extending a gap in the alignment (used for [Needleman-Wunsch](https://en.wikipedia.org/wiki/Needleman%E2%80%93Wunsch_algorithm) algorythm).
+* **Encoding function**: The encoding function that will be used for pre-processing of sequences. For non-helm notation sequences, only one encoding function is available, that will encode them in single character form and calculate the substitution matrix for each individual monomer. For [Helm](https://en.wikipedia.org/wiki/Hierarchical_editing_language_for_macromolecules) sequences, apart from prior function, another one is offered that will use [chemical fingerprint](https://www.rdkit.org/UGM/2012/Landrum_RDKit_UGM.Fingerprints.Final.pptx.pdf) distances between each macromolecule to calculate distance matrix. The `Encode sequences` function has 3 parameters which you can adjust using the gear (⚙️) button next to the encoding function selection: 
+    * Gap open penalty: The penalty for opening a gap in the alignment (used for [Needleman-Wunsch](https://en.wikipedia.org/wiki/Needleman%E2%80%93Wunsch_algorithm) algorithm).
+    * Gap extend penalty: The penalty for extending a gap in the alignment (used for [Needleman-Wunsch](https://en.wikipedia.org/wiki/Needleman%E2%80%93Wunsch_algorithm) algorithm).
     * Fingerprint type: The type of molecular fingerprints that will be used to generate monomer substitution matrix.
 * **Method**: The dimensionality reduction method that will be used. The options are:
-    * UMAP: [UMAP](https://umap-learn.readthedocs.io/en/latest/) is a dimensionality reduction technique that can be used for visualisation similarly to t-SNE, but also for general non-linear dimension reduction.
+    * UMAP: [UMAP](https://umap-learn.readthedocs.io/en/latest/) is a dimensionality reduction technique that can be used for visualization similarly to t-SNE, but also for general non-linear dimension reduction.
     * t-SNE: [t-SNE](https://en.wikipedia.org/wiki/T-distributed_stochastic_neighbor_embedding) is a machine learning algorithm for dimensionality reduction developed by Geoffrey Hinton and Laurens van der Maaten. It is a nonlinear dimensionality reduction technique that is particularly well-suited for embedding high-dimensional data into a space of two or three dimensions, which can then be visualized in a scatter plot.
 
     Other parameters for dimensionality reduction method can be accessed through the gear (⚙️) button next to the method selection.
@@ -423,7 +461,7 @@ The dialog has the following inputs:
 * **Similarity**: The similarity/distance function that will be used to calculate pairwise distances. The options are:
     * Needleman-Wunsch: [Needleman-Wunsch](https://en.wikipedia.org/wiki/Needleman%E2%80%93Wunsch_algorithm) is a dynamic programming algorithm that performs a global alignment on two sequences. It is commonly used in bioinformatics to align protein or nucleotide sequences.
     * Hamming: [Hamming distance](https://en.wikipedia.org/wiki/Hamming_distance) is a metric for comparing two macromolecules of same length. Hamming distance is the number of positions in which the two monomers are different.
-    * Monomer chemical distance: Similar to Hamming distance, but instead of penalizing the missmatch of monomers with -1, the penalty will be based on the chemical distance between the two monomers. The chemical distance is calculated using the [chemical fingerprint](https://www.rdkit.org/UGM/2012/Landrum_RDKit_UGM.Fingerprints.Final.pptx.pdf) of the monomers.
+    * Monomer chemical distance: Similar to Hamming distance, but instead of penalizing the mismatch of monomers with -1, the penalty will be based on the chemical distance between the two monomers. The chemical distance is calculated using the [chemical fingerprint](https://www.rdkit.org/UGM/2012/Landrum_RDKit_UGM.Fingerprints.Final.pptx.pdf) of the monomers.
     * Levenshtein: [Levenshtein distance](https://en.wikipedia.org/wiki/Levenshtein_distance) is a string metric for measuring the difference between two sequences. Informally, the Levenshtein distance between two sequences is the minimum number of single-monomer edits (insertions, deletions or substitutions) required to change one sequence into the other.
 * **Plot embeddings**: If checked, the plot of the embeddings will be shown after the calculation is finished.
 * **Postprocessing**: The postprocessing function that will be applied to the resulting embeddings. The options are:
@@ -433,14 +471,20 @@ The dialog has the following inputs:
         * **Minimum points**: The number of samples (or total weight) in a neighborhood for a point to be considered as a core point. This includes the point itself.
     * **Radial Coloring**: The radial coloring function will color the points based on their distance from the center of the plot. The color will be calculated as a gradient from the center to the border of the plot.
 
-**WebGPU (experimental)**
+**WebGPU Acceleration**
 
-WebGPU is an experimental feature that allows you to use the GPU for calculations in browser. We have implemented the KNN graph generation (with support to all simple and non-trivial distance functions like Needleman-Wunsch, Levenstain, etc.) and UMAP algorithms in webGPU, which can be enabled in the dimensionality reduction dialog. This can speed up the calculations significantly, especially for large datasets, up to 100x. This option can be found in the gear (⚙️) button next to the method selection (UMAP). 
+WebGPU is an experimental feature that enables GPU-accelerated calculations directly in the browser. We have implemented WebGPU support for KNN graph generation (with support for all distance functions including Needleman-Wunsch, Levenshtein, etc.) and UMAP algorithm, which can provide up to 100x speedup for large datasets.
 
-Please note, that webGPU is still considered as experimental feature, and for now only works in Chrome or Edge browsers (although it is planned to be supported in Firefox and Safari in the future). If webGPU is not supported in your browser, this checkbox will not appear in the dialog. To make sure that your opperating system gives browser access to correct(faster) GPU, you can check the following:
-* Go to settings and find display settings
-* Go to Graphics settings.
-* In the list of apps, make sure that your browser is set to use high performance GPU.
+To enable WebGPU acceleration, check the corresponding option in the gear (⚙️) button next to the method selection (UMAP).
+
+**Requirements and limitations:**
+* Requires hardware GPU support
+* To ensure your browser uses the high-performance GPU:
+  1. Go to system settings → Display settings → Graphics settings
+  2. Find your browser in the app list
+  3. Set it to use "High performance" GPU
+
+If WebGPU is not supported in your browser, the checkbox will not appear in the dialog.
 
 </details>
 
@@ -578,41 +622,128 @@ application performs SAR analysis of peptides. The app offers the following feat
 
 <!--replace with a gif-->
 
-## Utilities
+## Additional tools and utilities
 
-### Formats
+### Data formats and notations {#formats}
 
-Datagrok understand most popular notations for representing macromolecules,
-such as FASTA (DNA/RNA/protein), delimiter-separated FASTA,
-[HELM](https://en.wikipedia.org/wiki/Hierarchical_editing_language_for_macromolecules),
-[BILN](https://pubs.acs.org/doi/10.1021/acs.jcim.2c00703),
-[PDB](https://en.wikipedia.org/wiki/Protein_Data_Bank_(file_format)), and [others](../../../../access/files/supported-formats.md).
-Handles nucleotides, natural and non-natural peptides, 3D-structures, and other modalities.
+Datagrok supports a wide range of file formats and sequence notations for representing biological macromolecules.
+
+### File Formats
+
+**Sequence files:**
+* **FASTA**: Standard format for DNA, RNA, and protein sequences
+* **CSV/TSV**: Tabular data with sequence columns
+* **XLSX**: Excel files with biological data
+* **PDB**: Protein Data Bank format for 3D structures
+
+For a complete list, see [supported formats](../../../../access/files/supported-formats.md).
+
+### Sequence Notations
+
+**Linear sequences:**
+* **FASTA**: Single-letter codes for natural amino acids and nucleotides (e.g., `ACDEFGHIKLMNPQRSTVWY`)
+* **Separator-based**: Custom delimiters for multi-character monomers (e.g., `A-C-meD-E-F` or `dA.dC.dG.dT`)
+* **HELM**: Hierarchical format supporting both natural and non-natural monomers (e.g., `PEPTIDE1{A.C.D.E.F}$$$$`)
+
+**Complex structures:**
+* **HELM**: Industry standard for cyclic, branched, and conjugated structures
+* **BILN**: Bracket-based notation for modified oligonucleotides (e.g., `[mA].[mC].[mG].[mU]`)
+* **[Polytool notation](polytool.md)**: Rules-based notation with support for custom connection rules and chemical reactions
+
+**3D structures:**
+* **PDB**: Atomic coordinates and structural information
+
+### Modalities
+
+Datagrok handles diverse biological modalities, automatically detects them and applies appropriate analysis tools:
+
+* **DNA/RNA**: Natural and modified nucleotides
+* **Proteins**: Natural and non-natural amino acids
+* **Peptides**: Linear, cyclic, branched, and bicyclic structures
+* **Oligonucleotides**: With chemical modifications (phosphorothioate, 2'-OMe, LNA, etc.)
+* **Conjugates**: Peptides with small molecules, lipids, or other chemical groups
+* **Antibodies**: Full sequences, CDRs, and fragments
+
+### Automatic Detection
+
+When you import data, Datagrok:
+1. Automatically detects sequence columns
+2. Determines the notation type (FASTA, HELM, separator, etc.)
+3. Identifies the alphabet (DNA, RNA, protein)
+4. Assigns appropriate [semantic types](../../../../govern/catalog/semantic-types.md)
+5. Enables notation-specific rendering and analysis tools
+
+This automatic detection works across all supported notations and handles mixed formats within the same dataset.
 
 ### Format conversion
 
-Sequences from supported notations (HELM, FASTA, BILN) can be converted to molecular form (MOLBLOCK/SMILES), or back.
-Hovering over monomers of sequence will also highlight the corresponding monomer fragment in the resulting molecule.
+Datagrok provides bidirectional conversion between multiple sequence notations and molecular representations. The platform maintains structural fidelity during conversion and supports both linear and non-linear topologies.
 
-For individual macromolecules, the conversion happens automatically as you interact with them. 
-To convert explicitly, see the **Bio** > **Transform** menu.
+**Supported conversions:**
+
+* **Sequence to sequence**: HELM ↔ FASTA ↔ BILN ↔ Separator notations ↔ [Polytool notation](polytool.md)
+* **Sequence to molecule**: HELM/FASTA/BILN/Polytool → SMILES/MOLBLOCK
+* **Molecule to sequence**: SMILES → HELM
+
+The conversion engine recognizes monomers from active [monomer libraries](#manage-monomer-libraries) and maintains topology information including:
+* Cyclic structures (ring closures)
+* Branching points
+* Chemical modifications
+* Linkers and connectors
+
+When converting to molecular form, hovering over monomers in the sequence highlights the corresponding fragment in the resulting molecule structure, enabling easy verification of the conversion.
 
 Also, check out a YouTube video of [RDKit UGM presentation](https://www.youtube.com/watch?v=la-kj52djeI) about the conversion toolkit.
 
 <details>
-<summary>HELM to SMILES</summary>
-![](img/helm-mol-highlight.png)
+<summary>Sequence notation conversion</summary>
+
+To convert between sequence notations (e.g., HELM to FASTA, FASTA to separator format):
+
+1. In the **Top Menu**, select **Bio** > **Convert** > **Notation...**
+1. Select the source column containing sequences
+1. Choose the target notation (HELM, FASTA, Separator)
+1. For separator format, specify the delimiter character (e.g., `-`, `.`, `/`)
+1. Click **OK** to add the converted column to your table
+
 </details>
 
 <details>
-<summary>SMILES to HELM</summary>
-![](img/mol-to-helm.gif)
+<summary>Sequence to SMILES conversion</summary>
+
+![HELM to SMILES with highlighting](img/helm-mol-highlight.png)
+
+When you convert a sequence to molecular form:
+* Non-linear structures (cyclic, branched) are fully supported
+* The resulting molecule preserves all connections and modifications
+* Hovering over sequence monomers highlights corresponding molecular fragments
+* Useful for further cheminformatics analysis or molecular property calculations
+
+</details>
+
+<details>
+<summary>SMILES to HELM conversion</summary>
+
+![SMILES to HELM](img/mol-to-helm.gif)
+
+The platform can recognize monomer patterns in SMILES strings and convert them back to HELM notation:
+* Matches molecular fragments against the active monomer library
+* Reconstructs the sequence with proper monomer symbols
+* Identifies connection patterns (backbone, side chains, modifications)
+* Reports unrecognized fragments for manual review
+
+This is particularly useful when working with peptide-like molecules from chemical databases or when integrating with traditional small molecule workflows.
+
 </details>
 
 
+## Sequence manipulation and transformation
+
 ### Split to monomers
 
-You can split linear macromolecules to monomers, and generate one column for each position.
+You can split linear macromolecules into individual monomers, generating one column for each position in the sequence. This is useful for position-specific analysis, such as studying the effect of specific residues at particular positions.
+
+The tool maintains position information and monomer properties, enabling downstream statistical analysis or machine learning on individual positions.
 
 ![Split to monomers](img/split-to-monomers.gif)
 
@@ -624,19 +755,48 @@ You can split linear macromolecules to monomers, and generate one column for eac
 
 </details>
 
-### Convert to atomic level
+### Get region
 
-Datagrok enables you to generate atomic-level structures for macromolecule sequences in HELM, FASTA, BILN or Separator notations.
+Extract specific regions from macromolecule sequences while preserving position annotations and labels. This is particularly useful for analyzing antibody CDRs, protein domains, or specific motifs across a dataset.
 
-You have two options to generate the atomic structure of the sequences:
+The Get Region function maintains `.positionNames` and `.positionLabels` tags for extracted regions. If a column is annotated with a `.regions` tag (JSON format), the input form displays predefined regions for easy selection.
 
-* Convert non-linear, cyclic and branched sequences and optimize molecular structure using RDKit.
-* For linear sequences, reproduce the linear form of molecules. This is useful for better visual inspection of a linear peptide or nucleotide sequences.
+![Get region for Macromolecule](./img/sequence-GetRegion.gif)
 
-This approach allows you to restore atomic-level structures for macromolecules containing non-natural monomers, cyclic and branching structures.
-Monomers are sourced from the active [monomer libraries](#manage-monomer-libraries) in Datagrok.
+<details>
+<summary>How to use</summary>
 
-After conversion, hovering over monomers in the sequence highlights the corresponding part of the atomic structure in the corresponding molecule.
+1. To call Get Region:
+    * Select **Bio** > **Calculate** > **GetRegion**. A dialog opens. In the dialog select a table and a sequence column.
+    * Alternatively, click on the **Hamburger** icon of a Macromolecule column and expand the **Get Region** section.
+
+2. Fill in start and end positions of the region of interest, and name for the output column. A new column containing sequences of the region of interest is added to the table.
+
+</details>
+
+### Convert to atomic level {#convert-to-atomic-level}
+
+Datagrok enables you to generate atomic-level structures for macromolecule sequences in HELM, FASTA, BILN or Separator notations. This bridges the gap between sequence-level and chemistry-level analysis, allowing you to:
+
+* Perform molecular property calculations
+* Analyze structures with cheminformatics tools
+* Visualize 3D conformations
+* Study molecular interactions
+
+You have two options for generating atomic structures:
+
+**Option 1: Optimized 3D structures**
+* Converts non-linear, cyclic, and branched sequences
+* Generates optimized 3D conformations using RDKit
+* Suitable for structure-based analysis and visualization
+* Handles complex topologies including rings and branches
+
+**Option 2: Linear representation**
+* Reproduces the linear form of sequences
+* Useful for visual inspection and comparison
+* Depicts molecules (DNA/RNA/peptides) in a more user-friendly way, without optimizing for 3D conformation
+
+The conversion uses monomers defined in active [monomer libraries](#manage-monomer-libraries). After conversion, hovering over monomers in the sequence highlights the corresponding part of the atomic structure in the molecule, enabling easy structure verification.
 
 ```mdx-code-block
 <Tabs>
@@ -656,7 +816,6 @@ Linear sequences, represented in any notation (HELM, FASTA, BILN, Separator), ca
 
 ![Linear Sequences](img/linear-seq-highlight.png)
 
-
 ```mdx-code-block
 </TabItem>
 </Tabs>
@@ -666,33 +825,26 @@ Linear sequences, represented in any notation (HELM, FASTA, BILN, Separator), ca
 <summary>How to use</summary>
 
 1. In the **Top Menu**, select **Bio** > **Convert** > **To Atomic Level**. A dialog opens.
-2. In the dialog, select the sequence column and click **OK** to execute. A new column containing atomic structures
-   of sequences is added to the table. In addition, a menu **Chem** appears in the **Top Menu**. Clicking
-   the atomic-level structures displays cheminformatics-related information in the **Context Panel**.
+2. In the dialog, configure:
+   * **Sequence column**: Select the column containing sequences
+   * **Non-Linear**: Choose between optimized structures or linear representation
+3. Click **OK** to execute. A new column containing atomic structures is added to the table. A **Chem** menu appears in the **Top Menu**, providing access to cheminformatics tools applicable to generated molecules.
+
+When you click on the atomic-level structures, the **Context Panel** displays chemistry-related information and actions.
 
 </details>
 
-### Get region
+### Polytool
 
-With Datagrok, you can extract a region of sequences in a Macromolecule column.
-The Get Region function maintains `.positionNames` and `.positionLabels` for extracted region.
-The Get Region input form shows Region input if a Macromolecule column is annotated with `.regions` tag (JSON format),
-to easy selection region of interest to extract.
+Polytool is a comprehensive suite of tools for working with custom rules-based sequence notations and sequence enumeration. It provides a simplified notation system that supports both simple R-group connections and complex chemical reactions between monomers.
 
-![Get region for Macromolecule](./img/sequence-GetRegion.gif)
+Key features include:
+* Rules-based connection system with UI management
+* Support for reaction-based chemistry (e.g., click reactions)
+* Sequence enumeration for library generation
+* Conversion to atomic structures and other notations
 
-<details>
-<summary>How to use</summary>
-
-1. To call Get Region:
-
-    * Select **Bio** > **Convert** > **GetRegion**. A dialog opens. In the dialog select a table and a sequence column.
-    * Click on the **Hamburger** icon of a Macromolecule column. Expand section **Get Region**.
-
-2. Fill in start and end positions of the region of interest, and name of
-   a column. A new column containing sequences of the region of interest is added to the table.
-
-</details>
+To learn more, see the [Polytool](polytool.md) documentation.
 
 ### Oligo Toolkit
 
@@ -723,5 +875,7 @@ or customize any existing [open-source plugins](https://github.com/datagrok-ai/p
 ## Resources
 
 * [Demo app](https://public.datagrok.ai/apps/Tutorials/Demo)
+* Community: 
+  * [Macromolecules updates](https://community.datagrok.ai/t/macromolecules-updates/661)
 * Videos:
   * [Peptides](https://www.youtube.com/watch?v=HNSMSf2ZYsI&ab_channel=Datagrok)

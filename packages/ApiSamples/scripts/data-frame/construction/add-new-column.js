@@ -1,7 +1,6 @@
 // Create dataframe by adding and initializing columns
-//tags: DataFrame, Column, construction
 
-let t = DG.DataFrame.create(10)
+let t = DG.DataFrame.create(10);
 t.columns.addNewInt('int').init((i) => i);
 t.columns.addNewFloat('float').init((i) => i / 10);
 t.columns.addNewQnum('qnum').init((i) => DG.Qnum.create(i / 10, DG.QNUM_LESS));

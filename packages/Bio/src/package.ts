@@ -131,7 +131,9 @@ export class PackageFunctions {
     await initBioPromise;
   }
 
-  @grok.decorators.func({tags: ['tooltip']})
+  @grok.decorators.func({
+    meta: {role: 'tooltip'},
+  })
   static sequenceTooltip(
     @grok.decorators.param({options: {semType: 'Macromolecule'}}) col: DG.Column): DG.Widget<any> {
     const resWidget = new MacromoleculeColumnWidget(col, _package.seqHelper);
@@ -182,7 +184,10 @@ export class PackageFunctions {
     return funcEditor.widget();
   }
 
-  @grok.decorators.panel({name: 'Bioinformatics | Manage Monomer Libraries', tags: ['exclude-actions-panel']})
+  @grok.decorators.panel({
+    name: 'Bioinformatics | Manage Monomer Libraries',
+    meta: {'exclude-actions-panel': 'true'}
+  })
   static async libraryPanel(
     @grok.decorators.param({name: 'seqColumn', options: {semType: 'Macromolecule'}}) _seqColumn: DG.Column): Promise<DG.Widget> {
     // return getLibraryPanelUI();
@@ -264,10 +269,10 @@ export class PackageFunctions {
 
   @grok.decorators.func({
     name: 'customSequenceCellRenderer',
-    tags: ['cellRenderer'],
     meta: {
       cellType: 'sequence',
-      columnTags: 'quality=Macromolecule, units=custom'
+      columnTags: 'quality=Macromolecule, units=custom',
+      role: 'cellRenderer'
     },
     outputs: [{type: 'grid_cell_renderer', name: 'result'}]
   })
@@ -277,10 +282,10 @@ export class PackageFunctions {
 
   @grok.decorators.func({
     name: 'fastaSequenceCellRenderer',
-    tags: ['cellRenderer'],
     meta: {
       cellType: 'sequence',
-      columnTags: 'quality=Macromolecule, units=fasta'
+      columnTags: 'quality=Macromolecule, units=fasta',
+      role: 'cellRenderer'
     },
     outputs: [{type: 'grid_cell_renderer', name: 'result'}]
   })
@@ -290,10 +295,10 @@ export class PackageFunctions {
 
   @grok.decorators.func({
     name: 'separatorSequenceCellRenderer',
-    tags: ['cellRenderer'],
     meta: {
       cellType: 'sequence',
-      columnTags: 'quality=Macromolecule, units=separator'
+      columnTags: 'quality=Macromolecule, units=separator',
+      role: 'cellRenderer'
     },
     outputs: [{type: 'grid_cell_renderer', name: 'result'}]
   })
@@ -303,10 +308,10 @@ export class PackageFunctions {
 
   @grok.decorators.func({
     name: 'bilnSequenceCellRenderer',
-    tags: ['cellRenderer'],
     meta: {
       cellType: 'sequence',
-      columnTags: 'quality=Macromolecule, units=biln'
+      columnTags: 'quality=Macromolecule, units=biln',
+      role: 'cellRenderer'
     },
     outputs: [{type: 'grid_cell_renderer', name: 'result'}]
   })
@@ -316,8 +321,8 @@ export class PackageFunctions {
 
   @grok.decorators.func({
     name: 'refineNotationProviderForBiln',
-    tags: ['notationRefiner'],
-    outputs: [{type: 'bool', name: 'result'}]
+    outputs: [{type: 'bool', name: 'result'}],
+    meta: {role: 'notationRefiner'},
   })
   static refineNotationProviderForBiln(
     @grok.decorators.param({type: 'column'}) col: DG.Column<string>,
@@ -352,7 +357,9 @@ export class PackageFunctions {
     return getMacromoleculeColumnPropertyPanel(molColumn);
   }
 
-  @grok.decorators.panel({name: 'Composition analysis', tags: ['bio', 'widgets']})
+  @grok.decorators.panel({name: 'Composition analysis',
+    meta: {role: 'widgets', domain: 'bio'},
+  })
   static compositionAnalysisWidget(
     @grok.decorators.param({options: {semType: 'Macromolecule'}}) sequence: DG.SemanticValue): DG.Widget {
     return getCompositionAnalysisWidget(sequence, _package.monomerLib, _package.seqHelper);
@@ -360,10 +367,10 @@ export class PackageFunctions {
 
   @grok.decorators.func({
     name: 'MacromoleculeDifferenceCellRenderer',
-    tags: ['cellRenderer'],
     meta: {
       cellType: 'MacromoleculeDifference',
-      columnTags: 'quality=MacromoleculeDifference'
+      columnTags: 'quality=MacromoleculeDifference',
+      role: 'cellRenderer'
     },
     outputs: [{type: 'grid_cell_renderer', name: 'result'}]
   })
@@ -388,8 +395,7 @@ export class PackageFunctions {
   @grok.decorators.panel({
     name: 'WebLogo',
     description: 'WebLogo',
-    tags: ['viewer'],
-    meta: {icon: 'files/icons/weblogo-viewer.svg'},
+    meta: {icon: 'files/icons/weblogo-viewer.svg', role: 'viewer'},
     outputs: [{type: 'viewer', name: 'result'}]
   })
   static webLogoViewer() {
@@ -399,8 +405,7 @@ export class PackageFunctions {
   @grok.decorators.panel({
     name: 'VdRegions',
     description: 'V-Domain regions viewer',
-    tags: ['viewer'],
-    meta: {icon: 'files/icons/vdregions-viewer.svg'},
+    meta: {icon: 'files/icons/vdregions-viewer.svg', role: 'viewer'},
     outputs: [{type: 'viewer', name: 'result'}],
   })
   static vdRegionsViewer() {
@@ -527,11 +532,11 @@ export class PackageFunctions {
 
   @grok.decorators.func({
     name: 'Encode Sequences',
-    tags: ['dim-red-preprocessing-function'],
     meta: {
       supportedSemTypes: 'Macromolecule',
       supportedTypes: 'string',
-      supportedDistanceFunctions: 'Hamming,Levenshtein,Monomer chemical distance,Needlemann-Wunsch'
+      supportedDistanceFunctions: 'Hamming,Levenshtein,Monomer chemical distance,Needlemann-Wunsch',
+      role: 'dimRedPreprocessingFunction'
     },
     outputs: [{type: 'object', name: 'result'}],
   })
@@ -695,7 +700,7 @@ export class PackageFunctions {
 
   @grok.decorators.panel({
     name: 'Molecular Structure',
-    tags: ['bio', 'widgets']
+    meta: {role: 'widgets', domain: 'bio'},
   })
   static async toAtomicLevelPanel(
     @grok.decorators.param({name: 'sequence', type: 'semantic_value', options: {semType: 'Macromolecule'}})
@@ -748,7 +753,7 @@ export class PackageFunctions {
 
   @grok.decorators.panel({
     name: 'Molecular 3D Structure',
-    tags: ['bio', 'widgets']
+    meta: {role: 'widgets', domain: 'bio'},
   })
   static async sequence3dStructureWidget(
     @grok.decorators.param({
@@ -763,7 +768,7 @@ export class PackageFunctions {
   @grok.decorators.panel({
     name: 'MSA',
     description: 'Performs multiple sequence alignment',
-    tags: ['bio'],
+    meta: {domain: 'bio'},
     'top-menu': 'Bio | Analyze | MSA...'
   })
   static multipleSequenceAlignmentDialog(): void {
@@ -784,7 +789,7 @@ export class PackageFunctions {
   @grok.decorators.func({
     name: 'Multiple Sequence Alignment',
     description: 'Multiple sequence alignment',
-    tags: ['bio']
+    meta: {domain: 'bio'}
   })
   static async alignSequences(
     @grok.decorators.param({type: 'column', options: {semType: 'Macromolecule'}}) sequenceCol: DG.Column<string> | null = null,
@@ -908,10 +913,10 @@ export class PackageFunctions {
 
   @grok.decorators.func({
     name: 'monomerCellRenderer',
-    tags: ['cellRenderer'],
     meta: {
       cellType: 'Monomer',
-      columnTags: 'quality=Monomer'
+      columnTags: 'quality=Monomer',
+      role: 'cellRenderer'
     },
     outputs: [{type: 'grid_cell_renderer', name: 'result'}]
   })
@@ -1003,10 +1008,7 @@ export class PackageFunctions {
 
   @grok.decorators.func({
     name: 'Sequence Similarity Search',
-    tags: ['viewer'],
-    meta: {
-      icon: 'files/icons/sequence-similarity-viewer.svg'
-    },
+    meta: {icon: 'files/icons/sequence-similarity-viewer.svg', role: 'viewer'},
     outputs: [{name: 'result', type: 'viewer'}]
   })
   static similaritySearchViewer(): SequenceSimilarityViewer {
@@ -1027,10 +1029,7 @@ export class PackageFunctions {
 
   @grok.decorators.func({
     name: 'Sequence Diversity Search',
-    tags: ['viewer'],
-    meta: {
-      icon: 'files/icons/sequence-diversity-viewer.svg'
-    },
+    meta: {icon: 'files/icons/sequence-diversity-viewer.svg', role: 'viewer'},
     outputs: [{name: 'result', type: 'viewer'}]
   })
   static diversitySearchViewer(): SequenceDiversityViewer {
@@ -1167,8 +1166,7 @@ export class PackageFunctions {
   @grok.decorators.func({
     name: 'Bio Substructure Filter',
     description: 'Substructure filter for macromolecules',
-    tags: ['filter'],
-    meta: {semType: 'Macromolecule'},
+    meta: {semType: 'Macromolecule', role: 'filter'},
     outputs: [{type: 'filter', name: 'result'}],
   })
   static bioSubstructureFilter(): BioSubstructureFilter {

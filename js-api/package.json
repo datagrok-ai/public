@@ -2,6 +2,53 @@
   "name": "datagrok-api",
   "version": "1.26.5",
   "description": "",
+  "main": "./datagrok.js",
+  "types": "./datagrok.d.ts",
+  "typesVersions": {
+    "*": {
+      "grok": ["./grok.d.ts"],
+      "grok.js": ["./grok.d.ts"],
+      "ui": ["./ui.d.ts"],
+      "ui.js": ["./ui.d.ts"],
+      "dg": ["./dg.d.ts"],
+      "dg.js": ["./dg.d.ts"],
+      "node-api": ["./node-api.d.ts"]
+    }
+  },
+  "exports": {
+    "./grok": {
+      "types": "./grok.d.ts",
+      "default": "./grok.js"
+    },
+    "./grok.js": {
+      "types": "./grok.d.ts",
+      "default": "./grok.js"
+    },
+    "./ui": {
+      "types": "./ui.d.ts",
+      "default": "./ui.js"
+    },
+    "./ui.js": {
+      "types": "./ui.d.ts",
+      "default": "./ui.js"
+    },
+    "./dg": {
+      "types": "./dg.d.ts",
+      "default": "./dg.js"
+    },
+    "./dg.js": {
+      "types": "./dg.d.ts",
+      "default": "./dg.js"
+    },
+    "./node-api": {
+      "types": "./node-api.d.ts",
+      "default": "./node-api.js"
+    },
+    "./src/const": {
+      "types": "./src/const.d.ts",
+      "default": "./src/const.js"
+    }
+  },
   "dependencies": {
     "@babel/core": "^7.27.1",
     "@datagrok-libraries/chem-meta": "^1.0.12",
@@ -42,6 +89,7 @@
     "build-ts": "tsc && eslint ./src/*.js ./dg.js ./ui.js ./grok.js --fix",
     "build-js-api": "git clean -f -X -d ./src && tsc && webpack",
     "build": "tsc && webpack",
+    "build-docker": "tsc && webpack --config webpack.config.docker.js",
     "build-all": "npm --prefix ./../libraries/chem-meta run build && npm run build"
   }
 }

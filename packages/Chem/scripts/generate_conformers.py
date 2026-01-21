@@ -2,7 +2,7 @@
 #description: Generates multiple conformers for a molecule using RDKit
 #help-url: https://datagrok.ai/help/domains/chem/functions/conformers
 #language: python
-#tags: demo, chem, rdkit
+#meta.domain: chem
 #top-menu: Chem | Compute | Generate Conformers...
 #input: string molecule = "CCCC" {semType: Molecule}  # Butane - shows anti/gauche conformations
 #input: int num_conformers = 50 {caption: Num conformers} [Number of conformers to generate]

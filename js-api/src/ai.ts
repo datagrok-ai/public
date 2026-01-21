@@ -4,7 +4,77 @@ import { Entity } from './entities';
 
 const api: IDartApi = (typeof window !== 'undefined' ? window : global.window) as any;
 
+export type AiProvider = "openai" | "azure";
+export type AzureApiMode = "openai_compat" | "legacy";
+export type AiConfig =
+    {
+    provider: AiProvider;
+    configured: boolean;
+    indexEntities: boolean;
+    } & {
+        apiMode?: AzureApiMode;
+        apiVersion?: string;
+        modelToDeployment?: Record<string, string>;
+    };
+
+
+/**
+ * Datagrok AI integration entry point.
+ *
+ * Client usage depends on the configured AI provider:
+ *
+ * ## OpenAI (public API)
+ * Use the standard OpenAI JS client:
+ *
+ * ```ts
+ * import OpenAI from "openai";
+ *
+ * const client = new OpenAI({
+ *   baseURL: `${grok.ai.openAiProxyUrl}/v1`,
+ *   dangerouslyAllowBrowser: true,
+ *   apiKey: grok.ai.openAiProxyToken
+ * });
+ * ```
+ *
+ * ## Azure OpenAI
+ * Datagrok forwards requests to Azure OpenAI.
+ *
+ * - `apiMode === "openai_compat"` (recommended):
+ *   - Use the same OpenAI client as above.
+ *   - Pass **Azure deployment names** as `model`
+ *     (use `modelToDeployment` mapping if provided).
+ *
+ * - `apiMode === "legacy"`:
+ *   - Use an Azure-aware OpenAI client (deployment + api-version semantics).
+ *   - Pass **Azure deployment names** as `model`
+ *     (use `modelToDeployment` mapping if provided).
+ *
+ * In all cases, client code authenticates only with Datagrok.
+ * Provider credentials are injected server-side.
+ */
 export class AiPlugin {
+    /**
+     * Current AI provider configuration.
+     *
+     * How to choose the client:
+     *
+     * - `provider: "openai"`
+     *   - Use the standard OpenAI JS client.
+     *   - Use normal OpenAI model IDs (e.g. `gpt-4o`, `text-embedding-3-small`).
+     *
+     * - `provider: "azure"`
+     *   - Requests are forwarded to Azure OpenAI through Datagrok.
+     *   - `apiMode: "openai_compat"`:
+     *     - Use the standard OpenAI JS client.
+     *     - Azure usually expects deployment names as `model`.
+     *     - Use `modelToDeployment` to map OpenAI model IDs to deployment names.
+     *   - `apiMode: "legacy"`:
+     *     - Prefer an Azure-aware client.
+     */
+    get config(): AiConfig {
+        return api.grok_AI_Config();
+    }
+
     /**
      * Base URL of the Datagrok OpenAI proxy endpoint.
      *
@@ -71,8 +141,8 @@ export class AiPlugin {
      * @param threshold Similarity threshold in the range (0, 1).
      *   Higher values require closer (more similar) matches.
      * @param limit Maximum number of entities to return.
-     * @param types Optional list of entity type IDs to restrict the search. If omitted or empty, all
-     *   entity types are considered.
+     * @param types Optional list of entity types to restrict the search. If omitted or empty, all
+     *   entity types are considered. Use {@link Entity#entityType} to get type name.
      *
      * @returns A list of entities ordered by descending similarity
      *   (1.0 = perfect match).

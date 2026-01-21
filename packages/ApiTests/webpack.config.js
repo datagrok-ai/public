@@ -16,11 +16,6 @@ module.exports = {
   },
   resolve: {
     extensions: ['.wasm', '.mjs', '.ts', '.json', '.js', '.tsx'],
-    plugins: [
-      new TsconfigPathsPlugin({
-        configFile: path.resolve(__dirname, 'tsconfig.json'),
-      }),
-    ],
   },
   module: {
     rules: [

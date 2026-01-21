@@ -3,16 +3,16 @@ import * as DG from 'datagrok-api/dg';
 
 //name: Single Choice
 //description: A filter that lets you select exactly one category
-//tags: filter
 //output: filter result
+//meta.role: filter
 export function radioButtonFilter() {
   return PackageFunctions.radioButtonFilter();
 }
 
 //name: Multi Choice
 //description: A filter that works with columns of multi-value cells (such as lists of identifiers)
-//tags: filter
 //output: filter result
+//meta.role: filter
 export function multiValueFilter() {
   return PackageFunctions.multiValueFilter();
 }
@@ -25,9 +25,9 @@ export function timeWidget() : any {
 }
 
 //name: TableSummary
-//tags: viewer
 //output: viewer result
 //meta.showInGallery: false
+//meta.role: viewer
 export function tableSummary() {
   return PackageFunctions.tableSummary();
 }
@@ -37,10 +37,10 @@ export function inputDemo() : void {
   PackageFunctions.inputDemo();
 }
 
-//tags: valueEditor
 //output: object result
 //meta.propertyType: string
 //meta.semType: foo
+//meta.role: valueEditor
 export function fooInput() : any {
   return PackageFunctions.fooInput();
 }

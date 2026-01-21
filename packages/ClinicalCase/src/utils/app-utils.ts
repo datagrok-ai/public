@@ -7,19 +7,25 @@ import {CDISC_STANDARD, ClinCaseTableView, ClinStudyConfig} from './types';
 import {defineXmlFileName, STENDTC, STSTDTC, StudyConfigFileName,
   studyConfigJsonFileName} from '../constants/constants';
 import X2JS from 'x2js';
-import {addDomainAsTableView, readClinicalFile, removeExtension, studyConfigToMap} from './utils';
+import {hideValidationColumns, readClinicalFile,
+  removeExtension, studyConfigToMap} from './utils';
 import {SUBJECT_ID, TSPARM, TSPARMCD, TSVAL} from '../constants/columns-constants';
 import {ClinicalStudy} from '../clinical-study';
 import {SUMMARY_VIEW_NAME, VALIDATION_VIEW_NAME} from '../constants/view-names-constants';
 import {TABLE_VIEWS_META} from './views-creation-utils';
-import {Subject} from 'rxjs';
+import {Subject, Subscription} from 'rxjs';
 import {createInitialSatistics} from './initial-statistics-widget';
 import {ClinicalCaseViewBase} from '../model/ClinicalCaseViewBase';
+import {ValidationHelper} from '../helpers/validation-helper';
+import {getRequiredColumnsByView, handleMouseMoveOverErrorCell, setupValidationErrorColumns,
+  setupValidationErrorIndicators} from './views-validation-utils';
+import {DOMAINS_CATEGORIES_LIST, DOMAINS_DESCRIPTIONS, SUPP_DOMAIN_CATEGORY} from '../constants/domains-constants';
+import {setupTableViewLayout} from './layout-utils';
 
 export const validationNodes: {[key: string]: DG.TreeViewNode} = {};
 export let currentOpenedView: DG.ViewBase | null = null;
-export const CLINICAL_CASE_APP_PATH: string = '/apps/ClinicalCase';
-export const PRECLINICAL_CASE_APP_PATH: string = '/apps/PreclinicalCase';
+export const CLINICAL_CASE_APP_PATH: string = '/apps/ClinicalCase/ClinicalCase';
+export const PRECLINICAL_CASE_APP_PATH: string = '/apps/ClinicalCase/PreclinicalCase';
 export const studyLoadedSubject = new Subject<{name: string, loaded: boolean, errorDomains?: string[]}>();
 export const studies: {[key: string]: ClinicalStudy} = {};
 
@@ -181,6 +187,7 @@ export async function openApp(standard: CDISC_STANDARD): Promise<DG.ViewBase | v
       '-  Explore data on patient specific and trial specific levels\n' +
       '-  Browse through AEs and related data\n' +
       `-  Validate your ${standard} data`,
+    iconSize: 120,
   });
 
   const studiesHeader = ui.h1('Studies');
@@ -203,7 +210,8 @@ export async function openApp(standard: CDISC_STANDARD): Promise<DG.ViewBase | v
   currentOpenedView?.close();
   currentOpenedView = DG.View.create();
   currentOpenedView.name = standard === CDISC_STANDARD.SDTM ? 'Clinical Case' : 'Preclinical Case';
-  currentOpenedView.path = CDISC_STANDARD.SDTM ? CLINICAL_CASE_APP_PATH : PRECLINICAL_CASE_APP_PATH;
+  currentOpenedView.path = standard === CDISC_STANDARD.SEND ? PRECLINICAL_CASE_APP_PATH :
+    CLINICAL_CASE_APP_PATH;
   currentOpenedView.root.append(ui.divV([
     appHeader,
     studiesHeader,
@@ -337,7 +345,10 @@ async function createStudyWithConfig(files: DG.FileInfo[], treeNode: DG.TreeView
 function addStudyToBrowseTree(study: ClinicalStudy, treeNode: DG.TreeViewGroup, studyFiles?: DG.FileInfo[]) {
   const node = treeNode.getOrCreateGroup(study.config.name, null, false);
   node.onSelected.subscribe(async (_) => {
-    studies[study.studyId].currentViewName = SUMMARY_VIEW_NAME;
+    if (studies[study.studyId].changeViewToSummary)
+      studies[study.studyId].currentViewName = SUMMARY_VIEW_NAME;
+    else
+      studies[study.studyId].changeViewToSummary = true;
     if (!node.expanded)
       node.expanded = true;
     else
@@ -347,25 +358,32 @@ function addStudyToBrowseTree(study: ClinicalStudy, treeNode: DG.TreeViewGroup, 
   node.onNodeExpanding.subscribe(async (_) => {
     if (studies[study.studyId].loadingStudyData === true)
       return;
-    for (const viewName of SUPPORTED_VIEWS[study.config.standard]) {
-      const viewNode = node.item(viewName);
-      if (viewName === VALIDATION_VIEW_NAME)
-        validationNodes[study.studyId] = viewNode;
-      viewNode.onSelected.subscribe(() => {
-        if (studies[study.studyId].loadingStudyData === true) {
-          grok.shell.warning(`Loading data for study ${study.studyId}`);
-          treeNode.currentItem = node;
-          return;
-        }
-        studies[study.studyId].currentViewName = viewName;
-        loadView(study, viewName, node);
-      });
-    }
     if (!studies[study.studyId].initCompleted) {
       const sub = studyLoadedSubject.subscribe((data) => {
         if (data.name === study.studyId) {
           sub.unsubscribe();
           if (data.loaded) {
+            //adding views to tree only after data is loaded since we need all domains to perform validation
+            for (const viewName of SUPPORTED_VIEWS[study.config.standard]) {
+              //do not add view in case validation not passed
+              const validator = new ValidationHelper(getRequiredColumnsByView(study.studyId)[viewName], study.studyId);
+              if (!validator.validate())
+                continue;
+              const viewNode = node.item(viewName);
+              if (viewName === VALIDATION_VIEW_NAME)
+                validationNodes[study.studyId] = viewNode;
+              viewNode.onSelected.subscribe(() => {
+                if (studies[study.studyId].loadingStudyData === true) {
+                  grok.shell.warning(`Loading data for study ${study.studyId}`);
+                  treeNode.currentItem = node;
+                  return;
+                }
+                studies[study.studyId].currentViewName = viewName;
+                loadView(study, viewName, node);
+                const browseTreeRoot = node.root.closest('.d4-tree-view-root');
+                (browseTreeRoot as HTMLElement).focus();
+              });
+            }
             addDomainsToTree(study, node);
             openStudyNode(studies[study.studyId], node, studies[study.studyId].currentViewName);
           }
@@ -379,13 +397,62 @@ function addStudyToBrowseTree(study: ClinicalStudy, treeNode: DG.TreeViewGroup, 
 
 function addDomainsToTree(study: ClinicalStudy, treeNode: DG.TreeViewGroup) {
   const domains = study.domains.all();
-  const domainsNode = treeNode.group('Domains');
+  const domainsNode = treeNode.group('Domains', null, false);
+
+  // Group domains by category
+  const domainsByCategory: {[category: string]: typeof domains} = {};
   for (const domain of domains) {
-    const domainItem = domainsNode.item(domain.name);
-    domainItem.onSelected.subscribe(() => {
-      addDomainAsTableView(domain);
-    });
+    const domainInfo = DOMAINS_DESCRIPTIONS[domain.name];
+    let category = domainInfo?.category;
+    if (!category)
+      category = domain.name.startsWith('supp') ? SUPP_DOMAIN_CATEGORY : 'Other';
+    if (!domainsByCategory[category])
+      domainsByCategory[category] = [];
+    domainsByCategory[category].push(domain);
   }
+
+  // Add domains grouped by category
+  for (const category of DOMAINS_CATEGORIES_LIST) {
+    const categoryNode = domainsNode.group(category, null, false);
+    if (domainsByCategory[category]) {
+      for (const domain of domainsByCategory[category]) {
+        const domainItem = categoryNode.item(domain.name);
+        const domainInfo = DOMAINS_DESCRIPTIONS[domain.name];
+        if (domainInfo?.description)
+          ui.tooltip.bind(domainItem.root, domainInfo.description);
+        domainItem.onSelected.subscribe(() => {
+          addDomainAsTableView(study.studyId, domain);
+          const browseTreeRoot = treeNode.root.closest('.d4-tree-view-root');
+          (browseTreeRoot as HTMLElement).focus();
+        });
+      }
+    }
+  }
+}
+
+export function addDomainAsTableView(studyId: string, df: DG.DataFrame, closeCurrentPreview = true) {
+  if (closeCurrentPreview)
+    currentOpenedView?.close();
+  currentOpenedView = grok.shell.addTablePreview(df);
+  setupValidationErrorColumns(df);
+  hideValidationColumns(currentOpenedView as DG.TableView);
+  setupTableViewLayout(currentOpenedView as DG.TableView, studyId, df.name);
+
+  let errorSubs: Subscription[] = [];
+  const ribbons = currentOpenedView.getRibbonPanels();
+  const showErrors = ui.input.bool('Show validation errors', {
+    value: false,
+    onValueChanged: () => {
+      if (!showErrors.value) {
+        errorSubs.forEach((sub) => sub.unsubscribe());
+        (currentOpenedView as DG.TableView).grid.overlay.removeEventListener('mousemove', handleMouseMoveOverErrorCell);
+      } else
+        errorSubs = setupValidationErrorIndicators((currentOpenedView as DG.TableView).grid, df);
+      (currentOpenedView as DG.TableView).grid.invalidate();
+    },
+  });
+  ribbons.push([showErrors.root]);
+  currentOpenedView.setRibbonPanels(ribbons);
 }
 
 async function openStudyNode(study: ClinicalStudy, node: DG.TreeViewGroup, currentViewName: string) {
@@ -399,7 +466,6 @@ async function openStudyNode(study: ClinicalStudy, node: DG.TreeViewGroup, curre
   }
   loadView(study, currentViewName, node);
 }
-
 
 async function loadView(study: ClinicalStudy, viewName: string, parentNode: DG.TreeViewGroup) {
   let view = studies[study.studyId].views[viewName];
@@ -422,12 +488,22 @@ async function loadView(study: ClinicalStudy, viewName: string, parentNode: DG.T
   }
   currentOpenedView?.close();
   currentOpenedView = grok.shell.addPreview(view);
+  //return focus to browse tree to enable keyboard navigation
+  const browseTreeRoot = parentNode.root.closest('.d4-tree-view-root');
+  (browseTreeRoot as HTMLElement).focus();
+
+  //in case of table view search for saved layout
+  if (currentOpenedView.type === DG.TYPE.TABLE_VIEW) {
+    const tableView = currentOpenedView as DG.TableView;
+    await setupTableViewLayout(tableView, study.studyId, viewName);
+  }
   if (view.hasOwnProperty('loaded') && !(view as ClinicalCaseViewBase).loaded)
     (view as ClinicalCaseViewBase).load();
   else
     helper?.propertyPanel();
   view.path =
-        `${CLINICAL_CASE_APP_PATH}/${study.config.standard}/${study.studyId}/${viewName.replaceAll(' ', '')}`;
+        `${study.config.standard === CDISC_STANDARD.SEND ? PRECLINICAL_CASE_APP_PATH :
+          CLINICAL_CASE_APP_PATH}/${encodeURI(study.studyId)}/${encodeURI(viewName)}`;
 };
 
 export function openStudy(treeNode: DG.TreeViewGroup, standard: string,
@@ -436,12 +512,14 @@ export function openStudy(treeNode: DG.TreeViewGroup, standard: string,
     grok.shell.error(`Study ${currentStudyName} doesn't exist`);
   else if (currentStudyName) {
     const studyNode = treeNode.getOrCreateGroup(currentStudyName);
+    console.log(Object.keys(VIEW_CREATE_FUNC));
     if (currentViewName && !Object.keys(VIEW_CREATE_FUNC).includes(currentViewName)) {
       grok.shell.warning(`${currentViewName} view doesn't exist, opening summary view`);
       currentViewName = SUMMARY_VIEW_NAME;
     } else if (!currentViewName)
       currentViewName = SUMMARY_VIEW_NAME;
     studies[currentStudyName].currentViewName = currentViewName;
+    studies[currentStudyName].changeViewToSummary = false;
     //this will trigger onNodeExpanding
     if (treeNode.currentItem !== studyNode)
       treeNode.currentItem = studyNode;

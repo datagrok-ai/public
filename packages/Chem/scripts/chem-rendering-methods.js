@@ -5,7 +5,7 @@ function randomInt(min, max) {
   return min + Math.floor((max - min) * Math.random());
 }
 
-// TODO: internalize with Datagrok
+/* TODO: internalize with Datagrok */
 async function time(name, n, f) {
   let start = window.performance.now();
   for (let k = 0; k < n; ++k) {
@@ -46,7 +46,7 @@ function getRandomSubarray(arr, size) {
   return shuffled.slice(0, size);
 }
 
-// TODO: make this uniform with timeBySubarrays
+/* TODO: make this uniform with timeBySubarrays */
 async function timeByRandomArrays(name, samples, sz, n, f) {
   console.assert(sz <= samples.length,
     'Subsample size is larger than samples array');

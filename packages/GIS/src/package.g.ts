@@ -16,7 +16,7 @@ export async function info() : Promise<void> {
   await PackageFunctions.info();
 }
 
-//tags: init
+//meta.role: init
 export function init() : void {
   PackageFunctions.init();
 }
@@ -46,57 +46,57 @@ export async function gisBatchGeocoding(address: string) : Promise<string> {
 
 //name: Map
 //description: GIS map viewer
-//tags: viewer
 //output: viewer result
 //meta.icon: icons/icon.svg
 //meta.toolbox: true
+//meta.role: viewer
 export function gisViewer() : any {
   return PackageFunctions.gisViewer();
 }
 
-//tags: fileViewer
 //input: file file 
 //output: view result
+//meta.role: fileViewer
 //meta.fileViewer: kmz,kml
 export async function gisKMZAndKMLFileViewer(file: DG.FileInfo) : Promise<any> {
   return await PackageFunctions.gisKMZAndKMLFileViewer(file);
 }
 
-//tags: file-handler
 //input: string filecontent 
 //output: list<dataframe> result
+//meta.role: fileHandler
 //meta.ext: kml
 export async function gisKMLFileHandler(filecontent: string) : Promise<any> {
   return await PackageFunctions.gisKMLFileHandler(filecontent);
 }
 
-//tags: file-handler
 //input: list filecontent 
 //output: list<dataframe> result
+//meta.role: fileHandler
 //meta.ext: kmz
 export async function gisKMZFileHandler(filecontent: Uint8Array) : Promise<any> {
   return await PackageFunctions.gisKMZFileHandler(filecontent);
 }
 
-//tags: fileViewer
 //input: file file 
 //output: view result
+//meta.role: fileViewer
 //meta.fileViewer: geojson, topojson
 export async function gisGeoJSONFileViewer(file: DG.FileInfo) {
   return await PackageFunctions.gisGeoJSONFileViewer(file);
 }
 
-//tags: file-handler
 //input: string filecontent 
 //output: list<dataframe> result
+//meta.role: fileHandler
 //meta.ext: geojson, topojson
 export function gisGeoJSONFileHandler(filecontent: string) : any {
   return PackageFunctions.gisGeoJSONFileHandler(filecontent);
 }
 
-//tags: panel, widgets
 //input: string gisArea { semType: gis-area }
 //output: widget result
+//meta.role: widgets,panel
 //condition: true
 export function gisAreaWidget(gisArea: any) : any {
   return PackageFunctions.gisAreaWidget(gisArea);

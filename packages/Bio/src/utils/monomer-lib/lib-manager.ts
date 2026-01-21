@@ -103,7 +103,7 @@ export class MonomerLibManager implements IMonomerLibHelper {
   private _monomerLibProviders: IMonomerLibProvider[] | null = null;
   public async getProviders(): Promise<IMonomerLibProvider[]> {
     if (this._monomerLibProviders == null) {
-      const providerFuncs = DG.Func.find({tags: ['monomer-lib-provider']});
+      const providerFuncs = DG.Func.find({meta: {role: DG.FUNC_TYPES.MONOMER_LIB_PROVIDER}});
       this._monomerLibProviders = await Promise.all(providerFuncs.map(async (func) => {
         return (await func.apply({})) as IMonomerLibProvider;
       }));

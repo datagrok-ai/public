@@ -111,7 +111,7 @@ export const biologicsConfig: DBExplorerConfig = {
     }
   ],
   'headerNames': {
-    'smiles': 'Compound'
+    'linkers': 'linker_type',
   },
   'uniqueColumns': {
     'adc': 'identifier',

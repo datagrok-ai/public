@@ -1,14 +1,14 @@
 {
   "name": "@datagrok/chatgpt",
   "friendlyName": "ChatGPT",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "ChatGPT integration",
   "author": "oserhiienko@datagrok.ai",
   "dependencies": {
     "@datagrok-libraries/utils": "^4.6.5",
     "@modelcontextprotocol/sdk": "^1.21.1",
     "@types/dom-chromium-ai": "^0.0.10",
-    "@datagrok-libraries/db-explorer": "^1.6.0",
+    "@datagrok-libraries/db-explorer": "^1.6.2",
     "cash-dom": "latest",
     "datagrok-api": "../../js-api",
     "dayjs": "latest",
@@ -60,6 +60,27 @@
       "propertyType": "string",
       "description": "Vector Store ID with Datagrok documentation",
       "defaultValue": "",
+      "nullable": false
+    },
+    {
+      "name": "defaultFastModel",
+      "propertyType": "string",
+      "description": "Fast Model name for simple tasks. This must match the model names supported by OpenAI or name of deployed model.",
+      "defaultValue": "gpt-4o-mini",
+      "nullable": false
+    },
+    {
+      "name": "defaultDeepResearchModel",
+      "propertyType": "string",
+      "description": "Deep Research Model name for complex tasks. This must match the model names supported by OpenAI or name of deployed model.",
+      "defaultValue": "gpt-5.2",
+      "nullable": false
+    },
+    {
+      "name": "defaultCodingModel",
+      "propertyType": "string",
+      "description": "Coding Model name for code generation tasks. This must match the model names supported by OpenAI or name of deployed model.",
+      "defaultValue": "gpt-5.1-codex-max",
       "nullable": false
     }
   ]

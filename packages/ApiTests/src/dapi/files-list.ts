@@ -2,8 +2,8 @@ import type * as _grok from 'datagrok-api/grok';
 
 declare let grok: typeof _grok;
 
-import {category, expect, expectArray, test} from '@datagrok-libraries/utils/src/test';
-import {_package} from 'package-test';
+import {category, expect, expectArray, test} from '@datagrok-libraries/test/src/test';
+import {_package} from '../package-test';
 
 category('Dapi: files: list', () => {
   const filePath = 'System:AppData/ApiTests/list';

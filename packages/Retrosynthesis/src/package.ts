@@ -29,13 +29,7 @@ moleculeStream$.pipe(
 });
 export class PackageFunctions {
   @grok.decorators.panel({
-    'meta': {
-      'allowAddAsColumn': 'false',
-    },
-    'tags': [
-      'chem',
-      'widgets',
-    ],
+    'meta': {'allowAddAsColumn': 'false', 'role': 'widgets', 'domain': 'chem'},
     'name': 'Chemistry | Retrosynthesis',
     'condition': 'true',
   })

@@ -34,7 +34,7 @@ import './dapi/sticky_meta';
 import './dapi/users';
 import './dapi/benchmarks';
 import './dapi/functions-annotations';
-import './dapi/vector-functions-and-scripts'
+import './dapi/vector-functions-and-scripts';
 import './widgets/files-widget';
 import './widgets/legend';
 import './widgets/tree-view';
@@ -56,7 +56,7 @@ import './property/property';
 import './widgets/input-form';
 import './utils/progressIndicator';
 
-import { runTests, tests, TestContext, initAutoTests as initTests } from '@datagrok-libraries/utils/src/test';
+import { runTests, tests, TestContext, initAutoTests as initTests } from '@datagrok-libraries/test/src/test';
 
 export const _package = new DG.Package();
 export { tests };
@@ -66,9 +66,14 @@ export { tests };
 //input: string test {optional: true}
 //input: object testContext {optional: true}
 //input: bool stressTest {optional: true}
+//input: string skipToCategory {optional: true}
+//input: string skipToTest {optional: true}
+//input: bool returnOnFail {optional: true}
 //output: dataframe result
-export async function test(category: string, test: string, testContext: TestContext, stressTest?: boolean): Promise<DG.DataFrame> {
-  const data = await runTests({ category, test, testContext, stressTest });
+export async function test(category: string, test: string, testContext: TestContext, stressTest?: boolean,
+                           skipToCategory?: string, skipToTest?: string, returnOnFail?: boolean): Promise<DG.DataFrame> {
+    console.log(category, test, testContext, stressTest, skipToCategory, skipToTest, returnOnFail);
+  const data = await runTests({ category, test, testContext, stressTest, skipToCategory, skipToTest, returnOnFail });
   return DG.DataFrame.fromObjects(data)!;
 }
 

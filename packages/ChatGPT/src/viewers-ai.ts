@@ -2,8 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {getCurrentViewersString, getDataFrameDescription, getViewerDescriptionsString} from './utils';
-import {OpenAIClient} from './llm-utils/openAI-client';
-import {modelName} from './package';
+import {ModelType, OpenAIClient} from './llm-utils/openAI-client';
 
 type IViewerResponse = {
   viewerType: string;
@@ -25,7 +24,7 @@ export async function askAiTableView(view: DG.TableView, question: string) {
   //console.log(prompt);
   // TODO: substitute with the OpenAI client call
   const res = OpenAIClient.getInstance();
-  const answer = await res.generalPromptCached(modelName, '', prompt);
+  const answer = await res.generalPromptCached(ModelType.Fast, '', prompt);
   //console.log(answer);
   //grok.shell.info(answer);
 

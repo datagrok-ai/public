@@ -2,7 +2,6 @@
 #description: Sentiment classification of emotions and polarity
 #reference: https://en.wikipedia.org/wiki/Sentiment_analysis
 #language: r
-#tags: demo, nlp
 #input: dataframe data [Input data table]
 #input: column col {semType: text} [Name of a column that contains text data]
 #output: dataframe emotion {action:join(data)} [Column with distribution of emotions]

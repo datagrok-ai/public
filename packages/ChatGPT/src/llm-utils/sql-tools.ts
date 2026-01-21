@@ -5,14 +5,36 @@ import * as DG from 'datagrok-api/dg';
 import OpenAI from 'openai';
 import {getAIAbortSubscription} from '../utils';
 import * as _rxjs from 'rxjs';
-import {getTopKSimilarQueries, getVectorEmbedding} from './embeddings';
 import {SemValueObjectHandler} from '@datagrok-libraries/db-explorer/src/object-handlers';
 import {ChatModel} from 'openai/resources/index';
-import {AIPanelFuncs, UIMessageOptions} from './panel';
+import {AIPanelFuncs} from './panel';
 import {BuiltinDBInfoMeta, getDBColumnMetaData, getDBTableMetaData} from './query-meta-utils';
-import {OpenAIClient} from './openAI-client';
+import {ModelType, OpenAIClient} from './openAI-client';
 
 const suspiciousSQlPatterns = ['DROP ', 'DELETE ', 'UPDATE ', 'INSERT ', 'ALTER ', 'CREATE ', 'TRUNCATE ', 'EXEC ', 'MERGE '];
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null;
+}
+
+function getStringProp(obj: unknown, key: string): string | null {
+  if (!isRecord(obj))
+    return null;
+  const v = obj[key];
+  return typeof v === 'string' ? v : null;
+}
+
+function parseJsonObject(text: string): unknown {
+  try {
+    return JSON.parse(text);
+  } catch {
+    return null;
+  }
+}
+
+type ResponseCreateBody = Parameters<OpenAI['responses']['create']>[0];
+type ResponseInput = Exclude<ResponseCreateBody['input'], string | undefined>;
+type ResponseTool = Exclude<ResponseCreateBody['tools'], undefined>[number];
 /**
  * Generates SQL query using function calling approach where LLM can explore schema interactively
  * @throws Error if SQL generation fails
@@ -26,9 +48,10 @@ export async function generateAISqlQueryWithTools(
   connectionID: string,
   schemaName: string,
   options: {
-    oldMessages?: OpenAI.Chat.ChatCompletionMessageParam[]
-    aiPanel?: AIPanelFuncs<OpenAI.Chat.ChatCompletionMessageParam>,
-    modelName?: ChatModel
+    oldMessages?: ResponseInput,
+    aiPanel?: AIPanelFuncs<OpenAI.Responses.ResponseInputItem>,
+    modelName?: ChatModel,
+    disableVerbose?: boolean,
   } = {}
 ): Promise<string> {
   let aborted = false;
@@ -38,15 +61,6 @@ export async function generateAISqlQueryWithTools(
   // Load pre-indexed metadata if available
   const connection = await grok.dapi.connections.find(connectionID);
   const dbInfo = await BuiltinDBInfoMeta.fromConnection(connection);
-  let dbQueryEmbeddings: {query: string, embedding: number[]}[] = [];
-  // kind of lazy load to save memory on embedings, switch to proper storage in future
-  if (connection.name.toLowerCase() === 'chembl')
-    dbQueryEmbeddings = (await import('./indexes/chembl-query-embeddings')).chemblQueryEmbeddings;
-  else if (connection.name.toLowerCase() === 'biologics')
-    dbQueryEmbeddings = (await import('./indexes/biologics-query-embeddings')).biologicsQueryEmbeddings;
-  if (connection.name.toLowerCase() === 'datagrok')
-    dbQueryEmbeddings = (await import('./indexes/datagrok-query-embeddings')).datagrokQueryEmbeddings;
-
   // Create tool execution context
   const context = new SQLGenerationContext(connectionID, schemaName, dbInfo, connection);
   const abortSub = getAIAbortSubscription().subscribe(() => {
@@ -97,8 +111,8 @@ export async function generateAISqlQueryWithTools(
     When you have the final SQL query ready, respond with ONLY the SQL query text (no markdown, no explanation, no semicolon at the end).`;
 
 
-    const messages: OpenAI.Chat.ChatCompletionMessageParam[] = options.oldMessages ? options.oldMessages.slice() : [];
-    if (messages.length === 0) {
+    const input: ResponseInput = options.oldMessages ? options.oldMessages.slice() : [];
+    if (input.length === 0) {
       // Get initial table list
       const initialTableList = (await context.listTables(false, schemaName)).description;
       let semTypeWithinPromptInfo = '';
@@ -116,8 +130,9 @@ export async function generateAISqlQueryWithTools(
         }
       }
 
-      if ((dbQueryEmbeddings?.length ?? 0) > 0) {
+      if (grok.ai.entityIndexingEnabled) {
         const similarQueries = await findSimilarQueriesToPrompt(prompt);
+        console.log(`found ${similarQueries.n} similar queries for the prompt`);
         if (similarQueries.n > 0 && similarQueries.text) {
           semTypeWithinPromptInfo += `\n\n Additionally, here are some similar previously executed queries that might help you:
           \n${similarQueries.text}
@@ -125,10 +140,10 @@ export async function generateAISqlQueryWithTools(
         }
       }
 
-      const systemMsg: OpenAI.Chat.ChatCompletionMessageParam = {role: 'system', content: systemMessage};
-      messages.push(systemMsg);
+      const systemMsg: OpenAI.Responses.ResponseInputItem = {role: 'system', content: systemMessage};
+      input.push(systemMsg);
       options.aiPanel?.addEngineMessage(systemMsg);
-      const initialUserMsg: OpenAI.Chat.ChatCompletionMessageParam = {
+      const initialUserMsg: OpenAI.Responses.ResponseInputItem = {
         role: 'user',
         content: `
         Available schemas: ${(await context.listAllSchemas()).join(', ')}\n\n
@@ -137,158 +152,155 @@ export async function generateAISqlQueryWithTools(
         ${semTypeWithinPromptInfo}`,
       };
       options.aiPanel?.addEngineMessage(initialUserMsg); // prompt will be shown in UI
-      messages.push(initialUserMsg);
+      input.push(initialUserMsg);
     } else {
-      const followUpUserMsg: OpenAI.Chat.ChatCompletionMessageParam = {role: 'user', content: `User Follow up (do modifications as/if needed based on the following): ${prompt}`};
-      messages.push(followUpUserMsg);
+      const followUpUserMsg: OpenAI.Responses.ResponseInputItem = {role: 'user', content: `User Follow up (do modifications as/if needed based on the following): ${prompt}`};
+      input.push(followUpUserMsg);
       options.aiPanel?.addEngineMessage(followUpUserMsg);
     }
 
     // Define available tools
-    const tools: OpenAI.Chat.ChatCompletionTool[] = [
+    const tools: ResponseTool[] = [
       {
         type: 'function',
-        function: {
-          name: 'list_tables_in_schema',
-          description: 'Returns the list of all table names along with their descriptions/comments. Use this to understand what data is available. You must provide schemaName parameter to specify which schema to list tables from.',
-          parameters: {
-            type: 'object',
-            properties: {
-              schemaName: {
-                type: 'string',
-                description: 'Name of the schema to list tables from',
-              },
+        name: 'list_tables_in_schema',
+        description: 'Returns the list of all table names along with their descriptions/comments. Use this to understand what data is available. You must provide schemaName parameter to specify which schema to list tables from.',
+        parameters: {
+          type: 'object',
+          properties: {
+            schemaName: {
+              type: 'string',
+              description: 'Name of the schema to list tables from',
             },
-            required: ['schemaName'],
           },
+          required: ['schemaName'],
+          additionalProperties: false,
         },
+        strict: true,
       },
       {
         type: 'function',
-        function: {
-          name: 'list_all_schemas',
-          description: 'Retyurns the names all all schemas in the connection.',
-          parameters: {
-            type: 'object',
-            properties: {},
-            required: [],
-          },
+        name: 'list_all_schemas',
+        description: 'Retyurns the names all all schemas in the connection.',
+        parameters: {
+          type: 'object',
+          properties: {},
+          required: [],
+          additionalProperties: false,
         },
+        strict: true,
       },
 
       {
         type: 'function',
-        function: {
-          name: 'describe_tables',
-          description: 'Get detailed information about specific table(s) including all columns, their types, semantic types, comments, value ranges, and category values. Essential for understanding what data is in each table.',
-          parameters: {
-            type: 'object',
-            properties: {
-              tables: {
-                type: 'array',
-                items: {type: 'string'},
-                description: 'List of table names (MANDATORY WITH schema prefix) to describe. ALWAYS provide schema name as prefix, for example public.tableName...',
-              },
+        name: 'describe_tables',
+        description: 'Get detailed information about specific table(s) including all columns, their types, semantic types, comments, value ranges, and category values. Essential for understanding what data is in each table.',
+        parameters: {
+          type: 'object',
+          properties: {
+            tables: {
+              type: 'array',
+              items: {type: 'string'},
+              description: 'List of table names (MANDATORY WITH schema prefix) to describe. ALWAYS provide schema name as prefix, for example public.tableName...',
             },
-            required: ['tables'],
           },
+          required: ['tables'],
+          additionalProperties: false,
         },
+        strict: true,
       },
       {
         type: 'function',
-        function: {
-          name: 'list_joins',
-          description: 'Lists all foreign key relationships (joins) that involve the specified table(s). CRITICAL: Use this before writing any JOIN clause to verify the relationship exists.',
-          parameters: {
-            type: 'object',
-            properties: {
-              tables: {
-                type: 'array',
-                items: {type: 'string'},
-                description: 'List of table names (WITH schema prefix) to find joins for',
-              },
+        name: 'list_joins',
+        description: 'Lists all foreign key relationships (joins) that involve the specified table(s). CRITICAL: Use this before writing any JOIN clause to verify the relationship exists.',
+        parameters: {
+          type: 'object',
+          properties: {
+            tables: {
+              type: 'array',
+              items: {type: 'string'},
+              description: 'List of table names (WITH schema prefix) to find joins for',
             },
-            required: ['tables'],
           },
+          required: ['tables'],
+          additionalProperties: false,
         },
+        strict: true,
       },
       {
         type: 'function',
-        function: {
-          name: 'try_sql',
-          description: 'Execute an SQL query to test it. Returns row count and column names (limited to 10 rows). Use this to validate your query before providing the final answer. If row count is 0, the query might be wrong or the data might genuinely be absent. TRY NOT TO USE ORDER BY in YOUR TEST QUERIES on large tables unless absolutely necessary.',
-          parameters: {
-            type: 'object',
-            properties: {
-              sql: {
-                type: 'string',
-                description: 'The SQL query to test (will be automatically limited to 10 rows)',
-              },
-              description: {
-                type: 'string',
-                description: 'Short description of what this SQL is trying to achieve in markdown format. This will be put in ui for user context.',
-              }
+        name: 'try_sql',
+        description: 'Execute an SQL query to test it. Returns row count and column names (limited to 10 rows). Use this to validate your query before providing the final answer. If row count is 0, the query might be wrong or the data might genuinely be absent. TRY NOT TO USE ORDER BY in YOUR TEST QUERIES on large tables unless absolutely necessary.',
+        parameters: {
+          type: 'object',
+          properties: {
+            sql: {
+              type: 'string',
+              description: 'The SQL query to test (will be automatically limited to 10 rows)',
             },
-            required: ['sql'],
+            description: {
+              type: 'string',
+              description: 'Short description of what this SQL is trying to achieve in markdown format. This will be put in ui for user context.',
+            }
           },
+          required: ['sql', 'description'],
+          additionalProperties: false,
         },
+        strict: true,
       },
       // plain function tool for general purpose question answering
       {
         type: 'function',
-        function: {
-          name: 'reply_to_user',
-          description: 'Use this tool to esentially communicate with the user directly, give feedback, add context to what you are doing, explain reasoning(!!!) and so on. This is NOT for providing the final SQL query, but rather for intermediate communication. When using this tool, always provide a clear, informative and well formatted (markdown) message to the user in the reply parameter.',
-          parameters: {
-            type: 'object',
-            properties: {
-              reply: {
-                type: 'string',
-                description: 'Your text reply to the user question/prompt. this message will be shown in the UI, so make it clear, informative and formatted in markdown as needed.',
-              },
+        name: 'reply_to_user',
+        description: 'Use this tool to esentially communicate with the user directly, give feedback, add context to what you are doing, explain reasoning(!!!) and so on. This is NOT for providing the final SQL query, but rather for intermediate communication. When using this tool, always provide a clear, informative and well formatted (markdown) message to the user in the reply parameter.',
+        parameters: {
+          type: 'object',
+          properties: {
+            reply: {
+              type: 'string',
+              description: 'Your text reply to the user question/prompt. this message will be shown in the UI, so make it clear, informative and formatted in markdown as needed.',
             },
-            required: ['reply'],
-          }
-        }
+          },
+          required: ['reply'],
+          additionalProperties: false,
+        },
+        strict: true,
       }
     ];
 
     // if we have some embeddings, then also add a tool so that LLM can use it to find similar queries
-    if ((dbQueryEmbeddings?.length ?? 0) > 0) {
+    if (grok.ai.entityIndexingEnabled) {
       tools.push({
         type: 'function',
-        function: {
-          name: 'find_similar_queries',
-          description: 'Finds existing similar queries based on the prompt you provide (which should be based on user question). Use this to get inspiration from previously executed queries that might be similar to the user question. Return up to 3 similar queries with their descriptions/comments. Similarity is based on LLM embeddings and cosine similarity.',
-          parameters: {
-            type: 'object',
-            properties: {
-              prompt: {
-                type: 'string',
-                description: 'prompt derived from user question to find similar queries for',
-              },
+        name: 'find_similar_queries',
+        description: 'Finds existing similar queries based on the prompt you provide (which should be based on user question). Use this to get inspiration from previously executed queries that might be similar to the user question. Return up to 3 similar queries with their descriptions/comments. Similarity is based on LLM embeddings and cosine similarity.',
+        parameters: {
+          type: 'object',
+          properties: {
+            prompt: {
+              type: 'string',
+              description: 'prompt derived from user question to find similar queries for',
             },
-            required: ['prompt'],
           },
-        }
+          required: ['prompt'],
+          additionalProperties: false,
+        },
+        strict: true,
       });
     }
 
     async function findSimilarQueriesToPrompt(aiPrompt: string) {
-      if ((dbQueryEmbeddings?.length ?? 0) === 0)
-        return {text: 'No queries found', n: 0};
-      if ((dbQueryEmbeddings!.length < 4))
-        return {text: `Only ${dbQueryEmbeddings.length} queries found:\n\n${dbQueryEmbeddings!.map((q) => `- ${q.query}`).join('\n\n')}`, n: dbQueryEmbeddings.length};
       try {
-        const userQueryEmbedding = await getVectorEmbedding(openai, aiPrompt);
-        const topSimilarQueries = getTopKSimilarQueries(userQueryEmbedding, dbQueryEmbeddings!, 3);
-        console.log('Top similar queries:', topSimilarQueries);
-        if (topSimilarQueries.length === 0)
-          return {text: 'No similar queries found', n: 0};
+        const resultEntities = (await grok.ai.searchEntities(aiPrompt, 0.3, 10, ['DataQuery']))
+          .filter((e) => !!e && e instanceof DG.DataQuery && e.connection?.id === connectionID)
+          .filter((_, i) => i < 4) as DG.DataQuery[]; // limit to top 4
+
+        if (resultEntities.length === 0)
+          return {text: 'No similar queries found for this connection', n: 0};
         return {text: `Here are some similar previously executed queries that might help you.
           Note that these queries might have annotations/comments like name descriptions and so on that can help you understand the schema better.\n\n
           Here they are:
-          ${topSimilarQueries.map((q) => `- Query:\n ${q.query} \n (similarity score: ${q.score.toFixed(4)})`).join('\n\n')}`, n: topSimilarQueries.length};
+          ${resultEntities.map((q) => `- Query:\n ${q.query} \n`).join('\n\n')}`, n: resultEntities.length};
       } catch (error) {
         console.error('Error generating embedding for similar query search:', error);
         return {text: 'Error generating embedding for similar query search', n: 0};
@@ -306,71 +318,70 @@ export async function generateAISqlQueryWithTools(
       }
       iterations++;
       console.log(`\n=== Iteration ${iterations} ===`);
-
-      const response = await openai.chat.completions.create({
-        //   model: modelName,
-        //   temperature: 0,
-        model: options?.modelName ?? 'gpt-4o-mini',
-        temperature: 1,
-        reasoning_effort: options?.modelName?.startsWith('gpt-5') ? 'high' : undefined,
-        messages,
+      const modelName = options?.modelName ?? ModelType.Fast;
+      const response = await openai.responses.create({
+        model: modelName,
+        input,
         tools,
+        ...(modelName.startsWith('gpt-5') ? {reasoning: {effort: 'high'}} : {}),
       });
 
-      const choice = response.choices[0];
-      if (!choice) break;
+      const outputs = response.output ?? [];
+      input.push(...outputs);
+      outputs.forEach((item) =>
+        options.aiPanel?.addEngineMessage(item));
 
-      const message = choice.message;
-      messages.push(message);
-      options.aiPanel?.addEngineMessage(message);
-      // Check if the model wants to call functions
-      if (message.tool_calls && message.tool_calls.length > 0) {
-        const functionToolCalls = message.tool_calls.filter((tc) => tc.type === 'function');
-        console.log(`Tool calls requested: ${functionToolCalls.map((tc) => tc.function.name).join(', ')}`);
+      // Execute function calls (if any)
+      let hadToolCalls = false;
+      for (const item of outputs) {
+        if (isRecord(item) && item.type === 'function_call') {
+          hadToolCalls = true;
 
-        // Execute each tool call
-        for (const toolCall of functionToolCalls) {
-          if (toolCall.type !== 'function') continue;
-          const functionName = toolCall.function.name;
-          const functionArgs = JSON.parse(toolCall.function.arguments);
+          const functionName = getStringProp(item, 'name');
+          const callId = getStringProp(item, 'call_id');
+          const rawArgs = getStringProp(item, 'arguments') ?? '{}';
+          const args = parseJsonObject(rawArgs);
 
-          console.log(`Executing ${functionName} with args:`, functionArgs);
+          if (!functionName || !callId) {
+            input.push({type: 'function_call_output', call_id: callId ?? '', output: 'Error: malformed function call (missing name/call_id).'});
+            continue;
+          }
 
-          let result: string;
+          let result = '';
           try {
             switch (functionName) {
             case 'list_all_schemas':
               options.aiPanel?.addUiMessage(`📂 Listing all schemas in the database.`, false);
               result = (await context.listAllSchemas()).join(', ');
-              options.aiPanel?.addUiMessage(`✅ Schemas found: *${result}*`, false);
+              !options.disableVerbose && options.aiPanel?.addUiMessage(`✅ Schemas found: *${result}*`, false);
               break;
             case 'reply_to_user':
-              options.aiPanel?.addUiMessage(`💬 ${functionArgs.reply ?? ''}`, false);
+              options.aiPanel?.addUiMessage(`💬 ${getStringProp(args, 'reply') ?? ''}`, false);
               result = 'Reply sent to user.';
               break;
             case 'list_tables_in_schema':
-              options.aiPanel?.addUiMessage(`📑 Listing all tables in schema *${functionArgs.schemaName}*.`, false);
-              const res = await context.listTables(false, functionArgs.schemaName);
+              options.aiPanel?.addUiMessage(`📑 Listing all tables in schema *${getStringProp(args, 'schemaName') ?? ''}*.`, false);
+              const res = await context.listTables(false, getStringProp(args, 'schemaName') ?? schemaName);
               result = res.description;
-              options.aiPanel?.addUiMessage(res.tableCount ? `✅ Found ${res.tableCount} tables` : '⚠️ No tables found', false);
+              !options.disableVerbose && options.aiPanel?.addUiMessage(res.tableCount ? `✅ Found ${res.tableCount} tables` : '⚠️ No tables found', false);
               break;
             case 'describe_tables':
-              options.aiPanel?.addUiMessage(`📋 Getting content of following tables: *${functionArgs.tables.join(', ')}*.`, false);
-              result = await context.describeTables(functionArgs.tables);
+              options.aiPanel?.addUiMessage(`📋 Getting content of following tables: *${(isRecord(args) && Array.isArray(args.tables) ? args.tables.join(', ') : '')}*.`, false);
+              result = await context.describeTables((isRecord(args) && Array.isArray(args.tables) ? args.tables : []) as string[]);
               break;
             case 'list_joins':
-              options.aiPanel?.addUiMessage(`🔗 Listing relations for tables: *${functionArgs.tables.join(', ')}*.`, false);
-              result = await context.listJoins(functionArgs.tables);
+              options.aiPanel?.addUiMessage(`🔗 Listing relations for tables: *${(isRecord(args) && Array.isArray(args.tables) ? args.tables.join(', ') : '')}*.`, false);
+              result = await context.listJoins((isRecord(args) && Array.isArray(args.tables) ? args.tables : []) as string[]);
               break;
             case 'try_sql':
-              options.aiPanel?.addUiMessage(`🧪 Testing SQL query:\n${functionArgs.description}\n\`\`\`sql\n${functionArgs.sql}\n\`\`\``, false);
-              result = await context.trySql(functionArgs.sql, functionArgs.description);
-              options.aiPanel?.addUiMessage(`📊 SQL Test Result: \n\n${result}`, false);
+              options.aiPanel?.addUiMessage(`🧪 Testing SQL query:\n${getStringProp(args, 'description') ?? ''}\n\`\`\`sql\n${getStringProp(args, 'sql') ?? ''}\n\`\`\``, false);
+              result = await context.trySql(getStringProp(args, 'sql') ?? '', getStringProp(args, 'description') ?? '');
+              !options.disableVerbose && options.aiPanel?.addUiMessage(`📊 SQL Test Result: \n\n${result}`, false);
               break;
             case 'find_similar_queries':
               options.aiPanel?.addUiMessage(`🔍 Searching for similar queries to help with SQL generation.`, false);
-              const similarQueries = await findSimilarQueriesToPrompt(functionArgs.prompt);
-              options.aiPanel?.addUiMessage(similarQueries.n > 0 ? `✅ Found ${similarQueries.n} similar queries.` : `⚠️ ${similarQueries.text}`, false);
+              const similarQueries = await findSimilarQueriesToPrompt(getStringProp(args, 'prompt') ?? '');
+              !options.disableVerbose && options.aiPanel?.addUiMessage(similarQueries.n > 0 ? `✅ Found ${similarQueries.n} similar queries.` : `⚠️ ${similarQueries.text}`, false);
               result = similarQueries.text;
               break;
             default:
@@ -382,82 +393,68 @@ export async function generateAISqlQueryWithTools(
 
           console.log(`Result: ${result.substring(0, 200)}${result.length > 200 ? '...' : ''}`);
 
-          // Add function result to messages
-          const msg = {
-            role: 'tool',
-            tool_call_id: toolCall.id,
-            content: result,
-          } as const;
-          messages.push(msg);
-          options.aiPanel?.addEngineMessage({...msg});
+          input.push({type: 'function_call_output', call_id: callId, output: result});
+          options.aiPanel?.addEngineMessage({
+            type: 'function_call_output',
+            call_id: callId,
+            output: result,
+          });
         }
-      } else if (message.content) {
-      // Model provided a text response (hopefully the final SQL)
-        console.log('Model response:', message.content);
-
-        // Check if this looks like SQL (basic heuristic)
-        const content = message.content.trim();
-        // Clean up the response
-        let sql = content;
-        if (sql.startsWith('```sql'))
-          sql = sql.substring(6);
-        if (sql.startsWith('```'))
-          sql = sql.substring(3);
-        if (sql.endsWith('```'))
-          sql = sql.substring(0, sql.length - 3);
-        const contentUpperCase = sql.toUpperCase().trim();
-        if (contentUpperCase.length > 2 && (contentUpperCase.startsWith('SELECT') || contentUpperCase.startsWith('WITH'))) {
-          // Final SQL detected
-          const res = sql.trim().replace(/;+$/, ''); // Remove trailing semicolons
-          const resUpperCase = res.toUpperCase();
-          if (suspiciousSQlPatterns.some((pattern) => resUpperCase.includes(pattern))) {
-            const out = await new Promise<string>((resolve) => {
-              ui.dialog('Potentially Destructive SQL Detected')
-                .add(ui.divText('The generated SQL query contains potentially destructive commands. For safety, please confirm if you want to proceed with this query.'))
-                .add(ui.markdown(`\`\`\`sql\n${res}\n\`\`\``))
-                .onOK(() => resolve(res))
-                .onCancel(() => {
-                  console.log('User cancelled execution of potentially destructive SQL');
-                  resolve('');
-                })
-                .show();
-            });
-            options.aiPanel?.addUiMessage(!out ? 'User cancelled execution of potentially destructive SQL.' : 'User confirmed execution of potentially destructive SQL.', false);
-            if (out)
-              options.aiPanel?.addUiMessage(`Final SQL Query:\n\`\`\`sql\n${out}\n\`\`\``, false, {finalResult: out});
-            return out;
-          }
-          if (res)
-            options.aiPanel?.addUiMessage(`Final SQL Query:\n\`\`\`sql\n${res}\n\`\`\``, false, {finalResult: res});
-          return res;
-        } else {
-          const replyText = contentUpperCase.startsWith('REPLY ONLY:') ? content.substring('REPLY ONLY:'.length).trim() : content;
-          options.aiPanel?.addUiMessage(replyText, false);
-          return '';
-        }
-
-        // Model is explaining something, let it continue
-        // if (choice.finish_reason === 'stop')
-        //   break;
-      } else {
-      // No content and no tool calls
-        break;
       }
 
-      // Check finish reason
-      if (choice.finish_reason === 'stop')
-        break;
-      if (iterations >= maxIterations) {
-        // ask user if they want to continue
-        ui.dialog('Continue SQL Generation?')
-          .add(ui.divText('Maximum iterations reached. Do you want to continue generating the SQL query?'))
-          .onOK(() => {
+      // If the model called tools, we must continue so it can consume tool outputs.
+      if (hadToolCalls) {
+        if (iterations >= maxIterations && options.aiPanel) {
+          const cont = await options.aiPanel.addConfirmMessage('Maximum iterations reached. Do you want to continue generating the SQL query?');
+          if (cont)
             maxIterations += 10; // reset max iterations to continue
-          })
-          .onCancel(() => {
-            iterations = maxIterations; // will cause exit
-          })
-          .show();
+        }
+        continue;
+      }
+
+      const content = (response.output_text ?? '').trim();
+      if (content.length === 0)
+        throw new Error('Model returned no text and no tool calls');
+
+      console.log('Model response:', content);
+
+      // Check if this looks like SQL (basic heuristic)
+      let sql = content;
+      if (sql.startsWith('```sql'))
+        sql = sql.substring(6);
+      if (sql.startsWith('```'))
+        sql = sql.substring(3);
+      if (sql.endsWith('```'))
+        sql = sql.substring(0, sql.length - 3);
+      const contentUpperCase = sql.toUpperCase().trim();
+      if (contentUpperCase.length > 2 && (contentUpperCase.startsWith('SELECT') || contentUpperCase.startsWith('WITH'))) {
+        // Final SQL detected
+        const res = sql.trim().replace(/;+$/, ''); // Remove trailing semicolons
+        const resUpperCase = res.toUpperCase();
+        if (suspiciousSQlPatterns.some((pattern) => resUpperCase.includes(pattern))) {
+          const out = await new Promise<string>((resolve) => {
+            ui.dialog('Potentially Destructive SQL Detected')
+              .add(ui.divText('The generated SQL query contains potentially destructive commands. For safety, please confirm if you want to proceed with this query.'))
+              .add(ui.markdown(`\`\`\`sql\n${res}\n\`\`\``))
+              .onOK(() => resolve(res))
+              .onCancel(() => {
+                console.log('User cancelled execution of potentially destructive SQL');
+                resolve('');
+              })
+              .show();
+          });
+          options.aiPanel?.addUiMessage(!out ? 'User cancelled execution of potentially destructive SQL.' : 'User confirmed execution of potentially destructive SQL.', false);
+          if (out)
+            !options.disableVerbose && options.aiPanel?.addUiMessage(`Final SQL Query:\n\`\`\`sql\n${out}\n\`\`\``, false, {finalResult: out});
+          return out;
+        }
+        if (res)
+          !options.disableVerbose && options.aiPanel?.addUiMessage(`Final SQL Query:\n\`\`\`sql\n${res}\n\`\`\``, false, {finalResult: res});
+        return res;
+      } else {
+        const replyText = contentUpperCase.startsWith('REPLY ONLY:') ? content.substring('REPLY ONLY:'.length).trim() : content;
+        options.aiPanel?.addUiMessage(replyText, false);
+        return '';
       }
     }
     // If we exhausted iterations or didn't get a proper response

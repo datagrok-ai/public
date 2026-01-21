@@ -2,19 +2,17 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
-import {vaidateAEDomain, vaidateDMDomain} from './sdtm-validation/services/validation-service';
-import {createValidationDataFrame} from './sdtm-validation/validation-utils';
-import {SITE_ID, STUDY_ID, SUBJECT_ID} from './constants/columns-constants';
+import {COL_HAS_ERRORS_POSTFIX, DOMAIN, ERRORS_POSTFIX, HAS_VALIDATION_ERRORS_COL,
+  SITE_ID, STUDY_ID, SUBJECT_ID, VIOLATED_RULES_COL} from './constants/columns-constants';
 import {addVisitDayFromTvDomain, createEventStartEndDaysCol} from './data-preparation/data-preparation';
 import {createFilters, removeExtension} from './utils/utils';
-import {createErrorsByDomainMap} from './utils/views-validation-utils';
 import {CDISC_STANDARD, ClinStudyConfig} from './utils/types';
 import {ClinicalCaseViewsConfig} from './views-config';
 import {SUMMARY_VIEW_NAME} from './constants/view-names-constants';
 import {funcs} from './package-api';
 import {Subject} from 'rxjs';
 import {ValidationResult, IssueDetail} from './types/validation-result';
-import { COLUMN_FROM_DM_TAG } from './constants/constants';
+import {COLUMN_FROM_DM_TAG} from './constants/constants';
 
 export class ClinicalDomains {
   // Domains listed in alphabetical order
@@ -122,6 +120,7 @@ export class ClinicalStudy {
   currentViewName: string = SUMMARY_VIEW_NAME;
   validationCompleted = new Subject<boolean>();
   private validationColumnsSubscriptionSet = false;
+  changeViewToSummary = true;
 
   constructor(config: ClinStudyConfig) {
     this.config = config;
@@ -179,7 +178,7 @@ export class ClinicalStudy {
     this.domains.all().forEach((it) => {
       if (it.name !== 'dm' && it.columns.names().includes(SUBJECT_ID)) {
         const savedName = it.name;
-        const columnsFromDm = this.domains.dm.columns.names();
+        const columnsFromDm = this.domains.dm.columns.names().filter((it) => it !== DOMAIN);
         for (const colName of it.columns.names()) {
           const colIdx = columnsFromDm.findIndex((it) => it === colName);
           if (colIdx !== -1)
@@ -317,10 +316,10 @@ export class ClinicalStudy {
     issuesByRow: {[row: number]: IssueDetail[]},
   ): void {
     // Create boolean column for validation errors
-    const hasErrorsCol = domain.columns.addNewBool('HasValidationErrors');
+    const hasErrorsCol = domain.columns.addNewBool(HAS_VALIDATION_ERRORS_COL);
 
     // Create string column for violated rules (stored as JSON array of IssueDetail objects)
-    const violatedRulesCol = domain.columns.addNewString('ViolatedRules');
+    const violatedRulesCol = domain.columns.addNewString(VIOLATED_RULES_COL);
     violatedRulesCol.semType = 'sdisc-rule-violation';
 
 
@@ -331,11 +330,11 @@ export class ClinicalStudy {
     // Helper function to create columns for a variable if they don't exist
     const ensureVariableColumns = (variable: string): void => {
       if (!variableErrorColumns[variable] && domain.col(variable)) {
-        const hasErrorsColName = `${variable}_hasErrors`;
+        const hasErrorsColName = `${variable}${COL_HAS_ERRORS_POSTFIX}`;
         const hasErrorsCol = domain.columns.addNewBool(hasErrorsColName);
         variableHasErrorsColumns[variable] = hasErrorsCol;
 
-        const errorColName = `${variable}_errors`;
+        const errorColName = `${variable}${ERRORS_POSTFIX}`;
         const errorCol = domain.columns.addNewString(errorColName);
         variableErrorColumns[variable] = errorCol;
       }

@@ -6,4 +6,5 @@ grok.shell.newView('Drop-Down', [
       'Foo': () => grok.shell.info('foo'),
       'Bar': () => {}
     }, {show: false}).root)
-])]);
+  ])
+]);

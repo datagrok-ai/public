@@ -86,7 +86,7 @@ it and select **Clone...**
 
 ## Database Manager
 
-**Database Manager** lets you brows database schemas and other
+**Database Manager** lets you browse database schemas and other
 objects, such as queries, tables, and table columns (if supported by
 the providers). You can perform various operations like adding new connections
 and queries, previewing data, running queries, and managing objects using
@@ -678,6 +678,8 @@ you can specify joins manually.
 You can save the enrichment configuration by giving it a name, and clicking "SAVE". After that,
 you would see this next to the "Enrich..." button, allowing you to retrieve the necessary data
 in one click.
+
+You can also [publish enrichments](../../develop/how-to/packages/data-enrichments.md) with plugins.
 
 ![](img/db-data-enrichment.gif)
 

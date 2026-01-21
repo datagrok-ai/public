@@ -1,5 +1,39 @@
 # Datagrok-tools changelog
 
+## 4.14.72 (2026-01-13)
+
+### Bug Fixes
+
+* Include ts-morph in dependencies
+
+## 4.14.72 (2026-01-13)
+
+### Bug Fixes
+
+* Removed local dependency on js-api
+
+## 4.14.71 (2026-01-10)
+
+### Features
+
+* Grok Check: Added validation to restrict datagrok-api imports to public API paths only (GROK-19504)
+* Only allows imports from 'datagrok-api/dg', 'datagrok-api/grok', 'datagrok-api/ui'
+* Rejects deep imports like 'datagrok-api/dg/events' or 'datagrok-api/src/...'
+* Validates both import and export statements
+
+### Bug Fixes
+
+* Fixed invalid datagrok-api imports in UsageAnalysis, ChatGPT, and PowerPack packages
+
+
+## 4.14.70 (2026-01-10)
+
+### Bug Fixes
+
+* Grok Check: Fixed `--recursive` flag to check all packages instead of stopping after the first package
+* Grok Check: Fixed process exit behavior in recursive mode to continue checking remaining packages even when errors are found
+
+
 ## 4.14.26 (2025-07-10)
 
 ### Features

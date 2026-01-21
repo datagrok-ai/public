@@ -42,7 +42,7 @@ class ChemPackageDetectors extends DG.Package {
   }
 
   //name: detectMolecules
-  //tags: semTypeDetector
+  //meta.role: semTypeDetector
   //input: column col
   //output: string semType
   //meta.skipTest: GROK-17630
@@ -72,7 +72,7 @@ class ChemPackageDetectors extends DG.Package {
       grok.functions.call('Chem:detectSmiles', { col: col, min: minUnique }).then(() => {});
   }
 
-  //tags: semTypeDetector
+  //meta.role: semTypeDetector
   //input: column col
   //output: string semType
   //meta.skipTest: GROK-17630

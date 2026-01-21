@@ -1,5 +1,6 @@
 --name: patternSimilaritySearch
 --friendlyName: Search | Pattern Similarity
+--description: Searches ChEMBL compounds by molecular fingerprint similarity to a given pattern using Tanimoto coefficient.
 --connection: Chembl
 --input: string pattern {semType: Molecule}
 --input: int maxRows = 1000
@@ -14,11 +15,11 @@ limit @maxRows
 
 --name: patternSimilaritySearchWithThreshold
 --friendlyName: Search | Pattern Similarity With Threshold
---meta.description: Search for a given pattern in the ChEMBL database with a specified threshold of similarity.
+--description: Search for a given pattern in the ChEMBL database with a specified threshold of similarity.
 --connection: Chembl
 --meta.batchMode: true
 --input: string pattern {semType: Molecule}
---input: double threshold = 0.6 { min: 0, max: 1 }
+--input: double threshold = 0.6 { min: 0; max: 1 }
 select set_config('rdkit.tanimoto_threshold', @threshold::text, true);
 --batch
 select molregno, m as molecule, similarity from get_mfp2_neighbors(@pattern);
@@ -26,7 +27,7 @@ select molregno, m as molecule, similarity from get_mfp2_neighbors(@pattern);
 
 --name: patternSubstructureSearch
 --friendlyName: Search | Substructure
---meta.description: Search for a given substructure in the ChEMBL database.
+--description: Search for a given substructure in the ChEMBL database.
 --connection: Chembl
 --input: string pattern {semType: Substructure}
 --input: int maxRows = 1000
@@ -38,6 +39,7 @@ select molregno, m as molecule, similarity from get_mfp2_neighbors(@pattern);
 
 --name: ChemblNumberOfStructures
 --friendlyName: Browse | Specified number of ChEMBL structures
+--description: Returns a specified number of ChEMBL compound structures with canonical SMILES and molregno identifiers.
 --input: int maxNumberOfMolecules = 1000
 --connection: Chembl
 select
@@ -49,6 +51,7 @@ limit @maxNumberOfMolecules
 
 --name: ChemblMolregNoBySmiles
 --friendlyName: Chembl Molregno by smiles
+--description: Retrieves the molregno identifier for a compound by its canonical SMILES structure.
 --input: string smiles {semType: Molecule}
 --connection: Chembl
 select
@@ -62,6 +65,7 @@ limit 1
 
 --name: StructuresByOrganism
 --friendlyName: Chembl Targets by organism
+--description: Retrieves compound structures and bioactivity data for bacterial targets of a specified organism.
 --input: int maxNumberOfMolecules = 1000
 --input: string organism = "Shigella" {suggestions: Chembl:organisms}
 --connection: Chembl

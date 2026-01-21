@@ -68,6 +68,15 @@ export class Shell {
   get v(): ViewBase { return toJs(api.grok_Get_CurrentView()); }
   set v(view: ViewBase) { api.grok_Set_CurrentView(view.dart); }
 
+  /**
+   * The view currently displayed in preview mode.
+   *
+   * This allows inspecting an object (like a dataset) temporarily without
+   * fully opening it or adding it to the workspace.
+   */
+  get preview(): View | null { return toJs(api.grok_Get_CurrentPreview()); }
+  set preview(view: View | null) { api.grok_Set_CurrentPreview(view ? view.dart : null); }
+
   /** Current table view, or null */
   get tv(): TableView { return toJs(api.grok_Get_CurrentView()); }
 

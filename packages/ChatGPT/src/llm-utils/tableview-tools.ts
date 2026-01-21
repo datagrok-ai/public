@@ -2,12 +2,42 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {OpenAI} from 'openai';
-import {OpenAIClient} from './openAI-client';
+import type OpenAI from 'openai';
+import {ModelType, OpenAIClient} from './openAI-client';
 import {ChatModel} from 'openai/resources/shared';
 import {getAIAbortSubscription} from '../utils';
 import {AIPanelFuncs} from './panel';
 import {LLMCredsManager} from './creds';
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null;
+}
+
+function getStringProp(obj: unknown, key: string): string | null {
+  if (!isRecord(obj))
+    return null;
+  const v = obj[key];
+  return typeof v === 'string' ? v : null;
+}
+
+function getNumberProp(obj: unknown, key: string): number | null {
+  if (!isRecord(obj))
+    return null;
+  const v = obj[key];
+  return typeof v === 'number' ? v : null;
+}
+
+function parseJsonObject(text: string): unknown {
+  try {
+    return JSON.parse(text);
+  } catch {
+    return null;
+  }
+}
+
+type ResponseCreateBody = Parameters<OpenAI['responses']['create']>[0];
+type ResponseInput = Exclude<ResponseCreateBody['input'], string | undefined>;
+type ResponseTool = Exclude<ResponseCreateBody['tools'], undefined>[number];
 
 /**
  * Handles AI-assisted table view interactions with ask and agent modes
@@ -21,8 +51,8 @@ export async function processTableViewAIRequest(
   prompt: string,
   tableView: DG.TableView,
   options: {
-    oldMessages?: OpenAI.Chat.ChatCompletionMessageParam[]
-    aiPanel?: AIPanelFuncs,
+    oldMessages?: ResponseInput,
+    aiPanel?: AIPanelFuncs<OpenAI.Responses.ResponseInputItem>,
     modelName?: ChatModel,
   } = {}
 ): Promise<void> {
@@ -53,8 +83,8 @@ async function processAgentMode(
   prompt: string,
   context: TableViewContext,
   options: {
-    oldMessages?: OpenAI.Chat.ChatCompletionMessageParam[]
-    aiPanel?: AIPanelFuncs,
+    oldMessages?: ResponseInput,
+    aiPanel?: AIPanelFuncs<OpenAI.Responses.ResponseInputItem>,
     modelName?: ChatModel
   },
   isAborted: () => boolean,
@@ -94,170 +124,185 @@ CRITICAL RULES:
 
 Your responses should be informative, explaining what you're doing and why.`;
 
-  const messages: OpenAI.Chat.ChatCompletionMessageParam[] = options.oldMessages ? options.oldMessages.slice() : [];
+  const input: ResponseInput = options.oldMessages ? options.oldMessages.slice() : [];
 
-  if (messages.length === 0) {
+  if (input.length === 0) {
     const tableDescription = context.getTableDescription();
     const availableViewers = context.getAvailableViewers();
 
     const initialContext = `${tableDescription}\n\n${availableViewers}`;
 
-    messages.push({role: 'system', content: systemMessage});
-    messages.push({role: 'user', content: `${initialContext}\n\nUser request: ${prompt}`});
+    input.push({role: 'system', content: systemMessage});
+    input.push({role: 'user', content: `${initialContext}\n\nUser request: ${prompt}`});
 
     options.aiPanel?.addUserMessage({role: 'user', content: prompt}, prompt);
   } else {
-    messages.push({role: 'user', content: prompt});
+    input.push({role: 'user', content: prompt});
     options.aiPanel?.addUserMessage({role: 'user', content: prompt}, prompt);
   }
 
-  const tools: OpenAI.Chat.ChatCompletionTool[] = [
+  const tools: ResponseTool[] = [
     {
       type: 'function',
-      function: {
-        name: 'list_ui_elements',
-        description: 'Get a list of all available UI elements in the table view with their IDs and descriptions. Use this when users ask where to find features or how to access functionality. Call this before highlight_element to know which elements are available.',
-        parameters: {
-          type: 'object',
-          properties: {}
-        }
-      }
+      name: 'list_ui_elements',
+      description: 'Get a list of all available UI elements in the table view with their IDs and descriptions. Use this when users ask where to find features or how to access functionality. Call this before highlight_element to know which elements are available.',
+      parameters: {
+        type: 'object',
+        properties: {},
+        required: [],
+        additionalProperties: false,
+      },
+      strict: true,
     },
     {
       type: 'function',
-      function: {
-        name: 'highlight_element',
-        description: 'Highlights a UI element to guide the user. Use this when you want to show users where specific features or controls are located. Use list_ui_elements first to get valid element ID or names.',
-        parameters: {
-          type: 'object',
-          properties: {
-            elementId: {
-              type: 'string',
-              description: 'ID or name of the UI element to highlight'
+      name: 'highlight_element',
+      description: 'Highlights a UI element to guide the user. Use this when you want to show users where specific features or controls are located. Use list_ui_elements first to get valid element ID or names.',
+      parameters: {
+        type: 'object',
+        properties: {
+          elementId: {
+            type: 'string',
+            description: 'ID or name of the UI element to highlight'
+          },
+          description: {
+            type: 'string',
+            description: 'Brief description of why this element is being highlighted'
+          }
+        },
+        required: ['elementId', 'description'],
+        additionalProperties: false,
+      },
+      strict: true,
+    },
+    {
+      type: 'function',
+      name: 'get_available_viewers',
+      description: 'Get a list of all available viewer types that can be added to the table view. Use this if you forget which viewer types are available or need to remind yourself of the options.',
+      parameters: {
+        type: 'object',
+        properties: {},
+        required: [],
+        additionalProperties: false,
+      },
+      strict: true,
+    },
+    {
+      type: 'function',
+      name: 'describe_viewer',
+      description: 'Get detailed information about a viewer type including all its properties and their types. ALWAYS call this BEFORE adding a new viewer to understand what properties are available and their correct names/types. This describes the viewer type schema, not existing viewer instances.',
+      parameters: {
+        type: 'object',
+        properties: {
+          viewerType: {
+            type: 'string',
+            description: 'Type of the viewer to describe (e.g., "Histogram", "Scatter plot"). must match exactly one of the available viewer types supplied.'
+          }
+        },
+        required: ['viewerType'],
+        additionalProperties: false,
+      },
+      strict: true,
+    },
+    {
+      type: 'function',
+      name: 'add_viewer',
+      description: 'Add a new viewer to the table view with specified properties. IMPORTANT: Set all desired properties during creation using the viewerProperties parameter - avoid creating a viewer with empty properties and then adjusting it separately. Use describe_viewer first to understand available properties.',
+      parameters: {
+        type: 'object',
+        properties: {
+          viewerType: {
+            type: 'string',
+            description: 'Type of viewer to add'
+          },
+          viewerProperties: {
+            type: 'object',
+            description: 'Properties to configure for the viewer (e.g., {"valueColumnName": "Age", "markerSize": 15})',
+            properties: {},
+            required: [],
+            patternProperties: {
+              '.*': {},
             },
-            description: {
-              type: 'string',
-              description: 'Brief description of why this element is being highlighted'
-            }
+            additionalProperties: false,
+          }
+        },
+        required: ['viewerType', 'viewerProperties'],
+        additionalProperties: false,
+      },
+      strict: true,
+    },
+    {
+      type: 'function',
+      name: 'find_viewers_by_type',
+      description: 'Find all viewers of a specific type that are already added to the table view and get their IDs and current properties. Use this when you need to identify existing viewers of a certain type before modifying them, or when the user refers to "the histogram" or "the scatter plot".',
+      parameters: {
+        type: 'object',
+        properties: {
+          viewerType: {
+            type: 'string',
+            description: 'Type of viewers to find'
+          }
+        },
+        required: ['viewerType'],
+        additionalProperties: false,
+      },
+      strict: true,
+    },
+    {
+      type: 'function',
+      name: 'adjust_viewer',
+      description: 'Adjust properties of an EXISTING viewer by its ID. Use this to modify viewers that are already created, not for initial configuration. If viewer is not found, will inform you to add it instead. For new viewers, use add_viewer with all properties set from the start.',
+      parameters: {
+        type: 'object',
+        properties: {
+          viewerId: {
+            type: 'string',
+            description: 'ID of the viewer to adjust'
           },
-          required: ['elementId', 'description']
-        }
-      }
-    },
-    {
-      type: 'function',
-      function: {
-        name: 'get_available_viewers',
-        description: 'Get a list of all available viewer types that can be added to the table view. Use this if you forget which viewer types are available or need to remind yourself of the options.',
-        parameters: {
-          type: 'object',
-          properties: {}
-        }
-      }
-    },
-    {
-      type: 'function',
-      function: {
-        name: 'describe_viewer',
-        description: 'Get detailed information about a viewer type including all its properties and their types. ALWAYS call this BEFORE adding a new viewer to understand what properties are available and their correct names/types. This describes the viewer type schema, not existing viewer instances.',
-        parameters: {
-          type: 'object',
-          properties: {
-            viewerType: {
-              type: 'string',
-              description: 'Type of the viewer to describe (e.g., "Histogram", "Scatter plot"). must match exactly one of the available viewer types supplied.'
-            }
-          },
-          required: ['viewerType']
-        }
-      }
-    },
-    {
-      type: 'function',
-      function: {
-        name: 'add_viewer',
-        description: 'Add a new viewer to the table view with specified properties. IMPORTANT: Set all desired properties during creation using the viewerProperties parameter - avoid creating a viewer with empty properties and then adjusting it separately. Use describe_viewer first to understand available properties.',
-        parameters: {
-          type: 'object',
-          properties: {
-            viewerType: {
-              type: 'string',
-              description: 'Type of viewer to add'
+          viewerProperties: {
+            type: 'object',
+            description: 'Properties to update',
+            properties: {},
+            required: [],
+            patternProperties: {
+              '.*': {},
             },
-            viewerProperties: {
-              type: 'object',
-              description: 'Properties to configure for the viewer (e.g., {"valueColumnName": "Age", "markerSize": 15})'
-            }
-          },
-          required: ['viewerType', 'viewerProperties']
-        }
-      }
+            additionalProperties: false,
+          }
+        },
+        required: ['viewerId', 'viewerProperties'],
+        additionalProperties: false,
+      },
+      strict: true,
     },
     {
       type: 'function',
-      function: {
-        name: 'find_viewers_by_type',
-        description: 'Find all viewers of a specific type that are already added to the table view and get their IDs and current properties. Use this when you need to identify existing viewers of a certain type before modifying them, or when the user refers to "the histogram" or "the scatter plot".',
-        parameters: {
-          type: 'object',
-          properties: {
-            viewerType: {
-              type: 'string',
-              description: 'Type of viewers to find'
-            }
-          },
-          required: ['viewerType']
-        }
-      }
+      name: 'list_current_viewers',
+      description: 'Get a list of all currently added viewers with their IDs, types, and configured properties. Use this to see what viewers already exist before adding new ones or to find viewer IDs for adjustment.',
+      parameters: {
+        type: 'object',
+        properties: {},
+        required: [],
+        additionalProperties: false,
+      },
+      strict: true,
     },
     {
       type: 'function',
-      function: {
-        name: 'adjust_viewer',
-        description: 'Adjust properties of an EXISTING viewer by its ID. Use this to modify viewers that are already created, not for initial configuration. If viewer is not found, will inform you to add it instead. For new viewers, use add_viewer with all properties set from the start.',
-        parameters: {
-          type: 'object',
-          properties: {
-            viewerId: {
-              type: 'string',
-              description: 'ID of the viewer to adjust'
-            },
-            viewerProperties: {
-              type: 'object',
-              description: 'Properties to update'
-            }
-          },
-          required: ['viewerId', 'viewerProperties']
-        }
-      }
-    },
-    {
-      type: 'function',
-      function: {
-        name: 'list_current_viewers',
-        description: 'Get a list of all currently added viewers with their IDs, types, and configured properties. Use this to see what viewers already exist before adding new ones or to find viewer IDs for adjustment.',
-        parameters: {
-          type: 'object',
-          properties: {}
-        }
-      }
-    },
-    {
-      type: 'function',
-      function: {
-        name: 'reply_to_user',
-        description: 'Send a message to the user to explain reasoning, ask for clarification, or provide updates',
-        parameters: {
-          type: 'object',
-          properties: {
-            message: {
-              type: 'string',
-              description: 'Message to send to the user'
-            }
-          },
-          required: ['message']
-        }
-      }
+      name: 'reply_to_user',
+      description: 'Send a message to the user to explain reasoning, ask for clarification, or provide updates',
+      parameters: {
+        type: 'object',
+        properties: {
+          message: {
+            type: 'string',
+            description: 'Message to send to the user'
+          }
+        },
+        required: ['message'],
+        additionalProperties: false,
+      },
+      strict: true,
     }
   ];
 
@@ -265,25 +310,25 @@ Your responses should be informative, explaining what you're doing and why.`;
   if (vectorStoreId) {
     tools.push({
       type: 'function',
-      function: {
-        name: 'search_documentation',
-        description: 'Search external Datagrok documentation for authoritative information. CRITICAL: Use this tool IMMEDIATELY when user asks ANY question about: 1) How to access Datagrok features/functionality, 2) Where to find menu items or commands, 3) How to perform operations not directly related to viewer manipulation, 4) Package names or requirements, 5) Keyboard shortcuts, 6) Dialogs or workflows. DO NOT make assumptions or invent UI locations, feature names, or steps - ALWAYS search documentation first! If you are even slightly uncertain about something, USE THIS TOOL. Only skip this tool for questions that are purely about manipulating viewers in the current table.',
-        parameters: {
-          type: 'object',
-          properties: {
-            query: {
-              type: 'string',
-              description: 'The search query for finding relevant documentation'
-            },
-            maxResults: {
-              type: 'integer',
-              description: 'Maximum number of results to return (1-50)',
-              default: 5
-            }
+      name: 'search_documentation',
+      description: 'Search external Datagrok documentation for authoritative information. CRITICAL: Use this tool IMMEDIATELY when user asks ANY question about: 1) How to access Datagrok features/functionality, 2) Where to find menu items or commands, 3) How to perform operations not directly related to viewer manipulation, 4) Package names or requirements, 5) Keyboard shortcuts, 6) Dialogs or workflows. DO NOT make assumptions or invent UI locations, feature names, or steps - ALWAYS search documentation first! If you are even slightly uncertain about something, USE THIS TOOL. Only skip this tool for questions that are purely about manipulating viewers in the current table.',
+      parameters: {
+        type: 'object',
+        properties: {
+          query: {
+            type: 'string',
+            description: 'The search query for finding relevant documentation'
           },
-          required: ['query']
-        }
-      }
+          maxResults: {
+            type: 'integer',
+            description: 'Maximum number of results to return (1-50)',
+            default: 5
+          }
+        },
+        required: ['query', 'maxResults'],
+        additionalProperties: false,
+      },
+      strict: true,
     });
   }
 
@@ -294,34 +339,36 @@ Your responses should be informative, explaining what you're doing and why.`;
     }
 
     iterations++;
-
-    const response = await openai.chat.completions.create({
-      model: options?.modelName ?? 'gpt-4o-mini',
-      temperature: 1,
-      reasoning_effort: options?.modelName?.startsWith('gpt-5') ? 'high' : undefined,
-      messages,
+    const modelName = options?.modelName ?? ModelType.Fast;
+    const response = await openai.responses.create({
+      model: modelName,
+      input,
       tools,
+      ...(modelName.startsWith('gpt-5') ? {reasoning: {effort: 'high'}} : {}),
     });
 
-    const assistantMessage = response.choices[0].message;
-    messages.push(assistantMessage);
-    options.aiPanel?.addEngineMessage(assistantMessage);
-    // Handle text response
-    if (assistantMessage.content && assistantMessage.content.trim().length > 0) {
-      options.aiPanel?.addUiMessage(assistantMessage.content, false, {
-        finalResult: assistantMessage.content
-      });
-    }
+    const outputs = response.output ?? [];
+    input.push(...outputs);
+    outputs.forEach((item) =>
+      options.aiPanel?.addEngineMessage(item));
 
-    // Handle tool calls
-    const toolCalls = assistantMessage.tool_calls?.filter((tc) => tc.type === 'function') ?? [];
-    if (toolCalls.length > 0) {
-      for (const toolCall of toolCalls) {
-        const functionName = toolCall.function.name;
-        const args = JSON.parse(toolCall.function.arguments);
+    let hadToolCalls = false;
+    for (const item of outputs) {
+      if (isRecord(item) && item.type === 'function_call') {
+        hadToolCalls = true;
+
+        const functionName = getStringProp(item, 'name');
+        const callId = getStringProp(item, 'call_id');
+        const rawArgs = getStringProp(item, 'arguments') ?? '{}';
+        const args = parseJsonObject(rawArgs);
+        const argsObj = isRecord(args) ? args : {};
+
+        if (!functionName || !callId) {
+          input.push({type: 'function_call_output', call_id: callId ?? '', output: 'Error: malformed function call (missing name/call_id).'});
+          continue;
+        }
 
         let result: string;
-
         try {
           switch (functionName) {
           case 'list_ui_elements':
@@ -332,57 +379,70 @@ Your responses should be informative, explaining what you're doing and why.`;
             result = context.getAvailableViewers();
             options.aiPanel?.addUiMessage('📊 Getting available viewer types', false);
             break;
-          case 'highlight_element':
+          case 'highlight_element': {
             result = 'Element highlighted';
-            const actRes = await context.highlightElement(args.elementId, args.description);
-            options.aiPanel?.addUiMessage(`Highlighting: **${args.elementId}**`, false);
+            const elementId = getStringProp(argsObj, 'elementId') ?? '';
+            const description = getStringProp(argsObj, 'description') ?? '';
+            const actRes = await context.highlightElement(elementId, description);
+            options.aiPanel?.addUiMessage(`Highlighting: **${elementId}**`, false);
             if (actRes != null) {
               // if it is not null, then it is an error message
               result = actRes;
               options.aiPanel?.addUiMessage(`⚠️ ${actRes}`, false);
             }
             break;
-          case 'describe_viewer':
-            result = await context.describeViewer(args.viewerType);
-            options.aiPanel?.addUiMessage(`📋 Getting available properties for **${args.viewerType}** viewer`, false);
-            break;
-          case 'add_viewer': {
-            const viewerProps = args.viewerProperties || args.properties || {};
-            result = await context.addViewer(args.viewerType, viewerProps);
-            options.aiPanel?.addUiMessage(`➕ Added **${args.viewerType}** viewer ${viewerProps && Object.keys(viewerProps).length > 0 ? `with properties: \n\`\`\`json\n${JSON.stringify(viewerProps, null, 2)}\n\`\`\`\`` : ''}`, false);
+          }
+          case 'describe_viewer': {
+            const viewerType = getStringProp(argsObj, 'viewerType') ?? '';
+            result = await context.describeViewer(viewerType);
+            options.aiPanel?.addUiMessage(`📋 Getting available properties for **${viewerType}** viewer`, false);
             break;
           }
-          case 'find_viewers_by_type':
-            result = await context.findViewersByType(args.viewerType);
-            options.aiPanel?.addUiMessage(`🔎 Searching for **${args.viewerType}** viewers`, false);
+          case 'add_viewer': {
+            const viewerType = getStringProp(argsObj, 'viewerType') ?? '';
+            const viewerProps = (argsObj.viewerProperties ?? argsObj.properties ?? {}) as Record<string, any>;
+            result = await context.addViewer(viewerType, viewerProps);
+            options.aiPanel?.addUiMessage(`➕ Added **${viewerType}** viewer ${viewerProps && Object.keys(viewerProps).length > 0 ? `with properties: \n\`\`\`json\n${JSON.stringify(viewerProps, null, 2)}\n\`\`\`` : ''}`, false);
             break;
+          }
+          case 'find_viewers_by_type': {
+            const viewerType = getStringProp(argsObj, 'viewerType') ?? '';
+            options.aiPanel?.addUiMessage(`🔎 Searching for **${viewerType}** viewers`, false);
+            result = await context.findViewersByType(viewerType);
+            break;
+          }
           case 'adjust_viewer': {
-            const viewerProps = args.viewerProperties || args.properties || {};
-            result = await context.adjustViewer(args.viewerId, viewerProps);
-            options.aiPanel?.addUiMessage(`⚙️ Setting properties to the viewer: \n\`\`\`json\n${JSON.stringify(viewerProps, null, 2)}\n\`\`\`\``, false);
+            const viewerId = getStringProp(argsObj, 'viewerId') ?? '';
+            const viewerProps = (argsObj.viewerProperties ?? argsObj.properties ?? {}) as Record<string, any>;
+            result = await context.adjustViewer(viewerId, viewerProps);
+            options.aiPanel?.addUiMessage(`⚙️ Setting properties to the viewer: \n\`\`\`json\n${JSON.stringify(viewerProps, null, 2)}\n\`\`\``, false);
             break;
           }
           case 'list_current_viewers':
             result = await context.listCurrentViewers();
             options.aiPanel?.addUiMessage('📝 Listing currently open viewers', false);
             break;
-          case 'reply_to_user':
+          case 'reply_to_user': {
+            const message = getStringProp(argsObj, 'message') ?? '';
             result = 'Message sent to user';
-            options.aiPanel?.addUiMessage(`💬 ${args.message}`, false);
+            options.aiPanel?.addUiMessage(`💬 ${message}`, false);
             break;
+          }
           case 'search_documentation': {
-            // Ask for user confirmation before searching external docs
-            const confirmSearch = options.aiPanel ? await options.aiPanel.addConfirmMessage('Datagrok wants to search platform documentation for additional context. Do you want to allow this action?') : true;
-            if (!confirmSearch) {
-              result = 'Documentation search prohibited by user. Please answer based on the available context without using external documentation.';
-              options.aiPanel?.addUiMessage('⚠️ External documentation search prohibited by user.', false);
-              break;
-            }
-            options.aiPanel?.addUiMessage(`🔍 Searching documentation for: **${args.query}**`, false);
+            const query = getStringProp(argsObj, 'query') ?? '';
+            const maxResults = getNumberProp(argsObj, 'maxResults') ?? 4;
+            // Ask for user confirmation before searching external docs (example of using confirmations)
+            // const confirmSearch = options.aiPanel ? await options.aiPanel.addConfirmMessage('Datagrok wants to search platform documentation for additional context. Do you want to allow this action?') : true;
+            // if (!confirmSearch) {
+            //   result = 'Documentation search prohibited by user. Please answer based on the available context without using external documentation.';
+            //   options.aiPanel?.addUiMessage('⚠️ External documentation search prohibited by user.', false);
+            //   break;
+            // }
+            options.aiPanel?.addUiMessage(`🔍 Searching documentation for: **${query}**`, false);
             try {
               const searchData = await openai.vectorStores.search(vectorStoreId, {
-                query: args.query,
-                max_num_results: args.maxResults || 4,
+                query,
+                max_num_results: maxResults,
                 rewrite_query: false,
               });
 
@@ -417,42 +477,42 @@ Your responses should be informative, explaining what you're doing and why.`;
           options.aiPanel?.addUiMessage(`⚠️ Error executing ${functionName}: ${error.message}`, false);
         }
 
-        // Add tool result to messages
-        const toolMessage: OpenAI.Chat.ChatCompletionToolMessageParam = {
-          role: 'tool',
-          content: result,
-          tool_call_id: toolCall.id
-        };
-        messages.push(toolMessage);
-        options.aiPanel?.addEngineMessage({...toolMessage});
+        input.push({type: 'function_call_output', call_id: callId, output: result});
+        options.aiPanel?.addEngineMessage({
+          type: 'function_call_output',
+          call_id: callId,
+          output: result,
+        });
       }
-    } else {
-      // No tool calls and has content - we're done
-      if (assistantMessage.content)
-        break;
     }
 
-    // Check if we should continue
-    if (response.choices[0].finish_reason === 'stop')
-      break;
+    if (hadToolCalls) {
+      if (iterations >= maxIterations) {
+        const continueProcessing = await new Promise<boolean>((resolve) => {
+          ui.dialog('Maximum Iterations Reached')
+            .add(ui.divText(`The AI has reached the maximum iteration limit (${maxIterations}). Would you like to continue for 10 more iterations?`))
+            .onOK(() => resolve(true))
+            .onCancel(() => resolve(false))
+            .show();
+        });
 
-    // Check if we've hit max iterations
-    if (iterations >= maxIterations) {
-      const continueProcessing = await new Promise<boolean>((resolve) => {
-        ui.dialog('Maximum Iterations Reached')
-          .add(ui.divText(`The AI has reached the maximum iteration limit (${maxIterations}). Would you like to continue for 10 more iterations?`))
-          .onOK(() => resolve(true))
-          .onCancel(() => resolve(false))
-          .show();
-      });
-
-      if (continueProcessing) {
-        maxIterations += 10;
-        options.aiPanel?.addUiMessage(`ℹ️ Continuing processing for ${maxIterations - iterations} more iterations...`, false);
-      } else {
-        options.aiPanel?.addUiMessage('⚠️ Processing stopped by user.', false);
-        break;
+        if (continueProcessing) {
+          maxIterations += 10;
+          options.aiPanel?.addUiMessage(`ℹ️ Continuing processing for ${maxIterations - iterations} more iterations...`, false);
+        } else {
+          options.aiPanel?.addUiMessage('⚠️ Processing stopped by user.', false);
+          break;
+        }
       }
+      continue;
+    }
+
+    const content = (response.output_text ?? '').trim();
+    if (content.length > 0) {
+      options.aiPanel?.addUiMessage(content, false, {
+        finalResult: content
+      });
+      break;
     }
   }
 

@@ -1,5 +1,9 @@
 # ChEMBL changelog
 
+## 1.4.10 (2025-12-31)
+
+* Update db-explorer library version
+
 ## 1.4.7 (2025-12-11)
 
 * In place registration of regexp detectors for semantic types in DBExplorer integration

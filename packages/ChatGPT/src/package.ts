@@ -5,31 +5,30 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {ChatGptAssistant} from './prompt-engine/chatgpt-assistant';
 import {ChatGPTPromptEngine} from './prompt-engine/prompt-engine';
-import {getAiPanelVisibility, initAiPanel, setAiPanelVisibility} from './ai-panel';
-import {findBestFunction, tableQueriesFunctionsSearchLlm} from './prompts/find-best-function';
-import {askWiki, setupAIQueryEditorUI, setupSearchUI, setupTableViewAIPanelUI, smartExecution} from './llm-utils/ui';
+import {findBestMatchingQuery, tableQueriesFunctionsSearchLlm} from './llm-utils/query-matching';
+import {askWiki, setupAIQueryEditorUI, setupScriptsAIPanelUI, setupSearchUI, setupTableViewAIPanelUI, smartExecution} from './llm-utils/ui';
 import {Plan} from './prompt-engine/interfaces';
-import {OpenAIClient} from './llm-utils/openAI-client';
+import {initModelTypeNames, ModelType, OpenAIClient} from './llm-utils/openAI-client';
 import {LLMCredsManager} from './llm-utils/creds';
 import {CombinedAISearchAssistant} from './llm-utils/combined-search';
 import {JsonSchema} from './prompt-engine/interfaces';
 import {genDBConnectionMeta, moveDBMetaToStickyMetaOhCoolItEvenRhymes} from './llm-utils/db-index-tools';
-import * as rxjs from 'rxjs';
-import {embedConnectionQueries} from './llm-utils/embeddings';
 import {biologicsIndex} from './llm-utils/indexes/biologics-index';
 import {chemblIndex} from './llm-utils/indexes/chembl-index';
+import {uploadFilesToVectorStroreOneByOne} from './llm-utils/indexes/dg-repository-index';
 
 export * from './package.g';
 export const _package = new DG.Package();
 
-export const modelName: string = 'gpt-4o-mini';
 
 export class PackageFunctions {
   @grok.decorators.init()
   static async init() {
+    initModelTypeNames();
     LLMCredsManager.init(_package);
     setupSearchUI();
     setupTableViewAIPanelUI();
+    setupScriptsAIPanelUI();
   }
 
 
@@ -60,7 +59,9 @@ export class PackageFunctions {
     // }
   }
 
-  @grok.decorators.func({tags: ['searchProvider']})
+  @grok.decorators.func({
+    meta: {role: 'searchProvider'},
+  })
   static combinedLLMSearchProvider(): DG.SearchProvider {
     const isAiConfigured = grok.ai.openAiConfigured;
     return {
@@ -92,16 +93,16 @@ export class PackageFunctions {
 
  @grok.decorators.func({meta: {
    role: 'aiSearchProvider',
-   useWhen: 'If the prompt looks like a user has a goal to achieve something with concrete input(s), and wants the system to plan and execute a series of steps/functions to achieve that goal. for example, adme properties of CHEMBL1234, enumerate some peptide, etc.. . Also, if the tone of the prompt sounds like "Do something", use this function'
+   useWhen: 'If the prompt looks like a user has a goal to achieve something with concrete input(s), and wants the system to plan and execute a series of steps/functions to achieve that goal. This relates to functions that analyse or mutate data, not get it. for example, adme properties of CHEMBL1234, enumerate some peptide, etc... Also, if the tone of the prompt sounds like "Do something to something", use this function'
  }, name: 'Execute',
  description: 'Plans and executes function steps to achieve needed results', result: {type: 'widget', name: 'result'}})
   static async smartChainExecutionProvider(@grok.decorators.param({type: 'string'})prompt: string): Promise<DG.Widget | null> {
-    return await smartExecution(prompt, modelName);
+    return await smartExecution(prompt, ModelType.Fast);
   }
 
   @grok.decorators.func({meta: {
     role: 'aiSearchProvider',
-    useWhen: 'if the prompt suggest that the user is looking for a data table result and the prompt resembles a query pattern. for example, "bioactivity data for shigella" or "compounds similar to aspirin" or first 100 chembl compounds. there should be some parts of user prompt that could match parameters in some query, like shigella, aspirin, first 100 etc.'
+    useWhen: 'if the prompt suggest that the user is looking for a data table result and the prompt resembles a query pattern. for example, "bioactivity data for shigella" or "compounds similar to aspirin" or first 100 chembl compounds. there should be some parts of user prompt that could match parameters in some query, like shigella, aspirin, first 100 etc. Always use this function when user wants to get the data without any further processing or calculating'
   }, name: 'Query',
   description: 'Tries to find a query which has the similar pattern as the prompt user entered and executes it', result: {type: 'widget', name: 'result'}})
  static async llmSearchQueryProvider(@grok.decorators.param({type: 'string'})prompt: string): Promise<DG.Widget | null> {
@@ -136,7 +137,7 @@ export class PackageFunctions {
   ): Promise<string> {
     const client = OpenAIClient.getInstance();
     // this is used only here to provide caching
-    return await client.generalPrompt(modelName, 'You are a helpful assistant.', question);
+    return await client.generalPrompt(ModelType.Fast, 'You are a helpful assistant.', question);
   }
 
   @grok.decorators.func({
@@ -146,7 +147,7 @@ export class PackageFunctions {
     }
   })
   static async getExecutionPlan(userGoal: string): Promise<string> {
-    const gptEngine = ChatGPTPromptEngine.getInstance(modelName);
+    const gptEngine = ChatGPTPromptEngine.getInstance(ModelType['Deep Research']);
     const gptAssistant = new ChatGptAssistant(gptEngine);
     const plan: Plan = await gptAssistant.plan(userGoal);
     // Cache only works with scalar values, so we serialize the plan to a string
@@ -159,8 +160,8 @@ export class PackageFunctions {
       'cache.invalidateOn': '0 0 1 * *'
     }
   })
-  static async fuzzyMatch(prompt: string, searchPatterns: string[], descriptions: string[]): Promise<string> {
-    const queryMatchResult = await findBestFunction(prompt, searchPatterns, descriptions);
+  static async findMatchingPatternQuery(prompt: string): Promise<string> {
+    const queryMatchResult = await findBestMatchingQuery(prompt);
     return JSON.stringify(queryMatchResult);
   }
 
@@ -196,6 +197,38 @@ export class PackageFunctions {
   }
 
   @grok.decorators.func({})
+  static async setupVectorStore() {
+    const keyWordInput = ui.input.string('PassKey', {tooltipText: 'Enter the passkey for this action', placeholder: 'Type passkey here'});
+    ui.dialog('Index DG Repository Files to Vector Store')
+      .add(ui.divText('This will upload all files from DG Repository to the vector store for AI search and assistance. This may take up to an hour depending on the number of files in the repository.'))
+      .add(ui.divText('This action will delete the previous files and update all files. make sure to LEAVE THE PLATFORM OPEN until the process is finished.'))
+      .add(ui.divText('Make sure that you have set up the OpenAI API key and vector store ID in the package settings before proceeding.'))
+      .add(keyWordInput)
+      .onOK(async () => {
+        if (keyWordInput.value !== 'DG-index-admin') {
+          grok.shell.error('Incorrect passkey. Operation aborted.');
+          return;
+        }
+        await
+        uploadFilesToVectorStroreOneByOne();
+      })
+      .show();
+  }
+
+  @grok.decorators.func({})
+  static async searchForSomething() {
+    const query = 'anything';
+    const openAIClient = OpenAIClient.getInstance().openai;
+    const f = await openAIClient.vectorStores.search('vs_696fbf9985f8819191dc6f71e04b6593', {query: query, max_num_results: 5, filters: {
+      key: 'firstParentFolder',
+      type: 'eq',
+      value: 'datagrok-celery-task'
+    }});
+    console.log(f.data);
+  }
+
+
+  @grok.decorators.func({})
   static async indexDatabaseSchema() {
     grok.shell.info('Do not touch this function if you are not a developer. :D :D :D');
     return;
@@ -223,20 +256,6 @@ export class PackageFunctions {
         grok.shell.info('Database schema indexed successfully.');
         console.log(res);
         DG.Utils.download(`${connectionsInput.value}_${schemaInput.value}_db_index.json`, JSON.stringify(res, (_, v) => typeof v === 'bigint' ? Number(v) : v, 2));
-      }).show();
-  }
-
-  @grok.decorators.func({})
-  static async embedConnectionQueries() {
-    const connections = await grok.dapi.connections.list();
-    const connectionsInput = ui.input.choice('Connection', {items: connections.map((c) => c.nqName), value: connections[0].nqName, nullable: false});
-    ui.dialog('Embed Connection Queries')
-      .add(connectionsInput)
-      .onOK(async () => {
-        const connection = connections.find((c) => c.nqName === connectionsInput.value)!;
-        const embedRes = await embedConnectionQueries(connection.id);
-        console.log(embedRes);
-        DG.Utils.download(`${connectionsInput.value}_queries_embeddings.json`, JSON.stringify(embedRes, null, 2));
       }).show();
   }
 }

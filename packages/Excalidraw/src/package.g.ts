@@ -7,8 +7,8 @@ export function info() : void {
 }
 
 //name: Excalidraw
-//tags: app
 //output: view v
+//meta.role: app
 //meta.browsePath: Misc
 //meta.icon: images/excal.png
 export function excalidrawApp() {
@@ -16,10 +16,10 @@ export function excalidrawApp() {
 }
 
 //description: Excalidraw viewer
-//tags: fileViewer
 //input: file fileContent 
 //output: view result
 //meta.ext: excalidraw
+//meta.role: fileViewer
 //meta.fileViewer: excalidraw
 export async function excalfileViewer(fileContent: DG.FileInfo) : Promise<any> {
   return await PackageFunctions.excalfileViewer(fileContent);

@@ -11,7 +11,7 @@ import {RecentProjectsWidget} from './widgets/recent-projects-widget';
 import {CommunityWidget} from './widgets/community-widget';
 import {WebWidget} from './widgets/web-widget';
 import {appSearch, connectionsSearch,
-  dockerSearch, filesSearch, functionSearch, groupsSearch,
+  dockerSearch, entitySimilaritySearch, filesSearch, functionSearch, groupsSearch,
   helpSearch, jsSamplesSearch, pdbSearch, pubChemSearch, querySearch,
   scriptsSearch, usersSearch, wikiSearch} from './search/entity-search';
 import {KpiWidget} from './widgets/kpi-widget';
@@ -24,7 +24,7 @@ import {merge} from 'rxjs';
 import {HelpObjectHandler} from './search/help-entity';
 import {ActivityDashboardWidget} from './widgets/activity-dashboard-widget';
 import {DBExplorerEditor} from '@datagrok-libraries/db-explorer/src/editor';
-import {setupDBQueryCellHandler, setupGlobalDBExplorer} from './db-explorer';
+import {setupDBQueryCellHandler, setupGlobalDBExplorer, runEnrichmentFromConfig} from './db-explorer';
 export * from './package.g';
 export const _package = new DG.Package();
 export let _properties: { [propertyName: string]: any };
@@ -137,7 +137,7 @@ export class PackageFunctions {
     meta: {
       'showName': 'false',
     },
-    order: '1',
+    order: '-1',
     name: 'Activity dashboard',
   })
   static activityDashboardWidget(): DG.Widget {
@@ -199,7 +199,9 @@ export class PackageFunctions {
     return DG.Widget.fromRoot(createFuncTableViewWidget(func, inputParams));
   }
 
-  @grok.decorators.func({tags: ['searchProvider']})
+  @grok.decorators.func({
+    meta: {role: 'searchProvider'},
+  })
   static powerPackSearchProvider(): DG.SearchProvider {
     const providers: DG.SearchProvider = {
       'home': [{
@@ -212,7 +214,12 @@ export class PackageFunctions {
       }, {
         name: 'Scripts', description: 'Scripts Search', options: {relatedViewName: 'scripts'},
         search: (s: string) => scriptsSearch(s).then((r) => ({priority: 10, results: r})),
-      }, {
+      },
+      {
+        name: 'Similarity Search', description: 'Entity Similarity Search',
+        search: (s: string) => entitySimilaritySearch(s).then((r) => ({priority: 10, results: r})),
+      },
+      {
         name: 'Samples', description: 'API Samples Search',
         search: (s: string) => jsSamplesSearch(s).then((r) => ({priority: 9, results: r})),
       }, {
@@ -367,6 +374,13 @@ export class PackageFunctions {
       throw new Error('The file you are trying to open is too large. Excel max file size is 80MB.');
     const excelJSService = ExcelJSService.getInstance();
     return (await excelJSService.parse(bytes, sheetName));
+  }
+
+  @grok.decorators.func({
+    meta: {role: 'transform'}
+  })
+  static async runEnrichment(conn: DG.DataConnection, schema: string, table: string, column: string, name: string, df: DG.DataFrame): Promise<void> {
+    return runEnrichmentFromConfig(conn, schema, table, column, name, df);
   }
 }
 

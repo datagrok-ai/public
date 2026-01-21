@@ -180,6 +180,27 @@ This delay occurs because Python runs on the server side, and the interpreter ne
 
 :::
 
+## Interact with Datagrok from Python
+
+For Python scripts, Datagrok provides a pre-initialized global `grok` object. This object is an instance of the `DatagrokClient` from the `datagrok-api` package (see [Python API](https://datagrok.ai/api/py/)), and it's already initialized
+with the current user's token and correct server URL.
+
+This allows you to interact with the platform (download tables, upload files, call other functions) without any setup:
+
+```python
+# Download a specific table from the platform
+df = grok.tables.download("Project:MyTable")
+
+# Call another platform function
+res = grok.functions.call("Package:MyFunction", {"a": 1})
+```
+
+:::note
+
+You don't need to import `DatagrokClient` or initialize it manually; `grok` is available in the global scope of every Python script.
+
+:::
+
 ## Customize the input UI
 
 You can add custom captions for your inputs and default values. To do this,

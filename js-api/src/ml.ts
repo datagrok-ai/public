@@ -16,7 +16,6 @@ export namespace ml {
    * @param {DataFrame} table - Data table.
    * @param {object} columnNamesMap - Columns map.
    * @param {boolean} showProgress - Maximum number of results to return.
-   * @returns {Promise<DataFrame>}
    * */
   export async function applyModel(name: string, table: DataFrame, columnNamesMap: object = {}, showProgress: boolean = true): Promise<DataFrame> {
     await api.grok_ML_ApplyModel(name, table.dart, columnNamesMap, showProgress);
@@ -30,7 +29,6 @@ export namespace ml {
    * @param {string[]} impute - List of column names to impute missing values.
    * @param {string[]} data - List of column names containing data.
    * @param {number} nearestNeighbours - Number of nearest neighbours.
-   * @returns {Promise<DataFrame>}
    * */
   export async function missingValuesImputation(table: DataFrame, impute: string[], data: string[], nearestNeighbours: number): Promise<DataFrame> {
     await api.grok_ML_MissingValuesImputation(table.dart, impute, data, nearestNeighbours);
@@ -43,7 +41,6 @@ export namespace ml {
    * @param {DataFrame} table - Data table.
    * @param {string[]} features - List of column names containing features.
    * @param {number} clusters - Number of clusters.
-   * @returns {Promise<DataFrame>}
    * */
   export async function cluster(table: DataFrame, features: string[], clusters: number): Promise<DataFrame> {
     await api.grok_ML_Cluster(table.dart, features, clusters);

@@ -3,9 +3,9 @@
 #help-url: https://datagrok.ai/help/domains/chem/functions/tsne
 #language: python
 #sample: chem/smiles_coordinates.csv
-#tags: demo, chem, rdkit
+#meta.domain: chem
 #input: dataframe data [Input data table]
-#input: column smiles {type:categorical, semType: Molecule} [Molecules, in SMILES format]
+#input: column smiles {type:categorical; semType: Molecule} [Molecules, in SMILES format]
 #input: int components = 2 [Number of components]
 #input: int minClusterSize = 3 [Minimum cluster size]
 #output: graphics spanningTree

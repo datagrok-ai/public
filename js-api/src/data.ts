@@ -15,16 +15,12 @@ declare let DG: any;
 /** Provides convenient file shares access **/
 export class Files {
 
-  /** Reads a table from file. If file contains more than one table, reads the first one.
-   * @param {string} path
-   * @returns {Promise<DataFrame>}*/
+  /** Reads a table from file. If file contains more than one table, reads the first one. */
   openTable(path: string): Promise<DataFrame> {
     return api.grok_Files_OpenTable(path);
   }
 
-  /** Reads all tables from file
-   * @param {string} path
-   * @returns {Promise<Array<DataFrame>>}*/
+  /** Reads all tables from file */
   openTables(path: string): Promise<Array<DataFrame>> {
     return api.grok_Files_OpenTables(path);
   }
@@ -161,7 +157,6 @@ export class Data {
    * Parses the CSV string.
    * @param {string} csv - The content of the comma-separated values file.
    * @param {CsvImportOptions} options
-   * @returns {DataFrame}
    * */
   parseCsv(csv: string, options?: CsvImportOptions): DataFrame {
     return toJs(api.grok_ParseCsv(csv, options));
@@ -169,10 +164,7 @@ export class Data {
 
   /**
    * Loads table from the specified URL.
-   * Sample: {@link https://public.datagrok.ai/js/samples/data-access/load-csv}
-   * @param {string} csvUrl
-   * @returns {Promise<DataFrame>}
-   * */
+   * Sample: {@link https://public.datagrok.ai/js/samples/data-access/load-csv} */
   loadTable(csvUrl: string): Promise<DataFrame> {
     return api.grok_LoadDataFrame(csvUrl);
   }
@@ -211,7 +203,6 @@ export class Data {
    * @param {string[]} valueColumns2 - column names to copy from the second table
    * @param {JoinType} joinType - inner, outer, left, or right. See [DG.JOIN_TYPE]
    * @param {boolean} inPlace - merges content in-place into the source table
-   * @returns {DataFrame}
    * Sample: {@link https://public.datagrok.ai/js/samples/data-frame/join-link/join-tables}
    * */
   joinTables(t1: DataFrame, t2: DataFrame, keyColumns1: string[], keyColumns2: string[], valueColumns1: string[] | null = null, valueColumns2: string[] | null = null, joinType: JoinType = JOIN_TYPE.INNER, inPlace: boolean = false): DataFrame {
@@ -222,7 +213,6 @@ export class Data {
    * Opens a table by its id.
    * Sample: {@link https://public.datagrok.ai/js/samples/data-access/open-table-by-id}
    * @param {string} id - table GUID
-   * @returns {Promise<DataFrame>}
    */
   openTable(id: string): Promise<DataFrame> {
     return api.grok_OpenTable(id);
@@ -291,7 +281,6 @@ export class Detector {
    * @param {number} max - number of checks to make
    * @param {number} ratio - [0-1] range: minimum allowed number of the success/total checks.
    * @param minStringLength - values shorter than that are not considered checks
-   * @returns {boolean}
    * */
   static sampleCategories(column: Column, check: StringPredicate, min: number = 5, max: number = 10, ratio: number = 1, minStringLength: number = 1): boolean {
     if (column.type !== TYPE.STRING)

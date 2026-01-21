@@ -3,12 +3,15 @@
 #help-url: https://datagrok.ai/help/domains/chem/functions/butina-cluster
 #language: python
 #sample: chem/smiles_coordinates.csv
-#tags: demo, chem, rdkit
+#meta.domain: chem
+#top-menu: Chem | Analyze | Butina Cluster...
 #input: dataframe data [Input data table]
 #input: column molecules {semType: Molecule} [Molecules, in SMILES and MolBlock format]
-#output: dataframe clusters [Clusters]
+#input: double distanceCutoff = 0.4 [Tanimoto distance cutoff for clustering (0-1)]
+#output: dataframe clusters {action:join(data)} [Clusters]
 
 import numpy as np
+import pandas as pd
 from rdkit import Chem
 from rdkit.Chem import AllChem
 
@@ -31,13 +34,12 @@ for m in molecules:
   mols.append(Chem.Mol()) if mol is None else mols.append(mol)
 
 fingerprints = [AllChem.GetMorganFingerprintAsBitVect(mol, 2, 1024) for mol in mols]
-groups = cluster_fingerprints(fingerprints, cutoff=0.4)
+groups = cluster_fingerprints(fingerprints, cutoff=distanceCutoff)
 
 clusters = np.zeros(len(mols), dtype=np.int32)
 for n in range(0, len(groups)):
     idxs = list(groups[n])
     clusters[idxs] = np.ones(len(idxs)) * n
 
-# Convert to Pandas DataFrame
-clustersDf = pd.DataFrame(clusters, columns=['clusters'])
-clusters = pd.concat([data, clustersDf], axis=1)
+# Convert to Pandas DataFrame, make sure the cluster column is categorical
+clusters = pd.DataFrame({'cluster (Butina)': clusters})

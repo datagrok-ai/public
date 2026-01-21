@@ -29,7 +29,6 @@ import {createLines} from './mmp-lines';
 import {MmpPairedGrids} from './mmp-grids';
 import {PackageFunctions} from '../../../package';
 import {getZoomCoordinates} from '../../../utils/ui-utils';
-import {awaitCheck} from '@datagrok-libraries/utils/src/test';
 
 export type MmpInput = {
   table: DG.DataFrame,
@@ -122,7 +121,6 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
   tp: DG.Viewer | null = null;
   activityMeanNames: string[] = [];
   fragmentsDiv = ui.div();
-  defaultFragmentsFiltersStates: {[key: number]: any} = {};
   filterStatesUpdatedCondition: () => boolean = () => true;
 
   spCorrDiv = ui.divV([]);
@@ -170,7 +168,8 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
     super.onPropertyChanged(property);
     if (property?.name === 'totalData')
       this.totalDataUpdated = true;
-    if (property?.name === 'molecules' && property.get(this) !== '') { //for backward compatibility after changing molecules property to moleculesColumnName property
+    //for backward compatibility after changing molecules property to moleculesColumnName property
+    if (property?.name === 'molecules' && property.get(this) !== '') {
       this.moleculesColumnName = property.get(this);
       this.molecules = '';
       return;
@@ -503,9 +502,6 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
       this.tp.root,
     ], {style: {width: '100%', height: '100%'}});
 
-    if (!this.pairedGrids!.parentFragmentsFilter.anyFalse)
-      this.updateTrellisFiltersWithDefaultValues(tpDiv);
-
     this.tp.onEvent('d4-viewer-rendered').subscribe(() => {
       this.updateTrellisLegend(trellisLegend, this.tp!.getOptions().look.innerViewerLook.columnNames);
       this.createSortIcon(trellisSortState, TrellisAxis.From, this.tp!, 'chem-mmpa-fragments-sort-icon-x-axis');
@@ -577,30 +573,6 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
       ui.tooltip.bind(div, () => div.scrollWidth > div.clientWidth ? selectedActivities[i] : null);
       trellisLegend.append(div);
     }
-  }
-
-  updateTrellisFiltersWithDefaultValues(tpDiv: HTMLDivElement) {
-    const defaultFiltersStates = Object.keys(this.defaultFragmentsFiltersStates);
-    if (defaultFiltersStates.length) {
-      const lastFilterIdx = defaultFiltersStates[defaultFiltersStates.length - 1];
-      try {
-        awaitCheck(() => this.pairedGrids!.filters!.filters.length >= parseInt(lastFilterIdx) - 1,
-          '', 10000).then(async () => {
-          ui.setUpdateIndicator(tpDiv, true, 'Applying filters');
-          for (const key of defaultFiltersStates) {
-            this.pairedGrids!.filters!
-              .updateOrAdd(this.defaultFragmentsFiltersStates[key as any], key === lastFilterIdx);
-          }
-          try {
-            await awaitCheck(this.filterStatesUpdatedCondition, '', 20000);
-          } catch (e) {
-            grok.shell.error('Default filters haven\'t been applyed');
-          } finally {
-            ui.setUpdateIndicator(tpDiv, false);
-          }
-        });
-      } catch (e) {};
-    };
   }
 
   getCliffsTab(): HTMLElement {

@@ -1,5 +1,9 @@
 # NMRium changelog
 
+## 1.3.0 (2025-07-25)
+
+Update dependencies
+
 ## 1.1.0 (2025-03-03)
 
 Content dependent view for opening NMRium

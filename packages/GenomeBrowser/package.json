@@ -1,8 +1,8 @@
 {
   "name": "@datagrok/genome-browser",
   "friendlyName": "GenomeBrowser",
-  "version": "1.0.0",
-  "description": "",
+  "version": "1.0.1",
+  "description": "Provides visualization of genomic data along with its annotations",
   "author": {
     "name": "Stanislav Savenko",
     "email": "ssavenko@datagrok.ai"
@@ -95,7 +95,7 @@
   "repository": {
     "type": "git",
     "url": "https://github.com/datagrok-ai/public.git",
-    "directory": "packages/GenomeFileBrowse"
+    "directory": "packages/GenomeBrowser"
   },
   "sideEffects": [
     "rxjs/operators"

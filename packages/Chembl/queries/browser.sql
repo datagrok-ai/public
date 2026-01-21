@@ -1,5 +1,6 @@
 --name: _cbAllChemblStructures
 --friendlyName: Browse | All ChEMBL structures
+--description: Returns a limited set of all ChEMBL compound structures with canonical SMILES and molregno identifiers.
 --connection: Chembl
 select
   canonical_smiles, molregno
@@ -10,6 +11,7 @@ limit 1000
 
 --name: _cbFindByMolregno
 --friendlyName: Misc | Find by Molregno
+--description: Retrieves detailed compound information by molregno including structure, names, properties, and synonyms.
 --connection: Chembl
 --input: int molregno = 1234
 select
@@ -33,6 +35,7 @@ where
 
 --name: _cbChemblBrowserQuery
 --friendlyName: Browse | Summary
+--description: Searches ChEMBL compounds by multiple filters including substructure, molecule type, name, max phase, and Lipinski violations.
 --connection: Chembl
 --input: string substructure
 --input: string molecule_type

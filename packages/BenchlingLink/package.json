@@ -1,8 +1,12 @@
 {
-  "name": "benchlinglink",
+  "name": "@datagrok/benchlinglink",
   "friendlyName": "BenchlingLink",
+  "author": {
+    "name": "Maria Dolotova",
+    "email": "mdolotova@datagrok.ai"
+  },
   "version": "0.0.1",
-  "description": "",
+  "description": "Enables seamless interaction with the Benchling platform",
   "dependencies": {
     "datagrok-api": "^1.26.0",
     "cash-dom": "^8.1.5",

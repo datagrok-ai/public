@@ -8,22 +8,22 @@ export function openModelFromFuncall(funccall: DG.FuncCall) : void {
 
 //name: OutliersSelectionViewer
 //description: Creates an outliers selection viewer
-//tags: viewer
 //output: viewer result
+//meta.role: viewer
 export function OutliersSelection() {
   return PackageFunctions.OutliersSelection();
 }
 
-//tags: editor
 //input: funccall call 
 //output: view result
+//meta.role: editor
 export function RichFunctionViewEditor(call: DG.FuncCall) {
   return PackageFunctions.RichFunctionViewEditor(call);
 }
 
-//tags: editor
 //input: funccall call 
 //output: view result
+//meta.role: editor
 export function PipelineStepEditor(call: DG.FuncCall) {
   return PackageFunctions.PipelineStepEditor(call);
 }
@@ -35,14 +35,14 @@ export async function renderPanel(func: any) : Promise<any> {
   return await PackageFunctions.renderPanel(func);
 }
 
-//tags: init
+//meta.role: init
 export function init() : void {
   PackageFunctions.init();
 }
 
 //name: Model Hub
-//tags: app
 //output: view result
+//meta.role: app
 //meta.browsePath: Compute
 export function modelCatalog() {
   return PackageFunctions.modelCatalog();

@@ -96,4 +96,9 @@ export const TSVAL = 'TSVAL';
 //cl
 export const CLORRES = 'CLORRES';
 
+export const HAS_VALIDATION_ERRORS_COL = 'HasValidationErrors';
+export const VIOLATED_RULES_COL = 'ViolatedRules';
+export const COL_HAS_ERRORS_POSTFIX = '_hasErrors';
+export const ERRORS_POSTFIX = '_errors';
+
 

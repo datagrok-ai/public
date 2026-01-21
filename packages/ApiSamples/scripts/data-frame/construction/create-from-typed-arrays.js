@@ -1,7 +1,8 @@
-//tags: DataFrame, Column, construction
-// This is the fastest way of creating numerical columns
-// The following example creates a table with 100 million rows and three columns
-// See also: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Typed_arrays
+/**
+ * This is the fastest way of creating numerical columns
+ * The following example creates a table with 100 million rows and three columns
+ * See also: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Typed_arrays
+ */
 
 let len = 100000000;
 let ints = new Int32Array(len);

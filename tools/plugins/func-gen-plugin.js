@@ -15,6 +15,8 @@ const {
   inputOptionsNames,
 } = require('../bin/utils/func-generation');
 
+const {toCamelCase} = require('../bin/commands/migrate');
+
 const {api} = require('../bin/commands/api');
 
 const baseImport = 'import * as DG from \'datagrok-api/dg\';\n';
@@ -132,13 +134,17 @@ class FuncGeneratorPlugin {
       ...(reservedDecorators[name]['metadata']['tags'] ?? []),
       ...(decoratorOptions.get('tags') ?? []),
     ]);
+    
+    const role = reservedDecorators[name]['metadata']['role'];
+    if (role?.length > 0) {
+      const camelRole = toCamelCase(role);
 
-    if ((reservedDecorators[name]['metadata']['role']?.length > 0) ) {
-      if (!decoratorOptions.get('meta'))
-        decoratorOptions.set('meta', {role: reservedDecorators[name]['metadata']['role']});
-      else if (!decoratorOptions.get('meta')['role']) 
-        decoratorOptions.get('meta')['role'] = reservedDecorators[name]['metadata']['role'];
-      delete reservedDecorators[name]['metadata']['role'];
+      if (!decoratorOptions.has('meta')) 
+        decoratorOptions.set('meta', {role: camelRole});
+      else {
+        const meta = decoratorOptions.get('meta');
+        meta['role'] = meta['role'] ? `${meta['role']},${camelRole}` : camelRole;
+      }
     }
 
     const functionParams =
@@ -150,6 +156,8 @@ class FuncGeneratorPlugin {
       node?.type === 'MethodDefinition' ? className : identifierName,
       modifyImportPath(path.dirname(this.options.outputPath), file),
     );
+    const metadataCopy = {...reservedDecorators[name]['metadata']};
+    delete metadataCopy.role;
     
     imports.add(importString);
     const funcName = `${
@@ -157,7 +165,7 @@ class FuncGeneratorPlugin {
     }${identifierName}`;
     const funcAnnotaionOptions = {
       ...{name: funcName},
-      ...reservedDecorators[name]['metadata'],
+      ...metadataCopy,
       ...(annotationByReturnObj ?
         {outputs: annotationByReturnObj ?? []} :
         {}),

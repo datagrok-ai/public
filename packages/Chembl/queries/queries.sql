@@ -1,11 +1,13 @@
 --name: _protein classification
 --friendlyName: Misc | Protein Classification
+--description: Returns the complete protein classification hierarchy with preferred names and definitions.
 --connection: Chembl
 select protein_class_id, parent_id, pref_name, definition, class_level from protein_classification
 --end
 
 --name: _compounds which are selective to one target over a second target
 --friendlyName: Browse | Compounds selective to one target over a second target
+--description: Identifies compounds with selective activity, showing high potency for one target and low potency for another target.
 --connection: Chembl
 --input: string selectiveFor = "CHEMBL301"
 --input: string over = "CHEMBL4036"
@@ -38,6 +40,7 @@ AND td.chembl_id              = @over;
 
 --name: compound activity details for all targets containing @protein
 --friendlyName: Browse | Compound activity details for all targets containing @protein
+--description: Retrieves compound bioactivity data for all targets containing a specified protein accession identifier.
 --connection: Chembl
 --input: string protein = "P08172"
 SELECT DISTINCT
@@ -68,6 +71,7 @@ FROM compound_structures s
 
 --name: unichemUnitTestQuery
 --friendlyName: Misc | Unichem Test
+--description: Test query for Unichem database connectivity and data availability.
 --connection: Unichem
 --tags: unit-test
 --meta.testExpected: 1
@@ -77,7 +81,8 @@ select count(from_id) from src10src11
 
 --name: FracClassification
 --friendlyName: Search | FRAC classification
---connection: Chembl 
+--description: Searches compound structures by FRAC (Fungicide Resistance Action Committee) classification hierarchy levels.
+--connection: Chembl
 --input: string level1 = 'MITOSIS AND CELL DIVISION' {choices: Query("SELECT DISTINCT level1_description FROM frac_classification")}
 --input: string level2 {nullable: true; choices: Query("SELECT DISTINCT level2_description FROM frac_classification where level1_description = @level1")}
 --input: string level3 {nullable: true; choices: Query("SELECT DISTINCT level3_description FROM frac_classification where level2_description = @level2")}
@@ -98,7 +103,8 @@ WHERE
 
 --name: QueryBySubstructure
 --friendlyName: Search | By substructure, country and action type
---connection: Chembl 
+--description: Complex search combining molecular similarity, drug mechanism action type, and company research location.
+--connection: Chembl
 --meta.batchMode: true
 --input: string substructure = 'c1ccccc1' {semType: Molecule}
 --input: string threshold = '0.1' 
@@ -128,7 +134,8 @@ AND r.company IN (
 
 --name: ByChemblIds
 --friendlyName: Search | By ChEMBL ids
---connection: Chembl 
+--description: Retrieves molecule dictionary information for a list of ChEMBL identifiers.
+--connection: Chembl
 --input: list<string> chemblIds = ['CHEMBL1185', 'CHEMBL1186'] {inputType: TextArea}
 SELECT *
 FROM molecule_dictionary
@@ -138,6 +145,7 @@ WHERE chembl_id IN (
 --end
 
 --name: MolregnoInfo
+--description: Retrieves compound SMILES and research company country information for a given molregno identifier.
 --connection: Chembl
 --tags: panel, widget
 --input: int molregno {semType: molregno}
@@ -153,6 +161,7 @@ WHERE s.molregno = CAST(@molregno as INTEGER)
 --end
 
 --name: ChemblInfo
+--description: Retrieves compound SMILES and research company country information for a given ChEMBL identifier.
 --connection: Chembl
 --tags: panel, widget
 --input: string chemblId {semType: CHEMBL_ID}
@@ -172,7 +181,8 @@ WHERE md.chembl_id = @chemblId
 
 --name: FracClassificationWithSubstructure
 --friendlyName: Search | FRAC classification with substructure search
---connection: Chembl 
+--description: Combines FRAC classification hierarchy search with molecular substructure matching.
+--connection: Chembl
 --input: string level1 = 'STEROL BIOSYNTHESIS IN MEMBRANES' {choices: Query("SELECT DISTINCT level1_description FROM frac_classification")}
 --input: string level2 {nullable: true; choices: Query("SELECT DISTINCT level2_description FROM frac_classification where level1_description = @level1")}
 --input: string level3 {nullable: true; choices: Query("SELECT DISTINCT level3_description FROM frac_classification where level2_description = @level2")}

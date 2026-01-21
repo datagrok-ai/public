@@ -1,10 +1,11 @@
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
-import * as ui from 'datagrok-api/ui';
 import {scripts} from '../package-api';
 import {ClinStudyConfig} from './types';
-import { handleMouseMoveOverErrorCell, setupValidationErrorColumns, setupValidationErrorIndicators } from './views-validation-utils';
-import { Subscription } from 'rxjs';
+import {ACT_TRT_ARM, AGE, AGETXT, COL_HAS_ERRORS_POSTFIX, DEATH_DATE, ERRORS_POSTFIX,
+  ETHNIC, HAS_VALIDATION_ERRORS_COL, PLANNED_TRT_ARM, RACE, SEX, SPECIES, SUBJ_REF_ENDT,
+  SUBJ_REF_STDT, SUBJECT_ID, VIOLATED_RULES_COL} from '../constants/columns-constants';
+import {studies} from './app-utils';
 
 export function updateDivInnerHTML(div: HTMLElement, content: any) {
   div.innerHTML = '';
@@ -69,22 +70,46 @@ export function studyConfigToMap(studyConfig: ClinStudyConfig): {[key: string]: 
   return map;
 }
 
-export function addDomainAsTableView(df: DG.DataFrame) {
-  const tableView = grok.shell.addTableView(df);
-  setupValidationErrorColumns(df);
-  let errorSubs: Subscription[] = [];
-  const ribbons = tableView.getRibbonPanels();
-  const showErrors = ui.input.bool('Show validation errors', {
-    value: false,
-    onValueChanged: () => {
-      if (!showErrors.value) {
-        errorSubs.forEach((sub) => sub.unsubscribe());
-        tableView.grid.overlay.removeEventListener('mousemove', handleMouseMoveOverErrorCell);
-      } else
-        errorSubs = setupValidationErrorIndicators(tableView.grid, df);
-      tableView.grid.invalidate();
-    },
-  });
-  ribbons.push([showErrors.root]);
-  tableView.setRibbonPanels(ribbons);
+export function hideValidationColumns(tv: DG.TableView) {
+  const colNames = tv.dataFrame.columns.names();
+  for (const colName of colNames) {
+    if (colName === VIOLATED_RULES_COL || colName.endsWith(COL_HAS_ERRORS_POSTFIX) || colName.endsWith(ERRORS_POSTFIX))
+      tv.grid.col(colName).visible = false;
+  }
+}
+
+export function addDomainFilters(tv: DG.TableView, studyId: string): DG.FilterGroup | null {
+  const dmDomainColNames = studies[studyId].domains.dm.columns.names();
+  const firstColumnsNames = [SUBJ_REF_ENDT, SUBJ_REF_STDT, DEATH_DATE, SPECIES, ETHNIC, RACE, SEX,
+    AGETXT, AGE, PLANNED_TRT_ARM, ACT_TRT_ARM, SUBJECT_ID];
+  const otherCols = dmDomainColNames
+    .filter((it) => !firstColumnsNames.includes(it) && it !== HAS_VALIDATION_ERRORS_COL);
+  const filterCols: {colName: string, filterType: DG.FILTER_TYPE}[] = [];
+  const addFilterColNames = (columnNamesList: string[]) => {
+    for (const colName of columnNamesList) {
+      const col = studies[studyId].domains.dm.col(colName);
+      if (studies[studyId].domains.dm.col(colName)) {
+        //keep only filters containing more than one category
+        if (col.type === DG.TYPE.STRING && col.categories.length === 1)
+          continue;
+        const filterType = [DG.TYPE.INT, DG.TYPE.FLOAT].includes(col.type as DG.TYPE) ? DG.FILTER_TYPE.HISTOGRAM :
+          col.type === DG.TYPE.BOOL ? DG.FILTER_TYPE.BOOL_COLUMNS : DG.FILTER_TYPE.CATEGORICAL;
+        filterCols.push({colName, filterType});
+      }
+    }
+  };
+  addFilterColNames(firstColumnsNames);
+  addFilterColNames(otherCols);
+  const fg = tv.getFiltersGroup({createDefaultFilters: false});
+  if (filterCols.length) {
+    for (const filter of filterCols) {
+      fg.updateOrAdd({
+        type: filter.filterType,
+        column: filter.colName,
+        columnName: filter.colName,
+      });
+    }
+    return fg;
+  }
+  return null;
 }

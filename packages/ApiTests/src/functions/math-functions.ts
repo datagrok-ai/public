@@ -1,4 +1,4 @@
-import {category, test} from '@datagrok-libraries/utils/src/test';
+import {category, test} from '@datagrok-libraries/test/src/test';
 import {check, checkRandomInt} from './utils';
 
 

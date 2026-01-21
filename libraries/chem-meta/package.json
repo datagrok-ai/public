@@ -1,10 +1,14 @@
 {
   "name": "@datagrok-libraries/chem-meta",
+  "author": {
+    "name": "Maria Dolotova",
+    "email": "mdolotova@datagrok.ai"
+  },
   "publishConfig": {
     "access": "public"
   },
   "friendlyName": "Datagrok chem-meta library",
-  "version": "1.2.9",
+  "version": "1.2.10",
   "description": "RDKit JS API, utils for molfiles parsing",
   "dependencies": {
     "wu": "^2.1.0"

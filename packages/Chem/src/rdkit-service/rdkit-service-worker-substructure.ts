@@ -14,6 +14,8 @@ export enum MolNotation {
   MolBlock = 'molblock', // molblock V2000
   V3KMolBlock = 'v3Kmolblock', // molblock V3000
   Unknown = 'unknown',
+  CxSmiles = 'cxsmiles', // extended smiles
+  CxSmarts = 'cxsmarts', // extended smarts
 }
 
 export interface IRGroupAnalysisResult {
@@ -255,6 +257,12 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
             break;
           case MolNotation.Smarts:
             results[i] = rdMol.get_smarts();
+            break;
+          case MolNotation.CxSmiles:
+            results[i] = rdMol.get_cxsmiles();
+            break;
+          case MolNotation.CxSmarts:
+            results[i] = rdMol.get_cxsmarts();
             break;
           default:
             results[i] = 'Unknown notation: ' + targetNotation;

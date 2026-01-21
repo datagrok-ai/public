@@ -54,8 +54,4 @@ export namespace funcs {
   export async function addAggrStatisticsColumn(table: DG.DataFrame , colName: string , propName: string , aggrType: string ): Promise<DG.Column> {
     return await grok.functions.call('Curves:AddAggrStatisticsColumn', { table, colName, propName, aggrType });
   }
-
-  export async function rawPNGRenderer(): Promise<any> {
-    return await grok.functions.call('Curves:RawPNGRenderer', {});
-  }
 }

@@ -2,7 +2,7 @@
 #description: Generates the new dataset based on the given structure. Generated table has a column named 'mutations' with mutated structures.
 #help-url: https://datagrok.ai/help/domains/chem/functions/mutate
 #language: python
-#tags: demo, chem, rdkit
+#meta.domain: chem
 #top-menu: Chem | Transform | Mutate...
 #input: string molecule = "CN1C(CC(O)C1=O)C1=CN=CC=C1" {semType: Molecule}
 #input: int steps = 1 [Number of mutation steps]
