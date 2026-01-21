@@ -1,4 +1,5 @@
 import * as grok from 'datagrok-api/grok';
+import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 
 import {u2} from '@datagrok-libraries/utils/src/u2';
@@ -9,13 +10,16 @@ import {MpoProfileInfo, loadMpoProfiles, deleteMpoProfile} from './utils';
 import {MpoProfileCreateView} from './mpo-create-profile';
 
 export class MpoProfilesView {
-  readonly name = 'MPO Profiles';
-  readonly root = ui.divV([]);
+  name = 'MPO Profiles';
+  root = ui.divV([]);
+  view: DG.View;
 
   private tableContainer = ui.divV([]);
   private profiles: MpoProfileInfo[] = [];
 
   constructor() {
+    this.view = DG.View.fromRoot(this.root);
+    this.view.name = this.name;
     grok.shell.windows.showHelp = false;
   }
 
@@ -158,5 +162,10 @@ export class MpoProfilesView {
         }
       })
       .show();
+  }
+
+  async show() {
+    await this.render();
+    grok.shell.addPreview(this.view);
   }
 }

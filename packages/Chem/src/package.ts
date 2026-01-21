@@ -2577,9 +2577,7 @@ export class PackageFunctions {
   static async mpoProfilesApp(): Promise<DG.View> {
     const infoView = new MpoProfilesView();
     await infoView.render();
-    const view = DG.View.fromRoot(infoView.root);
-    view.name = 'MPO profiles';
-    return view;
+    return infoView.view;
   }
 
   @grok.decorators.func()
@@ -2616,10 +2614,10 @@ export class PackageFunctions {
     const suitableProfiles = await findSuitableProfiles(dataFrame, profiles);
 
     if (suitableProfiles.length === 0) {
-      container.appendChild(ui.divText('No suitable profiles available at the moment.'));
-      const createButton = ui.button('Create Profile', () => {
-        const view = new MpoProfileCreateView();
-        grok.shell.v = grok.shell.addPreview(view.view);
+      container.appendChild(ui.divText('No suitable profiles available.'));
+      const createButton = ui.button('Manage Profiles', async () => {
+        const profilesView = new MpoProfilesView();
+        await profilesView.show();
       });
       container.appendChild(createButton);
 

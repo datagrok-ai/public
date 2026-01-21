@@ -803,8 +803,8 @@ export namespace funcs {
     return await grok.functions.call('Chem:Mpo', {});
   }
 
-  export async function mpoTransformFunction(df: DG.DataFrame , currentProperties: any ): Promise<any> {
-    return await grok.functions.call('Chem:MpoTransformFunction', { df, currentProperties });
+  export async function mpoTransformFunction(df: DG.DataFrame , profileName: string , aggregation: any , currentProperties: any ): Promise<any> {
+    return await grok.functions.call('Chem:MpoTransformFunction', { df, profileName, aggregation, currentProperties });
   }
 
   export async function mpoProfileEditor(file: DG.FileInfo ): Promise<DG.View> {
@@ -828,5 +828,17 @@ export namespace funcs {
   */
   export async function biochemPropsWidget(): Promise<void> {
     return await grok.functions.call('Chem:BiochemPropsWidget', {});
+  }
+
+  export async function mpoProfilesApp(): Promise<DG.View> {
+    return await grok.functions.call('Chem:MpoProfilesApp', {});
+  }
+
+  export async function mpoProfilesAppTreeBrowser(treeNode: any , browseView: DG.View ): Promise<void> {
+    return await grok.functions.call('Chem:MpoProfilesAppTreeBrowser', { treeNode, browseView });
+  }
+
+  export async function mpoWidget(smiles: any ): Promise<any> {
+    return await grok.functions.call('Chem:MpoWidget', { smiles });
   }
 }
