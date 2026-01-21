@@ -6,7 +6,7 @@ import * as DG from 'datagrok-api/dg';
 /// [x, y] pairs are sorted by x in ascending order
 export type DesirabilityLine = number[][];
 
-export type DesirabilityMode = 'freeform' | 'gaussian' | 'sigmoid';
+export type DesirabilityMode = 'freeform' | 'gaussian' | 'sigmoid' | 'categorical';
 
 /// A desirability line with its weight
 export type PropertyDesirability = {
@@ -26,6 +26,8 @@ export type PropertyDesirability = {
   k?: number;
 
   freeformLine?: DesirabilityLine;
+
+  categories?: { name: string; weight: number }[];
 }
 
 /// A map of desirability lines with their weights
@@ -63,6 +65,16 @@ export function desirabilityScore(x: number, desirabilityLine: DesirabilityLine)
   return 0;
 }
 
+export function categoricalDesirabilityScore(
+  value: any,
+  prop: PropertyDesirability,
+): number {
+  const categories = prop.categories ?? [];
+  const found = categories.find((c) => c.name === value);
+  return found ? found.weight : 0;
+}
+
+
 /** Calculates the multi parameter optimization score, 0-100, 100 is the maximum */
 export function mpo(
   dataFrame: DG.DataFrame,
@@ -92,7 +104,11 @@ export function mpo(
     for (let j = 0; j < columns.length; j++) {
       const desirability = desirabilityTemplates[j];
       const value = columns[j].get(i);
-      scores[j] = desirabilityScore(value, desirability.line);
+      if (desirability.mode === 'categorical')
+        scores[j] = categoricalDesirabilityScore(value, desirability);
+      else
+        scores[j] = desirabilityScore(value, desirability.line);
+      // scores[j] = desirabilityScore(value, desirability.line);
       weights[j] = desirability.weight;
     }
 

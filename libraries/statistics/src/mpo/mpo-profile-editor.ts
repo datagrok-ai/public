@@ -7,6 +7,7 @@ import {MpoDesirabilityLineEditor} from './mpo-line-editor';
 import {Subject} from 'rxjs';
 
 import '../../css/styles.css';
+import {MpoCategoricalEditor} from './mpo-categorical-editor';
 
 export const MPO_SCORE_CHANGED_EVENT = 'grok-mpo-score-changed';
 
@@ -63,22 +64,30 @@ export class MpoProfileEditor {
     this.root.append(header, ui.divV(rows));
   }
 
+  private buildEditor(prop: PropertyDesirability): any {
+    if (prop.mode === 'categorical')
+      return new MpoCategoricalEditor(prop);
+    return new MpoDesirabilityLineEditor(prop, 300, 80);
+  }
+
+
   private buildRow(propertyName: string, prop: PropertyDesirability): HTMLElement {
     const row = ui.divH([], 'statistics-mpo-row');
 
-    const lineEditor = new MpoDesirabilityLineEditor(prop, 300, 80);
-    lineEditor.onChanged.subscribe(() => this.notifyChanged());
+    // const lineEditor = new MpoDesirabilityLineEditor(prop, 300, 80);
+    const editor = this.buildEditor(prop);
+    editor.onChanged.subscribe(() => this.notifyChanged());
 
     const propertyCell = this.buildPropertyCell(propertyName);
-    const weightCell = this.buildWeightAndRangeCell(propertyName, prop, lineEditor);
-    const columnCell = this.buildColumnSelector(propertyName, lineEditor);
-    const modeControl = this.design ? this.buildModeGear(propertyName, prop, lineEditor) : null;
+    const weightCell = this.buildWeightAndRangeCell(propertyName, prop, editor);
+    const columnCell = this.buildColumnSelector(propertyName, editor);
+    const modeControl = this.design ? this.buildModeGear(propertyName, prop, editor) : null;
     const controls = this.design ? this.buildRowControls(row, propertyName) : null;
 
     row.append(
       ui.divV([propertyCell, columnCell].filter(Boolean)),
       weightCell,
-      ui.divV([modeControl, lineEditor.root].filter(Boolean)),
+      ui.divV([modeControl, editor.root].filter(Boolean)),
     );
 
     if (controls)
@@ -234,6 +243,16 @@ export class MpoProfileEditor {
     this.notifyChanged();
   }
 
+  private ensureCategories(prop: PropertyDesirability, values: any[]) {
+    const unique = Array.from(new Set(values)).map((v) => String(v));
+    const existing = prop.categories ?? [];
+
+    prop.categories = unique.map((name) => ({
+      name,
+      weight: existing.find((c) => c.name === name)?.weight ?? 0.5,
+    }));
+  }
+
   private renameProperty(oldName: string, newName: string): void {
     if (!this.profile || this.profile.properties[newName])
       return;
@@ -289,7 +308,7 @@ export class MpoProfileEditor {
     const dialog = ui.dialog({title: `Desirability Settings: ${propertyName}`});
 
     const modeChoice = ui.input.choice('Mode', {
-      items: ['freeform', 'gaussian', 'sigmoid'],
+      items: ['freeform', 'gaussian', 'sigmoid', 'categorical'],
       value: prop.mode ?? 'freeform',
       onValueChanged: (v) => {
         this.updateProperty(propertyName, (p) => {
