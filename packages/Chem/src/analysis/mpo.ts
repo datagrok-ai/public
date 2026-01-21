@@ -43,7 +43,7 @@ export class MpoProfileDialog {
       onValueChanged: async (value) => await this.loadProfile(value),
     });
 
-    this.designModeInput = ui.input.bool('Design mode', {
+    this.designModeInput = ui.input.toggle('Design mode', {
       value: false,
       onValueChanged: (v) => this.mpoProfileEditor.setDesignMode(!!v),
     });
@@ -152,8 +152,8 @@ export class MpoProfileDialog {
   private getMpoControls(): HTMLElement {
     return ui.divV([
       this.aggregationInput.root,
-      this.mpoProfileEditor.root,
       this.designModeInput.root,
+      this.mpoProfileEditor.root,
       this.addParetoFront.root,
     ]);
   }
