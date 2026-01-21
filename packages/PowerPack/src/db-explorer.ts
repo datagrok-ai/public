@@ -114,9 +114,9 @@ export async function setupGlobalDBExplorer() {
       const defaultSchema = schemas.includes('public') ? 'public' : schemas[0];
 
       const schemaChoice = ui.input.choice('Schema', {value: defaultSchema, items: schemas,
-        tooltipText: 'Select schema for identifiers', nullable: false} );
+        tooltipText: 'Select primary schema for identifiers', nullable: false} );
 
-      ui.dialog('Select Schema for Identifiers Configuration')
+      ui.dialog('Select primary schema for Identifiers Configuration')
         .add(ui.form([schemaChoice]))
         .onOK(async () => {
           const view = DG.View.create();
