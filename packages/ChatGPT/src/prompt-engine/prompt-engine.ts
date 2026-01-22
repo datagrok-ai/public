@@ -1,4 +1,5 @@
-import {OpenAIClient} from '../llm-utils/openAI-client';
+import {ChatModel} from 'openai/resources/shared';
+import {ModelType, OpenAIClient} from '../llm-utils/openAI-client';
 import {JsonSchema} from './interfaces';
 export interface PromptEngine {
   generate(prompt: string, system: string, schema?: JsonSchema): Promise<string>;
@@ -8,11 +9,11 @@ export class ChatGPTPromptEngine implements PromptEngine {
   private static instance: ChatGPTPromptEngine | null = null;
 
   private constructor(
-    private model = 'gpt-4o-mini',
+    private model = ModelType['Deep Research'],
     private temperature = 0.0
   ) {}
 
-  public static getInstance(model?: string, temperature?: number): ChatGPTPromptEngine {
+  public static getInstance(model?: ChatModel, temperature?: number): ChatGPTPromptEngine {
     return ChatGPTPromptEngine.instance ??= new ChatGPTPromptEngine(model, temperature);
   }
 

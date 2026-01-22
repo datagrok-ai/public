@@ -21,7 +21,7 @@ export type DesirabilityProfile = {
   properties: { [key: string]: PropertyDesirability };
 }
 
-export const WEIGHTED_AGGREGATIONS = ['Sum', 'Average', 'Product', 'Geomean'] as const;
+export const WEIGHTED_AGGREGATIONS = ['Average', 'Sum', 'Product', 'Geomean', 'Min', 'Max'] as const;
 export type WeightedAggregation = typeof WEIGHTED_AGGREGATIONS[number];
 
 /// Calculates the desirability score for a given x value
@@ -50,7 +50,13 @@ export function desirabilityScore(x: number, desirabilityLine: DesirabilityLine)
 }
 
 /** Calculates the multi parameter optimization score, 0-100, 100 is the maximum */
-export function mpo(dataFrame: DG.DataFrame, columns: DG.Column[], profileName: string, aggregation: WeightedAggregation): DG.Column {
+export function mpo(
+  dataFrame: DG.DataFrame,
+  columns: DG.Column[],
+  profileName: string,
+  aggregation: WeightedAggregation,
+  addResultColumn: boolean = true,
+): DG.Column {
   if (columns.length === 0)
     throw new Error('No columns provided for MPO calculation.');
 
@@ -76,12 +82,11 @@ export function mpo(dataFrame: DG.DataFrame, columns: DG.Column[], profileName: 
       weights[j] = desirability.weight;
     }
 
-    const aggregatedScore = aggregate(scores, weights, aggregation);
-    return 100 * aggregatedScore;
+    return aggregate(scores, weights, aggregation);
   });
 
   // Add the column to the table
-  if (isNew)
+  if (isNew && addResultColumn)
     dataFrame.columns.add(resultColumn);
   return resultColumn;
 }
@@ -101,6 +106,12 @@ export function aggregate(scores: number[], weights: number[], aggregation: Weig
   case 'Geomean':
     const totalW = weights.reduce((sum, w) => sum + w, 0);
     return scores.reduce((prod, s, idx) => prod * Math.pow(s, weights[idx] / totalW), 1);
+
+  case 'Min':
+    return Math.min(...scores.map((s, idx) => Math.pow(s, weights[idx])));
+
+  case 'Max':
+    return Math.max(...scores.map((s, idx) => Math.pow(s, weights[idx])));
 
   default:
     throw new Error(`Unknown aggregation type: ${aggregation}`);

@@ -92,10 +92,16 @@ import {MixtureCellRenderer} from './rendering/mixture-cell-renderer';
 import {createComponentPane, createMixtureWidget, Mixfile} from './utils/mixfile';
 import {biochemicalPropertiesDialog} from './widgets/biochem-properties-widget';
 import {checkCurrentView} from './utils/ui-utils';
-import {mpo, PropertyDesirability, WeightedAggregation} from '@datagrok-libraries/statistics/src/mpo/mpo';
+import {DesirabilityProfile, mpo, PropertyDesirability, WEIGHTED_AGGREGATIONS, WeightedAggregation} from '@datagrok-libraries/statistics/src/mpo/mpo';
 //@ts-ignore
 import '../css/chem.css';
 import {addDeprotectedColumn, DeprotectEditor} from './analysis/deprotect';
+import {MpoProfilesView} from './mpo/mpo-profiles-view';
+import {MpoDesirabilityLineEditor} from '@datagrok-libraries/statistics/src/mpo/mpo-line-editor';
+
+import $ from 'cash-dom';
+import {MpoProfileCreateView} from './mpo/mpo-create-profile';
+import {findSuitableProfiles, loadMpoProfiles, MPO_TEMPLATE_PATH} from './mpo/utils';
 
 export {getMCS};
 export * from './package.g';
@@ -2507,7 +2513,7 @@ export class PackageFunctions {
     view.setRibbonPanels([[saveButton]]);
 
     file.readAsString().then((s) => {
-      const mpoEditor = new MpoProfileEditor();
+      const mpoEditor = new MpoProfileEditor(undefined, true);
       mpoEditor.setProfile(JSON.parse(s));
       view.append(mpoEditor.root);
 
@@ -2562,5 +2568,139 @@ export class PackageFunctions {
   })
   static async biochemPropsWidget(): Promise<void> {
     await biochemicalPropertiesDialog();
+  }
+
+  @grok.decorators.app({
+    'name': 'MPO profiles',
+    'meta': {browsePath: 'Chem', icon: 'images/mpo.png'},
+  })
+  static async mpoProfilesApp(): Promise<DG.View> {
+    const infoView = new MpoProfilesView();
+    await infoView.render();
+    const view = DG.View.fromRoot(infoView.root);
+    view.name = 'MPO profiles';
+    return view;
+  }
+
+  @grok.decorators.func()
+  static async mpoProfilesAppTreeBrowser(
+    @grok.decorators.param({type: 'dynamic'}) treeNode: DG.TreeViewGroup,
+    @grok.decorators.param({type: 'view'}) browseView: any,
+  ) {
+    const profileFiles = await grok.dapi.files.list(MPO_TEMPLATE_PATH);
+    for (const profile of profileFiles) {
+      const content =
+        JSON.parse(await grok.dapi.files.readAsText(`${MPO_TEMPLATE_PATH}/${profile.name}`)) as DesirabilityProfile;
+      treeNode.item(content.name).onSelected.subscribe(() => {
+        const editView = new MpoProfileCreateView(content, false);
+        grok.shell.addPreview(editView.view);
+      });
+    }
+  }
+
+  @grok.decorators.panel({
+    name: 'Chemistry | MPO',
+    meta: {role: 'widgets', domain: 'chem'},
+  })
+  static async mpoWidget(
+  @grok.decorators.param({name: 'smiles', options: {semType: 'Molecule'}})
+    semValue: DG.SemanticValue,
+  ): Promise<DG.Widget<any>> {
+    const container = ui.divV([]);
+    const resultDiv = ui.div();
+    const loader = ui.loader();
+    resultDiv.appendChild(loader);
+
+    const dataFrame = semValue.cell.dataFrame;
+    const profiles = await loadMpoProfiles();
+    const suitableProfiles = await findSuitableProfiles(dataFrame, profiles);
+
+    if (suitableProfiles.length === 0) {
+      container.appendChild(ui.divText('No suitable profiles available at the moment.'));
+      const createButton = ui.button('Create Profile', () => {
+        const view = new MpoProfileCreateView();
+        grok.shell.v = grok.shell.addPreview(view.view);
+      });
+      container.appendChild(createButton);
+
+      return DG.Widget.fromRoot(container);
+    }
+
+    const profileInput = ui.input.choice('Profile', {
+      items: suitableProfiles.map((p) => p.fileName),
+      value: suitableProfiles[0].fileName,
+      onValueChanged: () => calculateMpo(),
+    });
+
+    const aggregationInput = ui.input.choice('Aggregation', {
+      items: [...WEIGHTED_AGGREGATIONS],
+      value: WEIGHTED_AGGREGATIONS[0],
+      onValueChanged: () => calculateMpo(),
+    });
+
+    async function calculateMpo() {
+      if (!profileInput.value)
+        return;
+
+      const selected = suitableProfiles.find((p) => p.fileName === profileInput.value);
+      if (!selected)
+        return;
+
+      ui.empty(resultDiv);
+      resultDiv.appendChild(loader);
+
+      const columns: DG.Column[] = [];
+
+      for (const propertyName in selected.properties) {
+        const column = dataFrame.columns.byName(propertyName);
+        if (column) {
+          columns.push(column);
+          column.setTag(
+            'desirabilityTemplate',
+            JSON.stringify(selected.properties[propertyName]),
+          );
+        }
+      }
+
+      const score = await mpo(
+        dataFrame,
+        columns,
+        selected.name,
+        aggregationInput.value as WeightedAggregation,
+        false,
+      );
+
+      ui.empty(resultDiv);
+
+      const mpoValue = score.get(semValue.cell.rowIndex);
+      const valueHost = ui.divH([], {style: {position: 'relative', alignItems: 'center'}});
+
+      const addColumnIcon = ui.iconFA(
+        'plus',
+        async () => {
+          await mpo(
+            dataFrame,
+            columns,
+            selected.name,
+            aggregationInput.value as WeightedAggregation,
+          );
+        },
+        'Add MPO score as a column',
+      );
+
+      ui.tools.setHoverVisibility(valueHost, [addColumnIcon]);
+      $(addColumnIcon).css('color', '#2083d5').css('margin-right', '4px');
+
+      valueHost.appendChild(addColumnIcon);
+      valueHost.appendChild(ui.divText(mpoValue != null ? mpoValue.toFixed(2) : 'N/A'));
+
+      const table = ui.tableFromMap({'MPO Score': valueHost});
+      resultDiv.appendChild(table);
+    }
+
+    container.appendChild(ui.divV([profileInput.root, aggregationInput.root, resultDiv]));
+
+    await calculateMpo();
+    return DG.Widget.fromRoot(container);
   }
 }

@@ -4,7 +4,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {askDeepWiki} from './deepwikiclient';
-import {askOpenAIHelp} from './openAI-client';
+import {askOpenAIHelp, ModelType} from './openAI-client';
 import {LLMCredsManager} from './creds';
 import {CombinedAISearchAssistant} from './combined-search';
 import {ChatGPTPromptEngine} from '../prompt-engine/prompt-engine';
@@ -15,8 +15,9 @@ import {AssistantRenderer} from '../prompt-engine/rendering-tools';
 import {fireAIAbortEvent, fireAIPanelToggleEvent} from '../utils';
 import {generateAISqlQueryWithTools} from './sql-tools';
 import {processTableViewAIRequest} from './tableview-tools';
-import {DBAIPanel, ModelType, ScriptingAIPanel, TVAIPanel} from './panel';
+import {DBAIPanel, ScriptingAIPanel, TVAIPanel} from './panel';
 import {generateDatagrokScript} from './script-tools';
+import {ChatModel} from 'openai/resources/shared';
 
 
 export async function askWiki(question: string, useOpenAI: boolean = true) {
@@ -31,7 +32,7 @@ export async function askWiki(question: string, useOpenAI: boolean = true) {
   }
 }
 
-export async function smartExecution(prompt: string, modelName: string) {
+export async function smartExecution(prompt: string, modelName: ChatModel) {
   const gptEngine = ChatGPTPromptEngine.getInstance(modelName);
   const gptAssistant = new ChatGptAssistant(gptEngine);
 
