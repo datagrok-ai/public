@@ -769,7 +769,7 @@ class Editor {
         const oldFormula = item.formula!;
         item.formula = value;
         const resultOk = this.onItemChangedAction(itemIdx, true);
-        this.setFormulaValidationResult(resultOk, value, ibFormula);
+        this.setFormulaValidationResult(resultOk, value, ibFormula, item.type === ITEM_TYPE.BAND);
         this.setTitleIfEmpty(oldFormula, item.formula);
       }});
 
@@ -953,21 +953,42 @@ class Editor {
     return ui.divH([ibHeader.root]);
   }
 
-  private setFormulaValidationResult(resultOk: boolean, value: string, ibHeader: DG.InputBase<string>): void {
+  private setFormulaValidationResult(resultOk: boolean, value: string, ibHeader: DG.InputBase<string>, isBand: boolean = false): void {
     const elHeader = ibHeader.input as HTMLInputElement;
     const validateValue = (): string => {
-      // regex pattern check for formula:
-      // ${x or y column} = some optional expression ${x or y column not equal to the first one} some optional expression
-      const pattern = /^\s*\${(.+?)}\s*=\s*(.+\s*)?\${(.+?)}(\s*.+)?$/;
-      const matches = pattern.exec(value);
-      if (!matches)
-        return 'Line formula should be in format: ${x or y column} = ${x or y column} with optional expressions around';
-      
-      if (matches && matches[1] === matches[3])
+      if (isBand)
+        return resultOk ? '' : 'Invalid formula syntax';
+
+      // Must contain exactly one '='
+      const parts = value.split('=');
+      if (parts.length !== 2)
+        return 'Line formula should be in format: ${x or y column} = expression';
+
+      const [lhsRaw, rhsRaw] = parts.map(p => p.trim());
+
+      // LHS must be exactly one ${...}
+      const lhsMatch = /^\$\{([^}]+)\}$/.exec(lhsRaw);
+      if (!lhsMatch)
+        return 'Left side must be a single column in format ${column}';
+
+      const lhsColumn = lhsMatch[1].trim();
+
+      // Extract all ${...} on RHS
+      const rhsColumnRegex = /\$\{([^}]+)\}/g;
+      const rhsColumns: string[] = [];
+
+      let match;
+      while ((match = rhsColumnRegex.exec(rhsRaw)) !== null) {
+        rhsColumns.push(match[1].trim());
+      }
+
+      // If RHS references the same column → invalid
+      if (rhsColumns.includes(lhsColumn))
         return 'Line formula should contain different columns on both sides of the "=" sign';
 
-      return 'Invalid formula syntax';
-    }
+      // Expression syntax validation comes last
+      return resultOk ? '' : 'Invalid formula syntax';
+    };
     
     const validationTooltip = validateValue();
     resultOk = resultOk && validationTooltip === '';
