@@ -121,6 +121,7 @@ export class ClinicalStudy {
   validationCompleted = new Subject<boolean>();
   private validationColumnsSubscriptionSet = false;
   changeViewToSummary = true;
+  treatmentAndControlConfig: {treatment: string, control: string}[] = [];
 
   constructor(config: ClinStudyConfig) {
     this.config = config;

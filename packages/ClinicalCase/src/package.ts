@@ -17,11 +17,13 @@ import {TreeMapView} from './views/tree-map-view';
 import {MedicalHistoryView} from './views/medical-history-view';
 import {VisitsView} from './views/visits-view';
 import {StudyConfigurationView} from './views/study-config-view';
+import {ConfigurationView} from './views/configuration-view';
 import {ADVERSE_EVENTS_VIEW_NAME, AE_BROWSER_VIEW_NAME, AE_RISK_ASSESSMENT_VIEW_NAME,
   ANIMAL_PROFILE_VIEW_NAME,
   CORRELATIONS_VIEW_NAME, DISTRIBUTIONS_VIEW_NAME, LABORATORY_VIEW_NAME, MATRIX_TABLE_VIEW_NAME,
   MEDICAL_HISTORY_VIEW_NAME, PATIENT_PROFILE_VIEW_NAME, QUESTIONNAIRES_VIEW_NAME, STUDY_CONFIGURATIN_VIEW_NAME,
-  SUMMARY_VIEW_NAME, SURVIVAL_ANALYSIS_VIEW_NAME, TIMELINES_VIEW_NAME, MEASUREMENT_PROFILE_TABLE_VIEW_NAME,
+  CONFIGURATION_VIEW_NAME, SUMMARY_VIEW_NAME, SURVIVAL_ANALYSIS_VIEW_NAME, TIMELINES_VIEW_NAME,
+  MEASUREMENT_PROFILE_TABLE_VIEW_NAME,
   TIME_PROFILE_VIEW_NAME, TREE_MAP_VIEW_NAME,
   VALIDATION_VIEW_NAME, VISITS_VIEW_NAME} from './constants/view-names-constants';
 import {createClinCaseTableView} from './utils/views-creation-utils';
@@ -296,7 +298,8 @@ export const SUPPORTED_VIEWS: {[key: string]: string[]} = {
     AE_BROWSER_VIEW_NAME],
 
   [CDISC_STANDARD.SEND]: [SUMMARY_VIEW_NAME, TIMELINES_VIEW_NAME, LABORATORY_VIEW_NAME, ANIMAL_PROFILE_VIEW_NAME,
-    DISTRIBUTIONS_VIEW_NAME, VALIDATION_VIEW_NAME, MATRIX_TABLE_VIEW_NAME, MEASUREMENT_PROFILE_TABLE_VIEW_NAME],
+    DISTRIBUTIONS_VIEW_NAME, VALIDATION_VIEW_NAME, MATRIX_TABLE_VIEW_NAME, MEASUREMENT_PROFILE_TABLE_VIEW_NAME,
+    CONFIGURATION_VIEW_NAME],
 };
 
 export const VIEW_CREATE_FUNC: {[key: string]: (studyId: string, args?: any) => DG.ViewBase | ClinCaseTableView} = {
@@ -318,6 +321,7 @@ export const VIEW_CREATE_FUNC: {[key: string]: (studyId: string, args?: any) => 
   [VISITS_VIEW_NAME]: (studyId) => new VisitsView(VISITS_VIEW_NAME, studyId),
   [STUDY_CONFIGURATIN_VIEW_NAME]: (studyId, addView?: boolean) =>
     new StudyConfigurationView(STUDY_CONFIGURATIN_VIEW_NAME, studyId, addView),
+  [CONFIGURATION_VIEW_NAME]: (studyId) => new ConfigurationView(CONFIGURATION_VIEW_NAME, studyId),
   [VALIDATION_VIEW_NAME]: (studyId) => createClinCaseTableView(studyId, VALIDATION_VIEW_NAME),
   [QUESTIONNAIRES_VIEW_NAME]: (studyId) => new QuestionnaiesView(QUESTIONNAIRES_VIEW_NAME, studyId),
   [AE_BROWSER_VIEW_NAME]: (studyId, viewName) => createClinCaseTableView(studyId, viewName),

@@ -38,11 +38,19 @@ export function createMatrixTableView(studyId: string): any {
       .avg('res_num')
       .aggregate();
 
+    //rename columns - remove avg(res_num)
+    const cols = matrixDataframe.columns.names();
+    for (const colName of cols) {
+      if (colName.endsWith(' avg(res_num)'))
+        matrixDataframe.col(colName)!.name = colName.replace(' avg(res_num)', '');
+    }
+
     //add dm domain fields fro further filtering
     const columnsFromDm = studies[studyId].domains.dm.columns.names().filter((it) => it !== SUBJECT_ID);
     grok.data.joinTables(matrixDataframe, studies[studyId].domains.dm, [SUBJECT_ID], [SUBJECT_ID], null,
       columnsFromDm, DG.JOIN_TYPE.LEFT, true);
     pivotedDF = matrixDataframe;
+    pivotedDF.name = 'Matrix dataframe';
   }
 
   // onTableViewAdded function to add viewers
@@ -61,8 +69,9 @@ export function createMatrixTableView(studyId: string): any {
         innerViewerLook: l,
       });
     }
+    tableView.dockManager.dock(matrixViewer, DG.DOCK_TYPE.FILL);
     //const correlationViewer = await DG.Viewer.fromType(DG.VIEWER.CORR_PLOT, pivotedDF);
-    tableView.addViewer(matrixViewer);
+    // tableView.addViewer(matrixViewer);
     //tableView.addViewer(correlationViewer);
     addDomainFilters(tableView, studyId);
   };

@@ -398,6 +398,10 @@ function addStudyToBrowseTree(study: ClinicalStudy, treeNode: DG.TreeViewGroup, 
 function addDomainsToTree(study: ClinicalStudy, treeNode: DG.TreeViewGroup) {
   const domains = study.domains.all();
   const domainsNode = treeNode.group('Domains', null, false);
+  domainsNode.onSelected.subscribe(() => {
+    if (!domainsNode.expanded)
+      domainsNode.expanded = true;
+  });
 
   // Group domains by category
   const domainsByCategory: {[category: string]: typeof domains} = {};
@@ -414,6 +418,10 @@ function addDomainsToTree(study: ClinicalStudy, treeNode: DG.TreeViewGroup) {
   // Add domains grouped by category
   for (const category of DOMAINS_CATEGORIES_LIST) {
     const categoryNode = domainsNode.group(category, null, false);
+    categoryNode.onSelected.subscribe(() => {
+      if (!categoryNode.expanded)
+        categoryNode.expanded = true;
+    });
     if (domainsByCategory[category]) {
       for (const domain of domainsByCategory[category]) {
         const domainItem = categoryNode.item(domain.name);
