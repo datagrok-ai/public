@@ -168,6 +168,7 @@ export class MpoProfileEditor {
   ): HTMLElement {
     const weightInput = ui.input.float('', {
       value: prop.weight,
+      format: '#0.000',
       min: 0,
       max: 1,
       onValueChanged: (v) => {
@@ -188,6 +189,7 @@ export class MpoProfileEditor {
     const minInput = ui.input.float('', {
       value: prop.min ?? lineEditor.getMinX(),
       showSlider: true,
+      format: '#0.000',
       onValueChanged: (v) => {
         this.updateProperty(propertyName, (p) => {
           p.min = v ?? 0;
@@ -199,6 +201,7 @@ export class MpoProfileEditor {
     const maxInput = ui.input.float('', {
       value: prop.max ?? lineEditor.getMaxX(),
       showSlider: true,
+      format: '#0.000',
       onValueChanged: (v) => {
         this.updateProperty(propertyName, (p) => {
           p.max = v ?? 1;
@@ -322,7 +325,6 @@ export class MpoProfileEditor {
 
     const meanInput = ui.input.float('Mean', {
       value: prop.mean ?? 0,
-      //@ts-ignore
       format: '#0.000',
       onValueChanged: (v) => {
         this.updateProperty(propertyName, (p) => {
@@ -335,7 +337,6 @@ export class MpoProfileEditor {
 
     const sigmaInput = ui.input.float('Sigma', {
       value: prop.sigma ?? 1,
-      //@ts-ignore
       format: '#0.000',
       onValueChanged: (v) => {
         this.updateProperty(propertyName, (p) => {
@@ -348,7 +349,6 @@ export class MpoProfileEditor {
 
     const x0Input = ui.input.float('x0', {
       value: prop.x0 ?? 0,
-      //@ts-ignore
       format: '#0.000',
       onValueChanged: (v) => {
         this.updateProperty(propertyName, (p) => {
@@ -361,7 +361,6 @@ export class MpoProfileEditor {
 
     const kInput = ui.input.float('k', {
       value: prop.k ?? 10,
-      //@ts-ignore
       format: '#0.000',
       onValueChanged: (v) => {
         this.updateProperty(propertyName, (p) => {
