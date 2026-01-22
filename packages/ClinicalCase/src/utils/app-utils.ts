@@ -417,12 +417,12 @@ function addDomainsToTree(study: ClinicalStudy, treeNode: DG.TreeViewGroup) {
 
   // Add domains grouped by category
   for (const category of DOMAINS_CATEGORIES_LIST) {
-    const categoryNode = domainsNode.group(category, null, false);
-    categoryNode.onSelected.subscribe(() => {
-      if (!categoryNode.expanded)
-        categoryNode.expanded = true;
-    });
     if (domainsByCategory[category]) {
+      const categoryNode = domainsNode.group(category, null, false);
+      categoryNode.onSelected.subscribe(() => {
+        if (!categoryNode.expanded)
+          categoryNode.expanded = true;
+      });
       for (const domain of domainsByCategory[category]) {
         const domainItem = categoryNode.item(domain.name);
         const domainInfo = DOMAINS_DESCRIPTIONS[domain.name];
