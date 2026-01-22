@@ -28,12 +28,13 @@ export class MpoProfileCreateView {
   profileEditorContainer: HTMLDivElement;
   profileViewContainer: HTMLDivElement = ui.div();
   methodInput?: DG.ChoiceInput<string | null>;
-  aggregationInput?: DG.ChoiceInput<WeightedAggregation| null>;
+  aggregationInput?: DG.ChoiceInput<WeightedAggregation | null>;
   saveButton: HTMLElement | null = null;
+
+  tableView: DG.TableView | null = null;
 
   constructor(existingProfile?: DesirabilityProfile, showMethod: boolean = true) {
     this.view = DG.View.create();
-    this.view.name = existingProfile ? 'Edit MPO Profile' : 'Create MPO Profile';
     this.showMethod = showMethod;
     this.profile = existingProfile ?? this.createDefaultProfile();
 
@@ -42,10 +43,42 @@ export class MpoProfileCreateView {
     this.profileEditorContainer = ui.divV([this.editor.root]);
     this.profileEditorContainer.classList.add('chem-profile-editor-container');
 
+    this.initTableView();
+    this.view.name = this.tableView!.name = existingProfile ? 'Edit MPO Profile' : 'Create MPO Profile';
+
     this.initControls(showMethod);
     this.initSaveButton();
     this.attachLayout();
     this.listenForProfileChanges();
+  }
+
+  private initTableView(): void {
+    const emptyDf = DG.DataFrame.create(1);
+    this.tableView = DG.TableView.create(emptyDf, false);
+
+    setTimeout(() => {
+      this.tableView!._onAdded();
+      this.tableView!.grid.root.style.visibility = 'hidden';
+      this.tableView!.dockManager.dock(
+        this.view.root,
+        DG.DOCK_TYPE.TOP,
+        null,
+        '',
+        0.99,
+      );
+    }, 0);
+  }
+
+  private showTableView(ratio = 0.7): void {
+    if (!this.tableView) return;
+    this.tableView.grid.root.style.visibility = 'visible';
+    this.tableView.dockManager.dock(this.view.root, DG.DOCK_TYPE.TOP, null, '', ratio);
+  }
+
+  private hideTableView(): void {
+    if (!this.tableView) return;
+    this.tableView.grid.root.style.visibility = 'hidden';
+    this.tableView.dockManager.dock(this.view.root, DG.DOCK_TYPE.TOP, null, '', 0.99);
   }
 
   private initSaveButton() {
@@ -77,7 +110,14 @@ export class MpoProfileCreateView {
         items: [METHOD_MANUAL, METHOD_PROBABILISTIC],
         value: METHOD_MANUAL,
         nullable: false,
-        onValueChanged: () => this.attachLayout(),
+        onValueChanged: async () => {
+          if (this.methodInput!.value === METHOD_PROBABILISTIC) {
+            await this.runProbabilisticMpo();
+            return;
+          }
+          this.hideTableView();
+          this.attachLayout();
+        },
       });
       controls.push(this.methodInput);
     }
@@ -86,6 +126,10 @@ export class MpoProfileCreateView {
       nullable: true,
       onValueChanged: (df) => {
         this.df = df;
+
+        if (this.tableView && df)
+          this.tableView.dataFrame = df;
+
         this.attachLayout();
       },
     });
@@ -136,6 +180,26 @@ export class MpoProfileCreateView {
 
       await this.setupGridAndContextPanel();
     } finally {
+      ui.setUpdateIndicator(this.view.root, false);
+    }
+  }
+
+  private async runProbabilisticMpo(): Promise<void> {
+    if (!this.df || !this.tableView)
+      return;
+
+    ui.setUpdateIndicator(this.view.root, true, 'Running probabilistic MPO...');
+
+    this.showTableView(0.5);
+
+    const prev = grok.shell.v;
+    grok.shell.v = this.tableView;
+
+    try {
+      await grok.functions.call('Eda:trainPmpo', {});
+    } finally {
+      grok.shell.v = prev;
+
       ui.setUpdateIndicator(this.view.root, false);
     }
   }
