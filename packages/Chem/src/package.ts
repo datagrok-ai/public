@@ -92,12 +92,11 @@ import {MixtureCellRenderer} from './rendering/mixture-cell-renderer';
 import {createComponentPane, createMixtureWidget, Mixfile} from './utils/mixfile';
 import {biochemicalPropertiesDialog} from './widgets/biochem-properties-widget';
 import {checkCurrentView} from './utils/ui-utils';
-import {DesirabilityProfile, mpo, PropertyDesirability, WEIGHTED_AGGREGATIONS, WeightedAggregation} from '@datagrok-libraries/statistics/src/mpo/mpo';
+import {DesirabilityProfile, mpo, PropertyDesirability, WEIGHTED_AGGREGATIONS_LIST, WeightedAggregation} from '@datagrok-libraries/statistics/src/mpo/mpo';
 //@ts-ignore
 import '../css/chem.css';
 import {addDeprotectedColumn, DeprotectEditor} from './analysis/deprotect';
 import {MpoProfilesView} from './mpo/mpo-profiles-view';
-import {MpoDesirabilityLineEditor} from '@datagrok-libraries/statistics/src/mpo/mpo-line-editor';
 
 import $ from 'cash-dom';
 import {MpoProfileCreateView} from './mpo/mpo-create-profile';
@@ -2631,8 +2630,8 @@ export class PackageFunctions {
     });
 
     const aggregationInput = ui.input.choice('Aggregation', {
-      items: [...WEIGHTED_AGGREGATIONS],
-      value: WEIGHTED_AGGREGATIONS[0],
+      items: WEIGHTED_AGGREGATIONS_LIST,
+      nullable: false,
       onValueChanged: () => calculateMpo(),
     });
 

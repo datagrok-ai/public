@@ -5,7 +5,7 @@ import * as DG from 'datagrok-api/dg';
 import {
   DesirabilityProfile,
   WeightedAggregation,
-  WEIGHTED_AGGREGATIONS,
+  WEIGHTED_AGGREGATIONS_LIST,
 } from '@datagrok-libraries/statistics/src/mpo/mpo';
 import {MPO_SCORE_CHANGED_EVENT, MpoProfileEditor} from '@datagrok-libraries/statistics/src/mpo/mpo-profile-editor';
 
@@ -33,7 +33,7 @@ export class MpoProfileDialog {
     this.mpoProfileEditor = new MpoProfileEditor(this.dataFrame);
 
     this.aggregationInput = ui.input.choice('Aggregation', {
-      items: [...WEIGHTED_AGGREGATIONS],
+      items: WEIGHTED_AGGREGATIONS_LIST,
       nullable: false,
       onValueChanged: () => grok.events.fireCustomEvent(MPO_SCORE_CHANGED_EVENT, {}),
     });

@@ -5,7 +5,7 @@ import * as grok from 'datagrok-api/grok';
 import {
   DesirabilityProfile,
   PropertyDesirability,
-  WEIGHTED_AGGREGATIONS,
+  WEIGHTED_AGGREGATIONS_LIST,
   WeightedAggregation,
 } from '@datagrok-libraries/statistics/src/mpo/mpo';
 import {MPO_SCORE_CHANGED_EVENT, MpoProfileEditor} from '@datagrok-libraries/statistics/src/mpo/mpo-profile-editor';
@@ -33,7 +33,8 @@ export class MpoProfileCreateView {
 
   constructor(existingProfile?: DesirabilityProfile, showMethod: boolean = true) {
     this.view = DG.View.create();
-    this.view.name = existingProfile ? 'Edit MPO Profile' : 'Create MPO Profile';
+    const profileExists = !!existingProfile;
+    this.view.name = profileExists ? 'Edit MPO Profile' : 'Create MPO Profile';
     this.showMethod = showMethod;
     this.profile = existingProfile ?? this.createDefaultProfile();
 
@@ -42,7 +43,7 @@ export class MpoProfileCreateView {
     this.profileEditorContainer = ui.divV([this.editor.root]);
     this.profileEditorContainer.classList.add('chem-profile-editor-container');
 
-    this.initControls(showMethod);
+    this.initControls(profileExists, showMethod);
     this.initSaveButton();
     this.attachLayout();
     this.listenForProfileChanges();
@@ -69,7 +70,7 @@ export class MpoProfileCreateView {
     this.view.setRibbonPanels([[this.saveButton]]);
   }
 
-  private initControls(showMethod: boolean) {
+  private initControls(profileExists: boolean, showMethod: boolean) {
     const controls: DG.InputBase[] = [];
 
     if (showMethod) {
@@ -92,14 +93,15 @@ export class MpoProfileCreateView {
     controls.push(datasetInput);
 
     this.aggregationInput = ui.input.choice('Aggregation', {
-      items: [...WEIGHTED_AGGREGATIONS],
+      items: WEIGHTED_AGGREGATIONS_LIST,
       nullable: false,
-      onValueChanged: () => this.attachLayout(),
+      onValueChanged: () => /*this.attachLayout()*/ grok.events.fireCustomEvent(MPO_SCORE_CHANGED_EVENT, {}),
     });
     this.aggregationInput.enabled = false;
     controls.push(this.aggregationInput);
 
-    const headerDiv = ui.divV([ui.h1('New MPO Profile'), ui.form(controls)]);
+    const headerText = profileExists ? 'Edit MPO Profile' : 'New MPO Profile';
+    const headerDiv = ui.divV([ui.h1(headerText), ui.form(controls)]);
     headerDiv.classList.add('chem-profile-header');
 
     this.profileViewContainer = ui.divV([headerDiv]);
