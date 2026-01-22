@@ -33,8 +33,7 @@ export class MpoProfileCreateView {
 
   constructor(existingProfile?: DesirabilityProfile, showMethod: boolean = true) {
     this.view = DG.View.create();
-    const profileExists = !!existingProfile;
-    this.view.name = profileExists ? 'Edit MPO Profile' : 'Create MPO Profile';
+    this.view.name = existingProfile ? 'Edit MPO Profile' : 'Create MPO Profile';
     this.showMethod = showMethod;
     this.profile = existingProfile ?? this.createDefaultProfile();
 
@@ -43,7 +42,7 @@ export class MpoProfileCreateView {
     this.profileEditorContainer = ui.divV([this.editor.root]);
     this.profileEditorContainer.classList.add('chem-profile-editor-container');
 
-    this.initControls(profileExists, showMethod);
+    this.initControls(showMethod);
     this.initSaveButton();
     this.attachLayout();
     this.listenForProfileChanges();
@@ -70,7 +69,7 @@ export class MpoProfileCreateView {
     this.view.setRibbonPanels([[this.saveButton]]);
   }
 
-  private initControls(profileExists: boolean, showMethod: boolean) {
+  private initControls(showMethod: boolean) {
     const controls: DG.InputBase[] = [];
 
     if (showMethod) {
@@ -95,13 +94,12 @@ export class MpoProfileCreateView {
     this.aggregationInput = ui.input.choice('Aggregation', {
       items: WEIGHTED_AGGREGATIONS_LIST,
       nullable: false,
-      onValueChanged: () => /*this.attachLayout()*/ grok.events.fireCustomEvent(MPO_SCORE_CHANGED_EVENT, {}),
+      onValueChanged: () => grok.events.fireCustomEvent(MPO_SCORE_CHANGED_EVENT, {}),
     });
     this.aggregationInput.enabled = false;
     controls.push(this.aggregationInput);
 
-    const headerText = profileExists ? 'Edit MPO Profile' : 'New MPO Profile';
-    const headerDiv = ui.divV([ui.h1(headerText), ui.form(controls)]);
+    const headerDiv = ui.divV([ui.h1(this.view.name), ui.form(controls)]);
     headerDiv.classList.add('chem-profile-header');
 
     this.profileViewContainer = ui.divV([headerDiv]);
