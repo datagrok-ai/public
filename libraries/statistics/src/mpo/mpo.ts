@@ -105,6 +105,14 @@ export function mpo(
     for (let j = 0; j < columns.length; j++) {
       const desirability = desirabilityTemplates[j];
       const value = columns[j].get(i);
+
+      // if (value === null || value === undefined || Number.isNaN(value)) {
+        // continue; // Skip missing values; push to avoid creating sparse arrays
+        // scores[j] = 0; // treat as 0
+        // weights[j] = desirability.weight;
+        // continue;
+      // }
+
       if (desirability.mode === 'categorical')
         scores[j] = categoricalDesirabilityScore(value, desirability);
       else
