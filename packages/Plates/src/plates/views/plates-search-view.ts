@@ -313,7 +313,9 @@ function getSearchView(viewName: string,
   mainView.root.appendChild(splitter);
 
   setTemplate(plateTemplates[0]);
-  refreshAnalysisUI();
+  setTimeout(() => {
+    refreshAnalysisUI();
+  }, 1500);
   return mainView;
 }
 

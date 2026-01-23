@@ -86,6 +86,8 @@ export function platesApp() : any {
 }
 
 //input: dynamic treeNode 
+//meta.role: appTreeBrowser
+//meta.app: Plates
 export async function platesAppTreeBrowser(treeNode: any) : Promise<void> {
   await PackageFunctions.platesAppTreeBrowser(treeNode);
 }
