@@ -2653,14 +2653,17 @@ export class PackageFunctions {
 
       for (const propertyName in selected.properties) {
         const column = dataFrame.columns.byName(propertyName);
-        if (column) {
-          columns.push(column);
-          column.setTag(
-            'desirabilityTemplate',
-            JSON.stringify(selected.properties[propertyName]),
-          );
-        }
+        if (!column)
+          continue;
+
+        columns.push(column);
+
+        const newTagValue = JSON.stringify(selected.properties[propertyName]);
+        const existingTagValue = column.getTag('desirabilityTemplate');
+        if (existingTagValue !== newTagValue)
+          column.setTag('desirabilityTemplate', newTagValue);
       }
+
       const score = await mpo( //@ts-ignore
         dataFrame,
         columns,
