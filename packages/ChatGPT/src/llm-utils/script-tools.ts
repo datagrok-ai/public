@@ -2,12 +2,15 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {AIPanelFuncs} from './panel';
+import {AIPanelFuncs, MessageType} from './panel';
 import {getAIAbortSubscription} from '../utils';
 import {ModelType, OpenAIClient} from './openAI-client';
 import {LLMCredsManager} from './creds';
-import type OpenAI from 'openai';
 import {ComparisonFilter, CompoundFilter} from 'openai/resources/shared';
+import {OpenAIResponsesProvider} from './AI-API-providers/openai-responses-provider';
+import {OpenAIChatCompletionsProvider} from './AI-API-providers/openai-chat-completions-provider';
+import {AIProvider, FunctionToolSpec} from './AI-API-providers/types';
+
 
 class ClarificationNeededError extends Error {
   constructor() {
@@ -21,27 +24,28 @@ class NoScriptGeneratedError extends Error {
   }
 }
 
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null;
+type JsonPrimitive = string | number | boolean | null;
+type JsonValue = JsonPrimitive | JsonObject | JsonValue[];
+type JsonObject = { [key: string]: JsonValue };
+
+function isJsonObject(value: JsonValue | object | null | undefined): value is JsonObject {
+  return !!value && typeof value === 'object' && !Array.isArray(value);
 }
 
-function getStringProp(obj: unknown, key: string): string | null {
-  if (!isRecord(obj))
-    return null;
-  const v = obj[key];
+function getStringProp(obj: JsonObject | null | undefined, key: string): string | null {
+  const v = obj?.[key];
   return typeof v === 'string' ? v : null;
 }
 
-function getNumberProp(obj: unknown, key: string): number | null {
-  if (!isRecord(obj))
-    return null;
-  const v = obj[key];
+function getNumberProp(obj: JsonObject | null | undefined, key: string): number | null {
+  const v = obj?.[key];
   return typeof v === 'number' ? v : null;
 }
 
-function parseJsonObject(text: string): unknown {
+function parseJsonObject(text: string): JsonObject | null {
   try {
-    return JSON.parse(text);
+    const parsed = JSON.parse(text) as JsonValue;
+    return isJsonObject(parsed) ? parsed : null;
   } catch {
     return null;
   }
@@ -53,23 +57,6 @@ function isSafeJsMemberExpression(expr: string): boolean {
   return /^[A-Za-z_$][\w$]*(\.[A-Za-z_$][\w$]*)*$/.test(expr);
 }
 
-type ResponseCreateBody = Parameters<OpenAI['responses']['create']>[0];
-type ResponseInput = Exclude<ResponseCreateBody['input'], string | undefined>;
-
-type JsonSchemaObject = {
-  type: 'object';
-  properties: Record<string, unknown>;
-  required: string[];
-  additionalProperties: false;
-};
-
-type FunctionTool = {
-  type: 'function';
-  name: string;
-  description: string;
-  parameters: JsonSchemaObject;
-  strict: true;
-};
 
 /**
  * Generates a Datagrok script using function calling approach with Responses API
@@ -82,8 +69,8 @@ export async function generateDatagrokScript(
   prompt: string,
   language: DG.ScriptingLanguage,
   options: {
-    oldMessages?: ResponseInput,
-    aiPanel?: AIPanelFuncs<OpenAI.Responses.ResponseInputItem>,
+    oldMessages?: MessageType[],
+    aiPanel?: AIPanelFuncs<MessageType>,
     disableVerbose?: boolean,
   } = {}
 ): Promise<string> {
@@ -107,19 +94,22 @@ export async function generateDatagrokScript(
 
   try {
     // Initialize OpenAI client
-    const openai = OpenAIClient.getInstance().openai;
+    // const openai = OpenAIClient.getInstance().openai;
+    const provider = AIProvider.getProvider();
 
     // System message with strict guidelines
     const systemMessage = getSystemPrompt(language, vectorStoreId);
 
     // Create a running input list we will add to over time (per Responses API docs)
-    const input: ResponseInput = options.oldMessages ? options.oldMessages.slice() : [];
+    const input: MessageType[] = options.oldMessages ? [...options.oldMessages] : [];
     if (!input.length) {
-      input.push({role: 'system', content: systemMessage});
-      options.aiPanel?.addEngineMessage({role: 'system', content: systemMessage});
+      const systemMsg = provider.createSystemMessage(systemMessage);
+      input.push(systemMsg);
+      options.aiPanel?.addEngineMessage(systemMsg);
     }
-    options.aiPanel?.addEngineMessage({role: 'user', content: prompt});
-    input.push({role: 'user', content: prompt});
+    const userMsg = provider.createUserMessage(prompt);
+    options.aiPanel?.addEngineMessage(userMsg);
+    input.push(userMsg);
     // options.aiPanel?.addEngineMessage(systemMessage);
     // Define available tools
     const tools = getTools(language, vectorStoreId);
@@ -138,53 +128,53 @@ export async function generateDatagrokScript(
       console.log(`\n=== Iteration ${iterations} ===`);
 
       // Use Responses API instead of Chat Completions
-      const response = await openai.responses.create({
+      const response = await provider.create({
         model: ModelType.Coding,
-        input,
+        messages: input,
         tools,
         ...(ModelType.Coding.startsWith('gpt-5') ? {reasoning: {effort: 'medium'}} : {}),
       });
 
-      const outputs = response.output ?? [];
+      const outputs = response.outputMessages;
       input.push(...outputs);
       outputs.forEach((item) =>
         options.aiPanel?.addEngineMessage(item));
 
       // Execute function calls (if any)
       let hadToolCalls = false;
-      for (const item of outputs) {
-        if (isRecord(item) && item.type === 'function_call') {
-          hadToolCalls = true;
+      for (const call of response.toolCalls) {
+        hadToolCalls = true;
 
-          const functionName = getStringProp(item, 'name');
-          const callId = getStringProp(item, 'call_id');
-          const rawArgs = getStringProp(item, 'arguments') ?? '{}';
-          const args = parseJsonObject(rawArgs);
+        const functionName = call.name;
+        const callId = call.id;
+        const rawArgs = call.arguments ?? '{}';
+        const args = parseJsonObject(rawArgs);
 
-          if (!functionName || !callId) {
-            input.push({type: 'function_call_output', call_id: callId ?? '', output: 'Error: malformed function call (missing name/call_id).'});
-            continue;
+        if (!functionName || !callId) {
+          const errorText = 'Error: malformed function call (missing name/call_id).';
+          const outputItem = provider.createToolOutputMessage(callId ?? '', errorText);
+          if (callId) {
+            input.push(outputItem);
+            options.aiPanel?.addEngineMessage(outputItem);
           }
-
-          let result = '';
-          try {
-            result = await executeFunction(context, functionName, language, args, options.aiPanel);
-          } catch (e: unknown) {
-            const msg = e instanceof Error ? e.message : String(e);
-            result = `Error executing ${functionName}: ${msg}`;
-          }
-
-          input.push({type: 'function_call_output', call_id: callId, output: result});
-          options.aiPanel?.addEngineMessage({
-            type: 'function_call_output',
-            call_id: callId,
-            output: result,
-          });
-
-          // Clarification is a terminal action: ask the user and stop.
-          if (functionName === 'ask_user_for_clarification')
-            return '';
+          continue;
         }
+
+        let result = '';
+        try {
+          result = await executeFunction(context, functionName, language, args, options.aiPanel);
+        } catch (e) {
+          const msg = e instanceof Error ? e.message : String(e);
+          result = `Error executing ${functionName}: ${msg}`;
+        }
+
+        const outputItem = provider.createToolOutputMessage(callId, result);
+        input.push(outputItem);
+        options.aiPanel?.addEngineMessage(outputItem);
+
+        // Clarification is a terminal action: ask the user and stop.
+        if (functionName === 'ask_user_for_clarification')
+          return '';
       }
 
       // If the model called tools, we must continue so it can consume tool outputs.
@@ -197,7 +187,7 @@ export async function generateDatagrokScript(
         continue;
       }
 
-      const content = (response.output_text ?? '').trim();
+      const content = response.outputText.trim();
       if (content.length === 0)
         throw new Error('Model returned no text and no tool calls');
 
@@ -217,8 +207,9 @@ export async function generateDatagrokScript(
 
       const validationError = validateScriptHeader(content, language);
       if (validationError) {
-        input.push({role: 'user', content: `The generated script has an issue: ${validationError}. Please fix it and provide the corrected script. ALWAYS REMEMBER THAT YOU SHOULD OUTPUT THE CODE ONLY, WITHOUT ANY EXPLANATION, MARKDOWN, OR FORMATTING WITH CORRECT COMMENTS.`});
-        options.aiPanel?.addEngineMessage(input[input.length - 1]);
+        const fixMsg = provider.createUserMessage(`The generated script has an issue: ${validationError}. Please fix it and provide the corrected script. ALWAYS REMEMBER THAT YOU SHOULD OUTPUT THE CODE ONLY, WITHOUT ANY EXPLANATION, MARKDOWN, OR FORMATTING WITH CORRECT COMMENTS.`);
+        input.push(fixMsg);
+        options.aiPanel?.addEngineMessage(fixMsg);
         continue;
       }
 
@@ -227,7 +218,7 @@ export async function generateDatagrokScript(
 
     // If we exhausted iterations
     throw new Error('Failed to generate script: Maximum iterations reached or no valid script returned');
-  } catch (e: unknown) {
+  } catch (e) {
     if (e instanceof ClarificationNeededError)
       return '';
     else if (e instanceof NoScriptGeneratedError)
@@ -429,8 +420,8 @@ Example:
 /**
  * Defines tools available for script generation
  */
-function getTools(language: DG.ScriptingLanguage, vectorStoreId: string | null): FunctionTool[] {
-  const tools: FunctionTool[] = [
+function getTools(language: DG.ScriptingLanguage, vectorStoreId: string | null): FunctionToolSpec[] {
+  const tools: FunctionToolSpec[] = [
     {
       type: 'function',
       name: 'ask_user_for_clarification',
@@ -481,7 +472,7 @@ function getTools(language: DG.ScriptingLanguage, vectorStoreId: string | null):
             description: 'Detailed search query describing what API or feature you need to understand. Include context about what you are trying to do.'
           },
           maxResults: {
-            type: ['integer', 'null'],
+            type: 'integer',
             description: 'Maximum number of results to return (1-50)',
             default: 4
           }
@@ -526,7 +517,7 @@ function getTools(language: DG.ScriptingLanguage, vectorStoreId: string | null):
               description: 'Search query for the JS API source code (e.g., "grok.data.demo", "DG.DataFrame.fromCsv", "ui.dialog")'
             },
             maxResults: {
-              type: ['integer', 'null'],
+              type: 'integer',
               description: 'Maximum number of results to return (1-50)',
               default: 4
             }
@@ -567,8 +558,8 @@ async function executeFunction(
   context: ScriptGenerationContext,
   functionName: string,
   language: DG.ScriptingLanguage,
-  args: unknown,
-  aiPanel?: AIPanelFuncs<OpenAI.Responses.ResponseInputItem>
+  args: JsonObject | null,
+  aiPanel?: AIPanelFuncs<MessageType>
 ): Promise<string> {
   switch (functionName) {
   case 'search_documentation':
@@ -710,7 +701,7 @@ class ScriptGenerationContext {
         formattedResults += '---\n\n';
       }
       return formattedResults;
-    } catch (e: unknown) {
+    } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
       return `Error searching documentation: ${msg}`;
     }
@@ -754,13 +745,13 @@ class ScriptGenerationContext {
 
     try {
       // eslint-disable-next-line no-eval
-      const value = eval(expr) as unknown;
+      const value = eval(expr) as object | null | undefined;
       if (value === null || value === undefined)
         return 'Error: expression evaluated to null/undefined.';
 
-      const keys = Object.keys(value as Record<string, unknown>);
+      const keys = Object.keys(value as Record<string, string | number | boolean | null | object>);
       return JSON.stringify(keys);
-    } catch (e: unknown) {
+    } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
       return `Error evaluating expression: ${msg}`;
     }

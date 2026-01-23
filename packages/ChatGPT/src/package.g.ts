@@ -1,12 +1,12 @@
 import {PackageFunctions} from './package';
 import * as DG from 'datagrok-api/dg';
 
-//meta.role: init
+//tags: init
 export async function init() : Promise<void> {
   await PackageFunctions.init();
 }
 
-//meta.role: autostart
+//tags: autostart
 export function autostart() : void {
   PackageFunctions.autostart();
 }
@@ -104,12 +104,17 @@ export async function moveMetaToDB(dbName: string) : Promise<void> {
   await PackageFunctions.moveMetaToDB(dbName);
 }
 
+//name: setupVectorStore
+export async function setupVectorStore() : Promise<void> {
+  await PackageFunctions.setupVectorStore();
+}
+
+//name: searchForSomething
+export async function searchForSomething() : Promise<void> {
+  await PackageFunctions.searchForSomething();
+}
+
 //name: indexDatabaseSchema
 export async function indexDatabaseSchema() : Promise<void> {
   await PackageFunctions.indexDatabaseSchema();
-}
-
-//name: embedConnectionQueries
-export async function embedConnectionQueries() : Promise<void> {
-  await PackageFunctions.embedConnectionQueries();
 }

@@ -2,42 +2,44 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import type OpenAI from 'openai';
 import {ModelType, OpenAIClient} from './openAI-client';
 import {ChatModel} from 'openai/resources/shared';
 import {getAIAbortSubscription} from '../utils';
-import {AIPanelFuncs} from './panel';
+import {AIPanelFuncs, MessageType} from './panel';
 import {LLMCredsManager} from './creds';
+import {OpenAIResponsesProvider} from './AI-API-providers/openai-responses-provider';
+import {OpenAIChatCompletionsProvider} from './AI-API-providers/openai-chat-completions-provider';
+import {AIAPIProvider, AIProvider, FunctionToolSpec} from './AI-API-providers/types';
 
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null;
+
+type JsonPrimitive = string | number | boolean | null;
+type JsonValue = JsonPrimitive | JsonObject | JsonValue[];
+type JsonObject = { [key: string]: JsonValue };
+
+type ViewerProps = Record<string, JsonValue>;
+
+function isJsonObject(value: JsonValue | object | null | undefined): value is JsonObject {
+  return !!value && typeof value === 'object' && !Array.isArray(value);
 }
 
-function getStringProp(obj: unknown, key: string): string | null {
-  if (!isRecord(obj))
-    return null;
-  const v = obj[key];
+function getStringProp(obj: JsonObject | null | undefined, key: string): string | null {
+  const v = obj?.[key];
   return typeof v === 'string' ? v : null;
 }
 
-function getNumberProp(obj: unknown, key: string): number | null {
-  if (!isRecord(obj))
-    return null;
-  const v = obj[key];
+function getNumberProp(obj: JsonObject | null | undefined, key: string): number | null {
+  const v = obj?.[key];
   return typeof v === 'number' ? v : null;
 }
 
-function parseJsonObject(text: string): unknown {
+function parseJsonObject(text: string): JsonObject | null {
   try {
-    return JSON.parse(text);
+    const parsed = JSON.parse(text) as JsonValue;
+    return isJsonObject(parsed) ? parsed : null;
   } catch {
     return null;
   }
 }
-
-type ResponseCreateBody = Parameters<OpenAI['responses']['create']>[0];
-type ResponseInput = Exclude<ResponseCreateBody['input'], string | undefined>;
-type ResponseTool = Exclude<ResponseCreateBody['tools'], undefined>[number];
 
 /**
  * Handles AI-assisted table view interactions with ask and agent modes
@@ -51,8 +53,8 @@ export async function processTableViewAIRequest(
   prompt: string,
   tableView: DG.TableView,
   options: {
-    oldMessages?: ResponseInput,
-    aiPanel?: AIPanelFuncs<OpenAI.Responses.ResponseInputItem>,
+    oldMessages?: MessageType[],
+    aiPanel?: AIPanelFuncs<MessageType>,
     modelName?: ChatModel,
   } = {}
 ): Promise<void> {
@@ -68,8 +70,9 @@ export async function processTableViewAIRequest(
   try {
     // Initialize OpenAI client
     const openai = OpenAIClient.getInstance().openai;
+    const provider = AIProvider.getProvider();
     // Always use agent mode workflow with conditional system prompt
-    await processAgentMode(openai, prompt, context, options, () => aborted);
+    await processAgentMode(openai, provider, prompt, context, options, () => aborted);
   } finally {
     abortSub.unsubscribe();
   }
@@ -79,12 +82,13 @@ export async function processTableViewAIRequest(
  * Unified agent workflow with conditional system prompt based on mode
  */
 async function processAgentMode(
-  openai: OpenAI,
+  openai: ReturnType<typeof OpenAIClient.getInstance>['openai'],
+  provider: AIAPIProvider<any, any, any, any, any, any, any>,
   prompt: string,
   context: TableViewContext,
   options: {
-    oldMessages?: ResponseInput,
-    aiPanel?: AIPanelFuncs<OpenAI.Responses.ResponseInputItem>,
+    oldMessages?: MessageType[],
+    aiPanel?: AIPanelFuncs<MessageType>,
     modelName?: ChatModel
   },
   isAborted: () => boolean,
@@ -124,7 +128,7 @@ CRITICAL RULES:
 
 Your responses should be informative, explaining what you're doing and why.`;
 
-  const input: ResponseInput = options.oldMessages ? options.oldMessages.slice() : [];
+  const input: MessageType[] = options.oldMessages ? [...options.oldMessages] : [];
 
   if (input.length === 0) {
     const tableDescription = context.getTableDescription();
@@ -132,16 +136,19 @@ Your responses should be informative, explaining what you're doing and why.`;
 
     const initialContext = `${tableDescription}\n\n${availableViewers}`;
 
-    input.push({role: 'system', content: systemMessage});
-    input.push({role: 'user', content: `${initialContext}\n\nUser request: ${prompt}`});
+    const systemMsg = provider.createSystemMessage(systemMessage);
+    const userMsg = provider.createUserMessage(`${initialContext}\n\nUser request: ${prompt}`);
+    input.push(systemMsg);
+    input.push(userMsg);
 
-    options.aiPanel?.addUserMessage({role: 'user', content: prompt}, prompt);
+    options.aiPanel?.addUserMessage(userMsg, prompt);
   } else {
-    input.push({role: 'user', content: prompt});
-    options.aiPanel?.addUserMessage({role: 'user', content: prompt}, prompt);
+    const userMsg = provider.createUserMessage(prompt);
+    input.push(userMsg);
+    options.aiPanel?.addUserMessage(userMsg, prompt);
   }
 
-  const tools: ResponseTool[] = [
+  const tools: FunctionToolSpec[] = [
     {
       type: 'function',
       name: 'list_ui_elements',
@@ -221,7 +228,7 @@ Your responses should be informative, explaining what you're doing and why.`;
             properties: {},
             required: [],
             patternProperties: {
-              '.*': {},
+              '.*': {type: 'string'},
             },
             additionalProperties: false,
           }
@@ -265,7 +272,7 @@ Your responses should be informative, explaining what you're doing and why.`;
             properties: {},
             required: [],
             patternProperties: {
-              '.*': {},
+              '.*': {type: 'string'},
             },
             additionalProperties: false,
           }
@@ -340,150 +347,152 @@ Your responses should be informative, explaining what you're doing and why.`;
 
     iterations++;
     const modelName = options?.modelName ?? ModelType.Fast;
-    const response = await openai.responses.create({
+    const response = await provider.create({
       model: modelName,
-      input,
+      messages: input,
       tools,
       ...(modelName.startsWith('gpt-5') ? {reasoning: {effort: 'high'}} : {}),
     });
 
-    const outputs = response.output ?? [];
+    const outputs = response.outputMessages;
     input.push(...outputs);
     outputs.forEach((item) =>
       options.aiPanel?.addEngineMessage(item));
 
     let hadToolCalls = false;
-    for (const item of outputs) {
-      if (isRecord(item) && item.type === 'function_call') {
-        hadToolCalls = true;
+    for (const call of response.toolCalls) {
+      hadToolCalls = true;
 
-        const functionName = getStringProp(item, 'name');
-        const callId = getStringProp(item, 'call_id');
-        const rawArgs = getStringProp(item, 'arguments') ?? '{}';
-        const args = parseJsonObject(rawArgs);
-        const argsObj = isRecord(args) ? args : {};
+      const functionName = call.name;
+      const callId = call.id;
+      const rawArgs = call.arguments ?? '{}';
+      const argsObj = parseJsonObject(rawArgs);
 
-        if (!functionName || !callId) {
-          input.push({type: 'function_call_output', call_id: callId ?? '', output: 'Error: malformed function call (missing name/call_id).'});
-          continue;
+      if (!functionName || !callId) {
+        const outputItem = provider.createToolOutputMessage(callId ?? '', 'Error: malformed function call (missing name/call_id).');
+        if (callId) {
+          input.push(outputItem);
+          options.aiPanel?.addEngineMessage(outputItem);
         }
-
-        let result: string;
-        try {
-          switch (functionName) {
-          case 'list_ui_elements':
-            result = await context.listUIElements();
-            options.aiPanel?.addUiMessage('🔍 Looking for available UI elements', false);
-            break;
-          case 'get_available_viewers':
-            result = context.getAvailableViewers();
-            options.aiPanel?.addUiMessage('📊 Getting available viewer types', false);
-            break;
-          case 'highlight_element': {
-            result = 'Element highlighted';
-            const elementId = getStringProp(argsObj, 'elementId') ?? '';
-            const description = getStringProp(argsObj, 'description') ?? '';
-            const actRes = await context.highlightElement(elementId, description);
-            options.aiPanel?.addUiMessage(`Highlighting: **${elementId}**`, false);
-            if (actRes != null) {
-              // if it is not null, then it is an error message
-              result = actRes;
-              options.aiPanel?.addUiMessage(`⚠️ ${actRes}`, false);
-            }
-            break;
-          }
-          case 'describe_viewer': {
-            const viewerType = getStringProp(argsObj, 'viewerType') ?? '';
-            result = await context.describeViewer(viewerType);
-            options.aiPanel?.addUiMessage(`📋 Getting available properties for **${viewerType}** viewer`, false);
-            break;
-          }
-          case 'add_viewer': {
-            const viewerType = getStringProp(argsObj, 'viewerType') ?? '';
-            const viewerProps = (argsObj.viewerProperties ?? argsObj.properties ?? {}) as Record<string, any>;
-            result = await context.addViewer(viewerType, viewerProps);
-            options.aiPanel?.addUiMessage(`➕ Added **${viewerType}** viewer ${viewerProps && Object.keys(viewerProps).length > 0 ? `with properties: \n\`\`\`json\n${JSON.stringify(viewerProps, null, 2)}\n\`\`\`` : ''}`, false);
-            break;
-          }
-          case 'find_viewers_by_type': {
-            const viewerType = getStringProp(argsObj, 'viewerType') ?? '';
-            options.aiPanel?.addUiMessage(`🔎 Searching for **${viewerType}** viewers`, false);
-            result = await context.findViewersByType(viewerType);
-            break;
-          }
-          case 'adjust_viewer': {
-            const viewerId = getStringProp(argsObj, 'viewerId') ?? '';
-            const viewerProps = (argsObj.viewerProperties ?? argsObj.properties ?? {}) as Record<string, any>;
-            result = await context.adjustViewer(viewerId, viewerProps);
-            options.aiPanel?.addUiMessage(`⚙️ Setting properties to the viewer: \n\`\`\`json\n${JSON.stringify(viewerProps, null, 2)}\n\`\`\``, false);
-            break;
-          }
-          case 'list_current_viewers':
-            result = await context.listCurrentViewers();
-            options.aiPanel?.addUiMessage('📝 Listing currently open viewers', false);
-            break;
-          case 'reply_to_user': {
-            const message = getStringProp(argsObj, 'message') ?? '';
-            result = 'Message sent to user';
-            options.aiPanel?.addUiMessage(`💬 ${message}`, false);
-            break;
-          }
-          case 'search_documentation': {
-            const query = getStringProp(argsObj, 'query') ?? '';
-            const maxResults = getNumberProp(argsObj, 'maxResults') ?? 4;
-            // Ask for user confirmation before searching external docs (example of using confirmations)
-            // const confirmSearch = options.aiPanel ? await options.aiPanel.addConfirmMessage('Datagrok wants to search platform documentation for additional context. Do you want to allow this action?') : true;
-            // if (!confirmSearch) {
-            //   result = 'Documentation search prohibited by user. Please answer based on the available context without using external documentation.';
-            //   options.aiPanel?.addUiMessage('⚠️ External documentation search prohibited by user.', false);
-            //   break;
-            // }
-            options.aiPanel?.addUiMessage(`🔍 Searching documentation for: **${query}**`, false);
-            try {
-              const searchData = await openai.vectorStores.search(vectorStoreId, {
-                query,
-                max_num_results: maxResults,
-                rewrite_query: false,
-              });
-
-              // Format the search results
-              if (searchData.data && searchData.data.length > 0) {
-                let formattedResults = `Found ${searchData.data.length} relevant documentation sections:\n\n`;
-                for (const item of searchData.data) {
-                  formattedResults += `**Source**: ${item.filename} (score: ${item.score.toFixed(2)})\n`;
-                  for (const content of item.content) {
-                    if (content.type === 'text')
-                      formattedResults += `${content.text}\n\n`;
-                  }
-                  formattedResults += '---\n\n';
-                }
-                result = formattedResults;
-                options.aiPanel?.addUiMessage(`✅ Found ${searchData.data.length} relevant documentation sections`, false);
-              } else {
-                result = 'No relevant documentation found for this query.';
-                options.aiPanel?.addUiMessage('ℹ️ No relevant documentation found', false);
-              }
-            } catch (error: any) {
-              result = `Error searching documentation: ${error.message}`;
-              options.aiPanel?.addUiMessage(`⚠️ Error searching documentation: ${error.message}`, false);
-            }
-            break;
-          }
-          default:
-            result = `Unknown function: ${functionName}`;
-          }
-        } catch (error: any) {
-          result = `Error: ${error.message}`;
-          options.aiPanel?.addUiMessage(`⚠️ Error executing ${functionName}: ${error.message}`, false);
-        }
-
-        input.push({type: 'function_call_output', call_id: callId, output: result});
-        options.aiPanel?.addEngineMessage({
-          type: 'function_call_output',
-          call_id: callId,
-          output: result,
-        });
+        continue;
       }
+
+      let result: string;
+      try {
+        switch (functionName) {
+        case 'list_ui_elements':
+          result = await context.listUIElements();
+          options.aiPanel?.addUiMessage('🔍 Looking for available UI elements', false);
+          break;
+        case 'get_available_viewers':
+          result = context.getAvailableViewers();
+          options.aiPanel?.addUiMessage('📊 Getting available viewer types', false);
+          break;
+        case 'highlight_element': {
+          result = 'Element highlighted';
+          const elementId = getStringProp(argsObj, 'elementId') ?? '';
+          const description = getStringProp(argsObj, 'description') ?? '';
+          const actRes = await context.highlightElement(elementId, description);
+          options.aiPanel?.addUiMessage(`Highlighting: **${elementId}**`, false);
+          if (actRes != null) {
+            // if it is not null, then it is an error message
+            result = actRes;
+            options.aiPanel?.addUiMessage(`⚠️ ${actRes}`, false);
+          }
+          break;
+        }
+        case 'describe_viewer': {
+          const viewerType = getStringProp(argsObj, 'viewerType') ?? '';
+          result = await context.describeViewer(viewerType);
+          options.aiPanel?.addUiMessage(`📋 Getting available properties for **${viewerType}** viewer`, false);
+          break;
+        }
+        case 'add_viewer': {
+          const viewerType = getStringProp(argsObj, 'viewerType') ?? '';
+          const viewerProps = (isJsonObject(argsObj?.viewerProperties) ? argsObj.viewerProperties :
+            isJsonObject(argsObj?.properties) ? argsObj.properties : {}) as ViewerProps;
+          result = await context.addViewer(viewerType, viewerProps);
+          options.aiPanel?.addUiMessage(`➕ Added **${viewerType}** viewer ${viewerProps && Object.keys(viewerProps).length > 0 ? `with properties: \n\`\`\`json\n${JSON.stringify(viewerProps, null, 2)}\n\`\`\`` : ''}`, false);
+          break;
+        }
+        case 'find_viewers_by_type': {
+          const viewerType = getStringProp(argsObj, 'viewerType') ?? '';
+          options.aiPanel?.addUiMessage(`🔎 Searching for **${viewerType}** viewers`, false);
+          result = await context.findViewersByType(viewerType);
+          break;
+        }
+        case 'adjust_viewer': {
+          const viewerId = getStringProp(argsObj, 'viewerId') ?? '';
+          const viewerProps = (isJsonObject(argsObj?.viewerProperties) ? argsObj.viewerProperties :
+            isJsonObject(argsObj?.properties) ? argsObj.properties : {}) as ViewerProps;
+          result = await context.adjustViewer(viewerId, viewerProps);
+          options.aiPanel?.addUiMessage(`⚙️ Setting properties to the viewer: \n\`\`\`json\n${JSON.stringify(viewerProps, null, 2)}\n\`\`\``, false);
+          break;
+        }
+        case 'list_current_viewers':
+          result = await context.listCurrentViewers();
+          options.aiPanel?.addUiMessage('📝 Listing currently open viewers', false);
+          break;
+        case 'reply_to_user': {
+          const message = getStringProp(argsObj, 'message') ?? '';
+          result = 'Message sent to user';
+          options.aiPanel?.addUiMessage(`💬 ${message}`, false);
+          break;
+        }
+        case 'search_documentation': {
+          const query = getStringProp(argsObj, 'query') ?? '';
+          const maxResults = getNumberProp(argsObj, 'maxResults') ?? 4;
+          // Ask for user confirmation before searching external docs (example of using confirmations)
+          // const confirmSearch = options.aiPanel ? await options.aiPanel.addConfirmMessage('Datagrok wants to search platform documentation for additional context. Do you want to allow this action?') : true;
+          // if (!confirmSearch) {
+          //   result = 'Documentation search prohibited by user. Please answer based on the available context without using external documentation.';
+          //   options.aiPanel?.addUiMessage('⚠️ External documentation search prohibited by user.', false);
+          //   break;
+          // }
+          options.aiPanel?.addUiMessage(`🔍 Searching documentation for: **${query}**`, false);
+          try {
+            const searchData = await openai.vectorStores.search(vectorStoreId, {
+              query,
+              max_num_results: maxResults,
+              rewrite_query: false,
+            });
+
+            // Format the search results
+            if (searchData.data && searchData.data.length > 0) {
+              let formattedResults = `Found ${searchData.data.length} relevant documentation sections:\n\n`;
+              for (const item of searchData.data) {
+                formattedResults += `**Source**: ${item.filename} (score: ${item.score.toFixed(2)})\n`;
+                for (const content of item.content) {
+                  if (content.type === 'text')
+                    formattedResults += `${content.text}\n\n`;
+                }
+                formattedResults += '---\n\n';
+              }
+              result = formattedResults;
+              options.aiPanel?.addUiMessage(`✅ Found ${searchData.data.length} relevant documentation sections`, false);
+            } else {
+              result = 'No relevant documentation found for this query.';
+              options.aiPanel?.addUiMessage('ℹ️ No relevant documentation found', false);
+            }
+          } catch (error) {
+            const msg = error instanceof Error ? error.message : String(error);
+            result = `Error searching documentation: ${msg}`;
+            options.aiPanel?.addUiMessage(`⚠️ Error searching documentation: ${msg}`, false);
+          }
+          break;
+        }
+        default:
+          result = `Unknown function: ${functionName}`;
+        }
+      } catch (error) {
+        const msg = error instanceof Error ? error.message : String(error);
+        result = `Error: ${msg}`;
+        options.aiPanel?.addUiMessage(`⚠️ Error executing ${functionName}: ${msg}`, false);
+      }
+
+      const outputItem = provider.createToolOutputMessage(callId, result);
+      input.push(outputItem);
+      options.aiPanel?.addEngineMessage(outputItem);
     }
 
     if (hadToolCalls) {
@@ -507,7 +516,7 @@ Your responses should be informative, explaining what you're doing and why.`;
       continue;
     }
 
-    const content = (response.output_text ?? '').trim();
+    const content = response.outputText.trim();
     if (content.length > 0) {
       options.aiPanel?.addUiMessage(content, false, {
         finalResult: content
@@ -589,8 +598,8 @@ class TableViewContext {
     return viewer.tags.get(AI_GENERATED_IDENTIFIER_TAG)!;
   }
 
-  async addViewer(viewerType: string, properties: Record<string, any>): Promise<string> {
-    const newViewer = this.tableView.addViewer(viewerType, properties);
+  async addViewer(viewerType: string, properties: ViewerProps): Promise<string> {
+    const newViewer = this.tableView.addViewer(viewerType, properties as Record<string, string | number | boolean | null | object>);
     const id = this.getViewerIdentifier(newViewer);
     return `Added viewer with ID: ${id}`;
   }
@@ -607,11 +616,11 @@ class TableViewContext {
     return `Found viewers of type ${viewerType}: \n\n ${resultLines.join('\n\n')}`;
   }
 
-  async adjustViewer(viewerId: string, properties: any): Promise<string> {
+  async adjustViewer(viewerId: string, properties: ViewerProps): Promise<string> {
     const foundViewer = Array.from(this.tableView.viewers).find((v) => this.getViewerIdentifier(v) === viewerId);
     if (!foundViewer)
       return `Viewer with ID ${viewerId} not found. Please add a new viewer instead.`;
-    foundViewer.setOptions(properties);
+    foundViewer.setOptions(properties as Record<string, string | number | boolean | null | object>);
     return `Adjusted viewer ${viewerId}`;
   }
 

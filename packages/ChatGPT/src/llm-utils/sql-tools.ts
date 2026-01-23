@@ -2,39 +2,49 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import OpenAI from 'openai';
 import {getAIAbortSubscription} from '../utils';
 import * as _rxjs from 'rxjs';
 import {SemValueObjectHandler} from '@datagrok-libraries/db-explorer/src/object-handlers';
 import {ChatModel} from 'openai/resources/index';
-import {AIPanelFuncs} from './panel';
+import {AIPanelFuncs, MessageType} from './panel';
 import {BuiltinDBInfoMeta, getDBColumnMetaData, getDBTableMetaData} from './query-meta-utils';
 import {ModelType, OpenAIClient} from './openAI-client';
+import {OpenAIResponsesProvider} from './AI-API-providers/openai-responses-provider';
+import {OpenAIChatCompletionsProvider} from './AI-API-providers/openai-chat-completions-provider';
+import {AIProvider, FunctionToolSpec} from './AI-API-providers/types';
+
 
 const suspiciousSQlPatterns = ['DROP ', 'DELETE ', 'UPDATE ', 'INSERT ', 'ALTER ', 'CREATE ', 'TRUNCATE ', 'EXEC ', 'MERGE '];
 
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null;
+type JsonPrimitive = string | number | boolean | null;
+type JsonValue = JsonPrimitive | JsonObject | JsonValue[];
+type JsonObject = { [key: string]: JsonValue };
+
+function isJsonObject(value: JsonValue | object | null | undefined): value is JsonObject {
+  return !!value && typeof value === 'object' && !Array.isArray(value);
 }
 
-function getStringProp(obj: unknown, key: string): string | null {
-  if (!isRecord(obj))
-    return null;
-  const v = obj[key];
+function getStringProp(obj: JsonObject | null | undefined, key: string): string | null {
+  const v = obj?.[key];
   return typeof v === 'string' ? v : null;
 }
 
-function parseJsonObject(text: string): unknown {
+function getStringArrayProp(obj: JsonObject | null | undefined, key: string): string[] {
+  const v = obj?.[key];
+  if (!Array.isArray(v))
+    return [];
+  return v.filter((item): item is string => typeof item === 'string');
+}
+
+function parseJsonObject(text: string): JsonObject | null {
   try {
-    return JSON.parse(text);
+    const parsed = JSON.parse(text) as JsonValue;
+    return isJsonObject(parsed) ? parsed : null;
   } catch {
     return null;
   }
 }
 
-type ResponseCreateBody = Parameters<OpenAI['responses']['create']>[0];
-type ResponseInput = Exclude<ResponseCreateBody['input'], string | undefined>;
-type ResponseTool = Exclude<ResponseCreateBody['tools'], undefined>[number];
 /**
  * Generates SQL query using function calling approach where LLM can explore schema interactively
  * @throws Error if SQL generation fails
@@ -48,8 +58,8 @@ export async function generateAISqlQueryWithTools(
   connectionID: string,
   schemaName: string,
   options: {
-    oldMessages?: ResponseInput,
-    aiPanel?: AIPanelFuncs<OpenAI.Responses.ResponseInputItem>,
+    oldMessages?: MessageType[],
+    aiPanel?: AIPanelFuncs<MessageType>,
     modelName?: ChatModel,
     disableVerbose?: boolean,
   } = {}
@@ -75,8 +85,8 @@ export async function generateAISqlQueryWithTools(
     abortSub.unsubscribe();
   });
   try {
-  // Initialize OpenAI client
-    const openai = OpenAIClient.getInstance().openai;
+  // Initialize OpenAI client provider
+    const provider = AIProvider.getProvider();
 
     // Initial system message
     const systemMessage = `You are an expert SQL query generator. You have access to tools to explore a database schema and generate SQL queries.
@@ -110,8 +120,10 @@ export async function generateAISqlQueryWithTools(
     - Use the reply_to_user tool to communicate with the user, explain your reasoning during chain of though and execution and so on.
     When you have the final SQL query ready, respond with ONLY the SQL query text (no markdown, no explanation, no semicolon at the end).`;
 
-
-    const input: ResponseInput = options.oldMessages ? options.oldMessages.slice() : [];
+    const input: MessageType[] = options.oldMessages ? [...options.oldMessages] : [];
+    const addEngineMessage = (message: MessageType) => {
+      options.aiPanel?.addEngineMessage(message);
+    };
     if (input.length === 0) {
       // Get initial table list
       const initialTableList = (await context.listTables(false, schemaName)).description;
@@ -140,27 +152,24 @@ export async function generateAISqlQueryWithTools(
         }
       }
 
-      const systemMsg: OpenAI.Responses.ResponseInputItem = {role: 'system', content: systemMessage};
+      const systemMsg = provider.createSystemMessage(systemMessage);
       input.push(systemMsg);
-      options.aiPanel?.addEngineMessage(systemMsg);
-      const initialUserMsg: OpenAI.Responses.ResponseInputItem = {
-        role: 'user',
-        content: `
+      addEngineMessage(systemMsg);
+      const initialUserMsg = provider.createUserMessage(`
         Available schemas: ${(await context.listAllSchemas()).join(', ')}\n\n
         Available tables in schema ${schemaName}:\n\n${initialTableList}\n\nUser Query: ${prompt}\n\n
         Explore the schema using the available tools and generate an SQL query to answer this question.
-        ${semTypeWithinPromptInfo}`,
-      };
-      options.aiPanel?.addEngineMessage(initialUserMsg); // prompt will be shown in UI
+        ${semTypeWithinPromptInfo}`);
+      addEngineMessage(initialUserMsg); // prompt will be shown in UI
       input.push(initialUserMsg);
     } else {
-      const followUpUserMsg: OpenAI.Responses.ResponseInputItem = {role: 'user', content: `User Follow up (do modifications as/if needed based on the following): ${prompt}`};
+      const followUpUserMsg = provider.createUserMessage(`User Follow up (do modifications as/if needed based on the following): ${prompt}`);
       input.push(followUpUserMsg);
-      options.aiPanel?.addEngineMessage(followUpUserMsg);
+      addEngineMessage(followUpUserMsg);
     }
 
     // Define available tools
-    const tools: ResponseTool[] = [
+    const functionTools: FunctionToolSpec[] = [
       {
         type: 'function',
         name: 'list_tables_in_schema',
@@ -270,7 +279,7 @@ export async function generateAISqlQueryWithTools(
 
     // if we have some embeddings, then also add a tool so that LLM can use it to find similar queries
     if (grok.ai.entityIndexingEnabled) {
-      tools.push({
+      functionTools.push({
         type: 'function',
         name: 'find_similar_queries',
         description: 'Finds existing similar queries based on the prompt you provide (which should be based on user question). Use this to get inspiration from previously executed queries that might be similar to the user question. Return up to 3 similar queries with their descriptions/comments. Similarity is based on LLM embeddings and cosine similarity.',
@@ -288,6 +297,7 @@ export async function generateAISqlQueryWithTools(
         strict: true,
       });
     }
+
 
     async function findSimilarQueriesToPrompt(aiPrompt: string) {
       try {
@@ -319,87 +329,95 @@ export async function generateAISqlQueryWithTools(
       iterations++;
       console.log(`\n=== Iteration ${iterations} ===`);
       const modelName = options?.modelName ?? ModelType.Fast;
-      const response = await openai.responses.create({
+      const response = await provider.create({
         model: modelName,
-        input,
-        tools,
+        messages: input,
+        tools: functionTools,
         ...(modelName.startsWith('gpt-5') ? {reasoning: {effort: 'high'}} : {}),
       });
 
-      const outputs = response.output ?? [];
+      const outputs = response.outputMessages;
       input.push(...outputs);
-      outputs.forEach((item) =>
-        options.aiPanel?.addEngineMessage(item));
+      outputs.forEach((item) => addEngineMessage(item));
 
       // Execute function calls (if any)
       let hadToolCalls = false;
-      for (const item of outputs) {
-        if (isRecord(item) && item.type === 'function_call') {
-          hadToolCalls = true;
+      for (const call of response.toolCalls) {
+        hadToolCalls = true;
 
-          const functionName = getStringProp(item, 'name');
-          const callId = getStringProp(item, 'call_id');
-          const rawArgs = getStringProp(item, 'arguments') ?? '{}';
-          const args = parseJsonObject(rawArgs);
+        const functionName = call.name;
+        const callId = call.id;
+        const rawArgs = call.arguments ?? '{}';
+        const args = parseJsonObject(rawArgs);
 
-          if (!functionName || !callId) {
-            input.push({type: 'function_call_output', call_id: callId ?? '', output: 'Error: malformed function call (missing name/call_id).'});
-            continue;
-          }
-
-          let result = '';
-          try {
-            switch (functionName) {
-            case 'list_all_schemas':
-              options.aiPanel?.addUiMessage(`📂 Listing all schemas in the database.`, false);
-              result = (await context.listAllSchemas()).join(', ');
-              !options.disableVerbose && options.aiPanel?.addUiMessage(`✅ Schemas found: *${result}*`, false);
-              break;
-            case 'reply_to_user':
-              options.aiPanel?.addUiMessage(`💬 ${getStringProp(args, 'reply') ?? ''}`, false);
-              result = 'Reply sent to user.';
-              break;
-            case 'list_tables_in_schema':
-              options.aiPanel?.addUiMessage(`📑 Listing all tables in schema *${getStringProp(args, 'schemaName') ?? ''}*.`, false);
-              const res = await context.listTables(false, getStringProp(args, 'schemaName') ?? schemaName);
-              result = res.description;
-              !options.disableVerbose && options.aiPanel?.addUiMessage(res.tableCount ? `✅ Found ${res.tableCount} tables` : '⚠️ No tables found', false);
-              break;
-            case 'describe_tables':
-              options.aiPanel?.addUiMessage(`📋 Getting content of following tables: *${(isRecord(args) && Array.isArray(args.tables) ? args.tables.join(', ') : '')}*.`, false);
-              result = await context.describeTables((isRecord(args) && Array.isArray(args.tables) ? args.tables : []) as string[]);
-              break;
-            case 'list_joins':
-              options.aiPanel?.addUiMessage(`🔗 Listing relations for tables: *${(isRecord(args) && Array.isArray(args.tables) ? args.tables.join(', ') : '')}*.`, false);
-              result = await context.listJoins((isRecord(args) && Array.isArray(args.tables) ? args.tables : []) as string[]);
-              break;
-            case 'try_sql':
-              options.aiPanel?.addUiMessage(`🧪 Testing SQL query:\n${getStringProp(args, 'description') ?? ''}\n\`\`\`sql\n${getStringProp(args, 'sql') ?? ''}\n\`\`\``, false);
-              result = await context.trySql(getStringProp(args, 'sql') ?? '', getStringProp(args, 'description') ?? '');
-              !options.disableVerbose && options.aiPanel?.addUiMessage(`📊 SQL Test Result: \n\n${result}`, false);
-              break;
-            case 'find_similar_queries':
-              options.aiPanel?.addUiMessage(`🔍 Searching for similar queries to help with SQL generation.`, false);
-              const similarQueries = await findSimilarQueriesToPrompt(getStringProp(args, 'prompt') ?? '');
-              !options.disableVerbose && options.aiPanel?.addUiMessage(similarQueries.n > 0 ? `✅ Found ${similarQueries.n} similar queries.` : `⚠️ ${similarQueries.text}`, false);
-              result = similarQueries.text;
-              break;
-            default:
-              result = `Error: Unknown function ${functionName}`;
-            }
-          } catch (error: any) {
-            result = `Error executing ${functionName}: ${error.message}`;
-          }
-
-          console.log(`Result: ${result.substring(0, 200)}${result.length > 200 ? '...' : ''}`);
-
-          input.push({type: 'function_call_output', call_id: callId, output: result});
-          options.aiPanel?.addEngineMessage({
-            type: 'function_call_output',
-            call_id: callId,
-            output: result,
-          });
+        if (!functionName || !callId) {
+          const errorText = 'Error: malformed function call (missing name/call_id).';
+          const outputItem = provider.createToolOutputMessage(callId ?? '', errorText);
+          if (callId)
+            input.push(outputItem);
+          if (callId)
+            addEngineMessage(outputItem);
+          continue;
         }
+
+        let result = '';
+        try {
+          switch (functionName) {
+          case 'list_all_schemas':
+            options.aiPanel?.addUiMessage(`📂 Listing all schemas in the database.`, false);
+            result = (await context.listAllSchemas()).join(', ');
+            !options.disableVerbose && options.aiPanel?.addUiMessage(`✅ Schemas found: *${result}*`, false);
+            break;
+          case 'reply_to_user':
+            options.aiPanel?.addUiMessage(`💬 ${getStringProp(args, 'reply') ?? ''}`, false);
+            result = 'Reply sent to user.';
+            break;
+          case 'list_tables_in_schema':
+            options.aiPanel?.addUiMessage(`📑 Listing all tables in schema *${getStringProp(args, 'schemaName') ?? ''}*.`, false);
+            const res = await context.listTables(false, getStringProp(args, 'schemaName') ?? schemaName);
+            result = res.description;
+            !options.disableVerbose && options.aiPanel?.addUiMessage(res.tableCount ? `✅ Found ${res.tableCount} tables` : '⚠️ No tables found', false);
+            break;
+          case 'describe_tables': {
+            const tables = getStringArrayProp(args, 'tables');
+            options.aiPanel?.addUiMessage(`📋 Getting content of following tables: *${tables.join(', ')}*.`, false);
+            result = await context.describeTables(tables);
+            break;
+          }
+          case 'list_joins': {
+            const tables = getStringArrayProp(args, 'tables');
+            options.aiPanel?.addUiMessage(`🔗 Listing relations for tables: *${tables.join(', ')}*.`, false);
+            result = await context.listJoins(tables);
+            break;
+          }
+          case 'try_sql': {
+            const sql = getStringProp(args, 'sql') ?? '';
+            const description = getStringProp(args, 'description') ?? '';
+            options.aiPanel?.addUiMessage(`🧪 Testing SQL query:\n${description}\n\`\`\`sql\n${sql}\n\`\`\``, false);
+            result = await context.trySql(sql, description);
+            !options.disableVerbose && options.aiPanel?.addUiMessage(`📊 SQL Test Result: \n\n${result}`, false);
+            break;
+          }
+          case 'find_similar_queries': {
+            options.aiPanel?.addUiMessage(`🔍 Searching for similar queries to help with SQL generation.`, false);
+            const similarQueries = await findSimilarQueriesToPrompt(getStringProp(args, 'prompt') ?? '');
+            !options.disableVerbose && options.aiPanel?.addUiMessage(similarQueries.n > 0 ? `✅ Found ${similarQueries.n} similar queries.` : `⚠️ ${similarQueries.text}`, false);
+            result = similarQueries.text;
+            break;
+          }
+          default:
+            result = `Error: Unknown function ${functionName}`;
+          }
+        } catch (error) {
+          const message = error instanceof Error ? error.message : String(error);
+          result = `Error executing ${functionName}: ${message}`;
+        }
+
+        console.log(`Result: ${result.substring(0, 200)}${result.length > 200 ? '...' : ''}`);
+
+        const outputItem = provider.createToolOutputMessage(callId, result);
+        input.push(outputItem);
+        addEngineMessage(outputItem);
       }
 
       // If the model called tools, we must continue so it can consume tool outputs.
@@ -412,7 +430,7 @@ export async function generateAISqlQueryWithTools(
         continue;
       }
 
-      const content = (response.output_text ?? '').trim();
+      const content = response.outputText.trim();
       if (content.length === 0)
         throw new Error('Model returned no text and no tool calls');
 
@@ -626,19 +644,20 @@ class SQLGenerationContext {
       }
 
       return result.join('\n');
-    } catch (error: any) {
+    } catch (error) {
       SQLGenerationContext._lastFc = null;
-      return `SQL Error: ${typeof error == 'string' ? error : error?.message}\n\nThis query failed to execute. Please revise the SQL based on the schema information.`;
+      const message = error instanceof Error ? error.message : String(error);
+      return `SQL Error: ${message}\n\nThis query failed to execute. Please revise the SQL based on the schema information.`;
     }
   }
 
-  private formatColValue(value: any): string {
+  private formatColValue(value: string | number | boolean | null | undefined | object): string {
     if (value === null || value === undefined || value === '' || value === DG.FLOAT_NULL || value === DG.INT_NULL)
       return 'NULL';
     try {
       const valueString = value?.toString();
       return valueString.length > 50 ? `'${valueString.substring(0, 47)}...'` : `'${valueString}'`;
-    } catch (_e) {
+    } catch {
       return 'NON-STRINGIFIABLE-VALUE';
     }
   }

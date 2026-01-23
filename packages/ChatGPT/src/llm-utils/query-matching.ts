@@ -5,7 +5,7 @@ import * as DG from 'datagrok-api/dg';
 import {ChatGPTPromptEngine, GeminiPromptEngine, PromptEngine} from '../prompt-engine/prompt-engine';
 import {_package} from '../package';
 import {dartLike, fireAIAbortEvent} from '../utils';
-import {AIPanelFuncs} from './panel';
+import {AIPanelFuncs, MessageType} from './panel';
 import {generateAISqlQueryWithTools} from './sql-tools';
 import {ModelType} from './openAI-client';
 import OpenAI from 'openai';
@@ -50,12 +50,20 @@ export async function findBestMatchingQuery(
     type: 'object',
     properties: {
       searchPattern: {type: 'string'},
-      parameters: {type: 'object'},
+      parameters: {type: 'object',
+        properties: {},
+        required: [],
+        patternProperties: {
+          '.*': {},
+        },
+        additionalProperties: false,
+      },
       confidence: {type: 'number'},
       suggestedConnection: {type: ['string', 'null']},
       reasoning: {type: 'string'},
     },
     required: ['searchPattern', 'parameters', 'confidence', 'suggestedConnection', 'reasoning'],
+    additionalProperties: false,
   } as const;
   const tableQueriesSearchFunctions = DG.Func.find({meta: {searchPattern: null}, returnType: 'dataframe'})
     .filter((f) => f.options['searchPattern']);
@@ -272,7 +280,7 @@ function runQueryAIprompt(userPrompt: string, connection: DG.DataConnection, tvW
   };
 
 
-  const dummyAIPanelFuncs: AIPanelFuncs<OpenAI.Responses.ResponseInputItem> = {
+  const dummyAIPanelFuncs: AIPanelFuncs<MessageType> = {
     addUserMessage: (_aiMsg: any, _msg: string) => {},
     addAIMessage: (_aiMsg: any, _title: string, _msg: string) => {},
     addEngineMessage: (_aiMsg: any) => {},
