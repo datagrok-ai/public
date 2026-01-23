@@ -78,11 +78,15 @@ export function serviceLogsApp(path?: string, params?: any, limit?: number) : an
 }
 
 //input: dynamic treeNode 
+//meta.role: appTreeBrowser
+//meta.app: Service Logs
 export async function serviceLogsAppTreeBrowser(treeNode: any) : Promise<void> {
   await PackageFunctions.serviceLogsAppTreeBrowser(treeNode);
 }
 
 //input: dynamic treeNode 
+//meta.role: appTreeBrowser
+//meta.app: Reports
 export async function reportsAppTreeBrowser(treeNode: any) : Promise<void> {
   await PackageFunctions.reportsAppTreeBrowser(treeNode);
 }

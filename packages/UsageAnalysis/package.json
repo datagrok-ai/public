@@ -13,6 +13,7 @@
     "directory": "packages/UsageAnalysis"
   },
   "dependencies": {
+    "@datagrok-libraries/test": "^1.0.0",
     "@datagrok-libraries/utils": "^4.6.5",
     "acorn": "^8.5.0",
     "cash-dom": "^8.1.0",
@@ -22,6 +23,9 @@
     "dayjs": "^1.11.10",
     "moment": "^2.29.1",
     "rxjs": "^6.5.5"
+  },
+  "overrides": {
+    "datagrok-api": "$datagrok-api"
   },
   "scripts": {
     "lint": "eslint src --ext .ts",
@@ -46,7 +50,7 @@
     "@typescript-eslint/eslint-plugin": "^5.32.0",
     "@typescript-eslint/parser": "^5.32.0",
     "css-loader": "^6.4.0",
-    "datagrok-tools": "^4.14.55",
+    "datagrok-tools": "^5.0.0",
     "eslint": "^8.57.1",
     "eslint-config-google": "^0.14.0",
     "style-loader": "^3.3.0",
