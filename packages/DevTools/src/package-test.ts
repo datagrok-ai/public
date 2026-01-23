@@ -1,6 +1,6 @@
 import * as DG from 'datagrok-api/dg';
 // import * as grok from 'datagrok-api/grok';
-import {runTests, TestContext, tests, initAutoTests as initTests} from '@datagrok-libraries/utils/src/test';
+import {runTests, TestContext, tests, initAutoTests as initTests} from '@datagrok-libraries/test/src/test';
 
 import './tests/function-signature-editor-test';
 // import './tests/dev-panel-test';

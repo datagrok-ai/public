@@ -1,7 +1,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {delay, Test, TestContext, initAutoTests, awaitCheck} from '@datagrok-libraries/utils/src/test';
+import {delay, Test, TestContext, awaitCheck} from '@datagrok-libraries/test/src/test';
 import {initComputeApi} from '@datagrok-libraries/compute-api';
 import {c} from './package';
 import '../css/styles.css';
