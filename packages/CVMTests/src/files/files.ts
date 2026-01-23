@@ -4,7 +4,7 @@ import {
   category,
   test,
   expect
-} from '@datagrok-libraries/utils/src/test';
+} from '@datagrok-libraries/test/src/test';
 
 category('Files: OpenFile', () => {
   test('Open big csv', async () => {

@@ -145,6 +145,15 @@ for (const lang of languages) {
       }
     });
 
+    if (lang !== 'Grok') {
+      test('String list input', async () => {
+        const stringList = ['apple', 'banana', 'cherry', 'date'];
+        const result = await grok.functions.call(`CVMTests:${lang}ListStringTest`,
+            {'string_list': stringList});
+        expect(result, 'date');
+      }, {stressTest: serverSideLanguages.includes(lang)});
+    }
+
     if (lang === 'Python') {
       test('Environment string', async () => {
         const result = await grok.functions.call('CVMTests:PythonAnchorsCount',

@@ -8,7 +8,7 @@ import {
   expectObject,
   expectExceptionAsync,
   before
-} from '@datagrok-libraries/utils/src/test';
+} from '@datagrok-libraries/test/src/test';
 
 category('Docker', () => {
   const containerOnDemandName: string = 'Cvmtests-docker-test1';

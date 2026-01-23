@@ -91,6 +91,13 @@ export namespace scripts {
   }
 
   /**
+  Returns the last element of a string list
+  */
+  export async function juliaListStringTest(string_list: any ): Promise<string> {
+    return await grok.functions.call('CVMTests:JuliaListStringTest', { string_list });
+  }
+
+  /**
   map input/output
   */
   export async function juliaMap(input_map: any , unique_key: string ): Promise<any> {
@@ -176,6 +183,13 @@ export namespace scripts {
   */
   export async function octaveSimple(integer_input: number , double_input: number , bool_input: boolean , string_input: string ): Promise<{integer_output: number, double_output: number, bool_output: boolean, string_output: string}> {
     return await grok.functions.call('CVMTests:OctaveSimple', { integer_input, double_input, bool_input, string_input });
+  }
+
+  /**
+  Returns the last element of a string list
+  */
+  export async function octaveListStringTest(string_list: any ): Promise<string> {
+    return await grok.functions.call('CVMTests:OctaveListStringTest', { string_list });
   }
 
   /**
@@ -306,6 +320,13 @@ export namespace scripts {
   }
 
   /**
+  Returns the last element of a string list
+  */
+  export async function pythonListStringTest(string_list: any ): Promise<string> {
+    return await grok.functions.call('CVMTests:PythonListStringTest', { string_list });
+  }
+
+  /**
   map input/output
   */
   export async function pythonMap(input_map: any , unique_key: string ): Promise<any> {
@@ -402,6 +423,13 @@ export namespace scripts {
   */
   export async function rSimple(integer_input: number , double_input: number , bool_input: boolean , string_input: string ): Promise<{integer_output: number, double_output: number, bool_output: boolean, string_output: string}> {
     return await grok.functions.call('CVMTests:RSimple', { integer_input, double_input, bool_input, string_input });
+  }
+
+  /**
+  Returns the last element of a string list
+  */
+  export async function rListStringTest(string_list: any ): Promise<string> {
+    return await grok.functions.call('CVMTests:RListStringTest', { string_list });
   }
 
   /**
