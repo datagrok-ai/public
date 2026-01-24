@@ -200,7 +200,153 @@ new_table.col('model').init((i) => `${id_column.get(i)}_${i}`);
 </Tabs>
 ```
 
+## Choices
 
+Datagrok natively support the `choices` capability for primitive input types (usually strings).
+You can use it to pass to the script one value from a pre-populated list, 
+or a list of selected values.
+
+### Single choice
+
+To implement a single choice, specify the `choices` options in the paraemter annotaions.
+For example, let's implement a very sinmple calculator that accepts two numbers and an operation to perform on them.
+The Datagrok automatically creates a dropdown list with available operations.
+
+```mdx-code-block
+<Tabs>
+<TabItem value="result" label="Result" default>
+```
+
+![Single Choices example](../_pics/Scripting-Choice-single.png)
+
+
+```mdx-code-block
+</TabItem>
+<TabItem value="python" label="Python">
+```
+
+```python
+#name: ChoiceDemoCalculator
+#language: python
+#input: double a = 2
+#input: double b = 3
+#input: string action = "+" {choices: ["+", "-", "*", "/"]}
+#output: double c
+
+if action == "+":
+    c = a + b
+elif action == "-":
+    c = a - b
+elif action ==  "*":
+    c = a * b
+else:
+    c = a / b
+```
+
+```mdx-code-block
+</TabItem>
+<TabItem value="javascript" label="JavaScript">
+```
+
+```javascript
+//name: ChoiceDemoCalculatorJS
+//language: javascript
+//input: double a = 2
+//input: double b = 3
+//input: string action = "+" {choices: ["+", "-", "*", "/"]}
+//output: double c
+
+let c;  // result variable
+
+if (action === '+') {
+    c = a + b;
+} else if (action === '-') {
+    c = a - b;
+} else if (action === '*') {
+    c = a * b;
+} else {
+    c = a / b;
+}
+```
+
+```mdx-code-block
+</TabItem>
+</Tabs>
+```
+
+### Multi-value choice
+
+To implement a multi-choice input, 
+annotate the input variable as `list<type>`, 
+and specify the `choices` options in the parameter annotaions,
+same as above.
+To initialize the list of choices, you need to provide a list of values
+for the default variable value.
+
+:::caution Limited support for scripts
+
+Multi-value choices are now supported only in JavaScript.
+The multi-choice support for Python and R
+is planned for the next releases.
+
+:::
+
+```mdx-code-block
+<Tabs>
+<TabItem value="result" label="Result" default>
+```
+
+![Single Choices example](../_pics/Scripting-Choice-multi.png)
+
+```mdx-code-block
+</TabItem>
+<TabItem value="javascript" label="JavaScript">
+```
+
+```javascript
+//name: PurificationLogFactor
+//language: javascript
+//input: list<string> methods = ["Ion chromatography", "Diafiltration" ] {caption: "Purification methods"; choices: ["Gel-filtration", "Ion chromatography", "Diafiltration", "Ultrafiltration"]}
+//output: double log_factor_sum
+
+
+const logFactors = {
+  "Gel-filtration": 2.0,
+  "Ion chromatography": 4.5,
+  "Diafiltration": 6.4,
+  "Ultrafiltration": 10.0,
+};
+
+log_factor_sum = methods.reduce((sum, method) => {
+    const factor = logFactors[method];
+    if (typeof factor !== "number") {
+      throw new Error(`Unknown purification method: ${method}`);
+    }
+    return sum + factor;
+  }, 0)
+```
+
+```mdx-code-block
+</TabItem>
+</Tabs>
+```
+
+### Dynamic choice selection
+
+Instead of using a fixed list of values, 
+you can define choices using a csv file,
+a name of another function (such as query),
+or by writing an SQL query.
+
+```javascript
+//input: string shipCountry = "France" {choices: OpenFile("System:AppData/Samples/countries.csv")}
+//input: string shipCountry = "France" {choices: Samples:countries}
+//input: list<string> company {choices: Query("SELECT DISTINCT company from research_companies")}
+```
+
+Some more examples are provided on the 
+[Function annotations](../../../datagrok/concepts/functions/func-params-annotation.md#choices)
+page.
 
 ##  File I/O
 You can use files as input or output parameters
