@@ -200,6 +200,83 @@ new_table.col('model').init((i) => `${id_column.get(i)}_${i}`);
 </Tabs>
 ```
 
+## Choices
+
+Datagrok natively support the `choices` capability for primitive input types (usually strings).
+You can use it to pass to the script one value from a pre-populated list, 
+or a list of selected values.
+
+### Single choice
+
+To implement a single choice, specify the `choices` options in the paraemter annotaions.
+For example, let's implement a very sinmple calculator that accepts two numbers and an operation to perform on them.
+The Datagrok automatically creates a dropdown list with available operations.
+
+```mdx-code-block
+<Tabs>
+<TabItem value="result" label="Result" default>
+```
+
+![Single Choices example](../_pics/Scripting-Choice-single.png)
+
+
+```mdx-code-block
+</TabItem>
+<TabItem value="python" label="Python">
+```
+
+```python
+#name: ChoiceDemoCalculator
+#language: python
+#input: double a = 2
+#input: double b = 3
+#input: string action = "+" {choices: ["+", "-", "*", "/"]}
+#output: double c
+
+if action == "+":
+    c = a + b
+elif action == "-":
+    c = a - b
+elif action ==  "*":
+    c = a * b
+else:
+    c = a / b
+```
+
+```mdx-code-block
+</TabItem>
+<TabItem value="javascript" label="JavaScript">
+```
+
+```javascript
+//name: ChoiceDemoCalculatorJS
+//language: javascript
+//input: double a = 2
+//input: double b = 3
+//input: string action = "+" {choices: ["+", "-", "*", "/"]}
+//output: double c
+
+let c;  // result variable
+
+if (action === '+') {
+    c = a + b;
+} else if (action === '-') {
+    c = a - b;
+} else if (action === '*') {
+    c = a * b;
+} else {
+    c = a / b;
+}
+```
+
+```mdx-code-block
+</TabItem>
+</Tabs>
+```
+
+### Multi-value choice
+
+
 
 
 ##  File I/O
