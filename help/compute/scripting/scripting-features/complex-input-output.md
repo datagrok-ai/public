@@ -276,8 +276,77 @@ if (action === '+') {
 
 ### Multi-value choice
 
+To implement a multi-choice input, 
+annotate the input variable as `list<type>`, 
+and specify the `choices` options in the parameter annotaions,
+same as above.
+To initialize the list of choices, you need to provide a list of values
+for the default variable value.
+
+:::caution Limited support for scripts
+
+Multi-value choices are now supported only in JavaScript.
+The multi-choice support for Python and R
+is planned for the next releases.
+
+:::
+
+```mdx-code-block
+<Tabs>
+<TabItem value="result" label="Result" default>
+```
+
+![Single Choices example](../_pics/Scripting-Choice-multi.png)
+
+```mdx-code-block
+</TabItem>
+<TabItem value="javascript" label="JavaScript">
+```
+
+```javascript
+//name: PurificationLogFactor
+//language: javascript
+//input: list<string> methods = ["Ion chromatography", "Diafiltration" ] {caption: "Purification methods"; choices: ["Gel-filtration", "Ion chromatography", "Diafiltration", "Ultrafiltration"]}
+//output: double log_factor_sum
 
 
+const logFactors = {
+  "Gel-filtration": 2.0,
+  "Ion chromatography": 4.5,
+  "Diafiltration": 6.4,
+  "Ultrafiltration": 10.0,
+};
+
+log_factor_sum = methods.reduce((sum, method) => {
+    const factor = logFactors[method];
+    if (typeof factor !== "number") {
+      throw new Error(`Unknown purification method: ${method}`);
+    }
+    return sum + factor;
+  }, 0)
+```
+
+```mdx-code-block
+</TabItem>
+</Tabs>
+```
+
+### Dynamic choice selection
+
+Instead of using a fixed list of values, 
+you can define choices using a csv file,
+a name of another function (such as query),
+or by writing an SQL query.
+
+```javascript
+//input: string shipCountry = "France" {choices: OpenFile("System:AppData/Samples/countries.csv")}
+//input: string shipCountry = "France" {choices: Samples:countries}
+//input: list<string> company {choices: Query("SELECT DISTINCT company from research_companies")}
+```
+
+Some more examples are provided on the 
+[Function annotations](../../../datagrok/concepts/functions/func-params-annotation.md#choices)
+page.
 
 ##  File I/O
 You can use files as input or output parameters
