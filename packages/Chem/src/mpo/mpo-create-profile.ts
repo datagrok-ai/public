@@ -19,6 +19,7 @@ const METHOD_PROBABILISTIC = 'Probabilistic';
 export class MpoProfileCreateView {
   readonly view: DG.View;
   readonly showMethod: boolean;
+  readonly isEditMode: boolean;
 
   df: DG.DataFrame | null = null;
   profile: DesirabilityProfile;
@@ -29,27 +30,38 @@ export class MpoProfileCreateView {
   profileViewContainer: HTMLDivElement = ui.div();
   methodInput?: DG.ChoiceInput<string | null>;
   aggregationInput?: DG.ChoiceInput<WeightedAggregation | null>;
+  fileName?: string | null = null;
   saveButton: HTMLElement | null = null;
 
   tableView: DG.TableView | null = null;
 
-  constructor(existingProfile?: DesirabilityProfile, showMethod: boolean = true) {
+  constructor(existingProfile?: DesirabilityProfile, showMethod: boolean = true, fileName?: string) {
     this.view = DG.View.create();
     this.showMethod = showMethod;
-    this.profile = existingProfile ?? this.createDefaultProfile();
+    this.isEditMode = !!existingProfile;
+    this.fileName = fileName;
 
+    this.profile = existingProfile ?? this.createDefaultProfile();
     this.editor = new MpoProfileEditor(undefined, true);
     this.editor.setProfile(this.profile);
     this.profileEditorContainer = ui.divV([this.editor.root]);
     this.profileEditorContainer.classList.add('chem-profile-editor-container');
 
-    this.initTableView();
-    this.view.name = this.tableView!.name = existingProfile ? 'Edit MPO Profile' : 'Create MPO Profile';
+    if (!this.isEditMode)
+      this.initTableView();
+
+    this.view.name = this.isEditMode ? 'Edit MPO Profile' : 'Create MPO Profile';
+    this.updateViewPaths();
 
     this.initControls(showMethod);
     this.initSaveButton();
     this.attachLayout();
     this.listenForProfileChanges();
+  }
+
+  private updateViewPaths() {
+    const path = this.isEditMode && this.profile.name ? this.profile.name : 'Create MPO Profile';
+    // this.view.path = this.tableView!.path = /*createPath(path);*/path;
   }
 
   private initTableView(): void {
@@ -69,37 +81,43 @@ export class MpoProfileCreateView {
     }, 0);
   }
 
-  private showTableView(ratio = 0.7): void {
-    if (!this.tableView) return;
-    this.tableView.grid.root.style.visibility = 'visible';
-    this.tableView.dockManager.dock(this.view.root, DG.DOCK_TYPE.TOP, null, '', ratio);
-  }
+  private setTableViewVisible(visible: boolean, ratio = 0.7): void {
+    if (this.isEditMode || !this.tableView)
+      return;
 
-  private hideTableView(): void {
-    if (!this.tableView) return;
-    this.tableView.grid.root.style.visibility = 'hidden';
-    this.tableView.dockManager.dock(this.view.root, DG.DOCK_TYPE.TOP, null, '', 0.99);
+    this.tableView.grid.root.style.visibility = visible ? 'visible' : 'hidden';
+    this.tableView.dockManager.dock(
+      this.view.root,
+      DG.DOCK_TYPE.TOP,
+      null,
+      '',
+      visible ? ratio : 0.99,
+    );
   }
 
   private initSaveButton() {
     this.saveButton = ui.bigButton('Save', async () => {
+      const fileNameInput = ui.input.string('File name', {value: this.fileName ?? 'mpo-profile.json'});
       const nameInput = ui.input.string('Name', {value: this.profile.name ?? ''});
       const descInput = ui.input.string('Description', {value: this.profile.description ?? ''});
+
       ui.dialog({title: 'Save MPO Profile'})
-        .add(ui.divV([nameInput, descInput]))
+        .add(ui.divV([fileNameInput, nameInput, descInput]))
         .onOK(() => {
           this.profile.name = nameInput.value || '';
           this.profile.description = descInput.value || '';
 
-          grok.dapi.files.writeAsText(`${MPO_TEMPLATE_PATH}/new.json`, JSON.stringify(this.profile));
+          const fileName = this.fileName ?? fileNameInput.value!.trim();
+          grok.dapi.files.writeAsText(`${MPO_TEMPLATE_PATH}/${fileName}`, JSON.stringify(this.profile));
           this.saveButton!.style.display = 'none';
-          grok.shell.info(`Profile "${this.profile.name || 'Unnamed'}" saved.`);
+          grok.shell.info(`Profile "${this.profile.name}" saved.`);
         })
         .show();
     });
 
     this.saveButton.style.display = 'none';
     this.view.setRibbonPanels([[this.saveButton]]);
+    this.tableView?.setRibbonPanels([[this.saveButton]]);
   }
 
   private initControls(showMethod: boolean) {
@@ -115,7 +133,7 @@ export class MpoProfileCreateView {
             await this.runProbabilisticMpo();
             return;
           }
-          this.hideTableView();
+          this.setTableViewVisible(false);
           this.attachLayout();
         },
       });
@@ -190,7 +208,7 @@ export class MpoProfileCreateView {
 
     ui.setUpdateIndicator(this.view.root, true, 'Running probabilistic MPO...');
 
-    this.showTableView(0.5);
+    this.setTableViewVisible(true);
 
     const prev = grok.shell.v;
     grok.shell.v = this.tableView;

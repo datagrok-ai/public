@@ -5,25 +5,15 @@
     "properties": {
         "Caco2": {
             "line": [[-8, 0], [-6, 1], [-4, 0]],
-            "weight": 0.8,
-            "function": "Admetica:getAdmeProperty(['Caco2'])"
+            "weight": 0.8
         },
         "Lipophilicity": {
             "line": [[-2, 0], [2, 1], [3, 1], [5, 0.5]],
-            "weight": 1,
-            "function": "Admetica:getAdmeProperty(['Lipophilicity'])"
+            "weight": 1
         },
         "Solubility": {
             "line": [[-9, 0], [-8, 0.1], [-7, 0.3], [-6, 0.7], [-5, 0.9], [0, 1]],
             "weight": 1
-        },
-        "Type": {
-            "mode": "categorical",
-            "weight": 0.6,
-            "categories": [
-                { "name": "Pass", "weight": 1 },
-                { "name": "Fail", "weight": 0.5 }
-            ]
         }
     }
 }

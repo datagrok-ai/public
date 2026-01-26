@@ -6,7 +6,7 @@ import {u2} from '@datagrok-libraries/utils/src/u2';
 import {MpoProfileEditor} from '@datagrok-libraries/statistics/src/mpo/mpo-profile-editor';
 
 import {_package} from '../package';
-import {MpoProfileInfo, loadMpoProfiles, deleteMpoProfile} from './utils';
+import {MpoProfileInfo, loadMpoProfiles, deleteMpoProfile, createPathFromArr} from './utils';
 import {MpoProfileCreateView} from './mpo-create-profile';
 
 export class MpoProfilesView {
@@ -20,6 +20,7 @@ export class MpoProfilesView {
   constructor() {
     this.view = DG.View.fromRoot(this.root);
     this.view.name = this.name;
+    // this.view.path = this.name;
     grok.shell.windows.showHelp = false;
   }
 
@@ -115,7 +116,7 @@ export class MpoProfilesView {
     const clone = this.profileForEditing(profile);
     clone.name = `${profile.name} (Copy)`;
 
-    const view = new MpoProfileCreateView(clone, false);
+    const view = new MpoProfileCreateView(clone, false, profile.fileName);
     grok.shell.v = grok.shell.addView(view.view);
   }
 
@@ -141,13 +142,13 @@ export class MpoProfilesView {
 
   private openEditProfile(profile: MpoProfileInfo): void {
     const editable = this.profileForEditing(profile);
-    const view = new MpoProfileCreateView(editable, false);
+    const view = new MpoProfileCreateView(editable, false, profile.fileName);
     grok.shell.v = grok.shell.addView(view.view);
   }
 
   private openCreateProfile(): void {
     const view = new MpoProfileCreateView();
-    grok.shell.v = grok.shell.addPreview(view.view);
+    grok.shell.v = grok.shell.addPreview(view.tableView!);
   }
 
   private confirmDelete(profile: MpoProfileInfo): void {
