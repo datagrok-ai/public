@@ -14,14 +14,19 @@ import {getDesiredTables, getDescriptorStatistics, gaussDesirabilityFunc, sigmoi
 import {MIN_SAMPLES_COUNT, PMPO_NON_APPLICABLE, DescriptorStatistics, P_VAL_TRES_MIN, DESCR_TITLE,
   R2_MIN, Q_CUTOFF_MIN, PmpoParams, SCORES_TITLE, DESCR_TABLE_TITLE, PMPO_COMPUTE_FAILED, SELECTED_TITLE,
   P_VAL, DESIRABILITY_COL_NAME, STAT_GRID_HEIGHT, DESIRABILITY_COLUMN_WIDTH, WEIGHT_TITLE,
-  P_VAL_TRES_DEFAULT,
-  R2_DEFAULT,
-  Q_CUTOFF_DEFAULT} from './pmpo-defs';
+  P_VAL_TRES_DEFAULT, R2_DEFAULT, Q_CUTOFF_DEFAULT} from './pmpo-defs';
 import {addSelectedDescriptorsCol, getDescriptorStatisticsTable, getFilteredByPvalue, getFilteredByCorrelations,
   getModelParams, getDescrTooltip, saveModel, getScoreTooltip, getDesirabilityProfileJson, getCorrelationTriples,
   addCorrelationColumns, setPvalColumnColorCoding, setCorrColumnColorCoding} from './pmpo-utils';
 import {getOutputPalette} from '../pareto-optimization/utils';
 import {OPT_TYPE} from '../pareto-optimization/defs';
+
+export type PmpoTrainingResult = {
+  params: Map<string, PmpoParams>,
+  descrStatsTable: DG.DataFrame,
+  selectedByPvalue: string[],
+  selectedByCorr: string[],
+};
 
 /** Class implementing probabilistic MPO (pMPO) model training and prediction */
 export class Pmpo {
@@ -133,6 +138,54 @@ export class Pmpo {
 
     return true;
   } // isTableValid
+
+  /** Fits the pMPO model to the given data and returns training results */
+  static fit(df: DG.DataFrame, descriptors: DG.ColumnList, desirability: DG.Column,
+    pValTresh: number, r2Tresh: number, qCutoff: number): PmpoTrainingResult {
+    if (!Pmpo.isApplicable(descriptors, desirability, pValTresh, r2Tresh, qCutoff))
+      throw new Error('Failed to train pMPO model: the method is not applicable to the inputs');
+
+    const descriptorNames = descriptors.names();
+    const {desired, nonDesired} = getDesiredTables(df, desirability);
+
+    // Compute descriptors' statistics
+    const descrStats = new Map<string, DescriptorStatistics>();
+    descriptorNames.forEach((name) => {
+      descrStats.set(name, getDescriptorStatistics(desired.col(name)!, nonDesired.col(name)!));
+    });
+    const descrStatsTable = getDescriptorStatisticsTable(descrStats);
+
+    // Set p-value column color coding
+    setPvalColumnColorCoding(descrStatsTable, pValTresh);
+
+    // Filter by p-value
+    const selectedByPvalue = getFilteredByPvalue(descrStatsTable, pValTresh);
+
+    // Compute correlation triples
+    const correlationTriples = getCorrelationTriples(descriptors, selectedByPvalue);
+
+    // Filter by correlations
+    const selectedByCorr = getFilteredByCorrelations(descriptors, selectedByPvalue, descrStats, r2Tresh, correlationTriples);
+
+    // Add the Selected column
+    addSelectedDescriptorsCol(descrStatsTable, selectedByCorr);
+
+    // Add correlation columns
+    addCorrelationColumns(descrStatsTable, descriptorNames, correlationTriples, selectedByCorr);
+
+    // Set correlation columns color coding
+    setCorrColumnColorCoding(descrStatsTable, descriptorNames, r2Tresh);
+
+    // Compute pMPO parameters - training
+    const params = getModelParams(desired, nonDesired, selectedByCorr, qCutoff);
+
+    return {
+      params: params,
+      descrStatsTable: descrStatsTable,
+      selectedByPvalue: selectedByPvalue,
+      selectedByCorr: selectedByCorr,
+    };
+  } // fitModelParams
 
   /** Predicts pMPO scores for the given data frame using provided pMPO parameters */
   static predict(df: DG.DataFrame, params: Map<string, PmpoParams>, predictionName: string): DG.Column {
@@ -423,43 +476,13 @@ export class Pmpo {
   /** Fits the pMPO model to the given data and updates the viewers accordingly */
   private fitAndUpdateViewers(df: DG.DataFrame, descriptors: DG.ColumnList, desirability: DG.Column,
     pValTresh: number, r2Tresh: number, qCutoff: number): void {
-    if (!Pmpo.isApplicable(descriptors, desirability, pValTresh, r2Tresh, qCutoff))
-      throw new Error('Failed to train pMPO model: the method is not applicable to the inputs');
+    const trainResult = Pmpo.fit(df, descriptors, desirability, pValTresh, r2Tresh, qCutoff);
+    this.params = trainResult.params;
+    const descrStatsTable = trainResult.descrStatsTable;
+    const selectedByPvalue = trainResult.selectedByPvalue;
+    const selectedByCorr = trainResult.selectedByCorr;
 
     const descriptorNames = descriptors.names();
-    const {desired, nonDesired} = getDesiredTables(df, desirability);
-
-    // Compute descriptors' statistics
-    const descrStats = new Map<string, DescriptorStatistics>();
-    descriptorNames.forEach((name) => {
-      descrStats.set(name, getDescriptorStatistics(desired.col(name)!, nonDesired.col(name)!));
-    });
-    const descrStatsTable = getDescriptorStatisticsTable(descrStats);
-
-    // Set p-value column color coding
-    setPvalColumnColorCoding(descrStatsTable, pValTresh);
-
-    // Filter by p-value
-    const selectedByPvalue = getFilteredByPvalue(descrStatsTable, pValTresh);
-
-    // Compute correlation triples
-    const correlationTriples = getCorrelationTriples(descriptors, selectedByPvalue);
-
-    // Filter by correlations
-    const selectedByCorr = getFilteredByCorrelations(descriptors, selectedByPvalue, descrStats, r2Tresh, correlationTriples);
-
-    // Add the Selected column
-    addSelectedDescriptorsCol(descrStatsTable, selectedByCorr);
-
-    // Add correlation columns
-    addCorrelationColumns(descrStatsTable, descriptorNames, correlationTriples, selectedByCorr);
-
-    // Set correlation columns color coding
-    setCorrColumnColorCoding(descrStatsTable, descriptorNames, r2Tresh);
-
-    // Compute pMPO parameters - training
-    this.params = getModelParams(desired, nonDesired, selectedByCorr, qCutoff);
-    console.log('pMPO parameters:', this.params);
 
     //const weightsTable = getWeightsTable(this.params);
     const prediction = Pmpo.predict(df, this.params, this.predictionName);
