@@ -78,6 +78,7 @@ export class MpoProfileEditor {
   ): HTMLElement {
     const row = ui.divH([], 'statistics-mpo-row');
 
+    prop.mode ??= 'freeform';
     const editor = DesirabilityEditorFactory.create(prop);
     editor.onChanged.subscribe(() => this.emitChange());
 

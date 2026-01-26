@@ -12,36 +12,40 @@ type Point = [number, number];
 const EDITOR_PADDING = {top: 10, right: 10, bottom: 20, left: 30};
 const POINT_RADIUS = 3;
 
+const COLORS = {
+  line: '#2077b4',
+  point: '#d72f30',
+  barFill: 'rgba(160,196,255,0.5)',
+};
+
 class CoordMapper {
+  private plotWidth: number;
+  private plotHeight: number;
+  private scaleX: number;
+  private scaleY: number;
+
   constructor(
     private minX: number,
     private maxX: number,
     private width: number,
     private height: number,
-  ) {}
+  ) {
+    this.plotWidth = width - EDITOR_PADDING.left - EDITOR_PADDING.right;
+    this.plotHeight = height - EDITOR_PADDING.top - EDITOR_PADDING.bottom;
+    this.scaleX = (this.maxX - this.minX === 0) ? 1 : this.plotWidth / (this.maxX - this.minX);
+    this.scaleY = this.plotHeight;
+  }
 
   toCanvasCoords(p: Point): {x: number, y: number} {
-    const plotWidth = this.width - EDITOR_PADDING.left - EDITOR_PADDING.right;
-    const plotHeight = this.height - EDITOR_PADDING.top - EDITOR_PADDING.bottom;
-
-    const scaleX = (this.maxX - this.minX === 0) ? 1 : plotWidth / (this.maxX - this.minX);
-    const scaleY = plotHeight;
-
-    const canvasX = EDITOR_PADDING.left + (p[0] - this.minX) * scaleX;
-    const canvasY = EDITOR_PADDING.top + plotHeight - (p[1] * scaleY);
+    const canvasX = EDITOR_PADDING.left + (p[0] - this.minX) * this.scaleX;
+    const canvasY = EDITOR_PADDING.top + this.plotHeight - (p[1] * this.scaleY);
 
     return {x: canvasX, y: canvasY};
   }
 
   toDataCoords(canvasX: number, canvasY: number): {x: number, y: number} {
-    const plotWidth = this.width - EDITOR_PADDING.left - EDITOR_PADDING.right;
-    const plotHeight = this.height - EDITOR_PADDING.top - EDITOR_PADDING.bottom;
-
-    const scaleX = (this.maxX - this.minX === 0) ? 1 : plotWidth / (this.maxX - this.minX);
-    const scaleY = plotHeight;
-
-    let dataX = this.minX + (canvasX - EDITOR_PADDING.left) / scaleX;
-    let dataY = (EDITOR_PADDING.top + plotHeight - canvasY) / scaleY;
+    let dataX = this.minX + (canvasX - EDITOR_PADDING.left) / this.scaleX;
+    let dataY = (EDITOR_PADDING.top + this.plotHeight - canvasY) / this.scaleY;
 
     dataX = Math.max(this.minX, Math.min(this.maxX, dataX));
     dataY = Math.max(0, Math.min(1, dataY));
@@ -65,7 +69,7 @@ export class MpoDesirabilityLineEditor {
   private pointsGroup?: Konva.Group;
   private barValues?: number[];
 
-  private redrawFn?: (notify?: boolean) => void;
+  private redrawFn!: (notify?: boolean) => void;
 
   private specialHandle?: Konva.Circle;
   onParamsChanged?: (prop: PropertyDesirability) => void;
@@ -78,6 +82,15 @@ export class MpoDesirabilityLineEditor {
     this.root.style.position = 'relative';
 
     requestAnimationFrame(() => this.initKonva(width, height));
+  }
+
+  private isInPlotArea(pos: {x: number, y: number}, width: number, height: number) {
+    return (
+      pos.x >= EDITOR_PADDING.left &&
+      pos.x <= width - EDITOR_PADDING.right &&
+      pos.y >= EDITOR_PADDING.top &&
+      pos.y <= height - EDITOR_PADDING.bottom
+    );
   }
 
   private initKonva(width: number, height: number) {
@@ -100,54 +113,12 @@ export class MpoDesirabilityLineEditor {
     const maxX = this.getMaxX();
 
     // --- Draw Axes ---
-    const xAxis = new Konva.Line({
-      points: [EDITOR_PADDING.left, height - EDITOR_PADDING.bottom, width - EDITOR_PADDING.right, height - EDITOR_PADDING.bottom],
-      stroke: 'grey',
-      strokeWidth: 1,
-    });
-    const yAxis = new Konva.Line({
-      points: [EDITOR_PADDING.left, EDITOR_PADDING.top, EDITOR_PADDING.left, height - EDITOR_PADDING.bottom],
-      stroke: 'grey',
-      strokeWidth: 1,
-    });
-    this.layer.add(xAxis, yAxis);
-
-    // --- Axis Labels ---
-    const minXLabel = new Konva.Text({
-      x: EDITOR_PADDING.left,
-      y: height - EDITOR_PADDING.bottom + 3,
-      text: minX.toFixed(1),
-      fontSize: 9,
-      fill: 'grey',
-    });
-    const maxXLabel = new Konva.Text({
-      x: width - EDITOR_PADDING.right - 15,
-      y: height - EDITOR_PADDING.bottom + 3,
-      text: maxX.toFixed(1),
-      fontSize: 9,
-      align: 'right',
-      fill: 'grey',
-    });
-    const zeroYLabel = new Konva.Text({
-      x: EDITOR_PADDING.left - 20,
-      y: height - EDITOR_PADDING.bottom - 5,
-      text: '0.0',
-      fontSize: 9,
-      fill: 'grey',
-    });
-    const oneYLabel = new Konva.Text({
-      x: EDITOR_PADDING.left - 20,
-      y: EDITOR_PADDING.top - 5,
-      text: '1.0',
-      fontSize: 9,
-      fill: 'grey',
-    });
-    this.layer.add(minXLabel, maxXLabel, zeroYLabel, oneYLabel);
+    this.drawAxes(minX, maxX, width, height);
 
     // --- Draw Line and Points ---
     this.konvaLine = new Konva.Line({
       points: [],
-      stroke: '#2077b4',
+      stroke: COLORS.line,
       strokeWidth: 2,
       lineCap: 'round',
       lineJoin: 'round',
@@ -175,8 +146,10 @@ export class MpoDesirabilityLineEditor {
       const konvaPoints: number[] = [];
 
       const sortedLine = [...this.computeLine()].sort((a, b) => a[0] - b[0]);
+
+      const mapper = new CoordMapper(minX, maxX, width, height);
+
       sortedLine.forEach((p, index) => {
-        const mapper = new CoordMapper(minX, maxX, width, height);
         const coords = mapper.toCanvasCoords([p[0], p[1]]);
         konvaPoints.push(coords.x, coords.y);
 
@@ -184,7 +157,7 @@ export class MpoDesirabilityLineEditor {
           x: coords.x,
           y: coords.y,
           radius: POINT_RADIUS,
-          fill: '#d72f30',
+          fill: COLORS.point,
           stroke: 'black',
           strokeWidth: 1,
           draggable: this._prop.mode === 'freeform',
@@ -296,10 +269,7 @@ export class MpoDesirabilityLineEditor {
       const minX = this.getMinX();
       const maxX = this.getMaxX();
 
-      if (
-        pos.x < EDITOR_PADDING.left || pos.x > this.stage!.width() - EDITOR_PADDING.right ||
-        pos.y < EDITOR_PADDING.top || pos.y > this.stage!.height() - EDITOR_PADDING.bottom
-      ) return;
+      if (!this.isInPlotArea(pos, this.stage!.width(), this.stage!.height())) return;
 
       const mapper = new CoordMapper(minX, maxX, this.stage!.width(), this.stage!.height());
       const dataCoords = mapper.toDataCoords(pos.x, pos.y);
@@ -315,8 +285,7 @@ export class MpoDesirabilityLineEditor {
       if (!pos) return;
 
       if (this._prop.mode !== 'freeform') {
-        if (pos.x >= EDITOR_PADDING.left && pos.x <= width - EDITOR_PADDING.right &&
-          pos.y >= EDITOR_PADDING.top && pos.y <= height - EDITOR_PADDING.bottom)
+        if (this.isInPlotArea(pos, width, height))
           this.stage.container().style.cursor = 'grab';
         else
           this.stage.container().style.cursor = 'default';
@@ -394,11 +363,11 @@ export class MpoDesirabilityLineEditor {
   }
 
   getMinX(): number {
-    return this._prop.min ?? Math.min(...this._prop.line.map((p) => p[0]));
+    return this._prop.min ?? Math.min(...this._prop.line.map((p) => p[0])) ?? 0;
   }
 
   getMaxX(): number {
-    return this._prop.max ?? Math.max(...this._prop.line.map((p) => p[0]));
+    return this._prop.max ?? Math.max(...this._prop.line.map((p) => p[0])) ?? 1;
   }
 
   redrawAll(notify: boolean = true): void {
@@ -445,6 +414,8 @@ export class MpoDesirabilityLineEditor {
     const minX = this.getMinX();
     const maxX = this.getMaxX();
 
+    if (maxX === minX) return;
+
     const numBins = 20;
     const plotWidth = width - EDITOR_PADDING.left - EDITOR_PADDING.right;
     const plotHeight = height - EDITOR_PADDING.top - EDITOR_PADDING.bottom;
@@ -469,8 +440,8 @@ export class MpoDesirabilityLineEditor {
         y: EDITOR_PADDING.top + plotHeight - barH,
         width: barW,
         height: barH,
-        fill: 'rgba(160,196,255,0.5)',
-        stroke: '#2077b4',
+        fill: COLORS.barFill,
+        stroke: COLORS.line,
         strokeWidth: 0.5,
       });
 
@@ -479,10 +450,6 @@ export class MpoDesirabilityLineEditor {
 
     this.barsLayer.batchDraw();
   }
-
-  // ---------------------------
-  // NEW: curve drag + handle logic
-  // ---------------------------
 
   private enableCurveDrag(width: number, height: number) {
     if (!this.stage) return;
@@ -507,10 +474,7 @@ export class MpoDesirabilityLineEditor {
       const pos = this.stage!.getPointerPosition();
       if (!pos) return;
 
-      if (
-        pos.x < EDITOR_PADDING.left || pos.x > width - EDITOR_PADDING.right ||
-        pos.y < EDITOR_PADDING.top || pos.y > height - EDITOR_PADDING.bottom
-      ) return;
+      if (!this.isInPlotArea(pos, width, height)) return;
 
       dragging = true;
       startPointer = pos;
@@ -555,10 +519,7 @@ export class MpoDesirabilityLineEditor {
   }
 
   private addSpecialHandle(width: number, height: number) {
-    if (this.specialHandle) {
-      this.specialHandle.destroy();
-      this.specialHandle = undefined;
-    }
+    const clamp = (v: number, min: number, max: number) => Math.max(min, Math.min(max, v));
 
     if (this._prop.mode === 'freeform') return;
 
@@ -579,35 +540,39 @@ export class MpoDesirabilityLineEditor {
 
     const coords = mapper.toCanvasCoords([x, y]);
 
-    this.specialHandle = new Konva.Circle({
-      x: coords.x,
-      y: coords.y,
-      radius: 7,
-      fill: 'orange',
-      stroke: 'black',
-      strokeWidth: 1,
-      draggable: true,
-      hitStrokeWidth: 15,
-    });
+    if (!this.specialHandle) {
+      this.specialHandle = new Konva.Circle({
+        x: coords.x,
+        y: coords.y,
+        radius: 7,
+        fill: 'orange',
+        stroke: 'black',
+        strokeWidth: 1,
+        draggable: true,
+        hitStrokeWidth: 15,
+      });
 
-    this.specialHandle.on('dragmove', (evt) => {
-      const pos = evt.target.position();
-      const data = mapper.toDataCoords(pos.x, pos.y);
+      this.specialHandle.on('dragmove', (evt) => {
+        const pos = evt.target.position();
+        const data = mapper.toDataCoords(pos.x, pos.y);
 
-      if (this._prop.mode === 'gaussian') {
-        this._prop.mean = data.x;
-        this._prop.sigma = Math.max(0.01, Math.abs(data.y - 1));
-      } else if (this._prop.mode === 'sigmoid') {
-        this._prop.x0 = data.x;
-        this._prop.k = Math.max(0.1, Math.abs(data.y - 0.5) * 20);
-      }
+        if (this._prop.mode === 'gaussian') {
+          this._prop.mean = data.x;
+          this._prop.sigma = Math.max(0.01, Math.abs(data.y - 1));
+        } else if (this._prop.mode === 'sigmoid') {
+          this._prop.x0 = data.x;
+          this._prop.k = clamp(Math.abs(data.y - 0.5) * 30, 0.1, 30);
+        }
 
-      this._prop.line = this.computeLine();
-      this.redrawFn?.();
-      this.onParamsChanged?.(this._prop);
-    });
+        this._prop.line = this.computeLine();
+        this.redrawFn?.();
+        this.onParamsChanged?.(this._prop);
+      });
 
-    this.layer!.add(this.specialHandle);
+      this.layer!.add(this.specialHandle);
+    } else
+      this.specialHandle.position(coords);
+
     this.layer!.batchDraw();
   }
 }

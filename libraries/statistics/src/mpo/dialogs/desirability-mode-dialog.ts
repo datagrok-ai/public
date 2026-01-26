@@ -14,56 +14,52 @@ export class DesirabilityModeDialog {
   ) {}
 
   show(): void {
+    const original = {...this.prop};
+    const working = {...this.prop};
+
     const dialog = ui.dialog({
       title: `Desirability Settings: ${this.propertyName}`,
     });
 
-    const previewEditor = new MpoDesirabilityLineEditor(this.prop, 300, 80);
+    const previewEditor = new MpoDesirabilityLineEditor(working, 300, 80);
 
     const modeInput = ui.input.choice('Mode', {
       items: DESIRABILITY_MODES,
-      value: this.prop.mode ?? 'freeform',
+      value: working.mode ?? 'freeform',
       onValueChanged: (v) => {
-        this.prop.mode = v as DesirabilityMode;
-        this.onUpdate({mode: v as DesirabilityMode});
+        working.mode = v as DesirabilityMode;
         updateParams();
         previewEditor.redrawAll();
       },
     });
 
-    const min = this.float('Min', this.prop.min ?? previewEditor.getMinX(), (v) => {
-      this.prop.min = v;
-      this.onUpdate({min: v});
+    const min = this.float('Min', working.min ?? previewEditor.getMinX(), (v) => {
+      working.min = v;
       previewEditor.redrawAll();
     });
 
-    const max = this.float('Max', this.prop.max ?? previewEditor.getMaxX(), (v) => {
-      this.prop.max = v;
-      this.onUpdate({max: v});
+    const max = this.float('Max', working.max ?? previewEditor.getMaxX(), (v) => {
+      working.max = v;
       previewEditor.redrawAll();
     });
 
-    const mean = this.float('Mean', this.prop.mean ?? 0, (v) => {
-      this.prop.mean = v;
-      this.onUpdate({mean: v});
+    const mean = this.float('Mean', working.mean ?? 0, (v) => {
+      working.mean = v;
       previewEditor.redrawAll();
     });
 
-    const sigma = this.float('Sigma', this.prop.sigma ?? 1, (v) => {
-      this.prop.sigma = Math.max(0.01, v);
-      this.onUpdate({sigma: this.prop.sigma});
+    const sigma = this.float('Sigma', working.sigma ?? 1, (v) => {
+      working.sigma = Math.max(0.01, v);
       previewEditor.redrawAll();
     });
 
-    const x0 = this.float('x0', this.prop.x0 ?? 0, (v) => {
-      this.prop.x0 = v;
-      this.onUpdate({x0: v});
+    const x0 = this.float('x0', working.x0 ?? 0, (v) => {
+      working.x0 = v;
       previewEditor.redrawAll();
     });
 
-    const k = this.float('k', this.prop.k ?? 10, (v) => {
-      this.prop.k = Math.max(0.1, v);
-      this.onUpdate({k: this.prop.k});
+    const k = this.float('k', working.k ?? 10, (v) => {
+      working.k = Math.max(0.1, v);
       previewEditor.redrawAll();
     });
 
@@ -74,9 +70,9 @@ export class DesirabilityModeDialog {
 
       const inputs: DG.InputBase[] = [min, max];
 
-      if (this.prop.mode === 'gaussian')
+      if (working.mode === 'gaussian')
         inputs.push(mean, sigma);
-      else
+      if (working.mode === 'sigmoid')
         inputs.push(x0, k);
 
       paramPanel.append(ui.h3('Parameters'));
@@ -84,21 +80,18 @@ export class DesirabilityModeDialog {
     };
 
     previewEditor.onParamsChanged = (p) => {
-      Object.assign(this.prop, p);
+      Object.assign(working, p);
 
-      mean.value = this.prop.mean ?? 0;
-      sigma.value = this.prop.sigma ?? 1;
-      x0.value = this.prop.x0 ?? 0;
-      k.value = this.prop.k ?? 10;
-      min.value = this.prop.min ?? previewEditor.getMinX();
-      max.value = this.prop.max ?? previewEditor.getMaxX();
-
-      this.onUpdate(p);
+      mean.value = working.mean ?? 0;
+      sigma.value = working.sigma ?? 1;
+      x0.value = working.x0 ?? 0;
+      k.value = working.k ?? 10;
+      min.value = working.min ?? previewEditor.getMinX();
+      max.value = working.max ?? previewEditor.getMaxX();
     };
 
     previewEditor.onChanged.subscribe((line) => {
-      this.prop.line = line;
-      this.onUpdate({line});
+      working.line = line;
     });
 
     updateParams();
@@ -108,6 +101,17 @@ export class DesirabilityModeDialog {
       paramPanel,
       previewEditor.root,
     ]));
+
+    dialog.onOK(() => {
+      Object.assign(this.prop, working);
+      this.onUpdate(working);
+      dialog.close();
+    });
+
+    dialog.onCancel(() => {
+      Object.assign(this.prop, original);
+      dialog.close();
+    });
 
     dialog.show();
   }
