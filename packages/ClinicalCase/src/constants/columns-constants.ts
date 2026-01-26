@@ -64,6 +64,7 @@ export const LAB_TEST = 'LBTEST';
 export const LAB_RES_N = 'LBSTRESN';
 export const LAB_LO_LIM_N = 'LBSTNRLO';
 export const LAB_HI_LIM_N = 'LBSTNRHI';
+export const LAB_TEST_CAT = 'LBCAT';
 //vs
 export const VS_TEST = 'VSTEST';
 export const VS_RES_N = 'VSSTRESN';

@@ -4,10 +4,9 @@ import {ACTIVE_ARM_POSTTFIX, AE_PERCENT, ALT, AST, BILIRUBIN, DOMAINS_WITH_EVENT
   NEG_LOG10_P_VALUE, ODDS_RATIO, PLACEBO_ARM_POSTTFIX, P_VALUE, RELATIVE_RISK, RISK_DIFFERENCE,
   SE_RD_WITH_SIGN_LEVEL, STANDARD_ERROR_RD} from '../constants/constants';
 import {addDataFromDmDomain, dateDifferenceInDays, filterBooleanColumn, filterNulls} from './utils';
-import {AE_CAUSALITY, AE_REQ_HOSP, AE_SEQ, AE_SEVERITY, AE_START_DATE, LAB_HI_LIM_N, LAB_LO_LIM_N,
-  LAB_RES_N, LAB_TEST, SUBJECT_ID, SUBJ_REF_ENDT, SUBJ_REF_STDT, VISIT_DAY,
-  VISIT, VISIT_START_DATE,
-  VISIT_DAY_STR} from '../constants/columns-constants';
+import {ACT_TRT_ARM, AE_CAUSALITY, AE_REQ_HOSP, AE_SEQ, AE_SEVERITY, AE_START_DATE, LAB_DAY, LAB_HI_LIM_N,
+  LAB_LO_LIM_N, LAB_RES_N, LAB_TEST, PLANNED_TRT_ARM, SUBJECT_ID, SUBJ_REF_ENDT, SUBJ_REF_STDT, VISIT_DAY,
+  VISIT, VISIT_START_DATE, VISIT_DAY_STR, LAB_TEST_CAT} from '../constants/columns-constants';
 import {studies} from '../utils/app-utils';
 const {jStat} = require('jstat');
 
@@ -531,4 +530,284 @@ export function createVisitDayStrCol(df: DG.DataFrame, visitColNamesDict?: {[key
     else
       delete visitColNamesDict[df.name];
   }
+}
+
+/**
+ * Calculates baseline-related columns for LB domain:
+ * - LB_BASELINE: The LBSTRESN value at the minimum LBDY for each subject and test
+ * - LB_CHG: Change from baseline (LBSTRESN - LB_BASELINE)
+ * - LB_PCT_CHG: Percent change from baseline (100 * (LBSTRESN - LB_BASELINE) / LB_BASELINE)
+ * @param {DG.DataFrame} lbDomain - The LB domain DataFrame
+ */
+export function calculateLBBaselineColumns(lbDomain: DG.DataFrame): void {
+  if (!lbDomain || lbDomain.name.toLowerCase() !== 'lb')
+    return;
+
+  const subjectIdCol = lbDomain.col(SUBJECT_ID);
+  const labDayCol = lbDomain.col(LAB_DAY);
+  const labCatCol = lbDomain.col(LAB_TEST_CAT);
+  const labTestCol = lbDomain.col(LAB_TEST);
+  const labResNCol = lbDomain.col(LAB_RES_N);
+
+  // Check if required columns exist
+  if (!subjectIdCol || !labDayCol || !labTestCol || !labResNCol)
+    return;
+
+  // Check if columns already exist to avoid duplicates
+  const baselineColName = 'LB_BASELINE';
+  const chgColName = 'LB_CHG';
+  const pctChgColName = 'LB_PCT_CHG';
+
+  // Remove existing columns if they exist (to allow recalculation)
+  if (lbDomain.col(baselineColName))
+    lbDomain.columns.remove(baselineColName);
+  if (lbDomain.col(chgColName))
+    lbDomain.columns.remove(chgColName);
+  if (lbDomain.col(pctChgColName))
+    lbDomain.columns.remove(pctChgColName);
+
+  if (lbDomain.col(baselineColName) && lbDomain.col(chgColName) && lbDomain.col(pctChgColName))
+    return;
+
+  // Find baseline value for each subject and test combination
+  // Baseline is defined as the LBSTRESN value at the minimum LBDY for each subject and test
+
+  // Group by subject and test to find minimum LBDY (only for rows with valid values)
+  // The where clause will be applied during aggregation to filter nulls
+  const groupByCols = labCatCol ? [SUBJECT_ID, LAB_TEST_CAT, LAB_TEST] : [SUBJECT_ID, LAB_TEST];
+  const minDayGrouped = lbDomain.groupBy(groupByCols)
+    .min(LAB_DAY)
+    .aggregate();
+
+  // Join back to get the LBSTRESN value at the minimum day
+  // Join on SUBJECT_ID, LAB_TEST, and the minimum day value
+  const baselineData = grok.data.joinTables(
+    minDayGrouped,
+    lbDomain,
+    groupByCols.concat([`min(${LAB_DAY})`]),
+    groupByCols.concat([LAB_DAY]),
+    groupByCols.concat([`min(${LAB_DAY})`]),
+    [LAB_RES_N],
+    DG.JOIN_TYPE.LEFT,
+    false,
+  );
+
+  // Build baseline map: key = subjectId|test, value = baseline LBSTRESN
+  const baselineMap: {[key: string]: number} = {};
+  const baselineSubjCol = baselineData.col(SUBJECT_ID);
+  const baselineCatCol = baselineData.col(LAB_TEST_CAT);
+  const baselineTestCol = baselineData.col(LAB_TEST);
+  const baselineResCol = baselineData.col(LAB_RES_N);
+
+  for (let i = 0; i < baselineData.rowCount; i++) {
+    if (baselineResCol.isNone(i))
+      continue;
+
+    let subjectId = baselineSubjCol.get(i);
+    const key = subjectId += baselineCatCol ? `|${baselineCatCol.get(i)}|${baselineTestCol.get(i)}` :
+      `|${baselineTestCol.get(i)}`;
+    const baselineValue = baselineResCol.get(i);
+
+    // Store the baseline value (if multiple rows match, first one wins)
+    if (!baselineMap.hasOwnProperty(key))
+      baselineMap[key] = baselineValue;
+  }
+
+  // Create baseline column
+  const baselineCol = lbDomain.columns.addNewFloat(baselineColName);
+  baselineCol.init((i) => {
+    if (labDayCol.isNone(i) || labResNCol.isNone(i))
+      return null;
+
+    let subjectId = subjectIdCol.get(i);
+    const key = subjectId += labCatCol ? `|${labCatCol.get(i)}|${labTestCol.get(i)}` : `|${labTestCol.get(i)}`;
+    return baselineMap[key] ?? null;
+  });
+
+  // Create change from baseline column
+  const chgCol = lbDomain.columns.addNewFloat(chgColName);
+  chgCol.init((i) => {
+    if (labResNCol.isNone(i) || baselineCol.isNone(i))
+      return null;
+
+    const currentValue = labResNCol.get(i);
+    const baselineValue = baselineCol.get(i);
+
+    if (baselineValue === null || isNaN(baselineValue))
+      return null;
+
+    return currentValue - baselineValue;
+  });
+
+  // Create percent change from baseline column
+  const pctChgCol = lbDomain.columns.addNewFloat(pctChgColName);
+  pctChgCol.init((i) => {
+    if (labResNCol.isNone(i) || baselineCol.isNone(i))
+      return null;
+
+    const currentValue = labResNCol.get(i);
+    const baselineValue = baselineCol.get(i);
+
+    if (baselineValue === null || isNaN(baselineValue) || baselineValue === 0)
+      return null;
+
+    return 100 * (currentValue - baselineValue) / baselineValue;
+  });
+}
+
+/**
+ * Calculates control-related columns for LB domain:
+ * - CONTROL_MEAN: mean of LBSTRESN for concurrent control per test & visit
+ * - DELTA_VS_CONTROL: VALUE – CONTROL_MEAN
+ * - PCT_VS_CONTROL: 100 * (VALUE – CONTROL_MEAN) / CONTROL_MEAN
+ * @param {DG.DataFrame} lbDomain - The LB domain DataFrame
+ * @param {Array<{treatment: string, control: string}>} treatmentControlConfig - Treatment/control pairs
+ */
+export function calculateLBControlColumns(
+  lbDomain: DG.DataFrame,
+  treatmentControlConfig: {treatment: string, control: string}[],
+): void {
+  if (!lbDomain || lbDomain.name.toLowerCase() !== 'lb')
+    return;
+
+  if (!treatmentControlConfig || treatmentControlConfig.length === 0)
+    return;
+
+  const labTestCol = lbDomain.col(LAB_TEST);
+  const labCatCol = lbDomain.col(LAB_TEST_CAT);
+  const labResNCol = lbDomain.col(LAB_RES_N);
+  // Get treatment arm column (ARM or ACTARM, should be joined from DM)
+  const armCol = lbDomain.col(PLANNED_TRT_ARM) || lbDomain.col(ACT_TRT_ARM);
+  // Get visit column (prefer VISITDY, then VISIT, then VISITNUM)
+  const visitCol = lbDomain.col(LAB_DAY);
+
+  // Check if required columns exist
+  if (!labTestCol || !labResNCol || !armCol || !visitCol)
+    return;
+
+  // Column names
+  const controlMeanColName = 'CONTROL_MEAN';
+  const deltaVsControlColName = 'DELTA_VS_CONTROL';
+  const pctVsControlColName = 'PCT_VS_CONTROL';
+
+  // Remove existing columns if they exist (to allow recalculation)
+  if (lbDomain.col(controlMeanColName))
+    lbDomain.columns.remove(controlMeanColName);
+  if (lbDomain.col(deltaVsControlColName))
+    lbDomain.columns.remove(deltaVsControlColName);
+  if (lbDomain.col(pctVsControlColName))
+    lbDomain.columns.remove(pctVsControlColName);
+
+  // Build a map of treatment -> control arm
+  const treatmentToControlMap: {[treatment: string]: string} = {};
+  const controlArms = new Set<string>();
+  for (const config of treatmentControlConfig) {
+    treatmentToControlMap[config.treatment] = config.control;
+    controlArms.add(config.control);
+  }
+
+  // Build group columns for aggregation (test + optional category)
+  const testGroupCols = labCatCol ? [LAB_TEST_CAT, LAB_TEST] : [LAB_TEST];
+  const visitColName = visitCol.name;
+
+  // Calculate mean LBSTRESN for control subjects grouped by test & visit
+  // First, filter to only control subjects
+  const controlMeanMap: {[key: string]: number} = {};
+
+  // Group by test (+ optional category) and visit, calculate mean for control subjects
+  for (const controlArm of controlArms) {
+    // Use groupBy with where clause to filter control subjects
+    const controlFiltered = lbDomain.groupBy(testGroupCols.concat([visitColName, LAB_RES_N]))
+      .where(`${armCol.name} = ${controlArm}`)
+      .aggregate();
+
+    if (controlFiltered.rowCount === 0)
+      continue;
+
+    // Now group by test + visit and calculate mean
+    const meanGrouped = controlFiltered.groupBy(testGroupCols.concat([visitColName]))
+      .avg(LAB_RES_N)
+      .aggregate();
+
+    const avgColName = `avg(${LAB_RES_N})`;
+    const meanResCol = meanGrouped.col(avgColName);
+    const meanVisitCol = meanGrouped.col(visitColName);
+    const meanTestCol = meanGrouped.col(LAB_TEST);
+    const meanCatCol = labCatCol ? meanGrouped.col(LAB_TEST_CAT) : null;
+
+    if (!meanResCol || !meanVisitCol || !meanTestCol)
+      continue;
+
+    for (let i = 0; i < meanGrouped.rowCount; i++) {
+      if (meanResCol.isNone(i))
+        continue;
+
+      const test = meanTestCol.get(i);
+      const cat = meanCatCol ? meanCatCol.get(i) : '';
+      const visit = meanVisitCol.get(i);
+      const meanValue = meanResCol.get(i);
+
+      // Key format: controlArm|category|test|visit (category may be empty)
+      const key = `${controlArm}|${cat}|${test}|${visit}`;
+      controlMeanMap[key] = meanValue;
+    }
+  }
+
+  // Create CONTROL_MEAN column
+  const controlMeanCol = lbDomain.columns.addNewFloat(controlMeanColName);
+  controlMeanCol.init((i) => {
+    if (labResNCol.isNone(i))
+      return null;
+
+    const arm = armCol.get(i);
+    // Find control arm for this subject's arm
+    let controlArm: string | null = null;
+    if (controlArms.has(arm)) {
+      // Subject is in control group, use their own arm
+      controlArm = arm;
+    } else if (treatmentToControlMap[arm]) {
+      // Subject is in treatment group, use mapped control
+      controlArm = treatmentToControlMap[arm];
+    }
+
+    if (!controlArm)
+      return null;
+
+    const test = labTestCol.get(i);
+    const cat = labCatCol ? labCatCol.get(i) : '';
+    const visit = visitCol.get(i);
+    const key = `${controlArm}|${cat}|${test}|${visit}`;
+
+    return controlMeanMap[key] ?? null;
+  });
+
+  // Create DELTA_VS_CONTROL column
+  const deltaVsControlCol = lbDomain.columns.addNewFloat(deltaVsControlColName);
+  deltaVsControlCol.init((i) => {
+    if (labResNCol.isNone(i) || controlMeanCol.isNone(i))
+      return null;
+
+    const currentValue = labResNCol.get(i);
+    const controlMean = controlMeanCol.get(i);
+
+    if (controlMean === null || isNaN(controlMean))
+      return null;
+
+    return currentValue - controlMean;
+  });
+
+  // Create PCT_VS_CONTROL column
+  const pctVsControlCol = lbDomain.columns.addNewFloat(pctVsControlColName);
+  pctVsControlCol.init((i) => {
+    if (labResNCol.isNone(i) || controlMeanCol.isNone(i))
+      return null;
+
+    const currentValue = labResNCol.get(i);
+    const controlMean = controlMeanCol.get(i);
+
+    if (controlMean === null || isNaN(controlMean) || controlMean === 0)
+      return null;
+
+    return 100 * (currentValue - controlMean) / controlMean;
+  });
 }
