@@ -14,7 +14,7 @@ import {
   FIT_FUNCTION_LINEAR, FIT_FUNCTION_LOG_LINEAR, FIT_FUNCTION_EXPONENTIAL, linear, logLinear, exponential
 } from '@datagrok-libraries/statistics/src/fit/fit-curve';
 import {calculateBoxPlotStatistics} from '@datagrok-libraries/statistics/src/box-plot-statistics';
-import {category, test, expect, expectArray} from '@datagrok-libraries/utils/src/test';
+import {category, test, expect, expectArray} from '@datagrok-libraries/test/src/test';
 
 
 const sigmoidSeries: IFitSeries = {'fitLineColor': '#1f77b4', 'pointColor': '#1f77b4', 'showCurveConfidenceInterval': false, 'points': [{'x': 0.10000000149011612, 'y': 1.7412786483764648}, {'x': 0.6000000238418579, 'y': 1.8561450242996216}, {'x': 1.100000023841858, 'y': 1.6065685749053955}, {'x': 1.600000023841858, 'y': 1.70476496219635}, {'x': 2.0999999046325684, 'y': 1.5737264156341553}, {'x': 2.5999999046325684, 'y': 1.6007002592086792}, {'x': 3.0999999046325684, 'y': 1.6796687841415405}, {'x': 3.5999999046325684, 'y': 1.656104326248169}, {'x': 4.099999904632568, 'y': 1.782997488975525}, {'x': 4.599999904632568, 'y': 1.530208945274353}, {'x': 5.099999904632568, 'y': 1.1572397947311401}, {'x': 5.599999904632568, 'y': 0.8691964745521545}, {'x': 6.099999904632568, 'y': 0.3228665590286255}, {'x': 6.599999904632568, 'y': 0.2990703880786896}, {'x': 7.099999904632568, 'y': 0.23361243307590485}], 'fitFunction': 'sigmoid', 'clickToToggle': false, 'showFitLine': true, 'showPoints': 'points', 'parameters': [1.6914372095641517, 1.1536998642628853, 5.410173358224149, 0.2089689354045083]};
