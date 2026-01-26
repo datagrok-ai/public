@@ -14,6 +14,7 @@ export type PropertyDesirability = {
   min?: number; /// min value of the property (optional; used for editing the line)
   max?: number; /// max value of the property (optional; used for editing the line)
   weight: number; /// 0-1
+  defaultScore?: number;
 
   mode?: DesirabilityMode;
 
@@ -67,14 +68,13 @@ export function desirabilityScore(x: number, desirabilityLine: DesirabilityLine)
 }
 
 export function categoricalDesirabilityScore(
-  value: any,
+  value: string,
   prop: PropertyDesirability,
-): number {
+): number | null {
   const categories = prop.categories ?? [];
   const found = categories.find((c) => c.name === value);
-  return found ? found.desirability : 0;
+  return found?.desirability ?? prop.defaultScore ?? null;
 }
-
 
 /** Calculates the multi parameter optimization score, 0-100, 100 is the maximum */
 export function mpo(
@@ -106,19 +106,18 @@ export function mpo(
       const desirability = desirabilityTemplates[j];
       const value = columns[j].get(i);
 
-      // if (value === null || value === undefined || Number.isNaN(value)) {
-        // continue; // Skip missing values; push to avoid creating sparse arrays
-        // scores[j] = 0; // treat as 0
-        // weights[j] = desirability.weight;
-        // continue;
-      // }
+      if (columns[j].isNone(i))
+        return desirability.defaultScore ?? NaN;
 
-      if (desirability.mode === 'categorical')
-        scores[j] = categoricalDesirabilityScore(value, desirability);
-      else
-        scores[j] = desirabilityScore(value, desirability.line);
-      // scores[j] = desirabilityScore(value, desirability.line);
-      weights[j] = desirability.weight;
+      const score = desirability.categories ?
+        categoricalDesirabilityScore(value, desirability) :
+        desirabilityScore(value, desirability.line);
+
+      if (score === null)
+        return NaN;
+
+      scores.push(score);
+      weights.push(desirability.weight);
     }
 
     return aggregate(scores, weights, aggregation);
