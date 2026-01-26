@@ -1,7 +1,7 @@
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {Subject} from 'rxjs';
-import {PropertyDesirability} from './mpo';
+import {PropertyDesirability} from '../mpo';
 
 export class MpoCategoricalEditor {
   root = ui.divV([]);
@@ -46,5 +46,6 @@ export class MpoCategoricalEditor {
   }
 
   drawBars(values?: number[]) {};
-}
 
+  redrawAll(notify: boolean = true): void {};
+}

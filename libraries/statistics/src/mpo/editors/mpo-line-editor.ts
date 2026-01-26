@@ -3,7 +3,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 
 import Konva from 'konva';
-import {DesirabilityLine, PropertyDesirability} from './mpo';
+import {DesirabilityLine, PropertyDesirability} from '../mpo';
 import {Subject} from 'rxjs';
 
 type Point = [number, number];
