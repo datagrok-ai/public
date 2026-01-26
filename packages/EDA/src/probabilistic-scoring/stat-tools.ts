@@ -10,8 +10,6 @@ import * as jStat from 'jstat';
 
 import {Cutoff, DescriptorStatistics, SigmoidParams} from './pmpo-defs';
 
-const SQRT_2_PI = Math.sqrt(2 * Math.PI);
-
 /** Splits the dataframe into desired and non-desired tables based on the desirability column */
 export function getDesiredTables(df: DG.DataFrame, desirability: DG.Column) {
   const groups = df.groupBy([desirability.name]).getGroups() as any;
@@ -163,6 +161,7 @@ export function sigmoidS(x: number, x0: number, b: number, c: number): number {
 }
 
 /** Normal probability density function */
-export function normalPdf(x: number, mu: number, sigma: number): number {
-  return Math.exp(-((x - mu)**2) / (2 * sigma**2)) / (sigma * SQRT_2_PI);
+export function gaussDesirabilityFunc(x: number, mu: number, sigma: number): number {
+  return Math.exp(-((x - mu)**2) / (2 * sigma**2));
 }
+

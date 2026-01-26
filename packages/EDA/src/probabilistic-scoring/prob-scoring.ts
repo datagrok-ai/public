@@ -10,10 +10,13 @@ import {MpoProfileEditor} from '@datagrok-libraries/statistics/src/mpo/mpo-profi
 
 import '../../css/pmpo.css';
 
-import {getDesiredTables, getDescriptorStatistics, normalPdf, sigmoidS} from './stat-tools';
+import {getDesiredTables, getDescriptorStatistics, gaussDesirabilityFunc, sigmoidS} from './stat-tools';
 import {MIN_SAMPLES_COUNT, PMPO_NON_APPLICABLE, DescriptorStatistics, P_VAL_TRES_MIN, DESCR_TITLE,
   R2_MIN, Q_CUTOFF_MIN, PmpoParams, SCORES_TITLE, DESCR_TABLE_TITLE, PMPO_COMPUTE_FAILED, SELECTED_TITLE,
-  P_VAL, DESIRABILITY_COL_NAME, STAT_GRID_HEIGHT, DESIRABILITY_COLUMN_WIDTH, WEIGHT_TITLE} from './pmpo-defs';
+  P_VAL, DESIRABILITY_COL_NAME, STAT_GRID_HEIGHT, DESIRABILITY_COLUMN_WIDTH, WEIGHT_TITLE,
+  P_VAL_TRES_DEFAULT,
+  R2_DEFAULT,
+  Q_CUTOFF_DEFAULT} from './pmpo-defs';
 import {addSelectedDescriptorsCol, getDescriptorStatisticsTable, getFilteredByPvalue, getFilteredByCorrelations,
   getModelParams, getDescrTooltip, saveModel, getScoreTooltip, getDesirabilityProfileJson, getCorrelationTriples,
   addCorrelationColumns, setPvalColumnColorCoding, setCorrColumnColorCoding} from './pmpo-utils';
@@ -142,12 +145,12 @@ export class Pmpo {
       const col = df.col(name);
 
       if (col == null)
-        throw new Error(`Filed to apply pMPO: inconsistent data, no column "${name}" in the table "${df.name}"`);
+        throw new Error(`Failed to apply pMPO: inconsistent data, no column "${name}" in the table "${df.name}"`);
 
       const vals = col.getRawData();
       for (let i = 0; i < count; ++i) {
         x = vals[i];
-        scores[i] += param.weight * normalPdf(x, param.desAvg, param.desStd) * sigmoidS(x, param.x0, param.b, param.c);
+        scores[i] += param.weight * gaussDesirabilityFunc(x, param.desAvg, param.desStd) * sigmoidS(x, param.cutoff, param.b, param.c);
       }
     });
 
@@ -168,6 +171,7 @@ export class Pmpo {
   private predictionName = SCORES_TITLE;
 
   private desirabilityProfileRoots = new Map<string, HTMLElement>();
+
   constructor(df: DG.DataFrame) {
     this.table = df;
     this.view = grok.shell.tableView(df.name) ?? grok.shell.addTableView(df);
@@ -455,6 +459,7 @@ export class Pmpo {
 
     // Compute pMPO parameters - training
     this.params = getModelParams(desired, nonDesired, selectedByCorr, qCutoff);
+    console.log('pMPO parameters:', this.params);
 
     //const weightsTable = getWeightsTable(this.params);
     const prediction = Pmpo.predict(df, this.params, this.predictionName);
@@ -552,7 +557,7 @@ export class Pmpo {
       min: P_VAL_TRES_MIN,
       max: 1,
       step: 0.01,
-      value: 0.05,
+      value: P_VAL_TRES_DEFAULT,
       tooltipText: 'Descriptors with p-values above this threshold are excluded.',
       onValueChanged: (value) => {
         if ((value != null) && (value >= P_VAL_TRES_MIN) && (value <= 1))
@@ -565,7 +570,7 @@ export class Pmpo {
     const rInput = ui.input.float('R²', {
       nullable: false,
       min: R2_MIN,
-      value: 0.5,
+      value: R2_DEFAULT,
       max: 1,
       step: 0.01,
       // eslint-disable-next-line max-len
@@ -581,7 +586,7 @@ export class Pmpo {
     const qInput = ui.input.float('q-cutoff', {
       nullable: false,
       min: Q_CUTOFF_MIN,
-      value: 0.05,
+      value: Q_CUTOFF_DEFAULT,
       max: 1,
       step: 0.01,
       tooltipText: 'Q-cutoff for the pMPO model computation.',

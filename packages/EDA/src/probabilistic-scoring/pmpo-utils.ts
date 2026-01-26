@@ -11,7 +11,8 @@ import {COLORS, DESCR_TABLE_TITLE, DESCR_TITLE, DescriptorStatistics, Desirabili
   DESIRABILITY_COL_NAME, FOLDER, P_VAL, PMPO_COMPUTE_FAILED, PmpoParams, SCORES_TITLE,
   SELECTED_TITLE, STAT_TO_TITLE_MAP, TINY, WEIGHT_TITLE,
   CorrelationTriple} from './pmpo-defs';
-import {computeSigmoidParamsFromX0, getCutoffs, normalPdf, sigmoidS, solveNormalIntersection} from './stat-tools';
+import {computeSigmoidParamsFromX0, getCutoffs, gaussDesirabilityFunc, sigmoidS,
+  solveNormalIntersection} from './stat-tools';
 import {getColorScaleDiv} from '../pareto-optimization/utils';
 import {OPT_TYPE} from '../pareto-optimization/defs';
 
@@ -243,11 +244,30 @@ export function getModelParams(desired: DG.DataFrame, nonDesired: DG.DataFrame,
     // Unbiased standard deviation
     const sigmaNonDes = nonDesCol.stats.stdev * Math.sqrt((nonDesLen - 1) / nonDesLen);
 
-    // Compute cutoffs and intersections
+    // Compute cutoffs
     const cutoffs = getCutoffs(muDes, sigmaDes, muNonDes, sigmaNonDes);
+
+    // column_stats['inflection'] = np.exp(-np.square((column_stats['cutoff'] - column_stats['good_mean'])) /
+    //                                     (2 * np.square(column_stats['good_std'])))
+    // Compute inflection point
+    const inflection = Math.exp(-((cutoffs.cutoff - muDes) ** 2) / (2 * (sigmaDes ** 2)));
+
+    // Compute intersections of the two normal distributions
     const intersections = solveNormalIntersection(muDes, sigmaDes, muNonDes, sigmaNonDes);
 
-    // Compute parameters for the generalized sigmoid function
+    // # Calculate the b in the sigmoidal function
+    // column_stats['b'] = np.power(column_stats['inflection'], -1.0) - 1.0
+    // # q-value cutoff transformation
+    // n = np.power(q_cutoff, -1.0) - 1.0
+    // # Calculate the c in the sigmoidal function
+    // column_stats['c'] = np.power(10.0, ((np.log10(n / column_stats['b'])) /
+    //                                     (-1.0 * (column_stats['bad_mean'] - column_stats['cutoff']))))
+
+    const b = (Math.pow(inflection, -1.0) - 1.0);
+    const n = (Math.pow(qCutoff, -1.0) - 1.0);
+    const c = Math.pow(10.0, ((Math.log10(n / b)) / (-1.0 * (muNonDes - cutoffs.cutoff))));
+
+    // Compute parameters for the generalized sigmoid function TODO: delete
 
     let x0: number | null = null;
 
@@ -283,13 +303,14 @@ export function getModelParams(desired: DG.DataFrame, nonDesired: DG.DataFrame,
       cutoffDesired: cutoffs.cutoffDesired,
       cutoffNotDesired: cutoffs.cutoffNotDesired,
       pX0: sigmoidParams.pX0,
-      b: sigmoidParams.b,
-      c: sigmoidParams.c,
+      b: b,
+      c: c,
       zScore: z,
       weight: z,
       intersections: intersections,
       x0: x0,
       xBound: xBound,
+      inflection: inflection,
     });
   });
 
@@ -544,7 +565,7 @@ function getScale(param: PmpoParams, range: number[]): number {
 
 /** Basic pMPO function combining Gaussian and sigmoid functions. */
 function basicFunction(x: number, param: PmpoParams): number {
-  return normalPdf(x, param.desAvg, param.desStd) * sigmoidS(x, param.x0, param.b, param.c);
+  return gaussDesirabilityFunc(x, param.desAvg, param.desStd) * sigmoidS(x, param.x0, param.b, param.c);
 }
 
 /** Returns line points for the given pMPO parameters. */

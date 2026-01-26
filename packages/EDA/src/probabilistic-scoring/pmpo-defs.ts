@@ -44,6 +44,7 @@ export type PmpoParams = BasicStats & Cutoff & SigmoidParams & {
   intersections: number[],
   x0: number,
   xBound: number,
+  inflection: number,
 };
 
 export type CorrelationTriple = [string, string, number];
@@ -76,11 +77,20 @@ export const WEIGHT_TITLE = 'Weight';
 export const SCORES_TITLE = 'pMPO score';
 export const DESIRABILITY_COL_NAME = 'Desirability';
 
+/** Default p-value threshold for filtering descriptors */
+export const P_VAL_TRES_DEFAULT = 0.01;
+
 /** Minimum p-value threshold for filtering descriptors */
 export const P_VAL_TRES_MIN = 0.01;
 
+/** Default R-squared threshold for filtering correlated descriptors */
+export const R2_DEFAULT = 0.53;
+
 /** Minimum R-squared threshold for filtering correlated descriptors */
 export const R2_MIN = 0.01;
+
+/** Default q-cutoff for descriptors in the pMPO model */
+export const Q_CUTOFF_DEFAULT = 0.05;
 
 /** Minimum q-cutoff for descriptors in the pMPO model */
 export const Q_CUTOFF_MIN = 0.01;
