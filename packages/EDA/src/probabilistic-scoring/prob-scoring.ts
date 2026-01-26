@@ -431,7 +431,7 @@ export class Pmpo {
   } // updateGrid
 
   /** Updates the desirability profile data */
-  private updateDesirabilityProfileData(descrStatsTable: DG.DataFrame): void {
+  private updateDesirabilityProfileData(descrStatsTable: DG.DataFrame, useSigmoidalCorrection: boolean): void {
     if (this.params == null)
       return;
 
@@ -439,7 +439,7 @@ export class Pmpo {
     this.desirabilityProfileRoots.forEach((root) => root.remove());
     this.desirabilityProfileRoots.clear();
 
-    const desirabilityProfile = getDesirabilityProfileJson(this.params, '', '');
+    const desirabilityProfile = getDesirabilityProfileJson(this.params, useSigmoidalCorrection, '', '');
 
     // Set weights
     const descrNames = descrStatsTable.col(DESCR_TITLE)!.toList();
@@ -499,7 +499,7 @@ export class Pmpo {
     this.updateGrid();
 
     // Update desirability profile roots map
-    this.updateDesirabilityProfileData(descrStatsTable);
+    this.updateDesirabilityProfileData(descrStatsTable, useSigmoid);
 
     // Update statistics grid
     this.updateStatisticsGrid(descrStatsTable, descriptorNames, selectedByPvalue, selectedByCorr);
@@ -642,7 +642,7 @@ export class Pmpo {
         return;
       }
 
-      saveModel(this.params, this.table.name);
+      saveModel(this.params, this.table.name, useSigmoidInput.value);
     }, 'Save model as platform file.');
     form.append(saveBtn);
 

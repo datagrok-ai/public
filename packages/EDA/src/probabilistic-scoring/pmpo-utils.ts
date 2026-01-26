@@ -359,12 +359,13 @@ export async function loadPmpoParams(file: DG.FileInfo): Promise<Map<string, Pmp
  * @param name Name of the desirability profile.
  * @param description Description of the desirability profile.
  */
-export function getDesirabilityProfileJson(params: Map<string, PmpoParams>, name: string, description: string) {
+export function getDesirabilityProfileJson(params: Map<string, PmpoParams>, useSigmoidalCorrection: boolean,
+  name: string, description: string) {
   return {
     'type': 'MPO Desirability Profile',
     'name': name,
     'description': description,
-    'properties': getDesirabilityProfileProperties(params),
+    'properties': getDesirabilityProfileProperties(params, useSigmoidalCorrection),
   };
 }
 
@@ -372,7 +373,8 @@ export function getDesirabilityProfileJson(params: Map<string, PmpoParams>, name
  * @param params Map of descriptor names to their pMPO parameters.
  * @param modelName Suggested model name (used as default file name).
  */
-export async function saveModel(params: Map<string, PmpoParams>, modelName: string): Promise<void> {
+export async function saveModel(params: Map<string, PmpoParams>, modelName: string,
+  useSigmoidalCorrection: boolean): Promise<void> {
   let fileName = modelName;
   const nameInput = ui.input.string('File', {
     value: fileName,
@@ -409,6 +411,7 @@ export async function saveModel(params: Map<string, PmpoParams>, modelName: stri
     if (typeInput.value) {
       return getDesirabilityProfileJson(
         params,
+        useSigmoidalCorrection,
         nameInput.value,
         descriptionInput.value,
       );
@@ -514,19 +517,15 @@ export function setCorrColumnColorCoding(table: DG.DataFrame, descriptorNames: s
 /** Returns desirability profile properties for the given pMPO parameters.
  * @param params Map of descriptor names to their pMPO parameters.
  */
-function getDesirabilityProfileProperties(params: Map<string, PmpoParams>) {
+function getDesirabilityProfileProperties(params: Map<string, PmpoParams>,
+  useSigmoidalCorrection: boolean): DesirabilityProfileProperties {
   const props: DesirabilityProfileProperties = {};
 
-  let maxWeight = 0;
-  params.forEach((param) => maxWeight = Math.max(maxWeight, param.weight));
-
-  const scale = (maxWeight > 0) ? (1 / maxWeight) : 1;
-
   params.forEach((param, name) => {
-    const range = significantPoints(param);
+    const range = significantPoints(param, useSigmoidalCorrection);
     props[name] = {
-      weight: param.weight * scale,
-      line: getLine(param),
+      weight: param.weight,
+      line: getLine(param, useSigmoidalCorrection),
       min: Math.min(...range),
       max: Math.max(...range),
     };
@@ -556,41 +555,34 @@ function getArgsOfGaussFunc(mu: number, sigma: number): number[] {
   ];
 } // getArgsOfGaussFunc
 
-/** Returns scale factor for the given pMPO parameters and range of x values. */
-function getScale(param: PmpoParams, range: number[]): number {
-  const values = range.map((x) => basicFunction(x, param));
-
-  return Math.max(...values);
-}
-
 /** Basic pMPO function combining Gaussian and sigmoid functions. */
-function basicFunction(x: number, param: PmpoParams): number {
-  return gaussDesirabilityFunc(x, param.desAvg, param.desStd) * sigmoidS(x, param.x0, param.b, param.c);
+function basicFunction(x: number, param: PmpoParams, useSigmoidalCorrection: boolean): number {
+  return gaussDesirabilityFunc(x, param.desAvg, param.desStd) *
+    (useSigmoidalCorrection ? sigmoidS(x, param.x0, param.b, param.c) : 1);
 }
 
 /** Returns line points for the given pMPO parameters. */
-function getLine(param: PmpoParams): [number, number][] {
+function getLine(param: PmpoParams, useSigmoidalCorrection: boolean): [number, number][] {
   //const range = getArgsOfGaussFunc(param.desAvg, param.desStd);
-  const range = significantPoints(param);
-  const scale = getScale(param, range);
+  const range = significantPoints(param, useSigmoidalCorrection);
 
-  return range.map((x) => [x, basicFunction(x, param) / scale]);
+  return range.map((x) => [x, basicFunction(x, param, useSigmoidalCorrection)]);
 }
 
 /** Returns significant points for the given pMPO parameters. */
-function significantPoints(param: PmpoParams): number[] {
+function significantPoints(param: PmpoParams, useSigmoidalCorrection: boolean): number[] {
   const start = param.desAvg - 10 * param.desStd;
   const end = param.desAvg + 10 * param.desStd;
   const steps = 1000;
 
   let arg = start;
-  let func = basicFunction(arg, param);
+  let func = basicFunction(arg, param, useSigmoidalCorrection);
   let x = 0;
   let y = 0;
 
   for (let i = 0; i <= steps; i++) {
     x = start + ((end - start) * i) / steps;
-    y = basicFunction(x, param);
+    y = basicFunction(x, param, useSigmoidalCorrection);
     if (y > func) {
       arg = x;
       func = y;
