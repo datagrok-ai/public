@@ -14,7 +14,8 @@ import {getDesiredTables, getDescriptorStatistics, gaussDesirabilityFunc, sigmoi
 import {MIN_SAMPLES_COUNT, PMPO_NON_APPLICABLE, DescriptorStatistics, P_VAL_TRES_MIN, DESCR_TITLE,
   R2_MIN, Q_CUTOFF_MIN, PmpoParams, SCORES_TITLE, DESCR_TABLE_TITLE, PMPO_COMPUTE_FAILED, SELECTED_TITLE,
   P_VAL, DESIRABILITY_COL_NAME, STAT_GRID_HEIGHT, DESIRABILITY_COLUMN_WIDTH, WEIGHT_TITLE,
-  P_VAL_TRES_DEFAULT, R2_DEFAULT, Q_CUTOFF_DEFAULT} from './pmpo-defs';
+  P_VAL_TRES_DEFAULT, R2_DEFAULT, Q_CUTOFF_DEFAULT,
+  USE_SIGMOID_DEFAULT} from './pmpo-defs';
 import {addSelectedDescriptorsCol, getDescriptorStatisticsTable, getFilteredByPvalue, getFilteredByCorrelations,
   getModelParams, getDescrTooltip, saveModel, getScoreTooltip, getDesirabilityProfileJson, getCorrelationTriples,
   addCorrelationColumns, setPvalColumnColorCoding, setCorrColumnColorCoding} from './pmpo-utils';
@@ -188,7 +189,7 @@ export class Pmpo {
   } // fitModelParams
 
   /** Predicts pMPO scores for the given data frame using provided pMPO parameters */
-  static predict(df: DG.DataFrame, params: Map<string, PmpoParams>, predictionName: string): DG.Column {
+  static predict(df: DG.DataFrame, params: Map<string, PmpoParams>, useSigmoid: boolean, predictionName: string): DG.Column {
     const count = df.rowCount;
     const scores = new Float64Array(count).fill(0);
     let x = 0;
@@ -203,7 +204,8 @@ export class Pmpo {
       const vals = col.getRawData();
       for (let i = 0; i < count; ++i) {
         x = vals[i];
-        scores[i] += param.weight * gaussDesirabilityFunc(x, param.desAvg, param.desStd) * sigmoidS(x, param.cutoff, param.b, param.c);
+        scores[i] += param.weight * gaussDesirabilityFunc(x, param.desAvg, param.desStd) *
+         (useSigmoid ? sigmoidS(x, param.cutoff, param.b, param.c) : 1);
       }
     });
 
@@ -475,7 +477,7 @@ export class Pmpo {
 
   /** Fits the pMPO model to the given data and updates the viewers accordingly */
   private fitAndUpdateViewers(df: DG.DataFrame, descriptors: DG.ColumnList, desirability: DG.Column,
-    pValTresh: number, r2Tresh: number, qCutoff: number): void {
+    pValTresh: number, r2Tresh: number, qCutoff: number, useSigmoid: boolean): void {
     const trainResult = Pmpo.fit(df, descriptors, desirability, pValTresh, r2Tresh, qCutoff);
     this.params = trainResult.params;
     const descrStatsTable = trainResult.descrStatsTable;
@@ -485,7 +487,7 @@ export class Pmpo {
     const descriptorNames = descriptors.names();
 
     //const weightsTable = getWeightsTable(this.params);
-    const prediction = Pmpo.predict(df, this.params, this.predictionName);
+    const prediction = Pmpo.predict(df, this.params, useSigmoid, this.predictionName);
 
     // Mark predictions with a color
     prediction.colors.setLinear(getOutputPalette(OPT_TYPE.MAX), {min: prediction.stats.min, max: prediction.stats.max});
@@ -533,10 +535,11 @@ export class Pmpo {
         this.fitAndUpdateViewers(
           this.table,
           DG.DataFrame.fromColumns(descrInput.value).columns,
-        this.table.col(desInput.value!)!,
-        pInput.value!,
-        rInput.value!,
-        qInput.value!,
+          this.table.col(desInput.value!)!,
+          pInput.value!,
+          rInput.value!,
+          qInput.value!,
+          useSigmoidInput.value,
         );
       } catch (err) {
         grok.shell.error(err instanceof Error ? err.message : PMPO_COMPUTE_FAILED + ': the platform issue.');
@@ -570,7 +573,7 @@ export class Pmpo {
     });
     form.append(desInput.root);
 
-    const header = ui.h2('Thresholds');
+    const header = ui.h2('Settings');
     ui.tooltip.bind(header, 'Settings of the pMPO model training.');
     form.append(header);
 
@@ -581,7 +584,7 @@ export class Pmpo {
       max: 1,
       step: 0.01,
       value: P_VAL_TRES_DEFAULT,
-      tooltipText: 'Descriptors with p-values above this threshold are excluded.',
+      tooltipText: 'P-value threshold. Descriptors with p-values above this threshold are excluded.',
       onValueChanged: (value) => {
         if ((value != null) && (value >= P_VAL_TRES_MIN) && (value <= 1))
           runComputations();
@@ -597,7 +600,7 @@ export class Pmpo {
       max: 1,
       step: 0.01,
       // eslint-disable-next-line max-len
-      tooltipText: 'Descriptors with squared correlation above this threshold are considered highly correlated. Among them, the descriptor with the lower p-value is retained.',
+      tooltipText: 'Squared correlation threshold. Descriptors with squared correlation above this threshold are considered highly correlated. Among them, the descriptor with the lower p-value is retained.',
       onValueChanged: (value) => {
         if ((value != null) && (value >= R2_MIN) && (value <= 1))
           runComputations();
@@ -619,6 +622,16 @@ export class Pmpo {
       },
     });
     form.append(qInput.root);
+
+    // use sigmoid correction
+    const useSigmoidInput = ui.input.bool('\u03C3 correction', {
+      value: USE_SIGMOID_DEFAULT,
+      tooltipText: 'Use the sigmoidal correction to the weighted Gaussian scores.',
+      onValueChanged: (_value) => {
+        runComputations();
+      },
+    });
+    form.append(useSigmoidInput.root);
 
     setTimeout(() => runComputations(), 10);
 

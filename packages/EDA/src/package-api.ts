@@ -281,11 +281,4 @@ export namespace funcs {
   export async function trainPmpo(): Promise<void> {
     return await grok.functions.call('EDA:TrainPmpo', {});
   }
-
-  /**
-  Apply trained probabilistic multi-parameter optimization (pMPO) model to score samples
-  */
-  export async function applyPmpo(table: DG.DataFrame , file: DG.FileInfo ): Promise<void> {
-    return await grok.functions.call('EDA:ApplyPmpo', { table, file });
-  }
 }

@@ -1003,23 +1003,4 @@ export class PackageFunctions {
     const pMPO = new Pmpo(df);
     pMPO.runTrainingApp();
   }
-
-  @grok.decorators.func({
-    //'top-menu': 'ML | Apply pMPO...',
-    'name': 'applyPmpo',
-    'description': 'Apply trained probabilistic multi-parameter optimization (pMPO) model to score samples',
-  })
-  static async applyPmpo(
-    @grok.decorators.param({'type': 'dataframe'}) table: DG.DataFrame,
-    @grok.decorators.param({'type': 'file'}) file: DG.FileInfo,
-  ): Promise<void> {
-    try {
-      const params = await loadPmpoParams(file);
-      const predName = table.columns.getUnusedName('pMPO score');
-      const prediction = Pmpo.predict(table, params, predName);
-      table.columns.add(prediction, true);
-    } catch (err) {
-      grok.shell.warning(`Failed to apply pMPO: ${err instanceof Error ? err.message : 'the platform issue.'}`);
-    }
-  }
 }

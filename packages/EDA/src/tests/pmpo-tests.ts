@@ -14,7 +14,7 @@ const TIMEOUT = 4000;
 const MAD_THRESH = 0.1;
 
 const SOURCE_PATH = 'System:AppData/Eda/drugs-props-train.csv';
-const SCORES_PATH = 'System:AppData/Eda/drug-props-train-scores.csv';
+const SCORES_PATH = 'System:AppData/Eda/drugs-props-train-scores.csv';
 
 const DESIRABILITY_COL_NAME = 'CNS';
 const DESCRIPTOR_NAMES = ['TPSA', 'TPSA_S', 'HBA', 'HBD', 'MW', 'nAtoms',
@@ -45,61 +45,65 @@ function getScoreMaxDeviation(sourceDrugCol: DG.Column, sourceScores: DG.Column,
 } // getScoreMaxDeviation
 
 category('Probabilistic MPO', () => {
-  test(`Scores`, async () => {
-    let sourceDf: DG.DataFrame | null = null;
-    let referenceDf: DG.DataFrame | null = null;
-    let desirability: DG.Column | null = null;
-    let descriptors: DG.Column[] = [];
-    let sourceDrugCol: DG.Column | null = null;
-    let referenceDrugCol: DG.Column | null = null;
-    let referencePrediction: DG.Column | null = null;
-    let mad: number | null = null;
+  ['Sigmoidal', 'Gaussian'].forEach((refScoreName) => {
+    const useSigmoid = (refScoreName === 'Sigmoidal');
 
-    try {
+    test(refScoreName, async () => {
+      let sourceDf: DG.DataFrame | null = null;
+      let referenceDf: DG.DataFrame | null = null;
+      let desirability: DG.Column | null = null;
+      let descriptors: DG.Column[] = [];
+      let sourceDrugCol: DG.Column | null = null;
+      let referenceDrugCol: DG.Column | null = null;
+      let referencePrediction: DG.Column | null = null;
+      let mad: number | null = null;
+
+      try {
       // Load data
-      sourceDf = await grok.dapi.files.readCsv(SOURCE_PATH);
-      referenceDf = await grok.dapi.files.readCsv(SCORES_PATH);
+        sourceDf = await grok.dapi.files.readCsv(SOURCE_PATH);
+        referenceDf = await grok.dapi.files.readCsv(SCORES_PATH);
 
-      // Extract training items
-      desirability = sourceDf.col(DESIRABILITY_COL_NAME);
-      descriptors = sourceDf.columns.byNames(DESCRIPTOR_NAMES);
+        // Extract training items
+        desirability = sourceDf.col(DESIRABILITY_COL_NAME);
+        descriptors = sourceDf.columns.byNames(DESCRIPTOR_NAMES);
 
-      if (desirability == null)
-        throw new Error();
+        if (desirability == null)
+          throw new Error();
 
-      // Train pMPO model
-      const trainRes = Pmpo.fit(
-        sourceDf,
-        DG.DataFrame.fromColumns(descriptors).columns,
-        desirability,
-        P_VAL_TRES_DEFAULT,
-        R2_DEFAULT,
-        Q_CUTOFF_DEFAULT,
-      );
+        // Train pMPO model
+        const trainRes = Pmpo.fit(
+          sourceDf,
+          DG.DataFrame.fromColumns(descriptors).columns,
+          desirability,
+          P_VAL_TRES_DEFAULT,
+          R2_DEFAULT,
+          Q_CUTOFF_DEFAULT,
+        );
 
-      // Apply pMPO
-      const prediction = Pmpo.predict(sourceDf, trainRes.params, SCORES_NAME);
+        // Apply pMPO
+        const prediction = Pmpo.predict(sourceDf, trainRes.params, useSigmoid, SCORES_NAME);
 
-      // Compare with reference scores
-      sourceDrugCol = sourceDf.col(DRGUG);
-      referenceDrugCol = referenceDf.col(DRGUG);
-      referencePrediction = referenceDf.col(SCORES_NAME);
+        // Compare with reference scores
+        sourceDrugCol = sourceDf.col(DRGUG);
+        referenceDrugCol = referenceDf.col(DRGUG);
+        referencePrediction = referenceDf.col(refScoreName);
 
-      mad = getScoreMaxDeviation(sourceDrugCol!, prediction, referenceDrugCol!, referencePrediction!);
+        mad = getScoreMaxDeviation(sourceDrugCol!, prediction, referenceDrugCol!, referencePrediction!);
 
-      console.log('Max absolute deviation of pMPO scores:', mad);
-    } catch (error) {
-      grok.shell.error((error as Error).message);
-    }
+        console.log(refScoreName, ': max absolute deviation of pMPO scores:', mad);
+      } catch (error) {
+        grok.shell.error((error as Error).message);
+      }
 
-    expect(sourceDf !== null, true, 'Failed to load the source data: ' + SOURCE_PATH);
-    expect(referenceDf !== null, true, 'Failed to load the scores data: ' + SCORES_PATH);
-    expect(desirability !== null, true, 'Inconsistent source data: no column ' + DESIRABILITY_COL_NAME);
-    expect(descriptors.length, DESCRIPTOR_NAMES.length, 'Inconsistent source data: no enough of columns');
-    expect(sourceDrugCol !== null, true, 'Inconsistent source data: no column ' + DRGUG);
-    expect(referenceDrugCol !== null, true, 'Inconsistent reference data: no column ' + DRGUG);
-    expect(referencePrediction !== null, true, 'Inconsistent reference data: no column ' + SCORES_NAME);
-    expect(mad !== null, true, 'Failed to compare pMPO scores with the reference data');
-    expect(mad! < MAD_THRESH, true, `Max absolute deviation of pMPO scores exceeds the threshold (${MAD_THRESH})`);
-  }, {timeout: TIMEOUT});
+      expect(sourceDf !== null, true, 'Failed to load the source data: ' + SOURCE_PATH);
+      expect(referenceDf !== null, true, 'Failed to load the scores data: ' + SCORES_PATH);
+      expect(desirability !== null, true, 'Inconsistent source data: no column ' + DESIRABILITY_COL_NAME);
+      expect(descriptors.length, DESCRIPTOR_NAMES.length, 'Inconsistent source data: no enough of columns');
+      expect(sourceDrugCol !== null, true, 'Inconsistent source data: no column ' + DRGUG);
+      expect(referenceDrugCol !== null, true, 'Inconsistent reference data: no column ' + DRGUG);
+      expect(referencePrediction !== null, true, 'Inconsistent reference data: no column ' + SCORES_NAME);
+      expect(mad !== null, true, 'Failed to compare pMPO scores with the reference data');
+      expect(mad! < MAD_THRESH, true, `Max absolute deviation of pMPO scores exceeds the threshold (${MAD_THRESH})`);
+    }, {timeout: TIMEOUT});
+  });
 });

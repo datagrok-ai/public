@@ -95,6 +95,9 @@ export const Q_CUTOFF_DEFAULT = 0.05;
 /** Minimum q-cutoff for descriptors in the pMPO model */
 export const Q_CUTOFF_MIN = 0.01;
 
+/** Default setting for using sigmoid correction in pMPO */
+export const USE_SIGMOID_DEFAULT = true;
+
 /** Colors used for selected and skipped descriptors */
 export enum COLORS {
   SELECTED = 'rgb(26, 146, 26)',
