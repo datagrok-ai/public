@@ -14,10 +14,6 @@ function measure(g: CanvasRenderingContext2D, tag: string): number {
   return _measures[tag] ??= g.measureText(tag).width;
 }
 
-@grok.decorators.cellRenderer({
-  name: 'Tags',
-  cellType: 'Tags',
-})
 /**
  * Renders a comma-separated string value as checkboxes with options retrieved
  * from the column's `.choices` tag.
