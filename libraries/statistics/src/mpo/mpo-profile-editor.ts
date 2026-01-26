@@ -18,6 +18,9 @@ export class MpoProfileEditor {
   profile?: DesirabilityProfile;
   dataFrame?: DG.DataFrame;
   design = false;
+
+  private rows: Record<string, HTMLElement> = {};
+  private propertyOrder: string[] = [];
   columnMapping: Record<string, string | null> = {};
 
   constructor(dataFrame?: DG.DataFrame, design = false) {
@@ -28,6 +31,8 @@ export class MpoProfileEditor {
   setProfile(profile?: DesirabilityProfile): void {
     this.profile = profile;
     this.columnMapping = {};
+    this.rows = {};
+    this.propertyOrder = profile ? Object.keys(profile.properties) : [];
     this.render();
   }
 
@@ -48,16 +53,20 @@ export class MpoProfileEditor {
     if (!this.profile)
       return this.renderEmpty('No profile specified.');
 
-    const rows = Object.entries(this.profile.properties)
-      .map(([name, prop]) => this.buildRow(name, prop));
+    const rows = this.propertyOrder
+      .map((name) => this.profile!.properties[name])
+      .filter(Boolean)
+      .map((prop, i) => {
+        const name = this.propertyOrder[i];
+        if (!this.rows[name])
+          this.rows[name] = this.buildRow(name, prop);
+        return this.rows[name];
+      });
 
     if (!rows.length)
       return this.renderEmpty('No properties defined.');
 
-    this.root.append(
-      this.buildHeader(),
-      ui.divV(rows),
-    );
+    this.root.append(this.buildHeader(), ui.divV(rows));
   }
 
   private renderEmpty(text: string): void {
@@ -90,11 +99,16 @@ export class MpoProfileEditor {
       this.buildModeGear(name, prop, editor) :
       null;
 
+    const controls = this.design ? this.buildRowControls(name) : null;
+
     row.append(
       ui.divV([propertyCell, columnCell].filter(Boolean)),
       weightCell,
       ui.divH([editor.root, modeGear].filter(Boolean)),
     );
+
+    if (controls)
+      row.append(controls);
 
     return row;
   }
@@ -184,6 +198,12 @@ export class MpoProfileEditor {
     return gear;
   }
 
+  private buildRowControls(name: string): HTMLElement {
+    const add = ui.icons.add(() => this.insertRowAfter(name));
+    const del = ui.icons.delete(() => this.deleteProperty(name));
+    return ui.divH([add, del], 'statistics-mpo-control-buttons');
+  }
+
   private openModeDialog(
     name: string,
     prop: PropertyDesirability,
@@ -220,7 +240,45 @@ export class MpoProfileEditor {
     this.columnMapping[newName] = this.columnMapping[oldName] ?? null;
     delete this.columnMapping[oldName];
 
+    const idx = this.propertyOrder.indexOf(oldName);
+    this.propertyOrder[idx] = newName;
+
+    this.rows[newName] = this.rows[oldName];
+    delete this.rows[oldName];
+
     this.render();
+    this.emitChange();
+  }
+
+  private deleteProperty(name: string): void {
+    if (!this.profile) return;
+
+    delete this.profile.properties[name];
+    delete this.columnMapping[name];
+
+    const idx = this.propertyOrder.indexOf(name);
+    if (idx >= 0) this.propertyOrder.splice(idx, 1);
+
+    this.rows[name]?.remove();
+    delete this.rows[name];
+
+    this.emitChange();
+  }
+
+  private insertRowAfter(propertyName: string): void {
+    if (!this.profile) return;
+
+    const newName = `NewProperty${Object.keys(this.profile.properties).length + 1}`;
+    this.profile.properties[newName] = {weight: 1, mode: 'freeform', min: 0, max: 1, line: []};
+
+    const idx = this.propertyOrder.indexOf(propertyName);
+    this.propertyOrder.splice(idx + 1, 0, newName);
+
+    const newRow = this.buildRow(newName, this.profile.properties[newName]);
+    this.rows[newName] = newRow;
+
+    this.rows[propertyName]?.after(newRow);
+
     this.emitChange();
   }
 

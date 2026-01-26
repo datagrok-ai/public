@@ -27,7 +27,7 @@ export type PropertyDesirability = {
 
   freeformLine?: DesirabilityLine;
 
-  categories?: { name: string; weight: number }[];
+  categories?: { name: string; desirability: number }[];
 }
 
 /// A map of desirability lines with their weights
@@ -72,7 +72,7 @@ export function categoricalDesirabilityScore(
 ): number {
   const categories = prop.categories ?? [];
   const found = categories.find((c) => c.name === value);
-  return found ? found.weight : 0;
+  return found ? found.desirability : 0;
 }
 
 
