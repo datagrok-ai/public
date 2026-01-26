@@ -533,10 +533,15 @@ export function createVisitDayStrCol(df: DG.DataFrame, visitColNamesDict?: {[key
 }
 
 /**
- * Calculates baseline-related columns for LB domain:
+ * Calculates baseline-related and post-baseline summary columns for LB domain:
+ * Baseline columns:
  * - LB_BASELINE: The LBSTRESN value at the minimum LBDY for each subject and test
  * - LB_CHG: Change from baseline (LBSTRESN - LB_BASELINE)
  * - LB_PCT_CHG: Percent change from baseline (100 * (LBSTRESN - LB_BASELINE) / LB_BASELINE)
+ * Post-baseline columns:
+ * - MAX_POST_VALUE: max LBSTRESN post-baseline per subject/test
+ * - MIN_PCT_CHG: min LB_PCT_CHG post-baseline per subject/test
+ * - MAX_PCT_CHG: max LB_PCT_CHG post-baseline per subject/test
  * @param {DG.DataFrame} lbDomain - The LB domain DataFrame
  */
 export function calculateLBBaselineColumns(lbDomain: DG.DataFrame): void {
@@ -553,34 +558,33 @@ export function calculateLBBaselineColumns(lbDomain: DG.DataFrame): void {
   if (!subjectIdCol || !labDayCol || !labTestCol || !labResNCol)
     return;
 
-  // Check if columns already exist to avoid duplicates
+  // Column names
   const baselineColName = 'LB_BASELINE';
   const chgColName = 'LB_CHG';
   const pctChgColName = 'LB_PCT_CHG';
+  const maxPostValueColName = 'MAX_POST_VALUE';
+  const minPctChgColName = 'MIN_PCT_CHG';
+  const maxPctChgColName = 'MAX_PCT_CHG';
 
+  const removeColIfExists = (colName: string) => {
+    if (lbDomain.col(colName))
+      lbDomain.columns.remove(colName);
+  };
   // Remove existing columns if they exist (to allow recalculation)
-  if (lbDomain.col(baselineColName))
-    lbDomain.columns.remove(baselineColName);
-  if (lbDomain.col(chgColName))
-    lbDomain.columns.remove(chgColName);
-  if (lbDomain.col(pctChgColName))
-    lbDomain.columns.remove(pctChgColName);
+  removeColIfExists(baselineColName);
+  removeColIfExists(chgColName);
+  removeColIfExists(pctChgColName);
+  removeColIfExists(maxPostValueColName);
+  removeColIfExists(minPctChgColName);
+  removeColIfExists(maxPctChgColName);
 
-  if (lbDomain.col(baselineColName) && lbDomain.col(chgColName) && lbDomain.col(pctChgColName))
-    return;
-
-  // Find baseline value for each subject and test combination
-  // Baseline is defined as the LBSTRESN value at the minimum LBDY for each subject and test
-
-  // Group by subject and test to find minimum LBDY (only for rows with valid values)
-  // The where clause will be applied during aggregation to filter nulls
+  // Find baseline day (minimum LBDY) for each subject/test - calculate once
   const groupByCols = labCatCol ? [SUBJECT_ID, LAB_TEST_CAT, LAB_TEST] : [SUBJECT_ID, LAB_TEST];
   const minDayGrouped = lbDomain.groupBy(groupByCols)
     .min(LAB_DAY)
     .aggregate();
 
   // Join back to get the LBSTRESN value at the minimum day
-  // Join on SUBJECT_ID, LAB_TEST, and the minimum day value
   const baselineData = grok.data.joinTables(
     minDayGrouped,
     lbDomain,
@@ -592,36 +596,66 @@ export function calculateLBBaselineColumns(lbDomain: DG.DataFrame): void {
     false,
   );
 
-  // Build baseline map: key = subjectId|test, value = baseline LBSTRESN
+  // Build maps: baseline value and baseline day (calculated once, used for both)
   const baselineMap: {[key: string]: number} = {};
+  const baselineDayMap: {[key: string]: number} = {};
   const baselineSubjCol = baselineData.col(SUBJECT_ID);
   const baselineCatCol = baselineData.col(LAB_TEST_CAT);
   const baselineTestCol = baselineData.col(LAB_TEST);
   const baselineResCol = baselineData.col(LAB_RES_N);
+  const minDayColName = `min(${LAB_DAY})`;
+  const baselineDayCol = baselineData.col(minDayColName);
 
   for (let i = 0; i < baselineData.rowCount; i++) {
-    if (baselineResCol.isNone(i))
+    if (baselineResCol.isNone(i) || baselineDayCol.isNone(i))
       continue;
 
-    let subjectId = baselineSubjCol.get(i);
-    const key = subjectId += baselineCatCol ? `|${baselineCatCol.get(i)}|${baselineTestCol.get(i)}` :
-      `|${baselineTestCol.get(i)}`;
+    const subjectId = baselineSubjCol.get(i);
+    const cat = baselineCatCol ? baselineCatCol.get(i) : '';
+    const test = baselineTestCol.get(i);
+    const key = labCatCol ? `${subjectId}|${cat}|${test}` : `${subjectId}|${test}`;
     const baselineValue = baselineResCol.get(i);
+    const baselineDay = baselineDayCol.get(i);
 
-    // Store the baseline value (if multiple rows match, first one wins)
-    if (!baselineMap.hasOwnProperty(key))
+    // Store baseline value and day (if multiple rows match, first one wins)
+    if (!baselineMap.hasOwnProperty(key)) {
       baselineMap[key] = baselineValue;
+      baselineDayMap[key] = baselineDay;
+    }
   }
+
+  // Helper function to build key
+  const buildKey = (subjectId: string, cat: string | null, test: string): string => {
+    return labCatCol && cat !== null ? `${subjectId}|${cat}|${test}` : `${subjectId}|${test}`;
+  };
+
+  // Helper function to get subject/test info and build key for a row
+  const getRowKey = (i: number): {subjectId: string, cat: string | null, test: string, key: string} | null => {
+    if (labDayCol.isNone(i) || labResNCol.isNone(i))
+      return null;
+
+    const subjectId = subjectIdCol.get(i);
+    const cat = labCatCol ? labCatCol.get(i) : null;
+    const test = labTestCol.get(i);
+    const key = buildKey(subjectId, cat, test);
+    return {subjectId, cat, test, key};
+  };
+
+  // Collect post-baseline data while iterating (for post-baseline columns)
+  interface PostBaselineData {
+    maxValue: number | null;
+    minPctChg: number | null;
+    maxPctChg: number | null;
+  }
+  const postBaselineData: {[key: string]: PostBaselineData} = {};
 
   // Create baseline column
   const baselineCol = lbDomain.columns.addNewFloat(baselineColName);
   baselineCol.init((i) => {
-    if (labDayCol.isNone(i) || labResNCol.isNone(i))
+    const rowInfo = getRowKey(i);
+    if (!rowInfo)
       return null;
-
-    let subjectId = subjectIdCol.get(i);
-    const key = subjectId += labCatCol ? `|${labCatCol.get(i)}|${labTestCol.get(i)}` : `|${labTestCol.get(i)}`;
-    return baselineMap[key] ?? null;
+    return baselineMap[rowInfo.key] ?? null;
   });
 
   // Create change from baseline column
@@ -652,6 +686,70 @@ export function calculateLBBaselineColumns(lbDomain: DG.DataFrame): void {
       return null;
 
     return 100 * (currentValue - baselineValue) / baselineValue;
+  });
+
+  // Now collect post-baseline data in a single pass
+  for (let i = 0; i < lbDomain.rowCount; i++) {
+    const rowInfo = getRowKey(i);
+    if (!rowInfo)
+      continue;
+
+    const baselineDay = baselineDayMap[rowInfo.key];
+
+    if (baselineDay === undefined)
+      continue;
+
+    const currentDay = labDayCol.get(i);
+    if (currentDay <= baselineDay)
+      continue; // Skip baseline and pre-baseline rows
+
+    const currentValue = labResNCol.get(i);
+    const currentPctChg = pctChgCol && !pctChgCol.isNone(i) ? pctChgCol.get(i) : null;
+
+    if (!postBaselineData[rowInfo.key]) {
+      postBaselineData[rowInfo.key] = {
+        maxValue: currentValue,
+        minPctChg: currentPctChg,
+        maxPctChg: currentPctChg,
+      };
+    } else {
+      const data = postBaselineData[rowInfo.key];
+      if (currentValue > (data.maxValue ?? -Infinity))
+        data.maxValue = currentValue;
+      if (currentPctChg !== null) {
+        if (data.minPctChg === null || currentPctChg < data.minPctChg)
+          data.minPctChg = currentPctChg;
+        if (data.maxPctChg === null || currentPctChg > data.maxPctChg)
+          data.maxPctChg = currentPctChg;
+      }
+    }
+  }
+
+  // Create MAX_POST_VALUE column
+  const maxPostValueCol = lbDomain.columns.addNewFloat(maxPostValueColName);
+  maxPostValueCol.init((i) => {
+    const rowInfo = getRowKey(i);
+    if (!rowInfo)
+      return null;
+    return postBaselineData[rowInfo.key]?.maxValue ?? null;
+  });
+
+  // Create MIN_PCT_CHG column
+  const minPctChgCol = lbDomain.columns.addNewFloat(minPctChgColName);
+  minPctChgCol.init((i) => {
+    const rowInfo = getRowKey(i);
+    if (!rowInfo)
+      return null;
+    return postBaselineData[rowInfo.key]?.minPctChg ?? null;
+  });
+
+  // Create MAX_PCT_CHG column
+  const maxPctChgCol = lbDomain.columns.addNewFloat(maxPctChgColName);
+  maxPctChgCol.init((i) => {
+    const rowInfo = getRowKey(i);
+    if (!rowInfo)
+      return null;
+    return postBaselineData[rowInfo.key]?.maxPctChg ?? null;
   });
 }
 

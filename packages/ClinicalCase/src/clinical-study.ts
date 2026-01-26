@@ -198,7 +198,7 @@ export class ClinicalStudy {
       }
     });
 
-    // Calculate LB baseline columns if LB domain exists
+    // Calculate LB baseline and post-baseline columns if LB domain exists
     if (this.domains.lb)
       calculateLBBaselineColumns(this.domains.lb);
   }
