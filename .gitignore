@@ -92,3 +92,6 @@ tools/.cache/
 .history
 
 tmpclaude-*-cwd
+
+test-console-output-?.log
+test-record-?.mp4
