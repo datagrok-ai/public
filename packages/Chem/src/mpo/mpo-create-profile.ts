@@ -51,6 +51,8 @@ export class MpoProfileCreateView {
       this.initTableView();
 
     this.view.name = this.isEditMode ? 'Edit MPO Profile' : 'Create MPO Profile';
+    if (this.tableView)
+      this.tableView.name = this.view.name;
     this.updateViewPaths();
 
     this.initControls(showMethod);
@@ -60,8 +62,29 @@ export class MpoProfileCreateView {
   }
 
   private updateViewPaths() {
-    const path = this.isEditMode && this.profile.name ? this.profile.name : 'Create MPO Profile';
-    // this.view.path = this.tableView!.path = /*createPath(path);*/path;
+    const url = new URL(window.location.href);
+    const basePath = '/apps/Chem';
+
+    if (!url.pathname.startsWith(basePath))
+      url.pathname = basePath;
+
+    url.pathname = url.pathname.replace(/\/$/, '');
+
+    if (this.isEditMode) {
+      const profileId = encodeURIComponent(this.profile.name || '');
+      if (!url.pathname.endsWith('/Mpo'))
+        url.pathname += '/Mpo';
+      url.searchParams.set('profileId', profileId);
+    } else {
+      url.pathname = `${basePath}/Mpo/create-profile`;
+      url.searchParams.delete('profileId');
+    }
+
+    window.history.replaceState({}, '', url.toString());
+    this.view.path = url.pathname + (url.search ? url.search : '');
+
+    if (this.tableView)
+      this.tableView.path = this.view.path;
   }
 
   private initTableView(): void {
