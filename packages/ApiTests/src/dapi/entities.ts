@@ -37,12 +37,13 @@ category('Dapi: entities', () => {
 category('Dapi: entities: smart search', () => {
   test('users', async () => {
     expect((await grok.dapi.users.filter('firstName = "admin"').list()).length, 1);
-    expect((await grok.dapi.users.filter('status = "active"').list({pageSize: 5})).length, 4);
+    expect((await grok.dapi.users.filter('status = "active" && firstName = "admin"').list({pageSize: 5})).length, 1);
+    expect((await grok.dapi.users.filter('status != "active" && firstName = "admin"').list({pageSize: 5})).length, 0);
     expect((await grok.dapi.users.filter('id = "878c42b0-9a50-11e6-c537-6bf8e9ab02ee"').list()).length, 1);
   }, {stressTest: true});
 
   test('groups', async () => {
-    expect((await grok.dapi.groups.filter('Administr').list()).length, 1);
+    expect((await grok.dapi.groups.filter('nistratora').list()).length, 1);
     expect((await grok.dapi.groups.filter('friendlyName = "all users"').list()).length, 1);
     expect((await grok.dapi.groups.filter('id = "1ab8b38d-9c4e-4b1e-81c3-ae2bde3e12c5"').list()).length, 1);
   }, {stressTest: true});

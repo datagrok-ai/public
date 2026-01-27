@@ -1,4 +1,4 @@
-import {before, category, expect, test} from '@datagrok-libraries/test/src/test';
+import {awaitCheck, before, category, expect, test} from '@datagrok-libraries/test/src/test';
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
@@ -31,9 +31,7 @@ category('Settings', () => {
     expect(gss.showSelectedColumnsInProperties, true);
     expect(gss.showCurrentColumnInProperties, true);
     try {
-      // const v = grok.shell.addTableView(t);
-      // views.push(v);
-      grok.shell.o = t;
+      grok.shell.addTableView(t);
       t.rows.select((row) => row.sex === 'F');
       expect(grok.shell.o instanceof DG.RowGroup, true);
       expect(grok.shell.o.dataFrame.selection.trueCount, t.selection.trueCount);
