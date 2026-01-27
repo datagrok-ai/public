@@ -2489,9 +2489,8 @@ export class PackageFunctions {
       return [];
     }
 
-    try { //@ts-ignore
-      resultCol = mpo(df, columns, profileName, aggregation); //@ts-ignore
-      grok.shell.info(`MPO score calculated in column '${resultCol.name}'.`);
+    try {
+      resultCol = mpo(df, columns, profileName, aggregation);
     } catch (e) {
       console.error('MPO Calculation Error:', e);
       grok.shell.error(`MPO calculation failed: ${e instanceof Error ? e.message : String(e)}`);
@@ -2573,7 +2572,27 @@ export class PackageFunctions {
     'name': 'MPO profiles',
     'meta': {browsePath: 'Chem', icon: 'images/mpo.png'},
   })
-  static async mpoProfilesApp(): Promise<DG.View> {
+  static async mpoProfilesApp(
+    @grok.decorators.param({options: {metaUrl: true, optional: true}}) path?: string,
+  ): Promise<DG.View> {
+    const url = new URL(window.location.href);
+    const params = url.searchParams;
+
+    const hasPath = !!path;
+
+    if (hasPath && url.pathname.endsWith('/Mpo/create-profile')) {
+      const view = new MpoProfileCreateView();
+      return view.tableView!;
+    }
+
+    const profileId = params.get('profileId');
+    const profiles = await loadMpoProfiles();
+    if (hasPath && profileId) {
+      const profile = profiles.find((p) => p.name === decodeURIComponent(profileId));
+      const view = new MpoProfileCreateView(profile, false, profile?.fileName);
+      return view.view;
+    }
+
     const infoView = new MpoProfilesView();
     await infoView.render();
     return infoView.view;
@@ -2584,12 +2603,16 @@ export class PackageFunctions {
     @grok.decorators.param({type: 'dynamic'}) treeNode: DG.TreeViewGroup,
     @grok.decorators.param({type: 'view'}) browseView: any,
   ) {
+    let openedView: DG.ViewBase | null = null;
     const profileFiles = await grok.dapi.files.list(MPO_TEMPLATE_PATH);
     for (const profile of profileFiles) {
       const content =
         JSON.parse(await grok.dapi.files.readAsText(`${MPO_TEMPLATE_PATH}/${profile.name}`)) as DesirabilityProfile;
+
       treeNode.item(content.name).onSelected.subscribe(() => {
-        const editView = new MpoProfileCreateView(content, false);
+        openedView?.close();
+        const editView = new MpoProfileCreateView(content, false, profile.name);
+        openedView = editView.view;
         grok.shell.addPreview(editView.view);
       });
     }
