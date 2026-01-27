@@ -92,30 +92,27 @@ export function updateMpoPath(
 ): void {
   const url = new URL(window.location.href);
   const basePath = '/apps/Chem';
+  const mpoPath = `${basePath}/${MPO_PATH}`;
 
   if (!url.pathname.startsWith(basePath))
     url.pathname = basePath;
 
   url.pathname = url.pathname.replace(/\/$/, '');
 
-  if (!url.pathname.includes(`/${MPO_PATH}`))
-    url.pathname = `${basePath}/Mpo`;
-
   switch (mode) {
-  case MpoPathMode.Edit: {
-    const profileId = encodeURIComponent(profileName ?? '');
-    url.searchParams.set('profileId', profileId);
+  case MpoPathMode.Edit:
+    url.pathname = mpoPath;
+    url.searchParams.set('profileId', encodeURIComponent(profileName ?? ''));
     break;
-  }
 
   case MpoPathMode.Create:
-    url.pathname = `${basePath}/${MPO_PATH}/create-profile`;
+    url.pathname = `${mpoPath}/create-profile`;
     url.searchParams.delete('profileId');
     break;
 
   case MpoPathMode.List:
   default:
-    url.pathname = `${basePath}/${MPO_PATH}`;
+    url.pathname = mpoPath;
     url.searchParams.delete('profileId');
     break;
   }

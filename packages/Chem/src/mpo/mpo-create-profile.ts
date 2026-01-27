@@ -33,7 +33,7 @@ export class MpoProfileCreateView {
   fileName?: string | null = null;
   saveButton: HTMLElement | null = null;
 
-  tableView: DG.TableView | null = null;
+  tableView: DG.TableView;
 
   constructor(existingProfile?: DesirabilityProfile, showMethod: boolean = true, fileName?: string) {
     this.view = DG.View.create();
@@ -47,12 +47,12 @@ export class MpoProfileCreateView {
     this.profileEditorContainer = ui.divV([this.editor.root]);
     this.profileEditorContainer.classList.add('chem-profile-editor-container');
 
-    if (!this.isEditMode)
-      this.initTableView();
+    this.tableView = DG.TableView.create(DG.DataFrame.create(0), false);
+    this.tableView.name = this.view.name = this.isEditMode ? 'Edit MPO Profile' : 'Create MPO Profile';
+    this.dockTableView();
 
-    this.view.name = this.isEditMode ? 'Edit MPO Profile' : 'Create MPO Profile';
     updateMpoPath(
-      this.isEditMode ? this.view : this.tableView!,
+      this.isEditMode ? this.view : this.tableView,
       this.isEditMode ? MpoPathMode.Edit : MpoPathMode.Create,
       this.profile.name,
     );
@@ -63,26 +63,18 @@ export class MpoProfileCreateView {
     this.listenForProfileChanges();
   }
 
-  private initTableView(): void {
-    const emptyDf = DG.DataFrame.create(1);
-    this.tableView = DG.TableView.create(emptyDf, false);
-
-    setTimeout(() => {
-      this.tableView!._onAdded();
-      this.tableView!.name = this.view.name;
-      this.tableView!.grid.root.style.visibility = 'hidden';
-      this.tableView!.dockManager.dock(
-        this.view.root,
-        DG.DOCK_TYPE.TOP,
-        null,
-        '',
-        0.99,
-      );
-    }, 0);
+  private dockTableView() {
+    if (!this.isEditMode) {
+      setTimeout(() => {
+        this.tableView._onAdded();
+        this.tableView.grid.root.style.visibility = 'hidden';
+        this.tableView.dockManager.dock(this.view.root, DG.DOCK_TYPE.TOP, null, '', 0.99);
+      }, 0);
+    }
   }
 
   private setTableViewVisible(visible: boolean, ratio = 0.5): void {
-    if (this.isEditMode || !this.tableView)
+    if (this.isEditMode)
       return;
 
     this.tableView.grid.root.style.visibility = visible ? 'visible' : 'hidden';
@@ -117,7 +109,7 @@ export class MpoProfileCreateView {
 
     this.saveButton.style.display = 'none';
     this.view.setRibbonPanels([[this.saveButton]]);
-    this.tableView?.setRibbonPanels([[this.saveButton]]);
+    this.tableView.setRibbonPanels([[this.saveButton]]);
   }
 
   private initControls(showMethod: boolean) {
@@ -149,8 +141,7 @@ export class MpoProfileCreateView {
       nullable: true,
       onValueChanged: async (df) => {
         this.df = df;
-
-        if (this.tableView && df)
+        if (df)
           this.tableView.dataFrame = df;
 
         if (this.methodInput?.value === METHOD_PROBABILISTIC) {
@@ -222,11 +213,10 @@ export class MpoProfileCreateView {
   }
 
   private async runProbabilisticMpo(): Promise<void> {
-    if (!this.df || !this.tableView)
+    if (!this.df)
       return;
 
     ui.setUpdateIndicator(this.view.root, true, 'Running probabilistic MPO...');
-
     this.setTableViewVisible(true);
 
     const prev = grok.shell.v;
@@ -236,7 +226,6 @@ export class MpoProfileCreateView {
       await grok.functions.call('Eda:trainPmpo', {});
     } finally {
       grok.shell.v = prev;
-
       ui.setUpdateIndicator(this.view.root, false);
     }
   }
