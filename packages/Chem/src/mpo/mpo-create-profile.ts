@@ -315,5 +315,13 @@ export class MpoProfileCreateView {
       const agg = this.aggregationInput?.value ?? 'Average';
       await this.mpoContextPanel.render(this.profile, this.editor.columnMapping, agg);
     });
+
+    const handler = (eventView: DG.View) => {
+      if (eventView && this.view && eventView.id === this.view.id)
+        this.mpoContextPanel?.detach();
+    };
+
+    grok.events.onViewChanging.subscribe((eventData) => handler(eventData.args.view));
+    grok.events.onViewRemoving.subscribe((eventData) => handler(eventData.args.view));
   }
 }

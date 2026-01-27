@@ -173,7 +173,9 @@ export class MpoProfileDialog {
       .onOK(async () => {
         await this.saveProfile();
         await this.runMpoCalculation();
+        this.mpoContextPanel?.detach();
       })
+      .onCancel(() => this.mpoContextPanel?.detach())
       .show();
   }
 }
