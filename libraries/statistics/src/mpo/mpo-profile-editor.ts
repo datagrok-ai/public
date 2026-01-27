@@ -269,7 +269,8 @@ export class MpoProfileEditor {
     delete this.columnMapping[name];
 
     const idx = this.propertyOrder.indexOf(name);
-    if (idx >= 0) this.propertyOrder.splice(idx, 1);
+    if (idx >= 0)
+      this.propertyOrder.splice(idx, 1);
 
     this.rows[name]?.remove();
     delete this.rows[name];
