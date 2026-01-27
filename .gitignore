@@ -90,3 +90,5 @@ help/deploy/releases/plugins/plugins.json
 tools/.cache/
 
 .history
+
+tmpclaude-*-cwd
