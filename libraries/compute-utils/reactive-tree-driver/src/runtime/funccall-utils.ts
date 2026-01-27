@@ -59,7 +59,7 @@ export async function saveFuncCall(bridge: FuncCallInstancesBridge) {
   fc.options[RUN_ERROR_PATH] = bridge.runError$.value;
 
   fc.newId();
-  await historyUtils.saveRun(fc, false);
+  await historyUtils.saveRun(fc);
   return fc;
 }
 
@@ -67,7 +67,7 @@ export async function loadFuncCall(
   id: string,
   isReadonly: boolean,
 ): Promise<AdapterInitData> {
-  const fc = await historyUtils.loadRun(id, false, false);
+  const fc = await historyUtils.loadRun(id);
   const restrictions = deserialize(fc.options[RESTRICTIONS_PATH] ?? '{}');
   const isOutputOutdated = deserialize(fc.options[OUTPUT_OUTDATED_PATH] ?? 'false');
   const runError = fc.options[RUN_ERROR_PATH];
@@ -102,7 +102,7 @@ export async function saveInstanceState(
 }
 
 export async function loadInstanceState(id: string) {
-  const metaCall = await historyUtils.loadRun(id, false, false);
+  const metaCall = await historyUtils.loadRun(id);
   const isFavorite = await loadIsFavorite(metaCall);
   const config: PipelineSerializedState = deserialize(metaCall.options[CONFIG_PATH] ?? '{}');
   return [config, metaCall, isFavorite] as const;
