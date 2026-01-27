@@ -21,6 +21,8 @@ import {getRequiredColumnsByView, handleMouseMoveOverErrorCell, setupValidationE
   setupValidationErrorIndicators} from './views-validation-utils';
 import {DOMAINS_CATEGORIES_LIST, DOMAINS_DESCRIPTIONS, SUPP_DOMAIN_CATEGORY} from '../constants/domains-constants';
 import {setupTableViewLayout} from './layout-utils';
+import {getLbContextPane} from '../panels/lb-context-pane';
+import { createLbHeatmap } from '../domain-specific-viewers/lb-domain';
 
 export const validationNodes: {[key: string]: DG.TreeViewNode} = {};
 export let currentOpenedView: DG.ViewBase | null = null;
@@ -445,6 +447,11 @@ export function addDomainAsTableView(studyId: string, df: DG.DataFrame, closeCur
   setupValidationErrorColumns(df);
   hideValidationColumns(currentOpenedView as DG.TableView);
   setupTableViewLayout(currentOpenedView as DG.TableView, studyId, df.name);
+  if (df.name === 'lb') {
+    const heatmap = createLbHeatmap(df);
+    (currentOpenedView as DG.TableView).addViewer(heatmap);
+   // grok.shell.o = getLbContextPane(df);
+  }
 
   let errorSubs: Subscription[] = [];
   const ribbons = currentOpenedView.getRibbonPanels();
