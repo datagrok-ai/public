@@ -1,4 +1,4 @@
-import {category, test, expect} from '@datagrok-libraries/utils/src/test';
+import {category, test, expect} from '@datagrok-libraries/test/src/test';
 
 category('ApiSamples', async () => {
   test('dummy', async () => {

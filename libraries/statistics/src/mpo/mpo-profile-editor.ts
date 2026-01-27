@@ -123,7 +123,7 @@ export class MpoProfileEditor {
       return weightInput.root;
 
     const minInput = ui.input.float('', {
-      value: prop.min ?? 0,
+      value: prop.min ?? lineEditor.getMinX(),
       showSlider: true,
       onValueChanged: (v) => {
         this.updateProperty(propertyName, (p) => {
@@ -134,7 +134,7 @@ export class MpoProfileEditor {
     }).root;
 
     const maxInput = ui.input.float('', {
-      value: prop.max ?? 1,
+      value: prop.max ?? lineEditor.getMaxX(),
       showSlider: true,
       onValueChanged: (v) => {
         this.updateProperty(propertyName, (p) => {

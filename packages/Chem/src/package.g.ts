@@ -997,14 +997,14 @@ export async function namesToSmiles(data: DG.DataFrame, names: DG.Column<any>) :
   await PackageFunctions.namesToSmiles(data, names);
 }
 
-//input: string molecule { semType: molecule }
-//output: string smiles { semType: molecule }
+//input: string molecule { semType: Molecule }
+//output: string smiles { semType: Molecule }
 //meta.role: canonicalizer
 export function canonicalize(molecule: string) : string {
   return PackageFunctions.canonicalize(molecule);
 }
 
-//input: string molecule { semType: molecule }
+//input: string molecule { semType: Molecule }
 //output: string molecularFormula
 export function getMolecularFormula(molecule: string) : string {
   return PackageFunctions.getMolecularFormula(molecule);
@@ -1119,11 +1119,13 @@ export async function _mpo() : Promise<void> {
 }
 
 //input: dataframe df 
+//input: string profileName 
+//input: dynamic aggregation 
 //input: object currentProperties 
 //output: list res
 //meta.role: transform
-export async function mpoTransformFunction(df: DG.DataFrame, currentProperties: any) : Promise<string[]> {
-  return await PackageFunctions.mpoTransformFunction(df, currentProperties);
+export async function mpoTransformFunction(df: DG.DataFrame, profileName: string, aggregation: any, currentProperties: any) : Promise<string[]> {
+  return await PackageFunctions.mpoTransformFunction(df, profileName, aggregation, currentProperties);
 }
 
 //input: file file 
@@ -1164,4 +1166,28 @@ export async function mixtureTreeWidget(mixture: string) : Promise<any> {
 //top-menu: Chem | Calculate | Biochemical Properties
 export async function biochemPropsWidget() : Promise<void> {
   await PackageFunctions.biochemPropsWidget();
+}
+
+//name: MPO profiles
+//output: view result
+//meta.browsePath: Chem
+//meta.icon: images/mpo.png
+//meta.role: app
+export async function mpoProfilesApp() : Promise<any> {
+  return await PackageFunctions.mpoProfilesApp();
+}
+
+//input: dynamic treeNode 
+//input: view browseView 
+export async function mpoProfilesAppTreeBrowser(treeNode: any, browseView: any) : Promise<void> {
+  await PackageFunctions.mpoProfilesAppTreeBrowser(treeNode, browseView);
+}
+
+//name: Chemistry | MPO
+//input: semantic_value smiles { semType: Molecule }
+//output: widget result
+//meta.role: widgets,panel
+//meta.domain: chem
+export async function mpoWidget(semValue: DG.SemanticValue) : Promise<any> {
+  return await PackageFunctions.mpoWidget(semValue);
 }

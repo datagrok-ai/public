@@ -1,5 +1,4 @@
-import { category } from "@datagrok-libraries/utils/src/test";
-import { delay, DockManager, GridCell } from "datagrok-api/dg";
+import { delay } from "datagrok-api/dg";
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';

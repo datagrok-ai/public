@@ -70,7 +70,7 @@ function getItemTypeByCaption(caption: string): string {
     case ITEM_CAPTION.HORZ_BAND:
     case ITEM_CAPTION.VERT_BAND: return ITEM_TYPE.BAND;
 
-    default: throw 'Unknown item caption.';
+    default: throw new Error('Unknown item caption.');
   }
 }
 
@@ -523,7 +523,7 @@ class Preview {
         this.srcAxes = {y: src.props.yColumnName, x: src.props.xColumnName, yMap: src.props.yMap, xMap: src.props.xMap};
       }
     } else
-      throw 'Host is not DataFrame or Viewer.';
+      throw new Error('Host is not DataFrame or Viewer.');
 
     if (src instanceof DG.Viewer && src.getOptions()['type'] === DG.VIEWER.LINE_CHART)
       this.viewer = DG.Viewer.lineChart(this.dataFrame, {
@@ -769,7 +769,7 @@ class Editor {
         const oldFormula = item.formula!;
         item.formula = value;
         const resultOk = this.onItemChangedAction(itemIdx, true);
-        this.setFormulaValidationResult(resultOk, value, ibFormula);
+        this.setFormulaValidationResult(resultOk, value, ibFormula, item.type === ITEM_TYPE.BAND);
         this.setTitleIfEmpty(oldFormula, item.formula);
       }});
 
@@ -953,17 +953,47 @@ class Editor {
     return ui.divH([ibHeader.root]);
   }
 
-  private setFormulaValidationResult(resultOk: boolean, value: string, ibHeader: DG.InputBase<string>): void {
+  private setFormulaValidationResult(resultOk: boolean, value: string, ibHeader: DG.InputBase<string>, isBand: boolean = false): void {
     const elHeader = ibHeader.input as HTMLInputElement;
-    elHeader.classList.toggle('d4-forced-invalid', !resultOk);
-    if (!resultOk) {
-      const splitValues = value?.split('=');
-      if (splitValues?.length > 1 && (!splitValues[0].includes('${') || !splitValues[1].includes('${')))
-        ibHeader.setTooltip('Line formula should contain columns from both sides of the "=" sign');
-    }
-    else
-      ibHeader.setTooltip('');
+    const validateValue = (): string => {
+      if (isBand)
+        return resultOk ? '' : 'Invalid formula syntax';
 
+      // Must contain exactly one '='
+      const parts = value.split('=');
+      if (parts.length !== 2)
+        return 'Line formula should be in format: ${x or y column} = expression';
+
+      const [lhsRaw, rhsRaw] = parts.map(p => p.trim());
+
+      // LHS must be exactly one ${...}
+      const lhsMatch = /^\$\{([^}]+)\}$/.exec(lhsRaw);
+      if (!lhsMatch)
+        return 'Left side must be a single column in format ${column}';
+
+      const lhsColumn = lhsMatch[1].trim();
+
+      // Extract all ${...} on RHS
+      const rhsColumnRegex = /\$\{([^}]+)\}/g;
+      const rhsColumns: string[] = [];
+
+      let match;
+      while ((match = rhsColumnRegex.exec(rhsRaw)) !== null) {
+        rhsColumns.push(match[1].trim());
+      }
+
+      // If RHS references the same column → invalid
+      if (rhsColumns.includes(lhsColumn))
+        return 'Line formula should contain different columns on both sides of the "=" sign';
+
+      // Expression syntax validation comes last
+      return resultOk ? '' : 'Invalid formula syntax';
+    };
+    
+    const validationTooltip = validateValue();
+    resultOk = resultOk && validationTooltip === '';
+    ibHeader.setTooltip(validationTooltip);
+    elHeader.classList.toggle('d4-forced-invalid', !resultOk);
     this.onFormulaValidation(resultOk);
   }
 
@@ -1043,26 +1073,22 @@ class Editor {
 
   private setPointsValidationResult(resultOk: boolean, value: string, ibPoints: DG.InputBase<string>): void {
     const elPoints = ibPoints.input as HTMLInputElement;
-    elPoints.classList.toggle('d4-forced-invalid', !resultOk);
-    if (!resultOk) {
-      try {
-        const parsed = JSON.parse(`[${value}]`);
-        if (Array.isArray(parsed)) {
-          const validPoints = parsed.filter((p) => Array.isArray(p) && p.length === 2 && typeof p[0] === 'number' && typeof p[1] === 'number');
-          if (validPoints.length < 3) {
-            ibPoints.setTooltip('Area must have at least 3 points');
-          } else {
-            ibPoints.setTooltip('Points should be a list of [x, y] pairs, e.g., [1, 2], [3, 4]');
-          }
-        } else {
-          ibPoints.setTooltip('Points should be a list of [x, y] pairs, e.g., [1, 2], [3, 4]');
-        }
-      } catch {
-        ibPoints.setTooltip('Invalid JSON format for points');
-      }
-    } else {
-      ibPoints.setTooltip('');
+    const tooltipWarning = 'Points should be a list of [x, y] number pairs, e.g., [1, 2], [3, 4]';
+    const validateValue = (): string => {
+      if (resultOk)
+        return '';
+      
+      const parsed = JSON.parse(`[${value}]`);
+      return Array.isArray(parsed) && parsed.length < 3 ? 'Area must have at least 3 points' : tooltipWarning;
+    };
+    
+    try {
+      ibPoints.setTooltip(validateValue());
+    } catch {
+      ibPoints.setTooltip(tooltipWarning);
     }
+
+    elPoints.classList.toggle('d4-forced-invalid', !resultOk);
     this.onFormulaValidation(resultOk);
   }
 

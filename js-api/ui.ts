@@ -24,7 +24,7 @@ import {
   DropDown,
   TypeAhead,
   TypeAheadConfig,
-  TagsInput, ChoiceInput, InputForm, CodeInput, CodeConfig, MarkdownInput, TagsInputConfig, MarkdownConfig,
+  ChoiceInput, InputForm, CodeInput, CodeConfig, MarkdownInput, MarkdownConfig,
 } from './src/widgets';
 import {toDart, toJs} from './src/wrappers';
 import {Functions} from './src/functions';
@@ -33,7 +33,7 @@ import {__obs} from './src/events';
 import {HtmlUtils, _isDartium, _options, Utils} from './src/utils';
 import * as rxjs from 'rxjs';
 import {CanvasRenderer, GridCellRenderer, SemanticValue, Size} from './src/grid';
-import {Entity, FileInfo, Property, User} from './src/entities';
+import {Entity, FileInfo, Group, Property, User} from './src/entities';
 import { Column, DataFrame } from './src/dataframe';
 import dayjs from "dayjs";
 import { Wizard, WizardPage } from './src/ui/wizard';
@@ -760,7 +760,7 @@ export namespace input {
 
   const optionsMap: {[key: string]: (input: InputBase, option: any) => void} = {
     value: (input, x) => input.value = input.inputType === d4.InputType.File ? toDart(x) :
-      [d4.InputType.Files, d4.InputType.Columns].includes(input.inputType) ? x.map((elem: FileInfo | Column) => toDart(elem)) : x,
+      [d4.InputType.Files, d4.InputType.Columns, d4.InputType.Tags].includes(input.inputType) ? x.map((elem: any) => toDart(elem)) : x,
     nullable: (input, x) => input.nullable = x, // finish it?
     property: (input, x) => input.property = x,
     tooltipText: (input, x) => input.setTooltip(x),
@@ -772,7 +772,9 @@ export namespace input {
     placeholder: (input, x) => (input.input as HTMLInputElement).placeholder = x,
     items: (input, x) => input.inputType === d4.InputType.Choice ? (input as ChoiceInput<typeof x>).items = x :
       input.inputType === d4.InputType.Table ? (input as ChoiceInput<typeof x>).items = x.map((elem: DataFrame) => toDart(elem)) :
-        input.inputType === d4.InputType.MultiChoice ? api.grok_MultiChoiceInput_Set_Items(input.dart, x) : api.grok_RadioInput_Set_Items(input.dart, x),
+        input.inputType === d4.InputType.MultiChoice ? api.grok_MultiChoiceInput_Set_Items(input.dart, x) :
+          [d4.InputType.User, d4.InputType.UserGroups, d4.InputType.Tags].includes(input.inputType) ? api.grok_TagsInput_Set_Suggestion_Items(input.dart, x.map((elem: any) => toDart(elem))) :
+            api.grok_RadioInput_Set_Items(input.dart, x),
     icon: (input, x) => api.grok_StringInput_AddIcon(input.dart, x),
     available: (input, x) => api.grok_ColumnsInput_ChangeAvailableColumns(input.dart, x),
     checked: (input, x) => api.grok_ColumnsInput_ChangeCheckedColumns(input.dart, x),
@@ -781,7 +783,13 @@ export namespace input {
     additionalColumnProperties: (input, x) => setAdditionalColumnProperties(input, x),
     showSelectedColsOnTop: (input, x) => api.grok_ColumnsInput_SetShowSelectedColsOnTop(input.dart, x),
     showOnlyColorBox: (input, x) => api.grok_ColorInput_SetShowOnlyColorBox(input.dart, x),
+    allowNew: (input, x) => api.grok_TagsInput_Set_Allow_New(input.dart, x),
+    multiValue: (input, x) => api.grok_TagsInput_Set_MultiValue(input.dart, x),
     acceptExtensions: (input, x) => api.grok_FilesInput_Set_AcceptExtensions(input.dart, x),
+    itemToString: (input, x) => api.grok_TagsInput_Set_ItemToString(input.dart, x),
+    getSuggestions:(input, x) => api.grok_TagsInput_Set_GetSuggestions(input.dart, x),
+    createTagLabel: (input, x) => api.grok_TagsInput_Set_CreateTagLabel(input.dart, x),
+    createNewItem: (input, x) => api.grok_TagsInput_Set_CreateNewItem(input.dart, x),
   };
 
   function setInputOptions(input: InputBase, inputType: d4.InputType, options?: IInputInitOptions, ignoreProp: boolean = false): void {
@@ -836,6 +844,18 @@ export namespace input {
   export interface IChoiceInputInitOptions<T> extends IInputInitOptions<T> {
     items?: T[];
   }
+
+  export interface TagsInputConfig<T> extends IMultiChoiceInputInitOptions<T> {
+    items?: T[];
+    tags?: T[];
+    showButton?: boolean;
+    allowNew?: boolean;
+    multiValue?: boolean;
+    itemToString?: (item: T) => string;
+    getSuggestions?: (inputText: string) => Promise<T[]>;
+    createTagLabel?: (item: T) => Element;
+    createNewItem?: (inputText: string) => T;
+  };
 
   export interface IMultiChoiceInputInitOptions<T> extends Omit<IChoiceInputInitOptions<T>, 'value'> {
     value?: T[];
@@ -1037,11 +1057,12 @@ export namespace input {
     return _create(d4.InputType.Radio, name, options);
   }
 
-  export function user(name: string, options?: IInputInitOptions<User[]>): InputBase<User[] | null> {
+  export function user(name: string, options?: TagsInputConfig<User[]>): InputBase<User[] | null> {
     return _create(d4.InputType.User, name, options);
   }
 
-  export function userGroups(name: string, options?: IInputInitOptions<User[]>): InputBase<User[] | null> {
+
+  export function userGroups(name: string, options?: TagsInputConfig<User[]>): InputBase<User[] | null> {
     return _create(d4.InputType.UserGroups, name, options);
   }
 
@@ -1057,8 +1078,12 @@ export namespace input {
     return new CodeInput(name, options);
   }
 
-  export function tags(name: string, config?: TagsInputConfig) {
-    return new TagsInput(name, config);
+  export function tags<T>(name: string, config?: TagsInputConfig<T>): InputBase<T | null> {
+    //put tags into items (for backward compatibility)
+    if (config?.tags && !config.items)
+        config.items = config.tags as any[];
+    const tagsBaseInput = _create(d4.InputType.Tags, name, config);
+    return _create(d4.InputType.Tags, name, config);  
   }
 
   export async function markdownPreview(markdown: string): Promise<HTMLDivElement> {
@@ -1068,6 +1093,7 @@ export namespace input {
     markdownPreview.innerHTML = marked.parse(markdown ?? '');
     return markdownPreview;
   }
+
 }
 
 export function inputsRow(name: string, inputs: InputBase[]): HTMLElement {

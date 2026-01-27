@@ -1,0 +1,25 @@
+{
+  "name": "Add molecular properties",
+  "connection": "Chembl:Chembl",
+  "keySchema": "public",
+  "keyTable": "molecule_dictionary",
+  "keyColumn": "molregno",
+  "fields": [
+    "public.molecule_dictionary.molregno",
+    "public.compound_properties.full_mwt",
+    "public.compound_properties.alogp",
+    "public.compound_properties.psa",
+    "public.compound_properties.hba",
+    "public.compound_properties.hbd",
+    "public.compound_properties.rtb"
+  ],
+  "joins": [
+    {
+      "leftTableName": "public.molecule_dictionary",
+      "rightTableName": "public.compound_properties",
+      "joinType": "left",
+      "leftTableKeys": ["molregno"],
+      "rightTableKeys": ["molregno"]
+    }
+  ]
+}

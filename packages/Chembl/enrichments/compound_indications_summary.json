@@ -1,0 +1,22 @@
+{
+  "name": "Add compound info",
+  "connection": "Chembl:Chembl",
+  "keySchema": "public",
+  "keyTable": "drug_indication",
+  "keyColumn": "molregno",
+  "fields": [
+    "public.drug_indication.molregno",
+    "public.molecule_dictionary.chembl_id",
+    "public.molecule_dictionary.pref_name",
+    "public.molecule_dictionary.max_phase"
+  ],
+  "joins": [
+    {
+      "leftTableName": "public.drug_indication",
+      "rightTableName": "public.molecule_dictionary",
+      "joinType": "left",
+      "leftTableKeys": ["molregno"],
+      "rightTableKeys": ["molregno"]
+    }
+  ]
+}

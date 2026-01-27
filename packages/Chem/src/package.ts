@@ -2180,11 +2180,11 @@ export class PackageFunctions {
   }
 
   @grok.decorators.func({
-    outputs: [{name: 'smiles', type: 'string', options: {semType: 'molecule'}}],
+    outputs: [{name: 'smiles', type: 'string', options: {semType: 'Molecule'}}],
     meta: {role: 'canonicalizer'},
   })
   static canonicalize(
-    @grok.decorators.param({type: 'string', options: {semType: 'molecule'}}) molecule: string): string {
+    @grok.decorators.param({type: 'string', options: {semType: 'Molecule'}}) molecule: string): string {
     return PackageFunctions.convertMolNotation(molecule, DG.chem.Notation.Unknown, DG.chem.Notation.Smiles);
   }
 
@@ -2192,7 +2192,7 @@ export class PackageFunctions {
     outputs: [{name: 'molecularFormula', type: 'string'}],
   })
   static getMolecularFormula(
-    @grok.decorators.param({type: 'string', options: {semType: 'molecule'}}) molecule: string): string {
+    @grok.decorators.param({type: 'string', options: {semType: 'Molecule'}}) molecule: string): string {
     return oclMol(molecule).getMolecularFormula().formula;
   }
 
@@ -2490,8 +2490,8 @@ export class PackageFunctions {
       return [];
     }
 
-    try {
-      resultCol = mpo(df, columns, profileName, aggregation);
+    try { //@ts-ignore
+      resultCol = mpo(df, columns, profileName, aggregation); //@ts-ignore
       grok.shell.info(`MPO score calculated in column '${resultCol.name}'.`);
     } catch (e) {
       console.error('MPO Calculation Error:', e);
@@ -2653,16 +2653,18 @@ export class PackageFunctions {
 
       for (const propertyName in selected.properties) {
         const column = dataFrame.columns.byName(propertyName);
-        if (column) {
-          columns.push(column);
-          column.setTag(
-            'desirabilityTemplate',
-            JSON.stringify(selected.properties[propertyName]),
-          );
-        }
+        if (!column)
+          continue;
+
+        columns.push(column);
+
+        const newTagValue = JSON.stringify(selected.properties[propertyName]);
+        const existingTagValue = column.getTag('desirabilityTemplate');
+        if (existingTagValue !== newTagValue)
+          column.setTag('desirabilityTemplate', newTagValue);
       }
 
-      const score = await mpo(
+      const score = await mpo( //@ts-ignore
         dataFrame,
         columns,
         selected.name,
@@ -2678,7 +2680,7 @@ export class PackageFunctions {
       const addColumnIcon = ui.iconFA(
         'plus',
         async () => {
-          await mpo(
+          await mpo( //@ts-ignore
             dataFrame,
             columns,
             selected.name,

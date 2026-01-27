@@ -1,0 +1,24 @@
+{
+  "name": "Add assay info",
+  "connection": "Chembl:Chembl",
+  "keySchema": "public",
+  "keyTable": "activities",
+  "keyColumn": "assay_id",
+  "fields": [
+    "public.activities.assay_id",
+    "public.assays.assay_type",
+    "public.assays.tid",
+    "public.assays.confidence_score",
+    "public.assays.organism",
+    "public.assays.description"
+  ],
+  "joins": [
+    {
+      "leftTableName": "public.activities",
+      "rightTableName": "public.assays",
+      "joinType": "left",
+      "leftTableKeys": ["assay_id"],
+      "rightTableKeys": ["assay_id"]
+    }
+  ]
+}

@@ -431,7 +431,7 @@ div.ui-box > div.power-pack-activity-widget-content.ui-div.ui-panel {
     min-height: 70px;
 }
 
-.dlg-add-new-column{
+.add-new-column-dialog-root > .d4-dialog-contents {
     flex-direction: row;
     overflow: hidden;
     max-width: 100%

@@ -805,8 +805,15 @@ export interface IHistogramSettings {
   /// Show bin selector in the left top panel when the mouse is over the histogram
   showBinSelector: boolean;
 
+  ///Show bin values on top of the bars
+  showValues: boolean;
+
   /// Number of bins on the histogram
   bins: number;
+
+  valueMin: number;
+
+  valueMax: number;
 
   /// A categorical column to split data on (each bar represents a category)
   split: string;
@@ -902,6 +909,8 @@ export interface IHistogramSettings {
   filteredBinsColor: number;
 
   selectedBinsColor: number;
+
+  valuesColor: number;
 
   filteredOutColor: number;
 

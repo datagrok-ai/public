@@ -6,6 +6,7 @@ import {LLMCredsManager} from './creds';
 import {JsonSchema} from '../prompt-engine/interfaces';
 import {ChatModel} from 'openai/resources/shared';
 import {_package} from '../package';
+import {AIProvider, BuiltinToolSpec} from './AI-API-providers/types';
 
 export type ModelOption = 'Fast' | 'Deep Research' | 'Coding';
 export const ModelType: {[type in ModelOption]: ChatModel} = {
@@ -32,19 +33,24 @@ export function initModelTypeNames() {
 export class OpenAIClient {
   public openai: OpenAI;
   private constructor(private vectorStoreId: string) {
-    if (!grok.ai.openAiConfigured)
+    if (!grok.ai.openAiConfigured || !grok.ai.openAiProxyToken)
       throw new Error('OpenAI is not configured. Please set the API key in the AI settings under Admin section.');
-    this.openai = new OpenAI({baseURL: `${grok.ai.openAiProxyUrl}/v${grok.ai.config?.apiVersion ?? '1'}`, dangerouslyAllowBrowser: true,
+    const apiVersion = _package.settings.apiVersion ?? (grok.ai.config?.apiVersion ? `v${grok.ai.config?.apiVersion}` : 'v1');
+    this.openai = new OpenAI({baseURL: `${grok.ai.openAiProxyUrl}/${apiVersion}`, dangerouslyAllowBrowser: true,
       apiKey: 'unused',
       fetch: async (input, init) => {
         const url = typeof input === 'string' ? input : input.toString();
-        return fetch(url, {
+        const prms = {
           ...init,
-          headers: {
-            ...init?.headers,
-            Authorization: grok.ai.openAiProxyToken,
-          },
-        });
+          // headers: {
+          //   ...in
+          //   Authorization: grok.ai.openAiProxyToken,
+          // },
+        };
+        const headers = new Headers(prms.headers);
+        headers.set('Authorization', grok.ai.openAiProxyToken);
+        prms.headers = headers;
+        return fetch(url, prms);
       },
     });
   }
@@ -59,9 +65,9 @@ export class OpenAIClient {
     if (!this.vectorStoreId)
       throw new Error('Vector Store ID is not set. Please set it in the package settings.');
     const storageIDs = [this.vectorStoreId];
-    const response = await this.openai.responses.create({
-      model: ModelType.Fast,
-      instructions: `
+    const provider = AIProvider.getProvider();
+
+    const systemMsg = provider.createSystemMessage(`
     You are a helpful assistant with access to documentation for the datagrok platform via file_search tool. Use the available tool to answer questions accurately.
     
     VERY IMPORTANT TO REMEMBER!!!: you are a UI side assistant for Datagrok platform users, so when asked about how to do something in Datagrok, Always answer with UI solution first (if any) and then the code (if relevant).
@@ -73,16 +79,15 @@ export class OpenAIClient {
     MAKE SURE TO ALWAYS USE TOOL to access the repository information! DO NOT MAKE UP ANSWERS BASED ON YOUR TRAINING DATA!
 
     Prioritize readme files from help directory, js file samples from apisamples directory, and any other relevant documentation files.
-    `,
-      input: `${question}.\n Remember that I am in Datagrok platform environment and the question is related to working in Datagrok platform.`,
-      tools: [
-        {
-          type: 'file_search',
-          vector_store_ids: storageIDs,
-        },
-      ],
+    `);
+    const userMsg = provider.createUserMessage(`${question}.\n Remember that I am in Datagrok platform environment and the question is related to working in Datagrok platform.`);
+    const tools: BuiltinToolSpec[] = [{type: 'file_search', vector_store_ids: storageIDs}];
+    const response = await provider.create({
+      model: ModelType.Fast,
+      messages: [systemMsg, userMsg],
+      tools,
     });
-    return response.output_text;
+    return response.outputText;
   }
 
   async generalPromptCached(model: string, systemPrompt: string, prompt: string, schema?: JsonSchema): Promise<string> {
@@ -102,23 +107,22 @@ export class OpenAIClient {
     userPrompt: string,
     schema?: JsonSchema
   ): Promise<string> {
-    const response = await this.openai.responses.create({
+    const provider = AIProvider.getProvider();
+    const systemMsg = provider.createSystemMessage(systemPrompt);
+    const userMsg = provider.createUserMessage(userPrompt);
+    const responseFormat = schema ?
+      (provider.endpoint === 'openai.responses' ?
+        {format: {type: 'json_schema', name: 'ResponseSchema', schema, strict: true}} :
+        {type: 'json_schema', json_schema: {name: 'ResponseSchema', schema, strict: true}}) :
+      undefined;
+
+    const response = await provider.create({
       model,
-      instructions: systemPrompt,
-      input: userPrompt,
-      ...(schema && {
-        text: {
-          format: {
-            type: 'json_schema',
-            name: 'ResponseSchema',
-            schema,
-            strict: true,
-          }
-        }
-      }),
+      messages: [systemMsg, userMsg],
+      ...(responseFormat ? {responseFormat} : {}),
     });
 
-    const text = response.output_text ?? '';
+    const text = response.outputText ?? '';
     if (!schema)
       return text;
 

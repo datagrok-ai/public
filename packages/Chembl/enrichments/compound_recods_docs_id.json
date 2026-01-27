@@ -1,0 +1,27 @@
+{
+  "name": "Add documents info",
+  "connection": "Chembl:Chembl",
+  "keySchema": "public",
+  "keyTable": "compound_records",
+  "keyColumn": "doc_id",
+  "fields": [
+    "public.compound_records.doc_id",
+    "public.docs.doc_type",
+    "public.docs.journal",
+    "public.docs.year",
+    "public.docs.volume",
+    "public.docs.issue",
+    "public.docs.first_page",
+    "public.docs.doi",
+    "public.docs.pubmed_id"
+  ],
+  "joins": [
+    {
+      "leftTableName": "public.compound_records",
+      "rightTableName": "public.docs",
+      "joinType": "left",
+      "leftTableKeys": ["doc_id"],
+      "rightTableKeys": ["doc_id"]
+    }
+  ]
+}

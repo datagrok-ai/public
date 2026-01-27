@@ -690,7 +690,7 @@ function receiveFeedback(userPrompt: string, aiResponse: string, contextId: stri
 }
 
 
-export class DBAIPanel<T extends MessageType = OpenAI.Responses.ResponseInputItem> extends AIPanel<T, DBAIPanelInputs> {
+export class DBAIPanel extends AIPanel<MessageType, DBAIPanelInputs> {
   protected get placeHolder() { return 'Ask your database, like "Total sales by regions"'; }
   protected schemaInput: DG.InputBase<string>;
   constructor(schemas: string[], defaultSchema: string, connectionID: string, view: DG.View | DG.ViewBase) {
@@ -714,7 +714,7 @@ export class DBAIPanel<T extends MessageType = OpenAI.Responses.ResponseInputIte
   }
 }
 
-export class TVAIPanel<T extends MessageType = OpenAI.Responses.ResponseInputItem> extends AIPanel<T, TVAIPanelInputs> {
+export class TVAIPanel extends AIPanel<MessageType, TVAIPanelInputs> {
   protected get placeHolder() { return 'Ask about your table data...'; }
   protected tableView: DG.TableView;
   constructor(view: DG.TableView) {
@@ -727,7 +727,7 @@ export class TVAIPanel<T extends MessageType = OpenAI.Responses.ResponseInputIte
     return this.tableView.saveLayout().viewState;
   }
 
-  protected afterConversationLoad(conversation: StoredConversationWithContext<T>) {
+  protected afterConversationLoad(conversation: StoredConversationWithContext<MessageType>) {
     const currentViewers = Array.from(this.tableView.viewers);
     // only apply layout if the view is standard grid and there is layout meta
     if (!!conversation.meta && currentViewers.length === 1 && currentViewers[0].type === DG.VIEWER.GRID) {
@@ -737,7 +737,7 @@ export class TVAIPanel<T extends MessageType = OpenAI.Responses.ResponseInputIte
   }
 }
 
-export class ScriptingAIPanel<T extends MessageType = OpenAI.Responses.ResponseInputItem> extends AIPanel<T, ScriptingAIPanelInputs> {
+export class ScriptingAIPanel extends AIPanel<MessageType, ScriptingAIPanelInputs> {
   protected get placeHolder() { return 'Ask AI to generate a script...'; }
   protected languageInput: DG.InputBase<string>;
 
