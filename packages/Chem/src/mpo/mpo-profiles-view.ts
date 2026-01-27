@@ -6,7 +6,7 @@ import {u2} from '@datagrok-libraries/utils/src/u2';
 import {MpoProfileEditor} from '@datagrok-libraries/statistics/src/mpo/mpo-profile-editor';
 
 import {_package} from '../package';
-import {MpoProfileInfo, loadMpoProfiles, deleteMpoProfile} from './utils';
+import {MpoProfileInfo, loadMpoProfiles, deleteMpoProfile, updateMpoPath, MpoPathMode} from './utils';
 import {MpoProfileCreateView} from './mpo-create-profile';
 
 export class MpoProfilesView {
@@ -21,7 +21,7 @@ export class MpoProfilesView {
     this.view = DG.View.fromRoot(this.root);
     this.view.name = this.name;
     grok.shell.windows.showHelp = false;
-    this.ensureMpoInPath();
+    updateMpoPath(this.view, MpoPathMode.List);
   }
 
   async render(): Promise<void> {
@@ -42,23 +42,6 @@ export class MpoProfilesView {
       ui.setUpdateIndicator(this.root, false);
     }
   }
-
-  private ensureMpoInPath(): void {
-    const url = new URL(window.location.href);
-    const basePath = '/apps/Chem';
-
-    if (!url.pathname.startsWith(basePath))
-      url.pathname = basePath;
-
-    url.pathname = url.pathname.replace(/\/$/, '');
-
-    if (!url.pathname.endsWith('/Mpo'))
-      url.pathname = `${basePath}/Mpo`;
-
-    window.history.replaceState({}, '', url.toString());
-    this.view.path = url.pathname;
-  }
-
 
   private async reloadProfiles(): Promise<void> {
     ui.setUpdateIndicator(this.tableContainer, true);

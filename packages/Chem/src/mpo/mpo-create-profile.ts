@@ -11,7 +11,7 @@ import {
 import {MPO_SCORE_CHANGED_EVENT, MpoProfileEditor} from '@datagrok-libraries/statistics/src/mpo/mpo-profile-editor';
 
 import {MpoContextPanel} from './mpo-context-panel';
-import {MPO_TEMPLATE_PATH} from './utils';
+import {MPO_TEMPLATE_PATH, MpoPathMode, updateMpoPath} from './utils';
 
 const METHOD_MANUAL = 'Manual';
 const METHOD_PROBABILISTIC = 'Probabilistic';
@@ -51,40 +51,16 @@ export class MpoProfileCreateView {
       this.initTableView();
 
     this.view.name = this.isEditMode ? 'Edit MPO Profile' : 'Create MPO Profile';
-    if (this.tableView)
-      this.tableView.name = this.view.name;
-    this.updateViewPaths();
+    updateMpoPath(
+      this.isEditMode ? this.view : this.tableView!,
+      this.isEditMode ? MpoPathMode.Edit : MpoPathMode.Create,
+      this.profile.name,
+    );
 
     this.initControls(showMethod);
     this.initSaveButton();
     this.attachLayout();
     this.listenForProfileChanges();
-  }
-
-  private updateViewPaths() {
-    const url = new URL(window.location.href);
-    const basePath = '/apps/Chem';
-
-    if (!url.pathname.startsWith(basePath))
-      url.pathname = basePath;
-
-    url.pathname = url.pathname.replace(/\/$/, '');
-
-    if (this.isEditMode) {
-      const profileId = encodeURIComponent(this.profile.name || '');
-      if (!url.pathname.endsWith('/Mpo'))
-        url.pathname += '/Mpo';
-      url.searchParams.set('profileId', profileId);
-    } else {
-      url.pathname = `${basePath}/Mpo/create-profile`;
-      url.searchParams.delete('profileId');
-    }
-
-    window.history.replaceState({}, '', url.toString());
-    this.view.path = url.pathname + (url.search ? url.search : '');
-
-    if (this.tableView)
-      this.tableView.path = this.view.path;
   }
 
   private initTableView(): void {
@@ -93,6 +69,7 @@ export class MpoProfileCreateView {
 
     setTimeout(() => {
       this.tableView!._onAdded();
+      this.tableView!.name = this.view.name;
       this.tableView!.grid.root.style.visibility = 'hidden';
       this.tableView!.dockManager.dock(
         this.view.root,

@@ -15,7 +15,14 @@ export type MpoProfileInfo = {
   file?: DG.FileInfo;
 };
 
+export enum MpoPathMode {
+  List = 'list',
+  Edit = 'edit',
+  Create = 'create',
+}
+
 export const MPO_TEMPLATE_PATH = 'System:AppData/Chem/mpo';
+export const MPO_PATH = 'Mpo';
 
 export async function loadMpoProfiles(): Promise<MpoProfileInfo[]> {
   const files = await grok.dapi.files.list(MPO_TEMPLATE_PATH);
@@ -76,4 +83,46 @@ export function findSuitableProfiles(df: DG.DataFrame, profiles: MpoProfileInfo[
       dfColumnNames.has(prop),
     );
   });
+}
+
+export function updateMpoPath(
+  view: DG.View,
+  mode: MpoPathMode,
+  profileName?: string,
+): void {
+  const url = new URL(window.location.href);
+  const basePath = '/apps/Chem';
+
+  if (!url.pathname.startsWith(basePath))
+    url.pathname = basePath;
+
+  url.pathname = url.pathname.replace(/\/$/, '');
+
+  if (!url.pathname.includes(`/${MPO_PATH}`))
+    url.pathname = `${basePath}/Mpo`;
+
+  switch (mode) {
+  case MpoPathMode.Edit: {
+    const profileId = encodeURIComponent(profileName ?? '');
+    url.searchParams.set('profileId', profileId);
+    break;
+  }
+
+  case MpoPathMode.Create:
+    url.pathname = `${basePath}/${MPO_PATH}/create-profile`;
+    url.searchParams.delete('profileId');
+    break;
+
+  case MpoPathMode.List:
+  default:
+    url.pathname = `${basePath}/${MPO_PATH}`;
+    url.searchParams.delete('profileId');
+    break;
+  }
+
+  const newPath = url.pathname + (url.search ? url.search : '');
+  if (newPath !== window.location.pathname + window.location.search)
+    window.history.replaceState({}, '', newPath);
+
+  view.path = newPath;
 }
