@@ -6,12 +6,29 @@ import * as DG from 'datagrok-api/dg';
 /// [x, y] pairs are sorted by x in ascending order
 export type DesirabilityLine = number[][];
 
+export type DesirabilityMode = 'freeform' | 'gaussian' | 'sigmoid';
+
 /// A desirability line with its weight
 export type PropertyDesirability = {
   line: DesirabilityLine;
   min?: number; /// min value of the property (optional; used for editing the line)
   max?: number; /// max value of the property (optional; used for editing the line)
   weight: number; /// 0-1
+  defaultScore?: number;
+
+  mode?: DesirabilityMode;
+
+  /// Gaussian mode parameters
+  mean?: number;
+  sigma?: number;
+
+  /// Sigmoid mode parameters
+  x0?: number;
+  k?: number;
+
+  freeformLine?: DesirabilityLine;
+
+  categories?: { name: string; desirability: number }[];
 }
 
 /// A map of desirability lines with their weights
@@ -22,6 +39,7 @@ export type DesirabilityProfile = {
 }
 
 export const WEIGHTED_AGGREGATIONS = ['Average', 'Sum', 'Product', 'Geomean', 'Min', 'Max'] as const;
+export const WEIGHTED_AGGREGATIONS_LIST: WeightedAggregation[] = [...WEIGHTED_AGGREGATIONS];
 export type WeightedAggregation = typeof WEIGHTED_AGGREGATIONS[number];
 
 /// Calculates the desirability score for a given x value
@@ -47,6 +65,15 @@ export function desirabilityScore(x: number, desirabilityLine: DesirabilityLine)
 
   // Should not happen if x is within bounds, but return 0 as fallback
   return 0;
+}
+
+export function categoricalDesirabilityScore(
+  value: string,
+  prop: PropertyDesirability,
+): number | null {
+  const categories = prop.categories ?? [];
+  const found = categories.find((c) => c.name === value);
+  return found?.desirability ?? prop.defaultScore ?? null;
 }
 
 /** Calculates the multi parameter optimization score, 0-100, 100 is the maximum */
@@ -78,8 +105,19 @@ export function mpo(
     for (let j = 0; j < columns.length; j++) {
       const desirability = desirabilityTemplates[j];
       const value = columns[j].get(i);
-      scores[j] = desirabilityScore(value, desirability.line);
-      weights[j] = desirability.weight;
+
+      if (columns[j].isNone(i))
+        return desirability.defaultScore ?? NaN;
+
+      const score = desirability.categories ?
+        categoricalDesirabilityScore(value, desirability) :
+        desirabilityScore(value, desirability.line);
+
+      if (score === null)
+        return NaN;
+
+      scores.push(score);
+      weights.push(desirability.weight);
     }
 
     return aggregate(scores, weights, aggregation);
