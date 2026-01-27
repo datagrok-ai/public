@@ -5,8 +5,9 @@ import {Subject} from 'rxjs';
 import {PropertyDesirability} from '../mpo';
 
 export class MpoCategoricalEditor {
-  readonly root = ui.divV([]);
-  readonly onChanged = new Subject<PropertyDesirability>();
+  root = ui.divV([], {style: {width: '300px'}});
+  onChanged = new Subject<PropertyDesirability>();
+  supportsModeDialog: boolean = false;
 
   private _prop: PropertyDesirability;
   private sliders: DG.InputBase[] = [];
@@ -57,5 +58,15 @@ export class MpoCategoricalEditor {
       this.onChanged.next(this._prop);
   }
 
-  drawBars(values?: number[]): void {}
+  setColumn(col: DG.Column | null): void {
+    if (!col) return;
+
+    if (!this._prop.categories) {
+      this._prop.categories = col.categories.map((c) => ({
+        name: c,
+        desirability: 1,
+      }));
+    }
+    this.buildForm();
+  }
 }

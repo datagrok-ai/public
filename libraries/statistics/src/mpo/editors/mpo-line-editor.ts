@@ -1,6 +1,7 @@
 /* eslint-disable max-len */
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
+import * as DG from 'datagrok-api/dg';
 
 import Konva from 'konva';
 import {DesirabilityLine, PropertyDesirability} from '../mpo';
@@ -57,6 +58,7 @@ class CoordMapper {
 export class MpoDesirabilityLineEditor {
   root = ui.div();
   onChanged = new Subject<DesirabilityLine>();
+  supportsModeDialog: boolean = true;
 
   private _prop: PropertyDesirability;
   private barsLayer: Konva.Layer;
@@ -370,6 +372,22 @@ export class MpoDesirabilityLineEditor {
     return this._prop.max ?? Math.max(...this._prop.line.map((p) => p[0])) ?? 1;
   }
 
+  getDefaultMean(): number {
+    return (this.getMinX() + this.getMaxX()) / 2;
+  }
+
+  getDefaultSigma(): number {
+    return Math.max(0.01, (this.getMaxX() - this.getMinX()) / 6);
+  }
+
+  getDefaultX0(): number {
+    return (this.getMinX() + this.getMaxX()) / 2;
+  }
+
+  getDefaultK(): number {
+    return 10;
+  }
+
   redrawAll(notify: boolean = true): void {
     if (!this.stage || !this.layer || !this.redrawFn)
       return;
@@ -570,9 +588,19 @@ export class MpoDesirabilityLineEditor {
       });
 
       this.layer!.add(this.specialHandle);
-    } else
+    } else {
+      if (!this.specialHandle.getLayer())
+        this.layer!.add(this.specialHandle);
       this.specialHandle.position(coords);
-
+    }
     this.layer!.batchDraw();
+  }
+
+  setColumn(col: DG.Column | null): void {
+    if (!col)
+      return;
+
+    const values = col.toList();
+    this.drawBars(values);
   }
 }

@@ -58,6 +58,10 @@
   gap: 5px;
 }
 
+.statistics-mpo-row .ui-input-choice .ui-input-editor{
+  width: 100px !important;
+}
+
 .statistics-mpo-row > * {
   flex: 0 1 auto;
 }

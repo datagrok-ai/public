@@ -6,7 +6,7 @@ import * as DG from 'datagrok-api/dg';
 /// [x, y] pairs are sorted by x in ascending order
 export type DesirabilityLine = number[][];
 
-export type DesirabilityMode = 'freeform' | 'gaussian' | 'sigmoid' | 'categorical';
+export type DesirabilityMode = 'freeform' | 'gaussian' | 'sigmoid';
 
 /// A desirability line with its weight
 export type PropertyDesirability = {

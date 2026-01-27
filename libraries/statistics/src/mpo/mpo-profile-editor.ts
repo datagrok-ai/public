@@ -44,6 +44,7 @@ export class MpoProfileEditor {
     if (this.design === on)
       return;
     this.design = on;
+    this.rows = {};
     this.render();
   }
 
@@ -95,7 +96,7 @@ export class MpoProfileEditor {
     const weightCell = this.buildWeightAndRangeCell(name, prop);
     const columnCell = this.buildColumnSelector(name, editor);
 
-    const modeGear = this.design ?
+    const modeGear = this.design && editor.supportsModeDialog ?
       this.buildModeGear(name, prop, editor) :
       null;
 
@@ -164,10 +165,9 @@ export class MpoProfileEditor {
     const matched =
       columns.find((c) => c.toLowerCase() === name.toLowerCase()) ?? null;
 
-    const draw = (col: string | null) => {
-      if (!col) return;
-      const values = this.dataFrame!.col(col)?.toList();
-      (editor as any).drawBars?.(values);
+    const draw = (colName: string | null) => {
+      const col = colName ? this.dataFrame!.col(colName) : null;
+      editor.setColumn?.(col);
     };
 
     draw(matched);
@@ -181,8 +181,6 @@ export class MpoProfileEditor {
         draw(v ?? null);
       },
     });
-
-    input.root.style.width = '100px';
     return input.root;
   }
 

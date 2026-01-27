@@ -4,7 +4,7 @@ import * as DG from 'datagrok-api/dg';
 import {PropertyDesirability, DesirabilityMode} from '../mpo';
 import {MpoDesirabilityLineEditor} from '../editors/mpo-line-editor';
 
-const DESIRABILITY_MODES = ['freeform', 'gaussian', 'sigmoid', 'categorical'];
+const DESIRABILITY_MODES = ['freeform', 'gaussian', 'sigmoid'];
 
 export class DesirabilityModeDialog {
   constructor(
@@ -82,10 +82,10 @@ export class DesirabilityModeDialog {
     previewEditor.onParamsChanged = (p) => {
       Object.assign(working, p);
 
-      mean.value = working.mean ?? 0;
-      sigma.value = working.sigma ?? 1;
-      x0.value = working.x0 ?? 0;
-      k.value = working.k ?? 10;
+      mean.value = working.mean ?? previewEditor.getDefaultMean();
+      sigma.value = working.sigma ?? previewEditor.getDefaultSigma();
+      x0.value = working.x0 ?? previewEditor.getDefaultX0();
+      k.value = working.k ?? previewEditor.getDefaultK();
       min.value = working.min ?? previewEditor.getMinX();
       max.value = working.max ?? previewEditor.getMaxX();
     };
