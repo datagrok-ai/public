@@ -13,6 +13,8 @@ export type BasicStats = {
   desStd: number,
   nonDesAvg: number,
   nonDesStd: number,
+  min: number,
+  max: number,
 };
 
 /** Descriptor statistics including basic stats, t-statistics and p-value */
@@ -119,3 +121,6 @@ export type DesirabilityProfileProperties = Record<string, {
 
 export const STAT_GRID_HEIGHT = 75;
 export const DESIRABILITY_COLUMN_WIDTH = 305;
+
+/** Basic range sigma coefficients for desirability profile */
+export const BASIC_RANGE_SIGMA_COEFFS = [0, 0.25, 0.5, 1, 1.5, 2, 2.5, 3, 4, 5, 6, 7, 8, 9, 10];

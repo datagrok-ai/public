@@ -10,7 +10,8 @@ import '../../css/pmpo.css';
 import {COLORS, DESCR_TABLE_TITLE, DESCR_TITLE, DescriptorStatistics, DesirabilityProfileProperties,
   DESIRABILITY_COL_NAME, FOLDER, P_VAL, PMPO_COMPUTE_FAILED, PmpoParams, SCORES_TITLE,
   SELECTED_TITLE, STAT_TO_TITLE_MAP, TINY, WEIGHT_TITLE,
-  CorrelationTriple} from './pmpo-defs';
+  CorrelationTriple,
+  BASIC_RANGE_SIGMA_COEFFS} from './pmpo-defs';
 import {computeSigmoidParamsFromX0, getCutoffs, gaussDesirabilityFunc, sigmoidS,
   solveNormalIntersection} from './stat-tools';
 import {getColorScaleDiv} from '../pareto-optimization/utils';
@@ -255,14 +256,6 @@ export function getModelParams(desired: DG.DataFrame, nonDesired: DG.DataFrame,
     // Compute intersections of the two normal distributions
     const intersections = solveNormalIntersection(muDes, sigmaDes, muNonDes, sigmaNonDes);
 
-    // # Calculate the b in the sigmoidal function
-    // column_stats['b'] = np.power(column_stats['inflection'], -1.0) - 1.0
-    // # q-value cutoff transformation
-    // n = np.power(q_cutoff, -1.0) - 1.0
-    // # Calculate the c in the sigmoidal function
-    // column_stats['c'] = np.power(10.0, ((np.log10(n / column_stats['b'])) /
-    //                                     (-1.0 * (column_stats['bad_mean'] - column_stats['cutoff']))))
-
     const b = (Math.pow(inflection, -1.0) - 1.0);
     const n = (Math.pow(qCutoff, -1.0) - 1.0);
     const c = Math.pow(10.0, ((Math.log10(n / b)) / (-1.0 * (muNonDes - cutoffs.cutoff))));
@@ -299,6 +292,8 @@ export function getModelParams(desired: DG.DataFrame, nonDesired: DG.DataFrame,
       desStd: sigmaDes,
       nonDesAvg: muNonDes,
       nonDesStd: sigmaNonDes,
+      min: Math.min(desCol.stats.min, nonDesCol.stats.min),
+      max: Math.max(desCol.stats.max, nonDesCol.stats.max),
       cutoff: cutoffs.cutoff,
       cutoffDesired: cutoffs.cutoffDesired,
       cutoffNotDesired: cutoffs.cutoffNotDesired,
@@ -360,12 +355,12 @@ export async function loadPmpoParams(file: DG.FileInfo): Promise<Map<string, Pmp
  * @param description Description of the desirability profile.
  */
 export function getDesirabilityProfileJson(params: Map<string, PmpoParams>, useSigmoidalCorrection: boolean,
-  name: string, description: string) {
+  name: string, description: string, truncatedRange: boolean): any {
   return {
     'type': 'MPO Desirability Profile',
     'name': name,
     'description': description,
-    'properties': getDesirabilityProfileProperties(params, useSigmoidalCorrection),
+    'properties': getDesirabilityProfileProperties(params, useSigmoidalCorrection, truncatedRange),
   };
 }
 
@@ -414,6 +409,7 @@ export async function saveModel(params: Map<string, PmpoParams>, modelName: stri
         useSigmoidalCorrection,
         nameInput.value,
         descriptionInput.value,
+        false,
       );
     }
 
@@ -516,16 +512,18 @@ export function setCorrColumnColorCoding(table: DG.DataFrame, descriptorNames: s
 
 /** Returns desirability profile properties for the given pMPO parameters.
  * @param params Map of descriptor names to their pMPO parameters.
+ * @param useSigmoidalCorrection Whether to use sigmoidal correction in desirability functions.
+ * @param displayProfile Whether to create a profile to be displayed in the stat grid (true - truncated range).
  */
 function getDesirabilityProfileProperties(params: Map<string, PmpoParams>,
-  useSigmoidalCorrection: boolean): DesirabilityProfileProperties {
+  useSigmoidalCorrection: boolean, truncatedRange: boolean): DesirabilityProfileProperties {
   const props: DesirabilityProfileProperties = {};
 
   params.forEach((param, name) => {
-    const range = significantPoints(param, useSigmoidalCorrection);
+    const range = significantPoints(param, truncatedRange);
     props[name] = {
       weight: param.weight,
-      line: getLine(param, useSigmoidalCorrection),
+      line: getLine(param, useSigmoidalCorrection, truncatedRange),
       min: Math.min(...range),
       max: Math.max(...range),
     };
@@ -536,23 +534,11 @@ function getDesirabilityProfileProperties(params: Map<string, PmpoParams>,
 
 /** Returns array of arguments for Gaussian function centered at mu with stddev sigma. */
 function getArgsOfGaussFunc(mu: number, sigma: number): number[] {
-  return [
-    mu - 3 * sigma,
-    mu - 2.5 * sigma,
-    mu - 2 * sigma,
-    mu - 1.5 * sigma,
-    mu - sigma,
-    mu - 0.5 * sigma,
-    mu - 0.25 * sigma,
-    mu,
-    mu + 0.25 * sigma,
-    mu + 0.5 * sigma,
-    mu + sigma,
-    mu + 1.5 * sigma,
-    mu + 2 * sigma,
-    mu + 2.5 * sigma,
-    mu + 3 * sigma,
-  ];
+  return BASIC_RANGE_SIGMA_COEFFS
+    .concat(BASIC_RANGE_SIGMA_COEFFS.slice(1).map((coeff) => -coeff))
+    .sort()
+    .map((coeff) => mu + coeff * sigma);
+
 } // getArgsOfGaussFunc
 
 /** Basic pMPO function combining Gaussian and sigmoid functions. */
@@ -562,32 +548,22 @@ function basicFunction(x: number, param: PmpoParams, useSigmoidalCorrection: boo
 }
 
 /** Returns line points for the given pMPO parameters. */
-function getLine(param: PmpoParams, useSigmoidalCorrection: boolean): [number, number][] {
-  //const range = getArgsOfGaussFunc(param.desAvg, param.desStd);
-  const range = significantPoints(param, useSigmoidalCorrection);
+function getLine(param: PmpoParams, useSigmoidalCorrection: boolean, truncatedRange: boolean): [number, number][] {
+  const range = significantPoints(param,  truncatedRange);
 
   return range.map((x) => [x, basicFunction(x, param, useSigmoidalCorrection)]);
 }
 
 /** Returns significant points for the given pMPO parameters. */
-function significantPoints(param: PmpoParams, useSigmoidalCorrection: boolean): number[] {
-  const start = param.desAvg - 10 * param.desStd;
-  const end = param.desAvg + 10 * param.desStd;
-  const steps = 1000;
+function significantPoints(param: PmpoParams, truncatedRange: boolean): number[] {
+  const points = getArgsOfGaussFunc(param.desAvg, param.desStd);
 
-  let arg = start;
-  let func = basicFunction(arg, param, useSigmoidalCorrection);
-  let x = 0;
-  let y = 0;
-
-  for (let i = 0; i <= steps; i++) {
-    x = start + ((end - start) * i) / steps;
-    y = basicFunction(x, param, useSigmoidalCorrection);
-    if (y > func) {
-      arg = x;
-      func = y;
-    }
+  if (truncatedRange) {
+    return points
+      .filter((x) => (param.min < x) && (x < param.max))
+      .concat([param.min, param.max])
+      .sort();
   }
 
-  return getArgsOfGaussFunc(arg, param.desStd);
+  return points;
 } // significantPoints

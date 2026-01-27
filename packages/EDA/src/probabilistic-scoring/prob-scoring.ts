@@ -439,7 +439,7 @@ export class Pmpo {
     this.desirabilityProfileRoots.forEach((root) => root.remove());
     this.desirabilityProfileRoots.clear();
 
-    const desirabilityProfile = getDesirabilityProfileJson(this.params, useSigmoidalCorrection, '', '');
+    const desirabilityProfile = getDesirabilityProfileJson(this.params, useSigmoidalCorrection, '', '', true);
 
     // Set weights
     const descrNames = descrStatsTable.col(DESCR_TITLE)!.toList();

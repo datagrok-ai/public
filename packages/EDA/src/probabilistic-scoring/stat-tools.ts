@@ -68,6 +68,8 @@ export function getDescriptorStatistics(des: DG.Column, nonDes: DG.Column): Desc
     nonDesAvg: nonDesAvg,
     nonDesStd: nonDesStd,
     nonSesLen: nonDesLen,
+    min: Math.min(des.stats.min, nonDes.stats.min),
+    max: Math.max(des.stats.max, nonDes.stats.max),
     tstat: t,
     pValue: pValue,
   };
