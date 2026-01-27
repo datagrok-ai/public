@@ -15,7 +15,7 @@ import {
   VlaaivisColumnMetadata
 } from './constants';
 
-import {MpoDesirabilityLineEditor} from '@datagrok-libraries/statistics/src/mpo/editors/mpo-line-editor';
+import {MpoDesirabilityLineEditor} from '@datagrok-libraries/statistics/src/mpo/mpo-line-editor';
 import {PropertyDesirability} from '@datagrok-libraries/statistics/src/mpo/mpo';
 
 class VlaaiVisManager {
