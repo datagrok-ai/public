@@ -121,7 +121,7 @@ export class MpoProfilesView {
   }
 
   private openProfile(profile: MpoProfileInfo): void {
-    const editor = new MpoProfileEditor();
+    const editor = new MpoProfileEditor(undefined, false, true);
     editor.setProfile(profile);
     editor.root.style.pointerEvents = 'none';
 

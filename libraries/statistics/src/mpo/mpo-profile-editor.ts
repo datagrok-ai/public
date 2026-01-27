@@ -24,9 +24,10 @@ export class MpoProfileEditor {
   private propertyOrder: string[] = [];
   columnMapping: Record<string, string | null> = {};
 
-  constructor(dataFrame?: DG.DataFrame, design = false) {
+  constructor(dataFrame?: DG.DataFrame, design = false, preview = false) {
     this.dataFrame = dataFrame;
     this.design = design;
+    this.preview = preview;
   }
 
   setProfile(profile?: DesirabilityProfile): void {
@@ -49,7 +50,7 @@ export class MpoProfileEditor {
     this.render();
   }
 
-  setPreviewMode(on: boolean): void { // 🔹 NEW
+  setPreviewMode(on: boolean): void {
     if (this.preview === on)
       return;
     this.preview = on;
@@ -76,10 +77,8 @@ export class MpoProfileEditor {
     if (!rows.length)
       return this.renderEmpty('No properties defined.');
 
-    // 🔹 hide header in preview mode
     if (!this.preview)
       this.root.append(this.buildHeader());
-
     this.root.append(ui.divV(rows));
   }
 
@@ -92,16 +91,14 @@ export class MpoProfileEditor {
       ui.divText('Property', 'statistics-mpo-header-property'),
       ui.divText('Weight', 'statistics-mpo-header-weight'),
       ui.divText('Desirability', 'statistics-mpo-header-desirability'),
-    ], 'statistics-mpo-header');
+    ].filter(Boolean), 'statistics-mpo-header');
   }
 
   private buildRow(
     name: string,
     prop: PropertyDesirability,
   ): HTMLElement {
-    const row = this.preview ?
-      ui.divV([], 'statistics-mpo-row-preview') :
-      ui.divH([], 'statistics-mpo-row');
+    const row = ui.divH([], 'statistics-mpo-row');
 
     prop.mode ??= 'freeform';
     const editor = DesirabilityEditorFactory.create(prop);
@@ -117,31 +114,19 @@ export class MpoProfileEditor {
 
     const controls = this.design ? this.buildRowControls(name) : null;
 
-    if (this.preview) {
-      row.append(
-        propertyCell!,
-        columnCell!,
-        weightCell,
-        ui.divH([editor.root, modeGear].filter(Boolean)),
-      );
-    } else {
-      row.append(
-        ui.divV([propertyCell, columnCell].filter(Boolean)),
-        weightCell,
-        ui.divH([editor.root, modeGear].filter(Boolean)),
-      );
+    row.append(
+      ui.divV([propertyCell, columnCell].filter(Boolean)),
+      weightCell,
+      ui.divH([editor.root, modeGear].filter(Boolean)),
+    );
 
-      if (controls)
-        row.append(controls);
-    }
+    if (controls)
+      row.append(controls);
 
     return row;
   }
 
   private buildPropertyCell(name: string): HTMLElement | null {
-    if (this.preview)
-      return ui.divText(`Property: ${name}`, 'statistics-mpo-label');
-
     if (!this.design)
       return ui.divText(name, 'statistics-mpo-property-name');
 
@@ -162,7 +147,7 @@ export class MpoProfileEditor {
     name: string,
     prop: PropertyDesirability,
   ): HTMLElement {
-    const weightInput = ui.input.float(this.preview ? 'Weight' : '', {
+    const weightInput = ui.input.float('', {
       value: prop.weight,
       min: 0,
       max: 1,
@@ -178,10 +163,7 @@ export class MpoProfileEditor {
         'statistics-mpo-weight-design' :
         'statistics-mpo-weight-view',
     );
-
-    return this.preview ?
-      ui.divV([weightInput.root]) :
-      weightInput.root;
+    return weightInput.root;
   }
 
   private buildColumnSelector(
@@ -202,7 +184,7 @@ export class MpoProfileEditor {
 
     draw(matched);
 
-    const input = ui.input.choice(this.preview ? 'Column' : '', {
+    const input = ui.input.choice('', {
       items: columns,
       nullable: true,
       value: matched ?? '',
@@ -211,10 +193,7 @@ export class MpoProfileEditor {
         draw(v ?? null);
       },
     });
-
-    return this.preview ?
-      ui.divV([input.root]) :
-      input.root;
+    return input.root;
   }
 
   private buildModeGear(
@@ -300,13 +279,7 @@ export class MpoProfileEditor {
     if (!this.profile) return;
 
     const newName = `NewProperty${Object.keys(this.profile.properties).length + 1}`;
-    this.profile.properties[newName] = {
-      weight: 1,
-      mode: 'freeform',
-      min: 0,
-      max: 1,
-      line: [],
-    };
+    this.profile.properties[newName] = {weight: 1, mode: 'freeform', min: 0, max: 1, line: []};
 
     const idx = this.propertyOrder.indexOf(propertyName);
     this.propertyOrder.splice(idx + 1, 0, newName);

@@ -52,18 +52,21 @@
 .statistics-mpo-row {
   display: flex;
   align-items: center;
-  margin-bottom: 5px;
+  justify-content: flex-start;
+  margin-bottom: 10px;
   min-height: 70px;
-  flex-wrap: wrap;
-  gap: 5px;
-}
+  gap: 10px;
 
-.statistics-mpo-row .ui-input-choice .ui-input-editor{
-  width: 100px !important;
+  flex-wrap: wrap;
 }
 
 .statistics-mpo-row > * {
-  flex: 0 1 auto;
+  flex: 0 0 auto;
+  min-width: 100px;
+}
+
+.statistics-mpo-row .ui-input-choice .ui-input-editor {
+  width: 100px !important;
 }
 
 @media (max-width: 500px) {

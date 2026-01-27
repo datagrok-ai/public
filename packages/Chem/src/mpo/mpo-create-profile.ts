@@ -305,12 +305,13 @@ export class MpoProfileCreateView {
       await this.mpoContextPanel.render(this.profile, this.editor.columnMapping, agg);
     });
 
-    const handler = (eventView: DG.View) => {
-      if (eventView && this.view && eventView.id === this.view.id)
+    const handler = (eventData: DG.EventData) => {
+      const eventView = eventData.args?.view;
+      if (eventView && (eventView.id === this.view.id || eventView.id === this.tableView.id))
         this.mpoContextPanel?.detach();
     };
 
-    grok.events.onViewChanging.subscribe((eventData) => handler(eventData.args.view));
-    grok.events.onViewRemoving.subscribe((eventData) => handler(eventData.args.view));
+    grok.events.onViewChanging.subscribe((eventData) => handler(eventData));
+    grok.events.onViewRemoving.subscribe((eventData) => handler(eventData));
   }
 }
