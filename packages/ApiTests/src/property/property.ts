@@ -79,7 +79,7 @@ category('Property: Header parsing', () => {
     expect(func.inputs[10].description, 'My best description');
   });
   test('Complex caption', async () => {
-    expect(func.inputs[11].caption, 'MIC O2 P/V exponent');
+    expect(func.inputs[11].friendlyName, 'MIC O2 P/V exponent');
     expect(ui.input.forProperty(func.inputs[11]).caption, 'MIC O2 P/V exponent');
   });
 });

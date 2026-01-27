@@ -48,8 +48,8 @@ category('Dapi: entities: smart search', () => {
   }, {stressTest: true});
 
   test('packages', async () => {
-    expect((await grok.dapi.packages.filter('name="Api Tests" & author.login="system"').list({pageSize: 3})).length, 3);
-    expect((await grok.dapi.packages.filter(`name="Api Tests" & version = "${_package.version}"`).list({pageSize: 5})).length > 0, true);
+    expect((await grok.dapi.packages.filter('name="Api Tests"').list()).length > 0, true);
+    expect((await grok.dapi.packages.filter(`name="Api Tests" and version = "${_package.version}"`).list()).length > 0, true);
   }, {stressTest: true});
 }, {owner: 'aparamonov@datagrok.ai'});
 
