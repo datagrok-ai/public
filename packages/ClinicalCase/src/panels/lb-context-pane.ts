@@ -114,13 +114,66 @@ function createLbLineChart(lbDomain: DG.DataFrame): HTMLElement {
     return cats;
   };
 
-  // Initialize selected values
-  if (labCatCol && categories.length > 0) {
-    selectedCategory = categories[0];
-    const testsForCategory = getTestsForCategory(selectedCategory);
-    selectedTest = testsForCategory.length > 0 ? testsForCategory[0] : null;
-  } else
-    selectedTest = allTests.length > 0 ? allTests[0] : null;
+  // Find test with maximum absolute mean % change from baseline
+  const findTestWithMaxMeanPctChg = (): {category: string | null, test: string | null} => {
+    const groupByCols = labCatCol ? [LAB_TEST_CAT, LAB_TEST] : [LAB_TEST];
+
+    // Create a temporary dataframe with absolute values of LB_PCT_CHG
+    const tempDf = lbDomain.clone();
+    const absPctChgCol = tempDf.columns.addNewFloat('ABS_LB_PCT_CHG');
+    const pctChgCol = tempDf.col('LB_PCT_CHG');
+    absPctChgCol.init((i) => {
+      if (pctChgCol.isNone(i))
+        return null;
+      const value = pctChgCol.get(i);
+      return value !== null && !isNaN(value) ? Math.abs(value) : null;
+    });
+
+    // Calculate mean of absolute values
+    const meanDf = tempDf
+      .groupBy(groupByCols)
+      .avg('ABS_LB_PCT_CHG')
+      .aggregate();
+
+    const avgColName = 'avg(ABS_LB_PCT_CHG)';
+    const avgCol = meanDf.col(avgColName);
+    if (!avgCol || meanDf.rowCount === 0)
+      return {category: null, test: null};
+
+    let maxAbsMean = -Infinity;
+    let maxCategory: string | null = null;
+    let maxTest: string | null = null;
+
+    for (let i = 0; i < meanDf.rowCount; i++) {
+      if (avgCol.isNone(i))
+        continue;
+
+      const meanValue = avgCol.get(i);
+      if (meanValue !== null && !isNaN(meanValue) && meanValue > maxAbsMean) {
+        maxAbsMean = meanValue;
+        maxTest = meanDf.get(LAB_TEST, i);
+        if (labCatCol)
+          maxCategory = meanDf.get(LAB_TEST_CAT, i);
+      }
+    }
+
+    return {category: maxCategory, test: maxTest};
+  };
+
+  // Initialize selected values - find test with maximum mean % change
+  const maxTestResult = findTestWithMaxMeanPctChg();
+  if (maxTestResult.test) {
+    selectedTest = maxTestResult.test;
+    selectedCategory = maxTestResult.category;
+  } else {
+    // Fallback to first available if no valid data found
+    if (labCatCol && categories.length > 0) {
+      selectedCategory = categories[0];
+      const testsForCategory = getTestsForCategory(selectedCategory);
+      selectedTest = testsForCategory.length > 0 ? testsForCategory[0] : null;
+    } else
+      selectedTest = allTests.length > 0 ? allTests[0] : null;
+  }
 
   // Create dropdowns container
   const dropdownsContainer = ui.divH([], {style: {gap: '10px', padding: '10px', alignItems: 'center'}});
