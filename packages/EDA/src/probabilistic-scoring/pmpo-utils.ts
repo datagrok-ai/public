@@ -481,7 +481,10 @@ export function addCorrelationColumns(df: DG.DataFrame, descriptorNames: string[
   return df;
 } // addCorrelationColumns
 
-/* Sets color coding for the p-value column in the statistics table */
+/** Sets color coding for the p-value column in the statistics table
+ * @param table DataFrame with descriptor statistics.
+ * @param pValTresh P-value threshold.
+*/
 export function setPvalColumnColorCoding(table: DG.DataFrame, pValTresh: number): void {
   const pValCol = table.col(P_VAL);
   if (pValCol == null)
@@ -494,7 +497,11 @@ export function setPvalColumnColorCoding(table: DG.DataFrame, pValTresh: number)
   pValCol.meta.colors.setConditional(rules);
 } // setPvalColumnColorCoding
 
-/* Sets color coding for the p-value column in the statistics table */
+/** Sets color coding for the correlation columns in the statistics table.
+ * @param table DataFrame with descriptor statistics.
+ * @param descriptorNames List of descriptor names.
+ * @param r2Tresh R-squared threshold.
+*/
 export function setCorrColumnColorCoding(table: DG.DataFrame, descriptorNames: string[], r2Tresh: number): void {
   descriptorNames.forEach((name) => {
     const col = table.col(name);
@@ -531,30 +538,50 @@ function getDesirabilityProfileProperties(params: Map<string, PmpoParams>,
   return props;
 } // getDesirabilityProfileProperties
 
-/** Returns array of arguments for Gaussian function centered at mu with stddev sigma. */
+/** Returns array of arguments for Gaussian function centered at mu with stddev sigma.
+ * @param mu Mean of the Gaussian function.
+ * @param sigma Standard deviation of the Gaussian function.
+ * @param truncatedRange Whether to use truncated range (for interactive app) or extended range (for full profile).
+ * @return Array of arguments for the Gaussian function.
+*/
 function getArgsOfGaussFunc(mu: number, sigma: number, truncatedRange: boolean): number[] {
   return truncatedRange ?
-    BASIC_RANGE_SIGMA_COEFFS.map((coeff) => mu + coeff * sigma) :
-    EXTENDED_RANGE_SIGMA_COEFFS.map((coeff) => mu + coeff * sigma);
+    BASIC_RANGE_SIGMA_COEFFS.map((coeff) => mu + coeff * sigma) : // range for interactive app
+    EXTENDED_RANGE_SIGMA_COEFFS.map((coeff) => mu + coeff * sigma); // actual full range for desirability profile
 } // getArgsOfGaussFunc
 
-/** Basic pMPO function combining Gaussian and sigmoid functions. */
+/** Basic pMPO function combining Gaussian and sigmoid functions.
+ * @param x Argument.
+ * @param param pMPO parameters.
+ * @param useSigmoidalCorrection Whether to use sigmoidal correction.
+ * @return Value of the basic pMPO function at x.
+*/
 function basicFunction(x: number, param: PmpoParams, useSigmoidalCorrection: boolean): number {
   return gaussDesirabilityFunc(x, param.desAvg, param.desStd) *
     (useSigmoidalCorrection ? sigmoidS(x, param.cutoff, param.b, param.c) : 1);
 }
 
-/** Returns line points for the given pMPO parameters. */
+/** Returns line points for the given pMPO parameters.
+ * @param param pMPO parameters.
+ * @param useSigmoidalCorrection Whether to use sigmoidal correction.
+ * @param truncatedRange Whether to use truncated range (for interactive app) or extended range (for full profile).
+ * @return Array of [x, y] points representing the desirability function line.
+*/
 function getLine(param: PmpoParams, useSigmoidalCorrection: boolean, truncatedRange: boolean): [number, number][] {
   const range = significantPoints(param, truncatedRange);
 
   return range.map((x) => [x, basicFunction(x, param, useSigmoidalCorrection)]);
 }
 
-/** Returns significant points for the given pMPO parameters. */
+/** Returns significant points for the given pMPO parameters.
+ * @param param pMPO parameters.
+ * @param truncatedRange Whether to use truncated range (for interactive app) or extended range (for full profile).
+ * @return Array of significant points for the desirability function.
+*/
 function significantPoints(param: PmpoParams, truncatedRange: boolean): number[] {
   const points = getArgsOfGaussFunc(param.desAvg, param.desStd, truncatedRange);
 
+  /* Truncate range to show less points */
   if (truncatedRange) {
     const min = Math.min(param.min, param.desAvg - 3 * param.desStd);
     const max = Math.max(param.max, param.desAvg + 3 * param.desStd);
