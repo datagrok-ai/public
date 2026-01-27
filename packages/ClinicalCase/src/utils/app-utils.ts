@@ -22,7 +22,7 @@ import {getRequiredColumnsByView, handleMouseMoveOverErrorCell, setupValidationE
 import {DOMAINS_CATEGORIES_LIST, DOMAINS_DESCRIPTIONS, SUPP_DOMAIN_CATEGORY} from '../constants/domains-constants';
 import {setupTableViewLayout} from './layout-utils';
 import {getLbContextPane} from '../panels/lb-context-pane';
-import { createLbHeatmap } from '../domain-specific-viewers/lb-domain';
+import {createLbHeatmap} from '../domain-specific-viewers/lb-domain';
 
 export const validationNodes: {[key: string]: DG.TreeViewNode} = {};
 export let currentOpenedView: DG.ViewBase | null = null;
@@ -450,7 +450,7 @@ export function addDomainAsTableView(studyId: string, df: DG.DataFrame, closeCur
   if (df.name === 'lb') {
     const heatmap = createLbHeatmap(df);
     (currentOpenedView as DG.TableView).addViewer(heatmap);
-   // grok.shell.o = getLbContextPane(df);
+    setTimeout(() => grok.shell.o = getLbContextPane(df), 1000);
   }
 
   let errorSubs: Subscription[] = [];
