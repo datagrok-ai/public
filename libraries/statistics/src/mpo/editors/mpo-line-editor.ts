@@ -174,7 +174,8 @@ export class MpoDesirabilityLineEditor {
         pointCircle.setAttr('_dataIndex', sortedIndices[index]);
 
         pointCircle.on('dragmove', (evt) => {
-          if (this._prop.mode !== 'freeform') return;
+          if (this._prop.mode !== 'freeform')
+            return;
 
           const circle = evt.target as Konva.Circle;
           const pos = circle.position();
@@ -219,14 +220,16 @@ export class MpoDesirabilityLineEditor {
         });
 
         pointCircle.on('dragend', () => {
-          if (this._prop.mode !== 'freeform') return;
+          if (this._prop.mode !== 'freeform')
+            return;
 
           this._prop.line.sort((a, b) => a[0] - b[0]);
           this.redrawFn?.();
         });
 
         pointCircle.on('contextmenu', (evt) => {
-          if (this._prop.mode !== 'freeform') return;
+          if (this._prop.mode !== 'freeform')
+            return;
 
           evt.evt.preventDefault();
           if (this._prop.line.length <= 2) {
@@ -245,7 +248,8 @@ export class MpoDesirabilityLineEditor {
         });
 
         pointCircle.on('mouseenter', (evt) => {
-          if (this._prop.mode !== 'freeform') return;
+          if (this._prop.mode !== 'freeform')
+            return;
 
           this.stage!.container().style.cursor = 'pointer';
           const circle = evt.target as Konva.Circle;
@@ -256,7 +260,8 @@ export class MpoDesirabilityLineEditor {
         });
 
         pointCircle.on('mouseleave', () => {
-          if (this._prop.mode !== 'freeform') return;
+          if (this._prop.mode !== 'freeform')
+            return;
 
           this.stage!.container().style.cursor = 'default';
           ui.tooltip.hide();
@@ -282,15 +287,18 @@ export class MpoDesirabilityLineEditor {
         return;
       }
 
-      if (evt.target instanceof Konva.Circle || evt.evt.button !== 0) return;
+      if (evt.target instanceof Konva.Circle || evt.evt.button !== 0)
+        return;
 
       const pos = this.stage?.getPointerPosition();
-      if (!pos) return;
+      if (!pos)
+        return;
 
       const minX = this.getMinX();
       const maxX = this.getMaxX();
 
-      if (!this.isInPlotArea(pos, this.stage!.width(), this.stage!.height())) return;
+      if (!this.isInPlotArea(pos, this.stage!.width(), this.stage!.height()))
+        return;
 
       const mapper = new CoordMapper(minX, maxX, this.stage!.width(), this.stage!.height());
       const dataCoords = mapper.toDataCoords(pos.x, pos.y);
@@ -302,9 +310,11 @@ export class MpoDesirabilityLineEditor {
 
     // Cursor change
     this.stage.on('mousemove', (evt) => {
-      if (!this.stage) return;
+      if (!this.stage)
+        return;
       const pos = this.stage.getPointerPosition();
-      if (!pos) return;
+      if (!pos)
+        return;
 
       if (this._prop.mode !== 'freeform') {
         if (this.isInPlotArea(pos, width, height))
@@ -452,7 +462,8 @@ export class MpoDesirabilityLineEditor {
     const minX = this.getMinX();
     const maxX = this.getMaxX();
 
-    if (maxX === minX) return;
+    if (maxX === minX)
+      return;
 
     const numBins = 20;
     const plotWidth = width - EDITOR_PADDING.left - EDITOR_PADDING.right;
@@ -490,7 +501,8 @@ export class MpoDesirabilityLineEditor {
   }
 
   private enableCurveDrag(width: number, height: number) {
-    if (!this.stage) return;
+    if (!this.stage)
+      return;
 
     let dragging = false;
     let startPointer: {x: number, y: number} | null = null;
@@ -506,13 +518,17 @@ export class MpoDesirabilityLineEditor {
     const scaleY = 1 / plotHeight;
 
     this.stage.on('mousedown touchstart', (evt) => {
-      if (this._prop.mode === 'freeform') return;
-      if (!evt.evt) return;
+      if (this._prop.mode === 'freeform')
+        return;
+      if (!evt.evt)
+        return;
 
       const pos = this.stage!.getPointerPosition();
-      if (!pos) return;
+      if (!pos)
+        return;
 
-      if (!this.isInPlotArea(pos, width, height)) return;
+      if (!this.isInPlotArea(pos, width, height))
+        return;
 
       dragging = true;
       startPointer = pos;
@@ -526,10 +542,12 @@ export class MpoDesirabilityLineEditor {
     });
 
     this.stage.on('mousemove touchmove', (evt) => {
-      if (!dragging || !startPointer) return;
+      if (!dragging || !startPointer)
+        return;
 
       const pos = this.stage!.getPointerPosition();
-      if (!pos) return;
+      if (!pos)
+        return;
 
       const dx = pos.x - startPointer.x;
       const dy = pos.y - startPointer.y;
@@ -559,7 +577,8 @@ export class MpoDesirabilityLineEditor {
   private addSpecialHandle(width: number, height: number) {
     const clamp = (v: number, min: number, max: number) => Math.max(min, Math.min(max, v));
 
-    if (this._prop.mode === 'freeform') return;
+    if (this._prop.mode === 'freeform')
+      return;
 
     const minX = this.getMinX();
     const maxX = this.getMaxX();

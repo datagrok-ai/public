@@ -219,13 +219,9 @@ export class MpoProfileCreateView {
     ui.setUpdateIndicator(this.view.root, true, 'Running probabilistic MPO...');
     this.setTableViewVisible(true);
 
-    const prev = grok.shell.v;
-    grok.shell.v = this.tableView;
-
     try {
       await grok.functions.call('Eda:trainPmpo', {});
     } finally {
-      grok.shell.v = prev;
       ui.setUpdateIndicator(this.view.root, false);
     }
   }

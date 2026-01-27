@@ -234,7 +234,8 @@ export class MpoProfileEditor {
     updater: (p: PropertyDesirability) => void,
   ): void {
     const prop = this.profile?.properties[name];
-    if (!prop) return;
+    if (!prop)
+      return;
 
     updater(prop);
     this.emitChange();
@@ -261,7 +262,8 @@ export class MpoProfileEditor {
   }
 
   private deleteProperty(name: string): void {
-    if (!this.profile) return;
+    if (!this.profile)
+      return;
 
     delete this.profile.properties[name];
     delete this.columnMapping[name];
@@ -276,7 +278,8 @@ export class MpoProfileEditor {
   }
 
   private insertRowAfter(propertyName: string): void {
-    if (!this.profile) return;
+    if (!this.profile)
+      return;
 
     const newName = `NewProperty${Object.keys(this.profile.properties).length + 1}`;
     this.profile.properties[newName] = {weight: 1, mode: 'freeform', min: 0, max: 1, line: []};

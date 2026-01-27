@@ -48,8 +48,9 @@ export class MpoCategoricalEditor {
     const categories = this._prop.categories ?? [];
 
     categories.forEach((cat, idx) => {
-      const slider = this.sliders[idx] as any;
-      if (!slider) return;
+      const slider = this.sliders[idx];
+      if (!slider)
+        return;
 
       slider.value = cat.desirability ?? 0.5;
     });
@@ -59,7 +60,8 @@ export class MpoCategoricalEditor {
   }
 
   setColumn(col: DG.Column | null): void {
-    if (!col) return;
+    if (!col)
+      return;
 
     if (!this._prop.categories) {
       this._prop.categories = col.categories.map((c) => ({
