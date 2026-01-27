@@ -104,12 +104,12 @@ category('UI: Sharing', () => {
     const shareDialog = DG.Dialog.getOpenDialogs().find((d) => d.root.style.position === 'fixed' &&
       d.title.toLowerCase() === `share ${entityName}`);
     const shareDialogRoot = shareDialog!.root;
-    await awaitCheck(() => shareDialogRoot.querySelector('.user-selector-input') !== null,
+    await awaitCheck(() => shareDialogRoot.querySelector('.d4-user-selector-input') !== null,
       'cannot enter user for sharing', 3000);
-    const inputUser = shareDialogRoot.querySelector('.user-selector-input') as HTMLInputElement;
+    const inputUser = shareDialogRoot.querySelector('.d4-user-selector-input') as HTMLInputElement;
     inputUser.value = 'Admin';
     inputUser.dispatchEvent(new MouseEvent('input'));
-    await awaitCheck(() => (shareDialogRoot.querySelector('.user-selector-drop-down') as HTMLElement)
+    await awaitCheck(() => (shareDialogRoot.querySelector('.d4-user-selector-drop-down') as HTMLElement)
       ?.style?.visibility === '', 'cannot find user for sharing', 3000);
     await delay(100); // no way to handle it
     inputUser.dispatchEvent(new KeyboardEvent('keydown', {keyCode: 40}));

@@ -76,6 +76,9 @@ export class MpoDesirabilityLineEditor {
   private specialHandle?: Konva.Circle;
   onParamsChanged?: (prop: PropertyDesirability) => void;
 
+  // Flag to prevent touchpad right-click from adding a new point
+  private ignoreNextClick = false;
+
   constructor(prop: PropertyDesirability, width: number, height: number) {
     this._prop = prop;
     this.barsLayer = new Konva.Layer();
@@ -147,9 +150,10 @@ export class MpoDesirabilityLineEditor {
       this.pointsGroup!.destroyChildren();
       const konvaPoints: number[] = [];
 
-      const sortedLine = [...this.computeLine()].sort((a, b) => a[0] - b[0]);
-
       const mapper = new CoordMapper(minX, maxX, width, height);
+      const sortedIndices = [...this._prop.line.keys()]
+        .sort((a, b) => this._prop.line[a][0] - this._prop.line[b][0]);
+      const sortedLine = sortedIndices.map((idx) => this._prop.line[idx]);
 
       sortedLine.forEach((p, index) => {
         const coords = mapper.toCanvasCoords([p[0], p[1]]);
@@ -166,21 +170,27 @@ export class MpoDesirabilityLineEditor {
           hitStrokeWidth: 5,
         });
 
-        pointCircle.setAttr('_pointIndex', index);
+        // Store index directly on the node for easy access
+        pointCircle.setAttr('_dataIndex', sortedIndices[index]);
 
         pointCircle.on('dragmove', (evt) => {
           if (this._prop.mode !== 'freeform') return;
 
           const circle = evt.target as Konva.Circle;
           const pos = circle.position();
-          const currentPointIndex = circle.getAttr('_pointIndex');
+          const dataIndex = circle.getAttr('_dataIndex');
+          const sortedPos = sortedIndices.indexOf(dataIndex);
 
-          const prevX = currentPointIndex > 0 ? sortedLine[currentPointIndex - 1][0] : minX;
-          const nextX = currentPointIndex < sortedLine.length - 1 ? sortedLine[currentPointIndex + 1][0] : maxX;
+          // Constrain dragging horizontally between neighbors (or bounds)
+          const prevX = sortedPos > 0 ? this._prop.line[sortedIndices[sortedPos - 1]][0] : minX;
+          const nextX = sortedPos < sortedIndices.length - 1 ?
+            this._prop.line[sortedIndices[sortedPos + 1]][0] :
+            maxX;
 
-          const buffer = (maxX - minX === 0) ? 0 : 0.001 * (maxX - minX);
-          const minCanvasX = mapper.toCanvasCoords([prevX + (currentPointIndex > 0 ? buffer : 0), 0]).x;
-          const maxCanvasX = mapper.toCanvasCoords([nextX - (currentPointIndex < sortedLine.length - 1 ? buffer : 0), 0]).x;
+          // Add a small buffer to avoid points overlapping exactly
+          const buffer = (maxX - minX === 0) ? 0 : 0.001 * (maxX - minX); // Avoid NaN if minX === maxX
+          const minCanvasX = mapper.toCanvasCoords([prevX + (sortedPos > 0 ? buffer : 0), 0]).x;
+          const maxCanvasX = mapper.toCanvasCoords([nextX - (sortedPos < sortedIndices.length - 1 ? buffer : 0), 0]).x;
 
           pos.x = Math.max(minCanvasX, Math.min(maxCanvasX, pos.x));
 
@@ -191,11 +201,12 @@ export class MpoDesirabilityLineEditor {
           circle.position(pos);
 
           const dataCoords = mapper.toDataCoords(pos.x, pos.y);
-          this._prop.line[currentPointIndex][0] = dataCoords.x;
-          this._prop.line[currentPointIndex][1] = dataCoords.y;
+          this._prop.line[dataIndex][0] = dataCoords.x;
+          this._prop.line[dataIndex][1] = dataCoords.y;
 
           const currentKonvaPoints = this._prop.line.map((pData, idx) => {
-            if (idx === currentPointIndex)
+            // Use dragged circle position directly for the point being dragged
+            if (idx === dataIndex)
               return [pos.x, pos.y];
             else {
               const c = mapper.toCanvasCoords([pData[0], pData[1]]);
@@ -223,10 +234,14 @@ export class MpoDesirabilityLineEditor {
             return;
           }
 
+          this.ignoreNextClick = true;
           const circle = evt.target as Konva.Circle;
-          const indexToRemove = circle.getAttr('_pointIndex');
-          this._prop.line.splice(indexToRemove, 1);
-          this.redrawFn?.();
+          const dataIndex = circle.getAttr('_dataIndex') as number;
+
+          if (dataIndex >= 0) {
+            this._prop.line.splice(dataIndex, 1);
+            this.redrawFn?.();
+          }
         });
 
         pointCircle.on('mouseenter', (evt) => {
@@ -262,7 +277,11 @@ export class MpoDesirabilityLineEditor {
 
     // --- Left-click to Add Point ---
     this.stage.on('click tap', (evt) => {
-      if (this._prop.mode !== 'freeform') return;
+      if (this.ignoreNextClick) {
+        this.ignoreNextClick = false;
+        return;
+      }
+
       if (evt.target instanceof Konva.Circle || evt.evt.button !== 0) return;
 
       const pos = this.stage?.getPointerPosition();
@@ -277,6 +296,7 @@ export class MpoDesirabilityLineEditor {
       const dataCoords = mapper.toDataCoords(pos.x, pos.y);
 
       this._prop.line.push([dataCoords.x, dataCoords.y]);
+      this._prop.line.sort((a, b) => a[0] - b[0]);
       this.redrawFn?.();
     });
 

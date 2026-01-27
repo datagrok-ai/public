@@ -997,14 +997,14 @@ export async function namesToSmiles(data: DG.DataFrame, names: DG.Column<any>) :
   await PackageFunctions.namesToSmiles(data, names);
 }
 
-//input: string molecule { semType: molecule }
-//output: string smiles { semType: molecule }
+//input: string molecule { semType: Molecule }
+//output: string smiles { semType: Molecule }
 //meta.role: canonicalizer
 export function canonicalize(molecule: string) : string {
   return PackageFunctions.canonicalize(molecule);
 }
 
-//input: string molecule { semType: molecule }
+//input: string molecule { semType: Molecule }
 //output: string molecularFormula
 export function getMolecularFormula(molecule: string) : string {
   return PackageFunctions.getMolecularFormula(molecule);

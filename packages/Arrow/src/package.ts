@@ -51,13 +51,13 @@ export class PackageFunctions {
 
   @grok.decorators.fileHandler({ext: 'parquet'})
   static parquetFileHandler(@grok.decorators.param({type: 'list'}) bytes: WithImplicitCoercion<ArrayBuffer | SharedArrayBuffer>): DG.DataFrame[] | null {
-    const res = this.fromParquet(bytes as Uint8Array);
+    const res = this.fromParquet(new Uint8Array(bytes as ArrayBuffer));
     return res ? [res] : null;
   }
 
   @grok.decorators.fileHandler({ext: 'feather'})
   static featherFileHandler(@grok.decorators.param({type: 'list'}) bytes: WithImplicitCoercion<ArrayBuffer | SharedArrayBuffer>): DG.DataFrame[] | null {
-    const df = this.fromFeather(bytes as Uint8Array);
+    const df = this.fromFeather(new Uint8Array(bytes as ArrayBuffer));
     return df ? [df] : null;
   }
 
@@ -65,13 +65,13 @@ export class PackageFunctions {
   static saveAsParquet() {
     const table = grok.shell.t;
     const parquetUint8Array = this.toParquet(table);
-    DG.Utils.download(table.name + '.parquet', parquetUint8Array ?? new Uint8Array(0));
+    DG.Utils.download(table.name + '.parquet', (parquetUint8Array ?? new Uint8Array(0)) as Uint8Array<ArrayBuffer>);
   }
 
   @grok.decorators.fileExporter({description: 'Save as Feather'})
   static saveAsFeather() {
     const table = grok.shell.t;
     const arrowUint8Array = this.toFeather(table, false);
-    DG.Utils.download(table.name + '.feather', arrowUint8Array ?? new Uint8Array(0));
+    DG.Utils.download(table.name + '.feather', (arrowUint8Array ?? new Uint8Array(0)) as Uint8Array<ArrayBuffer>);
   }
 }

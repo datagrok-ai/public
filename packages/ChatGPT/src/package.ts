@@ -15,6 +15,10 @@ import {JsonSchema} from './prompt-engine/interfaces';
 import {genDBConnectionMeta, moveDBMetaToStickyMetaOhCoolItEvenRhymes} from './llm-utils/db-index-tools';
 import {biologicsIndex} from './llm-utils/indexes/biologics-index';
 import {chemblIndex} from './llm-utils/indexes/chembl-index';
+import {uploadFilesToVectorStroreOneByOne} from './llm-utils/indexes/dg-repository-index';
+import {AIProvider} from './llm-utils/AI-API-providers/types';
+import {OpenAIChatCompletionsProvider} from './llm-utils/AI-API-providers/openai-chat-completions-provider';
+import {OpenAIResponsesProvider} from './llm-utils/AI-API-providers/openai-responses-provider';
 
 export * from './package.g';
 export const _package = new DG.Package();
@@ -28,6 +32,13 @@ export class PackageFunctions {
     setupSearchUI();
     setupTableViewAIPanelUI();
     setupScriptsAIPanelUI();
+
+    // @ts-ignore
+    window.openAI = OpenAIClient.getInstance().openai;
+
+    AIProvider.setProvider(_package.settings.APIName === 'openai chat completions' ?
+      new OpenAIChatCompletionsProvider(OpenAIClient.getInstance().openai) : new OpenAIResponsesProvider(OpenAIClient.getInstance().openai)
+    );
   }
 
 
@@ -194,6 +205,38 @@ export class PackageFunctions {
     const meta = dbName === 'biologics' ? biologicsIndex : chemblIndex;
     await moveDBMetaToStickyMetaOhCoolItEvenRhymes(meta);
   }
+
+  @grok.decorators.func({})
+  static async setupVectorStore() {
+    const keyWordInput = ui.input.string('PassKey', {tooltipText: 'Enter the passkey for this action', placeholder: 'Type passkey here'});
+    ui.dialog('Index DG Repository Files to Vector Store')
+      .add(ui.divText('This will upload all files from DG Repository to the vector store for AI search and assistance. This may take up to an hour depending on the number of files in the repository.'))
+      .add(ui.divText('This action will delete the previous files and update all files. make sure to LEAVE THE PLATFORM OPEN until the process is finished.'))
+      .add(ui.divText('Make sure that you have set up the OpenAI API key and vector store ID in the package settings before proceeding.'))
+      .add(keyWordInput)
+      .onOK(async () => {
+        if (keyWordInput.value !== 'DG-index-admin') {
+          grok.shell.error('Incorrect passkey. Operation aborted.');
+          return;
+        }
+        await
+        uploadFilesToVectorStroreOneByOne();
+      })
+      .show();
+  }
+
+  @grok.decorators.func({})
+  static async searchForSomething() {
+    const query = 'anything';
+    const openAIClient = OpenAIClient.getInstance().openai;
+    const f = await openAIClient.vectorStores.search('vs_696fbf9985f8819191dc6f71e04b6593', {query: query, max_num_results: 5, filters: {
+      key: 'firstParentFolder',
+      type: 'eq',
+      value: 'datagrok-celery-task'
+    }});
+    console.log(f.data);
+  }
+
 
   @grok.decorators.func({})
   static async indexDatabaseSchema() {

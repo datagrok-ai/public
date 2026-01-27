@@ -44,6 +44,8 @@ export const DOMAINS_DESCRIPTIONS: {[key: string]: DomainInfo} = {
   ft: {description: 'Functional Tests', category: 'Findings'},
   qs: {description: 'Questionnaires', category: 'Findings'},
   oe: {description: 'Objective Evidence', category: 'Findings'},
+  cl: {description: 'Clinical Observations', category: 'Findings'},
+  fa: {description: 'Findings About', category: 'Findings'},
   // Findings - SEND In-Life / Observational Findings
   bw: {description: 'Body Weights', category: 'Findings'},
   fw: {description: 'Food and Water Consumption', category: 'Findings'},
@@ -59,6 +61,7 @@ export const DOMAINS_DESCRIPTIONS: {[key: string]: DomainInfo} = {
   nc: {description: 'Neurobehavioral/Cognitive Findings', category: 'Findings'},
   nv: {description: 'Nervous System Findings', category: 'Findings'},
   re: {description: 'Reproductive System Findings', category: 'Findings'},
+  ur: {description: 'Urinalysis Findings', category: 'Findings'},
   // Findings - Pathology Findings (SEND)
   ma: {description: 'Macropathology Findings', category: 'Findings'},
   mk: {description: 'Microscopic Findings', category: 'Findings'},

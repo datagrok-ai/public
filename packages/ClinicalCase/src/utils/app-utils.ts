@@ -21,6 +21,8 @@ import {getRequiredColumnsByView, handleMouseMoveOverErrorCell, setupValidationE
   setupValidationErrorIndicators} from './views-validation-utils';
 import {DOMAINS_CATEGORIES_LIST, DOMAINS_DESCRIPTIONS, SUPP_DOMAIN_CATEGORY} from '../constants/domains-constants';
 import {setupTableViewLayout} from './layout-utils';
+import {getLbContextPane} from '../panels/lb-context-pane';
+import {createLbHeatmap} from '../domain-specific-viewers/lb-domain';
 
 export const validationNodes: {[key: string]: DG.TreeViewNode} = {};
 export let currentOpenedView: DG.ViewBase | null = null;
@@ -398,6 +400,10 @@ function addStudyToBrowseTree(study: ClinicalStudy, treeNode: DG.TreeViewGroup, 
 function addDomainsToTree(study: ClinicalStudy, treeNode: DG.TreeViewGroup) {
   const domains = study.domains.all();
   const domainsNode = treeNode.group('Domains', null, false);
+  domainsNode.onSelected.subscribe(() => {
+    if (!domainsNode.expanded)
+      domainsNode.expanded = true;
+  });
 
   // Group domains by category
   const domainsByCategory: {[category: string]: typeof domains} = {};
@@ -413,8 +419,12 @@ function addDomainsToTree(study: ClinicalStudy, treeNode: DG.TreeViewGroup) {
 
   // Add domains grouped by category
   for (const category of DOMAINS_CATEGORIES_LIST) {
-    const categoryNode = domainsNode.group(category, null, false);
     if (domainsByCategory[category]) {
+      const categoryNode = domainsNode.group(category, null, false);
+      categoryNode.onSelected.subscribe(() => {
+        if (!categoryNode.expanded)
+          categoryNode.expanded = true;
+      });
       for (const domain of domainsByCategory[category]) {
         const domainItem = categoryNode.item(domain.name);
         const domainInfo = DOMAINS_DESCRIPTIONS[domain.name];
@@ -437,6 +447,11 @@ export function addDomainAsTableView(studyId: string, df: DG.DataFrame, closeCur
   setupValidationErrorColumns(df);
   hideValidationColumns(currentOpenedView as DG.TableView);
   setupTableViewLayout(currentOpenedView as DG.TableView, studyId, df.name);
+  if (df.name === 'lb') {
+    const heatmap = createLbHeatmap(df);
+    (currentOpenedView as DG.TableView).addViewer(heatmap);
+    setTimeout(() => grok.shell.o = getLbContextPane(df), 1000);
+  }
 
   let errorSubs: Subscription[] = [];
   const ribbons = currentOpenedView.getRibbonPanels();

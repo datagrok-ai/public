@@ -2,13 +2,19 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {DBExplorerConfig, QueryJoinOptions} from './types';
+import {DBExplorerConfig, ExplicitReference, QueryJoinOptions} from './types';
 import * as rxjs from 'rxjs';
 import {renderExampleCard} from './renderer';
 
 type EntryPoint = DBExplorerConfig['entryPoints'][string];
 
 type JoinOption = QueryJoinOptions
+
+type SchemaCacheEntry = {
+  schemaInfo: any[];
+  tableNames: string[];
+  columnNamesByTable: {[tableName: string]: string[]};
+};
 
 type CustomRenderer = NonNullable<DBExplorerConfig['customRenderers']>[number];
 
@@ -23,6 +29,7 @@ interface DBExplorerState {
   uniqueColumns: {[tableName: string]: string};
   customSelectedColumns: {[tableName: string]: string[]};
   customRenderers?: CustomRenderer[];
+  explicitReferences?: ExplicitReference[];
 }
 
 export class DBExplorerEditor {
@@ -43,6 +50,7 @@ export class DBExplorerEditor {
   private schemaInfo: any[] = [];
   private tableNames: string[] = [];
   private columnNamesByTable: {[tableName: string]: string[]} = {};
+  private schemaInfoCache: {[schemaName: string]: SchemaCacheEntry} = {};
   private validationErrors: string[] = [];
   private onSave?: (config: any) => void;
 
@@ -84,7 +92,8 @@ export class DBExplorerEditor {
     // Find all join options that start from this table
     const joinColumns: string[] = [];
     for (const joinOption of this.state.joinOptions) {
-      if (joinOption && joinOption.fromTable === tableName) {
+      const joinSchema = joinOption.fromSchema ?? this.state.schemaName;
+      if (joinOption && joinOption.fromTable === tableName && joinSchema === this.state.schemaName) {
         // Add the aliased column names from join selects
         if (joinOption.select) {
           for (const selectStr of joinOption.select) {
@@ -154,6 +163,7 @@ export class DBExplorerEditor {
         this.state.connectionName = null;
         this.state.connectionNqName = null;
         this.state.connectionProvider = null;
+        this.schemaInfoCache = {};
         this.clearAdvancedSections();
         return;
       }
@@ -161,6 +171,7 @@ export class DBExplorerEditor {
       this.state.connectionNqName = this.connectionInput.value;
       this.state.connectionName = selectedConnection.name || null;
       this.state.connectionProvider = selectedConnection.dataSource || null;
+      this.schemaInfoCache = {};
       const schemas = await grok.dapi.connections.getSchemas(selectedConnection);
       const oldSchemaValue = this.schemaInput.value;
       this.schemaInput.items = schemas.sort();
@@ -194,15 +205,42 @@ export class DBExplorerEditor {
   }
 
   private async loadSchemaInfo(): Promise<void> {
+    const entry = await this.ensureSchemaLoaded(this.state.schemaName);
+    if (!entry)
+      return;
+    this.schemaInfo = entry.schemaInfo;
+    this.tableNames = entry.tableNames;
+    this.columnNamesByTable = entry.columnNamesByTable;
+  }
+
+  private async ensureSchemaLoaded(schemaName: string | null): Promise<SchemaCacheEntry | null> {
+    if (!schemaName)
+      return null;
+    if (this.schemaInfoCache[schemaName])
+      return this.schemaInfoCache[schemaName];
     const connection = this.dataConnection;
-    if (!connection || !this.state.schemaName) return;
+    if (!connection)
+      return null;
+    const schemaInfo = await grok.dapi.connections.getSchema(connection, schemaName);
+    const tableNames = schemaInfo.map((t) => t.friendlyName).sort();
+    const columnNamesByTable: {[tableName: string]: string[]} = {};
+    for (const table of schemaInfo)
+      columnNamesByTable[table.friendlyName] = table.columns.map((c: any) => c.name).sort();
+    const entry: SchemaCacheEntry = {schemaInfo, tableNames, columnNamesByTable};
+    this.schemaInfoCache[schemaName] = entry;
+    return entry;
+  }
 
-    this.schemaInfo = await grok.dapi.connections.getSchema(connection, this.state.schemaName);
-    this.tableNames = this.schemaInfo.map((t) => t.friendlyName).sort();
-    this.columnNamesByTable = {};
+  private getSchemaTableNames(schemaName: string | null): string[] {
+    if (!schemaName)
+      return [];
+    return this.schemaInfoCache[schemaName]?.tableNames ?? [];
+  }
 
-    for (const table of this.schemaInfo)
-      this.columnNamesByTable[table.friendlyName] = table.columns.map((c: any) => c.name).sort();
+  private getSchemaColumnNames(schemaName: string | null, tableName: string | null): string[] {
+    if (!schemaName || !tableName)
+      return [];
+    return this.schemaInfoCache[schemaName]?.columnNamesByTable?.[tableName] ?? [];
   }
 
   private clearAdvancedSections(): void {
@@ -224,6 +262,10 @@ export class DBExplorerEditor {
     // Join Options Section
     const joinPane = accordion.addPane('Joins', () => this.createJoinOptionsSection(), true, null, false);
     ui.tooltip.bind(tryGetPaneHeaderRoot(joinPane.root), 'Define how to include data from related tables');
+
+    // Explicit References Section
+    const explicitRefsPane = accordion.addPane('Explicit References', () => this.createExplicitReferencesSection(), false, null, false);
+    ui.tooltip.bind(tryGetPaneHeaderRoot(explicitRefsPane.root), 'Define references between schema-table-columns that are not in schema metadata');
 
     // Header Names Section
     const headerPane = accordion.addPane('Header Names', () => this.createHeaderNamesSection(), false, null, false);
@@ -558,8 +600,10 @@ export class DBExplorerEditor {
       (joinOption, index) => { // index is starting from 1, not 0, like... WTF
         const selectDisplay = joinOption.select.join(', ');
         return [
+          joinOption.fromSchema ?? this.state.schemaName ?? '-',
           joinOption.fromTable,
           joinOption.columnName,
+          joinOption.onSchema ?? this.state.schemaName ?? '-',
           joinOption.tableName,
           joinOption.onColumn,
           selectDisplay,
@@ -572,7 +616,7 @@ export class DBExplorerEditor {
           )
         ];
       },
-      ['From Table', 'Column Name', 'Join Table', 'On Column', 'Select Columns', 'Actions']
+      ['From Schema', 'From Table', 'Column Name', 'To Schema', 'Join Table', 'On Column', 'Select Columns', 'Actions']
     );
     table.style.width = '100%';
     container.appendChild(table);
@@ -582,8 +626,10 @@ export class DBExplorerEditor {
     const isEdit = index !== null;
     let onAnythingChangedRef: () => void = () => {};
     const joinOption = isEdit ? this.state.joinOptions[index!] : {
+      fromSchema: this.state.schemaName || undefined,
       fromTable: this.tableNames[0] || '',
       columnName: '',
+      onSchema: this.state.schemaName || undefined,
       tableName: this.tableNames[0] || '',
       onColumn: '',
       select: []
@@ -591,38 +637,90 @@ export class DBExplorerEditor {
 
     const dialog = ui.dialog(isEdit ? `Edit Join Option ${index! + 1}` : 'Add Join Option');
 
+    const schemaItems = (this.schemaInput?.items ?? []) as string[];
+    const fromSchemaInput = ui.input.choice('From Schema', {
+      value: joinOption.fromSchema ?? this.state.schemaName ?? null,
+      items: schemaItems,
+      onValueChanged: onAnythingChangedRef
+    });
+    ui.tooltip.bind(fromSchemaInput.input, 'Schema of the starting table (the schema of the table that will be joined by the related table)');
+
     const fromTableInput = ui.input.choice('From Table', {value: joinOption.fromTable, items: this.tableNames, onValueChanged: onAnythingChangedRef});
-    ui.tooltip.bind(fromTableInput.input, 'Starting table for the join');
+    ui.tooltip.bind(fromTableInput.input, 'Starting table for the join (the table that will be joined by the related table)');
 
     const columnNameInput = ui.input.choice('Column Name', {
       value: joinOption.columnName,
-      items: this.columnNamesByTable[joinOption.fromTable] || [],
+      items: this.getSchemaColumnNames(joinOption.fromSchema ?? this.state.schemaName, joinOption.fromTable),
       onValueChanged: onAnythingChangedRef,
     });
     ui.tooltip.bind(columnNameInput.input, 'Foreign key column in starting table');
 
+    const onSchemaInput = ui.input.choice('To Schema', {
+      value: joinOption.onSchema ?? this.state.schemaName ?? null,
+      items: schemaItems,
+      onValueChanged: onAnythingChangedRef
+    });
+    ui.tooltip.bind(onSchemaInput.input, 'Schema of the related table (one that will join the starting table)');
+
     const tableNameInput = ui.input.choice('Table Name (to join)', {value: joinOption.tableName, items: this.tableNames, onValueChanged: onAnythingChangedRef});
-    ui.tooltip.bind(tableNameInput.input, 'Related table to join');
+    ui.tooltip.bind(tableNameInput.input, 'Related table to join (the table that will join the starting table)');
 
     const onColumnInput = ui.input.choice('On Column', {
       value: joinOption.onColumn,
-      items: this.columnNamesByTable[joinOption.tableName] || [],
+      items: this.getSchemaColumnNames(joinOption.onSchema ?? this.state.schemaName, joinOption.tableName),
       onValueChanged: onAnythingChangedRef,
     });
     ui.tooltip.bind(onColumnInput.input, 'Key column in related table');
 
-    fromTableInput.onChanged.subscribe(() => {
-      if (fromTableInput.value)
-        columnNameInput.items = this.columnNamesByTable[fromTableInput.value] || [];
+    this.ensureSchemaLoaded(fromSchemaInput.value ?? this.state.schemaName).then((entry) => {
+      if (!entry)
+        return;
+      fromTableInput.items = entry.tableNames;
+      if (fromTableInput.value && !fromTableInput.items.includes(fromTableInput.value))
+        fromTableInput.value = fromTableInput.items[0] ?? null;
+      columnNameInput.items = this.getSchemaColumnNames(fromSchemaInput.value ?? this.state.schemaName, fromTableInput.value);
     });
 
-    let availableColumns: string[] = this.columnNamesByTable[joinOption.tableName] || [];
+    this.ensureSchemaLoaded(onSchemaInput.value ?? this.state.schemaName).then((entry) => {
+      if (!entry)
+        return;
+      tableNameInput.items = entry.tableNames;
+      if (tableNameInput.value && !tableNameInput.items.includes(tableNameInput.value))
+        tableNameInput.value = tableNameInput.items[0] ?? null;
+      onColumnInput.items = this.getSchemaColumnNames(onSchemaInput.value ?? this.state.schemaName, tableNameInput.value);
+    });
+
+    fromSchemaInput.onChanged.subscribe(async () => {
+      if (!fromSchemaInput.value)
+        return;
+      const entry = await this.ensureSchemaLoaded(fromSchemaInput.value);
+      fromTableInput.items = entry?.tableNames ?? [];
+      if (fromTableInput.value && !fromTableInput.items.includes(fromTableInput.value))
+        fromTableInput.value = fromTableInput.items[0] ?? null;
+      columnNameInput.items = this.getSchemaColumnNames(fromSchemaInput.value, fromTableInput.value);
+    });
+
+    fromTableInput.onChanged.subscribe(() => {
+      columnNameInput.items = this.getSchemaColumnNames(fromSchemaInput.value ?? this.state.schemaName, fromTableInput.value);
+    });
+
+    onSchemaInput.onChanged.subscribe(async () => {
+      if (!onSchemaInput.value)
+        return;
+      const entry = await this.ensureSchemaLoaded(onSchemaInput.value);
+      tableNameInput.items = entry?.tableNames ?? [];
+      if (tableNameInput.value && !tableNameInput.items.includes(tableNameInput.value))
+        tableNameInput.value = tableNameInput.items[0] ?? null;
+      onColumnInput.items = this.getSchemaColumnNames(onSchemaInput.value, tableNameInput.value);
+      availableColumns = this.getSchemaColumnNames(onSchemaInput.value, tableNameInput.value);
+      renderSelectColumns();
+    });
+
+    let availableColumns: string[] = this.getSchemaColumnNames(onSchemaInput.value ?? this.state.schemaName, joinOption.tableName);
     tableNameInput.onChanged.subscribe(() => {
-      if (tableNameInput.value) {
-        onColumnInput.items = this.columnNamesByTable[tableNameInput.value] || [];
-        availableColumns = this.columnNamesByTable[tableNameInput.value] || [];
-        renderSelectColumns();
-      }
+      onColumnInput.items = this.getSchemaColumnNames(onSchemaInput.value ?? this.state.schemaName, tableNameInput.value);
+      availableColumns = this.getSchemaColumnNames(onSchemaInput.value ?? this.state.schemaName, tableNameInput.value);
+      renderSelectColumns();
     });
 
     // Select columns section
@@ -713,15 +811,18 @@ export class DBExplorerEditor {
         const filteredJoins = this.state.joinOptions.filter((_, i) => i !== index);
         const tempJoinOptions = [...filteredJoins];
         const tempJoinOption: JoinOption = {
+          fromSchema: fromSchemaInput.value ?? this.state.schemaName ?? undefined,
           fromTable: fromTableInput.value!,
           columnName: columnNameInput.value!,
+          onSchema: onSchemaInput.value ?? this.state.schemaName ?? undefined,
           tableName: tableNameInput.value!,
           onColumn: onColumnInput.value!,
           select: joinOption.select
         };
         tempJoinOptions.push(tempJoinOption);
+        const previewSchema = fromSchemaInput.value ?? this.state.schemaName!;
         const card = renderExampleCard(
-          this.dataConnection, this.state.schemaName, fromTableInput.value!, {joinOptions: tempJoinOptions, customRenderers: this.state.customRenderers,
+          this.dataConnection, previewSchema, fromTableInput.value!, {joinOptions: tempJoinOptions, customRenderers: this.state.customRenderers,
             uniqueColumns: this.state.uniqueColumns, // note: specifically leaving out custom selected columns to show all columns in preview
           });
         previewCardDiv.appendChild(card);
@@ -735,8 +836,10 @@ export class DBExplorerEditor {
 
 
     dialog.add(ui.divH([ui.divV([
+      fromSchemaInput.root,
       fromTableInput.root,
       columnNameInput.root,
+      onSchemaInput.root,
       tableNameInput.root,
       onColumnInput.root,
       selectColumnsLabel,
@@ -755,8 +858,10 @@ export class DBExplorerEditor {
       }
 
       const newJoinOption: JoinOption = {
+        fromSchema: fromSchemaInput.value ?? this.state.schemaName ?? undefined,
         fromTable: fromTableInput.value,
         columnName: columnNameInput.value,
+        onSchema: onSchemaInput.value ?? this.state.schemaName ?? undefined,
         tableName: tableNameInput.value,
         onColumn: onColumnInput.value,
         select: joinOption.select
@@ -1146,6 +1251,183 @@ export class DBExplorerEditor {
     dialog.show({resizable: true});
   }
 
+  private createExplicitReferencesSection(): HTMLDivElement {
+    const section = ui.divV([], 'explicit-references-section');
+
+    const infoText = ui.divText('Define explicit references between tables and schemas', 'db-explorer-info-text');
+    ui.tooltip.bind(infoText, 'Explicit references allow linking schema-table-columns that are not in DB schema metadata');
+
+    const tableContainer = ui.divV([], 'explicit-references-table-container');
+    this.renderExplicitReferencesTable(tableContainer);
+
+    const addButtonContainer = ui.divH([]);
+    addButtonContainer.style.marginTop = '10px';
+    const addButton = this.getAddIcon(() => this.showExplicitReferenceDialog(null, tableContainer), 'Add an explicit reference');
+    addButtonContainer.appendChild(addButton);
+
+    section.appendChild(infoText);
+    section.appendChild(tableContainer);
+    section.appendChild(addButtonContainer);
+
+    return section;
+  }
+
+  private renderExplicitReferencesTable(container: HTMLDivElement): void {
+    container.innerHTML = '';
+
+    if (!this.state.explicitReferences || this.state.explicitReferences.length === 0) {
+      container.appendChild(ui.divText('No explicit references defined yet', 'db-explorer-empty-message'));
+      return;
+    }
+
+    const table = ui.table(
+      this.state.explicitReferences,
+      (ref, index) => {
+        return [
+          ref.schema ?? this.state.schemaName ?? '-',
+          ref.table,
+          ref.column,
+          ref.refSchema ?? this.state.schemaName ?? '-',
+          ref.refTable,
+          ref.refColumn,
+          this.createActionButtons(
+            () => this.showExplicitReferenceDialog(index - 1, container),
+            () => {
+              this.state.explicitReferences!.splice(index - 1, 1);
+              this.renderExplicitReferencesTable(container);
+            }
+          )
+        ];
+      },
+      ['Schema', 'Table', 'Column', 'Ref Schema', 'Ref Table', 'Ref Column', 'Actions']
+    );
+    table.style.width = '100%';
+    container.appendChild(table);
+  }
+
+  private showExplicitReferenceDialog(index: number | null, tableContainer: HTMLDivElement): void {
+    const isEdit = index !== null;
+    const ref = isEdit ? this.state.explicitReferences![index!] : {
+      schema: this.state.schemaName ?? undefined,
+      table: this.tableNames[0] || '',
+      column: '',
+      refSchema: this.state.schemaName ?? undefined,
+      refTable: this.tableNames[0] || '',
+      refColumn: ''
+    };
+
+    const dialog = ui.dialog(isEdit ? `Edit Explicit Reference ${index! + 1}` : 'Add Explicit Reference');
+    const schemaItems = (this.schemaInput?.items ?? []) as string[];
+
+    const schemaInput = ui.input.choice('Schema', {value: ref.schema ?? this.state.schemaName ?? null, items: schemaItems});
+    ui.tooltip.bind(schemaInput.input, 'Schema of the source table');
+
+    const tableInput = ui.input.choice('Table', {value: ref.table, items: this.getSchemaTableNames(schemaInput.value ?? this.state.schemaName)});
+    ui.tooltip.bind(tableInput.input, 'Source table');
+
+    const columnInput = ui.input.choice('Column', {
+      value: ref.column,
+      items: this.getSchemaColumnNames(schemaInput.value ?? this.state.schemaName, tableInput.value)
+    });
+    ui.tooltip.bind(columnInput.input, 'Source column');
+
+    const refSchemaInput = ui.input.choice('Ref Schema', {value: ref.refSchema ?? this.state.schemaName ?? null, items: schemaItems});
+    ui.tooltip.bind(refSchemaInput.input, 'Schema of the referenced table');
+
+    const refTableInput = ui.input.choice('Ref Table', {value: ref.refTable, items: this.getSchemaTableNames(refSchemaInput.value ?? this.state.schemaName)});
+    ui.tooltip.bind(refTableInput.input, 'Referenced table');
+
+    const refColumnInput = ui.input.choice('Ref Column', {
+      value: ref.refColumn,
+      items: this.getSchemaColumnNames(refSchemaInput.value ?? this.state.schemaName, refTableInput.value)
+    });
+    ui.tooltip.bind(refColumnInput.input, 'Referenced column');
+
+    this.ensureSchemaLoaded(schemaInput.value ?? this.state.schemaName).then((entry) => {
+      if (!entry)
+        return;
+      tableInput.items = entry.tableNames;
+      if (tableInput.value && !tableInput.items.includes(tableInput.value))
+        tableInput.value = tableInput.items[0] ?? null;
+      columnInput.items = this.getSchemaColumnNames(schemaInput.value ?? this.state.schemaName, tableInput.value);
+    });
+
+    this.ensureSchemaLoaded(refSchemaInput.value ?? this.state.schemaName).then((entry) => {
+      if (!entry)
+        return;
+      refTableInput.items = entry.tableNames;
+      if (refTableInput.value && !refTableInput.items.includes(refTableInput.value))
+        refTableInput.value = refTableInput.items[0] ?? null;
+      refColumnInput.items = this.getSchemaColumnNames(refSchemaInput.value ?? this.state.schemaName, refTableInput.value);
+    });
+
+    schemaInput.onChanged.subscribe(async () => {
+      if (!schemaInput.value)
+        return;
+      const entry = await this.ensureSchemaLoaded(schemaInput.value);
+      tableInput.items = entry?.tableNames ?? [];
+      if (tableInput.value && !tableInput.items.includes(tableInput.value))
+        tableInput.value = tableInput.items[0] ?? null;
+      columnInput.items = this.getSchemaColumnNames(schemaInput.value, tableInput.value);
+    });
+
+    tableInput.onChanged.subscribe(() => {
+      columnInput.items = this.getSchemaColumnNames(schemaInput.value ?? this.state.schemaName, tableInput.value);
+    });
+
+    refSchemaInput.onChanged.subscribe(async () => {
+      if (!refSchemaInput.value)
+        return;
+      const entry = await this.ensureSchemaLoaded(refSchemaInput.value);
+      refTableInput.items = entry?.tableNames ?? [];
+      if (refTableInput.value && !refTableInput.items.includes(refTableInput.value))
+        refTableInput.value = refTableInput.items[0] ?? null;
+      refColumnInput.items = this.getSchemaColumnNames(refSchemaInput.value, refTableInput.value);
+    });
+
+    refTableInput.onChanged.subscribe(() => {
+      refColumnInput.items = this.getSchemaColumnNames(refSchemaInput.value ?? this.state.schemaName, refTableInput.value);
+    });
+
+    dialog.add(ui.divV([
+      schemaInput.root,
+      tableInput.root,
+      columnInput.root,
+      refSchemaInput.root,
+      refTableInput.root,
+      refColumnInput.root
+    ], 'ui-form'));
+
+    dialog.addButton(isEdit ? 'Save' : 'Add', () => {
+      if (!schemaInput.value || !tableInput.value || !columnInput.value || !refSchemaInput.value || !refTableInput.value || !refColumnInput.value) {
+        grok.shell.error('All fields are required');
+        return;
+      }
+
+      const newRef: ExplicitReference = {
+        schema: schemaInput.value ?? undefined,
+        table: tableInput.value,
+        column: columnInput.value,
+        refSchema: refSchemaInput.value ?? undefined,
+        refTable: refTableInput.value,
+        refColumn: refColumnInput.value
+      };
+
+      if (!this.state.explicitReferences)
+        this.state.explicitReferences = [];
+
+      if (isEdit)
+        this.state.explicitReferences[index!] = newRef;
+      else
+        this.state.explicitReferences.push(newRef);
+
+      this.renderExplicitReferencesTable(tableContainer);
+      dialog.close();
+    });
+
+    dialog.show({resizable: true});
+  }
+
   private createCustomRenderersSection(): HTMLDivElement {
     const section = ui.divV([], 'custom-renderers-section');
 
@@ -1336,6 +1618,22 @@ export class DBExplorerEditor {
       });
     });
 
+    // Validate explicit references
+    (this.state.explicitReferences ?? []).forEach((ref, index) => {
+      if (!ref.schema)
+        this.validationErrors.push(`Explicit reference ${index + 1}: schema is required`);
+      if (!ref.table)
+        this.validationErrors.push(`Explicit reference ${index + 1}: table is required`);
+      if (!ref.column)
+        this.validationErrors.push(`Explicit reference ${index + 1}: column is required`);
+      if (!ref.refSchema)
+        this.validationErrors.push(`Explicit reference ${index + 1}: refSchema is required`);
+      if (!ref.refTable)
+        this.validationErrors.push(`Explicit reference ${index + 1}: refTable is required`);
+      if (!ref.refColumn)
+        this.validationErrors.push(`Explicit reference ${index + 1}: refColumn is required`);
+    });
+
     // Display validation results
     if (this.validationErrors.length > 0) {
       grok.shell.error(`Validation failed with ${this.validationErrors.length} error(s)`);
@@ -1362,6 +1660,9 @@ export class DBExplorerEditor {
     // Only include customRenderers if it has values
     if (this.state.customRenderers && this.state.customRenderers.length > 0)
       config.customRenderers = this.state.customRenderers;
+
+    if (this.state.explicitReferences && this.state.explicitReferences.length > 0)
+      config.explicitReferences = this.state.explicitReferences;
 
     return config;
   }
@@ -1406,7 +1707,8 @@ export class DBExplorerEditor {
       headerNames: config.headerNames || {},
       uniqueColumns: config.uniqueColumns || {},
       customSelectedColumns: config.customSelectedColumns || {},
-      customRenderers: config.customRenderers || []
+      customRenderers: config.customRenderers || [],
+      explicitReferences: config.explicitReferences || []
     };
 
     // Update UI inputs

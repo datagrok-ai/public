@@ -175,7 +175,7 @@ function getViewers(viewers: { [v: string]: { [k: string]: any } }, table: DG.Da
   let viewerList = [];
 
   for (const value of Object.values(DG.CORE_VIEWER)) {
-    if (value !== 'Shape Map' && value !== DG.CORE_VIEWER.CONFUSION_MATRIX)
+    if (value !== 'Shape Map')
       viewerList.push(value);
   }
   viewerList.push('Column viewer');

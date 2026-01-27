@@ -39,7 +39,10 @@ General:
 | Show X Axis | boolean |  |
 | Allow Column Selection | boolean |  |
 | Show Bin Selector | boolean | Show bin selector in the left top panel when the mouse is over the histogram |
+| Show Values | boolean | Show bin values on top of the bars |
 | Bins | number | Number of bins on the histogram |
+| Value Min | number |  |
+| Value Max | number |  |
 | **Category** | | |
 | Split Column Name | string | A categorical column to split data on (each bar represents a category) |
 | Normalize Values | boolean | Whether the values should be normalized when multiple histograms are shown. If true, you are comparing distributions; if false, you are comparing absolute values. Requires *Split Column Name* to be set. |
@@ -95,6 +98,7 @@ General:
 | Axis Font | string |  |
 | Filtered Bins Color | number |  |
 | Selected Bins Color | number |  |
+| Values Color | number |  |
 | Filtered Out Color | number |  |
 | Controls Font | string | Viewer controls elements font. |
 | **Description** | | |

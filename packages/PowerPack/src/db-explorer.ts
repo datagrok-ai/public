@@ -114,9 +114,9 @@ export async function setupGlobalDBExplorer() {
       const defaultSchema = schemas.includes('public') ? 'public' : schemas[0];
 
       const schemaChoice = ui.input.choice('Schema', {value: defaultSchema, items: schemas,
-        tooltipText: 'Select schema for identifiers', nullable: false} );
+        tooltipText: 'Select primary schema for identifiers', nullable: false} );
 
-      ui.dialog('Select Schema for Identifiers Configuration')
+      ui.dialog('Select primary schema for Identifiers Configuration')
         .add(ui.form([schemaChoice]))
         .onOK(async () => {
           const view = DG.View.create();
@@ -388,7 +388,7 @@ Supported types are ${[DG.COLUMN_TYPE.STRING, DG.COLUMN_TYPE.BIG_INT, DG.COLUMN_
       return ui.info('Data frame is empty or not available.');
 
     const schemaName = col.tags.get(DG.Tags.DbSchema);
-    const connId = df.tags.get(DG.Tags.DataConnectionId);
+    const connId: string = df.tags.get(DG.Tags.DataConnectionNqName) ?? df.tags.get(DG.Tags.DataConnectionId);
     const dbColName = col.tags.get(DG.Tags.DbColumn);
     const tableName = col.tags.get(DG.Tags.DbTable);
 
@@ -396,7 +396,9 @@ Supported types are ${[DG.COLUMN_TYPE.STRING, DG.COLUMN_TYPE.BIG_INT, DG.COLUMN_
       return ui.info('Column is not linked to database table.');
 
     return ui.wait(async () => {
-      const conn = await grok.dapi.connections.find(connId);
+      const conn = connId.includes(':')
+          ? (await grok.dapi.connections.filter(`nqName = "${connId}"`).list()).find((_) => true)
+          : await grok.dapi.connections.find(connId);
       if (!conn)
         return ui.info('Failed to find connection for this column.');
       const tables: DG.TableInfo[] = await grok.dapi.connections.getSchema(conn, schemaName, tableName);
@@ -424,7 +426,7 @@ Supported types are ${[DG.COLUMN_TYPE.STRING, DG.COLUMN_TYPE.BIG_INT, DG.COLUMN_
 
 function getEnrichmentsDiv(conn: DG.DataConnection, schema: string, table: string, column: string, df: DG.DataFrame) {
   return ui.wait(async () => {
-    const names = await getEnrichConfigsNames(conn.id, schema, table, column);
+    const names = await getEnrichConfigsNames(conn.nqName, schema, table, column);
     const empty = ui.div([
       ui.divText('No enrichments yet.', 'power-pack-enrich-empty-title'),
       ui.divText('Add an enrichment for the column to extend this table.', 'power-pack-enrich-empty-sub')
@@ -435,7 +437,7 @@ function getEnrichmentsDiv(conn: DG.DataConnection, schema: string, table: strin
     root = ui.divV(names.map((n) => {
       let parent: HTMLDivElement | undefined = undefined;
       const deleteLink = ui.iconFA('times', () => {
-        deleteEnrichment(conn.id, schema, table, column, n).then((b) => {
+        deleteEnrichment(conn.nqName, schema, table, column, n).then((b) => {
           if (b)
             parent?.remove();
           if (root?.children?.length === 0)
@@ -444,7 +446,7 @@ function getEnrichmentsDiv(conn: DG.DataConnection, schema: string, table: strin
       }, 'Delete');
 
       const editLink = ui.iconFA('pencil', async () => {
-        const enrichment = await readEnrichConfig(conn.id, schema, table, column, n);
+        const enrichment = await readEnrichConfig(conn.nqName, schema, table, column, n);
         if (!enrichment) {
           grok.shell.error('Something went wrong when opening enrichment. Please try again.');
           return;
@@ -487,7 +489,7 @@ function showEnrichDialog(mainTable: DG.TableInfo, df: DG.DataFrame, dbColName: 
   const nameInput: DG.InputBase = ui.input.string('Name', {nullable: false, tooltipText: 'Provide name for the enrichment.', value: enrichName});
   const root = ui.wait(async () => {
     await pivotView.isInit();
-    await pivotView.setSingleColumnMode(dbColName);
+    // await pivotView.setSingleColumnMode(dbColName);
     ui.setDisplay(pivotView.groupByTag.root.parentElement!, false);
     ui.setDisplay(pivotView.orderTag.root.parentElement!, false);
     ui.setDisplay(pivotView.whereTag.root.parentElement!, false);
@@ -519,9 +521,9 @@ function showEnrichDialog(mainTable: DG.TableInfo, df: DG.DataFrame, dbColName: 
       pivotView.refreshQuery();
       const enrichment = convertTableQueryToEnrichment(pivotView.query, nameInput.value,
         mainTable.tags.get(DG.Tags.TableSchema), mainTable.friendlyName, dbColName);
-      await saveEnrichment(enrichment, pivotView.query.connection.id);
+      await saveEnrichment(enrichment, pivotView.query.connection.nqName);
       if (enrichName && enrichment.name != enrichName) {
-        await deleteEnrichment(pivotView.query.connection.id, enrichment.keySchema,
+        await deleteEnrichment(pivotView.query.connection.nqName, enrichment.keySchema,
           enrichment.keyTable, enrichment.keyColumn, enrichName);
       }
       onSave();
@@ -556,20 +558,20 @@ function showEnrichDialog(mainTable: DG.TableInfo, df: DG.DataFrame, dbColName: 
   dialog.show();
 }
 
-async function getEnrichConfigsNames(connectionId: string, schema: string, table: string, column: string): Promise<string[]> {
+async function getEnrichConfigsNames(connectionNqName: string, schema: string, table: string, column: string): Promise<string[]> {
   try {
     const files = await grok.dapi.files
-      .list(`System:AppData/PowerPack/enrichments/${connectionId}/${schema}/${table}/${column}`);
+      .list(`System:AppData/PowerPack/enrichments/${nqNameToPath(connectionNqName)}/${schema}/${table}/${column}`);
     return files.map((f) => f.name.substring(0, f.name.lastIndexOf('.')));
   } catch (_: any) {
     return [];
   }
 }
 
-async function deleteEnrichment(connectionId: string, schema: string, table: string, column: string, name: string): Promise<boolean> {
+async function deleteEnrichment(connectionNqName: string, schema: string, table: string, column: string, name: string): Promise<boolean> {
   try {
     await grok.dapi.files
-      .delete(`System:AppData/PowerPack/enrichments/${connectionId}/${schema}/${table}/${column}/${name}.json`);
+      .delete(`System:AppData/PowerPack/enrichments/${nqNameToPath(connectionNqName)}/${schema}/${table}/${column}/${name}.json`);
     return true;
   } catch (_: any) {
     new DG.Balloon().error('Something went wrong while deleting enrichment. Please, try again.');
@@ -577,24 +579,28 @@ async function deleteEnrichment(connectionId: string, schema: string, table: str
   }
 }
 
-async function readEnrichConfig(connectionId: string, schema: string, table: string, column: string, name: string): Promise<Enrichment | null> {
+async function readEnrichConfig(connectionNqName: string, schema: string, table: string, column: string, name: string): Promise<Enrichment | null> {
   try {
     const data = await grok.dapi.files
-      .readAsText(`System:AppData/PowerPack/enrichments/${connectionId}/${schema}/${table}/${column}/${name}.json`);
+      .readAsText(`System:AppData/PowerPack/enrichments/${nqNameToPath(connectionNqName)}/${schema}/${table}/${column}/${name}.json`);
     return JSON.parse(data);
   } catch (_: any) {
     return null;
   }
 }
 
-async function saveEnrichment(e: Enrichment, connectionId: string): Promise<void> {
+async function saveEnrichment(e: Enrichment, connectionNqName: string): Promise<void> {
   try {
     await grok.dapi.files
-      .writeAsText(`System:AppData/PowerPack/enrichments/${connectionId}/${e.keySchema}/${e.keyTable}/${e.keyColumn}/${e.name}.json`,
+      .writeAsText(`System:AppData/PowerPack/enrichments/${nqNameToPath(connectionNqName)}/${e.keySchema}/${e.keyTable}/${e.keyColumn}/${e.name}.json`,
         JSON.stringify(e));
   } catch (_: any) {
     new DG.Balloon().error('Could not save enrichment config. Please try again.');
   }
+}
+
+function nqNameToPath(connectionNqName: string) {
+  return connectionNqName.replace(':', '_');
 }
 
 function convertTableQueryToEnrichment(query: DG.TableQuery, name: string, keySchema: string, keyTable: string, keyColumn: string): Enrichment {
@@ -610,7 +616,7 @@ function convertEnrichmentToQuery(e: Enrichment, conn: DG.DataConnection): DG.Ta
 }
 
 export async function runEnrichmentFromConfig(conn: DG.DataConnection, schema: string, table: string, column: string, name: string, df: DG.DataFrame): Promise<void> {
-  const config = await readEnrichConfig(conn.id, schema, table, column, name);
+  const config = await readEnrichConfig(conn.nqName, schema, table, column, name);
   if (!config) {
     new DG.Balloon().error('Could not find enrichment. Please try again or create a new one.');
     return;
@@ -670,5 +676,3 @@ interface Enrichment {
   fields: string[];
   joins: DG.TableJoin[];
 }
-
-

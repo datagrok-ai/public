@@ -69,11 +69,15 @@ export namespace funcs {
     return await grok.functions.call('ChatGPT:MoveMetaToDB', { dbName });
   }
 
-  export async function indexDatabaseSchema(): Promise<void> {
-    return await grok.functions.call('ChatGPT:IndexDatabaseSchema', {});
+  export async function setupVectorStore(): Promise<void> {
+    return await grok.functions.call('ChatGPT:SetupVectorStore', {});
   }
 
-  export async function embedConnectionQueries(): Promise<void> {
-    return await grok.functions.call('ChatGPT:EmbedConnectionQueries', {});
+  export async function searchForSomething(): Promise<void> {
+    return await grok.functions.call('ChatGPT:SearchForSomething', {});
+  }
+
+  export async function indexDatabaseSchema(): Promise<void> {
+    return await grok.functions.call('ChatGPT:IndexDatabaseSchema', {});
   }
 }

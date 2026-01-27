@@ -23,7 +23,7 @@ export function createMeasurementProfileTableView(studyId: string): any {
 
       const df = it.clone(null, requiredColumns);
       df.getCol(`${it.name.toUpperCase()}TEST`).name = 'test';
-      df.getCol(`${it.name.toUpperCase()}STRESN`).name = 'res_num';
+      df.getCol(`${it.name.toUpperCase()}STRESN`).name = 'result';
       df.getCol(`${it.name.toUpperCase()}DY`).name = 'visit_day';
       if (!resDf)
         resDf = df;
@@ -37,6 +37,7 @@ export function createMeasurementProfileTableView(studyId: string): any {
   grok.data.joinTables(resDf, studies[studyId].domains.dm, [SUBJECT_ID], [SUBJECT_ID], null,
     columnsFromDm, DG.JOIN_TYPE.LEFT, true);
 
+  resDf.name = 'Measurements';
   const tests = resDf.col('test')!.categories;
   let selectedTest = tests[0];
   resDf.rows.match({test: selectedTest}).filter();
@@ -49,7 +50,7 @@ export function createMeasurementProfileTableView(studyId: string): any {
       resDf.rows.match({test: selectedTest}).filter();
       grok.shell.tv.dataFrame = resDf.clone(resDf.filter);
       //need to set boxPlot options since they are reset after table is changed
-      boxPlot.setOptions({value: 'res_num', category1: PLANNED_TRT_ARM});
+      boxPlot.setOptions({value: 'result', category1: PLANNED_TRT_ARM});
     },
   });
   let boxPlot: DG.Viewer | null = null;
@@ -60,12 +61,15 @@ export function createMeasurementProfileTableView(studyId: string): any {
     tableView.setRibbonPanels(ribbons);
 
     const lineChart = await DG.Viewer.fromType(DG.VIEWER.LINE_CHART, tableView.dataFrame);
-    lineChart.setOptions({yColumnNames: ['res_num'], yAggrTypes: ['avg'], whiskersType: 'Med | Q1, Q3'});
-    tableView.addViewer(lineChart);
+    lineChart.setOptions({yColumnNames: ['result'], yAggrTypes: ['avg'], whiskersType: 'Med | Q1, Q3'});
+    //tableView.addViewer(lineChart);
 
     boxPlot = await DG.Viewer.fromType(DG.VIEWER.BOX_PLOT, tableView.dataFrame);
-    boxPlot.setOptions({value: 'res_num', category1: PLANNED_TRT_ARM});
-    tableView.addViewer(boxPlot);
+    boxPlot.setOptions({value: 'result', category1: PLANNED_TRT_ARM});
+    //tableView.addViewer(boxPlot);
+
+    tableView.dockManager.dock(boxPlot, DG.DOCK_TYPE.FILL);
+    tableView.dockManager.dock(lineChart, DG.DOCK_TYPE.FILL);
 
     addDomainFilters(tableView, studyId);
   };

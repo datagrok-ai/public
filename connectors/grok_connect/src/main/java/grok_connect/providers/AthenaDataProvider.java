@@ -81,6 +81,14 @@ public class AthenaDataProvider extends JdbcDataProvider {
                     "The amount of time, in seconds, that the connector waits for data to be transferred\n" +
                             "over an established, open connection before timing out the connection.\n" +
                             "A value of 0 indicates that the connector never times out the connection. Default value is 50.", new Prop()));
+
+            add(new Property(Property.INT_TYPE, "UseResultsetStreaming",
+                    "This property specifies whether the connector uses the AWS result set streaming API\n" +
+                            "for result set fetching. If you are connecting to Athena through a proxy server, make sure that the\n" +
+                            "proxy server does not block port 444. The result set streaming API uses port\n" +
+                            "444 on the Athena server for outbound communications. By default 0 for Datagrok.\n" +
+                            "1: The connector uses the result set streaming API.\n" +
+                            "0: The connector uses pagination logic for result set fetching.", new Prop()));
         }};
     }
 
@@ -116,6 +124,8 @@ public class AthenaDataProvider extends JdbcDataProvider {
             setIfNotNull(properties, "Schema", conn.getDb());
             setIfNotNull(properties, "S3OutputEncOption", conn.get(DbCredentials.S3OutputEncOption));
         }
+        if (!properties.containsKey("UseResultsetStreaming"))
+            properties.setProperty("UseResultsetStreaming", "0");
         return properties;
     }
 

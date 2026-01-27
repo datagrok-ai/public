@@ -1,3 +1,4 @@
+/* eslint-disable max-len */
 /* eslint-disable valid-jsdoc */
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
@@ -167,6 +168,10 @@ export class AddNewColumnDialog {
   colTypeWidget = '';
   autocompleteOpened = false;
 
+  private get isFilterFormulaEditor(): boolean {
+    return this.call.aux['filterFormulaEditor'] == true;
+  }
+
   constructor(call: DG.FuncCall, widget?: DG.Widget) {
     this.codeMirrorDiv.classList.add(this.widget ? 'add-new-column-widget-cm-div' : 'add-new-column-dialog-cm-div');
     this.call = call;
@@ -185,8 +190,10 @@ export class AddNewColumnDialog {
     if (widget)
       this.widget = widget;
     else {
-      this.dialogTitle = this.edit ? this.editColumnTitle : this.addColumnTitle;
+      this.dialogTitle = this.isFilterFormulaEditor ?
+        'Edit Formula' : (this.edit ? this.editColumnTitle : this.addColumnTitle);
       this.uiDialog = ui.dialog({title: this.dialogTitle, helpUrl: this.helpUrl});
+      this.uiDialog.root.classList.add('add-new-column-dialog-root');
     }
 
     if (this.sourceDf) {
@@ -216,6 +223,14 @@ export class AddNewColumnDialog {
       this.uiDialog!
         .add(this.inputName)
         .add(this.inputType);
+
+      if (this.isFilterFormulaEditor) {
+        // if the editor is created for editing viewer filter formula, we do not need name and type inputs, and they must be fixed
+        this.inputName!.root.style.display = 'none';
+        this.inputType!.root.style.display = 'none';
+        this.inputName!.value = 'Filter Formula'; // does not matter, not used anywhere
+        this.inputType!.value = DG.COLUMN_TYPE.BOOL; // needs to be bool only to assist with validation
+      }
 
       this.uiDialog!
         .add(await this.initUiLayout())
@@ -387,7 +402,7 @@ export class AddNewColumnDialog {
       this.call.getParamValue('type') : defaultChoice, items: this.supportedTypes});
     control.onInput.subscribe(async () => {
       this.changedType = true;
-      await this.updatePreview(this.codeMirror!.state.doc.toString(), false)
+      await this.updatePreview(this.codeMirror!.state.doc.toString(), false);
     });
     control.setTooltip(this.tooltips['type']);
 
@@ -694,7 +709,7 @@ export class AddNewColumnDialog {
     const re = /".*?"|'.*?'/gm;
     let match = null;
     const quotesSelection: {from: number, to: number}[] = [];
-    const intervalsWithoutQuotes: [number, number][]= [];
+    const intervalsWithoutQuotes: [number, number][] = [];
     let counter = 0;
     while ((match = re.exec(formula)) != null) {
       if (!counter && match.index > 0)
@@ -1159,7 +1174,7 @@ export class AddNewColumnDialog {
     }
 
     this.changedType = false;
-    
+
     //in case name was changed in nameInput, do not recalculate preview
     if (changeName) {
       if (!this.error)
@@ -1401,7 +1416,7 @@ export class AddNewColumnDialog {
       .toList().filter((v, i) => selectedIndexes.includes(i));
     let types: string[] = [];
     let semTypes: string[] = [];
-    selectedColumns.forEach((v) => {types.push(v.type), semTypes.push(v.semType);});
+    selectedColumns.forEach((v) => { types.push(v.type), semTypes.push(v.semType); });
     types = types.filter((v, i, a) => a.indexOf(v) === i);
     semTypes = semTypes.filter((v, i, a) => a.indexOf(v) === i && v != null);
     return [types, semTypes];
@@ -1549,7 +1564,7 @@ export class AddNewColumnDialog {
               this.sourceDf?.col((ip as DG.FuncCallParam).value.inputs['field'])?.type ?? 'null' :
               Object.keys((ip as DG.FuncCallParam).value.outputParams).length > 0 ?
                 // eslint-disable-next-line max-len
-                (ip as DG.FuncCallParam).value.outputParams[Object.keys((ip as DG.FuncCallParam).value.outputParams)[0]].property.propertyType :'null' :
+                (ip as DG.FuncCallParam).value.outputParams[Object.keys((ip as DG.FuncCallParam).value.outputParams)[0]].property.propertyType : 'null' :
             this.getValueType((ip as DG.FuncCallParam).value);
         }
         if (outType == '') {
@@ -1563,7 +1578,7 @@ export class AddNewColumnDialog {
   }
 
   getOutputParamType(first: string, second: string) {
-    const isNullParam = (param: string) => param == 'null' || param == 'undefined'|| param == null;
+    const isNullParam = (param: string) => param == 'null' || param == 'undefined' || param == null;
     if (isNullParam(first))
       return !isNullParam(second) ? second : DG.TYPE.STRING;
     else {

@@ -1,0 +1,22 @@
+{
+  "name": "AddWarningRefsByWarningId",
+  "connection": "Chembl:Chembl",
+  "keySchema": "public",
+  "keyTable": "drug_warning",
+  "keyColumn": "warning_id",
+  "fields": [
+    "public.drug_warning.warning_id",
+    "public.warning_refs.ref_type",
+    "public.warning_refs.ref_id",
+    "public.warning_refs.ref_url"
+  ],
+  "joins": [
+    {
+      "leftTableName": "public.drug_warning",
+      "rightTableName": "public.warning_refs",
+      "joinType": "left",
+      "leftTableKeys": ["warning_id"],
+      "rightTableKeys": ["warning_id"]
+    }
+  ]
+}
