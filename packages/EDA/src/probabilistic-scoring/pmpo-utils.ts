@@ -558,7 +558,7 @@ function getArgsOfGaussFunc(mu: number, sigma: number): number[] {
 /** Basic pMPO function combining Gaussian and sigmoid functions. */
 function basicFunction(x: number, param: PmpoParams, useSigmoidalCorrection: boolean): number {
   return gaussDesirabilityFunc(x, param.desAvg, param.desStd) *
-    (useSigmoidalCorrection ? sigmoidS(x, param.x0, param.b, param.c) : 1);
+    (useSigmoidalCorrection ? sigmoidS(x, param.cutoff, param.b, param.c) : 1);
 }
 
 /** Returns line points for the given pMPO parameters. */
