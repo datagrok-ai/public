@@ -1104,3 +1104,9 @@
 .chem-mpo-actions-button:active {
   background: rgba(0, 0, 0, 0.08);
 }
+
+.chem-mpo-error-message {
+  color: #c00;
+  padding: 12px;
+  font-weight: 600;
+}

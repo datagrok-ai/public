@@ -81,7 +81,7 @@ export class MpoProfileCreateView {
     }, 0);
   }
 
-  private setTableViewVisible(visible: boolean, ratio = 0.7): void {
+  private setTableViewVisible(visible: boolean, ratio = 0.5): void {
     if (this.isEditMode || !this.tableView)
       return;
 
@@ -129,7 +129,12 @@ export class MpoProfileCreateView {
         value: METHOD_MANUAL,
         nullable: false,
         onValueChanged: async () => {
+          this.clearPreviousLayout();
           if (this.methodInput!.value === METHOD_PROBABILISTIC) {
+            if (!this.df) {
+              this.showError('Probabilistic MPO requires a dataset. Please select a dataset first.');
+              return;
+            }
             await this.runProbabilisticMpo();
             return;
           }
@@ -142,12 +147,26 @@ export class MpoProfileCreateView {
 
     const datasetInput = ui.input.table('Dataset', {
       nullable: true,
-      onValueChanged: (df) => {
+      onValueChanged: async (df) => {
         this.df = df;
 
         if (this.tableView && df)
           this.tableView.dataFrame = df;
 
+        if (this.methodInput?.value === METHOD_PROBABILISTIC) {
+          this.clearPreviousLayout();
+
+          if (!this.df) {
+            this.showError('Probabilistic MPO requires a dataset. Please select a dataset first.');
+            this.setTableViewVisible(false);
+            return;
+          }
+
+          await this.runProbabilisticMpo();
+          return;
+        }
+
+        this.setTableViewVisible(false);
         this.attachLayout();
       },
     });
@@ -223,8 +242,17 @@ export class MpoProfileCreateView {
   }
 
   private clearPreviousLayout() {
-    while (this.profileViewContainer.children.length > 1)
-      this.profileViewContainer.removeChild(this.profileViewContainer.lastChild!);
+    const header = this.profileViewContainer.children[0];
+    ui.empty(this.profileViewContainer);
+    if (header)
+      this.profileViewContainer.append(header);
+  }
+
+  private showError(message: string) {
+    this.clearPreviousLayout();
+    const errorDiv = ui.divText(message);
+    errorDiv.classList.add('chem-mpo-error-message');
+    this.profileViewContainer.append(errorDiv);
   }
 
   private ensureProfile() {
