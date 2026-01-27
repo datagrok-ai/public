@@ -122,5 +122,17 @@ export type DesirabilityProfileProperties = Record<string, {
 export const STAT_GRID_HEIGHT = 75;
 export const DESIRABILITY_COLUMN_WIDTH = 305;
 
-/** Basic range sigma coefficients for desirability profile */
-export const BASIC_RANGE_SIGMA_COEFFS = [0, 0.25, 0.5, 1, 1.5, 2, 2.5, 3, 4, 5, 6, 7, 8, 9, 10];
+const POSITIVE_BASIC_RANGE_SIGMA_COEFFS = [0, 0.25, 0.5, 1, 1.5, 2, 2.5, 3, 4, 5];
+export const BASIC_RANGE_SIGMA_COEFFS = POSITIVE_BASIC_RANGE_SIGMA_COEFFS
+  .slice(1)
+  .map((v) => -v)
+  .reverse()
+  .concat(POSITIVE_BASIC_RANGE_SIGMA_COEFFS);
+
+const EXTRA_RANGE_SIGMA_COEFFS = [0.12, 0.37, 0.63, 0.75, 0.88, 1.25, 1.75, 2.25, 2.75];
+const EXTENDED_POSITIVE_RANGE_SIGMA_COEFFS = POSITIVE_BASIC_RANGE_SIGMA_COEFFS.concat(EXTRA_RANGE_SIGMA_COEFFS).sort();
+export const EXTENDED_RANGE_SIGMA_COEFFS = EXTENDED_POSITIVE_RANGE_SIGMA_COEFFS
+  .slice(1)
+  .map((v) => -v)
+  .reverse()
+  .concat(EXTENDED_POSITIVE_RANGE_SIGMA_COEFFS);

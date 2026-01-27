@@ -9,9 +9,8 @@ import '../../css/pmpo.css';
 
 import {COLORS, DESCR_TABLE_TITLE, DESCR_TITLE, DescriptorStatistics, DesirabilityProfileProperties,
   DESIRABILITY_COL_NAME, FOLDER, P_VAL, PMPO_COMPUTE_FAILED, PmpoParams, SCORES_TITLE,
-  SELECTED_TITLE, STAT_TO_TITLE_MAP, TINY, WEIGHT_TITLE,
-  CorrelationTriple,
-  BASIC_RANGE_SIGMA_COEFFS} from './pmpo-defs';
+  SELECTED_TITLE, STAT_TO_TITLE_MAP, TINY, WEIGHT_TITLE, CorrelationTriple,
+  BASIC_RANGE_SIGMA_COEFFS, EXTENDED_RANGE_SIGMA_COEFFS} from './pmpo-defs';
 import {computeSigmoidParamsFromX0, getCutoffs, gaussDesirabilityFunc, sigmoidS,
   solveNormalIntersection} from './stat-tools';
 import {getColorScaleDiv} from '../pareto-optimization/utils';
@@ -533,12 +532,10 @@ function getDesirabilityProfileProperties(params: Map<string, PmpoParams>,
 } // getDesirabilityProfileProperties
 
 /** Returns array of arguments for Gaussian function centered at mu with stddev sigma. */
-function getArgsOfGaussFunc(mu: number, sigma: number): number[] {
-  return BASIC_RANGE_SIGMA_COEFFS
-    .concat(BASIC_RANGE_SIGMA_COEFFS.slice(1).map((coeff) => -coeff))
-    .sort()
-    .map((coeff) => mu + coeff * sigma);
-
+function getArgsOfGaussFunc(mu: number, sigma: number, truncatedRange: boolean): number[] {
+  return truncatedRange ?
+    BASIC_RANGE_SIGMA_COEFFS.map((coeff) => mu + coeff * sigma) :
+    EXTENDED_RANGE_SIGMA_COEFFS.map((coeff) => mu + coeff * sigma);
 } // getArgsOfGaussFunc
 
 /** Basic pMPO function combining Gaussian and sigmoid functions. */
@@ -549,19 +546,21 @@ function basicFunction(x: number, param: PmpoParams, useSigmoidalCorrection: boo
 
 /** Returns line points for the given pMPO parameters. */
 function getLine(param: PmpoParams, useSigmoidalCorrection: boolean, truncatedRange: boolean): [number, number][] {
-  const range = significantPoints(param,  truncatedRange);
+  const range = significantPoints(param, truncatedRange);
 
   return range.map((x) => [x, basicFunction(x, param, useSigmoidalCorrection)]);
 }
 
 /** Returns significant points for the given pMPO parameters. */
 function significantPoints(param: PmpoParams, truncatedRange: boolean): number[] {
-  const points = getArgsOfGaussFunc(param.desAvg, param.desStd);
+  const points = getArgsOfGaussFunc(param.desAvg, param.desStd, truncatedRange);
 
   if (truncatedRange) {
+    const min = Math.min(param.min, param.desAvg - 3 * param.desStd);
+    const max = Math.max(param.max, param.desAvg + 3 * param.desStd);
+
     return points
-      .filter((x) => (param.min < x) && (x < param.max))
-      .concat([param.min, param.max])
+      .filter((x) => (min <= x) && (x <= max))
       .sort();
   }
 
