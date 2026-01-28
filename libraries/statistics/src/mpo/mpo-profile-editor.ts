@@ -105,7 +105,7 @@ export class MpoProfileEditor {
     editor.onChanged.subscribe(() => this.emitChange());
 
     const propertyCell = this.buildPropertyCell(name);
-    const weightCell = this.buildWeightAndRangeCell(name, prop);
+    const weightCell = this.buildWeightCell(name, prop);
     const columnCell = this.buildColumnSelector(name, editor);
 
     const modeGear = this.design && editor.supportsModeDialog ?
@@ -143,7 +143,7 @@ export class MpoProfileEditor {
     return null;
   }
 
-  private buildWeightAndRangeCell(
+  private buildWeightCell(
     name: string,
     prop: PropertyDesirability,
   ): HTMLElement {

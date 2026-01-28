@@ -10,7 +10,7 @@ export class MpoCategoricalEditor {
   supportsModeDialog: boolean = false;
 
   private _prop: PropertyDesirability;
-  private sliders: DG.InputBase[] = [];
+  private desirabilityInputs: DG.InputBase[] = [];
   private form: HTMLElement | null = null;
 
   constructor(prop: PropertyDesirability) {
@@ -24,23 +24,23 @@ export class MpoCategoricalEditor {
     if (this.form) {
       ui.empty(this.root);
       this.form = null;
-      this.sliders = [];
+      this.desirabilityInputs = [];
     }
 
-    this.sliders = categories.map((cat, idx) => {
-      return ui.input.slider(cat.name, {
+    this.desirabilityInputs = categories.map((cat) => {
+      return ui.input.float(cat.name, {
         value: cat.desirability ?? 0.5,
         min: 0,
         max: 1,
-        step: 0.01,
+        format: '#0.000',
         onValueChanged: (value: number) => {
-          this._prop.categories![idx].desirability = value;
+          cat.desirability = value;
           this.onChanged.next(this._prop);
         },
       });
     });
 
-    this.form = ui.form(this.sliders);
+    this.form = ui.form(this.desirabilityInputs);
     this.root.append(this.form);
   }
 
@@ -48,11 +48,11 @@ export class MpoCategoricalEditor {
     const categories = this._prop.categories ?? [];
 
     categories.forEach((cat, idx) => {
-      const slider = this.sliders[idx];
-      if (!slider)
+      const desirabilityInput = this.desirabilityInputs[idx];
+      if (!desirabilityInput)
         return;
 
-      slider.value = cat.desirability ?? 0.5;
+      desirabilityInput.value = cat.desirability ?? 0.5;
     });
 
     if (notify)
