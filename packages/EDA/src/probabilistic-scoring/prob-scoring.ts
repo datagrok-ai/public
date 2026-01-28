@@ -10,12 +10,16 @@ import {MpoProfileEditor} from '@datagrok-libraries/statistics/src/mpo/mpo-profi
 
 import '../../css/pmpo.css';
 
-import {getDesiredTables, getDescriptorStatistics, gaussDesirabilityFunc, sigmoidS} from './stat-tools';
+import {getDesiredTables, getDescriptorStatistics, gaussDesirabilityFunc, sigmoidS, getConfusionMatrix, getAuc} from './stat-tools';
 import {MIN_SAMPLES_COUNT, PMPO_NON_APPLICABLE, DescriptorStatistics, P_VAL_TRES_MIN, DESCR_TITLE,
   R2_MIN, Q_CUTOFF_MIN, PmpoParams, SCORES_TITLE, DESCR_TABLE_TITLE, PMPO_COMPUTE_FAILED, SELECTED_TITLE,
   P_VAL, DESIRABILITY_COL_NAME, STAT_GRID_HEIGHT, DESIRABILITY_COLUMN_WIDTH, WEIGHT_TITLE,
   P_VAL_TRES_DEFAULT, R2_DEFAULT, Q_CUTOFF_DEFAULT,
-  USE_SIGMOID_DEFAULT} from './pmpo-defs';
+  USE_SIGMOID_DEFAULT,
+  ROC_TRESHOLDS,
+  ROC_TRESHOLDS_COUNT,
+  FPR_TITLE,
+  TPR_TITLE} from './pmpo-defs';
 import {addSelectedDescriptorsCol, getDescriptorStatisticsTable, getFilteredByPvalue, getFilteredByCorrelations,
   getModelParams, getDescrTooltip, saveModel, getScoreTooltip, getDesirabilityProfileJson, getCorrelationTriples,
   addCorrelationColumns, setPvalColumnColorCoding, setCorrColumnColorCoding} from './pmpo-utils';
@@ -226,6 +230,12 @@ export class Pmpo {
   private predictionName = SCORES_TITLE;
 
   private desirabilityProfileRoots = new Map<string, HTMLElement>();
+
+  private rocCurve = DG.Viewer.scatterPlot(this.initTable, {
+    showTitle: true,
+    showSizeSelector: false,
+    showColorSelector: false,
+  });
 
   constructor(df: DG.DataFrame) {
     this.table = df;
@@ -475,6 +485,46 @@ export class Pmpo {
     });
   } // updateDesirabilityProfileData
 
+  /** Updates the ROC curve viewer with the given desirability (labels) and prediction columns */
+  private updateRocCurve(desirability: DG.Column, prediction: DG.Column): void {
+    const tpr = new Float32Array(ROC_TRESHOLDS_COUNT);
+    const fpr = new Float32Array(ROC_TRESHOLDS_COUNT);
+
+    // Compute TPR and FPR for each threshold
+    for (let i = 0; i < ROC_TRESHOLDS_COUNT; ++i) {
+      const confusion = getConfusionMatrix(desirability, prediction, ROC_TRESHOLDS[i]);
+      tpr[i] = (confusion.TP + confusion.FN) > 0 ? confusion.TP / (confusion.TP + confusion.FN) : 0;
+      fpr[i] = (confusion.FP + confusion.TN) > 0 ? confusion.FP / (confusion.FP + confusion.TN) : 0;
+    }
+
+    const rocDf = DG.DataFrame.fromColumns([
+      DG.Column.fromFloat32Array(FPR_TITLE, fpr),
+      DG.Column.fromFloat32Array(TPR_TITLE, tpr),
+    ]);
+
+    // Add baseline
+    rocDf.meta.formulaLines.addLine({
+      title: 'Non-informative baseline',
+      formula: `\${${TPR_TITLE}} = \${${FPR_TITLE}}`,
+      width: 1,
+      style: 'dashed',
+      min: 0,
+      max: 1,
+    });
+
+    const auc = getAuc(tpr, fpr);
+
+    this.rocCurve.dataFrame = rocDf;
+    this.rocCurve.setOptions({
+      xColumnName: FPR_TITLE,
+      yColumnName: TPR_TITLE,
+      linesOrderColumnName: FPR_TITLE,
+      linesWidth: 5,
+      markerType: 'dot',
+      title: `ROC Curve (AUC = ${auc.toFixed(3)})`,
+    });
+  } // updateRocCurve
+
   /** Fits the pMPO model to the given data and updates the viewers accordingly */
   private fitAndUpdateViewers(df: DG.DataFrame, descriptors: DG.ColumnList, desirability: DG.Column,
     pValTresh: number, r2Tresh: number, qCutoff: number, useSigmoid: boolean): void {
@@ -503,6 +553,9 @@ export class Pmpo {
 
     // Update statistics grid
     this.updateStatisticsGrid(descrStatsTable, descriptorNames, selectedByPvalue, selectedByCorr);
+
+    // Update ROC curve
+    this.updateRocCurve(desirability, prediction);
   } // fitAndUpdateViewers
 
   /** Runs the pMPO model training application */
@@ -518,7 +571,11 @@ export class Pmpo {
     if (gridNode == null)
       throw new Error('Failed to train pMPO: missing a grid in the table view.');
 
-    dockMng.dock(this.statGrid, DG.DOCK_TYPE.DOWN, gridNode, undefined, 0.5);
+    // Dock statistics grid
+    const statGridNode = dockMng.dock(this.statGrid, DG.DOCK_TYPE.DOWN, gridNode, undefined, 0.5);
+
+    // Dock ROC curve
+    dockMng.dock(this.rocCurve, DG.DOCK_TYPE.RIGHT, statGridNode, undefined, 0.3);
 
     this.setRibbons();
   } // runTrainingApp

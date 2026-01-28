@@ -8,7 +8,7 @@ import * as DG from 'datagrok-api/dg';
 //@ts-ignore: no types
 import * as jStat from 'jstat';
 
-import {Cutoff, DescriptorStatistics, SigmoidParams} from './pmpo-defs';
+import {ConfusionMatrix, Cutoff, DescriptorStatistics, SigmoidParams} from './pmpo-defs';
 
 /** Splits the dataframe into desired and non-desired tables based on the desirability column */
 export function getDesiredTables(df: DG.DataFrame, desirability: DG.Column) {
@@ -167,3 +167,82 @@ export function gaussDesirabilityFunc(x: number, mu: number, sigma: number): num
   return Math.exp(-((x - mu)**2) / (2 * sigma**2));
 }
 
+/** Computes the confusion matrix given desirability (labels) and prediction columns
+ * @param desirability - desirability column (boolean)
+ * @param prediction - prediction column (numeric)
+ * @param threshold - threshold to convert prediction scores to binary labels
+ * @return ConfusionMatrix object with TP, TN, FP, FN counts
+ */
+export function getConfusionMatrix(desirability: DG.Column, prediction: DG.Column, threshold: number): ConfusionMatrix {
+  if (desirability.length !== prediction.length)
+    throw new Error('Failed to compute confusion matrix: columns have different lengths.');
+
+  if (desirability.type !== DG.COLUMN_TYPE.BOOL)
+    throw new Error('Failed to compute confusion matrix: desirability column must be boolean.');
+
+  if (!prediction.isNumerical)
+    throw new Error('Failed to compute confusion matrix: prediction column must be numerical.');
+
+  let TP = 0;
+  let TN = 0;
+  let FP = 0;
+  let FN = 0;
+
+  const desRaw = desirability.getRawData();
+  const predRaw = prediction.getRawData();
+
+  let desIdx = 0;
+  let curPos = 0;
+  let desElem = desRaw[0];
+
+  // Here, we extract bits from the desirability boolean column in chunks of 32 bits
+  for (let predIdx = 0; predIdx < prediction.length; ++predIdx) {
+    // console.log(predIdx + 1, ': ',
+    //   desirability.get(predIdx), '<-->', (desElem >>> curPos) & 1, ' vs ', predRaw[predIdx] >= threshold);
+
+    if (((desElem >>> curPos) & 1) == 1) { // True actual
+      if (predRaw[predIdx] >= threshold) { // True predicted
+        ++TP;
+      } else { // False predicted
+        ++FN;
+      }
+    } else { // False actual
+      if (predRaw[predIdx] >= threshold) { // True predicted
+        ++FP;
+      } else { // False predicted
+        ++TN;
+      }
+    }
+
+    ++curPos;
+
+    // Move to the next desirability element if we have processed 32 bits
+    if (curPos >= 32) {
+      curPos = 0;
+      ++desIdx;
+      desElem = desRaw[desIdx];
+    }
+  } // for predIdx
+
+  return {TP: TP, TN: TN, FP: FP, FN: FN};
+} // getConfusionMatrix
+
+/** Computes Area Under Curve (AUC) given TPR and FPR arrays
+ * @param tpr - True Positive Rate array
+ * @param fpr - False Positive Rate array
+ * @return AUC value
+ */
+export function getAuc(tpr: Float32Array, fpr: Float32Array): number {
+  if (tpr.length !== fpr.length)
+    throw new Error('Failed to compute AUC: TPR and FPR arrays have different lengths.');
+
+  let auc = 0.0;
+
+  for (let i = 1; i < tpr.length; ++i) {
+    const xDiff = Math.abs(fpr[i] - fpr[i - 1]);
+    const yAvg = (tpr[i] + tpr[i - 1]) / 2.0;
+    auc += xDiff * yAvg;
+  }
+
+  return auc;
+} // getAuc
