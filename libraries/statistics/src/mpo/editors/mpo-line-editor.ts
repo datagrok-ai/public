@@ -242,6 +242,10 @@ export class MpoDesirabilityLineEditor {
           const dataIndex = circle.getAttr('_dataIndex') as number;
 
           if (dataIndex >= 0) {
+            if (this._prop.min == null)
+              this._prop.min = this.getMinX();
+            if (this._prop.max == null)
+              this._prop.max = this.getMaxX();
             this._prop.line.splice(dataIndex, 1);
             this.redrawFn?.();
           }
