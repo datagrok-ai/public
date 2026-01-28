@@ -12,7 +12,7 @@ import {_package} from '../package-test';
 
 
 category('viewers', () => {
-  const viewers = DG.Func.find({package: 'Dendrogram', meta: {role: DG.FUNC_TYPES.VIEWER}}).map((f) => f.friendlyName);
+  const viewers = DG.Func.find({package: 'Dendrogram', meta: {role: 'viewer'}}).map((f) => f.friendlyName);
   for (const v of viewers) {
     test(v, async () => {
       const df = await (async () => {
