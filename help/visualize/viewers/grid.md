@@ -573,16 +573,15 @@ To unpin rows, select the **Unpin** option from the **Pin** context menu.
 
 You can color code columns with these schemes: 
    
-* For categorical columns (`string` and `bool` data types), "categorical"
-* For numeric columns, "conditional" or "linear"
-* For `datetime` columns, "linear"
+* For categorical columns (`string` and `bool` data types), "categorical" or "linked"
+* For numeric columns, "conditional", "linear" or "linked"
+* For `datetime` columns, "linear" or "linked"
 
-To color-code a column, right click its header and select the desired scheme
+To color code a column, right-click its header and select the desired scheme
 from the **Color Coding** submenu. This applies color to the
-column's background. To customize color-coding settings, click the column's
-header and adjust them in the **Context Panel** under **Colors**.
+column's background. To customize color-coding settings, right-click the column's header, choose **Edit** from the **Color Coding** submenu, and adjust the settings.
 
-![](img/grid-color-coding.gif)
+![Color Coding](img/grid-color-coding-new.gif)
 
 To copy color coding from one column to others, use the **Pick Up Coloring** and
 **Apply Coloring** commands from the column's **Color Coding** menu. These
