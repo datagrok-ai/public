@@ -1,4 +1,6 @@
 // Tests for Probabilistic MPO (pMPO)
+// Reference scores are pre-computed and stored in the 'drugs-props-train-scores.csv' file.
+// This scores are computed using the library: https://github.com/Merck/pmpo
 
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
@@ -11,7 +13,7 @@ import {Pmpo} from '../probabilistic-scoring/prob-scoring';
 import {P_VAL_TRES_DEFAULT, Q_CUTOFF_DEFAULT, R2_DEFAULT} from '../probabilistic-scoring/pmpo-defs';
 
 const TIMEOUT = 4000;
-const MAD_THRESH = 0.1;
+const MAD_THRESH = 1E-6;
 
 const SOURCE_PATH = 'System:AppData/Eda/drugs-props-train.csv';
 const SCORES_PATH = 'System:AppData/Eda/drugs-props-train-scores.csv';
@@ -20,8 +22,13 @@ const DESIRABILITY_COL_NAME = 'CNS';
 const DESCRIPTOR_NAMES = ['TPSA', 'TPSA_S', 'HBA', 'HBD', 'MW', 'nAtoms',
   'cLogD_ACD_v15', 'mapKa', 'cLogP_Biobyte', 'mbpKa', 'cLogP_ACD_v15', 'ALogP98'];
 const SCORES_NAME = 'Score';
-const DRGUG = 'Drug';
+const DRUG = 'Drug';
 
+const SIGMOIDAL = 'Sigmoidal';
+const GAUSSIAN = 'Gaussian';
+const PMPO_MODES = [SIGMOIDAL, GAUSSIAN];
+
+/** Computes the maximum absolute deviation between pMPO scores in two data frames */
 function getScoreMaxDeviation(sourceDrugCol: DG.Column, sourceScores: DG.Column,
   referenceDrugCol: DG.Column, referenceScores: DG.Column): number {
   let mad = 0;
@@ -45,8 +52,8 @@ function getScoreMaxDeviation(sourceDrugCol: DG.Column, sourceScores: DG.Column,
 } // getScoreMaxDeviation
 
 category('Probabilistic MPO', () => {
-  ['Sigmoidal', 'Gaussian'].forEach((refScoreName) => {
-    const useSigmoid = (refScoreName === 'Sigmoidal');
+  PMPO_MODES.forEach((refScoreName) => {
+    const useSigmoid = (refScoreName == SIGMOIDAL);
 
     test(refScoreName, async () => {
       let sourceDf: DG.DataFrame | null = null;
@@ -84,13 +91,13 @@ category('Probabilistic MPO', () => {
         const prediction = Pmpo.predict(sourceDf, trainRes.params, useSigmoid, SCORES_NAME);
 
         // Compare with reference scores
-        sourceDrugCol = sourceDf.col(DRGUG);
-        referenceDrugCol = referenceDf.col(DRGUG);
+        sourceDrugCol = sourceDf.col(DRUG);
+        referenceDrugCol = referenceDf.col(DRUG);
         referencePrediction = referenceDf.col(refScoreName);
 
         mad = getScoreMaxDeviation(sourceDrugCol!, prediction, referenceDrugCol!, referencePrediction!);
 
-        console.log(refScoreName, ': max absolute deviation of pMPO scores:', mad);
+        //console.log(refScoreName, ': max absolute deviation of pMPO scores:', mad);
       } catch (error) {
         grok.shell.error((error as Error).message);
       }
@@ -99,8 +106,8 @@ category('Probabilistic MPO', () => {
       expect(referenceDf !== null, true, 'Failed to load the scores data: ' + SCORES_PATH);
       expect(desirability !== null, true, 'Inconsistent source data: no column ' + DESIRABILITY_COL_NAME);
       expect(descriptors.length, DESCRIPTOR_NAMES.length, 'Inconsistent source data: no enough of columns');
-      expect(sourceDrugCol !== null, true, 'Inconsistent source data: no column ' + DRGUG);
-      expect(referenceDrugCol !== null, true, 'Inconsistent reference data: no column ' + DRGUG);
+      expect(sourceDrugCol !== null, true, 'Inconsistent source data: no column ' + DRUG);
+      expect(referenceDrugCol !== null, true, 'Inconsistent reference data: no column ' + DRUG);
       expect(referencePrediction !== null, true, 'Inconsistent reference data: no column ' + SCORES_NAME);
       expect(mad !== null, true, 'Failed to compare pMPO scores with the reference data');
       expect(mad! < MAD_THRESH, true, `Max absolute deviation of pMPO scores exceeds the threshold (${MAD_THRESH})`);
