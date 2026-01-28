@@ -2,7 +2,7 @@ import * as DG from 'datagrok-api/dg';
 
 import {Subject} from 'rxjs';
 
-import {PropertyDesirability} from '../mpo';
+import {PropertyDesirability, isNumerical} from '../mpo';
 import {MpoCategoricalEditor} from './mpo-categorical-editor';
 import {MpoDesirabilityLineEditor} from './mpo-line-editor';
 
@@ -21,7 +21,7 @@ export class DesirabilityEditorFactory {
     width = 300,
     height = 80,
   ): DesirabilityEditor {
-    if (prop.line)
+    if (isNumerical(prop))
       return new MpoDesirabilityLineEditor(prop, width, height);
 
     return new MpoCategoricalEditor(prop);

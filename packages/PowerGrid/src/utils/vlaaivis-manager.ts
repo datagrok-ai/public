@@ -16,7 +16,7 @@ import {
 } from './constants';
 
 import {MpoDesirabilityLineEditor} from '@datagrok-libraries/statistics/src/mpo/mpo-line-editor';
-import {PropertyDesirability} from '@datagrok-libraries/statistics/src/mpo/mpo';
+import {NumericalDesirability} from '@datagrok-libraries/statistics/src/mpo/mpo';
 
 class VlaaiVisManager {
   private settings: PieChartSettings;
@@ -67,7 +67,7 @@ class VlaaiVisManager {
     const sectors: Sector[] = Array.from(groupMap, ([groupName, metas]) => ({
       name: groupName,
       sectorColor: metas[0].sectorColor ?? defaultGroupProps[CONSTANTS.SECTOR_COLOR_PROPERTY],
-      subsectors: metas.map(({name, weight, line, min, max}) => ({name, weight, line, min, max}))
+      subsectors: metas.map(({name, weight, line, min, max}) => ({name, functionType: 'numerical' as const, weight, line, min, max}))
     }));
 
     return {
@@ -256,6 +256,7 @@ class VlaaiVisManager {
 
     return {
       name,
+      functionType: 'numerical',
       weight,
       line: meta?.line ?? []
     };
@@ -295,7 +296,8 @@ class VlaaiVisManager {
     const {line = [], min, max, weight} = this.metadataMap.get(nodeText) ?? {};
     const column = this.columns.find((c) => c.name === nodeText)!;
 
-    const lineProp: PropertyDesirability = {
+    const lineProp: NumericalDesirability = {
+      functionType: 'numerical',
       line,
       min: min ?? +column.min.toFixed(1),
       max: max ?? +column.max.toFixed(1),

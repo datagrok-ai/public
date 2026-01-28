@@ -249,9 +249,9 @@ export class MpoProfileCreateView {
       name: '',
       description: '',
       properties: {
-        'Property 1': {weight: 1, min: 0, max: 1, line: []},
-        'Property 2': {weight: 1, min: 0, max: 1, line: []},
-        'Property 3': {weight: 1, min: 0, max: 1, line: []},
+        'Property 1': {functionType: 'numerical', weight: 1, min: 0, max: 1, line: []},
+        'Property 2': {functionType: 'numerical', weight: 1, min: 0, max: 1, line: []},
+        'Property 3': {functionType: 'numerical', weight: 1, min: 0, max: 1, line: []},
       },
     };
   }
@@ -259,7 +259,7 @@ export class MpoProfileCreateView {
   private createProfileForDf(): DesirabilityProfile {
     const props: {[key: string]: PropertyDesirability} = {};
     for (const col of this.df!.columns.numerical)
-      props[col.name] = {weight: 1, min: col.min, max: col.max, line: []};
+      props[col.name] = {functionType: 'numerical', weight: 1, min: col.min, max: col.max, line: []};
 
     return {name: '', description: '', properties: props};
   }

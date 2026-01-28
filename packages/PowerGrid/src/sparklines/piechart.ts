@@ -1,7 +1,7 @@
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 
-import {desirabilityScore, PropertyDesirability} from '@datagrok-libraries/statistics/src/mpo/mpo';
+import {desirabilityScore, NumericalDesirability} from '@datagrok-libraries/statistics/src/mpo/mpo';
 
 import {
   createBaseInputs,
@@ -24,7 +24,7 @@ enum PieChartStyle {
   Vlaaivis = 'VlaaiVis'
 }
 
-export interface Subsector extends PropertyDesirability {
+export interface Subsector extends NumericalDesirability {
   name: string;
 }
 

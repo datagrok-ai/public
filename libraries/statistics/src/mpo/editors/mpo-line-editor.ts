@@ -4,7 +4,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import Konva from 'konva';
-import {DesirabilityLine, PropertyDesirability} from '../mpo';
+import {DesirabilityLine, NumericalDesirability} from '../mpo';
 import {Subject} from 'rxjs';
 
 type Point = [number, number];
@@ -60,7 +60,7 @@ export class MpoDesirabilityLineEditor {
   onChanged = new Subject<DesirabilityLine>();
   supportsModeDialog: boolean = true;
 
-  private _prop: PropertyDesirability;
+  private _prop: NumericalDesirability;
   private barsLayer: Konva.Layer;
   private pendingBarValues?: number[];
 
@@ -74,12 +74,12 @@ export class MpoDesirabilityLineEditor {
   private redrawFn!: (notify?: boolean) => void;
 
   private specialHandle?: Konva.Circle;
-  onParamsChanged?: (prop: PropertyDesirability) => void;
+  onParamsChanged?: (prop: NumericalDesirability) => void;
 
   // Flag to prevent touchpad right-click from adding a new point
   private ignoreNextClick = false;
 
-  constructor(prop: PropertyDesirability, width: number, height: number) {
+  constructor(prop: NumericalDesirability, width: number, height: number) {
     this._prop = prop;
     this.barsLayer = new Konva.Layer();
     this.root.style.width = `${width}px`;

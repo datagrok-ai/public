@@ -2,18 +2,18 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {Subject} from 'rxjs';
-import {PropertyDesirability} from '../mpo';
+import {CategoricalDesirability} from '../mpo';
 
 export class MpoCategoricalEditor {
   root = ui.divV([], {style: {width: '300px'}});
-  onChanged = new Subject<PropertyDesirability>();
+  onChanged = new Subject<CategoricalDesirability>();
   supportsModeDialog: boolean = false;
 
-  private _prop: PropertyDesirability;
+  private _prop: CategoricalDesirability;
   private desirabilityInputs: DG.InputBase[] = [];
   private form: HTMLElement | null = null;
 
-  constructor(prop: PropertyDesirability) {
+  constructor(prop: CategoricalDesirability) {
     this._prop = prop;
     this.buildForm();
   }
