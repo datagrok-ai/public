@@ -1110,3 +1110,11 @@
   padding: 12px;
   font-weight: 600;
 }
+
+.chem-descriptors-select-btn {
+  margin-top: 20px;
+}
+
+.d4-grid .chem-descriptors-select-btn {
+  display: none;
+}
