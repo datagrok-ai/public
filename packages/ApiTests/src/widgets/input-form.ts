@@ -239,40 +239,40 @@ category('Widgets: InputForm API', () => {
   test('form without default initialization', async () => {
     const newFuncCall1 = (await grok.functions.eval('ApiTests:InputFormTest')).prepare({stringInput: 'test2', intInput: 4});
     const newFuncCall2 = (await grok.functions.eval('ApiTests:InputFormTest')).prepare({stringInput: 'test2', intInput: 4});
-    expect(newFuncCall1.inputs['stringInput'], 'test2');
-    expect(newFuncCall1.inputs['intInput'], 4);
-    expect(newFuncCall1.inputs['doubleInput'], null);
-    expect(newFuncCall1.inputs['boolInput'], null);
-    expect(newFuncCall1.inputs['choiceInput'], null);
-    expect(newFuncCall1.inputs['tableInput'], null);
+    expect(newFuncCall1.inputs.get('stringInput'), 'test2');
+    expect(newFuncCall1.inputs.get('intInput'), 4);
+    expect(newFuncCall1.inputs.get('doubleInput'), null);
+    expect(newFuncCall1.inputs.get('boolInput'), null);
+    expect(newFuncCall1.inputs.get('choiceInput'), null);
+    expect(newFuncCall1.inputs.get('tableInput'), null);
 
     const newForm1 = await DG.InputForm.forFuncCall(newFuncCall1, {twoWayBinding: true, skipDefaultInit: true});
     const newForm2 = await DG.InputForm.forFuncCall(newFuncCall2, {twoWayBinding: true, skipDefaultInit: false});
 
-    expect(newFuncCall1.inputs['stringInput'], 'test2');
+    expect(newFuncCall1.inputs.get('stringInput'), 'test2');
     expect(newForm1.getInput('stringInput').value, 'test2');
-    expect(newFuncCall1.inputs['intInput'], 4);
+    expect(newFuncCall1.inputs.get('intInput'), 4);
     expect(newForm1.getInput('intInput').value, 4);
-    expect(newFuncCall1.inputs['doubleInput'], null);
+    expect(newFuncCall1.inputs.get('doubleInput'), null);
     expect(newForm1.getInput('doubleInput').value, null);
-    expect(newFuncCall1.inputs['boolInput'], null);
+    expect(newFuncCall1.inputs.get('boolInput'), null);
     expect(newForm1.getInput('boolInput').value, false);
-    expect(newFuncCall1.inputs['choiceInput'], null);
+    expect(newFuncCall1.inputs.get('choiceInput'), null);
     expect(newForm1.getInput('choiceInput').value, null);
-    expect(newFuncCall1.inputs['tableInput'], null);
+    expect(newFuncCall1.inputs.get('tableInput'), null);
     expect(newForm1.getInput('tableInput').value, null);
 
-    expect(newFuncCall2.inputs['stringInput'], 'test2');
+    expect(newFuncCall2.inputs.get('stringInput'), 'test2');
     expect(newForm2.getInput('stringInput').value, 'test2');
-    expect(newFuncCall2.inputs['intInput'], 4);
+    expect(newFuncCall2.inputs.get('intInput'), 4);
     expect(newForm2.getInput('intInput').value, 4);
-    expect(newFuncCall2.inputs['doubleInput'], 3.14);
+    expect(newFuncCall2.inputs.get('doubleInput'), 3.14);
     expect(newForm2.getInput('doubleInput').value, 3.14);
-    expect(newFuncCall2.inputs['boolInput'], true);
+    expect(newFuncCall2.inputs.get('boolInput'), true);
     expect(newForm2.getInput('boolInput').value, true);
-    expect(newFuncCall2.inputs['choiceInput'], '1');
+    expect(newFuncCall2.inputs.get('choiceInput'), '1');
     expect(newForm2.getInput('choiceInput').value, '1');
-    expect(newFuncCall2.inputs['tableInput'], null);
+    expect(newFuncCall2.inputs.get('tableInput'), null);
     expect(newForm2.getInput('tableInput').value, null);
   });
 }, {owner: 'dkovalyov@datagrok.ai'});
