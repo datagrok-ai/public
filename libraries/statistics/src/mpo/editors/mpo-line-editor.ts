@@ -81,12 +81,22 @@ export class MpoDesirabilityLineEditor {
 
   constructor(prop: NumericalDesirability, width: number, height: number) {
     this._prop = prop;
+    this.ensureDefaultLine();
     this.barsLayer = new Konva.Layer();
     this.root.style.width = `${width}px`;
     this.root.style.height = `${height}px`;
     this.root.style.position = 'relative';
 
     requestAnimationFrame(() => this.initKonva(width, height));
+  }
+
+  private ensureDefaultLine(): void {
+    if (this._prop.line.length > 0)
+      return;
+
+    const min = this._prop.min ?? 0;
+    const max = this._prop.max ?? 1;
+    this._prop.line = [[min, 0.5], [max, 0.5]];
   }
 
   private isInPlotArea(pos: {x: number, y: number}, width: number, height: number) {
