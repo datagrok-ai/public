@@ -117,8 +117,8 @@ width="800px"/>
 
 :::note developers
 
-You can [add formula lines programmatically](https://datagrok.ai/help/develop/how-to/show-formula-lines).
-
+You can [add formula lines programmatically](../../develop/how-to/viewers/show-formula-lines.md)
+ 
 :::
 
 ## Tooltip
