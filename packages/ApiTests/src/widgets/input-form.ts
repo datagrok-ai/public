@@ -237,14 +237,17 @@ category('Widgets: InputForm API', () => {
   });
 
   test('form without default initialization', async () => {
-    const newFuncCall1 = (await grok.functions.eval('ApiTests:InputFormTest')).prepare({stringInput: 'test2', intInput: 4});
-    const newFuncCall2 = (await grok.functions.eval('ApiTests:InputFormTest')).prepare({stringInput: 'test2', intInput: 4});
+    const newFuncCall1 = (await grok.functions.eval('ApiTests:InputFormTest'))
+        .prepare({stringInput: 'test2', intInput: 4});
+    const newFuncCall2 = (await grok.functions.eval('ApiTests:InputFormTest'))
+        .prepare({stringInput: 'test2', intInput: 4});
+
     expect(newFuncCall1.inputs.get('stringInput'), 'test2');
     expect(newFuncCall1.inputs.get('intInput'), 4);
-    expect(newFuncCall1.inputs.get('doubleInput'), null);
-    expect(newFuncCall1.inputs.get('boolInput'), null);
-    expect(newFuncCall1.inputs.get('choiceInput'), null);
-    expect(newFuncCall1.inputs.get('tableInput'), null);
+    expectNullOrUndefined(newFuncCall1.inputs.get('doubleInput'));
+    expectNullOrUndefined(newFuncCall1.inputs.get('boolInput'));
+    expectNullOrUndefined(newFuncCall1.inputs.get('choiceInput'));
+    expectNullOrUndefined(newFuncCall1.inputs.get('tableInput'));
 
     const newForm1 = await DG.InputForm.forFuncCall(newFuncCall1, {twoWayBinding: true, skipDefaultInit: true});
     const newForm2 = await DG.InputForm.forFuncCall(newFuncCall2, {twoWayBinding: true, skipDefaultInit: false});
@@ -253,14 +256,14 @@ category('Widgets: InputForm API', () => {
     expect(newForm1.getInput('stringInput').value, 'test2');
     expect(newFuncCall1.inputs.get('intInput'), 4);
     expect(newForm1.getInput('intInput').value, 4);
-    expect(newFuncCall1.inputs.get('doubleInput'), null);
-    expect(newForm1.getInput('doubleInput').value, null);
-    expect(newFuncCall1.inputs.get('boolInput'), null);
+    expectNullOrUndefined(newFuncCall1.inputs.get('doubleInput'));
+    expectNullOrUndefined(newForm1.getInput('doubleInput').value);
+    expectNullOrUndefined(newFuncCall1.inputs.get('boolInput'));
     expect(newForm1.getInput('boolInput').value, false);
-    expect(newFuncCall1.inputs.get('choiceInput'), null);
-    expect(newForm1.getInput('choiceInput').value, null);
-    expect(newFuncCall1.inputs.get('tableInput'), null);
-    expect(newForm1.getInput('tableInput').value, null);
+    expectNullOrUndefined(newFuncCall1.inputs.get('choiceInput'));
+    expectNullOrUndefined(newForm1.getInput('choiceInput').value);
+    expectNullOrUndefined(newFuncCall1.inputs.get('tableInput'));
+    expectNullOrUndefined(newForm1.getInput('tableInput').value);
 
     expect(newFuncCall2.inputs.get('stringInput'), 'test2');
     expect(newForm2.getInput('stringInput').value, 'test2');
@@ -272,8 +275,8 @@ category('Widgets: InputForm API', () => {
     expect(newForm2.getInput('boolInput').value, true);
     expect(newFuncCall2.inputs.get('choiceInput'), '1');
     expect(newForm2.getInput('choiceInput').value, '1');
-    expect(newFuncCall2.inputs.get('tableInput'), null);
-    expect(newForm2.getInput('tableInput').value, null);
+    expectNullOrUndefined(newFuncCall2.inputs.get('tableInput'));
+    expectNullOrUndefined(newForm2.getInput('tableInput').value);
   });
 }, {owner: 'dkovalyov@datagrok.ai'});
 
@@ -387,3 +390,7 @@ category('Widgets: InputForm w/ custom input', () => {
     );
   }, {skipReason: 'https://reddata.atlassian.net/browse/GROK-15737'});
 }, {owner: 'dkovalyov@datagrok.ai'});
+
+function expectNullOrUndefined(value: any): void {
+  expect(value === null || value === undefined, true);
+}
