@@ -257,7 +257,6 @@ export class MpoProfileEditor {
     this.rows[newName] = this.rows[oldName];
     delete this.rows[oldName];
 
-    this.render();
     this.emitChange();
   }
 
