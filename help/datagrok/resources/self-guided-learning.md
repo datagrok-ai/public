@@ -44,7 +44,7 @@ To get you started, we've prepared the following resources:
 * [Data access](../../access/access.md)
 * [Databases](../../access/databases/databases.md)
 * [Function annotations](../concepts/functions/func-params-annotation.md)
-* [Developers: Register identifier patterns](../../develop/how-to/grid/register-identifiers.md)
+* [Developers: Register identifier patterns](../../develop/how-to/db/register-identifiers.md)
 
 <h5>Watch</h5>
 

@@ -116,7 +116,7 @@ automatically following the foreign keys defined in the database schema. This is
 powerful tool that lets users get the data with minimum setup. It's also integrated with 
 the smart assistant:
 
-![](../../develop/how-to/grid/chembl-search-everywhere.png)
+![](../../develop/how-to/db/chembl-search-everywhere.png)
 
 Learn more
 - [User Group Meeting 19: Database Identifiers](https://youtu.be/4_NS3q7uvjs?t=2910)

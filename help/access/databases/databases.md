@@ -702,7 +702,7 @@ When you configure the explorer for your database, the system:
 
 This creates a seamless exploration experience where users can navigate complex database schemas without writing queries or understanding the underlying table relationships.
 
-For detailed instructions on setting up and using the DB-explorer library, refer to the [Developers Guide](../../develop/how-to/grid/register-identifiers.md).
+For detailed instructions on setting up and using the DB-explorer library, refer to the [Developers Guide](../../develop/how-to/db/register-identifiers.md).
 
 <!--
 

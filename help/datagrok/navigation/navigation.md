@@ -730,7 +730,7 @@ Datagrok routes your query through several mechanisms at once:
    `AND` and `OR` operators and parentheses.
    </details>
 
-* **Pattern-based identifier search**: Developers can [register custom identifier patterns](../../develop/how-to/grid/register-identifiers.md) (e.g., `CHEMBL\d+` for ChEMBL compound IDs). When a query matches a registered pattern, Datagrok recognizes the identifier, queries connected data sources, executes relevant [functions](../concepts/functions/functions.md), and shows the results accordingly (e.g., as info cards or as [info panes](#info-panes) in the **Context Panel**).
+* **Pattern-based identifier search**: Developers can [register custom identifier patterns](../../develop/how-to/db/register-identifiers.md) (e.g., `CHEMBL\d+` for ChEMBL compound IDs). When a query matches a registered pattern, Datagrok recognizes the identifier, queries connected data sources, executes relevant [functions](../concepts/functions/functions.md), and shows the results accordingly (e.g., as info cards or as [info panes](#info-panes) in the **Context Panel**).
 * **Natural language search patterns**: Pro users can define [natural language search patterns for functions](../concepts/functions/func-params-annotation.md#search-integrated-functions) (e.g., `bioactivity for ${target}`). Searching for "bioactivity for Shigella" automatically executes the function (e.g., runs a query) with "Shigella" as the parameter.
 * **LLM-powered interpretation and orchestration** (in Beta): Adds intelligence on top of deterministic search. The LLM interprets natural-language questions, normalizes fuzzy input, searches documentation, and orchestrates function execution and chaining.
 

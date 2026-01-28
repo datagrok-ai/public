@@ -128,12 +128,82 @@ The DB-explorer library is particularly valuable for:
 * **Research databases**: Drilling down through experiment IDs, sample codes, or publication references
 * **Any domain**: Where data is spread across multiple related tables and users need to quickly explore connections
 
-### Setting up DB-explorer
+### No-code configuration (DB Explorer editor)
 
-<details>
-<summary>Click to expand setup instructions</summary>
+You can configure DB-explorer without writing code directly from the **Database Connection**.
 
-Setting up the DB-explorer library for your database involves creating a plugin, configuring identifier detection, and registering object handlers. Follow these steps:
+1. Go to **Browse > Databases > Connection of choice**.
+2. Right-click a database connection.
+3. Select **Configure Identifiers...**.
+4. In the dialog that appears, select the **Schema** where your identifiers are located (e.g., `public`) and click **OK**.
+
+![Launch DB Explorer editor](laucnh-configurator.gif)
+
+This opens the **Database Explorer editor** for that specific connection and schema. The editor allows you to define how Datagrok detects and displays identifiers for tables in this schema.
+
+#### Main Interface
+
+The editor lists all configuration categories in an accordion. You can expand each section to view, add, edit, or delete items.
+
+* **Import / Export JSON**: Located at the bottom. Use these to backup your configuration or copy it to another environment.
+* **Save**: Validates your configuration (checking for missing required fields) and saves it to the system.
+
+#### Configuration Sections
+
+##### Identifiers
+
+This is the most important section. It defines the "Entry Points"—the semantic types that trigger DB Explorer.
+
+* **Semantic Type**: The specific name used by Datagrok to tag this data (e.g., `CHEMBL_ID`). If you use an existing semantic type, Datagrok will use your configuration to display info panels for it.
+* **Schema, Table & Column**: The specific database table and column where this identifier can be found.
+* **Match Regexp**: (Optional) A JavaScript regular expression to automatically detect this semantic type in imported data (e.g., `^CHEMBL\d+$`).
+    * **Test Regexp**: Click the "test" link to verify your regex against sample data.
+* **Regexp Example**: (Optional) Provides metadata for the detector, helping with autodetection performance and showing user-friendly examples in the search UI.
+    * **Example**: A valid ID (e.g., `CHEMBL1234`).
+    * **Non-Variable Part**: The constant prefix (e.g., `CHEMBL`).
+    * **Regexp Markup**: A display-friendly pattern (e.g., `CHEMBL[0-9]+`).
+
+![DB Explorer Identifiers](add-identifier.png)
+
+##### Joins
+
+Joins allow you to pull in data from related tables when an identifier is clicked. This allows you to construct comprehensive "Cards" shown in tooltips without writing complex SQL queries.
+
+* **From Schema/Table/Column**: The starting table (usually the one containing the identifier).
+* **To Schema/Table/Column**: The related table to join.
+* **Select Columns**: The most powerful part of the join configuration. You select which columns from the related table to include.
+    * You can **alias** columns (e.g., select `canonical_smiles` and rename it to `structure`) to make the output friendlier.
+    * These selected columns become available for display in the context panel and tooltips.
+
+![DB Explorer Joins](configure-joins.png)
+
+##### Explicit References
+
+Datagrok automatically detects foreign key relationships defined in the database schema. However, if your database lacks foreign keys, or if you need to link tables across different schemas, you can define **Explicit References**.
+
+* **Schema/Table/Column** (Source) -> **Ref Schema/Ref Table/Ref Column** (Target).
+* These references are used to build the "Links" section in the context panel, allowing users to drill down from one entity to related records.
+
+##### Presentation & Helpers
+
+These sections refine how data is displayed:
+
+* **Header Names**: When a query returns multiple rows for a single identifier, DB Explorer groups them in an accordion. By default, it names panes "Row 1", "Row 2". Mapping a **Header Name** (e.g., mapping table `orders` to column `order_date`) will label the panes with meaningful data.
+* **Unique Columns**: If a table has no Primary Key defined in the database, DB Explorer might struggle to identify unique rows. Specify a unique column here to fix row selection and linking.
+* **Custom Selected Columns**: By default, DB Explorer shows all columns from the main table plus joined columns. Use this to maintain a cleaner view by explicitly selecting exactly which columns to display for a specific table.
+* **Renderers**: Tell Datagrok how to render specific columns.
+    * `molecule`: Renders chemical structures (SMILES/Molfile).
+    * `helm`: Renders macromolecule sequences.
+    * `imageURL`: Renders an image from a URL string.
+    * `rawImage`: Renders binary image data.
+
+![Configured editor](configured-editor.png)
+
+### Code-based configuration
+
+While the No-code editor is sufficient for most use cases, creating a custom plugin gives you version control, advanced customization options like custom value converters, and the ability to bundle the configuration with your solution.
+
+To set up the DB-explorer library using code, follow these steps:
 
 #### Prerequisites
 
@@ -173,6 +243,7 @@ export const explorerConfig = {
   // Database connection details
   'connectionName': 'CHEMBL',          // Name of your database connection in Datagrok
   'schemaName': 'public',              // Database schema name where the identifiers are located
+  'nqName': 'CHEMBL',                   // Optional: fully-qualified connection name (namespace-qualified)
   'dataSourceName': 'postgres',        // Data source type (postgres, oracle, mysql, etc.)
   
   // Entry points: Define identifiers that trigger exploration
@@ -204,18 +275,34 @@ export const explorerConfig = {
   // This is useful to easily construct 'cards' for the identifiers that show up in tooltips and panels
   'joinOptions': [
     {
+      'fromSchema': 'public',               // Optional: schema for the starting table
       'fromTable': 'molecule_dictionary',     // Starting table
       'columnName': 'molregno',               // Foreign key column in starting table
+      'onSchema': 'public',                 // Optional: schema for the joined table
       'tableName': 'compound_structures',     // Related table to join
       'onColumn': 'molregno',                 // Key column in related table
       'select': ['canonical_smiles', 'standard_inchi']  // Columns to include from related table
     },
     {
+      'fromSchema': 'public',
       'fromTable': 'compound_structural_alerts',
       'columnName': 'alert_id',
+      'onSchema': 'public',
       'tableName': 'structural_alerts',
       'onColumn': 'alert_id',
       'select': ['alert_name']
+    }
+  ],
+
+  // Explicit references: Add relationships missing from DB metadata
+  'explicitReferences': [
+    {
+      'schema': 'public',
+      'table': 'compound_records',
+      'column': 'record_id',
+      'refSchema': 'public',
+      'refTable': 'molecule_dictionary',
+      'refColumn': 'molregno'
     }
   ],
   
@@ -257,7 +344,12 @@ export const explorerConfig = {
       'indication_class',
       'chirality'
     ]
-  }
+  },
+
+  // Custom renderers: Override rendering for specific columns
+  'customRenderers': [
+    { 'table': 'compound_structures', 'column': 'canonical_smiles', 'renderer': 'molecule' }
+  ]
 };
 ```
 
@@ -265,16 +357,21 @@ export const explorerConfig = {
 
 * **connectionName**: The exact name of your database connection as configured in Datagrok's Database Manager.
 * **schemaName**: The database schema containing your tables (e.g., `public`, `dbo`,).
+* **nqName**: Optional fully-qualified connection name (namespace-qualified). Useful when names collide.
 * **dataSourceName**: The type of database (e.g., `postgres`, `oracle`, `mysql`, `mssql`).
 * **entryPoints**: Defines the identifiers that trigger database exploration:
   * **Key**: The semantic type name (used internally by Datagrok to categorize data) (see [Semantic types](../../../govern/catalog/semantic-types.md)).
   * **table/column**: Specifies where this identifier lives in the database.
   * **regexpExample**: Human-readable documentation of the pattern.
-  * **matchRegexp**: JavaScript regular expression to detect this identifier in data.
-* **joinOptions**: Defines additional tables to automatically include when exploring an entity. This creates richer views by combining related data.
+  * **matchRegexp**: JavaScript regular expression to detect this identifier in data (optional if the semantic type is already registered elsewhere).
+* **joinOptions**: Defines additional tables to automatically include when exploring an entity. This creates richer views by combining related data. Use **fromSchema** and **onSchema** when joining across schemas.
+* **explicitReferences**: Defines relationships that are missing in database metadata (schema/table/column → referenced schema/table/column). These are used for building link panels and drill-downs.
 * **headerNames**: Maps table names to user-friendly column names for display purposes.
 * **uniqueColumns**: Tells the system which column uniquely identifies each row in tables that don't have obvious primary keys.
 * **customSelectedColumns**: Overrides which columns to display for specific tables, allowing you to hide irrelevant columns.
+* **customRenderers**: Forces a renderer for specific columns. Supported values include `rawImage`, `imageURL`, `molecule`, `helm`.
+
+<!-- TODO: Add GIF or screenshot of a full DB-explorer configuration JSON (entry points + joins + explicit references) -->
 
 #### Step 4: Create the registration handler
 
@@ -385,5 +482,3 @@ For more advanced usage, refer to the [DB-explorer library source code](https://
 #### Examples
 
 The [ChEMBL plugin](https://github.com/datagrok-ai/public/tree/master/packages/Chembl) provides a complete, real-world example of DB-explorer implementation for exploring the ChEMBL database.
-
-</details>
