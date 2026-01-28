@@ -121,6 +121,28 @@ You can [add formula lines programmatically](https://datagrok.ai/help/develop/ho
 
 :::
 
+## Annotation regions
+
+Annotation regions allow you to highlight areas of interest and annotate data. Like formula lines, they can be applied either to the current viewer or to the entire dataframe and appear in any viewer with matching axes.
+
+Annotation regions support overlapping areas and data selection, and behave consistently with log scales, inverted axes, axis swapping, and other axis transformations.
+
+### Adding annotation regions
+
+Right-click a viewer and select **Tools > Formula Lines…**, then click **ADD NEW** and choose one of the following:
+
+- **Region - Formula Lines**: Define the region by entering two formulas that set the upper and lower boundaries.
+- **Region - Draw Rectangle**: Click and drag on the viewer to draw a rectangular region.
+- **Region - Draw Lasso**: Click points or drag freely to draw a polygonal (lasso) region.
+- **Annotation Regions History**:  Select one of the previously created annotation regions from the history menu.
+
+For **Draw Rectangle** and **Draw Lasso** regions, the viewer enters drawing mode automatically,allowing you to draw directly on the viewer within the **Formula Lines** dialog.
+Alternatively, you can draw a region directly on the viewer by right-clicking and selecting **Tools > Draw Annotation Region**.
+
+To customize a region, provide a description and configure visual properties such as fill color, outline, and transparency.
+
+![Annotation Regions](img/annotation-regions.gif)
+
 ## Tooltip
 
 By default, a scatterplot inherits the tooltip from the grid. However, you can
