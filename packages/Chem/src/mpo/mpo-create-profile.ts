@@ -108,8 +108,7 @@ export class MpoProfileCreateView {
     });
 
     this.saveButton.style.display = 'none';
-    this.view.setRibbonPanels([[this.saveButton]]);
-    this.tableView.setRibbonPanels([[this.saveButton]]);
+    (this.isEditMode ? this.view : this.tableView).setRibbonPanels([[this.saveButton]]);
   }
 
   private initControls(showMethod: boolean) {
