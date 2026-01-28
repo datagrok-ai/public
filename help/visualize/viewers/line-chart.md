@@ -22,6 +22,11 @@ General:
 
 ![Line Chart](../../uploads/gifs/line-chart.gif "Line chart")
 
+## Tools
+
+- **Formula lines**: Add reference lines or bands defined by mathematical formulas to analyze trends and thresholds. See [Scatterplot: Formula lines](scatter-plot.md#formula-lines) for details.
+- **Annotation regions**: Highlight and annotate areas of interest on the chart using rectangular, lasso, or formula-based regions. See [Scatterplot: Annotation regions](scatter-plot.md#annotation-regions) for details.
+
 ## Statistical Process Control
 
 Line chart supports Statistical Process Control (SPC) features out of the box, including contol limits and adjustable rules.
