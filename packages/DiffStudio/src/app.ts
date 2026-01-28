@@ -34,11 +34,12 @@ import {unusedFileName, getTableFromLastRows, getInputsTable, getLookupsInfo, ha
   noModels,
   removeTitleBar} from './utils';
 
-import {ModelError, showModelErrorHint, getIsNotDefined, getUnexpected, getNullOutput} from './error-utils';
+import {showModelErrorHint, getIsNotDefined, getUnexpected, getNullOutput} from './error-utils';
 
 import '../css/app-styles.css';
 
 import {_package, PackageFunctions} from './package';
+import { getOptions, ModelError } from './shared-utils';
 
 const COLORS = DG.Color.categoricalPalette;
 const COLORS_COUNT = COLORS.length;
@@ -215,11 +216,6 @@ function getLineChartOptions(colNames: string[]): Partial<DG.ILineChartSettings>
   };
 }
 
-/**  String-to-value */
-const strToVal = (s: string) => {
-  const num = Number(s);
-  return !isNaN(num) ? num : s === 'true' ? true : s === 'false' ? false : s;
-};
 
 /** Browse properties */
 type Browsing = {
@@ -1252,84 +1248,7 @@ export class DiffStudio {
 
   /** Return options with respect to the model input specification */
   public static getOptions(name: string, modelInput: Input, modelBlock: string, startingInputs?: Map<string,number>) {
-    const options: DG.IProperty = {
-      name: name,
-      defaultValue: modelInput.value,
-      type: DG.TYPE.FLOAT,
-      inputType: INPUT_TYPE.FLOAT,
-    };
-
-    if (modelInput.annot !== null) {
-      let annot = modelInput.annot;
-      let descr: string | undefined = undefined;
-
-      let posOpen = annot.indexOf(BRACKET_OPEN);
-      let posClose = annot.indexOf(BRACKET_CLOSE);
-
-      if (posOpen !== -1) {
-        if (posClose === -1) {
-          throw new ModelError(
-            `${ERROR_MSG.MISSING_CLOSING_BRACKET}. Correct annotation in the **${modelBlock}** block.`,
-            LINK.INTERFACE,
-            annot,
-          );
-        }
-
-        descr = annot.slice(posOpen + 1, posClose);
-
-        annot = annot.slice(0, posOpen);
-      }
-
-      posOpen = annot.indexOf(BRACE_OPEN);
-      posClose = annot.indexOf(BRACE_CLOSE);
-
-      if (posOpen >= posClose) {
-        throw new ModelError(
-          `${ERROR_MSG.INCORRECT_BRACES_USE}. Correct annotation in the ***${modelBlock}** block.`,
-          LINK.INTERFACE,
-          annot,
-        );
-      }
-
-      let pos: number;
-      let key: string;
-      let val: string;
-
-      annot.slice(posOpen + 1, posClose).split(ANNOT_SEPAR).forEach((str) => {
-        pos = str.indexOf(CONTROL_SEP);
-
-        if (pos === -1) {
-          throw new ModelError(
-            `${ERROR_MSG.MISSING_COLON}. Correct annotation in the **${modelBlock}** block.`,
-            LINK.INTERFACE,
-            annot,
-          );
-        }
-
-        key = str.slice(0, pos).trim();
-        val = str.slice(pos + 1).trim();
-
-        options[key !== 'caption' ? key : 'friendlyName'] = strToVal(val);
-      });
-
-      options.description = descr ?? '';
-      options.friendlyName = options.friendlyName ?? options.name;
-      options.caption = options.friendlyName;
-    }
-
-    if (modelBlock === CONTROL_EXPR.ARG) {
-      options.friendlyName = options.name;
-      options.caption = options.name;
-      options.name = ARG_INPUT_KEYS_MAPPING[options.name];
-    }
-
-    if (startingInputs) {
-      options.defaultValue = startingInputs
-        .get(options.name!.replace(' ', '').toLowerCase()) ?? options.defaultValue;
-      modelInput.value = options.defaultValue;
-    }
-
-    return options;
+    return getOptions(name, modelInput, modelBlock, startingInputs);
   }; // getOptions
 
   /** Generate model inputs */

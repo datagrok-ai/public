@@ -11,7 +11,7 @@
 import {CONTROL_TAG, CONTROL_TAG_LEN, DF_NAME, CONTROL_EXPR, LOOP, UPDATE, MAX_LINE_CHART,
   SOLVER_OPTIONS_RANGES, TINY, STEP_RATIO} from './constants';
 
-import {ModelError} from './error-utils';
+import {ModelError} from './shared-utils';
 
 // Scripting specific constants
 export const CONTROL_SEP = ':';
@@ -43,9 +43,7 @@ const POW_IDX = MATH_FUNCS.indexOf('pow');
 const MATH_CONSTS = ['PI', 'E'];
 
 /** Default meta */
-const defaultMetas = `//meta.runOnOpen: true
-//meta.runOnInput: true
-//meta.features: {"sens-analysis": true, "fitting": true}`;
+const defaultMetas = `//meta.runOnOpen: true\n//meta.runOnInput: true\n//meta.features: {"sens-analysis": true, "fitting": true}\n`;
 
 /** Numerical input specification */
 export type Input = {
@@ -655,15 +653,20 @@ function getInputSpec(inp: Input): string {
   return `${inp.value}`;
 }
 
-/** Return annotation line specifying viewers */
-function getViewersLine(ivp: IVP): string {
+export function getViewersSpec(ivp: IVP) {
   const outputColsCount = (ivp.outputs) ? ivp.outputs.size : ivp.inits.size;
   const multiAxis = (outputColsCount > MAX_LINE_CHART - 1) ? 'true' : 'false';
 
   const segments = (ivp.updates) ? ` segmentColumnName: "${STAGE_COL_NAME}",` : '';
 
   // eslint-disable-next-line max-len
-  return `viewer: Line chart(block: 100, multiAxis: "${multiAxis}",${segments} multiAxisLegendPosition: "RightCenter", autoLayout: "false", showAggrSelectors: "false") | Grid(block: 100)`;
+  return `Line chart(block: 100, multiAxis: "${multiAxis}",${segments} multiAxisLegendPosition: "RightCenter", autoLayout: "false", showAggrSelectors: "false") | Grid(block: 100)`;
+}
+
+/** Return annotation line specifying viewers */
+function getViewersLine(ivp: IVP): string {
+  const spec = getViewersSpec(ivp);
+  return `viewer: ${spec}`;
 }
 
 /** Generate annotation lines */

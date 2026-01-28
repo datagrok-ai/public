@@ -5,28 +5,10 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {LINK, MISC, UI_TIME} from './ui-constants';
+import {ModelError} from './shared-utils';
 
 import '../css/app-styles.css';
 
-/** Diff Studio model error */
-export class ModelError extends Error {
-  private helpUrl: string;
-  private toHighlight: string = undefined;
-
-  constructor(message: string, helpUrl: string, toHighlight?: string) {
-    super(message);
-    this.helpUrl = helpUrl;
-    this.toHighlight = toHighlight;
-  }
-
-  public getHelpUrl() {
-    return this.helpUrl;
-  }
-
-  public getToHighlight() {
-    return this.toHighlight;
-  }
-}; // ModelError
 
 /** Show hint indicating the model error */
 export function showModelErrorHint(err: ModelError, tabControl: DG.TabControl) {
