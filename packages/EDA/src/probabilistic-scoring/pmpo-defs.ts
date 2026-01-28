@@ -13,6 +13,8 @@ export type BasicStats = {
   desStd: number,
   nonDesAvg: number,
   nonDesStd: number,
+  min: number,
+  max: number,
 };
 
 /** Descriptor statistics including basic stats, t-statistics and p-value */
@@ -44,6 +46,7 @@ export type PmpoParams = BasicStats & Cutoff & SigmoidParams & {
   intersections: number[],
   x0: number,
   xBound: number,
+  inflection: number,
 };
 
 export type CorrelationTriple = [string, string, number];
@@ -76,14 +79,26 @@ export const WEIGHT_TITLE = 'Weight';
 export const SCORES_TITLE = 'pMPO score';
 export const DESIRABILITY_COL_NAME = 'Desirability';
 
+/** Default p-value threshold for filtering descriptors */
+export const P_VAL_TRES_DEFAULT = 0.01;
+
 /** Minimum p-value threshold for filtering descriptors */
 export const P_VAL_TRES_MIN = 0.01;
+
+/** Default R-squared threshold for filtering correlated descriptors */
+export const R2_DEFAULT = 0.53;
 
 /** Minimum R-squared threshold for filtering correlated descriptors */
 export const R2_MIN = 0.01;
 
+/** Default q-cutoff for descriptors in the pMPO model */
+export const Q_CUTOFF_DEFAULT = 0.05;
+
 /** Minimum q-cutoff for descriptors in the pMPO model */
 export const Q_CUTOFF_MIN = 0.01;
+
+/** Default setting for using sigmoid correction in pMPO */
+export const USE_SIGMOID_DEFAULT = true;
 
 /** Colors used for selected and skipped descriptors */
 export enum COLORS {
@@ -106,3 +121,39 @@ export type DesirabilityProfileProperties = Record<string, {
 
 export const STAT_GRID_HEIGHT = 75;
 export const DESIRABILITY_COLUMN_WIDTH = 305;
+
+const POSITIVE_BASIC_RANGE_SIGMA_COEFFS = [0, 0.25, 0.5, 1, 1.5, 2, 2.5, 3, 4, 5];
+
+/** Basic range sigma coefficients for desirability profile points */
+export const BASIC_RANGE_SIGMA_COEFFS = POSITIVE_BASIC_RANGE_SIGMA_COEFFS
+  .slice(1)
+  .map((v) => -v)
+  .reverse()
+  .concat(POSITIVE_BASIC_RANGE_SIGMA_COEFFS);
+
+const EXTRA_RANGE_SIGMA_COEFFS = [0.12, 0.37, 0.63, 0.75, 0.88, 1.25, 1.75, 2.25, 2.75];
+const EXTENDED_POSITIVE_RANGE_SIGMA_COEFFS = POSITIVE_BASIC_RANGE_SIGMA_COEFFS.concat(EXTRA_RANGE_SIGMA_COEFFS).sort();
+
+/** Extended range sigma coefficients for desirability profile points */
+export const EXTENDED_RANGE_SIGMA_COEFFS = EXTENDED_POSITIVE_RANGE_SIGMA_COEFFS
+  .slice(1)
+  .map((v) => -v)
+  .reverse()
+  .concat(EXTENDED_POSITIVE_RANGE_SIGMA_COEFFS);
+
+/** Confusion matrix type */
+export type ConfusionMatrix = {
+  TP: number,
+  TN: number,
+  FP: number,
+  FN: number,
+};
+
+export const TPR_TITLE = 'TPR (Sensitivity)';
+export const FPR_TITLE = 'FPR (1 - Specificity)';
+
+const ROC_CURVE_POINTS = 100;
+export const ROC_TRESHOLDS_COUNT = ROC_CURVE_POINTS + 1;
+
+/** ROC curve thresholds from 0.0 to 1.0 */
+export const ROC_TRESHOLDS: number[] = Array.from({length: ROC_TRESHOLDS_COUNT}, (_, i) => i / ROC_CURVE_POINTS);

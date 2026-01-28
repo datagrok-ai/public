@@ -10,15 +10,28 @@ import {MpoProfileEditor} from '@datagrok-libraries/statistics/src/mpo/mpo-profi
 
 import '../../css/pmpo.css';
 
-import {getDesiredTables, getDescriptorStatistics, normalPdf, sigmoidS} from './stat-tools';
+import {getDesiredTables, getDescriptorStatistics, gaussDesirabilityFunc, sigmoidS, getConfusionMatrix, getAuc} from './stat-tools';
 import {MIN_SAMPLES_COUNT, PMPO_NON_APPLICABLE, DescriptorStatistics, P_VAL_TRES_MIN, DESCR_TITLE,
   R2_MIN, Q_CUTOFF_MIN, PmpoParams, SCORES_TITLE, DESCR_TABLE_TITLE, PMPO_COMPUTE_FAILED, SELECTED_TITLE,
-  P_VAL, DESIRABILITY_COL_NAME, STAT_GRID_HEIGHT, DESIRABILITY_COLUMN_WIDTH, WEIGHT_TITLE} from './pmpo-defs';
+  P_VAL, DESIRABILITY_COL_NAME, STAT_GRID_HEIGHT, DESIRABILITY_COLUMN_WIDTH, WEIGHT_TITLE,
+  P_VAL_TRES_DEFAULT, R2_DEFAULT, Q_CUTOFF_DEFAULT,
+  USE_SIGMOID_DEFAULT,
+  ROC_TRESHOLDS,
+  ROC_TRESHOLDS_COUNT,
+  FPR_TITLE,
+  TPR_TITLE} from './pmpo-defs';
 import {addSelectedDescriptorsCol, getDescriptorStatisticsTable, getFilteredByPvalue, getFilteredByCorrelations,
   getModelParams, getDescrTooltip, saveModel, getScoreTooltip, getDesirabilityProfileJson, getCorrelationTriples,
   addCorrelationColumns, setPvalColumnColorCoding, setCorrColumnColorCoding} from './pmpo-utils';
 import {getOutputPalette} from '../pareto-optimization/utils';
 import {OPT_TYPE} from '../pareto-optimization/defs';
+
+export type PmpoTrainingResult = {
+  params: Map<string, PmpoParams>,
+  descrStatsTable: DG.DataFrame,
+  selectedByPvalue: string[],
+  selectedByCorr: string[],
+};
 
 /** Class implementing probabilistic MPO (pMPO) model training and prediction */
 export class Pmpo {
@@ -131,8 +144,56 @@ export class Pmpo {
     return true;
   } // isTableValid
 
+  /** Fits the pMPO model to the given data and returns training results */
+  static fit(df: DG.DataFrame, descriptors: DG.ColumnList, desirability: DG.Column,
+    pValTresh: number, r2Tresh: number, qCutoff: number): PmpoTrainingResult {
+    if (!Pmpo.isApplicable(descriptors, desirability, pValTresh, r2Tresh, qCutoff))
+      throw new Error('Failed to train pMPO model: the method is not applicable to the inputs');
+
+    const descriptorNames = descriptors.names();
+    const {desired, nonDesired} = getDesiredTables(df, desirability);
+
+    // Compute descriptors' statistics
+    const descrStats = new Map<string, DescriptorStatistics>();
+    descriptorNames.forEach((name) => {
+      descrStats.set(name, getDescriptorStatistics(desired.col(name)!, nonDesired.col(name)!));
+    });
+    const descrStatsTable = getDescriptorStatisticsTable(descrStats);
+
+    // Set p-value column color coding
+    setPvalColumnColorCoding(descrStatsTable, pValTresh);
+
+    // Filter by p-value
+    const selectedByPvalue = getFilteredByPvalue(descrStatsTable, pValTresh);
+
+    // Compute correlation triples
+    const correlationTriples = getCorrelationTriples(descriptors, selectedByPvalue);
+
+    // Filter by correlations
+    const selectedByCorr = getFilteredByCorrelations(descriptors, selectedByPvalue, descrStats, r2Tresh, correlationTriples);
+
+    // Add the Selected column
+    addSelectedDescriptorsCol(descrStatsTable, selectedByCorr);
+
+    // Add correlation columns
+    addCorrelationColumns(descrStatsTable, descriptorNames, correlationTriples, selectedByCorr);
+
+    // Set correlation columns color coding
+    setCorrColumnColorCoding(descrStatsTable, descriptorNames, r2Tresh);
+
+    // Compute pMPO parameters - training
+    const params = getModelParams(desired, nonDesired, selectedByCorr, qCutoff);
+
+    return {
+      params: params,
+      descrStatsTable: descrStatsTable,
+      selectedByPvalue: selectedByPvalue,
+      selectedByCorr: selectedByCorr,
+    };
+  } // fitModelParams
+
   /** Predicts pMPO scores for the given data frame using provided pMPO parameters */
-  static predict(df: DG.DataFrame, params: Map<string, PmpoParams>, predictionName: string): DG.Column {
+  static predict(df: DG.DataFrame, params: Map<string, PmpoParams>, useSigmoid: boolean, predictionName: string): DG.Column {
     const count = df.rowCount;
     const scores = new Float64Array(count).fill(0);
     let x = 0;
@@ -142,12 +203,13 @@ export class Pmpo {
       const col = df.col(name);
 
       if (col == null)
-        throw new Error(`Filed to apply pMPO: inconsistent data, no column "${name}" in the table "${df.name}"`);
+        throw new Error(`Failed to apply pMPO: inconsistent data, no column "${name}" in the table "${df.name}"`);
 
       const vals = col.getRawData();
       for (let i = 0; i < count; ++i) {
         x = vals[i];
-        scores[i] += param.weight * normalPdf(x, param.desAvg, param.desStd) * sigmoidS(x, param.x0, param.b, param.c);
+        scores[i] += param.weight * gaussDesirabilityFunc(x, param.desAvg, param.desStd) *
+         (useSigmoid ? sigmoidS(x, param.cutoff, param.b, param.c) : 1);
       }
     });
 
@@ -168,6 +230,13 @@ export class Pmpo {
   private predictionName = SCORES_TITLE;
 
   private desirabilityProfileRoots = new Map<string, HTMLElement>();
+
+  private rocCurve = DG.Viewer.scatterPlot(this.initTable, {
+    showTitle: true,
+    showSizeSelector: false,
+    showColorSelector: false,
+  });
+
   constructor(df: DG.DataFrame) {
     this.table = df;
     this.view = grok.shell.tableView(df.name) ?? grok.shell.addTableView(df);
@@ -372,7 +441,7 @@ export class Pmpo {
   } // updateGrid
 
   /** Updates the desirability profile data */
-  private updateDesirabilityProfileData(descrStatsTable: DG.DataFrame): void {
+  private updateDesirabilityProfileData(descrStatsTable: DG.DataFrame, useSigmoidalCorrection: boolean): void {
     if (this.params == null)
       return;
 
@@ -380,7 +449,7 @@ export class Pmpo {
     this.desirabilityProfileRoots.forEach((root) => root.remove());
     this.desirabilityProfileRoots.clear();
 
-    const desirabilityProfile = getDesirabilityProfileJson(this.params, '', '');
+    const desirabilityProfile = getDesirabilityProfileJson(this.params, useSigmoidalCorrection, '', '', true);
 
     // Set weights
     const descrNames = descrStatsTable.col(DESCR_TITLE)!.toList();
@@ -416,48 +485,59 @@ export class Pmpo {
     });
   } // updateDesirabilityProfileData
 
+  /** Updates the ROC curve viewer with the given desirability (labels) and prediction columns */
+  private updateRocCurve(desirability: DG.Column, prediction: DG.Column): void {
+    const tpr = new Float32Array(ROC_TRESHOLDS_COUNT);
+    const fpr = new Float32Array(ROC_TRESHOLDS_COUNT);
+
+    // Compute TPR and FPR for each threshold
+    for (let i = 0; i < ROC_TRESHOLDS_COUNT; ++i) {
+      const confusion = getConfusionMatrix(desirability, prediction, ROC_TRESHOLDS[i]);
+      tpr[i] = (confusion.TP + confusion.FN) > 0 ? confusion.TP / (confusion.TP + confusion.FN) : 0;
+      fpr[i] = (confusion.FP + confusion.TN) > 0 ? confusion.FP / (confusion.FP + confusion.TN) : 0;
+    }
+
+    const rocDf = DG.DataFrame.fromColumns([
+      DG.Column.fromFloat32Array(FPR_TITLE, fpr),
+      DG.Column.fromFloat32Array(TPR_TITLE, tpr),
+    ]);
+
+    // Add baseline
+    rocDf.meta.formulaLines.addLine({
+      title: 'Non-informative baseline',
+      formula: `\${${TPR_TITLE}} = \${${FPR_TITLE}}`,
+      width: 1,
+      style: 'dashed',
+      min: 0,
+      max: 1,
+    });
+
+    const auc = getAuc(tpr, fpr);
+
+    this.rocCurve.dataFrame = rocDf;
+    this.rocCurve.setOptions({
+      xColumnName: FPR_TITLE,
+      yColumnName: TPR_TITLE,
+      linesOrderColumnName: FPR_TITLE,
+      linesWidth: 5,
+      markerType: 'dot',
+      title: `ROC Curve (AUC = ${auc.toFixed(3)})`,
+    });
+  } // updateRocCurve
+
   /** Fits the pMPO model to the given data and updates the viewers accordingly */
   private fitAndUpdateViewers(df: DG.DataFrame, descriptors: DG.ColumnList, desirability: DG.Column,
-    pValTresh: number, r2Tresh: number, qCutoff: number): void {
-    if (!Pmpo.isApplicable(descriptors, desirability, pValTresh, r2Tresh, qCutoff))
-      throw new Error('Failed to train pMPO model: the method is not applicable to the inputs');
+    pValTresh: number, r2Tresh: number, qCutoff: number, useSigmoid: boolean): void {
+    const trainResult = Pmpo.fit(df, descriptors, desirability, pValTresh, r2Tresh, qCutoff);
+    this.params = trainResult.params;
+    const descrStatsTable = trainResult.descrStatsTable;
+    const selectedByPvalue = trainResult.selectedByPvalue;
+    const selectedByCorr = trainResult.selectedByCorr;
 
     const descriptorNames = descriptors.names();
-    const {desired, nonDesired} = getDesiredTables(df, desirability);
-
-    // Compute descriptors' statistics
-    const descrStats = new Map<string, DescriptorStatistics>();
-    descriptorNames.forEach((name) => {
-      descrStats.set(name, getDescriptorStatistics(desired.col(name)!, nonDesired.col(name)!));
-    });
-    const descrStatsTable = getDescriptorStatisticsTable(descrStats);
-
-    // Set p-value column color coding
-    setPvalColumnColorCoding(descrStatsTable, pValTresh);
-
-    // Filter by p-value
-    const selectedByPvalue = getFilteredByPvalue(descrStatsTable, pValTresh);
-
-    // Compute correlation triples
-    const correlationTriples = getCorrelationTriples(descriptors, selectedByPvalue);
-
-    // Filter by correlations
-    const selectedByCorr = getFilteredByCorrelations(descriptors, selectedByPvalue, descrStats, r2Tresh, correlationTriples);
-
-    // Add the Selected column
-    addSelectedDescriptorsCol(descrStatsTable, selectedByCorr);
-
-    // Add correlation columns
-    addCorrelationColumns(descrStatsTable, descriptorNames, correlationTriples, selectedByCorr);
-
-    // Set correlation columns color coding
-    setCorrColumnColorCoding(descrStatsTable, descriptorNames, r2Tresh);
-
-    // Compute pMPO parameters - training
-    this.params = getModelParams(desired, nonDesired, selectedByCorr, qCutoff);
 
     //const weightsTable = getWeightsTable(this.params);
-    const prediction = Pmpo.predict(df, this.params, this.predictionName);
+    const prediction = Pmpo.predict(df, this.params, useSigmoid, this.predictionName);
 
     // Mark predictions with a color
     prediction.colors.setLinear(getOutputPalette(OPT_TYPE.MAX), {min: prediction.stats.min, max: prediction.stats.max});
@@ -469,10 +549,13 @@ export class Pmpo {
     this.updateGrid();
 
     // Update desirability profile roots map
-    this.updateDesirabilityProfileData(descrStatsTable);
+    this.updateDesirabilityProfileData(descrStatsTable, useSigmoid);
 
     // Update statistics grid
     this.updateStatisticsGrid(descrStatsTable, descriptorNames, selectedByPvalue, selectedByCorr);
+
+    // Update ROC curve
+    this.updateRocCurve(desirability, prediction);
   } // fitAndUpdateViewers
 
   /** Runs the pMPO model training application */
@@ -488,7 +571,11 @@ export class Pmpo {
     if (gridNode == null)
       throw new Error('Failed to train pMPO: missing a grid in the table view.');
 
-    dockMng.dock(this.statGrid, DG.DOCK_TYPE.DOWN, gridNode, undefined, 0.5);
+    // Dock statistics grid
+    const statGridNode = dockMng.dock(this.statGrid, DG.DOCK_TYPE.DOWN, gridNode, undefined, 0.5);
+
+    // Dock ROC curve
+    dockMng.dock(this.rocCurve, DG.DOCK_TYPE.RIGHT, statGridNode, undefined, 0.3);
 
     this.setRibbons();
   } // runTrainingApp
@@ -505,10 +592,11 @@ export class Pmpo {
         this.fitAndUpdateViewers(
           this.table,
           DG.DataFrame.fromColumns(descrInput.value).columns,
-        this.table.col(desInput.value!)!,
-        pInput.value!,
-        rInput.value!,
-        qInput.value!,
+          this.table.col(desInput.value!)!,
+          pInput.value!,
+          rInput.value!,
+          qInput.value!,
+          useSigmoidInput.value,
         );
       } catch (err) {
         grok.shell.error(err instanceof Error ? err.message : PMPO_COMPUTE_FAILED + ': the platform issue.');
@@ -542,7 +630,7 @@ export class Pmpo {
     });
     form.append(desInput.root);
 
-    const header = ui.h2('Thresholds');
+    const header = ui.h2('Settings');
     ui.tooltip.bind(header, 'Settings of the pMPO model training.');
     form.append(header);
 
@@ -552,8 +640,8 @@ export class Pmpo {
       min: P_VAL_TRES_MIN,
       max: 1,
       step: 0.01,
-      value: 0.05,
-      tooltipText: 'Descriptors with p-values above this threshold are excluded.',
+      value: P_VAL_TRES_DEFAULT,
+      tooltipText: 'P-value threshold. Descriptors with p-values above this threshold are excluded.',
       onValueChanged: (value) => {
         if ((value != null) && (value >= P_VAL_TRES_MIN) && (value <= 1))
           runComputations();
@@ -565,11 +653,11 @@ export class Pmpo {
     const rInput = ui.input.float('R²', {
       nullable: false,
       min: R2_MIN,
-      value: 0.5,
+      value: R2_DEFAULT,
       max: 1,
       step: 0.01,
       // eslint-disable-next-line max-len
-      tooltipText: 'Descriptors with squared correlation above this threshold are considered highly correlated. Among them, the descriptor with the lower p-value is retained.',
+      tooltipText: 'Squared correlation threshold. Descriptors with squared correlation above this threshold are considered highly correlated. Among them, the descriptor with the lower p-value is retained.',
       onValueChanged: (value) => {
         if ((value != null) && (value >= R2_MIN) && (value <= 1))
           runComputations();
@@ -581,7 +669,7 @@ export class Pmpo {
     const qInput = ui.input.float('q-cutoff', {
       nullable: false,
       min: Q_CUTOFF_MIN,
-      value: 0.05,
+      value: Q_CUTOFF_DEFAULT,
       max: 1,
       step: 0.01,
       tooltipText: 'Q-cutoff for the pMPO model computation.',
@@ -592,6 +680,16 @@ export class Pmpo {
     });
     form.append(qInput.root);
 
+    // use sigmoid correction
+    const useSigmoidInput = ui.input.bool('\u03C3 correction', {
+      value: USE_SIGMOID_DEFAULT,
+      tooltipText: 'Use the sigmoidal correction to the weighted Gaussian scores.',
+      onValueChanged: (_value) => {
+        runComputations();
+      },
+    });
+    form.append(useSigmoidInput.root);
+
     setTimeout(() => runComputations(), 10);
 
     // Save model button
@@ -601,7 +699,7 @@ export class Pmpo {
         return;
       }
 
-      saveModel(this.params, this.table.name);
+      saveModel(this.params, this.table.name, useSigmoidInput.value);
     }, 'Save model as platform file.');
     form.append(saveBtn);
 

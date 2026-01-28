@@ -544,10 +544,3 @@ export function paretoFrontViewer() : any {
 export function trainPmpo() : void {
   PackageFunctions.trainPmpo();
 }
-
-//description: Apply trained probabilistic multi-parameter optimization (pMPO) model to score samples
-//input: dataframe table 
-//input: file file 
-export async function applyPmpo(table: DG.DataFrame, file: DG.FileInfo) : Promise<void> {
-  await PackageFunctions.applyPmpo(table, file);
-}
