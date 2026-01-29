@@ -1,8 +1,8 @@
-//name: IvpPreparser
+
+//name: ivpLanguagePreparser
 //language: nodejs
 //input: string code
 //output: string result
-
 ;// ./src/constants.ts
 // Control constants
 const CONTROL_TAG = '#';

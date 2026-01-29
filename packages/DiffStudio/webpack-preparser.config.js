@@ -1,6 +1,12 @@
 const path = require('path');
 const { Compilation, sources } = require('webpack');
 
+const header = `
+//name: ivpLanguagePreparser
+//language: nodejs
+//input: string code
+//output: string result`;
+
 class AddAnnotationsPlugin {
   apply(compiler) {
     compiler.hooks.thisCompilation.tap('Replace', (compilation) => {
@@ -12,7 +18,6 @@ class AddAnnotationsPlugin {
         () => {
           const file = compilation.getAsset('preparser.js');
           const origSrc = file.source.source();
-          const header = '//name: IvpPreparser\n//language: nodejs\n//input: string code\n//output: string result\n';
           compilation.updateAsset(
             'preparser.js',
             new sources.RawSource(header + origSrc.split("\n").slice(1).join("\n"))

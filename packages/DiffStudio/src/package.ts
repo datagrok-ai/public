@@ -257,13 +257,11 @@ export class PackageFunctions {
   static ivpLanguageParser(@grok.decorators.param({ type: 'string' }) code: string): DG.Script  {
     const ivp = getIVP(code);
 
-    // not working in the core yet
-    // const lookupsOptions = ivp.inputsLookup ? [getLookupsInfo(ivp.inputsLookup) as any] : [];
-    const lookupsOptions = [];
-    const argOptions = ARG_INPUT_KEYS.map((key) => DiffStudio.getOptions(key, ivp.arg[key], CONTROL_EXPR.ARG));
-    const initsOptions =  [...ivp.inits.entries()].map(([key, val]) => DiffStudio.getOptions(key, val, CONTROL_EXPR.INITS));
-    const paramsOptions = ivp.params ? [...ivp.params.entries()].map(([key, val]) => DiffStudio.getOptions(key, val, CONTROL_EXPR.PARAMS)) : [];
-    const loopOptions = ivp.loop ? [DiffStudio.getOptions(LOOP.COUNT_NAME, ivp.loop.count, CONTROL_EXPR.LOOP)] : [];
+    const lookupsOptions = ivp.inputsLookup ? [getLookupsInfo(ivp.inputsLookup) as any] : [];
+    const argOptions = ARG_INPUT_KEYS.map((key) => getOptions(key, ivp.arg[key], CONTROL_EXPR.ARG));
+    const initsOptions =  [...ivp.inits.entries()].map(([key, val]) => getOptions(key, val, CONTROL_EXPR.INITS));
+    const paramsOptions = ivp.params ? [...ivp.params.entries()].map(([key, val]) => getOptions(key, val, CONTROL_EXPR.PARAMS)) : [];
+    const loopOptions = ivp.loop ? [getOptions(LOOP.COUNT_NAME, ivp.loop.count, CONTROL_EXPR.LOOP)] : [];
 
     const inputs: DG.Property[] = [
       ...lookupsOptions, ...argOptions, ...initsOptions, ...paramsOptions, ...loopOptions
@@ -275,8 +273,9 @@ export class PackageFunctions {
     const dfProp = DG.Property.fromOptions({
       name: DF_NAME,
       type: DG.TYPE.DATA_FRAME,
+      caption: ivp.name,
       // @ts-ignore:next-line
-      viewer: `Grid() | Line chart(multiAxis: true, allowEdit: false, segmentColumnName: ${STAGE_COL_NAME})`
+      viewer: getViewersSpec(ivp),
     });
 
     const ivpScript = DG.Script.fromParams(inputs, [dfProp], code);
