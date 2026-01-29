@@ -4,8 +4,7 @@ import * as ui from 'datagrok-api/ui';
 import {studies} from '../utils/app-utils';
 import {CDISC_STANDARD} from '../utils/types';
 import {createVisitDayStrCol} from '../data-preparation/data-preparation';
-import {DOMAIN, PLANNED_TRT_ARM, SUBJECT_ID, VISIT_DAY_STR} from '../constants/columns-constants';
-import {addDomainFilters} from '../utils/utils';
+import {DOMAIN, PLANNED_TRT_ARM, SEX, SUBJECT_ID, VISIT_DAY_STR} from '../constants/columns-constants';
 
 export function createMeasurementProfileTableView(studyId: string): any {
   const isSend = studies[studyId].config.standard === CDISC_STANDARD.SEND;
@@ -20,11 +19,26 @@ export function createMeasurementProfileTableView(studyId: string): any {
         createVisitDayStrCol(it);
         requiredColumns = requiredColumns.concat([VISIT_DAY_STR]);
       }
+      // if there is a category column, create temporary test column name, containing both category and test name
+      const catColName = `${it.name.toUpperCase()}CAT`;
+      const containsCatCol = it.col(catColName);
+      const fullTestNameCol = 'full_test_name';
+      if (containsCatCol) {
+        it.columns.addNewString(fullTestNameCol)
+          .init((i) => `${it.get(`${it.name.toUpperCase()}TEST`, i)} (${it.get(catColName, i)})`);
+        requiredColumns.push(fullTestNameCol);
+        requiredColumns = requiredColumns.filter((i) => i !== `${it.name.toUpperCase()}TEST`);
+      }
 
       const df = it.clone(null, requiredColumns);
-      df.getCol(`${it.name.toUpperCase()}TEST`).name = 'test';
+      df.getCol(containsCatCol ? fullTestNameCol : `${it.name.toUpperCase()}TEST`).name = 'test';
       df.getCol(`${it.name.toUpperCase()}STRESN`).name = 'result';
       df.getCol(`${it.name.toUpperCase()}DY`).name = 'visit_day';
+
+      // remove temporary full test name column
+      if (containsCatCol)
+        it.columns.remove(fullTestNameCol);
+
       if (!resDf)
         resDf = df;
       else
@@ -38,41 +52,31 @@ export function createMeasurementProfileTableView(studyId: string): any {
     columnsFromDm, DG.JOIN_TYPE.LEFT, true);
 
   resDf.name = 'Measurements';
-  const tests = resDf.col('test')!.categories;
-  let selectedTest = tests[0];
-  resDf.rows.match({test: selectedTest}).filter();
-  const dfFortableView = resDf.clone(resDf.filter);
-  const testChoiceInput = ui.input.choice('Test', {
-    items: tests,
-    value: selectedTest,
-    onValueChanged: () => {
-      selectedTest = testChoiceInput.value;
-      resDf.rows.match({test: selectedTest}).filter();
-      grok.shell.tv.dataFrame = resDf.clone(resDf.filter);
-      //need to set boxPlot options since they are reset after table is changed
-      boxPlot.setOptions({value: 'result', category1: PLANNED_TRT_ARM});
-    },
-  });
-  let boxPlot: DG.Viewer | null = null;
+  resDf.rows.filter((row) => row.test == resDf.get('test', 0));
+
+  let trellisPlot: DG.Viewer | null = null;
   // onTableViewAdded function to add viewers
   const onTableViewAdded = async (tableView: DG.TableView) => {
-    const ribbons = tableView.getRibbonPanels();
-    ribbons.push([testChoiceInput.root]);
-    tableView.setRibbonPanels(ribbons);
+    trellisPlot = await DG.Viewer.fromType(DG.VIEWER.TRELLIS_PLOT, tableView.dataFrame, {
+      xColumnNames: [SEX],
+      yColumnNames: ['test'],
+      viewerType: DG.VIEWER.LINE_CHART,
+      innerViewerLook: {
+        showXAxis: true,
+        aggrType: DG.STATS.AVG,
+        splitColumnNames: [PLANNED_TRT_ARM],
+      },
+    });
 
-    const lineChart = await DG.Viewer.fromType(DG.VIEWER.LINE_CHART, tableView.dataFrame);
-    lineChart.setOptions({yColumnNames: ['result'], yAggrTypes: ['avg'], whiskersType: 'Med | Q1, Q3'});
-    //tableView.addViewer(lineChart);
+    tableView.dockManager.dock(trellisPlot, DG.DOCK_TYPE.FILL);
 
-    boxPlot = await DG.Viewer.fromType(DG.VIEWER.BOX_PLOT, tableView.dataFrame);
-    boxPlot.setOptions({value: 'result', category1: PLANNED_TRT_ARM});
-    //tableView.addViewer(boxPlot);
-
-    tableView.dockManager.dock(boxPlot, DG.DOCK_TYPE.FILL);
-    tableView.dockManager.dock(lineChart, DG.DOCK_TYPE.FILL);
-
-    addDomainFilters(tableView, studyId);
+    const fg = tableView.getFiltersGroup({createDefaultFilters: false});
+    fg.updateOrAdd({
+      type: DG.FILTER_TYPE.CATEGORICAL,
+      column: 'test',
+      columnName: 'test',
+    });
   };
 
-  return {df: dfFortableView, onTableViewAddedFunc: onTableViewAdded};
+  return {df: resDf, onTableViewAddedFunc: onTableViewAdded};
 }
