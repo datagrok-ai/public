@@ -6,19 +6,12 @@ import * as rxjs from 'rxjs';
 import {OpenAI} from 'openai';
 // @ts-ignore .... idk why it does not like it
 import '../../css/ai.css';
-import {ChatModel} from 'openai/resources/shared';
-import {dartLike, fireAIAbortEvent} from '../utils';
-import {ConversationStorage, StoredConversationWithContext, UIMessage} from './storage';
-
-export type ModelOption = 'Fast' | 'Deep Research';
-export const ModelType: {[type in ModelOption]: ChatModel} = {
-  Fast: 'gpt-4o-mini',
-  //   ['Deep Research']: 'gpt-5.1', // hell of a smart model but expensive
-  'Deep Research': 'o4-mini', // good balance between speed, quality and $$$
-} as const;
+import {dartLike, fireAIAbortEvent, getAIPanelToggleSubscription} from '../utils';
+import {ConversationStorage, StoredConversationWithContext} from './storage';
+import {ModelOption, ModelType} from './openAI-client';
 
 // in future might extend it with other types for response API
-type MessageType = OpenAI.Chat.ChatCompletionMessageParam;
+export type MessageType = OpenAI.Chat.ChatCompletionMessageParam | OpenAI.Responses.ResponseInputItem;
 
 type AIPanelInputs = {
     prompt: string,
@@ -29,29 +22,69 @@ type DBAIPanelInputs = AIPanelInputs & {
     schemaName: string,
 }
 
+export type ScriptingAIPanelInputs = AIPanelInputs & {
+  language: DG.ScriptingLanguage
+};
+
+
+type TVAIPanelInputs = AIPanelInputs & {
+    mode: 'agent' | 'ask',
+}
+
 const actionButtionValues = {
   run: 'Run AI Prompt',
   stop: 'Stop AI Generation',
 } as const;
 
 export type UIMessageOptions = {
-  result?: {
-    finalResult?: string;
-  }
+  /** if set, will add feedback buttons to the message*/
+  finalResult?: string,
+  /** if set, will show a confirmation dialog with the given message before adding the message */
+  confirm?: {confirmResult?: boolean, message?: string},
+}
+
+export interface UIMessage {
+  fromUser: boolean;
+  text: string;
+  title?: string;
+  messageOptions?: UIMessageOptions;
+}
+
+export type PanleMesageRet = {
+  confirmPromie: Promise<boolean>,
+}
+
+export type AIPanelFuncs<T extends MessageType = OpenAI.Chat.ChatCompletionMessageParam> = {
+  /** Adds @aiMsg to the message stack (from user) and @msg to the UI panel */
+  addUserMessage: (aiMsg: T, msg: string) => void,
+  /** Adds @aiMsg to the message stack (from AI) and @msg with @title to the UI panel*/
+  addAIMessage: (aiMsg: T, title: string, msg: string) => void,
+  /** Adds @aiMsg to the message stack without showing it to the ui  */
+  addEngineMessage: (aiMsg: T) => void,
+  /** Adds @msg to the UI without adding it to the AI message stack */
+  addUiMessage: (msg: string, fromUser: boolean, messageOptions?: UIMessageOptions) => void
+  /**Adds confirmation section to the panel and awaits result */
+  addConfirmMessage: (msg?: string) => Promise<boolean>,
+
 }
 
 export class AIPanel<T extends MessageType = OpenAI.Chat.ChatCompletionMessageParam, K extends AIPanelInputs = AIPanelInputs> {
   private root: HTMLElement;
+  private view: DG.View | DG.ViewBase;
   private inputArea: HTMLElement;
   protected header: HTMLElement;
   private outputArea: HTMLElement;
   private textArea: HTMLTextAreaElement;
+  private textAreaDiv: HTMLElement;
   private runButton: HTMLElement;
   private modelInput: DG.InputBase<ModelOption>;
   private newChatButton: HTMLElement;
   private copyConversationButton: HTMLElement;
   private historyButton: HTMLElement;
   private tryAgainButton: HTMLElement;
+  private micButton: HTMLElement;
+  private recognition: SpeechRecognition | null = null;
+  private isRecognizing: boolean = false;
   private _onRunRequest = new rxjs.Subject<{prevMessages: T[], currentPrompt: K}>();
   private _messages: T[] = [];
   private _uiMessages: UIMessage[] = [];
@@ -71,7 +104,8 @@ export class AIPanel<T extends MessageType = OpenAI.Chat.ChatCompletionMessagePa
 
 
   private currentConversationId: string | null = null;
-  constructor(private _contextID: string = 'global-ai-panel') {
+  constructor(private _contextID: string = 'global-ai-panel', view: DG.View | DG.ViewBase) {
+    this.view = view;
     this.root = ui.divV([], 'd4-ai-generation-panel');
     this.inputArea = ui.divV([], 'd4-ai-panel-input-area');
     this.outputArea = ui.divV([], 'd4-ai-panel-output-area');
@@ -95,6 +129,7 @@ export class AIPanel<T extends MessageType = OpenAI.Chat.ChatCompletionMessagePa
     ui.tooltip.bind(this.runButton, () => this.runButtonTooltip, 'left');
     this.tryAgainButton = ui.icons.sync(() => this.tryAgain(), 'Try Again');
     this.historyButton = ui.iconFA('history', () => this.showHistory(), 'Chat History...');
+    this.micButton = ui.iconFA('microphone', () => this.toggleSpeechRecognition(), 'Voice Input');
     this.copyConversationButton = ui.iconFA('copy', async () => {
       const success = await this.copyConversationToClipboard();
       if (success)
@@ -124,14 +159,15 @@ export class AIPanel<T extends MessageType = OpenAI.Chat.ChatCompletionMessagePa
     }) as DG.InputBase<ModelOption>;
     this.hideContentIcons();
     this.inputControlsDiv = ui.divH([
-      this.historyButton,
+      this.micButton,
       this.modelInput.input
     ], 'd4-ai-panel-input-controls');
     this.runButton.style.color = 'var(--blue-1)';
     const inputControlsRight = ui.divH([this.tryAgainButton, this.runButton], 'd4-ai-panel-run-controls');
     inputControlsRight.style.marginLeft = 'auto';
     const controlsDiv = ui.divH([this.inputControlsDiv, inputControlsRight], 'd4-ai-panel-controls-container');
-    this.inputArea.appendChild(this.textArea);
+    this.textAreaDiv = ui.divV([this.textArea], {classes: 'd4-ai-input-textarea-div', style: {position: 'relative'}});
+    this.inputArea.appendChild(this.textAreaDiv);
     this.inputArea.appendChild(controlsDiv);
     this.root.appendChild(this.header);
     this.root.appendChild(this.outputArea);
@@ -146,12 +182,52 @@ export class AIPanel<T extends MessageType = OpenAI.Chat.ChatCompletionMessagePa
     rightHeaderDiv.appendChild(this.copyConversationButton);
     rightHeaderDiv.appendChild(this.historyButton);
     this.header.appendChild(rightHeaderDiv);
+    this.setupSubscriptions();
+  }
+
+  protected setupSubscriptions() {
+    // do some subscriptions
+    let wasShown = false;
+    const sub = grok.events.onCurrentViewChanged.subscribe(() => {
+      if (grok.shell.v != this.view) {
+        wasShown = this.isShown;
+        if (wasShown)
+          this.hide();
+      } else {
+        if (wasShown)
+          this.show();
+      }
+    });
+
+    const toggleSub = getAIPanelToggleSubscription().subscribe((rv) => {
+      if (rv == this.view)
+        this.toggle();
+    });
+    const that = this;
+    function onKeyDownHandler(event: KeyboardEvent) {
+      if (grok.shell.v === that.view && event.ctrlKey && event.key === 'i') {
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        that.toggle();
+      }
+    }
+    document.addEventListener('keydown', onKeyDownHandler);
+
+    const closeSub = grok.events.onViewRemoved.subscribe((view) => {
+      if (view == this.view) {
+        sub.unsubscribe();
+        closeSub.unsubscribe();
+        this.hide();
+        this.dispose();
+        toggleSub.unsubscribe();
+        document.removeEventListener('keydown', onKeyDownHandler);
+      }
+    });
   }
 
   private static _lastDockedPanel: DG.DockNode | null = null;
   show() {
     grok.shell.windows.showHelp = false;
-    grok.shell.windows.showContextPanel = false;
     // grok.shell.windows.context.root?.style
     // grok.shell.o = this.root;
     // grok.shell.setCurrentObject(this.root, true, true);
@@ -160,7 +236,9 @@ export class AIPanel<T extends MessageType = OpenAI.Chat.ChatCompletionMessagePa
         return;
       grok.shell.dockManager.close(AIPanel._lastDockedPanel);
     }
-    AIPanel._lastDockedPanel = grok.shell.dockManager.dock(this.root, 'right', null, undefined, 0.25);
+    const contextRoot = grok.shell.windows.context?.root;
+    const contextNode = contextRoot && document.contains(contextRoot) ? grok.shell.dockManager.findNode(contextRoot) : null;
+    AIPanel._lastDockedPanel = grok.shell.dockManager.dock(this.root, contextNode ? 'down' : 'right', contextNode, '', contextNode ? 0.5 : 0.25);
   }
 
   hide() {
@@ -197,6 +275,7 @@ export class AIPanel<T extends MessageType = OpenAI.Chat.ChatCompletionMessagePa
   }
 
   dispose() {
+    this.stopRecognition();
     this.root.remove();
     this._messages = [];
     this._uiMessages = [];
@@ -211,13 +290,18 @@ export class AIPanel<T extends MessageType = OpenAI.Chat.ChatCompletionMessagePa
   }
 
   private _aiMessagesAccordionPane: HTMLElement | null = null;
-  protected appendMessage(aiMessage: T, uiMessage: {title: string, content: string, fromUser: boolean, onlyAddToMessages?: boolean, uiOnly?: boolean, finalMessage?: string}, loader?: HTMLElement) {
+  protected appendMessage(
+    aiMessage: T, uiMessage: {
+      title: string, content: string, fromUser: boolean, onlyAddToMessages?: boolean, uiOnly?: boolean, messageOptions?: UIMessageOptions
+    }, loader?: HTMLElement
+  ): PanleMesageRet | undefined {
+    let ret: PanleMesageRet | undefined = undefined;
     if (!uiMessage.uiOnly)
       this._messages.push(aiMessage);
     if (uiMessage.onlyAddToMessages)
       return;
     // from this point we know that message is also in the ui.
-    this._uiMessages.push({fromUser: !!uiMessage.fromUser, text: uiMessage.content, title: uiMessage.title});
+    this._uiMessages.push({fromUser: !!uiMessage.fromUser, text: uiMessage.content, title: uiMessage.title, messageOptions: uiMessage.messageOptions});
     if (uiMessage.fromUser) {
       const userDiv = ui.div(ui.divText(uiMessage.content, 'd4-ai-user-prompt-divtext'), 'd4-ai-user-prompt-container');
       this.outputArea.appendChild(userDiv);
@@ -260,7 +344,7 @@ export class AIPanel<T extends MessageType = OpenAI.Chat.ChatCompletionMessagePa
         });
       }
 
-      if (uiMessage.finalMessage && !uiMessage.fromUser) {
+      if (uiMessage?.messageOptions?.finalResult && !uiMessage.fromUser) {
         // if it is a final message from AI, add thumbs up/down,
         const feedbackDiv = ui.divH([], 'd4-ai-panel-feedback-div');
         const thumbsUp = ui.iconFA('thumbs-up', () => {
@@ -283,7 +367,8 @@ export class AIPanel<T extends MessageType = OpenAI.Chat.ChatCompletionMessagePa
           (helpful ? thumbsUp : thumbsDown).style.backgroundColor = helpful ? 'rgba(0, 150, 30, 0.2)' : 'rgba(200, 0, 0, 0.2)';
           receiveFeedback(
             that._uiMessages[0]?.text ?? '',
-            uiMessage.finalMessage!,
+            uiMessage?.messageOptions?.finalResult!,
+            that.contextId,
             helpful
           );
         }
@@ -292,6 +377,41 @@ export class AIPanel<T extends MessageType = OpenAI.Chat.ChatCompletionMessagePa
         dartLike(feedbackDiv.style).set('gap', '8px').set('alignItems', 'center').set('width', '100%').set('paddingBottom', '8px').set('paddingLeft', '4px');
         markDown.appendChild(feedbackDiv);
       }
+
+      // if the action from AI requires confirmation, add confirm section with buttons
+      if (uiMessage?.messageOptions?.confirm && !uiMessage.fromUser) {
+        let resolve: (value: boolean) => void = () => {};
+        const confirmPromise = new Promise<boolean>((res) => { resolve = res; });
+        ret = {confirmPromie: confirmPromise};
+        const confirmDiv = ui.divV([], 'd4-ai-panel-confirmation-div');
+        const confirmText = ui.divText(uiMessage?.messageOptions?.confirm.message ?? 'Allow Datagrok to proceed?', 'd4-ai-panel-confirmation-text');
+        const buttonsDiv = ui.divH([], 'd4-ai-panel-confirmation-buttons-div');
+        const confirmButton = ui.iconFA('check', null, 'Confirm');
+        const cancelButton = ui.iconFA('times', null, 'Cancel');
+        dartLike(confirmButton.style).set('padding', '2px').set('borderRadius', '6px').set('marginRight', '2px').set('textAlign', 'center').set('width', '14px');
+        dartLike(cancelButton.style).set('padding', '2px').set('borderRadius', '6px').set('textAlign', 'center').set('width', '14px');
+        // if the result of confirmation is already set, do not subscribe to changes
+        const handleConfirmResult = (confirmed: boolean) => {
+          // make sure the reference of the result is also marked
+          uiMessage?.messageOptions?.confirm && (uiMessage.messageOptions.confirm.confirmResult = confirmed);
+          resolve(confirmed);
+          [confirmButton, cancelButton].forEach((el) => {
+            el.onclick = null;
+            dartLike(el.style).set('backgroundColor', '').set('cursor', 'default').set('opacity', '0.6').set('pointerEvents', 'none');
+          });
+          (confirmed ? confirmButton : cancelButton).style.backgroundColor = confirmed ? 'rgba(0, 150, 30, 0.3)' : 'rgba(200, 0, 0, 0.3)';
+        };
+        confirmButton.onclick = () => handleConfirmResult(true);
+        cancelButton.onclick = () => handleConfirmResult(false);
+        buttonsDiv.appendChild(confirmButton);
+        buttonsDiv.appendChild(cancelButton);
+        confirmDiv.appendChild(confirmText);
+        confirmDiv.appendChild(buttonsDiv);
+        markDown.appendChild(confirmDiv);
+        if (uiMessage?.messageOptions?.confirm.confirmResult != undefined)
+          handleConfirmResult(uiMessage?.messageOptions?.confirm.confirmResult); // already have a result
+      }
+
       dartLike(markDown.style).set('userSelect', 'text').set('maxWidth', '100%');
       const titleText = uiMessage.title ? [ui.h3(uiMessage.title, 'd4-ai-assistant-response-title')] : [];
       const assistantDiv = ui.divV([...titleText, markDown], 'd4-ai-assistant-response-container');
@@ -302,9 +422,10 @@ export class AIPanel<T extends MessageType = OpenAI.Chat.ChatCompletionMessagePa
       this.outputArea.appendChild(loader);
     this.outputArea.scrollTop = this.outputArea.scrollHeight;
     this.showContentIcons();
+    return ret;
   }
 
-  public startChatSession() {
+  public startChatSession(): {session: AIPanelFuncs<T>, endSession: () => void} {
     const loader = ui.icons.loader();
     dartLike(loader.style).set('alignSelf', 'center').set('height', '20px').set('marginTop', '8px');
     this.runButton.classList.remove('fal', 'fa-paper-plane');
@@ -312,14 +433,12 @@ export class AIPanel<T extends MessageType = OpenAI.Chat.ChatCompletionMessagePa
     this.runButton.style.color = 'orangered';
     this.runButtonTooltip = actionButtionValues.stop;
     return {
-      addUserMessage: (message: T, content: string) => {
-        this.appendMessage(message, {title: '', content: content, fromUser: true}, loader);
-      },
-      addAIMessage: (message: T, title: string, content: string, onlyAddToMessages?: boolean) => {
-        this.appendMessage(message, {title: title, content: content, fromUser: false, onlyAddToMessages}, loader);
-      },
-      addUIMessage: (content: string, fromUser: boolean, messageOptions?: UIMessageOptions) => {
-        this.appendMessage('' as any, {title: '', content: content, fromUser: fromUser, uiOnly: true, finalMessage: messageOptions?.result?.finalResult}, loader);
+      session: {
+        addAIMessage: (aiMessage, title, content) => this.appendMessage(aiMessage, {title: title, content: content, fromUser: false}, loader),
+        addEngineMessage: (aiMessage) => this.appendMessage(aiMessage, {title: '', content: '', fromUser: false, onlyAddToMessages: true}, loader),
+        addUiMessage: (msg: string, fromUser: boolean, messageOptions?: UIMessageOptions) => this.appendMessage('' as any, {title: '', content: msg, fromUser: fromUser, uiOnly: true, messageOptions: messageOptions}, loader),
+        addUserMessage: (aiMsg, content) => this.appendMessage(aiMsg, {title: '', content: content, fromUser: true}, loader),
+        addConfirmMessage: (msg?: string) => this.appendMessage('' as any, {title: '', content: '', fromUser: false, uiOnly: true, messageOptions: {confirm: {message: msg}}}, loader)!.confirmPromie,
       },
       endSession: () => {
         this.runButton.classList.remove('fas', 'fa-stop');
@@ -342,7 +461,7 @@ export class AIPanel<T extends MessageType = OpenAI.Chat.ChatCompletionMessagePa
     const inputs = this.getCurrentInputs();
     inputs.prompt = 'Please try again. ';
     this._onRunRequest.next({
-      prevMessages: this._messages,
+      prevMessages: [...this._messages],
       currentPrompt: inputs,
     });
   }
@@ -437,8 +556,9 @@ export class AIPanel<T extends MessageType = OpenAI.Chat.ChatCompletionMessagePa
       this.outputArea.innerHTML = '';
       this._uiMessages = [];
       conv.uiMessages.forEach((msg) => {
-        this.appendMessage(null as any, {title: msg.title ?? '', content: msg.text, fromUser: msg.fromUser, uiOnly: true}); // no loader
+        this.appendMessage(null as any, {title: msg.title ?? '', content: msg.text, fromUser: msg.fromUser, uiOnly: true, messageOptions: msg.messageOptions}); // no loader
       });
+      this.afterConversationLoad(conv);
       //grok.shell.info(`Loaded conversation: ${conv.initialPrompt.substring(0, 50)}...`);
     } catch (error) {
       console.error('Failed to load conversation:', error);
@@ -446,28 +566,135 @@ export class AIPanel<T extends MessageType = OpenAI.Chat.ChatCompletionMessagePa
     }
   }
 
+  protected afterConversationLoad(conversation: StoredConversationWithContext<T>) {
+    // do nothing in base class
+  }
+
+  protected getConversationMeta(): any {
+    return undefined;
+  }
+
   public async saveCurrentConversation(initialPrompt?: string) {
     if (this._messages.length === 0) return;
 
     try {
       if (this.currentConversationId)
-        await ConversationStorage.updateConversation(this.currentConversationId, this._messages, this._uiMessages);
+        await ConversationStorage.updateConversation(this.currentConversationId, this._messages, this._uiMessages, this.getConversationMeta());
       else {
         this.currentConversationId = await ConversationStorage.saveConversation(
-          this._messages, this._uiMessages, initialPrompt ?? this._uiMessages[0]?.text ?? 'No Title', this.contextId
+          this._messages, this._uiMessages, initialPrompt ?? this._uiMessages[0]?.text ?? 'No Title', this.contextId, this.getConversationMeta()
         );
       }
     } catch (error) {
       console.error('Failed to save conversation:', error);
     }
   }
+
+  private toggleSpeechRecognition() {
+    if (this.isRecognizing)
+      this.stopRecognition();
+    else
+      this.startRecognition();
+  }
+
+  private startRecognition() {
+    try {
+      this.recognition = new SpeechRecognition();
+      this.recognition.continuous = false;
+      this.recognition.interimResults = false;
+      this.recognition.lang = 'en-US';
+
+      // Update UI to show recording state
+      this.isRecognizing = true;
+      this.micButton.classList.remove('fa-microphone');
+      this.micButton.classList.add('fa-stop');
+      this.micButton.style.color = 'orangered';
+      ui.setUpdateIndicator(this.textAreaDiv, true, 'Listening...');
+
+      this.recognition.onresult = (event) => {
+        const transcript = event.results[0][0].transcript;
+        this.textArea.value = transcript;
+        this.textArea.focus();
+        ui.setUpdateIndicator(this.textAreaDiv, false);
+      };
+
+      this.recognition.onerror = (event) => {
+        console.error('Speech recognition error:', event.error);
+        ui.setUpdateIndicator(this.textAreaDiv, false);
+
+        let errorMessage = 'Speech recognition error';
+        switch (event.error) {
+        case 'no-speech':
+          errorMessage = 'No speech detected. Please try again.';
+          break;
+        case 'audio-capture':
+          errorMessage = 'No microphone found or access denied';
+          break;
+        case 'not-allowed':
+          errorMessage = 'Microphone access denied. Please enable microphone permissions.';
+          break;
+        case 'network':
+          errorMessage = 'Network error during speech recognition';
+          break;
+        case 'aborted':
+          // User stopped intentionally, no error message needed
+          break;
+        default:
+          errorMessage = `Speech recognition error: ${event.error}`;
+        }
+
+        if (event.error !== 'aborted')
+          grok.shell.error(errorMessage);
+
+
+        this.stopRecognition();
+      };
+
+      this.recognition.onend = () => {
+        this.isRecognizing = false;
+        this.micButton.classList.remove('fa-stop');
+        this.micButton.classList.add('fa-microphone');
+        this.micButton.style.color = '';
+        ui.setUpdateIndicator(this.textAreaDiv, false);
+      };
+
+      this.recognition.start();
+    } catch (error) {
+      console.error('Failed to start speech recognition:', error);
+      grok.shell.error('Failed to start speech recognition');
+      this.stopRecognition();
+    }
+  }
+
+  private stopRecognition() {
+    if (this.recognition) {
+      try {
+        this.recognition.stop();
+      } catch (error) {
+        console.error('Error stopping recognition:', error);
+      }
+      this.recognition = null;
+    }
+
+    this.isRecognizing = false;
+    this.micButton.classList.remove('fa-stop');
+    this.micButton.classList.add('fa-microphone');
+    this.micButton.style.color = '';
+    ui.setUpdateIndicator(this.textAreaDiv, false);
+  }
 }
 
-export class DBAIPanel<T extends MessageType = OpenAI.Chat.ChatCompletionMessageParam> extends AIPanel<T, DBAIPanelInputs> {
+
+function receiveFeedback(userPrompt: string, aiResponse: string, contextId: string, helpful: boolean) {
+  // not implemented yet
+}
+
+
+export class DBAIPanel extends AIPanel<MessageType, DBAIPanelInputs> {
   protected get placeHolder() { return 'Ask your database, like "Total sales by regions"'; }
   protected schemaInput: DG.InputBase<string>;
-  constructor(schemas: string[], defaultSchema: string, connectionID: string) {
-    super(connectionID); // context ID is connection ID
+  constructor(schemas: string[], defaultSchema: string, connectionID: string, view: DG.View | DG.ViewBase) {
+    super(connectionID, view); // context ID is connection ID
     this.schemaInput = ui.input.choice('Schema', {
       items: schemas,
       value: defaultSchema,
@@ -487,7 +714,50 @@ export class DBAIPanel<T extends MessageType = OpenAI.Chat.ChatCompletionMessage
   }
 }
 
+export class TVAIPanel extends AIPanel<MessageType, TVAIPanelInputs> {
+  protected get placeHolder() { return 'Ask about your table data...'; }
+  protected tableView: DG.TableView;
+  constructor(view: DG.TableView) {
+    super(view.dataFrame?.name ?? view.name ?? 'AI-Table-context', view); // context ID is table name
+    this.tableView = view;
+  }
 
-function receiveFeedback(userPrompt: string, aiResponse: string, helpful: boolean) {
-  // not implemented yet
+  // meta of TVAIPanel will store the layout of the table view
+  protected getConversationMeta() {
+    return this.tableView.saveLayout().viewState;
+  }
+
+  protected afterConversationLoad(conversation: StoredConversationWithContext<MessageType>) {
+    const currentViewers = Array.from(this.tableView.viewers);
+    // only apply layout if the view is standard grid and there is layout meta
+    if (!!conversation.meta && currentViewers.length === 1 && currentViewers[0].type === DG.VIEWER.GRID) {
+      const layout = DG.ViewLayout.fromViewState(conversation.meta);
+      this.tableView.loadLayout(layout, true);
+    }
+  }
+}
+
+export class ScriptingAIPanel extends AIPanel<MessageType, ScriptingAIPanelInputs> {
+  protected get placeHolder() { return 'Ask AI to generate a script...'; }
+  protected languageInput: DG.InputBase<string>;
+
+  constructor(view: DG.View | DG.ViewBase) {
+    super('scripting-ai-panel', view); // context ID is fixed for scripting panel
+    this.languageInput = ui.input.choice('Language', {
+      items: Object.values(DG.SCRIPT_LANGUAGE),
+      value: DG.SCRIPT_LANGUAGE.JAVASCRIPT,
+      nullable: false,
+      tooltipText: 'Select scripting language for the generated script.',
+    }) as DG.InputBase<string>;
+    this.inputControlsDiv.appendChild(this.languageInput.input);
+    ui.tooltip.bind(this.languageInput.input, 'Select scripting language for the generated script.');
+  }
+
+  public getCurrentInputs(): ScriptingAIPanelInputs {
+    const baseInputs = super.getCurrentInputs();
+    return {
+      ...baseInputs,
+      language: this.languageInput.value as DG.ScriptingLanguage,
+    };
+  }
 }

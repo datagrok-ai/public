@@ -2,12 +2,11 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {askAiTableView} from './viewers-ai';
-import {IDartApi} from 'datagrok-api/src/api/grok_api.g';
 import {popupMenu} from 'datagrok-api/ui';
 
 export const aiPanel: HTMLElement = ui.divV([]);
 const input: HTMLTextAreaElement = ui.element('textarea');
-const api: IDartApi = (typeof window !== 'undefined' ? window : global.window) as any;
+const api: any = (typeof window !== 'undefined' ? window : global.window) as any;
 
 
 export function initAiPanel() {

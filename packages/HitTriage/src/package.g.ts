@@ -17,16 +17,16 @@ export async function peptiHitAppTreeBrowser(treeNode: any) : Promise<void> {
 }
 
 //name: Hit Triage
-//tags: app
 //output: view result
+//meta.role: app
 //meta.browsePath: Chem
 export async function hitTriageApp() : Promise<any> {
   return await PackageFunctions.hitTriageApp();
 }
 
 //name: Hit Design
-//tags: app
 //output: view result
+//meta.role: app
 //meta.icon: images/icons/hit-design-icon.png
 //meta.browsePath: Chem
 export async function hitDesignApp() : Promise<any> {
@@ -34,8 +34,8 @@ export async function hitDesignApp() : Promise<any> {
 }
 
 //name: PeptiHit
-//tags: app
 //output: view result
+//meta.role: app
 //meta.icon: images/icons/pepti-hit-icon.png
 //meta.browsePath: Peptides
 export async function peptiHitApp() : Promise<any> {
@@ -43,48 +43,61 @@ export async function peptiHitApp() : Promise<any> {
 }
 
 //name: Demo Molecules 100
-//tags: HitTriageDataSource
 //output: dataframe result
+//meta.role: hitTriageDataSource
 export async function demoFileIngest() : Promise<any> {
   return await PackageFunctions.demoFileIngest();
 }
 
 //name: Demo Molecules 5000
-//tags: HitTriageDataSource
 //output: dataframe result
+//meta.role: hitTriageDataSource
 export async function demoFileIngest1() : Promise<any> {
   return await PackageFunctions.demoFileIngest1();
 }
 
 //name: Demo Molecules variable
-//tags: HitTriageDataSource
-//input: int numberOfMolecules  { description: Molecules counts }
+//input: int numberOfMolecules { description: Molecules counts }
 //output: dataframe result
+//meta.role: hitTriageDataSource
 export async function demoFileIngest2(numberOfMolecules: number) : Promise<any> {
   return await PackageFunctions.demoFileIngest2(numberOfMolecules);
 }
 
 //name: Demo File Submit
-//tags: HitTriageSubmitFunction
-//input: dataframe df  { description: Dataframe }
-//input: string molecules  { description: Molecules column name }
+//input: dataframe df { description: Dataframe }
+//input: string molecules { description: Molecules column name }
+//meta.role: hitTriageSubmitFunction
 export async function demoFileSubmit(df: DG.DataFrame, molecules: string) : Promise<void> {
   await PackageFunctions.demoFileSubmit(df, molecules);
 }
 
+//name: registerMoleculesToViD
+export async function registerMoleculesToViD() : Promise<void> {
+  await PackageFunctions.registerMoleculesToViD();
+}
+
+//name: Hit Design V-iD
+//tags: panel
+//input: semantic_value vid  { semType: HIT_DESIGN_VID }
+//output: widget result
+export function hitDesignVidPanel(vid: DG.SemanticValue) : any {
+  return PackageFunctions.hitDesignVidPanel(vid);
+}
+
 //name: gasteigerRenderer
-//tags: cellRenderer
 //output: grid_cell_renderer result
 //meta.cellType: customGasteigerPNG
 //meta.columnTags: quality=customGasteigerPNG
+//meta.role: cellRenderer
 export function gasteigerCellRenderer() : any {
   return PackageFunctions.gasteigerCellRenderer();
 }
 
 //name: Hit Triage package settings editor
-//tags: packageSettingsEditor
 //input: object propList 
 //output: widget result
+//meta.role: packageSettingsEditor
 export async function htPackageSettingEditor(properties: any) : Promise<any> {
   return await PackageFunctions.htPackageSettingEditor(properties);
 }

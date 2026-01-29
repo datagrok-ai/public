@@ -1,3 +1,4 @@
+import { migrate } from "./migrate";
 import { testAll } from "./test-all";
 
 const HELP = `
@@ -16,6 +17,7 @@ Commands:
     publish   Upload a package
     test      Run package tests
     testall      Run packages tests
+    migrate   Migrate legacy tags to meta.role
 
 To get help on a particular command, use:
     grok <command> --help
@@ -125,7 +127,7 @@ Running \`grok publish\` is the same as running \`grok publish defaultHost --bui
 `;
 
 const HELP_CHECK = `
-Usage: grok check
+Usage: grok check <pluginFolder>
 
 Options:
 [-r | --recursive]
@@ -216,6 +218,17 @@ Options:
 --all               Links all available packages(run in packages directory)
 `;
 
+const HELP_MIGRATE = `
+Usage: grok migrate
+
+Migrates legacy function tags into the meta.role field.
+
+Example:
+  tags: ['viewer', 'ml']
+  ⟶
+  meta: { role: 'viewer,ml' }
+`;
+
 // const HELP_MIGRATE = `
 // Usage: grok migrate
 
@@ -234,5 +247,6 @@ export const help = {
   publish: HELP_PUBLISH,
   test: HELP_TEST,
   testall: HELP_TESTALL,
+  migrate: HELP_MIGRATE,
   help: HELP,
 };

@@ -6,7 +6,7 @@ import '../../css/usage_analysis.css';
 import {UaToolbox} from '../ua-toolbox';
 import {Filter, UaView} from './ua';
 import {UaFilterableQueryViewer} from '../viewers/ua-filterable-query-viewer';
-import {awaitCheck} from '@datagrok-libraries/utils/src/test';
+import {awaitCheck} from '@datagrok-libraries/test/src/test';
 import {getTime} from '../utils';
 
 const format = 'es-pa-u-hc-h23';

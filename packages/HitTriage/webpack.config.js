@@ -6,7 +6,7 @@ module.exports = {
   cache: {
     type: 'filesystem',
   },
-  mode: 'development',
+  mode: 'production',
   entry: {
     package: './src/package.ts',
     test: {

@@ -31,6 +31,7 @@ zip
 /js-api/grok.js
 /js-api/dg.js
 /js-api/ui.js
+/js-api/src/datagrok/**/*.dart
 
 # JSDoc
 /js-api/docs
@@ -89,3 +90,8 @@ help/deploy/releases/plugins/plugins.json
 tools/.cache/
 
 .history
+
+tmpclaude-*-cwd
+
+test-console-output-?.log
+test-record-?.mp4

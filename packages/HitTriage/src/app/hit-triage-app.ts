@@ -10,13 +10,14 @@ import {CampaignIdKey, CampaignJsonName, CampaignTableName,
   HTQueryPrefix, HTScriptPrefix, HitSelectionColName, i18n} from './consts';
 import {addBreadCrumbsToRibbons, checkRibbonsHaveSubmit, modifyUrl, toFormatedDateString} from './utils';
 import {_package} from '../package';
-import '../../css/hit-triage.css';
 import {chemFunctionsDialog} from './dialogs/functions-dialog';
 import {HitAppBase} from './hit-app-base';
 import {HitBaseView} from './base-view';
 import {saveCampaignDialog} from './dialogs/save-campaign-dialog';
 import {calculateColumns} from './utils/calculate-single-cell';
 import {defaultPermissions, PermissionsDialog} from './dialogs/permissions-dialog';
+// @ts-ignore
+import '../../css/hit-triage.css';
 
 export class HitTriageApp extends HitAppBase<HitTriageTemplate> {
   multiView: DG.MultiView;
@@ -63,9 +64,9 @@ export class HitTriageApp extends HitAppBase<HitTriageTemplate> {
     });
   }
 
-    public get submitParams() {
-      return this.campaign?.template?.submit ?? this.template?.submit;
-    }
+  public get submitParams() {
+    return this.campaign?.template?.submit ?? this.template?.submit;
+  }
 
   public async setTemplate(template: HitTriageTemplate, presetFilters?: {[key: string]: any}[],
     campaignId?: string, ingestProps?: HitTriageTemplateIngest) {

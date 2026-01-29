@@ -15,7 +15,7 @@ let minifiedClassNameMap = {};
 export let c: DG.FuncCall;
 
 export class PackageFunctions {
-  @grok.decorators.func({tags: ['dev-tools']})
+  @grok.decorators.func()
   static renderDevPanel(
     @grok.decorators.param({type: 'object'}) ent: EntityType): Promise<DG.Widget> {
     return _renderDevPanel(ent, minifiedClassNameMap);
@@ -88,7 +88,7 @@ export class PackageFunctions {
 
   @grok.decorators.func({'top-menu': 'Tools | Dev | Test | Detectors Standard'})
   static async TestDetectorsStandard() {
-    const detectorsArray = DG.Func.find({tags: ['semTypeDetector']});
+    const detectorsArray = DG.Func.find({meta: {role: DG.FUNC_TYPES.SEM_TYPE_DETECTOR}});
     const df = await _testDetectorsStandard(detectorsArray);
     grok.shell.addTableView(df);
   }

@@ -92,8 +92,7 @@ export const getDfFromRuns = (
         `${run.func.name} - ${getStarted(run)}`;
     let idx = 2;
     while (uniqueRunNames.includes(defaultRunName)) {
-      defaultRunName = `${run.func.name} - ${getStarted(run)})
-        .toLocaleString('en-us', {month: 'short', day: 'numeric', hour: 'numeric', minute: 'numeric'})} - ${idx}`;
+      defaultRunName = `${run.func.name} - ${getStarted(run)} - ${idx}`;
       idx++;
     }
     uniqueRunNames.push(defaultRunName);

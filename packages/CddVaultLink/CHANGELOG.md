@@ -1,5 +1,11 @@
 # CDD Vault Link changelog
 
+## 1.0.5 (2025-12-24)
+
+### Bug fixes
+
+* GROK-18964 CDD Vault: Cannot get statistics for vault DataGrok test vault: Failed to fetch
+
 ## 1.0.4 (2025-05-28)
 
 * Some UI fixes

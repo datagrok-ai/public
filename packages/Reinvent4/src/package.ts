@@ -22,10 +22,8 @@ export class PackageFunctions
   }
 
   @grok.decorators.func({
-    'tags': [
-      'editor'
-    ],
-    'name': 'ReinventEditor'
+    'name': 'ReinventEditor',
+    meta: {role: 'editor'},
   })
   static reinventEditor(
     call: DG.FuncCall): void {
@@ -70,11 +68,9 @@ export class PackageFunctions
   }
 
   @grok.decorators.func({
-    'tags': [
-      'HitDesignerFunction'
-    ],
     'name': 'Reinvent',
-    'editor': 'Reinvent4:ReinventEditor'
+    'editor': 'Reinvent4:ReinventEditor',
+    'meta': {'role': 'hitDesignerFunction'}
   })
   static async reinvent(
     @grok.decorators.param({'options':{'semType':'Molecule','initialValue':'\'OC(CN1CCCC1)NC(CCC1)CC1Cl\''}}) ligand: string,

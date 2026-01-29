@@ -2,6 +2,10 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
+import {_package} from './package';
+import {DBExplorerConfig} from '@datagrok-libraries/db-explorer/src/types';
+import {DBExplorer} from '@datagrok-libraries/db-explorer/src/db-explorer';
+import {DBExplorerEditor} from '@datagrok-libraries/db-explorer/src/editor';
 
 export const WIDGETS_STORAGE = 'widgets';
 

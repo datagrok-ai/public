@@ -16,7 +16,7 @@ const searchWidgetFunctions = DG.Func.find({tags: ['search'], returnType: 'widge
 const tableQueriesSearchFunctions = DG.Func.find({meta: {searchPattern: null}, returnType: 'dataframe'})
   .filter((f) => f.options['searchPattern']);
 
-const searchProvidersFunctions = DG.Func.find({tags: ['searchProvider']});
+const searchProvidersFunctions = DG.Func.find({meta: {role: DG.FUNC_TYPES.SEARCH_PROVIDER}});
 
 export function initSearch() {
   //grok.dapi.queries.list().then((qs) => queries = qs);
@@ -348,7 +348,8 @@ export function createFuncTableViewWidget(sf: DG.Func, inputParams: Record<strin
       // comma separated list of values, with quotes if its string and without if its number
       const argumentList =
         sf.inputs.map((i: any) => i.propertyType === DG.TYPE.STRING ? `"${inputParams[i.name]}"` : inputParams[i.name]).join(',');
-      tv.dataFrame.setTag(DG.Tags.CreationScript, `Result = ${sf.nqName}(${argumentList})`);
+      if (inputParams && Object.keys(inputParams).length > 0)
+        tv.dataFrame.setTag(DG.Tags.CreationScript, `Result = ${sf.nqName}(${argumentList})`);
       setTimeout(() => {
         processPowerSearchTableView(tv);
         tv._onAdded();

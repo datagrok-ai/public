@@ -8,7 +8,7 @@
 
 TEST_SEM_TYPE = 'test';
 class UsageAnalysisPackageDetectors extends DG.Package {
-    //tags: semTypeDetector
+    //meta.role: semTypeDetector
     //input: column col
     //output: string semType 
     //meta.skipTest: test

@@ -2,8 +2,8 @@ import {PackageFunctions} from './package';
 import * as DG from 'datagrok-api/dg';
 
 //name: Signals
-//tags: app
 //output: view result
+//meta.role: app
 //meta.icon: images/signals-icon.png
 //meta.browsePath: Chem
 export async function signalsApp() : Promise<any> {

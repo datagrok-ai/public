@@ -17,13 +17,13 @@ function runStockBroker() {
   df.columns.addNew('volume', DG.TYPE.FLOAT);
   df.columns.addNew('up', DG.TYPE.STRING);
 
-  let addMilliseconds = function (time, ms) {
+  let addMilliseconds = function(time, ms) {
     return dayjs(time).add(ms, 'millisecond').toDate();
   };
 
   let tick = 20; // ms
   let start = addMilliseconds(new Date(), -tick * count);
-  let next = function (symbol) {
+  let next = function(symbol) {
     let v = tickers[symbol] + (Math.random() - 0.5) * 10;
     tickers[symbol] = v;
     return v;
@@ -31,7 +31,7 @@ function runStockBroker() {
   let upDown = () => Math.random() > 0.5 ? '▲' : '▼';
   let getValues = (symbol, time) => [symbol, dayjs(time).toDate().toLocaleString('en-US'), next(symbol), Math.round(Math.random() * 10000), upDown()];
 
-  let addTick = function (time) {
+  let addTick = function(time) {
     for (let symbol in tickers)
       df.rows.addNew(getValues(symbol, time));
   };
@@ -59,10 +59,10 @@ function runStockBroker() {
     valueAggrType: 'avg'
   });
 
-  view.grid.col('price').cellType = "percent completed";
+  view.grid.col('price').cellType = 'percent completed';
 
   let row = 0;
-  let timer = setInterval(function () {
+  let timer = setInterval(function() {
     for (let symbol in tickers) {
       df.rows.setValues(Math.trunc(row % (count * Object.keys(tickers).length)),
         getValues(symbol, addMilliseconds(start, tick)));
@@ -71,7 +71,7 @@ function runStockBroker() {
     df.fireValuesChanged();
   }, tick);
 
-  grok.events.onViewRemoved.subscribe(function (v) {
+  grok.events.onViewRemoved.subscribe(function(v) {
     if (v.name === view.name)
       clearInterval(timer);
   });

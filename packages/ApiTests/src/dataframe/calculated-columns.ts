@@ -1,7 +1,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import {Subscription} from 'rxjs';
-import {after, category, expect, test} from '@datagrok-libraries/utils/src/test';
+import {after, category, expect, test} from '@datagrok-libraries/test/src/test';
 
 
 category('DataFrame: Calculated columns', () => {
@@ -113,9 +113,10 @@ category('DataFrame: Calculated columns', () => {
           resolve('OK');
       })));
 
-    setTimeout(() => reject(new Error('Failed to delete a calculated column')), 50);
+    setTimeout(() => reject(new Error('Failed to delete a calculated column')), 100);
     await t.columns.addNewCalculated('calculated column', '${x}+${y}-${z}');
     t.columns.addNewInt('regular column').init(1);
+    await DG.delay(50);
     t.columns.remove('regular column');
     t.columns.remove('calculated column');
   }));

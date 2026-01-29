@@ -6,7 +6,7 @@
 #input: dataframe table
 #input: column molecules {caption: Molecules column}
 #input: double pH = 7.4 {caption: pH}
-#tags: Transform
+#meta.role: transform
 #meta.method_info.author: Datagrok Hybrid Method
 #meta.method_info.year: 2024
 #meta.method_info.package: https://github.com/datagrok-ai/public

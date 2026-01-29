@@ -101,4 +101,8 @@ export namespace funcs {
   export async function xlsxFileHandler(bytes: any , sheetName?: string ): Promise<any> {
     return await grok.functions.call('PowerPack:XlsxFileHandler', { bytes, sheetName });
   }
+
+  export async function runEnrichment(conn: any , schema: string , table: string , column: string , name: string , df: DG.DataFrame ): Promise<void> {
+    return await grok.functions.call('PowerPack:RunEnrichment', { conn, schema, table, column, name, df });
+  }
 }

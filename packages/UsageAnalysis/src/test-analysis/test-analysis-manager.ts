@@ -1,11 +1,9 @@
 import * as grok from 'datagrok-api/grok';
-import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import { _package } from '../package';
 
-import { delay, Test, TestContext, initAutoTests, awaitCheck } from '@datagrok-libraries/utils/src/test';
+import { Test } from '@datagrok-libraries/test/src/test';
 
-import { getDate } from '../utils';
 
 interface IPackageTest {
     test: Test,

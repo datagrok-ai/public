@@ -28,6 +28,34 @@ export namespace queries {
   export async function getLastModified(appName: string , campaignId: string ): Promise<DG.DataFrame> {
     return await grok.data.query('HitTriage:GetLastModified', { appName, campaignId });
   }
+
+  /**
+  Add a molecule to the dictionary. Returns VID for new or existing molecule.
+  */
+  export async function addMolecule(canonicalSmiles: string , appName: string , campaignId: string , createdBy: string ): Promise<DG.DataFrame> {
+    return await grok.data.query('HitTriage:AddMolecule', { canonicalSmiles, appName, campaignId, createdBy });
+  }
+
+  /**
+  Add multiple molecules to the dictionary. Returns VIDs for new or existing molecules.
+  */
+  export async function addMolecules(smiles: any , appName: string , campaignId: string , createdBy: string ): Promise<DG.DataFrame> {
+    return await grok.data.query('HitTriage:AddMolecules', { smiles, appName, campaignId, createdBy });
+  }
+
+  /**
+  Get a molecule's canonical SMILES by its VID.
+  */
+  export async function getMoleculeByVid(vid: string ): Promise<DG.DataFrame> {
+    return await grok.data.query('HitTriage:GetMoleculeByVid', { vid });
+  }
+
+  /**
+  Get all campaigns and creators for a given VID.
+  */
+  export async function getCampaignsByVid(vid: string , appName?: string | null): Promise<DG.DataFrame> {
+    return await grok.data.query('HitTriage:GetCampaignsByVid', { vid, appName });
+  }
 }
 
 export namespace funcs {
@@ -69,6 +97,14 @@ export namespace funcs {
 
   export async function demoFileSubmit(df: DG.DataFrame , molecules: string ): Promise<void> {
     return await grok.functions.call('HitTriage:DemoFileSubmit', { df, molecules });
+  }
+
+  export async function registerMoleculesToViD(): Promise<void> {
+    return await grok.functions.call('HitTriage:RegisterMoleculesToViD', {});
+  }
+
+  export async function hitDesignVidPanel(vid: any ): Promise<any> {
+    return await grok.functions.call('HitTriage:HitDesignVidPanel', { vid });
   }
 
   export async function gasteigerCellRenderer(): Promise<any> {

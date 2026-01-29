@@ -11,7 +11,7 @@ const TAG_FIT_CHART_FORMAT_3DX = '3dx';
 const likelyPNGColNames = ['image', 'png', 'thumbnail', 'img', 'glyph', 'icon', 'picture', 'photo'];
 /// <reference path="../../globals.d.ts" />
 class CurvesPackageDetectors extends DG.Package {
-  //tags: semTypeDetector
+  //meta.role: semTypeDetector
   //input: column col
   //output: string semType
   detectXMLCurveChart(col) {
@@ -23,7 +23,7 @@ class CurvesPackageDetectors extends DG.Package {
     return null;
   }
 
-  //tags: semTypeDetector
+  //meta.role: semTypeDetector
   //input: column col
   //output: string semType
   detectFit(col) {

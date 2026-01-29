@@ -83,7 +83,7 @@ category('screening tools', () => {
 });
 
 
-// To do: move to separate Benchmarks category
+/* To do: move to separate Benchmarks category*/
 category('screening tools: benchmarks', () => {
   before(async () => {
     if (!chemCommonRdKit.moduleInitialized) {

@@ -57,8 +57,7 @@ export class PackageFunctions {
 
   @grok.decorators.func({
     name: 'pdbCellRenderer',
-    tags: ['cellRenderer'],
-    meta: {cellType: 'Molecule3D', columnTags: 'quality=Molecule3D'},
+    meta: {cellType: 'Molecule3D', columnTags: 'quality=Molecule3D', role: 'cellRenderer'},
     outputs: [{type: 'grid_cell_renderer', name: 'result'}]
   })
   static Molecule3dCellRenderer(): PdbGridCellRenderer {
@@ -67,9 +66,9 @@ export class PackageFunctions {
 
   @grok.decorators.func({
     name: 'chemCellRenderer',
-    tags: ['cellRenderer', 'cellRenderer-PDB_ID'],
     meta: {
-      cellType: 'PDB_ID'
+      cellType: 'PDB_ID',
+      role: 'cellRenderer'
     },
     outputs: [{type: 'grid_cell_renderer', name: 'result'}]
   })
@@ -315,11 +314,11 @@ export class PackageFunctions {
   @grok.decorators.panel({
     name: 'NGL',
     description: '3D structure viewer for large biological molecules (proteins, DNA, and RNA)',
-    tags: ['viewer'],
     outputs: [{type: 'viewer', name: 'result'}],
     meta: {
       keywords: 'PDB, Biostructure',
-      icon: 'files/icons/ngl-viewer.svg'
+      icon: 'files/icons/ngl-viewer.svg',
+      role: 'viewer'
     }
   })
   static nglViewer(): DG.JsViewer & INglViewer {
@@ -329,11 +328,11 @@ export class PackageFunctions {
   @grok.decorators.panel({
     name: 'Biostructure',
     description: '3D structure molstar RCSB viewer for large biological molecules (proteins, DNA, and RNA)',
-    tags: ['viewer'],
     outputs: [{type: 'viewer', name: 'result'}],
     meta: {
       keywords: 'Molstar, PDB',
-      icon: 'files/icons/biostructure-viewer.svg'
+      icon: 'files/icons/biostructure-viewer.svg',
+      role: 'viewer'
     }
   })
   static molstarViewer(): DG.JsViewer & IBiostructureViewer {
@@ -343,11 +342,11 @@ export class PackageFunctions {
   @grok.decorators.panel({
     name: 'Biotrack',
     description: 'structure polymer annotation tracks',
-    tags: ['viewer'],
     outputs: [{type: 'viewer', name: 'result'}],
     meta: {
       keywords: 'PDB, track',
       showInGallery: 'false',
+      role: 'viewer'
     }
   })
   static saguaroViewer(): DG.JsViewer & IBiotrackViewer {
@@ -733,7 +732,7 @@ export class PackageFunctions {
 
   @grok.decorators.panel({
     name: '3D Structure',
-    tags: ['bio', 'widgets'],
+    meta: {role: 'widgets', domain: 'bio'},
   })
   static structure3D(
     @grok.decorators.param({options: {semType: 'Molecule3D'}}) molecule: DG.SemanticValue

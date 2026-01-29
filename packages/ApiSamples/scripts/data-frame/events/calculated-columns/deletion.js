@@ -1,4 +1,3 @@
-//tags: DataFrame, events
 let df = DG.DataFrame.fromColumns([
   DG.Column.fromList(DG.TYPE.FLOAT, 'x', [1, 2, 3]),
   DG.Column.fromList(DG.TYPE.FLOAT, 'y', [4, 5, 6]),
@@ -13,7 +12,7 @@ df.onColumnsRemoved
     data.args.columns
       .filter((col) => col.meta.formula != null)
       .forEach((col) => grok.shell.info(`Removed calculated column ${col.name}`));
-});
+  });
 
 df.columns.remove('x');
 df.columns.remove('new');

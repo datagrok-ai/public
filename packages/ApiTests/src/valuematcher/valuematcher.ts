@@ -1,6 +1,6 @@
 import * as DG from 'datagrok-api/dg';
 // import * as grok from 'datagrok-api/grok';
-import {category, expect, test} from '@datagrok-libraries/utils/src/test';
+import {category, expect, test} from '@datagrok-libraries/test/src/test';
 
 category('ValueMatcher', () => {
   test('numerical pattern equals', async () => {

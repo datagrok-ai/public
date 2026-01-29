@@ -156,8 +156,11 @@ category('projects', () => {
   });
 });
 
-//colList: list of columns which have been added to dataframe by analysis
-//viewerType: viewer which has been created by analysis
+/**
+ * @param colList List of columns which have been added to dataframe by analysis
+ * @param viewerType Viewer which has been created by analysis
+ */
+
 async function runSaveAndOpenProjectTest(tableName: string, analysisFunc: (tv: DG.TableView) => Promise<void>,
   colList: string[], viewerType: string, dataSync?: boolean,
   additionalChecks?: (tv: DG.TableView) => Promise<void>) {

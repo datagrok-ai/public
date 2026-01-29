@@ -6,11 +6,10 @@ export * from './package.g';
 
 export const _package = new DG.Package();
 
-//name: Ketcher
-//tags: moleculeSketcher
-//output: widget sketcher
 export class PackageFunctions {
-  @grok.decorators.func({name: 'Ketcher', tags: ['moleculeSketcher']})
+  @grok.decorators.func({name: 'Ketcher',
+    meta: {role: 'moleculeSketcher'},
+  })
   static ketcherSketcher() : DG.Widget {
     return new KetcherSketcher();
   }

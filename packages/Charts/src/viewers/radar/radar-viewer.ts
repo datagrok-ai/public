@@ -482,9 +482,8 @@ export class RadarViewer extends EChartViewer {
   }
 
   _testColumns(): boolean {
-    const columns = this.dataFrame.columns.toList();
-    const numColumns = columns.filter((col) => ['double', 'int'].includes(col.type));
-    return numColumns.length >= 1;
+    const columnSet = new Set(this.dataFrame.columns.names());
+    return this.valuesColumnNames.every((colName) => columnSet.has(colName));
   }
 
   render(indexes?: number[]) {

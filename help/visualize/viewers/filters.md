@@ -2,6 +2,11 @@
 title: "Filters"
 ---
 
+```mdx-code-block
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+```
+
 A set of controls for quick filtering, selection, and visual assessment of column values.
 
 General:
@@ -26,11 +31,79 @@ typing words, separating them with a comma, then the filter will show only those
 
 It is also allowed to paste multi-line text from the clipboard into the search field. In this case, the filter will also
 display those values that exactly match each word. The checkbox on the left of the search field controls weather to select
-filtered out values only. If this checkbox is enabled, upon searching for value(or values), filter will automatically select
+filtered out values only. If this checkbox is enabled, upon searching for value (or values), filter will automatically select
 only those values that match the search criteria. In contrary case if the checkbox is disabled, search will only filter out values
 and not select them.
 
 ![Filter](../../uploads/gifs/filter-checkbox.gif "Filter")
+
+## Structure filter
+
+Structure filter lets you filter molecules by structural patterns or similarity. 
+It works on molecular columns and supports the following search types:
+
+* **Contains**: filters molecules that contain the sketched structure.  
+* **Included in**: filters molecules where the sketched structure is a superstructure.  
+* **Not contains**: filters out molecules that contain the sketched structure.  
+* **Not included in**: filters out molecules where the sketched structure is a superstructure.  
+* **Exact match**: filters molecules that exactly match the sketched structure.  
+* **Similar**: filters molecules similar to the sketched structure; supports a similarity threshold.
+ 
+:::note Use current molecule as filter
+
+To quickly filter the dataset by the selected molecule, right-click the molecule cell in the grid and select **Current value > Use as filter**.
+
+:::
+
+### Categorical mode
+
+You can switch the structure filter to categorical mode, which treats each unique molecule as a separate, selectable category in the **Filter Panel**. To do that, click the column header, go to the **Context Panel** > **Chemistry** > **Rendering**, and set **Filter type** to `Categorical`. Alternalively, use [column tags](#column-tags) to set the categorical structure filter mode.
+
+![Structure filter](img/chem-structure-filter.gif)
+
+## Scaffold tree filter
+
+Scaffold tree filter lets you filter molecules based on their scaffolds.  
+The scaffold hierarchy is displayed as a tree, where you can:
+
+* Select one or more scaffolds to filter the dataset.  
+* Switch the **AND/OR** control to define filter logic.  
+* Exclude selected scaffolds using the **≠** icon.  
+* Color scaffolds to highlight relationships; colors are shown in both the dataset column and the scaffold tree.
+
+![Scaffold tree filter](img/chem-scaffold-tree-filter.gif)
+
+## Bio substructure filter
+
+Bio substructure filter lets you filter macromolecules based on their subsequences:
+
+* **FASTA sequences**: enter a subsequence.
+* **Separator-based sequences**: enter a subsequence and specify the separator for exact matching.
+* **HELM sequences**: use the visual editor to design complex structures for monomer-level filtering.
+
+```mdx-code-block
+<Tabs>
+<TabItem value="fasta-filtering" label="FASTA" default>
+```
+![FASTA filtering](img/fasta-filtering.gif)
+
+```mdx-code-block
+</TabItem>
+<TabItem value="separator-filtering" label="Separator">
+```
+![Separator filtering](img/separator-filtering.gif)
+
+```mdx-code-block
+</TabItem>
+<TabItem value="helm-filtering" label="HELM">
+```
+
+![HELM filtering](img/helm-filtering.gif)
+
+```mdx-code-block
+</TabItem>
+</Tabs>
+```
 
 ## Text filter
 
@@ -108,6 +181,18 @@ Combined boolean filter (or Flags filter) combines multiple boolean filters into
 
 ![Boolean Filter](../../uploads/gifs/bool-combined.gif)
 
+## Multi-value filter
+
+Multi-value filter lets you filter columns containing cells with multiple values,
+treating each value as an individual filter option. Each value in the filter has two checkboxes, allowing you to include or exclude rows that contain it.
+The AND/OR toggle controls how selected values are combined within the filter. 
+
+Add the filter from the **Filter Panel** hamburger menu: **Add Filter > Multi Value...**.
+Once added, the multi-value filter uses the `.multiValueSeparator` [column tag](#column-tags)
+to split values in the selected column.
+
+![Multi Value Filter](img/multi-value-filter.gif)
+
 ## Saving a filter configuration
 
 You can save a filter configuration for later use:
@@ -166,8 +251,44 @@ Drag-and-drop columns right from the grid to add the corresponding filters:
 
 ![filters-drag-column](img/filters-drag-column.gif)
 
+
+## Properties
+
+| Property | Type | Description |
+|----------|------|-------------|
+| **General** | | |
+| Histogram Look | histogramlook |  |
+| Show Filter Counts Indication | boolean |  |
+| Show Filter Indication | boolean |  |
+| Show Selection Indication | boolean | Indicate the proportion of the selected rows inside each category. |
+| Show Header | boolean |  |
+| Show Histogram | boolean |  |
+| Show Min Max | boolean |  |
+| Show Search Box | boolean |  |
+| Show Mouse Over Row | boolean | shows the current mouse over row in the table using grey vertical bar in corresponding row |
+| Show Current Row | boolean | shows the current row in the table using green vertical bar in corresponding row |
+| Show Mouse Over Group Row | boolean | shouws the mouse over group porportion in the filter (similar to how selection proportion is shown). |
+| Show Bool Combined Filter | boolean | Show a filter that represents all boolean columns in the table. |
+| Column Names | list |  |
+| Filters | list |  |
+| Allow Dynamic Menus | boolean |  |
+| Show Context Menu | boolean | Properties common for all viewers todo: use code generation |
+| Title | string |  |
+| Description | string | Viewer description that gets shown at the *Descriptor Position*. Markup is supported. |
+| Help | string | Help to be shown when user clicks on the ''?'' icon on top. Could either be in markdown, or a URL (starting with ''/'' or ''http''). |
+| Description Position | flexposition |  |
+| Description Visibility Mode | visibilitymode |  |
+| **Description** | | |
+| Show Title | boolean |  |
+| **Data** | | |
+| Table | string |  |
+
 See also:
 
 * [Viewers](../viewers/viewers.md)
 * [Table View](../table-view-1.md)
 * [JS API: Filters](https://public.datagrok.ai/js/samples/ui/viewers/types/filters)
+* Community:
+    * [Visualization-related updates](https://community.datagrok.ai/t/visualization-related-updates/521)
+    * [Filters updates](https://community.datagrok.ai/t/filters-updates/603)
+

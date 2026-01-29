@@ -10,6 +10,7 @@ import {FunctionsView} from './tabs/functions';
 import {OverviewView} from './tabs/overview';
 import {LogView} from './tabs/log';
 import {ProjectsView} from "./tabs/projects";
+import {ClicksView} from './tabs/clicks';
 
 export class ViewHandler {
   public static UA_NAME = 'Usage Analysis';
@@ -20,10 +21,10 @@ export class ViewHandler {
     this.view = new DG.MultiView({viewFactories: {}});
   }
 
-  async init(date?: string, groups?: string, packages?: string, tags?: string, categories?: string, projects?: string,  path?: string): Promise<void> {
+  async init(date?: string, groups?: string, packages?: string, tags?: string, categories?: string, projects?: string, path?: string): Promise<void> {
     this.view.parentCall = grok.functions.getCurrentCall();
     const toolbox = await UaToolbox.construct(this);
-    const viewClasses: (typeof UaView)[] = [OverviewView, PackagesView, FunctionsView, EventsView, LogView, ProjectsView];
+    const viewClasses: (typeof UaView)[] = [OverviewView, PackagesView, FunctionsView, EventsView, ClicksView, LogView, ProjectsView];
     for (let i = 0; i < viewClasses.length; i++) {
       const currentView = new viewClasses[i](toolbox);
       this.view.addView(currentView.name, () => {

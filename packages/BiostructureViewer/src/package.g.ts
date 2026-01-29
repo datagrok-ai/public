@@ -1,24 +1,24 @@
 import {PackageFunctions} from './package';
 import * as DG from 'datagrok-api/dg';
 
-//tags: init
+//meta.role: init
 export async function init() : Promise<void> {
   await PackageFunctions.init();
 }
 
 //name: pdbCellRenderer
-//tags: cellRenderer
 //output: grid_cell_renderer result
 //meta.cellType: Molecule3D
 //meta.columnTags: quality=Molecule3D
+//meta.role: cellRenderer
 export function Molecule3dCellRenderer() : any {
   return PackageFunctions.Molecule3dCellRenderer();
 }
 
 //name: chemCellRenderer
-//tags: cellRenderer, cellRenderer-PDB_ID
 //output: grid_cell_renderer result
 //meta.cellType: PDB_ID
+//meta.role: cellRenderer
 export function pdbIdCellRenderer() : any {
   return PackageFunctions.pdbIdCellRenderer();
 }
@@ -47,85 +47,85 @@ export async function viewBiostructure(content: string, format?: string, name?: 
 }
 
 //description: Opens PDB file
-//tags: file-handler
 //input: string fileContent 
 //output: list<dataframe> result
+//meta.role: fileHandler
 //meta.ext: mmcif, cifCore, pdb, gro
 export async function importPdb(fileContent: string) : Promise<any> {
   return await PackageFunctions.importPdb(fileContent);
 }
 
 //description: Opens XYZ file
-//tags: file-handler
 //input: string fileContent 
 //output: list<dataframe> result
+//meta.role: fileHandler
 //meta.ext: xyz
 export async function importXYZ(fileContent: string) : Promise<any> {
   return await PackageFunctions.importXYZ(fileContent);
 }
 
 //description: Opens biostructure files supported with NGL
-//tags: file-handler
 //input: string fileContent 
 //output: list<dataframe> result
+//meta.role: fileHandler
 //meta.ext: mmtf, cns, top, prmtop, ply, obj, ccp4
 export async function importWithNgl(fileContent: string) : Promise<any> {
   return await PackageFunctions.importWithNgl(fileContent);
 }
 
 //description: Opens .pdbqt file with docking result ligand poses
-//tags: file-handler
 //input: string fileContent 
 //input: bool test = false { optional: true }
 //output: list<dataframe> result
+//meta.role: fileHandler
 //meta.ext: pdbqt
 export async function importPdbqt(fileContent: string, test: boolean) : Promise<any> {
   return await PackageFunctions.importPdbqt(fileContent, test);
 }
 
-//tags: fileViewer
 //input: file file 
 //output: view result
+//meta.role: fileViewer
 //meta.fileViewer: mmtf,cns,top,prmtop,pqr
 export function previewNglStructure(file: any) : any {
   return PackageFunctions.previewNglStructure(file);
 }
 
-//tags: fileViewer
 //input: file file 
 //output: view result
+//meta.role: fileViewer
 //meta.fileViewer: ply,obj
 export function previewNglSurface(file: any) : any {
   return PackageFunctions.previewNglSurface(file);
 }
 
-//tags: fileViewer
 //input: file file 
 //output: view result
+//meta.role: fileViewer
 //meta.fileViewer: ccp4
 export function previewNglDensity(file: any) : any {
   return PackageFunctions.previewNglDensity(file);
 }
 
-//tags: fileViewer
 //input: file file 
 //output: view result
+//meta.role: fileViewer
 //meta.fileViewer: mol,mol2,cif,mcif,mmcif,gro,pdb,pdbqt,ent,sd,xyz
 export function previewBiostructureStructure(file: DG.FileInfo) : any {
   return PackageFunctions.previewBiostructureStructure(file);
 }
 
-//tags: fileViewer
 //input: file file 
 //output: view result
+//meta.role: fileViewer
 //meta.fileViewer: parm7,psf
 export function previewBiostructureTopology(file: DG.FileInfo) : any {
   return PackageFunctions.previewBiostructureTopology(file);
 }
 
-//tags: fileViewer
 //input: file file 
 //output: view result
+//meta.role: fileViewer
 //meta.fileViewer: dsn6,brix,cube,cub,dx,dxbin,xplor,mrc,map
 export function previewBiostructureDensity(file: DG.FileInfo) : any {
   return PackageFunctions.previewBiostructureDensity(file);
@@ -137,9 +137,9 @@ export async function openPdbResidues(fi: DG.FileInfo) : Promise<void> {
 }
 
 //name: PDB id viewer
-//tags: panel
 //input: string pdbId { semType: PDB_ID }
 //output: widget result
+//meta.role: panel
 export function pdbIdNglPanelWidget(pdbId: string) : any {
   return PackageFunctions.pdbIdNglPanelWidget(pdbId);
 }
@@ -186,30 +186,30 @@ export async function biostructureDataProviderApp() : Promise<void> {
 
 //name: NGL
 //description: 3D structure viewer for large biological molecules (proteins, DNA, and RNA)
-//tags: panel, viewer
 //output: viewer result
 //meta.keywords: PDB, Biostructure
 //meta.icon: files/icons/ngl-viewer.svg
+//meta.role: viewer,panel
 export function nglViewer() {
   return PackageFunctions.nglViewer();
 }
 
 //name: Biostructure
 //description: 3D structure molstar RCSB viewer for large biological molecules (proteins, DNA, and RNA)
-//tags: panel, viewer
 //output: viewer result
 //meta.keywords: Molstar, PDB
 //meta.icon: files/icons/biostructure-viewer.svg
+//meta.role: viewer,panel
 export function molstarViewer() {
   return PackageFunctions.molstarViewer();
 }
 
 //name: Biotrack
 //description: structure polymer annotation tracks
-//tags: panel, viewer
 //output: viewer result
 //meta.keywords: PDB, track
 //meta.showInGallery: false
+//meta.role: viewer,panel
 export function saguaroViewer() {
   return PackageFunctions.saguaroViewer();
 }
@@ -350,9 +350,10 @@ export function biostructureDataToJson(binary: boolean, data: any, ext: string, 
 }
 
 //name: 3D Structure
-//tags: panel, bio, widgets
 //input: semantic_value molecule { semType: Molecule3D }
 //output: widget result
+//meta.role: widgets,panel
+//meta.domain: bio
 export function structure3D(molecule: DG.SemanticValue) : any {
   return PackageFunctions.structure3D(molecule);
 }

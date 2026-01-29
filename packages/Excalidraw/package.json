@@ -53,6 +53,6 @@
   "repository": {
     "type": "git",
     "url": "https://github.com/datagrok-ai/public.git",
-    "directory": "packages/excalidraw"
+    "directory": "packages/Excalidraw"
   }
 }

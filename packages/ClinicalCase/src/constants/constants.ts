@@ -59,3 +59,5 @@ export const domainsToValidate = ['dm', 'ae'];
 //values from ts domain
 export const STSTDTC = 'STSTDTC';
 export const STENDTC = 'STENDTC';
+
+export const COLUMN_FROM_DM_TAG = '.columnFromDm';

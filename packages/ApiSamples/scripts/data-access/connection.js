@@ -1,4 +1,3 @@
-//tags: DataConnection
 const connection = await grok.dapi.connections.first();
 
 // Get the connection's parameters

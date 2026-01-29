@@ -21,18 +21,18 @@ export async function sureChemblSimilaritySearch(molecule: string, limit: number
 }
 
 //name: Databases | SureChEMBL | Substructure Search
-//tags: panel, widgets
 //input: string molecule { semType: Molecule }
 //output: widget result
+//meta.role: widgets,panel
 //condition: true
 export function sureChemblSubstructureSearchWidget(molecule: string) : any {
   return PackageFunctions.sureChemblSubstructureSearchWidget(molecule);
 }
 
 //name: Databases | SureChEMBL | Similarity Search
-//tags: panel, widgets
 //input: string molecule { semType: Molecule }
 //output: widget result
+//meta.role: panel,widgets
 //condition: true
 export function sureChemblSimilaritySearchWidget(molecule: string) : any {
   return PackageFunctions.sureChemblSimilaritySearchWidget(molecule);

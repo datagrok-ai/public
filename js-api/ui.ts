@@ -24,7 +24,7 @@ import {
   DropDown,
   TypeAhead,
   TypeAheadConfig,
-  TagsInput, ChoiceInput, InputForm, CodeInput, CodeConfig, MarkdownInput, TagsInputConfig, MarkdownConfig,
+  ChoiceInput, InputForm, CodeInput, CodeConfig, MarkdownInput, MarkdownConfig,
 } from './src/widgets';
 import {toDart, toJs} from './src/wrappers';
 import {Functions} from './src/functions';
@@ -33,7 +33,7 @@ import {__obs} from './src/events';
 import {HtmlUtils, _isDartium, _options, Utils} from './src/utils';
 import * as rxjs from 'rxjs';
 import {CanvasRenderer, GridCellRenderer, SemanticValue, Size} from './src/grid';
-import {Entity, FileInfo, Property, User} from './src/entities';
+import {Entity, FileInfo, Group, Property, User} from './src/entities';
 import { Column, DataFrame } from './src/dataframe';
 import dayjs from "dayjs";
 import { Wizard, WizardPage } from './src/ui/wizard';
@@ -496,7 +496,10 @@ export function tableFromProperties(items: any[], properties: Property[]) {
     properties.map((p) => p.name));
 }
 
-/** Creates a visual table based on [items] and [renderer]. */
+/** Creates a visual table based on [items] and [renderer].
+ * BE WARE: Indexing in the renderer function, due to HTML being totally awesome starts from 1, not 0.
+ * Because... What's a better way to make developers life miserable, right? 
+*/
 export function table<T>(items: T[], renderer: ((item: T, ind: number) => any) | null, columnNames: string[] | null = null): HTMLTableElement {
   return toJs(api.grok_HtmlTable(items, renderer !== null ? (object: any, ind: number) => renderer(toJs(object), ind) : null, columnNames)).root;
 }
@@ -757,7 +760,7 @@ export namespace input {
 
   const optionsMap: {[key: string]: (input: InputBase, option: any) => void} = {
     value: (input, x) => input.value = input.inputType === d4.InputType.File ? toDart(x) :
-      input.inputType === d4.InputType.Files ? x.map((elem: FileInfo) => toDart(elem)) : x,
+      [d4.InputType.Files, d4.InputType.Columns, d4.InputType.Tags].includes(input.inputType) ? x.map((elem: any) => toDart(elem)) : x,
     nullable: (input, x) => input.nullable = x, // finish it?
     property: (input, x) => input.property = x,
     tooltipText: (input, x) => input.setTooltip(x),
@@ -769,11 +772,24 @@ export namespace input {
     placeholder: (input, x) => (input.input as HTMLInputElement).placeholder = x,
     items: (input, x) => input.inputType === d4.InputType.Choice ? (input as ChoiceInput<typeof x>).items = x :
       input.inputType === d4.InputType.Table ? (input as ChoiceInput<typeof x>).items = x.map((elem: DataFrame) => toDart(elem)) :
-        input.inputType === d4.InputType.MultiChoice ? api.grok_MultiChoiceInput_Set_Items(input.dart, x) : api.grok_RadioInput_Set_Items(input.dart, x),
+        input.inputType === d4.InputType.MultiChoice ? api.grok_MultiChoiceInput_Set_Items(input.dart, x) :
+          [d4.InputType.User, d4.InputType.UserGroups, d4.InputType.Tags].includes(input.inputType) ? api.grok_TagsInput_Set_Suggestion_Items(input.dart, x.map((elem: any) => toDart(elem))) :
+            api.grok_RadioInput_Set_Items(input.dart, x),
     icon: (input, x) => api.grok_StringInput_AddIcon(input.dart, x),
     available: (input, x) => api.grok_ColumnsInput_ChangeAvailableColumns(input.dart, x),
     checked: (input, x) => api.grok_ColumnsInput_ChangeCheckedColumns(input.dart, x),
+    additionalColumns: (input, x) => setInputAdditionalColumns(input, x),
+    onAdditionalColumnsChanged: (input, x) => setInputAdditionalColumnsOnChanged(input, x),
+    additionalColumnProperties: (input, x) => setAdditionalColumnProperties(input, x),
+    showSelectedColsOnTop: (input, x) => api.grok_ColumnsInput_SetShowSelectedColsOnTop(input.dart, x),
     showOnlyColorBox: (input, x) => api.grok_ColorInput_SetShowOnlyColorBox(input.dart, x),
+    allowNew: (input, x) => api.grok_TagsInput_Set_Allow_New(input.dart, x),
+    multiValue: (input, x) => api.grok_TagsInput_Set_MultiValue(input.dart, x),
+    acceptExtensions: (input, x) => api.grok_FilesInput_Set_AcceptExtensions(input.dart, x),
+    itemToString: (input, x) => api.grok_TagsInput_Set_ItemToString(input.dart, x),
+    getSuggestions:(input, x) => api.grok_TagsInput_Set_GetSuggestions(input.dart, x),
+    createTagLabel: (input, x) => api.grok_TagsInput_Set_CreateTagLabel(input.dart, x),
+    createNewItem: (input, x) => api.grok_TagsInput_Set_CreateNewItem(input.dart, x),
   };
 
   function setInputOptions(input: InputBase, inputType: d4.InputType, options?: IInputInitOptions, ignoreProp: boolean = false): void {
@@ -794,24 +810,12 @@ export namespace input {
       }
       if (key !== 'nullable' && optionsMap[key] !== undefined)
         optionsMap[key](input, (specificOptions as IIndexable)[key]);
-
-      if (inputType === d4.InputType.Columns) {
-        if (key === 'additionalColumns') {
-          const additionalCols = options.additionalColumns as { [key: string]: Column[] } | undefined;
-          if (additionalCols)
-            setInputAdditionalColumns(input, additionalCols);
-        }
-        if (key === 'onAdditionalColumnsChanged') {
-          const onAdditionalColsChanged = options.onAdditionalColumnsChanged as((additionalColumns: { [key: string]: Column[] }) => void) | undefined;
-          if (onAdditionalColsChanged)
-            setInputAdditionalColumnsOnChanged(input, onAdditionalColsChanged);
-        }
-      }
     }
     const baseOptions = (({value, nullable, property, onCreated, onValueChanged}) => ({value, nullable, property, onCreated, onValueChanged}))(options);
     for (let key of Object.keys(baseOptions)) {
       if (key === 'value' && baseOptions[key] !== undefined)
-        options.property ? options.property.defaultValue = toDart(baseOptions[key]) : optionsMap[key](input, (baseOptions as IIndexable)[key]);
+        options.property ? options.property.defaultValue = Array.isArray(baseOptions[key]) ? (baseOptions[key] as unknown[]).map((elem) => toDart(elem)) :
+          toDart(baseOptions[key]) : optionsMap[key](input, (baseOptions as IIndexable)[key]);
       if (key === 'nullable' && baseOptions[key] !== undefined)
         options.property ? options.property.nullable = baseOptions[key]! : optionsMap[key](input, (baseOptions as IIndexable)[key]);
       if ((baseOptions as IIndexable)[key] !== undefined && optionsMap[key] !== undefined)
@@ -827,8 +831,6 @@ export namespace input {
     tooltipText?: string;
     onCreated?: (input: InputBase<T>) => void;
     onValueChanged?: (value: T, input: InputBase<T>) => void;
-    additionalColumns?: { [key: string]: Column[] };
-    onAdditionalColumnsChanged?: (additionalColumns: { [key: string]: Column[] }) => void;
   }
 
   export interface INumberInputInitOptions<T> extends IInputInitOptions<T> {
@@ -837,11 +839,24 @@ export namespace input {
     step?: number;
     showSlider?: boolean;
     showPlusMinus?: boolean;
+    format?: string;
   }
 
   export interface IChoiceInputInitOptions<T> extends IInputInitOptions<T> {
     items?: T[];
   }
+
+  export interface TagsInputConfig<T> extends IMultiChoiceInputInitOptions<T> {
+    items?: T[];
+    tags?: T[];
+    showButton?: boolean;
+    allowNew?: boolean;
+    multiValue?: boolean;
+    itemToString?: (item: T) => string;
+    getSuggestions?: (inputText: string) => Promise<T[]>;
+    createTagLabel?: (item: T) => Element;
+    createNewItem?: (inputText: string) => T;
+  };
 
   export interface IMultiChoiceInputInitOptions<T> extends Omit<IChoiceInputInitOptions<T>, 'value'> {
     value?: T[];
@@ -869,10 +884,16 @@ export namespace input {
     checked?: string[];
     additionalColumns?: { [key: string]: Column[] };
     onAdditionalColumnsChanged?: (additionalColumns: { [key: string]: Column[] }) => void;
+    additionalColumnProperties?: Property[];
+    showSelectedColsOnTop?: boolean;
   }
 
   export interface IColorInputInitOptions<T> extends IInputInitOptions<T> {
     showOnlyColorBox?: boolean;
+  }
+
+  export interface IFilesInputInitOptions<T> extends IInputInitOptions<T> {
+    acceptExtensions?: string[];
   }
 
   /** Set the table specifically for the column input */
@@ -889,22 +910,28 @@ export namespace input {
 
   /** Sets additional columns for the columns input */
   export function setInputAdditionalColumns(input: InputBase, additionalColumns: { [key: string]: Column[] }): void {
+    if (!additionalColumns)
+      return;
     const mapToSet: { [key: string]: any } = {};
     for (const [key, columns] of Object.entries(additionalColumns))
       mapToSet[key] = columns.map(c => c.dart);
-
     api.grok_ColumnsInput_SetAdditionalColumns(input.dart, toDart(mapToSet));
   }
 
-  /** Sets additional columns on change event */
+  /** Sets additional columns on change event for the columns input */
   export function setInputAdditionalColumnsOnChanged(input: InputBase, onChange: (values: { [key: string]: Column[] }) => void): void {
+    if (!onChange)
+      return;
     api.grok_ColumnsInput_SetOnAdditionalColumnsChanged(input.dart, !onChange ? null : toDart((values: any) => {
       values = toJs(values);
       for (const key of Object.keys(values))
         values[key] = values[key].map(toJs);
-
       onChange(values);
     }));
+  }
+
+  export function setAdditionalColumnProperties(input: InputBase, properties: Property[]): void {
+    api.grok_ColumnsInput_SetAdditionalColumnProperties(input.dart, properties.map((toDart)));
   }
 
   /** Creates input for the specified property, and optionally binds it to the specified object */
@@ -995,7 +1022,7 @@ export namespace input {
     return _create(d4.InputType.File, name, options);
   }
 
-  export function files(name: string, options?: IInputInitOptions<FileInfo[]>): InputBase<FileInfo[] | null> {
+  export function files(name: string, options?: IFilesInputInitOptions<FileInfo[]>): InputBase<FileInfo[] | null> {
     return _create(d4.InputType.Files, name, options);
   }
 
@@ -1031,11 +1058,12 @@ export namespace input {
     return _create(d4.InputType.Radio, name, options);
   }
 
-  export function user(name: string, options?: IInputInitOptions<User[]>): InputBase<User[] | null> {
+  export function user(name: string, options?: TagsInputConfig<User[]>): InputBase<User[] | null> {
     return _create(d4.InputType.User, name, options);
   }
 
-  export function userGroups(name: string, options?: IInputInitOptions<User[]>): InputBase<User[] | null> {
+
+  export function userGroups(name: string, options?: TagsInputConfig<User[]>): InputBase<User[] | null> {
     return _create(d4.InputType.UserGroups, name, options);
   }
 
@@ -1051,17 +1079,22 @@ export namespace input {
     return new CodeInput(name, options);
   }
 
-  export function tags(name: string, config?: TagsInputConfig) {
-    return new TagsInput(name, config);
+  export function tags<T>(name: string, config?: TagsInputConfig<T>): InputBase<T | null> {
+    //put tags into items (for backward compatibility)
+    if (config?.tags && !config.items)
+        config.items = config.tags as any[];
+    const tagsBaseInput = _create(d4.InputType.Tags, name, config);
+    return _create(d4.InputType.Tags, name, config);  
   }
 
   export async function markdownPreview(markdown: string): Promise<HTMLDivElement> {
-    await Utils.loadJsCss(['js/common/quill/marked.min.js']);
+    await Utils.loadJsCss(['/js/common/quill/marked.min.js']);
     const markdownPreview = div([], { style: { padding: '12px' } });
     //@ts-ignore
     markdownPreview.innerHTML = marked.parse(markdown ?? '');
     return markdownPreview;
   }
+
 }
 
 export function inputsRow(name: string, inputs: InputBase[]): HTMLElement {

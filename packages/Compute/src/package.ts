@@ -60,10 +60,10 @@ export class PackageFunctions {
 
 
   @grok.decorators.func({
-    tags: ['viewer'],
     name: 'OutliersSelectionViewer',
     description: 'Creates an outliers selection viewer',
     outputs: [{type: 'viewer', name: 'result'}],
+    meta: {role: 'viewer'},
   })
   static OutliersSelection() {
     return new OutliersSelectionViewer();

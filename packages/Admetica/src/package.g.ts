@@ -7,9 +7,10 @@ export function info() : void {
 }
 
 //name: Biology | Admetica
-//tags: panel, chem, widgets
 //input: semantic_value smiles { semType: Molecule }
 //output: widget result
+//meta.role: widgets,panel
+//meta.domain: chem
 export async function admeticaWidget(semValue: DG.SemanticValue) : Promise<any> {
   return await PackageFunctions.admeticaWidget(semValue);
 }
@@ -21,20 +22,20 @@ export async function getModels(property?: string) : Promise<string[]> {
 }
 
 //name: AdmeticaHT
-//tags: HitTriageFunction
 //input: dataframe table 
 //input: column molecules { semType: Molecule }
 //input: list<string> absorption { choices: Admetica:getModels('Absorption'); nullable: true }
 //input: list<string> distribution { choices: Admetica:getModels('Distribution'); nullable: true }
 //input: list<string> metabolism { choices: Admetica:getModels('Metabolism'); nullable: true }
 //input: list<string> excretion { choices: Admetica:getModels('Excretion'); nullable: true }
+//meta.role: hitTriageFunction
 export async function admeticaHT(table: DG.DataFrame, molecules: DG.Column, absorption: string[], distribution: string[], metabolism: string[], excretion: string[]) : Promise<void> {
   await PackageFunctions.admeticaHT(table, molecules, absorption, distribution, metabolism, excretion);
 }
 
 //name: AdmeticaEditor
-//tags: editor
 //input: funccall call 
+//meta.role: editor
 export function admeticaEditor(call: DG.FuncCall) : void {
   PackageFunctions.admeticaEditor(call);
 }
@@ -68,12 +69,12 @@ export async function getAdmePropertiesSingle(molecule: string) : Promise<any> {
 }
 
 //name: Admetica
-//tags: app
 //output: view result
 //meta.icon: images/vlaaivis.png
 //meta.browsePath: Chem
-export async function admeticaApp() : Promise<any> {
-  return await PackageFunctions.admeticaApp();
+//meta.role: app
+export async function runAdmeticaApplication() : Promise<any> {
+  return await PackageFunctions.runAdmeticaApplication();
 }
 
 //name: Admetica Demo

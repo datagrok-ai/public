@@ -13,7 +13,7 @@ function toHierarchy(dataFrame, splitByColumnNames) {
 
     for (let colIdx = idx; colIdx < columns.length; colIdx++) {
       let parentNode = colIdx === 0 ? data : parentNodes[colIdx - 1];
-      let node = { name: columns[colIdx].getString(i) };
+      let node = {name: columns[colIdx].getString(i)};
       parentNodes[colIdx] = node;
       if (!parentNode.children)
         parentNode.children = [];

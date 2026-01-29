@@ -1,7 +1,7 @@
 const t = grok.data.demo.demog();
 
 // Conditional color-coding for numerical columns
-t.col('height').meta.colors.setConditional({'20-170': '#00FF00', '170-190': "#220505"});
+t.col('height').meta.colors.setConditional({'20-170': '#00FF00', '170-190': '#220505'});
 
 // Linear color-coding for numerical columns
 t.col('age').meta.colors.setLinear(['#ff0000', '#ffff00', '#00ff00'], {min: 19, belowMinColor: '#ac3400', max: 70});

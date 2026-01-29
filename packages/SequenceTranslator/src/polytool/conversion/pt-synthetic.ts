@@ -70,19 +70,27 @@ export function getNewMonomers(rdkit: RDModule, mLib: IMonomerLib, rule: RuleRea
   for (let i = 0; i < rule.firstMonomers.length; i++) {
     const monomer = mLib.getMonomer('PEPTIDE', rule.firstMonomers[i]);
 
-    if (monomer) {
-      const sMolBlock = cutReactant(rdkit, monomer.molfile, rxnCutFirst, monomer.name);
-      monomers[counter] = sMolBlock;
-      monomerNames[counter] = `${monomer.symbol}_${monomerName}`;
+    if (monomer && monomer.molfile) {
+      try {
+        const sMolBlock = cutReactant(rdkit, monomer.molfile, rxnCutFirst, monomer.name);
+        monomers[counter] = sMolBlock;
+        monomerNames[counter] = `${monomer.symbol}_${monomerName}`;
+      } catch (e: any) {
+        console.error(e);
+      }
     }
     counter++;
   }
   for (let i = 0; i < rule.secondMonomers.length; i++) {
     const monomer = mLib.getMonomer('PEPTIDE', rule.secondMonomers[i]);
-    if (monomer) {
-      const sMolBlock = cutReactant(rdkit, monomer.molfile, rxnCutSecond, monomer.name);
-      monomers[counter] = sMolBlock;
-      monomerNames[counter] = `${monomer.symbol}_${monomerName}`;
+    if (monomer && monomer.molfile) {
+      try {
+        const sMolBlock = cutReactant(rdkit, monomer.molfile, rxnCutSecond, monomer.name);
+        monomers[counter] = sMolBlock;
+        monomerNames[counter] = `${monomer.symbol}_${monomerName}`;
+      } catch (e: any) {
+        console.error(e);
+      }
     }
     counter++;
   }

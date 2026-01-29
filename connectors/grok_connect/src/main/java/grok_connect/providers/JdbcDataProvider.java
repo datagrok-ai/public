@@ -534,6 +534,7 @@ public abstract class JdbcDataProvider extends DataProvider {
         }
         return result;
     }
+
     protected String getInQuery(PatternMatcher matcher, String names) {
         return String.format("(%s %s (%s))", matcher.colName, matcher.op, names);
     }
@@ -557,6 +558,10 @@ public abstract class JdbcDataProvider extends DataProvider {
             result.query = "(" + matcher.colName + " = @" + paramName + ")";
             result.params.add(new FuncParam(Types.BIG_INT, paramName, matcher.values.stream().findFirst().orElse(null)));
         }
+        else if (matcher.op.equals(PatternMatcher.IN) || matcher.op.equals(PatternMatcher.NOT_IN)) {
+            String names = paramToNamesString(paramName, matcher, "bigint", result);
+            result.query = getInQuery(matcher, names);
+        }
         else
             result.query = "(1 = 1)";
         return result;
@@ -573,10 +578,10 @@ public abstract class JdbcDataProvider extends DataProvider {
 
         String type = "string";
         String _query = "(LOWER(" + matcher.colName + ") LIKE @" + paramName + ")";
-        List<String> values = matcher.values;
+        List<Object> values = matcher.values;
         String value = null;
         if (values.size() > 0)
-            value = values.get(0).toLowerCase();
+            value = ((String) values.get(0)).toLowerCase();
 
         switch (matcher.op) {
             case PatternMatcher.EQUALS:

@@ -71,3 +71,4 @@ doesn't impact the representation of the chord viewer.
 * [Viewers](../viewers/viewers.md)
 * [Network viewer](network-diagram.md)
 * [Sankey viewer](sankey.md)
+* [Community: Visualization-related updates](https://community.datagrok.ai/t/visualization-related-updates/521)

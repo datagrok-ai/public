@@ -54,7 +54,7 @@ public class SessionHandler {
             err = err.getCause();
         String message = err.getMessage();
         // todo: improve this
-        if (queryManager.provider.getClass().equals(DatabricksProvider.class))
+        if (queryManager != null && queryManager.provider.getClass().equals(DatabricksProvider.class))
             message = DatabricksProvider.simplifyDatabricksError(message);
         String stackTrace = Arrays.stream(err.getStackTrace()).map(StackTraceElement::toString)
                 .collect(Collectors.joining(System.lineSeparator()));

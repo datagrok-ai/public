@@ -436,8 +436,8 @@ export class PackageFunctions {
     'meta': {
       'icon': 'icons/icon.svg',
       'toolbox': 'true',
+      'role': 'viewer',
     },
-    'tags': ['viewer'],
     'name': 'Map',
     'description': 'GIS map viewer',
     'outputs': [{'name': 'result', 'type': 'viewer'}],
@@ -590,10 +590,8 @@ export class PackageFunctions {
 
 
   @grok.decorators.panel({
-    'tags': [
-      'widgets',
-    ],
     'condition': 'true',
+    'meta': {role: 'widgets'},
   })
   static gisAreaWidget(
     @grok.decorators.param({'type': 'string', 'options': {'semType': 'gis-area'}}) gisArea: any): DG.Widget | null {

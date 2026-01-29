@@ -1,5 +1,5 @@
 
-  //tags: semTypeDetector
+  //meta.role: semTypeDetector
   //input: column col
   //output: string semType
   detect#{PACKAGE_DETECTORS_NAME}(col) {

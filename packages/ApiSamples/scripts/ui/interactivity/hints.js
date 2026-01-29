@@ -15,10 +15,10 @@ let msg = ui.divV([
   ui.h1('Title'),
   ui.divV([
     ui.divText('Click on Scatter plot to close hint indicator'),
-    ui.link('Remove hint-indicator and hint-popup',()=>{
+    ui.link('Remove hint-indicator and hint-popup', ()=>{
       indicator2.click();
       popup.remove();
-    }, '','')
+    }, '', '')
   ])
 ]);
 

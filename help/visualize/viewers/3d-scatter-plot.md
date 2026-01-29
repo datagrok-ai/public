@@ -31,3 +31,4 @@ See also:
 * [Table View](../table-view-1.md)
 * [Viewers](viewers.md)
 * [JS API: 3D Scatter plot](https://public.datagrok.ai/js/samples/ui/viewers/types/scatter-plot-3d)
+* [Community: Visualization-related updates](https://community.datagrok.ai/t/visualization-related-updates/521)

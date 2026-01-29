@@ -8,6 +8,7 @@ keywords:
 ---
 
 See details: [issues](release-history.md), [plugin changelogs](plugins/plugins.mdx), [JS API compatibility](compatibility/compatibility.mdx)
+Community: [Plugin releases](https://community.datagrok.ai/t/plugin-releases/775/149), [Platform releases](https://community.datagrok.ai/t/platform-releases/73/18)
 
 ## 1.26.7 || 2025-Nov
 

@@ -1,9 +1,9 @@
 // Demonstrates different link click modes in grid
 
 const df = DG.DataFrame.fromColumns([
-	DG.Column.fromList(DG.TYPE.STRING, 'open in new tab', ['To learn more about Datagrok open https://datagrok.ai/help/home']),
-	DG.Column.fromList(DG.TYPE.STRING, 'open in context panel', ['To learn more about Datagrok open https://datagrok.ai/help/home']),
-	DG.Column.fromList(DG.TYPE.STRING, 'custom', ['To learn more about Datagrok open https://datagrok.ai/help/home'])
+  DG.Column.fromList(DG.TYPE.STRING, 'open in new tab', ['To learn more about Datagrok open https://datagrok.ai/help/home']),
+  DG.Column.fromList(DG.TYPE.STRING, 'open in context panel', ['To learn more about Datagrok open https://datagrok.ai/help/home']),
+  DG.Column.fromList(DG.TYPE.STRING, 'custom', ['To learn more about Datagrok open https://datagrok.ai/help/home'])
 ]);
 grok.shell.addTableView(df);
 

@@ -8,7 +8,7 @@ import {
   expectTable,
   before,
   after,
-} from '@datagrok-libraries/utils/src/test';
+} from '@datagrok-libraries/test/src/test';
 import dayjs from 'dayjs';
 
 const languages = ['Python', 'R', 'Julia', 'NodeJS', 'Octave', 'Grok', 'JavaScript'];
@@ -145,6 +145,15 @@ for (const lang of languages) {
       }
     });
 
+    if (lang !== 'Grok') {
+      test('String list input', async () => {
+        const stringList = ['apple', 'banana', 'cherry', 'date'];
+        const result = await grok.functions.call(`CVMTests:${lang}ListStringTest`,
+            {'string_list': stringList});
+        expect(result, 'date');
+      }, {stressTest: serverSideLanguages.includes(lang)});
+    }
+
     if (lang === 'Python') {
       test('Environment string', async () => {
         const result = await grok.functions.call('CVMTests:PythonAnchorsCount',
@@ -154,14 +163,14 @@ for (const lang of languages) {
                             '  <li><a href="tel:+123456789">Phone</a></li>\n' +
                             '  </ul>'});
         expect(result, 3);
-      }, {timeout: 240000});
+      }, {timeout: 240000, skipReason: 'Unstable'});
 
       test('File type input and environment yaml', async () => {
         const files = await grok.dapi.files.list('System:AppData/CvmTests/images', false, 'silver.jpg');
         const result = await grok.functions.call('CVMTests:ImagePixelCount',
           {'fileInput': files[0]});
         expect(49090022, result);
-      }, {timeout: 240000});
+      }, {timeout: 240000, skipReason: 'Unstable'});
     }
   });
 

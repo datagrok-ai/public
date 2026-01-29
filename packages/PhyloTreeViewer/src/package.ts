@@ -23,8 +23,7 @@ declare const window: PtvWindowType;
 
 export class PackageFunctions {
   @grok.decorators.func({
-    meta: {icon: 'files/icons/phylocanvasgl-viewer.svg'},
-    tags: ['viewer'],
+    meta: {icon: 'files/icons/phylocanvasgl-viewer.svg', role: 'viewer'},
     name: 'PhylocanvasGL',
     description: 'Phylogenetic tree visualization',
     outputs: [{type: 'viewer', name: 'result'}]

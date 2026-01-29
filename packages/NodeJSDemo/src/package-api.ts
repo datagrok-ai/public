@@ -12,7 +12,7 @@ export namespace funcs {
     return await grok.functions.call('NodeTodo:Info', {});
   }
 
-  export async function todoApp(path?: string ): Promise<DG.View> {
-    return await grok.functions.call('NodeTodo:TodoApp', { path });
+  export async function todoApplication(path?: string ): Promise<DG.View> {
+    return await grok.functions.call('NodeTodo:TodoApplication', { path });
   }
 }

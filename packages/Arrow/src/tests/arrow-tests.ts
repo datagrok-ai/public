@@ -1,4 +1,4 @@
-import {before, category, expect, expectTable, test} from '@datagrok-libraries/utils/src/test';
+import {before, category, expect, expectTable, test} from '@datagrok-libraries/test/src/test';
 import * as DG from 'datagrok-api/dg';
 import { _package } from '../package-test';
 import {default as init} from "parquet-wasm";

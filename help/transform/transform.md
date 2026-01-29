@@ -11,6 +11,7 @@ the commonly used routines:
 
 * [Add New Column](add-new-column.md)
 * [Anonymize Data](anonymize-data.md)
+* [Append Tables](append-tables.md)
 * [Categorize Data](categorize-data.md)
 * [Batch Data Editor](batch-edit.md)
 * [Change Type](change-column-type.md)

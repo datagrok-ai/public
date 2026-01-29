@@ -1,4 +1,4 @@
-// User settings storage demo: Saving values to storage
+// User settings storage demo - saving values to storage
 
 const STORAGE_NAME = 'user-data-storage-demo';
 

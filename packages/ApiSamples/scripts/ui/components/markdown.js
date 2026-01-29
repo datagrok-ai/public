@@ -7,9 +7,9 @@ Datagrok unlocks the value of the complex data by empowering non-technical users
   * [Visualize](/help/visualize/viewers).
   * [Explore data](/help/#explore).
   * [Build and deploy predictive models](/help/learn/predictive-modeling).
-  *	[Collaborate with others](/help/collaborate/sharing).
+  * [Collaborate with others](/help/collaborate/sharing).
 `;
 
-grok.shell.newView('Markdown example',[
+grok.shell.newView('Markdown example', [
   ui.markdown(document)
 ]);

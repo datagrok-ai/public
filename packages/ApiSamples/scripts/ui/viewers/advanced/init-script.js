@@ -9,7 +9,7 @@ let view = grok.shell.addTableView(grok.data.demo.demog());
 
 let plot = view.scatterPlot({
   onInitializedScript:
-    "v.onAfterDrawScene.subscribe((_) => { " +
-    "  v.canvas.getContext('2d').setFillStyle('red').fillRect(100, 100, 50, 50); " +
-    "});"
+    'v.onAfterDrawScene.subscribe((_) => { ' +
+    '  v.canvas.getContext(\'2d\').setFillStyle(\'red\').fillRect(100, 100, 50, 50); ' +
+    '});'
 });

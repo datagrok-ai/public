@@ -12,7 +12,7 @@ import {_package} from '../package-test';
 category('Viewers', () => {
   const packageName = 'BiostructureViewer';
   // -- Viewers tests --
-  const viewers = DG.Func.find({package: packageName, tags: ['viewer']}).map((f) => f.friendlyName);
+  const viewers = DG.Func.find({package: packageName, meta: {role: DG.FUNC_TYPES.VIEWER}}).map((f) => f.friendlyName);
   for (const v of viewers) {
     test(v, async () => {
       await testViewer(v, await (async () => {

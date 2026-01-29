@@ -1,15 +1,17 @@
+/* eslint-disable max-len */
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {PeptiHitTemplate} from './types';
-import {PeptiHitHelmColName, TileCategoriesColName, ViDColName} from './consts';
-import {getNewVid} from './utils/calculate-single-cell';
-import '../../css/hit-triage.css';
+import {PeptiHitHelmColName, TileCategoriesColName, ViDColName, ViDSemType} from './consts';
 import {_package} from '../package';
 import {Subscription} from 'rxjs';
 import {filter} from 'rxjs/operators';
 import {HitDesignApp} from './hit-design-app';
 import {PeptiHitInfoView} from './pepti-hits-views/info-view';
+// @ts-ignore
+import '../../css/hit-triage.css';
+import {registerMol} from './utils/molreg';
 
 export class PeptiHitApp extends HitDesignApp<PeptiHitTemplate> {
   _helmColName: string = PeptiHitHelmColName;
@@ -72,6 +74,25 @@ export class PeptiHitApp extends HitDesignApp<PeptiHitTemplate> {
         grok.shell.error('Failed to apply layout. Falling back to default layout.');
         console.error(e);
       }
+    }
+
+    const vidGridCol = view.grid?.col(ViDColName);
+    if (vidGridCol)
+      vidGridCol.editable = false;
+
+    // set the semType of vidCol
+    const vidCol = this.dataFrame!.col(ViDColName);
+    if (vidCol) {
+      vidCol.semType = ViDSemType;
+      vidCol.valueComparer = (a: string | null, b: string | null) => {
+        if (a === b) return 0;
+        if (a === null) return -1;
+        if (b === null) return 1;
+        // column is in string format of V######, but at some point it might go beyond 1 million, so remove the 'V' and compare as numbers
+        const aNum = parseInt(a.substring(1));
+        const bNum = parseInt(b.substring(1));
+        return aNum - bNum;
+      };
     }
 
     if (isNew)
@@ -161,39 +182,19 @@ export class PeptiHitApp extends HitDesignApp<PeptiHitTemplate> {
           return;
         const newValue = gc.cell.value;
         const newValueIdx = gc.tableRowIndex!;
-        let newVid = this.dataFrame!.col(ViDColName)?.get(newValueIdx);
-        let foundMatch = false;
-        // try to find existing sequence
-        if (newValue) {
-          try {
-            const canonicals = gc.tableColumn.toList();
-            const canonicalNewValue = newValue;
-            if (canonicals?.length === this.dataFrame!.rowCount) {
-              for (let i = 0; i < canonicals.length; i++) {
-                if (canonicals[i] === canonicalNewValue &&
-                        i !== newValueIdx && this.dataFrame!.col(ViDColName)?.get(i)) {
-                  newVid = this.dataFrame!.col(ViDColName)?.get(i);
-                  foundMatch = true;
-                  break;
-                }
-              }
-            }
-          } catch (e) {
-            console.error(e);
-          }
+
+        await this.performSingleCellCalculations(newValueIdx, newValue);
+        // conversion happens in performSingleCellCalculations, now we need to register molecule and set V-iD
+        try {
+          const molValue: string = this.dataFrame!.col(this.molColName)!.get(newValueIdx);
+          const newVid = await registerMol(molValue ?? '', this.campaignId!, this.appName);
+          if (newVid)
+            this.dataFrame!.col(ViDColName)!.set(newValueIdx, newVid, true);
+        } catch (e) {
+          console.error('Error updating V-iD column:', e);
         }
-        // if the vid was duplicated, generate a new one
-        if (this.duplicateVidCache && !foundMatch &&
-              this.duplicateVidCache.valueCounts[this.duplicateVidCache.indexes[newValueIdx]] > 1)
-          newVid = null;
-
-        if (!newVid || newVid === '')
-          newVid = getNewVid(this.dataFrame!.col(ViDColName)!);
-
-        this.dataFrame!.col(ViDColName)!.set(newValueIdx, newVid, false);
-
-        this.performSingleCellCalculations(newValueIdx, newValue);
       } catch (e) {
+        grok.shell.error('Error performing cell calculations: ' + e);
         console.error(e);
       }
     }));
@@ -201,14 +202,15 @@ export class PeptiHitApp extends HitDesignApp<PeptiHitTemplate> {
     view?.grid && subs.push(view.grid.onCellRender.subscribe((args) => {
       try {
         // color duplicate vid values
+        const dvCache = this.duplicateVidCache;
         const cell = args.cell;
-        if (!cell || !cell.isTableCell || !cell.tableColumn || !this.duplicateVidCache ||
+        if (!cell || !cell.isTableCell || !cell.tableColumn || !dvCache ||
               cell.tableColumn.name !== ViDColName || (cell.tableRowIndex ?? -1) < 0)
           return;
 
-        if (this.duplicateVidCache.valueCounts[this.duplicateVidCache.indexes[cell.tableRowIndex!]] > 1) {
+        if (dvCache.valueCounts[dvCache.indexes[cell.tableRowIndex!]] > 1) {
           args.cell.style.backColor =
-                DG.Color.setAlpha(DG.Color.getCategoricalColor(this.duplicateVidCache.indexes[cell.tableRowIndex!])
+                DG.Color.setAlpha(DG.Color.getCategoricalColor(dvCache.indexes[cell.tableRowIndex!])
                   , 150);
         }
       } catch (e) {}

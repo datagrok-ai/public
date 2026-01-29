@@ -1,0 +1,70 @@
+
+#tutorials-ui-describer-tour-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0);
+  pointer-events: none;
+  z-index: 9999;
+}
+
+#tutorials-ui-describer-tour-overlay svg {
+  width: 100%;
+  height: 100%;
+}
+
+.tutorials-ui-describer-circle {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  margin-right: 4px;
+  margin-left: 12px;
+  margin-top: 2px;
+  margin-bottom: 5px;
+}
+
+.tutorials-ui-describer-reward-effect {
+  font-size: 48px;
+  animation: bio-rx-sim-tutorial-reward-blink 1s ease-in-out infinite;
+  opacity: 0;
+}
+
+@keyframes tutorials-ui-describer-reward-blink {
+  0%   { opacity: 0.2; transform: scale(0.9); }
+  50%  { opacity: 1;   transform: scale(1.15); }
+  100% { opacity: 0.2; transform: scale(0.9); }
+}
+
+.tutorials-ui-describer-reward-wrapper {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.tutorials-ui-describer-diff-studio-legend-icn {
+  margin-right: 10px;
+  margin-left: 10px;
+  margin-bottom: 5px;
+  margin-top: -3px;
+}
+
+.tutorials-ui-describer-diff-studio-legend-line {
+  margin-left: 10px;
+}
+
+.tutorials-ui-describer-diff-studio-text-with-slider {  
+  margin-top: 3px;
+  margin-bottom: 6px;
+}
+
+.tutorials-ui-describer-diff-studio-slider-in-text {    
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    margin-right: 4px;
+    margin-left: 4px;
+    margin-top: 2px;
+    margin-bottom: 2px;
+}

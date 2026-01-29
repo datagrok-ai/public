@@ -233,57 +233,25 @@ public class DatabricksProvider extends JdbcDataProvider {
         return catalog;
     }
 
-    private boolean isUnityCatalog(Connection db) throws SQLException {
-        // --- 1. Try SHOW CATALOGS ---
-        try (Statement st = db.createStatement();
-             ResultSet rs = st.executeQuery("SHOW CATALOGS")) {
-
-            int count = 0;
-            boolean hasNonHiveCatalog = false;
-
-            while (rs.next()) {
-                count++;
-                String cat = rs.getString(1);
-                if (!"hive_metastore".equalsIgnoreCase(cat))
-                    hasNonHiveCatalog = true;
-            }
-
-            // Unity Catalog is enabled when:
-            // - More than one catalog exists, OR
-            // - At least one catalog is not hive_metastore
-            if (count > 1 || hasNonHiveCatalog)
-                return true;
-        }
-
-        // --- 2. Unity Catalog disabled always returns a pseudo "hive_metastore"
-        // but this catalog does NOT expose a nested information_schema.
-        // Test if <catalog>.information_schema works.
-        try (Statement st = db.createStatement();
-             ResultSet test = st.executeQuery(
-                     "SELECT * FROM hive_metastore.information_schema.tables LIMIT 1")) {
-
-            // If the above query works, this "hive_metastore" is a REAL UC catalog.
+    private boolean isUnityCatalog(Connection db) {
+        try (Statement st = db.createStatement()) {
+            st.executeQuery(
+                    "SELECT 1 FROM hive_metastore.information_schema.tables LIMIT 1");
+            logger.debug("Unity Catalog detected via hive_metastore");
             return true;
+        } catch (SQLException ignored) {}
 
-        } catch (SQLException ignored) {
-            // Not a real catalog → no UC
-        }
-
-        // --- 3. Additional fallback: UC info schema exists only under catalogs ---
-        // Try probing system catalog which only exists under UC
-        try (Statement st = db.createStatement();
-             ResultSet rs = st.executeQuery("SHOW SCHEMAS IN system")) {
-
-            // If this works: Unity Catalog
+        try (Statement st = db.createStatement()) {
+            st.executeQuery(
+                    "SELECT 1 FROM system.information_schema.tables LIMIT 1");
+            logger.debug("Unity Catalog detected via system catalog");
             return true;
+        } catch (SQLException ignored) {}
 
-        } catch (SQLException ignored) {
-            // system catalog not found → UC disabled
-        }
-
-        // If none of the above heuristics indicate UC, treat as Hive-only
+        logger.debug("Unity Catalog not detected");
         return false;
     }
+
 
 
 

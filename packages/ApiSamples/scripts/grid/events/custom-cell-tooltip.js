@@ -1,7 +1,7 @@
 // Handles onCellTooltip event to customize the tooltip for "age" column and all column headers
 
 let view = grok.shell.addTableView(grok.data.demo.demog());
-view.grid.onCellTooltip(function (cell, x, y) {
+view.grid.onCellTooltip(function(cell, x, y) {
   if (cell.isTableCell && cell.tableColumn.name === 'age') {
     ui.tooltip.show(ui.divV([
       ui.h1('Custom tooltip'),

@@ -12,8 +12,8 @@ export async function getFolders() : Promise<string[]> {
 }
 
 //name: ReinventEditor
-//tags: editor
 //input: funccall call 
+//meta.role: editor
 export function reinventEditor(call: DG.FuncCall) : void {
   PackageFunctions.reinventEditor(call);
 }
@@ -28,10 +28,10 @@ export async function runReinvent(ligand: string, optimize: string) : Promise<st
 }
 
 //name: Reinvent
-//tags: HitDesignerFunction
 //input: string ligand = 'OC(CN1CCCC1)NC(CCC1)CC1Cl' { semType: Molecule }
 //input: string optimize { choices: Reinvent4:getFolders }
 //output: dataframe result
+//meta.role: hitDesignerFunction
 //editor: Reinvent4:ReinventEditor
 export async function reinvent(ligand: string, optimize: string) : Promise<any> {
   return await PackageFunctions.reinvent(ligand, optimize);

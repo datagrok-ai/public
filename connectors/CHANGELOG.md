@@ -1,6 +1,11 @@
 # Grok Connect changelog
 
-# 2.5.5 (2025-12-02) WIP
+# 2.5.6 (2025-12-18) WIP
+
+* Databricks: Correction in detection of environment
+* Minor fixes and improvements in TableQueries
+
+# 2.5.5 (2025-12-02)
 
 * Athena: Possibility to set socket timeout property in Properties
 

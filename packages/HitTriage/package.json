@@ -1,7 +1,7 @@
 {
   "name": "@datagrok/hit-triage",
   "friendlyName": "Hit Triage",
-  "version": "1.8.0",
+  "version": "1.9.0",
   "author": {
     "name": "Davit Rizhinashvili",
     "email": "drizhinashvili@datagrok.ai"
@@ -20,7 +20,7 @@
     "@datagrok-libraries/utils": "^4.6.5",
     "cash-dom": "^8.1.5",
     "css-loader": "^6.5.1",
-    "datagrok-api": "^1.26.0",
+    "datagrok-api": "../../js-api",
     "rxjs": "^6.5.5",
     "source-map-loader": "^4.0.1",
     "style-loader": "^3.3.1",
@@ -91,5 +91,8 @@
       "category": "Storage",
       "friendlyName": "Default Campaign Folder"
     }
-  ]
+  ],
+  "meta": {
+    "sok": "HD_OBSFUS__k7#mP9@zL2$qR5!nX8"
+  }
 }

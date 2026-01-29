@@ -12,10 +12,13 @@ export const TREE_MAP_VIEW_NAME = 'Tree Map';
 export const MEDICAL_HISTORY_VIEW_NAME = 'Medical History';
 export const VISITS_VIEW_NAME = 'Visits';
 export const STUDY_CONFIGURATIN_VIEW_NAME = 'Study Configuration';
+export const CONFIGURATION_VIEW_NAME = 'Configuration';
 export const VALIDATION_VIEW_NAME = 'Validation';
 export const AE_BROWSER_VIEW_NAME = 'AE Browser';
 export const COHORT_VIEW_NAME = 'Cohort';
 export const QUESTIONNAIRES_VIEW_NAME = 'Questionnaires';
+export const MATRIX_TABLE_VIEW_NAME = 'Matrix';
+export const MEASUREMENT_PROFILE_TABLE_VIEW_NAME = 'Measurements';
 
 //SEND specific names
 export const ANIMAL_PROFILE_VIEW_NAME = 'Animal Profile';

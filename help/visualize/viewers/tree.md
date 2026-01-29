@@ -67,3 +67,4 @@ the node.
 * [Network diagram](network-diagram.md) viewer
 * [Dendrogram](./dendrogram) viewer
 * [PhylocanvasGL](./phylocanvas-gl) viewer
+* [Community: Visualization-related updates](https://community.datagrok.ai/t/visualization-related-updates/521)

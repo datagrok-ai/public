@@ -341,9 +341,7 @@ export class FuncCall extends Entity {
 
   get debugLogger(): Logger { return new Logger(undefined, {dartLogger: api.grok_FuncCall_Get_DebugLogger(this.dart)}); }
 
-  /** Returns function call parameter value
-   * @param {string} name
-   * @returns {object} */
+  /** Returns function call parameter value */
   getParamValue(name: string): any {
     return toJs(api.grok_FuncCall_Get_Param_Value(this.dart, name));
   }

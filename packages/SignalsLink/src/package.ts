@@ -27,7 +27,7 @@ export class PackageFunctions{
     return view;
   }
 
-  @grok.decorators.func()
+  @grok.decorators.appTreeBrowser({app: 'Signals'})
   static async signalsAppTreeBrowser(treeNode: DG.TreeViewGroup) {
     treeNode.group('Projects');
     treeNode.group('Experiments');

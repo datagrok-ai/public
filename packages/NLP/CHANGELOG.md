@@ -1,5 +1,9 @@
 # NLP changelog
 
+## 1.2.4 (2025-07-04)
+
+Updated default params for text clustering
+
 ## 1.0.9 (2024-04-05)
 
 Fixed multiple filters creating.

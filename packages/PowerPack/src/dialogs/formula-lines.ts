@@ -70,7 +70,7 @@ function getItemTypeByCaption(caption: string): string {
     case ITEM_CAPTION.HORZ_BAND:
     case ITEM_CAPTION.VERT_BAND: return ITEM_TYPE.BAND;
 
-    default: throw 'Unknown item caption.';
+    default: throw new Error('Unknown item caption.');
   }
 }
 
@@ -523,7 +523,7 @@ class Preview {
         this.srcAxes = {y: src.props.yColumnName, x: src.props.xColumnName, yMap: src.props.yMap, xMap: src.props.xMap};
       }
     } else
-      throw 'Host is not DataFrame or Viewer.';
+      throw new Error('Host is not DataFrame or Viewer.');
 
     if (src instanceof DG.Viewer && src.getOptions()['type'] === DG.VIEWER.LINE_CHART)
       this.viewer = DG.Viewer.lineChart(this.dataFrame, {
@@ -769,15 +769,7 @@ class Editor {
         const oldFormula = item.formula!;
         item.formula = value;
         const resultOk = this.onItemChangedAction(itemIdx, true);
-        elFormula.classList.toggle('d4-forced-invalid', !resultOk);
-        if (!resultOk) {
-          const splitValues = value?.split('=');
-          if (splitValues?.length > 1 && (!splitValues[0].includes('${') || !splitValues[1].includes('${')))
-            ibFormula.setTooltip('Line formula should contain columns from both sides of the "=" sign');
-        }
-        else
-          ibFormula.setTooltip('');
-        this.onFormulaValidation(resultOk);
+        this.setFormulaValidationResult(resultOk, value, ibFormula, item.type === ITEM_TYPE.BAND);
         this.setTitleIfEmpty(oldFormula, item.formula);
       }});
 
@@ -951,13 +943,58 @@ class Editor {
     const ibHeader = ui.input.string(title === 'formula1' ? 'Formula 1' : 'Formula 2', {value: item[title] ? item[title] as string : '',
       onValueChanged: (value) => {
         (item as any)[title] = value;
-        this.onItemChangedAction(itemIdx, false);
+        const resultOk = this.onItemChangedAction(itemIdx, false);
+        this.setFormulaValidationResult(resultOk, value, ibHeader);
       }});
 
     const elHeader = ibHeader.input as HTMLInputElement;
     elHeader.setAttribute('style', 'width: 204px; max-width: none;');
 
     return ui.divH([ibHeader.root]);
+  }
+
+  private setFormulaValidationResult(resultOk: boolean, value: string, ibHeader: DG.InputBase<string>, isBand: boolean = false): void {
+    const elHeader = ibHeader.input as HTMLInputElement;
+    const validateValue = (): string => {
+      if (isBand)
+        return resultOk ? '' : 'Invalid formula syntax';
+
+      // Must contain exactly one '='
+      const parts = value.split('=');
+      if (parts.length !== 2)
+        return 'Line formula should be in format: ${x or y column} = expression';
+
+      const [lhsRaw, rhsRaw] = parts.map(p => p.trim());
+
+      // LHS must be exactly one ${...}
+      const lhsMatch = /^\$\{([^}]+)\}$/.exec(lhsRaw);
+      if (!lhsMatch)
+        return 'Left side must be a single column in format ${column}';
+
+      const lhsColumn = lhsMatch[1].trim();
+
+      // Extract all ${...} on RHS
+      const rhsColumnRegex = /\$\{([^}]+)\}/g;
+      const rhsColumns: string[] = [];
+
+      let match;
+      while ((match = rhsColumnRegex.exec(rhsRaw)) !== null) {
+        rhsColumns.push(match[1].trim());
+      }
+
+      // If RHS references the same column → invalid
+      if (rhsColumns.includes(lhsColumn))
+        return 'Line formula should contain different columns on both sides of the "=" sign';
+
+      // Expression syntax validation comes last
+      return resultOk ? '' : 'Invalid formula syntax';
+    };
+    
+    const validationTooltip = validateValue();
+    resultOk = resultOk && validationTooltip === '';
+    ibHeader.setTooltip(validationTooltip);
+    elHeader.classList.toggle('d4-forced-invalid', !resultOk);
+    this.onFormulaValidation(resultOk);
   }
 
   /** Creates text input for item title */
@@ -1034,22 +1071,53 @@ class Editor {
     return iShowLabels.root;
   }
 
+  private setPointsValidationResult(resultOk: boolean, value: string, ibPoints: DG.InputBase<string>): void {
+    const elPoints = ibPoints.input as HTMLInputElement;
+    const tooltipWarning = 'Points should be a list of [x, y] number pairs, e.g., [1, 2], [3, 4]';
+    const validateValue = (): string => {
+      if (resultOk)
+        return '';
+      
+      const parsed = JSON.parse(`[${value}]`);
+      return Array.isArray(parsed) && parsed.length < 3 ? 'Area must have at least 3 points' : tooltipWarning;
+    };
+    
+    try {
+      ibPoints.setTooltip(validateValue());
+    } catch {
+      ibPoints.setTooltip(tooltipWarning);
+    }
+
+    elPoints.classList.toggle('d4-forced-invalid', !resultOk);
+    this.onFormulaValidation(resultOk);
+  }
+
   private areaPointsInput(itemIdx: number): HTMLElement {
     const item = this.annotationRegionItems[itemIdx] as DG.AreaAnnotationRegion;
     const value = item.area ? JSON.stringify(item.area).replaceAll(',', ', ') :  '';
     const textArea = ui.input.textArea('Points', {
       value: value.substring(1, value.length - 1),
       onValueChanged: (value) => {
+        let resultOk = true;
         try {
           var parsed = JSON.parse(`[${value}]`);
-          if (!Array.isArray(parsed))
-            return;
-          
-          item.area = parsed.filter((p) => Array.isArray(p) && p.length === 2
-            && typeof p[0] === 'number' && typeof p[1] === 'number');
+          if (!Array.isArray(parsed)) {
+            resultOk = false;
+          } else {
+            const filtered = parsed.filter((p) => Array.isArray(p) && p.length === 2
+              && typeof p[0] === 'number' && typeof p[1] === 'number');
+            if (filtered.length !== parsed.length || filtered.length < 3) {
+              resultOk = false;
+            } else {
+              item.area = filtered;
+              this.onItemChangedAction(itemIdx, false);
+            }
+          }
+        } catch {
+          resultOk = false;
+        }
 
-          this.onItemChangedAction(itemIdx, false);
-        } catch { /** Invalid input isn't handled */ }
+        this.setPointsValidationResult(resultOk, value, textArea);
       }});
 
     const elDescription = textArea.input as HTMLInputElement;
@@ -1381,7 +1449,7 @@ class CreationControl {
 export class FormulaLinesDialog {
   public dialog: DG.Dialog = ui.dialog({
     title: 'Formula Lines',
-    helpUrl: '/help/develop/how-to/show-formula-lines.md',
+    helpUrl: '/help/develop/how-to/viewers/show-formula-lines.md',
   });
 
   private host: Host;

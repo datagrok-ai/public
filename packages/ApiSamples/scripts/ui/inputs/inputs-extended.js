@@ -36,10 +36,10 @@ function reset() {
 
 reset();
 
-content.appendChild(ui.bigButton('Post', function () {
+content.appendChild(ui.bigButton('Post', function() {
   grok.shell.info(inputs.map((input) => `${input.caption}: ${input.stringValue}`).join('<br>'));
 }));
-content.appendChild(ui.bigButton('Toggle enabled', function () {
+content.appendChild(ui.bigButton('Toggle enabled', function() {
   for (let input of inputs)
     input.enabled = !input.enabled;
 }));

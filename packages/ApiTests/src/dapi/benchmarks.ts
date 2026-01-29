@@ -2,12 +2,12 @@ import type * as _grok from 'datagrok-api/grok';
 import type * as _DG from 'datagrok-api/dg';
 declare let grok: typeof _grok, DG: typeof _DG;
 
-import {category, test} from '@datagrok-libraries/utils/src/test';
+import {category, test} from '@datagrok-libraries/test/src/test';
 
 
 category('Benchmarks: Detectors', () => {
   const df = grok.data.demo.demog(100000);
-  const detectors: _DG.Func[] = DG.Func.find({tags: ['semTypeDetector']});
+  const detectors: _DG.Func[] = DG.Func.find({meta: {role: DG.FUNC_TYPES.SEM_TYPE_DETECTOR}});
   const cols: _DG.Column[] = df.columns.byNames(['site', 'age', 'started', 'height']);
   grok.shell.closeTable(df);
 

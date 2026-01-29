@@ -50,7 +50,7 @@ export async function newCampaignAccordeon(template: HitTriageTemplate,
   const fileInputDiv = ui.div([dfInput, errorDiv]);
   if (Object.keys(dataSourceFunctionsMap).length === 0) {
   // functions that have special tag and are applicable for data source. they should return a dataframe with molecules
-    const dataSourceFunctions = DG.Func.find({tags: [C.HitTriageDataSourceTag]});
+    const dataSourceFunctions = DG.Func.find({meta: {role: C.HitTriageDataSourceTag}});
     // for display purposes we use friendly name of the function
     dataSourceFunctions.forEach((func) => {
       dataSourceFunctionsMap[func.friendlyName ?? func.name] = func;

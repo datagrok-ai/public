@@ -1,11 +1,15 @@
-export const biologicsConfig = {
+import {DBExplorerConfig} from '@datagrok-libraries/db-explorer/src/types';
+
+export const biologicsConfig: DBExplorerConfig = {
   'connectionName': 'Biologics',
   'schemaName': 'biologics',
+  'nqName': 'Biologics:biologics',
   'dataSourceName': 'postgresDart',
   'entryPoints': {
     'DG_BIOLOGICS_DRUG_ID': {
       'table': 'drugs',
       'column': 'identifier',
+      'matchRegexp': 'GROKMOL-\\d{6}',
       'regexpExample': {
         'example': 'GROKMOL-000001',
         'nonVariablePart': 'GROKMOL-',
@@ -15,6 +19,7 @@ export const biologicsConfig = {
     'DG_BIOLOGICS_PEPTIDE_ID': {
       'table': 'peptides',
       'column': 'identifier',
+      'matchRegexp': 'GROKPEP-\\d{6}',
       'regexpExample': {
         'example': 'GROKPEP-000001',
         'nonVariablePart': 'GROKPEP-',
@@ -24,6 +29,7 @@ export const biologicsConfig = {
     'DG_BIOLOGICS_SEQUENCE_ID': {
       'table': 'sequences',
       'column': 'identifier',
+      'matchRegexp': 'GROKSEQ-\\d{6}',
       'regexpExample': {
         'example': 'GROKSEQ-000001',
         'nonVariablePart': 'GROKSEQ-',
@@ -33,6 +39,7 @@ export const biologicsConfig = {
     'DG_BIOLOGICS_LINKER_ID': {
       'table': 'linkers',
       'column': 'identifier',
+      'matchRegexp': 'GROKLINKER-\\d{6}',
       'regexpExample': {
         'example': 'GROKLINKER-000001',
         'nonVariablePart': 'GROKLINKER-',
@@ -42,6 +49,7 @@ export const biologicsConfig = {
     'DG_BIOLOGICS_ADC_ID': {
       'table': 'adc',
       'column': 'identifier',
+      'matchRegexp': 'GROKADC-\\d{6}',
       'regexpExample': {
         'example': 'GROKADC-000001',
         'nonVariablePart': 'GROKADC-',
@@ -51,6 +59,7 @@ export const biologicsConfig = {
     'DG_BIOLOGICS_ORGANISM_ID': {
       'table': 'target_organisms',
       'column': 'identifier',
+      'matchRegexp': 'GROKORG-\\d{6}',
       'regexpExample': {
         'example': 'GROKORG-000001',
         'nonVariablePart': 'GROKORG-',
@@ -60,6 +69,7 @@ export const biologicsConfig = {
     'DG_BIOLOGICS_PURIFICATION_ID': {
       'table': 'purification_batches',
       'column': 'identifier',
+      'matchRegexp': 'GROKPUR-\\d{6}',
       'regexpExample': {
         'example': 'GROKPUR-000001',
         'nonVariablePart': 'GROKPUR-',
@@ -69,6 +79,7 @@ export const biologicsConfig = {
     'DG_BIOLOGICS_EXPRESSION_ID': {
       'table': 'expression_batches',
       'column': 'identifier',
+      'matchRegexp': 'GROKEXP-\\d{6}',
       'regexpExample': {
         'example': 'GROKEXP-000001',
         'nonVariablePart': 'GROKEXP-',
@@ -100,7 +111,7 @@ export const biologicsConfig = {
     }
   ],
   'headerNames': {
-    'smiles': 'Compound'
+    'linkers': 'linker_type',
   },
   'uniqueColumns': {
     'adc': 'identifier',

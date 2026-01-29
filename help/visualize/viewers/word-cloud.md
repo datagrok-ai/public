@@ -46,3 +46,4 @@ can use it to filter other viewers.
 
 * [Viewers](../viewers/viewers.md)
 * [Table View](../table-view-1.md)
+* [Community: Visualization-related updates](https://community.datagrok.ai/t/visualization-related-updates/521)

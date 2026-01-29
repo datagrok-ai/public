@@ -99,7 +99,7 @@ export async function htPackageSettingsEditorWidget(propList: DG.Property[]): Pr
     let curTooltip = defaultTooltip;
     const curValue: string = storageProp.get(null) ?? defaultCampaignStorage;
     const defaultStorageHeader = ui.h1('Default Campaign Storage', {style: {marginBottom: '6px', marginTop: '6px'}});
-  
+
     const storageInput = ui.input.string('Folder Path', {value: curValue});
     ui.tooltip.bind(storageInput.input, () => curTooltip);
     DG.debounce(storageInput.onChanged, 200).subscribe(async (_) => {
@@ -120,12 +120,11 @@ export async function htPackageSettingsEditorWidget(propList: DG.Property[]): Pr
         storageProp.set(null, value);
         curTooltip = defaultTooltip;
         storageInput.input.classList.remove('d4-invalid');
-
       } catch (e) {
         grok.shell.error('Error Setting default storage. Check console for more details');
         console.error(e);
       }
-    })
+    });
     w.root.appendChild(defaultStorageHeader);
     w.root.appendChild(storageInput.root);
   }

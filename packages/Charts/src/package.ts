@@ -21,10 +21,10 @@ export class PackageFunctions {
   @grok.decorators.func({
     name: 'Timelines',
     description: 'Creates a timelines viewer',
-    tags: ['viewer'],
     meta: {
       showInGallery: 'false',
       icon: 'icons/timelines-viewer.svg',
+      role: 'viewer',
     },
     outputs: [{name: 'result', type: 'viewer'}],
   })
@@ -33,8 +33,8 @@ export class PackageFunctions {
   }
 
   @grok.decorators.func({
-    tags: ['cellRenderer'],
     outputs: [{name: 'result', type: 'grid_cell_renderer'}],
+    meta: {role: 'cellRenderer'},
   })
   static flagCellRenderer() {
     return new FlagCellRenderer();

@@ -1,7 +1,7 @@
 {
   "name": "@datagrok/tutorials",
   "friendlyName": "Tutorials",
-  "version": "1.10.5",
+  "version": "1.10.6",
   "author": {
     "name": "Dmytro Kovalyov",
     "email": "dkovalyov@datagrok.ai"
@@ -13,7 +13,7 @@
     "directory": "packages/Tutorials"
   },
   "dependencies": {
-    "@datagrok-libraries/tutorials": "../../libraries/tutorials",
+    "@datagrok-libraries/tutorials": "^1.7.4",
     "@datagrok-libraries/utils": "^4.6.5",
     "cash-dom": "^8.1.0",
     "datagrok-api": "^1.26.3",

@@ -2,7 +2,7 @@ import type * as _grok from 'datagrok-api/grok';
 import type * as _DG from 'datagrok-api/dg';
 declare let grok: typeof _grok, DG: typeof _DG;
 
-import {category, test, expect} from '@datagrok-libraries/utils/src/test';
+import {category, test, expect} from '@datagrok-libraries/test/src/test';
 
 category('Dapi: groups', () => {
   test('find group', async () => {
@@ -48,19 +48,18 @@ category('Dapi: groups', () => {
   }, {stressTest: true});
 
   test('include member', async () => {
-    let subgroup = null as any;
-    let demoGroup = null as any;
+    let subgroup: _DG.Group | null = null;
+    let demoGroup: _DG.Group | null = null;
     try {
-      const localTestGroupName = 'js-api-test-group1';
-      const localTestGroup2Name = 'js-api-test-group2';
+      const localTestGroupName = `js-api-test-group1_${DG.Utils.randomString(6)}`;
+      const localTestGroup2Name = `js-api-test-group2_${DG.Utils.randomString(6)}`;
       demoGroup = await grok.dapi.groups.createNew(localTestGroup2Name);
       subgroup = DG.Group.create(localTestGroupName);
       subgroup.includeTo(demoGroup);
       const adminUser = await grok.dapi.users.filter('login = "admin"').first();
       subgroup.addAdminMember(adminUser.group);
       await grok.dapi.groups.saveRelations(subgroup);
-
-      subgroup = await grok.dapi.groups.include('children.child').filter(localTestGroupName).first();
+      subgroup = await grok.dapi.groups.include('children.child').filter(`shortName="${localTestGroupName}"`).first();
 
       let hasAdmin = false;
       for (const m of subgroup.adminMembers) {
@@ -71,8 +70,14 @@ category('Dapi: groups', () => {
       if (!hasAdmin)
         throw new Error('Member not added');
     } finally {
-      await grok.dapi.groups.delete(demoGroup);
-      await grok.dapi.groups.delete(subgroup);
+      try {
+        if (demoGroup)
+          await grok.dapi.groups.delete(demoGroup);
+      } catch (_) {}
+      try {
+        if (subgroup)
+          await grok.dapi.groups.delete(subgroup);
+      } catch (_) {}
     }
   }, {stressTest: true});
 

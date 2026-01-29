@@ -1,0 +1,86 @@
+.statistics-mpo-header {
+  margin-top: 10px;
+  padding-bottom: 5px;
+  border-bottom: 1px solid #ccc;
+}
+
+.statistics-mpo-header-property {
+  font-weight: bold;
+  width: 110px;
+}
+
+.statistics-mpo-header-weight {
+  font-weight: bold;
+  width: 60px;
+}
+
+.statistics-mpo-header-desirability {
+  font-weight: bold;
+  flex-grow: 1;
+  padding-left: 30px;
+  padding-right: 10px;
+}
+
+.statistics-mpo-property-name {
+  width: 110px;
+  padding-top: 5px;
+  margin-left: 4px;
+}
+
+.statistics-mpo-weight-input {
+  width: 60px;
+}
+
+.statistics-mpo-weight-view {
+  margin-top: 21px;
+}
+
+.statistics-mpo-weight-design {
+  margin-top: 0;
+}
+
+.statistics-mpo-control-buttons {
+  gap: 10px;
+  margin-left: 10px;
+  color: var(--blue-1);
+}
+
+.statistics-mpo-range-input {
+  width: 70px;
+}
+
+.statistics-mpo-row {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  margin-bottom: 10px;
+  min-height: 70px;
+  gap: 10px;
+
+  flex-wrap: wrap;
+}
+
+.statistics-mpo-row > * {
+  flex: 0 0 auto;
+  min-width: 100px;
+}
+
+.statistics-mpo-row .ui-input-choice .ui-input-editor {
+  width: 100px !important;
+}
+
+@media (max-width: 500px) {
+  .statistics-mpo-row {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .statistics-mpo-row > * {
+    width: 100% !important;
+    margin-bottom: 5px;
+  }
+
+  .statistics-mpo-weight-input {
+    margin-top: 0 !important;
+  }
+}

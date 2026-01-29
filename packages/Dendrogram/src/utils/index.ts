@@ -3,7 +3,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {GridNeighbor} from '@datagrok-libraries/gridext/src/ui/GridNeighbor';
-
+// @ts-ignore
 import '../css/injected-dendrogram.css';
 
 import {_package} from '../package';
@@ -33,6 +33,7 @@ export function attachDivToGrid(grid: DG.Grid, neighborWidth: number = 100): Gri
 
   const neighbor: GridNeighbor = new GridNeighbor(eDiv, grid, neighborWidth, _package.logger);
   neighbor.root && (neighbor.root.style.zIndex = '1');
+
   return neighbor;
 }
 

@@ -72,7 +72,7 @@ public class FuncCallBuilder {
         LinkedTreeMap<String, Object> map1 = new LinkedTreeMap<>();
         map1.put("expression", expression);
         map1.put("colName", "");
-        map1.put("values", Arrays.stream(values).filter(Objects::nonNull).collect(Collectors.toList()));
+        map1.put("values", Arrays.stream(values).filter(Objects::nonNull).map(Object::toString).collect(Collectors.toList()));
         map1.put("op", operator);
         map1.put("include1", include1);
         map1.put("include2", include2);

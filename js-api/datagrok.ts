@@ -73,7 +73,7 @@ export function getContext() {
 export async function startDatagrok(options: {apiUrl: string, apiToken?: string | undefined}): Promise<any> {
     console.log('Initializing Datagrok environment');
     //@ts-ignore
-    await import ('./src/datagrok/web/grok_shared.dart.js');
+    await import ('./src/datagrok/build/web/grok_shared.dart.js');
 
     await new Promise(resolve => setTimeout(resolve, 100));
     (globalThis as any).document = {createElement: () => {return {bind: {}}}};

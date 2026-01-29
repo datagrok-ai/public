@@ -1,6 +1,8 @@
-// Register a function that provides an information panel for a molecule.
-// It gets natively integrated with the platform's data augmentation system.
-// See also: https://datagrok.ai/help/discover/info-panels
+/**
+ * Register a function that provides an information panel for a molecule.
+ * It gets natively integrated with the platform's data augmentation system.
+ * See also: https://datagrok.ai/help/discover/info-panels
+ */
 
 grok.functions.register({
   signature: 'widget molWidget(String/Molecule smiles)',

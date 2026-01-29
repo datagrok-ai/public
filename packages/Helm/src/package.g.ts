@@ -1,7 +1,7 @@
 import {PackageFunctions} from './package';
 import * as DG from 'datagrok-api/dg';
 
-//tags: init
+//meta.role: init
 export async function initHelm() : Promise<void> {
   await PackageFunctions.initHelm();
 }
@@ -12,18 +12,18 @@ export async function getHelmService() : Promise<any> {
   return await PackageFunctions.getHelmService();
 }
 
-//tags: cellRenderer
 //output: grid_cell_renderer result
 //meta.columnTags: quality=Macromolecule, units=helm
 //meta.cellType: helm
+//meta.role: cellRenderer
 export function helmCellRenderer() : any {
   return PackageFunctions.helmCellRenderer();
 }
 
 //description: Macromolecule
-//tags: cellEditor
 //input: grid_cell cell 
 //meta.columnTags: quality=Macromolecule, units=helm
+//meta.role: cellEditor
 export function editMoleculeCell(cell: any) : void {
   PackageFunctions.editMoleculeCell(cell);
 }
@@ -37,9 +37,10 @@ export function openEditor(mol: DG.SemanticValue) : void {
 }
 
 //name: Properties
-//tags: panel, bio, helm, widgets
 //input: semantic_value sequence { semType: Macromolecule }
 //output: widget result
+//meta.role: widgets,panel
+//meta.domain: bio
 export function propertiesWidget(sequence: DG.SemanticValue) : any {
   return PackageFunctions.propertiesWidget(sequence);
 }
@@ -50,12 +51,12 @@ export function getMolfiles(col: DG.Column<any>) : any {
   return PackageFunctions.getMolfiles(col);
 }
 
-//tags: valueEditor
 //input: string name { optional: true }
 //input: object options { optional: true }
 //output: object result
 //meta.propertyType: string
 //meta.semType: Macromolecule
+//meta.role: valueEditor
 export function helmInput(name: string, options: any) : any {
   return PackageFunctions.helmInput(name, options);
 }

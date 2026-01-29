@@ -1,4 +1,3 @@
-//tags: Group
 //help-url: https://datagrok.ai/help/govern/group
 async function groupsTest() {
 
@@ -7,10 +6,10 @@ async function groupsTest() {
 
   // Create a new Demo group, if doesn't exist and save
   if (demoGroup == null)
-    demoGroup = await grok.dapi.groups.createNew("Demo Group");
+    demoGroup = await grok.dapi.groups.createNew('Demo Group');
 
   // Create a subgroup
-  let demoSubGroup = DG.Group.create("Demo Sub Group");
+  let demoSubGroup = DG.Group.create('Demo Sub Group');
 
   // Add to "Demo" group
   demoSubGroup.includeTo(demoGroup);

@@ -20,10 +20,11 @@ import {GridTreePlacer} from './tree-renderers/grid-tree-placer';
 import {Unsubscribable} from 'rxjs';
 import {ITreeHelper} from '@datagrok-libraries/bio/src/trees/tree-helper';
 
+//@ts-ignore
 import '../css/injected-dendrogram.css';
 
 export function injectTreeForGridUI2(
-  grid: DG.Grid, treeRoot: NodeType | null, leafColName?: string, neighborWidth: number = 100, cut?: TreeCutOptions,
+  grid: DG.Grid, treeRoot: NodeType | null, leafColName?: string, neighborWidth: number = 100, cut?: TreeCutOptions
 ): GridNeighbor {
   const th: ITreeHelper = new TreeHelper();
   const treeNb: GridNeighbor = attachDivToGrid(grid, neighborWidth);
@@ -55,11 +56,31 @@ export function injectTreeForGridUI2(
     }
   });
 
+  function assingClusters() {
+    if (!treeRoot)
+      return;
+    showClusterAsignmentDialog(treeRoot, th, grid.dataFrame);
+  }
+
+  treeNb.root?.addEventListener('contextmenu', (ev) => {
+    ev.stopImmediatePropagation();
+    ev.preventDefault();
+    const menu = DG.Menu.popup();
+    menu.item('Assign Clusters', () => { assingClusters(); });
+    menu.show({x: ev.clientX, y: ev.clientY, causedBy: ev});
+  });
+
+  const assignClustersButton = ui.iconFA('magic', assingClusters, 'Assign Clusters');
+  assignClustersButton.classList.add('dendrogram-assign-clusters-bttn');
+  treeNb.root?.appendChild(assignClustersButton);
+
+
   let cutSlider: DG.InputBase<number | null> | null = null;
   if (cut) {
     // TODO: Get max from tree height
     //@ts-ignore
     const treeHeight: number = (treeRoot as MarkupNodeType).subtreeLength;
+    console.log(treeHeight);
     cutSlider = ui.input.slider('', {value: 0, min: 0, max: treeHeight});
     $(cutSlider.root).find('input').each((_, el) => {
       el.setAttribute('step', '0.01');
@@ -133,7 +154,7 @@ export function injectTreeForGridUI2(
         }
       }
       if (selectionIndexes.size === 1) {
-        grid.dataFrame.currentRowIdx = selectionIndexes.values().next().value;
+        grid.dataFrame.currentRowIdx = selectionIndexes.values().next().value!;
       } else {
         grid.dataFrame.selection.init((i) => selectionIndexes.has(i));
         grid.dataFrame.selection.fireChanged();
@@ -317,7 +338,7 @@ export function injectTreeForGridUI2(
     });
 
     const infoContainer = ui.divV(
-      [sortInfoDiv, realignButton],
+      [sortInfoDiv, realignButton]
     );
 
     treeOverlay.appendChild(infoContainer);
@@ -326,7 +347,8 @@ export function injectTreeForGridUI2(
   }
 
   function treeNeighborOnClosed() {
-    for (const sub of subs) { sub.unsubscribe(); }
+    for (const sub of subs)
+      sub.unsubscribe();
   }
 
   const subs: Unsubscribable[] = [];
@@ -345,4 +367,95 @@ export function injectTreeForGridUI2(
   subs.push(grid.dataFrame.onFilterChanged.subscribe(dataFrameOnFilterChanged));
 
   return treeNb;
+}
+
+function showClusterAsignmentDialog(treeRoot: NodeType, th: ITreeHelper, dataFrame: DG.DataFrame) {
+  const dialog = ui.dialog('Assign Clusters');
+  const treeHeight = (treeRoot as MarkupNodeType).subtreeLength!;
+  if (!treeHeight)
+    throw new Error('Can not calculate tree height.');
+
+  const cutSlider = ui.input.float('Threshold', {value: treeHeight / 2, min: 0, max: treeHeight,
+    showSlider: true, tooltipText: 'Cutting threshold for clusters (height of dendrogram from the root)'});
+  const clusterInput = ui.input.int('Clusters', {value: 1, min: 1, tooltipText: 'Number of clusters after cutting'});
+  let processing = false;
+
+  const getClusterCount = (threshold: number) => {
+    return th.treeCutAsLeaves(treeRoot, threshold).length;
+  };
+
+  const searchForThresholdGivenClusterNum = (clusterNum: number): number => {
+    let low = 0;
+    let high = treeHeight;
+    let bestThreshold = low;
+    let minDiff = Number.MAX_VALUE;
+
+    for (let i = 0; i < 20; i++) {
+      const mid = (low + high) / 2;
+      const count = getClusterCount(mid);
+
+      if (count === clusterNum) return mid;
+
+      const diff = Math.abs(count - clusterNum);
+      if (diff < minDiff) {
+        minDiff = diff;
+        bestThreshold = mid;
+      }
+
+      if (count < clusterNum)
+        low = mid;
+      else
+        high = mid;
+    }
+    return bestThreshold;
+  };
+
+  cutSlider.onChanged.subscribe((value) => {
+    if (processing || value === null) return;
+    processing = true;
+    try {
+      clusterInput.value = getClusterCount(value);
+    } finally {
+      processing = false;
+    }
+  });
+
+  clusterInput.onChanged.subscribe((value) => {
+    if (processing || value === null) return;
+    processing = true;
+    try {
+      cutSlider.value = searchForThresholdGivenClusterNum(value);
+    } finally {
+      processing = false;
+    }
+  });
+
+  dialog.add(cutSlider.root);
+  dialog.add(clusterInput.root);
+  cutSlider.fireChanged();
+
+  dialog.addButton('Assign', () => {
+    const threshold = cutSlider.value ?? 0;
+    const clusters = th.treeCutAsLeaves(treeRoot, threshold);
+    const colName = dataFrame.columns.getUnusedName(`Cluster (${threshold.toFixed(2)})`);
+    const clusterCol = DG.Column.fromType(DG.TYPE.STRING, colName, dataFrame.rowCount);
+
+    clusters.forEach((node, idx) => {
+      const clusterId = (idx + 1).toString();
+      const leaves = th.getLeafList(node);
+      for (const leaf of leaves) {
+        const row = parseInt(leaf.name);
+        if (row !== undefined && !Number.isNaN(row))
+          clusterCol.set(row, clusterId, false);
+      }
+    });
+    const categoryOrder = clusters.map((_, idx) => (idx + 1).toString());
+    clusterCol.setCategoryOrder(categoryOrder);
+
+    clusterCol.fireValuesChanged();
+    dataFrame.columns.add(clusterCol);
+    dialog.close();
+  });
+
+  dialog.show();
 }

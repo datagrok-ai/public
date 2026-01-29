@@ -1,7 +1,7 @@
 import fs from 'fs';
-import path, { sep } from 'path';
-import { exec } from 'child_process';
-import { promisify } from 'util';
+import path, {sep} from 'path';
+import {exec} from 'child_process';
+import {promisify} from 'util';
 
 const execAsync = promisify(exec);
 
@@ -100,7 +100,6 @@ export const replacers: Indexable = {
 };
 
 
-
 export class TemplateBuilder {
   static sep = '\n';
   static indentSize = 2;
@@ -189,22 +188,22 @@ export const dgToTsTypeMap: Indexable = {
 
 export const propertyTypes = [
   'bool', 'int', 'double', 'string', 'datetime', 'object',
-  'column', 'dataframe', 'bitset', 'cell', 'string_list', 'map'
+  'column', 'dataframe', 'bitset', 'cell', 'string_list', 'map',
 ];
 
 export const headerTags = [
   'name', 'description', 'help-url', 'input', 'output', 'tags',
   'sample', 'language', 'returns', 'test', 'sidebar', 'condition',
   'top-menu', 'environment', 'require', 'editor-for', 'schedule',
-  'reference', 'editor', 'meta', 'connection', 'friendlyName'
+  'reference', 'editor', 'meta', 'connection', 'friendlyName',
 ];
 
 export const fileParamRegex = {
-  py: new RegExp(`^\#\\s*([^:]*): *([^\\s\\[\\{]+) ?([^\\s\\[\\{]+)?[^\\n]*$`),
-  ts: new RegExp(`^\/\/\\s*([^:]*): *([^\\s\\[\\{]+) ?([^\\s\\[\\{]+)?[^\\n]*$`),
-  js: new RegExp(`^\/\/\\s*([^:]*): *([^\\s\\[\\{]+) ?([^\\s\\[\\{]+)?[^\\n]*$`),
-  sql: new RegExp(`^--\\s*([^:]*): *([^\\s\\[\\{]+) ?([^\\s\\[\\{]+)?[^\\n]*$`)
-}
+  py: new RegExp(`^#\\s*(?!\\s*#)([^:]+):\\s+([^\\s\\[\\{]+) ?([^\\s\\[\\{]+)?`),
+  ts: new RegExp(`^//\\s*(?!\\s*//)([^:]+):\\s+([^\\s\\[\\{]+) ?([^\\s\\[\\{]+)?`),
+  js: new RegExp(`^//\\s*(?!\\s*//)([^:]+):\\s+([^\\s\\[\\{]+) ?([^\\s\\[\\{]+)?`),
+  sql: new RegExp(`^--\\s*([^:]+):\\s+([^\\s\\[\\{]+) ?([^\\s\\[\\{]+)?`),
+};
 
 export const nameAnnRegex = /\s*(name[^:]*): ([^\n\r\[\{]+)/;
 
@@ -219,12 +218,11 @@ export function getScriptOutputType(script: string, comment: string = '#'): stri
   let resType = 'void';
   let firstItemName = '';
   let wasSecond = false;
-  for (let match of matches) {
+  for (const match of matches) {
     if (resType === 'void') {
       resType = dgToTsTypeMap[match[1]] ?? 'any';
       firstItemName = match[2];
-    }
-    else {
+    } else {
       if (!wasSecond) {
         resType = `${firstItemName}: ${resType}`;
         wasSecond = true;
@@ -237,7 +235,7 @@ export function getScriptOutputType(script: string, comment: string = '#'): stri
 
 export function getScriptInputs(script: string, comment: string = '#'): object[] {
   const regex = new RegExp(`${comment}\\s*input:\\s?([a-z_]+)(?:<[^>]*>)?\\s+(\\w+)(?:[^{\\n]*{[^}\\n]*})?`, 'g');
-  const testOptional = (inputAnnotation: string) => /isOptional\s*:\s*true/.test(inputAnnotation) || /optional\s*:\s*true/.test(inputAnnotation)
+  const testOptional = (inputAnnotation: string) => /isOptional\s*:\s*true/.test(inputAnnotation) || /optional\s*:\s*true/.test(inputAnnotation);
   const inputAnnotations = [...script.matchAll(regex)];
   let firstTsValidOptionalIdx: number = inputAnnotations.length-1;
   for (; firstTsValidOptionalIdx >= 0; firstTsValidOptionalIdx--) {
@@ -247,13 +245,13 @@ export function getScriptInputs(script: string, comment: string = '#'): object[]
   }
   const inputs = [];
   for (const [idx, match] of inputAnnotations.entries()) {
-    const hasOptionalAnnotation = testOptional(match[0])
+    const hasOptionalAnnotation = testOptional(match[0]);
     const isOptional = hasOptionalAnnotation && idx >= firstTsValidOptionalIdx;
     const undefinable = hasOptionalAnnotation && idx < firstTsValidOptionalIdx;
     const nullable = /nullable\s*:\s*true/.test(match[0]);
     const type = dgToTsTypeMap[match[1]] || 'any';
     const name = match[2];
-    inputs.push({ type, name, isOptional, undefinable, nullable });
+    inputs.push({type, name, isOptional, undefinable, nullable});
   }
   return inputs;
 };
@@ -291,13 +289,13 @@ export interface Indexable { [key: string]: any }
 
 export async function runScript(script: string, path: string, verbose: boolean = false) {
   try {
-    const { stdout, stderr } = await execAsync(script, { cwd: path });
-    if (stderr && verbose) {
+    const {stdout, stderr} = await execAsync(script, {cwd: path});
+    if (stderr && verbose) 
       console.error(`Warning/Error: ${stderr}`);
-    }
-    if (stdout && verbose) {
+    
+    if (stdout && verbose) 
       console.log(`Output: ${stdout}`);
-    }
+    
   } catch (error: any) {
     console.error(`Execution failed: ${error.message}`);
     throw new Error(`Error executing '${script}'. Error message: ${error.message}`);
@@ -329,9 +327,8 @@ export async function runAll(packagesDir: string, command: string, options: Reco
       try {
         console.log(`${packagePath}: ${commandToRun} - Started`);
         await runScript(commandToRun, packagePath, options.verbose);
-          console.log(`${packagePath}: ${commandToRun} - Finished`);
-      }
-      catch (e) {
+        console.log(`${packagePath}: ${commandToRun} - Finished`);
+      } catch (e) {
         console.log(`${packagePath}: ${commandToRun} - Error`);
       }
     }
@@ -346,12 +343,12 @@ function optionsToString(options: Record<string, any>) {
     if (key === '_' || key === 'all') continue;
 
     if (typeof value === 'boolean') {
-      if (value) {
+      if (value) 
         parts.push(`--${key}`);
-      }
-    } else if (value !== undefined && value !== null) {
+      
+    } else if (value !== undefined && value !== null) 
       parts.push(`--${key}="${value}"`);
-    }
+    
   }
 
   return parts.join(' ');

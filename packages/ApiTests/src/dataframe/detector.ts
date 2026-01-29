@@ -1,5 +1,5 @@
 import * as DG from 'datagrok-api/dg';
-import {category, test} from '@datagrok-libraries/utils/src/test';
+import {category, test} from '@datagrok-libraries/test/src/test';
 
 category('Detector', () => {
   test('SingleEmptyCategory', async () => {

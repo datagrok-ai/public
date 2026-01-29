@@ -60,6 +60,9 @@ Some parameters are specific to script language and/or technology:
   * `condition`: GrokScript condition that gets evaluated to decide whether to show the panel for the object
 * Query
   * `connection`: Name of the db connection that the query should use
+* Scheduling (server-based functions only)
+  * `schedule`: [Cron expression](https://en.wikipedia.org/wiki/Cron) for automatic execution (e.g., `0 8 * * *` for daily at 8am)
+  * `schedule.runAs`: Group or role for execution context. You must be a member of the specified group. See [Scheduling](functions.md#scheduling).
 
 To add additional parameters, use the `meta.` prefix. They can be used for dynamically searching for
 the functions of interest.
@@ -541,7 +544,6 @@ FROM target_dictionary td
 
 </div></details>
 
-
 ### Function inputs
 
 To reuse other "helper" functions along with their editors for your top-level function, specify 
@@ -901,6 +903,47 @@ This tells the platform to render dummyEditor from the DevTools package as the e
 The purpose of the editor is solely to edit function parameters.
 
 ---
+
+## Annotating output dataframes with tags
+
+Datagrok functions can annotate **output dataframes** with tags using the `meta` section of the output parameter annotation. This allows function authors to attach semantic information to the resulting table and its columns, such as database provenance, molecule handling hints, or custom metadata.
+
+> **Note:** This mechanism applies **only** to output parameters of type `dataframe`.
+
+Annotations are defined directly in the function signature using the `meta` section of the output parameter:
+```javascript 
+//output: dataframe {meta: {...}}
+```
+The `meta` object can contain both dataframe-level and column-level tags:
+
+- **Dataframe-level tags**  
+  Any entry in the `meta` object whose key does **not** match a column name, and whose value is **not** a JSON object, is treated as metadata for the dataframe itself. These key–value pairs are written directly to the dataframe metadata (table tags).
+
+  Example:
+```javascript 
+//output: dataframe {meta: {".data-connection": "System:Datagrok"}}
+```
+  This sets a dataframe-level tag:
+
+  - `.data-connection = "System:Datagrok"`
+
+- **Column-level tags**  
+  If a key in the `meta` object matches a column name and its value **is** a JSON object, that object is interpreted as metadata for the corresponding column. All nested key–value pairs are applied as column tags.
+
+  Example:
+```javascript 
+//output: dataframe {meta: {"mol": {"DbTable": "structures", "DbSchema": "public", "DbColumn": "mol"}}}
+```
+  This applies the following tags to the `mol` column:
+
+  - `DbTable = "structures"`
+  - `DbSchema = "public"`
+  - `DbColumn = "mol"`
+
+Dataframe-level and column-level metadata can be combined within a single `meta` block:
+```javascript 
+//output: dataframe {meta: {".data-connection": "System:Datagrok", "mol": {"DbTable": "structures", "DbSchema": "public", "DbColumn": "mol"}}}
+```
 
 ## Examples
 

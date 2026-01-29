@@ -151,7 +151,7 @@ services:
     profiles: [ "all", "cvm", "scripting", "jupyter_kernel_gateway", "jkg" ]
 
   db:
-    image: postgres:17.4
+    image: pgvector/pgvector:pg17
     platform: linux/amd64
     shm_size: 2gb
     environment:

@@ -51,4 +51,8 @@ export namespace funcs {
   export async function runCoreValidate(standard: string , dataPath: string , version: string , outputFormat: string , options: any ): Promise<string> {
     return await grok.functions.call('ClinicalCase:RunCoreValidate', { standard, dataPath, version, outputFormat, options });
   }
+
+  export async function sdiscRuleViolationCellRenderer(): Promise<any> {
+    return await grok.functions.call('ClinicalCase:SdiscRuleViolationCellRenderer', {});
+  }
 }

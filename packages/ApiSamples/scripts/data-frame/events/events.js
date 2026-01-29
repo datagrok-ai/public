@@ -1,4 +1,3 @@
-//tags: DataFrame, events
 // Demonstrates handling of Datagrok-originated events
 
 demog = grok.data.demo.demog();

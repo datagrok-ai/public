@@ -2,7 +2,11 @@
   "name": "python",
   "friendlyName": "Python",
   "version": "0.0.3",
-  "description": "",
+  "description": "Python server for code execution and data processing",
+  "author": {
+    "name": "Oleksandra Serhiienko",
+    "email": "oserhiienko@datagrok.ai"
+  },
   "dependencies": {
     "@datagrok-libraries/utils": "^4.6.5",
     "cash-dom": "^8.1.5",

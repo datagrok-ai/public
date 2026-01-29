@@ -12,6 +12,7 @@ import grok_connect.connectors_info.FuncParam;
 import grok_connect.table_query.AggrFunctionInfo;
 import grok_connect.table_query.Stats;
 import grok_connect.utils.GrokConnectException;
+import grok_connect.utils.PatternMatcher;
 import grok_connect.utils.Prop;
 import grok_connect.utils.Property;
 import org.postgresql.util.PGobject;
@@ -182,6 +183,12 @@ public class PostgresDataProvider extends JdbcDataProvider {
         uuid.setType("uuid");
         uuid.setValue(value);
         statement.setObject(n, uuid);
+    }
+
+    @Override
+    protected String getInQuery(PatternMatcher matcher, String names) {
+        boolean isUuid = matcher.values != null && matcher.values.stream().allMatch((s) -> s instanceof String && UUID_REGEX.matcher((String) s).matches());
+        return String.format("(%s%s %s (%s))", matcher.colName, isUuid ? "::uuid" : "", matcher.op, names);
     }
 
     @SuppressWarnings("unchecked")

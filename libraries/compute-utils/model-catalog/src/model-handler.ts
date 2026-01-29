@@ -301,12 +301,12 @@ export class ModelHandler extends DG.ObjectHandler {
     const isFavoritesApplicable = (func: DG.Func) => func instanceof DG.Entity;
     const isFavorite = (func: DG.Func) => grok.shell.favorites.some((f) => f.id == func.id);
     //@ts-ignore
-    funcs.registerParamFunc('Add to Favorites', (this.type as DG.Type), async (func: DG.Func) => await DG.Favorites.add(DG.toJs(func)), (func: DG.Func) => {
+    funcs.registerParamFunc('Add to favorites', (this.type as DG.Type), async (func: DG.Func) => await DG.Favorites.add(DG.toJs(func)), (func: DG.Func) => {
       const properFunc = DG.toJs(func);
       return this.isApplicable(properFunc) && isFavoritesApplicable(properFunc) && !isFavorite(properFunc);
     });
     //@ts-ignore
-    funcs.registerParamFunc('Remove from Favorites', (this.type as DG.Type), async (func: DG.Func) => await DG.Favorites.remove(DG.toJs(func)), (func: DG.Func) => {
+    funcs.registerParamFunc('Remove from favorites', (this.type as DG.Type), async (func: DG.Func) => await DG.Favorites.remove(DG.toJs(func)), (func: DG.Func) => {
       const properFunc = DG.toJs(func);
       return this.isApplicable(properFunc) && isFavoritesApplicable(properFunc) && isFavorite(properFunc);
     });

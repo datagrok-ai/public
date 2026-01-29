@@ -1,7 +1,7 @@
 #name: Amide reaction
 #language: python
 #sample: chem/amines.csv, chem/carb_acids.csv
-#tags: demo, chem, rdkit
+#meta.domain: chem
 #input: dataframe amines [Input data table]
 #input: column amine_molecules {semType: Molecule}
 #input: dataframe acids [Input data table]

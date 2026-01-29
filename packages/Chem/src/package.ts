@@ -92,10 +92,15 @@ import {MixtureCellRenderer} from './rendering/mixture-cell-renderer';
 import {createComponentPane, createMixtureWidget, Mixfile} from './utils/mixfile';
 import {biochemicalPropertiesDialog} from './widgets/biochem-properties-widget';
 import {checkCurrentView} from './utils/ui-utils';
-import {mpo, PropertyDesirability} from '@datagrok-libraries/statistics/src/mpo/mpo';
+import {DesirabilityProfile, mpo, PropertyDesirability, WEIGHTED_AGGREGATIONS_LIST, WeightedAggregation} from '@datagrok-libraries/statistics/src/mpo/mpo';
 //@ts-ignore
 import '../css/chem.css';
 import {addDeprotectedColumn, DeprotectEditor} from './analysis/deprotect';
+import {MpoProfilesView} from './mpo/mpo-profiles-view';
+
+import $ from 'cash-dom';
+import {MpoProfileCreateView} from './mpo/mpo-create-profile';
+import {findSuitableProfiles, loadMpoProfiles, MPO_TEMPLATE_PATH} from './mpo/utils';
 
 export {getMCS};
 export * from './package.g';
@@ -165,8 +170,9 @@ async function initChemInt(): Promise<void> {
     storedSketcherType = PREVIOUS_SKETCHER_NAMES[storedSketcherType];
   if (!storedSketcherType && _properties.Sketcher)
     storedSketcherType = SKETCHER_FUNCS_FRIENDLY_NAMES[_properties.Sketcher];
-  const sketcherFunc = DG.Func.find({tags: ['moleculeSketcher']})
-    .find((e) => e.name === storedSketcherType || e.friendlyName === storedSketcherType);
+
+  const sketcherFunctions = DG.Func.find({meta: {role: DG.FUNC_TYPES.MOLECULE_SKETCHER}});
+  const sketcherFunc = sketcherFunctions.find((e) => e.name === storedSketcherType || e.friendlyName === storedSketcherType);
   if (sketcherFunc)
     DG.chem.currentSketcherType = sketcherFunc.friendlyName;
   else {
@@ -209,7 +215,8 @@ export class PackageFunctions {
   static async initChemAutostart(): Promise<void> { }
 
   @grok.decorators.func({'top-menu': 'Chem | Transform | Recalculate Coordinates...', 'name': 'Recalculate Coordinates',
-    'description': 'Recalculates 2D coordinates for molecules in the column using Open Chem Lib', 'tags': ['Transform'],
+    'description': 'Recalculates 2D coordinates for molecules in the column using Open Chem Lib',
+    'meta': {'role': 'transform'},
   })
   static async recalculateCoordsViaOCL(@grok.decorators.param({}) table: DG.DataFrame,
   @grok.decorators.param({options: {semType: 'Molecule'}}) molecules: DG.Column,
@@ -227,7 +234,8 @@ export class PackageFunctions {
 
   @grok.decorators.func({
     name: 'Chemistry | Most Diverse Structures',
-    tags: ['tooltip']})
+    meta: {role: 'tooltip'},
+  })
   static async chemTooltip(
     @grok.decorators.param({options: {semType: 'Molecule'}}) col: DG.Column): Promise<DG.Widget | undefined> {
     const initialWidth = 255;
@@ -288,8 +296,7 @@ export class PackageFunctions {
 
   @grok.decorators.func({
     name: 'Scaffold Tree',
-    tags: ['viewer'],
-    meta: {icon: 'files/icons/scaffold-tree-icon.svg'},
+    meta: {icon: 'files/icons/scaffold-tree-icon.svg', role: 'viewer'},
     outputs: [{name: 'result', type: 'viewer'}],
   })
   static scaffoldTreeViewer() : ScaffoldTreeViewer {
@@ -299,8 +306,7 @@ export class PackageFunctions {
   @grok.decorators.func({
     name: 'Substructure Filter',
     description: 'RDKit-based substructure filter',
-    tags: ['filter'],
-    meta: {semType: 'Molecule', primaryFilter: 'true', allowMultipleFiltersForColumn: 'false'},
+    meta: {semType: 'Molecule', primaryFilter: 'true', allowMultipleFiltersForColumn: 'false', role: 'filter'},
     outputs: [{name: 'result', type: 'filter'}],
   })
   static substructureFilter(): SubstructureFilter {
@@ -352,8 +358,7 @@ export class PackageFunctions {
 
   @grok.decorators.func({
     name: 'chemCellRenderer',
-    tags: ['cellRenderer', 'cellRenderer-ChemicalReaction'],
-    meta: {'cellType': 'ChemicalReaction'},
+    meta: {'cellType': 'ChemicalReaction', 'role': 'cellRenderer'},
     outputs: [{name: 'result', type: 'grid_cell_renderer'}],
   })
   static async rdKitReactionRenderer(): Promise<RDKitReactionRenderer> {
@@ -362,8 +367,7 @@ export class PackageFunctions {
 
   @grok.decorators.func({
     name: 'chemMixtureRenderer',
-    tags: ['cellRenderer', 'cellRenderer-ChemicalMixture'],
-    meta: {'cellType': 'ChemicalMixture'},
+    meta: {'cellType': 'ChemicalMixture', 'role': 'cellRenderer'},
     outputs: [{name: 'result', type: 'grid_cell_renderer'}],
   })
   static async rdKitMixtureRenderer(): Promise<MixtureCellRenderer> {
@@ -372,8 +376,7 @@ export class PackageFunctions {
 
   @grok.decorators.func({
     name: 'chemCellRenderer',
-    tags: ['cellRenderer', 'cellRenderer-Molecule'],
-    meta: {'cellType': 'Molecule'},
+    meta: {'cellType': 'Molecule', 'role': 'cellRenderer'},
     outputs: [{name: 'result', type: 'grid_cell_renderer'}],
   })
   static async chemCellRenderer(): Promise<DG.GridCellRenderer> {
@@ -496,9 +499,8 @@ export class PackageFunctions {
 
   @grok.decorators.func({
     name: 'Chem Similarity Search',
-    tags: ['viewer'],
     outputs: [{name: 'result', type: 'viewer'}],
-    meta: {icon: 'files/icons/chem-similarity-search-viewer.svg'},
+    meta: {icon: 'files/icons/chem-similarity-search-viewer.svg', role: 'viewer'},
   })
   static similaritySearchViewer(): ChemSimilarityViewer {
     return new ChemSimilarityViewer();
@@ -514,9 +516,8 @@ export class PackageFunctions {
 
   @grok.decorators.func({
     name: 'Chem Diversity Search',
-    tags: ['viewer'],
     outputs: [{name: 'result', type: 'viewer'}],
-    meta: {icon: 'files/icons/chem-diversity-search-viewer.svg'},
+    meta: {icon: 'files/icons/chem-diversity-search-viewer.svg', role: 'viewer'},
   })
   static diversitySearchViewer(): ChemDiversityViewer {
     return new ChemDiversityViewer();
@@ -541,7 +542,7 @@ export class PackageFunctions {
   //function with tranfrom tag to be able to run within data sync projects, adds column to dataframe
   @grok.decorators.func({
     name: 'calculateDescriptorsTransform',
-    tags: ['Transform'],
+    meta: {role: 'transform'},
   })
   static async calculateDescriptorsTransform(
     table: DG.DataFrame,
@@ -718,8 +719,7 @@ export class PackageFunctions {
 
   @grok.decorators.func({
     name: 'Fingerprints',
-    tags: ['dim-red-preprocessing-function'],
-    meta: {supportedSemTypes: 'Molecule', supportedDistanceFunctions: 'Tanimoto,Asymmetric,Cosine,Sokal'},
+    meta: {supportedSemTypes: 'Molecule', supportedDistanceFunctions: 'Tanimoto,Asymmetric,Cosine,Sokal', role: 'dimRedPreprocessingFunction'},
     outputs: [{type: 'object', name: 'result'}],
   })
   static async getFingerprints(
@@ -758,7 +758,8 @@ export class PackageFunctions {
     @grok.decorators.param({type: 'bool', options: {optional: true}}) clusterMCS?: boolean): Promise<DG.Viewer | undefined> {
     //workaround for functions which add viewers to tableView (can be run only on active table view)
     checkCurrentView(table);
-
+    // after this check we are sure that tableView is active
+    const tv = grok.shell.tv;
     if (molecules.semType !== DG.SEMTYPE.MOLECULE) {
       grok.shell.error(`Column ${molecules.name} is not of Molecule semantic type`);
       return;
@@ -778,7 +779,7 @@ export class PackageFunctions {
     let res: DG.ScatterPlotViewer = funcCall.getOutputParamValue();
 
     if (plotEmbeddings) {
-      res = grok.shell.tv.scatterPlot({x: embedColsNames[0], y: embedColsNames[1], title: 'Chemical space'});
+      res = tv.scatterPlot({x: embedColsNames[0], y: embedColsNames[1], title: 'Chemical space'});
       const description = `Molecules column: ${molecules.name}, method: ${methodName}, ${options ? `options: ${JSON.stringify(options)},` : ``} similarity: ${similarityMetric}`;
       res.setOptions({description: description, descriptionVisibilityMode: 'Never'});
       //temporary fix (to save backward compatibility) since labels option type has been changed from string to array in 1.23 platform version
@@ -800,8 +801,8 @@ export class PackageFunctions {
   }
 
   @grok.decorators.func({
-    tags: ['Transform'],
     outputs: [{type: 'viewer', name: 'result'}],
+    meta: {role: 'transform'},
   })
   static async chemSpaceTransform(
     table: DG.DataFrame,
@@ -910,8 +911,8 @@ export class PackageFunctions {
 
   @grok.decorators.func({
     name: 'runElementalAnalysis',
-    tags: ['Transform'],
     outputs: [{name: 'res', type: 'list'}],
+    meta: {role: 'transform'},
   })
   static runElementalAnalysis(
     table: DG.DataFrame,
@@ -953,8 +954,8 @@ export class PackageFunctions {
 
 
   @grok.decorators.func({
-    tags: ['Transform'],
     outputs: [{name: 'result', type: 'object'}],
+    meta: {role: 'transform'},
   })
   static async rGroupDecomposition(
     df: DG.DataFrame,
@@ -1112,7 +1113,7 @@ export class PackageFunctions {
   }
 
   @grok.decorators.func({
-    tags: ['Transform'],
+    meta: {role: 'transform'},
   })
   static async activityCliffsTransform(
     @grok.decorators.param({options: {description: 'Input data table'}}) table: DG.DataFrame,
@@ -1141,7 +1142,7 @@ export class PackageFunctions {
   @grok.decorators.func({
     'top-menu': 'Chem | Calculate | To InchI...',
     'name': 'To InchI',
-    'tags': ['Transform'],
+    'meta': {'role': 'transform'},
   })
   static addInchisTopMenu(
     table: DG.DataFrame,
@@ -1163,7 +1164,7 @@ export class PackageFunctions {
   @grok.decorators.func({
     'top-menu': 'Chem | Calculate | To InchI Keys...',
     'name': 'To InchI Keys',
-    'tags': ['Transform'],
+    'meta': {'role': 'transform'},
   })
   static addInchisKeysTopMenu(
     @grok.decorators.param({options: {description: 'Input data table'}}) table: DG.DataFrame,
@@ -1186,7 +1187,7 @@ export class PackageFunctions {
     'top-menu': 'Chem | Analyze | Structural Alerts...',
     'name': 'Structural Alerts',
     'description': 'Highlights the fragments that could lead to potential chemical hazards',
-    'tags': ['HitTriageFunction'],
+    'meta': {'role': 'hitTriageFunction'},
   })
   static async structuralAlertsTopMenu(
     @grok.decorators.param({options: {description: 'Input data table', caption: 'Table'}}) table: DG.DataFrame,
@@ -1222,8 +1223,8 @@ export class PackageFunctions {
 
   @grok.decorators.func({
     name: 'runStructuralAlerts',
-    tags: ['Transform'],
     outputs: [{name: 'result', type: 'dataframe'}],
+    meta: {role: 'transform'},
   })
   static async runStructuralAlerts(
     @grok.decorators.param({options: {caption: 'Table', description: 'Input data table'}}) table: DG.DataFrame,
@@ -1276,7 +1277,7 @@ export class PackageFunctions {
 
   @grok.decorators.panel({
     name: 'Chemistry | Rendering',
-    tags: ['exclude-actions-panel'],
+    meta: {'exclude-actions-panel': 'true'},
   })
   static molColumnPropertyPanel(
     @grok.decorators.param({options: {semType: 'Molecule'}}) molColumn: DG.Column): DG.Widget {
@@ -1285,7 +1286,7 @@ export class PackageFunctions {
 
   @grok.decorators.panel({
     name: 'Chemistry | Highlight',
-    tags: ['exclude-actions-panel'],
+    meta: {'exclude-actions-panel': 'true'},
   })
   static molColumnHighlights(
     @grok.decorators.param({options: {semType: 'Molecule'}}) molColumn: DG.Column): DG.Widget {
@@ -1294,7 +1295,7 @@ export class PackageFunctions {
 
   @grok.decorators.panel({
     name: 'Chemistry | Descriptors',
-    tags: ['chem', 'widgets'],
+    meta: {role: 'widgets', domain: 'chem'},
   })
   static descriptorsWidget(
     @grok.decorators.param({options: {semType: 'Molecule'}}) smiles: string): DG.Widget {
@@ -1309,7 +1310,7 @@ export class PackageFunctions {
     'name': 'Biology | Drug Likeness',
     'description': 'Drug Likeness score, with explanations on molecule fragments contributing to the score. OCL.',
     'help-url': '/help/domains/chem/info-panels/drug-likeness.md',
-    'tags': ['chem', 'widgets'],
+    'meta': {'role': 'widgets', 'domain': 'chem'},
   })
   static drugLikeness(
     @grok.decorators.param({options: {semType: 'Molecule'}}) smiles: DG.SemanticValue): DG.Widget {
@@ -1322,7 +1323,7 @@ export class PackageFunctions {
   @grok.decorators.panel({
     name: 'Chemistry | Properties',
     description: 'Basic molecule properties',
-    tags: ['chem', 'widgets'],
+    meta: {role: 'widgets', domain: 'chem'},
   })
   static properties(
     @grok.decorators.param({options: {semType: 'Molecule'}}) smiles: DG.SemanticValue): DG.Widget {
@@ -1345,7 +1346,7 @@ export class PackageFunctions {
     'name': 'Biology | Structural Alerts',
     'description': 'Screening drug candidates against structural alerts i.e. fragments associated to a toxicological response',
     'help-url': '/help/domains/chem/info-panels/structural-alerts.md',
-    'tags': ['chem', 'widgets'],
+    'meta': {'role': 'widgets', 'domain': 'chem'},
   })
   static async structuralAlerts(
     @grok.decorators.param({options: {semType: 'Molecule'}}) smiles: string): Promise<DG.Widget> {
@@ -1356,7 +1357,7 @@ export class PackageFunctions {
 
   @grok.decorators.panel({
     name: 'Structure | Identifiers',
-    tags: ['chem', 'widgets'],
+    meta: {role: 'widgets', domain: 'chem'},
   })
   static async identifiers(
     @grok.decorators.param({options: {semType: 'Molecule'}}) smiles: string): Promise<DG.Widget> {
@@ -1368,7 +1369,7 @@ export class PackageFunctions {
   @grok.decorators.panel({
     name: 'Structure | 3D Structure',
     description: '3D molecule representation',
-    tags: ['chem', 'widgets'],
+    meta: {role: 'widgets', domain: 'chem'},
   })
   static async structure3D(
     @grok.decorators.param({options: {semType: 'Molecule'}}) molecule: string): Promise<DG.Widget> {
@@ -1380,7 +1381,7 @@ export class PackageFunctions {
   @grok.decorators.panel({
     name: 'Structure | 2D Structure',
     description: '2D molecule representation',
-    tags: ['chem', 'widgets'],
+    meta: {role: 'widgets', domain: 'chem'},
   })
   static structure2d(
     @grok.decorators.param({options: {semType: 'Molecule'}}) molecule: string): DG.Widget {
@@ -1392,7 +1393,7 @@ export class PackageFunctions {
     'name': 'Biology | Toxicity',
     'description': 'Toxicity prediction. Calculated by openchemlib',
     'help-url': '/help/domains/chem/info-panels/toxicity-risks.md',
-    'tags': ['chem', 'widgets'],
+    'meta': {'role': 'widgets', 'domain': 'chem'},
   })
   static toxicity(
     @grok.decorators.param({options: {semType: 'Molecule'}}) smiles: DG.SemanticValue): DG.Widget {
@@ -1430,25 +1431,25 @@ export class PackageFunctions {
   @grok.decorators.func({
     name: 'convertMolNotation',
     description: 'RDKit-based conversion for SMILES, SMARTS, InChi, Molfile V2000 and Molfile V3000',
-    tags: ['unitConverter'],
     outputs: [{name: 'result', type: 'string', options: {semType: 'Molecule'}}],
+    meta: {role: 'unitConverter'},
   })
   static convertMolNotation(
     @grok.decorators.param({options: {semType: 'Molecule'}}) molecule: string,
-    @grok.decorators.param({type: 'string', options: {choices: ['smiles', 'smarts', 'molblock', 'v3Kmolblock']}}) sourceNotation: DG.chem.Notation,
-    @grok.decorators.param({type: 'string', options: {choices: ['smiles', 'smarts', 'molblock', 'v3Kmolblock']}}) targetNotation: DG.chem.Notation ): string {
+    @grok.decorators.param({type: 'string', options: {choices: ['smiles', 'cxsmiles', 'smarts', 'cxsmarts', 'molblock', 'v3Kmolblock']}}) sourceNotation: DG.chem.Notation,
+    @grok.decorators.param({type: 'string', options: {choices: ['smiles', 'cxsmiles', 'smarts', 'cxsmarts', 'molblock', 'v3Kmolblock']}}) targetNotation: DG.chem.Notation ): string {
     return _convertMolNotation(molecule, sourceNotation, targetNotation, PackageFunctions.getRdKitModule());
   }
 
   @grok.decorators.func({
     'top-menu': 'Chem | Transform | Convert Notation...',
     'name': 'Convert Notation',
-    'tags': ['Transform'],
+    'meta': {'role': 'transform'},
   })
   static async convertNotation(
     data: DG.DataFrame,
     @grok.decorators.param({type: 'column', options: {semType: 'Molecule'}}) molecules: DG.Column<string>,
-    @grok.decorators.param({type: 'string', options: {choices: ['smiles', 'smarts', 'molblock', 'v3Kmolblock'], initialValue: 'smiles'}}) targetNotation: DG.chem.Notation,
+    @grok.decorators.param({type: 'string', options: {choices: ['smiles', 'cxsmiles', 'smarts', 'cxsmarts', 'molblock', 'v3Kmolblock'], initialValue: 'smiles'}}) targetNotation: DG.chem.Notation,
     @grok.decorators.param({options: {initialValue: 'false'}}) overwrite: boolean = false,
     @grok.decorators.param({options: {initialValue: 'true'}}) join: boolean = true,
     @grok.decorators.param({options: {initialValue: 'false', optional: true, nullable: true}}) kekulize?: boolean): Promise<DG.Column<string> | void> {
@@ -1530,7 +1531,7 @@ export class PackageFunctions {
 
   @grok.decorators.func({
     description: 'Molecule',
-    tags: ['cellEditor'],
+    meta: {role: 'cellEditor'},
   })
   static async editMoleculeCell(
     @grok.decorators.param({type: 'grid_cell'}) cell: DG.GridCell): Promise<void> {
@@ -1578,8 +1579,8 @@ export class PackageFunctions {
 
   @grok.decorators.func({
     name: 'OpenChemLib',
-    tags: ['moleculeSketcher'],
     outputs: [{name: 'sketcher', type: 'widget'}],
+    meta: {role: 'moleculeSketcher'},
   })
   static openChemLibSketcher(): OpenChemLibSketcher {
     return new OpenChemLibSketcher();
@@ -1722,8 +1723,7 @@ export class PackageFunctions {
   @grok.decorators.func({
     name: 'Copy as...',
     description: 'Copies structure in different formats',
-    meta: {action: 'Copy as...'},
-    tags: ['exclude-current-value-menu'],
+    meta: {'action': 'Copy as...', 'exclude-current-value-menu': 'true'},
   })
   static copyAsAction(
     @grok.decorators.param({options: {semType: 'Molecule'}}) value: DG.SemanticValue) {
@@ -1744,8 +1744,7 @@ export class PackageFunctions {
   @grok.decorators.func({
     name: 'Copy as SMILES',
     description: 'Copies structure as smiles',
-    tags: ['exclude-actions-panel'],
-    meta: {action: 'Copy as SMILES'},
+    meta: {'action': 'Copy as SMILES', 'exclude-actions-panel': 'true'},
   })
   static copyAsSmiles(
     @grok.decorators.param({options: {semType: 'Molecule'}}) value: DG.SemanticValue): void {
@@ -1758,8 +1757,7 @@ export class PackageFunctions {
   @grok.decorators.func({
     name: 'Copy as MOLFILE V2000',
     description: 'Copies structure as molfile V2000',
-    tags: ['exclude-actions-panel'],
-    meta: {action: 'Copy as MOLFILE V2000'},
+    meta: {'action': 'Copy as MOLFILE V2000', 'exclude-actions-panel': 'true'},
   })
   static copyAsMolfileV2000(
     @grok.decorators.param({options: {semType: 'Molecule'}}) value: DG.SemanticValue): void {
@@ -1772,8 +1770,7 @@ export class PackageFunctions {
   @grok.decorators.func({
     name: 'Copy as MOLFILE V3000',
     description: 'Copies structure as molfile V3000',
-    tags: ['exclude-actions-panel'],
-    meta: {action: 'Copy as MOLFILE V3000'},
+    meta: {'action': 'Copy as MOLFILE V3000', 'exclude-actions-panel': 'true'},
   })
   static copyAsMolfileV3000(
     @grok.decorators.param({options: {semType: 'Molecule'}}) value: DG.SemanticValue): void {
@@ -1786,8 +1783,7 @@ export class PackageFunctions {
   @grok.decorators.func({
     name: 'Copy as SMARTS',
     description: 'Copies structure as smarts',
-    tags: ['exclude-actions-panel'],
-    meta: {action: 'Copy as SMARTS'},
+    meta: {'action': 'Copy as SMARTS', 'exclude-actions-panel': 'true'},
   })
   static copyAsSmarts(
     @grok.decorators.param({options: {semType: 'Molecule'}})value: DG.SemanticValue): void {
@@ -1800,8 +1796,7 @@ export class PackageFunctions {
   @grok.decorators.func({
     name: 'Copy as IMAGE',
     description: 'Copies structure as Image',
-    tags: ['exclude-actions-panel'],
-    meta: {action: 'Copy as Image'},
+    meta: {'action': 'Copy as Image', 'exclude-actions-panel': 'true'},
   })
   static copyAsImage(
     @grok.decorators.param({options: {semType: 'Molecule'}}) value: DG.SemanticValue): void {
@@ -1884,13 +1879,7 @@ export class PackageFunctions {
     'top-menu': 'Chem | Calculate | Chemical Properties...',
     'name': 'Chemical Properties',
     'description': 'Calculates chemical properties and adds them as columns to the input table. properties include Molecular Weight (MW), Hydrogen Bond Acceptors (HBA), Hydrogen Bond Donors (HBD), LogP (Partition), LogS (Solubility), Polar Surface Area (PSA), Rotatable Bonds, Stereo Centers, Molecule Charge.',
-    'tags': ['HitTriageFunction', 'Transform'],
-    'meta': {
-      'function_family': 'biochem-calculator',
-      'method_info.author': 'Open Chem Lib Team',
-      'method_info.year': '2024',
-      'method_info.github': 'https://github.com/actelion/openchemlib',
-    }})
+    'meta': {'function_family': 'biochem-calculator', 'method_info.author': 'Open Chem Lib Team', 'method_info.year': '2024', 'method_info.github': 'https://github.com/actelion/openchemlib', 'role': 'hitTriageFunction,transform'}})
   static async addChemPropertiesColumns(
     @grok.decorators.param({type: 'dataframe', options: {description: 'Input data table'}}) table: DG.DataFrame,
     @grok.decorators.param({type: 'column', options: {semType: 'Molecule'}}) molecules: DG.Column,
@@ -1941,7 +1930,8 @@ export class PackageFunctions {
   @grok.decorators.func({
     'top-menu': 'Chem | Calculate | Toxicity Risks...',
     'name': 'Toxicity Risks',
-    'tags': ['HitTriageFunction', 'Transform']})
+    'meta': {'role': 'hitTriageFunction,transform'},
+  })
   static async addChemRisksColumns(
     @grok.decorators.param({options: {description: 'Input data table'}}) table: DG.DataFrame,
     @grok.decorators.param({options: {semType: 'Molecule'}}) molecules: DG.Column,
@@ -1988,8 +1978,7 @@ export class PackageFunctions {
 
   @grok.decorators.func({
     name: 'Matched Molecular Pairs Analysis',
-    tags: ['viewer'],
-    meta: {showInGallery: 'false'},
+    meta: {showInGallery: 'false', role: 'viewer'},
     outputs: [{name: 'result', type: 'viewer'}],
   })
   static mmpViewer(): MatchedMolecularPairsViewer {
@@ -2056,9 +2045,8 @@ export class PackageFunctions {
   @grok.decorators.func({
     name: 'Scaffold Tree Filter',
     description: 'Scaffold Tree filter',
-    tags: ['filter'],
     outputs: [{name: 'result', type: 'filter'}],
-    meta: {semType: 'Molecule', allowMultipleFiltersForColumn: 'false'},
+    meta: {semType: 'Molecule', allowMultipleFiltersForColumn: 'false', role: 'filter'},
   })
   static scaffoldTreeFilter(): ScaffoldTreeFilter {
     return new ScaffoldTreeFilter();
@@ -2177,7 +2165,8 @@ export class PackageFunctions {
   @grok.decorators.func({
     'name': 'Names To Smiles',
     'top-menu': 'Chem | Transform | Names To Smiles...',
-    'tags': ['Transform']})
+    'meta': {'role': 'transform'},
+  })
   static async namesToSmiles(
     data: DG.DataFrame,
     @grok.decorators.param({type: 'column'}) names: DG.Column<string>): Promise<void> {
@@ -2190,11 +2179,11 @@ export class PackageFunctions {
   }
 
   @grok.decorators.func({
-    outputs: [{name: 'smiles', type: 'string', options: {semType: 'molecule'}}],
+    outputs: [{name: 'smiles', type: 'string', options: {semType: 'Molecule'}}],
     meta: {role: 'canonicalizer'},
   })
   static canonicalize(
-    @grok.decorators.param({type: 'string', options: {semType: 'molecule'}}) molecule: string): string {
+    @grok.decorators.param({type: 'string', options: {semType: 'Molecule'}}) molecule: string): string {
     return PackageFunctions.convertMolNotation(molecule, DG.chem.Notation.Unknown, DG.chem.Notation.Smiles);
   }
 
@@ -2202,7 +2191,7 @@ export class PackageFunctions {
     outputs: [{name: 'molecularFormula', type: 'string'}],
   })
   static getMolecularFormula(
-    @grok.decorators.param({type: 'string', options: {semType: 'molecule'}}) molecule: string): string {
+    @grok.decorators.param({type: 'string', options: {semType: 'Molecule'}}) molecule: string): string {
     return oclMol(molecule).getMolecularFormula().formula;
   }
 
@@ -2425,9 +2414,9 @@ export class PackageFunctions {
   @grok.decorators.func({
     'top-menu': 'Chem | Transform | Deprotect...',
     'name': 'Deprotect',
-    'tags': ['Transform'],
     'description': 'Removes drawn protecting groups / fragments from molecules',
     'editor': 'Chem:DeprotectEditor',
+    'meta': {'role': 'transform'},
   })
   static async deprotect(
     @grok.decorators.param({options: {description: 'Input data table'}}) table: DG.DataFrame,
@@ -2474,11 +2463,13 @@ export class PackageFunctions {
   }
 
   @grok.decorators.func({
-    tags: ['Transform'],
     outputs: [{name: 'res', type: 'list'}],
+    meta: {role: 'transform'},
   })
   static async mpoTransformFunction(
     df: DG.DataFrame,
+    profileName: string,
+    aggregation: WeightedAggregation,
     @grok.decorators.param({type: 'object'}) currentProperties: { [key: string]: PropertyDesirability },
   ): Promise<string[]> {
     const columns: DG.Column[] = [];
@@ -2486,7 +2477,7 @@ export class PackageFunctions {
     for (const propertyName in currentProperties) {
       const column = df.columns.byName(propertyName);
       if (!column) {
-        grok.shell.warning(`Column ${propertyName} from template not found in table. Skipping.`);
+        grok.shell.warning(`Column ${propertyName} from profile not found in table. Skipping.`);
         continue;
       }
       column.setTag('desirabilityTemplate', JSON.stringify(currentProperties[propertyName]));
@@ -2494,13 +2485,12 @@ export class PackageFunctions {
     }
 
     if (columns.length === 0) {
-      grok.shell.error('No valid columns found matching the template properties. Cannot calculate MPO score.');
+      grok.shell.error('No valid columns found matching the profile properties. Cannot calculate MPO score.');
       return [];
     }
 
     try {
-      resultCol = mpo(df, columns);
-      grok.shell.info(`MPO score calculated in column '${resultCol.name}'.`);
+      resultCol = mpo(df, columns, profileName, aggregation);
     } catch (e) {
       console.error('MPO Calculation Error:', e);
       grok.shell.error(`MPO calculation failed: ${e instanceof Error ? e.message : String(e)}`);
@@ -2521,7 +2511,7 @@ export class PackageFunctions {
     view.setRibbonPanels([[saveButton]]);
 
     file.readAsString().then((s) => {
-      const mpoEditor = new MpoProfileEditor();
+      const mpoEditor = new MpoProfileEditor(undefined, true);
       mpoEditor.setProfile(JSON.parse(s));
       view.append(mpoEditor.root);
 
@@ -2544,7 +2534,7 @@ export class PackageFunctions {
 
   @grok.decorators.panel({
     name: 'Chemistry | Mixture',
-    tags: ['chem', 'widgets'],
+    meta: {role: 'widgets', domain: 'chem'},
   })
   static async mixtureWidget(
     @grok.decorators.param({type: 'string', options: {semType: 'ChemicalMixture'}}) mixture: string): Promise<DG.Widget> {
@@ -2553,7 +2543,7 @@ export class PackageFunctions {
 
   @grok.decorators.panel({
     name: 'Chemistry | MixtureTree',
-    tags: ['chem', 'widgets'],
+    meta: {role: 'widgets', domain: 'chem'},
   })
   static async mixtureTreeWidget(
     @grok.decorators.param({options: {semType: 'ChemicalMixture'}}) mixture: string): Promise<DG.Widget> {
@@ -2576,5 +2566,163 @@ export class PackageFunctions {
   })
   static async biochemPropsWidget(): Promise<void> {
     await biochemicalPropertiesDialog();
+  }
+
+  @grok.decorators.app({
+    'name': 'MPO profiles',
+    'meta': {browsePath: 'Chem', icon: 'images/mpo.png'},
+  })
+  static async mpoProfilesApp(
+    @grok.decorators.param({options: {metaUrl: true, optional: true}}) path?: string,
+  ): Promise<DG.View> {
+    const url = new URL(window.location.href);
+    const params = url.searchParams;
+
+    const hasPath = !!path;
+
+    if (hasPath && url.pathname.endsWith('/Mpo/create-profile')) {
+      const view = new MpoProfileCreateView();
+      return view.tableView!;
+    }
+
+    const profileId = params.get('profileId');
+    const profiles = await loadMpoProfiles();
+    if (hasPath && profileId) {
+      const profile = profiles.find((p) => p.name === decodeURIComponent(profileId));
+      const view = new MpoProfileCreateView(profile, false, profile?.fileName);
+      return view.view;
+    }
+
+    const infoView = new MpoProfilesView();
+    await infoView.render();
+    return infoView.view;
+  }
+
+  @grok.decorators.func()
+  static async mpoProfilesAppTreeBrowser(
+    @grok.decorators.param({type: 'dynamic'}) treeNode: DG.TreeViewGroup,
+    @grok.decorators.param({type: 'view'}) browseView: any,
+  ) {
+    let openedView: DG.ViewBase | null = null;
+    const profileFiles = await grok.dapi.files.list(MPO_TEMPLATE_PATH);
+    for (const profile of profileFiles) {
+      const content =
+        JSON.parse(await grok.dapi.files.readAsText(`${MPO_TEMPLATE_PATH}/${profile.name}`)) as DesirabilityProfile;
+
+      treeNode.item(content.name).onSelected.subscribe(() => {
+        openedView?.close();
+        const editView = new MpoProfileCreateView(content, false, profile.name);
+        openedView = editView.view;
+        grok.shell.addPreview(editView.view);
+      });
+    }
+  }
+
+  @grok.decorators.panel({
+    name: 'Chemistry | MPO',
+    meta: {role: 'widgets', domain: 'chem'},
+  })
+  static async mpoWidget(
+  @grok.decorators.param({name: 'smiles', options: {semType: 'Molecule'}})
+    semValue: DG.SemanticValue,
+  ): Promise<DG.Widget<any>> {
+    const container = ui.divV([]);
+    const resultDiv = ui.div();
+    const loader = ui.loader();
+    resultDiv.appendChild(loader);
+
+    const dataFrame = semValue.cell.dataFrame;
+    const profiles = await loadMpoProfiles();
+    const suitableProfiles = await findSuitableProfiles(dataFrame, profiles);
+
+    if (suitableProfiles.length === 0) {
+      container.appendChild(ui.divText('No suitable profiles available.'));
+      const createButton = ui.button('Manage Profiles', async () => {
+        const profilesView = new MpoProfilesView();
+        await profilesView.show();
+      });
+      container.appendChild(createButton);
+
+      return DG.Widget.fromRoot(container);
+    }
+
+    const profileInput = ui.input.choice('Profile', {
+      items: suitableProfiles.map((p) => p.fileName),
+      value: suitableProfiles[0].fileName,
+      onValueChanged: () => calculateMpo(),
+    });
+
+    const aggregationInput = ui.input.choice('Aggregation', {
+      items: WEIGHTED_AGGREGATIONS_LIST,
+      nullable: false,
+      onValueChanged: () => calculateMpo(),
+    });
+
+    async function calculateMpo() {
+      if (!profileInput.value)
+        return;
+
+      const selected = suitableProfiles.find((p) => p.fileName === profileInput.value);
+      if (!selected)
+        return;
+
+      ui.empty(resultDiv);
+      resultDiv.appendChild(loader);
+
+      const columns: DG.Column[] = [];
+
+      for (const propertyName in selected.properties) {
+        const column = dataFrame.columns.byName(propertyName);
+        if (!column)
+          continue;
+
+        columns.push(column);
+
+        const newTagValue = JSON.stringify(selected.properties[propertyName]);
+        const existingTagValue = column.getTag('desirabilityTemplate');
+        if (existingTagValue !== newTagValue)
+          column.setTag('desirabilityTemplate', newTagValue);
+      }
+
+      const score = await mpo( //@ts-ignore
+        dataFrame,
+        columns,
+        selected.name,
+        aggregationInput.value as WeightedAggregation,
+        false,
+      );
+
+      ui.empty(resultDiv);
+
+      const mpoValue = score.get(semValue.cell.rowIndex);
+      const valueHost = ui.divH([], {style: {position: 'relative', alignItems: 'center'}});
+
+      const addColumnIcon = ui.iconFA(
+        'plus',
+        async () => {
+          await mpo( //@ts-ignore
+            dataFrame,
+            columns,
+            selected.name,
+            aggregationInput.value as WeightedAggregation,
+          );
+        },
+        'Add MPO score as a column',
+      );
+
+      ui.tools.setHoverVisibility(valueHost, [addColumnIcon]);
+      $(addColumnIcon).css('color', '#2083d5').css('margin-right', '4px');
+
+      valueHost.appendChild(addColumnIcon);
+      valueHost.appendChild(ui.divText(mpoValue != null ? mpoValue.toFixed(2) : 'N/A'));
+
+      const table = ui.tableFromMap({'MPO Score': valueHost});
+      resultDiv.appendChild(table);
+    }
+
+    container.appendChild(ui.divV([profileInput.root, aggregationInput.root, resultDiv]));
+
+    await calculateMpo();
+    return DG.Widget.fromRoot(container);
   }
 }

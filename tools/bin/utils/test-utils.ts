@@ -4,7 +4,7 @@ import path from 'path';
 import yaml from 'js-yaml';
 import * as utils from '../utils/utils';
 import {PuppeteerNode} from 'puppeteer';
-import * as DG from 'datagrok-api/dg';
+import type * as DG from 'datagrok-api/dg';
 import {PuppeteerScreenRecorder} from 'puppeteer-screen-recorder';
 import {spaceToCamelCase} from '../utils/utils';
 import puppeteer from 'puppeteer';
@@ -43,6 +43,13 @@ export async function getWebUrl(url: string, token: string) {
   const response = await fetch(`${url}/admin/plugins/admin/settings`, {headers: {Authorization: token}});
   const json = await response.json();
   return json.settings.webRoot;
+}
+
+export function getWebUrlFromPage(page: Page): string {
+  const url = page.url();
+  // Extract the base URL (protocol + host)
+  const urlObj = new URL(url);
+  return `${urlObj.protocol}//${urlObj.host}`;
 }
 
 export function getDevKey(hostKey: string): { url: string, key: string } {
@@ -335,31 +342,34 @@ export function addLogsToFile(filePath: string, stringToSave: string) {
 }
 
 export function printBrowsersResult(browserResult: ResultObject, verbose: boolean = false) {
-  if (verbose) {
-    if ((browserResult.passedAmount ?? 0) > 0 && (browserResult.verbosePassed ?? []).length > 0) {
-      console.log('Passed: ');
-      console.log(browserResult.verbosePassed);
+  // Skip detailed summary if modernOutput was used (already printed per-category)
+  if (!browserResult.modernOutput) {
+    if (verbose) {
+      if ((browserResult.passedAmount ?? 0) > 0 && (browserResult.verbosePassed ?? []).length > 0) {
+        console.log('Passed: ');
+        console.log(browserResult.verbosePassed);
+      }
+      if ((browserResult.skippedAmount ?? 0) > 0 && (browserResult.verboseSkipped ?? []).length > 0) {
+        console.log('Skipped: ');
+        console.log(browserResult.verboseSkipped);
+      }
     }
-    if ((browserResult.skippedAmount ?? 0) > 0 && (browserResult.verboseSkipped ?? []).length > 0) {
-      console.log('Skipped: ');
-      console.log(browserResult.verboseSkipped);
-    }
-  }
 
-  if ((browserResult.failedAmount ?? 0) > 0 && (browserResult.verboseFailed ?? []).length > 0) {
-    console.log('Failed: ');
-    console.log(browserResult.verboseFailed);
+    if ((browserResult.failedAmount ?? 0) > 0 && (browserResult.verboseFailed ?? []).length > 0) {
+      console.log('Failed: ');
+      console.log(browserResult.verboseFailed);
+    }
+    console.log('Passed amount:  ' + browserResult?.passedAmount);
+    console.log('Skipped amount: ' + browserResult?.skippedAmount);
+    console.log('Failed amount:  ' + browserResult?.failedAmount);
   }
-  console.log('Passed amount:  ' + browserResult?.passedAmount);
-  console.log('Skipped amount: ' + browserResult?.skippedAmount);
-  console.log('Failed amount:  ' + browserResult?.failedAmount);
 
   if (browserResult.failed) {
     if (browserResult.verboseFailed === 'Package not found')
       color.fail('Tests not found');
     else
       color.fail('Tests failed.');
-  } else 
+  } else
     color.success('Tests passed.');
   
 }
@@ -374,174 +384,284 @@ export function saveCsvResults(stringToSave: string[], csvReportDir: string) {
   color.info('Saved `test-report.csv`\n');
 }
 
-async function runTests(testsParams: { package: any, params: any }[], stopOnFail?: boolean): Promise<any> {
-  let failed = false;
-  let verbosePassed = '';
-  let verboseSkipped = '';
-  let verboseFailed = '';
-  let error = '';
-  let countPassed = 0;
-  let countSkipped = 0;
-  let countFailed = 0;
-  let resultDF: any = undefined;
-  let lastTest: any = null;
-  let res: string = '';
+async function runTests(testParams: { package: any, params: any }): Promise<any> {
+    let failed = false;
+    let verbosePassed = '';
+    let verboseSkipped = '';
+    let verboseFailed = '';
+    let countPassed = 0;
+    let countSkipped = 0;
+    let countFailed = 0;
 
-  try {
-    for (const testParam of testsParams) {
-      lastTest = testParam;
-      const df: DG.DataFrame = await (<any>window).grok.functions.call(testParam.package + ':test', testParam.params);
-
-      if (!df.getCol('flaking')) {
-          const flakingCol = (<any>window).DG.Column.fromType((<any>window).DG.COLUMN_TYPE.BOOL, 'flaking', df.rowCount);
-          df.columns.add(flakingCol);
-      }
-
-      if (!df.getCol('package')) {
-        const packageNameCol =
-                (<any>window).DG.Column.fromList((<any>window).DG.COLUMN_TYPE.STRING, 'package', Array(df.rowCount).fill(testParam.package));
-        df.columns.add(packageNameCol);
-      }
-
-      df.columns
-        .setOrder([ 
-          'date', 'category', 'name', 'success', 'result', 'ms', 'skipped', 'logs', 'owner', 'package', 'widgetsDifference', 'flaking']);
-      // addColumn('flaking', (<any>window).DG.Column.fromType((<any>window).DG.COLUMN_TYPE.BOOL, 'flaking', df.rowCount), df);
-      // addColumn('package', (<any>window).DG.Column.fromType((<any>window).DG.COLUMN_TYPE.BOOL, 'flaking', df.rowCount), df);
-      // if (!df.getCol('flaking')) {
-      //   const flakingCol = (<any>window).DG.Column.fromType((<any>window).DG.COLUMN_TYPE.BOOL, 'flaking', df.rowCount);
-      //   df.columns.add(flakingCol);
-      // }
-      // if (!df.getCol('package')) {
-      //   const packageNameCol =
-      //     (<any>window).DG.Column.fromList((<any>window).DG.COLUMN_TYPE.STRING, 'package', Array(df.rowCount).fill(testParam.package));
-      //   df.columns.add(packageNameCol);
-      // }
-      if (df.rowCount === 0) {
-        verboseFailed += `Test result : Invocation Fail : ${testParam.params.category}: ${testParam.params.test}\n`;
-        countFailed += 1;
-        failed = true;
-        continue;
-      }
-
-      let row = df.rows.get(0);
-      console.log(`DEBUG: runTests: IN A LOOP: rows in df ${df.rowCount}`);
-      if (df.rowCount > 1) {
-        const unhandledErrorRow = df.rows.get(1);
-        if (!unhandledErrorRow.get('success')) {
-          unhandledErrorRow['category'] = row.get('category');
-          unhandledErrorRow['name'] = row.get('name');
-          row = unhandledErrorRow;
+    try {
+        // Check if retry is supported by looking for skipToCategory parameter
+        let retrySupported = false;
+        try {
+            const funcs = (<any>window).DG.Func.find({package: testParams.package, name: 'test'});
+            if (funcs && funcs.length > 0) {
+                const testFunc = funcs[0];
+                retrySupported = testFunc.inputs?.some((input: any) => input.name === 'skipToCategory') === true;
+            }
+        } catch (e) {
+            retrySupported = false;
         }
-      }
-      const category = row.get('category');
-      const testName = row.get('name');
-      const time = row.get('ms');
-      const result = row.get('result');
-      const success = row.get('success');
-      const skipped = row.get('skipped');
-      row['flaking'] = success && (<any>window).DG.Test.isReproducing;
 
-      df.changeColumnType('result', (<any>window).DG.COLUMN_TYPE.STRING);
-      df.changeColumnType('logs', (<any>window).DG.COLUMN_TYPE.STRING);
-      if (df.col('widgetsDifference'))
-        df.changeColumnType('widgetsDifference', (<any>window).DG.COLUMN_TYPE.STRING);
-      // df.changeColumnType('memoryDelta', (<any>window).DG.COLUMN_TYPE.BIG_INT);
+        const testCallParams: any = {};
+        if (testParams.params?.category)
+            testCallParams.category = testParams.params.category;
+        if (testParams.params?.test)
+            testCallParams.test = testParams.params.test;
+        // Only pass retry-related params if supported
+        if (retrySupported) {
+            if (testParams.params?.skipToCategory)
+                testCallParams.skipToCategory = testParams.params.skipToCategory;
+            if (testParams.params?.skipToTest)
+                testCallParams.skipToTest = testParams.params.skipToTest;
+            if (testParams.params?.returnOnFail)
+                testCallParams.returnOnFail = testParams.params.returnOnFail;
+        }
 
-      if (resultDF === undefined)
-        resultDF = df;
-      else {
-        console.log(`DEBUG: COLUMN NAMES IN RESULT_DF: ${resultDF.columns.names()}`);
-        console.log(`DEBUG: COLUMN TYPES IN RESULT_DF: ${resultDF.columns.names().map((c) => `${c}: ${resultDF.col(c)?.type}`)}`);
-        console.log(`DEBUG: COLUMN NAMES IN DF: ${df.columns.names()}`);
-        console.log(`DEBUG: COLUMN TYPES IN DF: ${df.columns.names().map((c) => `${c}: ${df.col(c)?.type}`)}`);
-        resultDF = resultDF.append(df);
-      }
+        const df: DG.DataFrame = await (<any>window).grok.functions.call(
+            testParams.package + ':test',
+            Object.keys(testCallParams).length > 0 ? testCallParams : undefined
+        );
+        if (!df.getCol('flaking')) {
+            const flakingCol = (<any>window).DG.Column.fromType((<any>window).DG.COLUMN_TYPE.BOOL, 'flaking', df.rowCount);
+            df.columns.add(flakingCol);
+        }
 
-      if (row['skipped']) {
-        verboseSkipped += `Test result : Skipped : ${time} : ${category}: ${testName} :  ${result}\n`;
-        countSkipped += 1;
-      } else if (row['success']) {
-        verbosePassed += `Test result : Success : ${time} : ${category}: ${testName} :  ${result}\n`;
-        countPassed += 1;
-      } else {
-        verboseFailed += `Test result : Failed : ${time} : ${category}: ${testName} :  ${result}\n`;
-        countFailed += 1;
+        if (!df.getCol('package')) {
+            const packageNameCol =
+                (<any>window).DG.Column.fromList((<any>window).DG.COLUMN_TYPE.STRING, 'package', Array(df.rowCount).fill(testParams.package));
+            df.columns.add(packageNameCol);
+        }
+
+        df.columns
+            .setOrder([
+                'date', 'category', 'name', 'success', 'result', 'ms', 'skipped', 'logs', 'owner', 'package', 'widgetsDifference', 'flaking']);
+
+        df.changeColumnType('result', (<any>window).DG.COLUMN_TYPE.STRING);
+        df.changeColumnType('logs', (<any>window).DG.COLUMN_TYPE.STRING);
+        if (df.col('widgetsDifference'))
+            df.changeColumnType('widgetsDifference', (<any>window).DG.COLUMN_TYPE.STRING);
+        // df.changeColumnType('memoryDelta', (<any>window).DG.COLUMN_TYPE.BIG_INT);
+
+        let lastFailedTest: {category: string, test: string} | undefined = undefined;
+        for (let row: DG.Row of df.rows) {
+            if (row['skipped']) {
+                verboseSkipped += `${row['category']}: ${row['name']} (${row['ms']} ms) :  ${row['result']}\n`;
+                countSkipped += 1;
+            } else if (row['success']) {
+                verbosePassed += `${row['category']}: ${row['name']} (${row['ms']} ms) :  ${row['result']}\n`;
+                countPassed += 1;
+            } else {
+                verboseFailed += `${row['category']}: ${row['name']} (${row['ms']} ms) :  ${row['result']}\n`;
+                countFailed += 1;
+                failed = true;
+                if (row['category'] != 'Unhandled exceptions' && row['name'] != 'before' && row['name'] != 'after')
+                  lastFailedTest = {category: row['category'], test: row['name']};
+            }
+        }
+
+        return {
+            verbosePassed: verbosePassed,
+            verboseSkipped: verboseSkipped,
+            verboseFailed: verboseFailed,
+            passedAmount: countPassed,
+            skippedAmount: countSkipped,
+            failedAmount: countFailed,
+            csv: df.toCsv(),
+            failed: failed,
+            lastFailedTest: lastFailedTest,
+            retrySupported: retrySupported,
+            // df: resultDF?.toJson()
+        };
+    } catch (e) {
+        console.log(`DEBUG: runTests: IN CATCH: ERROR: ${e}`);
+        return {failed: true, retrySupported: false, error: `${e}, ${await (<any>window).DG.Logger.translateStackTrace((e as any).stack)}`}
+    }
+
+    /*
+        for (const testParam of testsParams) {
+          lastTest = testParam;
+          console.log(testParam);
+          const df: DG.DataFrame = await (<any>window).grok.functions.call(testParam.package + ':test', testParam.params);
+
+          if (!df.getCol('flaking')) {
+              const flakingCol = (<any>window).DG.Column.fromType((<any>window).DG.COLUMN_TYPE.BOOL, 'flaking', df.rowCount);
+              df.columns.add(flakingCol);
+          }
+
+          if (!df.getCol('package')) {
+            const packageNameCol =
+                    (<any>window).DG.Column.fromList((<any>window).DG.COLUMN_TYPE.STRING, 'package', Array(df.rowCount).fill(testParam.package));
+            df.columns.add(packageNameCol);
+          }
+
+          df.columns
+            .setOrder([
+              'date', 'category', 'name', 'success', 'result', 'ms', 'skipped', 'logs', 'owner', 'package', 'widgetsDifference', 'flaking']);
+          // addColumn('flaking', (<any>window).DG.Column.fromType((<any>window).DG.COLUMN_TYPE.BOOL, 'flaking', df.rowCount), df);
+          // addColumn('package', (<any>window).DG.Column.fromType((<any>window).DG.COLUMN_TYPE.BOOL, 'flaking', df.rowCount), df);
+          // if (!df.getCol('flaking')) {
+          //   const flakingCol = (<any>window).DG.Column.fromType((<any>window).DG.COLUMN_TYPE.BOOL, 'flaking', df.rowCount);
+          //   df.columns.add(flakingCol);
+          // }
+          // if (!df.getCol('package')) {
+          //   const packageNameCol =
+          //     (<any>window).DG.Column.fromList((<any>window).DG.COLUMN_TYPE.STRING, 'package', Array(df.rowCount).fill(testParam.package));
+          //   df.columns.add(packageNameCol);
+          // }
+          if (df.rowCount === 0) {
+            verboseFailed += `Test result : Invocation Fail : ${testParam.params.category}: ${testParam.params.test}\n`;
+            countFailed += 1;
+            failed = true;
+            continue;
+          }
+
+          let row = df.rows.get(0);
+          console.log(`DEBUG: runTests: IN A LOOP: rows in df ${df.rowCount}`);
+          if (df.rowCount > 1) {
+            const unhandledErrorRow = df.rows.get(1);
+            if (!unhandledErrorRow.get('success')) {
+              unhandledErrorRow['category'] = row.get('category');
+              unhandledErrorRow['name'] = row.get('name');
+              row = unhandledErrorRow;
+            }
+          }
+          const category = row.get('category');
+          const testName = row.get('name');
+          const time = row.get('ms');
+          const result = row.get('result');
+          const success = row.get('success');
+          const skipped = row.get('skipped');
+          row['flaking'] = success && (<any>window).DG.Test.isReproducing;
+
+          df.changeColumnType('result', (<any>window).DG.COLUMN_TYPE.STRING);
+          df.changeColumnType('logs', (<any>window).DG.COLUMN_TYPE.STRING);
+          if (df.col('widgetsDifference'))
+            df.changeColumnType('widgetsDifference', (<any>window).DG.COLUMN_TYPE.STRING);
+          // df.changeColumnType('memoryDelta', (<any>window).DG.COLUMN_TYPE.BIG_INT);
+
+          if (resultDF === undefined)
+            resultDF = df;
+          else {
+            console.log(`DEBUG: COLUMN NAMES IN RESULT_DF: ${resultDF.columns.names()}`);
+            console.log(`DEBUG: COLUMN TYPES IN RESULT_DF: ${resultDF.columns.names().map((c) => `${c}: ${resultDF.col(c)?.type}`)}`);
+            console.log(`DEBUG: COLUMN NAMES IN DF: ${df.columns.names()}`);
+            console.log(`DEBUG: COLUMN TYPES IN DF: ${df.columns.names().map((c) => `${c}: ${df.col(c)?.type}`)}`);
+            resultDF = resultDF.append(df);
+          }
+
+          if (row['skipped']) {
+            verboseSkipped += `Test result : Skipped : ${time} : ${category}: ${testName} :  ${result}\n`;
+            countSkipped += 1;
+          } else if (row['success']) {
+            verbosePassed += `Test result : Success : ${time} : ${category}: ${testName} :  ${result}\n`;
+            countPassed += 1;
+          } else {
+            verboseFailed += `Test result : Failed : ${time} : ${category}: ${testName} :  ${result}\n`;
+            countFailed += 1;
+            failed = true;
+          }
+          if ((success !== true && skipped !== true) && stopOnFail) {
+            break;
+          }
+        }
+
+        if ((<any>window).DG.Test.isInDebug) {
+          console.log('on browser closing debug point');
+          debugger;
+        }
+
+        res = '';
+        console.log(`DEBUG: runTests: AFTER THE LOOP: rows in resultDF ${resultDF?.rowCount}`);
+        if (resultDF) {
+          const bs = (<any>window).DG.BitSet.create(resultDF.rowCount);
+          bs.setAll(true);
+          for (let i = 0; i < resultDF.rowCount; i++) {
+            if (resultDF.rows.get(i).get('category') === 'Unhandled exceptions')
+              bs.set(i, false);
+
+          }
+          resultDF = resultDF.clone(bs);
+          console.log(`DEBUG: runTests: IN IF CONDITION: rows in resultDF ${resultDF.rowCount}`);
+          res = resultDF.toCsv();
+          console.log(`DEBUG: runTests: IN IF CONDITION: csv length ${res?.length}`);
+        }
+      } catch (e) {
         failed = true;
+        console.log(`DEBUG: runTests: IN CATCH: ERROR: ${e}`);
+        error = lastTest ?
+            `category: ${
+                lastTest.params.category}, name: ${
+                lastTest.params.test}, error: ${e}, ${await (<any>window).DG.Logger.translateStackTrace((e as any).stack)}` :
+            `test: null, error: ${e}, ${await (<any>window).DG.Logger.translateStackTrace((e as any).stack)}`;
       }
-      if ((success !== true && skipped !== true) && stopOnFail) {
-        break;
-      }
-    }
-
-    if ((<any>window).DG.Test.isInDebug) {
-      console.log('on browser closing debug point');
-      debugger;
-    }
-
-    res = '';
-    console.log(`DEBUG: runTests: AFTER THE LOOP: rows in resultDF ${resultDF?.rowCount}`);
-    if (resultDF) {
-      const bs = (<any>window).DG.BitSet.create(resultDF.rowCount);
-      bs.setAll(true);
-      for (let i = 0; i < resultDF.rowCount; i++) {
-        if (resultDF.rows.get(i).get('category') === 'Unhandled exceptions') 
-          bs.set(i, false);
-        
-      }
-      resultDF = resultDF.clone(bs);
-      console.log(`DEBUG: runTests: IN IF CONDITION: rows in resultDF ${resultDF.rowCount}`);
-      res = resultDF.toCsv();
-      console.log(`DEBUG: runTests: IN IF CONDITION: csv length ${res?.length}`);
-    }
-  } catch (e) {
-    failed = true;
-    console.log(`DEBUG: runTests: IN CATCH: ERROR: ${e}`);
-    error = lastTest ?
-        `category: ${
-            lastTest.params.category}, name: ${
-            lastTest.params.test}, error: ${e}, ${await (<any>window).DG.Logger.translateStackTrace((e as any).stack)}` :
-        `test: null, error: ${e}, ${await (<any>window).DG.Logger.translateStackTrace((e as any).stack)}`;
+      console.log(`DEBUG: runTests: BEFORE RETURN: RES: ${res.length}, FAILED: ${failed}, ERROR: ${error}`);
+      return {
+        failed: failed,
+        verbosePassed: verbosePassed,
+        verboseSkipped: verboseSkipped,
+        verboseFailed: verboseFailed,
+        passedAmount: countPassed,
+        skippedAmount: countSkipped,
+        failedAmount: countFailed,
+        error: error,
+        csv: res,
+        // df: resultDF?.toJson()
+      };*/
   }
-  console.log(`DEBUG: runTests: BEFORE RETURN: RES: ${res.length}, FAILED: ${failed}, ERROR: ${error}`);
-  return {
-    failed: failed,
-    verbosePassed: verbosePassed,
-    verboseSkipped: verboseSkipped,
-    verboseFailed: verboseFailed,
-    passedAmount: countPassed,
-    skippedAmount: countSkipped,
-    failedAmount: countFailed,
-    error: error,
-    csv: res,
-    // df: resultDF?.toJson()
-  };
-}
 
 export async function runBrowser(
-  testExecutionData: OrganizedTests[], 
-  browserOptions: BrowserOptions, 
-  browsersId: number, 
-  testInvocationTimeout: number = 3600000): Promise<ResultObject> {
+  testExecutionData: OrganizedTests,
+  browserOptions: BrowserOptions,
+  browsersId: number,
+  testInvocationTimeout: number = 3600000,
+  existingBrowserSession?: { browser: Browser, page: Page, webUrl: string }): Promise<ResultObject & { browserSession?: { browser: Browser, page: Page, webUrl: string } }> {
   const testsToRun = {
     func: runTests.toString(),
-    tests: testExecutionData,
+    testParams: testExecutionData,
   };
   return await timeout(async () => {
-    const params = Object.assign({
-      devtools: browserOptions.debug,
-    }, defaultLaunchParameters);
-    if (browserOptions.gui)
-      params['headless'] = false;
-    const out = await getBrowserPage(puppeteer, params);
-    const browser: Browser = out.browser;
-    const page: Page = out.page;
+    let browser: Browser;
+    let page: Page;
+    let webUrl: string;
+
+    if (existingBrowserSession) {
+      // Reuse existing browser - just refresh the page
+      browser = existingBrowserSession.browser;
+      page = existingBrowserSession.page;
+      webUrl = existingBrowserSession.webUrl;
+
+      // Remove old console listeners before refresh to avoid stale state references
+      page.removeAllListeners('console');
+
+      await page.goto(webUrl);
+      try {
+        await page.waitForFunction(() => document.querySelector('.grok-preloader') == null, {timeout: 3600000});
+      } catch (error) {
+        throw error;
+      }
+    } else {
+      // Create new browser
+      const params = Object.assign({
+        devtools: browserOptions.debug,
+      }, defaultLaunchParameters);
+      if (browserOptions.gui)
+        params['headless'] = false;
+      const out = await getBrowserPage(puppeteer, params);
+      browser = out.browser;
+      page = out.page;
+      webUrl = await getWebUrlFromPage(page);
+    }
     const recorder = new PuppeteerScreenRecorder(page, recorderConfig);
     const currentBrowserNum = browsersId;
     const logsDir = `./test-console-output-${currentBrowserNum}.log`;
     const recordDir = `./test-record-${currentBrowserNum}.mp4`;
 
-    if (browserOptions.record) {
+    if (browserOptions.record && !existingBrowserSession) {
+      // Only set up recording on initial browser creation, not on retry
       await recorder.start(recordDir);
       await page.exposeFunction('addLogsToFile', addLogsToFile);
 
@@ -552,6 +672,134 @@ export async function runBrowser(
         addLogsToFile(logsDir, `CONSOLE LOG REQUEST: ${response.status()}, ${response.url()}\n`);
       });
     }
+
+    // State tracking for test output formatting
+    const categoryResults: Map<string, {passed: number, failed: number}> = new Map();
+    let currentCategory: string | null = null;
+    let currentTestName: string | null = null;
+    // Store failed tests with their errors to print after category header
+    let pendingFailures: {testName: string, error: string | null}[] = [];
+    let pendingBeforeFailure: {error: string | null} | null = null;
+    let pendingAfterFailure: {error: string | null} | null = null;
+    let modernOutput = false;
+
+    const printCategorySummary = (category: string) => {
+      const results = categoryResults.get(category);
+      if (!results) return;
+      const formattedCategory = category.replace(/: /g, ', ');
+      const passedCount = results.passed;
+      if (results.failed > 0 || pendingBeforeFailure || pendingAfterFailure) {
+        console.log(`\x1b[31m❌ ${formattedCategory} (${passedCount} passed)\x1b[0m`);
+        // Print before() failure first
+        if (pendingBeforeFailure) {
+          console.log(`  \x1b[31m❌ before\x1b[0m`);
+          if (pendingBeforeFailure.error)
+            console.log(`    \x1b[31m${pendingBeforeFailure.error}\x1b[0m`);
+        }
+        // Print after() failure
+        if (pendingAfterFailure) {
+          console.log(`  \x1b[31m❌ after\x1b[0m`);
+          if (pendingAfterFailure.error)
+            console.log(`    \x1b[31m${pendingAfterFailure.error}\x1b[0m`);
+        }
+        // Print test failures
+        for (const failure of pendingFailures) {
+          console.log(`  \x1b[31m❌ ${failure.testName}\x1b[0m`);
+          if (failure.error)
+            console.log(`    \x1b[31m${failure.error}\x1b[0m`);
+        }
+      } else {
+        console.log(`\x1b[32m✅ ${formattedCategory} (${passedCount} passed)\x1b[0m`);
+      }
+      pendingFailures = [];
+      pendingBeforeFailure = null;
+      pendingAfterFailure = null;
+    };
+
+    // Subscribe to page console events for modern output formatting
+    // On retry, old listeners were removed so we need to re-attach
+    page.on('console', (msg) => {
+      const text = msg.text();
+      if (!text.startsWith('Package testing: '))
+        return;
+      modernOutput = true;
+      // Extract tokens in {{...}} format
+      const tokens: string[] = [];
+      const tokenRegex = /\{\{([^}]+)\}\}/g;
+      let match;
+      while ((match = tokenRegex.exec(text)) !== null)
+        tokens.push(match[1]);
+
+      // Category start: "Package testing: Started {{Category}}"
+      if (text.includes('Started') && tokens.length === 1) {
+        // Print summary of previous category if exists
+        if (currentCategory && categoryResults.has(currentCategory))
+          printCategorySummary(currentCategory);
+        currentCategory = tokens[0];
+        categoryResults.set(currentCategory, {passed: 0, failed: 0});
+        pendingFailures = [];
+        pendingBeforeFailure = null;
+        pendingAfterFailure = null;
+      } else if (text.includes('Started') && tokens.length === 2) {
+        // Test start: "Package testing: Started {{Category}} {{TestName}}"
+        const category = tokens[0].replace(/: /g, ', ');
+        currentTestName = tokens[1];
+        process.stdout.write(`${category}: ${currentTestName}...`);
+      } else if (text.includes('Finished') && tokens.length === 3) {
+        // Test finish: "Package testing: Finished {{Category}} {{TestName}} with {{success/error}} for X ms"
+        const category = tokens[0];
+        const testName = tokens[1];
+        const status = tokens[2];
+        const results = categoryResults.get(category);
+
+        // Clear the current test line
+        process.stdout.write('\r\x1b[K');
+
+        if (status === 'success') {
+          if (results) results.passed++;
+        } else {
+          if (results) results.failed++;
+          pendingFailures.push({testName, error: null});
+        }
+        currentTestName = null;
+      } else if (text.includes('Result for') && tokens.length === 2) {
+        // Error result: "Package testing: Result for {{Category}} {{TestName}}: error message"
+        const errorMsg = text.split(': ').slice(-1)[0];
+        // Attach error to the last pending failure
+        if (pendingFailures.length > 0)
+          pendingFailures[pendingFailures.length - 1].error = errorMsg;
+      } else if (text.includes('Category before()') && text.includes('failed') && tokens.length >= 1) {
+        // Category before() failed: "Package testing: Category before() {{Category}} failed"
+        process.stdout.write('\r\x1b[K');
+        pendingBeforeFailure = {error: null};
+      } else if (text.includes('Result for') && text.includes('before:') && tokens.length >= 1) {
+        // Before error result: "Package testing: Result for {{Category}} before: error message"
+        const errorMsg = text.split('before: ').slice(-1)[0];
+        if (pendingBeforeFailure)
+          pendingBeforeFailure.error = errorMsg;
+      } else if (text.includes('Category after()') && text.includes('failed') && tokens.length >= 1) {
+        // Category after() failed: "Package testing: Category after() {{Category}} failed"
+        process.stdout.write('\r\x1b[K');
+        pendingAfterFailure = {error: null};
+      } else if (text.includes('Result for') && text.includes('after:') && tokens.length >= 1) {
+        // After error result: "Package testing: Result for {{Category}} after: error message"
+        const errorMsg = text.split('after: ').slice(-1)[0];
+        if (pendingAfterFailure)
+          pendingAfterFailure.error = errorMsg;
+      } else if (text.includes('Unhandled Exception')) {
+        // Unhandled exception: "Package testing: Unhandled Exception: ..."
+        // Clear any pending test line and move to new line
+        process.stdout.write('\r\x1b[K\n');
+        const errorMsg = text.replace('Package testing: Unhandled Exception: ', '');
+        if (errorMsg && errorMsg !== 'null')
+          console.log(`\x1b[31m❌ Unhandled Exception: ${errorMsg}\x1b[0m`);
+      }
+    });
+
+    const printFinalCategorySummary = () => {
+      if (currentCategory && categoryResults.has(currentCategory))
+        printCategorySummary(currentCategory);
+    };
 
     const testingResults = await page.evaluate((testData, options): Promise<ResultObject> => {
 
@@ -568,7 +816,7 @@ export async function runBrowser(
 
         (<any>window).runTests = eval('(' + testData.func + ')');
 
-        (<any>window).runTests(testData.tests, options.stopOnTimeout).then((results: any) => {
+        (<any>window).runTests(testData.testParams, options.stopOnTimeout).then((results: any) => {
           resolve(results);
         })
           .catch((e: any) => {
@@ -606,19 +854,32 @@ export async function runBrowser(
       });
     }, testsToRun, browserOptions);
 
-    if (browserOptions.record) 
-      await recorder.stop();
-    
+    // Print the final category summary
+    printFinalCategorySummary();
 
-    if (browser != null) 
+    if (browserOptions.record && !existingBrowserSession)
+      await recorder.stop();
+
+    if (modernOutput) {
+      testingResults.verbosePassed = '';
+      testingResults.verboseSkipped = '';
+      testingResults.verboseFailed = '';
+    }
+
+    // Only close browser if not keeping it open for retry
+    if (!browserOptions.keepBrowserOpen && browser != null)
       await browser.close();
-    
-    return testingResults;
+
+    // Return browser session for potential reuse
+    return {
+      ...testingResults,
+      browserSession: browserOptions.keepBrowserOpen ? {browser, page, webUrl} : undefined,
+      modernOutput,
+    };
   }, testInvocationTimeout);
 }
 
 export async function mergeBrowsersResults(browsersResults: ResultObject[]): Promise<ResultObject> {
-
   const mergedResult: ResultObject = {
     failed: browsersResults[0].failed,
     verbosePassed: browsersResults[0].verbosePassed,
@@ -629,6 +890,7 @@ export async function mergeBrowsersResults(browsersResults: ResultObject[]): Pro
     failedAmount: browsersResults[0].failedAmount,
     csv: browsersResults[0].csv,
     error: '',
+    modernOutput: browsersResults.some((r) => r.modernOutput),
   };
 
   for (const browsersResult of browsersResults) {
@@ -660,7 +922,8 @@ export async function mergeBrowsersResults(browsersResults: ResultObject[]): Pro
 export interface BrowserOptions {
   path?: string, catchUnhandled?: boolean, core?: boolean,
   report?: boolean, record?: boolean, verbose?: boolean, benchmark?: boolean, platform?: boolean, category?: string, test?: string,
-  stressTest?: boolean, gui?: boolean, stopOnTimeout?: boolean, reproduce?: boolean, ciCd?: boolean, debug?: boolean
+  stressTest?: boolean, gui?: boolean, stopOnTimeout?: boolean, reproduce?: boolean, ciCd?: boolean, debug?: boolean,
+  skipToCategory?: string, skipToTest?: string, keepBrowserOpen?: boolean
 }
 
 export type ResultObject = {
@@ -672,7 +935,10 @@ export type ResultObject = {
   skippedAmount: number,
   failedAmount: number,
   error?: string,
-  csv: string
+  csv: string,
+  lastFailedTest?: {category: string, test: string},
+  retrySupported?: boolean,
+  modernOutput?: boolean
 };
 
 export class TestContext {
@@ -710,6 +976,9 @@ export type OrganizedTests = {
   params: {
     category: string,
     test: string,
+    skipToCategory?: string,
+    skipToTest?: string,
+    returnOnFail?: boolean,
     options: {
       catchUnhandled: boolean | undefined,
       report: boolean | undefined

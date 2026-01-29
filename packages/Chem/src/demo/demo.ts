@@ -181,34 +181,6 @@ export async function _demoSimilarityDiversitySearch(): Promise<void> {
 
 export async function _demoMMPA(): Promise<void> {
   const tv = await openMoleculeDataset('demo_files/mmp_demo.csv');
-  const filterStates = {
-    '2': {
-      'type': 'histogram',
-      'column': '\u0394 CYP3A4',
-      'active': true,
-      'filterOutMissingValues': true,
-      'showMissingValuesOnly': false,
-      'min': -0.06,
-      'max': 1.30,
-      'showHistogram': true,
-      'showSlider': true,
-      'showMinMax': false,
-      'boolInput': null,
-    },
-    '3': {
-      'type': 'histogram',
-      'column': '\u0394 hERG_pIC50',
-      'active': true,
-      'filterOutMissingValues': true,
-      'showMissingValuesOnly': false,
-      'min': -0.24,
-      'max': 0.39,
-      'showHistogram': true,
-      'showSlider': true,
-      'showMinMax': false,
-      'boolInput': null,
-    },
-  };
 
   _package.files.readAsText('demo_files/mmp_demo.layout').then(async (layoutString: string) => {
     const layout = DG.ViewLayout.fromJson(layoutString);
@@ -227,10 +199,6 @@ export async function _demoMMPA(): Promise<void> {
         return false;
       }, '', 20000);
     } catch (e) {};
-    mmpViewer!.defaultFragmentsFiltersStates = filterStates;
-    mmpViewer!.filterStatesUpdatedCondition = () => {
-      return mmpViewer!.pairedGrids!.fpGrid.dataFrame.filter.trueCount === 483;
-    };
     mmpViewer!.helpUrl = 'https://raw.githubusercontent.com/datagrok-ai/public/refs/heads/master/help/datagrok/solutions/domains/chem/chem.md#matched-molecular-pairs';
     setTimeout(()=> {
       grok.shell.windows.showHelp = true;

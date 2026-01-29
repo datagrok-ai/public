@@ -431,7 +431,7 @@ div.ui-box > div.power-pack-activity-widget-content.ui-div.ui-panel {
     min-height: 70px;
 }
 
-.dlg-add-new-column{
+.add-new-column-dialog-root > .d4-dialog-contents {
     flex-direction: row;
     overflow: hidden;
     max-width: 100%
@@ -696,4 +696,88 @@ body.dartium .power-pack-widgets-host.ui-div {
 
 .d4-dialog-header-hidden {
     display: none;
+}
+
+.power-pack-enrichment-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 6px 8px;
+    border-radius: 4px;
+}
+
+.power-pack-enrichment-row:hover {
+    background: var(--grey-1);
+}
+
+.power-pack-enrichment-actions {
+    display: flex;
+    gap: 8px;
+    opacity: 0;
+}
+
+.power-pack-enrichment-row:hover .power-pack-enrichment-actions {
+    opacity: 1;
+}
+
+.power-pack-enrichment-actions .fa-times {
+    color: var(--grey-4);
+}
+
+.power-pack-enrichment-actions .fa-times:hover {
+    color: var(--red-3);
+}
+
+/* Add enrichment button */
+.power-pack-enrich-add {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+
+    margin-top: 8px;
+    margin-left: 12px;
+    padding: 4px 6px;
+
+    background: none;               /* ← remove pill */
+    border: none;
+    border-radius: 4px;
+
+    color: var(--grey-4);            /* slightly stronger */
+    font-size: 12px;
+    font-weight: 500;
+
+    cursor: pointer;
+}
+
+.power-pack-enrich-add:hover {
+    color: var(--blue-1);
+    background: var(--grey-1);       /* subtle hover only */
+    text-decoration: none;
+}
+
+.power-pack-enrich-add i {
+    font-size: 12px;
+    opacity: 1;
+}
+
+.power-pack-enrich-add span {
+    opacity: 0.85;
+}
+
+.power-pack-enrich-empty {
+    margin-left: 16px;
+    margin-top: 6px;
+}
+
+.power-pack-enrich-empty-title {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--grey-6);
+    margin-bottom: 2px;
+}
+
+.power-pack-enrich-empty-sub {
+    font-size: 12px;
+    color: var(--grey-4);
+    margin-bottom: 6px;
 }

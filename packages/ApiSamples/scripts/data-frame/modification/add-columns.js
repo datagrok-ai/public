@@ -1,4 +1,3 @@
-//tags: DataFrame, modification
 // Different ways to add columns
 
 let t = DG.DataFrame.fromCsv(
@@ -13,7 +12,7 @@ t.columns.addNew('foo', DG.TYPE.INT);
 
 // Use type-specific methods if you know the data type in advance.
 // Also, check out different ways of column initialization.
-t.columns.addNewInt('int').init(5);                 // scalar initializer
+t.columns.addNewInt('int').init(5); // scalar initializer
 t.columns.addNewFloat('float').init((i) => i / 10); // function initializer
 t.columns.addNewBool('bool');
 t.columns.addNewString('string');

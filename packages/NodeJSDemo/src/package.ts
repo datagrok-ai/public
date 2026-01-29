@@ -12,12 +12,12 @@ export function info() {
 }
 
 
-//name: todoApp
-//tags: app
+//name: todoApplication
+//meta.role: app
 //input: string path { optional: true; meta.url: true }
 //output: view result
 //meta.url: /todo
-export function todoApp(path?: string) {
+export function todoApplication(path?: string) {
   const parent = grok.functions.getCurrentCall();
   return new TodoView(parent);
 }

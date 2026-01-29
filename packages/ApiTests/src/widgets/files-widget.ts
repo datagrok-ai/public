@@ -2,7 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import $ from 'cash-dom';
-import {before, category, expect, test, awaitCheck} from '@datagrok-libraries/utils/src/test';
+import {before, category, expect, test, awaitCheck} from '@datagrok-libraries/test/src/test';
 
 
 category('Widgets', () => {

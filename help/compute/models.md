@@ -79,3 +79,4 @@ See also
 * [Compute](compute.md)
 * [Parameter optimization](function-analysis.md#parameter-optimization)
 * [Sensitivity analysis](function-analysis.md#sensitivity-analysis)
+* [Community](https://community.datagrok.ai/t/solving-differential-equations/878)

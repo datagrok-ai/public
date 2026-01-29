@@ -7,7 +7,7 @@ let grid1 = DG.Viewer.grid(table);
 let grid2 = DG.Viewer.grid(table);
 
 // Grid render
-grid1.onCellRender.subscribe(function (args) {
+grid1.onCellRender.subscribe(function(args) {
   args.g.beginPath();
   args.g.arc(args.bounds.x + args.bounds.width / 2, args.bounds.y + args.bounds.height / 2, 10, 0, Math.PI * 2, true);
   args.g.closePath();
@@ -16,25 +16,25 @@ grid1.onCellRender.subscribe(function (args) {
   args.preventDefault();
 });
 
-grid2.onCellRender.subscribe(function (args) {
-  if(args.cell.isColHeader){
+grid2.onCellRender.subscribe(function(args) {
+  if (args.cell.isColHeader) {
     let textSize = args.g.measureText(args.cell.gridColumn.name);
     args.g.fillText(args.cell.gridColumn.name, args.bounds.x + (args.bounds.width - textSize.width)/2, args.bounds.y + (textSize.fontBoundingBoxAscent+textSize.fontBoundingBoxDescent));
-    args.g.font = "10px";
+    args.g.font = '10px';
     args.g.fillStyle = 'red';
     args.preventDefault();
   }
-  if (args.cell.isRowHeader){
+  if (args.cell.isRowHeader) {
     args.g.fillStyle = 'green';
-    args.g.font = "italic bold 15px Arial";
+    args.g.font = 'italic bold 15px Arial';
     args.g.fillText(`${args.cell.tableRowIndex}`, args.bounds.x + args.bounds.width / 2, args.bounds.y + args.bounds.height / 2);
- 	args.preventDefault();
+    args.preventDefault();
   }
-  if (args.cell.isTableCell){
+  if (args.cell.isTableCell) {
     args.g.fillStyle = 'blue';
-    args.g.font = "10px Comic Sans MS";
+    args.g.font = '10px Comic Sans MS';
     args.g.fillText(`${args.cell.tableRowIndex}`, args.bounds.x + args.bounds.width / 2, args.bounds.y + args.bounds.height / 2);
- 	args.preventDefault();
+    args.preventDefault();
   }
 });
 

@@ -1,5 +1,9 @@
 # Helm changelog
 
+## 2.13.1 (2025-10-31)
+
+Polifill for 1.25
+
 ## 2.13.0 (2025-10-29)
 
 * CHEMS and SMILES support in HELM

@@ -1,4 +1,3 @@
-# pylint: disable=no-member
 import os.path
 import sys
 from io import TextIOWrapper

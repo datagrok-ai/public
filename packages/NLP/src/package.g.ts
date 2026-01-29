@@ -10,7 +10,7 @@ export async function translationPanel(textfile: DG.FileInfo) : Promise<any> {
 }
 
 //name: exportFunc
-//tags: init
+//meta.role: init
 export async function initAWS() : Promise<void> {
   await PackageFunctions.initAWS();
 }
@@ -57,12 +57,12 @@ export function similar(query: string) : any {
 }
 
 //name: Sentence Embeddings
-//tags: dim-red-preprocessing-function
 //input: column col { semType: Text }
 //input: string metric 
 //output: object result
 //meta.supportedSemTypes: Text
 //meta.supportedDistanceFunctions: Vector Cosine, Euclidean, Manhattan
+//meta.role: dimRedPreprocessingFunction
 export async function sentenceEmbeddingsPreprocessingFunction(col: DG.Column, metric: string) {
   return await PackageFunctions.sentenceEmbeddingsPreprocessingFunction(col, metric);
 }
@@ -74,9 +74,9 @@ export async function getEmbeddings(sentences: string[]) : Promise<any> {
 }
 
 //name: Sentence Similarity Search
-//tags: viewer
 //output: viewer result
 //meta.showInGallery: false
+//meta.role: viewer
 export function sentenceSearchViewer() : any {
   return PackageFunctions.sentenceSearchViewer();
 }

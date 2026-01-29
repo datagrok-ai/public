@@ -9,4 +9,4 @@ let c = ui.div([
 
 c.style.border = '1px dashed red'; 
 
-grok.shell.newView('Containers',[c]);
+grok.shell.newView('Containers', [c]);

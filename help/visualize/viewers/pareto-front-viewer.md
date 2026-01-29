@@ -37,9 +37,26 @@ the info panels on the **Context Panel**. For example, you can:
 
 The Pareto front viewer responds to row selection and data filtering. When you change the target columns, it performs multi-objective optimization and displays the resulting points on the chart.
 
-![Word Cloud](img/pareto-front-viewer.gif)
+![Pareto front](img/pareto-front-viewer.gif)
+
+## Application
+
+The Pareto Front application streamlines multi-parameter optimization by helping you identify optimal trade-offs between conflicting objectives.
+
+To run the application:
+
+1. **Open a table** containing the parameters you want to optimize.
+2. Run **Top Menu > ML > Pareto Front...**. A view opens.
+3. **Configure optimization:** In the left-side input panel, select the parameters to optimize and specify the type of optimization for each (e.g., maximize or minimize).
+4. **Explore results:** The app automatically recalculates the results in real time. The optimization results are visualized using:
+
+   * The **Pareto Front viewer**, highlighting non-dominated solutions.
+   * **PC plot**, enabling analysis of trade-offs across all parameters.
+
+![Pareto front](img/pareto-front-app.gif)
 
 ## See also
 
 * [Viewers](../viewers/viewers.md)
 * [Scatter plot](../viewers/scatter-plot.md)
+* [PC plot](../viewers/pc-plot.md)

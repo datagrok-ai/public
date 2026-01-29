@@ -1,6 +1,7 @@
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {ALIGN_BY_SCAFFOLD_TAG, SCAFFOLD_COL, REGENERATE_COORDS, HIGHLIGHT_BY_SCAFFOLD_COL, ALIGN_BY_SCAFFOLD_LAYOUT_PERSISTED_TAG} from '../constants';
+import {ChemTemps} from '@datagrok-libraries/chem-meta/src/consts';
 
 enum StructureFilterType {
   Sketch = 'Sketch',
@@ -40,6 +41,20 @@ export function getMolColumnPropertyPanel(col: DG.Column): DG.Widget {
       }});
   highlightScaffoldsCheckbox.setTooltip('Highlight scaffold defined above');
 
+  const backupSubstructCol = col.temp[ChemTemps.SUBSTRUCT_BACKUP_COL];
+  const substructCol = col.temp[ChemTemps.SUBSTRUCT_COL];
+  const hasHighlightCol = !!substructCol;
+  const highlightRGroupsCheckbox = ui.input.bool('Highlight R-Groups', {
+    value: hasHighlightCol,
+    onValueChanged: (enabled) => {
+      if (enabled && backupSubstructCol)
+        col.temp[ChemTemps.SUBSTRUCT_COL] = backupSubstructCol;
+      else
+        delete col.temp[ChemTemps.SUBSTRUCT_COL];
+      col.dataFrame?.fireValuesChanged();
+    },
+  });
+
   const regenerateCoordsInitValue = col.tags[REGENERATE_COORDS] ?? col.temp?.[REGENERATE_COORDS];
   const regenerateCoordsCheckbox = ui.input.bool('Regen coords',
     {value: regenerateCoordsInitValue === 'true',
@@ -65,6 +80,7 @@ export function getMolColumnPropertyPanel(col: DG.Column): DG.Widget {
     showStructures,
     scaffoldColumnChoice,
     highlightScaffoldsCheckbox,
+    ...(backupSubstructCol ? [highlightRGroupsCheckbox] : []),
     regenerateCoordsCheckbox,
     moleculeFilteringChoice,
   ]);

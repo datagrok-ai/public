@@ -6,7 +6,7 @@ import $ from 'cash-dom';
 let view: DG.TableView;
 let table: DG.DataFrame;
 
-const groupСomparisons = [
+const groupComparisons = [
   'Bar chart',
   'Radar',
   'Chord viewer',
@@ -168,13 +168,14 @@ export function viewersDialog(currentView: DG.TableView, currentTable: DG.DataFr
 
   getTotalViewer();
   setTabIndex(rootViewers);
-};
+}
+
 
 function getViewers(viewers: { [v: string]: { [k: string]: any } }, table: DG.DataFrame) {
   let viewerList = [];
 
   for (const value of Object.values(DG.CORE_VIEWER)) {
-    if (value !== 'Shape Map' && value !== DG.CORE_VIEWER.CONFUSION_MATRIX)
+    if (value !== 'Shape Map')
       viewerList.push(value);
   }
   viewerList.push('Column viewer');
@@ -194,7 +195,7 @@ function getViewers(viewers: { [v: string]: { [k: string]: any } }, table: DG.Da
         type: 'viewer',
       },
     });
-    if (groupСomparisons.includes(viewerList[i])) viewers[i]['group'] = 'Comparison';
+    if (groupComparisons.includes(viewerList[i])) viewers[i]['group'] = 'Comparison';
     else if (groupCorrelations.includes(viewerList[i])) viewers[i]['group'] = 'Correlation';
     else if (groupRelationships.includes(viewerList[i])) viewers[i]['group'] = 'Relationship';
     else if (groupTrends.includes(viewerList[i])) viewers[i]['group'] = 'Trend';
@@ -205,7 +206,7 @@ function getViewers(viewers: { [v: string]: { [k: string]: any } }, table: DG.Da
 
 function getJsViewers(jsViewers: { [v: string]: { [k: string]: any } }, table: DG.DataFrame) {
   const skip = ['TestViewerForProperties', 'OutliersSelectionViewer'];
-  const list = DG.Func.find({tags: ['viewer']}).filter((v) => !skip.includes(v.friendlyName));
+  const list = DG.Func.find({meta: {role: DG.FUNC_TYPES.VIEWER}}).filter((v) => !skip.includes(v.friendlyName));
   let i = 0;
   for (const v of list) {
     let isViewerEnabled = true;
@@ -236,7 +237,7 @@ function getJsViewers(jsViewers: { [v: string]: { [k: string]: any } }, table: D
         type: 'js-viewer',
       },
     });
-    if (groupСomparisons.includes(v.friendlyName)) jsViewers[i]['group'] = 'Comparison';
+    if (groupComparisons.includes(v.friendlyName)) jsViewers[i]['group'] = 'Comparison';
     else if (groupCorrelations.includes(v.friendlyName)) jsViewers[i]['group'] = 'Correlation';
     else if (groupRelationships.includes(v.friendlyName)) jsViewers[i]['group'] = 'Relationship';
     else if (groupTrends.includes(v.friendlyName)) jsViewers[i]['group'] = 'Trend';

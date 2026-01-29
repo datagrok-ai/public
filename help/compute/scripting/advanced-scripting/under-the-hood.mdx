@@ -25,6 +25,10 @@ import json
 import pandas as pd
 import requests
 from datetime import datetime, timedelta
+from datagrok_api import DatagrokClient
+
+# Platform automatically initializes datagrok_api client with the current user's token and correct server URL:
+grok = DatagrokClient(...)
 ```
 
 ```mdx-code-block

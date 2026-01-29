@@ -26,6 +26,7 @@ keywords:
   - cdd vault integration
   - compound registration system
   - mixtures
+  - multi-parameter optimization
 ---
 
 ```mdx-code-block
@@ -444,7 +445,7 @@ matches for your target molecule. You can also open the results in a separate [T
 :::note Developers
 
 To dynamically enrich compound IDs with linked data, 
-[register identifier patterns](../../../../develop/how-to/grid/register-identifiers.md) 
+[register identifier patterns](../../../../develop/how-to/db/register-identifiers.md) 
 (e.g., `CHEMBL\d+`). Once registered, the matching values:
 
 * are automatically detected and highlighted across the platform
@@ -465,28 +466,42 @@ R-group analysis decomposes a set of molecules into a core and R-groups (ligands
 consists of the scaffold and ligand attachment points represented by R-groups.
 R-group analysis runs in browser using RDKit JS library.
 
-![R-Group Analysis](img/new_r_group_analysis.gif)
+![R-Group Analysis](img/new-r-groups-analysis.gif)
 
 <details>
 <summary> How to use </summary>
 
-1. Go to **Chem** > **Analyze SAR** > **R-Groups Analysis...**
+<Tabs>
+<TabItem value="workflow" label="Workflow" default>
+
+1. Go to **Chem** > **Analyze** > **R-Groups Analysis...**
 A [sketcher](#sketching) opens.
 1. In the sketcher, specify the common core (scaffold) for the selected molecular column using one of these methods:
    * Draw or paste a scaffold in the sketcher. You can define core with custom enumerated R groups.
    * Click **MCS** to automatically identify the most common substructure.
-   * Click the **Gear** icon to adjust R group analysis parameters.
+1. Click the **Gear** icon to adjust R group analysis parameters.
 1. Click **OK** to execute. The R-group columns are added to the dataframe, along with a [trellis plot](../../../../visualize/viewers/trellis-plot.md) for visual exploration.
 
-R-groups are highlighted with different colorsin the initial molecules in dataframe. Molecules are automatically aligned by core. To filter molecules with R group present in each enumerated position use **isHeat** column.
+R-groups are highlighted with different colors in the initial molecules in grid. Molecules are automatically aligned by core. To filter molecules with R group present in each enumerated position use **isMatch** column.
 
 The trellis plot initially displays pie charts. To change the chart type, use the **Viewer** control in the top-left corner to select a different viewer.
 
 If you prefer not to use a trellis plot, close it or clear the **Visual analysis** checkbox
-during Step 2. You can manually add it later. You can also use other [chemical viewers](chemically-aware-viewers.md), like scatterplot, box plot, bar chart, and others.
+during Step 3. You can manually add it later. You can also use other [chemical viewers](chemically-aware-viewers.md), like scatterplot, box plot, bar chart, and others.
 
 Use **Replace latest** checkbox to remove previous analysis results when running the new one. Or check it to add new analysis results in addition to existing.
+</TabItem>
+<TabItem value="Match" label="Only match at R groups">
 
+You can restrict R-groups analysis to molecules that have actual substituents at the specified R-group positions:
+1. Define a core with labeled R-groups in the sketcher
+1. Click the **Gear** icon and enable **Only match at R groups**.
+Before running the analysis, the tool verifies that the core contains properly labeled R groups. The selected setting is saved automatically for future sessions.
+
+![Only match at R groups](img/match-r-groups.gif)
+
+</TabItem>
+</Tabs>
 </details>
 
 :::note developers
@@ -952,7 +967,18 @@ Medicinal chemistry is a balancing act: potency must rise while properties like 
 
   New numeric columns can be added for immediate charting and filtering such as physical chemical properties (Top menu: Chem → Calculate → Chemical Properties...) or ADME properties with the Admetica plugin (Top menu: Chem → Admetica → Calculate...). Custom properties, like Ligand Efficiency (LE) or Lipophilic Ligand Efficiency (LLE), can be calculated using the [Add New Column](../../../../transform/add-new-column.md) feature.  Viewers, like [parallel coordinates plot](../../../../visualize/viewers/pc-plot.md), [radar](../../../../visualize/viewers/radar.md) or [row-level pie bar charts](../../../../visualize/viewers/grid.md#summary-columns), are especially useful for examining the profile of properties.  
 
-* **Desirability/utility functions & composite scores.** Map each property to a 0–1 “desirability” curve, then combine (sum/mean/weighted) into a single score that encodes the team’s preferences. A well-known example that is included by default is CNS MPO from Pfizer, which combines six physicochemical properties into a 0–6 score and correlates with clinical CNS success. 
+* **Desirability/utility functions & composite scores.** Map each property to a 0–1 “desirability” curve, then combine (sum/mean/weighted) into a single score that encodes the team’s preferences. Desirability functions can be either drawn manually or constructed automatically from a labeled dataset using probabilistic MPO. A well-known example that is included by default is CNS MPO from Pfizer, which combines six physicochemical properties into a 0–6 score and correlates with clinical CNS success. 
+
+  <details>
+  <summary> Probabilistic MPO </summary>
+
+  Probabilistic MPO ([pMPO](https://pmc.ncbi.nlm.nih.gov/articles/PMC4716604/)) is a data-driven method for constructing desirability profiles from labeled datasets, in which statistically significant and non-redundant molecular descriptors are identified through significance testing and correlation filtering. It then combines these descriptors into weighted desirability functions, enabling robust multi-parameter optimization and compound ranking based on balanced property trade-offs.
+
+  Build a desirability profile using the interactive pMPO application available via `Chem -> Calculate -> Train pMPO...`:
+
+  ![Pareto front](mpo-probabilistic.png)
+
+  </details>
 
   Available from `Chem -> Calculate -> MPO Score...`:
 
@@ -963,6 +989,17 @@ Medicinal chemistry is a balancing act: potency must rise while properties like 
 * **Active/Bayesian multi-objective optimization.** Use surrogate models to propose new compounds that efficiently move the Pareto front (or a scalarized objective), reducing screening cost and focusing make/test cycles. 
 
 * **Desirability-based QSAR/MQSAR.** Use the built-in [predictive modeling capabilities](#predictive-modeling) to predict property desirabilities directly (or predict properties first, then score). 
+
+<details>
+<summary> Pareto front </summary>
+
+The Pareto front represents a set of non-dominated solutions in multi-objective optimization, where improving one objective necessarily degrades at least one other, revealing optimal trade-offs between conflicting goals. Use the [Pareto front viewer](../../../../visualize/viewers/pareto-front-viewer.md) to display these Pareto-optimal points on an interactive scatterplot:
+
+![Pareto front](mpo-pareto-front.png)
+
+Launch an interactive Pareto Front [application](../../../../visualize/viewers/pareto-front-viewer.md#application) that enables real-time exploration of optimization results.
+
+</details>
 
 ## Generative chemistry
 
@@ -1122,7 +1159,10 @@ For a full list of chemical scripts, along with details on their implementation 
 
 * [Cheminformatics tutorial](https://public.datagrok.ai/apps/tutorials/Tutorials/Cheminformatics/VirtualScreening)
 * [Demo app](https://public.datagrok.ai/apps/Tutorials/Demo)
-* Videos
+* Community:
+  * [Cheminformatics updates](https://community.datagrok.ai/t/cheminformatics-updates/457)
+* Videos:
   * [Cheminformatics](https://www.youtube.com/watch?v=k1NVdTRpYOM)
   * [Molecular similarity and diversity](https://www.youtube.com/watch?v=wCdzD64plEo)
+
 <!--* [Package help reference]-->

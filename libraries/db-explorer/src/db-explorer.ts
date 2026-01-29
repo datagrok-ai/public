@@ -5,37 +5,48 @@ import * as DG from 'datagrok-api/dg';
 import {DBExplorerConfig, EntryPointOptions,
   QueryJoinOptions, ReferencedByObject, ReferenceObject, SchemaAndConnection} from './types';
 import {DBExplorerObjectHandler, SemValueObjectHandler} from './object-handlers';
+import {getDefaultRendererByName} from './renderer';
 
 export class DBExplorer {
   private schemasLoaded: boolean = false;
   private connection: DG.DataConnection | null = null;
   private references: ReferenceObject = {};
   private referencedBy: ReferencedByObject = {};
-  private _dbLoadPromise?: Promise<void>;
+  private _dbLoadPromise: Promise<void>;
+  private _dbLoadPromiseResolver: (() => void) = () => {};
   private objHandlers: DBExplorerObjectHandler[] = [];
   private loadingFailed: boolean = false;
+  public genericValueHandler: DBExplorerObjectHandler;
   constructor(
     private connectionName: string,
     private schemaName: string,
     private nqName?: string,
     private dataSourceName?: string
   ) {
-    const handler = new DBExplorerObjectHandler(
+    // in order for other functionality to be able to await the _dbLoadPromise,
+    // we need to assign it to some promise and register resolver
+    this._dbLoadPromise = new Promise<void>((resolve) => {
+      this._dbLoadPromiseResolver = resolve;
+    });
+    this.genericValueHandler = new DBExplorerObjectHandler(
       {valueConverter: (a) => a,
         joinOptions: []},
       async () => {
         return await this.dbSchema;
       },
+      nqName ?? connectionName,
       this.schemaName
     );
-    DG.ObjectHandler.register(handler);
-    this.objHandlers.push(handler);
+    DG.ObjectHandler.register(this.genericValueHandler);
+    this.objHandlers.push(this.genericValueHandler);
   }
 
+  private _dbLoadingPromise: Promise<void> | null = null;
   public get dbSchema(): Promise<SchemaAndConnection | null> {
     if (this.loadingFailed)
       return Promise.resolve(null);
-    this._dbLoadPromise ??= this.loadDbSchema();
+    // to make sure it is only loaded once
+    this._dbLoadingPromise ??= this.loadDbSchema();
     return this._dbLoadPromise
       .then(() => ({schema: {references: this.references, referencedBy: this.referencedBy}, connection: this.connection} as SchemaAndConnection))
       .catch((e) => {
@@ -44,9 +55,17 @@ export class DBExplorer {
       });
   }
 
+  /**
+   * Note: this method is and should only be called once per instance
+   * also, it is called automatically when dbSchema is requested for the first time
+   * this method is lazy -- it starts loading only when someone requests it.
+   */
   private async loadDbSchema() {
     try {
-      const connections = await grok.dapi.connections.filter(`name="${this.connectionName}"`).list();
+      const nqNameSplit = this.nqName?.split(':');
+      const connections = nqNameSplit?.length === 2 ?
+        await grok.dapi.connections.filter(`namespace = "${nqNameSplit[0]}:" and shortName = "${nqNameSplit[1]}"`).list() :
+        await grok.dapi.connections.filter(`name="${this.connectionName}" or shortName = "${this.connectionName}"`).list();
 
       this.connection = connections.find((c) => (!this.nqName || c.nqName?.toLowerCase() === this.nqName.toLowerCase()) && (!this.dataSourceName || c.dataSource?.toLowerCase() === this.dataSourceName.toLowerCase())) ?? null;
 
@@ -59,22 +78,26 @@ export class DBExplorer {
       const tables = await grok.dapi.connections.getSchema(this.connection, this.schemaName);
       if (!tables)
         throw new Error(`Schema ${this.schemaName} not found`);
-
+      // for implicit references, schema is always the primary one
+      this.references[this.schemaName] = {};
+      this.referencedBy[this.schemaName] = {};
+      const schemaRefs = this.references[this.schemaName];
+      const schemaRefBy = this.referencedBy[this.schemaName];
       tables.forEach((table) => {
         const tableName = table.friendlyName ?? table.name;
-        this.references[tableName] = {};
-        const t = this.references[tableName];
+        schemaRefs[tableName] = {};
+        const t = schemaRefs[tableName];
         table.columns.forEach((column) => {
           const ref = column.referenceInfo;
           if (ref && ref.table && ref.column) {
-            t[column.name] = {refTable: ref.table, refColumn: ref.column};
-            if (!this.referencedBy[ref.table])
-              this.referencedBy[ref.table] = {};
+            t[column.name] = {refTable: ref.table, refColumn: ref.column, refSchema: this.schemaName};
+            if (!schemaRefBy[ref.table])
+              schemaRefBy[ref.table] = {};
 
-            if (!this.referencedBy[ref.table][ref.column])
-              this.referencedBy[ref.table][ref.column] = [];
+            if (!schemaRefBy[ref.table][ref.column])
+              schemaRefBy[ref.table][ref.column] = [];
 
-            this.referencedBy[ref.table][ref.column].push({refTable: tableName, refColumn: column.name});
+            schemaRefBy[ref.table][ref.column].push({refTable: tableName, refColumn: column.name, refSchema: this.schemaName});
           }
         });
       });
@@ -84,9 +107,12 @@ export class DBExplorer {
       console.warn('Failed to load DB schema, Object handlers not registered');
       console.error(_e);
     }
+    if (this.connection)
+      this.objHandlers.forEach((handler) => handler.connectionNqName = this.connection!.nqName); // set for detection in isApplicable
+    this._dbLoadPromiseResolver();
   }
 
-  public async addCustomRelation(tableName: string, columnName: string, refTable: string, refColumn: string) {
+  public async addCustomRelation(tableName: string, columnName: string, refTable: string, refColumn: string, schemas?: {tableSchema?: string; refTableSchema?: string}) {
     if (!this.schemasLoaded) {
       try {
         await this._dbLoadPromise;
@@ -98,13 +124,21 @@ export class DBExplorer {
       console.warn('Failed to add custom relation, DB schema not loaded');
       return;
     }
-    if (!this.references[tableName])
-      this.references[tableName] = {};
-    this.references[tableName][columnName] = {refTable, refColumn};
-    if (!this.referencedBy[refTable])
-      this.referencedBy[refTable] = {};
-    this.referencedBy[refTable][refColumn] ??= [];
-    this.referencedBy[refTable][refColumn].push({refTable: tableName, refColumn: columnName});
+    const schemaName = schemas?.tableSchema ?? this.schemaName;
+    const refSchemaName = schemas?.refTableSchema ?? this.schemaName;
+    if (!this.references[schemaName])
+      this.references[schemaName] = {};
+    if (!this.referencedBy[refSchemaName])
+      this.referencedBy[refSchemaName] = {};
+    const schemaRefs = this.references[schemaName];
+    const schemaRefBy = this.referencedBy[refSchemaName];
+    if (!schemaRefs[tableName])
+      schemaRefs[tableName] = {};
+    schemaRefs[tableName][columnName] = {refTable, refColumn, refSchema: refSchemaName};
+    if (!schemaRefBy[refTable])
+      schemaRefBy[refTable] = {};
+    schemaRefBy[refTable][refColumn] ??= [];
+    schemaRefBy[refTable][refColumn].push({refTable: tableName, refColumn: columnName, refSchema: schemaName});
   }
 
   public addEntryPoint(
@@ -121,8 +155,12 @@ export class DBExplorer {
       columnName,
       fullOpts,
       schemaPromise,
-      this.schemaName
+      this.schemaName,
+      this.nqName ?? this.connectionName
     );
+    // if the matching regexp is also provided, register it
+    if (options?.matchRegexp)
+      DG.SemanticValue.registerRegExpDetector(semanticType, options.matchRegexp);
     DG.ObjectHandler.register(handler);
     this.objHandlers.push(handler);
     return this;
@@ -169,7 +207,7 @@ export class DBExplorer {
   public static initFromConfig(config: DBExplorerConfig) {
     const exp = new DBExplorer(config.connectionName, config.schemaName, config.nqName, config.dataSourceName);
     for (const [semType, entry] of Object.entries(config.entryPoints))
-      exp.addEntryPoint(semType, entry.table, entry.column, {regexpExample: entry.regexpExample});
+      exp.addEntryPoint(semType, entry.table, entry.column, {regexpExample: entry.regexpExample, matchRegexp: entry.matchRegexp});
     if (config.joinOptions)
       exp.addJoinOptions(config.joinOptions);
     if (config.headerNames)
@@ -178,6 +216,26 @@ export class DBExplorer {
       exp.addUniqueColumns(config.uniqueColumns);
     if (config.customSelectedColumns)
       exp.addCustomSelectedColumns(config.customSelectedColumns);
+    if (config.explicitReferences) {
+      config.explicitReferences.forEach((ref) => {
+        exp.addCustomRelation(
+          ref.table,
+          ref.column,
+          ref.refTable,
+          ref.refColumn,
+          {tableSchema: ref.schema, refTableSchema: ref.refSchema}
+        );
+      });
+    }
+    if (config.customRenderers) {
+      config.customRenderers.forEach((r) => {
+        const rendererFunc = getDefaultRendererByName(r.renderer);
+        const checkFunc = (tableName: string, colName: string, _value: string | number) => {
+          return tableName === r.table && colName === r.column;
+        };
+        exp.addCustomRenderer(checkFunc, rendererFunc);
+      });
+    }
     return exp;
   }
 

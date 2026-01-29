@@ -31,6 +31,9 @@
    * Set Color to Series
 1. Add a line chart. Set:
    * Split to Series, Stereo categories, Core, R1, R2, R3 - check that the line chart is not freezing and cannot be broken (even after Multiaxes is turned on)
+   * Turn off Multiaxes
+   * Set X to Chemical Space X
+   * Set Y to Average Mass, Chemical Space Y
    * Set formula line for Data frame (use the Data frame tab in the Formula Lines dialog):
       * `${Average Mass} = 0.75* ${Chemical Space X}* ${Chemical Space X} - 4 * ${Chemical Space X} -1+300`
       * `${Chemical Space Y} = 0.75* ${Chemical Space X}* ${Chemical Space X} - 4 * ${Chemical Space X} `

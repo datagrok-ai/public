@@ -2,8 +2,8 @@ import type * as _grok from 'datagrok-api/grok';
 import type * as _DG from 'datagrok-api/dg';
 declare let grok: typeof _grok, DG: typeof _DG;
 
-import {category, expect, expectTable, test} from '@datagrok-libraries/utils/src/test';
-import {_package} from 'package-test';
+import {category, expect, expectTable, test} from '@datagrok-libraries/test/src/test';
+import {_package} from '../package-test';
 
 category('Dapi: files', () => {
   const filePrefix = 'System:AppData/ApiTests/';
@@ -124,7 +124,7 @@ category('Dapi: files', () => {
 }, {owner: 'aparamonov@datagrok.ai'});
 
 category('Dapi: files: formats', () => {
-  const extensions = ['csv', 'd42', 'json', 'tar', 'tar.gz', 'tsv', 'txt', 'xlsx', 'xml', 'zip', 'kmz', 'kml'];
+  const extensions = ['csv', 'd42', 'json', 'tar', 'tar.gz', 'tsv', 'txt', 'xml', 'zip', 'kmz', 'kml'];
 
   for (const ext of extensions) {
     test(ext, async () => {

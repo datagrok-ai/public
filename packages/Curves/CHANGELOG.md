@@ -1,5 +1,9 @@
 # Curves changelog
 
+## 1.10.15 (2025-12-02)
+
+* Png Renderer: Fix flickering and moved to PowerGrid
+
 ## 1.10.12 (2025-09-16)
 
 * GROK-18808: Provided consistent names for Data top menu
@@ -58,7 +62,7 @@
 * Data-to-curves: fully covered script with history, datasync and 2 tier support
 * Raw PNG renderer
 
-## 1.6.0 - 1.8.0 (2025-03-31)
+## 1.8.0 (2025-03-31)
 
 ### Features
 
@@ -89,6 +93,10 @@
 * Fixed MultiCurveViewer issues
 * Fit panel: Fixed namings and inputs
 * GROK-17492: Fixed error when adding statistics column if the series has no name
+
+## 1.6.0 (2024-09-09)
+
+* Fixed tests
 
 ## 1.5.0 (2024-08-23)
 

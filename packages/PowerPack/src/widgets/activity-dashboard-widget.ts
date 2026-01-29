@@ -167,8 +167,8 @@ export class ActivityDashboardWidget extends DG.Widget {
       randomTip = todayItemListFromType.length > 0 ? todayItemListFromType[Math.floor(seededRandom(weekSeed) * todayItemListFromType.length)] : '';
 
     let tipIdx = 0;
-    const demoApp = DG.Func.find({tags: ['app'], package: 'Tutorials', name: 'demoApp'})[0];
-    const tutorialsApp = DG.Func.find({tags: ['app'], package: 'Tutorials', name: 'trackOverview'})[0];
+    const demoApp = DG.Func.find({meta: {role: DG.FUNC_TYPES.APP}, package: 'Tutorials', name: 'demoApp'})[0];
+    const tutorialsApp = DG.Func.find({meta: {role: DG.FUNC_TYPES.APP}, package: 'Tutorials', name: 'trackOverview'})[0];
 
     const createTip = (newRandomTip: DG.Func | string) => {
       const tip = ui.divText('', 'power-pack-activity-widget-spotlight-tip');
@@ -393,8 +393,8 @@ export class ActivityDashboardWidget extends DG.Widget {
 
   async getNewUserInfoColumns(): Promise<HTMLDivElement> {
     const root = ui.divH([], 'power-pack-activity-widget-spotlight-root');
-    const tutorialsApp = DG.Func.find({tags: ['app'], package: 'Tutorials', name: 'trackOverview'})[0];
-    const demoApp = DG.Func.find({tags: ['app'], package: 'Tutorials', name: 'demoApp'})[0];
+    const tutorialsApp = DG.Func.find({meta: {role: DG.FUNC_TYPES.APP}, package: 'Tutorials', name: 'trackOverview'})[0];
+    const demoApp = DG.Func.find({meta: {role: DG.FUNC_TYPES.APP}, package: 'Tutorials', name: 'demoApp'})[0];
     if (!tutorialsApp || !demoApp)
       return root;
     const appHandler = DG.ObjectHandler.forEntity(demoApp);

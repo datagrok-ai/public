@@ -59,3 +59,39 @@ The system provides interaction with files of the following extensions:
 
 * [Viewers](../viewers/viewers.md)
 * [Globe](globe.md)
+* [Community: Visualization-related updates](https://community.datagrok.ai/t/visualization-related-updates/521)
+
+## Properties
+
+| Property | Type | Description |
+|----------|------|-------------|
+| **General** | | |
+| Region Column Name | string |  |
+| Color Column Name | string |  |
+| Color Aggr Type | string |  |
+| Show Color Scale | boolean |  |
+| Show Color Selector | boolean |  |
+| Allow Pan Zoom | boolean |  |
+| Linear Color Scheme | list |  |
+| Categorical Color Scheme | list |  |
+| Row Source | string | Determines the rows shown on the plot. |
+| Allow Dynamic Menus | boolean |  |
+| Show Context Menu | boolean | Properties common for all viewers todo: use code generation |
+| Title | string |  |
+| Description | string | Viewer description that gets shown at the *Descriptor Position*. Markup is supported. |
+| Help | string | Help to be shown when user clicks on the ''?'' icon on top. Could either be in markdown, or a URL (starting with ''/'' or ''http''). |
+| Description Position | flexposition |  |
+| Description Visibility Mode | visibilitymode |  |
+| **Data** | | |
+| Filter | string | Formula that filters out rows to show. Examples: `${AGE}` > 20 or `${WEIGHT / 2)}` > 100, `${SEVERITY}` == ''Medium'', `${RACE}`.endsWith(''sian'') |
+| Table | string |  |
+| **Style** | | |
+| Controls Font | string | Viewer controls elements font. |
+| **Description** | | |
+| Show Title | boolean |  |
+
+## See also
+
+* [Viewers](../viewers/viewers.md)
+* [Globe](globe.md)
+* [Community: Visualization-related updates](https://community.datagrok.ai/t/visualization-related-updates/521)

@@ -40,7 +40,7 @@ export class PackageFunctions {
     return view;
   }
 
-  @grok.decorators.func()
+  @grok.decorators.appTreeBrowser({app: 'Benchling'})
   static async benchlingLinkAppTreeBrowser(treeNode: DG.TreeViewGroup): Promise<void> {
     function createFuncEditorView(funcName: string, v: DG.View) {
       let func = DG.Func.byName(funcName);

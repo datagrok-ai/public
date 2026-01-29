@@ -8,7 +8,7 @@
 class GenomeBrowserPackageDetectors extends DG.Package {
 
   //name: autostartChecker
-  //tags: autostart
+  //meta.role: autostart
   autostartChecker() {
     return;
   }

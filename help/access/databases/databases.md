@@ -86,7 +86,7 @@ it and select **Clone...**
 
 ## Database Manager
 
-**Database Manager** lets you brows database schemas and other
+**Database Manager** lets you browse database schemas and other
 objects, such as queries, tables, and table columns (if supported by
 the providers). You can perform various operations like adding new connections
 and queries, previewing data, running queries, and managing objects using
@@ -155,11 +155,6 @@ Datagrok provides several tools for creating, exploring, and editing queries.
 
 * [_AI Query Builder_](#ai-query-builder): lets users build queries using natural language. To access AI Query Builder, install the [ChatGPT](https://github.com/datagrok-ai/public/tree/master/packages/ChatGPT) plugin.
 
-:::note
-
-  The ability to query tables is connector-specific and may not be available for all.
-
-:::
 
 When you successfully create a query, it appears in the **Database Manager**
 under the corresponding connection or table. From there, you can run it, share
@@ -333,11 +328,15 @@ without saving.
 
 ### AI Query Builder
 
-**AI Query Builder** lets you ask questions in natural language and automatically 
-generates precise queries. You can then continue working with the query in 
-the **Query Editor**—manually edit, debug, add layouts, and more. 
+**AI Query Builder** lets you ask questions in natural language and  
+generates database queries. You can then continue working with the query in 
+the **Query Editor** — manually edit, debug, add layouts, and more. 
 
-To open the AI panel, click the **Brain** icon on the menu ribbon of the **Query** tab.
+To open the AI panel, click the **AI** icon on the menu ribbon of the **Query** tab.
+In the AI panel, use the conversational style to create or modify your query. For
+instance, you might start with "Give me the identifiers of molecules active 
+against the target X" and then, after the AI builds and executes the query, continue
+with "Include chemical structures as well".
 
 ![AI Query Builder](img/query-editor-ai.gif)
 
@@ -662,7 +661,48 @@ connection also deletes a query.
 
 :::
 
+## Data enrichment
 
+When working with database-linked data (either retrieved directly from the database, or containing the 
+[identifiers](#database-explorer) from that database), a popular need is to "enrich" existing rows in the
+spreadsheet with certain information from the database. For instance, given a column with SMILES, medicinal
+chemists might want to quickly access their ADME properties. Datagrok makes it possible to do in one click.
+
+To enrich a dataset, click on a column that was retrieved from the database. On the context panel, 
+expand the pane with the name of the database this column came from (such as "ChEMBL"), and click
+"Enrich...". In the dialog that appears, choose the columns that should be joined to the 
+source columns. This dialog uses [visual query editor](#visual-query-editor) that automatically 
+constructs the way columns should be joined, if this can be inferred from the database schema; if not,
+you can specify joins manually.
+
+You can save the enrichment configuration by giving it a name, and clicking "SAVE". After that,
+you would see this next to the "Enrich..." button, allowing you to retrieve the necessary data
+in one click.
+
+You can also [publish enrichments](../../develop/how-to/packages/data-enrichments.md) with plugins.
+
+![](img/db-data-enrichment.gif)
+
+## Database explorer
+
+The **Database Explorer** enables Datagrok to automatically detect and explore company-specific identifiers within relational databases. By linking identifier patterns to database columns, this library creates an intelligent exploration system that allows users to drill down through database relationships and discover all related data with a single click.
+
+![DB-explorer](img/db-explorer.gif)
+
+When you configure the explorer for your database, the system:
+
+1. **Detects identifiers**: Automatically recognizes identifier patterns (e.g., `CHEMBL1234`, `DRUG_ID_5678`) in your data using regular expressions.
+2. **Maps to semantic types**: Associates each identifier pattern with a semantic type and links it to a specific column in a specific table within your database.
+3. **Leverages database relationships**: Uses the database's foreign key relationships and reference information to understand how tables connect.
+4. **Enables drill-down exploration**: When you click an identifier anywhere in Datagrok, the system automatically:
+   - Queries the database for the entity associated with that identifier
+   - Displays all related information from the primary table
+   - Shows all associated records from related tables (using foreign keys)
+   - Renders custom visualizations (molecules, images, etc.) where applicable
+
+This creates a seamless exploration experience where users can navigate complex database schemas without writing queries or understanding the underlying table relationships.
+
+For detailed instructions on setting up and using the DB-explorer library, refer to the [Developers Guide](../../develop/how-to/db/register-identifiers.md).
 
 <!--
 

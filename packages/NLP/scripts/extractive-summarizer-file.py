@@ -2,7 +2,7 @@
 #description: Extractive Text Summarization Using TextRank Algorithm
 #language: python
 #environment: channels: [conda-forge], dependencies: [python=3.8, {pip: [gensim==3.6.0, textract, cleantext]}]
-#tags: nlp, panel
+#meta.role: panel
 #input: file file {semType: text} [Given text]
 #output: string summary {semType: text} [Summary]
 #reference: https://arxiv.org/abs/1602.03606 [Variations of the Similarity Function of TextRank for Automated Summarization]

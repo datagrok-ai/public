@@ -135,7 +135,7 @@ export const RFVApp = Vue.defineComponent({
         currentFuncCall.value.options['description'] = editOptions.description;
         currentFuncCall.value.options['tags'] = editOptions.tags;
         currentFuncCall.value.newId();
-        await historyUtils.saveRun(currentFuncCall.value, false);
+        await historyUtils.saveRun(currentFuncCall.value);
         await saveIsFavorite(currentFuncCall.value, !!editOptions.isFavorite);
         Vue.triggerRef(currentFuncCall);
       });

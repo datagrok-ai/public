@@ -1,7 +1,7 @@
 // Handles onCellPrepare event to set GridCell's parameters
 
 let view = grok.shell.addTableView(grok.data.demo.demog());
-view.grid.onCellPrepare(function (gc) {
+view.grid.onCellPrepare(function(gc) {
   // let's not process row headers, column headers, and other special cells
   if (!gc.isTableCell)
     return;

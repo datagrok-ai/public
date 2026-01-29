@@ -1,7 +1,7 @@
 import {PackageFunctions} from './package';
 import * as DG from 'datagrok-api/dg';
 
-//tags: init
+//meta.role: init
 export async function init() : Promise<void> {
   await PackageFunctions.init();
 }
@@ -30,25 +30,25 @@ export function modelCatalogTreeBrowser(treeNode: any, browseView: DG.ViewBase) 
 }
 
 //name: Custom Function View Editor
-//tags: editor
 //input: funccall call 
 //output: view result
+//meta.role: editor
 export async function CustomFunctionViewEditor(call: DG.FuncCall) : Promise<any> {
   return await PackageFunctions.CustomFunctionViewEditor(call);
 }
 
 //name: Rich Function View Editor
-//tags: editor
 //input: funccall call 
 //output: view result
+//meta.role: editor
 export async function RichFunctionViewEditor(call: DG.FuncCall) : Promise<any> {
   return await PackageFunctions.RichFunctionViewEditor(call);
 }
 
 //name: Tree Wizard Editor
-//tags: editor
 //input: funccall call 
 //output: view result
+//meta.role: editor
 export async function TreeWizardEditor(call: DG.FuncCall) : Promise<any> {
   return await PackageFunctions.TreeWizardEditor(call);
 }
@@ -67,22 +67,21 @@ export async function RunOptimizer(params: any) {
   return await PackageFunctions.RunOptimizer(params);
 }
 
-//tags: test, vue
+//name: ViewerTestApp
 export async function ViewerTestApp() : Promise<void> {
   await PackageFunctions.ViewerTestApp();
 }
 
-//tags: test, vue
+//name: FormTestApp
 export async function FormTestApp() : Promise<void> {
   await PackageFunctions.FormTestApp();
 }
 
-//tags: test, vue
+//name: HistoryTestApp
 export async function HistoryTestApp() : Promise<void> {
   await PackageFunctions.HistoryTestApp();
 }
 
-//tags: test, compute2
 //input: object params 
 //output: object result
 //editor: Compute2:TreeWizardEditor
@@ -90,7 +89,6 @@ export async function MockPipeline1(params: any) {
   return await PackageFunctions.MockPipeline1(params);
 }
 
-//tags: test, compute2
 //input: object params 
 //output: object result
 //editor: Compute2:TreeWizardEditor
@@ -133,7 +131,6 @@ export async function TestDF1(df: DG.DataFrame) : Promise<any> {
 }
 
 //name: Custom View (Compute 2 Test)
-//tags: test, compute2
 //editor: Compute2:CustomFunctionViewEditor
 export async function TestCustomView() : Promise<void> {
   await PackageFunctions.TestCustomView();

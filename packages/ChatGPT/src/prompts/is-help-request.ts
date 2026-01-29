@@ -1,4 +1,4 @@
-import {geminiDownloadMonitor} from './find-best-function';
+import {geminiDownloadMonitor} from '../llm-utils/query-matching';
 
 export async function isHelpRequest(post: string): Promise<boolean> {
   const schema = {

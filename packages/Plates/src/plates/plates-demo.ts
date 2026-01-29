@@ -19,7 +19,6 @@ export async function __createDummyPlateData() {
   await createDummyPlatesFromExcel();
 
   await initPlates(true);
-  grok.shell.info('Demo data check complete.');
 }
 
 async function createDummyPlates() {

@@ -20,11 +20,11 @@ function translate(seq) {
     'TAC': 'Y', 'TAT': 'Y', 'TAA': '_', 'TAG': '_',
     'TGC': 'C', 'TGT': 'C', 'TGA': '_', 'TGG': 'W'
   };
-  let protein = "";
+  let protein = '';
   if (seq.length % 3 === 0) {
     for (let i = 0; i < seq.length; i += 3) {
       const codon = seq.substring(i, i + 3).toUpperCase();
-      protein += table[codon]
+      protein += table[codon];
     }
   }
   return protein;

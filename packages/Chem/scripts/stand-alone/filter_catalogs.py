@@ -3,9 +3,9 @@
 #help-url: https://datagrok.ai/help/domains/chem/functions/filter-catalogs
 #language: python
 #sample: chem/smiles.csv
-#tags: demo, chem, rdkit
+#meta.domain: chem
 #input: dataframe data [Input data table]
-#input: column smiles {type:categorical, semType: Molecule} [Molecules, in SMILES format]
+#input: column smiles {type:categorical; semType: Molecule} [Molecules, in SMILES format]
 #input: string catalog = "BRENK" {choices: ["BRENK", "NIH", "PAINS_A", "PAINS_B", "PAINS_C", "ZINC"]}
 #output: dataframe filter {action:join(data)} [Column with filter matches]
 

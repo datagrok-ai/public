@@ -5,16 +5,16 @@ import {cumulativeEnrollemntByDay} from '../data-preparation/data-preparation';
 import {CLINICAL_TRIAL_GOV_FIELDS} from '../constants/constants';
 import {CLIN_TRIAL_GOV_SEARCH, HttpService} from '../services/http.service';
 import {_package} from '../package';
-import {AGE, BW_RES_N, CLORRES, RACE, SEX, SPECIES, SUBJECT_ID, SUBJ_REF_STDT,
+import {AGE, BW_RES_N, RACE, SEX, SPECIES, SUBJECT_ID, SUBJ_REF_STDT,
   VISIT_DAY} from '../constants/columns-constants';
 import {ClinicalCaseViewBase} from '../model/ClinicalCaseViewBase';
 import $ from 'cash-dom';
 import {checkDateFormat} from '../data-preparation/utils';
-import {removeExtension, updateDivInnerHTML} from '../utils/utils';
+import {removeExtension, studyConfigToMap, updateDivInnerHTML} from '../utils/utils';
 import {TRT_ARM_FIELD} from '../views-config';
-import {checkColumnsAndCreateViewer, setupValidationErrorIndicators} from '../utils/views-validation-utils';
+import {checkColumnsAndCreateViewer} from '../utils/views-validation-utils';
 import {CDISC_STANDARD} from '../utils/types';
-import {studies} from '../utils/app-utils';
+import {addDomainAsTableView, studies} from '../utils/app-utils';
 
 
 export class StudySummaryView extends ClinicalCaseViewBase {
@@ -64,7 +64,6 @@ export class StudySummaryView extends ClinicalCaseViewBase {
 
     const summary = ui.tableFromMap(summaryObj);
 
-
     const errorsSummary = this.errorsByDomainWithLinks ?
       ui.tableFromMap(this.errorsByDomainWithLinks) :
       ui.divText('No errors found', {style: {marginTop: '8px', marginLeft: '5px'}});
@@ -83,10 +82,7 @@ export class StudySummaryView extends ClinicalCaseViewBase {
       for (const domain of studies[this.studyId].domains.all()) {
         const domainName = removeExtension(domain.name);
         menu.item(domainName, () => {
-          const df = domain.clone();
-          df.name = `${this.studyId}_${domainName}`;
-          const tableView = grok.shell.addTableView(df);
-          setupValidationErrorIndicators(tableView, df);
+          addDomainAsTableView(this.studyId, domain, false);
         });
       }
       menu.show();
@@ -101,23 +97,14 @@ export class StudySummaryView extends ClinicalCaseViewBase {
         this.centralChart,
         async () => {await this.createCumulativeEnrollmentChart(this.viewerTitle);},
         'Cumulative enrollment');
-    } else { //if SEND - create clinical observations chart
-      const visitDayCol = studies[this.studyId].domains.cl?.col(VISIT_DAY) ??
-        studies[this.studyId].domains.cl?.col(`CLDY`);
-      const visitDayName = visitDayCol ? visitDayCol.name : VISIT_DAY;
-      checkColumnsAndCreateViewer(
-        studies[this.studyId].domains.cl,
-        [CLORRES, visitDayName],
-        this.centralChart,
-        () => {
-          const clinicalObsGrouppedByDay = studies[this.studyId].domains.cl
-            .groupBy([visitDayName, CLORRES]).count('count').aggregate();
-          const obs = DG.Viewer.lineChart(clinicalObsGrouppedByDay,
-            {overview: 'count', splitColumnNames: [CLORRES], xColumnName: visitDayName});
-          obs.root.prepend(ui.divText('Clinical observations', this.viewerTitle));
-          updateDivInnerHTML(this.centralChart, obs.root);
-        },
-        'Clinical observations');
+    } else { //if SEND - show study summary
+      const configMap = studyConfigToMap(studies[this.studyId].config);
+      const summaryDiv = ui.divV([]);
+      summaryDiv.append(ui.h1('Study summary',
+        {style: {fontSize: '15px', marginLeft: '12px', position: 'absolute', width: '98%', background: 'white'}}));
+      const summaryTableDiv = ui.div(ui.tableFromMap(configMap), {style: {marginTop: '15px'}});
+      summaryDiv.append(summaryTableDiv);
+      updateDivInnerHTML(this.centralChart, summaryDiv);
     }
 
     checkColumnsAndCreateViewer(
@@ -185,8 +172,17 @@ export class StudySummaryView extends ClinicalCaseViewBase {
     }
 
     this.root.className = 'grok-view ui-box';
-    this.root.append(ui.splitV([
-      ui.splitH([
+    const bottomCharts = ui.splitH([
+      this.armChart,
+      this.sexChart,
+      this.raceChart,
+      this.ageOrWeightChart,
+    ]);
+
+    const summaryDiv = ui.splitV([]);
+
+    if (!this.isSend) {
+      summaryDiv.append(ui.splitH([
         ui.panel([
           ui.divText(`${this.studyId} summary`, summaryStyle),
           summary,
@@ -196,15 +192,15 @@ export class StudySummaryView extends ClinicalCaseViewBase {
           errorsSummary,
         ]),
         addDomainToWorkspace,
-      ], {style: {maxHeight: '105px'}}),
-      this.centralChart,
-      ui.splitH([
-        this.armChart,
-        this.sexChart,
-        this.raceChart,
-        this.ageOrWeightChart,
-      ]),
-    ]));
+      ], {style: {maxHeight: '105px'}}));
+    } else {
+      summaryDiv.append(ui.div(addDomainToWorkspace,
+        {style: {maxHeight: '15px', display: 'flex', alignSelf: 'flex-end'}}));
+    }
+
+    summaryDiv.append(this.centralChart);
+    summaryDiv.append(bottomCharts);
+    this.root.append(summaryDiv);
   }
 
   private async createCumulativeEnrollmentChart(viewerTitle: any) {
@@ -255,22 +251,14 @@ export class StudySummaryView extends ClinicalCaseViewBase {
   }
 
   override async propertyPanel() {
+    if (this.isSend)
+      return;
     const acc = this.createAccWithTitle(this.studyId);
     acc.addPane('General', () => {
-      const map = {};
-      for (const key of Object.keys(studies[this.studyId].config)) {
-        if (key !== 'other')
-          map[key] = studies[this.studyId].config[key];
-        else {
-          const obj = studies[this.studyId].config.other;
-          if (obj)
-            Object.keys(obj).forEach((key) => map[key] = studies[this.studyId].config!.other[key]);
-        }
-      }
-      return ui.tableFromMap(map);
+      const configMap = studyConfigToMap(studies[this.studyId].config);
+      return ui.tableFromMap(configMap);
     });
-    if (!this.isSend)
-      this.getDataFromClinicalTrialsGov(acc);
+    this.getDataFromClinicalTrialsGov(acc);
 
     return acc.root;
   }

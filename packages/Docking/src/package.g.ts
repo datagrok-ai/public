@@ -32,11 +32,11 @@ export async function dockLigandCached(jsonForm: string, containerId: string) : 
 
 //name: AutoDock
 //description: Autodock plugin UI
-//tags: HitTriageFunction
-//input: dataframe table  { description: 'Input data table' }
-//input: column ligands  { type: categorical; semType: Molecule; description: 'Small molecules to dock' }
-//input: string target  { choices: Docking:getConfigFiles; description: 'Folder with config and macromolecule' }
-//input: double poses = 10 { description: 'Number of output conformations for each small molecule'; type: int }
+//input: dataframe table { description: 'Input data table' }
+//input: categorical ligands { type: categorical; semType: Molecule; description: 'Small molecules to dock' }
+//input: string target { choices: Docking:getConfigFiles; description: 'Folder with config and macromolecule' }
+//input: int poses = 10 { description: 'Number of output conformations for each small molecule' }
+//meta.role: hitTriageFunction
 //top-menu: Chem | Docking | AutoDock...
 export async function runAutodock(table: DG.DataFrame, ligands: DG.Column, target: string, poses: number) : Promise<void> {
   await PackageFunctions.runAutodock(table, ligands, target, poses);
@@ -49,9 +49,10 @@ export function isApplicableAutodock(molecule: string) : boolean {
 }
 
 //name: AutoDock
-//tags: panel, chem, widgets
-//input: semantic_value molecule  { semType: Molecule3D }
+//input: semantic_value molecule { semType: Molecule3D }
 //output: widget result
+//meta.role: widgets,panel
+//meta.domain: chem
 //condition: Docking:isApplicableAutodock(molecule)
 export async function autodockWidget(molecule: DG.SemanticValue) : Promise<any> {
   return await PackageFunctions.autodockWidget(molecule);
@@ -73,19 +74,19 @@ export async function demoDocking() : Promise<void> {
 }
 
 //name: Biology | AutoDock
-//tags: panel, widgets
-//input: semantic_value smiles  { semType: Molecule }
+//input: semantic_value smiles { semType: Molecule }
 //output: widget result
+//meta.role: widgets,panel
 export async function autodockPanel(smiles: DG.SemanticValue) : Promise<any> {
   return await PackageFunctions.autodockPanel(smiles);
 }
 
 //name: Docking
-//tags: app
-//input: string path  { meta.url: true; optional: true }
+//input: string path { meta.url: true; optional: true }
 //output: view result
 //meta.icon: images/docking-icon.png
 //meta.browsePath: Bio
+//meta.role: app
 export async function dockingView(path?: string) : Promise<any> {
   return await PackageFunctions.dockingView(path);
 }

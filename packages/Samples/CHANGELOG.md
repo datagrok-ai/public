@@ -1,5 +1,11 @@
 # Samples changelog
 
+## 1.4.2 (2025-09-22)
+
+* GROK-18923: Northwind: order details by @quantity, @productname, @Country: error
+* Samples: Notebooks: Use public python API
+* Samples: Deprecated more swager files
+
 ## 1.2.0 (2024-10-24)
 
 * Queries auto tests

@@ -43,8 +43,8 @@ export namespace funcs {
     return await grok.functions.call('Admetica:GetAdmePropertiesSingle', { molecule });
   }
 
-  export async function admeticaApp(): Promise<DG.View> {
-    return await grok.functions.call('Admetica:AdmeticaApp', {});
+  export async function runAdmeticaApplication(): Promise<DG.View> {
+    return await grok.functions.call('Admetica:RunAdmeticaApplication', {});
   }
 
   /**

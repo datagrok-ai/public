@@ -4,7 +4,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {askDeepWiki} from './deepwikiclient';
-import {askOpenAIHelp} from './openAI-client';
+import {askOpenAIHelp, ModelType} from './openAI-client';
 import {LLMCredsManager} from './creds';
 import {CombinedAISearchAssistant} from './combined-search';
 import {ChatGPTPromptEngine} from '../prompt-engine/prompt-engine';
@@ -12,9 +12,12 @@ import {ChatGptAssistant} from '../prompt-engine/chatgpt-assistant';
 import * as api from '../package-api';
 import {Plan} from '../prompt-engine/interfaces';
 import {AssistantRenderer} from '../prompt-engine/rendering-tools';
-import {dartLike, fireAIAbortEvent, getAIPanelToggleSubscription} from '../utils';
+import {fireAIAbortEvent, fireAIPanelToggleEvent} from '../utils';
 import {generateAISqlQueryWithTools} from './sql-tools';
-import {DBAIPanel, ModelType, UIMessageOptions} from './panel';
+import {processTableViewAIRequest} from './tableview-tools';
+import {DBAIPanel, ScriptingAIPanel, TVAIPanel} from './panel';
+import {generateDatagrokScript} from './script-tools';
+import {ChatModel} from 'openai/resources/shared';
 
 
 export async function askWiki(question: string, useOpenAI: boolean = true) {
@@ -29,8 +32,8 @@ export async function askWiki(question: string, useOpenAI: boolean = true) {
   }
 }
 
-export async function smartExecution(prompt: string, modelName: string) {
-  const gptEngine = ChatGPTPromptEngine.getInstance(LLMCredsManager.getApiKey(), modelName);
+export async function smartExecution(prompt: string, modelName: ChatModel) {
+  const gptEngine = ChatGPTPromptEngine.getInstance(modelName);
   const gptAssistant = new ChatGptAssistant(gptEngine);
 
   const mainWaitDiv = ui.wait(async () => {
@@ -50,7 +53,7 @@ export async function smartExecution(prompt: string, modelName: string) {
 
 // sets up the ui button for the input
 export function setupSearchUI() {
-  if (!LLMCredsManager.getApiKey()) {
+  if (!grok.ai.openAiConfigured) {
     console.warn('LLM API key is not set up. Search UI will not have AI assistance.');
     return;
   }
@@ -117,7 +120,7 @@ async function aiCombinedSearch(prompt: string) {
 }
 
 export async function setupAIQueryEditorUI(v: DG.ViewBase, connectionID: string, queryEditorRoot: HTMLElement, setAndRunFunc: (query: string) => void): Promise<boolean> {
-  if (!LLMCredsManager.getApiKey())
+  if (!grok.ai.openAiConfigured)
     return false;
   const connection = await grok.dapi.connections.find(connectionID);
   if (!connection) { // should not happen but just in case
@@ -128,35 +131,8 @@ export async function setupAIQueryEditorUI(v: DG.ViewBase, connectionID: string,
   const schemas = await grok.dapi.connections.getSchemas(connection);
   const defaultSchema = schemas.includes('public') ? 'public' : schemas[0];
 
-  const panel = new DBAIPanel(schemas, defaultSchema, connectionID);
+  const panel = new DBAIPanel(schemas, defaultSchema, connectionID, v);
   panel.show();
-
-  // do some subscriptions
-  let wasShown = true;
-  const sub = grok.events.onCurrentViewChanged.subscribe(() => {
-    if (grok.shell.v != v) {
-      wasShown = panel.isShown;
-      if (wasShown)
-        panel.hide();
-    } else {
-      if (wasShown)
-        panel.show();
-    }
-  });
-
-  const toggleSub = getAIPanelToggleSubscription().subscribe((rv) => {
-    if (rv == v)
-      panel.toggle();
-  });
-  const closeSub = grok.events.onViewRemoved.subscribe((view) => {
-    if (view == v) {
-      sub.unsubscribe();
-      closeSub.unsubscribe();
-      panel.hide();
-      panel.dispose();
-      toggleSub.unsubscribe();
-    }
-  });
 
   panel.onRunRequest.subscribe(async (args) => {
     ui.setUpdateIndicator(queryEditorRoot, true, 'Grokking Query...', () => { fireAIAbortEvent(); });
@@ -164,14 +140,7 @@ export async function setupAIQueryEditorUI(v: DG.ViewBase, connectionID: string,
     try {
       const sqlQuery = await generateAISqlQueryWithTools(args.currentPrompt.prompt, connectionID, args.currentPrompt.schemaName!, {
         oldMessages: args.prevMessages,
-        aiPanel: {
-          addAIMessage: (aiMessage, title, content) => {
-            session.addAIMessage(aiMessage, title, content);
-          },
-          addEngineMessage: (aiMessage) => session.addAIMessage(aiMessage, '', '', true),
-          addUiMessage: (msg: string, fromUser: boolean, messageOptions?: UIMessageOptions) => session.addUIMessage(msg, fromUser, messageOptions),
-          addUserMessage: (aiMsg, content) => session.addUserMessage(aiMsg, content),
-        }, modelName: ModelType[panel.getCurrentInputs().model],
+        aiPanel: session.session, modelName: ModelType[panel.getCurrentInputs().model],
       });
       if (sqlQuery && typeof sqlQuery === 'string' && sqlQuery.trim().length > 0)
         setAndRunFunc(sqlQuery);
@@ -184,4 +153,90 @@ export async function setupAIQueryEditorUI(v: DG.ViewBase, connectionID: string,
     session.endSession();
   });
   return true;
+}
+
+export async function setupTableViewAIPanelUI() {
+  if (!grok.ai.openAiConfigured)
+    return;
+  const handleView = (tableView: DG.TableView) => {
+    // setup ribbon panel icon
+    const iconFse = ui.iconSvg('ai.svg', () => fireAIPanelToggleEvent(tableView), 'Ask AI \n Ctrl+I');
+    iconFse.style.width = iconFse.style.height = '18px';
+    tableView.setRibbonPanels([...tableView.getRibbonPanels(), [iconFse]]);
+    // setup the panel itself
+    const panel = new TVAIPanel(tableView);
+    panel.hide();
+
+    // Setup request handler
+    panel.onRunRequest.subscribe(async (args) => {
+      const session = panel.startChatSession();
+      try {
+        await processTableViewAIRequest(
+          args.currentPrompt.prompt,
+          tableView,
+          {
+            oldMessages: args.prevMessages,
+            aiPanel: session.session,
+            modelName: ModelType[panel.getCurrentInputs().model],
+          }
+        );
+      } catch (error: any) {
+        grok.shell.error('Error during AI table view processing');
+        console.error('Error during AI table view processing:', error);
+      }
+      session.endSession();
+    });
+  };
+  // also handle already opened views
+  Array.from(grok.shell.tableViews).filter((v) => v.dataFrame != null).forEach((view) => {
+    handleView(view as DG.TableView);
+  });
+
+  grok.events.onViewAdded.subscribe((view) => {
+    if (view.type === DG.VIEW_TYPE.TABLE_VIEW)
+      handleView(view as DG.TableView);
+  });
+}
+
+export async function setupScriptsAIPanelUI() {
+  const handleView = (scriptView: DG.ScriptView) => {
+    // setup ribbon panel icon
+    const iconFse = ui.iconSvg('ai.svg', () => fireAIPanelToggleEvent(scriptView), 'Ask AI \n Ctrl+I');
+    iconFse.style.width = iconFse.style.height = '18px';
+    scriptView.setRibbonPanels([...scriptView.getRibbonPanels(), [iconFse]]);
+    // Setup request handler
+    // setup the panel itself
+    const panel = new ScriptingAIPanel(scriptView);
+    panel.hide();
+    panel.onRunRequest.subscribe(async (args) => {
+      ui.setUpdateIndicator(scriptView.root, true, 'Vibe-Grokking Script...', () => { fireAIAbortEvent(); });
+      const indicator = scriptView.root.querySelector('.d4-update-shadow') as HTMLElement;
+      if (indicator)
+        indicator.style.zIndex = '1000';
+      const session = panel.startChatSession();
+      try {
+        const res = await generateDatagrokScript(
+          args.currentPrompt.prompt,
+          panel.getCurrentInputs().language,
+          {
+            oldMessages: args.prevMessages,
+            aiPanel: session.session
+          }
+        );
+        if (res && res.trim().length > 0)
+          scriptView.code = res;
+        console.log('Generated script:', res);
+      } catch (error: any) {
+        grok.shell.error('Error during AI table view processing');
+        console.error('Error during AI table view processing:', error);
+      }
+      ui.setUpdateIndicator(scriptView.root, false);
+      session.endSession();
+    });
+  };
+
+  grok.events.onViewAdded.subscribe((view) => {
+    if (view.type === 'ScriptView')
+      setTimeout(() => handleView(view as DG.ScriptView), 500);
+  });
 }

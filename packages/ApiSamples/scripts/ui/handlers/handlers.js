@@ -16,7 +16,7 @@ class FruitCanvasRenderer extends DG.CanvasRenderer {
 }
 
 class FruitGridCellRenderer extends DG.GridCellRenderer {
-  get cellType() { return 'fruit'; }
+  get cellType() {return 'fruit';}
   render(g, x, y, w, h, cell, style) {
     g.fillStyle = cell.cell.value.color;
     g.fillText(cell.cell.value.name, x + 10, y + 10);
@@ -25,18 +25,18 @@ class FruitGridCellRenderer extends DG.GridCellRenderer {
 
 // Defines the way Datagrok handles entities of the specified type
 class FruitHandler extends DG.ObjectHandler {
-  get type() { return 'fruit' }
+  get type() {return 'fruit';}
 
   // Checks whether this is the handler for [x]
-  isApplicable(x) { return x instanceof Fruit; }
+  isApplicable(x) {return x instanceof Fruit;}
 
-  getCanvasRenderer(x) { return new FruitCanvasRenderer(); }
-  getGridCellRenderer(x) { return new FruitGridCellRenderer(); }
+  getCanvasRenderer(x) {return new FruitCanvasRenderer();}
+  getGridCellRenderer(x) {return new FruitGridCellRenderer();}
 
-  renderIcon(x) { return ui.iconFA('apple-alt'); }
-  renderMarkup(x) { let m = ui.span([this.renderIcon(), ui.label(x.name)]); $(m).css('color', x.color); return m; }
-  renderProperties(x) { return ui.divText(`Properties for ${x.name}`); }
-  renderTooltip(x) { return ui.divText(`${x.name} is in the air!`); }
+  renderIcon(x) {return ui.iconFA('apple-alt');}
+  renderMarkup(x) {let m = ui.span([this.renderIcon(), ui.label(x.name)]); $(m).css('color', x.color); return m;}
+  renderProperties(x) {return ui.divText(`Properties for ${x.name}`);}
+  renderTooltip(x) {return ui.divText(`${x.name} is in the air!`);}
   renderCard(x, context) {
     return ui.bind(x, ui.divV([
       this.renderMarkup(x),
@@ -71,7 +71,7 @@ v.append(ui.div([
   ui.h1('Manual rendering'),
   ui.tableFromMap({
     'icon': handler.renderIcon(orange),
-    'markup': handler.renderMarkup(orange,  'myContext'),
+    'markup': handler.renderMarkup(orange, 'myContext'),
     'card': handler.renderCard(orange),
     'tooltip': handler.renderTooltip(orange),
     'properties': handler.renderProperties(orange),

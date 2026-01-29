@@ -50,6 +50,11 @@
   max-width: 100px;
 }
 
+.d4-ai-generation-panel .d4-ai-panel-input-controls {
+  align-items: center;
+  gap: 4px;
+}
+
 .d4-ai-generation-panel .d4-ai-panel-run-controls i {
   margin-left: 8px;
   cursor: pointer;

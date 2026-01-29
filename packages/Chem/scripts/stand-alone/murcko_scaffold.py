@@ -3,7 +3,7 @@
 #help-url: https://datagrok.ai/help/domains/chem/functions/murcko-scaffolds
 #language: python
 #sample: chem/smiles.csv
-#tags: demo, chem, rdkit
+#meta.domain: chem
 #input: dataframe data [Input data table]
 #input: column smiles {type:categorical; semType: Molecule} [Molecules, in SMILES format]
 #output: dataframe scaffolds {action:join(data); semType: Molecule} [Murcko scaffolds, in SMILES format]

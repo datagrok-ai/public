@@ -1,4 +1,4 @@
-// Softmax classifier (multinomial logistic regression): https://en.wikipedia.org/wiki/Multinomial_logistic_regression
+/* Softmax classifier (multinomial logistic regression): https://en.wikipedia.org/wiki/Multinomial_logistic_regression */
 
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';

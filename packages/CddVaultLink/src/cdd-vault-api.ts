@@ -383,7 +383,6 @@ export interface ExportStatus {
   queued_job_position?: number
 }
 
-
 async function request<T>(
   method: string,
   path: string,

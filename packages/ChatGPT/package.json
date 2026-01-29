@@ -1,18 +1,18 @@
 {
   "name": "@datagrok/chatgpt",
   "friendlyName": "ChatGPT",
-  "version": "0.0.31",
+  "version": "1.0.3",
   "description": "ChatGPT integration",
   "author": "oserhiienko@datagrok.ai",
   "dependencies": {
     "@datagrok-libraries/utils": "^4.6.5",
     "@modelcontextprotocol/sdk": "^1.21.1",
     "@types/dom-chromium-ai": "^0.0.10",
-    "@datagrok-libraries/db-explorer": "^1.3.3",
+    "@datagrok-libraries/db-explorer": "^1.7.2",
     "cash-dom": "latest",
-    "datagrok-api": "../../js-api",
+    "datagrok-api": "^1.27.0",
     "dayjs": "latest",
-    "openai": "^6.9.0"
+    "openai": "^6.16.0"
   },
   "devDependencies": {
     "@types/dom-speech-recognition": "^0.0.7",
@@ -56,20 +56,47 @@
   ],
   "properties": [
     {
-      "name": "apiKey",
-      "propertyType": "string",
-      "defaultValue": "Enter ChatGPT API key",
-      "nullable": false
-    },
-    {
       "name": "vectorStoreId",
       "propertyType": "string",
-      "defaultValue": "Enter Vector Store ID",
+      "description": "Vector Store ID with Datagrok documentation",
+      "defaultValue": "",
+      "nullable": true
+    },
+    {
+      "name": "defaultFastModel",
+      "propertyType": "string",
+      "description": "Fast Model name for simple tasks. This must match the model names supported by OpenAI or name of deployed model.",
+      "defaultValue": "gpt-4o-mini",
       "nullable": false
     },
     {
-      "name": "claudeApiKey",
+      "name": "defaultDeepResearchModel",
       "propertyType": "string",
+      "description": "Deep Research Model name for complex tasks. This must match the model names supported by OpenAI or name of deployed model.",
+      "defaultValue": "gpt-5.2",
+      "nullable": false
+    },
+    {
+      "name": "defaultCodingModel",
+      "propertyType": "string",
+      "description": "Coding Model name for code generation tasks. This must match the model names supported by OpenAI or name of deployed model.",
+      "defaultValue": "gpt-5.1-codex-max",
+      "nullable": false
+    }, {
+      "name": "APIName",
+      "propertyType": "string",
+      "description": "OpenAI API endpoint. Responses or Chat completions API can be used.",
+      "defaultValue": "openai chat completions",
+      "nullable": false,
+      "choices": [
+        "openai chat completions",
+        "openai responses"
+      ]
+    }, {
+      "name": "apiVersion",
+      "propertyType": "string",
+      "description": "API version for OpenAI endpoint. v1 or v2.",
+      "defaultValue": "v1",
       "nullable": true
     }
   ]

@@ -286,7 +286,7 @@ services:
     logging: *default-logging
 
   db:
-    image: postgres:12.13
+    image: pgvector/pgvector:pg17
     tmpfs:
       - /dev/shm:size=2g
     stop_grace_period: 2m

@@ -3,7 +3,7 @@
 #top-menu: Chem | Transform | Curate...
 #language: python
 #sample: chem/chem_standards.csv
-#tags: demo, chem, rdkit
+#meta.domain: chem
 #input: dataframe data [Input data table]
 #input: column molecules {type:categorical; semType: Molecule}
 #input: bool kekulization = false

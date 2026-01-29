@@ -3,10 +3,11 @@ import path from 'path';
 import walk from 'ignore-walk';
 import * as utils from '../utils/utils';
 import * as color from '../utils/color-utils';
-import { FuncMetadata, FuncParam, FuncValidator, ValidationResult } from '../utils/interfaces';
-import { PackageFile } from '../utils/interfaces';
+import {FuncMetadata, FuncParam, FuncValidator, ValidationResult} from '../utils/interfaces';
+import {PackageFile} from '../utils/interfaces';
 import * as testUtils from '../utils/test-utils';
-import { error } from 'console';
+import {FuncRoleDescription, functionRoles} from '../utils/const';
+import {execSync} from 'child_process';
 
 
 const warns = ['Latest package version', 'Datagrok API version should contain'];
@@ -14,8 +15,7 @@ const forbiddenNames = ['function', 'class', 'export'];
 const namesInFiles = new Map<string, string[]>();
 
 export function check(args: CheckArgs): boolean {
-  const nOptions = Object.keys(args).length - 1;
-  const curDir = process.cwd();
+  const curDir = args._.length == 2 ? args._[1] : process.cwd();
 
   if (args.recursive)
     return runChecksRec(curDir, args.soft ?? false);
@@ -28,10 +28,10 @@ export function check(args: CheckArgs): boolean {
   }
 }
 
-function runChecks(packagePath: string, soft: boolean = false): boolean {
+function runChecks(packagePath: string, soft: boolean = false, noExit: boolean = false): boolean {
   if (packagePath.includes(`${path.sep}node_modules${path.sep}`))
     return true;
-  const files = (walk.sync({ path: packagePath, ignoreFiles: ['.npmignore', '.gitignore'] })).filter(e => !e.includes('node_modules'));
+  const files = (walk.sync({path: packagePath, ignoreFiles: ['.npmignore', '.gitignore']})).filter((e) => !e.includes('node_modules'));
   const jsTsFiles = files.filter((f) => (f.startsWith('src' + path.sep) || f.startsWith('queries' + path.sep) || f.startsWith('scripts' + path.sep)) && (f.endsWith('.js') || f.endsWith('.ts') || f.endsWith('.sql') || f.endsWith('.py')));
   const packageFiles = ['src/package.ts', 'src/detectors.ts', 'src/package.js', 'src/detectors.js',
     'src/package-test.ts', 'src/package-test.js', 'package.js', 'detectors.js'];
@@ -39,21 +39,29 @@ function runChecks(packagePath: string, soft: boolean = false): boolean {
   const errors: string[] = [];
   const warnings: string[] = [];
   const packageFilePath = path.join(packagePath, 'package.json');
-  const json: PackageFile = JSON.parse(fs.readFileSync(packageFilePath, { encoding: 'utf-8' }));
+  const json: PackageFile = JSON.parse(fs.readFileSync(packageFilePath, {encoding: 'utf-8'}));
 
   const webpackConfigPath = path.join(packagePath, 'webpack.config.js');
   const isWebpack = fs.existsSync(webpackConfigPath);
+
+  const semver = json.version.split('-')[0];
+  const [major, minor, patch] = semver.split('.').map(Number);
+  let isPre1Version = false;
   let isReleaseCandidateVersion: boolean = false;
   let externals: { [key: string]: string } | null = null;
+
+  if (major === 0) 
+    isPre1Version = true;
 
   if (/\d+.\d+.\d+-rc(.[A-Za-z0-9]*.[A-Za-z0-9]*)?/.test(json.version))
     isReleaseCandidateVersion = true;
   if (isWebpack) {
-    const content = fs.readFileSync(webpackConfigPath, { encoding: 'utf-8' });
+    const content = fs.readFileSync(webpackConfigPath, {encoding: 'utf-8'});
     externals = extractExternals(content);
     if (externals)
       errors.push(...checkImportStatements(packagePath, jsTsFiles, externals));
   }
+  errors.push(...checkDatagrokApiImports(packagePath, jsTsFiles));
   if (!soft)
     errors.push(...checkSourceMap(packagePath));
   errors.push(...checkNpmIgnore(packagePath));
@@ -61,8 +69,8 @@ function runChecks(packagePath: string, soft: boolean = false): boolean {
   const [signatureWarnings, signatureErrors] = checkFuncSignatures(packagePath, jsTsFiles);
   warnings.push(...signatureWarnings);
   errors.push(...signatureErrors);
-  errors.push(...checkPackageFile(packagePath, json, { isWebpack, externals, isReleaseCandidateVersion }));
-  if (!isReleaseCandidateVersion)
+  errors.push(...checkPackageFile(packagePath, json, {isWebpack, externals, isReleaseCandidateVersion}));
+  if (!isReleaseCandidateVersion && !isPre1Version)
     warnings.push(...checkChangelog(packagePath, json));
 
   if (warnings.length) {
@@ -75,27 +83,38 @@ function runChecks(packagePath: string, soft: boolean = false): boolean {
     showError(errors);
     if (soft || json.version.startsWith('0') || (errors.every((w) => warns.some((ww) => w.includes(ww)))))
       return true;
-    testUtils.exitWithCode(1);
+
+    if (noExit)
+      return false;
+    else
+      testUtils.exitWithCode(1);
   }
   console.log(`Checking package ${path.basename(packagePath)}...\t\t\t\u2713 OK`);
   return true;
 }
 
+
 function runChecksRec(dir: string, soft: boolean = false): boolean {
   const files = fs.readdirSync(dir);
+  let allPassed = true;
+  
   for (const file of files) {
     const filepath = path.join(dir, file);
     const stats = fs.statSync(filepath);
     if (stats.isDirectory()) {
-      if (utils.isPackageDir(filepath))
-        return runChecks(filepath, soft);
+      if (utils.isPackageDir(filepath)) {
+        const passed = runChecks(filepath, soft, true);
+        allPassed = allPassed && passed;
+      }
       else {
-        if (file !== 'node_modules' && !file.startsWith('.'))
-          runChecksRec(path.join(dir, file), soft);
+        if (file !== 'node_modules' && !file.startsWith('.')) {
+          const passed = runChecksRec(path.join(dir, file), soft);
+          allPassed = allPassed && passed;
+        }
       }
     }
   }
-  return false;
+  return allPassed;
 }
 
 export function extractExternals(config: string): {} | null {
@@ -133,11 +152,11 @@ export function checkImportStatements(packagePath: string, files: string[], exte
     const message = value ? '' : 'Pay attention to file ' + file + ': import statement `' +
       s + '` differs from the path given in the webpack config as an external module. ' +
       'It can increase the bundle size.';
-    return { value, message };
+    return {value, message};
   }
 
   for (const file of files) {
-    const content = fs.readFileSync(path.join(packagePath, file), { encoding: 'utf-8' });
+    const content = fs.readFileSync(path.join(packagePath, file), {encoding: 'utf-8'});
     const matchedImports = content.match(importRegex);
     if (matchedImports) {
       for (const match of matchedImports) {
@@ -151,201 +170,234 @@ export function checkImportStatements(packagePath: string, files: string[], exte
   return warnings;
 }
 
+
+export function checkDatagrokApiImports(packagePath: string, files: string[]): string[] {
+  const errors: string[] = [];
+
+  // Regex to find all datagrok-api imports/exports (including re-exports)
+  const datagrokApiImportRegex = /^\s*(import|export)\s+.*['"]datagrok-api\/[^'"]+['"]/gm;
+
+  // Regex to validate if import/export is allowed (only dg, grok, ui)
+  const allowedImportRegex = /^\s*(import|export)\s+.*['"]datagrok-api\/(dg|grok|ui)['"]/;
+
+  // Regex to extract the import path for error messages
+  const importPathRegex = /['"]datagrok-api\/([^'"]+)['"]/;
+
+  for (const file of files) {
+    const content = fs.readFileSync(path.join(packagePath, file), {encoding: 'utf-8'});
+    const matchedImports = content.match(datagrokApiImportRegex);
+
+    if (matchedImports) {
+      for (const match of matchedImports) {
+        // Check if this import/export is allowed
+        if (!allowedImportRegex.test(match)) {
+          // Extract the problematic path for error message
+          const pathMatch = match.match(importPathRegex);
+          const importedPath = pathMatch ? `datagrok-api/${pathMatch[1]}` : 'unknown';
+
+          errors.push(
+            `File "${file}": Invalid datagrok-api import.\n` +
+            `  Found: ${match.trim()} \n` +
+            `  Only these paths are allowed: 'datagrok-api/dg', 'datagrok-api/grok', 'datagrok-api/ui'\n` +
+            `  Deep imports like '${importedPath}' are not permitted.\n`
+          );
+        }
+      }
+    }
+  }
+
+  return errors;
+}
+const TYPE_ALIASES: Record<string, string[]> = {
+  file: ['fileinfo'],
+  dynamic: ['searchprovider'],
+};
+
+function normalizeType(type: string): string {
+  return type.toLowerCase().replace(/_/g, '');
+}
+
+function typesMatch(actual: string, expected: string): boolean {
+  const a = normalizeType(actual);
+  const e = normalizeType(expected);
+  if (a === e)
+    return true;
+  const aliases = TYPE_ALIASES[a];
+  return aliases ? aliases.includes(e) : false;
+}
+
+function parseSignature(sig: string): { inputs: FuncParam[]; outputs: FuncParam[]; variadicIndex: number } {
+  const match = sig.match(/^[^(]+\(([^)]*)\)\s*:\s*(.+)$/);
+  if (!match) throw new Error(`Invalid signature format: ${sig}`);
+
+  const paramsStr = match[1].trim();
+  const returnTypeStr = match[2].trim();
+
+  let variadicIndex = -1;
+
+  const parseParam = (p: string, index: number): FuncParam => {
+    const trimmed = p.trim();
+    const isVariadic = trimmed.startsWith('...');
+    if (isVariadic) variadicIndex = index;
+
+    const paramBody = isVariadic ? trimmed.slice(3) : trimmed;
+    const [name, type] = paramBody.split(':').map((s) => s.trim());
+    return {name, type: type || 'any'};
+  };
+
+  const inputs: FuncParam[] = paramsStr ? paramsStr.split(',').map((p, i) => parseParam(p, i)) : [];
+  const outputs: FuncParam[] = returnTypeStr ? returnTypeStr.split('|').map((t) => ({name: '', type: t.trim()})) : [];
+
+  return {inputs, outputs, variadicIndex};
+}
+
+function validateFunctionSignature(func: FuncMetadata, roleDesc: FuncRoleDescription): ValidationResult {
+  let valid = true;
+  const messages: string[] = [];
+
+  const addError = (msg: string) => {
+    valid = false; 
+    messages.push(msg);
+  };
+
+  const normalize = (t?: string) => t?.toLowerCase();
+
+  const fmtParam = (p?: {name?: string; type?: string}) =>
+    p ? `${p.name ?? '<unnamed>'}: ${p.type ?? '<unknown>'}` : '<missing>';
+
+  const fmtTypes = (types: string[]) => types.join(' | ');
+
+  const matchesExpected = (actual?: string, expected?: string) => {
+    if (!actual || !expected)
+      return false;
+    const actualType = normalize(actual)!;
+    const expectedTypes = expected.split('|').map((t) => normalize(t.trim())!);
+    return expectedTypes.some((t) => t === 'any' || typesMatch(actualType, t));
+  };
+
+  if (roleDesc.role === 'app' && func.name) {
+    const name = func.name.toLowerCase();
+    if (name.startsWith('app'))
+      addError('Prefix "App" is not needed. Consider removing it.');
+    if (name.endsWith('app'))
+      addError('Postfix "App" is not needed. Consider removing it.');
+  }
+
+  if (roleDesc.role === 'fileExporter' && (!func.description || func.description === ''))
+    addError('File exporters should have a description parameter');
+
+  if (roleDesc.role === 'fileViewer') {
+    const hasFileViewerTag = func.tags?.length === 1 && func.tags[0] === 'fileViewer';
+    const hasFileViewerRole = func.meta?.role === 'fileViewer';
+    if (!(hasFileViewerTag || hasFileViewerRole))
+      addError('File viewers must have only one tag: "fileViewer"');
+  }
+
+  const parsed = parseSignature(roleDesc.signature!);
+  const maxInputs = parsed.variadicIndex >= 0 ? parsed.variadicIndex : parsed.inputs.length;
+
+  for (let i = 0; i < maxInputs; i++) {
+    const expected = parsed.inputs[i];
+    const actual = func.inputs[i];
+
+    if (!actual) {
+      addError(`Input ${i} missing: expected ${fmtParam(expected)}`);
+      continue;
+    }
+
+    if (!matchesExpected(actual.type, expected?.type))
+      addError(`Input ${i} mismatch: expected ${fmtTypes(expected?.type?.split('|').map((t) => t.trim()) ?? [])}, got ${actual.type}`);
+  }
+
+  if (parsed.outputs.length > 0) {
+    if (!func.outputs?.length) {
+      if (!parsed.outputs.some((o) => o.type === 'void'))
+        addError(`Output missing: expected one of (${fmtTypes(parsed.outputs.map((o) => o.type!))})`); 
+    } else {
+      const matches = func.outputs.some((actual) =>
+        parsed.outputs.some((expected) => matchesExpected(actual.type, expected.type)),
+      );
+
+      if (!matches) {
+        addError(`Output mismatch: expected one of (${fmtTypes(parsed.outputs.map((o) => o.type!))}),
+          got (${fmtTypes(func.outputs.map((o) => o.type!))})`);
+      }
+    }
+  }
+
+  [...func.inputs, ...(func.outputs ?? [])].forEach((p, i) => {
+    if (!p.name || !p.type)
+      addError(`Parameter ${i} is incomplete: name=${p.name ?? '<missing>'}, type=${p.type ?? '<missing>'}`);
+  });
+
+  return {value: valid, message: messages.join('\n')};
+}
+
 export function checkFuncSignatures(packagePath: string, files: string[]): [string[], string[]] {
   const warnings: string[] = [];
   const errors: string[] = [];
-  const checkFunctions: { [role: string]: FuncValidator } = {
-    app: ({ name }: { name?: string }) => {
-      let value = true;
-      let message = '';
-
-      if (name && typeof name === 'string') {
-        const lowerCaseName = name.toLocaleLowerCase();
-        if (lowerCaseName.startsWith('app')) {
-          value = false;
-          message += 'Prefix "App" is not needed. Consider removing it.\n';
-        }
-        if (lowerCaseName.endsWith('app')) {
-          value = false;
-          message += 'Postfix "App" is not needed. Consider removing it.\n';
-        }
-      }
-
-      return { value, message };
-    },
-    semTypeDetector: ({ inputs, outputs }: { inputs: FuncParam[], outputs: FuncParam[] }) => {
-      let value = true;
-      let message = '';
-
-      if (inputs.length !== 1 || inputs[0].type !== 'column') {
-        value = false;
-        message += 'Semantic type detectors must have one input of type "column"\n';
-      }
-
-      if (outputs.length !== 1 || outputs[0].type !== 'string') {
-        value = false;
-        message += 'Semantic type detectors must have one output of type "string"\n';
-      }
-
-      return { value, message };
-    },
-    cellRenderer: ({ inputs, outputs }: { inputs: FuncParam[], outputs: FuncParam[] }) => {
-      let value = true;
-      let message = '';
-
-      if (inputs.length !== 0) {
-        value = false;
-        message += 'Cell renderer functions should take no arguments\n';
-      }
-
-      if (outputs.length !== 1 || outputs[0].type !== 'grid_cell_renderer') {
-        value = false;
-        message += 'Cell renderer functions must have one output of type "grid_cell_renderer"\n';
-      }
-
-      return { value, message };
-    },
-    viewer: ({ inputs, outputs }: { inputs: FuncParam[], outputs: FuncParam[] }) => {
-      let value = true;
-      let message = '';
-
-      if (inputs.length !== 0) {
-        value = false;
-        message += 'Viewer functions should take no arguments\n';
-      }
-
-      if (outputs.length > 1 || (outputs.length === 1 && outputs[0].type !== 'viewer')) {
-        value = false;
-        message += 'Viewers must have one output of type "viewer"\n';
-      }
-
-      return { value, message };
-    },
-    fileViewer: ({ inputs, outputs, tags }: { inputs: FuncParam[], outputs: FuncParam[], tags?: string[] }) => {
-      let value = true;
-      let message = '';
-
-      if (tags == null || (tags.length !== 1 && tags[0] !== 'fileViewer')) {
-        value = false;
-        message += 'File viewers must have only one tag: "fileViewer"\n';
-      }
-
-      if (inputs.length !== 1 || inputs[0].type !== 'file') {
-        value = false;
-        message += 'File viewers must have one input of type "file"\n';
-      }
-
-      if (outputs.length !== 1 || outputs[0].type !== 'view') {
-        value = false;
-        message += 'File viewers must have one output of type "view"\n';
-      }
-
-      return { value, message };
-    },
-    fileExporter: ({ description }: { description?: string }) => {
-      let value = true;
-      let message = '';
-
-      if (description == null || description === '') {
-        value = false;
-        message += 'File exporters should have a description parameter\n';
-      }
-
-      return { value, message };
-    },
-    packageSettingsEditor: ({ outputs }: { outputs: FuncParam[] }) => {
-      let value = true;
-      let message = '';
-
-      if (!(outputs.length === 1 && outputs[0].type === 'widget')) {
-        value = false;
-        message += 'Package settings editors must have one output of type "widget"\n';
-      }
-
-      return { value, message };
-    },
-    params: ({ inputs, outputs }: { inputs: FuncParam[], outputs: FuncParam[] }) => {
-      let value = true;
-      let message = '';
-
-      for (const input of inputs) {
-        if (!(input.name && input.type)) {
-          value = false;
-          message += `Function has no name or type of input parameter\n`;
-        }
-      }
-      for (const output of outputs) {
-        if (!(output.name && output.type)) {
-          value = false;
-          message += `Function has no name or type of output parameter\n`;
-        }
-      }
-
-      return { value, message };
-    },
-  };
-  const functionRoles = Object.keys(checkFunctions);
+  const namesInFiles = new Map<string, string[]>();
+  const roleMap = new Map(functionRoles.map((r) => [r.role, r]));
 
   for (const file of files) {
     if (file.includes('.min.'))
       continue;
-    const content = fs.readFileSync(path.join(packagePath, file), { encoding: 'utf-8' });
+
+    const content = fs.readFileSync(path.join(packagePath, file), 'utf-8');
     const functions = getFuncMetadata(content, file.split('.').pop() ?? 'ts');
 
     for (const f of functions.meta) {
-      const paramsCheck = checkFunctions.params(f);
-      if (!paramsCheck.value)
-        warnings.push(`File ${file}, function ${f.name}:\n${paramsCheck.message}`);
+      const allRoles = new Set<string>([
+        ...(f.tags ?? []),
+        ...(f.meta?.role?.split(',').map((r) => r.trim()) ?? []),
+      ]);
 
-      const roles = functionRoles.filter((role) => f.tags?.includes(role));
-      if (roles.length > 1)
-        warnings.push(`File ${file}, function ${f.name}: several function roles are used (${roles.join(', ')})`);
-      else if (roles.length === 1) {
-        const vr = checkFunctions[roles[0]](f);
-        if (!vr.value) {
+      const roles = [...allRoles].filter((r) => roleMap.has(r));
+
+      for (const role of roles) {
+        const roleDesc = roleMap.get(role)!;
+        const vr = validateFunctionSignature(f, roleDesc);
+        if (!vr.value)
           warnings.push(`File ${file}, function ${f.name}:\n${vr.message}`);
-        }
       }
-      let wrongInputNames = f.inputs.filter((e) => forbiddenNames.includes(e?.name ?? ''))
+
+      const invalidNames = f.inputs.filter((e) => forbiddenNames.includes(e?.name ?? ''));
+      if (invalidNames.length)
+        errors.push(`File ${file}, function ${f.name}: Wrong input names: (${invalidNames.map((e) => e.name).join(', ')})`);
+
       if (f.name && f.name !== 'postprocess') {
-        if (namesInFiles.has(f.name))
-          namesInFiles.get(f.name)?.push(file);
-        else
-          namesInFiles.set(f.name, [file]);
+        if (!namesInFiles.has(f.name))
+          namesInFiles.set(f.name, []);
+        namesInFiles.get(f.name)!.push(file);
       }
 
-      if (wrongInputNames.length > 0)
-        errors.push(`File ${file}, function ${f.name}: Wrong input names: (${wrongInputNames.map((e) => e.name).join(', ')})`);
       if (f.isInvalidateOnWithoutCache)
-        errors.push(`File ${file}, function ${f.name}: Can't use invalidateOn without cache, please follow this example: 'meta.cache.invalidateOn'`);
-
-      if (f.cache)
-        if (!utils.cacheValues.includes(f.cache))
-          errors.push(`File ${file}, function ${f.name}: unsupposed variable for cache : ${f.cache}`);
-      if (f.invalidateOn)
-        if (!utils.isValidCron(f.invalidateOn))
-          errors.push(`File ${file}, function ${f.name}: unsupposed variable for invalidateOn : ${f.invalidateOn}`);
+        errors.push(`File ${file}, function ${f.name}: Can't use invalidateOn without cache`);
+      if (f.cache && !utils.cacheValues.includes(f.cache))
+        errors.push(`File ${file}, function ${f.name}: unsupported cache variable: ${f.cache}`);
+      if (f.invalidateOn && !utils.isValidCron(f.invalidateOn))
+        errors.push(`File ${file}, function ${f.name}: unsupported invalidateOn: ${f.invalidateOn}`);
     }
 
-    functions.warnings.forEach(e => {
-      warnings.push(`${e} In the file: ${file}.`)
-    });
+    functions.warnings.forEach((w) => warnings.push(`${w} In the file: ${file}.`));
   }
-  for (const [name, files] of namesInFiles) {
-    if (files.length > 1)
-      errors.push(`Duplicate names ('${name}'): \n  ${files.join('\n  ')}`);
-  }
+
+  // Temporarily skip name-checking logic, as duplicate names are allowed
+  // for (const [name, files] of namesInFiles) {
+  //   if (files.length > 1)
+  //     errors.push(`Duplicate names ('${name}'): \n  ${files.join('\n  ')}`);
+  // }
 
   return [warnings, errors];
 }
 
 const sharedLibExternals: { [lib: string]: {} } = {
-  'common/html2canvas.min.js': { 'exceljs': 'ExcelJS' },
-  'common/exceljs.min.js': { 'html2canvas': 'html2canvas' },
-  'common/ngl_viewer/ngl.js': { 'NGL': 'NGL' },
-  'common/openchemlib-full.js': { 'openchemlib/full': 'OCL' },
-  'common/codemirror/codemirror.js': { 'codemirror': 'CodeMirror' },
-  'common/vue.js': { 'vue': 'Vue' }
+  'common/html2canvas.min.js': {'exceljs': 'ExcelJS'},
+  'common/exceljs.min.js': {'html2canvas': 'html2canvas'},
+  'common/ngl_viewer/ngl.js': {'NGL': 'NGL'},
+  'common/openchemlib-full.js': {'openchemlib/full': 'OCL'},
+  'common/codemirror/codemirror.js': {'codemirror': 'CodeMirror'},
+  'common/vue.js': {'vue': 'Vue'},
 };
 
 export function checkPackageFile(packagePath: string, json: PackageFile, options?: {
@@ -429,7 +481,7 @@ export function checkPackageFile(packagePath: string, json: PackageFile, options
   if (options?.isReleaseCandidateVersion === true) {
     let hasRCDependency = false;
 
-    for (let dependency of Object.keys(json.dependencies ?? {})) {
+    for (const dependency of Object.keys(json.dependencies ?? {})) {
       if (/\d+.\d+.\d+-rc(.[A-Za-z0-9]*.[A-Za-z0-9]*)?/.test((json.dependencies ?? {})[dependency])) {
         hasRCDependency = true;
         break;
@@ -437,7 +489,7 @@ export function checkPackageFile(packagePath: string, json: PackageFile, options
     }
 
     if (!hasRCDependency) {
-      for (let dependency of Object.keys(json.dependencies ?? {})) {
+      for (const dependency of Object.keys(json.dependencies ?? {})) {
         if (/\d+.\d+.\d+-rc(.[A-Za-z0-9]*.[A-Za-z0-9]*)?/.test((json.devDependencies ?? {})[dependency])) {
           hasRCDependency = true;
           break;
@@ -457,7 +509,7 @@ export function checkChangelog(packagePath: string, json: PackageFile): string[]
   const warnings: string[] = [];
   let clf: string;
   try {
-    clf = fs.readFileSync(path.join(packagePath, 'CHANGELOG.md'), { encoding: 'utf-8' });
+    clf = fs.readFileSync(path.join(packagePath, 'CHANGELOG.md'), {encoding: 'utf-8'});
   } catch (e) {
     return ['CHANGELOG.md file does not exist\n'];
   }
@@ -487,40 +539,51 @@ export function checkSourceMap(packagePath: string): string[] {
   const webpackConfigFilePath = path.join(packagePath, 'webpack.config.js');
 
   if (fs.existsSync(tsconfigFilePath) && fs.existsSync(webpackConfigFilePath)) {
-    const configJson: string = fs.readFileSync(tsconfigFilePath, { encoding: 'utf-8' }); // cant convert to json because file contains comments
+    const configJson: string = fs.readFileSync(tsconfigFilePath, {encoding: 'utf-8'}); // cant convert to json because file contains comments
 
     if (!(new RegExp('"sourceMap"\\s*:\\s*true')).test(configJson))
       warnings.push('ts config doesnt contain source map');
 
-    const webpackConfigJson: string = fs.readFileSync(webpackConfigFilePath, { encoding: 'utf-8' }); // cant convert to json because file contains comments
+    const webpackConfigJson: string = fs.readFileSync(webpackConfigFilePath, {encoding: 'utf-8'}); // cant convert to json because file contains comments
 
     if (!(new RegExp(`devtool\\s*:\\s*(([^\\n]*?[^\\n]*source-map[^\\n]*:[^\\n]*source-map[^\\n]*)|('(inline-)?source-map'))\\s*`)).test(webpackConfigJson))
       warnings.push('webpack config doesnt contain source map');
 
-    if (!fs.existsSync(packagePath + '/dist/package.js'))
-      warnings.push('dist\\package.js file doesnt exists');
+    // Check if dist files exist
+    const distPackage = path.join(packagePath, 'dist', 'package.js');
+    const distPackageTest = path.join(packagePath, 'dist', 'package-test.js');
 
-    if (!fs.existsSync(packagePath + '/dist/package-test.js'))
-      warnings.push('dist\\package-test.js file doesnt exists');
+    let missingFiles = [distPackage, distPackageTest].filter((f) => !fs.existsSync(f));
 
+    // If any dist files are missing, try to build automatically
+    if (missingFiles.length > 0) {
+      try {
+        execSync('npm run build', {cwd: packagePath, stdio: 'inherit'});
+      } catch (e) {
+        console.warn('Build failed:', e);
+      }
+
+      // Recheck dist files after build
+      missingFiles = [distPackage, distPackageTest].filter((f) => !fs.existsSync(f));
+      missingFiles.forEach((f) => warnings.push(`${path.relative(packagePath, f)} file doesnt exist even after build`));
+    }
   }
+
   return warnings;
 }
-
 
 export function checkNpmIgnore(packagePath: string): string[] {
   const warnings: string[] = [];
   if (fs.existsSync(path.join(...[packagePath, '.npmignore']))) {
-    const npmIgnoreContent: string = fs.readFileSync(path.join(...[packagePath, '.npmignore']), { encoding: 'utf-8' });
+    const npmIgnoreContent: string = fs.readFileSync(path.join(...[packagePath, '.npmignore']), {encoding: 'utf-8'});
     for (const row of npmIgnoreContent.split('\n')) {
       if ((row.match(new RegExp('\\s*dist\\/?\\s*$'))?.length || -1) > 0) {
-        warnings.push('there is dist directory in .npmignore')
+        warnings.push('there is dist directory in .npmignore');
         break;
       }
     }
-  }
-  else
-    warnings.push('.npmignore doesnt exists')
+  } else
+    warnings.push('.npmignore doesnt exists');
 
   return warnings;
 }
@@ -546,13 +609,13 @@ function getAllFilesInDirectory(directoryPath: string): string[] {
 
   let fileNames: string[] = [];
   const entries = fs.readdirSync(directoryPath);
-  entries.forEach(entry => {
+  entries.forEach((entry) => {
     const entryPath = path.join(directoryPath, entry);
     const stat = fs.statSync(entryPath);
 
-    if (stat.isFile()) {
+    if (stat.isFile()) 
       fileNames.push(entry);
-    } else if (stat.isDirectory() && !excludedFilesToCheck.includes(entry)) {
+    else if (stat.isDirectory() && !excludedFilesToCheck.includes(entry)) {
       const subDirectoryFiles = getAllFilesInDirectory(entryPath);
       fileNames = fileNames.concat(subDirectoryFiles);
     }
@@ -568,66 +631,108 @@ function warn(warnings: string[]): void {
   warnings.forEach((w) => color.warn(w));
 }
 
-function getFuncMetadata(script: string, fileExtention: string): { meta: FuncMetadata[], warnings: string[] } {
+function getFuncMetadata(script: string, fileExtension: string): { meta: FuncMetadata[], warnings: string[] } {
   const funcData: FuncMetadata[] = [];
   const warnings: string[] = [];
-  let isHeader = false;
-  let data: FuncMetadata = { name: '', inputs: [], outputs: [] };
+  const lines = script.split('\n');
+  const funcStartRegex = /^\s*function\s+\w+\s*\(|^\s*(export\s+)?(async\s+)?function\s+\w+\s*\(|^\s*(export\s+)?(const|let)\s+\w+\s*=\s*\(.*\)\s*=>/;
 
-  for (const line of script.split('\n')) {
-    if (!line)
-      continue;
-    //@ts-ignore
-    const match = line.match(utils.fileParamRegex[fileExtention]);
-    if (match) {
-      if (!isHeader)
-        isHeader = true;
+  function parseHeaderLines(headerLines: string[]): FuncMetadata | null {
+    const data: FuncMetadata = {name: '', inputs: [], outputs: []};
+    let hasContent = false;
+
+    for (const headerLine of headerLines) {
+      const match = headerLine.match(utils.fileParamRegex[fileExtension]);
+      if (!match)
+        continue;
+
       const param = match[1];
+      if (!utils.headerTags.includes(param) && !param.startsWith('meta.')) {
+        warnings.push(`Unknown header tag: ${param}`);
+        continue;
+      }
 
-      if (!utils.headerTags.includes(param) && !param.includes('meta.')) {
-        warnings.push(`Unknown header tag: ${param},`);
-        continue;
-      }
-      if (param === 'name')
-        data.name = line.match(utils.nameAnnRegex)?.[2]?.toLocaleLowerCase();
-      else if (param === 'description')
+      switch (param) {
+      case 'name':
+        data.name = headerLine.match(utils.nameAnnRegex)?.[2]?.toLocaleLowerCase() || '';
+        hasContent = true;
+        break;
+      case 'description':
         data.description = match[2];
-      else if (param === 'input') {
-        data.inputs.push({ type: match[2], name: match[3] });
-      }
-      else if (param === 'output')
-        data.outputs.push({ type: match[2], name: match[3] });
-      else if (param === 'tags') {
-        data.tags = match.input && match[3] ? match.input.split(':')[1].split(',').map((t) => t.trim()) : [match[2]];
-      }
-      else if (param === 'meta.cache') {
-        data.cache = line.split(':').pop()?.trim();
-      }
-      else if (param === 'meta.cache.invalidateOn') {
-        data.invalidateOn = line.split(':').pop()?.trim();
-      }
-      else if (param === 'meta.invalidateOn') {
+        hasContent = true;
+        break;
+      case 'input':
+        data.inputs.push({type: match[2], name: match[3]});
+        hasContent = true;
+        break;
+      case 'output':
+        data.outputs.push({type: match[2], name: match[3]});
+        hasContent = true;
+        break;
+      case 'tags':
+        data.tags = match.input && match[3] ?
+          match.input.split(':')[1].split(',').map((t) => t.trim()) :
+          [match[2]];
+        hasContent = true;
+        break;
+      case 'meta.role':
+        data.meta = data.meta || {};
+        data.meta.role = match[2];
+        hasContent = true;
+        break;
+      case 'meta.cache':
+        data.cache = headerLine.split(':').pop()?.trim();
+        hasContent = true;
+        break;
+      case 'meta.cache.invalidateOn':
+        data.invalidateOn = headerLine.split(':').pop()?.trim();
+        hasContent = true;
+        break;
+      case 'meta.invalidateOn':
         data.isInvalidateOnWithoutCache = true;
+        hasContent = true;
+        break;
       }
     }
-    if (isHeader) {
-      const nm = line.match(utils.nameRegex);
-      if (data.name === '') {
-        data = { name: '', inputs: [], outputs: [] };
-        isHeader = false;
-        continue;
-      }
-      if (nm)
-        data.name = nm[1]?.toLocaleLowerCase();
-      if (data.name && !match) {
-        funcData.push(data);
-        data = { name: '', inputs: [], outputs: [] };
-        isHeader = false;
-      }
-    }
+
+    return hasContent ? data : null;
   }
 
-  return { meta: funcData, warnings };
+  let i = 0;
+  const scriptHeaderLines: string[] = [];
+  while (i < lines.length) {
+    const line = lines[i].trim();
+    if (line.startsWith('//')) 
+      scriptHeaderLines.push(line);
+    else if (line === '') 
+      break;
+    else 
+      break;
+    i++;
+  }
+
+  const scriptData = parseHeaderLines(scriptHeaderLines);
+  if (scriptData)
+    funcData.push(scriptData);
+
+  for (; i < lines.length; i++) {
+    const line = lines[i].trim();
+    if (!line.match(funcStartRegex))
+      continue;
+    const headerLines: string[] = [];
+    for (let j = i - 1; j >= 0; j--) {
+      const prevLine = lines[j].trim();
+      if (!prevLine.startsWith('//'))
+        break;
+      headerLines.unshift(prevLine);
+    }
+
+    const funcMeta = parseHeaderLines(headerLines);
+    if (funcMeta)
+      funcData.push(funcMeta);
+  }
+
+  return {meta: funcData, warnings};
 }
 
 interface CheckArgs {

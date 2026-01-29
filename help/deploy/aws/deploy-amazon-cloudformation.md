@@ -278,7 +278,7 @@ deployment profile:
 1. Click **Next**, skip optional settings, and proceed to **Review**.
 1. If the stack enters a failed state (e.g., `UPDATE_ROLLBACK_IN_PROGRESS`), [check events](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/troubleshooting.html#basic-ts-guide) for details.
 
-:::notes
+:::note
 
 - CloudFormation will not replace database or file storage during update.
 - Your platform URL, admin credentials, and uploaded files will remain unchanged.

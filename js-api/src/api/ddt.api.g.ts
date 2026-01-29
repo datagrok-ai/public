@@ -164,6 +164,8 @@ export class Tags {
 
   static DataConnectionId = '.data-connection-id';
 
+  static DataConnectionNqName = '.data-connection-nqName';
+
   static DataConnection = '.data-connection';
 
   static DataSource = '.DataSource';
@@ -214,8 +216,6 @@ export class Tags {
   static DbComment = 'comment';
 
   static LlmComment = 'llmComment';
-
-  static DbTableDomains = 'domains';
 
   static DbTableRowCount = 'rowCount';
 
@@ -327,7 +327,7 @@ export class FuncOptions {
 
   static AutostartImmediate = 'autostartImmediate';
 
-  static OmitFromCreationScript = 'omitFromCreationScript';
+  static IncludeInCreationScript = 'includeInCreationScript';
 
   /// Applies to [FuncTypes.CellRenderer].
   /// Comma-separated list of key-value pairs that represent
@@ -424,6 +424,10 @@ export class FuncOptions {
   /// Example: "compound activity details for target ${target}"
   static SearchPattern = 'searchPattern';
 
+  static ExcludeActionsPanel = 'exclude-actions-panel';
+
+  static ExcludeCurrentValueMenu = 'exclude-current-value-menu';
+
 }
 export class FuncParamOptions {
   static SemType = 'semType';
@@ -479,5 +483,10 @@ export class FuncParamOptions {
   /// would trigger propagation of this choice's default values for other parameters.
   /// Example: Compute/cars.js
   static PropagateChoice = 'propagateChoice';
+
+  /// Column and table level metadata for dataframe outputs. If the keys are column names and the value is an object,
+  /// the object’s key–value pairs will be set as column tags. Otherwise, the value will be set as a dataframe tag.
+  /// Example: `meta: {"mol": {"DbTable": "structures", "DbSchema": "public", "DbColumn": "mol"}, ".data-connection": "System:Datagrok"}`
+  static Meta = 'meta';
 
 }

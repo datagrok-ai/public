@@ -1,5 +1,9 @@
 # PhyloTree Viewer changelog
 
+## 1.4.0 (2025-03-29)
+
+* Standardized plugin name to title case in README and changelog
+
 ## 1.2.12 (2024-09-02)
 
 Fix tests

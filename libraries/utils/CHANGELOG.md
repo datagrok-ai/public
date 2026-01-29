@@ -1,5 +1,9 @@
 # utils changelog
 
+## 4.6.14 (2025-12-15)
+
+GROK-19378: Forms viewer: Non-molecule semantic type is incorrectly treated as Molecule
+
 ## 4.6.11 (2025-10-22)
 
 Forms viewers: Enable custom renderers for all semantic types

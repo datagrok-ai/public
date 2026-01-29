@@ -19,7 +19,7 @@ category('Viewers: Core Viewers', () => {
     v !== 'Google map' && v !== 'Markup' && v !== 'Word cloud' &&
     //@ts-ignore
     v !== 'Scatter plot' && v !== DG.VIEWER.FILTERS && v !== 'Pivot table'); // TO FIX
-  const JsViewers = DG.Func.find({ tags: ['viewer'] }).map((f) => f.friendlyName);
+  const JsViewers = DG.Func.find({ meta: {role: DG.FUNC_TYPES.VIEWER} }).map((f) => f.friendlyName);
   const coreViewers: string[] = regViewers.filter((x) => !JsViewers.includes(x));
 
   before(async () => {

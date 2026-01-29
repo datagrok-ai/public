@@ -21,13 +21,13 @@ async function awaitScaffoldTree(viewer: DG.Viewer): Promise<void> {
 const awaitViewers: {[key: string]: (viewer: DG.Viewer) => Promise<void>} = {
   'Chem Similarity Search': awaitChemSearchViewer,
   'Chem Diversity Search': awaitChemSearchViewer,
-  'Scaffold Tree': awaitScaffoldTree
+  'Scaffold Tree': awaitScaffoldTree,
 }
 
 
 category('viewers', () => {
   const df = grok.data.demo.molecules(15);
-  const viewers = DG.Func.find({ package: 'Chem', tags: ['viewer'] }).reduce<string[]>((result, f) => {
+  const viewers = DG.Func.find({ package: 'Chem', meta: {role: DG.FUNC_TYPES.VIEWER} }).reduce<string[]>((result, f) => {
     const name = f.friendlyName;
     if (name !== 'Scaffold Tree')
       result.push(name);

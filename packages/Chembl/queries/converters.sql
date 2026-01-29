@@ -1,6 +1,6 @@
 --name: chemblIdToSmiles
 --friendlyName: Converters | ChEMBL to SMILES
---meta.description: Converts a ChEMBL ID to SMILES. CHEMBL IDs are unique identifiers for compounds in the ChEMBL database, for example CHEMBL1234. Not to be confused with molregno, which are unique registration numbers for compounds in the ChEMBL database.
+--description: Converts a ChEMBL ID to SMILES. CHEMBL IDs are unique identifiers for compounds in the ChEMBL database, for example CHEMBL1234. Not to be confused with molregno, which are unique registration numbers for compounds in the ChEMBL database.
 --meta.role: converter
 --meta.inputRegexp: (CHEMBL[0-9]+)
 --connection: ChemblSql
@@ -14,7 +14,7 @@ where d.chembl_id = @id
 
 
 --name: molregnoToSmiles
---meta.description: Converts a CHEMBL molregno to SMILES. Molregno is a unique registration number for compounds in the ChEMBL database, for example 1234. Not to be confused with ChEMBL IDs, which are unique identifiers for compounds in the ChEMBL database.
+--description: Converts a CHEMBL molregno to SMILES. Molregno is a unique registration number for compounds in the ChEMBL database, for example 1234. Not to be confused with ChEMBL IDs, which are unique identifiers for compounds in the ChEMBL database.
 --friendlyName: Converters | Molregno to SMILES
 --connection: ChemblSql
 --input: int molregno
@@ -24,7 +24,7 @@ select canonical_smiles from compound_structures where molregno = @molregno
 
 
 --name: nameToSmiles
---meta.description: Converts a compound name in chembl database to SMILES. For example aspirin or ibuprofen.
+--description: Converts a compound name in chembl database to SMILES. For example aspirin or ibuprofen.
 --friendlyName: Converters | Name to SMILES
 --meta.role: converter
 --meta.inputRegexp: (^[A-Z, a-z]+|\s+$)
@@ -45,7 +45,7 @@ inner join
 
 --name: namesToSmiles
 --friendlyName: Converters | Names to SMILES
---meta.description: Converts a list of compound names in chembl database to SMILES.
+--description: Converts a list of compound names in chembl database to SMILES.
 --connection: ChemblSql
 --input: list<string> names
 WITH names AS (
@@ -65,6 +65,7 @@ on t1.name = t2.name
 
 --name: inchiKeyToChembl
 --friendlyName: Converters | Inchi Key to ChEMBL
+--description: Converts InChI Keys to ChEMBL identifiers using a dataframe input.
 --connection: ChemblSql
 --input: dataframe ids
 select
@@ -79,6 +80,7 @@ from
 
 --name: inchiKeyToSmiles
 --friendlyName: Converters | Inchi Key to SMILES
+--description: Converts InChI Keys to canonical SMILES using a dataframe input.
 --connection: ChemblSql
 --input: dataframe ids
 select
@@ -92,6 +94,7 @@ from
 
 --name: inchiKeyToInchi
 --friendlyName: Converters | Inchi Key to Inchi
+--description: Converts InChI Keys to standard InChI strings using a dataframe input.
 --connection: ChemblSql
 --input: dataframe ids
 select
@@ -104,7 +107,7 @@ from
 
 --name: chemblToSmiles
 --friendlyName: Converters | ChEMBL to SMILES
---meta.description: Converts a dataframe with ChEMBL IDs to SMILES.
+--description: Converts a dataframe with ChEMBL IDs to SMILES.
 --connection: ChemblSql
 --input: dataframe ids
 select
@@ -119,7 +122,7 @@ from
 
 --name: chemblToInchi
 --friendlyName: Converters | ChEMBL to Inchi
---meta.description: Converts a dataframe with ChEMBL IDs to Inchi.
+--description: Converts a dataframe with ChEMBL IDs to Inchi.
 --connection: ChemblSql
 --input: dataframe ids
 select
@@ -134,7 +137,7 @@ from
 
 --name: chemblToInchiKey
 --friendlyName: Converters | ChEMBL to Inchi Key
---meta.description: Converts a dataframe with ChEMBL IDs to Inchi Keys.
+--description: Converts a dataframe with ChEMBL IDs to Inchi Keys.
 --connection: ChemblSql
 --input: dataframe ids
 select

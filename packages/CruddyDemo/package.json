@@ -2,7 +2,7 @@
   "name": "@datagrok/cruddydemo",
   "friendlyName": "Cruddy Demo",
   "version": "0.0.2",
-  "description": "",
+  "description": "Database-driven apps: define entities, browse/edit data, filters, privileges, events.",
   "author": {
     "name": "Andrew Skalkin",
     "email": "askalkin@datagrok.ai"

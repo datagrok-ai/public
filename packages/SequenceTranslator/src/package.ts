@@ -296,9 +296,9 @@ export class PackageFunctions {
   @grok.decorators.func({
     meta: {
       icon: 'img/icons/structure.png',
-      browsePath: 'Peptides | PolyTool'
+      browsePath: 'Peptides | PolyTool',
+      role: 'app'
     },
-    tags: ['app'],
     name: 'HELM Enumerator'
   })
   static async ptEnumeratorHelmApp(): Promise<void> {
@@ -309,9 +309,9 @@ export class PackageFunctions {
   @grok.decorators.func({
     meta: {
       icon: 'img/icons/structure.png',
-      browsePath: 'Peptides | PolyTool'
+      browsePath: 'Peptides | PolyTool',
+      role: 'app'
     },
-    tags: ['app'],
     name: 'Chem Enumerator'
   })
   static async ptEnumeratorChemApp(): Promise<void> {

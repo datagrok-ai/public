@@ -1,4 +1,4 @@
-#name: diffdock
+#name: diffdockPython
 #description: Predicts the 3D structure of how a molecule interacts with a protein
 #language: python
 #input: string protein

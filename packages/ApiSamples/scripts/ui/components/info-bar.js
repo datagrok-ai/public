@@ -6,7 +6,7 @@ grok.shell.newView('Weather App', [
     'Weather Forecast Application'
   ),
   ui.info(
-    ui.div([ui.p('This application fetches weather forecasts'),ui.p('and displays them on a map')]),
+    ui.div([ui.p('This application fetches weather forecasts'), ui.p('and displays them on a map')]),
     ui.h1('Weather Forecast Application'),
     false
   ),

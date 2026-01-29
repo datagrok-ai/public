@@ -1,5 +1,12 @@
 # EDA changelog
 
+## 1.4.12 (2026-01-16)
+
+Implemented
+
+* Interactive app for training probabilistic multi-parameter optimization (pMPO) models
+* Export pMPO models to MPO desirability profiles
+
 ## 1.4.11 (2025-11-21)
 
 Implemented

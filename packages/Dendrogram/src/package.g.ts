@@ -8,9 +8,9 @@ export function info() : void {
 
 //name: Dendrogram
 //description: Dendrogram tree visualization
-//tags: viewer
 //output: viewer result
 //meta.icon: files/icons/dendrogram-viewer.svg
+//meta.role: viewer
 export function dendrogram() : any {
   return PackageFunctions.dendrogram();
 }
@@ -77,17 +77,17 @@ export async function hierarchicalClustering(df: DG.DataFrame, colNameList: DG.C
 
 //name: importNwk
 //description: Opens Newick file
-//tags: file-handler
 //input: string fileContent 
 //output: list tables
+//meta.role: fileHandler
 //meta.ext: nwk, newick
 export async function importNewick(fileContent: string) : Promise<any> {
   return await PackageFunctions.importNewick(fileContent);
 }
 
-//tags: fileViewer
 //input: file file 
 //output: view preview
+//meta.role: fileViewer
 //meta.fileViewer: nwk,newick
 export async function previewNewick(file: DG.FileInfo) {
   return await PackageFunctions.previewNewick(file);

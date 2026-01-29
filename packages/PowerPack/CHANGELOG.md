@@ -1,5 +1,9 @@
 # Power Pack changelog
 
+## 1.7.19 (2025-12-19)
+
+* DBExplorer: Handle semtypes
+
 ## 1.7.15 (2025-10-27)
 
 * Removed recent projects widget
@@ -145,13 +149,13 @@
 
 ## 1.5.0 (2025-03-29)
 
-## 1.4.1  (2025-03-18)
+## 1.4.1 (2025-03-18)
 
 ### Bug Fixes
 
 * GROK-17755: Failed to open "Add viewer" dialog
 
-## 1.4.0  (2025-02-24) - 1.3.0 (2024-12-24)
+## 1.4.0 (2025-02-24)
 
 ### Features
 

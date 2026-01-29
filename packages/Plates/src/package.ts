@@ -21,7 +21,7 @@ import {DrcAnalysis} from './plate/analyses/drc/drc-analysis';
 export const _package = new DG.Package();
 
 
-//tags: autostart
+//meta.role: autostart
 export async function autostart(): Promise<void> {
   await PackageFunctions.createDummyPlateData();
 }
@@ -262,7 +262,7 @@ static async checkCsvIsPlate(file: DG.FileInfo): Promise<boolean> {
     return platesAppView();
   }
 
-  @grok.decorators.func()
+  @grok.decorators.appTreeBrowser({app: 'Plates'})
   static async platesAppTreeBrowser(treeNode: DG.TreeViewGroup) : Promise<void> {
     await initPlatesAppTree(treeNode);
   }

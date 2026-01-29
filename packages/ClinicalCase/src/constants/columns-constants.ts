@@ -64,6 +64,7 @@ export const LAB_TEST = 'LBTEST';
 export const LAB_RES_N = 'LBSTRESN';
 export const LAB_LO_LIM_N = 'LBSTNRLO';
 export const LAB_HI_LIM_N = 'LBSTNRHI';
+export const LAB_TEST_CAT = 'LBCAT';
 //vs
 export const VS_TEST = 'VSTEST';
 export const VS_RES_N = 'VSSTRESN';
@@ -95,5 +96,10 @@ export const TSPARM = 'TSPARM';
 export const TSVAL = 'TSVAL';
 //cl
 export const CLORRES = 'CLORRES';
+
+export const HAS_VALIDATION_ERRORS_COL = 'HasValidationErrors';
+export const VIOLATED_RULES_COL = 'ViolatedRules';
+export const COL_HAS_ERRORS_POSTFIX = '_hasErrors';
+export const ERRORS_POSTFIX = '_errors';
 
 

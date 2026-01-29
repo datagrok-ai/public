@@ -1,17 +1,18 @@
+import {SdiscRuleViolationCellRenderer} from './utils/rule-violation-cell-renderer';
 import {PackageFunctions} from './package';
 import * as DG from 'datagrok-api/dg';
 
 //name: Clinical Case
-//tags: app
 //output: view result
+//meta.role: app
 //meta.icon: /img/clin_case_icon.png
 export async function clinicalCaseApp() : Promise<any> {
   return await PackageFunctions.clinicalCaseApp();
 }
 
 //name: Preclinical Case
-//tags: app
 //output: view result
+//meta.role: app
 //meta.icon: /img/preclinical_case_icon.png
 export async function PreclinicalCaseApp() : Promise<any> {
   return await PackageFunctions.PreclinicalCaseApp();
@@ -44,17 +45,17 @@ export async function getListOfStudies(name?: string, description?: string, numS
   return await PackageFunctions.getListOfStudies(name, description, numSubjects, numSubjectsOperator, startDate, startDateOperator, endDate, endDateOperator, ongoing, standard);
 }
 
-//tags: folderViewer
 //input: file folder 
 //input: list<file> files 
 //output: widget result
+//meta.role: folderViewer
 export async function clinicalCaseFolderLauncher(folder: DG.FileInfo, files: DG.FileInfo[]) : Promise<any> {
   return await PackageFunctions.clinicalCaseFolderLauncher(folder, files);
 }
 
-//tags: file-handler
 //input: list file 
 //output: list<dataframe> result
+//meta.role: fileHandler
 //meta.ext: xpt
 export async function xptFileHandler(file: DG.FileInfo) : Promise<any> {
   return await PackageFunctions.xptFileHandler(file);
@@ -71,3 +72,11 @@ export async function xptFileHandler(file: DG.FileInfo) : Promise<any> {
 export async function runCoreValidate(standard: string, dataPath: string, version?: string, outputFormat?: string, options?: any) : Promise<string> {
   return await PackageFunctions.runCoreValidate(standard, dataPath, version, outputFormat, options);
 }
+//name: sdiscRuleViolationRenderer
+//tags: cellRenderer
+//output: grid_cell_renderer renderer
+//meta.cellType: sdisc-rule-violation
+export function _SdiscRuleViolationCellRenderer() {
+  return new SdiscRuleViolationCellRenderer();
+}
+

@@ -32,7 +32,7 @@ public class FuncParam {
                     this.value = ((Double) Double.parseDouble((String) value)).intValue();
                     break;
                 case Types.FLOAT:
-                    this.value = Float.parseFloat((String) value);
+                    this.value = Double.parseDouble((String) value);
                     break;
                 case Types.BOOL:
                     this.value = value.equals("true");

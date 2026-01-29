@@ -1,6 +1,6 @@
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
-import {category, before, test, after, expect, delay, assure} from '@datagrok-libraries/utils/src/test';
+import {category, before, test, after, delay} from '@datagrok-libraries/test/src/test';
 import {EntityType} from '../constants';
 
 

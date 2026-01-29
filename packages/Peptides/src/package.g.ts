@@ -1,7 +1,7 @@
 import {PackageFunctions} from './package';
 import * as DG from 'datagrok-api/dg';
 
-//tags: init
+//meta.role: init
 export async function initPeptides() : Promise<void> {
   await PackageFunctions.initPeptides();
 }
@@ -23,67 +23,67 @@ export async function testInitFunctionPeptides(v: any) : Promise<void> {
 }
 
 //name: Peptides
-//tags: panel, widgets
 //input: column col { semType: Macromolecule }
 //output: widget result
+//meta.role: widgets,panel
 export function peptidesPanel(col: DG.Column) : any {
   return PackageFunctions.peptidesPanel(col);
 }
 
 //name: Sequence Variability Map
 //description: Peptides Sequence Variability Map Viewer
-//tags: viewer
 //output: viewer result
 //meta.icon: files/icons/peptide-sar-viewer.svg
+//meta.role: viewer
 export function monomerPosition() : any {
   return PackageFunctions.monomerPosition();
 }
 
 //name: Most Potent Residues
 //description: Peptides Most Potent Residues Viewer
-//tags: viewer
 //output: viewer result
 //meta.icon: files/icons/peptide-sar-vertical-viewer.svg
+//meta.role: viewer
 export function mostPotentResidues() : any {
   return PackageFunctions.mostPotentResidues();
 }
 
 //name: Sequence Mutation Cliffs
 //description: Mutation Cliffs Line Chart
-//tags: viewer
 //output: viewer result
 //meta.icon: files/icons/sequence-statistics-viewer.svg
+//meta.role: viewer
 export function mutationCliffs() : any {
   return PackageFunctions.mutationCliffs();
 }
 
 //name: Logo Summary Table
-//tags: viewer
 //output: viewer result
 //meta.icon: files/icons/logo-summary-viewer.svg
+//meta.role: viewer
 export function logoSummaryTable() : any {
   return PackageFunctions.logoSummaryTable();
 }
 
 //name: Sequence Position Statistics
-//tags: viewer
 //output: viewer result
 //meta.icon: files/icons/sequence-statistics-viewer.svg
+//meta.role: viewer
 export function sequencePositionStatistics() : any {
   return PackageFunctions.sequencePositionStatistics();
 }
 
 //name: Active peptide selection
-//tags: viewer
 //output: viewer result
+//meta.role: viewer
 export function clusterMaxActivity() : any {
   return PackageFunctions.clusterMaxActivity();
 }
 
 //name: Manual Alignment
-//tags: panel, widgets
 //input: string _monomer { semType: Monomer }
 //output: widget result
+//meta.role: widgets,panel
 export function manualAlignment(_monomer: string) : any {
   return PackageFunctions.manualAlignment(_monomer);
 }
@@ -97,10 +97,10 @@ export async function macromoleculeSarFastaDemo() : Promise<void> {
 }
 
 //name: LST Pie Chart
-//tags: cellRenderer
 //output: grid_cell_renderer result
 //meta.cellType: lst-pie-chart
 //meta.gridChart: true
+//meta.role: cellRenderer
 export function lstPiechartCellRenderer() : any {
   return PackageFunctions.lstPiechartCellRenderer();
 }

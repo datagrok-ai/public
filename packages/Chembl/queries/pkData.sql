@@ -1,5 +1,6 @@
 --name: _PK data from 'Curated Drug Pharmacokinetic Data' source for @drug
 --friendlyName: Browse | PK for @drug
+--description: Retrieves pharmacokinetic data including dosage, route, regimen, and measured parameters for a specified drug from curated sources.
 --connection: Chembl
 --meta.searchPattern: "Pharmacokinetic Data for ${drug}" 
 --input: string drug = "LEVOFLOXACIN"

@@ -22,7 +22,7 @@ declare global {
 }
 
 //name: MetabolicGraph
-//tags: app
+//meta.role: app
 //meta.icon: files/icons/metabolic.png
 //description: Metabolic graph application
 //input: string path {meta.url: true; optional: true}
@@ -74,7 +74,7 @@ export function metabolicGraphApp(path?: string, filter?: string): DG.ViewBase {
 }
 
 //name: EscherFileViewer
-//tags: fileViewer
+//meta.role: fileViewer
 //meta.fileViewer: json
 //meta.fileViewerCheck: Metabolicgraph:escherFileViewerCheck
 //input: file file

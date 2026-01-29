@@ -12,7 +12,7 @@ const BOOLEAN_INPUT_TOP_MARGIN = 15;
 export class FormsViewer extends DG.JsViewer {
   get type(): string { return 'FormsViewer'; }
 
-  moleculeSize: 'small' | 'normal' | 'large';
+  rendererSize: 'small' | 'normal' | 'large';
   fieldsColumnNames: string[];
   colorCode: boolean;
   showCurrentRow: boolean;
@@ -23,7 +23,7 @@ export class FormsViewer extends DG.JsViewer {
   sortByColumnName?: string;
   sortAscending: boolean;
 
-  indexes: number[] | Int32Array<any>;
+  indexes: number[] | Int32Array;
   columnHeadersDiv: HTMLDivElement;
   virtualView: DG.VirtualView;
   columnLabelWidth: number = 0;
@@ -55,10 +55,11 @@ export class FormsViewer extends DG.JsViewer {
   protected getRendererSize(renderer: DG.GridCellRenderer): DG.Point {
     let width = renderer.defaultWidth;
     let height = renderer.defaultHeight;
-    if (!width || !height)
-      return this.getMoleculeSize();
 
-    switch (this.moleculeSize) {
+    if (!width || !height)
+      return this.getSize();
+
+    switch (this.rendererSize) {
       case 'normal': return new DG.Point(width, height);
       case 'large': return new DG.Point(Math.floor(width * 1.5), Math.floor(height * 1.5));
       case 'small':
@@ -66,8 +67,8 @@ export class FormsViewer extends DG.JsViewer {
     }
   }
 
-  protected getMoleculeSize(): DG.Point {
-    switch (this.moleculeSize) {
+  protected getSize(): DG.Point {
+    switch (this.rendererSize) {
       case 'normal': return new DG.Point(200, 100);
       case 'large': return new DG.Point(300, 150);
       case 'small':
@@ -89,7 +90,7 @@ export class FormsViewer extends DG.JsViewer {
     this.useGridSort = this.bool('useGridSort', true, {description: 'Sort values the same way as in the spreadsheet'});
     this.sortByColumnName = this.column('sortBy');
     this.sortAscending = false;
-    this.moleculeSize = this.string('moleculeSize', 'small', {choices: ['small', 'normal', 'large']}) as 'small' | 'normal' | 'large';
+    this.rendererSize = this.string('rendererSize', 'small', {choices: ['small', 'normal', 'large'], description: 'Sets the display size of rendered content'}) as 'small' | 'normal' | 'large';
 
     //fields
     this.indexes = [];
@@ -153,6 +154,8 @@ export class FormsViewer extends DG.JsViewer {
   onTableAttached() {
     if (this.fieldsColumnNames === null)
       this.setFieldsColumnNames(this.dataFrame.columns.names());
+    if (this.dataFrame.columns.bySemType('fit') != null && this.rendererSize === 'small')
+      this.rendererSize = 'normal';
 
     const sub = (stream: Observable<unknown>, action: Function) => {
       this.subs.push(DG.debounce(stream, 50).subscribe((_) => action()));
@@ -296,7 +299,7 @@ export class FormsViewer extends DG.JsViewer {
         try {
           // for molecules, use the gridCol renderer instead of inputBase
           const col = this.dataFrame.col(name)!;
-          if (col.semType && grid?.col(name)?.renderer) {
+          if (col.semType && col.meta.cellRenderer && grid?.col(name)?.renderer) {
             const renderer = grid!.col(name)!.renderer!;
             const rendererSize = this.getRendererSize(renderer);
             const gridCell = DG.GridCell.fromColumnRow(grid!, name, grid!.tableRowToGrid(row));
@@ -322,7 +325,7 @@ export class FormsViewer extends DG.JsViewer {
             const input = DG.InputBase.forColumn(col);
             if (input) {
               if (this.dataFrame.col(name)!.semType === DG.SEMTYPE.MOLECULE)
-                input.input.classList.add(`d4-multi-form-molecule-input-${this.moleculeSize}`);
+                input.input.classList.add(`d4-multi-form-molecule-input-${this.rendererSize}`);
               input.input.setAttribute('column', name);
               input.value = this.dataFrame.col(name)?.isNone(row) ? null : this.dataFrame.get(name, row);
               input.readOnly = true;

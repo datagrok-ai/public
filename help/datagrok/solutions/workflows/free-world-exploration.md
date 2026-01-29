@@ -54,7 +54,7 @@ query the data source and show the result in context.
 This capability is delivered through Datagrok packages. Once the package is
 published, patterns work globally for all users who have the
 package installed. To implement, you'll need basic familiarity with regular
-expressions, JavaScript, and the Datagrok plugin framework. [See documentation](../../../develop/how-to/grid/register-identifiers.md).
+expressions, JavaScript, and the Datagrok plugin framework. [See documentation](../../../develop/how-to/db/register-identifiers.md).
 
 ![Custom identifier patterns](img/custom-identifier-patterns.gif)
 

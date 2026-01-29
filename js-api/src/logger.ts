@@ -6,7 +6,7 @@ import dayjs from "dayjs";
 
 const api: IDartApi = (typeof window !== 'undefined' ? window : global.window) as any;
 
-export type LogMessage = {level: LOG_LEVEL, message: string, params?: object, type?: string, stackTrace?: string};
+export type LogMessage = {level: LOG_LEVEL, message: string, params?: object, type?: string, stackTrace?: string, auditType?: string, time?: any};
 
 type LoggerPutCallback = (logRecord: LogMessage) => void;
 

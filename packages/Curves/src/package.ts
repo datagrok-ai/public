@@ -23,11 +23,6 @@ import {convertDataToCurves, dataToCurvesUI} from './fit/data-to-curves';
 export const _package = new DG.Package();
 
 
-// //tags: autostart
-// export async function autostart(): Promise<void> {
-// }
-
-
 const SOURCE_COLUMN_TAG = '.sourceColumn';
 const SERIES_NUMBER_TAG = '.seriesNumber';
 const SERIES_AGGREGATION_TAG = '.seriesAggregation';
@@ -108,7 +103,7 @@ export class PackageFunctions {
     dataToCurvesUI();
   }
 
-  @grok.decorators.func({meta: {vectorFunc: 'true'}, tags: ['Transform']})
+  @grok.decorators.func({meta: {vectorFunc: 'true', role: 'transform'}})
   static addStatisticsColumn(table: DG.DataFrame, colName: string, propName: string, @grok.decorators.param({type: 'int'}) seriesNumber: number): DG.Column {
     const df = table;
     const col = df.col(colName)!;
@@ -144,7 +139,7 @@ export class PackageFunctions {
     return column;
   }
 
-  @grok.decorators.func({meta: {vectorFunc: 'true'}, tags: ['Transform']})
+  @grok.decorators.func({meta: {vectorFunc: 'true', role: 'transform'}})
   static addAggrStatisticsColumn(table: DG.DataFrame, colName: string, propName: string, aggrType: string): DG.Column {
     const df = table;
     const col = df.col(colName)!;

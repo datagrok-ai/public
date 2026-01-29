@@ -14,6 +14,99 @@ export class UsageType {
   static USER_REPORT_POSTED = 'user report posted';
 
 }
+export class ViewerEvent {
+  public dart: any;
+  constructor(dart: any) {
+    this.dart = dart;
+  }
+  static create(): ViewerEvent {
+    return new ViewerEvent(api.grok_ViewerEvent_Create());
+  }
+  get viewer(): any { return api.grok_ViewerEvent_Get_viewer(this.dart); };
+  set viewer(x: any) {api.grok_ViewerEvent_Set_viewer(this.dart, toDart(x)); }
+  get type(): string { return api.grok_ViewerEvent_Get_type(this.dart); };
+  set type(x: string) {api.grok_ViewerEvent_Set_type(this.dart, toDart(x)); }
+  get eventFlag(): boolean { return api.grok_ViewerEvent_Get_eventFlag(this.dart); };
+  set eventFlag(x: boolean) {api.grok_ViewerEvent_Set_eventFlag(this.dart, toDart(x)); }
+  get filters(): {[index: string]: any} { return api.grok_ViewerEvent_Get_filters(this.dart); };
+  set filters(x: {[index: string]: any}) {api.grok_ViewerEvent_Set_filters(this.dart, toDart(x)); }
+  get row(): number { return api.grok_ViewerEvent_Get_row(this.dart); };
+  set row(x: number) {api.grok_ViewerEvent_Set_row(this.dart, toDart(x)); }
+  get mouseEvent(): any { return api.grok_ViewerEvent_Get_mouseEvent(this.dart); };
+  set mouseEvent(x: any) {api.grok_ViewerEvent_Set_mouseEvent(this.dart, toDart(x)); }
+  get bitset(): any { return api.grok_ViewerEvent_Get_bitset(this.dart); };
+
+}
+export class InputType {
+  static Int = 'Int';
+
+  static BigInt = 'BigInt';
+
+  static Float = 'Float';
+
+  static QNum = 'QNum';
+
+  static Slider = 'Slider';
+
+  static Bool = 'Bool';
+
+  static Switch = 'Switch';
+
+  static Text = 'Text';
+
+  static TextArea = 'TextArea';
+
+  static Markdown = 'Markdown';
+
+  static Code = 'Code';
+
+  static Search = 'Search';
+
+  static Date = 'Date';
+
+  static Map = 'Map';
+
+  static File = 'File';
+
+  static Files = 'Files';
+
+  static List = 'List';
+
+  static Color = 'Color';
+
+  static Column = 'Column';
+
+  static Columns = 'Columns';
+
+  static ColumnsMap = 'ColumnsMap';
+
+  static Radio = 'Radio';
+
+  static Choice = 'Choice';
+
+  static MultiChoice = 'MultiChoice';
+
+  static Table = 'Table';
+
+  static TablesMultiChoice = 'TablesMultiChoice';
+
+  static Molecule = 'Molecule';
+
+  static User = 'User';
+
+  static UserGroups = 'UserGroups';
+
+  static Dynamic = 'Dynamic';
+
+  static Image = 'Image';
+
+  static JsInputProxy = 'JsInputProxy';
+
+  static Pem = 'Pem';
+
+  static Font = 'Font';
+
+}
 export class GridCellStyleEx {
   public dart: any;
   constructor(dart: any) {
@@ -104,94 +197,3 @@ export class GridCellStyleEx {
 export function renderMultipleHistograms(g: CanvasRenderingContext2D, bounds: any, histograms: Array<Int32List>, options?: {categoryColumn?: any, colors?: Array<number>, tension?: number, normalize?: boolean, markerSize?: number, fill?: boolean, minBin?: number, maxBin?: number, localMaximum?: boolean, highlightedHistogram?: number}): any
   { return api.grok_renderMultipleHistograms(toDart(g), toDart(bounds), toDart(histograms), toDart(options?.categoryColumn), toDart(options?.colors), toDart(options?.tension), toDart(options?.normalize), toDart(options?.markerSize), toDart(options?.fill), toDart(options?.minBin), toDart(options?.maxBin), toDart(options?.localMaximum), toDart(options?.highlightedHistogram)); }
 
-export class ViewerEvent {
-  public dart: any;
-  constructor(dart: any) {
-    this.dart = dart;
-  }
-  static create(): ViewerEvent {
-    return new ViewerEvent(api.grok_ViewerEvent_Create());
-  }
-  get viewer(): any { return api.grok_ViewerEvent_Get_viewer(this.dart); };
-  set viewer(x: any) {api.grok_ViewerEvent_Set_viewer(this.dart, toDart(x)); }
-  get type(): string { return api.grok_ViewerEvent_Get_type(this.dart); };
-  set type(x: string) {api.grok_ViewerEvent_Set_type(this.dart, toDart(x)); }
-  get eventFlag(): boolean { return api.grok_ViewerEvent_Get_eventFlag(this.dart); };
-  set eventFlag(x: boolean) {api.grok_ViewerEvent_Set_eventFlag(this.dart, toDart(x)); }
-  get filters(): {[index: string]: any} { return api.grok_ViewerEvent_Get_filters(this.dart); };
-  set filters(x: {[index: string]: any}) {api.grok_ViewerEvent_Set_filters(this.dart, toDart(x)); }
-  get row(): number { return api.grok_ViewerEvent_Get_row(this.dart); };
-  set row(x: number) {api.grok_ViewerEvent_Set_row(this.dart, toDart(x)); }
-  get mouseEvent(): any { return api.grok_ViewerEvent_Get_mouseEvent(this.dart); };
-  set mouseEvent(x: any) {api.grok_ViewerEvent_Set_mouseEvent(this.dart, toDart(x)); }
-  get bitset(): any { return api.grok_ViewerEvent_Get_bitset(this.dart); };
-
-}
-export class InputType {
-  static Int = 'Int';
-
-  static BigInt = 'BigInt';
-
-  static Float = 'Float';
-
-  static QNum = 'QNum';
-
-  static Slider = 'Slider';
-
-  static Bool = 'Bool';
-
-  static Switch = 'Switch';
-
-  static Text = 'Text';
-
-  static TextArea = 'TextArea';
-
-  static Markdown = 'Markdown';
-
-  static Code = 'Code';
-
-  static Search = 'Search';
-
-  static Date = 'Date';
-
-  static Map = 'Map';
-
-  static File = 'File';
-
-  static Files = 'Files';
-
-  static List = 'List';
-
-  static Color = 'Color';
-
-  static Column = 'Column';
-
-  static Columns = 'Columns';
-
-  static ColumnsMap = 'ColumnsMap';
-
-  static Radio = 'Radio';
-
-  static Choice = 'Choice';
-
-  static MultiChoice = 'MultiChoice';
-
-  static Table = 'Table';
-
-  static Molecule = 'Molecule';
-
-  static User = 'User';
-
-  static UserGroups = 'UserGroups';
-
-  static Dynamic = 'Dynamic';
-
-  static Image = 'Image';
-
-  static JsInputProxy = 'JsInputProxy';
-
-  static Pem = 'Pem';
-
-  static Font = 'Font';
-
-}
