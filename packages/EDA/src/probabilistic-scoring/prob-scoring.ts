@@ -14,16 +14,11 @@ import {getDesiredTables, getDescriptorStatistics, gaussDesirabilityFunc, sigmoi
 import {MIN_SAMPLES_COUNT, PMPO_NON_APPLICABLE, DescriptorStatistics, P_VAL_TRES_MIN, DESCR_TITLE,
   R2_MIN, Q_CUTOFF_MIN, PmpoParams, SCORES_TITLE, DESCR_TABLE_TITLE, PMPO_COMPUTE_FAILED, SELECTED_TITLE,
   P_VAL, DESIRABILITY_COL_NAME, STAT_GRID_HEIGHT, DESIRABILITY_COLUMN_WIDTH, WEIGHT_TITLE,
-  P_VAL_TRES_DEFAULT, R2_DEFAULT, Q_CUTOFF_DEFAULT,
-  USE_SIGMOID_DEFAULT,
-  ROC_TRESHOLDS,
-  ROC_TRESHOLDS_COUNT,
-  FPR_TITLE,
-  TPR_TITLE,
-  COLORS} from './pmpo-defs';
+  P_VAL_TRES_DEFAULT, R2_DEFAULT, Q_CUTOFF_DEFAULT, USE_SIGMOID_DEFAULT, ROC_TRESHOLDS, ROC_TRESHOLDS_COUNT,
+  FPR_TITLE, TPR_TITLE, COLORS} from './pmpo-defs';
 import {addSelectedDescriptorsCol, getDescriptorStatisticsTable, getFilteredByPvalue, getFilteredByCorrelations,
   getModelParams, getDescrTooltip, saveModel, getScoreTooltip, getDesirabilityProfileJson, getCorrelationTriples,
-  addCorrelationColumns, setPvalColumnColorCoding, setCorrColumnColorCoding} from './pmpo-utils';
+  addCorrelationColumns, setPvalColumnColorCoding, setCorrColumnColorCoding, PmpoError} from './pmpo-utils';
 import {getOutputPalette} from '../pareto-optimization/utils';
 import {OPT_TYPE} from '../pareto-optimization/defs';
 
@@ -166,6 +161,9 @@ export class Pmpo {
 
     // Filter by p-value
     const selectedByPvalue = getFilteredByPvalue(descrStatsTable, pValTresh);
+
+    if (selectedByPvalue.length < 1)
+      throw new PmpoError('Cannot train pMPO model: all descriptors have high p-values (not significant).');
 
     // Compute correlation triples
     const correlationTriples = getCorrelationTriples(descriptors, selectedByPvalue);
@@ -614,7 +612,9 @@ export class Pmpo {
           useSigmoidInput.value,
         );
       } catch (err) {
-        grok.shell.error(err instanceof Error ? err.message : PMPO_COMPUTE_FAILED + ': the platform issue.');
+        err instanceof PmpoError ?
+          grok.shell.warning(err.message) :
+          grok.shell.error(err instanceof Error ? err.message : PMPO_COMPUTE_FAILED + ': the platform issue.');
       }
     };
 

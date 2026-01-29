@@ -593,3 +593,11 @@ function significantPoints(param: PmpoParams, truncatedRange: boolean): number[]
 
   return points;
 } // significantPoints
+
+/** Custom error class for pMPO-related errors. */
+export class PmpoError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'PmpoError';
+  }
+}
