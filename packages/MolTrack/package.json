@@ -22,7 +22,7 @@
     "@typescript-eslint/eslint-plugin": "^8.39.0",
     "@typescript-eslint/parser": "^8.39.0",
     "css-loader": "^7.1.2",
-    "datagrok-tools": "^4.14.55",
+    "datagrok-tools": "^5.0.0",
     "eslint": "^8.57.1",
     "eslint-config-google": "^0.14.0",
     "style-loader": "^4.0.0",
@@ -53,5 +53,8 @@
     "url": "https://github.com/datagrok-ai/labs.git",
     "directory": "users/askalkin/MolTrack/MolTrack"
   },
-  "category": "Cheminformatics"
+  "category": "Cheminformatics",
+  "overrides": {
+    "datagrok-api": "$datagrok-api"
+  }
 }

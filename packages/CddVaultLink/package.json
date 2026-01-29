@@ -16,7 +16,7 @@
   },
   "devDependencies": {
     "css-loader": "^7.1.2",
-    "datagrok-tools": "^4.14.55",
+    "datagrok-tools": "^5.0.0",
     "style-loader": "^4.0.0",
     "ts-loader": "latest",
     "typescript": "latest",
@@ -46,5 +46,8 @@
     "type": "git",
     "url": "https://github.com/datagrok-ai/public.git",
     "directory": "packages/CddVaultLink"
+  },
+  "overrides": {
+    "datagrok-api": "$datagrok-api"
   }
 }

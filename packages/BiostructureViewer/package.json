@@ -58,7 +58,7 @@
     "@typescript-eslint/eslint-plugin": "^6.14.0",
     "@typescript-eslint/parser": "^6.14.0",
     "css-loader": "^6.8.1",
-    "datagrok-tools": "^4.14.55",
+    "datagrok-tools": "^5.0.0",
     "eslint": "^8.55.0",
     "eslint-config-google": "^0.14.0",
     "file-loader": "^6.2.0",
@@ -108,5 +108,8 @@
   "category": "Bioinformatics",
   "meta": {
     "dartium": false
+  },
+  "overrides": {
+    "datagrok-api": "$datagrok-api"
   }
 }

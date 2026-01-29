@@ -29,7 +29,7 @@
     "@typescript-eslint/parser": "^5.32.0",
     "@webgpu/types": "^0.1.57",
     "css-loader": "^5.0.0",
-    "datagrok-tools": "^4.14.55",
+    "datagrok-tools": "^5.0.0",
     "eslint": "^8.21.0",
     "eslint-config-google": "^0.14.0",
     "rxjs": "^6.5.5",
@@ -62,5 +62,8 @@
   "canView": [
     "All users"
   ],
-  "category": "Machine Learning"
+  "category": "Machine Learning",
+  "overrides": {
+    "datagrok-api": "$datagrok-api"
+  }
 }

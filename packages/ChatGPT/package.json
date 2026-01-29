@@ -19,7 +19,7 @@
     "@typescript-eslint/eslint-plugin": "^8.8.1",
     "@typescript-eslint/parser": "^8.8.1",
     "css-loader": "^7.1.2",
-    "datagrok-tools": "^4.14.69",
+    "datagrok-tools": "^5.0.0",
     "eslint": "^8.57.1",
     "eslint-config-google": "^0.14.0",
     "eslint-plugin-rxjs": "^5.0.3",
@@ -82,7 +82,8 @@
       "description": "Coding Model name for code generation tasks. This must match the model names supported by OpenAI or name of deployed model.",
       "defaultValue": "gpt-5.1-codex-max",
       "nullable": false
-    }, {
+    },
+    {
       "name": "APIName",
       "propertyType": "string",
       "description": "OpenAI API endpoint. Responses or Chat completions API can be used.",
@@ -92,12 +93,16 @@
         "openai chat completions",
         "openai responses"
       ]
-    }, {
+    },
+    {
       "name": "apiVersion",
       "propertyType": "string",
       "description": "API version for OpenAI endpoint. v1 or v2.",
       "defaultValue": "v1",
       "nullable": true
     }
-  ]
+  ],
+  "overrides": {
+    "datagrok-api": "$datagrok-api"
+  }
 }

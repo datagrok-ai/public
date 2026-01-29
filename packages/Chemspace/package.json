@@ -22,7 +22,7 @@
     "@typescript-eslint/eslint-plugin": "^8.8.1",
     "@typescript-eslint/parser": "^8.8.1",
     "css-loader": "^7.1.2",
-    "datagrok-tools": "^4.14.55",
+    "datagrok-tools": "^5.0.0",
     "eslint": "^8.57.1",
     "eslint-config-google": "^0.14.0",
     "style-loader": "^4.0.0",
@@ -74,5 +74,8 @@
         ]
       }
     ]
+  },
+  "overrides": {
+    "datagrok-api": "$datagrok-api"
   }
 }

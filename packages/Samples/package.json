@@ -24,7 +24,7 @@
     "@datagrok/dendrogram": "^1.2.33",
     "@typescript-eslint/eslint-plugin": "^5.32.0",
     "@typescript-eslint/parser": "^5.32.0",
-    "datagrok-tools": "^4.14.55",
+    "datagrok-tools": "^5.0.0",
     "eslint": "^8.21.0",
     "eslint-config-google": "^0.14.0",
     "webpack": "^5.95.0",
@@ -52,5 +52,8 @@
   "canEdit": [
     "Administators",
     "Administrators"
-  ]
+  ],
+  "overrides": {
+    "datagrok-api": "$datagrok-api"
+  }
 }

@@ -15,7 +15,7 @@
     "rxjs": "^6.5.5"
   },
   "devDependencies": {
-    "datagrok-tools": "^4.14.55",
+    "datagrok-tools": "^5.0.0",
     "webpack": "^5.95.0",
     "webpack-cli": "^5.1.4",
     "ts-loader": "latest",
@@ -53,5 +53,8 @@
     "type": "git",
     "url": "https://github.com/datagrok-ai/public.git",
     "directory": "packages/RevvitySignalsLink"
+  },
+  "overrides": {
+    "datagrok-api": "$datagrok-api"
   }
 }

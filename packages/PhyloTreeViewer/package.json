@@ -32,7 +32,7 @@
     "@types/wu": "^2.1.44",
     "@typescript-eslint/eslint-plugin": "^4.20.0",
     "@typescript-eslint/parser": "^4.20.0",
-    "datagrok-tools": "^4.14.55",
+    "datagrok-tools": "^5.0.0",
     "eslint": "^7.23.0",
     "eslint-config-google": "^0.14.0",
     "puppeteer": "^13.7.0",
@@ -67,5 +67,8 @@
   "canView": [
     "All users"
   ],
-  "category": "Visualizations"
+  "category": "Visualizations",
+  "overrides": {
+    "datagrok-api": "$datagrok-api"
+  }
 }

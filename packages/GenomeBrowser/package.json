@@ -48,7 +48,7 @@
     "@vitejs/plugin-react": "^4.3.4",
     "babel-loader": "^10.0.0",
     "css-loader": "^7.1.2",
-    "datagrok-tools": "^4.14.55",
+    "datagrok-tools": "^5.0.0",
     "eslint": "^9.21.0",
     "eslint-plugin-react-hooks": "^5.1.0",
     "eslint-plugin-react-refresh": "^0.4.19",

@@ -33,7 +33,7 @@
     "@types/uuid": "^9.0.2",
     "@typescript-eslint/eslint-plugin": "^5.32.0",
     "@typescript-eslint/parser": "^5.32.0",
-    "datagrok-tools": "^4.14.55",
+    "datagrok-tools": "^5.0.0",
     "eslint": "^8.21.0",
     "eslint-config-google": "^0.14.0",
     "webpack": "^5.95.0",
@@ -94,5 +94,8 @@
   ],
   "meta": {
     "sok": "HD_OBSFUS__k7#mP9@zL2$qR5!nX8"
+  },
+  "overrides": {
+    "datagrok-api": "$datagrok-api"
   }
 }

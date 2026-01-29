@@ -23,7 +23,7 @@
     "@types/sql.js": "^1.4.9",
     "@typescript-eslint/eslint-plugin": "^8.8.1",
     "@typescript-eslint/parser": "^8.8.1",
-    "datagrok-tools": "^4.14.55",
+    "datagrok-tools": "^5.0.0",
     "eslint": "^8.57.1",
     "eslint-config-google": "^0.14.0",
     "webpack": "^5.95.0",
@@ -58,5 +58,8 @@
   "canView": [
     "All users"
   ],
-  "category": "Data Access"
+  "category": "Data Access",
+  "overrides": {
+    "datagrok-api": "$datagrok-api"
+  }
 }

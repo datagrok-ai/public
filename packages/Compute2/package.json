@@ -32,7 +32,7 @@
     "autoprefixer": "^10.4.20",
     "babel-loader": "^9.2.1",
     "css-loader": "^7.1.2",
-    "datagrok-tools": "^4.14.55",
+    "datagrok-tools": "^5.0.0",
     "eslint": "^8.57.1",
     "eslint-config-google": "^0.14.0",
     "postcss": "^8.4.47",
@@ -80,5 +80,8 @@
   "category": "Compute",
   "meta": {
     "dartium": false
+  },
+  "overrides": {
+    "datagrok-api": "$datagrok-api"
   }
 }

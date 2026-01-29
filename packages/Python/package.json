@@ -14,7 +14,7 @@
     "dayjs": "^1.11.13"
   },
   "devDependencies": {
-    "datagrok-tools": "^4.14.55",
+    "datagrok-tools": "^5.0.0",
     "ts-loader": "latest",
     "typescript": "latest",
     "webpack": "^5.95.0",
@@ -46,5 +46,8 @@
     "url": "ssh://git@github.com/datagrok-ai/public.git",
     "directory": "packages/Python"
   },
-  "category": "Compute"
+  "category": "Compute",
+  "overrides": {
+    "datagrok-api": "$datagrok-api"
+  }
 }
