@@ -97,7 +97,7 @@
       "propertyType": "string",
       "description": "API version for OpenAI endpoint. v1 or v2.",
       "defaultValue": "v1",
-      "nullable": false
+      "nullable": true
     }
   ]
 }

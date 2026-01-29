@@ -1,5 +1,6 @@
 /* eslint-disable max-len */
 import * as grok from 'datagrok-api/grok';
+import * as DG from 'datagrok-api/dg';
 import OpenAI from 'openai';
 import * as api from '../package-api';
 import {LLMCredsManager} from './creds';
@@ -7,6 +8,7 @@ import {JsonSchema} from '../prompt-engine/interfaces';
 import {ChatModel} from 'openai/resources/shared';
 import {_package} from '../package';
 import {AIProvider, BuiltinToolSpec} from './AI-API-providers/types';
+import {AzureOpenAI} from 'openai';
 
 export type ModelOption = 'Fast' | 'Deep Research' | 'Coding';
 export const ModelType: {[type in ModelOption]: ChatModel} = {
@@ -24,9 +26,10 @@ export function initModelTypeNames() {
   if (_package.settings.defaultCodingModel)
     ModelType.Coding = _package.settings.defaultCodingModel as ChatModel;
   if (grok.ai.config?.modelToDeployment) {
-    ModelType.Fast = grok.ai.config.modelToDeployment[ModelType.Fast] as ChatModel ?? ModelType.Fast;
-    ModelType['Deep Research'] = grok.ai.config.modelToDeployment[ModelType['Deep Research']] as ChatModel ?? ModelType['Deep Research'];
-    ModelType.Coding = grok.ai.config.modelToDeployment[ModelType.Coding] as ChatModel ?? ModelType.Coding;
+    const cfg: typeof grok.ai.config.modelToDeployment = DG.toJs(grok.ai.config.modelToDeployment);
+    ModelType.Fast = cfg[ModelType.Fast] as ChatModel ?? ModelType.Fast;
+    ModelType['Deep Research'] = cfg[ModelType['Deep Research']] as ChatModel ?? ModelType['Deep Research'];
+    ModelType.Coding = cfg[ModelType.Coding] as ChatModel ?? ModelType.Coding;
   }
 }
 
@@ -35,11 +38,26 @@ export class OpenAIClient {
   private constructor(private vectorStoreId: string) {
     if (!grok.ai.openAiConfigured || !grok.ai.openAiProxyToken)
       throw new Error('OpenAI is not configured. Please set the API key in the AI settings under Admin section.');
-    const apiVersion = _package.settings.apiVersion ?? (grok.ai.config?.apiVersion ? `v${grok.ai.config?.apiVersion}` : 'v1');
-    this.openai = new OpenAI({baseURL: `${grok.ai.openAiProxyUrl}/${apiVersion}`, dangerouslyAllowBrowser: true,
+    const apiVersion = _package.settings.apiVersion ?? '';
+    const versionChunk = apiVersion ? `/${apiVersion}` : '';
+    this.openai = new OpenAI({baseURL: `${grok.ai.openAiProxyUrl}${versionChunk}`, dangerouslyAllowBrowser: true,
       apiKey: 'unused',
+      // ...(grok.ai.config.apiMode === 'legacy' ? {apiVersion: grok.ai.config!.apiVersion!} : {}),
       fetch: async (input, init) => {
-        const url = typeof input === 'string' ? input : input.toString();
+        let url = typeof input === 'string' ? input : input.toString();
+        if (grok.ai.config?.apiMode === 'legacy' && grok.ai.config?.apiVersion) {
+          const prsed = new URL(url);
+          prsed.searchParams.set('api-version', grok.ai.config?.apiVersion);
+          url = prsed.toString();
+          if (init?.body && typeof init.body === 'string') {
+            const bodyObj = JSON.parse(init.body);
+            const modelName = bodyObj['model'];
+            if (!modelName)
+              throw new Error('Model name is not specified in the request body.');
+            const modifiedURL = url.substring(0, grok.ai.openAiProxyUrl.length) + '/' + modelName + url.substring(grok.ai.openAiProxyUrl.length);
+            url = modifiedURL;
+          }
+        }
         const prms = {
           ...init,
           // headers: {
