@@ -140,7 +140,7 @@ export namespace historyUtils {
       groupsCache.set('All users', allGroup);
     }
 
-    const callCopy = await deepCopy(callToSave);
+    const callCopy = deepCopy(callToSave);
     if (isIncomplete(callCopy)) callCopy.options['createdOn'] = dayjs().utc(true).unix();
 
     const fileInputs = wu(callCopy.inputParams.values() as DG.FuncCallParam[])
