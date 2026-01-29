@@ -37,7 +37,7 @@ export async function scriptsSearch(s: string): Promise<DG.Func[]> {
 }
 
 export async function entitySimilaritySearch(s: string): Promise<DG.Entity[]> {
-  if (!grok.ai.entityIndexingEnabled)
+  if (!grok.ai.config.indexEntities)
     return [];
   try {
     const results = await grok.ai.searchEntities(s, 0.3, 20);

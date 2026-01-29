@@ -8,7 +8,6 @@ import {JsonSchema} from '../prompt-engine/interfaces';
 import {ChatModel} from 'openai/resources/shared';
 import {_package} from '../package';
 import {AIProvider, BuiltinToolSpec} from './AI-API-providers/types';
-import {AzureOpenAI} from 'openai';
 
 export type ModelOption = 'Fast' | 'Deep Research' | 'Coding';
 export const ModelType: {[type in ModelOption]: ChatModel} = {
@@ -25,8 +24,8 @@ export function initModelTypeNames() {
     ModelType['Deep Research'] = _package.settings.defaultDeepResearchModel as ChatModel;
   if (_package.settings.defaultCodingModel)
     ModelType.Coding = _package.settings.defaultCodingModel as ChatModel;
-  if (grok.ai.config?.modelToDeployment) {
-    const cfg: typeof grok.ai.config.modelToDeployment = DG.toJs(grok.ai.config.modelToDeployment);
+  if (grok.ai.config.current?.provider == 'azure' && grok.ai.config.current.modelToDeployment) {
+    const cfg: typeof grok.ai.config.current.modelToDeployment = DG.toJs(grok.ai.config.current.modelToDeployment);
     ModelType.Fast = cfg[ModelType.Fast] as ChatModel ?? ModelType.Fast;
     ModelType['Deep Research'] = cfg[ModelType['Deep Research']] as ChatModel ?? ModelType['Deep Research'];
     ModelType.Coding = cfg[ModelType.Coding] as ChatModel ?? ModelType.Coding;
@@ -36,26 +35,27 @@ export function initModelTypeNames() {
 export class OpenAIClient {
   public openai: OpenAI;
   private constructor(private vectorStoreId: string) {
-    if (!grok.ai.openAiConfigured || !grok.ai.openAiProxyToken)
+    if (!grok.ai.config.configured)
       throw new Error('OpenAI is not configured. Please set the API key in the AI settings under Admin section.');
     const apiVersion = _package.settings.apiVersion ?? '';
     const versionChunk = apiVersion ? `/${apiVersion}` : '';
-    this.openai = new OpenAI({baseURL: `${grok.ai.openAiProxyUrl}${versionChunk}`, dangerouslyAllowBrowser: true,
+    this.openai = new OpenAI({baseURL: `${grok.ai.config.proxyUrl}${versionChunk}`, dangerouslyAllowBrowser: true,
       apiKey: 'unused',
       // ...(grok.ai.config.apiMode === 'legacy' ? {apiVersion: grok.ai.config!.apiVersion!} : {}),
       fetch: async (input, init) => {
         let url = typeof input === 'string' ? input : input.toString();
-        if (grok.ai.config?.apiMode === 'legacy' && grok.ai.config?.apiVersion) {
-          const prsed = new URL(url);
-          prsed.searchParams.set('api-version', grok.ai.config?.apiVersion);
-          url = prsed.toString();
+        if (grok.ai.config.current?.provider == 'azure' && grok.ai.config.current.apiMode === 'legacy') {
+          if (grok.ai.config.current.apiVersion) {
+            const prsed = new URL(url);
+            prsed.searchParams.set('api-version', grok.ai.config.current.apiVersion);
+            url = prsed.toString();
+          }
           if (init?.body && typeof init.body === 'string') {
             const bodyObj = JSON.parse(init.body);
             const modelName = bodyObj['model'];
             if (!modelName)
               throw new Error('Model name is not specified in the request body.');
-            const modifiedURL = url.substring(0, grok.ai.openAiProxyUrl.length) + '/' + modelName + url.substring(grok.ai.openAiProxyUrl.length);
-            url = modifiedURL;
+            url = url.substring(0, grok.ai.config.proxyUrl.length) + '/' + modelName + url.substring(grok.ai.config.proxyUrl.length);
           }
         }
         const prms = {
@@ -66,7 +66,7 @@ export class OpenAIClient {
           // },
         };
         const headers = new Headers(prms.headers);
-        headers.set('Authorization', grok.ai.openAiProxyToken);
+        headers.set('Authorization', grok.ai.config.proxyToken);
         prms.headers = headers;
         return fetch(url, prms);
       },

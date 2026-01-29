@@ -73,7 +73,7 @@ export class PackageFunctions {
     meta: {role: 'searchProvider'},
   })
   static combinedLLMSearchProvider(): DG.SearchProvider {
-    const isAiConfigured = grok.ai.openAiConfigured;
+    const isAiConfigured = grok.ai.config.configured;
     return {
       'home': {
         name: 'Ask AI Assistant',

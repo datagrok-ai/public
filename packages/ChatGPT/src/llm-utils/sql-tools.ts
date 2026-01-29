@@ -142,7 +142,7 @@ export async function generateAISqlQueryWithTools(
         }
       }
 
-      if (grok.ai.entityIndexingEnabled) {
+      if (grok.ai.config.indexEntities) {
         const similarQueries = await findSimilarQueriesToPrompt(prompt);
         console.log(`found ${similarQueries.n} similar queries for the prompt`);
         if (similarQueries.n > 0 && similarQueries.text) {
@@ -278,7 +278,7 @@ export async function generateAISqlQueryWithTools(
     ];
 
     // if we have some embeddings, then also add a tool so that LLM can use it to find similar queries
-    if (grok.ai.entityIndexingEnabled) {
+    if (grok.ai.config.indexEntities) {
       functionTools.push({
         type: 'function',
         name: 'find_similar_queries',
