@@ -77,7 +77,7 @@ export const DESCR_TABLE_TITLE = DESCR_TITLE + ' Statistics';
 export const SELECTED_TITLE = 'Selected';
 export const WEIGHT_TITLE = 'Weight';
 export const SCORES_TITLE = 'pMPO score';
-export const DESIRABILITY_COL_NAME = 'Desirability';
+export const DESIRABILITY_COL_NAME = 'Desirability Curve';
 
 /** Default p-value threshold for filtering descriptors */
 export const P_VAL_TRES_DEFAULT = 0.01;

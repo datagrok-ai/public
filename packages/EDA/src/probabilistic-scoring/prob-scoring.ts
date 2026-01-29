@@ -19,7 +19,8 @@ import {MIN_SAMPLES_COUNT, PMPO_NON_APPLICABLE, DescriptorStatistics, P_VAL_TRES
   ROC_TRESHOLDS,
   ROC_TRESHOLDS_COUNT,
   FPR_TITLE,
-  TPR_TITLE} from './pmpo-defs';
+  TPR_TITLE,
+  COLORS} from './pmpo-defs';
 import {addSelectedDescriptorsCol, getDescriptorStatisticsTable, getFilteredByPvalue, getFilteredByCorrelations,
   getModelParams, getDescrTooltip, saveModel, getScoreTooltip, getDesirabilityProfileJson, getCorrelationTriples,
   addCorrelationColumns, setPvalColumnColorCoding, setCorrColumnColorCoding} from './pmpo-utils';
@@ -363,14 +364,12 @@ export class Pmpo {
           } else {
             const descriptor = grid.cell(DESCR_TITLE, cell.gridRow).value;
 
-            if ((colName === DESIRABILITY_COL_NAME) || (colName === WEIGHT_TITLE)) {
-              const startText = (colName === WEIGHT_TITLE) ? 'No weight' : 'No chart shown';
-
+            if (colName === WEIGHT_TITLE) {
               if (!this.desirabilityProfileRoots.has(descriptor)) {
                 if (selectedByPvalue.includes(descriptor))
-                  ui.tooltip.show(`${startText}: <b>${descriptor}</b> is excluded due to a high correlation with other descriptors.`, x, y);
+                  ui.tooltip.show(`No weight: <b>${descriptor}</b> is excluded due to a high correlation with other descriptors.`, x, y);
                 else
-                  ui.tooltip.show(`${startText}: <b>${descriptor}</b> is excluded due to a high p-value.`, x, y);
+                  ui.tooltip.show(`No weight: <b>${descriptor}</b> is excluded due to a high p-value.`, x, y);
 
                 return true;
               }
@@ -410,7 +409,23 @@ export class Pmpo {
         return;
 
       const descriptor = grid.cell(DESCR_TITLE, cell.gridRow).value;
-      cell.element = this.desirabilityProfileRoots.get(descriptor) ?? ui.div();
+      const element = this.desirabilityProfileRoots.get(descriptor);
+
+      if (element != null)
+        cell.element = element;
+      else {
+        const selected = selectedByPvalue.includes(descriptor);
+        const text = selected ? 'highly correlated with other descriptors' : 'statistically insignificant';
+        const tooltipMsg = selected ?
+          `No chart shown: <b>${descriptor}</b> is excluded due to a high correlation with other descriptors.` :
+          `No chart shown: <b>${descriptor}</b> is excluded due to a high p-value.`;
+
+        const divWithDescription = ui.divText(text);
+        divWithDescription.style.color = COLORS.SKIPPED;
+        divWithDescription.classList.add('eda-pmpo-centered-text');
+        ui.tooltip.bind(divWithDescription, tooltipMsg);
+        cell.element = divWithDescription;
+      }
     }); // grid.onCellPrepare
   } // updateGrid
 
@@ -631,7 +646,7 @@ export class Pmpo {
     form.append(desInput.root);
 
     const header = ui.h2('Settings');
-    ui.tooltip.bind(header, 'Settings of the pMPO model training.');
+    ui.tooltip.bind(header, 'Settings of the pMPO model.');
     form.append(header);
 
     // p-value threshold input
