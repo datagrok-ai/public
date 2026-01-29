@@ -9,9 +9,9 @@
     "@modelcontextprotocol/sdk": "^1.21.1",
     "@types/dom-chromium-ai": "^0.0.10",
     "@datagrok-libraries/db-explorer": "^1.7.2",
-    "cash-dom": "latest",
-    "datagrok-api": "^1.27.0",
-    "dayjs": "latest",
+    "cash-dom": "^8.1.5",
+    "datagrok-api": "../../js-api",
+    "dayjs": "^1.11.19",
     "openai": "^6.16.0",
     "@datagrok-libraries/test": "^1.0.0"
   },
@@ -25,10 +25,10 @@
     "eslint-config-google": "^0.14.0",
     "eslint-plugin-rxjs": "^5.0.3",
     "style-loader": "^4.0.0",
-    "ts-loader": "latest",
-    "typescript": "latest",
-    "webpack": "latest",
-    "webpack-cli": "latest"
+    "ts-loader": "^9.5.4",
+    "typescript": "^5.9.3",
+    "webpack": "^5.104.1",
+    "webpack-cli": "^6.0.1"
   },
   "scripts": {
     "link-all": "grok link",

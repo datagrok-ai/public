@@ -8,10 +8,10 @@
   "version": "1.4.6",
   "description": "Computation and visualization of hierarchical data clustering. [Learn more](https://github.com/datagrok-ai/public/blob/master/packages/Dendrogram/README.md)",
   "dependencies": {
-    "@datagrok-libraries/bio": "latest",
+    "@datagrok-libraries/bio": "^5.61.4",
     "@datagrok-libraries/gridext": "^1.5.3",
-    "@datagrok-libraries/math": "latest",
-    "@datagrok-libraries/ml": "latest",
+    "@datagrok-libraries/math": "^1.2.6",
+    "@datagrok-libraries/ml": "^6.10.8",
     "@datagrok-libraries/utils": "^4.6.5",
     "@webgpu/types": "^0.1.40",
     "cash-dom": "^8.1.5",

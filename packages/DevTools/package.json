@@ -33,10 +33,10 @@
     "eslint": "^8.21.0",
     "eslint-config-google": "^0.14.0",
     "style-loader": "^2.0.0",
-    "ts-loader": "latest",
-    "typescript": "latest",
-    "webpack": "latest",
-    "webpack-cli": "latest"
+    "ts-loader": "^9.5.4",
+    "typescript": "^5.9.3",
+    "webpack": "^5.104.1",
+    "webpack-cli": "^6.0.1"
   },
   "scripts": {
     "link-api": "npm link datagrok-api",

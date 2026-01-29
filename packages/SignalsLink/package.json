@@ -18,8 +18,8 @@
     "css-loader": "^7.1.2",
     "datagrok-tools": "^5.0.0",
     "style-loader": "^4.0.0",
-    "ts-loader": "latest",
-    "typescript": "latest",
+    "ts-loader": "^9.5.4",
+    "typescript": "^5.9.3",
     "webpack": "^5.95.0",
     "webpack-cli": "^5.1.4"
   },
