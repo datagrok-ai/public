@@ -1246,11 +1246,6 @@ export class DiffStudio {
     }
   } // clearSolution
 
-  /** Return options with respect to the model input specification */
-  public static getOptions(name: string, modelInput: Input, modelBlock: string, startingInputs?: Map<string,number>) {
-    return getOptions(name, modelInput, modelBlock, startingInputs);
-  }; // getOptions
-
   /** Generate model inputs */
   private async generateInputs(ivp: IVP): Promise<void> {
 
@@ -1299,7 +1294,7 @@ export class DiffStudio {
 
     // Inputs for argument
     for (const key of ARG_INPUT_KEYS) {
-      options = DiffStudio.getOptions(key, ivp.arg[key], CONTROL_EXPR.ARG, this.startingInputs);
+      options = getOptions(key, ivp.arg[key], CONTROL_EXPR.ARG, this.startingInputs);
       const input = ui.input.forProperty(DG.Property.fromOptions(options));
       input.caption = options.friendlyName ?? options.name;
 
@@ -1316,7 +1311,7 @@ export class DiffStudio {
 
     // Inputs for initial values
     ivp.inits.forEach((val, key) => {
-      options = DiffStudio.getOptions(key, val, CONTROL_EXPR.INITS, this.startingInputs);
+      options = getOptions(key, val, CONTROL_EXPR.INITS, this.startingInputs);
       const input = ui.input.forProperty(DG.Property.fromOptions(options));
       input.caption = options.friendlyName ?? options.name;
 
@@ -1334,7 +1329,7 @@ export class DiffStudio {
     // Inputs for parameters
     if (ivp.params !== null) {
       ivp.params.forEach((val, key) => {
-        options = DiffStudio.getOptions(key, val, CONTROL_EXPR.PARAMS, this.startingInputs);
+        options = getOptions(key, val, CONTROL_EXPR.PARAMS, this.startingInputs);
         const input = ui.input.forProperty(DG.Property.fromOptions(options));
         input.caption = options.friendlyName ?? options.name;
 
@@ -1352,7 +1347,7 @@ export class DiffStudio {
 
     // Inputs for loop
     if (ivp.loop !== null) {
-      options = DiffStudio.getOptions(SCRIPTING.COUNT, ivp.loop.count, CONTROL_EXPR.LOOP, this.startingInputs);
+      options = getOptions(SCRIPTING.COUNT, ivp.loop.count, CONTROL_EXPR.LOOP, this.startingInputs);
       options.inputType = INPUT_TYPE.INT; // since it's an integer
       options.type = DG.TYPE.INT; // since it's an integer
       const input = ui.input.forProperty(DG.Property.fromOptions(options));
