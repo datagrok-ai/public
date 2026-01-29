@@ -10,12 +10,14 @@ import {MpoProfileEditor} from '@datagrok-libraries/statistics/src/mpo/mpo-profi
 
 import '../../css/pmpo.css';
 
-import {getDesiredTables, getDescriptorStatistics, gaussDesirabilityFunc, sigmoidS, getConfusionMatrix, getAuc} from './stat-tools';
+import {getDesiredTables, getDescriptorStatistics, gaussDesirabilityFunc, sigmoidS, getConfusionMatrix, getAuc, getBoolPredictionColumn} from './stat-tools';
 import {MIN_SAMPLES_COUNT, PMPO_NON_APPLICABLE, DescriptorStatistics, P_VAL_TRES_MIN, DESCR_TITLE,
   R2_MIN, Q_CUTOFF_MIN, PmpoParams, SCORES_TITLE, DESCR_TABLE_TITLE, PMPO_COMPUTE_FAILED, SELECTED_TITLE,
   P_VAL, DESIRABILITY_COL_NAME, STAT_GRID_HEIGHT, DESIRABILITY_COLUMN_WIDTH, WEIGHT_TITLE,
   P_VAL_TRES_DEFAULT, R2_DEFAULT, Q_CUTOFF_DEFAULT, USE_SIGMOID_DEFAULT, ROC_TRESHOLDS, ROC_TRESHOLDS_COUNT,
-  FPR_TITLE, TPR_TITLE, COLORS} from './pmpo-defs';
+  FPR_TITLE, TPR_TITLE, COLORS,
+  ConfusionMatrix,
+  THRESHOLD} from './pmpo-defs';
 import {addSelectedDescriptorsCol, getDescriptorStatisticsTable, getFilteredByPvalue, getFilteredByCorrelations,
   getModelParams, getDescrTooltip, saveModel, getScoreTooltip, getDesirabilityProfileJson, getCorrelationTriples,
   addCorrelationColumns, setPvalColumnColorCoding, setCorrColumnColorCoding, PmpoError} from './pmpo-utils';
@@ -227,6 +229,7 @@ export class Pmpo {
   private statGrid = DG.Viewer.grid(this.initTable, {showTitle: true, title: DESCR_TABLE_TITLE});
 
   private predictionName = SCORES_TITLE;
+  private boolPredictionName = '';
 
   private desirabilityProfileRoots = new Map<string, HTMLElement>();
 
@@ -498,19 +501,32 @@ export class Pmpo {
     });
   } // updateDesirabilityProfileData
 
-  /** Updates the ROC curve viewer with the given desirability (labels) and prediction columns */
-  private updateRocCurve(desirability: DG.Column, prediction: DG.Column): void {
+  /** Updates the ROC curve viewer with the given desirability (labels) and prediction columns
+   * @return Best threshold according to Youden's J statistic
+   */
+  private updateRocCurve(desirability: DG.Column, prediction: DG.Column): number {
     const tpr = new Float32Array(ROC_TRESHOLDS_COUNT);
     const fpr = new Float32Array(ROC_TRESHOLDS_COUNT);
+
+    let bestJ = -1;
+    let currentJ = -1;
+    let bestThreshold = ROC_TRESHOLDS[0];
 
     // Compute TPR and FPR for each threshold
     for (let i = 0; i < ROC_TRESHOLDS_COUNT; ++i) {
       const confusion = getConfusionMatrix(desirability, prediction, ROC_TRESHOLDS[i]);
       tpr[i] = (confusion.TP + confusion.FN) > 0 ? confusion.TP / (confusion.TP + confusion.FN) : 0;
       fpr[i] = (confusion.FP + confusion.TN) > 0 ? confusion.FP / (confusion.FP + confusion.TN) : 0;
+      currentJ = tpr[i] - fpr[i];
+
+      if (currentJ > bestJ) {
+        bestJ = currentJ;
+        bestThreshold = ROC_TRESHOLDS[i];
+      }
     }
 
     const rocDf = DG.DataFrame.fromColumns([
+      DG.Column.fromFloat32Array(THRESHOLD, ROC_TRESHOLDS),
       DG.Column.fromFloat32Array(FPR_TITLE, fpr),
       DG.Column.fromFloat32Array(TPR_TITLE, tpr),
     ]);
@@ -536,6 +552,8 @@ export class Pmpo {
       markerType: 'dot',
       title: `ROC Curve (AUC = ${auc.toFixed(3)})`,
     });
+
+    return bestThreshold;
   } // updateRocCurve
 
   /** Fits the pMPO model to the given data and updates the viewers accordingly */
@@ -555,6 +573,7 @@ export class Pmpo {
     // Mark predictions with a color
     prediction.colors.setLinear(getOutputPalette(OPT_TYPE.MAX), {min: prediction.stats.min, max: prediction.stats.max});
 
+    // Remove existing prediction column and add the new one
     df.columns.remove(this.predictionName);
     df.columns.add(prediction);
 
@@ -568,7 +587,14 @@ export class Pmpo {
     this.updateStatisticsGrid(descrStatsTable, descriptorNames, selectedByPvalue, selectedByCorr);
 
     // Update ROC curve
-    this.updateRocCurve(desirability, prediction);
+    const bestThreshold = this.updateRocCurve(desirability, prediction);
+
+    console.log(`Best threshold according to Youden's J statistic: ${bestThreshold}`);
+
+    df.columns.remove(this.boolPredictionName);
+    this.boolPredictionName = df.columns.getUnusedName(desirability.name + '(predicted)');
+    const boolPrediction = getBoolPredictionColumn(prediction, bestThreshold, this.boolPredictionName);
+    df.columns.add(boolPrediction);
   } // fitAndUpdateViewers
 
   /** Runs the pMPO model training application */

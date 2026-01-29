@@ -246,3 +246,23 @@ export function getAuc(tpr: Float32Array, fpr: Float32Array): number {
 
   return auc;
 } // getAuc
+
+/** Converts numeric prediction column to boolean based on the given threshold
+ * @param numericPrediction - numeric prediction column
+ * @param threshold - threshold to convert prediction scores to binary labels
+ * @param name - name for the resulting boolean column
+ * @return Boolean prediction column
+ */
+export function getBoolPredictionColumn(numericPrediction: DG.Column, threshold: number, name: string): DG.Column {
+  if (!numericPrediction.isNumerical)
+    throw new Error('Failed to compute confusion matrix: prediction column must be numerical.');
+
+  const size = numericPrediction.length;
+  const boolPredData = new Array<boolean>(size);
+  const predRaw = numericPrediction.getRawData();
+
+  for (let i = 0; i < size; ++i)
+    boolPredData[i] = (predRaw[i] >= threshold);
+
+  return DG.Column.fromList(DG.COLUMN_TYPE.BOOL, name, boolPredData);
+} // getBoolPredictionColumn

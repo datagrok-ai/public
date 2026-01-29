@@ -151,9 +151,10 @@ export type ConfusionMatrix = {
 
 export const TPR_TITLE = 'TPR (Sensitivity)';
 export const FPR_TITLE = 'FPR (1 - Specificity)';
+export const THRESHOLD = 'Threshold';
 
-const ROC_CURVE_POINTS = 100;
-export const ROC_TRESHOLDS_COUNT = ROC_CURVE_POINTS + 1;
+const ROC_POINTS = 100;
+export const ROC_TRESHOLDS_COUNT = ROC_POINTS + 1;
 
 /** ROC curve thresholds from 0.0 to 1.0 */
-export const ROC_TRESHOLDS: number[] = Array.from({length: ROC_TRESHOLDS_COUNT}, (_, i) => i / ROC_CURVE_POINTS);
+export const ROC_TRESHOLDS = new Float32Array(Array.from({length: ROC_TRESHOLDS_COUNT}, (_, i) => i / ROC_POINTS));
