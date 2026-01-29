@@ -13,8 +13,8 @@ export function openModelFromFuncall(funccall: DG.FuncCall) : void {
 
 //name: OutliersSelectionViewer
 //description: Creates an outliers selection viewer
-//tags: viewer
 //output: viewer result
+//meta.role: viewer
 export function OutliersSelection() {
   return PackageFunctions.OutliersSelection();
 }

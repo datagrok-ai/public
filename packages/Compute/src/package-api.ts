@@ -43,7 +43,7 @@ export namespace funcs {
     return await grok.functions.call('Compute:OutliersSelection', {});
   }
 
-  export async function richFunctionViewEditor(call: any ): Promise<any> {
+  export async function richFunctionViewEditor(call: any ): Promise<DG.View> {
     return await grok.functions.call('Compute:RichFunctionViewEditor', { call });
   }
 
