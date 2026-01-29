@@ -2,7 +2,7 @@ import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 
-import {category, test, testViewer} from '@datagrok-libraries/utils/src/test';
+import {category, test, testViewer} from '@datagrok-libraries/test/src/test';
 import {TAGS as pdbTAGS} from '@datagrok-libraries/bio/src/pdb';
 import {IPdbHelper} from '@datagrok-libraries/bio/src/pdb/pdb-helper';
 import {asIViewer, IViewer} from '@datagrok-libraries/bio/src/viewers/viewer';

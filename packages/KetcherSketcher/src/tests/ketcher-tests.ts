@@ -1,4 +1,4 @@
-import { after, before, category, test } from '@datagrok-libraries/utils/src/test';
+import { after, before, category, test } from '@datagrok-libraries/test/src/test';
 import { _testSetMolfile, _testSetSmarts, _testSetSmiles } from './ketcher-utils';
 
 

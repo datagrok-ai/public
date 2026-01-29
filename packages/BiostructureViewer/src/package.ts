@@ -14,7 +14,7 @@ import {NglGlServiceBase} from '@datagrok-libraries/bio/src/viewers/ngl-gl-servi
 import {IBiostructureViewer} from '@datagrok-libraries/bio/src/viewers/molstar-viewer';
 import {IBiotrackViewer} from '@datagrok-libraries/bio/src/viewers/biotrack';
 import {BiostructureDataJson} from '@datagrok-libraries/bio/src/pdb/types';
-import {delay} from '@datagrok-libraries/utils/src/test';
+import {delay} from '@datagrok-libraries/test/src/test';
 
 import {byData, byId, MolstarViewer} from './viewers/molstar-viewer';
 import {SaguaroViewer} from './viewers/saguaro-viewer';

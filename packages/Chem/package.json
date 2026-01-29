@@ -60,7 +60,8 @@
     "typescript": "5.6.3",
     "typescript-lru-cache": "^2.0.0",
     "worker-loader": "^3.0.8",
-    "wu": "^2.1.0"
+    "wu": "^2.1.0",
+    "@datagrok-libraries/test": "^1.0.0"
   },
   "devDependencies": {
     "@datagrok/charts": "^1.4.0",

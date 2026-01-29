@@ -18,7 +18,8 @@
     "datagrok-api": "^1.26.0",
     "file-loader": "^6.2.0",
     "ts-loader": "^9.5.1",
-    "typescript": "^5.6.3"
+    "typescript": "^5.6.3",
+    "@datagrok-libraries/test": "^1.0.0"
   },
   "devDependencies": {
     "@datagrok/chem": "^1.16.5",

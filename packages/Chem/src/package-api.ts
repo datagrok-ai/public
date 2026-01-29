@@ -338,7 +338,7 @@ export namespace funcs {
     return await grok.functions.call('Chem:ChemSpaceEditor', { call });
   }
 
-  export async function getFingerprints(col: DG.Column , _metric?: string , fingerprintType?: string ): Promise<any> {
+  export async function getFingerprints(col: DG.Column , _metric?: any , fingerprintType?: string ): Promise<any> {
     return await grok.functions.call('Chem:GetFingerprints', { col, _metric, fingerprintType });
   }
 

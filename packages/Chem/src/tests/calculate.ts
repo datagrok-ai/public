@@ -1,8 +1,8 @@
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
-import {category, before, after, expect, test, delay, awaitCheck} from '@datagrok-libraries/utils/src/test';
-import {ensureContainerRunning} from '@datagrok-libraries/utils/src/test-container-utils';
+import {category, before, after, expect, test, delay, awaitCheck} from '@datagrok-libraries/test/src/test';
+import {ensureContainerRunning} from '@datagrok-libraries/test/src/test-container-utils';
 import {CONTAINER_TIMEOUT} from './utils';
 import * as chemCommonRdKit from '../utils/chem-common-rdkit';
 import {_package} from '../package-test';

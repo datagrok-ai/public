@@ -1,5 +1,5 @@
 import * as DG from 'datagrok-api/dg';
-import {category, test} from '@datagrok-libraries/utils/src/test';
+import {category, test} from '@datagrok-libraries/test/src/test';
 import {PipelineConfiguration} from '@datagrok-libraries/compute-utils';
 import {getProcessedConfig} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/config-processing-utils';
 import {StateTree} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/StateTree';

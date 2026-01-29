@@ -5,7 +5,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {_package} from '../package-test';
 
-import {category, expect, test, timeout} from '@datagrok-libraries/utils/src/test';
+import {category, expect, test, timeout} from '@datagrok-libraries/test/src/test';
 
 import {TEMPLATES, ENERGY_N_CONTROL} from '../templates';
 import {USE_CASES} from '../use-cases';

@@ -20,7 +20,8 @@
     "eslint-config-google": "^0.14.0",
     "exceljs": "^4.3.0",
     "jstat": "^1.9.6",
-    "rxjs": "^6.5.5"
+    "rxjs": "^6.5.5",
+    "@datagrok-libraries/test": "^1.0.0"
   },
   "devDependencies": {
     "@datagrok/curves": "^1.10.12",

@@ -4,7 +4,7 @@ import * as ui from 'datagrok-api/ui';
 
 import wu from 'wu';
 
-import {category, delay, expect, test, testViewer} from '@datagrok-libraries/utils/src/test';
+import {category, delay, expect, test, testViewer} from '@datagrok-libraries/test/src/test';
 
 import {awaitGrid} from './utils';
 import {WebLogoViewer} from '../viewers/web-logo-viewer';

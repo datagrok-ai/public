@@ -22,7 +22,8 @@
     "rxjs": "^6.6.7",
     "source-map-loader": "^5.0.0",
     "ts-loader": "^9.5.1",
-    "typescript": "^5.8.3"
+    "typescript": "^5.8.3",
+    "@datagrok-libraries/test": "^1.0.0"
   },
   "devDependencies": {
     "@types/lodash.clonedeepwith": "^4.5.9",

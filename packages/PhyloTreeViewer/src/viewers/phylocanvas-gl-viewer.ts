@@ -15,7 +15,7 @@ import {intToHtml} from '@datagrok-libraries/utils/src/color';
 import {IPhylocanvasGlViewer, TreeTypesNames} from '@datagrok-libraries/bio/src/viewers/phylocanvas-gl-viewer';
 import {TreeDefaultPalette} from '@datagrok-libraries/bio/src/trees';
 import {parseNewick, Shapes, TreeTypes} from '@datagrok-libraries/bio/src/trees/phylocanvas';
-import {testEvent} from '@datagrok-libraries/utils/src/test';
+import {testEvent} from '@datagrok-libraries/test/src/test';
 
 // TODO: add test for these properties existing.
 

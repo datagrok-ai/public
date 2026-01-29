@@ -16,7 +16,7 @@ import {
   RepresentationType,
 } from '@datagrok-libraries/bio/src/viewers/ngl-gl-viewer';
 import {PromiseSyncer} from '@datagrok-libraries/bio/src/utils/syncer';
-import {testEvent} from '@datagrok-libraries/utils/src/test';
+import {testEvent} from '@datagrok-libraries/test/src/test';
 import {errInfo} from '@datagrok-libraries/bio/src/utils/err-info';
 import {BiostructureData, BiostructureDataJson} from '@datagrok-libraries/bio/src/pdb/types';
 import {ILogger} from '@datagrok-libraries/bio/src/utils/logger';

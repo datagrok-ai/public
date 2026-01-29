@@ -12,7 +12,8 @@
     "cash-dom": "^8.1.5",
     "cors": "^2.8.5",
     "datagrok-api": "^1.26.0",
-    "dayjs": "^1.11.13"
+    "dayjs": "^1.11.13",
+    "@datagrok-libraries/test": "^1.0.0"
   },
   "devDependencies": {
     "css-loader": "^7.1.2",

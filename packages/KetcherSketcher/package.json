@@ -19,7 +19,8 @@
     "file-loader": "^6.2.0",
     "ketcher-core": "^2.21.0",
     "ketcher-react": "^2.21.0",
-    "ketcher-standalone": "^2.21.0"
+    "ketcher-standalone": "^2.21.0",
+    "@datagrok-libraries/test": "^1.0.0"
   },
   "devDependencies": {
     "@datagrok/chem": "^1.13.0",

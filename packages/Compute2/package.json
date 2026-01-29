@@ -22,7 +22,8 @@
     "rxjs": "^6.6.7",
     "vue": "^3.5.13",
     "vue-json-pretty": "^2.4.0",
-    "wu": "^2.1.0"
+    "wu": "^2.1.0",
+    "@datagrok-libraries/test": "^1.0.0"
   },
   "devDependencies": {
     "@types/lodash.isequal": "^4.5.8",

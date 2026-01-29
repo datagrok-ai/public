@@ -18,7 +18,8 @@
     "datagrok-api": "^1.25.0",
     "dayjs": "^1.11.13",
     "jszip": "^3.10.1",
-    "jszip-sync": "^3.2.1-sync"
+    "jszip-sync": "^3.2.1-sync",
+    "@datagrok-libraries/test": "^1.0.0"
   },
   "devDependencies": {
     "@typescript-eslint/eslint-plugin": "^5.32.0",

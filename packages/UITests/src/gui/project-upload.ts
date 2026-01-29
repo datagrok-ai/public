@@ -2,7 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
 import {uploadProject} from './gui-utils';
-import {category, delay, expect, test} from '@datagrok-libraries/utils/src/test';
+import {category, delay, expect, test} from '@datagrok-libraries/test/src/test';
 
 category('Projects', () => {
   test('Project: Create', async () => {

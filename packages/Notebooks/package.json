@@ -31,7 +31,8 @@
     "bufferutil": "^4.0.1",
     "datagrok-api": "^1.26.0",
     "es6-promise": "~4.2.8",
-    "utf-8-validate": "^5.0.2"
+    "utf-8-validate": "^5.0.2",
+    "@datagrok-libraries/test": "^1.0.0"
   },
   "devDependencies": {
     "@types/codemirror": "^0.0.76",

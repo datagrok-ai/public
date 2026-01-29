@@ -5,7 +5,7 @@ import * as DG from 'datagrok-api/dg';
 
 import wu from 'wu';
 
-import {before, after, category, test, expectArray, expect} from '@datagrok-libraries/utils/src/test';
+import {before, after, category, test, expectArray, expect} from '@datagrok-libraries/test/src/test';
 import {RDModule} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 import {_toAtomicLevel} from '@datagrok-libraries/bio/src/monomer-works/to-atomic-level';
 import {IMonomerLib} from '@datagrok-libraries/bio/src/types/monomer-library';

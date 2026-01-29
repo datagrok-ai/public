@@ -4,7 +4,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {COUNTRY_CODES} from './country-codes';
 import {ChemspacePriceColumns, ChemspaceOffer, ChemspacePricesTableItem, ChemspaceResult} from './model';
-import {delay} from '@datagrok-libraries/utils/src/test';
+import {delay} from '@datagrok-libraries/test/src/test';
 
 export * from './package.g';
 

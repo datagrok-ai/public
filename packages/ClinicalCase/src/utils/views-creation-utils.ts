@@ -14,7 +14,7 @@ import {studies} from './app-utils';
 import {createValidationView} from '../views/validation-table-view';
 import {createMatrixTableView} from '../views/matrix-table-view';
 import {createMeasurementProfileTableView} from '../views/measurement-profile-table-view';
-import {awaitCheck} from '@datagrok-libraries/utils/src/test';
+import {awaitCheck} from '@datagrok-libraries/test/src/test';
 
 
 export function createAEBrowserHelper(studyId: string): any {

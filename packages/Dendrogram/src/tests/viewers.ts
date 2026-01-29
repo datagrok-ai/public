@@ -4,7 +4,7 @@ import * as ui from 'datagrok-api/ui';
 
 import $ from 'cash-dom';
 
-import {awaitCheck, category, test, testViewer} from '@datagrok-libraries/utils/src/test';
+import {awaitCheck, category, test, testViewer} from '@datagrok-libraries/test/src/test';
 
 import {TreeHelper} from '../utils/tree-helper';
 

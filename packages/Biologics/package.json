@@ -12,7 +12,8 @@
     "@datagrok-libraries/utils": "^4.6.9",
     "cash-dom": "^8.1.5",
     "datagrok-api": "^1.26.0",
-    "dayjs": "^1.11.13"
+    "dayjs": "^1.11.13",
+    "@datagrok-libraries/test": "^1.0.0"
   },
   "devDependencies": {
     "@typescript-eslint/eslint-plugin": "^8.8.1",

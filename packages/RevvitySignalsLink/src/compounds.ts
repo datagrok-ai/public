@@ -2,7 +2,7 @@ import * as DG from 'datagrok-api/dg';
 import { queryStructureById } from './revvity-api';
 import { ComplexCondition, Operators } from '@datagrok-libraries/utils/src/query-builder/query-builder';
 import { SignalsSearchQuery } from './signals-search-query';
-import { delay } from '@datagrok-libraries/utils/src/test';
+import { delay } from '@datagrok-libraries/test/src/test';
 import { funcs } from './package-api';
 
 export const assetsQuery = {

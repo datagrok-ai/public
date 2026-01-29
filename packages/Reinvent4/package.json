@@ -13,7 +13,8 @@
     "cash-dom": "^8.1.5",
     "datagrok-api": "^1.26.0",
     "dayjs": "^1.11.13",
-    "jszip": "3.10.1"
+    "jszip": "3.10.1",
+    "@datagrok-libraries/test": "^1.0.0"
   },
   "devDependencies": {
     "datagrok-tools": "^5.0.0",

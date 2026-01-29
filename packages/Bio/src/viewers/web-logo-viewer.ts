@@ -22,7 +22,7 @@ import {
 import {errorToConsole} from '@datagrok-libraries/utils/src/to-console';
 import {intToHtmlA} from '@datagrok-libraries/utils/src/color';
 import {ISeqSplitted} from '@datagrok-libraries/bio/src/utils/macromolecule/types';
-import {testEvent} from '@datagrok-libraries/utils/src/test';
+import {testEvent} from '@datagrok-libraries/test/src/test';
 import {PromiseSyncer} from '@datagrok-libraries/bio/src/utils/syncer';
 import {GAP_SYMBOL} from '@datagrok-libraries/bio/src/utils/macromolecule/consts';
 import {IMonomerLibBase} from '@datagrok-libraries/bio/src/types/monomer-library';

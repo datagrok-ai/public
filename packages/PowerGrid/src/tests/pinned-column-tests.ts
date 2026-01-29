@@ -4,7 +4,7 @@ import * as DG from 'datagrok-api/dg';
 
 import $ from 'cash-dom';
 
-import {awaitCheck, category, expect, expectArray, test} from '@datagrok-libraries/utils/src/test';
+import {awaitCheck, category, expect, expectArray, test} from '@datagrok-libraries/test/src/test';
 
 category('pinned-column', () => {
   const csv = `col1, col2, col3, col4

@@ -25,7 +25,8 @@
     "file-loader": "^6.2.0",
     "rxjs": "^6.5.5",
     "uuid": "^10.0.0",
-    "wu": "^2.1.0"
+    "wu": "^2.1.0",
+    "@datagrok-libraries/test": "^1.0.0"
   },
   "devDependencies": {
     "@datagrok-libraries/helm-web-editor": "^1.1.16",

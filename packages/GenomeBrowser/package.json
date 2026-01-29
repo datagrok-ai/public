@@ -32,7 +32,8 @@
     "datagrok-api": "^1.21.3",
     "dayjs": "^1.11.13",
     "react": "^19.0.0",
-    "react-dom": "^19.0.0"
+    "react-dom": "^19.0.0",
+    "@datagrok-libraries/test": "^1.0.0"
   },
   "devDependencies": {
     "@babel/core": "^7.26.10",

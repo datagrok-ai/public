@@ -1,7 +1,7 @@
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 
-import {after, awaitCheck, category, delay, expect, test} from '@datagrok-libraries/utils/src/test';
+import {after, awaitCheck, category, delay, expect, test} from '@datagrok-libraries/test/src/test';
 import {createTableView} from './utils';
 import {RGroupDecompRes} from '../analysis/r-group-analysis';
 

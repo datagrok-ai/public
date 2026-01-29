@@ -10,7 +10,7 @@ import {IRGroupAnalysisResult} from '../rdkit-service/rdkit-service-worker-subst
 import {getRdKitService} from '../utils/chem-common-rdkit';
 import {_convertMolNotation} from '../utils/convert-notation-utils';
 import {SCAFFOLD_COL} from '../constants';
-import {delay} from '@datagrok-libraries/utils/src/test';
+import {delay} from '@datagrok-libraries/test/src/test';
 import {hexToPercentRgb} from '../utils/chem-common';
 import {getQueryMolSafe} from '../utils/mol-creation_rdkit';
 import {MolfileHandler} from '@datagrok-libraries/chem-meta/src/parsing-utils/molfile-handler';

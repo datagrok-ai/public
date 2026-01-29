@@ -1,7 +1,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
-import {before, category, expect, expectArray, test, testEvent} from '@datagrok-libraries/utils/src/test';
+import {before, category, expect, expectArray, test, testEvent} from '@datagrok-libraries/test/src/test';
 import {ALPHABET, NOTATION, TAGS as bioTAGS} from '@datagrok-libraries/bio/src/utils/macromolecule';
 import {getSeqHelper, ISeqHelper} from '@datagrok-libraries/bio/src/utils/seq-helper';
 import {GAP_SYMBOL} from '@datagrok-libraries/bio/src/utils/macromolecule/consts';

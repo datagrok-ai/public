@@ -15,7 +15,8 @@
     "dayjs": "^1.11.13",
     "jszip": "^3.10.1",
     "ol": "^6.15.1",
-    "xhr2": "^0.2.1"
+    "xhr2": "^0.2.1",
+    "@datagrok-libraries/test": "^1.0.0"
   },
   "devDependencies": {
     "@types/d3": "^7.4.3",

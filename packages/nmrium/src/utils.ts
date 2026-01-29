@@ -6,7 +6,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import { getNMRiumComponent } from "../nmrium-wrapper/src/NMRiumWrapper";
 import { NMRiumEvents } from "../nmrium-wrapper/src/NMRiumWrapper";
-import { delay } from '@datagrok-libraries/utils/src/test';
+import { delay } from '@datagrok-libraries/test/src/test';
 
 export function getNMRiumView() {
     const root = ui.div([], {classes:'d4-nmrium-wrapper'});

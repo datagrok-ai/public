@@ -2,7 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {runTests, TestContext, tests, initAutoTests as initTests} from '@datagrok-libraries/utils/src/test';
+import {runTests, TestContext, tests, initAutoTests as initTests} from '@datagrok-libraries/test/src/test';
 
 import './tests/_first-tests';
 import './tests/Palettes-test';

@@ -4,7 +4,7 @@ import * as DG from 'datagrok-api/dg';
 
 
 import {_package} from '../package';
-import {delay} from '@datagrok-libraries/utils/src/test';
+import {delay} from '@datagrok-libraries/test/src/test';
 
 type IDetectorReport = { categoriesSample: any[], rejectReason: string };
 

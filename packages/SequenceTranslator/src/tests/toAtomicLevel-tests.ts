@@ -3,7 +3,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {before, after, category, expect, test, expectArray, testEvent, delay} from '@datagrok-libraries/utils/src/test';
+import {before, after, category, expect, test, expectArray, testEvent, delay} from '@datagrok-libraries/test/src/test';
 import {Monomer, MonomerLibData} from '@datagrok-libraries/bio/src/types/monomer-library';
 
 import {PolymerTypes} from '@datagrok-libraries/bio/src/helm/consts';
