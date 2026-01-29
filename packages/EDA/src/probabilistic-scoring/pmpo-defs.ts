@@ -149,10 +149,12 @@ export type ConfusionMatrix = {
   FN: number,
 };
 
+// Titles for ROC curve columns
 export const TPR_TITLE = 'TPR (Sensitivity)';
 export const FPR_TITLE = 'FPR (1 - Specificity)';
 export const THRESHOLD = 'Threshold';
 
+// Number of points in ROC curve
 const ROC_POINTS = 100;
 export const ROC_TRESHOLDS_COUNT = ROC_POINTS + 1;
 

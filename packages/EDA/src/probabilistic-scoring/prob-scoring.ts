@@ -566,6 +566,7 @@ export class Pmpo {
     return bestThreshold;
   } // updateRocCurve
 
+  /** Updates the confusion matrix viewer with the given data frame, desirability column name, and best threshold */
   private updateConfusionMatrix(df: DG.DataFrame, desColName: string, bestThreshold: number): void {
     this.confusionMatrix.dataFrame = df;
     this.confusionMatrix.setOptions({
@@ -618,6 +619,8 @@ export class Pmpo {
 
     // Update confusion matrix
     this.updateConfusionMatrix(df, desColName, bestThreshold);
+
+    this.view.dataFrame.selection.setAll(false, true);
   } // fitAndUpdateViewers
 
   /** Runs the pMPO model training application */
