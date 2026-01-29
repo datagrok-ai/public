@@ -18,33 +18,41 @@ import {DIFF_GROK_OUT_IDX} from './constants';
 
 /** Grid analyzer */
 export class GridAnalysis {
+  private func: DG.Func;
   private funcCalls: DG.FuncCall[] | null = null;
+  private outputsOfInterest: OutputDataFromUI[];
+  private diffGrok: DiffGrok | undefined;
+  private funcInputs: Record<string, any>[];
   private inputCols: DG.Column[]= [];
 
   constructor(
-    private func: DG.Func,
-    private funcInputs: Record<string, any>[],
-    private variedInputsInf: {name: string, caption: string, type: DG.TYPE}[],
-    private outputsOfInterest: OutputDataFromUI[],
-    private diffGrok: DiffGrok | undefined,
+    func: DG.Func,
+    funcInputs: Record<string, any>[],
+    variedInputsInf: {name: string, caption: string, type: DG.TYPE}[],
+    outputsOfInterest: OutputDataFromUI[],
+    diffGrok: DiffGrok | undefined,
   ) {
-  } // constructor
-
-  /** Performs non-random sensitivity analysis */
-  async perform(): Promise<DG.DataFrame> {
-    this.funcCalls = (this.diffGrok === undefined) ?
-      await Promise.all(this.funcInputs.map((inp) => this.func.prepareAsync(inp))) :
+    this.func = func;
+    this.diffGrok = diffGrok;
+    this.funcInputs = funcInputs;
+    this.funcCalls = (diffGrok === undefined) ?
+      funcInputs.map((inp) => func.prepare(inp)) :
       null;
 
-    this.variedInputsInf.forEach((info) => {
+    variedInputsInf.forEach((info) => {
       const col = DG.Column.fromList(
         info.type as unknown as DG.COLUMN_TYPE,
         info.caption,
-        this.funcInputs.map((inputs) => inputs[info.name]),
+        funcInputs.map((inputs) => inputs[info.name]),
       );
       this.inputCols.push(col);
     });
 
+    this.outputsOfInterest = outputsOfInterest;
+  } // constructor
+
+  /** Performs non-random sensitivity analysis */
+  async perform(): Promise<DG.DataFrame> {
     // columns with outputs
     let outputCols: DG.Column[];
 

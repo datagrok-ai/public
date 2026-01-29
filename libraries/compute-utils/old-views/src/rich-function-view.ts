@@ -293,7 +293,7 @@ export class RichFunctionView extends FunctionView {
     await Promise.all(inputParams.map(async (param) => {
       if (param.property.options.input) {
         const func = DG.Func.byName(param.property.options.input);
-        const call = await func.prepareAsync({params: JSON.parse(param.property.options.inputOptions || '{}')});
+        const call = func.prepare({params: JSON.parse(param.property.options.inputOptions || '{}')});
         await call.call();
         this.inputsOverride[param.name] = call.outputs.input;
       }
@@ -551,8 +551,7 @@ export class RichFunctionView extends FunctionView {
     };
 
     const func = DG.Func.byName(this.uploadFunc!) as DG.Func;
-    const funcCall = await func.prepareAsync({params: {'func': this.func}});
-    await funcCall.call();
+    const funcCall = await func.prepare({params: {'func': this.func}}).call();
     const uploadWidget = funcCall.outputs.uploadWidget;
     const uploadFuncCall = funcCall.outputs.uploadFuncCall as DG.FuncCall;
     let uploadedFunccalls = [] as DG.FuncCall[];

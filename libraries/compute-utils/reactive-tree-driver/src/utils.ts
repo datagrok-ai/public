@@ -12,7 +12,7 @@ export function callHandler<R, P = any>(handler: HandlerBase<P, R>, params: P): 
   if (typeof handler === 'string') {
     return defer(async () => {
       const f = DG.Func.byName(handler);
-      const call = await f.prepareAsync({params});
+      const call = f.prepare({params});
       await call.call(undefined, undefined, {processed: true, report: false});
       const res = call.getOutputParamValue() as R;
       return res;

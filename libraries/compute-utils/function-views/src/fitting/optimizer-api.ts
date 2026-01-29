@@ -41,7 +41,7 @@ export async function runOptimizer(
 ): Promise<[OptimizationResult, DG.FuncCall[]]> {
   const {variedInputNames, fixedInputs} = getInputsData(inputBounds);
 
-  const objectiveFunc = await makeConstFunction(lossType, func, inputBounds, outputTargets);
+  const objectiveFunc = makeConstFunction(lossType, func, inputBounds, outputTargets);
 
   const defaultsOverrides = JSON.parse(func.options['fittingSettings'] || '{}');
 
@@ -69,7 +69,7 @@ export async function runOptimizer(
   const extrema = optResult.extremums;
   extrema.sort((a: Extremum, b: Extremum) => a.cost - b.cost);
 
-  const getCalledFuncCall = await makeGetCalledFuncCall(func, fixedInputs, variedInputNames, true);
+  const getCalledFuncCall = makeGetCalledFuncCall(func, fixedInputs, variedInputNames, true);
   const targetDfs: TargetTableOutput[] = outputTargets
     .filter((output) => output.type === DG.TYPE.DATA_FRAME)
     .map((output) => {

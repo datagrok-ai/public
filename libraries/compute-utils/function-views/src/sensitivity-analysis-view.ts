@@ -1012,7 +1012,7 @@ export class SensitivityAnalysisView {
           return;
 
         const selectedInput = funcInputs[cell.tableRowIndex ?? 0];
-        const funcCall = await this.func.prepareAsync(selectedInput);
+        const funcCall = this.func.prepare(selectedInput);
         const selectedRun = await funcCall.call(undefined, undefined, {processed: true, report: false});
 
         const scalarParams = ([...selectedRun.outputParams.values()])
@@ -1171,7 +1171,7 @@ export class SensitivityAnalysisView {
           return;
 
         const selectedInput = funcInputs[cell.tableRowIndex ?? 0];
-        const funcCall = await this.func.prepareAsync(selectedInput);
+        const funcCall = this.func.prepare(selectedInput);
         const selectedRun = await funcCall.call(undefined, undefined, {processed: true, report: false});
 
         const scalarParams = ([...selectedRun.outputParams.values()])
@@ -1353,7 +1353,7 @@ export class SensitivityAnalysisView {
           return;
 
         const selectedInput = funcInputs[cell.tableRowIndex ?? 0];
-        const funcCall = await this.func.prepareAsync(selectedInput);
+        const funcCall = this.func.prepare(selectedInput);
         const selectedRun = await funcCall.call(undefined, undefined, {processed: true, report: false});
 
         const scalarParams = ([...selectedRun.outputParams.values()])

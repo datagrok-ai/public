@@ -40,7 +40,7 @@ export async function makeFuncCall(
 ): Promise<AdapterInitData> {
   const func = DG.Func.byName(nqName);
   const defaultValues = getFuncallDefaults(func);
-  const fc = await func.prepareAsync(defaultValues);
+  const fc = func.prepare(defaultValues);
   fc.newId();
   const adapter = new FuncCallAdapter(fc, isReadonly);
   return {adapter, restrictions: {}, runError: undefined, isOutputOutdated: true};
@@ -77,7 +77,7 @@ export async function loadFuncCall(
 
 export async function makeMetaCall(nqName: string) {
   const func = DG.Func.byName(nqName);
-  const metaCall = await func.prepareAsync({});
+  const metaCall = func.prepare({});
   return metaCall;
 }
 

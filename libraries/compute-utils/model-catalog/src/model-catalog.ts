@@ -148,7 +148,7 @@ async function handleInitialUri(segment: string) {
         if (missingGroups?.length)
           grok.shell.error(`User is not a part of the following user groups: ${missingGroups.map((g) => g.name).join(',')}`);
         else
-          await ModelHandler.openModel(func);
+          ModelHandler.openModel(func);
       }
     }
   }

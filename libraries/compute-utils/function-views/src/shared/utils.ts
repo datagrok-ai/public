@@ -27,7 +27,7 @@ export function properUpdateIndicator(e: HTMLElement, state: boolean) {
   }
 }
 
-export const getDfFromRuns = async (
+export const getDfFromRuns = (
   comparedRuns: DG.FuncCall[],
   func: DG.Func,
   options: {
@@ -35,15 +35,13 @@ export const getDfFromRuns = async (
     parentCall?: DG.FuncCall,
   } = {parentView: undefined, parentCall: undefined},
 ) => {
-  const fc = await func.prepareAsync();
+  const configFunc = func;
 
-  const allProps = [
-    ...fc.inputParams.values(),
-    ...fc.outputParams.values(),
-  ];
-
-  const allParamViewers = allProps
-    .map(({property}) => getPropViewers(property))
+  const allParamViewers = [
+    ...configFunc.inputs,
+    ...configFunc.outputs,
+  ]
+    .map((prop) => getPropViewers(prop))
     .reduce((acc, config) => {
       if (!acc[config.name])
         acc[config.name] = config.config;
@@ -107,7 +105,8 @@ export const getDfFromRuns = async (
   comparisonDf.name = options.parentCall?.func.name ?
     `${options.parentCall?.func.name} - comparison` : `${func.name} - comparison`;
 
-  allProps.forEach(({property}) =>  addColumnsFromProp(property))
+  configFunc.inputs.forEach((prop) => addColumnsFromProp(prop));
+  configFunc.outputs.forEach((prop) => addColumnsFromProp(prop));
 
   // Catching events to render context panel
   grok.events.onCurrentObjectChanged.subscribe(({sender}) => {

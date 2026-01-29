@@ -249,7 +249,7 @@ export class PipelineView extends FunctionView {
 
     const viewsLoading = scriptsWithStepId.map(async (scriptWithId) => {
       const currentStep = this.steps[scriptWithId.stepId];
-      const scriptCall: DG.FuncCall = await scriptWithId.stepScript.prepareAsync();
+      const scriptCall: DG.FuncCall = scriptWithId.stepScript.prepare();
       const editorFunc = editorFuncs[currentStep.editor];
 
       await this.onBeforeStepFuncCallApply(scriptWithId.stepScript.nqName, scriptCall, editorFunc);
@@ -679,7 +679,7 @@ export class PipelineView extends FunctionView {
   }
 
   public override async saveRun(callToSave: DG.FuncCall): Promise<DG.FuncCall> {
-    let callCopy = await deepCopy(callToSave);
+    let callCopy = deepCopy(callToSave);
     await this.onBeforeSaveRun(callCopy);
 
     if (isIncomplete(callCopy)) {
