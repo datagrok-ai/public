@@ -92,7 +92,7 @@ export class PackageFunctions {
   }
 
 
-  @grok.decorators.editor({outputs: [{type: 'view', name: 'result'}]})
+  @grok.decorators.editor({outputs: [{type: 'object', name: 'result'}]})
   static PipelineStepEditor(call: DG.FuncCall) {
     return RichFunctionViewInst.fromFuncCall(call as any, {historyEnabled: false, isTabbed: true});
   }
