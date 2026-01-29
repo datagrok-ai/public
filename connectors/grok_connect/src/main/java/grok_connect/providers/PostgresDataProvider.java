@@ -187,7 +187,7 @@ public class PostgresDataProvider extends JdbcDataProvider {
 
     @Override
     protected String getInQuery(PatternMatcher matcher, String names) {
-        boolean isUuid = matcher.values != null && matcher.values.stream().allMatch((s) -> s != null && UUID_REGEX.matcher(s).matches());
+        boolean isUuid = matcher.values != null && matcher.values.stream().allMatch((s) -> s instanceof String && UUID_REGEX.matcher((String) s).matches());
         return String.format("(%s%s %s (%s))", matcher.colName, isUuid ? "::uuid" : "", matcher.op, names);
     }
 
