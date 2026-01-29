@@ -974,7 +974,7 @@ Medicinal chemistry is a balancing act: potency must rise while properties like 
 
   Probabilistic MPO ([pMPO](https://pmc.ncbi.nlm.nih.gov/articles/PMC4716604/)) is a data-driven method for constructing desirability profiles from labeled datasets, in which statistically significant and non-redundant molecular descriptors are identified through significance testing and correlation filtering. It then combines these descriptors into weighted desirability functions, enabling robust multi-parameter optimization and compound ranking based on balanced property trade-offs.
 
-  Build a desirability profile using the interactive pMPO application available via `Chem -> Calculate -> Train pMPO...`:
+  Build a desirability profile using the interactive pMPO [application](../../../../learn/pMPO.md):
 
   ![Pareto front](mpo-probabilistic.png)
 
