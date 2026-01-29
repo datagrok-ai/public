@@ -1169,12 +1169,13 @@ export async function biochemPropsWidget() : Promise<void> {
 }
 
 //name: MPO profiles
+//input: string path { meta.url: true; optional: true }
 //output: view result
 //meta.browsePath: Chem
 //meta.icon: images/mpo.png
 //meta.role: app
-export async function mpoProfilesApp() : Promise<any> {
-  return await PackageFunctions.mpoProfilesApp();
+export async function mpoProfilesApp(path?: string) : Promise<any> {
+  return await PackageFunctions.mpoProfilesApp(path);
 }
 
 //input: dynamic treeNode 

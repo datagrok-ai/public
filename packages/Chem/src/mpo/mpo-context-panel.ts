@@ -6,6 +6,7 @@ import {DesirabilityProfile, WeightedAggregation} from '@datagrok-libraries/stat
 
 import {MpoScoreViewer} from './mpo-scores-viewer';
 import {computeMpo} from './utils';
+import {Subscription} from 'rxjs';
 
 
 export class MpoContextPanel {
@@ -17,6 +18,7 @@ export class MpoContextPanel {
   private histogram?: DG.Viewer;
   private bestScoreViewer?: MpoScoreViewer;
   private worstScoreViewer?: MpoScoreViewer;
+  private currentObjectChangingSub: Subscription | null = null;
 
   // Uncomment to disable interactivity
   // showCurrentRow: false,
@@ -42,6 +44,8 @@ export class MpoContextPanel {
 
     this.histogramHost.classList.add('chem-mpo-histogram-compact');
     grok.shell.o = this.root;
+
+    this.attachCurrentObjectChanging();
   }
 
   private updateTitle(title: string) {
@@ -106,5 +110,18 @@ export class MpoContextPanel {
 
     this.bestScoreViewer.render();
     this.worstScoreViewer.render();
+  }
+
+  private attachCurrentObjectChanging() {
+    this.currentObjectChangingSub = grok.events.onEvent('d4-current-object-changing').subscribe((e) => {
+      const newObj = e.newObject;
+      if (newObj !== this.root)
+        e.preventDefault();
+    });
+  }
+
+  detach() {
+    this.currentObjectChangingSub?.unsubscribe();
+    this.currentObjectChangingSub = null;
   }
 }

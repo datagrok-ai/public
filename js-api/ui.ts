@@ -839,6 +839,7 @@ export namespace input {
     step?: number;
     showSlider?: boolean;
     showPlusMinus?: boolean;
+    format?: string;
   }
 
   export interface IChoiceInputInitOptions<T> extends IInputInitOptions<T> {

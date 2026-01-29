@@ -1,6 +1,6 @@
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
-import {before, category, expect, test, expectTable, expectExceptionAsync, after} from '@datagrok-libraries/test/src/test';
+import {before, category, expect, test,  expectExceptionAsync, after} from '@datagrok-libraries/test/src/test';
 import {_package} from '../package-test';
 
 category('Packages: migrations', () => {
@@ -28,30 +28,23 @@ category('Packages: migrations', () => {
     await deletePackage('apitestsdb');
   });
 
-  async function waitPackageInit() {
-    let promise = new Promise((resolve, reject) => {
-      console.log('wait 10 seconds to fully init package');
-      setTimeout(() => {
-        resolve(null);
-      }, 10000);
-    });
-    await promise;
-  }
-
   async function publish(packageData: Uint8Array, name: string, debug: boolean) {
     const uploadResponse = await fetch(`${grok.dapi.root}/packages/dev/${key}/${name}?debug=${debug}&rebuild=false`,
       {method: 'POST', body: packageData as BodyInit});
     expect(uploadResponse.status, 200);
-    expect((await uploadResponse.text()).indexOf('ApiError'), -1);
-    await waitPackageInit();
+    let text = await uploadResponse.text();
+    expect(text.indexOf('ApiError'), -1);
+    console.log('wait 10 seconds to fully init package');
+    await DG.delay(10000);
   }
 
   async function deletePackage(packageName: string) {
     const uploadResponse = await fetch(`${grok.dapi.root}/packages/dev/${key}/${packageName}`,
       {method: 'DELETE'});
     expect(uploadResponse.status, 200);
-    expect((await uploadResponse.text()).indexOf('ApiError'), -1);
-    await waitPackageInit();
+    let text = await uploadResponse.text();
+    expect(text.indexOf('ApiError'), -1);
+    await DG.delay(10000);
   }
 
   test('Query uploaded package', async () => {
@@ -65,7 +58,6 @@ category('Packages: migrations', () => {
     
     // previous versions should be disabled 
     let versionsList = await grok.dapi.packages.filter('shortName = "Apitestsdb"').list();
-    console.log(versionsList);
     expect(versionsList.length, 1);
   }, { timeout: 50000 });
 

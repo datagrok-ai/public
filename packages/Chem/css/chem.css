@@ -1082,3 +1082,39 @@
   min-width: 0;
   min-height: 0;
 }
+
+.chem-mpo-actions-button {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: transparent;
+  font-size: 18px;
+  line-height: 28px;
+  cursor: pointer;
+  transition: background 0.2s ease, border-color 0.2s ease;
+}
+
+.chem-mpo-actions-button:hover {
+  background: rgba(0, 0, 0, 0.05);
+  border-color: rgba(0, 0, 0, 0.12);
+}
+
+.chem-mpo-actions-button:active {
+  background: rgba(0, 0, 0, 0.08);
+}
+
+.chem-mpo-error-message {
+  color: #c00;
+  padding: 12px;
+  font-weight: 600;
+}
+
+.chem-descriptors-select-btn {
+  margin-top: 20px;
+}
+
+.d4-grid .chem-descriptors-select-btn {
+  display: none;
+}

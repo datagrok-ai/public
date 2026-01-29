@@ -73,7 +73,7 @@ export function getDescriptorsSingle(smiles: string): DG.Widget {
       update();
     });
   });
-  selectButton.style.marginTop = '20px';
+  selectButton.classList.add('chem-descriptors-select-btn');
 
   const update = () => {
     removeChildren(result);

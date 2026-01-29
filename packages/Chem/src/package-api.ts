@@ -830,8 +830,8 @@ export namespace funcs {
     return await grok.functions.call('Chem:BiochemPropsWidget', {});
   }
 
-  export async function mpoProfilesApp(): Promise<DG.View> {
-    return await grok.functions.call('Chem:MpoProfilesApp', {});
+  export async function mpoProfilesApp(path?: string ): Promise<DG.View> {
+    return await grok.functions.call('Chem:MpoProfilesApp', { path });
   }
 
   export async function mpoProfilesAppTreeBrowser(treeNode: any , browseView: DG.View ): Promise<void> {

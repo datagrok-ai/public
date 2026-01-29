@@ -286,17 +286,13 @@ category('Dapi: functions calls', async () => {
 
   test('list package script funccalls with package', async () => {
     const loadedCalls = await grok.dapi.functions.calls
-      .allPackageVersions()
-      .include('func,func.package').filter(`func.name="dummyPackageScript"`).list({pageSize: 5});
-
+        .include('func,func.package').filter(`func.name="dummyPackageScript"`).list({pageSize: 5});
     expect(loadedCalls[0].func.package.toString().includes('ApiTests'), true);
   });
 
   test('list package function funccalls with package', async () => {
     const loadedCalls = await grok.dapi.functions.calls
-      .allPackageVersions()
-      .include('func,func.package').filter(`func.name="dummyPackageFunction"`).list({pageSize: 5});
-
+        .include('func,func.package').filter(`func.name="dummyPackageFunction"`).list({pageSize: 5});
     expect(loadedCalls[0].func.package.toString().includes('ApiTests'), true);
   });
 
