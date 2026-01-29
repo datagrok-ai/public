@@ -239,6 +239,16 @@ export class Pmpo {
     showColorSelector: false,
   });
 
+  private confusionMatrix = DG.Viewer.fromType('Confusion matrix', this.initTable, {
+    xColumnName: 'control',
+    yColumnName: 'control',
+    showTitle: true,
+    title: 'Confusion Matrix',
+    descriptionPosition: 'Bottom',
+    description: 'Confusion matrix for the predicted vs actual desirability labels.',
+    descriptionVisibilityMode: 'Always',
+  });
+
   constructor(df: DG.DataFrame) {
     this.table = df;
     this.view = grok.shell.tableView(df.name) ?? grok.shell.addTableView(df);
@@ -556,6 +566,16 @@ export class Pmpo {
     return bestThreshold;
   } // updateRocCurve
 
+  private updateConfusionMatrix(df: DG.DataFrame, desColName: string, bestThreshold: number): void {
+    this.confusionMatrix.dataFrame = df;
+    this.confusionMatrix.setOptions({
+      xColumnName: desColName,
+      yColumnName: this.boolPredictionName,
+      description: `Threshold: ${bestThreshold.toFixed(3)} (optimized via Youden's J)`,
+      title: desColName + ' Confusion Matrix',
+    });
+  } // updateConfusionMatrix
+
   /** Fits the pMPO model to the given data and updates the viewers accordingly */
   private fitAndUpdateViewers(df: DG.DataFrame, descriptors: DG.ColumnList, desirability: DG.Column,
     pValTresh: number, r2Tresh: number, qCutoff: number, useSigmoid: boolean): void {
@@ -589,12 +609,15 @@ export class Pmpo {
     // Update ROC curve
     const bestThreshold = this.updateRocCurve(desirability, prediction);
 
-    console.log(`Best threshold according to Youden's J statistic: ${bestThreshold}`);
-
+    // Update desirability prediction column
+    const desColName = desirability.name;
     df.columns.remove(this.boolPredictionName);
-    this.boolPredictionName = df.columns.getUnusedName(desirability.name + '(predicted)');
+    this.boolPredictionName = df.columns.getUnusedName(desColName + '(predicted)');
     const boolPrediction = getBoolPredictionColumn(prediction, bestThreshold, this.boolPredictionName);
     df.columns.add(boolPrediction);
+
+    // Update confusion matrix
+    this.updateConfusionMatrix(df, desColName, bestThreshold);
   } // fitAndUpdateViewers
 
   /** Runs the pMPO model training application */
@@ -614,7 +637,10 @@ export class Pmpo {
     const statGridNode = dockMng.dock(this.statGrid, DG.DOCK_TYPE.DOWN, gridNode, undefined, 0.5);
 
     // Dock ROC curve
-    dockMng.dock(this.rocCurve, DG.DOCK_TYPE.RIGHT, statGridNode, undefined, 0.3);
+    const rocNode = dockMng.dock(this.rocCurve, DG.DOCK_TYPE.RIGHT, statGridNode, undefined, 0.3);
+
+    // Dock confusion matrix
+    dockMng.dock(this.confusionMatrix, DG.DOCK_TYPE.RIGHT, rocNode, undefined, 0.2);
 
     this.setRibbons();
   } // runTrainingApp
