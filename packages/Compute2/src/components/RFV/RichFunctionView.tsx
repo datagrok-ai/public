@@ -81,7 +81,6 @@ const getScalarContent = (funcCall: DG.FuncCall, prop: DG.Property) => {
 };
 
 const tabToProperties = (fc: DG.FuncCall) => {
-  const func = fc.func;
   const tabsToProps = getEmptyTabToProperties();
 
   const processDf = (dfProp: DG.Property, isOutput: boolean) => {
@@ -110,23 +109,23 @@ const tabToProperties = (fc: DG.FuncCall) => {
     return;
   };
 
-  func.inputs.forEach((inputProp) => {
-    if (inputProp.propertyType === DG.TYPE.DATA_FRAME) processDf(inputProp, false);
+  [...fc.inputParams.values()].forEach(({ property }) => {
+    if (property.propertyType === DG.TYPE.DATA_FRAME) processDf(property, false);
   });
 
-  func.outputs.forEach((outputProp) => {
-    if (outputProp.propertyType === DG.TYPE.DATA_FRAME) {
-      processDf(outputProp, true);
+  [...fc.outputParams.values()].forEach(({property}) => {
+    if (property.propertyType === DG.TYPE.DATA_FRAME) {
+      processDf(property, true);
       return;
     }
-    const category = outputProp.category === 'Misc' ? 'Output': outputProp.category;
+    const category = property.category === 'Misc' ? 'Output': property.category;
 
     const categoryProps = tabsToProps.outputs.get(category);
-    const content = getScalarContent(fc, outputProp);
+    const content = getScalarContent(fc, property);
     if (!content)
       return;
     const [rawValue, formattedValue, units] = content;
-    const scalarProp = {name: outputProp.name, friendlyName: outputProp.caption || outputProp.name, rawValue, formattedValue, units};
+    const scalarProp = {name: property.name, friendlyName: property.caption || property.name, rawValue, formattedValue, units};
     if (categoryProps && categoryProps.type === 'scalars')
       categoryProps.scalarsData.push(scalarProp);
     else
