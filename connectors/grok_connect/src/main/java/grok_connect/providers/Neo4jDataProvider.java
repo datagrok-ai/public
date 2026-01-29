@@ -80,7 +80,7 @@ public class Neo4jDataProvider extends JdbcDataProvider {
         PatternMatcherResult result = new PatternMatcherResult();
         String type = "string";
         String formatQuery = "(toLower(%s) %s toLower(@%s))";
-        String value = (matcher.values.get(0)).toLowerCase();
+        String value = ((String) matcher.values.get(0)).toLowerCase();
         switch (matcher.op) {
             case PatternMatcher.EQUALS:
                 result.setQuery(String.format(formatQuery, matcher.colName, "=", paramName));
