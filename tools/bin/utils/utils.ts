@@ -297,7 +297,10 @@ export async function runScript(script: string, path: string, verbose: boolean =
       console.log(`Output: ${stdout}`);
     
   } catch (error: any) {
+    const output = [error.stdout, error.stderr].filter(Boolean).join('\n');
     console.error(`Execution failed: ${error.message}`);
+    if (output)
+      console.error(output);
     throw new Error(`Error executing '${script}'. Error message: ${error.message}`);
   }
 }

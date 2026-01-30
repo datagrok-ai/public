@@ -15,11 +15,11 @@
     "webpack-cli": "^5.1.4"
   },
   "scripts": {
-    "link-all": "grok link",
     "debug-#{PACKAGE_NAME_LOWERCASE}": "webpack && grok publish",
     "release-#{PACKAGE_NAME_LOWERCASE}": "webpack && grok publish --release",
     "build-#{PACKAGE_NAME_LOWERCASE}": "webpack",
-    "build": "grok api && grok check && webpack"
+    "build": "grok api && grok check && webpack",
+    "test": "grok test"
   },
   "canEdit": [
     "Developers"

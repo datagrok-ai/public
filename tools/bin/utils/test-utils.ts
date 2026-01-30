@@ -183,19 +183,15 @@ export async function loadPackage(
     linkPackage?: boolean,
     release?: boolean
 ): Promise<void> {
-  try {
-    if (skipPublish != true) {
-      process.stdout.write(`Building and publishing ${dirName}...`);
-      await utils.runScript(`npm install`, packageDir);
-      if (linkPackage)
-        await utils.runScript(`grok link`, packageDir);
-      if (skipBuild != true)
-        await utils.runScript(`npm run build`, packageDir);
-      await utils.runScript(`grok publish ${hostString}${release ? ' --release' : ''}`, packageDir);
-      process.stdout.write(` success!\n`);
-    }
-  } catch (e: any) {
-    process.stdout.write(` failed to load package ${dirName}!\n`);
+  if (skipPublish != true) {
+    process.stdout.write(`Building and publishing ${dirName}...`);
+    await utils.runScript(`npm install`, packageDir);
+    if (linkPackage)
+      await utils.runScript(`grok link`, packageDir);
+    if (skipBuild != true)
+      await utils.runScript(`npm run build`, packageDir);
+    await utils.runScript(`grok publish ${hostString}${release ? ' --release' : ''}`, packageDir);
+    process.stdout.write(` success!\n`);
   }
 }
 
@@ -226,6 +222,7 @@ export async function loadPackages(
   for (const dirName of fs.readdirSync(packagesDir)) {
     const packageDir = path.join(packagesDir, dirName);
     if (!fs.lstatSync(packageDir).isFile()) {
+      let shouldLoad = false;
       try {
         const packageJsonData = JSON.parse(fs.readFileSync(path.join(packageDir, 'package.json'), {encoding: 'utf-8'}));
         const packageFriendlyName =
@@ -234,14 +231,15 @@ export async function loadPackages(
                     packageJsonData['name'].split('/')[1] ?? packageJsonData['name'] ?? '').toLocaleLowerCase() ?? ''
             ) ?? packagesToRun.get(dirName);
 
-        if (utils.isPackageDir(packageDir) && (packageFriendlyName !== undefined || packagesToLoad === 'all')) {
-          await loadPackage(packageDir, dirName, hostString, skipPublish, skipBuild, linkPackage, release);
-          packagesToRun.set(dirName, true);
-        }
+        shouldLoad = utils.isPackageDir(packageDir) && (packageFriendlyName !== undefined || packagesToLoad === 'all');
       } catch (e: any) {
         if (utils.isPackageDir(packageDir) &&
             (packagesToRun.get(spaceToCamelCase(dirName).toLocaleLowerCase()) !== undefined || packagesToLoad === 'all'))
           console.log(`Couldn't read package.json  ${dirName}`);
+      }
+      if (shouldLoad) {
+        await loadPackage(packageDir, dirName, hostString, skipPublish, skipBuild, linkPackage, release);
+        packagesToRun.set(dirName, true);
       }
     }
   }

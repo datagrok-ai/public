@@ -254,8 +254,8 @@ async function publishPackage(args: PublishArgs) {
   if (!args.link) {
     if (args.build || args.rebuild) {
       console.log('Building');
-      utils.runScript('npm install', curDir, false);
-      utils.runScript('npm run build', curDir, false);
+      await utils.runScript('npm install', curDir, false);
+      await utils.runScript('npm run build', curDir, false);
     }
   }
 
