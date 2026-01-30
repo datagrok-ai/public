@@ -208,6 +208,8 @@ category('Widgets: InputForm API', () => {
   });
 
   test('funccall to form bind after replace', async () => {
+    funcCall = (await grok.functions.eval('ApiTests:InputFormTest')).prepare();
+    form = await DG.InputForm.forFuncCall(funcCall, {twoWayBinding: true});
     newFuncCall = (await grok.functions.eval('ApiTests:InputFormTest')).prepare();
     form.source = newFuncCall;
 
@@ -219,6 +221,7 @@ category('Widgets: InputForm API', () => {
     newFuncCall.inputs['boolInput'] = true;
     newFuncCall.inputs['choiceInput'] = '1';
     newFuncCall.inputs['tableInput'] = geo;
+
     updateInputs();
 
     expect(inputs['stringInput'].value, 'test');

@@ -225,7 +225,7 @@ export function expectFloat(actual: number, expected: number, tolerance = 0.001,
     (actual === Number.NaN && expected === Number.NaN) || (isNaN(actual) && isNaN(expected)))
     return;
   const areEqual = Math.abs(actual - expected) < tolerance;
-  expect(areEqual, true, `${error ?? ''} (tolerance = ${tolerance})`);
+  expect(areEqual, true, `${error ?? ''} (tolerance = ${tolerance}; a = ${actual}, e = ${expected})`);
   if (!areEqual)
     throw new Error(`Expected ${expected}, got ${actual} (tolerance = ${tolerance})`);
 }
