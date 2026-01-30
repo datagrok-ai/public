@@ -54,7 +54,7 @@ export class MpoScoreViewer extends ChemSearchBaseViewer {
     });
 
     const scoreDiv = ui.divText(score.toFixed(2));
-    scoreDiv.style.marginTop = '6px';
+    // scoreDiv.style.marginTop = '6px';
     const propsDiv = ui.divV([scoreDiv], {style: {alignItems: 'center'}});
 
     const grid = ui.div([molDiv, propsDiv], {style: {position: 'relative'}});
