@@ -1,21 +1,70 @@
 /// this file was generated automatically from d4 classes declarations
 
 
-export interface ISummarySettings {
-  /// List of columns to show aggregations on
-  columnNames: Array<string>;
+export interface IBarChartSettings {
+  /// Determines the rows shown on the scatter plot.
+  rowSource: keyof typeof RowSet;
 
-  /// List of aggregations for the columns
-  aggregations: Array<string>;
+  /// Formula that filters out rows to show.
+  /// Example: "${AGE} > 20 or (${WEIGHT} / 2) > 100"
+  filter: string;
 
-  /// Controls the source of the data comparison
-  /// * Row: shows vertical bars based on each row category
-  /// * Column: shows horizontal bars based on each column category
-  /// * Global: shows horizontal bars based on all selected categories
-  normalization: string;
+  /// Determines what happens when you click on a bar.
+  onClick: keyof typeof RowGroupAction;
 
-  /// Visualization type (text, circles or bars)
-  visualization: string;
+  /// Value column. See *Value Aggr Type* for aggregation options.
+  value: string;
+  valueColumnName: string;
+
+  /// Value aggregation.
+  valueAggrType: string;
+
+  /// When true, each outermost bar is of the same width.
+  /// This mode is useful for comparing relative value frequency when the *Stack* column is specified.
+  relativeValues: boolean;
+
+  /// Indicates whether the "no data" bar should appear
+  /// when the *Split* value is not present.
+  includeNulls: boolean;
+
+  /// Whether to sort bars *by category* or *by value*.
+  /// See also *Bar Sort Order*
+  barSortType: string;
+
+  /// Whether the bars should be sorted in ascending or descending order.
+  /// See also *Bar Sort Type*.
+  barSortOrder: string;
+
+  axisType: keyof typeof AxisType;
+
+  showValueAxis: boolean;
+
+  showValueSelector: boolean;
+
+  orientation: string;
+
+  /// A categorical column to split data on (each bar represents a category)
+  split: string;
+  splitColumnName: string;
+
+  /// Time unit map function for *Split* (applicable to dates only).
+  splitMap: string;
+
+  showCategoryValues: boolean;
+
+  showValuesInsteadOfCategories: boolean;
+
+  showCategorySelector: boolean;
+
+  /// A categorical column to further split data on.
+  /// Each category would become a part of the bar resulting from *Split*.
+  stack: string;
+  stackColumnName: string;
+
+  /// Time unit map function for *Stack* (applicable to dates only).
+  stackMap: string;
+
+  showStackSelector: boolean;
 
   /// Numerical column to be used for color-coding.
   /// The values in the bin get aggregated using the *Color Aggr Type* property.
@@ -25,110 +74,91 @@ export interface ISummarySettings {
   /// Color aggregation type.
   colorAggrType: string;
 
-  /// Whether to apply color coding to the background or to the text.
-  applyTo: string;
-
-  /// Custom color scheme for the color-coding.
-  colorSchemes: Array<Array<number>>;
-
   invertColorScheme: boolean;
 
-  /// If true - show bars on different sides of zero axes for negative and positive values
-  zeroAxis: boolean;
+  linearColorScheme: Array<number>;
 
-  allowDynamicMenus: boolean;
+  /// Whether the selected rows are indicated.
+  /// Only works for cumulative aggregations such as count.
+  showSelectedRows: boolean;
 
-  // Properties common for all viewers
-  // todo: use code generation
-  // Properties common for all viewers
-  // todo: use code generation
-  // Properties common for all viewers
-  // todo: use code generation
-  showContextMenu: boolean;
+  showMouseOverRect: boolean;
 
-  title: string;
+  /// Show which part is filtered
+  /// Only works with RowSource = All
+  showFilteredRows: boolean;
 
-  showTitle: boolean;
+  showMouseOverRows: boolean;
 
-  table: string;
+  autoLayout: boolean;
 
-  /// Viewer description that gets shown at the *Descriptor Position*.
-  /// Markup is supported.
-  /// Viewer description that gets shown at the *Descriptor Position*.
-  /// Markup is supported.
-  /// Viewer description that gets shown at the *Descriptor Position*.
-  /// Markup is supported.
-  description: string;
+  maxCategoryWidth: number;
 
-  /// Help to be shown when user clicks on the '?' icon on top.
-  /// Could either be in markdown, or a URL (starting with '/' or 'http').
-  /// Help to be shown when user clicks on the '?' icon on top.
-  /// Could either be in markdown, or a URL (starting with '/' or 'http').
-  /// Help to be shown when user clicks on the '?' icon on top.
-  /// Could either be in markdown, or a URL (starting with '/' or 'http').
-  help: string;
+  categoryValueWidth: number;
 
-  /// Namespace-qualified function that gets executed when a viewer is initialized
-  /// Namespace-qualified function that gets executed when a viewer is initialized
-  /// Namespace-qualified function that gets executed when a viewer is initialized
-  initializationFunction: string;
+  showValueAxisLine: boolean;
 
-  /// JavaScript that gets executed after a viewer is initialized and added to the TableView
-  /// JavaScript that gets executed after a viewer is initialized and added to the TableView
-  /// JavaScript that gets executed after a viewer is initialized and added to the TableView
-  onInitializedScript: string;
+  barBorderLineMouseOverWidth: number;
 
-  descriptionPosition: keyof typeof FlexPosition;
+  barBorderLineWidth: number;
 
-  descriptionVisibilityMode: keyof typeof VisibilityMode;
+  maxBarHeight: number;
 
-}
+  barCornerRadius: number;
 
-export enum FlexPosition {
-  Left = 'Left',
-  Right = 'Right',
-  Top = 'Top',
-  Bottom = 'Bottom',
-}
+  verticalAlign: keyof typeof VerticalAlignType;
 
-export enum VisibilityMode {
-  Auto = 'Auto',
-  Always = 'Always',
-  Never = 'Never',
-}
+  font: string;
 
-export interface ITileViewerSettings {
+  axisFont: string;
+
+  minTextHeight: number;
+
+  backColor: number;
+
+  axisColor: number;
+
+  barColor: number;
+
+  categoryColor: number;
+
+  valueTextColor: number;
+
+  barBorderLineMouseOverColor: number;
+
+  barBorderLineFilteredColor: number;
+
+  barBorderLineColor: number;
+
+  outerMarginLeft: number;
+
+  outerMarginRight: number;
+
+  outerMarginTop: number;
+
+  outerMarginBottom: number;
+
+  showAllCats: boolean;
+
+  useSplitColors: boolean;
+
+  showEmptyBars: boolean;
+
+  showLabels: string;
+
+  legendVisibility: keyof typeof VisibilityMode;
+
+  legendPosition: keyof typeof FlexAutoPosition;
+
+  /// Viewer controls elements font.
   controlsFont: string;
 
-  lanesColumnName: string;
-
-  cardMarkup: string;
-
-  allowDragBetweenLanes: boolean;
-
-  /// Whether the form auto-generates whenever columns change
-  autoGenerate: boolean;
-
-  sketchState: {[index: string]: any};
-
-  columnsJson: string;
-
-  tilesFont: string;
-
-  lanes: Array<string>;
-
-  /// Determines the rows shown on the plot.
-  rowSource: keyof typeof RowSet;
-
-  /// Formula that filters out rows to show.
-  /// Examples:
-  ///   ${AGE} > 20 or ${WEIGHT / 2)} > 100,
-  ///   ${SEVERITY} == 'Medium',
-  ///   ${RACE}.endsWith('sian')
-  filter: string;
-
   allowDynamicMenus: boolean;
 
+  // Properties common for all viewers
+  // todo: use code generation
+  // Properties common for all viewers
+  // todo: use code generation
   // Properties common for all viewers
   // todo: use code generation
   showContextMenu: boolean;
@@ -141,15 +171,27 @@ export interface ITileViewerSettings {
 
   /// Viewer description that gets shown at the *Descriptor Position*.
   /// Markup is supported.
+  /// Viewer description that gets shown at the *Descriptor Position*.
+  /// Markup is supported.
+  /// Viewer description that gets shown at the *Descriptor Position*.
+  /// Markup is supported.
   description: string;
 
+  /// Help to be shown when user clicks on the '?' icon on top.
+  /// Could either be in markdown, or a URL (starting with '/' or 'http').
+  /// Help to be shown when user clicks on the '?' icon on top.
+  /// Could either be in markdown, or a URL (starting with '/' or 'http').
   /// Help to be shown when user clicks on the '?' icon on top.
   /// Could either be in markdown, or a URL (starting with '/' or 'http').
   help: string;
 
   /// Namespace-qualified function that gets executed when a viewer is initialized
+  /// Namespace-qualified function that gets executed when a viewer is initialized
+  /// Namespace-qualified function that gets executed when a viewer is initialized
   initializationFunction: string;
 
+  /// JavaScript that gets executed after a viewer is initialized and added to the TableView
+  /// JavaScript that gets executed after a viewer is initialized and added to the TableView
   /// JavaScript that gets executed after a viewer is initialized and added to the TableView
   onInitializedScript: string;
 
@@ -170,140 +212,251 @@ export enum RowSet {
   MouseOverRow = 'MouseOverRow',
 }
 
-export interface ITreeMapSettings {
-  splitByColumnNames: Array<string>;
-
-  color: string;
-  colorColumnName: string;
-
-  colorAggrType: string;
-
-  size: string;
-  sizeColumnName: string;
-
-  autoLayout: boolean;
-
-  sizeAggrType: string;
-
-  defaultColor: number;
-
-  showColumnSelectionPanel: boolean;
-
-  outerMarginLeft: number;
-
-  outerMarginRight: number;
-
-  outerMarginTop: number;
-
-  outerMarginBottom: number;
-
-  /// Determines the rows shown on the plot.
-  rowSource: keyof typeof RowSet;
-
-  /// Formula that filters out rows to show.
-  /// Examples:
-  ///   ${AGE} > 20 or ${WEIGHT / 2)} > 100,
-  ///   ${SEVERITY} == 'Medium',
-  ///   ${RACE}.endsWith('sian')
-  filter: string;
-
-  /// Viewer controls elements font.
-  controlsFont: string;
-
-  allowDynamicMenus: boolean;
-
-  // Properties common for all viewers
-  // todo: use code generation
-  showContextMenu: boolean;
-
-  title: string;
-
-  showTitle: boolean;
-
-  table: string;
-
-  /// Viewer description that gets shown at the *Descriptor Position*.
-  /// Markup is supported.
-  description: string;
-
-  /// Help to be shown when user clicks on the '?' icon on top.
-  /// Could either be in markdown, or a URL (starting with '/' or 'http').
-  help: string;
-
-  /// Namespace-qualified function that gets executed when a viewer is initialized
-  initializationFunction: string;
-
-  /// JavaScript that gets executed after a viewer is initialized and added to the TableView
-  onInitializedScript: string;
-
-  descriptionPosition: keyof typeof FlexPosition;
-
-  descriptionVisibilityMode: keyof typeof VisibilityMode;
-
+export enum RowGroupAction {
+  Select = 'Select',
+  Filter = 'Filter',
+  None = 'None',
 }
 
-export interface ITrellisPlotSettings {
-  xColumnNames: Array<string>;
+export enum AxisType {
+  linear = 'linear',
+  logarithmic = 'logarithmic',
+}
 
-  yColumnNames: Array<string>;
+export enum VerticalAlignType {
+  Center = 'Center',
+  Top = 'Top',
+  Bottom = 'Bottom',
+}
 
-  viewerType: string;
+export enum VisibilityMode {
+  Auto = 'Auto',
+  Always = 'Always',
+  Never = 'Never',
+}
 
-  //if false, full screen icon will not be shown on inner viewer hover
-  allowViewerFullScreen: boolean;
+export enum FlexAutoPosition {
+  Auto = 'Auto',
+  Left = 'Left',
+  Right = 'Right',
+  Top = 'Top',
+  Bottom = 'Bottom',
+  RightTop = 'RightTop',
+  RightBottom = 'RightBottom',
+  LeftTop = 'LeftTop',
+  LeftBottom = 'LeftBottom',
+}
 
-  yLabelsOrientation: keyof typeof TextOrientation;
+export enum FlexPosition {
+  Left = 'Left',
+  Right = 'Right',
+  Top = 'Top',
+  Bottom = 'Bottom',
+}
 
-  xLabelsOrientation: keyof typeof TextOrientation;
+export interface IBoxPlotSettings {
+  categoryColumnNames: Array<string>;
 
-  categoryLabelFont: string;
+  /// If *Category 2* is not defined, sets *Markers Color* the same as the currently selected column.
+  category1: string;
+  category1ColumnName: string;
 
-  innerViewerLook: any;
+  /// Time unit map function for *Category 1 Column Names* (applicable to dates only).
+  category1Map: string;
 
-  innerViewerLooks: {[index: string]: any};
+  /// If defined, sets *Markers Color* the same as the currently selected column.
+  category2: string;
+  category2ColumnName: string;
 
-  showGridlines: string;
+  /// Time unit map function for *Category 2 Column Names* (applicable to dates only).
+  category2Map: string;
 
-  showXSelectors: boolean;
+  showStatistics: boolean;
 
-  showYSelectors: boolean;
+  showCategoryAxis: boolean;
 
-  /// Shows horizontal axis for each inner viewer row.
-  /// Depending on selected inner viewer, axis may be hidden automatically.
-  showXAxes: keyof typeof VisibilityMode;
+  showCategorySelector: boolean;
 
-  /// Shows vertical axis for each inner viewer column.
-  /// Depending on selected inner viewer, axis may be hidden automatically.
-  showYAxes: keyof typeof VisibilityMode;
+  labelOrientation: keyof typeof TextOrientation;
 
-  /// If checked, all inner viewers use the same axis scales.
-  globalScale: boolean;
+  /// Display subcategories - category combinations in the x axis table.
+  showMinorCategories: boolean;
 
-  /// Shows range sliders for inner viewer axis. Available only if corresponding axes (X or Y) are shown.
-  showRangeSliders: boolean;
+  value: string;
+  valueColumnName: string;
 
-  showXLabels: boolean;
+  axisType: keyof typeof AxisType;
 
-  showYLabels: boolean;
+  valueMin: number;
 
-  showControlPanel: boolean;
+  valueMax: number;
 
-  syncMouseOverRow: boolean;
+  invertYAxis: boolean;
 
-  /// Action to be performed when you click on a trellis cell
-  onClick: keyof typeof RowGroupAction;
+  showValueAxis: boolean;
 
-  packCategories: boolean;
+  showValueSelector: boolean;
 
-  useTiledView: boolean;
+  /// Include plots, which are empty or have null values.
+  showEmptyCategories: boolean;
 
-  tilesPerRow: number;
+  /// Column to color-code boxes (Q2-Q3 region) or inner violin shapes.
+  /// See also *Bin Color Aggr Type*.
+  binColor: string;
+  binColorColumnName: string;
+
+  /// Aggregation function for color-coding.
+  /// See also *Bin Color*.
+  binColorAggrType: string;
+
+  showColorSelector: boolean;
+
+  /// Column to color-code markers. Changing *Category 1* or *Category 2*
+  /// sets the color scheme to categorical (same as selected category column).
+  markerColor: string;
+  markerColorColumnName: string;
+
+  /// Categorical coloring time unit map function (applicable to dates only).
+  markerColorMap: string;
+
+  colorAxisType: keyof typeof AxisType;
+
+  invertColorScheme: boolean;
+
+  colorMin: number;
+
+  colorMax: number;
+
+  markers: string;
+  markersColumnName: string;
+
+  /// Marker category time unit map function (applicable to dates only).
+  markersMap: string;
+
+  markerMinSize: number;
+
+  markerMaxSize: number;
+
+  showSizeSelector: boolean;
+
+  markerSizeColumnName: string;
+
+  markerType: string;
+
+  markerSize: number;
+
+  markerOpacity: number;
+
+  showMeanCross: boolean;
+
+  showLowerDash: boolean;
+
+  showUpperDash: boolean;
+
+  showMedianDash: boolean;
+
+  /// Points are not shown if the number of rows is greater than *Show Values Limit*.
+  showValuesLimit: number;
+
+  /// Show points inside the interquartile range (Q3 - Q1).
+  showInsideValues: boolean;
+
+  /// Show points outside the interquartile range (Q3 - Q1).
+  showOutsideValues: boolean;
+
+  /// Show p-value. Press T to toggle.
+  /// Currently works only when there are two categories.
+  /// Welch's t-test is used for calculating the p-value.
+  showPValue: boolean;
+
+  showMouseOverPoint: boolean;
+
+  showMouseOverRowGroup: boolean;
+
+  statistics: Array<string>;
+
+  showTotalCount: boolean;
+
+  /// Shown values count inside lower and upper bounds, where:
+  /// IQR = Q3 - Q1.
+  /// Lower Bound = Q1 - (1.5 * IQR).
+  /// Upper Bound = Q3 + (1.5 * IQR).
+  showInliersCount: boolean;
+
+  /// Shown values count outside lower and upper bounds, where:
+  /// IQR = Q3 - Q1.
+  /// Lower Bound = Q1 - (1.5 * IQR).
+  /// Upper Bound = Q3 + (1.5 * IQR).
+  showOutliersCount: boolean;
+
+  showMin: boolean;
+
+  showMax: boolean;
+
+  showAvg: boolean;
+
+  showMed: boolean;
+
+  showStdev: boolean;
+
+  showQ1: boolean;
+
+  showQ3: boolean;
+
+  viewport: string;
 
   autoLayout: boolean;
+
+  /// When checked, both categories from **Category 1** and **Category 2** columns are shown ignoring axis size adjustments.
+  showAllCategories: boolean;
+
+  plotStyle: string;
+
+  axisFont: string;
+
+  categoryFont: string;
+
+  statisticsFont: string;
+
+  whiskerLineWidth: number;
+
+  interquartileLineWidth: number;
+
+  whiskerWidthRatio: number;
+
+  axisUseColumnFormat: boolean;
+
+  /// Number of KDE bins to display a violin plot.
+  bins: number;
+
+  whiskerColor: number;
+
+  violinWhiskerColor: number;
 
   backColor: number;
 
-  viewport: string;
+  filteredRowsColor: number;
+
+  filteredOutRowsColor: number;
+
+  selectedRowsColor: number;
+
+  missingValueColor: number;
+
+  defaultBoxColor: number;
+
+  linearColorScheme: Array<number>;
+
+  categoricalColorScheme: Array<number>;
+
+  /// Controls box plot tooltip visibility
+  showTooltip: string;
+
+  showLabels: keyof typeof VisibilityMode;
+
+  /// Newline-separated list of column names to be used in a tooltip.
+  /// Requires *showTooltip* to be enabled.
+  rowTooltip: string;
 
   legendVisibility: keyof typeof VisibilityMode;
 
@@ -360,22 +513,417 @@ export enum TextOrientation {
   Vert = 'Vert',
 }
 
-export enum RowGroupAction {
-  Select = 'Select',
-  Filter = 'Filter',
-  None = 'None',
+export interface ICalendarSettings {
+  date: string;
+  dateColumnName: string;
+
+  controlsFont: string;
+
+  showHeader: boolean;
+
+  redWeekends: boolean;
+
+  /// Determines what happens when you click a date.
+  onClick: keyof typeof RowGroupAction;
+
+  showFilteredOnly: boolean;
+
+  backColor: number;
+
+  oddMonthColor: number;
+
+  evenMonthColor: number;
+
+  /// Determines the rows shown on the plot.
+  rowSource: keyof typeof RowSet;
+
+  /// Formula that filters out rows to show.
+  /// Examples:
+  ///   ${AGE} > 20 or ${WEIGHT / 2)} > 100,
+  ///   ${SEVERITY} == 'Medium',
+  ///   ${RACE}.endsWith('sian')
+  filter: string;
+
+  allowDynamicMenus: boolean;
+
+  // Properties common for all viewers
+  // todo: use code generation
+  showContextMenu: boolean;
+
+  title: string;
+
+  showTitle: boolean;
+
+  table: string;
+
+  /// Viewer description that gets shown at the *Descriptor Position*.
+  /// Markup is supported.
+  description: string;
+
+  /// Help to be shown when user clicks on the '?' icon on top.
+  /// Could either be in markdown, or a URL (starting with '/' or 'http').
+  help: string;
+
+  /// Namespace-qualified function that gets executed when a viewer is initialized
+  initializationFunction: string;
+
+  /// JavaScript that gets executed after a viewer is initialized and added to the TableView
+  onInitializedScript: string;
+
+  descriptionPosition: keyof typeof FlexPosition;
+
+  descriptionVisibilityMode: keyof typeof VisibilityMode;
+
 }
 
-export enum FlexAutoPosition {
-  Auto = 'Auto',
-  Left = 'Left',
-  Right = 'Right',
-  Top = 'Top',
-  Bottom = 'Bottom',
-  RightTop = 'RightTop',
-  RightBottom = 'RightBottom',
-  LeftTop = 'LeftTop',
-  LeftBottom = 'LeftBottom',
+export interface ICardSettings {
+  caption: string;
+
+  valueSourceType: keyof typeof CardValueSourceType;
+
+  /// Source-type specific value.
+  value: string;
+
+  format: string;
+
+  allowDynamicMenus: boolean;
+
+  // Properties common for all viewers
+  // todo: use code generation
+  showContextMenu: boolean;
+
+  title: string;
+
+  showTitle: boolean;
+
+  table: string;
+
+  /// Viewer description that gets shown at the *Descriptor Position*.
+  /// Markup is supported.
+  description: string;
+
+  /// Help to be shown when user clicks on the '?' icon on top.
+  /// Could either be in markdown, or a URL (starting with '/' or 'http').
+  help: string;
+
+  /// Namespace-qualified function that gets executed when a viewer is initialized
+  initializationFunction: string;
+
+  /// JavaScript that gets executed after a viewer is initialized and added to the TableView
+  onInitializedScript: string;
+
+  descriptionPosition: keyof typeof FlexPosition;
+
+  descriptionVisibilityMode: keyof typeof VisibilityMode;
+
+}
+
+export enum CardValueSourceType {
+  Constant = 'Constant',
+  TableMeta = 'TableMeta',
+  ColumnMeta = 'ColumnMeta',
+  Markup = 'Markup',
+  Formula = 'Formula',
+  External = 'External',
+}
+
+export interface IConfusionMatrixSettings {
+  /// Column to be put on the X axis
+  x: string;
+  xColumnName: string;
+
+  /// Column to be put on the Y axis
+  y: string;
+  yColumnName: string;
+
+  /// Determines the rows shown on the plot.
+  rowSource: keyof typeof RowSet;
+
+  /// Formula that filters out rows to show.
+  /// Examples:
+  ///   ${AGE} > 20 or ${WEIGHT / 2)} > 100,
+  ///   ${SEVERITY} == 'Medium',
+  ///   ${RACE}.endsWith('sian')
+  filter: string;
+
+  /// Viewer controls elements font.
+  controlsFont: string;
+
+  allowDynamicMenus: boolean;
+
+  // Properties common for all viewers
+  // todo: use code generation
+  showContextMenu: boolean;
+
+  title: string;
+
+  showTitle: boolean;
+
+  table: string;
+
+  /// Viewer description that gets shown at the *Descriptor Position*.
+  /// Markup is supported.
+  description: string;
+
+  /// Help to be shown when user clicks on the '?' icon on top.
+  /// Could either be in markdown, or a URL (starting with '/' or 'http').
+  help: string;
+
+  /// Namespace-qualified function that gets executed when a viewer is initialized
+  initializationFunction: string;
+
+  /// JavaScript that gets executed after a viewer is initialized and added to the TableView
+  onInitializedScript: string;
+
+  descriptionPosition: keyof typeof FlexPosition;
+
+  descriptionVisibilityMode: keyof typeof VisibilityMode;
+
+}
+
+export interface ICorrelationPlotSettings {
+  controlsFont: string;
+
+  /// Columns to be put on the X axis
+  xColumnNames: Array<string>;
+
+  /// Columns to be put on the Y axis
+  yColumnNames: Array<string>;
+
+  correlationType: keyof typeof CorrelationType;
+
+  /// Shows the Pearson correlation coefficient inside the corresponding cell.
+  showPearsonR: boolean;
+
+  /// Shows the tooltip with the corresponding scatter plot inside.
+  showTooltip: boolean;
+
+  /// Ignores double click behavior on the grid cells.
+  ignoreDoubleClick: boolean;
+
+  backColor: number;
+
+  defaultCellFont: string;
+
+  colHeaderFont: string;
+
+  /// Determines the rows shown on the plot.
+  rowSource: keyof typeof RowSet;
+
+  /// Formula that filters out rows to show.
+  /// Examples:
+  ///   ${AGE} > 20 or ${WEIGHT / 2)} > 100,
+  ///   ${SEVERITY} == 'Medium',
+  ///   ${RACE}.endsWith('sian')
+  filter: string;
+
+  allowDynamicMenus: boolean;
+
+  // Properties common for all viewers
+  // todo: use code generation
+  showContextMenu: boolean;
+
+  title: string;
+
+  showTitle: boolean;
+
+  table: string;
+
+  /// Viewer description that gets shown at the *Descriptor Position*.
+  /// Markup is supported.
+  description: string;
+
+  /// Help to be shown when user clicks on the '?' icon on top.
+  /// Could either be in markdown, or a URL (starting with '/' or 'http').
+  help: string;
+
+  /// Namespace-qualified function that gets executed when a viewer is initialized
+  initializationFunction: string;
+
+  /// JavaScript that gets executed after a viewer is initialized and added to the TableView
+  onInitializedScript: string;
+
+  descriptionPosition: keyof typeof FlexPosition;
+
+  descriptionVisibilityMode: keyof typeof VisibilityMode;
+
+}
+
+export enum CorrelationType {
+  Pearson = 'Pearson',
+  Spearman = 'Spearman',
+}
+
+export interface IDensityPlotSettings {
+  binShape: string;
+
+  /// Columns to be put on the X axis
+  x: string;
+  xColumnName: string;
+
+  /// Columns to be put on the Y axis
+  y: string;
+  yColumnName: string;
+
+  autoLayout: boolean;
+
+  axisFont: string;
+
+  showColorScale: boolean;
+
+  invertColorScheme: boolean;
+
+  colorTransformType: keyof typeof AxisType;
+
+  linearColorScheme: Array<number>;
+
+  showXAxis: boolean;
+
+  showYAxis: boolean;
+
+  xAxisType: keyof typeof AxisType;
+
+  yAxisType: keyof typeof AxisType;
+
+  invertXAxis: boolean;
+
+  invertYAxis: boolean;
+
+  showXSelector: boolean;
+
+  showYSelector: boolean;
+
+  xMin: number;
+
+  yMin: number;
+
+  xMax: number;
+
+  yMax: number;
+
+  bins: number;
+
+  allowZoom: boolean;
+
+  binToRange: boolean;
+
+  showBinSelector: boolean;
+
+  backColor: number;
+
+  viewport: string;
+
+  /// Determines the rows shown on the plot.
+  rowSource: keyof typeof RowSet;
+
+  /// Formula that filters out rows to show.
+  /// Examples:
+  ///   ${AGE} > 20 or ${WEIGHT / 2)} > 100,
+  ///   ${SEVERITY} == 'Medium',
+  ///   ${RACE}.endsWith('sian')
+  filter: string;
+
+  /// Viewer controls elements font.
+  controlsFont: string;
+
+  allowDynamicMenus: boolean;
+
+  // Properties common for all viewers
+  // todo: use code generation
+  showContextMenu: boolean;
+
+  title: string;
+
+  showTitle: boolean;
+
+  table: string;
+
+  /// Viewer description that gets shown at the *Descriptor Position*.
+  /// Markup is supported.
+  description: string;
+
+  /// Help to be shown when user clicks on the '?' icon on top.
+  /// Could either be in markdown, or a URL (starting with '/' or 'http').
+  help: string;
+
+  /// Namespace-qualified function that gets executed when a viewer is initialized
+  initializationFunction: string;
+
+  /// JavaScript that gets executed after a viewer is initialized and added to the TableView
+  onInitializedScript: string;
+
+  descriptionPosition: keyof typeof FlexPosition;
+
+  descriptionVisibilityMode: keyof typeof VisibilityMode;
+
+}
+
+export interface IFiltersSettings {
+  active: boolean;
+
+  histogramLook: any;
+
+  showFilterCountsIndication: boolean;
+
+  showFilterIndication: boolean;
+
+  /// Indicate the proportion of the selected rows inside each category.
+  showSelectionIndication: boolean;
+
+  showHeader: boolean;
+
+  showHistogram: boolean;
+
+  showMinMax: boolean;
+
+  showSearchBox: boolean;
+
+  // shows the current mouse over row in the table using grey vertical bar in corresponding row
+  showMouseOverRow: boolean;
+
+  // shows the current row in the table using green vertical bar in corresponding row
+  showCurrentRow: boolean;
+
+  // shouws the mouse over group porportion in the filter (similar to how selection proportion is shown).
+  showMouseOverGroupRow: boolean;
+
+  /// Show a filter that represents all boolean columns in the table.
+  showBoolCombinedFilter: boolean;
+
+  columnNames: Array<string>;
+
+  filters: Array<{[index: string]: any}>;
+
+  allowDynamicMenus: boolean;
+
+  // Properties common for all viewers
+  // todo: use code generation
+  showContextMenu: boolean;
+
+  title: string;
+
+  showTitle: boolean;
+
+  table: string;
+
+  /// Viewer description that gets shown at the *Descriptor Position*.
+  /// Markup is supported.
+  description: string;
+
+  /// Help to be shown when user clicks on the '?' icon on top.
+  /// Could either be in markdown, or a URL (starting with '/' or 'http').
+  help: string;
+
+  /// Namespace-qualified function that gets executed when a viewer is initialized
+  initializationFunction: string;
+
+  /// JavaScript that gets executed after a viewer is initialized and added to the TableView
+  onInitializedScript: string;
+
+  descriptionPosition: keyof typeof FlexPosition;
+
+  descriptionVisibilityMode: keyof typeof VisibilityMode;
+
 }
 
 export interface IFormSettings {
@@ -1022,6 +1570,8 @@ export interface ILineChartSettings {
 
   showXSelector: boolean;
 
+  showVerticalGridLines: boolean;
+
   xAxisLabelOrientation: string;
 
   xAxisTickmarksMode: keyof typeof AxisTickmarksMode;
@@ -1043,6 +1593,8 @@ export interface ILineChartSettings {
   showYAxis: boolean;
 
   yGlobalScale: boolean;
+
+  showHorizontalGridLines: boolean;
 
   /// Axis title to be shown on the left axis in multi-axis mode
   yAxisTitle: string;
@@ -1193,6 +1745,8 @@ export interface ILineChartSettings {
 
   currentLineColor: number;
 
+  gridLineColor: number;
+
   selectedRowsColor: number;
 
   statisticalProcessLineColor: number;
@@ -1302,6 +1856,8 @@ export interface ILineChartSettings {
 
   // Properties common for all viewers
   // todo: use code generation
+  // Properties common for all viewers
+  // todo: use code generation
   showContextMenu: boolean;
 
   title: string;
@@ -1312,15 +1868,21 @@ export interface ILineChartSettings {
 
   /// Viewer description that gets shown at the *Descriptor Position*.
   /// Markup is supported.
+  /// Viewer description that gets shown at the *Descriptor Position*.
+  /// Markup is supported.
   description: string;
 
+  /// Help to be shown when user clicks on the '?' icon on top.
+  /// Could either be in markdown, or a URL (starting with '/' or 'http').
   /// Help to be shown when user clicks on the '?' icon on top.
   /// Could either be in markdown, or a URL (starting with '/' or 'http').
   help: string;
 
   /// Namespace-qualified function that gets executed when a viewer is initialized
+  /// Namespace-qualified function that gets executed when a viewer is initialized
   initializationFunction: string;
 
+  /// JavaScript that gets executed after a viewer is initialized and added to the TableView
   /// JavaScript that gets executed after a viewer is initialized and added to the TableView
   onInitializedScript: string;
 
@@ -1328,11 +1890,6 @@ export interface ILineChartSettings {
 
   descriptionVisibilityMode: keyof typeof VisibilityMode;
 
-}
-
-export enum AxisType {
-  linear = 'linear',
-  logarithmic = 'logarithmic',
 }
 
 export enum AxisTickmarksMode {
@@ -2114,6 +2671,64 @@ export interface IPointsViewerSettings {
 
 }
 
+export interface IRocCurveSettings {
+  /// Columns to be put on the X axis
+  predictionColumnNames: Array<string>;
+
+  /// Column to be put on the Y axis
+  targetColumn: string;
+
+  /// Positive class name
+  positiveClass: string;
+
+  /// Select to draw thresholds
+  showThreshold: boolean;
+
+  /// Determines the rows shown on the plot.
+  rowSource: keyof typeof RowSet;
+
+  /// Formula that filters out rows to show.
+  /// Examples:
+  ///   ${AGE} > 20 or ${WEIGHT / 2)} > 100,
+  ///   ${SEVERITY} == 'Medium',
+  ///   ${RACE}.endsWith('sian')
+  filter: string;
+
+  /// Viewer controls elements font.
+  controlsFont: string;
+
+  allowDynamicMenus: boolean;
+
+  // Properties common for all viewers
+  // todo: use code generation
+  showContextMenu: boolean;
+
+  title: string;
+
+  showTitle: boolean;
+
+  table: string;
+
+  /// Viewer description that gets shown at the *Descriptor Position*.
+  /// Markup is supported.
+  description: string;
+
+  /// Help to be shown when user clicks on the '?' icon on top.
+  /// Could either be in markdown, or a URL (starting with '/' or 'http').
+  help: string;
+
+  /// Namespace-qualified function that gets executed when a viewer is initialized
+  initializationFunction: string;
+
+  /// JavaScript that gets executed after a viewer is initialized and added to the TableView
+  onInitializedScript: string;
+
+  descriptionPosition: keyof typeof FlexPosition;
+
+  descriptionVisibilityMode: keyof typeof VisibilityMode;
+
+}
+
 export interface IScatterPlotSettings {
   /// Invalid are null values and not positive numbers if axis is logarithmic.
   filterOutInvalid: boolean;
@@ -2173,6 +2788,15 @@ export interface IScatterPlotSettings {
   showXSelector: boolean;
 
   showYSelector: boolean;
+
+  /// Shows a distribution histogram along the X axis (at the top)
+  showXHistogram: boolean;
+
+  /// Shows a distribution histogram along the Y axis (on the right)
+  showYHistogram: boolean;
+
+  /// Number of bins for axis histograms
+  histogramBins: number;
 
   /// Point lower bound for x axis whiskers. Selecting it disables *X Whisker Range*.
   xWhiskerMin: string;
@@ -2585,6 +3209,55 @@ export interface IScatterPlot3dSettings {
 
 }
 
+export interface ISparklinesSettings {
+  /// List of columns to show aggregations on
+  columnNames: Array<string>;
+
+  /// List of aggregations for the columns
+  aggregations: Array<string>;
+
+  sparklineType: string;
+
+  /// Numerical column to be used for color-coding.
+  /// The values in the bin get aggregated using the *Color Aggr Type* property.
+  color: string;
+  colorColumnName: string;
+
+  /// Color aggregation type.
+  colorAggrType: string;
+
+  allowDynamicMenus: boolean;
+
+  // Properties common for all viewers
+  // todo: use code generation
+  showContextMenu: boolean;
+
+  title: string;
+
+  showTitle: boolean;
+
+  table: string;
+
+  /// Viewer description that gets shown at the *Descriptor Position*.
+  /// Markup is supported.
+  description: string;
+
+  /// Help to be shown when user clicks on the '?' icon on top.
+  /// Could either be in markdown, or a URL (starting with '/' or 'http').
+  help: string;
+
+  /// Namespace-qualified function that gets executed when a viewer is initialized
+  initializationFunction: string;
+
+  /// JavaScript that gets executed after a viewer is initialized and added to the TableView
+  onInitializedScript: string;
+
+  descriptionPosition: keyof typeof FlexPosition;
+
+  descriptionVisibilityMode: keyof typeof VisibilityMode;
+
+}
+
 export interface IStatsViewerSettings {
   controlsFont: string;
 
@@ -2636,70 +3309,21 @@ export interface IStatsViewerSettings {
 
 }
 
-export interface IBarChartSettings {
-  /// Determines the rows shown on the scatter plot.
-  rowSource: keyof typeof RowSet;
+export interface ISummarySettings {
+  /// List of columns to show aggregations on
+  columnNames: Array<string>;
 
-  /// Formula that filters out rows to show.
-  /// Example: "${AGE} > 20 or ${WEIGHT / 2) > 100"
-  filter: string;
+  /// List of aggregations for the columns
+  aggregations: Array<string>;
 
-  /// Determines what happens when you click on a bar.
-  onClick: keyof typeof RowGroupAction;
+  /// Controls the source of the data comparison
+  /// * Row: shows vertical bars based on each row category
+  /// * Column: shows horizontal bars based on each column category
+  /// * Global: shows horizontal bars based on all selected categories
+  normalization: string;
 
-  /// Value column. See *Value Aggr Type* for aggregation options.
-  value: string;
-  valueColumnName: string;
-
-  /// Value aggregation.
-  valueAggrType: string;
-
-  /// When true, each outermost bar is of the same width.
-  /// This mode is useful for comparing relative value frequency when the *Stack* column is specified.
-  relativeValues: boolean;
-
-  /// Indicates whether the "no data" bar should appear
-  /// when the *Split* value is not present.
-  includeNulls: boolean;
-
-  /// Whether to sort bars *by category* or *by value*.
-  /// See also *Bar Sort Order*
-  barSortType: string;
-
-  /// Whether the bars should be sorted in ascending or descending order.
-  /// See also *Bar Sort Type*.
-  barSortOrder: string;
-
-  axisType: keyof typeof AxisType;
-
-  showValueAxis: boolean;
-
-  showValueSelector: boolean;
-
-  orientation: string;
-
-  /// A categorical column to split data on (each bar represents a category)
-  split: string;
-  splitColumnName: string;
-
-  /// Time unit map function for *Split* (applicable to dates only).
-  splitMap: string;
-
-  showCategoryValues: boolean;
-
-  showValuesInsteadOfCategories: boolean;
-
-  showCategorySelector: boolean;
-
-  /// A categorical column to further split data on.
-  /// Each category would become a part of the bar resulting from *Split*.
-  stack: string;
-  stackColumnName: string;
-
-  /// Time unit map function for *Stack* (applicable to dates only).
-  stackMap: string;
-
-  showStackSelector: boolean;
+  /// Visualization type (text, circles or bars)
+  visualization: string;
 
   /// Numerical column to be used for color-coding.
   /// The values in the bin get aggregated using the *Color Aggr Type* property.
@@ -2709,61 +3333,129 @@ export interface IBarChartSettings {
   /// Color aggregation type.
   colorAggrType: string;
 
+  /// Whether to apply color coding to the background or to the text.
+  applyTo: string;
+
+  /// Custom color scheme for the color-coding.
+  colorSchemes: Array<Array<number>>;
+
   invertColorScheme: boolean;
 
-  linearColorScheme: Array<number>;
+  /// If true - show bars on different sides of zero axes for negative and positive values
+  zeroAxis: boolean;
 
-  /// Whether the selected rows are indicated.
-  /// Only works for cumulative aggregations such as count.
-  showSelectedRows: boolean;
+  allowDynamicMenus: boolean;
 
-  showMouseOverRect: boolean;
+  // Properties common for all viewers
+  // todo: use code generation
+  showContextMenu: boolean;
 
-  /// Show which part is filtered
-  /// Only works with RowSource = All
-  showFilteredRows: boolean;
+  title: string;
 
-  showMouseOverRows: boolean;
+  showTitle: boolean;
+
+  table: string;
+
+  /// Viewer description that gets shown at the *Descriptor Position*.
+  /// Markup is supported.
+  description: string;
+
+  /// Help to be shown when user clicks on the '?' icon on top.
+  /// Could either be in markdown, or a URL (starting with '/' or 'http').
+  help: string;
+
+  /// Namespace-qualified function that gets executed when a viewer is initialized
+  initializationFunction: string;
+
+  /// JavaScript that gets executed after a viewer is initialized and added to the TableView
+  onInitializedScript: string;
+
+  descriptionPosition: keyof typeof FlexPosition;
+
+  descriptionVisibilityMode: keyof typeof VisibilityMode;
+
+}
+
+export interface ITileViewerSettings {
+  controlsFont: string;
+
+  lanesColumnName: string;
+
+  cardMarkup: string;
+
+  allowDragBetweenLanes: boolean;
+
+  /// Whether the form auto-generates whenever columns change
+  autoGenerate: boolean;
+
+  sketchState: {[index: string]: any};
+
+  columnsJson: string;
+
+  tilesFont: string;
+
+  lanes: Array<string>;
+
+  /// Determines the rows shown on the plot.
+  rowSource: keyof typeof RowSet;
+
+  /// Formula that filters out rows to show.
+  /// Examples:
+  ///   ${AGE} > 20 or ${WEIGHT / 2)} > 100,
+  ///   ${SEVERITY} == 'Medium',
+  ///   ${RACE}.endsWith('sian')
+  filter: string;
+
+  allowDynamicMenus: boolean;
+
+  // Properties common for all viewers
+  // todo: use code generation
+  showContextMenu: boolean;
+
+  title: string;
+
+  showTitle: boolean;
+
+  table: string;
+
+  /// Viewer description that gets shown at the *Descriptor Position*.
+  /// Markup is supported.
+  description: string;
+
+  /// Help to be shown when user clicks on the '?' icon on top.
+  /// Could either be in markdown, or a URL (starting with '/' or 'http').
+  help: string;
+
+  /// Namespace-qualified function that gets executed when a viewer is initialized
+  initializationFunction: string;
+
+  /// JavaScript that gets executed after a viewer is initialized and added to the TableView
+  onInitializedScript: string;
+
+  descriptionPosition: keyof typeof FlexPosition;
+
+  descriptionVisibilityMode: keyof typeof VisibilityMode;
+
+}
+
+export interface ITreeMapSettings {
+  splitByColumnNames: Array<string>;
+
+  color: string;
+  colorColumnName: string;
+
+  colorAggrType: string;
+
+  size: string;
+  sizeColumnName: string;
 
   autoLayout: boolean;
 
-  maxCategoryWidth: number;
+  sizeAggrType: string;
 
-  categoryValueWidth: number;
+  defaultColor: number;
 
-  showValueAxisLine: boolean;
-
-  barBorderLineMouseOverWidth: number;
-
-  barBorderLineWidth: number;
-
-  maxBarHeight: number;
-
-  barCornerRadius: number;
-
-  verticalAlign: keyof typeof VerticalAlignType;
-
-  font: string;
-
-  axisFont: string;
-
-  minTextHeight: number;
-
-  backColor: number;
-
-  axisColor: number;
-
-  barColor: number;
-
-  categoryColor: number;
-
-  valueTextColor: number;
-
-  barBorderLineMouseOverColor: number;
-
-  barBorderLineFilteredColor: number;
-
-  barBorderLineColor: number;
+  showColumnSelectionPanel: boolean;
 
   outerMarginLeft: number;
 
@@ -2773,267 +3465,6 @@ export interface IBarChartSettings {
 
   outerMarginBottom: number;
 
-  showAllCats: boolean;
-
-  useSplitColors: boolean;
-
-  showEmptyBars: boolean;
-
-  showLabels: string;
-
-  legendVisibility: keyof typeof VisibilityMode;
-
-  legendPosition: keyof typeof FlexAutoPosition;
-
-  /// Viewer controls elements font.
-  controlsFont: string;
-
-  allowDynamicMenus: boolean;
-
-  // Properties common for all viewers
-  // todo: use code generation
-  showContextMenu: boolean;
-
-  title: string;
-
-  showTitle: boolean;
-
-  table: string;
-
-  /// Viewer description that gets shown at the *Descriptor Position*.
-  /// Markup is supported.
-  description: string;
-
-  /// Help to be shown when user clicks on the '?' icon on top.
-  /// Could either be in markdown, or a URL (starting with '/' or 'http').
-  help: string;
-
-  /// Namespace-qualified function that gets executed when a viewer is initialized
-  initializationFunction: string;
-
-  /// JavaScript that gets executed after a viewer is initialized and added to the TableView
-  onInitializedScript: string;
-
-  descriptionPosition: keyof typeof FlexPosition;
-
-  descriptionVisibilityMode: keyof typeof VisibilityMode;
-
-}
-
-export enum VerticalAlignType {
-  Center = 'Center',
-  Top = 'Top',
-  Bottom = 'Bottom',
-}
-
-export interface IBoxPlotSettings {
-  categoryColumnNames: Array<string>;
-
-  /// If *Category 2* is not defined, sets *Markers Color* the same as the currently selected column.
-  category1: string;
-  category1ColumnName: string;
-
-  /// Time unit map function for *Category 1 Column Names* (applicable to dates only).
-  category1Map: string;
-
-  /// If defined, sets *Markers Color* the same as the currently selected column.
-  category2: string;
-  category2ColumnName: string;
-
-  /// Time unit map function for *Category 2 Column Names* (applicable to dates only).
-  category2Map: string;
-
-  showStatistics: boolean;
-
-  showCategoryAxis: boolean;
-
-  showCategorySelector: boolean;
-
-  labelOrientation: keyof typeof TextOrientation;
-
-  /// Display subcategories - category combinations in the x axis table.
-  showMinorCategories: boolean;
-
-  value: string;
-  valueColumnName: string;
-
-  axisType: keyof typeof AxisType;
-
-  valueMin: number;
-
-  valueMax: number;
-
-  invertYAxis: boolean;
-
-  showValueAxis: boolean;
-
-  showValueSelector: boolean;
-
-  /// Include plots, which are empty or have null values.
-  showEmptyCategories: boolean;
-
-  /// Column to color-code boxes (Q2-Q3 region) or inner violin shapes.
-  /// See also *Bin Color Aggr Type*.
-  binColor: string;
-  binColorColumnName: string;
-
-  /// Aggregation function for color-coding.
-  /// See also *Bin Color*.
-  binColorAggrType: string;
-
-  showColorSelector: boolean;
-
-  /// Column to color-code markers. Changing *Category 1* or *Category 2*
-  /// sets the color scheme to categorical (same as selected category column).
-  markerColor: string;
-  markerColorColumnName: string;
-
-  /// Categorical coloring time unit map function (applicable to dates only).
-  markerColorMap: string;
-
-  colorAxisType: keyof typeof AxisType;
-
-  invertColorScheme: boolean;
-
-  colorMin: number;
-
-  colorMax: number;
-
-  markers: string;
-  markersColumnName: string;
-
-  /// Marker category time unit map function (applicable to dates only).
-  markersMap: string;
-
-  markerMinSize: number;
-
-  markerMaxSize: number;
-
-  showSizeSelector: boolean;
-
-  markerSizeColumnName: string;
-
-  markerType: string;
-
-  markerSize: number;
-
-  markerOpacity: number;
-
-  showMeanCross: boolean;
-
-  showLowerDash: boolean;
-
-  showUpperDash: boolean;
-
-  showMedianDash: boolean;
-
-  /// Points are not shown if the number of rows is greater than *Show Values Limit*.
-  showValuesLimit: number;
-
-  /// Show points inside the interquartile range (Q3 - Q1).
-  showInsideValues: boolean;
-
-  /// Show points outside the interquartile range (Q3 - Q1).
-  showOutsideValues: boolean;
-
-  /// Show p-value. Press T to toggle.
-  /// Currently works only when there are two categories.
-  /// Welch's t-test is used for calculating the p-value.
-  showPValue: boolean;
-
-  showMouseOverPoint: boolean;
-
-  showMouseOverRowGroup: boolean;
-
-  statistics: Array<string>;
-
-  showTotalCount: boolean;
-
-  /// Shown values count inside lower and upper bounds, where:
-  /// IQR = Q3 - Q1.
-  /// Lower Bound = Q1 - (1.5 * IQR).
-  /// Upper Bound = Q3 + (1.5 * IQR).
-  showInliersCount: boolean;
-
-  /// Shown values count outside lower and upper bounds, where:
-  /// IQR = Q3 - Q1.
-  /// Lower Bound = Q1 - (1.5 * IQR).
-  /// Upper Bound = Q3 + (1.5 * IQR).
-  showOutliersCount: boolean;
-
-  showMin: boolean;
-
-  showMax: boolean;
-
-  showAvg: boolean;
-
-  showMed: boolean;
-
-  showStdev: boolean;
-
-  showQ1: boolean;
-
-  showQ3: boolean;
-
-  viewport: string;
-
-  autoLayout: boolean;
-
-  /// When checked, both categories from **Category 1** and **Category 2** columns are shown ignoring axis size adjustments.
-  showAllCategories: boolean;
-
-  plotStyle: string;
-
-  axisFont: string;
-
-  categoryFont: string;
-
-  statisticsFont: string;
-
-  whiskerLineWidth: number;
-
-  interquartileLineWidth: number;
-
-  whiskerWidthRatio: number;
-
-  axisUseColumnFormat: boolean;
-
-  /// Number of KDE bins to display a violin plot.
-  bins: number;
-
-  whiskerColor: number;
-
-  violinWhiskerColor: number;
-
-  backColor: number;
-
-  filteredRowsColor: number;
-
-  filteredOutRowsColor: number;
-
-  selectedRowsColor: number;
-
-  missingValueColor: number;
-
-  defaultBoxColor: number;
-
-  linearColorScheme: Array<number>;
-
-  categoricalColorScheme: Array<number>;
-
-  /// Controls box plot tooltip visibility
-  showTooltip: string;
-
-  showLabels: keyof typeof VisibilityMode;
-
-  /// Newline-separated list of column names to be used in a tooltip.
-  /// Requires *showTooltip* to be enabled.
-  rowTooltip: string;
-
-  legendVisibility: keyof typeof VisibilityMode;
-
-  legendPosition: keyof typeof FlexAutoPosition;
-
   /// Determines the rows shown on the plot.
   rowSource: keyof typeof RowSet;
 
@@ -3079,363 +3510,72 @@ export interface IBoxPlotSettings {
 
 }
 
-export interface ICalendarSettings {
-  date: string;
-  dateColumnName: string;
-
-  controlsFont: string;
-
-  showHeader: boolean;
-
-  redWeekends: boolean;
-
-  /// Determines what happens when you click a date.
-  onClick: keyof typeof RowGroupAction;
-
-  showFilteredOnly: boolean;
-
-  backColor: number;
-
-  oddMonthColor: number;
-
-  evenMonthColor: number;
-
-  /// Determines the rows shown on the plot.
-  rowSource: keyof typeof RowSet;
-
-  /// Formula that filters out rows to show.
-  /// Examples:
-  ///   ${AGE} > 20 or ${WEIGHT / 2)} > 100,
-  ///   ${SEVERITY} == 'Medium',
-  ///   ${RACE}.endsWith('sian')
-  filter: string;
-
-  allowDynamicMenus: boolean;
-
-  // Properties common for all viewers
-  // todo: use code generation
-  showContextMenu: boolean;
-
-  title: string;
-
-  showTitle: boolean;
-
-  table: string;
-
-  /// Viewer description that gets shown at the *Descriptor Position*.
-  /// Markup is supported.
-  description: string;
-
-  /// Help to be shown when user clicks on the '?' icon on top.
-  /// Could either be in markdown, or a URL (starting with '/' or 'http').
-  help: string;
-
-  /// Namespace-qualified function that gets executed when a viewer is initialized
-  initializationFunction: string;
-
-  /// JavaScript that gets executed after a viewer is initialized and added to the TableView
-  onInitializedScript: string;
-
-  descriptionPosition: keyof typeof FlexPosition;
-
-  descriptionVisibilityMode: keyof typeof VisibilityMode;
-
-}
-
-export interface ICardSettings {
-  caption: string;
-
-  valueSourceType: keyof typeof CardValueSourceType;
-
-  /// Source-type specific value.
-  value: string;
-
-  format: string;
-
-  allowDynamicMenus: boolean;
-
-  // Properties common for all viewers
-  // todo: use code generation
-  showContextMenu: boolean;
-
-  title: string;
-
-  showTitle: boolean;
-
-  table: string;
-
-  /// Viewer description that gets shown at the *Descriptor Position*.
-  /// Markup is supported.
-  description: string;
-
-  /// Help to be shown when user clicks on the '?' icon on top.
-  /// Could either be in markdown, or a URL (starting with '/' or 'http').
-  help: string;
-
-  /// Namespace-qualified function that gets executed when a viewer is initialized
-  initializationFunction: string;
-
-  /// JavaScript that gets executed after a viewer is initialized and added to the TableView
-  onInitializedScript: string;
-
-  descriptionPosition: keyof typeof FlexPosition;
-
-  descriptionVisibilityMode: keyof typeof VisibilityMode;
-
-}
-
-export enum CardValueSourceType {
-  Constant = 'Constant',
-  TableMeta = 'TableMeta',
-  ColumnMeta = 'ColumnMeta',
-  Markup = 'Markup',
-  Formula = 'Formula',
-  External = 'External',
-}
-
-export interface IConfusionMatrixSettings {
-  /// Column to be put on the X axis
-  x: string;
-  xColumnName: string;
-
-  /// Column to be put on the Y axis
-  y: string;
-  yColumnName: string;
-
-  /// Determines the rows shown on the plot.
-  rowSource: keyof typeof RowSet;
-
-  /// Formula that filters out rows to show.
-  /// Examples:
-  ///   ${AGE} > 20 or ${WEIGHT / 2)} > 100,
-  ///   ${SEVERITY} == 'Medium',
-  ///   ${RACE}.endsWith('sian')
-  filter: string;
-
-  /// Viewer controls elements font.
-  controlsFont: string;
-
-  allowDynamicMenus: boolean;
-
-  // Properties common for all viewers
-  // todo: use code generation
-  showContextMenu: boolean;
-
-  title: string;
-
-  showTitle: boolean;
-
-  table: string;
-
-  /// Viewer description that gets shown at the *Descriptor Position*.
-  /// Markup is supported.
-  description: string;
-
-  /// Help to be shown when user clicks on the '?' icon on top.
-  /// Could either be in markdown, or a URL (starting with '/' or 'http').
-  help: string;
-
-  /// Namespace-qualified function that gets executed when a viewer is initialized
-  initializationFunction: string;
-
-  /// JavaScript that gets executed after a viewer is initialized and added to the TableView
-  onInitializedScript: string;
-
-  descriptionPosition: keyof typeof FlexPosition;
-
-  descriptionVisibilityMode: keyof typeof VisibilityMode;
-
-}
-
-export interface ICorrelationPlotSettings {
-  controlsFont: string;
-
-  /// Columns to be put on the X axis
+export interface ITrellisPlotSettings {
   xColumnNames: Array<string>;
 
-  /// Columns to be put on the Y axis
   yColumnNames: Array<string>;
 
-  correlationType: keyof typeof CorrelationType;
+  viewerType: string;
 
-  /// Shows the Pearson correlation coefficient inside the corresponding cell.
-  showPearsonR: boolean;
+  //if false, full screen icon will not be shown on inner viewer hover
+  allowViewerFullScreen: boolean;
 
-  /// Shows the tooltip with the corresponding scatter plot inside.
-  showTooltip: boolean;
+  yLabelsOrientation: keyof typeof TextOrientation;
 
-  /// Ignores double click behavior on the grid cells.
-  ignoreDoubleClick: boolean;
+  xLabelsOrientation: keyof typeof TextOrientation;
 
-  backColor: number;
+  categoryLabelFont: string;
 
-  defaultCellFont: string;
+  innerViewerLook: any;
 
-  colHeaderFont: string;
+  innerViewerLooks: {[index: string]: any};
 
-  /// Determines the rows shown on the plot.
-  rowSource: keyof typeof RowSet;
+  showGridlines: string;
 
-  /// Formula that filters out rows to show.
-  /// Examples:
-  ///   ${AGE} > 20 or ${WEIGHT / 2)} > 100,
-  ///   ${SEVERITY} == 'Medium',
-  ///   ${RACE}.endsWith('sian')
-  filter: string;
+  showXSelectors: boolean;
 
-  allowDynamicMenus: boolean;
+  showYSelectors: boolean;
 
-  // Properties common for all viewers
-  // todo: use code generation
-  showContextMenu: boolean;
+  /// Shows horizontal axis for each inner viewer row.
+  /// Depending on selected inner viewer, axis may be hidden automatically.
+  showXAxes: keyof typeof VisibilityMode;
 
-  title: string;
+  /// Shows vertical axis for each inner viewer column.
+  /// Depending on selected inner viewer, axis may be hidden automatically.
+  showYAxes: keyof typeof VisibilityMode;
 
-  showTitle: boolean;
+  /// If checked, all inner viewers use the same axis scales.
+  globalScale: boolean;
 
-  table: string;
+  /// Shows range sliders for inner viewer axis. Available only if corresponding axes (X or Y) are shown.
+  showRangeSliders: boolean;
 
-  /// Viewer description that gets shown at the *Descriptor Position*.
-  /// Markup is supported.
-  description: string;
+  showXLabels: boolean;
 
-  /// Help to be shown when user clicks on the '?' icon on top.
-  /// Could either be in markdown, or a URL (starting with '/' or 'http').
-  help: string;
+  showYLabels: boolean;
 
-  /// Namespace-qualified function that gets executed when a viewer is initialized
-  initializationFunction: string;
+  showControlPanel: boolean;
 
-  /// JavaScript that gets executed after a viewer is initialized and added to the TableView
-  onInitializedScript: string;
+  syncMouseOverRow: boolean;
 
-  descriptionPosition: keyof typeof FlexPosition;
+  /// Action to be performed when you click on a trellis cell
+  onClick: keyof typeof RowGroupAction;
 
-  descriptionVisibilityMode: keyof typeof VisibilityMode;
+  packCategories: boolean;
 
-}
+  useTiledView: boolean;
 
-export enum CorrelationType {
-  Pearson = 'Pearson',
-  Spearman = 'Spearman',
-}
-
-export interface IDensityPlotSettings {
-  binShape: string;
-
-  /// Columns to be put on the X axis
-  x: string;
-  xColumnName: string;
-
-  /// Columns to be put on the Y axis
-  y: string;
-  yColumnName: string;
+  tilesPerRow: number;
 
   autoLayout: boolean;
-
-  axisFont: string;
-
-  showColorScale: boolean;
-
-  invertColorScheme: boolean;
-
-  colorTransformType: keyof typeof AxisType;
-
-  linearColorScheme: Array<number>;
-
-  showXAxis: boolean;
-
-  showYAxis: boolean;
-
-  xAxisType: keyof typeof AxisType;
-
-  yAxisType: keyof typeof AxisType;
-
-  invertXAxis: boolean;
-
-  invertYAxis: boolean;
-
-  showXSelector: boolean;
-
-  showYSelector: boolean;
-
-  xMin: number;
-
-  yMin: number;
-
-  xMax: number;
-
-  yMax: number;
-
-  bins: number;
-
-  allowZoom: boolean;
-
-  binToRange: boolean;
-
-  showBinSelector: boolean;
 
   backColor: number;
 
   viewport: string;
 
-  /// Determines the rows shown on the plot.
-  rowSource: keyof typeof RowSet;
+  legendVisibility: keyof typeof VisibilityMode;
 
-  /// Formula that filters out rows to show.
-  /// Examples:
-  ///   ${AGE} > 20 or ${WEIGHT / 2)} > 100,
-  ///   ${SEVERITY} == 'Medium',
-  ///   ${RACE}.endsWith('sian')
-  filter: string;
-
-  /// Viewer controls elements font.
-  controlsFont: string;
-
-  allowDynamicMenus: boolean;
-
-  // Properties common for all viewers
-  // todo: use code generation
-  showContextMenu: boolean;
-
-  title: string;
-
-  showTitle: boolean;
-
-  table: string;
-
-  /// Viewer description that gets shown at the *Descriptor Position*.
-  /// Markup is supported.
-  description: string;
-
-  /// Help to be shown when user clicks on the '?' icon on top.
-  /// Could either be in markdown, or a URL (starting with '/' or 'http').
-  help: string;
-
-  /// Namespace-qualified function that gets executed when a viewer is initialized
-  initializationFunction: string;
-
-  /// JavaScript that gets executed after a viewer is initialized and added to the TableView
-  onInitializedScript: string;
-
-  descriptionPosition: keyof typeof FlexPosition;
-
-  descriptionVisibilityMode: keyof typeof VisibilityMode;
-
-}
-
-export interface IRocCurveSettings {
-  /// Columns to be put on the X axis
-  predictionColumnNames: Array<string>;
-
-  /// Column to be put on the Y axis
-  targetColumn: string;
-
-  /// Positive class name
-  positiveClass: string;
-
-  /// Select to draw thresholds
-  showThreshold: boolean;
+  legendPosition: keyof typeof FlexAutoPosition;
 
   /// Determines the rows shown on the plot.
   rowSource: keyof typeof RowSet;
@@ -3449,139 +3589,6 @@ export interface IRocCurveSettings {
 
   /// Viewer controls elements font.
   controlsFont: string;
-
-  allowDynamicMenus: boolean;
-
-  // Properties common for all viewers
-  // todo: use code generation
-  showContextMenu: boolean;
-
-  title: string;
-
-  showTitle: boolean;
-
-  table: string;
-
-  /// Viewer description that gets shown at the *Descriptor Position*.
-  /// Markup is supported.
-  description: string;
-
-  /// Help to be shown when user clicks on the '?' icon on top.
-  /// Could either be in markdown, or a URL (starting with '/' or 'http').
-  help: string;
-
-  /// Namespace-qualified function that gets executed when a viewer is initialized
-  initializationFunction: string;
-
-  /// JavaScript that gets executed after a viewer is initialized and added to the TableView
-  onInitializedScript: string;
-
-  descriptionPosition: keyof typeof FlexPosition;
-
-  descriptionVisibilityMode: keyof typeof VisibilityMode;
-
-}
-
-export interface ISparklinesSettings {
-  /// List of columns to show aggregations on
-  columnNames: Array<string>;
-
-  /// List of aggregations for the columns
-  aggregations: Array<string>;
-
-  sparklineType: string;
-
-  /// Numerical column to be used for color-coding.
-  /// The values in the bin get aggregated using the *Color Aggr Type* property.
-  color: string;
-  colorColumnName: string;
-
-  /// Color aggregation type.
-  colorAggrType: string;
-
-  allowDynamicMenus: boolean;
-
-  // Properties common for all viewers
-  // todo: use code generation
-  // Properties common for all viewers
-  // todo: use code generation
-  // Properties common for all viewers
-  // todo: use code generation
-  showContextMenu: boolean;
-
-  title: string;
-
-  showTitle: boolean;
-
-  table: string;
-
-  /// Viewer description that gets shown at the *Descriptor Position*.
-  /// Markup is supported.
-  /// Viewer description that gets shown at the *Descriptor Position*.
-  /// Markup is supported.
-  /// Viewer description that gets shown at the *Descriptor Position*.
-  /// Markup is supported.
-  description: string;
-
-  /// Help to be shown when user clicks on the '?' icon on top.
-  /// Could either be in markdown, or a URL (starting with '/' or 'http').
-  /// Help to be shown when user clicks on the '?' icon on top.
-  /// Could either be in markdown, or a URL (starting with '/' or 'http').
-  /// Help to be shown when user clicks on the '?' icon on top.
-  /// Could either be in markdown, or a URL (starting with '/' or 'http').
-  help: string;
-
-  /// Namespace-qualified function that gets executed when a viewer is initialized
-  /// Namespace-qualified function that gets executed when a viewer is initialized
-  /// Namespace-qualified function that gets executed when a viewer is initialized
-  initializationFunction: string;
-
-  /// JavaScript that gets executed after a viewer is initialized and added to the TableView
-  /// JavaScript that gets executed after a viewer is initialized and added to the TableView
-  /// JavaScript that gets executed after a viewer is initialized and added to the TableView
-  onInitializedScript: string;
-
-  descriptionPosition: keyof typeof FlexPosition;
-
-  descriptionVisibilityMode: keyof typeof VisibilityMode;
-
-}
-
-export interface IFiltersSettings {
-  active: boolean;
-
-  histogramLook: any;
-
-  showFilterCountsIndication: boolean;
-
-  showFilterIndication: boolean;
-
-  /// Indicate the proportion of the selected rows inside each category.
-  showSelectionIndication: boolean;
-
-  showHeader: boolean;
-
-  showHistogram: boolean;
-
-  showMinMax: boolean;
-
-  showSearchBox: boolean;
-
-  // shows the current mouse over row in the table using grey vertical bar in corresponding row
-  showMouseOverRow: boolean;
-
-  // shows the current row in the table using green vertical bar in corresponding row
-  showCurrentRow: boolean;
-
-  // shouws the mouse over group porportion in the filter (similar to how selection proportion is shown).
-  showMouseOverGroupRow: boolean;
-
-  /// Show a filter that represents all boolean columns in the table.
-  showBoolCombinedFilter: boolean;
-
-  columnNames: Array<string>;
-
-  filters: Array<{[index: string]: any}>;
 
   allowDynamicMenus: boolean;
 

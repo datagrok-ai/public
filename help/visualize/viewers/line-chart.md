@@ -107,6 +107,7 @@ Line chart supports Statistical Process Control (SPC) features out of the box, i
 | Invert X Axis | boolean |  |
 | Show X Axis | boolean |  |
 | Show X Selector | boolean |  |
+| Show Vertical Grid Lines | boolean |  |
 | X Axis Label Orientation | string |  |
 | X Axis Tickmarks Mode | axistickmarksmode |  |
 | **Y** | | |
@@ -114,6 +115,7 @@ Line chart supports Statistical Process Control (SPC) features out of the box, i
 | Y Axis Type | string |  |
 | Show Y Axis | boolean |  |
 | Y Global Scale | boolean |  |
+| Show Horizontal Grid Lines | boolean |  |
 | Y Axis Title | string | Axis title to be shown on the left axis in multi-axis mode |
 | Y2 Axis Title | string | Axis title to be shown on the left axis in multi-axis mode |
 | Y Axis Tickmarks Mode | axistickmarksmode |  |
@@ -163,6 +165,7 @@ Line chart supports Statistical Process Control (SPC) features out of the box, i
 | X Axis Height | number | Requires *Auto Axis Size* to be turned off. |
 | Line Coloring Type | string |  |
 | Axis Font | string |  |
+| Grid Line Color | number |  |
 | Selected Rows Color | number |  |
 | Statistical Process Line Color | number |  |
 | Statistical Process Area Color | number |  |
