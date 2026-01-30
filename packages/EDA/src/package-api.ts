@@ -281,4 +281,8 @@ export namespace funcs {
   export async function trainPmpo(): Promise<void> {
     return await grok.functions.call('EDA:TrainPmpo', {});
   }
+
+  export async function getPmpoAppItems(view: DG.View ): Promise<any> {
+    return await grok.functions.call('EDA:GetPmpoAppItems', { view });
+  }
 }

@@ -544,3 +544,9 @@ export function paretoFrontViewer() : any {
 export function trainPmpo() : void {
   PackageFunctions.trainPmpo();
 }
+
+//input: view view 
+//output: object result
+export function getPmpoAppItems(view: any) : any {
+  return PackageFunctions.getPmpoAppItems(view);
+}

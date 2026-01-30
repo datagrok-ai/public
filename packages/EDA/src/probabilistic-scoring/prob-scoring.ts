@@ -31,6 +31,17 @@ export type PmpoTrainingResult = {
   selectedByCorr: string[],
 };
 
+/** Type for pMPO training controls */
+export type Controls = {form: HTMLElement, saveBtn: HTMLButtonElement};
+
+/** Type for pMPO elements */
+export type PmpoAppItems = {
+  statsGrid: DG.Viewer;
+  rocCurve: DG.Viewer;
+  confusionMatrix: DG.Viewer;
+  controls: Controls;
+};
+
 /** Class implementing probabilistic MPO (pMPO) model training and prediction */
 export class Pmpo {
   /** Checks if pMPO model can be applied to the given descriptors and desirability column */
@@ -249,9 +260,9 @@ export class Pmpo {
     descriptionVisibilityMode: 'Always',
   });
 
-  constructor(df: DG.DataFrame) {
+  constructor(df: DG.DataFrame, view?: DG.TableView) {
     this.table = df;
-    this.view = grok.shell.tableView(df.name) ?? grok.shell.addTableView(df);
+    this.view = view ?? (grok.shell.tableView(df.name) ?? grok.shell.addTableView(df));
     this.boolCols = this.getBoolCols();
     this.numericCols = this.getValidNumericCols();
     this.predictionName = df.columns.getUnusedName(SCORES_TITLE);
@@ -628,7 +639,7 @@ export class Pmpo {
     const dockMng = this.view.dockManager;
 
     // Inputs form
-    dockMng.dock(this.getInputForm(), DG.DOCK_TYPE.LEFT, null, undefined, 0.1);
+    dockMng.dock(this.getInputForm(true).form, DG.DOCK_TYPE.LEFT, null, undefined, 0.1);
 
     // Dock viewers
     const gridNode = dockMng.findNode(this.view.grid.root);
@@ -648,8 +659,18 @@ export class Pmpo {
     this.setRibbons();
   } // runTrainingApp
 
+  /** Runs the pMPO model training application */
+  public getPmpoAppItems(): PmpoAppItems {
+    return {
+      statsGrid: this.statGrid,
+      rocCurve: this.rocCurve,
+      confusionMatrix: this.confusionMatrix,
+      controls: this.getInputForm(false),
+    };
+  } // getViewers
+
   /** Creates and returns the input form for pMPO model training */
-  private getInputForm(): HTMLElement {
+  private getInputForm(addBtn: boolean): Controls {
     const form = ui.form([]);
     form.append(ui.h2('Training data'));
     const numericColNames = this.numericCols.map((col) => col.name);
@@ -763,7 +784,7 @@ export class Pmpo {
     setTimeout(() => runComputations(), 10);
 
     // Save model button
-    const saveBtn = ui.button('Save model', async () => {
+    const saveBtn = ui.button('Save', async () => {
       if (this.params == null) {
         grok.shell.warning('Failed to save pMPO model: null parameters.');
         return;
@@ -771,12 +792,17 @@ export class Pmpo {
 
       saveModel(this.params, this.table.name, useSigmoidInput.value);
     }, 'Save model as platform file.');
-    form.append(saveBtn);
+
+    if (addBtn)
+      form.append(saveBtn);
 
     const div = ui.div([form]);
     div.classList.add('eda-pmpo-input-form');
 
-    return div;
+    return {
+      form: div,
+      saveBtn: saveBtn,
+    };
   } // getInputForm
 
   /** Retrieves boolean columns from the data frame */

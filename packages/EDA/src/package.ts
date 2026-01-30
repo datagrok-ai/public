@@ -115,7 +115,7 @@ export class PackageFunctions {
 
 
   @grok.decorators.func({
-    'meta': {'defaultPostProcessingFunction': 'true', role: 'dimRedPostprocessingFunction'},
+    'meta': {'defaultPostProcessingFunction': 'true', 'role': 'dimRedPostprocessingFunction'},
     'name': 'DBSCAN clustering',
   })
   static async dbscanPostProcessingFunction(
@@ -145,7 +145,7 @@ export class PackageFunctions {
     'meta': {
       'supportedTypes': 'int,float,double,qnum',
       'supportedDistanceFunctions': 'Difference',
-      'role': 'dimRedPreprocessingFunction'
+      'role': 'dimRedPreprocessingFunction',
     },
     'name': 'None (number)',
     'outputs': [{name: 'result', type: 'object'}],
@@ -163,7 +163,7 @@ export class PackageFunctions {
     'meta': {
       'supportedTypes': 'string',
       'supportedDistanceFunctions': 'One-Hot,Levenshtein,Hamming',
-      'role': 'dimRedPreprocessingFunction'
+      'role': 'dimRedPreprocessingFunction',
     },
     'name': 'None (string)',
     'outputs': [{name: 'result', type: 'object'}],
@@ -979,7 +979,7 @@ export class PackageFunctions {
     'name': 'Pareto front',
     'description': 'Pareto front viewer',
     'outputs': [{'name': 'result', 'type': 'viewer'}],
-    'meta': {'icon': 'icons/pareto-front-viewer.svg', role: 'viewer'},
+    'meta': {'icon': 'icons/pareto-front-viewer.svg', 'role': 'viewer'},
   })
   static paretoFrontViewer(): DG.Viewer {
     return new ParetoFrontViewer();
@@ -1002,5 +1002,16 @@ export class PackageFunctions {
 
     const pMPO = new Pmpo(df);
     pMPO.runTrainingApp();
+  }
+
+  @grok.decorators.func({'name': 'getPmpoAppItems', 'outputs': [{name: 'result', type: 'object'}]})
+  static getPmpoAppItems(@grok.decorators.param({type: 'view'}) view: DG.TableView): any | null {
+    const df = view.dataFrame;
+    if (!Pmpo.isTableValid(df))
+      return null;
+
+    const pMPO = new Pmpo(df, view);
+
+    return pMPO.getPmpoAppItems();
   }
 }
