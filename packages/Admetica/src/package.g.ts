@@ -54,7 +54,7 @@ export async function admeticaMenu(table: DG.DataFrame, molecules: DG.Column, te
 }
 
 //input: column molecules { semType: Molecule }
-//input: list<string> props 
+//input: list<string> props { optional: true }
 //output: dataframe result
 //meta.vectorFunc: true
 export async function getAdmeProperties(molecules: DG.Column, props?: string[]) : Promise<any> {

@@ -110,7 +110,7 @@ export class PackageFunctions {
   })
   static async getAdmeProperties(
     @grok.decorators.param({ options: { semType: 'Molecule' } }) molecules: DG.Column,
-    @grok.decorators.param({ type: 'list<string>', optional: true }) props?: string[],
+    @grok.decorators.param({type: 'list<string>', options: { optional: true }}) props?: string[],
   ): Promise<DG.DataFrame> {
     const values = new Array(molecules.length + 1);
     values[0] = molecules.name;
