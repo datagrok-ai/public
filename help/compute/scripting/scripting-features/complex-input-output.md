@@ -485,9 +485,6 @@ with open(array_file_binary, 'wb') as npfile:
 ...
 ```
 
-:::
-
-
 ## Return graphical objects
 
 Datagrok supports the special data type to transfer graphical data.
