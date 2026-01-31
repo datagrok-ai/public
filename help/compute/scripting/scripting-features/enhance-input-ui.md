@@ -110,3 +110,34 @@ You can group script inputs into categories using the `category` tag.
 </TabItem>
 </Tabs>
 ```
+
+## Choices
+
+Datagrok natively support the `choices` capability for primitive input types.
+You can use it to pass to the script one value from a pre-populated list or a list of selected values.
+
+```mdx-code-block
+<Tabs>
+<TabItem value="single" label="Single choice" default>
+```
+
+![Single Choices example](../_pics/scripting-choice-single.png)
+
+```mdx-code-block
+</TabItem>
+<TabItem value="multiple" label="Multiple choices" default>
+```
+
+![Multiple Choices example](../_pics/scripting-choice-multi.png)
+
+```mdx-code-block
+</TabItem>
+</Tabs>
+```
+
+You can define choices using a list of fixed values,  
+a CSV file,
+a name of another function,
+or a direct SQL query.
+For details, visit the page 
+[Function annotations](../../../datagrok/concepts/functions/func-params-annotation.md#choices).
