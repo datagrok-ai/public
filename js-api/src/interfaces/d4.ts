@@ -1422,6 +1422,9 @@ export interface IHistogramSettings {
   /// Only applicable when *spline* is true and *split* is empty
   fillSpline: boolean;
 
+  /// Shows distribution lines for each stack or spline category in the histogram (see also **Split** and  **Split Stack**).
+  showDistributionLines: boolean;
+
   showColumnSelector: boolean;
 
   showSplitSelector: boolean;
