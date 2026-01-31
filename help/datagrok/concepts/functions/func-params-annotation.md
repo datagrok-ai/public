@@ -308,7 +308,9 @@ To learn more, see [search patterns](../../../visualize/table-view-1.md#search-p
 ### Choices
 
 Use `choices` to make input a combo box, and restrict the selection to the defined set of values. 
-You can define `choices` using a comma-separated list of values, a name of another function (such as query), 
+You can define `choices` using a comma-separated list of values, 
+a CSV file,
+a name of another function (such as query), 
 or by writing an actual SQL query.
 
 <details> 
@@ -323,6 +325,10 @@ or by writing an actual SQL query.
 ```
 
 ![img_2.png](single-choice-input.png)
+
+When you provide as input a multi-column CSV file, 
+Datagrok uses the first column for the list of values. 
+
 
 </div> 
 </details>
@@ -339,6 +345,21 @@ this example:
 ```
 
 ![img_1.png](multiple-choice-input.png)
+
+To specify initial values for a multiple choice, use a JavaScript array:
+
+```sql
+--input: list<string> shipCountries = ["France", "Germany"] {choices: ['France', 'Italy', 'Germany']}
+```
+
+:::caution Limited support for scripts
+
+Multi-value choices are now supported only in `JavaScript`.
+The multi-choice support for `Python` and `R`
+is planned for the next releases.
+
+:::
+
 
 </div> 
 </details>
