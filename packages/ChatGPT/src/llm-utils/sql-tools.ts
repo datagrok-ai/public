@@ -8,10 +8,9 @@ import {SemValueObjectHandler} from '@datagrok-libraries/db-explorer/src/object-
 import {ChatModel} from 'openai/resources/index';
 import {AIPanelFuncs, MessageType} from './panel';
 import {BuiltinDBInfoMeta, getDBColumnMetaData, getDBTableMetaData} from './query-meta-utils';
-import {ModelType, OpenAIClient} from './openAI-client';
-import {OpenAIResponsesProvider} from './AI-API-providers/openai-responses-provider';
-import {OpenAIChatCompletionsProvider} from './AI-API-providers/openai-chat-completions-provider';
-import {AIProvider, FunctionToolSpec} from './AI-API-providers/types';
+import {ModelOption, ModelType, OpenAIClient} from './openAI-client';
+import {LanguageModelV3FunctionTool, LanguageModelV3Message} from '@ai-sdk/provider';
+import {findLast} from '../utils';
 
 
 const suspiciousSQlPatterns = ['DROP ', 'DELETE ', 'UPDATE ', 'INSERT ', 'ALTER ', 'CREATE ', 'TRUNCATE ', 'EXEC ', 'MERGE '];
@@ -60,7 +59,7 @@ export async function generateAISqlQueryWithTools(
   options: {
     oldMessages?: MessageType[],
     aiPanel?: AIPanelFuncs<MessageType>,
-    modelName?: ChatModel,
+    modelType?: ModelOption,
     disableVerbose?: boolean,
   } = {}
 ): Promise<string> {
@@ -86,7 +85,9 @@ export async function generateAISqlQueryWithTools(
   });
   try {
   // Initialize OpenAI client provider
-    const provider = AIProvider.getProvider();
+    const langTool = OpenAIClient.getInstance();
+    const modelType = options.modelType ?? 'Fast';
+    const client = langTool.aiModels[modelType];
 
     // Initial system message
     const systemMessage = `You are an expert SQL query generator. You have access to tools to explore a database schema and generate SQL queries.
@@ -152,10 +153,10 @@ export async function generateAISqlQueryWithTools(
         }
       }
 
-      const systemMsg = provider.createSystemMessage(systemMessage);
+      const systemMsg = langTool.createSystemMessage(systemMessage);
       input.push(systemMsg);
       addEngineMessage(systemMsg);
-      const initialUserMsg = provider.createUserMessage(`
+      const initialUserMsg = langTool.createUserMessage(`
         Available schemas: ${(await context.listAllSchemas()).join(', ')}\n\n
         Available tables in schema ${schemaName}:\n\n${initialTableList}\n\nUser Query: ${prompt}\n\n
         Explore the schema using the available tools and generate an SQL query to answer this question.
@@ -163,18 +164,18 @@ export async function generateAISqlQueryWithTools(
       addEngineMessage(initialUserMsg); // prompt will be shown in UI
       input.push(initialUserMsg);
     } else {
-      const followUpUserMsg = provider.createUserMessage(`User Follow up (do modifications as/if needed based on the following): ${prompt}`);
+      const followUpUserMsg = langTool.createUserMessage(`User Follow up (do modifications as/if needed based on the following): ${prompt}`);
       input.push(followUpUserMsg);
       addEngineMessage(followUpUserMsg);
     }
 
     // Define available tools
-    const functionTools: FunctionToolSpec[] = [
+    const functionTools: LanguageModelV3FunctionTool[] = [
       {
         type: 'function',
         name: 'list_tables_in_schema',
         description: 'Returns the list of all table names along with their descriptions/comments. Use this to understand what data is available. You must provide schemaName parameter to specify which schema to list tables from.',
-        parameters: {
+        inputSchema: {
           type: 'object',
           properties: {
             schemaName: {
@@ -191,7 +192,7 @@ export async function generateAISqlQueryWithTools(
         type: 'function',
         name: 'list_all_schemas',
         description: 'Retyurns the names all all schemas in the connection.',
-        parameters: {
+        inputSchema: {
           type: 'object',
           properties: {},
           required: [],
@@ -204,7 +205,7 @@ export async function generateAISqlQueryWithTools(
         type: 'function',
         name: 'describe_tables',
         description: 'Get detailed information about specific table(s) including all columns, their types, semantic types, comments, value ranges, and category values. Essential for understanding what data is in each table.',
-        parameters: {
+        inputSchema: {
           type: 'object',
           properties: {
             tables: {
@@ -222,7 +223,7 @@ export async function generateAISqlQueryWithTools(
         type: 'function',
         name: 'list_joins',
         description: 'Lists all foreign key relationships (joins) that involve the specified table(s). CRITICAL: Use this before writing any JOIN clause to verify the relationship exists.',
-        parameters: {
+        inputSchema: {
           type: 'object',
           properties: {
             tables: {
@@ -240,7 +241,7 @@ export async function generateAISqlQueryWithTools(
         type: 'function',
         name: 'try_sql',
         description: 'Execute an SQL query to test it. Returns row count and column names (limited to 10 rows). Use this to validate your query before providing the final answer. If row count is 0, the query might be wrong or the data might genuinely be absent. TRY NOT TO USE ORDER BY in YOUR TEST QUERIES on large tables unless absolutely necessary.',
-        parameters: {
+        inputSchema: {
           type: 'object',
           properties: {
             sql: {
@@ -262,7 +263,7 @@ export async function generateAISqlQueryWithTools(
         type: 'function',
         name: 'reply_to_user',
         description: 'Use this tool to esentially communicate with the user directly, give feedback, add context to what you are doing, explain reasoning(!!!) and so on. This is NOT for providing the final SQL query, but rather for intermediate communication. When using this tool, always provide a clear, informative and well formatted (markdown) message to the user in the reply parameter.',
-        parameters: {
+        inputSchema: {
           type: 'object',
           properties: {
             reply: {
@@ -283,7 +284,7 @@ export async function generateAISqlQueryWithTools(
         type: 'function',
         name: 'find_similar_queries',
         description: 'Finds existing similar queries based on the prompt you provide (which should be based on user question). Use this to get inspiration from previously executed queries that might be similar to the user question. Return up to 3 similar queries with their descriptions/comments. Similarity is based on LLM embeddings and cosine similarity.',
-        parameters: {
+        inputSchema: {
           type: 'object',
           properties: {
             prompt: {
@@ -328,31 +329,38 @@ export async function generateAISqlQueryWithTools(
       }
       iterations++;
       console.log(`\n=== Iteration ${iterations} ===`);
-      const modelName = options?.modelName ?? ModelType.Fast;
-      const response = await provider.create({
-        model: modelName,
-        messages: input,
+      const response = await client.doGenerate({
+        prompt: input,
         tools: functionTools,
-        ...(modelName.startsWith('gpt-5') ? {reasoning: {effort: 'high'}} : {}),
+        providerOptions: {
+          openai: {
+            ...(ModelType.Coding.startsWith('gpt-5') ? {reasoning: {effort: 'medium'}} : {}),
+          }
+        }
       });
 
-      const outputs = response.outputMessages;
-      input.push(...outputs);
-      outputs.forEach((item) => addEngineMessage(item));
+      const formattedOutput: LanguageModelV3Message = {
+        role: 'assistant',
+        // @ts-ignore
+        content: response.content
+      };
+      //const outputs: MessageType[] = response.content.map((item) => ({role: 'assistant', content: [item]} as MessageType));
+      input.push(formattedOutput);
+      options.aiPanel?.addEngineMessage(formattedOutput);
 
       // Execute function calls (if any)
       let hadToolCalls = false;
-      for (const call of response.toolCalls) {
+      for (const call of response.content.filter((c) => c.type === 'tool-call')) {
         hadToolCalls = true;
 
-        const functionName = call.name;
-        const callId = call.id;
-        const rawArgs = call.arguments ?? '{}';
+        const functionName = call.toolName;
+        const callId = call.toolCallId;
+        const rawArgs = call.input ?? '{}';
         const args = parseJsonObject(rawArgs);
 
         if (!functionName || !callId) {
           const errorText = 'Error: malformed function call (missing name/call_id).';
-          const outputItem = provider.createToolOutputMessage(callId ?? '', errorText);
+          const outputItem = langTool.createToolOutputMessage(callId ?? '', functionName ?? '', errorText);
           if (callId)
             input.push(outputItem);
           if (callId)
@@ -415,7 +423,7 @@ export async function generateAISqlQueryWithTools(
 
         console.log(`Result: ${result.substring(0, 200)}${result.length > 200 ? '...' : ''}`);
 
-        const outputItem = provider.createToolOutputMessage(callId, result);
+        const outputItem = langTool.createToolOutputMessage(callId, functionName, result);
         input.push(outputItem);
         addEngineMessage(outputItem);
       }
@@ -430,8 +438,8 @@ export async function generateAISqlQueryWithTools(
         continue;
       }
 
-      const content = response.outputText.trim();
-      if (content.length === 0)
+      const content = findLast(response.content, (c) => c.type === 'text')?.text!;
+      if ((content?.length ?? 0) === 0)
         throw new Error('Model returned no text and no tool calls');
 
       console.log('Model response:', content);

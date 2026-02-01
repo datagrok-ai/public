@@ -8,7 +8,6 @@ import {dartLike, fireAIAbortEvent} from '../utils';
 import {AIPanelFuncs, MessageType} from './panel';
 import {generateAISqlQueryWithTools} from './sql-tools';
 import {ModelType} from './openAI-client';
-import OpenAI from 'openai';
 
 
 /// Prompt API: https://developer.chrome.com/docs/ai/prompt-api
@@ -302,7 +301,7 @@ function runQueryAIprompt(userPrompt: string, connection: DG.DataConnection, tvW
         defaultSchema,
         {
           aiPanel: dummyAIPanelFuncs,
-          modelName: ModelType['Deep Research'],
+          modelType: 'Deep Research',
           disableVerbose: true
         }
       );

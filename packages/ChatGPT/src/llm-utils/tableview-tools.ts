@@ -2,15 +2,12 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {ModelType, OpenAIClient} from './openAI-client';
+import {ModelOption, ModelType, OpenAIClient} from './openAI-client';
 import {ChatModel} from 'openai/resources/shared';
-import {getAIAbortSubscription} from '../utils';
+import {findLast, getAIAbortSubscription} from '../utils';
 import {AIPanelFuncs, MessageType} from './panel';
 import {LLMCredsManager} from './creds';
-import {OpenAIResponsesProvider} from './AI-API-providers/openai-responses-provider';
-import {OpenAIChatCompletionsProvider} from './AI-API-providers/openai-chat-completions-provider';
-import {AIAPIProvider, AIProvider, FunctionToolSpec} from './AI-API-providers/types';
-
+import {LanguageModelV3, LanguageModelV3FunctionTool, LanguageModelV3Message} from '@ai-sdk/provider';
 
 type JsonPrimitive = string | number | boolean | null;
 type JsonValue = JsonPrimitive | JsonObject | JsonValue[];
@@ -55,7 +52,7 @@ export async function processTableViewAIRequest(
   options: {
     oldMessages?: MessageType[],
     aiPanel?: AIPanelFuncs<MessageType>,
-    modelName?: ChatModel,
+    modelType?: ModelOption,
   } = {}
 ): Promise<void> {
   let aborted = false;
@@ -69,10 +66,11 @@ export async function processTableViewAIRequest(
 
   try {
     // Initialize OpenAI client
-    const openai = OpenAIClient.getInstance().openai;
-    const provider = AIProvider.getProvider();
+    const langTool = OpenAIClient.getInstance();
+    const modelType = options.modelType ?? 'Fast';
+    const client = langTool.aiModels[modelType];
     // Always use agent mode workflow with conditional system prompt
-    await processAgentMode(openai, provider, prompt, context, options, () => aborted);
+    await processAgentMode(client, langTool, prompt, context, options, () => aborted);
   } finally {
     abortSub.unsubscribe();
   }
@@ -82,14 +80,14 @@ export async function processTableViewAIRequest(
  * Unified agent workflow with conditional system prompt based on mode
  */
 async function processAgentMode(
-  openai: ReturnType<typeof OpenAIClient.getInstance>['openai'],
-  provider: AIAPIProvider<any, any, any, any, any, any, any>,
+  client: LanguageModelV3,
+  langTool: OpenAIClient,
   prompt: string,
   context: TableViewContext,
   options: {
     oldMessages?: MessageType[],
     aiPanel?: AIPanelFuncs<MessageType>,
-    modelName?: ChatModel
+    modelType?: ModelOption
   },
   isAborted: () => boolean,
 ): Promise<void> {
@@ -136,24 +134,24 @@ Your responses should be informative, explaining what you're doing and why.`;
 
     const initialContext = `${tableDescription}\n\n${availableViewers}`;
 
-    const systemMsg = provider.createSystemMessage(systemMessage);
-    const userMsg = provider.createUserMessage(`${initialContext}\n\nUser request: ${prompt}`);
+    const systemMsg = langTool.createSystemMessage(systemMessage);
+    const userMsg = langTool.createUserMessage(`${initialContext}\n\nUser request: ${prompt}`);
     input.push(systemMsg);
     input.push(userMsg);
-
+    options.aiPanel?.addEngineMessage(systemMsg);
     options.aiPanel?.addUserMessage(userMsg, prompt);
   } else {
-    const userMsg = provider.createUserMessage(prompt);
+    const userMsg = langTool.createUserMessage(prompt);
     input.push(userMsg);
     options.aiPanel?.addUserMessage(userMsg, prompt);
   }
 
-  const tools: FunctionToolSpec[] = [
+  const tools: LanguageModelV3FunctionTool[] = [
     {
       type: 'function',
       name: 'list_ui_elements',
       description: 'Get a list of all available UI elements in the table view with their IDs and descriptions. Use this when users ask where to find features or how to access functionality. Call this before highlight_element to know which elements are available.',
-      parameters: {
+      inputSchema: {
         type: 'object',
         properties: {},
         required: [],
@@ -165,7 +163,7 @@ Your responses should be informative, explaining what you're doing and why.`;
       type: 'function',
       name: 'highlight_element',
       description: 'Highlights a UI element to guide the user. Use this when you want to show users where specific features or controls are located. Use list_ui_elements first to get valid element ID or names.',
-      parameters: {
+      inputSchema: {
         type: 'object',
         properties: {
           elementId: {
@@ -186,7 +184,7 @@ Your responses should be informative, explaining what you're doing and why.`;
       type: 'function',
       name: 'get_available_viewers',
       description: 'Get a list of all available viewer types that can be added to the table view. Use this if you forget which viewer types are available or need to remind yourself of the options.',
-      parameters: {
+      inputSchema: {
         type: 'object',
         properties: {},
         required: [],
@@ -198,7 +196,7 @@ Your responses should be informative, explaining what you're doing and why.`;
       type: 'function',
       name: 'describe_viewer',
       description: 'Get detailed information about a viewer type including all its properties and their types. ALWAYS call this BEFORE adding a new viewer to understand what properties are available and their correct names/types. This describes the viewer type schema, not existing viewer instances.',
-      parameters: {
+      inputSchema: {
         type: 'object',
         properties: {
           viewerType: {
@@ -215,7 +213,7 @@ Your responses should be informative, explaining what you're doing and why.`;
       type: 'function',
       name: 'add_viewer',
       description: 'Add a new viewer to the table view with specified properties. IMPORTANT: Set all desired properties during creation using the viewerProperties parameter - avoid creating a viewer with empty properties and then adjusting it separately. Use describe_viewer first to understand available properties.',
-      parameters: {
+      inputSchema: {
         type: 'object',
         properties: {
           viewerType: {
@@ -242,7 +240,7 @@ Your responses should be informative, explaining what you're doing and why.`;
       type: 'function',
       name: 'find_viewers_by_type',
       description: 'Find all viewers of a specific type that are already added to the table view and get their IDs and current properties. Use this when you need to identify existing viewers of a certain type before modifying them, or when the user refers to "the histogram" or "the scatter plot".',
-      parameters: {
+      inputSchema: {
         type: 'object',
         properties: {
           viewerType: {
@@ -259,7 +257,7 @@ Your responses should be informative, explaining what you're doing and why.`;
       type: 'function',
       name: 'adjust_viewer',
       description: 'Adjust properties of an EXISTING viewer by its ID. Use this to modify viewers that are already created, not for initial configuration. If viewer is not found, will inform you to add it instead. For new viewers, use add_viewer with all properties set from the start.',
-      parameters: {
+      inputSchema: {
         type: 'object',
         properties: {
           viewerId: {
@@ -286,7 +284,7 @@ Your responses should be informative, explaining what you're doing and why.`;
       type: 'function',
       name: 'list_current_viewers',
       description: 'Get a list of all currently added viewers with their IDs, types, and configured properties. Use this to see what viewers already exist before adding new ones or to find viewer IDs for adjustment.',
-      parameters: {
+      inputSchema: {
         type: 'object',
         properties: {},
         required: [],
@@ -298,7 +296,7 @@ Your responses should be informative, explaining what you're doing and why.`;
       type: 'function',
       name: 'reply_to_user',
       description: 'Send a message to the user to explain reasoning, ask for clarification, or provide updates',
-      parameters: {
+      inputSchema: {
         type: 'object',
         properties: {
           message: {
@@ -319,7 +317,7 @@ Your responses should be informative, explaining what you're doing and why.`;
       type: 'function',
       name: 'search_documentation',
       description: 'Search external Datagrok documentation for authoritative information. CRITICAL: Use this tool IMMEDIATELY when user asks ANY question about: 1) How to access Datagrok features/functionality, 2) Where to find menu items or commands, 3) How to perform operations not directly related to viewer manipulation, 4) Package names or requirements, 5) Keyboard shortcuts, 6) Dialogs or workflows. DO NOT make assumptions or invent UI locations, feature names, or steps - ALWAYS search documentation first! If you are even slightly uncertain about something, USE THIS TOOL. Only skip this tool for questions that are purely about manipulating viewers in the current table.',
-      parameters: {
+      inputSchema: {
         type: 'object',
         properties: {
           query: {
@@ -346,30 +344,36 @@ Your responses should be informative, explaining what you're doing and why.`;
     }
 
     iterations++;
-    const modelName = options?.modelName ?? ModelType.Fast;
-    const response = await provider.create({
-      model: modelName,
-      messages: input,
+    const response = await client.doGenerate({
+      prompt: input,
       tools,
-      ...(modelName.startsWith('gpt-5') ? {reasoning: {effort: 'high'}} : {}),
+      providerOptions: {
+        openai: {
+          ...(ModelType.Coding.startsWith('gpt-5') ? {reasoning: {effort: 'medium'}} : {}),
+        }
+      }
     });
 
-    const outputs = response.outputMessages;
-    input.push(...outputs);
-    outputs.forEach((item) =>
-      options.aiPanel?.addEngineMessage(item));
+    const formattedOutput: LanguageModelV3Message = {
+      role: 'assistant',
+      // @ts-ignore
+      content: response.content
+    };
+      //const outputs: MessageType[] = response.content.map((item) => ({role: 'assistant', content: [item]} as MessageType));
+    input.push(formattedOutput);
+    options.aiPanel?.addEngineMessage(formattedOutput);
 
     let hadToolCalls = false;
-    for (const call of response.toolCalls) {
+    for (const call of response.content.filter((c) => c.type === 'tool-call')) {
       hadToolCalls = true;
 
-      const functionName = call.name;
-      const callId = call.id;
-      const rawArgs = call.arguments ?? '{}';
+      const functionName = call.toolName;
+      const callId = call.toolCallId;
+      const rawArgs = call.input ?? '{}';
       const argsObj = parseJsonObject(rawArgs);
 
       if (!functionName || !callId) {
-        const outputItem = provider.createToolOutputMessage(callId ?? '', 'Error: malformed function call (missing name/call_id).');
+        const outputItem = langTool.createToolOutputMessage(callId ?? '', functionName ?? '', 'Error: malformed function call (missing name/call_id).');
         if (callId) {
           input.push(outputItem);
           options.aiPanel?.addEngineMessage(outputItem);
@@ -451,7 +455,7 @@ Your responses should be informative, explaining what you're doing and why.`;
           // }
           options.aiPanel?.addUiMessage(`🔍 Searching documentation for: **${query}**`, false);
           try {
-            const searchData = await openai.vectorStores.search(vectorStoreId, {
+            const searchData = await langTool.openai.vectorStores.search(vectorStoreId, {
               query,
               max_num_results: maxResults,
               rewrite_query: false,
@@ -490,7 +494,7 @@ Your responses should be informative, explaining what you're doing and why.`;
         options.aiPanel?.addUiMessage(`⚠️ Error executing ${functionName}: ${msg}`, false);
       }
 
-      const outputItem = provider.createToolOutputMessage(callId, result);
+      const outputItem = langTool.createToolOutputMessage(callId, functionName, result);
       input.push(outputItem);
       options.aiPanel?.addEngineMessage(outputItem);
     }
@@ -516,9 +520,9 @@ Your responses should be informative, explaining what you're doing and why.`;
       continue;
     }
 
-    const content = response.outputText.trim();
-    if (content.length > 0) {
-      options.aiPanel?.addUiMessage(content, false, {
+    const content = findLast(response.content, (c) => c.type === 'text')?.text;
+    if ((content?.length ?? 0) > 0) {
+      options.aiPanel?.addUiMessage(content!, false, {
         finalResult: content
       });
       break;

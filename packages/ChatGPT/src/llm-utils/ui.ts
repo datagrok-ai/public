@@ -140,7 +140,7 @@ export async function setupAIQueryEditorUI(v: DG.ViewBase, connectionID: string,
     try {
       const sqlQuery = await generateAISqlQueryWithTools(args.currentPrompt.prompt, connectionID, args.currentPrompt.schemaName!, {
         oldMessages: args.prevMessages,
-        aiPanel: session.session, modelName: ModelType[panel.getCurrentInputs().model],
+        aiPanel: session.session, modelType: panel.getCurrentInputs().model,
       });
       if (sqlQuery && typeof sqlQuery === 'string' && sqlQuery.trim().length > 0)
         setAndRunFunc(sqlQuery);
@@ -177,7 +177,7 @@ export async function setupTableViewAIPanelUI() {
           {
             oldMessages: args.prevMessages,
             aiPanel: session.session,
-            modelName: ModelType[panel.getCurrentInputs().model],
+            modelType: panel.getCurrentInputs().model,
           }
         );
       } catch (error: any) {

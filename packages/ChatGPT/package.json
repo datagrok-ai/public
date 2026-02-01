@@ -1,19 +1,23 @@
 {
   "name": "@datagrok/chatgpt",
   "friendlyName": "ChatGPT",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "ChatGPT integration",
   "author": "oserhiienko@datagrok.ai",
   "dependencies": {
+    "@ai-sdk/anthropic": "^3.0.31",
+    "@ai-sdk/openai": "^3.0.23",
+    "@ai-sdk/provider": "^3.0.6",
+    "@datagrok-libraries/db-explorer": "^1.7.2",
+    "@datagrok-libraries/test": "^1.0.0",
     "@datagrok-libraries/utils": "^4.6.5",
     "@modelcontextprotocol/sdk": "^1.21.1",
     "@types/dom-chromium-ai": "^0.0.10",
-    "@datagrok-libraries/db-explorer": "^1.7.2",
+    "ai": "^6.0.62",
     "cash-dom": "^8.1.5",
     "datagrok-api": "../../js-api",
     "dayjs": "^1.11.19",
-    "openai": "^6.16.0",
-    "@datagrok-libraries/test": "^1.0.0"
+    "openai": "^6.16.0"
   },
   "devDependencies": {
     "@types/dom-speech-recognition": "^0.0.7",
