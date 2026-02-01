@@ -74,6 +74,7 @@ Two build targets in `webpack.config.js`:
 - Semicolons required
 - Windows line endings (CRLF)
 - TypeScript strict mode with `strictNullChecks: true`
+- File naming convention is kebab-case: `my-component.ts`
 
 ## Tests
 
