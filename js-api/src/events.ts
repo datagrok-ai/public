@@ -15,7 +15,6 @@ import {LogMessage} from './logger';
 
 const api: IDartApi = (typeof window !== 'undefined' ? window : global.window) as any;
 
-
 export function debounce<T>(observable: rxjs.Observable<T>, milliseconds: number = 100): rxjs.Observable<T> {
   return observable.pipe(rxjsOperators.debounceTime(milliseconds));
 }
@@ -183,10 +182,13 @@ export class Events {
 
   get onFormCreating(): rxjs.Observable<EventData<ColumnsArgs>> { return __obs('d4-form-creating'); }
 
+  /** You can use it to dynamically add panes for the context panel */
   get onAccordionConstructed(): rxjs.Observable<Accordion> { return __obs('d4-accordion-constructed'); }
 
+  /** Occurs when a package is successfully loaded. */
   get onPackageLoaded(): rxjs.Observable<Package> { return __obs('d4-package-loaded'); }
 
+  /** You can use it to override the default implementation of file import. */
   get onFileImportRequest(): rxjs.Observable<EventData<FileImportArgs>> { return __obs('d4-file-import-request'); }
 
   get onGridCellLinkClicked(): rxjs.Observable<EventData<GridCellArgs>> {return __obs('d4-grid-cell-link-clicked-global'); }
@@ -196,36 +198,10 @@ export class Events {
   }
 
   get onLog(): Observable<LogMessage> { return api.grok_Logger_OnLog(); }
+
+  get onServerMessage(): Observable<IServerMessageEventArgs> { return __obs('server-message'); }
 }
 
-/*
-
-export class Stream {
-  private dart: any;
-  constructor(dart: any) {
-    this.dart = dart;
-  }
-
-  listen(onData: any) {
-    return new StreamSubscription(api.grok_Stream_Listen(this.dart, onData));
-  }
-
-  toObservable() {
-    let observable = rxjs.fromEventPattern(
-      function (handler) {
-        return api.grok_OnEvent(eventId, function (x) {
-          handler(w ? toJs(x) : x);
-        });
-      },
-      function (handler, streamSubscription) {
-        streamSubscription.cancel();
-      }
-    );
-    return observable;
-  }
-}
-
-*/
 
 /** Subscription to an event stream. Call [cancel] to stop listening. */
 export class StreamSubscription {
@@ -253,6 +229,7 @@ export class EventData<TArgs = any> {
     return api.grok_EventData_Get_CausedBy(this.dart);
   }
 
+  /** Sender - typically, but not always, an HTML Element */
   get sender(): any {
     return toJs(api.grok_EventData_Get_Sender(this.dart));
   }
@@ -367,4 +344,14 @@ export interface EventArgs {
   value: any;
   trigger: HTMLElement;
   event: UIEvent;
+}
+
+export type JsonPrimitive = string | number | boolean | null;
+export type JsonObject = { [key: string]: JsonValue };
+export type JsonArray = JsonValue[];
+export type JsonValue = JsonPrimitive | JsonObject | JsonArray;
+
+export interface IServerMessageEventArgs {
+  eventType: string;
+  message: any;
 }

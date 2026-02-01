@@ -396,31 +396,29 @@ export class AdminDataSource {
       throw new Error('Recipients list shouldn\'t be empty');
     return api.grok_Dapi_Admin_Send_Email(this.dart, toDart(email));
   }
+
+  /** Sends a message to the specified browser client
+   * See also {@link ServerMessageTypes} */
+  pushMessage(messageType: string, message: object, sessionIds: string[]): Promise<any> {
+    return api.grok_Dapi_Admin_PushMessage(this.dart, messageType, api.grok_JSON_decode(JSON.stringify(message)), toDart(sessionIds));
+  }
 }
 
-/**
- * Represents message that can be sent over the network using the configured SMTP service
- */
+/** Email that can be sent using the configured SMTP service */
 export interface Email {
-  /**
-   * Message subject
-   */
+  /** Message subject */
   subject: string,
-  /**
-   * List of recipients
-   */
+
+  /** List of recipients */
   to: string [],
-  /**
-   * Use to specify plaintext body
-   */
+
+  /** Plaintext body */
   text?: string,
-  /**
-   * Use to specify HTML body
-   */
+
+  /** HTML body (takes precedence over plain text) */
   html?: string,
-  /**
-   * Use to send copies of an email to additional recipients
-   */
+
+  /** Blind carbon copy */
   bcc?: string [],
 }
 
