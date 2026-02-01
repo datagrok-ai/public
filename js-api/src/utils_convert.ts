@@ -1,13 +1,38 @@
+/**
+ * Internal conversion utilities for Dart-JavaScript interop.
+ *
+ * **Note on underscore prefix**: Functions in this module are prefixed with `_` to indicate
+ * they are internal utilities intended for use within the API implementation.
+ * While they are exported (and available to package authors who need low-level access),
+ * they are not part of the stable public API and may change without notice.
+ *
+ * For most use cases, prefer the higher-level APIs in the main modules.
+ *
+ * @module utils_convert
+ * @internal
+ */
+
 import {toJs} from "./wrappers";
 import {IDartApi} from "./api/grok_api.g";
 
 const api: IDartApi = (typeof window !== 'undefined' ? window : global.window) as any;
 
 
+/**
+ * Converts a value to JSON string, handling null.
+ * @internal
+ */
 export function _toJson(x: any) {
     return x === null ? null : JSON.stringify(x);
 }
 
+/**
+ * Wraps a Dart iterable as a JavaScript Iterable.
+ * Allows using Dart collections in for...of loops.
+ * @param dart - Dart iterable object
+ * @returns JavaScript Iterable wrapper
+ * @internal
+ */
 export function _toIterable(dart: any): Iterable<any> {
     let iterable = {};
     // @ts-ignore
@@ -16,6 +41,12 @@ export function _toIterable(dart: any): Iterable<any> {
     return iterable;
 }
 
+/**
+ * Creates a JavaScript iterator from a Dart iterator.
+ * @param dart - Dart iterator object
+ * @returns JavaScript iterator with next() method
+ * @internal
+ */
 export function _getIterator(dart: any) {
     let iterator = api.grok_Iterable_Get_Iterator(dart);
     return {

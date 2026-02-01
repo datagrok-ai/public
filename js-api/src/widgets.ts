@@ -77,7 +77,35 @@ export type CodeConfig = {
   placeholder?: string;
 };
 
+/**
+ * A dynamic property bag that provides convenient access to an object's properties.
+ *
+ * This class uses a JavaScript Proxy to allow accessing properties directly by name:
+ * ```typescript
+ * viewer.props.showAxes = true;  // Instead of: viewer.setOptions({showAxes: true})
+ * console.log(viewer.props.color);
+ * ```
+ *
+ * The Proxy intercepts property access and routes it through the underlying
+ * property system, which handles type conversion and validation.
+ *
+ * **Note**: Due to the dynamic Proxy nature, TypeScript cannot provide
+ * compile-time type checking for property access. Use `getProperties()` to
+ * discover available properties at runtime.
+ *
+ * @example
+ * // Access viewer properties
+ * const scatter = view.scatterPlot();
+ * scatter.props.xColumnName = 'age';
+ * scatter.props.yColumnName = 'weight';
+ *
+ * // Enumerate available properties
+ * for (const prop of scatter.props.getProperties()) {
+ *   console.log(prop.name, prop.propertyType);
+ * }
+ */
 export class ObjectPropertyBag {
+  /** The source object whose properties are being wrapped */
   source: any;
 
   constructor(source: any, x: any = null) {
