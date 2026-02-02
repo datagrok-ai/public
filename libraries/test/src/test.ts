@@ -462,7 +462,7 @@ export async function runTests(options?: TestExecutionOptions) : Promise<TestRes
   if (package_ != undefined)
     await initAutoTests(package_);
   const results:TestResultExtended[] = [];
-  console.log(`Running tests`);
+  console.log(`Running tests...`);
   console.log(options);
   options ??= {};
   options!.testContext ??= new TestContext();
@@ -618,8 +618,7 @@ export async function runTests(options?: TestExecutionOptions) : Promise<TestRes
       for (const [key, value] of Object.entries(categoriesToInvoke)) {
           if (options.exclude?.some((c) => key.startsWith(c)))
               continue;
-          if (options?.category != null && !key.toLowerCase().startsWith(`${options?.category.toLowerCase().trim()} :`) &&
-              key.toLowerCase().trim() !== options?.category.toLowerCase().trim())
+          if (options?.category != null && !key.toLowerCase().startsWith(options?.category.toLowerCase().trim()))
               continue;
 
           if (skippingCategories) {
@@ -634,12 +633,18 @@ export async function runTests(options?: TestExecutionOptions) : Promise<TestRes
                   }
               }
           }
-          stdLog(`Package testing: Started {{${key}}}`);
           //@ts-ignore
-          const skipped = value.tests?.every((t: Test) => t.options?.skipReason);
-          if (!skipped)
-              value.beforeStatus = await invokeCategoryMethod(value.before, key);
+          const skipped = value.tests?.every((t: Test) => t.options?.skipReason
+              || (options?.test != null && options.test.toLowerCase() !== t.name.toLowerCase()));
 
+          if (!skipped) {
+              //@ts-ignore
+              const skippedCount = (value.tests ?? []).filter((t: Test) =>
+                t.options?.skipReason || (options?.test != null && options.test.toLowerCase() !== t.name.toLowerCase())
+              ).length;
+              stdLog(`Package testing: Started {{${key}}}${skippedCount > 0 ? ` skipped {{${skippedCount}}}` : ''}`);
+              value.beforeStatus = await invokeCategoryMethod(value.before, key);
+          }
           let t = value.tests ?? [];
 
           if (options.stressTest) {
@@ -773,6 +778,8 @@ async function execTest(t: Test, predicate: string | undefined, logs: any[],
     return undefined;
   }
 
+  if (skip && !DG.Test.isInBenchmark)
+    stdLog(`Package testing: Skipped {{${t.category}}} {{${t.name}}}`);
   if (!skip)
     stdLog(`Package testing: Started {{${t.category}}} {{${t.name}}}`);
   const start = Date.now();

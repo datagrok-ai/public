@@ -372,6 +372,7 @@ export function printBrowsersResult(browserResult: ResultObject, verbose: boolea
             console.log(`\x1b[33m  To run this category separately use --category "${category}" argument\x1b[0m`);
           else
             console.log(`\x1b[33m  To run this test separately use --category "${category}" --test "${testName}" arguments\x1b[0m`);
+          console.log('');
         }
       }
     }
@@ -690,11 +691,12 @@ export async function runBrowser(
     }
 
     // State tracking for test output formatting
-    const categoryResults: Map<string, {passed: number, failed: number}> = new Map();
+    const categoryResults: Map<string, {passed: number, failed: number, skipped: number}> = new Map();
     let currentCategory: string | null = null;
     let currentTestName: string | null = null;
     // Store failed tests with their errors to print after category header
     let pendingFailures: {testName: string, error: string | null}[] = [];
+    let pendingSkipped: string[] = [];
     let pendingBeforeFailure: {error: string | null} | null = null;
     let pendingAfterFailure: {error: string | null} | null = null;
     let modernOutput = false;
@@ -704,8 +706,9 @@ export async function runBrowser(
       if (!results) return;
       const formattedCategory = category;
       const passedCount = results.passed;
+      const skippedSuffix = results.skipped > 0 ? `, \x1b[33m${results.skipped} skipped\x1b[0m` : '';
       if (results.failed > 0 || pendingBeforeFailure || pendingAfterFailure) {
-        console.log(`\x1b[31m❌ ${formattedCategory} (${passedCount} passed)\x1b[0m`);
+        console.log(`\x1b[31m❌ ${formattedCategory}\x1b[31m (\x1b[32m${passedCount} passed${skippedSuffix}\x1b[31m)\x1b[0m`);
         // Print before() failure first
         if (pendingBeforeFailure) {
           console.log(`  \x1b[31m❌ before\x1b[0m`);
@@ -720,6 +723,9 @@ export async function runBrowser(
             console.log(`    \x1b[31m${pendingAfterFailure.error}\x1b[0m`);
           console.log(`    \x1b[33mTo run this category separately use --category "${category}"\x1b[0m`);
         }
+        // Print skipped tests
+        for (const skippedName of pendingSkipped)
+          console.log(`  \x1b[33m⊘ ${skippedName}\x1b[0m`);
         // Print test failures
         for (const failure of pendingFailures) {
           console.log(`  \x1b[31m❌ ${failure.testName}\x1b[0m`);
@@ -728,9 +734,13 @@ export async function runBrowser(
           console.log(`    \x1b[33mTo run this test separately use --category "${category}" --test "${failure.testName}"\x1b[0m`);
         }
       } else {
-        console.log(`\x1b[32m✅ ${formattedCategory} (${passedCount} passed)\x1b[0m`);
+        console.log(`\x1b[32m✅ ${formattedCategory} (${passedCount} passed${skippedSuffix}\x1b[32m)\x1b[0m`);
+        // Print skipped tests
+        for (const skippedName of pendingSkipped)
+          console.log(`  \x1b[33m⊘ ${skippedName}\x1b[0m`);
       }
       pendingFailures = [];
+      pendingSkipped = [];
       pendingBeforeFailure = null;
       pendingAfterFailure = null;
     };
@@ -768,16 +778,23 @@ export async function runBrowser(
       while ((match = tokenRegex.exec(text)) !== null)
         tokens.push(match[1]);
 
-      // Category start: "Package testing: Started {{Category}}"
-      if (text.includes('Started') && tokens.length === 1) {
+      // Category start: "Package testing: Started {{Category}}" or "Package testing: Started {{Category}} skipped {{N}}"
+      if (text.includes('Started') && (tokens.length === 1 || (tokens.length === 2 && text.includes('skipped')))) {
         // Print summary of previous category if exists
         if (currentCategory && categoryResults.has(currentCategory))
           printCategorySummary(currentCategory);
         currentCategory = tokens[0];
-        categoryResults.set(currentCategory, {passed: 0, failed: 0});
+        const skippedCount = tokens.length === 2 ? parseInt(tokens[1]) || 0 : 0;
+        categoryResults.set(currentCategory, {passed: 0, failed: 0, skipped: skippedCount});
         pendingFailures = [];
+        pendingSkipped = [];
         pendingBeforeFailure = null;
         pendingAfterFailure = null;
+      } else if (text.includes('Skipped') && tokens.length === 2 && !text.includes('benchmark')) {
+        // Individual skipped test: "Package testing: Skipped {{Category}} {{TestName}}"
+        // Only collect if the test belongs to the current active category
+        if (tokens[0] === currentCategory)
+          pendingSkipped.push(tokens[1]);
       } else if (text.includes('Started') && tokens.length === 2) {
         // Test start: "Package testing: Started {{Category}} {{TestName}}"
         const category = tokens[0];

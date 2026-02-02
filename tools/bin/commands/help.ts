@@ -122,6 +122,7 @@ Options:
 --build  	        Builds the package
 --release         Publish package as release version
 --skip-check      Skip check stage 
+--verbose         Show debug information
 
 Running \`grok publish\` is the same as running \`grok publish defaultHost --build --debug\`
 `;
@@ -151,13 +152,13 @@ Options:
 --csv               Save the test report in a CSV file
 --gui               Launch graphical interface (non-headless mode)
 --debug             Enables debug point on tests run (useless without gui mode) 
---catchUnhandled    Catch unhandled exceptions during test execution (default=true)
+--verbose           Show debug information
+--retry --no-retry  Enables or disables browser reload after a failed test
 --report            Report failed tests to audit, notifies package author (default=false)
 --skip-build        Skip the package build step
 --skip-publish      Skip the package publication step
---link  	          Link the package to local utils
+--link  	        Link the package to local utils
 --record            Records the test execution process in mp4 format
---verbose           Prints detailed information about passed and skipped tests in the console
 --platform          Runs only platform tests (applicable for ApiTests package only)
 --core              Runs package & auto tests & core tests (core tests run only from DevTools package)
 --benchmark   	    Runs tests in benchmark mode
