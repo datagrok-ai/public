@@ -1716,6 +1716,8 @@ export interface ILineChartSettings {
 
   lineWidth: number;
 
+  whiskerWidth: number;
+
   lineTransparency: number;
 
   /// Height of the overview chart

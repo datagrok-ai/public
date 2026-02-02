@@ -157,6 +157,7 @@ Line chart supports Statistical Process Control (SPC) features out of the box, i
 | Auto Layout | boolean |  |
 | Segments Font | string |  |
 | Line Width | number |  |
+| Whisker Width | number |  |
 | Line Transparency | number |  |
 | Overview Height | number | Height of the overview chart |
 | Histogram Width | number |  |
