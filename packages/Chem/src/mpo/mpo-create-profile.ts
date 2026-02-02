@@ -34,6 +34,17 @@ export class MpoProfileCreateView {
   saveButton: HTMLElement | null = null;
 
   tableView: DG.TableView;
+  private tableViewVisible: boolean = false;
+
+  private pMpoDockedItems: {
+    statsGrid?: DG.DockNode;
+    rocCurve?: DG.DockNode;
+    confusionMatrix?: DG.DockNode;
+    controls?: {
+      form: DG.DockNode;
+      saveBtn: HTMLElement;
+    };
+  } | null = null;
 
   constructor(existingProfile?: DesirabilityProfile, showMethod: boolean = true, fileName?: string) {
     this.view = DG.View.create();
@@ -73,10 +84,11 @@ export class MpoProfileCreateView {
     }
   }
 
-  private setTableViewVisible(visible: boolean, ratio = 0.5): void {
+  private setTableViewVisible(visible: boolean, ratio = 0.25): void {
     if (this.isEditMode)
       return;
 
+    this.tableViewVisible = visible;
     this.tableView.grid.root.style.visibility = visible ? 'visible' : 'hidden';
     this.tableView.dockManager.dock(
       this.view.root,
@@ -108,8 +120,7 @@ export class MpoProfileCreateView {
     });
 
     this.saveButton.style.display = 'none';
-    this.view.setRibbonPanels([[this.saveButton]]);
-    this.tableView.setRibbonPanels([[this.saveButton]]);
+    (this.isEditMode ? this.view : this.tableView).setRibbonPanels([[this.saveButton]]);
   }
 
   private initControls(showMethod: boolean) {
@@ -140,25 +151,33 @@ export class MpoProfileCreateView {
     const datasetInput = ui.input.table('Dataset', {
       nullable: true,
       onValueChanged: async (df) => {
-        this.df = df;
-        if (df)
+        this.closePMpoPanels();
+        const indicatorRoot = this.tableViewVisible ? this.tableView.root : this.view.root;
+        ui.setUpdateIndicator(indicatorRoot, true, 'Switching dataset...');
+        await new Promise((r) => setTimeout(r, 0));
+
+        try {
+          this.df = df;
           this.tableView.dataFrame = df;
 
-        if (this.methodInput?.value === METHOD_PROBABILISTIC) {
-          this.clearPreviousLayout();
+          if (this.methodInput?.value === METHOD_PROBABILISTIC) {
+            this.clearPreviousLayout();
 
-          if (!this.df) {
-            this.showError('Probabilistic MPO requires a dataset. Please select a dataset first.');
-            this.setTableViewVisible(false);
+            if (!this.df) {
+              this.showError('Probabilistic MPO requires a dataset. Please select a dataset first.');
+              this.setTableViewVisible(false);
+              return;
+            }
+
+            await this.runProbabilisticMpo();
             return;
           }
 
-          await this.runProbabilisticMpo();
-          return;
+          this.setTableViewVisible(false);
+          this.attachLayout();
+        } finally {
+          ui.setUpdateIndicator(indicatorRoot, false);
         }
-
-        this.setTableViewVisible(false);
-        this.attachLayout();
       },
     });
     controls.push(datasetInput);
@@ -212,15 +231,70 @@ export class MpoProfileCreateView {
     }
   }
 
+  private closePMpoPanels(): void {
+    if (!this.pMpoDockedItems)
+      return;
+
+    const dockMng = this.tableView.dockManager;
+    const {statsGrid, rocCurve, confusionMatrix, controls} = this.pMpoDockedItems;
+
+    if (statsGrid)
+      dockMng.close(statsGrid);
+    if (rocCurve)
+      dockMng.close(rocCurve);
+    if (confusionMatrix)
+      dockMng.close(confusionMatrix);
+
+    if (controls) {
+      if (controls.form)
+        dockMng.close(controls.form);
+      if (controls.saveBtn)
+        controls.saveBtn.remove();
+    }
+
+    this.pMpoDockedItems = null;
+  }
+
   private async runProbabilisticMpo(): Promise<void> {
     if (!this.df)
       return;
 
     ui.setUpdateIndicator(this.view.root, true, 'Running probabilistic MPO...');
-    this.setTableViewVisible(true);
 
     try {
-      await grok.functions.call('Eda:trainPmpo', {});
+      this.closePMpoPanels();
+
+      const pMpoAppItems = await grok.functions.call('EDA:getPmpoAppItems', {view: this.tableView});
+      if (!pMpoAppItems) {
+        this.setTableViewVisible(false);
+        this.showError('pMPO is not applicable for this dataset.');
+        return;
+      }
+
+      this.setTableViewVisible(true);
+
+      const dockMng = this.tableView.dockManager;
+      const gridNode = dockMng.findNode(this.tableView.grid.root);
+      if (!gridNode)
+        throw new Error('Failed to train pMPO: missing a grid in the table view.');
+
+      const controlsNode = dockMng.dock(pMpoAppItems.controls.form, DG.DOCK_TYPE.LEFT, gridNode, undefined, 0.1);
+      const statGridNode = dockMng.dock(pMpoAppItems.statsGrid, DG.DOCK_TYPE.DOWN, gridNode, undefined, 0.5);
+      const rocNode = dockMng.dock(pMpoAppItems.rocCurve, DG.DOCK_TYPE.RIGHT, statGridNode, undefined, 0.3);
+      const confusionNode = dockMng.dock(pMpoAppItems.confusionMatrix, DG.DOCK_TYPE.RIGHT, rocNode, undefined, 0.2);
+
+      if (pMpoAppItems.controls.saveBtn)
+        this.tableView.setRibbonPanels([[pMpoAppItems.controls.saveBtn]]);
+
+      this.pMpoDockedItems = {
+        statsGrid: statGridNode,
+        rocCurve: rocNode,
+        confusionMatrix: confusionNode,
+        controls: {
+          form: controlsNode,
+          saveBtn: pMpoAppItems.controls.saveBtn,
+        },
+      };
     } finally {
       ui.setUpdateIndicator(this.view.root, false);
     }
@@ -250,9 +324,9 @@ export class MpoProfileCreateView {
       name: '',
       description: '',
       properties: {
-        'Property 1': {weight: 1, min: 0, max: 1, line: []},
-        'Property 2': {weight: 1, min: 0, max: 1, line: []},
-        'Property 3': {weight: 1, min: 0, max: 1, line: []},
+        'Property 1': {functionType: 'numerical', weight: 1, min: 0, max: 1, line: []},
+        'Property 2': {functionType: 'numerical', weight: 1, min: 0, max: 1, line: []},
+        'Property 3': {functionType: 'numerical', weight: 1, min: 0, max: 1, line: []},
       },
     };
   }
@@ -260,7 +334,7 @@ export class MpoProfileCreateView {
   private createProfileForDf(): DesirabilityProfile {
     const props: {[key: string]: PropertyDesirability} = {};
     for (const col of this.df!.columns.numerical)
-      props[col.name] = {weight: 1, min: col.min, max: col.max, line: []};
+      props[col.name] = {functionType: 'numerical', weight: 1, min: col.min, max: col.max, line: []};
 
     return {name: '', description: '', properties: props};
   }

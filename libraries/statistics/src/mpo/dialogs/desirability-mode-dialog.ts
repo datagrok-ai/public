@@ -1,7 +1,7 @@
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {PropertyDesirability, DesirabilityMode} from '../mpo';
+import {NumericalDesirability, DesirabilityMode} from '../mpo';
 import {MpoDesirabilityLineEditor} from '../editors/mpo-line-editor';
 
 const DESIRABILITY_MODES = ['freeform', 'gaussian', 'sigmoid'];
@@ -9,8 +9,8 @@ const DESIRABILITY_MODES = ['freeform', 'gaussian', 'sigmoid'];
 export class DesirabilityModeDialog {
   constructor(
     private propertyName: string,
-    private prop: PropertyDesirability,
-    private onUpdate: (patch: Partial<PropertyDesirability>) => void,
+    private prop: NumericalDesirability,
+    private onUpdate: (patch: Partial<NumericalDesirability>) => void,
   ) {}
 
   show(): void {

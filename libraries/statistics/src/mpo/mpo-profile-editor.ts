@@ -3,7 +3,7 @@ import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
 
 import {Subject} from 'rxjs';
-import {DesirabilityProfile, PropertyDesirability} from './mpo';
+import {DesirabilityProfile, PropertyDesirability, isNumerical, migrateDesirability} from './mpo';
 import {DesirabilityEditor, DesirabilityEditorFactory} from './editors/desirability-editor-factory';
 import {DesirabilityModeDialog} from './dialogs/desirability-mode-dialog';
 
@@ -31,6 +31,10 @@ export class MpoProfileEditor {
   }
 
   setProfile(profile?: DesirabilityProfile): void {
+    if (profile) {
+      for (const key of Object.keys(profile.properties))
+        profile.properties[key] = migrateDesirability(profile.properties[key]);
+    }
     this.profile = profile;
     this.columnMapping = {};
     this.rows = {};
@@ -100,7 +104,8 @@ export class MpoProfileEditor {
   ): HTMLElement {
     const row = ui.divH([], 'statistics-mpo-row');
 
-    prop.mode ??= 'freeform';
+    if (isNumerical(prop))
+      prop.mode ??= 'freeform';
     const editor = DesirabilityEditorFactory.create(prop);
     editor.onChanged.subscribe(() => this.emitChange());
 
@@ -219,6 +224,9 @@ export class MpoProfileEditor {
     prop: PropertyDesirability,
     editor: DesirabilityEditor,
   ): void {
+    if (!isNumerical(prop))
+      return;
+
     new DesirabilityModeDialog(
       name,
       prop,
@@ -257,7 +265,6 @@ export class MpoProfileEditor {
     this.rows[newName] = this.rows[oldName];
     delete this.rows[oldName];
 
-    this.render();
     this.emitChange();
   }
 
@@ -283,7 +290,7 @@ export class MpoProfileEditor {
       return;
 
     const newName = `NewProperty${Object.keys(this.profile.properties).length + 1}`;
-    this.profile.properties[newName] = {weight: 1, mode: 'freeform', min: 0, max: 1, line: []};
+    this.profile.properties[newName] = {functionType: 'numerical', weight: 1, mode: 'freeform', min: 0, max: 1, line: []};
 
     const idx = this.propertyOrder.indexOf(propertyName);
     this.propertyOrder.splice(idx + 1, 0, newName);
