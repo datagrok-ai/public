@@ -28,8 +28,9 @@ const packageFiles = [
   'src/package-test.ts', 'src/package-test.js', 'package.js', 'detectors.js',
 ];
 let config: utils.Config;
-export async function processPackage(debug: boolean, rebuild: boolean, host: string, devKey: string, packageName: any, dropDb: boolean, suffix?: string) {
+export async function processPackage(debug: boolean, rebuild: boolean, host: string, devKey: string, packageName: any, dropDb: boolean, suffix?: string, verbose?: boolean) {
   // Get the server timestamps
+  verbose = verbose || false;
   let timestamps: Indexable = {};
   let url = `${host}/packages/dev/${devKey}/${packageName}`;
   if (debug) {
@@ -40,7 +41,10 @@ export async function processPackage(debug: boolean, rebuild: boolean, host: str
         return 1;
       }
     } catch (error) {
-      console.error(error);
+      if (utils.isConnectivityError(error))
+        color.error(`Server is possibly offline: ${host}`);
+      if (verbose)
+        console.error(error);
       return 1;
     }
   }
@@ -131,7 +135,6 @@ export async function processPackage(debug: boolean, rebuild: boolean, host: str
     const t = fs.statSync(fullPath).mtime.toUTCString();
     localTimestamps[canonicalRelativePath] = t;
     if (debug && timestamps[canonicalRelativePath] === t) {
-      console.log(`Skipping ${canonicalRelativePath}`);
       return;
     }
     if (canonicalRelativePath.startsWith('connections/')) {
@@ -146,11 +149,9 @@ export async function processPackage(debug: boolean, rebuild: boolean, host: str
         f = f.replace(m[0], envVar);
       }
       zip.append(f, {name: relativePath});
-      console.log(`Adding ${canonicalRelativePath}...`);
       return;
     }
     zip.append(fs.createReadStream(fullPath), {name: relativePath});
-    console.log(`Adding ${canonicalRelativePath}...`);
   });
   if (errs.length) {
     errs.forEach((e) => color.error(e));
@@ -163,41 +164,31 @@ export async function processPackage(debug: boolean, rebuild: boolean, host: str
   url += `?debug=${debug.toString()}&rebuild=${rebuild.toString()}&dropDb=${(dropDb ?? false).toString()}`;
   if (suffix)
     url += `&suffix=${suffix.toString()}`;
-  const uploadPromise = new Promise((resolve, reject) => {
-    fetch(url, {
-      method: 'POST',
-      body: zip,
-    }).then(async (body: any) => {
-      let response;
-      try {
-        response = await body.text();
-        return JSON.parse(response);
-      } catch (error) {
-        console.error(response);
-      }
-    }).then((j: {}) => resolve(j)).catch((err: Error) => {
-      reject(err);
-    });
-  }).catch((error) => {
-    console.error(error);
-  });
   await zip.finalize();
 
   try {
-    const log = await uploadPromise as Indexable;
+      const body = await fetch(url, {
+          method: 'POST',
+          body: zip,
+      });
+    const log = JSON.parse(await body.text());
 
     fs.unlinkSync('zip');
-    if (log['#type'] === 'ApiError') {
-      color.error(log['message']);
-      console.error(log['innerMessage']);
-      console.log(log);
-      return 1;
-    } else 
-      console.log(log);
-      // color.warn(contentValidationLog);
-    
+    if (log != undefined) {
+        if (log['#type'] === 'ApiError') {
+            color.error(log['message']);
+            console.error(log['innerMessage']);
+            console.log(log);
+            return 1;
+        } else
+            console.log(log);
+        // color.warn(contentValidationLog);
+    }
   } catch (error) {
-    console.error(error);
+      if (utils.isConnectivityError(error))
+          color.error(`Server is possibly offline: ${url}`);
+      if (verbose)
+          console.error(error);
     return 1;
   }
   return 0;
@@ -264,7 +255,7 @@ async function publishPackage(args: PublishArgs) {
     return false;
   }
 
-  console.log('Publishing');
+  console.log('Publishing...');
   // Create `config.yaml` if it doesn't exist yet
   if (!fs.existsSync(grokDir)) fs.mkdirSync(grokDir);
   if (!fs.existsSync(confPath)) fs.writeFileSync(confPath, yaml.dump(confTemplate));
@@ -314,7 +305,7 @@ async function publishPackage(args: PublishArgs) {
           args.suffix = stdout.toString().substring(0, 8);
       });
       await utils.delay(100);
-      code = await processPackage(!args.release, Boolean(args.rebuild), url, key, packageName, args.dropDb ?? false, args.suffix);
+      code = await processPackage(!args.release, Boolean(args.rebuild), url, key, packageName, args.dropDb ?? false, args.suffix, args.verbose);
     } catch (error) {
       console.error(error);
       code = 1;
@@ -338,5 +329,6 @@ interface PublishArgs {
   all?: boolean,
   refresh?: boolean,
   link?: boolean,
-  dropDb?: boolean
+  dropDb?: boolean,
+  verbose?: boolean
 }

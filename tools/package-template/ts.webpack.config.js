@@ -12,6 +12,7 @@ module.exports = {
     package: './src/package.ts',
   },
   resolve: {
+    symlinks: false,
     extensions: ['.wasm', '.mjs', '.ts', '.json', '.js', '.tsx'],
   },
   module: {

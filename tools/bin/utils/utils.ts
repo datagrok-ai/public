@@ -287,6 +287,12 @@ export interface Config {
 
 export interface Indexable { [key: string]: any }
 
+export function isConnectivityError(error: any): boolean {
+  const msg = (error?.message ?? '').toLowerCase() + ' ' + (error?.code ?? '').toLowerCase();
+  return ['econnrefused', 'enotfound', 'etimedout', 'eai_again', 'econnreset', 'fetch failed', 'network error']
+    .some((token) => msg.includes(token));
+}
+
 export async function runScript(script: string, path: string, verbose: boolean = false) {
   try {
     const {stdout, stderr} = await execAsync(script, {cwd: path});
@@ -295,13 +301,10 @@ export async function runScript(script: string, path: string, verbose: boolean =
     
     if (stdout && verbose) 
       console.log(`Output: ${stdout}`);
-    
+
   } catch (error: any) {
     const output = [error.stdout, error.stderr].filter(Boolean).join('\n');
-    console.error(`Execution failed: ${error.message}`);
-    if (output)
-      console.error(output);
-    throw new Error(`Error executing '${script}'. Error message: ${error.message}`);
+    throw new Error(output);
   }
 }
 

@@ -31,7 +31,14 @@ export const defaultLaunchParameters: utils.Indexable = {
 };
 
 export async function getToken(url: string, key: string) {
-  const response = await fetch(`${url}/users/login/dev/${key}`, {method: 'POST'});
+  let response;
+  try {
+    response = await fetch(`${url}/users/login/dev/${key}`, {method: 'POST'});
+  } catch (error: any) {
+    if (utils.isConnectivityError(error))
+      color.error(`Server is possibly offline: ${url}`);
+    throw error;
+  }
   const json = await response.json();
   if (json.isSuccess == true)
     return json.token;
@@ -356,6 +363,17 @@ export function printBrowsersResult(browserResult: ResultObject, verbose: boolea
     if ((browserResult.failedAmount ?? 0) > 0 && (browserResult.verboseFailed ?? []).length > 0) {
       console.log('Failed: ');
       console.log(browserResult.verboseFailed);
+      for (const line of browserResult.verboseFailed.split('\n')) {
+        const match = line.match(/^(.+?):\s+(.+?)\s+\(/);
+        if (match) {
+          const category = match[1].trim();
+          const testName = match[2].trim();
+          if (testName === 'before' || testName === 'after')
+            console.log(`\x1b[33m  To run this category separately use --category "${category}" argument\x1b[0m`);
+          else
+            console.log(`\x1b[33m  To run this test separately use --category "${category}" --test "${testName}" arguments\x1b[0m`);
+        }
+      }
     }
     console.log('Passed amount:  ' + browserResult?.passedAmount);
     console.log('Skipped amount: ' + browserResult?.skippedAmount);
@@ -684,7 +702,7 @@ export async function runBrowser(
     const printCategorySummary = (category: string) => {
       const results = categoryResults.get(category);
       if (!results) return;
-      const formattedCategory = category.replace(/: /g, ', ');
+      const formattedCategory = category;
       const passedCount = results.passed;
       if (results.failed > 0 || pendingBeforeFailure || pendingAfterFailure) {
         console.log(`\x1b[31m❌ ${formattedCategory} (${passedCount} passed)\x1b[0m`);
@@ -693,18 +711,21 @@ export async function runBrowser(
           console.log(`  \x1b[31m❌ before\x1b[0m`);
           if (pendingBeforeFailure.error)
             console.log(`    \x1b[31m${pendingBeforeFailure.error}\x1b[0m`);
+          console.log(`    \x1b[33mTo run this category separately use --category "${category}"\x1b[0m`);
         }
         // Print after() failure
         if (pendingAfterFailure) {
           console.log(`  \x1b[31m❌ after\x1b[0m`);
           if (pendingAfterFailure.error)
             console.log(`    \x1b[31m${pendingAfterFailure.error}\x1b[0m`);
+          console.log(`    \x1b[33mTo run this category separately use --category "${category}"\x1b[0m`);
         }
         // Print test failures
         for (const failure of pendingFailures) {
           console.log(`  \x1b[31m❌ ${failure.testName}\x1b[0m`);
           if (failure.error)
             console.log(`    \x1b[31m${failure.error}\x1b[0m`);
+          console.log(`    \x1b[33mTo run this test separately use --category "${category}" --test "${failure.testName}"\x1b[0m`);
         }
       } else {
         console.log(`\x1b[32m✅ ${formattedCategory} (${passedCount} passed)\x1b[0m`);
@@ -713,6 +734,25 @@ export async function runBrowser(
       pendingBeforeFailure = null;
       pendingAfterFailure = null;
     };
+
+    // Print all console messages when verbose mode is enabled
+    if (browserOptions.verbose) {
+      page.on('console', (msg) => {
+        const type = msg.type();
+        const text = msg.text();
+          if (text.startsWith('Package testing: '))
+              return;
+        if (type === 'error')
+          console.log(`\x1b[31m[console.error] ${text}\x1b[0m`);
+        else if (type === 'warning')
+          console.log(`\x1b[33m[console.warn] ${text}\x1b[0m`);
+        else
+          console.log(`[console.log] ${text}`);
+      });
+      page.on('pageerror', (error) => {
+        console.log(`\x1b[31m[page error] ${error.message}\x1b[0m`);
+      });
+    }
 
     // Subscribe to page console events for modern output formatting
     // On retry, old listeners were removed so we need to re-attach
@@ -740,7 +780,7 @@ export async function runBrowser(
         pendingAfterFailure = null;
       } else if (text.includes('Started') && tokens.length === 2) {
         // Test start: "Package testing: Started {{Category}} {{TestName}}"
-        const category = tokens[0].replace(/: /g, ', ');
+        const category = tokens[0];
         currentTestName = tokens[1];
         process.stdout.write(`${category}: ${currentTestName}...`);
       } else if (text.includes('Finished') && tokens.length === 3) {
@@ -751,7 +791,8 @@ export async function runBrowser(
         const results = categoryResults.get(category);
 
         // Clear the current test line
-        process.stdout.write('\r\x1b[K');
+          if (!browserOptions.verbose)
+            process.stdout.write('\r\x1b[K');
 
         if (status === 'success') {
           if (results) results.passed++;
