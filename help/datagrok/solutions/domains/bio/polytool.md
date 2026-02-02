@@ -14,6 +14,18 @@ keywords:
 
 Polytool is a comprehensive suite of tools that extends Datagrok's capabilities for working with custom rules-based sequence notations and includes powerful utilities for sequence enumeration. This functionality is provided through the Sequence Translator plugin and enables flexible representation and manipulation of sequences.
 
+For the broader context on how Datagrok handles macromolecules, see the [Bioinformatics overview](bio.md). Polytool relies on the same platform concepts, including [macromolecule semantic type assignment](../../../../govern/catalog/semantic-types.md), [monomer libraries](bio.md#manage-monomer-libraries), and [format conversion](bio.md#format-conversion).
+
+## Quick Links
+
+* [Bioinformatics overview](bio.md)
+* [Sequence notation formats](bio.md#formats) (FASTA, HELM, BILN, etc.)
+* [Format conversion](bio.md#format-conversion) and [convert to atomic level](bio.md#convert-to-atomic-level)
+* [Manage monomer libraries](bio.md#manage-monomer-libraries) and [manage monomers](bio.md#manage-monomers)
+* [Peptides SAR](peptides-sar.md) (common downstream analysis for enumerated libraries)
+* [Oligo toolkit](oligo-toolkit.md) (if you're working with oligonucleotide modalities)
+* [Supported file formats](../../../../access/files/supported-formats.md)
+
 ## Overview
 
 Polytool introduces a simplified, rules-based sequence notation that offers significant advantages over existing formats like BILN and HELM. The notation uses a dash-separated format that is more human-readable while supporting complex structural features including branches and connections.
@@ -49,6 +61,8 @@ The Polytool notation provides several key advantages:
 * **Multiple rule sets**: Support for different rule sets for different use cases
 * **Reaction support**: Unlike BILN and HELM, which are limited to R-group connections, Polytool supports complex reaction rules
 
+To learn more about these formats and how Datagrok uses them, see [Sequence notation formats](bio.md#formats), as well as the external references for [HELM](https://en.wikipedia.org/wiki/Hierarchical_editing_language_for_macromolecules) and [BILN](https://pubs.acs.org/doi/10.1021/acs.jcim.2c00703).
+
 ### Reaction-Based Rules
 
 The most powerful feature of Polytool is its support for reaction-based connection rules. Instead of simply linking R-groups, you can define rules that produce reaction products between monomers.
@@ -61,7 +75,7 @@ This capability opens new possibilities for representing complex chemical modifi
 
 ## Converting Sequences to Molecular Structures
 
-The primary use case for Polytool notation is storing company-specific rules-based sequences in monomeric form and converting them to atomic structures for further analysis.
+The primary use case for Polytool notation is storing company-specific rules-based sequences in monomeric form and converting them to [atomic-level structures](bio.md#convert-to-atomic-level) for further analysis. The conversion uses the active [monomer libraries](bio.md#manage-monomer-libraries) and can optionally produce [HELM](https://en.wikipedia.org/wiki/Hierarchical_editing_language_for_macromolecules) for interoperability.
 
 ### Using the Convert Tool
 
@@ -97,7 +111,7 @@ When enabled, uses a linear conversion engine that depicts linear molecules in a
 
 ### Technical Details
 
-Under the hood, reaction-based rules use RDKit for chemical transformations. The conversion process:
+Under the hood, reaction-based rules use [RDKit](https://www.rdkit.org/) for chemical transformations. The conversion process:
 
 1. Creates temporary monomers for reaction participants and products
 2. Applies reaction rules using RDKit
@@ -138,7 +152,7 @@ Advanced rules that define chemical reactions between monomers. These rules gene
 
 ## Sequence Enumeration
 
-The enumerate feature is a powerful tool for generating multiple sequence variants based on specified positions and monomers. This is especially useful for creating peptide libraries and exploring sequence space.
+The enumerate feature is a powerful tool for generating multiple sequence variants based on specified positions and monomers. This is especially useful for creating peptide libraries and exploring sequence space (see [Bioinformatics overview](bio.md)).
 
 ### Enumeration Modes
 
@@ -181,7 +195,7 @@ The tool generates all specified variants and displays them in a new table.
 
 ### Use Cases
 
-* **Peptide library design**: Generate variants for SAR studies
+* **Peptide library design**: Generate variants for SAR studies (see [Peptides SAR](peptides-sar.md))
 * **Optimization campaigns**: Explore substitutions at key positions
 * **Chemical space exploration**: Systematically vary sequence composition
 * **Lead compound generation**: Create focused libraries around hit sequences
@@ -196,6 +210,8 @@ Polytool notation is fully integrated throughout Datagrok:
 * **Analysis**: Apply all standard macromolecule SAR analysis tools
 * **Interoperability**: Convert between Polytool, HELM, and BILN formats (where applicable)
 
+For related platform features, see [Searching and filtering](bio.md#searching-and-filtering), [Sketching and editing](bio.md#sketching-and-editing), and the list of macromolecule-aware viewers in the [Bioinformatics overview](bio.md).
+
 This seamless integration ensures that sequences in Polytool notation can be used in all aspects of your workflow, from initial data exploration to final analysis and reporting.
 
 ## See Also
@@ -203,3 +219,9 @@ This seamless integration ensures that sequences in Polytool notation can be use
 * [Bioinformatics Overview](bio.md)
 * [Manage Monomer Libraries](bio.md#manage-monomer-libraries)
 * [Sequence Notation Formats](bio.md#formats) 
+* [Format conversion](bio.md#format-conversion)
+* [Convert to atomic level](bio.md#convert-to-atomic-level)
+* [Peptides SAR](peptides-sar.md)
+* [Oligo toolkit](oligo-toolkit.md)
+* [Supported file formats](../../../../access/files/supported-formats.md)
+* [Semantic types](../../../../govern/catalog/semantic-types.md)
