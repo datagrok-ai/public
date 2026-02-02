@@ -83,7 +83,7 @@ export class MpoProfileCreateView {
     }
   }
 
-  private setTableViewVisible(visible: boolean, ratio = 0.5): void {
+  private setTableViewVisible(visible: boolean, ratio = 0.25): void {
     if (this.isEditMode)
       return;
 
@@ -257,12 +257,11 @@ export class MpoProfileCreateView {
         return;
       }
 
-      const controlsNode = dockMng.dock(pMpoAppItems.controls.form, DG.DOCK_TYPE.LEFT, null, undefined, 0.1);
-
       const gridNode = dockMng.findNode(this.tableView.grid.root);
       if (!gridNode)
         throw new Error('Failed to train pMPO: missing a grid in the table view.');
 
+      const controlsNode = dockMng.dock(pMpoAppItems.controls.form, DG.DOCK_TYPE.LEFT, gridNode, undefined, 0.1);
       const statGridNode = dockMng.dock(pMpoAppItems.statsGrid, DG.DOCK_TYPE.DOWN, gridNode, undefined, 0.5);
       const rocNode = dockMng.dock(pMpoAppItems.rocCurve, DG.DOCK_TYPE.RIGHT, statGridNode, undefined, 0.3);
       const confusionNode = dockMng.dock(pMpoAppItems.confusionMatrix, DG.DOCK_TYPE.RIGHT, rocNode, undefined, 0.2);
