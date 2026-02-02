@@ -2,7 +2,6 @@ import {ScatterPlotCellRenderer} from './sparklines/scatter-plot';
 import {RawPNGRenderer} from './pngRenderer';
 import {PackageFunctions} from './package';
 import {HtmlTestCellRenderer} from './cell-types/test-cell-renderer';
-import {TagsCellRenderer} from './cell-types/tags-cell-renderer';
 import {MultiChoiceCellRenderer} from './cell-types/multi-choice-cell-renderer';
 import {ImageCellRenderer} from './cell-types/image-cell-renderer';
 import {HyperlinkCellRenderer} from './cell-types/hyperlink-cell-renderer';
@@ -38,14 +37,6 @@ export function _ImageCellRenderer() {
 //meta.cellType: MultiChoice
 export function _MultiChoiceCellRenderer() {
   return new MultiChoiceCellRenderer();
-}
-
-//name: Tags
-//output: grid_cell_renderer renderer
-//meta.role: cellRenderer
-//meta.cellType: Tags
-export function _TagsCellRenderer() {
-  return new TagsCellRenderer();
 }
 
 //name: htestCellRenderer
@@ -113,6 +104,16 @@ export function radarCellRenderer() {
 //meta.role: cellRenderer
 export function smartFormCellRenderer() {
   return PackageFunctions.smartFormCellRenderer();
+}
+
+//name: Tags
+//output: grid_cell_renderer result
+//meta.cellType: Tags
+//meta.gridChart: true
+//meta.virtual: true
+//meta.role: cellRenderer
+export function tagsCellRenderer() {
+  return PackageFunctions.tagsCellRenderer();
 }
 
 //description: Adds a sparkline column for the selected columns

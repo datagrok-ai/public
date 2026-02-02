@@ -12,7 +12,7 @@ import {
   SparklineType,
   SummaryColumnColoringType,
   SummarySettingsBase,
-  NormalizationType, getScaledNumber, getSparklinesContextPanel
+  NormalizationType, getScaledNumber, scaleSettings, getSparklinesContextPanel
 } from './shared';
 import {VlaaiVisManager} from '../utils/vlaaivis-manager';
 
@@ -128,13 +128,9 @@ function onHit(gridCell: DG.GridCell, e: MouseEvent): Hit {
   if (settings.style == PieChartStyle.Radius && !settings.sectors) {
     activeColumn = Math.floor((angle * cols.length) / (2 * Math.PI));
     if (cols[activeColumn] !== null) {
-      const scaledNumber = getScaledNumber(cols, row, cols[activeColumn], {
-        normalization: settings.normalization,
-        invertScale: settings.invertColumnNames?.includes(cols[activeColumn].name),
-        logScale: settings.logColumnNames?.includes(cols[activeColumn].name),
-        minValues: settings.minValues,
-        maxValues: settings.maxValues,
-      });
+      const scaledNumber = getScaledNumber(cols, row, cols[activeColumn],
+        scaleSettings(settings, cols[activeColumn])
+      );
       r = scaledNumber * (gridCell.bounds.width - 4) / 2;
       r = Math.max(r, minRadius);
     }
@@ -233,13 +229,9 @@ export class PieChartCellRenderer extends DG.GridCellRenderer {
         if (cols[i] === null || row === -1 || cols[i].isNone(row))
           continue;
 
-        const scaledNumber = getScaledNumber(cols, row, cols[i], {
-          normalization: settings.normalization,
-          invertScale: settings.invertColumnNames?.includes(cols[i].name),
-          logScale: settings.logColumnNames?.includes(cols[i].name),
-          minValues: settings.minValues,
-          maxValues: settings.maxValues,
-        });
+        const scaledNumber = getScaledNumber(cols, row, cols[i],
+          scaleSettings(settings, cols[i])
+        );
         let r = scaledNumber * box.width / 2;
         r = Math.max(r, minRadius);
         g.beginPath();
