@@ -35,6 +35,16 @@ export class MpoProfileCreateView {
 
   tableView: DG.TableView;
 
+  private pMpoDockedItems: {
+    statsGrid?: DG.DockNode;
+    rocCurve?: DG.DockNode;
+    confusionMatrix?: DG.DockNode;
+    controls?: {
+      form: DG.DockNode;
+      saveBtn: HTMLElement;
+    };
+  } | null = null;
+
   constructor(existingProfile?: DesirabilityProfile, showMethod: boolean = true, fileName?: string) {
     this.view = DG.View.create();
     this.showMethod = showMethod;
@@ -219,7 +229,56 @@ export class MpoProfileCreateView {
     this.setTableViewVisible(true);
 
     try {
-      await grok.functions.call('Eda:trainPmpo', {});
+      const dockMng = this.tableView.dockManager;
+
+      if (this.pMpoDockedItems) {
+        const {statsGrid, rocCurve, confusionMatrix, controls} = this.pMpoDockedItems;
+
+        if (statsGrid)
+          dockMng.close(statsGrid);
+        if (rocCurve)
+          dockMng.close(rocCurve);
+        if (confusionMatrix)
+          dockMng.close(confusionMatrix);
+
+        if (controls) {
+          if (controls.form)
+            dockMng.close(controls.form);
+          if (controls.saveBtn)
+            controls.saveBtn.remove();
+        }
+
+        this.pMpoDockedItems = null;
+      }
+
+      const pMpoAppItems = await grok.functions.call('EDA:getPmpoAppItems', {view: this.tableView});
+      if (!pMpoAppItems) {
+        grok.shell.warning('pMPO is not applicable');
+        return;
+      }
+
+      const controlsNode = dockMng.dock(pMpoAppItems.controls.form, DG.DOCK_TYPE.LEFT, null, undefined, 0.1);
+
+      const gridNode = dockMng.findNode(this.tableView.grid.root);
+      if (!gridNode)
+        throw new Error('Failed to train pMPO: missing a grid in the table view.');
+
+      const statGridNode = dockMng.dock(pMpoAppItems.statsGrid, DG.DOCK_TYPE.DOWN, gridNode, undefined, 0.5);
+      const rocNode = dockMng.dock(pMpoAppItems.rocCurve, DG.DOCK_TYPE.RIGHT, statGridNode, undefined, 0.3);
+      const confusionNode = dockMng.dock(pMpoAppItems.confusionMatrix, DG.DOCK_TYPE.RIGHT, rocNode, undefined, 0.2);
+
+      if (pMpoAppItems.controls.saveBtn)
+        this.tableView.setRibbonPanels([[pMpoAppItems.controls.saveBtn]]);
+
+      this.pMpoDockedItems = {
+        statsGrid: statGridNode,
+        rocCurve: rocNode,
+        confusionMatrix: confusionNode,
+        controls: {
+          form: controlsNode,
+          saveBtn: pMpoAppItems.controls.saveBtn,
+        },
+      };
     } finally {
       ui.setUpdateIndicator(this.view.root, false);
     }
