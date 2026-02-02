@@ -3,7 +3,7 @@ import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
 
 import {Subject} from 'rxjs';
-import {DesirabilityProfile, PropertyDesirability, isNumerical} from './mpo';
+import {DesirabilityProfile, PropertyDesirability, isNumerical, migrateDesirability} from './mpo';
 import {DesirabilityEditor, DesirabilityEditorFactory} from './editors/desirability-editor-factory';
 import {DesirabilityModeDialog} from './dialogs/desirability-mode-dialog';
 
@@ -31,6 +31,10 @@ export class MpoProfileEditor {
   }
 
   setProfile(profile?: DesirabilityProfile): void {
+    if (profile) {
+      for (const key of Object.keys(profile.properties))
+        profile.properties[key] = migrateDesirability(profile.properties[key]);
+    }
     this.profile = profile;
     this.columnMapping = {};
     this.rows = {};

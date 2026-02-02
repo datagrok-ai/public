@@ -43,13 +43,11 @@ export function isNumerical(p: PropertyDesirability): p is NumericalDesirability
   return p.functionType === 'numerical';
 }
 
-export function isCategorical(p: PropertyDesirability): p is CategoricalDesirability {
-  return p.functionType === 'categorical';
-}
-
 export function migrateDesirability(raw: any): PropertyDesirability {
-  if (raw.functionType) return raw;
-  if (raw.categories) return {...raw, functionType: 'categorical'};
+  if (raw.functionType)
+    return raw;
+  if (raw.categories)
+    return {...raw, functionType: 'categorical'};
   return {...raw, functionType: 'numerical'};
 }
 
@@ -130,9 +128,9 @@ export function mpo(
       if (columns[j].isNone(i))
         return desirability.defaultScore ?? NaN;
 
-      const score = isCategorical(desirability) ?
-        categoricalDesirabilityScore(value, desirability) :
-        desirabilityScore(value, desirability.line);
+      const score = isNumerical(desirability) ?
+        desirabilityScore(value, desirability.line) :
+        categoricalDesirabilityScore(value, desirability);
 
       if (score === null)
         return NaN;
