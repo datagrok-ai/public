@@ -31,17 +31,72 @@ The API is organized into three main namespaces that packages import:
 
 | Module          | Purpose                                                                        |
 |-----------------|--------------------------------------------------------------------------------|
-| `dataframe.ts`  | DataFrame, Column, Row, BitSet - core data structures                          |
+| `dataframe.ts`  | Barrel export for `src/dataframe/` - DataFrame, Column, Row, BitSet            |
+| `entities.ts`   | Barrel export for `src/entities/` - User, Group, Project, Package, etc.        |
+| `widgets.ts`    | Barrel export for `src/widgets/` - Widget, Dialog, Menu, InputBase, etc.       |
 | `viewer.ts`     | Viewer base class and built-in viewers (ScatterPlot, Histogram, etc.)          |
 | `grid.ts`       | Grid viewer, cell rendering, GridCell, GridColumn                              |
-| `entities.ts`   | Platform entities: User, Group, Project, Package, Script, DataConnection, etc. |
 | `dapi.ts`       | Server API (Dapi class) - HTTP data sources for entities, queries, files, etc. |
 | `shell.ts`      | Shell class - access to views, tables, windows, settings, current objects      |
-| `widgets.ts`    | Widget, Dialog, Menu, InputBase, Accordion, TreeView, etc.                     |
 | `functions.ts`  | FuncCall, function registration, parameter handling                            |
 | `events.ts`     | Event system - rxjs Observable-based platform events                           |
 | `views/view.ts` | ViewBase, View, TableView - application views                                  |
 | `const.ts`      | Enums and constants (TYPE, COLUMN_TYPE, AGG, JOIN_TYPE, VIEWER, etc.)          |
+
+### Module Directories
+
+Large modules are split into focused sub-modules for maintainability. The main files (`dataframe.ts`, `entities.ts`, `widgets.ts`) are barrel exports that re-export everything from their directories, preserving backward compatibility.
+
+#### `src/dataframe/` - Core Data Structures
+| File                | Contents                                                    |
+|---------------------|-------------------------------------------------------------|
+| `types.ts`          | Type aliases: RowPredicate, Comparer, ColumnId, etc.        |
+| `qnum.ts`           | Qnum class for qualified numbers (with comparison operators)|
+| `bit-set.ts`        | BitSet class for efficient boolean arrays                   |
+| `stats.ts`          | Stats class, GroupByBuilder for aggregations                |
+| `column.ts`         | Column and typed variants (FloatColumn, DateTimeColumn)     |
+| `column-list.ts`    | ColumnList collection class                                 |
+| `column-helpers.ts` | ColumnMetaHelper, ColumnColorHelper, ColumnMarkerHelper     |
+| `row.ts`            | Row, Cell, RowList, RowGroup, RowMatcher, ValueMatcher      |
+| `data-frame.ts`     | DataFrame class and helper classes                          |
+| `formula-helpers.ts`| DataFrameFormulaLinesHelper, DataFrameAnnotationRegionsHelper|
+
+#### `src/entities/` - Platform Entities
+| File                | Contents                                                    |
+|---------------------|-------------------------------------------------------------|
+| `types.ts`          | PropertyGetter, PropertySetter, DataConnectionProperties    |
+| `entity.ts`         | Base Entity class                                           |
+| `user.ts`           | User, UserSession, Group (kept together for circular deps)  |
+| `property.ts`       | IProperty, Property, EntityProperty                         |
+| `func.ts`           | Func, Script, ScriptEnvironment                             |
+| `data-connection.ts`| DataConnection, DataQuery, TableQuery, DataJob, Credentials |
+| `table-info.ts`     | TableInfo, ColumnInfo, FileInfo                             |
+| `logging.ts`        | LogEventType, LogEvent, LogEventParameter                   |
+| `schema.ts`         | Schema, EntityType, HistoryEntry                            |
+| `project.ts`        | Project, ProjectOpenOptions                                 |
+| `view-layout.ts`    | ViewLayout, ViewInfo                                        |
+| `reports.ts`        | UserReport, UserReportsRule, UserNotification               |
+| `misc.ts`           | Model, Notebook, Package, DockerContainer, ProgressIndicator|
+| `search-provider.ts`| SearchProvider types                                        |
+
+#### `src/widgets/` - UI Widgets
+| File                | Contents                                                    |
+|---------------------|-------------------------------------------------------------|
+| `types.ts`          | RangeSliderStyle, SliderOptions, IMenu* interfaces          |
+| `base.ts`           | Widget, DartWidget, DartWrapper, ObjectPropertyBag          |
+| `filter.ts`         | Filter abstract base class                                  |
+| `func-call-editor.ts`| FuncCallEditor abstract class                              |
+| `inputs-base.ts`    | InputBase, JsInputBase                                      |
+| `code-editor.ts`    | CodeEditor                                                  |
+| `inputs.ts`         | DateInput, ChoiceInput, TypeAhead, CodeInput                |
+| `markdown-input.ts` | MarkdownInput (separate for Quill lazy loading)             |
+| `forms.ts`          | Dialog, InputForm                                           |
+| `containers.ts`     | Accordion, AccordionPane, TabControl, TabPane, ToolboxPage  |
+| `menu.ts`           | Menu, Balloon                                               |
+| `tree.ts`           | TagEditor, TagElement, TreeViewNode, TreeViewGroup          |
+| `data-widgets.ts`   | RangeSlider, HtmlTable, ColumnComboBox, Legend, PropertyGrid|
+| `specialized.ts`    | FilesWidget, FunctionsWidget, Favorites, VisualDbQueryEditor|
+| `progress.ts`       | TaskBarProgressIndicator                                    |
 
 ### Dart-JavaScript Interop
 

@@ -1798,7 +1798,7 @@ export interface IDartApi {
   grok_ConnectionDataSource_CredentialsTemplate(ds: any): any;
 
   // Generated from ../../shared/grok_shared/lib/grok_shared.api.g.dart
-  grok_ServerEventTypes_Create(): any;
+  grok_ServerMessageTypes_Create(): any;
   grok_DataSourceType_Create(): any;
   grok_Permission_Create(): any;
   grok_ScriptLanguage_Create(): any;

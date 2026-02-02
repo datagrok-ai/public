@@ -173,9 +173,9 @@ export class Dapi {
 
 
   /** Users Files management API endpoint
-   *  @type {FileSource} */
-  get files(): FileSource {
-    return new FileSource();
+   *  @type {FilesDataSource} */
+  get files(): FilesDataSource {
+    return new FilesDataSource();
   }
 
   get reports(): UserReportsDataSource {
@@ -1252,7 +1252,25 @@ export class ActivityDataSource extends HttpDataSource<LogEvent> {
   }
 }
 
-export class FileSource {
+/**
+ * Provides access to file operations in the Datagrok file system.
+ *
+ * Allows reading, writing, listing, and managing files and directories
+ * in user file shares and data connections.
+ *
+ * Access via `grok.dapi.files`.
+ *
+ * @example
+ * // List files
+ * const files = await grok.dapi.files.list('System:AppData/MyApp');
+ *
+ * // Read a file
+ * const content = await grok.dapi.files.readAsText('System:AppData/MyApp/config.json');
+ *
+ * // Write a file
+ * await grok.dapi.files.writeAsText('System:AppData/MyApp/output.txt', 'Hello, World!');
+ */
+export class FilesDataSource {
   private readonly root: string;
   constructor(root: string = '') {
     this.root = root;
@@ -1431,3 +1449,8 @@ export class FileSource {
     return api.grok_Dapi_UserFiles_WriteAsText(file, data);
   }
 }
+
+/**
+ * @deprecated Use {@link FilesDataSource} instead. This alias is provided for backward compatibility.
+ */
+export const FileSource = FilesDataSource;
