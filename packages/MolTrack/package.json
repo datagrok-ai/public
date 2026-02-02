@@ -16,7 +16,7 @@
     "dayjs": "^1.11.13",
     "randexp": "^0.5.3",
     "rxjs": "^6.5.5",
-    "@datagrok-libraries/test": "^1.0.0"
+    "@datagrok-libraries/test": "^1.1.0"
   },
   "devDependencies": {
     "@types/wu": "^2.1.44",

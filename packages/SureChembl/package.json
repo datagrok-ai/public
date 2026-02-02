@@ -21,7 +21,7 @@
     "file-loader": "^6.2.0",
     "ts-loader": "^9.5.1",
     "typescript": "^5.6.3",
-    "@datagrok-libraries/test": "^1.0.0"
+    "@datagrok-libraries/test": "^1.1.0"
   },
   "devDependencies": {
     "@datagrok/chem": "^1.13.0",

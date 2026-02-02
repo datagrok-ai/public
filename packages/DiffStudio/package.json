@@ -24,7 +24,7 @@
     "datagrok-api": "^1.26.3",
     "dayjs": "=1.11.10",
     "style-loader": "^3.3.4",
-    "@datagrok-libraries/test": "^1.0.0"
+    "@datagrok-libraries/test": "^1.1.0"
   },
   "devDependencies": {
     "@datagrok/compute": "^1.39.0",

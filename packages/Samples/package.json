@@ -18,7 +18,7 @@
     "rxjs": "^6.5.5",
     "ts-loader": "^9.5.1",
     "typescript": "^5.6.3",
-    "@datagrok-libraries/test": "^1.0.0"
+    "@datagrok-libraries/test": "^1.1.0"
   },
   "devDependencies": {
     "@datagrok/api-tests": "^1.9.0",

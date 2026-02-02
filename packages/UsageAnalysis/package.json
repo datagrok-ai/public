@@ -13,7 +13,7 @@
     "directory": "packages/UsageAnalysis"
   },
   "dependencies": {
-    "@datagrok-libraries/test": "^1.0.0",
+    "@datagrok-libraries/test": "^1.1.0",
     "@datagrok-libraries/utils": "^4.6.5",
     "acorn": "^8.5.0",
     "cash-dom": "^8.1.0",

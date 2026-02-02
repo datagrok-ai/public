@@ -15,7 +15,7 @@
     "dayjs": "=1.11.10",
     "js-yaml": "^4.1.0",
     "rxjs": "^6.5.5",
-    "@datagrok-libraries/test": "^1.0.0"
+    "@datagrok-libraries/test": "^1.1.0"
   },
   "devDependencies": {
     "@types/js-yaml": "^4.0.9",

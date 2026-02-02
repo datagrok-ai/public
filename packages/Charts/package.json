@@ -30,7 +30,7 @@
     "three": "^0.154.0",
     "three-globe": "2.24.13",
     "ws": "^7.5.1",
-    "@datagrok-libraries/test": "^1.0.0"
+    "@datagrok-libraries/test": "^1.1.0"
   },
   "scripts": {
     "link-api": "npm link datagrok-api",

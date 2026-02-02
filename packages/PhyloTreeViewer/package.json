@@ -25,7 +25,7 @@
     "mjolnir.js": "^2.7.0",
     "rxjs": "^6.5.5",
     "wu": "^2.1.0",
-    "@datagrok-libraries/test": "^1.0.0"
+    "@datagrok-libraries/test": "^1.1.0"
   },
   "devDependencies": {
     "@datagrok/dendrogram": "^1.2.33",

@@ -9,7 +9,7 @@
     "@ai-sdk/openai": "^3.0.23",
     "@ai-sdk/provider": "^3.0.6",
     "@datagrok-libraries/db-explorer": "^1.7.2",
-    "@datagrok-libraries/test": "^1.0.0",
+    "@datagrok-libraries/test": "^1.1.0",
     "@datagrok-libraries/utils": "^4.6.5",
     "@modelcontextprotocol/sdk": "^1.21.1",
     "@types/dom-chromium-ai": "^0.0.10",
