@@ -50,6 +50,7 @@ export function attachLoaderDivToGrid(grid: DG.Grid, neighborWidth: number = 100
     grid.invalidate();
   }, 'Remove Dendrogram');
   button.classList.add('dendrogram-close-bttn');
+  eDiv.appendChild(button);
   loader.style.width = '40px';
   const neighbor: GridNeighbor = new GridNeighbor(eDiv, grid, neighborWidth, _package.logger);
   //trigger grid rerender

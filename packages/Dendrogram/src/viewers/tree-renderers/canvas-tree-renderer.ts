@@ -9,7 +9,7 @@ import {TreeHelper} from '../../utils/tree-helper';
 import {errorToConsole} from '@datagrok-libraries/utils/src/to-console';
 
 function canvasToTreePoint<TNode extends MarkupNodeType>(
-  canvasPoint: DG.Point, canvas: HTMLCanvasElement, placer: RectangleTreePlacer<TNode>,
+  canvasPoint: DG.Point, canvas: HTMLCanvasElement, placer: RectangleTreePlacer<TNode>
 ): DG.Point {
   const canvasWidth = canvas.clientWidth - placer.padding.left - placer.padding.right;
   const res: DG.Point = new DG.Point(
@@ -19,7 +19,7 @@ function canvasToTreePoint<TNode extends MarkupNodeType>(
 }
 
 function treeToCanvasPoint<TNode extends MarkupNodeType>(
-  treePoint: DG.Point, canvas: HTMLCanvasElement, placer: RectangleTreePlacer<TNode>,
+  treePoint: DG.Point, canvas: HTMLCanvasElement, placer: RectangleTreePlacer<TNode>
 ): DG.Point {
   const canvasWidth = canvas.clientWidth - placer.padding.left - placer.padding.right;
   const res: DG.Point = new DG.Point(
@@ -61,7 +61,7 @@ export class CanvasTreeRenderer<TNode extends MarkupNodeType>
   constructor(
     treeRoot: TNode | null, placer: RectangleTreePlacer<TNode>,
     mainStyler: ITreeStyler<TNode>, lightStyler: ITreeStyler<TNode>,
-    currentStyler: ITreeStyler<TNode>, mouseOverStyler: ITreeStyler<TNode>, selectionStyler: ITreeStyler<TNode>,
+    currentStyler: ITreeStyler<TNode>, mouseOverStyler: ITreeStyler<TNode>, selectionStyler: ITreeStyler<TNode>
   ) {
     super(treeRoot);
 
