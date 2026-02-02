@@ -297,6 +297,8 @@ export interface IBoxPlotSettings {
 
   showValueSelector: boolean;
 
+  zoomValuesByFilter: boolean;
+
   /// Include plots, which are empty or have null values.
   showEmptyCategories: boolean;
 
