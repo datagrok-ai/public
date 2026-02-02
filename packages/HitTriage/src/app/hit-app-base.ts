@@ -20,7 +20,7 @@ export abstract class HitAppBase<T> {
   public static molFileExtReaders: { ext: string; handlerFunc: DG.Func }[] = ['sdf', 'mol', 'smi', 'mol2']
     .map((ext) => {
       const handlerFunc =
-      DG.Func.find({meta: {role: DG.FUNC_TYPES.FILE_IMPORTER}})
+      DG.Func.find({meta: {role: DG.FUNC_TYPES.FILE_IMPORTER}}).concat(DG.Func.find({tags: ['file-handler']}))
         .find((f) => f?.options?.ext && typeof f.options.ext === 'string' && f.options.ext.split(',').includes(ext));
       return {ext, handlerFunc: handlerFunc as DG.Func};
     })
@@ -30,7 +30,7 @@ export abstract class HitAppBase<T> {
   constructor(public parentCall: DG.FuncCall, appN: AppName) {
     this.baseUrl = new URL(window.location.href).origin + `/apps/HitTriage/${appN.replace(' ', '')}`;
     this._appName = appN;
-    const funcs = DG.Func.find({meta: {role: HitTriageComputeFunctionTag}});
+    const funcs = Array.from(new Set(DG.Func.find({meta: {role: HitTriageComputeFunctionTag}}).concat(DG.Func.find({tags: [HitTriageComputeFunctionTag]}))));
     const functions = funcs.filter((f) => f.type === funcTypeNames.function);
     const scripts = funcs.filter((f) => f.type === funcTypeNames.script) as DG.Script[];
     const queries = funcs.filter((f) => f.type === funcTypeNames.query) as DG.DataQuery[];
@@ -111,9 +111,33 @@ export abstract class HitAppBase<T> {
       if (!!it && it !== 'MALFORMED_INPUT_VALUE')
         df2MolMap.set(it, i);
     });
-    // const existingVidValues = new Set<string>();
-    // const vidCol2 = df2.col(ViDColName);
-    // vidCol2?.categories?.forEach((v) => existingVidValues.add(v));
+
+    // there might be cases where the columns do match but have different types (e.g. string vs int)
+    const setCorrectedColValue = (setWhereCol: DG.Column, fromCol: DG.Column, setRow: number, fromRow: number) => {
+      try {
+        if (setWhereCol.type === fromCol.type)
+          setWhereCol.set(setRow, fromCol.get(fromRow), false);
+        else if (setWhereCol.type === DG.COLUMN_TYPE.STRING)
+          setWhereCol.set(setRow, fromCol.getString(fromRow), false);
+        else if (setWhereCol.type === DG.COLUMN_TYPE.INT) {
+          const val = fromCol.get(fromRow);
+          if (typeof val === 'number')
+            setWhereCol.set(setRow, Math.round(val), false);
+          else if (typeof val === 'string' && val.length > 0 && !isNaN(Number(val)))
+            setWhereCol.set(setRow, Math.round(Number(val)), false);
+        } else if (setWhereCol.type === DG.COLUMN_TYPE.FLOAT) {
+          const val = fromCol.get(fromRow);
+          if (typeof val === 'number')
+            setWhereCol.set(setRow, val, false);
+          else if (typeof val === 'string' && val.length > 0 && !isNaN(Number(val)))
+            setWhereCol.set(setRow, Number(val), false);
+        } else // direct setting as fallback
+          setWhereCol.set(setRow, fromCol.get(fromRow), false);
+      } catch (e) {
+        _package.logger.error(`Error setting column value for column ${setWhereCol.name} at row ${setRow} from column ${fromCol.name} at row ${fromRow}: ${e}`);
+      }
+    };
+
     this.isJoining = true;
     try {
     // first check that all columns are there
@@ -131,17 +155,13 @@ export abstract class HitAppBase<T> {
           continue; // skip invalid molecules
         if (!df2MolMap.has(df1MolCol[i])) {
           df2.rows.addNew(null, true);
-          for (const col of df1.columns) {
-            const value = col.get(i);
-            df2.col(col.name)!.set(df2.rowCount - 1, value, false);
-          }
+          for (const col of df1.columns)
+            setCorrectedColValue(df2.col(col.name)!, col, df2.rowCount - 1, i);
         } else {
           if (addedColNames.length > 0) {
             const row = df2MolMap.get(df1MolCol[i])!;
-            for (const colName of addedColNames) {
-              const value = df1.col(colName)!.get(i);
-            df2.col(colName)!.set(row, value, false);
-            }
+            for (const colName of addedColNames)
+              setCorrectedColValue(df2.col(colName)!, df1.col(colName)!, row, i);
           }
         }
       }

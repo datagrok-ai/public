@@ -131,19 +131,19 @@ async function hitAppTB(treeNode: DG.TreeViewGroup, name: AppName) {
 }
 
 export class PackageFunctions {
-  @grok.decorators.appTreeBrowser({app: 'Hit Triage'})
+  @grok.decorators.treeBrowser({meta: {app: 'Hit Triage'}})
   static async hitTriageAppTreeBrowser(treeNode: DG.TreeViewGroup) {
     await hitAppTB(treeNode, 'Hit Triage');
   }
 
 
-  @grok.decorators.appTreeBrowser({app: 'Hit Design'})
+  @grok.decorators.treeBrowser({meta: {app: 'Hit Design'}})
   static async hitDesignAppTreeBrowser(treeNode: DG.TreeViewGroup) {
     await hitAppTB(treeNode, 'Hit Design');
   }
 
 
-  @grok.decorators.appTreeBrowser({app: 'PeptiHit'})
+  @grok.decorators.treeBrowser({meta: {app: 'PeptiHit'}})
   static async peptiHitAppTreeBrowser(treeNode: DG.TreeViewGroup) {
     await hitAppTB(treeNode, 'PeptiHit');
   }
