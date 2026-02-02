@@ -15,3 +15,27 @@ To add the viewer programmatically from the console, use:
 :::
 
 ![Confusion Matrix](img/confusion-matrix.gif)
+
+## Properties
+
+| Property | Type | Description |
+|----------|------|-------------|
+| **General** | | |
+| X Column Name | string | Column to be put on the X axis |
+| Y Column Name | string | Column to be put on the Y axis |
+| Row Source | string | Determines the rows shown on the plot. |
+| Allow Dynamic Menus | boolean |  |
+| Show Context Menu | boolean | Properties common for all viewers todo: use code generation |
+| Title | string |  |
+| Description | string | Viewer description that gets shown at the *Descriptor Position*. Markup is supported. |
+| Help | string | Help to be shown when user clicks on the ''?'' icon on top. Could either be in markdown, or a URL (starting with ''/'' or ''http''). |
+| Description Position | flexposition |  |
+| Description Visibility Mode | visibilitymode |  |
+| **Data** | | |
+| Filter | string | Formula that filters out rows to show. Examples: `${AGE}` > 20 or `${WEIGHT / 2)}` > 100, `${SEVERITY}` == ''Medium'', `${RACE}`.endsWith(''sian'') |
+| Table | string |  |
+| **Style** | | |
+| Controls Font | string | Viewer controls elements font. |
+| **Description** | | |
+| Show Title | boolean |  |
+

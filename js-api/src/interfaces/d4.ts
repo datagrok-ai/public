@@ -297,6 +297,8 @@ export interface IBoxPlotSettings {
 
   showValueSelector: boolean;
 
+  /// If checked, focuses on filtered points (on value axis) as the filter changes.
+  /// If current value column is filtered, zoom is not applied.
   zoomValuesByFilter: boolean;
 
   /// Include plots, which are empty or have null values.
