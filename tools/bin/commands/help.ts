@@ -70,6 +70,11 @@ const HELP_API = `
 Usage: grok api
 
 Create wrapper functions for package scripts and queries
+
+Options:
+[-v | --verbose]
+
+--verbose         Print detailed output
 `;
 
 const HELP_CONFIG = `
@@ -114,15 +119,15 @@ Uploads a package
 Checks for errors before publishing — the package won't be published if there are any.
 
 Options:
-[--all] [--refresh] [--link] [--build] [--release] [--skip-check] 
+[--all] [--refresh] [--link] [--build] [--release] [--skip-check] [-v | --verbose]
 
---all             Publish all available packages(run in packages directory)
---refresh         Publish all available already loaded packages(run in packages directory)
---link  	        Link the package to local packages
---build  	        Builds the package
+--all             Publish all available packages (run in packages directory)
+--refresh         Publish all available already loaded packages (run in packages directory)
+--link            Link the package to local packages
+--build           Builds the package
 --release         Publish package as release version
---skip-check      Skip check stage 
---verbose         Show debug information
+--skip-check      Skip check stage
+--verbose         Print detailed output
 
 Running \`grok publish\` is the same as running \`grok publish defaultHost --build --debug\`
 `;
@@ -131,10 +136,11 @@ const HELP_CHECK = `
 Usage: grok check <pluginFolder>
 
 Options:
-[-r | --recursive]
+[-r | --recursive] [-v | --verbose]
 
 --recursive       Check all packages in the current directory
 --soft            Even if an error occurs, it doesn't throw an exception
+--verbose         Print detailed output
 
 Check package content (function signatures, import statements of external modules, etc.)
 `;

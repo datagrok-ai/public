@@ -19,11 +19,13 @@ const names = new Set<string>();
 
 let _package: any = {};
 
-function generateQueryWrappers(): void {
+function generateQueryWrappers(verbose: boolean): void {
   const queriesDir = path.join(curDir, 'queries');
   if (!fs.existsSync(queriesDir)) {
-    color.warn(`Directory ${queriesDir} not found`);
-    console.log('Skipping API generation for queries...');
+    if (verbose) {
+      color.warn(`Directory ${queriesDir} not found`);
+      console.log('Skipping API generation for queries...');
+    }
     return;
   }
 
@@ -62,15 +64,17 @@ function generateQueryWrappers(): void {
     }
   }
 
-  saveWrappersToFile('queries', wrappers);
+  saveWrappersToFile('queries', wrappers, verbose);
 }
 
-function generateScriptWrappers(): void {
+function generateScriptWrappers(verbose: boolean): void {
   const scriptsDir = path.join(curDir, 'scripts');
   const pythonDir = fs.existsSync(srcDir) ? path.join(srcDir, 'python') : path.join(curDir, 'python');
   if (!fs.existsSync(scriptsDir)) {
-    color.warn(`Directory ${scriptsDir} not found`);
-    console.log('Skipping API generation for scripts...');
+    if (verbose) {
+      color.warn(`Directory ${scriptsDir} not found`);
+      console.log('Skipping API generation for scripts...');
+    }
     return;
   }
   const wrappers = [];
@@ -111,10 +115,10 @@ function generateScriptWrappers(): void {
     }
   }
 
-  saveWrappersToFile('scripts', wrappers);
+  saveWrappersToFile('scripts', wrappers, verbose);
 }
 
-function generateFunctionWrappers(): void {
+function generateFunctionWrappers(verbose: boolean): void {
   let filesToParse = packageFuncDirs.map((e) => path.join(curDir, 'src', e)).filter((e) => fs.existsSync(e));
 
   const annotaionRegex = /(?:\/\/[^\n]*\n)+export[^{]*/g;
@@ -152,24 +156,25 @@ function generateFunctionWrappers(): void {
     }
   }
 
-  saveWrappersToFile('funcs', wrappers);
+  saveWrappersToFile('funcs', wrappers, verbose);
 }
 
-function saveWrappersToFile(namespaceName: string, wrappers: string[]) {
+function saveWrappersToFile(namespaceName: string, wrappers: string[], verbose: boolean) {
   if (wrappers.length === 0)
     return;
   if (!fs.existsSync(funcFilePath))
-    createApiFile()
+    createApiFile(verbose)
 
   const scriptApi = new utils.TemplateBuilder(utils.namespaceTemplate)
     .replace('PACKAGE_NAMESPACE', namespaceName)
     .replace('NAME', wrappers.join(sep.repeat(2)));
   fs.appendFileSync(funcFilePath, sep + scriptApi.build() + sep);
-  color.success(`Successfully generated file ${apiFile}${sep}`);
+  if (verbose)
+    color.success(`Successfully generated file ${apiFile}${sep}`);
 }
 
-function createApiFile() {
-  if (fs.existsSync(funcFilePath)) {
+function createApiFile(verbose: boolean) {
+  if (fs.existsSync(funcFilePath) && verbose) {
     color.warn(`The file ${funcFilePath} already exists`);
     console.log('Rewriting its contents...');
   }
@@ -182,19 +187,20 @@ function checkNameColision(name: string) {
   names.add(name);
 }
 
-export function api(args: { _: string[] }): boolean {
+export function api(args: { _: string[], verbose?: boolean, v?: boolean }): boolean {
+  const verbose = args.verbose || args.v || false;
   _package = JSON.parse(fs.readFileSync(packagePath, { encoding: 'utf-8' }));
   if (_package.friendlyName)
     _package.friendlyName = _package.friendlyName.replaceAll(' ', '')
-  const nOptions = Object.keys(args).length - 1;
+  const nOptions = Object.keys(args).length - 1 - (args.verbose ? 1 : 0) - (args.v ? 1 : 0);
   if (args['_'].length !== 1 || nOptions > 0) return false;
   if (!utils.isPackageDir(process.cwd())) {
     color.error('File `package.json` not found. Run the command from the package directory');
     return false;
   }
-  createApiFile();
-  generateScriptWrappers();
-  generateQueryWrappers();
-  generateFunctionWrappers();
+  createApiFile(verbose);
+  generateScriptWrappers(verbose);
+  generateQueryWrappers(verbose);
+  generateFunctionWrappers(verbose);
   return true;
 }

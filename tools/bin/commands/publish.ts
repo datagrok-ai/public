@@ -28,7 +28,8 @@ const packageFiles = [
   'src/package-test.ts', 'src/package-test.js', 'package.js', 'detectors.js',
 ];
 let config: utils.Config;
-export async function processPackage(debug: boolean, rebuild: boolean, host: string, devKey: string, packageName: any, dropDb: boolean, suffix?: string, verbose?: boolean) {
+
+export async function processPackage(debug: boolean, rebuild: boolean, host: string, devKey: string, packageName: any, dropDb: boolean, suffix?: string, hostAlias?: string, verbose: boolean = false) {
   // Get the server timestamps
   verbose = verbose || false;
   let timestamps: Indexable = {};
@@ -50,8 +51,8 @@ export async function processPackage(debug: boolean, rebuild: boolean, host: str
   }
 
   const zip = archiver('zip', {store: false});
-    const chunks = [];
-    zip.on('data', (chunk: any) => chunks.push(chunk));
+  const chunks = [];
+  zip.on('data', (chunk: any) => chunks.push(chunk));
 
   // Gather the files
   const localTimestamps: Indexable = {};
@@ -80,10 +81,9 @@ export async function processPackage(debug: boolean, rebuild: boolean, host: str
         'or run `grok publish` with the `--rebuild` option');
       rebuild = true;
     }
-  } 
+  }
 
-  // let contentValidationLog = '';
-  console.log('Starting package checks...');
+  if (verbose) console.log('Starting package checks...');
   const checkStart = Date.now();
   const jsTsFiles = files.filter((f) => !f.startsWith('dist/') && (f.endsWith('.js') || f.endsWith('.ts')));
   const packageFilePath = path.join(curDir, 'package.json');
@@ -92,21 +92,10 @@ export async function processPackage(debug: boolean, rebuild: boolean, host: str
   if (isWebpack) {
     const webpackConfigPath = path.join(curDir, 'webpack.config.js');
     const content = fs.readFileSync(webpackConfigPath, {encoding: 'utf-8'});
-    // const externals = extractExternals(content);
-    // if (externals) {
-    //   const importWarnings = checkImportStatements(curDir, jsTsFiles, externals);
-    //   contentValidationLog += importWarnings.join('\n') + (importWarnings.length ? '\n' : '');
-    // }
   }
 
   const funcFiles = jsTsFiles.filter((f) => packageFiles.includes(f));
-  // const funcWarnings = checkFuncSignatures(curDir, funcFiles);
-  // contentValidationLog += funcWarnings.join('\n') + (funcWarnings.length ? '\n' : '');
-  // const packageWarnings = checkPackageFile(curDir, json);
-  // contentValidationLog += packageWarnings.join('\n') + (packageWarnings.length ? '\n' : '');
-  // const changelogWarnings = checkChangelog(curDir, json);
-  // contentValidationLog += changelogWarnings.join('\n') + '';
-  console.log(`Checks finished in ${Date.now() - checkStart} ms`);
+  if (verbose) console.log(`Checks finished in ${Date.now() - checkStart} ms`);
   const reg = new RegExp(/\${(\w*)}/g);
   const errs: string[] = [];
 
@@ -130,13 +119,10 @@ export async function processPackage(debug: boolean, rebuild: boolean, host: str
       return;
     if (relativePath === 'zip')
       return;
-    // if (!utils.checkScriptLocation(canonicalRelativePath)) {
-    //   contentValidationLog += `Warning: file \`${canonicalRelativePath}\`` +
-    //     ` should be in directory \`${path.basename(curDir)}/scripts/\`\n`;
-    // }
     const t = fs.statSync(fullPath).mtime.toUTCString();
     localTimestamps[canonicalRelativePath] = t;
     if (debug && timestamps[canonicalRelativePath] === t) {
+      if (verbose) console.log(`Skipping ${canonicalRelativePath}`);
       return;
     }
     if (canonicalRelativePath.startsWith('connections/')) {
@@ -151,9 +137,11 @@ export async function processPackage(debug: boolean, rebuild: boolean, host: str
         f = f.replace(m[0], envVar);
       }
       zip.append(f, {name: relativePath});
+      if (verbose) console.log(`Adding ${canonicalRelativePath}...`);
       return;
     }
     zip.append(fs.createReadStream(fullPath), {name: relativePath});
+    if (verbose) console.log(`Adding ${canonicalRelativePath}...`);
   });
   if (errs.length) {
     errs.forEach((e) => color.error(e));
@@ -167,39 +155,42 @@ export async function processPackage(debug: boolean, rebuild: boolean, host: str
   if (suffix)
     url += `&suffix=${suffix.toString()}`;
   await zip.finalize();
-    const zipBuffer = Buffer.concat(chunks);
+  const zipBuffer = Buffer.concat(chunks);
 
   try {
-      const body = await fetch(url, {
-          method: 'POST',
-          body: zipBuffer,
-      });
+    const body = await fetch(url, {
+      method: 'POST',
+      body: zipBuffer,
+    });
     const log = JSON.parse(await body.text());
 
     fs.unlinkSync('zip');
     if (log != undefined) {
-        if (log['#type'] === 'ApiError') {
-            color.error(log['message']);
-            console.error(log['innerMessage']);
-            console.log(log);
-            return 1;
-        } else
-            console.log(log);
-        // color.warn(contentValidationLog);
+      if (log['#type'] === 'ApiError') {
+        color.error(log['message']);
+        console.error(log['innerMessage']);
+        console.log(log);
+        return 1;
+      } else {
+        if (verbose)
+          console.log(log);
+        color.success(`✓ Published to ${hostAlias || new URL(host).hostname}`);
+      }
     }
   } catch (error) {
-      if (utils.isConnectivityError(error))
-          color.error(`Server is possibly offline: ${url}`);
-      if (verbose)
-          console.error(error);
+    if (utils.isConnectivityError(error))
+      color.error(`Server is possibly offline: ${url}`);
+    if (verbose)
+      console.error(error);
     return 1;
   }
   return 0;
 }
 
 export async function publish(args: PublishArgs) {
+  const verbose = args.verbose || args.v || false;
   if (!args['skip-check'] && !args['all']&& !args['refresh'])
-    check({_: ['check']});
+    check({_: ['check'], verbose: verbose});
   config = yaml.load(fs.readFileSync(confPath, {encoding: 'utf-8'})) as utils.Config;
   if (args.refresh) {
     if (path.basename(curDir) !== 'packages')
@@ -224,30 +215,30 @@ export async function publish(args: PublishArgs) {
       packagesToLoad = (await (await fetch(url, {
         method: 'GET',
         headers: {
-          'Authorization': token, // Attach cookies here
+          'Authorization': token,
         },
       })).json()).map((item: any) => item.name);
     }
-    console.log('Loading packages:');
+    if (verbose) console.log('Loading packages:');
     await loadPackages(curDir, packagesToLoad.join(' '), host, false, false, args.link, args.release);
   } else {
     if (args.link) {
-      console.log('Linking');
+      if (verbose) console.log('Linking');
 
       await utils.runScript(`npm install`, curDir);
       await utils.runScript(`grok link`, curDir);
       await utils.runScript(`npm run build`, curDir);
     }
-    await publishPackage(args);
+    await publishPackage(args, verbose);
   }
 }
 
-async function publishPackage(args: PublishArgs) {
+async function publishPackage(args: PublishArgs, verbose: boolean) {
   const nArgs = args['_'].length;
 
   if (!args.link) {
     if (args.build || args.rebuild) {
-      console.log('Building');
+      if (verbose) console.log('Building');
       await utils.runScript('npm install', curDir, false);
       await utils.runScript('npm run build', curDir, false);
     }
@@ -258,7 +249,7 @@ async function publishPackage(args: PublishArgs) {
     return false;
   }
 
-  console.log('Publishing...');
+  if (verbose) console.log('Publishing...');
   // Create `config.yaml` if it doesn't exist yet
   if (!fs.existsSync(grokDir)) fs.mkdirSync(grokDir);
   if (!fs.existsSync(confPath)) fs.writeFileSync(confPath, yaml.dump(confTemplate));
@@ -308,12 +299,12 @@ async function publishPackage(args: PublishArgs) {
           args.suffix = stdout.toString().substring(0, 8);
       });
       await utils.delay(100);
-      code = await processPackage(!args.release, Boolean(args.rebuild), url, key, packageName, args.dropDb ?? false, args.suffix, args.verbose);
+      code = await processPackage(!args.release, Boolean(args.rebuild), url, key, packageName, args.dropDb ?? false, args.suffix, host, verbose);
     } catch (error) {
       console.error(error);
       code = 1;
     }
-    console.log(`Exiting with code ${code}`);
+    if (verbose) console.log(`Exiting with code ${code}`);
     process.exit(code);
   });
 
@@ -333,5 +324,6 @@ interface PublishArgs {
   refresh?: boolean,
   link?: boolean,
   dropDb?: boolean,
-  verbose?: boolean
+  verbose?: boolean,
+  v?: boolean
 }
