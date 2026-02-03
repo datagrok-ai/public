@@ -21,6 +21,8 @@ export class MpoProfileEditor {
   preview = false;
 
   private rows: Record<string, HTMLElement> = {};
+  private rowIds: Record<string, string> = {};
+
   private propertyOrder: string[] = [];
   columnMapping: Record<string, string | null> = {};
 
@@ -28,6 +30,10 @@ export class MpoProfileEditor {
     this.dataFrame = dataFrame;
     this.design = design;
     this.preview = preview;
+  }
+
+  private newRowId(): string {
+    return crypto.randomUUID();
   }
 
   setProfile(profile?: DesirabilityProfile): void {
@@ -38,7 +44,12 @@ export class MpoProfileEditor {
     this.profile = profile;
     this.columnMapping = {};
     this.rows = {};
+    this.rowIds = {};
     this.propertyOrder = profile ? Object.keys(profile.properties) : [];
+
+    for (const name of this.propertyOrder)
+      this.rowIds[name] = this.newRowId();
+
     this.render();
   }
 
@@ -68,15 +79,12 @@ export class MpoProfileEditor {
     if (!this.profile)
       return this.renderEmpty('No profile specified.');
 
-    const rows = this.propertyOrder
-      .map((name) => this.profile!.properties[name])
-      .filter(Boolean)
-      .map((prop, i) => {
-        const name = this.propertyOrder[i];
-        if (!this.rows[name])
-          this.rows[name] = this.buildRow(name, prop);
-        return this.rows[name];
-      });
+    const rows = this.propertyOrder.map((name) => {
+      const rowId = this.rowIds[name];
+      if (!this.rows[rowId])
+        this.rows[rowId] = this.buildRow(name, rowId, this.profile!.properties[name]);
+      return this.rows[rowId];
+    });
 
     if (!rows.length)
       return this.renderEmpty('No properties defined.');
@@ -95,29 +103,31 @@ export class MpoProfileEditor {
       ui.divText('Property', 'statistics-mpo-header-property'),
       ui.divText('Weight', 'statistics-mpo-header-weight'),
       ui.divText('Desirability', 'statistics-mpo-header-desirability'),
-    ].filter(Boolean), 'statistics-mpo-header');
+    ], 'statistics-mpo-header');
   }
 
   private buildRow(
     name: string,
+    rowId: string,
     prop: PropertyDesirability,
   ): HTMLElement {
     const row = ui.divH([], 'statistics-mpo-row');
+    row.dataset.rowId = rowId;
 
     if (isNumerical(prop))
       prop.mode ??= 'freeform';
     const editor = DesirabilityEditorFactory.create(prop);
     editor.onChanged.subscribe(() => this.emitChange());
 
-    const propertyCell = this.buildPropertyCell(name);
-    const weightCell = this.buildWeightCell(name, prop);
-    const columnCell = this.buildColumnSelector(name, editor);
+    const propertyCell = this.buildPropertyCell(rowId, name);
+    const weightCell = this.buildWeightCell(rowId, prop);
+    const columnCell = this.buildColumnSelector(rowId, editor);
 
     const modeGear = this.design && editor.supportsModeDialog ?
-      this.buildModeGear(name, prop, editor) :
+      this.buildModeGear(rowId, prop, editor) :
       null;
 
-    const controls = this.design ? this.buildRowControls(name) : null;
+    const controls = this.design ? this.buildRowControls(rowId) : null;
 
     row.append(
       ui.divV([propertyCell, columnCell].filter(Boolean)),
@@ -131,16 +141,20 @@ export class MpoProfileEditor {
     return row;
   }
 
-  private buildPropertyCell(name: string): HTMLElement | null {
+  private buildPropertyCell(rowId: string, name: string): HTMLElement | null {
     if (!this.design)
       return ui.divText(name, 'statistics-mpo-property-name');
 
     if (!this.dataFrame) {
+      let currentName = name;
+
       return ui.input.string('', {
         value: name,
         onValueChanged: (v) => {
-          if (v && v !== name)
-            this.renameProperty(name, v);
+          if (!v || v === currentName)
+            return;
+          this.renameProperty(currentName, v);
+          currentName = v;
         },
       }).root;
     }
@@ -149,9 +163,10 @@ export class MpoProfileEditor {
   }
 
   private buildWeightCell(
-    name: string,
+    rowId: string,
     prop: PropertyDesirability,
   ): HTMLElement {
+    const name = this.getPropertyNameByRowId(rowId)!;
     const weightInput = ui.input.float('', {
       value: prop.weight,
       min: 0,
@@ -172,12 +187,13 @@ export class MpoProfileEditor {
   }
 
   private buildColumnSelector(
-    name: string,
+    rowId: string,
     editor: DesirabilityEditor,
   ): HTMLElement | null {
     if (!this.dataFrame)
       return null;
 
+    const name = this.getPropertyNameByRowId(rowId)!;
     const columns = this.dataFrame.columns.names();
     const matched =
       columns.find((c) => c.toLowerCase() === name.toLowerCase()) ?? null;
@@ -202,10 +218,11 @@ export class MpoProfileEditor {
   }
 
   private buildModeGear(
-    name: string,
+    rowId: string,
     prop: PropertyDesirability,
     editor: DesirabilityEditor,
   ): HTMLElement {
+    const name = this.getPropertyNameByRowId(rowId)!;
     const gear = ui.icons.settings(() =>
       this.openModeDialog(name, prop, editor));
 
@@ -213,9 +230,9 @@ export class MpoProfileEditor {
     return gear;
   }
 
-  private buildRowControls(name: string): HTMLElement {
-    const add = ui.icons.add(() => this.insertRowAfter(name));
-    const del = ui.icons.delete(() => this.deleteProperty(name));
+  private buildRowControls(rowId: string): HTMLElement {
+    const add = ui.icons.add(() => this.insertRowAfterRow(rowId));
+    const del = ui.icons.delete(() => this.deleteRow(rowId));
     return ui.divH([add, del], 'statistics-mpo-control-buttons');
   }
 
@@ -237,6 +254,83 @@ export class MpoProfileEditor {
     ).show();
   }
 
+  private getPropertyNameByRowId(rowId: string): string | undefined {
+    return Object.entries(this.rowIds)
+      .find(([, id]) => id === rowId)?.[0];
+  }
+
+  private renameProperty(oldName: string, newName: string): void {
+    if (!this.profile || this.profile.properties[newName])
+      return;
+
+    const rowId = this.rowIds[oldName];
+    this.profile.properties[newName] = this.profile.properties[oldName];
+    delete this.profile.properties[oldName];
+
+    this.columnMapping[newName] = this.columnMapping[oldName] ?? null;
+    delete this.columnMapping[oldName];
+
+    const idx = this.propertyOrder.indexOf(oldName);
+    if (idx >= 0)
+      this.propertyOrder[idx] = newName;
+
+    delete this.rowIds[oldName];
+    this.rowIds[newName] = rowId;
+
+    this.emitChange();
+  }
+
+  private deleteRow(rowId: string): void {
+    const name = this.getPropertyNameByRowId(rowId);
+    if (!name || !this.profile)
+      return;
+
+    delete this.profile.properties[name];
+    delete this.columnMapping[name];
+    delete this.rowIds[name];
+
+    const idx = this.propertyOrder.indexOf(name);
+    if (idx >= 0)
+      this.propertyOrder.splice(idx, 1);
+
+    this.rows[rowId]?.remove();
+    delete this.rows[rowId];
+
+    this.emitChange();
+  }
+
+  private insertRowAfterRow(rowId: string): void {
+    if (!this.profile)
+      return;
+
+    const afterName = this.getPropertyNameByRowId(rowId);
+    if (!afterName)
+      return;
+
+    const newName = `NewProperty${Object.keys(this.profile.properties).length + 1}`;
+    const newRowId = this.newRowId();
+
+    this.profile.properties[newName] = {
+      functionType: 'numerical',
+      weight: 1,
+      mode: 'freeform',
+      min: 0,
+      max: 1,
+      line: [],
+    };
+
+    this.rowIds[newName] = newRowId;
+
+    const idx = this.propertyOrder.indexOf(afterName);
+    this.propertyOrder.splice(idx + 1, 0, newName);
+
+    const newRow = this.buildRow(newName, newRowId, this.profile.properties[newName]);
+    this.rows[newRowId] = newRow;
+
+    this.rows[rowId]?.after(newRow);
+    this.emitChange();
+  }
+
   private mutateProperty(
     name: string,
     updater: (p: PropertyDesirability) => void,
@@ -246,60 +340,6 @@ export class MpoProfileEditor {
       return;
 
     updater(prop);
-    this.emitChange();
-  }
-
-  private renameProperty(oldName: string, newName: string): void {
-    if (!this.profile || this.profile.properties[newName])
-      return;
-
-    this.profile.properties[newName] = this.profile.properties[oldName];
-    delete this.profile.properties[oldName];
-
-    this.columnMapping[newName] = this.columnMapping[oldName] ?? null;
-    delete this.columnMapping[oldName];
-
-    const idx = this.propertyOrder.indexOf(oldName);
-    this.propertyOrder[idx] = newName;
-
-    this.rows[newName] = this.rows[oldName];
-    delete this.rows[oldName];
-
-    this.emitChange();
-  }
-
-  private deleteProperty(name: string): void {
-    if (!this.profile)
-      return;
-
-    delete this.profile.properties[name];
-    delete this.columnMapping[name];
-
-    const idx = this.propertyOrder.indexOf(name);
-    if (idx >= 0)
-      this.propertyOrder.splice(idx, 1);
-
-    this.rows[name]?.remove();
-    delete this.rows[name];
-
-    this.emitChange();
-  }
-
-  private insertRowAfter(propertyName: string): void {
-    if (!this.profile)
-      return;
-
-    const newName = `NewProperty${Object.keys(this.profile.properties).length + 1}`;
-    this.profile.properties[newName] = {functionType: 'numerical', weight: 1, mode: 'freeform', min: 0, max: 1, line: []};
-
-    const idx = this.propertyOrder.indexOf(propertyName);
-    this.propertyOrder.splice(idx + 1, 0, newName);
-
-    const newRow = this.buildRow(newName, this.profile.properties[newName]);
-    this.rows[newName] = newRow;
-
-    this.rows[propertyName]?.after(newRow);
-
     this.emitChange();
   }
 
