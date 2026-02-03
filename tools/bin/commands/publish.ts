@@ -29,9 +29,8 @@ const packageFiles = [
 ];
 let config: utils.Config;
 
-export async function processPackage(debug: boolean, rebuild: boolean, host: string, devKey: string, packageName: any, dropDb: boolean, suffix?: string, hostAlias?: string, verbose: boolean = false) {
+export async function processPackage(debug: boolean, rebuild: boolean, host: string, devKey: string, packageName: any, dropDb: boolean, suffix?: string, hostAlias?: string) {
   // Get the server timestamps
-  verbose = verbose || false;
   let timestamps: Indexable = {};
   let url = `${host}/packages/dev/${devKey}/${packageName}`;
   if (debug) {
@@ -44,7 +43,7 @@ export async function processPackage(debug: boolean, rebuild: boolean, host: str
     } catch (error) {
       if (utils.isConnectivityError(error))
         color.error(`Server is possibly offline: ${host}`);
-      if (verbose)
+      if (color.isVerbose())
         console.error(error);
       return 1;
     }
@@ -83,7 +82,7 @@ export async function processPackage(debug: boolean, rebuild: boolean, host: str
     }
   }
 
-  if (verbose) console.log('Starting package checks...');
+  color.log('Starting package checks...');
   const checkStart = Date.now();
   const jsTsFiles = files.filter((f) => !f.startsWith('dist/') && (f.endsWith('.js') || f.endsWith('.ts')));
   const packageFilePath = path.join(curDir, 'package.json');
@@ -95,7 +94,7 @@ export async function processPackage(debug: boolean, rebuild: boolean, host: str
   }
 
   const funcFiles = jsTsFiles.filter((f) => packageFiles.includes(f));
-  if (verbose) console.log(`Checks finished in ${Date.now() - checkStart} ms`);
+  color.log(`Checks finished in ${Date.now() - checkStart} ms`);
   const reg = new RegExp(/\${(\w*)}/g);
   const errs: string[] = [];
 
@@ -122,7 +121,7 @@ export async function processPackage(debug: boolean, rebuild: boolean, host: str
     const t = fs.statSync(fullPath).mtime.toUTCString();
     localTimestamps[canonicalRelativePath] = t;
     if (debug && timestamps[canonicalRelativePath] === t) {
-      if (verbose) console.log(`Skipping ${canonicalRelativePath}`);
+      color.log(`Skipping ${canonicalRelativePath}`);
       return;
     }
     if (canonicalRelativePath.startsWith('connections/')) {
@@ -137,11 +136,11 @@ export async function processPackage(debug: boolean, rebuild: boolean, host: str
         f = f.replace(m[0], envVar);
       }
       zip.append(f, {name: relativePath});
-      if (verbose) console.log(`Adding ${canonicalRelativePath}...`);
+      color.log(`Adding ${canonicalRelativePath}...`);
       return;
     }
     zip.append(fs.createReadStream(fullPath), {name: relativePath});
-    if (verbose) console.log(`Adding ${canonicalRelativePath}...`);
+    color.log(`Adding ${canonicalRelativePath}...`);
   });
   if (errs.length) {
     errs.forEach((e) => color.error(e));
@@ -172,7 +171,7 @@ export async function processPackage(debug: boolean, rebuild: boolean, host: str
         console.log(log);
         return 1;
       } else {
-        if (verbose)
+        if (color.isVerbose())
           console.log(log);
         color.success(`✓ Published to ${hostAlias || new URL(host).hostname}`);
       }
@@ -180,7 +179,7 @@ export async function processPackage(debug: boolean, rebuild: boolean, host: str
   } catch (error) {
     if (utils.isConnectivityError(error))
       color.error(`Server is possibly offline: ${url}`);
-    if (verbose)
+    if (color.isVerbose())
       console.error(error);
     return 1;
   }
@@ -188,9 +187,9 @@ export async function processPackage(debug: boolean, rebuild: boolean, host: str
 }
 
 export async function publish(args: PublishArgs) {
-  const verbose = args.verbose || args.v || false;
+  color.setVerbose(args.verbose || args.v || false);
   if (!args['skip-check'] && !args['all']&& !args['refresh'])
-    check({_: ['check'], verbose: verbose});
+    check({_: ['check'], verbose: args.verbose, v: args.v});
   config = yaml.load(fs.readFileSync(confPath, {encoding: 'utf-8'})) as utils.Config;
   if (args.refresh) {
     if (path.basename(curDir) !== 'packages')
@@ -219,26 +218,26 @@ export async function publish(args: PublishArgs) {
         },
       })).json()).map((item: any) => item.name);
     }
-    if (verbose) console.log('Loading packages:');
+    color.log('Loading packages:');
     await loadPackages(curDir, packagesToLoad.join(' '), host, false, false, args.link, args.release);
   } else {
     if (args.link) {
-      if (verbose) console.log('Linking');
+      color.log('Linking');
 
       await utils.runScript(`npm install`, curDir);
       await utils.runScript(`grok link`, curDir);
       await utils.runScript(`npm run build`, curDir);
     }
-    await publishPackage(args, verbose);
+    await publishPackage(args);
   }
 }
 
-async function publishPackage(args: PublishArgs, verbose: boolean) {
+async function publishPackage(args: PublishArgs) {
   const nArgs = args['_'].length;
 
   if (!args.link) {
     if (args.build || args.rebuild) {
-      if (verbose) console.log('Building');
+      color.log('Building');
       await utils.runScript('npm install', curDir, false);
       await utils.runScript('npm run build', curDir, false);
     }
@@ -249,7 +248,7 @@ async function publishPackage(args: PublishArgs, verbose: boolean) {
     return false;
   }
 
-  if (verbose) console.log('Publishing...');
+  color.log('Publishing...');
   // Create `config.yaml` if it doesn't exist yet
   if (!fs.existsSync(grokDir)) fs.mkdirSync(grokDir);
   if (!fs.existsSync(confPath)) fs.writeFileSync(confPath, yaml.dump(confTemplate));
@@ -299,12 +298,12 @@ async function publishPackage(args: PublishArgs, verbose: boolean) {
           args.suffix = stdout.toString().substring(0, 8);
       });
       await utils.delay(100);
-      code = await processPackage(!args.release, Boolean(args.rebuild), url, key, packageName, args.dropDb ?? false, args.suffix, host, verbose);
+      code = await processPackage(!args.release, Boolean(args.rebuild), url, key, packageName, args.dropDb ?? false, args.suffix, host);
     } catch (error) {
       console.error(error);
       code = 1;
     }
-    if (verbose) console.log(`Exiting with code ${code}`);
+    color.log(`Exiting with code ${code}`);
     process.exit(code);
   });
 
