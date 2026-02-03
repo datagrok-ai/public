@@ -12,12 +12,12 @@ export function getMolFileHandler(molString: string) : any {
   return PackageFunctions.getMolFileHandler(molString);
 }
 
-//tags: init
+//meta.role: init
 export async function init() : Promise<void> {
   await PackageFunctions.init();
 }
 
-//tags: autostart
+//meta.role: autostart
 export async function initChemAutostart() : Promise<void> {
   await PackageFunctions.initChemAutostart();
 }
@@ -162,7 +162,7 @@ export async function searchSubstructure(molStringsColumn: DG.Column, molString:
 }
 
 //description: As SDF...
-//tags: fileExporter
+//meta.role: fileExporter
 export async function saveAsSdf() : Promise<void> {
   await PackageFunctions.saveAsSdf();
 }
@@ -241,8 +241,8 @@ export async function chemDescriptors(table: DG.DataFrame, molecules: DG.Column,
 }
 
 //name: SearchSubstructureEditor
-//tags: editor
 //input: funccall call 
+//meta.role: editor
 export function searchSubstructureEditor(call: DG.FuncCall) : void {
   PackageFunctions.searchSubstructureEditor(call);
 }
@@ -276,21 +276,21 @@ export async function performClusterMCS(molCol: DG.Column, clusterCol: DG.Column
   return await PackageFunctions.performClusterMCS(molCol, clusterCol);
 }
 
-//tags: editor
 //input: funccall call 
+//meta.role: editor
 export function ChemSpaceEditor(call: DG.FuncCall) : void {
   PackageFunctions.ChemSpaceEditor(call);
 }
 
 //name: Fingerprints
 //input: column col { semType: Molecule }
-//input: dynamic _metric { optional: true }
+//input: string _metric { optional: true }
 //input: string fingerprintType = 'Morgan' { caption: Fingerprint type; optional: true; choices: ["Morgan","RDKit","Pattern","AtomPair","MACCS","TopologicalTorsion"] }
 //output: object result
 //meta.supportedSemTypes: Molecule
 //meta.supportedDistanceFunctions: Tanimoto,Asymmetric,Cosine,Sokal
 //meta.role: dimRedPreprocessingFunction
-export async function getFingerprints(col: DG.Column, _metric: any, fingerprintType: any) {
+export async function getFingerprints(col: DG.Column, _metric: string | undefined, fingerprintType: any) {
   return await PackageFunctions.getFingerprints(col, _metric, fingerprintType);
 }
 
@@ -384,8 +384,8 @@ export async function rGroupDecomposition(df: DG.DataFrame, molColName: string, 
   return await PackageFunctions.rGroupDecomposition(df, molColName, core, rGroupName, rGroupMatchingStrategy, onlyMatchAtRGroups);
 }
 
-//tags: editor
 //input: funccall call 
+//meta.role: editor
 export function ActivityCliffsEditor(call: DG.FuncCall) : void {
   PackageFunctions.ActivityCliffsEditor(call);
 }
@@ -502,28 +502,27 @@ export async function getStructuralAlerts(molecules: DG.Column, alerts?: string[
 }
 
 //name: Chemistry | Rendering
-//tags: panel
 //input: column molColumn { semType: Molecule }
 //output: widget result
 //meta.exclude-actions-panel: true
+//meta.role: panel
 export function molColumnPropertyPanel(molColumn: DG.Column) : any {
   return PackageFunctions.molColumnPropertyPanel(molColumn);
 }
 
 //name: Chemistry | Highlight
-//tags: panel
 //input: column molColumn { semType: Molecule }
 //output: widget result
 //meta.exclude-actions-panel: true
+//meta.role: panel
 export function molColumnHighlights(molColumn: DG.Column) : any {
   return PackageFunctions.molColumnHighlights(molColumn);
 }
 
 //name: Chemistry | Descriptors
-//tags: panel
 //input: string smiles { semType: Molecule }
 //output: widget result
-//meta.role: widgets
+//meta.role: widgets,panel
 //meta.domain: chem
 export function descriptorsWidget(smiles: string) : any {
   return PackageFunctions.descriptorsWidget(smiles);
@@ -531,10 +530,9 @@ export function descriptorsWidget(smiles: string) : any {
 
 //name: Biology | Drug Likeness
 //description: Drug Likeness score, with explanations on molecule fragments contributing to the score. OCL.
-//tags: panel
 //input: semantic_value smiles { semType: Molecule }
 //output: widget result
-//meta.role: widgets
+//meta.role: widgets,panel
 //meta.domain: chem
 //help-url: /help/domains/chem/info-panels/drug-likeness.md
 export function drugLikeness(smiles: DG.SemanticValue) : any {
@@ -543,10 +541,9 @@ export function drugLikeness(smiles: DG.SemanticValue) : any {
 
 //name: Chemistry | Properties
 //description: Basic molecule properties
-//tags: panel
 //input: semantic_value smiles { semType: Molecule }
 //output: widget result
-//meta.role: widgets
+//meta.role: widgets,panel
 //meta.domain: chem
 export function properties(smiles: DG.SemanticValue) : any {
   return PackageFunctions.properties(smiles);
@@ -561,10 +558,9 @@ export function getChemPropertyFunction(name: string) : any {
 
 //name: Biology | Structural Alerts
 //description: Screening drug candidates against structural alerts i.e. fragments associated to a toxicological response
-//tags: panel
 //input: string smiles { semType: Molecule }
 //output: widget result
-//meta.role: widgets
+//meta.role: widgets,panel
 //meta.domain: chem
 //help-url: /help/domains/chem/info-panels/structural-alerts.md
 export async function structuralAlerts(smiles: string) : Promise<any> {
@@ -572,10 +568,9 @@ export async function structuralAlerts(smiles: string) : Promise<any> {
 }
 
 //name: Structure | Identifiers
-//tags: panel
 //input: string smiles { semType: Molecule }
 //output: widget result
-//meta.role: widgets
+//meta.role: widgets,panel
 //meta.domain: chem
 export async function identifiers(smiles: string) : Promise<any> {
   return await PackageFunctions.identifiers(smiles);
@@ -583,10 +578,9 @@ export async function identifiers(smiles: string) : Promise<any> {
 
 //name: Structure | 3D Structure
 //description: 3D molecule representation
-//tags: panel
 //input: string molecule { semType: Molecule }
 //output: widget result
-//meta.role: widgets
+//meta.role: widgets,panel
 //meta.domain: chem
 export async function structure3D(molecule: string) : Promise<any> {
   return await PackageFunctions.structure3D(molecule);
@@ -594,10 +588,9 @@ export async function structure3D(molecule: string) : Promise<any> {
 
 //name: Structure | 2D Structure
 //description: 2D molecule representation
-//tags: panel
 //input: string molecule { semType: Molecule }
 //output: widget result
-//meta.role: widgets
+//meta.role: widgets,panel
 //meta.domain: chem
 export function structure2d(molecule: string) : any {
   return PackageFunctions.structure2d(molecule);
@@ -605,10 +598,9 @@ export function structure2d(molecule: string) : any {
 
 //name: Biology | Toxicity
 //description: Toxicity prediction. Calculated by openchemlib
-//tags: panel
 //input: semantic_value smiles { semType: Molecule }
 //output: widget result
-//meta.role: widgets
+//meta.role: widgets,panel
 //meta.domain: chem
 //help-url: /help/domains/chem/info-panels/toxicity-risks.md
 export function toxicity(smiles: DG.SemanticValue) : any {
@@ -677,36 +669,36 @@ export function openChemLibSketcher() : any {
 }
 
 //description: Opens SDF file
-//tags: file-handler
 //input: list bytes 
 //output: list<dataframe> result
+//meta.role: fileHandler
 //meta.ext: sdf,mol
 export function importSdf(bytes: Uint8Array) : any {
   return PackageFunctions.importSdf(bytes);
 }
 
 //description: Opens smi file
-//tags: file-handler
 //input: list bytes 
 //output: list<dataframe> result
+//meta.role: fileHandler
 //meta.ext: smi
 export function importSmi(bytes: Uint8Array) : any {
   return PackageFunctions.importSmi(bytes);
 }
 
 //description: Opens smi file
-//tags: file-handler
 //input: list bytes 
 //output: list<dataframe> result
+//meta.role: fileHandler
 //meta.ext: mol2
 export function importMol2(bytes: Uint8Array) : any {
   return PackageFunctions.importMol2(bytes);
 }
 
 //description: Opens MOL file
-//tags: file-handler
 //input: string content 
 //output: list<dataframe> result
+//meta.role: fileHandler
 //meta.ext: mol
 export function importMol(content: string) : any {
   return PackageFunctions.importMol(content);
@@ -895,8 +887,8 @@ export function mmpViewer() : any {
   return PackageFunctions.mmpViewer();
 }
 
-//tags: editor
 //input: funccall call 
+//meta.role: editor
 export function MMPEditor(call: DG.FuncCall) : void {
   PackageFunctions.MMPEditor(call);
 }
@@ -1098,9 +1090,9 @@ export async function deprotect(table: DG.DataFrame, molecules: DG.Column, fragm
 }
 
 //name: Deprotect Editor
-//tags: editor
 //input: funccall call 
 //output: widget result
+//meta.role: editor
 export function deprotectEditor(call: DG.FuncCall) : any {
   return PackageFunctions.deprotectEditor(call);
 }
@@ -1136,9 +1128,9 @@ export async function mpoTransformFunction(df: DG.DataFrame, profileName: string
   return await PackageFunctions.mpoTransformFunction(df, profileName, aggregation, currentProperties);
 }
 
-//tags: fileViewer
 //input: file file 
 //output: view result
+//meta.role: fileViewer
 //meta.fileViewer: json
 //meta.fileViewerCheck: Chem:checkJsonMpoProfile
 export function mpoProfileEditor(file: DG.FileInfo) : any {
@@ -1152,20 +1144,18 @@ export function checkJsonMpoProfile(content: string) {
 }
 
 //name: Chemistry | Mixture
-//tags: panel
 //input: string mixture { semType: ChemicalMixture }
 //output: widget result
-//meta.role: widgets
+//meta.role: widgets,panel
 //meta.domain: chem
 export async function mixtureWidget(mixture: string) : Promise<any> {
   return await PackageFunctions.mixtureWidget(mixture);
 }
 
 //name: Chemistry | MixtureTree
-//tags: panel
 //input: string mixture { semType: ChemicalMixture }
 //output: widget result
-//meta.role: widgets
+//meta.role: widgets,panel
 //meta.domain: chem
 export async function mixtureTreeWidget(mixture: string) : Promise<any> {
   return await PackageFunctions.mixtureTreeWidget(mixture);
@@ -1179,11 +1169,11 @@ export async function biochemPropsWidget() : Promise<void> {
 }
 
 //name: MPO profiles
-//tags: app
 //input: string path { meta.url: true; optional: true }
 //output: view result
 //meta.browsePath: Chem
 //meta.icon: images/mpo.png
+//meta.role: app
 export async function mpoProfilesApp(path?: string) : Promise<any> {
   return await PackageFunctions.mpoProfilesApp(path);
 }
@@ -1195,10 +1185,9 @@ export async function mpoProfilesAppTreeBrowser(treeNode: any, browseView: any) 
 }
 
 //name: Chemistry | MPO
-//tags: panel
 //input: semantic_value smiles { semType: Molecule }
 //output: widget result
-//meta.role: widgets
+//meta.role: widgets,panel
 //meta.domain: chem
 export async function mpoWidget(semValue: DG.SemanticValue) : Promise<any> {
   return await PackageFunctions.mpoWidget(semValue);

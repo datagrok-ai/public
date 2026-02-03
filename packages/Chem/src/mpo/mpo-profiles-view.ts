@@ -122,7 +122,8 @@ export class MpoProfilesView {
     const clone = this.profileForEditing(profile);
     clone.name = `${profile.name} (Copy)`;
 
-    const view = new MpoProfileCreateView(clone, false, profile.fileName);
+    const cloneFileName = profile.fileName.replace(/\.json$/i, '-copy.json');
+    const view = new MpoProfileCreateView(clone, false, cloneFileName);
     grok.shell.v = grok.shell.addView(view.view);
   }
 

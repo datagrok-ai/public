@@ -11,7 +11,7 @@ import {
 import {MPO_SCORE_CHANGED_EVENT, MpoProfileEditor} from '@datagrok-libraries/statistics/src/mpo/mpo-profile-editor';
 
 import {MpoContextPanel} from './mpo-context-panel';
-import {MPO_TEMPLATE_PATH, MpoPathMode, updateMpoPath} from './utils';
+import {loadMpoProfiles, MPO_TEMPLATE_PATH, MpoPathMode, updateMpoPath} from './utils';
 
 const METHOD_MANUAL = 'Manual';
 const METHOD_PROBABILISTIC = 'Probabilistic';
@@ -35,6 +35,7 @@ export class MpoProfileCreateView {
 
   tableView: DG.TableView;
   private tableViewVisible: boolean = false;
+  private existingFileNames: Set<string> | null = null;
 
   private pMpoDockedItems: {
     statsGrid?: DG.DockNode;
@@ -46,11 +47,17 @@ export class MpoProfileCreateView {
     };
   } | null = null;
 
-  constructor(existingProfile?: DesirabilityProfile, showMethod: boolean = true, fileName?: string) {
+  constructor(
+    existingProfile?: DesirabilityProfile,
+    showMethod: boolean = true,
+    fileName?: string,
+    existingFileNames?: Set<string>,
+  ) {
     this.view = DG.View.create();
     this.showMethod = showMethod;
     this.isEditMode = !!existingProfile;
     this.fileName = fileName;
+    this.existingFileNames = existingFileNames ?? null;
 
     this.profile = existingProfile ?? this.createDefaultProfile();
     this.editor = new MpoProfileEditor(undefined, true);
@@ -101,22 +108,42 @@ export class MpoProfileCreateView {
 
   private initSaveButton() {
     this.saveButton = ui.bigButton('Save', async () => {
-      const fileNameInput = ui.input.string('File name', {value: this.fileName ?? 'mpo-profile.json'});
+      if (!this.existingFileNames) {
+        const existingFiles = await loadMpoProfiles();
+        this.existingFileNames = new Set(existingFiles.map((f) => f.fileName));
+      }
+
+      const fileNameInput = ui.input.string('File name', {value: this.fileName ?? 'mpo-profile.json', nullable: false});
+      const normalizeFileName = (name: string) =>
+        name.endsWith('.json') ? name : `${name}.json`;
+
+      fileNameInput.addValidator((value) => {
+        const normalized = normalizeFileName(value);
+        const canOverwrite = this.isEditMode && normalized === this.fileName;
+        if (!canOverwrite && this.existingFileNames?.has(normalized))
+          return `File "${normalized}" already exists`;
+        return null;
+      });
+
       const nameInput = ui.input.string('Name', {value: this.profile.name ?? ''});
       const descInput = ui.input.string('Description', {value: this.profile.description ?? ''});
 
-      ui.dialog({title: 'Save MPO Profile'})
+      const dlg = ui.dialog({title: 'Save MPO Profile'})
         .add(ui.divV([fileNameInput, nameInput, descInput]))
-        .onOK(() => {
+        .onOK(async () => {
           this.profile.name = nameInput.value || '';
           this.profile.description = descInput.value || '';
 
-          const fileName = this.fileName ?? fileNameInput.value!.trim();
-          grok.dapi.files.writeAsText(`${MPO_TEMPLATE_PATH}/${fileName}`, JSON.stringify(this.profile));
+          const fileName = normalizeFileName(fileNameInput.value!.trim());
+          await grok.dapi.files.writeAsText(`${MPO_TEMPLATE_PATH}/${fileName}`, JSON.stringify(this.profile));
+          this.fileName = fileName;
           this.saveButton!.style.display = 'none';
           grok.shell.info(`Profile "${this.profile.name}" saved.`);
         })
         .show();
+
+      const okButton = dlg.getButton('OK');
+      fileNameInput.onInput.subscribe(() => okButton.disabled = !fileNameInput.validate());
     });
 
     this.saveButton.style.display = 'none';
