@@ -66,7 +66,9 @@ export class MpoProfileCreateView {
     this.profileEditorContainer.classList.add('chem-profile-editor-container');
 
     this.tableView = DG.TableView.create(DG.DataFrame.create(0), false);
-    this.tableView.name = this.view.name = this.isEditMode ? 'Edit MPO Profile' : 'Create MPO Profile';
+    this.tableView.name = this.view.name = this.isEditMode ?
+      `Edit ${this.profile.name ?? 'MPO'} Profile` :
+      'Create MPO Profile';
     this.dockTableView();
 
     updateMpoPath(
