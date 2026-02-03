@@ -1,3 +1,4 @@
+/* eslint-disable max-len */
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
@@ -6,7 +7,7 @@ import {u2} from '@datagrok-libraries/utils/src/u2';
 import {MpoProfileEditor} from '@datagrok-libraries/statistics/src/mpo/mpo-profile-editor';
 
 import {_package} from '../package';
-import {MpoProfileInfo, loadMpoProfiles, deleteMpoProfile, updateMpoPath, MpoPathMode} from './utils';
+import {MpoProfileInfo, loadMpoProfiles, deleteMpoProfile, updateMpoPath, MpoPathMode, MPO_PROFILE_CHANGED_EVENT} from './utils';
 import {MpoProfileCreateView} from './mpo-create-profile';
 
 export class MpoProfilesView {
@@ -166,6 +167,7 @@ export class MpoProfilesView {
           await deleteMpoProfile(profile);
           this.profiles = this.profiles.filter((p) => p !== profile);
           this.rerenderTable();
+          grok.events.fireCustomEvent(MPO_PROFILE_CHANGED_EVENT, {});
         } catch (e) {
           grok.shell.error(`Failed to delete profile "${profile.name}": ${e instanceof Error ? e.message : e}`);
         }

@@ -100,7 +100,7 @@ import {MpoProfilesView} from './mpo/mpo-profiles-view';
 
 import $ from 'cash-dom';
 import {MpoProfileCreateView} from './mpo/mpo-create-profile';
-import {findSuitableProfiles, loadMpoProfiles, MPO_TEMPLATE_PATH} from './mpo/utils';
+import {findSuitableProfiles, loadMpoProfiles, MPO_PROFILE_CHANGED_EVENT, MPO_TEMPLATE_PATH} from './mpo/utils';
 
 export {getMCS};
 export * from './package.g';
@@ -2604,18 +2604,31 @@ export class PackageFunctions {
     @grok.decorators.param({type: 'view'}) browseView: any,
   ) {
     let openedView: DG.ViewBase | null = null;
-    const profileFiles = await grok.dapi.files.list(MPO_TEMPLATE_PATH);
-    for (const profile of profileFiles) {
-      const content =
-        JSON.parse(await grok.dapi.files.readAsText(`${MPO_TEMPLATE_PATH}/${profile.name}`)) as DesirabilityProfile;
 
-      treeNode.item(content.name).onSelected.subscribe(() => {
-        openedView?.close();
-        const editView = new MpoProfileCreateView(content, false, profile.name);
-        openedView = editView.view;
-        grok.shell.addPreview(editView.view);
-      });
-    }
+    const refresh = async () => {
+      treeNode.items.forEach((item) => item.remove());
+
+      const profileFiles = await grok.dapi.files.list(MPO_TEMPLATE_PATH);
+      for (const profile of profileFiles) {
+        const content =
+        JSON.parse(await grok.dapi.files.readAsText(
+          `${MPO_TEMPLATE_PATH}/${profile.name}`,
+        )) as DesirabilityProfile;
+
+        treeNode.item(content.name).onSelected.subscribe(() => {
+          openedView?.close();
+          const editView = new MpoProfileCreateView(content, false, profile.name);
+          openedView = editView.view;
+          grok.shell.addPreview(editView.view);
+        });
+      }
+    };
+
+    await refresh();
+
+    grok.events.onCustomEvent(MPO_PROFILE_CHANGED_EVENT).subscribe(async () => {
+      await refresh();
+    });
   }
 
   @grok.decorators.panel({

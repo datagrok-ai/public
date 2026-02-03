@@ -11,7 +11,7 @@ import {
 import {MPO_SCORE_CHANGED_EVENT, MpoProfileEditor} from '@datagrok-libraries/statistics/src/mpo/mpo-profile-editor';
 
 import {MpoContextPanel} from './mpo-context-panel';
-import {loadMpoProfiles, MPO_TEMPLATE_PATH, MpoPathMode, updateMpoPath} from './utils';
+import {loadMpoProfiles, MPO_PROFILE_CHANGED_EVENT, MPO_TEMPLATE_PATH, MpoPathMode, updateMpoPath} from './utils';
 
 const METHOD_MANUAL = 'Manual';
 const METHOD_PROBABILISTIC = 'Probabilistic';
@@ -140,6 +140,7 @@ export class MpoProfileCreateView {
           await grok.dapi.files.writeAsText(`${MPO_TEMPLATE_PATH}/${fileName}`, JSON.stringify(this.profile));
           this.fileName = fileName;
           this.saveButton!.style.display = 'none';
+          grok.events.fireCustomEvent(MPO_PROFILE_CHANGED_EVENT, {});
           grok.shell.info(`Profile "${this.profile.name}" saved.`);
         })
         .show();
