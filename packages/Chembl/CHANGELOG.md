@@ -1,5 +1,11 @@
 # ChEMBL changelog
 
+## 1.4.11 (2025-01-06)
+
+* Migrated tags to roles
+* Add descriptions to all queries
+* Fix validation
+
 ## 1.4.10 (2025-12-31)
 
 * Update db-explorer library version
