@@ -41,7 +41,7 @@ export async function entitySimilaritySearch(s: string): Promise<DG.Entity[]> {
     return [];
   try {
     const results = await grok.ai.searchEntities(s, 0.3, 20);
-    return results.filter((r) => !!r);
+    return results.filter((r: any) => !!r);
   } catch (e) {
     console.error('Error during similarity search:', e);
     return [];
