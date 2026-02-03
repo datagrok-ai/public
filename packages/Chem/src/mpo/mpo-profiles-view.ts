@@ -81,7 +81,7 @@ export class MpoProfilesView {
       (profile) => [
         this.buildActionsButton(profile),
         ui.link(profile.name, () => this.openProfile(profile)),
-        ui.divText(profile.description, 'chem-mpo-description'),
+        this.buildDescription(profile.description),
       ],
       ['', 'Name', 'Description'],
     );
@@ -104,6 +104,12 @@ export class MpoProfilesView {
     );
     actionsButton.classList.add('chem-mpo-actions-button');
     return actionsButton;
+  }
+
+  private buildDescription(text: string): HTMLElement {
+    const span = ui.divText(text, 'chem-mpo-description');
+    span.addEventListener('click', () => span.classList.toggle('expanded'));
+    return span;
   }
 
   private profileForEditing(profile: MpoProfileInfo): MpoProfileInfo {

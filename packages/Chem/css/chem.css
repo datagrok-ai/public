@@ -983,7 +983,16 @@
   max-width: 300px;
   white-space: normal;
   word-break: break-word;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
   overflow: hidden;
+  cursor: pointer;
+}
+
+.chem-mpo-description.expanded {
+  display: block;
+  overflow: visible;
 }
 
 .chem-mpo-d-none {
