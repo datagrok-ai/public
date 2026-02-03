@@ -66,10 +66,10 @@ export class RectangleTreePlacer<TNode extends MarkupNodeType> implements ITreeP
    * @return {RectangleTreeHoverType<TNode> | null} Hover type or null if not found*/
   getNode(
     treeRoot: TNode, canvasPoint: DG.Point, lineWidth: number, nodeSize: number,
-    treeToCanvas: (treeP: DG.Point) => DG.Point,
+    treeToCanvas: (treeP: DG.Point) => DG.Point
   ): RectangleTreeHoverType<TNode> | null {
     function getNodeInt(
-      node: MarkupNodeType, canvasPoint: DG.Point, currentHeight: number,
+      node: MarkupNodeType, canvasPoint: DG.Point, currentHeight: number
     ): RectangleTreeHoverType<TNode> | null {
       const dpr: number = window.devicePixelRatio;
       // tree to canvas is linear transform, so searching node in canvas coords is correct
@@ -125,7 +125,7 @@ export class RectangleTreePlacer<TNode extends MarkupNodeType> implements ITreeP
 
   getNodeHeight(treeRoot: MarkupNodeType | null, node: MarkupNodeType): number | undefined {
     function getNodeHeightInt(
-      currentNode: MarkupNodeType, node: MarkupNodeType, currentHeight: number,
+      currentNode: MarkupNodeType, node: MarkupNodeType, currentHeight: number
     ): number | undefined {
       let res: number | undefined = undefined;
       if (currentNode == node) {

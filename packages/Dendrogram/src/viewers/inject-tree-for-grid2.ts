@@ -67,6 +67,7 @@ export function injectTreeForGridUI2(
     ev.preventDefault();
     const menu = DG.Menu.popup();
     menu.item('Assign Clusters', () => { assingClusters(); });
+    menu.item('Reset Zoom', () => renderer.onResetZoom());
     menu.show({x: ev.clientX, y: ev.clientY, causedBy: ev});
   });
 

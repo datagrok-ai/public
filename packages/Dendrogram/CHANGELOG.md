@@ -1,5 +1,9 @@
 # Dendrogram changelog
 
+## 1.4.8 (2026-02-03)
+
+* Horizontal zooming of dendrogram with mouse wheel and pinch gesture.
+
 ## 1.4.7 (2026-02-02)
 
 * Resizable dendrogram neighbor panel in the grid.
