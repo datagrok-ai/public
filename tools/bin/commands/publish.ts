@@ -50,6 +50,8 @@ export async function processPackage(debug: boolean, rebuild: boolean, host: str
   }
 
   const zip = archiver('zip', {store: false});
+    const chunks = [];
+    zip.on('data', (chunk: any) => chunks.push(chunk));
 
   // Gather the files
   const localTimestamps: Indexable = {};
@@ -165,11 +167,12 @@ export async function processPackage(debug: boolean, rebuild: boolean, host: str
   if (suffix)
     url += `&suffix=${suffix.toString()}`;
   await zip.finalize();
+    const zipBuffer = Buffer.concat(chunks);
 
   try {
       const body = await fetch(url, {
           method: 'POST',
-          body: zip,
+          body: zipBuffer,
       });
     const log = JSON.parse(await body.text());
 
