@@ -43,9 +43,19 @@ export class CanvasTreeRenderer<TNode extends MarkupNodeType>
   protected _mainStylerOnChangedSub!: rxjs.Unsubscribable;
   protected xZoomFactor: number = 1;
   protected get xZoomNorm(): number { return Math.min(Math.max(Math.floor(this.xZoomFactor * 4) / 4, 1), 100); }
+  public updateXZoom(newZoom: number) {
+    this.xZoomFactor = newZoom;
+    this.render('updateXZoom()');
+  }
 
   get mainStyler(): ITreeStyler<TNode> {
     return this._mainStyler;
+  }
+
+  public treeXToCanvasX(treeX: number): number {
+    if (!this.canvas) throw new Error('CanvasTreeRenderer.treeXToCanvasX(): canvas is not attached');
+    return treeToCanvasPoint(
+      new DG.Point(treeX, 0), this.canvas, this.placer, this.xZoomNorm).x;
   }
 
   set mainStyler(value: ITreeStyler<TNode>) {

@@ -471,7 +471,9 @@ function showClusterAsignmentDialog(
   subs.push(renderer.onAfterRender.subscribe(({target, context, lengthRatio}) => {
     const tgt = target as GridTreeRendererBase<MarkupNodeType>;
 
-    const posX = cutSlider.value! * lengthRatio + tgt.leftPadding * window.devicePixelRatio;
+    // const drawCanvasSize = context.canvas.width - (tgt.leftPadding + tgt.rightPadding) * window.devicePixelRatio;
+    // const actRatio = renderer.treeRoot?.subtreeLength ? drawCanvasSize / renderer.treeRoot!.subtreeLength : lengthRatio;
+    const posX = tgt.treeXToCanvasX(cutSlider.value!) * window.devicePixelRatio;
 
     context.strokeStyle = '#A00000';
     context.moveTo(posX, 0);
