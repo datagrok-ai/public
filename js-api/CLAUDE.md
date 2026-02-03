@@ -141,6 +141,24 @@ to JS API, tests should be passed.
 grok test
 ```
 
+## Quick Lookups
+
+For JS API method questions, check these files first:
+
+| Looking for...                  | Check first                        |
+|---------------------------------|------------------------------------|
+| Expression/formula evaluation   | `src/functions.ts` (eval, call, scriptSync, Context) |
+| Function calls, FuncCall        | `src/functions.ts`                 |
+| DataFrame operations            | `src/dataframe/data-frame.ts`      |
+| Column operations               | `src/dataframe/column.ts`          |
+| UI components, dialogs, inputs  | `src/widgets/`                     |
+| Server/HTTP API                 | `src/dapi.ts`                      |
+| Viewers                         | `src/viewer.ts`                    |
+| Grid                            | `src/grid.ts`                      |
+| Events                          | `src/events.ts`                    |
+| Shell (views, tables, windows)  | `src/shell.ts`                     |
+| Constants and enums             | `src/const.ts`                     |
+
 ## Canonical code samples
 
 See [API usage samples](../packages/ApiSamples/scripts) 
