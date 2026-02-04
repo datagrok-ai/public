@@ -148,7 +148,7 @@ export class MpoProfileEditor {
     if (!this.dataFrame) {
       let currentName = name;
 
-      return ui.input.string('', {
+      const propNameInp = ui.input.string('', {
         value: name,
         onValueChanged: (v) => {
           if (!v || v === currentName)
@@ -156,7 +156,10 @@ export class MpoProfileEditor {
           this.renameProperty(currentName, v);
           currentName = v;
         },
-      }).root;
+      });
+
+      ui.tooltip.bind(propNameInp.input, () => currentName);
+      return propNameInp.root;
     }
 
     return null;
