@@ -6,7 +6,7 @@ export function info() : void {
   PackageFunctions.info();
 }
 
-//tags: init
+//meta.role: init
 export async function init() : Promise<void> {
   await PackageFunctions.init();
 }
@@ -75,8 +75,8 @@ export async function reduceDimensionality() : Promise<void> {
   await PackageFunctions.reduceDimensionality();
 }
 
-//tags: editor
 //input: funccall call 
+//meta.role: editor
 export function GetMCLEditor(call: DG.FuncCall) : void {
   PackageFunctions.GetMCLEditor(call);
 }
@@ -549,4 +549,11 @@ export function trainPmpo() : void {
 //output: object result
 export function getPmpoAppItems(view: any) : any {
   return PackageFunctions.getPmpoAppItems(view);
+}
+
+//description: Generates syntethetic dataset oriented on the pMPO modeling
+//input: int samples 
+//output: dataframe Synthetic
+export async function generatePmpoDataset(samples: number) : Promise<any> {
+  return await PackageFunctions.generatePmpoDataset(samples);
 }

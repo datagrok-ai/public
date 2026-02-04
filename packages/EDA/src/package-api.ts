@@ -285,4 +285,11 @@ export namespace funcs {
   export async function getPmpoAppItems(view: DG.View ): Promise<any> {
     return await grok.functions.call('EDA:GetPmpoAppItems', { view });
   }
+
+  /**
+  Generates syntethetic dataset oriented on the pMPO modeling
+  */
+  export async function generatePmpoDataset(samples: number ): Promise<DG.DataFrame> {
+    return await grok.functions.call('EDA:GeneratePmpoDataset', { samples });
+  }
 }

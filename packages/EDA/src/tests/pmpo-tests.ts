@@ -7,16 +7,14 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {_package} from '../package-test';
 
-import {category, expect, test} from '@datagrok-libraries/utils/src/test';
+import {category, expect, test} from '@datagrok-libraries/test/src/test';
 
 import {Pmpo} from '../probabilistic-scoring/prob-scoring';
-import {P_VAL_TRES_DEFAULT, Q_CUTOFF_DEFAULT, R2_DEFAULT} from '../probabilistic-scoring/pmpo-defs';
+import {P_VAL_TRES_DEFAULT, Q_CUTOFF_DEFAULT, R2_DEFAULT, SCORES_PATH,
+  SOURCE_PATH} from '../probabilistic-scoring/pmpo-defs';
 
 const TIMEOUT = 4000;
 const MAD_THRESH = 1E-6;
-
-const SOURCE_PATH = 'System:AppData/Eda/drugs-props-train.csv';
-const SCORES_PATH = 'System:AppData/Eda/drugs-props-train-scores.csv';
 
 const DESIRABILITY_COL_NAME = 'CNS';
 const DESCRIPTOR_NAMES = ['TPSA', 'TPSA_S', 'HBA', 'HBD', 'MW', 'nAtoms',

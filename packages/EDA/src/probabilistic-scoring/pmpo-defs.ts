@@ -160,3 +160,11 @@ export const ROC_TRESHOLDS_COUNT = ROC_POINTS + 1;
 
 /** ROC curve thresholds from 0.0 to 1.0 */
 export const ROC_TRESHOLDS = new Float32Array(Array.from({length: ROC_TRESHOLDS_COUNT}, (_, i) => i / ROC_POINTS));
+
+/** Sample dataframe for pMPO training: https://pmc.ncbi.nlm.nih.gov/articles/PMC4716604/ */
+export const SOURCE_PATH = 'System:AppData/Eda/drugs-props-train.csv';
+
+/** Scores of the sample dataframe computed using https://github.com/Merck/pmpo */
+export const SCORES_PATH = 'System:AppData/Eda/drugs-props-train-scores.csv';
+
+export const SYNTHETIC_DRUG_NAME = 'Synthetic drug';

@@ -36,10 +36,12 @@ import {SoftmaxClassifier} from './softmax-classifier';
 
 import {initXgboost} from '../wasm/xgbooster';
 import {XGBooster} from './xgbooster';
+
 import {ParetoOptimizer} from './pareto-optimization/pareto-optimizer';
 import {ParetoFrontViewer} from './pareto-optimization/pareto-front-viewer';
+
 import {Pmpo} from './probabilistic-scoring/prob-scoring';
-import {loadPmpoParams} from './probabilistic-scoring/pmpo-utils';
+import {getSynteticPmpoData} from './probabilistic-scoring/data-generator';
 
 export const _package = new DG.Package();
 export * from './package.g';
@@ -1013,5 +1015,14 @@ export class PackageFunctions {
     const pMPO = new Pmpo(df, view);
 
     return pMPO.getPmpoAppItems();
+  }
+
+  @grok.decorators.func({
+    'name': 'generatePmpoDataset',
+    'description': 'Generates syntethetic dataset oriented on the pMPO modeling',
+    'outputs': [{name: 'Synthetic', type: 'dataframe'}],
+  })
+  static async generatePmpoDataset(@grok.decorators.param({'type': 'int'}) samples: number): Promise<DG.DataFrame> {
+    return await getSynteticPmpoData(samples);
   }
 }
