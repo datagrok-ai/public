@@ -26,8 +26,12 @@ category('Dapi', () => {
     const logger = new DG.Logger((m) => (m.params as {[key: string]: any})['jsApiTest2'] = 'jsApiTest3');
     const jsApiTestType = 'jsApiTestType';
     logger.log('jsApiTest0', {jsApiTest1: 'jsApiTest2'}, jsApiTestType);
-    await DG.delay(1000);
-    expect((await grok.dapi.logTypes.list({filter: jsApiTestType}))[0]?.name, jsApiTestType);
+    for (let i = 0; i < 10; i++) {
+        await DG.delay(200);
+        if ((await grok.dapi.logTypes.list({filter: jsApiTestType}))[0]?.name == jsApiTestType)
+            return;
+    }
+    throw new Error('Log type not found');
     //TODO: find log
     // console.log(await grok.dapi.log.list({filter: 'jsApiTest1 = "jsApiTest2"'}));
   }, {owner: 'aparamonov@datagrok.ai', skipReason: typeof process !== 'undefined' ? 'NodeJS environment' : undefined});
