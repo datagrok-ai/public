@@ -2649,6 +2649,8 @@ export interface IPointsViewerSettings {
   /// Additional columns to display in the tooltip
   tooltipColumnNames: Array<string>;
 
+  colorScheme: Array<number>;
+
   allowDynamicMenus: boolean;
 
   // Properties common for all viewers
