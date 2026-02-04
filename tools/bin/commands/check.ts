@@ -15,7 +15,8 @@ const forbiddenNames = ['function', 'class', 'export'];
 const namesInFiles = new Map<string, string[]>();
 
 export function check(args: CheckArgs): boolean {
-  color.setVerbose(args.verbose || args.v || false);
+  if (args.verbose !== undefined || args.v !== undefined)
+    color.setVerbose(args.verbose || args.v || false);
   const curDir = args._.length == 2 ? args._[1] : process.cwd();
 
   if (args.recursive)
@@ -554,20 +555,8 @@ export function checkSourceMap(packagePath: string): string[] {
     const distPackage = path.join(packagePath, 'dist', 'package.js');
     const distPackageTest = path.join(packagePath, 'dist', 'package-test.js');
 
-    let missingFiles = [distPackage, distPackageTest].filter((f) => !fs.existsSync(f));
-
-    // If any dist files are missing, try to build automatically
-    if (missingFiles.length > 0) {
-      try {
-        execSync('npm run build', {cwd: packagePath, stdio: 'inherit'});
-      } catch (e) {
-        console.warn('Build failed:', e);
-      }
-
-      // Recheck dist files after build
-      missingFiles = [distPackage, distPackageTest].filter((f) => !fs.existsSync(f));
-      missingFiles.forEach((f) => warnings.push(`${path.relative(packagePath, f)} file doesnt exist even after build`));
-    }
+    const missingFiles = [distPackage, distPackageTest].filter((f) => !fs.existsSync(f));
+    missingFiles.forEach((f) => warnings.push(`${path.relative(packagePath, f)} file doesnt exist. Run 'npm run build' first.`));
   }
 
   return warnings;

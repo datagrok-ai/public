@@ -189,7 +189,7 @@ export async function processPackage(debug: boolean, rebuild: boolean, host: str
 export async function publish(args: PublishArgs) {
   color.setVerbose(args.verbose || args.v || false);
   if (!args['skip-check'] && !args['all']&& !args['refresh'])
-    check({_: ['check'], verbose: args.verbose, v: args.v});
+    check({_: ['check']});
   config = yaml.load(fs.readFileSync(confPath, {encoding: 'utf-8'})) as utils.Config;
   if (args.refresh) {
     if (path.basename(curDir) !== 'packages')
