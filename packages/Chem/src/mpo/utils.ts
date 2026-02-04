@@ -124,3 +124,27 @@ export function updateMpoPath(
 
   view.path = newPath;
 }
+
+export function deepEqual<T>(current: T, original: T): boolean {
+  if (current === original)
+    return true;
+
+  if (typeof original !== 'object')
+    return false;
+
+  if (Array.isArray(original)) {
+    if (!Array.isArray(current) || current.length !== original.length)
+      return false;
+    for (let i = 0; i < original.length; i++) {
+      if (!deepEqual(current[i], original[i]))
+        return false;
+    }
+    return true;
+  }
+
+  for (const key in original) {
+    if (!deepEqual(current[key], original[key]))
+      return false;
+  }
+  return true;
+}
