@@ -100,7 +100,7 @@ import {MpoProfilesView} from './mpo/mpo-profiles-view';
 
 import $ from 'cash-dom';
 import {MpoProfileCreateView} from './mpo/mpo-create-profile';
-import {findSuitableProfiles, loadMpoProfiles, MPO_PROFILE_CHANGED_EVENT, MPO_TEMPLATE_PATH} from './mpo/utils';
+import {calculateMpoCore, findSuitableProfiles, loadMpoProfiles, MPO_PROFILE_CHANGED_EVENT, MPO_TEMPLATE_PATH} from './mpo/utils';
 
 export {getMCS};
 export * from './package.g';
@@ -2472,31 +2472,15 @@ export class PackageFunctions {
     aggregation: WeightedAggregation,
     @grok.decorators.param({type: 'object'}) currentProperties: { [key: string]: PropertyDesirability },
   ): Promise<string[]> {
-    const columns: DG.Column[] = [];
-    let resultCol: DG.Column | null = null;
-    for (const propertyName in currentProperties) {
-      const column = df.columns.byName(propertyName);
-      if (!column) {
-        grok.shell.warning(`Column ${propertyName} from profile not found in table. Skipping.`);
-        continue;
-      }
-      column.setTag('desirabilityTemplate', JSON.stringify(currentProperties[propertyName]));
-      columns.push(column);
-    }
+    const result = calculateMpoCore(df, profileName, currentProperties, aggregation);
 
-    if (columns.length === 0) {
-      grok.shell.error('No valid columns found matching the profile properties. Cannot calculate MPO score.');
-      return [];
-    }
+    for (const warning of result.warnings)
+      grok.shell.warning(warning);
 
-    try {
-      resultCol = mpo(df, columns, profileName, aggregation);
-    } catch (e) {
-      console.error('MPO Calculation Error:', e);
-      grok.shell.error(`MPO calculation failed: ${e instanceof Error ? e.message : String(e)}`);
-    }
+    if (result.error)
+      grok.shell.error(result.error);
 
-    return resultCol ? [resultCol.name] : [];
+    return result.columnNames;
   }
 
   @grok.decorators.fileViewer({

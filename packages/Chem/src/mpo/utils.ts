@@ -3,6 +3,7 @@ import * as DG from 'datagrok-api/dg';
 
 import {
   DesirabilityProfile,
+  mpo,
   PropertyDesirability,
   WeightedAggregation,
 } from '@datagrok-libraries/statistics/src/mpo/mpo';
@@ -53,16 +54,68 @@ export async function deleteMpoProfile(profile: MpoProfileInfo): Promise<void> {
   await grok.dapi.files.delete(`${MPO_TEMPLATE_PATH}/${profile.fileName}`);
 }
 
+export type MpoCalculationResult = {
+  columnNames: string[];
+  warnings: string[];
+  error?: string;
+};
+
+export function calculateMpoCore(
+  df: DG.DataFrame,
+  profileName: string,
+  currentProperties: Record<string, PropertyDesirability>,
+  aggregation: WeightedAggregation,
+): MpoCalculationResult {
+  const columns: DG.Column[] = [];
+  const warnings: string[] = [];
+
+  for (const [propertyName, desirability] of Object.entries(currentProperties)) {
+    const column = df.columns.byName(propertyName);
+    if (!column) {
+      warnings.push(`Column "${propertyName}" from profile not found in table. Skipping.`);
+      continue;
+    }
+    column.setTag('desirabilityTemplate', JSON.stringify(desirability));
+    columns.push(column);
+  }
+
+  if (columns.length === 0) {
+    return {
+      columnNames: [],
+      warnings,
+      error: 'No valid columns found matching the profile properties. Cannot calculate MPO score.',
+    };
+  }
+
+  try {
+    const resultCol = mpo(df, columns, profileName, aggregation);
+    return {columnNames: resultCol ? [resultCol.name] : [], warnings};
+  } catch (e) {
+    console.error('MPO Calculation Error:', e);
+    return {
+      columnNames: [],
+      warnings,
+      error: `MPO calculation failed: ${e instanceof Error ? e.message : String(e)}`,
+    };
+  }
+}
+
 export async function computeMpo(
   df: DG.DataFrame,
   profile: DesirabilityProfile,
   columnMapping: Record<string, string | null>,
   aggregation?: WeightedAggregation,
+  silent: boolean = false,
 ): Promise<string[]> {
   const mappedProperties: Record<string, PropertyDesirability> = {};
   for (const [propName, prop] of Object.entries(profile.properties)) {
     const columnName = columnMapping[propName] ?? propName;
     mappedProperties[columnName] = prop;
+  }
+
+  if (silent) {
+    const result = calculateMpoCore(df, profile.name ?? 'MPO', mappedProperties, aggregation ?? 'Average');
+    return result.columnNames;
   }
 
   const [func] = await DG.Func.find({name: 'mpoTransformFunction'});
