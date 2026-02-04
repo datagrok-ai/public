@@ -212,6 +212,7 @@ export class MpoProfileEditor {
       onValueChanged: (v) => {
         this.columnMapping[name] = v ?? null;
         draw(v ?? null);
+        this.emitChange();
       },
     });
     return input.root;

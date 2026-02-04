@@ -30,6 +30,7 @@ export class MpoProfileDialog {
   private dialog?: DG.Dialog<{}>;
   private mpoContextPanel?: MpoContextPanel;
   private originalProfile: DesirabilityProfile | null = null;
+  private suitableProfileNames: string[] = [];
 
   constructor(dataFrame?: DG.DataFrame) {
     this.dataFrame = dataFrame ?? grok.shell.t;
@@ -69,13 +70,13 @@ export class MpoProfileDialog {
 
   async init(): Promise<void> {
     this.mpoProfiles = await loadMpoProfiles();
-    const suitableProfiles = findSuitableProfiles(this.dataFrame, this.mpoProfiles).map((p) => p.fileName);
+    this.suitableProfileNames = findSuitableProfiles(this.dataFrame, this.mpoProfiles).map((p) => p.fileName);
 
     this.profileInput.items = this.mpoProfiles.map((p) => p.fileName);
-    requestAnimationFrame(() => this.highlightSuitableProfiles(suitableProfiles));
+    requestAnimationFrame(() => this.highlightSuitableProfiles(this.suitableProfileNames));
 
-    const defaultProfile = suitableProfiles.length > 0 ?
-      suitableProfiles[0] :
+    const defaultProfile = this.suitableProfileNames.length > 0 ?
+      this.suitableProfileNames[0] :
       this.mpoProfiles[0]?.fileName ?? null;
 
     if (defaultProfile) {
@@ -101,6 +102,7 @@ export class MpoProfileDialog {
   private listenForProfileChanges(): void {
     grok.events.onCustomEvent(MPO_SCORE_CHANGED_EVENT).subscribe(async () => {
       this.updateSaveButtonVisibility();
+      this.updateOkButtonState();
       if (this.currentProfile && this.mpoContextPanel) {
         await this.mpoContextPanel.render(
           this.currentProfile,
@@ -128,6 +130,7 @@ export class MpoProfileDialog {
     this.mpoProfileEditor.setProfile(this.currentProfile);
     this.originalProfile = structuredClone(this.currentProfile);
     this.updateSaveButtonVisibility();
+    this.updateOkButtonState();
   }
 
   private isProfileModified(): boolean {
@@ -138,6 +141,19 @@ export class MpoProfileDialog {
 
   private updateSaveButtonVisibility(): void {
     this.saveButton.classList.toggle('chem-mpo-d-none', !this.isProfileModified());
+  }
+
+  private isProfileApplicable(): boolean {
+    const mapping = this.mpoProfileEditor.columnMapping;
+    const hasMappedColumns = Object.values(mapping).some((v) => v != null);
+    const isSuitable = this.suitableProfileNames.includes(this.currentProfileFileName ?? '');
+    return hasMappedColumns || isSuitable;
+  }
+
+  private updateOkButtonState(): void {
+    const okButton = this.dialog?.getButton('OK');
+    if (okButton)
+      okButton.disabled = !this.isProfileApplicable();
   }
 
   private async saveProfile(): Promise<void> {
@@ -216,5 +232,7 @@ export class MpoProfileDialog {
       })
       .onCancel(() => this.mpoContextPanel?.detach())
       .show();
+
+    this.updateOkButtonState();
   }
 }

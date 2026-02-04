@@ -189,6 +189,7 @@ export class MpoProfileCreateView {
         try {
           this.df = df;
           this.tableView.dataFrame = df;
+          await grok.data.detectSemanticTypes(this.df!);
 
           if (this.methodInput?.value === METHOD_PROBABILISTIC) {
             this.clearPreviousLayout();
@@ -372,8 +373,6 @@ export class MpoProfileCreateView {
   private async setupGridAndContextPanel() {
     if (!this.mpoContextPanel)
       this.mpoContextPanel = new MpoContextPanel(this.df!);
-
-    await grok.data.detectSemanticTypes(this.df!);
 
     const gridContainer = ui.div([]);
     gridContainer.classList.add('chem-data-grid-container');
