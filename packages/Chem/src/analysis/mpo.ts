@@ -11,7 +11,8 @@ import {MPO_SCORE_CHANGED_EVENT, MpoProfileEditor} from '@datagrok-libraries/sta
 
 import {MpoContextPanel} from '../mpo/mpo-context-panel';
 import {PackageFunctions} from '../package';
-import {computeMpo, MPO_TEMPLATE_PATH, loadMpoProfiles, MpoProfileInfo, deepEqual} from '../mpo/utils';
+import {computeMpo, MPO_TEMPLATE_PATH, loadMpoProfiles, MpoProfileInfo,
+  deepEqual, findSuitableProfiles} from '../mpo/utils';
 
 export class MpoProfileDialog {
   dataFrame: DG.DataFrame;
@@ -68,9 +69,15 @@ export class MpoProfileDialog {
 
   async init(): Promise<void> {
     this.mpoProfiles = await loadMpoProfiles();
-    const defaultProfile = this.mpoProfiles.length > 0 ? this.mpoProfiles[0].fileName : null;
+    const suitableProfiles = findSuitableProfiles(this.dataFrame, this.mpoProfiles).map((p) => p.fileName);
 
     this.profileInput.items = this.mpoProfiles.map((p) => p.fileName);
+    requestAnimationFrame(() => this.highlightSuitableProfiles(suitableProfiles));
+
+    const defaultProfile = suitableProfiles.length > 0 ?
+      suitableProfiles[0] :
+      this.mpoProfiles[0]?.fileName ?? null;
+
     if (defaultProfile) {
       this.profileInput.value = defaultProfile;
       await this.loadProfile(defaultProfile);
@@ -78,6 +85,17 @@ export class MpoProfileDialog {
 
     this.listenForProfileChanges();
     this.mpoContextPanel = new MpoContextPanel(this.dataFrame);
+  }
+
+  private highlightSuitableProfiles(suitableFileNames: string[]): void {
+    const select = this.profileInput.input as HTMLSelectElement;
+    for (let i = 0; i < select.options.length; i++) {
+      const option = select.options[i];
+      const text = option.textContent ?? '';
+
+      if (suitableFileNames.includes(option.value) && !text.startsWith('⭐'))
+        option.textContent = `⭐ ${text}`;
+    }
   }
 
   private listenForProfileChanges(): void {
