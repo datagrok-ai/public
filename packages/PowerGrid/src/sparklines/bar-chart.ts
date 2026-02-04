@@ -12,6 +12,7 @@ import {
   getRenderColor,
   NormalizationType,
   getScaledNumber,
+  scaleSettings,
   getSparklinesContextPanel
 } from './shared';
 
@@ -48,13 +49,9 @@ function onHit(gridCell: DG.GridCell, e: MouseEvent): Hit {
   };
   if ((activeColumn >= cols.length) || (activeColumn < 0))
     return answer;
-  const scaled = getScaledNumber(cols, row, cols[activeColumn], {
-    normalization: settings.normalization,
-    invertScale: settings.invertColumnNames?.includes(cols[activeColumn].name),
-    logScale: settings.logColumnNames?.includes(cols[activeColumn].name),
-    minValues: settings.minValues,
-    maxValues: settings.maxValues,
-  });
+  const scaled = getScaledNumber(cols, row, cols[activeColumn],
+    scaleSettings(settings, cols[activeColumn]),
+  );
   const bb = b
     .getLeftPart(cols.length, activeColumn)
     .getBottomScaled(scaled > minH ? scaled : minH)
@@ -96,13 +93,9 @@ export class BarChartCellRenderer extends DG.GridCellRenderer {
       const currentCol = cols[i];
       if (!currentCol.isNone(row)) {
         g.setFillStyle(DG.Color.toRgb(getRenderColor(settings, DG.Color.fromHtml('#8080ff'), {column: currentCol, colIdx: i, rowIdx: row})));
-        const scaled = getScaledNumber(cols, row, currentCol, {
-          normalization: settings.normalization,
-          invertScale: settings.invertColumnNames?.includes(currentCol.name),
-          logScale: settings.logColumnNames?.includes(currentCol.name),
-          minValues: settings.minValues,
-          maxValues: settings.maxValues,
-        });
+        const scaled = getScaledNumber(cols, row, currentCol,
+          scaleSettings(settings, currentCol),
+        );
         const bb = b
           .getLeftPart(cols.length, i)
           .getBottomScaled(scaled > minH ? scaled : minH)

@@ -2,7 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {after, before, category, delay, expect, expectObject, test} from '@datagrok-libraries/utils/src/test';
+import {after, before, category, delay, expect, expectObject, test} from '@datagrok-libraries/test/src/test';
 import {UserLibSettings} from '@datagrok-libraries/bio/src/monomer-works/types';
 import {getMonomerLibHelper, IMonomerLibHelper} from '@datagrok-libraries/bio/src/types/monomer-library';
 import {

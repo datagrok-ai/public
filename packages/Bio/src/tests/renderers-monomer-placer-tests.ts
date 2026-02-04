@@ -5,7 +5,7 @@ import * as ui from 'datagrok-api/ui';
 
 import wu from 'wu';
 
-import {after, before, category, expect, expectArray, test} from '@datagrok-libraries/utils/src/test';
+import {after, before, category, expect, expectArray, test} from '@datagrok-libraries/test/src/test';
 import {MonomerPlacer, hitBounds} from '@datagrok-libraries/bio/src/utils/cell-renderer-monomer-placer';
 import {monomerToShort} from '@datagrok-libraries/bio/src/utils/macromolecule';
 import {getMonomerLibHelper, IMonomerLibHelper} from '@datagrok-libraries/bio/src/types/monomer-library';

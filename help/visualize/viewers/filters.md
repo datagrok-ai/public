@@ -181,6 +181,18 @@ Combined boolean filter (or Flags filter) combines multiple boolean filters into
 
 ![Boolean Filter](../../uploads/gifs/bool-combined.gif)
 
+## Multi-value filter
+
+Multi-value filter lets you filter columns containing cells with multiple values,
+treating each value as an individual filter option. Each value in the filter has two checkboxes, allowing you to include or exclude rows that contain it.
+The AND/OR toggle controls how selected values are combined within the filter. 
+
+Add the filter from the **Filter Panel** hamburger menu: **Add Filter > Multi Value...**.
+Once added, the multi-value filter uses the `.multiValueSeparator` [column tag](#column-tags)
+to split values in the selected column.
+
+![Multi Value Filter](img/multi-value-filter.gif)
+
 ## Saving a filter configuration
 
 You can save a filter configuration for later use:

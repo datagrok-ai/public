@@ -1,6 +1,6 @@
 import {_package} from '../package-test';
 import * as chemCommonRdKit from '../utils/chem-common-rdkit';
-import {before, expect, category, test} from '@datagrok-libraries/utils/src/test';
+import {before, expect, category, test} from '@datagrok-libraries/test/src/test';
 import {isFragment, _isSmarts} from '../utils/mol-creation_rdkit';
 import {readDataframe} from './utils';
 

@@ -14,7 +14,7 @@ import wu from 'wu';
 import {Observable, Subject, Unsubscribable} from 'rxjs';
 
 import {TAGS as bioTAGS, NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';
-import {delay, testEvent} from '@datagrok-libraries/utils/src/test';
+import {delay, testEvent} from '@datagrok-libraries/test/src/test';
 import {IRenderer} from '@datagrok-libraries/bio/src/types/renderer';
 import {ILogger} from '@datagrok-libraries/bio/src/utils/logger';
 import {PromiseSyncer} from '@datagrok-libraries/bio/src/utils/syncer';

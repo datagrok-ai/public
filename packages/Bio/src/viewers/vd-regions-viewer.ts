@@ -4,7 +4,7 @@ import * as DG from 'datagrok-api/dg';
 
 import {fromEvent, Observable, Subject, Unsubscribable} from 'rxjs';
 
-import {testEvent} from '@datagrok-libraries/utils/src/test';
+import {testEvent} from '@datagrok-libraries/test/src/test';
 import {
   IVdRegionsViewer,
   VdRegion, VdRegionType,

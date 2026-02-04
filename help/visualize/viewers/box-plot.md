@@ -79,6 +79,7 @@ For instance, you would get the upper whisker inverted on the following data: [0
 | Invert Y Axis | boolean |  |
 | Show Value Axis | boolean |  |
 | Show Value Selector | boolean |  |
+| Zoom Values By Filter | boolean | If checked, focuses on filtered points (on value axis) as the filter changes. If current value column is filtered, zoom is not applied. |
 | Show Empty Categories | boolean | Include plots, which are empty or have null values. |
 | **Color** | | |
 | Bin Color Column Name | string | Column to color-code boxes (Q2-Q3 region) or inner violin shapes. See also *Bin Color Aggr Type*. |

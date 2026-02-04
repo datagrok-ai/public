@@ -1,6 +1,6 @@
 import * as DG from "datagrok-api/dg";
 import * as grok from 'datagrok-api/grok';
-import { runTests, tests, TestContext } from '@datagrok-libraries/utils/src/test';
+import { runTests, tests, TestContext } from '@datagrok-libraries/test/src/test';
 
 export let _package = new DG.Package();
 export { tests };

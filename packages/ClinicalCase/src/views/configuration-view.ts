@@ -4,6 +4,7 @@ import * as DG from 'datagrok-api/dg';
 import {ClinicalCaseViewBase} from '../model/ClinicalCaseViewBase';
 import {ACT_TRT_ARM, PLANNED_TRT_ARM} from '../constants/columns-constants';
 import {studies} from '../utils/app-utils';
+import {calculateLBControlColumns} from '../data-preparation/data-preparation';
 
 interface TreatmentControlRow {
   treatment: string;
@@ -160,6 +161,10 @@ export class ConfigurationView extends ClinicalCaseViewBase {
       treatment: row.treatment,
       control: row.control,
     }));
+
+    // Calculate control columns for LB domain if it exists
+    if (study.domains.lb)
+      calculateLBControlColumns(study.domains.lb, study.treatmentAndControlConfig);
 
     grok.shell.info(`Configuration saved: ${this.tableRows.length} treatment/control pair(s)`);
   }

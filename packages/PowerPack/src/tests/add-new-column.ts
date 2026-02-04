@@ -1,7 +1,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import {after, awaitCheck, before, category, expect,
-  isDialogPresent, test} from '@datagrok-libraries/utils/src/test';
+  isDialogPresent, test} from '@datagrok-libraries/test/src/test';
 import {AddNewColumnDialog} from '../dialogs/add-new-column';
 import {FUNC_HINTS, FUNC_TESTS, FUNC_VALIDATION} from './utils';
 import { expectTyped } from './dialogs';

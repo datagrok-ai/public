@@ -1,7 +1,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
-import { awaitCheck, delay } from '@datagrok-libraries/utils/src/test';
+import { awaitCheck, delay } from '@datagrok-libraries/test/src/test';
 import { getRevvityLibraries } from './libraries';
 import { filterProperties, getPropertiesForLibAndEntityType, initializeFilters, runSearchQuery, SAVED_SEARCH_STORAGE } from './search-utils';
 import { getCompoundTypeByViewName, getViewNameByCompoundType } from './utils';

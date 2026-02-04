@@ -47,27 +47,33 @@ category('UserSettingsStorage', () => {
   }, {stressTest: true});
 
   test('credentials', async () => {
-    console.log(_package);
-    const url = `https://${window.location.host}/api/credentials/for/${_package.name}`;
-    const headers = new Headers();
-    headers.append('Accept', 'application/json');
-    headers.append('testAuth', `test`);
-    headers.append('original-url', url);
-    headers.append('Authorization', grok.dapi.token);
-    headers.append('original-method', 'POST');
+    try {
+      const url = `${grok.dapi.root}/credentials/for/${_package.name}`;
+      const headers = new Headers();
+      headers.append('Content-Type', 'application/json');
 
-    const requestOptions: RequestInit = {
-      method: 'POST',
-      headers: headers,
-      redirect: 'follow',
+      const requestOptions: RequestInit = {
+        method: 'POST',
+        headers: headers,
+        credentials: 'include',
+        body: JSON.stringify({test: 'test'}),
+      };
+      await fetch(url, requestOptions);
+      const credentialsParams = (await _package.getCredentials()).parameters;
 
-      body: JSON.stringify({test: 'test'}),
-    };
-    const response = await grok.dapi.fetchProxy(url, requestOptions);
-    
-    const credentialsParams = (await _package.getCredentials()).parameters;
-
-    expect(credentialsParams['test'], 'test');
+      expect(credentialsParams['test'], 'test');
+    } finally {
+      const cred = await _package.getCredentials();
+      if (cred) {
+        try {
+          cred.parameters.delete('test');
+          if (cred.parameters.size() > 1)
+            await grok.dapi.credentials.save(cred);
+          else
+            await grok.dapi.credentials.delete(cred);
+        } catch (_) {}
+      }
+    }
   });
 
 }, {owner: 'ppolovyi@datagrok.ai'});

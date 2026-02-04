@@ -2,7 +2,7 @@ import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 // import * as ui from 'datagrok-api/ui';
 
-import {awaitCheck, before, category, expect, test} from '@datagrok-libraries/utils/src/test';
+import {awaitCheck, before, category, expect, test} from '@datagrok-libraries/test/src/test';
 import {createTableView} from './utils';
 import * as chemCommonRdKit from '../utils/chem-common-rdkit';
 import {_package} from '../package-test';

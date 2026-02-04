@@ -4,7 +4,8 @@ import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 import {COL_HAS_ERRORS_POSTFIX, DOMAIN, ERRORS_POSTFIX, HAS_VALIDATION_ERRORS_COL,
   SITE_ID, STUDY_ID, SUBJECT_ID, VIOLATED_RULES_COL} from './constants/columns-constants';
-import {addVisitDayFromTvDomain, createEventStartEndDaysCol} from './data-preparation/data-preparation';
+import {addVisitDayFromTvDomain, createEventStartEndDaysCol,
+  calculateLBBaselineColumns} from './data-preparation/data-preparation';
 import {createFilters, removeExtension} from './utils/utils';
 import {CDISC_STANDARD, ClinStudyConfig} from './utils/types';
 import {ClinicalCaseViewsConfig} from './views-config';
@@ -196,6 +197,10 @@ export class ClinicalStudy {
           it.col(col)!.setTag('Description', this.config.fieldsDefinitions[col]);
       }
     });
+
+    // Calculate LB baseline and post-baseline columns if LB domain exists
+    if (this.domains.lb)
+      calculateLBBaselineColumns(this.domains.lb);
   }
 
 

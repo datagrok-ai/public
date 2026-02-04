@@ -9,7 +9,9 @@ import {TreeHelper} from './tree-helper';
 import {getClusterMatrixWorker} from '@datagrok-libraries/math';
 import {ITreeHelper} from '@datagrok-libraries/bio/src/trees/tree-helper';
 import {attachLoaderDivToGrid} from '.';
+import {GridNeighbor} from '@datagrok-libraries/gridext/src/ui/GridNeighbor';
 
+export const DENDROGRAM_NEIGHBOR_TEMP_NAME = '__dendrogram_neighbor_temp__';
 // Custom UI Dialog for Hierarchical Clustering
 export async function hierarchicalClusteringDialog(getDefaultCoulumn: (t: DG.DataFrame) => DG.Column | null = (_t) => null): Promise<void> {
   if (!grok.shell.tv?.table) {
@@ -99,6 +101,14 @@ export async function hierarchicalClusteringUI(
   if (!tv.grid)
     throw new Error('TableView has no grid to attach dendrogram to.');
 
+  if (tv.grid.temp[DENDROGRAM_NEIGHBOR_TEMP_NAME]) {
+    grok.shell.warning('Dendrogram is already attached to the table grid. Closing existing dendrogram.');
+    const existingNB: GridNeighbor = tv.grid.temp[DENDROGRAM_NEIGHBOR_TEMP_NAME];
+    if (existingNB && typeof existingNB.close === 'function')
+      existingNB.close();
+    tv.grid.temp[DENDROGRAM_NEIGHBOR_TEMP_NAME] = null;
+  }
+
   const loaderNB = attachLoaderDivToGrid(tv.grid, neighborWidth);
 
   // TODO: Filter rows with nulls in selected columns
@@ -108,15 +118,15 @@ export async function hierarchicalClusteringUI(
       .map((col) => {
         let res: DG.Column;
         switch (col.type) {
-        case DG.COLUMN_TYPE.DATE_TIME:
+          case DG.COLUMN_TYPE.DATE_TIME:
           // column of type 'datetime' getRawData() returns Float64Array
-          const colData: Float64Array = col.getRawData() as Float64Array;
-          res = DG.Column.float(col.name, col.length).init((rowI) => {
-            return !col.isNone(rowI) ? colData[rowI] : null;
-          });
-          break;
-        default:
-          res = col;
+            const colData: Float64Array = col.getRawData() as Float64Array;
+            res = DG.Column.float(col.name, col.length).init((rowI) => {
+              return !col.isNone(rowI) ? colData[rowI] : null;
+            });
+            break;
+          default:
+            res = col;
         }
         return res;
       }));
@@ -127,7 +137,7 @@ export async function hierarchicalClusteringUI(
       distance);
 
     const clusterMatrixWorker = getClusterMatrixWorker(
-       distanceMatrix!.data, preparedDf.rowCount, linkageCode,
+       distanceMatrix!.data, preparedDf.rowCount, linkageCode
     );
     const clusterMatrix = await clusterMatrixWorker;
 
@@ -186,7 +196,9 @@ export async function hierarchicalClusteringUI(
       };
     });
     tv.grid.invalidate();
+    tv.grid.temp[DENDROGRAM_NEIGHBOR_TEMP_NAME] = nb;
   } catch (err) {
+    grok.shell.error('Error during hierarchical clustering. See console for details.');
     console.error(err);
     tv.grid.invalidate();
     loaderNB.close();
@@ -194,7 +206,7 @@ export async function hierarchicalClusteringUI(
 }
 
 export function hierarchicalClusteringFilterDfForNulls(
-  df: DG.DataFrame, colNameSet: Set<string>,
+  df: DG.DataFrame, colNameSet: Set<string>
 ): [DG.DataFrame, Int32Array] {
   // filteredNullsDf to open new table view
   const colList: DG.Column[] = df.columns.toList().filter((col) => colNameSet.has(col.name));

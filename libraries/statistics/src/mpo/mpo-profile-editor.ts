@@ -2,9 +2,10 @@ import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
 
-import {DesirabilityProfile, PropertyDesirability} from './mpo';
-import {MpoDesirabilityLineEditor} from './mpo-line-editor';
 import {Subject} from 'rxjs';
+import {DesirabilityProfile, PropertyDesirability, isNumerical, migrateDesirability} from './mpo';
+import {DesirabilityEditor, DesirabilityEditorFactory} from './editors/desirability-editor-factory';
+import {DesirabilityModeDialog} from './dialogs/desirability-mode-dialog';
 
 import '../../css/styles.css';
 
@@ -14,14 +15,42 @@ export class MpoProfileEditor {
   readonly root = ui.div([]);
   readonly onChanged = new Subject<void>();
 
+  profile?: DesirabilityProfile;
   dataFrame?: DG.DataFrame;
   design = false;
-  profile?: DesirabilityProfile;
+  preview = false;
+
+  private rows: Record<string, HTMLElement> = {};
+  private rowIds: Record<string, string> = {};
+
+  private propertyOrder: string[] = [];
   columnMapping: Record<string, string | null> = {};
 
-  constructor(dataFrame?: DG.DataFrame, design = false) {
+  constructor(dataFrame?: DG.DataFrame, design = false, preview = false) {
     this.dataFrame = dataFrame;
     this.design = design;
+    this.preview = preview;
+  }
+
+  private newRowId(): string {
+    return crypto.randomUUID();
+  }
+
+  setProfile(profile?: DesirabilityProfile): void {
+    if (profile) {
+      for (const key of Object.keys(profile.properties))
+        profile.properties[key] = migrateDesirability(profile.properties[key]);
+    }
+    this.profile = profile;
+    this.columnMapping = {};
+    this.rows = {};
+    this.rowIds = {};
+    this.propertyOrder = profile ? Object.keys(profile.properties) : [];
+
+    for (const name of this.propertyOrder)
+      this.rowIds[name] = this.newRowId();
+
+    this.render();
   }
 
   getProfile(): DesirabilityProfile | undefined {
@@ -31,48 +60,79 @@ export class MpoProfileEditor {
   setDesignMode(on: boolean): void {
     if (this.design === on)
       return;
-
     this.design = on;
-    if (this.profile)
-      this.setProfile(this.profile);
+    this.rows = {};
+    this.render();
   }
 
-  setProfile(profile?: DesirabilityProfile): void {
-    this.profile = profile;
-    this.columnMapping = {};
+  setPreviewMode(on: boolean): void {
+    if (this.preview === on)
+      return;
+    this.preview = on;
+    this.rows = {};
+    this.render();
+  }
+
+  private render(): void {
     ui.empty(this.root);
 
-    if (!profile) {
-      this.root.append(ui.divText('No profile specified.'));
-      return;
-    }
+    if (!this.profile)
+      return this.renderEmpty('No profile specified.');
 
-    const header = this.buildHeader();
-    const rows = Object.entries(profile.properties).map(([name, prop]) => this.buildRow(name, prop));
+    const rows = this.propertyOrder.map((name) => {
+      const rowId = this.rowIds[name];
+      if (!this.rows[rowId])
+        this.rows[rowId] = this.buildRow(name, rowId, this.profile!.properties[name]);
+      return this.rows[rowId];
+    });
 
-    if (rows.length === 0) {
-      this.root.append(ui.divText('No properties defined.'));
-      return;
-    }
+    if (!rows.length)
+      return this.renderEmpty('No properties defined.');
 
-    this.root.append(header, ui.divV(rows));
+    if (!this.preview)
+      this.root.append(this.buildHeader());
+    this.root.append(ui.divV(rows));
   }
 
-  private buildRow(propertyName: string, prop: PropertyDesirability): HTMLElement {
+  private renderEmpty(text: string): void {
+    this.root.append(ui.divText(text));
+  }
+
+  private buildHeader(): HTMLElement {
+    return ui.divH([
+      ui.divText('Property', 'statistics-mpo-header-property'),
+      ui.divText('Weight', 'statistics-mpo-header-weight'),
+      ui.divText('Desirability', 'statistics-mpo-header-desirability'),
+    ], 'statistics-mpo-header');
+  }
+
+  private buildRow(
+    name: string,
+    rowId: string,
+    prop: PropertyDesirability,
+  ): HTMLElement {
     const row = ui.divH([], 'statistics-mpo-row');
+    row.dataset.rowId = rowId;
 
-    const lineEditor = new MpoDesirabilityLineEditor(prop, 300, 80);
-    lineEditor.onChanged.subscribe(() => this.notifyChanged());
+    if (isNumerical(prop))
+      prop.mode ??= 'freeform';
+    const editor = DesirabilityEditorFactory.create(prop);
+    editor.onChanged.subscribe(() => this.emitChange());
 
-    const propertyCell = this.buildPropertyCell(propertyName);
-    const weightCell = this.buildWeightAndRangeCell(propertyName, prop, lineEditor);
-    const columnCell = this.buildColumnSelector(propertyName, lineEditor);
-    const controls = this.design ? this.buildRowControls(row, propertyName) : null;
+    const propertyCell = this.buildPropertyCell(rowId, name);
+    const weightCell = this.buildWeightCell(rowId, prop);
+    const columnCell = this.buildColumnSelector(rowId, editor);
+
+    const modeGear = this.design && editor.supportsModeDialog ?
+      this.buildModeGear(rowId, prop, editor) :
+      null;
+
+    const controls = this.design ? this.buildRowControls(rowId) : null;
 
     row.append(
       ui.divV([propertyCell, columnCell].filter(Boolean)),
       weightCell,
-      lineEditor.root,
+      ui.divH([editor.root, modeGear].filter(Boolean)),
     );
 
     if (controls)
@@ -81,130 +141,197 @@ export class MpoProfileEditor {
     return row;
   }
 
-  private buildPropertyCell(propertyName: string): HTMLElement | null {
+  private buildPropertyCell(rowId: string, name: string): HTMLElement | null {
     if (!this.design)
-      return ui.divText(propertyName, 'statistics-mpo-property-name');
+      return ui.divText(name, 'statistics-mpo-property-name');
 
-    if (this.dataFrame)
-      return null;
+    if (!this.dataFrame) {
+      let currentName = name;
 
-    return ui.input.string('', {
-      value: propertyName,
-      onValueChanged: (v) => {
-        if (v && v !== propertyName)
-          this.renameProperty(propertyName, v);
-      },
-    }).root;
+      return ui.input.string('', {
+        value: name,
+        onValueChanged: (v) => {
+          if (!v || v === currentName)
+            return;
+          this.renameProperty(currentName, v);
+          currentName = v;
+        },
+      }).root;
+    }
+
+    return null;
   }
 
-  private buildWeightAndRangeCell(
-    propertyName: string,
+  private buildWeightCell(
+    rowId: string,
     prop: PropertyDesirability,
-    lineEditor: MpoDesirabilityLineEditor,
   ): HTMLElement {
+    const name = this.getPropertyNameByRowId(rowId)!;
     const weightInput = ui.input.float('', {
       value: prop.weight,
       min: 0,
       max: 1,
-      onValueChanged: (v) => {
-        this.updateProperty(propertyName, (p) => {
-          p.weight = Math.max(0, Math.min(1, v ?? 0));
-        });
-      },
+      format: '#0.000',
+      onValueChanged: (v) =>
+        this.mutateProperty(name, (p) =>
+          p.weight = Math.max(0, Math.min(1, v ?? 0))),
     });
 
     weightInput.root.classList.add(
       'statistics-mpo-weight-input',
-      this.design ? 'statistics-mpo-weight-design' : 'statistics-mpo-weight-view',
+      this.design ?
+        'statistics-mpo-weight-design' :
+        'statistics-mpo-weight-view',
     );
-
-
-    if (!this.design)
-      return weightInput.root;
-
-    const minInput = ui.input.float('', {
-      value: prop.min ?? lineEditor.getMinX(),
-      showSlider: true,
-      onValueChanged: (v) => {
-        this.updateProperty(propertyName, (p) => {
-          p.min = v ?? 0;
-          lineEditor.redrawAll();
-        });
-      },
-    }).root;
-
-    const maxInput = ui.input.float('', {
-      value: prop.max ?? lineEditor.getMaxX(),
-      showSlider: true,
-      onValueChanged: (v) => {
-        this.updateProperty(propertyName, (p) => {
-          p.max = v ?? 1;
-          lineEditor.redrawAll();
-        });
-      },
-    }).root;
-
-    minInput.classList.add('statistics-mpo-range-input');
-    maxInput.classList.add('statistics-mpo-range-input');
-
-    return ui.divH(
-      [weightInput.root, ui.divH([minInput, maxInput])],
-    );
+    return weightInput.root;
   }
 
   private buildColumnSelector(
-    propertyName: string,
-    lineEditor: MpoDesirabilityLineEditor,
+    rowId: string,
+    editor: DesirabilityEditor,
   ): HTMLElement | null {
     if (!this.dataFrame)
       return null;
 
-    const columnNames = this.dataFrame.columns.names();
-    const matched = columnNames.find(
-      (c) => c.toLowerCase() === propertyName.toLowerCase(),
-    ) ?? null;
+    const name = this.getPropertyNameByRowId(rowId)!;
+    const columns = this.dataFrame.columns.names();
+    const matched =
+      columns.find((c) => c.toLowerCase() === name.toLowerCase()) ?? null;
 
-    const drawFromColumn = (name: string | null) => {
-      if (!name)
-        return;
-
-      const values = this.dataFrame!.col(name)?.toList();
-      lineEditor.drawBars(values);
+    const draw = (colName: string | null) => {
+      const col = colName ? this.dataFrame!.col(colName) : null;
+      editor.setColumn?.(col);
     };
 
-    drawFromColumn(matched);
+    draw(matched);
 
     const input = ui.input.choice('', {
-      items: columnNames,
+      items: columns,
       nullable: true,
       value: matched ?? '',
       onValueChanged: (v) => {
-        this.columnMapping[propertyName] = v ?? null;
-        drawFromColumn(v ?? null);
+        this.columnMapping[name] = v ?? null;
+        draw(v ?? null);
       },
     });
-
-    input.root.style.width = '100px';
     return input.root;
   }
 
-  private buildRowControls(row: HTMLElement, propertyName: string): HTMLElement {
-    const add = ui.icons.add(() => this.insertRowAfter(row));
-    const del = ui.icons.delete(() => this.deleteProperty(propertyName));
+  private buildModeGear(
+    rowId: string,
+    prop: PropertyDesirability,
+    editor: DesirabilityEditor,
+  ): HTMLElement {
+    const name = this.getPropertyNameByRowId(rowId)!;
+    const gear = ui.icons.settings(() =>
+      this.openModeDialog(name, prop, editor));
+
+    gear.classList.add('statistics-mpo-gear');
+    return gear;
+  }
+
+  private buildRowControls(rowId: string): HTMLElement {
+    const add = ui.icons.add(() => this.insertRowAfterRow(rowId));
+    const del = ui.icons.delete(() => this.deleteRow(rowId));
     return ui.divH([add, del], 'statistics-mpo-control-buttons');
   }
 
-  private buildHeader(): HTMLElement {
-    return ui.divH([
-      ui.divText('Property', 'statistics-mpo-header-property'),
-      ui.divText('Weight', 'statistics-mpo-header-weight'),
-      this.design ? ui.divText('Min', 'statistics-mpo-header-weight') : null,
-      this.design ? ui.divText('Max', 'statistics-mpo-header-weight') : null,
-      ui.divText('Desirability', 'statistics-mpo-header-desirability'),
-    ].filter(Boolean), 'statistics-mpo-header');
+  private openModeDialog(
+    name: string,
+    prop: PropertyDesirability,
+    editor: DesirabilityEditor,
+  ): void {
+    if (!isNumerical(prop))
+      return;
+
+    new DesirabilityModeDialog(
+      name,
+      prop,
+      (patch) => {
+        this.mutateProperty(name, (p) => Object.assign(p, patch));
+        editor.redrawAll();
+      },
+    ).show();
   }
 
-  private updateProperty(
+  private getPropertyNameByRowId(rowId: string): string | undefined {
+    return Object.entries(this.rowIds)
+      .find(([, id]) => id === rowId)?.[0];
+  }
+
+  private renameProperty(oldName: string, newName: string): void {
+    if (!this.profile || this.profile.properties[newName])
+      return;
+
+    const rowId = this.rowIds[oldName];
+    this.profile.properties[newName] = this.profile.properties[oldName];
+    delete this.profile.properties[oldName];
+
+    this.columnMapping[newName] = this.columnMapping[oldName] ?? null;
+    delete this.columnMapping[oldName];
+
+    const idx = this.propertyOrder.indexOf(oldName);
+    if (idx >= 0)
+      this.propertyOrder[idx] = newName;
+
+    delete this.rowIds[oldName];
+    this.rowIds[newName] = rowId;
+
+    this.emitChange();
+  }
+
+  private deleteRow(rowId: string): void {
+    const name = this.getPropertyNameByRowId(rowId);
+    if (!name || !this.profile)
+      return;
+
+    delete this.profile.properties[name];
+    delete this.columnMapping[name];
+    delete this.rowIds[name];
+
+    const idx = this.propertyOrder.indexOf(name);
+    if (idx >= 0)
+      this.propertyOrder.splice(idx, 1);
+
+    this.rows[rowId]?.remove();
+    delete this.rows[rowId];
+
+    this.emitChange();
+  }
+
+  private insertRowAfterRow(rowId: string): void {
+    if (!this.profile)
+      return;
+
+    const afterName = this.getPropertyNameByRowId(rowId);
+    if (!afterName)
+      return;
+
+    const newName = `NewProperty${Object.keys(this.profile.properties).length + 1}`;
+    const newRowId = this.newRowId();
+
+    this.profile.properties[newName] = {
+      functionType: 'numerical',
+      weight: 1,
+      mode: 'freeform',
+      min: 0,
+      max: 1,
+      line: [],
+    };
+
+    this.rowIds[newName] = newRowId;
+
+    const idx = this.propertyOrder.indexOf(afterName);
+    this.propertyOrder.splice(idx + 1, 0, newName);
+
+    const newRow = this.buildRow(newName, newRowId, this.profile.properties[newName]);
+    this.rows[newRowId] = newRow;
+
+    this.rows[rowId]?.after(newRow);
+    this.emitChange();
+  }
+
+  private mutateProperty(
     name: string,
     updater: (p: PropertyDesirability) => void,
   ): void {
@@ -213,46 +340,10 @@ export class MpoProfileEditor {
       return;
 
     updater(prop);
-    this.notifyChanged();
+    this.emitChange();
   }
 
-  private renameProperty(oldName: string, newName: string): void {
-    if (!this.profile || this.profile.properties[newName])
-      return;
-
-    this.profile.properties[newName] = this.profile.properties[oldName];
-    delete this.profile.properties[oldName];
-
-    this.columnMapping[newName] = this.columnMapping[oldName] ?? null;
-    delete this.columnMapping[oldName];
-
-    this.setProfile(this.profile);
-    this.notifyChanged();
-  }
-
-  private deleteProperty(name: string): void {
-    if (!this.profile)
-      return;
-
-    delete this.profile.properties[name];
-    delete this.columnMapping[name];
-
-    this.setProfile(this.profile);
-    this.notifyChanged();
-  }
-
-  private insertRowAfter(_: HTMLElement): void {
-    if (!this.profile)
-      return;
-
-    const name = `NewProperty${Object.keys(this.profile.properties).length + 1}`;
-    this.profile.properties[name] = {weight: 1, min: 0, max: 1, line: []};
-
-    this.setProfile(this.profile);
-    this.notifyChanged();
-  }
-
-  private notifyChanged(): void {
+  private emitChange(): void {
     this.onChanged.next();
     grok.events.fireCustomEvent(MPO_SCORE_CHANGED_EVENT, {});
   }

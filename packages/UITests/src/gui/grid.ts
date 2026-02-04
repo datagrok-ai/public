@@ -1,7 +1,7 @@
 import * as grok from 'datagrok-api/grok';
 // import * as DG from 'datagrok-api/dg';
 
-import { category, delay, test, awaitCheck, before } from '@datagrok-libraries/utils/src/test';
+import { category, delay, test, awaitCheck, before } from '@datagrok-libraries/test/src/test';
 import {getHTMLElementbyInnerText, showToolbox} from './gui-utils';
 import { checkDialog } from './gui-utils';
 

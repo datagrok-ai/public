@@ -9,7 +9,7 @@ import {INglViewer} from '@datagrok-libraries/bio/src/viewers/ngl-gl-viewer';
 import {_package} from '../package';
 import {awaitGrid} from '../tests/utils';
 import {NglViewer} from '../viewers/ngl-viewer';
-import {delay} from '@datagrok-libraries/utils/src/test';
+import {delay} from '@datagrok-libraries/test/src/test';
 
 const ligandsDataFn: string = 'samples/1bdq-obs-pred.sdf';
 const structureDataFn: string = 'samples/1bdq-wo-ligands.pdb';

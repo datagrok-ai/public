@@ -54,59 +54,76 @@ export namespace historyUtils {
   }
 
   /**
+   * Shallow loads a FuncCall with a specified ID.
+   * @param callToSave FuncCall to save
+   */
+  export async function shallowLoadRun(funcCallId: string) {
+    const pulledRun = await grok.dapi.functions.calls.allPackageVersions()
+      .include('session.user,func.package, inputs, outputs').find(funcCallId);
+    return pulledRun;
+  }
+
+  /**
    * Loads a FuncCall with a specified ID. By default, also loads its' inputs/outputs and author.
    * FuncCall is loaded with internal TableInfo structs instead of DG.Dataframe-s.
-   * Thus, we should load them separately, and it is time-consuming. If you don't need actual values of DF-s,
-   * you can skip DF loading using {@link skipDfLoad} param.
-   * @param funcCallId FuncCall ID to load
-   * @param skipDfLoad If true, skips replacing TableInfo with the actual dataframe
+   * Thus, we should load them separately, and it is time-consuming.
    * @returns Requested FuncCall
    */
-  export async function loadRun(funcCallId: string, skipDfLoad = false, skipFileLoad = true) {
+  export async function loadRun(funcCallId: string) {
     const pulledRun = await grok.dapi.functions.calls.allPackageVersions()
       .include('session.user,func.package, inputs, outputs').find(funcCallId);
 
-    if (!skipFileLoad) {
-      const fileInputs = wu(pulledRun.inputParams.values() as DG.FuncCallParam[])
-        .filter((input) => input.property.propertyType === DG.TYPE.FILE &&
-          !!pulledRun.inputs[input.name]);
+    const fileInputs = wu(pulledRun.inputParams.values() as DG.FuncCallParam[])
+      .filter((input) => input.property.propertyType === DG.TYPE.FILE &&
+        !!pulledRun.inputs[input.name]);
 
-      await Promise.all(fileInputs
-        .map(async (input) => {
-          const {id, name} = JSON.parse(pulledRun.inputs[input.name]);
-          const bytes = await grok.dapi.files.readAsBytes(id);
-          const fileInfo = DG.FileInfo.fromBytes(name, bytes);
-          fileInfo.id = id;
-          pulledRun.inputs[input.name] = fileInfo;
+    await Promise.all(fileInputs
+      .map(async (input) => {
+        const { id, name } = JSON.parse(pulledRun.inputs[input.name]);
+        const bytes = await grok.dapi.files.readAsBytes(id);
+        const fileInfo = DG.FileInfo.fromBytes(name, bytes);
+        fileInfo.id = id;
+        pulledRun.inputs[input.name] = fileInfo;
 
-          return Promise.resolve();
-        }),
+        return Promise.resolve();
+      }),
+    );
+
+    const dfOutputs = wu(pulledRun.outputParams.values() as DG.FuncCallParam[])
+      .filter((output) =>
+        output.property.propertyType === DG.TYPE.DATA_FRAME &&
+        !!pulledRun.outputs[output.name],
       );
-    }
+    await Promise.all(dfOutputs.map(async (output) => {
+      pulledRun.outputs[output.name] = await grok.dapi.tables.getTable(pulledRun.outputs[output.name]);
+      return Promise.resolve();
+    }));
 
-    if (!skipDfLoad) {
-      const dfOutputs = wu(pulledRun.outputParams.values() as DG.FuncCallParam[])
-        .filter((output) =>
-          output.property.propertyType === DG.TYPE.DATA_FRAME &&
-          !!pulledRun.outputs[output.name],
-        );
-      await Promise.all(dfOutputs.map(async (output) => {
-        pulledRun.outputs[output.name] = await grok.dapi.tables.getTable(pulledRun.outputs[output.name]);
-        return Promise.resolve();
-      }));
+    const dfInputs = wu(pulledRun.inputParams.values() as DG.FuncCallParam[])
+      .filter((input) =>
+        input.property.propertyType === DG.TYPE.DATA_FRAME &&
+        !!pulledRun.inputs[input.name],
+      );
+    await Promise.all(dfInputs.map(async (input) => {
+      pulledRun.inputs[input.name] = await grok.dapi.tables.getTable(pulledRun.inputs[input.name]);
+      return Promise.resolve();
+    }));
 
-      const dfInputs = wu(pulledRun.inputParams.values() as DG.FuncCallParam[])
-        .filter((input) =>
-          input.property.propertyType === DG.TYPE.DATA_FRAME &&
-          !!pulledRun.inputs[input.name],
-        );
-      await Promise.all(dfInputs.map(async (input) => {
-        pulledRun.inputs[input.name] = await grok.dapi.tables.getTable(pulledRun.inputs[input.name]);
-        return Promise.resolve();
-      }));
-    }
 
     return pulledRun;
+  }
+
+  /**
+   * Shallow saving already existing FuncCall with the same id. Should
+   * be used only for updating run meta.
+   * @param callToSave FuncCall to save
+   */
+  export async function updateRunMeta(call: DG.FuncCall) {
+    const fc = await grok.dapi.functions.calls.allPackageVersions().save(call);
+    grok.log.audit('@user edited metadata of @model model run', {
+      'user': DG.User.current(),
+      'model': fc.func,
+    });
   }
 
   /**
@@ -115,7 +132,7 @@ export namespace historyUtils {
    * @param callToSave FuncCall to save
    * @returns Saved FuncCall
    */
-  export async function saveRun(callToSave: DG.FuncCall, skipFileSave = true) {
+  export async function saveRun(callToSave: DG.FuncCall) {
     let allGroup = groupsCache.get('All users');
 
     if (!allGroup) {
@@ -126,28 +143,28 @@ export namespace historyUtils {
     const callCopy = deepCopy(callToSave);
     if (isIncomplete(callCopy)) callCopy.options['createdOn'] = dayjs().utc(true).unix();
 
-    if (!skipFileSave) {
-      const fileInputs = wu(callCopy.inputParams.values() as DG.FuncCallParam[])
-        .filter((input) => input.property.propertyType === DG.TYPE.FILE &&
+    const fileInputs = wu(callCopy.inputParams.values() as DG.FuncCallParam[])
+      .filter((input) => input.property.propertyType === DG.TYPE.FILE &&
         !!callCopy.inputs[input.name]);
 
-      await Promise.all(fileInputs
-        .map(async (input) => {
-          const fileInfo = callCopy.inputs[input.name] as DG.FileInfo;
-          const filledFileInfo = DG.FileInfo.fromBytes(fileInfo.name, await fileInfo.readAsBytes());
-          await grok.dapi.files.write(filledFileInfo);
-          callCopy.inputs[input.name] = {id: filledFileInfo.id, name: filledFileInfo.name};
+    await Promise.all(fileInputs
+      .map(async (input) => {
+        const fileInfo = callCopy.inputs[input.name] as DG.FileInfo;
+        const filledFileInfo = DG.FileInfo.fromBytes(fileInfo.name, await fileInfo.readAsBytes());
+        await grok.dapi.files.write(filledFileInfo);
+        await grok.dapi.permissions.grant(filledFileInfo, allGroup, false);
+        callCopy.inputs[input.name] = { id: filledFileInfo.id, name: filledFileInfo.name };
 
-          return Promise.resolve();
-        }),
-      );
-    }
+        return Promise.resolve();
+      }),
+    );
 
     const dfOutputs = wu(callCopy.outputParams.values() as DG.FuncCallParam[])
       .filter((output) =>
         output.property.propertyType === DG.TYPE.DATA_FRAME &&
         !!callCopy.outputs[output.name],
       );
+
     await Promise.all(dfOutputs
       .map(async (output) => {
         await grok.dapi.tables.uploadDataFrame(callCopy.outputs[output.name]);
@@ -159,6 +176,7 @@ export namespace historyUtils {
         input.property.propertyType === DG.TYPE.DATA_FRAME &&
         !!callCopy.inputs[input.name],
       );
+
     await Promise.all(dfInputs
       .map(async (input) => {
         await grok.dapi.tables.uploadDataFrame(callCopy.inputs[input.name]);

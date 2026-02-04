@@ -117,8 +117,8 @@ width="800px"/>
 
 :::note developers
 
-You can [add formula lines programmatically](https://datagrok.ai/help/develop/how-to/show-formula-lines).
-
+You can [add formula lines programmatically](../../develop/how-to/viewers/show-formula-lines.md)
+ 
 :::
 
 ## Tooltip
@@ -239,6 +239,10 @@ Youtube")](https://www.youtube.com/watch?v=7MBXWzdC0-I&t=214s)
 | Y Whisker Min Column Name | string | Point lower bound for y axis whiskers. Selecting it disables *Y Whisker Range*. |
 | Y Whisker Max Column Name | string | Point upper bound for y axis whiskers. Selecting it disables *Y Whisker Range*. |
 | Y Whisker Range Column Name | string | Point range for y axis whiskers. Applied only if *Y Whisker Min* and *Y Whisker Max* are not set. |
+| **Axes** | | |
+| Show X Histogram | boolean | Shows a distribution histogram along the X axis (at the top) |
+| Show Y Histogram | boolean | Shows a distribution histogram along the Y axis (on the right) |
+| Histogram Bins | number | Number of bins for axis histograms |
 | **Color** | | |
 | Color Column Name | string | A column to be used for color-coding. Could be numerical or categorical. If not set, *Filtered Rows Color* is used for markers that pass the filter. Color palettes could defined either for columns in the column context panel, or via *Linear Color Scheme* and *Categorical Color Scheme* properties. |
 | Color Map | string | Categorical coloring time unit map function (applicable to dates only). |

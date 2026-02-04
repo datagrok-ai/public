@@ -27,7 +27,8 @@
     "react-science": "6.0.0",
     "vite-plugin-pwa": "^0.20.1",
     "openchemlib": "^8.15.0",
-    "openchemlib-utils": "^6.4.1"
+    "openchemlib-utils": "^6.4.1",
+    "@datagrok-libraries/test": "^1.1.0"
   },
   "devDependencies": {
     "@babel/plugin-transform-modules-commonjs": "^7.24.8",
@@ -41,16 +42,16 @@
     "@types/react-router-dom": "^5.3.3",
     "cross-env": "^7.0.3",
     "css-loader": "^6.7.3",
-    "datagrok-tools": "^4.14.55",
+    "datagrok-tools": "^5.0.0",
     "eslint": "^8.57.0",
     "eslint-config-cheminfo-react": "^13.0.0",
     "eslint-config-cheminfo-typescript": "^15.0.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-router-dom": "^6.26.0",
-    "style-loader": "latest",
-    "ts-loader": "latest",
-    "typescript": "latest",
+    "style-loader": "^4.0.0",
+    "ts-loader": "^9.5.4",
+    "typescript": "^5.9.3",
     "webpack": "^5.95.0",
     "webpack-cli": "^5.1.4"
   },
@@ -79,5 +80,8 @@
     "type": "git",
     "url": "https://github.com/datagrok-ai/public.git",
     "directory": "packages/nmrium"
+  },
+  "overrides": {
+    "datagrok-api": "$datagrok-api"
   }
 }

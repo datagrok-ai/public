@@ -48,7 +48,7 @@ import {funcs} from '../package-api';
 import dayjs, {Dayjs} from 'dayjs';
 import {_package} from '../package';
 import {Subject} from 'rxjs';
-import {awaitCheck} from '@datagrok-libraries/utils/src/test';
+import {awaitCheck} from '@datagrok-libraries/test/src/test';
 import {createPathFromArr, getAppHeader, getStatisticsWidget} from '../utils/view-utils';
 import {applyMolTrackLayout, saveMolTrackLayout} from '../utils/layout';
 

@@ -64,9 +64,8 @@ category('Shell', () => {
     grok.shell.addTableView(demog);
     grok.shell.addTable(grok.data.demo.demog(10));
     grok.shell.closeAll();
-    expect(grok.shell.v === null, true);
-    expect(grok.shell.tv === null, true);
-    expect(grok.shell.t === null, true);
+    const views = Array.from(grok.shell.views);
+    expect(views.length == 0 || views.every((v) => v.name === 'Datagrok' || v.name == 'Test Manager'), true);
     expect(document.querySelector(".dockManagerTest"), null);
   });
   

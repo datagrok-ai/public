@@ -7,7 +7,7 @@ export async function getMonomerLibHelper() : Promise<any> {
   return await PackageFunctions.getMonomerLibHelper();
 }
 
-//meta.role: init
+//tags: init
 export async function initBio() : Promise<void> {
   await PackageFunctions.initBio();
 }
@@ -47,42 +47,42 @@ export function getSeqHandler(sequence: DG.Column<any>) : any {
 
 //name: Bioinformatics | Get Region
 //description: Creates a new column with sequences of the region between start and end
+//tags: panel
 //input: column seqCol { semType: Macromolecule }
 //output: widget result
-//meta.role: panel
 export function getRegionPanel(seqCol: DG.Column<any>) : any {
   return PackageFunctions.getRegionPanel(seqCol);
 }
 
 //name: Bioinformatics | Manage Monomer Libraries
+//tags: panel
 //input: column seqColumn { semType: Macromolecule }
 //output: widget result
 //meta.exclude-actions-panel: true
-//meta.role: panel
 export async function libraryPanel(_seqColumn: DG.Column) : Promise<any> {
   return await PackageFunctions.libraryPanel(_seqColumn);
 }
 
+//tags: editor
 //input: funccall call 
-//meta.role: editor
 export function GetRegionEditor(call: DG.FuncCall) : void {
   PackageFunctions.GetRegionEditor(call);
 }
 
+//tags: editor
 //input: funccall call 
-//meta.role: editor
 export function SplitToMonomersEditor(call: DG.FuncCall) : void {
   PackageFunctions.SplitToMonomersEditor(call);
 }
 
+//tags: editor
 //input: funccall call 
-//meta.role: editor
 export function SequenceSpaceEditor(call: DG.FuncCall) : void {
   PackageFunctions.SequenceSpaceEditor(call);
 }
 
+//tags: editor
 //input: funccall call 
-//meta.role: editor
 export function SeqActivityCliffsEditor(call: DG.FuncCall) : void {
   PackageFunctions.SeqActivityCliffsEditor(call);
 }
@@ -129,17 +129,18 @@ export function refineNotationProviderForBiln(col: DG.Column<any>, stats: any, s
 }
 
 //name: Bioinformatics | Sequence Renderer
+//tags: panel
 //input: column molColumn { semType: Macromolecule }
 //output: widget result
-//meta.role: panel
 export function macroMolColumnPropertyPanel(molColumn: DG.Column) : any {
   return PackageFunctions.macroMolColumnPropertyPanel(molColumn);
 }
 
 //name: Composition analysis
+//tags: panel
 //input: semantic_value sequence { semType: Macromolecule }
 //output: widget result
-//meta.role: widgets,panel
+//meta.role: widgets
 //meta.domain: bio
 export function compositionAnalysisWidget(sequence: DG.SemanticValue) : any {
   return PackageFunctions.compositionAnalysisWidget(sequence);
@@ -166,18 +167,20 @@ export function sequenceAlignment(alignType: string, alignTable: string, gap: nu
 
 //name: WebLogo
 //description: WebLogo
+//tags: panel
 //output: viewer result
 //meta.icon: files/icons/weblogo-viewer.svg
-//meta.role: viewer,panel
+//meta.role: viewer
 export function webLogoViewer() {
   return PackageFunctions.webLogoViewer();
 }
 
 //name: VdRegions
 //description: V-Domain regions viewer
+//tags: panel
 //output: viewer result
 //meta.icon: files/icons/vdregions-viewer.svg
-//meta.role: viewer,panel
+//meta.role: viewer
 export function vdRegionsViewer() {
   return PackageFunctions.vdRegionsViewer();
 }
@@ -188,7 +191,7 @@ export function vdRegionsViewer() {
 //input: string end { optional: true }
 //input: string name { optional: true; description: Name of the column to be created }
 //output: column result
-export function getRegion(sequence: DG.Column<any>, start?: string, end?: string, name?: string) : any {
+export function getRegion(sequence: DG.Column<any>, start: any, end: any, name: any) : any {
   return PackageFunctions.getRegion(sequence, start, end, name);
 }
 
@@ -201,7 +204,7 @@ export function getRegion(sequence: DG.Column<any>, start?: string, end?: string
 //input: string name { optional: true; description: Region column name }
 //top-menu: Bio | Calculate | Get Region...
 //editor: Bio:GetRegionEditor
-export async function getRegionTopMenu(table: DG.DataFrame, sequence: DG.Column, start?: string, end?: string, name?: string) : Promise<void> {
+export async function getRegionTopMenu(table: DG.DataFrame, sequence: DG.Column, start: any, end: any, name: any) : Promise<void> {
   await PackageFunctions.getRegionTopMenu(table, sequence, start, end, name);
 }
 
@@ -302,9 +305,10 @@ export async function toAtomicLevelAction(seqCol: DG.Column) : Promise<void> {
 }
 
 //name: Molecular Structure
+//tags: panel
 //input: semantic_value sequence { semType: Macromolecule }
 //output: widget result
-//meta.role: widgets,panel
+//meta.role: widgets
 //meta.domain: bio
 export async function toAtomicLevelPanel(sequence: DG.SemanticValue) : Promise<any> {
   return await PackageFunctions.toAtomicLevelPanel(sequence);
@@ -319,9 +323,10 @@ export async function toAtomicLevelSingleSeq(sequence: string) : Promise<string>
 }
 
 //name: Molecular 3D Structure
+//tags: panel
 //input: semantic_value sequence { semType: Macromolecule }
 //output: widget result
-//meta.role: widgets,panel
+//meta.role: widgets
 //meta.domain: bio
 export async function sequence3dStructureWidget(sequence: DG.SemanticValue) : Promise<any> {
   return await PackageFunctions.sequence3dStructureWidget(sequence);
@@ -329,8 +334,8 @@ export async function sequence3dStructureWidget(sequence: DG.SemanticValue) : Pr
 
 //name: MSA
 //description: Performs multiple sequence alignment
+//tags: panel
 //meta.domain: bio
-//meta.role: panel
 //top-menu: Bio | Analyze | MSA...
 export function multipleSequenceAlignmentDialog() : void {
   PackageFunctions.multipleSequenceAlignmentDialog();
@@ -357,18 +362,18 @@ export async function compositionAnalysis() {
 }
 
 //description: Opens FASTA file
+//tags: file-handler
 //input: string fileContent 
 //output: list<dataframe> result
-//meta.role: fileHandler
 //meta.ext: fasta, fna, ffn, faa, frn, fa, fst
 export function importFasta(fileContent: string) : any {
   return PackageFunctions.importFasta(fileContent);
 }
 
 //description: Opens Bam file
+//tags: file-handler
 //input: string fileContent 
 //output: list<dataframe> result
-//meta.role: fileHandler
 //meta.ext: bam, bai
 export function importBam(fileContent: string) : any {
   return PackageFunctions.importBam(fileContent);
@@ -450,8 +455,8 @@ export function diversitySearchTopMenu() {
 }
 
 //name: SearchSubsequenceEditor
+//tags: editor
 //input: funccall call 
-//meta.role: editor
 export function searchSubsequenceEditor(call: DG.FuncCall) : void {
   PackageFunctions.searchSubsequenceEditor(call);
 }
@@ -505,8 +510,8 @@ export async function manageMonomersView() : Promise<void> {
 }
 
 //name: Manage Monomer Libraries
+//tags: app
 //output: view result
-//meta.role: app
 //meta.browsePath: Peptides
 //meta.icon: files/icons/monomers.png
 export async function manageMonomerLibrariesView() : Promise<any> {
@@ -521,7 +526,7 @@ export async function manageMonomerLibrariesViewTreeBrowser(treeNode: any) : Pro
 }
 
 //description: As FASTA...
-//meta.role: fileExporter
+//tags: fileExporter
 export function saveAsFasta() : void {
   PackageFunctions.saveAsFasta();
 }

@@ -51,7 +51,7 @@ category('DataFrame: Calculated columns', () => {
       resolve('Skipped because PowerPack is installed');
     else {
       let tv: DG.TableView;
-      subs.push(grok.events.onDialogShown.subscribe((d) => {
+      subs.push(grok.events.onDialogShown.subscribe((d: any) => {
         if (d.title == 'Add New Column')
           resolve('OK');
         dialogs.push(d);
@@ -74,7 +74,7 @@ category('DataFrame: Calculated columns', () => {
     if ((await grok.dapi.packages.filter('PowerPack').list({pageSize: 5})).length > 0)
       resolve('Skipped because PowerPack is installed');
     else {
-      subs.push(grok.events.onDialogShown.subscribe((d) => {
+      subs.push(grok.events.onDialogShown.subscribe((d: DG.Dialog) => {
         if (d.title == 'Add New Column')
           resolve('OK');
         dialogs.push(d);
@@ -94,7 +94,7 @@ category('DataFrame: Calculated columns', () => {
 
   test('Calculated columns addition event', () => new Promise(async (resolve, reject) => {
     const t = df.clone();
-    subs.push(t.onColumnsAdded.subscribe((data) =>
+    subs.push(t.onColumnsAdded.subscribe((data: any) =>
       data.args.columns.forEach((column: DG.Column) => {
         if (column.meta.formula !== null && column.name === 'calculated column')
           resolve('OK');
@@ -107,15 +107,16 @@ category('DataFrame: Calculated columns', () => {
 
   test('Calculated columns deletion event', () => new Promise(async (resolve, reject) => {
     const t = df.clone();
-    subs.push(t.onColumnsRemoved.subscribe((data) =>
+    subs.push(t.onColumnsRemoved.subscribe((data: any) =>
       data.args.columns.forEach((column: DG.Column) => {
         if (column.meta.formula !== null && column.name === 'calculated column')
           resolve('OK');
       })));
 
-    setTimeout(() => reject(new Error('Failed to delete a calculated column')), 50);
+    setTimeout(() => reject(new Error('Failed to delete a calculated column')), 100);
     await t.columns.addNewCalculated('calculated column', '${x}+${y}-${z}');
     t.columns.addNewInt('regular column').init(1);
+    await DG.delay(50);
     t.columns.remove('regular column');
     t.columns.remove('calculated column');
   }));

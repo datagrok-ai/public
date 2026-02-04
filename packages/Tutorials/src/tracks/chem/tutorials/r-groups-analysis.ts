@@ -6,7 +6,7 @@ import {Tutorial, TutorialPrerequisites} from '@datagrok-libraries/tutorials/src
 import {Observable, combineLatest, interval} from 'rxjs';
 import $, {Cash} from 'cash-dom';
 import { _package } from '../../../package';
-import { delay } from '@datagrok-libraries/utils/src/test';
+import { delay } from '@datagrok-libraries/test/src/test';
 
 
 export class RGroupsAnalysisTutorial extends Tutorial {

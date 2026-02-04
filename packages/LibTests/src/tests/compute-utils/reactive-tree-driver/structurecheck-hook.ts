@@ -1,5 +1,5 @@
 import * as DG from 'datagrok-api/dg';
-import {category, test, before} from '@datagrok-libraries/utils/src/test';
+import {category, test, before} from '@datagrok-libraries/test/src/test';
 import {TestScheduler} from 'rxjs/testing';
 import {expectDeepEqual} from '@datagrok-libraries/utils/src/expect';
 import {PipelineConfiguration} from '@datagrok-libraries/compute-utils';

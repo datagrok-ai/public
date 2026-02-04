@@ -2,16 +2,19 @@ import {PackageFunctions} from './package';
 import * as DG from 'datagrok-api/dg';
 
 //input: dynamic treeNode 
+//meta.app: Hit Triage
 export async function hitTriageAppTreeBrowser(treeNode: any) : Promise<void> {
   await PackageFunctions.hitTriageAppTreeBrowser(treeNode);
 }
 
 //input: dynamic treeNode 
+//meta.app: Hit Design
 export async function hitDesignAppTreeBrowser(treeNode: any) : Promise<void> {
   await PackageFunctions.hitDesignAppTreeBrowser(treeNode);
 }
 
 //input: dynamic treeNode 
+//meta.app: PeptiHit
 export async function peptiHitAppTreeBrowser(treeNode: any) : Promise<void> {
   await PackageFunctions.peptiHitAppTreeBrowser(treeNode);
 }
@@ -78,9 +81,9 @@ export async function registerMoleculesToViD() : Promise<void> {
 }
 
 //name: Hit Design V-iD
-//tags: panel
-//input: semantic_value vid  { semType: HIT_DESIGN_VID }
+//input: semantic_value vid { semType: HIT_DESIGN_VID }
 //output: widget result
+//meta.role: panel
 export function hitDesignVidPanel(vid: DG.SemanticValue) : any {
   return PackageFunctions.hitDesignVidPanel(vid);
 }

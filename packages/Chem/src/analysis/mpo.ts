@@ -5,7 +5,7 @@ import * as DG from 'datagrok-api/dg';
 import {
   DesirabilityProfile,
   WeightedAggregation,
-  WEIGHTED_AGGREGATIONS,
+  WEIGHTED_AGGREGATIONS_LIST,
 } from '@datagrok-libraries/statistics/src/mpo/mpo';
 import {MPO_SCORE_CHANGED_EVENT, MpoProfileEditor} from '@datagrok-libraries/statistics/src/mpo/mpo-profile-editor';
 
@@ -33,7 +33,7 @@ export class MpoProfileDialog {
     this.mpoProfileEditor = new MpoProfileEditor(this.dataFrame);
 
     this.aggregationInput = ui.input.choice('Aggregation', {
-      items: [...WEIGHTED_AGGREGATIONS],
+      items: WEIGHTED_AGGREGATIONS_LIST,
       nullable: false,
       onValueChanged: () => grok.events.fireCustomEvent(MPO_SCORE_CHANGED_EVENT, {}),
     });
@@ -43,7 +43,7 @@ export class MpoProfileDialog {
       onValueChanged: async (value) => await this.loadProfile(value),
     });
 
-    this.designModeInput = ui.input.bool('Design mode', {
+    this.designModeInput = ui.input.toggle('Design mode', {
       value: false,
       onValueChanged: (v) => this.mpoProfileEditor.setDesignMode(!!v),
     });
@@ -152,8 +152,8 @@ export class MpoProfileDialog {
   private getMpoControls(): HTMLElement {
     return ui.divV([
       this.aggregationInput.root,
-      this.mpoProfileEditor.root,
       this.designModeInput.root,
+      this.mpoProfileEditor.root,
       this.addParetoFront.root,
     ]);
   }
@@ -173,7 +173,9 @@ export class MpoProfileDialog {
       .onOK(async () => {
         await this.saveProfile();
         await this.runMpoCalculation();
+        this.mpoContextPanel?.detach();
       })
+      .onCancel(() => this.mpoContextPanel?.detach())
       .show();
   }
 }

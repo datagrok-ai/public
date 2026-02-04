@@ -15,17 +15,17 @@ export function _welcomeView() : any {
 }
 
 //name: Activity dashboard
-//tags: dashboard
 //output: widget result
 //meta.showName: false
+//meta.role: dashboard
 //meta.order: -1
 export function activityDashboardWidget() : any {
   return PackageFunctions.activityDashboardWidget();
 }
 
 //name: Community
-//tags: dashboard
 //output: widget result
+//meta.role: dashboard
 //meta.order: 6
 export function communityWidget() : any {
   return PackageFunctions.communityWidget();
@@ -53,9 +53,9 @@ export function isFormulaColumn(col: DG.Column) : boolean {
 }
 
 //name: Formula
-//tags: panel
 //input: column col 
 //output: widget result
+//meta.role: panel
 //condition: PowerPack:isFormulaColumn(col)
 export function formulaWidget(col: DG.Column) : any {
   return PackageFunctions.formulaWidget(col);
@@ -83,13 +83,13 @@ export function formulaLinesDialog(src: any, currentIndexToSet?: number, isDataF
   PackageFunctions.formulaLinesDialog(src, currentIndexToSet, isDataFrameValue, isAnnotationArea);
 }
 
-//tags: init
+//meta.role: init
 export async function powerPackInit() : Promise<void> {
   await PackageFunctions.powerPackInit();
 }
 
 //description: Windows Manager
-//tags: autostart
+//meta.role: autostart
 export function windowsManager() : void {
   PackageFunctions.windowsManager();
 }
@@ -101,24 +101,24 @@ export function viewerDialog(tv: any) : void {
 }
 
 //description: ViewerGallery
-//tags: autostart
+//meta.role: autostart
 export function viewerGallery() : void {
   PackageFunctions.viewerGallery();
 }
 
-//tags: fileViewer
 //input: file file 
 //output: view result
+//meta.role: fileViewer
 //meta.fileViewer: md,mdx
 export async function markdownFileViewer(file: DG.FileInfo) : Promise<any> {
   return await PackageFunctions.markdownFileViewer(file);
 }
 
 //description: Opens Excel file
-//tags: file-handler
 //input: list bytes 
 //input: string sheetName { optional: true }
 //output: list<dataframe> result
+//meta.role: fileHandler
 //meta.ext: xlsx
 export async function xlsxFileHandler(bytes: Uint8Array, sheetName?: string) : Promise<any> {
   return await PackageFunctions.xlsxFileHandler(bytes, sheetName);

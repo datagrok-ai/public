@@ -16,9 +16,6 @@ import {genDBConnectionMeta, moveDBMetaToStickyMetaOhCoolItEvenRhymes} from './l
 import {biologicsIndex} from './llm-utils/indexes/biologics-index';
 import {chemblIndex} from './llm-utils/indexes/chembl-index';
 import {uploadFilesToVectorStroreOneByOne} from './llm-utils/indexes/dg-repository-index';
-import {AIProvider} from './llm-utils/AI-API-providers/types';
-import {OpenAIChatCompletionsProvider} from './llm-utils/AI-API-providers/openai-chat-completions-provider';
-import {OpenAIResponsesProvider} from './llm-utils/AI-API-providers/openai-responses-provider';
 
 export * from './package.g';
 export const _package = new DG.Package();
@@ -36,9 +33,9 @@ export class PackageFunctions {
     // @ts-ignore
     window.openAI = OpenAIClient.getInstance().openai;
 
-    AIProvider.setProvider(_package.settings.APIName === 'openai chat completions' ?
-      new OpenAIChatCompletionsProvider(OpenAIClient.getInstance().openai) : new OpenAIResponsesProvider(OpenAIClient.getInstance().openai)
-    );
+    // AIProvider.setProvider(_package.settings.APIName === 'openai chat completions' ?
+    //   new OpenAIChatCompletionsProvider(OpenAIClient.getInstance().openai) : new OpenAIResponsesProvider(OpenAIClient.getInstance().openai)
+    // );
   }
 
 
@@ -73,7 +70,7 @@ export class PackageFunctions {
     meta: {role: 'searchProvider'},
   })
   static combinedLLMSearchProvider(): DG.SearchProvider {
-    const isAiConfigured = grok.ai.openAiConfigured;
+    const isAiConfigured = grok.ai.config.configured;
     return {
       'home': {
         name: 'Ask AI Assistant',

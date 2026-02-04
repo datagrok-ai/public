@@ -99,21 +99,41 @@ export function remove(element: HTMLElement): void {
   element.remove();
 }
 
+/**
+ * Internal helper to set element inner text and return the element for chaining.
+ * Prefer using standard DOM APIs or ui.div/ui.span with content directly.
+ * @internal
+ */
 export function _innerText(x: HTMLElement, s: string): HTMLElement {
   x.innerText = s;
   return x;
 }
 
+/**
+ * Internal helper to add a CSS class and return the element for chaining.
+ * Prefer using ui.element() with className parameter or standard classList API.
+ * @internal
+ */
 export function _class(x: HTMLElement, s: string): HTMLElement {
   x.classList.add(s);
   return x;
 }
 
+/**
+ * Internal helper to set text color and return the element for chaining.
+ * Prefer using CSS classes for styling.
+ * @internal
+ */
 export function _color(x: HTMLElement, s: string): HTMLElement {
   x.style.color = s;
   return x;
 }
 
+/**
+ * Internal helper to set background color and return the element for chaining.
+ * Prefer using CSS classes for styling.
+ * @internal
+ */
 export function _backColor(x: HTMLElement, s: string): HTMLElement {
   x.style.backgroundColor = s;
   return x;
@@ -839,6 +859,7 @@ export namespace input {
     step?: number;
     showSlider?: boolean;
     showPlusMinus?: boolean;
+    format?: string;
   }
 
   export interface IChoiceInputInitOptions<T> extends IInputInitOptions<T> {

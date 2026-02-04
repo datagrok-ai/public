@@ -7,9 +7,8 @@ import {getAIAbortSubscription} from '../utils';
 import {ModelType, OpenAIClient} from './openAI-client';
 import {LLMCredsManager} from './creds';
 import {ComparisonFilter, CompoundFilter} from 'openai/resources/shared';
-import {OpenAIResponsesProvider} from './AI-API-providers/openai-responses-provider';
-import {OpenAIChatCompletionsProvider} from './AI-API-providers/openai-chat-completions-provider';
-import {AIProvider, FunctionToolSpec} from './AI-API-providers/types';
+import {LanguageModelV3FunctionTool, LanguageModelV3Message} from '@ai-sdk/provider';
+import {findLast} from '../utils';
 
 
 class ClarificationNeededError extends Error {
@@ -95,7 +94,8 @@ export async function generateDatagrokScript(
   try {
     // Initialize OpenAI client
     // const openai = OpenAIClient.getInstance().openai;
-    const provider = AIProvider.getProvider();
+    const langTool = OpenAIClient.getInstance();
+    const client = langTool.aiModels.Coding;
 
     // System message with strict guidelines
     const systemMessage = getSystemPrompt(language, vectorStoreId);
@@ -103,11 +103,11 @@ export async function generateDatagrokScript(
     // Create a running input list we will add to over time (per Responses API docs)
     const input: MessageType[] = options.oldMessages ? [...options.oldMessages] : [];
     if (!input.length) {
-      const systemMsg = provider.createSystemMessage(systemMessage);
+      const systemMsg = langTool.createSystemMessage(systemMessage);
       input.push(systemMsg);
       options.aiPanel?.addEngineMessage(systemMsg);
     }
-    const userMsg = provider.createUserMessage(prompt);
+    const userMsg = langTool.createUserMessage(prompt);
     options.aiPanel?.addEngineMessage(userMsg);
     input.push(userMsg);
     // options.aiPanel?.addEngineMessage(systemMessage);
@@ -127,32 +127,39 @@ export async function generateDatagrokScript(
       iterations++;
       console.log(`\n=== Iteration ${iterations} ===`);
 
-      // Use Responses API instead of Chat Completions
-      const response = await provider.create({
-        model: ModelType.Coding,
-        messages: input,
+      const response = await client.doGenerate({
+        prompt: input,
         tools,
-        ...(ModelType.Coding.startsWith('gpt-5') ? {reasoning: {effort: 'medium'}} : {}),
+        providerOptions: {
+          openai: {
+            ...(ModelType.Coding.startsWith('gpt-5') ? {reasoning: {effort: 'medium'}} : {}),
+          }
+        }
       });
-
-      const outputs = response.outputMessages;
-      input.push(...outputs);
-      outputs.forEach((item) =>
-        options.aiPanel?.addEngineMessage(item));
+      const formattedOutput: LanguageModelV3Message = {
+        role: 'assistant',
+        // @ts-ignore
+        content: response.content
+      };
+      //const outputs: MessageType[] = response.content.map((item) => ({role: 'assistant', content: [item]} as MessageType));
+      input.push(formattedOutput);
+      options.aiPanel?.addEngineMessage(formattedOutput);
+      // outputs.forEach((item) =>
+      //   options.aiPanel?.addEngineMessage(item));
 
       // Execute function calls (if any)
       let hadToolCalls = false;
-      for (const call of response.toolCalls) {
+      for (const call of response.content.filter((c) => c.type === 'tool-call')) {
         hadToolCalls = true;
 
-        const functionName = call.name;
-        const callId = call.id;
-        const rawArgs = call.arguments ?? '{}';
+        const functionName = call.toolName;
+        const callId = call.toolCallId;
+        const rawArgs = call.input ?? '{}';
         const args = parseJsonObject(rawArgs);
 
         if (!functionName || !callId) {
           const errorText = 'Error: malformed function call (missing name/call_id).';
-          const outputItem = provider.createToolOutputMessage(callId ?? '', errorText);
+          const outputItem = langTool.createToolOutputMessage(callId ?? '', functionName ?? '', errorText);
           if (callId) {
             input.push(outputItem);
             options.aiPanel?.addEngineMessage(outputItem);
@@ -168,7 +175,7 @@ export async function generateDatagrokScript(
           result = `Error executing ${functionName}: ${msg}`;
         }
 
-        const outputItem = provider.createToolOutputMessage(callId, result);
+        const outputItem = langTool.createToolOutputMessage(callId, functionName, result);
         input.push(outputItem);
         options.aiPanel?.addEngineMessage(outputItem);
 
@@ -187,8 +194,8 @@ export async function generateDatagrokScript(
         continue;
       }
 
-      const content = response.outputText.trim();
-      if (content.length === 0)
+      const content = findLast(response.content, (c) => c.type === 'text')?.text!;
+      if ((content?.length ?? 0) === 0)
         throw new Error('Model returned no text and no tool calls');
 
       if (content.startsWith('CLARIFICATION NEEDED:')) {
@@ -200,14 +207,14 @@ export async function generateDatagrokScript(
       if (content.startsWith('REPLY ONLY:')) {
         const reply = content.replace('REPLY ONLY:', '').trim();
         options.aiPanel?.addUiMessage(reply, false);
-        throw new NoScriptGeneratedError();
+        return '';
       }
       //   let sanitizedContent = content;
       //   if (content && content)
 
       const validationError = validateScriptHeader(content, language);
       if (validationError) {
-        const fixMsg = provider.createUserMessage(`The generated script has an issue: ${validationError}. Please fix it and provide the corrected script. ALWAYS REMEMBER THAT YOU SHOULD OUTPUT THE CODE ONLY, WITHOUT ANY EXPLANATION, MARKDOWN, OR FORMATTING WITH CORRECT COMMENTS.`);
+        const fixMsg = langTool.createUserMessage(`The generated script has an issue: ${validationError}. Please fix it and provide the corrected script. ALWAYS REMEMBER THAT YOU SHOULD OUTPUT THE CODE ONLY, WITHOUT ANY EXPLANATION, MARKDOWN, OR FORMATTING WITH CORRECT COMMENTS.`);
         input.push(fixMsg);
         options.aiPanel?.addEngineMessage(fixMsg);
         continue;
@@ -420,13 +427,13 @@ Example:
 /**
  * Defines tools available for script generation
  */
-function getTools(language: DG.ScriptingLanguage, vectorStoreId: string | null): FunctionToolSpec[] {
-  const tools: FunctionToolSpec[] = [
+function getTools(language: DG.ScriptingLanguage, vectorStoreId: string | null) {
+  const tools: LanguageModelV3FunctionTool[] = [
     {
       type: 'function',
       name: 'ask_user_for_clarification',
       description: 'Ask the user for clarification when the requirements are vague or missing critical information. Use this when you need to know: required inputs, expected outputs, specific parameters, data types, or any other essential details.',
-      parameters: {
+      inputSchema: {
         type: 'object',
         properties: {
           question: {
@@ -443,7 +450,7 @@ function getTools(language: DG.ScriptingLanguage, vectorStoreId: string | null):
       type: 'function',
       name: 'reply_to_user',
       description: 'Send a message to the user to explain your reasoning, provide updates, or answer questions. Use this for intermediate communication, NOT for the final script.',
-      parameters: {
+      inputSchema: {
         type: 'object',
         properties: {
           message: {
@@ -464,7 +471,7 @@ function getTools(language: DG.ScriptingLanguage, vectorStoreId: string | null):
       type: 'function',
       name: 'search_documentation',
       description: 'Search Datagrok documentation and API references. MANDATORY before using any Datagrok API. Returns detailed information about classes, methods, properties, and usage examples.',
-      parameters: {
+      inputSchema: {
         type: 'object',
         properties: {
           query: {
@@ -489,7 +496,7 @@ function getTools(language: DG.ScriptingLanguage, vectorStoreId: string | null):
     type: 'function',
     name: 'find_similar_script_samples',
     description: 'Find similar scripts code samples from Datagrok codebase. HIGHLY RECOMMENDED before writing any code using DG, grok, or ui APIs. Returns real working examples.',
-    parameters: {
+    inputSchema: {
       type: 'object',
       properties: {
         description: {
@@ -509,7 +516,7 @@ function getTools(language: DG.ScriptingLanguage, vectorStoreId: string | null):
         type: 'function',
         name: 'search_js_api_sources',
         description: 'Search Datagrok JavaScript API source code (js-api) to verify that a method/property exists. Use this before calling any grok/ui/DG members that are not already confirmed by examples. Returns relevant source chunks.',
-        parameters: {
+        inputSchema: {
           type: 'object',
           properties: {
             query: {
@@ -532,7 +539,7 @@ function getTools(language: DG.ScriptingLanguage, vectorStoreId: string | null):
       type: 'function',
       name: 'list_js_members',
       description: 'List enumerable members (Object.keys) of a JavaScript object/namespace to verify methods/properties exist. Use this to avoid hallucinating APIs. Input must be a dotted identifier expression like "grok.chem" or "DG" or "ui".',
-      parameters: {
+      inputSchema: {
         type: 'object',
         properties: {
           expression: {

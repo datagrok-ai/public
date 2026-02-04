@@ -13,10 +13,11 @@
     "cash-dom": "^8.1.5",
     "datagrok-api": "^1.26.0",
     "dayjs": "^1.11.13",
-    "jszip": "3.10.1"
+    "jszip": "3.10.1",
+    "@datagrok-libraries/test": "^1.1.0"
   },
   "devDependencies": {
-    "datagrok-tools": "^4.14.55",
+    "datagrok-tools": "^5.0.0",
     "ts-loader": "^9.5.1",
     "typescript": "5.6.3",
     "webpack": "^5.95.0",
@@ -47,5 +48,8 @@
     "url": "https://github.com/datagrok-ai/public.git",
     "directory": "packages/Reinvent4"
   },
-  "category": "Bioinformatics"
+  "category": "Bioinformatics",
+  "overrides": {
+    "datagrok-api": "$datagrok-api"
+  }
 }

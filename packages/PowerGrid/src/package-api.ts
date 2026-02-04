@@ -24,10 +24,6 @@ export namespace funcs {
     return await grok.functions.call('PowerGrid:MultiChoiceCellRenderer', {});
   }
 
-  export async function tagsCellRenderer(): Promise<any> {
-    return await grok.functions.call('PowerGrid:TagsCellRenderer', {});
-  }
-
   export async function htmlTestCellRenderer(): Promise<any> {
     return await grok.functions.call('PowerGrid:HtmlTestCellRenderer', {});
   }
@@ -54,6 +50,10 @@ export namespace funcs {
 
   export async function smartFormCellRenderer(): Promise<any> {
     return await grok.functions.call('PowerGrid:SmartFormCellRenderer', {});
+  }
+
+  export async function tagsCellRenderer(): Promise<any> {
+    return await grok.functions.call('PowerGrid:TagsCellRenderer', {});
   }
 
   /**

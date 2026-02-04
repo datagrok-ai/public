@@ -24,12 +24,13 @@
     "cash-dom": "^8.1.5",
     "datagrok-api": "^1.25.0",
     "dayjs": "^1.11.13",
-    "rxjs": "^6.5.5"
+    "rxjs": "^6.5.5",
+    "@datagrok-libraries/test": "^1.1.0"
   },
   "devDependencies": {
     "@typescript-eslint/eslint-plugin": "^8.8.1",
     "@typescript-eslint/parser": "^8.8.1",
-    "datagrok-tools": "^4.14.55",
+    "datagrok-tools": "^5.0.0",
     "eslint": "^8.57.1",
     "eslint-config-google": "^0.14.0",
     "ts-loader": "^9.5.1",
@@ -56,5 +57,8 @@
   ],
   "canView": [
     "All users"
-  ]
+  ],
+  "overrides": {
+    "datagrok-api": "$datagrok-api"
+  }
 }

@@ -32,7 +32,7 @@ export namespace funcs {
     return await grok.functions.call('Admetica:AdmeticaMenu', { table, molecules, template, models, addPiechart, addForm });
   }
 
-  export async function getAdmeProperties(molecules: DG.Column , props: any ): Promise<DG.DataFrame> {
+  export async function getAdmeProperties(molecules: DG.Column , props?: any ): Promise<DG.DataFrame> {
     return await grok.functions.call('Admetica:GetAdmeProperties', { molecules, props });
   }
 

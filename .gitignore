@@ -90,3 +90,8 @@ help/deploy/releases/plugins/plugins.json
 tools/.cache/
 
 .history
+
+tmpclaude-*-cwd
+
+test-console-output-?.log
+test-record-?.mp4

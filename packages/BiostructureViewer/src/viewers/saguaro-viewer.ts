@@ -10,7 +10,7 @@ import {RcsbFvBoardConfigInterface} from '@rcsb/rcsb-saguaro/build/RcsbFv/RcsbFv
 
 import {intToHtmlA} from '@datagrok-libraries/utils/src/color';
 import {PromiseSyncer} from '@datagrok-libraries/bio/src/utils/syncer';
-import {testEvent} from '@datagrok-libraries/utils/src/test';
+import {testEvent} from '@datagrok-libraries/test/src/test';
 import {BiotrackProps} from '@datagrok-libraries/bio/src/viewers/biotrack';
 
 import {_package} from '../package';

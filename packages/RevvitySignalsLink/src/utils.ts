@@ -5,7 +5,7 @@ import * as ui from 'datagrok-api/ui';
 import { getRevvityUsers, getUserStringIdById } from './users';
 import { queryEntityById, RevvityApiResponse, RevvityData, RevvityUser, search } from './revvity-api';
 
-import { awaitCheck } from '@datagrok-libraries/utils/src/test';
+import { awaitCheck } from '@datagrok-libraries/test/src/test';
 import { compoundTypeAndViewNameMapping, ENTITY_FIELDS_TO_EXCLUDE, FIELDS_SECTION_NAME, FIELDS_TO_EXCLUDE_FROM_CORPORATE_ID_WIDGET, FIELDS_TO_EXCLUDE_FROM_WIDGET, FIRST_COL_NAMES, LAST_COL_NAMES, MOL_COL_NAME, MOLECULAR_FORMULA_FIELD_NAME, NAME, PARAMS_KEY, QUERY_KEY, STORAGE_NAME, SUBMITTER_FIELD_NAME, TABS_TO_EXCLUDE_FROM_WIDGET, TAGS_TO_EXCLUDE, USER_FIELDS } from './constants';
 import { getRevvityLibraries } from './libraries';
 import { u2 } from '@datagrok-libraries/utils/src/u2';

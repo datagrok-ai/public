@@ -22,13 +22,14 @@
     "moment": "^2.29.1",
     "rxjs": "^6.5.5",
     "x2js": "^3.4.4",
-    "dayjs": "^1.11.13"
+    "dayjs": "^1.11.13",
+    "@datagrok-libraries/test": "^1.1.0"
   },
   "devDependencies": {
     "@typescript-eslint/eslint-plugin": "^5.32.0",
     "@typescript-eslint/parser": "^5.32.0",
     "css-loader": "^7.1.2",
-    "datagrok-tools": "^4.14.55",
+    "datagrok-tools": "^5.0.0",
     "eslint": "^8.21.0",
     "eslint-config-google": "^0.14.0",
     "style-loader": "^4.0.0",
@@ -59,5 +60,8 @@
   "canView": [
     "All users"
   ],
-  "category": "Health"
+  "category": "Health",
+  "overrides": {
+    "datagrok-api": "$datagrok-api"
+  }
 }

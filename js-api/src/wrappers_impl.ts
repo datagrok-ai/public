@@ -1,12 +1,26 @@
+/**
+ * Implementation of Dart-JavaScript interop conversion functions.
+ *
+ * This file contains the actual implementation of toJs() and toDart().
+ * The wrappers.ts file delegates to these via the DG global for bootstrapping.
+ *
+ * @see {@link ./dart-interop.md} for full documentation on the interop system.
+ * @module wrappers_impl
+ */
+
 import {Property} from "./entities";
 import {FLOAT_NULL, TYPE, TYPES_SCALAR} from "./const";
 import dayjs from "dayjs";
 import { TypedEventArgs } from "./widgets";
 let api: any = (typeof window !== 'undefined' ? window : global.window);
 
-/** Converts list of Dart objects to JavaScript objects by calling {@link toJs}
- * @param {object[]} params
- * @returns {object[]} - list of JavaScript objects */
+/**
+ * Converts a list of Dart objects to JavaScript objects.
+ * Iterates through the array and calls {@link toJs} on non-scalar types.
+ *
+ * @param params - Array of Dart objects
+ * @returns Array of JavaScript objects/wrappers
+ */
 export function paramsToJs(params: any): any {
   let result = <any>[];
   for (let i = 0; i < params.length; i++) {
@@ -22,11 +36,27 @@ export function paramsToJs(params: any): any {
 
 
 /**
- * Instantiates the corresponding JS handler for the Dart object [dart]. See also {@link toDart}
- * @param dart - Dart handle
- * @param {boolean} check - when true, throws an exception if the object can't be converted to JS.
- * @returns JavaScript wrapper for the Dart object
- * */
+ * Converts a Dart object to its JavaScript wrapper or native JS value.
+ *
+ * Type conversion rules:
+ * - `null`/`undefined` -> passed through
+ * - `FLOAT_NULL` sentinel -> `null`
+ * - `Map` -> plain object with recursively converted values
+ * - `List` -> array via {@link paramsToJs}
+ * - `DG.TypedEventArgs` -> {@link TypedEventArgs} wrapper
+ * - `DateTime` -> `dayjs` object
+ * - `ByteArray` -> passed through unchanged
+ * - `BigInt` -> JavaScript `BigInt`
+ * - Objects with existing wrappers -> returns the wrapper
+ * - `Property` -> {@link Property} wrapper
+ *
+ * @param dart - Dart object handle
+ * @param check - When true, throws an exception if the type cannot be converted
+ * @returns JavaScript wrapper, native JS value, or the original Dart handle
+ * @throws Error if `check` is true and type is not supported
+ * @see {@link toDart} for the reverse operation
+ * @see {@link ./dart-interop.md} for full documentation
+ */
 export function toJs(dart: any, check: boolean = false): any {
   if (dart === null)
     return null;
@@ -72,7 +102,23 @@ function isPlainObject(value: any) {
   return value?.constructor === Object;
 }
 
-/** Extracts a Dart handle from the JavaScript wrapper. See also {@link toJs} */
+/**
+ * Converts a JavaScript object to its Dart representation.
+ *
+ * Conversion rules (checked in order):
+ * 1. `null`/`undefined` -> passed through
+ * 2. `dayjs` object -> Dart `DateTime`
+ * 3. Object with `toDart()` method -> calls `x.toDart()`
+ * 4. Object with `dart` property -> returns `x.dart`
+ * 5. Plain object `{}` -> Dart `Map`
+ * 6. JavaScript `BigInt` -> Dart `BigInt`
+ * 7. Everything else -> passed through unchanged
+ *
+ * @param x - JavaScript object to convert
+ * @returns Dart object handle
+ * @see {@link toJs} for the reverse operation
+ * @see {@link ./dart-interop.md} for full documentation
+ */
 export function toDart(x: any): any {
   if (x === undefined || x === null)
     return x;

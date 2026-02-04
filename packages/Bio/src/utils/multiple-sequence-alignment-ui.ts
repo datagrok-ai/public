@@ -6,7 +6,7 @@ import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 
 import {ColumnInputOptions} from '@datagrok-libraries/utils/src/type-declarations';
-import {delay} from '@datagrok-libraries/utils/src/test';
+import {delay} from '@datagrok-libraries/test/src/test';
 import {ALPHABET, NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';
 import {ISeqHelper} from '@datagrok-libraries/bio/src/utils/seq-helper';
 

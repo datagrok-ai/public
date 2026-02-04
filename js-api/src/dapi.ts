@@ -173,9 +173,9 @@ export class Dapi {
 
 
   /** Users Files management API endpoint
-   *  @type {FileSource} */
-  get files(): FileSource {
-    return new FileSource();
+   *  @type {FilesDataSource} */
+  get files(): FilesDataSource {
+    return new FilesDataSource();
   }
 
   get reports(): UserReportsDataSource {
@@ -396,31 +396,29 @@ export class AdminDataSource {
       throw new Error('Recipients list shouldn\'t be empty');
     return api.grok_Dapi_Admin_Send_Email(this.dart, toDart(email));
   }
+
+  /** Sends a message to the specified browser client
+   * See also {@link ServerMessageTypes} */
+  pushMessage(messageType: string, message: object, sessionIds: string[]): Promise<any> {
+    return api.grok_Dapi_Admin_PushMessage(this.dart, messageType, api.grok_JSON_decode(JSON.stringify(message)), toDart(sessionIds));
+  }
 }
 
-/**
- * Represents message that can be sent over the network using the configured SMTP service
- */
+/** Email that can be sent using the configured SMTP service */
 export interface Email {
-  /**
-   * Message subject
-   */
+  /** Message subject */
   subject: string,
-  /**
-   * List of recipients
-   */
+
+  /** List of recipients */
   to: string [],
-  /**
-   * Use to specify plaintext body
-   */
+
+  /** Plaintext body */
   text?: string,
-  /**
-   * Use to specify HTML body
-   */
+
+  /** HTML body (takes precedence over plain text) */
   html?: string,
-  /**
-   * Use to send copies of an email to additional recipients
-   */
+
+  /** Blind carbon copy */
   bcc?: string [],
 }
 
@@ -1254,7 +1252,25 @@ export class ActivityDataSource extends HttpDataSource<LogEvent> {
   }
 }
 
-export class FileSource {
+/**
+ * Provides access to file operations in the Datagrok file system.
+ *
+ * Allows reading, writing, listing, and managing files and directories
+ * in user file shares and data connections.
+ *
+ * Access via `grok.dapi.files`.
+ *
+ * @example
+ * // List files
+ * const files = await grok.dapi.files.list('System:AppData/MyApp');
+ *
+ * // Read a file
+ * const content = await grok.dapi.files.readAsText('System:AppData/MyApp/config.json');
+ *
+ * // Write a file
+ * await grok.dapi.files.writeAsText('System:AppData/MyApp/output.txt', 'Hello, World!');
+ */
+export class FilesDataSource {
   private readonly root: string;
   constructor(root: string = '') {
     this.root = root;
@@ -1433,3 +1449,8 @@ export class FileSource {
     return api.grok_Dapi_UserFiles_WriteAsText(file, data);
   }
 }
+
+/**
+ * @deprecated Use {@link FilesDataSource} instead. This alias is provided for backward compatibility.
+ */
+export const FileSource = FilesDataSource;

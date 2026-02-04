@@ -2,7 +2,7 @@ import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 //import * as ui from 'datagrok-api/ui';
 
-import {awaitCheck, category, test, testViewer} from '@datagrok-libraries/utils/src/test';
+import {awaitCheck, category, test, testViewer} from '@datagrok-libraries/test/src/test';
 
 async function awaitChemSearchViewer(viewer: DG.Viewer): Promise<void> {
   await awaitCheck(()=> {

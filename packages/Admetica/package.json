@@ -21,13 +21,14 @@
     "datagrok-api": "^1.26.0",
     "dayjs": "=1.11.10",
     "eslint": "^8.57.1",
-    "punycode": "^2.3.1"
+    "punycode": "^2.3.1",
+    "@datagrok-libraries/test": "^1.1.0"
   },
   "devDependencies": {
     "@typescript-eslint/eslint-plugin": "^8.32.0",
     "@typescript-eslint/parser": "^8.32.0",
     "css-loader": "^7.1.2",
-    "datagrok-tools": "^4.14.55",
+    "datagrok-tools": "^5.0.0",
     "eslint-config-google": "^0.14.0",
     "style-loader": "^4.0.0",
     "ts-loader": "^9.5.1",
@@ -56,5 +57,8 @@
   "canView": [
     "All users"
   ],
-  "category": "Cheminformatics"
+  "category": "Cheminformatics",
+  "overrides": {
+    "datagrok-api": "$datagrok-api"
+  }
 }

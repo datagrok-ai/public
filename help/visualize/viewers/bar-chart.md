@@ -45,7 +45,7 @@ Year - Month' and 'Year - Quarter':
 |----------|------|-------------|
 | **Data** | | |
 | Row Source | string | Determines the rows shown on the scatter plot. |
-| Filter | string | Formula that filters out rows to show. Example: `${AGE} > 20` or `${WEIGHT} / 2) > 100` |
+| Filter | string | Formula that filters out rows to show. Example: `${AGE}` > 20 or (`${WEIGHT}` / 2) > 100 |
 | On Click | string | Determines what happens when you click on a bar. |
 | Table | string |  |
 | **Value** | | |
@@ -93,7 +93,7 @@ Year - Month' and 'Year - Quarter':
 | Show Values Instead Of Categories | boolean |  |
 | Show Category Selector | boolean |  |
 | **Stack** | | |
-| Stack Column Name | string | A categorical column to further split data on. Each category would become a part of the bar resulting from *Split*. |
+| Stack Column Name | string | A categorical column to further split data on. Each category would become a part of the bar resulting from *Split*. Shows stacked bars only when *VAlue Aggr Type* is additive. |
 | Stack Map | string | Time unit map function for *Stack* (applicable to dates only). |
 | Show Stack Selector | boolean |  |
 | **Color** | | |

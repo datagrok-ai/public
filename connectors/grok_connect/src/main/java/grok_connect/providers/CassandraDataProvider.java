@@ -143,10 +143,10 @@ public class CassandraDataProvider extends JdbcDataProvider {
         PatternMatcherResult result = new PatternMatcherResult();
         String type = "string";
         String _query = matcher.colName +  " LIKE @" + paramName;
-        List<String> values = matcher.values;
+        List<Object> values = matcher.values;
         String value = null;
         if (values.size() > 0)
-            value = values.get(0).toLowerCase();
+            value = ((String) values.get(0)).toLowerCase();
 
         switch (matcher.op) {
             case PatternMatcher.EQUALS:

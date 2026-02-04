@@ -1,7 +1,8 @@
 /* eslint-disable max-len */
 import * as DG from 'datagrok-api/dg';
-import wu from 'wu';
 import * as ui from 'datagrok-api/ui';
+
+import wu from 'wu';
 
 type getSettingsFunc<Type extends SummarySettingsBase> = (gs: DG.GridColumn) => Type;
 
@@ -38,6 +39,7 @@ export interface SummarySettingsBase {
   maxValues: Map<string, number>;
   colorCode: SummaryColumnColoringType;
   normalization: NormalizationType;
+  useFilteredData: boolean;
 }
 
 /// Utility method for old summary columns format support
@@ -91,7 +93,24 @@ export const sparklineTypes: string[] = [
 type AxisScaleSettings = ScaleSettings & {
   minValues?: Map<string, number>;
   maxValues?: Map<string, number>;
+  useFilteredData?: boolean;
 };
+
+export function scaleSettings(
+  settings: SummarySettingsBase,
+  column: DG.Column,
+  overrides?: Partial<ScaleSettings>
+): AxisScaleSettings {
+  return {
+    normalization: settings.normalization,
+    invertScale: settings.invertColumnNames?.includes(column.name),
+    logScale: settings.logColumnNames?.includes(column.name),
+    minValues: settings.minValues,
+    maxValues: settings.maxValues,
+    useFilteredData: settings.useFilteredData,
+    ...overrides,
+  };
+}
 
 export function distance(p1: DG.Point, p2: DG.Point): number {
   return Math.sqrt((p1.x - p2.x) * (p1.x - p2.x) + (p1.y - p2.y) * (p1.y - p2.y));
@@ -112,6 +131,7 @@ export function getScaledNumber(
     logScale = false,
     minValues,
     maxValues,
+    useFilteredData = false,
   } = settings;
 
   const toLogSafe = (v: number) => v > 0 ? Math.log(v) : FLOAT_NONE;
@@ -122,13 +142,22 @@ export function getScaledNumber(
     const rawMin = minValues?.get(column.name);
     const rawMax = maxValues?.get(column.name);
 
-    const min = rawMin != null && rawMin !== FLOAT_NONE ? rawMin : column.min;
-    const max = rawMax != null && rawMax !== FLOAT_NONE ? rawMax : column.max;
+    let colMin: number;
+    let colMax: number;
 
-    return {
-      min: scaleValue(min),
-      max: scaleValue(max),
-    };
+    if (useFilteredData) {
+      const stats = DG.Stats.fromColumn(column, column.dataFrame.filter);
+      colMin = stats.min;
+      colMax = stats.max;
+    } else {
+      colMin = column.min;
+      colMax = column.max;
+    }
+
+    const min = rawMin != null && rawMin !== FLOAT_NONE ? rawMin : colMin;
+    const max = rawMax != null && rawMax !== FLOAT_NONE ? rawMax : colMax;
+
+    return {min: scaleValue(min), max: scaleValue(max)};
   };
 
   const normalize = (value: number, min: number, max: number): number =>
@@ -298,7 +327,19 @@ export function createBaseInputs(gridColumn: DG.GridColumn, settings: SummarySet
     });
   }
 
-  return [createColumnsInput(), createNormalizationInput(), createColorCodeInput()].filter(Boolean) as DG.InputBase[];
+  function createFilteredDataInput(): DG.InputBase | null {
+    if (isSmartForm) return null;
+    return ui.input.bool('Use Filtered Data', {
+      value: settings.useFilteredData ?? false,
+      onValueChanged: (value) => {
+        settings.useFilteredData = value;
+        invalidate();
+      },
+      tooltipText: 'When enabled, normalization uses min/max from filtered rows only',
+    });
+  }
+
+  return [createColumnsInput(), createNormalizationInput(), createFilteredDataInput(), createColorCodeInput()].filter(Boolean) as DG.InputBase[];
 }
 
 export function getRenderColor(settings: SummarySettingsBase, baseColor: number,

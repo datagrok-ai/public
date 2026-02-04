@@ -26,6 +26,7 @@ export async function test(args: TestArgs): Promise<boolean> {
   const config = yaml.load(fs.readFileSync(confPath, {encoding: 'utf-8'})) as utils.Config;
 
   isArgsValid(args);
+
   utils.setHost(args.host, config);
 
   let packageJsonData = undefined;
@@ -43,11 +44,18 @@ export async function test(args: TestArgs): Promise<boolean> {
 
 
   if (!args.package) {
-    await testUtils.loadPackages(packagesDir,
-      packageName,
-      args.host,
-      args['skip-publish'],
-      args['skip-build'], args.link);
+      try {
+          await testUtils.loadPackages(packagesDir,
+              packageName,
+              args.host,
+              args['skip-publish'],
+              args['skip-build'], args.link);
+      } catch (e) {
+          console.error('\n');
+          // @ts-ignore
+          console.error(e.message);
+          process.exit(1);
+      }
   }
   process.env.TARGET_PACKAGE = packageName;
   const res = await runTesting(args);
@@ -83,6 +91,8 @@ let retryEnabled = true;
 async function runTesting(args: TestArgs): Promise<ResultObject> {
 
   retryEnabled = args['retry'] ?? true;
+  if (args.test || args.category)
+      retryEnabled = false;
   let organized: OrganizedTest = {
     package: process.env.TARGET_PACKAGE ?? '',
     params: {

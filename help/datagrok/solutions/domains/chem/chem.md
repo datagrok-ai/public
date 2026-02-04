@@ -445,7 +445,7 @@ matches for your target molecule. You can also open the results in a separate [T
 :::note Developers
 
 To dynamically enrich compound IDs with linked data, 
-[register identifier patterns](../../../../develop/how-to/grid/register-identifiers.md) 
+[register identifier patterns](../../../../develop/how-to/db/register-identifiers.md) 
 (e.g., `CHEMBL\d+`). Once registered, the matching values:
 
 * are automatically detected and highlighted across the platform

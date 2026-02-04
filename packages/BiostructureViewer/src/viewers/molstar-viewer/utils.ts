@@ -22,7 +22,7 @@ import {defaults, molecule3dFileExtensions} from './consts';
 import {parseAndVisualsData} from './molstar-viewer-open';
 import {PluginCommands} from 'molstar/lib/mol-plugin/commands';
 import {PluginLayoutControlsDisplay, PluginLayoutStateProps} from 'molstar/lib/mol-plugin/layout';
-import {delay, testEvent} from '@datagrok-libraries/utils/src/test';
+import {delay, testEvent} from '@datagrok-libraries/test/src/test';
 import {_package} from '../../package';
 
 /** Creates viewer, ensures to complete creation awaiting first render */

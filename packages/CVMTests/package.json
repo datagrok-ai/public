@@ -9,7 +9,7 @@
   "servicePackage": true,
   "description": "Automated CVM tests",
   "dependencies": {
-    "@datagrok-libraries/test": "^1.0.0",
+    "@datagrok-libraries/test": "^1.1.0",
     "cash-dom": "^8.1.1",
     "datagrok-api": "../../js-api",
     "dayjs": "^1.11.10",
@@ -37,7 +37,7 @@
     "build-cvmtests": "webpack",
     "build": "grok api && grok check --soft && webpack",
     "debug-cvmtests-dev": "webpack && grok publish dev",
-    "release-cvmtests-dev": "webpack && grok publish dev --release",
+    "release-cvmtests-dev": "webpack && grok publish localhost --release",
     "debug-cvmtests-public": "webpack && grok publish public",
     "release-cvmtests-public": "webpack && grok publish public --release",
     "debug-cvmtests-release": "webpack && grok publish release",
@@ -46,7 +46,7 @@
     "release-cvmtests-test": "webpack && grok publish test --release",
     "lint": "eslint src --ext .ts",
     "lint-fix": "eslint src --ext .ts --fix",
-    "test": "grok test"
+    "test": "grok test --host localhost --skip-build --skip-publish"
   },
   "canEdit": [
     "Administrators"

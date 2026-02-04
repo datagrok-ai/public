@@ -2,7 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 import {ValidationResult, IssueDetail} from '../types/validation-result';
-import {awaitCheck} from '@datagrok-libraries/utils/src/test';
+import {awaitCheck} from '@datagrok-libraries/test/src/test';
 import {studies} from '../utils/app-utils';
 import {validationFixFunctions} from '../utils/validation-fix-utils';
 import {setupValidationErrorColumns, setupValidationErrorIndicators} from '../utils/views-validation-utils';

@@ -156,6 +156,7 @@ export type RectangleRenderOptions<TNode extends MarkupNodeType> = {
   get lengthRatio(): number;
   get stepRatio(): number;
   get styler(): ITreeStyler<TNode>;
+  xZoomFactor?: number;
 
   /** Total (whole) tree length (height) */
   get totalLength(): number;
@@ -321,7 +322,11 @@ export function renderNode<TNode extends MarkupNodeType>(
       const beginX = currentLength * opts.lengthRatio + opts.leftPadding * dpr;
       const endX = (currentLength + node.branch_length!) * opts.lengthRatio + opts.leftPadding * dpr;
       const posY = (node.index - opts.firstRowIndex) * opts.stepRatio;
-
+      const zoomFactor = opts.xZoomFactor ?? 1;
+      const actualEndX = endX * zoomFactor - (zoomFactor - 1) * ctx.canvas.width;
+      // console.log(`zoomFactor: ${zoomFactor}, endX: ${endX}, actualEndX: ${actualEndX}`);
+      if (actualEndX < 0)
+        continue;
       const maxIndex = node.maxIndex ?? node.index;
       const minIndex = node.minIndex ?? node.index;
       const isInRange = opts.firstRowIndex <= maxIndex && minIndex <= opts.lastRowIndex;
@@ -334,6 +339,9 @@ export function renderNode<TNode extends MarkupNodeType>(
         const posX = (currentLength + node.branch_length!) * opts.lengthRatio + opts.leftPadding * dpr;
         const minY = Math.max((joinMinIndex - opts.firstRowIndex) * opts.stepRatio, 0);
         const maxY = Math.min((joinMaxIndex - opts.firstRowIndex) * opts.stepRatio, opts.ctx.canvas.height);
+        // const actualPosX = posX - (zoomFactor - 1) * ctx.canvas.width;
+        // if (actualPosX < 0)
+        //   continue;
 
         ctx.beginPath();
         ctx.strokeStyle = opts.styler.getStrokeColor(node);
@@ -410,7 +418,8 @@ export function renderNode<TNode extends MarkupNodeType>(
               ctx.lineWidth = 1;
               ctx.lineCap = 'round';
               ctx.moveTo(endX, posY);
-              ctx.lineTo(ctx.canvas.width, posY);
+              ctx.lineTo(ctx.canvas.width * zoomFactor, posY);
+              // console.log(`endx: ${endX}, canvas.width: ${ctx.canvas.width}`);
               ctx.stroke();
             }
             //#endregion

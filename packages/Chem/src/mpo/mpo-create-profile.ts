@@ -5,13 +5,13 @@ import * as grok from 'datagrok-api/grok';
 import {
   DesirabilityProfile,
   PropertyDesirability,
-  WEIGHTED_AGGREGATIONS,
+  WEIGHTED_AGGREGATIONS_LIST,
   WeightedAggregation,
 } from '@datagrok-libraries/statistics/src/mpo/mpo';
 import {MPO_SCORE_CHANGED_EVENT, MpoProfileEditor} from '@datagrok-libraries/statistics/src/mpo/mpo-profile-editor';
 
 import {MpoContextPanel} from './mpo-context-panel';
-import {MPO_TEMPLATE_PATH} from './utils';
+import {loadMpoProfiles, MPO_PROFILE_CHANGED_EVENT, MPO_TEMPLATE_PATH, MpoPathMode, updateMpoPath} from './utils';
 
 const METHOD_MANUAL = 'Manual';
 const METHOD_PROBABILISTIC = 'Probabilistic';
@@ -19,6 +19,7 @@ const METHOD_PROBABILISTIC = 'Probabilistic';
 export class MpoProfileCreateView {
   readonly view: DG.View;
   readonly showMethod: boolean;
+  readonly isEditMode: boolean;
 
   df: DG.DataFrame | null = null;
   profile: DesirabilityProfile;
@@ -28,19 +29,53 @@ export class MpoProfileCreateView {
   profileEditorContainer: HTMLDivElement;
   profileViewContainer: HTMLDivElement = ui.div();
   methodInput?: DG.ChoiceInput<string | null>;
-  aggregationInput?: DG.ChoiceInput<WeightedAggregation| null>;
+  aggregationInput?: DG.ChoiceInput<WeightedAggregation | null>;
+  fileName?: string | null = null;
   saveButton: HTMLElement | null = null;
 
-  constructor(existingProfile?: DesirabilityProfile, showMethod: boolean = true) {
-    this.view = DG.View.create();
-    this.view.name = existingProfile ? 'Edit MPO Profile' : 'Create MPO Profile';
-    this.showMethod = showMethod;
-    this.profile = existingProfile ?? this.createDefaultProfile();
+  tableView: DG.TableView;
+  private tableViewVisible: boolean = false;
+  private existingFileNames: Set<string> | null = null;
 
+  private pMpoDockedItems: {
+    statsGrid?: DG.DockNode;
+    rocCurve?: DG.DockNode;
+    confusionMatrix?: DG.DockNode;
+    controls?: {
+      form: DG.DockNode;
+      saveBtn: HTMLElement;
+    };
+  } | null = null;
+
+  constructor(
+    existingProfile?: DesirabilityProfile,
+    showMethod: boolean = true,
+    fileName?: string,
+    existingFileNames?: Set<string>,
+  ) {
+    this.view = DG.View.create();
+    this.showMethod = showMethod;
+    this.isEditMode = !!existingProfile;
+    this.fileName = fileName;
+    this.existingFileNames = existingFileNames ?? null;
+
+    this.profile = existingProfile ?? this.createDefaultProfile();
     this.editor = new MpoProfileEditor(undefined, true);
     this.editor.setProfile(this.profile);
     this.profileEditorContainer = ui.divV([this.editor.root]);
     this.profileEditorContainer.classList.add('chem-profile-editor-container');
+
+    this.tableView = DG.TableView.create(DG.DataFrame.create(0), false);
+    this.tableView.name = this.view.name = this.isEditMode ?
+      `Edit ${this.profile.name ?? 'MPO'} Profile` :
+      'Create MPO Profile';
+    this.dockTableView();
+
+    updateMpoPath(
+      this.isEditMode ? this.view : this.tableView,
+      this.isEditMode ? MpoPathMode.Edit : MpoPathMode.Create,
+      this.profile.name,
+    );
 
     this.initControls(showMethod);
     this.initSaveButton();
@@ -48,25 +83,74 @@ export class MpoProfileCreateView {
     this.listenForProfileChanges();
   }
 
+  private dockTableView() {
+    if (!this.isEditMode) {
+      setTimeout(() => {
+        this.tableView._onAdded();
+        this.tableView.grid.root.style.visibility = 'hidden';
+        this.tableView.dockManager.dock(this.view.root, DG.DOCK_TYPE.TOP, null, '', 0.99);
+      }, 0);
+    }
+  }
+
+  private setTableViewVisible(visible: boolean, ratio = 0.25): void {
+    if (this.isEditMode)
+      return;
+
+    this.tableViewVisible = visible;
+    this.tableView.grid.root.style.visibility = visible ? 'visible' : 'hidden';
+    this.tableView.dockManager.dock(
+      this.view.root,
+      DG.DOCK_TYPE.TOP,
+      null,
+      '',
+      visible ? ratio : 0.99,
+    );
+  }
+
   private initSaveButton() {
     this.saveButton = ui.bigButton('Save', async () => {
+      if (!this.existingFileNames) {
+        const existingFiles = await loadMpoProfiles();
+        this.existingFileNames = new Set(existingFiles.map((f) => f.fileName));
+      }
+
+      const fileNameInput = ui.input.string('File name', {value: this.fileName ?? 'mpo-profile.json', nullable: false});
+      const normalizeFileName = (name: string) =>
+        name.endsWith('.json') ? name : `${name}.json`;
+
+      fileNameInput.addValidator((value) => {
+        const normalized = normalizeFileName(value);
+        const canOverwrite = this.isEditMode && normalized === this.fileName;
+        if (!canOverwrite && this.existingFileNames?.has(normalized))
+          return `File "${normalized}" already exists`;
+        return null;
+      });
+
       const nameInput = ui.input.string('Name', {value: this.profile.name ?? ''});
       const descInput = ui.input.string('Description', {value: this.profile.description ?? ''});
-      ui.dialog({title: 'Save MPO Profile'})
-        .add(ui.divV([nameInput, descInput]))
-        .onOK(() => {
+
+      const dlg = ui.dialog({title: 'Save MPO Profile'})
+        .add(ui.divV([fileNameInput, nameInput, descInput]))
+        .onOK(async () => {
           this.profile.name = nameInput.value || '';
           this.profile.description = descInput.value || '';
 
-          grok.dapi.files.writeAsText(`${MPO_TEMPLATE_PATH}/new.json`, JSON.stringify(this.profile));
+          const fileName = normalizeFileName(fileNameInput.value!.trim());
+          await grok.dapi.files.writeAsText(`${MPO_TEMPLATE_PATH}/${fileName}`, JSON.stringify(this.profile));
+          this.fileName = fileName;
           this.saveButton!.style.display = 'none';
-          grok.shell.info(`Profile "${this.profile.name || 'Unnamed'}" saved.`);
+          grok.events.fireCustomEvent(MPO_PROFILE_CHANGED_EVENT, {});
+          grok.shell.info(`Profile "${this.profile.name}" saved.`);
         })
         .show();
+
+      const okButton = dlg.getButton('OK');
+      fileNameInput.onInput.subscribe(() => okButton.disabled = !fileNameInput.validate());
     });
 
     this.saveButton.style.display = 'none';
-    this.view.setRibbonPanels([[this.saveButton]]);
+    (this.isEditMode ? this.view : this.tableView).setRibbonPanels([[this.saveButton]]);
   }
 
   private initControls(showMethod: boolean) {
@@ -77,29 +161,66 @@ export class MpoProfileCreateView {
         items: [METHOD_MANUAL, METHOD_PROBABILISTIC],
         value: METHOD_MANUAL,
         nullable: false,
-        onValueChanged: () => this.attachLayout(),
+        onValueChanged: async () => {
+          this.clearPreviousLayout();
+          if (this.methodInput!.value === METHOD_PROBABILISTIC) {
+            if (!this.df) {
+              this.showError('Probabilistic MPO requires a dataset. Please select a dataset first.');
+              return;
+            }
+            await this.runProbabilisticMpo();
+            return;
+          }
+          this.setTableViewVisible(false);
+          this.attachLayout();
+        },
       });
       controls.push(this.methodInput);
     }
 
     const datasetInput = ui.input.table('Dataset', {
       nullable: true,
-      onValueChanged: (df) => {
-        this.df = df;
-        this.attachLayout();
+      onValueChanged: async (df) => {
+        this.closePMpoPanels();
+        const indicatorRoot = this.tableViewVisible ? this.tableView.root : this.view.root;
+        ui.setUpdateIndicator(indicatorRoot, true, 'Switching dataset...');
+        await new Promise((r) => setTimeout(r, 0));
+
+        try {
+          this.df = df;
+          this.tableView.dataFrame = df;
+
+          if (this.methodInput?.value === METHOD_PROBABILISTIC) {
+            this.clearPreviousLayout();
+
+            if (!this.df) {
+              this.showError('Probabilistic MPO requires a dataset. Please select a dataset first.');
+              this.setTableViewVisible(false);
+              return;
+            }
+
+            await this.runProbabilisticMpo();
+            return;
+          }
+
+          this.setTableViewVisible(false);
+          this.attachLayout();
+        } finally {
+          ui.setUpdateIndicator(indicatorRoot, false);
+        }
       },
     });
     controls.push(datasetInput);
 
     this.aggregationInput = ui.input.choice('Aggregation', {
-      items: [...WEIGHTED_AGGREGATIONS],
+      items: WEIGHTED_AGGREGATIONS_LIST,
       nullable: false,
-      onValueChanged: () => this.attachLayout(),
+      onValueChanged: () => grok.events.fireCustomEvent(MPO_SCORE_CHANGED_EVENT, {}),
     });
     this.aggregationInput.enabled = false;
     controls.push(this.aggregationInput);
 
-    const headerDiv = ui.divV([ui.h1('New MPO Profile'), ui.form(controls)]);
+    const headerDiv = ui.divV([ui.h1(this.view.name), ui.form(controls)]);
     headerDiv.classList.add('chem-profile-header');
 
     this.profileViewContainer = ui.divV([headerDiv]);
@@ -140,9 +261,87 @@ export class MpoProfileCreateView {
     }
   }
 
+  private closePMpoPanels(): void {
+    if (!this.pMpoDockedItems)
+      return;
+
+    const dockMng = this.tableView.dockManager;
+    const {statsGrid, rocCurve, confusionMatrix, controls} = this.pMpoDockedItems;
+
+    if (statsGrid)
+      dockMng.close(statsGrid);
+    if (rocCurve)
+      dockMng.close(rocCurve);
+    if (confusionMatrix)
+      dockMng.close(confusionMatrix);
+
+    if (controls) {
+      if (controls.form)
+        dockMng.close(controls.form);
+      if (controls.saveBtn)
+        controls.saveBtn.remove();
+    }
+
+    this.pMpoDockedItems = null;
+  }
+
+  private async runProbabilisticMpo(): Promise<void> {
+    if (!this.df)
+      return;
+
+    ui.setUpdateIndicator(this.view.root, true, 'Running probabilistic MPO...');
+
+    try {
+      this.closePMpoPanels();
+
+      const pMpoAppItems = await grok.functions.call('EDA:getPmpoAppItems', {view: this.tableView});
+      if (!pMpoAppItems) {
+        this.setTableViewVisible(false);
+        this.showError('pMPO is not applicable for this dataset.');
+        return;
+      }
+
+      this.setTableViewVisible(true);
+
+      const dockMng = this.tableView.dockManager;
+      const gridNode = dockMng.findNode(this.tableView.grid.root);
+      if (!gridNode)
+        throw new Error('Failed to train pMPO: missing a grid in the table view.');
+
+      const controlsNode = dockMng.dock(pMpoAppItems.controls.form, DG.DOCK_TYPE.LEFT, gridNode, undefined, 0.1);
+      const statGridNode = dockMng.dock(pMpoAppItems.statsGrid, DG.DOCK_TYPE.DOWN, gridNode, undefined, 0.5);
+      const rocNode = dockMng.dock(pMpoAppItems.rocCurve, DG.DOCK_TYPE.RIGHT, statGridNode, undefined, 0.3);
+      const confusionNode = dockMng.dock(pMpoAppItems.confusionMatrix, DG.DOCK_TYPE.RIGHT, rocNode, undefined, 0.2);
+
+      if (pMpoAppItems.controls.saveBtn)
+        this.tableView.setRibbonPanels([[pMpoAppItems.controls.saveBtn]]);
+
+      this.pMpoDockedItems = {
+        statsGrid: statGridNode,
+        rocCurve: rocNode,
+        confusionMatrix: confusionNode,
+        controls: {
+          form: controlsNode,
+          saveBtn: pMpoAppItems.controls.saveBtn,
+        },
+      };
+    } finally {
+      ui.setUpdateIndicator(this.view.root, false);
+    }
+  }
+
   private clearPreviousLayout() {
-    while (this.profileViewContainer.children.length > 1)
-      this.profileViewContainer.removeChild(this.profileViewContainer.lastChild!);
+    const header = this.profileViewContainer.children[0];
+    ui.empty(this.profileViewContainer);
+    if (header)
+      this.profileViewContainer.append(header);
+  }
+
+  private showError(message: string) {
+    this.clearPreviousLayout();
+    const errorDiv = ui.divText(message);
+    errorDiv.classList.add('chem-mpo-error-message');
+    this.profileViewContainer.append(errorDiv);
   }
 
   private ensureProfile() {
@@ -155,9 +354,9 @@ export class MpoProfileCreateView {
       name: '',
       description: '',
       properties: {
-        'Property 1': {weight: 1, min: 0, max: 1, line: []},
-        'Property 2': {weight: 1, min: 0, max: 1, line: []},
-        'Property 3': {weight: 1, min: 0, max: 1, line: []},
+        'Property 1': {functionType: 'numerical', weight: 1, min: 0, max: 1, line: []},
+        'Property 2': {functionType: 'numerical', weight: 1, min: 0, max: 1, line: []},
+        'Property 3': {functionType: 'numerical', weight: 1, min: 0, max: 1, line: []},
       },
     };
   }
@@ -165,7 +364,7 @@ export class MpoProfileCreateView {
   private createProfileForDf(): DesirabilityProfile {
     const props: {[key: string]: PropertyDesirability} = {};
     for (const col of this.df!.columns.numerical)
-      props[col.name] = {weight: 1, min: col.min, max: col.max, line: []};
+      props[col.name] = {functionType: 'numerical', weight: 1, min: col.min, max: col.max, line: []};
 
     return {name: '', description: '', properties: props};
   }
@@ -205,5 +404,14 @@ export class MpoProfileCreateView {
       const agg = this.aggregationInput?.value ?? 'Average';
       await this.mpoContextPanel.render(this.profile, this.editor.columnMapping, agg);
     });
+
+    const handler = (eventData: DG.EventData) => {
+      const eventView = eventData.args?.view;
+      if (eventView && (eventView.id === this.view.id || eventView.id === this.tableView.id))
+        this.mpoContextPanel?.detach();
+    };
+
+    grok.events.onViewChanging.subscribe((eventData) => handler(eventData));
+    grok.events.onViewRemoving.subscribe((eventData) => handler(eventData));
   }
 }

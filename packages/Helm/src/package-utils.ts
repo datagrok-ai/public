@@ -5,7 +5,7 @@ import * as DG from 'datagrok-api/dg';
 
 import {Unsubscribable} from 'rxjs';
 
-import {delay, timeout} from '@datagrok-libraries/utils/src/test';
+import {delay, timeout} from '@datagrok-libraries/test/src/test';
 import {errorToConsole} from '@datagrok-libraries/utils/src/to-console';
 import {errInfo} from '@datagrok-libraries/bio/src/utils/err-info';
 import {

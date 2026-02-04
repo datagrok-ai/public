@@ -4,7 +4,7 @@ import { getApiKey, getApiUrl } from "./credentials-utils";
 import * as grok from 'datagrok-api/grok';
 import { SignalsSearchParams, SignalsSearchQuery } from "./signals-search-query";
 import { MAX_RETURN_ROWS } from "./constants";
-import { delay } from '@datagrok-libraries/utils/src/test';
+import { delay } from '@datagrok-libraries/test/src/test';
 
 // Top-level response interface
 export interface RevvityApiResponse<T = any, I = any> {

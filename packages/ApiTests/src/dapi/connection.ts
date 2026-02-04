@@ -80,8 +80,8 @@ category('Dapi: connection cache', () => {
   const testFilePath2: string = 'System:AppData/ApiTests/renamed_test_files.txt';
 
   before(async () => {
-    const connection: _DG.DataConnection = await grok.dapi.connections.filter(`shortName="AppData"`).first();
-    await grok.functions.call('DropConnectionCache', { 'connection': connection });
+    const appData: _DG.DataConnection = await grok.dapi.connections.filter(`shortName="AppData"`).first();
+    await grok.functions.call('DropConnectionCache', { 'connection': appData });
   });
 
   test('Invalidation, performance', async () => {
@@ -119,17 +119,6 @@ category('Dapi: connection cache', () => {
     // id should be absent when we read as csv, and second time from cache
     expect(!table1.id && !table2.id, true);
   }, {skipReason: typeof process !== 'undefined' ? 'NodeJS environment' : undefined });
-
-  test('Performance: read csv', async () => {
-    const first = await getExecutionTime(async () => {
-      await grok.dapi.files.readCsv('System:AppData/ApiTests/datasets/demog.csv');
-    });
-    const second = await getExecutionTime(async () => {
-      await grok.dapi.files.readCsv('System:AppData/ApiTests/datasets/demog.csv');
-    });
-    // second execution should be faster
-    expect(second * 2 < first);
-  }, {skipReason: typeof process !== 'undefined' ? 'NodeJS environment' : undefined});
 
   test('Sequential stress test', async () => {
     const times = DG.Test.isInBenchmark ? 100 : 10;

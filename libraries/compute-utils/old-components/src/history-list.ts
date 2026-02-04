@@ -112,25 +112,19 @@ export class HistoricalRunsList extends DG.Widget {
       if (!this.options?.isHistory)
         this.updateRun(funcCall);
       else {
-        return ((!!editOptions.isFavorite !== isFavorite) ?
-          saveIsFavorite(funcCall, !!editOptions.isFavorite) :
-          Promise.resolve())
-          .then(() => historyUtils.loadRun(funcCall.id, false))
-          .then((fullCall) => {
-            if (editOptions.title) fullCall.options['title'] = editOptions.title;
-            if (editOptions.description) fullCall.options['description'] = editOptions.description;
-            if (editOptions.tags) fullCall.options['tags'] = editOptions.tags;
-
-            return [historyUtils.saveRun(fullCall), fullCall] as const;
-          })
-          .then(([, fullCall]) => {
-            this.updateRun(fullCall);
-
-            this.onMetadataEdit.next(fullCall);
-          })
-          .catch((err) => {
+        try {
+          if (!!editOptions.isFavorite !== isFavorite)
+            await saveIsFavorite(funcCall, !!editOptions.isFavorite);
+          const fullCall = await historyUtils.shallowLoadRun(funcCall.id);
+          if (editOptions.title) fullCall.options['title'] = editOptions.title;
+          if (editOptions.description) fullCall.options['description'] = editOptions.description;
+          if (editOptions.tags) fullCall.options['tags'] = editOptions.tags;
+          await historyUtils.updateRunMeta(fullCall);
+          this.updateRun(fullCall);
+          this.onMetadataEdit.next(fullCall);
+        } catch(err: any) {
             grok.shell.error(err);
-          });
+        }
       }
     });
     editDialog.show({center: true, width: 500});
@@ -359,7 +353,7 @@ export class HistoricalRunsList extends DG.Widget {
   }
 
   async deleteRun(id: string) {
-    return historyUtils.loadRun(id, true)
+    return historyUtils.shallowLoadRun(id)
       .then(async (loadedRun) => {
         return [
           await (this.options?.isHistory ? historyUtils.deleteRun(loadedRun): Promise.resolve()),
@@ -484,7 +478,7 @@ export class HistoricalRunsList extends DG.Widget {
           if (runCache.has(run.id))
             return runCache.get(run.id)!;
           else {
-            const loadedRun = await historyUtils.loadRun(run.id, true);
+            const loadedRun = await historyUtils.shallowLoadRun(run.id);
             runCache.set(loadedRun.id, loadedRun);
 
             return loadedRun;

@@ -10,6 +10,7 @@
   "dependencies": {
     "@datagrok-libraries/statistics": "^1.10.0",
     "@datagrok-libraries/utils": "^4.6.5",
+    "@datagrok-libraries/test": "^1.1.0",
     "@types/wu": "^2.1.42",
     "@typescript-eslint/eslint-plugin": "^5.62.0",
     "@typescript-eslint/parser": "^5.62.0",
@@ -24,13 +25,16 @@
   },
   "devDependencies": {
     "css-loader": "^5.0.0",
-    "datagrok-tools": "^4.14.55",
+    "datagrok-tools": "^5.0.0",
     "source-map-loader": "^4.0.1",
     "style-loader": "^2.0.0",
     "ts-loader": "^9.5.1",
     "typescript": "^5.6.3",
     "webpack": "^5.95.0",
     "webpack-cli": "^5.1.4"
+  },
+  "overrides": {
+    "datagrok-api": "$datagrok-api"
   },
   "scripts": {
     "link-all": "npm link datagrok-api @datagrok-libraries/utils @datagrok-libraries/statistics",

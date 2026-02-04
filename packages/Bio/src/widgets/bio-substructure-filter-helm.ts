@@ -9,7 +9,7 @@ import {App, IHelmWebEditor} from '@datagrok-libraries/bio/src/helm/types';
 import {getHelmHelper} from '@datagrok-libraries/bio/src/helm/helm-helper';
 import {ILogger} from '@datagrok-libraries/bio/src/utils/logger';
 import {errInfo} from '@datagrok-libraries/bio/src/utils/err-info';
-import {delay} from '@datagrok-libraries/utils/src/test';
+import {delay} from '@datagrok-libraries/test/src/test';
 import {ISeqHelper} from '@datagrok-libraries/bio/src/utils/seq-helper';
 
 import {updateDivInnerHTML} from '../utils/ui-utils';

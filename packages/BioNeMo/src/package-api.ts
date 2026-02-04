@@ -11,15 +11,15 @@ export namespace scripts {
   /**
   Predicts the 3D structure of how a molecule interacts with a protein
   */
-  export async function diffdock(protein: string , ligand: string , num_poses: number , api_key: string ): Promise<any> {
-    return await grok.functions.call('BioNeMo:Diffdock', { protein, ligand, num_poses, api_key });
+  export async function diffdockPython(protein: string , ligand: string , num_poses: number , api_key: string ): Promise<any> {
+    return await grok.functions.call('BioNeMo:DiffdockPython', { protein, ligand, num_poses, api_key });
   }
 
   /**
   Predicts the 3D structure of a protein from its amino acid sequence
   */
-  export async function esmfold(sequence: string , api_key: string ): Promise<string> {
-    return await grok.functions.call('BioNeMo:Esmfold', { sequence, api_key });
+  export async function esmfoldPython(sequence: string , api_key: string ): Promise<string> {
+    return await grok.functions.call('BioNeMo:EsmfoldPython', { sequence, api_key });
   }
 
   /**

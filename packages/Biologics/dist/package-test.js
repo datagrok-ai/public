@@ -101,9 +101,9 @@ testData.columns.add(datagrok_api_dg__WEBPACK_IMPORTED_MODULE_0__.Column.fromLis
 
 /***/ }),
 
-/***/ "./node_modules/@datagrok-libraries/utils/src/test-viewer-utils.js":
+/***/ "./node_modules/@datagrok-libraries/test/src/test-viewer-utils.js":
 /*!*************************************************************************!*\
-  !*** ./node_modules/@datagrok-libraries/utils/src/test-viewer-utils.js ***!
+  !*** ./node_modules/@datagrok-libraries/test/src/test-viewer-utils.js ***!
   \*************************************************************************/
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
@@ -119,7 +119,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */ });
 /* harmony import */ var datagrok_api_grok__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! datagrok-api/grok */ "datagrok-api/grok");
 /* harmony import */ var datagrok_api_grok__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(datagrok_api_grok__WEBPACK_IMPORTED_MODULE_0__);
-/* harmony import */ var _test__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./test */ "./node_modules/@datagrok-libraries/utils/src/test.js");
+/* harmony import */ var _test__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./test */ "./node_modules/@datagrok-libraries/test/src/test.js");
 var __awaiter = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -250,9 +250,9 @@ function loadLayout(args, withDelay = true) {
 
 /***/ }),
 
-/***/ "./node_modules/@datagrok-libraries/utils/src/test.js":
+/***/ "./node_modules/@datagrok-libraries/test/src/test.js":
 /*!************************************************************!*\
-  !*** ./node_modules/@datagrok-libraries/utils/src/test.js ***!
+  !*** ./node_modules/@datagrok-libraries/test/src/test.js ***!
   \************************************************************/
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
@@ -292,7 +292,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var datagrok_api_dg__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! datagrok-api/dg */ "datagrok-api/dg");
 /* harmony import */ var datagrok_api_dg__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__webpack_require__.n(datagrok_api_dg__WEBPACK_IMPORTED_MODULE_1__);
 /* harmony import */ var _dataframe_utils__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./dataframe-utils */ "./node_modules/@datagrok-libraries/utils/src/dataframe-utils.js");
-/* harmony import */ var _test_viewer_utils__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ./test-viewer-utils */ "./node_modules/@datagrok-libraries/utils/src/test-viewer-utils.js");
+/* harmony import */ var _test_viewer_utils__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ./test-viewer-utils */ "./node_modules/@datagrok-libraries/test/src/test-viewer-utils.js");
 var __awaiter = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -1620,7 +1620,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */   test: () => (/* binding */ test),
 /* harmony export */   tests: () => (/* reexport safe */ _datagrok_libraries_utils_src_test__WEBPACK_IMPORTED_MODULE_0__.tests)
 /* harmony export */ });
-/* harmony import */ var _datagrok_libraries_utils_src_test__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! @datagrok-libraries/utils/src/test */ "./node_modules/@datagrok-libraries/utils/src/test.js");
+/* harmony import */ var _datagrok_libraries_utils_src_test__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! @datagrok-libraries/test/src/test */ "./node_modules/@datagrok-libraries/test/src/test.js");
 /* harmony import */ var datagrok_api_dg__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! datagrok-api/dg */ "datagrok-api/dg");
 /* harmony import */ var datagrok_api_dg__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__webpack_require__.n(datagrok_api_dg__WEBPACK_IMPORTED_MODULE_1__);
 

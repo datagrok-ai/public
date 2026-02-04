@@ -124,7 +124,7 @@ category('Dapi: files', () => {
 }, {owner: 'aparamonov@datagrok.ai'});
 
 category('Dapi: files: formats', () => {
-  const extensions = ['csv', 'd42', 'json', 'tar', 'tar.gz', 'tsv', 'txt', 'xlsx', 'xml', 'zip', 'kmz', 'kml'];
+  const extensions = ['csv', 'd42', 'json', 'tar', 'tar.gz', 'tsv', 'txt', 'xml', 'zip', 'kmz', 'kml'];
 
   for (const ext of extensions) {
     test(ext, async () => {

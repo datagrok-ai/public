@@ -1,6 +1,6 @@
 import * as DG from 'datagrok-api/dg';
 
-import {before, category, expect, test} from '@datagrok-libraries/utils/src/test';
+import {before, category, expect, test} from '@datagrok-libraries/test/src/test';
 
 import {findMutations, MutationCliffsOptions} from '../utils/algorithms';
 import * as type from '../utils/types';

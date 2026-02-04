@@ -1,5 +1,5 @@
 import * as grok from 'datagrok-api/grok';
-import {test, category, awaitCheck} from '@datagrok-libraries/utils/src/test';
+import {test, category, awaitCheck} from '@datagrok-libraries/test/src/test';
 import {app, pricesPanel, samplesPanel} from '../package';
 
 category('Chemspace', () => {

@@ -4,7 +4,7 @@ import * as DG from 'datagrok-api/dg';
 import {closeAllAccordionPanes, demoScaffold, getAccordionPane, openMoleculeDataset,
   openSketcher, scrollTable} from '../utils/demo-utils';
 import {DemoScript} from '@datagrok-libraries/tutorials/src/demo-script';
-import {awaitCheck, delay} from '@datagrok-libraries/utils/src/test';
+import {awaitCheck, delay} from '@datagrok-libraries/test/src/test';
 import {_package, PackageFunctions} from '../package';
 import {rGroupAnalysis} from '../analysis/r-group-analysis';
 import {CLIFFS_DF_NAME, activityCliffsIdx} from '@datagrok-libraries/ml/src/viewers/activity-cliffs';

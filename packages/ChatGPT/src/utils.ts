@@ -1,3 +1,4 @@
+/* eslint-disable max-len */
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
@@ -161,4 +162,13 @@ export function fireAIAbortEvent() {
 
 export function fireAIPanelToggleEvent(v: DG.View | DG.ViewBase) {
   grok.events.fireCustomEvent(AI_PANEL_TOGGLE_EVENT, v);
+}
+
+export function findLast<T, K extends T>(array: T[], predicate: (value: T, index: number, obj: T[]) => value is K): K | undefined {
+  for (let i = array.length - 1; i >= 0; i--) {
+    const value = array[i];
+    if (predicate(value, i, array))
+      return value;
+  }
+  return undefined;
 }

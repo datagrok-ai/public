@@ -6,12 +6,49 @@ import * as DG from 'datagrok-api/dg';
 /// [x, y] pairs are sorted by x in ascending order
 export type DesirabilityLine = number[][];
 
-/// A desirability line with its weight
-export type PropertyDesirability = {
+export type DesirabilityMode = 'freeform' | 'gaussian' | 'sigmoid';
+
+type BasePropertyDesirability = {
+  weight: number; /// 0-1
+  defaultScore?: number;
+}
+
+export type NumericalDesirability = BasePropertyDesirability & {
+  functionType: 'numerical';
   line: DesirabilityLine;
   min?: number; /// min value of the property (optional; used for editing the line)
   max?: number; /// max value of the property (optional; used for editing the line)
-  weight: number; /// 0-1
+
+  mode?: DesirabilityMode;
+
+  /// Gaussian mode parameters
+  mean?: number;
+  sigma?: number;
+
+  /// Sigmoid mode parameters
+  x0?: number;
+  k?: number;
+
+  freeformLine?: DesirabilityLine;
+}
+
+export type CategoricalDesirability = BasePropertyDesirability & {
+  functionType: 'categorical';
+  categories: { name: string; desirability: number }[];
+}
+
+export type PropertyDesirability = NumericalDesirability | CategoricalDesirability;
+
+export function isNumerical(p: PropertyDesirability): p is NumericalDesirability {
+  return p.functionType === 'numerical';
+}
+
+export function migrateDesirability(raw: any): PropertyDesirability {
+  if (raw.functionType)
+    return raw;
+  if (raw.categories)
+    return {...raw, functionType: 'categorical'};
+  return {...raw, functionType: 'numerical'};
 }
 
 /// A map of desirability lines with their weights
@@ -22,6 +59,7 @@ export type DesirabilityProfile = {
 }
 
 export const WEIGHTED_AGGREGATIONS = ['Average', 'Sum', 'Product', 'Geomean', 'Min', 'Max'] as const;
+export const WEIGHTED_AGGREGATIONS_LIST: WeightedAggregation[] = [...WEIGHTED_AGGREGATIONS];
 export type WeightedAggregation = typeof WEIGHTED_AGGREGATIONS[number];
 
 /// Calculates the desirability score for a given x value
@@ -49,6 +87,14 @@ export function desirabilityScore(x: number, desirabilityLine: DesirabilityLine)
   return 0;
 }
 
+export function categoricalDesirabilityScore(
+  value: string,
+  prop: CategoricalDesirability,
+): number | null {
+  const found = prop.categories.find((c) => c.name === value);
+  return found?.desirability ?? prop.defaultScore ?? null;
+}
+
 /** Calculates the multi parameter optimization score, 0-100, 100 is the maximum */
 export function mpo(
   dataFrame: DG.DataFrame,
@@ -68,7 +114,7 @@ export function mpo(
 
   const desirabilityTemplates = columns.map((column) => {
     const tag = column.getTag('desirabilityTemplate');
-    return JSON.parse(tag) as PropertyDesirability;
+    return migrateDesirability(JSON.parse(tag));
   });
 
   resultColumn.init((i) => {
@@ -78,8 +124,19 @@ export function mpo(
     for (let j = 0; j < columns.length; j++) {
       const desirability = desirabilityTemplates[j];
       const value = columns[j].get(i);
-      scores[j] = desirabilityScore(value, desirability.line);
-      weights[j] = desirability.weight;
+
+      if (columns[j].isNone(i))
+        return desirability.defaultScore ?? NaN;
+
+      const score = isNumerical(desirability) ?
+        desirabilityScore(value, desirability.line) :
+        categoricalDesirabilityScore(value, desirability);
+
+      if (score === null)
+        return NaN;
+
+      scores.push(score);
+      weights.push(desirability.weight);
     }
 
     return aggregate(scores, weights, aggregation);

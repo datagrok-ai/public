@@ -53,7 +53,7 @@ export async function smartExecution(prompt: string, modelName: ChatModel) {
 
 // sets up the ui button for the input
 export function setupSearchUI() {
-  if (!grok.ai.openAiConfigured) {
+  if (!grok.ai.config.configured) {
     console.warn('LLM API key is not set up. Search UI will not have AI assistance.');
     return;
   }
@@ -120,7 +120,7 @@ async function aiCombinedSearch(prompt: string) {
 }
 
 export async function setupAIQueryEditorUI(v: DG.ViewBase, connectionID: string, queryEditorRoot: HTMLElement, setAndRunFunc: (query: string) => void): Promise<boolean> {
-  if (!grok.ai.openAiConfigured)
+  if (!grok.ai.config.configured)
     return false;
   const connection = await grok.dapi.connections.find(connectionID);
   if (!connection) { // should not happen but just in case
@@ -140,7 +140,7 @@ export async function setupAIQueryEditorUI(v: DG.ViewBase, connectionID: string,
     try {
       const sqlQuery = await generateAISqlQueryWithTools(args.currentPrompt.prompt, connectionID, args.currentPrompt.schemaName!, {
         oldMessages: args.prevMessages,
-        aiPanel: session.session, modelName: ModelType[panel.getCurrentInputs().model],
+        aiPanel: session.session, modelType: panel.getCurrentInputs().model,
       });
       if (sqlQuery && typeof sqlQuery === 'string' && sqlQuery.trim().length > 0)
         setAndRunFunc(sqlQuery);
@@ -156,7 +156,7 @@ export async function setupAIQueryEditorUI(v: DG.ViewBase, connectionID: string,
 }
 
 export async function setupTableViewAIPanelUI() {
-  if (!grok.ai.openAiConfigured)
+  if (!grok.ai.config.configured)
     return;
   const handleView = (tableView: DG.TableView) => {
     // setup ribbon panel icon
@@ -177,7 +177,7 @@ export async function setupTableViewAIPanelUI() {
           {
             oldMessages: args.prevMessages,
             aiPanel: session.session,
-            modelName: ModelType[panel.getCurrentInputs().model],
+            modelType: panel.getCurrentInputs().model,
           }
         );
       } catch (error: any) {
