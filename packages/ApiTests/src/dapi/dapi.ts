@@ -26,8 +26,8 @@ category('Dapi', () => {
     const logger = new DG.Logger((m) => (m.params as {[key: string]: any})['jsApiTest2'] = 'jsApiTest3');
     const jsApiTestType = 'jsApiTestType';
     logger.log('jsApiTest0', {jsApiTest1: 'jsApiTest2'}, jsApiTestType);
-    for (let i = 0; i < 10; i++) {
-        await DG.delay(200);
+    for (let i = 0; i < 100; i++) {
+        await DG.delay(100);
         if ((await grok.dapi.logTypes.list({filter: jsApiTestType}))[0]?.name == jsApiTestType)
             return;
     }
