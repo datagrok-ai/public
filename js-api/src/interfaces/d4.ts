@@ -58,6 +58,7 @@ export interface IBarChartSettings {
 
   /// A categorical column to further split data on.
   /// Each category would become a part of the bar resulting from *Split*.
+  /// Shows stacked bars only when *VAlue Aggr Type* is additive.
   stack: string;
   stackColumnName: string;
 
