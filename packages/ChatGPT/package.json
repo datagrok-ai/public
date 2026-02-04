@@ -92,11 +92,12 @@
       "name": "APIName",
       "propertyType": "string",
       "description": "OpenAI API endpoint. Responses or Chat completions API can be used.",
-      "defaultValue": "openai chat completions",
+      "defaultValue": "OpenAI Chat Completions",
       "nullable": false,
       "choices": [
-        "openai chat completions",
-        "openai responses"
+        "OpenAI Chat Completions",
+        "OpenAI Responses",
+        "Antropic Messages"
       ]
     },
     {

@@ -2,7 +2,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {ModelOption, ModelType, OpenAIClient} from './openAI-client';
+import {ModelOption, ModelType, LLMClient} from './LLM-client';
 import {ChatModel} from 'openai/resources/shared';
 import {findLast, getAIAbortSubscription} from '../utils';
 import {AIPanelFuncs, MessageType} from './panel';
@@ -66,7 +66,7 @@ export async function processTableViewAIRequest(
 
   try {
     // Initialize OpenAI client
-    const langTool = OpenAIClient.getInstance();
+    const langTool = LLMClient.getInstance();
     const modelType = options.modelType ?? 'Fast';
     const client = langTool.aiModels[modelType];
     // Always use agent mode workflow with conditional system prompt
@@ -81,7 +81,7 @@ export async function processTableViewAIRequest(
  */
 async function processAgentMode(
   client: LanguageModelV3,
-  langTool: OpenAIClient,
+  langTool: LLMClient,
   prompt: string,
   context: TableViewContext,
   options: {
@@ -234,7 +234,7 @@ Your responses should be informative, explaining what you're doing and why.`;
         required: ['viewerType', 'viewerProperties'],
         additionalProperties: false,
       },
-      strict: true,
+      // strict: true,
     },
     {
       type: 'function',
@@ -278,7 +278,7 @@ Your responses should be informative, explaining what you're doing and why.`;
         required: ['viewerId', 'viewerProperties'],
         additionalProperties: false,
       },
-      strict: true,
+      // strict: true,
     },
     {
       type: 'function',
@@ -354,12 +354,22 @@ Your responses should be informative, explaining what you're doing and why.`;
       }
     });
 
+    const fixedContent = response.content.map((item) => {
+      if (item.type === 'tool-call') {
+        return {
+          ...item,
+          input: typeof item.input === 'string' ? parseJsonObject(item.input) ?? item.input : item.input
+        };
+      }
+      return item;
+    });
+
     const formattedOutput: LanguageModelV3Message = {
       role: 'assistant',
       // @ts-ignore
-      content: response.content
+      content: fixedContent
     };
-      //const outputs: MessageType[] = response.content.map((item) => ({role: 'assistant', content: [item]} as MessageType));
+    //const outputs: MessageType[] = response.content.map((item) => ({role: 'assistant', content: [item]} as MessageType));
     input.push(formattedOutput);
     options.aiPanel?.addEngineMessage(formattedOutput);
 

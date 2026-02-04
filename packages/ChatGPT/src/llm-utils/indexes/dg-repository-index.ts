@@ -3,7 +3,7 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 
-import {OpenAIClient} from '../openAI-client';
+import {LLMClient} from '../LLM-client';
 import OpenAI from 'openai';
 
 const VECTOR_STORE_NAME = 'datagrok-public-index';
@@ -165,7 +165,7 @@ export async function uploadFilesToVectorStroreOneByOne() {
     }
   );
   // go one by one and upload
-  const client = OpenAIClient.getInstance().openai;
+  const client = LLMClient.getInstance().openai;
 
   // check if the vector store with name 'datagrok-public-index' already exists, if not, create it
   const vectorStoreId = await getOrCreateVectorStoreId(client, VECTOR_STORE_NAME, pg);

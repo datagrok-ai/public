@@ -7,7 +7,7 @@ import * as rxjs from 'rxjs';
 import '../../css/ai.css';
 import {dartLike, fireAIAbortEvent, getAIPanelToggleSubscription} from '../utils';
 import {ConversationStorage, StoredConversationWithContext} from './storage';
-import {ModelOption, ModelType} from './openAI-client';
+import {ModelOption, ModelType} from './LLM-client';
 import {LanguageModelV3Message, LanguageModelV3Content} from '@ai-sdk/provider';
 
 // in future might extend it with other types for response API

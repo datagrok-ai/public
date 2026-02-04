@@ -4,8 +4,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {askDeepWiki} from './deepwikiclient';
-import {askOpenAIHelp, ModelType} from './openAI-client';
-import {LLMCredsManager} from './creds';
+import {askOpenAIHelp, ModelType} from './LLM-client';
 import {CombinedAISearchAssistant} from './combined-search';
 import {ChatGPTPromptEngine} from '../prompt-engine/prompt-engine';
 import {ChatGptAssistant} from '../prompt-engine/chatgpt-assistant';
@@ -17,7 +16,6 @@ import {generateAISqlQueryWithTools} from './sql-tools';
 import {processTableViewAIRequest} from './tableview-tools';
 import {DBAIPanel, ScriptingAIPanel, TVAIPanel} from './panel';
 import {generateDatagrokScript} from './script-tools';
-import {ChatModel} from 'openai/resources/shared';
 
 
 export async function askWiki(question: string, useOpenAI: boolean = true) {
@@ -32,7 +30,7 @@ export async function askWiki(question: string, useOpenAI: boolean = true) {
   }
 }
 
-export async function smartExecution(prompt: string, modelName: ChatModel) {
+export async function smartExecution(prompt: string, modelName: string) {
   const gptEngine = ChatGPTPromptEngine.getInstance(modelName);
   const gptAssistant = new ChatGptAssistant(gptEngine);
 

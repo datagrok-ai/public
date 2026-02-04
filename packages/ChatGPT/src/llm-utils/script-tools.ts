@@ -4,7 +4,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {AIPanelFuncs, MessageType} from './panel';
 import {getAIAbortSubscription} from '../utils';
-import {ModelType, OpenAIClient} from './openAI-client';
+import {ModelType, LLMClient} from './LLM-client';
 import {LLMCredsManager} from './creds';
 import {ComparisonFilter, CompoundFilter} from 'openai/resources/shared';
 import {LanguageModelV3FunctionTool, LanguageModelV3Message} from '@ai-sdk/provider';
@@ -94,7 +94,7 @@ export async function generateDatagrokScript(
   try {
     // Initialize OpenAI client
     // const openai = OpenAIClient.getInstance().openai;
-    const langTool = OpenAIClient.getInstance();
+    const langTool = LLMClient.getInstance();
     const client = langTool.aiModels.Coding;
 
     // System message with strict guidelines
@@ -136,10 +136,20 @@ export async function generateDatagrokScript(
           }
         }
       });
+      const fixedContent = response.content.map((item) => {
+        if (item.type === 'tool-call') {
+          return {
+            ...item,
+            input: typeof item.input === 'string' ? parseJsonObject(item.input) ?? item.input : item.input
+          };
+        }
+        return item;
+      });
+
       const formattedOutput: LanguageModelV3Message = {
         role: 'assistant',
         // @ts-ignore
-        content: response.content
+        content: fixedContent
       };
       //const outputs: MessageType[] = response.content.map((item) => ({role: 'assistant', content: [item]} as MessageType));
       input.push(formattedOutput);
@@ -663,7 +673,7 @@ class ScriptGenerationContext {
       return 'Error: empty documentation search query.';
 
     try {
-      const openai = OpenAIClient.getInstance().openai;
+      const openai = LLMClient.getInstance().openai;
       const filterObject = {filters: [] as ComparisonFilter[], type: 'and'} satisfies CompoundFilter;
       if (filterOptions) {
         if (filterOptions.fileExtension) {

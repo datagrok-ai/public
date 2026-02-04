@@ -4,20 +4,19 @@ import * as DG from 'datagrok-api/dg';
 import OpenAI from 'openai';
 import * as api from '../package-api';
 import {LLMCredsManager} from './creds';
-import {JsonSchema} from '../prompt-engine/interfaces';
-import {ChatModel} from 'openai/resources/shared';
+import {JsonSchema, LLMApiNames} from '../prompt-engine/interfaces';
 import {_package} from '../package';
 // import {AIProvider, BuiltinToolSpec} from './AI-API-providers/types';
 import * as osdk from '@ai-sdk/openai';
-import * as sdkProvider from '@ai-sdk/provider';
-import {LanguageModelV3Message} from '@ai-sdk/provider';
+import * as asdk from '@ai-sdk/anthropic';
+import {LanguageModelV3Message, LanguageModelV3} from '@ai-sdk/provider';
 import {findLast} from '../utils';
 
 export type ModelOption = 'Fast' | 'Deep Research' | 'Coding';
-export const ModelType: {[type in ModelOption]: ChatModel} = {
+export const ModelType: {[type in ModelOption]: string} = {
   Fast: 'gpt-4o-mini',
-  'Deep Research': 'gpt-5.2' as ChatModel, // hell of a smart model but a bit expensive expensive
-  Coding: 'gpt-5.1-codex-max' as ChatModel,
+  'Deep Research': 'gpt-5.2', // hell of a smart model but a bit expensive expensive
+  Coding: 'gpt-5.1-codex-max',
   //'Deep Research': 'o4-mini', // good balance between speed, quality and $$$
 };
 
@@ -25,23 +24,23 @@ export function initModelTypeNames() {
   if (_package.settings.defaultFastModel)
     ModelType.Fast = _package.settings.defaultFastModel;
   if (_package.settings.defaultDeepResearchModel)
-    ModelType['Deep Research'] = _package.settings.defaultDeepResearchModel as ChatModel;
+    ModelType['Deep Research'] = _package.settings.defaultDeepResearchModel;
   if (_package.settings.defaultCodingModel)
-    ModelType.Coding = _package.settings.defaultCodingModel as ChatModel;
+    ModelType.Coding = _package.settings.defaultCodingModel;
   if (grok.ai.config.current?.provider == 'azure' && grok.ai.config.current.modelToDeployment) {
     const cfg: typeof grok.ai.config.current.modelToDeployment = DG.toJs(grok.ai.config.current.modelToDeployment);
-    ModelType.Fast = cfg[ModelType.Fast] as ChatModel ?? ModelType.Fast;
-    ModelType['Deep Research'] = cfg[ModelType['Deep Research']] as ChatModel ?? ModelType['Deep Research'];
-    ModelType.Coding = cfg[ModelType.Coding] as ChatModel ?? ModelType.Coding;
+    ModelType.Fast = cfg[ModelType.Fast] ?? ModelType.Fast;
+    ModelType['Deep Research'] = cfg[ModelType['Deep Research']] ?? ModelType['Deep Research'];
+    ModelType.Coding = cfg[ModelType.Coding] ?? ModelType.Coding;
   }
 }
 
-export class OpenAIClient {
+export class LLMClient {
   public openai: OpenAI;
-  public aiModels!: Record<ModelOption, sdkProvider.LanguageModelV3>;
+  public aiModels!: Record<ModelOption, LanguageModelV3>;
   private constructor(private vectorStoreId: string) {
     if (!grok.ai.config.configured)
-      throw new Error('OpenAI is not configured. Please set the API key in the AI settings under Admin section.');
+      throw new Error('AI is not configured. Please set the API key in the AI settings under Admin section.');
     const apiVersion = _package.settings.apiVersion ?? '';
     const versionChunk = apiVersion ? `/${apiVersion}` : '';
     const fullBaseUrl = `${grok.ai.config.proxyUrl}${versionChunk}`;
@@ -82,7 +81,8 @@ export class OpenAIClient {
 
     // const constr = _package.settings.APIName === 'openai chat completions' ? osdk.openai.chat : osdk.openai.responses;
     // this.aiModels.Fast = constr(ModelType.Fast);
-    const provider = osdk.createOpenAI({
+    const providerConstructor = _package.settings.APIName === LLMApiNames.AntropicMessages ? asdk.createAnthropic : osdk.createOpenAI;
+    const provider = providerConstructor({
       baseURL: fullBaseUrl,
       apiKey: grok.ai.config.proxyToken!,
       fetch: async (input, init) => {
@@ -114,7 +114,10 @@ export class OpenAIClient {
         return fetch(url, prms);
       },
     });
-    const constr = _package.settings.APIName === 'openai chat completions' ? provider.chat : provider.responses;
+
+    const constr = _package.settings.APIName === LLMApiNames.OpenAIChatCompletions ? provider.chat :
+      (_package.settings.APIName === LLMApiNames.OpenAIResponses ? (provider as osdk.OpenAIProvider).responses :
+        (provider as asdk.AnthropicProvider).messages);
     // @ts-ignore
     this.aiModels = {};
     for (const type of Object.keys(ModelType) as ModelOption[])
@@ -129,10 +132,10 @@ export class OpenAIClient {
     //   .then((res) => { console.log('OpenAI client initialized', res); });
   }
 
-  private static _instance: OpenAIClient | null = null;
-  static getInstance(): OpenAIClient {
-    OpenAIClient._instance ??= new OpenAIClient(LLMCredsManager.getVectorStoreId());
-    return OpenAIClient._instance;
+  private static _instance: LLMClient | null = null;
+  static getInstance(): LLMClient {
+    LLMClient._instance ??= new LLMClient(LLMCredsManager.getVectorStoreId());
+    return LLMClient._instance;
   }
 
   async getHelpAnswer(question: string): Promise<string> {

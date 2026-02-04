@@ -2,7 +2,7 @@
 
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
-import {ModelType, OpenAIClient} from './openAI-client';
+import {ModelType, LLMClient} from './LLM-client';
 /**
  * The idea is to provide single AI search provider which will decide which LLM to use based on user prompt.
  * This class will not care about individual LLM implementations, nor the presence of api keys and other needed things.
@@ -144,7 +144,7 @@ export class CombinedAISearchAssistant {
         User query: ${prompt}
 
         `;
-    const res = await OpenAIClient.getInstance().generalPromptCached(
+    const res = await LLMClient.getInstance().generalPromptCached(
       ModelType.Fast, 'You are a helpful assistant that selects the best function for a user query. reply with JSON array only and nothing else', fullPrompt);
 
     let order = Object.keys(this.functions);
