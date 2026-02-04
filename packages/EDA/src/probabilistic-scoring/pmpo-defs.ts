@@ -167,4 +167,14 @@ export const SOURCE_PATH = 'System:AppData/Eda/drugs-props-train.csv';
 /** Scores of the sample dataframe computed using https://github.com/Merck/pmpo */
 export const SCORES_PATH = 'System:AppData/Eda/drugs-props-train-scores.csv';
 
+/** Name of the synthetic drug used in the sample dataframe */
 export const SYNTHETIC_DRUG_NAME = 'Synthetic drug';
+
+/** pMPO model evaluation result type */
+export type PmpoEvaluationResult = {
+  auc: number,
+  threshold: number,
+};
+
+/** Default setting for auto-tuning pMPO parameters */
+export const AUTO_TUNE_THRESHOLD_DEFAULT = 10000;

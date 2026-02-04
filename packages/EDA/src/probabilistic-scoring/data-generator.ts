@@ -18,6 +18,7 @@ export async function getSynteticPmpoData(samplesCount: number): Promise<DG.Data
   return generator.getGenerated(samplesCount);
 }
 
+/** Class for generating synthetic data for pMPO model training and testing */
 export class PmpoDataGenerator {
   private sourceDf: DG.DataFrame;
   private drugName: string;

@@ -15,7 +15,8 @@ import {MIN_SAMPLES_COUNT, PMPO_NON_APPLICABLE, DescriptorStatistics, P_VAL_TRES
   R2_MIN, Q_CUTOFF_MIN, PmpoParams, SCORES_TITLE, DESCR_TABLE_TITLE, PMPO_COMPUTE_FAILED, SELECTED_TITLE,
   P_VAL, DESIRABILITY_COL_NAME, STAT_GRID_HEIGHT, DESIRABILITY_COLUMN_WIDTH, WEIGHT_TITLE,
   P_VAL_TRES_DEFAULT, R2_DEFAULT, Q_CUTOFF_DEFAULT, USE_SIGMOID_DEFAULT, ROC_TRESHOLDS, ROC_TRESHOLDS_COUNT,
-  FPR_TITLE, TPR_TITLE, COLORS, THRESHOLD} from './pmpo-defs';
+  FPR_TITLE, TPR_TITLE, COLORS, THRESHOLD, PmpoEvaluationResult,
+  AUTO_TUNE_THRESHOLD_DEFAULT} from './pmpo-defs';
 import {addSelectedDescriptorsCol, getDescriptorStatisticsTable, getFilteredByPvalue, getFilteredByCorrelations,
   getModelParams, getDescrTooltip, saveModel, getScoreTooltip, getDesirabilityProfileJson, getCorrelationTriples,
   addCorrelationColumns, setPvalColumnColorCoding, setCorrColumnColorCoding, PmpoError} from './pmpo-utils';
@@ -523,7 +524,7 @@ export class Pmpo {
   /** Updates the ROC curve viewer with the given desirability (labels) and prediction columns
    * @return Best threshold according to Youden's J statistic
    */
-  private updateRocCurve(desirability: DG.Column, prediction: DG.Column): number {
+  private updateRocCurve(desirability: DG.Column, prediction: DG.Column): PmpoEvaluationResult {
     const tpr = new Float32Array(ROC_TRESHOLDS_COUNT);
     const fpr = new Float32Array(ROC_TRESHOLDS_COUNT);
 
@@ -572,7 +573,7 @@ export class Pmpo {
       title: `ROC Curve (AUC = ${auc.toFixed(3)})`,
     });
 
-    return bestThreshold;
+    return {auc: auc, threshold: bestThreshold};
   } // updateRocCurve
 
   /** Updates the confusion matrix viewer with the given data frame, desirability column name, and best threshold */
@@ -616,7 +617,7 @@ export class Pmpo {
     this.updateStatisticsGrid(descrStatsTable, descriptorNames, selectedByPvalue, selectedByCorr);
 
     // Update ROC curve
-    const bestThreshold = this.updateRocCurve(desirability, prediction);
+    const bestThreshold = this.updateRocCurve(desirability, prediction).threshold;
 
     // Update desirability prediction column
     const desColName = desirability.name;
@@ -719,8 +720,30 @@ export class Pmpo {
     form.append(desInput.root);
 
     const header = ui.h2('Settings');
-    ui.tooltip.bind(header, 'Settings of the pMPO model.');
     form.append(header);
+    ui.tooltip.bind(header, 'Settings of the pMPO model.'); 
+
+    // use sigmoid correction
+    const useSigmoidInput = ui.input.bool('\u03C3 correction', {
+      value: USE_SIGMOID_DEFAULT,
+      tooltipText: 'Use the sigmoidal correction to the weighted Gaussian scores.',
+      onValueChanged: (_value) => {
+        runComputations();
+      },
+    });
+    form.append(useSigmoidInput.root);
+    
+    const autoTune = (this.table.rowCount <= AUTO_TUNE_THRESHOLD_DEFAULT);
+
+    // autotuning input
+    const autoTuneInput = ui.input.bool('Auto-tuning', {
+      value: autoTune,
+      tooltipText: 'Automatically select optimal settings.',
+      onValueChanged: (value) => {
+        setEnability(!value);
+      }, 
+    });
+    form.append(autoTuneInput.root);
 
     // p-value threshold input
     const pInput = ui.input.float('p-value', {
@@ -768,15 +791,13 @@ export class Pmpo {
     });
     form.append(qInput.root);
 
-    // use sigmoid correction
-    const useSigmoidInput = ui.input.bool('\u03C3 correction', {
-      value: USE_SIGMOID_DEFAULT,
-      tooltipText: 'Use the sigmoidal correction to the weighted Gaussian scores.',
-      onValueChanged: (_value) => {
-        runComputations();
-      },
-    });
-    form.append(useSigmoidInput.root);
+    const setEnability = (toEnable: boolean) => {
+      pInput.enabled = toEnable;
+      rInput.enabled = toEnable;
+      qInput.enabled = toEnable;
+    }
+
+    setEnability(!autoTune);
 
     setTimeout(() => runComputations(), 10);
 
