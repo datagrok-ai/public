@@ -597,7 +597,6 @@ export class Pmpo {
 
     const descriptorNames = descriptors.names();
 
-    //const weightsTable = getWeightsTable(this.params);
     const prediction = Pmpo.predict(df, this.params, useSigmoid, this.predictionName);
 
     // Mark predictions with a color

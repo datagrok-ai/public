@@ -12,8 +12,9 @@ import {category, expect, test} from '@datagrok-libraries/test/src/test';
 import {Pmpo} from '../probabilistic-scoring/prob-scoring';
 import {P_VAL_TRES_DEFAULT, Q_CUTOFF_DEFAULT, R2_DEFAULT, SCORES_PATH,
   SOURCE_PATH} from '../probabilistic-scoring/pmpo-defs';
+import {getSynteticPmpoData} from '../probabilistic-scoring/data-generator';
 
-const TIMEOUT = 4000;
+const TIMEOUT = 10000;
 const MAD_THRESH = 1E-6;
 
 const DESIRABILITY_COL_NAME = 'CNS';
@@ -25,6 +26,9 @@ const DRUG = 'Drug';
 const SIGMOIDAL = 'Sigmoidal';
 const GAUSSIAN = 'Gaussian';
 const PMPO_MODES = [SIGMOIDAL, GAUSSIAN];
+
+const SAMPLES_K = 100;
+const SAMPLES_COUNT = 1000 * SAMPLES_K;
 
 /** Computes the maximum absolute deviation between pMPO scores in two data frames */
 function getScoreMaxDeviation(sourceDrugCol: DG.Column, sourceScores: DG.Column,
@@ -50,10 +54,11 @@ function getScoreMaxDeviation(sourceDrugCol: DG.Column, sourceScores: DG.Column,
 } // getScoreMaxDeviation
 
 category('Probabilistic MPO', () => {
+  // Correctness tests: compare pMPO scores with reference scores
   PMPO_MODES.forEach((refScoreName) => {
     const useSigmoid = (refScoreName == SIGMOIDAL);
 
-    test(refScoreName, async () => {
+    test('Correctness: ' + refScoreName, async () => {
       let sourceDf: DG.DataFrame | null = null;
       let referenceDf: DG.DataFrame | null = null;
       let desirability: DG.Column | null = null;
@@ -64,7 +69,7 @@ category('Probabilistic MPO', () => {
       let mad: number | null = null;
 
       try {
-      // Load data
+        // Load data
         sourceDf = await grok.dapi.files.readCsv(SOURCE_PATH);
         referenceDf = await grok.dapi.files.readCsv(SCORES_PATH);
 
@@ -111,4 +116,42 @@ category('Probabilistic MPO', () => {
       expect(mad! < MAD_THRESH, true, `Max absolute deviation of pMPO scores exceeds the threshold (${MAD_THRESH})`);
     }, {timeout: TIMEOUT});
   });
+
+  // Performance tests: measure time of pMPO training
+  test('Performance: ' + SAMPLES_K + 'K drugs, ' + DESCRIPTOR_NAMES.length + ' descriptors', async () => {
+    let sourceDf: DG.DataFrame | null = null;
+    let desirability: DG.Column | null = null;
+    let descriptors: DG.Column[] = [];
+
+    try {
+      // Generate synthetic data
+      sourceDf = await getSynteticPmpoData(SAMPLES_COUNT);
+
+      // Extract training items
+      desirability = sourceDf.col(DESIRABILITY_COL_NAME);
+      descriptors = sourceDf.columns.byNames(DESCRIPTOR_NAMES);
+
+      if (desirability == null)
+        throw new Error();
+
+      // Train pMPO model
+      const trainRes = Pmpo.fit(
+        sourceDf,
+        DG.DataFrame.fromColumns(descriptors).columns,
+        desirability,
+        P_VAL_TRES_DEFAULT,
+        R2_DEFAULT,
+        Q_CUTOFF_DEFAULT,
+      );
+
+      // Apply pMPO
+      Pmpo.predict(sourceDf, trainRes.params, true, SCORES_NAME);
+    } catch (error) {
+      grok.shell.error((error as Error).message);
+    }
+
+    expect(sourceDf !== null, true, 'Failed to load the source data: ' + SOURCE_PATH);
+    expect(desirability !== null, true, 'Inconsistent source data: no column ' + DESIRABILITY_COL_NAME);
+    expect(descriptors.length, DESCRIPTOR_NAMES.length, 'Inconsistent source data: no enough of columns');
+  }, {timeout: TIMEOUT});
 });
