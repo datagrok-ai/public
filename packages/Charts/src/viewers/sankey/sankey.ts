@@ -26,12 +26,14 @@ import { MessageHandler } from '../../utils/utils';
 interface Node {
   node: number,
   name: string,
+  rowIdx: number,
 }
 
 interface Link {
   source: number,
   target: number,
   value: number,
+  rowIdx: number,
 }
 
 interface Margin {
@@ -69,12 +71,17 @@ export class SankeyViewer extends DG.JsViewer {
   sourceCol: DG.Column | null = null;
   targetCol: DG.Column | null = null;
 
+  nodeColorColumnName: string;
+  linkColorColumnName: string;
+
   constructor() {
     super();
     // Properties
     this.sourceColumnName = this.string('sourceColumnName', null, {nullable: false, columnTypeFilter: DG.TYPE.STRING});
     this.targetColumnName = this.string('targetColumnName', null, {nullable: false, columnTypeFilter: DG.TYPE.STRING});
     this.valueColumnName = this.string('valueColumnName', null, {nullable: false, columnTypeFilter: DG.TYPE.NUMERICAL});
+    this.nodeColorColumnName = this.string('nodeColorColumnName', null, {category: 'Color', columnTypeFilter: DG.TYPE.CATEGORICAL});
+    this.linkColorColumnName = this.string('linkColorColumnName', null, {category: 'Color', columnTypeFilter: DG.TYPE.CATEGORICAL});
     this.addRowSourceAndFormula();
 
     this.initialized = false;
@@ -104,6 +111,7 @@ export class SankeyViewer extends DG.JsViewer {
   onTableAttached() {
     this.subs.push(DG.debounce(this.dataFrame.selection.onChanged, 50).subscribe((_) => this.render()));
     this.subs.push(DG.debounce(ui.onSizeChanged(this.root), 50).subscribe((_) => this.render()));
+    this.subs.push(this.dataFrame.onMetadataChanged.subscribe((_) => this.render()));
 
     this.init();
 
@@ -138,7 +146,6 @@ export class SankeyViewer extends DG.JsViewer {
       selectedIndexes :
       Array.from({ length: rowCount }, (_, index) => index);
 
-
     const sourceList = new Array<string>(filteredIndexList.length);
     const targetList = new Array<string>(filteredIndexList.length);
     const valueList = new Array<number>(filteredIndexList.length);
@@ -152,12 +159,25 @@ export class SankeyViewer extends DG.JsViewer {
     this.sourceCol = DG.Column.fromList('string', this.sourceColumnName, sourceList);
     this.targetCol = DG.Column.fromList('string', this.targetColumnName, targetList);
 
+    const nodeRowIdx = new Map<string, number>();
+    const filteredRowCount = filteredIndexList.length;
+    for (let i = 0; i < filteredRowCount; i++) {
+      const rowIdx = filteredIndexList[i];
+      if (!nodeRowIdx.has(sourceList[i]))
+        nodeRowIdx.set(sourceList[i], rowIdx);
+      if (!nodeRowIdx.has(targetList[i]))
+        nodeRowIdx.set(targetList[i], rowIdx);
+    }
+
     const nodes: Node[] = Array.from(new Set(sourceList.concat(targetList)))
       .filter((element) => element)
-      .map((node: string, index: number) => ({node: index, name: node}));
+      .map((name: string, index: number) => ({
+        node: index,
+        name: name,
+        rowIdx: nodeRowIdx.get(name)!,
+      }));
 
     const links: Link[] = [];
-    const filteredRowCount = filteredIndexList.length;
     for (let i = 0; i < filteredRowCount; i++) {
       const source = nodes.findIndex((node) => node.name === sourceList[i]);
       const target = nodes.findIndex((node) => node.name === targetList[i]);
@@ -168,6 +188,7 @@ export class SankeyViewer extends DG.JsViewer {
         source: source,
         target: target,
         value: valueList[i],
+        rowIdx: filteredIndexList[i],
       });
     }
 
@@ -250,6 +271,8 @@ export class SankeyViewer extends DG.JsViewer {
 
     const dataFrameSourceColumn = this.dataFrame.getCol(this.sourceColumnName);
     const dataFrameTargetColumn = this.dataFrame.getCol(this.targetColumnName);
+    const nodeColorCol = this.nodeColorColumnName ? this.dataFrame.col(this.nodeColorColumnName) : null;
+    const linkColorCol = this.linkColorColumnName ? this.dataFrame.col(this.linkColorColumnName) : null;
 
     const nodes = nodeGroup
       .selectAll('rect')
@@ -259,7 +282,10 @@ export class SankeyViewer extends DG.JsViewer {
       .attr('y', (d) => d.y0!)
       .attr('height', (d) => Math.abs(d.y1! - d.y0!))
       .attr('width', (d) => d.x1! - d.x0!)
-      .attr('fill', (d: any) => DG.Color.toRgb(this.color!(d.name)))
+      .attr('fill', (d: any) => {
+        const color = nodeColorCol ? DG.Color.getRowColor(nodeColorCol, d.rowIdx) : this.color!(d.name);
+        return DG.Color.toRgb(color);
+      })
       .on('mouseover', (event, d: any) => {
         ui.tooltip.showRowGroup(this.dataFrame, (i) => {
           return this.rowMatchesColumnValues(this.sourceCol, this.targetCol, i, d.name, d.name, 'OR');
@@ -281,6 +307,11 @@ export class SankeyViewer extends DG.JsViewer {
       .join('path')
       .attr('class', 'link')
       .attr('d', sankeyLinkHorizontal())
+      .style('stroke', (d: any) => {
+        const color = linkColorCol ? DG.Color.getRowColor(linkColorCol, d.rowIdx) : DG.Color.darkGray;
+        return DG.Color.toRgb(color);
+      })
+      .style('fill', 'none')
       .attr('stroke-width', (d) => Math.max(1, d.width!))
       .on('mouseover', (event, d: any) => {
         ui.tooltip.showRowGroup(this.dataFrame, (i) => {
