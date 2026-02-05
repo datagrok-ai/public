@@ -176,5 +176,8 @@ export type PmpoEvaluationResult = {
   threshold: number,
 };
 
-/** Default setting for auto-tuning pMPO parameters */
-export const AUTO_TUNE_THRESHOLD_DEFAULT = 10000;
+/** Maximum number of rows for which auto-tuning is applicable */
+export const AUTO_TUNE_MAX_APPLICABLE_ROWS = 5000;
+
+/** Minimum number of rows to show a warning about auto-tuning */
+export const AUTO_TUNE_WARNING_MIN_ROWS = 10000;

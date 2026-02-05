@@ -15,8 +15,7 @@ import {MIN_SAMPLES_COUNT, PMPO_NON_APPLICABLE, DescriptorStatistics, P_VAL_TRES
   R2_MIN, Q_CUTOFF_MIN, PmpoParams, SCORES_TITLE, DESCR_TABLE_TITLE, PMPO_COMPUTE_FAILED, SELECTED_TITLE,
   P_VAL, DESIRABILITY_COL_NAME, STAT_GRID_HEIGHT, DESIRABILITY_COLUMN_WIDTH, WEIGHT_TITLE,
   P_VAL_TRES_DEFAULT, R2_DEFAULT, Q_CUTOFF_DEFAULT, USE_SIGMOID_DEFAULT, ROC_TRESHOLDS, ROC_TRESHOLDS_COUNT,
-  FPR_TITLE, TPR_TITLE, COLORS, THRESHOLD, PmpoEvaluationResult,
-  AUTO_TUNE_THRESHOLD_DEFAULT} from './pmpo-defs';
+  FPR_TITLE, TPR_TITLE, COLORS, THRESHOLD, PmpoEvaluationResult, AUTO_TUNE_MAX_APPLICABLE_ROWS, AUTO_TUNE_WARNING_MIN_ROWS} from './pmpo-defs';
 import {addSelectedDescriptorsCol, getDescriptorStatisticsTable, getFilteredByPvalue, getFilteredByCorrelations,
   getModelParams, getDescrTooltip, saveModel, getScoreTooltip, getDesirabilityProfileJson, getCorrelationTriples,
   addCorrelationColumns, setPvalColumnColorCoding, setCorrColumnColorCoding, PmpoError} from './pmpo-utils';
@@ -721,7 +720,7 @@ export class Pmpo {
 
     const header = ui.h2('Settings');
     form.append(header);
-    ui.tooltip.bind(header, 'Settings of the pMPO model.'); 
+    ui.tooltip.bind(header, 'Settings of the pMPO model.');
 
     // use sigmoid correction
     const useSigmoidInput = ui.input.bool('\u03C3 correction', {
@@ -732,16 +731,41 @@ export class Pmpo {
       },
     });
     form.append(useSigmoidInput.root);
-    
-    const autoTune = (this.table.rowCount <= AUTO_TUNE_THRESHOLD_DEFAULT);
+
+    const toUseAutoTune = (this.table.rowCount <= AUTO_TUNE_MAX_APPLICABLE_ROWS);
+    const toShowAutoTuneWarning = (this.table.rowCount > AUTO_TUNE_WARNING_MIN_ROWS);
+
+    const setOptimalParametersAndRun = () => {
+      const optimalSettings = getOptimalSettings();
+      pInput.value = optimalSettings.pValTresh;
+      rInput.value = optimalSettings.r2Tresh;
+      qInput.value = optimalSettings.qCutoff;
+      runComputations();
+    };
 
     // autotuning input
     const autoTuneInput = ui.input.bool('Auto-tuning', {
-      value: autoTune,
+      value: toUseAutoTune,
       tooltipText: 'Automatically select optimal settings.',
       onValueChanged: (value) => {
         setEnability(!value);
-      }, 
+
+        // If auto-tuning is turned on, set optimal parameters and run computations
+        if (value) {
+          if (toShowAutoTuneWarning) {
+            const dlg = ui.dialog('⚠️ Long Computation')
+              .add(ui.divText('Auto-tuning is time-consuming for large datasets.'))
+              .add(ui.divText('Do you want to continue?'))
+              .onCancel(() => autoTuneInput.value = false)
+              .addButton('Run Anyway', () => {
+                setOptimalParametersAndRun();
+                dlg.close();
+              })
+              .show();
+          } else
+            setOptimalParametersAndRun();
+        }
+      },
     });
     form.append(autoTuneInput.root);
 
@@ -754,6 +778,10 @@ export class Pmpo {
       value: P_VAL_TRES_DEFAULT,
       tooltipText: 'P-value threshold. Descriptors with p-values above this threshold are excluded.',
       onValueChanged: (value) => {
+        // Prevent running computations when auto-tuning is on, since parameters will be set automatically
+        if (autoTuneInput.value)
+          return;
+
         if ((value != null) && (value >= P_VAL_TRES_MIN) && (value <= 1))
           runComputations();
       },
@@ -770,6 +798,10 @@ export class Pmpo {
       // eslint-disable-next-line max-len
       tooltipText: 'Squared correlation threshold. Descriptors with squared correlation above this threshold are considered highly correlated. Among them, the descriptor with the lower p-value is retained.',
       onValueChanged: (value) => {
+        // Prevent running computations when auto-tuning is on, since parameters will be set automatically
+        if (autoTuneInput.value)
+          return;
+
         if ((value != null) && (value >= R2_MIN) && (value <= 1))
           runComputations();
       },
@@ -785,6 +817,10 @@ export class Pmpo {
       step: 0.01,
       tooltipText: 'Q-cutoff for the pMPO model computation.',
       onValueChanged: (value) => {
+        // Prevent running computations when auto-tuning is on, since parameters will be set automatically
+        if (autoTuneInput.value)
+          return;
+
         if ((value != null) && (value >= Q_CUTOFF_MIN) && (value <= 1))
           runComputations();
       },
@@ -795,11 +831,16 @@ export class Pmpo {
       pInput.enabled = toEnable;
       rInput.enabled = toEnable;
       qInput.enabled = toEnable;
-    }
+    };
 
-    setEnability(!autoTune);
+    //setEnability(!basicAutoTune);
 
-    setTimeout(() => runComputations(), 10);
+    setTimeout(() => {
+      if (toUseAutoTune)
+        autoTuneInput.value = true; // this will trigger setting optimal parameters and running computations
+      else
+        runComputations();
+    }, 10);
 
     // Save model button
     const saveBtn = ui.button('Save', async () => {
@@ -847,3 +888,11 @@ export class Pmpo {
     return res;
   } // getValidNumericCols
 }; // Pmpo
+
+function getOptimalSettings() {
+  return {
+    pValTresh: 0.123,
+    r2Tresh: 0.456,
+    qCutoff: 0.345,
+  };
+}
