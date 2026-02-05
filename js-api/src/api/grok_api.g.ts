@@ -1633,7 +1633,7 @@ export interface IDartApi {
   grok_FuncCall_Get_Output_Param_Value(call: any): any;
   grok_ParseCsv(s: String, options: any): any;
   grok_TestData(s: String, rows: Num, columns: Num): any;
-  grok_LinkTables(t1: any, t2: any, keys1: any, keys2: any, linkTypes: any, initialSync: Bool): any;
+  grok_LinkTables(t1: any, t2: any, keys1: any, keys2: any, linkTypes: any, initialSync: Bool, filterAllOnNoRowsSelected: Bool): any;
   grok_JoinTables(t1: any, t2: any, keys1: any, keys2: any, values1: any, values2: any, joinType: String, inPlace: Bool): any;
   grok_Subscription_Cancel(sub: any): any;
   grok_CallQuery(queryName: String, queryParameters: any, adHoc: Bool): Promise<any>;
