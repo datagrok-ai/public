@@ -54,6 +54,12 @@ export async function deleteMpoProfile(profile: MpoProfileInfo): Promise<void> {
   await grok.dapi.files.delete(`${MPO_TEMPLATE_PATH}/${profile.fileName}`);
 }
 
+export function profileForEditing(profile: MpoProfileInfo): MpoProfileInfo {
+  const copy = {...profile};
+  delete copy.file;
+  return copy;
+}
+
 export type MpoCalculationResult = {
   columnNames: string[];
   warnings: string[];

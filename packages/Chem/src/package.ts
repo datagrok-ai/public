@@ -92,7 +92,7 @@ import {MixtureCellRenderer} from './rendering/mixture-cell-renderer';
 import {createComponentPane, createMixtureWidget, Mixfile} from './utils/mixfile';
 import {biochemicalPropertiesDialog} from './widgets/biochem-properties-widget';
 import {checkCurrentView} from './utils/ui-utils';
-import {DesirabilityProfile, mpo, PropertyDesirability, WEIGHTED_AGGREGATIONS_LIST, WeightedAggregation} from '@datagrok-libraries/statistics/src/mpo/mpo';
+import {mpo, PropertyDesirability, WEIGHTED_AGGREGATIONS_LIST, WeightedAggregation} from '@datagrok-libraries/statistics/src/mpo/mpo';
 //@ts-ignore
 import '../css/chem.css';
 import {addDeprotectedColumn, DeprotectEditor} from './analysis/deprotect';
@@ -100,7 +100,8 @@ import {MpoProfilesView} from './mpo/mpo-profiles-view';
 
 import $ from 'cash-dom';
 import {MpoProfileCreateView} from './mpo/mpo-create-profile';
-import {calculateMpoCore, findSuitableProfiles, loadMpoProfiles, MPO_PROFILE_CHANGED_EVENT, MPO_TEMPLATE_PATH} from './mpo/utils';
+import {cloneMpoProfile, confirmDeleteMpoProfile} from './mpo/mpo-actions';
+import {calculateMpoCore, findSuitableProfiles, loadMpoProfiles, MPO_PROFILE_CHANGED_EVENT, MpoProfileInfo} from './mpo/utils';
 
 export {getMCS};
 export * from './package.g';
@@ -2588,22 +2589,31 @@ export class PackageFunctions {
     @grok.decorators.param({type: 'view'}) browseView: any,
   ) {
     let openedView: DG.ViewBase | null = null;
+    const profileMap = new Map<DG.TreeViewNode, MpoProfileInfo>();
 
     const refresh = async () => {
       treeNode.items.forEach((item) => item.remove());
+      profileMap.clear();
 
-      const profileFiles = await grok.dapi.files.list(MPO_TEMPLATE_PATH);
-      for (const profile of profileFiles) {
-        const content =
-        JSON.parse(await grok.dapi.files.readAsText(
-          `${MPO_TEMPLATE_PATH}/${profile.name}`,
-        )) as DesirabilityProfile;
+      const profiles = await loadMpoProfiles();
+      for (const profile of profiles) {
+        const item = treeNode.item(profile.name);
+        profileMap.set(item, profile);
 
-        treeNode.item(content.name).onSelected.subscribe(() => {
+        item.onSelected.subscribe(() => {
           openedView?.close();
-          const editView = new MpoProfileCreateView(content, false, profile.name);
+          const editView = new MpoProfileCreateView(profile, false, profile.fileName);
           openedView = editView.view;
           grok.shell.addPreview(editView.view);
+        });
+
+        item.captionLabel.addEventListener('contextmenu', (ev) => {
+          ev.stopImmediatePropagation();
+          ev.preventDefault();
+          DG.Menu.popup()
+            .item('Clone', () => cloneMpoProfile(profile))
+            .item('Delete', () => confirmDeleteMpoProfile(profile))
+            .show({x: ev.clientX, y: ev.clientY, causedBy: ev});
         });
       }
     };

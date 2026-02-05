@@ -7,8 +7,9 @@ import {u2} from '@datagrok-libraries/utils/src/u2';
 import {MpoProfileEditor} from '@datagrok-libraries/statistics/src/mpo/mpo-profile-editor';
 
 import {_package} from '../package';
-import {MpoProfileInfo, loadMpoProfiles, deleteMpoProfile, updateMpoPath, MpoPathMode, MPO_PROFILE_CHANGED_EVENT} from './utils';
+import {MpoProfileInfo, loadMpoProfiles, updateMpoPath, MpoPathMode, profileForEditing} from './utils';
 import {MpoProfileCreateView} from './mpo-create-profile';
+import {cloneMpoProfile, confirmDeleteMpoProfile} from './mpo-actions';
 
 export class MpoProfilesView {
   name = 'MPO Profiles';
@@ -113,19 +114,8 @@ export class MpoProfilesView {
     return span;
   }
 
-  private profileForEditing(profile: MpoProfileInfo): MpoProfileInfo {
-    const copy = {...profile};
-    delete (copy as any).file;
-    return copy;
-  }
-
   private openCloneProfile(profile: MpoProfileInfo): void {
-    const clone = this.profileForEditing(profile);
-    clone.name = `${profile.name} (Copy)`;
-
-    const cloneFileName = profile.fileName.replace(/\.json$/i, '-copy.json');
-    const view = new MpoProfileCreateView(clone, false, cloneFileName);
-    grok.shell.v = grok.shell.addView(view.view);
+    cloneMpoProfile(profile);
   }
 
   private openProfile(profile: MpoProfileInfo): void {
@@ -149,7 +139,7 @@ export class MpoProfilesView {
   }
 
   private openEditProfile(profile: MpoProfileInfo): void {
-    const editable = this.profileForEditing(profile);
+    const editable = profileForEditing(profile);
     const view = new MpoProfileCreateView(editable, false, profile.fileName);
     grok.shell.v = grok.shell.addView(view.view);
   }
@@ -160,19 +150,10 @@ export class MpoProfilesView {
   }
 
   private confirmDelete(profile: MpoProfileInfo): void {
-    ui.dialog('Delete profile')
-      .add(ui.divText(`Are you sure you want to delete profile "${profile.name}"?`))
-      .onOK(async () => {
-        try {
-          await deleteMpoProfile(profile);
-          this.profiles = this.profiles.filter((p) => p !== profile);
-          this.rerenderTable();
-          grok.events.fireCustomEvent(MPO_PROFILE_CHANGED_EVENT, {});
-        } catch (e) {
-          grok.shell.error(`Failed to delete profile "${profile.name}": ${e instanceof Error ? e.message : e}`);
-        }
-      })
-      .show();
+    confirmDeleteMpoProfile(profile, () => {
+      this.profiles = this.profiles.filter((p) => p !== profile);
+      this.rerenderTable();
+    });
   }
 
   async show() {
