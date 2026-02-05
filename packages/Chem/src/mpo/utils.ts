@@ -13,7 +13,6 @@ export type MpoProfileInfo = {
   name: string;
   description: string;
   properties: Record<string, PropertyDesirability>;
-  file?: DG.FileInfo;
 };
 
 export enum MpoPathMode {
@@ -36,7 +35,6 @@ export async function loadMpoProfiles(): Promise<MpoProfileInfo[]> {
       const content = JSON.parse(text) as DesirabilityProfile;
 
       profiles.push({
-        file,
         fileName: file.name,
         name: content.name ?? file.name.replace(/\.json$/i, ''),
         description: content.description ?? '',
@@ -52,12 +50,6 @@ export async function loadMpoProfiles(): Promise<MpoProfileInfo[]> {
 
 export async function deleteMpoProfile(profile: MpoProfileInfo): Promise<void> {
   await grok.dapi.files.delete(`${MPO_TEMPLATE_PATH}/${profile.fileName}`);
-}
-
-export function profileForEditing(profile: MpoProfileInfo): MpoProfileInfo {
-  const copy = {...profile};
-  delete copy.file;
-  return copy;
 }
 
 export type MpoCalculationResult = {

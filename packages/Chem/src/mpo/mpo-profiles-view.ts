@@ -7,7 +7,7 @@ import {u2} from '@datagrok-libraries/utils/src/u2';
 import {MpoProfileEditor} from '@datagrok-libraries/statistics/src/mpo/mpo-profile-editor';
 
 import {_package} from '../package';
-import {MpoProfileInfo, loadMpoProfiles, updateMpoPath, MpoPathMode, profileForEditing} from './utils';
+import {MpoProfileInfo, loadMpoProfiles, updateMpoPath, MpoPathMode} from './utils';
 import {MpoProfileCreateView} from './mpo-create-profile';
 import {cloneMpoProfile, confirmDeleteMpoProfile} from './mpo-actions';
 
@@ -139,7 +139,7 @@ export class MpoProfilesView {
   }
 
   private openEditProfile(profile: MpoProfileInfo): void {
-    const editable = profileForEditing(profile);
+    const editable = structuredClone(profile);
     const view = new MpoProfileCreateView(editable, false, profile.fileName);
     grok.shell.v = grok.shell.addView(view.view);
   }

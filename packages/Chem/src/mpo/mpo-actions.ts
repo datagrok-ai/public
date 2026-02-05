@@ -2,10 +2,10 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 
 import {MpoProfileCreateView} from './mpo-create-profile';
-import {deleteMpoProfile, MPO_PROFILE_CHANGED_EVENT, MpoProfileInfo, profileForEditing} from './utils';
+import {deleteMpoProfile, MPO_PROFILE_CHANGED_EVENT, MpoProfileInfo} from './utils';
 
 export function cloneMpoProfile(profile: MpoProfileInfo): void {
-  const clone = profileForEditing(profile);
+  const clone = structuredClone(profile);
   clone.name = `${profile.name} (Copy)`;
 
   const cloneFileName = profile.fileName.replace(/\.json$/i, '-copy.json');
