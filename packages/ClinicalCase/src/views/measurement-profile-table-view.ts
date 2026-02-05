@@ -21,30 +21,46 @@ export function createMeasurementProfileTableView(studyId: string): any {
         createVisitDayStrCol(it);
         requiredColumns = requiredColumns.concat([VISIT_DAY_STR]);
       }
-      // if there is a category column, create temporary test column name, containing both category and test name
+      // if there is a category or specimen type column,
+      // create temporary test column name, containing both category and test name
       const catColName = `${it.name.toUpperCase()}CAT`;
-      const containsCatCol = it.col(catColName);
+      const specColName = `${it.name.toUpperCase()}SPEC`;
+      const catCol = it.col(catColName);
+      const specCol = it.col(specColName);
+      const containsCatOrSpecCol = catCol || specCol;
       const fullTestNameCol = 'full_test_name';
-      if (containsCatCol) {
+      if (containsCatOrSpecCol) {
         it.columns.addNewString(fullTestNameCol)
-          .init((i) => `${it.get(`${it.name.toUpperCase()}TEST`, i)} ${
-            it.get(catColName, i) ? `(${it.get(catColName, i)})` : ``}`);
+          .init((i) => {
+            const arr = [];
+            if (catCol && !catCol.isNone(i))
+              arr.push(catCol.get(i));
+            if (specCol && !specCol.isNone(i))
+              arr.push(specCol.get(i));
+            return `${it.get(`${it.name.toUpperCase()}TEST`, i)} ${arr.length ? `(${arr.join(',')}) `: ``}`;
+          });
         requiredColumns.push(fullTestNameCol);
         requiredColumns = requiredColumns.filter((i) => i !== `${it.name.toUpperCase()}TEST`);
-      } else //create category column for compatibility in case it is missing
+      }
+      //in case cat or spec column is missing, adding it for compatibility
+      if (!catCol)
         it.columns.addNewString(catColName);
+      if (!specCol)
+        it.columns.addNewString(specColName);
       requiredColumns.push(`${it.name.toUpperCase()}CAT`);
+      requiredColumns.push(`${it.name.toUpperCase()}SPEC`);
 
       const df = it.clone(null, requiredColumns);
-      df.getCol(containsCatCol ? fullTestNameCol : `${it.name.toUpperCase()}TEST`).name = 'test';
+      df.getCol(containsCatOrSpecCol ? fullTestNameCol : `${it.name.toUpperCase()}TEST`).name = 'test';
       df.getCol(`${it.name.toUpperCase()}CAT`).name = 'category';
+      df.getCol(`${it.name.toUpperCase()}SPEC`).name = 'specimen';
       df.getCol(`${it.name.toUpperCase()}STRESN`).name = 'result';
       df.getCol(`${it.name.toUpperCase()}DY`).name = 'visit_day';
       df.getCol(`${it.name.toUpperCase()}STRESC`).name = 'string_result';
       df.getCol(`${it.name.toUpperCase()}STRESU`).name = 'units';
 
       // remove temporary full test name column
-      if (containsCatCol)
+      if (containsCatOrSpecCol)
         it.columns.remove(fullTestNameCol);
 
       if (!resDf)
