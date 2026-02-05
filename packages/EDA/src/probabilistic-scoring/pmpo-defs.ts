@@ -211,6 +211,7 @@ export type OptimalPoint = {
   pValTresh: number,
   r2Tresh: number,
   qCutoff: number,
+  success: boolean,
 };
 
 /** Minimum bounds for pMPO parameters during optimization */

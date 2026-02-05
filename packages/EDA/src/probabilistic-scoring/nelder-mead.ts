@@ -1,3 +1,7 @@
+import * as grok from 'datagrok-api/grok';
+import * as ui from 'datagrok-api/ui';
+import * as DG from 'datagrok-api/dg';
+
 function getInitialParams(
   objectiveFunc: (x: Float32Array) => number,
   settings: Map<string, number>,
@@ -64,7 +68,8 @@ function fillPoint(
   }
 } // fillPoint
 
-export function optimizeNM( objectiveFunc: (x: Float32Array) => number, paramsInitial: Float32Array,
+export async function optimizeNM(pi: DG.ProgressIndicator,
+  objectiveFunc: (x: Float32Array) => number, paramsInitial: Float32Array,
   settings: Map<string, number>, restrictionsBottom: Float32Array, restrictionsTop: Float32Array) {
   // Settings initialization
   const tolerance = settings.get('tolerance')!;
@@ -102,10 +107,20 @@ export function optimizeNM( objectiveFunc: (x: Float32Array) => number, paramsIn
   const costs = new Array<number>(maxIter);
 
   if (dim > 1) {
+    let percentage = 0;
+
     while (true) {
       indexes.sort((a:number, b:number) => {
         return pointObjectives[a] - pointObjectives[b];
       });
+
+      percentage = Math.floor(100 * (iteration) / maxIter);
+      pi.update(percentage, `Optimizing... (${percentage}%)`);
+      await new Promise((r) => setTimeout(r, 1));
+
+      if (pi.canceled)
+        break;
+
       if (iteration > maxIter)
         break;
 
@@ -176,11 +191,11 @@ export function optimizeNM( objectiveFunc: (x: Float32Array) => number, paramsIn
       }
 
       break;
-    }
+    } // while
 
     for (let i = iteration; i < maxIter; i++)
       costs[i] = pointObjectives[indexes[0]];
-  }
+  } // if
 
   return {
     optimalPoint: optParams[indexes[0]],

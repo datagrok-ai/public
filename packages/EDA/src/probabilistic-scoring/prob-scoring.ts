@@ -732,18 +732,21 @@ export class Pmpo {
     // Flag indicating whether optimal parameters from auto-tuning are currently used
     let areTunedSettingsUsed = false;
 
-    const setOptimalParametersAndRun = () => {
+    const setOptimalParametersAndRun = async () => {
       if (!areTunedSettingsUsed) {
-        const optimalSettings = this.getOptimalSettings(
+        const optimalSettings = await this.getOptimalSettings(
           DG.DataFrame.fromColumns(descrInput.value).columns,
           this.table.col(desInput.value!)!,
           useSigmoidInput.value,
         );
 
-        pInput.value = Math.max(optimalSettings.pValTresh, P_VAL_TRES_MIN);
-        rInput.value = Math.max(optimalSettings.r2Tresh, R2_MIN);
-        qInput.value = Math.max(optimalSettings.qCutoff, Q_CUTOFF_MIN);
-        areTunedSettingsUsed = true;
+        if (optimalSettings.success) {
+          pInput.value = Math.max(optimalSettings.pValTresh, P_VAL_TRES_MIN);
+          rInput.value = Math.max(optimalSettings.r2Tresh, R2_MIN);
+          qInput.value = Math.max(optimalSettings.qCutoff, Q_CUTOFF_MIN);
+          areTunedSettingsUsed = true;
+        } else
+          autoTuneInput.value = false; // revert to manual mode if optimization failed
       }
 
       runComputations();
@@ -759,7 +762,7 @@ export class Pmpo {
     // autotuning input
     const autoTuneInput = ui.input.bool('Auto-tuning', {
       value: toUseAutoTune,
-      tooltipText: 'Automatically select optimal settings.',
+      tooltipText: 'Automatically select optimal p-value, R², and q-cutoff by maximizing AUC.',
       onValueChanged: (value) => {
         setEnability(!value);
 
@@ -773,9 +776,9 @@ export class Pmpo {
               .add(ui.divText('Auto-tuning is time-consuming for large datasets.'))
               .add(ui.divText('Do you want to continue?'))
               .onCancel(() => autoTuneInput.value = false)
-              .addButton('Run Anyway', () => {
+              .addButton('Run Anyway', async () => {
                 dlg.close();
-                setTimeout(setOptimalParametersAndRun, 10);
+                setTimeout(async () => await setOptimalParametersAndRun(), 10);
               })
               .show();
           } else
@@ -914,7 +917,7 @@ export class Pmpo {
   } // getValidNumericCols
 
   /** Fits the pMPO model to the given data and updates the viewers accordingly */
-  private getOptimalSettings(descriptors: DG.ColumnList, desirability: DG.Column, useSigmoid: boolean): OptimalPoint {
+  private async getOptimalSettings(descriptors: DG.ColumnList, desirability: DG.Column, useSigmoid: boolean): Promise<OptimalPoint> {
     const funcToBeMinimized = (point: Float32Array) => {
       // Fit the model
       const trainResult = Pmpo.fit(this.table, descriptors, desirability, point[0], point[1], point[2], false);
@@ -926,20 +929,41 @@ export class Pmpo {
       return 1 - getPmpoEvaluation(desirability, prediction).auc;
     }; // funcToBeMinimized
 
-    const optimalResult = optimizeNM(
-      funcToBeMinimized,
-      new Float32Array([P_VAL_TRES_DEFAULT, R2_DEFAULT, Q_CUTOFF_DEFAULT]),
-      DEFAULT_OPTIMIZATION_SETTINGS,
-      LOW_PARAMS_BOUNDS,
-      HIGH_PARAMS_BOUNDS,
-    );
-
-    //console.log(optimalResult);
-
-    return {
-      pValTresh: optimalResult.optimalPoint[0],
-      r2Tresh: optimalResult.optimalPoint[1],
-      qCutoff: optimalResult.optimalPoint[2],
+    const failedResult: OptimalPoint = {
+      pValTresh: 0,
+      r2Tresh: 0,
+      qCutoff: 0,
+      success: false,
     };
+
+    const pi = DG.TaskBarProgressIndicator.create('Optimizing... ', {cancelable: true});
+
+    try {
+      const optimalResult = await optimizeNM(
+        pi,
+        funcToBeMinimized,
+        new Float32Array([P_VAL_TRES_DEFAULT, R2_DEFAULT, Q_CUTOFF_DEFAULT]),
+        DEFAULT_OPTIMIZATION_SETTINGS,
+        LOW_PARAMS_BOUNDS,
+        HIGH_PARAMS_BOUNDS,
+      );
+
+      const success = !pi.canceled;
+      pi.close();
+
+      if (success) {
+        return {
+          pValTresh: optimalResult.optimalPoint[0],
+          r2Tresh: optimalResult.optimalPoint[1],
+          qCutoff: optimalResult.optimalPoint[2],
+          success: true,
+        };
+      } else
+        return failedResult;
+    } catch (err) {
+      pi.close();
+
+      return failedResult;
+    }
   } // getOptimalSettings
 }; // Pmpo
