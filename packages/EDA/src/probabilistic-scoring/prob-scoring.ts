@@ -675,6 +675,8 @@ export class Pmpo {
     // Function to run computations on input changes
     const runComputations = () => {
       try {
+        grok.shell.info('Running...');
+
         this.fitAndUpdateViewers(
           this.table,
           DG.DataFrame.fromColumns(descrInput.value).columns,
@@ -699,8 +701,10 @@ export class Pmpo {
       checked: numericColNames,
       tooltipText: 'Descriptor columns used for model construction.',
       onValueChanged: (value) => {
-        if (value != null)
-          runComputations();
+        if (value != null) {
+          areTunedSettingsUsed = false;
+          checkAutoTuneAndRun();
+        }
       },
     });
     form.append(descrInput.root);
@@ -712,8 +716,10 @@ export class Pmpo {
       items: this.boolCols.map((col) => col.name),
       tooltipText: 'Desirability column.',
       onValueChanged: (value) => {
-        if (value != null)
-          runComputations();
+        if (value != null) {
+          areTunedSettingsUsed = false;
+          checkAutoTuneAndRun();
+        }
       },
     });
     form.append(desInput.root);
@@ -727,7 +733,8 @@ export class Pmpo {
       value: USE_SIGMOID_DEFAULT,
       tooltipText: 'Use the sigmoidal correction to the weighted Gaussian scores.',
       onValueChanged: (_value) => {
-        runComputations();
+        areTunedSettingsUsed = false;
+        checkAutoTuneAndRun();
       },
     });
     form.append(useSigmoidInput.root);
@@ -735,12 +742,26 @@ export class Pmpo {
     const toUseAutoTune = (this.table.rowCount <= AUTO_TUNE_MAX_APPLICABLE_ROWS);
     const toShowAutoTuneWarning = (this.table.rowCount > AUTO_TUNE_WARNING_MIN_ROWS);
 
+    // Flag indicating whether optimal parameters from auto-tuning are currently used
+    let areTunedSettingsUsed = false;
+
     const setOptimalParametersAndRun = () => {
-      const optimalSettings = getOptimalSettings();
-      pInput.value = optimalSettings.pValTresh;
-      rInput.value = optimalSettings.r2Tresh;
-      qInput.value = optimalSettings.qCutoff;
+      if (!areTunedSettingsUsed) {
+        const optimalSettings = getOptimalSettings();
+        pInput.value = optimalSettings.pValTresh;
+        rInput.value = optimalSettings.r2Tresh;
+        qInput.value = optimalSettings.qCutoff;
+        areTunedSettingsUsed = true;
+      }
+
       runComputations();
+    };
+
+    const checkAutoTuneAndRun = () => {
+      if (autoTuneInput.value)
+        setOptimalParametersAndRun();
+      else
+        runComputations();
     };
 
     // autotuning input
@@ -749,6 +770,9 @@ export class Pmpo {
       tooltipText: 'Automatically select optimal settings.',
       onValueChanged: (value) => {
         setEnability(!value);
+
+        if (areTunedSettingsUsed)
+          return;
 
         // If auto-tuning is turned on, set optimal parameters and run computations
         if (value) {
@@ -782,6 +806,7 @@ export class Pmpo {
         if (autoTuneInput.value)
           return;
 
+        areTunedSettingsUsed = false;
         if ((value != null) && (value >= P_VAL_TRES_MIN) && (value <= 1))
           runComputations();
       },
@@ -802,6 +827,8 @@ export class Pmpo {
         if (autoTuneInput.value)
           return;
 
+        areTunedSettingsUsed = false;
+
         if ((value != null) && (value >= R2_MIN) && (value <= 1))
           runComputations();
       },
@@ -820,6 +847,8 @@ export class Pmpo {
         // Prevent running computations when auto-tuning is on, since parameters will be set automatically
         if (autoTuneInput.value)
           return;
+
+        areTunedSettingsUsed = false;
 
         if ((value != null) && (value >= Q_CUTOFF_MIN) && (value <= 1))
           runComputations();
@@ -891,8 +920,8 @@ export class Pmpo {
 
 function getOptimalSettings() {
   return {
-    pValTresh: 0.123,
-    r2Tresh: 0.456,
-    qCutoff: 0.345,
+    pValTresh: 0.123 + Math.random() * 0.000001,
+    r2Tresh: 0.456 + Math.random() * 0.000001,
+    qCutoff: 0.345 + Math.random() * 0.000001,
   };
 }
