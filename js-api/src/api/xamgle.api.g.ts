@@ -113,10 +113,6 @@ export interface SettingsInterface {
 
   enableIndexedDBTablesCache: boolean;
 
-  /// Displays Index Files check box in connection edit dialog. If it is disabled then check
-  /// box will not be shown to the user and indexing of files will not be configurable.
-  enableConnectionIndexFiles: boolean;
-
   dateFormat: string;
 
   integerNumberFormat: string;
@@ -143,5 +139,9 @@ export interface SettingsInterface {
   /// This includes console logs, server logs, data connectivity logs, Docker logs, etc.
   autoReportErrors: boolean;
 
+
+}
+export class PopupMenuTypes {
+  static VIEW_CONTEXT_MENU = 'view-context-menu';
 
 }
