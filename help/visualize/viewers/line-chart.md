@@ -42,8 +42,14 @@ To configure a custom aggregated tooltip, go to **Context menu > Tooltip > Edit*
 
 ## Statistical Process Control
 
-Line chart supports Statistical Process Control (SPC) features out of the box, including contol limits and adjustable rules.
-![SPC Chart](../../uploads/gifs/line-chart-spc.png "SPC Chart")
+Line chart includes comprehensive Statistical Process Control (SPC) capabilities for monitoring process behavior:
+
+- Control limits (manually configurable) and process mean line
+- Sigma bands (±1σ and ±2σ) to visualize process variation
+- Western Electric rules for anomaly detection: outliers, bias, trends, oscillation, shifts, and suppressed variation
+
+Toggle each component on/off independently in the **Context Panel** to focus on relevant process signals.
+![](img/line-chart-spc.gif)
 
 ## Videos
 
