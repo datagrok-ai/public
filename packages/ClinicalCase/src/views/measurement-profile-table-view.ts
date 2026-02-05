@@ -86,6 +86,21 @@ export function createMeasurementProfileTableView(studyId: string): any {
   let trellisPlot: DG.Viewer | null = null;
   // onTableViewAdded function to add viewers
   const onTableViewAdded = async (tableView: DG.TableView) => {
+    const splitBy = ui.input.choice('Split by', {
+      items: ['Treatment arm', 'Subject'],
+      value: 'Treatment arm',
+      onValueChanged: () => {
+        trellisPlot.setOptions({
+          innerViewerLook: {
+            splitColumnNames: splitBy.value === 'Treatment arm' ? [PLANNED_TRT_ARM] : [SUBJECT_ID],
+          },
+        });
+      },
+    });
+    const ribbons = tableView.getRibbonPanels();
+    ribbons.push([splitBy.root]);
+    tableView.setRibbonPanels(ribbons);
+
     trellisPlot = await DG.Viewer.fromType(DG.VIEWER.TRELLIS_PLOT, tableView.dataFrame, {
       xColumnNames: [SEX],
       yColumnNames: ['test'],
