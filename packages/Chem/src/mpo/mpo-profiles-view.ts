@@ -3,13 +3,14 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 
+import {Subscription} from 'rxjs';
 import {u2} from '@datagrok-libraries/utils/src/u2';
 import {MpoProfileEditor} from '@datagrok-libraries/statistics/src/mpo/mpo-profile-editor';
 
 import {_package} from '../package';
-import {MpoProfileInfo, loadMpoProfiles, updateMpoPath, MpoPathMode} from './utils';
+import {MpoProfileInfo, updateMpoPath, MpoPathMode, MPO_PROFILE_CHANGED_EVENT} from './utils';
 import {MpoProfileCreateView} from './mpo-create-profile';
-import {cloneMpoProfile, confirmDeleteMpoProfile} from './mpo-actions';
+import {MpoProfileManager} from './mpo-profile-manager';
 
 export class MpoProfilesView {
   name = 'MPO Profiles';
@@ -17,7 +18,7 @@ export class MpoProfilesView {
   view: DG.View;
 
   private tableContainer = ui.divV([]);
-  private profiles: MpoProfileInfo[] = [];
+  private subs: Subscription[] = [];
 
   constructor() {
     this.view = DG.View.fromRoot(this.root);
@@ -40,6 +41,7 @@ export class MpoProfilesView {
       );
 
       await this.reloadProfiles();
+      this.listenForChanges();
     } finally {
       ui.setUpdateIndicator(this.root, false);
     }
@@ -48,7 +50,7 @@ export class MpoProfilesView {
   private async reloadProfiles(): Promise<void> {
     ui.setUpdateIndicator(this.tableContainer, true);
     try {
-      this.profiles = await loadMpoProfiles();
+      await MpoProfileManager.ensureLoaded();
       this.rerenderTable();
     } finally {
       ui.setUpdateIndicator(this.tableContainer, false);
@@ -69,7 +71,7 @@ export class MpoProfilesView {
   private rerenderTable(): void {
     ui.empty(this.tableContainer);
 
-    if (this.profiles.length === 0) {
+    if (MpoProfileManager.items.length === 0) {
       this.tableContainer.append(ui.h2('No MPO profiles yet'));
       return;
     }
@@ -79,7 +81,7 @@ export class MpoProfilesView {
 
   private buildProfilesTable(): HTMLElement {
     const table = ui.table(
-      this.profiles,
+      MpoProfileManager.items,
       (profile) => [
         this.buildActionsButton(profile),
         ui.link(profile.name, () => this.openProfile(profile)),
@@ -115,7 +117,7 @@ export class MpoProfilesView {
   }
 
   private openCloneProfile(profile: MpoProfileInfo): void {
-    cloneMpoProfile(profile);
+    MpoProfileManager.clone(profile);
   }
 
   private openProfile(profile: MpoProfileInfo): void {
@@ -150,10 +152,20 @@ export class MpoProfilesView {
   }
 
   private confirmDelete(profile: MpoProfileInfo): void {
-    confirmDeleteMpoProfile(profile, () => {
-      this.profiles = this.profiles.filter((p) => p !== profile);
-      this.rerenderTable();
-    });
+    MpoProfileManager.confirmDelete(profile);
+  }
+
+  private listenForChanges(): void {
+    this.subs.push(grok.events.onCustomEvent(MPO_PROFILE_CHANGED_EVENT).subscribe(() => this.reloadProfiles()));
+    this.subs.push(grok.events.onViewRemoving.subscribe((v) => {
+      if (v.args.view.id === this.view.id)
+        this.detach();
+    }));
+  }
+
+  private detach(): void {
+    this.subs.forEach((sub) => sub.unsubscribe());
+    this.subs = [];
   }
 
   async show() {

@@ -100,8 +100,8 @@ import {MpoProfilesView} from './mpo/mpo-profiles-view';
 
 import $ from 'cash-dom';
 import {MpoProfileCreateView} from './mpo/mpo-create-profile';
-import {cloneMpoProfile, confirmDeleteMpoProfile} from './mpo/mpo-actions';
-import {calculateMpoCore, findSuitableProfiles, loadMpoProfiles, MPO_PROFILE_CHANGED_EVENT, MpoProfileInfo} from './mpo/utils';
+import {MpoProfileManager} from './mpo/mpo-profile-manager';
+import {calculateMpoCore, findSuitableProfiles, MPO_PROFILE_CHANGED_EVENT, MpoProfileInfo} from './mpo/utils';
 
 export {getMCS};
 export * from './package.g';
@@ -2571,7 +2571,7 @@ export class PackageFunctions {
     }
 
     const profileId = params.get('profileId');
-    const profiles = await loadMpoProfiles();
+    const profiles = await MpoProfileManager.ensureLoaded();
     if (hasPath && profileId) {
       const profile = profiles.find((p) => p.name === decodeURIComponent(profileId));
       const view = new MpoProfileCreateView(profile, false, profile?.fileName);
@@ -2595,7 +2595,7 @@ export class PackageFunctions {
       treeNode.items.forEach((item) => item.remove());
       profileMap.clear();
 
-      const profiles = await loadMpoProfiles();
+      const profiles = await MpoProfileManager.ensureLoaded();
       for (const profile of profiles) {
         const item = treeNode.item(profile.name);
         profileMap.set(item, profile);
@@ -2611,8 +2611,8 @@ export class PackageFunctions {
           ev.stopImmediatePropagation();
           ev.preventDefault();
           DG.Menu.popup()
-            .item('Clone', () => cloneMpoProfile(profile))
-            .item('Delete', () => confirmDeleteMpoProfile(profile))
+            .item('Clone', () => MpoProfileManager.clone(profile))
+            .item('Delete', () => MpoProfileManager.confirmDelete(profile))
             .show({x: ev.clientX, y: ev.clientY, causedBy: ev});
         });
       }
@@ -2639,8 +2639,8 @@ export class PackageFunctions {
     resultDiv.appendChild(loader);
 
     const dataFrame = semValue.cell.dataFrame;
-    const profiles = await loadMpoProfiles();
-    const suitableProfiles = await findSuitableProfiles(dataFrame, profiles);
+    const profiles = await MpoProfileManager.ensureLoaded();
+    const suitableProfiles = findSuitableProfiles(dataFrame, profiles);
 
     if (suitableProfiles.length === 0) {
       container.appendChild(ui.divText('No suitable profiles available.'));

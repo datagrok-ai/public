@@ -2,6 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
+import {Subscription} from 'rxjs';
 import {
   DesirabilityProfile,
   WeightedAggregation,
@@ -10,9 +11,9 @@ import {
 import {MPO_SCORE_CHANGED_EVENT, MpoProfileEditor} from '@datagrok-libraries/statistics/src/mpo/mpo-profile-editor';
 
 import {MpoContextPanel} from '../mpo/mpo-context-panel';
+import {MpoProfileManager} from '../mpo/mpo-profile-manager';
 import {PackageFunctions} from '../package';
-import {computeMpo, MPO_TEMPLATE_PATH, loadMpoProfiles, MpoProfileInfo,
-  deepEqual, findSuitableProfiles} from '../mpo/utils';
+import {computeMpo, MpoProfileInfo, deepEqual, findSuitableProfiles} from '../mpo/utils';
 
 export class MpoProfileDialog {
   dataFrame: DG.DataFrame;
@@ -31,6 +32,7 @@ export class MpoProfileDialog {
   private mpoContextPanel?: MpoContextPanel;
   private originalProfile: DesirabilityProfile | null = null;
   private suitableProfileNames: string[] = [];
+  private subs: Subscription[] = [];
 
   constructor(dataFrame?: DG.DataFrame) {
     this.dataFrame = dataFrame ?? grok.shell.t;
@@ -69,7 +71,7 @@ export class MpoProfileDialog {
   }
 
   async init(): Promise<void> {
-    this.mpoProfiles = await loadMpoProfiles();
+    this.mpoProfiles = await MpoProfileManager.ensureLoaded();
     this.suitableProfileNames = findSuitableProfiles(this.dataFrame, this.mpoProfiles).map((p) => p.fileName);
 
     this.profileInput.items = this.mpoProfiles.map((p) => p.fileName);
@@ -100,7 +102,7 @@ export class MpoProfileDialog {
   }
 
   private listenForProfileChanges(): void {
-    grok.events.onCustomEvent(MPO_SCORE_CHANGED_EVENT).subscribe(async () => {
+    this.subs.push(grok.events.onCustomEvent(MPO_SCORE_CHANGED_EVENT).subscribe(async () => {
       this.updateSaveButtonVisibility();
       this.updateOkButtonState();
       if (this.currentProfile && this.mpoContextPanel) {
@@ -110,7 +112,7 @@ export class MpoProfileDialog {
           this.aggregationInput.value ?? undefined,
         );
       }
-    });
+    }));
   }
 
   private async loadProfile(fileName: string | null): Promise<void> {
@@ -160,17 +162,7 @@ export class MpoProfileDialog {
     if (!this.currentProfileFileName || !this.currentProfile)
       return;
 
-    try {
-      const updatedProfileString = JSON.stringify(this.currentProfile, null, 2);
-      await grok.dapi.files.writeAsText(
-        `${MPO_TEMPLATE_PATH}/${this.currentProfileFileName}`,
-        updatedProfileString,
-      );
-      grok.shell.info(`Profile '${this.currentProfileFileName}' updated.`);
-    } catch (e) {
-      grok.shell.error(
-        `Failed to save profile '${this.currentProfileFileName}': ${e instanceof Error ? e.message : e}`);
-    }
+    await MpoProfileManager.save(this.currentProfile, this.currentProfileFileName);
   }
 
   private addParetoFrontViewer(columnNames: string[]): void {
@@ -228,11 +220,17 @@ export class MpoProfileDialog {
       .add(this.getEditor())
       .onOK(async () => {
         await this.runMpoCalculation();
-        this.mpoContextPanel?.detach();
+        this.detach();
       })
-      .onCancel(() => this.mpoContextPanel?.detach())
+      .onCancel(() => this.detach())
       .show();
 
     this.updateOkButtonState();
+  }
+
+  private detach(): void {
+    this.mpoContextPanel?.detach();
+    this.subs.forEach((sub) => sub.unsubscribe());
+    this.subs = [];
   }
 }
