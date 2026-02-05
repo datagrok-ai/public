@@ -12,6 +12,7 @@ import serialization.Types;
 import java.sql.*;
 import java.util.*;
 
+@SuppressWarnings({"SqlDialectInspection", "SqlNoDataSourceInspection"})
 public class DatabricksProvider extends JdbcDataProvider {
     private static final String PAT_METHOD = "Personal Access Token";
     private static final String OAUTH_METHOD = "OAuth Client Credentials";
@@ -98,7 +99,7 @@ public class DatabricksProvider extends JdbcDataProvider {
     @Override
     public String getConnectionStringImpl(DataConnection conn) {
         String workspaceUrl = conn.get("workspaceURL");
-        if (GrokConnectUtil.isEmpty(workspaceUrl)) {
+        if (GrokConnectUtil.isNotEmpty(workspaceUrl)) {
             workspaceUrl = workspaceUrl.replaceFirst("(?i)^https?://", "");
             int slashIndex = workspaceUrl.indexOf('/');
             if (slashIndex != -1)
@@ -124,7 +125,6 @@ public class DatabricksProvider extends JdbcDataProvider {
                     DataFrame.fromColumns(new StringColumn("table_schema"));
 
             String catalog = getCatalog(connection, db);
-
             String infoSchemaPath = getInfoSchemaPath(db, catalog);
 
             String sql =
@@ -132,14 +132,76 @@ public class DatabricksProvider extends JdbcDataProvider {
                             "FROM " + infoSchemaPath + ".schemata " +
                             "ORDER BY schema_name";
 
+            SQLException primaryError;
             try (PreparedStatement ps = db.prepareStatement(sql);
                  ResultSet rs = ps.executeQuery()) {
 
                 while (rs.next())
                     result.addRow(rs.getString(1));
+                return result;
+            } catch (SQLException e) {
+                primaryError = e;
+                logger.debug("Primary getSchemas query failed: {}", e.getMessage());
             }
 
-            return result;
+            // Fallback: try the opposite information_schema path
+            String fallbackPath;
+            if (infoSchemaPath.contains(".")) {
+                // Was Unity path, try legacy
+                fallbackPath = "information_schema";
+            } else if (GrokConnectUtil.isNotEmpty(catalog)) {
+                // Was legacy, try Unity (only if catalog is available)
+                fallbackPath = addBrackets(catalog) + ".information_schema";
+            } else {
+                fallbackPath = null;
+            }
+
+            if (fallbackPath != null) {
+                String fallbackSql =
+                        "SELECT schema_name " +
+                                "FROM " + fallbackPath + ".schemata " +
+                                "ORDER BY schema_name";
+
+                try (PreparedStatement ps = db.prepareStatement(fallbackSql);
+                     ResultSet rs = ps.executeQuery()) {
+
+                    logger.debug("Fallback getSchemas query succeeded with path: {}", fallbackPath);
+                    while (rs.next())
+                        result.addRow(rs.getString(1));
+                    return result;
+                } catch (SQLException e) {
+                    logger.debug("Fallback getSchemas query also failed: {}", e.getMessage());
+                }
+            }
+
+            // Final fallback: use SHOW SCHEMAS which works on both systems
+            if (GrokConnectUtil.isNotEmpty(catalog)) {
+                try (Statement st = db.createStatement();
+                     ResultSet rs = st.executeQuery("SHOW SCHEMAS IN " + addBrackets(catalog))) {
+
+                    logger.debug("SHOW SCHEMAS fallback succeeded");
+                    while (rs.next())
+                        result.addRow(rs.getString(1));
+                    return result;
+                } catch (SQLException e) {
+                    logger.debug("SHOW SCHEMAS fallback failed: {}", e.getMessage());
+                }
+            }
+
+            // Last resort: SHOW SCHEMAS without catalog
+            try (Statement st = db.createStatement();
+                 ResultSet rs = st.executeQuery("SHOW SCHEMAS")) {
+
+                logger.debug("SHOW SCHEMAS (no catalog) fallback succeeded");
+                while (rs.next())
+                    result.addRow(rs.getString(1));
+                return result;
+            } catch (SQLException e) {
+                logger.debug("SHOW SCHEMAS (no catalog) fallback failed: {}", e.getMessage());
+            }
+
+            // All attempts failed, throw the original error
+            throw primaryError;
 
         } catch (SQLException e) {
             throw new GrokConnectException(simplifyDatabricksError(e.getMessage()));
@@ -147,7 +209,16 @@ public class DatabricksProvider extends JdbcDataProvider {
     }
 
     private String getInfoSchemaPath(Connection db, String catalog) throws SQLException {
-        return isUnityCatalog(db) ? addBrackets(catalog) + ".information_schema" : "information_schema";
+        Boolean isUnity = isUnityCatalog(db);
+        if (isUnity == null) {
+            // Detection inconclusive - try Unity Catalog path first if catalog available, will fallback if it fails
+            if (GrokConnectUtil.isNotEmpty(catalog))
+                return addBrackets(catalog) + ".information_schema";
+            return "information_schema";
+        }
+        if (isUnity && GrokConnectUtil.isNotEmpty(catalog))
+            return addBrackets(catalog) + ".information_schema";
+        return "information_schema";
     }
 
     @Override
@@ -156,67 +227,193 @@ public class DatabricksProvider extends JdbcDataProvider {
 
         try (Connection db = getConnection(connection)) {
 
-            DataFrame result = DataFrame.fromColumns(
-                    new StringColumn("table_catalog"),
-                    new StringColumn("table_schema"),
-                    new StringColumn("table_name"),
-                    new StringColumn("column_name"),
-                    new StringColumn("data_type"),
-                    new IntColumn("is_view")
-            );
-
             String catalog = getCatalog(connection, db);
             String infoSchemaPath = getInfoSchemaPath(db, catalog);
-            StringBuilder sql = new StringBuilder(
-                    "SELECT t.table_catalog, t.table_schema, t.table_name, " +
-                            "       c.column_name, c.data_type, " +
-                            "       CASE WHEN t.table_type = 'VIEW' THEN 1 ELSE 0 END AS is_view " +
-                            "FROM " + infoSchemaPath + ".tables t " +
-                            "LEFT JOIN " + infoSchemaPath + ".columns c " +
-                            "  ON t.table_catalog = c.table_catalog " +
-                            " AND t.table_schema  = c.table_schema " +
-                            " AND t.table_name    = c.table_name "
-            );
 
+            // Try primary path
+            DataFrame result = tryGetSchemaWithPath(db, infoSchemaPath, catalog, schema, table);
+            if (result != null)
+                return result;
 
-            sql.append("WHERE 1=1 ");
-
-            if (GrokConnectUtil.isNotEmpty(schema))
-                sql.append("AND LOWER(t.table_schema) = LOWER(?) ");
-
-            if (GrokConnectUtil.isNotEmpty(table))
-                sql.append("AND t.table_name = ? ");
-
-            sql.append("ORDER BY t.table_schema, t.table_name, c.ordinal_position");
-
-            try (PreparedStatement ps = db.prepareStatement(sql.toString())) {
-
-                int idx = 1;
-                if (schema != null)
-                    ps.setString(idx++, schema);
-
-                if (table != null)
-                    ps.setString(idx, table);
-
-                try (ResultSet rs = ps.executeQuery()) {
-                    while (rs.next()) {
-                        result.addRow(
-                                rs.getString("table_catalog"),
-                                rs.getString("table_schema"),
-                                rs.getString("table_name"),
-                                rs.getString("column_name"),
-                                rs.getString("data_type"),
-                                rs.getInt("is_view")
-                        );
-                    }
-                }
+            // Fallback: try the opposite information_schema path
+            String fallbackPath;
+            if (infoSchemaPath.contains(".")) {
+                // Was Unity path, try legacy
+                fallbackPath = "information_schema";
+            } else if (GrokConnectUtil.isNotEmpty(catalog)) {
+                // Was legacy, try Unity (only if catalog is available)
+                fallbackPath = addBrackets(catalog) + ".information_schema";
+            } else {
+                fallbackPath = null;
             }
 
-            return result;
+            if (fallbackPath != null) {
+                logger.debug("Primary getSchema query failed, trying fallback path: {}", fallbackPath);
+                result = tryGetSchemaWithPath(db, fallbackPath, catalog, schema, table);
+                if (result != null)
+                    return result;
+            }
+
+            // Final fallback: use SHOW TABLES and DESCRIBE for each table
+            logger.debug("Information schema queries failed, using SHOW TABLES fallback");
+            return getSchemaViaShowTables(db, catalog, schema, table);
 
         } catch (SQLException e) {
             throw new GrokConnectException(simplifyDatabricksError(e.getMessage()));
         }
+    }
+
+    private DataFrame tryGetSchemaWithPath(Connection db, String infoSchemaPath, String catalog,
+                                           String schema, String table) {
+        // Try with table_catalog first
+        DataFrame result = tryGetSchemaWithCatalogColumn(db, infoSchemaPath, catalog, schema, table, true);
+        if (result != null)
+            return result;
+
+        // If failed, try without table_catalog (some legacy/driver configs don't have it)
+        logger.debug("Retrying getSchema without table_catalog column");
+        return tryGetSchemaWithCatalogColumn(db, infoSchemaPath, catalog, schema, table, false);
+    }
+
+    private DataFrame tryGetSchemaWithCatalogColumn(Connection db, String infoSchemaPath, String catalog,
+                                                    String schema, String table, boolean useCatalogColumn) {
+        DataFrame result = DataFrame.fromColumns(
+                new StringColumn("table_catalog"),
+                new StringColumn("table_schema"),
+                new StringColumn("table_name"),
+                new StringColumn("column_name"),
+                new StringColumn("data_type"),
+                new IntColumn("is_view")
+        );
+
+        StringBuilder sql = new StringBuilder();
+        if (useCatalogColumn) {
+            sql.append("SELECT t.table_catalog, t.table_schema, t.table_name, ")
+               .append("       c.column_name, c.data_type, ")
+               .append("       CASE WHEN t.table_type = 'VIEW' THEN 1 ELSE 0 END AS is_view ")
+               .append("FROM ").append(infoSchemaPath).append(".tables t ")
+               .append("LEFT JOIN ").append(infoSchemaPath).append(".columns c ")
+               .append("  ON t.table_catalog = c.table_catalog ")
+               .append(" AND t.table_schema  = c.table_schema ")
+               .append(" AND t.table_name    = c.table_name ");
+        } else {
+            // Query without table_catalog - join only on schema and table name
+            sql.append("SELECT t.table_schema, t.table_name, ")
+               .append("       c.column_name, c.data_type, ")
+               .append("       CASE WHEN t.table_type = 'VIEW' THEN 1 ELSE 0 END AS is_view ")
+               .append("FROM ").append(infoSchemaPath).append(".tables t ")
+               .append("LEFT JOIN ").append(infoSchemaPath).append(".columns c ")
+               .append("  ON t.table_schema = c.table_schema ")
+               .append(" AND t.table_name   = c.table_name ");
+        }
+
+        sql.append("WHERE 1=1 ");
+
+        // Filter by catalog only if column exists and catalog is provided
+        if (useCatalogColumn && GrokConnectUtil.isNotEmpty(catalog))
+            sql.append("AND t.table_catalog = ? ");
+
+        if (GrokConnectUtil.isNotEmpty(schema))
+            sql.append("AND LOWER(t.table_schema) = LOWER(?) ");
+
+        if (GrokConnectUtil.isNotEmpty(table))
+            sql.append("AND t.table_name = ? ");
+
+        sql.append("ORDER BY t.table_schema, t.table_name, c.ordinal_position");
+
+        try (PreparedStatement ps = db.prepareStatement(sql.toString())) {
+            int idx = 1;
+            if (useCatalogColumn && GrokConnectUtil.isNotEmpty(catalog))
+                ps.setString(idx++, catalog);
+
+            if (GrokConnectUtil.isNotEmpty(schema))
+                ps.setString(idx++, schema);
+
+            if (GrokConnectUtil.isNotEmpty(table))
+                ps.setString(idx, table);
+
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    result.addRow(
+                            useCatalogColumn ? rs.getString("table_catalog") : catalog,
+                            rs.getString("table_schema"),
+                            rs.getString("table_name"),
+                            rs.getString("column_name"),
+                            rs.getString("data_type"),
+                            rs.getInt("is_view")
+                    );
+                }
+            }
+            return result;
+        } catch (SQLException e) {
+            logger.debug("getSchema query failed with path {} (useCatalogColumn={}): {}",
+                    infoSchemaPath, useCatalogColumn, e.getMessage());
+            return null;
+        }
+    }
+
+    private DataFrame getSchemaViaShowTables(Connection db, String catalog, String schema, String table)
+            throws SQLException {
+        DataFrame result = DataFrame.fromColumns(
+                new StringColumn("table_catalog"),
+                new StringColumn("table_schema"),
+                new StringColumn("table_name"),
+                new StringColumn("column_name"),
+                new StringColumn("data_type"),
+                new IntColumn("is_view")
+        );
+
+        String targetSchema = GrokConnectUtil.isNotEmpty(schema) ? schema : "default";
+
+        // Get list of tables
+        List<String[]> tables = new ArrayList<>(); // [tableName, isView]
+        String showTablesSql = GrokConnectUtil.isNotEmpty(catalog)
+                ? "SHOW TABLES IN " + addBrackets(catalog) + "." + addBrackets(targetSchema)
+                : "SHOW TABLES IN " + addBrackets(targetSchema);
+
+        try (Statement st = db.createStatement();
+             ResultSet rs = st.executeQuery(showTablesSql)) {
+            while (rs.next()) {
+                String tableName = rs.getString("tableName");
+                if (table == null || table.equals(tableName)) {
+                    String isTemp = "false";
+                    try {
+                        isTemp = rs.getString("isTemporary");
+                    } catch (SQLException ignored) {}
+                    tables.add(new String[]{tableName, isTemp});
+                }
+            }
+        }
+
+        // Get columns for each table using DESCRIBE
+        for (String[] tableInfo : tables) {
+            String tableName = tableInfo[0];
+            String describeSql = GrokConnectUtil.isNotEmpty(catalog)
+                    ? "DESCRIBE " + addBrackets(catalog) + "." + addBrackets(targetSchema) + "." + addBrackets(tableName)
+                    : "DESCRIBE " + addBrackets(targetSchema) + "." + addBrackets(tableName);
+
+            try (Statement st = db.createStatement();
+                 ResultSet rs = st.executeQuery(describeSql)) {
+                while (rs.next()) {
+                    String colName = rs.getString("col_name");
+                    // Skip partition info and empty rows
+                    if (colName == null || colName.isEmpty() || colName.startsWith("#"))
+                        continue;
+                    result.addRow(
+                            catalog,
+                            targetSchema,
+                            tableName,
+                            colName,
+                            rs.getString("data_type"),
+                            0 // Can't easily determine if view from SHOW TABLES
+                    );
+                }
+            } catch (SQLException e) {
+                logger.debug("DESCRIBE failed for table {}: {}", tableName, e.getMessage());
+            }
+        }
+
+        return result;
     }
 
     private String getCatalog(DataConnection connection, Connection db) throws SQLException {
@@ -233,23 +430,66 @@ public class DatabricksProvider extends JdbcDataProvider {
         return catalog;
     }
 
-    private boolean isUnityCatalog(Connection db) {
-        try (Statement st = db.createStatement()) {
-            st.executeQuery(
-                    "SELECT 1 FROM hive_metastore.information_schema.tables LIMIT 1");
-            logger.debug("Unity Catalog detected via hive_metastore");
-            return true;
-        } catch (SQLException ignored) {}
+    /**
+     * Detects if the connection uses Unity Catalog.
+     * @return true if Unity Catalog, false if legacy Hive metastore, null if detection is inconclusive
+     */
+    private Boolean isUnityCatalog(Connection db) {
+        // Method 1: Check SHOW CATALOGS - Unity Catalog has multiple catalogs or 'system' catalog
+        try (Statement st = db.createStatement();
+             ResultSet rs = st.executeQuery("SHOW CATALOGS")) {
+            Set<String> catalogs = new HashSet<>();
+            while (rs.next()) {
+                catalogs.add(rs.getString(1).toLowerCase());
+            }
+            // Unity Catalog always has 'system' catalog; legacy Hive metastore does not
+            if (catalogs.contains("system")) {
+                logger.debug("Unity Catalog detected: 'system' catalog present");
+                return true;
+            }
+            // If only hive_metastore exists and no system catalog, it's legacy
+            if (catalogs.size() == 1 && catalogs.contains("hive_metastore")) {
+                logger.debug("Legacy Hive metastore detected: only hive_metastore catalog present");
+                return false;
+            }
+            // Multiple catalogs without 'system' is unusual but treat as Unity Catalog
+            if (catalogs.size() > 1) {
+                logger.debug("Unity Catalog detected: multiple catalogs present ({})", catalogs);
+                return true;
+            }
+        } catch (SQLException e) {
+            logger.debug("SHOW CATALOGS failed (may lack permissions): {}", e.getMessage());
+        }
 
-        try (Statement st = db.createStatement()) {
-            st.executeQuery(
-                    "SELECT 1 FROM system.information_schema.tables LIMIT 1");
-            logger.debug("Unity Catalog detected via system catalog");
+        // Method 2: Try to access system.information_schema (Unity Catalog specific)
+        try (Statement st = db.createStatement();
+             ResultSet ignored = st.executeQuery("SELECT 1 FROM system.information_schema.catalogs LIMIT 1")) {
+            logger.debug("Unity Catalog detected via system.information_schema.catalogs");
             return true;
-        } catch (SQLException ignored) {}
+        } catch (SQLException e) {
+            String msg = e.getMessage().toLowerCase();
+            // If error indicates catalog/schema doesn't exist, it's likely legacy
+            if (msg.contains("catalog") && (msg.contains("not found") || msg.contains("does not exist"))) {
+                logger.debug("Legacy Hive metastore detected: system catalog does not exist");
+                return false;
+            }
+            // Permission error - detection inconclusive
+            logger.debug("system.information_schema query failed (may lack permissions): {}", e.getMessage());
+        }
 
-        logger.debug("Unity Catalog not detected");
-        return false;
+        // Method 3: Try legacy information_schema directly (no catalog prefix)
+        // Note: This can work on both legacy AND Unity Catalog (with default catalog context),
+        // so we can't definitively determine the system type - return null (inconclusive)
+        try (Statement st = db.createStatement();
+             ResultSet ignored = st.executeQuery("SELECT 1 FROM information_schema.tables LIMIT 1")) {
+            logger.debug("Unqualified information_schema accessible - could be legacy or Unity with default catalog");
+            return null;
+        } catch (SQLException e) {
+            logger.debug("Legacy information_schema query failed: {}", e.getMessage());
+        }
+
+        logger.debug("Unity Catalog detection inconclusive - will try Unity path with fallback");
+        return null; // Inconclusive - caller should handle fallback
     }
 
 
@@ -280,12 +520,14 @@ public class DatabricksProvider extends JdbcDataProvider {
     @Override
     public String getCommentsQuery(DataConnection connection) throws GrokConnectException {
         try (Connection conn = getConnection(connection)) {
-            if (!isUnityCatalog(conn))
-                throw new GrokConnectException("Can not get comments for legacy metastore");
+            Boolean isUnity = isUnityCatalog(conn);
+            if (Boolean.FALSE.equals(isUnity))
+                throw new GrokConnectException("Cannot get comments for legacy metastore");
+            // If isUnity is true or null (inconclusive), proceed - query will fail naturally if not Unity
         } catch (SQLException e) {
             throw new GrokConnectException(e);
         }
-    
+
         return "--input: string schema\n" +
                 "-- SCHEMA (database.schema) comments\n" +
                 "(\n" +
