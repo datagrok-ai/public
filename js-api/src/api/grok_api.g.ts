@@ -258,6 +258,16 @@ export interface IDartApi {
   grok_FilterGroup_SetExpanded(filterGroup: any, filter: any, active: Bool): any;
   grok_FilterGroup_Remove(filterGroup: any, filter: any): any;
   grok_FilterGroup_SetActive(filterGroup: any, active: Bool, notify: Bool): any;
+  grok_GridFilterBase_SaveState(filter: any): any;
+  grok_GridFilterBase_ApplyState(filter: any, state: any): any;
+  grok_GridFilterBase_Get_FilterColumnName(filter: any): any;
+  grok_GridFilterBase_Get_FilterType(filter: any): any;
+  grok_GridFilterBase_Get_IsActive(filter: any): any;
+  grok_GridFilterBase_Set_IsActive(filter: any, active: Bool): any;
+  grok_GridFilterBase_Get_IsFiltering(filter: any): any;
+  grok_GridFilterBase_Set_Sorting(filter: any, sortByCol: String, asc: Bool): any;
+  grok_GridFilterBase_Get_Caption(filter: any): any;
+  grok_GridFilterBase_Set_Caption(filter: any, caption: String): any;
   grok_DockNode_Get_Container(node: any): any;
   grok_DockNode_DetachFromParent(node: any): any;
   grok_DockNode_RemoveChild(node: any, childNode: any): any;

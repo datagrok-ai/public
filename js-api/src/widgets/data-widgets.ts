@@ -176,3 +176,51 @@ export class PropertyGrid extends DartWidget {
     api.grok_PropertyGrid_Update(this.dart, src, props.map((x) => toDart(x)));
   }
 }
+
+export class GridFilterBase extends DartWidget {
+  constructor(dart: any) {
+    super(dart);
+  }
+
+  saveState(): Record<string, any> {
+    return toJs(api.grok_GridFilterBase_SaveState(this.dart));
+  }
+
+  applyState(state: Record<string, any>): void {
+    api.grok_GridFilterBase_ApplyState(this.dart, toDart(state));
+  }
+
+  get filterColumnName(): string {
+    return api.grok_GridFilterBase_Get_FilterColumnName(this.dart);
+  }
+
+  get filterType(): string {
+    return api.grok_GridFilterBase_Get_FilterType(this.dart);
+  }
+
+  get isActive(): boolean {
+    return api.grok_GridFilterBase_Get_IsActive(this.dart);
+  }
+
+  set isActive(value: boolean) {
+    api.grok_GridFilterBase_Set_IsActive(this.dart, value);
+  }
+
+  get isFiltering(): boolean {
+    return api.grok_GridFilterBase_Get_IsFiltering(this.dart);
+  }
+
+  setSorting(columnName: 'name' | 'count', ascending: boolean): void {
+    api.grok_GridFilterBase_Set_Sorting(this.dart, columnName, ascending);
+  }
+
+  get caption(): string {
+    return api.grok_GridFilterBase_Get_Caption(this.dart);
+  }
+
+  set caption(value: string) {
+    api.grok_GridFilterBase_Set_Caption(this.dart, value);
+  }
+
+
+}
