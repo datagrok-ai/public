@@ -10,17 +10,22 @@ import {MpoProfileEditor} from '@datagrok-libraries/statistics/src/mpo/mpo-profi
 
 import '../../css/pmpo.css';
 
-import {getDesiredTables, getDescriptorStatistics, gaussDesirabilityFunc, sigmoidS, getConfusionMatrix, getAuc, getBoolPredictionColumn} from './stat-tools';
+import {getDesiredTables, getDescriptorStatistics, gaussDesirabilityFunc, sigmoidS,
+  getBoolPredictionColumn, getPmpoEvaluation} from './stat-tools';
 import {MIN_SAMPLES_COUNT, PMPO_NON_APPLICABLE, DescriptorStatistics, P_VAL_TRES_MIN, DESCR_TITLE,
   R2_MIN, Q_CUTOFF_MIN, PmpoParams, SCORES_TITLE, DESCR_TABLE_TITLE, PMPO_COMPUTE_FAILED, SELECTED_TITLE,
   P_VAL, DESIRABILITY_COL_NAME, STAT_GRID_HEIGHT, DESIRABILITY_COLUMN_WIDTH, WEIGHT_TITLE,
-  P_VAL_TRES_DEFAULT, R2_DEFAULT, Q_CUTOFF_DEFAULT, USE_SIGMOID_DEFAULT, ROC_TRESHOLDS, ROC_TRESHOLDS_COUNT,
-  FPR_TITLE, TPR_TITLE, COLORS, THRESHOLD, PmpoEvaluationResult, AUTO_TUNE_MAX_APPLICABLE_ROWS, AUTO_TUNE_WARNING_MIN_ROWS} from './pmpo-defs';
+  P_VAL_TRES_DEFAULT, R2_DEFAULT, Q_CUTOFF_DEFAULT, USE_SIGMOID_DEFAULT, ROC_TRESHOLDS,
+  FPR_TITLE, TPR_TITLE, COLORS, THRESHOLD, AUTO_TUNE_MAX_APPLICABLE_ROWS, AUTO_TUNE_WARNING_MIN_ROWS,
+  DEFAULT_OPTIMIZATION_SETTINGS, P_VAL_TRES_MAX, R2_MAX, Q_CUTOFF_MAX, OptimalPoint, LOW_PARAMS_BOUNDS,
+  HIGH_PARAMS_BOUNDS,
+  FORMAT} from './pmpo-defs';
 import {addSelectedDescriptorsCol, getDescriptorStatisticsTable, getFilteredByPvalue, getFilteredByCorrelations,
   getModelParams, getDescrTooltip, saveModel, getScoreTooltip, getDesirabilityProfileJson, getCorrelationTriples,
   addCorrelationColumns, setPvalColumnColorCoding, setCorrColumnColorCoding, PmpoError} from './pmpo-utils';
 import {getOutputPalette} from '../pareto-optimization/utils';
 import {OPT_TYPE} from '../pareto-optimization/defs';
+import {optimizeNM} from './nelder-mead';
 
 export type PmpoTrainingResult = {
   params: Map<string, PmpoParams>,
@@ -153,9 +158,11 @@ export class Pmpo {
 
   /** Fits the pMPO model to the given data and returns training results */
   static fit(df: DG.DataFrame, descriptors: DG.ColumnList, desirability: DG.Column,
-    pValTresh: number, r2Tresh: number, qCutoff: number): PmpoTrainingResult {
-    if (!Pmpo.isApplicable(descriptors, desirability, pValTresh, r2Tresh, qCutoff))
-      throw new Error('Failed to train pMPO model: the method is not applicable to the inputs');
+    pValTresh: number, r2Tresh: number, qCutoff: number, toCheckApplicability: boolean = true): PmpoTrainingResult {
+    if (toCheckApplicability) {
+      if (!Pmpo.isApplicable(descriptors, desirability, pValTresh, r2Tresh, qCutoff))
+        throw new Error('Failed to train pMPO model: the method is not applicable to the inputs');
+    }
 
     const descriptorNames = descriptors.names();
     const {desired, nonDesired} = getDesiredTables(df, desirability);
@@ -523,31 +530,13 @@ export class Pmpo {
   /** Updates the ROC curve viewer with the given desirability (labels) and prediction columns
    * @return Best threshold according to Youden's J statistic
    */
-  private updateRocCurve(desirability: DG.Column, prediction: DG.Column): PmpoEvaluationResult {
-    const tpr = new Float32Array(ROC_TRESHOLDS_COUNT);
-    const fpr = new Float32Array(ROC_TRESHOLDS_COUNT);
-
-    let bestJ = -1;
-    let currentJ = -1;
-    let bestThreshold = ROC_TRESHOLDS[0];
-
-    // Compute TPR and FPR for each threshold
-    for (let i = 0; i < ROC_TRESHOLDS_COUNT; ++i) {
-      const confusion = getConfusionMatrix(desirability, prediction, ROC_TRESHOLDS[i]);
-      tpr[i] = (confusion.TP + confusion.FN) > 0 ? confusion.TP / (confusion.TP + confusion.FN) : 0;
-      fpr[i] = (confusion.FP + confusion.TN) > 0 ? confusion.FP / (confusion.FP + confusion.TN) : 0;
-      currentJ = tpr[i] - fpr[i];
-
-      if (currentJ > bestJ) {
-        bestJ = currentJ;
-        bestThreshold = ROC_TRESHOLDS[i];
-      }
-    }
+  private updateRocCurve(desirability: DG.Column, prediction: DG.Column): number {
+    const evaluation = getPmpoEvaluation(desirability, prediction);
 
     const rocDf = DG.DataFrame.fromColumns([
       DG.Column.fromFloat32Array(THRESHOLD, ROC_TRESHOLDS),
-      DG.Column.fromFloat32Array(FPR_TITLE, fpr),
-      DG.Column.fromFloat32Array(TPR_TITLE, tpr),
+      DG.Column.fromFloat32Array(FPR_TITLE, evaluation.fpr),
+      DG.Column.fromFloat32Array(TPR_TITLE, evaluation.tpr),
     ]);
 
     // Add baseline
@@ -560,8 +549,6 @@ export class Pmpo {
       max: 1,
     });
 
-    const auc = getAuc(tpr, fpr);
-
     this.rocCurve.dataFrame = rocDf;
     this.rocCurve.setOptions({
       xColumnName: FPR_TITLE,
@@ -569,10 +556,10 @@ export class Pmpo {
       linesOrderColumnName: FPR_TITLE,
       linesWidth: 5,
       markerType: 'dot',
-      title: `ROC Curve (AUC = ${auc.toFixed(3)})`,
+      title: `ROC Curve (AUC = ${evaluation.auc.toFixed(3)})`,
     });
 
-    return {auc: auc, threshold: bestThreshold};
+    return evaluation.threshold;
   } // updateRocCurve
 
   /** Updates the confusion matrix viewer with the given data frame, desirability column name, and best threshold */
@@ -616,7 +603,7 @@ export class Pmpo {
     this.updateStatisticsGrid(descrStatsTable, descriptorNames, selectedByPvalue, selectedByCorr);
 
     // Update ROC curve
-    const bestThreshold = this.updateRocCurve(desirability, prediction).threshold;
+    const bestThreshold = this.updateRocCurve(desirability, prediction);
 
     // Update desirability prediction column
     const desColName = desirability.name;
@@ -675,7 +662,7 @@ export class Pmpo {
     // Function to run computations on input changes
     const runComputations = () => {
       try {
-        grok.shell.info('Running...');
+        //grok.shell.info('Running...');
 
         this.fitAndUpdateViewers(
           this.table,
@@ -747,10 +734,15 @@ export class Pmpo {
 
     const setOptimalParametersAndRun = () => {
       if (!areTunedSettingsUsed) {
-        const optimalSettings = getOptimalSettings();
-        pInput.value = optimalSettings.pValTresh;
-        rInput.value = optimalSettings.r2Tresh;
-        qInput.value = optimalSettings.qCutoff;
+        const optimalSettings = this.getOptimalSettings(
+          DG.DataFrame.fromColumns(descrInput.value).columns,
+          this.table.col(desInput.value!)!,
+          useSigmoidInput.value,
+        );
+
+        pInput.value = Math.max(optimalSettings.pValTresh, P_VAL_TRES_MIN);
+        rInput.value = Math.max(optimalSettings.r2Tresh, R2_MIN);
+        qInput.value = Math.max(optimalSettings.qCutoff, Q_CUTOFF_MIN);
         areTunedSettingsUsed = true;
       }
 
@@ -782,8 +774,8 @@ export class Pmpo {
               .add(ui.divText('Do you want to continue?'))
               .onCancel(() => autoTuneInput.value = false)
               .addButton('Run Anyway', () => {
-                setOptimalParametersAndRun();
                 dlg.close();
+                setTimeout(setOptimalParametersAndRun, 10);
               })
               .show();
           } else
@@ -797,9 +789,11 @@ export class Pmpo {
     const pInput = ui.input.float('p-value', {
       nullable: false,
       min: P_VAL_TRES_MIN,
-      max: 1,
+      max: P_VAL_TRES_MAX,
       step: 0.01,
       value: P_VAL_TRES_DEFAULT,
+      // @ts-ignore
+      format: FORMAT,
       tooltipText: 'P-value threshold. Descriptors with p-values above this threshold are excluded.',
       onValueChanged: (value) => {
         // Prevent running computations when auto-tuning is on, since parameters will be set automatically
@@ -807,7 +801,7 @@ export class Pmpo {
           return;
 
         areTunedSettingsUsed = false;
-        if ((value != null) && (value >= P_VAL_TRES_MIN) && (value <= 1))
+        if ((value != null) && (value >= P_VAL_TRES_MIN) && (value <= P_VAL_TRES_MAX))
           runComputations();
       },
     });
@@ -815,10 +809,12 @@ export class Pmpo {
 
     // R² threshold input
     const rInput = ui.input.float('R²', {
+      // @ts-ignore
+      format: FORMAT,
       nullable: false,
       min: R2_MIN,
       value: R2_DEFAULT,
-      max: 1,
+      max: R2_MAX,
       step: 0.01,
       // eslint-disable-next-line max-len
       tooltipText: 'Squared correlation threshold. Descriptors with squared correlation above this threshold are considered highly correlated. Among them, the descriptor with the lower p-value is retained.',
@@ -829,7 +825,7 @@ export class Pmpo {
 
         areTunedSettingsUsed = false;
 
-        if ((value != null) && (value >= R2_MIN) && (value <= 1))
+        if ((value != null) && (value >= R2_MIN) && (value <= R2_MAX))
           runComputations();
       },
     });
@@ -837,10 +833,12 @@ export class Pmpo {
 
     // q-cutoff input
     const qInput = ui.input.float('q-cutoff', {
+      // @ts-ignore
+      format: FORMAT,
       nullable: false,
       min: Q_CUTOFF_MIN,
       value: Q_CUTOFF_DEFAULT,
-      max: 1,
+      max: Q_CUTOFF_MAX,
       step: 0.01,
       tooltipText: 'Q-cutoff for the pMPO model computation.',
       onValueChanged: (value) => {
@@ -850,7 +848,7 @@ export class Pmpo {
 
         areTunedSettingsUsed = false;
 
-        if ((value != null) && (value >= Q_CUTOFF_MIN) && (value <= 1))
+        if ((value != null) && (value >= Q_CUTOFF_MIN) && (value <= Q_CUTOFF_MAX))
           runComputations();
       },
     });
@@ -861,8 +859,6 @@ export class Pmpo {
       rInput.enabled = toEnable;
       qInput.enabled = toEnable;
     };
-
-    //setEnability(!basicAutoTune);
 
     setTimeout(() => {
       if (toUseAutoTune)
@@ -916,12 +912,34 @@ export class Pmpo {
 
     return res;
   } // getValidNumericCols
-}; // Pmpo
 
-function getOptimalSettings() {
-  return {
-    pValTresh: 0.123 + Math.random() * 0.000001,
-    r2Tresh: 0.456 + Math.random() * 0.000001,
-    qCutoff: 0.345 + Math.random() * 0.000001,
-  };
-}
+  /** Fits the pMPO model to the given data and updates the viewers accordingly */
+  private getOptimalSettings(descriptors: DG.ColumnList, desirability: DG.Column, useSigmoid: boolean): OptimalPoint {
+    const funcToBeMinimized = (point: Float32Array) => {
+      // Fit the model
+      const trainResult = Pmpo.fit(this.table, descriptors, desirability, point[0], point[1], point[2], false);
+
+      // Get predictions
+      const prediction = Pmpo.predict(this.table, trainResult.params, useSigmoid, this.predictionName);
+
+      // Evaluate predictions and return 1 - AUC (since optimization minimizes the function, but we want to maximize AUC)
+      return 1 - getPmpoEvaluation(desirability, prediction).auc;
+    }; // funcToBeMinimized
+
+    const optimalResult = optimizeNM(
+      funcToBeMinimized,
+      new Float32Array([P_VAL_TRES_DEFAULT, R2_DEFAULT, Q_CUTOFF_DEFAULT]),
+      DEFAULT_OPTIMIZATION_SETTINGS,
+      LOW_PARAMS_BOUNDS,
+      HIGH_PARAMS_BOUNDS,
+    );
+
+    //console.log(optimalResult);
+
+    return {
+      pValTresh: optimalResult.optimalPoint[0],
+      r2Tresh: optimalResult.optimalPoint[1],
+      qCutoff: optimalResult.optimalPoint[2],
+    };
+  } // getOptimalSettings
+}; // Pmpo

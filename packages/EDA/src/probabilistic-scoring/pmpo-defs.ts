@@ -85,11 +85,17 @@ export const P_VAL_TRES_DEFAULT = 0.01;
 /** Minimum p-value threshold for filtering descriptors */
 export const P_VAL_TRES_MIN = 0.01;
 
+/** Maximum p-value threshold for filtering descriptors */
+export const P_VAL_TRES_MAX = 1;
+
 /** Default R-squared threshold for filtering correlated descriptors */
 export const R2_DEFAULT = 0.53;
 
 /** Minimum R-squared threshold for filtering correlated descriptors */
 export const R2_MIN = 0.01;
+
+/** Maximum R-squared threshold for filtering correlated descriptors */
+export const R2_MAX = 1.0;
 
 /** Default q-cutoff for descriptors in the pMPO model */
 export const Q_CUTOFF_DEFAULT = 0.05;
@@ -97,8 +103,13 @@ export const Q_CUTOFF_DEFAULT = 0.05;
 /** Minimum q-cutoff for descriptors in the pMPO model */
 export const Q_CUTOFF_MIN = 0.01;
 
+/** Maximum q-cutoff for descriptors in the pMPO model */
+export const Q_CUTOFF_MAX = 1;
+
 /** Default setting for using sigmoid correction in pMPO */
 export const USE_SIGMOID_DEFAULT = true;
+
+export const FORMAT = '0.00';
 
 /** Colors used for selected and skipped descriptors */
 export enum COLORS {
@@ -171,13 +182,39 @@ export const SCORES_PATH = 'System:AppData/Eda/drugs-props-train-scores.csv';
 export const SYNTHETIC_DRUG_NAME = 'Synthetic drug';
 
 /** pMPO model evaluation result type */
-export type PmpoEvaluationResult = {
+export type ModelEvaluationResult = {
   auc: number,
   threshold: number,
+  tpr: Float32Array,
+  fpr: Float32Array,
 };
 
 /** Maximum number of rows for which auto-tuning is applicable */
-export const AUTO_TUNE_MAX_APPLICABLE_ROWS = 5000;
+export const AUTO_TUNE_MAX_APPLICABLE_ROWS = 1000;
 
 /** Minimum number of rows to show a warning about auto-tuning */
-export const AUTO_TUNE_WARNING_MIN_ROWS = 10000;
+export const AUTO_TUNE_WARNING_MIN_ROWS = 3000;
+
+/** Default settings for optimization in pMPO parameter tuning */
+export const DEFAULT_OPTIMIZATION_SETTINGS = new Map<string, number>([
+  ['tolerance', 0.0001],
+  ['maxIter', 50],
+  ['nonZeroParam', 0.0001],
+  ['initialScale', 0.02],
+  ['scaleReflaction', 1],
+  ['scaleExpansion', 2],
+  ['scaleContraction', -0.5],
+]);
+
+/** Optimal point type for pMPO parameter tuning */
+export type OptimalPoint = {
+  pValTresh: number,
+  r2Tresh: number,
+  qCutoff: number,
+};
+
+/** Minimum bounds for pMPO parameters during optimization */
+export const LOW_PARAMS_BOUNDS = new Float32Array([P_VAL_TRES_MIN, R2_MIN, Q_CUTOFF_MIN]);
+
+/** Maximum bounds for pMPO parameters during optimization */
+export const HIGH_PARAMS_BOUNDS = new Float32Array([P_VAL_TRES_MAX, R2_MAX, Q_CUTOFF_MAX]);

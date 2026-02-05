@@ -8,7 +8,8 @@ import * as DG from 'datagrok-api/dg';
 //@ts-ignore: no types
 import * as jStat from 'jstat';
 
-import {ConfusionMatrix, Cutoff, DescriptorStatistics, SigmoidParams} from './pmpo-defs';
+import {ConfusionMatrix, Cutoff, DescriptorStatistics, ModelEvaluationResult,
+  ROC_TRESHOLDS, ROC_TRESHOLDS_COUNT, SigmoidParams} from './pmpo-defs';
 
 /** Splits the dataframe into desired and non-desired tables based on the desirability column */
 export function getDesiredTables(df: DG.DataFrame, desirability: DG.Column) {
@@ -266,3 +267,37 @@ export function getBoolPredictionColumn(numericPrediction: DG.Column, threshold:
 
   return DG.Column.fromList(DG.COLUMN_TYPE.BOOL, name, boolPredData);
 } // getBoolPredictionColumn
+
+/** Computes pMPO model evaluation metrics: AUC, optimal threshold, TPR and FPR arrays
+ * @param desirability - desirability column (boolean)
+ * @param prediction - prediction column (numeric)
+ * @return ModelEvaluationResult object with AUC, optimal threshold, TPR and FPR arrays
+ */
+export function getPmpoEvaluation(desirability: DG.Column, prediction: DG.Column): ModelEvaluationResult {
+  const tpr = new Float32Array(ROC_TRESHOLDS_COUNT);
+  const fpr = new Float32Array(ROC_TRESHOLDS_COUNT);
+
+  let bestJ = -1;
+  let currentJ = -1;
+  let bestThreshold = ROC_TRESHOLDS[0];
+
+  // Compute TPR and FPR for each threshold
+  for (let i = 0; i < ROC_TRESHOLDS_COUNT; ++i) {
+    const confusion = getConfusionMatrix(desirability, prediction, ROC_TRESHOLDS[i]);
+    tpr[i] = (confusion.TP + confusion.FN) > 0 ? confusion.TP / (confusion.TP + confusion.FN) : 0;
+    fpr[i] = (confusion.FP + confusion.TN) > 0 ? confusion.FP / (confusion.FP + confusion.TN) : 0;
+    currentJ = tpr[i] - fpr[i];
+
+    if (currentJ > bestJ) {
+      bestJ = currentJ;
+      bestThreshold = ROC_TRESHOLDS[i];
+    }
+  }
+
+  return {
+    auc: getAuc(tpr, fpr),
+    threshold: bestThreshold,
+    tpr: tpr,
+    fpr: fpr,
+  };
+} // getPmpoEvaluation
