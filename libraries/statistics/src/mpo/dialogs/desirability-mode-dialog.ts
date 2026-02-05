@@ -1,3 +1,4 @@
+/* eslint-disable max-len */
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
@@ -5,6 +6,13 @@ import {NumericalDesirability, DesirabilityMode} from '../mpo';
 import {MpoDesirabilityLineEditor} from '../editors/mpo-line-editor';
 
 const DESIRABILITY_MODES = ['freeform', 'gaussian', 'sigmoid'];
+
+type ParamConfig = {
+  key: 'min' | 'max' | 'mean' | 'sigma' | 'x0' | 'k';
+  label: string;
+  fallback: () => number;
+  transform?: (v: number) => number;
+};
 
 export class DesirabilityModeDialog {
   constructor(
@@ -33,68 +41,53 @@ export class DesirabilityModeDialog {
       },
     });
 
-    const min = this.float('Min', this.prop.min ?? previewEditor.getMinX(), (v) => {
-      this.prop.min = v;
-      this.onUpdate({min: v});
-      previewEditor.redrawAll();
-    });
+    const configs: ParamConfig[] = [
+      {key: 'min', label: 'Min', fallback: () => previewEditor.getMinX()},
+      {key: 'max', label: 'Max', fallback: () => previewEditor.getMaxX()},
+      {key: 'mean', label: 'Mean', fallback: () => previewEditor.getDefaultMean()},
+      {key: 'sigma', label: 'Sigma', fallback: () => previewEditor.getDefaultSigma(), transform: (v) => Math.max(0.01, v)},
+      {key: 'x0', label: 'x0', fallback: () => previewEditor.getDefaultX0()},
+      {key: 'k', label: 'k', fallback: () => previewEditor.getDefaultK(), transform: (v) => Math.max(0.1, v)},
+    ];
 
-    const max = this.float('Max', this.prop.max ?? previewEditor.getMaxX(), (v) => {
-      this.prop.max = v;
-      this.onUpdate({max: v});
-      previewEditor.redrawAll();
-    });
+    const inputs = new Map<string, DG.InputBase>();
+    for (const cfg of configs) {
+      inputs.set(cfg.key, ui.input.float(cfg.label, {
+        value: this.prop[cfg.key] ?? cfg.fallback(),
+        format: '#0.000',
+        onValueChanged: (v) => {
+          const value = cfg.transform ? cfg.transform(v ?? cfg.fallback()) : (v ?? cfg.fallback());
+          this.prop[cfg.key] = value;
+          this.onUpdate({[cfg.key]: value});
+          previewEditor.redrawAll();
+        },
+      }));
+    }
 
-    const mean = this.float('Mean', this.prop.mean ?? 0, (v) => {
-      this.prop.mean = v;
-      this.onUpdate({mean: v});
-      previewEditor.redrawAll();
-    });
-
-    const sigma = this.float('Sigma', this.prop.sigma ?? 1, (v) => {
-      this.prop.sigma = Math.max(0.01, v);
-      this.onUpdate({sigma: this.prop.sigma});
-      previewEditor.redrawAll();
-    });
-
-    const x0 = this.float('x0', this.prop.x0 ?? 0, (v) => {
-      this.prop.x0 = v;
-      this.onUpdate({x0: v});
-      previewEditor.redrawAll();
-    });
-
-    const k = this.float('k', this.prop.k ?? 10, (v) => {
-      this.prop.k = Math.max(0.1, v);
-      this.onUpdate({k: this.prop.k});
-      previewEditor.redrawAll();
-    });
+    const syncInputs = () => {
+      for (const cfg of configs)
+        inputs.get(cfg.key)!.value = this.prop[cfg.key] ?? cfg.fallback();
+    };
 
     const paramPanel = ui.divV([]);
 
     const updateParams = () => {
       ui.empty(paramPanel);
 
-      const inputs: DG.InputBase[] = [min, max];
+      const form: DG.InputBase[] = [inputs.get('min')!, inputs.get('max')!];
 
       if (this.prop.mode === 'gaussian')
-        inputs.push(mean, sigma);
+        form.push(inputs.get('mean')!, inputs.get('sigma')!);
       if (this.prop.mode === 'sigmoid')
-        inputs.push(x0, k);
+        form.push(inputs.get('x0')!, inputs.get('k')!);
 
       paramPanel.append(ui.h3('Parameters'));
-      paramPanel.append(ui.form(inputs));
+      paramPanel.append(ui.form(form));
     };
 
     previewEditor.onParamsChanged = (p) => {
       Object.assign(this.prop, p);
-
-      mean.value = this.prop.mean ?? previewEditor.getDefaultMean();
-      sigma.value = this.prop.sigma ?? previewEditor.getDefaultSigma();
-      x0.value = this.prop.x0 ?? previewEditor.getDefaultX0();
-      k.value = this.prop.k ?? previewEditor.getDefaultK();
-      min.value = this.prop.min ?? previewEditor.getMinX();
-      max.value = this.prop.max ?? previewEditor.getMaxX();
-
+      syncInputs();
       this.onUpdate(p);
       previewEditor.redrawAll();
     };
@@ -119,22 +112,11 @@ export class DesirabilityModeDialog {
 
     dialog.onCancel(() => {
       Object.assign(this.prop, original);
+      syncInputs();
       previewEditor.redrawAll();
       dialog.close();
     });
 
     dialog.show();
-  }
-
-  private float(
-    label: string,
-    value: number,
-    onChange: (v: number) => void,
-  ): DG.InputBase {
-    return ui.input.float(label, {
-      value,
-      format: '#0.000',
-      onValueChanged: (v) => onChange(v ?? value),
-    });
   }
 }
