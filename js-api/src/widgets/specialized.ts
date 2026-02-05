@@ -206,7 +206,7 @@ export class DropDown extends Widget {
   }
 
   private _initCustomDropDown(createElement: () => HTMLElement): void {
-    const contentContainer = ui.div([], 'ui-drop-down-content');
+    const contentContainer: HTMLDivElement = ui.div([], 'ui-drop-down-content');
     this._contentContainer = contentContainer;
     const closeOnClick = this._options?.closeOnClick !== false;
 
