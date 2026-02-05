@@ -419,6 +419,14 @@ To embed:
 
 <img src={EmbedViewerDialog} width="450"/>
 
+## Viewer controls font
+
+Many viewers allow you to customize fonts for different elements to match your presentation style. **Controls Font** is used for control elements like column selectors, combo boxes, and other UI controls on the viewer. **Axis Font** is used for axis labels and tick marks in chart viewers. Individual viewers may also provide additional font properties for specialized elements such as labels, formulas, annotations, and statistics.
+
+To customize fonts, access the viewer's **Context Panel** and look for font properties in the **Style** section or use context menu.
+
+![](viewers/img/viewers-font.gif)
+
 ## Utilities
 
 ### Table Manager
