@@ -302,6 +302,9 @@ export class Tags {
   /// Specifies if calculated columns are subscribed
   static CalculatedColumnsSubscribed = '.calculatedColumnsSubscribed';
 
+  /// Specifies list of subscriptions for calculated columns
+  static CalculatedColumnsSubscriptions = '.calculatedColumnsSubscriptions';
+
   /// Boolean flag that allows not to show property panel for the cell/column
   static ShowPropPanels = '.show-prop-panels';
 
