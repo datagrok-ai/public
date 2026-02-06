@@ -50,8 +50,10 @@ export class PmpoDataGenerator {
    * @param samplesCount Number of samples to generate
    * @returns DataFrame with generated data */
   public getGenerated(samplesCount: number): DG.DataFrame {
-    if (samplesCount <= 0)
-      throw new Error('Failed to generate pMPO data: sample count must be positive.');
+    if (samplesCount <= 1)
+      throw new Error('Failed to generate pMPO data: sample count must be greater than 1.');
+
+    let result: DG.DataFrame;
 
     /* Use rows from the source dataframe if the requested sample count
        is less than or equal to the source dataframe row count */
@@ -61,12 +63,25 @@ export class PmpoDataGenerator {
       for (let i = 0; i < samplesCount; ++i)
         rowMask.set(i, true);
 
-      return this.sourceDf.clone(rowMask);
+      result = this.sourceDf.clone(rowMask);
+    } else {
+      const cloneDf = this.getClonedSourceDfWithFloatNumericCols();
+      result = cloneDf.append(this.getSyntheticTable(samplesCount - this.sourceDf.rowCount));
     }
 
-    const cloneDf = this.getClonedSourceDfWithFloatNumericCols();
+    // Check boolean columns and ensure non-zero stdev
+    for (const col of result.columns) {
+      if (col.type === DG.COLUMN_TYPE.BOOL && col.stats.stdev === 0) {
+        // All values are the same, flip the first value
+        let value = col.get(0);
+        col.set(0, !value);
 
-    return cloneDf.append(this.getSyntheticTable(samplesCount - this.sourceDf.rowCount));
+        value = col.get(1);
+        col.set(1, !value);
+      }
+    }
+
+    return result;
   } // getGenerated
 
   /** Generates a synthetic data table
