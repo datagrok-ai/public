@@ -2665,7 +2665,7 @@ export class PackageFunctions {
       onValueChanged: () => calculateMpo(),
     });
 
-    async function calculateMpo() {
+    function calculateMpo() {
       if (!profileInput.value)
         return;
 
@@ -2691,7 +2691,7 @@ export class PackageFunctions {
           column.setTag('desirabilityTemplate', newTagValue);
       }
 
-      const score = await mpo( //@ts-ignore
+      const score = mpo(
         dataFrame,
         columns,
         selected.name,
@@ -2706,8 +2706,8 @@ export class PackageFunctions {
 
       const addColumnIcon = ui.iconFA(
         'plus',
-        async () => {
-          await mpo( //@ts-ignore
+        () => {
+          mpo(
             dataFrame,
             columns,
             selected.name,
@@ -2729,7 +2729,7 @@ export class PackageFunctions {
 
     container.appendChild(ui.divV([profileInput.root, aggregationInput.root, resultDiv]));
 
-    await calculateMpo();
+    calculateMpo();
     return DG.Widget.fromRoot(container);
   }
 }
