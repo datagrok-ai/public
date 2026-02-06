@@ -78,6 +78,10 @@ export namespace funcs {
     return await grok.functions.call('DevTools:TestFunction', { col1, col2, col3, out });
   }
 
+  export async function testFunctionJoin(data: DG.DataFrame , col1: DG.Column , col2: DG.Column , col3: DG.Column , out?: any ): Promise<DG.DataFrame> {
+    return await grok.functions.call('DevTools:TestFunctionJoin', { data, col1, col2, col3, out });
+  }
+
   export async function exceptionFunc(a: number ): Promise<number> {
     return await grok.functions.call('DevTools:ExceptionFunc', { a });
   }
