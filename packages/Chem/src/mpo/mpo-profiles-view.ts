@@ -118,7 +118,9 @@ export class MpoProfilesView {
   }
 
   private openCloneProfile(profile: MpoProfileInfo): void {
-    MpoProfileManager.clone(profile);
+    const {profile: clonedProfile, fileName} = MpoProfileManager.prepareClone(profile);
+    const view = new MpoProfileCreateView(clonedProfile, false, fileName);
+    grok.shell.v = grok.shell.addView(view.view);
   }
 
   private openProfile(profile: MpoProfileInfo): void {

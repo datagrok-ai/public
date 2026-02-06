@@ -2611,7 +2611,11 @@ export class PackageFunctions {
           ev.stopImmediatePropagation();
           ev.preventDefault();
           DG.Menu.popup()
-            .item('Clone', () => MpoProfileManager.clone(profile))
+            .item('Clone', () => {
+              const {profile: clonedProfile, fileName} = MpoProfileManager.prepareClone(profile);
+              const view = new MpoProfileCreateView(clonedProfile, false, fileName);
+              grok.shell.v = grok.shell.addView(view.view);
+            })
             .item('Delete', () => MpoProfileManager.confirmDelete(profile))
             .show({x: ev.clientX, y: ev.clientY, causedBy: ev});
         });
