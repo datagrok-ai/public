@@ -3,12 +3,14 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 
+import {Subscription} from 'rxjs';
 import {u2} from '@datagrok-libraries/utils/src/u2';
 import {MpoProfileEditor} from '@datagrok-libraries/statistics/src/mpo/mpo-profile-editor';
 
 import {_package} from '../package';
-import {MpoProfileInfo, loadMpoProfiles, deleteMpoProfile, updateMpoPath, MpoPathMode, MPO_PROFILE_CHANGED_EVENT} from './utils';
+import {MpoProfileInfo, updateMpoPath, MpoPathMode, MPO_PROFILE_CHANGED_EVENT} from './utils';
 import {MpoProfileCreateView} from './mpo-create-profile';
+import {MpoProfileManager} from './mpo-profile-manager';
 
 export class MpoProfilesView {
   name = 'MPO Profiles';
@@ -16,7 +18,7 @@ export class MpoProfilesView {
   view: DG.View;
 
   private tableContainer = ui.divV([]);
-  private profiles: MpoProfileInfo[] = [];
+  private subs: Subscription[] = [];
 
   constructor() {
     this.view = DG.View.fromRoot(this.root);
@@ -39,6 +41,7 @@ export class MpoProfilesView {
       );
 
       await this.reloadProfiles();
+      this.listenForChanges();
     } finally {
       ui.setUpdateIndicator(this.root, false);
     }
@@ -47,7 +50,7 @@ export class MpoProfilesView {
   private async reloadProfiles(): Promise<void> {
     ui.setUpdateIndicator(this.tableContainer, true);
     try {
-      this.profiles = await loadMpoProfiles();
+      await MpoProfileManager.ensureLoaded();
       this.rerenderTable();
     } finally {
       ui.setUpdateIndicator(this.tableContainer, false);
@@ -68,7 +71,7 @@ export class MpoProfilesView {
   private rerenderTable(): void {
     ui.empty(this.tableContainer);
 
-    if (this.profiles.length === 0) {
+    if (MpoProfileManager.items.length === 0) {
       this.tableContainer.append(ui.h2('No MPO profiles yet'));
       return;
     }
@@ -78,7 +81,7 @@ export class MpoProfilesView {
 
   private buildProfilesTable(): HTMLElement {
     const table = ui.table(
-      this.profiles,
+      MpoProfileManager.items,
       (profile) => [
         this.buildActionsButton(profile),
         ui.link(profile.name, () => this.openProfile(profile)),
@@ -113,19 +116,8 @@ export class MpoProfilesView {
     return span;
   }
 
-  private profileForEditing(profile: MpoProfileInfo): MpoProfileInfo {
-    const copy = {...profile};
-    delete (copy as any).file;
-    return copy;
-  }
-
   private openCloneProfile(profile: MpoProfileInfo): void {
-    const clone = this.profileForEditing(profile);
-    clone.name = `${profile.name} (Copy)`;
-
-    const cloneFileName = profile.fileName.replace(/\.json$/i, '-copy.json');
-    const view = new MpoProfileCreateView(clone, false, cloneFileName);
-    grok.shell.v = grok.shell.addView(view.view);
+    MpoProfileManager.clone(profile);
   }
 
   private openProfile(profile: MpoProfileInfo): void {
@@ -149,7 +141,7 @@ export class MpoProfilesView {
   }
 
   private openEditProfile(profile: MpoProfileInfo): void {
-    const editable = this.profileForEditing(profile);
+    const editable = structuredClone(profile);
     const view = new MpoProfileCreateView(editable, false, profile.fileName);
     grok.shell.v = grok.shell.addView(view.view);
   }
@@ -160,19 +152,20 @@ export class MpoProfilesView {
   }
 
   private confirmDelete(profile: MpoProfileInfo): void {
-    ui.dialog('Delete profile')
-      .add(ui.divText(`Are you sure you want to delete profile "${profile.name}"?`))
-      .onOK(async () => {
-        try {
-          await deleteMpoProfile(profile);
-          this.profiles = this.profiles.filter((p) => p !== profile);
-          this.rerenderTable();
-          grok.events.fireCustomEvent(MPO_PROFILE_CHANGED_EVENT, {});
-        } catch (e) {
-          grok.shell.error(`Failed to delete profile "${profile.name}": ${e instanceof Error ? e.message : e}`);
-        }
-      })
-      .show();
+    MpoProfileManager.confirmDelete(profile);
+  }
+
+  private listenForChanges(): void {
+    this.subs.push(grok.events.onCustomEvent(MPO_PROFILE_CHANGED_EVENT).subscribe(() => this.reloadProfiles()));
+    this.subs.push(grok.events.onViewRemoving.subscribe((v) => {
+      if (v.args.view.id === this.view.id)
+        this.detach();
+    }));
+  }
+
+  private detach(): void {
+    this.subs.forEach((sub) => sub.unsubscribe());
+    this.subs = [];
   }
 
   async show() {

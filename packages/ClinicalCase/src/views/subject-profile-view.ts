@@ -105,7 +105,7 @@ function collectClinicalObservations(studyId: string, selectedSubjectId?: string
 
   Object.keys(colNamesDict).forEach((key) => {
     if (pivotedDf.col(key))
-      pivotedDf.col(key)!.name = colNamesDict[key];
+      pivotedDf.col(key)!.setTag('friendlyName', colNamesDict[key]);
   });
 
   const correctColumnsOrder = ['category', 'subcategory', 'location', 'result']

@@ -396,9 +396,9 @@ Supported types are ${[DG.COLUMN_TYPE.STRING, DG.COLUMN_TYPE.BIG_INT, DG.COLUMN_
       return ui.info('Column is not linked to database table.');
 
     return ui.wait(async () => {
-      const conn = connId.includes(':')
-          ? (await grok.dapi.connections.filter(`nqName = "${connId}"`).list()).find((_) => true)
-          : await grok.dapi.connections.find(connId);
+      const conn = connId.includes(':') ?
+        (await grok.dapi.connections.filter(`namespace = "${connId.split(':')[0]}:" and shortName = "${connId.split(':')[1]}"`).list()).find((_) => true) :
+        await grok.dapi.connections.find(connId);
       if (!conn)
         return ui.info('Failed to find connection for this column.');
       const tables: DG.TableInfo[] = await grok.dapi.connections.getSchema(conn, schemaName, tableName);

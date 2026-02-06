@@ -2,6 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
+import {Subscription} from 'rxjs';
 import {
   DesirabilityProfile,
   WeightedAggregation,
@@ -10,8 +11,9 @@ import {
 import {MPO_SCORE_CHANGED_EVENT, MpoProfileEditor} from '@datagrok-libraries/statistics/src/mpo/mpo-profile-editor';
 
 import {MpoContextPanel} from '../mpo/mpo-context-panel';
+import {MpoProfileManager} from '../mpo/mpo-profile-manager';
 import {PackageFunctions} from '../package';
-import {computeMpo, MPO_TEMPLATE_PATH, loadMpoProfiles, MpoProfileInfo} from '../mpo/utils';
+import {computeMpo, MpoProfileInfo, deepEqual, findSuitableProfiles} from '../mpo/utils';
 
 export class MpoProfileDialog {
   dataFrame: DG.DataFrame;
@@ -24,9 +26,13 @@ export class MpoProfileDialog {
   currentProfile: DesirabilityProfile | null = null;
   currentProfileFileName: string | null = null;
   manageButton: HTMLElement;
+  saveButton: HTMLButtonElement;
 
   private dialog?: DG.Dialog<{}>;
   private mpoContextPanel?: MpoContextPanel;
+  private originalProfile: DesirabilityProfile | null = null;
+  private suitableProfileNames: string[] = [];
+  private subs: Subscription[] = [];
 
   constructor(dataFrame?: DG.DataFrame) {
     this.dataFrame = dataFrame ?? grok.shell.t;
@@ -55,13 +61,26 @@ export class MpoProfileDialog {
       this.dialog?.close();
     });
     this.manageButton.classList.add('chem-mpo-dialog-manage-button');
+
+    this.saveButton = ui.button('Save', async () => {
+      await this.saveProfile();
+      this.originalProfile = structuredClone(this.currentProfile!);
+      this.updateSaveButtonVisibility();
+    });
+    this.saveButton.classList.add('chem-mpo-dialog-manage-button', 'chem-mpo-d-none');
   }
 
   async init(): Promise<void> {
-    this.mpoProfiles = await loadMpoProfiles();
-    const defaultProfile = this.mpoProfiles.length > 0 ? this.mpoProfiles[0].fileName : null;
+    this.mpoProfiles = await MpoProfileManager.ensureLoaded();
+    this.suitableProfileNames = findSuitableProfiles(this.dataFrame, this.mpoProfiles).map((p) => p.fileName);
 
     this.profileInput.items = this.mpoProfiles.map((p) => p.fileName);
+    requestAnimationFrame(() => this.highlightSuitableProfiles(this.suitableProfileNames));
+
+    const defaultProfile = this.suitableProfileNames.length > 0 ?
+      this.suitableProfileNames[0] :
+      this.mpoProfiles[0]?.fileName ?? null;
+
     if (defaultProfile) {
       this.profileInput.value = defaultProfile;
       await this.loadProfile(defaultProfile);
@@ -71,8 +90,21 @@ export class MpoProfileDialog {
     this.mpoContextPanel = new MpoContextPanel(this.dataFrame);
   }
 
+  private highlightSuitableProfiles(suitableFileNames: string[]): void {
+    const select = this.profileInput.input as HTMLSelectElement;
+    for (let i = 0; i < select.options.length; i++) {
+      const option = select.options[i];
+      const text = option.textContent ?? '';
+
+      if (suitableFileNames.includes(option.value) && !text.startsWith('⭐'))
+        option.textContent = `⭐ ${text}`;
+    }
+  }
+
   private listenForProfileChanges(): void {
-    grok.events.onCustomEvent(MPO_SCORE_CHANGED_EVENT).subscribe(async () => {
+    this.subs.push(grok.events.onCustomEvent(MPO_SCORE_CHANGED_EVENT).subscribe(async () => {
+      this.updateSaveButtonVisibility();
+      this.updateOkButtonState();
       if (this.currentProfile && this.mpoContextPanel) {
         await this.mpoContextPanel.render(
           this.currentProfile,
@@ -80,7 +112,7 @@ export class MpoProfileDialog {
           this.aggregationInput.value ?? undefined,
         );
       }
-    });
+    }));
   }
 
   private async loadProfile(fileName: string | null): Promise<void> {
@@ -92,29 +124,45 @@ export class MpoProfileDialog {
       return;
 
     this.currentProfileFileName = fileName;
-    this.currentProfile = {
+    this.currentProfile = structuredClone({
       name: profileInfo.name,
       description: profileInfo.description,
       properties: profileInfo.properties,
-    };
+    });
     this.mpoProfileEditor.setProfile(this.currentProfile);
+    this.originalProfile = structuredClone(this.currentProfile);
+    this.updateSaveButtonVisibility();
+    this.updateOkButtonState();
+  }
+
+  private isProfileModified(): boolean {
+    if (!this.currentProfile || !this.originalProfile)
+      return false;
+    return !deepEqual(this.currentProfile, this.originalProfile);
+  }
+
+  private updateSaveButtonVisibility(): void {
+    this.saveButton.classList.toggle('chem-mpo-d-none', !this.isProfileModified());
+  }
+
+  private isProfileApplicable(): boolean {
+    const mapping = this.mpoProfileEditor.columnMapping;
+    const hasMappedColumns = Object.values(mapping).some((v) => v != null);
+    const isSuitable = this.suitableProfileNames.includes(this.currentProfileFileName ?? '');
+    return hasMappedColumns || isSuitable;
+  }
+
+  private updateOkButtonState(): void {
+    const okButton = this.dialog?.getButton('OK');
+    if (okButton)
+      okButton.disabled = !this.isProfileApplicable();
   }
 
   private async saveProfile(): Promise<void> {
     if (!this.currentProfileFileName || !this.currentProfile)
       return;
 
-    try {
-      const updatedProfileString = JSON.stringify(this.currentProfile, null, 2);
-      await grok.dapi.files.writeAsText(
-        `${MPO_TEMPLATE_PATH}/${this.currentProfileFileName}`,
-        updatedProfileString,
-      );
-      grok.shell.info(`Profile '${this.currentProfileFileName}' updated.`);
-    } catch (e) {
-      grok.shell.error(
-        `Failed to save profile '${this.currentProfileFileName}': ${e instanceof Error ? e.message : e}`);
-    }
+    await MpoProfileManager.save(this.currentProfile, this.currentProfileFileName);
   }
 
   private addParetoFrontViewer(columnNames: string[]): void {
@@ -146,7 +194,7 @@ export class MpoProfileDialog {
   }
 
   private getProfileControls(): HTMLElement {
-    return ui.divH([this.profileInput.root, this.manageButton], {style: {gap: '10px'}});
+    return ui.divH([this.profileInput.root, this.manageButton, this.saveButton], {style: {gap: '10px'}});
   }
 
   private getMpoControls(): HTMLElement {
@@ -171,11 +219,18 @@ export class MpoProfileDialog {
     this.dialog = ui.dialog('MPO Score')
       .add(this.getEditor())
       .onOK(async () => {
-        await this.saveProfile();
         await this.runMpoCalculation();
-        this.mpoContextPanel?.detach();
+        this.detach();
       })
-      .onCancel(() => this.mpoContextPanel?.detach())
+      .onCancel(() => this.detach())
       .show();
+
+    this.updateOkButtonState();
+  }
+
+  private detach(): void {
+    this.mpoContextPanel?.detach();
+    this.subs.forEach((sub) => sub.unsubscribe());
+    this.subs = [];
   }
 }

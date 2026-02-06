@@ -53,7 +53,7 @@
     "debug-parquettest-dev": "grok publish dev",
     "release-parquettest-dev": "grok publish dev --release",
     "debug-parquettest-local": "grok publish local",
-    "release-parquettest-local": "grok publish local --release",
+    "release-parquettest-local": "grok publish localhost --release",
     "test": "grok test",
     "test-dev": "grok test --host dev",
     "test-local": "grok test --host localhost"

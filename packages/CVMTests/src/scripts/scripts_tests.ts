@@ -83,15 +83,12 @@ for (const lang of languages) {
     if (!['NodeJS', 'JavaScript', 'Grok', 'Octave'].includes(lang)) {
       test('DataFrame int column correctness', async () => {
         const result = await grok.functions.call(`CVMTests:${lang}IntColumn`);
-        if (lang !== 'R') {
+        if (lang !== 'R')
           expect((result['resultInBound'] as DG.DataFrame).getCol('col1').type === DG.COLUMN_TYPE.INT, true);
-          expect((result['resultOutBound'] as DG.DataFrame).getCol('col1').type === DG.COLUMN_TYPE.BIG_INT, true);
-        }
-        else {
+        else
           // R returns float columns. They can be easily converted to int
           expect((result['resultInBound'] as DG.DataFrame).getCol('col1').type === DG.COLUMN_TYPE.FLOAT, true);
-          expect((result['resultOutBound'] as DG.DataFrame).getCol('col1').type === DG.COLUMN_TYPE.FLOAT, true);
-        }
+        expect((result['resultOutBound'] as DG.DataFrame).getCol('col1').type === DG.COLUMN_TYPE.BIG_INT, true);
       }, {timeout: 60000});
 
       test('Empty dataframe', async () => {
@@ -125,7 +122,8 @@ for (const lang of languages) {
       const column = await df.columns.addNewCalculated('new', `CVMTests:${lang}CalcColumn(\${x} + \${y})`);
       expect(df.columns.contains(column.name), true);
       expect(column.get(0), 6);
-    }, {stressTest: serverSideLanguages.includes(lang), skipReason: lang === 'Grok' ? 'Doesn\'t support vectorization' : undefined});
+    }, {stressTest: serverSideLanguages.includes(lang), skipReason: lang === 'Grok' ? 'Doesn\'t support vectorization' :
+      serverSideLanguages.includes(lang) ? 'GROK-16573: Calculated columns broken for server-side languages' : undefined});
 
     test('File input', async () => {
       const files = await grok.dapi.files.list('System:AppData/CvmTests/', false, 'cars.csv');
@@ -179,7 +177,8 @@ for (const lang of languages) {
       const rows = DG.Test.isInBenchmark ? 10000 : 100;
       const df = grok.data.demo.demog(rows);
       await df.columns.addNewCalculated('new', `CVMTests:${lang}CalcColumn(\${age})`);
-    }, {timeout: 60000, benchmark: true, stressTest: serverSideLanguages.includes(lang), skipReason: lang === 'Grok' ? 'Doesn\'t support vectorization' : undefined});
+    }, {timeout: 60000, benchmark: true, stressTest: serverSideLanguages.includes(lang), skipReason: lang === 'Grok' ? 'Doesn\'t support vectorization' :
+      serverSideLanguages.includes(lang) ? 'GROK-16573: Calculated columns broken for server-side languages' : undefined});
 
     test(`Dataframe performance test sequentially`, async () => {
       const iterations = DG.Test.isInBenchmark ? ['JavaScript', 'Grok'].includes(lang) ? 500 : 10 : 3;

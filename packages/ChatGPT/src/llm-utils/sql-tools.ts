@@ -8,7 +8,7 @@ import {SemValueObjectHandler} from '@datagrok-libraries/db-explorer/src/object-
 import {ChatModel} from 'openai/resources/index';
 import {AIPanelFuncs, MessageType} from './panel';
 import {BuiltinDBInfoMeta, getDBColumnMetaData, getDBTableMetaData} from './query-meta-utils';
-import {ModelOption, ModelType, OpenAIClient} from './openAI-client';
+import {ModelOption, ModelType, LLMClient} from './LLM-client';
 import {LanguageModelV3FunctionTool, LanguageModelV3Message} from '@ai-sdk/provider';
 import {findLast} from '../utils';
 
@@ -85,7 +85,7 @@ export async function generateAISqlQueryWithTools(
   });
   try {
   // Initialize OpenAI client provider
-    const langTool = OpenAIClient.getInstance();
+    const langTool = LLMClient.getInstance();
     const modelType = options.modelType ?? 'Fast';
     const client = langTool.aiModels[modelType];
 
@@ -339,10 +339,21 @@ export async function generateAISqlQueryWithTools(
         }
       });
 
+      // Fix tool_use input fields - Anthropic expects objects, not strings
+      const fixedContent = response.content.map((item) => {
+        if (item.type === 'tool-call') {
+          return {
+            ...item,
+            input: typeof item.input === 'string' ? parseJsonObject(item.input) ?? item.input : item.input
+          };
+        }
+        return item;
+      });
+
       const formattedOutput: LanguageModelV3Message = {
         role: 'assistant',
         // @ts-ignore
-        content: response.content
+        content: fixedContent
       };
       //const outputs: MessageType[] = response.content.map((item) => ({role: 'assistant', content: [item]} as MessageType));
       input.push(formattedOutput);
@@ -477,10 +488,14 @@ export async function generateAISqlQueryWithTools(
         if (res)
           !options.disableVerbose && options.aiPanel?.addUiMessage(`Final SQL Query:\n\`\`\`sql\n${res}\n\`\`\``, false, {finalResult: res});
         return res;
-      } else {
+      } else if (contentUpperCase.startsWith('REPLY ONLY:')) {
         const replyText = contentUpperCase.startsWith('REPLY ONLY:') ? content.substring('REPLY ONLY:'.length).trim() : content;
         options.aiPanel?.addUiMessage(replyText, false);
-        return '';
+      } else {
+        // Not SQL - add a message to AI to remind it that it needs to provide ONLY SQL Beggining with SELECT or WITH
+        const reminderMsg = langTool.createUserMessage('The last response was not a valid SQL query. Please provide ONLY the SQL query text beginning with SELECT or WITH statement, without any explanations or additional text. Remember to prefix table names with schema name.');
+        input.push(reminderMsg);
+        addEngineMessage(reminderMsg);
       }
     }
     // If we exhausted iterations or didn't get a proper response

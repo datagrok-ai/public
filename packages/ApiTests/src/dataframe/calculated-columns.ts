@@ -5,6 +5,29 @@ import {after, category, expect, test} from '@datagrok-libraries/test/src/test';
 
 
 category('DataFrame: Calculated columns', () => {
+  async function testActionJoinSelectiveColumns(funcName: string): Promise<void> {
+    const testDf = DG.DataFrame.fromColumns([
+      DG.Column.fromList(DG.TYPE.INT, 'col1', [1, 2, 3]),
+      DG.Column.fromList(DG.TYPE.STRING, 'col2', ['a', 'b', 'c']),
+      DG.Column.fromList(DG.TYPE.FLOAT, 'col3', [1.5, 2.5, 3.5]),
+    ]);
+    const func = DG.Func.find({package: 'DevTools', name: funcName})[0];
+    if (!func)
+      throw new Error(`${funcName} not found in DevTools package`);
+    const call = func.prepare({
+      data: testDf,
+      col1: testDf.col('col1'),
+      col2: testDf.col('col2'),
+      col3: testDf.col('col3'),
+      out: ['joinedCol1', 'joinedCol3'],
+    });
+    await call.call();
+
+    expect(testDf.columns.contains('joinedCol1'), true, 'joinedCol1 should be added');
+    expect(testDf.columns.contains('joinedCol2'), false, 'joinedCol2 should NOT be added');
+    expect(testDf.columns.contains('joinedCol3'), true, 'joinedCol3 should be added');
+  }
+
   const df = DG.DataFrame.fromColumns([
     DG.Column.fromList(DG.TYPE.FLOAT, 'x', [1, 2, 3]),
     DG.Column.fromList(DG.TYPE.FLOAT, 'y', [4, 5, 6]),
@@ -121,8 +144,16 @@ category('DataFrame: Calculated columns', () => {
     t.columns.remove('calculated column');
   }));
 
+  test('Action join function selective columns', async () => {
+    await testActionJoinSelectiveColumns('testFunctionJoin');
+  });
+
+  test('Action join script selective columns', async () => {
+    await testActionJoinSelectiveColumns('TestFunctionScriptJoin');
+  });
+
   after(async () => {
     subs.forEach((sub) => sub.unsubscribe());
     dialogs.forEach((d) => d.close());
   });
-}, { owner: 'mdolotova@datagrok.ai' });
+}, {owner: 'mdolotova@datagrok.ai'});

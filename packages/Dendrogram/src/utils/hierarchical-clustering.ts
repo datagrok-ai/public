@@ -104,8 +104,12 @@ export async function hierarchicalClusteringUI(
   if (tv.grid.temp[DENDROGRAM_NEIGHBOR_TEMP_NAME]) {
     grok.shell.warning('Dendrogram is already attached to the table grid. Closing existing dendrogram.');
     const existingNB: GridNeighbor = tv.grid.temp[DENDROGRAM_NEIGHBOR_TEMP_NAME];
-    if (existingNB && typeof existingNB.close === 'function')
-      existingNB.close();
+    if (existingNB && typeof existingNB.close === 'function') {
+      try {
+        existingNB.close();
+      } catch (_) {
+      }
+    }
     tv.grid.temp[DENDROGRAM_NEIGHBOR_TEMP_NAME] = null;
   }
 
@@ -184,6 +188,8 @@ export async function hierarchicalClusteringUI(
     const nb = injectTreeForGridUI2(tv.grid, newickRoot, undefined, neighborWidth);
     const s = nb.onClosed.subscribe(() => {
       tv.grid.props.onInitializedScript = '';
+      if (tv.grid.temp[DENDROGRAM_NEIGHBOR_TEMP_NAME] === nb)
+        tv.grid.temp[DENDROGRAM_NEIGHBOR_TEMP_NAME] = null;
       s.unsubscribe();
     });
     const viewRemoveSub = grok.events.onViewRemoved.subscribe((view) => {

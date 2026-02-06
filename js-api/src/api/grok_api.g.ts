@@ -258,6 +258,16 @@ export interface IDartApi {
   grok_FilterGroup_SetExpanded(filterGroup: any, filter: any, active: Bool): any;
   grok_FilterGroup_Remove(filterGroup: any, filter: any): any;
   grok_FilterGroup_SetActive(filterGroup: any, active: Bool, notify: Bool): any;
+  grok_GridFilterBase_SaveState(filter: any): any;
+  grok_GridFilterBase_ApplyState(filter: any, state: any): any;
+  grok_GridFilterBase_Get_FilterColumnName(filter: any): any;
+  grok_GridFilterBase_Get_FilterType(filter: any): any;
+  grok_GridFilterBase_Get_IsActive(filter: any): any;
+  grok_GridFilterBase_Set_IsActive(filter: any, active: Bool): any;
+  grok_GridFilterBase_Get_IsFiltering(filter: any): any;
+  grok_GridFilterBase_Set_Sorting(filter: any, sortByCol: String, asc: Bool): any;
+  grok_GridFilterBase_Get_Caption(filter: any): any;
+  grok_GridFilterBase_Set_Caption(filter: any, caption: String): any;
   grok_DockNode_Get_Container(node: any): any;
   grok_DockNode_DetachFromParent(node: any): any;
   grok_DockNode_RemoveChild(node: any, childNode: any): any;
@@ -1623,7 +1633,7 @@ export interface IDartApi {
   grok_FuncCall_Get_Output_Param_Value(call: any): any;
   grok_ParseCsv(s: String, options: any): any;
   grok_TestData(s: String, rows: Num, columns: Num): any;
-  grok_LinkTables(t1: any, t2: any, keys1: any, keys2: any, linkTypes: any, initialSync: Bool): any;
+  grok_LinkTables(t1: any, t2: any, keys1: any, keys2: any, linkTypes: any, initialSync: Bool, filterAllOnNoRowsSelected: Bool): any;
   grok_JoinTables(t1: any, t2: any, keys1: any, keys2: any, values1: any, values2: any, joinType: String, inPlace: Bool): any;
   grok_Subscription_Cancel(sub: any): any;
   grok_CallQuery(queryName: String, queryParameters: any, adHoc: Bool): Promise<any>;

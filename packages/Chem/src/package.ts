@@ -92,7 +92,7 @@ import {MixtureCellRenderer} from './rendering/mixture-cell-renderer';
 import {createComponentPane, createMixtureWidget, Mixfile} from './utils/mixfile';
 import {biochemicalPropertiesDialog} from './widgets/biochem-properties-widget';
 import {checkCurrentView} from './utils/ui-utils';
-import {DesirabilityProfile, mpo, PropertyDesirability, WEIGHTED_AGGREGATIONS_LIST, WeightedAggregation} from '@datagrok-libraries/statistics/src/mpo/mpo';
+import {mpo, PropertyDesirability, WEIGHTED_AGGREGATIONS_LIST, WeightedAggregation} from '@datagrok-libraries/statistics/src/mpo/mpo';
 //@ts-ignore
 import '../css/chem.css';
 import {addDeprotectedColumn, DeprotectEditor} from './analysis/deprotect';
@@ -100,7 +100,8 @@ import {MpoProfilesView} from './mpo/mpo-profiles-view';
 
 import $ from 'cash-dom';
 import {MpoProfileCreateView} from './mpo/mpo-create-profile';
-import {findSuitableProfiles, loadMpoProfiles, MPO_PROFILE_CHANGED_EVENT, MPO_TEMPLATE_PATH} from './mpo/utils';
+import {MpoProfileManager} from './mpo/mpo-profile-manager';
+import {calculateMpoCore, findSuitableProfiles, MPO_PROFILE_CHANGED_EVENT, MpoProfileInfo} from './mpo/utils';
 
 export {getMCS};
 export * from './package.g';
@@ -2472,31 +2473,15 @@ export class PackageFunctions {
     aggregation: WeightedAggregation,
     @grok.decorators.param({type: 'object'}) currentProperties: { [key: string]: PropertyDesirability },
   ): Promise<string[]> {
-    const columns: DG.Column[] = [];
-    let resultCol: DG.Column | null = null;
-    for (const propertyName in currentProperties) {
-      const column = df.columns.byName(propertyName);
-      if (!column) {
-        grok.shell.warning(`Column ${propertyName} from profile not found in table. Skipping.`);
-        continue;
-      }
-      column.setTag('desirabilityTemplate', JSON.stringify(currentProperties[propertyName]));
-      columns.push(column);
-    }
+    const result = calculateMpoCore(df, profileName, currentProperties, aggregation);
 
-    if (columns.length === 0) {
-      grok.shell.error('No valid columns found matching the profile properties. Cannot calculate MPO score.');
-      return [];
-    }
+    for (const warning of result.warnings)
+      grok.shell.warning(warning);
 
-    try {
-      resultCol = mpo(df, columns, profileName, aggregation);
-    } catch (e) {
-      console.error('MPO Calculation Error:', e);
-      grok.shell.error(`MPO calculation failed: ${e instanceof Error ? e.message : String(e)}`);
-    }
+    if (result.error)
+      grok.shell.error(result.error);
 
-    return resultCol ? [resultCol.name] : [];
+    return result.columnNames;
   }
 
   @grok.decorators.fileViewer({
@@ -2586,7 +2571,7 @@ export class PackageFunctions {
     }
 
     const profileId = params.get('profileId');
-    const profiles = await loadMpoProfiles();
+    const profiles = await MpoProfileManager.ensureLoaded();
     if (hasPath && profileId) {
       const profile = profiles.find((p) => p.name === decodeURIComponent(profileId));
       const view = new MpoProfileCreateView(profile, false, profile?.fileName);
@@ -2604,22 +2589,31 @@ export class PackageFunctions {
     @grok.decorators.param({type: 'view'}) browseView: any,
   ) {
     let openedView: DG.ViewBase | null = null;
+    const profileMap = new Map<DG.TreeViewNode, MpoProfileInfo>();
 
     const refresh = async () => {
       treeNode.items.forEach((item) => item.remove());
+      profileMap.clear();
 
-      const profileFiles = await grok.dapi.files.list(MPO_TEMPLATE_PATH);
-      for (const profile of profileFiles) {
-        const content =
-        JSON.parse(await grok.dapi.files.readAsText(
-          `${MPO_TEMPLATE_PATH}/${profile.name}`,
-        )) as DesirabilityProfile;
+      const profiles = await MpoProfileManager.ensureLoaded();
+      for (const profile of profiles) {
+        const item = treeNode.item(profile.name);
+        profileMap.set(item, profile);
 
-        treeNode.item(content.name).onSelected.subscribe(() => {
+        item.onSelected.subscribe(() => {
           openedView?.close();
-          const editView = new MpoProfileCreateView(content, false, profile.name);
+          const editView = new MpoProfileCreateView(profile, false, profile.fileName);
           openedView = editView.view;
           grok.shell.addPreview(editView.view);
+        });
+
+        item.captionLabel.addEventListener('contextmenu', (ev) => {
+          ev.stopImmediatePropagation();
+          ev.preventDefault();
+          DG.Menu.popup()
+            .item('Clone', () => MpoProfileManager.clone(profile))
+            .item('Delete', () => MpoProfileManager.confirmDelete(profile))
+            .show({x: ev.clientX, y: ev.clientY, causedBy: ev});
         });
       }
     };
@@ -2645,8 +2639,8 @@ export class PackageFunctions {
     resultDiv.appendChild(loader);
 
     const dataFrame = semValue.cell.dataFrame;
-    const profiles = await loadMpoProfiles();
-    const suitableProfiles = await findSuitableProfiles(dataFrame, profiles);
+    const profiles = await MpoProfileManager.ensureLoaded();
+    const suitableProfiles = findSuitableProfiles(dataFrame, profiles);
 
     if (suitableProfiles.length === 0) {
       container.appendChild(ui.divText('No suitable profiles available.'));
