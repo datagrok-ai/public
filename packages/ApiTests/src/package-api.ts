@@ -62,7 +62,7 @@ export namespace funcs {
     return await grok.functions.call('APITests:TestOutputAnnotationJoinCol', { data, col });
   }
 
-  export async function testOutputAnnotationJoinColList(data: DG.DataFrame , col: DG.Column ): Promise<DG.Column> {
+  export async function testOutputAnnotationJoinColList(data: DG.DataFrame , col: DG.Column ): Promise<string[]> {
     return await grok.functions.call('APITests:TestOutputAnnotationJoinColList', { data, col });
   }
 
