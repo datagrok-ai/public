@@ -240,7 +240,7 @@ export class Pmpo {
   private boolCols: DG.Column[];
   private numericCols: DG.Column[];
 
-  private initTable = grok.data.demo.demog(10);
+  private initTable = DG.DataFrame.create();
 
   private statGrid = DG.Viewer.grid(this.initTable, {showTitle: true, title: DESCR_TABLE_TITLE});
 
