@@ -8,7 +8,7 @@ import {u2} from '@datagrok-libraries/utils/src/u2';
 import {MpoProfileEditor} from '@datagrok-libraries/statistics/src/mpo/mpo-profile-editor';
 
 import {_package} from '../package';
-import {MpoProfileInfo, updateMpoPath, MpoPathMode, MPO_PROFILE_CHANGED_EVENT} from './utils';
+import {MpoProfileInfo, updateMpoPath, MpoPathMode, MPO_PROFILE_CHANGED_EVENT, MPO_PROFILE_DELETED_EVENT} from './utils';
 import {MpoProfileCreateView} from './mpo-create-profile';
 import {MpoProfileManager} from './mpo-profile-manager';
 
@@ -19,6 +19,7 @@ export class MpoProfilesView {
 
   private tableContainer = ui.divV([]);
   private subs: Subscription[] = [];
+  private previewedFileName: string | null = null;
 
   constructor() {
     this.view = DG.View.fromRoot(this.root);
@@ -129,6 +130,7 @@ export class MpoProfilesView {
     panel.addTitle(ui.label('MPO Profile'));
     panel.root.append(editor.root, this.buildEditRibbon(profile));
 
+    this.previewedFileName = profile.fileName;
     grok.shell.o = panel.root;
   }
 
@@ -157,6 +159,12 @@ export class MpoProfilesView {
 
   private listenForChanges(): void {
     this.subs.push(grok.events.onCustomEvent(MPO_PROFILE_CHANGED_EVENT).subscribe(() => this.reloadProfiles()));
+    this.subs.push(grok.events.onCustomEvent(MPO_PROFILE_DELETED_EVENT).subscribe((data) => {
+      if (data?.fileName === this.previewedFileName) {
+        grok.shell.o = null;
+        this.previewedFileName = null;
+      }
+    }));
     this.subs.push(grok.events.onViewRemoving.subscribe((v) => {
       if (v.args.view.id === this.view.id)
         this.detach();

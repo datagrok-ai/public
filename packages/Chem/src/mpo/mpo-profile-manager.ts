@@ -4,7 +4,8 @@ import * as ui from 'datagrok-api/ui';
 import {DesirabilityProfile} from '@datagrok-libraries/statistics/src/mpo/mpo';
 
 import {MpoProfileCreateView} from './mpo-create-profile';
-import {deleteMpoProfile, loadMpoProfiles, MPO_PROFILE_CHANGED_EVENT, MPO_TEMPLATE_PATH, MpoProfileInfo} from './utils';
+import {deleteMpoProfile, loadMpoProfiles, MPO_PROFILE_CHANGED_EVENT, MPO_PROFILE_DELETED_EVENT,
+  MPO_TEMPLATE_PATH, MpoProfileInfo} from './utils';
 
 class MpoProfileManagerImpl {
   private profiles: MpoProfileInfo[] = [];
@@ -62,6 +63,7 @@ class MpoProfileManagerImpl {
           await deleteMpoProfile(profile);
           this.profiles = this.profiles.filter((p) => p.fileName !== profile.fileName);
           this.fireChanged();
+          grok.events.fireCustomEvent(MPO_PROFILE_DELETED_EVENT, {fileName: profile.fileName});
           onDeleted?.();
         } catch (e) {
           grok.shell.error(`Failed to delete profile "${profile.name}": ${e instanceof Error ? e.message : e}`);

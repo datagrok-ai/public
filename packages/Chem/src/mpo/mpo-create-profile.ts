@@ -13,7 +13,7 @@ import {
 import {MPO_SCORE_CHANGED_EVENT, MpoProfileEditor} from '@datagrok-libraries/statistics/src/mpo/mpo-profile-editor';
 
 import {MpoContextPanel} from './mpo-context-panel';
-import {MpoPathMode, updateMpoPath} from './utils';
+import {MpoPathMode, MPO_PROFILE_DELETED_EVENT, updateMpoPath} from './utils';
 import {MpoProfileManager} from './mpo-profile-manager';
 
 const METHOD_MANUAL = 'Manual';
@@ -402,6 +402,11 @@ export class MpoProfileCreateView {
       await this.mpoContextPanel.render(this.profile, this.editor.columnMapping, agg);
     }));
 
+    this.subs.push(grok.events.onCustomEvent(MPO_PROFILE_DELETED_EVENT).subscribe((data) => {
+      if (data?.fileName === this.fileName)
+        this.closeView();
+    }));
+
     const viewHandler = (eventData: DG.EventData) => {
       const eventView = eventData.args?.view;
       if (eventView && (eventView.id === this.view.id || eventView.id === this.tableView.id))
@@ -416,5 +421,10 @@ export class MpoProfileCreateView {
     this.mpoContextPanel?.detach();
     this.subs.forEach((sub) => sub.unsubscribe());
     this.subs = [];
+  }
+
+  private closeView(): void {
+    this.detach();
+    (this.isEditMode ? this.view : this.tableView).close();
   }
 }
