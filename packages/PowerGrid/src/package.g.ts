@@ -2,6 +2,7 @@ import {ScatterPlotCellRenderer} from './sparklines/scatter-plot';
 import {RawPNGRenderer} from './pngRenderer';
 import {PackageFunctions} from './package';
 import {HtmlTestCellRenderer} from './cell-types/test-cell-renderer';
+import {StarsCellRenderer} from './cell-types/stars-cell-renderer';
 import {MultiChoiceCellRenderer} from './cell-types/multi-choice-cell-renderer';
 import {ImageCellRenderer} from './cell-types/image-cell-renderer';
 import {HyperlinkCellRenderer} from './cell-types/hyperlink-cell-renderer';
@@ -37,6 +38,14 @@ export function _ImageCellRenderer() {
 //meta.cellType: MultiChoice
 export function _MultiChoiceCellRenderer() {
   return new MultiChoiceCellRenderer();
+}
+
+//name: Stars
+//output: grid_cell_renderer renderer
+//meta.role: cellRenderer
+//meta.cellType: Stars
+export function _StarsCellRenderer() {
+  return new StarsCellRenderer();
 }
 
 //name: htestCellRenderer

@@ -4,6 +4,7 @@ import {_HtmlTestCellRenderer} from './package.g';
 import {_HyperlinkCellRenderer} from './package.g';
 import {_BinaryImageCellRenderer} from './package.g';
 import {_ImageCellRenderer} from './package.g';
+import {_StarsCellRenderer} from './package.g';
 /* Do not change these import lines to match external modules in webpack configuration */
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
@@ -418,3 +419,4 @@ export {_HyperlinkCellRenderer};
 export {_HtmlTestCellRenderer};
 export {_ScatterPlotCellRenderer};
 export {_MultiChoiceCellRenderer};
+export {_StarsCellRenderer};
