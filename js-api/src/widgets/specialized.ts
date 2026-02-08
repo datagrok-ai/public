@@ -103,6 +103,8 @@ export class DropDown extends Widget {
   private _options?: DropDownOptions;
   private _contentContainer?: HTMLElement;
 
+  public get type(): string { return 'DropDown'; }
+
   constructor(label: string | Element, options?: DropDownOptions) {
     const labelElement = typeof label === 'string' ? ui.span([label]) : label;
     super(ui.div([labelElement], 'ui-drop-down-root'));
@@ -189,7 +191,9 @@ export class DropDown extends Widget {
         this._menuCloseSub = this._currentMenu.onClose.subscribe(() => this.collapse(false));
 
         const rect = this.root.getBoundingClientRect();
-        this._currentMenu.show({x: rect.left, y: rect.bottom});
+        const x = Math.floor(window.scrollX + rect.left + 6);
+        const y = Math.floor(window.scrollY + rect.bottom + 2);
+        this._currentMenu.show({x: x, y: y, element: document.body, nextToElement: false});
       }
     });
   }
