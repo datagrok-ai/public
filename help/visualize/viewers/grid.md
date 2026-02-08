@@ -363,6 +363,21 @@ To show data from multiple columns, you can design a form:
 ![Forms](img/grid-forms.gif "Forms")
 
 </TabItem>
+<TabItem value="confidence-interval" label="Confidence interval">
+
+Confidence interval columns visualize point estimates with their uncertainty ranges. Each cell
+shows a center mark (dot, diamond, or vertical line) for the estimate, connected by a horizontal
+whisker line to the lower and upper bounds. Optional end caps (serifs) and a semi-transparent
+fill band between the bounds make the intervals easy to read at a glance.
+
+Two input modes are supported: **three-column** binding (estimate, lower bound, upper bound) and
+**two-column** binding (estimate + margin of error for symmetric intervals). Scale options include
+global (shared min/max across all rows), per-row, custom fixed range, and symmetric around zero.
+A reference line (e.g., zero or a target value) can be added for comparison. Log scale is
+available for data spanning orders of magnitude. When bounds extend beyond the visible range,
+arrow indicators show truncation. Hovering over a cell displays exact values in a tooltip.
+
+</TabItem>
 </Tabs>
 
 ### Data from linked tables
