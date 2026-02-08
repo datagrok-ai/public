@@ -125,6 +125,16 @@ export function tagsCellRenderer() {
   return PackageFunctions.tagsCellRenderer();
 }
 
+//name: Confidence Interval
+//output: grid_cell_renderer result
+//meta.cellType: ConfidenceInterval
+//meta.gridChart: true
+//meta.virtual: true
+//meta.role: cellRenderer
+export function confidenceIntervalCellRenderer() {
+  return PackageFunctions.confidenceIntervalCellRenderer();
+}
+
 //description: Adds a sparkline column for the selected columns
 //input: list columns { type: numerical }
 //meta.action: Sparklines...

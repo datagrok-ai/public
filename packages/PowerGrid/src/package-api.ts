@@ -60,6 +60,10 @@ export namespace funcs {
     return await grok.functions.call('PowerGrid:TagsCellRenderer', {});
   }
 
+  export async function confidenceIntervalCellRenderer(): Promise<any> {
+    return await grok.functions.call('PowerGrid:ConfidenceIntervalCellRenderer', {});
+  }
+
   /**
   Adds a sparkline column for the selected columns
   */
