@@ -271,15 +271,7 @@ Cell renderers customize how cell data is shown. For instance, molecules in
 SMILES notation may be rendered in 2D. For specific semantic types,
 such as molecules or URL images, cell renderers are applied automatically. 
 
-To apply a cell renderer manually:
-
-1. Right click the column header and select **Column properties...**. A dialog
-   opens.
-1. In the dialog, set the tag key to `cell.renderer` and the tag value to the
-   desired cell renderer  name (e.g., `Tags`). 
-  >Note: Some cell renderers <!--(e.g., [MultiChoice])  //TODO: New doc: supported-cell-renderers.md--> may require
-  >additional parameters. 
-1. Click **OK**.
+Use the "Renderer" combobox under the "Settings" pane in the column context panel.
 
 ![](../../deploy/releases/img/release1.18-cellrend-tags-multichoice-dropdown.gif)
 
@@ -304,7 +296,6 @@ After that, double-clicking the cell will show a drop-down list with those optio
 The `MultiChoice` renderer displays a list of predefined options as checkboxes within a cell. To configure it:
 
 1. Set the column tag `cell.renderer` to `MultiChoice`.
-
 2. Set another column tag, `.choices`, to a JSON string array of the options you want to display (e.g., ["Option 1", "Option 2", "Option 3"]).
 
 #### Tags renderer
@@ -312,8 +303,11 @@ The `MultiChoice` renderer displays a list of predefined options as checkboxes w
 The `Tags` renderer is used to display comma-separated values from a string column as individual "tags". To use it:
 
 1. Set the column tag `cell.renderer` to `Tags`.
-
 2. Ensure the cell values are formatted as a comma-separated string (e.g., "Opt1,Opt2,Opt3").
+
+#### Stars
+
+The `Stars` cell type applies to the integer column, and lets you "rate" something with stars.
 
 ### Summary columns
 
