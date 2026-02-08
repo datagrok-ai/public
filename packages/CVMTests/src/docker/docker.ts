@@ -29,9 +29,9 @@ category('Docker', () => {
     let container = await stopContainer(containerOnDemandName);
     await grok.dapi.docker.dockerContainers.run(container.id, true);
     await delay(90000);
-    container = await grok.dapi.docker.dockerContainers.filter(containerOnDemandName).first();
+    container = await grok.dapi.docker.dockerContainers.filter(`name = "cvmtests-${containerOnDemandName}"`).first();
     expect(container.status.startsWith('stop'), true);
-  }, {timeout: 240000, /*stressTest: true*/});
+  }, {timeout: 240000, skipReason: 'Tool long'});
 
   test('Get response and logs: Incorrect', async () => {
     let response = await grok.dapi.docker.dockerContainers.fetchProxy(incorrectId, '/square?number=4');
@@ -98,7 +98,7 @@ category('Docker', () => {
 });
 
 async function stopContainer(containerName: string): Promise<DG.DockerContainer> {
-  const container = await grok.dapi.docker.dockerContainers.filter(containerName).first();
+  const container = await grok.dapi.docker.dockerContainers.filter(`name = "cvmtests-${containerName}"`).first();
   //@ts-ignore
   if (!container.status.startsWith('stopped') && !(container.status.startsWith('pending') || container.status === 'stopping'))
     await grok.dapi.docker.dockerContainers.stop(container.id, true);
@@ -106,9 +106,8 @@ async function stopContainer(containerName: string): Promise<DG.DockerContainer>
 }
 
 async function startContainer(containerName: string): Promise<DG.DockerContainer> {
-  const container = await grok.dapi.docker.dockerContainers.filter(containerName).first();
-  if (container.status.startsWith('stopped'))
-    await grok.dapi.docker.dockerContainers.run(container.id, true);
+  const container = await grok.dapi.docker.dockerContainers.filter(`name = "cvmtests-${containerName}"`).first();
+  await grok.dapi.docker.dockerContainers.run(container.id, true);
   return container;
 }
 
