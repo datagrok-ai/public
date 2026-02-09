@@ -918,17 +918,6 @@ export class Pmpo {
 
   /** Fits the pMPO model to the given data and updates the viewers accordingly */
   private async getOptimalSettings(descriptors: DG.ColumnList, desirability: DG.Column, useSigmoid: boolean): Promise<OptimalPoint> {
-    const funcToBeMinimized = (point: Float32Array) => {
-      // Fit the model
-      const trainResult = Pmpo.fit(this.table, descriptors, desirability, point[0], point[1], point[2], false);
-
-      // Get predictions
-      const prediction = Pmpo.predict(this.table, trainResult.params, useSigmoid, this.predictionName);
-
-      // Evaluate predictions and return 1 - AUC (since optimization minimizes the function, but we want to maximize AUC)
-      return 1 - getPmpoEvaluation(desirability, prediction).auc;
-    }; // funcToBeMinimized
-
     const failedResult: OptimalPoint = {
       pValTresh: 0,
       r2Tresh: 0,
@@ -936,13 +925,44 @@ export class Pmpo {
       success: false,
     };
 
+    const descriptorNames = descriptors.names();
+    const {desired, nonDesired} = getDesiredTables(this.table, desirability);
+
+    // Compute descriptors' statistics
+    const descrStats = new Map<string, DescriptorStatistics>();
+    descriptorNames.forEach((name) => {
+      descrStats.set(name, getDescriptorStatistics(desired.col(name)!, nonDesired.col(name)!));
+    });
+    const descrStatsTable = getDescriptorStatisticsTable(descrStats);
+
+    // Filter by p-value
+    const selectedByPvalue = getFilteredByPvalue(descrStatsTable, P_VAL_TRES_DEFAULT);
+    if (selectedByPvalue.length < 1)
+      return failedResult;
+
+    const correlationTriples = getCorrelationTriples(descriptors, selectedByPvalue);
+
+    const funcToBeMinimized = (point: Float32Array) => {
+      // Filter by correlations
+      const selectedByCorr = getFilteredByCorrelations(descriptors, selectedByPvalue, descrStats, point[0], correlationTriples);
+
+      // Compute pMPO parameters - training
+      const params = getModelParams(desired, nonDesired, selectedByCorr, point[1]);
+
+      // Get predictions
+      const prediction = Pmpo.predict(this.table, params, useSigmoid, this.predictionName);
+
+      // Evaluate predictions and return 1 - AUC (since optimization minimizes the function, but we want to maximize AUC)
+      return 1 - getPmpoEvaluation(desirability, prediction).auc;
+    }; // funcToBeMinimized
+
     const pi = DG.TaskBarProgressIndicator.create('Optimizing... ', {cancelable: true});
 
     try {
       const optimalResult = await optimizeNM(
         pi,
         funcToBeMinimized,
-        new Float32Array([P_VAL_TRES_DEFAULT, R2_DEFAULT, Q_CUTOFF_DEFAULT]),
+        new Float32Array([R2_DEFAULT, Q_CUTOFF_DEFAULT]),
         DEFAULT_OPTIMIZATION_SETTINGS,
         LOW_PARAMS_BOUNDS,
         HIGH_PARAMS_BOUNDS,
@@ -953,9 +973,9 @@ export class Pmpo {
 
       if (success) {
         return {
-          pValTresh: optimalResult.optimalPoint[0],
-          r2Tresh: optimalResult.optimalPoint[1],
-          qCutoff: optimalResult.optimalPoint[2],
+          pValTresh: P_VAL_TRES_DEFAULT,
+          r2Tresh: optimalResult.optimalPoint[0],
+          qCutoff: optimalResult.optimalPoint[1],
           success: true,
         };
       } else

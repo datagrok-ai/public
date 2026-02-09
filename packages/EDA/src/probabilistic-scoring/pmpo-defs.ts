@@ -198,7 +198,7 @@ export const AUTO_TUNE_WARNING_MIN_ROWS = 3000;
 /** Default settings for optimization in pMPO parameter tuning */
 export const DEFAULT_OPTIMIZATION_SETTINGS = new Map<string, number>([
   ['tolerance', 0.0001],
-  ['maxIter', 50],
+  ['maxIter', 25],
   ['nonZeroParam', 0.0001],
   ['initialScale', 0.02],
   ['scaleReflaction', 1],
@@ -215,7 +215,7 @@ export type OptimalPoint = {
 };
 
 /** Minimum bounds for pMPO parameters during optimization */
-export const LOW_PARAMS_BOUNDS = new Float32Array([P_VAL_TRES_MIN, R2_MIN, Q_CUTOFF_MIN]);
+export const LOW_PARAMS_BOUNDS = new Float32Array([R2_MIN, Q_CUTOFF_MIN]);
 
 /** Maximum bounds for pMPO parameters during optimization */
-export const HIGH_PARAMS_BOUNDS = new Float32Array([P_VAL_TRES_MAX, R2_MAX, Q_CUTOFF_MAX]);
+export const HIGH_PARAMS_BOUNDS = new Float32Array([R2_MAX, Q_CUTOFF_MAX]);

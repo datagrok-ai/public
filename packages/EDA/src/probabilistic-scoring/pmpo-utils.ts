@@ -509,8 +509,8 @@ export function setCorrColumnColorCoding(table: DG.DataFrame, descriptorNames: s
       return;
 
     const rules: Record<string, string> = {};
-    rules[`>${r2Tresh}`] = COLORS.SKIPPED;
-    rules[`=<${r2Tresh}`] = COLORS.SELECTED;
+    rules[`>=${r2Tresh}`] = COLORS.SKIPPED;
+    rules[`<${r2Tresh}`] = COLORS.SELECTED;
 
     col.meta.colors.setConditional(rules);
   });

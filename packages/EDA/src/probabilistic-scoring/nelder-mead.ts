@@ -114,7 +114,7 @@ export async function optimizeNM(pi: DG.ProgressIndicator,
         return pointObjectives[a] - pointObjectives[b];
       });
 
-      percentage = Math.floor(100 * (iteration) / maxIter);
+      percentage = Math.min(100, Math.floor(100 * (iteration) / maxIter));
       pi.update(percentage, `Optimizing... (${percentage}%)`);
       await new Promise((r) => setTimeout(r, 1));
 
