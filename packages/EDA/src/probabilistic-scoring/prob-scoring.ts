@@ -213,20 +213,36 @@ export class Pmpo {
   static predict(df: DG.DataFrame, params: Map<string, PmpoParams>, useSigmoid: boolean, predictionName: string): DG.Column {
     const count = df.rowCount;
     const scores = new Float64Array(count).fill(0);
-    let x = 0;
 
     // Compute pMPO scores (see https://pmc.ncbi.nlm.nih.gov/articles/PMC4716604/
     params.forEach((param, name) => {
       const col = df.col(name);
+      const b = param.b;
+      const c = param.c;
+      const x0 = param.cutoff;
+      let weight = param.weight;
+      const avg = param.desAvg;
+      const std = param.desStd;
+      const frac = 1.0 / (2 * std**2);
 
       if (col == null)
         throw new Error(`Failed to apply pMPO: inconsistent data, no column "${name}" in the table "${df.name}"`);
 
       const vals = col.getRawData();
-      for (let i = 0; i < count; ++i) {
-        x = vals[i];
-        scores[i] += param.weight * gaussDesirabilityFunc(x, param.desAvg, param.desStd) *
-         (useSigmoid ? sigmoidS(x, param.cutoff, param.b, param.c) : 1);
+
+      if (useSigmoid) {
+        if (c > 0) {
+          for (let i = 0; i < count; ++i)
+            scores[i] += weight * Math.exp(-((vals[i] - avg)**2) * frac) / (1.0 + b * (c ** (-(vals[i] - x0))));
+        } else {
+          weight = weight / (1.0 + b);
+
+          for (let i = 0; i < count; ++i)
+            scores[i] += weight * Math.exp(-((vals[i] - avg)**2) * frac);
+        }
+      } else {
+        for (let i = 0; i < count; ++i)
+          scores[i] += weight * Math.exp(-((vals[i] - avg)**2) * frac);
       }
     });
 
@@ -793,7 +809,7 @@ export class Pmpo {
       nullable: false,
       min: P_VAL_TRES_MIN,
       max: P_VAL_TRES_MAX,
-      step: 0.01,
+      step: 0.001,
       value: P_VAL_TRES_DEFAULT,
       // @ts-ignore
       format: FORMAT,
