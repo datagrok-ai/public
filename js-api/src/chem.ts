@@ -71,7 +71,6 @@ export namespace chem {
 
   /** A common interface that all sketchers should implement */
   export abstract class SketcherBase extends Widget {
-
     onChanged: Subject<any> = new Subject<any>();
     host?: Sketcher;
     _name: string = '';
@@ -79,6 +78,12 @@ export namespace chem {
     constructor() {
       super(ui.box());
     }
+
+    /**
+     * This field is used in cases when smiles is set from column but actually molblock is set to keep same coordinates.
+     * When this happens and user copies over the smiles from sketche, the sketcher returns transformed smiles.
+    */
+    explicitMol?: {notation: 'smiles' | 'molblock' | 'molblockV3000'; value: string} | null = null;
 
     /** SMILES representation of the molecule */
     abstract get smiles(): string;
