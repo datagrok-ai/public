@@ -43,8 +43,10 @@ export class MpoContextPanel {
     this.panel.addTitle(ui.span([icon, ui.label('MPO not calculated yet')]));
 
     this.histogramHost.classList.add('chem-mpo-histogram-compact');
-    grok.shell.o = this.root;
+  }
 
+  show(): void {
+    grok.shell.o = this.root;
     this.attachCurrentObjectChanging();
   }
 
@@ -83,7 +85,7 @@ export class MpoContextPanel {
       return;
 
     if (grok.shell.o !== this.root)
-      grok.shell.o = this.root;
+      this.show();
 
     const columnNames = await computeMpo(this.df, profile, columnMapping, aggregation, true);
     if (!columnNames.length)
@@ -112,16 +114,37 @@ export class MpoContextPanel {
     this.worstScoreViewer.render();
   }
 
-  private attachCurrentObjectChanging() {
+  private attachCurrentObjectChanging(): void {
+    if (this.currentObjectChangingSub)
+      return;
+
     this.currentObjectChangingSub = grok.events.onEvent('d4-current-object-changing').subscribe((e) => {
-      const newObj = e.newObject;
-      if (newObj !== this.root)
+      if (e.newObject !== this.root)
         e.preventDefault();
     });
   }
 
-  detach() {
+  close(): void {
     this.currentObjectChangingSub?.unsubscribe();
     this.currentObjectChangingSub = null;
+    this.resetViewers();
+
+    if (grok.shell.o === this.root)
+      grok.shell.o = null;
+  }
+
+  updateDataFrame(df: DG.DataFrame): void {
+    this.df = df;
+    this.resetViewers();
+  }
+
+  private resetViewers(): void {
+    this.histogram = undefined;
+    ui.empty(this.histogramHost);
+    this.bestScoreViewer = undefined;
+    this.worstScoreViewer = undefined;
+
+    while (this.panel.panes.length > 0)
+      this.panel.removePane(this.panel.panes[0]);
   }
 }

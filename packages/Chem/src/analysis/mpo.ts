@@ -92,13 +92,17 @@ export class MpoProfileDialog {
   }
 
   private highlightSuitableProfiles(suitableFileNames: string[]): void {
+    const STAR_PLACEHOLDER = '\u2003\u2002';
     const select = this.profileInput.input as HTMLSelectElement;
+
     for (let i = 0; i < select.options.length; i++) {
       const option = select.options[i];
       const text = option.textContent ?? '';
+      if (text.startsWith('⭐') || text.startsWith('\u2003'))
+        continue;
 
-      if (suitableFileNames.includes(option.value) && !text.startsWith('⭐'))
-        option.textContent = `⭐ ${text}`;
+      const isApplicable = suitableFileNames.includes(option.value);
+      option.textContent = `${isApplicable ? '⭐' : STAR_PLACEHOLDER} ${text}`;
     }
   }
 
@@ -256,7 +260,7 @@ export class MpoProfileDialog {
   }
 
   private detach(): void {
-    this.mpoContextPanel?.detach();
+    this.mpoContextPanel?.close();
     this.subs.forEach((sub) => sub.unsubscribe());
     this.subs = [];
   }

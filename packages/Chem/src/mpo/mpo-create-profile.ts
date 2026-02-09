@@ -162,10 +162,12 @@ export class MpoProfileCreateView {
         onValueChanged: async () => {
           this.clearPreviousLayout();
           if (this.methodInput!.value === METHOD_PROBABILISTIC) {
+            this.closeContextPanel();
             if (!this.df) {
               this.showError('Probabilistic MPO requires a dataset. Please select a dataset first.');
               return;
             }
+            this.tableView.dataFrame = this.df;
             await this.runProbabilisticMpo();
             return;
           }
@@ -186,18 +188,25 @@ export class MpoProfileCreateView {
 
         try {
           this.df = df;
-          this.tableView.dataFrame = df;
-          await grok.data.detectSemanticTypes(this.df!);
+
+          if (!this.df) {
+            this.closeContextPanel();
+            this.setTableViewVisible(false);
+
+            if (this.methodInput?.value === METHOD_PROBABILISTIC) {
+              this.clearPreviousLayout();
+              this.showError('Probabilistic MPO requires a dataset. Please select a dataset first.');
+            } else
+              this.attachLayout();
+            return;
+          }
+
+          await grok.data.detectSemanticTypes(this.df);
+          this.mpoContextPanel?.updateDataFrame(this.df);
 
           if (this.methodInput?.value === METHOD_PROBABILISTIC) {
+            this.tableView.dataFrame = this.df;
             this.clearPreviousLayout();
-
-            if (!this.df) {
-              this.showError('Probabilistic MPO requires a dataset. Please select a dataset first.');
-              this.setTableViewVisible(false);
-              return;
-            }
-
             await this.runProbabilisticMpo();
             return;
           }
@@ -417,8 +426,13 @@ export class MpoProfileCreateView {
     this.subs.push(grok.events.onViewRemoving.subscribe(viewHandler));
   }
 
+  private closeContextPanel(): void {
+    this.mpoContextPanel?.close();
+    this.mpoContextPanel = null;
+  }
+
   private detach(): void {
-    this.mpoContextPanel?.detach();
+    this.closeContextPanel();
     this.subs.forEach((sub) => sub.unsubscribe());
     this.subs = [];
   }
