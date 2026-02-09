@@ -36,7 +36,7 @@ import {getInchiKeysImpl, getInchisImpl} from './panels/inchi';
 import {getMolColumnPropertyPanel} from './panels/chem-column-property-panel';
 import {ScaffoldTreeViewer} from './widgets/scaffold-tree';
 import {ScaffoldTreeFilter} from './widgets/scaffold-tree-filter';
-import {Fingerprint} from './utils/chem-common';
+import {Fingerprint, waitFor} from './utils/chem-common';
 import * as chemCommonRdKit from './utils/chem-common-rdkit';
 import {IMolContext, getMolSafe, isFragment, _isSmarts} from './utils/mol-creation_rdkit';
 import {checkMoleculeValid, checkMolEqualSmiles, _rdKitModule} from './utils/chem-common-rdkit';
@@ -1541,11 +1541,21 @@ export class PackageFunctions {
     const sketcher = new Sketcher(undefined, PackageFunctions.validateMolecule);
     const unit = cell.cell.column.meta.units;
     let molecule = cell.cell.value;
+    let ogSmiles: string | null = null;
     if (unit === DG.chem.Notation.Smiles) {
+      ogSmiles = molecule;
       //convert to molFile to draw in coordinates similar to dataframe cell
       molecule = PackageFunctions.convertMolNotation(molecule, DG.chem.Notation.Smiles, DG.chem.Notation.MolBlock);
     }
     sketcher.setMolecule(molecule);
+    if (ogSmiles) {
+      waitFor(() => !!sketcher.sketcher?.isInitialized)
+        .then((inited) => {
+          if (inited)
+          sketcher.sketcher!.explicitMol = {notation: 'smiles', value: ogSmiles};
+        });
+    }
+
     const dlg = ui.dialog()
       .add(sketcher)
       .onOK(() => {
@@ -1555,7 +1565,6 @@ export class PackageFunctions {
           const mol = checkMoleculeValid(cell.cell.value);
           if (!checkMolEqualSmiles(mol, newValue)) {
             try {
-              //@ts-ignore TODO Remove on js-api update
               cell.setValue(newValue, true);
             } catch {
               cell.cell.value = newValue;
@@ -1564,7 +1573,6 @@ export class PackageFunctions {
           mol?.delete();
         } else {
           try {
-            //@ts-ignore TODO Remove on js-api update
             cell.setValue(sketcher.getMolFile(), true);
           } catch {
             cell.cell.value = sketcher.getMolFile();
