@@ -1500,7 +1500,17 @@ export class AddNewColumnDialog {
         filter = !word.text.endsWith(':');
       } else if (word.text.includes('$') || word.text.includes('${') || word.text.includes('$[')) {
         const dollarIdx = word.text.lastIndexOf('$');
-        const openingSym = word.text.includes('$[') ? '[' : '{';
+        //check if there is a function before dollar sign and if it is an aggregation function which requires square braces
+        let openingSym = '{';
+        if (context.view) {
+          const funcName = this.getFunctionNameAtPosition(context.view!, index - 2, -1, this.packageFunctionsParams,
+            this.coreFunctionsParams, true)?.funcName;
+          const isAggr = funcName ?
+            Object.entries(DG.AGG).map(([key, value]) => value).includes(funcName!.toLocaleLowerCase() as DG.AGG) : false;
+          if (isAggr)
+            openingSym = '[';
+        }
+        const func = this.getFunctionNameAtPosition(context.view!, index - 2, -1, this.packageFunctionsParams, this.coreFunctionsParams, true)
         const closingSym = openingSym === '{' ? '}' : ']';
         const openingBracketIdx = word.text.indexOf(openingSym) > dollarIdx ? word.text.indexOf(openingSym) : -1;
         const closingBracket = context.state.doc.length > word.text.length ?
