@@ -71,6 +71,12 @@ export async function testFunctionJoin(data: DG.DataFrame, col1: DG.Column, col2
   return await PackageFunctions.testFunctionJoin(data, col1, col2, col3, out);
 }
 
+//input: dataframe data 
+//output: dataframe result { action: join(data) }
+export async function testFunctionNewJoinWithoutFormula(data: DG.DataFrame) : Promise<any> {
+  return await PackageFunctions.testFunctionNewJoinWithoutFormula(data);
+}
+
 //name: ExceptionFunc
 //input: int a 
 //output: int result

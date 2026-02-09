@@ -1,7 +1,7 @@
 import os
 import logging
 import asyncio
-from quart import Quart, request
+from quart import Quart, request, jsonify
 from quart import websocket as quart_websocket
 from hypercorn.asyncio import serve
 from hypercorn.config import Config
@@ -12,6 +12,19 @@ logger = logging.getLogger(__name__)
 
 # Quart app (ASGI-compatible Flask alternative)
 app = Quart('apitests')
+
+
+# Custom error handlers to return JSON instead of HTML
+@app.errorhandler(404)
+async def not_found(e):
+    logger.warning(f"404 Not Found: {request.path}")
+    return jsonify({"error": "Not found", "path": request.path}), 404
+
+
+@app.errorhandler(500)
+async def internal_error(e):
+    logger.error(f"500 Internal Server Error: {str(e)}")
+    return jsonify({"error": "Internal server error", "message": str(e)}), 500
 
 @app.route('/square', methods=['GET'])
 async def square():
@@ -41,7 +54,7 @@ async def websocket_handler():
 # Run the ASGI server
 async def run_server():
     config = Config()
-    config.bind = ["0.0.0.0:25353"]  # Same port for HTTP and WebSocket
+    config.bind = ["0.0.0.0:5353"]  # Same port for HTTP and WebSocket
     await serve(app, config)
 
 if __name__ == '__main__':

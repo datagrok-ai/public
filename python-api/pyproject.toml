@@ -44,7 +44,6 @@ test = [
     "pytest-xml",
     "pytest-item-dict",
     "data_to_xml",
-    "requests-mock"
 ]
 
 [project.urls]

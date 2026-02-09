@@ -1,8 +1,19 @@
 import os
 
-from flask import Flask, request
+from flask import Flask, request, jsonify
 
 app = Flask('apitests')
+
+
+# Custom error handlers to return JSON instead of HTML
+@app.errorhandler(404)
+def not_found(e):
+    return jsonify({"error": "Not found", "path": request.path}), 404
+
+
+@app.errorhandler(500)
+def internal_error(e):
+    return jsonify({"error": "Internal server error", "message": str(e)}), 500
 
 
 @app.route('/square', methods=['GET'])
@@ -29,4 +40,4 @@ if __name__ == '__main__':
     pid.write(str(os.getpid()))
     pid.close()
 
-    app.run(host='0.0.0.0', port=15353, threaded=True)
+    app.run(host='0.0.0.0', port=5353, threaded=True)

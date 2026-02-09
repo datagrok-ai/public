@@ -1120,6 +1120,12 @@
   font-weight: 600;
 }
 
+.chem-mpo-footer-warning {
+  color: #805125;
+  flex: 1;
+  text-align: center;
+}
+
 .chem-descriptors-select-btn {
   margin-top: 20px;
 }

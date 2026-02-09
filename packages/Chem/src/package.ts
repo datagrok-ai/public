@@ -36,7 +36,7 @@ import {getInchiKeysImpl, getInchisImpl} from './panels/inchi';
 import {getMolColumnPropertyPanel} from './panels/chem-column-property-panel';
 import {ScaffoldTreeViewer} from './widgets/scaffold-tree';
 import {ScaffoldTreeFilter} from './widgets/scaffold-tree-filter';
-import {Fingerprint} from './utils/chem-common';
+import {Fingerprint, waitFor} from './utils/chem-common';
 import * as chemCommonRdKit from './utils/chem-common-rdkit';
 import {IMolContext, getMolSafe, isFragment, _isSmarts} from './utils/mol-creation_rdkit';
 import {checkMoleculeValid, checkMolEqualSmiles, _rdKitModule} from './utils/chem-common-rdkit';
@@ -101,6 +101,7 @@ import {MpoProfilesView} from './mpo/mpo-profiles-view';
 import $ from 'cash-dom';
 import {MpoProfileCreateView} from './mpo/mpo-create-profile';
 import {MpoProfileManager} from './mpo/mpo-profile-manager';
+import {MpoProfileHandler} from './mpo/mpo-profile-handler';
 import {calculateMpoCore, findSuitableProfiles, MPO_PROFILE_CHANGED_EVENT, MpoProfileInfo} from './mpo/utils';
 
 export {getMCS};
@@ -210,6 +211,7 @@ export class PackageFunctions {
     if (!_initChemPromise)
       _initChemPromise = initChemInt();
     await _initChemPromise;
+    DG.ObjectHandler.register(new MpoProfileHandler());
   }
 
   @grok.decorators.autostart()
@@ -1539,11 +1541,21 @@ export class PackageFunctions {
     const sketcher = new Sketcher(undefined, PackageFunctions.validateMolecule);
     const unit = cell.cell.column.meta.units;
     let molecule = cell.cell.value;
+    let ogSmiles: string | null = null;
     if (unit === DG.chem.Notation.Smiles) {
+      ogSmiles = molecule;
       //convert to molFile to draw in coordinates similar to dataframe cell
       molecule = PackageFunctions.convertMolNotation(molecule, DG.chem.Notation.Smiles, DG.chem.Notation.MolBlock);
     }
     sketcher.setMolecule(molecule);
+    if (ogSmiles) {
+      waitFor(() => !!sketcher.sketcher?.isInitialized)
+        .then((inited) => {
+          if (inited)
+          sketcher.sketcher!.explicitMol = {notation: 'smiles', value: ogSmiles};
+        });
+    }
+
     const dlg = ui.dialog()
       .add(sketcher)
       .onOK(() => {
@@ -1553,7 +1565,6 @@ export class PackageFunctions {
           const mol = checkMoleculeValid(cell.cell.value);
           if (!checkMolEqualSmiles(mol, newValue)) {
             try {
-              //@ts-ignore TODO Remove on js-api update
               cell.setValue(newValue, true);
             } catch {
               cell.cell.value = newValue;
@@ -1562,7 +1573,6 @@ export class PackageFunctions {
           mol?.delete();
         } else {
           try {
-            //@ts-ignore TODO Remove on js-api update
             cell.setValue(sketcher.getMolFile(), true);
           } catch {
             cell.cell.value = sketcher.getMolFile();
@@ -2611,8 +2621,8 @@ export class PackageFunctions {
           ev.stopImmediatePropagation();
           ev.preventDefault();
           DG.Menu.popup()
-            .item('Clone', () => MpoProfileManager.clone(profile))
-            .item('Delete', () => MpoProfileManager.confirmDelete(profile))
+            .item('Clone', () => MpoProfileHandler.clone(profile))
+            .item('Delete', () => MpoProfileHandler.delete(profile))
             .show({x: ev.clientX, y: ev.clientY, causedBy: ev});
         });
       }
@@ -2665,7 +2675,7 @@ export class PackageFunctions {
       onValueChanged: () => calculateMpo(),
     });
 
-    async function calculateMpo() {
+    function calculateMpo() {
       if (!profileInput.value)
         return;
 
@@ -2691,7 +2701,7 @@ export class PackageFunctions {
           column.setTag('desirabilityTemplate', newTagValue);
       }
 
-      const score = await mpo( //@ts-ignore
+      const score = mpo(
         dataFrame,
         columns,
         selected.name,
@@ -2706,8 +2716,8 @@ export class PackageFunctions {
 
       const addColumnIcon = ui.iconFA(
         'plus',
-        async () => {
-          await mpo( //@ts-ignore
+        () => {
+          mpo(
             dataFrame,
             columns,
             selected.name,
@@ -2729,7 +2739,7 @@ export class PackageFunctions {
 
     container.appendChild(ui.divV([profileInput.root, aggregationInput.root, resultDiv]));
 
-    await calculateMpo();
+    calculateMpo();
     return DG.Widget.fromRoot(container);
   }
 }

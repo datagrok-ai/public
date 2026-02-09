@@ -5,12 +5,12 @@ import * as ui from 'datagrok-api/ui';
 
 import {Subscription} from 'rxjs';
 import {u2} from '@datagrok-libraries/utils/src/u2';
-import {MpoProfileEditor} from '@datagrok-libraries/statistics/src/mpo/mpo-profile-editor';
 
 import {_package} from '../package';
-import {MpoProfileInfo, updateMpoPath, MpoPathMode, MPO_PROFILE_CHANGED_EVENT} from './utils';
+import {MpoProfileInfo, updateMpoPath, MpoPathMode, MPO_PROFILE_CHANGED_EVENT, MPO_PROFILE_DELETED_EVENT} from './utils';
 import {MpoProfileCreateView} from './mpo-create-profile';
 import {MpoProfileManager} from './mpo-profile-manager';
+import {MpoProfileHandler} from './mpo-profile-handler';
 
 export class MpoProfilesView {
   name = 'MPO Profiles';
@@ -19,6 +19,7 @@ export class MpoProfilesView {
 
   private tableContainer = ui.divV([]);
   private subs: Subscription[] = [];
+  private previewedFileName: string | null = null;
 
   constructor() {
     this.view = DG.View.fromRoot(this.root);
@@ -84,7 +85,7 @@ export class MpoProfilesView {
       MpoProfileManager.items,
       (profile) => [
         this.buildActionsButton(profile),
-        ui.link(profile.name, () => this.openProfile(profile)),
+        this.buildProfileLink(profile),
         this.buildDescription(profile.description),
       ],
       ['', 'Name', 'Description'],
@@ -94,14 +95,21 @@ export class MpoProfilesView {
     return table;
   }
 
+  private buildProfileLink(profile: MpoProfileInfo): HTMLElement {
+    const link = ui.link(profile.name, () => {
+      this.previewedFileName = profile.fileName;
+    });
+    return ui.bind(profile, link);
+  }
+
   private buildActionsButton(profile: MpoProfileInfo): HTMLElement {
     const actionsButton = ui.button(
       '⋮',
       () => {
         ui.popupMenu()
-          .item('Edit', () => this.openEditProfile(profile))
-          .item('Clone', () => this.openCloneProfile(profile))
-          .item('Delete', () => this.confirmDelete(profile))
+          .item('Edit', () => MpoProfileHandler.edit(profile))
+          .item('Clone', () => MpoProfileHandler.clone(profile))
+          .item('Delete', () => MpoProfileHandler.delete(profile))
           .show();
       },
       'Actions',
@@ -116,47 +124,19 @@ export class MpoProfilesView {
     return span;
   }
 
-  private openCloneProfile(profile: MpoProfileInfo): void {
-    MpoProfileManager.clone(profile);
-  }
-
-  private openProfile(profile: MpoProfileInfo): void {
-    const editor = new MpoProfileEditor(undefined, false, true);
-    editor.setProfile(profile);
-    editor.root.style.pointerEvents = 'none';
-
-    const panel = ui.accordion();
-    panel.addTitle(ui.label('MPO Profile'));
-    panel.root.append(editor.root, this.buildEditRibbon(profile));
-
-    grok.shell.o = panel.root;
-  }
-
-  private buildEditRibbon(profile: MpoProfileInfo): HTMLElement {
-    const editBtn = ui.bigButton('Edit', () => this.openEditProfile(profile));
-
-    const container = ui.divH([editBtn], {style: {justifyContent: 'flex-end'}});
-    container.classList.add('d4-ribbon-item');
-    return container;
-  }
-
-  private openEditProfile(profile: MpoProfileInfo): void {
-    const editable = structuredClone(profile);
-    const view = new MpoProfileCreateView(editable, false, profile.fileName);
-    grok.shell.v = grok.shell.addView(view.view);
-  }
-
   private openCreateProfile(): void {
     const view = new MpoProfileCreateView();
     grok.shell.v = grok.shell.addPreview(view.tableView!);
   }
 
-  private confirmDelete(profile: MpoProfileInfo): void {
-    MpoProfileManager.confirmDelete(profile);
-  }
-
   private listenForChanges(): void {
     this.subs.push(grok.events.onCustomEvent(MPO_PROFILE_CHANGED_EVENT).subscribe(() => this.reloadProfiles()));
+    this.subs.push(grok.events.onCustomEvent(MPO_PROFILE_DELETED_EVENT).subscribe((data) => {
+      if (data?.fileName === this.previewedFileName) {
+        grok.shell.o = null;
+        this.previewedFileName = null;
+      }
+    }));
     this.subs.push(grok.events.onViewRemoving.subscribe((v) => {
       if (v.args.view.id === this.view.id)
         this.detach();

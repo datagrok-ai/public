@@ -33,6 +33,7 @@ export class MpoProfileDialog {
   private originalProfile: DesirabilityProfile | null = null;
   private suitableProfileNames: string[] = [];
   private subs: Subscription[] = [];
+  private footerWarning: HTMLElement | null = null;
 
   constructor(dataFrame?: DG.DataFrame) {
     this.dataFrame = dataFrame ?? grok.shell.t;
@@ -146,16 +147,42 @@ export class MpoProfileDialog {
   }
 
   private isProfileApplicable(): boolean {
+    if (!this.currentProfile)
+      return false;
+
     const mapping = this.mpoProfileEditor.columnMapping;
-    const hasMappedColumns = Object.values(mapping).some((v) => v != null);
-    const isSuitable = this.suitableProfileNames.includes(this.currentProfileFileName ?? '');
-    return hasMappedColumns || isSuitable;
+    const dfColumnNames = this.dataFrame.columns.names();
+    const propertyNames = Object.keys(this.currentProfile.properties);
+
+    if (propertyNames.length === 0)
+      return false;
+
+    return propertyNames.every((prop) => {
+      if (mapping[prop] != null)
+        return true;
+      if (prop in mapping)
+        return false;
+      return dfColumnNames.includes(prop);
+    });
   }
 
   private updateOkButtonState(): void {
+    const isApplicable = this.isProfileApplicable();
     const okButton = this.dialog?.getButton('OK');
     if (okButton)
-      okButton.disabled = !this.isProfileApplicable();
+      okButton.disabled = !isApplicable;
+    this.updateFooterWarning(!isApplicable);
+  }
+
+  private updateFooterWarning(show: boolean): void {
+    if (!this.footerWarning) {
+      const commandBar = this.dialog?.root.querySelector('.d4-command-bar');
+      if (!commandBar)
+        return;
+      this.footerWarning = ui.divText('⚠️ Some profile properties are not mapped', 'chem-mpo-footer-warning');
+      commandBar.append(this.footerWarning);
+    }
+    this.footerWarning.classList.toggle('chem-mpo-d-none', !show);
   }
 
   private async saveProfile(): Promise<void> {

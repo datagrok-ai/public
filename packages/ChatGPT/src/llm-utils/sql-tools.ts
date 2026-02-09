@@ -340,14 +340,22 @@ export async function generateAISqlQueryWithTools(
       });
 
       // Fix tool_use input fields - Anthropic expects objects, not strings
+      // The AI SDK's doGenerate puts item IDs in providerMetadata, but the
+      // Responses API input converter only reads reasoning items from providerOptions
+      // (tool-call has a fallback to providerMetadata, but reasoning does not).
+      // Copy providerMetadata → providerOptions so reasoning item_references are created.
       const fixedContent = response.content.map((item) => {
+        const patched = {
+          ...item,
+          providerOptions: (item as any).providerOptions ?? (item as any).providerMetadata,
+        };
         if (item.type === 'tool-call') {
           return {
-            ...item,
+            ...patched,
             input: typeof item.input === 'string' ? parseJsonObject(item.input) ?? item.input : item.input
           };
         }
-        return item;
+        return patched;
       });
 
       const formattedOutput: LanguageModelV3Message = {
