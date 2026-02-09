@@ -136,7 +136,7 @@ Line chart supports Statistical Process Control (SPC) features out of the box, i
 | Show Mouse Over Category | boolean | Determines whether the line is highlighted when you hover over the corresponding category. Example: Split by = SEX and you hover over the Male category in the filter. |
 | Show Mouse Over Row Line | boolean | Show vertical line reflecting the position of the mouse-over row See also *Mouse Over Line Color* |
 | **Statistical process control** | | |
-| Show Statical Process Control | boolean | Shows/hides upper and lower control limits, and [Western Electric rules](https:sentient.cloud/what-are-western-electric-rules-2/). |
+| Show Statical Process Control | boolean | Shows/hides upper and lower control limits, and [Western Electric rules](https://sentient.cloud/what-are-western-electric-rules-2/). |
 | Show Control Limits | boolean | Shows/hides upper and lower control limits. |
 | Show Sigma1 | boolean |  |
 | Show Sigma2 | boolean |  |
