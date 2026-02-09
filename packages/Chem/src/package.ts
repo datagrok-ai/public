@@ -101,6 +101,7 @@ import {MpoProfilesView} from './mpo/mpo-profiles-view';
 import $ from 'cash-dom';
 import {MpoProfileCreateView} from './mpo/mpo-create-profile';
 import {MpoProfileManager} from './mpo/mpo-profile-manager';
+import {MpoProfileHandler} from './mpo/mpo-profile-handler';
 import {calculateMpoCore, findSuitableProfiles, MPO_PROFILE_CHANGED_EVENT, MpoProfileInfo} from './mpo/utils';
 
 export {getMCS};
@@ -210,6 +211,7 @@ export class PackageFunctions {
     if (!_initChemPromise)
       _initChemPromise = initChemInt();
     await _initChemPromise;
+    DG.ObjectHandler.register(new MpoProfileHandler());
   }
 
   @grok.decorators.autostart()
@@ -2611,12 +2613,8 @@ export class PackageFunctions {
           ev.stopImmediatePropagation();
           ev.preventDefault();
           DG.Menu.popup()
-            .item('Clone', () => {
-              const {profile: clonedProfile, fileName} = MpoProfileManager.prepareClone(profile);
-              const view = new MpoProfileCreateView(clonedProfile, false, fileName);
-              grok.shell.v = grok.shell.addView(view.view);
-            })
-            .item('Delete', () => MpoProfileManager.confirmDelete(profile))
+            .item('Clone', () => MpoProfileHandler.clone(profile))
+            .item('Delete', () => MpoProfileHandler.delete(profile))
             .show({x: ev.clientX, y: ev.clientY, causedBy: ev});
         });
       }
