@@ -192,9 +192,6 @@ export type ModelEvaluationResult = {
 /** Maximum number of rows for which auto-tuning is applicable */
 export const AUTO_TUNE_MAX_APPLICABLE_ROWS = 10000;
 
-/** Minimum number of rows to show a warning about auto-tuning */
-export const AUTO_TUNE_WARNING_MIN_ROWS = 20000;
-
 /** Default settings for optimization in pMPO parameter tuning */
 export const DEFAULT_OPTIMIZATION_SETTINGS = new Map<string, number>([
   ['tolerance', 0.001],

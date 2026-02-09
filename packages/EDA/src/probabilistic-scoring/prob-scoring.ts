@@ -10,16 +10,13 @@ import {MpoProfileEditor} from '@datagrok-libraries/statistics/src/mpo/mpo-profi
 
 import '../../css/pmpo.css';
 
-import {getDesiredTables, getDescriptorStatistics, gaussDesirabilityFunc, sigmoidS,
-  getBoolPredictionColumn, getPmpoEvaluation} from './stat-tools';
+import {getDesiredTables, getDescriptorStatistics, getBoolPredictionColumn, getPmpoEvaluation} from './stat-tools';
 import {MIN_SAMPLES_COUNT, PMPO_NON_APPLICABLE, DescriptorStatistics, P_VAL_TRES_MIN, DESCR_TITLE,
   R2_MIN, Q_CUTOFF_MIN, PmpoParams, SCORES_TITLE, DESCR_TABLE_TITLE, PMPO_COMPUTE_FAILED, SELECTED_TITLE,
   P_VAL, DESIRABILITY_COL_NAME, STAT_GRID_HEIGHT, DESIRABILITY_COLUMN_WIDTH, WEIGHT_TITLE,
   P_VAL_TRES_DEFAULT, R2_DEFAULT, Q_CUTOFF_DEFAULT, USE_SIGMOID_DEFAULT, ROC_TRESHOLDS,
-  FPR_TITLE, TPR_TITLE, COLORS, THRESHOLD, AUTO_TUNE_MAX_APPLICABLE_ROWS, AUTO_TUNE_WARNING_MIN_ROWS,
-  DEFAULT_OPTIMIZATION_SETTINGS, P_VAL_TRES_MAX, R2_MAX, Q_CUTOFF_MAX, OptimalPoint, LOW_PARAMS_BOUNDS,
-  HIGH_PARAMS_BOUNDS,
-  FORMAT} from './pmpo-defs';
+  FPR_TITLE, TPR_TITLE, COLORS, THRESHOLD, AUTO_TUNE_MAX_APPLICABLE_ROWS, DEFAULT_OPTIMIZATION_SETTINGS,
+  P_VAL_TRES_MAX, R2_MAX, Q_CUTOFF_MAX, OptimalPoint, LOW_PARAMS_BOUNDS, HIGH_PARAMS_BOUNDS, FORMAT} from './pmpo-defs';
 import {addSelectedDescriptorsCol, getDescriptorStatisticsTable, getFilteredByPvalue, getFilteredByCorrelations,
   getModelParams, getDescrTooltip, saveModel, getScoreTooltip, getDesirabilityProfileJson, getCorrelationTriples,
   addCorrelationColumns, setPvalColumnColorCoding, setCorrColumnColorCoding, PmpoError} from './pmpo-utils';
@@ -743,7 +740,6 @@ export class Pmpo {
     form.append(useSigmoidInput.root);
 
     const toUseAutoTune = (this.table.rowCount <= AUTO_TUNE_MAX_APPLICABLE_ROWS);
-    const toShowAutoTuneWarning = (this.table.rowCount > AUTO_TUNE_WARNING_MIN_ROWS);
 
     // Flag indicating whether optimal parameters from auto-tuning are currently used
     let areTunedSettingsUsed = false;
@@ -777,29 +773,17 @@ export class Pmpo {
 
     // autotuning input
     const autoTuneInput = ui.input.bool('Auto-tuning', {
-      value: toUseAutoTune,
+      value: false,
       tooltipText: 'Automatically select optimal p-value, R², and q-cutoff by maximizing AUC.',
-      onValueChanged: (value) => {
+      onValueChanged: async (value) => {
         setEnability(!value);
 
         if (areTunedSettingsUsed)
           return;
 
         // If auto-tuning is turned on, set optimal parameters and run computations
-        if (value) {
-          if (toShowAutoTuneWarning) {
-            const dlg = ui.dialog('⚠️ Long Computation')
-              .add(ui.divText('Auto-tuning is time-consuming for large datasets.'))
-              .add(ui.divText('Do you want to continue?'))
-              .onCancel(() => autoTuneInput.value = false)
-              .addButton('Run Anyway', async () => {
-                dlg.close();
-                setTimeout(async () => await setOptimalParametersAndRun(), 10);
-              })
-              .show();
-          } else
-            setOptimalParametersAndRun();
-        }
+        if (value)
+          await setOptimalParametersAndRun();
       },
     });
     form.append(autoTuneInput.root);
@@ -880,6 +864,8 @@ export class Pmpo {
     };
 
     setTimeout(() => {
+      runComputations();
+
       if (toUseAutoTune)
         autoTuneInput.value = true; // this will trigger setting optimal parameters and running computations
       else
