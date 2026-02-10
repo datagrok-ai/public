@@ -1,3 +1,4 @@
+/* eslint-disable max-len */
 /* eslint-disable guard-for-in */
 import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
@@ -18,7 +19,7 @@ import {FormStateGenerator} from './admetica-form';
 import {CellRenderViewer} from '../viewers/cell-render-viewer';
 
 import '../css/admetica.css';
-import { getAdmeProperties } from '../package';
+import {PackageFunctions} from '../package';
 
 export let properties: any;
 export const tablePieChartIndexMap: Map<string, number> = new Map();
@@ -31,7 +32,7 @@ export async function convertLD50(df: DG.DataFrame, smiles: DG.Column): Promise<
   const ldCol = df.getCol('LD50');
   const molWeightsDf: DG.DataFrame = await grok.functions.call('Chem:getProperties', {
     molecules: smiles,
-    property: ['MW'],
+    selected: ['MW'],
   });
 
   ldCol.init((i) => {
@@ -64,17 +65,57 @@ export async function performChemicalPropertyPredictions(
   }
   const progressIndicator = DG.TaskBarProgressIndicator.create('Running Admetica...');
   try {
+    const existingColumns = viewTable.columns.names();
     progressIndicator.update(10, 'Predicting...');
-    const table = await getAdmeProperties(molColumn, models);
+    await grok.functions.call('Admetica:getAdmeProperties', {table: viewTable, molecules: molColumn, props: models});
     progressIndicator.update(80, 'Results are ready');
-    const molColIdx = viewTable.columns.names().findIndex((name) => name === molColumn.name);
-    if (table)
-      addResultColumns(table, viewTable, addPiechart, addForm, molColIdx ?? -1, update);
+
+    const newColumnNames = viewTable.columns.names().filter((name: string) => !existingColumns.includes(name));
+    if (newColumnNames.length > 0) {
+      const molColIdx = viewTable.columns.names().findIndex((name) => name === molColumn.name);
+      applyPostProcessing(viewTable, newColumnNames, addPiechart, addForm, molColIdx);
+    }
   } catch (error: any) {
-    if (raiseException) throw error;
+    if (raiseException)
+      throw error;
     grok.shell.error(error);
   } finally {
     progressIndicator.close();
+  }
+}
+
+function applyPostProcessing(
+  viewTable: DG.DataFrame, columnNames: string[],
+  addPiechart: boolean, addForm: boolean, molColIdx: number,
+): void {
+  const tableView = grok.shell.getTableView(viewTable.name);
+  if (!tableView)
+    return;
+
+  const {grid} = tableView;
+  const models = properties.subgroup.flatMap((subgroup: Subgroup) => subgroup.models);
+
+  for (const columnName of columnNames) {
+    const model = models.find((m: Model) => columnName.includes(m.name));
+    if (!model)
+      continue;
+    const gridCol = grid.col(columnName);
+    if (gridCol)
+      updateColumnProperties(gridCol, model);
+  }
+
+  if (addPiechart)
+    addSparklines(viewTable, columnNames, molColIdx + 2);
+
+  setAdmeGroups(viewTable, columnNames);
+  addColorCoding(viewTable, columnNames);
+  addCustomTooltip(viewTable);
+
+  if (addForm) {
+    const molColName = viewTable.columns.names()[molColIdx];
+    const form = createDynamicForm(viewTable, columnNames, molColName, addPiechart);
+    tableView.dockManager.dock(form, DG.DOCK_TYPE.RIGHT, null, 'Form', 0.45);
+    grid.invalidate();
   }
 }
 
@@ -290,65 +331,6 @@ export function updateColumnProperties(gridCol: DG.GridColumn, model: any): void
   }
 }
 
-export function addResultColumns(
-  table: DG.DataFrame,
-  viewTable: DG.DataFrame,
-  addPiechart: boolean = true,
-  addForm: boolean = true,
-  molColIdx: number,
-  update: boolean = false,
-): void {
-  if (table.columns.length === 0) return;
-
-  if (table.rowCount > viewTable.rowCount)
-    table.rows.removeAt(table.rowCount - 1);
-
-
-  const modelNames: string[] = table.columns.names();
-  const updatedModelNames: string[] = [];
-  const models = properties.subgroup.flatMap((subgroup: Subgroup) => subgroup.models);
-
-  for (const modelName of modelNames) {
-    const column: DG.Column = table.columns.byName(modelName);
-    const newColumnName = viewTable.columns.getUnusedName(column.name);
-    column.name = newColumnName;
-
-    const colToReplace = viewTable.col(modelName);
-    const model = models.find((m: any) => m.name === modelName);
-
-    if (model) {
-      if (!update || !colToReplace)
-        viewTable.columns.add(column);
-      else
-        viewTable.columns.replace(colToReplace, column);
-      updatedModelNames.push(column.name);
-    }
-  }
-
-  const tableView = grok.shell.getTableView(viewTable.name);
-  const { grid } = tableView;
-  models.forEach((model: Model) => {
-    const columnName = updatedModelNames.find((name) => name.includes(model.name));
-    if (!columnName) return;
-
-    const column = grid.col(columnName);
-    if (column) updateColumnProperties(column, model);
-  });
-
-  if (addPiechart)
-    addSparklines(viewTable, updatedModelNames, molColIdx + 2);
-
-  setAdmeGroups(viewTable, updatedModelNames);
-  addColorCoding(viewTable, updatedModelNames);
-  addCustomTooltip(viewTable);
-
-  if (addForm) {
-    const form = createDynamicForm(viewTable, updatedModelNames, viewTable.columns.names()[molColIdx], addPiechart);
-    tableView.dockManager.dock(form, DG.DOCK_TYPE.RIGHT, null, 'Form', 0.45);
-    grid.invalidate();
-  }
-}
-
 export async function getModelsSingle(smiles: string, semValue: DG.SemanticValue): Promise<DG.Accordion> {
   const acc = ui.accordion('Admetica');
   await setProperties();
@@ -386,7 +368,8 @@ export async function getModelsSingle(smiles: string, semValue: DG.SemanticValue
 
     result.appendChild(ui.loader());
     try {
-      const table = await getAdmeProperties(DG.Column.fromStrings('smiles', [smiles]), queryParams);
+      const col = DG.Column.fromStrings('smiles', [smiles]);
+      const table = await PackageFunctions.getAdmeProperties(DG.DataFrame.fromColumns([col]), col, queryParams);
       ui.empty(result);
       table.name = DEFAULT_TABLE_NAME;
       addColorCoding(table, queryParams, true, props);
@@ -461,7 +444,8 @@ async function createPieChartPane(semValue: DG.SemanticValue): Promise<HTMLEleme
 
   const parsedValue = units === DG.UNITS.Molecule.MOLBLOCK ? `"${value}"` : value;
   const params = await getQueryParams();
-  const result = await getAdmeProperties(DG.Column.fromStrings('molecules', [parsedValue]), params);
+  const col = DG.Column.fromStrings('molecules', [parsedValue]);
+  const result = await PackageFunctions.getAdmeProperties(DG.DataFrame.fromColumns([col]), col, params);
   const pieSettings = createPieSettings(dataFrame, params, properties);
   pieSettings.sectors.values = result.toCsv()!;
   gridCol!.settings = pieSettings;
@@ -471,7 +455,7 @@ async function createPieChartPane(semValue: DG.SemanticValue): Promise<HTMLEleme
 }
 
 export function createDynamicForm(
-  viewTable: DG.DataFrame, updatedModelNames: string[], molColName: string, addPiechart: boolean
+  viewTable: DG.DataFrame, updatedModelNames: string[], molColName: string, addPiechart: boolean,
 ): DG.FormViewer {
   const form = DG.FormViewer.createDefault(viewTable, { columns: updatedModelNames });
   const mapping = FormStateGenerator.createCategoryModelMapping(properties, updatedModelNames);

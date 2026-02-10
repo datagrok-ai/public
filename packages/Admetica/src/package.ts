@@ -107,8 +107,10 @@ export class PackageFunctions {
   @grok.decorators.func({
     name: 'getAdmeProperties',
     meta: {vectorFunc: 'true'},
+    outputs: [{name: 'result', type: 'dataframe', options: {action: 'join(table)'}}],
   })
   static async getAdmeProperties(
+    table: DG.DataFrame,
     @grok.decorators.param({ options: { semType: 'Molecule' } }) molecules: DG.Column,
     @grok.decorators.param({type: 'list<string>', options: { optional: true }}) props?: string[],
   ): Promise<DG.DataFrame> {
@@ -139,7 +141,8 @@ export class PackageFunctions {
   static async getAdmePropertiesSingle(
     @grok.decorators.param({ options: { semType: 'Molecule' } }) molecule: string,
   ): Promise<DG.DataFrame> {
-    return await PackageFunctions.getAdmeProperties(DG.Column.fromStrings('Molecule', [molecule]));
+    const col = DG.Column.fromStrings('Molecule', [molecule]);
+    return await PackageFunctions.getAdmeProperties(DG.DataFrame.fromColumns([col]), col);
   }
 
   @grok.decorators.app({name: 'Admetica', meta: {icon: 'images/vlaaivis.png', browsePath: 'Chem'}})

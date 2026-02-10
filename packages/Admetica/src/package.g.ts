@@ -53,12 +53,13 @@ export async function admeticaMenu(table: DG.DataFrame, molecules: DG.Column, te
   await PackageFunctions.admeticaMenu(table, molecules, template, models, addPiechart, addForm);
 }
 
+//input: dataframe table 
 //input: column molecules { semType: Molecule }
 //input: list<string> props { optional: true }
-//output: dataframe result
+//output: dataframe result { action: join(table) }
 //meta.vectorFunc: true
-export async function getAdmeProperties(molecules: DG.Column, props?: string[]) : Promise<any> {
-  return await PackageFunctions.getAdmeProperties(molecules, props);
+export async function getAdmeProperties(table: DG.DataFrame, molecules: DG.Column, props?: string[]) : Promise<any> {
+  return await PackageFunctions.getAdmeProperties(table, molecules, props);
 }
 
 //description: Predicts ADME properties for a given molecule.
