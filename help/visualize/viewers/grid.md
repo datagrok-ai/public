@@ -676,12 +676,8 @@ or press Alt+C.
 | Vert Col Labels Height | number | Height of the column labels when the orientation is vertical, and *Col Header Height* is not specified. |
 | Horz Col Labels Height | number | Height of the column labels when the orientation is horizontal, and *Col Header Height* is not specified. |
 | Max Heatmap Columns | number |  |
-| **Rows** | | |
-| Row Height | number | Applicable only to grid |
-| **Selection** | | |
-| Show Mouse Over Row Indicator | boolean | Indicates mouse-over row by drawing a vertical stripe on the row header |
-| Show Current Row Indicator | boolean | Indicates current row with the *Current Row Color*. |
 | **General** | | |
+| Show Friendly Name | boolean | When checked, friendly name gets shown underneath the column name. |
 | Top Level Default Menu | boolean | When set to false, default menu appears under the ''Grid'' submenu. |
 | Show Default Popup Menu | boolean | Whether items applicable to all viewers (such as Pickup Style) should be shown in a popup menu. Also requires *Show Context Menu*. |
 | Allow Block Selection | boolean | Mouse drag on the data cells selects both rows and columns |
@@ -751,6 +747,11 @@ or press Alt+C.
 | Opacity | number | Applies to image columns only |
 | Element | element | For ''html'' cell types only |
 | Choices | list | When defined, the cell editor becomes a combo box with the specified values |
+| **Rows** | | |
+| Row Height | number | Applicable only to grid |
+| **Selection** | | |
+| Show Mouse Over Row Indicator | boolean | Indicates mouse-over row by drawing a vertical stripe on the row header |
+| Show Current Row Indicator | boolean | Indicates current row with the *Current Row Color*. |
 | **Style** | | |
 | Show Current Cell Outline | boolean |  |
 | Color Coding | gridcolorcodingtype | Color-coding that applies to all columns. Additionally, each column can be individually color-coded. |

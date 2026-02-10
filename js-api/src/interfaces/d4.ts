@@ -1015,6 +1015,9 @@ export interface IGridSettings {
 
   showColumnLabels: boolean;
 
+  /// When checked, friendly name gets shown underneath the column name.
+  showFriendlyName: boolean;
+
   /// Column header height. If not specified, it is calculated automatically.
   /// See also *Col Labels Orientation*, *Horz Col Labels Height*
   colHeaderHeight: number;
