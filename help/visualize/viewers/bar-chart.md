@@ -56,6 +56,8 @@ Year - Month' and 'Year - Quarter':
 | Bar Sort Type | string | Whether to sort bars *by category* or *by value*. See also *Bar Sort Order* |
 | Bar Sort Order | string | Whether the bars should be sorted in ascending or descending order. See also *Bar Sort Type*. |
 | Axis Type | string |  |
+| Value Min | number |  |
+| Value Max | number |  |
 | Show Value Axis | boolean |  |
 | Show Value Selector | boolean |  |
 | **General** | | |
@@ -93,7 +95,7 @@ Year - Month' and 'Year - Quarter':
 | Show Values Instead Of Categories | boolean |  |
 | Show Category Selector | boolean |  |
 | **Stack** | | |
-| Stack Column Name | string | A categorical column to further split data on. Each category would become a part of the bar resulting from *Split*. Shows stacked bars only when *VAlue Aggr Type* is additive. |
+| Stack Column Name | string | A categorical column to further split data on. Each category would become a part of the bar resulting from *Split*. Shows stacked bars only when *Value Aggr Type* is additive. |
 | Stack Map | string | Time unit map function for *Stack* (applicable to dates only). |
 | Show Stack Selector | boolean |  |
 | **Color** | | |
