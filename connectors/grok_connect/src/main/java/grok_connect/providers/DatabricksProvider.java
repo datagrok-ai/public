@@ -48,6 +48,7 @@ public class DatabricksProvider extends JdbcDataProvider {
         descriptor.nameBrackets = "`";
         descriptor.defaultSchema = "default";
         descriptor.canBrowseSchema = true;
+        descriptor.supportCatalogs = true;
         descriptor.typesMap = new HashMap<String, String>() {{
             put("tinyint", Types.INT);
             put("smallint", Types.INT);
@@ -127,18 +128,9 @@ public class DatabricksProvider extends JdbcDataProvider {
             String catalog = getCatalog(connection, db);
             String infoSchemaPath = getInfoSchemaPath(db, catalog);
 
-            String sql =
-                    "SELECT schema_name " +
-                            "FROM " + infoSchemaPath + ".schemata " +
-                            "ORDER BY schema_name";
-
             SQLException primaryError;
-            try (PreparedStatement ps = db.prepareStatement(sql);
-                 ResultSet rs = ps.executeQuery()) {
-
-                while (rs.next())
-                    result.addRow(rs.getString(1));
-                return result;
+            try {
+                return getSchemasFromInfoSchema(db, infoSchemaPath, catalog);
             } catch (SQLException e) {
                 primaryError = e;
                 logger.debug("Primary getSchemas query failed: {}", e.getMessage());
@@ -146,29 +138,17 @@ public class DatabricksProvider extends JdbcDataProvider {
 
             // Fallback: try the opposite information_schema path
             String fallbackPath;
-            if (infoSchemaPath.contains(".")) {
-                // Was Unity path, try legacy
+            if (infoSchemaPath.contains("."))
                 fallbackPath = "information_schema";
-            } else if (GrokConnectUtil.isNotEmpty(catalog)) {
-                // Was legacy, try Unity (only if catalog is available)
+            else if (GrokConnectUtil.isNotEmpty(catalog))
                 fallbackPath = addBrackets(catalog) + ".information_schema";
-            } else {
+            else
                 fallbackPath = null;
-            }
 
             if (fallbackPath != null) {
-                String fallbackSql =
-                        "SELECT schema_name " +
-                                "FROM " + fallbackPath + ".schemata " +
-                                "ORDER BY schema_name";
-
-                try (PreparedStatement ps = db.prepareStatement(fallbackSql);
-                     ResultSet rs = ps.executeQuery()) {
-
-                    logger.debug("Fallback getSchemas query succeeded with path: {}", fallbackPath);
-                    while (rs.next())
-                        result.addRow(rs.getString(1));
-                    return result;
+                try {
+                    logger.debug("Fallback getSchemas query with path: {}", fallbackPath);
+                    return getSchemasFromInfoSchema(db, fallbackPath, catalog);
                 } catch (SQLException e) {
                     logger.debug("Fallback getSchemas query also failed: {}", e.getMessage());
                 }
@@ -206,6 +186,30 @@ public class DatabricksProvider extends JdbcDataProvider {
         } catch (SQLException e) {
             throw new GrokConnectException(simplifyDatabricksError(e.getMessage()));
         }
+    }
+
+    private DataFrame getSchemasFromInfoSchema(Connection db, String infoSchemaPath, String catalog)
+            throws SQLException {
+        DataFrame result = DataFrame.fromColumns(new StringColumn("table_schema"));
+
+        String sql;
+        if (GrokConnectUtil.isNotEmpty(catalog)) {
+            sql = "SELECT DISTINCT schema_name FROM " + infoSchemaPath + ".schemata " +
+                    "WHERE catalog_name = ? ORDER BY schema_name";
+        } else {
+            sql = "SELECT DISTINCT schema_name FROM " + infoSchemaPath + ".schemata " +
+                    "ORDER BY schema_name";
+        }
+
+        try (PreparedStatement ps = db.prepareStatement(sql)) {
+            if (GrokConnectUtil.isNotEmpty(catalog))
+                ps.setString(1, catalog);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next())
+                    result.addRow(rs.getString(1));
+            }
+        }
+        return result;
     }
 
     private String getInfoSchemaPath(Connection db, String catalog) throws SQLException {
@@ -287,25 +291,17 @@ public class DatabricksProvider extends JdbcDataProvider {
         );
 
         StringBuilder sql = new StringBuilder();
-        if (useCatalogColumn) {
-            sql.append("SELECT t.table_catalog, t.table_schema, t.table_name, ")
-               .append("       c.column_name, c.data_type, ")
-               .append("       CASE WHEN t.table_type = 'VIEW' THEN 1 ELSE 0 END AS is_view ")
-               .append("FROM ").append(infoSchemaPath).append(".tables t ")
-               .append("LEFT JOIN ").append(infoSchemaPath).append(".columns c ")
-               .append("  ON t.table_catalog = c.table_catalog ")
-               .append(" AND t.table_schema  = c.table_schema ")
-               .append(" AND t.table_name    = c.table_name ");
-        } else {
-            // Query without table_catalog - join only on schema and table name
-            sql.append("SELECT t.table_schema, t.table_name, ")
-               .append("       c.column_name, c.data_type, ")
-               .append("       CASE WHEN t.table_type = 'VIEW' THEN 1 ELSE 0 END AS is_view ")
-               .append("FROM ").append(infoSchemaPath).append(".tables t ")
-               .append("LEFT JOIN ").append(infoSchemaPath).append(".columns c ")
-               .append("  ON t.table_schema = c.table_schema ")
-               .append(" AND t.table_name   = c.table_name ");
-        }
+        sql.append("SELECT ");
+        if (useCatalogColumn)
+            sql.append("t.table_catalog, ");
+        sql.append("t.table_schema, t.table_name, c.column_name, c.data_type, ")
+           .append("CASE WHEN t.table_type = 'VIEW' THEN 1 ELSE 0 END AS is_view ")
+           .append("FROM ").append(infoSchemaPath).append(".tables t ")
+           .append("LEFT JOIN ").append(infoSchemaPath).append(".columns c ")
+           .append("  ON LOWER(t.table_schema) = LOWER(c.table_schema) ")
+           .append(" AND LOWER(t.table_name) = LOWER(c.table_name) ");
+        if (useCatalogColumn)
+            sql.append(" AND LOWER(t.table_catalog) = LOWER(c.table_catalog) ");
 
         sql.append("WHERE 1=1 ");
 
@@ -363,53 +359,50 @@ public class DatabricksProvider extends JdbcDataProvider {
                 new IntColumn("is_view")
         );
 
-        String targetSchema = GrokConnectUtil.isNotEmpty(schema) ? schema : "default";
-
-        // Get list of tables
-        List<String[]> tables = new ArrayList<>(); // [tableName, isView]
-        String showTablesSql = GrokConnectUtil.isNotEmpty(catalog)
-                ? "SHOW TABLES IN " + addBrackets(catalog) + "." + addBrackets(targetSchema)
-                : "SHOW TABLES IN " + addBrackets(targetSchema);
-
-        try (Statement st = db.createStatement();
-             ResultSet rs = st.executeQuery(showTablesSql)) {
-            while (rs.next()) {
-                String tableName = rs.getString("tableName");
-                if (table == null || table.equals(tableName)) {
-                    String isTemp = "false";
-                    try {
-                        isTemp = rs.getString("isTemporary");
-                    } catch (SQLException ignored) {}
-                    tables.add(new String[]{tableName, isTemp});
-                }
+        List<String> schemas = new ArrayList<>();
+        if (GrokConnectUtil.isNotEmpty(schema)) {
+            schemas.add(schema);
+        } else {
+            String showSchemasSql = GrokConnectUtil.isNotEmpty(catalog)
+                    ? "SHOW SCHEMAS IN " + addBrackets(catalog) : "SHOW SCHEMAS";
+            try (Statement st = db.createStatement();
+                 ResultSet rs = st.executeQuery(showSchemasSql)) {
+                while (rs.next())
+                    schemas.add(rs.getString(1));
             }
         }
 
-        // Get columns for each table using DESCRIBE
-        for (String[] tableInfo : tables) {
-            String tableName = tableInfo[0];
-            String describeSql = GrokConnectUtil.isNotEmpty(catalog)
-                    ? "DESCRIBE " + addBrackets(catalog) + "." + addBrackets(targetSchema) + "." + addBrackets(tableName)
-                    : "DESCRIBE " + addBrackets(targetSchema) + "." + addBrackets(tableName);
+        for (String targetSchema : schemas) {
+            String showTablesSql = GrokConnectUtil.isNotEmpty(catalog)
+                    ? "SHOW TABLES IN " + addBrackets(catalog) + "." + addBrackets(targetSchema)
+                    : "SHOW TABLES IN " + addBrackets(targetSchema);
 
+            List<String> tables = new ArrayList<>();
             try (Statement st = db.createStatement();
-                 ResultSet rs = st.executeQuery(describeSql)) {
+                 ResultSet rs = st.executeQuery(showTablesSql)) {
                 while (rs.next()) {
-                    String colName = rs.getString("col_name");
-                    // Skip partition info and empty rows
-                    if (colName == null || colName.isEmpty() || colName.startsWith("#"))
-                        continue;
-                    result.addRow(
-                            catalog,
-                            targetSchema,
-                            tableName,
-                            colName,
-                            rs.getString("data_type"),
-                            0 // Can't easily determine if view from SHOW TABLES
-                    );
+                    String tableName = rs.getString("tableName");
+                    if (table == null || table.equals(tableName))
+                        tables.add(tableName);
                 }
-            } catch (SQLException e) {
-                logger.debug("DESCRIBE failed for table {}: {}", tableName, e.getMessage());
+            }
+
+            for (String tableName : tables) {
+                String describeSql = GrokConnectUtil.isNotEmpty(catalog)
+                        ? "DESCRIBE " + addBrackets(catalog) + "." + addBrackets(targetSchema) + "." + addBrackets(tableName)
+                        : "DESCRIBE " + addBrackets(targetSchema) + "." + addBrackets(tableName);
+
+                try (Statement st = db.createStatement();
+                     ResultSet rs = st.executeQuery(describeSql)) {
+                    while (rs.next()) {
+                        String colName = rs.getString("col_name");
+                        if (colName == null || colName.isEmpty() || colName.startsWith("#"))
+                            continue;
+                        result.addRow(catalog, targetSchema, tableName, colName, rs.getString("data_type"), 0);
+                    }
+                } catch (SQLException e) {
+                    logger.debug("DESCRIBE failed for table {}: {}", tableName, e.getMessage());
+                }
             }
         }
 
@@ -417,7 +410,9 @@ public class DatabricksProvider extends JdbcDataProvider {
     }
 
     private String getCatalog(DataConnection connection, Connection db) throws SQLException {
-        String catalog = connection.hasCustomConnectionString() ? null : connection.get("Catalog");
+        String catalog = connection.getDb();
+        if (GrokConnectUtil.isEmpty(catalog) && !connection.hasCustomConnectionString())
+            catalog = connection.get("Catalog");
         if (GrokConnectUtil.isEmpty(catalog)) {
             try (Statement st = db.createStatement();
                  ResultSet rs = st.executeQuery("SELECT current_catalog()")) {
@@ -494,6 +489,28 @@ public class DatabricksProvider extends JdbcDataProvider {
 
 
 
+
+    @Override
+    public DataFrame getCatalogs(DataConnection connection) throws GrokConnectException {
+        try (Connection db = getConnection(connection)) {
+            DataFrame result = DataFrame.fromColumns(new StringColumn("catalog_name"));
+            try (Statement st = db.createStatement();
+                 ResultSet rs = st.executeQuery("SHOW CATALOGS")) {
+                List<String> catalogs = new ArrayList<>();
+                while (rs.next())
+                    catalogs.add(rs.getString(1));
+                Collections.sort(catalogs);
+                for (String catalog : catalogs)
+                    result.addRow(catalog);
+                return result;
+            } catch (SQLException e) {
+                logger.debug("SHOW CATALOGS failed, falling back to JDBC metadata: {}", e.getMessage());
+            }
+            return readCatalogsFromMetadata(db);
+        } catch (SQLException e) {
+            throw new GrokConnectException(simplifyDatabricksError(e.getMessage()));
+        }
+    }
 
     @Override
     public DataFrame getForeignKeys(DataConnection conn, String schema) {

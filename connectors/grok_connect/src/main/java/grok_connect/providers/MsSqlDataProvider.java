@@ -18,8 +18,8 @@ import grok_connect.table_query.Stats;
 import grok_connect.utils.GrokConnectException;
 import grok_connect.utils.GrokConnectUtil;
 import grok_connect.utils.QueryCancelledByUser;
-import serialization.Types;
 import serialization.DataFrame;
+import serialization.Types;
 
 public class MsSqlDataProvider extends JdbcDataProvider {
 
@@ -33,6 +33,7 @@ public class MsSqlDataProvider extends JdbcDataProvider {
         descriptor.connectionTemplate.add(DbCredentials.getSsl());
         descriptor.credentialsTemplate = DbCredentials.getDbCredentialsTemplate();
         descriptor.canBrowseSchema = true;
+        descriptor.supportCatalogs = true;
         descriptor.defaultSchema = "dbo";
         descriptor.limitAtEnd = false;
 
@@ -83,14 +84,13 @@ public class MsSqlDataProvider extends JdbcDataProvider {
                 (conn.ssl() ? "integratedSecurity=true;encrypt=true;trustServerCertificate=true;" : "");
     }
 
+
     @Override
     public DataFrame getSchema(DataConnection connection, String schema, String table, boolean includeKeyInfo) throws QueryCancelledByUser,
             GrokConnectException {
         FuncCall queryRun = new FuncCall();
         queryRun.func = new DataQuery();
-        String db = connection.getDb();
-        queryRun.func.query = (db != null && db.length() != 0)
-                ? getSchemaSql(db, schema, table, false) : getSchemaSql(schema, null, table, includeKeyInfo);
+        queryRun.func.query = getSchemaSql(connection.getDb(), schema, table, includeKeyInfo);
         queryRun.func.connection = connection;
 
         return execute(queryRun);
@@ -98,72 +98,61 @@ public class MsSqlDataProvider extends JdbcDataProvider {
 
     @Override
     public String getSchemasSql(String db) {
-        return "SELECT SCHEMA_NAME FROM INFORMATION_SCHEMA.SCHEMATA";
+        return "SELECT name FROM sys.schemas ORDER BY name";
     }
 
     @Override
     public String getSchemaSql(String db, String schema, String table, boolean includeKeyInfo) {
-        List<String> filters = new ArrayList<String>() {{
-            add("c.table_schema = '" + ((schema != null) ? schema : descriptor.defaultSchema) + "'");
-        }};
+        List<String> filters = new ArrayList<>();
+        filters.add("o.type IN ('U', 'V', 'S')");
 
-        if (db != null && db.length() != 0)
-            filters.add("c.table_catalog = '" + db + "'");
+        if (schema != null)
+            filters.add("s.name = '" + schema + "'");
 
         if (table != null)
-            filters.add("c.table_name = '" + table + "'");
+            filters.add("o.name = '" + table + "'");
 
         String whereClause = "WHERE " + String.join(" AND \n", filters);
 
         StringBuilder sql = new StringBuilder();
 
         sql.append("SELECT ")
-                .append("c.table_schema AS table_schema, ")
-                .append("c.table_name AS table_name, ")
-                .append("c.column_name AS column_name, ")
-                .append("c.data_type AS data_type, ")
-                .append("CASE t.table_type WHEN 'VIEW' THEN 1 ELSE 0 END AS is_view");
+                .append("DB_NAME() AS table_catalog, ")
+                .append("s.name AS table_schema, ")
+                .append("o.name AS table_name, ")
+                .append("c.name AS column_name, ")
+                .append("ty.name AS data_type, ")
+                .append("CASE WHEN o.type = 'V' THEN 1 ELSE 0 END AS is_view");
 
         if (includeKeyInfo) {
             sql.append(", ")
-                    .append("CASE WHEN pk.column_name IS NOT NULL THEN 1 ELSE 0 END AS is_primary_key, ")
-                    .append("CASE WHEN pk.column_name IS NOT NULL OR uq.column_name IS NOT NULL THEN 1 ELSE 0 END AS is_unique");
+                    .append("CASE WHEN pk.column_id IS NOT NULL THEN 1 ELSE 0 END AS is_primary_key, ")
+                    .append("CASE WHEN pk.column_id IS NOT NULL OR uq.column_id IS NOT NULL THEN 1 ELSE 0 END AS is_unique");
         }
 
-        sql.append(" FROM information_schema.columns c ")
-                .append("JOIN information_schema.tables t ")
-                .append("  ON t.table_name = c.table_name ")
-                .append(" AND t.table_schema = c.table_schema ")
-                .append(" AND t.table_catalog = c.table_catalog ");
+        sql.append(" FROM sys.all_columns c ")
+                .append("JOIN sys.all_objects o ON c.object_id = o.object_id ")
+                .append("JOIN sys.schemas s ON o.schema_id = s.schema_id ")
+                .append("JOIN sys.types ty ON c.user_type_id = ty.user_type_id ");
 
         if (includeKeyInfo) {
             sql.append("LEFT JOIN ( ")
-                    .append("   SELECT kcu.table_schema, kcu.table_name, kcu.column_name ")
-                    .append("   FROM information_schema.table_constraints tc ")
-                    .append("   JOIN information_schema.key_column_usage kcu ")
-                    .append("     ON tc.constraint_name = kcu.constraint_name ")
-                    .append("    AND tc.table_schema = kcu.table_schema ")
-                    .append("    AND tc.table_catalog = kcu.table_catalog ")
-                    .append("   WHERE tc.constraint_type = 'PRIMARY KEY' ")
-                    .append(") pk ON pk.table_schema = c.table_schema ")
-                    .append("    AND pk.table_name = c.table_name ")
-                    .append("    AND pk.column_name = c.column_name ");
+                    .append("   SELECT ic.object_id, ic.column_id ")
+                    .append("   FROM sys.index_columns ic ")
+                    .append("   JOIN sys.indexes i ON ic.object_id = i.object_id AND ic.index_id = i.index_id ")
+                    .append("   WHERE i.is_primary_key = 1 ")
+                    .append(") pk ON pk.object_id = c.object_id AND pk.column_id = c.column_id ");
 
             sql.append("LEFT JOIN ( ")
-                    .append("   SELECT kcu.table_schema, kcu.table_name, kcu.column_name ")
-                    .append("   FROM information_schema.table_constraints tc ")
-                    .append("   JOIN information_schema.key_column_usage kcu ")
-                    .append("     ON tc.constraint_name = kcu.constraint_name ")
-                    .append("    AND tc.table_schema = kcu.table_schema ")
-                    .append("    AND tc.table_catalog = kcu.table_catalog ")
-                    .append("   WHERE tc.constraint_type = 'UNIQUE' ")
-                    .append(") uq ON uq.table_schema = c.table_schema ")
-                    .append("    AND uq.table_name = c.table_name ")
-                    .append("    AND uq.column_name = c.column_name ");
+                    .append("   SELECT ic.object_id, ic.column_id ")
+                    .append("   FROM sys.index_columns ic ")
+                    .append("   JOIN sys.indexes i ON ic.object_id = i.object_id AND ic.index_id = i.index_id ")
+                    .append("   WHERE i.is_unique = 1 ")
+                    .append(") uq ON uq.object_id = c.object_id AND uq.column_id = c.column_id ");
         }
 
         sql.append(" ").append(whereClause);
-        sql.append(" ORDER BY c.table_name");
+        sql.append(" ORDER BY o.name, c.column_id");
 
         return sql.toString();
     }

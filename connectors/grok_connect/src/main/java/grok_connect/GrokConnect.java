@@ -210,6 +210,23 @@ public class GrokConnect {
             return response;
         });
 
+        post("/catalogs", (request, response) -> {
+            BufferAccessor buffer;
+            DataQueryRunResult result = new DataQueryRunResult();
+            try {
+                DataConnection connection = gson.fromJson(request.body(), DataConnection.class);
+                DataProvider provider = providerManager.getByName(connection.dataSource);
+                DataFrame dataFrame = provider.getCatalogs(connection);
+                buffer = packDataFrame(result, dataFrame);
+            } catch (QueryCancelledByUser | GrokConnectException ex) {
+                buffer = packException(result, ex.getClass().equals(GrokConnectException.class) && ex.getCause() != null
+                        ? (Exception) ex.getCause() : ex);
+                PARENT_LOGGER.info(DEFAULT_LOG_EXCEPTION_MESSAGE, ex);
+            }
+            prepareResponse(result, response, buffer);
+            return response;
+        });
+
         post("/comments", (request, response) -> {
             BufferAccessor buffer;
             DataQueryRunResult result = new DataQueryRunResult();

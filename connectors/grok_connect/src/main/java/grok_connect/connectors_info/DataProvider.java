@@ -32,6 +32,11 @@ public abstract class DataProvider
         throw new UnsupportedOperationException();
     }
 
+    public DataFrame getCatalogs(DataConnection dataConnection)
+            throws QueryCancelledByUser, GrokConnectException {
+        throw new UnsupportedOperationException();
+    }
+
     public abstract PatternMatcherResult numericPatternConverter(String paramName, String typeName, PatternMatcher matcher);
     public abstract PatternMatcherResult stringPatternConverter(String paramName, PatternMatcher matcher);
     public abstract PatternMatcherResult dateTimePatternConverter(String paramName, PatternMatcher matcher);

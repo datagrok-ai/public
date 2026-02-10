@@ -18,6 +18,16 @@ class MySqlDataProviderTest extends ContainerizedProviderBaseTest {
         super(provider);
     }
 
+    @DisplayName("Test of getCatalogs() method with correct DataConnection")
+    @Test
+    public void getCatalogs_ok() {
+        DataFrame actual = Assertions.assertDoesNotThrow(() -> provider.getCatalogs(connection));
+        Assertions.assertNotNull(actual);
+        Assertions.assertEquals(1, actual.columns.size());
+        Assertions.assertEquals("catalog_name", actual.columns.get(0).name);
+        Assertions.assertTrue(actual.rowCount > 0);
+    }
+
     @Order(4)
     @DisplayName("Test of getSchemas() method with correct DataConnection")
     @ParameterizedTest(name = "CORRECT ARGUMENTS")

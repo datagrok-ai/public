@@ -94,7 +94,7 @@ public abstract class JdbcDataProvider extends DataProvider {
     }
 
     public void testConnection(DataConnection conn) throws GrokConnectException {
-        try (Connection connection = getConnection(conn)) {
+        try (Connection ignored = getConnection(conn)) {
             // just open and close the connection
         } catch (SQLException e) {
             throw new GrokConnectException(e);
@@ -118,6 +118,27 @@ public abstract class JdbcDataProvider extends DataProvider {
         queryRun.func.connection = connection;
 
         return execute(queryRun);
+    }
+
+    public DataFrame getCatalogs(DataConnection connection) throws GrokConnectException {
+        try (Connection db = getConnection(connection)) {
+            return readCatalogsFromMetadata(db);
+        } catch (SQLException e) {
+            throw new GrokConnectException(e);
+        }
+    }
+
+    protected DataFrame readCatalogsFromMetadata(Connection connection) throws SQLException {
+        DataFrame result = DataFrame.fromColumns(new StringColumn("catalog_name"));
+        try (ResultSet rs = connection.getMetaData().getCatalogs()) {
+            List<String> catalogs = new ArrayList<>();
+            while (rs.next())
+                catalogs.add(rs.getString("TABLE_CAT"));
+            Collections.sort(catalogs);
+            for (String catalog : catalogs)
+                result.addRow(catalog);
+        }
+        return result;
     }
 
     public String getCommentsQuery(DataConnection connection) throws GrokConnectException {

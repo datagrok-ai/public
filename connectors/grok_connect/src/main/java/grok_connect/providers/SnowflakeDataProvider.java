@@ -93,7 +93,7 @@ public class SnowflakeDataProvider extends JdbcDataProvider {
                 isEmptyDb ? "" : String.format(" LOWER(c.table_catalog) = LOWER('%s')", db),
                 isEmptySchema ? "" : String.format("%s c.table_schema = '%s'", isEmptyDb ? "" : " AND", schema),
                 isEmptyTable ? "" : String.format("%s c.table_name = '%s'", isEmptyDb && isEmptySchema ? "" : " AND", table));
-        return String.format("SELECT c.table_schema as table_schema, c.table_name as table_name, c.column_name as column_name, "
+        return String.format("SELECT c.table_catalog as table_catalog, c.table_schema as table_schema, c.table_name as table_name, c.column_name as column_name, "
                         + "c.data_type as data_type, "
                         + "case t.table_type when 'VIEW' then 1 else 0 end as is_view FROM information_schema.columns c "
                         + "JOIN information_schema.tables t ON t.table_name = c.table_name AND t.table_schema = c.table_schema AND LOWER(t.table_catalog) = LOWER(c.table_catalog)%s " +
@@ -139,6 +139,7 @@ public class SnowflakeDataProvider extends JdbcDataProvider {
         descriptor.type = TYPE;
         descriptor.description = DESCRIPTION;
         descriptor.canBrowseSchema = CAN_BROWSE_SCHEMA;
+        descriptor.supportCatalogs = true;
         descriptor.defaultSchema = DEFAULT_SCHEMA;
         Property cloudProviders = new Property(Property.STRING_TYPE, DbCredentials.CLOUD);
         cloudProviders.choices = AVAILABLE_CLOUDS;
