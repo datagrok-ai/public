@@ -9,7 +9,7 @@
 ### Bug Fixes
 
 * GROK-19376: Projects: errors for opening data with radar viewer
-* [3221] (https://github.com/datagrok-ai/public/issues/3221): Charts | Tree: Add configuration to hide overlapping labels
+* [3221](https://github.com/datagrok-ai/public/issues/3221): Charts | Tree: Add configuration to hide overlapping labels
 * GROK-19226: Charts | Tree: Failed to load saved layout with attached tree viewer
 * GROK-19095: Charts | Radar: Trigger the label formatter when resizing
 * GROK-19097, GROK-19098: Charts: Chord: Row Source works incorrectly for some values
