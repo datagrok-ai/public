@@ -583,8 +583,9 @@ export class DataConnectionsDataSource extends HttpDataSource<DataConnection> {
     return toJs(await api.grok_DataConnectionsDataSource_Get_Unique_Columns(this.dart, c.dart, schema, table));
   }
 
-  async getDatabaseInfo(c: DataConnection): Promise<DbInfo> {
-    return toJs(await api.grok_DataConnectionsDataSource_Get_Db_Info(this.dart, c.dart))
+
+  async getDatabaseInfo(c: DataConnection, catalog: string | null = null): Promise<DbInfo[]> {
+    return toJs(await api.grok_DataConnectionsDataSource_Get_Db_Info(this.dart, c.dart, catalog))
   }
 }
 

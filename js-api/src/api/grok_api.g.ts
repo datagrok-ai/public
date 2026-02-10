@@ -1028,7 +1028,7 @@ export interface IDartApi {
   grok_DataConnectionsDataSource_Get_Schemas(s: any, c: any): Promise<any>;
   grok_DataConnectionsDataSource_Get_Schema(s: any, c: any, schema: String, table: String): Promise<any>;
   grok_DataConnectionsDataSource_Get_Unique_Columns(s: any, c: any, schema: String, table: String): Promise<any>;
-  grok_DataConnectionsDataSource_Get_Db_Info(s: any, c: any): Promise<any>;
+  grok_DataConnectionsDataSource_Get_Db_Info(s: any, c: any, catalog: String): Promise<any>;
   grok_GroupsDataSource_Save(s: any, e: any): Promise<any>;
   grok_EntitiesDataSource_GetRecent(s: any): Promise<any>;
   grok_EntitiesDataSource_SaveProperties(s: any, props: any): Promise<any>;
@@ -1788,6 +1788,7 @@ export interface IDartApi {
   grok_DbRelationInfo_Get_Prop(rel: any, name: String): any;
   grok_DbRelationInfo_Get_Connection(rel: any): any;
   grok_DbSchemaInfo_Get_Name(info: any): any;
+  grok_DbSchemaInfo_Get_Catalog(info: any): any;
   grok_DbSchemaInfo_Get_Prop(info: any, name: String): any;
   grok_DbSchemaInfo_Set_Prop(info: any, propName: String, value: any): Promise<any>;
   grok_DbSchemaInfo_Get_Tables(info: any): Promise<any>;
@@ -1803,6 +1804,7 @@ export interface IDartApi {
   grok_ConnectionDataSource_CommentStart(ds: any): any;
   grok_ConnectionDataSource_NameBrackets(ds: any): any;
   grok_ConnectionDataSource_CanBrowseSchema(ds: any): any;
+  grok_ConnectionDataSource_SupportCatalogs(ds: any): any;
   grok_ConnectionDataSource_QueryLanguage(ds: any): any;
   grok_ConnectionDataSource_ConnectionTemplate(ds: any): any;
   grok_ConnectionDataSource_CredentialsTemplate(ds: any): any;
