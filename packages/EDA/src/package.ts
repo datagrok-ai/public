@@ -988,7 +988,6 @@ export class PackageFunctions {
   }
 
   @grok.decorators.func({
-    'top-menu': 'Chem | Calculate | Train pMPO...',
     'name': 'trainPmpo',
     'description': 'Train probabilistic multi-parameter optimization (pMPO) model',
   })
