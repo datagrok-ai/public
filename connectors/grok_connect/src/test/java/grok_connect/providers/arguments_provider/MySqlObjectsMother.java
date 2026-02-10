@@ -24,8 +24,8 @@ public class MySqlObjectsMother {
     public static Stream<Arguments> getSchemas_ok() {
         DataFrame expected = DataFrameBuilder.getBuilder()
                 .setRowCount(1)
-                .setColumn(new StringColumn(new String[] {"datagrok"}),
-                        "TABLE_SCHEMA")
+                .setColumn(new StringColumn(new String[] {"datagrok", "information_schema", "performance_schema"}),
+                        "table_schema")
                 .build();
         return Stream.of(Arguments.of(expected));
     }

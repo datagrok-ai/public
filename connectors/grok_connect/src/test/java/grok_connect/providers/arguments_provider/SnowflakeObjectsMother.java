@@ -22,7 +22,7 @@ public class SnowflakeObjectsMother {
     public static Stream<Arguments> getSchemas_ok() {
         DataFrame expected = DataFrameBuilder.getBuilder()
                 .setRowCount(2)
-                .setColumn(new StringColumn(new String[] {"PUBLIC", "INFORMATION_SCHEMA"}),
+                .setColumn(new StringColumn(new String[] {"INFORMATION_SCHEMA", "PUBLIC"}),
                         "TABLE_SCHEMA")
                 .build();
         return Stream.of(Arguments.of(expected));
@@ -34,10 +34,14 @@ public class SnowflakeObjectsMother {
         String thirdColumnName = "COLUMN_NAME";
         String fourthColumnName = "DATA_TYPE";
         String fifthColumnName = "IS_VIEW";
+        String catalog = "TEST";
         String schema = "PUBLIC";
         String table = "MOCK_DATA";
         DataFrame expected = DataFrameBuilder.getBuilder()
                 .setRowCount(10)
+                .setColumn(new StringColumn(), "TABLE_CATALOG", new String[] {catalog, catalog,
+                        catalog, catalog, catalog, catalog, catalog,
+                        catalog, catalog, catalog})
                 .setColumn(new StringColumn(), firstColumnName, new String[] {schema, schema,
                         schema, schema, schema, schema, schema,
                         schema, schema, schema})

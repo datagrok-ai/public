@@ -81,7 +81,7 @@ public class SnowflakeDataProvider extends JdbcDataProvider {
 
     @Override
     public String getSchemasSql(String db) {
-        return "SELECT DISTINCT table_schema FROM information_schema.columns;";
+        return "SELECT DISTINCT table_schema FROM information_schema.columns ORDER BY table_schema;";
     }
 
     @Override

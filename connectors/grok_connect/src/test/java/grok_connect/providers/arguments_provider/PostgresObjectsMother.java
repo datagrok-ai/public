@@ -41,10 +41,14 @@ public class PostgresObjectsMother {
         String thirdColumnName = "column_name";
         String fourthColumnName = "data_type";
         String fifthColumnName = "is_view";
+        String catalog = "datagrok";
         String schema = "public";
         String table = "mock_data";
         DataFrame expected = DataFrameBuilder.getBuilder()
                 .setRowCount(10)
+                .setColumn(new StringColumn(), "table_catalog", new String[] {catalog, catalog,
+                        catalog, catalog, catalog, catalog, catalog,
+                        catalog, catalog, catalog})
                 .setColumn(new StringColumn(), firstColumnName, new String[] {schema, schema,
                         schema, schema, schema, schema, schema,
                         schema, schema, schema})

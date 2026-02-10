@@ -98,7 +98,7 @@ public class MsSqlDataProvider extends JdbcDataProvider {
 
     @Override
     public String getSchemasSql(String db) {
-        return "SELECT name FROM sys.schemas ORDER BY name";
+        return "SELECT name as SCHEMA_NAME FROM sys.schemas ORDER BY name";
     }
 
     @Override

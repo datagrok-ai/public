@@ -21,9 +21,20 @@ public class MsSqlObjectsMother {
     public static Stream<Arguments> getSchemas_ok() {
         DataFrame expected = DataFrameBuilder.getBuilder()
                 .setRowCount(13)
-                .setColumn(new StringColumn(new String[] {"dbo", "guest",
-                        "INFORMATION_SCHEMA", "sys", "db_owner", "db_accessadmin", "db_securityadmin", "db_ddladmin",
-                "db_backupoperator", "db_datareader", "db_datawriter", "db_denydatareader", "db_denydatawriter"}),
+                .setColumn(new StringColumn(new String[] {
+                                "db_accessadmin",
+                                "db_backupoperator",
+                                "db_datareader",
+                                "db_datawriter",
+                                "db_ddladmin",
+                                "db_denydatareader",
+                                "db_denydatawriter",
+                                "db_owner",
+                                "db_securityadmin",
+                                "dbo",
+                                "guest",
+                                "INFORMATION_SCHEMA",
+                                "sys"}),
                         "SCHEMA_NAME")
                 .build();
         return Stream.of(Arguments.of(expected));
