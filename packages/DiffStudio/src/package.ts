@@ -13,6 +13,7 @@ import {getBallFlightSim} from './demo/ball-flight';
 export {Model} from './model';
 import {PK_PD_MODEL_INFO} from './demo/pk-pd';
 import {BIOREACTOR_MODEL_INFO} from './demo/bioreactor';
+import {GA_PRODUCTION_MODEL_INFO} from './demo/ga-production';
 
 import {DF_NAME} from './constants';
 import {UI_TIME} from './ui-constants';
@@ -214,6 +215,16 @@ export class PackageFunctions {
     await call.call();
 
     return call.outputs[DF_NAME];
+  }
+
+  @grok.decorators.model({
+    name: 'gaProduction',
+    description: 'Gluconic acid (GA) production by Aspergillus niger modeling',
+    icon: 'files/icons/ga-production.png',
+  })
+  static async gaProduction(): Promise<void> {
+    const model = new Model(GA_PRODUCTION_MODEL_INFO);
+    await model.run();
   }
 
   @grok.decorators.model({

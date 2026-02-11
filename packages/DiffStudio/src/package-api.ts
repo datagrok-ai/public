@@ -83,6 +83,13 @@ export namespace funcs {
   }
 
   /**
+  Gluconic acid (GA) production by Aspergillus niger modeling
+  */
+  export async function gaProduction(): Promise<void> {
+    return await grok.functions.call('DiffStudio:GaProduction', {});
+  }
+
+  /**
   In-browser two-compartment pharmacokinetic-pharmacodynamic (PK-PD) simulation
   */
   export async function pkPdNew(): Promise<void> {

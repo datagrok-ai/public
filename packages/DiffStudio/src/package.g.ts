@@ -70,7 +70,7 @@ export async function runDiffStudioTreeBrowser(treeNode: any) : Promise<void> {
 //output: double maxDist { caption: Max distance }
 //output: double maxHeight { caption: Max height }
 //output: dataframe df { caption: Trajectory; viewer: Line chart(block: 60, multiAxis: "false", multiAxisLegendPosition: "RightCenter", autoLayout: "false", showAggrSelectors: "false") | Grid(block: 40) }
-//meta.role: model
+//tags: model
 //editor: Compute:RichFunctionViewEditor
 //sidebar: @compute
 //meta.runOnOpen: true
@@ -102,9 +102,16 @@ export async function solveODE(problem: string) : Promise<any> {
   return await PackageFunctions.solveODE(problem);
 }
 
+//description: Gluconic acid (GA) production by Aspergillus niger modeling
+//tags: model
+//meta.icon: files/icons/ga-production.png
+export async function gaProduction() : Promise<void> {
+  await PackageFunctions.gaProduction();
+}
+
 //name: PK-PD
 //description: In-browser two-compartment pharmacokinetic-pharmacodynamic (PK-PD) simulation
-//meta.role: model
+//tags: model
 //meta.icon: files/icons/pkpd.png
 export async function pkPdNew() : Promise<void> {
   await PackageFunctions.pkPdNew();
@@ -120,7 +127,7 @@ export async function demoSimPKPD() : Promise<any> {
 }
 
 //description: Controlled fab-arm exchange mechanism simulation
-//meta.role: model
+//tags: model
 //meta.icon: files/icons/bioreactor.png
 export async function Bioreactor() : Promise<void> {
   await PackageFunctions.Bioreactor();
@@ -133,13 +140,6 @@ export async function Bioreactor() : Promise<void> {
 //test: demoBioreactor() //wait: 100 
 export async function demoBioreactor() : Promise<any> {
   return await PackageFunctions.demoBioreactor();
-}
-
-//description: Gluconic acid (GA) production by Aspergillus niger modeling
-//meta.role: model
-//meta.icon: files/icons/ga-production.png
-export async function gaProduction() : Promise<void> {
-  await PackageFunctions.gaProduction();
 }
 
 //description: Run model with Diff Studio UI

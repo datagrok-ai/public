@@ -8,10 +8,12 @@ import {_package} from '../package-test';
 import {category} from '@datagrok-libraries/test/src/test';
 import {testTemplate} from './test-utils';
 import {BIOREACTOR_MODEL_INFO} from '../demo/bioreactor';
+import {GA_PRODUCTION_MODEL_INFO} from '../demo/ga-production';
 import {PK_PD_MODEL_INFO} from '../demo/pk-pd';
 
 // Demo models tests
 category('Demo models', () => {
-  testTemplate('bioreactor.ts', BIOREACTOR_MODEL_INFO.equations);
-  testTemplate('pk-pd.ts', PK_PD_MODEL_INFO.equations);
+  testTemplate('bioreactor', BIOREACTOR_MODEL_INFO.equations);
+  testTemplate('ga-production', GA_PRODUCTION_MODEL_INFO.equations);
+  testTemplate('pk-pd', PK_PD_MODEL_INFO.equations);
 }); // Demo models
