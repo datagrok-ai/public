@@ -12,6 +12,7 @@ import {
 } from '@datagrok-libraries/statistics/src/mpo/mpo';
 import {MPO_SCORE_CHANGED_EVENT, MpoProfileEditor} from '@datagrok-libraries/statistics/src/mpo/mpo-profile-editor';
 
+import {FormulaEditor} from './formula-editor';
 import {MpoContextPanel} from './mpo-context-panel';
 import {MpoPathMode, MPO_PROFILE_DELETED_EVENT, updateMpoPath} from './utils';
 import {MpoProfileManager} from './mpo-profile-manager';
@@ -39,6 +40,7 @@ export class MpoProfileCreateView {
   tableView: DG.TableView;
   private tableViewVisible: boolean = false;
   private subs: Subscription[] = [];
+  private formulaEditor = new FormulaEditor();
 
   private pMpoDockedItems: {
     statsGrid?: DG.DockNode;
@@ -223,12 +225,18 @@ export class MpoProfileCreateView {
     this.aggregationInput = ui.input.choice('Aggregation', {
       items: WEIGHTED_AGGREGATIONS_LIST,
       nullable: false,
-      onValueChanged: () => grok.events.fireCustomEvent(MPO_SCORE_CHANGED_EVENT, {}),
+      onValueChanged: () => {
+        const isFormula = this.aggregationInput!.value === 'Formula';
+        this.formulaEditor.visible = isFormula;
+        if (isFormula && this.profile && this.df)
+          this.formulaEditor.build(this.profile, this.df);
+        grok.events.fireCustomEvent(MPO_SCORE_CHANGED_EVENT, {});
+      },
     });
     this.aggregationInput.enabled = false;
     controls.push(this.aggregationInput);
 
-    const headerDiv = ui.divV([ui.h1(this.view.name), ui.form(controls)]);
+    const headerDiv = ui.divV([ui.h1(this.view.name), ui.form(controls), this.formulaEditor.root]);
     headerDiv.classList.add('chem-profile-header');
 
     this.profileViewContainer = ui.divV([headerDiv]);
@@ -408,7 +416,7 @@ export class MpoProfileCreateView {
       if (!this.df || !this.profile || !this.mpoContextPanel) return;
 
       const agg = this.aggregationInput?.value ?? 'Average';
-      await this.mpoContextPanel.render(this.profile, this.editor.columnMapping, agg);
+      await this.mpoContextPanel.render(this.profile, this.editor.columnMapping, agg, this.formulaEditor.getExpression());
     }));
 
     this.subs.push(grok.events.onCustomEvent(MPO_PROFILE_DELETED_EVENT).subscribe((data) => {
@@ -433,6 +441,7 @@ export class MpoProfileCreateView {
 
   private detach(): void {
     this.closeContextPanel();
+    this.formulaEditor.disconnect();
     this.subs.forEach((sub) => sub.unsubscribe());
     this.subs = [];
   }

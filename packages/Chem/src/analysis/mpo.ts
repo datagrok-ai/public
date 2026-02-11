@@ -10,6 +10,7 @@ import {
 } from '@datagrok-libraries/statistics/src/mpo/mpo';
 import {MPO_SCORE_CHANGED_EVENT, MpoProfileEditor} from '@datagrok-libraries/statistics/src/mpo/mpo-profile-editor';
 
+import {FormulaEditor} from '../mpo/formula-editor';
 import {MpoContextPanel} from '../mpo/mpo-context-panel';
 import {MpoProfileManager} from '../mpo/mpo-profile-manager';
 import {PackageFunctions} from '../package';
@@ -34,6 +35,7 @@ export class MpoProfileDialog {
   private suitableProfileNames: string[] = [];
   private subs: Subscription[] = [];
   private footerWarning: HTMLElement | null = null;
+  private formulaEditor = new FormulaEditor();
 
   constructor(dataFrame?: DG.DataFrame) {
     this.dataFrame = dataFrame ?? grok.shell.t;
@@ -42,7 +44,13 @@ export class MpoProfileDialog {
     this.aggregationInput = ui.input.choice('Aggregation', {
       items: WEIGHTED_AGGREGATIONS_LIST,
       nullable: false,
-      onValueChanged: () => grok.events.fireCustomEvent(MPO_SCORE_CHANGED_EVENT, {}),
+      onValueChanged: () => {
+        const isFormula = this.aggregationInput.value === 'Formula';
+        this.formulaEditor.visible = isFormula;
+        if (isFormula && this.currentProfile)
+          this.formulaEditor.build(this.currentProfile, this.dataFrame);
+        grok.events.fireCustomEvent(MPO_SCORE_CHANGED_EVENT, {});
+      },
     });
 
     this.profileInput = ui.input.choice('Profile', {
@@ -115,6 +123,7 @@ export class MpoProfileDialog {
           this.currentProfile,
           this.mpoProfileEditor.columnMapping,
           this.aggregationInput.value ?? undefined,
+          this.formulaEditor.getExpression(),
         );
       }
     }));
@@ -136,6 +145,8 @@ export class MpoProfileDialog {
     });
     this.mpoProfileEditor.setProfile(this.currentProfile);
     this.originalProfile = structuredClone(this.currentProfile);
+    if (this.formulaEditor.visible)
+      this.formulaEditor.build(this.currentProfile, this.dataFrame);
     this.updateSaveButtonVisibility();
     this.updateOkButtonState();
   }
@@ -215,6 +226,7 @@ export class MpoProfileDialog {
         this.currentProfile!,
         this.mpoProfileEditor.columnMapping,
         this.aggregationInput.value!,
+        this.formulaEditor.getExpression(),
       );
 
       if (columnNames.length && this.addParetoFront.value)
@@ -231,6 +243,7 @@ export class MpoProfileDialog {
   private getMpoControls(): HTMLElement {
     return ui.divV([
       this.aggregationInput.root,
+      this.formulaEditor.root,
       this.designModeInput.root,
       this.mpoProfileEditor.root,
       this.addParetoFront.root,
@@ -261,6 +274,7 @@ export class MpoProfileDialog {
 
   private detach(): void {
     this.mpoContextPanel?.close();
+    this.formulaEditor.disconnect();
     this.subs.forEach((sub) => sub.unsubscribe());
     this.subs = [];
   }

@@ -1122,10 +1122,11 @@ export async function _mpo() : Promise<void> {
 //input: string profileName 
 //input: dynamic aggregation 
 //input: object currentProperties 
+//input: string formula 
 //output: dataframe result { action: join(df) }
 //meta.role: transform
-export async function mpoTransformFunction(df: DG.DataFrame, profileName: string, aggregation: any, currentProperties: any) : Promise<any> {
-  return await PackageFunctions.mpoTransformFunction(df, profileName, aggregation, currentProperties);
+export async function mpoTransformFunction(df: DG.DataFrame, profileName: string, aggregation: any, currentProperties: any, formula: string) : Promise<any> {
+  return await PackageFunctions.mpoTransformFunction(df, profileName, aggregation, currentProperties, formula);
 }
 
 //input: file file 

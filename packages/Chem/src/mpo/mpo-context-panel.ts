@@ -80,6 +80,7 @@ export class MpoContextPanel {
     profile: DesirabilityProfile,
     columnMapping: Record<string, string | null>,
     aggregation?: WeightedAggregation,
+    formula?: string,
   ) {
     if (!profile)
       return;
@@ -87,7 +88,7 @@ export class MpoContextPanel {
     if (grok.shell.o !== this.root)
       this.show();
 
-    const columnNames = await computeMpo(this.df, profile, columnMapping, aggregation);
+    const columnNames = await computeMpo(this.df, profile, columnMapping, aggregation, formula);
     if (!columnNames.length)
       return;
 

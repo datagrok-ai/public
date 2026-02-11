@@ -1,6 +1,7 @@
 /* eslint-disable guard-for-in */
 /* eslint-disable max-len */
 import * as DG from 'datagrok-api/dg';
+import * as grok from 'datagrok-api/grok';
 
 /// An array of [x, y] points representing the desirability line
 /// [x, y] pairs are sorted by x in ascending order
@@ -58,7 +59,7 @@ export type DesirabilityProfile = {
   properties: { [key: string]: PropertyDesirability };
 }
 
-export const WEIGHTED_AGGREGATIONS = ['Average', 'Sum', 'Product', 'Geomean', 'Min', 'Max'] as const;
+export const WEIGHTED_AGGREGATIONS = ['Average', 'Sum', 'Product', 'Geomean', 'Min', 'Max', 'Formula'] as const;
 export const WEIGHTED_AGGREGATIONS_LIST: WeightedAggregation[] = [...WEIGHTED_AGGREGATIONS];
 export type WeightedAggregation = typeof WEIGHTED_AGGREGATIONS[number];
 
@@ -95,13 +96,30 @@ export function categoricalDesirabilityScore(
   return found?.desirability ?? prop.defaultScore ?? null;
 }
 
+export async function aggregateFormula(
+  scores: number[],
+  propertyNames: string[],
+  formula: string,
+): Promise<number> {
+  let expression = formula;
+  for (let i = 0; i < propertyNames.length; i++)
+    expression = expression.replaceAll('${' + propertyNames[i] + '}', String(scores[i]));
+  try {
+    return await grok.functions.eval(expression);
+  }
+  catch (e) {
+    return NaN;
+  }
+}
+
 /** Calculates the multi parameter optimization score, 0-100, 100 is the maximum */
-export function mpo(
+export async function mpo(
   dataFrame: DG.DataFrame,
   columns: DG.Column[],
   profileName: string,
   aggregation: WeightedAggregation,
-): DG.Column {
+  formula?: string,
+): Promise<DG.Column> {
   if (columns.length === 0)
     throw new Error('No columns provided for MPO calculation.');
 
@@ -112,30 +130,46 @@ export function mpo(
     return migrateDesirability(JSON.parse(tag));
   });
 
-  resultColumn.init((i) => {
+  const propertyNames = columns.map((c) => c.name);
+
+  for (let i = 0; i < columns[0].length; i++) {
     const scores: number[] = [];
     const weights: number[] = [];
+    let skipRow = false;
 
     for (let j = 0; j < columns.length; j++) {
       const desirability = desirabilityTemplates[j];
+
+      if (columns[j].isNone(i)) {
+        resultColumn.set(i, desirability.defaultScore ?? NaN);
+        skipRow = true;
+        break;
+      }
+
       const value = columns[j].get(i);
-
-      if (columns[j].isNone(i))
-        return desirability.defaultScore ?? NaN;
-
       const score = isNumerical(desirability) ?
         desirabilityScore(value, desirability.line) :
         categoricalDesirabilityScore(value, desirability);
 
-      if (score === null)
-        return NaN;
+      if (score === null) {
+        resultColumn.set(i, NaN);
+        skipRow = true;
+        break;
+      }
 
       scores.push(score);
       weights.push(desirability.weight);
     }
 
-    return aggregate(scores, weights, aggregation);
-  });
+    if (!skipRow) {
+      if (aggregation === 'Formula' && formula)
+        resultColumn.set(i, await aggregateFormula(scores, propertyNames, formula));
+      else if (aggregation === 'Formula')
+        resultColumn.set(i, NaN);
+      else
+        resultColumn.set(i, aggregate(scores, weights, aggregation));
+    }
+  }
 
   return resultColumn;
 }

@@ -338,7 +338,7 @@ export namespace funcs {
     return await grok.functions.call('Chem:ChemSpaceEditor', { call });
   }
 
-  export async function getFingerprints(col: DG.Column , _metric?: any , fingerprintType?: string ): Promise<any> {
+  export async function getFingerprints(col: DG.Column , _metric?: string , fingerprintType?: string ): Promise<any> {
     return await grok.functions.call('Chem:GetFingerprints', { col, _metric, fingerprintType });
   }
 
@@ -803,8 +803,8 @@ export namespace funcs {
     return await grok.functions.call('Chem:Mpo', {});
   }
 
-  export async function mpoTransformFunction(df: DG.DataFrame , profileName: string , aggregation: any , currentProperties: any ): Promise<any> {
-    return await grok.functions.call('Chem:MpoTransformFunction', { df, profileName, aggregation, currentProperties });
+  export async function mpoTransformFunction(df: DG.DataFrame , profileName: string , aggregation: any , currentProperties: any , formula: string ): Promise<DG.DataFrame> {
+    return await grok.functions.call('Chem:MpoTransformFunction', { df, profileName, aggregation, currentProperties, formula });
   }
 
   export async function mpoProfileEditor(file: DG.FileInfo ): Promise<DG.View> {

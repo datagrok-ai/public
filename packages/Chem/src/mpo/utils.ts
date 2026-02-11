@@ -60,12 +60,13 @@ export type MpoCalculationResult = {
   error?: string;
 };
 
-export function calculateMpoCore(
+export async function calculateMpoCore(
   df: DG.DataFrame,
   profileName: string,
   currentProperties: Record<string, PropertyDesirability>,
   aggregation: WeightedAggregation,
-): MpoCalculationResult {
+  formula?: string,
+): Promise<MpoCalculationResult> {
   const columns: DG.Column[] = [];
   const warnings: string[] = [];
 
@@ -88,7 +89,7 @@ export function calculateMpoCore(
   }
 
   try {
-    const resultCol = mpo(df, columns, profileName, aggregation);
+    const resultCol = await mpo(df, columns, profileName, aggregation, formula);
     return {columnNames: resultCol ? [resultCol.name] : [], resultColumn: resultCol, warnings};
   } catch (e) {
     console.error('MPO Calculation Error:', e);
@@ -105,11 +106,21 @@ export async function computeMpo(
   profile: DesirabilityProfile,
   columnMapping: Record<string, string | null>,
   aggregation?: WeightedAggregation,
+  formula?: string,
 ): Promise<string[]> {
   const mappedProperties: Record<string, PropertyDesirability> = {};
   for (const [propName, prop] of Object.entries(profile.properties)) {
     const columnName = columnMapping[propName] ?? propName;
     mappedProperties[columnName] = prop;
+  }
+
+  let resolvedFormula = formula ?? '';
+  if (resolvedFormula) {
+    for (const [propName] of Object.entries(profile.properties)) {
+      const columnName = columnMapping[propName] ?? propName;
+      if (columnName !== propName)
+        resolvedFormula = resolvedFormula.replaceAll('${' + propName + '}', '${' + columnName + '}');
+    }
   }
 
   const profileName = profile.name ?? 'MPO';
@@ -118,6 +129,7 @@ export async function computeMpo(
     profileName,
     currentProperties: mappedProperties,
     aggregation: aggregation ?? 'Average',
+    formula: resolvedFormula,
   });
   return df.col(profileName) ? [profileName] : [];
 }

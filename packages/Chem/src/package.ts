@@ -2482,8 +2482,9 @@ export class PackageFunctions {
     profileName: string,
     aggregation: WeightedAggregation,
     @grok.decorators.param({type: 'object'}) currentProperties: { [key: string]: PropertyDesirability },
+    formula: string = '',
   ): Promise<DG.DataFrame> {
-    const result = calculateMpoCore(df, profileName, currentProperties, aggregation);
+    const result = await calculateMpoCore(df, profileName, currentProperties, aggregation, formula || undefined);
 
     for (const warning of result.warnings)
       grok.shell.warning(warning);
@@ -2669,16 +2670,16 @@ export class PackageFunctions {
     const profileInput = ui.input.choice('Profile', {
       items: suitableProfiles.map((p) => p.fileName),
       value: suitableProfiles[0].fileName,
-      onValueChanged: () => calculateMpo(),
+      onValueChanged: async () => await calculateMpo(),
     });
 
     const aggregationInput = ui.input.choice('Aggregation', {
-      items: WEIGHTED_AGGREGATIONS_LIST,
+      items: WEIGHTED_AGGREGATIONS_LIST.filter((a) => a !== 'Formula'),
       nullable: false,
-      onValueChanged: () => calculateMpo(),
+      onValueChanged: async () => await calculateMpo(),
     });
 
-    function calculateMpo() {
+    async function calculateMpo() {
       if (!profileInput.value)
         return;
 
@@ -2704,7 +2705,7 @@ export class PackageFunctions {
           column.setTag('desirabilityTemplate', newTagValue);
       }
 
-      const score = mpo(
+      const score = await mpo(
         dataFrame,
         columns,
         selected.name,
@@ -2718,8 +2719,8 @@ export class PackageFunctions {
 
       const addColumnIcon = ui.iconFA(
         'plus',
-        () => {
-          const col = mpo(
+        async () => {
+          const col = await mpo(
             dataFrame,
             columns,
             selected.name,
@@ -2743,7 +2744,7 @@ export class PackageFunctions {
 
     container.appendChild(ui.divV([profileInput.root, aggregationInput.root, resultDiv]));
 
-    calculateMpo();
+    await calculateMpo();
     return DG.Widget.fromRoot(container);
   }
 }
