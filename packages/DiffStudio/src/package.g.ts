@@ -135,6 +135,13 @@ export async function demoBioreactor() : Promise<any> {
   return await PackageFunctions.demoBioreactor();
 }
 
+//description: Gluconic acid (GA) production by Aspergillus niger modeling
+//meta.role: model
+//meta.icon: files/icons/ga-production.png
+export async function gaProduction() : Promise<void> {
+  await PackageFunctions.gaProduction();
+}
+
 //description: Run model with Diff Studio UI
 //input: string model 
 //input: int inputsTabDockRatio 
