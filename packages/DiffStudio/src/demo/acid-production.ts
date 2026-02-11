@@ -1,10 +1,7 @@
-/** GA-production demo model */
-
 import {LINK} from '../ui-constants';
 import {ModelInfo} from '../model';
 
-/** GA-production model specification */
-export const GA_PRODUCTION_MODEL = `#name: GA-production
+export const ACID_PRODUCTION_MODEL = `#name: Acid Production
 #description: Gluconic acid (GA) production by Aspergillus niger modeling
 #equations:
   dX/dt = rX
@@ -54,15 +51,13 @@ export const GA_PRODUCTION_MODEL = `#name: GA-production
 
 #tolerance: 1e-9`;
 
-/** UI options */
 const UI_OPTS = {
   inputsTabDockRatio: 0.17,
   graphsDockRatio: 0.85,
 };
 
-/** Info for help panel */
 const INFO = `# Model
-Gluconic acid (GA) production by Aspergillus niger modeling.
+Gluconic acid (GA) production by Aspergillus niger modeling
 # Try
 Interactive results based on input changes.
 # Performance
@@ -74,8 +69,8 @@ enables the creation of complex models without writing code.
 * [Sensitivity analysis](${LINK.SENS_AN})
 * [Parameter optimization](${LINK.FITTING})`;
 
-export const GA_PRODUCTION_MODEL_INFO: ModelInfo = {
-  equations: GA_PRODUCTION_MODEL,
+export const ACID_PRODUCTION_MODEL_INFO: ModelInfo = {
+  equations: ACID_PRODUCTION_MODEL,
   uiOptions: UI_OPTS,
   info: INFO,
 };

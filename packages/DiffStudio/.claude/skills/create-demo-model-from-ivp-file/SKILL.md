@@ -14,6 +14,7 @@ Throughout this skill, the model name extracted from the IVP file is transformed
 
 | Form | Example | Usage |
 |---|---|---|
+| Original (as in IVP) | `Acid Base` | Decorator `name` |
 | `kebab-case` | `acid-base` | File name, import path |
 | `camelCase` | `acidBase` | Method name, decorator `name` |
 | `UPPER_SNAKE_CASE` | `ACID_BASE` | Constant prefixes |
@@ -67,13 +68,13 @@ Throughout this skill, the model name extracted from the IVP file is transformed
 
    a. **Add import** for use in the class method:
 ```ts
-   import {<UPPER_SNAKE_CASE>_MODEL_INFO} from './demos/<kebab-case>';
+   import {<UPPER_SNAKE_CASE>_MODEL_INFO} from './demo/<kebab-case>';
 ```
 
    b. **Add method** to the `PackageFunctions` class (in alphabetical order among existing model methods):
 ```ts
    @grok.decorators.model({
-     name: '<camelCase>',
+     name: '<Original model name from IVP>',
      description: '<model-description>',
      icon: '<path-to-png-file>',
    })
@@ -97,7 +98,7 @@ Given: `src/ivp/acid-base.ivp` with content:
 
 And optional PNG: `images/acid-base.png`
 
-**Generated file** `src/demos/acid-base.ts`:
+**Generated file** `src/demo/acid-base.ts`:
 ```ts
 import {LINK} from '../ui-constants';
 import {ModelInfo} from '../model';
@@ -111,11 +112,11 @@ export const ACID_BASE_MODEL = `#name: Acid Base
 
 **In `src/package.ts`**:
 ```ts
-import {ACID_BASE_MODEL_INFO} from './demos/acid-base';
+import {ACID_BASE_MODEL_INFO} from './demo/acid-base';
 
 // Inside PackageFunctions:
 @grok.decorators.model({
-  name: 'acidBase',
+  name: 'Acid Base',
   description: 'Acid-base equilibrium model',
   icon: 'images/acid-base.png',
 })

@@ -1,4 +1,4 @@
-#name: GA-production
+#name: Acid Production
 #description: Gluconic acid (GA) production by Aspergillus niger modeling
 #equations:
   dX/dt = rX
