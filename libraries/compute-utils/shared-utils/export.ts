@@ -125,6 +125,7 @@ export const richFunctionViewReport = async (
           caption: scalarInput.options['caption'] ?? scalarInput.name,
           value: lastCall.inputs[scalarInput.name] ?? '',
           units: scalarInput.options['units'] ?? '',
+          format: scalarInput.format
         })));
       }
 
@@ -146,6 +147,7 @@ export const richFunctionViewReport = async (
           caption: scalarOutput.options['caption'] ?? scalarOutput.name,
           value: lastCall.outputs[scalarOutput.name] ?? '',
           units: scalarOutput.options['units'] ?? '',
+          format: scalarOutput.format,
         })));
       }
 
@@ -239,11 +241,19 @@ export const reportFuncCallExcel = async (funccall: DG.FuncCall) => {
   );
 };
 
+export const formatNumber = (val: any, format?: string) => {
+  try {
+    return (Number.isFinite(val) && format) ? DG.format(val, format) : val;
+  } catch {
+    return val;
+  }
+}
+
 export const scalarsToSheet =
-  (sheet: ExcelJS.Worksheet, scalars: { caption: string, value: string, units: string }[]) => {
+  (sheet: ExcelJS.Worksheet, scalars: { caption: string, value: string, units: string, format?: string }[]) => {
     sheet.addRow(['Parameter', 'Value', 'Units']).font = {bold: true};
     scalars.forEach((scalar) => {
-      sheet.addRow([scalar.caption, scalar.value, scalar.units]);
+      sheet.addRow([scalar.caption, formatNumber(scalar.value, scalar.format), scalar.units]);
     });
 
     sheet.getColumn(1).width = Math.max(
@@ -260,11 +270,27 @@ export const dfToSheet = (sheet: ExcelJS.Worksheet, dfCounter: number, df?: DG.D
   if (!df)
     return;
   const columnKey = sheet.getColumn(column ?? 1).letter;
+  const rows = [];
+  for (let rowIdx = 0; rowIdx < df.rowCount; rowIdx++) {
+    const row = [];
+    for (let colIdx = 0; colIdx < df.columns.length; colIdx++) {
+      const col = df.col(colIdx)!;
+      const rawVal = df.get(col.name, rowIdx);
+      if (col?.type === 'double') {
+        const format = col?.tags?.['format'] ?? '.00';
+        const val =  formatNumber(rawVal, format);
+        row.push(val);
+      } else {
+        row.push(rawVal);
+      }
+    }
+    rows.push(row);
+  }
   const tableConfig = {
     name: `ID_${dfCounter.toString()}`,
     ref: `${columnKey}${row ?? 1}`,
     columns: df.columns.toList().map((col) => ({name: col.name, filterButton: false})),
-    rows: new Array(df.rowCount).fill(0).map((_, idx) => [...df.row(idx).cells].map((cell) => cell.value)),
+    rows,
   };
   sheet.addTable(tableConfig);
   sheet.columns.forEach((col) => {
