@@ -87,7 +87,7 @@ export class MpoContextPanel {
     if (grok.shell.o !== this.root)
       this.show();
 
-    const columnNames = await computeMpo(this.df, profile, columnMapping, aggregation, true);
+    const columnNames = await computeMpo(this.df, profile, columnMapping, aggregation);
     if (!columnNames.length)
       return;
 

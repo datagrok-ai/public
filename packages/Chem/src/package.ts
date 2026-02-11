@@ -2474,7 +2474,7 @@ export class PackageFunctions {
   }
 
   @grok.decorators.func({
-    outputs: [{name: 'res', type: 'list'}],
+    outputs: [{name: 'result', type: 'dataframe', options: {action: 'join(df)'}}],
     meta: {role: 'transform'},
   })
   static async mpoTransformFunction(
@@ -2482,7 +2482,7 @@ export class PackageFunctions {
     profileName: string,
     aggregation: WeightedAggregation,
     @grok.decorators.param({type: 'object'}) currentProperties: { [key: string]: PropertyDesirability },
-  ): Promise<string[]> {
+  ): Promise<DG.DataFrame> {
     const result = calculateMpoCore(df, profileName, currentProperties, aggregation);
 
     for (const warning of result.warnings)
@@ -2491,7 +2491,10 @@ export class PackageFunctions {
     if (result.error)
       grok.shell.error(result.error);
 
-    return result.columnNames;
+    if (result.resultColumn && !df.col(result.resultColumn.name))
+      return DG.DataFrame.fromColumns([result.resultColumn]);
+
+    return DG.DataFrame.create();
   }
 
   @grok.decorators.fileViewer({
@@ -2706,7 +2709,6 @@ export class PackageFunctions {
         columns,
         selected.name,
         aggregationInput.value as WeightedAggregation,
-        false,
       );
 
       ui.empty(resultDiv);
@@ -2717,12 +2719,14 @@ export class PackageFunctions {
       const addColumnIcon = ui.iconFA(
         'plus',
         () => {
-          mpo(
+          const col = mpo(
             dataFrame,
             columns,
             selected.name,
             aggregationInput.value as WeightedAggregation,
           );
+          if (!dataFrame.col(col.name))
+            dataFrame.columns.add(col);
         },
         'Add MPO score as a column',
       );

@@ -1122,9 +1122,9 @@ export async function _mpo() : Promise<void> {
 //input: string profileName 
 //input: dynamic aggregation 
 //input: object currentProperties 
-//output: list res
+//output: dataframe result { action: join(df) }
 //meta.role: transform
-export async function mpoTransformFunction(df: DG.DataFrame, profileName: string, aggregation: any, currentProperties: any) : Promise<string[]> {
+export async function mpoTransformFunction(df: DG.DataFrame, profileName: string, aggregation: any, currentProperties: any) : Promise<any> {
   return await PackageFunctions.mpoTransformFunction(df, profileName, aggregation, currentProperties);
 }
 

@@ -101,16 +101,11 @@ export function mpo(
   columns: DG.Column[],
   profileName: string,
   aggregation: WeightedAggregation,
-  addResultColumn: boolean = true,
 ): DG.Column {
   if (columns.length === 0)
     throw new Error('No columns provided for MPO calculation.');
 
-  let resultColumn = dataFrame.col(profileName);
-  const isNew = !resultColumn;
-
-  if (!resultColumn)
-    resultColumn = DG.Column.float(profileName, columns[0].length);
+  const resultColumn = dataFrame.col(profileName) ?? DG.Column.float(profileName, columns[0].length);
 
   const desirabilityTemplates = columns.map((column) => {
     const tag = column.getTag('desirabilityTemplate');
@@ -142,9 +137,6 @@ export function mpo(
     return aggregate(scores, weights, aggregation);
   });
 
-  // Add the column to the table
-  if (isNew && addResultColumn)
-    dataFrame.columns.add(resultColumn);
   return resultColumn;
 }
 

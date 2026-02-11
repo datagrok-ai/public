@@ -55,6 +55,7 @@ export async function deleteMpoProfile(profile: MpoProfileInfo): Promise<void> {
 
 export type MpoCalculationResult = {
   columnNames: string[];
+  resultColumn?: DG.Column;
   warnings: string[];
   error?: string;
 };
@@ -88,7 +89,7 @@ export function calculateMpoCore(
 
   try {
     const resultCol = mpo(df, columns, profileName, aggregation);
-    return {columnNames: resultCol ? [resultCol.name] : [], warnings};
+    return {columnNames: resultCol ? [resultCol.name] : [], resultColumn: resultCol, warnings};
   } catch (e) {
     console.error('MPO Calculation Error:', e);
     return {
@@ -104,7 +105,6 @@ export async function computeMpo(
   profile: DesirabilityProfile,
   columnMapping: Record<string, string | null>,
   aggregation?: WeightedAggregation,
-  silent: boolean = false,
 ): Promise<string[]> {
   const mappedProperties: Record<string, PropertyDesirability> = {};
   for (const [propName, prop] of Object.entries(profile.properties)) {
@@ -112,20 +112,14 @@ export async function computeMpo(
     mappedProperties[columnName] = prop;
   }
 
-  if (silent) {
-    const result = calculateMpoCore(df, profile.name ?? 'MPO', mappedProperties, aggregation ?? 'Average');
-    return result.columnNames;
-  }
-
-  const [func] = await DG.Func.find({name: 'mpoTransformFunction'});
-  const funcCall = await func.prepare({
-    df,
-    profileName: profile.name ?? 'MPO',
+  const profileName = profile.name ?? 'MPO';
+  await grok.functions.call('Chem:mpoTransformFunction', {
+    df: df,
+    profileName,
     currentProperties: mappedProperties,
     aggregation: aggregation ?? 'Average',
-  }).call(undefined, undefined, {processed: false});
-
-  return funcCall.getOutputParamValue() ?? [];
+  });
+  return df.col(profileName) ? [profileName] : [];
 }
 
 export function findSuitableProfiles(df: DG.DataFrame, profiles: MpoProfileInfo[]): MpoProfileInfo[] {

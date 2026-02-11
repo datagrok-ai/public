@@ -52,15 +52,12 @@ export class BoltzService {
     return jsonResponse.result!;
   }
 
-  static async processBoltzResult(df: DG.DataFrame) {
-    const {grid} = grok.shell.getTableView(df.name);
-    const pdbCol = df.columns.byName('pdb');
-    const confidenceGridCol = grid.columns.byName('confidence_score');
-    const confidenceCol = confidenceGridCol?.column;
+  static processBoltzResult(resultDf: DG.DataFrame) {
+    const pdbCol = resultDf.columns.byName('pdb');
+    const confidenceCol = resultDf.columns.byName('confidence_score');
     if (!pdbCol || !confidenceCol) return;
-      
+
     pdbCol.semType = DG.SEMTYPE.MOLECULE3D;
-    confidenceGridCol.isTextColorCoded = true;
     confidenceCol.meta.colors.setLinear([DG.Color.red, DG.Color.green]);
     confidenceCol.meta.format = '0.000';
     confidenceCol.setTag(DG.TAGS.DESCRIPTION, BOLTZ_PROPERTY_DESCRIPTIONS['confidence_score']);
@@ -68,43 +65,40 @@ export class BoltzService {
   
   static async folding(df: DG.DataFrame, sequences: DG.Column): Promise<DG.DataFrame> {
     let resultDf = DG.DataFrame.create();
-    
+
     for (let [index, sequence] of sequences.toList().entries()) {
       const config: Config = {
         version: 1,
         sequences: []
       };
-  
+
       const chainId = String.fromCharCode(65 + index);
-  
+
       config.sequences.push({
-        protein: {  // Structure the sequence under the 'protein' field
-          id: chainId,  // Chain ID (e.g., 'A', 'B', etc.)
-          sequence: sequence  // The protein sequence
+        protein: { // Structure the sequence under the 'protein' field
+          id: chainId, // Chain ID (e.g., 'A', 'B', etc.)
+          sequence: sequence // The protein sequence
         }
       });
-  
+
       const yamlString = yaml.dump(config);
       const result = DG.DataFrame.fromCsv(await grok.functions.call('Boltz1:runBoltz', { config: yamlString, msa: '' }));
       resultDf.append(result, true);
     }
-  
-    df.columns.add(resultDf.columns.byName('pdb'));
-    df.columns.add(resultDf.columns.byName('confidence_score'));
-    await this.processBoltzResult(df);
-    await grok.data.detectSemanticTypes(df);
-  
-    return df;
+
+    this.processBoltzResult(resultDf);
+    await grok.data.detectSemanticTypes(resultDf);
+    return resultDf;
   }  
   
   static async docking(df: DG.DataFrame, molecules: DG.Column, config: string): Promise<DG.DataFrame> {
     const configFile = (await grok.dapi.files.list(`${BOLTZ_CONFIG_PATH}/${config}`)).find((file) => file.extension === 'yaml')!;
     const msa = (await grok.dapi.files.list(`${BOLTZ_CONFIG_PATH}/${config}`)).find((file) => file.extension === 'a3m');
-    
+
     let msaFile = '';
     if (msa)
       msaFile = await grok.dapi.files.readAsText(msa.fullPath);
-    
+
     const existingConfig = yaml.load(await configFile.readAsString()) as any;
     let resultDf = DG.DataFrame.create();
 
@@ -114,32 +108,29 @@ export class BoltzService {
       const constraints = existingConfig.constraints;
 
       const chainId = String.fromCharCode(65 + index);
-        
+
       const ligandBlock = {
         ligand: {
           id: [chainId],
-          smiles: isSmiles 
-            ? molecule 
+          smiles: isSmiles
+            ? molecule
             : await grok.chem.convert(molecule, DG.chem.Notation.Unknown, DG.chem.Notation.Smiles),
         },
       };
-  
+
       sequences.push(ligandBlock);
       constraints[0].pocket.binder = chainId;
       const updatedConfig = yaml.dump(existingConfig);
-      
+
       const result = DG.DataFrame.fromCsv(await grok.functions.call('Boltz1:runBoltz', { config: updatedConfig, msa: msaFile}));
       resultDf.append(result, true);
 
       sequences.pop();
     }
 
-    df.columns.add(resultDf.columns.byName('pdb'));
-    df.columns.add(resultDf.columns.byName('confidence_score'));
-    await this.processBoltzResult(df);
-    await grok.data.detectSemanticTypes(df);
-  
-    return df;
+    this.processBoltzResult(resultDf);
+    await grok.data.detectSemanticTypes(resultDf);
+    return resultDf;
   }
   
   static async boltzWidget(molecule: DG.SemanticValue): Promise<DG.Widget<any> | null> {
