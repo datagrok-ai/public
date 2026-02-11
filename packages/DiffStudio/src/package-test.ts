@@ -4,6 +4,7 @@ import './tests/numerical-methods-tests';
 import './tests/features-tests';
 import './tests/platform-funcs-tests';
 import './tests/pipeline-tests';
+import './tests/demo-models-tests';
 
 export const _package = new DG.Package();
 export {tests};

@@ -63,7 +63,6 @@ export async function runDiffStudioTreeBrowser(treeNode: any) : Promise<void> {
 
 //name: Ball flight
 //description: Ball flight simulation
-//tags: model
 //input: double dB = 0.01 { category: Ball; caption: Diameter; units: m; min: 0.01; max: 0.3; minFormula: roB / 20000; maxFormula: roB / 4000 }
 //input: double roB = 200 { category: Ball; caption: Density; description: Material density; units: kg/m^3; min: 200; max: 1200 }
 //input: double v = 50 { category: Throw parameters; caption: Velocity; min: 40; max: 60; units: m/sec }
@@ -71,6 +70,7 @@ export async function runDiffStudioTreeBrowser(treeNode: any) : Promise<void> {
 //output: double maxDist { caption: Max distance }
 //output: double maxHeight { caption: Max height }
 //output: dataframe df { caption: Trajectory; viewer: Line chart(block: 60, multiAxis: "false", multiAxisLegendPosition: "RightCenter", autoLayout: "false", showAggrSelectors: "false") | Grid(block: 40) }
+//meta.role: model
 //editor: Compute:RichFunctionViewEditor
 //sidebar: @compute
 //meta.runOnOpen: true
@@ -104,7 +104,7 @@ export async function solveODE(problem: string) : Promise<any> {
 
 //name: PK-PD
 //description: In-browser two-compartment pharmacokinetic-pharmacodynamic (PK-PD) simulation
-//tags: model
+//meta.role: model
 //meta.icon: files/icons/pkpd.png
 export async function pkPdNew() : Promise<void> {
   await PackageFunctions.pkPdNew();
@@ -120,7 +120,7 @@ export async function demoSimPKPD() : Promise<any> {
 }
 
 //description: Controlled fab-arm exchange mechanism simulation
-//tags: model
+//meta.role: model
 //meta.icon: files/icons/bioreactor.png
 export async function Bioreactor() : Promise<void> {
   await PackageFunctions.Bioreactor();

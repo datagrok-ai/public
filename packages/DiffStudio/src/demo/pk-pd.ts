@@ -1,10 +1,10 @@
 /** PK-PD demo model */
 
 import {LINK} from '../ui-constants';
-import {Model} from '../model';
+import {ModelInfo} from '../model';
 
 /** PK-PD model specification */
-const MODEL = `#name: PK-PD
+const PK_PD_MODEL = `#name: PK-PD
 #equations:
   d(depot)/dt = -KA * depot
   d(centr)/dt = KA * depot - CL * C2 - Q * C2 + Q * C3
@@ -70,5 +70,8 @@ enables the creation of complex models without writing code.
 * [Sensitivity analysis](${LINK.SENS_AN})
 * [Parameter optimization](${LINK.FITTING})`;
 
-/** PK-PD demo model */
-export const PK_PD_DEMO = new Model(MODEL, UI_OPTS, INFO);
+export const PK_PD_MODEL_INFO: ModelInfo = {
+  equations: PK_PD_MODEL,
+  uiOptions: UI_OPTS,
+  info: INFO,
+};
