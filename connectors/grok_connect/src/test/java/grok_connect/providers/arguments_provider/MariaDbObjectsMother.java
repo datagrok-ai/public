@@ -23,6 +23,15 @@ public class MariaDbObjectsMother {
                 FuncCallBuilder.fromQuery("SELECT * FROM JSON_TYPE")), expected));
     }
 
+    public static Stream<Arguments> getSchemas_ok() {
+        DataFrame expected = DataFrameBuilder.getBuilder()
+                .setRowCount(1)
+                .setColumn(new StringColumn(new String[] {"datagrok", "information_schema"}),
+                        "table_schema")
+                .build();
+        return Stream.of(Arguments.of(expected));
+    }
+
     public static Stream<Arguments> getSchema_ok() {
         String firstColumnName = "table_schema";
         String secondColumnName = "table_name";
