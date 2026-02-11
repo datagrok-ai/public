@@ -46,6 +46,10 @@ export namespace funcs {
     return await grok.functions.call('PowerPack:KpiWidget', {});
   }
 
+  export async function cronInput(): Promise<any> {
+    return await grok.functions.call('PowerPack:CronInput', {});
+  }
+
   export async function isFormulaColumn(col: DG.Column ): Promise<boolean> {
     return await grok.functions.call('PowerPack:IsFormulaColumn', { col });
   }

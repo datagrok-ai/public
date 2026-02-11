@@ -46,6 +46,14 @@ export function kpiWidget() : any {
   return PackageFunctions.kpiWidget();
 }
 
+//output: object result
+//meta.propertyType: string
+//meta.semType: cron
+//meta.role: valueEditor
+export function cronInput() : any {
+  return PackageFunctions.cronInput();
+}
+
 //input: column col 
 //output: bool result
 export function isFormulaColumn(col: DG.Column) : boolean {
