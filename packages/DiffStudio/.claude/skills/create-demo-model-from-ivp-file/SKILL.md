@@ -31,7 +31,7 @@ Throughout this skill, the model name extracted from the IVP file is transformed
    - Read the entire file content as a raw string (it will be used as the equations constant).
 
 3. **Generate TS file**: create `src/demos/<kebab-case>.ts` with the following content:
-```ts
+   ```ts
    import {LINK} from '../ui-constants';
    import {ModelInfo} from '../model';
 
@@ -60,19 +60,19 @@ Throughout this skill, the model name extracted from the IVP file is transformed
      uiOptions: UI_OPTS,
      info: INFO,
    };
-```
+   ```
 
    > **Note**: when embedding the IVP file content inside a template literal, escape any backticks (`` ` ``) and `${` sequences found in the file.
 
 4. **Update the package file** `src/package.ts`:
 
    a. **Add import** for use in the class method:
-```ts
+   ```ts
    import {<UPPER_SNAKE_CASE>_MODEL_INFO} from './demo/<kebab-case>';
-```
+   ```
 
    b. **Add method** to the `PackageFunctions` class (in alphabetical order among existing model methods):
-```ts
+   ```ts
    @grok.decorators.model({
      name: '<Original model name from IVP>',
      description: '<model-description>',
@@ -82,7 +82,7 @@ Throughout this skill, the model name extracted from the IVP file is transformed
      const model = new Model(<UPPER_SNAKE_CASE>_MODEL_INFO);
      await model.run();
    }
-```
+   ```
 
    - Omit `description` from the decorator if no description was found in the IVP file.
    - Omit `icon` from the decorator if no PNG file was provided.
