@@ -63,7 +63,7 @@ export async function runDiffStudioTreeBrowser(treeNode: any) : Promise<void> {
 
 //name: Acid Production
 //description: Gluconic acid (GA) production by Aspergillus niger modeling
-//meta.role: model
+//tags: model
 //meta.icon: files/icons/ga-production.png
 export async function acidProduction() : Promise<void> {
   await PackageFunctions.acidProduction();
@@ -78,7 +78,7 @@ export async function acidProduction() : Promise<void> {
 //output: double maxDist { caption: Max distance }
 //output: double maxHeight { caption: Max height }
 //output: dataframe df { caption: Trajectory; viewer: Line chart(block: 60, multiAxis: "false", multiAxisLegendPosition: "RightCenter", autoLayout: "false", showAggrSelectors: "false") | Grid(block: 40) }
-//meta.role: model
+//tags: model
 //editor: Compute:RichFunctionViewEditor
 //sidebar: @compute
 //meta.runOnOpen: true
@@ -112,7 +112,7 @@ export async function solveODE(problem: string) : Promise<any> {
 
 //name: PK-PD
 //description: In-browser two-compartment pharmacokinetic-pharmacodynamic (PK-PD) simulation
-//meta.role: model
+//tags: model
 //meta.icon: files/icons/pkpd.png
 export async function pkPdNew() : Promise<void> {
   await PackageFunctions.pkPdNew();
@@ -129,14 +129,14 @@ export async function demoSimPKPD() : Promise<any> {
 
 //name: Pollution
 //description: The chemical reaction part of the air pollution model developed at The Dutch National Institute of Public Health and Environmental Protection
-//meta.role: model
+//tags: model
 //meta.icon: files/icons/pollution.png
 export async function pollution() : Promise<void> {
   await PackageFunctions.pollution();
 }
 
 //description: Controlled fab-arm exchange mechanism simulation
-//meta.role: model
+//tags: model
 //meta.icon: files/icons/bioreactor.png
 export async function Bioreactor() : Promise<void> {
   await PackageFunctions.Bioreactor();
