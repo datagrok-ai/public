@@ -63,7 +63,11 @@ export const getDockSpawnConfig = (func: DG.Func) => {
 
 export const getRunLabel = (func: DG.Func) => {
   return func.options['runLabel'];
-};
+}
+
+export const getCustomExports = (func: DG.Func) => {
+  return JSON.parse(func.options['customExports'] ?? '[]');
+}
 
 export const getFeature = (features: Record<string, boolean> | string[], featureName: string, defaultValue: boolean) => {
   if (features instanceof Array)
