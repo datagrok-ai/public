@@ -134,7 +134,7 @@ export type FuncCallActionConfiguration<P> = PipelineLinkConfigurationBase<P> & 
   handler: FunccallActionHandler;
 } & ActionInfo;
 
-const actionPositions = ['buttons', 'menu', 'none'] as const;
+const actionPositions = ['buttons', 'menu', 'globalmenu', 'none'] as const;
 export type ActionPositions = typeof actionPositions[number];
 
 // static steps config

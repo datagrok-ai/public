@@ -22,7 +22,7 @@ import {
   findNextStep,
   findNextSubStep,
   findNodeWithPathByUuid, findPrevStep, findTreeNodeByPath,
-  findTreeNodeParrent, hasInconsistencies, hasSubtreeFixableInconsistencies,
+  findTreeNodeParrent, getRelevantGlobalActions, hasInconsistencies, hasSubtreeFixableInconsistencies,
   reportTree,
 } from '../../utils';
 import {useReactiveTreeDriver} from '../../composables/use-reactive-tree-driver';
@@ -405,9 +405,14 @@ export const TreeWizard = Vue.defineComponent({
     });
 
     const menuActions = Vue.computed(() => {
-      return chosenStepState.value?.actions?.reduce((acc, action) => {
+      if (!treeState.value || !chosenStepUuid.value)
+        return {};
+      const globalActions = getRelevantGlobalActions(treeState.value, chosenStepUuid.value);
+      const currentStepActions = chosenStepState.value?.actions?.filter(action => action.position === 'menu') ?? [];
+      const actions = [...globalActions, ...currentStepActions];
+      return actions.reduce((acc, action) => {
         const menuCategory = action.menuCategory ?? 'Actions';
-        if (action.position === 'menu') {
+        if (action.position === 'menu' || action.position === 'globalmenu') {
           if (acc[menuCategory])
             acc[menuCategory].push(action);
           else
@@ -742,7 +747,6 @@ export const TreeWizard = Vue.defineComponent({
               state={chosenStepState.value}
               uuid={chosenStepUuid.value}
               isRoot={isRootChoosen.value}
-              menuActions={menuActions.value}
               buttonActions={buttonActions.value}
               onActionRequested={runActionWithConfirmation}
               dock-spawn-title='Step sequence review'

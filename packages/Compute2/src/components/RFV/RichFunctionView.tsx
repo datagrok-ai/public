@@ -430,7 +430,7 @@ export const RichFunctionView = Vue.defineComponent({
               DG.Utils.download(`${currentCall.value.func.nqName} - ${Utils.getStartedOrNull(currentCall.value) ?? 'Not completed'}.xlsx`, blob);
             }}
             tooltip='Generate standard report for the current step'
-          />}
+          /> }
           { isFittingEnabled.value && <IconImage
             name='fitting'
             path={`${_package.webRoot}files/icons/icon-chart-dots.svg`}

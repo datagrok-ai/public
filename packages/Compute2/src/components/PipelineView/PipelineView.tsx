@@ -28,9 +28,6 @@ export const PipelineView = Vue.defineComponent({
     uuid: {
       type: String,
     },
-    menuActions: {
-      type: Object as Vue.PropType<Record<string, ViewAction[]>>,
-    },
     buttonActions: {
       type: Object as Vue.PropType<ViewAction[]>,
     },
@@ -69,7 +66,6 @@ export const PipelineView = Vue.defineComponent({
     const state = Vue.computed(() => props.state);
     const currentCall = Vue.computed(() => props.funcCall ? Vue.markRaw(props.funcCall) : undefined);
 
-    const menuActions = Vue.computed(() => props.menuActions);
     const buttonActions = Vue.computed(() => props.buttonActions);
     const currentView = Vue.computed(() => Vue.markRaw(props.view));
     const isRoot = Vue.computed(() => props.isRoot);
@@ -100,20 +96,9 @@ export const PipelineView = Vue.defineComponent({
     });
 
     const cardsClasses = 'grok-app-card grok-gallery-grid-item-wrapper pr-4';
-    const menuIconStyle = {width: '15px', display: 'inline-block', textAlign: 'center'};
 
     return () => (
       <div class='w-full h-full flex'>
-        { menuActions.value && Object.entries(menuActions.value).map(([category, actions]) =>
-          <RibbonMenu groupName={category} view={currentView.value}>
-            {
-              actions.map((action) => Vue.withDirectives(
-                <span onClick={() => emit('actionRequested', action.uuid)}>
-                  <div> { action.icon && <IconFA name={action.icon} style={menuIconStyle}/> } { action.friendlyName ?? action.uuid } </div>
-                </span>, [[tooltip, action.description]]))
-            }
-          </RibbonMenu>)
-        }
         <RibbonPanel view={currentView.value}>
           { <IconFA
               name='question'

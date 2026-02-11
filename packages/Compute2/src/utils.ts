@@ -11,6 +11,7 @@ import {
   PipelineStateParallel,
   PipelineStateSequential,
   StepFunCallState,
+  ViewAction,
 } from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineInstance';
 import {zipSync, Zippable} from 'fflate';
 import {dfToViewerMapping, getFuncCallDefaultFilename, replaceForWindowsPath, richFunctionViewReport} from '@datagrok-libraries/compute-utils';
@@ -143,6 +144,20 @@ export const hasSubtreeFixableInconsistencies = (
       false,
   );
 };
+
+export function getRelevantGlobalActions(data: PipelineState, currentStepUuid: string) : ViewAction[] {
+  const nodePaths = _findTreeNode([data], (state) => state.uuid === currentStepUuid);
+  const segments = nodePaths?.pathSegments ?? [];
+  const states: PipelineState[] = [data];
+  for (let idx = 1, currentState = data; idx < segments.length; idx++) {
+    if (isFuncCallState(currentState))
+      break;
+    currentState = currentState.steps[segments[idx]];
+    states.push(currentState);
+  }
+  const globalActions = states.flatMap(state => state?.actions?.filter(action => action.position === 'globalmenu') ?? []);
+  return globalActions;
+}
 
 export const hasInconsistencies = (consistencyStates?: Record<string, ConsistencyInfo>) => {
   const firstInconsistency = Object.values(consistencyStates || {}).find(
