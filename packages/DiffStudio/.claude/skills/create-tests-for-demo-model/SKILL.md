@@ -1,7 +1,7 @@
 ---
 name: create-tests-for-demo-model
 description: Create tests for Diff Studio demo models
-argument-hint: [ts-file path]
+argument-hint: <ts-file path>
 ---
 
 # Create Tests for Diff Studio Demo Model
