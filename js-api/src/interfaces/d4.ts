@@ -162,10 +162,6 @@ export interface IBarChartSettings {
 
   // Properties common for all viewers
   // todo: use code generation
-  // Properties common for all viewers
-  // todo: use code generation
-  // Properties common for all viewers
-  // todo: use code generation
   showContextMenu: boolean;
 
   title: string;
@@ -176,27 +172,15 @@ export interface IBarChartSettings {
 
   /// Viewer description that gets shown at the *Descriptor Position*.
   /// Markup is supported.
-  /// Viewer description that gets shown at the *Descriptor Position*.
-  /// Markup is supported.
-  /// Viewer description that gets shown at the *Descriptor Position*.
-  /// Markup is supported.
   description: string;
 
-  /// Help to be shown when user clicks on the '?' icon on top.
-  /// Could either be in markdown, or a URL (starting with '/' or 'http').
-  /// Help to be shown when user clicks on the '?' icon on top.
-  /// Could either be in markdown, or a URL (starting with '/' or 'http').
   /// Help to be shown when user clicks on the '?' icon on top.
   /// Could either be in markdown, or a URL (starting with '/' or 'http').
   help: string;
 
   /// Namespace-qualified function that gets executed when a viewer is initialized
-  /// Namespace-qualified function that gets executed when a viewer is initialized
-  /// Namespace-qualified function that gets executed when a viewer is initialized
   initializationFunction: string;
 
-  /// JavaScript that gets executed after a viewer is initialized and added to the TableView
-  /// JavaScript that gets executed after a viewer is initialized and added to the TableView
   /// JavaScript that gets executed after a viewer is initialized and added to the TableView
   onInitializedScript: string;
 
