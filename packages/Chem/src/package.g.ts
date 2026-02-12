@@ -255,6 +255,17 @@ export function SubstructureSearchTopMenu(molecules: DG.Column) : void {
   PackageFunctions.SubstructureSearchTopMenu(molecules);
 }
 
+//name: BitBIRCH Clustering
+//description: O(N) incremental clustering of molecules based on binary fingerprint similarity
+//input: dataframe table 
+//input: column molecules { semType: Molecule }
+//input: double threshold = 0.65 { caption: Threshold; min: 0; max: 1 }
+//input: string fingerprintType = 'Morgan' { caption: Fingerprint type; choices: ["Morgan","RDKit","Pattern","AtomPair","MACCS","TopologicalTorsion"] }
+//top-menu: Chem | Calculate | BitBIRCH Clustering...
+export async function bitbirchClusteringTopMenu(table: DG.DataFrame, molecules: DG.Column, threshold: number, fingerprintType: string) : Promise<void> {
+  await PackageFunctions.bitbirchClusteringTopMenu(table, molecules, threshold, fingerprintType);
+}
+
 //name: Cluster MCS
 //description: Calculates most common substructures for each cluster
 //input: dataframe table 

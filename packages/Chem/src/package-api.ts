@@ -321,6 +321,13 @@ export namespace funcs {
   }
 
   /**
+  O(N) incremental clustering of molecules based on binary fingerprint similarity
+  */
+  export async function bitbirchClusteringTopMenu(table: DG.DataFrame , molecules: DG.Column , threshold: any , fingerprintType: string ): Promise<void> {
+    return await grok.functions.call('Chem:BitbirchClusteringTopMenu', { table, molecules, threshold, fingerprintType });
+  }
+
+  /**
   Calculates most common substructures for each cluster
   */
   export async function clusterMCSTopMenu(table: DG.DataFrame , molCol: DG.Column , clusterCol: DG.Column ): Promise<void> {
@@ -338,7 +345,7 @@ export namespace funcs {
     return await grok.functions.call('Chem:ChemSpaceEditor', { call });
   }
 
-  export async function getFingerprints(col: DG.Column , _metric?: any , fingerprintType?: string ): Promise<any> {
+  export async function getFingerprints(col: DG.Column , _metric?: string , fingerprintType?: string ): Promise<any> {
     return await grok.functions.call('Chem:GetFingerprints', { col, _metric, fingerprintType });
   }
 
