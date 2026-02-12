@@ -654,7 +654,7 @@ export class PackageFunctions {
   static async bitbirchClusteringTopMenu(
     table: DG.DataFrame,
     @grok.decorators.param({type: 'column', options: {semType: 'Molecule'}}) molecules: DG.Column,
-    @grok.decorators.param({type: 'double', options: {initialValue: '0.65', caption: 'Threshold', min: '0', max: '1'}}) threshold: number = 0.65,
+    @grok.decorators.param({type: 'double', options: {initialValue: '0.55', caption: 'Threshold', min: '0', max: '1'}}) threshold: number = 0.65,
     @grok.decorators.param({
       type: 'string',
       options: {
@@ -664,10 +664,9 @@ export class PackageFunctions {
       },
     }) fingerprintType: string = 'Morgan',
   ): Promise<void> {
-    const PG = DG.TaskBarProgressIndicator.create('BitBIRCH clustering...');
     try {
-      const {bitbirchClustering} = await import('./analysis/bitbirch-clustering');
-      const col = await bitbirchClustering(
+      const {bitbirchWorker} = await import('./analysis/bit-birch/bitbirch-clustering');
+      const col = await bitbirchWorker(
         molecules, threshold, fingerprintType as Fingerprint);
       col.name = table.columns.getUnusedName(col.name);
       table.columns.add(col);
@@ -675,7 +674,6 @@ export class PackageFunctions {
       grok.shell.error('BitBIRCH Clustering Error');
       console.error(e);
     }
-    PG.close();
   }
 
   @grok.decorators.func({

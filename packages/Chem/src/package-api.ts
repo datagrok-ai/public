@@ -323,7 +323,7 @@ export namespace funcs {
   /**
   O(N) incremental clustering of molecules based on binary fingerprint similarity
   */
-  export async function bitbirchClusteringTopMenu(table: DG.DataFrame , molecules: DG.Column , threshold: any , fingerprintType: string ): Promise<void> {
+  export async function bitbirchClusteringTopMenu(table: DG.DataFrame , molecules: DG.Column , threshold: number , fingerprintType: string ): Promise<void> {
     return await grok.functions.call('Chem:BitbirchClusteringTopMenu', { table, molecules, threshold, fingerprintType });
   }
 
@@ -810,7 +810,7 @@ export namespace funcs {
     return await grok.functions.call('Chem:Mpo', {});
   }
 
-  export async function mpoTransformFunction(df: DG.DataFrame , profileName: string , aggregation: any , currentProperties: any ): Promise<any> {
+  export async function mpoTransformFunction(df: DG.DataFrame , profileName: string , aggregation: any , currentProperties: any ): Promise<DG.DataFrame> {
     return await grok.functions.call('Chem:MpoTransformFunction', { df, profileName, aggregation, currentProperties });
   }
 
