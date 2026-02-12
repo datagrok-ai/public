@@ -1,0 +1,72 @@
+.preclinical-case-add-domain-to-workspace-icon {
+    color: var(--blue-1);
+    font-weight: 500;
+    margin-top: 18px;
+    margin-right: 20px;
+    align-self: flex-end;
+    max-height: 20px;
+}
+
+.preclinical-case-import-study-button {
+    margin-top: 20px !important;
+}
+
+.preclinical-case-validation-error-cell {
+    display: flex;
+    gap: 4px;
+    padding: 4px 4px;
+}
+
+.preclinical-case-validation-error-mark {
+    color: #dc3545;
+    cursor: help;
+    font-size: 10px;
+    padding-top: 2px;
+}
+
+.preclinical-case-study-import-view .ui-files-input-summary-indicator {
+    padding-bottom: 6px;
+}
+
+.preclinical-case-study-import-in-progress-div {
+    height: 30px;
+}
+
+.cross-domain-viewers-div .d4-viewer-title {
+    display: flex!important;
+}
+
+.preclinical-case-legend {
+    gap: 4px;
+    margin-left: 10px !important;
+    cursor: default !important;
+}
+
+.preclinical-case-legend-dot {
+    width: 10px;
+    height: 10px;
+    min-width: 10px;
+    border-radius: 50%;
+    border-width: 2px;
+    border-style: solid;
+    cursor: default;
+}
+
+.preclinical-case-legend-tooltip-row {
+    align-items: center;
+    gap: 6px;
+}
+
+.preclinical-case-legend-tooltip-dot {
+    width: 10px;
+    height: 10px;
+    min-width: 10px;
+    border-radius: 50%;
+    border-width: 2px;
+    border-style: solid;
+}
+
+.preclinical-case-legend-tooltip-label {
+    white-space: nowrap;
+    font-size: 12px;
+}

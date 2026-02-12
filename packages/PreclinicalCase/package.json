@@ -1,0 +1,70 @@
+{
+  "name": "preclinicalcase",
+  "friendlyName": "PreclinicalCase",
+  "version": "0.0.1",
+    "author": {
+    "name": "Maria Dolotova",
+    "email": "mdolotova@datagrok.ai"
+  },
+  "description": "PreclinicalCase package",
+  "dependencies": {
+    "@datagrok-libraries/utils": "../../libraries/utils",
+    "@datagrok-libraries/gridext": "^1.5.3",
+    "datagrok-api": "../../js-api",
+    "rxjs": "^6.5.5",
+    "x2js": "^3.4.4",
+    "dayjs": "^1.11.13",
+    "@datagrok-libraries/test": "^1.1.0"
+  },
+  "devDependencies": {
+    "@typescript-eslint/eslint-plugin": "^5.32.0",
+    "@typescript-eslint/parser": "^5.32.0",
+    "css-loader": "^7.1.2",
+    "datagrok-tools": "^5.1.5",
+    "eslint": "^8.21.0",
+    "eslint-config-google": "^0.14.0",
+    "style-loader": "^4.0.0",
+    "ts-loader": "^9.5.1",
+    "typescript": "^5.0.4",
+    "webpack": "^5.95.0",
+    "webpack-cli": "^4.7.2"
+  },
+  "scripts": {
+    "debug-preclinicalcase": "webpack && grok publish",
+    "release-preclinicalcase": "webpack && grok publish --release",
+    "build-preclinicalcase": "webpack",
+    "build": "grok api && grok check --soft && webpack",
+    "test": "grok test",
+    "debug-preclinicalcase-dev": "webpack && grok publish dev",
+    "release-preclinicalcase-dev": "webpack && grok publish dev --release",
+    "debug-preclinicalcase-public": "webpack && grok publish public",
+    "release-preclinicalcase-public": "webpack && grok publish public --release",
+    "debug-preclinicalcase-test": "webpack && grok publish test",
+    "release-preclinicalcase-test": "webpack && grok publish test --release",
+    "debug-preclinicalcase-sandbox": "webpack && grok publish sandbox",
+    "release-preclinicalcase-sandbox": "webpack && grok publish sandbox --release",
+    "debug-preclinicalcase-release": "webpack && grok publish release",
+    "release-preclinicalcase-release": "webpack && grok publish release --release",
+    "debug-preclinicalcase-release2": "webpack && grok publish release2",
+    "release-preclinicalcase-release2": "webpack && grok publish release2 --release",
+    "debug-preclinicalcase-arena": "webpack && grok publish arena",
+    "release-preclinicalcase-arena": "webpack && grok publish arena --release",
+    "debug-preclinicalcase-datagrok-rc.neomorph.com": "webpack && grok publish datagrok-rc.neomorph.com",
+    "release-preclinicalcase-datagrok-rc.neomorph.com": "webpack && grok publish datagrok-rc.neomorph.com --release"
+  },
+  "canEdit": [
+    "Developers"
+  ],
+  "canView": [
+    "All users"
+  ],
+    "category": "Health",
+  "overrides": {
+    "datagrok-api": "$datagrok-api"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/datagrok-ai/public.git",
+    "directory": "packages/PreclinicalCase"
+  }
+}
