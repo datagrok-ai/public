@@ -107,6 +107,13 @@ public class SqlAnnotator {
             }
         }
 
+        if (GrokConnectUtil.isNotEmpty(query.connection.getDb())) {
+            String db = query.connection.getDb();
+            for (serialization.Column<?> col : table.columns)
+                if (col.getTag(Tags.Db) == null)
+                    col.setTag(Tags.Db, db);
+        }
+
         table.tags.put(Tags.DataConnectionId, query.connection.id);
     }
 
@@ -171,7 +178,7 @@ public class SqlAnnotator {
             return null;
 
         if (!(ti instanceof DerivedTableInfo))
-            return new ColumnLineage(ti.table, ti.schema, colName);
+            return new ColumnLineage(ti.database, ti.table, ti.schema, colName);
 
         DerivedTableInfo dti = (DerivedTableInfo) ti;
 
@@ -208,6 +215,7 @@ public class SqlAnnotator {
             map.put(
                     alias,
                     new TableInfo(
+                            normalize(t.getDatabase().getDatabaseName()),
                             normalize(t.getSchemaName()),
                             normalize(t.getName()),
                             alias
@@ -247,6 +255,8 @@ public class SqlAnnotator {
             col.setTag(Tags.DbColumn, col.name);
             if (ti.schema != null)
                 col.setTag(Tags.DbSchema, ti.schema);
+            if (ti.database != null)
+                col.setTag(Tags.Db, ti.database);
         }
     }
 
@@ -257,6 +267,8 @@ public class SqlAnnotator {
             col.setTag(Tags.DbColumn, cl.column);
             if (cl.schema != null)
                 col.setTag(Tags.DbSchema, cl.schema);
+            if (cl.database != null)
+                col.setTag(Tags.Db, cl.database);
         }
     }
 
@@ -367,11 +379,13 @@ public class SqlAnnotator {
     }
 
     private static class TableInfo {
+        String database;
         String schema;
         String table;
         String alias;
 
-        TableInfo(String s, String t, String a) {
+        TableInfo(String d, String s, String t, String a) {
+            database = d;
             schema = s;
             table = t;
             alias = a;
@@ -382,7 +396,7 @@ public class SqlAnnotator {
         Map<String, ColumnLineage> columnLineage;
 
         DerivedTableInfo(String a, Map<String, ColumnLineage> lineages) {
-            super(null, null, a);
+            super(null, null, null, a);
             columnLineage = lineages;
         }
     }
@@ -398,11 +412,13 @@ public class SqlAnnotator {
     }
 
     private static class ColumnLineage {
+        String database;
         String table;
         String schema;
         String column;
 
-        ColumnLineage(String table, String schema, String column) {
+        ColumnLineage(String database, String table, String schema, String column) {
+            this.database = database;
             this.table = table;
             this.schema = schema;
             this.column = column;
