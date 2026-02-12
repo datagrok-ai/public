@@ -54,6 +54,11 @@ class MpoProfileManagerImpl {
     return {profile: clone, fileName: cloneFileName};
   }
 
+  generateFileName(profileName: string): string {
+    const base = profileName.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+    return this.getNextAvailable(base, this.existingFileNames, (b, n) => n ? `${b}-${n}.json` : `${b}.json`);
+  }
+
   confirmDelete(profile: MpoProfileInfo, onDeleted?: () => void): void {
     ui.dialog('Delete profile')
       .add(ui.divText(`Are you sure you want to delete profile "${profile.name}"?`))

@@ -112,29 +112,19 @@ export class MpoProfileCreateView {
   private initSaveButton() {
     this.saveButton = ui.bigButton('Save', async () => {
       await MpoProfileManager.ensureLoaded();
-      const existingFileNames = MpoProfileManager.existingFileNames;
-      const fileNameInput = ui.input.string('File name', {value: this.fileName ?? 'mpo-profile.json', nullable: false});
-      const normalizeFileName = (name: string) =>
-        name.endsWith('.json') ? name : `${name}.json`;
 
-      fileNameInput.addValidator((value) => {
-        const normalized = normalizeFileName(value);
-        const canOverwrite = this.isEditMode && normalized === this.fileName;
-        if (!canOverwrite && existingFileNames?.has(normalized))
-          return `File "${normalized}" already exists`;
-        return null;
-      });
-
-      const nameInput = ui.input.string('Name', {value: this.profile.name ?? ''});
+      const nameInput = ui.input.string('Name', {value: this.profile.name ?? '', nullable: false});
       const descInput = ui.input.string('Description', {value: this.profile.description ?? ''});
 
       const dlg = ui.dialog({title: 'Save MPO Profile'})
-        .add(ui.divV([fileNameInput, nameInput, descInput]))
+        .add(ui.divV([nameInput, descInput]))
         .onOK(async () => {
           this.profile.name = nameInput.value || '';
           this.profile.description = descInput.value || '';
 
-          const fileName = normalizeFileName(fileNameInput.value!.trim());
+          const fileName = this.isEditMode ?
+            this.fileName! :
+            MpoProfileManager.generateFileName(nameInput.value!.trim());
           const saved = await MpoProfileManager.save(this.profile, fileName);
           if (saved) {
             this.fileName = fileName;
@@ -144,7 +134,8 @@ export class MpoProfileCreateView {
         .show();
 
       const okButton = dlg.getButton('OK');
-      fileNameInput.onInput.subscribe(() => okButton.disabled = !fileNameInput.validate());
+      okButton.disabled = !nameInput.validate();
+      nameInput.onInput.subscribe(() => okButton.disabled = !nameInput.validate());
     });
 
     this.saveButton.style.display = 'none';
