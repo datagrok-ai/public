@@ -68,7 +68,7 @@ export class MpoProfileCreateView {
 
     this.tableView = DG.TableView.create(DG.DataFrame.create(0), false);
     this.tableView.name = this.view.name = this.isEditMode ?
-      `Edit ${this.profile.name ?? 'MPO'} Profile` :
+      `Edit ${this.profile.name || 'MPO'} Profile` :
       'Create MPO Profile';
     this.dockTableView();
 
@@ -162,6 +162,7 @@ export class MpoProfileCreateView {
             await this.runProbabilisticMpo();
             return;
           }
+          this.closePMpoPanels();
           this.setTableViewVisible(false);
           this.attachLayout();
         },
@@ -282,6 +283,8 @@ export class MpoProfileCreateView {
     }
 
     this.pMpoDockedItems = null;
+    if (this.saveButton)
+      (this.isEditMode ? this.view : this.tableView).setRibbonPanels([[this.saveButton]]);
   }
 
   private async runProbabilisticMpo(): Promise<void> {

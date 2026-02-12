@@ -112,7 +112,7 @@ export async function computeMpo(
     mappedProperties[columnName] = prop;
   }
 
-  const profileName = profile.name ?? 'MPO';
+  const profileName = profile.name || 'MPO';
   await grok.functions.call('Chem:mpoTransformFunction', {
     df: df,
     profileName,
