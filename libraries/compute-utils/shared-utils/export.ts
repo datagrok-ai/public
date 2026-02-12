@@ -62,21 +62,22 @@ export const richFunctionViewReport = async (
         sheet: ExcelJS.Worksheet,
         viewer: DG.Viewer | undefined,
         columnForImage: number, rowForImage = 0,
-        options?: { heightInCells?: number, widthInCells?: number, widthToRender: number, heightToRender: number},
       ) => {
         if (!viewer || !viewer.dataFrame)
           return;
         const newViewer = DG.Viewer.fromType(viewer.type, viewer.dataFrame.clone());
         newViewer.copyViewersLook(viewer);
 
+        let width = 1280;
+        let height = 720;
+
         const viewerBox = ui.div(newViewer.root, {style: {
-          height: `${options?.heightToRender ?? 800}px`,
-          width: `${options?.widthToRender ?? 800}px`,
+          width: `${width}px`,
+          height: `${height}px`,
         }});
         viewerBox.classList.add('ui-box');
         viewerBox.classList.remove('ui-div');
         grok.shell.v.root.insertAdjacentElement('afterend', viewerBox);
-
         await delay(1000);
         const imageDataUrl = (await loadedHtml2canvas(viewerBox)).toDataURL();
 
@@ -87,15 +88,9 @@ export const richFunctionViewReport = async (
           extension: 'png',
         });
 
-        const ratio = (options?.heightInCells || options?.widthInCells) ?
-          Math.min(
-            (options?.heightInCells ?? Number.MAX_VALUE) / (800 / 20),
-            (options?.widthInCells ?? Number.MAX_VALUE) / (800 / 100),
-          ): 1;
-
         sheet.addImage(imageId, {
           tl: {col: columnForImage, row: rowForImage},
-          ext: {width: 800 * ratio, height: 800 * ratio},
+          ext: {width, height},
         });
       };
 
@@ -167,7 +162,6 @@ export const richFunctionViewReport = async (
             viewer,
             currentDf.columns.length + 2,
             (index > 0) ? (index * 16) + 1 : 0,
-            {heightInCells: 16, heightToRender: 600, widthToRender: 600},
           );
         };
       }
@@ -210,7 +204,6 @@ export const richFunctionViewReport = async (
               viewer,
               currentDf.columns.length + 2,
               (index > 0) ? (index * 16) + 1 : 0,
-              {heightInCells: 16, heightToRender: 600, widthToRender: 600},
             );
           }
         }
