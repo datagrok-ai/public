@@ -317,6 +317,10 @@ export class Tags {
   /// Used to preserve the column's original name, set only once (on the first rename)
   static ColumnInitialName = '.%initialName';
 
+  /// When set to true, visually obscures the column content using a blur effect.
+  /// Useful for anonymizing data in screenshots.
+  static BlurContent = '.blur-content';
+
 }
 export class FuncOptions {
   /// Fully qualified name of the function that edits corresponding function calls
