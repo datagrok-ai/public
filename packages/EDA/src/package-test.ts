@@ -5,6 +5,9 @@ import './tests/linear-methods-tests';
 import './tests/classifiers-tests';
 import './tests/mis-vals-imputation-tests';
 import './tests/anova-tests';
+import './tests/pmpo-tests';
+import './tests/pareto-tests';
+
 export const _package = new DG.Package();
 export {tests};
 

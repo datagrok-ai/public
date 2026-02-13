@@ -8,9 +8,8 @@ import * as DG from 'datagrok-api/dg';
 //@ts-ignore: no types
 import * as jStat from 'jstat';
 
-import {Cutoff, DescriptorStatistics, SigmoidParams} from './pmpo-defs';
-
-const SQRT_2_PI = Math.sqrt(2 * Math.PI);
+import {ConfusionMatrix, Cutoff, DescriptorStatistics, ModelEvaluationResult,
+  ROC_TRESHOLDS, ROC_TRESHOLDS_COUNT, SigmoidParams} from './pmpo-defs';
 
 /** Splits the dataframe into desired and non-desired tables based on the desirability column */
 export function getDesiredTables(df: DG.DataFrame, desirability: DG.Column) {
@@ -70,6 +69,8 @@ export function getDescriptorStatistics(des: DG.Column, nonDes: DG.Column): Desc
     nonDesAvg: nonDesAvg,
     nonDesStd: nonDesStd,
     nonSesLen: nonDesLen,
+    min: Math.min(des.stats.min, nonDes.stats.min),
+    max: Math.max(des.stats.max, nonDes.stats.max),
     tstat: t,
     pValue: pValue,
   };
@@ -163,6 +164,140 @@ export function sigmoidS(x: number, x0: number, b: number, c: number): number {
 }
 
 /** Normal probability density function */
-export function normalPdf(x: number, mu: number, sigma: number): number {
-  return Math.exp(-((x - mu)**2) / (2 * sigma**2)) / (sigma * SQRT_2_PI);
+export function gaussDesirabilityFunc(x: number, mu: number, sigma: number): number {
+  return Math.exp(-((x - mu)**2) / (2 * sigma**2));
 }
+
+/** Computes the confusion matrix given desirability (labels) and prediction columns
+ * @param desirability - desirability column (boolean)
+ * @param prediction - prediction column (numeric)
+ * @param threshold - threshold to convert prediction scores to binary labels
+ * @return ConfusionMatrix object with TP, TN, FP, FN counts
+ */
+export function getConfusionMatrix(desirability: DG.Column, prediction: DG.Column, threshold: number): ConfusionMatrix {
+  if (desirability.length !== prediction.length)
+    throw new Error('Failed to compute confusion matrix: columns have different lengths.');
+
+  if (desirability.type !== DG.COLUMN_TYPE.BOOL)
+    throw new Error('Failed to compute confusion matrix: desirability column must be boolean.');
+
+  if (!prediction.isNumerical)
+    throw new Error('Failed to compute confusion matrix: prediction column must be numerical.');
+
+  let TP = 0;
+  let TN = 0;
+  let FP = 0;
+  let FN = 0;
+
+  const desRaw = desirability.getRawData();
+  const predRaw = prediction.getRawData();
+
+  let desIdx = 0;
+  let curPos = 0;
+  let desElem = desRaw[0];
+
+  // Here, we extract bits from the desirability boolean column in chunks of 32 bits
+  for (let predIdx = 0; predIdx < prediction.length; ++predIdx) {
+    // console.log(predIdx + 1, ': ',
+    //   desirability.get(predIdx), '<-->', (desElem >>> curPos) & 1, ' vs ', predRaw[predIdx] >= threshold);
+
+    if (((desElem >>> curPos) & 1) == 1) { // True actual
+      if (predRaw[predIdx] >= threshold) { // True predicted
+        ++TP;
+      } else { // False predicted
+        ++FN;
+      }
+    } else { // False actual
+      if (predRaw[predIdx] >= threshold) { // True predicted
+        ++FP;
+      } else { // False predicted
+        ++TN;
+      }
+    }
+
+    ++curPos;
+
+    // Move to the next desirability element if we have processed 32 bits
+    if (curPos >= 32) {
+      curPos = 0;
+      ++desIdx;
+      desElem = desRaw[desIdx];
+    }
+  } // for predIdx
+
+  return {TP: TP, TN: TN, FP: FP, FN: FN};
+} // getConfusionMatrix
+
+/** Computes Area Under Curve (AUC) given TPR and FPR arrays
+ * @param tpr - True Positive Rate array
+ * @param fpr - False Positive Rate array
+ * @return AUC value
+ */
+export function getAuc(tpr: Float32Array, fpr: Float32Array): number {
+  if (tpr.length !== fpr.length)
+    throw new Error('Failed to compute AUC: TPR and FPR arrays have different lengths.');
+
+  let auc = 0.0;
+
+  for (let i = 1; i < tpr.length; ++i) {
+    const xDiff = Math.abs(fpr[i] - fpr[i - 1]);
+    const yAvg = (tpr[i] + tpr[i - 1]) / 2.0;
+    auc += xDiff * yAvg;
+  }
+
+  return auc;
+} // getAuc
+
+/** Converts numeric prediction column to boolean based on the given threshold
+ * @param numericPrediction - numeric prediction column
+ * @param threshold - threshold to convert prediction scores to binary labels
+ * @param name - name for the resulting boolean column
+ * @return Boolean prediction column
+ */
+export function getBoolPredictionColumn(numericPrediction: DG.Column, threshold: number, name: string): DG.Column {
+  if (!numericPrediction.isNumerical)
+    throw new Error('Failed to compute confusion matrix: prediction column must be numerical.');
+
+  const size = numericPrediction.length;
+  const boolPredData = new Array<boolean>(size);
+  const predRaw = numericPrediction.getRawData();
+
+  for (let i = 0; i < size; ++i)
+    boolPredData[i] = (predRaw[i] >= threshold);
+
+  return DG.Column.fromList(DG.COLUMN_TYPE.BOOL, name, boolPredData);
+} // getBoolPredictionColumn
+
+/** Computes pMPO model evaluation metrics: AUC, optimal threshold, TPR and FPR arrays
+ * @param desirability - desirability column (boolean)
+ * @param prediction - prediction column (numeric)
+ * @return ModelEvaluationResult object with AUC, optimal threshold, TPR and FPR arrays
+ */
+export function getPmpoEvaluation(desirability: DG.Column, prediction: DG.Column): ModelEvaluationResult {
+  const tpr = new Float32Array(ROC_TRESHOLDS_COUNT);
+  const fpr = new Float32Array(ROC_TRESHOLDS_COUNT);
+
+  let bestJ = -1;
+  let currentJ = -1;
+  let bestThreshold = ROC_TRESHOLDS[0];
+
+  // Compute TPR and FPR for each threshold
+  for (let i = 0; i < ROC_TRESHOLDS_COUNT; ++i) {
+    const confusion = getConfusionMatrix(desirability, prediction, ROC_TRESHOLDS[i]);
+    tpr[i] = (confusion.TP + confusion.FN) > 0 ? confusion.TP / (confusion.TP + confusion.FN) : 0;
+    fpr[i] = (confusion.FP + confusion.TN) > 0 ? confusion.FP / (confusion.FP + confusion.TN) : 0;
+    currentJ = tpr[i] - fpr[i];
+
+    if (currentJ > bestJ) {
+      bestJ = currentJ;
+      bestThreshold = ROC_TRESHOLDS[i];
+    }
+  }
+
+  return {
+    auc: getAuc(tpr, fpr),
+    threshold: bestThreshold,
+    tpr: tpr,
+    fpr: fpr,
+  };
+} // getPmpoEvaluation

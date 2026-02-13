@@ -36,10 +36,12 @@ import {SoftmaxClassifier} from './softmax-classifier';
 
 import {initXgboost} from '../wasm/xgbooster';
 import {XGBooster} from './xgbooster';
+
 import {ParetoOptimizer} from './pareto-optimization/pareto-optimizer';
 import {ParetoFrontViewer} from './pareto-optimization/pareto-front-viewer';
+
 import {Pmpo} from './probabilistic-scoring/prob-scoring';
-import {loadPmpoParams} from './probabilistic-scoring/pmpo-utils';
+import {getSynteticPmpoData} from './probabilistic-scoring/data-generator';
 
 export const _package = new DG.Package();
 export * from './package.g';
@@ -115,7 +117,7 @@ export class PackageFunctions {
 
 
   @grok.decorators.func({
-    'meta': {'defaultPostProcessingFunction': 'true', role: 'dimRedPostprocessingFunction'},
+    'meta': {'defaultPostProcessingFunction': 'true', 'role': 'dimRedPostprocessingFunction'},
     'name': 'DBSCAN clustering',
   })
   static async dbscanPostProcessingFunction(
@@ -145,7 +147,7 @@ export class PackageFunctions {
     'meta': {
       'supportedTypes': 'int,float,double,qnum',
       'supportedDistanceFunctions': 'Difference',
-      'role': 'dimRedPreprocessingFunction'
+      'role': 'dimRedPreprocessingFunction',
     },
     'name': 'None (number)',
     'outputs': [{name: 'result', type: 'object'}],
@@ -163,7 +165,7 @@ export class PackageFunctions {
     'meta': {
       'supportedTypes': 'string',
       'supportedDistanceFunctions': 'One-Hot,Levenshtein,Hamming',
-      'role': 'dimRedPreprocessingFunction'
+      'role': 'dimRedPreprocessingFunction',
     },
     'name': 'None (string)',
     'outputs': [{name: 'result', type: 'object'}],
@@ -979,14 +981,13 @@ export class PackageFunctions {
     'name': 'Pareto front',
     'description': 'Pareto front viewer',
     'outputs': [{'name': 'result', 'type': 'viewer'}],
-    'meta': {'icon': 'icons/pareto-front-viewer.svg', role: 'viewer'},
+    'meta': {'icon': 'icons/pareto-front-viewer.svg', 'role': 'viewer'},
   })
   static paretoFrontViewer(): DG.Viewer {
     return new ParetoFrontViewer();
   }
 
   @grok.decorators.func({
-    'top-menu': 'Chem | Calculate | Train pMPO...',
     'name': 'trainPmpo',
     'description': 'Train probabilistic multi-parameter optimization (pMPO) model',
   })
@@ -1004,22 +1005,25 @@ export class PackageFunctions {
     pMPO.runTrainingApp();
   }
 
+  @grok.decorators.func({'name': 'getPmpoAppItems', 'outputs': [{name: 'result', type: 'object'}]})
+  static getPmpoAppItems(@grok.decorators.param({type: 'view'}) view: DG.TableView): any | null {
+    const df = view.dataFrame;
+    if (!Pmpo.isTableValid(df))
+      return null;
+
+    const pMPO = new Pmpo(df, view);
+
+    return pMPO.getPmpoAppItems();
+  }
+
   @grok.decorators.func({
-    //'top-menu': 'ML | Apply pMPO...',
-    'name': 'applyPmpo',
-    'description': 'Apply trained probabilistic multi-parameter optimization (pMPO) model to score samples',
+    'name': 'generatePmpoDataset',
+    'description': 'Generates syntethetic dataset oriented on the pMPO modeling',
+    'outputs': [{name: 'Synthetic', type: 'dataframe'}],
   })
-  static async applyPmpo(
-    @grok.decorators.param({'type': 'dataframe'}) table: DG.DataFrame,
-    @grok.decorators.param({'type': 'file'}) file: DG.FileInfo,
-  ): Promise<void> {
-    try {
-      const params = await loadPmpoParams(file);
-      const predName = table.columns.getUnusedName('pMPO score');
-      const prediction = Pmpo.predict(table, params, predName);
-      table.columns.add(prediction, true);
-    } catch (err) {
-      grok.shell.warning(`Failed to apply pMPO: ${err instanceof Error ? err.message : 'the platform issue.'}`);
-    }
+  static async generatePmpoDataset(@grok.decorators.param({'type': 'int'}) samples: number): Promise<DG.DataFrame> {
+    const df = await getSynteticPmpoData(samples);
+    df.name = 'Synthetic';
+    return df;
   }
 }

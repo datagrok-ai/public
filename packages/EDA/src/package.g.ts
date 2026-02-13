@@ -6,7 +6,7 @@ export function info() : void {
   PackageFunctions.info();
 }
 
-//tags: init
+//meta.role: init
 export async function init() : Promise<void> {
   await PackageFunctions.init();
 }
@@ -75,8 +75,8 @@ export async function reduceDimensionality() : Promise<void> {
   await PackageFunctions.reduceDimensionality();
 }
 
-//tags: editor
 //input: funccall call 
+//meta.role: editor
 export function GetMCLEditor(call: DG.FuncCall) : void {
   PackageFunctions.GetMCLEditor(call);
 }
@@ -540,14 +540,19 @@ export function paretoFrontViewer() : any {
 }
 
 //description: Train probabilistic multi-parameter optimization (pMPO) model
-//top-menu: Chem | Calculate | Train pMPO...
 export function trainPmpo() : void {
   PackageFunctions.trainPmpo();
 }
 
-//description: Apply trained probabilistic multi-parameter optimization (pMPO) model to score samples
-//input: dataframe table 
-//input: file file 
-export async function applyPmpo(table: DG.DataFrame, file: DG.FileInfo) : Promise<void> {
-  await PackageFunctions.applyPmpo(table, file);
+//input: view view 
+//output: object result
+export function getPmpoAppItems(view: any) : any {
+  return PackageFunctions.getPmpoAppItems(view);
+}
+
+//description: Generates syntethetic dataset oriented on the pMPO modeling
+//input: int samples 
+//output: dataframe Synthetic
+export async function generatePmpoDataset(samples: number) : Promise<any> {
+  return await PackageFunctions.generatePmpoDataset(samples);
 }

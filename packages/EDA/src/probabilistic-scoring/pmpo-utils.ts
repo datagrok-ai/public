@@ -9,9 +9,10 @@ import '../../css/pmpo.css';
 
 import {COLORS, DESCR_TABLE_TITLE, DESCR_TITLE, DescriptorStatistics, DesirabilityProfileProperties,
   DESIRABILITY_COL_NAME, FOLDER, P_VAL, PMPO_COMPUTE_FAILED, PmpoParams, SCORES_TITLE,
-  SELECTED_TITLE, STAT_TO_TITLE_MAP, TINY, WEIGHT_TITLE,
-  CorrelationTriple} from './pmpo-defs';
-import {computeSigmoidParamsFromX0, getCutoffs, normalPdf, sigmoidS, solveNormalIntersection} from './stat-tools';
+  SELECTED_TITLE, STAT_TO_TITLE_MAP, TINY, WEIGHT_TITLE, CorrelationTriple,
+  BASIC_RANGE_SIGMA_COEFFS, EXTENDED_RANGE_SIGMA_COEFFS} from './pmpo-defs';
+import {computeSigmoidParamsFromX0, getCutoffs, gaussDesirabilityFunc, sigmoidS,
+  solveNormalIntersection} from './stat-tools';
 import {getColorScaleDiv} from '../pareto-optimization/utils';
 import {OPT_TYPE} from '../pareto-optimization/defs';
 
@@ -243,11 +244,22 @@ export function getModelParams(desired: DG.DataFrame, nonDesired: DG.DataFrame,
     // Unbiased standard deviation
     const sigmaNonDes = nonDesCol.stats.stdev * Math.sqrt((nonDesLen - 1) / nonDesLen);
 
-    // Compute cutoffs and intersections
+    // Compute cutoffs
     const cutoffs = getCutoffs(muDes, sigmaDes, muNonDes, sigmaNonDes);
+
+    // column_stats['inflection'] = np.exp(-np.square((column_stats['cutoff'] - column_stats['good_mean'])) /
+    //                                     (2 * np.square(column_stats['good_std'])))
+    // Compute inflection point
+    const inflection = Math.exp(-((cutoffs.cutoff - muDes) ** 2) / (2 * (sigmaDes ** 2)));
+
+    // Compute intersections of the two normal distributions
     const intersections = solveNormalIntersection(muDes, sigmaDes, muNonDes, sigmaNonDes);
 
-    // Compute parameters for the generalized sigmoid function
+    const b = (Math.pow(inflection, -1.0) - 1.0);
+    const n = (Math.pow(qCutoff, -1.0) - 1.0);
+    const c = Math.pow(10.0, ((Math.log10(n / b)) / (-1.0 * (muNonDes - cutoffs.cutoff))));
+
+    // Compute parameters for the generalized sigmoid function TODO: delete
 
     let x0: number | null = null;
 
@@ -279,17 +291,20 @@ export function getModelParams(desired: DG.DataFrame, nonDesired: DG.DataFrame,
       desStd: sigmaDes,
       nonDesAvg: muNonDes,
       nonDesStd: sigmaNonDes,
+      min: Math.min(desCol.stats.min, nonDesCol.stats.min),
+      max: Math.max(desCol.stats.max, nonDesCol.stats.max),
       cutoff: cutoffs.cutoff,
       cutoffDesired: cutoffs.cutoffDesired,
       cutoffNotDesired: cutoffs.cutoffNotDesired,
       pX0: sigmoidParams.pX0,
-      b: sigmoidParams.b,
-      c: sigmoidParams.c,
+      b: b,
+      c: c,
       zScore: z,
       weight: z,
       intersections: intersections,
       x0: x0,
       xBound: xBound,
+      inflection: inflection,
     });
   });
 
@@ -338,12 +353,13 @@ export async function loadPmpoParams(file: DG.FileInfo): Promise<Map<string, Pmp
  * @param name Name of the desirability profile.
  * @param description Description of the desirability profile.
  */
-export function getDesirabilityProfileJson(params: Map<string, PmpoParams>, name: string, description: string) {
+export function getDesirabilityProfileJson(params: Map<string, PmpoParams>, useSigmoidalCorrection: boolean,
+  name: string, description: string, truncatedRange: boolean): any {
   return {
     'type': 'MPO Desirability Profile',
     'name': name,
     'description': description,
-    'properties': getDesirabilityProfileProperties(params),
+    'properties': getDesirabilityProfileProperties(params, useSigmoidalCorrection, truncatedRange),
   };
 }
 
@@ -351,7 +367,8 @@ export function getDesirabilityProfileJson(params: Map<string, PmpoParams>, name
  * @param params Map of descriptor names to their pMPO parameters.
  * @param modelName Suggested model name (used as default file name).
  */
-export async function saveModel(params: Map<string, PmpoParams>, modelName: string): Promise<void> {
+export async function saveModel(params: Map<string, PmpoParams>, modelName: string,
+  useSigmoidalCorrection: boolean): Promise<void> {
   let fileName = modelName;
   const nameInput = ui.input.string('File', {
     value: fileName,
@@ -388,8 +405,10 @@ export async function saveModel(params: Map<string, PmpoParams>, modelName: stri
     if (typeInput.value) {
       return getDesirabilityProfileJson(
         params,
+        useSigmoidalCorrection,
         nameInput.value,
         descriptionInput.value,
+        false,
       );
     }
 
@@ -462,7 +481,10 @@ export function addCorrelationColumns(df: DG.DataFrame, descriptorNames: string[
   return df;
 } // addCorrelationColumns
 
-/* Sets color coding for the p-value column in the statistics table */
+/** Sets color coding for the p-value column in the statistics table
+ * @param table DataFrame with descriptor statistics.
+ * @param pValTresh P-value threshold.
+*/
 export function setPvalColumnColorCoding(table: DG.DataFrame, pValTresh: number): void {
   const pValCol = table.col(P_VAL);
   if (pValCol == null)
@@ -475,7 +497,11 @@ export function setPvalColumnColorCoding(table: DG.DataFrame, pValTresh: number)
   pValCol.meta.colors.setConditional(rules);
 } // setPvalColumnColorCoding
 
-/* Sets color coding for the p-value column in the statistics table */
+/** Sets color coding for the correlation columns in the statistics table.
+ * @param table DataFrame with descriptor statistics.
+ * @param descriptorNames List of descriptor names.
+ * @param r2Tresh R-squared threshold.
+*/
 export function setCorrColumnColorCoding(table: DG.DataFrame, descriptorNames: string[], r2Tresh: number): void {
   descriptorNames.forEach((name) => {
     const col = table.col(name);
@@ -483,8 +509,8 @@ export function setCorrColumnColorCoding(table: DG.DataFrame, descriptorNames: s
       return;
 
     const rules: Record<string, string> = {};
-    rules[`>${r2Tresh}`] = COLORS.SKIPPED;
-    rules[`=<${r2Tresh}`] = COLORS.SELECTED;
+    rules[`>=${r2Tresh}`] = COLORS.SKIPPED;
+    rules[`<${r2Tresh}`] = COLORS.SELECTED;
 
     col.meta.colors.setConditional(rules);
   });
@@ -492,20 +518,18 @@ export function setCorrColumnColorCoding(table: DG.DataFrame, descriptorNames: s
 
 /** Returns desirability profile properties for the given pMPO parameters.
  * @param params Map of descriptor names to their pMPO parameters.
+ * @param useSigmoidalCorrection Whether to use sigmoidal correction in desirability functions.
+ * @param displayProfile Whether to create a profile to be displayed in the stat grid (true - truncated range).
  */
-function getDesirabilityProfileProperties(params: Map<string, PmpoParams>) {
+function getDesirabilityProfileProperties(params: Map<string, PmpoParams>,
+  useSigmoidalCorrection: boolean, truncatedRange: boolean): DesirabilityProfileProperties {
   const props: DesirabilityProfileProperties = {};
 
-  let maxWeight = 0;
-  params.forEach((param) => maxWeight = Math.max(maxWeight, param.weight));
-
-  const scale = (maxWeight > 0) ? (1 / maxWeight) : 1;
-
   params.forEach((param, name) => {
-    const range = significantPoints(param);
+    const range = significantPoints(param, truncatedRange);
     props[name] = {
-      weight: param.weight * scale,
-      line: getLine(param),
+      weight: param.weight,
+      line: getLine(param, useSigmoidalCorrection, truncatedRange),
       min: Math.min(...range),
       max: Math.max(...range),
     };
@@ -514,67 +538,66 @@ function getDesirabilityProfileProperties(params: Map<string, PmpoParams>) {
   return props;
 } // getDesirabilityProfileProperties
 
-/** Returns array of arguments for Gaussian function centered at mu with stddev sigma. */
-function getArgsOfGaussFunc(mu: number, sigma: number): number[] {
-  return [
-    mu - 3 * sigma,
-    mu - 2.5 * sigma,
-    mu - 2 * sigma,
-    mu - 1.5 * sigma,
-    mu - sigma,
-    mu - 0.5 * sigma,
-    mu - 0.25 * sigma,
-    mu,
-    mu + 0.25 * sigma,
-    mu + 0.5 * sigma,
-    mu + sigma,
-    mu + 1.5 * sigma,
-    mu + 2 * sigma,
-    mu + 2.5 * sigma,
-    mu + 3 * sigma,
-  ];
+/** Returns array of arguments for Gaussian function centered at mu with stddev sigma.
+ * @param mu Mean of the Gaussian function.
+ * @param sigma Standard deviation of the Gaussian function.
+ * @param truncatedRange Whether to use truncated range (for interactive app) or extended range (for full profile).
+ * @return Array of arguments for the Gaussian function.
+*/
+function getArgsOfGaussFunc(mu: number, sigma: number, truncatedRange: boolean): number[] {
+  return truncatedRange ?
+    BASIC_RANGE_SIGMA_COEFFS.map((coeff) => mu + coeff * sigma) : // range for interactive app
+    EXTENDED_RANGE_SIGMA_COEFFS.map((coeff) => mu + coeff * sigma); // actual full range for desirability profile
 } // getArgsOfGaussFunc
 
-/** Returns scale factor for the given pMPO parameters and range of x values. */
-function getScale(param: PmpoParams, range: number[]): number {
-  const values = range.map((x) => basicFunction(x, param));
-
-  return Math.max(...values);
+/** Basic pMPO function combining Gaussian and sigmoid functions.
+ * @param x Argument.
+ * @param param pMPO parameters.
+ * @param useSigmoidalCorrection Whether to use sigmoidal correction.
+ * @return Value of the basic pMPO function at x.
+*/
+function basicFunction(x: number, param: PmpoParams, useSigmoidalCorrection: boolean): number {
+  return gaussDesirabilityFunc(x, param.desAvg, param.desStd) *
+    (useSigmoidalCorrection ? sigmoidS(x, param.cutoff, param.b, param.c) : 1);
 }
 
-/** Basic pMPO function combining Gaussian and sigmoid functions. */
-function basicFunction(x: number, param: PmpoParams): number {
-  return normalPdf(x, param.desAvg, param.desStd) * sigmoidS(x, param.x0, param.b, param.c);
+/** Returns line points for the given pMPO parameters.
+ * @param param pMPO parameters.
+ * @param useSigmoidalCorrection Whether to use sigmoidal correction.
+ * @param truncatedRange Whether to use truncated range (for interactive app) or extended range (for full profile).
+ * @return Array of [x, y] points representing the desirability function line.
+*/
+function getLine(param: PmpoParams, useSigmoidalCorrection: boolean, truncatedRange: boolean): [number, number][] {
+  const range = significantPoints(param, truncatedRange);
+
+  return range.map((x) => [x, basicFunction(x, param, useSigmoidalCorrection)]);
 }
 
-/** Returns line points for the given pMPO parameters. */
-function getLine(param: PmpoParams): [number, number][] {
-  //const range = getArgsOfGaussFunc(param.desAvg, param.desStd);
-  const range = significantPoints(param);
-  const scale = getScale(param, range);
+/** Returns significant points for the given pMPO parameters.
+ * @param param pMPO parameters.
+ * @param truncatedRange Whether to use truncated range (for interactive app) or extended range (for full profile).
+ * @return Array of significant points for the desirability function.
+*/
+function significantPoints(param: PmpoParams, truncatedRange: boolean): number[] {
+  const points = getArgsOfGaussFunc(param.desAvg, param.desStd, truncatedRange);
 
-  return range.map((x) => [x, basicFunction(x, param) / scale]);
-}
+  /* Truncate range to show less points */
+  if (truncatedRange) {
+    const min = Math.min(param.min, param.desAvg - 3 * param.desStd);
+    const max = Math.max(param.max, param.desAvg + 3 * param.desStd);
 
-/** Returns significant points for the given pMPO parameters. */
-function significantPoints(param: PmpoParams): number[] {
-  const start = param.desAvg - 10 * param.desStd;
-  const end = param.desAvg + 10 * param.desStd;
-  const steps = 1000;
-
-  let arg = start;
-  let func = basicFunction(arg, param);
-  let x = 0;
-  let y = 0;
-
-  for (let i = 0; i <= steps; i++) {
-    x = start + ((end - start) * i) / steps;
-    y = basicFunction(x, param);
-    if (y > func) {
-      arg = x;
-      func = y;
-    }
+    return points
+      .filter((x) => (min <= x) && (x <= max))
+      .sort();
   }
 
-  return getArgsOfGaussFunc(arg, param.desStd);
+  return points;
 } // significantPoints
+
+/** Custom error class for pMPO-related errors. */
+export class PmpoError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'PmpoError';
+  }
+}
