@@ -452,6 +452,10 @@ export namespace scripts {
 }
 
 export namespace funcs {
+  export async function getColumn(table: DG.DataFrame , columnName: string ): Promise<DG.Column> {
+    return await grok.functions.call('CVMTests:GetColumn', { table, columnName });
+  }
+
   export async function info(): Promise<void> {
     return await grok.functions.call('CVMTests:Info', {});
   }
