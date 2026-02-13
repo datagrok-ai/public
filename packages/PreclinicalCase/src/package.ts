@@ -5,7 +5,7 @@ import * as DG from 'datagrok-api/dg';
 import {StudySummaryView} from './views/study-summary-view';
 import {ConfigurationView} from './views/configuration-view';
 import {STUDY_ID} from './constants/columns-constants';
-import {CONFIGURATION_VIEW_NAME, EVENTS_VIEW_NAME, MATRIX_TABLE_VIEW_NAME,
+import {CONFIGURATION_VIEW_NAME, OBSERVATION_TIMELINES_VIEW_NAME, MATRIX_TABLE_VIEW_NAME,
   MEASUREMENT_PROFILE_TABLE_VIEW_NAME, MICROSCOPIC_FINDINGS_TABLE_VIEW_NAME,
   SUMMARY_VIEW_NAME, VALIDATION_VIEW_NAME} from './constants/view-names-constants';
 import {createTableView} from './utils/views-creation-utils';
@@ -23,7 +23,7 @@ import { createValidationView } from './views/validation-table-view';
 import { createMatrixTableView } from './views/matrix-table-view';
 import { createMeasurementProfileTableView } from './views/measurement-profile-table-view';
 import { createMICrossDomainView } from './views/mi-cross-domain-analysis';
-import { createEventsView } from './views/events-view';
+import { createObservationTimelinesView } from './views/observation-timelines-view';
 // Import renderers to ensure they're registered                                                                                                                    
 import './utils/rule-violation-cell-renderer';                                                                                                                      
 import './utils/combined-measurements-cell-renderer';   
@@ -122,7 +122,7 @@ export class PackageFunctions {
 export const SUPPORTED_VIEWS: string[] = [
   SUMMARY_VIEW_NAME, VALIDATION_VIEW_NAME, MATRIX_TABLE_VIEW_NAME,
   MEASUREMENT_PROFILE_TABLE_VIEW_NAME, MICROSCOPIC_FINDINGS_TABLE_VIEW_NAME,
-  EVENTS_VIEW_NAME, CONFIGURATION_VIEW_NAME,
+  OBSERVATION_TIMELINES_VIEW_NAME, CONFIGURATION_VIEW_NAME,
 ];
 
 export const VIEW_CREATE_FUNC: {[key: string]: (studyId: string, args?: any) => DG.ViewBase | TableView} = {
@@ -135,6 +135,6 @@ export const VIEW_CREATE_FUNC: {[key: string]: (studyId: string, args?: any) => 
     createTableView(studyId, MEASUREMENT_PROFILE_TABLE_VIEW_NAME, createMeasurementProfileTableView),
   [MICROSCOPIC_FINDINGS_TABLE_VIEW_NAME]: (studyId) =>
     createTableView(studyId, MICROSCOPIC_FINDINGS_TABLE_VIEW_NAME, createMICrossDomainView),
-  [EVENTS_VIEW_NAME]: (studyId) =>
-    createTableView(studyId, EVENTS_VIEW_NAME, createEventsView),
+  [OBSERVATION_TIMELINES_VIEW_NAME]: (studyId) =>
+    createTableView(studyId, OBSERVATION_TIMELINES_VIEW_NAME, createObservationTimelinesView),
 };

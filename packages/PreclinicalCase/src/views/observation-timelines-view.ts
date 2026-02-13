@@ -16,7 +16,7 @@ type ArmValues = {[arm: string]: ArmEntry};
 type DayMap = {[day: number]: ArmValues};
 type GroupData = {domain: string, category: string, test: string, units: string, days: DayMap};
 
-export function createEventsView(studyId: string): StudyTableViewParams {
+export function createObservationTimelinesView(studyId: string): StudyTableViewParams {
   const allMeasurements = createAllMeasurementsDf(studyId);
   if (!allMeasurements)
     return {df: DG.DataFrame.create()};
@@ -86,7 +86,7 @@ export function createEventsView(studyId: string): StudyTableViewParams {
 
   const rowCount = groupMap.size;
   const pivotedDf = DG.DataFrame.create(rowCount);
-  pivotedDf.name = 'Events';
+  pivotedDf.name = 'Observation timelines';
 
   const pDomainCol = pivotedDf.columns.addNewString(DOMAIN);
   const pCatCol = pivotedDf.columns.addNewString('category');
@@ -215,6 +215,8 @@ export function createEventsView(studyId: string): StudyTableViewParams {
     });
 
     grid.root.addEventListener('mousemove', (e: MouseEvent) => {
+      if (e.target !== grid.canvas && e.target !== grid.overlay)
+        return;
       const cell = grid.hitTest(e.offsetX, e.offsetY);
       if (!cell || !cell.isColHeader) return;
 
