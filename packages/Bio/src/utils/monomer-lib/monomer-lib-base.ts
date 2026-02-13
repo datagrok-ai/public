@@ -130,7 +130,7 @@ export class MonomerLibBase implements IMonomerLibBase {
   }
 
   getMonomer(polymerType: PolymerType | null, argMonomerSymbol: string): Monomer | null {
-    const logPrefix = `Bio: MonomerLib.getMonomer()`;
+    // const logPrefix = `Bio: MonomerLib.getMonomer()`;
     // Adjust RNA's 'R' for ribose to 'r' and 'P' for phosphate to 'p' for case-sensitive monomer names.
     // There are uppercase 'R' and 'P' at RNA samples in test data 'helm2.csv' but lowercase in HELMCoreLibrary.json
     let monomerSymbol = argMonomerSymbol;
@@ -142,7 +142,7 @@ export class MonomerLibBase implements IMonomerLibBase {
     let res: Monomer | null = null;
 
     if (!polymerType) {
-      _package.logger.warning(`${logPrefix} symbol '${argMonomerSymbol}', polymerType not specified.`);
+      // _package.logger.warning(`${logPrefix} symbol '${argMonomerSymbol}', polymerType not specified.`);
       // Assume any polymer type
       for (const [_polymerType, dict] of Object.entries(this._monomers)) {
         res = dict[monomerSymbol];
@@ -154,6 +154,8 @@ export class MonomerLibBase implements IMonomerLibBase {
         monomerSymbol = this._smilesMonomerCache[polymerType][monomerSymbol];
       const dict = this._monomers[polymerType];
       res = dict?.[monomerSymbol] ?? null;
+      if (!res)
+        return this.getMonomer(null, monomerSymbol); // fallback to search without polymer type
     }
     return res;
   }
@@ -252,6 +254,8 @@ export class MonomerLibBase implements IMonomerLibBase {
             .replace(/_/g, ' ')
             .replace(/-/g, ' ')
             .replace(/([a-z])([a-z])([A-Z])/g, '$1$2 $3');
+          if (monomer.polymerType)
+            res.append(ui.divText(monomer.polymerType, {style: {fontStyle: 'italic'}}));
           res.append(ui.divText(source));
         }
       }

@@ -335,8 +335,9 @@ export class PackageFunctions {
     if (!reCons) {
       // biln might also encode monomers with hyphens in names encoded by []
       // here we know that there are no monomers with connections like (1,2) in names, so we can check for []
-      const reBrackets = Object.keys(stats.freq).some((om) => om.includes('[') || om.includes(']'));
-      if (!reBrackets)
+      const reBrackets = Object.keys(stats.freq).filter((om) => om.startsWith('[') && om.startsWith(']'));
+      const midBrackets = Object.keys(stats.freq).filter((om) => om.includes('[') || om.includes(']'));
+      if (reBrackets.length !== midBrackets.length)
         return false;
     }
     // refine the notation provider

@@ -772,14 +772,25 @@ export class SeqHandler implements ISeqHandler {
   public convert(tgtNotation: NOTATION, tgtSeparator?: string): DG.Column<string> {
     // Get joiner from the source column units handler (this) knowing about the source sequence.
     // For example, converting DNA Helm to fasta requires removing the r(X)p decoration.
-    const joiner: JoinerFunc = this.getJoiner({notation: tgtNotation, separator: tgtSeparator});
-    const newColumn = this.getNewColumn(tgtNotation, tgtSeparator);
-    // assign the values to the newly created empty column
-    newColumn.init((rowIdx: number) => {
-      const srcSS = this.getSplitted(rowIdx);
-      return joiner(srcSS);
-    });
-    return newColumn;
+    if (!this.isCustom() || tgtNotation !== NOTATION.HELM) {
+      const joiner: JoinerFunc = this.getJoiner({notation: tgtNotation, separator: tgtSeparator});
+      const newColumn = this.getNewColumn(tgtNotation, tgtSeparator);
+      // assign the values to the newly created empty column
+      newColumn.init((rowIdx: number) => {
+        const srcSS = this.getSplitted(rowIdx);
+        return joiner(srcSS);
+      });
+      return newColumn;
+    } else {
+      if (!this.notationProvider || !this.notationProvider.getHelm)
+        throw new Error('Notation provider with getHelm function is required for custom notation conversion.');
+      const newColumn = this.getNewColumn(tgtNotation, tgtSeparator);
+      newColumn.init((rowIdx: number) => {
+        const srcSeq = this.column.get(rowIdx);
+        return this.notationProvider!.getHelm(srcSeq, {});
+      });
+      return newColumn;
+    }
   }
 
   /**
@@ -931,6 +942,8 @@ export class SeqHandler implements ISeqHandler {
 
   private convertToHelm(src: string): string {
     if (this.notation == NOTATION.HELM) return src;
+    if (this.isCustom() && this.notationProvider?.getHelm)
+      return this.notationProvider.getHelm(src, {});
 
     const wrappers = this.getHelmWrappers();
 
