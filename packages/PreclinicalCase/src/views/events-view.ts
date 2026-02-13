@@ -139,6 +139,16 @@ export function createEventsView(studyId: string): StudyTableViewParams {
   pivotedDf.setTag('armOrder', JSON.stringify(sortedArms));
   pivotedDf.setTag('subjectOrder', JSON.stringify(sortedSubjects));
 
+  const dayColDataMasks: DG.BitSet[] = [];
+  for (const col of dayColumns) {
+    const mask = DG.BitSet.create(rowCount);
+    for (let r = 0; r < rowCount; r++) {
+      if (!col.isNone(r))
+        mask.set(r, true);
+    }
+    dayColDataMasks.push(mask);
+  }
+
   const onTableViewAdded = async (tableView: DG.TableView) => {
     await awaitCheck(() => tableView.grid !== null, '', 1000);
 
@@ -215,10 +225,19 @@ export function createEventsView(studyId: string): StudyTableViewParams {
       }
     });
 
-    for (const colName of metaCols.concat(['Y axis'])) {
+    for (const colName of metaCols) {
       const gridCol = grid.col(colName);
-      if (gridCol)
-        PinnedUtils.addPinnedColumn(gridCol);
+      if (!gridCol) continue;
+      if (colName === 'test')
+        gridCol.width = 80;
+      else
+        gridCol.visible = false;
+    }
+
+    for (const colName of ['test', 'Y axis']) {
+      const pinCol = grid.col(colName);
+      if (pinCol)
+        PinnedUtils.addPinnedColumn(pinCol);
     }
 
     const subjectInput = ui.input.choice('Subject', {
@@ -260,10 +279,32 @@ export function createEventsView(studyId: string): StudyTableViewParams {
     });
 
     const fg = tableView.getFiltersGroup({createDefaultFilters: false});
-    fg.updateOrAdd({
-      type: DG.FILTER_TYPE.CATEGORICAL,
-      column: DOMAIN,
-      columnName: DOMAIN,
+    for (const colName of metaCols) {
+      fg.updateOrAdd({
+        type: DG.FILTER_TYPE.CATEGORICAL,
+        column: colName,
+        columnName: colName,
+      });
+    }
+
+    pivotedDf.onFilterChanged.subscribe(() => {
+      const filter = pivotedDf.filter;
+      const visible = new Uint8Array(dayColumns.length);
+      for (let r = filter.findNext(-1, true); r !== -1; r = filter.findNext(r, true)) {
+        let allFound = true;
+        for (let d = 0; d < dayColumns.length; d++) {
+          if (!visible[d] && dayColDataMasks[d].get(r))
+            visible[d] = 1;
+          if (!visible[d])
+            allFound = false;
+        }
+        if (allFound) break;
+      }
+      for (let d = 0; d < dayColumns.length; d++) {
+        const gridCol = grid.col(dayColumns[d].name);
+        if (gridCol)
+          gridCol.visible = visible[d] === 1;
+      }
     });
 
     restoreBrowsePanelOnRemoval();
