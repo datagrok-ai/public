@@ -67,6 +67,29 @@ export function studyConfigToMap(studyConfig: StudyConfig): {[key: string]: any}
   return map;
 }
 
+export function restoreBrowsePanelOnRemoval(): void {
+  const browseRoot = grok.shell.browsePanel.root;
+  const parent = browseRoot.closest('.tab-host');
+  if (!parent)
+    return;
+
+  const observer = new MutationObserver((mutations) => {
+    for (const mutation of mutations) {
+      for (const removed of Array.from(mutation.removedNodes)) {
+        if (removed === browseRoot || (removed instanceof Element && removed.contains(browseRoot))) {
+          observer.disconnect();
+          const handle = document.querySelector('[name = "view-handle: Browse"]') as HTMLElement;
+          if (handle)
+            handle.click();
+          return;
+        }
+      }
+    }
+  });
+
+  observer.observe(parent, {childList: true, subtree: true});
+}
+
 export function hideValidationColumns(tv: DG.TableView) {
   const colNames = tv.dataFrame.columns.names();
   for (const colName of colNames) {

@@ -3,8 +3,8 @@ import * as DG from 'datagrok-api/dg';
 import {studies} from '../utils/app-utils';
 import {createVisitDayStrCol} from '../data-preparation/data-preparation';
 import {DOMAIN, PLANNED_TRT_ARM, SUBJECT_ID, VISIT_DAY_STR} from '../constants/columns-constants';
-import {addDomainFilters} from '../utils/utils';
-import { StudyTableViewParams } from '../utils/views-creation-utils';
+import {addDomainFilters, restoreBrowsePanelOnRemoval} from '../utils/utils';
+import {StudyTableViewParams} from '../utils/views-creation-utils';
 
 export function createMatrixTableView(studyId: string): StudyTableViewParams {
   let resDf: DG.DataFrame | null = null;
@@ -65,6 +65,7 @@ export function createMatrixTableView(studyId: string): StudyTableViewParams {
     }
     tableView.dockManager.dock(matrixViewer, DG.DOCK_TYPE.FILL);
     addDomainFilters(tableView, studyId);
+    restoreBrowsePanelOnRemoval();
   };
 
   return {df: pivotedDF, onTableViewAddedFunc: onTableViewAdded};

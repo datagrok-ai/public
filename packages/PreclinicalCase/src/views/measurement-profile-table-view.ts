@@ -5,7 +5,8 @@ import {studies} from '../utils/app-utils';
 import {createAllMeasurementsDf, createVisitDayStrCol} from '../data-preparation/data-preparation';
 import {DOMAIN, PLANNED_TRT_ARM, SEX, SUBJECT_ID, VISIT_DAY_STR} from '../constants/columns-constants';
 import {createSubjectProfileView} from './subject-profile-view';
-import { StudyTableViewParams } from '../utils/views-creation-utils';
+import {StudyTableViewParams} from '../utils/views-creation-utils';
+import {restoreBrowsePanelOnRemoval} from '../utils/utils';
 
 export function createMeasurementProfileTableView(studyId: string): StudyTableViewParams {
   let resDf = createAllMeasurementsDf(studyId);
@@ -74,6 +75,7 @@ export function createMeasurementProfileTableView(studyId: string): StudyTableVi
       column: 'test',
       columnName: 'test',
     });
+    restoreBrowsePanelOnRemoval();
   };
 
   return {df: resDf, onTableViewAddedFunc: onTableViewAdded};

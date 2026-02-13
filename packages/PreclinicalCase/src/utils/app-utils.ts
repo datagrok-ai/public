@@ -324,7 +324,6 @@ async function openStudyNode(study: PreclinicalStudy, node: DG.TreeViewGroup, cu
 async function loadView(study: PreclinicalStudy, viewName: string, parentNode: DG.TreeViewGroup) {
   currentOpenedView?.close();
   let view = studies[study.studyId].views[viewName];
-  let helper: any;
   if (!view) {
     view = VIEW_CREATE_FUNC[viewName](study.studyId) as DG.ViewBase;
   }
@@ -338,8 +337,6 @@ async function loadView(study: PreclinicalStudy, viewName: string, parentNode: D
   }
   if ((view as any).loaded === false && typeof (view as any).load === 'function')
     (view as any).load();
-  else
-    helper?.propertyPanel();
   view.path = `${PRECLINICAL_CASE_APP_PATH}/${encodeURI(study.studyId)}/${encodeURI(viewName)}`;
 };
 

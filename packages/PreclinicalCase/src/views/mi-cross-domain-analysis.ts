@@ -206,6 +206,8 @@ export function createMICrossDomainView(studyId: string): StudyTableViewParams {
     });
 
     updateBoxPlots();
+    //workaround to switch bach to browse from toolbox
+    (grok.shell.browsePanel.root.closest('.dock-container')?.querySelector('[name = "view-handle: Browse"]') as HTMLElement)?.click();
   };
 
   return {df: miDf, onTableViewAddedFunc: onTableViewAdded};

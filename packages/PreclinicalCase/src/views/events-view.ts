@@ -4,6 +4,7 @@ import * as DG from 'datagrok-api/dg';
 import {studies} from '../utils/app-utils';
 import {SUBJECT_ID, DOMAIN, PLANNED_TRT_ARM, ACT_TRT_ARM} from '../constants/columns-constants';
 import {StudyTableViewParams} from '../utils/views-creation-utils';
+import {restoreBrowsePanelOnRemoval} from '../utils/utils';
 import {createAllMeasurementsDf} from '../data-preparation/data-preparation';
 import {createSubjectProfileView} from './subject-profile-view';
 import {awaitCheck} from '@datagrok-libraries/test/src/test';
@@ -264,6 +265,8 @@ export function createEventsView(studyId: string): StudyTableViewParams {
       column: DOMAIN,
       columnName: DOMAIN,
     });
+
+    restoreBrowsePanelOnRemoval();
   };
 
   return {df: pivotedDf, onTableViewAddedFunc: onTableViewAdded};
