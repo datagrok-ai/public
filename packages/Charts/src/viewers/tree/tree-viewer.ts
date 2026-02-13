@@ -748,6 +748,7 @@ export class TreeViewer extends EChartViewer {
       backgroundColor: {
         image: img.src,
       },
+      rotate: this.layout === 'radial' ? 0 : undefined,
     };
   }
 
@@ -760,15 +761,27 @@ export class TreeViewer extends EChartViewer {
 
   formatLabel(params: any): string {
     if (params.data.semType === 'Molecule') {
+      const minImageWidth = 70;
+      const minImageHeight = 80;
       //@ts-ignore
-      const ItemAreaInfoArray = this.chart.getModel().getSeriesByIndex(0).getData()._itemLayouts.slice(1);
+      const itemLayouts = this.chart.getModel().getSeriesByIndex(0).getData()._itemLayouts.slice(1);
+      if (this.layout === 'radial') {
+        const totalNodes = itemLayouts.filter((item: any) => item && item.x !== undefined).length;
+        const chartSize = Math.min(this.chart.getWidth(), this.chart.getHeight());
+        const maxDim = Math.max(minImageWidth, Math.floor(chartSize / Math.max(1, Math.sqrt(totalNodes))));
+        const renderWidth = Math.min(maxDim, 150);
+        const renderHeight = Math.min(Math.floor(renderWidth * minImageHeight / minImageWidth), 150);
+        this.renderMoleculeQueued(params, renderWidth, renderHeight);
+        return ' ';
+      }
+
       const getCurrentItemIndex = params.dataIndex - 1;
-      const ItemLayoutInfo = ItemAreaInfoArray.find((item: any, index: number) => getCurrentItemIndex === index);
+      const ItemLayoutInfo = itemLayouts.find((item: any, index: number) => getCurrentItemIndex === index);
 
       const { x, y } = ItemLayoutInfo;
       const isVerticalOrientation = this.isVerticalOrientation();
 
-      const sortedItems = [...ItemAreaInfoArray]
+      const sortedItems = [...itemLayouts]
         .filter((item: any) => item && (item.x !== undefined && item.y !== undefined))
         .sort((a: any, b: any) => isVerticalOrientation ? a.y - b.y : a.x - b.x);
 
@@ -798,8 +811,6 @@ export class TreeViewer extends EChartViewer {
           (sortedPositions[index + 1] - sortedPositions[index - 1]) / 2;
 
       const labelHeight = Math.floor(chartSize / nodesAtLevel.length);
-      const minImageWidth = 70;
-      const minImageHeight = 80;
 
       if (availableSpace >= minImageWidth && labelHeight >= minImageHeight) {
         const scaleByWidth = availableSpace / minImageWidth;
