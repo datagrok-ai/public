@@ -8,7 +8,7 @@ import {restoreBrowsePanelOnRemoval} from '../utils/utils';
 import {createAllMeasurementsDf} from '../data-preparation/data-preparation';
 import {createSubjectProfileView} from './subject-profile-view';
 import {awaitCheck} from '@datagrok-libraries/test/src/test';
-import {subjectClicked$, PADDING_X, MARKER_RADIUS, getArmColorStr} from '../utils/combined-measurements-cell-renderer';
+import {subjectClicked$, PADDING_X, PADDING_Y, getArmColorStr, getEnabledArms} from '../utils/combined-measurements-cell-renderer';
 import * as PinnedUtils from '@datagrok-libraries/gridext/src/pinned/PinnedUtils';
 
 type ArmEntry = {values: number[], subjects: string[]};
@@ -149,6 +149,9 @@ export function createEventsView(studyId: string): StudyTableViewParams {
     dayColDataMasks.push(mask);
   }
 
+  const armCodeToName = studies[studyId].armCodeToName;
+  const getArmCode = (arm: string) => Object.keys(armCodeToName).find((c) => armCodeToName[c] === arm) ?? arm;
+
   const onTableViewAdded = async (tableView: DG.TableView) => {
     await awaitCheck(() => tableView.grid !== null, '', 1000);
 
@@ -172,11 +175,9 @@ export function createEventsView(studyId: string): StudyTableViewParams {
     if (minGridCol) minGridCol.visible = false;
     if (maxGridCol) maxGridCol.visible = false;
 
-    grid.setOptions({rowHeight: 60, colHeaderHeight: 50});
+    grid.setOptions({rowHeight: 60, colHeaderHeight: 100});
 
     const dayColNameSet = new Set(dayColNames);
-
-    const HEADER_HIT_RADIUS = 6;
 
     grid.onCellRendered.subscribe((args) => {
       const cell = args.cell;
@@ -188,16 +189,28 @@ export function createEventsView(studyId: string): StudyTableViewParams {
 
       const g = args.g;
       const bounds = args.bounds;
-      const markerY = bounds.y + bounds.height - MARKER_RADIUS - 4;
-      const armWidth = (bounds.width - 2 * PADDING_X) / sortedArms.length;
+      const curEnabledArms = getEnabledArms(pivotedDf);
+      if (curEnabledArms.length === 0)
+        return;
+      const armWidth = (bounds.width - 2 * PADDING_X) / curEnabledArms.length;
 
-      g.lineWidth = 1.5;
-      for (let i = 0; i < sortedArms.length; i++) {
+      const maxLabelHeight = 30;
+      g.font = '10px sans-serif';
+      g.textBaseline = 'middle';
+      for (let i = 0; i < curEnabledArms.length; i++) {
+        const globalIdx = sortedArms.indexOf(curEnabledArms[i]);
         const cx = bounds.x + PADDING_X + i * armWidth + armWidth / 2;
-        g.strokeStyle = getArmColorStr(i);
-        g.beginPath();
-        g.arc(cx, markerY, MARKER_RADIUS, 0, 2 * Math.PI);
-        g.stroke();
+        let armCode = getArmCode(curEnabledArms[i]);
+        while (armCode.length > 1 && g.measureText(armCode).width > maxLabelHeight)
+          armCode = armCode.slice(0, -1);
+        if (armCode !== getArmCode(curEnabledArms[i]))
+          armCode += '\u2026';
+        g.save();
+        g.translate(cx, bounds.y + bounds.height - 4);
+        g.rotate(-Math.PI / 2);
+        g.fillStyle = getArmColorStr(globalIdx >= 0 ? globalIdx : i);
+        g.fillText(armCode, 0, 0);
+        g.restore();
       }
     });
 
@@ -209,16 +222,16 @@ export function createEventsView(studyId: string): StudyTableViewParams {
       if (!colName || !dayColNameSet.has(colName)) return;
 
       const bounds = cell.bounds;
-      const markerY = bounds.y + bounds.height - MARKER_RADIUS - 4;
-      const armWidth = (bounds.width - 2 * PADDING_X) / sortedArms.length;
+      const curEnabledArms = getEnabledArms(pivotedDf);
+      if (curEnabledArms.length === 0) return;
+      const armWidth = (bounds.width - 2 * PADDING_X) / curEnabledArms.length;
 
-      for (let i = 0; i < sortedArms.length; i++) {
-        const cx = bounds.x + PADDING_X + i * armWidth + armWidth / 2;
-        const dx = e.offsetX - cx;
-        const dy = e.offsetY - markerY;
-        if (Math.sqrt(dx * dx + dy * dy) < HEADER_HIT_RADIUS) {
-          const el = ui.divText(sortedArms[i]);
-          el.style.color = getArmColorStr(i);
+      for (let i = 0; i < curEnabledArms.length; i++) {
+        const bandStart = bounds.x + PADDING_X + i * armWidth;
+        if (e.offsetX >= bandStart && e.offsetX < bandStart + armWidth) {
+          const globalIdx = sortedArms.indexOf(curEnabledArms[i]);
+          const el = ui.divText(curEnabledArms[i]);
+          el.style.color = getArmColorStr(globalIdx >= 0 ? globalIdx : i);
           ui.tooltip.show(el, e.clientX + 16, e.clientY + 16);
           return;
         }
@@ -252,7 +265,8 @@ export function createEventsView(studyId: string): StudyTableViewParams {
         }
       },
     });
-    const tooltipContent = ui.divV([]);
+    const disabledArms = new Set<string>();
+    const baseArmWidth = (120 - 2 * PADDING_X) / sortedArms.length;
     const legendDiv = ui.div([], {classes: 'preclinical-case-legend'});
     for (let i = 0; i < sortedArms.length; i++) {
       const color = DG.Color.getCategoricalColor(i);
@@ -261,17 +275,39 @@ export function createEventsView(studyId: string): StudyTableViewParams {
       const b = color & 0xFF;
       const colorStr = `rgb(${r},${g},${b})`;
 
-      const dot = ui.div([], {classes: 'preclinical-case-legend-dot', style: {borderColor: colorStr}});
-      legendDiv.appendChild(dot);
-
-      const tooltipDot = ui.div([], {classes: 'preclinical-case-legend-tooltip-dot', style: {borderColor: colorStr}});
-      const tooltipLabel = ui.div([sortedArms[i]], {classes: 'preclinical-case-legend-tooltip-label', style: {color: colorStr}});
-      const tooltipRow = ui.divH([tooltipDot, tooltipLabel], {classes: 'preclinical-case-legend-tooltip-row'});
-      tooltipContent.appendChild(tooltipRow);
+      const armCode = getArmCode(sortedArms[i]);
+      const label = ui.div([armCode], {classes: 'preclinical-case-legend-label', style: {color: colorStr}});
+      label.style.cursor = 'pointer';
+      ui.tooltip.bind(label, () => {
+        const tip = ui.divText(sortedArms[i]);
+        tip.style.color = disabledArms.has(sortedArms[i]) ? '#aaa' : colorStr;
+        return tip;
+      });
+      label.addEventListener('click', () => {
+        if (disabledArms.has(sortedArms[i])) {
+          disabledArms.delete(sortedArms[i]);
+          label.style.color = colorStr;
+          label.style.opacity = '';
+        } else {
+          disabledArms.add(sortedArms[i]);
+          label.style.color = '#ccc';
+          label.style.opacity = '0.5';
+        }
+        pivotedDf.setTag('disabledArms', JSON.stringify([...disabledArms]));
+        const enabledCount = sortedArms.length - disabledArms.size;
+        const newWidth = Math.round(2 * PADDING_X + enabledCount * baseArmWidth);
+        for (const dayColName of dayColNames) {
+          const gc = grid.col(dayColName);
+          if (gc && gc.visible)
+            gc.width = newWidth;
+        }
+        grid.invalidate();
+      });
+      legendDiv.appendChild(label);
     }
-    ui.tooltip.bind(legendDiv, () => tooltipContent);
 
-    tableView.setRibbonPanels([[subjectInput.root, legendDiv]]);
+    const connectPointsInput = ui.input.bool('Connect subject points', {value: false, onValueChanged: () => grid.invalidate()});
+    tableView.setRibbonPanels([[subjectInput.root, connectPointsInput.root, legendDiv]]);
 
     subjectClicked$.subscribe((subject) => {
       subjectInput.value = subject;
@@ -304,6 +340,91 @@ export function createEventsView(studyId: string): StudyTableViewParams {
         const gridCol = grid.col(dayColumns[d].name);
         if (gridCol)
           gridCol.visible = visible[d] === 1;
+      }
+    });
+
+    grid.onAfterDrawOverlay.subscribe(() => {
+      if (!connectPointsInput.value)
+        return;
+      const selectedSubject = pivotedDf.getTag('selectedSubject');
+      if (!selectedSubject)
+        return;
+      const enabledArms = getEnabledArms(pivotedDf);
+      if (enabledArms.length === 0)
+        return;
+
+      const overlayCtx = grid.overlay.getContext('2d');
+      if (!overlayCtx)
+        return;
+
+      const minCol = pivotedDf.col('~rowMin')!;
+      const maxCol = pivotedDf.col('~rowMax')!;
+      const visibleDayColNames = dayColNames.filter((n) => {
+        const gc = grid.col(n);
+        return gc && gc.visible;
+      });
+      if (visibleDayColNames.length < 2)
+        return;
+
+      const firstDayGridCol = grid.col(visibleDayColNames[0]);
+      if (!firstDayGridCol)
+        return;
+
+      for (const visCell of firstDayGridCol.getVisibleCells()) {
+        if (!visCell.isTableCell)
+          continue;
+        const gridRow = visCell.gridRow;
+        const tableRowIdx = visCell.tableRowIndex;
+        if (tableRowIdx == null)
+          continue;
+
+        const rowMin = minCol.get(tableRowIdx);
+        const rowMax = maxCol.get(tableRowIdx);
+        const range = rowMax - rowMin;
+        const pts: {x: number, y: number}[] = [];
+
+        for (const dayColName of visibleDayColNames) {
+          const cell = grid.cell(dayColName, gridRow);
+          if (!cell)
+            continue;
+          const value = cell.cell.value;
+          if (!value)
+            continue;
+
+          let armData: any;
+          try { armData = JSON.parse(value); }
+          catch { continue; }
+
+          const bounds = cell.bounds;
+          const armWidth = (bounds.width - 2 * PADDING_X) / enabledArms.length;
+
+          for (const arm of Object.keys(armData)) {
+            const enabledIdx = enabledArms.indexOf(arm);
+            if (enabledIdx < 0)
+              continue;
+            const entry = armData[arm];
+            const subIdx = entry.subjects.indexOf(selectedSubject);
+            if (subIdx < 0)
+              continue;
+            const px = bounds.x + PADDING_X + enabledIdx * armWidth + armWidth / 2;
+            const v = entry.values[subIdx];
+            const py = range === 0
+              ? bounds.y + bounds.height / 2
+              : bounds.y + bounds.height - PADDING_Y - ((v - rowMin) / range) * (bounds.height - 2 * PADDING_Y);
+            pts.push({x: px, y: py});
+            break;
+          }
+        }
+
+        if (pts.length >= 2) {
+          overlayCtx.strokeStyle = 'rgba(80,80,80,0.6)';
+          overlayCtx.lineWidth = 1;
+          overlayCtx.beginPath();
+          overlayCtx.moveTo(pts[0].x, pts[0].y);
+          for (let p = 1; p < pts.length; p++)
+            overlayCtx.lineTo(pts[p].x, pts[p].y);
+          overlayCtx.stroke();
+        }
       }
     });
 

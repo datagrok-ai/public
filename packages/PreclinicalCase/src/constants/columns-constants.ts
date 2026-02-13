@@ -42,6 +42,8 @@ export const MILAT = 'MILAT';
 export const MIDIR = 'MIDIR';
 export const MIANTREG = 'MIANTREG';
 export const MIDY_STR = 'MIDY_STR';
+//ta
+export const ARMCD = 'ARMCD';
 
 export const HAS_VALIDATION_ERRORS_COL = 'HasValidationErrors';
 export const VIOLATED_RULES_COL = 'ViolatedRules';

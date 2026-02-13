@@ -1,6 +1,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
-import {COL_HAS_ERRORS_POSTFIX, DOMAIN, ERRORS_POSTFIX, HAS_VALIDATION_ERRORS_COL,
+import {ARMCD, COL_HAS_ERRORS_POSTFIX, DOMAIN, ERRORS_POSTFIX, HAS_VALIDATION_ERRORS_COL,
+  PLANNED_TRT_ARM,
   STUDY_ID, SUBJECT_ID, VIOLATED_RULES_COL} from './constants/columns-constants';
 import {calculateLBBaselineColumns} from './data-preparation/data-preparation';
 import {removeExtension} from './utils/utils';
@@ -72,6 +73,7 @@ export class PreclinicalStudy {
   private validationColumnsSubscriptionSet = false;
   changeViewToSummary = true;
   treatmentAndControlConfig: {treatment: string, control: string}[] = [];
+  armCodeToName: {[armcd: string]: string} = {};
 
   constructor(config: StudyConfig) {
     this.config = config;
@@ -113,6 +115,19 @@ export class PreclinicalStudy {
           it.col(col)!.setTag('Description', this.config.fieldsDefinitions[col]);
       }
     });
+
+    if (this.domains.ta) {
+      const armcdCol = this.domains.ta.col(ARMCD);
+      const armCol = this.domains.ta.col(PLANNED_TRT_ARM);
+      if (armcdCol && armCol) {
+        for (let i = 0; i < this.domains.ta.rowCount; i++) {
+          const armcd = armcdCol.get(i);
+          const arm = armCol.get(i);
+          if (armcd && arm && !this.armCodeToName[armcd])
+            this.armCodeToName[armcd] = arm;
+        }
+      }
+    }
 
     if (this.domains.lb)
       calculateLBBaselineColumns(this.domains.lb);
