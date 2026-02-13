@@ -13,6 +13,8 @@ import {getBallFlightSim} from './demo/ball-flight';
 export {Model} from './model';
 import {PK_PD_MODEL_INFO} from './demo/pk-pd';
 import {BIOREACTOR_MODEL_INFO} from './demo/bioreactor';
+import {ACID_PRODUCTION_MODEL_INFO} from './demo/acid-production';
+import {POLLUTION_MODEL_INFO} from './demo/pollution';
 
 import {DF_NAME} from './constants';
 import {UI_TIME} from './ui-constants';
@@ -259,6 +261,26 @@ export class PackageFunctions {
   static async demoBioreactor(): Promise<any> {
     const model = new Model(BIOREACTOR_MODEL_INFO);
     await model.runDemo();
+  }
+
+  @grok.decorators.model({
+    name: 'Acid Production',
+    description: 'Gluconic acid (GA) production by Aspergillus niger modeling',
+    icon: 'files/icons/ga-production.png',
+  })
+  static async acidProduction(): Promise<void> {
+    const model = new Model(ACID_PRODUCTION_MODEL_INFO);
+    await model.run();
+  }
+
+  @grok.decorators.model({
+    name: 'Pollution',
+    description: 'The chemical reaction part of the air pollution model developed at The Dutch National Institute of Public Health and Environmental Protection',
+    icon: 'files/icons/pollution.png',
+  })
+  static async pollution(): Promise<void> {
+    const model = new Model(POLLUTION_MODEL_INFO);
+    await model.run();
   }
 
   @grok.decorators.func({

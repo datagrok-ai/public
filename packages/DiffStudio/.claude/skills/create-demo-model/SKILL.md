@@ -6,8 +6,7 @@ argument-hint: <ivp-file-path> [png-file-path]
 
 # Create Demo Model from IVP File
 
-Create a Diff Studio demo model using equations extracted from the IVP file,
-and register it in the package.
+Create a Diff Studio demo model using equations extracted from the IVP file, and register it in the package.
 
 ## Input Parsing
 
