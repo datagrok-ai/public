@@ -36,30 +36,28 @@ public class TableQuery extends DataQuery {
         if (tableName == null || provider == null)
             throw new IllegalArgumentException("tableName and provider must not be null");
 
-        tableName = provider.addBrackets(tableName);
+        int dotCount = tableName.length() - tableName.replace(".", "").length();
+
+        // Already fully qualified (catalog.schema.table)
+        if (dotCount >= 2)
+            return provider.addBrackets(tableName);
 
         boolean hasSchema = GrokConnectUtil.isNotEmpty(schema);
         boolean hasCatalog = GrokConnectUtil.isNotEmpty(catalog);
-        boolean hasDot = tableName.contains(".");
-        boolean isSQLite = "SQLite".equalsIgnoreCase(connection.dataSource);
 
-        if (provider.descriptor.requiresFullyQualifiedTable && hasCatalog) {
-            if (hasSchema && !hasDot)
-                return String.format("%s.%s.%s",
-                        provider.addBrackets(catalog),
-                        provider.addBrackets(schema),
-                        tableName);
-            if (hasDot)
-                return String.format("%s.%s",
-                        provider.addBrackets(catalog),
-                        tableName);
+        // Already has schema.table
+        if (dotCount == 1) {
+            if (provider.descriptor.supportCatalogs && hasCatalog)
+                return provider.addBrackets(catalog + "." + tableName);
+            return provider.addBrackets(tableName);
         }
 
-
-        if (hasSchema && !isSQLite && !hasDot)
-            return String.format("%s.%s", provider.addBrackets(schema), tableName);
-
-        return tableName;
+        // Simple table name (no dots)
+        if (provider.descriptor.supportCatalogs && hasCatalog && hasSchema)
+            return provider.addBrackets(catalog + "." + schema + "." + tableName);
+        if (hasSchema)
+            return provider.addBrackets(schema + "." + tableName);
+        return provider.addBrackets(tableName);
     }
 
     public String toSql() {

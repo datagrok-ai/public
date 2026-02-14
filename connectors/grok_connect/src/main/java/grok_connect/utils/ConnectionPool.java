@@ -18,6 +18,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public class ConnectionPool {
     private static final Logger LOGGER = LoggerFactory.getLogger(ConnectionPool.class);
     private static final Map<String, HikariDataSource> connectionPool = new ConcurrentHashMap<>();
+    private static final Object driverLoadLock = new Object();
 
     public static Connection getConnection(String url, java.util.Properties properties, String driverClassName)
             throws GrokConnectException {
@@ -26,7 +27,7 @@ public class ConnectionPool {
             throw new GrokConnectException("Connection parameters are null");
         String key = url + properties + driverClassName;
         try {
-            HikariDataSource ds = connectionPool.computeIfAbsent(key, k -> getDataSource(url, properties, driverClassName));
+            HikariDataSource ds = getOrCreateDataSource(key, url, properties, driverClassName);
             return ds.getConnection();
         } catch (HikariPool.PoolInitializationException | SQLTransientConnectionException e) {
             HikariDataSource pool = connectionPool.remove(key);
@@ -45,19 +46,43 @@ public class ConnectionPool {
         if (dataSource == null || GrokConnectUtil.isEmpty(key))
             throw new GrokConnectException("Connection parameters are null");
         try {
-            HikariDataSource ds = connectionPool.computeIfAbsent(key, k -> getDataSource(dataSource));
+            HikariDataSource ds = getOrCreateDataSource(key, dataSource);
             return ds.getConnection();
         } catch (HikariPool.PoolInitializationException | SQLTransientConnectionException e) {
-            if (connectionPool.containsKey(key)) {
-                HikariDataSource pool = connectionPool.remove(key);
-                if (pool != null)
-                    pool.close();
-            }
+            HikariDataSource pool = connectionPool.remove(key);
+            if (pool != null)
+                pool.close();
             Throwable cause = e.getCause();
             throw new GrokConnectException(cause != null ? cause : e);
         } catch (SQLException e) {
             throw new GrokConnectException(e);
         }
+    }
+
+    private static HikariDataSource getOrCreateDataSource(String key, String url, Properties properties, String driverClassName) {
+        HikariDataSource ds = connectionPool.get(key);
+        if (ds != null)
+            return ds;
+        HikariDataSource newDs = getDataSource(url, properties, driverClassName);
+        HikariDataSource existing = connectionPool.putIfAbsent(key, newDs);
+        if (existing != null) {
+            newDs.close();
+            return existing;
+        }
+        return newDs;
+    }
+
+    private static HikariDataSource getOrCreateDataSource(String key, DataSource dataSource) {
+        HikariDataSource ds = connectionPool.get(key);
+        if (ds != null)
+            return ds;
+        HikariDataSource newDs = getDataSource(dataSource);
+        HikariDataSource existing = connectionPool.putIfAbsent(key, newDs);
+        if (existing != null) {
+            newDs.close();
+            return existing;
+        }
+        return newDs;
     }
 
     private static HikariDataSource getDataSource(DataSource dataSource) {
@@ -73,6 +98,7 @@ public class ConnectionPool {
         config.setMinimumIdle(0);
         config.setIdleTimeout(SettingsManager.getInstance().getSettings().connectionPoolIdleTimeout);
         config.setLeakDetectionThreshold(60 * 1000);
+        config.setInitializationFailTimeout(-1);
 
         return new HikariDataSource(config);
     }
@@ -100,12 +126,15 @@ public class ConnectionPool {
         HikariConfig config = new HikariConfig();
         config.setPoolName(poolName);
         config.setJdbcUrl(url);
-        config.setDriverClassName(driverClassName);
+        synchronized (driverLoadLock) {
+            config.setDriverClassName(driverClassName);
+        }
         config.setDataSourceProperties(properties);
         config.setMaximumPoolSize(SettingsManager.getInstance().getSettings().connectionPoolMaximumPoolSize);
         config.setMinimumIdle(0);
         config.setIdleTimeout(SettingsManager.getInstance().getSettings().connectionPoolIdleTimeout);
         config.setLeakDetectionThreshold(60 * 1000);
+        config.setInitializationFailTimeout(-1);
         return new HikariDataSource(config);
     }
 }
