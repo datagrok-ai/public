@@ -224,7 +224,7 @@ export function createMICrossDomainView(studyId: string): StudyTableViewParams {
 
     const fg = tableView.getFiltersGroup({createDefaultFilters: false});
     for (const col of existingMiSplitCats)
-      fg.add({type: DG.FILTER_TYPE.CATEGORICAL, column: col});
+      fg.add({type: DG.FILTER_TYPE.CATEGORICAL, column: col, sortColumn: col === MISPEC ? 'total' : 'filtered', sortDirection: 'false'});
 
     tableView.dataFrame.onFilterChanged.subscribe(() => {
       latestFilterFromMi = resDf!.filter.clone();
@@ -232,7 +232,7 @@ export function createMICrossDomainView(studyId: string): StudyTableViewParams {
     });
 
     updateBoxPlots();
-    //workaround to switch bach to browse from toolbox
+    //workaround to switch back to browse from toolbox
     (grok.shell.browsePanel.root.closest('.dock-container')?.querySelector('[name = "view-handle: Browse"]') as HTMLElement)?.click();
   };
 
