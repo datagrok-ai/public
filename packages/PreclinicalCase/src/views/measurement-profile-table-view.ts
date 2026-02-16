@@ -166,7 +166,19 @@ export function createMeasurementProfileTableView(studyId: string): StudyTableVi
         updateArmFilter();
     });
 
-    tableView.setRibbonPanels([[splitBy.root, colorBy.root, legendDiv]]);
+    const hasPctChange = tableView.dataFrame.col('pct_change') !== null;
+    const valueType = ui.input.choice('Value', {
+      items: hasPctChange ? ['Absolute', '% change from baseline'] : ['Absolute'],
+      value: 'Absolute',
+      onValueChanged: () => {
+        const yCol = valueType.value === '% change from baseline' ? 'pct_change' : 'result';
+        trellisPlot?.setOptions({
+          innerViewerLook: {yColumnNames: [yCol]},
+        });
+      },
+    });
+
+    tableView.setRibbonPanels([[valueType.root, splitBy.root, colorBy.root, legendDiv]]);
 
     trellisPlot = await DG.Viewer.fromType(DG.VIEWER.TRELLIS_PLOT, tableView.dataFrame, {
       xColumnNames: [SEX],
