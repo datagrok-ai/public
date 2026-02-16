@@ -841,6 +841,9 @@ export namespace chem {
     let root = document.createElement('div');
     // @ts-ignore
     import('openchemlib/full.js').then((OCL) => {
+      const isMolFile = smiles.includes('M  END');
+      if (!isMolFile && smiles.length > 5000)
+        return;
       let m = smiles.includes('M  END') ? OCL.Molecule.fromMolfile(smiles) : OCL.Molecule.fromSmiles(smiles);
       root.innerHTML = m.toSVG(width, height, undefined, options);
     });

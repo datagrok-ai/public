@@ -25,6 +25,12 @@ function isSmiles(notationType: string): boolean {
   return notationType === MolNotationType.SMILES;
 }
 
+function oclMol(mol: string, notationType: string): OCL.Molecule {
+  if (isSmiles(notationType) && mol.length > 5000)
+    throw new Error('Invalid molecule string');
+  return isSmiles(notationType) ? OCL.Molecule.fromSmiles(mol) : OCL.Molecule.fromMolfile(mol);
+}
+
 function recalculateCoordinates(molList: Array<string>, notationType: string) {
   const res: Array<string> = new Array(molList?.length ?? 0).fill('');
   const errors: string[] = [];
@@ -34,7 +40,7 @@ function recalculateCoordinates(molList: Array<string>, notationType: string) {
       return;
     }
     try {
-      const mol = isSmiles(notationType) ? OCL.Molecule.fromSmiles(molfile) : OCL.Molecule.fromMolfile(molfile);
+      const mol = oclMol(molfile, notationType);
       mol.inventCoordinates();
       const v3 = mol.toMolfileV3();
       res[i] = v3.replace('STERAC1', 'STEABS');
@@ -73,7 +79,7 @@ function getChemProperties(molList: Array<string>, propList: string[], notationT
     res[propName] = new Array(molList.length).fill(null);
   molList.forEach((smiles, i) => {
     try {
-      const mol = isSmiles(notationType) ? OCL.Molecule.fromSmiles(smiles) : OCL.Molecule.fromMolfile(smiles);
+      const mol = oclMol(smiles, notationType);
       propList.forEach((p) => {
         res[p][i] = CHEM_PROP_MAP[p].valueFunc(mol);
       });
@@ -92,7 +98,7 @@ function getToxRisks(molList: Array<string>, riskTypes: number[], notationType: 
   const toxicityPredictor = new OCL.ToxicityPredictor();
   molList.forEach((smiles, i) => {
     try {
-      const mol = isSmiles(notationType) ? OCL.Molecule.fromSmiles(smiles) : OCL.Molecule.fromMolfile(smiles);
+      const mol = oclMol(smiles, notationType);
       riskTypes.forEach((p) => {
         res[p][i] = toxicityPredictor.assessRisk(mol, p);
       });
@@ -110,7 +116,7 @@ function getDrugLikeliness(molList: Array<string>, notationType: string): OCLWor
   const dlp = new OCL.DruglikenessPredictor();
   molList.forEach((smiles, i) => {
     try {
-      const mol = isSmiles(notationType) ? OCL.Molecule.fromSmiles(smiles) : OCL.Molecule.fromMolfile(smiles);
+      const mol = oclMol(smiles, notationType);
       const score = dlp.assessDruglikeness(mol);
       res[colName][i] = score;
     } catch (e) {

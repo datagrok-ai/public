@@ -2505,6 +2505,8 @@ class SketcherDialogWrapper {
   normalizeMolStr(molStr: string): string {
     let mol;
     try {
+      if (!grok.chem.isMolBlock(molStr) && molStr?.length > 5000)
+        throw new Error('SMILES string longer than 5000 characters not supported');
       mol = _rdKitModule.get_mol(molStr);
       if (mol.has_coords() === 2) {
         mol.normalize_depiction(0);

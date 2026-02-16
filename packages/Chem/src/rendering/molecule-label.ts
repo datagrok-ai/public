@@ -3,7 +3,7 @@ import * as DG from 'datagrok-api/dg';
 import {PackageFunctions} from '../package';
 import {RDKIT_COMMON_RENDER_OPTS} from '../utils/chem-common-rdkit';
 import {RDMol} from '@datagrok-libraries/chem-meta/src/rdkit-api';
-import {getFirstNSymbols} from '../utils/chem-common';
+import {getFirstNSymbols, isMolBlock} from '../utils/chem-common';
 
 export async function drawMoleculeLabels(
   table: DG.DataFrame, molCol: DG.Column, sp: DG.ScatterPlotViewer, maxPoints: number, smallMarkerSize: number = -1,
@@ -35,8 +35,7 @@ export async function drawMoleculeLabels(
             setTimeout(() => sp.render(sp.getInfo()['canvas'].getContext('2d')), 10);
           }
           return; // return if there are more than max allowed points in total on the screen
-        }
-        else {
+        } else {
           pointsOnScreen[counter] = point;
           pointsOnScreenIdxs[counter] = i;
           counter++;
@@ -89,7 +88,14 @@ export async function drawMoleculeLabels(
         const canwasWidth = largeMarkerSize - moleculeRectOffset;
         const canvasHeight = canwasWidth * 0.7;
         const imageHost = ui.canvas(canwasWidth, canvasHeight);
+        const mStr = molCol.get(pointsOnScreenIdxs[i]);
+        if (mStr && !isMolBlock(mStr) && mStr.length > 5000) {
+          // throw new Error('SMILES string longer than 5000 characters not supported')
+          ctxMain.closePath();
+          continue;
+        }
         mol = rdkitModule.get_mol(molCol.get(pointsOnScreenIdxs[i]));
+
         mol?.draw_to_canvas_with_highlights(imageHost, JSON.stringify(RDKIT_COMMON_RENDER_OPTS));
         ctxMain.arc(pointsOnScreen[i].x, pointsOnScreen[i].y, Math.floor(largeMarkerSize/2), 0, 2 * Math.PI);
         ctxMain.fill();
