@@ -158,18 +158,21 @@ export function createMICrossDomainView(studyId: string): StudyTableViewParams {
     return boxPlot;
   };
 
+  const NO_FINDING = 'No Finding';
+
   const updateBoxPlots = async () => {
     ui.empty(boxplotBySeverityDiv);
     ui.empty(boxplotByDayDiv);
     const filteredMiDf = miDf.clone(miDf.filter);
     resDf!.rows.match({test: selectedTest}).filter();
+    const testOnlyFilter = resDf!.filter.clone();
     const filteredMeasurements = resDf!.clone(resDf!.filter.and(latestFilterFromMi));
     const miDayBoxplot = await createBoxPlot(filteredMeasurements, MIDY_STR,
       `${selectedTest} before Microscopic finding day`);
     boxplotByDayDiv.append(miDayBoxplot.root);
     const catsToSelect: string[] = [];
     for (const cat of catsForSeverityBoxplot) {
-      if (filteredMiDf.col(cat)!.categories.length > 1)
+      if (filteredMiDf.col(cat) && filteredMiDf.col(cat)!.categories.length > 1)
         catsToSelect.push(cat);
     }
     if (catsToSelect.length) {
@@ -179,9 +182,23 @@ export function createMICrossDomainView(studyId: string): StudyTableViewParams {
           {style: {textAlign: 'center'}}));
       return;
     }
-    grok.data.joinTables(filteredMeasurements, filteredMiDf, [SUBJECT_ID], [SUBJECT_ID], null,
-      [MISEV], DG.JOIN_TYPE.LEFT, true);
-    const severityBoxPlot = await createBoxPlot(filteredMeasurements, MISEV,
+    // Include ALL subjects for the selected test — not just those with MI findings.
+    // Subjects without the selected finding get "No Finding", providing the reference
+    // distribution needed to assess correlation between severity and lab values.
+    const allSubjectMeasurements = resDf!.clone(testOnlyFilter);
+    const hasMiSev = filteredMiDf.col(MISEV) !== null;
+    const joinCol = hasMiSev ? MISEV : MISTRESC;
+    grok.data.joinTables(allSubjectMeasurements, filteredMiDf, [SUBJECT_ID], [SUBJECT_ID], null,
+      [joinCol], DG.JOIN_TYPE.LEFT, true);
+    const joinedCol = allSubjectMeasurements.col(joinCol);
+    if (!joinedCol)
+      return;
+    allSubjectMeasurements.columns.addNewString('severity').init((i) => {
+      if (joinedCol.isNone(i) || joinedCol.get(i) === '')
+        return NO_FINDING;
+      return hasMiSev ? joinedCol.get(i) : 'Finding';
+    });
+    const severityBoxPlot = await createBoxPlot(allSubjectMeasurements, 'severity',
       `${selectedTest} vs Microscopic finding severity`);
     boxplotBySeverityDiv.append(severityBoxPlot.root);
   };
