@@ -5,6 +5,8 @@ import type ExcelJS from 'exceljs';
 import type html2canvas from 'html2canvas';
 import {viewerTypesMapping} from './consts';
 import {delay, getPropViewers} from './utils';
+import type {ValidationResult} from '../reactive-tree-driver/src/data/common-types';
+import type {ConsistencyInfo} from '../reactive-tree-driver/src/runtime/StateTreeNodes';
 
 const updateIndicatorWithText = (element: HTMLElement, updating: boolean, text?: string) => {
   ui.setUpdateIndicator(element, updating);
@@ -18,6 +20,8 @@ export const richFunctionViewReport = async (
   func: DG.Func,
   lastCall: DG.FuncCall,
   dfToViewerMapping: {[key: string]: (DG.Viewer | undefined)[]},
+  validationStates?: Record<string, ValidationResult>,
+  consistencyStates?: Record<string, ConsistencyInfo>,
 ) => {
   const sheetNamesCache = {} as Record<string, string>;
 
@@ -68,8 +72,8 @@ export const richFunctionViewReport = async (
         const newViewer = DG.Viewer.fromType(viewer.type, viewer.dataFrame.clone());
         newViewer.copyViewersLook(viewer);
 
-        let width = 1280;
-        let height = 720;
+        const width = 1280;
+        const height = 720;
 
         const viewerBox = ui.div(newViewer.root, {style: {
           width: `${width}px`,
@@ -110,18 +114,24 @@ export const richFunctionViewReport = async (
       exportWorkbook.addWorksheet(getSheetName(visibleTitle, exportWorkbook));
 
         const currentDf = lastCall.inputs[dfInput.name];
-        dfToSheet(currentDfSheet, dfCounter, currentDf);
+        dfToSheet({sheet: currentDfSheet, dfCounter, df: currentDf});
         dfCounter++;
       });
 
       if (scalarInputs.length) {
         const inputScalarsSheet = exportWorkbook.addWorksheet('Input scalars');
-        scalarsToSheet(inputScalarsSheet, scalarInputs.map((scalarInput) => ({
-          caption: scalarInput.options['caption'] ?? scalarInput.name,
-          value: lastCall.inputs[scalarInput.name] ?? '',
-          units: scalarInput.options['units'] ?? '',
-          format: scalarInput.format
-        })));
+        scalarsToSheet(
+          inputScalarsSheet,
+          scalarInputs.map((scalarInput) => ({
+            name: scalarInput.name,
+            caption: scalarInput.options['caption'] ?? scalarInput.name,
+            value: lastCall.inputs[scalarInput.name] ?? '',
+            units: scalarInput.options['units'] ?? '',
+            format: scalarInput.format,
+          })),
+          validationStates,
+          consistencyStates,
+        );
       }
 
       dfOutputs.forEach((dfOutput) => {
@@ -131,19 +141,25 @@ export const richFunctionViewReport = async (
       exportWorkbook.addWorksheet(getSheetName(visibleTitle, exportWorkbook));
 
         const currentDf = lastCall.outputs[dfOutput.name];
-        dfToSheet(currentDfSheet, dfCounter, currentDf);
+        dfToSheet({sheet: currentDfSheet, dfCounter, df: currentDf});
         dfCounter++;
       });
 
 
       if (scalarOutputs.length) {
         const outputScalarsSheet = exportWorkbook.addWorksheet('Output scalars');
-        scalarsToSheet(outputScalarsSheet, scalarOutputs.map((scalarOutput) => ({
-          caption: scalarOutput.options['caption'] ?? scalarOutput.name,
-          value: lastCall.outputs[scalarOutput.name] ?? '',
-          units: scalarOutput.options['units'] ?? '',
-          format: scalarOutput.format,
-        })));
+        scalarsToSheet(
+          outputScalarsSheet,
+          scalarOutputs.map((scalarOutput) => ({
+            name: scalarOutput.name,
+            caption: scalarOutput.options['caption'] ?? scalarOutput.name,
+            value: lastCall.outputs[scalarOutput.name] ?? '',
+            units: scalarOutput.options['units'] ?? '',
+            format: scalarOutput.format,
+          })),
+          validationStates,
+          consistencyStates,
+        );
       }
 
       for (const inputProp of func.inputs.filter((prop) => isDataFrame(prop))) {
@@ -191,11 +207,7 @@ export const richFunctionViewReport = async (
               DG.Column.float('Stdev', length).init((i: number) => currentDf.columns.byIndex(i).stats.stdev),
             ]);
             dfToSheet(
-              exportWorkbook.getWorksheet(getSheetName(visibleTitle, exportWorkbook))!,
-              dfCounter,
-              stats,
-              currentDf.columns.length + 2,
-              (index > 0 && nonGridViewers[index-1]) ? Math.ceil(nonGridViewers[index-1]!.root.clientHeight / 20) + 1 : 0,
+              {sheet: exportWorkbook.getWorksheet(getSheetName(visibleTitle, exportWorkbook))!, dfCounter, df: stats, column: currentDf.columns.length + 2, row: (index > 0 && nonGridViewers[index - 1]) ? Math.ceil(nonGridViewers[index - 1]!.root.clientHeight / 20) + 1 : 0},
             );
             dfCounter++;
           } else {
@@ -240,29 +252,72 @@ export const formatNumber = (val: any, format?: string) => {
   } catch {
     return val;
   }
-}
+};
 
-export const scalarsToSheet =
-  (sheet: ExcelJS.Worksheet, scalars: { caption: string, value: string, units: string, format?: string }[]) => {
-    sheet.addRow(['Parameter', 'Value', 'Units']).font = {bold: true};
-    scalars.forEach((scalar) => {
-      sheet.addRow([scalar.caption, formatNumber(scalar.value, scalar.format), scalar.units]);
-    });
+export const scalarsToSheet = (sheet: ExcelJS.Worksheet,
+  scalars: { name: string, caption: string, value: string, units: string, format?: string }[],
+  validationStates?: Record<string, ValidationResult>,
+  consistencyStates?: Record<string, ConsistencyInfo>,
+) => {
+  const cols = ['Parameter', 'Value', 'Units'];
+  if (validationStates)
+    cols.push('Validation');
+  if (consistencyStates)
+    cols.push('Consistency');
+  sheet.addRow(cols).font = {bold: true};
+  scalars.forEach((scalar) => {
+    const vals = [scalar.caption, formatNumber(scalar.value, scalar.format), scalar.units];
+    if (validationStates?.[scalar.name])
+      vals.push(getValidationString(validationStates[scalar.name]));
+    if (consistencyStates?.[scalar.name])
+      vals.push(getConsistencyString(consistencyStates[scalar.name]));
 
-    sheet.getColumn(1).width = Math.max(
-      ...scalars.map((scalar) => scalar.caption.toString().length), 'Parameter'.length,
-    ) * 1.2;
-    sheet.getColumn(2).width = Math.max(
-      ...scalars.map((scalar) => scalar.value.toString().length), 'Value'.length) * 1.2;
-    sheet.getColumn(3).width = Math.max(
-      ...scalars.map((scalar) => scalar.units.toString().length), 'Units'.length) * 1.2;
-  };
+    sheet.addRow([scalar.caption, formatNumber(scalar.value, scalar.format), scalar.units]);
+  });
 
+  sheet.getColumn(1).width = Math.max(
+    ...scalars.map((scalar) => scalar.caption.toString().length), 'Parameter'.length,
+  ) * 1.2;
+  sheet.getColumn(2).width = Math.max(
+    ...scalars.map((scalar) => scalar.value.toString().length), 'Value'.length) * 1.2;
+  sheet.getColumn(3).width = Math.max(
+    ...scalars.map((scalar) => scalar.units.toString().length), 'Units'.length) * 1.2;
 
-export const dfToSheet = (sheet: ExcelJS.Worksheet, dfCounter: number, df?: DG.DataFrame, column?: number, row?: number) => {
+  sheet.getColumn(4).width = 250;
+  sheet.getColumn(5).width = 250;
+};
+
+const getValidationString = (data: ValidationResult) => {
+  const validations = (['errors', 'warnings'] as const)
+    .filter((category) => !!data?.[category]?.length)
+    .flatMap((category) => data![category]!.map((advice) =>({category, advice})))
+    .map(({category, advice}) => `${category}: ${typeof advice === 'string' ? advice : advice.description}`)
+    .join('\n');
+  return validations;
+};
+
+const getConsistencyString = (data: ConsistencyInfo) => {
+  if (data.inconsistent && (data.restriction === 'disabled' || data.restriction === 'restricted'))
+    return `Inconsistent: value should be ${String(data.assignedValue)}`;
+  return;
+};
+
+const dfToSheet = (
+  {
+    sheet,
+    dfCounter,
+    df,
+    column,
+    row,
+    validation,
+    consistency,
+  } :
+ { sheet: ExcelJS.Worksheet; dfCounter: number; df?: DG.DataFrame; column?: number; row?: number; validation?: ValidationResult; consistency?: ConsistencyInfo },
+) => {
   if (!df)
     return;
   const columnKey = sheet.getColumn(column ?? 1).letter;
+  const nCols = df.columns.length;
   const rows = [];
   for (let rowIdx = 0; rowIdx < df.rowCount; rowIdx++) {
     const row = [];
@@ -271,11 +326,10 @@ export const dfToSheet = (sheet: ExcelJS.Worksheet, dfCounter: number, df?: DG.D
       const rawVal = df.get(col.name, rowIdx);
       if (col?.type === 'double') {
         const format = col?.tags?.['format'] ?? '.00';
-        const val =  formatNumber(rawVal, format);
+        const val = formatNumber(rawVal, format);
         row.push(val);
-      } else {
+      } else
         row.push(rawVal);
-      }
     }
     rows.push(row);
   }
@@ -290,7 +344,16 @@ export const dfToSheet = (sheet: ExcelJS.Worksheet, dfCounter: number, df?: DG.D
     col.width = 25;
     col.alignment = {wrapText: true};
   });
-};
+  const metaCol = nCols + 1;
+  if (validation) {
+    sheet.getCell(1, metaCol).value = getValidationString(validation);
+    sheet.getColumn(metaCol).width = 250;
+  }
+  if (consistency) {
+    sheet.getCell(1, metaCol).value = getConsistencyString(consistency);
+    sheet.getColumn(metaCol).width = 250;
+  }
+}
 
 const isDataFrame = (prop: DG.Property) => (prop.propertyType === DG.TYPE.DATA_FRAME);
 

@@ -63,11 +63,11 @@ export const getDockSpawnConfig = (func: DG.Func) => {
 
 export const getRunLabel = (func: DG.Func) => {
   return func.options['runLabel'];
-}
+};
 
 export const getCustomExports = (func: DG.Func) => {
   return JSON.parse(func.options['customExports'] ?? '[]');
-}
+};
 
 export const getFeature = (features: Record<string, boolean> | string[], featureName: string, defaultValue: boolean) => {
   if (features instanceof Array)
@@ -95,7 +95,7 @@ export const isIncomplete = (run: DG.FuncCall) => {
 export const deepCopy = (call: DG.FuncCall) => {
   // if there is no ':' in nqName, it might be ambiguous, so try to
   // reuse call.func, otherwise use nqName search
-  const deepClone = call.func?.nqName?.includes(":") ? DG.Func.byName(call.func.nqName).prepare() : call.func.prepare();
+  const deepClone = call.func?.nqName?.includes(':') ? DG.Func.byName(call.func.nqName).prepare() : call.func.prepare();
 
   deepClone.id = call.id;
 
