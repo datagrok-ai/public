@@ -129,6 +129,7 @@ Line chart supports Statistical Process Control (SPC) features out of the box, i
 | Markers Map | string | Marker category time unit map function (applicable to dates only). |
 | Marker Type | string |  |
 | Marker Size | number |  |
+| Marker Opacity | number |  |
 | Show Markers | visibilitymode | A boolean column that determines whether to show markers. |
 | Markers Visibility Column Name | string |  |
 | **Selection** | | |
