@@ -1596,7 +1596,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
 
   private fillColumnFromNodes(
     column: DG.Column, childNodes: DG.TreeViewNode[], rowCount: number,
-    getCategoryName: (node: ITreeNode) => string,
+    getCategoryName: (node: ITreeNode) => string | null,
     colorMap: Map<string, string | undefined>,
   ): void {
     const buffer = new Array<string | null>(rowCount).fill(null);
@@ -1605,6 +1605,8 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     for (const childNode of childNodes) {
       const nodeValue = value(childNode);
       const categoryName = getCategoryName(nodeValue);
+      if (categoryName == null)
+        continue;
       categoryColorMap.set(categoryName, colorMap.get(nodeValue.smiles));
       const {bitset} = nodeValue;
       if (bitset && bitset.trueCount > 0) {
@@ -1652,7 +1654,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
         'Column with scaffold tree labels used for color-coded legends.');
       this.labelsColumn = labelsCol;
       this.fillColumnFromNodes(this.labelsColumn, childNodes, rowCount,
-        (node) => node.label || node.smiles, scaffoldColorMap);
+        (node) => node.label ?? null, scaffoldColorMap);
     } else
       this.removeLabelsColumn();
   }
@@ -1861,12 +1863,25 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     (labelInput.input as HTMLInputElement).placeholder = 'Label';
     if (!this.showLabels)
       labelInput.root.style.display = 'none';
-    labelInput.onChanged.subscribe(() => {
+    const commitLabel = () => {
       const text = labelInput.value.trim();
       value(group).label = text || undefined;
       this.treeEncode = JSON.stringify(this.serializeTrees(this.tree));
       this.assignScaffoldColors();
+    };
+    labelInput.onChanged.subscribe(() => {
+      value(group).label = labelInput.value || undefined;
     });
+    const inputEl = labelInput.input as HTMLInputElement;
+    inputEl.onkeydown = (e: KeyboardEvent) => {
+      e.stopPropagation();
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        commitLabel();
+        inputEl.blur();
+      }
+    };
+    inputEl.onblur = () => commitLabel();
     labelInput.root.onclick = (e) => e.stopImmediatePropagation();
     labelInput.root.onmousedown = (e) => e.stopImmediatePropagation();
     groupValue.labelElement = labelInput.root as HTMLDivElement;
