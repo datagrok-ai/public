@@ -1500,9 +1500,9 @@ export class AddNewColumnDialog {
         filter = !word.text.endsWith(':');
       } else if (word.text.includes('$') || word.text.includes('${') || word.text.includes('$[')) {
         const dollarIdx = word.text.lastIndexOf('$');
-        //check if there is a function before dollar sign and if it is an aggregation function which requires square braces
+        //check if there is a function before dollar sign (only in case index > 2: function name at least one letter and an opening brace) and if it is an aggregation function which requires square braces
         let openingSym = '{';
-        if (context.view) {
+        if (context.view && index > 1) {
           const funcName = this.getFunctionNameAtPosition(context.view!, index - 2, -1, this.packageFunctionsParams,
             this.coreFunctionsParams, true)?.funcName;
           const isAggr = funcName ?
@@ -1510,7 +1510,6 @@ export class AddNewColumnDialog {
           if (isAggr)
             openingSym = '[';
         }
-        const func = this.getFunctionNameAtPosition(context.view!, index - 2, -1, this.packageFunctionsParams, this.coreFunctionsParams, true)
         const closingSym = openingSym === '{' ? '}' : ']';
         const openingBracketIdx = word.text.indexOf(openingSym) > dollarIdx ? word.text.indexOf(openingSym) : -1;
         const closingBracket = context.state.doc.length > word.text.length ?
