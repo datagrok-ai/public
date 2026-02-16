@@ -64,7 +64,7 @@ export class MonomerLibBase implements IMonomerLibBase {
   }
 
   getMonomerSymbolsByType(polymerType: PolymerType): string[] {
-    const res = Object.keys(this._monomers[polymerType]);
+    const res = Object.keys(this._monomers[polymerType] ?? {});
     if (this._smilesMonomerCache[polymerType])
       res.push(...Object.keys(this._smilesMonomerCache[polymerType]));
     return res;

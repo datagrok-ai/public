@@ -337,7 +337,9 @@ export class PackageFunctions {
       // here we know that there are no monomers with connections like (1,2) in names, so we can check for []
       const reBrackets = Object.keys(stats.freq).filter((om) => om.startsWith('[') && om.startsWith(']'));
       const midBrackets = Object.keys(stats.freq).filter((om) => om.includes('[') || om.includes(']'));
-      if (reBrackets.length !== midBrackets.length)
+      if (reBrackets.length !== midBrackets.length || reBrackets.length === 0)
+        return false;
+      if (Object.keys(stats.freq).some((om) => om.startsWith('*') || om.startsWith('$') || om.startsWith('@') || om.startsWith('%')))
         return false;
     }
     // refine the notation provider
