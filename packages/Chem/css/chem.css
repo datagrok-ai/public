@@ -435,6 +435,18 @@
   margin-left: -40px;
 }
 
+.scaffold-tree-label-input {
+  margin: 0;
+  padding: 0;
+  max-width: 100%;
+}
+
+.scaffold-tree-label-input .ui-input-editor {
+  font-size: 11px;
+  height: 20px;
+  padding: 0 4px;
+}
+
 .chem-drug-likeness-widget-score-div, .chem-toxicity-widget-risk-row {
   display: flex;
   align-items: center;
