@@ -70,36 +70,44 @@ export function createMICrossDomainView(studyId: string): StudyTableViewParams {
 
   const createFindingsSummaryTable = () => {
     const subjectByArmCount = studies[studyId].domains.mi!.groupBy([PLANNED_TRT_ARM])
-      .count('total_subjects').aggregate();
-    const listOfArms = subjectByArmCount.col(PLANNED_TRT_ARM)!.toList();
-    const listOfTotalSubjNums = subjectByArmCount.col('total_subjects')!.toList();
-    if (!miDf.col('total_subjects')) {
-      grok.data.joinTables(miDf, subjectByArmCount, [PLANNED_TRT_ARM], [PLANNED_TRT_ARM],
-        undefined, ['total_subjects'], DG.JOIN_TYPE.LEFT, true);
-      miDf.name = 'mi';
-    }
-    const subjByFinding = miDf.groupBy(['ARM', 'MISPEC', 'MISTRESC', 'total_subjects'])
-      .count('subjects_with_finding').aggregate();
-    subjByFinding.columns.addNewString('percent')
-      .init((i) => {
-        const subjWithFinding = subjByFinding.col('subjects_with_finding')!.get(i);
-        const percent = (subjWithFinding / subjByFinding.col('total_subjects')!.get(i)) * 100;
-        return `${subjWithFinding} (${percent.toFixed(2)}%)`;
-      });
-    const pivoted = subjByFinding.groupBy(['MISPEC', 'MISTRESC']).pivot('ARM').first('percent').aggregate();
-    pivoted.columns.names().forEach((col) => {
-      if (col.endsWith(' first(percent)')) {
-        let newColName = col.replace(' first(percent)', '');
-        const idxOfArm = listOfArms.findIndex((it) => it === newColName);
-        if (idxOfArm !== -1)
-          newColName = `${newColName} (n = ${listOfTotalSubjNums[idxOfArm]})`;
-        pivoted.col(col)!.name = newColName;
-      }
-    });
-    pivoted.name = 'findings sumary';
-    grok.data.linkTables(miDf, pivoted, [MISPEC, MISTRESC], [MISPEC, MISTRESC], [DG.SYNC_TYPE.FILTER_TO_FILTER], true);
+      .uniqueCount(SUBJECT_ID, 'total_subjects').aggregate();
+    const listOfArms: string[] = subjectByArmCount.col(PLANNED_TRT_ARM)!.toList();
+    const listOfTotalSubjNums: number[] = subjectByArmCount.col('total_subjects')!.toList();
 
-    return pivoted;
+    const subjByFinding = miDf.groupBy([PLANNED_TRT_ARM, MISPEC, MISTRESC])
+      .uniqueCount(SUBJECT_ID, 'subjects_with_finding').aggregate();
+
+    const pivotedCount = subjByFinding.groupBy([MISPEC, MISTRESC])
+      .pivot(PLANNED_TRT_ARM).first('subjects_with_finding').aggregate();
+
+    const result = DG.DataFrame.create(pivotedCount.rowCount);
+    result.columns.addNewString(MISPEC).init((i) => pivotedCount.get(MISPEC, i));
+    result.columns.addNewString(MISTRESC).init((i) => pivotedCount.get(MISTRESC, i));
+
+    for (let a = 0; a < listOfArms.length; a++) {
+      const arm = listOfArms[a];
+      const total = listOfTotalSubjNums[a];
+      const srcCountCol = pivotedCount.columns.names()
+        .find((c) => c.startsWith(arm) && c.includes('first(subjects_with_finding)'));
+      if (!srcCountCol)
+        continue;
+
+      const countColName = `N ${arm} (n=${total})`;
+      const pctColName = `% ${arm} (n=${total})`;
+      result.columns.addNewInt(countColName).init((i) => {
+        const v = pivotedCount.get(srcCountCol, i);
+        return v == null || v === '' ? 0 : Number(v);
+      });
+      const pctCol = result.columns.addNewFloat(pctColName).init((i) => {
+        const v = pivotedCount.get(srcCountCol, i);
+        const n = v == null || v === '' ? 0 : Number(v);
+        return total > 0 ? (n / total) * 100 : 0;
+      });
+    }
+
+    result.name = 'findings summary';
+    grok.data.linkTables(miDf, result, [MISPEC, MISTRESC], [MISPEC, MISTRESC], [DG.SYNC_TYPE.FILTER_TO_FILTER], true);
+    return result;
   };
 
   const miSplitCategories: {[key: string]: string} = {
@@ -187,7 +195,8 @@ export function createMICrossDomainView(studyId: string): StudyTableViewParams {
 
   grok.data.linkTables(miDf, resDf!, [SUBJECT_ID], [SUBJECT_ID], [DG.SYNC_TYPE.FILTER_TO_FILTER], true);
 
-  const summaryFindingsGrid = createFindingsSummaryTable().plot.grid({title: 'Findings frequency table'});
+  const summaryResult = createFindingsSummaryTable();
+  const summaryFindingsGrid = summaryResult.plot.grid({title: 'Findings frequency table'});
 
   const onTableViewAdded = async (tableView: DG.TableView) => {
     tableView.setRibbonPanels([[testChoiceInput.root]]);
