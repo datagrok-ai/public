@@ -438,7 +438,7 @@ function getEnrichmentsDiv(conn: DG.DataConnection, schema: string, table: strin
     root = ui.divV(names.map((n) => {
       let parent: HTMLDivElement | undefined = undefined;
       const deleteLink = ui.iconFA('times', () => {
-        deleteEnrichment(conn.nqName, schema, table, column, n).then((b) => {
+        deleteEnrichment(conn.nqName, schema, table, column, n, db).then((b) => {
           if (b)
             parent?.remove();
           if (root?.children?.length === 0)
@@ -525,7 +525,7 @@ function showEnrichDialog(mainTable: DG.TableInfo, df: DG.DataFrame, dbColName: 
       await saveEnrichment(enrichment, pivotView.query.connection.nqName);
       if (enrichName && enrichment.name != enrichName) {
         await deleteEnrichment(pivotView.query.connection.nqName, enrichment.keySchema,
-          enrichment.keyTable, enrichment.keyColumn, enrichName);
+          enrichment.keyTable, enrichment.keyColumn, enrichName, enrichment.keyDb);
       }
       onSave();
     });
@@ -569,10 +569,10 @@ async function getEnrichConfigsNames(connectionNqName: string, schema: string, t
   }
 }
 
-async function deleteEnrichment(connectionNqName: string, schema: string, table: string, column: string, name: string): Promise<boolean> {
+async function deleteEnrichment(connectionNqName: string, schema: string, table: string, column: string, name: string, db: string | null = null): Promise<boolean> {
   try {
     await grok.dapi.files
-      .delete(`System:AppData/PowerPack/enrichments/${nqNameToPath(connectionNqName)}/${schema}/${table}/${column}/${name}.json`);
+      .delete(`System:AppData/PowerPack/enrichments/${nqNameToPath(connectionNqName)}${db ? `/${db}` : ''}/${schema}/${table}/${column}/${name}.json`);
     return true;
   } catch (_: any) {
     new DG.Balloon().error('Something went wrong while deleting enrichment. Please, try again.');
