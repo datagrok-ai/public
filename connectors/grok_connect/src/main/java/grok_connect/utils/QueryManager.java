@@ -4,7 +4,6 @@ import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
-import java.util.LinkedHashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -117,8 +116,7 @@ public class QueryManager {
                 isFinished = true;
                 LOGGER.info("Received all data");
             }
-            df.tags = new LinkedHashMap<>();
-            df.tags.put(CHUNK_NUMBER_TAG, String.valueOf(dfNumber));
+            df.setTag(CHUNK_NUMBER_TAG, String.valueOf(dfNumber));
             if (dfNumber == 1)
                 try {
                     SqlAnnotator.annotate(query.func, df);

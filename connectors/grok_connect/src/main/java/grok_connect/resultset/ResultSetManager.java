@@ -31,7 +31,7 @@ public interface ResultSetManager {
      *
      * @return Column array
      */
-    Column[] getProcessedColumns();
+    Column<?>[] getProcessedColumns();
 
     /**
      * Empty all columns for reuse without the need to init ResultSetManager again

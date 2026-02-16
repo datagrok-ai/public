@@ -79,7 +79,7 @@ public class BufferAccessor {
     }
 
     void writeString(String value) {
-        byte[] bytes = value == null ? null : value.getBytes(Charset.forName("UTF-8"));
+        byte[] bytes = value == null ? null : value.getBytes(StandardCharsets.UTF_8);
         writeUint8List(bytes);
     }
 
@@ -240,7 +240,7 @@ public class BufferAccessor {
             String str = values[start + n];
             if (str != null) {
                 lengths[n] = str.length();
-                byte[] bytes = str.getBytes(Charset.forName("UTF-8"));
+                byte[] bytes = str.getBytes(StandardCharsets.UTF_8);
                 _ensureSpace(bytes.length);
                 for (int m = 0; m < bytes.length; m++)
                     view.setInt8(bufPos + m, bytes[m]);
@@ -255,11 +255,15 @@ public class BufferAccessor {
         writeInt32List(lengths);
     }
 
-    void writeColumn(Column col) {
+    void writeColumn(Column<?> col) {
+        if (col instanceof ComplexTypeColumn) {
+            col.encode(this);
+            return;
+        }
         writeTypeCode(TYPE_COLUMN);
-        writeString(col.name);
+        writeString(col.getName());
         writeString(col.getType());
-        writeStringMap(col.tags);
+        writeStringMap(col.getTags());
         col.encode(this);
     }
 
@@ -267,14 +271,22 @@ public class BufferAccessor {
     public int[] writeDataFrame(DataFrame dataFrame) {
         writeTypeCode(TYPE_DATA_FRAME);
         writeInt64((dataFrame.rowCount == null) ? -1 : dataFrame.rowCount);
-        writeInt64(dataFrame.columns.size());
+
+        int flatCount = 0;
+        for (int n = 0; n < dataFrame.getColumnCount(); n++) {
+            Column<?> col = dataFrame.getColumn(n);
+            flatCount += (col instanceof ComplexTypeColumn)
+                ? ((ComplexTypeColumn) col).getEncodedColumnCount()
+                : 1;
+        }
+        writeInt64(flatCount);
 
         writeString(dataFrame.name);
-        writeStringMap(dataFrame.tags);
-        int[] offsets = new int[dataFrame.columns.size()];
-        for (int n = 0; n < dataFrame.columns.size(); n++) {
+        writeStringMap(dataFrame.getTags());
+        int[] offsets = new int[dataFrame.getColumnCount()];
+        for (int n = 0; n < dataFrame.getColumnCount(); n++) {
             offsets[n] = bufPos;
-            writeColumn(dataFrame.columns.get(n));
+            writeColumn(dataFrame.getColumn(n));
         }
 
         return offsets;
@@ -306,37 +318,33 @@ public class BufferAccessor {
 
     public byte[] toUint8List() {
         byte[] result = new byte[bufPos];
-        for (int i = 0; i < bufPos; i++)
-            result[i] = buf[i];
+        System.arraycopy(buf, 0, result, 0, bufPos);
         return result;
     }
 
     // Inserts space into buffer on position [pos] with size [size].
     void _insert(int pos, int size) {
         _ensureSpace(size);
-        for (int i = bufPos - 1; i >= pos; i--)
-            buf[i + size] = buf[i];
+        if (bufPos - pos >= 0) System.arraycopy(buf, pos, buf, pos + size, bufPos - pos);
         bufPos += size;
     }
 
     // Get size of buffer required to write [Uint8List] list to it.
     static int sizeUint8List(byte[] value) {
         // Type code + Length + Data
-        int size = 2 + 8 + ((value == null) ? 0 : value.length);
-        return size;
+        return 2 + 8 + ((value == null) ? 0 : value.length);
     }
 
     // Get size of buffer required to write String to it.
     static int sizeString(String value) {
-        byte[] bytes = value == null ? null : value.getBytes(Charset.forName("UTF-8"));
+        byte[] bytes = value == null ? null : value.getBytes(StandardCharsets.UTF_8);
         return sizeUint8List(bytes);
     }
 
     // Get size of buffer required to write [Int32List] list to it.
     static int sizeInt32List(int[] value) {
         // Type code + Length + Data
-        int size = 2 + 8 + ((value == null) ? 0 : value.length * 4);
-        return size;
+        return 2 + 8 + ((value == null) ? 0 : value.length * 4);
     }
 
     // Gets buffer as byte array with header information [header].

@@ -98,7 +98,7 @@ public class GrokConnect {
                         .atZone(ZoneId.systemDefault())
                         .toLocalDate().format(DateTimeFormatter.ofPattern("yyyy-MM-dd hh:mm:ss"));
                 result.execTime = execTime;
-                result.columns = dataFrame.columns.size();
+                result.columns = dataFrame.getColumnCount();
                 result.rows = dataFrame.rowCount;
                 String logString = String.format("%s: Execution time: %f s, Columns/Rows: %d/%d, Blob size: %d bytes\n",
                         result.timeStamp,
@@ -313,7 +313,7 @@ public class GrokConnect {
     private static BufferAccessor packDataFrame(DataQueryRunResult result, DataFrame dataFrame) {
         result.blob = dataFrame.toByteArray();
         result.blobLength = result.blob.length;
-        result.columns = dataFrame.columns.size();
+        result.columns = dataFrame.getColumnCount();
         result.rows = dataFrame.rowCount;
 
         BufferAccessor buffer = new BufferAccessor(result.blob);

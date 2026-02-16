@@ -1,7 +1,6 @@
 package grok_connect.providers.arguments_provider;
 
 import grok_connect.connectors_info.FuncCall;
-import grok_connect.providers.utils.DataFrameBuilder;
 import grok_connect.providers.utils.DateParser;
 import grok_connect.providers.utils.FuncCallBuilder;
 import grok_connect.providers.utils.Parser;
@@ -24,16 +23,14 @@ import java.util.stream.Stream;
 /**
  * Provides data for Athena provider tests, all queries should be ordered
  */
+@SuppressWarnings("unused")
 public class AthenaObjectsMother {
     private static final Parser parser = new DateParser();
     private static final String datePattern = "yyyy-MM-dd";
 
     public static Stream<Arguments> getSchemas_ok() {
-        DataFrame expected = DataFrameBuilder.getBuilder()
-                .setRowCount(2)
-                .setColumn(new StringColumn(new String[] {"information_schema", "test_db"}),
-                        "table_schema")
-                .build();
+        DataFrame expected = DataFrame.fromColumns(
+                new StringColumn("table_schema", new String[] {"information_schema", "test_db"}));
         return Stream.of(Arguments.of(expected));
     }
 
@@ -45,21 +42,19 @@ public class AthenaObjectsMother {
         String fifthColumnName = "is_view";
         String schema = "test_db";
         String table = "mock_data";
-        DataFrame expected = DataFrameBuilder.getBuilder()
-                .setRowCount(10)
-                .setColumn(new StringColumn(), firstColumnName, new String[] {schema, schema,
+        DataFrame expected = DataFrame.fromColumns(
+                new StringColumn(firstColumnName, new String[] {schema, schema,
                         schema, schema, schema, schema, schema,
-                        schema, schema, schema})
-                .setColumn(new StringColumn(), secondColumnName, new String[] {table, table,
+                        schema, schema, schema}),
+                new StringColumn(secondColumnName, new String[] {table, table,
                         table, table, table, table,
-                        table, table, table, table})
-                .setColumn(new StringColumn(), thirdColumnName, new String[] {"id", "first_name", "last_name", "email",
-                        "gender", "ip_address", "bool", "country", "date", "some_number"})
-                .setColumn(new StringColumn(), fourthColumnName, new String[] {"bigint", "varchar(50)",
+                        table, table, table, table}),
+                new StringColumn(thirdColumnName, new String[] {"id", "first_name", "last_name", "email",
+                        "gender", "ip_address", "bool", "country", "date", "some_number"}),
+                new StringColumn(fourthColumnName, new String[] {"bigint", "varchar(50)",
                         "varchar(50)", "varchar(50)", "varchar(50)", "varchar(50)",
-                        "boolean", "varchar(50)", "date", "real"})
-                .setColumn(new IntColumn(), fifthColumnName, new Integer[] {0, 0, 0, 0, 0, 0, 0, 0, 0, 0})
-                .build();
+                        "boolean", "varchar(50)", "date", "real"}),
+                new IntColumn(fifthColumnName, new Integer[] {0, 0, 0, 0, 0, 0, 0, 0, 0, 0}));
         return Stream.of(Arguments.of(expected));
     }
 
@@ -78,11 +73,8 @@ public class AthenaObjectsMother {
         LocalDate yesterday = now.minusDays(1);
         LocalDate dayOfLastYear = now.minusDays(150);
         // --input: string date = "today" {pattern: datetime}
-        DataFrame expected1 = DataFrameBuilder.getBuilder()
-                .setRowCount(1)
-                .setColumn(new DateTimeColumn(new Double[]{parser.parseDateToDouble(datePattern, now.toString())}),
-                        "date")
-                .build();
+        DataFrame expected1 = DataFrame.fromColumns(
+                new DateTimeColumn("date", new Double[]{parser.parseDateToDouble(datePattern, now.toString())}));
         FuncCall funcCall1 = FuncCallBuilder.getBuilder()
                 .addQuery("--input: string date = \"today\" {pattern: datetime}\n"
                         + "SELECT * FROM dates_patterns WHERE @date(date) ORDER BY date\n"
@@ -92,14 +84,11 @@ public class AthenaObjectsMother {
                         now.toString(), now.plusDays(1).toString())
                 .build();
         // --input: string date = "this week" {pattern: datetime}
-        DataFrame expected2 = DataFrameBuilder.getBuilder()
-                .setRowCount(dayOfWeek == 1 ? 2 : 3)
-                .setColumn(new DateTimeColumn(parser.parseDatesToDoubles(datePattern,
+        DataFrame expected2 = DataFrame.fromColumns(
+                new DateTimeColumn("date", parser.parseDatesToDoubles(datePattern,
                                 dayOfWeek == 1 ? null : yesterday.toString(),
                                 now.toString(),
-                                lastDayOfWeek.equals(now) ? null : lastDayOfWeek.toString())),
-                        "date")
-                .build();
+                                lastDayOfWeek.equals(now) ? null : lastDayOfWeek.toString())));
         FuncCall funcCall2 = FuncCallBuilder.getBuilder()
                 .addQuery("--input: string date = \"this week\" {pattern: datetime}\n"
                         + "SELECT * FROM dates_patterns WHERE @date(date) ORDER BY date\n"
@@ -110,15 +99,12 @@ public class AthenaObjectsMother {
                         lastDayOfWeek.plusDays(1).toString())
                 .build();
         // --input: string date = "this month" {pattern: datetime}
-        DataFrame expected3 = DataFrameBuilder.getBuilder()
-                .setRowCount(dayOfMonth > 1 && dayOfMonth < 31 - 6 ? 3 : 2)
-                .setColumn(new DateTimeColumn(parser.parseDatesToDoubles(datePattern,
+        DataFrame expected3 = DataFrame.fromColumns(
+                new DateTimeColumn("date", parser.parseDatesToDoubles(datePattern,
                                 dayOfMonth == 1 ? null : yesterday.toString(),
                                 now.toString(),
                                 lastDayOfWeek.getMonthValue() >  lastDayOfMonth.getMonthValue() || lastDayOfWeek.equals(now)?
-                                        null : lastDayOfWeek.toString())),
-                        "date")
-                .build();
+                                        null : lastDayOfWeek.toString())));
         FuncCall funcCall3 = FuncCallBuilder.getBuilder()
                 .addQuery("--input: string date = \"this month\" {pattern: datetime}\n"
                         + "SELECT * FROM dates_patterns WHERE @date(date) ORDER BY date\n"
@@ -129,16 +115,13 @@ public class AthenaObjectsMother {
                         lastDayOfMonth.plusDays(1).toString())
                 .build();
         // --input: string date = "this year" {pattern: datetime}
-        DataFrame expected4 = DataFrameBuilder.getBuilder()
-                .setRowCount(dayOfYear > 1 && dayOfYear < Year.of(now.getYear()).length() - 6 ? 3 : 2)
-                .setColumn(new DateTimeColumn(parser.parseDatesToDoubles(datePattern,
+        DataFrame expected4 = DataFrame.fromColumns(
+                new DateTimeColumn("date", parser.parseDatesToDoubles(datePattern,
                                 dayOfLastYear.getYear() == now.getYear() ? dayOfLastYear.toString() : null,
                                 dayOfMonth == 1 ? null : yesterday.toString(),
                                 now.toString(),
                                 lastDayOfWeek.getMonthValue() >  lastDayOfMonth.getMonthValue() || lastDayOfWeek.equals(now)?
-                                        null : lastDayOfWeek.toString())),
-                        "date")
-                .build();
+                                        null : lastDayOfWeek.toString())));
         FuncCall funcCall4 = FuncCallBuilder.getBuilder()
                 .addQuery("--input: string date = \"this year\" {pattern: datetime}\n"
                         + "SELECT * FROM dates_patterns WHERE @date(date) ORDER BY date\n"
@@ -149,11 +132,8 @@ public class AthenaObjectsMother {
                         lastDayOfYear.plusDays(1).toString())
                 .build();
         // --input: string date = "yesterday" {pattern: datetime}
-        DataFrame expected5 = DataFrameBuilder.getBuilder()
-                .setRowCount(1)
-                .setColumn(new DateTimeColumn(parser.parseDatesToDoubles(datePattern, yesterday.toString())),
-                        "date")
-                .build();
+        DataFrame expected5 = DataFrame.fromColumns(
+                new DateTimeColumn("date", parser.parseDatesToDoubles(datePattern, yesterday.toString())));
         FuncCall funcCall5 = FuncCallBuilder.getBuilder()
                 .addQuery("--input: string date = \"yesterday\" {pattern: datetime}\n"
                         + "SELECT * FROM dates_patterns WHERE @date(date)\n"
@@ -164,12 +144,9 @@ public class AthenaObjectsMother {
                         now.toString())
                 .build();
         // --input: string date = "last year" {pattern: datetime}
-        DataFrame expected6 = DataFrameBuilder.getBuilder()
-                .setRowCount(1)
-                .setColumn(new DateTimeColumn(parser.parseDatesToDoubles(datePattern,
-                                dayOfLastYear.getYear() < now.getYear() ? dayOfLastYear.toString() : null)),
-                        "date")
-                .build();
+        DataFrame expected6 = DataFrame.fromColumns(
+                new DateTimeColumn("date", parser.parseDatesToDoubles(datePattern,
+                                dayOfLastYear.getYear() < now.getYear() ? dayOfLastYear.toString() : null)));
         FuncCall funcCall6 = FuncCallBuilder.getBuilder()
                 .addQuery("--input: string date = \"last year\" {pattern: datetime}\n"
                         + "SELECT * FROM dates_patterns WHERE @date(date)\n"
@@ -179,16 +156,13 @@ public class AthenaObjectsMother {
                         firstDayOfYear.minusYears(1).toString(), firstDayOfYear.toString())
                 .build();
         // --input: string date = "anytime" {pattern: datetime}
-        DataFrame expected7 = DataFrameBuilder.getBuilder()
-                .setRowCount(5)
-                .setColumn(new DateTimeColumn(parser.parseDatesToDoubles(datePattern,  "2021-04-09",
+        DataFrame expected7 = DataFrame.fromColumns(
+                new DateTimeColumn("date", parser.parseDatesToDoubles(datePattern,  "2021-04-09",
                                 dayOfLastYear.toString(),
                                 yesterday.toString(), now.toString(),
                                 lastDayOfWeek.getMonthValue() >  lastDayOfMonth.getMonthValue()
                                         || lastDayOfWeek.equals(now)?
-                                        null : lastDayOfWeek.toString())),
-                        "date")
-                .build();
+                                        null : lastDayOfWeek.toString())));
         FuncCall funcCall7 = FuncCallBuilder.getBuilder()
                 .addQuery( "--input: string date = \"anytime\" {pattern: datetime}\n"
                         + "SELECT * FROM dates_patterns WHERE @date(date) ORDER BY date\n"
@@ -197,11 +171,8 @@ public class AthenaObjectsMother {
                 .addFuncCallOptionsPattern("date", "", "none", true, true)
                 .build();
         // --input: string date = "2021-2022" {pattern: datetime}
-        DataFrame expected8 = DataFrameBuilder.getBuilder()
-                .setRowCount(1)
-                .setColumn(new DateTimeColumn(parser.parseDatesToDoubles(datePattern, "2021-04-09")),
-                        "date")
-                .build();
+        DataFrame expected8 = DataFrame.fromColumns(
+                new DateTimeColumn("date", parser.parseDatesToDoubles(datePattern, "2021-04-09")));
 
         FuncCall funcCall8 = FuncCallBuilder.getBuilder()
                 .addQuery( "--input: string date = \"2021-2021\" {pattern: datetime}\n"
@@ -223,14 +194,11 @@ public class AthenaObjectsMother {
                         Year.of(2022).atDay(1).toString())
                 .build();
         // --input: string date = "after 1/1/2022" {pattern: datetime}
-        DataFrame expected9 = DataFrameBuilder.getBuilder()
-                .setRowCount(4)
-                .setColumn(new DateTimeColumn(parser.parseDatesToDoubles(datePattern, dayOfLastYear.toString(),
+        DataFrame expected9 = DataFrame.fromColumns(
+                new DateTimeColumn("date", parser.parseDatesToDoubles(datePattern, dayOfLastYear.toString(),
                                 yesterday.toString(), now.toString(), lastDayOfWeek.getMonthValue() >
                                         lastDayOfMonth.getMonthValue() || lastDayOfWeek.equals(now)?
-                                        null : lastDayOfWeek.toString())),
-                        "date")
-                .build();
+                                        null : lastDayOfWeek.toString())));
         FuncCall funcCall10 = FuncCallBuilder.getBuilder()
                 .addQuery("--input: string date = \"after 1/1/2022\" {pattern: datetime}\n"
                         + "SELECT * FROM dates_patterns WHERE @date(date) ORDER BY date\n"
@@ -267,45 +235,35 @@ public class AthenaObjectsMother {
     public static Stream<Arguments> checkParameterSupport_ok() {
         String datePattern = "yyyy-MM-dd";
         // --input: int id = 20
-        DataFrame expected1 = DataFrameBuilder.getBuilder()
-                .setRowCount(1)
-                .setColumn(new BigIntColumn(new String[]{"20"}),
-                        "id")
-                .setColumn(new StringColumn(new String[]{"Lucius"}), "first_name")
-                .setColumn(new StringColumn(new String[]{"Edelmann"}),
-                        "last_name")
-                .setColumn(new StringColumn(new String[]{"ledelmannj@bravesites.com"}), "email")
-                .setColumn(new StringColumn(new String[]{"Male"}), "gender")
-                .setColumn(new StringColumn(new String[]{"66.174.30.225/32"}),
-                        "ip_address")
-                .setColumn(new BoolColumn(new Boolean[]{false}), "bool")
-                .setColumn(new StringColumn(new String[]{"Brazil"}), "country")
-                .setColumn(new DateTimeColumn(parser.parseDatesToDoubles(datePattern, "1999-06-22")), "date")
-                .setColumn(new FloatColumn(new Float[]{378.73f}), "some_number")
-                .build();
+        DataFrame expected1 = DataFrame.fromColumns(
+                new BigIntColumn("id", new String[]{"20"}),
+                new StringColumn("first_name", new String[]{"Lucius"}),
+                new StringColumn("last_name", new String[]{"Edelmann"}),
+                new StringColumn("email", new String[]{"ledelmannj@bravesites.com"}),
+                new StringColumn("gender", new String[]{"Male"}),
+                new StringColumn("ip_address", new String[]{"66.174.30.225/32"}),
+                new BoolColumn("bool", new Boolean[]{false}),
+                new StringColumn("country", new String[]{"Brazil"}),
+                new DateTimeColumn("date", parser.parseDatesToDoubles(datePattern, "1999-06-22")),
+                new FloatColumn("some_number", new Float[]{378.73f}));
         FuncCall funcCall1 = FuncCallBuilder.getBuilder()
                 .addQuery("--input: int id = 20\n"
                         + "SELECT * FROM mock_data WHERE id = @id")
                 .addFuncParam("int", "", "id", 20, "")
                 .build();
         // --input: string id = ">28" {pattern: int}
-        DataFrame expected2 = DataFrameBuilder.getBuilder()
-                .setRowCount(2)
-                .setColumn(new BigIntColumn(new String[]{"29", "30"}),
-                        "id")
-                .setColumn(new StringColumn(new String[]{"Grantham", "Bran"}), "first_name")
-                .setColumn(new StringColumn(new String[]{"Fayter", "Longlands"}),
-                        "last_name")
-                .setColumn(new StringColumn(new String[]{"gfayters@desdev.cn", "blonglandst@tripod.com"}), "email")
-                .setColumn(new StringColumn(new String[]{"Male", "Genderqueer"}), "gender")
-                .setColumn(new StringColumn(new String[]{"26.120.76.78/32", "14.92.3.30/32"}),
-                        "ip_address")
-                .setColumn(new BoolColumn(new Boolean[]{false, false}), "bool")
-                .setColumn(new StringColumn(new String[]{"Sweden", "France"}), "country")
-                .setColumn(new DateTimeColumn(parser.parseDatesToDoubles(datePattern, "2009-10-02",
-                        "2016-07-10")), "date")
-                .setColumn(new FloatColumn(new Float[]{595.22f, 879.94f}), "some_number")
-                .build();
+        DataFrame expected2 = DataFrame.fromColumns(
+                new BigIntColumn("id", new String[]{"29", "30"}),
+                new StringColumn("first_name", new String[]{"Grantham", "Bran"}),
+                new StringColumn("last_name", new String[]{"Fayter", "Longlands"}),
+                new StringColumn("email", new String[]{"gfayters@desdev.cn", "blonglandst@tripod.com"}),
+                new StringColumn("gender", new String[]{"Male", "Genderqueer"}),
+                new StringColumn("ip_address", new String[]{"26.120.76.78/32", "14.92.3.30/32"}),
+                new BoolColumn("bool", new Boolean[]{false, false}),
+                new StringColumn("country", new String[]{"Sweden", "France"}),
+                new DateTimeColumn("date", parser.parseDatesToDoubles(datePattern, "2009-10-02",
+                        "2016-07-10")),
+                new FloatColumn("some_number", new Float[]{595.22f, 879.94f}));
 
         FuncCall funcCall2 = FuncCallBuilder.getBuilder()
                 .addQuery("--input: string id = \">28\" {pattern: int}\n"
@@ -325,22 +283,17 @@ public class AthenaObjectsMother {
                         null, null, 29)
                 .build();
         // --input: string id = "<=1" {pattern: int}
-        DataFrame expected3 = DataFrameBuilder.getBuilder()
-                .setRowCount(1)
-                .setColumn(new BigIntColumn(new String[]{"1"}),
-                        "id")
-                .setColumn(new StringColumn(new String[]{"Burk"}), "first_name")
-                .setColumn(new StringColumn(new String[]{"Kemery"}),
-                        "last_name")
-                .setColumn(new StringColumn(new String[]{"bkemery0@businesswire.com"}), "email")
-                .setColumn(new StringColumn(new String[]{"Male"}), "gender")
-                .setColumn(new StringColumn(new String[]{"249.64.22.121/32"}),
-                        "ip_address")
-                .setColumn(new BoolColumn(new Boolean[]{true}), "bool")
-                .setColumn(new StringColumn(new String[]{"China"}), "country")
-                .setColumn(new DateTimeColumn(parser.parseDatesToDoubles(datePattern, "2017-09-20")), "date")
-                .setColumn(new FloatColumn(new Float[]{510.32f}), "some_number")
-                .build();
+        DataFrame expected3 = DataFrame.fromColumns(
+                new BigIntColumn("id", new String[]{"1"}),
+                new StringColumn("first_name", new String[]{"Burk"}),
+                new StringColumn("last_name", new String[]{"Kemery"}),
+                new StringColumn("email", new String[]{"bkemery0@businesswire.com"}),
+                new StringColumn("gender", new String[]{"Male"}),
+                new StringColumn("ip_address", new String[]{"249.64.22.121/32"}),
+                new BoolColumn("bool", new Boolean[]{true}),
+                new StringColumn("country", new String[]{"China"}),
+                new DateTimeColumn("date", parser.parseDatesToDoubles(datePattern, "2017-09-20")),
+                new FloatColumn("some_number", new Float[]{510.32f}));
         FuncCall funcCall4 = FuncCallBuilder.getBuilder()
                 .addQuery("--input: string id = \"<=1\" {pattern: int}\n"
                         + "SELECT * FROM mock_data WHERE @id(id) ORDER BY id\n"
@@ -369,38 +322,33 @@ public class AthenaObjectsMother {
                 .build();
         // --input: string id = "not in(11, 12, 13, 14, 15, "
         //                                + "16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30)" {pattern: int}
-        DataFrame expected4 = DataFrameBuilder.getBuilder()
-                .setRowCount(10)
-                .setColumn(new BigIntColumn(
+        DataFrame expected4 = DataFrame.fromColumns(
+                new BigIntColumn("id",
                                 Stream.iterate(1, x -> x + 1).limit(10)
                                         .map(String::valueOf).toArray(String[]::new)),
-                        "id")
-                .setColumn(new StringColumn(new String[]{"Burk", "Nicholle", "Orlando", "Gothart",
-                        "Mitchell", "Jeromy", "Joela", "Darren", "Marlie", "Scottie"}), "first_name")
-                .setColumn(new StringColumn(new String[]{"Kemery", "Karoly", "Westgate",
+                new StringColumn("first_name", new String[]{"Burk", "Nicholle", "Orlando", "Gothart",
+                        "Mitchell", "Jeromy", "Joela", "Darren", "Marlie", "Scottie"}),
+                new StringColumn("last_name", new String[]{"Kemery", "Karoly", "Westgate",
                                 "Cokayne", "Haglington", "Twinn", "Cornau", "Juares", "Mayze", "Formilli"}),
-                        "last_name")
-                .setColumn(new StringColumn(new String[]{"bkemery0@businesswire.com", "nkaroly1@alexa.com",
+                new StringColumn("email", new String[]{"bkemery0@businesswire.com", "nkaroly1@alexa.com",
                         "owestgate2@dedecms.com", "gcokayne3@plala.or.jp", "mhaglington4@indiegogo.com",
                         "jtwinn5@globo.com", "jcornau6@imgur.com", "djuares7@hexun.com",
-                        "mmayze8@google.com.au", "sformilli9@aol.com"}), "email")
-                .setColumn(new StringColumn(new String[]{"Male", "Female", "Polygender", "Male", "Male", "Male",
-                        "Female", "Male", "Female", "Male"}), "gender")
-                .setColumn(new StringColumn(new String[]{"249.64.22.121/32", "255.233.247.118/32",
+                        "mmayze8@google.com.au", "sformilli9@aol.com"}),
+                new StringColumn("gender", new String[]{"Male", "Female", "Polygender", "Male", "Male", "Male",
+                        "Female", "Male", "Female", "Male"}),
+                new StringColumn("ip_address", new String[]{"249.64.22.121/32", "255.233.247.118/32",
                                 "75.0.252.254/32", "196.83.12.163/32", "209.93.181.190/32", "25.13.2.132/32",
                                 "195.47.88.236/32", "94.170.16.96/32", "68.41.25.65/32", "101.241.191.228/32"}),
-                        "ip_address")
-                .setColumn(new BoolColumn(new Boolean[]{true, false, false, true, true, true,
-                        false, false, false, false}), "bool")
-                .setColumn(new StringColumn(new String[]{"China", "Poland", "Netherlands",
+                new BoolColumn("bool", new Boolean[]{true, false, false, true, true, true,
+                        false, false, false, false}),
+                new StringColumn("country", new String[]{"China", "Poland", "Netherlands",
                         "Philippines", "Poland", "Serbia", "Indonesia", "China",
-                        "France", "Vietnam"}), "country")
-                .setColumn(new DateTimeColumn(parser.parseDatesToDoubles(datePattern,"2017-09-20",
+                        "France", "Vietnam"}),
+                new DateTimeColumn("date", parser.parseDatesToDoubles(datePattern,"2017-09-20",
                         "2014-02-27", "2020-09-03", "2001-01-31", "2020-10-09",
-                        "2014-10-04", "2020-03-19", "2011-04-09", "2011-11-10", "2003-01-04")), "date")
-                .setColumn(new FloatColumn(new Float[]{510.32f, 864.09f, 822.7f, 251.05f, 15.22f,
-                        378.4f, 349.11f, 631.89f, 561.72f, 978.01f}), "some_number")
-                .build();
+                        "2014-10-04", "2020-03-19", "2011-04-09", "2011-11-10", "2003-01-04")),
+                new FloatColumn("some_number", new Float[]{510.32f, 864.09f, 822.7f, 251.05f, 15.22f,
+                        378.4f, 349.11f, 631.89f, 561.72f, 978.01f}));
         FuncCall funcCall7 = FuncCallBuilder.getBuilder()
                 .addQuery("--input: string id = \"not in(11, 12, 13, 14, 15, 16, 17, 18, 19, 20, "
                         + "21, 22, 23, 24, 25, 26, 27, 28, 29, 30)\" {pattern: int}\n"
@@ -432,24 +380,18 @@ public class AthenaObjectsMother {
                 .addFuncParam("double", "", "some_number", 510.32, "double")
                 .build();
         // --input: string some_number = ">975" {pattern: double}
-        DataFrame expected5 = DataFrameBuilder.getBuilder()
-                .setRowCount(2)
-                .setColumn(new BigIntColumn(new String[]{"10", "26"}),
-                        "id")
-                .setColumn(new StringColumn(new String[]{"Scottie", "Daryle"}), "first_name")
-                .setColumn(new StringColumn(new String[]{"Formilli", "O'Shaughnessy"}),
-                        "last_name")
-                .setColumn(new StringColumn(new String[]{"sformilli9@aol.com", "doshaughnessyp@com.com"}),
-                        "email")
-                .setColumn(new StringColumn(new String[]{"Male", "Male"}), "gender")
-                .setColumn(new StringColumn(new String[]{"101.241.191.228/32", "204.107.16.207/32"}),
-                        "ip_address")
-                .setColumn(new BoolColumn(new Boolean[]{false, false}), "bool")
-                .setColumn(new StringColumn(new String[]{"Vietnam", "Honduras"}), "country")
-                .setColumn(new DateTimeColumn(parser.parseDatesToDoubles(datePattern, "2003-01-04",
-                        "2010-05-04")), "date")
-                .setColumn(new FloatColumn(new Float[]{978.01f, 983.03f}), "some_number")
-                .build();
+        DataFrame expected5 = DataFrame.fromColumns(
+                new BigIntColumn("id", new String[]{"10", "26"}),
+                new StringColumn("first_name", new String[]{"Scottie", "Daryle"}),
+                new StringColumn("last_name", new String[]{"Formilli", "O'Shaughnessy"}),
+                new StringColumn("email", new String[]{"sformilli9@aol.com", "doshaughnessyp@com.com"}),
+                new StringColumn("gender", new String[]{"Male", "Male"}),
+                new StringColumn("ip_address", new String[]{"101.241.191.228/32", "204.107.16.207/32"}),
+                new BoolColumn("bool", new Boolean[]{false, false}),
+                new StringColumn("country", new String[]{"Vietnam", "Honduras"}),
+                new DateTimeColumn("date", parser.parseDatesToDoubles(datePattern, "2003-01-04",
+                        "2010-05-04")),
+                new FloatColumn("some_number", new Float[]{978.01f, 983.03f}));
         FuncCall funcCall10 =  FuncCallBuilder.getBuilder()
                 .addQuery("--input: string some_number = \">975\" {pattern: double}\n"
                         + "SELECT * FROM mock_data WHERE @some_number(some_number) ORDER BY id\n"
@@ -468,22 +410,17 @@ public class AthenaObjectsMother {
                         null, null, 975)
                 .build();
         //--input: string some_number = "<20" {pattern: double}
-        DataFrame expected6 = DataFrameBuilder.getBuilder()
-                .setRowCount(1)
-                .setColumn(new BigIntColumn(new String[]{"5"}),
-                        "id")
-                .setColumn(new StringColumn(new String[]{"Mitchell"}), "first_name")
-                .setColumn(new StringColumn(new String[]{"Haglington"}),
-                        "last_name")
-                .setColumn(new StringColumn(new String[]{"mhaglington4@indiegogo.com"}), "email")
-                .setColumn(new StringColumn(new String[]{"Male"}), "gender")
-                .setColumn(new StringColumn(new String[]{"209.93.181.190/32"}),
-                        "ip_address")
-                .setColumn(new BoolColumn(new Boolean[]{true}), "bool")
-                .setColumn(new StringColumn(new String[]{"Poland"}), "country")
-                .setColumn(new DateTimeColumn(parser.parseDatesToDoubles(datePattern, "2020-10-09")), "date")
-                .setColumn(new FloatColumn(new Float[]{15.22f}), "some_number")
-                .build();
+        DataFrame expected6 = DataFrame.fromColumns(
+                new BigIntColumn("id", new String[]{"5"}),
+                new StringColumn("first_name", new String[]{"Mitchell"}),
+                new StringColumn("last_name", new String[]{"Haglington"}),
+                new StringColumn("email", new String[]{"mhaglington4@indiegogo.com"}),
+                new StringColumn("gender", new String[]{"Male"}),
+                new StringColumn("ip_address", new String[]{"209.93.181.190/32"}),
+                new BoolColumn("bool", new Boolean[]{true}),
+                new StringColumn("country", new String[]{"Poland"}),
+                new DateTimeColumn("date", parser.parseDatesToDoubles(datePattern, "2020-10-09")),
+                new FloatColumn("some_number", new Float[]{15.22f}));
         FuncCall funcCall12 = FuncCallBuilder.getBuilder()
                 .addQuery("--input: string some_number = \"<20\" {pattern: double}\n"
                         + "SELECT * FROM mock_data WHERE @some_number(some_number) ORDER BY id\n"
@@ -502,22 +439,17 @@ public class AthenaObjectsMother {
                         null, null, 20)
                 .build();
         // --input: string first_name = 'contains Z' {pattern: string}
-        DataFrame expected7 = DataFrameBuilder.getBuilder()
-                .setRowCount(1)
-                .setColumn(new BigIntColumn(new String[]{"25"}),
-                        "id")
-                .setColumn(new StringColumn(new String[]{"Zolly"}), "first_name")
-                .setColumn(new StringColumn(new String[]{"Wimmers"}),
-                        "last_name")
-                .setColumn(new StringColumn(new String[]{"zwimmerso@hatena.ne.jp"}), "email")
-                .setColumn(new StringColumn(new String[]{"Male"}), "gender")
-                .setColumn(new StringColumn(new String[]{"123.12.225.114/32"}),
-                        "ip_address")
-                .setColumn(new BoolColumn(new Boolean[]{false}), "bool")
-                .setColumn(new StringColumn(new String[]{"Bosnia and Herzegovina"}), "country")
-                .setColumn(new DateTimeColumn(parser.parseDatesToDoubles(datePattern, "2003-02-12")), "date")
-                .setColumn(new FloatColumn(new Float[]{217.18f}), "some_number")
-                .build();
+        DataFrame expected7 = DataFrame.fromColumns(
+                new BigIntColumn("id", new String[]{"25"}),
+                new StringColumn("first_name", new String[]{"Zolly"}),
+                new StringColumn("last_name", new String[]{"Wimmers"}),
+                new StringColumn("email", new String[]{"zwimmerso@hatena.ne.jp"}),
+                new StringColumn("gender", new String[]{"Male"}),
+                new StringColumn("ip_address", new String[]{"123.12.225.114/32"}),
+                new BoolColumn("bool", new Boolean[]{false}),
+                new StringColumn("country", new String[]{"Bosnia and Herzegovina"}),
+                new DateTimeColumn("date", parser.parseDatesToDoubles(datePattern, "2003-02-12")),
+                new FloatColumn("some_number", new Float[]{217.18f}));
         FuncCall funcCall14 = FuncCallBuilder.getBuilder()
                 .addQuery("--input: string first_name = 'contains Z' {pattern: string}\n"
                         + "SELECT * FROM mock_data WHERE @first_name(first_name) ORDER BY id\n"
@@ -527,23 +459,17 @@ public class AthenaObjectsMother {
                         null, null, "Z")
                 .build();
         // --input: string first_name = 'starts with W' {pattern: string}
-        DataFrame expected8 = DataFrameBuilder.getBuilder()
-                .setRowCount(1)
-                .setColumn(new BigIntColumn(new String[]{"23"}),
-                        "id")
-                .setColumn(new StringColumn(new String[]{"Waly"}), "first_name")
-                .setColumn(new StringColumn(new String[]{"Rogliero"}),
-                        "last_name")
-                .setColumn(new StringColumn(new String[]{"wroglierom@berkeley.edu"}), "email")
-                .setColumn(new StringColumn(new String[]{"Female"}), "gender")
-                .setColumn(new StringColumn(new String[]{"122.90.196.231/32"}),
-                        "ip_address")
-                .setColumn(new BoolColumn(new Boolean[]{true}), "bool")
-                .setColumn(new StringColumn(new String[]{"Sweden"}), "country")
-                .setColumn(new DateTimeColumn(parser.parseDatesToDoubles(datePattern, "2011-12-18")),
-                        "date")
-                .setColumn(new FloatColumn(new Float[]{147.69f}), "some_number")
-                .build();
+        DataFrame expected8 = DataFrame.fromColumns(
+                new BigIntColumn("id", new String[]{"23"}),
+                new StringColumn("first_name", new String[]{"Waly"}),
+                new StringColumn("last_name", new String[]{"Rogliero"}),
+                new StringColumn("email", new String[]{"wroglierom@berkeley.edu"}),
+                new StringColumn("gender", new String[]{"Female"}),
+                new StringColumn("ip_address", new String[]{"122.90.196.231/32"}),
+                new BoolColumn("bool", new Boolean[]{true}),
+                new StringColumn("country", new String[]{"Sweden"}),
+                new DateTimeColumn("date", parser.parseDatesToDoubles(datePattern, "2011-12-18")),
+                new FloatColumn("some_number", new Float[]{147.69f}));
         FuncCall funcCall15 = FuncCallBuilder.getBuilder()
                 .addQuery("--input: string first_name = 'starts with W' {pattern: string}\n"
                         + "SELECT * FROM mock_data WHERE @first_name(first_name) ORDER BY id\n"
@@ -553,23 +479,17 @@ public class AthenaObjectsMother {
                         null, null, "W")
                 .build();
         // --input: string first_name = 'ends with y' {pattern: string}
-        DataFrame expected9 = DataFrameBuilder.getBuilder()
-                .setRowCount(1)
-                .setColumn(new BigIntColumn(new String[]{"20"}),
-                        "id")
-                .setColumn(new StringColumn(new String[]{"Lucius"}), "first_name")
-                .setColumn(new StringColumn(new String[]{"Edelmann"}),
-                        "last_name")
-                .setColumn(new StringColumn(new String[]{"ledelmannj@bravesites.com"}), "email")
-                .setColumn(new StringColumn(new String[]{"Male"}), "gender")
-                .setColumn(new StringColumn(new String[]{"66.174.30.225/32"}),
-                        "ip_address")
-                .setColumn(new BoolColumn(new Boolean[]{false}), "bool")
-                .setColumn(new StringColumn(new String[]{"Brazil"}), "country")
-                .setColumn(new DateTimeColumn(parser.parseDatesToDoubles(datePattern, "1999-06-22")),
-                        "date")
-                .setColumn(new FloatColumn(new Float[]{378.73f}), "some_number")
-                .build();
+        DataFrame expected9 = DataFrame.fromColumns(
+                new BigIntColumn("id", new String[]{"20"}),
+                new StringColumn("first_name", new String[]{"Lucius"}),
+                new StringColumn("last_name", new String[]{"Edelmann"}),
+                new StringColumn("email", new String[]{"ledelmannj@bravesites.com"}),
+                new StringColumn("gender", new String[]{"Male"}),
+                new StringColumn("ip_address", new String[]{"66.174.30.225/32"}),
+                new BoolColumn("bool", new Boolean[]{false}),
+                new StringColumn("country", new String[]{"Brazil"}),
+                new DateTimeColumn("date", parser.parseDatesToDoubles(datePattern, "1999-06-22")),
+                new FloatColumn("some_number", new Float[]{378.73f}));
         FuncCall funcCall16 = FuncCallBuilder.getBuilder()
                 .addQuery("--input: string first_name = 'ends with s' {pattern: string}\n"
                         + "SELECT * FROM mock_data WHERE @first_name(first_name) ORDER BY id\n"
@@ -579,25 +499,19 @@ public class AthenaObjectsMother {
                         null, null, "s")
                 .build();
         // --input: string country = 'in (Poland, Brazil)' {pattern: string}
-        DataFrame expected10 = DataFrameBuilder.getBuilder()
-                .setRowCount(1)
-                .setColumn(new BigIntColumn(new String[]{"2", "5", "20"}),
-                        "id")
-                .setColumn(new StringColumn(new String[]{"Nicholle", "Mitchell", "Lucius",}), "first_name")
-                .setColumn(new StringColumn(new String[]{"Karoly", "Haglington", "Edelmann"}),
-                        "last_name")
-                .setColumn(new StringColumn(new String[]{"nkaroly1@alexa.com", "mhaglington4@indiegogo.com",
-                        "ledelmannj@bravesites.com"}), "email")
-                .setColumn(new StringColumn(new String[]{"Female", "Male", "Male"}), "gender")
-                .setColumn(new StringColumn(new String[]{"255.233.247.118/32", "209.93.181.190/32", "66.174.30.225/32"}),
-                        "ip_address")
-                .setColumn(new BoolColumn(new Boolean[]{false, true, false}), "bool")
-                .setColumn(new StringColumn(new String[]{"Poland", "Poland", "Brazil"}), "country")
-                .setColumn(new DateTimeColumn(parser.parseDatesToDoubles(datePattern, "2014-02-27",
+        DataFrame expected10 = DataFrame.fromColumns(
+                new BigIntColumn("id", new String[]{"2", "5", "20"}),
+                new StringColumn("first_name", new String[]{"Nicholle", "Mitchell", "Lucius",}),
+                new StringColumn("last_name", new String[]{"Karoly", "Haglington", "Edelmann"}),
+                new StringColumn("email", new String[]{"nkaroly1@alexa.com", "mhaglington4@indiegogo.com",
+                        "ledelmannj@bravesites.com"}),
+                new StringColumn("gender", new String[]{"Female", "Male", "Male"}),
+                new StringColumn("ip_address", new String[]{"255.233.247.118/32", "209.93.181.190/32", "66.174.30.225/32"}),
+                new BoolColumn("bool", new Boolean[]{false, true, false}),
+                new StringColumn("country", new String[]{"Poland", "Poland", "Brazil"}),
+                new DateTimeColumn("date", parser.parseDatesToDoubles(datePattern, "2014-02-27",
                                 "2020-10-09","1999-06-22")),
-                        "date")
-                .setColumn(new FloatColumn(new Float[]{864.09f, 15.22f, 378.73f}), "some_number")
-                .build();
+                new FloatColumn("some_number", new Float[]{864.09f, 15.22f, 378.73f}));
         FuncCall funcCall17 = FuncCallBuilder.getBuilder()
                 .addQuery("--input: string country = 'in (Poland, Brazil)' {pattern: string}\n" +
                         "SELECT * FROM mock_data WHERE @country(country) ORDER BY id\n" +
@@ -629,23 +543,17 @@ public class AthenaObjectsMother {
 
     public static Stream<Arguments> checkRegexSupport_ok() {
         // --input: string email = 'regex ^([A-Za-z0-9_]+@google.com.au)$' {pattern: string}
-        DataFrame expected = DataFrameBuilder.getBuilder()
-                .setRowCount(1)
-                .setColumn(new BigIntColumn(new String[]{"9"}),
-                        "id")
-                .setColumn(new StringColumn(new String[]{"Marlie"}), "first_name")
-                .setColumn(new StringColumn(new String[]{"Mayze"}),
-                        "last_name")
-                .setColumn(new StringColumn(new String[]{"mmayze8@google.com.au"}), "email")
-                .setColumn(new StringColumn(new String[]{"Female"}), "gender")
-                .setColumn(new StringColumn(new String[]{"68.41.25.65/32"}),
-                        "ip_address")
-                .setColumn(new BoolColumn(new Boolean[]{false}), "bool")
-                .setColumn(new StringColumn(new String[]{"France"}), "country")
-                .setColumn(new DateTimeColumn(parser.parseDatesToDoubles("yyyy-MM-dd", "2011-11-10")),
-                        "date")
-                .setColumn(new FloatColumn(new Float[]{561.72f}), "some_number")
-                .build();
+        DataFrame expected = DataFrame.fromColumns(
+                new BigIntColumn("id", new String[]{"9"}),
+                new StringColumn("first_name", new String[]{"Marlie"}),
+                new StringColumn("last_name", new String[]{"Mayze"}),
+                new StringColumn("email", new String[]{"mmayze8@google.com.au"}),
+                new StringColumn("gender", new String[]{"Female"}),
+                new StringColumn("ip_address", new String[]{"68.41.25.65/32"}),
+                new BoolColumn("bool", new Boolean[]{false}),
+                new StringColumn("country", new String[]{"France"}),
+                new DateTimeColumn("date", parser.parseDatesToDoubles("yyyy-MM-dd", "2011-11-10")),
+                new FloatColumn("some_number", new Float[]{561.72f}));
         FuncCall funcCall = FuncCallBuilder.getBuilder()
                 .addQuery("--input: string email = 'regex ^([A-Za-z0-9_]+@google.com.au)$' {pattern: string}\n"
                         + "SELECT * FROM mock_data WHERE @email(email) ORDER BY id\n"
@@ -666,23 +574,17 @@ public class AthenaObjectsMother {
         //--input: string some_number = ">20" {pattern: double}
         //--input: string country = "in (Indonesia)" {pattern: string}
         //--input: string date = "before 1/1/2022" {pattern: datetime}
-        DataFrame expected1 = DataFrameBuilder.getBuilder()
-                .setRowCount(1)
-                .setColumn(new BigIntColumn(new String[]{"13"}),
-                        "id")
-                .setColumn(new StringColumn(new String[]{"Pail"}), "first_name")
-                .setColumn(new StringColumn(new String[]{"Boxell"}),
-                        "last_name")
-                .setColumn(new StringColumn(new String[]{"pboxellc@moonfruit.com"}), "email")
-                .setColumn(new StringColumn(new String[]{"Genderqueer"}), "gender")
-                .setColumn(new StringColumn(new String[]{"2.37.160.155/32"}),
-                        "ip_address")
-                .setColumn(new BoolColumn(new Boolean[]{false}), "bool")
-                .setColumn(new StringColumn(new String[]{"Indonesia"}), "country")
-                .setColumn(new DateTimeColumn(parser.parseDatesToDoubles(datePattern, "2012-01-14")),
-                        "date")
-                .setColumn(new FloatColumn(new Float[]{73.47f}), "some_number")
-                .build();
+        DataFrame expected1 = DataFrame.fromColumns(
+                new BigIntColumn("id", new String[]{"13"}),
+                new StringColumn("first_name", new String[]{"Pail"}),
+                new StringColumn("last_name", new String[]{"Boxell"}),
+                new StringColumn("email", new String[]{"pboxellc@moonfruit.com"}),
+                new StringColumn("gender", new String[]{"Genderqueer"}),
+                new StringColumn("ip_address", new String[]{"2.37.160.155/32"}),
+                new BoolColumn("bool", new Boolean[]{false}),
+                new StringColumn("country", new String[]{"Indonesia"}),
+                new DateTimeColumn("date", parser.parseDatesToDoubles(datePattern, "2012-01-14")),
+                new FloatColumn("some_number", new Float[]{73.47f}));
         FuncCall funcCall1 = FuncCallBuilder.getBuilder()
                 .addQuery("--input: string first_name = \"starts with p\" {pattern: string}\n"
                         + "--input: string id = \">1\" {pattern: int}\n"
@@ -724,25 +626,19 @@ public class AthenaObjectsMother {
         List<String> values = new ArrayList<>();
         values.add("Poland");
         values.add("Brazil");
-        DataFrame expected = DataFrameBuilder.getBuilder()
-                .setRowCount(1)
-                .setColumn(new BigIntColumn(new String[]{"2", "5", "20"}),
-                        "id")
-                .setColumn(new StringColumn(new String[]{"Nicholle", "Mitchell", "Lucius",}), "first_name")
-                .setColumn(new StringColumn(new String[]{"Karoly", "Haglington", "Edelmann"}),
-                        "last_name")
-                .setColumn(new StringColumn(new String[]{"nkaroly1@alexa.com", "mhaglington4@indiegogo.com",
-                        "ledelmannj@bravesites.com"}), "email")
-                .setColumn(new StringColumn(new String[]{"Female", "Male", "Male"}), "gender")
-                .setColumn(new StringColumn(new String[]{"255.233.247.118/32", "209.93.181.190/32", "66.174.30.225/32"}),
-                        "ip_address")
-                .setColumn(new BoolColumn(new Boolean[]{false, true, false}), "bool")
-                .setColumn(new StringColumn(new String[]{"Poland", "Poland", "Brazil"}), "country")
-                .setColumn(new DateTimeColumn(parser.parseDatesToDoubles("yyyy-MM-dd", "2014-02-27",
+        DataFrame expected = DataFrame.fromColumns(
+                new BigIntColumn("id", new String[]{"2", "5", "20"}),
+                new StringColumn("first_name", new String[]{"Nicholle", "Mitchell", "Lucius",}),
+                new StringColumn("last_name", new String[]{"Karoly", "Haglington", "Edelmann"}),
+                new StringColumn("email", new String[]{"nkaroly1@alexa.com", "mhaglington4@indiegogo.com",
+                        "ledelmannj@bravesites.com"}),
+                new StringColumn("gender", new String[]{"Female", "Male", "Male"}),
+                new StringColumn("ip_address", new String[]{"255.233.247.118/32", "209.93.181.190/32", "66.174.30.225/32"}),
+                new BoolColumn("bool", new Boolean[]{false, true, false}),
+                new StringColumn("country", new String[]{"Poland", "Poland", "Brazil"}),
+                new DateTimeColumn("date", parser.parseDatesToDoubles("yyyy-MM-dd", "2014-02-27",
                                 "2020-10-09","1999-06-22")),
-                        "date")
-                .setColumn(new FloatColumn(new Float[]{864.09f, 15.22f, 378.73f}), "some_number")
-                .build();
+                new FloatColumn("some_number", new Float[]{864.09f, 15.22f, 378.73f}));
         FuncCall funcCall1 = FuncCallBuilder.getBuilder()
                 .addQuery("--input: list<string> values\n" +
                         "SELECT * FROM mock_data WHERE country IN (@values) ORDER BY id")
@@ -763,17 +659,13 @@ public class AthenaObjectsMother {
     }
 
     public static Stream<Arguments> checkOutputDataFrame_arrayType_ok() {
-        DataFrame expected1 = DataFrameBuilder.getBuilder()
-                .setRowCount(2)
-                .setColumn(new IntColumn(new Integer[]{1, 2}), "id")
-                .setColumn(new StringColumn(new String[]{"1, 2, 3", "1, null, 3"}), "array_data")
-                .build();
+        DataFrame expected1 = DataFrame.fromColumns(
+                new IntColumn("id", new Integer[]{1, 2}),
+                new StringColumn("array_data", new String[]{"1, 2, 3", "1, null, 3"}));
         FuncCall funcCall1 = FuncCallBuilder.fromQuery("SELECT * FROM array_type_int ORDER BY id");
-        DataFrame expected2 = DataFrameBuilder.getBuilder()
-                .setRowCount(1)
-                .setColumn(new IntColumn(new Integer[]{1}), "id")
-                .setColumn(new StringColumn(new String[]{"Hello, World, Datagrok"}), "array_data")
-                .build();
+        DataFrame expected2 = DataFrame.fromColumns(
+                new IntColumn("id", new Integer[]{1}),
+                new StringColumn("array_data", new String[]{"Hello, World, Datagrok"}));
         FuncCall funcCall2 = FuncCallBuilder.fromQuery("SELECT * FROM array_type_string ORDER BY id");
         return Stream.of(
                 Arguments.of(Named.of("ARRAY<INT> TYPE SUPPORT", funcCall1), expected1),
@@ -781,79 +673,60 @@ public class AthenaObjectsMother {
     }
 
     public static Stream<Arguments> checkOutputDataFrame_characterTypes_ok() {
-        DataFrame expected = DataFrameBuilder.getBuilder()
-                .setRowCount(1)
-                .setColumn(new StringColumn(new String[]{"Datagrok"}),
-                        "char_data")
-                .setColumn(new StringColumn(new String[]{"Hello, World"}),
-                        "varchar_data")
-                .setColumn(new StringColumn(new String[]{"Hello, Datagrok!"}),
-                        "string_data")
-                .build();
+        DataFrame expected = DataFrame.fromColumns(
+                new StringColumn("char_data", new String[]{"Datagrok"}),
+                new StringColumn("varchar_data", new String[]{"Hello, World"}),
+                new StringColumn("string_data", new String[]{"Hello, Datagrok!"}));
         FuncCall funcCall = FuncCallBuilder.fromQuery("SELECT * FROM character_types");
         return Stream.of(
                 Arguments.of(Named.of("CHARACTER TYPES SUPPORT", funcCall), expected));
     }
 
     public static Stream<Arguments> checkOutputDataFrame_dateTypes_ok() {
-        DataFrame expected = DataFrameBuilder.getBuilder()
-                .setRowCount(2)
-                .setColumn(new DateTimeColumn(parser.parseDatesToDoubles(datePattern,
-                        "1996-08-26", "2023-08-26")), "date_type")
-                .setColumn(new DateTimeColumn(new Double[]{
+        DataFrame expected = DataFrame.fromColumns(
+                new DateTimeColumn("date_type", parser.parseDatesToDoubles(datePattern,
+                        "1996-08-26", "2023-08-26")),
+                new DateTimeColumn("timestamp_type", new Double[]{
                         parser.parseDateToDouble("yyyy-MM-dd HH:mm:ss", "2018-04-01 00:00:00"),
                         parser.parseDateToDouble("yyyy-MM-dd HH:mm:ss.SSS",
-                        "2023-04-05 12:00:00.123")}), "timestamp_type")
-                .build();
+                        "2023-04-05 12:00:00.123")}));
         FuncCall funcCall = FuncCallBuilder.fromQuery("SELECT * FROM date_types ORDER BY id");
         return Stream.of(
                 Arguments.of(Named.of("DATE TYPES SUPPORT", funcCall), expected));
     }
 
     public static Stream<Arguments> checkOutputDataFrame_floatTypes_ok() {
-        DataFrame expected = DataFrameBuilder.getBuilder()
-                .setRowCount(2)
-                .setColumn(new FloatColumn(new Float[]{Float.POSITIVE_INFINITY, Float.NEGATIVE_INFINITY}),
-                        "double_type")
-                .setColumn(new FloatColumn(new Float[]{3.40282346638528860e+38f, 1.40129846432481707e-45f}),
-                        "float_type")
-                .setColumn(new FloatColumn(new Float[]{0.12f, 0.50f}), "decimal_type")
-                .build();
+        DataFrame expected = DataFrame.fromColumns(
+                new FloatColumn("double_type", new Float[]{Float.POSITIVE_INFINITY, Float.NEGATIVE_INFINITY}),
+                new FloatColumn("float_type", new Float[]{3.40282346638528860e+38f, 1.40129846432481707e-45f}),
+                new FloatColumn("decimal_type", new Float[]{0.12f, 0.50f}));
         FuncCall funcCall = FuncCallBuilder.fromQuery("SELECT * FROM float_types ORDER BY double_type DESC");
         return Stream.of(
                 Arguments.of(Named.of("FLOAT TYPES SUPPORT", funcCall), expected));
     }
 
     public static Stream<Arguments> checkOutputDataFrame_mapType_ok() {
-        DataFrame expected = DataFrameBuilder.getBuilder()
-                .setRowCount(1)
-                .setColumn(new StringColumn(new String[]{"{bar=2, Datagrok=2023, foo=1}"}), "map_data")
-                .build();
+        DataFrame expected = DataFrame.fromColumns(
+                new StringColumn("map_data", new String[]{"{bar=2, Datagrok=2023, foo=1}"}));
         FuncCall funcCall = FuncCallBuilder.fromQuery("SELECT * FROM map_type");
         return Stream.of(
                 Arguments.of(Named.of("MAP TYPE SUPPORT", funcCall), expected));
     }
 
     public static Stream<Arguments> checkOutputDataFrame_numericTypes_ok() {
-        DataFrame expected = DataFrameBuilder.getBuilder()
-                .setRowCount(2)
-                .setColumn(new IntColumn(new Integer[]{56, 0}), "tinyint_data")
-                .setColumn(new IntColumn(new Integer[]{1241, -1000}), "smallint_data")
-                .setColumn(new IntColumn(new Integer[]{2600000, -2600000}), "int_data")
-                .setColumn(new BigIntColumn(new String[] {"9223372036854775807", "-9223372036854775807"}),
-                        "bigint_data")
-                .build();
+        DataFrame expected = DataFrame.fromColumns(
+                new IntColumn("tinyint_data", new Integer[]{56, 0}),
+                new IntColumn("smallint_data", new Integer[]{1241, -1000}),
+                new IntColumn("int_data", new Integer[]{2600000, -2600000}),
+                new BigIntColumn("bigint_data", new String[] {"9223372036854775807", "-9223372036854775807"}));
         FuncCall funcCall = FuncCallBuilder.fromQuery("SELECT * FROM numeric_types ORDER BY tinyint_data DESC");
         return Stream.of(
                 Arguments.of(Named.of("NUMERIC TYPES SUPPORT", funcCall), expected));
     }
 
     public static Stream<Arguments> checkOutputDataFrame_structType_ok() {
-        DataFrame expected = DataFrameBuilder.getBuilder()
-                .setRowCount(1)
-                .setColumn(new StringColumn(new String[]{"{name=Bob, age=38}"}),
-                        "struct_data")
-                .build();
+        DataFrame expected = DataFrame.fromColumns(
+                new StringColumn("struct_data", new String[]{"{name=Bob, age=38}"}));
         FuncCall funcCall = FuncCallBuilder.fromQuery("SELECT * FROM struct_type");
         return Stream.of(
                 Arguments.of(Named.of("STRUCT TYPE SUPPORT", funcCall), expected));

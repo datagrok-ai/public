@@ -1,53 +1,60 @@
 package serialization;
 
-// Float column.
-public class FloatColumn extends Column<Float> {
+public class FloatColumn extends AbstractColumn<Float> {
     private static final String TYPE = Types.FLOAT;
     static final double None = 2.6789344063684636e-34;
 
     private float[] data;
 
-    public FloatColumn() {
+    public FloatColumn(String name) {
+        super(name);
         data = new float[initColumnSize];
     }
 
-    public FloatColumn(int initColumnSize) {
-        this.initColumnSize = initColumnSize;
+    public FloatColumn(String name, int initColumnSize) {
+        super(name, initColumnSize);
         data = new float[initColumnSize];
     }
 
-    public FloatColumn(Float[] values) {
+    public FloatColumn(String name, Float[] values) {
+        super(name);
         data = new float[initColumnSize];
         addAll(values);
     }
 
+    @Override
     public String getType() {
         return TYPE;
     }
 
+    @Override
     public void empty() {
         length = 0;
         data = new float[initColumnSize];
     }
 
+    @Override
     public void encode(BufferAccessor buf) {
         buf.writeInt32(1);  // Encoder ID
         buf.writeInt8((byte)0);   // Archive
         buf.writeFloat32List(data, 0, length);
     }
 
+    @Override
     public void add(Float value) {
         ensureSpace(1);
         data[length++] = (value != null) ? value : (float)None;
     }
 
+    @Override
     public void addAll(Float[] values) {
         ensureSpace(values.length);
-        for (int n = 0; n < values.length; n++)
-            data[length++] = (values[n] != null) ? values[n] : (float)None;
+        for (Float value : values)
+            data[length++] = (value != null) ? value : (float)None;
     }
 
-    public Object get(int idx) {
+    @Override
+    public Float get(int idx) {
         return data[idx];
     }
 
@@ -58,9 +65,10 @@ public class FloatColumn extends Column<Float> {
 
     @Override
     public long memoryInBytes() {
-        return data.length * 4;
+        return (long) data.length * 4;
     }
 
+    @Override
     public boolean isNone(int idx) {
         return data[idx] == None;
     }
@@ -73,7 +81,8 @@ public class FloatColumn extends Column<Float> {
         }
     }
 
-    public float[] getData() {
+    @Override
+    public Object toArray() {
         return data;
     }
 }

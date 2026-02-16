@@ -86,7 +86,7 @@ public class GrokConnectShell {
                         .atZone(ZoneId.systemDefault())
                         .toLocalDate().format(DateTimeFormatter.ofPattern("yyyy-MM-dd hh:mm:ss")),
                 execTime,
-                table.columns.size(),
+                table.getColumnCount(),
                 table.rowCount);
 
         String csv = table.toCsv();

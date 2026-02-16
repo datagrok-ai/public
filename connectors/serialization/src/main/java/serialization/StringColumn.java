@@ -2,75 +2,88 @@ package serialization;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Comparator;
 import java.util.List;
-import java.util.Objects;
 
-
-// String column.
-public class StringColumn extends Column<String> {
+public class StringColumn extends AbstractColumn<String> {
     private static final String TYPE = Types.STRING;
 
     private String[] data;
     private Integer[] idxs;
     private List<String> categories;
 
-    public StringColumn() {
-        data = new String[initColumnSize];
-    }
-
     public StringColumn(String name) {
-        this();
-        this.name = name;
-    }
-
-    public StringColumn(int initColumnSize) {
-        this.initColumnSize = initColumnSize;
+        super(name);
         data = new String[initColumnSize];
     }
 
-    public StringColumn(String[] values) {
+    public StringColumn(String name, int initColumnSize) {
+        super(name, initColumnSize);
+        data = new String[initColumnSize];
+    }
+
+    public StringColumn(String name, String[] values) {
+        super(name);
         data = new String[initColumnSize];
         addAll(values);
     }
 
+    @Override
     public String getType() {
         return TYPE;
     }
 
+    @Override
     public void empty() {
         length = 0;
         data = new String[initColumnSize];
         categorize();
     }
 
+    @Override
     public void encode(BufferAccessor buf) {
         categorize();
         buf.writeInt32(0);
         buf.writeStringList(categories.toArray(new String[0]));
-        IntColumn col = new IntColumn();
+        IntColumn col = new IntColumn("");
         col.addAll(idxs);
         col.encode(buf);
     }
 
+    @Override
     public void add(String value) {
         ensureSpace(1);
         data[length++] = value;
     }
 
+    @Override
     public void addAll(String[] values) {
         ensureSpace(values.length);
-        for (int n = 0; n < values.length; n++)
-            data[length++] = values[n];
+        for (String value : values)
+            data[length++] = value;
     }
 
-    public Object get(int idx) {
+    @Override
+    public String get(int idx) {
         return data[idx];
     }
 
     @Override
     public void set(int index, String value) {
         data[index] = value;
+    }
+
+    @Override
+    public long memoryInBytes() {
+        long size = 0;
+        for (String s : data)
+            if (s != null)
+                size += s.length();
+        return size * 2 + (long) data.length * 16;
+    }
+
+    @Override
+    public boolean isNone(int idx) {
+        return data[idx] == null || data[idx].equals("");
     }
 
     private void ensureSpace(int extraLength) {
@@ -88,35 +101,18 @@ public class StringColumn extends Column<String> {
         return data[o1].compareTo(data[o2]);
     }
 
-    @Override
-    public long memoryInBytes() {
-        long size = 0;
-        for (int n = 0; n < data.length; n++)
-            if (data[n] != null)
-                size += data[n].length();
-        return size * 2 + data.length * 16;
-    }
-
-    public boolean isNone(int idx) {
-        return data[idx] == null || data[idx].equals("");
-    }
-
     private void categorize() {
         categories = new ArrayList<>();
 
         idxs = new Integer[length];
         Integer[] order = new Integer[length];
         for (int n = 0; n < length; n++) {
-            data[n] = data[n] == null ? "" : data[n]; 
+            data[n] = data[n] == null ? "" : data[n];
             idxs[n] = n;
             order[n] = n;
         }
 
-        Arrays.sort(order, new Comparator<Integer>() {
-            public int compare(Integer o1, Integer o2) {
-                return comparer(o1, o2);
-            }
-        });
+        Arrays.sort(order, this::comparer);
 
         for (int i = 0; i < length; i++) {
             boolean newCat = (i == 0) || (comparer(order[i], order[i - 1]) != 0);
@@ -128,7 +124,8 @@ public class StringColumn extends Column<String> {
         }
     }
 
-    public String[] getData() {
+    @Override
+    public Object toArray() {
         return data;
     }
 }

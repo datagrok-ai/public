@@ -9,7 +9,6 @@ import org.junit.jupiter.params.provider.MethodSource;
 import serialization.DataFrame;
 import serialization.StringColumn;
 
-import java.util.LinkedHashMap;
 import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -34,9 +33,8 @@ public class SqlAnnotatorTest {
 
     private DataFrame df(String... columnNames) {
         DataFrame df = new DataFrame();
-        df.tags = new LinkedHashMap<>();
         for (String c : columnNames)
-            df.columns.add(new StringColumn(c));
+            df.addColumn(new StringColumn(c));
         return df;
     }
 
@@ -67,7 +65,7 @@ public class SqlAnnotatorTest {
                         new String[]{"a", "b"},
                         c -> {
                             assertEquals("table1", c.getTag(Tags.DbTable));
-                            assertEquals(c.name, c.getTag(Tags.DbColumn));
+                            assertEquals(c.getName(), c.getTag(Tags.DbColumn));
                             assertEquals("schema1", c.getTag(Tags.DbSchema));
                         }
                 )
@@ -187,7 +185,7 @@ public class SqlAnnotatorTest {
                         new String[]{"a", "b"},
                         c -> {
                             assertEquals("MyTable", c.getTag(Tags.DbTable));
-                            assertEquals(c.name, c.getTag(Tags.DbColumn));
+                            assertEquals(c.getName(), c.getTag(Tags.DbColumn));
                         }
                 )
         );
@@ -327,7 +325,7 @@ public class SqlAnnotatorTest {
 
         SqlAnnotator.annotate(q, df);
 
-        for (serialization.Column<?> c : df.columns)
+        for (serialization.Column<?> c : df.getColumns())
             tc.assertion.assertColumn(c);
     }
 }

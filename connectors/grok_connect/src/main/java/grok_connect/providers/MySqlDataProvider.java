@@ -216,7 +216,7 @@ public class MySqlDataProvider extends JdbcDataProvider {
     }
 
     @Override
-    public String getCommentsQuery(DataConnection connection) throws GrokConnectException {
+    public String getCommentsQuery(DataConnection connection) {
         return "--input: string schema\n" +
                 "(\n" +
                 "    SELECT\n" +

@@ -48,8 +48,8 @@ class MsSqlDataProviderTest extends ContainerizedProviderBaseTest {
     public void getCatalogs_ok() {
         DataFrame actual = Assertions.assertDoesNotThrow(() -> provider.getCatalogs(connection));
         Assertions.assertNotNull(actual);
-        Assertions.assertEquals(1, actual.columns.size());
-        Assertions.assertEquals("catalog_name", actual.columns.get(0).name);
+        Assertions.assertEquals(1, actual.getColumnCount());
+        Assertions.assertEquals("catalog_name", actual.getColumn(0).getName());
         Assertions.assertTrue(actual.rowCount > 0);
     }
 
@@ -201,6 +201,6 @@ class MsSqlDataProviderTest extends ContainerizedProviderBaseTest {
 
     private void prepareDataFrame(DataFrame dataFrame) {
         // in order to save time reuse some common's
-        dataFrame.columns.removeIf(column -> column.name.equals("bool")); // mssql doesn't have boolean type
+        dataFrame.removeColumn("bool"); // mssql doesn't have boolean type
     }
 }

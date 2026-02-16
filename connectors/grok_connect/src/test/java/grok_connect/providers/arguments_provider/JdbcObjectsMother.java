@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Stream;
 
+@SuppressWarnings("unused")
 public class JdbcObjectsMother {
     public static Stream<Arguments> test_getParameterNames_ok() {
         String query1 = "--name: getSmth\n" +

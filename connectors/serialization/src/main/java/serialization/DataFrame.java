@@ -1,7 +1,7 @@
 package serialization;
 
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -10,12 +10,13 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
-public class DataFrame {
+public class DataFrame implements Taggable {
     private static final String delimiter = ",";
+    private final List<Column<?>> columns = new ArrayList<>();
+    private final Map<String, String> tags = new HashMap<>();
+
     public String name;
     public Integer rowCount = 0;
-    public List<Column> columns = new ArrayList<>();
-    public Map<String, String> tags;
 
     public DataFrame() {
     }
@@ -26,43 +27,66 @@ public class DataFrame {
         return df;
     }
 
+    public List<Column<?>> getColumns() {
+        return columns;
+    }
+
+    public Column<?> getColumn(String name) {
+        for (Column<?> col : columns)
+            if (col.getName().equals(name))
+                return col;
+        return null;
+    }
+
+    public Column<?> getColumn(int index) {
+        return columns.get(index);
+    }
+
+    public int getColumnCount() {
+        return columns.size();
+    }
+
+    public void removeColumn(String name) {
+        columns.removeIf(c -> c.getName().equalsIgnoreCase(name));
+    }
+
     @SuppressWarnings("unchecked")
     public void addRow(Object... objects) {
         if (objects.length != columns.size())
             throw new RuntimeException("Objects length does not match columns length");
-        for (int i = 0; i < columns.size(); i++) {
-            columns.get(i).add(objects[i]);
-        }
+        for (int i = 0; i < columns.size(); i++)
+            ((Column<Object>) columns.get(i)).add(objects[i]);
         rowCount++;
     }
 
-    public void addColumn(Column col) {
-        rowCount = col.length;
-        col.name = getUniqueName(col.name);
+    public void addColumn(Column<?> col) {
+        rowCount = col.getLength();
+        col.setName(getUniqueName(col.getName()));
         columns.add(col);
     }
 
-    public void addColumns(Column[] cols) {
+    public void addColumns(Column<?>[] cols) {
         if (cols != null && cols.length > 0) {
-            Column column = cols[0];
+            Column<?> column = cols[0];
             if (column.getType().equals(Types.COLUMN_LIST)) {
-                Column column1 = (Column) column.get(0);
-                rowCount = column1 == null ? 0 : (column1).length;
+                ComplexTypeColumn ctc = (ComplexTypeColumn) column;
+                Column<?>[] inner = ctc.convertToColumns();
+                rowCount = inner.length > 0 ? inner[0].getLength() : 0;
             } else {
-                rowCount = column.length;
+                rowCount = column.getLength();
             }
             addColumnsRecursive(cols);
         }
     }
 
-    private void addColumnsRecursive(Column[] cols) {
-        for (Column col : cols) {
+    private void addColumnsRecursive(Column<?>[] cols) {
+        for (Column<?> col : cols) {
             if (col == null) break;
             if (col.getType().equals(Types.COLUMN_LIST)) {
                 ComplexTypeColumn complexTypeColumn = (ComplexTypeColumn) col;
-                addColumnsRecursive(complexTypeColumn.getAll());
+                addColumnsRecursive(complexTypeColumn.convertToColumns());
             } else {
-                col.name = getUniqueName(col.name);
+                col.setName(getUniqueName(col.getName()));
                 columns.add(col);
             }
         }
@@ -77,7 +101,7 @@ public class DataFrame {
     public String toCsv() {
         StringBuilder buffer = new StringBuilder();
         String collect = columns.stream()
-                .map(column -> column.name)
+                .map(Column::getName)
                 .collect(Collectors.joining(delimiter));
         buffer.append(collect);
         buffer.append(System.lineSeparator());
@@ -98,7 +122,7 @@ public class DataFrame {
         return (new TablesBlob(tables)).toByteArray();
     }
 
-    private String columnToStr(Column col, int row) {
+    private String columnToStr(Column<?> col, int row) {
         if (col.isNone(row))
             return "";
         String str = String.valueOf(col.get(row));
@@ -107,9 +131,8 @@ public class DataFrame {
 
     private String getUniqueName(String name) {
         Predicate<String> unique = (candidate) -> {
-            String lowerCandidate = candidate.toLowerCase();
-            for (Column column : columns)
-                if (column.name.equals(lowerCandidate))
+            for (Column<?> column : columns)
+                if (column.getName().equalsIgnoreCase(candidate))
                     return false;
             return true;
         };
@@ -120,7 +143,7 @@ public class DataFrame {
         int i = 1;
         String core = name;
 
-        Pattern pattern = Pattern.compile("^(.*) \\(([0-9]+)\\)$");
+        Pattern pattern = Pattern.compile("^(.*) \\((\\d+)\\)$");
         Matcher matcher = pattern.matcher(name);
         if (matcher.find()) {
             core = matcher.group(1);
@@ -128,34 +151,31 @@ public class DataFrame {
         }
 
         for (; true; i++) {
-            String newName = core + " (" + String.valueOf(i) + ")";
+            String newName = core + " (" + i + ")";
             if (unique.test(newName))
                 return newName;
         }
     }
 
+    @SuppressWarnings("unchecked")
     public void merge(DataFrame dataFrame) {
-        if (!Objects.equals(columns.size(), dataFrame.columns.size()) && rowCount != 0) {
+        if (!Objects.equals(columns.size(), dataFrame.columns.size()) && rowCount != 0)
             throw new RuntimeException("Can't merge dataframes with different row count");
-        }
         if (rowCount == 0) {
-            addColumns(dataFrame.columns.toArray(new Column[0]));
+            addColumns(dataFrame.columns.toArray(new Column<?>[0]));
             return;
         }
         for (int i = 0; i < columns.size(); i++) {
-            Column column = columns.get(i);
-            Column columnToMerge = dataFrame.columns.get(i);
-            if (!column.name.equals(columnToMerge.name)) {
+            Column<Object> column = (Column<Object>) columns.get(i);
+            Column<?> columnToMerge = dataFrame.columns.get(i);
+            if (!column.getName().equals(columnToMerge.getName()))
                 throw new RuntimeException("Can't merge dataframes of columns with different names");
-            }
-            for (int j = 0; j < columnToMerge.length; j++) {
+            for (int j = 0; j < columnToMerge.getLength(); j++)
                 column.add(columnToMerge.get(j));
-            }
         }
-        Column column = columns.get(0);
-        if (column != null) {
-            rowCount = column.length;
-        }
+        Column<?> column = columns.get(0);
+        if (column != null)
+            rowCount = column.getLength();
     }
 
     @Override
@@ -171,9 +191,14 @@ public class DataFrame {
         return Objects.hash(name, rowCount, columns, tags);
     }
 
+    @Override
+    public Map<String, String> getTags() {
+        return tags;
+    }
+
     public long memoryInBytes() {
         long sum = 0;
-        for (Column col : columns)
+        for (Column<?> col : columns)
             sum += col.memoryInBytes();
         return sum;
     }
