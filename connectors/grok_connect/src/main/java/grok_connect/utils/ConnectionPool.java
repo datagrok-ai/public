@@ -11,14 +11,19 @@ import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.SQLTransientConnectionException;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 public class ConnectionPool {
     private static final Logger LOGGER = LoggerFactory.getLogger(ConnectionPool.class);
     private static final Map<String, HikariDataSource> connectionPool = new ConcurrentHashMap<>();
     private static final Object driverLoadLock = new Object();
+    private static volatile boolean evictionStarted = false;
 
     public static Connection getConnection(String url, java.util.Properties properties, String driverClassName)
             throws GrokConnectException {
@@ -60,6 +65,7 @@ public class ConnectionPool {
     }
 
     private static HikariDataSource getOrCreateDataSource(String key, String url, Properties properties, String driverClassName) {
+        startEvictionIfNeeded();
         HikariDataSource ds = connectionPool.get(key);
         if (ds != null)
             return ds;
@@ -73,6 +79,7 @@ public class ConnectionPool {
     }
 
     private static HikariDataSource getOrCreateDataSource(String key, DataSource dataSource) {
+        startEvictionIfNeeded();
         HikariDataSource ds = connectionPool.get(key);
         if (ds != null)
             return ds;
@@ -136,5 +143,45 @@ public class ConnectionPool {
         config.setLeakDetectionThreshold(60 * 1000);
         config.setInitializationFailTimeout(-1);
         return new HikariDataSource(config);
+    }
+
+    private static void startEvictionIfNeeded() {
+        if (evictionStarted)
+            return;
+        synchronized (ConnectionPool.class) {
+            if (evictionStarted)
+                return;
+            long rateMs = SettingsManager.getInstance().getSettings().connectionPoolTimerRate;
+            ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor(r -> {
+                Thread t = new Thread(r, "ConnectionPool-Evictor");
+                t.setDaemon(true);
+                return t;
+            });
+            scheduler.scheduleAtFixedRate(ConnectionPool::evictIdlePools, rateMs, rateMs, TimeUnit.MILLISECONDS);
+            evictionStarted = true;
+        }
+    }
+
+    private static void evictIdlePools() {
+        Iterator<Map.Entry<String, HikariDataSource>> it = connectionPool.entrySet().iterator();
+        while (it.hasNext()) {
+            Map.Entry<String, HikariDataSource> entry = it.next();
+            HikariDataSource ds = entry.getValue();
+            try {
+                if (ds.isClosed()) {
+                    it.remove();
+                    continue;
+                }
+                com.zaxxer.hikari.HikariPoolMXBean pool = ds.getHikariPoolMXBean();
+                if (pool != null && pool.getIdleConnections() == 0 && pool.getActiveConnections() == 0) {
+                    LOGGER.info("Evicting idle pool: {}", ds.getPoolName());
+                    it.remove();
+                    ds.close();
+                }
+            }
+            catch (Exception e) {
+                LOGGER.warn("Error evicting pool: {}", ds.getPoolName(), e);
+            }
+        }
     }
 }
