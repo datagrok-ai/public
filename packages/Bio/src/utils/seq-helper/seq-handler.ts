@@ -149,7 +149,7 @@ export class SeqHandler implements ISeqHandler {
 
     const stats = getStats(categoriesSample, 3, (s) => s.split(this.separator!));
     let invalidateRequired = false;
-    const refinerList = DG.Func.find({meta: {role: DG.FUNC_TYPES.NOTATION_REFINER}});
+    const refinerList = DG.Func.find({meta: {role: 'notationRefiner'}});
 
     for (const refineFuncFind of refinerList) {
       try {
