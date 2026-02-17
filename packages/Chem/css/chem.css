@@ -435,7 +435,7 @@
   margin-left: -40px;
 }
 
-.scaffold-tree-label-input.ui-input-root {
+.chem-scaffold-tree-label-input.ui-input-root {
   margin: -8px 0 0 0 !important;
   padding: 0 !important;
   max-width: 100%;
@@ -445,12 +445,12 @@
   background-color: transparent !important;
 }
 
-.scaffold-tree-label-input.ui-input-root > label {
+.chem-scaffold-tree-label-input.ui-input-root > label {
   display: none !important;
 }
 
-.scaffold-tree-label-input .ui-input-editor,
-.scaffold-tree-label-input input {
+.chem-scaffold-tree-label-input .ui-input-editor,
+.chem-scaffold-tree-label-input input {
   font-size: 11px !important;
   line-height: 14px !important;
   height: 16px !important;
@@ -468,14 +468,18 @@
   box-shadow: none !important;
 }
 
-.scaffold-tree-label-input .ui-input-editor:focus,
-.scaffold-tree-label-input input:focus {
+.chem-scaffold-tree-label-input .ui-input-editor:focus,
+.chem-scaffold-tree-label-input input:focus {
   border-bottom: 1px solid var(--blue-1) !important;
 }
 
-.scaffold-tree-label-input .ui-input-editor::placeholder {
+.chem-scaffold-tree-label-input .ui-input-editor::placeholder {
   color: var(--grey-3);
   font-style: italic;
+}
+
+.chem-scaffold-tree-label-hidden {
+  display: none !important;
 }
 
 .chem-drug-likeness-widget-score-div, .chem-toxicity-widget-risk-row {

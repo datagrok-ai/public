@@ -40,6 +40,11 @@ interface INode {
   label?: string;
 }
 
+interface IColumnResult {
+  column: DG.Column;
+  isNew: boolean;
+}
+
 interface ITreeNode {
   smiles: string;
   autocreated: boolean;
@@ -700,9 +705,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     // this.tree.root.classList.add('d4-tree-view-lines');
 
     this.title = this.string('title', 'Scaffold Tree');
-    this.showLabels = this.bool('showLabels', false, {
-      description: 'Show editable labels on scaffold nodes and create a labels column',
-    });
+    this.showLabels = this.bool('showLabels', false, {description: 'Show editable labels'});
     this.size = this.string('size', Object.keys(this.sizesMap)[2], {choices: Object.keys(this.sizesMap)});
     this.tree.root.classList.add('scaffold-tree-viewer');
     this.tree.root.classList.add(`scaffold-tree-${this.size}`);
@@ -1572,16 +1575,19 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
       this.assignScaffoldColors();
   }
 
-  private getOrCreateColumn(columnName: string, description: string): {column: DG.Column, isNew: boolean} {
+  private getOrCreateColumn(columnName: string, description: string): IColumnResult {
     let column = this.dataFrame!.columns.byName(columnName);
     const isNew = !column;
 
-    // Prefix with '~' to prevent unintended scrolling when adding, then rename.
+    // First, we create an auxiliary column by prefixing its name with '~'.
+    // This prevents unintended scrolling behavior when adding the column to the DataFrame.
+    // After adding the column, we remove the '~' prefix to ensure it is recognized and used in the viewers.
     if (!column) {
       column = this.dataFrame!.columns.addNewString(`~${columnName}`);
       column.name = columnName;
       column.setTag(DG.TAGS.DESCRIPTION, description);
       column.setTag(EXCLUDE_FROM_FILTER_COLUMN_SELECT, 'true');
+      // Set the formula tag so the column is recognized as a calculated column and added before the layout is applied.
       column.setTag(DG.TAGS.FORMULA, '');
     }
 
@@ -1595,20 +1601,20 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
   }
 
   private fillColumnFromNodes(
-    column: DG.Column, childNodes: DG.TreeViewNode[], rowCount: number,
-    getCategoryName: (node: ITreeNode) => string | null,
+    column: DG.Column, childNodes: DG.TreeViewNode[],
+    categoryField: 'smiles' | 'label',
     colorMap: Map<string, string | undefined>,
   ): void {
-    const buffer = new Array<string | null>(rowCount).fill(null);
+    const buffer = new Array<string | null>(this.dataFrame!.rowCount).fill(null);
     const categoryColorMap = new Map<string, string | undefined>();
 
     for (const childNode of childNodes) {
       const nodeValue = value(childNode);
-      const categoryName = getCategoryName(nodeValue);
+      const {bitset, smiles} = nodeValue;
+      const categoryName = nodeValue[categoryField] ?? null;
       if (categoryName == null)
         continue;
-      categoryColorMap.set(categoryName, colorMap.get(nodeValue.smiles));
-      const {bitset} = nodeValue;
+      categoryColorMap.set(categoryName, colorMap.get(smiles));
       if (bitset && bitset.trueCount > 0) {
         let index = bitset.findNext(-1, true);
         while (index !== -1) {
@@ -1628,14 +1634,15 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     if (!this.dataFrame)
       return;
 
-    const rowCount = this.dataFrame.rowCount;
     const scaffoldColorMap = new Map(this.colorCodedScaffolds.map((scaffold) => [scaffold.molecule, scaffold.color]));
 
-    const childNodes: DG.TreeViewNode[] = [];
+    const childNodes = [];
     for (const child of this.tree.items) {
-      if (scaffoldColorMap.has(value(child).smiles))
+      const smiles = value(child).smiles;
+      if (scaffoldColorMap.has(smiles))
         childNodes.push(child);
     }
+
     childNodes.sort((a, b) => value(b).bitset!.trueCount - value(a).bitset!.trueCount);
 
     const fragmentsColumnName = `${this.title}_${this.molColumn?.name}_colors`;
@@ -1645,16 +1652,18 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     this.fragmentsColumn.semType ??= DG.SEMTYPE.MOLECULE;
     // @ts-ignore // temporary compatibility for older versions
     this.fragmentsColumn.meta.allowColorPicking = false;
-    this.fillColumnFromNodes(this.fragmentsColumn, childNodes, rowCount,
-      (node) => node.smiles, scaffoldColorMap);
+    this.fillColumnFromNodes(this.fragmentsColumn, childNodes, 'smiles', scaffoldColorMap);
 
+    this.updateLabelsColumn(childNodes, scaffoldColorMap);
+  }
+
+  private updateLabelsColumn(childNodes: DG.TreeViewNode[], scaffoldColorMap: Map<string, string | undefined>): void {
     if (this.showLabels) {
       const labelsColumnName = `${this.title}_${this.molColumn?.name}_labels`;
       const {column: labelsCol} = this.getOrCreateColumn(labelsColumnName,
         'Column with scaffold tree labels used for color-coded legends.');
       this.labelsColumn = labelsCol;
-      this.fillColumnFromNodes(this.labelsColumn, childNodes, rowCount,
-        (node) => node.label ?? null, scaffoldColorMap);
+      this.fillColumnFromNodes(this.labelsColumn, childNodes, 'label', scaffoldColorMap);
     } else
       this.removeLabelsColumn();
   }
@@ -1859,10 +1868,10 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     iconsInfo.onmousedown = (e) => e.stopImmediatePropagation();
 
     const labelInput = ui.input.string('', {value: groupValue.label ?? ''});
-    labelInput.root.classList.add('scaffold-tree-label-input');
+    labelInput.root.classList.add('chem-scaffold-tree-label-input');
     (labelInput.input as HTMLInputElement).placeholder = 'Label';
     if (!this.showLabels)
-      labelInput.root.style.display = 'none';
+      labelInput.root.classList.add('chem-scaffold-tree-label-hidden');
     const commitLabel = () => {
       const text = labelInput.value.trim();
       value(group).label = text || undefined;
@@ -2136,7 +2145,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
       for (const item of this.tree.items) {
         const labelEl = value(item).labelElement;
         if (labelEl)
-          labelEl.style.display = this.showLabels ? '' : 'none';
+          labelEl.classList.toggle('chem-scaffold-tree-label-hidden', !this.showLabels);
       }
       this.assignScaffoldColors();
     }
@@ -2301,6 +2310,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     if (this.molColumn)
       this.setScaffoldTag(this.molColumn, [], true);
     this.removeFragmentsColumn();
+    this.removeLabelsColumn();
 
     disconnectExistingObservers(this);
     super.detach();
@@ -2388,6 +2398,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
               thisViewer.cancelled = true;
               thisViewer.clear();
               thisViewer.removeFragmentsColumn();
+              this.removeLabelsColumn();
               dialog.close();
             })
             .show();
