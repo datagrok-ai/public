@@ -14,8 +14,10 @@ import {
   ViewAction,
 } from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineInstance';
 import {zipSync, Zippable} from 'fflate';
-import {dfToViewerMapping, getFuncCallDefaultFilename, replaceForWindowsPath, richFunctionViewReport} from '@datagrok-libraries/compute-utils';
+import {dfToViewerMapping, getStartedOrNull, replaceForWindowsPath, richFunctionViewReport, ValidationResult} from '@datagrok-libraries/compute-utils';
 import {ConsistencyInfo, FuncCallStateInfo, MetaCallInfo} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/StateTreeNodes';
+import type Dayjs from 'dayjs';
+import {ExportCbInput} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineConfiguration';
 
 export type NodeWithPath = {
   state: PipelineState,
@@ -165,56 +167,100 @@ export const hasInconsistencies = (consistencyStates?: Record<string, Consistenc
   return !!firstInconsistency;
 };
 
-export async function reportTree(treeState?: PipelineState, meta: MetaCallInfo = {}, hasNotSavedEdits?: boolean) {
-  if (treeState) {
-    const zipConfig = {} as Zippable;
+export async function reportTree(
+  {
+    startDownload,
+    treeState,
+    meta = {},
+    callInfoStates,
+    validationStates,
+    consistencyStates,
+    descriptions,
+    hasNotSavedEdits,
+    cb,
+  }: {
+    startDownload: boolean;
+    treeState: PipelineState;
+    meta?: MetaCallInfo;
+    callInfoStates?: Record<string, FuncCallStateInfo | undefined>,
+    validationStates?: Record<string, Record<string, ValidationResult> | undefined>,
+    consistencyStates?: Record<string, Record<string, ConsistencyInfo> | undefined>,
+    descriptions?: Record<string, Record<string, string | string[]> | undefined>,
+    hasNotSavedEdits?: boolean;
+    cb?: (input: ExportCbInput) => Promise<void>,
+  }) {
+  const zipConfig = {} as Zippable;
 
-    const reportTreeRec = async (state: PipelineState, previousPath: string = '', idx: number = 1) => {
-      if (isFuncCallState(state) && state.funcCall) {
-        const funccall = state.funcCall;
+  const q = [{ state: treeState, idx: 0, path: [] as string[] }];
 
-        const [blob] = await richFunctionViewReport(
-          'Excel',
-          funccall.func,
-          funccall,
-          dfToViewerMapping(funccall),
-        );
+  while (q.length > 0) {
+    const { state, idx, path } = q.shift()!;
+    if (isFuncCallState(state)) {
+      const funcCall = state.funcCall;
+      const callInfo = callInfoStates?.[state.uuid];
+      if (!funcCall || !callInfo)
+        continue;
 
-        const validatedFilename = replaceForWindowsPath(
-          `${String(idx).padStart(3, '0')}_${getFuncCallDefaultFilename(funccall)}`,
-        );
-        const validatedFilenameWithPath = `${previousPath}/${validatedFilename}`;
+      const validation = validationStates?.[state.uuid];
+      const consistency = consistencyStates?.[state.uuid];
+      const description = descriptions?.[state.uuid];
+      const {isOutputOutdated, runError} = callInfo;
 
-        zipConfig[validatedFilenameWithPath] =
-                      [new Uint8Array(await blob.arrayBuffer()), {level: 0}];
+      const [blob, wb] = await richFunctionViewReport(
+        'Excel',
+        funcCall.func,
+        funcCall,
+        dfToViewerMapping(funcCall),
+        validation,
+        consistency,
+      );
+
+      const rawFileName = getExportName(state, isOutputOutdated, description?.title as string, getStartedOrNull(funcCall), runError);
+      const fileName = `${String(idx + 1).padStart(3, '0')}_${replaceForWindowsPath(rawFileName)}.xlsx`;
+      if (cb) {
+        await cb({
+          fc: funcCall,
+          wb,
+          path,
+          fileName,
+          isOutputOutdated,
+          runError,
+          validation,
+          consistency,
+          description
+        });
       }
-
-      if (
-        isSequentialPipelineState(state) ||
-          isParallelPipelineState(state) ||
-          isStaticPipelineState(state)
-      ) {
-        const nestedPath = `${String(idx).padStart(3, '0')}_${state.friendlyName ?? state.nqName}`;
-        let validatedNestedPath = replaceForWindowsPath(nestedPath);
-
-        if (previousPath.length > 0) validatedNestedPath = `${previousPath}/${validatedNestedPath}`;
-
-        for (const [idx, stepState] of state.steps.entries())
-          await reportTreeRec(stepState, validatedNestedPath, idx + 1);
+      const configKey = [...path, fileName].join('/')
+      zipConfig[configKey] = [new Uint8Array(await blob.arrayBuffer()), { level: 0 }];
+    } else {
+      const dirName = `${String(idx + 1).padStart(3, '0')}_${replaceForWindowsPath(state.friendlyName ?? state.nqName ?? '')}`;
+      for (const [idx, stepState] of state.steps.entries()) {
+        q.push({ state: stepState, idx, path: [...path, dirName] })
       }
-    };
-
-    await reportTreeRec(treeState);
-
-    const modelName = treeState.friendlyName ?? treeState.configId;
-    const runName = meta.title ? `${modelName} - ${meta.title}` : modelName;
-    const fileName = (meta.started && !hasNotSavedEdits) ? `${runName} - ${meta.started}` : `${runName} - edited`;
-
-    const name = replaceForWindowsPath(`${fileName}.zip`);
-
-    DG.Utils.download(name, new Blob([zipSync(zipConfig) as any]));
+    }
   }
+
+  const rawFileName = getExportName(treeState, !!hasNotSavedEdits, meta.title, meta.started);
+  const fileName = replaceForWindowsPath(`${rawFileName}.zip`);
+  const blob = new Blob([zipSync(zipConfig) as any]);
+  if (startDownload)
+    DG.Utils.download(fileName, blob);
+  return [blob, fileName] as const;
 }
+
+function getExportName(
+  state: PipelineState,
+  hasNotSavedEdits: boolean,
+  title?: string,
+  started?: Dayjs.Dayjs,
+  runError?: string,
+) {
+  const stateName = state.friendlyName ?? state.configId;
+  const name = title ? `${stateName} - ${title}` : stateName;
+  const fileName = (started && !hasNotSavedEdits) ? `${name} - ${started}` : (runError ? `${name} - failed` : `${name} - edited`);
+  return fileName;
+}
+
 
 export function setDifference<T>(a: Set<T>, b: Set<T>) {
   return new Set(Array.from(a).filter((item) => !b.has(item)));

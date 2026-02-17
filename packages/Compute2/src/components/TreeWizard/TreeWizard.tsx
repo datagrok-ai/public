@@ -30,7 +30,9 @@ import {take} from 'rxjs/operators';
 import {EditRunMetadataDialog} from '@datagrok-libraries/compute-utils/shared-components/src/history-dialogs';
 import {PipelineInstanceConfig} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineInstance';
 import {setHelpService} from '../../composables/use-help';
-import {reportFuncCallExcel} from '@datagrok-libraries/compute-utils';
+import {CustomExport, ExportCbInput} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineConfiguration';
+import * as Utils from '@datagrok-libraries/compute-utils/shared-utils/utils';
+import {dfToViewerMapping, richFunctionViewReport} from '@datagrok-libraries/compute-utils';
 
 const DEVELOPERS_GROUP = 'Developers';
 
@@ -364,14 +366,80 @@ export const TreeWizard = Vue.defineComponent({
     }, {immediate: true});
 
     ////
-    // chosen step state
+    // export
     ////
 
     const exports = Vue.computed(() => {
       if (!treeState.value || isFuncCallState(treeState.value))
         return [];
-      return [{id: 'default', friendlyName: 'Default Excel', handler: () => reportTree(treeState.value, currentMetaCallData.value, hasNotSavedEdits.value)}, ...(treeState.value.customExports ?? [])];
+      const defaultExport: CustomExport = {
+        id: 'default',
+        friendlyName: 'Default Excel',
+        handler: () => reportTree({
+          startDownload: true,
+          treeState: treeState.value!,
+          meta: currentMetaCallData.value,
+          callInfoStates: states.calls,
+          validationStates: states.validations,
+          consistencyStates: states.consistency,
+          descriptions: states.descriptions,
+          hasNotSavedEdits: hasNotSavedEdits.value
+        })};
+      return [defaultExport,...(treeState.value.customExports ?? [])];
     });
+
+    const exportHandler = async (exportData: CustomExport) => {
+      if (!treeState.value)
+        return
+      const utils = {
+        reportFuncCallExcel: async (fc: DG.FuncCall, uuid: string) => {
+          return richFunctionViewReport(
+            'Excel',
+            fc.func,
+            fc,
+            dfToViewerMapping(fc),
+            states.validations?.[uuid],
+            states.consistency?.[uuid],
+          );
+        },
+        reportStateExcel: async (state: PipelineState, cb: (input: ExportCbInput) => Promise<void>) => {
+          return reportTree({
+            startDownload: false,
+            treeState: state,
+            meta: currentMetaCallData.value,
+            callInfoStates: states.calls,
+            validationStates: states.validations,
+            consistencyStates: states.consistency,
+            descriptions: states.descriptions,
+            hasNotSavedEdits: hasNotSavedEdits.value,
+            cb,
+          });
+        },
+        getFuncCallCustomExports: (fc: DG.FuncCall) => {
+          return Utils.getCustomExports(fc.func).map(x => x.name);
+        },
+        runFuncCallCustomExport: async (fc: DG.FuncCall, uuid: string, exportName: string) => {
+          const exports =  Utils.getCustomExports(fc.func);
+          const item = exports.find(x => x.name === exportName);
+          if (!item)
+            throw new Error(`No export named ${exportName} is defined for ${fc.func.nqName}`);
+          const res = await DG.Func.byName(fc.func.nqName).apply({
+            startDownload: false,
+            funcCall: fc,
+            validationState: states.validations?.[uuid],
+            consistencyState: states.consistency?.[uuid],
+            isOutputOutdated: states.calls?.[uuid]?.isOutputOutdated,
+            runError: states.calls?.[uuid]?.runError,
+          });
+          return res;
+        },
+      };
+      await exportData.handler(treeState.value!, utils);
+    }
+
+    ////
+    // chosen step state
+    ////
 
     const chosenStepState = Vue.computed(() => chosenStep.value?.state);
 
@@ -553,11 +621,9 @@ export const TreeWizard = Vue.defineComponent({
         {isTreeReady.value && isTreeReportable.value &&
           <RibbonMenu groupName='Export' view={currentView.value}>
             {
-              exports.value.map(({id, friendlyName, handler}) =>
-                <span onClick={() => (treeState.value) ?
-                  handler(treeState.value, {reportFuncCallExcel: reportFuncCallExcel}) :
-                  null}>
-                  <div> {friendlyName ?? id} </div>
+              exports.value.map((exportData) =>
+                <span onClick={() => exportHandler(exportData)}>
+                  <div> {exportData.friendlyName ?? exportData.id} </div>
                 </span>,
               )
             }

@@ -65,7 +65,7 @@ export const getRunLabel = (func: DG.Func) => {
   return func.options['runLabel'];
 };
 
-export const getCustomExports = (func: DG.Func) => {
+export const getCustomExports = (func: DG.Func): {name: string, function: string}[] => {
   return JSON.parse(func.options['customExports'] ?? '[]');
 };
 

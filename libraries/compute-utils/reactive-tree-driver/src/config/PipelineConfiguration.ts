@@ -5,6 +5,7 @@ import {IRuntimeLinkController, IRuntimeMetaController, IRuntimePipelineMutation
 import {ItemId, NqName, RestrictionType, LinkSpecString, ValidationResult} from '../data/common-types';
 import {PipelineOutline, PipelineState, StepParallelInitialConfig, StepSequentialInitialConfig} from './PipelineInstance';
 import type ExcelJS from 'exceljs';
+import {ConsistencyInfo} from '../runtime/StateTreeNodes';
 
 //
 // Pipeline public configuration
@@ -42,10 +43,25 @@ export type FunccallActionHandler = HandlerBase<{ controller: IFuncallActionCont
 export type PipelineProvider = HandlerBase<{ version?: string }, LoadedPipeline>;
 export type ReturnHandler = HandlerBase<{ controller: IRuntimeReturnController }, void>;
 
-export type ExportUtils = {
-  reportFuncCallExcel: (fc: DG.FuncCall) => Promise<readonly [Blob, ExcelJS.Workbook]>;
+export interface ExportCbInput {
+  fc: DG.FuncCall,
+  wb: ExcelJS.Workbook,
+  path: string[],
+  fileName: string,
+  isOutputOutdated?: boolean,
+  runError?: string,
+  validation?: Record<string, ValidationResult>,
+  consistency?: Record<string, ConsistencyInfo>,
+  description?: Record<string, string | string[]>,
 }
-export type PipelineExport = (pipelineState: PipelineState, utils: ExportUtils) => Promise<void>;
+
+export type ExportUtils = {
+  reportStateExcel: (pipelineState: PipelineState, cb: <T>(input: ExportCbInput) => Promise<T>) => Promise<readonly [Blob, string]>;
+  reportFuncCallExcel: (fc: DG.FuncCall, uuid: string) => Promise<readonly [Blob, ExcelJS.Workbook]>;
+  getFuncCallCustomExports: (fc: DG.FuncCall) => string[];
+  runFuncCallCustomExport: (fc: DG.FuncCall, uuid: string, exportName: string) => Promise<any>;
+}
+export type PipelineExport = (pipelineState: PipelineState, utils: ExportUtils) => Promise<readonly [Blob, string]>;
 export type ViewersHook = (ioName: string, type: string, viewer?: DG.Viewer, meta?: any) => void;
 export type StructureCheckHook = (data: PipelineOutline) => ValidationResult | undefined;
 
