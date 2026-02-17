@@ -16,7 +16,6 @@ public class DefaultComplexColumnManager implements ColumnManager<Map<String, Ob
     private static final Converter<Map<String, Object>> DEFAULT_CONVERTER = new ComplexTypeConverter();
 
     @Override
-    @SuppressWarnings("unchecked")
     public Map<String, Object> convert(Object value, ColumnMeta columnMeta) {
         LOGGER.trace("convert method was called");
         if (value == null) {

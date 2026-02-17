@@ -1,8 +1,9 @@
 package serialization;
 
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class StringColumn extends AbstractColumn<String> {
     private static final String TYPE = Types.STRING;
@@ -86,6 +87,11 @@ public class StringColumn extends AbstractColumn<String> {
         return data[idx] == null || data[idx].equals("");
     }
 
+    @Override
+    public Object toArray() {
+        return data;
+    }
+
     private void ensureSpace(int extraLength) {
         if (length + extraLength > data.length) {
             String[] newData = new String[data.length * 2 + Math.max(0, length + extraLength - data.length * 2)];
@@ -94,38 +100,30 @@ public class StringColumn extends AbstractColumn<String> {
         }
     }
 
-    public int comparer(Integer o1, Integer o2) {
-        if (data[o1].equals("") && data[o2].equals("")) return 0;
-        if (data[o1].equals("")) return 1;
-        if (data[o2].equals("")) return -1;
-        return data[o1].compareTo(data[o2]);
-    }
-
     private void categorize() {
-        categories = new ArrayList<>();
+        Map<String, Integer> categoryMap = new HashMap<>();
+        int[] tempIdxs = new int[length];
+
+        for (int n = 0; n < length; n++) {
+            String value = data[n] == null ? "" : data[n];
+            data[n] = value;
+            tempIdxs[n] = categoryMap.computeIfAbsent(value, k -> categoryMap.size());
+        }
+
+        categories = new ArrayList<>(categoryMap.keySet());
+        categories.sort((a, b) -> {
+            if (a.isEmpty() && b.isEmpty()) return 0;
+            if (a.isEmpty()) return 1;
+            if (b.isEmpty()) return -1;
+            return a.compareTo(b);
+        });
+
+        int[] remap = new int[categoryMap.size()];
+        for (int i = 0; i < categories.size(); i++)
+            remap[categoryMap.get(categories.get(i))] = i;
 
         idxs = new Integer[length];
-        Integer[] order = new Integer[length];
-        for (int n = 0; n < length; n++) {
-            data[n] = data[n] == null ? "" : data[n];
-            idxs[n] = n;
-            order[n] = n;
-        }
-
-        Arrays.sort(order, this::comparer);
-
-        for (int i = 0; i < length; i++) {
-            boolean newCat = (i == 0) || (comparer(order[i], order[i - 1]) != 0);
-            if (newCat) {
-                String cat = data[order[i]];
-                categories.add(cat);
-            }
-            idxs[order[i]] = categories.size() - 1;
-        }
-    }
-
-    @Override
-    public Object toArray() {
-        return data;
+        for (int n = 0; n < length; n++)
+            idxs[n] = remap[tempIdxs[n]];
     }
 }

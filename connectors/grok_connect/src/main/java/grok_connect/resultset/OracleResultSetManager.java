@@ -34,10 +34,9 @@ public class OracleResultSetManager extends DefaultResultSetManager {
             super.setValue(o, index);
     }
 
-    @SuppressWarnings("unchecked")
     private void setBigIntValue(Object o, int index, Column<?> column) {
         if (o == null)
-            ((Column<Object>) column).add(null);
+            column.add(null);
         else {
             String str = o.toString();
             BigInteger bigIntValue = new BigInteger(str);
