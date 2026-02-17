@@ -260,7 +260,7 @@ export class MpoProfileDialog {
   }
 
   private detach(): void {
-    this.mpoContextPanel?.close();
+    this.mpoContextPanel?.release();
     this.subs.forEach((sub) => sub.unsubscribe());
     this.subs = [];
   }

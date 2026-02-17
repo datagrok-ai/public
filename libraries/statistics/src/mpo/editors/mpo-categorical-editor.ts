@@ -5,16 +5,21 @@ import {Subject} from 'rxjs';
 import {CategoricalDesirability} from '../mpo';
 
 export class MpoCategoricalEditor {
-  root = ui.divV([], {style: {width: '300px'}});
+  root: HTMLDivElement;
   onChanged = new Subject<CategoricalDesirability>();
-  supportsModeDialog: boolean = false;
+  supportsModeDialog: boolean = true;
 
   private _prop: CategoricalDesirability;
+  private design: boolean;
+  private showControls: boolean;
   private desirabilityInputs: DG.InputBase[] = [];
   private form: HTMLElement | null = null;
 
-  constructor(prop: CategoricalDesirability) {
+  constructor(prop: CategoricalDesirability, design = false, showControls = false) {
     this._prop = prop;
+    this.design = design;
+    this.showControls = showControls;
+    this.root = ui.divV([], 'statistics-mpo-cat-editor');
     this.buildForm();
   }
 
@@ -27,33 +32,84 @@ export class MpoCategoricalEditor {
       this.desirabilityInputs = [];
     }
 
-    this.desirabilityInputs = categories.map((cat) => {
-      return ui.input.float(cat.name, {
-        value: cat.desirability ?? 0.5,
-        min: 0,
-        max: 1,
-        format: '#0.000',
-        onValueChanged: (value: number) => {
-          cat.desirability = value;
-          this.onChanged.next(this._prop);
-        },
-      });
+    if (this.design)
+      this.buildDesignForm(categories);
+    else
+      this.buildViewForm(categories);
+  }
+
+  private createDesirabilityInput(
+    label: string,
+    cat: {name: string; desirability: number},
+  ): DG.InputBase {
+    const input = ui.input.float(label, {value: cat.desirability ?? 0.5, min: 0, max: 1, format: '#0.000',
+      onValueChanged: (value: number) => {
+        cat.desirability = value;
+        this.onChanged.next(this._prop);
+      },
     });
+    this.desirabilityInputs.push(input);
+    return input;
+  }
+
+  private buildViewForm(categories: {name: string; desirability: number}[]): void {
+    for (const cat of categories)
+      this.createDesirabilityInput(cat.name, cat);
 
     this.form = ui.form(this.desirabilityInputs);
     this.root.append(this.form);
   }
 
+  private buildDesignForm(categories: {name: string; desirability: number}[]): void {
+    const rows = categories.map((cat, idx) => this.buildCategoryRow(cat, idx));
+
+    this.form = ui.divV(rows);
+    this.root.append(this.form);
+  }
+
+  private buildCategoryRow(
+    cat: {name: string; desirability: number},
+    idx: number,
+  ): HTMLElement {
+    const nameInput = ui.input.string('', {value: cat.name, onValueChanged: (v) => {
+      cat.name = v;
+      this.onChanged.next(this._prop);
+    }});
+    nameInput.root.classList.add('statistics-mpo-cat-name');
+
+    const desInput = this.createDesirabilityInput('', cat);
+    desInput.root.classList.add('statistics-mpo-cat-desirability');
+
+    const elements: HTMLElement[] = [nameInput.root, desInput.root];
+
+    if (this.showControls) {
+      const add = ui.icons.add(() => {
+        const newCat = {name: `Category ${this._prop.categories.length + 1}`, desirability: 1};
+        this._prop.categories.splice(idx + 1, 0, newCat);
+        this.buildForm();
+        this.onChanged.next(this._prop);
+      });
+
+      const del = ui.icons.delete(() => {
+        this._prop.categories.splice(idx, 1);
+        this.buildForm();
+        this.onChanged.next(this._prop);
+      });
+
+      elements.push(ui.divH([add, del], 'statistics-mpo-control-buttons'));
+    }
+
+    return ui.divH(elements, 'statistics-mpo-cat-row');
+  }
+
   redrawAll(notify: boolean = true): void {
     const categories = this._prop.categories ?? [];
 
-    categories.forEach((cat, idx) => {
-      const desirabilityInput = this.desirabilityInputs[idx];
-      if (!desirabilityInput)
-        return;
-
-      desirabilityInput.value = cat.desirability ?? 0.5;
-    });
+    for (let i = 0; i < categories.length; i++) {
+      if (!this.desirabilityInputs[i])
+        break;
+      this.desirabilityInputs[i].value = categories[i].desirability ?? 0.5;
+    }
 
     if (notify)
       this.onChanged.next(this._prop);
@@ -63,7 +119,7 @@ export class MpoCategoricalEditor {
     if (!col)
       return;
 
-    if (!this._prop.categories) {
+    if (!this._prop.categories || this._prop.categories.length === 0) {
       this._prop.categories = col.categories.map((c) => ({
         name: c,
         desirability: 1,

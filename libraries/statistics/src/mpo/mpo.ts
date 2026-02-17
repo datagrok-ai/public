@@ -43,6 +43,17 @@ export function isNumerical(p: PropertyDesirability): p is NumericalDesirability
   return p.functionType === 'numerical';
 }
 
+export function createDefaultNumerical(weight = 1, min = 0, max = 1): NumericalDesirability {
+  return {functionType: 'numerical', weight, mode: 'freeform', min, max, line: []};
+}
+
+export function createDefaultCategorical(
+  weight = 1,
+  categories?: {name: string; desirability: number}[],
+): CategoricalDesirability {
+  return {functionType: 'categorical', weight, categories: categories ?? [{name: 'Category 1', desirability: 1}]};
+}
+
 export function migrateDesirability(raw: any): PropertyDesirability {
   if (raw.functionType)
     return raw;

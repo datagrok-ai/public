@@ -14,17 +14,17 @@ export interface DesirabilityEditor<T = any> {
   setColumn?(col: DG.Column | null): void;
 }
 
-
 export class DesirabilityEditorFactory {
   static create(
     prop: PropertyDesirability,
     width = 300,
     height = 80,
+    design = false,
   ): DesirabilityEditor {
     if (isNumerical(prop))
       return new MpoDesirabilityLineEditor(prop, width, height);
 
-    return new MpoCategoricalEditor(prop);
+    return new MpoCategoricalEditor(prop, design);
   }
 }
 

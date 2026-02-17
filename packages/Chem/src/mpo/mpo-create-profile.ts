@@ -9,6 +9,7 @@ import {
   PropertyDesirability,
   WEIGHTED_AGGREGATIONS_LIST,
   WeightedAggregation,
+  createDefaultNumerical,
 } from '@datagrok-libraries/statistics/src/mpo/mpo';
 import {MPO_SCORE_CHANGED_EVENT, MpoProfileEditor} from '@datagrok-libraries/statistics/src/mpo/mpo-profile-editor';
 
@@ -356,9 +357,9 @@ export class MpoProfileCreateView {
       name: '',
       description: '',
       properties: {
-        'Property 1': {functionType: 'numerical', weight: 1, min: 0, max: 1, line: []},
-        'Property 2': {functionType: 'numerical', weight: 1, min: 0, max: 1, line: []},
-        'Property 3': {functionType: 'numerical', weight: 1, min: 0, max: 1, line: []},
+        'Property 1': createDefaultNumerical(),
+        'Property 2': createDefaultNumerical(),
+        'Property 3': createDefaultNumerical(),
       },
     };
   }
@@ -366,7 +367,7 @@ export class MpoProfileCreateView {
   private createProfileForDf(): DesirabilityProfile {
     const props: {[key: string]: PropertyDesirability} = {};
     for (const col of this.df!.columns.numerical)
-      props[col.name] = {functionType: 'numerical', weight: 1, min: col.min, max: col.max, line: []};
+      props[col.name] = createDefaultNumerical(1, col.min, col.max);
 
     return {name: '', description: '', properties: props};
   }
@@ -421,7 +422,7 @@ export class MpoProfileCreateView {
   }
 
   private closeContextPanel(): void {
-    this.mpoContextPanel?.close();
+    this.mpoContextPanel?.release();
     this.mpoContextPanel = null;
   }
 
