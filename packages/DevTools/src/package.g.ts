@@ -72,6 +72,15 @@ export async function testFunctionJoin(data: DG.DataFrame, col1: DG.Column, col2
 }
 
 //input: dataframe data 
+//input: column_list columns 
+//input: list<string> out { optional: true }
+//output: dataframe result { action: join(data) }
+//meta.vectorFunc: true
+export async function testFunctionJoinColumnList(data: DG.DataFrame, columns: DG.ColumnList, out?: string[]) : Promise<any> {
+  return await PackageFunctions.testFunctionJoinColumnList(data, columns, out);
+}
+
+//input: dataframe data 
 //output: dataframe result { action: join(data) }
 export async function testFunctionNewJoinWithoutFormula(data: DG.DataFrame) : Promise<any> {
   return await PackageFunctions.testFunctionNewJoinWithoutFormula(data);
