@@ -251,13 +251,27 @@ For more details, including formula syntax, read [Add new column](../../transfor
 
 ### Column groups
 
-Group columns together by selecting them and then choosing the "Group columns..." action 
-in the context panel. You can also specify group color. Once columns are grouped, group name will appear above 
+Group columns together by selecting them and then choosing the "Group columns..." action
+in the context panel. You can also specify group color. Once columns are grouped, group name will appear above
 columns names. You can use it for selecting and moving all columns at once.
 
 You can quickly show or hide groups of columns from [filters](filters.md).
 
 ![](img/grid-column-groups.gif)
+
+### Blur content
+
+The blur content feature obscures column values, which is useful for protecting
+sensitive data during screen sharing or presentations. When enabled, the column's
+cell values are blurred, making them unreadable while still showing that data exists.
+
+To enable blur content for a column:
+
+1. Click the column header to select it.
+2. In the **Context Panel**, expand the **Settings** section.
+3. Enable the **Blur content** checkbox.
+
+To disable blurring, uncheck the **Blur content** option.
 
 ## Cells
 
