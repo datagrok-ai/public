@@ -114,11 +114,14 @@ export class PackageFunctions {
     @grok.decorators.param({ options: { semType: 'Molecule' } }) molecules: DG.Column,
     @grok.decorators.param({type: 'list<string>', options: { optional: true }}) props?: string[],
   ): Promise<DG.DataFrame> {
+    const isMolblock = molecules.meta.units === DG.UNITS.Molecule.MOLBLOCK ||
+      (!molecules.meta.units && DG.Detector.sampleCategories(molecules, (s) => s.includes('M  END'), 1));
+
     const values = new Array(molecules.length + 1);
     values[0] = molecules.name;
     for (let i = 0; i < molecules.length; i++) {
       const value = molecules.get(i);
-      values[i + 1] = molecules.meta.units === DG.UNITS.Molecule.MOLBLOCK ? `"${value}"` : value;
+      values[i + 1] = isMolblock ? `"${value}"` : value;
     }
     const csv = values.join('\n');
 
