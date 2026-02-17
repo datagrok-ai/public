@@ -22,12 +22,38 @@ const confPath = path.join(grokDir, 'config.yaml');
 const consoleLogOutputDir = path.join(curDir, 'test-console-output.log');
 const csvReportDir = path.join(curDir, 'test-report.csv');
 
+/**
+ * Detects if the current directory is within a Dart library folder (d4, xamgle, etc.)
+ * and returns the appropriate test category to use.
+ * @returns The category string (e.g., "Core: d4") or undefined if not in a recognized Dart folder
+ */
+function detectDartLibraryCategory(): string | undefined {
+  const normalizedPath = curDir.replace(/\\/g, '/');
+
+  if (normalizedPath.includes('/d4/') || normalizedPath.endsWith('/d4'))
+    return 'Core: d4';
+
+  if (normalizedPath.includes('/xamgle/') || normalizedPath.endsWith('/xamgle'))
+    return 'Core: xamgle';
+
+  return undefined;
+}
+
 export async function test(args: TestArgs): Promise<boolean> {
   const config = yaml.load(fs.readFileSync(confPath, {encoding: 'utf-8'})) as utils.Config;
 
   isArgsValid(args);
 
   utils.setHost(args.host, config);
+
+  // Auto-detect category based on current directory if not specified
+  if (!args.category) {
+    const detectedCategory = detectDartLibraryCategory();
+    if (detectedCategory) {
+      args.category = detectedCategory;
+      color.info(`Detected Dart library directory, using category: "${detectedCategory}"`);
+    }
+  }
 
   let packageJsonData = undefined;
   if (!args.package)
