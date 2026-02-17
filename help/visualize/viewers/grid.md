@@ -115,21 +115,28 @@ Subject to permissions, you can:
 * Specify who can edit a column. Users without edit permissions will receive a notification when attempting to edit a restricted column.
 
 <details>
-<summary>Column properties</summary>
+<summary>Column properties (tags)</summary>
 
-| Property         | Description                                        |
-|------------------|----------------------------------------------------|
-| New name         | New column name                                    |
-| Visible          | Allows to hide column                              |
-| Is Color Coded   | Enable/Disable column color coding                 |
-| Show Value       | Allows to do not show values on color coded column |
-| Width            | Column width, in pixels                            |
-| Background Color | Background Color, 32 bit integer                   |
-| Decimal Places   | Decimal Places                                     |
-| Custom Name      | Custom name, original will be saved                |
-| Column Name      | Column Name                                        |
-| Custom Format    | Custom Format                                      |
-| Cell Type        | Cell Type                                          |
+The following tags can be set on columns to control their behavior and appearance.
+To edit, right-click a column header and select **Properties...** or press F2
+in the grid.
+
+| Tag | Description |
+|-----|-------------|
+| `friendlyName` | Name to be shown in the UI |
+| `format` | Column format (see [Format](../../govern/catalog/tags.md#format)) |
+| `cell.renderer` | Cell renderer identifier (see [Cell renderers](#cell-renderers)) |
+| `.choices` | JSON-encoded list of strings to be used in a cell editor. Applicable for string columns only |
+| `.auto-choices` | When set to `true`, switches the cell editor to a combo box that only allows to choose values from a list of already existing values in the column |
+| `.color-coding-type` | Indicates on what basis columns are colored: `Off`, `Linear`, `Conditional` (numeric), or `Categorical` |
+| `.blur-content` | When set to `true`, visually obscures the column content using a blur effect. Useful for anonymizing data during screen sharing |
+| `editableBy` | Comma-separated list of user or group names allowed to edit this column |
+| `.allow-rename` | Whether users can rename this column from the UI |
+| `description` | Column description |
+| `quality` | Semantic type (see [Semantic types](../../govern/catalog/semantic-types.md)) |
+| `units` | Units in which the values are stored |
+| `formula` | Formula used for creating a derived column |
+| `group` | Pipe-separated path that defines where this column is within a hierarchy (used for column groups) |
 
   </details>
 
