@@ -1,5 +1,10 @@
 # Bio changelog
 
+## 2.25.10 (2026-02-17)
+
+* Softer detectors for provider specific notations
+* HELM workflow for custom providers
+
 ## 2.25.9 (2025-12-02)
 
 * Fix Substructure filter for datasync

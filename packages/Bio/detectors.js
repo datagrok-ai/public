@@ -147,6 +147,7 @@ class BioPackageDetectors extends DG.Package {
    *  Concurrent modification during iteration: Instance of 'JSArray<Column>'.
    */
   //meta.role: semTypeDetector
+  //tags: semTypeDetector
   //input: column col
   //output: string semType
   detectMacromolecule(col) {
@@ -637,6 +638,7 @@ class BioPackageDetectors extends DG.Package {
 
   //name: autostart
   //meta.role: autostart
+  //tags: autostart
   //description: Bio bootstrap
   autostart() {
     this.logger.debug('Bio: detectors.js: autostart()');

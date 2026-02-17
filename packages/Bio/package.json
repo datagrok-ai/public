@@ -5,7 +5,7 @@
     "name": "Davit Rizhinashvili",
     "email": "drizhinashvili@datagrok.ai"
   },
-  "version": "2.25.9",
+  "version": "2.25.10",
   "description": "Bioinformatics support (import/export of sequences, conversion, visualization, analysis). [See more](https://github.com/datagrok-ai/public/blob/master/packages/Bio/README.md) for details.",
   "repository": {
     "type": "git",
@@ -56,7 +56,7 @@
     "ajv-errors": "^3.0.0",
     "cash-dom": "^8.0.0",
     "css-loader": "^6.7.3",
-    "datagrok-api": "1.26.3",
+    "datagrok-api": "^1.26.3",
     "dayjs": "^1.11.4",
     "fastest-levenshtein": "^1.0.16",
     "openchemlib": "^7.2.3",
