@@ -55,7 +55,7 @@ export class PackageFunctions {
   }
 
 
-  @grok.decorators.init({})
+  @grok.decorators.init({tags: ['init']})
   static async init(): Promise<void> {
     await _initEDAAPI();
     await initXgboost();
@@ -117,8 +117,9 @@ export class PackageFunctions {
 
 
   @grok.decorators.func({
-    'meta': {'defaultPostProcessingFunction': 'true', 'role': 'dimRedPostprocessingFunction'},
+    'meta': {'defaultPostProcessingFunction': 'true', 'role': 'dim-red-postprocessing-function'},
     'name': 'DBSCAN clustering',
+    'tags': ['dim-red-postprocessing-function'],
   })
   static async dbscanPostProcessingFunction(
     col1: DG.Column,
@@ -147,9 +148,10 @@ export class PackageFunctions {
     'meta': {
       'supportedTypes': 'int,float,double,qnum',
       'supportedDistanceFunctions': 'Difference',
-      'role': 'dimRedPreprocessingFunction',
+      'role': 'dim-red-preprocessing-function',
     },
     'name': 'None (number)',
+    'tags': ['dim-red-preprocessing-function'],
     'outputs': [{name: 'result', type: 'object'}],
   })
   static numberPreprocessingFunction(
@@ -165,8 +167,9 @@ export class PackageFunctions {
     'meta': {
       'supportedTypes': 'string',
       'supportedDistanceFunctions': 'One-Hot,Levenshtein,Hamming',
-      'role': 'dimRedPreprocessingFunction',
+      'role': 'dim-red-preprocessing-function',
     },
+    'tags': ['dim-red-preprocessing-function'],
     'name': 'None (string)',
     'outputs': [{name: 'result', type: 'object'}],
   })
@@ -221,7 +224,7 @@ export class PackageFunctions {
   }
 
 
-  @grok.decorators.editor()
+  @grok.decorators.editor({tags: ['editor']})
   static GetMCLEditor(
     call: DG.FuncCall): void {
     try {
@@ -289,6 +292,7 @@ export class PackageFunctions {
   @grok.decorators.func({
     'outputs': [{'name': 'result', 'type': 'viewer'}],
     'meta': {showInGallery: 'false', role: 'viewer'},
+    'tags': ['viewer'],
     'name': 'MCL',
     'description': 'Markov clustering viewer',
   })
@@ -982,6 +986,7 @@ export class PackageFunctions {
     'description': 'Pareto front viewer',
     'outputs': [{'name': 'result', 'type': 'viewer'}],
     'meta': {'icon': 'icons/pareto-front-viewer.svg', 'role': 'viewer'},
+    'tags': ['viewer'],
   })
   static paretoFrontViewer(): DG.Viewer {
     return new ParetoFrontViewer();
