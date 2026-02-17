@@ -1,7 +1,7 @@
 {
   "name": "@datagrok/sequence-translator",
   "friendlyName": "Sequence Translator",
-  "version": "1.10.5",
+  "version": "1.10.6",
   "author": {
     "name": "Davit Rizhinashvili",
     "email": "drizhinashvili@datagrok.ai"
@@ -28,7 +28,7 @@
     "@datagrok-libraries/utils": "^4.6.5",
     "@types/react": "^18.0.15",
     "cash-dom": "^8.1.0",
-    "datagrok-api": "^1.25.0",
+    "datagrok-api": "^1.26.0",
     "lodash": "^4.17.21",
     "object-hash": "^3.0.0",
     "openchemlib": "6.0.1",
