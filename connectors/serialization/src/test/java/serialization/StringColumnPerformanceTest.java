@@ -6,6 +6,7 @@ import org.junit.jupiter.params.provider.CsvSource;
 
 import java.util.Arrays;
 import java.util.Random;
+import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -25,6 +26,8 @@ import static org.junit.jupiter.api.Assertions.*;
 // 100K rows / all unique               31.1ms               16.3ms            1.9x
 // 500K rows / all unique              269.4ms              110.2ms            2.4x
 // 1M rows / all unique                814.4ms              247.8ms            3.3x
+// 300 rows / 2KB unique                 1.6ms                1.4ms            1.1x
+// 30K rows / UUID unique               11.3ms                8.5ms            1.3x
 public class StringColumnPerformanceTest {
     private static final int WARMUP_RUNS = 5;
     private static final int MEASURED_RUNS = 10;
@@ -60,18 +63,7 @@ public class StringColumnPerformanceTest {
             times[i] = System.nanoTime() - start;
         }
 
-        long min = Long.MAX_VALUE, max = 0, sum = 0;
-        for (long t : times) {
-            if (t < min) min = t;
-            if (t > max) max = t;
-            sum += t;
-        }
-        double avgMs = (sum / (double) MEASURED_RUNS) / 1_000_000.0;
-        double minMs = min / 1_000_000.0;
-        double maxMs = max / 1_000_000.0;
-
-        System.out.printf("%-30s  avg=%.1fms  min=%.1fms  max=%.1fms%n",
-                label, avgMs, minMs, maxMs);
+        printTimes(label, times);
     }
 
     @Test
@@ -113,6 +105,65 @@ public class StringColumnPerformanceTest {
         StringColumn col = new StringColumn("nulls", values);
         byte[] encoded = encodeColumn(col);
         assertTrue(encoded.length > 0);
+    }
+
+    @Test
+    void encodeLongStringsAllUnique() {
+        int rowCount = 300;
+        int strLen = 2048;
+        StringColumn col = new StringColumn("long_unique", rowCount);
+        Random rng = new Random(42);
+        for (int i = 0; i < rowCount; i++) {
+            StringBuilder sb = new StringBuilder(strLen);
+            for (int j = 0; j < strLen; j++)
+                sb.append((char) ('a' + rng.nextInt(26)));
+            col.add(sb.toString());
+        }
+
+        for (int i = 0; i < WARMUP_RUNS; i++)
+            encodeColumn(col);
+
+        long[] times = new long[MEASURED_RUNS];
+        for (int i = 0; i < MEASURED_RUNS; i++) {
+            long start = System.nanoTime();
+            encodeColumn(col);
+            times[i] = System.nanoTime() - start;
+        }
+        printTimes("300 rows / 2KB unique", times);
+    }
+
+    @Test
+    void encodeUuidStringsAllUnique() {
+        int rowCount = 30000;
+        StringColumn col = new StringColumn("uuid_unique", rowCount);
+        Random rng = new Random(42);
+        for (int i = 0; i < rowCount; i++)
+            col.add(new UUID(rng.nextLong(), rng.nextLong()).toString());
+
+        for (int i = 0; i < WARMUP_RUNS; i++)
+            encodeColumn(col);
+
+        long[] times = new long[MEASURED_RUNS];
+        for (int i = 0; i < MEASURED_RUNS; i++) {
+            long start = System.nanoTime();
+            encodeColumn(col);
+            times[i] = System.nanoTime() - start;
+        }
+        printTimes("30K rows / UUID unique", times);
+    }
+
+    private static void printTimes(String label, long[] times) {
+        long min = Long.MAX_VALUE, max = 0, sum = 0;
+        for (long t : times) {
+            if (t < min) min = t;
+            if (t > max) max = t;
+            sum += t;
+        }
+        double avgMs = (sum / (double) times.length) / 1_000_000.0;
+        double minMs = min / 1_000_000.0;
+        double maxMs = max / 1_000_000.0;
+        System.out.printf("%-30s  avg=%.1fms  min=%.1fms  max=%.1fms%n",
+                label, avgMs, minMs, maxMs);
     }
 
     private static StringColumn buildColumn(int rowCount, int categoryCount) {
