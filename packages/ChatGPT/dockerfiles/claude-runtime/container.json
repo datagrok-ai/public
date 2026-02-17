@@ -1,0 +1,6 @@
+{
+  "cpu": 1,
+  "memory": 3072,
+  "on_demand": true,
+  "gpu": 0
+}

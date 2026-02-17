@@ -551,7 +551,7 @@ export async function generateAISqlQueryWithTools(
  * Context class that manages tool execution for SQL generation.
  * Supports multiple catalogs (e.g. for Databricks) with a default catalog.
  */
-class SQLGenerationContext {
+export class SQLGenerationContext {
   private dbInfoMap: Map<string, BuiltinDBInfoMeta> = new Map();
 
   constructor(

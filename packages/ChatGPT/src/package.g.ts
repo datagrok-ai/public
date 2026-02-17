@@ -11,6 +11,11 @@ export function autostart() : void {
   PackageFunctions.autostart();
 }
 
+//name: setupClaudeRuntimeForTableView
+export async function setupClaudeRuntimeForTableView() : Promise<void> {
+  await PackageFunctions.setupClaudeRuntimeForTableView();
+}
+
 //output: dynamic result
 //meta.role: searchProvider
 export function combinedLLMSearchProvider() : any {

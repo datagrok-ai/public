@@ -73,7 +73,7 @@ export class AIPanel<T extends MessageType = LanguageModelV3Message, K extends A
   private view: DG.View | DG.ViewBase;
   private inputArea: HTMLElement;
   protected header: HTMLElement;
-  private outputArea: HTMLElement;
+  protected outputArea: HTMLElement;
   private textArea: HTMLTextAreaElement;
   private textAreaDiv: HTMLElement;
   private runButton: HTMLElement;
@@ -87,7 +87,7 @@ export class AIPanel<T extends MessageType = LanguageModelV3Message, K extends A
   private isRecognizing: boolean = false;
   private _onRunRequest = new rxjs.Subject<{prevMessages: T[], currentPrompt: K}>();
   private _messages: T[] = [];
-  private _uiMessages: UIMessage[] = [];
+  protected _uiMessages: UIMessage[] = [];
   protected get placeHolder() { return 'Type your prompt here...'; }
   public get onRunRequest() {
     return this._onRunRequest.asObservable();
@@ -289,7 +289,7 @@ export class AIPanel<T extends MessageType = LanguageModelV3Message, K extends A
     } as K;
   }
 
-  private _aiMessagesAccordionPane: HTMLElement | null = null;
+  protected _aiMessagesAccordionPane: HTMLElement | null = null;
   protected appendMessage(
     aiMessage: T, uiMessage: {
       title: string, content: string, fromUser: boolean, onlyAddToMessages?: boolean, uiOnly?: boolean, messageOptions?: UIMessageOptions
@@ -425,7 +425,7 @@ export class AIPanel<T extends MessageType = LanguageModelV3Message, K extends A
     return ret;
   }
 
-  public startChatSession(): {session: AIPanelFuncs<T>, endSession: () => void} {
+  public startChatSession(): {session: AIPanelFuncs<T>, endSession: () => void, loader: HTMLElement} {
     const loader = ui.icons.loader();
     dartLike(loader.style).set('alignSelf', 'center').set('height', '20px').set('marginTop', '8px');
     this.runButton.classList.remove('fal', 'fa-paper-plane');
@@ -433,6 +433,7 @@ export class AIPanel<T extends MessageType = LanguageModelV3Message, K extends A
     this.runButton.style.color = 'orangered';
     this.runButtonTooltip = actionButtionValues.stop;
     return {
+      loader,
       session: {
         addAIMessage: (aiMessage, title, content) => this.appendMessage(aiMessage, {title: title, content: content, fromUser: false}, loader),
         addEngineMessage: (aiMessage) => this.appendMessage(aiMessage, {title: '', content: '', fromUser: false, onlyAddToMessages: true}, loader),

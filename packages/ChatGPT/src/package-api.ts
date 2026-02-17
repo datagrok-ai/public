@@ -16,6 +16,10 @@ export namespace funcs {
     return await grok.functions.call('ChatGPT:Autostart', {});
   }
 
+  export async function setupClaudeRuntimeForTableView(): Promise<void> {
+    return await grok.functions.call('ChatGPT:SetupClaudeRuntimeForTableView', {});
+  }
+
   export async function combinedLLMSearchProvider(): Promise<any> {
     return await grok.functions.call('ChatGPT:CombinedLLMSearchProvider', {});
   }

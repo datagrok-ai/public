@@ -662,7 +662,7 @@ function validateScriptHeader(script: string, language: DG.ScriptingLanguage): s
 /**
  * Context class that manages tool execution for script generation
  */
-class ScriptGenerationContext {
+export class ScriptGenerationContext {
   constructor(private vectorStoreId: string | null) {}
 
   dispose() {
@@ -732,12 +732,12 @@ class ScriptGenerationContext {
     }
   }
 
-  async findSimilarScriptSamples(description: string, language: DG.ScriptingLanguage): Promise<string> {
+  async findSimilarScriptSamples(description: string, language?: DG.ScriptingLanguage): Promise<string> {
     const similarSampels = await grok.ai.searchEntities(description, 0.3, 10, ['Script']);
     if (similarSampels.length === 0)
       return 'No similar script samples found.';
     const scripts = similarSampels
-      .filter((e) => e instanceof DG.Script && e.language === language) as DG.Script[];
+      .filter((e) => e instanceof DG.Script && (!language || e.language === language)) as DG.Script[];
     if (scripts.length === 0)
       return 'No similar script samples found.';
     let result = `Found ${scripts.length} similar script samples:\n\n`;
