@@ -211,6 +211,7 @@ export class MpoProfileCreateView {
         }
       },
     });
+    datasetInput.setTooltip('Load data to preview desirability scores as you edit the profile');
     controls.push(datasetInput);
 
     this.aggregationInput = ui.input.choice('Aggregation', {
@@ -219,6 +220,7 @@ export class MpoProfileCreateView {
       onValueChanged: () => grok.events.fireCustomEvent(MPO_SCORE_CHANGED_EVENT, {}),
     });
     this.aggregationInput.enabled = false;
+    this.updateAggregationTooltip();
     controls.push(this.aggregationInput);
 
     const headerDiv = ui.divV([ui.h1(this.view.name), ui.form(controls)]);
@@ -239,8 +241,10 @@ export class MpoProfileCreateView {
       if (this.methodInput?.value === METHOD_MANUAL || !this.showMethod) {
         this.editor.design = true;
         this.editor.dataFrame = this.df ?? null as any;
-        if (this.aggregationInput)
+        if (this.aggregationInput) {
           this.aggregationInput.enabled = !!this.df;
+          this.updateAggregationTooltip();
+        }
 
         if (this.showMethod) {
           this.profile = this.df ?
@@ -411,19 +415,27 @@ export class MpoProfileCreateView {
         this.closeView();
     }));
 
-    const viewHandler = (eventData: DG.EventData) => {
-      const eventView = eventData.args?.view;
-      if (eventView && (eventView.id === this.view.id || eventView.id === this.tableView.id))
-        this.detach();
-    };
+    const isOwnView = (v: DG.View | null) => v && (v.id === this.view.id || v.id === this.tableView.id);
 
-    this.subs.push(grok.events.onViewChanging.subscribe(viewHandler));
-    this.subs.push(grok.events.onViewRemoving.subscribe(viewHandler));
+    this.subs.push(grok.events.onCurrentViewChanged.subscribe(() => {
+      if (!isOwnView(grok.shell.v as DG.View))
+        this.closeContextPanel();
+    }));
+    this.subs.push(grok.events.onViewRemoving.subscribe((data: DG.EventData) => {
+      if (isOwnView(data.args?.view))
+        this.detach();
+    }));
+  }
+
+  private updateAggregationTooltip(): void {
+    const tip = this.aggregationInput!.enabled
+      ? 'Score aggregation method'
+      : 'Score aggregation method; select a dataset to enable';
+    this.aggregationInput!.setTooltip(tip);
   }
 
   private closeContextPanel(): void {
     this.mpoContextPanel?.release();
-    this.mpoContextPanel = null;
   }
 
   private detach(): void {
