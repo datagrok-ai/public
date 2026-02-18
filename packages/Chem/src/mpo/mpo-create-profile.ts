@@ -398,6 +398,9 @@ export class MpoProfileCreateView {
 
     this.profileViewContainer.append(split);
 
+    if (this.df!.currentRowIdx === -1 && this.df!.rowCount > 0)
+      this.df!.currentCell = this.df!.cell(0, this.df!.columns.byIndex(0).name);
+
     await this.mpoContextPanel!.render(this.profile, this.editor.columnMapping, 'Average');
   }
 
@@ -428,9 +431,9 @@ export class MpoProfileCreateView {
   }
 
   private updateAggregationTooltip(): void {
-    const tip = this.aggregationInput!.enabled
-      ? 'Score aggregation method'
-      : 'Score aggregation method; select a dataset to enable';
+    const tip = this.aggregationInput!.enabled ?
+      'Score aggregation method' :
+      'Score aggregation method; select a dataset to enable';
     this.aggregationInput!.setTooltip(tip);
   }
 

@@ -136,7 +136,7 @@ export function mpo(
 
       const score = isNumerical(desirability) ?
         desirabilityScore(value, desirability.line) :
-        categoricalDesirabilityScore(value, desirability);
+        categoricalDesirabilityScore(String(value), desirability);
 
       if (score === null)
         return NaN;
