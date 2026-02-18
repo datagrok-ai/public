@@ -234,8 +234,9 @@ export async function reportTree(
       zipConfig[configKey] = [new Uint8Array(await blob.arrayBuffer()), { level: 0 }];
     } else {
       const dirName = `${String(idx + 1).padStart(3, '0')}_${replaceForWindowsPath(state.friendlyName ?? state.nqName ?? '')}`;
+      const nPath = state === treeState ? [] : [...path, dirName]
       for (const [idx, stepState] of state.steps.entries()) {
-        q.push({ state: stepState, idx, path: [...path, dirName] })
+        q.push({ state: stepState, idx, path: nPath })
       }
     }
   }

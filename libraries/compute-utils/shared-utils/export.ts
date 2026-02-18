@@ -262,12 +262,10 @@ export const scalarsToSheet = (sheet: ExcelJS.Worksheet,
   sheet.addRow(cols).font = {bold: true};
   scalars.forEach((scalar) => {
     const vals = [scalar.caption, formatNumber(scalar.value, scalar.format), scalar.units];
-    if (validationStates?.[scalar.name])
-      vals.push(getValidationString(validationStates[scalar.name]));
-    if (consistencyStates?.[scalar.name])
-      vals.push(getConsistencyString(consistencyStates[scalar.name]));
+    vals.push(getValidationString(validationStates?.[scalar.name]));
+    vals.push(getConsistencyString(consistencyStates?.[scalar.name]));
 
-    sheet.addRow([scalar.caption, formatNumber(scalar.value, scalar.format), scalar.units]);
+    sheet.addRow(vals);
   });
 
   sheet.getColumn(1).width = Math.max(
@@ -282,7 +280,9 @@ export const scalarsToSheet = (sheet: ExcelJS.Worksheet,
   sheet.getColumn(5).width = 100;
 };
 
-const getValidationString = (data: ValidationResult) => {
+const getValidationString = (data?: ValidationResult) => {
+  if (data == null)
+    return '';
   const validations = (['errors', 'warnings'] as const)
     .filter((category) => !!data?.[category]?.length)
     .flatMap((category) => data![category]!.map((advice) =>({category, advice})))
@@ -291,7 +291,9 @@ const getValidationString = (data: ValidationResult) => {
   return validations;
 };
 
-const getConsistencyString = (data: ConsistencyInfo) => {
+const getConsistencyString = (data?: ConsistencyInfo) => {
+  if (data == null)
+    return '';
   if (data.inconsistent && (data.restriction === 'disabled' || data.restriction === 'restricted'))
     return `Inconsistent: value should be ${String(data.assignedValue)}`;
   return;
@@ -320,7 +322,7 @@ const dfToSheet = (
       const col = df.col(colIdx)!;
       const rawVal = df.get(col.name, rowIdx);
       if (col?.type === 'double') {
-        const format = col?.tags?.['format'] ?? '.00';
+        const format = col?.tags?.['format'] ?? '0.00';
         const val = formatNumber(rawVal, format);
         row.push(val);
       } else
