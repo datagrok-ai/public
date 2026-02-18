@@ -11,3 +11,13 @@ export type PositionInBonds = {
   nodeIdx: number,
 }
 
+/** Cap group information for an R-group */
+export type CapGroupInfo = {
+  /** Extracted element string (e.g. 'H', 'O', 'C=C') */
+  element: string,
+  /** Raw cap group SMILES (e.g. '[H][*:1]', 'O[*:2]', 'C=C[*:3]') */
+  smiles: string,
+  /** Whether the cap is a single atom (valid element symbol) */
+  isSimple: boolean,
+}
+

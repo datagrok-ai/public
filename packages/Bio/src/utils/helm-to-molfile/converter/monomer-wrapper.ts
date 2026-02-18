@@ -6,17 +6,23 @@ import {MolfileHandler} from '@datagrok-libraries/chem-meta/src/parsing-utils/mo
 import {Helm} from './helm';
 import {MolfileWrapper} from './mol-wrapper';
 import {MolfileWrapperFactory} from './mol-wrapper-factory';
+import {CapGroupInfo} from './types';
+
+/** Returns true if the string is a valid single element symbol (e.g. 'H', 'O', 'C', 'Cl') */
+function isSimpleElement(s: string): boolean {
+  return /^[A-Z][a-z]?$/.test(s);
+}
 
 export class MonomerWrapper {
   private readonly molfileWrapper: MolfileWrapper;
-  private capGroupElements: string[] = [];
+  private capGroupInfo: CapGroupInfo[] = [];
   private static molfileV2KToV3KCache: Map<string, string> = new Map();
   constructor(
     public readonly monomerSymbol: string,
     public readonly monomerIdx: number,
     private helm: Helm,
     shift: { x: number, y: number },
-    rdKitModule: RDModule,
+    private readonly rdKitModule: RDModule,
     private readonly monomerLib: IMonomerLibBase
   ) {
     const libraryMonomerObject = this.getLibraryMonomerObject();
@@ -26,7 +32,7 @@ export class MonomerWrapper {
       molfile = this.convertMolfileToV3KFormat(molfile, monomerSymbol, rdKitModule);
 
     this.molfileWrapper = MolfileWrapperFactory.getInstance(molfile, monomerSymbol);
-    this.capGroupElements = this.getCapGroupElements(libraryMonomerObject);
+    this.capGroupInfo = this.getCapGroupInfo(libraryMonomerObject);
 
     this.removeRGroups(helm.bondedRGroupsMap[monomerIdx]!);
     this.capRemainingRGroups();
@@ -63,20 +69,19 @@ export class MonomerWrapper {
     return monomer;
   }
 
-  private getCapGroupElements(
+  private getCapGroupInfo(
     libraryMonomerObject: Monomer
-  ): string[] {
+  ): CapGroupInfo[] {
     const rgroups = libraryMonomerObject.rgroups;
-    const result = rgroups.map((rgroup) => {
+    return rgroups.map((rgroup) => {
       const smiles = rgroup[HELM_RGROUP_FIELDS.CAP_GROUP_SMILES] ||
         // WARNING: ignore because both key variants coexist in HELM Core Library!
         // @ts-ignore
         rgroup[HELM_RGROUP_FIELDS.CAP_GROUP_SMILES_UPPERCASE];
       // extract the element symbol
-      return smiles.replace(/(\[|\]|\*|:|\d)/g, '');
+      const element = smiles.replace(/(\[|\]|\*|:|\d)/g, '');
+      return {element, smiles, isSimple: isSimpleElement(element)};
     });
-
-    return result;
   }
 
   private shiftCoordinates(shift: { x: number, y: number }): void {
@@ -96,7 +101,7 @@ export class MonomerWrapper {
   }
 
   private capRemainingRGroups(): void {
-    this.molfileWrapper.capRGroups(this.capGroupElements);
+    this.molfileWrapper.capRGroups(this.capGroupInfo, this.rdKitModule);
   }
 
   replaceRGroupWithAttachmentAtom(rGroupId: number, attachmentAtomIdx: number): void {
