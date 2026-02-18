@@ -6,6 +6,7 @@ import {ItemId, NqName, RestrictionType, LinkSpecString, ValidationResult} from 
 import {PipelineOutline, PipelineState, StepParallelInitialConfig, StepSequentialInitialConfig} from './PipelineInstance';
 import type ExcelJS from 'exceljs';
 import {ConsistencyInfo} from '../runtime/StateTreeNodes';
+import {Zippable} from 'fflate';
 
 //
 // Pipeline public configuration
@@ -46,6 +47,7 @@ export type ReturnHandler = HandlerBase<{ controller: IRuntimeReturnController }
 export interface ExportCbInput {
   fc: DG.FuncCall,
   wb: ExcelJS.Workbook,
+  archive: Zippable,
   path: string[],
   fileName: string,
   isOutputOutdated?: boolean,
@@ -56,12 +58,13 @@ export interface ExportCbInput {
 }
 
 export type ExportUtils = {
-  reportStateExcel: (pipelineState: PipelineState, cb: <T>(input: ExportCbInput) => Promise<T>) => Promise<readonly [Blob, string]>;
+  reportStateExcel: (pipelineState: PipelineState, cb?: <T>(input: ExportCbInput) => Promise<T>) => Promise<readonly [Blob, Zippable, string]>;
   reportFuncCallExcel: (fc: DG.FuncCall, uuid: string) => Promise<readonly [Blob, ExcelJS.Workbook]>;
   getFuncCallCustomExports: (fc: DG.FuncCall) => string[];
   runFuncCallCustomExport: (fc: DG.FuncCall, uuid: string, exportName: string) => Promise<any>;
+
 }
-export type PipelineExport = (pipelineState: PipelineState, utils: ExportUtils) => Promise<readonly [Blob, string]>;
+export type PipelineExport = (pipelineState: PipelineState, utils: ExportUtils) => Promise<any>;
 export type ViewersHook = (ioName: string, type: string, viewer?: DG.Viewer, meta?: any) => void;
 export type StructureCheckHook = (data: PipelineOutline) => ValidationResult | undefined;
 

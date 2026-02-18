@@ -356,6 +356,22 @@ To disable it, add the `meta.features` tag to the script header.
 </Tabs>
 ```
 
+### Customize export
+
+You can customize export using the following annotation:
+
+```javascript
+//meta.customExports: [{"name": "pdf", "function": "MyPackage:MyPDFExport"}]
+```
+
+The export function will recieve the following arguments:
+
+* `funcCall`: DG.FuncCall, current call.
+* `startDownload`: bool, true if the function should start a file download or just return results.
+* `isOutputOutdated`: bool, true if the function output is outdated.
+* `validationState`: `Record<string, ValidationResult>`, avialiable only if run inside a [workflows](../../workflows/workflows.mdx).
+* `consistencyState`: `Record<string, ConsistencyInfo>`, avialiable only if run inside a [workflows](../../workflows/workflows.mdx).
+
 
 ## Review and compare historical script runs
 

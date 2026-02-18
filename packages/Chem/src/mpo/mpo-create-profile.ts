@@ -9,6 +9,7 @@ import {
   PropertyDesirability,
   WEIGHTED_AGGREGATIONS_LIST,
   WeightedAggregation,
+  createDefaultNumerical,
 } from '@datagrok-libraries/statistics/src/mpo/mpo';
 import {MPO_SCORE_CHANGED_EVENT, MpoProfileEditor} from '@datagrok-libraries/statistics/src/mpo/mpo-profile-editor';
 
@@ -210,6 +211,7 @@ export class MpoProfileCreateView {
         }
       },
     });
+    datasetInput.setTooltip('Load data to preview desirability scores as you edit the profile');
     controls.push(datasetInput);
 
     this.aggregationInput = ui.input.choice('Aggregation', {
@@ -218,6 +220,7 @@ export class MpoProfileCreateView {
       onValueChanged: () => grok.events.fireCustomEvent(MPO_SCORE_CHANGED_EVENT, {}),
     });
     this.aggregationInput.enabled = false;
+    this.updateAggregationTooltip();
     controls.push(this.aggregationInput);
 
     const headerDiv = ui.divV([ui.h1(this.view.name), ui.form(controls)]);
@@ -238,8 +241,10 @@ export class MpoProfileCreateView {
       if (this.methodInput?.value === METHOD_MANUAL || !this.showMethod) {
         this.editor.design = true;
         this.editor.dataFrame = this.df ?? null as any;
-        if (this.aggregationInput)
+        if (this.aggregationInput) {
           this.aggregationInput.enabled = !!this.df;
+          this.updateAggregationTooltip();
+        }
 
         if (this.showMethod) {
           this.profile = this.df ?
@@ -356,9 +361,9 @@ export class MpoProfileCreateView {
       name: '',
       description: '',
       properties: {
-        'Property 1': {functionType: 'numerical', weight: 1, min: 0, max: 1, line: []},
-        'Property 2': {functionType: 'numerical', weight: 1, min: 0, max: 1, line: []},
-        'Property 3': {functionType: 'numerical', weight: 1, min: 0, max: 1, line: []},
+        'Property 1': createDefaultNumerical(),
+        'Property 2': createDefaultNumerical(),
+        'Property 3': createDefaultNumerical(),
       },
     };
   }
@@ -366,7 +371,7 @@ export class MpoProfileCreateView {
   private createProfileForDf(): DesirabilityProfile {
     const props: {[key: string]: PropertyDesirability} = {};
     for (const col of this.df!.columns.numerical)
-      props[col.name] = {functionType: 'numerical', weight: 1, min: col.min, max: col.max, line: []};
+      props[col.name] = createDefaultNumerical(1, col.min, col.max);
 
     return {name: '', description: '', properties: props};
   }
@@ -393,6 +398,9 @@ export class MpoProfileCreateView {
 
     this.profileViewContainer.append(split);
 
+    if (this.df!.currentRowIdx === -1 && this.df!.rowCount > 0)
+      this.df!.currentCell = this.df!.cell(0, this.df!.columns.byIndex(0).name);
+
     await this.mpoContextPanel!.render(this.profile, this.editor.columnMapping, 'Average');
   }
 
@@ -410,19 +418,27 @@ export class MpoProfileCreateView {
         this.closeView();
     }));
 
-    const viewHandler = (eventData: DG.EventData) => {
-      const eventView = eventData.args?.view;
-      if (eventView && (eventView.id === this.view.id || eventView.id === this.tableView.id))
-        this.detach();
-    };
+    const isOwnView = (v: DG.View | null) => v && (v.id === this.view.id || v.id === this.tableView.id);
 
-    this.subs.push(grok.events.onViewChanging.subscribe(viewHandler));
-    this.subs.push(grok.events.onViewRemoving.subscribe(viewHandler));
+    this.subs.push(grok.events.onCurrentViewChanged.subscribe(() => {
+      if (!isOwnView(grok.shell.v as DG.View))
+        this.closeContextPanel();
+    }));
+    this.subs.push(grok.events.onViewRemoving.subscribe((data: DG.EventData) => {
+      if (isOwnView(data.args?.view))
+        this.detach();
+    }));
+  }
+
+  private updateAggregationTooltip(): void {
+    const tip = this.aggregationInput!.enabled ?
+      'Score aggregation method' :
+      'Score aggregation method; select a dataset to enable';
+    this.aggregationInput!.setTooltip(tip);
   }
 
   private closeContextPanel(): void {
-    this.mpoContextPanel?.close();
-    this.mpoContextPanel = null;
+    this.mpoContextPanel?.release();
   }
 
   private detach(): void {

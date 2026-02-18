@@ -810,8 +810,12 @@ export namespace funcs {
     return await grok.functions.call('Chem:Mpo', {});
   }
 
-  export async function mpoTransformFunction(df: DG.DataFrame , profileName: string , aggregation: any , currentProperties: any ): Promise<DG.DataFrame> {
-    return await grok.functions.call('Chem:MpoTransformFunction', { df, profileName, aggregation, currentProperties });
+  export async function mpoCalculate(df: DG.DataFrame , columns: string[] , profileName: string , aggregation: string ): Promise<DG.DataFrame> {
+    return await grok.functions.call('Chem:MpoCalculate', { df, columns, profileName, aggregation });
+  }
+
+  export async function mpoTransformFunction(df: DG.DataFrame , profileName: string , aggregation: string , currentProperties: string , silent: boolean ): Promise<DG.DataFrame> {
+    return await grok.functions.call('Chem:MpoTransformFunction', { df, profileName, aggregation, currentProperties, silent });
   }
 
   export async function mpoProfileEditor(file: DG.FileInfo ): Promise<DG.View> {

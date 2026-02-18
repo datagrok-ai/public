@@ -87,7 +87,7 @@ export class MpoContextPanel {
     if (grok.shell.o !== this.root)
       this.show();
 
-    const columnNames = await computeMpo(this.df, profile, columnMapping, aggregation);
+    const columnNames = await computeMpo(this.df, profile, columnMapping, aggregation, true);
     if (!columnNames.length)
       return;
 
@@ -124,9 +124,13 @@ export class MpoContextPanel {
     });
   }
 
-  close(): void {
+  release(): void {
     this.currentObjectChangingSub?.unsubscribe();
     this.currentObjectChangingSub = null;
+  }
+
+  close(): void {
+    this.release();
     this.resetViewers();
 
     if (grok.shell.o === this.root)

@@ -1130,13 +1130,23 @@ export async function _mpo() : Promise<void> {
 }
 
 //input: dataframe df 
+//input: column_list columns 
 //input: string profileName 
-//input: dynamic aggregation 
-//input: object currentProperties 
+//input: string aggregation 
 //output: dataframe result { action: join(df) }
+export function mpoCalculate(df: DG.DataFrame, columns: DG.ColumnList, profileName: string, aggregation: any) : any {
+  return PackageFunctions.mpoCalculate(df, columns, profileName, aggregation);
+}
+
+//input: dataframe df 
+//input: string profileName 
+//input: string aggregation 
+//input: string currentProperties 
+//input: bool silent 
+//output: dataframe result
 //meta.role: transform
-export async function mpoTransformFunction(df: DG.DataFrame, profileName: string, aggregation: any, currentProperties: any) : Promise<any> {
-  return await PackageFunctions.mpoTransformFunction(df, profileName, aggregation, currentProperties);
+export async function mpoTransformFunction(df: DG.DataFrame, profileName: string, aggregation: any, currentProperties: string, silent: boolean) : Promise<any> {
+  return await PackageFunctions.mpoTransformFunction(df, profileName, aggregation, currentProperties, silent);
 }
 
 //input: file file 

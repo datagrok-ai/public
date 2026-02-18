@@ -189,7 +189,7 @@ export async function reportTree(
     hasNotSavedEdits?: boolean;
     cb?: (input: ExportCbInput) => Promise<void>,
   }) {
-  const zipConfig = {} as Zippable;
+  const zipConfig: Zippable = {};
 
   const q = [{ state: treeState, idx: 0, path: [] as string[] }];
 
@@ -217,10 +217,13 @@ export async function reportTree(
 
       const rawFileName = getExportName(state, isOutputOutdated, description?.title as string, getStartedOrNull(funcCall), runError);
       const fileName = `${String(idx + 1).padStart(3, '0')}_${replaceForWindowsPath(rawFileName)}.xlsx`;
+      const configKey = [...path, fileName].join('/')
+      zipConfig[configKey] = [new Uint8Array(await blob.arrayBuffer()), { level: 0 }];
       if (cb) {
         await cb({
           fc: funcCall,
           wb,
+          archive: zipConfig,
           path,
           fileName,
           isOutputOutdated,
@@ -230,12 +233,11 @@ export async function reportTree(
           description
         });
       }
-      const configKey = [...path, fileName].join('/')
-      zipConfig[configKey] = [new Uint8Array(await blob.arrayBuffer()), { level: 0 }];
     } else {
       const dirName = `${String(idx + 1).padStart(3, '0')}_${replaceForWindowsPath(state.friendlyName ?? state.nqName ?? '')}`;
+      const nPath = state === treeState ? [] : [...path, dirName]
       for (const [idx, stepState] of state.steps.entries()) {
-        q.push({ state: stepState, idx, path: [...path, dirName] })
+        q.push({ state: stepState, idx, path: nPath })
       }
     }
   }
@@ -245,7 +247,7 @@ export async function reportTree(
   const blob = new Blob([zipSync(zipConfig) as any]);
   if (startDownload)
     DG.Utils.download(fileName, blob);
-  return [blob, fileName] as const;
+  return [blob, zipConfig, fileName] as const;
 }
 
 function getExportName(

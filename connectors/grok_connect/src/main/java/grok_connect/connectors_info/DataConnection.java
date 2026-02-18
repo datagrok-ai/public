@@ -7,7 +7,6 @@ public class DataConnection
 {
     private static final String SERVER = "server";
     private static final String DB = "db";
-    private static final String CATALOG = "Catalog";
     private static final String PORT = "port";
 
     public String id;
@@ -16,7 +15,7 @@ public class DataConnection
     public Credentials credentials;
 
     public String getServer() { return (String)parameters.get(SERVER); }
-    public String getDb() { return (String) parameters.getOrDefault(DB, parameters.get(CATALOG)); }
+    public String getDb() { return (String) parameters.get(DB); }
     public String getPort() {
         Object port = parameters.get(PORT);
         if (port == null)

@@ -20,7 +20,6 @@
   "devDependencies": {
     "@datagrok/biostructure-viewer": "^1.3.0",
     "css-loader": "^7.1.2",
-    "datagrok-tools": "^5.0.0",
     "style-loader": "^4.0.0",
     "ts-loader": "^9.5.1",
     "typescript": "^5.6.3",

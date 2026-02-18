@@ -1,6 +1,8 @@
+import {RDModule} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 import {MolfileAtoms} from './mol-atoms';
 import {MolfileBonds} from './mol-bonds';
 import {RGroupHandler} from './r-group-handler';
+import {CapGroupInfo} from './types';
 
 export abstract class MolfileWrapper {
   constructor(protected monomerSymbol: string) { }
@@ -76,8 +78,8 @@ export abstract class MolfileWrapper {
     this.bonds.shift(shift);
   }
 
-  capRGroups(capGroupElements: string[]): void {
-    this.rGroups.capRGroups(capGroupElements);
+  capRGroups(capGroupInfo: CapGroupInfo[], rdKitModule: RDModule): void {
+    this.rGroups.capRGroups(capGroupInfo, rdKitModule);
   }
 }
 

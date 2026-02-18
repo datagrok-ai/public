@@ -102,7 +102,7 @@ import $ from 'cash-dom';
 import {MpoProfileCreateView} from './mpo/mpo-create-profile';
 import {MpoProfileManager} from './mpo/mpo-profile-manager';
 import {MpoProfileHandler} from './mpo/mpo-profile-handler';
-import {calculateMpoCore, findSuitableProfiles, MPO_PROFILE_CHANGED_EVENT, MpoProfileInfo} from './mpo/utils';
+import {findSuitableProfiles, MPO_PROFILE_CHANGED_EVENT, MpoProfileInfo} from './mpo/utils';
 
 export {getMCS};
 export * from './package.g';
@@ -2507,26 +2507,52 @@ export class PackageFunctions {
 
   @grok.decorators.func({
     outputs: [{name: 'result', type: 'dataframe', options: {action: 'join(df)'}}],
+  })
+  static mpoCalculate(
+    df: DG.DataFrame,
+    @grok.decorators.param({type: 'column_list'}) columns: DG.ColumnList,
+    profileName: string,
+    @grok.decorators.param({type: 'string'}) aggregation: WeightedAggregation,
+  ): DG.DataFrame {
+    const resultCol = mpo(df, Array.from(columns), profileName, aggregation);
+    if (resultCol && !df.col(resultCol.name))
+      return DG.DataFrame.fromColumns([resultCol]);
+    return DG.DataFrame.create();
+  }
+
+  @grok.decorators.func({
     meta: {role: 'transform'},
   })
   static async mpoTransformFunction(
     df: DG.DataFrame,
     profileName: string,
-    aggregation: WeightedAggregation,
-    @grok.decorators.param({type: 'object'}) currentProperties: { [key: string]: PropertyDesirability },
+    @grok.decorators.param({type: 'string'}) aggregation: WeightedAggregation,
+    @grok.decorators.param({type: 'string'}) currentProperties: string,
+    silent: boolean = false,
   ): Promise<DG.DataFrame> {
-    const result = calculateMpoCore(df, profileName, currentProperties, aggregation);
+    const parsedProperties: Record<string, PropertyDesirability> = JSON.parse(currentProperties);
+    const columns: DG.Column[] = [];
 
-    for (const warning of result.warnings)
-      grok.shell.warning(warning);
+    for (const [propertyName, desirability] of Object.entries(parsedProperties)) {
+      const column = df.columns.byName(propertyName);
+      if (!column) {
+        if (!silent)
+          grok.shell.warning(`Column "${propertyName}" not found. Skipping.`);
+        continue;
+      }
+      column.setTag('desirabilityTemplate', JSON.stringify(desirability));
+      columns.push(column);
+    }
 
-    if (result.error)
-      grok.shell.error(result.error);
+    if (columns.length === 0) {
+      if (!silent)
+        grok.shell.error('No valid columns found matching the profile properties.');
+      return DG.DataFrame.create();
+    }
 
-    if (result.resultColumn && !df.col(result.resultColumn.name))
-      return DG.DataFrame.fromColumns([result.resultColumn]);
+    const colList = new DG.ColumnList(columns);
 
-    return DG.DataFrame.create();
+    return await grok.functions.call('Chem:mpoCalculate', {df, columns: colList, profileName, aggregation});
   }
 
   @grok.decorators.fileViewer({
