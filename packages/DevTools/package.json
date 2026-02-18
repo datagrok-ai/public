@@ -29,7 +29,6 @@
     "@typescript-eslint/parser": "^5.32.0",
     "cash-dom": "^8.1.0",
     "css-loader": "^5.2.4",
-    "datagrok-tools": "^5.0.0",
     "eslint": "^8.21.0",
     "eslint-config-google": "^0.14.0",
     "style-loader": "^2.0.0",

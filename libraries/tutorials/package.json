@@ -22,7 +22,6 @@
     "@types/wu": "^2.1.44",
     "@typescript-eslint/eslint-plugin": "^8.8.1",
     "@typescript-eslint/parser": "^8.8.1",
-    "datagrok-tools": "^4.14.20",
     "dts-bundle-generator": "^7.0.0",
     "eslint": "^8.57.1",
     "eslint-config-google": "^0.14.0",

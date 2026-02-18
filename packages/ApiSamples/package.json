@@ -30,7 +30,6 @@
     "@types/wu": "^2.1.42",
     "@typescript-eslint/eslint-plugin": "^5.26.0",
     "@typescript-eslint/parser": "^5.26.0",
-    "datagrok-tools": "^5.0.0",
     "eslint": "^8.16.0",
     "eslint-config-google": "^0.14.0",
     "root-require": "^0.3.1",

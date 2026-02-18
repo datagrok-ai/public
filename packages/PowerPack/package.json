@@ -36,7 +36,6 @@
   "devDependencies": {
     "@typescript-eslint/eslint-plugin": "^5.32.0",
     "@typescript-eslint/parser": "^5.32.0",
-    "datagrok-tools": "^5.1.2",
     "eslint": "^8.21.0",
     "eslint-config-google": "^0.14.0",
     "path": "^0.12.7",
@@ -51,7 +50,6 @@
     "lint-fix": "eslint src --ext .ts --fix",
     "link-all": "npm link datagrok-api  @datagrok-libraries/utils",
     "link-api": "npm link datagrok-api",
-    "link-tools": "npm link datagrok-tools",
     "link-utils": "npm link @datagrok-libraries/utils",
     "debug-powerpack": "webpack && grok publish localhost --release",
     "release-powerpack": "webpack && grok publish dev --release",
