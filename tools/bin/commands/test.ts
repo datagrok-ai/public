@@ -23,7 +23,7 @@ const consoleLogOutputDir = path.join(curDir, 'test-console-output.log');
 const csvReportDir = path.join(curDir, 'test-report.csv');
 
 /**
- * Detects if the current directory is within a Dart library folder (d4, xamgle, etc.)
+ * Detects if the current directory is within a Dart library folder (d4, xamgle, ddt, dml)
  * and returns the appropriate test category to use.
  * @returns The category string (e.g., "Core: d4") or undefined if not in a recognized Dart folder
  */
@@ -32,9 +32,12 @@ function detectDartLibraryCategory(): string | undefined {
 
   if (normalizedPath.includes('/d4/') || normalizedPath.endsWith('/d4'))
     return 'Core: d4';
-
   if (normalizedPath.includes('/xamgle/') || normalizedPath.endsWith('/xamgle'))
     return 'Core: xamgle';
+  if (normalizedPath.includes('/ddt/') || normalizedPath.endsWith('/ddt'))
+    return 'Core: ddt';
+  if (normalizedPath.includes('/dml/') || normalizedPath.endsWith('/dml'))
+    return 'Core: dml';
 
   return undefined;
 }
