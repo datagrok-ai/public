@@ -402,7 +402,7 @@ export const TreeWizard = Vue.defineComponent({
             states.consistency?.[uuid],
           );
         },
-        reportStateExcel: async (state: PipelineState, cb: (input: ExportCbInput) => Promise<void>) => {
+        reportStateExcel: async (state: PipelineState, cb?: (input: ExportCbInput) => Promise<void>) => {
           return reportTree({
             startDownload: false,
             treeState: state,
