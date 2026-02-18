@@ -1148,6 +1148,7 @@ export interface IDartApi {
   grok_DataFrame_GetSortedOrder(t: any, sortByColumnIds: any, sortOrders: any, mask: any): any;
   grok_DataFrame_FromByteArray(bytes: any): any;
   grok_DataFrame_ToByteArray(t: any): any;
+  grok_DataFrame_ToParquet(t: any, compress: any): any;
   grok_DataFrame_ExportAndReopen(t: any): any;
   grok_Map_Get(map: any, key: any): any;
   grok_Map_Set(map: any, key: any, value: any): any;

@@ -270,6 +270,12 @@ export class DataFrame {
     return api.grok_DataFrame_ToByteArray(this.dart);
   }
 
+  /** Exports dataframe to Parquet format.
+   *  @param {boolean} compress - If true, applies GZIP compression. */
+  toParquet(compress: boolean = false): Uint8Array {
+    return api.grok_DataFrame_ToParquet(this.dart, compress);
+  }
+
   /** Creates a new dataframe from the specified row mask and a list of columns.
    * @param {BitSet} rowMask - Rows to include.
    * @param {string[]} columnIds - Columns to include.
