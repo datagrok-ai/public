@@ -2,6 +2,7 @@
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
+import {Subscription} from 'rxjs';
 import {
   PropertyDesirability, NumericalDesirability, CategoricalDesirability, DesirabilityMode,
   createDefaultCategorical, createDefaultNumerical, isNumerical,
@@ -25,6 +26,7 @@ export class DesirabilityModeDialog {
     private prop: PropertyDesirability,
     private onUpdate: (patch: Partial<PropertyDesirability>) => void,
     private onTypeChanged?: (newProp: PropertyDesirability) => void,
+    private mappedCol?: DG.Column | null,
   ) {}
 
   show(): void {
@@ -36,6 +38,7 @@ export class DesirabilityModeDialog {
 
     const contentPanel = ui.divV([]);
     const cached: Record<string, PropertyDesirability> = {[original.functionType]: structuredClone(original)};
+    const subs: Subscription[] = [];
 
     const typeInput = ui.input.choice('Type', {items: [...PROPERTY_TYPES], value: this.prop.functionType, onValueChanged: (v) => {
       if (v === this.prop.functionType)
@@ -45,8 +48,11 @@ export class DesirabilityModeDialog {
 
       if (cached[v])
         this.prop = structuredClone(cached[v]);
-      else if (v === 'categorical')
-        this.prop = createDefaultCategorical(original.weight);
+      else if (v === 'categorical') {
+        const cats = this.mappedCol?.isCategorical ?
+          this.mappedCol.categories.map((c: string) => ({name: c, desirability: 1})) : undefined;
+        this.prop = createDefaultCategorical(original.weight, cats);
+      }
       else
         this.prop = createDefaultNumerical(original.weight);
 
@@ -113,10 +119,10 @@ export class DesirabilityModeDialog {
         previewEditor.redrawAll();
       };
 
-      previewEditor.onChanged.subscribe((line) => {
+      subs.push(previewEditor.onChanged.subscribe((line) => {
         prop.line = line;
         this.onUpdate({line} as any);
-      });
+      }));
 
       updateParams();
 
@@ -126,11 +132,19 @@ export class DesirabilityModeDialog {
     const buildCategoricalContent = () => {
       const prop = this.prop as CategoricalDesirability;
       const catEditor = new MpoCategoricalEditor(prop, true, true);
-      catEditor.onChanged.subscribe(() => this.onUpdate(this.prop));
+      if (this.mappedCol?.isCategorical)
+        catEditor.setChoices([...this.mappedCol.categories]);
+      subs.push(catEditor.onChanged.subscribe(() => this.onUpdate(this.prop)));
       contentPanel.append(catEditor.root);
     };
 
+    const dispose = () => {
+      for (const s of subs)
+        s.unsubscribe();
+    };
+
     const buildContent = () => {
+      dispose();
       ui.empty(contentPanel);
 
       if (isNumerical(this.prop))
@@ -141,9 +155,10 @@ export class DesirabilityModeDialog {
 
     buildContent();
 
-    dialog.add(ui.divV([typeInput.root, contentPanel]));
+    dialog.add(ui.divV([...(!this.mappedCol ? [typeInput.root] : []), contentPanel]));
 
     dialog.onOK(() => {
+      dispose();
       if (this.prop.functionType !== original.functionType)
         this.onTypeChanged?.(this.prop);
       else
@@ -152,6 +167,7 @@ export class DesirabilityModeDialog {
     });
 
     dialog.onCancel(() => {
+      dispose();
       this.prop = original;
       this.onUpdate(original);
       dialog.close();

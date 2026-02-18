@@ -14,6 +14,7 @@ export class MpoCategoricalEditor {
   private showControls: boolean;
   private desirabilityInputs: DG.InputBase[] = [];
   private form: HTMLElement | null = null;
+  private columnCategories: string[] | null = null;
 
   constructor(prop: CategoricalDesirability, design = false, showControls = false) {
     this._prop = prop;
@@ -71,10 +72,17 @@ export class MpoCategoricalEditor {
     cat: {name: string; desirability: number},
     idx: number,
   ): HTMLElement {
-    const nameInput = ui.input.string('', {value: cat.name, onValueChanged: (v) => {
-      cat.name = v;
-      this.onChanged.next(this._prop);
-    }});
+    const nameInput = this.columnCategories ?
+      ui.input.choice('', {items: this.columnCategories, nullable: true, value: cat.name || null,
+        onValueChanged: (v) => {
+          cat.name = v ?? '';
+          this.onChanged.next(this._prop);
+        },
+      }) :
+      ui.input.string('', {value: cat.name, onValueChanged: (v) => {
+        cat.name = v;
+        this.onChanged.next(this._prop);
+      }});
     nameInput.root.classList.add('statistics-mpo-cat-name');
 
     const desInput = this.createDesirabilityInput('', cat);
@@ -84,7 +92,7 @@ export class MpoCategoricalEditor {
 
     if (this.showControls) {
       const add = ui.icons.add(() => {
-        const newCat = {name: `Category ${this._prop.categories.length + 1}`, desirability: 1};
+        const newCat = {name: this.columnCategories ? '' : `Category ${this._prop.categories.length + 1}`, desirability: 1};
         this._prop.categories.splice(idx + 1, 0, newCat);
         this.buildForm();
         this.onChanged.next(this._prop);
@@ -103,28 +111,26 @@ export class MpoCategoricalEditor {
   }
 
   redrawAll(notify: boolean = true): void {
-    const categories = this._prop.categories ?? [];
-
-    for (let i = 0; i < categories.length; i++) {
-      if (!this.desirabilityInputs[i])
-        break;
-      this.desirabilityInputs[i].value = categories[i].desirability ?? 0.5;
-    }
-
+    this.buildForm();
     if (notify)
       this.onChanged.next(this._prop);
+  }
+
+  setChoices(choices: string[]): void {
+    this.columnCategories = choices;
+    this.buildForm();
   }
 
   setColumn(col: DG.Column | null): void {
     if (!col)
       return;
 
-    if (!this._prop.categories || this._prop.categories.length === 0) {
-      this._prop.categories = col.categories.map((c) => ({
-        name: c,
-        desirability: 1,
-      }));
-    }
+    this.columnCategories = col.isCategorical ? [...col.categories] : null;
+    const existing = new Map(this._prop.categories?.map((c) => [c.name, c.desirability]) ?? []);
+    this._prop.categories = col.categories.map((c: string) => ({
+      name: c,
+      desirability: existing.get(c) ?? 1,
+    }));
     this.buildForm();
   }
 }

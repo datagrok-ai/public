@@ -24,7 +24,7 @@ export class DesirabilityEditorFactory {
     if (isNumerical(prop))
       return new MpoDesirabilityLineEditor(prop, width, height);
 
-    return new MpoCategoricalEditor(prop, design);
+    return new MpoCategoricalEditor(prop, design, false);
   }
 }
 
