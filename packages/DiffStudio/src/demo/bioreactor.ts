@@ -2,10 +2,10 @@
 /** Bioreactor demo model */
 
 import {LINK} from '../ui-constants';
-import {Model} from '../model';
+import {ModelInfo} from '../model';
 
 /** Bioreactor model specification */
-const MODEL = `#name: Bioreactor
+const BIOREACTOR_IVP = `#name: Bioreactor
 #description: Bioreactor simulation
 #comment: 
   Source: https://doi.org/10.1074/jbc.RA117.000303.
@@ -183,4 +183,8 @@ enables the creation of complex models without writing code.
 * [Parameter optimization](${LINK.FITTING})`;
 
 /** Bioreactor demo model */
-export const BIOREACTOR_DEMO = new Model(MODEL, UI_OPTS, INFO);
+export const BIOREACTOR_MODEL_INFO: ModelInfo = {
+  equations: BIOREACTOR_IVP,
+  uiOptions: UI_OPTS,
+  info: INFO,
+};

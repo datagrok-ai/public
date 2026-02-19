@@ -1,5 +1,11 @@
 # HitTriage changelog
 
+## 1.9.1 (2025-02-03)
+
+* HD: Parallel running functions, fix table joining
+* Hit Design: Custom comparer for vid
+* GROK-19523: AppTreeBrowser decorator: Fixed behavior, so it finds the app properly, fixed usages
+
 ## 1.9.0 (2025-12-17)
 
 * Global Vid system and molecule tracking across multiple campaigns.

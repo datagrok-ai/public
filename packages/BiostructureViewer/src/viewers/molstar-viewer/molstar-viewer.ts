@@ -20,7 +20,7 @@ import { zip } from 'molstar/lib/mol-util/zip/zip';
 import { SyncRuntimeContext } from 'molstar/lib/mol-task/execution/synchronous';
 import { AssetManager } from 'molstar/lib/mol-util/assets';
 
-import {testEvent} from '@datagrok-libraries/utils/src/test';
+import {testEvent} from '@datagrok-libraries/test/src/test';
 import {
   BiostructureData, BiostructureDataJson, BiostructureDataProviderFunc
 } from '@datagrok-libraries/bio/src/pdb/types';

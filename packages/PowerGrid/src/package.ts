@@ -4,6 +4,7 @@ import {_HtmlTestCellRenderer} from './package.g';
 import {_HyperlinkCellRenderer} from './package.g';
 import {_BinaryImageCellRenderer} from './package.g';
 import {_ImageCellRenderer} from './package.g';
+import {_StarsCellRenderer} from './package.g';
 /* Do not change these import lines to match external modules in webpack configuration */
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
@@ -25,6 +26,7 @@ import {FormCellRenderer} from './forms/forms';
 import {scWebGPUPointHitTest, scWebGPURender} from './webgpu/scatterplot';
 import {getGPUDevice} from '@datagrok-libraries/math/src/webGPU/getGPUDevice';
 import {TagsCellRenderer} from './cell-types/tags-cell-renderer';
+import {ConfidenceIntervalCellRenderer} from './cell-types/confidence-interval-cell-renderer';
 export * from './package.g';
 export const _package = new DG.Package();
 
@@ -131,6 +133,21 @@ export class PackageFunctions {
     })
   static tagsCellRenderer() {
     return new TagsCellRenderer();
+  }
+
+
+  @grok.decorators.func({
+    meta: {
+      cellType: 'ConfidenceInterval',
+      gridChart: 'true',
+      virtual: 'true',
+      role: 'cellRenderer'
+    },
+    name: 'Confidence Interval',
+    outputs: [{type: 'grid_cell_renderer', name: 'result'}]
+  })
+  static confidenceIntervalCellRenderer() {
+    return new ConfidenceIntervalCellRenderer();
   }
 
 
@@ -418,3 +435,4 @@ export {_HyperlinkCellRenderer};
 export {_HtmlTestCellRenderer};
 export {_ScatterPlotCellRenderer};
 export {_MultiChoiceCellRenderer};
+export {_StarsCellRenderer};

@@ -4,7 +4,7 @@ import * as ui from 'datagrok-api/ui';
 
 import {chem} from 'datagrok-api/grok';
 import Sketcher = chem.Sketcher;
-import {category, expect, test, before, after, testEvent, delay, awaitCheck} from '@datagrok-libraries/utils/src/test';
+import {category, expect, test, before, after, testEvent, delay, awaitCheck} from '@datagrok-libraries/test/src/test';
 import {malformedMolblock, molV2000, molV3000} from './utils';
 
 

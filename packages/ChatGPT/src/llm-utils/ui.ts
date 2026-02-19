@@ -4,8 +4,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {askDeepWiki} from './deepwikiclient';
-import {askOpenAIHelp, ModelType} from './openAI-client';
-import {LLMCredsManager} from './creds';
+import {askOpenAIHelp, ModelType} from './LLM-client';
 import {CombinedAISearchAssistant} from './combined-search';
 import {ChatGPTPromptEngine} from '../prompt-engine/prompt-engine';
 import {ChatGptAssistant} from '../prompt-engine/chatgpt-assistant';
@@ -14,10 +13,10 @@ import {Plan} from '../prompt-engine/interfaces';
 import {AssistantRenderer} from '../prompt-engine/rendering-tools';
 import {fireAIAbortEvent, fireAIPanelToggleEvent} from '../utils';
 import {generateAISqlQueryWithTools} from './sql-tools';
+import {BuiltinDBInfoMeta} from './query-meta-utils';
 import {processTableViewAIRequest} from './tableview-tools';
 import {DBAIPanel, ScriptingAIPanel, TVAIPanel} from './panel';
 import {generateDatagrokScript} from './script-tools';
-import {ChatModel} from 'openai/resources/shared';
 
 
 export async function askWiki(question: string, useOpenAI: boolean = true) {
@@ -32,7 +31,7 @@ export async function askWiki(question: string, useOpenAI: boolean = true) {
   }
 }
 
-export async function smartExecution(prompt: string, modelName: ChatModel) {
+export async function smartExecution(prompt: string, modelName: string) {
   const gptEngine = ChatGPTPromptEngine.getInstance(modelName);
   const gptAssistant = new ChatGptAssistant(gptEngine);
 
@@ -53,7 +52,7 @@ export async function smartExecution(prompt: string, modelName: ChatModel) {
 
 // sets up the ui button for the input
 export function setupSearchUI() {
-  if (!grok.ai.openAiConfigured) {
+  if (!grok.ai.config.configured) {
     console.warn('LLM API key is not set up. Search UI will not have AI assistance.');
     return;
   }
@@ -120,7 +119,7 @@ async function aiCombinedSearch(prompt: string) {
 }
 
 export async function setupAIQueryEditorUI(v: DG.ViewBase, connectionID: string, queryEditorRoot: HTMLElement, setAndRunFunc: (query: string) => void): Promise<boolean> {
-  if (!grok.ai.openAiConfigured)
+  if (!grok.ai.config.configured)
     return false;
   const connection = await grok.dapi.connections.find(connectionID);
   if (!connection) { // should not happen but just in case
@@ -128,19 +127,21 @@ export async function setupAIQueryEditorUI(v: DG.ViewBase, connectionID: string,
     return false;
   }
 
-  const schemas = await grok.dapi.connections.getSchemas(connection);
-  const defaultSchema = schemas.includes('public') ? 'public' : schemas[0];
+  const allDbInfos = await BuiltinDBInfoMeta.allFromConnection(connection);
+  const catalogs = allDbInfos.map((d) => d.name);
+  const defaultCatalog = connection.parameters?.['catalog'] ?? connection.parameters?.['db'] ?? catalogs[0] ?? '';
 
-  const panel = new DBAIPanel(schemas, defaultSchema, connectionID, v);
+  const panel = new DBAIPanel(catalogs, defaultCatalog, connectionID, v);
   panel.show();
 
   panel.onRunRequest.subscribe(async (args) => {
     ui.setUpdateIndicator(queryEditorRoot, true, 'Grokking Query...', () => { fireAIAbortEvent(); });
     const session = panel.startChatSession();
     try {
-      const sqlQuery = await generateAISqlQueryWithTools(args.currentPrompt.prompt, connectionID, args.currentPrompt.schemaName!, {
+      const sqlQuery = await generateAISqlQueryWithTools(args.currentPrompt.prompt, connectionID, {
+        catalogName: args.currentPrompt.catalogName,
         oldMessages: args.prevMessages,
-        aiPanel: session.session, modelName: ModelType[panel.getCurrentInputs().model],
+        aiPanel: session.session, modelType: panel.getCurrentInputs().model,
       });
       if (sqlQuery && typeof sqlQuery === 'string' && sqlQuery.trim().length > 0)
         setAndRunFunc(sqlQuery);
@@ -156,7 +157,7 @@ export async function setupAIQueryEditorUI(v: DG.ViewBase, connectionID: string,
 }
 
 export async function setupTableViewAIPanelUI() {
-  if (!grok.ai.openAiConfigured)
+  if (!grok.ai.config.configured)
     return;
   const handleView = (tableView: DG.TableView) => {
     // setup ribbon panel icon
@@ -177,7 +178,7 @@ export async function setupTableViewAIPanelUI() {
           {
             oldMessages: args.prevMessages,
             aiPanel: session.session,
-            modelName: ModelType[panel.getCurrentInputs().model],
+            modelType: panel.getCurrentInputs().model,
           }
         );
       } catch (error: any) {

@@ -288,7 +288,7 @@ category('DataFrame: Column', () => {
 
   test('init', async () => {
     const col = DG.Column.int('col', 5);
-    col.init((i) => i + 1);
+    col.init((i: number) => i + 1);
     expectArray(col.toList(), [1, 2, 3, 4, 5]);
   });
 
@@ -332,7 +332,7 @@ category('DataFrame: Column', () => {
 
   test('bool', async () => {
     const col = DG.Column.bool('col', 3);
-    col.init((_) => true);
+    col.init((_: number) => true);
     expect(col.type, 'bool');
     expectArray(col.toList(), [true, true, true]);
   });
@@ -344,13 +344,13 @@ category('DataFrame: Column', () => {
 
   test('dateTime', async () => {
     const col = DG.Column.dateTime('col', 3);
-    col.init((_) => Date.now());
+    col.init((_: number) => Date.now());
     expect(col.type, 'datetime');
   });
 
   test('float', async () => {
     const col = DG.Column.float('col', 3);
-    col.init((_) => 1.1);
+    col.init((_: any) => 1.1);
     expect(col.type, 'double');
     expectFloat(col.get(0) ?? 0, 1.1);
   });
@@ -388,7 +388,7 @@ category('DataFrame: Column', () => {
 
   test('int', async () => {
     const col = DG.Column.int('col', 3);
-    col.init((_) => 1);
+    col.init((_: any) => 1);
     expect(col.get(1), 1);
   });
 
@@ -410,7 +410,7 @@ category('DataFrame: Column', () => {
 
   test('string', async () => {
     const col = DG.Column.string('col', 3);
-    col.init((_) => 'val');
+    col.init((_: any) => 'val');
     expect(col.get(0), 'val');
   });
 }, {owner: 'aparamonov@datagrok.ai'});

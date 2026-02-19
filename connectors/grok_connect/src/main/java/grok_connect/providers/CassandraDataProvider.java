@@ -107,8 +107,7 @@ public class CassandraDataProvider extends JdbcDataProvider {
     public DataFrame getSchemas(DataConnection connection) throws QueryCancelledByUser, GrokConnectException {
         String db = connection.get(DbCredentials.KEYSPACE);
         if (GrokConnectUtil.isNotEmpty(db)) {
-            StringColumn column = new StringColumn(new String[]{db});
-            column.name = "TABLE_SCHEMA";
+            StringColumn column = new StringColumn("TABLE_SCHEMA", new String[]{db});
             DataFrame dataFrame = new DataFrame();
             dataFrame.addColumn(column);
             return dataFrame;

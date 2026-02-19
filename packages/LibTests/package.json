@@ -20,7 +20,8 @@
     "fflate": "^0.8.2",
     "lodash.clonedeepwith": "^4.5.0",
     "rxjs": "^6.6.7",
-    "wu": "^2.1.0"
+    "wu": "^2.1.0",
+    "@datagrok-libraries/test": "^1.1.0"
   },
   "devDependencies": {
     "@types/lodash.clonedeepwith": "^4.5.9",
@@ -28,7 +29,6 @@
     "@typescript-eslint/eslint-plugin": "^8.8.1",
     "@typescript-eslint/parser": "^8.8.1",
     "css-loader": "^7.1.2",
-    "datagrok-tools": "^4.14.55",
     "eslint": "^8.57.1",
     "eslint-config-google": "^0.14.0",
     "source-map-loader": "^5.0.0",
@@ -59,5 +59,8 @@
     "type": "git",
     "url": "git@github.com:datagrok-ai/public.git",
     "directory": "packages/LibTests"
+  },
+  "overrides": {
+    "datagrok-api": "$datagrok-api"
   }
 }

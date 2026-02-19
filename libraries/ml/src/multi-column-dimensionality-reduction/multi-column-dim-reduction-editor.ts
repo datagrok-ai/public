@@ -13,7 +13,7 @@ import {IDimReductionParam, ITSNEOptions, IUMAPOptions} from './multi-column-dim
 import {Subject} from 'rxjs';
 import '../../css/styles.css';
 import {getGPUAdapterDescription} from '@datagrok-libraries/math/src/webGPU/getGPUDevice';
-import { vectorDistanceMetricsMethods, VectorMetricsNames } from '../typed-metrics';
+import {vectorDistanceMetricsMethods, VectorMetricsNames} from '../typed-metrics';
 
 export class UMAPOptions {
   learningRate: IDimReductionParam =
@@ -105,7 +105,7 @@ export class MultiColumnDimReductionEditor {
     postProcessingEditor: PostProcessingFuncEditor;
     aggregationMethodInput = ui.input.choice('Aggregation', {value: DistanceAggregationMethods.EUCLIDEAN,
       items: [DistanceAggregationMethods.EUCLIDEAN, DistanceAggregationMethods.MANHATTAN]});
-    vectorDistanceInput: DG.InputBase<string | null> = ui.input.choice('Distance metric', {value: VectorMetricsNames.Euclidean, items:[VectorMetricsNames.Euclidean, VectorMetricsNames.Manhattan, VectorMetricsNames.Cosine]});
+    vectorDistanceInput: DG.InputBase<string | null> = ui.input.choice('Distance metric', {value: VectorMetricsNames.Euclidean, items: [VectorMetricsNames.Euclidean, VectorMetricsNames.Manhattan, VectorMetricsNames.Cosine]});
 
     onColumnsChanged: Subject<void>;
     constructor(editorSettings: DimReductionEditorOptions = {}) {
@@ -114,8 +114,10 @@ export class MultiColumnDimReductionEditor {
       this.onColumnsChanged = new Subject();
       this.editorSettings = editorSettings;
       this.columnParamsEditorAccordion = ui.accordion();
-      const preporcessingFuncs = DG.Func.find({meta: {role: DIM_RED_PREPROCESSING_FUNCTION_TAG}});
-      preporcessingFuncs.forEach((f) => {
+      const tags = DG.Func.find({tags: [DIM_RED_PREPROCESSING_FUNCTION_TAG]});
+      const meta = DG.Func.find({meta: {role: DIM_RED_PREPROCESSING_FUNCTION_TAG}});
+      const preprocessingFuncs = Array.from(new Set([...tags, ...meta]));
+      preprocessingFuncs.forEach((f) => {
         const semTypes: string = f.options.get(SUPPORTED_SEMTYPES_TAG) ?? '';
         const name = f.friendlyName ?? f.name;
         const types: string = f.options.get(SUPPORTED_TYPES_TAG) ?? '';
@@ -586,7 +588,9 @@ class PostProcessingFuncEditor {
     });
     this._argsElement.style.display = 'none';
 
-    const postProcessingFuncs = DG.Func.find({meta: {role: DIM_RED_POSTPROCESSING_FUNCTION_TAG}})
+    const tags = DG.Func.find({tags: [DIM_RED_POSTPROCESSING_FUNCTION_TAG]});
+    const meta = DG.Func.find({meta: {role: DIM_RED_POSTPROCESSING_FUNCTION_TAG}});
+    const postProcessingFuncs = Array.from(new Set([...tags, ...meta]))
       .filter((f) => f.inputs.length >= 2);
     postProcessingFuncs.forEach((f) => {
       const name = f.friendlyName ?? f.name;

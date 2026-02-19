@@ -31,7 +31,14 @@ export const defaultLaunchParameters: utils.Indexable = {
 };
 
 export async function getToken(url: string, key: string) {
-  const response = await fetch(`${url}/users/login/dev/${key}`, {method: 'POST'});
+  let response;
+  try {
+    response = await fetch(`${url}/users/login/dev/${key}`, {method: 'POST'});
+  } catch (error: any) {
+    if (utils.isConnectivityError(error))
+      color.error(`Server is possibly offline: ${url}`);
+    throw error;
+  }
   const json = await response.json();
   if (json.isSuccess == true)
     return json.token;
@@ -183,19 +190,15 @@ export async function loadPackage(
     linkPackage?: boolean,
     release?: boolean
 ): Promise<void> {
-  try {
-    if (skipPublish != true) {
-      process.stdout.write(`Building and publishing ${dirName}...`);
-      await utils.runScript(`npm install`, packageDir);
-      if (linkPackage)
-        await utils.runScript(`grok link`, packageDir);
-      if (skipBuild != true)
-        await utils.runScript(`npm run build`, packageDir);
-      await utils.runScript(`grok publish ${hostString}${release ? ' --release' : ''}`, packageDir);
-      process.stdout.write(` success!\n`);
-    }
-  } catch (e: any) {
-    process.stdout.write(` failed to load package ${dirName}!\n`);
+  if (skipPublish != true) {
+    process.stdout.write(`Building and publishing ${dirName}...`);
+    await utils.runScript(`npm install`, packageDir);
+    if (linkPackage)
+      await utils.runScript(`grok link`, packageDir);
+    if (skipBuild != true)
+      await utils.runScript(`npm run build`, packageDir);
+    await utils.runScript(`grok publish ${hostString}${release ? ' --release' : ''}`, packageDir);
+    process.stdout.write(` success!\n`);
   }
 }
 
@@ -226,6 +229,7 @@ export async function loadPackages(
   for (const dirName of fs.readdirSync(packagesDir)) {
     const packageDir = path.join(packagesDir, dirName);
     if (!fs.lstatSync(packageDir).isFile()) {
+      let shouldLoad = false;
       try {
         const packageJsonData = JSON.parse(fs.readFileSync(path.join(packageDir, 'package.json'), {encoding: 'utf-8'}));
         const packageFriendlyName =
@@ -234,14 +238,15 @@ export async function loadPackages(
                     packageJsonData['name'].split('/')[1] ?? packageJsonData['name'] ?? '').toLocaleLowerCase() ?? ''
             ) ?? packagesToRun.get(dirName);
 
-        if (utils.isPackageDir(packageDir) && (packageFriendlyName !== undefined || packagesToLoad === 'all')) {
-          await loadPackage(packageDir, dirName, hostString, skipPublish, skipBuild, linkPackage, release);
-          packagesToRun.set(dirName, true);
-        }
+        shouldLoad = utils.isPackageDir(packageDir) && (packageFriendlyName !== undefined || packagesToLoad === 'all');
       } catch (e: any) {
         if (utils.isPackageDir(packageDir) &&
             (packagesToRun.get(spaceToCamelCase(dirName).toLocaleLowerCase()) !== undefined || packagesToLoad === 'all'))
           console.log(`Couldn't read package.json  ${dirName}`);
+      }
+      if (shouldLoad) {
+        await loadPackage(packageDir, dirName, hostString, skipPublish, skipBuild, linkPackage, release);
+        packagesToRun.set(dirName, true);
       }
     }
   }
@@ -358,6 +363,18 @@ export function printBrowsersResult(browserResult: ResultObject, verbose: boolea
     if ((browserResult.failedAmount ?? 0) > 0 && (browserResult.verboseFailed ?? []).length > 0) {
       console.log('Failed: ');
       console.log(browserResult.verboseFailed);
+      for (const line of browserResult.verboseFailed.split('\n')) {
+        const match = line.match(/^(.+?):\s+(.+?)\s+\(/);
+        if (match) {
+          const category = match[1].trim();
+          const testName = match[2].trim();
+          if (testName === 'before' || testName === 'after')
+            console.log(`\x1b[33m  To run this category separately use --category "${category}" argument\x1b[0m`);
+          else
+            console.log(`\x1b[33m  To run this test separately use --category "${category}" --test "${testName}" arguments\x1b[0m`);
+          console.log('');
+        }
+      }
     }
     console.log('Passed amount:  ' + browserResult?.passedAmount);
     console.log('Skipped amount: ' + browserResult?.skippedAmount);
@@ -674,11 +691,12 @@ export async function runBrowser(
     }
 
     // State tracking for test output formatting
-    const categoryResults: Map<string, {passed: number, failed: number}> = new Map();
+    const categoryResults: Map<string, {passed: number, failed: number, skipped: number}> = new Map();
     let currentCategory: string | null = null;
     let currentTestName: string | null = null;
     // Store failed tests with their errors to print after category header
     let pendingFailures: {testName: string, error: string | null}[] = [];
+    let pendingSkipped: string[] = [];
     let pendingBeforeFailure: {error: string | null} | null = null;
     let pendingAfterFailure: {error: string | null} | null = null;
     let modernOutput = false;
@@ -686,35 +704,65 @@ export async function runBrowser(
     const printCategorySummary = (category: string) => {
       const results = categoryResults.get(category);
       if (!results) return;
-      const formattedCategory = category.replace(/: /g, ', ');
+      const formattedCategory = category;
       const passedCount = results.passed;
+      const skippedSuffix = results.skipped > 0 ? `, \x1b[33m${results.skipped} skipped\x1b[0m` : '';
       if (results.failed > 0 || pendingBeforeFailure || pendingAfterFailure) {
-        console.log(`\x1b[31m❌ ${formattedCategory} (${passedCount} passed)\x1b[0m`);
+        console.log(`\x1b[31m❌ ${formattedCategory}\x1b[31m (\x1b[32m${passedCount} passed${skippedSuffix}\x1b[31m)\x1b[0m`);
         // Print before() failure first
         if (pendingBeforeFailure) {
           console.log(`  \x1b[31m❌ before\x1b[0m`);
           if (pendingBeforeFailure.error)
             console.log(`    \x1b[31m${pendingBeforeFailure.error}\x1b[0m`);
+          console.log(`    \x1b[33mTo run this category separately use --category "${category}"\x1b[0m`);
         }
         // Print after() failure
         if (pendingAfterFailure) {
           console.log(`  \x1b[31m❌ after\x1b[0m`);
           if (pendingAfterFailure.error)
             console.log(`    \x1b[31m${pendingAfterFailure.error}\x1b[0m`);
+          console.log(`    \x1b[33mTo run this category separately use --category "${category}"\x1b[0m`);
         }
+        // Print skipped tests
+        for (const skippedName of pendingSkipped)
+          console.log(`  \x1b[33m⊘ ${skippedName}\x1b[0m`);
         // Print test failures
         for (const failure of pendingFailures) {
           console.log(`  \x1b[31m❌ ${failure.testName}\x1b[0m`);
           if (failure.error)
             console.log(`    \x1b[31m${failure.error}\x1b[0m`);
+          console.log(`    \x1b[33mTo run this test separately use --category "${category}" --test "${failure.testName}"\x1b[0m`);
         }
       } else {
-        console.log(`\x1b[32m✅ ${formattedCategory} (${passedCount} passed)\x1b[0m`);
+        console.log(`\x1b[32m✅ ${formattedCategory} (${passedCount} passed${skippedSuffix}\x1b[32m)\x1b[0m`);
+        // Print skipped tests
+        for (const skippedName of pendingSkipped)
+          console.log(`  \x1b[33m⊘ ${skippedName}\x1b[0m`);
       }
       pendingFailures = [];
+      pendingSkipped = [];
       pendingBeforeFailure = null;
       pendingAfterFailure = null;
     };
+
+    // Print all console messages when verbose mode is enabled
+    if (browserOptions.verbose) {
+      page.on('console', (msg) => {
+        const type = msg.type();
+        const text = msg.text();
+          if (text.startsWith('Package testing: '))
+              return;
+        if (type === 'error')
+          console.log(`\x1b[31m[console.error] ${text}\x1b[0m`);
+        else if (type === 'warning')
+          console.log(`\x1b[33m[console.warn] ${text}\x1b[0m`);
+        else
+          console.log(`[console.log] ${text}`);
+      });
+      page.on('pageerror', (error) => {
+        console.log(`\x1b[31m[page error] ${error.message}\x1b[0m`);
+      });
+    }
 
     // Subscribe to page console events for modern output formatting
     // On retry, old listeners were removed so we need to re-attach
@@ -730,19 +778,26 @@ export async function runBrowser(
       while ((match = tokenRegex.exec(text)) !== null)
         tokens.push(match[1]);
 
-      // Category start: "Package testing: Started {{Category}}"
-      if (text.includes('Started') && tokens.length === 1) {
+      // Category start: "Package testing: Started {{Category}}" or "Package testing: Started {{Category}} skipped {{N}}"
+      if (text.includes('Started') && (tokens.length === 1 || (tokens.length === 2 && text.includes('skipped')))) {
         // Print summary of previous category if exists
         if (currentCategory && categoryResults.has(currentCategory))
           printCategorySummary(currentCategory);
         currentCategory = tokens[0];
-        categoryResults.set(currentCategory, {passed: 0, failed: 0});
+        const skippedCount = tokens.length === 2 ? parseInt(tokens[1]) || 0 : 0;
+        categoryResults.set(currentCategory, {passed: 0, failed: 0, skipped: skippedCount});
         pendingFailures = [];
+        pendingSkipped = [];
         pendingBeforeFailure = null;
         pendingAfterFailure = null;
+      } else if (text.includes('Skipped') && tokens.length === 2 && !text.includes('benchmark')) {
+        // Individual skipped test: "Package testing: Skipped {{Category}} {{TestName}}"
+        // Only collect if the test belongs to the current active category
+        if (tokens[0] === currentCategory)
+          pendingSkipped.push(tokens[1]);
       } else if (text.includes('Started') && tokens.length === 2) {
         // Test start: "Package testing: Started {{Category}} {{TestName}}"
-        const category = tokens[0].replace(/: /g, ', ');
+        const category = tokens[0];
         currentTestName = tokens[1];
         process.stdout.write(`${category}: ${currentTestName}...`);
       } else if (text.includes('Finished') && tokens.length === 3) {
@@ -753,7 +808,8 @@ export async function runBrowser(
         const results = categoryResults.get(category);
 
         // Clear the current test line
-        process.stdout.write('\r\x1b[K');
+          if (!browserOptions.verbose)
+            process.stdout.write('\r\x1b[K');
 
         if (status === 'success') {
           if (results) results.passed++;

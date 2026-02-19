@@ -12,7 +12,7 @@ import {
   expectArray,
   expectObject,
   awaitCheck
-} from '@datagrok-libraries/utils/src/test';
+} from '@datagrok-libraries/test/src/test';
 
 import {PhylocanvasGlService} from '../utils/phylocanvas-gl-service';
 import {TreeToGridApp} from '../apps/tree-to-grid-app';

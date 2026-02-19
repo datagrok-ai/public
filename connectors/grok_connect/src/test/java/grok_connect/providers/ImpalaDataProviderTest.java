@@ -151,9 +151,9 @@ class ImpalaDataProviderTest {
 
     private void prepareDataFrame(DataFrame dataFrame) {
         // in order to save time reuse some commons
-        dataFrame.columns.forEach(column -> {
-            if (column.name.equals("date")) {
-                column.name = "dat";
+        dataFrame.getColumns().forEach(column -> {
+            if (column.getName().equals("date")) {
+                column.setName("dat");
             }
         });
     }

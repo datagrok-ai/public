@@ -21,11 +21,8 @@ let _package: any = {};
 
 function generateQueryWrappers(): void {
   const queriesDir = path.join(curDir, 'queries');
-  if (!fs.existsSync(queriesDir)) {
-    color.warn(`Directory ${queriesDir} not found`);
-    console.log('Skipping API generation for queries...');
+  if (!fs.existsSync(queriesDir))
     return;
-  }
 
   const files = walk.sync({
     path: './queries',
@@ -68,11 +65,8 @@ function generateQueryWrappers(): void {
 function generateScriptWrappers(): void {
   const scriptsDir = path.join(curDir, 'scripts');
   const pythonDir = fs.existsSync(srcDir) ? path.join(srcDir, 'python') : path.join(curDir, 'python');
-  if (!fs.existsSync(scriptsDir)) {
-    color.warn(`Directory ${scriptsDir} not found`);
-    console.log('Skipping API generation for scripts...');
+  if (!fs.existsSync(scriptsDir))
     return;
-  }
   const wrappers = [];
 
   for (let dir of [scriptsDir, pythonDir]) {
@@ -159,20 +153,16 @@ function saveWrappersToFile(namespaceName: string, wrappers: string[]) {
   if (wrappers.length === 0)
     return;
   if (!fs.existsSync(funcFilePath))
-    createApiFile()
+    createApiFile();
 
   const scriptApi = new utils.TemplateBuilder(utils.namespaceTemplate)
     .replace('PACKAGE_NAMESPACE', namespaceName)
     .replace('NAME', wrappers.join(sep.repeat(2)));
   fs.appendFileSync(funcFilePath, sep + scriptApi.build() + sep);
-  color.success(`Successfully generated file ${apiFile}${sep}`);
+  color.log(`Successfully generated file ${apiFile}${sep}`, 'success');
 }
 
 function createApiFile() {
-  if (fs.existsSync(funcFilePath)) {
-    color.warn(`The file ${funcFilePath} already exists`);
-    console.log('Rewriting its contents...');
-  }
   fs.writeFileSync(funcFilePath, annotationForApiFile + utils.dgImports + sep, 'utf8');
 }
 
@@ -182,11 +172,12 @@ function checkNameColision(name: string) {
   names.add(name);
 }
 
-export function api(args: { _: string[] }): boolean {
+export function api(args: { _: string[], verbose?: boolean, v?: boolean }): boolean {
+  color.setVerbose(args.verbose || args.v || false);
   _package = JSON.parse(fs.readFileSync(packagePath, { encoding: 'utf-8' }));
   if (_package.friendlyName)
     _package.friendlyName = _package.friendlyName.replaceAll(' ', '')
-  const nOptions = Object.keys(args).length - 1;
+  const nOptions = Object.keys(args).length - 1 - (args.verbose ? 1 : 0) - (args.v ? 1 : 0);
   if (args['_'].length !== 1 || nOptions > 0) return false;
   if (!utils.isPackageDir(process.cwd())) {
     color.error('File `package.json` not found. Run the command from the package directory');

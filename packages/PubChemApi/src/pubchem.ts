@@ -1,7 +1,7 @@
 import * as grok from 'datagrok-api/grok';
 
 import {anyObject, getSmiles, paramsType, pubChemIdType, pubChemSearchType, urlParamsFromObject} from './utils';
-import {delay} from '@datagrok-libraries/utils/src/test';
+import {delay} from '@datagrok-libraries/test/src/test';
 import {pubChemPug, pubChemRest} from './tests/const';
 
 export async function similaritySearch(

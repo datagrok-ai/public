@@ -11,7 +11,7 @@ import {
 } from './utils/chem-common';
 import BitArray from '@datagrok-libraries/utils/src/bit-array';
 import {getDiverseSubset} from '@datagrok-libraries/utils/src/similarity-metrics';
-import {assure} from '@datagrok-libraries/utils/src/test';
+import {assure} from '@datagrok-libraries/test/src/test';
 import {ArrayUtils} from '@datagrok-libraries/utils/src/array-utils';
 import {tanimotoSimilarity} from '@datagrok-libraries/ml/src/distance-metrics-methods';
 import {getMolSafe} from './utils/mol-creation_rdkit';
@@ -383,6 +383,7 @@ export async function chemSubstructureSearchLibrary(
 
 export function getRDKitFpAsUint8Array(mol: RDMol, fingerprint: Fingerprint): Uint8Array {
   if (fingerprint == Fingerprint.Morgan) {
+    mol.remove_hs_in_place(); // hydrogens can cause identical molecules to have different fingerprints
     return mol.get_morgan_fp_as_uint8array(JSON.stringify({
       radius: defaultMorganFpRadius,
       nBits: defaultMorganFpLength,

@@ -15,7 +15,7 @@ public class DataConnection
     public Credentials credentials;
 
     public String getServer() { return (String)parameters.get(SERVER); }
-    public String getDb() { return (String)parameters.get(DB); }
+    public String getDb() { return (String) parameters.get(DB); }
     public String getPort() {
         Object port = parameters.get(PORT);
         if (port == null)

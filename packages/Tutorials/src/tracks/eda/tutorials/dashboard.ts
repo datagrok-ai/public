@@ -4,7 +4,7 @@ import $ from 'cash-dom';
 import { filter } from 'rxjs/operators';
 import { Tutorial, TutorialPrerequisites } from '@datagrok-libraries/tutorials/src/tutorial';
 import { interval, Observable} from 'rxjs';
-import { delay } from '@datagrok-libraries/utils/src/test';
+import { delay } from '@datagrok-libraries/test/src/test';
 import { waitForElementClick } from './utils';
 
 export class DashboardTutorial extends Tutorial {

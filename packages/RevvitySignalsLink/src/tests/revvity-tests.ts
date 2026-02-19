@@ -1,7 +1,7 @@
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 
-import { awaitCheck, before, category, expect, test } from '@datagrok-libraries/utils/src/test';
+import { awaitCheck, before, category, expect, test } from '@datagrok-libraries/test/src/test';
 //import { funcs } from '../package-api';
 import { openRevvityNode } from '../view-utils';
 import { Operators } from '@datagrok-libraries/utils/src/query-builder/query-builder';

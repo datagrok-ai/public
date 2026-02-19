@@ -19,6 +19,7 @@ import {errInfo} from '@datagrok-libraries/bio/src/utils/err-info';
 import {InputColumnBase} from '@datagrok-libraries/bio/src/types/input';
 import {SeqValueBase} from '@datagrok-libraries/bio/src/utils/macromolecule/seq-handler';
 import {NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';
+import {SeqTemps} from '@datagrok-libraries/bio/src/utils/macromolecule/seq-handler';
 
 import {PolyToolEnumeratorParams, PolyToolEnumeratorType, PolyToolEnumeratorTypes} from './types';
 import {getLibrariesList, LIB_PATH} from './utils';
@@ -32,11 +33,13 @@ import {RuleInputs, RULES_PATH, RULES_STORAGE_NAME} from './conversion/pt-rules'
 import {Chain} from './conversion/pt-chain';
 import {polyToolConvert} from './pt-dialog';
 
-import {_package, PackageFunctions} from '../package';
+import {_package, applyNotationProviderForCyclized, PackageFunctions} from '../package';
 import {buildMonomerHoverLink} from '@datagrok-libraries/bio/src/monomer-works/monomer-hover';
 import {getRdKitModule} from '@datagrok-libraries/bio/src/chem/rdkit-module';
 
 import {PolymerTypes} from '@datagrok-libraries/js-draw-lite/src/types/org';
+import { CyclizedNotationProvider } from '../utils/cyclized';
+import { INotationProvider } from '@datagrok-libraries/bio/src/utils/macromolecule/types';
 
 type PolyToolEnumerateInputs = {
   macromolecule: HelmInputBase;
@@ -161,9 +164,22 @@ async function getPolyToolEnumerateDialog(
     const getValue = (cell?: DG.Cell): [SeqValueBase, PolyToolDataRole] => {
       let resSeqValue: SeqValueBase;
       let resDataRole: PolyToolDataRole;
+      let resHelm: string | null = null;
       if (cell && cell.rowIndex >= 0 && cell?.column.semType == DG.SEMTYPE.MACROMOLECULE) {
         const sh = seqHelper.getSeqHandler(cell.column);
         resSeqValue = sh.getValue(cell.rowIndex);
+        // if (cell.column.temp?.[SeqTemps.notationProvider])
+        if (cell.column.temp?.[SeqTemps.notationProvider] && !(cell.column.temp[SeqTemps.notationProvider] instanceof CyclizedNotationProvider)) {
+          const notationProvider = cell.column.temp[SeqTemps.notationProvider] as INotationProvider;
+          resHelm = notationProvider.getHelm(resSeqValue.value, {});
+          // create temp helm column to apply notation provider for cyclized sequences
+          let seqCol: DG.Column;
+          DG.DataFrame.fromColumns([seqCol = DG.Column.fromList(DG.COLUMN_TYPE.STRING, 'seq', [resHelm])]);
+          seqCol.semType = DG.SEMTYPE.MACROMOLECULE;
+          seqCol.meta.units = NOTATION.HELM;
+          const sh = seqHelper.getSeqHandler(seqCol);
+          resSeqValue = sh.getValue(0);
+        }
         resDataRole = (resSeqValue.tags[PolyToolTags.dataRole] as PolyToolDataRole.template) ?? PolyToolDataRole.macromolecule;
       } else {
         const seqCol = DG.Column.fromList(DG.COLUMN_TYPE.STRING, 'seq', [PT_HELM_EXAMPLE]);
@@ -200,8 +216,13 @@ async function getPolyToolEnumerateDialog(
                 if (aa.T === 'ATOM') {
                   try {
                     if (!seqValue.isDna() && !seqValue.isRna()) {
-                      const canonicalSymbol = seqValue.getSplitted().getCanonical(aa.bio!.continuousId - 1);
-                      return monomerLibFuncs.getMonomer(aa.bio!.type, canonicalSymbol);
+                      if (cell?.column?.temp?.[SeqTemps.notationProvider] instanceof CyclizedNotationProvider) {
+                        const canonicalSymbol = seqValue.getSplitted().getCanonical(aa.bio!.continuousId - 1);
+                        return monomerLibFuncs.getMonomer(aa.bio!.type, canonicalSymbol);
+                      } else {
+                        const canonicalSymbol = aa.elem;
+                        return monomerLibFuncs.getMonomer(aa.bio!.type, canonicalSymbol);
+                      }
                     } else {
                       const canonicalSymbol = seqValue.getSplittedWithSugarsAndPhosphates().getCanonical(aa.bio!.continuousId - 1);
                       return monomerLibFuncs.getMonomer(aa.bio!.type, canonicalSymbol);
@@ -475,7 +496,7 @@ async function getPolyToolEnumerateDialog(
       const cell = grok.shell.tv.dataFrame.currentCell;
       if (cell.column.semType !== DG.SEMTYPE.MACROMOLECULE) return;
 
-      [seqValue, dataRole] = getValue();
+      [seqValue, dataRole] = getValue(cell);
       fillForCurrentCell(seqValue, dataRole, cell);
     }));
 
@@ -554,9 +575,9 @@ async function getPolyToolEnumerateDialog(
     const exec = async (): Promise<void> => {
       try {
         const srcHelm = inputs.macromolecule.stringValue;
-        const helmSelections: number[] = wu.enumerate<HelmAtom>(inputs.macromolecule.molValue.atoms)
+        const helmSelections = wu.enumerate<HelmAtom>(inputs.macromolecule.molValue.atoms)
           .filter(([a, aI]) => a.highlighted)
-          .map(([a, aI]) => aI).toArray();
+          .map(([a, aI]) => a).toArray();
         if (inputs.enumeratorType.value === PolyToolEnumeratorTypes.Library) {
           if (helmSelections.length === 0) {
             grok.shell.warning('PolyTool: position for enumeration was not selected');
@@ -595,7 +616,8 @@ async function getPolyToolEnumerateDialog(
               grok.shell.warning(`Monomer Library '${monLibName}' was not found`);
               return;
             }
-            const peptideMonomers = monLib.getMonomerSymbolsByType(PolymerTypes.PEPTIDE);
+            const polymerType = helmTypeToPolymerType(helmSelections[0].biotype() ?? 'HELM_AA');
+            const peptideMonomers = monLib.getMonomerSymbolsByType(polymerType);
             placeHoldersValue[0].monomers = peptideMonomers;
             enumerationType = PolyToolEnumeratorTypes.Single;
           }

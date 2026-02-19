@@ -1,6 +1,6 @@
 import * as DG from 'datagrok-api/dg';
 
-import {runTests, TestContext, tests, initAutoTests as initTests } from '@datagrok-libraries/utils/src/test';
+import {runTests, TestContext, tests, initAutoTests as initTests } from '@datagrok-libraries/test/src/test';
 
 import './tests/pinned-column-tests';
 import './tests/webgpu-tests';

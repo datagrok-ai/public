@@ -7,7 +7,7 @@ import {
   test,
   expect,
   expectArray,
-} from '@datagrok-libraries/utils/src/test';
+} from '@datagrok-libraries/test/src/test';
 
 import {_package} from '../../src/package-test';
 import {TreeHelper} from '../utils/tree-helper';

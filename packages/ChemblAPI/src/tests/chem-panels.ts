@@ -1,5 +1,5 @@
 import * as grok from 'datagrok-api/grok';
-import {category, before, after, expect, test} from '@datagrok-libraries/utils/src/test';
+import {category, before, after, expect, test} from '@datagrok-libraries/test/src/test';
 import {PackageFunctions} from '../package';
 
 const sampleIdentifiers = [

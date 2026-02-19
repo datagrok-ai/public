@@ -3,7 +3,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {awaitCheck, before, category, delay, expect, expectArray, test, timeout} from '@datagrok-libraries/utils/src/test';
+import {awaitCheck, before, category, delay, expect, expectArray, test, timeout} from '@datagrok-libraries/test/src/test';
 
 import {
   performChemicalPropertyPredictions,
@@ -43,7 +43,7 @@ category('Admetica', () => {
       'O=C1Nc2ccccc2C(C2CCCCC2)=NC1',
     ]);
     const admeProps = ['PPBR', 'VDss'];
-    const distributionResults = await getAdmeProperties(smilesColumn, admeProps);
+    const distributionResults = await getAdmeProperties(molecules, smilesColumn, admeProps);
     expect(distributionResults != null, true);
   }, {timeout: 25000});
 

@@ -10,6 +10,7 @@
 class SequenceTranslatorPackageDetectors extends DG.Package {
   //name: autostart
   //meta.role: autostart
+  //tags: autostart
   //description: SequenceTranslator bootstrap
   autostart() {
     this.logger.debug('ST: detectors.js: autostart()');
@@ -67,6 +68,7 @@ class SequenceTranslatorPackageDetectors extends DG.Package {
 
   //name: refineNotationProviderForHarmonizedSequence
   //meta.role: notationRefiner
+  //tags: notationRefiner
   //input: column col
   //input: object stats
   //input: string separator = null { optional: true }

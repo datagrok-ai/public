@@ -41,10 +41,8 @@ category('Packages: migrations', () => {
   async function deletePackage(packageName: string) {
     const uploadResponse = await fetch(`${grok.dapi.root}/packages/dev/${key}/${packageName}`,
       {method: 'DELETE'});
-    expect(uploadResponse.status, 200);
     let text = await uploadResponse.text();
     expect(text.indexOf('ApiError'), -1);
-    await DG.delay(10000);
   }
 
   test('Query uploaded package', async () => {

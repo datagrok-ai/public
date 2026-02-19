@@ -255,6 +255,17 @@ export function SubstructureSearchTopMenu(molecules: DG.Column) : void {
   PackageFunctions.SubstructureSearchTopMenu(molecules);
 }
 
+//name: BitBIRCH Clustering
+//description: O(N) incremental clustering of molecules based on binary fingerprint similarity
+//input: dataframe table 
+//input: column molecules { semType: Molecule }
+//input: double threshold = 0.55 { caption: Threshold; min: 0; max: 1 }
+//input: string fingerprintType = 'Morgan' { caption: Fingerprint type; choices: ["Morgan","RDKit","Pattern","AtomPair","MACCS","TopologicalTorsion"] }
+//top-menu: Chem | Calculate | BitBIRCH Clustering...
+export async function bitbirchClusteringTopMenu(table: DG.DataFrame, molecules: DG.Column, threshold: number, fingerprintType: string) : Promise<void> {
+  await PackageFunctions.bitbirchClusteringTopMenu(table, molecules, threshold, fingerprintType);
+}
+
 //name: Cluster MCS
 //description: Calculates most common substructures for each cluster
 //input: dataframe table 
@@ -1119,13 +1130,23 @@ export async function _mpo() : Promise<void> {
 }
 
 //input: dataframe df 
+//input: column_list columns 
 //input: string profileName 
-//input: dynamic aggregation 
-//input: object currentProperties 
-//output: list res
+//input: string aggregation 
+//output: dataframe result { action: join(df) }
+export function mpoCalculate(df: DG.DataFrame, columns: DG.ColumnList, profileName: string, aggregation: any) : any {
+  return PackageFunctions.mpoCalculate(df, columns, profileName, aggregation);
+}
+
+//input: dataframe df 
+//input: string profileName 
+//input: string aggregation 
+//input: string currentProperties 
+//input: bool silent 
+//output: dataframe result
 //meta.role: transform
-export async function mpoTransformFunction(df: DG.DataFrame, profileName: string, aggregation: any, currentProperties: any) : Promise<string[]> {
-  return await PackageFunctions.mpoTransformFunction(df, profileName, aggregation, currentProperties);
+export async function mpoTransformFunction(df: DG.DataFrame, profileName: string, aggregation: any, currentProperties: string, silent: boolean) : Promise<any> {
+  return await PackageFunctions.mpoTransformFunction(df, profileName, aggregation, currentProperties, silent);
 }
 
 //input: file file 

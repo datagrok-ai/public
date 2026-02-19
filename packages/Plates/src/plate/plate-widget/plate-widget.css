@@ -31,11 +31,12 @@
 /* Make the first child (the TabControl) take up the available space */
 .assay-plates--plate-widget__main-container > div:first-child {
     flex-grow: 1;
+    height: 100% !important;
 }
 
 .assay-plates--plate-widget__details {
     /* Define a size for the details panel on the right */
-    min-width: 250px;
+    min-width: 100px;
     max-width: 300px;
     overflow-y: auto;
 }
@@ -125,4 +126,28 @@
 .assay-plates--create-plate-view .d4-tab-content .assay-plates--plate-widget > :last-child {
     flex-grow: 1;
     min-width: 0;
+}
+
+/* == XLSX Plate Container Layout ==
+   Splits the view: plate widget on top (constrained), DRC analysis below (fills remaining) */
+.xlsx-plate-container {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+}
+
+.xlsx-plate-container > .assay-plates--plate-widget {
+    flex: 0 0 auto;
+    height: 300px;
+    max-height: 40%;
+    min-height: 180px;
+    overflow: hidden;
+}
+
+.xlsx-plate-container > .assay-plates--analysis-view-container {
+    flex: 1 1 auto;
+    min-height: 200px;
+    overflow: auto;
 }

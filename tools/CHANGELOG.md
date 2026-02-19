@@ -1,5 +1,13 @@
 # Datagrok-tools changelog
 
+## 5.1.3 (2026-02-03)
+
+* GROK-19407:
+  * Improved developer experience for grok check, grok api, grok publish
+  * Fixed warnings all over the packages when using grok check
+
+### Bug Fixes
+
 ## 4.14.72 (2026-01-13)
 
 ### Bug Fixes

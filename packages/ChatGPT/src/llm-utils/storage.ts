@@ -4,7 +4,7 @@
 import {OpenAI} from 'openai';
 import {MessageType, UIMessage} from './panel';
 
-export interface StoredConversation<T extends MessageType = OpenAI.Chat.ChatCompletionMessageParam, TMeta = any> {
+export interface StoredConversation<T extends MessageType = MessageType, TMeta = any> {
   id: string;
   timestamp: number;
   initialPrompt: string;
@@ -13,7 +13,7 @@ export interface StoredConversation<T extends MessageType = OpenAI.Chat.ChatComp
   meta?: TMeta;
 }
 
-export interface StoredConversationWithContext<T extends MessageType = OpenAI.Chat.ChatCompletionMessageParam, TMeta = any>
+export interface StoredConversationWithContext<T extends MessageType = MessageType, TMeta = any>
   extends StoredConversation<T, TMeta> {
   contextId: string; // can be connection ID, project ID, or whatever context is appropriate
 }
@@ -43,7 +43,7 @@ export class ConversationStorage {
     });
   }
 
-  static async saveConversation<TMeta = any, MessageT extends MessageType = OpenAI.Chat.ChatCompletionMessageParam>(
+  static async saveConversation<TMeta = any, MessageT extends MessageType = MessageType>(
     messages: MessageT[],
     uiMessages: UIMessage[],
     initialPrompt: string,
@@ -79,7 +79,7 @@ export class ConversationStorage {
     });
   }
 
-  static async updateConversation<MessageT extends MessageType = OpenAI.Chat.ChatCompletionMessageParam>(
+  static async updateConversation<MessageT extends MessageType = MessageType>(
     conversationId: string,
     messages: MessageT[],
     uiMessages: UIMessage[],
@@ -110,7 +110,7 @@ export class ConversationStorage {
     });
   }
 
-  static async getConversation<MessageT extends MessageType = OpenAI.Chat.ChatCompletionMessageParam>(conversationId: string): Promise<StoredConversation<MessageT> | null> {
+  static async getConversation<MessageT extends MessageType = MessageType>(conversationId: string): Promise<StoredConversation<MessageT> | null> {
     const db = await this.openDB();
 
     return new Promise((resolve, reject) => {
@@ -123,7 +123,7 @@ export class ConversationStorage {
     });
   }
 
-  static async listConversations<MessageT extends MessageType = OpenAI.Chat.ChatCompletionMessageParam>(
+  static async listConversations<MessageT extends MessageType = MessageType>(
     contextId?: string,
     limit: number = 50
   ): Promise<StoredConversation<MessageT>[]> {

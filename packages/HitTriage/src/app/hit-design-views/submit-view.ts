@@ -69,7 +69,7 @@ export class HitDesignSubmitView extends HitBaseView<HitDesignTemplate, HitDesig
     //dlg.addButton('Submit', ()=>{this.submit(); dlg.close();}, undefined, 'Submit the campaign file to the specified function');
     dlg.show();
 
-    const submitFunctions = DG.Func.find({meta: {role: HitTriageSubmitTag}});
+    const submitFunctions = Array.from(new Set(DG.Func.find({meta: {role: HitTriageSubmitTag}}).concat(DG.Func.find({tags: [HitTriageSubmitTag]}))));
     const submitFunctionMap = submitFunctions.reduce((acc, fn) => {
       acc[fn.friendlyName ?? fn.name] = fn;
       return acc;

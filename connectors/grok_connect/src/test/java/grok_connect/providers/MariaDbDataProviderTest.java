@@ -21,7 +21,7 @@ class MariaDbDataProviderTest extends MySqlDataProviderTest {
     @Order(4)
     @DisplayName("Test of getSchemas() method with correct DataConnection")
     @ParameterizedTest(name = "CORRECT ARGUMENTS")
-    @MethodSource("grok_connect.providers.arguments_provider.MySqlObjectsMother#getSchemas_ok")
+    @MethodSource("grok_connect.providers.arguments_provider.MariaDbObjectsMother#getSchemas_ok")
     public void getSchemas_ok(DataFrame expected) {
         DataFrame actual = Assertions.assertDoesNotThrow(() -> provider.getSchemas(connection));
         Assertions.assertTrue(dataFrameComparator.isDataFramesEqual(expected, actual));

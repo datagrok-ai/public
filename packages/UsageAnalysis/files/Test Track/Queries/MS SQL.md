@@ -29,6 +29,14 @@
     * Right-click the connection and select **Delete** from the context menu
     * In the confirmation dialog, click DELETE
 3. Refresh Browse and check that query has been deleted and is no longer present
+
+### 5. Catalog browsing
+1. Go to **Browse** > **Databases** > **MS SQL** > **NorthwindTest** > **Catalogs**
+2. Verify that catalogs are listed under the connection
+3. Expand a catalog — schemas should appear
+4. Expand a schema — tables should appear
+5. Click on a catalog node and verify the **Context Panel** shows the catalog preview
+6. Check that **Comment** and **LLM comment** meta properties can be assigned to the catalog
 ---
 {
   "order": 5

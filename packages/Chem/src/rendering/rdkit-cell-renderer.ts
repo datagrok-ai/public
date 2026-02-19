@@ -1,3 +1,4 @@
+/* eslint-disable max-len */
 /**
  * RDKit-based molecule cell renderer.
  * */
@@ -150,6 +151,8 @@ M  END
         mol = molCtx.mol;
       } else {
         try {
+          if (!molString.includes('\n') && molString.length > 5000)
+            throw new Error('Invalid molecule string'); // do not attempt to parse very long SMILES, will cause MOB.
           mol = this.rdKitModule.get_qmol(molString);
           mol.convert_to_aromatic_form();
         } catch (e) {

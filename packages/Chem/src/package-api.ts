@@ -321,6 +321,13 @@ export namespace funcs {
   }
 
   /**
+  O(N) incremental clustering of molecules based on binary fingerprint similarity
+  */
+  export async function bitbirchClusteringTopMenu(table: DG.DataFrame , molecules: DG.Column , threshold: number , fingerprintType: string ): Promise<void> {
+    return await grok.functions.call('Chem:BitbirchClusteringTopMenu', { table, molecules, threshold, fingerprintType });
+  }
+
+  /**
   Calculates most common substructures for each cluster
   */
   export async function clusterMCSTopMenu(table: DG.DataFrame , molCol: DG.Column , clusterCol: DG.Column ): Promise<void> {
@@ -803,8 +810,12 @@ export namespace funcs {
     return await grok.functions.call('Chem:Mpo', {});
   }
 
-  export async function mpoTransformFunction(df: DG.DataFrame , profileName: string , aggregation: any , currentProperties: any ): Promise<any> {
-    return await grok.functions.call('Chem:MpoTransformFunction', { df, profileName, aggregation, currentProperties });
+  export async function mpoCalculate(df: DG.DataFrame , columns: string[] , profileName: string , aggregation: string ): Promise<DG.DataFrame> {
+    return await grok.functions.call('Chem:MpoCalculate', { df, columns, profileName, aggregation });
+  }
+
+  export async function mpoTransformFunction(df: DG.DataFrame , profileName: string , aggregation: string , currentProperties: string , silent: boolean ): Promise<DG.DataFrame> {
+    return await grok.functions.call('Chem:MpoTransformFunction', { df, profileName, aggregation, currentProperties, silent });
   }
 
   export async function mpoProfileEditor(file: DG.FileInfo ): Promise<DG.View> {

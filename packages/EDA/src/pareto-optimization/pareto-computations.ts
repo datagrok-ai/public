@@ -2,6 +2,12 @@
 
 import {NumericArray, OPT_TYPE} from './defs';
 
+/** Computes the Pareto front mask for a given dataset and optimization sense
+ * @param rawData Array of numeric arrays representing the dataset (each array corresponds to a feature/dimension)
+ * @param sense Array of optimization types (OPT_TYPE.MIN or OPT_TYPE.MAX) for each dimension
+ * @param nPoints Number of data points in the dataset
+ * @param nullIndices Optional set of indices corresponding to missing values (these points will be marked as non-optimal)
+ * @returns Boolean array where true indicates that the point is on the Pareto front */
 export function getParetoMask(rawData: NumericArray[], sense: OPT_TYPE[], nPoints: number,
   nullIndices?: Set<number>): boolean[] {
   if (nPoints === 0)

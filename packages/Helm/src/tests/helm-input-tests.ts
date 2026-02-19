@@ -4,7 +4,7 @@ import * as DG from 'datagrok-api/dg';
 
 import $ from 'cash-dom';
 
-import {after, before, category, delay, expect, test, testEvent} from '@datagrok-libraries/utils/src/test';
+import {after, before, category, delay, expect, test, testEvent} from '@datagrok-libraries/test/src/test';
 import {IHelmHelper, getHelmHelper} from '@datagrok-libraries/bio/src/helm/helm-helper';
 import {getMonomerLibHelper, IMonomerLibHelper} from '@datagrok-libraries/bio/src/types/monomer-library';
 import {

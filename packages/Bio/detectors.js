@@ -147,6 +147,8 @@ class BioPackageDetectors extends DG.Package {
    *  Concurrent modification during iteration: Instance of 'JSArray<Column>'.
    */
   //meta.role: semTypeDetector
+  //tags: semTypeDetector
+  //meta.skipTest: GROK-17630
   //input: column col
   //output: string semType
   detectMacromolecule(col) {
@@ -433,8 +435,14 @@ class BioPackageDetectors extends DG.Package {
         return symbol;
       for (let cI = 1; cI < symbolLen - 1; ++cI) {
         const c = symbol[cI];
-        if (this.forbiddenMulticharMiddle.includes(c))
+        const ssqCount = Array.from(symbol).filter((s) => s === '[').length;
+        const sseCount = Array.from(symbol).filter((s) => s === ']').length;
+        if (this.forbiddenMulticharMiddle.includes(c)) {
+          // the entry can be something like [Ab]*Ba
+          if (((symbol.startsWith('[') && c === ']') || (symbol.endsWith(']') && c === '[')) && ssqCount === sseCount)
+            continue;
           return symbol;
+        }
       }
       if (symbol.match(/^\d+\W+.*/))
         // symbols like '2,...' are forbidden
@@ -631,6 +639,7 @@ class BioPackageDetectors extends DG.Package {
 
   //name: autostart
   //meta.role: autostart
+  //tags: autostart
   //description: Bio bootstrap
   autostart() {
     this.logger.debug('Bio: detectors.js: autostart()');

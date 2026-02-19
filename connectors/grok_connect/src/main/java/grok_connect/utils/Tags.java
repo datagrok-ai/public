@@ -1,6 +1,7 @@
 package grok_connect.utils;
 
 public class Tags {
+    public static String Db = "Db";
     public static String DbSchema = "DbSchema";
 
     public static String DbTable = "DbTable";

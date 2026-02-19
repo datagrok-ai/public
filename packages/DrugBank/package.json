@@ -17,13 +17,13 @@
     "cash-dom": "^8.1.5",
     "datagrok-api": "^1.26.1",
     "dayjs": "^1.11.13",
-    "openchemlib": "^8.15.0"
+    "openchemlib": "^8.15.0",
+    "@datagrok-libraries/test": "^1.1.0"
   },
   "devDependencies": {
     "@datagrok/chem": "^1.13.0",
     "@typescript-eslint/eslint-plugin": "^8.8.1",
     "@typescript-eslint/parser": "^8.8.1",
-    "datagrok-tools": "^4.14.55",
     "eslint": "^8.57.1",
     "eslint-config-google": "^0.14.0",
     "ts-loader": "^9.5.1",
@@ -56,5 +56,8 @@
   "category": "Cheminformatics",
   "sources": [
     "common/openchemlib-full.js"
-  ]
+  ],
+  "overrides": {
+    "datagrok-api": "$datagrok-api"
+  }
 }

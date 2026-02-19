@@ -13,6 +13,7 @@ import {
   getRenderColor,
   NormalizationType,
   getScaledNumber,
+  scaleSettings,
   getSparklinesContextPanel
 } from './shared';
 
@@ -29,14 +30,9 @@ function getPos(col: number, row: number, constants: getPosConstants): DG.Point 
   const b = constants.b;
   const settings = constants.settings;
   const cols = constants.cols;
-  const r: number = getScaledNumber(cols, row, cols[col], {
-    normalization: settings.normalization,
-    zeroScale: settings.zeroScale,
-    invertScale: settings.invertColumnNames?.includes(cols[col].name),
-    logScale: settings.logColumnNames?.includes(cols[col].name),
-    minValues: settings.minValues,
-    maxValues: settings.maxValues,
-  });
+  const r: number = getScaledNumber(cols, row, cols[col],
+    scaleSettings(settings, cols[col], {zeroScale: settings.zeroScale}),
+  );
 
   return new DG.Point(
     b.left + b.width * (cols.length == 1 ? 0 : col / (cols.length - 1)),
@@ -83,7 +79,7 @@ function onHit(gridCell: DG.GridCell, e: MouseEvent): Hit {
   const getPosConstants: getPosConstants = {
     b: b,
     settings: settings,
-    cols: cols
+    cols: cols,
   };
 
   const mousePoint = new DG.Point(e.offsetX, e.offsetY);
@@ -140,7 +136,7 @@ export class SparklineCellRenderer extends DG.GridCellRenderer {
     const getPosConstants: getPosConstants = {
       b: b,
       settings: settings,
-      cols: cols
+      cols: cols,
     };
 
     g.beginPath();

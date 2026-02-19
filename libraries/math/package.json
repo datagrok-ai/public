@@ -8,7 +8,7 @@
     "access": "public"
   },
   "friendlyName": "Datagrok math library",
-  "version": "1.2.6",
+  "version": "1.2.7",
   "description": "Library for high performance computations",
   "dependencies": {
     "@webgpu/types": "^0.1.40",
@@ -28,7 +28,6 @@
     "@typescript-eslint/eslint-plugin": "^8.8.1",
     "@typescript-eslint/parser": "^8.8.1",
     "css-loader": "^6.7.3",
-    "datagrok-tools": "^4.14.20",
     "eslint": "^8.57.1",
     "eslint-config-eslint": "^9.0.0",
     "eslint-config-google": "^0.14.0",

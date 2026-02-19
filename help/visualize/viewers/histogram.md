@@ -51,6 +51,7 @@ General:
 | Show Markers | boolean | Whether markers should be drown when multiple histograms are shown. Requires *Split Column Name* to be set. |
 | **Misc** | | |
 | Show Y Axis | boolean |  |
+| Show Distribution Lines | boolean | Shows distribution lines for each stack or spline category in the histogram (see also **Split** and **Split Stack**). |
 | **General** | | |
 | Zoom To Range | boolean | Whether the horizontal axis should be zoomed to the range of the visible bins. |
 | Normalize To Filter | boolean | Whether the values should be normalized to the filter or globally. |

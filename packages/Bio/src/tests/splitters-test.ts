@@ -4,7 +4,7 @@ import * as DG from 'datagrok-api/dg';
 
 import wu from 'wu';
 
-import {after, before, category, test, expect, expectArray} from '@datagrok-libraries/utils/src/test';
+import {after, before, category, test, expect, expectArray} from '@datagrok-libraries/test/src/test';
 import {TAGS as bioTAGS, splitterAsFasta} from '@datagrok-libraries/bio/src/utils/macromolecule';
 import {splitterAsHelm} from '@datagrok-libraries/bio/src/utils/macromolecule/utils';
 import {ISeqSplitted} from '@datagrok-libraries/bio/src/utils/macromolecule/types';

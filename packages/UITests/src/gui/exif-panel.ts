@@ -1,4 +1,4 @@
-import {category, delay, test} from '@datagrok-libraries/utils/src/test';
+import {category, delay, test} from '@datagrok-libraries/test/src/test';
 import * as grok from 'datagrok-api/grok';
 import {checkHTMLElementbyInnerText, getHTMLElementbyInnerText} from './gui-utils';
 

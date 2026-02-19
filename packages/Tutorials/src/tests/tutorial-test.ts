@@ -1,6 +1,6 @@
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
-import { before, category, test, assure, expect } from '@datagrok-libraries/utils/src/test';
+import { before, category, test, assure, expect } from '@datagrok-libraries/test/src/test';
 import { Tutorial } from '@datagrok-libraries/tutorials/src/tutorial';
 import { Track } from '@datagrok-libraries/tutorials/src/track';
 

@@ -195,6 +195,8 @@ export class PackageFunctions {
 
 export async function chemblSubstructureSearch(molecule: string): Promise<DG.DataFrame | null> {
   try {
+    if (!grok.chem.isMolBlock(molecule) && molecule?.length > 5000)
+      throw new Error('SMILES string longer than 5000 characters not supported');
     const mol = (await grok.functions.call('Chem:getRdKitModule')).get_mol(molecule);
     const smarts = mol.get_smarts();
     mol?.delete();
@@ -210,6 +212,8 @@ export async function chemblSubstructureSearch(molecule: string): Promise<DG.Dat
 
 export async function chemblSimilaritySearch(molecule: string): Promise<DG.DataFrame | null> {
   try {
+    if (!grok.chem.isMolBlock(molecule) && molecule?.length > 5000)
+      throw new Error('SMILES string longer than 5000 characters not supported');
     const mol = (await grok.functions.call('Chem:getRdKitModule')).get_mol(molecule);
     const smiles = mol.get_smiles();
     mol?.delete();

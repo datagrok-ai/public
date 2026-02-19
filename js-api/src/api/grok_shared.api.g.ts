@@ -2,6 +2,32 @@
 import { toDart } from "../wrappers";
 let api = (typeof window !== 'undefined' ? window : global.window) as any;
 
+export class ServerMessageTypes {
+  /// Chat message sent.
+  static CHAT_MESSAGE_SENT = 'chat-message-sent';
+
+  /// Notification sent to a user.
+  static NOTIFICATION_SENT = 'notification-sent';
+
+  /// Notebook table updated.
+  static NOTEBOOK_TABLE_UPDATED = 'notebook-table-updated';
+
+  /// Docker image built.
+  static DOCKER_IMAGE_BUILT = 'docker-image-built';
+
+  /// Docker container updated.
+  static DOCKER_CONTAINER_UPDATED = 'docker-container-updated';
+
+  /// Package repository error.
+  static PACKAGE_REPOSITORY_ERROR = 'package-repository-error';
+
+  /// Logger settings changed.
+  static LOGGER_SETTINGS_CHANGED = 'logger-settings-changed';
+
+  /// Package installed.
+  static PACKAGE_INSTALLED = 'package-installed';
+
+}
 export class DataSourceType {
   static Access = 'Access';
 

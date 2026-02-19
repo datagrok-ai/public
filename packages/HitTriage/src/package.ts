@@ -131,19 +131,19 @@ async function hitAppTB(treeNode: DG.TreeViewGroup, name: AppName) {
 }
 
 export class PackageFunctions {
-  @grok.decorators.appTreeBrowser({app: 'Hit Triage'})
+  @grok.decorators.treeBrowser({meta: {app: 'Hit Triage'}})
   static async hitTriageAppTreeBrowser(treeNode: DG.TreeViewGroup) {
     await hitAppTB(treeNode, 'Hit Triage');
   }
 
 
-  @grok.decorators.appTreeBrowser({app: 'Hit Design'})
+  @grok.decorators.treeBrowser({meta: {app: 'Hit Design'}})
   static async hitDesignAppTreeBrowser(treeNode: DG.TreeViewGroup) {
     await hitAppTB(treeNode, 'Hit Design');
   }
 
 
-  @grok.decorators.appTreeBrowser({app: 'PeptiHit'})
+  @grok.decorators.treeBrowser({meta: {app: 'PeptiHit'}})
   static async peptiHitAppTreeBrowser(treeNode: DG.TreeViewGroup) {
     await hitAppTB(treeNode, 'PeptiHit');
   }
@@ -152,6 +152,7 @@ export class PackageFunctions {
   @grok.decorators.app({
     browsePath: 'Chem',
     name: 'Hit Triage',
+    tags: ['app'],
   })
   static async hitTriageApp(): Promise<DG.ViewBase> {
     const c = grok.functions.getCurrentCall();
@@ -163,6 +164,7 @@ export class PackageFunctions {
     icon: 'images/icons/hit-design-icon.png',
     browsePath: 'Chem',
     name: 'Hit Design',
+    tags: ['app'],
   })
   static async hitDesignApp(): Promise<DG.ViewBase> {
     const c = grok.functions.getCurrentCall();
@@ -174,6 +176,7 @@ export class PackageFunctions {
     icon: 'images/icons/pepti-hit-icon.png',
     browsePath: 'Peptides',
     name: 'PeptiHit',
+    tags: ['app'],
   })
   static async peptiHitApp(): Promise<DG.ViewBase> {
     const c = grok.functions.getCurrentCall();
@@ -285,6 +288,7 @@ export class PackageFunctions {
   @grok.decorators.func({
     name: 'Hit Triage package settings editor',
     meta: {role: 'packageSettingsEditor'},
+    tags: ['packageSettingsEditor'],
   })
   static async htPackageSettingEditor(
     @grok.decorators.param({'name': 'propList', 'type': 'object'}) properties: DG.Property[]) : Promise<DG.Widget> {

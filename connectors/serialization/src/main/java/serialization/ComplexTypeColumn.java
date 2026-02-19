@@ -1,24 +1,31 @@
 package serialization;
 
-import java.lang.reflect.Array;
-import java.lang.reflect.Field;
+import java.math.BigDecimal;
+import java.math.BigInteger;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.OffsetDateTime;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
+import java.time.temporal.Temporal;
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.Collections;
+import java.util.Date;
+import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Objects;
+import java.util.Map;
 
-public class ComplexTypeColumn extends Column<List<Column>> {
-    private static final int DEFAULT_ARRAY_SIZE = 25;
-    private static final String DATA_FIELD_NAME = "data";
-    private Column[] data;
+public class ComplexTypeColumn extends AbstractColumn<Map<String, Object>> {
+    private List<Map<String, Object>> data = new ArrayList<>();
 
-    public ComplexTypeColumn() {
-        this.data = new Column[initColumnSize];
+    public ComplexTypeColumn(String name) {
+        super(name);
     }
 
-    public ComplexTypeColumn(int initColumnSize) {
-        this.initColumnSize = initColumnSize;
-        this.data = new Column[initColumnSize];
+    public ComplexTypeColumn(String name, int initColumnSize) {
+        super(name, initColumnSize);
     }
 
     @Override
@@ -28,236 +35,233 @@ public class ComplexTypeColumn extends Column<List<Column>> {
 
     @Override
     public void encode(BufferAccessor buf) {
-        for (int i = 0; i < length; i++) {
-            Column column = data[i];
-            if (column != null) {
-                column.encode(buf);
-            }
-        }
+        for (Column<?> col : convertToColumns())
+            buf.writeColumn(col);
     }
 
     @Override
-    public void add(List<Column> columns) {
-        ensureSpace(columns.size());
-        processListMap(columns);
-        if (length == 0) {
-            System.arraycopy(columns.toArray(new Column[0]), 0, data, 0, columns.size());
-            length += columns.size();
-        } else {
-            // append nulls for each column in case there are no such column
-            appendNull(data, 1);
-            for (Column column: columns) {
-                String name = column.name;
-                Column first = null;
-                for (Column col: data) {
-                    if (col != null && col.name.equals(name)) {
-                        first = col;
-                        break;
-                    }
-                }
-                if (first != null) {
-                    setExisted(first, column);
-                } else {
-                    int lengthDiff = Math.abs(data[0].length - column.length);
-                    if (lengthDiff > 0) {
-                        insertNull(column, lengthDiff);
-                    }
-                    data[length++] = column;
-                }
-            }
-        }
-    }
-
-    /*
-     * Needed in a case we have nested list with maps - if so,
-     * we get list of columns of different length
-     */
-    private void processListMap(List<Column> columns) {
-        boolean nullsOnly = columns.stream().noneMatch(Objects::nonNull);
-        if (nullsOnly) return;
-        int minLength = columns.get(0).length;
-        int maxLength = minLength;
-        for (int i = 1; i < columns.size(); i++) {
-            int length = columns.get(i).length;
-            minLength = Math.min(minLength, length);
-            maxLength = Math.max(maxLength, length);
-        }
-        if (maxLength - minLength == 0) return;
-        for (Column column: columns) {
-            appendNull(column, maxLength - column.length);
-        }
+    public void add(Map<String, Object> value) {
+        data.add(value != null ? value : Collections.emptyMap());
+        length++;
     }
 
     @Override
-    public void addAll(List<Column>[] value) {
-        throw new UnsupportedOperationException("Not supported");
-    }
-
-
-    @Override
-    public Object get(int idx) {
-        if (idx >= data.length) {
-            return null;
-        }
-        return data[idx];
+    public void addAll(Map<String, Object>[] values) {
+        for (Map<String, Object> value : values)
+            add(value);
     }
 
     @Override
-    public void set(int index, List<Column> value) {
-        throw new UnsupportedOperationException("Not supported");
+    public Map<String, Object> get(int idx) {
+        return data.get(idx);
+    }
+
+    @Override
+    public void set(int index, Map<String, Object> value) {
+        data.set(index, value != null ? value : Collections.emptyMap());
     }
 
     @Override
     public long memoryInBytes() {
-        if (length == 0) {
-            return 0L;
-        }
-        return Arrays.stream(data)
-                .unordered()
-                .parallel()
-                .filter(Objects::nonNull)
-                .map(Column::memoryInBytes)
-                .reduce(0L, Long::sum);
+        return data.size() * 64L;
     }
 
     @Override
     public boolean isNone(int idx) {
-        return idx >= data.length;
+        return idx >= data.size() || data.get(idx).isEmpty();
+    }
+
+    @Override
+    public Object toArray() {
+        return data.toArray(new Map[0]);
     }
 
     @Override
     public void empty() {
         length = 0;
-        data = new Column[DEFAULT_ARRAY_SIZE];
+        data = new ArrayList<>();
     }
 
-    public Column[] getAll() {
-        Column[] returnArray = new Column[length];
-        if (Arrays.stream(data).allMatch(Objects::isNull)) {
-            return returnArray;
+    int getEncodedColumnCount() {
+        return convertToColumns().length;
+    }
+
+    Column<?>[] convertToColumns() {
+        if (data.isEmpty())
+            return new Column<?>[0];
+
+        // Expand rows: List<Map> values are exploded into sub-rows
+        List<Map<String, Object>> expandedRows = new ArrayList<>();
+        for (Map<String, Object> row : data)
+            expandedRows.addAll(expandRow(row));
+
+        // Collect all flattened key-value pairs per row, tracking column order
+        Map<String, List<Object>> columns = new LinkedHashMap<>();
+        int rowIndex = 0;
+        for (Map<String, Object> row : expandedRows) {
+            for (String key : row.keySet()) {
+                if (!columns.containsKey(key)) {
+                    List<Object> list = new ArrayList<>(Collections.nCopies(rowIndex, null));
+                    columns.put(key, list);
+                }
+            }
+            for (Map.Entry<String, List<Object>> entry : columns.entrySet())
+                entry.getValue().add(row.get(entry.getKey()));
+            rowIndex++;
         }
-        System.arraycopy(data, 0, returnArray, 0, length);
-        return returnArray;
+
+        List<Column<?>> result = new ArrayList<>();
+        for (Map.Entry<String, List<Object>> entry : columns.entrySet()) {
+            String key = entry.getKey();
+            List<Object> values = entry.getValue();
+            String type = detectType(values);
+            String colName = name != null ? name + "." + key : key;
+            Column<?> col = Column.getColumnForType(type, colName, Math.max(values.size(), initColumnSize));
+            for (Object v : values)
+                addValueToColumn(col, v, type);
+            result.add(col);
+        }
+        return result.toArray(new Column<?>[0]);
     }
 
     /**
-     * complexTypeConverter return always StringColumn for null values because it's not possible to detect type.
-     * If not null value appears and its corresponding column is not StringColumn
-     * and all previous values in old column are nulls - replace with new column type and insert nulls before value
+     * Expands a single row map into one or more sub-rows. If the map contains
+     * List-of-Map values (e.g. MongoDB arrays of objects), they are "exploded":
+     * scalar fields get null for the extra sub-rows, list-of-map fields fill each sub-row.
      */
-    private void setExisted(Column existed, Column newColumn) {
-        boolean allNulls = true;
-        for (int i = 0; i < existed.length; i++) {
-            if (existed.get(i) != null) {
-                allNulls = false;
-                break;
-            }
-        }
-        if (allNulls && !existed.getType().equals(newColumn.getType())) {
-            insertNull(newColumn, existed.length - 1);
-            for (int i = 0; i < data.length; i++) {
-                if (data[i] == existed) {
-                    data[i] = newColumn;
-                    return;
+    private List<Map<String, Object>> expandRow(Map<String, Object> row) {
+        Map<String, Object> scalars = new LinkedHashMap<>();
+        Map<String, List<Map<String, Object>>> listMaps = new LinkedHashMap<>();
+        separateFields(row, "", scalars, listMaps);
+
+        if (listMaps.isEmpty())
+            return Collections.singletonList(scalars);
+
+        int maxLen = 0;
+        for (List<Map<String, Object>> list : listMaps.values())
+            maxLen = Math.max(maxLen, list.size());
+
+        List<Map<String, Object>> expanded = new ArrayList<>();
+        for (int i = 0; i < maxLen; i++) {
+            Map<String, Object> sub = new LinkedHashMap<>();
+            // Scalar fields: value in first sub-row, null in rest
+            for (Map.Entry<String, Object> entry : scalars.entrySet())
+                sub.put(entry.getKey(), i == 0 ? entry.getValue() : null);
+            // List-of-map fields: flatten each list item with dot-prefix
+            for (Map.Entry<String, List<Map<String, Object>>> entry : listMaps.entrySet()) {
+                String prefix = entry.getKey();
+                List<Map<String, Object>> list = entry.getValue();
+                if (i < list.size()) {
+                    Map<String, Object> flat = new LinkedHashMap<>();
+                    flattenMap(list.get(i), prefix, flat);
+                    sub.putAll(flat);
                 }
             }
+            expanded.add(sub);
         }
-        for (int i = 0; i < newColumn.length; i++) {
-            Object value = newColumn.get(i);
-            if (existed.getType().equals(Types.BOOL)) {
-                value = ((int) value) == 1;
-            }
-            if (i == 0) {
-                existed.set(existed.length - 1, value); // replace added null
+        return expanded;
+    }
+
+    @SuppressWarnings("unchecked")
+    private void separateFields(Map<String, Object> map, String prefix,
+                                Map<String, Object> scalars, Map<String, List<Map<String, Object>>> listMaps) {
+        for (Map.Entry<String, Object> entry : map.entrySet()) {
+            String key = prefix.isEmpty() ? entry.getKey() : prefix + "." + entry.getKey();
+            Object value = entry.getValue();
+            if (value instanceof Map) {
+                separateFields((Map<String, Object>) value, key, scalars, listMaps);
+            } else if (value instanceof List && !((List<?>) value).isEmpty()
+                    && ((List<?>) value).get(0) instanceof Map) {
+                listMaps.put(key, (List<Map<String, Object>>) value);
             } else {
-                existed.add(value);
+                scalars.put(key, value);
             }
         }
     }
 
-    private void ensureSpace(int extraLength) {
-        if (length + extraLength > data.length) {
-            Column[] newData = new Column[data.length * 2 + Math.max(0, length + extraLength - data.length * 2)];
-            System.arraycopy(data, 0, newData, 0, data.length);
-            data = newData;
+    @SuppressWarnings("unchecked")
+    private void flattenMap(Map<String, Object> map, String prefix, Map<String, Object> result) {
+        for (Map.Entry<String, Object> entry : map.entrySet()) {
+            String key = prefix.isEmpty() ? entry.getKey() : prefix + "." + entry.getKey();
+            Object value = entry.getValue();
+            if (value instanceof Map)
+                flattenMap((Map<String, Object>) value, key, result);
+            else
+                result.put(key, value);
         }
     }
 
-    private void insertNull(Column column, int nullCount) {
-        if (column == null) {
+    private String detectType(List<Object> values) {
+        for (Object v : values) {
+            if (v == null)
+                continue;
+            if (v instanceof Integer || v instanceof Short || v instanceof Byte)
+                return Types.INT;
+            if (v instanceof Long || v instanceof BigInteger)
+                return Types.BIG_INT;
+            if (v instanceof Float)
+                return Types.FLOAT;
+            if (v instanceof Double || v instanceof BigDecimal)
+                return Types.FLOAT;
+            if (v instanceof Boolean)
+                return Types.BOOL;
+            if (v instanceof Temporal || v instanceof Date)
+                return Types.DATE_TIME;
+            if (v instanceof String)
+                return Types.STRING;
+            return Types.STRING;
+        }
+        return Types.STRING;
+    }
+
+    private void addValueToColumn(Column<?> col, Object value, String type) {
+        if (value == null) {
+            col.add(null);
             return;
         }
-        try {
-            Field data ;
-            if (column.getType().equals(Types.BIG_INT)) {
-                data = column.getClass().getSuperclass().getDeclaredField(DATA_FIELD_NAME);
-            } else {
-                data = column.getClass().getDeclaredField(DATA_FIELD_NAME);
-            }
-            data.setAccessible(true);
-            Class<?> componentType = data.get(column).getClass().getComponentType();
-            Object array = Array.newInstance(componentType.isPrimitive()
-                    ? getWrapperClassForPrimitive(componentType) : componentType, column.length + nullCount);
-            for (int j = nullCount, i = 0; i < column.length; j++, i++) {
-                if (column.getType().equals(Types.BOOL)) {
-                    boolean value = ((Integer) column.get(i)) == 1;
-                    Array.set(array, j, value);
-                } else {
-                    Array.set(array, j, column.get(i));
-                }
-            }
-            data.setAccessible(false);
-            column.empty();
-            column.addAll((convertToObjectArray(array)));
-        } catch (NoSuchFieldException | IllegalAccessException e) {
-            throw new RuntimeException("Something went wrong when inserting null", e);
-        }
-    }
-
-    private Object[] convertToObjectArray(Object array) {
-        Class ofArray = array.getClass().getComponentType();
-        if (ofArray.isPrimitive()) {
-            List ar = new ArrayList();
-            int length = Array.getLength(array);
-            for (int i = 0; i < length; i++) {
-                ar.add(Array.get(array, i));
-            }
-            return ar.toArray();
-        }
-        else {
-            return (Object[]) array;
-        }
-    }
-
-    private Class<?> getWrapperClassForPrimitive(Class<?> primitiveClass) {
-        switch (primitiveClass.getName()) {
-            case "double":
-                return Double.class;
-            case "float":
-                return Float.class;
-            case "int":
-                return Integer.class;
+        switch (type) {
+            case Types.INT:
+                ((IntColumn) col).add(((Number) value).intValue());
+                break;
+            case Types.BIG_INT:
+                ((BigIntColumn) col).add(value.toString());
+                break;
+            case Types.FLOAT:
+                ((FloatColumn) col).add(((Number) value).floatValue());
+                break;
+            case Types.BOOL:
+                ((BoolColumn) col).add((Boolean) value);
+                break;
+            case Types.DATE_TIME:
+                ((DateTimeColumn) col).add(toEpochMicros(value));
+                break;
             default:
-                throw new RuntimeException("Couldn't find wrapper");
+                ((StringColumn) col).add(value.toString());
+                break;
         }
     }
 
-    private void insertNull(Column[] columns, int nullCount) {
-        for (Column column: columns) {
-            insertNull(column, nullCount);
-        }
-    }
+    private static final double MILLIS_TO_MICROS = 1000.0;
 
-    private void appendNull(Column column, int nullCount) {
-        if (column == null) return;
-        for (int i = 0; i < nullCount; i++) {
-            column.add(null);
-        }
-    }
-
-    private void appendNull(Column[] columns, int nullCount) {
-        for (Column column: columns) {
-            appendNull(column, nullCount);
-        }
+    private Double toEpochMicros(Object value) {
+        long epochMillis;
+        if (value instanceof Date)
+            epochMillis = ((Date) value).getTime();
+        else if (value instanceof LocalDate)
+            epochMillis = ((LocalDate) value).atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli();
+        else if (value instanceof LocalDateTime)
+            epochMillis = ((LocalDateTime) value).atZone(ZoneId.systemDefault()).toInstant().toEpochMilli();
+        else if (value instanceof Instant)
+            epochMillis = ((Instant) value).toEpochMilli();
+        else if (value instanceof OffsetDateTime)
+            epochMillis = ((OffsetDateTime) value).toInstant().toEpochMilli();
+        else if (value instanceof ZonedDateTime)
+            epochMillis = ((ZonedDateTime) value).toInstant().toEpochMilli();
+        else if (value instanceof LocalTime)
+            epochMillis = ((LocalTime) value).atDate(LocalDate.ofEpochDay(0))
+                    .atZone(ZoneId.systemDefault()).toInstant().toEpochMilli();
+        else
+            epochMillis = 0;
+        return epochMillis * MILLIS_TO_MICROS;
     }
 }

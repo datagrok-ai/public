@@ -28,7 +28,8 @@ const packageFiles = [
   'src/package-test.ts', 'src/package-test.js', 'package.js', 'detectors.js',
 ];
 let config: utils.Config;
-export async function processPackage(debug: boolean, rebuild: boolean, host: string, devKey: string, packageName: any, dropDb: boolean, suffix?: string) {
+
+export async function processPackage(debug: boolean, rebuild: boolean, host: string, devKey: string, packageName: any, dropDb: boolean, suffix?: string, hostAlias?: string) {
   // Get the server timestamps
   let timestamps: Indexable = {};
   let url = `${host}/packages/dev/${devKey}/${packageName}`;
@@ -40,12 +41,17 @@ export async function processPackage(debug: boolean, rebuild: boolean, host: str
         return 1;
       }
     } catch (error) {
-      console.error(error);
+      if (utils.isConnectivityError(error))
+        color.error(`Server is possibly offline: ${host}`);
+      if (color.isVerbose())
+        console.error(error);
       return 1;
     }
   }
 
   const zip = archiver('zip', {store: false});
+  const chunks = [];
+  zip.on('data', (chunk: any) => chunks.push(chunk));
 
   // Gather the files
   const localTimestamps: Indexable = {};
@@ -74,10 +80,9 @@ export async function processPackage(debug: boolean, rebuild: boolean, host: str
         'or run `grok publish` with the `--rebuild` option');
       rebuild = true;
     }
-  } 
+  }
 
-  // let contentValidationLog = '';
-  console.log('Starting package checks...');
+  color.log('Starting package checks...');
   const checkStart = Date.now();
   const jsTsFiles = files.filter((f) => !f.startsWith('dist/') && (f.endsWith('.js') || f.endsWith('.ts')));
   const packageFilePath = path.join(curDir, 'package.json');
@@ -86,21 +91,10 @@ export async function processPackage(debug: boolean, rebuild: boolean, host: str
   if (isWebpack) {
     const webpackConfigPath = path.join(curDir, 'webpack.config.js');
     const content = fs.readFileSync(webpackConfigPath, {encoding: 'utf-8'});
-    // const externals = extractExternals(content);
-    // if (externals) {
-    //   const importWarnings = checkImportStatements(curDir, jsTsFiles, externals);
-    //   contentValidationLog += importWarnings.join('\n') + (importWarnings.length ? '\n' : '');
-    // }
   }
 
   const funcFiles = jsTsFiles.filter((f) => packageFiles.includes(f));
-  // const funcWarnings = checkFuncSignatures(curDir, funcFiles);
-  // contentValidationLog += funcWarnings.join('\n') + (funcWarnings.length ? '\n' : '');
-  // const packageWarnings = checkPackageFile(curDir, json);
-  // contentValidationLog += packageWarnings.join('\n') + (packageWarnings.length ? '\n' : '');
-  // const changelogWarnings = checkChangelog(curDir, json);
-  // contentValidationLog += changelogWarnings.join('\n') + '';
-  console.log(`Checks finished in ${Date.now() - checkStart} ms`);
+  color.log(`Checks finished in ${Date.now() - checkStart} ms`);
   const reg = new RegExp(/\${(\w*)}/g);
   const errs: string[] = [];
 
@@ -124,14 +118,10 @@ export async function processPackage(debug: boolean, rebuild: boolean, host: str
       return;
     if (relativePath === 'zip')
       return;
-    // if (!utils.checkScriptLocation(canonicalRelativePath)) {
-    //   contentValidationLog += `Warning: file \`${canonicalRelativePath}\`` +
-    //     ` should be in directory \`${path.basename(curDir)}/scripts/\`\n`;
-    // }
     const t = fs.statSync(fullPath).mtime.toUTCString();
     localTimestamps[canonicalRelativePath] = t;
     if (debug && timestamps[canonicalRelativePath] === t) {
-      console.log(`Skipping ${canonicalRelativePath}`);
+      color.log(`Skipping ${canonicalRelativePath}`);
       return;
     }
     if (canonicalRelativePath.startsWith('connections/')) {
@@ -146,11 +136,11 @@ export async function processPackage(debug: boolean, rebuild: boolean, host: str
         f = f.replace(m[0], envVar);
       }
       zip.append(f, {name: relativePath});
-      console.log(`Adding ${canonicalRelativePath}...`);
+      color.log(`Adding ${canonicalRelativePath}...`);
       return;
     }
     zip.append(fs.createReadStream(fullPath), {name: relativePath});
-    console.log(`Adding ${canonicalRelativePath}...`);
+    color.log(`Adding ${canonicalRelativePath}...`);
   });
   if (errs.length) {
     errs.forEach((e) => color.error(e));
@@ -163,47 +153,41 @@ export async function processPackage(debug: boolean, rebuild: boolean, host: str
   url += `?debug=${debug.toString()}&rebuild=${rebuild.toString()}&dropDb=${(dropDb ?? false).toString()}`;
   if (suffix)
     url += `&suffix=${suffix.toString()}`;
-  const uploadPromise = new Promise((resolve, reject) => {
-    fetch(url, {
-      method: 'POST',
-      body: zip,
-    }).then(async (body: any) => {
-      let response;
-      try {
-        response = await body.text();
-        return JSON.parse(response);
-      } catch (error) {
-        console.error(response);
-      }
-    }).then((j: {}) => resolve(j)).catch((err: Error) => {
-      reject(err);
-    });
-  }).catch((error) => {
-    console.error(error);
-  });
   await zip.finalize();
+  const zipBuffer = Buffer.concat(chunks);
 
   try {
-    const log = await uploadPromise as Indexable;
+    const body = await fetch(url, {
+      method: 'POST',
+      body: zipBuffer,
+    });
+    const log = JSON.parse(await body.text());
 
     fs.unlinkSync('zip');
-    if (log['#type'] === 'ApiError') {
-      color.error(log['message']);
-      console.error(log['innerMessage']);
-      console.log(log);
-      return 1;
-    } else 
-      console.log(log);
-      // color.warn(contentValidationLog);
-    
+    if (log != undefined) {
+      if (log['#type'] === 'ApiError') {
+        color.error(log['message']);
+        console.error(log['innerMessage']);
+        console.log(log);
+        return 1;
+      } else {
+        if (color.isVerbose())
+          console.log(log);
+        color.success(`✓ Published to ${hostAlias || new URL(host).hostname}`);
+      }
+    }
   } catch (error) {
-    console.error(error);
+    if (utils.isConnectivityError(error))
+      color.error(`Server is possibly offline: ${url}`);
+    if (color.isVerbose())
+      console.error(error);
     return 1;
   }
   return 0;
 }
 
 export async function publish(args: PublishArgs) {
+  color.setVerbose(args.verbose || args.v || false);
   if (!args['skip-check'] && !args['all']&& !args['refresh'])
     check({_: ['check']});
   config = yaml.load(fs.readFileSync(confPath, {encoding: 'utf-8'})) as utils.Config;
@@ -230,15 +214,15 @@ export async function publish(args: PublishArgs) {
       packagesToLoad = (await (await fetch(url, {
         method: 'GET',
         headers: {
-          'Authorization': token, // Attach cookies here
+          'Authorization': token,
         },
       })).json()).map((item: any) => item.name);
     }
-    console.log('Loading packages:');
+    color.log('Loading packages:');
     await loadPackages(curDir, packagesToLoad.join(' '), host, false, false, args.link, args.release);
   } else {
     if (args.link) {
-      console.log('Linking');
+      color.log('Linking');
 
       await utils.runScript(`npm install`, curDir);
       await utils.runScript(`grok link`, curDir);
@@ -253,9 +237,9 @@ async function publishPackage(args: PublishArgs) {
 
   if (!args.link) {
     if (args.build || args.rebuild) {
-      console.log('Building');
-      utils.runScript('npm install', curDir, false);
-      utils.runScript('npm run build', curDir, false);
+      color.log('Building');
+      await utils.runScript('npm install', curDir, false);
+      await utils.runScript('npm run build', curDir, false);
     }
   }
 
@@ -264,7 +248,7 @@ async function publishPackage(args: PublishArgs) {
     return false;
   }
 
-  console.log('Publishing');
+  color.log('Publishing...');
   // Create `config.yaml` if it doesn't exist yet
   if (!fs.existsSync(grokDir)) fs.mkdirSync(grokDir);
   if (!fs.existsSync(confPath)) fs.writeFileSync(confPath, yaml.dump(confTemplate));
@@ -314,12 +298,12 @@ async function publishPackage(args: PublishArgs) {
           args.suffix = stdout.toString().substring(0, 8);
       });
       await utils.delay(100);
-      code = await processPackage(!args.release, Boolean(args.rebuild), url, key, packageName, args.dropDb ?? false, args.suffix);
+      code = await processPackage(!args.release, Boolean(args.rebuild), url, key, packageName, args.dropDb ?? false, args.suffix, host);
     } catch (error) {
       console.error(error);
       code = 1;
     }
-    console.log(`Exiting with code ${code}`);
+    color.log(`Exiting with code ${code}`);
     process.exit(code);
   });
 
@@ -338,5 +322,7 @@ interface PublishArgs {
   all?: boolean,
   refresh?: boolean,
   link?: boolean,
-  dropDb?: boolean
+  dropDb?: boolean,
+  verbose?: boolean,
+  v?: boolean
 }

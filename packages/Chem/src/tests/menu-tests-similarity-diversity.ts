@@ -2,7 +2,7 @@ import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 
 import {category, expect, expectFloat, expectArray, test, delay,
-  before, after, awaitCheck, testEvent} from '@datagrok-libraries/utils/src/test';
+  before, after, awaitCheck, testEvent} from '@datagrok-libraries/test/src/test';
 import {_package} from '../package-test';
 import {Fingerprint} from '../utils/chem-common';
 import {createTableView, readDataframe, molV2000, molV3000} from './utils';

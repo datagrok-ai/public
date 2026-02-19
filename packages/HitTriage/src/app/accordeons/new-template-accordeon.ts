@@ -24,7 +24,7 @@ export async function createTemplateAccordeon(app: HitAppBase<any>,
     availableTemplateKeys.push(t.key);
   }
 
-  const availableSubmitFunctions = DG.Func.find({meta: {role: C.HitTriageSubmitTag}});
+  const availableSubmitFunctions = Array.from(new Set(DG.Func.find({meta: {role: C.HitTriageSubmitTag}}).concat(DG.Func.find({tags: [C.HitTriageSubmitTag]}))));
   const submitFunctionsMap: {[key: string]: DG.Func} = {};
   availableSubmitFunctions.forEach((func) => {
     submitFunctionsMap[func.friendlyName ?? func.name] = func;
@@ -82,7 +82,7 @@ export async function createTemplateAccordeon(app: HitAppBase<any>,
   funcInput.root.classList.add('hit-triage-new-template-functions-input');
   if (Object.entries(dataSourceFunctionMap).length === 0) {
   // functions that have special tag and are applicable for data source. they should return a dataframe with molecules
-    const dataSourceFunctions = DG.Func.find({meta: {role: C.HitTriageDataSourceTag}});
+    const dataSourceFunctions = Array.from(new Set(DG.Func.find({meta: {role: C.HitTriageDataSourceTag}}).concat(DG.Func.find({tags: [C.HitTriageDataSourceTag]}))));
     dataSourceFunctions.forEach((func) => {
       dataSourceFunctionMap[func.friendlyName ?? func.name] = func;
     });

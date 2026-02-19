@@ -107,6 +107,7 @@ Line chart supports Statistical Process Control (SPC) features out of the box, i
 | Invert X Axis | boolean |  |
 | Show X Axis | boolean |  |
 | Show X Selector | boolean |  |
+| Show Vertical Grid Lines | boolean |  |
 | X Axis Label Orientation | string |  |
 | X Axis Tickmarks Mode | axistickmarksmode |  |
 | **Y** | | |
@@ -114,6 +115,7 @@ Line chart supports Statistical Process Control (SPC) features out of the box, i
 | Y Axis Type | string |  |
 | Show Y Axis | boolean |  |
 | Y Global Scale | boolean |  |
+| Show Horizontal Grid Lines | boolean |  |
 | Y Axis Title | string | Axis title to be shown on the left axis in multi-axis mode |
 | Y2 Axis Title | string | Axis title to be shown on the left axis in multi-axis mode |
 | Y Axis Tickmarks Mode | axistickmarksmode |  |
@@ -127,6 +129,7 @@ Line chart supports Statistical Process Control (SPC) features out of the box, i
 | Markers Map | string | Marker category time unit map function (applicable to dates only). |
 | Marker Type | string |  |
 | Marker Size | number |  |
+| Marker Opacity | number |  |
 | Show Markers | visibilitymode | A boolean column that determines whether to show markers. |
 | Markers Visibility Column Name | string |  |
 | **Selection** | | |
@@ -134,7 +137,7 @@ Line chart supports Statistical Process Control (SPC) features out of the box, i
 | Show Mouse Over Category | boolean | Determines whether the line is highlighted when you hover over the corresponding category. Example: Split by = SEX and you hover over the Male category in the filter. |
 | Show Mouse Over Row Line | boolean | Show vertical line reflecting the position of the mouse-over row See also *Mouse Over Line Color* |
 | **Statistical process control** | | |
-| Show Statical Process Control | boolean | Shows/hides upper and lower control limits, and [Western Electric rules](https:sentient.cloud/what-are-western-electric-rules-2/). |
+| Show Statical Process Control | boolean | Shows/hides upper and lower control limits, and [Western Electric rules](https://sentient.cloud/what-are-western-electric-rules-2/). |
 | Show Control Limits | boolean | Shows/hides upper and lower control limits. |
 | Show Sigma1 | boolean |  |
 | Show Sigma2 | boolean |  |
@@ -155,6 +158,7 @@ Line chart supports Statistical Process Control (SPC) features out of the box, i
 | Auto Layout | boolean |  |
 | Segments Font | string |  |
 | Line Width | number |  |
+| Whisker Width | number |  |
 | Line Transparency | number |  |
 | Overview Height | number | Height of the overview chart |
 | Histogram Width | number |  |
@@ -163,6 +167,7 @@ Line chart supports Statistical Process Control (SPC) features out of the box, i
 | X Axis Height | number | Requires *Auto Axis Size* to be turned off. |
 | Line Coloring Type | string |  |
 | Axis Font | string |  |
+| Grid Line Color | number |  |
 | Selected Rows Color | number |  |
 | Statistical Process Line Color | number |  |
 | Statistical Process Area Color | number |  |

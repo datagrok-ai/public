@@ -49,6 +49,8 @@ export function convert(col: DG.Column<string> | undefined, seqHelper: ISeqHelpe
       separatorInput.value = '/'; // helm monomers can have - in the name like D-aThr;
     dialogHeader.textContent = 'Current notation: ' + currentNotation;
     filteredNotations = notations.filter((e) => e !== currentNotation);
+    if (currentNotation === NOTATION.CUSTOM)
+      filteredNotations = [NOTATION.HELM];
     targetNotationInput = ui.input.choice('Convert to', {
       value: filteredNotations[0], items: filteredNotations,
       onValueChanged: toggleSeparator
@@ -72,6 +74,8 @@ export function convert(col: DG.Column<string> | undefined, seqHelper: ISeqHelpe
 
   const separatorArray = ['-', '.', '/'];
   let filteredNotations = notations.filter((e) => e !== currentNotation);
+  if (currentNotation === NOTATION.CUSTOM)
+    filteredNotations = [NOTATION.HELM];
 
   const separatorInput = ui.input.choice('Separator', {value: separatorArray[0], items: separatorArray});
 

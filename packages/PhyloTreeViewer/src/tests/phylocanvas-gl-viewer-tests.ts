@@ -3,7 +3,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {_package} from '../package-test';
-import {after, before, category, test, expect, expectArray, expectObject} from '@datagrok-libraries/utils/src/test';
+import {after, before, category, test, expect, expectArray, expectObject} from '@datagrok-libraries/test/src/test';
 import {IPhylocanvasGlViewer} from '@datagrok-libraries/bio/src/viewers/phylocanvas-gl-viewer';
 import {getTreeHelper, ITreeHelper} from '@datagrok-libraries/bio/src/trees/tree-helper';
 

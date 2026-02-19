@@ -1,58 +1,60 @@
 package serialization;
 
-// Integer column.
-public class IntColumn extends Column<Integer> {
+public class IntColumn extends AbstractColumn<Integer> {
     private static final String TYPE = Types.INT;
     public static final int None = -2147483648;
 
     private int[] data;
 
-    public IntColumn() {
-        data = new int[initColumnSize];
-    }
-
     public IntColumn(String name) {
-        this();
-        this.name = name;
-    }
-
-    public IntColumn(int initColumnSize) {
-        this.initColumnSize = initColumnSize;
+        super(name);
         data = new int[initColumnSize];
     }
 
-    public IntColumn(Integer[] values) {
+    public IntColumn(String name, int initColumnSize) {
+        super(name, initColumnSize);
+        data = new int[initColumnSize];
+    }
+
+    public IntColumn(String name, Integer[] values) {
+        super(name);
         data = new int[initColumnSize];
         addAll(values);
     }
 
+    @Override
     public String getType() {
         return TYPE;
     }
 
+    @Override
     public void empty() {
         length = 0;
         data = new int[initColumnSize];
     }
 
+    @Override
     public void encode(BufferAccessor buf) {
         buf.writeInt32(1);
         buf.writeInt8((byte)0);
         buf.writeInt32List(data, 0, length);
     }
 
+    @Override
     public void add(Integer value) {
         ensureSpace(1);
         data[length++] = (value != null) ? value : None;
     }
 
+    @Override
     public void addAll(Integer[] values) {
         ensureSpace(values.length);
-        for (int n = 0; n < values.length; n++)
-            data[length++] = (values[n] != null) ? values[n] : None;
+        for (Integer value : values)
+            data[length++] = (value != null) ? value : None;
     }
 
-    public Object get(int idx) {
+    @Override
+    public Integer get(int idx) {
         return data[idx];
     }
 
@@ -63,9 +65,10 @@ public class IntColumn extends Column<Integer> {
 
     @Override
     public long memoryInBytes() {
-        return data.length * 4;
+        return (long) data.length * 4;
     }
 
+    @Override
     public boolean isNone(int idx) {
         return data[idx] == None;
     }
@@ -78,7 +81,8 @@ public class IntColumn extends Column<Integer> {
         }
     }
 
-    public int[] getData() {
+    @Override
+    public Object toArray() {
         return data;
     }
 }

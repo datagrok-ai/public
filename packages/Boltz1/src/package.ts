@@ -34,7 +34,8 @@ export class PackageFunctions {
 
   @grok.decorators.func({
     name: 'Boltz',
-    'top-menu': 'Bio | Folding | Boltz...'
+    'top-menu': 'Bio | Folding | Boltz...',
+    outputs: [{name: 'result', type: 'dataframe', options: {action: 'join(table)'}}],
   })
   static async folding(
     table: DG.DataFrame,
@@ -45,7 +46,8 @@ export class PackageFunctions {
 
   @grok.decorators.func({
     name: 'Boltz',
-    'top-menu': 'Chem | Docking | Boltz...'
+    'top-menu': 'Chem | Docking | Boltz...',
+    outputs: [{name: 'result', type: 'dataframe', options: {action: 'join(table)'}}],
   })
   static async docking(
     table: DG.DataFrame,

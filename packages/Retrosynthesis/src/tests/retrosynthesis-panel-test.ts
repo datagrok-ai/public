@@ -1,7 +1,7 @@
 import * as grok from 'datagrok-api/grok';
-import {category, test, expect} from '@datagrok-libraries/utils/src/test';
+import {category, test, expect} from '@datagrok-libraries/test/src/test';
 import {ReactionData, Tree} from '../aizynth-api';
-import {before, timeout} from '@datagrok-libraries/utils/src/test';
+import {before, timeout} from '@datagrok-libraries/test/src/test';
 
 
 category('retrosynthesis', async () => {

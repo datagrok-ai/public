@@ -121,8 +121,13 @@ export class Db {
     return TableQueryBuilder.from(tableName, connectionId);
   }
 
-  async getInfo(connection: DataConnection): Promise<DbInfo> {
-    return grok.dapi.connections.getDatabaseInfo(connection);
+  /** Returns database catalog (e.g. database) information for the given connection.
+   * If {@link catalog} is specified, returns only the matching catalog.
+   * For databases that don't support catalogs (e.g., MySQL, Oracle),
+   * returns a single {@link DbInfo} with the name from the connection's db property,
+   * or '\<unknown database name\>' if not set. */
+  async getInfo(connection: DataConnection, catalog: string | null = null): Promise<DbInfo[]> {
+    return grok.dapi.connections.getDatabaseInfo(connection, catalog);
   }
 }
 
@@ -173,8 +178,8 @@ export class Data {
    * Links tables by the specified key columns using the specified link types (such as "current row to filter", see {@link DG.SYNC_TYPE}).
    * Tables are synchronized on the first change, set the {@link initialSync} option to reflect the current table state according to the sync type.
    * */
-  linkTables(t1: DataFrame, t2: DataFrame, keyColumns1: string[], keyColumns2: string[], linkTypes: SyncType[], initialSync: boolean = false): void {
-    api.grok_LinkTables(t1.dart, t2.dart, keyColumns1, keyColumns2, linkTypes, initialSync);
+  linkTables(t1: DataFrame, t2: DataFrame, keyColumns1: string[], keyColumns2: string[], linkTypes: SyncType[], initialSync: boolean = false, filterAllOnNoRowsSelected = false): void {
+    api.grok_LinkTables(t1.dart, t2.dart, keyColumns1, keyColumns2, linkTypes, initialSync, filterAllOnNoRowsSelected);
   };
 
   /**
@@ -337,6 +342,10 @@ export class DbSchemaInfo {
    */
   get name(): string {
     return api.grok_DbSchemaInfo_Get_Name(this.dart);
+  }
+
+  get catalog(): string {
+    return api.grok_DbSchemaInfo_Get_Catalog(this.dart);
   }
 
   /**
@@ -576,7 +585,7 @@ export interface DbTableProperties {
 }
 
 /**
- * Represents metadata for a database connection in Datagrok.
+ * Represents metadata for a database/catalog in Datagrok.
  *
  * Provides access to high-level database metadata such as schemas,
  * relations, comments, and LLM-generated annotations. It also allows updating
@@ -599,7 +608,7 @@ export class DbInfo {
   // ─────────────────────────────── GETTERS ───────────────────────────────
 
   /**
-   * The name of the database.
+   * The name of the database/catalog.
    *
    * @returns The database name.
    */
@@ -769,6 +778,13 @@ export class ConnectionDataSource {
    */
   get canBrowseSchema(): boolean {
     return api.grok_ConnectionDataSource_CanBrowseSchema(this.dart);
+  }
+
+  /**
+   * Whether database catalogs can be browsed from UI. Applicable only to database data sources.
+   */
+  get supportCatalogs(): boolean {
+    return api.grok_ConnectionDataSource_SupportCatalogs(this.dart);
   }
 
   /**

@@ -6,8 +6,14 @@ Pie chart is useful for reflecting numerical proportions. Conceptually, it is si
 represents categorical values. A pie chart shows the relative size of a given category (a slice of the pie) compared to
 the entire dataset (the whole pie).
 
-> Developers: To add the viewer from the console, use:
+:::note developers 
+
+To add the viewer from the console, use:
 `grok.shell.tv.addViewer('Pie chart');`
+
+:::
+
+![](img/pie-chart.gif)
 
 Controls:
 

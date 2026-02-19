@@ -21,7 +21,7 @@ import BitArray from '@datagrok-libraries/utils/src/bit-array';
 import {IColoredScaffold} from '../rendering/rdkit-cell-renderer';
 import {Fingerprint} from '../utils/chem-common';
 import $ from 'cash-dom';
-import {awaitCheck} from '@datagrok-libraries/utils/src/test';
+import {awaitCheck} from '@datagrok-libraries/test/src/test';
 
 const FILTER_SYNC_EVENT = 'chem-substructure-filter';
 const SKETCHER_TYPE_CHANGED = 'chem-sketcher-type-changed';

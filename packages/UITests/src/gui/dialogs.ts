@@ -1,7 +1,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
-import { before, awaitCheck, category, test, delay, expect } from '@datagrok-libraries/utils/src/test';
+import { before, awaitCheck, category, test, delay, expect } from '@datagrok-libraries/test/src/test';
 import {
   isColumnPresent, isViewerPresent, isDialogPresent, returnDialog,
   setDialogInputValue, checkDialog, checkViewer

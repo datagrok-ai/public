@@ -1,7 +1,7 @@
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 
-import {delay, expect, testEvent} from '@datagrok-libraries/utils/src/test';
+import {delay, expect, testEvent} from '@datagrok-libraries/test/src/test';
 import {asRenderer, IRenderer, isRenderer} from '@datagrok-libraries/bio/src/types/renderer';
 
 import {_package} from '../package-test';

@@ -371,8 +371,9 @@ chartData.series![0][colorFieldName] = DG.Color.toHtml(colorFieldName === 'outli
 
       return host;
     }
-
-    const chartPane = acc.addPane('Chart', () => DG.GridCellWidget.fromGridCell(gridCell).root);
+    const gcw = DG.GridCellWidget.fromGridCell(gridCell);
+    gcw.canvas.addEventListener('click', (e) => gcw.render());
+    const chartPane = acc.addPane('Chart', () => gcw.root);
     const screenBounds = FitChartCellRenderer.inflateScreenBounds(gridCell.bounds);
     if (screenBounds.width < FitConstants.MIN_POINTS_AND_STATS_VISIBILITY_PX_WIDTH ||
       screenBounds.height < FitConstants.MIN_POINTS_AND_STATS_VISIBILITY_PX_HEIGHT)

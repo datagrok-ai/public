@@ -160,10 +160,10 @@ class VirtuosoDataProviderTest {
 
     private void prepareDataFrame(DataFrame dataFrame) {
         // in order to save time reuse some common's
-        dataFrame.columns.removeIf(column -> column.name.equals("bool")); // oracle doesn't have boolean type
-        dataFrame.columns.forEach(column -> { // all columns name stored in uppercase
-            if (column.name.equals("date")) { // 'date' is reserved word in oracle, so use 'dat' for column name
-                column.name = "dat";
+        dataFrame.removeColumn("bool"); // oracle doesn't have boolean type
+        dataFrame.getColumns().forEach(column -> { // all columns name stored in uppercase
+            if (column.getName().equals("date")) { // 'date' is reserved word in oracle, so use 'dat' for column name
+                column.setName("dat");
             }
         });
     }

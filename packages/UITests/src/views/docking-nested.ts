@@ -2,7 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 
-import {awaitCheck, before, category, test} from '@datagrok-libraries/utils/src/test';
+import {awaitCheck, before, category, test} from '@datagrok-libraries/test/src/test';
 
 category('View: DockingNested', () => {
   let df: DG.DataFrame;

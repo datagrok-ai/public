@@ -14,37 +14,34 @@ with recursive selected_groups as (
 ),
 _dates as (select min(event_time) as min_date, max(event_time) as max_date from events where @date(event_time)),
 dates as (select min_date - (max_date - min_date) as min_prev_date, min_date, max_date from _dates),
-relevant_events as (
-    select id, event_time, session_id
-    from events
-    where event_time between (select min_prev_date from dates) and (select max_date from dates)
-),
-relevant_parameters as (select id from event_parameters where name = 'package' or type = 'entity_id'),
-relevant_epv as (
-    select distinct on (epv.event_id) epv.*
-    from event_parameter_values epv
-    where epv.parameter_id in (select id from relevant_parameters)
-    and epv.value_uuid is not null and epv.value <> 'null'
-),
-joined as (
+package_event_ids as (
+    select epv.event_id
+    from published_packages pp
+    join event_parameter_values epv on epv.value_uuid = pp.id
+    join event_parameters ep on epv.parameter_id = ep.id and ep.name = 'package'
+    where pp.name = any(@packages)
+    union
+    select epv.event_id
+    from published_packages pp
+    join entities e1 on e1.package_id = pp.id
+    join event_parameter_values epv on epv.value_uuid = e1.id and epv.value <> 'null'
+    join event_parameters ep on epv.parameter_id = ep.id and ep.type = 'entity_id'
+    where pp.name = any(@packages)
+)
 select
-    u.id as uid,
-    case when e.event_time < d.min_date then 1 else 2 end as period
-from relevant_events e
-    join relevant_epv epv on epv.event_id = e.id
-    join entities en on en.id = epv.value_uuid
-    left join published_packages pp on pp.id = en.package_id
-    left join published_packages pp1 on pp1.id = en.id
+    count(distinct uid) filter (where period=1) as count1,
+    count(distinct uid) filter (where period=2) as count2
+from (
+    select u.id as uid,
+        case when e.event_time < d.min_date then 1 else 2 end as period
+    from events e
     join users_sessions s on e.session_id = s.id
     join users u on u.id = s.user_id
     join selected_groups sg on u.group_id = sg.id
     cross join dates d
-where coalesce(pp.name, pp1.name, 'Core') = any(@packages) or @packages = ARRAY['all']
-    )
-select
-    count(distinct uid) filter (where period=1) as count1,
-        count(distinct uid) filter (where period=2) as count2
-from joined
+    where e.event_time between d.min_prev_date and d.max_date
+        and (@packages = ARRAY['all'] or e.id in (select event_id from package_event_ids))
+) joined
 --end
 
 

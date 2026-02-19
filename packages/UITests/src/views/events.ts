@@ -1,6 +1,6 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
-import {after, before, category, expect, test, testEvent} from '@datagrok-libraries/utils/src/test';
+import {after, before, category, expect, test, testEvent} from '@datagrok-libraries/test/src/test';
 
 category('View: Events', () => {
   let df: DG.DataFrame;

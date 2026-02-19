@@ -9,13 +9,16 @@ import {DiffStudio} from './app';
 import {getIVP, IVP, getScriptLines, getScriptParams} from './scripting-tools';
 
 import {getBallFlightSim} from './demo/ball-flight';
-import {PK_PD_DEMO} from './demo/pk-pd';
-import {BIOREACTOR_DEMO} from './demo/bioreactor';
+
+export {Model} from './model';
+import {PK_PD_MODEL_INFO} from './demo/pk-pd';
+import {BIOREACTOR_MODEL_INFO} from './demo/bioreactor';
+
 import {DF_NAME} from './constants';
 import {UI_TIME} from './ui-constants';
 
 import {ODEs, SolverOptions} from 'diff-grok';
-import {Model} from './model';
+import {Model, ModelInfo} from './model';
 
 import utc from 'dayjs/plugin/utc';
 import dayjs from 'dayjs';
@@ -219,7 +222,8 @@ export class PackageFunctions {
     icon: 'files/icons/pkpd.png',
   })
   static async pkPdNew(): Promise<void> {
-    await PK_PD_DEMO.run();
+    const model = new Model(PK_PD_MODEL_INFO);
+    await model.run();
   }
 
   @grok.decorators.demo({
@@ -232,15 +236,18 @@ export class PackageFunctions {
     },
   })
   static async demoSimPKPD(): Promise<any> {
-    await PK_PD_DEMO.runDemo();
+    const model = new Model(PK_PD_MODEL_INFO);
+    await model.runDemo();
   }
 
   @grok.decorators.model({
+    name: 'Bioreactor',
     description: 'Controlled fab-arm exchange mechanism simulation',
     icon: 'files/icons/bioreactor.png',
   })
   static async Bioreactor(): Promise<void> {
-    await BIOREACTOR_DEMO.run();
+    const model = new Model(BIOREACTOR_MODEL_INFO);
+    await model.run();
   }
 
   @grok.decorators.demo({
@@ -250,7 +257,8 @@ export class PackageFunctions {
     test: {test: 'demoBioreactor()', wait: '100'},
   })
   static async demoBioreactor(): Promise<any> {
-    await BIOREACTOR_DEMO.runDemo();
+    const model = new Model(BIOREACTOR_MODEL_INFO);
+    await model.runDemo();
   }
 
   @grok.decorators.func({
@@ -259,10 +267,16 @@ export class PackageFunctions {
   static async runModel(model: string,
     @grok.decorators.param({type: 'int'}) inputsTabDockRatio: number,
     @grok.decorators.param({type: 'int'}) graphsDockRatio: number): Promise<void> {
-    const diffStudioModel = new Model(model, {
-      inputsTabDockRatio: inputsTabDockRatio,
-      graphsDockRatio: graphsDockRatio,
-    }, '');
+    const modelInfo: ModelInfo = {
+      equations: model,
+      uiOptions: {
+        inputsTabDockRatio: inputsTabDockRatio,
+        graphsDockRatio: graphsDockRatio,
+      },
+      info: '',
+    };
+
+    const diffStudioModel = new Model(modelInfo);
 
     await diffStudioModel.run();
   }

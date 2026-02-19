@@ -24,5 +24,9 @@ COPY --chown=grok:grok --from=pip_builder $VIRTUAL_ENV $VIRTUAL_ENV
 ENV PATH ${VIRTUAL_ENV}/bin:$PATH
 ENV PYTHONUNBUFFERED=1
 COPY . .
-EXPOSE 25353
+EXPOSE 5353
+
+HEALTHCHECK --interval=5s --timeout=3s --start-period=5s --retries=3 \
+  CMD wget --spider http://127.0.0.1:5353/health || exit 1
+
 CMD ["python", "app.py"]

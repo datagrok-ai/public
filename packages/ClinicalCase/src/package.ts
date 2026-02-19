@@ -25,7 +25,8 @@ import {ADVERSE_EVENTS_VIEW_NAME, AE_BROWSER_VIEW_NAME, AE_RISK_ASSESSMENT_VIEW_
   CONFIGURATION_VIEW_NAME, SUMMARY_VIEW_NAME, SURVIVAL_ANALYSIS_VIEW_NAME, TIMELINES_VIEW_NAME,
   MEASUREMENT_PROFILE_TABLE_VIEW_NAME,
   TIME_PROFILE_VIEW_NAME, TREE_MAP_VIEW_NAME,
-  VALIDATION_VIEW_NAME, VISITS_VIEW_NAME} from './constants/view-names-constants';
+  VALIDATION_VIEW_NAME, VISITS_VIEW_NAME,
+  MICROSCOPIC_FINDINGS_TABLE_VIEW_NAME} from './constants/view-names-constants';
 import {createClinCaseTableView} from './utils/views-creation-utils';
 //import {CohortView} from './views/cohort-view';
 import {QuestionnaiesView} from './views/questionnaires-view';
@@ -299,7 +300,7 @@ export const SUPPORTED_VIEWS: {[key: string]: string[]} = {
 
   [CDISC_STANDARD.SEND]: [SUMMARY_VIEW_NAME, TIMELINES_VIEW_NAME, LABORATORY_VIEW_NAME, ANIMAL_PROFILE_VIEW_NAME,
     DISTRIBUTIONS_VIEW_NAME, VALIDATION_VIEW_NAME, MATRIX_TABLE_VIEW_NAME, MEASUREMENT_PROFILE_TABLE_VIEW_NAME,
-    CONFIGURATION_VIEW_NAME],
+    MICROSCOPIC_FINDINGS_TABLE_VIEW_NAME, CONFIGURATION_VIEW_NAME],
 };
 
 export const VIEW_CREATE_FUNC: {[key: string]: (studyId: string, args?: any) => DG.ViewBase | ClinCaseTableView} = {
@@ -328,6 +329,8 @@ export const VIEW_CREATE_FUNC: {[key: string]: (studyId: string, args?: any) => 
   [MATRIX_TABLE_VIEW_NAME]: (studyId) => createClinCaseTableView(studyId, MATRIX_TABLE_VIEW_NAME),
   [MEASUREMENT_PROFILE_TABLE_VIEW_NAME]: (studyId) =>
     createClinCaseTableView(studyId, MEASUREMENT_PROFILE_TABLE_VIEW_NAME),
+  [MICROSCOPIC_FINDINGS_TABLE_VIEW_NAME]: (studyId) =>
+    createClinCaseTableView(studyId, MICROSCOPIC_FINDINGS_TABLE_VIEW_NAME),
 };
 
 

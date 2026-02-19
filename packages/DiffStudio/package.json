@@ -23,13 +23,13 @@
     "css-loader": "^7.1.2",
     "datagrok-api": "^1.26.3",
     "dayjs": "=1.11.10",
-    "style-loader": "^3.3.4"
+    "style-loader": "^3.3.4",
+    "@datagrok-libraries/test": "^1.1.0"
   },
   "devDependencies": {
     "@datagrok/compute": "^1.39.0",
     "@typescript-eslint/eslint-plugin": "^5.62.0",
     "@typescript-eslint/parser": "^5.62.0",
-    "datagrok-tools": "^4.14.55",
     "eslint": "^8.56.0",
     "eslint-config-google": "^0.14.0",
     "eslint-plugin-react": "^7.33.2",
@@ -62,5 +62,8 @@
     "url": "https://github.com/datagrok-ai/public.git",
     "directory": "packages/DiffStudio"
   },
-  "category": "Compute"
+  "category": "Compute",
+  "overrides": {
+    "datagrok-api": "$datagrok-api"
+  }
 }

@@ -2,7 +2,7 @@
   "name": "#{PACKAGE_NAME_LOWERCASE}",
   "friendlyName": "#{PACKAGE_NAME}",
   "version": "0.0.1",
-  "description": "",
+  "description": "#{PACKAGE_NAME} package",
   "dependencies": {
     "datagrok-api": "^1.26.0",
     "cash-dom": "^8.1.5",
@@ -10,16 +10,15 @@
     "@datagrok-libraries/utils": "^4.6.5"
   },
   "devDependencies": {
-    "datagrok-tools": "^4.14.53",
     "webpack": "^5.95.0",
     "webpack-cli": "^5.1.4"
   },
   "scripts": {
-    "link-all": "grok link",
     "debug-#{PACKAGE_NAME_LOWERCASE}": "webpack && grok publish",
     "release-#{PACKAGE_NAME_LOWERCASE}": "webpack && grok publish --release",
     "build-#{PACKAGE_NAME_LOWERCASE}": "webpack",
-    "build": "grok api && grok check && webpack"
+    "build": "grok api && grok check --soft && webpack",
+    "test": "grok test"
   },
   "canEdit": [
     "Developers"
