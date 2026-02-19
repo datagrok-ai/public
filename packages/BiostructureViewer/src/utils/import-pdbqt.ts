@@ -2,7 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 
-import {delay} from '@datagrok-libraries/utils/src/test';
+import {delay} from '@datagrok-libraries/test/src/test';
 import {Molecule3DUnits} from '@datagrok-libraries/bio/src/molecule-3d/molecule-3d-units-handler';
 import {TAGS as pdbTAGS} from '@datagrok-libraries/bio/src/pdb/index';
 import {BiostructureData, BiostructureDataJson} from '@datagrok-libraries/bio/src/pdb/types';

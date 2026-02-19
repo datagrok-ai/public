@@ -22,14 +22,14 @@
     "rxjs": "^6.6.7",
     "source-map-loader": "^5.0.0",
     "ts-loader": "^9.5.1",
-    "typescript": "^5.8.3"
+    "typescript": "^5.8.3",
+    "@datagrok-libraries/test": "^1.1.0"
   },
   "devDependencies": {
     "@types/lodash.clonedeepwith": "^4.5.9",
     "@typescript-eslint/eslint-plugin": "^8.8.1",
     "@typescript-eslint/parser": "^8.8.1",
     "css-loader": "^7.1.2",
-    "datagrok-tools": "^4.14.55",
     "eslint": "^8.0.1",
     "eslint-config-google": "^0.14.0",
     "style-loader": "^4.0.0",
@@ -68,5 +68,8 @@
   "meta": {
     "url": "/Modelhub",
     "dartium": false
+  },
+  "overrides": {
+    "datagrok-api": "$datagrok-api"
   }
 }

@@ -11,12 +11,10 @@ import grok_connect.connectors_info.DbCredentials;
 import grok_connect.connectors_info.FuncParam;
 import grok_connect.table_query.AggrFunctionInfo;
 import grok_connect.table_query.Stats;
-import grok_connect.utils.GrokConnectException;
 import grok_connect.utils.PatternMatcher;
 import grok_connect.utils.Prop;
 import grok_connect.utils.Property;
 import org.postgresql.util.PGobject;
-import serialization.DataFrame;
 import serialization.Types;
 
 public class PostgresDataProvider extends JdbcDataProvider {
@@ -32,6 +30,7 @@ public class PostgresDataProvider extends JdbcDataProvider {
         descriptor.nameBrackets = "\"";
 
         descriptor.canBrowseSchema = true;
+        descriptor.supportCatalogs = true;
         descriptor.defaultSchema = "public";
         descriptor.typesMap = new HashMap<String, String>() {{
             put("smallint", Types.INT);
@@ -107,9 +106,9 @@ public class PostgresDataProvider extends JdbcDataProvider {
     @Override
     public String getSchemaSql(String db, String schema, String table, boolean includeKeyInfo)
     {
-        List<String> filters = new ArrayList<String>() {{
-            add("c.table_schema = '" + ((schema != null) ? schema : descriptor.defaultSchema) + "'");
-        }};
+        List<String> filters = new ArrayList<>();
+        if (schema != null)
+            filters.add("c.table_schema = '" + schema + "'");
 
         if (db != null && db.length() != 0)
             filters.add("c.table_catalog = '" + db + "'");
@@ -117,11 +116,12 @@ public class PostgresDataProvider extends JdbcDataProvider {
         if (table != null)
             filters.add("c.table_name = '" + table + "'");
 
-        String whereClause = "WHERE " + String.join(" AND \n", filters);
+        String whereClause = filters.isEmpty() ? "" : "WHERE " + String.join(" AND \n", filters);
 
         StringBuilder sql = new StringBuilder();
 
         sql.append("SELECT ")
+                .append("c.table_catalog as table_catalog, ")
                 .append("c.table_schema AS table_schema, ")
                 .append("c.table_name AS table_name, ")
                 .append("c.column_name AS column_name, ")
@@ -207,7 +207,7 @@ public class PostgresDataProvider extends JdbcDataProvider {
     }
 
     @Override
-    public String getCommentsQuery(DataConnection connection) throws GrokConnectException {
+    public String getCommentsQuery(DataConnection connection) {
         return "--input: string schema\n" +
                 "SELECT \n" +
                 "    n.nspname AS table_schema,\n" +

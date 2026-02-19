@@ -2,7 +2,7 @@ import {ScatterPlotCellRenderer} from './sparklines/scatter-plot';
 import {RawPNGRenderer} from './pngRenderer';
 import {PackageFunctions} from './package';
 import {HtmlTestCellRenderer} from './cell-types/test-cell-renderer';
-import {TagsCellRenderer} from './cell-types/tags-cell-renderer';
+import {StarsCellRenderer} from './cell-types/stars-cell-renderer';
 import {MultiChoiceCellRenderer} from './cell-types/multi-choice-cell-renderer';
 import {ImageCellRenderer} from './cell-types/image-cell-renderer';
 import {HyperlinkCellRenderer} from './cell-types/hyperlink-cell-renderer';
@@ -40,12 +40,12 @@ export function _MultiChoiceCellRenderer() {
   return new MultiChoiceCellRenderer();
 }
 
-//name: Tags
+//name: Stars
 //output: grid_cell_renderer renderer
 //meta.role: cellRenderer
-//meta.cellType: Tags
-export function _TagsCellRenderer() {
-  return new TagsCellRenderer();
+//meta.cellType: Stars
+export function _StarsCellRenderer() {
+  return new StarsCellRenderer();
 }
 
 //name: htestCellRenderer
@@ -113,6 +113,26 @@ export function radarCellRenderer() {
 //meta.role: cellRenderer
 export function smartFormCellRenderer() {
   return PackageFunctions.smartFormCellRenderer();
+}
+
+//name: Tags
+//output: grid_cell_renderer result
+//meta.cellType: Tags
+//meta.gridChart: true
+//meta.virtual: true
+//meta.role: cellRenderer
+export function tagsCellRenderer() {
+  return PackageFunctions.tagsCellRenderer();
+}
+
+//name: Confidence Interval
+//output: grid_cell_renderer result
+//meta.cellType: ConfidenceInterval
+//meta.gridChart: true
+//meta.virtual: true
+//meta.role: cellRenderer
+export function confidenceIntervalCellRenderer() {
+  return PackageFunctions.confidenceIntervalCellRenderer();
 }
 
 //description: Adds a sparkline column for the selected columns

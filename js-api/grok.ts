@@ -5,7 +5,7 @@ import {Settings, Shell} from './src/shell';
 import {Data} from './src/data';
 import {Logger} from './src/logger';
 import {UserSettingsStorage} from "./src/user_settings_storage";
-import {AiPlugin} from "./src/ai";
+import {AI} from "./src/ai";
 
 /** Function-related APIs (finding, calling, registering) */
 export const functions = new Functions();
@@ -29,7 +29,7 @@ export const data = new Data();
 export const userSettings = new UserSettingsStorage();
 
 /** AI API */
-export const ai = new AiPlugin();
+export const ai = AI;
 
 export * from './src/chem';
 export * from './src/ml';

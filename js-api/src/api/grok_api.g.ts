@@ -258,6 +258,16 @@ export interface IDartApi {
   grok_FilterGroup_SetExpanded(filterGroup: any, filter: any, active: Bool): any;
   grok_FilterGroup_Remove(filterGroup: any, filter: any): any;
   grok_FilterGroup_SetActive(filterGroup: any, active: Bool, notify: Bool): any;
+  grok_GridFilterBase_SaveState(filter: any): any;
+  grok_GridFilterBase_ApplyState(filter: any, state: any): any;
+  grok_GridFilterBase_Get_FilterColumnName(filter: any): any;
+  grok_GridFilterBase_Get_FilterType(filter: any): any;
+  grok_GridFilterBase_Get_IsActive(filter: any): any;
+  grok_GridFilterBase_Set_IsActive(filter: any, active: Bool): any;
+  grok_GridFilterBase_Get_IsFiltering(filter: any): any;
+  grok_GridFilterBase_Set_Sorting(filter: any, sortByCol: String, asc: Bool): any;
+  grok_GridFilterBase_Get_Caption(filter: any): any;
+  grok_GridFilterBase_Set_Caption(filter: any, caption: String): any;
   grok_DockNode_Get_Container(node: any): any;
   grok_DockNode_DetachFromParent(node: any): any;
   grok_DockNode_RemoveChild(node: any, childNode: any): any;
@@ -988,6 +998,7 @@ export interface IDartApi {
   grok_Dapi_Environments(): any;
   grok_Dapi_Entities_GetEntities(ids: any): Promise<any>;
   grok_Dapi_Admin(): any;
+  grok_Dapi_Admin_PushMessage(adminClient: any, messageType: String, message: any, sessionIds: any): Promise<any>;
   grok_Dapi_Admin_Send_Email(adminClient: any, email: any): any;
   grok_Dapi_Log(): any;
   grok_Dapi_Log_Where(logClient: any, entityId: String, start: any, end: any, favoritesOnly: Bool): any;
@@ -1014,10 +1025,10 @@ export interface IDartApi {
   grok_ProjectsDataSource_Save(s: any, p: any, saveRelations: Bool): Promise<any>;
   grok_DataConnectionsDataSource_Save(s: any, c: any, saveCredentials: Bool): Promise<any>;
   grok_DataConnectionsDataSource_SubDir(s: any, c: any, dir: String): Promise<any>;
-  grok_DataConnectionsDataSource_Get_Schemas(s: any, c: any): Promise<any>;
-  grok_DataConnectionsDataSource_Get_Schema(s: any, c: any, schema: String, table: String): Promise<any>;
+  grok_DataConnectionsDataSource_Get_Schemas(s: any, c: any, catalog: String): Promise<any>;
+  grok_DataConnectionsDataSource_Get_Schema(s: any, c: any, schema: String, table: String, catalog: String): Promise<any>;
   grok_DataConnectionsDataSource_Get_Unique_Columns(s: any, c: any, schema: String, table: String): Promise<any>;
-  grok_DataConnectionsDataSource_Get_Db_Info(s: any, c: any): Promise<any>;
+  grok_DataConnectionsDataSource_Get_Db_Info(s: any, c: any, catalog: String): Promise<any>;
   grok_GroupsDataSource_Save(s: any, e: any): Promise<any>;
   grok_EntitiesDataSource_GetRecent(s: any): Promise<any>;
   grok_EntitiesDataSource_SaveProperties(s: any, props: any): Promise<any>;
@@ -1137,6 +1148,8 @@ export interface IDartApi {
   grok_DataFrame_GetSortedOrder(t: any, sortByColumnIds: any, sortOrders: any, mask: any): any;
   grok_DataFrame_FromByteArray(bytes: any): any;
   grok_DataFrame_ToByteArray(t: any): any;
+  grok_DataFrame_ToParquet(t: any, compress: any): any;
+  grok_DataFrame_ToArrow(t: any): any;
   grok_DataFrame_ExportAndReopen(t: any): any;
   grok_Map_Get(map: any, key: any): any;
   grok_Map_Set(map: any, key: any, value: any): any;
@@ -1622,7 +1635,7 @@ export interface IDartApi {
   grok_FuncCall_Get_Output_Param_Value(call: any): any;
   grok_ParseCsv(s: String, options: any): any;
   grok_TestData(s: String, rows: Num, columns: Num): any;
-  grok_LinkTables(t1: any, t2: any, keys1: any, keys2: any, linkTypes: any, initialSync: Bool): any;
+  grok_LinkTables(t1: any, t2: any, keys1: any, keys2: any, linkTypes: any, initialSync: Bool, filterAllOnNoRowsSelected: Bool): any;
   grok_JoinTables(t1: any, t2: any, keys1: any, keys2: any, values1: any, values2: any, joinType: String, inPlace: Bool): any;
   grok_Subscription_Cancel(sub: any): any;
   grok_CallQuery(queryName: String, queryParameters: any, adHoc: Bool): Promise<any>;
@@ -1777,6 +1790,7 @@ export interface IDartApi {
   grok_DbRelationInfo_Get_Prop(rel: any, name: String): any;
   grok_DbRelationInfo_Get_Connection(rel: any): any;
   grok_DbSchemaInfo_Get_Name(info: any): any;
+  grok_DbSchemaInfo_Get_Catalog(info: any): any;
   grok_DbSchemaInfo_Get_Prop(info: any, name: String): any;
   grok_DbSchemaInfo_Set_Prop(info: any, propName: String, value: any): Promise<any>;
   grok_DbSchemaInfo_Get_Tables(info: any): Promise<any>;
@@ -1792,11 +1806,13 @@ export interface IDartApi {
   grok_ConnectionDataSource_CommentStart(ds: any): any;
   grok_ConnectionDataSource_NameBrackets(ds: any): any;
   grok_ConnectionDataSource_CanBrowseSchema(ds: any): any;
+  grok_ConnectionDataSource_SupportCatalogs(ds: any): any;
   grok_ConnectionDataSource_QueryLanguage(ds: any): any;
   grok_ConnectionDataSource_ConnectionTemplate(ds: any): any;
   grok_ConnectionDataSource_CredentialsTemplate(ds: any): any;
 
   // Generated from ../../shared/grok_shared/lib/grok_shared.api.g.dart
+  grok_ServerMessageTypes_Create(): any;
   grok_DataSourceType_Create(): any;
   grok_Permission_Create(): any;
   grok_ScriptLanguage_Create(): any;
@@ -1822,10 +1838,10 @@ export interface IDartApi {
   grok_FuncOptions_Create(): any;
   grok_FuncParamOptions_Create(): any;
 
-  // Generated from ../d4\lib\src\common\common.api.g.dart
+  // Generated from ../d4/lib/src/common/common.api.g.dart
   grok_UsageType_Create(): any;
 
-  // Generated from ../d4\lib\src\grid\grid.api.g.dart
+  // Generated from ../d4/lib/src/grid/grid.api.g.dart
   grok_GridCellStyle_Create(): any;
   grok_GridCellStyle_Get_defaultStyle(): any;
   grok_GridCellStyle_Set_defaultStyle(v: any): any;
@@ -1875,7 +1891,7 @@ export interface IDartApi {
   grok_GridCellStyle_Set_choices(x: any, v: any): any;
   grok_renderMultipleHistograms(g: any, bounds: any, histograms: any, categoryColumn: any, colors: any, tension: Num, normalize: Bool, markerSize: Num, fill: Bool, minBin: Num, maxBin: Num, localMaximum: Bool, highlightedHistogram: Num): any;
 
-  // Generated from ../d4\lib\src\viewers\grid\grid.api.g.dart
+  // Generated from ../d4/lib/src/viewers/grid/grid.api.g.dart
   grok_GridCellStyle_Create(): any;
   grok_GridCellStyle_Get_defaultStyle(): any;
   grok_GridCellStyle_Set_defaultStyle(v: any): any;
@@ -1925,7 +1941,7 @@ export interface IDartApi {
   grok_GridCellStyle_Set_choices(x: any, v: any): any;
   grok_renderMultipleHistograms(g: any, bounds: any, histograms: any, categoryColumn: any, colors: any, tension: Num, normalize: Bool, markerSize: Num, fill: Bool, minBin: Num, maxBin: Num, localMaximum: Bool, highlightedHistogram: Num): any;
 
-  // Generated from ../d4\lib\src\viewer_base\viewer_base.api.g.dart
+  // Generated from ../d4/lib/src/viewer_base/viewer_base.api.g.dart
   grok_ViewerEvent_Create(): any;
   grok_ViewerEvent_Get_viewer(x: any): any;
   grok_ViewerEvent_Set_viewer(x: any, v: any): any;
@@ -1941,6 +1957,6 @@ export interface IDartApi {
   grok_ViewerEvent_Set_mouseEvent(x: any, v: any): any;
   grok_ViewerEvent_Get_bitset(x: any): any;
 
-  // Generated from ../d4\lib\src\widgets\widgets.api.g.dart
+  // Generated from ../d4/lib/src/widgets/widgets.api.g.dart
   grok_InputType_Create(): any;
 }

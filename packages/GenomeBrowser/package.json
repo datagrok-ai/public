@@ -15,9 +15,6 @@
     "@datagrok-libraries/utils": {
       "rxjs": "^7.8.2"
     },
-    "datagrok-tools": {
-      "rxjs": "^7.8.2"
-    },
     "datagrok-api": {
       "rxjs": "^7.8.2"
     }
@@ -32,7 +29,8 @@
     "datagrok-api": "^1.21.3",
     "dayjs": "^1.11.13",
     "react": "^19.0.0",
-    "react-dom": "^19.0.0"
+    "react-dom": "^19.0.0",
+    "@datagrok-libraries/test": "^1.1.0"
   },
   "devDependencies": {
     "@babel/core": "^7.26.10",
@@ -48,7 +46,6 @@
     "@vitejs/plugin-react": "^4.3.4",
     "babel-loader": "^10.0.0",
     "css-loader": "^7.1.2",
-    "datagrok-tools": "^4.14.55",
     "eslint": "^9.21.0",
     "eslint-plugin-react-hooks": "^5.1.0",
     "eslint-plugin-react-refresh": "^0.4.19",
@@ -56,8 +53,8 @@
     "globals": "^15.15.0",
     "html-webpack-plugin": "^5.6.3",
     "style-loader": "^4.0.0",
-    "ts-loader": "latest",
-    "typescript": "latest",
+    "ts-loader": "^9.5.4",
+    "typescript": "^5.9.3",
     "typescript-eslint": "^8.24.1",
     "webpack": "^5.95.0",
     "webpack-cli": "^5.1.4",

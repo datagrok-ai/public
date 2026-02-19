@@ -13,7 +13,7 @@ import {CONTROL_EXPR, DF_NAME, LOOP} from './constants';
 import {UI_TIME} from './ui-constants';
 
 import {ODEs, SolverOptions} from 'diff-grok';
-import {Model} from './model';
+import {Model, ModelInfo} from './model';
 
 import utc from 'dayjs/plugin/utc';
 import dayjs from 'dayjs';
@@ -219,10 +219,16 @@ export class PackageFunctions {
   static async runModel(model: string,
     @grok.decorators.param({type: 'int'}) inputsTabDockRatio: number,
     @grok.decorators.param({type: 'int'}) graphsDockRatio: number): Promise<void> {
-    const diffStudioModel = new Model(model, {
-      inputsTabDockRatio: inputsTabDockRatio,
-      graphsDockRatio: graphsDockRatio,
-    }, '');
+    const modelInfo: ModelInfo = {
+      equations: model,
+      uiOptions: {
+        inputsTabDockRatio: inputsTabDockRatio,
+        graphsDockRatio: graphsDockRatio,
+      },
+      info: '',
+    };
+
+    const diffStudioModel = new Model(modelInfo);
 
     await diffStudioModel.run();
   }

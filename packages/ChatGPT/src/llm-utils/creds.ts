@@ -13,7 +13,7 @@ export class LLMCredsManager {
   // Initialize the singleton instance
   // TODO: in future this will probably move to credentials manager
   static init(pckg: DG.Package): void {
-    const hasAIKey = grok.ai.openAiConfigured;
+    const hasAIKey = grok.ai.config.configured;
     const vectorStoreId = pckg.settings[OPENAIVectorStoreName];
     LLMCredsManager._instance =
       new LLMCredsManager(hasAIKey ? vectorStoreId ?? '' : '');

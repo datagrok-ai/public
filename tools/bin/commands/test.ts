@@ -1,5 +1,5 @@
 /* eslint-disable max-len */
-import {exec} from 'child_process';
+import {exec, spawnSync} from 'child_process';
 import fs from 'fs';
 import os from 'os';
 import path from 'path';
@@ -22,11 +22,83 @@ const confPath = path.join(grokDir, 'config.yaml');
 const consoleLogOutputDir = path.join(curDir, 'test-console-output.log');
 const csvReportDir = path.join(curDir, 'test-report.csv');
 
+/**
+ * Detects if the current directory is within a Dart library folder (d4, xamgle, ddt, dml)
+ * and returns the appropriate test category to use.
+ * @returns The category string (e.g., "Core: d4") or undefined if not in a recognized Dart folder
+ */
+function detectDartLibraryCategory(): string | undefined {
+  const normalizedPath = curDir.replace(/\\/g, '/');
+
+  if (normalizedPath.includes('/d4/') || normalizedPath.endsWith('/d4'))
+    return 'Core: d4';
+  if (normalizedPath.includes('/xamgle/') || normalizedPath.endsWith('/xamgle'))
+    return 'Core: xamgle';
+  if (normalizedPath.includes('/ddt/') || normalizedPath.endsWith('/ddt'))
+    return 'Core: ddt';
+  if (normalizedPath.includes('/dml/') || normalizedPath.endsWith('/dml'))
+    return 'Core: dml';
+
+  return undefined;
+}
+
+/**
+ * Traverses up from startDir to find the git repository root (.git directory).
+ */
+function findGitRoot(startDir: string): string | undefined {
+  let current = startDir;
+  while (true) {
+    if (fs.existsSync(path.join(current, '.git')))
+      return current;
+    const parent = path.dirname(current);
+    if (parent === current)
+      return undefined;
+    current = parent;
+  }
+}
+
 export async function test(args: TestArgs): Promise<boolean> {
   const config = yaml.load(fs.readFileSync(confPath, {encoding: 'utf-8'})) as utils.Config;
 
   isArgsValid(args);
+
   utils.setHost(args.host, config);
+
+  // If running from a core Dart library directory, delegate to DevTools package
+  if (!args.package) {
+    const detectedCategory = detectDartLibraryCategory();
+    if (detectedCategory) {
+      const category = args.category ?? detectedCategory;
+      const gitRoot = findGitRoot(curDir);
+      const devToolsDir = gitRoot ? path.join(gitRoot, 'public', 'packages', 'DevTools') : undefined;
+      if (!devToolsDir || !fs.existsSync(devToolsDir)) {
+        color.error(`Cannot run core tests from this directory: DevTools package not found.`);
+        color.error(`Run 'grok test --category="${category}"' from 'public/packages/DevTools' instead.`);
+        process.exit(1);
+      }
+      color.info(`Detected core library directory. Delegating to DevTools with category: "${category}"`);
+      const cmdArgs = ['test', `--category=${category}`];
+      if (args.host) cmdArgs.push(`--host=${args.host}`);
+      if (args.test) cmdArgs.push(`--test=${args.test}`);
+      if (args.csv) cmdArgs.push('--csv');
+      if (args.gui) cmdArgs.push('--gui');
+      if (args.verbose) cmdArgs.push('--verbose');
+      if (args.benchmark) cmdArgs.push('--benchmark');
+      if (args['stress-test']) cmdArgs.push('--stress-test');
+      if (args['skip-build']) cmdArgs.push('--skip-build');
+      if (args['skip-publish']) cmdArgs.push('--skip-publish');
+      if (args.link) cmdArgs.push('--link');
+      if (args.record) cmdArgs.push('--record');
+      if (args.catchUnhandled) cmdArgs.push('--catchUnhandled');
+      if (args.report) cmdArgs.push('--report');
+      if (args.debug) cmdArgs.push('--debug');
+      if (args['ci-cd']) cmdArgs.push('--ci-cd');
+      if (args['no-retry']) cmdArgs.push('--no-retry');
+      const grokScript = path.resolve(__dirname, '..', 'grok.js');
+      const result = spawnSync(process.execPath, [grokScript, ...cmdArgs], {cwd: devToolsDir, stdio: 'inherit'});
+      process.exit(result.status ?? 1);
+    }
+  }
 
   let packageJsonData = undefined;
   if (!args.package)
@@ -43,11 +115,18 @@ export async function test(args: TestArgs): Promise<boolean> {
 
 
   if (!args.package) {
-    await testUtils.loadPackages(packagesDir,
-      packageName,
-      args.host,
-      args['skip-publish'],
-      args['skip-build'], args.link);
+      try {
+          await testUtils.loadPackages(packagesDir,
+              packageName,
+              args.host,
+              args['skip-publish'],
+              args['skip-build'], args.link);
+      } catch (e) {
+          console.error('\n');
+          // @ts-ignore
+          console.error(e.message);
+          process.exit(1);
+      }
   }
   process.env.TARGET_PACKAGE = packageName;
   const res = await runTesting(args);
@@ -83,6 +162,8 @@ let retryEnabled = true;
 async function runTesting(args: TestArgs): Promise<ResultObject> {
 
   retryEnabled = args['retry'] ?? true;
+  if (args.test || args.category)
+      retryEnabled = false;
   let organized: OrganizedTest = {
     package: process.env.TARGET_PACKAGE ?? '',
     params: {

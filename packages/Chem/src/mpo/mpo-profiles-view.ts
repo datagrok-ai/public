@@ -1,13 +1,16 @@
+/* eslint-disable max-len */
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 
+import {Subscription} from 'rxjs';
 import {u2} from '@datagrok-libraries/utils/src/u2';
-import {MpoProfileEditor} from '@datagrok-libraries/statistics/src/mpo/mpo-profile-editor';
 
 import {_package} from '../package';
-import {MpoProfileInfo, loadMpoProfiles, deleteMpoProfile, updateMpoPath, MpoPathMode} from './utils';
+import {MpoProfileInfo, updateMpoPath, MpoPathMode, MPO_PROFILE_CHANGED_EVENT, MPO_PROFILE_DELETED_EVENT} from './utils';
 import {MpoProfileCreateView} from './mpo-create-profile';
+import {MpoProfileManager} from './mpo-profile-manager';
+import {MpoProfileHandler} from './mpo-profile-handler';
 
 export class MpoProfilesView {
   name = 'MPO Profiles';
@@ -15,12 +18,14 @@ export class MpoProfilesView {
   view: DG.View;
 
   private tableContainer = ui.divV([]);
-  private profiles: MpoProfileInfo[] = [];
+  private subs: Subscription[] = [];
+  private previewedFileName: string | null = null;
 
   constructor() {
     this.view = DG.View.fromRoot(this.root);
     this.view.name = this.name;
     grok.shell.windows.showHelp = false;
+    grok.shell.windows.showProperties = true;
     updateMpoPath(this.view, MpoPathMode.List);
   }
 
@@ -38,6 +43,7 @@ export class MpoProfilesView {
       );
 
       await this.reloadProfiles();
+      this.listenForChanges();
     } finally {
       ui.setUpdateIndicator(this.root, false);
     }
@@ -46,7 +52,7 @@ export class MpoProfilesView {
   private async reloadProfiles(): Promise<void> {
     ui.setUpdateIndicator(this.tableContainer, true);
     try {
-      this.profiles = await loadMpoProfiles();
+      await MpoProfileManager.ensureLoaded();
       this.rerenderTable();
     } finally {
       ui.setUpdateIndicator(this.tableContainer, false);
@@ -67,7 +73,7 @@ export class MpoProfilesView {
   private rerenderTable(): void {
     ui.empty(this.tableContainer);
 
-    if (this.profiles.length === 0) {
+    if (MpoProfileManager.items.length === 0) {
       this.tableContainer.append(ui.h2('No MPO profiles yet'));
       return;
     }
@@ -77,11 +83,11 @@ export class MpoProfilesView {
 
   private buildProfilesTable(): HTMLElement {
     const table = ui.table(
-      this.profiles,
+      MpoProfileManager.items,
       (profile) => [
         this.buildActionsButton(profile),
-        ui.link(profile.name, () => this.openProfile(profile)),
-        ui.divText(profile.description, 'chem-mpo-description'),
+        this.buildProfileLink(profile),
+        this.buildDescription(profile.description),
       ],
       ['', 'Name', 'Description'],
     );
@@ -90,14 +96,22 @@ export class MpoProfilesView {
     return table;
   }
 
+  private buildProfileLink(profile: MpoProfileInfo): HTMLElement {
+    const link = ui.link(profile.name, () => {
+      this.previewedFileName = profile.fileName;
+    });
+    link.addEventListener('dblclick', () => MpoProfileHandler.edit(profile));
+    return ui.bind(profile, link);
+  }
+
   private buildActionsButton(profile: MpoProfileInfo): HTMLElement {
     const actionsButton = ui.button(
       '⋮',
       () => {
         ui.popupMenu()
-          .item('Edit', () => this.openEditProfile(profile))
-          .item('Clone', () => this.openCloneProfile(profile))
-          .item('Delete', () => this.confirmDelete(profile))
+          .item('Edit', () => MpoProfileHandler.edit(profile))
+          .item('Clone', () => MpoProfileHandler.clone(profile))
+          .item('Delete', () => MpoProfileHandler.delete(profile))
           .show();
       },
       'Actions',
@@ -106,44 +120,15 @@ export class MpoProfilesView {
     return actionsButton;
   }
 
-  private profileForEditing(profile: MpoProfileInfo): MpoProfileInfo {
-    const copy = {...profile};
-    delete (copy as any).file;
-    return copy;
-  }
-
-  private openCloneProfile(profile: MpoProfileInfo): void {
-    const clone = this.profileForEditing(profile);
-    clone.name = `${profile.name} (Copy)`;
-
-    const view = new MpoProfileCreateView(clone, false, profile.fileName);
-    grok.shell.v = grok.shell.addView(view.view);
-  }
-
-  private openProfile(profile: MpoProfileInfo): void {
-    const editor = new MpoProfileEditor(undefined, false, true);
-    editor.setProfile(profile);
-    editor.root.style.pointerEvents = 'none';
-
-    const panel = ui.accordion();
-    panel.addTitle(ui.label('MPO Profile'));
-    panel.root.append(editor.root, this.buildEditRibbon(profile));
-
-    grok.shell.o = panel.root;
-  }
-
-  private buildEditRibbon(profile: MpoProfileInfo): HTMLElement {
-    const editBtn = ui.bigButton('Edit', () => this.openEditProfile(profile));
-
-    const container = ui.divH([editBtn], {style: {justifyContent: 'flex-end'}});
-    container.classList.add('d4-ribbon-item');
-    return container;
-  }
-
-  private openEditProfile(profile: MpoProfileInfo): void {
-    const editable = this.profileForEditing(profile);
-    const view = new MpoProfileCreateView(editable, false, profile.fileName);
-    grok.shell.v = grok.shell.addView(view.view);
+  private buildDescription(text: string): HTMLElement {
+    const span = ui.divText(text, 'chem-mpo-description');
+    requestAnimationFrame(() => {
+      if (span.scrollHeight > span.clientHeight) {
+        span.classList.add('chem-mpo-description-expandable');
+        span.onclick = () => span.classList.toggle('expanded');
+      }
+    });
+    return span;
   }
 
   private openCreateProfile(): void {
@@ -151,19 +136,23 @@ export class MpoProfilesView {
     grok.shell.v = grok.shell.addPreview(view.tableView!);
   }
 
-  private confirmDelete(profile: MpoProfileInfo): void {
-    ui.dialog('Delete profile')
-      .add(ui.divText(`Are you sure you want to delete profile "${profile.name}"?`))
-      .onOK(async () => {
-        try {
-          await deleteMpoProfile(profile);
-          this.profiles = this.profiles.filter((p) => p !== profile);
-          this.rerenderTable();
-        } catch (e) {
-          grok.shell.error(`Failed to delete profile "${profile.name}": ${e instanceof Error ? e.message : e}`);
-        }
-      })
-      .show();
+  private listenForChanges(): void {
+    this.subs.push(grok.events.onCustomEvent(MPO_PROFILE_CHANGED_EVENT).subscribe(() => this.reloadProfiles()));
+    this.subs.push(grok.events.onCustomEvent(MPO_PROFILE_DELETED_EVENT).subscribe((data) => {
+      if (data?.fileName === this.previewedFileName) {
+        grok.shell.o = null;
+        this.previewedFileName = null;
+      }
+    }));
+    this.subs.push(grok.events.onViewRemoving.subscribe((v) => {
+      if (v.args.view.id === this.view.id)
+        this.detach();
+    }));
+  }
+
+  private detach(): void {
+    this.subs.forEach((sub) => sub.unsubscribe());
+    this.subs = [];
   }
 
   async show() {

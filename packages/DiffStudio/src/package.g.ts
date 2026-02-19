@@ -11,14 +11,14 @@ export function dock() : void {
   PackageFunctions.dock();
 }
 
-//input: object problem 
+//input: object problem
 //output: dataframe result
 export function solve(problem: any) : any {
   return PackageFunctions.solve(problem);
 }
 
-//input: object problem 
-//input: object options 
+//input: object problem
+//input: object options
 //output: dataframe result
 export function solveEquations(problem: any, options: any) : any {
   return PackageFunctions.solveEquations(problem, options);
@@ -36,34 +36,33 @@ export async function runDiffStudio() : Promise<any> {
 //name: Diff Studio Demo
 //description: Interactive solver of ordinary differential equations (ODE)
 //meta.demoPath: Compute | Diff Studio
-//test: runDiffStudioDemo() //wait: 100 
+//test: runDiffStudioDemo() //wait: 100
 export async function runDiffStudioDemo() : Promise<void> {
   await PackageFunctions.runDiffStudioDemo();
 }
 
 //tags: file-handler
-//input: string content 
+//input: string content
 //meta.ext: ipv
 export async function ivpFileHandler(content: string) : Promise<void> {
   await PackageFunctions.ivpFileHandler(content);
 }
 
 //tags: fileViewer
-//input: file file 
+//input: file file
 //output: view result
 //meta.fileViewer: ivp
 export async function previewIvp(file: DG.FileInfo) : Promise<any> {
   return await PackageFunctions.previewIvp(file);
 }
 
-//input: dynamic treeNode 
+//input: dynamic treeNode
 export async function runDiffStudioTreeBrowser(treeNode: any) : Promise<void> {
   await PackageFunctions.runDiffStudioTreeBrowser(treeNode);
 }
 
 //name: Ball flight
 //description: Ball flight simulation
-//tags: model
 //input: double dB = 0.01 { category: Ball; caption: Diameter; units: m; min: 0.01; max: 0.3; minFormula: roB / 20000; maxFormula: roB / 4000 }
 //input: double roB = 200 { category: Ball; caption: Density; description: Material density; units: kg/m^3; min: 200; max: 1200 }
 //input: double v = 50 { category: Throw parameters; caption: Velocity; min: 40; max: 60; units: m/sec }
@@ -82,36 +81,36 @@ export function ballFlight(dB: number, roB: number, v: number, a: number) {
 }
 
 //description: Return serialized initial value problem for ordinary differential equations
-//input: string problem 
+//input: string problem
 //output: object serialization
 export function serializeEquations(problem: string) : any {
   return PackageFunctions.serializeEquations(problem);
 }
 
 //description: Perform ODEs serialization to JS-code
-//input: dynamic serialization 
+//input: dynamic serialization
 //output: string result
 export function odesToCode(serialization: any) : string {
   return PackageFunctions.odesToCode(serialization);
 }
 
 //description: Solve initial value problem for ordinary differential equations
-//input: string problem 
+//input: string problem
 //output: dataframe result
 export async function solveODE(problem: string) : Promise<any> {
   return await PackageFunctions.solveODE(problem);
 }
 
 //description: Run model with Diff Studio UI
-//input: string model 
-//input: int inputsTabDockRatio 
-//input: int graphsDockRatio 
+//input: string model
+//input: int inputsTabDockRatio
+//input: int graphsDockRatio
 export async function runModel(model: string, inputsTabDockRatio: number, graphsDockRatio: number) : Promise<void> {
   await PackageFunctions.runModel(model, inputsTabDockRatio, graphsDockRatio);
 }
 
 //tags: scriptHandler
-//input: funccall ivpCall 
+//input: funccall ivpCall
 //meta.scriptHandler.language: ivp
 //meta.scriptHandler.extensions: ivp
 //meta.scriptHandler.commentStart: #
@@ -123,7 +122,7 @@ export async function ivpLanguageHandler(ivpCall: DG.FuncCall) : Promise<void> {
   await PackageFunctions.ivpLanguageHandler(ivpCall);
 }
 
-//input: string code 
+//input: string code
 //output: dynamic result
 export function ivpLanguageParser(code: string) : any {
   return PackageFunctions.ivpLanguageParser(code);

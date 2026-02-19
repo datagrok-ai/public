@@ -433,6 +433,13 @@ export namespace scripts {
   }
 
   /**
+  map input/output
+  */
+  export async function rMap(input_map: any , unique_key: string ): Promise<any> {
+    return await grok.functions.call('CVMTests:RMap', { input_map, unique_key });
+  }
+
+  /**
   df performance
   */
   export async function rSingleDf(df: DG.DataFrame ): Promise<DG.DataFrame> {
@@ -445,6 +452,10 @@ export namespace scripts {
 }
 
 export namespace funcs {
+  export async function getColumn(table: DG.DataFrame , columnName: string ): Promise<DG.Column> {
+    return await grok.functions.call('CVMTests:GetColumn', { table, columnName });
+  }
+
   export async function info(): Promise<void> {
     return await grok.functions.call('CVMTests:Info', {});
   }

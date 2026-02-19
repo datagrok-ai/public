@@ -3,7 +3,7 @@ import * as grok from 'datagrok-api/grok';
 
 import {_package} from '../package-test';
 import {readDataframe} from './utils';
-import {before, after, expect, category, test, awaitCheck} from '@datagrok-libraries/utils/src/test';
+import {before, after, expect, category, test, awaitCheck} from '@datagrok-libraries/test/src/test';
 import {chemSpace, runChemSpace} from '../analysis/chem-space';
 import * as chemCommonRdKit from '../utils/chem-common-rdkit';
 import {getSimilaritiesMarix, getSimilaritiesMarixFromDistances} from '../utils/similarity-utils';

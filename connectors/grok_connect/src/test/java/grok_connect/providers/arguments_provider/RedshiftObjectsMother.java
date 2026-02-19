@@ -1,7 +1,6 @@
 package grok_connect.providers.arguments_provider;
 
 import grok_connect.connectors_info.FuncCall;
-import grok_connect.providers.utils.DataFrameBuilder;
 import grok_connect.providers.utils.DateParser;
 import grok_connect.providers.utils.FuncCallBuilder;
 import grok_connect.providers.utils.Parser;
@@ -21,6 +20,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Stream;
 
+@SuppressWarnings("unused")
 public class RedshiftObjectsMother {
     private static final Parser parser = new DateParser();
 
@@ -32,21 +32,19 @@ public class RedshiftObjectsMother {
         String fifthColumnName = "is_view";
         String schema = "public";
         String table = "mock_data";
-        DataFrame expected = DataFrameBuilder.getBuilder()
-                .setRowCount(10)
-                .setColumn(new StringColumn(), firstColumnName, new String[] {schema, schema,
+        DataFrame expected = DataFrame.fromColumns(
+                new StringColumn(firstColumnName, new String[] {schema, schema,
                         schema, schema, schema, schema, schema,
-                        schema, schema, schema})
-                .setColumn(new StringColumn(), secondColumnName, new String[] {table, table,
+                        schema, schema, schema}),
+                new StringColumn(secondColumnName, new String[] {table, table,
                         table, table, table, table,
-                        table, table, table, table})
-                .setColumn(new StringColumn(), thirdColumnName, new String[] {"id", "first_name", "last_name", "email",
-                        "gender", "ip_address", "bool", "country", "date", "some_number"})
-                .setColumn(new StringColumn(), fourthColumnName, new String[] {"bigint", "character varying",
+                        table, table, table, table}),
+                new StringColumn(thirdColumnName, new String[] {"id", "first_name", "last_name", "email",
+                        "gender", "ip_address", "bool", "country", "date", "some_number"}),
+                new StringColumn(fourthColumnName, new String[] {"bigint", "character varying",
                         "character varying", "character varying", "character varying", "character varying",
-                        "boolean", "character varying", "date", "numeric"})
-                .setColumn(new IntColumn(), fifthColumnName, new Integer[] {0, 0, 0, 0, 0, 0, 0, 0, 0, 0})
-                .build();
+                        "boolean", "character varying", "date", "numeric"}),
+                new IntColumn(fifthColumnName, new Integer[] {0, 0, 0, 0, 0, 0, 0, 0, 0, 0}));
         return Stream.of(Arguments.of(expected));
     }
 
@@ -55,25 +53,19 @@ public class RedshiftObjectsMother {
         List<String> values = new ArrayList<>();
         values.add("Poland");
         values.add("Brazil");
-        DataFrame expected = DataFrameBuilder.getBuilder()
-                .setRowCount(1)
-                .setColumn(new BigIntColumn(new String[]{"2", "5", "20"}),
-                        "id")
-                .setColumn(new StringColumn(new String[]{"Nicholle", "Mitchell", "Lucius",}), "first_name")
-                .setColumn(new StringColumn(new String[]{"Karoly", "Haglington", "Edelmann"}),
-                        "last_name")
-                .setColumn(new StringColumn(new String[]{"nkaroly1@alexa.com", "mhaglington4@indiegogo.com",
-                        "ledelmannj@bravesites.com"}), "email")
-                .setColumn(new StringColumn(new String[]{"Female", "Male", "Male"}), "gender")
-                .setColumn(new StringColumn(new String[]{"255.233.247.118/32", "209.93.181.190/32", "66.174.30.225/32"}),
-                        "ip_address")
-                .setColumn(new BoolColumn(new Boolean[]{false, true, false}), "bool")
-                .setColumn(new StringColumn(new String[]{"Poland", "Poland", "Brazil"}), "country")
-                .setColumn(new DateTimeColumn(parser.parseDatesToDoubles("yyyy-MM-dd", "2014-02-27",
+        DataFrame expected = DataFrame.fromColumns(
+                new BigIntColumn("id", new String[]{"2", "5", "20"}),
+                new StringColumn("first_name", new String[]{"Nicholle", "Mitchell", "Lucius",}),
+                new StringColumn("last_name", new String[]{"Karoly", "Haglington", "Edelmann"}),
+                new StringColumn("email", new String[]{"nkaroly1@alexa.com", "mhaglington4@indiegogo.com",
+                        "ledelmannj@bravesites.com"}),
+                new StringColumn("gender", new String[]{"Female", "Male", "Male"}),
+                new StringColumn("ip_address", new String[]{"255.233.247.118/32", "209.93.181.190/32", "66.174.30.225/32"}),
+                new BoolColumn("bool", new Boolean[]{false, true, false}),
+                new StringColumn("country", new String[]{"Poland", "Poland", "Brazil"}),
+                new DateTimeColumn("date", parser.parseDatesToDoubles("yyyy-MM-dd", "2014-02-27",
                                 "2020-10-09","1999-06-22")),
-                        "date")
-                .setColumn(new FloatColumn(new Float[]{864.09f, 15.22f, 378.73f}), "some_number")
-                .build();
+                new FloatColumn("some_number", new Float[]{864.09f, 15.22f, 378.73f}));
         FuncCall funcCall1 = FuncCallBuilder.getBuilder()
                 .addQuery("--input: list<string> values\n" +
                         "SELECT * FROM mock_data WHERE country IN (@values)")
@@ -108,11 +100,8 @@ public class RedshiftObjectsMother {
         LocalDate yesterday = now.minusDays(1);
         LocalDate dayOfLastYear = now.minusDays(150);
         // --input: string date = "today" {pattern: datetime}
-        DataFrame expected1 = DataFrameBuilder.getBuilder()
-                .setRowCount(1)
-                .setColumn(new DateTimeColumn(new Double[]{parser.parseDateToDouble(datePattern, now.toString())}),
-                        "date")
-                .build();
+        DataFrame expected1 = DataFrame.fromColumns(
+                new DateTimeColumn("date", new Double[]{parser.parseDateToDouble(datePattern, now.toString())}));
         FuncCall funcCall1 = FuncCallBuilder.getBuilder()
                 .addQuery("-- input: string date = \"today\" {pattern: datetime}\n"
                         + "SELECT * FROM dates_patterns WHERE @date(date)\n"
@@ -122,14 +111,11 @@ public class RedshiftObjectsMother {
                         now.toString(), now.plusDays(1).toString())
                 .build();
         // --input: string date = "this week" {pattern: datetime}
-        DataFrame expected2 = DataFrameBuilder.getBuilder()
-                .setRowCount(dayOfWeek == 1 ? 2 : 3)
-                .setColumn(new DateTimeColumn(parser.parseDatesToDoubles(datePattern,
+        DataFrame expected2 = DataFrame.fromColumns(
+                new DateTimeColumn("date", parser.parseDatesToDoubles(datePattern,
                                 dayOfWeek == 1 ? null : yesterday.toString(),
                                 now.toString(),
-                                lastDayOfWeek.equals(now) ? null : lastDayOfWeek.toString())),
-                        "date")
-                .build();
+                                lastDayOfWeek.equals(now) ? null : lastDayOfWeek.toString())));
         FuncCall funcCall2 = FuncCallBuilder.getBuilder()
                 .addQuery("-- input: string date = \"this week\" {pattern: datetime}\n"
                         + "SELECT * FROM dates_patterns WHERE @date(date) ORDER BY date\n"
@@ -140,15 +126,12 @@ public class RedshiftObjectsMother {
                         lastDayOfWeek.plusDays(1).toString())
                 .build();
         // --input: string date = "this month" {pattern: datetime}
-        DataFrame expected3 = DataFrameBuilder.getBuilder()
-                .setRowCount(dayOfMonth > 1 && dayOfMonth < 31 - 6 ? 3 : 2)
-                .setColumn(new DateTimeColumn(parser.parseDatesToDoubles(datePattern,
+        DataFrame expected3 = DataFrame.fromColumns(
+                new DateTimeColumn("date", parser.parseDatesToDoubles(datePattern,
                                 dayOfMonth == 1 ? null : yesterday.toString(),
                                 now.toString(),
                                 lastDayOfWeek.getMonthValue() >  lastDayOfMonth.getMonthValue() || lastDayOfWeek.equals(now)?
-                                        null : lastDayOfWeek.toString())),
-                        "date")
-                .build();
+                                        null : lastDayOfWeek.toString())));
         FuncCall funcCall3 = FuncCallBuilder.getBuilder()
                 .addQuery("-- input: string date = \"this month\" {pattern: datetime}\n"
                         + "SELECT * FROM dates_patterns WHERE @date(date) ORDER BY date\n"
@@ -159,16 +142,13 @@ public class RedshiftObjectsMother {
                         lastDayOfMonth.plusDays(1).toString())
                 .build();
         // --input: string date = "this year" {pattern: datetime}
-        DataFrame expected4 = DataFrameBuilder.getBuilder()
-                .setRowCount(dayOfYear > 1 && dayOfYear < Year.of(now.getYear()).length() - 6 ? 3 : 2)
-                .setColumn(new DateTimeColumn(parser.parseDatesToDoubles(datePattern,
+        DataFrame expected4 = DataFrame.fromColumns(
+                new DateTimeColumn("date", parser.parseDatesToDoubles(datePattern,
                                 dayOfMonth == 1 ? null : yesterday.toString(),
                                 now.toString(),
                                 lastDayOfWeek.getMonthValue() >  lastDayOfMonth.getMonthValue() || lastDayOfWeek.equals(now)?
                                         null : lastDayOfWeek.toString(),
-                                dayOfLastYear.getYear() == now.getYear() ? dayOfLastYear.toString() : null)),
-                        "date")
-                .build();
+                                dayOfLastYear.getYear() == now.getYear() ? dayOfLastYear.toString() : null)));
         FuncCall funcCall4 = FuncCallBuilder.getBuilder()
                 .addQuery("-- input: string date = \"this year\" {pattern: datetime}\n"
                         + "SELECT * FROM dates_patterns WHERE @date(date) ORDER BY date\n"
@@ -179,11 +159,8 @@ public class RedshiftObjectsMother {
                         lastDayOfYear.plusDays(1).toString())
                 .build();
         // --input: string date = "yesterday" {pattern: datetime}
-        DataFrame expected5 = DataFrameBuilder.getBuilder()
-                .setRowCount(1)
-                .setColumn(new DateTimeColumn(parser.parseDatesToDoubles(datePattern, yesterday.toString())),
-                        "date")
-                .build();
+        DataFrame expected5 = DataFrame.fromColumns(
+                new DateTimeColumn("date", parser.parseDatesToDoubles(datePattern, yesterday.toString())));
         FuncCall funcCall5 = FuncCallBuilder.getBuilder()
                 .addQuery("-- input: string date = \"yesterday\" {pattern: datetime}\n"
                         + "SELECT * FROM dates_patterns WHERE @date(date)\n"
@@ -194,13 +171,10 @@ public class RedshiftObjectsMother {
                         now.toString())
                 .build();
         // --input: string date = "last year" {pattern: datetime}
-        DataFrame expected6 = DataFrameBuilder.getBuilder()
-                .setRowCount(1)
-                .setColumn(new DateTimeColumn(parser.parseDatesToDoubles(datePattern,
+        DataFrame expected6 = DataFrame.fromColumns(
+                new DateTimeColumn("date", parser.parseDatesToDoubles(datePattern,
                                 yesterday.getYear() < now.getYear() ? yesterday.toString() : null,
-                                dayOfLastYear.getYear() < now.getYear() ? dayOfLastYear.toString() : null)),
-                        "date")
-                .build();
+                                dayOfLastYear.getYear() < now.getYear() ? dayOfLastYear.toString() : null)));
         FuncCall funcCall6 = FuncCallBuilder.getBuilder()
                 .addQuery("-- input: string date = \"last year\" {pattern: datetime}\n"
                         + "SELECT * FROM dates_patterns WHERE @date(date) ORDER BY date\n"
@@ -210,15 +184,12 @@ public class RedshiftObjectsMother {
                         firstDayOfYear.minusYears(1).toString(), firstDayOfYear.toString())
                 .build();
         // --input: string date = "anytime" {pattern: datetime}
-        DataFrame expected7 = DataFrameBuilder.getBuilder()
-                .setRowCount(5)
-                .setColumn(new DateTimeColumn(parser.parseDatesToDoubles(datePattern, "2021-04-09",
+        DataFrame expected7 = DataFrame.fromColumns(
+                new DateTimeColumn("date", parser.parseDatesToDoubles(datePattern, "2021-04-09",
                                 dayOfLastYear.toString(), yesterday.toString(),
                                 now.toString(),
                                 lastDayOfWeek.getMonthValue() >  lastDayOfMonth.getMonthValue() || lastDayOfWeek.equals(now)?
-                                        null : lastDayOfWeek.toString())),
-                        "date")
-                .build();
+                                        null : lastDayOfWeek.toString())));
         FuncCall funcCall7 = FuncCallBuilder.getBuilder()
                 .addQuery( "-- input: string date = \"anytime\" {pattern: datetime}\n"
                         + "SELECT * FROM dates_patterns WHERE @date(date) ORDER BY date\n"
@@ -227,11 +198,8 @@ public class RedshiftObjectsMother {
                 .addFuncCallOptionsPattern("date", "", "none", true, true)
                 .build();
         // --input: string date = "2021-2022" {pattern: datetime}
-        DataFrame expected8 = DataFrameBuilder.getBuilder()
-                .setRowCount(1)
-                .setColumn(new DateTimeColumn(parser.parseDatesToDoubles(datePattern, "2021-04-09")),
-                        "date")
-                .build();
+        DataFrame expected8 = DataFrame.fromColumns(
+                new DateTimeColumn("date", parser.parseDatesToDoubles(datePattern, "2021-04-09")));
 
         FuncCall funcCall8 = FuncCallBuilder.getBuilder()
                 .addQuery( "-- input: string date = \"2021-2021\" {pattern: datetime}\n"
@@ -253,14 +221,11 @@ public class RedshiftObjectsMother {
                         Year.of(2022).atDay(1).toString())
                 .build();
         // --input: string date = "after 1/1/2022" {pattern: datetime}
-        DataFrame expected9 = DataFrameBuilder.getBuilder()
-                .setRowCount(4)
-                .setColumn(new DateTimeColumn(parser.parseDatesToDoubles(datePattern, dayOfLastYear.toString(), yesterday.toString(),
+        DataFrame expected9 = DataFrame.fromColumns(
+                new DateTimeColumn("date", parser.parseDatesToDoubles(datePattern, dayOfLastYear.toString(), yesterday.toString(),
                                 now.toString(), lastDayOfWeek.getMonthValue() >
                                         lastDayOfMonth.getMonthValue() || lastDayOfWeek.equals(now)?
-                                        null : lastDayOfWeek.toString())),
-                        "date")
-                .build();
+                                        null : lastDayOfWeek.toString())));
         FuncCall funcCall10 = FuncCallBuilder.getBuilder()
                 .addQuery("-- input: string date = \"after 1/1/2022\" {pattern: datetime}\n"
                         + "SELECT * FROM dates_patterns WHERE @date(date) ORDER BY date;\n"
@@ -295,11 +260,9 @@ public class RedshiftObjectsMother {
     }
 
     public static Stream<Arguments> checkOutputDataFrame_binaryTypes_ok() {
-        DataFrame expected = DataFrameBuilder.getBuilder()
-                .setRowCount(1)
-                .setColumn(new StringColumn(new String[] {"Grok"}), "varbyte_type")
-                .setColumn(new StringColumn(new String[] {"Grok Connect"}), "varbinary_type")
-                .build();
+        DataFrame expected = DataFrame.fromColumns(
+                new StringColumn("varbyte_type", new String[] {"Grok"}),
+                new StringColumn("varbinary_type", new String[] {"Grok Connect"}));
         return Stream.of(Arguments.of(Named.of("BINARY TYPES SUPPORT",
                 FuncCallBuilder.fromQuery("SELECT from_varbyte(varbyte_type, 'utf-8') varbyte_type, "
                         + "from_varbyte(varbinary_type, 'utf-8') varbinary_type FROM BINARY_TYPES")), expected));
@@ -307,52 +270,43 @@ public class RedshiftObjectsMother {
 
     public static Stream<Arguments> checkOutputDataFrame_characterTypes_ok() {
         String bpchar = new String(new char[249]).replace("\0", " ");
-        DataFrame expected = DataFrameBuilder.getBuilder()
-                .setRowCount(1)
-                .setColumn(new StringColumn(new String[] {"Hello"}), "char_type")
-                .setColumn(new StringColumn(new String[] {"Datagrok"}), "varchar_type")
-                .setColumn(new StringColumn(new String[] {"Groks"}), "nchar_type")
-                .setColumn(new StringColumn(new String[] {"Datagrok"}), "nvarchar_type")
-                .setColumn(new StringColumn(new String[] {"Hello World!"}), "text_type")
-                .setColumn(new StringColumn(new String[] {"Groking" + bpchar}), "bpchar_type")
-                .build();
+        DataFrame expected = DataFrame.fromColumns(
+                new StringColumn("char_type", new String[] {"Hello"}),
+                new StringColumn("varchar_type", new String[] {"Datagrok"}),
+                new StringColumn("nchar_type", new String[] {"Groks"}),
+                new StringColumn("nvarchar_type", new String[] {"Datagrok"}),
+                new StringColumn("text_type", new String[] {"Hello World!"}),
+                new StringColumn("bpchar_type", new String[] {"Groking" + bpchar}));
         return Stream.of(Arguments.of(Named.of("CHARACTER TYPES SUPPORT",
                 FuncCallBuilder.fromQuery("SELECT * FROM CHARACTER_TYPES")), expected));
     }
 
     public static Stream<Arguments> checkOutputDataFrame_dateTypes_ok() {
         Parser parser = new DateParser();
-        DataFrame expected = DataFrameBuilder.getBuilder()
-                .setRowCount(1)
-                .setColumn(new DateTimeColumn(new Double[]{parser.parseDateToDouble("yyyy-MM-dd",
-                        "2008-06-01")}), "date_type")
-                .setColumn(new DateTimeColumn(new Double[]{parser.parseDateToDouble("hh:mm:ss",
-                        "00:00:00")}), "time_type")
-                .setColumn(new DateTimeColumn(new Double[]{parser.parseDateToDouble("hh:mm:ss.SSS X",
-                        "04:05:06.789 +00:00")}), "timetz_type")
-                .setColumn(new DateTimeColumn(new Double[]{parser.parseDateToDouble("yyyy-MM-dd HH:mm:ss",
-                        "2008-06-01 09:59:59"),}), "timestamp_type")
-                .setColumn(new DateTimeColumn(new Double[]{parser.parseDateToDouble("yyyy-MM-dd HH:mm:ss X",
-                        "2001-02-16 18:38:40 +00:00"),}), "timestamptz_type")
-                .build();
+        DataFrame expected = DataFrame.fromColumns(
+                new DateTimeColumn("date_type", new Double[]{parser.parseDateToDouble("yyyy-MM-dd",
+                        "2008-06-01")}),
+                new DateTimeColumn("time_type", new Double[]{parser.parseDateToDouble("hh:mm:ss",
+                        "00:00:00")}),
+                new DateTimeColumn("timetz_type", new Double[]{parser.parseDateToDouble("hh:mm:ss.SSS X",
+                        "04:05:06.789 +00:00")}),
+                new DateTimeColumn("timestamp_type", new Double[]{parser.parseDateToDouble("yyyy-MM-dd HH:mm:ss",
+                        "2008-06-01 09:59:59"),}),
+                new DateTimeColumn("timestamptz_type", new Double[]{parser.parseDateToDouble("yyyy-MM-dd HH:mm:ss X",
+                        "2001-02-16 18:38:40 +00:00"),}));
         return Stream.of(Arguments.of(Named.of("DATE, TIME, TIMETZ, TIMESTAMP, TIMESTAMPTZ TYPES SUPPORT",
                 FuncCallBuilder.fromQuery("SELECT * FROM DATE_TYPES")), expected));
     }
 
     public static Stream<Arguments> checkOutputDataFrame_numericTypes_ok() {
-        DataFrame expected1 = DataFrameBuilder.getBuilder()
-                .setRowCount(2)
-                .setColumn(new IntColumn(new Integer[]{0, -32768}), "smallint_type")
-                .setColumn(new IntColumn(new Integer[]{2147483647, -2147483648}), "int_type")
-                .setColumn(new BigIntColumn(new String[]{"9223372036854775807", "-9223372036854775808"}),
-                        "bigint_type")
-                .build();
-        DataFrame expected2 = DataFrameBuilder.getBuilder()
-                .setRowCount(2)
-                .setColumn(new FloatColumn(new Float[]{5.23553f, 0.9999f}), "decimal_type")
-                .setColumn(new FloatColumn(new Float[]{-2E-10f, 214144412.2f}), "real_type")
-                .setColumn(new FloatColumn(new Float[]{3.14f, Float.NEGATIVE_INFINITY}), "double_precision_type")
-                .build();
+        DataFrame expected1 = DataFrame.fromColumns(
+                new IntColumn("smallint_type", new Integer[]{0, -32768}),
+                new IntColumn("int_type", new Integer[]{2147483647, -2147483648}),
+                new BigIntColumn("bigint_type", new String[]{"9223372036854775807", "-9223372036854775808"}));
+        DataFrame expected2 = DataFrame.fromColumns(
+                new FloatColumn("decimal_type", new Float[]{5.23553f, 0.9999f}),
+                new FloatColumn("real_type", new Float[]{-2E-10f, 214144412.2f}),
+                new FloatColumn("double_precision_type", new Float[]{3.14f, Float.NEGATIVE_INFINITY}));
         return Stream.of(Arguments.of(Named.of("INTEGER TYPES SUPPORT",
                 FuncCallBuilder.fromQuery("SELECT * FROM INTEGER_TYPES")), expected1),
                 Arguments.of(Named.of("FLOAT TYPES SUPPORT",
@@ -360,11 +314,9 @@ public class RedshiftObjectsMother {
     }
 
     public static Stream<Arguments> checkOutputDataFrame_superType_ok() {
-        DataFrame expected = DataFrameBuilder.getBuilder()
-                .setRowCount(2)
-                .setColumn(new StringColumn(new String[] {"{\"bar\":\"baz\",\"balance\":7.77,\"active\":false}",
-                "[10,100,1000]"}), "super_type")
-                .build();
+        DataFrame expected = DataFrame.fromColumns(
+                new StringColumn("super_type", new String[] {"{\"bar\":\"baz\",\"balance\":7.77,\"active\":false}",
+                "[10,100,1000]"}));
         return Stream.of(Arguments.of(Named.of("SUPER TYPE SUPPORT",
                 FuncCallBuilder.fromQuery("SELECT * FROM SUPER_TYPE")), expected));
     }

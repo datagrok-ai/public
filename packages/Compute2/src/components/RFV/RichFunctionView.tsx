@@ -225,6 +225,7 @@ export const RichFunctionView = Vue.defineComponent({
     const visibleTabLabels = Vue.shallowRef([] as string[]);
     const activePanelTitle = Vue.shallowRef<string | undefined>(undefined);
     const dockSpawnConfig = Vue.shallowRef<Record<string, DockSpawnConfigItem>>({});
+    const customExports = Vue.ref<{name: string, function: string}[]>([]);
 
     const isSAenabled = Vue.ref(false);
     const isReportEnabled = Vue.ref(false);
@@ -266,6 +267,7 @@ export const RichFunctionView = Vue.defineComponent({
       isFittingEnabled.value = Utils.getFeature(features, 'fitting', false);
       allowRerun.value = Utils.getFeature(features, 'rerun', false);
       runLabel.value = Utils.getRunLabel(call.func) ?? 'Run';
+      customExports.value = Utils.getCustomExports(call.func);
       dockSpawnConfig.value = Utils.getDockSpawnConfig(call.func);
     }, {immediate: true});
 
@@ -287,6 +289,20 @@ export const RichFunctionView = Vue.defineComponent({
     }, {immediate: true});
 
     const showRun = Vue.computed(() => props.showRunButton && (isOutputOutdated.value || allowRerun.value));
+
+    const reportHandler = async (nqName: string) => {
+      await DG.Func.byName(nqName).apply({
+        startDownload: true,
+        funcCall: currentCall.value,
+        validationState: validationState.value,
+        consistencyState: consistencyState.value,
+        isOutputOutdated: isOutputOutdated.value,
+      });
+    }
+
+    const exports = Vue.computed(() => {
+      return customExports.value.filter(x => x.function && x.name).map(x => ({...x, handler: () => reportHandler(x.function)}));
+    });
 
     ////
     // DockManager related
@@ -408,7 +424,16 @@ export const RichFunctionView = Vue.defineComponent({
     const menuIconStyle = {width: '15px', display: 'inline-block', textAlign: 'center'};
 
     return () => (
-      Vue.withDirectives(<div class='w-full h-full flex'>
+      Vue.withDirectives(<div class='w-full h-full flex'> { isReportEnabled.value && !isOutputOutdated.value && exports.value?.length > 0 &&
+        <RibbonMenu groupName='Step export' view={currentView.value}>
+          {
+            exports.value.map(({ name, handler }) =>
+              <span onClick={handler}>
+                <div> {name} </div>
+              </span>
+            )
+          }
+        </RibbonMenu> }
         <RibbonMenu groupName='Panels' view={currentView.value}>
           <span
             onClick={() => formHidden.value = !formHidden.value}
@@ -453,7 +478,7 @@ export const RichFunctionView = Vue.defineComponent({
               DG.Utils.download(`${currentCall.value.func.nqName} - ${Utils.getStartedOrNull(currentCall.value) ?? 'Not completed'}.xlsx`, blob);
             }}
             tooltip='Generate standard report for the current step'
-          />}
+          /> }
           { isFittingEnabled.value && <IconImage
             name='fitting'
             path={`${_package.webRoot}files/icons/icon-chart-dots.svg`}

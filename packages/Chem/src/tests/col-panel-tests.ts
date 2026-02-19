@@ -1,6 +1,6 @@
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
-import {awaitCheck, category, delay, expect, test} from '@datagrok-libraries/utils/src/test';
+import {awaitCheck, category, delay, expect, test} from '@datagrok-libraries/test/src/test';
 import { readDataframe } from './utils';
 
 

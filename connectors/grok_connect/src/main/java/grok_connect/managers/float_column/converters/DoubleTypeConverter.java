@@ -10,7 +10,7 @@ public class DoubleTypeConverter implements Converter<Float> {
     @Override
     public Float convert(Object value) {
         LOGGER.trace(DEFAULT_LOG_MESSAGE, value.getClass());
-        Double doubleValue = (Double) value;
+        double doubleValue = (Double) value;
         LOGGER.trace("value is {}", doubleValue);
         if (doubleValue > Float.MAX_VALUE) {
             return Float.POSITIVE_INFINITY;
@@ -19,6 +19,6 @@ public class DoubleTypeConverter implements Converter<Float> {
         } else if (Double.isNaN(doubleValue)) {
             return Float.NaN;
         }
-        return doubleValue.floatValue();
+        return (float) doubleValue;
     }
 }

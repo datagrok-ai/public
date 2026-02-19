@@ -79,7 +79,8 @@ export class PackageFunctions {
   @grok.decorators.app({
     icon: 'img/icons/toolkit.png',
     browsePath: 'Peptides | Oligo Toolkit',
-    name: 'Oligo Toolkit'
+    name: 'Oligo Toolkit',
+    tags: ['app']
   })
   static async oligoToolkitApp(): Promise<DG.ViewBase> {
     await _package.initLibData();
@@ -92,7 +93,7 @@ export class PackageFunctions {
   }
 
 
-  @grok.decorators.init()
+  @grok.decorators.init({tags: ['init']})
   static async init(): Promise<void> {
     if (initSequenceTranslatorPromise === null)
       _package.startInit(initSequenceTranslatorPromise = initSequenceTranslatorInt());
@@ -103,7 +104,8 @@ export class PackageFunctions {
   @grok.decorators.app({
     icon: 'img/icons/translator.png',
     browsePath: 'Peptides | Oligo Toolkit',
-    name: 'Oligo Translator'
+    name: 'Oligo Translator',
+    tags: ['app']
   })
   static async oligoTranslatorApp(): Promise<DG.ViewBase> {
     const view = await getSpecifiedAppView(APP_NAME.TRANSLATOR);
@@ -114,7 +116,8 @@ export class PackageFunctions {
   @grok.decorators.app({
     icon: 'img/icons/pattern.png',
     browsePath: 'Peptides | Oligo Toolkit',
-    name: 'Oligo Pattern'
+    name: 'Oligo Pattern',
+    tags: ['app']
   })
   static async oligoPatternApp(): Promise<DG.ViewBase> {
     const view = await getSpecifiedAppView(APP_NAME.PATTERN);
@@ -125,7 +128,8 @@ export class PackageFunctions {
   @grok.decorators.app({
     icon: 'img/icons/structure.png',
     browsePath: 'Peptides | Oligo Toolkit',
-    name: 'Oligo Structure'
+    name: 'Oligo Structure',
+    tags: ['app']
   })
   static async oligoStructureApp(): Promise<DG.ViewBase> {
     const view = await getSpecifiedAppView(APP_NAME.STRUCTURE);
@@ -229,7 +233,7 @@ export class PackageFunctions {
     await polyToolConvertUI();
   }
 
-  @grok.decorators.editor()
+  @grok.decorators.editor({tags: ['editor']})
   static async getPolyToolConvertEditor(
     call: DG.FuncCall): Promise<DG.Column<string> | null> {
     const funcEditor = await PolyToolConvertFuncEditor.create(call);
@@ -299,7 +303,8 @@ export class PackageFunctions {
       browsePath: 'Peptides | PolyTool',
       role: 'app'
     },
-    name: 'HELM Enumerator'
+    name: 'HELM Enumerator',
+    tags: ['app']
   })
   static async ptEnumeratorHelmApp(): Promise<void> {
     await polyToolEnumerateHelmUI();
@@ -312,7 +317,8 @@ export class PackageFunctions {
       browsePath: 'Peptides | PolyTool',
       role: 'app'
     },
-    name: 'Chem Enumerator'
+    name: 'Chem Enumerator',
+    tags: ['app']
   })
   static async ptEnumeratorChemApp(): Promise<void> {
     polyToolEnumerateChemUI();

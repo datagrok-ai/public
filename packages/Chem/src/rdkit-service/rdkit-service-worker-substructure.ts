@@ -5,7 +5,7 @@ import {IMolContext, getMolSafe, getQueryMolSafe} from '../utils/mol-creation_rd
 import BitArray from '@datagrok-libraries/utils/src/bit-array';
 import {RuleId} from '../panels/structural-alerts';
 import {SubstructureSearchType} from '../constants';
-import {stringArrayToMolList} from '../utils/chem-common';
+import {hasNewLines, stringArrayToMolList} from '../utils/chem-common';
 import {ISubstruct} from '@datagrok-libraries/chem-meta/src/types';
 
 export enum MolNotation {
@@ -84,7 +84,7 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
         try {
           queryCanonicalSmiles = queryMol.get_smiles();
           //need to get canonical smiles from mol (not qmol) since qmol implicitly merges query hydrogens
-          queryCanonicalSmiles = this._rdKitModule.get_mol(queryMolString).get_smiles();
+          queryCanonicalSmiles = this.getMolWithSmilesCheck(queryMolString)?.get_smiles() ?? '';
         } catch {}
       }
       const matches = await this.searchWithPatternFps(queryMol, molecules,
@@ -93,6 +93,13 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
       return matches;
     } else
       throw new Error('Chem | Search pattern cannot be set');
+  }
+
+  getMolWithSmilesCheck(molString: string, details?: any): RDMol | null {
+    // hasNewLines should be faster, as M END checked by isMolBlock is usually at the end
+    if (molString && !hasNewLines(molString) && molString.length > 5000)
+      return null; // do not attempt to parse very long SMILES, will cause MOB.
+    return this._rdKitModule.get_mol(molString, details);
   }
 
 
@@ -119,7 +126,7 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
         let isCached = false;
         try {
           const cachedMol = this._molsCache?.get(molecules[i]);
-          mol = cachedMol ?? this._rdKitModule.get_mol(molecules[i], details);
+          mol = cachedMol ?? this.getMolWithSmilesCheck(molecules[i], details)!;
           if (cachedMol || this.addToCache(mol))
             isCached = true;
           if (mol) {
@@ -367,7 +374,7 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
       mols = stringArrayToMolList(molecules, this._rdKitModule);
       try {
         core = coreIsQMol ? this._rdKitModule.get_qmol(coreMolecule) :
-          this._rdKitModule.get_mol(coreMolecule, JSON.stringify({
+          this.getMolWithSmilesCheck(coreMolecule, JSON.stringify({
             makeDummiesQueries: true,
             mappedDummiesAreRGroups: true,
           }));
@@ -449,7 +456,9 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
     for (let i = 0; i < size; i++) {
       let mol;
       try {
-        mol = this._rdKitModule.get_mol(molecules[i]);
+        mol = this.getMolWithSmilesCheck(molecules[i]);
+        if (!mol)
+          continue;
         smiles[i] = mol.get_smiles();
         if (mol) {
           const res = mol.get_mmpa_frags(1, 1, 20);

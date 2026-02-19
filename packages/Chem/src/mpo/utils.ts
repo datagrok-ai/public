@@ -12,7 +12,6 @@ export type MpoProfileInfo = {
   name: string;
   description: string;
   properties: Record<string, PropertyDesirability>;
-  file?: DG.FileInfo;
 };
 
 export enum MpoPathMode {
@@ -23,6 +22,8 @@ export enum MpoPathMode {
 
 export const MPO_TEMPLATE_PATH = 'System:AppData/Chem/mpo';
 export const MPO_PATH = 'Mpo';
+export const MPO_PROFILE_CHANGED_EVENT = 'chem-mpo-profile-changed';
+export const MPO_PROFILE_DELETED_EVENT = 'chem-mpo-profile-deleted';
 
 export async function loadMpoProfiles(): Promise<MpoProfileInfo[]> {
   const files = await grok.dapi.files.list(MPO_TEMPLATE_PATH);
@@ -34,7 +35,6 @@ export async function loadMpoProfiles(): Promise<MpoProfileInfo[]> {
       const content = JSON.parse(text) as DesirabilityProfile;
 
       profiles.push({
-        file,
         fileName: file.name,
         name: content.name ?? file.name.replace(/\.json$/i, ''),
         description: content.description ?? '',
@@ -52,11 +52,19 @@ export async function deleteMpoProfile(profile: MpoProfileInfo): Promise<void> {
   await grok.dapi.files.delete(`${MPO_TEMPLATE_PATH}/${profile.fileName}`);
 }
 
+export type MpoCalculationResult = {
+  columnNames: string[];
+  resultColumn?: DG.Column;
+  warnings: string[];
+  error?: string;
+};
+
 export async function computeMpo(
   df: DG.DataFrame,
   profile: DesirabilityProfile,
   columnMapping: Record<string, string | null>,
   aggregation?: WeightedAggregation,
+  silent: boolean = false,
 ): Promise<string[]> {
   const mappedProperties: Record<string, PropertyDesirability> = {};
   for (const [propName, prop] of Object.entries(profile.properties)) {
@@ -64,15 +72,15 @@ export async function computeMpo(
     mappedProperties[columnName] = prop;
   }
 
-  const [func] = await DG.Func.find({name: 'mpoTransformFunction'});
-  const funcCall = await func.prepare({
-    df,
-    profileName: profile.name ?? 'MPO',
-    currentProperties: mappedProperties,
+  const profileName = profile.name || 'MPO';
+  await grok.functions.call('Chem:mpoTransformFunction', {
+    df: df,
+    profileName,
+    currentProperties: JSON.stringify(mappedProperties),
     aggregation: aggregation ?? 'Average',
-  }).call(undefined, undefined, {processed: false});
-
-  return funcCall.getOutputParamValue() ?? [];
+    silent,
+  });
+  return df.col(profileName) ? [profileName] : [];
 }
 
 export function findSuitableProfiles(df: DG.DataFrame, profiles: MpoProfileInfo[]): MpoProfileInfo[] {
@@ -122,4 +130,28 @@ export function updateMpoPath(
     window.history.replaceState({}, '', newPath);
 
   view.path = newPath;
+}
+
+export function deepEqual<T>(current: T, original: T): boolean {
+  if (current === original)
+    return true;
+
+  if (typeof original !== 'object')
+    return false;
+
+  if (Array.isArray(original)) {
+    if (!Array.isArray(current) || current.length !== original.length)
+      return false;
+    for (let i = 0; i < original.length; i++) {
+      if (!deepEqual(current[i], original[i]))
+        return false;
+    }
+    return true;
+  }
+
+  for (const key in original) {
+    if (!deepEqual(current[key], original[key]))
+      return false;
+  }
+  return true;
 }

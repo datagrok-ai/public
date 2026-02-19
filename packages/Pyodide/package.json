@@ -8,7 +8,7 @@
     "email": "ppolovyi@datagrok.ai"
   },
   "dependencies": {
-    "@datagrok-libraries/test": "^1.0.0",
+    "@datagrok-libraries/test": "^1.1.0",
     "@datagrok-libraries/utils": "^4.6.5",
     "cash-dom": "^8.1.5",
     "datagrok-api": "../../js-api",
@@ -20,7 +20,6 @@
   },
   "devDependencies": {
     "@types/uuid": "^10.0.0",
-    "datagrok-tools": "^5.0.0",
     "ts-loader": "^9.5.1",
     "typescript": "^5.6.3",
     "webpack": "^5.95.0",

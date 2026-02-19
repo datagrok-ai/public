@@ -3,7 +3,7 @@
 /* eslint-disable max-len */
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
-import {mapFromRow, safeLog, toExcelPosition} from './../utils';
+import {mapFromRow, toExcelPosition} from './../utils';
 import {Plate, PLATE_OUTLIER_WELL_NAME} from './../plate';
 import {fromEvent, Subject, Subscription} from 'rxjs';
 import {filter, takeUntil} from 'rxjs/operators';
@@ -41,6 +41,8 @@ export class PlateWidget extends DG.Widget {
   wellValidationErrors: Map<string, string[]> = new Map();
 
   private hoveredCell: { row: number, col: number } | null = null;
+  private _positiveMinCache: number | null = null;
+  private _positiveMinCacheCol: DG.Column | undefined = undefined;
   private _onDestroy = new Subject<void>();
   private analysisCoordinators: IAnalysisWidgetCoordinator[] = [];
   private outlierSubscription?: Subscription;
@@ -119,9 +121,9 @@ export class PlateWidget extends DG.Widget {
     return distance <= radius;
   }
 
-  public addAnalysisTab(name: string, content: HTMLElement): void {
+  public addAnalysisTab(name: string, content: HTMLElement, makeCurrent = true): void {
     const pane = this.tabs.addPane(name, () => content);
-    this.tabs.currentPane = pane;
+    if (makeCurrent) this.tabs.currentPane = pane;
   }
 
   constructor() {
@@ -232,7 +234,7 @@ export class PlateWidget extends DG.Widget {
     const pw = new PlateWidget();
     pw.plate = plate;
 
-    ui.empty(pw.root);
+    // ui.empty(pw.root);
 
     pw.detailsDiv = ui.divV([], 'assay-plates--plate-widget__details');
     pw.wellDetailsDiv = ui.div();
@@ -284,12 +286,16 @@ export class PlateWidget extends DG.Widget {
   }
 
   refresh() {
+    this._positiveMinCache = null;
+    this._positiveMinCacheCol = undefined;
     const currentPaneName = this.tabs.currentPane?.name;
     this.tabs.clear();
     this.grids.clear();
-    this.tabs.addPane('Summary', () => this.grid.root);
-    this.tabs.addPane(`X Outliers X`, () => this.grid.root);
-
+    this.tabs.addPane('Summary', () => {
+      // this.grid.invalidate();
+      return this.grid.root;
+    });
+    // this.tabs.addPane(`X Outliers X`, () => this.grid.root);
     const allColumns = this.plate.data.columns.toList()
       .filter((c) => c.name !== PLATE_OUTLIER_WELL_NAME);
 
@@ -407,15 +413,44 @@ export class PlateWidget extends DG.Widget {
       args.preventDefault();
   }
 
+  /** Returns the smallest positive value in the color column (cached). */
+  private getPositiveMin(): number | null {
+    if (this._positiveMinCacheCol === this._colorColumn && this._positiveMinCache !== null)
+      return this._positiveMinCache;
+
+    if (!this._colorColumn) return null;
+
+    let min = Infinity;
+    for (let i = 0; i < this._colorColumn.length; i++) {
+      if (!this._colorColumn.isNone(i)) {
+        const v = this._colorColumn.get(i);
+        if (v > 0 && v < min) min = v;
+      }
+    }
+    this._positiveMinCache = min === Infinity ? null : min;
+    this._positiveMinCacheCol = this._colorColumn;
+    return this._positiveMinCache;
+  }
+
   getColor(dataRow: number) {
     if (!this._colorColumn) return DG.Color.white;
     const isLog = this._colorColumn.name?.toLowerCase()?.includes('conc');
     const val = this._colorColumn.get(dataRow)!;
     const stats = this._colorColumn.stats;
-    const reducedVal = isLog ? safeLog(val) : val;
-    const min = isLog ? safeLog(stats.min) : stats.min;
-    const max = isLog ? safeLog(stats.max) : stats.max;
-    return DG.Color.scaleColor(reducedVal, min, max, undefined, colorScheme);
+
+    if (isLog) {
+      // Non-positive concentrations (e.g. control wells) get the base color
+      if (val <= 0) return colorScheme[0];
+
+      const reducedVal = Math.log10(val);
+      const positiveMin = this.getPositiveMin();
+      const logMin = positiveMin !== null ? Math.log10(positiveMin) : reducedVal;
+      const logMax = stats.max > 0 ? Math.log10(stats.max) : reducedVal;
+
+      return DG.Color.scaleColor(reducedVal, Math.min(logMin, logMax), Math.max(logMin, logMax), undefined, colorScheme);
+    }
+
+    return DG.Color.scaleColor(val, stats.min, stats.max, undefined, colorScheme);
   }
 
   syncGrids() {

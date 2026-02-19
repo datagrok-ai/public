@@ -2,7 +2,7 @@
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 
-import {category, expect, test} from '@datagrok-libraries/utils/src/test';
+import {category, expect, test} from '@datagrok-libraries/test/src/test';
 import {Plate} from '../plate/plate';
 
 // @ts-ignore

@@ -4,7 +4,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {delay} from '@datagrok-libraries/utils/src/test';
+import {delay} from '@datagrok-libraries/test/src/test';
 import {ILogger} from '@datagrok-libraries/bio/src/utils/logger';
 import {DEFAULT_FILES_LIB_PROVIDER_NAME, findProviderWithLibraryName, IMonomerLib, IMonomerSet} from '@datagrok-libraries/bio/src/types/monomer-library';
 import {
@@ -103,7 +103,7 @@ export class MonomerLibManager implements IMonomerLibHelper {
   private _monomerLibProviders: IMonomerLibProvider[] | null = null;
   public async getProviders(): Promise<IMonomerLibProvider[]> {
     if (this._monomerLibProviders == null) {
-      const providerFuncs = DG.Func.find({meta: {role: DG.FUNC_TYPES.MONOMER_LIB_PROVIDER}});
+      const providerFuncs = DG.Func.find({meta: {role: 'monomer-lib-provider'}});
       this._monomerLibProviders = await Promise.all(providerFuncs.map(async (func) => {
         return (await func.apply({})) as IMonomerLibProvider;
       }));

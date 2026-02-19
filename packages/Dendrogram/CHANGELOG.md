@@ -1,5 +1,17 @@
 # Dendrogram changelog
 
+## 1.4.8 (2026-02-03)
+
+* Horizontal zooming of dendrogram with mouse wheel and pinch gesture.
+
+## 1.4.7 (2026-02-02)
+
+* Resizable dendrogram neighbor panel in the grid.
+* Cluster assignment based on cut-off slider or clusters number.
+* Fix error handling in hierarchical clustering.
+* Cut slider indicator vertical line
+* Closing old dendrogram neighbor on new clustering
+
 ## 1.4.5 (2025-08-01)
 
 * Support initialization

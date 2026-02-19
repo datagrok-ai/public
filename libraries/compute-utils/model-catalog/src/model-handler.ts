@@ -128,10 +128,11 @@ export class ModelHandler extends DG.ObjectHandler {
     dlg.show();
   }
 
-  // Checks whether this is the handler for [x]
+  // Checks whether this is the handler for x
   override isApplicable(x: any) {
     const js = DG.toJs(x);
-    return js instanceof DG.Func && js.hasTag('model');
+    const hasModelRole = ((js?.options?.role as string) ?? '').split(',').includes('model');
+    return js instanceof DG.Func && (js.hasTag('model') || hasModelRole);
   }
 
   private userGroups = new BehaviorSubject<DG.Group[] | undefined>(undefined);

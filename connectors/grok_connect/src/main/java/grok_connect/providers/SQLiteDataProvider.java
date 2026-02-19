@@ -24,6 +24,7 @@ import grok_connect.utils.Property;
 import grok_connect.utils.QueryCancelledByUser;
 import serialization.*;
 
+@SuppressWarnings("unused")
 public class SQLiteDataProvider extends JdbcDataProvider {
     public boolean autoInterpolation() {
         return false;
@@ -69,8 +70,7 @@ public class SQLiteDataProvider extends JdbcDataProvider {
 
     @Override
     public DataFrame getSchemas(DataConnection connection) throws QueryCancelledByUser, GrokConnectException {
-        StringColumn column = new StringColumn(new String[]{""});
-        column.name = "TABLE_SCHEMA";
+        StringColumn column = new StringColumn("TABLE_SCHEMA", new String[]{""});
         return DataFrame.fromColumns(column);
     }
 

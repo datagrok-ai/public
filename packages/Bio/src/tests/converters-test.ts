@@ -3,7 +3,7 @@
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 
-import {before, category, expect, expectArray, test} from '@datagrok-libraries/utils/src/test';
+import {before, category, expect, expectArray, test} from '@datagrok-libraries/test/src/test';
 import {NOTATION, TAGS as bioTAGS} from '@datagrok-libraries/bio/src/utils/macromolecule';
 import {ISeqHelper, getSeqHelper} from '@datagrok-libraries/bio/src/utils/seq-helper';
 import {ISeqHandler} from '@datagrok-libraries/bio/src/utils/macromolecule/seq-handler';

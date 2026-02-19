@@ -58,8 +58,16 @@ export class BaseAnalysisView {
       requiredFields: this.config.requiredFields,
       sourceColumns: this.plate.data.columns.names(),
       currentMappings: this.currentMappings,
-      onMap: this.onMap,
-      onUndo: this.onUndo
+      onMap: (target: string, source: string) => {
+        this.currentMappings.set(target, source);
+        this.onMap(target, source);
+        this.render();
+      },
+      onUndo: (target: string) => {
+        this.currentMappings.delete(target);
+        this.onUndo(target);
+        this.render();
+      }
     });
 
     const panelRoot = mappingPanel.getRoot();

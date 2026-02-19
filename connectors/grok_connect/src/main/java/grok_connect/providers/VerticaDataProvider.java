@@ -89,15 +89,12 @@ public class VerticaDataProvider extends JdbcDataProvider {
             GrokConnectException {
         String columnName = "is_view";
         DataFrame dataFrame = super.getSchema(connection, schema, table, includeKeyInfo);
-        Column oldColumn = dataFrame.columns.stream()
-                .filter(column -> column.name.equals(columnName))
-                .collect(Collectors.toList()).get(0);
-        dataFrame.columns.remove(oldColumn);
-        Column newColumn = new IntColumn();
-        for (int i = 0; i< oldColumn.length; i++)
+        Column<?> oldColumn = dataFrame.getColumn(columnName);
+        dataFrame.removeColumn(columnName);
+        IntColumn newColumn = new IntColumn(columnName);
+        for (int i = 0; i < oldColumn.getLength(); i++)
             newColumn.add(Integer.valueOf(oldColumn.get(i).toString()));
-        newColumn.name = columnName;
-        dataFrame.columns.add(newColumn);
+        dataFrame.addColumn(newColumn);
         return dataFrame;
     }
 

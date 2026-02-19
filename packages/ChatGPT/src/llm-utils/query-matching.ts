@@ -7,8 +7,8 @@ import {_package} from '../package';
 import {dartLike, fireAIAbortEvent} from '../utils';
 import {AIPanelFuncs, MessageType} from './panel';
 import {generateAISqlQueryWithTools} from './sql-tools';
-import {ModelType} from './openAI-client';
-import OpenAI from 'openai';
+import {ModelType} from './LLM-client';
+import {JsonSchema} from '../prompt-engine/interfaces';
 
 
 /// Prompt API: https://developer.chrome.com/docs/ai/prompt-api
@@ -46,17 +46,22 @@ type PatternQueryMatchResult = {
 export async function findBestMatchingQuery(
   question: string,
 ): Promise<QueryMatchResult | null> {
-  const schema = {
+  const schema: JsonSchema = {
     type: 'object',
     properties: {
       searchPattern: {type: 'string'},
-      parameters: {type: 'object',
-        properties: {},
-        required: [],
-        patternProperties: {
-          '.*': {},
+      parameters: {
+        type: 'array',
+        description: 'Array of parameter key-value pairs extracted from the search pattern.',
+        items: {
+          type: 'object',
+          properties: {
+            key: {type: 'string'},
+            value: {type: 'string'},
+          },
+          required: ['key', 'value'],
+          additionalProperties: false,
         },
-        additionalProperties: false,
       },
       confidence: {type: 'number'},
       suggestedConnection: {type: ['string', 'null']},
@@ -117,7 +122,7 @@ STEP 3 — Extract parameters:
   - Identify parameters in format \${parameterName} from the selected pattern
   - Extract corresponding values ONLY if explicitly stated or clearly implied
   - Use empty string if a parameter cannot be determined
-  - Return as JSON object
+  - Return as array of objects with 'key' (parameter name) and 'value' (extracted value) properties
 
 STEP 4 — Provide reasoning:
   - In 1-2 sentences, explain why you chose this pattern and confidence level
@@ -148,7 +153,7 @@ User request:
 
 Analyze the user request and return a JSON object with:
 - searchPattern: the exact pattern string from above (or closest match if confidence is low)
-- parameters: extracted parameter values as object
+- parameters: array of objects with 'key' and 'value' properties for extracted parameter values
 - confidence: your confidence score (0 to 1)
 - suggestedConnection: infer the most likely connection from available list (be generous with inference); return null only if truly no clues exist
 - reasoning: brief explanation of your decision, including why you chose/didn't choose a connection
@@ -178,23 +183,41 @@ Analyze the user request and return a JSON object with:
         .replace(/```\s*$/i, '')
         .trim();
 
-      result = JSON.parse(cleanedResponse) as QueryMatchResult;
+      const rawResult = JSON.parse(cleanedResponse) as {
+        searchPattern: string;
+        parameters: Array<{key: string; value: string}>;
+        confidence: number;
+        suggestedConnection?: string | null;
+        reasoning?: string;
+      };
 
       // Validate required fields
-      if (typeof result.searchPattern !== 'string')
+      if (typeof rawResult.searchPattern !== 'string')
         throw new Error('searchPattern must be a string');
-      if (typeof result.parameters !== 'object' || result.parameters === null)
-        throw new Error('parameters must be an object');
-      if (typeof result.confidence !== 'number' || result.confidence < 0 || result.confidence > 1)
+      if (!Array.isArray(rawResult.parameters))
+        throw new Error('parameters must be an array');
+      if (typeof rawResult.confidence !== 'number' || rawResult.confidence < 0 || rawResult.confidence > 1)
         throw new Error('confidence must be a number between 0 and 1');
-      if (result.suggestedConnection !== undefined && result.suggestedConnection !== null && typeof result.suggestedConnection !== 'string')
+      if (rawResult.suggestedConnection !== undefined && rawResult.suggestedConnection !== null && typeof rawResult.suggestedConnection !== 'string')
         throw new Error('suggestedConnection must be a string or null');
-      if (result.reasoning !== undefined && typeof result.reasoning !== 'string')
+      if (rawResult.reasoning !== undefined && typeof rawResult.reasoning !== 'string')
         throw new Error('reasoning must be a string');
 
-      // Set defaults for optional fields if missing
-      result.suggestedConnection = result.suggestedConnection ?? null;
-      result.reasoning = result.reasoning ?? 'No reasoning provided';
+      // Convert array format to Record format
+      const parametersRecord: Record<string, string> = {};
+      for (const param of rawResult.parameters) {
+        if (typeof param.key !== 'string' || typeof param.value !== 'string')
+          throw new Error('Each parameter must have string key and value properties');
+        parametersRecord[param.key] = param.value;
+      }
+
+      result = {
+        searchPattern: rawResult.searchPattern,
+        parameters: parametersRecord,
+        confidence: rawResult.confidence,
+        suggestedConnection: rawResult.suggestedConnection ?? null,
+        reasoning: rawResult.reasoning ?? 'No reasoning provided',
+      };
     } catch (parseError) {
       _package.logger.error(`Failed to parse LLM response: ${parseError}. Response was: ${responseText}`);
       return null;
@@ -294,15 +317,12 @@ function runQueryAIprompt(userPrompt: string, connection: DG.DataConnection, tvW
   async function runPrompt() {
     try {
       ui.setUpdateIndicator(outputDiv, true, 'Generating query...', abort);
-      const schemas = await grok.dapi.connections.getSchemas(connection);
-      const defaultSchema = schemas.includes('public') ? 'public' : schemas.includes(connection.name) ? connection.name : schemas[0];
       const sqlResult = await generateAISqlQueryWithTools(
         userPrompt,
         connection.id!,
-        defaultSchema,
         {
           aiPanel: dummyAIPanelFuncs,
-          modelName: ModelType['Deep Research'],
+          modelType: 'Deep Research',
           disableVerbose: true
         }
       );

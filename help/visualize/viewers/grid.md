@@ -271,15 +271,7 @@ Cell renderers customize how cell data is shown. For instance, molecules in
 SMILES notation may be rendered in 2D. For specific semantic types,
 such as molecules or URL images, cell renderers are applied automatically. 
 
-To apply a cell renderer manually:
-
-1. Right click the column header and select **Column properties...**. A dialog
-   opens.
-1. In the dialog, set the tag key to `cell.renderer` and the tag value to the
-   desired cell renderer  name (e.g., `Tags`). 
-  >Note: Some cell renderers <!--(e.g., [MultiChoice])  //TODO: New doc: supported-cell-renderers.md--> may require
-  >additional parameters. 
-1. Click **OK**.
+Use the "Renderer" combobox under the "Settings" pane in the column context panel.
 
 ![](../../deploy/releases/img/release1.18-cellrend-tags-multichoice-dropdown.gif)
 
@@ -304,7 +296,6 @@ After that, double-clicking the cell will show a drop-down list with those optio
 The `MultiChoice` renderer displays a list of predefined options as checkboxes within a cell. To configure it:
 
 1. Set the column tag `cell.renderer` to `MultiChoice`.
-
 2. Set another column tag, `.choices`, to a JSON string array of the options you want to display (e.g., ["Option 1", "Option 2", "Option 3"]).
 
 #### Tags renderer
@@ -312,8 +303,11 @@ The `MultiChoice` renderer displays a list of predefined options as checkboxes w
 The `Tags` renderer is used to display comma-separated values from a string column as individual "tags". To use it:
 
 1. Set the column tag `cell.renderer` to `Tags`.
-
 2. Ensure the cell values are formatted as a comma-separated string (e.g., "Opt1,Opt2,Opt3").
+
+#### Stars
+
+The `Stars` cell type applies to the integer column, and lets you "rate" something with stars.
 
 ### Summary columns
 
@@ -367,6 +361,21 @@ To show data from multiple columns, you can design a form:
 <br/>
 
 ![Forms](img/grid-forms.gif "Forms")
+
+</TabItem>
+<TabItem value="confidence-interval" label="Confidence interval">
+
+Confidence interval columns visualize point estimates with their uncertainty ranges. Each cell
+shows a center mark (dot, diamond, or vertical line) for the estimate, connected by a horizontal
+whisker line to the lower and upper bounds. Optional end caps (serifs) and a semi-transparent
+fill band between the bounds make the intervals easy to read at a glance.
+
+Two input modes are supported: **three-column** binding (estimate, lower bound, upper bound) and
+**two-column** binding (estimate + margin of error for symmetric intervals). Scale options include
+global (shared min/max across all rows), per-row, custom fixed range, and symmetric around zero.
+A reference line (e.g., zero or a target value) can be added for comparison. Log scale is
+available for data spanning orders of magnitude. When bounds extend beyond the visible range,
+arrow indicators show truncation. Hovering over a cell displays exact values in a tooltip.
 
 </TabItem>
 </Tabs>
@@ -667,12 +676,8 @@ or press Alt+C.
 | Vert Col Labels Height | number | Height of the column labels when the orientation is vertical, and *Col Header Height* is not specified. |
 | Horz Col Labels Height | number | Height of the column labels when the orientation is horizontal, and *Col Header Height* is not specified. |
 | Max Heatmap Columns | number |  |
-| **Rows** | | |
-| Row Height | number | Applicable only to grid |
-| **Selection** | | |
-| Show Mouse Over Row Indicator | boolean | Indicates mouse-over row by drawing a vertical stripe on the row header |
-| Show Current Row Indicator | boolean | Indicates current row with the *Current Row Color*. |
 | **General** | | |
+| Show Friendly Name | boolean | When checked, friendly name gets shown underneath the column name. |
 | Top Level Default Menu | boolean | When set to false, default menu appears under the ''Grid'' submenu. |
 | Show Default Popup Menu | boolean | Whether items applicable to all viewers (such as Pickup Style) should be shown in a popup menu. Also requires *Show Context Menu*. |
 | Allow Block Selection | boolean | Mouse drag on the data cells selects both rows and columns |
@@ -742,6 +747,11 @@ or press Alt+C.
 | Opacity | number | Applies to image columns only |
 | Element | element | For ''html'' cell types only |
 | Choices | list | When defined, the cell editor becomes a combo box with the specified values |
+| **Rows** | | |
+| Row Height | number | Applicable only to grid |
+| **Selection** | | |
+| Show Mouse Over Row Indicator | boolean | Indicates mouse-over row by drawing a vertical stripe on the row header |
+| Show Current Row Indicator | boolean | Indicates current row with the *Current Row Color*. |
 | **Style** | | |
 | Show Current Cell Outline | boolean |  |
 | Color Coding | gridcolorcodingtype | Color-coding that applies to all columns. Additionally, each column can be individually color-coded. |

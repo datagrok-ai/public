@@ -12,14 +12,14 @@
     "@datagrok/chem": "^1.15.0",
     "cash-dom": "^8.1.5",
     "datagrok-api": "../../js-api",
-    "dayjs": "^1.11.13"
+    "dayjs": "^1.11.13",
+    "@datagrok-libraries/test": "^1.1.0"
   },
   "devDependencies": {
     "css-loader": "^7.1.2",
-    "datagrok-tools": "^4.14.55",
     "style-loader": "^4.0.0",
-    "ts-loader": "latest",
-    "typescript": "latest",
+    "ts-loader": "^9.5.4",
+    "typescript": "^5.9.3",
     "webpack": "^5.95.0",
     "webpack-cli": "^5.1.4"
   },
@@ -46,5 +46,8 @@
     "type": "git",
     "url": "https://github.com/datagrok-ai/public.git",
     "directory": "packages/CddVaultLink"
+  },
+  "overrides": {
+    "datagrok-api": "$datagrok-api"
   }
 }

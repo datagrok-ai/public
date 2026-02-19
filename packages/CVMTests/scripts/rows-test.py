@@ -1,7 +1,7 @@
 #name: RowsTest
 #language: python
 #output: dataframe res
-#test: ApiTests:getColumn(RowsTest(), 'calories').length == 3
+#test: CvmTests:getColumn(RowsTest(), 'calories').length == 3
 import pandas as pd
 data = {
   "calories": [420, 380, 390]

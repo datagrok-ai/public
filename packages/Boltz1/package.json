@@ -14,13 +14,13 @@
     "datagrok-api": "^1.26.0",
     "dayjs": "=1.11.10",
     "js-yaml": "^4.1.0",
-    "rxjs": "^6.5.5"
+    "rxjs": "^6.5.5",
+    "@datagrok-libraries/test": "^1.1.0"
   },
   "devDependencies": {
     "@types/js-yaml": "^4.0.9",
     "@types/wu": "^2.1.44",
     "css-loader": "^7.1.2",
-    "datagrok-tools": "^4.14.55", 
     "style-loader": "^4.0.0",
     "ts-loader": "9.4.2",
     "typescript": "^5.3.3",
@@ -50,5 +50,8 @@
     "url": "https://github.com/datagrok-ai/public.git",
     "directory": "packages/Boltz1"
   },
-  "category": "Bioinformatics"
+  "category": "Bioinformatics",
+  "overrides": {
+    "datagrok-api": "$datagrok-api"
+  }
 }

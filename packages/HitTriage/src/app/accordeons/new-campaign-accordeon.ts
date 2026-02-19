@@ -1,3 +1,4 @@
+/* eslint-disable max-len */
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
@@ -50,7 +51,8 @@ export async function newCampaignAccordeon(template: HitTriageTemplate,
   const fileInputDiv = ui.div([dfInput, errorDiv]);
   if (Object.keys(dataSourceFunctionsMap).length === 0) {
   // functions that have special tag and are applicable for data source. they should return a dataframe with molecules
-    const dataSourceFunctions = DG.Func.find({meta: {role: C.HitTriageDataSourceTag}});
+    const dataSourceFunctions =
+      Array.from(new Set(DG.Func.find({meta: {role: C.HitTriageDataSourceTag}}).concat(DG.Func.find({tags: [C.HitTriageDataSourceTag]}))));
     // for display purposes we use friendly name of the function
     dataSourceFunctions.forEach((func) => {
       dataSourceFunctionsMap[func.friendlyName ?? func.name] = func;

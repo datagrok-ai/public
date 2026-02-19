@@ -5,7 +5,7 @@ import * as DG from 'datagrok-api/dg';
 import {Subject} from 'rxjs';
 import * as ngl from 'NGL';
 
-import {delay, testEvent} from '@datagrok-libraries/utils/src/test';
+import {delay, testEvent} from '@datagrok-libraries/test/src/test';
 
 import {_package} from '../package';
 

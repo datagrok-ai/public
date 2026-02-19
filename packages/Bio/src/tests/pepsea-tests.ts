@@ -1,6 +1,6 @@
 import * as DG from 'datagrok-api/dg';
 
-import {before, category, expect, expectArray, test} from '@datagrok-libraries/utils/src/test';
+import {before, category, expect, expectArray, test} from '@datagrok-libraries/test/src/test';
 import {runPepsea} from '../utils/pepsea';
 import {TestLogger} from './utils/test-logger';
 import {errInfo} from '@datagrok-libraries/bio/src/utils/err-info';

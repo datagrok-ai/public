@@ -3,7 +3,7 @@
 #help-url: https://datagrok.ai/help/domains/chem/functions/conformers
 #language: python
 #meta.domain: chem
-#top-menu: Chem | Compute | Generate Conformers...
+#top-menu: Chem | Calculate | Generate Conformers...
 #input: string molecule = "CCCC" {semType: Molecule}  # Butane - shows anti/gauche conformations
 #input: int num_conformers = 50 {caption: Num conformers} [Number of conformers to generate]
 #input: bool optimize = true [Optimize with MMFF94 force field]

@@ -24,6 +24,8 @@ export async function getStructuralAlerts(molecule: string): Promise<number[]> {
   const alerts: number[] = [];
   let mol: RDMol | null = null;
   try {
+    if (!grok.chem.isMolBlock(molecule) && molecule?.length > 5000)
+      throw new Error('SMILES string longer than 5000 characters not supported');
     mol = rdKitModule.get_mol(molecule);
     //TODO: use SustructLibrary and count_matches instead. Currently throws an error on rule id 221
     // const lib = new _structuralAlertsRdKitModule.SubstructLibrary();

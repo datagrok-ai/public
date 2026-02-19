@@ -15,6 +15,8 @@ const forbiddenNames = ['function', 'class', 'export'];
 const namesInFiles = new Map<string, string[]>();
 
 export function check(args: CheckArgs): boolean {
+  if (args.verbose !== undefined || args.v !== undefined)
+    color.setVerbose(args.verbose || args.v || false);
   const curDir = args._.length == 2 ? args._[1] : process.cwd();
 
   if (args.recursive)
@@ -24,7 +26,7 @@ export function check(args: CheckArgs): boolean {
       color.error('File `package.json` not found. Run the command from the package directory');
       return false;
     }
-    return runChecks(curDir, args.soft ?? false);
+    return runChecks(curDir, args.soft ?? false, false);
   }
 }
 
@@ -89,7 +91,7 @@ function runChecks(packagePath: string, soft: boolean = false, noExit: boolean =
     else
       testUtils.exitWithCode(1);
   }
-  console.log(`Checking package ${path.basename(packagePath)}...\t\t\t\u2713 OK`);
+  color.log(`Checking package ${path.basename(packagePath)}...\t\t\t\u2713 OK`);
   return true;
 }
 
@@ -97,7 +99,7 @@ function runChecks(packagePath: string, soft: boolean = false, noExit: boolean =
 function runChecksRec(dir: string, soft: boolean = false): boolean {
   const files = fs.readdirSync(dir);
   let allPassed = true;
-  
+
   for (const file of files) {
     const filepath = path.join(dir, file);
     const stats = fs.statSync(filepath);
@@ -553,20 +555,8 @@ export function checkSourceMap(packagePath: string): string[] {
     const distPackage = path.join(packagePath, 'dist', 'package.js');
     const distPackageTest = path.join(packagePath, 'dist', 'package-test.js');
 
-    let missingFiles = [distPackage, distPackageTest].filter((f) => !fs.existsSync(f));
-
-    // If any dist files are missing, try to build automatically
-    if (missingFiles.length > 0) {
-      try {
-        execSync('npm run build', {cwd: packagePath, stdio: 'inherit'});
-      } catch (e) {
-        console.warn('Build failed:', e);
-      }
-
-      // Recheck dist files after build
-      missingFiles = [distPackage, distPackageTest].filter((f) => !fs.existsSync(f));
-      missingFiles.forEach((f) => warnings.push(`${path.relative(packagePath, f)} file doesnt exist even after build`));
-    }
+    const missingFiles = [distPackage, distPackageTest].filter((f) => !fs.existsSync(f));
+    missingFiles.forEach((f) => warnings.push(`${path.relative(packagePath, f)} file doesnt exist. Run 'npm run build' first.`));
   }
 
   return warnings;
@@ -590,11 +580,16 @@ export function checkNpmIgnore(packagePath: string): string[] {
 
 function checkScriptNames(packagePath: string): string[] {
   const warnings: string[] = [];
+  // Only check source code files - test data and documentation can have descriptive names with spaces
+  const sourceExtensions = ['.ts', '.js', '.py', '.r', '.jl', '.m', '.sql'];
 
   try {
     if (fs.existsSync(packagePath)) {
       const filesInDirectory = getAllFilesInDirectory(packagePath);
       for (const fileName of filesInDirectory) {
+        const ext = path.extname(fileName).toLowerCase();
+        if (!sourceExtensions.includes(ext))
+          continue;
         if (fileName.match(new RegExp('^[A-Za-z0-9._-]*$'))?.length !== 1)
           warnings.push(`${fileName}: file name contains inappropriate symbols`);
       }
@@ -605,7 +600,11 @@ function checkScriptNames(packagePath: string): string[] {
 }
 
 function getAllFilesInDirectory(directoryPath: string): string[] {
-  const excludedFilesToCheck: string[] = ['node_modules', 'dist'];
+  // Exclude directories that typically contain test data, fixtures, or documentation
+  const excludedDirs: string[] = [
+    'node_modules', 'dist', 'files', 'fixtures', 'data', 'templates',
+    'test-data', 'scenarios', 'samples', 'demo', 'docs', 'documentation'
+  ];
 
   let fileNames: string[] = [];
   const entries = fs.readdirSync(directoryPath);
@@ -613,9 +612,9 @@ function getAllFilesInDirectory(directoryPath: string): string[] {
     const entryPath = path.join(directoryPath, entry);
     const stat = fs.statSync(entryPath);
 
-    if (stat.isFile()) 
+    if (stat.isFile())
       fileNames.push(entry);
-    else if (stat.isDirectory() && !excludedFilesToCheck.includes(entry)) {
+    else if (stat.isDirectory() && !excludedDirs.includes(entry.toLowerCase())) {
       const subDirectoryFiles = getAllFilesInDirectory(entryPath);
       fileNames = fileNames.concat(subDirectoryFiles);
     }
@@ -740,4 +739,6 @@ interface CheckArgs {
   r?: boolean,
   recursive?: boolean,
   soft?: boolean,
+  verbose?: boolean,
+  v?: boolean,
 }

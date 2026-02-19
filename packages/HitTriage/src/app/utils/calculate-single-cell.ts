@@ -18,70 +18,87 @@ export async function calculateCellValues(
   const table = DG.DataFrame.fromColumns([col]);
   table.name = 'HD cell values';
   await table.meta.detectSemanticTypes();
-
-  try {
-    if (descriptors.length)
-      await grok.chem.descriptors(table, col.name, descriptors);
-  } catch (e) {
-    console.error('Descriptors calculation error', e);
-  }
-  for (const func of functions) {
+  const promises: Promise<void>[] = [];
+  promises.push(new Promise(async (resolve) => {
     try {
-      const props = func.args;
-      const fs = DG.Func.find({package: func.package, name: func.name});
-      if (!fs.length || !fs[0]) {
-        console.warn(`Function ${func.name} from package ${func.package} is not found`);
-        continue;
-      }
-      const f = fs[0];
-      const tablePropName = f.inputs[0].name;
-      const colPropName = f.inputs[1].name;
-      await f.apply({...props, [tablePropName]: table, [colPropName]: col.name});
+      if (descriptors.length)
+        await grok.chem.descriptors(table, col.name, descriptors);
     } catch (e) {
-      console.error(e);
-      continue;
+      _package.logger.error('Descriptors calculation error');
+      _package.logger.error(e);
     }
+    resolve();
+  }));
+
+  for (const func of functions) {
+    promises.push(new Promise(async (resolve) => {
+      try {
+        const props = func.args;
+        const fs = DG.Func.find({package: func.package, name: func.name});
+        if (!fs.length || !fs[0]) {
+          console.warn(`Function ${func.name} from package ${func.package} is not found`);
+          resolve();
+          return;
+        }
+        const f = fs[0];
+        const tablePropName = f.inputs[0].name;
+        const colPropName = f.inputs[1].name;
+        await f.apply({...props, [tablePropName]: table, [colPropName]: col.name});
+      } catch (e) {
+        _package.logger.error(e);
+      }
+      resolve();
+    }));
   }
 
   for (const script of scripts) {
     const props = script.args;
-    try {
-      const scriptFunc = DG.Func.find({name: script.name})
-        .filter((s) => s.type === funcTypeNames.script && s.id === script.id)[0] as DG.Script | undefined;
-      if (scriptFunc) {
-        const tablePropName = scriptFunc.inputs[0].name;
-        const colPropName = scriptFunc.inputs[1].name;
+    promises.push(new Promise(async (resolve) => {
+      try {
+        const scriptFunc = DG.Func.find({name: script.name})
+          .filter((s) => s.type === funcTypeNames.script && s.id === script.id)[0] as DG.Script | undefined;
+        if (scriptFunc) {
+          const tablePropName = scriptFunc.inputs[0].name;
+          const colPropName = scriptFunc.inputs[1].name;
 
-        const r: DG.DataFrame = await scriptFunc.apply({...props, [tablePropName]: table, [colPropName]: col.name});
-        if (r && r.rowCount === table.rowCount && scriptFunc.language === 'python') {
-          for (const c of r.columns) {
-            c.name = table.columns.getUnusedName(c.name);
-            table.columns.add(c);
+          const r: DG.DataFrame = await scriptFunc.apply({...props, [tablePropName]: table, [colPropName]: col.name});
+          if (r && r.rowCount === table.rowCount && scriptFunc.language === 'python') {
+            for (const c of r.columns) {
+              c.name = table.columns.getUnusedName(c.name);
+              table.columns.add(c);
+            }
           }
         }
+      } catch (e) {
+        _package.logger.error(e);
       }
-    } catch (e) {
-      console.error(e);
-    }
+      resolve();
+    }));
   }
 
   for (const query of queries) {
     const props = query.args;
-    try {
-      const queryFunc = DG.Func.find({name: query.name})
-        .filter((s) => s.type === funcTypeNames.query && s.id === query.id)[0];
-      if (queryFunc) {
-        const listPropName = queryFunc.inputs[0].name;
-        const valueList = [canonicalSmiles];
-        const qRes = await queryFunc.apply({...props, [listPropName]: valueList});
-        if (!qRes || qRes.rowCount === 0)
-          continue;
-        await joinQueryResults(table, HitDesignMolColName, qRes);
+    promises.push(new Promise(async (resolve) => {
+      try {
+        const queryFunc = DG.Func.find({name: query.name})
+          .filter((s) => s.type === funcTypeNames.query && s.id === query.id)[0];
+        if (queryFunc) {
+          const listPropName = queryFunc.inputs[0].name;
+          const valueList = [canonicalSmiles];
+          const qRes = await queryFunc.apply({...props, [listPropName]: valueList});
+          if (!qRes || qRes.rowCount === 0) {
+            resolve();
+            return;
+          }
+          await joinQueryResults(table, HitDesignMolColName, qRes);
+        }
+      } catch (e) {
+        _package.logger.error(e);
       }
-    } catch (e) {
-      console.error(e);
-    }
+      resolve();
+    }));
   }
+  await Promise.all(promises);
   pg.close();
   const molCol = table.col(HitDesignMolColName)!;
   for (let i = 0; i < molCol.length; i++) {
@@ -113,76 +130,99 @@ export async function calculateColumns(resultMap: IComputeDialogResult, dataFram
     const newVal = _package.convertToSmiles(value);
     molSmilesCol.set(i, newVal, false);
   }
-  try {
-    if (resultMap.descriptors && resultMap.descriptors.length > 0)
-      await grok.chem.descriptors(dataFrame!, molSmilesColName!, resultMap.descriptors);
-  } catch (e) {
-    console.error('Descriptors calculation error', e);
-  }
+  const promises: Promise<void>[] = [];
+  promises.push(new Promise(async (resolve) => {
+    try {
+      if (resultMap.descriptors && resultMap.descriptors.length > 0)
+        await grok.chem.descriptors(dataFrame!, molSmilesColName!, resultMap.descriptors);
+    } catch (e) {
+      _package.logger.error('Descriptors calculation error');
+      _package.logger.error(e);
+    }
+    resolve();
+  }));
 
   for (const funcName of Object.keys(resultMap.externals)) {
-    try {
-      const props = resultMap.externals[funcName];
-      const f = DG.Func.find({package: funcName.split(':')[0], name: funcName.split(':')[1]})[0];
-      const tablePropName = f.inputs[0].name;
-      const colPropName = f.inputs[1].name;
-      if (props)
-        await f.apply({...props, [tablePropName]: dataFrame!, [colPropName]: molSmilesColName});
-    } catch (e) {
-      console.error(e);
-    }
+    promises.push(new Promise(async (resolve) => {
+      try {
+        const props = resultMap.externals[funcName];
+        const f = DG.Func.find({package: funcName.split(':')[0], name: funcName.split(':')[1]})[0];
+        const tablePropName = f.inputs[0].name;
+        const colPropName = f.inputs[1].name;
+        if (props)
+          await f.apply({...props, [tablePropName]: dataFrame!, [colPropName]: molSmilesColName});
+      } catch (e) {
+        _package.logger.error(e);
+      }
+      resolve();
+    }));
   };
   // handling scripts
   for (const scriptName of Object.keys(resultMap.scripts ?? {})) {
     const props = resultMap.scripts![scriptName];
-    if (props) {
-      const scriptParts = scriptName.split(':');
-      const scriptId = scriptParts[2];
-      if (!scriptId)
-        continue;
-      try {
-        const sn = scriptParts[1]; // script name
-        const s = DG.Func.find({name: sn})
-          .filter((s) => s.type === funcTypeNames.script && s.id === scriptId)[0] as DG.Script | undefined;
-        if (!s)
-          continue;
-        const tablePropName = s.inputs[0].name;
-        const colPropName = s.inputs[1].name;
-        const r: DG.DataFrame = await s.apply({...props, [tablePropName]: dataFrame, [colPropName]: molSmilesColName});
-        if (r && r.rowCount === dataFrame.rowCount && s.language === 'python') {
-          for (const c of r.columns) {
-            c.name = dataFrame.columns.getUnusedName(c.name);
-            dataFrame.columns.add(c);
-          }
+    promises.push(new Promise(async (resolve) => {
+      if (props) {
+        const scriptParts = scriptName.split(':');
+        const scriptId = scriptParts[2];
+        if (!scriptId) {
+          resolve();
+          return;
         }
-      } catch (e) {
-        console.error(e);
+        try {
+          const sn = scriptParts[1]; // script name
+          const s = DG.Func.find({name: sn})
+            .filter((s) => s.type === funcTypeNames.script && s.id === scriptId)[0] as DG.Script | undefined;
+          if (!s) {
+            resolve();
+            return;
+          }
+          const tablePropName = s!.inputs[0].name;
+          const colPropName = s!.inputs[1].name;
+          const r: DG.DataFrame = await s.apply({...props, [tablePropName]: dataFrame, [colPropName]: molSmilesColName});
+          if (r && r.rowCount === dataFrame.rowCount && s.language === 'python') {
+            for (const c of r.columns) {
+              c.name = dataFrame.columns.getUnusedName(c.name);
+              dataFrame.columns.add(c);
+            }
+          }
+        } catch (e) {
+          _package.logger.error(e);
+        }
       }
-    }
+      resolve();
+    }));
   };
 
   // handling queries
   for (const queryName of Object.keys(resultMap.queries ?? {})) {
     const props = resultMap.queries![queryName];
-    if (props) {
-      const queryParts = queryName.split(':');
-      const queryId = queryParts[2];
-      if (!queryId)
-        continue;
-      try {
-        const qn = queryParts[1]; // query name
-        const s = DG.Func.find({name: qn})
-          .filter((s) => s.type === funcTypeNames.query && s.id === queryId)[0];
-        if (!s)
-          continue;
-        const listPropName = s.inputs[0].name;
-        const resDf: DG.DataFrame = await s.apply({...props, [listPropName]: molSmilesCol.toList()});
-        if (resDf)
-          await joinQueryResults(dataFrame!, molSmilesColName!, resDf);
-      } catch (e) {
-        console.error(e);
+    promises.push(new Promise(async (resolve) => {
+      if (props) {
+        const queryParts = queryName.split(':');
+        const queryId = queryParts[2];
+        if (!queryId) {
+          resolve();
+          return;
+        }
+        try {
+          const qn = queryParts[1]; // query name
+          const s = DG.Func.find({name: qn})
+            .filter((s) => s.type === funcTypeNames.query && s.id === queryId)[0];
+          if (!s) {
+            resolve();
+            return;
+          }
+          const listPropName = s.inputs[0].name;
+          const resDf: DG.DataFrame = await s.apply({...props, [listPropName]: molSmilesCol.toList()});
+          if (resDf)
+            await joinQueryResults(dataFrame!, molSmilesColName!, resDf);
+        } catch (e) {
+          console.error(e);
+        }
       }
-    }
+      resolve();
+    }));
   };
+  await Promise.all(promises);
   pg.close();
 }

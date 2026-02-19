@@ -4,11 +4,11 @@ import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
-import java.util.LinkedHashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import grok_connect.GrokConnect;
+import grok_connect.connectors_info.DataConnection;
 import grok_connect.connectors_info.FuncCall;
 import grok_connect.handlers.QueryHandler;
 import grok_connect.log.EventType;
@@ -62,6 +62,9 @@ public class QueryManager {
         if (query.func instanceof TableQuery) {
             LOGGER.debug("Building table query...");
             query.func.query = provider.queryTableSql((TableQuery) query.func);
+            String catalog = ((TableQuery) query.func).catalog;
+            if (GrokConnectUtil.isNotEmpty(catalog))
+                query.func.connection.parameters.put("db", catalog);
             LOGGER.debug("TableQuery was built");
         }
     }
@@ -113,8 +116,7 @@ public class QueryManager {
                 isFinished = true;
                 LOGGER.info("Received all data");
             }
-            df.tags = new LinkedHashMap<>();
-            df.tags.put(CHUNK_NUMBER_TAG, String.valueOf(dfNumber));
+            df.setTag(CHUNK_NUMBER_TAG, String.valueOf(dfNumber));
             if (dfNumber == 1)
                 try {
                     SqlAnnotator.annotate(query.func, df);

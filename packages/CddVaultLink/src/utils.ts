@@ -4,7 +4,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {queryExportStatus, queryExportResult, ExportStatus, ApiResponse, Batch, Project, Vault, Molecule} from "./cdd-vault-api";
 import { ALL_TABS, CDDVaultSearchType, COLLECTIONS_TAB, EXPANDABLE_TABS, MOLECULES_TAB, PROTOCOLS_TAB, SAVED_SEARCHES_TAB, SEARCH_TAB } from './constants';
-import { awaitCheck, delay } from '@datagrok-libraries/utils/src/test';
+import { awaitCheck, delay } from '@datagrok-libraries/test/src/test';
 import { SeachEditor } from './search-function-editor';
 
 export const CDD_HOST = 'https://app.collaborativedrug.com/';

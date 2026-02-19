@@ -11,3 +11,12 @@ export class PackageFunctions {
     grok.shell.info(_package.webRoot);
   }
 }
+
+//name: getColumn
+//input: dataframe table
+//input: string columnName
+//output: column col
+export function getColumn(table: DG.DataFrame, columnName: string): DG.Column {
+    const col = table.getCol(columnName);
+    return col;
+}

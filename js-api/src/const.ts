@@ -851,6 +851,100 @@ export enum PERMISSION {
 }
 
 /**
+ * Event type identifiers used with `grok.events.onEvent()` and `__obs()`.
+ *
+ * Events are grouped by prefix:
+ * - `d4-*`: Platform/UI events
+ * - `grok-*`: Grok-specific events (views, projects)
+ * - `ddt-*`: DataFrame/table events (used internally via DataFrame event getters)
+ *
+ * @see Events class in events.ts for typed event getters
+ * @see {@link ./dart-interop.md} for event system documentation
+ */
+export enum EVENT_TYPE {
+  // Context menu events
+  CONTEXT_MENU = 'd4-context-menu',
+  CONTEXT_MENU_CLOSED = 'd4-menu-closed',
+
+  // View events
+  CURRENT_VIEW_CHANGED = 'd4-current-view-changed',
+  CURRENT_VIEW_CHANGING = 'd4-current-view-changing',
+  VIEW_ADDED = 'grok-view-added',
+  VIEW_ADDING = 'grok-view-adding',
+  VIEW_REMOVED = 'grok-view-removed',
+  VIEW_REMOVING = 'grok-view-removing',
+  VIEW_RENAMED = 'grok-view-renamed',
+  VIEW_CHANGED = 'grok-view-changed',
+  VIEW_CHANGING = 'grok-view-changing',
+
+  // Object events
+  CURRENT_OBJECT_CHANGED = 'd4-current-object-changed',
+  CURRENT_CELL_CHANGED = 'd4-current-cell-changed',
+
+  // Table events
+  TABLE_ADDED = 'd4-table-added',
+  TABLE_REMOVED = 'd4-table-removed',
+
+  // Query events
+  QUERY_STARTED = 'd4-query-started',
+  QUERY_FINISHED = 'd4-query-finished',
+
+  // Project events
+  CURRENT_PROJECT_CHANGED = 'grok-current-project-changed',
+  PROJECT_SAVED = 'grok-project-saved',
+  PROJECT_SAVING = 'grok-project-saving',
+  PROJECT_OPENED = 'grok-project-opened',
+  PROJECT_CLOSING = 'grok-project-closing',
+  PROJECT_CLOSED = 'grok-project-closed',
+  PROJECT_MODIFIED = 'grok-project-modified',
+
+  // Viewer events
+  VIEWER_ADDED = 'd4-viewer-added',
+  VIEWER_CLOSED = 'd4-viewer-closed',
+
+  // Layout events
+  VIEW_LAYOUT_GENERATED = 'd4-view-layout-generated',
+  VIEW_LAYOUT_APPLYING = 'd4-view-layout-applying',
+  VIEW_LAYOUT_APPLIED = 'd4-view-layout-applied',
+
+  // Tooltip events
+  TOOLTIP_REQUEST = 'd4-tooltip-request',
+  TOOLTIP_SHOWN = 'd4-tooltip-shown',
+  TOOLTIP_CLOSED = 'd4-tooltip-closed',
+
+  // Dialog and input events
+  DIALOG_SHOWN = 'd4-dialog-showed',
+  INPUT_CREATED = 'd4-input-created',
+  ACCORDION_CONSTRUCTED = 'd4-accordion-constructed',
+
+  // Form events
+  FORM_CREATING = 'd4-form-creating',
+
+  // Filter events
+  RESET_FILTER_REQUEST = 'd4-reset-filter-request',
+
+  // File events
+  FILE_EDITED = 'grok-file-edited',
+  FILE_IMPORT_REQUEST = 'd4-file-import-request',
+
+  // Grid events
+  GRID_CELL_LINK_CLICKED = 'd4-grid-cell-link-clicked-global',
+
+  // Package events
+  PACKAGE_LOADED = 'd4-package-loaded',
+
+  // AI events
+  AI_GENERATION_ABORT = 'd4-ai-generation-abort',
+  AI_PANEL_TOGGLE = 'd4-ai-panel-toggle',
+
+  // Tree view events
+  TREE_VIEW_NODE_ADDED = 'd4-tree-view-node-added',
+
+  // Server events
+  SERVER_MESSAGE = 'server-message',
+}
+
+/**
  * @typedef {string} AggregationType
  * @typedef {string} SyncType
  * @typedef {string} JoinType

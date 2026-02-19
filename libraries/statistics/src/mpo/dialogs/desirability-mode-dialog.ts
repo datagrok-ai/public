@@ -1,16 +1,32 @@
+/* eslint-disable max-len */
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {PropertyDesirability, DesirabilityMode} from '../mpo';
+import {Subscription} from 'rxjs';
+import {
+  PropertyDesirability, NumericalDesirability, CategoricalDesirability, DesirabilityMode,
+  createDefaultCategorical, createDefaultNumerical, isNumerical,
+} from '../mpo';
 import {MpoDesirabilityLineEditor} from '../editors/mpo-line-editor';
+import {MpoCategoricalEditor} from '../editors/mpo-categorical-editor';
 
-const DESIRABILITY_MODES = ['freeform', 'gaussian', 'sigmoid'];
+const DESIRABILITY_MODES: DesirabilityMode[] = ['freeform', 'gaussian', 'sigmoid'];
+const PROPERTY_TYPES = ['numerical', 'categorical'] as const;
+
+type ParamConfig = {
+  key: 'min' | 'max' | 'mean' | 'sigma' | 'x0' | 'k';
+  label: string;
+  fallback: () => number;
+  transform?: (v: number) => number;
+};
 
 export class DesirabilityModeDialog {
   constructor(
     private propertyName: string,
     private prop: PropertyDesirability,
     private onUpdate: (patch: Partial<PropertyDesirability>) => void,
+    private onTypeChanged?: (newProp: PropertyDesirability) => void,
+    private mappedCol?: DG.Column | null,
   ) {}
 
   show(): void {
@@ -20,121 +36,143 @@ export class DesirabilityModeDialog {
       title: `Desirability Settings: ${this.propertyName}`,
     });
 
-    const previewEditor = new MpoDesirabilityLineEditor(this.prop, 300, 80);
+    const contentPanel = ui.divV([]);
+    const cached: Record<string, PropertyDesirability> = {[original.functionType]: structuredClone(original)};
+    const subs: Subscription[] = [];
 
-    const modeInput = ui.input.choice('Mode', {
-      items: DESIRABILITY_MODES,
-      value: this.prop.mode ?? 'freeform',
-      onValueChanged: (v) => {
-        this.prop.mode = v as DesirabilityMode;
-        this.onUpdate({mode: this.prop.mode});
+    const typeInput = ui.input.choice('Type', {items: [...PROPERTY_TYPES], value: this.prop.functionType, onValueChanged: (v) => {
+      if (v === this.prop.functionType)
+        return;
+
+      cached[this.prop.functionType] = structuredClone(this.prop);
+
+      if (cached[v])
+        this.prop = structuredClone(cached[v]);
+      else if (v === 'categorical') {
+        const cats = this.mappedCol?.isCategorical ?
+          this.mappedCol.categories.map((c: string) => ({name: c, desirability: 1})) : undefined;
+        this.prop = createDefaultCategorical(original.weight, cats);
+      }
+      else
+        this.prop = createDefaultNumerical(original.weight);
+
+      buildContent();
+    }});
+
+    const buildNumericalContent = () => {
+      const prop = this.prop as NumericalDesirability;
+      prop.mode ??= 'freeform';
+
+      const previewEditor = new MpoDesirabilityLineEditor(prop, 300, 80);
+
+      const modeInput = ui.input.choice('Mode', {items: DESIRABILITY_MODES, value: prop.mode, onValueChanged: (v) => {
+        prop.mode = v as DesirabilityMode;
+        this.onUpdate({mode: prop.mode} as any);
         updateParams();
         previewEditor.redrawAll();
-      },
-    });
+      }});
 
-    const min = this.float('Min', this.prop.min ?? previewEditor.getMinX(), (v) => {
-      this.prop.min = v;
-      this.onUpdate({min: v});
-      previewEditor.redrawAll();
-    });
+      const configs: ParamConfig[] = [
+        {key: 'min', label: 'Min', fallback: () => previewEditor.getMinX()},
+        {key: 'max', label: 'Max', fallback: () => previewEditor.getMaxX()},
+        {key: 'mean', label: 'Mean', fallback: () => previewEditor.getDefaultMean()},
+        {key: 'sigma', label: 'Sigma', fallback: () => previewEditor.getDefaultSigma(), transform: (v) => Math.max(0.01, v)},
+        {key: 'x0', label: 'x0', fallback: () => previewEditor.getDefaultX0()},
+        {key: 'k', label: 'k', fallback: () => previewEditor.getDefaultK(), transform: (v) => Math.max(0.1, v)},
+      ];
 
-    const max = this.float('Max', this.prop.max ?? previewEditor.getMaxX(), (v) => {
-      this.prop.max = v;
-      this.onUpdate({max: v});
-      previewEditor.redrawAll();
-    });
+      const inputs = new Map<string, DG.InputBase>();
+      for (const cfg of configs) {
+        inputs.set(cfg.key, ui.input.float(cfg.label, {value: prop[cfg.key] ?? cfg.fallback(), format: '#0.000', onValueChanged: (v) => {
+          const value = cfg.transform ? cfg.transform(v ?? cfg.fallback()) : (v ?? cfg.fallback());
+          prop[cfg.key] = value;
+          this.onUpdate({[cfg.key]: value} as any);
+          previewEditor.redrawAll();
+        }}));
+      }
 
-    const mean = this.float('Mean', this.prop.mean ?? 0, (v) => {
-      this.prop.mean = v;
-      this.onUpdate({mean: v});
-      previewEditor.redrawAll();
-    });
+      const syncInputs = () => {
+        for (const cfg of configs)
+          inputs.get(cfg.key)!.value = prop[cfg.key] ?? cfg.fallback();
+      };
 
-    const sigma = this.float('Sigma', this.prop.sigma ?? 1, (v) => {
-      this.prop.sigma = Math.max(0.01, v);
-      this.onUpdate({sigma: this.prop.sigma});
-      previewEditor.redrawAll();
-    });
+      const paramPanel = ui.divV([]);
 
-    const x0 = this.float('x0', this.prop.x0 ?? 0, (v) => {
-      this.prop.x0 = v;
-      this.onUpdate({x0: v});
-      previewEditor.redrawAll();
-    });
+      const updateParams = () => {
+        ui.empty(paramPanel);
 
-    const k = this.float('k', this.prop.k ?? 10, (v) => {
-      this.prop.k = Math.max(0.1, v);
-      this.onUpdate({k: this.prop.k});
-      previewEditor.redrawAll();
-    });
+        const form: DG.InputBase[] = [inputs.get('min')!, inputs.get('max')!];
 
-    const paramPanel = ui.divV([]);
+        if (prop.mode === 'gaussian')
+          form.push(inputs.get('mean')!, inputs.get('sigma')!);
+        if (prop.mode === 'sigmoid')
+          form.push(inputs.get('x0')!, inputs.get('k')!);
 
-    const updateParams = () => {
-      ui.empty(paramPanel);
+        paramPanel.append(ui.h3('Parameters'));
+        paramPanel.append(ui.form(form));
+      };
 
-      const inputs: DG.InputBase[] = [min, max];
+      previewEditor.onParamsChanged = (p) => {
+        Object.assign(prop, p);
+        syncInputs();
+        this.onUpdate(p as any);
+        previewEditor.redrawAll();
+      };
 
-      if (this.prop.mode === 'gaussian')
-        inputs.push(mean, sigma);
-      if (this.prop.mode === 'sigmoid')
-        inputs.push(x0, k);
+      subs.push(previewEditor.onChanged.subscribe((line) => {
+        prop.line = line;
+        this.onUpdate({line} as any);
+      }));
 
-      paramPanel.append(ui.h3('Parameters'));
-      paramPanel.append(ui.form(inputs));
+      updateParams();
+
+      contentPanel.append(modeInput.root, paramPanel, previewEditor.root);
     };
 
-    previewEditor.onParamsChanged = (p) => {
-      Object.assign(this.prop, p);
-
-      mean.value = this.prop.mean ?? previewEditor.getDefaultMean();
-      sigma.value = this.prop.sigma ?? previewEditor.getDefaultSigma();
-      x0.value = this.prop.x0 ?? previewEditor.getDefaultX0();
-      k.value = this.prop.k ?? previewEditor.getDefaultK();
-      min.value = this.prop.min ?? previewEditor.getMinX();
-      max.value = this.prop.max ?? previewEditor.getMaxX();
-
-      this.onUpdate(p);
-      previewEditor.redrawAll();
+    const buildCategoricalContent = () => {
+      const prop = this.prop as CategoricalDesirability;
+      const catEditor = new MpoCategoricalEditor(prop, true, true);
+      if (this.mappedCol?.isCategorical)
+        catEditor.setChoices([...this.mappedCol.categories]);
+      subs.push(catEditor.onChanged.subscribe(() => this.onUpdate(this.prop)));
+      contentPanel.append(catEditor.root);
     };
 
-    previewEditor.onChanged.subscribe((line) => {
-      this.prop.line = line;
-      this.onUpdate({line});
-    });
+    const dispose = () => {
+      for (const s of subs)
+        s.unsubscribe();
+    };
 
-    updateParams();
+    const buildContent = () => {
+      dispose();
+      ui.empty(contentPanel);
 
-    dialog.add(ui.divV([
-      modeInput.root,
-      paramPanel,
-      previewEditor.root,
-    ]));
+      if (isNumerical(this.prop))
+        buildNumericalContent();
+      else
+        buildCategoricalContent();
+    };
+
+    buildContent();
+
+    dialog.add(ui.divV([...(!this.mappedCol ? [typeInput.root] : []), contentPanel]));
 
     dialog.onOK(() => {
-      this.onUpdate(this.prop);
+      dispose();
+      if (this.prop.functionType !== original.functionType)
+        this.onTypeChanged?.(this.prop);
+      else
+        this.onUpdate(this.prop);
       dialog.close();
     });
 
     dialog.onCancel(() => {
-      Object.assign(this.prop, original);
-      previewEditor.redrawAll();
+      dispose();
+      this.prop = original;
+      this.onUpdate(original);
       dialog.close();
     });
 
     dialog.show();
-  }
-
-  private float(
-    label: string,
-    value: number,
-    onChange: (v: number) => void,
-  ): DG.InputBase {
-    return ui.input.float(label, {
-      value,
-      format: '#0.000',
-      onValueChanged: (v) => onChange(v ?? value),
-    });
   }
 }

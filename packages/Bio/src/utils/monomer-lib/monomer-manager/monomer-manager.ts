@@ -697,6 +697,14 @@ function getCaseInvariantValue<T>(obj: { [key: string]: T }, key: string): T | u
   return obj[caseInvariantKey];
 }
 
+function setCaseInvariantValue<T>(obj: { [key: string]: T }, key: string, value: T): void {
+  const caseInvariantKey = Object.keys(obj).find((k) => k.toLowerCase() === key.toLowerCase());
+  if (caseInvariantKey)
+    obj[caseInvariantKey] = value;
+  else
+    obj[key] = value;
+}
+
 // some r groups for some monomers can lack smiles, or something else :D this function will try to fix that
 function resolveRGroupInfo(rgps: RGroup[]): RGroup[] {
   return (rgps.map((rg) => {
@@ -1283,12 +1291,51 @@ export function getCorrectedMolBlock(molBlock: string) {
 // reverse of r-group substitution, will substitute rgroups with cap groups
 function capSmiles(smiles: string, rgroups: RGroup[]) {
   let newSmiles = smiles;
-  rgroups.forEach((rg) => {
-    const rgroupNum = rg.label[1] ?? '1';
+  rgroups.forEach((rg, i) => {
+    const rgroupNum = rg.label[1] ?? `${i + 1}`; // if label is not in format R#, use index as number
     const capGroupName = getCaseInvariantValue(rg, HELM_RGROUP_FIELDS.CAP_GROUP_NAME);
-    newSmiles = newSmiles.replace(`[*:${rgroupNum}]`, `[${capGroupName}]`);
+    const capGroupSmiles = getCaseInvariantValue(rg, HELM_RGROUP_FIELDS.CAP_GROUP_SMILES_UPPERCASE);
+    if (capGroupName?.toLowerCase() === 'allyl' || capGroupSmiles?.replace(`[*:${rgroupNum}]`, '')?.toLowerCase() === 'c=c' || capGroupSmiles?.replace(`[*:${rgroupNum}]`, '')?.toLowerCase() === '[c=c]')
+      newSmiles = newSmiles.replace(`[*:${rgroupNum}]`, 'C=C');
+    else
+      newSmiles = newSmiles.replace(`[*:${rgroupNum}]`, `[${capGroupName}]`);
   });
   return newSmiles;
+}
+
+/**  fix r-groups smiles notation
+// in some cases, instead of having O[*:1], we get smth like [O:2], or O[R1], or [*1]
+// Modifies in place
+*/
+function correctRGroupsSmiles(rgroups: RGroup[]) {
+  // case 1: [O:2] -> O[*:2]
+  function replaceAtomMapping(smi: string, num: number) {
+    const regex = /\[([A-Z][a-z]?):(\d+)\]/g;
+    return smi.replace(regex, (match, atom, n) => {
+      if (parseInt(n) === num) {
+        const correctedAtom = atom?.toLowerCase && atom?.toLowerCase() === 'h' ? '[H]' : atom; // special case for hydrogen, as H[*:1] is not valid, but [H][*:1] is valid
+        return `${correctedAtom}[*:${n}]`;
+      }
+
+      return match;
+    });
+  }
+
+  rgroups.forEach((rg, i) => {
+    const capGroupSmiles = getCaseInvariantValue(rg, HELM_RGROUP_FIELDS.CAP_GROUP_SMILES_UPPERCASE);
+    const rGroupNum = rg.label[1] ?? `${i + 1}`; // if label is not in format R#, use index as number
+    if (!capGroupSmiles || capGroupSmiles.includes(`[*:${rGroupNum}]`))
+      return;
+    const atomLabeledSmilesRegex = new RegExp(`\\[[A-Za-z]{1,2}:${rGroupNum}\\]`);
+    if (capGroupSmiles.includes(`[*${rGroupNum}]`)) // case 2: [*1] -> [*:1]
+      setCaseInvariantValue(rg, HELM_RGROUP_FIELDS.CAP_GROUP_SMILES_UPPERCASE, capGroupSmiles.replace(`[*${rGroupNum}]`, `[*:${rGroupNum}]`));
+    else if (capGroupSmiles.includes(`[R${rGroupNum}]`)) // case 3: O[R1] -> O[*:1]
+      setCaseInvariantValue(rg, HELM_RGROUP_FIELDS.CAP_GROUP_SMILES_UPPERCASE, capGroupSmiles.replace(`[R${rGroupNum}]`, `[*:${rGroupNum}]`));
+    else if (atomLabeledSmilesRegex.test(capGroupSmiles)) // case 4: [O:2] -> O[*:2]
+      setCaseInvariantValue(rg, HELM_RGROUP_FIELDS.CAP_GROUP_SMILES_UPPERCASE, replaceAtomMapping(capGroupSmiles, Number.parseInt(rGroupNum)));
+    else if (`[${capGroupSmiles}]`.match(atomLabeledSmilesRegex)?.[0].length === capGroupSmiles.length + 2) // case 5: O:2 -> O[*:2], no brackets at all
+      setCaseInvariantValue(rg, HELM_RGROUP_FIELDS.CAP_GROUP_SMILES_UPPERCASE, replaceAtomMapping(`[${capGroupSmiles}]`, Number.parseInt(rGroupNum)));
+  });
 }
 
 async function monomerFromDfRow(dfRow: DG.Row): Promise<Monomer> {
@@ -1323,16 +1370,25 @@ async function monomerFromDfRow(dfRow: DG.Row): Promise<Monomer> {
 
   let naturalAnalog = dfRow.get(MONOMER_DF_COLUMN_NAMES.NATURAL_ANALOG);
   const polymerType = dfRow.get(MONOMER_DF_COLUMN_NAMES.POLYMER_TYPE);
+  // parse r-groups
   let rGroups: RGroup[] = [];
   try {
     rGroups = JSON.parse(dfRow.get(MONOMER_DF_COLUMN_NAMES.R_GROUPS) ?? '[]');
+  } catch (_) {
+    rGroups ??= [];
+  }
+
+  // correct r group smiles if needed
+  correctRGroupsSmiles(rGroups);
+
+  try {
     if (!naturalAnalog && polymerType) {
       const mostSimilar = await mostSimilarNaturalAnalog(capSmiles(smiles, rGroups), polymerType);
       if (mostSimilar)
         naturalAnalog = mostSimilar;
     }
-  } catch (_) {
-    rGroups ??= [];
+  } catch (e) {
+    console.error(e);
   }
 
   return {

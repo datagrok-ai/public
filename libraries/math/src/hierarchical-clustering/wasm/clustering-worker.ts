@@ -10,6 +10,9 @@ onmessage = (event) => {
       .then((clusterMatrix) => {
         data.clusterMatrix = clusterMatrix;
         postMessage(data);
+      }).catch((e) => {
+        data.error = e;
+        postMessage(data);
       });
   } catch (e) {
     data.error = e;

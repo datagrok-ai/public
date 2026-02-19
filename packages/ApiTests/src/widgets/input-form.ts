@@ -160,7 +160,7 @@ category('Widgets: InputForm API', () => {
 
   function testOnInputChangeObservable(): void {
     const changedInputPropNames = [] as string[];
-    form.onInputChanged.pipe(take(6)).subscribe((ed) => {
+    form.onInputChanged.pipe(take(6)).subscribe((ed: DG.EventData<DG.InputArgs>) => {
       changedInputPropNames.push(ed.args.input.property.name);
     });
 
@@ -208,6 +208,8 @@ category('Widgets: InputForm API', () => {
   });
 
   test('funccall to form bind after replace', async () => {
+    funcCall = (await grok.functions.eval('ApiTests:InputFormTest')).prepare();
+    form = await DG.InputForm.forFuncCall(funcCall, {twoWayBinding: true});
     newFuncCall = (await grok.functions.eval('ApiTests:InputFormTest')).prepare();
     form.source = newFuncCall;
 
@@ -219,6 +221,7 @@ category('Widgets: InputForm API', () => {
     newFuncCall.inputs['boolInput'] = true;
     newFuncCall.inputs['choiceInput'] = '1';
     newFuncCall.inputs['tableInput'] = geo;
+
     updateInputs();
 
     expect(inputs['stringInput'].value, 'test');
@@ -339,7 +342,7 @@ category('Widgets: InputForm w/ custom input', () => {
 
   test('form on input change observable', async () => {
     const changedInputPropNames = [] as string[];
-    const changeSub = form.onInputChanged.subscribe((ed) => {
+    const changeSub = form.onInputChanged.subscribe((ed: DG.EventData<DG.InputArgs>) => {
       changedInputPropNames.push(ed.args.input.property.name);
     });
 
@@ -378,7 +381,7 @@ category('Widgets: InputForm w/ custom input', () => {
     updateInputs();
 
     const changedInputPropNames = [] as string[];
-    form.onInputChanged.pipe(take(1)).subscribe((ed) => {
+    form.onInputChanged.pipe(take(1)).subscribe((ed: DG.EventData<DG.InputArgs>) => {
       changedInputPropNames.push(ed.args.input.property.name);
     });
 

@@ -29,8 +29,8 @@ export class DiffDockModel {
   private targetName: string;
   private poses: number;
   private currentViewer: DG.DockNode | null = null;
-  public posesColumn!: DG.Column;
-  public virtualPosesColumn!: DG.Column;
+  public posesColumnName!: string;
+  public virtualPosesColumnName!: string;
 
   constructor(df: DG.DataFrame, ligands: DG.Column, target: string, targetName: string, poses: number) {
     this.df = df;
@@ -40,14 +40,13 @@ export class DiffDockModel {
     this.poses = poses;
   }
 
-  async run() {
-    const { posesColumn, confidenceColumn, virtualPosesColumn } = await this.calculatePoses();
-    this.posesColumn = posesColumn;
-    this.virtualPosesColumn = virtualPosesColumn;
+  async run(): Promise<DG.DataFrame> {
+    const result = await this.calculatePoses();
     this.subscribeToCurrentCellChanged();
+    return result;
   }
 
-  private async calculatePoses() {
+  private async calculatePoses(): Promise<DG.DataFrame> {
     const posesColumn = this.createColumn(DG.TYPE.STRING, CONSTANTS.POSES_COLUMN_NAME, this.ligands.length);
     const confidenceColumn = this.createColumn(DG.TYPE.FLOAT, CONSTANTS.CONFIDENCE_COLUMN_NAME, this.ligands.length);
     const virtualPosesColumn = this.createColumn(DG.TYPE.STRING, `${CONSTANTS.VIRTUAL_POSES_COLUMN_NAME}_${this.targetName}_${this.poses}`, this.ligands.length);
@@ -71,14 +70,14 @@ export class DiffDockModel {
       virtualPosesColumn.set(i, JSON.stringify(posesJson));
     }
 
-    this.df.columns.add(posesColumn);
-    this.df.columns.add(confidenceColumn);
-    this.df.columns.add(virtualPosesColumn);
-    await grok.data.detectSemanticTypes(this.df);
+    this.posesColumnName = posesColumn.name;
+    this.virtualPosesColumnName = virtualPosesColumn.name;
 
     grid.onCellRender.subscribe(() => this.configureGrid(grid));
-
-    return { posesColumn, confidenceColumn, virtualPosesColumn };
+    
+    const resultDf = DG.DataFrame.fromColumns([posesColumn, confidenceColumn, virtualPosesColumn]);
+    await grok.data.detectSemanticTypes(resultDf);
+    return resultDf;
   }
 
   private configureGrid(grid: DG.Grid) {
@@ -168,9 +167,11 @@ export class DiffDockModel {
 
   private async handleCurrentCellChanged() {
     const currentCell = this.df.currentCell;
-    if (currentCell && currentCell.column === this.posesColumn) {
+    const posesColumn = this.df.columns.byName(this.posesColumnName);
+    if (currentCell && currentCell.column === posesColumn) {
       const currentRow = this.df.currentRowIdx;
-      const poses = (JSON.parse(this.virtualPosesColumn.get(currentRow)) as PosesJson);
+      const virtualPosesColumn = this.df.columns.byName(this.virtualPosesColumnName);
+      const poses = (JSON.parse(virtualPosesColumn.get(currentRow)) as PosesJson);
       const { bestId, bestPose, confidence } = this.findBestPose(poses);
       const combinedControl = await this.createCombinedControl(poses, bestPose, bestId);
 

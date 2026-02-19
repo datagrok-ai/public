@@ -1,5 +1,5 @@
 import * as DG from 'datagrok-api/dg';
-import {category, test, before, delay} from '@datagrok-libraries/utils/src/test';
+import {category, test, before, delay} from '@datagrok-libraries/test/src/test';
 import {createRFV, initComputeApi} from '@datagrok-libraries/compute-api';
 import {take, filter} from 'rxjs/operators';
 import {applyTransformations} from '@datagrok-libraries/utils/src/json-serialization';

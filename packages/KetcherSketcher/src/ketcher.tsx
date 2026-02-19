@@ -51,6 +51,7 @@ export class KetcherSketcher extends grok.chem.SketcherBase {
         window[KETCHER_WINDOW_OBJECT] = ketcher;
         this.setMoleculeFromHost();
         (this._sketcher.editor as any).subscribe('change', async (_: any) => {
+          this.explicitMol = null;
           try {
             this._smiles = await this._sketcher!.getSmiles();
           } catch { //in case we are working with smarts - getSmiles() will fail with exception
@@ -85,6 +86,8 @@ export class KetcherSketcher extends grok.chem.SketcherBase {
   }
 
   get smiles() {
+    if (this.explicitMol?.notation === 'smiles')
+      return this.explicitMol.value;
     return this._smiles === null ?
       this._molV2000 !== null ? DG.chem.convert(this._molV2000, DG.chem.Notation.MolBlock, DG.chem.Notation.Smiles) :
         this._molV3000 !== null ? DG.chem.convert(this._molV3000, DG.chem.Notation.V3KMolBlock, DG.chem.Notation.Smiles) :
@@ -97,9 +100,12 @@ export class KetcherSketcher extends grok.chem.SketcherBase {
     this._molV3000 = null;
     this._smarts = null;
     this.setKetcherMolecule(smiles);
+    this.explicitMol = {notation: 'smiles', value: smiles};
   }
 
   get molFile() {
+    if (this.explicitMol?.notation === 'molblock')
+      return this.explicitMol.value;
     return this._molV2000 === null ?
       this._molV3000 !== null ? DG.chem.convert(this._molV3000, DG.chem.Notation.V3KMolBlock, DG.chem.Notation.MolBlock) :
         this._smiles !== null ? DG.chem.convert(this._smiles, DG.chem.Notation.Smiles, DG.chem.Notation.MolBlock) :
@@ -112,9 +118,12 @@ export class KetcherSketcher extends grok.chem.SketcherBase {
     this._smarts = null;
     this._smiles = null;
     this.setKetcherMolecule(molfile);
+    this.explicitMol = {notation: 'molblock', value: molfile};
   }
 
   get molV3000() {
+    if (this.explicitMol?.notation === 'molblockV3000')
+      return this.explicitMol.value;
     return this._molV3000 === null ?
       this._molV2000 !== null ? DG.chem.convert(this._molV2000, DG.chem.Notation.MolBlock, DG.chem.Notation.V3KMolBlock) :
         this._smiles !== null ? DG.chem.convert(this._smiles, DG.chem.Notation.Smiles, DG.chem.Notation.V3KMolBlock) :
@@ -127,6 +136,7 @@ export class KetcherSketcher extends grok.chem.SketcherBase {
     this._smarts = null;
     this._smiles = null;
     this.setKetcherMolecule(molfile);
+    this.explicitMol = {notation: 'molblockV3000', value: molfile};
   }
 
   async getSmarts(): Promise<string> {

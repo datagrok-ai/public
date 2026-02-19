@@ -8,7 +8,7 @@ category('Events', () => {
         let subscriptionPassed = false;
         let tv = grok.shell.addTableView(grok.data.demo.demog())
         let barChart = tv.barChart();
-        let subscription = barChart.onContextMenu.subscribe(menu => subscriptionPassed = true);
+        let subscription = barChart.onContextMenu.subscribe((menu : DG.Menu) => subscriptionPassed = true);
         const rightClickEvent = new MouseEvent("contextmenu", {
             bubbles: true,
             cancelable: true,
@@ -23,7 +23,7 @@ category('Events', () => {
 
     test('onEvent', async () => {
         let subscriptionPassed = false;
-        let subscription = grok.events.onCustomEvent("test").subscribe((e) => { subscriptionPassed = true; });
+        let subscription = grok.events.onCustomEvent("test").subscribe((e: any) => { subscriptionPassed = true; });
         grok.events.fireCustomEvent("test", null);
         await delay(500);
         subscription.unsubscribe();
@@ -32,7 +32,7 @@ category('Events', () => {
 
     test('onCustomEvent/fireCustomEvent', async () => {
         let subscriptionPassed = false;
-        let subscription = grok.events.onCustomEvent("test").subscribe((e) => { subscriptionPassed = true; });
+        let subscription = grok.events.onCustomEvent("test").subscribe((e: any) => { subscriptionPassed = true; });
         grok.events.fireCustomEvent("test", null);
         await delay(500);
         subscription.unsubscribe();

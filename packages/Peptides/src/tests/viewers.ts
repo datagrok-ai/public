@@ -1,6 +1,6 @@
 import * as DG from 'datagrok-api/dg';
 
-import {after, before, category, delay, expect, test, testViewer} from '@datagrok-libraries/utils/src/test';
+import {after, before, category, delay, expect, test, testViewer} from '@datagrok-libraries/test/src/test';
 import {PeptidesModel, VIEWER_TYPE} from '../model';
 import {_package} from '../package-test';
 import {NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';

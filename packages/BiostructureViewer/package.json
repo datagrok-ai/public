@@ -42,7 +42,8 @@
     "react-select": "3.2.0",
     "rxjs": "^6.5.5",
     "uuid": "^9.0.1",
-    "wu": "^2.1.0"
+    "wu": "^2.1.0",
+    "@datagrok-libraries/test": "^1.1.0"
   },
   "devDependencies": {
     "@datagrok/chem": "^1.13.0",
@@ -58,7 +59,6 @@
     "@typescript-eslint/eslint-plugin": "^6.14.0",
     "@typescript-eslint/parser": "^6.14.0",
     "css-loader": "^6.8.1",
-    "datagrok-tools": "^4.14.55",
     "eslint": "^8.55.0",
     "eslint-config-google": "^0.14.0",
     "file-loader": "^6.2.0",
@@ -108,5 +108,8 @@
   "category": "Bioinformatics",
   "meta": {
     "dartium": false
+  },
+  "overrides": {
+    "datagrok-api": "$datagrok-api"
   }
 }

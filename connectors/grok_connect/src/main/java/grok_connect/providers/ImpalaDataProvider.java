@@ -91,15 +91,14 @@ public class ImpalaDataProvider extends JdbcDataProvider {
         String schema = connection.get(DbCredentials.SCHEMA);
         String columnName = "TABLE_SCHEMA";
         if (GrokConnectUtil.isNotEmpty(schema)) {
-            StringColumn column = new StringColumn(new String[]{schema});
-            column.name = columnName;
+            StringColumn column = new StringColumn(columnName, new String[]{schema});
             DataFrame dataFrame = new DataFrame();
             dataFrame.addColumn(column);
             return dataFrame;
         }
         DataFrame dataFrame = super.getSchemas(connection);
-        dataFrame.columns.removeIf(column -> column.name.equalsIgnoreCase("comment"));
-        dataFrame.columns.get(0).name = columnName;
+        dataFrame.removeColumn("comment");
+        dataFrame.getColumn(0).setName(columnName);
         return dataFrame;
     }
 
@@ -169,7 +168,7 @@ public class ImpalaDataProvider extends JdbcDataProvider {
         DataFrame tables = execute(queryRun);
         DataFrame result = new DataFrame();
         for (int i = 0; i < tables.rowCount; i++) {
-            String table = tables.columns.get(0).get(i)
+            String table = tables.getColumn(0).get(i)
                     .toString();
             result.merge(getSingleTableInfo(connection, table, includeKeyInfo));
         }
@@ -191,29 +190,27 @@ public class ImpalaDataProvider extends JdbcDataProvider {
 
     @SuppressWarnings("unchecked")
     private void prepareGetSchemaDataFrame(DataFrame dataFrame, String schema, String table) {
-        dataFrame.columns.removeIf(column -> column.name.equalsIgnoreCase("#Distinct Values") ||
-                column.name.equalsIgnoreCase("#Nulls") ||
-                column.name.equalsIgnoreCase("Max Size") ||
-                column.name.equalsIgnoreCase("Avg Size") ||
-                column.name.equalsIgnoreCase("#Trues") ||
-                column.name.equalsIgnoreCase("#Falses"));
-        int size = dataFrame.columns.size();
+        dataFrame.removeColumn("#Distinct Values");
+        dataFrame.removeColumn("#Nulls");
+        dataFrame.removeColumn("Max Size");
+        dataFrame.removeColumn("Avg Size");
+        dataFrame.removeColumn("#Trues");
+        dataFrame.removeColumn("#Falses");
+        int size = dataFrame.getColumnCount();
         for (int i = 0; i < size; i++) {
-            Column column = dataFrame.columns.get(i);
-            if (column.name.equalsIgnoreCase("Column")) {
-                column.name = "column_name";
-            } else if (column.name.equalsIgnoreCase("Type")) {
-                column.name = "data_type";
+            Column<?> column = dataFrame.getColumn(i);
+            if (column.getName().equalsIgnoreCase("Column")) {
+                column.setName("column_name");
+            } else if (column.getName().equalsIgnoreCase("Type")) {
+                column.setName("data_type");
             }
         }
-        Column tableSchema = new StringColumn();
-        tableSchema.name = "table_schema";
+        Column tableSchema = new StringColumn("table_schema");
         for (int i = 0; i < dataFrame.rowCount; i++) {
             tableSchema.add(schema);
         }
         dataFrame.addColumn(tableSchema);
-        Column tableColumn = new StringColumn();
-        tableColumn.name = "table_name";
+        Column tableColumn = new StringColumn("table_name");
         for (int i = 0; i < dataFrame.rowCount; i++) {
             tableColumn.add(table);
         }

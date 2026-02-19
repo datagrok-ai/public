@@ -1,6 +1,6 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
-import {after, category, expect, delay, test} from '@datagrok-libraries/utils/src/test';
+import {after, category, expect, delay, test} from '@datagrok-libraries/test/src/test';
 
 
 async function testExcelImport(path: string, isBenchmarkTest: boolean) {

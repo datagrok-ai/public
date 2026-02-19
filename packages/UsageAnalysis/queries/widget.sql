@@ -2,23 +2,23 @@
 --meta.cache: all
 --meta.cache.invalidateOn: 0 0 * * *
 --connection: System:Datagrok
-select date(e.event_time) as date, count(distinct u.id)
+select date, count(*) from (
+	select distinct date(e.event_time) as date, s.user_id
 	from events e
 	inner join users_sessions s on e.session_id = s.id
-	inner join users u on u.id = s.user_id
 	WHERE e.event_time > (current_timestamp - '60 day'::interval)
-group by date(e.event_time)
+) sub
+group by date
 --end
 
 --name:UsersEventsSummary
 --meta.cache: all
 --meta.cache.invalidateOn: 0 0 * * *
 --connection: System:Datagrok
-select date(e.event_time) as date,  count(e.id)
+select date(e.event_time) as date, count(e.id)
 	from events e
-	inner join users_sessions s on e.session_id = s.id
-	inner join users u on u.id = s.user_id
 	WHERE e.event_time > (current_timestamp - '60 day'::interval)
+	  AND e.session_id IS NOT NULL
 group by date(e.event_time)
 --end
 
@@ -26,11 +26,10 @@ group by date(e.event_time)
 --meta.cache: all
 --meta.cache.invalidateOn: 0 0 * * *
 --connection: System:Datagrok
-select date(e.event_time) as date,  count(e.id)
+select date(e.event_time) as date, count(e.id)
 	from events e
-	inner join event_types t on t.id = e.event_type_id
-	inner join users_sessions s on e.session_id = s.id
-	inner join users u on u.id = s.user_id
-	WHERE e.event_time > (current_timestamp - '60 day'::interval) and t.source = 'error'
+	WHERE e.event_time > (current_timestamp - '60 day'::interval)
+	  AND e.session_id IS NOT NULL
+	  AND e.event_type_id IN (SELECT id FROM event_types WHERE source = 'error')
 group by date(e.event_time)
 --end

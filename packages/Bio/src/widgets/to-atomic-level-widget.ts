@@ -18,12 +18,6 @@ export async function toAtomicLevelSingle(sequence: DG.SemanticValue): Promise<{
       errorText = 'Atomic level conversion requeires a sequence column';
       return {errorText, mol: ''};
     }
-    const supportedUnits: string[] = [NOTATION.FASTA, NOTATION.SEPARATOR, NOTATION.HELM, NOTATION.BILN];
-    //todo: add support for custom notations
-    if (!supportedUnits.includes(sequence.cell.column.meta.units?.toLowerCase() ?? '')) {
-      errorText = 'Unsupported sequence notation. please use Bio | Polytool | Convert';
-      return {errorText, mol: ''};
-    }
     const seqHelper = await PackageFunctions.getSeqHelper();
     const seqSh = seqHelper.getSeqHandler(sequence.cell.column);
     if (!seqSh) {
@@ -46,7 +40,7 @@ export async function toAtomicLevelSingle(sequence: DG.SemanticValue): Promise<{
       singleValCol.temp[SeqTemps.notationProvider] = sequence.cell.column.temp[SeqTemps.notationProvider];
     // helm and biln will have cyclization marks, so we need to use POM to convert them
     const seqSplitted = seqSh.getSplitted(sequence.cell.rowIndex);
-    const shouldUsePOM = (seqSplitted.graphInfo?.connections?.length ?? 0) > 0;
+    const shouldUsePOM = (seqSplitted.graphInfo?.connections?.length ?? 0) > 0 || seqSh.units === NOTATION.CUSTOM;
     const isHelmWithMultiplePolymerTypes = seqSh.isHelm() &&
       (new Set((seqSplitted.graphInfo?.polymerTypes ?? []))).size > 1;
 

@@ -58,30 +58,30 @@ export class ProjectsView extends UaView {
             }
         });
 
-        const accessFrequencyPerProject = new UaFilterableQueryViewer({
+        const dailyProjectAccess = new UaFilterableQueryViewer({
             filterSubscription: this.uaToolbox.filterStream,
-            name: 'Access Frequency',
-            queryName: 'UserAccessFrequencyPerProject',
+            name: 'Daily Project Access',
+            queryName: 'DailyProjectAccess',
             processDataFrame: (t: DG.DataFrame) => {
                 t.getCol('project_name').setTag('friendlyName', 'Project Name');
-                t.getCol('unique_users').setTag('friendlyName', 'Avg Unique Users Daily');
-                t.getCol('avg_days_between_accesses').setTag('friendlyName', 'Days Between Access');
+                t.getCol('access_date').setTag('friendlyName', 'Date');
+                t.getCol('user_name').setTag('friendlyName', 'User');
                 return t;
             },
             createViewer: (t: DG.DataFrame) => {
                 const grid = DG.Viewer.grid(t, {
-                    'title': 'Access Frequency Daily',
-                    'description': 'Provides average number of days between user accesses and average users count daily for projects that have more than one access.',
+                    'title': 'Daily Project Access',
+                    'description': 'Shows which unique users opened each project per day.',
                     'descriptionVisibilityMode': DG.VisibilityMode.Never
                 });
-                grid.sort(['unique_users', 'avg_days_between_accesses'], [false, true]);
+                grid.sort(['access_date'], [false]);
                 return grid;
             }
         });
 
         this.viewers.push(projectsViewer);
         this.viewers.push(uniqueUsersPerProject);
-        this.viewers.push(accessFrequencyPerProject);
+        this.viewers.push(dailyProjectAccess);
         // this.viewers.push(packagesTimeViewer);
         // packagesTimeViewer.root.style.display = 'none';
         this.root.append(projectsViewer.root);
@@ -91,7 +91,7 @@ export class ProjectsView extends UaView {
                     projectsViewer.root,
                     ui.splitH([
                         ui.box(uniqueUsersPerProject.root, {style: {height: '100%'}}),
-                        ui.box(accessFrequencyPerProject.root, {style: {height: '100%'}}),
+                        ui.box(dailyProjectAccess.root, {style: {height: '100%'}}),
                     ])
                 ]
             )

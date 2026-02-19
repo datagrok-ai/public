@@ -57,3 +57,7 @@
 .clinical-case-study-import-in-progress-div {
     height: 30px;
 }
+
+.cross-domain-viewers-div .d4-viewer-title {
+    display: flex!important;
+}

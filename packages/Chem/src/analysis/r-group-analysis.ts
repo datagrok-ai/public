@@ -10,8 +10,8 @@ import {IRGroupAnalysisResult} from '../rdkit-service/rdkit-service-worker-subst
 import {getRdKitService} from '../utils/chem-common-rdkit';
 import {_convertMolNotation} from '../utils/convert-notation-utils';
 import {SCAFFOLD_COL} from '../constants';
-import {delay} from '@datagrok-libraries/utils/src/test';
-import {hexToPercentRgb} from '../utils/chem-common';
+import {delay} from '@datagrok-libraries/test/src/test';
+import {hasNewLines, hexToPercentRgb} from '../utils/chem-common';
 import {getQueryMolSafe} from '../utils/mol-creation_rdkit';
 import {MolfileHandler} from '@datagrok-libraries/chem-meta/src/parsing-utils/molfile-handler';
 import {RDMol} from '@datagrok-libraries/chem-meta/src/rdkit-api';
@@ -283,6 +283,8 @@ export async function rGroupDecomp(col: DG.Column, params: RGroupParams): Promis
             let mol: RDMol | null = null;
             if (molStr) {
               try {
+                if (!hasNewLines(molStr) && molStr.length > 5000)
+                  continue; // do not attempt to parse very long SMILES, will cause MOB.
                 mol = rdkit.get_mol(molStr); //try to get mol. In case fail - try to get qmol
                 if (!mol)
                   mol = rdkit.get_qmol(molStr);
@@ -400,6 +402,8 @@ export async function rGroupsPython(col: DG.Column<string>, core: string, prefix
       for (let i = 0; i < resCol.length; i++) {
         const molStr = resCol.get(i);
         try {
+          if (molStr && !hasNewLines(molStr) && molStr.length > 5000)
+            continue; // do not attempt to parse very long SMILES, will cause MOB.
           const mol = module.get_mol(molStr);
           molsArray[i] = mol.get_molblock().replace('ISO', 'RGP');
           mol.delete();

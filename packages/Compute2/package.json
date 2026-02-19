@@ -9,6 +9,7 @@
   "description": "Provides UI based on Vue/Webcomponents",
   "dependencies": {
     "@datagrok-libraries/compute-utils": "^1.44.9",
+    "@datagrok-libraries/test": "^1.1.0",
     "@datagrok-libraries/utils": "^4.6.5",
     "@datagrok-libraries/webcomponents-vue": "^0.2.0",
     "@he-tree/vue": "^2.8.7",
@@ -19,6 +20,8 @@
     "datagrok-api": "^1.26.0",
     "dayjs": "=1.11.10",
     "diff-grok": "^1.0.9",
+    "dayjs": "^1.11.19",
+    "exceljs": "^4.4.0",
     "fflate": "^0.8.2",
     "rxjs": "^6.6.7",
     "vue": "^3.5.13",
@@ -33,7 +36,6 @@
     "autoprefixer": "^10.4.20",
     "babel-loader": "^9.2.1",
     "css-loader": "^7.1.2",
-    "datagrok-tools": "^4.14.55",
     "eslint": "^8.57.1",
     "eslint-config-google": "^0.14.0",
     "postcss": "^8.4.47",
@@ -81,5 +83,8 @@
   "category": "Compute",
   "meta": {
     "dartium": false
+  },
+  "overrides": {
+    "datagrok-api": "$datagrok-api"
   }
 }

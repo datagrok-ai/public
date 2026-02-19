@@ -83,14 +83,13 @@ for (const lang of languages) {
     if (!['NodeJS', 'JavaScript', 'Grok', 'Octave'].includes(lang)) {
       test('DataFrame int column correctness', async () => {
         const result = await grok.functions.call(`CVMTests:${lang}IntColumn`);
-        if (lang !== 'R') {
-          expect((result['resultInBound'] as DG.DataFrame).getCol('col1').type === DG.COLUMN_TYPE.INT, true);
+        expect((result['resultInBound'] as DG.DataFrame).getCol('col1').type === DG.COLUMN_TYPE.INT, true);
+        if (lang !== 'R')
           expect((result['resultOutBound'] as DG.DataFrame).getCol('col1').type === DG.COLUMN_TYPE.BIG_INT, true);
-        }
         else {
-          // R returns float columns. They can be easily converted to int
-          expect((result['resultInBound'] as DG.DataFrame).getCol('col1').type === DG.COLUMN_TYPE.FLOAT, true);
-          expect((result['resultOutBound'] as DG.DataFrame).getCol('col1').type === DG.COLUMN_TYPE.FLOAT, true);
+          const isArrow: boolean = DG.Func.find({package: 'Arrow', name: 'toParquet'}).length !== 0;
+          // R does not natively support 64-bit integers, needs external lib. That's why bigint are returned as numeric for arrow
+          expect((result['resultOutBound'] as DG.DataFrame).getCol('col1').type === (isArrow ? DG.COLUMN_TYPE.FLOAT : DG.COLUMN_TYPE.BIG_INT), true);
         }
       }, {timeout: 60000});
 

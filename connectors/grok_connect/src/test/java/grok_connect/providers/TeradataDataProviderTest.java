@@ -185,10 +185,10 @@ class TeradataDataProviderTest {
 
     private void prepareDataFrame(DataFrame dataFrame) {
         // in order to save time reuse some commons
-        dataFrame.columns.removeIf(column -> column.name.equals("bool"));
-        dataFrame.columns.forEach(column -> {
-            if (column.name.equals("date")) {
-                column.name = "dat";
+        dataFrame.removeColumn("bool");
+        dataFrame.getColumns().forEach(column -> {
+            if (column.getName().equals("date")) {
+                column.setName("dat");
             }
         });
     }

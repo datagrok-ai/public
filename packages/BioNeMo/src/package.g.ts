@@ -17,9 +17,10 @@ export async function molMIMModel(algorithm: string, num_molecules: number, prop
 //name: EsmFold
 //input: dataframe table 
 //input: column sequences { semType: Macromolecule }
+//output: dataframe result { action: join(table) }
 //top-menu: Bio | Folding | EsmFold...
-export async function esmFoldModel(table: DG.DataFrame, sequences: DG.Column) : Promise<void> {
-  await PackageFunctions.esmFoldModel(table, sequences);
+export async function esmFoldModel(table: DG.DataFrame, sequences: DG.Column) : Promise<any> {
+  return await PackageFunctions.esmFoldModel(table, sequences);
 }
 
 //name: Bio | EsmFold
@@ -49,9 +50,10 @@ export async function diffDockModelScript(ligand: string, target: string, poses:
 //input: column ligands { semType: Molecule }
 //input: string target { choices: Bionemo: getTargetFiles }
 //input: double poses = 10 
+//output: dataframe result { action: join(table) }
 //top-menu: Chem | Docking | DiffDock...
-export async function diffDockModel(table: DG.DataFrame, ligands: DG.Column, target: string, poses: number) : Promise<void> {
-  await PackageFunctions.diffDockModel(table, ligands, target, poses);
+export async function diffDockModel(table: DG.DataFrame, ligands: DG.Column, target: string, poses: number) : Promise<any> {
+  return await PackageFunctions.diffDockModel(table, ligands, target, poses);
 }
 
 //name: Biology | DiffDock

@@ -1,6 +1,6 @@
 // Tests of numerical methods
 import {_package} from '../package-test';
-import {category, expect, test} from '@datagrok-libraries/utils/src/test';
+import {category, expect, test} from '@datagrok-libraries/test/src/test';
 import {mrt, ros3prw, ros34prw, CorrProblem, ODEs, corrProbs, perfProbs} from 'diff-grok';
 
 /** Return numerical solution error: maximum absolute deviation between approximate & exact solutions */

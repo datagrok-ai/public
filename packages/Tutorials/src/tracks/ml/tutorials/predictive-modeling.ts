@@ -4,7 +4,7 @@ import * as ui from 'datagrok-api/ui';
 import $ from 'cash-dom';
 import { filter, map } from 'rxjs/operators';
 import { Tutorial, TutorialPrerequisites } from '@datagrok-libraries/tutorials/src/tutorial';
-import {delay} from '@datagrok-libraries/utils/src/test';
+import {delay} from '@datagrok-libraries/test/src/test';
 import { interval, Observable } from 'rxjs';
 
 

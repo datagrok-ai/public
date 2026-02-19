@@ -50,8 +50,8 @@ export namespace funcs {
     return await grok.functions.call('MolTrack:MolTrackApp', { path });
   }
 
-  export async function molTrackAppTreeBrowser(treeNode: any , browseView: DG.View ): Promise<void> {
-    return await grok.functions.call('MolTrack:MolTrackAppTreeBrowser', { treeNode, browseView });
+  export async function molTrackAppTreeBrowser(appNode: any , browseView: DG.View ): Promise<void> {
+    return await grok.functions.call('MolTrack:MolTrackAppTreeBrowser', { appNode, browseView });
   }
 
   /**

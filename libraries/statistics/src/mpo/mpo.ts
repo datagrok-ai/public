@@ -8,13 +8,16 @@ export type DesirabilityLine = number[][];
 
 export type DesirabilityMode = 'freeform' | 'gaussian' | 'sigmoid';
 
-/// A desirability line with its weight
-export type PropertyDesirability = {
+type BasePropertyDesirability = {
+  weight: number; /// 0-1
+  defaultScore?: number;
+}
+
+export type NumericalDesirability = BasePropertyDesirability & {
+  functionType: 'numerical';
   line: DesirabilityLine;
   min?: number; /// min value of the property (optional; used for editing the line)
   max?: number; /// max value of the property (optional; used for editing the line)
-  weight: number; /// 0-1
-  defaultScore?: number;
 
   mode?: DesirabilityMode;
 
@@ -27,8 +30,36 @@ export type PropertyDesirability = {
   k?: number;
 
   freeformLine?: DesirabilityLine;
+}
 
-  categories?: { name: string; desirability: number }[];
+export type CategoricalDesirability = BasePropertyDesirability & {
+  functionType: 'categorical';
+  categories: { name: string; desirability: number }[];
+}
+
+export type PropertyDesirability = NumericalDesirability | CategoricalDesirability;
+
+export function isNumerical(p: PropertyDesirability): p is NumericalDesirability {
+  return p.functionType === 'numerical';
+}
+
+export function createDefaultNumerical(weight = 1, min = 0, max = 1): NumericalDesirability {
+  return {functionType: 'numerical', weight, mode: 'freeform', min, max, line: []};
+}
+
+export function createDefaultCategorical(
+  weight = 1,
+  categories?: {name: string; desirability: number}[],
+): CategoricalDesirability {
+  return {functionType: 'categorical', weight, categories: categories ?? [{name: 'Category 1', desirability: 1}]};
+}
+
+export function migrateDesirability(raw: any): PropertyDesirability {
+  if (raw.functionType)
+    return raw;
+  if (raw.categories)
+    return {...raw, functionType: 'categorical'};
+  return {...raw, functionType: 'numerical'};
 }
 
 /// A map of desirability lines with their weights
@@ -69,10 +100,9 @@ export function desirabilityScore(x: number, desirabilityLine: DesirabilityLine)
 
 export function categoricalDesirabilityScore(
   value: string,
-  prop: PropertyDesirability,
+  prop: CategoricalDesirability,
 ): number | null {
-  const categories = prop.categories ?? [];
-  const found = categories.find((c) => c.name === value);
+  const found = prop.categories.find((c) => c.name === value);
   return found?.desirability ?? prop.defaultScore ?? null;
 }
 
@@ -82,20 +112,15 @@ export function mpo(
   columns: DG.Column[],
   profileName: string,
   aggregation: WeightedAggregation,
-  addResultColumn: boolean = true,
 ): DG.Column {
   if (columns.length === 0)
     throw new Error('No columns provided for MPO calculation.');
 
-  let resultColumn = dataFrame.col(profileName);
-  const isNew = !resultColumn;
-
-  if (!resultColumn)
-    resultColumn = DG.Column.float(profileName, columns[0].length);
+  const resultColumn = dataFrame.col(profileName) ?? DG.Column.float(profileName, columns[0].length);
 
   const desirabilityTemplates = columns.map((column) => {
     const tag = column.getTag('desirabilityTemplate');
-    return JSON.parse(tag) as PropertyDesirability;
+    return migrateDesirability(JSON.parse(tag));
   });
 
   resultColumn.init((i) => {
@@ -109,9 +134,9 @@ export function mpo(
       if (columns[j].isNone(i))
         return desirability.defaultScore ?? NaN;
 
-      const score = desirability.categories ?
-        categoricalDesirabilityScore(value, desirability) :
-        desirabilityScore(value, desirability.line);
+      const score = isNumerical(desirability) ?
+        desirabilityScore(value, desirability.line) :
+        categoricalDesirabilityScore(String(value), desirability);
 
       if (score === null)
         return NaN;
@@ -123,9 +148,6 @@ export function mpo(
     return aggregate(scores, weights, aggregation);
   });
 
-  // Add the column to the table
-  if (isNew && addResultColumn)
-    dataFrame.columns.add(resultColumn);
   return resultColumn;
 }
 

@@ -1,5 +1,4 @@
-import {ChatModel} from 'openai/resources/shared';
-import {ModelType, OpenAIClient} from '../llm-utils/openAI-client';
+import {ModelType, LLMClient} from '../llm-utils/LLM-client';
 import {JsonSchema} from './interfaces';
 export interface PromptEngine {
   generate(prompt: string, system: string, schema?: JsonSchema): Promise<string>;
@@ -13,12 +12,12 @@ export class ChatGPTPromptEngine implements PromptEngine {
     private temperature = 0.0
   ) {}
 
-  public static getInstance(model?: ChatModel, temperature?: number): ChatGPTPromptEngine {
+  public static getInstance(model?: string, temperature?: number): ChatGPTPromptEngine {
     return ChatGPTPromptEngine.instance ??= new ChatGPTPromptEngine(model, temperature);
   }
 
   async generate(prompt: string, system: string, schema?: JsonSchema): Promise<string> {
-    const res = OpenAIClient.getInstance();
+    const res = LLMClient.getInstance();
     return await res.generalPromptCached(this.model, system, prompt, schema);
   }
 }
@@ -47,7 +46,7 @@ export class GeminiPromptEngine implements PromptEngine {
   async generate(prompt: string, system: string, schema?: JsonSchema): Promise<string> {
     await this.initSession(system);
     return this.session!.prompt(prompt, {
-      responseConstraint: schema ?? undefined,
+      responseConstraint: (schema as Record<string, unknown>) ?? undefined,
     });
   }
 }

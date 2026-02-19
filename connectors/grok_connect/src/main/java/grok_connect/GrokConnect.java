@@ -98,7 +98,7 @@ public class GrokConnect {
                         .atZone(ZoneId.systemDefault())
                         .toLocalDate().format(DateTimeFormatter.ofPattern("yyyy-MM-dd hh:mm:ss"));
                 result.execTime = execTime;
-                result.columns = dataFrame.columns.size();
+                result.columns = dataFrame.getColumnCount();
                 result.rows = dataFrame.rowCount;
                 String logString = String.format("%s: Execution time: %f s, Columns/Rows: %d/%d, Blob size: %d bytes\n",
                         result.timeStamp,
@@ -210,6 +210,23 @@ public class GrokConnect {
             return response;
         });
 
+        post("/catalogs", (request, response) -> {
+            BufferAccessor buffer;
+            DataQueryRunResult result = new DataQueryRunResult();
+            try {
+                DataConnection connection = gson.fromJson(request.body(), DataConnection.class);
+                DataProvider provider = providerManager.getByName(connection.dataSource);
+                DataFrame dataFrame = provider.getCatalogs(connection);
+                buffer = packDataFrame(result, dataFrame);
+            } catch (QueryCancelledByUser | GrokConnectException ex) {
+                buffer = packException(result, ex.getClass().equals(GrokConnectException.class) && ex.getCause() != null
+                        ? (Exception) ex.getCause() : ex);
+                PARENT_LOGGER.info(DEFAULT_LOG_EXCEPTION_MESSAGE, ex);
+            }
+            prepareResponse(result, response, buffer);
+            return response;
+        });
+
         post("/comments", (request, response) -> {
             BufferAccessor buffer;
             DataQueryRunResult result = new DataQueryRunResult();
@@ -296,7 +313,7 @@ public class GrokConnect {
     private static BufferAccessor packDataFrame(DataQueryRunResult result, DataFrame dataFrame) {
         result.blob = dataFrame.toByteArray();
         result.blobLength = result.blob.length;
-        result.columns = dataFrame.columns.size();
+        result.columns = dataFrame.getColumnCount();
         result.rows = dataFrame.rowCount;
 
         BufferAccessor buffer = new BufferAccessor(result.blob);

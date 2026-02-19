@@ -59,7 +59,7 @@ export function injectTreeForGridUI2(
   function assingClusters() {
     if (!treeRoot)
       return;
-    showClusterAsignmentDialog(treeRoot, th, grid.dataFrame);
+    showClusterAsignmentDialog(treeRoot, th, grid.dataFrame, renderer);
   }
 
   treeNb.root?.addEventListener('contextmenu', (ev) => {
@@ -67,6 +67,7 @@ export function injectTreeForGridUI2(
     ev.preventDefault();
     const menu = DG.Menu.popup();
     menu.item('Assign Clusters', () => { assingClusters(); });
+    menu.item('Reset Zoom', () => renderer.onResetZoom());
     menu.show({x: ev.clientX, y: ev.clientY, causedBy: ev});
   });
 
@@ -369,7 +370,9 @@ export function injectTreeForGridUI2(
   return treeNb;
 }
 
-function showClusterAsignmentDialog(treeRoot: NodeType, th: ITreeHelper, dataFrame: DG.DataFrame) {
+function showClusterAsignmentDialog(
+  treeRoot: NodeType, th: ITreeHelper, dataFrame: DG.DataFrame, renderer: GridTreeRendererBase<MarkupNodeType>
+) {
   const dialog = ui.dialog('Assign Clusters');
   const treeHeight = (treeRoot as MarkupNodeType).subtreeLength!;
   if (!treeHeight)
@@ -410,7 +413,9 @@ function showClusterAsignmentDialog(treeRoot: NodeType, th: ITreeHelper, dataFra
     return bestThreshold;
   };
 
-  cutSlider.onChanged.subscribe((value) => {
+  const subs: Unsubscribable[] = [];
+
+  subs.push(cutSlider.onChanged.subscribe((value) => {
     if (processing || value === null) return;
     processing = true;
     try {
@@ -418,9 +423,13 @@ function showClusterAsignmentDialog(treeRoot: NodeType, th: ITreeHelper, dataFra
     } finally {
       processing = false;
     }
-  });
+  }));
 
-  clusterInput.onChanged.subscribe((value) => {
+  subs.push(DG.debounce(cutSlider.onChanged, 20).subscribe(() => {
+    renderer.render('Invalidate');
+  }));
+
+  subs.push(clusterInput.onChanged.subscribe((value) => {
     if (processing || value === null) return;
     processing = true;
     try {
@@ -428,7 +437,7 @@ function showClusterAsignmentDialog(treeRoot: NodeType, th: ITreeHelper, dataFra
     } finally {
       processing = false;
     }
-  });
+  }));
 
   dialog.add(cutSlider.root);
   dialog.add(clusterInput.root);
@@ -458,4 +467,23 @@ function showClusterAsignmentDialog(treeRoot: NodeType, th: ITreeHelper, dataFra
   });
 
   dialog.show();
+
+  subs.push(renderer.onAfterRender.subscribe(({target, context, lengthRatio}) => {
+    const tgt = target as GridTreeRendererBase<MarkupNodeType>;
+
+    // const drawCanvasSize = context.canvas.width - (tgt.leftPadding + tgt.rightPadding) * window.devicePixelRatio;
+    // const actRatio = renderer.treeRoot?.subtreeLength ? drawCanvasSize / renderer.treeRoot!.subtreeLength : lengthRatio;
+    const posX = tgt.treeXToCanvasX(cutSlider.value!) * window.devicePixelRatio;
+
+    context.strokeStyle = '#A00000';
+    context.moveTo(posX, 0);
+    context.lineTo(posX, context.canvas.height);
+    context.stroke();
+  }));
+
+  const closeSub = dialog.onClose.subscribe(() => {
+    for (const sub of subs)
+      sub.unsubscribe();
+    closeSub.unsubscribe();
+  });
 }

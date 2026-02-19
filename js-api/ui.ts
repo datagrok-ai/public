@@ -22,6 +22,10 @@ import {
   SliderOptions,
   Breadcrumbs,
   DropDown,
+  DropDownMenuItems,
+  DropDownMenuBuilder,
+  DropDownListOptions,
+  DropDownOptions,
   TypeAhead,
   TypeAheadConfig,
   ChoiceInput, InputForm, CodeInput, CodeConfig, MarkdownInput, MarkdownConfig,
@@ -99,21 +103,41 @@ export function remove(element: HTMLElement): void {
   element.remove();
 }
 
+/**
+ * Internal helper to set element inner text and return the element for chaining.
+ * Prefer using standard DOM APIs or ui.div/ui.span with content directly.
+ * @internal
+ */
 export function _innerText(x: HTMLElement, s: string): HTMLElement {
   x.innerText = s;
   return x;
 }
 
+/**
+ * Internal helper to add a CSS class and return the element for chaining.
+ * Prefer using ui.element() with className parameter or standard classList API.
+ * @internal
+ */
 export function _class(x: HTMLElement, s: string): HTMLElement {
   x.classList.add(s);
   return x;
 }
 
+/**
+ * Internal helper to set text color and return the element for chaining.
+ * Prefer using CSS classes for styling.
+ * @internal
+ */
 export function _color(x: HTMLElement, s: string): HTMLElement {
   x.style.color = s;
   return x;
 }
 
+/**
+ * Internal helper to set background color and return the element for chaining.
+ * Prefer using CSS classes for styling.
+ * @internal
+ */
 export function _backColor(x: HTMLElement, s: string): HTMLElement {
   x.style.backgroundColor = s;
   return x;
@@ -2171,10 +2195,47 @@ export function breadcrumbs(path: string[]): Breadcrumbs {
 }
 
 /**
- * Example: {@link https://public.datagrok.ai/js/samples/ui/components/combo-popup}
+ * Creates a dropdown component. The most common use case is a menu dropdown.
+ *
+ * @example Menu dropdown (recommended):
+ * ui.dropDown('Actions', {
+ *   'Add': () => grok.shell.info('add'),
+ *   'Edit': () => grok.shell.info('edit'),
+ *   'More': {
+ *     'Option 1': () => {},
+ *     'Option 2': () => {},
+ *   }
+ * });
+ *
+ * @example List dropdown:
+ * ui.dropDown('Items', ['Item 1', 'Item 2', 'Item 3'], {
+ *   onItemClick: (item) => grok.shell.info(item)
+ * });
+ *
+ * @example Custom content dropdown:
+ * ui.dropDown('Custom', () => ui.div('Any content here'));
+ *
+ * Example: {@link https://public.datagrok.ai/js/samples/ui/components/drop-down}
  */
-export function dropDown(label: string | Element, createElement: () => HTMLElement): DropDown {
-  return new DropDown(label, createElement);
+export function dropDown(label: string | Element, items: DropDownMenuItems, options?: DropDownOptions): DropDown;
+export function dropDown(label: string | Element, builder: DropDownMenuBuilder, options?: DropDownOptions): DropDown;
+export function dropDown(label: string | Element, items: string[], listOptions?: DropDownListOptions, options?: DropDownOptions): DropDown;
+export function dropDown(label: string | Element, createElement: () => HTMLElement, options?: DropDownOptions): DropDown;
+export function dropDown(
+  label: string | Element,
+  content: DropDownMenuItems | DropDownMenuBuilder | string[] | (() => HTMLElement),
+  optionsOrListOptions?: DropDownOptions | DropDownListOptions,
+  options?: DropDownOptions
+): DropDown {
+  if (Array.isArray(content))
+    return DropDown.list(label, content, optionsOrListOptions as DropDownListOptions, options);
+
+  // Function with 1 parameter (menu) -> menu builder, function with 0 parameters -> custom content
+  if (typeof content === 'function')
+    return content.length === 1 ? DropDown.menu(label, content as DropDownMenuBuilder, optionsOrListOptions as DropDownOptions) :
+      DropDown.custom(label, content as () => HTMLElement, optionsOrListOptions as DropDownOptions);
+
+  return DropDown.menu(label, content, optionsOrListOptions as DropDownOptions);
 }
 
 // export function makeInputTypeAhead(input: HTMLInputElement, config: TypeAheadConfig): void {

@@ -8,10 +8,9 @@ import {SemValueObjectHandler} from '@datagrok-libraries/db-explorer/src/object-
 import {ChatModel} from 'openai/resources/index';
 import {AIPanelFuncs, MessageType} from './panel';
 import {BuiltinDBInfoMeta, getDBColumnMetaData, getDBTableMetaData} from './query-meta-utils';
-import {ModelType, OpenAIClient} from './openAI-client';
-import {OpenAIResponsesProvider} from './AI-API-providers/openai-responses-provider';
-import {OpenAIChatCompletionsProvider} from './AI-API-providers/openai-chat-completions-provider';
-import {AIProvider, FunctionToolSpec} from './AI-API-providers/types';
+import {ModelOption, ModelType, LLMClient} from './LLM-client';
+import {LanguageModelV3FunctionTool, LanguageModelV3Message} from '@ai-sdk/provider';
+import {findLast} from '../utils';
 
 
 const suspiciousSQlPatterns = ['DROP ', 'DELETE ', 'UPDATE ', 'INSERT ', 'ALTER ', 'CREATE ', 'TRUNCATE ', 'EXEC ', 'MERGE '];
@@ -50,17 +49,16 @@ function parseJsonObject(text: string): JsonObject | null {
  * @throws Error if SQL generation fails
  * @param prompt - User's natural language query
  * @param connectionID - Database connection ID
- * @param schemaName - Schema name
- * @param dbMeta - Optional DBConnectionMeta object with enriched metadata
+ * @param options - Options including catalogName, old messages, AI panel, etc.
  */
 export async function generateAISqlQueryWithTools(
   prompt: string,
   connectionID: string,
-  schemaName: string,
   options: {
+    catalogName?: string,
     oldMessages?: MessageType[],
     aiPanel?: AIPanelFuncs<MessageType>,
-    modelName?: ChatModel,
+    modelType?: ModelOption,
     disableVerbose?: boolean,
   } = {}
 ): Promise<string> {
@@ -70,9 +68,15 @@ export async function generateAISqlQueryWithTools(
 
   // Load pre-indexed metadata if available
   const connection = await grok.dapi.connections.find(connectionID);
-  const dbInfo = await BuiltinDBInfoMeta.fromConnection(connection);
+  const allDbInfos = await BuiltinDBInfoMeta.allFromConnection(connection);
+  const catalogNames = allDbInfos.map((d) => d.name);
+  const defaultCatalog = options.catalogName ??
+    connection.parameters?.['catalog'] ??
+    connection.parameters?.['db'] ??
+    catalogNames[0] ??
+    '';
   // Create tool execution context
-  const context = new SQLGenerationContext(connectionID, schemaName, dbInfo, connection);
+  const context = new SQLGenerationContext(connectionID, defaultCatalog, allDbInfos, connection);
   const abortSub = getAIAbortSubscription().subscribe(() => {
     aborted = true;
     console.log('Aborting SQL generation as per user request');
@@ -86,7 +90,9 @@ export async function generateAISqlQueryWithTools(
   });
   try {
   // Initialize OpenAI client provider
-    const provider = AIProvider.getProvider();
+    const langTool = LLMClient.getInstance();
+    const modelType = options.modelType ?? 'Fast';
+    const client = langTool.aiModels[modelType];
 
     // Initial system message
     const systemMessage = `You are an expert SQL query generator. You have access to tools to explore a database schema and generate SQL queries.
@@ -94,12 +100,13 @@ export async function generateAISqlQueryWithTools(
     Your name is Datagrok SQL Expert.
 
     WORKFLOW:
-    1. You are provided with a list of available tables and their descriptions
-    2. Use describe_tables to get detailed column information for relevant tables
-    3. Use list_joins to understand relationships between tables
-    4. Use try_sql to test your generated queries (it returns row count and column names)
-    5. Iterate and refine your query based on test results
-    6. Once satisfied, provide the final SQL query
+    1. You are provided with the default catalog and available schemas
+    2. Use list_tables_in_schema to see what tables are available in a schema
+    3. Use describe_tables to get detailed column information for relevant tables
+    4. Use list_joins to understand relationships between tables
+    5. Use try_sql to test your generated queries (it returns row count and column names)
+    6. Iterate and refine your query based on test results
+    7. Once satisfied, provide the final SQL query
 
     CRITICAL RULES:
     - ALWAYS use list_joins to verify relationships before writing JOIN clauses
@@ -107,7 +114,8 @@ export async function generateAISqlQueryWithTools(
     - ONLY use relationships explicitly listed by list_joins
     - ALWAYS Use try_sql to validate your query before finalizing and submitting it
     - Pay attention to semantic types, value ranges, and category values from describe_tables
-    - Current Schema name is: ${schemaName}
+    - The default database catalog is: ${defaultCatalog}. Use list_catalogs if you need to explore other catalogs.
+    - Use list_all_schemas and list_tables_in_schema to discover the database structure before writing queries.
     - ALWAYS prefix table names with schema name in SQL or other functions!!!
     - DO NOT USE 'to' as a table alias
     - If some categorical value is supplied to match (e.g. status value or measurement units), use the information from corresponding column's category values (if any). otherwise, try to use multiple options using OR (for example for micromolar units, try 'uM', 'μM', ets).
@@ -125,8 +133,8 @@ export async function generateAISqlQueryWithTools(
       options.aiPanel?.addEngineMessage(message);
     };
     if (input.length === 0) {
-      // Get initial table list
-      const initialTableList = (await context.listTables(false, schemaName)).description;
+      // Get initial schema list for the default catalog
+      const defaultSchemas = await context.listAllSchemas(defaultCatalog);
       let semTypeWithinPromptInfo = '';
       // try to also match some identifiers within the user prompt to provide even more context
       const parsedPrompt = DG.SemanticValue.parse(prompt);
@@ -142,7 +150,7 @@ export async function generateAISqlQueryWithTools(
         }
       }
 
-      if (grok.ai.entityIndexingEnabled) {
+      if (grok.ai.config.indexEntities) {
         const similarQueries = await findSimilarQueriesToPrompt(prompt);
         console.log(`found ${similarQueries.n} similar queries for the prompt`);
         if (similarQueries.n > 0 && similarQueries.text) {
@@ -152,37 +160,42 @@ export async function generateAISqlQueryWithTools(
         }
       }
 
-      const systemMsg = provider.createSystemMessage(systemMessage);
+      const systemMsg = langTool.createSystemMessage(systemMessage);
       input.push(systemMsg);
       addEngineMessage(systemMsg);
-      const initialUserMsg = provider.createUserMessage(`
-        Available schemas: ${(await context.listAllSchemas()).join(', ')}\n\n
-        Available tables in schema ${schemaName}:\n\n${initialTableList}\n\nUser Query: ${prompt}\n\n
-        Explore the schema using the available tools and generate an SQL query to answer this question.
+      const initialUserMsg = langTool.createUserMessage(`
+        Default catalog: ${defaultCatalog}\n
+        Available catalogs: ${catalogNames.join(', ')}\n\n
+        Available schemas in catalog '${defaultCatalog}': ${defaultSchemas.join(', ')}\n\nUser Query: ${prompt}\n\n
+        Explore the database using the available tools and generate an SQL query to answer this question.
         ${semTypeWithinPromptInfo}`);
       addEngineMessage(initialUserMsg); // prompt will be shown in UI
       input.push(initialUserMsg);
     } else {
-      const followUpUserMsg = provider.createUserMessage(`User Follow up (do modifications as/if needed based on the following): ${prompt}`);
+      const followUpUserMsg = langTool.createUserMessage(`User Follow up (do modifications as/if needed based on the following): ${prompt}`);
       input.push(followUpUserMsg);
       addEngineMessage(followUpUserMsg);
     }
 
     // Define available tools
-    const functionTools: FunctionToolSpec[] = [
+    const functionTools: LanguageModelV3FunctionTool[] = [
       {
         type: 'function',
         name: 'list_tables_in_schema',
-        description: 'Returns the list of all table names along with their descriptions/comments. Use this to understand what data is available. You must provide schemaName parameter to specify which schema to list tables from.',
-        parameters: {
+        description: 'Returns the list of all table names along with their descriptions/comments. Use this to understand what data is available.',
+        inputSchema: {
           type: 'object',
           properties: {
             schemaName: {
               type: 'string',
               description: 'Name of the schema to list tables from',
             },
+            catalogName: {
+              type: 'string',
+              description: 'Name of the catalog containing the schema',
+            },
           },
-          required: ['schemaName'],
+          required: ['schemaName', 'catalogName'],
           additionalProperties: false,
         },
         strict: true,
@@ -190,8 +203,25 @@ export async function generateAISqlQueryWithTools(
       {
         type: 'function',
         name: 'list_all_schemas',
-        description: 'Retyurns the names all all schemas in the connection.',
-        parameters: {
+        description: 'Returns the names of all schemas in the specified catalog.',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            catalogName: {
+              type: 'string',
+              description: 'Name of the catalog to list schemas from',
+            },
+          },
+          required: ['catalogName'],
+          additionalProperties: false,
+        },
+        strict: true,
+      },
+      {
+        type: 'function',
+        name: 'list_catalogs',
+        description: 'Returns the names of all database catalogs available on this connection. Use this if you need to explore data across different catalogs.',
+        inputSchema: {
           type: 'object',
           properties: {},
           required: [],
@@ -204,13 +234,13 @@ export async function generateAISqlQueryWithTools(
         type: 'function',
         name: 'describe_tables',
         description: 'Get detailed information about specific table(s) including all columns, their types, semantic types, comments, value ranges, and category values. Essential for understanding what data is in each table.',
-        parameters: {
+        inputSchema: {
           type: 'object',
           properties: {
             tables: {
               type: 'array',
               items: {type: 'string'},
-              description: 'List of table names (MANDATORY WITH schema prefix) to describe. ALWAYS provide schema name as prefix, for example public.tableName...',
+              description: 'List of table names to describe. Use schema.table format (e.g. public.tableName) or catalog.schema.table format for cross-catalog queries.',
             },
           },
           required: ['tables'],
@@ -222,13 +252,13 @@ export async function generateAISqlQueryWithTools(
         type: 'function',
         name: 'list_joins',
         description: 'Lists all foreign key relationships (joins) that involve the specified table(s). CRITICAL: Use this before writing any JOIN clause to verify the relationship exists.',
-        parameters: {
+        inputSchema: {
           type: 'object',
           properties: {
             tables: {
               type: 'array',
               items: {type: 'string'},
-              description: 'List of table names (WITH schema prefix) to find joins for',
+              description: 'List of table names to find joins for. Use schema.table or catalog.schema.table format.',
             },
           },
           required: ['tables'],
@@ -240,7 +270,7 @@ export async function generateAISqlQueryWithTools(
         type: 'function',
         name: 'try_sql',
         description: 'Execute an SQL query to test it. Returns row count and column names (limited to 10 rows). Use this to validate your query before providing the final answer. If row count is 0, the query might be wrong or the data might genuinely be absent. TRY NOT TO USE ORDER BY in YOUR TEST QUERIES on large tables unless absolutely necessary.',
-        parameters: {
+        inputSchema: {
           type: 'object',
           properties: {
             sql: {
@@ -262,7 +292,7 @@ export async function generateAISqlQueryWithTools(
         type: 'function',
         name: 'reply_to_user',
         description: 'Use this tool to esentially communicate with the user directly, give feedback, add context to what you are doing, explain reasoning(!!!) and so on. This is NOT for providing the final SQL query, but rather for intermediate communication. When using this tool, always provide a clear, informative and well formatted (markdown) message to the user in the reply parameter.',
-        parameters: {
+        inputSchema: {
           type: 'object',
           properties: {
             reply: {
@@ -278,12 +308,12 @@ export async function generateAISqlQueryWithTools(
     ];
 
     // if we have some embeddings, then also add a tool so that LLM can use it to find similar queries
-    if (grok.ai.entityIndexingEnabled) {
+    if (grok.ai.config.indexEntities) {
       functionTools.push({
         type: 'function',
         name: 'find_similar_queries',
         description: 'Finds existing similar queries based on the prompt you provide (which should be based on user question). Use this to get inspiration from previously executed queries that might be similar to the user question. Return up to 3 similar queries with their descriptions/comments. Similarity is based on LLM embeddings and cosine similarity.',
-        parameters: {
+        inputSchema: {
           type: 'object',
           properties: {
             prompt: {
@@ -328,31 +358,57 @@ export async function generateAISqlQueryWithTools(
       }
       iterations++;
       console.log(`\n=== Iteration ${iterations} ===`);
-      const modelName = options?.modelName ?? ModelType.Fast;
-      const response = await provider.create({
-        model: modelName,
-        messages: input,
+      const response = await client.doGenerate({
+        prompt: input,
         tools: functionTools,
-        ...(modelName.startsWith('gpt-5') ? {reasoning: {effort: 'high'}} : {}),
+        providerOptions: {
+          openai: {
+            ...(ModelType.Coding.startsWith('gpt-5') ? {reasoning: {effort: 'medium'}} : {}),
+          }
+        }
       });
 
-      const outputs = response.outputMessages;
-      input.push(...outputs);
-      outputs.forEach((item) => addEngineMessage(item));
+      // Fix tool_use input fields - Anthropic expects objects, not strings
+      // The AI SDK's doGenerate puts item IDs in providerMetadata, but the
+      // Responses API input converter only reads reasoning items from providerOptions
+      // (tool-call has a fallback to providerMetadata, but reasoning does not).
+      // Copy providerMetadata → providerOptions so reasoning item_references are created.
+      const fixedContent = response.content.map((item) => {
+        const patched = {
+          ...item,
+          providerOptions: (item as any).providerOptions ?? (item as any).providerMetadata,
+        };
+        if (item.type === 'tool-call') {
+          return {
+            ...patched,
+            input: typeof item.input === 'string' ? parseJsonObject(item.input) ?? item.input : item.input
+          };
+        }
+        return patched;
+      });
+
+      const formattedOutput: LanguageModelV3Message = {
+        role: 'assistant',
+        // @ts-ignore
+        content: fixedContent
+      };
+      //const outputs: MessageType[] = response.content.map((item) => ({role: 'assistant', content: [item]} as MessageType));
+      input.push(formattedOutput);
+      options.aiPanel?.addEngineMessage(formattedOutput);
 
       // Execute function calls (if any)
       let hadToolCalls = false;
-      for (const call of response.toolCalls) {
+      for (const call of response.content.filter((c) => c.type === 'tool-call')) {
         hadToolCalls = true;
 
-        const functionName = call.name;
-        const callId = call.id;
-        const rawArgs = call.arguments ?? '{}';
+        const functionName = call.toolName;
+        const callId = call.toolCallId;
+        const rawArgs = call.input ?? '{}';
         const args = parseJsonObject(rawArgs);
 
         if (!functionName || !callId) {
           const errorText = 'Error: malformed function call (missing name/call_id).';
-          const outputItem = provider.createToolOutputMessage(callId ?? '', errorText);
+          const outputItem = langTool.createToolOutputMessage(callId ?? '', functionName ?? '', errorText);
           if (callId)
             input.push(outputItem);
           if (callId)
@@ -363,9 +419,14 @@ export async function generateAISqlQueryWithTools(
         let result = '';
         try {
           switch (functionName) {
+          case 'list_catalogs':
+            options.aiPanel?.addUiMessage(`📂 Listing all catalogs in the database.`, false);
+            result = (await context.listCatalogs()).join(', ');
+            !options.disableVerbose && options.aiPanel?.addUiMessage(`✅ Catalogs found: *${result}*`, false);
+            break;
           case 'list_all_schemas':
-            options.aiPanel?.addUiMessage(`📂 Listing all schemas in the database.`, false);
-            result = (await context.listAllSchemas()).join(', ');
+            options.aiPanel?.addUiMessage(`📂 Listing all schemas in catalog *${getStringProp(args, 'catalogName') ?? ''}*.`, false);
+            result = (await context.listAllSchemas(getStringProp(args, 'catalogName') ?? defaultCatalog)).join(', ');
             !options.disableVerbose && options.aiPanel?.addUiMessage(`✅ Schemas found: *${result}*`, false);
             break;
           case 'reply_to_user':
@@ -373,8 +434,8 @@ export async function generateAISqlQueryWithTools(
             result = 'Reply sent to user.';
             break;
           case 'list_tables_in_schema':
-            options.aiPanel?.addUiMessage(`📑 Listing all tables in schema *${getStringProp(args, 'schemaName') ?? ''}*.`, false);
-            const res = await context.listTables(false, getStringProp(args, 'schemaName') ?? schemaName);
+            options.aiPanel?.addUiMessage(`📑 Listing all tables in schema *${getStringProp(args, 'schemaName') ?? ''}* (catalog: *${getStringProp(args, 'catalogName') ?? ''}*).`, false);
+            const res = await context.listTables(false, getStringProp(args, 'schemaName') ?? '', getStringProp(args, 'catalogName') ?? undefined);
             result = res.description;
             !options.disableVerbose && options.aiPanel?.addUiMessage(res.tableCount ? `✅ Found ${res.tableCount} tables` : '⚠️ No tables found', false);
             break;
@@ -415,7 +476,7 @@ export async function generateAISqlQueryWithTools(
 
         console.log(`Result: ${result.substring(0, 200)}${result.length > 200 ? '...' : ''}`);
 
-        const outputItem = provider.createToolOutputMessage(callId, result);
+        const outputItem = langTool.createToolOutputMessage(callId, functionName, result);
         input.push(outputItem);
         addEngineMessage(outputItem);
       }
@@ -430,8 +491,8 @@ export async function generateAISqlQueryWithTools(
         continue;
       }
 
-      const content = response.outputText.trim();
-      if (content.length === 0)
+      const content = findLast(response.content, (c) => c.type === 'text')?.text!;
+      if ((content?.length ?? 0) === 0)
         throw new Error('Model returned no text and no tool calls');
 
       console.log('Model response:', content);
@@ -469,10 +530,14 @@ export async function generateAISqlQueryWithTools(
         if (res)
           !options.disableVerbose && options.aiPanel?.addUiMessage(`Final SQL Query:\n\`\`\`sql\n${res}\n\`\`\``, false, {finalResult: res});
         return res;
-      } else {
+      } else if (contentUpperCase.startsWith('REPLY ONLY:')) {
         const replyText = contentUpperCase.startsWith('REPLY ONLY:') ? content.substring('REPLY ONLY:'.length).trim() : content;
         options.aiPanel?.addUiMessage(replyText, false);
-        return '';
+      } else {
+        // Not SQL - add a message to AI to remind it that it needs to provide ONLY SQL Beggining with SELECT or WITH
+        const reminderMsg = langTool.createUserMessage('The last response was not a valid SQL query. Please provide ONLY the SQL query text beginning with SELECT or WITH statement, without any explanations or additional text. Remember to prefix table names with schema name.');
+        input.push(reminderMsg);
+        addEngineMessage(reminderMsg);
       }
     }
     // If we exhausted iterations or didn't get a proper response
@@ -483,33 +548,63 @@ export async function generateAISqlQueryWithTools(
 }
 
 /**
- * Context class that manages tool execution for SQL generation
+ * Context class that manages tool execution for SQL generation.
+ * Supports multiple catalogs (e.g. for Databricks) with a default catalog.
  */
 class SQLGenerationContext {
+  private dbInfoMap: Map<string, BuiltinDBInfoMeta> = new Map();
+
   constructor(
     private connectionID: string,
-    private schemaName: string,
-    private dbMeta: BuiltinDBInfoMeta,
+    private defaultCatalog: string,
+    dbInfos: BuiltinDBInfoMeta[],
     private connection: DG.DataConnection
-  ) {}
+  ) {
+    for (const dbInfo of dbInfos)
+      this.dbInfoMap.set(dbInfo.name, dbInfo);
+  }
 
-  async listAllSchemas(): Promise<string[]> {
-    return (await this.dbMeta.getSchemas()).map((s) => s.name);
+  private getDbInfo(catalogName?: string): BuiltinDBInfoMeta {
+    const name = catalogName ?? this.defaultCatalog;
+    const dbInfo = this.dbInfoMap.get(name);
+    if (!dbInfo)
+      throw new Error(`Catalog '${name}' not found. Available catalogs: ${Array.from(this.dbInfoMap.keys()).join(', ')}`);
+    return dbInfo;
+  }
+
+  /**
+   * Parses a table reference that may include catalog, schema, and table name.
+   * Supports: catalog.schema.table, schema.table, or just table
+   */
+  private parseTableRef(tableRef: string): {catalog: string, schema: string, table: string} {
+    const parts = tableRef.trim().split('.');
+    if (parts.length >= 3)
+      return {catalog: parts[0], schema: parts[1], table: parts.slice(2).join('.')};
+    if (parts.length === 2)
+      return {catalog: this.defaultCatalog, schema: parts[0], table: parts[1]};
+    return {catalog: this.defaultCatalog, schema: '', table: parts[0]};
+  }
+
+  async listCatalogs(): Promise<string[]> {
+    return Array.from(this.dbInfoMap.keys());
+  }
+
+  async listAllSchemas(catalogName?: string): Promise<string[]> {
+    return (await this.getDbInfo(catalogName).getSchemas()).map((s) => s.name);
   }
 
   /**
    * Tool: list_tables
    * Returns all tables with their descriptions
    */
-  async listTables(includeAllDescriptions: boolean, schemaName: string): Promise<{description: string, tableCount: number}> {
-    schemaName ??= this.schemaName;
+  async listTables(includeAllDescriptions: boolean, schemaName: string, catalogName?: string): Promise<{description: string, tableCount: number}> {
+    const dbInfo = this.getDbInfo(catalogName);
 
-    const schema = (await this.dbMeta.getSchemas()).find((s) => s.name === schemaName);
+    const schema = (await dbInfo.getSchemas()).find((s) => s.name === schemaName);
     if (!schema)
-      return {description: `Schema ${schemaName} not found in metadata.`, tableCount: 0};
+      return {description: `Schema ${schemaName} not found in catalog ${catalogName ?? this.defaultCatalog}.`, tableCount: 0};
 
     const tables = (await schema.getTables());
-    //const parts: string[] = [];
     const tableDescs = tables.map((table) => {
       const parts = [`${table.friendlyName ?? table.name}`];
       const tableMeta = getDBTableMetaData(table);
@@ -527,35 +622,39 @@ class SQLGenerationContext {
 
   /**
    * Tool: describe_tables
-   * Returns detailed column information for specified tables
+   * Returns detailed column information for specified tables.
+   * Supports catalog.schema.table and schema.table formats.
    */
   async describeTables(tableNames: string[]): Promise<string> {
-    const schemaNames = tableNames.map((t) => t.trim().indexOf('.') >= 0 ? t.split('.')[0] : this.schemaName);
-    tableNames = tableNames.map((t) => t.trim()).map((t) => t.indexOf('.') >= 0 ? t.split('.')[1] : t); // Remove schema prefix if present
+    const refs = tableNames.map((t) => this.parseTableRef(t));
     const descriptions: string[] = [];
 
-    const schemas = await this.dbMeta.getSchemas();
-    const schemaTableMap: Map<string, DG.TableInfo[]> = new Map();
-    for (const sn of Array.from(new Set(schemaNames))) {
-      const schema = schemas.find((s) => s.name === sn);
-      if (schema) {
-        const tables = await schema.getTables();
-        schemaTableMap.set(sn, tables);
-      }
+    // Group by catalog+schema for efficient fetching
+    const groupKey = (r: {catalog: string, schema: string}) => `${r.catalog}\0${r.schema}`;
+    const schemaTableCache: Map<string, DG.TableInfo[]> = new Map();
+
+    for (const key of new Set(refs.map(groupKey))) {
+      const [catalog, schema] = key.split('\0');
+      try {
+        const dbInfo = this.getDbInfo(catalog);
+        const schemaInfo = (await dbInfo.getSchemas()).find((s) => s.name === schema);
+        if (schemaInfo)
+          schemaTableCache.set(key, await schemaInfo.getTables());
+      } catch { /* catalog not found */ }
     }
-    for (let i = 0; i < tableNames.length; i++) {
-      const tables = schemaTableMap.get(schemaNames[i]);
+
+    for (const ref of refs) {
+      const tables = schemaTableCache.get(groupKey(ref));
       if (!tables) {
-        descriptions.push(`Schema ${schemaNames[i]} not found`);
+        descriptions.push(`Schema ${ref.schema} not found in catalog ${ref.catalog}`);
         continue;
       }
-      const table = tables.find((t) => t.friendlyName === tableNames[i] || t.name === tableNames[i]);
+      const table = tables.find((t) => t.friendlyName === ref.table || t.name === ref.table);
       if (!table) {
-        descriptions.push(`Table ${tableNames[i]} not found`);
+        descriptions.push(`Table ${ref.table} not found in ${ref.schema}`);
         continue;
       }
-      const tableDesc = this.buildDetailedTableDescription(table);
-      descriptions.push(tableDesc);
+      descriptions.push(this.buildDetailedTableDescription(table));
     }
 
     return descriptions.join('\n\n---\n\n');
@@ -563,22 +662,36 @@ class SQLGenerationContext {
 
   /**
    * Tool: list_joins
-   * Returns all foreign key relationships involving the specified tables
+   * Returns all foreign key relationships involving the specified tables.
+   * Supports catalog.schema.table and schema.table formats.
    */
   async listJoins(tableNames: string[]): Promise<string> {
-    const schemaNames = tableNames.map((t) => t.trim().indexOf('.') >= 0 ? t.split('.')[0] : this.schemaName);
-    tableNames = tableNames.map((t) => t.trim()).map((t) => t.indexOf('.') >= 0 ? t.split('.')[1] : t); // Remove schema prefix if present
-    // in case of cross-schema requests,
-    const schemaQualifiedTableSet = new Set<string>();
-    for (let i = 0; i < tableNames.length; i++)
-      schemaQualifiedTableSet.add(`${schemaNames[i]}.${tableNames[i]}`);
+    const refs = tableNames.map((t) => this.parseTableRef(t));
 
-    // const joins: string[] = [];
-    const uniqueSchemas = Array.from(new Set(schemaNames));
-    const relations = (await Promise.all(uniqueSchemas.map(async (sn) => await this.dbMeta.getRelationsForSchema(sn))))
-      .flat()
+    const schemaQualifiedTableSet = new Set<string>();
+    for (const ref of refs)
+      schemaQualifiedTableSet.add(`${ref.schema}.${ref.table}`);
+
+    // Collect unique catalog+schema pairs for efficient relation fetching
+    const catalogSchemaMap = new Map<string, Set<string>>();
+    for (const ref of refs) {
+      if (!catalogSchemaMap.has(ref.catalog))
+        catalogSchemaMap.set(ref.catalog, new Set());
+      catalogSchemaMap.get(ref.catalog)!.add(ref.schema);
+    }
+
+    const allRelations: DG.DbRelationInfo[] = [];
+    for (const [catalog, schemas] of catalogSchemaMap) {
+      const dbInfo = this.getDbInfo(catalog);
+      for (const schema of schemas) {
+        const relations = await dbInfo.getRelationsForSchema(schema);
+        allRelations.push(...relations);
+      }
+    }
+
+    const filteredRelations = allRelations
       .filter((rel) => schemaQualifiedTableSet.has(`${rel.fromSchema}.${rel.fromTable}`) || schemaQualifiedTableSet.has(`${rel.toSchema}.${rel.toTable}`));
-    const joins = relations.map((rel) => this.buildJoinDescription(rel));
+    const joins = filteredRelations.map((rel) => this.buildJoinDescription(rel));
 
     if (joins.length === 0)
       return `No foreign key relationships found for tables: ${tableNames.join(', ')}`;

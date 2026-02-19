@@ -11,15 +11,15 @@ export namespace scripts {
   /**
   Predicts the 3D structure of how a molecule interacts with a protein
   */
-  export async function diffdock(protein: string , ligand: string , num_poses: number , api_key: string ): Promise<any> {
-    return await grok.functions.call('BioNeMo:Diffdock', { protein, ligand, num_poses, api_key });
+  export async function diffdockPython(protein: string , ligand: string , num_poses: number , api_key: string ): Promise<any> {
+    return await grok.functions.call('BioNeMo:DiffdockPython', { protein, ligand, num_poses, api_key });
   }
 
   /**
   Predicts the 3D structure of a protein from its amino acid sequence
   */
-  export async function esmfold(sequence: string , api_key: string ): Promise<string> {
-    return await grok.functions.call('BioNeMo:Esmfold', { sequence, api_key });
+  export async function esmfoldPython(sequence: string , api_key: string ): Promise<string> {
+    return await grok.functions.call('BioNeMo:EsmfoldPython', { sequence, api_key });
   }
 
   /**
@@ -35,7 +35,7 @@ export namespace funcs {
     return await grok.functions.call('BioNeMo:MolMIMModel', { algorithm, num_molecules, property_name, minimize, min_similarity, particles, iterations, smi });
   }
 
-  export async function esmFoldModel(table: DG.DataFrame , sequences: DG.Column ): Promise<void> {
+  export async function esmFoldModel(table: DG.DataFrame , sequences: DG.Column ): Promise<DG.DataFrame> {
     return await grok.functions.call('BioNeMo:EsmFoldModel', { table, sequences });
   }
 
@@ -51,7 +51,7 @@ export namespace funcs {
     return await grok.functions.call('BioNeMo:DiffDockModelScript', { ligand, target, poses });
   }
 
-  export async function diffDockModel(table: DG.DataFrame , ligands: DG.Column , target: string , poses: number ): Promise<void> {
+  export async function diffDockModel(table: DG.DataFrame , ligands: DG.Column , target: string , poses: number ): Promise<DG.DataFrame> {
     return await grok.functions.call('BioNeMo:DiffDockModel', { table, ligands, target, poses });
   }
 

@@ -44,6 +44,7 @@ import './packages/properties';
 import './packages/docker';
 import './packages/user-settings-storage';
 import './packages/upload-migrations';
+import './packages/upload-project-isolation';
 import './grid/grid';
 import './grid/filterGroup';
 import './shell/events';
@@ -102,7 +103,7 @@ export async function testPackages(): Promise<DG.DataFrame> {
         continue;
       }
       const packageColumn = DG.Column.string('package', df.rowCount);
-      packageColumn.init((n) => f.package.name);
+      packageColumn.init((n: any) => f.package.name);
       df.columns.insert(packageColumn, 0);
       dfs.push(df);
       grok.shell.closeAll();

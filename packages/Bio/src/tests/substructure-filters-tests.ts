@@ -7,7 +7,7 @@ import * as DG from 'datagrok-api/dg';
 import $ from 'cash-dom';
 import wu from 'wu';
 
-import {after, before, category, test, expect, delay, testEvent, awaitCheck} from '@datagrok-libraries/utils/src/test';
+import {after, before, category, test, expect, delay, testEvent, awaitCheck} from '@datagrok-libraries/test/src/test';
 import {getMonomerLibHelper, IMonomerLibHelper} from '@datagrok-libraries/bio/src/types/monomer-library';
 import {
   getUserLibSettings, setUserLibSettings

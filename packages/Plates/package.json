@@ -14,18 +14,18 @@
     "@typescript-eslint/eslint-plugin": "^5.62.0",
     "@typescript-eslint/parser": "^5.62.0",
     "cash-dom": "^8.0.0",
-    "datagrok-api": "^1.26.0",
+    "datagrok-api": "../../js-api",
     "dayjs": "^1.11.7",
     "eslint": "^8.1.0",
     "eslint-config-google": "^0.14.0",
     "exceljs": "^4.3.0",
     "jstat": "^1.9.6",
-    "rxjs": "^6.5.5"
+    "rxjs": "^6.5.5",
+    "@datagrok-libraries/test": "^1.1.0"
   },
   "devDependencies": {
     "@datagrok/curves": "^1.10.12",
     "css-loader": "^5.0.0",
-    "datagrok-tools": "^4.14.55",
     "source-map-loader": "^4.0.1",
     "style-loader": "^2.0.0",
     "ts-loader": "^9.5.1",
@@ -58,5 +58,8 @@
     "url": "https://github.com/datagrok-ai/public.git",
     "directory": "packages/Plates"
   },
-  "category": "Visualizations"
+  "category": "Visualizations",
+  "overrides": {
+    "datagrok-api": "$datagrok-api"
+  }
 }

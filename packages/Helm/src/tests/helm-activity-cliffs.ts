@@ -1,7 +1,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
-import {after, awaitCheck, before, category, test} from '@datagrok-libraries/utils/src/test';
+import {after, awaitCheck, before, category, test} from '@datagrok-libraries/test/src/test';
 
 import {BitArrayMetricsNames} from '@datagrok-libraries/ml/src/typed-metrics';
 import {getMonomerLibHelper, IMonomerLibHelper} from '@datagrok-libraries/bio/src/types/monomer-library';
@@ -11,7 +11,7 @@ import {
 import {UserLibSettings} from '@datagrok-libraries/bio/src/monomer-works/types';
 import {DimReductionMethods} from '@datagrok-libraries/ml/src/multi-column-dimensionality-reduction/types';
 import {getHelmHelper, IHelmHelper} from '@datagrok-libraries/bio/src/helm/helm-helper';
-import {expect} from '@datagrok-libraries/utils/src/test';
+import {expect} from '@datagrok-libraries/test/src/test';
 import {MmDistanceFunctionsNames} from '@datagrok-libraries/ml/src/macromolecule-distance-functions';
 import {BitArrayMetrics} from '@datagrok-libraries/ml/src/typed-metrics';
 import {BYPASS_LARGE_DATA_WARNING} from '@datagrok-libraries/ml/src/functionEditors/consts';

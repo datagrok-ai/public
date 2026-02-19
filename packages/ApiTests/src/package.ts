@@ -102,7 +102,7 @@ export function CustomStringInput(params: any) {
 //input: column col
 //output: dataframe res {action:join(data)}
 export function testOutputAnnotationJoinDf(data: DG.DataFrame, col: DG.Column<string>): DG.DataFrame {
-  const colRes = DG.Column.string('joined', data.rowCount).init((i) => `${col.get(i)}_abc`);
+  const colRes = DG.Column.string('joined', data.rowCount).init((i: number) => `${col.get(i)}_abc`);
   return DG.DataFrame.fromColumns([colRes]);
 }
 
@@ -111,16 +111,16 @@ export function testOutputAnnotationJoinDf(data: DG.DataFrame, col: DG.Column<st
 //input: column col
 //output: column res {action:join(data)}
 export function testOutputAnnotationJoinCol(data: DG.DataFrame, col: DG.Column<string>): DG.Column {
-  const colRes = DG.Column.string('joined', data.rowCount).init((i) => `${col.get(i)}_abc`);
+  const colRes = DG.Column.string('joined', data.rowCount).init((i: number) => `${col.get(i)}_abc`);
   return colRes;
 }
 
 //name: testOutputAnnotationJoinColList
 //input: dataframe data
 //input: column col
-//output: column res {action:join(data)}
+//output: column_list res {action:join(data)}
 export function testOutputAnnotationJoinColList(data: DG.DataFrame, col: DG.Column<string>): DG.ColumnList {
-  const colRes = DG.Column.string('joined', data.rowCount).init((i) => `${col.get(i)}_abc`);
+  const colRes = DG.Column.string('joined', data.rowCount).init((i: number) => `${col.get(i)}_abc`);
   return DG.DataFrame.fromColumns([colRes]).columns;
 }
 
@@ -129,7 +129,7 @@ export function testOutputAnnotationJoinColList(data: DG.DataFrame, col: DG.Colu
 //input: column col
 //output: dataframe res {action:replace(data)}
 export function testOutputAnnotationReplaceDf(data: DG.DataFrame, col: DG.Column<string>): DG.DataFrame {
-  const colRes = DG.Column.string('val', data.rowCount).init((i) => `${col.get(i)}_abc`);
+  const colRes = DG.Column.string('val', data.rowCount).init((i: number) => `${col.get(i)}_abc`);
   return DG.DataFrame.fromColumns([colRes]);
 }
 
@@ -138,7 +138,7 @@ export function testOutputAnnotationReplaceDf(data: DG.DataFrame, col: DG.Column
 //input: column col
 //output: column res {action:replace(data)}
 export function testOutputAnnotationReplaceCol(data: DG.DataFrame, col: DG.Column<string>): DG.Column {
-  const colRes = DG.Column.string('val', data.rowCount).init((i) => `${col.get(i)}_abc`);
+  const colRes = DG.Column.string('val', data.rowCount).init((i: number) => `${col.get(i)}_abc`);
   return colRes;
 }
 
@@ -147,7 +147,7 @@ export function testOutputAnnotationReplaceCol(data: DG.DataFrame, col: DG.Colum
 //input: column col
 //output: column res {action:replace(data)}
 export function testOutputAnnotationReplaceColList(data: DG.DataFrame, col: DG.Column<string>): DG.ColumnList {
-  const colRes = DG.Column.string('val', data.rowCount).init((i) => `${col.get(i)}_abc`);
+  const colRes = DG.Column.string('val', data.rowCount).init((i: number) => `${col.get(i)}_abc`);
   return DG.DataFrame.fromColumns([colRes]).columns;
 }
 
@@ -156,7 +156,7 @@ export function testOutputAnnotationReplaceColList(data: DG.DataFrame, col: DG.C
 //input: column col
 //output: column res
 export function testOutputWithoutAction(data: DG.DataFrame, col: DG.Column<string>): DG.Column {
-  const res = DG.Column.string('val', data.rowCount).init((i) => `${col.get(i)}_abc`);
+  const res = DG.Column.string('val', data.rowCount).init((i: number) => `${col.get(i)}_abc`);
   return res;
 }
 
@@ -174,7 +174,7 @@ export function expectDate(actual: dayjs.Dayjs, expected: dayjs.Dayjs): void {
 //input: string prefix
 //output: column res
 export function testVectorFunc(col: DG.Column, prefix: string) {
-  const res = DG.Column.string('result', col.length).init((i) => `${prefix}_${col.get(i)}`);
+  const res = DG.Column.string('result', col.length).init((i: number) => `${prefix}_${col.get(i)}`);
   return res;
 }
 
@@ -186,6 +186,6 @@ export function testVectorFunc(col: DG.Column, prefix: string) {
 //input: column postfix
 //output: column res
 export function testVectorFuncNonVectorizableParam(col: DG.Column, prefix: string, postfix: DG.Column) {
-  const res = DG.Column.string('result', col.length).init((i) => `${prefix}_${col.get(i)}_${postfix.get(i)}`);
+  const res = DG.Column.string('result', col.length).init((i: number) => `${prefix}_${col.get(i)}_${postfix.get(i)}`);
   return res;
 }

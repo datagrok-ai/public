@@ -9,7 +9,7 @@ import {Observable, Subject} from 'rxjs';
 import {NglGlAux, NglGlProps} from '@datagrok-libraries/bio/src/viewers/ngl-gl-service';
 import {IBiostructureViewer} from '@datagrok-libraries/bio/src/viewers/molstar-viewer';
 import {DockingRole, DockingTags} from '@datagrok-libraries/bio/src/viewers/molecule3d';
-import {testEvent} from '@datagrok-libraries/utils/src/test';
+import {testEvent} from '@datagrok-libraries/test/src/test';
 import {CellRendererBackAsyncBase, RenderServiceBase} from '@datagrok-libraries/bio/src/utils/cell-renderer-async-base';
 import {getGridCellColTemp} from '@datagrok-libraries/bio/src/utils/cell-renderer-back-base';
 

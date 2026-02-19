@@ -3,15 +3,15 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import * as rxjs from 'rxjs';
-import {OpenAI} from 'openai';
 // @ts-ignore .... idk why it does not like it
 import '../../css/ai.css';
 import {dartLike, fireAIAbortEvent, getAIPanelToggleSubscription} from '../utils';
 import {ConversationStorage, StoredConversationWithContext} from './storage';
-import {ModelOption, ModelType} from './openAI-client';
+import {ModelOption, ModelType} from './LLM-client';
+import {LanguageModelV3Message, LanguageModelV3Content} from '@ai-sdk/provider';
 
 // in future might extend it with other types for response API
-export type MessageType = OpenAI.Chat.ChatCompletionMessageParam | OpenAI.Responses.ResponseInputItem;
+export type MessageType = LanguageModelV3Message;
 
 type AIPanelInputs = {
     prompt: string,
@@ -19,7 +19,7 @@ type AIPanelInputs = {
 }
 
 type DBAIPanelInputs = AIPanelInputs & {
-    schemaName: string,
+    catalogName: string,
 }
 
 export type ScriptingAIPanelInputs = AIPanelInputs & {
@@ -54,7 +54,7 @@ export type PanleMesageRet = {
   confirmPromie: Promise<boolean>,
 }
 
-export type AIPanelFuncs<T extends MessageType = OpenAI.Chat.ChatCompletionMessageParam> = {
+export type AIPanelFuncs<T extends MessageType = LanguageModelV3Message> = {
   /** Adds @aiMsg to the message stack (from user) and @msg to the UI panel */
   addUserMessage: (aiMsg: T, msg: string) => void,
   /** Adds @aiMsg to the message stack (from AI) and @msg with @title to the UI panel*/
@@ -68,7 +68,7 @@ export type AIPanelFuncs<T extends MessageType = OpenAI.Chat.ChatCompletionMessa
 
 }
 
-export class AIPanel<T extends MessageType = OpenAI.Chat.ChatCompletionMessageParam, K extends AIPanelInputs = AIPanelInputs> {
+export class AIPanel<T extends MessageType = LanguageModelV3Message, K extends AIPanelInputs = AIPanelInputs> {
   private root: HTMLElement;
   private view: DG.View | DG.ViewBase;
   private inputArea: HTMLElement;
@@ -692,24 +692,24 @@ function receiveFeedback(userPrompt: string, aiResponse: string, contextId: stri
 
 export class DBAIPanel extends AIPanel<MessageType, DBAIPanelInputs> {
   protected get placeHolder() { return 'Ask your database, like "Total sales by regions"'; }
-  protected schemaInput: DG.InputBase<string>;
-  constructor(schemas: string[], defaultSchema: string, connectionID: string, view: DG.View | DG.ViewBase) {
+  protected catalogInput: DG.InputBase<string>;
+  constructor(catalogs: string[], defaultCatalog: string, connectionID: string, view: DG.View | DG.ViewBase) {
     super(connectionID, view); // context ID is connection ID
-    this.schemaInput = ui.input.choice('Schema', {
-      items: schemas,
-      value: defaultSchema,
+    this.catalogInput = ui.input.choice('Catalog', {
+      items: catalogs,
+      value: defaultCatalog,
       nullable: false,
-      tooltipText: 'Select the database schema to use for AI-assisted query generation.',
+      tooltipText: 'Select the database catalog to use for AI-assisted query generation.',
     }) as DG.InputBase<string>;
-    this.inputControlsDiv.appendChild(this.schemaInput.input);
-    ui.tooltip.bind(this.schemaInput.input, 'Select the database schema to use for AI-assisted query generation.');
+    this.inputControlsDiv.appendChild(this.catalogInput.input);
+    ui.tooltip.bind(this.catalogInput.input, 'Select the database catalog to use for AI-assisted query generation.');
   }
 
   public getCurrentInputs(): DBAIPanelInputs {
     const baseInputs = super.getCurrentInputs();
     return {
       ...baseInputs,
-      schemaName: this.schemaInput.value!,
+      catalogName: this.catalogInput.value!,
     };
   }
 }

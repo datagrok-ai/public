@@ -8,7 +8,7 @@ import {INglViewer} from '@datagrok-libraries/bio/src/viewers/ngl-gl-viewer';
 
 import {awaitGrid} from '../tests/utils';
 import {NglViewer} from '../viewers/ngl-viewer';
-import {delay} from '@datagrok-libraries/utils/src/test';
+import {delay} from '@datagrok-libraries/test/src/test';
 
 import {_package} from '../package';
 

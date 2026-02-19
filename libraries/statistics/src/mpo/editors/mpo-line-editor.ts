@@ -4,7 +4,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import Konva from 'konva';
-import {DesirabilityLine, PropertyDesirability} from '../mpo';
+import {DesirabilityLine, NumericalDesirability} from '../mpo';
 import {Subject} from 'rxjs';
 
 type Point = [number, number];
@@ -60,7 +60,7 @@ export class MpoDesirabilityLineEditor {
   onChanged = new Subject<DesirabilityLine>();
   supportsModeDialog: boolean = true;
 
-  private _prop: PropertyDesirability;
+  private _prop: NumericalDesirability;
   private barsLayer: Konva.Layer;
   private pendingBarValues?: number[];
 
@@ -74,19 +74,29 @@ export class MpoDesirabilityLineEditor {
   private redrawFn!: (notify?: boolean) => void;
 
   private specialHandle?: Konva.Circle;
-  onParamsChanged?: (prop: PropertyDesirability) => void;
+  onParamsChanged?: (prop: NumericalDesirability) => void;
 
   // Flag to prevent touchpad right-click from adding a new point
   private ignoreNextClick = false;
 
-  constructor(prop: PropertyDesirability, width: number, height: number) {
+  constructor(prop: NumericalDesirability, width: number, height: number) {
     this._prop = prop;
+    this.ensureDefaultLine();
     this.barsLayer = new Konva.Layer();
     this.root.style.width = `${width}px`;
     this.root.style.height = `${height}px`;
     this.root.style.position = 'relative';
 
     requestAnimationFrame(() => this.initKonva(width, height));
+  }
+
+  private ensureDefaultLine(): void {
+    if (this._prop.line.length > 0)
+      return;
+
+    const min = this._prop.min ?? 0;
+    const max = this._prop.max ?? 1;
+    this._prop.line = [[min, 0.5], [max, 0.5]];
   }
 
   private isInPlotArea(pos: {x: number, y: number}, width: number, height: number) {
@@ -242,6 +252,10 @@ export class MpoDesirabilityLineEditor {
           const dataIndex = circle.getAttr('_dataIndex') as number;
 
           if (dataIndex >= 0) {
+            if (this._prop.min == null)
+              this._prop.min = this.getMinX();
+            if (this._prop.max == null)
+              this._prop.max = this.getMaxX();
             this._prop.line.splice(dataIndex, 1);
             this.redrawFn?.();
           }

@@ -193,7 +193,7 @@ export class Link {
         prefix: this.prefix,
         id: this.matchInfo.spec.id,
         linkUUID: this.uuid,
-        basePath: this.matchInfo.basePath
+        basePath: this.matchInfo.basePath,
       });
     }
     if (this.matchInfo.spec.handler) {

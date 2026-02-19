@@ -1,7 +1,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
-import {before, category, test} from '@datagrok-libraries/utils/src/test';
+import {before, category, test} from '@datagrok-libraries/test/src/test';
 import {NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';
 
 import {_package} from '../package-test';

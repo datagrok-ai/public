@@ -4,7 +4,7 @@ import * as DG from 'datagrok-api/dg';
 import {_package, PackageFunctions} from '../package';
 import {handleError} from './utils';
 import {DemoScript} from '@datagrok-libraries/tutorials/src/demo-script';
-import {delay} from '@datagrok-libraries/utils/src/test';
+import {delay} from '@datagrok-libraries/test/src/test';
 import {adjustGridcolAfterRender} from '../utils/ui-utils';
 
 export async function demoToAtomicLevel(): Promise<void> {

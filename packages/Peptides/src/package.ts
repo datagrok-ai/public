@@ -79,7 +79,7 @@ async function openDemoData(chosenFile: string): Promise<void> {
 
 
 export class PackageFunctions {
-  @grok.decorators.init()
+  @grok.decorators.init({tags: ['init']})
   static async initPeptides(): Promise<void> {
     try {
       monomerWorks ??= new MonomerWorks(await grok.functions.call('Bio:getBioLib'));
@@ -161,6 +161,7 @@ export class PackageFunctions {
   @grok.decorators.panel({
     name: 'Peptides',
     meta: {role: 'widgets'},
+    tags: ['widgets', 'panel'],
   })
   static peptidesPanel(
     @grok.decorators.param({'options': {'semType': 'Macromolecule'}}) col: DG.Column): DG.Widget {
@@ -174,6 +175,7 @@ export class PackageFunctions {
   @grok.decorators.func({
     meta: {icon: 'files/icons/peptide-sar-viewer.svg', role: 'viewer'},
     name: 'Sequence Variability Map',
+    tags: ['viewer'],
     description: 'Peptides Sequence Variability Map Viewer',
     outputs: [{type: 'viewer', name: 'result'}],
   })
@@ -185,6 +187,7 @@ export class PackageFunctions {
   @grok.decorators.func({
     meta: {icon: 'files/icons/peptide-sar-vertical-viewer.svg', role: 'viewer'},
     name: 'Most Potent Residues',
+    tags: ['viewer'],
     description: 'Peptides Most Potent Residues Viewer',
     outputs: [{type: 'viewer', name: 'result'}],
   })
@@ -196,6 +199,7 @@ export class PackageFunctions {
     meta: {icon: 'files/icons/sequence-statistics-viewer.svg', role: 'viewer'},
     name: 'Sequence Mutation Cliffs',
     description: 'Mutation Cliffs Line Chart',
+    tags: ['viewer'],
     outputs: [{type: 'viewer', name: 'result'}],
   })
   static mutationCliffs(): DG.Viewer {
@@ -206,6 +210,7 @@ export class PackageFunctions {
   @grok.decorators.func({
     meta: {icon: 'files/icons/logo-summary-viewer.svg', role: 'viewer'},
     name: 'Logo Summary Table',
+    tags: ['viewer'],
     outputs: [{type: 'viewer', name: 'result'}],
   })
   static logoSummaryTable(): DG.Viewer {
@@ -217,6 +222,7 @@ export class PackageFunctions {
     meta: {icon: 'files/icons/sequence-statistics-viewer.svg', role: 'viewer'},
     name: 'Sequence Position Statistics',
     outputs: [{type: 'viewer', name: 'result'}],
+    tags: ['viewer'],
   })
   static sequencePositionStatistics(): DG.Viewer {
     return new SequencePositionStatsViewer();
@@ -227,6 +233,7 @@ export class PackageFunctions {
     name: 'Active peptide selection',
     outputs: [{type: 'viewer', name: 'result'}],
     meta: {role: 'viewer'},
+    tags: ['viewer'],
   })
   static clusterMaxActivity(): DG.Viewer {
     return new ClusterMaxActivityViewer();
@@ -236,6 +243,7 @@ export class PackageFunctions {
   @grok.decorators.panel({
     name: 'Manual Alignment',
     meta: {role: 'widgets'},
+    tags: ['widgets', 'panel'],
   })
   static manualAlignment(
     @grok.decorators.param({'options': {'semType': 'Monomer'}}) _monomer: string): DG.Widget {
@@ -270,6 +278,7 @@ export class PackageFunctions {
       gridChart: 'true',
       role: 'cellRenderer',
     },
+    tags: ['cellRenderer'],
     name: 'LST Pie Chart',
     outputs: [{type: 'grid_cell_renderer', name: 'result'}],
   })

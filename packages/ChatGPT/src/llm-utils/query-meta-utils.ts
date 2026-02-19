@@ -13,9 +13,16 @@ export class BuiltinDBInfoMeta extends DG.DbInfo {
     super(dart);
   }
 
-  public static async fromConnection(connection: DG.DataConnection): Promise<BuiltinDBInfoMeta> {
-    const dbInfo = await grok.data.db.getInfo(connection);
-    return new BuiltinDBInfoMeta(dbInfo.dart);
+  public static async fromConnection(connection: DG.DataConnection, catalog?: string): Promise<BuiltinDBInfoMeta> {
+    const dbInfos = await grok.data.db.getInfo(connection, catalog ?? null);
+    if (dbInfos.length === 0)
+      throw new Error(`No database info found for connection '${connection.name}'${catalog ? ` and catalog '${catalog}'` : ''}`);
+    return new BuiltinDBInfoMeta(dbInfos[0].dart);
+  }
+
+  public static async allFromConnection(connection: DG.DataConnection): Promise<BuiltinDBInfoMeta[]> {
+    const dbInfos = await grok.data.db.getInfo(connection);
+    return dbInfos.map((d) => new BuiltinDBInfoMeta(d.dart));
   }
 
   private _cachedRelations: Map<string, DG.DbRelationInfo[]> = new Map();

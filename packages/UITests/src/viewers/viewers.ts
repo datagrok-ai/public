@@ -1,7 +1,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
-import {after, before, category, expect, test, delay, testViewer} from '@datagrok-libraries/utils/src/test';
+import {after, before, category, expect, test, delay, testViewer} from '@datagrok-libraries/test/src/test';
 import {TestViewerForProperties} from './test-viewer-for-properties';
 import {_package} from '../package-test';
 

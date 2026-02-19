@@ -304,8 +304,8 @@ export namespace queries {
     return await grok.data.query('UsageAnalysis:UniqueUsersPerProject', { date, groups, projects });
   }
 
-  export async function userAccessFrequencyPerProject(date: string , groups: any , projects: any ): Promise<DG.DataFrame> {
-    return await grok.data.query('UsageAnalysis:UserAccessFrequencyPerProject', { date, groups, projects });
+  export async function dailyProjectAccess(date: string , groups: any , projects: any ): Promise<DG.DataFrame> {
+    return await grok.data.query('UsageAnalysis:DailyProjectAccess', { date, groups, projects });
   }
 
   export async function accessCountPerPeriodPerProject(date: string , groups: any , projects: any ): Promise<DG.DataFrame> {

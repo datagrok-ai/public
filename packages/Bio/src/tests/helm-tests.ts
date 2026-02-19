@@ -4,7 +4,7 @@ import * as DG from 'datagrok-api/dg';
 
 import wu from 'wu';
 
-import {before, category, expect, expectArray, test} from '@datagrok-libraries/utils/src/test';
+import {before, category, expect, expectArray, test} from '@datagrok-libraries/test/src/test';
 import {Helm} from '../utils/helm-to-molfile/converter/helm';
 
 category('helm', () => {
