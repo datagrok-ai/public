@@ -1,5 +1,9 @@
 # compute-utils changelog
 
+## 1.44.10 (2026-02-19)
+
+- Workflows export customization options
+
 ## 1.44.11 (2025-11-20)
 
 - Workflows navigation related improvements
