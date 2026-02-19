@@ -12,7 +12,7 @@ const filtersStyle = {
 const users: {[_: string]: any} = {};
 
 export class ErrorsView extends UaView {
-  constructor(uaToolbox: UaToolbox) {
+  constructor(uaToolbox?: UaToolbox) {
     super(uaToolbox);
     this.name = 'Errors';
   }

@@ -23,7 +23,7 @@ export function getUsersTable(usersHistogram: DG.DataFrame): HTMLTableElement {
 export class PackagesView extends UaView {
   expanded: {[key: string]: boolean} = {f: true, l: true};
 
-  constructor(uaToolbox: UaToolbox) {
+  constructor(uaToolbox?: UaToolbox) {
     super(uaToolbox);
     this.name = 'Packages';
     this.rout = '/Usage';

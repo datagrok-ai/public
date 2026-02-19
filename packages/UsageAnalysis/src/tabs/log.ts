@@ -13,7 +13,7 @@ const users: Array<any> = [];
 // const tags = ui.divH([]);
 
 export class LogView extends UaView {
-  constructor(uaToolbox: UaToolbox) {
+  constructor(uaToolbox?: UaToolbox) {
     super(uaToolbox);
     this.name = 'Log';
   }

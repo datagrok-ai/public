@@ -36,8 +36,8 @@ export async function TestAnalysisReportForCurrentDay(date: any) : Promise<any> 
 //meta.role: app
 //meta.url: /
 //meta.browsePath: Admin
-export async function usageAnalysisApp(path?: string, date?: string, groups?: string, packages?: string, tags?: string, categories?: string, projects?: string) : Promise<any> {
-  return await PackageFunctions.usageAnalysisApp(path, date, groups, packages, tags, categories, projects);
+export function usageAnalysisApp(path?: string, date?: string, groups?: string, packages?: string, tags?: string, categories?: string, projects?: string) : any {
+  return PackageFunctions.usageAnalysisApp(path, date, groups, packages, tags, categories, projects);
 }
 
 //input: column<string> ticketColumn 

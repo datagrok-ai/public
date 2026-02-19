@@ -11,7 +11,7 @@ import {UaQueryViewer} from '../viewers/abstract/ua-query-viewer';
 export class FunctionsView extends UaView {
   static viewName = 'Functions';
 
-  constructor(uaToolbox: UaToolbox) {
+  constructor(uaToolbox?: UaToolbox) {
     super(uaToolbox);
   }
 

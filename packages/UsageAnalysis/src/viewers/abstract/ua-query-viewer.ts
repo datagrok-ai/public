@@ -62,15 +62,17 @@ export abstract class UaQueryViewer extends UaViewer {
   postQuery(dataFrame: DG.DataFrame): DG.DataFrame {
     if (this.processDataFrame)
       dataFrame = this.processDataFrame!(dataFrame);
-    this.viewer ??= this.createViewer(dataFrame);
-    this.viewer.dataFrame = dataFrame;
+    if (this.viewer != null) {
+      this.viewer.root.remove();
+      this.viewer = undefined;
+    }
+    this.viewer = this.createViewer(dataFrame);
     this.viewer.setOptions({
       markerMinSize: 10,
       markerMaxSize: 30,
     });
-    this.root.appendChild(this.viewer!.root);
-    this.viewer!.dataFrame = dataFrame ?? this.viewer!.dataFrame;
-    this.viewer!.root.style.display = 'flex';
+    this.root.appendChild(this.viewer.root);
+    this.viewer.root.style.display = 'flex';
     this.loader.classList.remove('ua-wait');
     return dataFrame;
   }

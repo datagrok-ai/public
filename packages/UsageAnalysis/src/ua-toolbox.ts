@@ -49,11 +49,13 @@ export class UaToolbox {
     const dateInput = ui.input.string('Date', {value: date});
     dateInput.addPatternMenu('datetime');
     dateInput.setTooltip('Set the date period');
-    const groupsInput = await ChoiceInputGroups.construct();
-    const packagesInput = await ChoiceInputPackages.construct();
-    const tagsInput = await ChoiceInputTags.construct();
-    const packagesCategoriesInput = await ChoiceInputPackagesCategories.construct();
-    const projectsInput = await ChoiceInputProjects.construct();
+    const [groupsInput, packagesInput, tagsInput, packagesCategoriesInput, projectsInput] = await Promise.all([
+      ChoiceInputGroups.construct(),
+      ChoiceInputPackages.construct(),
+      ChoiceInputTags.construct(),
+      ChoiceInputPackagesCategories.construct(),
+      ChoiceInputProjects.construct(),
+    ]);
     const filterStream = new BehaviorSubject(new UaFilter({
       date: date,
       groups: [groupsInput.emptyLabel],

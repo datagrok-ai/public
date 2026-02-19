@@ -20,7 +20,7 @@ export class ClicksView extends UaView {
   tabControl?: DG.TabControl;
   pickModeCleanup: (() => void) | null = null;
 
-  constructor(uaToolbox: UaToolbox) {
+  constructor(uaToolbox?: UaToolbox) {
     super(uaToolbox);
     this.name = 'Clicks';
   }

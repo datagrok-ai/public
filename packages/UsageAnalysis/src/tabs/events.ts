@@ -8,7 +8,7 @@ import {UaFilterableQueryViewer} from '../viewers/ua-filterable-query-viewer';
 
 
 export class EventsView extends UaView {
-  constructor(uaToolbox: UaToolbox) {
+  constructor(uaToolbox?: UaToolbox) {
     super(uaToolbox);
     this.name = 'Events';
   }

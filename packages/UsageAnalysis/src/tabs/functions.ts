@@ -11,7 +11,7 @@ import {getTime} from '../utils';
 export class FunctionsView extends UaView {
   functionsExecTime: HTMLElement = ui.panel();
 
-  constructor(uaToolbox: UaToolbox) {
+  constructor(uaToolbox?: UaToolbox) {
     super(uaToolbox);
     this.name = 'Functions';
     this.functionsExecTime.style.display = 'none';

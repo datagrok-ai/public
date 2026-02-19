@@ -99,16 +99,17 @@ export class PackageFunctions {
     'browsePath': 'Admin',
     'name': 'Usage Analysis',
   })
-  static async usageAnalysisApp(
+  static usageAnalysisApp(
     @grok.decorators.param({'options': {'optional': true, 'meta.url': true}}) path?: string,
     @grok.decorators.param({'options': {'optional': true}}) date?: string,
     @grok.decorators.param({'options': {'optional': true}}) groups?: string,
     @grok.decorators.param({'options': {'optional': true}}) packages?: string,
     @grok.decorators.param({'options': {'optional': true}}) tags?: string,
     @grok.decorators.param({'options': {'optional': true}}) categories?: string,
-    @grok.decorators.param({'options': {'optional': true}}) projects?: string): Promise<DG.ViewBase | null> {
+    @grok.decorators.param({'options': {'optional': true}}) projects?: string): DG.ViewBase | null {
     const handler = new ViewHandler();
-    await handler.init(date, groups, packages, tags, categories, projects, path);
+    handler.view.parentCall = grok.functions.getCurrentCall();
+    handler.init(date, groups, packages, tags, categories, projects, path);
     return handler.view;
   }
 

@@ -12,7 +12,7 @@ import {TopUsersViewer} from '../drilldown_viewers/users/top-users-viewer';
 export class UsersView extends UaView {
   static viewName = 'Users';
 
-  constructor(uaToolbox: UaToolbox) {
+  constructor(uaToolbox?: UaToolbox) {
     super(uaToolbox);
   }
 
