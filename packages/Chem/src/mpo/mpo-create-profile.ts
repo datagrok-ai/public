@@ -22,6 +22,15 @@ import {MpoProfileManager} from './mpo-profile-manager';
 const METHOD_MANUAL = 'Manual';
 const METHOD_PROBABILISTIC = 'Probabilistic';
 
+const MPO_CREATE_STORAGE = 'mpo-create';
+const MPO_HINTS_KEY = 'hints';
+
+type MpoHint = {
+  text: string;
+  element: HTMLElement;
+  position: ui.hints.POSITION;
+};
+
 export class MpoProfileCreateView {
   readonly view: DG.View;
   readonly showMethod: boolean;
@@ -35,6 +44,7 @@ export class MpoProfileCreateView {
   profileEditorContainer: HTMLDivElement;
   profileViewContainer: HTMLDivElement = ui.div();
   methodInput?: DG.ChoiceInput<string | null>;
+  datasetInput?: DG.InputBase;
   aggregationInput?: DG.ChoiceInput<WeightedAggregation | null>;
   fileName?: string | null = null;
   saveButton: HTMLElement | null = null;
@@ -42,6 +52,7 @@ export class MpoProfileCreateView {
   tableView: DG.TableView;
   private tableViewVisible: boolean = false;
   private subs: Subscription[] = [];
+  private lastOpenedHint: HTMLDivElement | null = null;
 
   private pMpoDockedItems: {
     statsGrid?: DG.DockNode;
@@ -176,7 +187,7 @@ export class MpoProfileCreateView {
       controls.push(this.methodInput);
     }
 
-    const datasetInput = ui.input.table('Dataset', {
+    this.datasetInput = ui.input.table('Dataset', {
       nullable: true,
       onValueChanged: async (df) => {
         this.closePMpoPanels();
@@ -216,8 +227,8 @@ export class MpoProfileCreateView {
         }
       },
     });
-    datasetInput.setTooltip('Load data to preview desirability scores as you edit the profile');
-    controls.push(datasetInput);
+    this.datasetInput.setTooltip('Load data to preview desirability scores as you edit the profile');
+    controls.push(this.datasetInput);
 
     this.aggregationInput = ui.input.choice('Aggregation', {
       items: WEIGHTED_AGGREGATIONS_LIST,
@@ -235,6 +246,57 @@ export class MpoProfileCreateView {
     this.profileViewContainer.classList.add('chem-profile-view');
 
     this.view.root.append(this.profileViewContainer);
+    this.initHints();
+  }
+
+  private initHints(): void {
+    if (grok.userSettings.getValue(MPO_CREATE_STORAGE, MPO_HINTS_KEY) === 'shown')
+      return;
+
+    const hints: MpoHint[] = [];
+
+    if (this.methodInput) {
+      hints.push({
+        element: this.methodInput.root,
+        text: 'Choose between manual desirability curve editing and probabilistic MPO trained from labeled data.',
+        position: ui.hints.POSITION.LEFT,
+      });
+    }
+
+    hints.push(
+      {
+        element: this.datasetInput!.root,
+        text: 'Optionally load a dataset to preview desirability scores in real-time as you edit the profile. ' +
+          'Numerical columns will be automatically mapped to profile properties.',
+        position: ui.hints.POSITION.LEFT,
+      },
+      {
+        element: this.aggregationInput!.root,
+        text: 'Choose how individual property scores combine into the final MPO score. ' +
+          'Enabled when a dataset is loaded.',
+        position: ui.hints.POSITION.LEFT,
+      },
+    );
+
+    setTimeout(() => {
+      this.setupHint(hints, 0);
+      grok.userSettings.add(MPO_CREATE_STORAGE, MPO_HINTS_KEY, 'shown');
+    }, 1000);
+  }
+
+  private setupHint(hints: MpoHint[], i: number): void {
+    if (i >= hints.length)
+      return;
+
+    this.lastOpenedHint?.remove();
+
+    const hintContent = ui.div();
+    hintContent.append(ui.divText(hints[i].text));
+    hintContent.append(i < hints.length - 1 ?
+      ui.button('Next', () => this.setupHint(hints, i + 1)) :
+      ui.button('Close', () => this.lastOpenedHint?.remove()));
+
+    this.lastOpenedHint = ui.hints.addHint(hints[i].element, hintContent, hints[i].position);
   }
 
   private async attachLayout() {
@@ -453,6 +515,7 @@ export class MpoProfileCreateView {
   }
 
   private detach(): void {
+    this.lastOpenedHint?.remove();
     this.closeContextPanel();
     this.subs.forEach((sub) => sub.unsubscribe());
     this.subs = [];

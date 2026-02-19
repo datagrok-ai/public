@@ -73,7 +73,7 @@ export class MpoProfileDialog {
   }
 
   async init(): Promise<void> {
-    this.mpoProfiles = await MpoProfileManager.ensureLoaded();
+    this.mpoProfiles = await MpoProfileManager.load();
     this.suitableProfileNames = findSuitableProfiles(this.dataFrame, this.mpoProfiles).map((p) => p.fileName);
 
     this.profileInput.items = this.mpoProfiles.map((p) => p.fileName);

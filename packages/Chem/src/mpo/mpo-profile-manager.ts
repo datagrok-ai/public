@@ -81,7 +81,7 @@ class MpoProfileManagerImpl {
       await grok.dapi.files.writeAsText(`${MPO_TEMPLATE_PATH}/${fileName}`, JSON.stringify(profile));
       await this.load();
       this.fireChanged();
-      grok.shell.info(`Profile "${profile.name}" saved.`);
+      grok.shell.info(`Profile "${profile.name}" saved as ${fileName}.`);
       return true;
     } catch (e) {
       grok.shell.error(`Failed to save profile: ${e instanceof Error ? e.message : e}`);

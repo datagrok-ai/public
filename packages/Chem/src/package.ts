@@ -2723,7 +2723,7 @@ export class PackageFunctions {
     resultDiv.appendChild(loader);
 
     const dataFrame = semValue.cell.dataFrame;
-    const profiles = await MpoProfileManager.ensureLoaded();
+    const profiles = await MpoProfileManager.load();
     const suitableProfiles = findSuitableProfiles(dataFrame, profiles);
 
     if (suitableProfiles.length === 0) {
