@@ -28,6 +28,10 @@ export namespace scripts {
 }
 
 export namespace funcs {
+  export async function init(): Promise<void> {
+    return await grok.functions.call('Compute:Init', {});
+  }
+
   export async function openModelFromFuncall(funccall: any ): Promise<void> {
     return await grok.functions.call('Compute:OpenModelFromFuncall', { funccall });
   }
@@ -43,24 +47,8 @@ export namespace funcs {
     return await grok.functions.call('Compute:RichFunctionViewEditor', { call });
   }
 
-  export async function pipelineStepEditor(call: any ): Promise<DG.View> {
+  export async function pipelineStepEditor(call: any ): Promise<any> {
     return await grok.functions.call('Compute:PipelineStepEditor', { call });
-  }
-
-  export async function renderPanel(func: any ): Promise<any> {
-    return await grok.functions.call('Compute:RenderPanel', { func });
-  }
-
-  export async function init(): Promise<void> {
-    return await grok.functions.call('Compute:Init', {});
-  }
-
-  export async function modelCatalog(): Promise<DG.View> {
-    return await grok.functions.call('Compute:ModelCatalog', {});
-  }
-
-  export async function modelCatalogTreeBrowser(treeNode: any , browseView: DG.View ): Promise<void> {
-    return await grok.functions.call('Compute:ModelCatalogTreeBrowser', { treeNode, browseView });
   }
 
   export async function customDataUploader(func: any ): Promise<any> {
@@ -101,19 +89,5 @@ export namespace funcs {
 
   export async function objectCoolingSelector(params: any ): Promise<any> {
     return await grok.functions.call('Compute:ObjectCoolingSelector', { params });
-  }
-
-  /**
-  Test for optimization: multiple scalars output
-  */
-  export async function fitTestFunc(x1: number , x2: number , y: DG.DataFrame , bool: boolean ): Promise<{integer: number, float1: number, float2: number, table1: DG.DataFrame, table2: DG.DataFrame}> {
-    return await grok.functions.call('Compute:FitTestFunc', { x1, x2, y, bool });
-  }
-
-  /**
-  Test for optimization: multiple scalars output
-  */
-  export async function testFittingOutputs(): Promise<void> {
-    return await grok.functions.call('Compute:TestFittingOutputs', {});
   }
 }

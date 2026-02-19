@@ -13,10 +13,8 @@ import {EXPERIMENTAL_TAG, viewerTypesMapping} from '../../shared-utils/consts';
 import {FuncCallInput, FuncCallInputValidated, isFuncCallInputValidated, isInputLockable, SubscriptionLike} from './shared-utils/input-wrappers';
 import '../css/rich-function-view.css';
 import {FunctionView} from './function-view';
-import {SensitivityAnalysisView as SensitivityAnalysis, FittingView as Optimization, OptimizationView} from '../../function-views';
 import {HistoryInputBase} from '../../old-components/src/history-input';
 import {historyUtils} from '../../history-utils';
-import {getFittingWgt, getOptimizationAnWgt, getSensAnWgt} from '../../function-views/src/fitting/fitting-utils';
 import {EDIT_STATE_PATH, INPUT_STATE, RESTRICTED_PATH, SYNC_FIELD, SyncFields, syncParams, ValidationRequestPayload} from './shared-utils/consts';
 import {categoryToDfParamMap, createPartialCopy, getFuncRunLabel, getObservable, getValidators, injectInputBaseValidation, injectLockStates, inputBaseAdditionalRenderHandler, isInputBase, updateOutputValidationSign, validate} from './shared-utils/utils';
 import {HistoricalRunsList} from '../../old-components/src/history-list';
@@ -704,15 +702,6 @@ export class RichFunctionView extends FunctionView {
       ...this.isUploadMode.value ? ['d4-current']: [],
     );
 
-    const sensitivityAnalysis = getSensAnWgt();
-    sensitivityAnalysis.onclick = async () => await this.onSALaunch();
-
-    const fitting = getFittingWgt();
-    fitting.onclick = async () => await this.onFittingLaunch();
-
-    const optimize = getOptimizationAnWgt();
-    optimize.onclick = async () => await this.onOptimizationLaunch();
-
     const contextHelpIcon = ui.iconFA('info', async () => {
       if (this.hasContextHelp) {
         grok.shell.windows.help.visible = true;
@@ -726,9 +715,6 @@ export class RichFunctionView extends FunctionView {
       ...super.buildRibbonPanels().flat(),
       ...this.runningOnInput || this.options.isTabbed ? []: [play],
       ...this.hasUploadMode ? [toggleUploadMode]: [],
-      ...this.isFittingEnabled ? [fitting]: [],
-      ...this.isSaEnabled ? [sensitivityAnalysis]: [],
-      ...this.isOptimizationEnabled ? [optimize]: [],
       ...!this.options.isTabbed && this.hasContextHelp ? [contextHelpIcon]: [],
     ]];
 
@@ -1179,18 +1165,6 @@ export class RichFunctionView extends FunctionView {
 
   private renderOutputForm(): HTMLElement {
     return this.renderIOForm(SYNC_FIELD.OUTPUTS);
-  }
-
-  private async onSALaunch(): Promise<void> {
-    await SensitivityAnalysis.fromEmpty(this.func);
-  }
-
-  private async onFittingLaunch(): Promise<void> {
-    await Optimization.fromEmpty(this.func);
-  }
-
-  private async onOptimizationLaunch(): Promise<void> {
-    await OptimizationView.fromEmpty(this.func);
   }
 
   private renderInputForm(): HTMLElement {
