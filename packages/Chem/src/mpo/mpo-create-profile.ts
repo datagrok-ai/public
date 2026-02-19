@@ -70,9 +70,10 @@ export class MpoProfileCreateView {
     this.profileEditorContainer.classList.add('chem-profile-editor-container');
 
     this.tableView = DG.TableView.create(DG.DataFrame.create(0), false);
-    this.tableView.name = this.view.name = this.isEditMode ?
-      `Edit ${this.profile.name || 'MPO'} Profile` :
-      'Create MPO Profile';
+    const tabName = this.isEditMode ?
+      `Edit ${this.profile.name || 'MPO'}` :
+      'Create MPO';
+    this.tableView.name = this.view.name = tabName;
     this.dockTableView();
 
     updateMpoPath(
@@ -156,6 +157,7 @@ export class MpoProfileCreateView {
         onValueChanged: async () => {
           this.clearPreviousLayout();
           if (this.methodInput!.value === METHOD_PROBABILISTIC) {
+            this.setAggregationVisible(false);
             this.closeContextPanel();
             if (!this.df) {
               this.showError('Probabilistic MPO requires a dataset. Please select a dataset first.');
@@ -165,6 +167,7 @@ export class MpoProfileCreateView {
             await this.runProbabilisticMpo();
             return;
           }
+          this.setAggregationVisible(true);
           this.closePMpoPanels();
           this.setTableViewVisible(false);
           this.attachLayout();
@@ -225,7 +228,7 @@ export class MpoProfileCreateView {
     this.updateAggregationTooltip();
     controls.push(this.aggregationInput);
 
-    const headerDiv = ui.divV([ui.h1(this.view.name), ui.form(controls)]);
+    const headerDiv = ui.divV([ui.h1(`${this.view.name} Profile`), ui.form(controls)]);
     headerDiv.classList.add('chem-profile-header');
 
     this.profileViewContainer = ui.divV([headerDiv]);
@@ -431,6 +434,11 @@ export class MpoProfileCreateView {
       if (isOwnView(data.args?.view))
         this.detach();
     }));
+  }
+
+  private setAggregationVisible(visible: boolean): void {
+    if (this.aggregationInput)
+      this.aggregationInput.root.classList.toggle('chem-mpo-d-none', !visible);
   }
 
   private updateAggregationTooltip(): void {

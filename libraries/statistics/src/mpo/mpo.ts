@@ -138,12 +138,15 @@ export function mpo(
       const desirability = desirabilityTemplates[j];
       const value = columns[j].get(i);
 
-      if (columns[j].isNone(i))
-        return desirability.defaultScore ?? NaN;
+      let score: number | null;
 
-      const score = isNumerical(desirability) ?
-        desirabilityScore(value, desirability.line) :
-        categoricalDesirabilityScore(String(value), desirability);
+      if (columns[j].isNone(i))
+        score = desirability.defaultScore ?? null;
+      else {
+        score = isNumerical(desirability) ?
+          desirabilityScore(value, desirability.line) :
+          categoricalDesirabilityScore(String(value), desirability);
+      }
 
       if (score === null)
         return NaN;
