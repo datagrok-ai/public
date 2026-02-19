@@ -5,6 +5,8 @@ import * as grok from 'datagrok-api/grok';
   name: 'Scatter Plot',
   cellType: 'scatterplot',
   virtual: true,
+  //@ts-ignore
+  tags: ['cellRenderer'],
 })
 export class ScatterPlotCellRenderer extends DG.GridCellRenderer {
   get name() : string { return 'scatterplot'; }

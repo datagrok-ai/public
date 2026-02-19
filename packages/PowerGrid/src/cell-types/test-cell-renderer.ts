@@ -57,6 +57,8 @@ export class TestCellRenderer extends DG.GridCellRenderer {
 @grok.decorators.cellRenderer({
   name: 'htestCellRenderer',
   cellType: 'htest',
+  //@ts-ignore
+  tags: ['cellRenderer'],
 })
 export class HtmlTestCellRenderer extends DG.GridCellRenderer {
   get name() { return 'htest'; }

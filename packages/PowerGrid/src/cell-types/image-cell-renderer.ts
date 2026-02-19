@@ -10,6 +10,8 @@ const DLG_WINDOW_PADDING_PX = 24;
 @grok.decorators.cellRenderer({
   name: 'imageUrlCellRenderer',
   cellType: 'ImageUrl',
+  //@ts-ignore
+  tags: ['cellRenderer'],
 })
 export class ImageCellRenderer extends DG.GridCellRenderer {
   get name() { return 'ImageUrl'; }

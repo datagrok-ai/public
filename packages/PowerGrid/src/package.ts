@@ -40,6 +40,7 @@ export class PackageFunctions {
       cellType: 'bar',
       role: 'cellRenderer'
     },
+    tags: ['cellRenderer'],
     outputs: [{type: 'grid_cell_renderer', name: 'result'}]
   })
   static barCellRenderer() {
@@ -54,6 +55,7 @@ export class PackageFunctions {
       virtual: 'true',
       role: 'cellRenderer'
     },
+    tags: ['cellRenderer'],
     name: 'Sparklines',
     outputs: [{type: 'grid_cell_renderer', name: 'result'}]
   })
@@ -69,6 +71,7 @@ export class PackageFunctions {
       virtual: 'true',
       role: 'cellRenderer'
     },
+    tags: ['cellRenderer'],
     name: 'Bar Chart',
     outputs: [{type: 'grid_cell_renderer', name: 'result'}]
   })
@@ -84,6 +87,7 @@ export class PackageFunctions {
       virtual: 'true',
       role: 'cellRenderer'
     },
+    tags: ['cellRenderer'],
     name: 'Pie Chart',
     outputs: [{type: 'grid_cell_renderer', name: 'result'}]
   })
@@ -99,6 +103,7 @@ export class PackageFunctions {
       virtual: 'true',
       role: 'cellRenderer'
     },
+    tags: ['cellRenderer'],
     name: 'Radar',
     outputs: [{type: 'grid_cell_renderer', name: 'result'}]
   })
@@ -114,6 +119,7 @@ export class PackageFunctions {
       virtual: 'true',
       role: 'cellRenderer'
     },
+    tags: ['cellRenderer'],
     name: 'Smart Form',
     outputs: [{type: 'grid_cell_renderer', name: 'result'}]
   })
@@ -128,6 +134,7 @@ export class PackageFunctions {
         virtual: 'true',
         role: 'cellRenderer'
       },
+      tags: ['cellRenderer'],
       name: 'Tags',
       outputs: [{type: 'grid_cell_renderer', name: 'result'}]
     })
@@ -143,55 +150,56 @@ export class PackageFunctions {
       virtual: 'true',
       role: 'cellRenderer'
     },
+    tags: ['cellRenderer'],
     name: 'Confidence Interval',
     outputs: [{type: 'grid_cell_renderer', name: 'result'}]
   })
-  static confidenceIntervalCellRenderer() {
-    return new ConfidenceIntervalCellRenderer();
-  }
+    static confidenceIntervalCellRenderer() {
+      return new ConfidenceIntervalCellRenderer();
+    }
 
 
   @grok.decorators.func({
     meta: {action: 'Sparklines...'},
     description: 'Adds a sparkline column for the selected columns'
   })
-    static summarizeColumns(
+  static summarizeColumns(
     @grok.decorators.param({'type': 'list', 'options': {'type': 'numerical'}}) columns: DG.Column[]) {
-      const table = columns[0].dataFrame;
-      const name = ui.input.string('Name', {value: table.columns.getUnusedName('Summary')});
-      const sparklineType = ui.input.choice('Type', {value: SparklineType.Sparkline, items: sparklineTypes});
-      const columnsSelector = ui.input.columns('Columns', {value: columns, table: table,
-        available: names(table.columns.numerical)});
-      const hide = ui.input.bool('Hide', {value: false});
-      hide.setTooltip('Hide source columns in the grid');
+    const table = columns[0].dataFrame;
+    const name = ui.input.string('Name', {value: table.columns.getUnusedName('Summary')});
+    const sparklineType = ui.input.choice('Type', {value: SparklineType.Sparkline, items: sparklineTypes});
+    const columnsSelector = ui.input.columns('Columns', {value: columns, table: table,
+      available: names(table.columns.numerical)});
+    const hide = ui.input.bool('Hide', {value: false});
+    hide.setTooltip('Hide source columns in the grid');
 
-      function addSummaryColumn() {
-        const grid = grok.shell.tv.grid;
-        const left = grid.horzScroll.min;
-        const columnNames = names(columnsSelector.value);
-        const options = {gridColumnName: name.value, cellType: sparklineType.value!};
-        const gridCol = grid.columns.add(options);
-        gridCol.move(grid.columns.byName(columnNames[0])!.idx);
-        gridCol.settings ??= {};
-        gridCol.settings[sparklineType.value! as SparklineType] = {columnNames: columnNames};
-        if (hide.value) {
-          for (const name of columnNames)
+    function addSummaryColumn() {
+      const grid = grok.shell.tv.grid;
+      const left = grid.horzScroll.min;
+      const columnNames = names(columnsSelector.value);
+      const options = {gridColumnName: name.value, cellType: sparklineType.value!};
+      const gridCol = grid.columns.add(options);
+      gridCol.move(grid.columns.byName(columnNames[0])!.idx);
+      gridCol.settings ??= {};
+      gridCol.settings[sparklineType.value! as SparklineType] = {columnNames: columnNames};
+      if (hide.value) {
+        for (const name of columnNames)
           grid.columns.byName(name)!.visible = false;
-        }
-        grid.horzScroll.scrollTo(left);
-        gridCol.scrollIntoView();
-        grok.shell.o = gridCol;
       }
-
-      DG.Dialog
-        .create({title: 'Add Summary Column'})
-        .add(name)
-        .add(sparklineType)
-        .add(columnsSelector)
-        .add(hide)
-        .onOK(addSummaryColumn)
-        .show();
+      grid.horzScroll.scrollTo(left);
+      gridCol.scrollIntoView();
+      grok.shell.o = gridCol;
     }
+
+    DG.Dialog
+      .create({title: 'Add Summary Column'})
+      .add(name)
+      .add(sparklineType)
+      .add(columnsSelector)
+      .add(hide)
+      .onOK(addSummaryColumn)
+      .show();
+  }
 
 
   @grok.decorators.func({
@@ -240,6 +248,7 @@ export class PackageFunctions {
       columnTags: 'foo=bar,units=kg',
       role: 'cellRenderer'
     },
+    tags: ['cellRenderer'],
     outputs: [{type: 'grid_cell_renderer', name: 'result'}]
   })
   static testUnitsKgCellRenderer() {
@@ -253,6 +262,7 @@ export class PackageFunctions {
       columnTags: 'foo=bar,units=ton',
       role: 'cellRenderer'
     },
+    tags: ['cellRenderer'],
     outputs: [{type: 'grid_cell_renderer', name: 'result'}]
   })
   static testUnitsTonCellRenderer() {
@@ -282,7 +292,7 @@ export class PackageFunctions {
   }
 
 
-  @grok.decorators.autostart()
+  @grok.decorators.autostart({tags: ['autostart']})
   static async _autoPowerGrid() {
     PinnedUtils.registerPinnedColumns();
     DG.GridCellRenderer.register(new ScatterPlotCellRenderer());
@@ -346,6 +356,7 @@ export class PackageFunctions {
       toolbox: 'true',
       role: 'viewer'
     },
+    tags: ['viewer'],
     name: 'Forms',
     description: 'Forms viewer',
     outputs: [{type: 'viewer', name: 'result'}]
@@ -359,6 +370,7 @@ export class PackageFunctions {
     name: 'Content',
     description: 'Image content',
     meta: {role: 'widgets'},
+    tags: ['widgets', 'panel']
   })
   static imgContent(
     @grok.decorators.param({'options': {'semType': 'ImageUrl'}}) imageUrl: string): DG.Widget {
