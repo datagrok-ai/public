@@ -1,5 +1,9 @@
 # Compute2 changelog
 
+## 1.3.22 (2025-11-24)
+
+- Workflows export customization options
+
 ## 1.3.21 (2025-11-24)
 
 - Show workflow help button in ribbon panel as well

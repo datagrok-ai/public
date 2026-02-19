@@ -21,7 +21,7 @@ function getDatagrokTools() {
   }
 }
 
-const FuncGeneratorPlugin = getDatagrokTools();
+// const FuncGeneratorPlugin = getDatagrokTools();
 const webpack = require('webpack');
 const {BundleAnalyzerPlugin} = require('webpack-bundle-analyzer');
 
@@ -74,7 +74,7 @@ module.exports = (env) => {
         generateStatsFile: stats,
         analyzerMode: 'disabled',
       }),
-      new FuncGeneratorPlugin({outputPath: './src/package.g.ts'}),
+      // new FuncGeneratorPlugin({outputPath: './src/package.g.ts'}),
     ],
     devtool: 'source-map',
     externals: {
