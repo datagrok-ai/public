@@ -618,6 +618,16 @@ export function toxicity(smiles: DG.SemanticValue) : any {
   return PackageFunctions.toxicity(smiles);
 }
 
+//name: Databases | Synthon Search | Substructure Search
+//description: Substructure search in synthon chemical space using RDKit SynthonSpaceSearch
+//input: string molecule { semType: Molecule }
+//output: widget result
+//meta.role: widgets,panel
+//meta.domain: chem
+export async function synthonSearch(molecule: string) : Promise<any> {
+  return await PackageFunctions.synthonSearch(molecule);
+}
+
 //input: column molecule { semType: Molecule }
 //input: string targetNotation 
 //input: bool kekulize = false { optional: true; nullable: true }

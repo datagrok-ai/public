@@ -30,6 +30,7 @@ import {addPropertiesAsColumns, getChemPropertyFunc, getPropertiesAsColumns, pro
 import {structuralAlertsWidget} from './widgets/structural-alerts';
 import {structure2dWidget} from './widgets/structure2d';
 import {getToxicityRisksColumns, toxicityWidget} from './widgets/toxicity';
+import {synthonSearchWidget} from './widgets/synthon-search';
 
 //panels imports
 import {getInchiKeysImpl, getInchisImpl} from './panels/inchi';
@@ -1435,6 +1436,17 @@ export class PackageFunctions {
     return smiles && !DG.chem.Sketcher.isEmptyMolfile(smiles.value) ?
       _isSmarts(smiles.value) || isFragment(smiles.value) ? new DG.Widget(ui.divText(SMARTS_MOLECULE_MESSAGE)) :
         toxicityWidget(smiles) : new DG.Widget(ui.divText(EMPTY_MOLECULE_MESSAGE));
+  }
+
+  @grok.decorators.panel({
+    name: 'Databases | Synthon Search | Substructure Search',
+    description: 'Substructure search in synthon chemical space using RDKit SynthonSpaceSearch',
+    meta: {role: 'widgets', domain: 'chem'},
+  })
+  static async synthonSearch(
+    @grok.decorators.param({options: {semType: 'Molecule'}}) molecule: string): Promise<DG.Widget> {
+    return molecule && !DG.chem.Sketcher.isEmptyMolfile(molecule) ?
+      await synthonSearchWidget(molecule) : new DG.Widget(ui.divText(EMPTY_MOLECULE_MESSAGE));
   }
 
   @grok.decorators.func({
