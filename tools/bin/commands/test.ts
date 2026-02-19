@@ -1,5 +1,5 @@
 /* eslint-disable max-len */
-import {exec} from 'child_process';
+import {exec, spawnSync} from 'child_process';
 import fs from 'fs';
 import os from 'os';
 import path from 'path';
@@ -42,6 +42,21 @@ function detectDartLibraryCategory(): string | undefined {
   return undefined;
 }
 
+/**
+ * Traverses up from startDir to find the git repository root (.git directory).
+ */
+function findGitRoot(startDir: string): string | undefined {
+  let current = startDir;
+  while (true) {
+    if (fs.existsSync(path.join(current, '.git')))
+      return current;
+    const parent = path.dirname(current);
+    if (parent === current)
+      return undefined;
+    current = parent;
+  }
+}
+
 export async function test(args: TestArgs): Promise<boolean> {
   const config = yaml.load(fs.readFileSync(confPath, {encoding: 'utf-8'})) as utils.Config;
 
@@ -49,12 +64,39 @@ export async function test(args: TestArgs): Promise<boolean> {
 
   utils.setHost(args.host, config);
 
-  // Auto-detect category based on current directory if not specified
-  if (!args.category) {
+  // If running from a core Dart library directory, delegate to DevTools package
+  if (!args.package) {
     const detectedCategory = detectDartLibraryCategory();
     if (detectedCategory) {
-      args.category = detectedCategory;
-      color.info(`Detected Dart library directory, using category: "${detectedCategory}"`);
+      const category = args.category ?? detectedCategory;
+      const gitRoot = findGitRoot(curDir);
+      const devToolsDir = gitRoot ? path.join(gitRoot, 'public', 'packages', 'DevTools') : undefined;
+      if (!devToolsDir || !fs.existsSync(devToolsDir)) {
+        color.error(`Cannot run core tests from this directory: DevTools package not found.`);
+        color.error(`Run 'grok test --category="${category}"' from 'public/packages/DevTools' instead.`);
+        process.exit(1);
+      }
+      color.info(`Detected core library directory. Delegating to DevTools with category: "${category}"`);
+      const cmdArgs = ['test', `--category=${category}`];
+      if (args.host) cmdArgs.push(`--host=${args.host}`);
+      if (args.test) cmdArgs.push(`--test=${args.test}`);
+      if (args.csv) cmdArgs.push('--csv');
+      if (args.gui) cmdArgs.push('--gui');
+      if (args.verbose) cmdArgs.push('--verbose');
+      if (args.benchmark) cmdArgs.push('--benchmark');
+      if (args['stress-test']) cmdArgs.push('--stress-test');
+      if (args['skip-build']) cmdArgs.push('--skip-build');
+      if (args['skip-publish']) cmdArgs.push('--skip-publish');
+      if (args.link) cmdArgs.push('--link');
+      if (args.record) cmdArgs.push('--record');
+      if (args.catchUnhandled) cmdArgs.push('--catchUnhandled');
+      if (args.report) cmdArgs.push('--report');
+      if (args.debug) cmdArgs.push('--debug');
+      if (args['ci-cd']) cmdArgs.push('--ci-cd');
+      if (args['no-retry']) cmdArgs.push('--no-retry');
+      const grokScript = path.resolve(__dirname, '..', 'grok.js');
+      const result = spawnSync(process.execPath, [grokScript, ...cmdArgs], {cwd: devToolsDir, stdio: 'inherit'});
+      process.exit(result.status ?? 1);
     }
   }
 
