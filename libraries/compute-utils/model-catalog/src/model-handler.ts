@@ -4,7 +4,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {BehaviorSubject} from 'rxjs';
 import {filter, map, take} from 'rxjs/operators';
-import {getContextHelp} from '../../shared-utils/utils';
+import {getContextHelp, getPackage} from '../../shared-utils/utils';
 
 function addPopover(popover: HTMLElement) {
   stylePopover(popover);
@@ -144,6 +144,11 @@ export class ModelHandler extends DG.ObjectHandler {
   getLanguageIcon(language: string) {
     if (language == 'grok')
       return ui.iconSvg('project');
+    if (language == 'ivp') {
+      const func = DG.Func.find({package: 'DiffStudio', name: 'ivpLanguageParser'})[0];
+      const iconUrl = func.package.getIconUrl();
+      return ui.iconImage('ivp', iconUrl);
+    }
     return ui.iconImage('script', `/images/entities/${language}.png`);
   }
 
@@ -194,11 +199,17 @@ export class ModelHandler extends DG.ObjectHandler {
     if (func.options['icon'] != null && (func.options['icon'].startsWith('http://') || func.options['icon'].startsWith('https://')))
       return ui.iconImage('model-icon', func.options['icon']);
 
-    if (func instanceof DG.Script)
+    let fpackage = getPackage(func);
+
+    if (func instanceof DG.Script && (fpackage == null || func.options['icon'] == null))
       return this.getLanguageIcon(func.language);
 
     func = DG.Func.find({package: func.package.name, name: func.name})[0];
-    let iconUrl = func.package.getIconUrl();
+    fpackage = getPackage(func);
+    if (!fpackage)
+      return ui.iconSvg('project');
+
+    let iconUrl = fpackage?.getIconUrl();
     if (func.options['icon'] != null) {
       const packagePathSegments = iconUrl.split('/');
       packagePathSegments.pop();

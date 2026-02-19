@@ -6,15 +6,10 @@ import * as DG from 'datagrok-api/dg';
 
 import {solveDefault, solveIVP} from './solver-tools';
 import {DiffStudio} from './app';
-import {getIVP, IVP, getScriptLines, getScriptParams} from './scripting-tools';
+import {getIVP, IVP, getScriptLines, getScriptParams, ARG_INPUT_KEYS, SCRIPTING, STAGE_COL_NAME} from './scripting-tools';
 
 import {getBallFlightSim} from './demo/ball-flight';
-
-export {Model} from './model';
-import {PK_PD_MODEL_INFO} from './demo/pk-pd';
-import {BIOREACTOR_MODEL_INFO} from './demo/bioreactor';
-
-import {DF_NAME} from './constants';
+import {CONTROL_EXPR, DF_NAME, LOOP} from './constants';
 import {UI_TIME} from './ui-constants';
 
 import {ODEs, SolverOptions} from 'diff-grok';
@@ -22,6 +17,7 @@ import {Model, ModelInfo} from './model';
 
 import utc from 'dayjs/plugin/utc';
 import dayjs from 'dayjs';
+import {getLookupsInfo} from './utils';
 
 export const _package = new DG.Package();
 
@@ -147,12 +143,13 @@ export class PackageFunctions {
   @grok.decorators.model({
     name: 'Ball flight',
     description: 'Ball flight simulation',
-    editor: 'Compute:RichFunctionViewEditor',
-    sidebar: '@compute',
+    editor: 'Compute2:RichFunctionViewEditor',
     runOnOpen: 'true',
     runOnInput: 'true',
     features: '{"sens-analysis": true, "fitting": true}',
     icon: 'files/icons/ball.png',
+    // @ts-expect-error
+    dockSpawnConfig: '{"Trajectory / Grid": {"dock-spawn-dock-ratio": 0.3, "dock-spawn-dock-type": "right", "dock-spawn-dock-to": "Trajectory / Line chart"}, "Output": {"dock-spawn-dock-ratio": 0.15, "dock-spawn-dock-type": "down", "dock-spawn-dock-to": "Trajectory / Line chart"}}',
     outputs: [
       {
         name: 'maxDist',
@@ -167,7 +164,7 @@ export class PackageFunctions {
       {
         name: 'df',
         type: 'dataframe',
-        options: {caption: 'Trajectory', viewer: 'Line chart(block: 60, multiAxis: "false", multiAxisLegendPosition: "RightCenter", autoLayout: "false", showAggrSelectors: "false") | Grid(block: 40)'},
+        options: {caption: 'Trajectory', viewer: 'Line chart(multiAxis: "false", multiAxisLegendPosition: "RightCenter", autoLayout: "false", showAggrSelectors: "false") | Grid()'},
       },
     ],
   })
@@ -216,51 +213,6 @@ export class PackageFunctions {
     return call.outputs[DF_NAME];
   }
 
-  @grok.decorators.model({
-    name: 'PK-PD',
-    description: 'In-browser two-compartment pharmacokinetic-pharmacodynamic (PK-PD) simulation',
-    icon: 'files/icons/pkpd.png',
-  })
-  static async pkPdNew(): Promise<void> {
-    const model = new Model(PK_PD_MODEL_INFO);
-    await model.run();
-  }
-
-  @grok.decorators.demo({
-    name: 'PK-PD Simulation Demo',
-    description: 'In-browser two-compartment pharmacokinetic-pharmacodynamic (PK-PD) simulation',
-    demoPath: 'Compute | PK-PD Modeling',
-    test: {
-      test: 'demoSimPKPD()',
-      wait: '100',
-    },
-  })
-  static async demoSimPKPD(): Promise<any> {
-    const model = new Model(PK_PD_MODEL_INFO);
-    await model.runDemo();
-  }
-
-  @grok.decorators.model({
-    name: 'Bioreactor',
-    description: 'Controlled fab-arm exchange mechanism simulation',
-    icon: 'files/icons/bioreactor.png',
-  })
-  static async Bioreactor(): Promise<void> {
-    const model = new Model(BIOREACTOR_MODEL_INFO);
-    await model.run();
-  }
-
-  @grok.decorators.demo({
-    name: 'Bioreactor Demo',
-    description: 'In-browser simulation of controlled fab-arm exchange mechanism',
-    demoPath: 'Compute | Bioreactor',
-    test: {test: 'demoBioreactor()', wait: '100'},
-  })
-  static async demoBioreactor(): Promise<any> {
-    const model = new Model(BIOREACTOR_MODEL_INFO);
-    await model.runDemo();
-  }
-
   @grok.decorators.func({
     description: 'Run model with Diff Studio UI',
   })
@@ -279,6 +231,61 @@ export class PackageFunctions {
     const diffStudioModel = new Model(modelInfo);
 
     await diffStudioModel.run();
+  }
+
+  @grok.decorators.func({
+    'meta': {
+      'scriptHandler.language': 'ivp',
+      'scriptHandler.extensions': 'ivp',
+      'scriptHandler.commentStart': '#',
+      'scriptHandler.codeEditorMode': 'python',
+      'scriptHandler.parserFunction': 'DiffStudio:ivpLanguageParser',
+      'scriptHandler.templateScript': '#name: Template\\n#language: ivp\\n#equations:\\n  dy/dt = -y + sin(t) / t\\n\\n#argument: t\\n  initial = 0.01 {min: 0.01; max: 10}\\n  final = 15 {min: 15; max: 150}\\n  step = 0.01 {min: 0.001; max: 0.1}\\n\\n#inits:\\n  y = 0 {min: 0; max: 9}\\n',
+      'icon': 'files/icons/package.png'
+    },
+    'tags': [
+      'scriptHandler'
+    ]
+  })
+  static async ivpLanguageHandler(ivpCall: DG.FuncCall): Promise<void> {
+    const params = {...ivpCall.inputs};
+
+    const ivp = getIVP((ivpCall.func as DG.Script).script);
+    const scriptText = getScriptLines(ivp).filter(line => line.search(/^[\s]*\/\/language:[\s]*ivp/g) < 0).join('\n');
+    const jsScript = DG.Script.create(scriptText);
+
+    const jsCall = jsScript.prepare(params);
+    await jsCall.call();
+    ivpCall.outputs[DF_NAME] = jsCall.outputs[DF_NAME];
+  }
+
+  @grok.decorators.func()
+  static ivpLanguageParser(@grok.decorators.param({ type: 'string' }) code: string): DG.Script  {
+    const ivp = getIVP(code);
+
+    const lookupsOptions = ivp.inputsLookup ? [getLookupsInfo(ivp.inputsLookup) as any] : [];
+    const argOptions = ARG_INPUT_KEYS.map((key) => getOptions(key, ivp.arg[key], CONTROL_EXPR.ARG));
+    const initsOptions =  [...ivp.inits.entries()].map(([key, val]) => getOptions(key, val, CONTROL_EXPR.INITS));
+    const paramsOptions = ivp.params ? [...ivp.params.entries()].map(([key, val]) => getOptions(key, val, CONTROL_EXPR.PARAMS)) : [];
+    const loopOptions = ivp.loop ? [getOptions(LOOP.COUNT_NAME, ivp.loop.count, CONTROL_EXPR.LOOP)] : [];
+
+    const inputs: DG.Property[] = [
+      ...lookupsOptions, ...argOptions, ...initsOptions, ...paramsOptions, ...loopOptions
+    ].map((propOpts) =>{
+      const prop = DG.Property.fromOptions(propOpts);
+      return prop;
+    });
+
+    const dfProp = DG.Property.fromOptions({
+      name: DF_NAME,
+      type: DG.TYPE.DATA_FRAME,
+      caption: ivp.name,
+      // @ts-ignore:next-line
+      viewer: getViewersSpec(ivp),
+    });
+
+    const ivpScript = DG.Script.fromParams(inputs, [dfProp], code);
+    return ivpScript;
   }
 }
 

@@ -18,6 +18,8 @@
     "@vueuse/rxjs": "^13.3.0",
     "cash-dom": "^8.1.4",
     "datagrok-api": "^1.26.0",
+    "dayjs": "=1.11.10",
+    "diff-grok": "^1.0.9",
     "dayjs": "^1.11.19",
     "exceljs": "^4.4.0",
     "fflate": "^0.8.2",

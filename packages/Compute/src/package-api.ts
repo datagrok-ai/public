@@ -43,7 +43,7 @@ export namespace funcs {
     return await grok.functions.call('Compute:RichFunctionViewEditor', { call });
   }
 
-  export async function pipelineStepEditor(call: any ): Promise<DG.View> {
+  export async function pipelineStepEditor(call: any ): Promise<any> {
     return await grok.functions.call('Compute:PipelineStepEditor', { call });
   }
 

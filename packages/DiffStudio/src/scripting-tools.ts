@@ -11,7 +11,7 @@
 import {CONTROL_TAG, CONTROL_TAG_LEN, DF_NAME, CONTROL_EXPR, LOOP, UPDATE, MAX_LINE_CHART,
   SOLVER_OPTIONS_RANGES, TINY, STEP_RATIO} from './constants';
 
-import {ModelError} from './error-utils';
+import {ModelError} from './shared-utils';
 
 // Scripting specific constants
 export const CONTROL_SEP = ':';
@@ -43,9 +43,7 @@ const POW_IDX = MATH_FUNCS.indexOf('pow');
 const MATH_CONSTS = ['PI', 'E'];
 
 /** Default meta */
-const defaultMetas = `//meta.runOnOpen: true
-//meta.runOnInput: true
-//meta.features: {"sens-analysis": true, "fitting": true}`;
+const defaultMetas = `//meta.runOnOpen: true\n//meta.runOnInput: true\n//meta.features: {"sens-analysis": true, "fitting": true}\n`;
 
 /** Numerical input specification */
 export type Input = {
@@ -64,6 +62,11 @@ type Arg = {
 
 /** Input keys of Arg */
 export const ARG_INPUT_KEYS = ['initial', 'final', 'step'];
+export const ARG_INPUT_KEYS_MAPPING = {
+  'initial': '_t0',
+  'final': '_t1',
+  'step': '_h'
+};
 
 /** Scripting specific constants */
 export enum SCRIPTING {
@@ -169,8 +172,7 @@ enum ANNOT {
   DOUBLE_INPUT = '//input: double',
   INT_INPUT = '//input: int',
   OUTPUT = `//output: dataframe ${DF_NAME}`,
-  EDITOR = '//editor: Compute:RichFunctionViewEditor',
-  SIDEBAR = '//sidebar: @compute',
+  EDITOR = '//editor: Compute2:RichFunctionViewEditor',
   CAPTION = 'caption:',
   ARG_INIT = '{caption: Initial; category: Argument}',
   ARG_FIN = '{caption: Final; category: Argument}',
@@ -651,15 +653,20 @@ function getInputSpec(inp: Input): string {
   return `${inp.value}`;
 }
 
-/** Return annotation line specifying viewers */
-function getViewersLine(ivp: IVP): string {
+export function getViewersSpec(ivp: IVP) {
   const outputColsCount = (ivp.outputs) ? ivp.outputs.size : ivp.inits.size;
   const multiAxis = (outputColsCount > MAX_LINE_CHART - 1) ? 'true' : 'false';
 
   const segments = (ivp.updates) ? ` segmentColumnName: "${STAGE_COL_NAME}",` : '';
 
   // eslint-disable-next-line max-len
-  return `viewer: Line chart(block: 100, multiAxis: "${multiAxis}",${segments} multiAxisLegendPosition: "RightCenter", autoLayout: "false", showAggrSelectors: "false") | Grid(block: 100)`;
+  return `Line chart(block: 100, multiAxis: "${multiAxis}",${segments} multiAxisLegendPosition: "RightCenter", autoLayout: "false", showAggrSelectors: "false") | Grid(block: 100)`;
+}
+
+/** Return annotation line specifying viewers */
+function getViewersLine(ivp: IVP): string {
+  const spec = getViewersSpec(ivp);
+  return `viewer: ${spec}`;
 }
 
 /** Generate annotation lines */
@@ -709,7 +716,6 @@ function getAnnot(ivp: IVP, toAddViewers = true, toAddEditor = false): string[] 
   // the 'editor' line
   if (toAddEditor) {
     res.push(ANNOT.EDITOR);
-    res.push(ANNOT.SIDEBAR);
   }
 
   if (ivp.metas.length >0)

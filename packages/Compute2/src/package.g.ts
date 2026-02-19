@@ -1,31 +1,31 @@
 import {PackageFunctions} from './package';
 import * as DG from 'datagrok-api/dg';
 
-//meta.role: init
+//tags: init
 export async function init() : Promise<void> {
   await PackageFunctions.init();
 }
 
 //name: Custom Function View Editor
+//tags: editor
 //input: funccall call 
 //output: view result
-//meta.role: editor
 export async function CustomFunctionViewEditor(call: DG.FuncCall) : Promise<any> {
   return await PackageFunctions.CustomFunctionViewEditor(call);
 }
 
 //name: Rich Function View Editor
+//tags: editor
 //input: funccall call 
 //output: view result
-//meta.role: editor
 export async function RichFunctionViewEditor(call: DG.FuncCall) : Promise<any> {
   return await PackageFunctions.RichFunctionViewEditor(call);
 }
 
 //name: Tree Wizard Editor
+//tags: editor
 //input: funccall call 
 //output: view result
-//meta.role: editor
 export async function TreeWizardEditor(call: DG.FuncCall) : Promise<any> {
   return await PackageFunctions.TreeWizardEditor(call);
 }
