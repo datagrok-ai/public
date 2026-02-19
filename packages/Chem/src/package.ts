@@ -2525,11 +2525,11 @@ export class PackageFunctions {
     @grok.decorators.param({type: 'column_list'}) columns: DG.ColumnList,
     profileName: string,
     @grok.decorators.param({type: 'string'}) aggregation: WeightedAggregation,
-  ): DG.DataFrame {
+  ): DG.DataFrame | null {
     const resultCol = mpo(df, Array.from(columns), profileName, aggregation);
     if (resultCol && !df.col(resultCol.name))
       return DG.DataFrame.fromColumns([resultCol]);
-    return DG.DataFrame.create();
+    return null;
   }
 
   @grok.decorators.func({
@@ -2562,8 +2562,8 @@ export class PackageFunctions {
       return DG.DataFrame.create();
     }
 
-    const colList = new DG.ColumnList(columns);
-
+    // Temporary fix until proper support for list<column> is implemented
+    const colList = DG.DataFrame.fromColumns(columns).columns;
     return await grok.functions.call('Chem:mpoCalculate', {df, columns: colList, profileName, aggregation});
   }
 
