@@ -7,6 +7,15 @@ import {PolyToolBreadthPlaceholder} from './types';
 import {parseMonomerSymbolList} from './pt-placeholders-input';
 import {GridCellRenderArgs} from 'datagrok-api/dg';
 
+/** Callback invoked when user double-clicks a Monomers cell in the breadth grid.
+ * @param start 0-based start position index
+ * @param end 0-based end position index
+ * @param currentMonomers current monomer symbols
+ * @returns new monomer symbols, or null if cancelled */
+export type BreadthMonomerCellEditCallback = (
+  start: number, end: number, currentMonomers: string[],
+) => Promise<string[] | null>;
+
 export class PolyToolPlaceholdersBreadthInput extends DG.JsInputBase<DG.DataFrame> {
   get inputType(): string { return 'Breadth'; }
 
@@ -29,6 +38,9 @@ export class PolyToolPlaceholdersBreadthInput extends DG.JsInputBase<DG.DataFram
   get placeholdersBreadthValue(): PolyToolBreadthPlaceholder[] {
     return dfToPlaceholdersBreadth(this.grid.dataFrame);
   }
+
+  /** Set this callback to handle double-click editing of the Monomers column */
+  onMonomerCellEdit: BreadthMonomerCellEditCallback | null = null;
 
   private readonly gridHost: HTMLDivElement;
   public grid: DG.Grid;
@@ -91,6 +103,18 @@ export class PolyToolPlaceholdersBreadthInput extends DG.JsInputBase<DG.DataFram
       }
     });
 
+    // Make Monomers column non-editable (editing via double-click dialog)
+    const monomersGridCol = this.grid.columns.byName('Monomers');
+    if (monomersGridCol)
+      monomersGridCol.editable = false;
+
+    // Double-click on Monomers cell opens the monomer selection dialog
+    this.subs.push(this.grid.onCellDoubleClick.subscribe((gc: DG.GridCell) => {
+      if (gc.tableColumn?.name === 'Monomers' &&
+        gc.tableRowIndex != null && gc.tableRowIndex >= 0)
+        this.handleMonomerCellDoubleClick(gc.tableRowIndex);
+    }));
+
     this.updateGridHeight(heightRowCount ?? this.grid.dataFrame.rowCount + 0.7);
     this.subs.push(ui.onSizeChanged(this.grid.root)
       .subscribe(this.gridRootOnSizeChanged.bind(this)));
@@ -139,6 +163,21 @@ export class PolyToolPlaceholdersBreadthInput extends DG.JsInputBase<DG.DataFram
   }
 
   // -- Handle events --
+
+  private async handleMonomerCellDoubleClick(tableRowIdx: number): Promise<void> {
+    if (!this.onMonomerCellEdit)
+      return;
+    const df = this.grid.dataFrame;
+    const start = parseInt(df.get('Start', tableRowIdx)) - 1;
+    const end = parseInt(df.get('End', tableRowIdx)) - 1;
+    if (isNaN(start) || isNaN(end))
+      return;
+    const currentStr: string = df.get('Monomers', tableRowIdx) ?? '';
+    const currentMonomers = parseMonomerSymbolList(currentStr);
+    const result = await this.onMonomerCellEdit(start, end, currentMonomers);
+    if (result !== null)
+      df.set('Monomers', tableRowIdx, result.join(', '));
+  }
 
   private gridRootOnSizeChanged(): void {
     this.grid.columns.byIndex(4)!.width = this.grid.root.clientWidth - this.grid.horzScroll.root.offsetWidth -

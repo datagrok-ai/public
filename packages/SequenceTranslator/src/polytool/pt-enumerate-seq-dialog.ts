@@ -25,6 +25,7 @@ import {PolyToolEnumeratorParams, PolyToolEnumeratorType, PolyToolEnumeratorType
 import {getLibrariesList, LIB_PATH} from './utils';
 import {doPolyToolEnumerateHelm, PT_HELM_EXAMPLE} from './pt-enumeration-helm';
 import {PolyToolPlaceholdersInput} from './pt-placeholders-input';
+import {showMonomerSelectionDialog} from './pt-monomer-selection-dialog';
 import {defaultErrorHandler} from '../utils/err-info';
 import {PolyToolPlaceholdersBreadthInput} from './pt-placeholders-breadth-input';
 import {PT_UI_DIALOG_ENUMERATION, PT_UI_GET_HELM, PT_UI_HIGHLIGHT_MONOMERS, PT_UI_RULES_USED, PT_UI_USE_CHIRALITY} from './const';
@@ -293,6 +294,30 @@ async function getPolyToolEnumerateDialog(
     // #### Inputs END
     inputs.library.root.style.setProperty('display', 'none');
     inputs.trivialNameCol.addOptions(trivialNameSampleDiv);
+
+    // Wire up monomer cell double-click to open selection dialog
+    inputs.placeholders.onMonomerCellEdit = async (position: number, currentMonomers: string[]) => {
+      const mol = inputs.macromolecule.molValue;
+      if (position < 0 || position >= mol.atoms.length)
+        return null;
+      const atom = mol.atoms[position];
+      const helmType: HelmType = atom.biotype()!;
+      const polymerType = helmTypeToPolymerType(helmType);
+      return showMonomerSelectionDialog(monomerLib, polymerType, currentMonomers);
+    };
+
+    // Wire up breadth monomer cell double-click to open selection dialog
+    inputs.placeholdersBreadth.onMonomerCellEdit = async (
+      start: number, _end: number, currentMonomers: string[],
+    ) => {
+      const mol = inputs.macromolecule.molValue;
+      if (start < 0 || start >= mol.atoms.length)
+        return null;
+      const atom = mol.atoms[start];
+      const helmType: HelmType = atom.biotype()!;
+      const polymerType = helmTypeToPolymerType(helmType);
+      return showMonomerSelectionDialog(monomerLib, polymerType, currentMonomers);
+    };
 
     let placeholdersValidity: string | null = null;
     inputs.placeholders.addValidator((value: string): string | null => {

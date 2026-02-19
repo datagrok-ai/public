@@ -7,6 +7,12 @@ import {fromEvent, Unsubscribable} from 'rxjs';
 import {PolyToolPlaceholder} from './types';
 import {GridCellRenderArgs} from 'datagrok-api/dg';
 
+/** Callback invoked when user double-clicks a Monomers cell.
+ * @param position 0-based position index
+ * @param currentMonomers current monomer symbols
+ * @returns new monomer symbols, or null if cancelled */
+export type MonomerCellEditCallback = (position: number, currentMonomers: string[]) => Promise<string[] | null>;
+
 export class PolyToolPlaceholdersInput extends DG.JsInputBase<DG.DataFrame> {
   get inputType(): string { return 'Positions'; }
 
@@ -37,6 +43,9 @@ export class PolyToolPlaceholdersInput extends DG.JsInputBase<DG.DataFrame> {
   get placeholdersValue(): PolyToolPlaceholder[] {
     return dfToPlaceholders(this.grid.dataFrame);
   }
+
+  /** Set this callback to handle double-click editing of the Monomers column */
+  onMonomerCellEdit: MonomerCellEditCallback | null = null;
 
   private readonly gridHost: HTMLDivElement;
   private grid!: DG.Grid;
@@ -88,6 +97,17 @@ export class PolyToolPlaceholdersInput extends DG.JsInputBase<DG.DataFrame> {
         });
       }
     });
+
+    // Make Monomers column non-editable (editing is done via double-click dialog)
+    const monomersGridCol = this.grid.columns.byName('Monomers');
+    if (monomersGridCol)
+      monomersGridCol.editable = false;
+
+    // Double-click on Monomers cell opens the monomer selection dialog
+    this.subs.push(this.grid.onCellDoubleClick.subscribe((gc: DG.GridCell) => {
+      if (gc.tableColumn?.name === 'Monomers' && gc.tableRowIndex != null && gc.tableRowIndex >= 0)
+        this.handleMonomerCellDoubleClick(gc.tableRowIndex);
+    }));
 
     this.updateGridHeight(heightRowCount ?? this.grid.dataFrame.rowCount + 0.7);
     this.subs.push(ui.onSizeChanged(this.grid.root)
@@ -159,6 +179,20 @@ export class PolyToolPlaceholdersInput extends DG.JsInputBase<DG.DataFrame> {
   }
 
   // -- Handle events --
+
+  private async handleMonomerCellDoubleClick(tableRowIdx: number): Promise<void> {
+    if (!this.onMonomerCellEdit)
+      return;
+    const df = this.grid.dataFrame;
+    const position = parseInt(df.get('Position', tableRowIdx)) - 1;
+    if (isNaN(position))
+      return;
+    const currentMonomersStr: string = df.get('Monomers', tableRowIdx) ?? '';
+    const currentMonomers = parseMonomerSymbolList(currentMonomersStr);
+    const result = await this.onMonomerCellEdit(position, currentMonomers);
+    if (result !== null)
+      df.set('Monomers', tableRowIdx, result.join(', '));
+  }
 
   private gridRootOnSizeChanged(): void {
     this.grid.columns.byIndex(3)!.width = this.grid.root.clientWidth - this.grid.horzScroll.root.offsetWidth -
