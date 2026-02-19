@@ -5,6 +5,7 @@ import * as grok from 'datagrok-api/grok';
 import {Subscription} from 'rxjs';
 
 import {
+  DESIRABILITY_PROFILE_TYPE,
   DesirabilityProfile,
   PropertyDesirability,
   WEIGHTED_AGGREGATIONS_LIST,
@@ -358,6 +359,7 @@ export class MpoProfileCreateView {
 
   private createDefaultProfile(): DesirabilityProfile {
     return {
+      type: DESIRABILITY_PROFILE_TYPE,
       name: '',
       description: '',
       properties: {
@@ -373,7 +375,7 @@ export class MpoProfileCreateView {
     for (const col of this.df!.columns.numerical)
       props[col.name] = createDefaultNumerical(1, col.min, col.max);
 
-    return {name: '', description: '', properties: props};
+    return {type: DESIRABILITY_PROFILE_TYPE, name: '', description: '', properties: props};
   }
 
   private async setupGridAndContextPanel() {

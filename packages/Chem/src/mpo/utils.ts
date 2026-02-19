@@ -2,16 +2,14 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
 import {
+  DESIRABILITY_PROFILE_TYPE,
   DesirabilityProfile,
   PropertyDesirability,
   WeightedAggregation,
 } from '@datagrok-libraries/statistics/src/mpo/mpo';
 
-export type MpoProfileInfo = {
+export type MpoProfileInfo = DesirabilityProfile & {
   fileName: string;
-  name: string;
-  description: string;
-  properties: Record<string, PropertyDesirability>;
 };
 
 export enum MpoPathMode {
@@ -35,6 +33,7 @@ export async function loadMpoProfiles(): Promise<MpoProfileInfo[]> {
       const content = JSON.parse(text) as DesirabilityProfile;
 
       profiles.push({
+        type: DESIRABILITY_PROFILE_TYPE,
         fileName: file.name,
         name: content.name ?? file.name.replace(/\.json$/i, ''),
         description: content.description ?? '',

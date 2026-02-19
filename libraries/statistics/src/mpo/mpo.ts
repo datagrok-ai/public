@@ -62,11 +62,18 @@ export function migrateDesirability(raw: any): PropertyDesirability {
   return {...raw, functionType: 'numerical'};
 }
 
+export const DESIRABILITY_PROFILE_TYPE = 'MPO Desirability Profile';
+
 /// A map of desirability lines with their weights
 export type DesirabilityProfile = {
+  type: typeof DESIRABILITY_PROFILE_TYPE;
   name: string;
   description: string;
   properties: { [key: string]: PropertyDesirability };
+}
+
+export function isDesirabilityProfile(x: any): x is DesirabilityProfile {
+  return x != null && typeof x === 'object' && x.type === DESIRABILITY_PROFILE_TYPE;
 }
 
 export const WEIGHTED_AGGREGATIONS = ['Average', 'Sum', 'Product', 'Geomean', 'Min', 'Max'] as const;
