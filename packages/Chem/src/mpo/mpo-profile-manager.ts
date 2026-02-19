@@ -2,6 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 
 import {DesirabilityProfile} from '@datagrok-libraries/statistics/src/mpo/mpo';
+import {generateMpoFileName, getNextAvailable} from '@datagrok-libraries/statistics/src/mpo/utils';
 
 import {deleteMpoProfile, loadMpoProfiles, MPO_PROFILE_CHANGED_EVENT, MPO_PROFILE_DELETED_EVENT,
   MPO_TEMPLATE_PATH, MpoProfileInfo} from './utils';
@@ -39,13 +40,13 @@ class MpoProfileManagerImpl {
     const baseFileName = this.getBaseFileName(profile.fileName);
 
     const clone = structuredClone(profile);
-    clone.name = this.getNextAvailable(
+    clone.name = getNextAvailable(
       baseName,
       this.existingNames,
       (b, n) => n ? `${b} (Copy ${n})` : `${b} (Copy)`,
     );
 
-    const cloneFileName = this.getNextAvailable(
+    const cloneFileName = getNextAvailable(
       baseFileName,
       this.existingFileNames,
       (b, n) => n ? `${b}-copy-${n}.json` : `${b}-copy.json`,
@@ -55,8 +56,7 @@ class MpoProfileManagerImpl {
   }
 
   generateFileName(profileName: string): string {
-    const base = profileName.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
-    return this.getNextAvailable(base, this.existingFileNames, (b, n) => n ? `${b}-${n}.json` : `${b}.json`);
+    return generateMpoFileName(profileName, this.existingFileNames);
   }
 
   confirmDelete(profile: MpoProfileInfo, onDeleted?: () => void): void {
@@ -99,22 +99,6 @@ class MpoProfileManagerImpl {
 
   private getBaseFileName(fileName: string): string {
     return fileName.replace(/(-copy(?:-\d+)?)?\.json$/i, '');
-  }
-
-  private getNextAvailable(
-    base: string,
-    existing: Set<string>,
-    format: (base: string, num?: number) => string,
-  ): string {
-    const first = format(base);
-    if (!existing.has(first))
-      return first;
-
-    let num = 2;
-    while (existing.has(format(base, num)))
-      num++;
-
-    return format(base, num);
   }
 }
 

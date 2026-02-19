@@ -8,6 +8,8 @@ import {
   WeightedAggregation,
 } from '@datagrok-libraries/statistics/src/mpo/mpo';
 
+export {MPO_PROFILE_CHANGED_EVENT, MPO_PROFILE_DELETED_EVENT} from '@datagrok-libraries/statistics/src/mpo/utils';
+
 export type MpoProfileInfo = DesirabilityProfile & {
   fileName: string;
 };
@@ -20,8 +22,6 @@ export enum MpoPathMode {
 
 export const MPO_TEMPLATE_PATH = 'System:AppData/Chem/mpo';
 export const MPO_PATH = 'Mpo';
-export const MPO_PROFILE_CHANGED_EVENT = 'chem-mpo-profile-changed';
-export const MPO_PROFILE_DELETED_EVENT = 'chem-mpo-profile-deleted';
 
 export async function loadMpoProfiles(): Promise<MpoProfileInfo[]> {
   const files = await grok.dapi.files.list(MPO_TEMPLATE_PATH);

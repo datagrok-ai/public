@@ -8,7 +8,8 @@ import {
   WeightedAggregation,
   WEIGHTED_AGGREGATIONS_LIST,
 } from '@datagrok-libraries/statistics/src/mpo/mpo';
-import {MPO_SCORE_CHANGED_EVENT, MpoProfileEditor} from '@datagrok-libraries/statistics/src/mpo/mpo-profile-editor';
+import {MpoProfileEditor} from '@datagrok-libraries/statistics/src/mpo/mpo-profile-editor';
+import {MPO_SCORE_CHANGED_EVENT} from '@datagrok-libraries/statistics/src/mpo/utils';
 
 import {MpoContextPanel} from '../mpo/mpo-context-panel';
 import {MpoProfileManager} from '../mpo/mpo-profile-manager';

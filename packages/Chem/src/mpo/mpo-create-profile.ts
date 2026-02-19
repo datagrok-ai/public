@@ -12,7 +12,8 @@ import {
   WeightedAggregation,
   createDefaultNumerical,
 } from '@datagrok-libraries/statistics/src/mpo/mpo';
-import {MPO_SCORE_CHANGED_EVENT, MpoProfileEditor} from '@datagrok-libraries/statistics/src/mpo/mpo-profile-editor';
+import {MpoProfileEditor} from '@datagrok-libraries/statistics/src/mpo/mpo-profile-editor';
+import {MPO_SCORE_CHANGED_EVENT} from '@datagrok-libraries/statistics/src/mpo/utils';
 
 import {MpoContextPanel} from './mpo-context-panel';
 import {MpoPathMode, MPO_PROFILE_DELETED_EVENT, updateMpoPath} from './utils';
@@ -116,7 +117,7 @@ export class MpoProfileCreateView {
       await MpoProfileManager.ensureLoaded();
 
       const nameInput = ui.input.string('Name', {value: this.profile.name ?? '', nullable: false});
-      const descInput = ui.input.string('Description', {value: this.profile.description ?? ''});
+      const descInput = ui.input.textArea('Description', {value: this.profile.description ?? ''});
 
       const dlg = ui.dialog({title: 'Save MPO Profile'})
         .add(ui.divV([nameInput, descInput]))

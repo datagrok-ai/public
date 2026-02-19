@@ -12,7 +12,8 @@ import {DesirabilityModeDialog} from './dialogs/desirability-mode-dialog';
 
 import '../../css/styles.css';
 
-export const MPO_SCORE_CHANGED_EVENT = 'grok-mpo-score-changed';
+import {MPO_SCORE_CHANGED_EVENT} from './utils';
+
 const MAX_CATEGORICAL_CATEGORIES = 20;
 
 export class MpoProfileEditor {

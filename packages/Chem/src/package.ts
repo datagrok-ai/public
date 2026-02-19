@@ -2704,6 +2704,7 @@ export class PackageFunctions {
     await refresh();
 
     grok.events.onCustomEvent(MPO_PROFILE_CHANGED_EVENT).subscribe(async () => {
+      await MpoProfileManager.load();
       await refresh();
     });
   }

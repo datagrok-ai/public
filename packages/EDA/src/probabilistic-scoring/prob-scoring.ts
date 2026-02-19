@@ -476,7 +476,9 @@ export class Pmpo {
 
     grid.sort([this.predictionName], [false]);
 
-    grid.col(name)!.format = '0.0000';
+    const scoresCol = grid.col(name);
+    scoresCol!.format = '0.0000';
+    scoresCol!.isTextColorCoded = true;
 
     // set tooltips
     grid.onCellTooltip((cell, x, y) => {
