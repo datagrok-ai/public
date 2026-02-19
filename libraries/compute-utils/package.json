@@ -1,7 +1,7 @@
 {
   "name": "@datagrok-libraries/compute-utils",
   "friendlyName": "ComputeUtils",
-  "version": "1.44.12",
+  "version": "1.44.13",
   "author": {
     "name": "Andrey Sharapov",
     "email": "andrey.sharapov@softwarecountry.com"
@@ -13,7 +13,7 @@
     "@types/uuid": "^10.0.0",
     "cash-dom": "^8.1.4",
     "datagrok-api": "^1.26.3",
-    "dayjs": "^1.11.19",
+    "dayjs": "^1.11.10",
     "diff-grok": "^1.0.8",
     "ebnf": "^1.9.1",
     "exceljs": "^4.3.0",
