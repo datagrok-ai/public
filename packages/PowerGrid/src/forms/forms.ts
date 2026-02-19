@@ -44,14 +44,16 @@ let scene: Scene;
 
 /** Returns approximate length in characters of the longest value in the column. */
 function getMaxValueWidth(column: DG.Column): number {
-  if (column.type === DG.TYPE.INT)
+  if (column.type === DG.TYPE.BOOL)
+    return 30;
+  else if (column.type === DG.TYPE.INT)
     return column.max.toString().length * 8;
   else if (column.type === DG.TYPE.FLOAT || column.type === DG.TYPE.QNUM)
     return 50;
   else if (column.type === DG.TYPE.STRING) {
     const values = column.categories;
     if (values.length < 50)
-      return Math.min(...values.map((v) => v.length));
+      return Math.max(...values.map((v) => v ? v.length : 0)) * 8;
     return 100;
   }
   return 100;
@@ -114,16 +116,19 @@ export class FormCellRenderer extends DG.GridCellRenderer {
     const font = `${fontSize.toFixed(1)}px Roboto, Roboto Local`;
     g.font = font;
 
-    const maxValueWidth = Math.min(100, Math.max(...cols.map((c) => getMaxValueWidth(c) * (fontSize / 11))));
-    const maxNameWidth = Math.min(200, Math.max(...cols.map((c) => g.measureText(c.name).width)));
-
     const effectiveWidth = b.width / numLayoutCols;
+    const maxAllowedValueWidth = effectiveWidth * 0.55;
+    const calculatedValueWidth = Math.max(...cols.map((c) => getMaxValueWidth(c) * (fontSize / 11)));
+    const finalValueWidth = Math.min(100, Math.min(calculatedValueWidth, maxAllowedValueWidth));
+    const maxNameWidth = Math.max(...cols.map((c) => g.measureText(c.name).width));
+
     const showColumnNames = settings.showColumnNames == 'Always' ||
-      ((settings.showColumnNames ?? 'Auto') == 'Auto' && effectiveWidth - maxValueWidth > 30); // as long as there is small space for names
-    const columnNamesWidth = showColumnNames ? Math.max(Math.min(maxNameWidth + 10, effectiveWidth - maxValueWidth), 0) : 0;
+      ((settings.showColumnNames ?? 'Auto') == 'Auto' && effectiveWidth - finalValueWidth > 30); // as long as there is small space for names
+    const columnNamesWidth = showColumnNames ? Math.max(Math.min(maxNameWidth + 10, effectiveWidth - finalValueWidth), 0) : 0;
 
     const totalFormHeight = rowsPerCol * colHeight;
     const verticalMargin = Math.max(0, (b.height - totalFormHeight) / 2);
+
     for (let i = 0; i < cols.length; i++) {
       const col = cols[i];
       const cell = gridCell.grid.cell(col.name, gridCell.gridRow);
@@ -140,6 +145,10 @@ export class FormCellRenderer extends DG.GridCellRenderer {
         const xOffset = b.x + (layoutColIndex * effectiveWidth);
         const yOffset = b.y + verticalMargin + (layoutRowIndex * colHeight);
 
+        const intX = Math.ceil(xOffset);
+        const intY = Math.ceil(yOffset);
+        const intH = Math.ceil(colHeight);
+
         // render in a column
         const r = new DG.Rect(
           Math.ceil(xOffset),
@@ -147,16 +156,24 @@ export class FormCellRenderer extends DG.GridCellRenderer {
           Math.ceil(effectiveWidth),
           Math.ceil(colHeight)
         );
-        if (showColumnNames)
-          scene.elements.push(new LabelElement(r.getLeft(columnNamesWidth), fontSize * 0.6, col.name,
+        if (showColumnNames) {
+          const labelRect = new DG.Rect(intX, intY, columnNamesWidth, intH);
+          scene.elements.push(new LabelElement(labelRect, fontSize * 0.6, col.name,
             {horzAlign: 'right', color: 'lightgrey', font: font}));
+        }
 
-        const leftMargin = r.width >= 20 ? 5 : 0;
+        const leftMargin = columnNamesWidth > 0 ? 5 : 0;
         cell.style.marker = markers[i % markers.length];
         cell.style.horzAlign = 'left';
         cell.style.marginLeft = 0;
         cell.style.font = font;
-        scene.elements.push(new GridCellElement(r.cutLeft(columnNamesWidth + leftMargin), cell));
+
+        const valueX = intX + columnNamesWidth + leftMargin;
+        let valueRect = new DG.Rect(valueX, intY, finalValueWidth, intH);
+        if (col.type === DG.TYPE.BOOL)
+          valueRect = new DG.Rect(valueX, intY - 6, 20, intH);
+
+        scene.elements.push(new GridCellElement(valueRect, cell));
       }
     }
 
