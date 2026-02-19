@@ -1,6 +1,6 @@
 # Compute2 changelog
 
-## 1.3.22 (2025-11-24)
+## 1.3.22 (2026-02-19)
 
 - Workflows export customization options
 
