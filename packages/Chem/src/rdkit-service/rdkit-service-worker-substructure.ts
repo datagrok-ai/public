@@ -98,8 +98,8 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
   getMolWithSmilesCheck(molString: string, details?: any): RDMol | null {
     // hasNewLines should be faster, as M END checked by isMolBlock is usually at the end
     if (molString && !hasNewLines(molString) && molString.length > 5000)
-      return null; // do not attempt to parse very long SMILES, will cause MOB.
-    return this._rdKitModule.get_mol(molString, details ?? '{}');
+      return null; // do not attempt to parse very long SMILES, will cause MOB. P.s. passing undefined details fails rdkit
+    return details ? this._rdKitModule.get_mol(molString, details) : this._rdKitModule.get_mol(molString);
   }
 
 
