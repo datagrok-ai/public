@@ -163,6 +163,13 @@ export namespace scripts {
   }
 
   /**
+  Fingerprint similarity search in synthon chemical space using RDKit SynthonSpaceSearch
+  */
+  export async function synthonSimilaritySearch(molecule: string , synthonLibrary: DG.FileInfo , maxHits: number , similarityCutoff: number ): Promise<DG.DataFrame> {
+    return await grok.functions.call('Chem:SynthonSimilaritySearch', { molecule, synthonLibrary, maxHits, similarityCutoff });
+  }
+
+  /**
   Substructure search in synthon chemical space using RDKit SynthonSpaceSearch
   */
   export async function synthonSubstructureSearch(molecule: string , synthonLibrary: DG.FileInfo , maxHits: number ): Promise<DG.DataFrame> {
@@ -507,10 +514,10 @@ export namespace funcs {
   }
 
   /**
-  Substructure search in synthon chemical space using RDKit SynthonSpaceSearch
+  Fingerprint similarity search in synthon chemical space using RDKit SynthonSpaceSearch
   */
-  export async function synthonSearch(molecule: string ): Promise<any> {
-    return await grok.functions.call('Chem:SynthonSearch', { molecule });
+  export async function synthonSimilaritySearch(molecule: string ): Promise<any> {
+    return await grok.functions.call('Chem:SynthonSimilaritySearch', { molecule });
   }
 
   export async function convertMoleculeNotation(molecule: DG.Column , targetNotation: string , kekulize?: boolean | null): Promise<DG.Column> {

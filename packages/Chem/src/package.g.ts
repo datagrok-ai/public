@@ -624,8 +624,18 @@ export function toxicity(smiles: DG.SemanticValue) : any {
 //output: widget result
 //meta.role: widgets,panel
 //meta.domain: chem
-export async function synthonSearch(molecule: string) : Promise<any> {
-  return await PackageFunctions.synthonSearch(molecule);
+export async function synthonSubstructureSearchWidget(molecule: string) : Promise<any> {
+  return await PackageFunctions.synthonSubstructureSearchWidget(molecule);
+}
+
+//name: Databases | Synthon Search | Similarity Search
+//description: Fingerprint similarity search in synthon chemical space using RDKit SynthonSpaceSearch
+//input: string molecule { semType: Molecule }
+//output: widget result
+//meta.role: widgets,panel
+//meta.domain: chem
+export async function synthonSimilaritySearchWidget(molecule: string) : Promise<any> {
+  return await PackageFunctions.synthonSimilaritySearchWidget(molecule);
 }
 
 //input: column molecule { semType: Molecule }

@@ -19,14 +19,18 @@ async function getDefaultSynthonLibrary(): Promise<DG.FileInfo> {
   return cachedSynthonLibrary;
 }
 
-export async function synthonSearchWidget(molecule: string): Promise<DG.Widget> {
+async function synthonSearchWidget(
+  searchFn: (lib: DG.FileInfo) => Promise<DG.DataFrame>,
+  tableName: string,
+  labelFn: (df: DG.DataFrame, i: number) => string,
+): Promise<DG.Widget> {
   const headerHost = ui.div([]);
   const compsHost = ui.div([ui.loader()], 'd4-flex-wrap chem-viewer-grid chem-search-panel-wrapper');
   const panel = ui.divV([headerHost, compsHost]);
 
   try {
     const synthonLibrary = await getDefaultSynthonLibrary();
-    const df: DG.DataFrame = await scripts.synthonSubstructureSearch(molecule, synthonLibrary, 100);
+    const df: DG.DataFrame = await searchFn(synthonLibrary);
 
     ui.empty(compsHost);
 
@@ -35,24 +39,22 @@ export async function synthonSearchWidget(molecule: string): Promise<DG.Widget> 
       return new DG.Widget(panel);
     }
 
-    console.log(df);
     const moleculeCol = df.getCol('smiles');
-    const nameCol = df.getCol('name');
     const molCount = Math.min(df.rowCount, MAX_MOLECULES);
 
     for (let i = 0; i < molCount; i++) {
       const molHost = ui.divV([], {style: {marginBottom: '12px'}});
       molHost.append(drawMolecule(moleculeCol.get(i), WIDTH, HEIGHT, true));
-      const name = nameCol.get(i);
-      if (name)
-        molHost.appendChild(ui.divText(name, {style: {textAlign: 'center', fontSize: '11px'}}));
+      const label = labelFn(df, i);
+      if (label)
+        molHost.appendChild(ui.divText(label, {style: {textAlign: 'center', fontSize: '11px'}}));
 
       compsHost.appendChild(molHost);
     }
 
     headerHost.appendChild(ui.iconFA('arrow-square-down', () => {
       moleculeCol.semType = DG.SEMTYPE.MOLECULE;
-      df.name = 'Synthon Search Results';
+      df.name = tableName;
       grok.shell.addTableView(df);
     }, 'Open compounds as table'));
 
@@ -63,4 +65,24 @@ export async function synthonSearchWidget(molecule: string): Promise<DG.Widget> 
   }
 
   return new DG.Widget(panel);
+}
+
+export function _synthonSubstructureSearchWidget(molecule: string): Promise<DG.Widget> {
+  return synthonSearchWidget(
+    (lib) => scripts.synthonSubstructureSearch(molecule, lib, 100),
+    'Synthon Substructure Search Results',
+    (df, i) => df.getCol('name').get(i) ?? '',
+  );
+}
+
+export function _synthonSimilaritySearchWidget(molecule: string): Promise<DG.Widget> {
+  return synthonSearchWidget(
+    (lib) => scripts.synthonSimilaritySearch(molecule, lib, 100, 0.5),
+    'Synthon Similarity Search Results',
+    (df, i) => {
+      const name = df.getCol('name').get(i);
+      const sim = df.getCol('similarity').get(i);
+      return [name, sim != null ? sim.toFixed(2) : null].filter(Boolean).join(' | ');
+    },
+  );
 }
