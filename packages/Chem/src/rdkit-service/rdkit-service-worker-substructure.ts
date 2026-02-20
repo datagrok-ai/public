@@ -99,7 +99,7 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
     // hasNewLines should be faster, as M END checked by isMolBlock is usually at the end
     if (molString && !hasNewLines(molString) && molString.length > 5000)
       return null; // do not attempt to parse very long SMILES, will cause MOB.
-    return this._rdKitModule.get_mol(molString, details);
+    return this._rdKitModule.get_mol(molString, details ?? '{}');
   }
 
 
