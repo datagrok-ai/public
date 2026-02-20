@@ -86,8 +86,14 @@ export abstract class NotationProviderBase {
   };
 
   static async getProviderConstructors(): Promise<typeof NotationProviderBase[]> {
-    const constFuncs = DG.Func.find({meta: {role: NOTATION_PROVIDER_CONSTRUCTOR_ROLE}});
-    return Promise.all(constFuncs.map((f) => f.apply({})));
+    // this is terrible, I know, but otherwise this gets put in webworkers and fails due to DG resolution)))
+    // @ts-ignore
+    if (window?.DG) {
+      // @ts-ignore
+      const constFuncs: any[] = window.DG.Func.find({meta: {role: NOTATION_PROVIDER_CONSTRUCTOR_ROLE}});
+      return Promise.all(constFuncs.map((f) => f.apply({})));
+    }
+    return [];
   }
 }
 
