@@ -13,12 +13,7 @@ import os
 import shutil
 import pandas as pd
 from rdkit import Chem
-from rdkit.Chem import rdSynthonSpaceSearch
-
-try:
-  from rdkit.Chem import rdSynthonSpaceSearch
-except ImportError:
-  raise ImportError('rdSynthonSpaceSearch requires RDKit >= 2024.09.3 Please update your RDKit installation.')
+from rdkit.Chem import rdSynthonSpaceSearch, rdFingerprintGenerator
 
 if 'M  END' in molecule:
   mol = Chem.MolFromMolBlock(molecule, sanitize=True)
@@ -30,15 +25,19 @@ if mol is None:
 else:
   synthons_dir = 'synthons'
   file_name = os.path.basename(synthonLibrary)
-  cached_path = os.path.join(synthons_dir, file_name)
+  base_name = os.path.splitext(file_name)[0]
+  cached_text = os.path.join(synthons_dir, file_name)
+  cached_db = os.path.join(synthons_dir, base_name + '.db')
 
-  if not os.path.isdir(synthons_dir) or not os.path.isfile(cached_path):
+  if not os.path.isfile(cached_db):
     os.makedirs(synthons_dir, exist_ok=True)
-    shutil.copy2(synthonLibrary, cached_path)
+    if not os.path.isfile(cached_text):
+      shutil.copy2(synthonLibrary, cached_text)
+    fpgen = rdFingerprintGenerator.GetRDKitFPGenerator(fpSize=2048)
+    rdSynthonSpaceSearch.ConvertTextToDBFile(cached_text, cached_db, fpgen)
 
   synthonspace = rdSynthonSpaceSearch.SynthonSpace()
-  
-  synthonspace.ReadTextFile(cached_path)
+  synthonspace.ReadDBFile(cached_db)
 
   params = rdSynthonSpaceSearch.SynthonSpaceSearchParams()
   params.maxHits = maxHits

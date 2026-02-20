@@ -514,10 +514,17 @@ export namespace funcs {
   }
 
   /**
+  Substructure search in synthon chemical space using RDKit SynthonSpaceSearch
+  */
+  export async function synthonSubstructureSearchWidget(molecule: string ): Promise<any> {
+    return await grok.functions.call('Chem:SynthonSubstructureSearchWidget', { molecule });
+  }
+
+  /**
   Fingerprint similarity search in synthon chemical space using RDKit SynthonSpaceSearch
   */
-  export async function synthonSimilaritySearch(molecule: string ): Promise<any> {
-    return await grok.functions.call('Chem:SynthonSimilaritySearch', { molecule });
+  export async function synthonSimilaritySearchWidget(molecule: string ): Promise<any> {
+    return await grok.functions.call('Chem:SynthonSimilaritySearchWidget', { molecule });
   }
 
   export async function convertMoleculeNotation(molecule: DG.Column , targetNotation: string , kekulize?: boolean | null): Promise<DG.Column> {
