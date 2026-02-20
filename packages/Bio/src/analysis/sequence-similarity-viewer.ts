@@ -62,7 +62,7 @@ export class SequenceSimilarityViewer extends SequenceSearchBaseViewer {
     if (!this.beforeRender())
       return;
     if (this.targetColumn) {
-      this.curIdx = this.dataFrame!.currentRowIdx == -1 ? 0 : this.dataFrame!.currentRowIdx;
+      this.curIdx = (this.dataFrame?.currentRowIdx ?? -1) == -1 ? 0 : this.dataFrame!.currentRowIdx;
 
       // Force recomputation if parameters changed
       const parametersChanged =
@@ -72,7 +72,7 @@ export class SequenceSimilarityViewer extends SequenceSearchBaseViewer {
         this.lastGapExtend !== this.gapExtend;
 
       if ((computeData && !this.gridSelect) || parametersChanged) {
-        this.targetMoleculeIdx = (this.dataFrame!.currentRowIdx ?? -1) < 0 ? 0 : this.dataFrame!.currentRowIdx; await this.computeByMM();
+        this.targetMoleculeIdx = (this.dataFrame?.currentRowIdx ?? -1) < 0 ? 0 : this.dataFrame!.currentRowIdx; await this.computeByMM();
         const similarColumnName: string = this.similarColumnLabel != null ? this.similarColumnLabel :
           `similar (${this.targetColumn})`;
         this.molCol = DG.Column.string(similarColumnName,
@@ -87,9 +87,9 @@ export class SequenceSimilarityViewer extends SequenceSearchBaseViewer {
         let prevTimer: any = null;
         const _ = resDf.onCurrentRowChanged.subscribe((_: any) => {
           prevTimer && clearTimeout(prevTimer);
-          if ((resDf.currentRowIdx ?? -1) < 0)
+          if ((resDf?.currentRowIdx ?? -1) < 0)
             return;
-          this.dataFrame.currentRowIdx = resDf.col('indexes')!.get(resDf.currentRowIdx);
+          this.dataFrame && (this.dataFrame.currentRowIdx = resDf.col('indexes')!.get(resDf.currentRowIdx));
           prevTimer = setTimeout(() => { this.createPropertyPanel(resDf); }, 300);
           this.gridSelect = true;
         });
