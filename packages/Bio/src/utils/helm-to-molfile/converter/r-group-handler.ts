@@ -112,16 +112,15 @@ export class RGroupHandler {
   /** WARNING: capping RGroups and deletion of the bonded ones don't commute */
   capRGroups(capGroupInfo: CapGroupInfo[], rdKitModule: RDModule): void {
     this.rGroupIdToAtomicIndexMap.forEach((atomicIdx, rGroupId) => {
-      const info = capGroupInfo[rGroupId - 1];
+      const info = capGroupInfo.find((info) => info.rGroupId === rGroupId) ?? capGroupInfo[rGroupId - 1];
       if (info.isSimple) {
         if (info.element === HYDROGEN_SYMBOL) {
           this.removeRGroups([rGroupId]);
           this.deleteBondLineWithSpecifiedRGroup(rGroupId);
         } else
           this.atoms.replaceRGroupSymbolByElement(atomicIdx, info.element);
-      } else {
+      } else
         this.capWithComplexGroup(atomicIdx, info.smiles, rdKitModule);
-      }
     });
   }
 

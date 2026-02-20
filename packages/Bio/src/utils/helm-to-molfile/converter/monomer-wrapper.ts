@@ -73,14 +73,23 @@ export class MonomerWrapper {
     libraryMonomerObject: Monomer
   ): CapGroupInfo[] {
     const rgroups = libraryMonomerObject.rgroups;
-    return rgroups.map((rgroup) => {
+    return rgroups.map((rgroup, ind) => {
       const smiles = rgroup[HELM_RGROUP_FIELDS.CAP_GROUP_SMILES] ||
         // WARNING: ignore because both key variants coexist in HELM Core Library!
         // @ts-ignore
         rgroup[HELM_RGROUP_FIELDS.CAP_GROUP_SMILES_UPPERCASE];
+      let rgroupId = rgroup[HELM_RGROUP_FIELDS.LABEL][1];
+      if (!rgroupId || !parseInt(rgroupId) || isNaN(parseInt(rgroupId))) {
+        // try to parse it from smiles, which can look like '[H][*:1]', 'O[*:2]', 'C=C[*:3]'
+        const match = smiles?.match(/\[\*:(\d)\]/);
+        if (match && match[1])
+          rgroupId = match[1];
+      }
+      if (!rgroupId || !parseInt(rgroupId) || isNaN(parseInt(rgroupId)))
+        rgroupId = `${ind + 1}`; // fallback to index-based id, starting from 1
       // extract the element symbol
       const element = smiles.replace(/(\[|\]|\*|:|\d)/g, '');
-      return {element, smiles, isSimple: isSimpleElement(element)};
+      return {element, smiles, isSimple: isSimpleElement(element), rGroupId: parseInt(rgroupId)};
     });
   }
 
