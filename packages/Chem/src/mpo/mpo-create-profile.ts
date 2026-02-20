@@ -257,24 +257,24 @@ export class MpoProfileCreateView {
 
     if (this.methodInput) {
       hints.push({
-        element: this.methodInput.root,
+        element: this.methodInput.input,
         text: 'Choose between manual desirability curve editing and probabilistic MPO trained from labeled data.',
-        position: ui.hints.POSITION.LEFT,
+        position: ui.hints.POSITION.RIGHT,
       });
     }
 
     hints.push(
       {
-        element: this.datasetInput!.root,
+        element: this.datasetInput!.input,
         text: 'Optionally load a dataset to preview desirability scores in real-time as you edit the profile. ' +
           'Numerical columns will be automatically mapped to profile properties.',
-        position: ui.hints.POSITION.LEFT,
+        position: ui.hints.POSITION.RIGHT,
       },
       {
-        element: this.aggregationInput!.root,
+        element: this.aggregationInput!.input,
         text: 'Choose how individual property scores combine into the final MPO score. ' +
           'Enabled when a dataset is loaded.',
-        position: ui.hints.POSITION.LEFT,
+        position: ui.hints.POSITION.RIGHT,
       },
     );
 
