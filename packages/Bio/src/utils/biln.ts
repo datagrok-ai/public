@@ -6,7 +6,7 @@ import * as DG from 'datagrok-api/dg';
 
 /* eslint-disable max-len */
 import {ISeqHelper} from '@datagrok-libraries/bio/src/utils/seq-helper';
-import {INotationProvider, SplitterFunc} from '@datagrok-libraries/bio/src/utils/macromolecule/types';
+import {INotationProvider, NotationProviderBase, SplitterFunc} from '@datagrok-libraries/bio/src/utils/macromolecule/types';
 import {NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule/consts';
 import {CellRendererBackBase} from '@datagrok-libraries/bio/src/utils/cell-renderer-back-base';
 import {MonomerPlacer} from '@datagrok-libraries/bio/src/utils/cell-renderer-monomer-placer';
@@ -14,16 +14,24 @@ import {monomerToShort, splitterAsBiln} from '@datagrok-libraries/bio/src/utils/
 import {_package} from '../package';
 /* eslint-enable max-len */
 
-export class BilnNotationProvider implements INotationProvider {
+export class BilnNotationProvider extends NotationProviderBase implements INotationProvider {
   public readonly splitter: SplitterFunc;
 
   get defaultGapOriginal(): string { return ''; }
 
+  static override get notationName(): string { return NOTATION.BILN; }
+
+  static override get implementsFromHelm(): boolean { return false; }
+
+  static override convertFromHelm(helm: string, options: any): string {
+    throw new Error('Canonical way of converting from helm to biln must be used');
+  }
   constructor(
     public readonly separator: string,
     public readonly seqHelper: ISeqHelper,
     public readonly seqCol: DG.Column
   ) {
+    super();
     this.splitter = splitterAsBiln.bind(this);
   }
 

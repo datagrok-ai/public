@@ -1,3 +1,4 @@
+/* eslint-disable max-len */
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
@@ -7,6 +8,7 @@ import {Subscription} from 'rxjs';
 
 import {NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';
 import {ISeqHelper} from '@datagrok-libraries/bio/src/utils/seq-helper';
+import {NotationProviderBase} from '@datagrok-libraries/bio/src/utils/macromolecule/types';
 
 
 let convertDialog: DG.Dialog | null = null;
@@ -18,7 +20,7 @@ let convertDialogSubs: Subscription[] = [];
  * @param {DG.Column<string>} col Column with 'Macromolecule' semantic type
  * @param {ISeqHelper} seqHelper
  */
-export function convert(col: DG.Column<string> | undefined, seqHelper: ISeqHelper): void {
+export async function convert(col: DG.Column<string> | undefined, seqHelper: ISeqHelper): Promise<void> {
   let srcCol = col ?? grok.shell.t.columns.bySemType('Macromolecule')!;
   if (!srcCol)
     throw new Error('No column with Macromolecule semantic type found');
@@ -41,6 +43,9 @@ export function convert(col: DG.Column<string> | undefined, seqHelper: ISeqHelpe
     NOTATION.HELM,
     NOTATION.BILN
   ];
+
+  const notationProviderConstructors = await NotationProviderBase.getProviderConstructors();
+
   const toggleColumn = (newCol: DG.Column) => {
     srcCol = newCol;
     converterSh = seqHelper.getSeqHandler(srcCol);
@@ -51,6 +56,13 @@ export function convert(col: DG.Column<string> | undefined, seqHelper: ISeqHelpe
     filteredNotations = notations.filter((e) => e !== currentNotation);
     if (currentNotation === NOTATION.CUSTOM)
       filteredNotations = [NOTATION.HELM];
+    if (currentNotation === NOTATION.HELM) {
+      // add custom notations that
+      notationProviderConstructors.forEach((c) => {
+        if (c.implementsFromHelm)
+          filteredNotations.unshift(c.notationName as NOTATION); // hack :)
+      });
+    }
     targetNotationInput = ui.input.choice('Convert to', {
       value: filteredNotations[0], items: filteredNotations,
       onValueChanged: toggleSeparator
@@ -76,6 +88,13 @@ export function convert(col: DG.Column<string> | undefined, seqHelper: ISeqHelpe
   let filteredNotations = notations.filter((e) => e !== currentNotation);
   if (currentNotation === NOTATION.CUSTOM)
     filteredNotations = [NOTATION.HELM];
+  if (currentNotation === NOTATION.HELM) {
+    // add custom notations that
+    notationProviderConstructors.forEach((c) => {
+      if (c.implementsFromHelm)
+        filteredNotations.unshift(c.notationName as NOTATION); // hack :)
+    });
+  }
 
   const separatorInput = ui.input.choice('Separator', {value: separatorArray[0], items: separatorArray});
 
@@ -109,8 +128,11 @@ export function convert(col: DG.Column<string> | undefined, seqHelper: ISeqHelpe
       .onOK(async () => {
         const targetNotation = targetNotationInput.value as NOTATION;
         const separator: string | undefined = targetNotation === NOTATION.SEPARATOR ? separatorInput.value! : undefined;
+        let notationProviderConstructor: typeof NotationProviderBase | undefined = undefined;
+        if (!notations.includes(targetNotation) && notationProviderConstructors.find((c) => c.notationName === targetNotation))
+          notationProviderConstructor = notationProviderConstructors.find((c) => c.notationName === targetNotation)!;
 
-        await convertDo(srcCol, seqHelper, targetNotation, separator);
+        await convertDo(srcCol, seqHelper, targetNotation, separator, notationProviderConstructor);
       })
       .show({x: 350, y: 100});
 
@@ -127,18 +149,38 @@ export function convert(col: DG.Column<string> | undefined, seqHelper: ISeqHelpe
  * @param {NOTATION} targetNotation Target notation
  * @param {string | null} separator Separator for SEPARATOR notation
  */
-export async function convertDo(srcCol: DG.Column, seqHelper: ISeqHelper, targetNotation: NOTATION, separator?: string): Promise<DG.Column> {
-  const converterSh = seqHelper.getSeqHandler(srcCol);
-  const newColumn = converterSh.convert(targetNotation, separator);
-  srcCol.dataFrame.columns.add(newColumn);
+export async function convertDo(srcCol: DG.Column, seqHelper: ISeqHelper, targetNotation: NOTATION, separator?: string, notationProviderConstructor?: typeof NotationProviderBase): Promise<DG.Column> {
+  if (notationProviderConstructor) {
+    const newColName = srcCol.dataFrame.columns.getUnusedName(`${notationProviderConstructor.notationName}(${srcCol.name})`);
+    const newCol = DG.Column.string(newColName, srcCol.length);
+    newCol.init((i) => {
+      const seq = srcCol.get(i);// we know for sure (in Macron accent) that it is helm
+      try {
+        return notationProviderConstructor.convertFromHelm(seq, {});
+      } catch (e) {
+        console.error(`Error converting sequence at row ${i}: ${e instanceof Error ? e.message : e}`);
+        return '';
+      }
+    });
+    srcCol.dataFrame.columns.add(newCol);
+    const semType = await grok.functions.call('Bio:detectMacromolecule', {col: newCol});
+    if (semType)
+      newCol.semType = semType;
+    await grok.data.detectSemanticTypes(srcCol.dataFrame);
+    return newCol;
+  } else {
+    const converterSh = seqHelper.getSeqHandler(srcCol);
+    const newColumn = converterSh.convert(targetNotation, separator);
+    srcCol.dataFrame.columns.add(newColumn);
 
-  // Call detector directly to escape some error on detectSemanticTypes
-  const semType = await grok.functions.call('Bio:detectMacromolecule', {col: newColumn});
-  if (semType)
-    newColumn.semType = semType;
+    // Call detector directly to escape some error on detectSemanticTypes
+    const semType = await grok.functions.call('Bio:detectMacromolecule', {col: newColumn});
+    if (semType)
+      newColumn.semType = semType;
 
-  // call to calculate 'cell.renderer' tag
-  await grok.data.detectSemanticTypes(srcCol.dataFrame);
+    // call to calculate 'cell.renderer' tag
+    await grok.data.detectSemanticTypes(srcCol.dataFrame);
 
-  return newColumn;
+    return newColumn;
+  }
 }
