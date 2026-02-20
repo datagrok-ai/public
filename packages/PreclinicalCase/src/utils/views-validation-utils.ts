@@ -3,6 +3,7 @@ import * as DG from 'datagrok-api/dg';
 import * as sdtmCols from '../constants/columns-constants';
 import {updateDivInnerHTML} from './utils';
 import {Subscription} from 'rxjs';
+import {VariableError} from '../types/validation-result';
 
 const ERROR_ICON_SIZE = 9;
 const ERROR_ICON_MARGIN = 2;
@@ -36,10 +37,13 @@ export function setupValidationErrorColumns(df: DG.DataFrame) {
   df.setTag(COLUMNS_WITH_VALIDATION_ERRORS_TAG, JSON.stringify(columnsWithErrors));
 }
 
+const ERROR_COLOR = '#dc3545';
+const CONTEXT_COLOR = '#6c757d';
+
 let currentErrorCell: {
     tableColName: string,
     tableRowIndex: number,
-    errors: Array<{ruleID: string, message: string, value: string}>,
+    errors: VariableError[],
     iconX: number,
     iconY: number,
     iconRight: number,
@@ -76,7 +80,7 @@ export function setupValidationErrorIndicators(grid: DG.Grid, df: DG.DataFrame, 
 
     if (hasErrors) {
       const errorsStr = errorsCol.get(tableRowIndex);
-      let errors: Array<{ruleID: string, message: string, value: string}> = [];
+      let errors: VariableError[] = [];
       if (errorsStr) {
         try {
           errors = JSON.parse(errorsStr);
@@ -109,17 +113,21 @@ export function setupValidationErrorIndicators(grid: DG.Grid, df: DG.DataFrame, 
       const iconX = bounds.x + bounds.width - iconSize - margin;
       const iconY = bounds.y + margin;
 
-      g.strokeStyle = '#dc3545';
+      const hasActualErrors = errors.some((e) => !e.isContext);
+      const color = hasActualErrors ? ERROR_COLOR : CONTEXT_COLOR;
+      const symbol = hasActualErrors ? '!' : 'i';
+
+      g.strokeStyle = color;
       g.lineWidth = 1;
       g.beginPath();
       g.arc(iconX + iconSize / 2, iconY + iconSize / 2, iconSize / 2 - 0.5, 0, 2 * Math.PI);
       g.stroke();
 
-      g.fillStyle = '#dc3545';
+      g.fillStyle = color;
       g.font = 'bold 6px Arial';
       g.textAlign = 'center';
       g.textBaseline = 'middle';
-      g.fillText('!', iconX + iconSize / 2, iconY + iconSize / 2 + 0.5);
+      g.fillText(symbol, iconX + iconSize / 2, iconY + iconSize / 2 + 0.5);
 
       g.restore();
     }
@@ -142,7 +150,7 @@ export function setupValidationErrorIndicators(grid: DG.Grid, df: DG.DataFrame, 
     }
 
     const errorsStr = errorsCol.get(cell.tableRowIndex!);
-    let errors: Array<{ruleID: string, message: string, value: string}> = [];
+    let errors: VariableError[] = [];
     if (errorsStr) {
       try {
         errors = JSON.parse(errorsStr);
@@ -204,13 +212,14 @@ export function handleMouseMoveOverErrorCell(e: MouseEvent) {
 }
 
 export function createColumnValidationTooltip(
-  errors: Array<{ruleID: string, message: string, value: string}>,
+  errors: VariableError[],
 ): HTMLElement | string {
   if (!errors || errors.length === 0)
     return 'No validation errors';
 
   const tooltipDiv = ui.div([], {style: {maxWidth: '400px'}});
-  errors.forEach((error, index) => {
+  for (let index = 0; index < errors.length; index++) {
+    const error = errors[index];
     const errorDiv = ui.div([],
       {style: {
         marginBottom: '8px',
@@ -218,28 +227,31 @@ export function createColumnValidationTooltip(
         borderBottom: index < errors.length - 1 ? '1px solid var(--grey-2)' : 'none',
       }});
 
-    const ruleIdDiv = ui.div([
+    const typeLabel = error.isContext ? 'Referenced by rule' : 'Error';
+    const typeColor = error.isContext ? CONTEXT_COLOR : ERROR_COLOR;
+    errorDiv.append(ui.div([
+      ui.span([typeLabel], {style: {fontWeight: 'bold', color: typeColor, fontSize: '11px'}}),
+    ]));
+
+    errorDiv.append(ui.div([
       ui.span(['Rule ID: '], {style: {fontWeight: 'bold'}}),
       ui.span([error.ruleID]),
-    ]);
-    errorDiv.append(ruleIdDiv);
+    ]));
 
-    const messageDiv = ui.div([
+    errorDiv.append(ui.div([
       ui.span(['Message: '], {style: {fontWeight: 'bold'}}),
       ui.span([error.message]),
-    ]);
-    errorDiv.append(messageDiv);
+    ]));
 
     if (error.value) {
-      const valueDiv = ui.div([
+      errorDiv.append(ui.div([
         ui.span(['Value: '], {style: {fontWeight: 'bold'}}),
         ui.span([error.value]),
-      ]);
-      errorDiv.append(valueDiv);
+      ]));
     }
 
     tooltipDiv.append(errorDiv);
-  });
+  }
 
   return tooltipDiv;
 }

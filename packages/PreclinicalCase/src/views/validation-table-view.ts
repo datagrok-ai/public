@@ -57,7 +57,7 @@ export function createValidationView(studyId: string): StudyTableViewParams {
       currentDomainDf = null;
     } else {
       const domain: string = issueSummaryDf!.get('dataset', issueSummaryDf!.currentRowIdx);
-      const domainWithoutExtension = domain.replace('.xpt', '').replace('.csv', '');
+      const domainWithoutExtension = domain.toLowerCase().replace('.xpt', '').replace('.csv', '');
       let domainDf: DG.DataFrame | null = null;
       if (domainWithoutExtension.startsWith('supp')) {
         const domainIdx = studies[studyId].domains.supp.findIndex((it) => it.name === domainWithoutExtension);
