@@ -135,18 +135,9 @@ export async function showMonomerSelectionDialog(
         }
 
         const menuRoot = document.querySelector('.d4-menu-popup:last-of-type');
-        if (menuRoot) {
+        if (menuRoot)
           menuItems = Array.from(menuRoot.querySelectorAll('.d4-menu-item')) as HTMLElement[];
-          menuItems.forEach((item) => {
-            item.addEventListener('mouseenter', () => {
-              const symbol = item.textContent?.split(' - ')[0] ?? '';
-              if (!symbol)
-                return;
-              const tooltip = monomerLib.getTooltip(helmType, symbol);
-              ui.tooltip.show(tooltip, item.getBoundingClientRect().right + 10, item.getBoundingClientRect().bottom + 16);
-            });
-          });
-        }
+
         highlightedIndex = -1;
       }, 0);
     }
