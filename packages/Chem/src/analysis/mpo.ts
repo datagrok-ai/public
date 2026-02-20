@@ -74,14 +74,14 @@ export class MpoProfileDialog {
 
   async init(): Promise<void> {
     this.mpoProfiles = await MpoProfileManager.load();
-    this.suitableProfileNames = findSuitableProfiles(this.dataFrame, this.mpoProfiles).map((p) => p.fileName);
+    this.suitableProfileNames = findSuitableProfiles(this.dataFrame, this.mpoProfiles).map((p) => p.name);
 
-    this.profileInput.items = this.mpoProfiles.map((p) => p.fileName);
+    this.profileInput.items = this.mpoProfiles.map((p) => p.name);
     requestAnimationFrame(() => this.highlightSuitableProfiles(this.suitableProfileNames));
 
     const defaultProfile = this.suitableProfileNames.length > 0 ?
       this.suitableProfileNames[0] :
-      this.mpoProfiles[0]?.fileName ?? null;
+      this.mpoProfiles[0]?.name ?? null;
 
     if (defaultProfile) {
       this.profileInput.value = defaultProfile;
@@ -121,15 +121,15 @@ export class MpoProfileDialog {
     }));
   }
 
-  private async loadProfile(fileName: string | null): Promise<void> {
-    if (!fileName)
+  private async loadProfile(profileName: string | null): Promise<void> {
+    if (!profileName)
       return;
 
-    const profileInfo = this.mpoProfiles.find((p) => p.fileName === fileName);
+    const profileInfo = this.mpoProfiles.find((p) => p.name === profileName);
     if (!profileInfo)
       return;
 
-    this.currentProfileFileName = fileName;
+    this.currentProfileFileName = profileInfo.fileName;
     this.currentProfile = structuredClone(profileInfo);
     this.mpoProfileEditor.setProfile(this.currentProfile);
     this.originalProfile = structuredClone(this.currentProfile);
