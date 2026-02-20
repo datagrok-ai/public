@@ -634,14 +634,15 @@ export class MonomerManager implements IMonomerManager {
 function substituteCapsWithRGroupsSmiles(smiles: string, rGroups: RGroup[]) {
   let newSmiles = smiles;
   // first substitute all caps with R-groups with corresponding numbers
+  // like
   rGroups.forEach((rGroup) => {
     const RNum = rGroup.label[1] ?? '1';
-    const capRegex = new RegExp(`\\[\\${rGroup.capGroupName}:${RNum}\\]`, 'g');
-    newSmiles = newSmiles.replace(capRegex, `[*:${RNum}]`);
+    newSmiles = newSmiles.replace(`[${rGroup.capGroupName}:${RNum}]`, `[*:${RNum}]`);
   });
   // during some conversions atoms can end up as isotops in smiles string like this [2O]
 
   // replace all [2O] with [*:2], there can be also two atoms like [2OH] -> [*:2]
+  // for searching purposes: 'ISO'
   const isotopeRegex = /\[\d[A-Z]{1,2}\]/g;
   newSmiles = newSmiles.replaceAll(isotopeRegex, (match) => {
     const rGroupNum = match[1];
@@ -1355,6 +1356,26 @@ function correctRGroupsSmiles(rgroups: RGroup[]) {
       setCaseInvariantValue(rg, HELM_RGROUP_FIELDS.CAP_GROUP_SMILES_UPPERCASE, replaceAtomMapping(capGroupSmiles, Number.parseInt(rGroupNum)));
     else if (`[${capGroupSmiles}]`.match(atomLabeledSmilesRegex)?.[0].length === capGroupSmiles.length + 2) // case 5: O:2 -> O[*:2], no brackets at all
       setCaseInvariantValue(rg, HELM_RGROUP_FIELDS.CAP_GROUP_SMILES_UPPERCASE, replaceAtomMapping(`[${capGroupSmiles}]`, Number.parseInt(rGroupNum)));
+  });
+  // finally, there is a case of incorrectly written r group smiles, we can see cases like this:
+  /**
+   * {
+        "alternateId": "R3-Br",
+        "capGroupName": "Br",
+        "capGroupSMILES": "[*:3]",
+        "label": "R3"
+      }
+   */
+  rgroups.forEach((rg) => {
+    const capGroupSmiles = getCaseInvariantValue(rg, HELM_RGROUP_FIELDS.CAP_GROUP_SMILES_UPPERCASE)!;
+    const match = capGroupSmiles.match(/\[\*\:?(\d+)\]/);
+    if (match) {
+      const rGroupSmiles = match[0];
+      if (capGroupSmiles === rGroupSmiles) {
+        // if cap group smiles is exactly the same as r group smiles, it is likely that r group smiles were written in wrong way
+        setCaseInvariantValue(rg, HELM_RGROUP_FIELDS.CAP_GROUP_SMILES_UPPERCASE, `${getCaseInvariantValue(rg, HELM_RGROUP_FIELDS.CAP_GROUP_NAME)}${capGroupSmiles}`);
+      }
+    }
   });
 }
 
