@@ -1,5 +1,17 @@
 import * as DG from 'datagrok-api/dg';
 
+// Re-export shared compute-function types from the statistics library
+export type {TemplateFunction, TemplateScript, ComputeQuery, TemplateCompute,
+  ComputeFunctions, IComputeDialogResult, IFunctionArgs,
+  IDescriptorTree, Descriptor, IChemFunctionsDialogResult} from '@datagrok-libraries/statistics/src/compute-functions/types';
+import type {TemplateFunction, TemplateScript, TemplateCompute} from '@datagrok-libraries/statistics/src/compute-functions/types';
+
+// Backward-compatible aliases
+export type HitTriageTemplateFunction = TemplateFunction;
+export type HitTriageTemplateScript = TemplateScript;
+export type HitTriageComputeQuery = TemplateScript & { inputName: string };
+export type HitTriageTemplateCompute = TemplateCompute;
+
 export type AppName = keyof CampaignsType;
 
 export type CampaignsType = {
@@ -8,54 +20,10 @@ export type CampaignsType = {
     'PeptiHit': HitDesignCampaign,
 }
 
-export type IDescriptorTree = {
-    [key: string]: {
-      descriptors: Array<Descriptor>,
-    } & Descriptor;
-}
-
-export type Descriptor = {
-    name: string,
-    description: string,
-};
-
-export type IFunctionArgs<T = any> = {
-    [key: string]: T,
-}
-
-export type HitTriageTemplateFunction = {
-    package: string,
-    name: string,
-    args: IFunctionArgs,
-}
-
-export type HitTriageTemplateScript = {
-    name: string,
-    args: IFunctionArgs,
-    id: string,
-}
-
-export type HitTriageComputeQuery = HitTriageTemplateScript & {
-    inputName: string,
-}
-
-export type IComputeDialogResult = {
-    descriptors: string[],
-    externals: {
-        [_: string]: IFunctionArgs
-    },
-    scripts?: {
-        [_: string]: IFunctionArgs
-    }
-    queries?: {
-        [_: string]: IFunctionArgs
-    }
-}
-
 export type HitTriageTemplate = {
     name: string,
     key: string,
-    compute: HitTriageTemplateCompute,
+    compute: TemplateCompute,
     submit?: HitTriageTemplateSubmit,
     campaignFields: HitTriageCampaignField[],
     dataSourceType: IngestType,
@@ -84,16 +52,6 @@ export type HitTriageTemplateIngest = {
     type: IngestType,
     query: string,
     molColName: string,
-};
-
-export type HitTriageTemplateCompute = {
-    descriptors: {
-        enabled: boolean,
-        args: string[],
-    }
-    functions: HitTriageTemplateFunction[],
-    scripts?: HitTriageTemplateScript[],
-    queries?: HitTriageTemplateScript[],
 };
 
 export type HitTriageTemplateSubmit = {
@@ -132,11 +90,6 @@ export type TriagePermissions = {
     view: string[],
 };
 
-export type IChemFunctionsDialogResult = {
-    okProxy: () => void,
-    root: HTMLElement,
-};
-
 export type INewTemplateResult<T> = {
     template: Promise<T>,
     root: HTMLElement,
@@ -152,9 +105,3 @@ export type HitDesignCampaign = Omit<HitTriageCampaign, 'filters' | 'ingest'> & 
 
 // todo: probably add some more stuff
 export type PeptiHitTemplate = HitDesignTemplate & {toAtomiLevelProps?: {[key: string]: any}}
-
-export type ComputeFunctions = {
-    functions: DG.Func[],
-    scripts: DG.Script[],
-    queries: DG.DataQuery[],
-};

@@ -4,7 +4,8 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {_package} from '../package';
 import {AppName, ComputeFunctions, HitDesignCampaign, HitTriageCampaign} from './types';
-import {funcTypeNames, HitTriageComputeFunctionTag, ViDColName} from './consts';
+import {HitTriageComputeFunctionTag, ViDColName} from './consts';
+import {discoverComputeFunctions} from '@datagrok-libraries/statistics/src/compute-functions/discovery';
 import {checkEditPermissions} from './utils';
 import * as api from '../package-api';
 
@@ -30,11 +31,7 @@ export abstract class HitAppBase<T> {
   constructor(public parentCall: DG.FuncCall, appN: AppName) {
     this.baseUrl = new URL(window.location.href).origin + `/apps/HitTriage/${appN.replace(' ', '')}`;
     this._appName = appN;
-    const funcs = Array.from(new Set(DG.Func.find({meta: {role: HitTriageComputeFunctionTag}}).concat(DG.Func.find({tags: [HitTriageComputeFunctionTag]}))));
-    const functions = funcs.filter((f) => f.type === funcTypeNames.function);
-    const scripts = funcs.filter((f) => f.type === funcTypeNames.script) as DG.Script[];
-    const queries = funcs.filter((f) => f.type === funcTypeNames.query) as DG.DataQuery[];
-    this.computeFunctions = {functions, scripts, queries};
+    this.computeFunctions = discoverComputeFunctions(HitTriageComputeFunctionTag);
 
     // this.layouts = new Promise<DG.ViewLayout[]>(async (resolve) => {
     //   // we need all layouts, as applicable ones might not be enaugh

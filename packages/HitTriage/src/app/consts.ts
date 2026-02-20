@@ -1,5 +1,8 @@
 import type {HitDesignCampaign} from './types';
 
+// Re-export shared compute-function constants from the statistics library
+export {funcTypeNames, HTScriptPrefix, HTQueryPrefix, ComputeQueryMolColName} from '@datagrok-libraries/statistics/src/compute-functions/consts';
+
 export const CampaignIdKey = 'campaignId';
 export const HitDesignCampaignIdKey = 'campaignId';
 export const CampaignTableName = 'enriched_table.csv';
@@ -16,9 +19,6 @@ export const ViDColName = 'V-iD';
 export const ViDSemType = 'HIT_DESIGN_VID';
 export const HTcampaignName = 'HTcampaignName';
 export const HDcampaignName = 'HDcampaignName';
-export const HTScriptPrefix = 'HTScript';
-export const HTQueryPrefix = 'HTQuery';
-export const ComputeQueryMolColName = 'molecules';
 export const i18n = {
   startNewCampaign: 'New Campaign',
   createNewCampaign: 'New Campaign',
@@ -33,12 +33,6 @@ export const i18n = {
   createNewCampaignHeader: 'New Campaign',
   selectTemplate: 'Template',
   noInformation: 'No Information',
-} as const;
-
-export const funcTypeNames = {
-  script: 'script',
-  function: 'function-package',
-  query: 'data-query',
 } as const;
 
 export const HDCampaignsGroupingLSKey = 'HDCampaignsGrouping';

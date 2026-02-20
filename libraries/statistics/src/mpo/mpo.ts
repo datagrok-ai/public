@@ -1,6 +1,7 @@
 /* eslint-disable guard-for-in */
 /* eslint-disable max-len */
 import * as DG from 'datagrok-api/dg';
+import {TemplateFunction} from '../compute-functions/types';
 
 /// An array of [x, y] points representing the desirability line
 /// [x, y] pairs are sorted by x in ascending order
@@ -11,6 +12,7 @@ export type DesirabilityMode = 'freeform' | 'gaussian' | 'sigmoid';
 type BasePropertyDesirability = {
   weight: number; /// 0-1
   defaultScore?: number;
+  function?: TemplateFunction;
 }
 
 export type NumericalDesirability = BasePropertyDesirability & {

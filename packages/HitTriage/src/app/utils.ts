@@ -3,9 +3,46 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {Subscription} from 'rxjs';
-import {CampaignGrouping, CampaignGroupingType, CampaignJsonName, CampaignTableColumns, ComputeQueryMolColName, DefaultCampaignTableInfoGetters, HDCampaignsGroupingLSKey, HDCampaignsTableSortingLSKey, HDCampaignTableColumnsLSKey, HTFunctionOrderingLSKey, i18n} from './consts';
+import {CampaignGrouping, CampaignGroupingType, CampaignJsonName, CampaignTableColumns, DefaultCampaignTableInfoGetters, HDCampaignsGroupingLSKey, HDCampaignsTableSortingLSKey, HDCampaignTableColumnsLSKey, HTFunctionOrderingLSKey, i18n} from './consts';
 import {AppName, CampaignsType, HitDesignCampaign, HitTriageCampaign, TriagePermissions} from './types';
 import {_package} from '../package';
+
+// Re-export shared compute-function utilities from the statistics library
+export {joinQueryResults, getFuncPackageNameSafe} from '@datagrok-libraries/statistics/src/compute-functions/utils';
+export type {FunctionOrdering} from '@datagrok-libraries/statistics/src/compute-functions/utils';
+import {
+  getSavedFunctionOrdering as _getSavedFunctionOrdering,
+  setSavedFunctionOrdering as _setSavedFunctionOrdering,
+  getReorderingInput as _getReorderingInput,
+} from '@datagrok-libraries/statistics/src/compute-functions/utils';
+import type {FunctionOrdering} from '@datagrok-libraries/statistics/src/compute-functions/utils';
+
+// Wrappers that bind the HitTriage-specific localStorage key
+export function getSavedFunctionOrdering(): FunctionOrdering {
+  return _getSavedFunctionOrdering(HTFunctionOrderingLSKey);
+}
+
+export function setSavedFunctionOrdering(ordering: FunctionOrdering) {
+  _setSavedFunctionOrdering(ordering, HTFunctionOrderingLSKey);
+}
+
+export function getReorderingInput(functions: string[], onOk: (ordering: FunctionOrdering) => void) {
+  return _getReorderingInput(functions, onOk, HTFunctionOrderingLSKey);
+}
+
+export function getReorderedFunctionTabArgs(args: {[key: string]: HTMLElement}) {
+  const ordering = getSavedFunctionOrdering();
+  const orderedArgs: {[key: string]: HTMLElement} = {};
+  for (const key of ordering.order) {
+    if (args[key])
+      orderedArgs[key] = args[key];
+  }
+  for (const key in args) {
+    if (!orderedArgs[key] && !ordering.hidden.includes(key))
+      orderedArgs[key] = args[key];
+  }
+  return orderedArgs;
+}
 
 export const toFormatedDateString = (d: Date): string => {
   return `${d.getFullYear()}/${d.getMonth() + 1}/${d.getDate()}`;
@@ -114,23 +151,6 @@ export async function runAsync<T>(root: HTMLElement, func: () => Promise<T>) {
     ui.setUpdateIndicator(root, false);
   }
 }
-
-export async function joinQueryResults(df: DG.DataFrame, molColName: string, qRes: DG.DataFrame) {
-  if (qRes.rowCount === 0)
-    return;
-  const molCol = df.col(molColName);
-  if (!molCol)
-    throw new Error('There is no molecule column in dataframe');
-  let resOriginalCol = qRes.col(ComputeQueryMolColName);
-  if (!resOriginalCol) {
-    await qRes.meta.detectSemanticTypes();
-    resOriginalCol = qRes.columns.bySemType(DG.SEMTYPE.MOLECULE);
-  }
-  if (!resOriginalCol)
-    throw new Error('There is no original molecule column in query result dataframe');
-  const newColNames = qRes.columns.names().filter((name) => name !== ComputeQueryMolColName);
-  df.join(qRes, [molColName], [resOriginalCol.name], undefined, newColNames, undefined, true);
-};
 
 export async function loadCampaigns<T extends AppName>(
   appName: T, deletedCampaigns: string[],
@@ -456,108 +476,6 @@ export function timeoutOneTimeEventListener(element: HTMLElement, eventName: str
 //   df.name = 'Reinvent Design';
 //   return df;
 // }
-
-// #region Function ordering
-
-export type FunctionOrdering = {
-  order: string[],
-  hidden: string[]
-}
-
-export function getSavedFunctionOrdering(): FunctionOrdering {
-  const orderingString = getLocalStorageValue<string>(HTFunctionOrderingLSKey) ?? '{}';
-  try {
-    const orderingP = JSON.parse(orderingString);
-    const ordering: FunctionOrdering = {
-      order: orderingP?.order ?? [],
-      hidden: orderingP?.hidden ?? [],
-    };
-    return ordering;
-  } catch (e) {
-    console.error('error parsing function ordering', e);
-  }
-  return {order: [], hidden: []};
-}
-
-export function setSavedFunctionOrdering(ordering: FunctionOrdering) {
-  setLocalStorageValue(HTFunctionOrderingLSKey, JSON.stringify(ordering));
-}
-
-export function getReorderedFunctionTabArgs(args: {[key: string]: HTMLElement}) {
-  const ordering = getSavedFunctionOrdering();
-  const orderedArgs: {[key: string]: HTMLElement} = {};
-  for (const key of ordering.order) {
-    if (args[key])
-      orderedArgs[key] = args[key];
-  }
-  for (const key in args) {
-    if (!orderedArgs[key] && !ordering.hidden.includes(key))
-      orderedArgs[key] = args[key];
-  }
-  return orderedArgs;
-}
-
-export function getReorderingInput(functions: string[], onOk: (ordering: FunctionOrdering) => void) {
-  const order = getSavedFunctionOrdering();
-  const dataFrame = DG.DataFrame.fromColumns(functions.map((f) => DG.Column.fromStrings(f, [f])));
-  dataFrame.columns.setOrder(order.order ?? []);
-  const columnsEditor = ui.input.columns('reorder', {table: dataFrame, value: dataFrame.columns.toList().filter((c) => !order.hidden.includes(c.name))});
-  columnsEditor.onChanged.subscribe(() => {
-    try {
-      const chosenColumns = columnsEditor.value.map((c) => c.name);
-      const hiddenColumns = functions.filter((f) => !chosenColumns.includes(f));
-      const newOrdering = {
-        order: columnsEditor.value.map((c) => c.name),
-        hidden: hiddenColumns,
-      };
-      dataFrame.columns.setOrder(newOrdering.order);
-      setSavedFunctionOrdering(newOrdering);
-      onOk(newOrdering);
-    } catch (e) {
-      console.error(e);
-    }
-  });
-
-  const children = Array.from(columnsEditor.root.children) as HTMLElement[];
-  setTimeout(() => {
-    children.forEach((child) => {
-      child.style.maxWidth = '0px';
-      child.style.overflow = 'hidden';
-      child.style.padding = '0px';
-      child.style.paddingRight = '0px';
-      child.style.visibility = 'hidden';
-      if (child instanceof HTMLLabelElement)
-        child.style.display = 'none';
-    });
-  }, 200);
-  columnsEditor.root.style.justifyContent = 'end';
-  columnsEditor.root.style.width = '40px';
-  columnsEditor.root.style.height = '0px';
-  columnsEditor.root.style.overflow = 'visible';
-  columnsEditor.root.style.padding = '0px';
-
-
-  const editIcon = ui.icons.edit(() => {
-    children.forEach((child) => {
-      child.click();
-    });
-  }, 'Order or hide functions');
-
-  columnsEditor.addOptions(editIcon);
-  (Array.from(columnsEditor.root.children) as HTMLElement[]).forEach((child) => {
-    child.style.borderBottom = 'unset';
-  });
-  editIcon.style.fontSize = '16px';
-  return columnsEditor.root;
-}
-
-export function getFuncPackageNameSafe(func: DG.Func): string | undefined {
-  try {
-    return func.package?.name;
-  } catch (e) {
-    return undefined;
-  }
-}
 
 export function isNil(something: any) {
   return something === '' || something === null || something === undefined || (typeof something == 'number' && isNaN(something));
