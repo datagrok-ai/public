@@ -1205,12 +1205,24 @@ export function findLastIndex<T>(ar: ArrayLike<T>, pred: (el: T) => boolean): nu
   return foundIdx;
 }
 
+function replaceAllylsInSmiles(smiles: string): string {
+  // OG smiles can include something like [Allyl:3], which is invalid smiles and needs to be replaced with [*:3]
+  // number is single digit
+  const allylRegex = /\[Allyl\:\d\]/g;
+  return smiles.replaceAll(allylRegex, (match) => {
+    const rGroupNum = match[match.length - 2];
+    return `[*:${rGroupNum}]`;
+  });
+}
+
 /**NB! Can throw error */
 function getCorrectedSmiles(rgroups: RGroup[], smiles?: string, molBlock?: string): string {
+  if (smiles)
+    smiles = replaceAllylsInSmiles(smiles);
   const isSmilesMalformed = !smiles || !grok.chem.checkSmiles(smiles);
   if ((isSmilesMalformed) && !molBlock) throw new Error('Both SMILES and MOL block are empty or malformed');
 
-  let canonical = isSmilesMalformed ? grok.chem.convert(molBlock!, DG.chem.Notation.Unknown, DG.chem.Notation.Smiles) : smiles;
+  let canonical = isSmilesMalformed ? grok.chem.convert(molBlock!, DG.chem.Notation.Unknown, DG.chem.Notation.Smiles) : smiles!;
 
   canonical = substituteCapsWithRGroupsSmiles(canonical, rgroups);
   canonical = fixRGroupsAsElementsSmiles(canonical);
@@ -1223,15 +1235,23 @@ export function getCorrectedMolBlock(molBlock: string) {
   // 1. RGP field is present at the end, before the M END line
   // 2. RGP field is present in the correct format
   // 3. R group labels are written as R# and not just R
-  // 4. there is no ISO field in the molblock. if there is, it needs to be substituted with RGP field and thats it.
+  // 4. there is no incorrect ISO field in the molblock.
+  // if there is, it needs to be substituted with RGP field and thats it. sometimes R groups from smiles get written as isotopes in molblock.
+  // If the number in ISO is more than 8, chances are that it is actually an ISO field, otherwise, it is likely an R group
   // 5. make sure that R groups have no metadata in the atomblocks
 
   const lines = molBlock.split('\n');
 
   const isoLineIdx = lines.findIndex((line) => line.startsWith('M') && line.includes('ISO'));
   if (isoLineIdx !== -1) {
-    const isoIndex = lines[isoLineIdx].indexOf('ISO');
-    lines[isoLineIdx] = lines[isoLineIdx].substring(0, isoIndex) + 'RGP' + lines[isoLineIdx].substring(isoIndex + 3);
+    // check the number in ISO field, the line could look like this:
+    //M  ISO  1  25 208
+    // in this case, we have 208, which can not be an R group, rather it is an isotope of lead
+    const isoLineParts = lines[isoLineIdx].trim().split(' ').filter(Boolean);
+    if (isoLineParts.length >= 5 && Number.parseInt(isoLineParts[4]) < 9) {
+      const isoIndex = lines[isoLineIdx].indexOf('ISO');
+      lines[isoLineIdx] = lines[isoLineIdx].substring(0, isoIndex) + 'RGP' + lines[isoLineIdx].substring(isoIndex + 3);
+    }
   }
 
   const molStartIdx = lines.findIndex((line) => line.includes('V2000'));
