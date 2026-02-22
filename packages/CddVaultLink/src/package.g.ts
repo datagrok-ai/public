@@ -13,6 +13,8 @@ export async function cddVaultApp(path: string, filter: string) : Promise<any> {
 }
 
 //input: dynamic treeNode 
+//meta.role: appTreeBrowser
+//meta.app: CDD Vault
 export async function cddVaultAppTreeBrowser(treeNode: any) : Promise<void> {
   await PackageFunctions.cddVaultAppTreeBrowser(treeNode);
 }
