@@ -19,8 +19,6 @@ import {PieChartCellRenderer} from './sparklines/piechart';
 import {RadarChartCellRender} from './sparklines/radar-chart';
 import {ScatterPlotCellRenderer} from './sparklines/scatter-plot';
 import {names, SparklineType, sparklineTypes, SummarySettingsBase} from './sparklines/shared';
-import * as PinnedUtils from '@datagrok-libraries/gridext/src/pinned/PinnedUtils';
-import {PinnedColumn} from '@datagrok-libraries/gridext/src/pinned/PinnedColumn';
 import {FormsViewer} from '@datagrok-libraries/utils/src/viewers/forms-viewer';
 import {FormCellRenderer} from './forms/forms';
 import {scWebGPUPointHitTest, scWebGPURender} from './webgpu/scatterplot';
@@ -267,13 +265,6 @@ export class PackageFunctions {
   })
   static testUnitsTonCellRenderer() {
     return new HtmlTestCellRenderer();
-  }
-
-
-  @grok.decorators.func({outputs: [{type: 'object', name: 'result'}]})
-  static addPinnedColumn(
-    @grok.decorators.param({'type': 'object'}) gridCol: DG.GridColumn) : PinnedColumn {
-    return PinnedUtils.addPinnedColumn(gridCol);
   }
 
 

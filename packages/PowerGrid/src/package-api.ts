@@ -86,10 +86,6 @@ export namespace funcs {
     return await grok.functions.call('PowerGrid:TestUnitsTonCellRenderer', {});
   }
 
-  export async function addPinnedColumn(gridCol: any ): Promise<any> {
-    return await grok.functions.call('PowerGrid:AddPinnedColumn', { gridCol });
-  }
-
   export async function demoTestUnitsCellRenderer(): Promise<void> {
     return await grok.functions.call('PowerGrid:DemoTestUnitsCellRenderer', {});
   }
