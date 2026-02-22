@@ -26,7 +26,7 @@ interface BuildResult {
   success: boolean;
 }
 
-interface PackageInfo {
+export interface PackageInfo {
   dir: string;
   name: string;
   friendlyName: string;
@@ -98,7 +98,7 @@ async function buildRecursive(baseDir: string, args: BuildArgs, buildCmd: string
   return results.every((r) => r.success);
 }
 
-function discoverPackages(baseDir: string): PackageInfo[] {
+export function discoverPackages(baseDir: string): PackageInfo[] {
   const entries = fs.readdirSync(baseDir);
   const packages: PackageInfo[] = [];
 
@@ -137,7 +137,7 @@ function discoverPackages(baseDir: string): PackageInfo[] {
   return packages.sort((a, b) => a.friendlyName.localeCompare(b.friendlyName));
 }
 
-function applyFilter(packages: PackageInfo[], filterStr: string): PackageInfo[] {
+export function applyFilter(packages: PackageInfo[], filterStr: string): PackageInfo[] {
   const conditions = filterStr.split('&&').map((s) => s.trim());
   const parsedConditions = conditions.map((cond) => {
     const colonIdx = cond.indexOf(':');
@@ -159,7 +159,7 @@ function applyFilter(packages: PackageInfo[], filterStr: string): PackageInfo[] 
   });
 }
 
-function getNestedValue(obj: any, path: string): any {
+export function getNestedValue(obj: any, path: string): any {
   const parts = path.split('.');
   let current = obj;
   for (const part of parts) {
@@ -258,7 +258,7 @@ function getBundleSize(dir: string): string {
 }
 
 
-function confirm(message: string): Promise<boolean> {
+export function confirm(message: string): Promise<boolean> {
   const rl = readline.createInterface({input: process.stdin, output: process.stdout});
   return new Promise((resolve) => {
     rl.question(`${message} [Y/n] `, (answer) => {
