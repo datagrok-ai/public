@@ -7,6 +7,22 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 This directory contains 70+ Datagrok plugins. Each plugin is a self-contained TypeScript plugin that extends
 the Datagrok data analytics platform with viewers, connectors, scientific tools, and more.
 
+## Grok utility
+
+Use `grok` utility (part of `datagrok-tools` at `../tools`) for working with plugins in a universal way.
+Invoke it from the plugin folder:
+
+```bash
+grok --help   # help, or grok <command> --help
+grok publish  # uploads plugin to a Datagrok server
+grok add      # add an object template
+grok api      # create a TS file with the client code to work with functions exposed by the plugin
+grok check    # check package content for validity (such as function signatures)
+grok link     # link `datagrok-api` and libraries for local development
+grok test     # run package test
+grok testall  # run tests in all packages (invoked from the folder containing all plugins)
+```
+
 ## Build Commands
 
 Every package follows the same build pattern. Run from within a package directory:
@@ -43,7 +59,7 @@ grok test --gui --debug              # With breakpoints
 ```
 
 ## Package Structure
-
+!
 A package is a versionable unit of content distribution. Beyond TypeScript source, packages can bundle
 scripts, queries, connections, Docker containers, databases, and static files — all recognized by the
 platform automatically.

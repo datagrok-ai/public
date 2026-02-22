@@ -9,6 +9,7 @@ Datagrok's package management tool
 Commands:
     add       Add an object template
     api       Create wrapper functions
+    build     Build a package or multiple packages
     check     Check package content (function signatures, etc.)
     config    Create and manage config files
     create    Create a package
@@ -236,6 +237,26 @@ Example:
   meta: { role: 'viewer,ml' }
 `;
 
+const HELP_BUILD = `
+Usage: grok build
+
+Build a package in the current directory, or recursively build multiple packages.
+
+Options:
+[-r | --recursive] [-s | --silent] [--filter] [-v | --verbose]
+
+--recursive       Build all packages in the current directory
+--silent          Skip confirmation prompt (for recursive builds)
+--filter          Filter packages by package.json fields (e.g. --filter "category:Cheminformatics")
+--verbose         Print detailed output
+
+Examples:
+  grok build                                          Build the current package
+  grok build -r                                       Build all packages in the current directory
+  grok build -r -s                                    Build all packages without confirmation
+  grok build -r --filter "category:Cheminformatics"   Build only matching packages
+`;
+
 // const HELP_MIGRATE = `
 // Usage: grok migrate
 
@@ -246,6 +267,7 @@ Example:
 export const help = {
   add: HELP_ADD,
   api: HELP_API,
+  build: HELP_BUILD,
   check: HELP_CHECK,
   config: HELP_CONFIG,
   create: HELP_CREATE,
