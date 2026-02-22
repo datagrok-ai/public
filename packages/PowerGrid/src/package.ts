@@ -294,7 +294,7 @@ export class PackageFunctions {
 
   @grok.decorators.autostart({tags: ['autostart']})
   static async _autoPowerGrid() {
-    PinnedUtils.registerPinnedColumns();
+    //PinnedUtils.registerPinnedColumns();
     DG.GridCellRenderer.register(new ScatterPlotCellRenderer());
 
     // handling column remove/rename in sparkline columns

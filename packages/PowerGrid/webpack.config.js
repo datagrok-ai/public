@@ -2,7 +2,7 @@ const path = require('path');
 const {execSync} = require('child_process');
 const packageName = path.parse(require('./package.json').name).name.toLowerCase().replace(/-/g, '');
 
-const workingInDartium = false; // when working in Dartium, set this to true
+const workingInDartium = true; // when working in Dartium, set this to true
 
 function getDatagrokTools() {
   const pluginPath = 'datagrok-tools/plugins/func-gen-plugin';
