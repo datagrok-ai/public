@@ -243,11 +243,13 @@ Usage: grok build
 Build a package in the current directory, or recursively build multiple packages.
 
 Options:
-[-r | --recursive] [-s | --silent] [--filter] [-v | --verbose]
+[-r | --recursive] [-s | --silent] [--filter] [--no-incremental] [--parallel N] [-v | --verbose]
 
 --recursive       Build all packages in the current directory
 --silent          Skip confirmation prompt (for recursive builds)
 --filter          Filter packages by package.json fields (e.g. --filter "category:Cheminformatics")
+--no-incremental  Run a full build instead of the default incremental build
+--parallel N      Max parallel builds (default: 4)
 --verbose         Print detailed output
 
 Examples:
@@ -255,6 +257,7 @@ Examples:
   grok build -r                                       Build all packages in the current directory
   grok build -r -s                                    Build all packages without confirmation
   grok build -r --filter "category:Cheminformatics"   Build only matching packages
+  grok build -r --parallel 8                          Build with 8 parallel jobs
 `;
 
 // const HELP_MIGRATE = `

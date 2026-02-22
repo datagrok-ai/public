@@ -14,6 +14,8 @@ interface BuildArgs {
   silent?: boolean;
   filter?: string;
   verbose?: boolean;
+  'no-incremental'?: boolean;
+  parallel?: number;
 }
 
 interface BuildResult {
@@ -36,13 +38,15 @@ export async function build(args: BuildArgs): Promise<boolean> {
   if (args.verbose)
     color.setVerbose(true);
 
+  const buildCmd = args['no-incremental'] ? 'npm run build' : 'npm run build -- --env incremental';
+
   if (args.recursive)
-    return await buildRecursive(process.cwd(), args);
+    return await buildRecursive(process.cwd(), args, buildCmd);
   else
-    return await buildSingle(process.cwd());
+    return await buildSingle(process.cwd(), buildCmd);
 }
 
-async function buildSingle(dir: string): Promise<boolean> {
+async function buildSingle(dir: string, buildCmd: string): Promise<boolean> {
   if (!utils.isPackageDir(dir)) {
     color.error('Not a package directory (no package.json found)');
     return false;
@@ -54,7 +58,7 @@ async function buildSingle(dir: string): Promise<boolean> {
 
   try {
     await utils.runScript('npm install', dir, color.isVerbose());
-    await utils.runScript('npm run build', dir, color.isVerbose());
+    await utils.runScript(buildCmd, dir, color.isVerbose());
     color.success(`Successfully built ${name}`);
     return true;
   }
@@ -66,7 +70,7 @@ async function buildSingle(dir: string): Promise<boolean> {
   }
 }
 
-async function buildRecursive(baseDir: string, args: BuildArgs): Promise<boolean> {
+async function buildRecursive(baseDir: string, args: BuildArgs, buildCmd: string): Promise<boolean> {
   const packages = discoverPackages(baseDir);
   if (packages.length === 0) {
     color.warn('No packages found in the current directory');
@@ -79,9 +83,7 @@ async function buildRecursive(baseDir: string, args: BuildArgs): Promise<boolean
     return false;
   }
 
-  console.log(`Found ${filtered.length} package(s):`);
-  for (const pkg of filtered)
-    console.log(`  ${pkg.friendlyName} (${pkg.version})`);
+  console.log(`Found ${filtered.length} package(s): ${filtered.map((p) => p.friendlyName).join(', ')}`);
 
   if (!args.silent) {
     const confirmed = await confirm(`\nBuild ${filtered.length} package(s)?`);
@@ -91,9 +93,8 @@ async function buildRecursive(baseDir: string, args: BuildArgs): Promise<boolean
     }
   }
 
-  console.log('');
-  const results = await buildParallel(filtered);
-  printResultsTable(results);
+  const maxParallel = args.parallel || 4;
+  const results = await buildParallel(filtered, buildCmd, maxParallel);
   return results.every((r) => r.success);
 }
 
@@ -169,12 +170,23 @@ function getNestedValue(obj: any, path: string): any {
   return current;
 }
 
-async function buildParallel(packages: PackageInfo[]): Promise<BuildResult[]> {
-  const total = packages.length;
-  let completed = 0;
+async function buildParallel(packages: PackageInfo[], buildCmd: string, maxParallel: number): Promise<BuildResult[]> {
   const results: BuildResult[] = [];
 
-  const promises = packages.map(async (pkg) => {
+  const headers = ['Plugin', 'Version', 'Build time', 'Bundle size'];
+  const widths = [
+    Math.max(headers[0].length, ...packages.map((p) => p.friendlyName.length)),
+    Math.max(headers[1].length, ...packages.map((p) => p.version.length)),
+    Math.max(headers[2].length, 10),
+    Math.max(headers[3].length, 40),
+  ];
+  const pad = (s: string, w: number) => s + ' '.repeat(Math.max(0, w - s.length));
+
+  console.log(`\nBuilding with ${maxParallel} parallel job(s)...`);
+  console.log(headers.map((h, i) => pad(h, widths[i])).join(' | '));
+  console.log(widths.map((w) => '-'.repeat(w)).join('-+-'));
+
+  const buildOne = async (pkg: PackageInfo): Promise<BuildResult> => {
     const start = Date.now();
     let success = true;
     let buildTime = '';
@@ -182,7 +194,7 @@ async function buildParallel(packages: PackageInfo[]): Promise<BuildResult[]> {
 
     try {
       await execAsync('npm install', {cwd: pkg.dir, maxBuffer: 10 * 1024 * 1024});
-      await execAsync('npm run build', {cwd: pkg.dir, maxBuffer: 10 * 1024 * 1024});
+      await execAsync(buildCmd, {cwd: pkg.dir, maxBuffer: 10 * 1024 * 1024});
       const elapsed = (Date.now() - start) / 1000;
       buildTime = `${elapsed.toFixed(1)}s`;
       bundleSize = getBundleSize(pkg.dir);
@@ -190,17 +202,9 @@ async function buildParallel(packages: PackageInfo[]): Promise<BuildResult[]> {
     catch (error: any) {
       success = false;
       buildTime = 'Error';
-      bundleSize = 'Error';
-      color.log(`Build error for ${pkg.friendlyName}: ${error.message}`, 'error');
+      const raw = (error.stderr || error.stdout || error.message || 'Unknown error').trim();
+      bundleSize = raw.replace(/\r?\n/g, ' ').replace(/\s+/g, ' ').substring(0, 40);
     }
-
-    completed++;
-    const mark = success ? '\u2713' : '\u2717';
-    const msg = `[${completed}/${total}] ${mark} ${pkg.friendlyName}`;
-    if (success)
-      color.success(msg);
-    else
-      color.error(msg);
 
     const result: BuildResult = {
       name: pkg.friendlyName,
@@ -210,11 +214,36 @@ async function buildParallel(packages: PackageInfo[]): Promise<BuildResult[]> {
       success,
     };
     results.push(result);
-    return result;
-  });
 
-  await Promise.all(promises);
-  return results.sort((a, b) => a.name.localeCompare(b.name));
+    const cells = [result.name, result.version, result.buildTime, result.bundleSize];
+    const line = cells.map((cell, j) => pad(cell, widths[j])).join(' | ');
+    if (success)
+      color.info(line);
+    else
+      color.error(line);
+
+    return result;
+  };
+
+  let idx = 0;
+  const next = async (): Promise<void> => {
+    while (idx < packages.length) {
+      const pkg = packages[idx++];
+      await buildOne(pkg);
+    }
+  };
+  const workers = Array.from({length: Math.min(maxParallel, packages.length)}, () => next());
+  await Promise.all(workers);
+
+  const succeeded = results.filter((r) => r.success).length;
+  const failed = results.length - succeeded;
+  console.log('');
+  if (failed === 0)
+    color.success(`All ${results.length} package(s) built successfully`);
+  else
+    color.warn(`${succeeded} succeeded, ${failed} failed`);
+
+  return results;
 }
 
 function getBundleSize(dir: string): string {
@@ -228,35 +257,6 @@ function getBundleSize(dir: string): string {
   }
 }
 
-function printResultsTable(results: BuildResult[]): void {
-  const headers = ['Plugin', 'Version', 'Build time', 'Bundle size'];
-  const rows = results.map((r) => [r.name, r.version, r.buildTime, r.bundleSize]);
-
-  const widths = headers.map((h, i) =>
-    Math.max(h.length, ...rows.map((r) => r[i].length)));
-
-  const pad = (s: string, w: number) => s + ' '.repeat(Math.max(0, w - s.length));
-  const sep = widths.map((w) => '-'.repeat(w)).join('-+-');
-
-  console.log('\n' + headers.map((h, i) => pad(h, widths[i])).join(' | '));
-  console.log(sep);
-
-  for (let i = 0; i < results.length; i++) {
-    const line = rows[i].map((cell, j) => pad(cell, widths[j])).join(' | ');
-    if (results[i].success)
-      console.log(line);
-    else
-      color.error(line);
-  }
-
-  const succeeded = results.filter((r) => r.success).length;
-  const failed = results.length - succeeded;
-  console.log('');
-  if (failed === 0)
-    color.success(`All ${results.length} package(s) built successfully`);
-  else
-    color.warn(`${succeeded} succeeded, ${failed} failed`);
-}
 
 function confirm(message: string): Promise<boolean> {
   const rl = readline.createInterface({input: process.stdin, output: process.stdout});
