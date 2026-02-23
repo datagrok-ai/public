@@ -6,6 +6,8 @@ import {HelmType, PolymerType} from '@datagrok-libraries/bio/src/helm/types';
 import {IMonomerLib, Monomer} from '@datagrok-libraries/bio/src/types/monomer-library';
 import {polymerTypeToHelmType} from '@datagrok-libraries/bio/src/utils/macromolecule/utils';
 
+import {parseMonomerSymbolList} from './pt-placeholders-input';
+
 const MAX_SUGGESTIONS = 20;
 
 /** Shows a dialog for selecting monomers with autocomplete and tag-based display.
@@ -155,6 +157,41 @@ export async function showMonomerSelectionDialog(
     }
 
     inputEl.addEventListener('input', () => { showSuggestions(); });
+
+    // Handle pasting multiple monomers (space / comma / newline separated)
+    inputEl.addEventListener('paste', (e: ClipboardEvent) => {
+      const pastedText = e.clipboardData?.getData('text');
+      if (!pastedText)
+        return;
+
+      // Split on newlines first, then parse each line (handles parenthesized symbols like hArg(Et,Et))
+      const lines = pastedText.split(/[\n\r]+/).map((l) => l.trim()).filter((l) => l.length > 0);
+      const candidates: string[] = [];
+      for (const line of lines) {
+        const parsed = parseMonomerSymbolList(line);
+        // If parseMonomerSymbolList returned a single token but the line has spaces and no commas,
+        // split on spaces as well (e.g. "K P F" -> ["K", "P", "F"])
+        if (parsed.length === 1 && line.includes(' ') && !line.includes(','))
+          candidates.push(...line.split(/\s+/).map((s) => s.trim()).filter((s) => s.length > 0));
+        else
+          candidates.push(...parsed);
+      }
+
+      if (candidates.length <= 1)
+        return; // Single symbol: let default paste + autocomplete handle it
+
+      e.preventDefault();
+
+      for (const candidate of candidates) {
+        if (allSymbols.includes(candidate) && !selectedMonomers.includes(candidate))
+          selectedMonomers.push(candidate);
+      }
+
+      renderTags();
+      inputEl.value = '';
+      hideMenu();
+      inputEl.focus();
+    });
 
     inputEl.addEventListener('keydown', (e: KeyboardEvent) => {
       if (e.key === 'ArrowDown') {

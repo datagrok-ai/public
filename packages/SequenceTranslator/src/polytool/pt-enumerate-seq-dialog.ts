@@ -28,7 +28,7 @@ import {PolyToolPlaceholdersInput} from './pt-placeholders-input';
 import {showMonomerSelectionDialog} from './pt-monomer-selection-dialog';
 import {defaultErrorHandler} from '../utils/err-info';
 import {PolyToolPlaceholdersBreadthInput} from './pt-placeholders-breadth-input';
-import {PT_UI_DIALOG_ENUMERATION, PT_UI_GET_HELM, PT_UI_HIGHLIGHT_MONOMERS, PT_UI_RULES_USED, PT_UI_USE_CHIRALITY} from './const';
+import {PT_ENUM_TYPE_TOOLTIPS, PT_UI_DIALOG_ENUMERATION, PT_UI_GET_HELM, PT_UI_HIGHLIGHT_MONOMERS, PT_UI_RULES_USED, PT_UI_USE_CHIRALITY} from './const';
 import {PolyToolDataRole, PolyToolTags} from '../consts';
 import {RuleInputs, RULES_PATH, RULES_STORAGE_NAME} from './conversion/pt-rules';
 import {Chain} from './conversion/pt-chain';
@@ -39,8 +39,22 @@ import {buildMonomerHoverLink} from '@datagrok-libraries/bio/src/monomer-works/m
 import {getRdKitModule} from '@datagrok-libraries/bio/src/chem/rdkit-module';
 
 import {PolymerTypes} from '@datagrok-libraries/js-draw-lite/src/types/org';
-import { CyclizedNotationProvider } from '../utils/cyclized';
-import { INotationProvider } from '@datagrok-libraries/bio/src/utils/macromolecule/types';
+import {CyclizedNotationProvider} from '../utils/cyclized';
+import {INotationProvider, NotationProviderBase} from '@datagrok-libraries/bio/src/utils/macromolecule/types';
+
+/**
+ * PolyTool Enumeration Dialog
+ *
+ * Provides the UI for enumerating macromolecule variants. The user selects positions
+ * on a HELM molecule and specifies substitute monomers at each position. Supports
+ * multiple enumeration strategies (Single, Parallel, Matrix, Library) and optional
+ * downstream processing (atomic-level conversion, chirality, rules).
+ *
+ * Architecture:
+ *   polyToolEnumerateHelmUI()     - Entry point: creates, sizes, and shows the dialog
+ *   getPolyToolEnumerateDialog()  - Builds all inputs, validators, event wiring, and the dialog
+ *   polyToolEnumerateSeq()        - Executes enumeration and post-processes results into a DataFrame
+ */
 
 type PolyToolEnumerateInputs = {
   macromolecule: HelmInputBase;
@@ -73,15 +87,21 @@ type PolyToolEnumerateHelmSerialized = {
   library: string;
 };
 
+/** Entry point: creates, sizes, and shows the enumeration dialog. */
 export async function polyToolEnumerateHelmUI(cell?: DG.Cell): Promise<void> {
   await _package.initPromise;
 
+  // Capture viewport dimensions for dialog sizing
   const maxWidth = window.innerWidth;
   const maxHeight = window.innerHeight;
 
   try {
     // eslint-disable-next-line prefer-const
     let dialog: DG.Dialog;
+
+    // Dynamically allocates remaining vertical space to flex-fit inputs (e.g. the macromolecule editor)
+    // after fixed-height inputs are laid out. fitInputs maps child element indices to proportional
+    // height weights; elements not in fitInputs get their natural height.
     function resizeInputs() {
       if (dialog == null) return;
 
@@ -107,18 +127,13 @@ export async function polyToolEnumerateHelmUI(cell?: DG.Cell): Promise<void> {
     };
     dialog = await getPolyToolEnumerateDialog(cell, resizeInputs);
 
+    // On first show, center the dialog at 70% of viewport; on subsequent resizes, just reflow inputs
     let isFirstShow = true;
     ui.onSizeChanged(dialog.root).subscribe(() => {
       if (isFirstShow) {
-        // const dialogRootCash = $(dialog.root);
-        // const contentMaxHeight = maxHeight -
-        //   dialogRootCash.find('div.d4-dialog-header').get(0)!.offsetHeight -
-        //   dialogRootCash.find('div.d4-dialog-footer').get(0)!.offsetHeight;
-
         const dialogWidth = maxWidth * 0.7;
         const dialogHeight = maxHeight * 0.7;
 
-        // Centered, but resizable dialog
         dialog.root.style.width = `${Math.min(maxWidth, dialogWidth)}px`;
         dialog.root.style.height = `${Math.min(maxHeight, dialogHeight)}px`;
         dialog.root.style.left = `${Math.floor((maxWidth - dialog.root.offsetWidth) / 2)}px`;
@@ -141,19 +156,21 @@ export async function polyToolEnumerateHelmUI(cell?: DG.Cell): Promise<void> {
   }
 }
 
+/** Builds and configures the enumeration dialog with all inputs, validators, and event handlers. */
 async function getPolyToolEnumerateDialog(
   cell?: DG.Cell, resizeInputs?: () => void
 ): Promise<DG.Dialog> {
   const logPrefix = `ST: PT: HelmDialog()`;
   let inputs: PolyToolEnumerateInputs;
   const subs: Unsubscribable[] = [];
-  // will store previous enumeration type to support logic of cleanups
+  // Track previous enumeration type to clean up state when switching to/from Library mode
   let prevEnumerationType: PolyToolEnumeratorType = PolyToolEnumeratorTypes.Single;
   const destroy = () => {
     for (const sub of subs) sub.unsubscribe();
     inputs.placeholders.detach();
   };
   try {
+    // --- Initialize helpers (monomer lib, sequence helper, HELM helper) ---
     const libHelper = await getMonomerLibHelper();
     const monomerLib = libHelper.getMonomerLib();
     const seqHelper = await getSeqHelper();
@@ -162,6 +179,8 @@ async function getPolyToolEnumerateDialog(
     const [_libList, helmHelper] = await Promise.all([getLibrariesList(), getHelmHelper()]);
     const monomerLibFuncs = helmHelper.buildMonomersFuncsFromLib(monomerLib);
 
+    // Resolves the source macromolecule from the given cell or falls back to a default example.
+    // Returns the sequence value and its data role (macromolecule vs template).
     const getValue = (cell?: DG.Cell): [SeqValueBase, PolyToolDataRole] => {
       let resSeqValue: SeqValueBase;
       let resDataRole: PolyToolDataRole;
@@ -197,12 +216,14 @@ async function getPolyToolEnumerateDialog(
 
     let [seqValue, dataRole]: [SeqValueBase, PolyToolDataRole] = getValue(cell);
 
+    // --- UI state ---
     let srcId: { value: string, colName: string } | null = null;
     let ruleFileList: string[];
     let ruleInputs: RuleInputs;
     const trivialNameSampleDiv = ui.divText('', {style: {marginLeft: '8px', marginTop: '2px'}});
     const warningsTextDiv = ui.divText('', {style: {color: 'red'}});
-    // #### Inputs
+
+    // === INPUT DEFINITIONS ===
     inputs = {
       macromolecule: helmHelper.createHelmInput(
         'Macromolecule', {
@@ -292,6 +313,14 @@ async function getPolyToolEnumerateDialog(
       library: ui.input.choice('Monomer Library', {items: _libList, value: _libList[0], nullable: true}) as DG.InputBase<string>,
     };
     // #### Inputs END
+
+    // Bind tooltip to enumerator type choice, updating on each change
+    const updateEnumTypeTooltip = () => {
+      const tooltipText = PT_ENUM_TYPE_TOOLTIPS[inputs.enumeratorType.value] ?? '';
+      ui.tooltip.bind(inputs.enumeratorType.input, tooltipText);
+    };
+    updateEnumTypeTooltip();
+
     inputs.library.root.style.setProperty('display', 'none');
     inputs.trivialNameCol.addOptions(trivialNameSampleDiv);
 
@@ -319,23 +348,41 @@ async function getPolyToolEnumerateDialog(
       return showMonomerSelectionDialog(monomerLib, polymerType, currentMonomers);
     };
 
+    // === VALIDATORS ===
+    // Validates placeholder positions and monomers based on the current enumeration mode.
     let placeholdersValidity: string | null = null;
     inputs.placeholders.addValidator((value: string): string | null => {
+      placeholdersValidity = null;
       const errors: string[] = [];
+      setTimeout(() => { updateWarnings(); }, 100);
       try {
         // for library, ony one placeholder is allowed
         if (inputs.enumeratorType.value === PolyToolEnumeratorTypes.Library) {
-          setTimeout(() => { updateWarnings(); }, 10);
           const pcs = inputs.placeholders.placeholdersValue;
           if (pcs.length > 1)
-            return 'Only one placeholder is allowed for Library mode';
+            placeholdersValidity = 'Only one placeholder is allowed for Library mode';
           if (pcs.length === 1) {
             if (pcs[0].position == null)
-              return 'Position is required for Library mode';
+              placeholdersValidity = 'Position is required for Library mode';
             if (pcs[0].position > inputs.macromolecule.molValue.atoms.length)
-              return `There is no monomer at position ${pcs[0].position + 1}.`;
+              placeholdersValidity = `There is no monomer at position ${pcs[0].position + 1}.`;
           }
-          return null;
+          return placeholdersValidity;
+        }
+
+        // Parallel mode: all placeholders must have the same monomer count
+        if (inputs.enumeratorType.value === PolyToolEnumeratorTypes.Parallel) {
+          const pcs = inputs.placeholders.placeholdersValue;
+          const nonEmpty = pcs.filter((ph) => ph.monomers.length > 0);
+          if (nonEmpty.length > 1) {
+            const firstCount = nonEmpty[0].monomers.length;
+            const mismatch = nonEmpty.find((ph) => ph.monomers.length !== firstCount);
+            if (mismatch) {
+              placeholdersValidity = `Parallel mode requires all positions to have the same number of monomers. ` +
+                `Position ${nonEmpty[0].position + 1} has ${firstCount}, ` +
+                `but position ${mismatch.position + 1} has ${mismatch.monomers.length}.`;
+            }
+          }
         }
 
         if (dataRole !== PolyToolDataRole.macromolecule)
@@ -373,7 +420,7 @@ async function getPolyToolEnumerateDialog(
           .join('\n');
         if (Object.keys(byTypeStr).length > 0)
           errors.push(`Placeholders contain missed monomers: ${byTypeStr}`);
-        placeholdersValidity = errors.length > 0 ? errors.join('\n') : null;
+        placeholdersValidity = errors.length > 0 ? errors.join('\n') : placeholdersValidity;
       } catch (err: any) {
         const [errMsg, errStack] = defaultErrorHandler(err, false);
         placeholdersValidity = errMsg;
@@ -460,8 +507,14 @@ async function getPolyToolEnumerateDialog(
         defaultErrorHandler(err, false);
       }
       prevEnumerationType = inputs.enumeratorType.value;
+      updateEnumTypeTooltip();
+      // Re-validate placeholders (Parallel mode has different constraints than Single/Matrix)
+      inputs.placeholders.fireChanged();
     });
 
+    // === MOLECULE INTERACTION EVENT HANDLERS ===
+
+    // Mouse move: show tooltip of substitute monomers at hovered position
     subs.push(inputs.macromolecule.onMouseMove.subscribe((e: MouseEvent) => {
       try {
         _package.logger.debug(`${logPrefix}, placeholdersInput.onMouseMove()`);
@@ -486,6 +539,7 @@ async function getPolyToolEnumerateDialog(
         defaultErrorHandler(err, false);
       }
     }));
+    // Click on molecule: add clicked atom position to the placeholders grid
     subs.push(inputs.macromolecule.onClick.subscribe((e: MouseEvent) => {
       try {
         _package.logger.debug(`${logPrefix}, placeholdersInput.onClick()`);
@@ -528,6 +582,9 @@ async function getPolyToolEnumerateDialog(
     inputs.macromolecule.root.style.setProperty('min-width', '250px', 'important');
     // inputs.macromolecule.root.style.setProperty('max-height', '300px', 'important');
 
+    // === VIEW UPDATE HELPERS ===
+
+    // Highlights atoms in the molecule editor that have placeholders defined
     const updateViewMol = () => {
       const phPosSet = new Set<number>(inputs.placeholders.placeholdersValue.map((ph) => ph.position));
       const mol = inputs.macromolecule.molValue;
@@ -538,6 +595,7 @@ async function getPolyToolEnumerateDialog(
       inputs.macromolecule.redraw();
     };
 
+    // Shows/hides conversion rules UI based on toAtomicLevel setting and data role
     const updateViewRules = () => {
       if (inputs.toAtomicLevel.value && dataRole === PolyToolDataRole.template) {
         inputs.generateHelm.root.style.removeProperty('display');
@@ -553,7 +611,7 @@ async function getPolyToolEnumerateDialog(
       if (resizeInputs)
         resizeInputs();
     };
-
+    let dialogOKButton: HTMLButtonElement | null | undefined = null;
     const updateWarnings = () => {
       const warnings = placeholdersValidity;
       // const iw = inputs.warnings;
@@ -565,6 +623,8 @@ async function getPolyToolEnumerateDialog(
 
         w.innerText = warnings;
         w.style.removeProperty('display');
+        if (dialogOKButton)
+          dialogOKButton.disabled = true;
       } else {
         // iw.value = ''; // <- breaks dialog resize
         // iw.enabled = false;
@@ -572,6 +632,8 @@ async function getPolyToolEnumerateDialog(
 
         w.innerText = '';
         w.style.setProperty('display', 'none');
+        if (dialogOKButton)
+          dialogOKButton.disabled = false;
       }
       //resizeInputs();
     };
@@ -597,6 +659,8 @@ async function getPolyToolEnumerateDialog(
     fillForCurrentCell(seqValue, dataRole, cell);
     updateViewRules();
 
+    // === EXECUTION (OK button handler) ===
+    // Pre-flight validates inputs, resolves Library mode, builds params, and runs enumeration.
     const exec = async (): Promise<void> => {
       try {
         const srcHelm = inputs.macromolecule.stringValue;
@@ -625,6 +689,7 @@ async function getPolyToolEnumerateDialog(
           await getHelmHelper(); // initializes JSDraw and org
 
           const placeHoldersValue = inputs.placeholders.placeholdersValue;
+          // Library mode: load all monomers from the selected library and convert to Single mode
           let enumerationType = inputs.enumeratorType.value;
           if (enumerationType === PolyToolEnumeratorTypes.Library) {
             if (placeHoldersValue.length !== 1) {
@@ -647,12 +712,33 @@ async function getPolyToolEnumerateDialog(
             enumerationType = PolyToolEnumeratorTypes.Single;
           }
 
+          if (enumerationType === PolyToolEnumeratorTypes.Parallel) {
+            const nonEmpty = placeHoldersValue.filter((ph) => ph.monomers.length > 0);
+            if (nonEmpty.length > 1) {
+              const firstCount = nonEmpty[0].monomers.length;
+              if (nonEmpty.some((ph) => ph.monomers.length !== firstCount)) {
+                grok.shell.warning('Parallel mode requires all positions to have the same number of monomers');
+                return;
+              }
+            }
+          }
+
           const params: PolyToolEnumeratorParams = {
             placeholders: placeHoldersValue,
             type: enumerationType,
             breadthPlaceholders: inputs.placeholdersBreadth.placeholdersBreadthValue,
             keepOriginal: inputs.keepOriginal.value,
           };
+
+          if (cell?.column?.temp?.[SeqTemps.notationProvider] &&
+            !(cell.column.temp[SeqTemps.notationProvider] instanceof CyclizedNotationProvider)) {
+            const notationProvider = cell.column.temp[SeqTemps.notationProvider] as INotationProvider;
+            if ((notationProvider.constructor as typeof NotationProviderBase).implementsFromHelm) {
+              const cons = notationProvider.constructor as typeof NotationProviderBase;
+              params.fromHelmNotation = {notationName: cons.notationName, convert: (helm) => cons.convertFromHelm(helm, {})};
+            }
+          }
+
           const toAtomicLevelV: boolean = inputs.toAtomicLevel.value;
           const enumeratorResDf = await polyToolEnumerateSeq(srcHelm, dataRole, srcId, params,
             toAtomicLevelV ? {
@@ -669,6 +755,8 @@ async function getPolyToolEnumerateDialog(
       }
     };
 
+    // === DIALOG CONSTRUCTION AND LAYOUT ===
+    // Layout: macromolecule editor on top, two-column (placeholders | breadth), two-column (options | rules)
     const dialog = ui.dialog({title: PT_UI_DIALOG_ENUMERATION, showFooter: true})
       .add(inputs.macromolecule.root)
       .add(ui.divH([
@@ -693,14 +781,20 @@ async function getPolyToolEnumerateDialog(
         {style: {width: '50%'}})],
       {style: {width: '100%'}}))
       .add(warningsTextDiv)
-      // .addButton('Enumerate', () => {
-      //   execDialog()
-      //     .then(() => {});
-      // }, 0, 'Keeps the dialog open')
-      .onOK(() => { exec(); });
+      .onOK(() => {
+        if (placeholdersValidity) {
+          updateWarnings();
+          grok.shell.warning('Please fix validation errors before running enumeration');
+          return;
+        }
+        exec();
+      });
+      // .onOK(() => { exec(); });
+    dialogOKButton = dialog.getButton('OK') as HTMLButtonElement;
     subs.push(dialog.onClose.subscribe(() => {
       destroy();
     }));
+    // Dialog history: serialization/deserialization for persisting dialog state across sessions
     dialog.history(
       /* getInput */ (): PolyToolEnumerateHelmSerialized => {
         return {
@@ -732,6 +826,10 @@ async function getPolyToolEnumerateDialog(
         inputs.highlightMonomers.value = x.highlightMonomers ?? false;
         ruleInputs.setActive(x.rules);
         inputs.library.value = x.library;
+        setTimeout(() => {
+          inputs.placeholders.invalidateGrid();
+          inputs.placeholdersBreadth.invalidateGrid();
+        }, 100);
       });
     return dialog;
   } catch (err: any) {
@@ -740,10 +838,16 @@ async function getPolyToolEnumerateDialog(
   }
 }
 
-/**
- * @param {DG.SemanticValue} srcValue Source value to enumerate, either of data role
- *                                    {@link PolyToolDataRole.template} or {@link PolyToolDataRole.macromolecule}
- * */
+/** Executes enumeration and post-processes results into a DataFrame.
+ * Handles both macromolecule and template data roles, with optional
+ * atomic-level conversion (chirality, highlighting, rules).
+ *
+ * @param srcHelm Source HELM string to enumerate
+ * @param dataRole Whether the source is a {@link PolyToolDataRole.template} or {@link PolyToolDataRole.macromolecule}
+ * @param srcId Optional trivial name column info for generating IDs
+ * @param params Enumeration parameters (type, placeholders, keepOriginal)
+ * @param toAtomicLevel Post-processing options, or false to skip
+ */
 export async function polyToolEnumerateSeq(
   srcHelm: string, dataRole: PolyToolDataRole, srcId: { value: string, colName: string } | null,
   params: PolyToolEnumeratorParams,
@@ -756,7 +860,10 @@ export async function polyToolEnumerateSeq(
     const rdKitModule = await getRdKitModule();
     const monomerLib = libHelper.getMonomerLib(); // TODO: Get monomer lib from src SeqValueBase
 
+    // Core enumeration: produces [helm, id] pairs
     const resList = doPolyToolEnumerateHelm(srcHelm, srcId?.value ?? '', params);
+
+    // Create result column based on data role (macromolecule uses HELM directly, template converts via Chain)
     let enumCol: DG.Column<string>;
     switch (dataRole) {
     case PolyToolDataRole.macromolecule: {
@@ -779,11 +886,19 @@ export async function polyToolEnumerateSeq(
     }
     }
     const enumeratorResDf = DG.DataFrame.fromColumns([enumCol]);
+
+    if (dataRole === PolyToolDataRole.macromolecule && params.fromHelmNotation) {
+      const c = DG.Column.fromType(DG.COLUMN_TYPE.STRING, `${params.fromHelmNotation.notationName}(${enumCol.name})`, enumeratorResDf.rowCount)
+        .init((rowIdx: number) => enumCol.isNone(rowIdx) ? null : params.fromHelmNotation!.convert(enumCol.get(rowIdx)!));
+      enumeratorResDf.columns.add(c);
+    }
+
     await grok.data.detectSemanticTypes(enumeratorResDf);
     if (dataRole == PolyToolDataRole.template)
       PackageFunctions.applyNotationProviderForCyclized(enumCol, '-');
 
 
+    // Optional post-processing: convert to atomic level with chirality/highlighting
     if (toAtomicLevel) {
       let resHelmCol: DG.Column<string>;
       if (dataRole === PolyToolDataRole.macromolecule) {
@@ -800,6 +915,7 @@ export async function polyToolEnumerateSeq(
       }
     }
 
+    // Add trivial name ID column if the source had one
     if (srcId) {
       const enumIdCol = DG.Column.fromType(DG.COLUMN_TYPE.STRING, srcId.colName, resList.length)
         .init((rowIdx: number) => resList[rowIdx][1]);

@@ -61,6 +61,39 @@ function getPtEnumeratorMatrix(m: HelmMol, placeholders: PolyToolPlaceholder[]):
   return resMolList;
 }
 
+/** Parallel (zip) enumeration: the i-th result takes the i-th monomer from each placeholder position.
+ * All placeholders must have the same number of monomers (validated upstream).
+ * With K positions and N monomers each, produces exactly N results. */
+function getPtEnumeratorParallel(m: HelmMol, placeholders: PolyToolPlaceholder[]): HelmMol[] {
+  if (placeholders.length === 0)
+    return [];
+
+  const monomerCount = placeholders[0].monomers.length;
+  for (const ph of placeholders) {
+    if (ph.monomers.length !== monomerCount)
+      throw new Error(`Parallel enumeration requires all positions to have the same number of monomers`);
+  }
+
+  const resMolList: HelmMol[] = new Array<HelmMol>(monomerCount);
+  for (let i = 0; i < monomerCount; i++) {
+    const resM = m.clone() as HelmMol;
+    const nameParts: string[] = [];
+    for (const ph of placeholders) {
+      const pos = ph.position;
+      const newSymbol = ph.monomers[i];
+      const oldSymbol = resM.atoms[pos].elem;
+      resM.atoms[pos].elem = newSymbol;
+
+      const idOldSymbol = oldSymbol?.length > 1 ? `[${oldSymbol}]` : oldSymbol;
+      const idNewSymbol = newSymbol?.length > 1 ? `[${newSymbol}]` : newSymbol;
+      nameParts.push(`${idOldSymbol}${pos + 1}${idNewSymbol}`);
+    }
+    resM.name = `${m.name}-${nameParts.join('-')}`;
+    resMolList[i] = resM;
+  }
+  return resMolList;
+}
+
 function getPtEnumeratorBreadth(m: HelmMol, placeholdersBreadth: PolyToolBreadthPlaceholder[]): HelmMol[] {
   if (placeholdersBreadth.length == 0)
     return [];
@@ -88,6 +121,10 @@ export function doPolyToolEnumerateHelm(
     switch (params.type) {
     case PolyToolEnumeratorTypes.Single: {
       resMolList = getPtEnumeratorSingle(molHandler.m, params.placeholders);
+      break;
+    }
+    case PolyToolEnumeratorTypes.Parallel: {
+      resMolList = getPtEnumeratorParallel(molHandler.m, params.placeholders);
       break;
     }
     case PolyToolEnumeratorTypes.Matrix: {
