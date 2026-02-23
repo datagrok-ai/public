@@ -26,7 +26,8 @@ export class CallbackAction extends Error {
 
 /** Default options of the solver */
 export enum DEFAULT_OPTIONS {
-  SCRIPTING = '{maxIterations: 1}',
+  MAX_TIME = 'maxTime: 5000',
+  SCRIPTING = `{${MAX_TIME}}`,
   NO_CHECKS = '{ }',
 }
 
@@ -77,11 +78,11 @@ const getMethod = (options?: Partial<SolverOptions>) => {
   case METHOD.AB5:
     return ab5;
 
-  case METHOD.ROS34PRw:
-    return ros34prw;
+  case METHOD.LSODA:
+    return lsoda;
 
   default:
-    return lsoda;
+    return ros34prw;
   }
 };
 
