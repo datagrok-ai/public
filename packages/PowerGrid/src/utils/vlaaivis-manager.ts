@@ -15,7 +15,6 @@ import {
   VlaaivisColumnMetadata
 } from './constants';
 
-import {MpoDesirabilityLineEditor} from '@datagrok-libraries/statistics/src/mpo/mpo-line-editor';
 import {PropertyDesirability} from '@datagrok-libraries/statistics/src/mpo/mpo';
 
 class VlaaiVisManager {
@@ -291,7 +290,8 @@ class VlaaiVisManager {
     return groupMap;
   }
 
-  private createLineEditor(nodeText: string, container: HTMLElement): void {
+  private async createLineEditor(nodeText: string, container: HTMLElement): Promise<void> {
+    const {MpoDesirabilityLineEditor} = await import('@datagrok-libraries/statistics/src/mpo/mpo-line-editor');
     const {line = [], min, max, weight} = this.metadataMap.get(nodeText) ?? {};
     const column = this.columns.find((c) => c.name === nodeText)!;
 
