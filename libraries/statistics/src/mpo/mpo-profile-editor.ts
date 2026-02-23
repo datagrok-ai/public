@@ -227,6 +227,8 @@ export class MpoProfileEditor {
       const col = v ? this.dataFrame!.col(v) : null;
       if (col && this.switchPropertyType(name, rowId, col))
         return;
+      if (col && col.isNumerical)
+        editor.setRange?.(col.min, col.max);
       editor.setColumn?.(col);
       this.emitChange();
     }});

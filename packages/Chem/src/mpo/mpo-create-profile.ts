@@ -463,7 +463,7 @@ export class MpoProfileCreateView {
       const dlg = ui.dialog('Keep profile changes?')
         .addButton('Keep', () => safeResolve(true))
         .addButton('Discard', () => safeResolve(false))
-        .show();
+        .show({center: true});
 
       dlg.getButton('Cancel')?.remove();
     });

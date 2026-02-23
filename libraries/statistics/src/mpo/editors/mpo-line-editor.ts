@@ -79,8 +79,15 @@ export class MpoDesirabilityLineEditor {
   // Flag to prevent touchpad right-click from adding a new point
   private ignoreNextClick = false;
 
+  private dragScaleX = 0;
+  private dragScaleY = 0;
+  private _width: number;
+  private _height: number;
+
   constructor(prop: NumericalDesirability, width: number, height: number) {
     this._prop = prop;
+    this._width = width;
+    this._height = height;
     this.ensureDefaultLine();
     this.barsLayer = new Konva.Layer();
     this.root.style.width = `${width}px`;
@@ -97,6 +104,13 @@ export class MpoDesirabilityLineEditor {
     const min = this._prop.min ?? 0;
     const max = this._prop.max ?? 1;
     this._prop.line = [[min, 0.5], [max, 0.5]];
+  }
+
+  private updateDragScales(): void {
+    const plotWidth = this._width - EDITOR_PADDING.left - EDITOR_PADDING.right;
+    const plotHeight = this._height - EDITOR_PADDING.top - EDITOR_PADDING.bottom;
+    this.dragScaleX = (this.getMaxX() - this.getMinX()) / plotWidth;
+    this.dragScaleY = 1 / plotHeight;
   }
 
   private isInPlotArea(pos: {x: number, y: number}, width: number, height: number) {
@@ -342,6 +356,7 @@ export class MpoDesirabilityLineEditor {
 
     // Enable curve drag (smooth)
     this.enableCurveDrag(width, height);
+    this.updateDragScales();
 
     // Initial draw
     if (this.pendingBarValues) {
@@ -525,12 +540,6 @@ export class MpoDesirabilityLineEditor {
     let startX0 = 0;
     let startK = 0;
 
-    const plotWidth = width - EDITOR_PADDING.left - EDITOR_PADDING.right;
-    const plotHeight = height - EDITOR_PADDING.top - EDITOR_PADDING.bottom;
-
-    const scaleX = (this.getMaxX() - this.getMinX()) / plotWidth;
-    const scaleY = 1 / plotHeight;
-
     this.stage.on('mousedown touchstart', (evt) => {
       if (this._prop.mode === 'freeform')
         return;
@@ -567,13 +576,13 @@ export class MpoDesirabilityLineEditor {
       const dy = pos.y - startPointer.y;
 
       if (this._prop.mode === 'gaussian') {
-        this._prop.mean = startMean + dx * scaleX;
-        this._prop.sigma = Math.max(0.01, startSigma + (-dy) * scaleY * (this.getMaxX() - this.getMinX()));
+        this._prop.mean = startMean + dx * this.dragScaleX;
+        this._prop.sigma = Math.max(0.01, startSigma + (-dy) * this.dragScaleY * (this.getMaxX() - this.getMinX()));
       }
 
       if (this._prop.mode === 'sigmoid') {
-        this._prop.x0 = startX0 + dx * scaleX;
-        this._prop.k = Math.max(0.1, startK + (-dy) * scaleY * 50);
+        this._prop.x0 = startX0 + dx * this.dragScaleX;
+        this._prop.k = Math.max(0.1, startK + (-dy) * this.dragScaleY * 50);
       }
 
       this._prop.line = this.computeLine();
@@ -647,6 +656,40 @@ export class MpoDesirabilityLineEditor {
       this.specialHandle.position(coords);
     }
     this.layer!.batchDraw();
+  }
+
+  setRange(min: number, max: number): void {
+    const oldMin = this.getMinX();
+    const oldMax = this.getMaxX();
+    const oldRange = oldMax - oldMin;
+    const newRange = max - min;
+
+    if (oldRange !== 0 && newRange !== 0) {
+      const scale = newRange / oldRange;
+      const remap = (x: number) => min + (x - oldMin) * scale;
+
+      if (this._prop.mean != null)
+        this._prop.mean = remap(this._prop.mean);
+      if (this._prop.sigma != null)
+        this._prop.sigma *= scale;
+      if (this._prop.x0 != null)
+        this._prop.x0 = remap(this._prop.x0);
+      if (this._prop.k != null)
+        this._prop.k /= scale;
+
+      for (const p of this._prop.line)
+        p[0] = remap(p[0]);
+
+      if (this._prop.freeformLine) {
+        for (const p of this._prop.freeformLine)
+          p[0] = remap(p[0]);
+      }
+    }
+
+    this._prop.min = min;
+    this._prop.max = max;
+    this.updateDragScales();
+    this.redrawAll(false);
   }
 
   setColumn(col: DG.Column | null): void {
