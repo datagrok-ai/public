@@ -292,4 +292,11 @@ export namespace funcs {
   export async function generatePmpoDataset(samples: number ): Promise<DG.DataFrame> {
     return await grok.functions.call('EDA:GeneratePmpoDataset', { samples });
   }
+
+  /**
+  Fit pMPO model and return desirability profile
+  */
+  export async function fitPmpoProfile(df: DG.DataFrame , desirabilityColumn: string ): Promise<any> {
+    return await grok.functions.call('EDA:FitPmpoProfile', { df, desirabilityColumn });
+  }
 }

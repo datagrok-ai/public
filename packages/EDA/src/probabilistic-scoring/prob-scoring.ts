@@ -206,6 +206,20 @@ export class Pmpo {
     };
   } // fitModelParams
 
+  /** Fits a pMPO model and returns a desirability profile JSON suitable for MPO scoring.
+   * Automatically selects suitable numerical columns as descriptors. */
+  static fitProfile(df: DG.DataFrame, desirabilityColumn: string): any {
+    const desCol = df.col(desirabilityColumn)!;
+    const descriptors = DG.DataFrame.fromColumns(
+      [...df.columns.numerical].filter(
+        (c) => c.name !== desirabilityColumn && c.stats.missingValueCount === 0 && c.stats.stdev > 0,
+      ),
+    ).columns;
+
+    const result = Pmpo.fit(df, descriptors, desCol, P_VAL_TRES_DEFAULT, R2_DEFAULT, Q_CUTOFF_DEFAULT);
+    return getDesirabilityProfileJson(result.params, true, '', '', false);
+  }
+
   /** Predicts pMPO scores for the given data frame using provided pMPO parameters */
   static predict(df: DG.DataFrame, params: Map<string, PmpoParams>, useSigmoid: boolean, predictionName: string): DG.Column {
     const count = df.rowCount;

@@ -4,7 +4,10 @@ import * as DG from 'datagrok-api/dg';
 
 import {Subscription} from 'rxjs';
 import {
+  createDefaultNumerical,
+  DESIRABILITY_PROFILE_TYPE,
   DesirabilityProfile,
+  PropertyDesirability,
   WeightedAggregation,
   WEIGHTED_AGGREGATIONS_LIST,
 } from '@datagrok-libraries/statistics/src/mpo/mpo';
@@ -15,6 +18,8 @@ import {MpoContextPanel} from '../mpo/mpo-context-panel';
 import {MpoProfileManager} from '../mpo/mpo-profile-manager';
 import {PackageFunctions} from '../package';
 import {computeMpo, MpoProfileInfo, deepEqual, findSuitableProfiles} from '../mpo/utils';
+
+const CREATE_NEW_PROFILE_ITEM = '+ Create New...';
 
 export class MpoProfileDialog {
   dataFrame: DG.DataFrame;
@@ -35,10 +40,20 @@ export class MpoProfileDialog {
   private suitableProfileNames: string[] = [];
   private subs: Subscription[] = [];
   private footerWarning: HTMLElement | null = null;
+  private isNewProfile = false;
+
+  private pmpoSettingsIcon: HTMLElement;
+  private methodInput: DG.ChoiceInput<string | null>;
+  private boolColInput: DG.ChoiceInput<string | null>;
+  private pmpoSettingsContainer: HTMLElement;
+  private pmpoSettingsOpened = false;
+  private hasBoolColumns: boolean;
 
   constructor(dataFrame?: DG.DataFrame) {
     this.dataFrame = dataFrame ?? grok.shell.t;
     this.mpoProfileEditor = new MpoProfileEditor(this.dataFrame);
+
+    this.hasBoolColumns = [...this.dataFrame.columns].some((c) => c.type === DG.COLUMN_TYPE.BOOL);
 
     this.aggregationInput = ui.input.choice('Aggregation', {
       items: WEIGHTED_AGGREGATIONS_LIST,
@@ -48,7 +63,13 @@ export class MpoProfileDialog {
 
     this.profileInput = ui.input.choice('Profile', {
       nullable: false,
-      onValueChanged: async (value) => await this.loadProfile(value),
+      onValueChanged: async (value) => {
+        if (value === CREATE_NEW_PROFILE_ITEM) {
+          await this.startNewProfile();
+          return;
+        }
+        await this.loadProfile(value);
+      },
     });
 
     this.designModeInput = ui.input.toggle('Design mode', {
@@ -70,13 +91,47 @@ export class MpoProfileDialog {
       this.updateSaveButtonVisibility();
     });
     this.saveButton.classList.add('chem-mpo-dialog-manage-button', 'chem-mpo-d-none');
+
+    this.methodInput = ui.input.choice('Method', {
+      items: ['Manual', 'Probabilistic'],
+      nullable: false,
+      value: 'Manual',
+      onValueChanged: async (value) => {
+        this.boolColInput.root.style.display = value === 'Probabilistic' ? '' : 'none';
+        if (value === 'Probabilistic') {
+          const boolCol = this.boolColInput.value;
+          if (boolCol)
+            await this.createProbabilisticProfile(boolCol);
+        } else
+          this.createManualProfile();
+      },
+    });
+
+    this.boolColInput = ui.input.choice('Activity column', {
+      items: [],
+      nullable: true,
+      onValueChanged: async (value) => {
+        if (value && this.methodInput.value === 'Probabilistic')
+          await this.createProbabilisticProfile(value);
+      },
+    });
+    this.boolColInput.root.style.display = 'none';
+
+    this.pmpoSettingsContainer = ui.divV([this.methodInput.root, this.boolColInput.root],
+      {style: {display: 'none'}});
+
+    this.pmpoSettingsIcon = ui.icons.settings(() => {
+      this.pmpoSettingsOpened = !this.pmpoSettingsOpened;
+      this.pmpoSettingsContainer.style.display = this.pmpoSettingsOpened ? '' : 'none';
+    }, 'Generate from data (pMPO)');
+    this.pmpoSettingsIcon.style.display = 'none';
   }
 
   async init(): Promise<void> {
     this.mpoProfiles = await MpoProfileManager.load();
     this.suitableProfileNames = findSuitableProfiles(this.dataFrame, this.mpoProfiles).map((p) => p.name);
 
-    this.profileInput.items = this.mpoProfiles.map((p) => p.name);
+    this.profileInput.items = [CREATE_NEW_PROFILE_ITEM, ...this.mpoProfiles.map((p) => p.name)];
     requestAnimationFrame(() => this.highlightSuitableProfiles(this.suitableProfileNames));
 
     const defaultProfile = this.suitableProfileNames.length > 0 ?
@@ -98,6 +153,9 @@ export class MpoProfileDialog {
 
     for (let i = 0; i < select.options.length; i++) {
       const option = select.options[i];
+      if (option.value === CREATE_NEW_PROFILE_ITEM)
+        continue;
+
       const text = option.textContent ?? '';
       if (text.startsWith('✓') || text.startsWith('\u2003'))
         continue;
@@ -129,12 +187,72 @@ export class MpoProfileDialog {
     if (!profileInfo)
       return;
 
+    this.isNewProfile = false;
+    this.pmpoSettingsOpened = false;
+    this.pmpoSettingsIcon.style.display = 'none';
+    this.pmpoSettingsContainer.style.display = 'none';
+
     this.currentProfileFileName = profileInfo.fileName;
     this.currentProfile = structuredClone(profileInfo);
     this.mpoProfileEditor.setProfile(this.currentProfile);
     this.originalProfile = structuredClone(this.currentProfile);
     this.updateSaveButtonVisibility();
     this.updateOkButtonState();
+  }
+
+  private async startNewProfile(): Promise<void> {
+    this.isNewProfile = true;
+    this.pmpoSettingsOpened = false;
+    this.pmpoSettingsContainer.style.display = 'none';
+    this.boolColInput.root.style.display = 'none';
+
+    if (this.hasBoolColumns) {
+      const boolCols = [...this.dataFrame.columns].filter((c) => c.type === DG.COLUMN_TYPE.BOOL);
+      this.boolColInput.items = boolCols.map((c) => c.name);
+      this.boolColInput.nullable = true;
+      this.boolColInput.value = null;
+      this.methodInput.value = 'Manual';
+      this.pmpoSettingsIcon.style.display = '';
+    }
+
+    this.createManualProfile();
+  }
+
+  private createManualProfile(): void {
+    const props: {[key: string]: PropertyDesirability} = {};
+    for (const col of this.dataFrame.columns.numerical)
+      props[col.name] = createDefaultNumerical(1, col.min, col.max);
+
+    this.currentProfile = {type: DESIRABILITY_PROFILE_TYPE, name: '', description: '', properties: props};
+    this.currentProfileFileName = null;
+    this.originalProfile = null;
+    this.isNewProfile = true;
+
+    this.mpoProfileEditor.setProfile(this.currentProfile);
+    this.designModeInput.value = true;
+    this.saveButton.classList.remove('chem-mpo-d-none');
+    this.updateOkButtonState();
+  }
+
+  private async createProbabilisticProfile(boolColName: string): Promise<void> {
+    try {
+      const profile = await grok.functions.call('EDA:fitPmpoProfile',
+        {df: this.dataFrame, desirabilityColumn: boolColName});
+
+      this.currentProfile = profile;
+      this.currentProfileFileName = null;
+      this.originalProfile = null;
+      this.isNewProfile = true;
+
+      this.mpoProfileEditor.setProfile(this.currentProfile!);
+      this.designModeInput.value = true;
+      this.saveButton.classList.remove('chem-mpo-d-none');
+      this.updateOkButtonState();
+    } catch (e) {
+      grok.shell.warning(`pMPO training failed: ${e instanceof Error ? e.message : e}`);
+      this.methodInput.value = 'Manual';
+      this.createManualProfile();
+    }
   }
 
   private isProfileModified(): boolean {
@@ -144,7 +262,7 @@ export class MpoProfileDialog {
   }
 
   private updateSaveButtonVisibility(): void {
-    this.saveButton.classList.toggle('chem-mpo-d-none', !this.isProfileModified());
+    this.saveButton.classList.toggle('chem-mpo-d-none', !this.isNewProfile && !this.isProfileModified());
   }
 
   private isProfileApplicable(): boolean {
@@ -187,10 +305,58 @@ export class MpoProfileDialog {
   }
 
   private async saveProfile(): Promise<void> {
-    if (!this.currentProfileFileName || !this.currentProfile)
+    if (!this.currentProfile)
       return;
 
-    await MpoProfileManager.save(this.currentProfile, this.currentProfileFileName);
+    if (!this.currentProfileFileName) {
+      const saved = await this.showSaveNewProfileDialog();
+      if (!saved)
+        return;
+    } else
+      await MpoProfileManager.save(this.currentProfile, this.currentProfileFileName);
+  }
+
+  private showSaveNewProfileDialog(): Promise<boolean> {
+    return new Promise((resolve) => {
+      const nameInput = ui.input.string('Name', {value: '', nullable: false});
+      const descInput = ui.input.textArea('Description', {value: ''});
+
+      ui.dialog({title: 'Save MPO Profile'})
+        .add(ui.divV([nameInput.root, descInput.root]))
+        .onOK(async () => {
+          const name = nameInput.value!.trim();
+          if (!name) {
+            grok.shell.warning('Profile name cannot be empty');
+            resolve(false);
+            return;
+          }
+
+          this.currentProfile!.name = name;
+          this.currentProfile!.description = descInput.value || '';
+          this.currentProfileFileName = MpoProfileManager.generateFileName(name);
+          const saved = await MpoProfileManager.save(this.currentProfile!, this.currentProfileFileName!);
+          if (saved) {
+            this.isNewProfile = false;
+            this.pmpoSettingsOpened = false;
+            this.pmpoSettingsIcon.style.display = 'none';
+            this.pmpoSettingsContainer.style.display = 'none';
+            await this.refreshProfilesDropdown(this.currentProfile!.name);
+            this.originalProfile = structuredClone(this.currentProfile!);
+            this.updateSaveButtonVisibility();
+          }
+          resolve(saved);
+        })
+        .onCancel(() => resolve(false))
+        .show();
+    });
+  }
+
+  private async refreshProfilesDropdown(selectName: string): Promise<void> {
+    this.mpoProfiles = await MpoProfileManager.load();
+    this.suitableProfileNames = findSuitableProfiles(this.dataFrame, this.mpoProfiles).map((p) => p.name);
+    this.profileInput.items = [CREATE_NEW_PROFILE_ITEM, ...this.mpoProfiles.map((p) => p.name)];
+    requestAnimationFrame(() => this.highlightSuitableProfiles(this.suitableProfileNames));
+    this.profileInput.value = selectName;
   }
 
   private addParetoFrontViewer(columnNames: string[]): void {
@@ -222,11 +388,13 @@ export class MpoProfileDialog {
   }
 
   private getProfileControls(): HTMLElement {
-    return ui.divH([this.profileInput.root, this.manageButton, this.saveButton], {style: {gap: '10px'}});
+    return ui.divH([this.profileInput.root, this.pmpoSettingsIcon, this.manageButton, this.saveButton],
+      {style: {gap: '10px'}});
   }
 
   private getMpoControls(): HTMLElement {
     return ui.divV([
+      this.pmpoSettingsContainer,
       this.aggregationInput.root,
       this.designModeInput.root,
       this.mpoProfileEditor.root,
