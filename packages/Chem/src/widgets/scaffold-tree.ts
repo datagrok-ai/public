@@ -77,7 +77,7 @@ interface ScaffoldLayout {
   scaffoldJson: string;
 }
 
-const MAX_MOL_NUMBER = 500;
+const MAX_MOL_NUMBER = 51000;
 
 export function value(node: TreeViewNode): ITreeNode {
   return node.value as ITreeNode;
@@ -654,6 +654,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
   bitOperation: string;
   ringCutoff: number = 10;
   dischargeAndDeradicalize: boolean = false;
+  // maxMolecules: number = 51000;
   cancelled: boolean = false;
   treeBuildCount: number = -1;
   checkBoxesUpdateInProgress: boolean = false;
@@ -697,6 +698,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
   visibleNodes: Set<DG.TreeViewGroup> | null = null;
   intersectionObserver: IntersectionObserver | undefined;
   resizeObserver: ResizeObserver | undefined;
+  _activeWorker: Worker | null = null;
 
   constructor() {
     super();
@@ -748,6 +750,11 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
       description: 'Remove charges and radicals from scaffolds',
       userEditable: false,
     });
+
+    // this.maxMolecules = this.int('maxMolecules', 51000, {
+    //   category: 'Scaffold Generation',
+    //   description: 'Maximum number of molecules to process',
+    // });
 
     this.treeEncode = this.string('treeEncode', '[]', {userEditable: false});
     this.allowGenerate = this.bool('allowGenerate', null, {userEditable: false});
@@ -857,10 +864,9 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     this.clear();
     let currentCancelled = false;
 
-    //this.root.style.visibility = 'hidden';
     ui.setUpdateIndicator(this.root, true);
     this.progressBar = DG.TaskBarProgressIndicator.create('Generating Scaffold Tree...');
-    this.progressBar?.update(0, 'Installing ScaffoldGraph..: 0% completed');
+    this.progressBar?.update(0, 'Generating scaffold tree..: 0% completed');
 
     const c = this.root.getElementsByClassName('d4-update-shadow');
     if (c.length > 0) {
@@ -871,6 +877,10 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
       const eCancel : HTMLAnchorElement = ui.link('Cancel', () => {
         this.cancelled = true;
         currentCancelled = true;
+        if (this._activeWorker) {
+          this._activeWorker.terminate();
+          this._activeWorker = null;
+        }
         eCancel.innerHTML = 'Cancelling... Please Wait...';
         eCancel.style.pointerEvents = 'none';
         eCancel.style.color = 'gray';
@@ -896,6 +906,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
       return;
 
     this.progressBar?.update(30, 'Generating tree..: 30% completed');
+    // const maxMolCount = this.maxMolecules;
     const maxMolCount = 750;
 
     let length = this.molColumn.length;
@@ -908,7 +919,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
 
     let molStr = null;
     let mTmp = null;
-    const ar = new Array(length);
+    const smiles: string[] = new Array(length);
     for (let n = 0, m = 0; n < length; ++n, m += step) {
       molStr = this.molColumn.get(m);
       if (molStr.includes('V3000')) {
@@ -919,29 +930,85 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
           try {
             mTmp = _rdKitModule.get_qmol(molStr);
           } catch (e) {
-            ar[n] = molStr;
+            smiles[n] = molStr;
           }
         }
         if (mTmp !== null) {
-          ar[n] = mTmp.get_smiles();
+          smiles[n] = mTmp.get_smiles();
           mTmp.delete();
         }
         continue;
-      } else ar[n] = molStr;
+      } else smiles[n] = molStr;
     }
 
     if (currentCancelled)
       return;
 
-    const molCol: DG.Column = DG.Column.fromStrings('smiles', ar);
-    molCol.semType = DG.SEMTYPE.MOLECULE;
-    molCol.meta.units = this.molColumn.meta.units;
-    const dataFrame = DG.DataFrame.fromColumns([molCol]);
+    this.finishGenerateTreeWasm(smiles);
+  }
 
-    if (currentCancelled)
-      return;
+  async finishGenerateTreeWasm(smiles: string[]): Promise<void> {
+    const runNum = this.treeBuildCount;
 
-    this.finishGenerateTree(dataFrame);
+    try {
+      const worker = new Worker(
+        new URL('./scaffold-network.worker.ts', import.meta.url));
+      this._activeWorker = worker;
+
+      const jsonStr = await new Promise<string>((resolve, reject) => {
+        worker.onmessage = (event: MessageEvent) => {
+          const {result, error}: {result?: string, error?: string} = event.data;
+          if (error)
+            reject(new Error(error));
+          else
+            resolve(result!);
+        };
+        worker.onerror = (e) => reject(new Error(e.message));
+        worker.postMessage({
+          smilesJson: JSON.stringify(smiles),
+          ringCutoff: this.ringCutoff,
+          dischargeAndDeradicalize: this.dischargeAndDeradicalize,
+          webRoot: _package.webRoot,
+        });
+      });
+
+      worker.terminate();
+      this._activeWorker = null;
+
+      if (this.treeBuildCount > runNum || this.cancelled)
+        return;
+
+      if (jsonStr != null && jsonStr != '')
+        await this.loadTreeStr(jsonStr);
+
+      if (this.cancelled) {
+        this.clear();
+        ui.setUpdateIndicator(this.root, false);
+        this.progressBar?.update(100, 'Build Cancelled');
+        this.progressBar?.close();
+        this.progressBar = null;
+        return;
+      }
+
+      this.treeEncodeUpdateInProgress = true;
+      this.treeEncode = JSON.stringify(this.serializeTrees(this.tree));
+      this.treeEncodeUpdateInProgress = false;
+
+      this.progressBar?.close();
+      this.progressBar = null;
+    } catch (e: any) {
+      console.warn('WASM scaffold tree failed, falling back to Python:', e);
+      this._activeWorker?.terminate();
+      this._activeWorker = null;
+
+      // Fallback to Python path
+      const molCol: DG.Column = DG.Column.fromStrings('smiles', smiles);
+      molCol.semType = DG.SEMTYPE.MOLECULE;
+      if (this.molColumn)
+        molCol.meta.units = this.molColumn.meta.units;
+      const dataFrame = DG.DataFrame.fromColumns([molCol]);
+      this.finishGenerateTree(dataFrame);
+    }
   }
 
   async finishGenerateTree(dataFrame: DG.DataFrame) : Promise<void> {
@@ -2345,6 +2412,11 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
 
   detach(): void {
     this.cancelled = true;
+
+    if (this._activeWorker) {
+      this._activeWorker.terminate();
+      this._activeWorker = null;
+    }
 
     if (this.wrapper !== null) {
       this.wrapper.close();

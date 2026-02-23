@@ -53,7 +53,7 @@ module.exports = (_env, _options) => ({
       library: {type: 'var', name: `${packageName}_test`},
       import: './src/package-test.ts',
     },
-    package: [`./src/${rdkitLibVersion}.wasm`, './src/bbwasm_bg.wasm', './src/package.ts'],
+    package: [`./src/${rdkitLibVersion}.wasm`, './src/bbwasm_bg.wasm', './src/scaffold_network.wasm', './src/package.ts'],
   },
   devtool: 'source-map',
   devServer: {
