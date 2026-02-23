@@ -53,6 +53,9 @@ export class MpoProfileCreateView {
   private tableViewVisible: boolean = false;
   private subs: Subscription[] = [];
   private lastOpenedHint: HTMLDivElement | null = null;
+  private profileModified = false;
+  private updatingLayout = false;
+  private stashedManualProfile: { profile: DesirabilityProfile; modified: boolean } | null = null;
 
   private pMpoDockedItems: {
     statsGrid?: DG.DockNode;
@@ -88,15 +91,19 @@ export class MpoProfileCreateView {
     this.dockTableView();
 
     updateMpoPath(
-      this.isEditMode ? this.view : this.tableView,
+      this.activeView,
       this.isEditMode ? MpoPathMode.Edit : MpoPathMode.Create,
       this.profile.name,
     );
 
     this.initControls(showMethod);
     this.initSaveButton();
-    this.attachLayout();
+    this.attachLayout(true);
     this.listenForProfileChanges();
+  }
+
+  private get activeView(): DG.View {
+    return this.isEditMode ? this.view : this.tableView;
   }
 
   private dockTableView() {
@@ -144,6 +151,7 @@ export class MpoProfileCreateView {
           if (saved) {
             this.fileName = fileName;
             this.saveButton!.style.display = 'none';
+            this.profileModified = false;
           }
         })
         .show();
@@ -154,7 +162,7 @@ export class MpoProfileCreateView {
     });
 
     this.saveButton.style.display = 'none';
-    (this.isEditMode ? this.view : this.tableView).setRibbonPanels([[this.saveButton]]);
+    this.activeView.setRibbonPanels([[this.saveButton]]);
   }
 
   private initControls(showMethod: boolean) {
@@ -166,8 +174,12 @@ export class MpoProfileCreateView {
         value: METHOD_MANUAL,
         nullable: false,
         onValueChanged: async () => {
-          this.clearPreviousLayout();
           if (this.methodInput!.value === METHOD_PROBABILISTIC) {
+            this.stashedManualProfile = {
+              profile: structuredClone(this.profile),
+              modified: this.profileModified,
+            };
+            this.clearPreviousLayout();
             this.setAggregationVisible(false);
             this.closeContextPanel();
             if (!this.df) {
@@ -178,10 +190,20 @@ export class MpoProfileCreateView {
             await this.runProbabilisticMpo();
             return;
           }
-          this.setAggregationVisible(true);
-          this.closePMpoPanels();
-          this.setTableViewVisible(false);
-          this.attachLayout();
+
+          if (this.stashedManualProfile) {
+            this.profile = this.stashedManualProfile.profile;
+            this.profileModified = this.stashedManualProfile.modified;
+            this.stashedManualProfile = null;
+            this.prepareManualLayout();
+            await this.attachLayout(true);
+            return;
+          }
+
+          const keepChanges = this.profileModified ?
+            await this.showKeepChangesDialog() : false;
+          this.prepareManualLayout();
+          this.attachLayout(false, keepChanges);
         },
       });
       controls.push(this.methodInput);
@@ -190,14 +212,17 @@ export class MpoProfileCreateView {
     this.datasetInput = ui.input.table('Dataset', {
       nullable: true,
       onValueChanged: async (df) => {
+        this.df = df;
+        const isManual = this.methodInput?.value !== METHOD_PROBABILISTIC;
+        const keepChanges = isManual && this.showMethod && this.profileModified ?
+          await this.showKeepChangesDialog() : false;
+
         this.closePMpoPanels();
         const indicatorRoot = this.tableViewVisible ? this.tableView.root : this.view.root;
         ui.setUpdateIndicator(indicatorRoot, true, 'Switching dataset...');
         await new Promise((r) => setTimeout(r, 0));
 
         try {
-          this.df = df;
-
           if (!this.df) {
             this.closeContextPanel();
             this.setTableViewVisible(false);
@@ -206,7 +231,7 @@ export class MpoProfileCreateView {
               this.clearPreviousLayout();
               this.showError('Probabilistic MPO requires a dataset. Please select a dataset first.');
             } else
-              this.attachLayout();
+              this.attachLayout(false, keepChanges);
             return;
           }
 
@@ -221,7 +246,7 @@ export class MpoProfileCreateView {
           }
 
           this.setTableViewVisible(false);
-          this.attachLayout();
+          this.attachLayout(false, keepChanges);
         } finally {
           ui.setUpdateIndicator(indicatorRoot, false);
         }
@@ -299,12 +324,12 @@ export class MpoProfileCreateView {
     this.lastOpenedHint = ui.hints.addHint(hints[i].element, hintContent, hints[i].position);
   }
 
-  private async attachLayout() {
+  private async attachLayout(skipProfileResolution = false, keepChanges: boolean = false) {
+    if (this.showMethod && !skipProfileResolution && this.methodInput?.value === METHOD_MANUAL)
+      this.profile = this.resolveProfileForTransition(keepChanges);
+
     ui.setUpdateIndicator(this.view.root, true, 'Updating layout...');
     try {
-      this.clearPreviousLayout();
-      this.ensureProfile();
-
       if (this.methodInput?.value === METHOD_MANUAL || !this.showMethod) {
         this.editor.design = true;
         this.editor.dataFrame = this.df ?? null as any;
@@ -312,15 +337,18 @@ export class MpoProfileCreateView {
           this.aggregationInput.enabled = !!this.df;
           this.updateAggregationTooltip();
         }
-
-        if (this.showMethod) {
-          this.profile = this.df ?
-            this.createProfileForDf() :
-            this.createDefaultProfile();
-        }
       }
 
-      this.editor.setProfile(this.profile);
+      this.clearPreviousLayout();
+      this.updatingLayout = true;
+      try {
+        this.editor.setProfile(this.profile);
+      } finally {
+        this.updatingLayout = false;
+      }
+
+      if (this.profileModified && this.saveButton)
+        this.saveButton.style.display = 'initial';
 
       if (!this.df) {
         this.profileViewContainer.append(this.profileEditorContainer);
@@ -356,7 +384,7 @@ export class MpoProfileCreateView {
 
     this.pMpoDockedItems = null;
     if (this.saveButton)
-      (this.isEditMode ? this.view : this.tableView).setRibbonPanels([[this.saveButton]]);
+      this.activeView.setRibbonPanels([[this.saveButton]]);
   }
 
   private async runProbabilisticMpo(): Promise<void> {
@@ -404,6 +432,13 @@ export class MpoProfileCreateView {
     }
   }
 
+  private prepareManualLayout(): void {
+    this.clearPreviousLayout();
+    this.setAggregationVisible(true);
+    this.closePMpoPanels();
+    this.setTableViewVisible(false);
+  }
+
   private clearPreviousLayout() {
     const header = this.profileViewContainer.children[0];
     ui.empty(this.profileViewContainer);
@@ -418,9 +453,53 @@ export class MpoProfileCreateView {
     this.profileViewContainer.append(errorDiv);
   }
 
-  private ensureProfile() {
-    if (!this.profile)
-      this.profile = this.createDefaultProfile();
+  private showKeepChangesDialog(): Promise<boolean> {
+    return new Promise((resolve) => {
+      const safeResolve = (value: boolean) => {
+        dlg.close();
+        resolve(value);
+      };
+
+      const dlg = ui.dialog('Keep profile changes?')
+        .addButton('Keep', () => safeResolve(true))
+        .addButton('Discard', () => safeResolve(false))
+        .show();
+
+      dlg.getButton('Cancel')?.remove();
+    });
+  }
+
+  private mergeProfileWithDf(existing: DesirabilityProfile, df: DG.DataFrame): DesirabilityProfile {
+    const merged: DesirabilityProfile = {
+      type: existing.type,
+      name: existing.name,
+      description: existing.description,
+      properties: {},
+    };
+
+    for (const key of Object.keys(existing.properties))
+      merged.properties[key] = structuredClone(existing.properties[key]);
+
+    const existingLower = new Set(Object.keys(merged.properties).map((n) => n.toLowerCase()));
+    for (const col of df.columns.numerical) {
+      if (!existingLower.has(col.name.toLowerCase()))
+        merged.properties[col.name] = createDefaultNumerical(1, col.min, col.max);
+    }
+
+    return merged;
+  }
+
+  private resolveProfileForTransition(keepChanges: boolean): DesirabilityProfile {
+    if (!keepChanges) {
+      this.profileModified = false;
+      this.stashedManualProfile = null;
+      return this.df ? this.createProfileForDf() : this.createDefaultProfile();
+    }
+
+    if (this.df)
+      return this.mergeProfileWithDf(this.profile, this.df);
+
+    return this.profile;
   }
 
   private createDefaultProfile(): DesirabilityProfile {
@@ -474,7 +553,10 @@ export class MpoProfileCreateView {
 
   private listenForProfileChanges() {
     this.subs.push(grok.events.onCustomEvent(MPO_SCORE_CHANGED_EVENT).subscribe(async () => {
-      this.saveButton!.style.display = 'initial';
+      if (!this.updatingLayout) {
+        this.saveButton!.style.display = 'initial';
+        this.profileModified = true;
+      }
       if (!this.df || !this.profile || !this.mpoContextPanel) return;
 
       const agg = this.aggregationInput?.value ?? 'Average';
@@ -523,6 +605,6 @@ export class MpoProfileCreateView {
 
   private closeView(): void {
     this.detach();
-    (this.isEditMode ? this.view : this.tableView).close();
+    this.activeView.close();
   }
 }
