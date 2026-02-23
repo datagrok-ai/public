@@ -282,6 +282,13 @@ export class PackageFunctions {
     grok.shell.info('Different renderers even though semantic types are the same');
   }
 
+  @grok.decorators.func({outputs: [{type: 'object', name: 'result'}]})
+  static addPinnedColumn(
+    @grok.decorators.param({'type': 'object'}) gridCol: DG.GridColumn) {
+    gridCol.pin();
+    return gridCol;
+  }
+
 
   @grok.decorators.autostart({tags: ['autostart']})
   static async _autoPowerGrid() {

@@ -186,6 +186,12 @@ export function demoTestUnitsCellRenderer() : void {
   PackageFunctions.demoTestUnitsCellRenderer();
 }
 
+//input: object gridCol 
+//output: object result
+export function addPinnedColumn(gridCol: any) {
+  return PackageFunctions.addPinnedColumn(gridCol);
+}
+
 //tags: autostart
 //meta.role: autostart
 export async function _autoPowerGrid() : Promise<void> {
