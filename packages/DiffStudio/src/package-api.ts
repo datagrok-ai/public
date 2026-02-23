@@ -118,6 +118,13 @@ export namespace funcs {
   }
 
   /**
+  The chemical reaction part of the air pollution model developed at The Dutch National Institute of Public Health and Environmental Protection
+  */
+  export async function pollution(): Promise<void> {
+    return await grok.functions.call('DiffStudio:Pollution', {});
+  }
+
+  /**
   Run model with Diff Studio UI
   */
   export async function runModel(model: string , inputsTabDockRatio: number , graphsDockRatio: number ): Promise<void> {
