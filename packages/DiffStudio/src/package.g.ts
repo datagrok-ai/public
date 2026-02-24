@@ -69,14 +69,9 @@ export async function runDiffStudioTreeBrowser(treeNode: any) : Promise<void> {
 //input: double a = 45 { category: Throw parameters; caption: Angle; min: 20; max: 70; units: deg }
 //output: double maxDist { caption: Max distance }
 //output: double maxHeight { caption: Max height }
-<<<<<<< vmakarichev/grok-19666-diff-studio-claude-code-features
-//output: dataframe df { caption: Trajectory; viewer: Line chart(block: 60, multiAxis: "false", multiAxisLegendPosition: "RightCenter", autoLayout: "false", showAggrSelectors: "false") | Grid(block: 40) }
-//meta.role: model
-//editor: Compute:RichFunctionViewEditor
-=======
 //output: dataframe df { caption: Trajectory; viewer: Line chart(multiAxis: "false", multiAxisLegendPosition: "RightCenter", autoLayout: "false", showAggrSelectors: "false") | Grid() }
+//meta.role: model
 //editor: Compute2:RichFunctionViewEditor
->>>>>>> master
 //sidebar: @compute
 //meta.runOnOpen: true
 //meta.runOnInput: true
