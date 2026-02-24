@@ -119,6 +119,10 @@ export interface IBarChartSettings {
 
   minTextHeight: number;
 
+  /// When enabled, shows hatched areas and arrows on bars
+  /// that are clipped by the value axis range.
+  showClippedBarIndicators: boolean;
+
   backColor: number;
 
   axisColor: number;
@@ -413,6 +417,8 @@ export interface IBoxPlotSettings {
   showQ3: boolean;
 
   viewport: string;
+
+  allowColorSynchronization: boolean;
 
   autoLayout: boolean;
 

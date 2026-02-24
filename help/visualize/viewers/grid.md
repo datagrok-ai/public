@@ -675,6 +675,7 @@ or press Alt+C.
 | Col Header Height | number | Column header height. If not specified, it is calculated automatically. See also *Col Labels Orientation*, *Horz Col Labels Height* |
 | Vert Col Labels Height | number | Height of the column labels when the orientation is vertical, and *Col Header Height* is not specified. |
 | Horz Col Labels Height | number | Height of the column labels when the orientation is horizontal, and *Col Header Height* is not specified. |
+| Frozen Columns | number |  |
 | Max Heatmap Columns | number |  |
 | **General** | | |
 | Show Friendly Name | boolean | When checked, friendly name gets shown underneath the column name. |
