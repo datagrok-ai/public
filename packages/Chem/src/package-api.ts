@@ -165,15 +165,15 @@ export namespace scripts {
   /**
   Fingerprint similarity search in synthon chemical space using RDKit SynthonSpaceSearch
   */
-  export async function synthonSimilaritySearch(molecule: string , synthonLibrary: DG.FileInfo , maxHits: number , similarityCutoff: number ): Promise<DG.DataFrame> {
-    return await grok.functions.call('Chem:SynthonSimilaritySearch', { molecule, synthonLibrary, maxHits, similarityCutoff });
+  export async function synthonSimilaritySearch(molecule: string , synthonLibrary: DG.FileInfo , libraryName: string , maxHits: number , similarityCutoff: number ): Promise<DG.DataFrame> {
+    return await grok.functions.call('Chem:SynthonSimilaritySearch', { molecule, synthonLibrary, libraryName, maxHits, similarityCutoff });
   }
 
   /**
   Substructure search in synthon chemical space using RDKit SynthonSpaceSearch
   */
-  export async function synthonSubstructureSearch(molecule: string , synthonLibrary: DG.FileInfo , maxHits: number ): Promise<DG.DataFrame> {
-    return await grok.functions.call('Chem:SynthonSubstructureSearch', { molecule, synthonLibrary, maxHits });
+  export async function synthonSubstructureSearch(molecule: string , synthonLibrary: DG.FileInfo , libraryName: string , maxHits: number ): Promise<DG.DataFrame> {
+    return await grok.functions.call('Chem:SynthonSubstructureSearch', { molecule, synthonLibrary, libraryName, maxHits });
   }
 
   /**
@@ -525,6 +525,13 @@ export namespace funcs {
   */
   export async function synthonSimilaritySearchWidget(molecule: string ): Promise<any> {
     return await grok.functions.call('Chem:SynthonSimilaritySearchWidget', { molecule });
+  }
+
+  /**
+  Search in synthon chemical space and return products with precursor structures
+  */
+  export async function synthonSearchFunc(spaceName: string , molecule: string , maxHits: number , searchType: string , similarityCutoff?: number | null): Promise<DG.DataFrame> {
+    return await grok.functions.call('Chem:SynthonSearchFunc', { spaceName, molecule, maxHits, searchType, similarityCutoff });
   }
 
   export async function convertMoleculeNotation(molecule: DG.Column , targetNotation: string , kekulize?: boolean | null): Promise<DG.Column> {

@@ -638,6 +638,20 @@ export async function synthonSimilaritySearchWidget(molecule: string) : Promise<
   return await PackageFunctions.synthonSimilaritySearchWidget(molecule);
 }
 
+//name: synthonSearch
+//description: Search in synthon chemical space and return products with precursor structures
+//input: string spaceName 
+//input: string molecule { semType: Molecule }
+//input: double maxHits = 100 
+//input: string searchType { choices: ["substructure","similarity"] }
+//input: double similarityCutoff = 0.5 { optional: true; nullable: true }
+//output: dataframe result
+//meta.cache: client
+//meta.cache.invalidateOn: 0 * * * *
+export async function synthonSearchFunc(spaceName: string, molecule: string, maxHits: number, searchType: string, similarityCutoff?: number) : Promise<any> {
+  return await PackageFunctions.synthonSearchFunc(spaceName, molecule, maxHits, searchType, similarityCutoff);
+}
+
 //input: column molecule { semType: Molecule }
 //input: string targetNotation 
 //input: bool kekulize = false { optional: true; nullable: true }
