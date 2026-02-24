@@ -43,6 +43,7 @@ export class SunburstViewer extends EChartViewer {
   includeNulls: boolean;
   private moleculeRenderQueue: Promise<void> = Promise.resolve();
   private latestRenderToken = 0;
+  viewerFilter: DG.BitSet | null = null;
   constructor() {
     super();
     this.initEventListeners();
@@ -94,21 +95,21 @@ export class SunburstViewer extends EChartViewer {
     }, event);
   }
 
-  handleDataframeFiltering(path: string[], dataFrame: DG.DataFrame) {
-    const filterFunction = this.buildFilterFunction(path);
-    dataFrame.rows.filter(filterFunction);
-  }
+  handleDataframeFiltering(path: string[], event: MouseEvent) {
+    if (this.viewerFilter === null)
+      this.viewerFilter = DG.BitSet.create(this.dataFrame.rowCount);
 
-  buildFilterFunction(path: string[]): (row: any) => boolean {
-    return (row) => {
-      return path.every((expectedValue, i) => {
-        const column = this.dataFrame.getCol(this.eligibleHierarchyNames[i]);
-        const columnValue = row.get(this.eligibleHierarchyNames[i]);
-        const formattedValue = columnValue !== null ?
-          (column.type !== DG.TYPE.STRING ? columnValue.toString() : columnValue) : '';
-        return formattedValue === expectedValue;
+    this.viewerFilter.handleClick((index: number) => {
+      return path.every((segment, j) => {
+        const columnValue = this.dataFrame.getCol(this.eligibleHierarchyNames[j]).get(index);
+        return columnValue == null ? segment === ' ' : columnValue.toString() === segment;
       });
-    };
+    }, event);
+
+    if (this.viewerFilter.trueCount === 0)
+      this.viewerFilter = null;
+
+    this.dataFrame.rows.requestFilter();
   }
 
   initEventListeners(): void {
@@ -128,7 +129,7 @@ export class SunburstViewer extends EChartViewer {
         selectedSectors = selectedSectors.filter((sector) => sector !== pathString);
 
       if (this.onClick === 'Filter') {
-        this.handleDataframeFiltering(path, this.dataFrame);
+        this.handleDataframeFiltering(path, event);
         return;
       } else
         this.applySelectionFilter(this.dataFrame.selection, path, event);
@@ -166,8 +167,8 @@ export class SunburstViewer extends EChartViewer {
       const clickY = (event.clientY - top) * scaleY;
 
       if (this.isCanvasEmpty(canvas.getContext('2d'), clickX, clickY)) {
-        this.render();
-        this.dataFrame.filter.setAll(true);
+        this.viewerFilter = null;
+        this.dataFrame.rows.requestFilter();
       }
     };
 
@@ -186,8 +187,8 @@ export class SunburstViewer extends EChartViewer {
 
   onContextMenuHandler(menu: DG.Menu): void {
     menu.item('Reset View', () => {
-      this.render();
-      this.dataFrame.filter.setAll(true);
+      this.viewerFilter = null;
+      this.dataFrame.rows.requestFilter();
     });
   }
 
@@ -239,6 +240,13 @@ export class SunburstViewer extends EChartViewer {
       this.hierarchyColumnNames = this.hierarchyColumnNames.filter((columnName) =>
         !columnNamesToRemove.includes(columnName));
       this.render();
+    }));
+    this.subs.push(this.dataFrame.onRowsFiltering.subscribe(() => {
+      if (this.viewerFilter)
+        this.dataFrame.filter.and(this.viewerFilter);
+    }));
+    this.subs.push(DG.debounce(grok.events.onResetFilterRequest, 10).subscribe(() => {
+      this.viewerFilter = null;
     }));
   }
 

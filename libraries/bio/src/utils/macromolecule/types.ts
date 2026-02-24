@@ -5,6 +5,7 @@ import * as DG from 'datagrok-api/dg';
 import {CellRendererBackBase} from '../cell-renderer-back-base';
 import {ISeqHandler} from './seq-handler';
 import {PolymerType} from '../../helm/types';
+import {NOTATION_PROVIDER_CONSTRUCTOR_ROLE} from './consts';
 
 export type SeqSplittedBase = ArrayLike<string> & Iterable<string>;
 
@@ -66,6 +67,34 @@ export interface INotationProvider {
   getHelm(seq: string, options: any): string;
 
   createCellRendererBack(gridCol: DG.GridColumn | null, tableCol: DG.Column<string>): CellRendererBackBase<string>;
+}
+
+export abstract class NotationProviderBase {
+  /** Name of the custom notation */
+  static get notationName(): string {
+    return 'Custom';
+  };
+
+  /** flag to let bio know if this provider implements method for converting helm to it */
+  static get implementsFromHelm(): boolean {
+    return false;
+  };
+
+  /** Method for converting HELM to this notation */
+  static convertFromHelm(helm: string, options: any): string {
+    throw new Error(`Method convertFromHelm not implemented for this notation provider`);
+  };
+
+  static async getProviderConstructors(): Promise<typeof NotationProviderBase[]> {
+    // this is terrible, I know, but otherwise this gets put in webworkers and fails due to DG resolution)))
+    // @ts-ignore
+    if (window?.DG) {
+      // @ts-ignore
+      const constFuncs: any[] = window.DG.Func.find({meta: {role: NOTATION_PROVIDER_CONSTRUCTOR_ROLE}});
+      return Promise.all(constFuncs.map((f) => f.apply({})));
+    }
+    return [];
+  }
 }
 
 export type SeqColStats = { freq: MonomerFreqs, sameLength: boolean }

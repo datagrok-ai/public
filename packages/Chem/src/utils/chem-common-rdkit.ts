@@ -6,7 +6,7 @@ import {convertToRDKit} from '../analysis/r-group-analysis';
 import rdKitLibVersion from '../rdkit_lib_version';
 //@ts-ignore
 import initRDKitModule from '../RDKit_minimal.js';
-import {isMolBlock} from './chem-common';
+import {hasNewLines, isMolBlock} from './chem-common';
 import $ from 'cash-dom';
 import {RDModule, RDMol, RDReaction} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 import {ISubstruct} from '@datagrok-libraries/chem-meta/src/types';
@@ -239,6 +239,8 @@ export function checkMolEqualSmiles(mol1: any, molfile2: string): boolean {
 export function checkMoleculeValid(molecule: string): any {
   let mol;
   try {
+    if (!hasNewLines(molecule) && molecule?.length > 5000)
+      return null;
     mol = getRdKitModule().get_mol(molecule);
   } catch (e: any) {
     mol?.delete();

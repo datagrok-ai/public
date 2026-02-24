@@ -15,6 +15,7 @@ import {appSearch, connectionsSearch,
   helpSearch, jsSamplesSearch, pdbSearch, pubChemSearch, querySearch,
   scriptsSearch, usersSearch, wikiSearch} from './search/entity-search';
 import {KpiWidget} from './widgets/kpi-widget';
+import {CronInput} from './widgets/cron-input';
 import {HtmlWidget} from './widgets/html-widget';
 import {viewersDialog} from './viewers-gallery';
 import {windowsManagerPanel} from './windows-manager';
@@ -165,6 +166,18 @@ export class PackageFunctions {
   @grok.decorators.func()
   static kpiWidget(): DG.Widget {
     return new KpiWidget();
+  }
+
+  @grok.decorators.func({
+    meta: {
+      propertyType: 'string',
+      semType: 'cron',
+      role: 'valueEditor',
+    },
+    outputs: [{type: 'object', name: 'result'}],
+  })
+  static cronInput(): DG.InputBase {
+    return new CronInput();
   }
 
   @grok.decorators.func({})
@@ -379,8 +392,8 @@ export class PackageFunctions {
   @grok.decorators.func({
     meta: {role: 'transform'}
   })
-  static async runEnrichment(conn: DG.DataConnection, schema: string, table: string, column: string, name: string, df: DG.DataFrame): Promise<void> {
-    return runEnrichmentFromConfig(conn, schema, table, column, name, df);
+  static async runEnrichment(conn: DG.DataConnection, schema: string, table: string, column: string, name: string, df: DG.DataFrame, db: string): Promise<void> {
+    return runEnrichmentFromConfig(conn, schema, table, column, name, df, db);
   }
 }
 

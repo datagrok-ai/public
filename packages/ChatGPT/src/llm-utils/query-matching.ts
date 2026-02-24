@@ -317,12 +317,9 @@ function runQueryAIprompt(userPrompt: string, connection: DG.DataConnection, tvW
   async function runPrompt() {
     try {
       ui.setUpdateIndicator(outputDiv, true, 'Generating query...', abort);
-      const schemas = await grok.dapi.connections.getSchemas(connection);
-      const defaultSchema = schemas.includes('public') ? 'public' : schemas.includes(connection.name) ? connection.name : schemas[0];
       const sqlResult = await generateAISqlQueryWithTools(
         userPrompt,
         connection.id!,
-        defaultSchema,
         {
           aiPanel: dummyAIPanelFuncs,
           modelType: 'Deep Research',

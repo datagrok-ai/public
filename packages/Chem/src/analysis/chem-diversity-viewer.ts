@@ -128,6 +128,7 @@ export async function chemDiversitySearch(
       const mol = getMolSafe(moleculeColumn.categories[randomIndexes[i]], {}, rdkit).mol;
       if (mol) {
         try {
+          mol.remove_hs_in_place(); // hydrogens can cause identical molecules to have different fingerprints
           const fp = mol.get_morgan_fp_as_uint8array(JSON.stringify({
             radius: defaultMorganFpRadius,
             nBits: defaultMorganFpLength,

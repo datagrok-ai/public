@@ -13,6 +13,7 @@ import {Plan} from '../prompt-engine/interfaces';
 import {AssistantRenderer} from '../prompt-engine/rendering-tools';
 import {fireAIAbortEvent, fireAIPanelToggleEvent} from '../utils';
 import {generateAISqlQueryWithTools} from './sql-tools';
+import {BuiltinDBInfoMeta} from './query-meta-utils';
 import {processTableViewAIRequest} from './tableview-tools';
 import {DBAIPanel, ScriptingAIPanel, TVAIPanel} from './panel';
 import {generateDatagrokScript} from './script-tools';
@@ -126,17 +127,19 @@ export async function setupAIQueryEditorUI(v: DG.ViewBase, connectionID: string,
     return false;
   }
 
-  const schemas = await grok.dapi.connections.getSchemas(connection);
-  const defaultSchema = schemas.includes('public') ? 'public' : schemas[0];
+  const allDbInfos = await BuiltinDBInfoMeta.allFromConnection(connection);
+  const catalogs = allDbInfos.map((d) => d.name);
+  const defaultCatalog = connection.parameters?.['catalog'] ?? connection.parameters?.['db'] ?? catalogs[0] ?? '';
 
-  const panel = new DBAIPanel(schemas, defaultSchema, connectionID, v);
+  const panel = new DBAIPanel(catalogs, defaultCatalog, connectionID, v);
   panel.show();
 
   panel.onRunRequest.subscribe(async (args) => {
     ui.setUpdateIndicator(queryEditorRoot, true, 'Grokking Query...', () => { fireAIAbortEvent(); });
     const session = panel.startChatSession();
     try {
-      const sqlQuery = await generateAISqlQueryWithTools(args.currentPrompt.prompt, connectionID, args.currentPrompt.schemaName!, {
+      const sqlQuery = await generateAISqlQueryWithTools(args.currentPrompt.prompt, connectionID, {
+        catalogName: args.currentPrompt.catalogName,
         oldMessages: args.prevMessages,
         aiPanel: session.session, modelType: panel.getCurrentInputs().model,
       });

@@ -30,13 +30,14 @@ import {addPropertiesAsColumns, getChemPropertyFunc, getPropertiesAsColumns, pro
 import {structuralAlertsWidget} from './widgets/structural-alerts';
 import {structure2dWidget} from './widgets/structure2d';
 import {getToxicityRisksColumns, toxicityWidget} from './widgets/toxicity';
+import {_synthonSubstructureSearchWidget, _synthonSimilaritySearchWidget} from './widgets/synthon-search';
 
 //panels imports
 import {getInchiKeysImpl, getInchisImpl} from './panels/inchi';
 import {getMolColumnPropertyPanel} from './panels/chem-column-property-panel';
 import {ScaffoldTreeViewer} from './widgets/scaffold-tree';
 import {ScaffoldTreeFilter} from './widgets/scaffold-tree-filter';
-import {Fingerprint, waitFor} from './utils/chem-common';
+import {Fingerprint, hasNewLines, waitFor} from './utils/chem-common';
 import * as chemCommonRdKit from './utils/chem-common-rdkit';
 import {IMolContext, getMolSafe, isFragment, _isSmarts} from './utils/mol-creation_rdkit';
 import {checkMoleculeValid, checkMolEqualSmiles, _rdKitModule} from './utils/chem-common-rdkit';
@@ -92,7 +93,7 @@ import {MixtureCellRenderer} from './rendering/mixture-cell-renderer';
 import {createComponentPane, createMixtureWidget, Mixfile} from './utils/mixfile';
 import {biochemicalPropertiesDialog} from './widgets/biochem-properties-widget';
 import {checkCurrentView} from './utils/ui-utils';
-import {mpo, PropertyDesirability, WEIGHTED_AGGREGATIONS_LIST, WeightedAggregation} from '@datagrok-libraries/statistics/src/mpo/mpo';
+import {DESIRABILITY_PROFILE_TYPE, isDesirabilityProfile, mpo, PropertyDesirability, WEIGHTED_AGGREGATIONS_LIST, WeightedAggregation} from '@datagrok-libraries/statistics/src/mpo/mpo';
 //@ts-ignore
 import '../css/chem.css';
 import {addDeprotectedColumn, DeprotectEditor} from './analysis/deprotect';
@@ -102,7 +103,7 @@ import $ from 'cash-dom';
 import {MpoProfileCreateView} from './mpo/mpo-create-profile';
 import {MpoProfileManager} from './mpo/mpo-profile-manager';
 import {MpoProfileHandler} from './mpo/mpo-profile-handler';
-import {calculateMpoCore, findSuitableProfiles, MPO_PROFILE_CHANGED_EVENT, MpoProfileInfo} from './mpo/utils';
+import {findSuitableProfiles, MPO_PROFILE_CHANGED_EVENT, MpoProfileInfo} from './mpo/utils';
 
 export {getMCS};
 export * from './package.g';
@@ -345,6 +346,8 @@ export class PackageFunctions {
   @grok.decorators.func()
   static getCLogP(
     @grok.decorators.param({type: 'string', options: {semType: 'Molecule'}}) smiles: string): number {
+    if (!smiles || (!hasNewLines(smiles) && smiles.length > 5000))
+      return NaN; // do not attempt to parse very long SMILES, will cause MOB.
     const mol = PackageFunctions.getRdKitModule().get_mol(smiles);
     const res = JSON.parse(mol.get_descriptors()).CrippenClogP;
     mol?.delete();
@@ -643,6 +646,36 @@ export class PackageFunctions {
           .getElementsByClassName('chem-canvas')[0];
         (element as HTMLElement).click();
       }, 500);
+    }
+  }
+
+  @grok.decorators.func({
+    'name': 'BitBIRCH Clustering',
+    'top-menu': 'Chem | Calculate | BitBIRCH Clustering...',
+    'description': 'O(N) incremental clustering of molecules based on binary fingerprint similarity',
+  })
+  static async bitbirchClusteringTopMenu(
+    table: DG.DataFrame,
+    @grok.decorators.param({type: 'column', options: {semType: 'Molecule'}}) molecules: DG.Column,
+    @grok.decorators.param({type: 'double', options: {initialValue: '0.55', caption: 'Threshold', min: '0', max: '1'}}) threshold: number = 0.65,
+    @grok.decorators.param({
+      type: 'string',
+      options: {
+        caption: 'Fingerprint type',
+        choices: ['Morgan', 'RDKit', 'Pattern', 'AtomPair', 'MACCS', 'TopologicalTorsion'],
+        initialValue: 'Morgan',
+      },
+    }) fingerprintType: string = 'Morgan',
+  ): Promise<void> {
+    try {
+      const {bitbirchWorker} = await import('./analysis/bit-birch/bitbirch-clustering');
+      const col = await bitbirchWorker(
+        molecules, threshold, fingerprintType as Fingerprint);
+      col.name = table.columns.getUnusedName(col.name);
+      table.columns.add(col);
+    } catch (e) {
+      grok.shell.error('BitBIRCH Clustering Error');
+      console.error(e);
     }
   }
 
@@ -1403,6 +1436,28 @@ export class PackageFunctions {
     return smiles && !DG.chem.Sketcher.isEmptyMolfile(smiles.value) ?
       _isSmarts(smiles.value) || isFragment(smiles.value) ? new DG.Widget(ui.divText(SMARTS_MOLECULE_MESSAGE)) :
         toxicityWidget(smiles) : new DG.Widget(ui.divText(EMPTY_MOLECULE_MESSAGE));
+  }
+
+  @grok.decorators.panel({
+    name: 'Databases | Synthon Search | Substructure Search',
+    description: 'Substructure search in synthon chemical space using RDKit SynthonSpaceSearch',
+    meta: {role: 'widgets', domain: 'chem'},
+  })
+  static async synthonSubstructureSearchWidget(
+    @grok.decorators.param({options: {semType: 'Molecule'}}) molecule: string): Promise<DG.Widget> {
+    return molecule && !DG.chem.Sketcher.isEmptyMolfile(molecule) ?
+      await _synthonSubstructureSearchWidget(molecule) : new DG.Widget(ui.divText(EMPTY_MOLECULE_MESSAGE));
+  }
+
+  @grok.decorators.panel({
+    name: 'Databases | Synthon Search | Similarity Search',
+    description: 'Fingerprint similarity search in synthon chemical space using RDKit SynthonSpaceSearch',
+    meta: {role: 'widgets', domain: 'chem'},
+  })
+  static async synthonSimilaritySearchWidget(
+    @grok.decorators.param({options: {semType: 'Molecule'}}) molecule: string): Promise<DG.Widget> {
+    return molecule && !DG.chem.Sketcher.isEmptyMolfile(molecule) ?
+      await _synthonSimilaritySearchWidget(molecule) : new DG.Widget(ui.divText(EMPTY_MOLECULE_MESSAGE));
   }
 
   @grok.decorators.func({
@@ -2474,24 +2529,53 @@ export class PackageFunctions {
   }
 
   @grok.decorators.func({
-    outputs: [{name: 'res', type: 'list'}],
+    outputs: [{name: 'result', type: 'dataframe', options: {action: 'join(df)'}}],
+  })
+  static mpoCalculate(
+    df: DG.DataFrame,
+    @grok.decorators.param({type: 'column_list'}) columns: DG.ColumnList,
+    profileName: string,
+    @grok.decorators.param({type: 'string'}) aggregation: WeightedAggregation,
+  ): DG.DataFrame | null {
+    const resultCol = mpo(df, Array.from(columns), profileName, aggregation);
+    if (resultCol && !df.col(resultCol.name))
+      return DG.DataFrame.fromColumns([resultCol]);
+    return null;
+  }
+
+  @grok.decorators.func({
     meta: {role: 'transform'},
   })
   static async mpoTransformFunction(
     df: DG.DataFrame,
     profileName: string,
-    aggregation: WeightedAggregation,
-    @grok.decorators.param({type: 'object'}) currentProperties: { [key: string]: PropertyDesirability },
-  ): Promise<string[]> {
-    const result = calculateMpoCore(df, profileName, currentProperties, aggregation);
+    @grok.decorators.param({type: 'string'}) aggregation: WeightedAggregation,
+    @grok.decorators.param({type: 'string'}) currentProperties: string,
+    silent: boolean = false,
+  ): Promise<DG.DataFrame> {
+    const parsedProperties: Record<string, PropertyDesirability> = JSON.parse(currentProperties);
+    const columns: DG.Column[] = [];
 
-    for (const warning of result.warnings)
-      grok.shell.warning(warning);
+    for (const [propertyName, desirability] of Object.entries(parsedProperties)) {
+      const column = df.columns.byName(propertyName);
+      if (!column) {
+        if (!silent)
+          grok.shell.warning(`Column "${propertyName}" not found. Skipping.`);
+        continue;
+      }
+      column.setTag('desirabilityTemplate', JSON.stringify(desirability));
+      columns.push(column);
+    }
 
-    if (result.error)
-      grok.shell.error(result.error);
+    if (columns.length === 0) {
+      if (!silent)
+        grok.shell.error('No valid columns found matching the profile properties.');
+      return DG.DataFrame.create();
+    }
 
-    return result.columnNames;
+    // Temporary fix until proper support for list<column> is implemented
+    const colList = DG.DataFrame.fromColumns(columns).columns;
+    return await grok.functions.call('Chem:mpoCalculate', {df, columns: colList, profileName, aggregation});
   }
 
   @grok.decorators.fileViewer({
@@ -2524,7 +2608,7 @@ export class PackageFunctions {
     outputs: [{name: 'result', type: 'bool'}],
   })
   static checkJsonMpoProfile(content: string) {
-    return JSON.parse(content)['type'] === 'MPO Desirability Profile';
+    return isDesirabilityProfile(JSON.parse(content));
   }
 
   @grok.decorators.panel({
@@ -2631,6 +2715,7 @@ export class PackageFunctions {
     await refresh();
 
     grok.events.onCustomEvent(MPO_PROFILE_CHANGED_EVENT).subscribe(async () => {
+      await MpoProfileManager.load();
       await refresh();
     });
   }
@@ -2649,7 +2734,7 @@ export class PackageFunctions {
     resultDiv.appendChild(loader);
 
     const dataFrame = semValue.cell.dataFrame;
-    const profiles = await MpoProfileManager.ensureLoaded();
+    const profiles = await MpoProfileManager.load();
     const suitableProfiles = findSuitableProfiles(dataFrame, profiles);
 
     if (suitableProfiles.length === 0) {
@@ -2706,7 +2791,6 @@ export class PackageFunctions {
         columns,
         selected.name,
         aggregationInput.value as WeightedAggregation,
-        false,
       );
 
       ui.empty(resultDiv);
@@ -2717,12 +2801,14 @@ export class PackageFunctions {
       const addColumnIcon = ui.iconFA(
         'plus',
         () => {
-          mpo(
+          const col = mpo(
             dataFrame,
             columns,
             selected.name,
             aggregationInput.value as WeightedAggregation,
           );
+          if (!dataFrame.col(col.name))
+            dataFrame.columns.add(col);
         },
         'Add MPO score as a column',
       );

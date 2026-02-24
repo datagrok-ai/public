@@ -16,6 +16,11 @@ export abstract class MolfileAtoms {
     this.rawAtomLines[atomIdx] = this.rawAtomLines[atomIdx].replace(R_GROUP_ELEMENT_SYMBOL, newElementSymbol);
   }
 
+  appendAtomLine(rawLine: string, x: number, y: number): void {
+    this.rawAtomLines.push(rawLine);
+    this.coordinates.push({x, y});
+  }
+
   deleteAtoms(indices: number[]): void {
     this.coordinates = this.coordinates.filter((_, idx) => !indices.includes(idx));
     this.rawAtomLines = this.rawAtomLines.filter((_, idx) => !indices.includes(idx));

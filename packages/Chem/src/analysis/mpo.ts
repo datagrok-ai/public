@@ -8,7 +8,8 @@ import {
   WeightedAggregation,
   WEIGHTED_AGGREGATIONS_LIST,
 } from '@datagrok-libraries/statistics/src/mpo/mpo';
-import {MPO_SCORE_CHANGED_EVENT, MpoProfileEditor} from '@datagrok-libraries/statistics/src/mpo/mpo-profile-editor';
+import {MpoProfileEditor} from '@datagrok-libraries/statistics/src/mpo/mpo-profile-editor';
+import {MPO_SCORE_CHANGED_EVENT} from '@datagrok-libraries/statistics/src/mpo/utils';
 
 import {MpoContextPanel} from '../mpo/mpo-context-panel';
 import {MpoProfileManager} from '../mpo/mpo-profile-manager';
@@ -72,15 +73,15 @@ export class MpoProfileDialog {
   }
 
   async init(): Promise<void> {
-    this.mpoProfiles = await MpoProfileManager.ensureLoaded();
-    this.suitableProfileNames = findSuitableProfiles(this.dataFrame, this.mpoProfiles).map((p) => p.fileName);
+    this.mpoProfiles = await MpoProfileManager.load();
+    this.suitableProfileNames = findSuitableProfiles(this.dataFrame, this.mpoProfiles).map((p) => p.name);
 
-    this.profileInput.items = this.mpoProfiles.map((p) => p.fileName);
+    this.profileInput.items = this.mpoProfiles.map((p) => p.name);
     requestAnimationFrame(() => this.highlightSuitableProfiles(this.suitableProfileNames));
 
     const defaultProfile = this.suitableProfileNames.length > 0 ?
       this.suitableProfileNames[0] :
-      this.mpoProfiles[0]?.fileName ?? null;
+      this.mpoProfiles[0]?.name ?? null;
 
     if (defaultProfile) {
       this.profileInput.value = defaultProfile;
@@ -98,11 +99,11 @@ export class MpoProfileDialog {
     for (let i = 0; i < select.options.length; i++) {
       const option = select.options[i];
       const text = option.textContent ?? '';
-      if (text.startsWith('⭐') || text.startsWith('\u2003'))
+      if (text.startsWith('✓') || text.startsWith('\u2003'))
         continue;
 
       const isApplicable = suitableFileNames.includes(option.value);
-      option.textContent = `${isApplicable ? '⭐' : STAR_PLACEHOLDER} ${text}`;
+      option.textContent = `${isApplicable ? '✓' : STAR_PLACEHOLDER} ${text}`;
     }
   }
 
@@ -120,20 +121,16 @@ export class MpoProfileDialog {
     }));
   }
 
-  private async loadProfile(fileName: string | null): Promise<void> {
-    if (!fileName)
+  private async loadProfile(profileName: string | null): Promise<void> {
+    if (!profileName)
       return;
 
-    const profileInfo = this.mpoProfiles.find((p) => p.fileName === fileName);
+    const profileInfo = this.mpoProfiles.find((p) => p.name === profileName);
     if (!profileInfo)
       return;
 
-    this.currentProfileFileName = fileName;
-    this.currentProfile = structuredClone({
-      name: profileInfo.name,
-      description: profileInfo.description,
-      properties: profileInfo.properties,
-    });
+    this.currentProfileFileName = profileInfo.fileName;
+    this.currentProfile = structuredClone(profileInfo);
     this.mpoProfileEditor.setProfile(this.currentProfile);
     this.originalProfile = structuredClone(this.currentProfile);
     this.updateSaveButtonVisibility();
@@ -260,7 +257,7 @@ export class MpoProfileDialog {
   }
 
   private detach(): void {
-    this.mpoContextPanel?.close();
+    this.mpoContextPanel?.release();
     this.subs.forEach((sub) => sub.unsubscribe());
     this.subs = [];
   }

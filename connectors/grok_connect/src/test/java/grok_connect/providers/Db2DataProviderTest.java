@@ -109,6 +109,6 @@ class Db2DataProviderTest extends ContainerizedProviderBaseTest {
     }
 
     private void prepareDataFrame(DataFrame dataFrame) {
-        dataFrame.columns.forEach(column -> column.name = column.name.toUpperCase());
+        dataFrame.getColumns().forEach(column -> column.setName(column.getName().toUpperCase()));
     }
 }

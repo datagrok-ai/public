@@ -58,7 +58,7 @@ class OracleDataProviderTest extends ContainerizedProviderBaseTest {
     @MethodSource("grok_connect.providers.arguments_provider.OracleObjectsMother#checkDatesParameterSupport_ok")
     public void checkDatesParameterSupport_ok(@ConvertWith(NamedArgumentConverter.class) FuncCall funcCall, DataFrame expected) {
         funcCall.func.connection = connection;
-        expected.columns.forEach(column -> column.name = column.name.toUpperCase());
+        expected.getColumns().forEach(column -> column.setName(column.getName().toUpperCase()));
         DataFrame actual = Assertions.assertDoesNotThrow(() -> provider.execute(funcCall));
         Assertions.assertTrue(dataFrameComparator.isDataFramesEqual(expected, actual));
     }
@@ -147,12 +147,12 @@ class OracleDataProviderTest extends ContainerizedProviderBaseTest {
 
     private void prepareDataFrame(DataFrame dataFrame) {
         // in order to save time reuse some common's
-        dataFrame.columns.removeIf(column -> column.name.equals("bool")); // oracle doesn't have boolean type
-        dataFrame.columns.forEach(column -> { // all columns name stored in uppercase
-            if (column.name.equals("date")) { // 'date' is reserved word in oracle, so use 'dat' for column name
-                column.name = "DAT";
+        dataFrame.removeColumn("bool"); // oracle doesn't have boolean type
+        dataFrame.getColumns().forEach(column -> { // all columns name stored in uppercase
+            if (column.getName().equals("date")) { // 'date' is reserved word in oracle, so use 'dat' for column name
+                column.setName("DAT");
             } else {
-                column.name = column.name.toUpperCase();
+                column.setName(column.getName().toUpperCase());
             }
         });
     }

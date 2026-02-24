@@ -82,6 +82,10 @@ export namespace funcs {
     return await grok.functions.call('DevTools:TestFunctionJoin', { data, col1, col2, col3, out });
   }
 
+  export async function testFunctionJoinColumnList(data: DG.DataFrame , columns: string[] , out?: any ): Promise<DG.DataFrame> {
+    return await grok.functions.call('DevTools:TestFunctionJoinColumnList', { data, columns, out });
+  }
+
   export async function testFunctionNewJoinWithoutFormula(data: DG.DataFrame ): Promise<DG.DataFrame> {
     return await grok.functions.call('DevTools:TestFunctionNewJoinWithoutFormula', { data });
   }

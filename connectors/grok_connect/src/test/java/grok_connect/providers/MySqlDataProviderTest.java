@@ -23,8 +23,8 @@ class MySqlDataProviderTest extends ContainerizedProviderBaseTest {
     public void getCatalogs_ok() {
         DataFrame actual = Assertions.assertDoesNotThrow(() -> provider.getCatalogs(connection));
         Assertions.assertNotNull(actual);
-        Assertions.assertEquals(1, actual.columns.size());
-        Assertions.assertEquals("catalog_name", actual.columns.get(0).name);
+        Assertions.assertEquals(1, actual.getColumnCount());
+        Assertions.assertEquals("catalog_name", actual.getColumn(0).getName());
         Assertions.assertTrue(actual.rowCount > 0);
     }
 

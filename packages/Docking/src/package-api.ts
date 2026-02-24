@@ -28,6 +28,10 @@ export namespace funcs {
     return await grok.functions.call('Docking:DockLigandCached', { jsonForm, containerId });
   }
 
+  export async function getAutodockResults(table: DG.DataFrame , ligands: DG.Column , target: string , poses: number ): Promise<DG.DataFrame> {
+    return await grok.functions.call('Docking:GetAutodockResults', { table, ligands, target, poses });
+  }
+
   /**
   Autodock plugin UI
   */

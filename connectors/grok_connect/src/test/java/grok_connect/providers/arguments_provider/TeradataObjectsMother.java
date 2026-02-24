@@ -1,7 +1,6 @@
 package grok_connect.providers.arguments_provider;
 
 import grok_connect.connectors_info.FuncCall;
-import grok_connect.providers.utils.DataFrameBuilder;
 import grok_connect.providers.utils.DateParser;
 import grok_connect.providers.utils.FuncCallBuilder;
 import grok_connect.providers.utils.Parser;
@@ -18,19 +17,17 @@ import java.time.Year;
 import java.time.temporal.TemporalAdjusters;
 import java.util.stream.Stream;
 
+@SuppressWarnings("unused")
 public class TeradataObjectsMother {
     private static final Parser parser = new DateParser();
 
     public static Stream<Arguments> getSchemas_ok() {
-        DataFrame expected = DataFrameBuilder.getBuilder()
-                .setRowCount(27)
-                .setColumn(new StringColumn(new String[] {"tdwm", "TDStats", "tapidb",
+        DataFrame expected = DataFrame.fromColumns(
+                new StringColumn("table_schema", new String[] {"tdwm", "TDStats", "tapidb",
                                 "TDMaps", "val", "TDBCMgmt", "SYSLIB", "mldb", "TD_ANALYTICS_DB",
                                 "TEST", "TD_SYSXML", "SystemFe", "dbcmngr", "TD_SERVER_DB", "SYSUDTLIB",
                                 "TDQCD", "LockLogShredder", "SYSUIF", "Sys_Calendar", "TD_SYSFNLIB",
-                                "TDaaS_DB", "DBC", "SYSSPATIAL", "SQLJ", "SYSJDBC", "SYSBAR", "SysAdmin"}),
-                        "table_schema")
-                .build();
+                                "TDaaS_DB", "DBC", "SYSSPATIAL", "SQLJ", "SYSJDBC", "SYSBAR", "SysAdmin"}));
         return Stream.of(Arguments.of(expected));
     }
 
@@ -42,21 +39,19 @@ public class TeradataObjectsMother {
         String fifthColumnName = "is_view";
         String schema = "TEST";
         String table = "MOCK_DATA";
-        DataFrame expected = DataFrameBuilder.getBuilder()
-                .setRowCount(9)
-                .setColumn(new StringColumn(), firstColumnName, new String[] {schema, schema,
+        DataFrame expected = DataFrame.fromColumns(
+                new StringColumn(firstColumnName, new String[] {schema, schema,
                         schema, schema, schema, schema, schema,
-                        schema, schema})
-                .setColumn(new StringColumn(), secondColumnName, new String[] {table, table,
+                        schema, schema}),
+                new StringColumn(secondColumnName, new String[] {table, table,
                         table, table, table, table,
-                        table, table, table})
-                .setColumn(new StringColumn(), thirdColumnName, new String[] {"first_name", "ip_address",
-                        "last_name", "some_number", "gender", "email", "country", "id", "dat"})
-                .setColumn(new StringColumn(), fourthColumnName, new String[] {"VARCHAR(50)", "VARCHAR(50)",
+                        table, table, table}),
+                new StringColumn(thirdColumnName, new String[] {"first_name", "ip_address",
+                        "last_name", "some_number", "gender", "email", "country", "id", "dat"}),
+                new StringColumn(fourthColumnName, new String[] {"VARCHAR(50)", "VARCHAR(50)",
                         "VARCHAR(50)", "NUMBER(5,2)", "VARCHAR(50)", "VARCHAR(50)",
-                        "VARCHAR(50)", "BIGINT", "DATE"})
-                .setColumn(new IntColumn(), fifthColumnName, new Integer[] {0, 0, 0, 0, 0, 0, 0, 0, 0})
-                .build();
+                        "VARCHAR(50)", "BIGINT", "DATE"}),
+                new IntColumn(fifthColumnName, new Integer[] {0, 0, 0, 0, 0, 0, 0, 0, 0}));
         return Stream.of(Arguments.of(expected));
     }
 
@@ -75,11 +70,8 @@ public class TeradataObjectsMother {
         LocalDate yesterday = now.minusDays(1);
         LocalDate dayOfLastYear = now.minusDays(150);
         // --input: string date = "today" {pattern: datetime}
-        DataFrame expected1 = DataFrameBuilder.getBuilder()
-                .setRowCount(1)
-                .setColumn(new DateTimeColumn(new Double[]{parser.parseDateToDouble(datePattern, now.toString())}),
-                        "dat")
-                .build();
+        DataFrame expected1 = DataFrame.fromColumns(
+                new DateTimeColumn("dat", new Double[]{parser.parseDateToDouble(datePattern, now.toString())}));
         FuncCall funcCall1 = FuncCallBuilder.getBuilder()
                 .addQuery("--input: string dat = \"today\" {pattern: datetime}\n"
                         + "SELECT dat FROM dates_patterns WHERE @dat(dat)\n"
@@ -89,14 +81,11 @@ public class TeradataObjectsMother {
                         now.toString(), now.plusDays(1).toString())
                 .build();
         // --input: string date = "this week" {pattern: datetime}
-        DataFrame expected2 = DataFrameBuilder.getBuilder()
-                .setRowCount(dayOfWeek == 1 ? 2 : 3)
-                .setColumn(new DateTimeColumn(parser.parseDatesToDoubles(datePattern,
+        DataFrame expected2 = DataFrame.fromColumns(
+                new DateTimeColumn("dat", parser.parseDatesToDoubles(datePattern,
                                 dayOfWeek == 1 ? null : yesterday.toString(),
                                 now.toString(),
-                                lastDayOfWeek.equals(now) ? null : lastDayOfWeek.toString())),
-                        "dat")
-                .build();
+                                lastDayOfWeek.equals(now) ? null : lastDayOfWeek.toString())));
         FuncCall funcCall2 = FuncCallBuilder.getBuilder()
                 .addQuery("--input: string dat = \"this week\" {pattern: datetime}\n"
                         + "SELECT dat FROM dates_patterns WHERE @dat(dat) ORDER BY dat\n"
@@ -107,15 +96,12 @@ public class TeradataObjectsMother {
                         lastDayOfWeek.plusDays(1).toString())
                 .build();
         // --input: string date = "this month" {pattern: datetime}
-        DataFrame expected3 = DataFrameBuilder.getBuilder()
-                .setRowCount(dayOfMonth > 1 && dayOfMonth < 31 - 6 ? 3 : 2)
-                .setColumn(new DateTimeColumn(parser.parseDatesToDoubles(datePattern,
+        DataFrame expected3 = DataFrame.fromColumns(
+                new DateTimeColumn("dat", parser.parseDatesToDoubles(datePattern,
                                 dayOfMonth == 1 ? null : yesterday.toString(),
                                 now.toString(),
                                 lastDayOfWeek.getMonthValue() >  lastDayOfMonth.getMonthValue() || lastDayOfWeek.equals(now)?
-                                        null : lastDayOfWeek.toString())),
-                        "dat")
-                .build();
+                                        null : lastDayOfWeek.toString())));
         FuncCall funcCall3 = FuncCallBuilder.getBuilder()
                 .addQuery("--input: string dat = \"this month\" {pattern: datetime}\n"
                         + "SELECT dat FROM dates_patterns WHERE @dat(dat) ORDER BY dat\n"
@@ -126,16 +112,13 @@ public class TeradataObjectsMother {
                         lastDayOfMonth.plusDays(1).toString())
                 .build();
         // --input: string date = "this year" {pattern: datetime}
-        DataFrame expected4 = DataFrameBuilder.getBuilder()
-                .setRowCount(dayOfYear > 1 && dayOfYear < Year.of(now.getYear()).length() - 6 ? 3 : 2)
-                .setColumn(new DateTimeColumn(parser.parseDatesToDoubles(datePattern,
+        DataFrame expected4 = DataFrame.fromColumns(
+                new DateTimeColumn("dat", parser.parseDatesToDoubles(datePattern,
                                 dayOfLastYear.getYear() == now.getYear() ? dayOfLastYear.toString() : null,
                                 dayOfYear == 1 ? null : yesterday.toString(),
                                 now.toString(),
                                 lastDayOfWeek.getYear() >  now.getYear() || lastDayOfWeek.equals(now)?
-                                        null : lastDayOfWeek.toString())),
-                        "dat")
-                .build();
+                                        null : lastDayOfWeek.toString())));
         FuncCall funcCall4 = FuncCallBuilder.getBuilder()
                 .addQuery("--input: string dat = \"this year\" {pattern: datetime}\n"
                         + "SELECT dat FROM dates_patterns WHERE @dat(dat) ORDER BY dat\n"
@@ -146,11 +129,8 @@ public class TeradataObjectsMother {
                         lastDayOfYear.plusDays(1).toString())
                 .build();
         // --input: string date = "yesterday" {pattern: datetime}
-        DataFrame expected5 = DataFrameBuilder.getBuilder()
-                .setRowCount(1)
-                .setColumn(new DateTimeColumn(parser.parseDatesToDoubles(datePattern, yesterday.toString())),
-                        "dat")
-                .build();
+        DataFrame expected5 = DataFrame.fromColumns(
+                new DateTimeColumn("dat", parser.parseDatesToDoubles(datePattern, yesterday.toString())));
         FuncCall funcCall5 = FuncCallBuilder.getBuilder()
                 .addQuery("--input: string date = \"yesterday\" {pattern: datetime}\n"
                         + "SELECT dat FROM dates_patterns WHERE @dat(dat) ORDER BY dat\n"
@@ -161,13 +141,10 @@ public class TeradataObjectsMother {
                         now.toString())
                 .build();
         // --input: string date = "last year" {pattern: datetime}
-        DataFrame expected6 = DataFrameBuilder.getBuilder()
-                .setRowCount(1)
-                .setColumn(new DateTimeColumn(parser.parseDatesToDoubles(datePattern,
+        DataFrame expected6 = DataFrame.fromColumns(
+                new DateTimeColumn("dat", parser.parseDatesToDoubles(datePattern,
                                 dayOfLastYear.getYear() < now.getYear() ? dayOfLastYear.toString() : null,
-                                yesterday.getYear() < now.getYear() ? yesterday.toString() : null)),
-                        "dat")
-                .build();
+                                yesterday.getYear() < now.getYear() ? yesterday.toString() : null)));
         FuncCall funcCall6 = FuncCallBuilder.getBuilder()
                 .addQuery("--input: string dat = \"last year\" {pattern: datetime}\n"
                         + "SELECT dat FROM dates_patterns WHERE @dat(dat) ORDER BY dat\n"
@@ -177,16 +154,13 @@ public class TeradataObjectsMother {
                         firstDayOfYear.minusYears(1).toString(), firstDayOfYear.toString())
                 .build();
         // --input: string date = "anytime" {pattern: datetime}
-        DataFrame expected7 = DataFrameBuilder.getBuilder()
-                .setRowCount(5)
-                .setColumn(new DateTimeColumn(parser.parseDatesToDoubles(datePattern, "2021-04-09",
+        DataFrame expected7 = DataFrame.fromColumns(
+                new DateTimeColumn("dat", parser.parseDatesToDoubles(datePattern, "2021-04-09",
                                 dayOfLastYear.toString(),
                                 yesterday.toString(),
                                 now.toString(),
                                 lastDayOfWeek.equals(now) ? null : lastDayOfWeek.toString()
-                                )),
-                        "dat")
-                .build();
+                                )));
         FuncCall funcCall7 = FuncCallBuilder.getBuilder()
                 .addQuery( "--input: string dat = \"anytime\" {pattern: datetime}\n"
                         + "SELECT dat FROM dates_patterns WHERE @dat(dat) ORDER BY dat\n"
@@ -195,11 +169,8 @@ public class TeradataObjectsMother {
                 .addFuncCallOptionsPattern("dat", "", "none", true, true)
                 .build();
         // --input: string date = "2021-2022" {pattern: datetime}
-        DataFrame expected8 = DataFrameBuilder.getBuilder()
-                .setRowCount(1)
-                .setColumn(new DateTimeColumn(parser.parseDatesToDoubles(datePattern, "2021-04-09")),
-                        "dat")
-                .build();
+        DataFrame expected8 = DataFrame.fromColumns(
+                new DateTimeColumn("dat", parser.parseDatesToDoubles(datePattern, "2021-04-09")));
 
         FuncCall funcCall8 = FuncCallBuilder.getBuilder()
                 .addQuery( "--input: string dat = \"2021-2021\" {pattern: datetime}\n"
@@ -221,15 +192,12 @@ public class TeradataObjectsMother {
                         Year.of(2022).atDay(1).toString())
                 .build();
         // --input: string date = "after 1/1/2022" {pattern: datetime}
-        DataFrame expected9 = DataFrameBuilder.getBuilder()
-                .setRowCount(4)
-                .setColumn(new DateTimeColumn(parser.parseDatesToDoubles(datePattern,
+        DataFrame expected9 = DataFrame.fromColumns(
+                new DateTimeColumn("dat", parser.parseDatesToDoubles(datePattern,
                                 dayOfLastYear.toString(),
                                 yesterday.toString(),
                                 now.toString(),
-                                lastDayOfWeek.equals(now) ? null : lastDayOfWeek.toString())),
-                        "dat")
-                .build();
+                                lastDayOfWeek.equals(now) ? null : lastDayOfWeek.toString())));
         FuncCall funcCall10 = FuncCallBuilder.getBuilder()
                 .addQuery("--input: string dat = \"after 1/1/2022\" {pattern: datetime}\n"
                         + "SELECT dat FROM dates_patterns WHERE @dat(dat) ORDER BY dat\n"
@@ -264,106 +232,86 @@ public class TeradataObjectsMother {
     }
 
     public static Stream<Arguments> checkArrayTypeSupport_ok() {
-        DataFrame expected = DataFrameBuilder.getBuilder()
-                .setRowCount(2)
-                .setColumn(new BigIntColumn(new String[]{"1", "2"}), "id")
-                .setColumn(new StringColumn(new String[]{"ResultArray:INTEGER[121, 255, 1241244]",
-                        "ResultArray:INTEGER[0, -124412, 5555]"}), "data")
-                .build();
+        DataFrame expected = DataFrame.fromColumns(
+                new BigIntColumn("id", new String[]{"1", "2"}),
+                new StringColumn("data", new String[]{"ResultArray:INTEGER[121, 255, 1241244]",
+                        "ResultArray:INTEGER[0, -124412, 5555]"}));
         FuncCall funcCall = FuncCallBuilder.fromQuery("SELECT * FROM ARRAY_TYPE");
         return Stream.of(Arguments.of(Named.of("ARRAY TYPE SUPPORT", funcCall), expected));
     }
 
     public static Stream<Arguments> checkCharacterTypesSupport_ok() {
-        DataFrame expected = DataFrameBuilder.getBuilder()
-                .setRowCount(1)
-                .setColumn(new StringColumn(new String[]{"Hello     "}), "ch")
-                .setColumn(new StringColumn(new String[]{"World"}), "varch")
-                .setColumn(new StringColumn(new String[]{"Datagrok"}), "clb")
-                .build();
+        DataFrame expected = DataFrame.fromColumns(
+                new StringColumn("ch", new String[]{"Hello     "}),
+                new StringColumn("varch", new String[]{"World"}),
+                new StringColumn("clb", new String[]{"Datagrok"}));
         FuncCall funcCall = FuncCallBuilder.fromQuery("SELECT * FROM character_type");
         return Stream.of(Arguments.of(Named.of("CHARACTER TYPES SUPPORT", funcCall), expected));
     }
 
     public static Stream<Arguments> checkJsonTypeSupport_ok() {
-        DataFrame expected = DataFrameBuilder.getBuilder()
-                .setRowCount(3)
-                .setColumn(new BigIntColumn(new String[]{"1", "2", "3"}), "id")
-                .setColumn(new StringColumn(new String[]{"{\"phones\":[{\"type\": \"mobile\", \"phone\": \"001001\"}, "
+        DataFrame expected = DataFrame.fromColumns(
+                new BigIntColumn("id", new String[]{"1", "2", "3"}),
+                new StringColumn("data", new String[]{"{\"phones\":[{\"type\": \"mobile\", \"phone\": \"001001\"}, "
                         + "{\"type\": \"fix\", \"phone\": \"002002\"}]}",
-                        "{\"bar\": \"baz\", \"balance\": 7.77, \"active\":false}", "{\"reading\": 1.230e-5}"}),
-                        "data")
-                .build();
+                        "{\"bar\": \"baz\", \"balance\": 7.77, \"active\":false}", "{\"reading\": 1.230e-5}"}));
         FuncCall funcCall = FuncCallBuilder.fromQuery("SELECT * FROM JSON_DATA ORDER BY id");
         return Stream.of(Arguments.of(Named.of("JSON TYPE SUPPORT", funcCall), expected));
     }
 
     public static Stream<Arguments> checkDateTypesSupport_ok() {
-        DataFrame expected = DataFrameBuilder.getBuilder()
-                .setRowCount(1)
-                .setColumn(new DateTimeColumn(new Double[]{parser.parseDateToDouble("yyyy-MM-dd",
-                        "2023-01-01")}), "dat")
-                .setColumn(new DateTimeColumn(new Double[]{parser.parseDateToDouble("HH:mm:ss.SSS",
-                        "12:55:33.333")}), "time_data")
-                .setColumn(new DateTimeColumn(new Double[]{parser.parseDateToDouble("yyyy-MM-dd HH:mm:ss.SSS",
-                        "2023-01-01 12:55:33.333")}), "stamp")
-                .setColumn(new DateTimeColumn(new Double[]{parser.parseDateToDouble("HH:mm:ss.SSSX",
-                        "12:55:33.333+02:00")}), "time_zoned")
-                .setColumn(new DateTimeColumn(new Double[]{parser.parseDateToDouble("yyyy-MM-dd HH:mm:ss.SSS",
-                        "2000-01-01 11:37:58.222")}), "zoned_stamp")
-                .build();
+        DataFrame expected = DataFrame.fromColumns(
+                new DateTimeColumn("dat", new Double[]{parser.parseDateToDouble("yyyy-MM-dd",
+                        "2023-01-01")}),
+                new DateTimeColumn("time_data", new Double[]{parser.parseDateToDouble("HH:mm:ss.SSS",
+                        "12:55:33.333")}),
+                new DateTimeColumn("stamp", new Double[]{parser.parseDateToDouble("yyyy-MM-dd HH:mm:ss.SSS",
+                        "2023-01-01 12:55:33.333")}),
+                new DateTimeColumn("time_zoned", new Double[]{parser.parseDateToDouble("HH:mm:ss.SSSX",
+                        "12:55:33.333+02:00")}),
+                new DateTimeColumn("zoned_stamp", new Double[]{parser.parseDateToDouble("yyyy-MM-dd HH:mm:ss.SSS",
+                        "2000-01-01 11:37:58.222")}));
         FuncCall funcCall = FuncCallBuilder.fromQuery("SELECT * FROM dates_type");
         return Stream.of(Arguments.of(Named.of("DATE TYPES SUPPORT", funcCall), expected));
     }
 
     public static Stream<Arguments> checkSpatialTypesSupport_ok() {
-        DataFrame expected = DataFrameBuilder.getBuilder()
-                .setRowCount(1)
-                .setColumn(new BigIntColumn(new String[]{"1"}), "id")
-                .setColumn(new StringColumn(new String[]{"POINT (10 20)"}), "point")
-                .setColumn(new StringColumn(new String[]{"POLYGON ((1 1,1 3,6 3,6 0,1 1))"}), "polygon")
-                .setColumn(new StringColumn(new String[]{"LINESTRING (1 1,2 2,3 3,4 4)"}), "linestring")
-                .setColumn(new StringColumn(new String[]{"MULTIPOLYGON (((1 1,1 3,6 3,6 0,1 1)),((10 5,10 10,20 10,20 5,10 5)))"}),
-                        "multipolygon")
-                .build();
+        DataFrame expected = DataFrame.fromColumns(
+                new BigIntColumn("id", new String[]{"1"}),
+                new StringColumn("point", new String[]{"POINT (10 20)"}),
+                new StringColumn("polygon", new String[]{"POLYGON ((1 1,1 3,6 3,6 0,1 1))"}),
+                new StringColumn("linestring", new String[]{"LINESTRING (1 1,2 2,3 3,4 4)"}),
+                new StringColumn("multipolygon", new String[]{"MULTIPOLYGON (((1 1,1 3,6 3,6 0,1 1)),((10 5,10 10,20 10,20 5,10 5)))"}));
         FuncCall funcCall = FuncCallBuilder.fromQuery("SELECT * FROM SPATIAL_TYPES");
         return Stream.of(Arguments.of(Named.of("SPATIAL TYPES SUPPORT", funcCall), expected));
     }
 
     public static Stream<Arguments> checkXmlTypeSupport_ok() {
-        DataFrame expected = DataFrameBuilder.getBuilder()
-                .setRowCount(2)
-                .setColumn(new BigIntColumn(new String[]{"1", "2"}), "id")
-                .setColumn(new StringColumn(new String[]{"<foo>Hello World!</foo>",
-                        "<book><title>Manual</title><chapter>...</chapter></book>"}), "data")
-                .build();
+        DataFrame expected = DataFrame.fromColumns(
+                new BigIntColumn("id", new String[]{"1", "2"}),
+                new StringColumn("data", new String[]{"<foo>Hello World!</foo>",
+                        "<book><title>Manual</title><chapter>...</chapter></book>"}));
         FuncCall funcCall = FuncCallBuilder.fromQuery("SELECT * FROM XML_DATA");
         return Stream.of(Arguments.of(Named.of("XML TYPE SUPPORT", funcCall), expected));
     }
 
     public static Stream<Arguments> checkIntegerTypesSupport_ok() {
-        DataFrame expected = DataFrameBuilder.getBuilder()
-                .setRowCount(2)
-                .setColumn(new BigIntColumn(new String[]{"9223372036854775807", "0"}),
-                        "bigint_type")
-                .setColumn(new IntColumn(new Integer[] {-128, 127}), "byte_int")
-                .setColumn(new IntColumn(new Integer[] {32760, -23444}), "small_int")
-                .setColumn(new IntColumn(new Integer[] {2147483647, -2147483647}), "int_type")
-                .build();
+        DataFrame expected = DataFrame.fromColumns(
+                new BigIntColumn("bigint_type", new String[]{"9223372036854775807", "0"}),
+                new IntColumn("byte_int", new Integer[] {-128, 127}),
+                new IntColumn("small_int", new Integer[] {32760, -23444}),
+                new IntColumn("int_type", new Integer[] {2147483647, -2147483647}));
         FuncCall funcCall = FuncCallBuilder.fromQuery("SELECT * FROM INTEGER_TYPES");
         return Stream.of(Arguments.of(Named.of("INTEGER TYPES SUPPORT", funcCall), expected));
     }
 
     public static Stream<Arguments> checkFloatTypesSupport_ok() {
-        DataFrame expected = DataFrameBuilder.getBuilder()
-                .setRowCount(2)
-                .setColumn(new FloatColumn(new Float[]{3.4020234234f, 0.9999f}), "float_type")
-                .setColumn(new FloatColumn(new Float[]{-3.4028423f, 1.9999f}), "real_type")
-                .setColumn(new FloatColumn(new Float[]{-0.0043512f, 213515.435545f}),
-                        "double_type")
-                .setColumn(new FloatColumn(new Float[]{235234.4646f, 99999999.9999f}), "decimal_type")
-                .setColumn(new FloatColumn(new Float[]{999.99f, 0.99f}), "number_type")
-                .build();
+        DataFrame expected = DataFrame.fromColumns(
+                new FloatColumn("float_type", new Float[]{3.4020234234f, 0.9999f}),
+                new FloatColumn("real_type", new Float[]{-3.4028423f, 1.9999f}),
+                new FloatColumn("double_type", new Float[]{-0.0043512f, 213515.435545f}),
+                new FloatColumn("decimal_type", new Float[]{235234.4646f, 99999999.9999f}),
+                new FloatColumn("number_type", new Float[]{999.99f, 0.99f}));
         FuncCall funcCall = FuncCallBuilder.fromQuery("SELECT * FROM FLOAT_TYPE");
         return Stream.of(Arguments.of(Named.of("FLOAT TYPES SUPPORT", funcCall), expected));
     }

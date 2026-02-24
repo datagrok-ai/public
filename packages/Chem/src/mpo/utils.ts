@@ -2,17 +2,16 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
 import {
+  DESIRABILITY_PROFILE_TYPE,
   DesirabilityProfile,
-  mpo,
   PropertyDesirability,
   WeightedAggregation,
 } from '@datagrok-libraries/statistics/src/mpo/mpo';
 
-export type MpoProfileInfo = {
+export {MPO_PROFILE_CHANGED_EVENT, MPO_PROFILE_DELETED_EVENT} from '@datagrok-libraries/statistics/src/mpo/utils';
+
+export type MpoProfileInfo = DesirabilityProfile & {
   fileName: string;
-  name: string;
-  description: string;
-  properties: Record<string, PropertyDesirability>;
 };
 
 export enum MpoPathMode {
@@ -23,8 +22,6 @@ export enum MpoPathMode {
 
 export const MPO_TEMPLATE_PATH = 'System:AppData/Chem/mpo';
 export const MPO_PATH = 'Mpo';
-export const MPO_PROFILE_CHANGED_EVENT = 'chem-mpo-profile-changed';
-export const MPO_PROFILE_DELETED_EVENT = 'chem-mpo-profile-deleted';
 
 export async function loadMpoProfiles(): Promise<MpoProfileInfo[]> {
   const files = await grok.dapi.files.list(MPO_TEMPLATE_PATH);
@@ -36,6 +33,7 @@ export async function loadMpoProfiles(): Promise<MpoProfileInfo[]> {
       const content = JSON.parse(text) as DesirabilityProfile;
 
       profiles.push({
+        type: DESIRABILITY_PROFILE_TYPE,
         fileName: file.name,
         name: content.name ?? file.name.replace(/\.json$/i, ''),
         description: content.description ?? '',
@@ -55,49 +53,10 @@ export async function deleteMpoProfile(profile: MpoProfileInfo): Promise<void> {
 
 export type MpoCalculationResult = {
   columnNames: string[];
+  resultColumn?: DG.Column;
   warnings: string[];
   error?: string;
 };
-
-export function calculateMpoCore(
-  df: DG.DataFrame,
-  profileName: string,
-  currentProperties: Record<string, PropertyDesirability>,
-  aggregation: WeightedAggregation,
-): MpoCalculationResult {
-  const columns: DG.Column[] = [];
-  const warnings: string[] = [];
-
-  for (const [propertyName, desirability] of Object.entries(currentProperties)) {
-    const column = df.columns.byName(propertyName);
-    if (!column) {
-      warnings.push(`Column "${propertyName}" from profile not found in table. Skipping.`);
-      continue;
-    }
-    column.setTag('desirabilityTemplate', JSON.stringify(desirability));
-    columns.push(column);
-  }
-
-  if (columns.length === 0) {
-    return {
-      columnNames: [],
-      warnings,
-      error: 'No valid columns found matching the profile properties. Cannot calculate MPO score.',
-    };
-  }
-
-  try {
-    const resultCol = mpo(df, columns, profileName, aggregation);
-    return {columnNames: resultCol ? [resultCol.name] : [], warnings};
-  } catch (e) {
-    console.error('MPO Calculation Error:', e);
-    return {
-      columnNames: [],
-      warnings,
-      error: `MPO calculation failed: ${e instanceof Error ? e.message : String(e)}`,
-    };
-  }
-}
 
 export async function computeMpo(
   df: DG.DataFrame,
@@ -112,20 +71,15 @@ export async function computeMpo(
     mappedProperties[columnName] = prop;
   }
 
-  if (silent) {
-    const result = calculateMpoCore(df, profile.name ?? 'MPO', mappedProperties, aggregation ?? 'Average');
-    return result.columnNames;
-  }
-
-  const [func] = await DG.Func.find({name: 'mpoTransformFunction'});
-  const funcCall = await func.prepare({
-    df,
-    profileName: profile.name ?? 'MPO',
-    currentProperties: mappedProperties,
+  const profileName = profile.name || 'MPO';
+  await grok.functions.call('Chem:mpoTransformFunction', {
+    df: df,
+    profileName,
+    currentProperties: JSON.stringify(mappedProperties),
     aggregation: aggregation ?? 'Average',
-  }).call(undefined, undefined, {processed: false});
-
-  return funcCall.getOutputParamValue() ?? [];
+    silent,
+  });
+  return df.col(profileName) ? [profileName] : [];
 }
 
 export function findSuitableProfiles(df: DG.DataFrame, profiles: MpoProfileInfo[]): MpoProfileInfo[] {

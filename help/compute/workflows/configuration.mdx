@@ -171,7 +171,8 @@ _Optional_
 
 An array of items, with `id`, `friendlyName` and `handler`, used to
 defined custom exports for workflow data. Handler here is an async
-function that receives `PipelineState` and `ExportUtils` arguments.
+function that receives `PipelineState` and `ExportUtils`
+arguments. More information is avaliable [here](#custom-exports)
 
 ### Static workflows
 
@@ -347,3 +348,44 @@ specific version workflow data is available.
 When creating a new workflow version, all dependent workflows that need to use
 the updated dependency must also release new versions.
 This ensures proper version compatibility across the workflow ecosystem.
+
+
+### Custom exports
+
+A custom export function recieves two arguments
+
+* `treeState` of type `PipelineState`
+* `utils` of type `ExportUtils`
+
+Export utils contain 4 methods that could reuse standard existing
+export logic:
+
+* `reportFuncCallExcel` - creates a standard xlsx blob and exceljs
+  workbook for function call, returns [Blob, ExcelJS.Workbook].
+* `getFuncCallCustomExports` - returns a list of custom exports
+  defined specifically for a particular Func, returns string[].
+* `runFuncCallCustomExport` - runs a custom export defined on a Func
+  based on export name. Returns whatever a custom export returned.
+* `reportStateExcel` - creates a standard xlsx tree export, however
+  for each call an optional callback will be called (if
+  provided). Returns [Blob, Zippable, string], where 3rd is the name
+  of a file.
+
+
+Callback in `reportStateExcel` will recieve an object the following
+fields:
+
+*  fc: `DG.FuncCall`
+*  wb: `ExcelJS.Workbook`
+*  archive: `Zippable`
+*  path: `string[]`
+*  fileName: `string`
+*  isOutputOutdated?: `boolean`
+*  runError?:` string`
+*  validation?: `Record<string, ValidationResult>`
+*  consistency?: `Record<string, ConsistencyInfo>`
+*  description?: `Record<string, string | string[]>`
+
+This allows to reuse most of the tree export logic, however individual
+exceljs workbooks could be customized or replaced/augmented with a
+different file.

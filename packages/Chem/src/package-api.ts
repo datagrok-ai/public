@@ -163,6 +163,20 @@ export namespace scripts {
   }
 
   /**
+  Fingerprint similarity search in synthon chemical space using RDKit SynthonSpaceSearch
+  */
+  export async function synthonSimilaritySearch(molecule: string , synthonLibrary: DG.FileInfo , maxHits: number , similarityCutoff: number ): Promise<DG.DataFrame> {
+    return await grok.functions.call('Chem:SynthonSimilaritySearch', { molecule, synthonLibrary, maxHits, similarityCutoff });
+  }
+
+  /**
+  Substructure search in synthon chemical space using RDKit SynthonSpaceSearch
+  */
+  export async function synthonSubstructureSearch(molecule: string , synthonLibrary: DG.FileInfo , maxHits: number ): Promise<DG.DataFrame> {
+    return await grok.functions.call('Chem:SynthonSubstructureSearch', { molecule, synthonLibrary, maxHits });
+  }
+
+  /**
   to be used in tests to ensure JKG is up and running
   */
   export async function testPythonRunning(x: number , y: number ): Promise<number> {
@@ -321,6 +335,13 @@ export namespace funcs {
   }
 
   /**
+  O(N) incremental clustering of molecules based on binary fingerprint similarity
+  */
+  export async function bitbirchClusteringTopMenu(table: DG.DataFrame , molecules: DG.Column , threshold: number , fingerprintType: string ): Promise<void> {
+    return await grok.functions.call('Chem:BitbirchClusteringTopMenu', { table, molecules, threshold, fingerprintType });
+  }
+
+  /**
   Calculates most common substructures for each cluster
   */
   export async function clusterMCSTopMenu(table: DG.DataFrame , molCol: DG.Column , clusterCol: DG.Column ): Promise<void> {
@@ -338,7 +359,7 @@ export namespace funcs {
     return await grok.functions.call('Chem:ChemSpaceEditor', { call });
   }
 
-  export async function getFingerprints(col: DG.Column , _metric?: any , fingerprintType?: string ): Promise<any> {
+  export async function getFingerprints(col: DG.Column , _metric?: string , fingerprintType?: string ): Promise<any> {
     return await grok.functions.call('Chem:GetFingerprints', { col, _metric, fingerprintType });
   }
 
@@ -490,6 +511,20 @@ export namespace funcs {
   */
   export async function toxicity(smiles: any ): Promise<any> {
     return await grok.functions.call('Chem:Toxicity', { smiles });
+  }
+
+  /**
+  Substructure search in synthon chemical space using RDKit SynthonSpaceSearch
+  */
+  export async function synthonSubstructureSearchWidget(molecule: string ): Promise<any> {
+    return await grok.functions.call('Chem:SynthonSubstructureSearchWidget', { molecule });
+  }
+
+  /**
+  Fingerprint similarity search in synthon chemical space using RDKit SynthonSpaceSearch
+  */
+  export async function synthonSimilaritySearchWidget(molecule: string ): Promise<any> {
+    return await grok.functions.call('Chem:SynthonSimilaritySearchWidget', { molecule });
   }
 
   export async function convertMoleculeNotation(molecule: DG.Column , targetNotation: string , kekulize?: boolean | null): Promise<DG.Column> {
@@ -803,8 +838,12 @@ export namespace funcs {
     return await grok.functions.call('Chem:Mpo', {});
   }
 
-  export async function mpoTransformFunction(df: DG.DataFrame , profileName: string , aggregation: any , currentProperties: any ): Promise<any> {
-    return await grok.functions.call('Chem:MpoTransformFunction', { df, profileName, aggregation, currentProperties });
+  export async function mpoCalculate(df: DG.DataFrame , columns: string[] , profileName: string , aggregation: string ): Promise<DG.DataFrame> {
+    return await grok.functions.call('Chem:MpoCalculate', { df, columns, profileName, aggregation });
+  }
+
+  export async function mpoTransformFunction(df: DG.DataFrame , profileName: string , aggregation: string , currentProperties: string , silent: boolean ): Promise<DG.DataFrame> {
+    return await grok.functions.call('Chem:MpoTransformFunction', { df, profileName, aggregation, currentProperties, silent });
   }
 
   export async function mpoProfileEditor(file: DG.FileInfo ): Promise<DG.View> {

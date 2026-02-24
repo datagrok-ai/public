@@ -122,8 +122,8 @@ export class HistoricalRunsList extends DG.Widget {
           await historyUtils.updateRunMeta(fullCall);
           this.updateRun(fullCall);
           this.onMetadataEdit.next(fullCall);
-        } catch(err: any) {
-            grok.shell.error(err);
+        } catch (err: any) {
+          grok.shell.error(err);
         }
       }
     });

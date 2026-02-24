@@ -15,11 +15,10 @@ import {PolymerType, MonomerType} from '@datagrok-libraries/bio/src/helm/types';
 import {MonomerLibManager} from '../lib-manager';
 
 import {MONOMER_RENDERER_TAGS} from '@datagrok-libraries/bio/src/utils/cell-renderer';
-import {BioTags} from '@datagrok-libraries/bio/src/utils/macromolecule/consts';
+import {BioTags, MONOMER_MOTIF_SPLITTER} from '@datagrok-libraries/bio/src/utils/macromolecule/consts';
 //@ts-ignore
 import '../../../../css/monomer-manager.css';
 import {Subscription} from 'rxjs';
-import {STANDRARD_R_GROUPS} from './const';
 
 // columns of monomers dataframe, note that rgroups is hidden and will be displayed as separate columns
 export enum MONOMER_DF_COLUMN_NAMES {
@@ -60,84 +59,7 @@ export async function standardiseMonomers(monomers: Monomer[]) {
   return fixedMonomers;
 }
 
-/// matches molecules in the dataframe with monomers in the library by canonical smiles
-export async function matchMoleculesWithMonomers(molDf: DG.DataFrame, molColName: string, monomerLib: IMonomerLib, polymerType: PolymerType = 'PEPTIDE'): Promise<DG.DataFrame> {
-  const duplicates = monomerLib.duplicateMonomers?.[polymerType] ?? {};
-  const converterFunc = DG.Func.find({package: 'Chem', name: 'convertMoleculeNotation'})[0];
-  if (!converterFunc)
-    throw new Error('Function convertMoleculeNotation not found, please install Chem package');
-  // first: stamdardize monomers
-  const monomers = monomerLib.getMonomerSymbolsByType(polymerType).map((s) => monomerLib.getMonomer(polymerType, s)!).filter((m) => m && (m.smiles || m.molfile));
-  const fixedMonomers = await standardiseMonomers(monomers);
-  fixedMonomers.forEach((m, i) => {
-    m.lib = monomers[i].lib;
-  });
-  const unCappedMonomerSmilesMap = fixedMonomers.filter((m) => !!m.smiles).reduce((acc, m) => {
-    acc[m.smiles] = {symbol: m.symbol, smiles: m.smiles, original: m.smiles, source: m.lib?.source}; return acc;
-  }, {} as {[smiles: string]: {symbol: string, smiles: string, original: string | undefined, source: string | undefined}});
-  const cappedMonomerSmiles = fixedMonomers.map((m, i) => ({symbol: m.symbol, smiles: capSmiles(m.smiles ?? '', m.rgroups ?? []), original: m.smiles, source: monomers[i]?.lib?.source}))
-    .filter((s) => !!s?.smiles && !s.smiles.includes('[*:'));
-
-  // canonicalize all monomer smiles
-  const monomerSmilesCol = DG.Column.fromList(DG.COLUMN_TYPE.STRING, 'MonomerSmiles', cappedMonomerSmiles.map((m) => m.smiles!));
-  monomerSmilesCol.semType = DG.SEMTYPE.MOLECULE;
-  const canonicalizedMonomersSmilesCol: DG.Column = await converterFunc.apply({molecule: monomerSmilesCol, targetNotation: DG.chem.Notation.Smiles});
-  if (!canonicalizedMonomersSmilesCol || canonicalizedMonomersSmilesCol.length !== monomerSmilesCol.length)
-    throw new Error('Error canonicalizing monomer smiles');
-  canonicalizedMonomersSmilesCol.toList().forEach((s, i) => cappedMonomerSmiles[i].smiles = s);
-  const cappedMonomerSmilesMap = cappedMonomerSmiles.reduce((acc, m) => { acc[m.smiles] = m; return acc; }, {} as {[smiles: string]: {symbol: string, smiles: string, original: string | undefined, source: string | undefined}});
-
-  const moleculesOriginalCol = molDf.col(molColName)!;
-  const correctedOriginalList = moleculesOriginalCol.toList().map((s) => {
-    if (!s) return s;
-    try {
-      const isMolBlock = s.includes('\n');
-      return getCorrectedSmiles([], isMolBlock ? undefined : s, isMolBlock ? s : undefined);
-    } catch (_e) {
-      return s;
-    }
-  });
-  const moleculesOriginalColCorrected = DG.Column.fromList(DG.COLUMN_TYPE.STRING, 'MoleculesOriginalCorrected', correctedOriginalList);
-  // create dummy df
-  moleculesOriginalColCorrected.semType = DG.SEMTYPE.MOLECULE;
-  const _ddf = DG.DataFrame.fromColumns([moleculesOriginalColCorrected]);
-  const canonicalizedMoleculesCol: DG.Column = await converterFunc.apply({molecule: moleculesOriginalColCorrected, targetNotation: DG.chem.Notation.Smiles});
-  if (!canonicalizedMoleculesCol || canonicalizedMoleculesCol.length !== moleculesOriginalColCorrected.length)
-    throw new Error('Error canonicalizing molecules');
-
-  const canonicalizedMolecules = canonicalizedMoleculesCol.toList();
-
-  const resultDf = molDf.clone();
-  const matchingMonomerSmilesCol = resultDf.columns.addNewString(resultDf.columns.getUnusedName('Matched monomer smiles'));
-  matchingMonomerSmilesCol.semType = DG.SEMTYPE.MOLECULE;
-  const matchingMonomerSymbolCol = resultDf.columns.addNewString(resultDf.columns.getUnusedName('Matched monomer symbol'));
-  matchingMonomerSymbolCol.semType = 'Monomer';
-  const sourceLibCol = resultDf.columns.addNewString(resultDf.columns.getUnusedName('Matched monomer source'));
-  resultDf.columns.setOrder([molColName, matchingMonomerSymbolCol.name, matchingMonomerSmilesCol.name, sourceLibCol.name]);
-
-  for (let i = 0; i < canonicalizedMolecules.length; i++) {
-    const mol = canonicalizedMolecules[i];
-    if (!mol) continue;
-    let match = cappedMonomerSmilesMap[mol] ?? unCappedMonomerSmilesMap[mol];
-    if (!match) {
-      // try capping the molecule and matching again
-      const cappedMol = capSmiles(mol, STANDRARD_R_GROUPS);
-      if (cappedMol !== mol) {
-        const correctedMol = grok.chem.convert(cappedMol, DG.chem.Notation.Unknown, DG.chem.Notation.Smiles);
-        match = cappedMonomerSmilesMap[correctedMol] ?? unCappedMonomerSmilesMap[correctedMol];
-      }
-    }
-    if (match) {
-      const matchSymbol = match.symbol;
-      const sources = (duplicates[matchSymbol]?.length ?? 0) > 0 ? duplicates[matchSymbol].map((m) => m?.lib?.source).filter((s) => !!s).join(', ') : (match.source ?? '');
-      const originalSmiles = match.original ?? match.smiles;
-      matchingMonomerSmilesCol.set(i, originalSmiles, false);
-      matchingMonomerSymbolCol.set(i, matchSymbol, false);
-      sourceLibCol.set(i, sources, false);
-    }
-  }
-  return resultDf;
-}
+export {matchMoleculesWithMonomers} from './match-molecules';
 
 /** Standardizes the monomer library
  * warning: throws error if the library is not valid or has invalid monomers
@@ -634,14 +556,15 @@ export class MonomerManager implements IMonomerManager {
 function substituteCapsWithRGroupsSmiles(smiles: string, rGroups: RGroup[]) {
   let newSmiles = smiles;
   // first substitute all caps with R-groups with corresponding numbers
+  // like
   rGroups.forEach((rGroup) => {
     const RNum = rGroup.label[1] ?? '1';
-    const capRegex = new RegExp(`\\[\\${rGroup.capGroupName}:${RNum}\\]`, 'g');
-    newSmiles = newSmiles.replace(capRegex, `[*:${RNum}]`);
+    newSmiles = newSmiles.replace(`[${rGroup.capGroupName}:${RNum}]`, `[*:${RNum}]`);
   });
   // during some conversions atoms can end up as isotops in smiles string like this [2O]
 
   // replace all [2O] with [*:2], there can be also two atoms like [2OH] -> [*:2]
+  // for searching purposes: 'ISO'
   const isotopeRegex = /\[\d[A-Z]{1,2}\]/g;
   newSmiles = newSmiles.replaceAll(isotopeRegex, (match) => {
     const rGroupNum = match[1];
@@ -695,6 +618,14 @@ function getCaseInvariantValue<T>(obj: { [key: string]: T }, key: string): T | u
   const caseInvariantKey = Object.keys(obj).find((k) => k.toLowerCase() === key.toLowerCase());
   if (!caseInvariantKey) return undefined;
   return obj[caseInvariantKey];
+}
+
+function setCaseInvariantValue<T>(obj: { [key: string]: T }, key: string, value: T): void {
+  const caseInvariantKey = Object.keys(obj).find((k) => k.toLowerCase() === key.toLowerCase());
+  if (caseInvariantKey)
+    obj[caseInvariantKey] = value;
+  else
+    obj[key] = value;
 }
 
 // some r groups for some monomers can lack smiles, or something else :D this function will try to fix that
@@ -1197,12 +1128,24 @@ export function findLastIndex<T>(ar: ArrayLike<T>, pred: (el: T) => boolean): nu
   return foundIdx;
 }
 
+function replaceAllylsInSmiles(smiles: string): string {
+  // OG smiles can include something like [Allyl:3], which is invalid smiles and needs to be replaced with [*:3]
+  // number is single digit
+  const allylRegex = /\[Allyl\:\d\]/g;
+  return smiles.replaceAll(allylRegex, (match) => {
+    const rGroupNum = match[match.length - 2];
+    return `[*:${rGroupNum}]`;
+  });
+}
+
 /**NB! Can throw error */
-function getCorrectedSmiles(rgroups: RGroup[], smiles?: string, molBlock?: string): string {
+export function getCorrectedSmiles(rgroups: RGroup[], smiles?: string, molBlock?: string): string {
+  if (smiles)
+    smiles = replaceAllylsInSmiles(smiles);
   const isSmilesMalformed = !smiles || !grok.chem.checkSmiles(smiles);
   if ((isSmilesMalformed) && !molBlock) throw new Error('Both SMILES and MOL block are empty or malformed');
 
-  let canonical = isSmilesMalformed ? grok.chem.convert(molBlock!, DG.chem.Notation.Unknown, DG.chem.Notation.Smiles) : smiles;
+  let canonical = isSmilesMalformed ? grok.chem.convert(molBlock!, DG.chem.Notation.Unknown, DG.chem.Notation.Smiles) : smiles!;
 
   canonical = substituteCapsWithRGroupsSmiles(canonical, rgroups);
   canonical = fixRGroupsAsElementsSmiles(canonical);
@@ -1215,15 +1158,23 @@ export function getCorrectedMolBlock(molBlock: string) {
   // 1. RGP field is present at the end, before the M END line
   // 2. RGP field is present in the correct format
   // 3. R group labels are written as R# and not just R
-  // 4. there is no ISO field in the molblock. if there is, it needs to be substituted with RGP field and thats it.
+  // 4. there is no incorrect ISO field in the molblock.
+  // if there is, it needs to be substituted with RGP field and thats it. sometimes R groups from smiles get written as isotopes in molblock.
+  // If the number in ISO is more than 8, chances are that it is actually an ISO field, otherwise, it is likely an R group
   // 5. make sure that R groups have no metadata in the atomblocks
 
   const lines = molBlock.split('\n');
 
   const isoLineIdx = lines.findIndex((line) => line.startsWith('M') && line.includes('ISO'));
   if (isoLineIdx !== -1) {
-    const isoIndex = lines[isoLineIdx].indexOf('ISO');
-    lines[isoLineIdx] = lines[isoLineIdx].substring(0, isoIndex) + 'RGP' + lines[isoLineIdx].substring(isoIndex + 3);
+    // check the number in ISO field, the line could look like this:
+    //M  ISO  1  25 208
+    // in this case, we have 208, which can not be an R group, rather it is an isotope of lead
+    const isoLineParts = lines[isoLineIdx].trim().split(' ').filter(Boolean);
+    if (isoLineParts.length >= 5 && Number.parseInt(isoLineParts[4]) < 9) {
+      const isoIndex = lines[isoLineIdx].indexOf('ISO');
+      lines[isoLineIdx] = lines[isoLineIdx].substring(0, isoIndex) + 'RGP' + lines[isoLineIdx].substring(isoIndex + 3);
+    }
   }
 
   const molStartIdx = lines.findIndex((line) => line.includes('V2000'));
@@ -1281,14 +1232,73 @@ export function getCorrectedMolBlock(molBlock: string) {
 }
 
 // reverse of r-group substitution, will substitute rgroups with cap groups
-function capSmiles(smiles: string, rgroups: RGroup[]) {
+export function capSmiles(smiles: string, rgroups: RGroup[]) {
   let newSmiles = smiles;
-  rgroups.forEach((rg) => {
-    const rgroupNum = rg.label[1] ?? '1';
+  rgroups.forEach((rg, i) => {
+    const rgroupNum = rg.label[1] ?? `${i + 1}`; // if label is not in format R#, use index as number
     const capGroupName = getCaseInvariantValue(rg, HELM_RGROUP_FIELDS.CAP_GROUP_NAME);
-    newSmiles = newSmiles.replace(`[*:${rgroupNum}]`, `[${capGroupName}]`);
+    const capGroupSmiles = getCaseInvariantValue(rg, HELM_RGROUP_FIELDS.CAP_GROUP_SMILES_UPPERCASE);
+    if (capGroupName?.toLowerCase() === 'allyl' || capGroupSmiles?.replace(`[*:${rgroupNum}]`, '')?.toLowerCase() === 'c=c' || capGroupSmiles?.replace(`[*:${rgroupNum}]`, '')?.toLowerCase() === '[c=c]')
+      newSmiles = newSmiles.replace(`[*:${rgroupNum}]`, 'C=C');
+    else
+      newSmiles = newSmiles.replace(`[*:${rgroupNum}]`, `[${capGroupName}]`);
   });
   return newSmiles;
+}
+
+/**  fix r-groups smiles notation
+// in some cases, instead of having O[*:1], we get smth like [O:2], or O[R1], or [*1]
+// Modifies in place
+*/
+function correctRGroupsSmiles(rgroups: RGroup[]) {
+  // case 1: [O:2] -> O[*:2]
+  function replaceAtomMapping(smi: string, num: number) {
+    const regex = /\[([A-Z][a-z]?):(\d+)\]/g;
+    return smi.replace(regex, (match, atom, n) => {
+      if (parseInt(n) === num) {
+        const correctedAtom = atom?.toLowerCase && atom?.toLowerCase() === 'h' ? '[H]' : atom; // special case for hydrogen, as H[*:1] is not valid, but [H][*:1] is valid
+        return `${correctedAtom}[*:${n}]`;
+      }
+
+      return match;
+    });
+  }
+
+  rgroups.forEach((rg, i) => {
+    const capGroupSmiles = getCaseInvariantValue(rg, HELM_RGROUP_FIELDS.CAP_GROUP_SMILES_UPPERCASE);
+    const rGroupNum = rg.label[1] ?? `${i + 1}`; // if label is not in format R#, use index as number
+    if (!capGroupSmiles || capGroupSmiles.includes(`[*:${rGroupNum}]`))
+      return;
+    const atomLabeledSmilesRegex = new RegExp(`\\[[A-Za-z]{1,2}:${rGroupNum}\\]`);
+    if (capGroupSmiles.includes(`[*${rGroupNum}]`)) // case 2: [*1] -> [*:1]
+      setCaseInvariantValue(rg, HELM_RGROUP_FIELDS.CAP_GROUP_SMILES_UPPERCASE, capGroupSmiles.replace(`[*${rGroupNum}]`, `[*:${rGroupNum}]`));
+    else if (capGroupSmiles.includes(`[R${rGroupNum}]`)) // case 3: O[R1] -> O[*:1]
+      setCaseInvariantValue(rg, HELM_RGROUP_FIELDS.CAP_GROUP_SMILES_UPPERCASE, capGroupSmiles.replace(`[R${rGroupNum}]`, `[*:${rGroupNum}]`));
+    else if (atomLabeledSmilesRegex.test(capGroupSmiles)) // case 4: [O:2] -> O[*:2]
+      setCaseInvariantValue(rg, HELM_RGROUP_FIELDS.CAP_GROUP_SMILES_UPPERCASE, replaceAtomMapping(capGroupSmiles, Number.parseInt(rGroupNum)));
+    else if (`[${capGroupSmiles}]`.match(atomLabeledSmilesRegex)?.[0].length === capGroupSmiles.length + 2) // case 5: O:2 -> O[*:2], no brackets at all
+      setCaseInvariantValue(rg, HELM_RGROUP_FIELDS.CAP_GROUP_SMILES_UPPERCASE, replaceAtomMapping(`[${capGroupSmiles}]`, Number.parseInt(rGroupNum)));
+  });
+  // finally, there is a case of incorrectly written r group smiles, we can see cases like this:
+  /**
+   * {
+        "alternateId": "R3-Br",
+        "capGroupName": "Br",
+        "capGroupSMILES": "[*:3]",
+        "label": "R3"
+      }
+   */
+  rgroups.forEach((rg) => {
+    const capGroupSmiles = getCaseInvariantValue(rg, HELM_RGROUP_FIELDS.CAP_GROUP_SMILES_UPPERCASE)!;
+    const match = capGroupSmiles.match(/\[\*\:?(\d+)\]/);
+    if (match) {
+      const rGroupSmiles = match[0];
+      if (capGroupSmiles === rGroupSmiles) {
+        // if cap group smiles is exactly the same as r group smiles, it is likely that r group smiles were written in wrong way
+        setCaseInvariantValue(rg, HELM_RGROUP_FIELDS.CAP_GROUP_SMILES_UPPERCASE, `${getCaseInvariantValue(rg, HELM_RGROUP_FIELDS.CAP_GROUP_NAME)}${capGroupSmiles}`);
+      }
+    }
+  });
 }
 
 async function monomerFromDfRow(dfRow: DG.Row): Promise<Monomer> {
@@ -1323,16 +1333,25 @@ async function monomerFromDfRow(dfRow: DG.Row): Promise<Monomer> {
 
   let naturalAnalog = dfRow.get(MONOMER_DF_COLUMN_NAMES.NATURAL_ANALOG);
   const polymerType = dfRow.get(MONOMER_DF_COLUMN_NAMES.POLYMER_TYPE);
+  // parse r-groups
   let rGroups: RGroup[] = [];
   try {
     rGroups = JSON.parse(dfRow.get(MONOMER_DF_COLUMN_NAMES.R_GROUPS) ?? '[]');
+  } catch (_) {
+    rGroups ??= [];
+  }
+
+  // correct r group smiles if needed
+  correctRGroupsSmiles(rGroups);
+
+  try {
     if (!naturalAnalog && polymerType) {
       const mostSimilar = await mostSimilarNaturalAnalog(capSmiles(smiles, rGroups), polymerType);
       if (mostSimilar)
         naturalAnalog = mostSimilar;
     }
-  } catch (_) {
-    rGroups ??= [];
+  } catch (e) {
+    console.error(e);
   }
 
   return {

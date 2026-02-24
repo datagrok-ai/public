@@ -30,7 +30,7 @@ public class DatabricksProvider extends JdbcDataProvider {
                     DbCredentials.CONNECTION_STRING_DESCRIPTION, new Prop("textarea")));
             add(new Property(Property.STRING_TYPE, "workspaceURL", "Your Databricks workspace host. You can copy this from your browser’s address bar — for example dbc-52240d8b-a70a.cloud.databricks.com."));
             add(new Property(Property.STRING_TYPE, "httpPath", "The unique path of your SQL Warehouse or endpoint. You can find it in Databricks → Compute → SQL Warehouses → Connection details."));
-            add(new Property(Property.STRING_TYPE, "Catalog", "Optional. Unity Catalog name that contains your data (for example samples or main). If omitted, Databricks defaults to main."));
+            add(new Property(Property.STRING_TYPE, DbCredentials.DB, "Optional. Unity Catalog name that contains your data (for example samples or main). If omitted, Databricks defaults to main.", null, "Catalog"));
         }};
 
         descriptor.credentialsTemplate = new ArrayList<Property>() {{
@@ -75,7 +75,7 @@ public class DatabricksProvider extends JdbcDataProvider {
         if (!conn.hasCustomConnectionString()) {
             properties.setProperty("SSL", "1"); // Always true
             if (!conn.hasCustomConnectionString())
-                setIfNotEmpty(properties, "ConnCatalog", conn.get("Catalog"));
+                setIfNotEmpty(properties, "ConnCatalog", conn.getDb());
         }
 
         String method = (String) conn.credentials.parameters.get("#chosen-auth-method");
@@ -411,8 +411,6 @@ public class DatabricksProvider extends JdbcDataProvider {
 
     private String getCatalog(DataConnection connection, Connection db) throws SQLException {
         String catalog = connection.getDb();
-        if (GrokConnectUtil.isEmpty(catalog) && !connection.hasCustomConnectionString())
-            catalog = connection.get("Catalog");
         if (GrokConnectUtil.isEmpty(catalog)) {
             try (Statement st = db.createStatement();
                  ResultSet rs = st.executeQuery("SELECT current_catalog()")) {

@@ -3,9 +3,9 @@ package grok_connect.providers;
 import grok_connect.connectors_info.DataConnection;
 import grok_connect.connectors_info.DataSource;
 import grok_connect.connectors_info.DbCredentials;
-import grok_connect.utils.Property;
 import java.util.ArrayList;
 
+@SuppressWarnings("unused")
 public class OrientDbJdbcProvider extends JdbcDataProvider {
     public OrientDbJdbcProvider() {
         driverClassName = "com.orientechnologies.orient.jdbc.OrientJdbcDriver";

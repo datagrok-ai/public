@@ -64,12 +64,7 @@ public class DefaultDateTimeColumnManager implements ColumnManager<Double> {
     }
 
     @Override
-    public Column getColumn() {
-        return new DateTimeColumn();
-    }
-
-    @Override
-    public Column getColumn(int initColumnSize) {
-        return new DateTimeColumn(initColumnSize);
+    public Column<?> getColumn(String name, int initColumnSize) {
+        return new DateTimeColumn(name, initColumnSize);
     }
 }

@@ -7,6 +7,9 @@ import * as DG from 'datagrok-api/dg';
 import * as OCL from 'openchemlib/full';
 
 function oclMol(mol: string): OCL.Molecule {
+  const isMolFile = mol.includes('M  END');
+  if (!isMolFile && mol.length > 5000)
+    throw new Error('Invalid molecule string');
   return mol.includes('M  END') ? OCL.Molecule.fromMolfile(mol) : OCL.Molecule.fromSmiles(mol);
 }
 

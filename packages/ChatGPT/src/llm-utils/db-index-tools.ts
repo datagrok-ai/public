@@ -528,7 +528,7 @@ export async function moveDBMetaToStickyMetaOhCoolItEvenRhymes(connectionMeta: D
   const connection = await grok.dapi.connections.filter(`name="${connectionMeta.name}"`).first();
   if (!connection)
     throw new Error(`Connection ${connectionMeta.name} not found`);
-  const dbInfo = await grok.data.db.getInfo(connection);
+  const dbInfo = (await grok.data.db.getInfo(connection))[0];
 
   await dbInfo.clearProperties();
   console.log(`Cleared existing metadata for connection ${connectionMeta.name}`);

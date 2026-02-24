@@ -2,7 +2,7 @@ package grok_connect.providers;
 
 import grok_connect.connectors_info.*;
 
-
+@SuppressWarnings("unused")
 // TODO Note that this is just template. This class can be used as connector layer for other databases.
 public class OdbcDataProvider extends JdbcDataProvider {
     public OdbcDataProvider() {

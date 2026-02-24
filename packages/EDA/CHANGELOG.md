@@ -1,5 +1,13 @@
 # EDA changelog
 
+## 1.4.13 (WIP)
+
+Improved probabilistic multi-parameter optimization (pMPO):
+
+* ROC curve and confusion matrix
+* pMPO without sigmoidal correction
+* Correctness tests
+
 ## 1.4.12 (2026-01-16)
 
 Implemented

@@ -13,6 +13,11 @@ export abstract class MolfileBonds {
     return this.bondedAtomPairs;
   }
 
+  appendBondLine(rawLine: string, bondedPair: number[]): void {
+    this.rawBondLines.push(rawLine);
+    this.bondedAtomPairs.push(bondedPair);
+  }
+
   deleteBondLines(indices: number[]): void {
     this.rawBondLines = this.rawBondLines.filter((_, idx) => !indices.includes(idx));
     this.bondedAtomPairs = this.bondedAtomPairs.filter((_, idx) => !indices.includes(idx));

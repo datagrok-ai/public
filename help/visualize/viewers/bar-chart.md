@@ -118,6 +118,7 @@ Year - Month' and 'Year - Quarter':
 | Font | string |  |
 | Axis Font | string |  |
 | Min Text Height | number |  |
+| Show Clipped Bar Indicators | boolean | When enabled, shows hatched areas and arrows on bars that are clipped by the value axis range. |
 | Controls Font | string | Viewer controls elements font. |
 | **Description** | | |
 | Show Title | boolean |  |

@@ -23,7 +23,7 @@ export async function runBoltz(config: string, msa: string) : Promise<string> {
 //name: Boltz
 //input: dataframe table 
 //input: column sequences { semType: Macromolecule }
-//output: dataframe result
+//output: dataframe result { action: join(table) }
 //top-menu: Bio | Folding | Boltz...
 export async function folding(table: DG.DataFrame, sequences: DG.Column) : Promise<any> {
   return await PackageFunctions.folding(table, sequences);
@@ -33,7 +33,7 @@ export async function folding(table: DG.DataFrame, sequences: DG.Column) : Promi
 //input: dataframe table 
 //input: column ligands { semType: Molecule }
 //input: string config { choices: Boltz1:getBoltzConfigFolders; description: 'Folder with config files for docking' }
-//output: dataframe result
+//output: dataframe result { action: join(table) }
 //top-menu: Chem | Docking | Boltz...
 export async function docking(table: DG.DataFrame, ligands: DG.Column, config: string) : Promise<any> {
   return await PackageFunctions.docking(table, ligands, config);

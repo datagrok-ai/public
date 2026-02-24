@@ -46,6 +46,14 @@ export function kpiWidget() : any {
   return PackageFunctions.kpiWidget();
 }
 
+//output: object result
+//meta.propertyType: string
+//meta.semType: cron
+//meta.role: valueEditor
+export function cronInput() : any {
+  return PackageFunctions.cronInput();
+}
+
 //input: column col 
 //output: bool result
 export function isFormulaColumn(col: DG.Column) : boolean {
@@ -130,7 +138,8 @@ export async function xlsxFileHandler(bytes: Uint8Array, sheetName?: string) : P
 //input: string column 
 //input: string name 
 //input: dataframe df 
+//input: string db 
 //meta.role: transform
-export async function runEnrichment(conn: any, schema: string, table: string, column: string, name: string, df: DG.DataFrame) : Promise<void> {
-  await PackageFunctions.runEnrichment(conn, schema, table, column, name, df);
+export async function runEnrichment(conn: any, schema: string, table: string, column: string, name: string, df: DG.DataFrame, db: string) : Promise<void> {
+  await PackageFunctions.runEnrichment(conn, schema, table, column, name, df, db);
 }

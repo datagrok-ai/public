@@ -12,42 +12,48 @@ with recursive selected_groups as (
   select gr.child_id as id from selected_groups sg
   join groups_relations gr on sg.id = gr.parent_id
 ),
-res AS (
-select e.event_time as time_old, u.group_id as ugid,
-coalesce(pp.name, pp1.name, pp2.name) as package, coalesce(pp.package_id, pp1.package_id, pp2.package_id) as pid
-from events e
-inner join event_types et on e.event_type_id = et.id
-left join entities en on et.id = en.id
-left join published_packages pp on en.package_id = pp.id
-left join event_parameter_values epv inner join event_parameters ep on epv.parameter_id = ep.id and ep.name = 'package'
-on epv.event_id = e.id
-left join published_packages pp1 on pp1.id = epv.value_uuid
-left join event_parameter_values epv1 inner join event_parameters ep1 on epv1.parameter_id = ep1.id and ep1.type = 'entity_id'
-inner join entities e1 on epv1.value != 'null' and e1.id = epv1.value_uuid
-inner join published_packages pp2 inner join packages p2 on p2.id = pp2.package_id on e1.package_id = pp2.id
-on epv1.event_id = e.id
-inner join users_sessions s on e.session_id = s.id
-inner join users u on u.id = s.user_id
-WHERE @date(e.event_time)
+trunc_val as (
+  select case
+    when mx - mn >= INTERVAL '6 month' then 604800
+    when mx - mn >= INTERVAL '70 day' then 172800
+    when mx - mn >= INTERVAL '10 day' then 43200
+    when mx - mn >= INTERVAL '2 day' then 14400
+    when mx - mn >= INTERVAL '3 hour' then 1800
+    else 600
+  end as trunc
+  from (
+    select min(event_time) as mn, max(event_time) as mx
+    from events where @date(event_time)
+  ) t
 ),
-t1 AS (
-  SELECT (MAX(res.time_old) - MIN(res.time_old)) as inter
-  FROM res
-),
-t2 AS (
-  SELECT case when inter >= INTERVAL '6 month' then 604800
-  when inter >= INTERVAL '70 day' then 172800
-	when inter >= INTERVAL '10 day' then 43200
-	when inter >= INTERVAL '2 day' then 14400
-	when inter >= INTERVAL '3 hour' then 1800
-	else 600 end as trunc
-from t1
+package_event_ids as (
+  select epv.event_id
+  from published_packages pp
+  join event_parameter_values epv on epv.value_uuid = pp.id
+  join event_parameters ep on epv.parameter_id = ep.id and ep.name = 'package'
+  where pp.name = any(@packages)
+  union
+  select epv.event_id
+  from published_packages pp
+  join packages p on p.id = pp.package_id
+  join entities e1 on e1.package_id = pp.id
+  join event_parameter_values epv on epv.value_uuid = e1.id and epv.value <> 'null'
+  join event_parameters ep on epv.parameter_id = ep.id and ep.type = 'entity_id'
+  where pp.name = any(@packages)
 )
-select to_timestamp(floor((extract('epoch' from res.time_old) / trunc )) * trunc)
-AT TIME ZONE 'UTC' as date, count(distinct res.ugid)
-from res, selected_groups sg, t2
-where res.ugid = sg.id
-and (res.package = any(@packages) or @packages = ARRAY['all'])
+select date, count(*) from (
+  select distinct
+    to_timestamp(floor(extract('epoch' from e.event_time) / tv.trunc) * tv.trunc)
+      AT TIME ZONE 'UTC' as date,
+    u.group_id as ugid
+  from events e
+  join users_sessions s on e.session_id = s.id
+  join users u on u.id = s.user_id
+  join selected_groups sg on u.group_id = sg.id
+  cross join trunc_val tv
+  where @date(e.event_time)
+    and (@packages = ARRAY['all'] or e.id in (select event_id from package_event_ids))
+) sub
 group by date
 --end
 
@@ -65,35 +71,37 @@ with recursive selected_groups as (
   select gr.child_id as id from selected_groups sg
   join groups_relations gr on sg.id = gr.parent_id
 ),
-res AS (
-select DISTINCT e.id, e.event_time, u.friendly_name as user, u.id as uid, u.group_id as ugid,
-coalesce(pp.name, pp1.name, pp2.name, p1.name, 'Core') as package,
-coalesce(pp.package_id, pp1.package_id, pp2.package_id, p1.id) as pid
-from events e
-inner join event_types et on e.event_type_id = et.id
-left join entities en on et.id = en.id
-left join published_packages pp on en.package_id = pp.id
-left join project_relations pr ON pr.entity_id = en.id
-left join projects proj ON proj.id = pr.project_id
-and proj.is_root = true
-and proj.is_package = true
-left join packages p1 on proj.name = p1.name or proj.name = p1.friendly_name
-left join event_parameter_values epv inner join event_parameters ep on epv.parameter_id = ep.id and ep.name = 'package'
-on epv.event_id = e.id
-left join published_packages pp1 on pp1.id = epv.value_uuid
-left join event_parameter_values epv1 inner join event_parameters ep1 on epv1.parameter_id = ep1.id and ep1.type = 'entity_id'
-inner join entities e1 on epv1.value != 'null' and e1.id = epv1.value_uuid
-inner join published_packages pp2 inner join packages p2 on p2.id = pp2.package_id on e1.package_id = pp2.id
-on epv1.event_id = e.id
-inner join users_sessions s on e.session_id = s.id
-inner join users u on u.id = s.user_id
-where @date(e.event_time)
+package_events as (
+  select distinct on (sub.event_id) sub.event_id, sub.package_name, sub.package_id
+  from (
+    select epv.event_id, pp.name as package_name, pp.package_id, 1 as priority
+    from published_packages pp
+    join event_parameter_values epv on epv.value_uuid = pp.id
+    join event_parameters ep on epv.parameter_id = ep.id and ep.name = 'package'
+    union all
+    select epv.event_id, pp.name, pp.package_id, 2 as priority
+    from published_packages pp
+    join packages p on p.id = pp.package_id
+    join entities e1 on e1.package_id = pp.id
+    join event_parameter_values epv on epv.value_uuid = e1.id and epv.value <> 'null'
+    join event_parameters ep on epv.parameter_id = ep.id and ep.type = 'entity_id'
+  ) sub
+  order by sub.event_id, sub.priority
 )
-select res.package as package, res.user, res.user as name,
-count(*) AS count, res.uid, res.ugid, coalesce(res.pid, '00000000-0000-0000-0000-000000000000') as pid,
-max(event_time) as time_end, min(event_time) as time_start
-from res, selected_groups sg
-where res.ugid = sg.id
-and (res.package = any(@packages) or @packages = ARRAY['all'])
-GROUP BY res.package, res.user, res.uid, res.ugid, res.pid
+select
+  coalesce(pe.package_name, 'Core') as package,
+  u.friendly_name as user, u.friendly_name as name,
+  count(*) as count, u.id as uid, u.group_id as ugid,
+  coalesce(pe.package_id, '00000000-0000-0000-0000-000000000000') as pid,
+  max(e.event_time) as time_end, min(e.event_time) as time_start
+from events e
+join users_sessions s on e.session_id = s.id
+join users u on u.id = s.user_id
+join selected_groups sg on u.group_id = sg.id
+left join package_events pe on pe.event_id = e.id
+where @date(e.event_time)
+  and (coalesce(pe.package_name, 'Core') = any(@packages) or @packages = ARRAY['all'])
+group by coalesce(pe.package_name, 'Core'),
+  coalesce(pe.package_id, '00000000-0000-0000-0000-000000000000'),
+  u.friendly_name, u.id, u.group_id
 --end

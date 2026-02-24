@@ -128,10 +128,11 @@ export class ModelHandler extends DG.ObjectHandler {
     dlg.show();
   }
 
-  // Checks whether this is the handler for [x]
+  // Checks whether this is the handler for x
   override isApplicable(x: any) {
     const js = DG.toJs(x);
-    return js instanceof DG.Func && js.hasTag('model');
+    const hasModelRole = ((js?.options?.role as string) ?? '').split(',').includes('model');
+    return js instanceof DG.Func && (js.hasTag('model') || hasModelRole);
   }
 
   private userGroups = new BehaviorSubject<DG.Group[] | undefined>(undefined);
@@ -212,13 +213,20 @@ export class ModelHandler extends DG.ObjectHandler {
   }
 
   override renderPreview(x: DG.Func): DG.View {
-    const v = super.renderPreview(x);
-    v.name = (x.friendlyName ?? x.name) + ' description';
     return DG.View.fromViewAsync(async () => {
       const help = await getContextHelp(x);
       const userGroups = await this.awaitUserGroups();
       const missingMandatoryGroups = ModelHandler.getMissingGroups(x, userGroups);
-      const startBtnDiv = missingMandatoryGroups.length ?
+      if (!missingMandatoryGroups?.length && (x.options.editor === 'Compute2:TreeWizardEditor' || x.options.editor === 'Compute2:RichFunctionViewEditor')) {
+        const call = x.prepare();
+        const res = await DG.Func.byName(x.options.editor).prepare({call}).call();
+        const view = res.getOutputParamValue() as DG.View;
+        return view;
+      }
+      const v = super.renderPreview(x);
+      v.name = (x.friendlyName ?? x.name) + ' preview';
+
+      const startBtnDiv = missingMandatoryGroups?.length ?
         ui.div([this.makeMandatoryGroupsInfo(missingMandatoryGroups)], {style: {
           border: '2px solid var(--red-3)',
           padding: '10px',

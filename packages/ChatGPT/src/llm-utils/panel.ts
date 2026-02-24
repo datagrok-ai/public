@@ -19,7 +19,7 @@ type AIPanelInputs = {
 }
 
 type DBAIPanelInputs = AIPanelInputs & {
-    schemaName: string,
+    catalogName: string,
 }
 
 export type ScriptingAIPanelInputs = AIPanelInputs & {
@@ -692,24 +692,24 @@ function receiveFeedback(userPrompt: string, aiResponse: string, contextId: stri
 
 export class DBAIPanel extends AIPanel<MessageType, DBAIPanelInputs> {
   protected get placeHolder() { return 'Ask your database, like "Total sales by regions"'; }
-  protected schemaInput: DG.InputBase<string>;
-  constructor(schemas: string[], defaultSchema: string, connectionID: string, view: DG.View | DG.ViewBase) {
+  protected catalogInput: DG.InputBase<string>;
+  constructor(catalogs: string[], defaultCatalog: string, connectionID: string, view: DG.View | DG.ViewBase) {
     super(connectionID, view); // context ID is connection ID
-    this.schemaInput = ui.input.choice('Schema', {
-      items: schemas,
-      value: defaultSchema,
+    this.catalogInput = ui.input.choice('Catalog', {
+      items: catalogs,
+      value: defaultCatalog,
       nullable: false,
-      tooltipText: 'Select the database schema to use for AI-assisted query generation.',
+      tooltipText: 'Select the database catalog to use for AI-assisted query generation.',
     }) as DG.InputBase<string>;
-    this.inputControlsDiv.appendChild(this.schemaInput.input);
-    ui.tooltip.bind(this.schemaInput.input, 'Select the database schema to use for AI-assisted query generation.');
+    this.inputControlsDiv.appendChild(this.catalogInput.input);
+    ui.tooltip.bind(this.catalogInput.input, 'Select the database catalog to use for AI-assisted query generation.');
   }
 
   public getCurrentInputs(): DBAIPanelInputs {
     const baseInputs = super.getCurrentInputs();
     return {
       ...baseInputs,
-      schemaName: this.schemaInput.value!,
+      catalogName: this.catalogInput.value!,
     };
   }
 }

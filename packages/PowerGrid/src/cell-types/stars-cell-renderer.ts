@@ -38,6 +38,8 @@ function drawStar(g: CanvasRenderingContext2D, cx: number, cy: number, outerR: n
 @grok.decorators.cellRenderer({
   name: 'Stars',
   cellType: 'Stars',
+  //@ts-ignore
+  tags: ['cellRenderer'],
 })
 export class StarsCellRenderer extends DG.GridCellRenderer {
   get name() { return 'Stars'; }

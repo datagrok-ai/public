@@ -282,10 +282,14 @@ export namespace funcs {
     return await grok.functions.call('EDA:TrainPmpo', {});
   }
 
+  export async function getPmpoAppItems(view: DG.View ): Promise<any> {
+    return await grok.functions.call('EDA:GetPmpoAppItems', { view });
+  }
+
   /**
-  Apply trained probabilistic multi-parameter optimization (pMPO) model to score samples
+  Generates syntethetic dataset oriented on the pMPO modeling
   */
-  export async function applyPmpo(table: DG.DataFrame , file: DG.FileInfo ): Promise<void> {
-    return await grok.functions.call('EDA:ApplyPmpo', { table, file });
+  export async function generatePmpoDataset(samples: number ): Promise<DG.DataFrame> {
+    return await grok.functions.call('EDA:GeneratePmpoDataset', { samples });
   }
 }

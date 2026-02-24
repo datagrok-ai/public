@@ -103,7 +103,9 @@ export class DimReductionBaseEditor {
       if (this.editorSettings.enableMCL)
         this.methods.push(MCLMethodName as any);
 
-      const preprocessingFuncs = DG.Func.find({meta: {role: DIM_RED_PREPROCESSING_FUNCTION_TAG}});
+      const tags = DG.Func.find({tags: [DIM_RED_PREPROCESSING_FUNCTION_TAG]});
+      const meta = DG.Func.find({meta: {role: DIM_RED_PREPROCESSING_FUNCTION_TAG}});
+      const preprocessingFuncs = Array.from(new Set([...tags, ...meta]));
       // map that contains all preprocessing functions and their metadata
       preprocessingFuncs.forEach((f) => {
         const semTypes: string = f.options.get(SUPPORTED_SEMTYPES_TAG) ?? '';
@@ -243,11 +245,11 @@ export class DimReductionBaseEditor {
           });
         });
         this.regenerateColInput();
-      }
+      };
       changed();
       // the table can be uploaded on spot, so lets check that
       if (!value.columns.toList().some((col) => !!col.getTag(DG.Tags.SemanticDetectionDuration)))
-        value.meta.detectSemanticTypes().then(() => {changed();})
+        value.meta.detectSemanticTypes().then(() => { changed(); });
     }
 
     private onColumnInputChanged() {

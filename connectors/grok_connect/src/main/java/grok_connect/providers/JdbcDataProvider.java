@@ -54,6 +54,7 @@ public abstract class JdbcDataProvider extends DataProvider {
         return props;
     }
 
+    @SuppressWarnings("unchecked")
     public Properties getJdbcProperties(DataConnection conn) {
         java.util.Properties props = new Properties();
         if (conn.parameters.containsKey("jdbcProperties") && this.descriptor.jdbcPropertiesTemplate != null) {

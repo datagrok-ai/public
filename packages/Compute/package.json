@@ -6,7 +6,7 @@
     "name": "Andrey Sharapov",
     "email": "andrey.sharapov@softwarecountry.com"
   },
-  "description": "Provides additional analytical and UI blocks for [Datagrok scientific computing](https://datagrok.ai/help/compute/).",
+  "description": "Legacy modeling UI",
   "repository": {
     "type": "git",
     "url": "https://github.com/datagrok-ai/public.git",
@@ -14,23 +14,22 @@
   },
   "dependencies": {
     "@datagrok-libraries/compute-utils": "^1.44.9",
+    "@datagrok-libraries/test": "^1.1.0",
     "@datagrok-libraries/utils": "^4.6.5",
     "cash-dom": "^8.1.5",
     "datagrok-api": "^1.26.0",
-    "dayjs": "=1.11.10",
+    "dayjs": "^1.11.19",
     "exceljs": "^4.3.0",
     "rxjs": "^6.6.7",
     "source-map-loader": "^5.0.0",
     "ts-loader": "^9.5.1",
-    "typescript": "^5.8.3",
-    "@datagrok-libraries/test": "^1.1.0"
+    "typescript": "^5.8.3"
   },
   "devDependencies": {
     "@types/lodash.clonedeepwith": "^4.5.9",
     "@typescript-eslint/eslint-plugin": "^8.8.1",
     "@typescript-eslint/parser": "^8.8.1",
     "css-loader": "^7.1.2",
-    "datagrok-tools": "^5.0.0",
     "eslint": "^8.0.1",
     "eslint-config-google": "^0.14.0",
     "style-loader": "^4.0.0",
@@ -67,7 +66,6 @@
   ],
   "category": "Compute",
   "meta": {
-    "url": "/Modelhub",
     "dartium": false
   },
   "overrides": {

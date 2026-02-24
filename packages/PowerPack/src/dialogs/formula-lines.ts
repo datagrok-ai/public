@@ -1,6 +1,5 @@
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {delay} from '@datagrok-libraries/test/src/test';
 
 /** Formula Line types */
 const enum ITEM_TYPE {
@@ -316,7 +315,7 @@ class Table {
       }
 
       if (itemIdx !== -1) {
-        delay(1).then((_) => {
+        DG.delay(1).then((_) => {
           this.currentItemIdx = itemIdx;
         });
       }

@@ -30,7 +30,6 @@
     "@datagrok/compute": "^1.39.0",
     "@typescript-eslint/eslint-plugin": "^5.62.0",
     "@typescript-eslint/parser": "^5.62.0",
-    "datagrok-tools": "^5.0.0",
     "eslint": "^8.56.0",
     "eslint-config-google": "^0.14.0",
     "eslint-plugin-react": "^7.33.2",

@@ -16,7 +16,7 @@ public class TableInfo
 
     public ColumnInfo[] columns;
 
-    public Map<String, String> tags = new HashMap<>();
+    public Map<String, String> tags;
     public String queryRun;
 
     public int rowCount;
@@ -25,16 +25,16 @@ public class TableInfo
     public TableInfo(DataFrame t)
     {
         name = t.name;
-        if (t.columns.size() > 0) {
-            rowCount = t.columns.get(0).length;
-            colCount = t.columns.size();
+        if (t.getColumnCount() > 0) {
+            rowCount = t.getColumn(0).getLength();
+            colCount = t.getColumnCount();
             columns = new ColumnInfo[colCount];
             for (int n = 0; n < colCount; n++)
-                columns[n] = new ColumnInfo(t.columns.get(n));
+                columns[n] = new ColumnInfo(t.getColumn(n));
         } else {
             rowCount = 0;
             colCount = 0;
         }
-        tags = t.tags;
+        tags = t.getTags();
     }
 }

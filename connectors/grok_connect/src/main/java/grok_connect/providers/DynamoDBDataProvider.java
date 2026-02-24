@@ -11,6 +11,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Properties;
 
+@SuppressWarnings("unused")
 public class DynamoDBDataProvider extends JdbcDataProvider {
     private static final String DEFAULT_DOMAIN = "amazonaws.com";
     private static final List<String> AVAILABLE_REGIONS = Collections.unmodifiableList(Arrays.asList(

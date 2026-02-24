@@ -15,6 +15,8 @@ export function getChoices(column: DG.Column): string[] | null {
 @grok.decorators.cellRenderer({
   name: 'Multi Choice',
   cellType: 'MultiChoice',
+  //@ts-ignore
+  tags: ['cellRenderer'],
 })
 /**
  * Renders a comma-separated string value as checkboxes with options retrieved

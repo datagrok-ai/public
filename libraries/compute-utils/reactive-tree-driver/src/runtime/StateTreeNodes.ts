@@ -80,7 +80,6 @@ export class FuncCallNode implements IStoreProvider {
     public readonly config: PipelineStepConfigurationProcessed,
     public isReadonly: boolean,
   ) {
-
     this.getConsistencyChanges().pipe(
       takeUntil(this.closed$),
     ).subscribe(this.consistencyInfo$);

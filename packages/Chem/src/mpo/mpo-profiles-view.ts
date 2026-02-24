@@ -25,6 +25,7 @@ export class MpoProfilesView {
     this.view = DG.View.fromRoot(this.root);
     this.view.name = this.name;
     grok.shell.windows.showHelp = false;
+    grok.shell.windows.showProperties = true;
     updateMpoPath(this.view, MpoPathMode.List);
   }
 
@@ -99,6 +100,7 @@ export class MpoProfilesView {
     const link = ui.link(profile.name, () => {
       this.previewedFileName = profile.fileName;
     });
+    link.addEventListener('dblclick', () => MpoProfileHandler.edit(profile));
     return ui.bind(profile, link);
   }
 
@@ -120,7 +122,12 @@ export class MpoProfilesView {
 
   private buildDescription(text: string): HTMLElement {
     const span = ui.divText(text, 'chem-mpo-description');
-    span.addEventListener('click', () => span.classList.toggle('expanded'));
+    requestAnimationFrame(() => {
+      if (span.scrollHeight > span.clientHeight) {
+        span.classList.add('chem-mpo-description-expandable');
+        span.onclick = () => span.classList.toggle('expanded');
+      }
+    });
     return span;
   }
 

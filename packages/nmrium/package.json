@@ -42,7 +42,6 @@
     "@types/react-router-dom": "^5.3.3",
     "cross-env": "^7.0.3",
     "css-loader": "^6.7.3",
-    "datagrok-tools": "^5.0.0",
     "eslint": "^8.57.0",
     "eslint-config-cheminfo-react": "^13.0.0",
     "eslint-config-cheminfo-typescript": "^15.0.0",

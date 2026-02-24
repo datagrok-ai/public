@@ -571,12 +571,12 @@ export class DataConnectionsDataSource extends HttpDataSource<DataConnection> {
     return toJs(await api.grok_DataConnectionsDataSource_SubDir(this.dart, e.dart, path));
   }
 
-  async getSchemas(e: DataConnection): Promise<string[]> {
-    return toJs(await api.grok_DataConnectionsDataSource_Get_Schemas(this.dart, e.dart));
+  async getSchemas(e: DataConnection, catalog: string | null = null): Promise<string[]> {
+    return toJs(await api.grok_DataConnectionsDataSource_Get_Schemas(this.dart, e.dart, catalog));
   }
 
-  async getSchema(e: DataConnection, schemaName: string | null = null, tableName: string | null = null): Promise<TableInfo[]> {
-    return toJs(await api.grok_DataConnectionsDataSource_Get_Schema(this.dart, e.dart, schemaName ?? null, tableName ?? null));
+  async getSchema(e: DataConnection, schemaName: string | null = null, tableName: string | null = null, catalog: string | null = null): Promise<TableInfo[]> {
+    return toJs(await api.grok_DataConnectionsDataSource_Get_Schema(this.dart, e.dart, schemaName, tableName, catalog));
   }
 
   async getUniqueColumnsNames(c: DataConnection, schema: string, table: string): Promise<string[]> {
