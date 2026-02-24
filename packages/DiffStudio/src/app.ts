@@ -25,13 +25,11 @@ import {getIVP, getScriptLines, getScriptParams, IVP, Input, SCRIPTING,
   BRACE_OPEN, BRACE_CLOSE, BRACKET_OPEN, BRACKET_CLOSE, ANNOT_SEPAR,
   CONTROL_SEP, STAGE_COL_NAME, ARG_INPUT_KEYS, DEFAULT_SOLVER_SETTINGS} from './scripting-tools';
 
-import {CallbackAction, DEFAULT_OPTIONS} from './solver-tools';
+import {CallbackAction} from './solver-tools';
 
 import {unusedFileName, getTableFromLastRows, getInputsTable, getLookupsInfo, hasNaN, getCategoryWidget,
   getReducedTable, closeWindows, getRecentModelsTable, getMyModelFiles, getEquationsFromFile,
-  getMaxGraphsInFacetGridRow, removeTitle,
-  noModels,
-  removeTitleBar} from './utils';
+  getMaxGraphsInFacetGridRow, removeTitle, noModels, removeTitleBar, getTryRunOptions} from './utils';
 
 import {ModelError, showModelErrorHint, getIsNotDefined, getUnexpected, getNullOutput} from './error-utils';
 
@@ -1588,7 +1586,7 @@ export class DiffStudio {
   /** Try to solve IVP */
   private async tryToSolve(ivp: IVP): Promise<void> {
     const optionsBuf = ivp.solverSettings;
-    ivp.solverSettings = DEFAULT_OPTIONS.SCRIPTING;
+    ivp.solverSettings = getTryRunOptions(ivp.solverSettings);
 
     try {
       const scriptText = getScriptLines(ivp, true, true).join('\n');

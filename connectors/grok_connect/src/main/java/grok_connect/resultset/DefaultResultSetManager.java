@@ -16,7 +16,6 @@ import serialization.StringColumn;
 import serialization.Types;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
@@ -24,7 +23,7 @@ import java.util.Map;
 public class DefaultResultSetManager implements ResultSetManager {
     protected final Logger logger = LoggerFactory.getLogger(this.getClass().getName());
     protected final Collection<ColumnManager<?>> columnManagers;
-    protected Column[] columns;
+    protected Column<?>[] columns;
     protected ColumnMeta[] columnsMeta;
     protected ColumnManager<?>[] currentManagers;
     protected boolean isInit = false;
@@ -57,7 +56,7 @@ public class DefaultResultSetManager implements ResultSetManager {
     public void init(ResultSetMetaData meta, int initColumnSize) {
         try {
             int columnCount = meta.getColumnCount();
-            columns = new Column[columnCount];
+            columns = new Column<?>[columnCount];
             columnsMeta = new ColumnMeta[columnCount];
             currentManagers = new ColumnManager[columnCount];
             for (int i = 0; i < columnCount; i++) {
@@ -65,13 +64,8 @@ public class DefaultResultSetManager implements ResultSetManager {
                 columnsMeta[i] = columnMeta;
                 ColumnManager<?> applicableColumnManager = getApplicableColumnManager(columnMeta);
                 currentManagers[i] = applicableColumnManager;
-                Column column;
-                if (applicableColumnManager instanceof DefaultComplexColumnManager)
-                    column = applicableColumnManager.getColumn();
-                else
-                    column = applicableColumnManager.getColumn(initColumnSize);
-                column.name = columnMeta.getColumnLabel();
-                columns[i] = column;
+                String columnName = columnMeta.getColumnLabel();
+                columns[i] = applicableColumnManager.getColumn(columnName, initColumnSize);
             }
             isInit = true;
         } catch (SQLException e) {
@@ -82,17 +76,16 @@ public class DefaultResultSetManager implements ResultSetManager {
     @Override
     public void processValue(Object o, int index) {
         if (isInit) {
-            Column current = columns[index - 1];
+            Column<?> current = columns[index - 1];
             try {
                 setValue(o, index);
             } catch (RuntimeException e) {
                 logger.error(EventType.ERROR.getMarker(),
                         "Couldn't convert object to be applicable for column {} of type {}. StringColumn fallback will be used",
                         columnsMeta[index - 1].getColumnLabel(), columns[index - 1].getType(), e);
-                Column stringColumn = new StringColumn(columnsMeta[index - 1].getColumnSize());
-                stringColumn.name = current.name;
+                StringColumn stringColumn = new StringColumn(current.getName(), columnsMeta[index - 1].getColumnSize());
                 ColumnManager<String> newManager = new DefaultStringColumnManager();
-                for (int i = 0; i < current.length; i++) {
+                for (int i = 0; i < current.getLength(); i++) {
                     Object value = current.get(i);
                     stringColumn.add(newManager.convert(value, columnsMeta[index - 1]));
                 }
@@ -106,14 +99,14 @@ public class DefaultResultSetManager implements ResultSetManager {
     }
 
     @Override
-    public Column[] getProcessedColumns() {
+    public Column<?>[] getProcessedColumns() {
         return columns;
     }
 
     @Override
     public void empty(int newColSize) {
         for (Column<?> col : columns) {
-            col.initColumnSize = newColSize;
+            col.setInitColumnSize(newColSize);
             col.empty();
         }
     }
@@ -128,8 +121,9 @@ public class DefaultResultSetManager implements ResultSetManager {
         return new DefaultStringColumnManager();
     }
 
+    @SuppressWarnings("unchecked")
     protected void setValue(Object o, int index) {
-        columns[index - 1].add(currentManagers[index - 1].convert(o, columnsMeta[index - 1]));
+        ((Column<Object>) columns[index - 1]).add(currentManagers[index - 1].convert(o, columnsMeta[index - 1]));
     }
 
     protected ColumnMeta getColumnMeta(int index, ResultSetMetaData meta, int initColumnSize) {

@@ -7,16 +7,22 @@ import * as DG from 'datagrok-api/dg';
 import '../css/app-styles.css';
 import {DiffStudio, UiOptions} from './app';
 
+export type ModelInfo = {
+  equations: string;
+  info: string;
+  uiOptions: UiOptions;
+};
+
 /** Diff Studio model  */
 export class Model {
   private model: string;
   private uiOptions: UiOptions;
   private info: string;
 
-  constructor(model: string, uiOptions: UiOptions, info: string) {
-    this.model = model;
-    this.uiOptions = uiOptions;
-    this.info = info;
+  constructor(modelInfo: ModelInfo) {
+    this.model = modelInfo.equations;
+    this.uiOptions = modelInfo.uiOptions;
+    this.info = modelInfo.info;
   }
 
   private showHelpPanel(): void {

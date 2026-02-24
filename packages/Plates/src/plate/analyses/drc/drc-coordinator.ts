@@ -57,6 +57,8 @@ export class DrcAnalysisCoordinator {
 
     this.seriesVals.length = 0;
     Array.prototype.push.apply(this.seriesVals, newSeriesVals);
+
+    this.curvesGrid.invalidate();
   }
 
   private listenToPlateWidgetEvents(): void {

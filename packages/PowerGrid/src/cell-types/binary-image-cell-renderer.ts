@@ -5,6 +5,8 @@ import * as grok from 'datagrok-api/grok';
 @grok.decorators.cellRenderer({
   name: 'binaryImageCellRenderer',
   cellType: 'BinaryImage',
+  //@ts-ignore
+  tags: ['cellRenderer'],
 })
 export class BinaryImageCellRenderer extends DG.GridCellRenderer {
   get name() { return 'BinaryImage'; }

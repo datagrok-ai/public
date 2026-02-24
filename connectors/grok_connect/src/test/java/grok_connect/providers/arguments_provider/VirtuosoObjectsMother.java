@@ -1,7 +1,6 @@
 package grok_connect.providers.arguments_provider;
 
 import grok_connect.connectors_info.FuncCall;
-import grok_connect.providers.utils.DataFrameBuilder;
 import grok_connect.providers.utils.DateParser;
 import grok_connect.providers.utils.FuncCallBuilder;
 import grok_connect.providers.utils.Parser;
@@ -21,15 +20,13 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Stream;
 
+@SuppressWarnings("unused")
 public class VirtuosoObjectsMother {
     private static final Parser parser = new DateParser();
 
     public static Stream<Arguments> getSchemas_ok() {
-        DataFrame expected = DataFrameBuilder.getBuilder()
-                .setRowCount(6)
-                .setColumn(new StringColumn(new String[] {"DBA"}),
-                        "TABLE_SCHEMA")
-                .build();
+        DataFrame expected = DataFrame.fromColumns(
+                new StringColumn("TABLE_SCHEMA", new String[] {"DBA"}));
         return Stream.of(Arguments.of(expected));
     }
 
@@ -40,20 +37,18 @@ public class VirtuosoObjectsMother {
         String fourthColumnName = "data_type";
         String schema = "DBA";
         String table = "MOCK_DATA";
-        DataFrame expected = DataFrameBuilder.getBuilder()
-                .setRowCount(9)
-                .setColumn(new StringColumn(), firstColumnName, new String[] {schema, schema,
+        DataFrame expected = DataFrame.fromColumns(
+                new StringColumn(firstColumnName, new String[] {schema, schema,
                         schema, schema, schema, schema, schema,
-                        schema, schema})
-                .setColumn(new StringColumn(), secondColumnName, new String[] {table, table,
+                        schema, schema}),
+                new StringColumn(secondColumnName, new String[] {table, table,
                         table, table, table, table,
-                        table, table, table})
-                .setColumn(new StringColumn(), thirdColumnName, new String[] {"id", "first_name", "last_name", "email",
-                        "gender", "ip_address", "country", "dat", "some_number"})
-                .setColumn(new StringColumn(), fourthColumnName, new String[] {"BIGINT", "VARCHAR",
+                        table, table, table}),
+                new StringColumn(thirdColumnName, new String[] {"id", "first_name", "last_name", "email",
+                        "gender", "ip_address", "country", "dat", "some_number"}),
+                new StringColumn(fourthColumnName, new String[] {"BIGINT", "VARCHAR",
                         "VARCHAR", "VARCHAR", "VARCHAR", "VARCHAR",
-                        "VARCHAR", "DATE", "DECIMAL"})
-                .build();
+                        "VARCHAR", "DATE", "DECIMAL"}));
         return Stream.of(Arguments.of(expected));
     }
 
@@ -62,25 +57,19 @@ public class VirtuosoObjectsMother {
         List<String> values = new ArrayList<>();
         values.add("Poland");
         values.add("Brazil");
-        DataFrame expected = DataFrameBuilder.getBuilder()
-                .setRowCount(1)
-                .setColumn(new BigIntColumn(new String[]{"2", "5", "20"}),
-                        "id")
-                .setColumn(new StringColumn(new String[]{"Nicholle", "Mitchell", "Lucius",}), "first_name")
-                .setColumn(new StringColumn(new String[]{"Karoly", "Haglington", "Edelmann"}),
-                        "last_name")
-                .setColumn(new StringColumn(new String[]{"nkaroly1@alexa.com", "mhaglington4@indiegogo.com",
-                        "ledelmannj@bravesites.com"}), "email")
-                .setColumn(new StringColumn(new String[]{"Female", "Male", "Male"}), "gender")
-                .setColumn(new StringColumn(new String[]{"255.233.247.118/32", "209.93.181.190/32", "66.174.30.225/32"}),
-                        "ip_address")
-                .setColumn(new BoolColumn(new Boolean[]{false, true, false}), "bool")
-                .setColumn(new StringColumn(new String[]{"Poland", "Poland", "Brazil"}), "country")
-                .setColumn(new DateTimeColumn(parser.parseDatesToDoubles("yyyy-MM-dd", "2014-02-27",
+        DataFrame expected = DataFrame.fromColumns(
+                new BigIntColumn("id", new String[]{"2", "5", "20"}),
+                new StringColumn("first_name", new String[]{"Nicholle", "Mitchell", "Lucius",}),
+                new StringColumn("last_name", new String[]{"Karoly", "Haglington", "Edelmann"}),
+                new StringColumn("email", new String[]{"nkaroly1@alexa.com", "mhaglington4@indiegogo.com",
+                        "ledelmannj@bravesites.com"}),
+                new StringColumn("gender", new String[]{"Female", "Male", "Male"}),
+                new StringColumn("ip_address", new String[]{"255.233.247.118/32", "209.93.181.190/32", "66.174.30.225/32"}),
+                new BoolColumn("bool", new Boolean[]{false, true, false}),
+                new StringColumn("country", new String[]{"Poland", "Poland", "Brazil"}),
+                new DateTimeColumn("date", parser.parseDatesToDoubles("yyyy-MM-dd", "2014-02-27",
                                 "2020-10-09","1999-06-22")),
-                        "date")
-                .setColumn(new FloatColumn(new Float[]{864.09f, 15.22f, 378.73f}), "some_number")
-                .build();
+                new FloatColumn("some_number", new Float[]{864.09f, 15.22f, 378.73f}));
         FuncCall funcCall1 = FuncCallBuilder.getBuilder()
                 .addQuery("--input: list<string> values\n" +
                         "SELECT * FROM mock_data WHERE country IN (@values) ORDER BY id")
@@ -109,23 +98,17 @@ public class VirtuosoObjectsMother {
         //--input: string some_number = ">20" {pattern: double}
         //--input: string country = "in (Indonesia)" {pattern: string}
         //--input: string date = "before 1/1/2022" {pattern: datetime}
-        DataFrame expected1 = DataFrameBuilder.getBuilder()
-                .setRowCount(1)
-                .setColumn(new BigIntColumn(new String[]{"13"}),
-                        "id")
-                .setColumn(new StringColumn(new String[]{"Pail"}), "first_name")
-                .setColumn(new StringColumn(new String[]{"Boxell"}),
-                        "last_name")
-                .setColumn(new StringColumn(new String[]{"pboxellc@moonfruit.com"}), "email")
-                .setColumn(new StringColumn(new String[]{"Genderqueer"}), "gender")
-                .setColumn(new StringColumn(new String[]{"2.37.160.155/32"}),
-                        "ip_address")
-                .setColumn(new BoolColumn(new Boolean[]{false}), "bool")
-                .setColumn(new StringColumn(new String[]{"Indonesia"}), "country")
-                .setColumn(new DateTimeColumn(parser.parseDatesToDoubles(datePattern, "2012-01-14")),
-                        "date")
-                .setColumn(new FloatColumn(new Float[]{73.47f}), "some_number")
-                .build();
+        DataFrame expected1 = DataFrame.fromColumns(
+                new BigIntColumn("id", new String[]{"13"}),
+                new StringColumn("first_name", new String[]{"Pail"}),
+                new StringColumn("last_name", new String[]{"Boxell"}),
+                new StringColumn("email", new String[]{"pboxellc@moonfruit.com"}),
+                new StringColumn("gender", new String[]{"Genderqueer"}),
+                new StringColumn("ip_address", new String[]{"2.37.160.155/32"}),
+                new BoolColumn("bool", new Boolean[]{false}),
+                new StringColumn("country", new String[]{"Indonesia"}),
+                new DateTimeColumn("date", parser.parseDatesToDoubles(datePattern, "2012-01-14")),
+                new FloatColumn("some_number", new Float[]{73.47f}));
         FuncCall funcCall1 = FuncCallBuilder.getBuilder()
                 .addQuery("--input: string first_name = \"starts with p\" {pattern: string}\n"
                         + "--input: string id = \">1\" {pattern :int}\n"
@@ -161,69 +144,58 @@ public class VirtuosoObjectsMother {
     }
 
     public static Stream<Arguments> checkIntegerTypesSupport_ok() {
-        DataFrame expected = DataFrameBuilder.getBuilder()
-                .setRowCount(3)
-                .setColumn(new IntColumn(new Integer[] {0, -10, -10739}), "smallint_type")
-                .setColumn(new IntColumn(new Integer[]{200, -2600000, -2}), "integer_type")
-                .setColumn(new BigIntColumn(new String[]{"0", "-9999999999999", "0"}),
-                        "bigint_type")
-                .build();
+        DataFrame expected = DataFrame.fromColumns(
+                new IntColumn("smallint_type", new Integer[] {0, -10, -10739}),
+                new IntColumn("integer_type", new Integer[]{200, -2600000, -2}),
+                new BigIntColumn("bigint_type", new String[]{"0", "-9999999999999", "0"}));
         FuncCall funcCall = FuncCallBuilder.fromQuery("SELECT * FROM INTEGER_TYPES");
         return Stream.of(Arguments.of(Named.of("INTEGER TYPES SUPPORT", funcCall), expected));
     }
 
     public static Stream<Arguments> checkXmlTypeSupport_ok() {
-        DataFrame expected = DataFrameBuilder.getBuilder()
-                .setRowCount(2)
-                .setColumn(new StringColumn(new String[]{"<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\"?>\r\n" +
+        DataFrame expected = DataFrame.fromColumns(
+                new StringColumn("xml_type", new String[]{"<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\"?>\r\n" +
                         "<foo>Hello World!</foo>\r\n",
                         "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\"?>\r\n" +
                                 "<book>\r\n" +
                                 "<title>Manual</title>\r\n" +
                                 "<chapter>...</chapter>\r\n" +
-                                "</book>\r\n"}), "xml_type")
-                .build();
+                                "</book>\r\n"}));
         FuncCall funcCall = FuncCallBuilder.fromQuery("SELECT * FROM XML_TYPE");
         return Stream.of(Arguments.of(Named.of("XML TYPE SUPPORT", funcCall), expected));
     }
 
     public static Stream<Arguments> checkCharacterTypesSupport_ok() {
-        DataFrame expected = DataFrameBuilder.getBuilder()
-                .setRowCount(1)
-                .setColumn(new StringColumn(new String[]{"D"}), "char_type")
-                .setColumn(new StringColumn(new String[]{"A"}), "character_type")
-                .setColumn(new StringColumn(new String[]{"Release 1.14"}), "varchar_type")
-                .setColumn(new StringColumn(new String[]{"Grok"}), "nvarchar_type")
-                .build();
+        DataFrame expected = DataFrame.fromColumns(
+                new StringColumn("char_type", new String[]{"D"}),
+                new StringColumn("character_type", new String[]{"A"}),
+                new StringColumn("varchar_type", new String[]{"Release 1.14"}),
+                new StringColumn("nvarchar_type", new String[]{"Grok"}));
         FuncCall funcCall = FuncCallBuilder.fromQuery("SELECT * FROM TEST_CHARACTERS");
         return Stream.of(Arguments.of(Named.of("CHARACTER TYPES SUPPORT", funcCall), expected));
     }
 
     public static Stream<Arguments> checkFloatTypesSupport_ok() {
-        DataFrame expected = DataFrameBuilder.getBuilder()
-                .setRowCount(2)
-                .setColumn(new FloatColumn(new Float[]{1.24124128E8f, 1.0E-10f}), "numeric_type")
-                .setColumn(new FloatColumn(new Float[]{9.9999998E10f, 1.0E14f}), "decimal_type")
-                .setColumn(new FloatColumn(new Float[]{3.12E-13f, 3.13213136E17f}), "float_type")
-                .setColumn(new FloatColumn(new Float[]{3.21123136E8f, -9.9999998E12f}), "double_type")
-                .setColumn(new FloatColumn(new Float[]{3.2E-4f, -12.121412f}), "real_type")
-                .build();
+        DataFrame expected = DataFrame.fromColumns(
+                new FloatColumn("numeric_type", new Float[]{1.24124128E8f, 1.0E-10f}),
+                new FloatColumn("decimal_type", new Float[]{9.9999998E10f, 1.0E14f}),
+                new FloatColumn("float_type", new Float[]{3.12E-13f, 3.13213136E17f}),
+                new FloatColumn("double_type", new Float[]{3.21123136E8f, -9.9999998E12f}),
+                new FloatColumn("real_type", new Float[]{3.2E-4f, -12.121412f}));
         FuncCall funcCall = FuncCallBuilder.fromQuery("SELECT * FROM FLOAT_TYPES");
         return Stream.of(Arguments.of(Named.of("FLOAT TYPES SUPPORT", funcCall), expected));
     }
 
     public static Stream<Arguments> checkDateTypesSupport_ok() {
-        DataFrame expected = DataFrameBuilder.getBuilder()
-                .setRowCount(1)
-                .setColumn(new DateTimeColumn(new Double[]{parser.parseDateToDouble("yyyy-MM-dd",
-                        "1999-01-08")}), "date_type")
-                .setColumn(new DateTimeColumn(new Double[]{parser.parseDateToDouble("HH:mm:ss.SSS",
-                        "04:05:06.789")}), "time_type")
-                .setColumn(new DateTimeColumn(new Double[]{parser.parseDateToDouble("yyyy-MM-dd HH:mm:ss",
-                        "1999-01-08 04:05:06")}), "datetime_type")
-                .setColumn(new DateTimeColumn(new Double[]{parser.parseDateToDouble("yyyy-MM-dd HH:mm:ss",
-                        "1999-01-08 04:05:06")}), "stamp")
-                .build();
+        DataFrame expected = DataFrame.fromColumns(
+                new DateTimeColumn("date_type", new Double[]{parser.parseDateToDouble("yyyy-MM-dd",
+                        "1999-01-08")}),
+                new DateTimeColumn("time_type", new Double[]{parser.parseDateToDouble("HH:mm:ss.SSS",
+                        "04:05:06.789")}),
+                new DateTimeColumn("datetime_type", new Double[]{parser.parseDateToDouble("yyyy-MM-dd HH:mm:ss",
+                        "1999-01-08 04:05:06")}),
+                new DateTimeColumn("stamp", new Double[]{parser.parseDateToDouble("yyyy-MM-dd HH:mm:ss",
+                        "1999-01-08 04:05:06")}));
         FuncCall funcCall = FuncCallBuilder.fromQuery("SELECT * FROM DATE_TYPES");
         return Stream.of(Arguments.of(Named.of("DATE TYPES SUPPORT", funcCall), expected));
     }
@@ -243,11 +215,8 @@ public class VirtuosoObjectsMother {
         LocalDate yesterday = now.minusDays(1);
         LocalDate dayOfLastYear = now.minusDays(150);
         // --input: string date = "today" {pattern: datetime}
-        DataFrame expected1 = DataFrameBuilder.getBuilder()
-                .setRowCount(1)
-                .setColumn(new DateTimeColumn(new Double[]{parser.parseDateToDouble(datePattern, now.toString())}),
-                        "date")
-                .build();
+        DataFrame expected1 = DataFrame.fromColumns(
+                new DateTimeColumn("date", new Double[]{parser.parseDateToDouble(datePattern, now.toString())}));
         FuncCall funcCall1 = FuncCallBuilder.getBuilder()
                 .addQuery("-- input: string date = \"today\" {pattern: datetime}\n"
                         + "SELECT * FROM dates_patterns WHERE @date(dat)\n"
@@ -257,14 +226,11 @@ public class VirtuosoObjectsMother {
                         now.toString(), now.plusDays(1).toString())
                 .build();
         // --input: string date = "this week" {pattern: datetime}
-        DataFrame expected2 = DataFrameBuilder.getBuilder()
-                .setRowCount(dayOfWeek == 1 ? 2 : 3)
-                .setColumn(new DateTimeColumn(parser.parseDatesToDoubles(datePattern,
+        DataFrame expected2 = DataFrame.fromColumns(
+                new DateTimeColumn("date", parser.parseDatesToDoubles(datePattern,
                                 now.toString(),
                                 dayOfWeek == 1 ? null : yesterday.toString(),
-                                lastDayOfWeek.equals(now) ? null : lastDayOfWeek.toString())),
-                        "date")
-                .build();
+                                lastDayOfWeek.equals(now) ? null : lastDayOfWeek.toString())));
         FuncCall funcCall2 = FuncCallBuilder.getBuilder()
                 .addQuery("-- input: string date = \"this week\" {pattern: datetime}\n"
                         + "SELECT * FROM dates_patterns WHERE @date(dat)\n"
@@ -275,15 +241,12 @@ public class VirtuosoObjectsMother {
                         lastDayOfWeek.plusDays(1).toString())
                 .build();
         // --input: string date = "this month" {pattern: datetime}
-        DataFrame expected3 = DataFrameBuilder.getBuilder()
-                .setRowCount(dayOfMonth > 1 && dayOfMonth < 31 - 6 ? 3 : 2)
-                .setColumn(new DateTimeColumn(parser.parseDatesToDoubles(datePattern,
+        DataFrame expected3 = DataFrame.fromColumns(
+                new DateTimeColumn("date", parser.parseDatesToDoubles(datePattern,
                                 now.toString(),
                                 dayOfMonth == 1 ? null : yesterday.toString(),
                                 lastDayOfWeek.getMonthValue() >  lastDayOfMonth.getMonthValue() || lastDayOfWeek.equals(now)?
-                                        null : lastDayOfWeek.toString())),
-                        "date")
-                .build();
+                                        null : lastDayOfWeek.toString())));
         FuncCall funcCall3 = FuncCallBuilder.getBuilder()
                 .addQuery("-- input: string date = \"this month\" {pattern: datetime}\n"
                         + "SELECT * FROM dates_patterns WHERE @date(dat)\n"
@@ -294,16 +257,13 @@ public class VirtuosoObjectsMother {
                         lastDayOfMonth.plusDays(1).toString())
                 .build();
         // --input: string date = "this year" {pattern: datetime}
-        DataFrame expected4 = DataFrameBuilder.getBuilder()
-                .setRowCount(dayOfYear > 1 && dayOfYear < Year.of(now.getYear()).length() - 6 ? 3 : 2)
-                .setColumn(new DateTimeColumn(parser.parseDatesToDoubles(datePattern,
+        DataFrame expected4 = DataFrame.fromColumns(
+                new DateTimeColumn("date", parser.parseDatesToDoubles(datePattern,
                                 now.toString(),
                                 dayOfYear == 1 ? null : yesterday.toString(),
                                 lastDayOfWeek.getYear() >  now.getYear() || lastDayOfWeek.equals(now)?
                                         null : lastDayOfWeek.toString(),
-                                dayOfLastYear.getYear() == now.getYear() ? dayOfLastYear.toString() : null)),
-                        "date")
-                .build();
+                                dayOfLastYear.getYear() == now.getYear() ? dayOfLastYear.toString() : null)));
         FuncCall funcCall4 = FuncCallBuilder.getBuilder()
                 .addQuery("-- input: string date = \"this year\" {pattern: datetime}\n"
                         + "SELECT * FROM dates_patterns WHERE @date(dat)\n"
@@ -314,11 +274,8 @@ public class VirtuosoObjectsMother {
                         lastDayOfYear.plusDays(1).toString())
                 .build();
         // --input: string date = "yesterday" {pattern: datetime}
-        DataFrame expected5 = DataFrameBuilder.getBuilder()
-                .setRowCount(1)
-                .setColumn(new DateTimeColumn(parser.parseDatesToDoubles(datePattern, yesterday.toString())),
-                        "date")
-                .build();
+        DataFrame expected5 = DataFrame.fromColumns(
+                new DateTimeColumn("date", parser.parseDatesToDoubles(datePattern, yesterday.toString())));
         FuncCall funcCall5 = FuncCallBuilder.getBuilder()
                 .addQuery("-- input: string date = \"yesterday\" {pattern: datetime}\n"
                         + "SELECT * FROM dates_patterns WHERE @date(dat)\n"
@@ -329,13 +286,10 @@ public class VirtuosoObjectsMother {
                         now.toString())
                 .build();
         // --input: string date = "last year" {pattern: datetime}
-        DataFrame expected6 = DataFrameBuilder.getBuilder()
-                .setRowCount(1)
-                .setColumn(new DateTimeColumn(parser.parseDatesToDoubles(datePattern,
+        DataFrame expected6 = DataFrame.fromColumns(
+                new DateTimeColumn("date", parser.parseDatesToDoubles(datePattern,
                                 yesterday.getYear() < now.getYear() ? yesterday.toString() : null,
-                                dayOfLastYear.getYear() < now.getYear() ? dayOfLastYear.toString() : null)),
-                        "date")
-                .build();
+                                dayOfLastYear.getYear() < now.getYear() ? dayOfLastYear.toString() : null)));
         FuncCall funcCall6 = FuncCallBuilder.getBuilder()
                 .addQuery("-- input: string date = \"last year\" {pattern: datetime}\n"
                         + "SELECT * FROM dates_patterns WHERE @date(dat)\n"
@@ -345,14 +299,11 @@ public class VirtuosoObjectsMother {
                         firstDayOfYear.minusYears(1).toString(), firstDayOfYear.toString())
                 .build();
         // --input: string date = "anytime" {pattern: datetime}
-        DataFrame expected7 = DataFrameBuilder.getBuilder()
-                .setRowCount(5)
-                .setColumn(new DateTimeColumn(parser.parseDatesToDoubles(datePattern, now.toString(),
+        DataFrame expected7 = DataFrame.fromColumns(
+                new DateTimeColumn("date", parser.parseDatesToDoubles(datePattern, now.toString(),
                                 yesterday.toString(), lastDayOfWeek.getYear() >  now.getYear() || lastDayOfWeek.equals(now)?
                                         null : lastDayOfWeek.toString(), dayOfLastYear.toString(),
-                                "2021-04-09")),
-                        "date")
-                .build();
+                                "2021-04-09")));
         FuncCall funcCall7 = FuncCallBuilder.getBuilder()
                 .addQuery( "-- input: string date = \"anytime\" {pattern: datetime}\n"
                         + "SELECT * FROM dates_patterns WHERE @date(dat)\n"
@@ -361,11 +312,8 @@ public class VirtuosoObjectsMother {
                 .addFuncCallOptionsPattern("date", "", "none", true, true)
                 .build();
         // --input: string date = "2021-2022" {pattern: datetime}
-        DataFrame expected8 = DataFrameBuilder.getBuilder()
-                .setRowCount(1)
-                .setColumn(new DateTimeColumn(parser.parseDatesToDoubles(datePattern, "2021-04-09")),
-                        "date")
-                .build();
+        DataFrame expected8 = DataFrame.fromColumns(
+                new DateTimeColumn("date", parser.parseDatesToDoubles(datePattern, "2021-04-09")));
 
         FuncCall funcCall8 = FuncCallBuilder.getBuilder()
                 .addQuery( "-- input: string date = \"2021-2021\" {pattern: datetime}\n"
@@ -387,12 +335,9 @@ public class VirtuosoObjectsMother {
                         Year.of(2022).atDay(1).toString())
                 .build();
         // --input: string date = "after 1/1/2022" {pattern: datetime}
-        DataFrame expected9 = DataFrameBuilder.getBuilder()
-                .setRowCount(4)
-                .setColumn(new DateTimeColumn(parser.parseDatesToDoubles(datePattern, now.toString(),
-                                yesterday.toString(), lastDayOfWeek.toString(), dayOfLastYear.toString())),
-                        "date")
-                .build();
+        DataFrame expected9 = DataFrame.fromColumns(
+                new DateTimeColumn("date", parser.parseDatesToDoubles(datePattern, now.toString(),
+                                yesterday.toString(), lastDayOfWeek.toString(), dayOfLastYear.toString())));
         FuncCall funcCall10 = FuncCallBuilder.getBuilder()
                 .addQuery("-- input: string date = \"after 1/1/2022\" {pattern: datetime}\n"
                         + "SELECT * FROM dates_patterns WHERE @date(dat);\n"

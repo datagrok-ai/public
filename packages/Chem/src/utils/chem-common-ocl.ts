@@ -43,5 +43,8 @@ function _molToCanvas(mol: OCL.Molecule, width = 200, height = 100): HTMLCanvasE
 }
 
 export function oclMol(molStr: string): OCL.Molecule {
-  return DG.chem.isMolBlock(molStr) ? OCL.Molecule.fromMolfile(molStr) : OCL.Molecule.fromSmiles(molStr);
+  const isMolFile = DG.chem.isMolBlock(molStr);
+  if (!isMolFile && molStr.length > 5000)
+    throw new Error('Invalid molecule string');
+  return isMolFile ? OCL.Molecule.fromMolfile(molStr) : OCL.Molecule.fromSmiles(molStr);
 }

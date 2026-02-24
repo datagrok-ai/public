@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(docker ps:*)",
+      "Bash(powershell -Command:*)",
+      "Bash(docker logs:*)",
+      "Bash(docker stats:*)",
+      "Bash(docker inspect:*)",
+      "Bash(docker network:*)",
+      "Bash(systeminfo:*)",
+      "Bash(findstr:*)",
+      "Bash(npx grok test:*)"
+    ]
+  }
+}

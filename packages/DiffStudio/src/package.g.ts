@@ -70,13 +70,14 @@ export async function runDiffStudioTreeBrowser(treeNode: any) : Promise<void> {
 //input: double a = 45 { category: Throw parameters; caption: Angle; min: 20; max: 70; units: deg }
 //output: double maxDist { caption: Max distance }
 //output: double maxHeight { caption: Max height }
-//output: dataframe df { caption: Trajectory; viewer: Line chart(block: 60, multiAxis: "false", multiAxisLegendPosition: "RightCenter", autoLayout: "false", showAggrSelectors: "false") | Grid(block: 40) }
-//editor: Compute:RichFunctionViewEditor
+//output: dataframe df { caption: Trajectory; viewer: Line chart(multiAxis: "false", multiAxisLegendPosition: "RightCenter", autoLayout: "false", showAggrSelectors: "false") | Grid() }
+//editor: Compute2:RichFunctionViewEditor
 //sidebar: @compute
 //meta.runOnOpen: true
 //meta.runOnInput: true
 //meta.features: {"sens-analysis": true, "fitting": true}
 //meta.icon: files/icons/ball.png
+//meta.dockSpawnConfig: {"Trajectory / Grid": {"dock-spawn-dock-ratio": 0.3, "dock-spawn-dock-type": "right", "dock-spawn-dock-to": "Trajectory / Line chart"}, "Output": {"dock-spawn-dock-ratio": 0.15, "dock-spawn-dock-type": "down", "dock-spawn-dock-to": "Trajectory / Line chart"}}
 export function ballFlight(dB: number, roB: number, v: number, a: number) {
   return PackageFunctions.ballFlight(dB, roB, v, a);
 }
@@ -133,6 +134,22 @@ export async function Bioreactor() : Promise<void> {
 //test: demoBioreactor() //wait: 100 
 export async function demoBioreactor() : Promise<any> {
   return await PackageFunctions.demoBioreactor();
+}
+
+//name: Acid Production
+//description: Gluconic acid (GA) production by Aspergillus niger modeling
+//tags: model
+//meta.icon: files/icons/ga-production.png
+export async function acidProduction() : Promise<void> {
+  await PackageFunctions.acidProduction();
+}
+
+//name: Pollution
+//description: The chemical reaction part of the air pollution model developed at The Dutch National Institute of Public Health and Environmental Protection
+//tags: model
+//meta.icon: files/icons/pollution.png
+export async function pollution() : Promise<void> {
+  await PackageFunctions.pollution();
 }
 
 //description: Run model with Diff Studio UI

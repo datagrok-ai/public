@@ -9,13 +9,18 @@ import {DiffStudio} from './app';
 import {getIVP, IVP, getScriptLines, getScriptParams} from './scripting-tools';
 
 import {getBallFlightSim} from './demo/ball-flight';
-import {PK_PD_DEMO} from './demo/pk-pd';
-import {BIOREACTOR_DEMO} from './demo/bioreactor';
+
+export {Model} from './model';
+import {PK_PD_MODEL_INFO} from './demo/pk-pd';
+import {BIOREACTOR_MODEL_INFO} from './demo/bioreactor';
+import {ACID_PRODUCTION_MODEL_INFO} from './demo/acid-production';
+import {POLLUTION_MODEL_INFO} from './demo/pollution';
+
 import {DF_NAME} from './constants';
 import {UI_TIME} from './ui-constants';
 
 import {ODEs, SolverOptions} from 'diff-grok';
-import {Model} from './model';
+import {Model, ModelInfo} from './model';
 
 import utc from 'dayjs/plugin/utc';
 import dayjs from 'dayjs';
@@ -144,12 +149,14 @@ export class PackageFunctions {
   @grok.decorators.model({
     name: 'Ball flight',
     description: 'Ball flight simulation',
-    editor: 'Compute:RichFunctionViewEditor',
+    editor: 'Compute2:RichFunctionViewEditor',
     sidebar: '@compute',
     runOnOpen: 'true',
     runOnInput: 'true',
     features: '{"sens-analysis": true, "fitting": true}',
     icon: 'files/icons/ball.png',
+    // @ts-expect-error
+    dockSpawnConfig: '{"Trajectory / Grid": {"dock-spawn-dock-ratio": 0.3, "dock-spawn-dock-type": "right", "dock-spawn-dock-to": "Trajectory / Line chart"}, "Output": {"dock-spawn-dock-ratio": 0.15, "dock-spawn-dock-type": "down", "dock-spawn-dock-to": "Trajectory / Line chart"}}',
     outputs: [
       {
         name: 'maxDist',
@@ -164,7 +171,7 @@ export class PackageFunctions {
       {
         name: 'df',
         type: 'dataframe',
-        options: {caption: 'Trajectory', viewer: 'Line chart(block: 60, multiAxis: "false", multiAxisLegendPosition: "RightCenter", autoLayout: "false", showAggrSelectors: "false") | Grid(block: 40)'},
+        options: {caption: 'Trajectory', viewer: 'Line chart(multiAxis: "false", multiAxisLegendPosition: "RightCenter", autoLayout: "false", showAggrSelectors: "false") | Grid()'},
       },
     ],
   })
@@ -219,7 +226,8 @@ export class PackageFunctions {
     icon: 'files/icons/pkpd.png',
   })
   static async pkPdNew(): Promise<void> {
-    await PK_PD_DEMO.run();
+    const model = new Model(PK_PD_MODEL_INFO);
+    await model.run();
   }
 
   @grok.decorators.demo({
@@ -232,15 +240,18 @@ export class PackageFunctions {
     },
   })
   static async demoSimPKPD(): Promise<any> {
-    await PK_PD_DEMO.runDemo();
+    const model = new Model(PK_PD_MODEL_INFO);
+    await model.runDemo();
   }
 
   @grok.decorators.model({
+    name: 'Bioreactor',
     description: 'Controlled fab-arm exchange mechanism simulation',
     icon: 'files/icons/bioreactor.png',
   })
   static async Bioreactor(): Promise<void> {
-    await BIOREACTOR_DEMO.run();
+    const model = new Model(BIOREACTOR_MODEL_INFO);
+    await model.run();
   }
 
   @grok.decorators.demo({
@@ -250,7 +261,28 @@ export class PackageFunctions {
     test: {test: 'demoBioreactor()', wait: '100'},
   })
   static async demoBioreactor(): Promise<any> {
-    await BIOREACTOR_DEMO.runDemo();
+    const model = new Model(BIOREACTOR_MODEL_INFO);
+    await model.runDemo();
+  }
+
+  @grok.decorators.model({
+    name: 'Acid Production',
+    description: 'Gluconic acid (GA) production by Aspergillus niger modeling',
+    icon: 'files/icons/ga-production.png',
+  })
+  static async acidProduction(): Promise<void> {
+    const model = new Model(ACID_PRODUCTION_MODEL_INFO);
+    await model.run();
+  }
+
+  @grok.decorators.model({
+    name: 'Pollution',
+    description: 'The chemical reaction part of the air pollution model developed at The Dutch National Institute of Public Health and Environmental Protection',
+    icon: 'files/icons/pollution.png',
+  })
+  static async pollution(): Promise<void> {
+    const model = new Model(POLLUTION_MODEL_INFO);
+    await model.run();
   }
 
   @grok.decorators.func({
@@ -259,10 +291,16 @@ export class PackageFunctions {
   static async runModel(model: string,
     @grok.decorators.param({type: 'int'}) inputsTabDockRatio: number,
     @grok.decorators.param({type: 'int'}) graphsDockRatio: number): Promise<void> {
-    const diffStudioModel = new Model(model, {
-      inputsTabDockRatio: inputsTabDockRatio,
-      graphsDockRatio: graphsDockRatio,
-    }, '');
+    const modelInfo: ModelInfo = {
+      equations: model,
+      uiOptions: {
+        inputsTabDockRatio: inputsTabDockRatio,
+        graphsDockRatio: graphsDockRatio,
+      },
+      info: '',
+    };
+
+    const diffStudioModel = new Model(modelInfo);
 
     await diffStudioModel.run();
   }

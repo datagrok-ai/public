@@ -653,6 +653,73 @@ If the function has the `meta.vectorFunc: true` annotation, Datagrok automatical
 This allows you to create multiple derived columns (for example, several computed chemical descriptors) from one
 unified expression — all from the familiar **Add new column** interface.
 
+### Joining results to input tables
+
+When a function computes new columns, you often want those results added directly to the source table rather than
+returned separately. The `action: join(tableName)` annotation automates this — the function's output is automatically
+joined to the specified input table parameter.
+
+The annotation works with different output types:
+
+* **`column`** — a single computed column is added to the table.
+* **`column_list`** — multiple columns are added to the table.
+* **`dataframe`** — all columns from the returned dataframe are added to the table.
+
+#### Example: Murcko scaffolds (Python)
+
+The [Murcko Scaffolds](https://datagrok.ai/help/domains/chem/functions/murcko-scaffolds) function from the Chem package
+extracts molecular scaffolds and joins them to the input table:
+
+```python
+#name: Murcko Scaffolds
+#description: Generation of Murcko scaffolds from a molecule
+#input: dataframe data [Input data table]
+#input: column smiles {type:categorical; semType: Molecule} [Molecules, in SMILES format]
+#output: dataframe scaffolds {action:join(data); semType: Molecule} [Murcko scaffolds]
+```
+
+When this function runs, the resulting `scaffolds` column is automatically added to the `data` table.
+
+#### Example: TypeScript with different output types
+
+The annotation works with `column`, `column_list`, and `dataframe` outputs:
+
+```ts
+//name: addProcessedColumn
+//input: dataframe data
+//input: column col
+//output: column res {action:join(data)}
+export function addProcessedColumn(data: DG.DataFrame, col: DG.Column): DG.Column {
+  return DG.Column.string('processed', data.rowCount).init((i) => `${col.get(i)}_processed`);
+}
+```
+
+#### TypeScript decorator syntax
+
+Using decorators, you can specify the action in the outputs array:
+
+```ts
+@grok.decorators.func({
+  outputs: [{name: 'res', type: 'dataframe', options: {action: 'join(data)'}}],
+})
+static async getChemspacePrices(
+  data: DG.DataFrame,
+  @grok.decorators.param({type: 'column<string>', options: {semType: 'chemspace-id'}}) idsColumn: DG.Column,
+  shipToCountry: string
+): Promise<DG.DataFrame> {
+  // Fetch prices and return as dataframe - columns are joined to data
+}
+```
+
+#### Formula tagging and persistence
+
+Columns joined via `action: join` behave like calculated columns:
+
+* They are tagged with the formula that created them.
+* When source data changes, they recalculate automatically.
+* The formula is preserved in **DataSync projects**, ensuring reproducibility when reopening.
+* **Layouts** containing these columns restore correctly when applied to new data.
+
 ### Input types
 
 Input fields such as text boxes or combo boxes get generated automatically based on

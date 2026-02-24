@@ -7,8 +7,8 @@ import {ChatGptAssistant} from './prompt-engine/chatgpt-assistant';
 import {ChatGPTPromptEngine} from './prompt-engine/prompt-engine';
 import {findBestMatchingQuery, tableQueriesFunctionsSearchLlm} from './llm-utils/query-matching';
 import {askWiki, setupAIQueryEditorUI, setupScriptsAIPanelUI, setupSearchUI, setupTableViewAIPanelUI, smartExecution} from './llm-utils/ui';
-import {Plan} from './prompt-engine/interfaces';
-import {initModelTypeNames, ModelType, OpenAIClient} from './llm-utils/openAI-client';
+import {PackageSettings, Plan} from './prompt-engine/interfaces';
+import {initModelTypeNames, ModelType, LLMClient} from './llm-utils/LLM-client';
 import {LLMCredsManager} from './llm-utils/creds';
 import {CombinedAISearchAssistant} from './llm-utils/combined-search';
 import {JsonSchema} from './prompt-engine/interfaces';
@@ -18,7 +18,14 @@ import {chemblIndex} from './llm-utils/indexes/chembl-index';
 import {uploadFilesToVectorStroreOneByOne} from './llm-utils/indexes/dg-repository-index';
 
 export * from './package.g';
-export const _package = new DG.Package();
+
+export class ChatGPTPackage extends DG.Package {
+  get settings(): PackageSettings {
+    return super.settings as PackageSettings;
+  }
+}
+
+export const _package = new ChatGPTPackage();
 
 
 export class PackageFunctions {
@@ -30,8 +37,8 @@ export class PackageFunctions {
     setupTableViewAIPanelUI();
     setupScriptsAIPanelUI();
 
-    // @ts-ignore
-    window.openAI = OpenAIClient.getInstance().openai;
+    // // @ts-ignore
+    // window.openAI = OpenAIClient.getInstance().openai;
 
     // AIProvider.setProvider(_package.settings.APIName === 'openai chat completions' ?
     //   new OpenAIChatCompletionsProvider(OpenAIClient.getInstance().openai) : new OpenAIResponsesProvider(OpenAIClient.getInstance().openai)
@@ -128,7 +135,7 @@ export class PackageFunctions {
     prompt: string,
     schema?: JsonSchema
   ): Promise<string> {
-    const client = OpenAIClient.getInstance();
+    const client = LLMClient.getInstance();
     // this is used only here to provide caching
     return await client.generalPrompt(model, systemPrompt, prompt, schema);
   }
@@ -142,7 +149,7 @@ export class PackageFunctions {
   static async ask(
     question: string,
   ): Promise<string> {
-    const client = OpenAIClient.getInstance();
+    const client = LLMClient.getInstance();
     // this is used only here to provide caching
     return await client.generalPrompt(ModelType.Fast, 'You are a helpful assistant.', question);
   }
@@ -179,7 +186,7 @@ export class PackageFunctions {
     }
   })
   static async askDocumentationCached(prompt: string): Promise<string> {
-    const client = OpenAIClient.getInstance();
+    const client = LLMClient.getInstance();
     return await client.getHelpAnswer(prompt);
   }
 
@@ -225,7 +232,7 @@ export class PackageFunctions {
   @grok.decorators.func({})
   static async searchForSomething() {
     const query = 'anything';
-    const openAIClient = OpenAIClient.getInstance().openai;
+    const openAIClient = LLMClient.getInstance().openai;
     const f = await openAIClient.vectorStores.search('vs_696fbf9985f8819191dc6f71e04b6593', {query: query, max_num_results: 5, filters: {
       key: 'firstParentFolder',
       type: 'eq',

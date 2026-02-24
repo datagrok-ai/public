@@ -30,13 +30,14 @@ import {addPropertiesAsColumns, getChemPropertyFunc, getPropertiesAsColumns, pro
 import {structuralAlertsWidget} from './widgets/structural-alerts';
 import {structure2dWidget} from './widgets/structure2d';
 import {getToxicityRisksColumns, toxicityWidget} from './widgets/toxicity';
+import {_synthonSubstructureSearchWidget, _synthonSimilaritySearchWidget, synthonSearch} from './widgets/synthon-search';
 
 //panels imports
 import {getInchiKeysImpl, getInchisImpl} from './panels/inchi';
 import {getMolColumnPropertyPanel} from './panels/chem-column-property-panel';
 import {ScaffoldTreeViewer} from './widgets/scaffold-tree';
 import {ScaffoldTreeFilter} from './widgets/scaffold-tree-filter';
-import {Fingerprint} from './utils/chem-common';
+import {Fingerprint, hasNewLines, waitFor} from './utils/chem-common';
 import * as chemCommonRdKit from './utils/chem-common-rdkit';
 import {IMolContext, getMolSafe, isFragment, _isSmarts} from './utils/mol-creation_rdkit';
 import {checkMoleculeValid, checkMolEqualSmiles, _rdKitModule} from './utils/chem-common-rdkit';
@@ -92,7 +93,7 @@ import {MixtureCellRenderer} from './rendering/mixture-cell-renderer';
 import {createComponentPane, createMixtureWidget, Mixfile} from './utils/mixfile';
 import {biochemicalPropertiesDialog} from './widgets/biochem-properties-widget';
 import {checkCurrentView} from './utils/ui-utils';
-import {DesirabilityProfile, mpo, PropertyDesirability, WEIGHTED_AGGREGATIONS_LIST, WeightedAggregation} from '@datagrok-libraries/statistics/src/mpo/mpo';
+import {isDesirabilityProfile, mpo, PropertyDesirability, WEIGHTED_AGGREGATIONS_LIST, WeightedAggregation} from '@datagrok-libraries/statistics/src/mpo/mpo';
 //@ts-ignore
 import '../css/chem.css';
 import {addDeprotectedColumn, DeprotectEditor} from './analysis/deprotect';
@@ -100,7 +101,11 @@ import {MpoProfilesView} from './mpo/mpo-profiles-view';
 
 import $ from 'cash-dom';
 import {MpoProfileCreateView} from './mpo/mpo-create-profile';
-import {findSuitableProfiles, loadMpoProfiles, MPO_PROFILE_CHANGED_EVENT, MPO_TEMPLATE_PATH} from './mpo/utils';
+import {MpoProfileManager} from './mpo/mpo-profile-manager';
+import {MpoProfileHandler} from './mpo/mpo-profile-handler';
+import {findSuitableProfiles, MPO_PROFILE_CHANGED_EVENT, MpoProfileInfo} from './mpo/utils';
+import {removeWaterAndSalts} from './utils/reactions/reactions';
+import {transformationReactionsUI, twoComponentReactionUI} from './utils/reactions/ui';
 
 export {getMCS};
 export * from './package.g';
@@ -209,6 +214,7 @@ export class PackageFunctions {
     if (!_initChemPromise)
       _initChemPromise = initChemInt();
     await _initChemPromise;
+    DG.ObjectHandler.register(new MpoProfileHandler());
   }
 
   @grok.decorators.autostart()
@@ -342,6 +348,8 @@ export class PackageFunctions {
   @grok.decorators.func()
   static getCLogP(
     @grok.decorators.param({type: 'string', options: {semType: 'Molecule'}}) smiles: string): number {
+    if (!smiles || (!hasNewLines(smiles) && smiles.length > 5000))
+      return NaN; // do not attempt to parse very long SMILES, will cause MOB.
     const mol = PackageFunctions.getRdKitModule().get_mol(smiles);
     const res = JSON.parse(mol.get_descriptors()).CrippenClogP;
     mol?.delete();
@@ -640,6 +648,36 @@ export class PackageFunctions {
           .getElementsByClassName('chem-canvas')[0];
         (element as HTMLElement).click();
       }, 500);
+    }
+  }
+
+  @grok.decorators.func({
+    'name': 'BitBIRCH Clustering',
+    'top-menu': 'Chem | Calculate | BitBIRCH Clustering...',
+    'description': 'O(N) incremental clustering of molecules based on binary fingerprint similarity',
+  })
+  static async bitbirchClusteringTopMenu(
+    table: DG.DataFrame,
+    @grok.decorators.param({type: 'column', options: {semType: 'Molecule'}}) molecules: DG.Column,
+    @grok.decorators.param({type: 'double', options: {initialValue: '0.55', caption: 'Threshold', min: '0', max: '1'}}) threshold: number = 0.65,
+    @grok.decorators.param({
+      type: 'string',
+      options: {
+        caption: 'Fingerprint type',
+        choices: ['Morgan', 'RDKit', 'Pattern', 'AtomPair', 'MACCS', 'TopologicalTorsion'],
+        initialValue: 'Morgan',
+      },
+    }) fingerprintType: string = 'Morgan',
+  ): Promise<void> {
+    try {
+      const {bitbirchWorker} = await import('./analysis/bit-birch/bitbirch-clustering');
+      const col = await bitbirchWorker(
+        molecules, threshold, fingerprintType as Fingerprint);
+      col.name = table.columns.getUnusedName(col.name);
+      table.columns.add(col);
+    } catch (e) {
+      grok.shell.error('BitBIRCH Clustering Error');
+      console.error(e);
     }
   }
 
@@ -1402,6 +1440,46 @@ export class PackageFunctions {
         toxicityWidget(smiles) : new DG.Widget(ui.divText(EMPTY_MOLECULE_MESSAGE));
   }
 
+  @grok.decorators.panel({
+    name: 'Databases | Synthon Search | Substructure Search',
+    description: 'Substructure search in synthon chemical space using RDKit SynthonSpaceSearch',
+    meta: {role: 'widgets', domain: 'chem'},
+  })
+  static async synthonSubstructureSearchWidget(
+    @grok.decorators.param({options: {semType: 'Molecule'}}) molecule: string): Promise<DG.Widget> {
+    return molecule && !DG.chem.Sketcher.isEmptyMolfile(molecule) ?
+      await _synthonSubstructureSearchWidget(molecule) : new DG.Widget(ui.divText(EMPTY_MOLECULE_MESSAGE));
+  }
+
+  @grok.decorators.panel({
+    name: 'Databases | Synthon Search | Similarity Search',
+    description: 'Fingerprint similarity search in synthon chemical space using RDKit SynthonSpaceSearch',
+    meta: {role: 'widgets', domain: 'chem'},
+  })
+  static async synthonSimilaritySearchWidget(
+    @grok.decorators.param({options: {semType: 'Molecule'}}) molecule: string): Promise<DG.Widget> {
+    return molecule && !DG.chem.Sketcher.isEmptyMolfile(molecule) ?
+      await _synthonSimilaritySearchWidget(molecule) : new DG.Widget(ui.divText(EMPTY_MOLECULE_MESSAGE));
+  }
+
+  @grok.decorators.func({
+    name: 'synthonSearch',
+    description: 'Search in synthon chemical space and return products with precursor structures',
+    meta: {
+      cache: 'client',
+      cacheInvalidateOn: '0 * * * *',
+    },
+  })
+  static async synthonSearchFunc(
+    @grok.decorators.param({description: 'Synthon space name (file name in synthon-data/)'}) spaceName: string,
+    @grok.decorators.param({options: {semType: 'Molecule'}, description: 'Query molecule'}) molecule: string,
+    @grok.decorators.param({options: {initialValue: '100'}, description: 'Maximum number of hits'}) maxHits: number,
+    @grok.decorators.param({options: {choices: ['substructure', 'similarity']}, description: 'Search type'}) searchType: string,
+    @grok.decorators.param({options: {initialValue: '0.5', optional: true, nullable: true}, description: 'Similarity cutoff (0-1)'}) similarityCutoff?: number,
+  ): Promise<DG.DataFrame> {
+    return synthonSearch(spaceName, molecule, maxHits, searchType, similarityCutoff);
+  }
+
   @grok.decorators.func({
     name: 'convertMoleculeNotation',
     meta: {vectorFunc: 'true'},
@@ -1538,11 +1616,21 @@ export class PackageFunctions {
     const sketcher = new Sketcher(undefined, PackageFunctions.validateMolecule);
     const unit = cell.cell.column.meta.units;
     let molecule = cell.cell.value;
+    let ogSmiles: string | null = null;
     if (unit === DG.chem.Notation.Smiles) {
+      ogSmiles = molecule;
       //convert to molFile to draw in coordinates similar to dataframe cell
       molecule = PackageFunctions.convertMolNotation(molecule, DG.chem.Notation.Smiles, DG.chem.Notation.MolBlock);
     }
     sketcher.setMolecule(molecule);
+    if (ogSmiles) {
+      waitFor(() => !!sketcher.sketcher?.isInitialized)
+        .then((inited) => {
+          if (inited)
+          sketcher.sketcher!.explicitMol = {notation: 'smiles', value: ogSmiles};
+        });
+    }
+
     const dlg = ui.dialog()
       .add(sketcher)
       .onOK(() => {
@@ -1552,7 +1640,6 @@ export class PackageFunctions {
           const mol = checkMoleculeValid(cell.cell.value);
           if (!checkMolEqualSmiles(mol, newValue)) {
             try {
-              //@ts-ignore TODO Remove on js-api update
               cell.setValue(newValue, true);
             } catch {
               cell.cell.value = newValue;
@@ -1561,7 +1648,6 @@ export class PackageFunctions {
           mol?.delete();
         } else {
           try {
-            //@ts-ignore TODO Remove on js-api update
             cell.setValue(sketcher.getMolFile(), true);
           } catch {
             cell.cell.value = sketcher.getMolFile();
@@ -2463,40 +2549,53 @@ export class PackageFunctions {
   }
 
   @grok.decorators.func({
-    outputs: [{name: 'res', type: 'list'}],
+    outputs: [{name: 'result', type: 'dataframe', options: {action: 'join(df)'}}],
+  })
+  static mpoCalculate(
+    df: DG.DataFrame,
+    @grok.decorators.param({type: 'column_list'}) columns: DG.ColumnList,
+    profileName: string,
+    @grok.decorators.param({type: 'string'}) aggregation: WeightedAggregation,
+  ): DG.DataFrame | null {
+    const resultCol = mpo(df, Array.from(columns), profileName, aggregation);
+    if (resultCol && !df.col(resultCol.name))
+      return DG.DataFrame.fromColumns([resultCol]);
+    return null;
+  }
+
+  @grok.decorators.func({
     meta: {role: 'transform'},
   })
   static async mpoTransformFunction(
     df: DG.DataFrame,
     profileName: string,
-    aggregation: WeightedAggregation,
-    @grok.decorators.param({type: 'object'}) currentProperties: { [key: string]: PropertyDesirability },
-  ): Promise<string[]> {
+    @grok.decorators.param({type: 'string'}) aggregation: WeightedAggregation,
+    @grok.decorators.param({type: 'string'}) currentProperties: string,
+    silent: boolean = false,
+  ): Promise<DG.DataFrame> {
+    const parsedProperties: Record<string, PropertyDesirability> = JSON.parse(currentProperties);
     const columns: DG.Column[] = [];
-    let resultCol: DG.Column | null = null;
-    for (const propertyName in currentProperties) {
+
+    for (const [propertyName, desirability] of Object.entries(parsedProperties)) {
       const column = df.columns.byName(propertyName);
       if (!column) {
-        grok.shell.warning(`Column ${propertyName} from profile not found in table. Skipping.`);
+        if (!silent)
+          grok.shell.warning(`Column "${propertyName}" not found. Skipping.`);
         continue;
       }
-      column.setTag('desirabilityTemplate', JSON.stringify(currentProperties[propertyName]));
+      column.setTag('desirabilityTemplate', JSON.stringify(desirability));
       columns.push(column);
     }
 
     if (columns.length === 0) {
-      grok.shell.error('No valid columns found matching the profile properties. Cannot calculate MPO score.');
-      return [];
+      if (!silent)
+        grok.shell.error('No valid columns found matching the profile properties.');
+      return DG.DataFrame.create();
     }
 
-    try {
-      resultCol = mpo(df, columns, profileName, aggregation);
-    } catch (e) {
-      console.error('MPO Calculation Error:', e);
-      grok.shell.error(`MPO calculation failed: ${e instanceof Error ? e.message : String(e)}`);
-    }
-
-    return resultCol ? [resultCol.name] : [];
+    // Temporary fix until proper support for list<column> is implemented
+    const colList = DG.DataFrame.fromColumns(columns).columns;
+    return await grok.functions.call('Chem:mpoCalculate', {df, columns: colList, profileName, aggregation});
   }
 
   @grok.decorators.fileViewer({
@@ -2529,7 +2628,7 @@ export class PackageFunctions {
     outputs: [{name: 'result', type: 'bool'}],
   })
   static checkJsonMpoProfile(content: string) {
-    return JSON.parse(content)['type'] === 'MPO Desirability Profile';
+    return isDesirabilityProfile(JSON.parse(content));
   }
 
   @grok.decorators.panel({
@@ -2586,7 +2685,7 @@ export class PackageFunctions {
     }
 
     const profileId = params.get('profileId');
-    const profiles = await loadMpoProfiles();
+    const profiles = await MpoProfileManager.ensureLoaded();
     if (hasPath && profileId) {
       const profile = profiles.find((p) => p.name === decodeURIComponent(profileId));
       const view = new MpoProfileCreateView(profile, false, profile?.fileName);
@@ -2601,25 +2700,34 @@ export class PackageFunctions {
   @grok.decorators.func()
   static async mpoProfilesAppTreeBrowser(
     @grok.decorators.param({type: 'dynamic'}) treeNode: DG.TreeViewGroup,
-    @grok.decorators.param({type: 'view'}) browseView: any,
+    @grok.decorators.param({type: 'view'}) _browseView: any,
   ) {
     let openedView: DG.ViewBase | null = null;
+    const profileMap = new Map<DG.TreeViewNode, MpoProfileInfo>();
 
     const refresh = async () => {
       treeNode.items.forEach((item) => item.remove());
+      profileMap.clear();
 
-      const profileFiles = await grok.dapi.files.list(MPO_TEMPLATE_PATH);
-      for (const profile of profileFiles) {
-        const content =
-        JSON.parse(await grok.dapi.files.readAsText(
-          `${MPO_TEMPLATE_PATH}/${profile.name}`,
-        )) as DesirabilityProfile;
+      const profiles = await MpoProfileManager.ensureLoaded();
+      for (const profile of profiles) {
+        const item = treeNode.item(profile.name);
+        profileMap.set(item, profile);
 
-        treeNode.item(content.name).onSelected.subscribe(() => {
+        item.onSelected.subscribe(() => {
           openedView?.close();
-          const editView = new MpoProfileCreateView(content, false, profile.name);
+          const editView = new MpoProfileCreateView(profile, false, profile.fileName);
           openedView = editView.view;
           grok.shell.addPreview(editView.view);
+        });
+
+        item.captionLabel.addEventListener('contextmenu', (ev) => {
+          ev.stopImmediatePropagation();
+          ev.preventDefault();
+          DG.Menu.popup()
+            .item('Clone', () => MpoProfileHandler.clone(profile))
+            .item('Delete', () => MpoProfileHandler.delete(profile))
+            .show({x: ev.clientX, y: ev.clientY, causedBy: ev});
         });
       }
     };
@@ -2627,9 +2735,45 @@ export class PackageFunctions {
     await refresh();
 
     grok.events.onCustomEvent(MPO_PROFILE_CHANGED_EVENT).subscribe(async () => {
+      await MpoProfileManager.load();
       await refresh();
     });
   }
+
+  @grok.decorators.func({
+    topMenu: 'Chem | Transform | Remove Water and Salts...',
+    name: 'removeWaterAndSalts',
+    friendlyName: 'Remove Water and Salts',
+    description: 'Removes water and salts from the list of molecules',
+    outputs: [{name: 'result', type: 'column', options: {semType: 'Molecule'}}],
+  })
+  static async removeWaterAndSaltsTopMenu(table: DG.DataFrame, @grok.decorators.param({semType: 'Molecule'}) molecules: DG.Column) {
+    const res = await removeWaterAndSalts(molecules.toList());
+    const col = table.columns.getOrCreate(`Desalted(${molecules.name})`, DG.TYPE.STRING);
+    col.semType = DG.SEMTYPE.MOLECULE;
+    col.init((i) => res[i]);
+  }
+
+  @grok.decorators.func({
+    topMenu: 'Chem | Transform | Run Reaction...',
+    name: 'transformationReactions',
+    friendlyName: 'Run Reaction',
+    description: 'Runs reaction based on the reaction SMARTS and list of reactants',
+  })
+  static async transformationReactionsTopMenu(): Promise<void> {
+    transformationReactionsUI(grok.shell.t, null);
+  }
+
+  @grok.decorators.func({
+    topMenu: 'Chem | Transform | Two-Component Reaction...',
+    name: 'twoComponentReaction',
+    friendlyName: 'Two-Component Reaction',
+    description: 'Runs a reaction between molecules from two columns',
+  })
+  static async twoComponentReactionTopMenu(): Promise<void> {
+    twoComponentReactionUI(grok.shell.t);
+  }
+
 
   @grok.decorators.panel({
     name: 'Chemistry | MPO',
@@ -2645,8 +2789,8 @@ export class PackageFunctions {
     resultDiv.appendChild(loader);
 
     const dataFrame = semValue.cell.dataFrame;
-    const profiles = await loadMpoProfiles();
-    const suitableProfiles = await findSuitableProfiles(dataFrame, profiles);
+    const profiles = await MpoProfileManager.load();
+    const suitableProfiles = findSuitableProfiles(dataFrame, profiles);
 
     if (suitableProfiles.length === 0) {
       container.appendChild(ui.divText('No suitable profiles available.'));
@@ -2671,7 +2815,7 @@ export class PackageFunctions {
       onValueChanged: () => calculateMpo(),
     });
 
-    async function calculateMpo() {
+    function calculateMpo() {
       if (!profileInput.value)
         return;
 
@@ -2697,12 +2841,11 @@ export class PackageFunctions {
           column.setTag('desirabilityTemplate', newTagValue);
       }
 
-      const score = await mpo( //@ts-ignore
+      const score = mpo(
         dataFrame,
         columns,
         selected.name,
         aggregationInput.value as WeightedAggregation,
-        false,
       );
 
       ui.empty(resultDiv);
@@ -2712,13 +2855,15 @@ export class PackageFunctions {
 
       const addColumnIcon = ui.iconFA(
         'plus',
-        async () => {
-          await mpo( //@ts-ignore
+        () => {
+          const col = mpo(
             dataFrame,
             columns,
             selected.name,
             aggregationInput.value as WeightedAggregation,
           );
+          if (!dataFrame.col(col.name))
+            dataFrame.columns.add(col);
         },
         'Add MPO score as a column',
       );
@@ -2735,7 +2880,7 @@ export class PackageFunctions {
 
     container.appendChild(ui.divV([profileInput.root, aggregationInput.root, resultDiv]));
 
-    await calculateMpo();
+    calculateMpo();
     return DG.Widget.fromRoot(container);
   }
 }

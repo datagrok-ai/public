@@ -35,7 +35,7 @@ export namespace funcs {
     return await grok.functions.call('BioNeMo:MolMIMModel', { algorithm, num_molecules, property_name, minimize, min_similarity, particles, iterations, smi });
   }
 
-  export async function esmFoldModel(table: DG.DataFrame , sequences: DG.Column ): Promise<void> {
+  export async function esmFoldModel(table: DG.DataFrame , sequences: DG.Column ): Promise<DG.DataFrame> {
     return await grok.functions.call('BioNeMo:EsmFoldModel', { table, sequences });
   }
 
@@ -51,7 +51,7 @@ export namespace funcs {
     return await grok.functions.call('BioNeMo:DiffDockModelScript', { ligand, target, poses });
   }
 
-  export async function diffDockModel(table: DG.DataFrame , ligands: DG.Column , target: string , poses: number ): Promise<void> {
+  export async function diffDockModel(table: DG.DataFrame , ligands: DG.Column , target: string , poses: number ): Promise<DG.DataFrame> {
     return await grok.functions.call('BioNeMo:DiffDockModel', { table, ligands, target, poses });
   }
 

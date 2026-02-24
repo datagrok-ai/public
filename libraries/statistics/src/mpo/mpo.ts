@@ -43,6 +43,17 @@ export function isNumerical(p: PropertyDesirability): p is NumericalDesirability
   return p.functionType === 'numerical';
 }
 
+export function createDefaultNumerical(weight = 1, min = 0, max = 1): NumericalDesirability {
+  return {functionType: 'numerical', weight, mode: 'freeform', min, max, line: []};
+}
+
+export function createDefaultCategorical(
+  weight = 1,
+  categories?: {name: string; desirability: number}[],
+): CategoricalDesirability {
+  return {functionType: 'categorical', weight, categories: categories ?? [{name: 'Category 1', desirability: 1}]};
+}
+
 export function migrateDesirability(raw: any): PropertyDesirability {
   if (raw.functionType)
     return raw;
@@ -51,11 +62,18 @@ export function migrateDesirability(raw: any): PropertyDesirability {
   return {...raw, functionType: 'numerical'};
 }
 
+export const DESIRABILITY_PROFILE_TYPE = 'MPO Desirability Profile';
+
 /// A map of desirability lines with their weights
 export type DesirabilityProfile = {
+  type: typeof DESIRABILITY_PROFILE_TYPE;
   name: string;
   description: string;
   properties: { [key: string]: PropertyDesirability };
+}
+
+export function isDesirabilityProfile(x: any): x is DesirabilityProfile {
+  return x != null && typeof x === 'object' && x.type === DESIRABILITY_PROFILE_TYPE;
 }
 
 export const WEIGHTED_AGGREGATIONS = ['Average', 'Sum', 'Product', 'Geomean', 'Min', 'Max'] as const;
@@ -101,16 +119,11 @@ export function mpo(
   columns: DG.Column[],
   profileName: string,
   aggregation: WeightedAggregation,
-  addResultColumn: boolean = true,
 ): DG.Column {
   if (columns.length === 0)
     throw new Error('No columns provided for MPO calculation.');
 
-  let resultColumn = dataFrame.col(profileName);
-  const isNew = !resultColumn;
-
-  if (!resultColumn)
-    resultColumn = DG.Column.float(profileName, columns[0].length);
+  const resultColumn = dataFrame.col(profileName) ?? DG.Column.float(profileName, columns[0].length);
 
   const desirabilityTemplates = columns.map((column) => {
     const tag = column.getTag('desirabilityTemplate');
@@ -125,12 +138,15 @@ export function mpo(
       const desirability = desirabilityTemplates[j];
       const value = columns[j].get(i);
 
-      if (columns[j].isNone(i))
-        return desirability.defaultScore ?? NaN;
+      let score: number | null;
 
-      const score = isNumerical(desirability) ?
-        desirabilityScore(value, desirability.line) :
-        categoricalDesirabilityScore(value, desirability);
+      if (columns[j].isNone(i))
+        score = desirability.defaultScore ?? null;
+      else {
+        score = isNumerical(desirability) ?
+          desirabilityScore(value, desirability.line) :
+          categoricalDesirabilityScore(String(value), desirability);
+      }
 
       if (score === null)
         return NaN;
@@ -142,9 +158,6 @@ export function mpo(
     return aggregate(scores, weights, aggregation);
   });
 
-  // Add the column to the table
-  if (isNew && addResultColumn)
-    dataFrame.columns.add(resultColumn);
   return resultColumn;
 }
 

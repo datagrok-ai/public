@@ -305,6 +305,7 @@ export function inspectCurve(gridCell: DG.GridCell, size?: Partial<DG.Size>, rer
   const dlg = ui.dialog({title: 'Edit chart'})
     .add(gridCellWidget.root)
     .show({resizable: true, width: size?.width ?? 500, height: size?.height ?? 430});
+  dlg.getButton('CANCEL').textContent = 'Close';
   if (rerenderOnChange)
     dlg.sub(merge(gridCell.grid.dataFrame.onDataChanged, gridCell.grid.dataFrame.onMetadataChanged).subscribe(() => gridCellWidget.render()));
 }
@@ -337,7 +338,7 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
   }
 
   onClick(gridCell: DG.GridCell, e: MouseEvent): void {
-    if (!gridCell.cell.value)
+    if (!gridCell.cell.value || !gridCell.cell.column)
       return;
 
     const data = gridCell.cell.column.getTag(FitConstants.TAG_FIT_CHART_FORMAT) === FitConstants.TAG_FIT_CHART_FORMAT_3DX ?
@@ -375,7 +376,9 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
   }
 
   onDoubleClick(gridCell: DG.GridCell, _e: MouseEvent): void {
-    inspectCurve(gridCell);
+    inspectCurve(gridCell, undefined, true);
+    _e.preventDefault();
+    _e.stopPropagation();
   }
 
   areAxesShown(screenBounds: DG.Rect): boolean {

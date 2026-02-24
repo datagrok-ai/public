@@ -265,6 +265,10 @@ Packages must not bundle these (they are provided by the platform at runtime):
 
 The `grok check` command validates that imports match webpack externals.
 
+## Troubleshooting
+
+- To update `grok` tool: `npm i datagrok-tools --g`
+
 ## Code Style
 
 - 2-space indentation

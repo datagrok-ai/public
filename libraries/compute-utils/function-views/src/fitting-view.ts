@@ -18,7 +18,8 @@ import {nelderMeadSettingsOpts} from './fitting/optimizer-nelder-mead';
 import {getCategoryWidget, getShowInfoWidget, getLossFuncDf, lightenRGB,
   getScalarsGoodnessOfFitViewer, getHelpIcon, getRadarTooltip, toUseRadar, getRandomSeedSettings,
   getEarlyStoppingInputs,
-  makeGetCalledFuncCall} from './fitting/fitting-utils';
+  makeGetCalledFuncCall,
+  getRowIndex} from './fitting/fitting-utils';
 import {OptimizationResult, Extremum, TargetTableOutput, ValueBoundsData, OutputTargetItem} from './fitting/optimizer-misc';
 import {getLookupChoiceInput} from './shared/lookup-tools';
 
@@ -223,15 +224,15 @@ export class FittingView {
       toggleInputs(!!formula);
 
       const icon = ui.iconFA('question', () => {
-        const avaliableVars = this.getAvaliableVars(inputProp.name).flatMap(([, { prop }]) => [ui.divText(prop.name), ui.divText(prop.caption)]);
-        const varsGrid = ui.div([ui.h3('Variable'), ui.h3('Caption'), ...avaliableVars], {style: {display: 'grid', 'gridTemplateColumns': '50% 50%'}});
+        const avaliableVars = this.getAvaliableVars(inputProp.name).flatMap(([, {prop}]) => [ui.divText(prop.name), ui.divText(prop.caption)]);
+        const varsGrid = ui.div([ui.h3('Variable'), ui.h3('Caption'), ...avaliableVars], {style: {'display': 'grid', 'gridTemplateColumns': '50% 50%'}});
         const popupHeader = `Set formula for ${key} bound for ${inputProp.caption ?? inputProp.name}\n` +
           `Avaliable variables:\n`;
         ui.showPopup(ui.div([ui.divText(popupHeader), varsGrid], {
-          style: {maxWidth: '500px', maxHeight: '800px', overflowY: 'auto', userSelect: 'text', padding: '10px'}
+          style: {maxWidth: '500px', maxHeight: '800px', overflowY: 'auto', userSelect: 'text', padding: '10px'},
         }), icon);
       });
-      boolInput.addOptions(icon)
+      boolInput.addOptions(icon);
       return boolInput;
     };
 
@@ -1859,7 +1860,7 @@ export class FittingView {
         if ((cell === null) || (cell === undefined))
           return;
 
-        const row = cell.tableRowIndex ?? 0;
+        const row = getRowIndex(cell);
         //const selectedRun = calledFuncCalls[row];
         const selectedRun = await getCalledFuncCall(nonSimilarExtrema[row].point);
 

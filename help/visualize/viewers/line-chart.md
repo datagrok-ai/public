@@ -135,6 +135,7 @@ Toggle each component on/off independently in the **Context Panel** to focus on 
 | Markers Map | string | Marker category time unit map function (applicable to dates only). |
 | Marker Type | string |  |
 | Marker Size | number |  |
+| Marker Opacity | number |  |
 | Show Markers | visibilitymode | A boolean column that determines whether to show markers. |
 | Markers Visibility Column Name | string |  |
 | **Selection** | | |
@@ -142,7 +143,7 @@ Toggle each component on/off independently in the **Context Panel** to focus on 
 | Show Mouse Over Category | boolean | Determines whether the line is highlighted when you hover over the corresponding category. Example: Split by = SEX and you hover over the Male category in the filter. |
 | Show Mouse Over Row Line | boolean | Show vertical line reflecting the position of the mouse-over row See also *Mouse Over Line Color* |
 | **Statistical process control** | | |
-| Show Statical Process Control | boolean | Shows/hides upper and lower control limits, and [Western Electric rules](https:sentient.cloud/what-are-western-electric-rules-2/). |
+| Show Statical Process Control | boolean | Shows/hides upper and lower control limits, and [Western Electric rules](https://sentient.cloud/what-are-western-electric-rules-2/). |
 | Show Control Limits | boolean | Shows/hides upper and lower control limits. |
 | Show Sigma1 | boolean |  |
 | Show Sigma2 | boolean |  |

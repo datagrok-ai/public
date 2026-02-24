@@ -122,7 +122,41 @@
   padding-right: 4px;
 }
 
+.assay-plates-folder-preview .assay-plates--drc-save-button-container, .assay-plates-file-preview .assay-plates--drc-save-button-container {
+  display: none; /* Hide the save button in folder/file preview */
+}
+
 /* Margin for the save button */
 .assay-plates--drc-save-button {
   margin-top: 8px;
+}
+
+/* == XLSX Container Overrides ==
+   Override min-height when analysis view is inside the xlsx split layout */
+.xlsx-plate-container > .assay-plates--analysis-view-container {
+  min-height: 0;
+}
+
+.xlsx-plate-container > .assay-plates--analysis-view-container .assay-plates--analysis-grid-container {
+  overflow: auto;
+}
+
+.xlsx-plate-container > .assay-plates--analysis-view-container .assay-plates--analysis-grid-container > .d4-grid {
+  min-height: 200px;
+  width: 100%;
+}
+
+/* == Tab-embedded Analysis View Overrides ==
+   When analysis view is inside plate widget tabs (folder preview case) */
+.assay-plates--plate-widget__tabs .assay-plates--analysis-view-container {
+  min-height: 0;
+}
+
+.assay-plates--plate-widget__tabs .assay-plates--drc-analysis-container {
+  overflow: auto;
+}
+
+.assay-plates--plate-widget__tabs .assay-plates--analysis-grid-container > .d4-grid {
+  min-height: 200px;
+  width: 100%;
 }

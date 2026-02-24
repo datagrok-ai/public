@@ -14,7 +14,7 @@ public class OracleBigIntColumnManager extends DefaultBigIntColumnManager {
     }
 
     @Override
-    public Column getColumn() {
-        return new IntColumn();
+    public Column<?> getColumn(String name, int initColumnSize) {
+        return new IntColumn(name, initColumnSize);
     }
 }

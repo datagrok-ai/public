@@ -1,5 +1,5 @@
+import {JSONSchema7} from 'ai';
 import * as DG from 'datagrok-api/dg';
-import type OpenAI from 'openai';
 
 export interface FuncParam {
   type: string;
@@ -64,7 +64,7 @@ export interface PackageSelection {
   }[];
 }
 
-export type JsonSchema = OpenAI.Responses.ResponseFormatTextJSONSchemaConfig['schema'];
+export type JsonSchema = JSONSchema7;
 
 /* Schemas defined to enable structured output handling */
 export const PackageSelectionSchema: JsonSchema = {
@@ -148,3 +148,21 @@ export const PlanSchema: JsonSchema = {
   additionalProperties: false,
   required: ['goal', 'analysis', 'steps'],
 };
+
+export enum LLMApiNames {
+  OpenAIChatCompletions = 'OpenAI Chat Completions',
+  OpenAIResponses = 'OpenAI Responses',
+  AntropicMessages = 'Antropic Messages'
+}
+
+export type LLMApiName = `${LLMApiNames}`;
+// export type LLMApiName = 'OpenAI Chat Completions' | 'OpenAI Responses' | 'Antropic Messages'
+
+export type PackageSettings = {
+  vectorStoreId?: string;
+  defaultFastModel?: string;
+  defaultDeepResearchModel?: string;
+  defaultCodingModel?: string;
+  APIName: LLMApiName;
+  apiVersion?: string;
+}

@@ -56,12 +56,7 @@ public class DefaultFloatColumnManager implements ColumnManager<Float> {
     }
 
     @Override
-    public Column getColumn() {
-        return new FloatColumn();
-    }
-
-    @Override
-    public Column getColumn(int initColumnSize) {
-        return new FloatColumn(initColumnSize);
+    public Column<?> getColumn(String name, int initColumnSize) {
+        return new FloatColumn(name, initColumnSize);
     }
 }

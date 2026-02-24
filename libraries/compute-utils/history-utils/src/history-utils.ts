@@ -79,7 +79,7 @@ export namespace historyUtils {
 
     await Promise.all(fileInputs
       .map(async (input) => {
-        const { id, name } = JSON.parse(pulledRun.inputs[input.name]);
+        const {id, name} = JSON.parse(pulledRun.inputs[input.name]);
         const bytes = await grok.dapi.files.readAsBytes(id);
         const fileInfo = DG.FileInfo.fromBytes(name, bytes);
         fileInfo.id = id;
@@ -153,7 +153,7 @@ export namespace historyUtils {
         const filledFileInfo = DG.FileInfo.fromBytes(fileInfo.name, await fileInfo.readAsBytes());
         await grok.dapi.files.write(filledFileInfo);
         await grok.dapi.permissions.grant(filledFileInfo, allGroup, false);
-        callCopy.inputs[input.name] = { id: filledFileInfo.id, name: filledFileInfo.name };
+        callCopy.inputs[input.name] = {id: filledFileInfo.id, name: filledFileInfo.name};
 
         return Promise.resolve();
       }),

@@ -688,6 +688,9 @@ export class GridColumn<TData = any> {
     return api.grok_GridColumn_Get_Idx(this.dart);
   }
 
+  pin(): void {api.grok_Grid_pinColumns(api.grok_GridColumn_Get_Grid(this.dart), [this.dart]); }
+  unpin(): void {api.grok_Grid_unpinColumns(api.grok_GridColumn_Get_Grid(this.dart), [this.dart]); }
+
   /** @returns {string} Column name. */
   get name(): string { return api.grok_GridColumn_Get_Name(this.dart); }
   set name(x: string) { api.grok_GridColumn_Set_Name(this.dart, x); }

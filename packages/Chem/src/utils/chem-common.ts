@@ -1,7 +1,7 @@
 import BitArray from '@datagrok-libraries/utils/src/bit-array';
 import {getMolSafe} from './mol-creation_rdkit';
 import {MolList, RDModule, RDMol} from '@datagrok-libraries/chem-meta/src/rdkit-api';
-import { ISubstruct } from '@datagrok-libraries/chem-meta/src/types';
+import {ISubstruct} from '@datagrok-libraries/chem-meta/src/types';
 
 export const defaultMorganFpRadius = 2;
 export const defaultMorganFpLength = 2048;
@@ -63,6 +63,10 @@ export function isMolBlock(s: string): boolean {
   return s.includes('M  END');
 }
 
+export function hasNewLines(s: string): boolean {
+  return s.includes('\n') || s.includes('\r');
+}
+
 /** @deprecated Use DG.Color.hexToPercentRgb */
 export function hexToPercentRgb(hex: string): number[] | null {
   const result = hex.length === 7 ? /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex) :
@@ -97,7 +101,7 @@ export function appendMolList(molString: string | null, mols: MolList, rdkit: RD
 }
 
 export function getSigFigs(n: number, sig: number) {
-  var mult = Math.pow(10, sig - Math.floor(Math.log(n) / Math.LN10) - 1);
+  const mult = Math.pow(10, sig - Math.floor(Math.log(n) / Math.LN10) - 1);
   return Math.round(n * mult) / mult;
 }
 
@@ -134,9 +138,9 @@ export function getUncommonAtomsAndBonds(molecule: string, mcsMol: RDMol | null,
             let uncommonAtomsSingle = [...uncommonAtoms];
             let uncommonBondsSingle = [...uncommonBonds];
             if (matchedAtomsAndBondsList[i].atoms)
-              uncommonAtomsSingle = getArraysDifference(uncommonAtomsSingle, matchedAtomsAndBondsList[i].atoms!.sort((a, b) => { return a - b; }));
+              uncommonAtomsSingle = getArraysDifference(uncommonAtomsSingle, matchedAtomsAndBondsList[i].atoms!.sort((a, b) => {return a - b;}));
             if (matchedAtomsAndBondsList[i].bonds)
-              uncommonBondsSingle = getArraysDifference(uncommonBondsSingle, matchedAtomsAndBondsList[i].bonds!.sort((a, b) => { return a - b; }));
+              uncommonBondsSingle = getArraysDifference(uncommonBondsSingle, matchedAtomsAndBondsList[i].bonds!.sort((a, b) => {return a - b;}));
 
             let errorRate = 0;
             for (let j = 0; j < uncommonBondsSingle.length - 1; j++) {
@@ -176,3 +180,21 @@ function getArraysDifference(largerArr: number[], smallerArr: number[]) {
     largerArr[i] === smallerArr[counter] ? counter++ : diffArr.push(largerArr[i]);
   return diffArr;
 }
+
+export function waitFor(condition: () => boolean, timeout: number = 5000, interval: number = 100): Promise<boolean> {
+  return new Promise((resolve) => {
+    let timeoutRef: any = null;
+    const intervalRef = setInterval(() => {
+      if (condition()) {
+        clearInterval(interval);
+        clearTimeout(timeoutRef);
+        resolve(true);
+      }
+    }, interval);
+    timeoutRef = setTimeout(() => {
+      clearInterval(intervalRef);
+      resolve(false);
+    }, timeout);
+  });
+}
+

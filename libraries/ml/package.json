@@ -8,7 +8,7 @@
     "email": "drizhinashvili@datagrok.ai"
   },
   "friendlyName": "Datagrok ML library",
-  "version": "6.10.8",
+  "version": "6.10.9",
   "description": "Machine learning supporting utilities",
   "dependencies": {
     "@datagrok-libraries/math": "^1.2.6",
@@ -34,7 +34,6 @@
     "@typescript-eslint/eslint-plugin": "^4.29.1",
     "@typescript-eslint/parser": "^4.29.1",
     "css-loader": "^7.1.2",
-    "datagrok-tools": "^4.14.20",
     "eslint": "^7.32.0",
     "eslint-config-google": "^0.14.0",
     "ts-loader": "^9.2.6",

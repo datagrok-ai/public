@@ -66,12 +66,7 @@ public class DefaultIntColumnManager implements ColumnManager<Integer> {
     }
 
     @Override
-    public Column getColumn() {
-        return new IntColumn();
-    }
-
-    @Override
-    public Column getColumn(int initColumnSize) {
-        return new IntColumn(initColumnSize);
+    public Column<?> getColumn(String name, int initColumnSize) {
+        return new IntColumn(name, initColumnSize);
     }
 }

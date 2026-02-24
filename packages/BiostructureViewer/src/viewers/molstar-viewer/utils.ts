@@ -144,7 +144,8 @@ export function previewMolstarUI(file: DG.FileInfo): { view: DG.View, loadingPro
     throw new Error(`Unsupported format: ${file.extension}`);
   }
 
-  const view = DG.View.create({name: 'Molstar preview'});
+  const view = DG.View.create();
+  view.name = file.name;
   let viewer: RcsbViewer;
   const subs: Unsubscribable[] = [];
   subs.push(ui.onSizeChanged(view.root).subscribe((value: any) => {

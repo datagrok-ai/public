@@ -87,48 +87,47 @@ To modify a connection, right-click it and select **Edit...** from the list of
 options. To quickly create a connection similar to an existing one, right-click
 it and select **Clone...**
 
-<!--
-
 ### File indexing
-For file shares, Datagrok supports indexing of folders and 
-[supported file formats](supported-formats.md), including archives such as .tar or .zip.
 
-Connections and folders are indexed by default when you create a connection. 
-File indexing is optional. To index files, select the **Index Files** option when creating a file share.
+File indexing lets you automatically extract metadata from files stored in your
+file shares. Once configured, Datagrok periodically scans the specified folders,
+runs the scripts you choose against each file, and saves the extracted properties.
+This metadata can then be used to search, filter, and organize your files.
 
-:::tip
+#### Setting up indexing rules
 
-You can enable file indexing at any time. Right-click the file share and select **Edit...** 
-Then, check the **Index file** checkbox in the dialog that appears. Click **OK** to save.
+To configure file indexing, the file share must first be saved. Then:
 
-:::
+1. Right-click the file share in **Data** > **Files** and select **Edit...**.
+2. Go to the **Indexing** tab.
+3. Click **Manage indexing rules...** to open the indexing rules editor.
 
-File indexing is a recurring data job that runs every hour. 
-Datagrok extracts the following information from the indexed file:
+Alternatively, right-click the file share and select **Indexing...** from the
+context menu.
 
-* Filename
-* File size, in bytes
-* Number of rows and columns
-* Column-level information such as name, data type, and [semantic type](../../govern/catalog/semantic-types.md).
+#### Configuring rules
 
-For instance, with indexing, you can browse columns within a CSV file inside a ZIP file:
+Each indexing rule defines what to scan and how to process the files:
 
-![File Explorer](../databases/connectors/files-browser.gif)
+| Setting        | Description                                                                                                    |
+|----------------|----------------------------------------------------------------------------------------------------------------|
+| **Folder**     | The folder within the file share to scan. Each folder path must be unique across rules.                        |
+| **Scripts**    | One or more scripts to run against each file. Scripts must accept a file input and produce metadata as output. |
+| **Schedule**   | A cron expression defining how often indexing runs. The minimum interval is one hour.                          |
+| **Subfolders** | When enabled, the rule also scans all subfolders within the specified folder.                                  |
+| **Enabled**    | Toggle the rule on or off without deleting it.                                                                 |
 
-Indexing helps you find datasets quicker as indexed files appear in the search 
-results based on metadata extracted. For example, you can search for dataframes 
-matching the following criteria across specified or all data providers at once:
+You can add multiple rules per file share to index different folders with
+different scripts and schedules. Click **Add Rule** to create additional rules,
+and use the **Save** button to apply your changes.
 
-* Created in the last month
-* Has a column that contains molecules, and
-* Has a column named "activity."
+#### How it works
 
-:::note
-
-To learn how searching works in Datagrok, see [Smart search](../../visualize/table-view-1.md#search).
-
-:::
--->
+On each scheduled run, Datagrok lists the files in the configured folder (and
+subfolders, if enabled), then runs the assigned scripts against each file. The
+scripts extract metadata such as content properties, tags, or computed values,
+which are saved as properties on the corresponding file entities. These
+properties then become available for searching and filtering in the File Manager.
 
 ## File Manager
 

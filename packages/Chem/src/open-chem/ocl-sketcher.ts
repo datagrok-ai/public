@@ -22,6 +22,7 @@ export class OpenChemLibSketcher extends grok.chem.SketcherBase {
     this.root.id = id;
     this._sketcher = OCL.StructureEditor.createSVGEditor(id, 1);
     this._sketcher.setChangeListenerCallback((_) => {
+      this.explicitMol = null;
       if (this.setSavedMolecule) {
         this.setSavedMolecule = false;
         this.molFile = this.savedMolecule!;
@@ -55,27 +56,36 @@ export class OpenChemLibSketcher extends grok.chem.SketcherBase {
   }
 
   get smiles() {
+    if (this.explicitMol?.notation === 'smiles')
+      return this.explicitMol.value;
     return this._sketcher ? this._sketcher.getSmiles() : '';
   }
 
   set smiles(s) {
     this._sketcher?.setSmiles(s);
+    this.explicitMol = {notation: 'smiles', value: s};
   }
 
   get molFile() {
+    if (this.explicitMol?.notation === 'molblock')
+      return this.explicitMol.value;
     return this._sketcher ? this._sketcher.getMolFile() : '';
   }
 
   set molFile(s) {
     this._sketcher?.setMolFile(s);
+    this.explicitMol = {notation: 'molblock', value: s};
   }
 
   get molV3000() {
+    if (this.explicitMol?.notation === 'molblockV3000')
+      return this.explicitMol.value;
     return this._sketcher ? this._sketcher.getMolFileV3() : '';
   }
 
   set molV3000(s) {
     this._sketcher?.setMolFile(s);
+    this.explicitMol = {notation: 'molblockV3000', value: s};
   }
 
   async getSmarts(): Promise<string> {

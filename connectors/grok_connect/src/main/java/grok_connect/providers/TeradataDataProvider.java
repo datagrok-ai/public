@@ -77,8 +77,7 @@ public class TeradataDataProvider extends JdbcDataProvider {
     @Override
     public DataFrame getSchemas(DataConnection connection) throws QueryCancelledByUser, GrokConnectException {
         String db = connection.getDb();
-        StringColumn column = new StringColumn(new String[]{db});
-        column.name = "TABLE_SCHEMA";
+        StringColumn column = new StringColumn("TABLE_SCHEMA", new String[]{db});
         DataFrame dataFrame = new DataFrame();
         dataFrame.addColumn(column);
         return dataFrame;

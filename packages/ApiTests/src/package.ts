@@ -118,7 +118,7 @@ export function testOutputAnnotationJoinCol(data: DG.DataFrame, col: DG.Column<s
 //name: testOutputAnnotationJoinColList
 //input: dataframe data
 //input: column col
-//output: column res {action:join(data)}
+//output: column_list res {action:join(data)}
 export function testOutputAnnotationJoinColList(data: DG.DataFrame, col: DG.Column<string>): DG.ColumnList {
   const colRes = DG.Column.string('joined', data.rowCount).init((i: number) => `${col.get(i)}_abc`);
   return DG.DataFrame.fromColumns([colRes]).columns;

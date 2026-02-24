@@ -19,6 +19,9 @@ export class MpoContextPanel {
   private bestScoreViewer?: MpoScoreViewer;
   private worstScoreViewer?: MpoScoreViewer;
   private currentObjectChangingSub: Subscription | null = null;
+  private currentRowChangedSub: Subscription | null = null;
+  private panelMouseDown = false;
+  private scoreViewerInteraction = false;
 
   // Uncomment to disable interactivity
   // showCurrentRow: false,
@@ -43,8 +46,13 @@ export class MpoContextPanel {
     this.panel.addTitle(ui.span([icon, ui.label('MPO not calculated yet')]));
 
     this.histogramHost.classList.add('chem-mpo-histogram-compact');
-    grok.shell.o = this.root;
 
+    this.root.addEventListener('mousedown', () => this.panelMouseDown = true, true);
+    this.root.addEventListener('mouseup', () => this.panelMouseDown = false, true);
+  }
+
+  show(): void {
+    grok.shell.o = this.root;
     this.attachCurrentObjectChanging();
   }
 
@@ -83,9 +91,9 @@ export class MpoContextPanel {
       return;
 
     if (grok.shell.o !== this.root)
-      grok.shell.o = this.root;
+      this.show();
 
-    const columnNames = await computeMpo(this.df, profile, columnMapping, aggregation);
+    const columnNames = await computeMpo(this.df, profile, columnMapping, aggregation, true);
     if (!columnNames.length)
       return;
 
@@ -112,16 +120,54 @@ export class MpoContextPanel {
     this.worstScoreViewer.render();
   }
 
-  private attachCurrentObjectChanging() {
+  private attachCurrentObjectChanging(): void {
+    if (this.currentObjectChangingSub)
+      return;
+
     this.currentObjectChangingSub = grok.events.onEvent('d4-current-object-changing').subscribe((e) => {
-      const newObj = e.newObject;
-      if (newObj !== this.root)
+      if (e.newObject === this.root)
+        return;
+      if (this.panelMouseDown || this.scoreViewerInteraction) {
         e.preventDefault();
+        this.scoreViewerInteraction = false;
+      }
+    });
+
+    this.currentRowChangedSub = this.df.onCurrentRowChanged.subscribe(() => {
+      if (this.bestScoreViewer?.interacting || this.worstScoreViewer?.interacting)
+        this.scoreViewerInteraction = true;
     });
   }
 
-  detach() {
+  release(): void {
     this.currentObjectChangingSub?.unsubscribe();
+    this.currentRowChangedSub?.unsubscribe();
     this.currentObjectChangingSub = null;
+    this.currentRowChangedSub = null;
+    this.panelMouseDown = false;
+    this.scoreViewerInteraction = false;
+  }
+
+  close(): void {
+    this.release();
+    this.resetViewers();
+
+    if (grok.shell.o === this.root)
+      grok.shell.o = null;
+  }
+
+  updateDataFrame(df: DG.DataFrame): void {
+    this.df = df;
+    this.resetViewers();
+  }
+
+  private resetViewers(): void {
+    this.histogram = undefined;
+    ui.empty(this.histogramHost);
+    this.bestScoreViewer = undefined;
+    this.worstScoreViewer = undefined;
+
+    while (this.panel.panes.length > 0)
+      this.panel.removePane(this.panel.panes[0]);
   }
 }

@@ -96,25 +96,27 @@ group by res.package, res.id, res.name, res.pid
 --meta.cache.invalidateOn: 0 0 * * *
 --connection: System:Datagrok
 --test: PackagesContextPaneLogs(1681084800, 1681516800, ['878c42b0-9a50-11e6-c537-6bf8e9ab02ee'], ['00000000-0000-0000-0000-000000000000'])
-with res as (
-select DISTINCT e.id, et.source,
-coalesce(pp1.package_id, '00000000-0000-0000-0000-000000000000') as pid
-from events e
-inner join event_types et on e.event_type_id = et.id
-left join event_parameter_values epv inner join event_parameters ep on epv.parameter_id = ep.id and ep.name = 'package'
-on epv.event_id = e.id
-left join published_packages pp1 on pp1.id = epv.value_uuid
-inner join users_sessions s on e.session_id = s.id
-inner join users u on u.id = s.user_id
-where et.source in ('debug', 'error', 'info', 'warning', 'usage')
-and e.event_time between to_timestamp(@time_start)
-and to_timestamp(@time_end)
-and u.id = any(@users)
+with package_param_ids as materialized (
+  select id from event_parameters where name = 'package'
 )
-select res.source, count(*)::int
-from res
-where res.pid = any(@packages)
-group by res.source
+select et.source, count(*)::int
+from events e
+join users_sessions s on e.session_id = s.id
+join event_types et on e.event_type_id = et.id
+  and et.source in ('debug', 'error', 'info', 'warning', 'usage')
+left join lateral (
+  select epv.value_uuid
+  from event_parameter_values epv
+  where epv.event_id = e.id
+    and epv.parameter_id in (select id from package_param_ids)
+  limit 1
+) pkg on true
+left join published_packages pp1 on pp1.id = pkg.value_uuid
+where e.event_time between to_timestamp(@time_start)
+  and to_timestamp(@time_end)
+  and s.user_id = any(@users)
+  and coalesce(pp1.package_id, '00000000-0000-0000-0000-000000000000') = any(@packages)
+group by et.source
 --end
 
 
@@ -127,26 +129,31 @@ group by res.source
 --meta.cache.invalidateOn: 0 0 * * *
 --connection: System:Datagrok
 --test: PackagesContextPaneAudit(1681084800, 1681516800, ['878c42b0-9a50-11e6-c537-6bf8e9ab02ee'], ['00000000-0000-0000-0000-000000000000'])
-with res as (
-select DISTINCT e.id, et.friendly_name as name,
-coalesce(pp2.package_id, '00000000-0000-0000-0000-000000000000') as pid
-from events e
-inner join event_types et on e.event_type_id = et.id
-left join event_parameter_values epv1 inner join event_parameters ep1 on epv1.parameter_id = ep1.id and ep1.type = 'entity_id'
-inner join entities e1 on epv1.value != 'null' and e1.id = epv1.value_uuid
-inner join published_packages pp2 inner join packages p2 on p2.id = pp2.package_id on e1.package_id = pp2.id
-on epv1.event_id = e.id
-inner join users_sessions s on e.session_id = s.id
-inner join users u on u.id = s.user_id
-where et.source = 'audit'
-and e.event_time between to_timestamp(@time_start)
-and to_timestamp(@time_end)
-and u.id = any(@users)
+with entity_param_ids as materialized (
+  select id from event_parameters where type = 'entity_id'
+),
+user_events as materialized (
+  select e.id, e.event_type_id
+  from users_sessions s
+  join events e on e.session_id = s.id
+    and e.event_time between to_timestamp(@time_start) and to_timestamp(@time_end)
+  where s.user_id = any(@users)
 )
-select res.name, count(*)::int
-from res
-where res.pid = any(@packages)
-group by res.name
+select et.friendly_name as name, count(*)::int
+from user_events ue
+join event_types et on ue.event_type_id = et.id and et.source = 'audit'
+left join lateral (
+  select pp2.package_id
+  from event_parameter_values epv
+  join entities e1 on e1.id = epv.value_uuid
+  join published_packages pp2 on pp2.id = e1.package_id
+  where epv.event_id = ue.id
+    and epv.parameter_id in (select id from entity_param_ids)
+    and epv.value <> 'null'
+  limit 1
+) pkg on true
+where coalesce(pkg.package_id, '00000000-0000-0000-0000-000000000000') = any(@packages)
+group by et.friendly_name
 --end
 
 

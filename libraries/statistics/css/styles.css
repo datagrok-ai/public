@@ -69,6 +69,26 @@
   width: 100px !important;
 }
 
+.statistics-mpo-cat-editor {
+  width: 280px;
+  margin-left: 20px;
+}
+
+.statistics-mpo-cat-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-bottom: 2px;
+}
+
+.statistics-mpo-cat-name {
+  width: 120px;
+}
+
+.statistics-mpo-cat-desirability {
+  width: 70px;
+}
+
 @media (max-width: 500px) {
   .statistics-mpo-row {
     flex-direction: column;

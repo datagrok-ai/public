@@ -37,6 +37,10 @@ export interface IBarChartSettings {
 
   axisType: keyof typeof AxisType;
 
+  valueMin: number;
+
+  valueMax: number;
+
   showValueAxis: boolean;
 
   showValueSelector: boolean;
@@ -58,7 +62,7 @@ export interface IBarChartSettings {
 
   /// A categorical column to further split data on.
   /// Each category would become a part of the bar resulting from *Split*.
-  /// Shows stacked bars only when *VAlue Aggr Type* is additive.
+  /// Shows stacked bars only when *Value Aggr Type* is additive.
   stack: string;
   stackColumnName: string;
 
@@ -114,6 +118,10 @@ export interface IBarChartSettings {
   axisFont: string;
 
   minTextHeight: number;
+
+  /// When enabled, shows hatched areas and arrows on bars
+  /// that are clipped by the value axis range.
+  showClippedBarIndicators: boolean;
 
   backColor: number;
 
@@ -409,6 +417,8 @@ export interface IBoxPlotSettings {
   showQ3: boolean;
 
   viewport: string;
+
+  allowColorSynchronization: boolean;
 
   autoLayout: boolean;
 
@@ -1010,6 +1020,9 @@ export interface IGridSettings {
   showRemoveRowIcon: boolean;
 
   showColumnLabels: boolean;
+
+  /// When checked, friendly name gets shown underneath the column name.
+  showFriendlyName: boolean;
 
   /// Column header height. If not specified, it is calculated automatically.
   /// See also *Col Labels Orientation*, *Horz Col Labels Height*
@@ -1632,6 +1645,8 @@ export interface ILineChartSettings {
   markerType: string;
 
   markerSize: number;
+
+  markerOpacity: number;
 
   /// A boolean column that determines whether to show markers.
   showMarkers: keyof typeof VisibilityMode;

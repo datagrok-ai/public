@@ -125,7 +125,6 @@ export class PackageFunctions {
     return DG.DataFrame.fromColumns([functionColumn, resultColumn, timeColumn]);
   }
 
-
   @grok.decorators.func({meta: {vectorFunc: 'true'}})
   static async testFunction(
     @grok.decorators.param({type: 'column<int>'}) col1: DG.Column,
@@ -164,6 +163,123 @@ export class PackageFunctions {
       }
     }
     return colList.length > 0 ? DG.DataFrame.fromColumns(colList) : DG.DataFrame.create(col1.length);
+  }
+
+  @grok.decorators.func({
+    meta: {vectorFunc: 'true'},
+    outputs: [{name: 'result', type: 'dataframe', options: {action: 'join(data)'}}],
+  })
+  static async testFunctionJoin(
+    data: DG.DataFrame,
+    @grok.decorators.param({type: 'column<int>'}) col1: DG.Column,
+    @grok.decorators.param({type: 'column<string>'}) col2: DG.Column,
+    @grok.decorators.param({type: 'column<double>'}) col3: DG.Column,
+    @grok.decorators.param({type: 'list<string>', options: {optional: true}}) out?: string[]): Promise<DG.DataFrame> {
+    function createNewCol1() {
+      const res1 = DG.Column.int('joinedCol1', col1.length);
+      res1.init((i) => col1.getNumber(i) + 1);
+      return res1;
+    }
+    function createNewCol2() {
+      const res2 = DG.Column.string('joinedCol2', col2.length);
+      res2.init((i) => col2.get(i) + ' joined');
+      return res2;
+    }
+    function createNewCol3() {
+      const res3 = DG.Column.float('joinedCol3', col3.length);
+      res3.init((i) => col3.getNumber(i) + 10.5);
+      return res3;
+    }
+    const colCreationFuncs: {[colName: string]: () => DG.Column} = {
+      'joinedCol1': createNewCol1,
+      'joinedCol2': createNewCol2,
+      'joinedCol3': createNewCol3,
+    };
+
+    const colList: DG.Column[] = [];
+    if (out == undefined || out.length === 0)
+      return DG.DataFrame.fromColumns([createNewCol1(), createNewCol2(), createNewCol3()]);
+    else {
+      for (const colName of out) {
+        if (colCreationFuncs[colName] != undefined)
+          colList.push(colCreationFuncs[colName]());
+      }
+    }
+    return colList.length > 0 ? DG.DataFrame.fromColumns(colList) : DG.DataFrame.create(col1.length);
+  }
+
+  @grok.decorators.func({
+    meta: {vectorFunc: 'true'},
+    outputs: [{name: 'result', type: 'dataframe', options: {action: 'join(data)'}}],
+  })
+  static async testFunctionJoinColumnList(
+    data: DG.DataFrame,
+    @grok.decorators.param({type: 'column_list'}) columns: DG.ColumnList,
+    @grok.decorators.param({type: 'list<string>', options: {optional: true}}) out?: string[]
+  ): Promise<DG.DataFrame> {
+    const cols = columns.toList();
+    const colCreationFuncs: {[colName: string]: () => DG.Column} = {};
+    for (let i = 0; i < cols.length; i++) {
+      const col = cols[i];
+      const idx = i;
+      colCreationFuncs[`joinedCol${idx + 1}`] = () => {
+        if (col.type === DG.COLUMN_TYPE.INT || col.type === DG.COLUMN_TYPE.FLOAT) {
+          const res = DG.Column.float(`joinedCol${idx + 1}`, col.length);
+          res.init((j) => col.getNumber(j) + idx + 1);
+          return res;
+        } else {
+          const res = DG.Column.string(`joinedCol${idx + 1}`, col.length);
+          res.init((j) => col.get(j) + ` joined${idx + 1}`);
+          return res;
+        }
+      };
+    }
+
+    const colList: DG.Column[] = [];
+    if (out == undefined || out.length === 0) {
+      for (const name of Object.keys(colCreationFuncs))
+        colList.push(colCreationFuncs[name]());
+    } else {
+      for (const colName of out) {
+        if (colCreationFuncs[colName] != undefined)
+          colList.push(colCreationFuncs[colName]());
+      }
+    }
+    return colList.length > 0 ? DG.DataFrame.fromColumns(colList) : DG.DataFrame.create(data.rowCount);
+  }
+
+  @grok.decorators.func({
+    outputs: [{name: 'result', type: 'dataframe', options: {action: 'join(data)'}}],
+  })
+  static async testFunctionNewJoinWithoutFormula(data: DG.DataFrame): Promise<DG.DataFrame> {
+    const result = DG.DataFrame.create(data.rowCount);
+
+    const studyTag = DG.Column.string('StudyTag', data.rowCount).init((i) => `STUDY-${(i % 3) + 1}`);
+    const siteCode = DG.Column.int('SiteCode', data.rowCount).init((i) => 100 + (i % 20));
+    const qcFlag = DG.Column.bool('QCFlag', data.rowCount).init((i) => (i % 7) !== 0);
+    const notes = DG.Column.string('Notes', data.rowCount).init((i) => (i % 10 === 0) ? 'Check source record' : '');
+
+    studyTag.setTag('description', 'Arbitrary study-level tag/label for demo purposes');
+    studyTag.setTag('Tag.Category', 'Demo');
+    studyTag.setTag('Tag.Source', 'Script');
+
+    siteCode.setTag('description', 'Arbitrary site code for demo purposes');
+    siteCode.setTag('Tag.Category', 'Demo');
+    siteCode.setTag('Tag.Source', 'Script');
+
+    qcFlag.setTag('description', 'Arbitrary QC flag for demo purposes');
+    qcFlag.setTag('Tag.Category', 'Demo');
+    qcFlag.setTag('Tag.Source', 'Script');
+
+    notes.setTag('description', 'Free-text notes for demo purposes');
+    notes.setTag('Tag.Category', 'Demo');
+    notes.setTag('Tag.Source', 'Script');
+
+    result.columns.add(studyTag);
+    result.columns.add(siteCode);
+    result.columns.add(qcFlag);
+    result.columns.add(notes);
+    return result;
   }
 
 

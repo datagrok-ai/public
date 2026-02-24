@@ -475,7 +475,7 @@ export const reservedDecorators : ReservedDecorator = {
   },
   model: {
     metadata: {
-      role: FUNC_TYPES.MODEL,
+      tags: [FUNC_TYPES.MODEL],
       inputs: [],
       outputs: [],
     },

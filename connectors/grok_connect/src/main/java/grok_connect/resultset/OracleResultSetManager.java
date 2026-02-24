@@ -19,24 +19,22 @@ public class OracleResultSetManager extends DefaultResultSetManager {
     public void init(ResultSetMetaData meta, int initColumnSize) {
         super.init(meta, initColumnSize);
         for (int i = 0; i < columns.length; i++) {
-            Column column = columns[i];
-            if (column.getType().equals(Types.BIG_INT)) {
-                columns[i] = new IntColumn(initColumnSize);
-                columns[i].name = column.name;
-            }
+            Column<?> column = columns[i];
+            if (column.getType().equals(Types.BIG_INT))
+                columns[i] = new IntColumn(column.getName(), initColumnSize);
         }
     }
 
     @Override
     protected void setValue(Object o, int index) {
-        Column column = columns[index - 1];
+        Column<?> column = columns[index - 1];
         if (column.getType().equals(Types.INT) && currentManagers[index - 1].getClass().equals(OracleBigIntColumnManager.class))
             setBigIntValue(o, index, column);
         else
             super.setValue(o, index);
     }
 
-    private void setBigIntValue(Object o, int index, Column column) {
+    private void setBigIntValue(Object o, int index, Column<?> column) {
         if (o == null)
             column.add(null);
         else {
@@ -44,15 +42,14 @@ public class OracleResultSetManager extends DefaultResultSetManager {
             BigInteger bigIntValue = new BigInteger(str);
             if (bigIntValue.compareTo(BigInteger.valueOf(Integer.MAX_VALUE)) <= 0 &&
                     bigIntValue.compareTo(BigInteger.valueOf(Integer.MIN_VALUE)) >= 0) {
-                column.add(bigIntValue.intValue());
+                ((IntColumn) column).add(bigIntValue.intValue());
             } else {
-                Column bigIntColumn = new BigIntColumn();
-                for (int i = 0; i < column.length; i++) {
+                BigIntColumn bigIntColumn = new BigIntColumn(column.getName());
+                for (int i = 0; i < column.getLength(); i++) {
                     Object currentValue = column.get(i);
                     bigIntColumn.add(currentValue.equals(IntColumn.None) ? "" : currentValue.toString());
                 }
                 bigIntColumn.add(str);
-                bigIntColumn.name = column.name;
                 columns[index - 1] = bigIntColumn;
             }
         }

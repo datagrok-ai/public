@@ -34,12 +34,7 @@ public class DefaultBoolColumnManager implements ColumnManager<Boolean> {
     }
 
     @Override
-    public Column getColumn() {
-        return new BoolColumn();
-    }
-
-    @Override
-    public Column getColumn(int initColumnSize) {
-        return new BoolColumn(initColumnSize);
+    public Column<?> getColumn(String name, int initColumnSize) {
+        return new BoolColumn(name, initColumnSize);
     }
 }

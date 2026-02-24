@@ -24,7 +24,6 @@
     "@typescript-eslint/eslint-plugin": "^8.8.1",
     "@typescript-eslint/parser": "^8.8.1",
     "css-loader": "^7.1.2",
-    "datagrok-tools": "^5.0.0",
     "eslint": "^8.57.1",
     "eslint-config-google": "^0.14.0",
     "eslint-plugin-rxjs": "^5.0.3",
@@ -92,11 +91,12 @@
       "name": "APIName",
       "propertyType": "string",
       "description": "OpenAI API endpoint. Responses or Chat completions API can be used.",
-      "defaultValue": "openai chat completions",
+      "defaultValue": "OpenAI Chat Completions",
       "nullable": false,
       "choices": [
-        "openai chat completions",
-        "openai responses"
+        "OpenAI Chat Completions",
+        "OpenAI Responses",
+        "Antropic Messages"
       ]
     },
     {

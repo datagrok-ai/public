@@ -10,7 +10,7 @@ category('Database Meta: DbInfo', async () => {
 
     before(async () => {
         conn = await grok.functions.eval('DbTests:PostgreSQLDBTests');
-        dbInfo = await grok.data.db.getInfo(conn);
+        dbInfo = (await grok.data.db.getInfo(conn, 'public'))[0];
         try {
             await dbInfo?.clearProperties();
         } catch (_) {}
@@ -21,12 +21,12 @@ category('Database Meta: DbInfo', async () => {
         expect(dbInfo.comment === undefined || dbInfo.comment === null, true);
         await dbInfo.setComment(testComment);
         expect(dbInfo.comment, testComment);
-        let updated = await grok.data.db.getInfo(conn);
+        let updated = (await grok.data.db.getInfo(conn, 'public'))[0];
         expect(updated.comment, testComment);
 
         await dbInfo.setLlmComment(testLlmComment);
         expect(dbInfo.llmComment, testLlmComment);
-        updated = await grok.data.db.getInfo(conn);
+        updated = (await grok.data.db.getInfo(conn, 'public'))[0];
         expect(updated.llmComment, testLlmComment);
     });
 
@@ -96,7 +96,7 @@ category('Database Meta: DbInfo', async () => {
 
         await dbInfo.addRelation(fromTable, fromColumns, toTable, toColumns, props);
         await dbInfo.clearProperties();
-        let updated = await grok.data.db.getInfo(conn);
+        let updated = (await grok.data.db.getInfo(conn, 'public'))[0];
         expect(updated.comment == null, true);
         const rels = await dbInfo.getRelations();
         expect(rels.length, 0);
@@ -117,7 +117,7 @@ category('Database Meta: DbSchemaInfo', async () => {
 
     before(async () => {
         conn = await grok.functions.eval('DbTests:PostgreSQLDBTests');
-        dbInfo = await grok.data.db.getInfo(conn);
+        dbInfo = (await grok.data.db.getInfo(conn, 'public'))[0];
         try {
             await dbInfo?.clearProperties();
         } catch (_) {}
@@ -133,13 +133,13 @@ category('Database Meta: DbSchemaInfo', async () => {
 
         await publicSchema.setComment(testComment);
         expect(publicSchema.comment, testComment);
-        let updated = await grok.data.db.getInfo(conn);
+        let updated = (await grok.data.db.getInfo(conn, 'public'))[0];
         let updatedSchema = (await updated.getSchemas()).find((s) => s.name === 'public')!;
         expect(updatedSchema.comment, testComment);
 
         await publicSchema.setLlmComment(testLlmComment);
         expect(publicSchema.llmComment, testLlmComment);
-        updated = await grok.data.db.getInfo(conn);
+        updated = (await grok.data.db.getInfo(conn, 'public'))[0];
         updatedSchema = (await updated.getSchemas()).find((s) => s.name === 'public')!;
         expect(updatedSchema.llmComment, testLlmComment);
     });
@@ -164,7 +164,7 @@ category('Database Meta: DbSchemaInfo', async () => {
         expect(t2.tags[DG.Tags.DbTableRowCount], 123);
 
         // full refresh
-        const updatedInfo = await grok.data.db.getInfo(conn);
+        const updatedInfo = (await grok.data.db.getInfo(conn, 'public'))[0];
         const updatedSchemas = await updatedInfo.getSchemas();
         const s3 = updatedSchemas.find(x => x.name === publicSchema.name)!;
         const t3 = (await s3.getTables()).find(x => x.name === t.name)!;
@@ -196,7 +196,7 @@ category('Database Meta: DbSchemaInfo', async () => {
         expect(c2.tags[DG.Tags.DbComment], props.comment);
 
         // full refresh
-        const updatedInfo = await grok.data.db.getInfo(conn);
+        const updatedInfo = (await grok.data.db.getInfo(conn, 'public'))[0];
         const updatedSchemas = await updatedInfo.getSchemas();
         const s3 = updatedSchemas.find(x => x.name === x.name)!;
         const t3 = (await s3.getTables()).find(x => x.name === t.name)!;
@@ -219,7 +219,7 @@ category('Database Meta: DbRelationInfo', async () => {
 
     before(async () => {
         conn = await grok.functions.eval('DbTests:PostgreSQLDBTests');
-        dbInfo = await grok.data.db.getInfo(conn);
+        dbInfo = (await grok.data.db.getInfo(conn, 'public'))[0];
         try {
             await dbInfo?.clearProperties();
         } catch (_) {}

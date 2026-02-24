@@ -25,29 +25,27 @@ export class PackageFunctions {
 
   @grok.decorators.func({
     name: 'EsmFold',
-    'top-menu': 'Bio | Folding | EsmFold...'
+    'top-menu': 'Bio | Folding | EsmFold...',
+    outputs: [{name: 'result', type: 'dataframe', options: {action: 'join(table)'}}],
   })
   static async esmFoldModel(
     table: DG.DataFrame,
     @grok.decorators.param({ options: { semType: 'Macromolecule' } })
     sequences: DG.Column
-  ): Promise<void> {
-    try {
-      const apiKey = await getApiKey();
-      const grid = grok.shell.getTableView(table.name).grid;
-      const protein = DG.Column.fromType(DG.TYPE.STRING, 'Protein', sequences.length);
-      for (let i = 0; i < sequences.length; ++i) {
-        const colValue = sequences.get(i);
-        const predictedValue = await grok.functions.call('BioNeMo:esmfoldPython', { sequence: colValue, api_key: apiKey });
-        protein.set(i, predictedValue);
-      }
-      protein.setTag(DG.TAGS.SEMTYPE, DG.SEMTYPE.MOLECULE3D);
-      table.columns.add(protein);
-      await grok.data.detectSemanticTypes(table);
-      grid.invalidate();
-    } catch (e: any) {
-      grok.shell.error(e.message);
+  ): Promise<DG.DataFrame> {
+    const apiKey = await getApiKey();
+    const protein = DG.Column.fromType(DG.TYPE.STRING, 'Protein', sequences.length);
+    for (let i = 0; i < sequences.length; ++i) {
+      const colValue = sequences.get(i);
+      const esmFoldRes = await grok.functions.call('BioNeMo:esmfoldPython', { sequence: colValue, api_key: apiKey });
+      const { success, pdb } = JSON.parse(esmFoldRes);
+      if (success)
+        protein.set(i, pdb);
     }
+    protein.setTag(DG.TAGS.SEMTYPE, DG.SEMTYPE.MOLECULE3D);
+    const resultDf = DG.DataFrame.fromColumns([protein]);
+    await grok.data.detectSemanticTypes(resultDf);
+    return resultDf;
   }
 
   @grok.decorators.func({
@@ -111,18 +109,19 @@ export class PackageFunctions {
 
   @grok.decorators.func({
     name: 'DiffDock',
-    'top-menu': 'Chem | Docking | DiffDock...'
+    'top-menu': 'Chem | Docking | DiffDock...',
+    outputs: [{name: 'result', type: 'dataframe', options: {action: 'join(table)'}}],
   })
   static async diffDockModel(
     table: DG.DataFrame,
     @grok.decorators.param({options: {semType: 'Molecule'}}) ligands: DG.Column,
     @grok.decorators.param({options: {choices: 'Bionemo: getTargetFiles'}}) target: string,
     @grok.decorators.param({options: {initialValue: '10'}}) poses: number
-  ): Promise<void> {
+  ): Promise<DG.DataFrame> {
     const receptorFile = (await grok.dapi.files.list(`${CONSTANTS.TARGET_PATH}/${target}`)).find((file) => file.extension === 'pdbqt')!;
     const receptor = await grok.dapi.files.readAsText(receptorFile);
     const diffDockModel = new DiffDockModel(table, ligands, receptor, receptorFile.name, poses);
-    await diffDockModel.run();
+    return await diffDockModel.run();
   }
 
   @grok.decorators.panel({
@@ -188,7 +187,7 @@ async function handleRunClick(smiles: DG.SemanticValue, poses: number, target: s
       }
     }
 
-    diffDockModel.virtualPosesColumn = posesColumn;
+    diffDockModel.virtualPosesColumnName = posesColumn.name;
 
     const { bestId, bestPose } = diffDockModel.findBestPose(posesJson);
     const viewer = await diffDockModel.createCombinedControl(posesJson, bestPose, bestId, false);

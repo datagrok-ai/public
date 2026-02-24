@@ -46,6 +46,10 @@ export namespace funcs {
     return await grok.functions.call('PowerPack:KpiWidget', {});
   }
 
+  export async function cronInput(): Promise<any> {
+    return await grok.functions.call('PowerPack:CronInput', {});
+  }
+
   export async function isFormulaColumn(col: DG.Column ): Promise<boolean> {
     return await grok.functions.call('PowerPack:IsFormulaColumn', { col });
   }
@@ -102,7 +106,7 @@ export namespace funcs {
     return await grok.functions.call('PowerPack:XlsxFileHandler', { bytes, sheetName });
   }
 
-  export async function runEnrichment(conn: any , schema: string , table: string , column: string , name: string , df: DG.DataFrame ): Promise<void> {
-    return await grok.functions.call('PowerPack:RunEnrichment', { conn, schema, table, column, name, df });
+  export async function runEnrichment(conn: any , schema: string , table: string , column: string , name: string , df: DG.DataFrame , db: string ): Promise<void> {
+    return await grok.functions.call('PowerPack:RunEnrichment', { conn, schema, table, column, name, df, db });
   }
 }

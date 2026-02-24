@@ -125,4 +125,4 @@ category('DataFrame: Calculated columns', () => {
     subs.forEach((sub) => sub.unsubscribe());
     dialogs.forEach((d) => d.close());
   });
-}, { owner: 'mdolotova@datagrok.ai' });
+}, {owner: 'mdolotova@datagrok.ai'});

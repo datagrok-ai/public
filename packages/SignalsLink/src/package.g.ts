@@ -11,6 +11,8 @@ export async function signalsApp() : Promise<any> {
 }
 
 //input: dynamic treeNode 
+//meta.role: appTreeBrowser
+//meta.app: Signals
 export async function signalsAppTreeBrowser(treeNode: any) : Promise<void> {
   await PackageFunctions.signalsAppTreeBrowser(treeNode);
 }

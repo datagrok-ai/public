@@ -3,7 +3,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {getSchemaDescriptor} from '@datagrok-libraries/db-explorer/src/utils';
-import {OpenAIClient} from './openAI-client';
+import {LLMClient} from './LLM-client';
 import {JsonSchema} from '../prompt-engine/interfaces';
 
 type DBIDWithSchema = `${string}.${string}`;
@@ -322,7 +322,7 @@ const HiddenRelationsSchema: JsonSchema = {
  * @param openAIModel - The OpenAI model to use (e.g., 'gpt-4o')
  */
 export async function postProcessDBConnectionMeta(connectionMeta: DBConnectionMeta, openAIModel: string): Promise<DBConnectionMeta> {
-  const llmClient = OpenAIClient.getInstance();
+  const llmClient = LLMClient.getInstance();
   const result = {...connectionMeta};
 
   // Step 1: Generate connection-level comment
@@ -528,7 +528,7 @@ export async function moveDBMetaToStickyMetaOhCoolItEvenRhymes(connectionMeta: D
   const connection = await grok.dapi.connections.filter(`name="${connectionMeta.name}"`).first();
   if (!connection)
     throw new Error(`Connection ${connectionMeta.name} not found`);
-  const dbInfo = await grok.data.db.getInfo(connection);
+  const dbInfo = (await grok.data.db.getInfo(connection))[0];
 
   await dbInfo.clearProperties();
   console.log(`Cleared existing metadata for connection ${connectionMeta.name}`);

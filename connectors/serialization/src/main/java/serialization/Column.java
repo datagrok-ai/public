@@ -1,53 +1,39 @@
 package serialization;
 
-import java.util.HashMap;
-import java.util.Map;
+public interface Column<T> extends Taggable {
+    String getName();
+    void setName(String name);
+    int getLength();
+    String getType();
+    void encode(BufferAccessor buf);
+    void add(T value);
+    void addAll(T[] value);
+    T get(int idx);
+    void set(int index, T value);
+    long memoryInBytes();
+    boolean isNone(int idx);
+    void empty();
+    Object toArray();
+    int getInitColumnSize();
+    void setInitColumnSize(int size);
 
-// Column.
-public abstract class Column<T> {
-    public String name;
-    public int length = 0;
-    public Map<String, String> tags = new HashMap<>();
-    public int initColumnSize = 100;
-
-    public Column() {
-    }
-
-    public abstract String getType();
-    public abstract void encode(BufferAccessor buf);
-    public abstract void add(T value);
-    public abstract void addAll(T[] value);
-    public abstract Object get(int idx);
-    public abstract void set(int index, T value);
-    public abstract long memoryInBytes();
-    public abstract boolean isNone(int idx);
-    public abstract void empty();
-
-    public static Column getColumnForType(String type, int initColumnSize) {
+    static Column<?> getColumnForType(String type, String name, int initColumnSize) {
         switch (type) {
             case Types.FLOAT:
-                return new FloatColumn(initColumnSize);
+                return new FloatColumn(name, initColumnSize);
             case Types.INT:
-                return new IntColumn(initColumnSize);
+                return new IntColumn(name, initColumnSize);
             case Types.BIG_INT:
-                return new BigIntColumn(initColumnSize);
+                return new BigIntColumn(name, initColumnSize);
             case Types.DATE_TIME:
-                return new DateTimeColumn(initColumnSize);
+                return new DateTimeColumn(name, initColumnSize);
             case Types.COLUMN_LIST:
-                return new ComplexTypeColumn();
+                return new ComplexTypeColumn(name, initColumnSize);
             case Types.BOOL:
-                return new BoolColumn(initColumnSize);
+                return new BoolColumn(name, initColumnSize);
             case Types.STRING:
             default:
-                return new StringColumn(initColumnSize);
+                return new StringColumn(name, initColumnSize);
         }
-    }
-
-    public void setTag(String key, String value) {
-        tags.put(key, value);
-    }
-
-    public String getTag(String key) {
-        return tags.get(key);
     }
 }

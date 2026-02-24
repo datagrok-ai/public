@@ -97,6 +97,17 @@ export const TSVAL = 'TSVAL';
 //cl
 export const CLORRES = 'CLORRES';
 
+//mi
+export const MISTRESC = 'MISTRESC';
+export const MISPEC = 'MISPEC';
+export const MISEV = 'MISEV';
+export const MIDY = 'MIDY';
+export const MILAT = 'MILAT';
+export const MIDIR = 'MIDIR';
+export const MIANTREG = 'MIANTREG';
+export const MIDY_STR = 'MIDY_STR';
+
+
 export const HAS_VALIDATION_ERRORS_COL = 'HasValidationErrors';
 export const VIOLATED_RULES_COL = 'ViolatedRules';
 export const COL_HAS_ERRORS_POSTFIX = '_hasErrors';

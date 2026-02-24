@@ -9,6 +9,7 @@ Datagrok's package management tool
 Commands:
     add       Add an object template
     api       Create wrapper functions
+    build     Build a package or multiple packages
     check     Check package content (function signatures, etc.)
     config    Create and manage config files
     create    Create a package
@@ -149,15 +150,15 @@ const HELP_TEST = `
 Usage: grok test
 
 Options:
-[--package] [--category] [--test] [--host] [--csv] [--gui] [--skip-build] [--skip-publish] [--link] [--catchUnhandled] [--report] [--record] [--verbose] [--platform] [--benchmark] [--stress-test] [--debug] [--all]
+[--package] [--category] [--test] [--host] [--csv] [--gui] [--skip-build] [--skip-publish] [--link] [--catchUnhandled] [--report] [--record] [--verbose] [--platform] [--benchmark] [--stress-test] [--debug] [--all] [-r | --recursive] [--filter] [--parallel N]
 
 --package           Specify a package name to run tests for
 --category          Specify a category name to run tests for
---test              Specify a test name to run 
+--test              Specify a test name to run
 --host              Host alias as in the config file
 --csv               Save the test report in a CSV file
 --gui               Launch graphical interface (non-headless mode)
---debug             Enables debug point on tests run (useless without gui mode) 
+--debug             Enables debug point on tests run (useless without gui mode)
 --verbose           Show debug information
 --retry --no-retry  Enables or disables browser reload after a failed test
 --report            Report failed tests to audit, notifies package author (default=false)
@@ -170,8 +171,17 @@ Options:
 --benchmark   	    Runs tests in benchmark mode
 --stress-test       Runs shuffled stress-test only
 --all               Runs tests for all available packages(run in packages directory)
- 
+--recursive         Test all packages in the current directory (parallel, table output)
+--filter            Filter packages by package.json fields (e.g. --filter "category:Cheminformatics")
+--parallel N        Max parallel test jobs (default: 4)
+
 Run package tests
+
+Examples:
+  grok test -r                                       Test all packages
+  grok test -r --filter "category:Cheminformatics"   Test matching packages
+  grok test -r --parallel 2 --host dev               Test with 2 jobs against dev
+  grok test -r --skip-build --skip-publish            Test without rebuilding
 
 See instructions:
 https://datagrok.ai/help/develop/how-to/test-packages#local-testing
@@ -236,6 +246,29 @@ Example:
   meta: { role: 'viewer,ml' }
 `;
 
+const HELP_BUILD = `
+Usage: grok build
+
+Build a package in the current directory, or recursively build multiple packages.
+
+Options:
+[-r | --recursive] [-s | --silent] [--filter] [--no-incremental] [--parallel N] [-v | --verbose]
+
+--recursive       Build all packages in the current directory
+--silent          Skip confirmation prompt (for recursive builds)
+--filter          Filter packages by package.json fields (e.g. --filter "category:Cheminformatics")
+--no-incremental  Run a full build instead of the default incremental build
+--parallel N      Max parallel builds (default: 4)
+--verbose         Print detailed output
+
+Examples:
+  grok build                                          Build the current package
+  grok build -r                                       Build all packages in the current directory
+  grok build -r -s                                    Build all packages without confirmation
+  grok build -r --filter "category:Cheminformatics"   Build only matching packages
+  grok build -r --parallel 8                          Build with 8 parallel jobs
+`;
+
 // const HELP_MIGRATE = `
 // Usage: grok migrate
 
@@ -246,6 +279,7 @@ Example:
 export const help = {
   add: HELP_ADD,
   api: HELP_API,
+  build: HELP_BUILD,
   check: HELP_CHECK,
   config: HELP_CONFIG,
   create: HELP_CREATE,

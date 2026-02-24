@@ -23,7 +23,6 @@ export interface IUserReport {
   /// Model description
   /** Property description. It will be shown in the UI where possible. */
   /// Free-text description.
-  /// Description (optional).
   description: string;
 
   reporter: any;
@@ -48,7 +47,6 @@ export interface IUserReport {
   /// Name;
   /** Property name. */
   /** Property name. */
-  /// File name (part of [path] after the last separator).
   name: string;
 
   /// Identifier

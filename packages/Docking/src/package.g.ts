@@ -30,6 +30,15 @@ export async function dockLigandCached(jsonForm: string, containerId: string) : 
   return await PackageFunctions.dockLigandCached(jsonForm, containerId);
 }
 
+//input: dataframe table 
+//input: column ligands { semType: Molecule }
+//input: string target 
+//input: double poses 
+//output: dataframe result { action: join(table) }
+export async function getAutodockResults(table: DG.DataFrame, ligands: DG.Column, target: string, poses: number) : Promise<any> {
+  return await PackageFunctions.getAutodockResults(table, ligands, target, poses);
+}
+
 //name: AutoDock
 //description: Autodock plugin UI
 //input: dataframe table { description: 'Input data table' }

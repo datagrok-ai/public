@@ -1,11 +1,16 @@
 /* eslint-disable max-len */
-import {exec} from 'child_process';
+import {exec, execFile, spawnSync} from 'child_process';
+import {promisify} from 'util';
 import fs from 'fs';
 import os from 'os';
 import path from 'path';
 import yaml from 'js-yaml';
 import * as utils from '../utils/utils';
 import * as color from '../utils/color-utils';
+import {discoverPackages, applyFilter, PackageInfo, confirm} from './build';
+
+const execAsync = promisify(exec);
+const execFileAsync = promisify(execFile);
 import * as Papa from 'papaparse';
 import * as testUtils from '../utils/test-utils';
 import {BrowserOptions, loadTestsList, runBrowser, ResultObject, saveCsvResults, printBrowsersResult, mergeBrowsersResults, Test, OrganizedTests as OrganizedTest, timeout, addColumnToCsv} from '../utils/test-utils';
@@ -22,12 +27,86 @@ const confPath = path.join(grokDir, 'config.yaml');
 const consoleLogOutputDir = path.join(curDir, 'test-console-output.log');
 const csvReportDir = path.join(curDir, 'test-report.csv');
 
+/**
+ * Detects if the current directory is within a Dart library folder (d4, xamgle, ddt, dml)
+ * and returns the appropriate test category to use.
+ * @returns The category string (e.g., "Core: d4") or undefined if not in a recognized Dart folder
+ */
+function detectDartLibraryCategory(): string | undefined {
+  const normalizedPath = curDir.replace(/\\/g, '/');
+
+  if (normalizedPath.includes('/d4/') || normalizedPath.endsWith('/d4'))
+    return 'Core: d4';
+  if (normalizedPath.includes('/xamgle/') || normalizedPath.endsWith('/xamgle'))
+    return 'Core: xamgle';
+  if (normalizedPath.includes('/ddt/') || normalizedPath.endsWith('/ddt'))
+    return 'Core: ddt';
+  if (normalizedPath.includes('/dml/') || normalizedPath.endsWith('/dml'))
+    return 'Core: dml';
+
+  return undefined;
+}
+
+/**
+ * Traverses up from startDir to find the git repository root (.git directory).
+ */
+function findGitRoot(startDir: string): string | undefined {
+  let current = startDir;
+  while (true) {
+    if (fs.existsSync(path.join(current, '.git')))
+      return current;
+    const parent = path.dirname(current);
+    if (parent === current)
+      return undefined;
+    current = parent;
+  }
+}
+
 export async function test(args: TestArgs): Promise<boolean> {
+  if (args.recursive)
+    return await testRecursive(process.cwd(), args);
+
   const config = yaml.load(fs.readFileSync(confPath, {encoding: 'utf-8'})) as utils.Config;
 
   isArgsValid(args);
 
   utils.setHost(args.host, config);
+
+  // If running from a core Dart library directory, delegate to DevTools package
+  if (!args.package) {
+    const detectedCategory = detectDartLibraryCategory();
+    if (detectedCategory) {
+      const category = args.category ?? detectedCategory;
+      const gitRoot = findGitRoot(curDir);
+      const devToolsDir = gitRoot ? path.join(gitRoot, 'public', 'packages', 'DevTools') : undefined;
+      if (!devToolsDir || !fs.existsSync(devToolsDir)) {
+        color.error(`Cannot run core tests from this directory: DevTools package not found.`);
+        color.error(`Run 'grok test --category="${category}"' from 'public/packages/DevTools' instead.`);
+        process.exit(1);
+      }
+      color.info(`Detected core library directory. Delegating to DevTools with category: "${category}"`);
+      const cmdArgs = ['test', `--category=${category}`];
+      if (args.host) cmdArgs.push(`--host=${args.host}`);
+      if (args.test) cmdArgs.push(`--test=${args.test}`);
+      if (args.csv) cmdArgs.push('--csv');
+      if (args.gui) cmdArgs.push('--gui');
+      if (args.verbose) cmdArgs.push('--verbose');
+      if (args.benchmark) cmdArgs.push('--benchmark');
+      if (args['stress-test']) cmdArgs.push('--stress-test');
+      if (args['skip-build']) cmdArgs.push('--skip-build');
+      if (args['skip-publish']) cmdArgs.push('--skip-publish');
+      if (args.link) cmdArgs.push('--link');
+      if (args.record) cmdArgs.push('--record');
+      if (args.catchUnhandled) cmdArgs.push('--catchUnhandled');
+      if (args.report) cmdArgs.push('--report');
+      if (args.debug) cmdArgs.push('--debug');
+      if (args['ci-cd']) cmdArgs.push('--ci-cd');
+      if (args['no-retry']) cmdArgs.push('--no-retry');
+      const grokScript = path.resolve(__dirname, '..', 'grok.js');
+      const result = spawnSync(process.execPath, [grokScript, ...cmdArgs], {cwd: devToolsDir, stdio: 'inherit'});
+      process.exit(result.status ?? 1);
+    }
+  }
 
   let packageJsonData = undefined;
   if (!args.package)
@@ -300,5 +379,164 @@ interface TestArgs {
   core?: boolean,
   'stress-test'?: boolean,
   'ci-cd'?: boolean,
-  'no-retry'?: boolean
-} 
+  'no-retry'?: boolean,
+  recursive?: boolean,
+  filter?: string,
+  parallel?: number,
+}
+
+interface TestResult {
+  name: string;
+  version: string;
+  tests: string;
+  time: string;
+  success: boolean;
+}
+
+async function testRecursive(baseDir: string, args: TestArgs): Promise<boolean> {
+  const packages = discoverPackages(baseDir);
+  if (packages.length === 0) {
+    color.warn('No packages found in the current directory');
+    return false;
+  }
+
+  const filtered = args.filter ? applyFilter(packages, args.filter) : packages;
+  if (filtered.length === 0) {
+    color.warn('No packages match the filter');
+    return false;
+  }
+
+  console.log(`Found ${filtered.length} package(s): ${filtered.map((p) => p.friendlyName).join(', ')}`);
+
+  const confirmed = await confirm(`\nTest ${filtered.length} package(s)?`);
+  if (!confirmed) {
+    console.log('Aborted.');
+    return false;
+  }
+
+  const maxParallel = args.parallel || 4;
+  const results = await testParallel(filtered, args, maxParallel);
+  return results.every((r) => r.success);
+}
+
+function buildTestArgs(args: TestArgs): string[] {
+  const grokScript = path.resolve(__dirname, '..', 'grok.js');
+  const parts = [grokScript, 'test'];
+  if (args.host) parts.push(`--host=${args.host}`);
+  if (args['skip-build']) parts.push('--skip-build');
+  if (args['skip-publish']) parts.push('--skip-publish');
+  if (args.link) parts.push('--link');
+  if (args.verbose) parts.push('--verbose');
+  if (args.csv) parts.push('--csv');
+  if (args.catchUnhandled) parts.push('--catchUnhandled');
+  if (args.report) parts.push('--report');
+  if (args.benchmark) parts.push('--benchmark');
+  if (args['stress-test']) parts.push('--stress-test');
+  if (args['ci-cd']) parts.push('--ci-cd');
+  if (args['no-retry']) parts.push('--no-retry');
+  return parts;
+}
+
+function parseTestOutput(stdout: string): {passed: number, failed: number, skipped: number} | null {
+  const passedMatch = stdout.match(/Passed amount:\s*(\d+)/);
+  const failedMatch = stdout.match(/Failed amount:\s*(\d+)/);
+  const skippedMatch = stdout.match(/Skipped amount:\s*(\d+)/);
+  if (!passedMatch && !failedMatch)
+    return null;
+  return {
+    passed: passedMatch ? parseInt(passedMatch[1]) : 0,
+    failed: failedMatch ? parseInt(failedMatch[1]) : 0,
+    skipped: skippedMatch ? parseInt(skippedMatch[1]) : 0,
+  };
+}
+
+async function testParallel(packages: PackageInfo[], args: TestArgs, maxParallel: number): Promise<TestResult[]> {
+  const results: TestResult[] = [];
+  const cmdArgs = buildTestArgs(args);
+
+  const headers = ['Plugin', 'Version', 'Tests', 'Time'];
+  const widths = [
+    Math.max(headers[0].length, ...packages.map((p) => p.friendlyName.length)),
+    Math.max(headers[1].length, ...packages.map((p) => p.version.length)),
+    Math.max(headers[2].length, 18),
+    Math.max(headers[3].length, 8),
+  ];
+  const pad = (s: string, w: number) => s + ' '.repeat(Math.max(0, w - s.length));
+
+  console.log(`\nTesting with ${maxParallel} parallel job(s)...`);
+  console.log(headers.map((h, i) => pad(h, widths[i])).join(' | '));
+  console.log(widths.map((w) => '-'.repeat(w)).join('-+-'));
+
+  const testOne = async (pkg: PackageInfo): Promise<TestResult> => {
+    const start = Date.now();
+    let success = true;
+    let tests = '';
+    let time = '';
+
+    try {
+      const {stdout} = await execFileAsync(process.execPath, cmdArgs, {
+        cwd: pkg.dir,
+        maxBuffer: 50 * 1024 * 1024,
+        timeout: testInvocationTimeout,
+      });
+      const elapsed = (Date.now() - start) / 1000;
+      time = `${elapsed.toFixed(1)}s`;
+      const counts = parseTestOutput(stdout);
+      if (counts) {
+        const total = counts.passed + counts.failed + counts.skipped;
+        tests = `${counts.passed} of ${total} passed`;
+        success = counts.failed === 0;
+      }
+      else {
+        tests = 'Done (no counts)';
+      }
+    }
+    catch (error: any) {
+      success = false;
+      const elapsed = (Date.now() - start) / 1000;
+      time = `${elapsed.toFixed(1)}s`;
+      const stdout = error.stdout || '';
+      const counts = parseTestOutput(stdout);
+      if (counts) {
+        const total = counts.passed + counts.failed + counts.skipped;
+        tests = `${counts.passed} of ${total} passed`;
+      }
+      else {
+        const raw = (error.stderr || error.stdout || error.message || 'Unknown error').trim();
+        tests = raw.replace(/\r?\n/g, ' ').replace(/\s+/g, ' ').substring(0, 30);
+      }
+    }
+
+    const result: TestResult = {name: pkg.friendlyName, version: pkg.version, tests, time, success};
+    results.push(result);
+
+    const cells = [result.name, result.version, result.tests, result.time];
+    const line = cells.map((cell, j) => pad(cell, widths[j])).join(' | ');
+    if (success)
+      color.info(line);
+    else
+      color.error(line);
+
+    return result;
+  };
+
+  let idx = 0;
+  const next = async (): Promise<void> => {
+    while (idx < packages.length) {
+      const pkg = packages[idx++];
+      await testOne(pkg);
+    }
+  };
+  const workers = Array.from({length: Math.min(maxParallel, packages.length)}, () => next());
+  await Promise.all(workers);
+
+  const succeeded = results.filter((r) => r.success).length;
+  const failed = results.length - succeeded;
+  console.log('');
+  if (failed === 0)
+    color.success(`All ${results.length} package(s) passed`);
+  else
+    color.warn(`${succeeded} passed, ${failed} failed`);
+
+  return results;
+}

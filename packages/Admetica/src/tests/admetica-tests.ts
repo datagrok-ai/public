@@ -43,7 +43,7 @@ category('Admetica', () => {
       'O=C1Nc2ccccc2C(C2CCCCC2)=NC1',
     ]);
     const admeProps = ['PPBR', 'VDss'];
-    const distributionResults = await getAdmeProperties(smilesColumn, admeProps);
+    const distributionResults = await getAdmeProperties(molecules, smilesColumn, admeProps);
     expect(distributionResults != null, true);
   }, {timeout: 25000});
 

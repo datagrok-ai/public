@@ -1,0 +1,490 @@
+# GENERATED CODE - DO NOT MODIFY BY HAND
+# Generated from @ExportApi() annotated server plugins
+# See core/server/datlas/docs/code-gen.md
+openapi: "3.1.0"
+info:
+  title: Datagrok API
+  version: "1.0.0"
+  description: Auto-generated API specification for Datagrok server
+servers:
+  - url: /api
+    description: Datagrok server
+paths:
+  /chats/comments/{id}:
+    get:
+      operationId: getComments
+      summary: get comments
+      tags:
+        - Chats
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int64
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int64
+        - name: order
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/GrokComment"
+    post:
+      operationId: postComment
+      summary: post comment
+      tags:
+        - Chats
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GrokComment"
+      responses:
+        "200":
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GrokComment"
+    delete:
+      operationId: deleteComment
+      summary: delete comment
+      tags:
+        - Chats
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: boolean
+  /chats/comments/{id}/count:
+    get:
+      operationId: countComments
+      summary: count comments
+      tags:
+        - Chats
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: integer
+                format: int64
+  /chats/comments/{id}/up_vote:
+    post:
+      operationId: upVoteComment
+      summary: up vote comment
+      tags:
+        - Chats
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: string
+  /chats/comments/{id}/down_vote:
+    post:
+      operationId: downVoteComment
+      summary: down vote comment
+      tags:
+        - Chats
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: string
+  /chats/{id}:
+    delete:
+      operationId: deleteChat
+      summary: delete chat
+      tags:
+        - Chats
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: boolean
+    get:
+      operationId: getChat
+      summary: get chat
+      tags:
+        - Chats
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: include
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GrokChat"
+  /chats:
+    post:
+      operationId: saveChat
+      summary: save chat
+      tags:
+        - Chats
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GrokChat"
+      responses:
+        "200":
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GrokChat"
+    get:
+      operationId: getChats
+      summary: get chats
+      tags:
+        - Chats
+      parameters:
+        - name: entityId
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: userId
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: onlyPrivate
+          in: query
+          required: false
+          schema:
+            type: boolean
+        - name: include
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: text
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: id
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int64
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int64
+        - name: order
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/GrokChat"
+  /chats/{id}/view:
+    post:
+      operationId: viewChat
+      summary: view chat
+      tags:
+        - Chats
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: string
+  /chats/{id}/watch:
+    get:
+      operationId: isWatched
+      summary: is watched
+      tags:
+        - Chats
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: boolean
+    post:
+      operationId: watchChat
+      summary: watch chat
+      tags:
+        - Chats
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: string
+  /chats/{id}/read:
+    post:
+      operationId: readChat
+      summary: read chat
+      tags:
+        - Chats
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: string
+  /chats/{id}/un_watch:
+    post:
+      operationId: unWatchChat
+      summary: un watch chat
+      tags:
+        - Chats
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: string
+  /chats/with_groups:
+    get:
+      operationId: getChatsWithGroups
+      summary: get chats with groups
+      tags:
+        - Chats
+      parameters:
+        - name: ids
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/GrokChat"
+  /chats/count:
+    get:
+      operationId: countChats
+      summary: count chats
+      tags:
+        - Chats
+      parameters:
+        - name: entityId
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: userId
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: onlyPrivate
+          in: query
+          required: false
+          schema:
+            type: boolean
+        - name: include
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: text
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: id
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: integer
+                format: int64
+  /chats/count_unread:
+    get:
+      operationId: countUnreadChats
+      summary: count unread chats
+      tags:
+        - Chats
+      parameters:
+        - name: entityId
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: userId
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: include
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: text
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: id
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: integer
+                format: int64
+  /chats/export:
+    post:
+      operationId: exportChats
+      summary: export chats
+      tags:
+        - Chats
+      responses:
+        "200":
+          description: Successful response
+components:
+  schemas:
+    GrokComment:
+      type: object
+      description: GrokComment entity
+    GrokChat:
+      type: object
+      description: GrokChat entity

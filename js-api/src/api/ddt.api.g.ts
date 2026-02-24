@@ -302,6 +302,9 @@ export class Tags {
   /// Specifies if calculated columns are subscribed
   static CalculatedColumnsSubscribed = '.calculatedColumnsSubscribed';
 
+  /// Specifies list of subscriptions for calculated columns
+  static CalculatedColumnsSubscriptions = '.calculatedColumnsSubscriptions';
+
   /// Boolean flag that allows not to show property panel for the cell/column
   static ShowPropPanels = '.show-prop-panels';
 
@@ -313,6 +316,10 @@ export class Tags {
 
   /// Used to preserve the column's original name, set only once (on the first rename)
   static ColumnInitialName = '.%initialName';
+
+  /// When set to true, visually obscures the column content using a blur effect.
+  /// Useful for anonymizing data in screenshots.
+  static BlurContent = '.blur-content';
 
 }
 export class FuncOptions {

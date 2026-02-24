@@ -73,6 +73,17 @@ const CHARTS_VIEWERS_TEST_DATA: {[key: string] : ViewersTestData} = {
     .length >= 1, tooltip: 'Word cloud viewer needs at least 1 string column'},
 };
 
+const BIOCHEM_VIEWERS_TEST_DATA: {[key: string] : ViewersTestData} = {
+  'Chem Similarity Search': {checkFunc: (table) => table.columns.bySemType(DG.SEMTYPE.MOLECULE) !== null,
+    tooltip: 'Chem Similarity Search viewer needs at least 1 molecular column'},
+  'Chem Diversity Search': {checkFunc: (table) => table.columns.bySemType(DG.SEMTYPE.MOLECULE) !== null,
+    tooltip: 'Chem Diversity Search viewer needs at least 1 molecular column'},
+  'Sequence Similarity Search': {checkFunc: (table) => table.columns.bySemType(DG.SEMTYPE.MACROMOLECULE) !== null,
+    tooltip: 'Chem Similarity Search viewer needs at least 1 sequence column'},
+  'Sequence Diversity Search': {checkFunc: (table) => table.columns.bySemType(DG.SEMTYPE.MACROMOLECULE) !== null,
+    tooltip: 'Chem Diversity Search viewer needs at least 1 sequence column'},
+};
+
 const viewers: any = {};
 const jsViewers: any = {};
 const rootViewers = ui.divH([], 'viewer-gallery');
@@ -218,7 +229,9 @@ function getJsViewers(jsViewers: { [v: string]: { [k: string]: any } }, table: D
       }
       else
         isViewerEnabled = false;
-    } else {
+    } else if ((v.package.name === 'Chem' || v.package.name === 'Bio') && BIOCHEM_VIEWERS_TEST_DATA[v.friendlyName])
+      isViewerEnabled = BIOCHEM_VIEWERS_TEST_DATA[v.friendlyName].checkFunc(table);
+    else {
       if (v.options['showInGallery'] === 'false')
         continue;
     }
@@ -227,7 +240,8 @@ function getJsViewers(jsViewers: { [v: string]: { [k: string]: any } }, table: D
         name: v.friendlyName,
         enabled: isViewerEnabled,
         tooltip: isViewerEnabled ? '' : CHARTS_VIEWERS_TEST_DATA[v.friendlyName] ?
-          CHARTS_VIEWERS_TEST_DATA[v.friendlyName].tooltip : 'Viewer cannot be created from viewer gallery',
+          CHARTS_VIEWERS_TEST_DATA[v.friendlyName].tooltip : BIOCHEM_VIEWERS_TEST_DATA[v.friendlyName] ?
+          BIOCHEM_VIEWERS_TEST_DATA[v.friendlyName].tooltip : 'Viewer cannot be created from viewer gallery',
         icon: (v.options['icon'] != undefined) ? `${v.package.webRoot.endsWith('/') ?
           v.package.webRoot : v.package.webRoot + '/'}${v.options['icon']}` : 'svg-project',
         description: v.description,

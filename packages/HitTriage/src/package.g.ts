@@ -20,6 +20,7 @@ export async function peptiHitAppTreeBrowser(treeNode: any) : Promise<void> {
 }
 
 //name: Hit Triage
+//tags: app
 //output: view result
 //meta.role: app
 //meta.browsePath: Chem
@@ -28,6 +29,7 @@ export async function hitTriageApp() : Promise<any> {
 }
 
 //name: Hit Design
+//tags: app
 //output: view result
 //meta.role: app
 //meta.icon: images/icons/hit-design-icon.png
@@ -37,6 +39,7 @@ export async function hitDesignApp() : Promise<any> {
 }
 
 //name: PeptiHit
+//tags: app
 //output: view result
 //meta.role: app
 //meta.icon: images/icons/pepti-hit-icon.png
@@ -98,6 +101,7 @@ export function gasteigerCellRenderer() : any {
 }
 
 //name: Hit Triage package settings editor
+//tags: packageSettingsEditor
 //input: object propList 
 //output: widget result
 //meta.role: packageSettingsEditor
