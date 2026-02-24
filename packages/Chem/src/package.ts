@@ -93,7 +93,7 @@ import {MixtureCellRenderer} from './rendering/mixture-cell-renderer';
 import {createComponentPane, createMixtureWidget, Mixfile} from './utils/mixfile';
 import {biochemicalPropertiesDialog} from './widgets/biochem-properties-widget';
 import {checkCurrentView} from './utils/ui-utils';
-import {DESIRABILITY_PROFILE_TYPE, isDesirabilityProfile, mpo, PropertyDesirability, WEIGHTED_AGGREGATIONS_LIST, WeightedAggregation} from '@datagrok-libraries/statistics/src/mpo/mpo';
+import {isDesirabilityProfile, mpo, PropertyDesirability, WEIGHTED_AGGREGATIONS_LIST, WeightedAggregation} from '@datagrok-libraries/statistics/src/mpo/mpo';
 //@ts-ignore
 import '../css/chem.css';
 import {addDeprotectedColumn, DeprotectEditor} from './analysis/deprotect';
@@ -104,6 +104,8 @@ import {MpoProfileCreateView} from './mpo/mpo-create-profile';
 import {MpoProfileManager} from './mpo/mpo-profile-manager';
 import {MpoProfileHandler} from './mpo/mpo-profile-handler';
 import {findSuitableProfiles, MPO_PROFILE_CHANGED_EVENT, MpoProfileInfo} from './mpo/utils';
+import {removeWaterAndSalts} from './utils/reactions/reactions';
+import {transformationReactionsUI, twoComponentReactionUI} from './utils/reactions/ui';
 
 export {getMCS};
 export * from './package.g';
@@ -2698,7 +2700,7 @@ export class PackageFunctions {
   @grok.decorators.func()
   static async mpoProfilesAppTreeBrowser(
     @grok.decorators.param({type: 'dynamic'}) treeNode: DG.TreeViewGroup,
-    @grok.decorators.param({type: 'view'}) browseView: any,
+    @grok.decorators.param({type: 'view'}) _browseView: any,
   ) {
     let openedView: DG.ViewBase | null = null;
     const profileMap = new Map<DG.TreeViewNode, MpoProfileInfo>();
@@ -2737,6 +2739,41 @@ export class PackageFunctions {
       await refresh();
     });
   }
+
+  @grok.decorators.func({
+    topMenu: 'Chem | Transform | Remove Water and Salts...',
+    name: 'removeWaterAndSalts',
+    friendlyName: 'Remove Water and Salts',
+    description: 'Removes water and salts from the list of molecules',
+    outputs: [{name: 'result', type: 'column', options: {semType: 'Molecule'}}],
+  })
+  static async removeWaterAndSaltsTopMenu(table: DG.DataFrame, @grok.decorators.param({semType: 'Molecule'}) molecules: DG.Column) {
+    const res = await removeWaterAndSalts(molecules.toList());
+    const col = table.columns.getOrCreate(`Desalted(${molecules.name})`, DG.TYPE.STRING);
+    col.semType = DG.SEMTYPE.MOLECULE;
+    col.init((i) => res[i]);
+  }
+
+  @grok.decorators.func({
+    topMenu: 'Chem | Transform | Run Reaction...',
+    name: 'transformationReactions',
+    friendlyName: 'Run Reaction',
+    description: 'Runs reaction based on the reaction SMARTS and list of reactants',
+  })
+  static async transformationReactionsTopMenu(): Promise<void> {
+    transformationReactionsUI(grok.shell.t, null);
+  }
+
+  @grok.decorators.func({
+    topMenu: 'Chem | Transform | Two-Component Reaction...',
+    name: 'twoComponentReaction',
+    friendlyName: 'Two-Component Reaction',
+    description: 'Runs a reaction between molecules from two columns',
+  })
+  static async twoComponentReactionTopMenu(): Promise<void> {
+    twoComponentReactionUI(grok.shell.t);
+  }
+
 
   @grok.decorators.panel({
     name: 'Chemistry | MPO',
