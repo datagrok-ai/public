@@ -3,14 +3,11 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {EditorSelection, EditorState, Extension, StateEffectType} from '@codemirror/state';
-import {DecorationSet, EditorView, ViewUpdate, hoverTooltip, keymap} from '@codemirror/view';
-import {Completion, CompletionContext, CompletionResult,
-  autocompletion, startCompletion} from '@codemirror/autocomplete';
-import {StateEffect, StateField} from '@codemirror/state';
-import {Decoration} from '@codemirror/view';
-import {minimalSetup} from 'codemirror';
-import {bracketMatching} from '@codemirror/language';
+import type {EditorSelection, EditorState, Extension, StateEffectType} from '@codemirror/state';
+import type {DecorationSet, EditorView, ViewUpdate} from '@codemirror/view';
+import type {Completion, CompletionContext, CompletionResult} from '@codemirror/autocomplete';
+import type {StateEffect, StateField} from '@codemirror/state';
+import type {Decoration} from '@codemirror/view';
 import {Subject} from 'rxjs';
 
 /**
@@ -141,6 +138,8 @@ export class AddNewColumnDialog {
   uiFunctions?: HTMLDivElement;
   uiDialog?: DG.Dialog;
   codeMirror?: EditorView;
+  private _EditorSelection!: (typeof import('@codemirror/state'))['EditorSelection'];
+  private _hoverTooltip!: (typeof import('@codemirror/view'))['hoverTooltip'];
   codeMirrorDiv = ui.div('', {style: {border: 'dotted 1px var(--grey-3)'}});
   errorDiv = ui.div('', 'cm-errort-div cm-hint-div');
   hintDiv = ui.div('', 'cm-hint-div');
@@ -276,7 +275,7 @@ export class AddNewColumnDialog {
       };
     }
 
-    this.codeMirror = this.initCodeMirror();
+    this.codeMirror = await this.initCodeMirror();
     this.codeMirrorDiv.addEventListener('keydown', (e: KeyboardEvent) => {
       //do not close the dialog when autocompleting using Enter button
       if (e.code === 'Enter' && this.autocompleteEnter) {
@@ -415,7 +414,15 @@ export class AddNewColumnDialog {
   }
 
 
-  initCodeMirror(): EditorView {
+  async initCodeMirror(): Promise<EditorView> {
+    const {EditorView, keymap, hoverTooltip, Decoration} = await import('@codemirror/view');
+    const {EditorState, EditorSelection, StateEffect, StateField} = await import('@codemirror/state');
+    const {autocompletion, startCompletion} = await import('@codemirror/autocomplete');
+    const {minimalSetup} = await import('codemirror');
+    const {bracketMatching} = await import('@codemirror/language');
+    this._EditorSelection = EditorSelection;
+    this._hoverTooltip = hoverTooltip;
+
     this.codeMirrorDiv!.onclick = () => {
       cm.focus();
     };
@@ -993,7 +1000,7 @@ export class AddNewColumnDialog {
 
   hoverTooltipCustom(packageFunctionsParams: { [key: string]: FuncInfo },
     coreFunctionsParams: { [key: string]: FuncInfo }): Extension {
-    return hoverTooltip((view: EditorView, pos: number, side: number) => {
+    return this._hoverTooltip((view: EditorView, pos: number, side: number) => {
       const res = this.getFunctionNameAtPosition(view, pos, side, packageFunctionsParams, coreFunctionsParams);
       if (!res || !res.signature)
         return null;
@@ -1024,8 +1031,8 @@ export class AddNewColumnDialog {
       firstParamEnd = closeParenthesisIdx;
     setTimeout(() => this.codeMirror!.focus(), 100);
     this.codeMirror!.dispatch({
-      selection: EditorSelection.create([
-        EditorSelection.range(openParenthesis + 1, firstParamEnd),
+      selection: this._EditorSelection.create([
+        this._EditorSelection.range(openParenthesis + 1, firstParamEnd),
       ]),
     });
   }
