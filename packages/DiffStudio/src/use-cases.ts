@@ -160,7 +160,9 @@ const PK_PD_MODEL = `#name: PK-PD
   Kin = 0.2 {caption: Kin; category: Parameters; min: 0.1; max: 0.5} [The first-order production constant]
   Kout = 0.2 {caption: Kout; category: Parameters; min: 0.1; max: 0.5} [The first-order dissipation rate constant]
   
-#tolerance: 1e-9`;
+#tolerance: 1e-9
+
+#meta.solver: {method: 'lsoda'}`;
 
 /** Gluconic acid production */
 const ACID_PROD_MODEL = `#name: GA-production

@@ -37,3 +37,5 @@
   Kout = 0.2 {caption: Kout; category: Parameters; min: 0.1; max: 0.5} [The first-order dissipation rate constant]
   
 #tolerance: 1E-9
+
+#meta.solver: {method: 'lsoda'}
