@@ -4,7 +4,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {ODEs, SolverOptions, mrt, ros3prw, ros34prw} from 'diff-grok';
+import {ODEs, SolverOptions, mrt, ros3prw, ros34prw, rk4, ab5, rk3, rkdp, ab4, lsoda} from 'diff-grok';
 import {getCallback} from './callbacks/callback-tools';
 import {METHOD} from './ui-constants';
 
@@ -26,7 +26,8 @@ export class CallbackAction extends Error {
 
 /** Default options of the solver */
 export enum DEFAULT_OPTIONS {
-  SCRIPTING = '{maxIterations: 1}',
+  MAX_TIME = 'maxTime: 5000',
+  SCRIPTING = `{${MAX_TIME}}`,
   NO_CHECKS = '{ }',
 }
 
@@ -58,6 +59,27 @@ const getMethod = (options?: Partial<SolverOptions>) => {
 
   case METHOD.ROS34PRw:
     return ros34prw;
+
+  case METHOD.ROS34PRw:
+    return ros34prw;
+
+  case METHOD.RK3:
+    return rk3;
+
+  case METHOD.RK4:
+    return rk4;
+
+  case METHOD.RK5:
+    return rkdp;
+
+  case METHOD.AB4:
+    return ab4;
+
+  case METHOD.AB5:
+    return ab5;
+
+  case METHOD.LSODA:
+    return lsoda;
 
   default:
     return ros34prw;

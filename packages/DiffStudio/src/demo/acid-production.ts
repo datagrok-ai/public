@@ -1,4 +1,7 @@
-#name: Acid Production
+import {LINK} from '../ui-constants';
+import {ModelInfo} from '../model';
+
+export const ACID_PRODUCTION_MODEL = `#name: Acid Production
 #description: Gluconic acid (GA) production by Aspergillus niger modeling
 #equations:
   dX/dt = rX
@@ -46,4 +49,28 @@
   Kla = 1.7e-2 {units: 1/s; category: Parameters} [Volumetric mass transfer coefficient]
   Cod = 15 {units: kg/m³; category: Parameters} [Liquid phase dissolved oxygen saturation concentration]
   
-#tolerance: 1e-9
+#tolerance: 1e-9`;
+
+const UI_OPTS = {
+  inputsTabDockRatio: 0.17,
+  graphsDockRatio: 0.85,
+};
+
+const INFO = `# Model
+Gluconic acid (GA) production by Aspergillus niger modeling
+# Try
+Interactive results based on input changes.
+# Performance
+Nonlinear systems of differential equations are solved within milliseconds.
+# No-code
+[Diff Studio](${LINK.DIF_STUDIO})
+enables the creation of complex models without writing code.
+# Learn more
+* [Sensitivity analysis](${LINK.SENS_AN})
+* [Parameter optimization](${LINK.FITTING})`;
+
+export const ACID_PRODUCTION_MODEL_INFO: ModelInfo = {
+  equations: ACID_PRODUCTION_MODEL,
+  uiOptions: UI_OPTS,
+  info: INFO,
+};
