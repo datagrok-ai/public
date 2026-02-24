@@ -8,11 +8,11 @@
   },
   "description": "Datagrok compute utils",
   "dependencies": {
-    "@datagrok-libraries/utils": "^4.5.7",
+    "@datagrok-libraries/utils": "../utils",
     "@types/lodash.clonedeepwith": "^4.5.9",
     "@types/uuid": "^10.0.0",
     "cash-dom": "^8.1.4",
-    "datagrok-api": "^1.26.3",
+    "datagrok-api": "../../js-api",
     "dayjs": "^1.11.19",
     "diff-grok": "^1.1.0",
     "ebnf": "^1.9.1",
