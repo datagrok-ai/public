@@ -19,5 +19,7 @@ export type CapGroupInfo = {
   smiles: string,
   /** Whether the cap is a single atom (valid element symbol) */
   isSimple: boolean,
+  /** Number of R group, to handle cases where its not sorted */
+  rGroupId: number,
 }
 

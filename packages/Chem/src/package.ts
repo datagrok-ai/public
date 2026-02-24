@@ -30,6 +30,7 @@ import {addPropertiesAsColumns, getChemPropertyFunc, getPropertiesAsColumns, pro
 import {structuralAlertsWidget} from './widgets/structural-alerts';
 import {structure2dWidget} from './widgets/structure2d';
 import {getToxicityRisksColumns, toxicityWidget} from './widgets/toxicity';
+import {_synthonSubstructureSearchWidget, _synthonSimilaritySearchWidget} from './widgets/synthon-search';
 
 //panels imports
 import {getInchiKeysImpl, getInchisImpl} from './panels/inchi';
@@ -92,7 +93,7 @@ import {MixtureCellRenderer} from './rendering/mixture-cell-renderer';
 import {createComponentPane, createMixtureWidget, Mixfile} from './utils/mixfile';
 import {biochemicalPropertiesDialog} from './widgets/biochem-properties-widget';
 import {checkCurrentView} from './utils/ui-utils';
-import {mpo, PropertyDesirability, WEIGHTED_AGGREGATIONS_LIST, WeightedAggregation} from '@datagrok-libraries/statistics/src/mpo/mpo';
+import {DESIRABILITY_PROFILE_TYPE, isDesirabilityProfile, mpo, PropertyDesirability, WEIGHTED_AGGREGATIONS_LIST, WeightedAggregation} from '@datagrok-libraries/statistics/src/mpo/mpo';
 //@ts-ignore
 import '../css/chem.css';
 import {addDeprotectedColumn, DeprotectEditor} from './analysis/deprotect';
@@ -1437,6 +1438,28 @@ export class PackageFunctions {
         toxicityWidget(smiles) : new DG.Widget(ui.divText(EMPTY_MOLECULE_MESSAGE));
   }
 
+  @grok.decorators.panel({
+    name: 'Databases | Synthon Search | Substructure Search',
+    description: 'Substructure search in synthon chemical space using RDKit SynthonSpaceSearch',
+    meta: {role: 'widgets', domain: 'chem'},
+  })
+  static async synthonSubstructureSearchWidget(
+    @grok.decorators.param({options: {semType: 'Molecule'}}) molecule: string): Promise<DG.Widget> {
+    return molecule && !DG.chem.Sketcher.isEmptyMolfile(molecule) ?
+      await _synthonSubstructureSearchWidget(molecule) : new DG.Widget(ui.divText(EMPTY_MOLECULE_MESSAGE));
+  }
+
+  @grok.decorators.panel({
+    name: 'Databases | Synthon Search | Similarity Search',
+    description: 'Fingerprint similarity search in synthon chemical space using RDKit SynthonSpaceSearch',
+    meta: {role: 'widgets', domain: 'chem'},
+  })
+  static async synthonSimilaritySearchWidget(
+    @grok.decorators.param({options: {semType: 'Molecule'}}) molecule: string): Promise<DG.Widget> {
+    return molecule && !DG.chem.Sketcher.isEmptyMolfile(molecule) ?
+      await _synthonSimilaritySearchWidget(molecule) : new DG.Widget(ui.divText(EMPTY_MOLECULE_MESSAGE));
+  }
+
   @grok.decorators.func({
     name: 'convertMoleculeNotation',
     meta: {vectorFunc: 'true'},
@@ -2513,11 +2536,11 @@ export class PackageFunctions {
     @grok.decorators.param({type: 'column_list'}) columns: DG.ColumnList,
     profileName: string,
     @grok.decorators.param({type: 'string'}) aggregation: WeightedAggregation,
-  ): DG.DataFrame {
+  ): DG.DataFrame | null {
     const resultCol = mpo(df, Array.from(columns), profileName, aggregation);
     if (resultCol && !df.col(resultCol.name))
       return DG.DataFrame.fromColumns([resultCol]);
-    return DG.DataFrame.create();
+    return null;
   }
 
   @grok.decorators.func({
@@ -2550,8 +2573,8 @@ export class PackageFunctions {
       return DG.DataFrame.create();
     }
 
-    const colList = new DG.ColumnList(columns);
-
+    // Temporary fix until proper support for list<column> is implemented
+    const colList = DG.DataFrame.fromColumns(columns).columns;
     return await grok.functions.call('Chem:mpoCalculate', {df, columns: colList, profileName, aggregation});
   }
 
@@ -2585,7 +2608,7 @@ export class PackageFunctions {
     outputs: [{name: 'result', type: 'bool'}],
   })
   static checkJsonMpoProfile(content: string) {
-    return JSON.parse(content)['type'] === 'MPO Desirability Profile';
+    return isDesirabilityProfile(JSON.parse(content));
   }
 
   @grok.decorators.panel({
@@ -2692,6 +2715,7 @@ export class PackageFunctions {
     await refresh();
 
     grok.events.onCustomEvent(MPO_PROFILE_CHANGED_EVENT).subscribe(async () => {
+      await MpoProfileManager.load();
       await refresh();
     });
   }
@@ -2710,7 +2734,7 @@ export class PackageFunctions {
     resultDiv.appendChild(loader);
 
     const dataFrame = semValue.cell.dataFrame;
-    const profiles = await MpoProfileManager.ensureLoaded();
+    const profiles = await MpoProfileManager.load();
     const suitableProfiles = findSuitableProfiles(dataFrame, profiles);
 
     if (suitableProfiles.length === 0) {

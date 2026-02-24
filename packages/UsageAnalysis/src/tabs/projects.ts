@@ -1,21 +1,62 @@
 import {UaView} from "./ua";
 import {UaToolbox} from "../ua-toolbox";
 import * as ui from "datagrok-api/ui";
-import * as grok from "datagrok-api/grok";
 import * as DG from "datagrok-api/dg";
 import {UaFilterableQueryViewer} from "../viewers/ua-filterable-query-viewer";
+import {loadUsers, setupUserIconRenderer} from "../utils";
 
 export class ProjectsView extends UaView {
-    constructor(uaToolbox: UaToolbox) {
+    constructor(uaToolbox?: UaToolbox) {
         super(uaToolbox);
         this.name = 'Projects';
     }
 
     async initViewers(path?: string): Promise<void> {
+        const users = await loadUsers();
+        let syncing = false;
+
+        const syncViewers = (projectName: string, source: 'scatter' | 'bar' | 'grid') => {
+            if (syncing) return;
+            syncing = true;
+            try {
+                if (source !== 'scatter') {
+                    const df = projectsViewer.viewer?.dataFrame;
+                    if (df) {
+                        const col = df.getCol('project_name');
+                        df.selection.init((i) => col.get(i) === projectName);
+                    }
+                }
+                if (source !== 'bar') {
+                    const df = uniqueUsersPerProject.viewer?.dataFrame;
+                    if (df) {
+                        const col = df.getCol('project_name');
+                        df.selection.init((i) => col.get(i) === projectName);
+                    }
+                }
+                if (source !== 'grid') {
+                    const df = dailyProjectAccess.viewer?.dataFrame;
+                    if (df) {
+                        const col = df.getCol('project_name');
+                        df.selection.init((i) => col.get(i) === projectName);
+                    }
+                }
+            }
+            finally {
+                syncing = false;
+            }
+        };
+
         const projectsViewer = new UaFilterableQueryViewer({
             filterSubscription: this.uaToolbox.filterStream,
             name: 'Projects Usage',
             queryName: 'AccessCountPerPeriodPerProject',
+            processDataFrame: (t: DG.DataFrame) => {
+                t.onCurrentRowChanged.subscribe(() => {
+                    if (t.currentRowIdx < 0) return;
+                    syncViewers(t.get('project_name', t.currentRowIdx), 'scatter');
+                });
+                return t;
+            },
             createViewer: (t: DG.DataFrame) => {
                 return DG.Viewer.scatterPlot(t, {
                     x: 'period',
@@ -38,7 +79,7 @@ export class ProjectsView extends UaView {
             name: 'Unique Users Per Project',
             queryName: 'UniqueUsersPerProject',
             createViewer: (t: DG.DataFrame) => {
-                return DG.Viewer.barChart(t, {
+                const viewer = DG.Viewer.barChart(t, {
                     'valueColumnName': 'unique_users',
                     'valueAggrType': 'sum',
                     'barSortType': 'by value',
@@ -55,6 +96,10 @@ export class ProjectsView extends UaView {
                     'description': 'Counts the number of distinct users accessing each project.',
                     'descriptionVisibilityMode': DG.VisibilityMode.Never
                 });
+                viewer.onEvent('d4-bar-chart-on-category-clicked').subscribe((args: any) => {
+                    syncViewers(args.args.options.categories[0], 'bar');
+                });
+                return viewer;
             }
         });
 
@@ -66,6 +111,10 @@ export class ProjectsView extends UaView {
                 t.getCol('project_name').setTag('friendlyName', 'Project Name');
                 t.getCol('access_date').setTag('friendlyName', 'Date');
                 t.getCol('user_name').setTag('friendlyName', 'User');
+                t.onCurrentRowChanged.subscribe(() => {
+                    if (t.currentRowIdx < 0) return;
+                    syncViewers(t.get('project_name', t.currentRowIdx), 'grid');
+                });
                 return t;
             },
             createViewer: (t: DG.DataFrame) => {
@@ -75,6 +124,7 @@ export class ProjectsView extends UaView {
                     'descriptionVisibilityMode': DG.VisibilityMode.Never
                 });
                 grid.sort(['access_date'], [false]);
+                setupUserIconRenderer(grid, users, ['user_name']);
                 return grid;
             }
         });
@@ -82,8 +132,6 @@ export class ProjectsView extends UaView {
         this.viewers.push(projectsViewer);
         this.viewers.push(uniqueUsersPerProject);
         this.viewers.push(dailyProjectAccess);
-        // this.viewers.push(packagesTimeViewer);
-        // packagesTimeViewer.root.style.display = 'none';
         this.root.append(projectsViewer.root);
 
         this.root.append(

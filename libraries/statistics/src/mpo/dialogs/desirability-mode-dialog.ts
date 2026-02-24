@@ -29,6 +29,17 @@ export class DesirabilityModeDialog {
     private mappedCol?: DG.Column | null,
   ) {}
 
+  private buildDefaultScoreInput(prop: PropertyDesirability): DG.InputBase {
+    const input = ui.input.float('Default score', {value: prop.defaultScore ?? 0, min: 0, max: 1, format: '#0.000',
+      onValueChanged: (v) => {
+        prop.defaultScore = v ?? 0;
+        this.onUpdate({defaultScore: prop.defaultScore} as any);
+      },
+    });
+    input.setTooltip('Desirability score (0–1) used when a cell value is missing or a category is unmatched. If not set, the row is excluded from scoring.');
+    return input;
+  }
+
   show(): void {
     const original = structuredClone(this.prop);
 
@@ -151,6 +162,8 @@ export class DesirabilityModeDialog {
         buildNumericalContent();
       else
         buildCategoricalContent();
+
+      contentPanel.append(ui.h3('Fallback'), ui.form([this.buildDefaultScoreInput(this.prop)]));
     };
 
     buildContent();

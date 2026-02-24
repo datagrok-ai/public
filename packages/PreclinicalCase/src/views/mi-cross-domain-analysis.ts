@@ -7,6 +7,7 @@ import {DOMAIN, MIANTREG, MIDIR, MIDY, MIDY_STR, MILAT, MISEV, MISPEC, MISTRESC,
   VISIT_DAY_STR} from '../constants/columns-constants';
 import {awaitCheck} from '@datagrok-libraries/test/src/test';
 import { StudyTableViewParams } from '../utils/views-creation-utils';
+import { restoreBrowsePanelOnRemoval } from '../utils/utils';
 
 export function createMICrossDomainView(studyId: string): StudyTableViewParams {
   let resDf: DG.DataFrame | null = null;
@@ -233,7 +234,7 @@ export function createMICrossDomainView(studyId: string): StudyTableViewParams {
 
     updateBoxPlots();
     //workaround to switch back to browse from toolbox
-    (grok.shell.browsePanel.root.closest('.dock-container')?.querySelector('[name = "view-handle: Browse"]') as HTMLElement)?.click();
+    restoreBrowsePanelOnRemoval();
   };
 
   return {df: miDf, onTableViewAddedFunc: onTableViewAdded};

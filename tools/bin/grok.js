@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 const argv = require('minimist')(process.argv.slice(2), {
-  alias: {k: 'key', h: 'help', r: 'recursive'},
+  alias: {k: 'key', h: 'help', r: 'recursive', s: 'silent'},
 });
 const help = require('./commands/help').help;
 const runAllCommand = require('./utils/utils').runAll;
@@ -8,6 +8,7 @@ const runAllCommand = require('./utils/utils').runAll;
 const commands = {
   add: require('./commands/add').add,
   api: require('./commands/api').api,
+  build: require('./commands/build').build,
   check: require('./commands/check').check,
   config: require('./commands/config').config,
   create: require('./commands/create').create,

@@ -10,6 +10,7 @@ export class MpoScoreViewer extends ChemSearchBaseViewer {
   mpoColumn: DG.Column;
   curIdx: number = 0;
   mode: 'best' | 'worst';
+  interacting = false;
 
   constructor(df: DG.DataFrame, mpoColName: string, mode: 'best' | 'worst' = 'best') {
     const moleculeCol = df.columns.bySemType(DG.SEMTYPE.MOLECULE);
@@ -33,15 +34,20 @@ export class MpoScoreViewer extends ChemSearchBaseViewer {
     if (!this.dataFrame)
       return;
 
-    if (event.shiftKey || event.altKey)
-      this.dataFrame.selection.set(rowIdx, true);
-    else if (event.metaKey)
-      this.dataFrame.selection.set(rowIdx, !this.dataFrame.selection.get(rowIdx));
-    else {
-      this.dataFrame.currentRowIdx = rowIdx;
-      this.gridSelect = true;
+    this.interacting = true;
+    try {
+      if (event.shiftKey || event.altKey)
+        this.dataFrame.selection.set(rowIdx, true);
+      else if (event.metaKey)
+        this.dataFrame.selection.set(rowIdx, !this.dataFrame.selection.get(rowIdx));
+      else {
+        this.dataFrame.currentRowIdx = rowIdx;
+        this.gridSelect = true;
+      }
+      this.renderInternal();
+    } finally {
+      this.interacting = false;
     }
-    this.renderInternal();
   }
 
   private createGrid(rowIdx: number): HTMLElement {

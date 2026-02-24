@@ -62,11 +62,18 @@ export function migrateDesirability(raw: any): PropertyDesirability {
   return {...raw, functionType: 'numerical'};
 }
 
+export const DESIRABILITY_PROFILE_TYPE = 'MPO Desirability Profile';
+
 /// A map of desirability lines with their weights
 export type DesirabilityProfile = {
+  type: typeof DESIRABILITY_PROFILE_TYPE;
   name: string;
   description: string;
   properties: { [key: string]: PropertyDesirability };
+}
+
+export function isDesirabilityProfile(x: any): x is DesirabilityProfile {
+  return x != null && typeof x === 'object' && x.type === DESIRABILITY_PROFILE_TYPE;
 }
 
 export const WEIGHTED_AGGREGATIONS = ['Average', 'Sum', 'Product', 'Geomean', 'Min', 'Max'] as const;
@@ -131,12 +138,15 @@ export function mpo(
       const desirability = desirabilityTemplates[j];
       const value = columns[j].get(i);
 
-      if (columns[j].isNone(i))
-        return desirability.defaultScore ?? NaN;
+      let score: number | null;
 
-      const score = isNumerical(desirability) ?
-        desirabilityScore(value, desirability.line) :
-        categoricalDesirabilityScore(String(value), desirability);
+      if (columns[j].isNone(i))
+        score = desirability.defaultScore ?? null;
+      else {
+        score = isNumerical(desirability) ?
+          desirabilityScore(value, desirability.line) :
+          categoricalDesirabilityScore(String(value), desirability);
+      }
 
       if (score === null)
         return NaN;

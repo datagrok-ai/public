@@ -36,6 +36,8 @@ export function demoApp(path?: string, filter?: string) : any {
 }
 
 //input: dynamic treeNode 
+//meta.role: appTreeBrowser
+//meta.app: Demo
 export async function demoAppTreeBrowser(treeNode: any) : Promise<void> {
   await PackageFunctions.demoAppTreeBrowser(treeNode);
 }

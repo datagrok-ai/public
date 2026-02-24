@@ -221,3 +221,9 @@ export async function getPolyToolCombineDialog() : Promise<void> {
 export function applyNotationProviderForCyclized(col: DG.Column<any>, separator: string) : void {
   PackageFunctions.applyNotationProviderForCyclized(col, separator);
 }
+
+//output: dynamic result
+//meta.role: notationProviderConstructor
+export async function harmonizedSequenceNotationProviderConstructor() : Promise<any> {
+  return await PackageFunctions.harmonizedSequenceNotationProviderConstructor();
+}

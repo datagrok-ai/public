@@ -1,7 +1,7 @@
 const path = require('path');
 const {execSync} = require('child_process');
 const packageName = path.parse(require('./package.json').name).name.toLowerCase().replace(/-/g, '');
-
+const workingInDartium = false; // when working in Dartium, set this to true
 function getDatagrokTools() {
   const pluginPath = 'datagrok-tools/plugins/func-gen-plugin';
   try {
@@ -40,7 +40,22 @@ module.exports = {
       { test: /\.ts$/,
         loader: 'ts-loader',
         exclude: /node_modules/,
-      }
+      },
+      ...(workingInDartium ? [{
+        test: /\.js$/,
+        // include: [
+        //   /node_modules[\\/]konva/,
+        //   /node_modules[\\/]@datagrok-libraries/,
+        // ],
+        use: {
+          loader: 'babel-loader',
+          options: {
+            presets: [['@babel/preset-env', {
+              targets: 'chrome 54'// approximate Dartium's engine
+            }]],
+          },
+        },
+      }] : []),
     ],
   },
   devtool: 'source-map',

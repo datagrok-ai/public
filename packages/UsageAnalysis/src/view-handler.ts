@@ -19,14 +19,17 @@ export class ViewHandler {
 
   constructor() {
     this.view = new DG.MultiView({viewFactories: {}});
+    this.view.name = ViewHandler.UA_NAME;
+    this.view.box = true;
   }
 
   async init(date?: string, groups?: string, packages?: string, tags?: string, categories?: string, projects?: string, path?: string): Promise<void> {
-    this.view.parentCall = grok.functions.getCurrentCall();
-    const toolbox = await UaToolbox.construct(this);
+    const toolboxPromise = UaToolbox.construct(this);
     const viewClasses: (typeof UaView)[] = [OverviewView, PackagesView, FunctionsView, EventsView, ClicksView, LogView, ProjectsView];
+    const views: UaView[] = [];
     for (let i = 0; i < viewClasses.length; i++) {
-      const currentView = new viewClasses[i](toolbox);
+      const currentView = new viewClasses[i]();
+      views.push(currentView);
       this.view.addView(currentView.name, () => {
         currentView.tryToInitViewers(path);
         return currentView;
@@ -42,6 +45,14 @@ export class ViewHandler {
         urlTab = urlTab[0].toUpperCase() + urlTab.slice(1);
       }
     }
+
+    const indicatorTimer = setTimeout(() => ui.setUpdateIndicator(this.view.root, true, 'Loading...'), 200);
+    const toolbox = await toolboxPromise;
+    clearTimeout(indicatorTimer);
+    ui.setUpdateIndicator(this.view.root, false);
+    for (const view of views)
+      view.setToolbox(toolbox);
+    this.view.toolbox = toolbox.rootAccordion.root;
 
     toolbox.toggleCategoriesInput(urlTab == 'Packages');
     toolbox.toggleTagsInput(urlTab == 'Functions');
@@ -154,9 +165,6 @@ export class ViewHandler {
       else
         fButtons.style.display = 'none';
     });
-    this.view.name = ViewHandler.UA_NAME;
-    this.view.box = true;
-
     if (viewClasses.some((v) => v.name === `${urlTab}View`))
       this.changeTab(urlTab);
   }

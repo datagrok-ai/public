@@ -5,6 +5,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
+import {generateMpoFileName, MPO_PROFILE_CHANGED_EVENT} from '@datagrok-libraries/statistics/src/mpo/utils';
 import '../../css/pmpo.css';
 
 import {COLORS, DESCR_TABLE_TITLE, DESCR_TITLE, DescriptorStatistics, DesirabilityProfileProperties,
@@ -369,37 +370,12 @@ export function getDesirabilityProfileJson(params: Map<string, PmpoParams>, useS
  */
 export async function saveModel(params: Map<string, PmpoParams>, modelName: string,
   useSigmoidalCorrection: boolean): Promise<void> {
-  let fileName = modelName;
-  const nameInput = ui.input.string('File', {
-    value: fileName,
-    nullable: false,
-    onValueChanged: (val) => {
-      fileName = val;
-      dlg.getButton('Save').disabled = (fileName.length < 1) || (folderName.length < 1);
-    },
+  const nameInput = ui.input.string('Name', {value: modelName, nullable: false});
+  const descriptionInput = ui.input.textArea('Description', {value: ' ', nullable: true});
+  const typeInput = ui.input.bool('Desirability Profile', {
+    value: true,
+    tooltipText: 'Save the model as an MPO Desirability Profile. If disabled, the model is saved in the pMPO format.',
   });
-
-  let folderName = FOLDER;
-  const folderInput = ui.input.string('Folder', {
-    value: folderName,
-    nullable: false,
-    onValueChanged: (val) => {
-      folderName = val;
-      dlg.getButton('Save').disabled = (fileName.length < 1) || (folderName.length < 1);
-    },
-  });
-
-  const save = async () => {
-    const path = `${folderName}/${fileName}.json`;
-    try {
-      const jsonString = JSON.stringify(objectToSave(), null, 2);
-      await grok.dapi.files.writeAsText(path, jsonString);
-      grok.shell.info(`Saved to ${path}`);
-    } catch (err) {
-      grok.shell.error(`Failed to save: ${err instanceof Error ? err.message : 'the platform issue'}.`);
-    }
-    dlg.close();
-  };
 
   const objectToSave = () => {
     if (typeInput.value) {
@@ -420,34 +396,29 @@ export async function saveModel(params: Map<string, PmpoParams>, modelName: stri
     };
   };
 
-  const modelNameInput = ui.input.string('Name', {value: modelName, nullable: true});
-  const descriptionInput = ui.input.textArea('Description', {value: ' ', nullable: true});
-  const typeInput = ui.input.bool('Desirability Profile', {
-    value: true,
-    tooltipText: 'Save the model as an MPO Desirability Profile. If disabled, the model is saved in the pMPO format.',
-  });
-
   const dlg = ui.dialog({title: 'Save model'})
-    .add(ui.h2('Path'))
-    .add(folderInput)
     .add(nameInput)
-    .add(ui.h2('Model'))
-    .add(modelNameInput)
     .add(descriptionInput)
     .add(typeInput)
     .addButton('Save', async () => {
-      const exist = await grok.dapi.files.exists(`${folderName}/${fileName}.json`);
-      if (!exist)
-        await save();
-      else {
-        // Handle overwrite confirmation
-        ui.dialog({title: 'Warning'})
-          .add(ui.label('Overwrite existing file?'))
-          .onOK(async () => await save())
-          .show();
+      try {
+        const files = await grok.dapi.files.list(FOLDER);
+        const existingFileNames = new Set(files.map((f) => f.name));
+        const fileName = generateMpoFileName(nameInput.value, existingFileNames);
+        const path = `${FOLDER}/${fileName}`;
+        const jsonString = JSON.stringify(objectToSave(), null, 2);
+        await grok.dapi.files.writeAsText(path, jsonString);
+        grok.events.fireCustomEvent(MPO_PROFILE_CHANGED_EVENT, {});
+        grok.shell.info(`Saved to ${path}`);
+      } catch (err) {
+        grok.shell.error(`Failed to save: ${err instanceof Error ? err.message : 'the platform issue'}.`);
       }
+      dlg.close();
     })
     .show();
+
+  dlg.getButton('Save').disabled = !nameInput.validate();
+  nameInput.onInput.subscribe(() => dlg.getButton('Save').disabled = !nameInput.validate());
 } // saveModel
 
 /** Adds columns with correlation coefficients between descriptors.

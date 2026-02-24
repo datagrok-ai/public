@@ -12,7 +12,6 @@
     "cash-dom": "^8.1.5",
     "datagrok-api": "^1.22.0",
     "dayjs": "^1.11.10",
-    "glpk-wasm": "^0.1.4",
     "glpk.js": "^4.0.2",
     "@datagrok-libraries/test": "^1.1.0"
   },

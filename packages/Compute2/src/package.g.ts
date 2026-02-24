@@ -1,13 +1,14 @@
 import {PackageFunctions} from './package';
 import * as DG from 'datagrok-api/dg';
 
+//meta.role: init
 //tags: init
 export async function init() : Promise<void> {
   await PackageFunctions.init();
 }
 
 //name: renderRestPanel
-//input: func func 
+//input: func func
 //output: widget result
 export async function renderPanel(func: any) : Promise<any> {
   return await PackageFunctions.renderPanel(func);
@@ -21,47 +22,50 @@ export function modelCatalog() {
   return PackageFunctions.modelCatalog();
 }
 
-//input: dynamic treeNode 
-//input: view browseView 
-//meta.role:  
-//meta.app:  
+//input: dynamic treeNode
+//input: view browseView
+//meta.role:
+//meta.app:
 export function modelCatalogTreeBrowser(treeNode: any, browseView: DG.ViewBase) : void {
   PackageFunctions.modelCatalogTreeBrowser(treeNode, browseView);
 }
 
 //name: Custom Function View Editor
-//tags: editor
-//input: funccall call 
+//input: funccall call
 //output: view result
+//meta.role: editor
+//tags: editor
 export async function CustomFunctionViewEditor(call: DG.FuncCall) : Promise<any> {
   return await PackageFunctions.CustomFunctionViewEditor(call);
 }
 
 //name: Rich Function View Editor
-//tags: editor
-//input: funccall call 
+//input: funccall call
 //output: view result
+//meta.role: editor
+//tags: editor
 export async function RichFunctionViewEditor(call: DG.FuncCall) : Promise<any> {
   return await PackageFunctions.RichFunctionViewEditor(call);
 }
 
 //name: Tree Wizard Editor
-//tags: editor
-//input: funccall call 
+//input: funccall call
 //output: view result
+//meta.role: editor
+//tags: editor
 export async function TreeWizardEditor(call: DG.FuncCall) : Promise<any> {
   return await PackageFunctions.TreeWizardEditor(call);
 }
 
-//input: string nqName 
-//input: string version 
-//input: object instanceConfig 
+//input: string nqName
+//input: string version
+//input: object instanceConfig
 //output: object result
 export async function StartWorkflow(nqName: string, version: string, instanceConfig?: any) {
   return await PackageFunctions.StartWorkflow(nqName, version, instanceConfig);
 }
 
-//input: object params 
+//input: object params
 //output: object result
 export async function RunOptimizer(params: any) {
   return await PackageFunctions.RunOptimizer(params);
@@ -82,49 +86,49 @@ export async function HistoryTestApp() : Promise<void> {
   await PackageFunctions.HistoryTestApp();
 }
 
-//input: object params 
+//input: object params
 //output: object result
 //editor: Compute2:TreeWizardEditor
 export async function MockPipeline1(params: any) {
   return await PackageFunctions.MockPipeline1(params);
 }
 
-//input: object params 
+//input: object params
 //output: object result
 //editor: Compute2:TreeWizardEditor
 export async function MockPipeline2(params: any) {
   return await PackageFunctions.MockPipeline2(params);
 }
 
-//input: double a 
-//input: double b 
+//input: double a
+//input: double b
 //output: double result
 export async function TestAdd2(a: number, b: number) : Promise<number> {
   return await PackageFunctions.TestAdd2(a, b);
 }
 
-//input: double a 
-//input: double b 
+//input: double a
+//input: double b
 //output: double result
 export async function TestSub2(a: number, b: number) : Promise<number> {
   return await PackageFunctions.TestSub2(a, b);
 }
 
-//input: double a 
-//input: double b 
+//input: double a
+//input: double b
 //output: double result
 export async function TestMul2(a: number, b: number) : Promise<number> {
   return await PackageFunctions.TestMul2(a, b);
 }
 
-//input: double a 
-//input: double b 
+//input: double a
+//input: double b
 //output: double result
 export async function TestDiv2(a: number, b: number) : Promise<number> {
   return await PackageFunctions.TestDiv2(a, b);
 }
 
-//input: dataframe df 
+//input: dataframe df
 //output: dataframe result
 export async function TestDF1(df: DG.DataFrame) : Promise<any> {
   return await PackageFunctions.TestDF1(df);
@@ -140,7 +144,7 @@ export async function TestCustomView() : Promise<void> {
 //input: double x1 = 1 { caption: param1; min: -3; max: 3 }
 //input: double x2 = -1 { caption: param2; min: -3; max: 3 }
 //input: dataframe y { caption: table }
-//input: bool bool 
+//input: bool bool
 //output: int integer
 //output: double float1
 //output: double float2

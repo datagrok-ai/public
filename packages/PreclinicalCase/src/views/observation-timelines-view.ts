@@ -10,11 +10,14 @@ import {createSubjectProfileView} from './subject-profile-view';
 import {awaitCheck} from '@datagrok-libraries/test/src/test';
 import {subjectClicked$, PADDING_X, PADDING_Y, getArmColorStr, getEnabledArms} from '../utils/combined-measurements-cell-renderer';
 import * as PinnedUtils from '@datagrok-libraries/gridext/src/pinned/PinnedUtils';
+import {Subscription} from 'rxjs';
 
 type ArmEntry = {values: number[], subjects: string[]};
 type ArmValues = {[arm: string]: ArmEntry};
 type DayMap = {[day: number]: ArmValues};
 type GroupData = {domain: string, category: string, test: string, units: string, days: DayMap};
+
+let subjectClickedSub: Subscription | null = null;
 
 export function createObservationTimelinesView(studyId: string): StudyTableViewParams {
   const allMeasurements = createAllMeasurementsDf(studyId);
@@ -311,7 +314,8 @@ export function createObservationTimelinesView(studyId: string): StudyTableViewP
     const connectPointsInput = ui.input.bool('Connect subject points', {value: false, onValueChanged: () => grid.invalidate()});
     tableView.setRibbonPanels([[subjectInput.root, connectPointsInput.root, legendDiv]]);
 
-    subjectClicked$.subscribe((subject) => {
+    subjectClickedSub?.unsubscribe();
+    subjectClickedSub = subjectClicked$.subscribe((subject) => {
       subjectInput.value = subject;
       grid.invalidate();
     });

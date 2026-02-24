@@ -10,6 +10,8 @@ export async function benchlingLinkApp() : Promise<any> {
 }
 
 //input: dynamic treeNode 
+//meta.role: appTreeBrowser
+//meta.app: Benchling
 export async function benchlingLinkAppTreeBrowser(treeNode: any) : Promise<void> {
   await PackageFunctions.benchlingLinkAppTreeBrowser(treeNode);
 }

@@ -12,7 +12,8 @@ import {DesirabilityModeDialog} from './dialogs/desirability-mode-dialog';
 
 import '../../css/styles.css';
 
-export const MPO_SCORE_CHANGED_EVENT = 'grok-mpo-score-changed';
+import {MPO_SCORE_CHANGED_EVENT} from './utils';
+
 const MAX_CATEGORICAL_CATEGORIES = 20;
 
 export class MpoProfileEditor {
@@ -217,11 +218,11 @@ export class MpoProfileEditor {
     const matched = this.columnMapping[name] ?? null;
 
     if (matched) {
-      const col = this.dataFrame.col(matched) ?? null;
+      const col = this.dataFrame.col(matched);
       editor.setColumn?.(col);
     }
 
-    const input = ui.input.choice('', {items, nullable: false, value: matched ?? '', onValueChanged: (v) => {
+    const input = ui.input.choice('', {items, nullable: true, value: matched ?? '', onValueChanged: (v) => {
       this.columnMapping[name] = v ?? null;
       const col = v ? this.dataFrame!.col(v) : null;
       if (col && this.switchPropertyType(name, rowId, col))
@@ -244,9 +245,7 @@ export class MpoProfileEditor {
     if (!this.dataFrame)
       return null;
     const eligible = this.getEligibleColumnNames();
-    const colName = this.columnMapping[name] ??
-      eligible.find((c) => c.toLowerCase() === name.toLowerCase()) ??
-      eligible[0] ?? null;
+    const colName = this.columnMapping[name] ?? eligible.find((c) => c.toLowerCase() === name.toLowerCase()) ?? null;
     if (colName)
       this.columnMapping[name] = colName;
     return colName ? this.dataFrame.col(colName) ?? null : null;

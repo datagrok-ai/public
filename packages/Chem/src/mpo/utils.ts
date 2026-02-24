@@ -2,16 +2,16 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
 import {
+  DESIRABILITY_PROFILE_TYPE,
   DesirabilityProfile,
   PropertyDesirability,
   WeightedAggregation,
 } from '@datagrok-libraries/statistics/src/mpo/mpo';
 
-export type MpoProfileInfo = {
+export {MPO_PROFILE_CHANGED_EVENT, MPO_PROFILE_DELETED_EVENT} from '@datagrok-libraries/statistics/src/mpo/utils';
+
+export type MpoProfileInfo = DesirabilityProfile & {
   fileName: string;
-  name: string;
-  description: string;
-  properties: Record<string, PropertyDesirability>;
 };
 
 export enum MpoPathMode {
@@ -22,8 +22,6 @@ export enum MpoPathMode {
 
 export const MPO_TEMPLATE_PATH = 'System:AppData/Chem/mpo';
 export const MPO_PATH = 'Mpo';
-export const MPO_PROFILE_CHANGED_EVENT = 'chem-mpo-profile-changed';
-export const MPO_PROFILE_DELETED_EVENT = 'chem-mpo-profile-deleted';
 
 export async function loadMpoProfiles(): Promise<MpoProfileInfo[]> {
   const files = await grok.dapi.files.list(MPO_TEMPLATE_PATH);
@@ -35,6 +33,7 @@ export async function loadMpoProfiles(): Promise<MpoProfileInfo[]> {
       const content = JSON.parse(text) as DesirabilityProfile;
 
       profiles.push({
+        type: DESIRABILITY_PROFILE_TYPE,
         fileName: file.name,
         name: content.name ?? file.name.replace(/\.json$/i, ''),
         description: content.description ?? '',

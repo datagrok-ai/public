@@ -1,7 +1,7 @@
 {
   "name": "@datagrok/compute2",
   "friendlyName": "Compute2",
-  "version": "1.3.21",
+  "version": "1.3.22",
   "author": {
     "name": "Andrey Sharapov",
     "email": "andrey.sharapov@softwarecountry.com"
@@ -18,7 +18,7 @@
     "@vueuse/rxjs": "^13.3.0",
     "cash-dom": "^8.1.4",
     "datagrok-api": "^1.26.0",
-    "dayjs": "^1.11.19",
+    "dayjs": "^1.11.10",
     "exceljs": "^4.4.0",
     "fflate": "^0.8.2",
     "rxjs": "^6.6.7",

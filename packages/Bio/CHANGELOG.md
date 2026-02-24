@@ -1,5 +1,11 @@
 # Bio changelog
 
+## 2.25.12 (2026-02-20)
+
+* Isotope support in monomers
+* More R group validation and auto fixing
+* Support for custom notation provider from-helm converter
+
 ## 2.25.11 (2026-02-18)
 
 * Support for complex R-groups in monomer libraries, like allyls and others

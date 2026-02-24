@@ -541,6 +541,8 @@ export interface IDartApi {
   grok_Grid_TableRowToGrid(grid: any, tableRow: Num): any;
   grok_Grid_GridRowToTable(grid: any, gridRow: Num): any;
   grok_Grid_Render(grid: any, g: any, bounds: any): any;
+  grok_Grid_pinColumns(grid: any, columns: any): any;
+  grok_Grid_unpinColumns(grid: any, columns: any): any;
   grok_User(): any;
   grok_User_Get_Picture(u: any): any;
   grok_SemanticValue_Get_GridCell(v: any): any;
@@ -1148,7 +1150,7 @@ export interface IDartApi {
   grok_DataFrame_GetSortedOrder(t: any, sortByColumnIds: any, sortOrders: any, mask: any): any;
   grok_DataFrame_FromByteArray(bytes: any): any;
   grok_DataFrame_ToByteArray(t: any): any;
-  grok_DataFrame_ToParquet(t: any, compress: any): any;
+  grok_DataFrame_ToParquet(t: any, compress: Bool): any;
   grok_DataFrame_ToArrow(t: any): any;
   grok_DataFrame_ExportAndReopen(t: any): any;
   grok_Map_Get(map: any, key: any): any;
