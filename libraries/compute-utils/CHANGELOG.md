@@ -1,6 +1,6 @@
 # compute-utils changelog
 
-## 1.44.14 (2026-02-24)
+## 1.44.13 (2026-02-24)
 
 - Fixed grid cell bug in Fitting and Sensitivity Analysis
 
