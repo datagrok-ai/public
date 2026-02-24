@@ -332,7 +332,7 @@ class VlaaiVisManager {
       });
     });
 
-    this.tree.onSelectedNodeChanged.subscribe((node: DG.TreeViewNode) => {
+    this.tree.onSelectedNodeChanged.subscribe(async (node: DG.TreeViewNode) => {
       const nodeText = node?.text;
       const isValidNode = node.parent.text !== '';
       const column = this.columns.find((c) => c.name === nodeText);
@@ -340,7 +340,7 @@ class VlaaiVisManager {
       if (!isValidNode || !column) return;
 
       this.updateInputs(inputs, nodeText);
-      this.createLineEditor(nodeText, inputs);
+      await this.createLineEditor(nodeText, inputs);
     });
 
 
