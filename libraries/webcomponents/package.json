@@ -8,12 +8,13 @@
   "description": "Datagrok web components wrappers",
   "dependencies": {
     "cash-dom": "^8.1.4",
-    "datagrok-api": "^1.24.0",
-    "dayjs": "=1.11.10",
+    "datagrok-api": "../../js-api",
+    "dayjs": "^1.11.19",
     "rxjs": "^6.6.7",
     "wu": "^2.1.0"
   },
   "devDependencies": {
+    "@types/node": "^25.3.0",
     "@types/wu": "^2.1.0",
     "@typescript-eslint/eslint-plugin": "^8.8.1",
     "@typescript-eslint/parser": "^8.8.1",
@@ -26,7 +27,7 @@
     "link-api": "npm link datagrok-api",
     "link-all": "npm link datagrok-api",
     "clean": "npx tsc --build --clean",
-    "build": "grok check --soft && npx tsc --build",
+    "build": "grok check --soft && tsc",
     "lint": "eslint . --ext .ts",
     "lint-fix": "eslint . --ext .ts --fix",
     "build-all": "npm --prefix ./../../js-api run build && npm run build"
