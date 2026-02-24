@@ -1,7 +1,7 @@
 import {PackageFunctions} from './package';
 import * as DG from 'datagrok-api/dg';
 
-//tags: init
+//meta.role: init
 export async function init() : Promise<void> {
   await PackageFunctions.init();
 }
@@ -19,16 +19,16 @@ export function OutliersSelection() {
   return PackageFunctions.OutliersSelection();
 }
 
-//tags: editor
 //input: funccall call 
 //output: view result
+//meta.role: editor
 export function RichFunctionViewEditor(call: DG.FuncCall) {
   return PackageFunctions.RichFunctionViewEditor(call);
 }
 
-//tags: editor
 //input: funccall call 
 //output: object result
+//meta.role: editor
 export function PipelineStepEditor(call: DG.FuncCall) {
   return PackageFunctions.PipelineStepEditor(call);
 }
