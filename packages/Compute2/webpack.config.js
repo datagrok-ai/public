@@ -72,6 +72,7 @@ module.exports = (env) => {
       new BundleAnalyzerPlugin({
         defaultSizes: 'parsed',
         generateStatsFile: stats,
+        generateStatsFile: 'stats.json',
         analyzerMode: 'disabled',
       }),
       new FuncGeneratorPlugin({outputPath: './src/package.g.ts'}),
