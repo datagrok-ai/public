@@ -22,7 +22,7 @@
     "codemirror": "^6.0.1",
     "css-loader": "^7.1.2",
     "datagrok-api": "^1.26.3",
-    "dayjs": "=1.11.10",
+    "dayjs": "^1.11.19",
     "style-loader": "^3.3.4",
     "@datagrok-libraries/test": "^1.1.0"
   },
