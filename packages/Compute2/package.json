@@ -6,7 +6,7 @@
     "name": "Andrey Sharapov",
     "email": "andrey.sharapov@softwarecountry.com"
   },
-  "description": "Provides UI based on Vue/Webcomponents",
+  "description": "Provides modeling UI and Workflows [Documentaion](https://datagrok.ai/help/compute/)",
   "dependencies": {
     "@datagrok-libraries/compute-utils": "^1.44.9",
     "@datagrok-libraries/test": "^1.1.0",
@@ -80,6 +80,7 @@
   ],
   "category": "Compute",
   "meta": {
+    "url": "/Modelhub",
     "dartium": false
   },
   "overrides": {

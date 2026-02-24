@@ -26,7 +26,7 @@ export const TreeWizardApp = Vue.defineComponent({
       required: false,
     },
     view: {
-      type: DG.ViewBase,
+      type: DG.View,
       required: true,
     },
     resolve: {
