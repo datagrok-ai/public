@@ -216,3 +216,18 @@ export const LOW_PARAMS_BOUNDS = new Float32Array([0.5, Q_CUTOFF_MIN]);
 
 /** Maximum bounds for pMPO parameters during optimization */
 export const HIGH_PARAMS_BOUNDS = new Float32Array([R2_MAX, Q_CUTOFF_MAX]);
+
+export enum EQUALITY_SIGN {
+  GREATER = '>',
+  LESS = '<',
+  GREATER_OR_EQUAL = '≥',
+  LESS_OR_EQUAL = '≤',
+  DEFAULT = LESS_OR_EQUAL,
+};
+
+export const SIGN_OPTIONS = [
+  EQUALITY_SIGN.GREATER,
+  EQUALITY_SIGN.LESS,
+  EQUALITY_SIGN.GREATER_OR_EQUAL,
+  EQUALITY_SIGN.LESS_OR_EQUAL,
+];

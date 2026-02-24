@@ -16,7 +16,9 @@ import {MIN_SAMPLES_COUNT, PMPO_NON_APPLICABLE, DescriptorStatistics, P_VAL_TRES
   P_VAL, DESIRABILITY_COL_NAME, STAT_GRID_HEIGHT, DESIRABILITY_COLUMN_WIDTH, WEIGHT_TITLE,
   P_VAL_TRES_DEFAULT, R2_DEFAULT, Q_CUTOFF_DEFAULT, USE_SIGMOID_DEFAULT, ROC_TRESHOLDS,
   FPR_TITLE, TPR_TITLE, COLORS, THRESHOLD, AUTO_TUNE_MAX_APPLICABLE_ROWS, DEFAULT_OPTIMIZATION_SETTINGS,
-  P_VAL_TRES_MAX, R2_MAX, Q_CUTOFF_MAX, OptimalPoint, LOW_PARAMS_BOUNDS, HIGH_PARAMS_BOUNDS, FORMAT} from './pmpo-defs';
+  P_VAL_TRES_MAX, R2_MAX, Q_CUTOFF_MAX, OptimalPoint, LOW_PARAMS_BOUNDS, HIGH_PARAMS_BOUNDS, FORMAT,
+  EQUALITY_SIGN,
+  SIGN_OPTIONS} from './pmpo-defs';
 import {addSelectedDescriptorsCol, getDescriptorStatisticsTable, getFilteredByPvalue, getFilteredByCorrelations,
   getModelParams, getDescrTooltip, saveModel, getScoreTooltip, getDesirabilityProfileJson, getCorrelationTriples,
   addCorrelationColumns, setPvalColumnColorCoding, setCorrColumnColorCoding, PmpoError} from './pmpo-utils';
@@ -695,6 +697,21 @@ export class Pmpo {
       }
     };
 
+    const signInput = ui.input.choice(' ', {
+      value: EQUALITY_SIGN.DEFAULT,
+      items: SIGN_OPTIONS,
+      nullable: false,
+      tooltipText: '',
+      onValueChanged: (_value) => {},
+    });
+
+    const desirabilityThresholdInput = ui.input.float(' ', {
+      value: 0,
+      nullable: false,
+      tooltipText: '',
+      onValueChanged: (_value) => {},
+    });
+
     // Descriptor columns input
     const descrInput = ui.input.columns('Descriptors', {
       table: this.table,
@@ -725,6 +742,8 @@ export class Pmpo {
       },
     });
     form.append(desInput.root);
+    form.append(signInput.root);
+    form.append(desirabilityThresholdInput.root);
 
     const header = ui.h2('Settings');
     form.append(header);
