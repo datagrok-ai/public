@@ -4,7 +4,6 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {delay} from '@datagrok-libraries/test/src/test';
 import {ILogger} from '@datagrok-libraries/bio/src/utils/logger';
 import {DEFAULT_FILES_LIB_PROVIDER_NAME, findProviderWithLibraryName, IMonomerLib, IMonomerSet} from '@datagrok-libraries/bio/src/types/monomer-library';
 import {
@@ -91,7 +90,7 @@ export class MonomerLibManager implements IMonomerLibHelper {
         return true;
       })(),
       (async () => {
-        await delay(timeout);
+        await DG.delay(timeout);
         return false;
       })(),
     ]).then((res) => {
