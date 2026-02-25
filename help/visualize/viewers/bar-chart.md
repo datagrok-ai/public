@@ -110,6 +110,7 @@ Year - Month' and 'Year - Quarter':
 | Max Category Width | number |  |
 | Category Value Width | number |  |
 | Show Value Axis Line | boolean |  |
+| Show Category Zero Baseline | boolean |  |
 | Bar Border Line Mouse Over Width | number |  |
 | Bar Border Line Width | number |  |
 | Max Bar Height | number |  |

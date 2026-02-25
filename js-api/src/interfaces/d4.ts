@@ -103,6 +103,8 @@ export interface IBarChartSettings {
 
   showValueAxisLine: boolean;
 
+  showCategoryZeroBaseline: boolean;
+
   barBorderLineMouseOverWidth: number;
 
   barBorderLineWidth: number;

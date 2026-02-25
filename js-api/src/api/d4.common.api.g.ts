@@ -37,78 +37,6 @@ export class ViewerEvent {
   get bitset(): any { return api.grok_ViewerEvent_Get_bitset(this.dart); };
 
 }
-export class InputType {
-  static Int = 'Int';
-
-  static BigInt = 'BigInt';
-
-  static Float = 'Float';
-
-  static QNum = 'QNum';
-
-  static Slider = 'Slider';
-
-  static Bool = 'Bool';
-
-  static Switch = 'Switch';
-
-  static Text = 'Text';
-
-  static TextArea = 'TextArea';
-
-  static Markdown = 'Markdown';
-
-  static Code = 'Code';
-
-  static Search = 'Search';
-
-  static Date = 'Date';
-
-  static Map = 'Map';
-
-  static File = 'File';
-
-  static Files = 'Files';
-
-  static List = 'List';
-
-  static Color = 'Color';
-
-  static Column = 'Column';
-
-  static Columns = 'Columns';
-
-  static ColumnsMap = 'ColumnsMap';
-
-  static Radio = 'Radio';
-
-  static Choice = 'Choice';
-
-  static MultiChoice = 'MultiChoice';
-
-  static Tags = 'Tags';
-
-  static Table = 'Table';
-
-  static TablesMultiChoice = 'TablesMultiChoice';
-
-  static Molecule = 'Molecule';
-
-  static User = 'User';
-
-  static UserGroups = 'UserGroups';
-
-  static Dynamic = 'Dynamic';
-
-  static Image = 'Image';
-
-  static JsInputProxy = 'JsInputProxy';
-
-  static Pem = 'Pem';
-
-  static Font = 'Font';
-
-}
 export class GridCellStyleEx {
   public dart: any;
   constructor(dart: any) {
@@ -199,3 +127,75 @@ export class GridCellStyleEx {
 export function renderMultipleHistograms(g: CanvasRenderingContext2D, bounds: any, histograms: Array<Int32List>, options?: {categoryColumn?: any, colors?: Array<number>, tension?: number, normalize?: boolean, markerSize?: number, fill?: boolean, minBin?: number, maxBin?: number, localMaximum?: boolean, highlightedHistogram?: number}): any
   { return api.grok_renderMultipleHistograms(toDart(g), toDart(bounds), toDart(histograms), toDart(options?.categoryColumn), toDart(options?.colors), toDart(options?.tension), toDart(options?.normalize), toDart(options?.markerSize), toDart(options?.fill), toDart(options?.minBin), toDart(options?.maxBin), toDart(options?.localMaximum), toDart(options?.highlightedHistogram)); }
 
+export class InputType {
+  static Int = 'Int';
+
+  static BigInt = 'BigInt';
+
+  static Float = 'Float';
+
+  static QNum = 'QNum';
+
+  static Slider = 'Slider';
+
+  static Bool = 'Bool';
+
+  static Switch = 'Switch';
+
+  static Text = 'Text';
+
+  static TextArea = 'TextArea';
+
+  static Markdown = 'Markdown';
+
+  static Code = 'Code';
+
+  static Search = 'Search';
+
+  static Date = 'Date';
+
+  static Map = 'Map';
+
+  static File = 'File';
+
+  static Files = 'Files';
+
+  static List = 'List';
+
+  static Color = 'Color';
+
+  static Column = 'Column';
+
+  static Columns = 'Columns';
+
+  static ColumnsMap = 'ColumnsMap';
+
+  static Radio = 'Radio';
+
+  static Choice = 'Choice';
+
+  static MultiChoice = 'MultiChoice';
+
+  static Tags = 'Tags';
+
+  static Table = 'Table';
+
+  static TablesMultiChoice = 'TablesMultiChoice';
+
+  static Molecule = 'Molecule';
+
+  static User = 'User';
+
+  static UserGroups = 'UserGroups';
+
+  static Dynamic = 'Dynamic';
+
+  static Image = 'Image';
+
+  static JsInputProxy = 'JsInputProxy';
+
+  static Pem = 'Pem';
+
+  static Font = 'Font';
+
+}
