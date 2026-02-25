@@ -12,16 +12,17 @@ import '../../css/pmpo.css';
 
 import {getDesiredTables, getDescriptorStatistics, getBoolPredictionColumn, getPmpoEvaluation} from './stat-tools';
 import {MIN_SAMPLES_COUNT, PMPO_NON_APPLICABLE, DescriptorStatistics, P_VAL_TRES_MIN, DESCR_TITLE,
-  R2_MIN, Q_CUTOFF_MIN, PmpoParams, SCORES_TITLE, DESCR_TABLE_TITLE, PMPO_COMPUTE_FAILED, SELECTED_TITLE,
+  R2_MIN, Q_CUTOFF_MIN, PmpoParams, SCORES_TITLE, DESCR_TABLE_TITLE, SELECTED_TITLE,
   P_VAL, DESIRABILITY_COL_NAME, STAT_GRID_HEIGHT, DESIRABILITY_COLUMN_WIDTH, WEIGHT_TITLE,
   P_VAL_TRES_DEFAULT, R2_DEFAULT, Q_CUTOFF_DEFAULT, USE_SIGMOID_DEFAULT, ROC_TRESHOLDS,
   FPR_TITLE, TPR_TITLE, COLORS, THRESHOLD, AUTO_TUNE_MAX_APPLICABLE_ROWS, DEFAULT_OPTIMIZATION_SETTINGS,
   P_VAL_TRES_MAX, R2_MAX, Q_CUTOFF_MAX, OptimalPoint, LOW_PARAMS_BOUNDS, HIGH_PARAMS_BOUNDS, FORMAT,
-  EQUALITY_SIGN,
-  SIGN_OPTIONS} from './pmpo-defs';
+  EQUALITY_SIGN, SIGN_OPTIONS, THRESHOLDED_DESIRABILITY_COL_NAME,
+  PMPO_COMPUTE_FAILED} from './pmpo-defs';
 import {addSelectedDescriptorsCol, getDescriptorStatisticsTable, getFilteredByPvalue, getFilteredByCorrelations,
   getModelParams, getDescrTooltip, saveModel, getScoreTooltip, getDesirabilityProfileJson, getCorrelationTriples,
-  addCorrelationColumns, setPvalColumnColorCoding, setCorrColumnColorCoding, PmpoError} from './pmpo-utils';
+  addCorrelationColumns, setPvalColumnColorCoding, setCorrColumnColorCoding, PmpoError, getInitCol,
+  getBoolDesirabilityColData, isDesirabilityValid} from './pmpo-utils';
 import {getOutputPalette} from '../pareto-optimization/utils';
 import {OPT_TYPE} from '../pareto-optimization/defs';
 import {optimizeNM} from './nelder-mead';
@@ -126,29 +127,20 @@ export class Pmpo {
       return false;
     }
 
-    let boolColsCount = 0;
     let validNumericColsCount = 0;
 
     // Check numeric columns and boolean columns
     for (const col of df.columns) {
       if (col.isNumerical) {
-        if ((col.stats.missingValueCount < 1) && (col.stats.stdev > 0))
+        if (col.stats.stdev > 0)
           ++validNumericColsCount;
-      } else if (col.type == DG.COLUMN_TYPE.BOOL)
-        ++boolColsCount;
-    }
-
-    // Check boolean columns count
-    if (boolColsCount < 1) {
-      if (toShowMsg)
-        grok.shell.warning(PMPO_NON_APPLICABLE + ': no boolean columns.');
-      return false;
+      }
     }
 
     // Check valid numeric columns count
-    if (validNumericColsCount < 1) {
+    if (validNumericColsCount < 2) {
       if (toShowMsg)
-        grok.shell.warning(PMPO_NON_APPLICABLE + ': no numeric columns without missing values and non-zero variance.');
+        grok.shell.warning(PMPO_NON_APPLICABLE + ': not enough of numeric columns with non-zero variance.');
       return false;
     }
 
@@ -252,7 +244,7 @@ export class Pmpo {
 
   private table: DG.DataFrame;
   private view: DG.TableView;
-  private boolCols: DG.Column[];
+  private desirabilityColumns: DG.Column[];
   private numericCols: DG.Column[];
 
   private initTable = DG.DataFrame.create();
@@ -263,6 +255,9 @@ export class Pmpo {
   private boolPredictionName = '';
 
   private desirabilityProfileRoots = new Map<string, HTMLElement>();
+
+  private tresholdedColumn: DG.Column | null = null;
+  private threshColTooltip: string | null = null;
 
   private rocCurve = DG.Viewer.scatterPlot(this.initTable, {
     showTitle: true,
@@ -283,7 +278,7 @@ export class Pmpo {
   constructor(df: DG.DataFrame, view?: DG.TableView) {
     this.table = df;
     this.view = view ?? (grok.shell.tableView(df.name) ?? grok.shell.addTableView(df));
-    this.boolCols = this.getBoolCols();
+    this.desirabilityColumns = this.getDesirabilityColumns();
     this.numericCols = this.getValidNumericCols();
     this.predictionName = df.columns.getUnusedName(SCORES_TITLE);
   };
@@ -491,6 +486,12 @@ export class Pmpo {
             ui.tooltip.show(getScoreTooltip(), x, y);
 
             return true;
+          } else {
+            if (this.tresholdedColumn != null && cell.tableColumn.name === this.tresholdedColumn.name) {
+              ui.tooltip.show(ui.markdown(this.threshColTooltip ?? ''), x, y);
+
+              return true;
+            }
           }
 
           return false;
@@ -675,16 +676,49 @@ export class Pmpo {
     const form = ui.form([]);
     form.append(ui.h2('Training data'));
     const numericColNames = this.numericCols.map((col) => col.name);
+    const initDesirability = getInitCol(this.desirabilityColumns);
+    const checkedNumericColNames = numericColNames.filter((name) => name !== initDesirability.name);
+
+    // returns the desirability column to be used for computations, based on the input desirability column and threshold settings
+    const getDesirabilityColumn = (): DG.Column => {
+      // remove existing thresholded column if exists
+      if (this.tresholdedColumn != null) {
+        this.table.columns.remove(this.tresholdedColumn.name);
+        this.tresholdedColumn = null;
+      }
+
+      // if the column is not boolean, create a thresholded column based on the input threshold and sign;
+      if (desInput.value!.type !== DG.COLUMN_TYPE.BOOL) {
+        const boolDesirabilityData = getBoolDesirabilityColData(
+              desInput.value!,
+              desirabilityThresholdInput.value!,
+              signInput.value as EQUALITY_SIGN,
+        );
+        this.tresholdedColumn = boolDesirabilityData.column;
+        this.threshColTooltip = boolDesirabilityData.tooltip;
+
+        this.tresholdedColumn.name = this.table.columns.getUnusedName(THRESHOLDED_DESIRABILITY_COL_NAME);
+        this.table.columns.add(this.tresholdedColumn);
+
+        return this.tresholdedColumn;
+      }
+
+      // otherwise, use the boolean column as is
+      return desInput.value!;
+    };
 
     // Function to run computations on input changes
     const runComputations = () => {
+      if (!areInputsValid())
+        return;
+
       try {
-        //grok.shell.info('Running...');
+      //grok.shell.info('Running...');
 
         this.fitAndUpdateViewers(
           this.table,
           DG.DataFrame.fromColumns(descrInput.value).columns,
-          this.table.col(desInput.value!)!,
+          getDesirabilityColumn(),
           pInput.value!,
           rInput.value!,
           qInput.value!,
@@ -697,27 +731,12 @@ export class Pmpo {
       }
     };
 
-    const signInput = ui.input.choice(' ', {
-      value: EQUALITY_SIGN.DEFAULT,
-      items: SIGN_OPTIONS,
-      nullable: false,
-      tooltipText: '',
-      onValueChanged: (_value) => {},
-    });
-
-    const desirabilityThresholdInput = ui.input.float(' ', {
-      value: 0,
-      nullable: false,
-      tooltipText: '',
-      onValueChanged: (_value) => {},
-    });
-
     // Descriptor columns input
     const descrInput = ui.input.columns('Descriptors', {
       table: this.table,
       nullable: false,
       available: numericColNames,
-      checked: numericColNames,
+      checked: checkedNumericColNames,
       tooltipText: 'Descriptor columns used for model construction.',
       onValueChanged: (value) => {
         if (value != null) {
@@ -728,22 +747,63 @@ export class Pmpo {
     });
     form.append(descrInput.root);
 
-    // Desirability column input
-    const desInput = ui.input.choice('Desirability', {
+    const setVisibilityOfDesirabilityThreshold = (value: DG.Column) => {
+      const hidden = value.type === DG.COLUMN_TYPE.BOOL;
+      desirabilityThresholdInput.root.hidden = hidden;
+      signInput.root.hidden = hidden;
+    };
+
+    const desInput = ui.input.column('Desirability', {
       nullable: false,
-      value: this.boolCols[0].name,
-      items: this.boolCols.map((col) => col.name),
+      value: initDesirability,
+      table: this.table,
+      filter: (col) => this.desirabilityColumns.includes(col),
       tooltipText: 'Desirability column.',
       onValueChanged: (value) => {
         if (value != null) {
+          setVisibilityOfDesirabilityThreshold(value);
+          areComputationsBlocked = true;
+          desirabilityThresholdInput.value = Math.round(value.stats.avg * 100) / 100;
+          areComputationsBlocked = false;
+
+          areTunedSettingsUsed = false;
+          checkAutoTuneAndRun();
+        }
+      }, // onValueChanged
+    });
+    form.append(desInput.root);
+
+    let areComputationsBlocked = false;
+
+    const signInput = ui.input.choice(' ', {
+      value: EQUALITY_SIGN.DEFAULT,
+      items: SIGN_OPTIONS,
+      nullable: false,
+      tooltipText: 'Comparison operator',
+      onValueChanged: (_value) => {
+        areTunedSettingsUsed = false;
+        checkAutoTuneAndRun();
+      },
+    });
+
+    const desirabilityThresholdInput = ui.input.float(' ', {
+      value: Math.round(initDesirability.stats.avg * 100) / 100,
+      nullable: false,
+      tooltipText: '',
+      format: '0.00',
+      onValueChanged: (value) => {
+        if (value != null) {
+          if (areComputationsBlocked)
+            return;
           areTunedSettingsUsed = false;
           checkAutoTuneAndRun();
         }
       },
     });
-    form.append(desInput.root);
+
     form.append(signInput.root);
     form.append(desirabilityThresholdInput.root);
+    setVisibilityOfDesirabilityThreshold(desInput.value!);
 
     const header = ui.h2('Settings');
     form.append(header);
@@ -766,10 +826,13 @@ export class Pmpo {
     let areTunedSettingsUsed = false;
 
     const setOptimalParametersAndRun = async () => {
+      if (!areInputsValid())
+        return;
+
       if (!areTunedSettingsUsed) {
         const optimalSettings = await this.getOptimalSettings(
           DG.DataFrame.fromColumns(descrInput.value).columns,
-          this.table.col(desInput.value!)!,
+          getDesirabilityColumn(),
           useSigmoidInput.value,
         );
 
@@ -783,6 +846,69 @@ export class Pmpo {
       }
 
       runComputations();
+    };
+
+    const areInputsValid = (): boolean => {
+      let res = true;
+
+      if (pInput.value == null || rInput.value == null || qInput.value == null)
+        res = false;
+      else {
+        if ((pInput.value <= 0) || (pInput.value > 1) || (rInput.value < 0) || (rInput.value > 1) || (qInput.value <= 0) || (qInput.value > 1))
+          res = false;
+      }
+
+      if (descrInput.value == null || desInput.value == null)
+        res = false;
+      else {
+        if (descrInput.value.includes(desInput.value)) {
+          res = false;
+          descrInput.input.classList.add('d4-invalid');
+          desInput.input.classList.add('d4-invalid');
+          ui.tooltip.bind(descrInput.input, 'Desirability column cannot be used as a descriptor.');
+          ui.tooltip.bind(desInput.input, 'Desirability column cannot be used as a descriptor.');
+        } else {
+          descrInput.input.classList.remove('d4-invalid');
+          ui.tooltip.bind(descrInput.input, 'Descriptor columns used for model construction.');
+
+          if (desInput.value.type === DG.COLUMN_TYPE.BOOL) {
+            if (desInput.value.stats.stdev > 0) {
+              desInput.input.classList.remove('d4-invalid');
+              ui.tooltip.bind(desInput.input, 'Desirability column.');
+            } else {
+              res = false;
+              desInput.input.classList.add('d4-invalid');
+              ui.tooltip.bind(desInput.input, 'Desirability column contains only a single value.');
+            }
+          } else {
+            if (desInput.value.stats.stdev > 0) {
+              if (desirabilityThresholdInput.value != null) {
+                if (!isDesirabilityValid(desInput.value, desirabilityThresholdInput.value, signInput.value as EQUALITY_SIGN)) {
+                  res = false;
+                  desInput.input.classList.add('d4-invalid');
+                  desirabilityThresholdInput.input.classList.add('d4-invalid');
+                  ui.tooltip.bind(desInput.input, 'Invalid desirability threshold: all values are on the same side of the threshold according to the selected sign.');
+                } else {
+                  desInput.input.classList.remove('d4-invalid');
+                  desirabilityThresholdInput.input.classList.remove('d4-invalid');
+                  ui.tooltip.bind(desInput.input, 'Desirability column.');
+                  ui.tooltip.bind(desirabilityThresholdInput.input, 'Desirability threshold for non-boolean desirability column.');
+                }
+              } else {
+                res = false;
+                desInput.input.classList.add('d4-invalid');
+                ui.tooltip.bind(desInput.input, 'Specify non-null desirability threshold.');
+              }
+            } else {
+              res = false;
+              desInput.input.classList.add('d4-invalid');
+              ui.tooltip.bind(desInput.input, 'Desirability column has zero variance.');
+            }
+          }
+        }
+      } // areInputsValid
+
+      return res;
     };
 
     const checkAutoTuneAndRun = () => {
@@ -915,17 +1041,17 @@ export class Pmpo {
     };
   } // getInputForm
 
-  /** Retrieves boolean columns from the data frame */
-  private getBoolCols(): DG.Column[] {
+  /** Retrieves acceptable desirability columns (boolean or numerical with non-zero standard deviation) from the data frame */
+  private getDesirabilityColumns(): DG.Column[] {
     const res: DG.Column[] = [];
 
     for (const col of this.table.columns) {
-      if ((col.type === DG.COLUMN_TYPE.BOOL) && (col.stats.stdev > 0))
+      if (((col.type === DG.COLUMN_TYPE.BOOL) || (col.isNumerical)) && (col.stats.stdev > 0))
         res.push(col);
     }
 
     return res;
-  } // getBoolCols
+  } // getDesirabilityColumns
 
   /** Retrieves valid (numerical, no missing values, non-zero standard deviation) numeric columns from the data frame */
   private getValidNumericCols(): DG.Column[] {

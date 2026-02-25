@@ -14,8 +14,11 @@ import * as jStat from 'jstat';
 export async function getSynteticPmpoData(samplesCount: number): Promise<DG.DataFrame> {
   const df = await grok.dapi.files.readCsv(SOURCE_PATH);
   const generator = new PmpoDataGenerator(df, 'Drug', 'CNS', 'Smiles');
+  const genTable = generator.getGenerated(samplesCount);
+  genTable.columns.add(DG.Column.fromList(DG.COLUMN_TYPE.BOOL, 'Const bool', new Array(samplesCount).fill(true)));
+  genTable.columns.add(DG.Column.fromInt32Array('Const int', new Int32Array(samplesCount).fill(1)));
 
-  return generator.getGenerated(samplesCount);
+  return genTable;
 }
 
 /** Class for generating synthetic data for pMPO model training and testing */

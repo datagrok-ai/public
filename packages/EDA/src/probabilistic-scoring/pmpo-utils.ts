@@ -11,7 +11,7 @@ import '../../css/pmpo.css';
 import {COLORS, DESCR_TABLE_TITLE, DESCR_TITLE, DescriptorStatistics, DesirabilityProfileProperties,
   DESIRABILITY_COL_NAME, FOLDER, P_VAL, PMPO_COMPUTE_FAILED, PmpoParams, SCORES_TITLE,
   SELECTED_TITLE, STAT_TO_TITLE_MAP, TINY, WEIGHT_TITLE, CorrelationTriple,
-  BASIC_RANGE_SIGMA_COEFFS, EXTENDED_RANGE_SIGMA_COEFFS} from './pmpo-defs';
+  BASIC_RANGE_SIGMA_COEFFS, EXTENDED_RANGE_SIGMA_COEFFS, EQUALITY_SIGN} from './pmpo-defs';
 import {computeSigmoidParamsFromX0, getCutoffs, gaussDesirabilityFunc, sigmoidS,
   solveNormalIntersection} from './stat-tools';
 import {getColorScaleDiv} from '../pareto-optimization/utils';
@@ -570,5 +570,86 @@ export class PmpoError extends Error {
   constructor(message: string) {
     super(message);
     this.name = 'PmpoError';
+  }
+}
+
+/** Returns the initial column for the desirability input, preferring boolean columns.
+ * @param cols List of columns to choose from.
+ * @return The initial column for the desirability input.
+*/
+export function getInitCol(cols: DG.Column[]): DG.Column {
+  for (const col of cols) {
+    if ((col.type === DG.COLUMN_TYPE.BOOL) && (col.stats.stdev > 0))
+      return col;
+  }
+
+  for (const col of cols) {
+    if ((col.isNumerical) && (col.stats.stdev > 0))
+      return col;
+  }
+
+  return cols[0];
+}
+
+/** Returns a comparator function based on the given equality sign.
+ * @param sign Equality sign ('<', '<=', '>', '>=').
+ * @return Comparator function that takes two numbers and returns a boolean.
+*/
+function getComparator(sign: EQUALITY_SIGN): (a: number, b: number) => boolean {
+  switch (sign) {
+  case EQUALITY_SIGN.LESS: return (a, b) => a < b;
+  case EQUALITY_SIGN.LESS_OR_EQUAL: return (a, b) => a <= b;
+  case EQUALITY_SIGN.GREATER: return (a, b) => a > b;
+  case EQUALITY_SIGN.GREATER_OR_EQUAL: return (a, b) => a >= b;
+
+  default:
+    throw new Error(`Unsupported sign: ${sign}`);
+  }
+}
+
+/** Converts a numeric column to a boolean column based on the given threshold and equality sign.
+ * @param numericCol Numeric column to convert.
+ * @param threshold Threshold value for comparison.
+ * @param sign Equality sign for comparison ('<', '<=', '>', '>=').
+ * @return Boolean column resulting from the comparison.
+*/
+export function getBoolDesirabilityColData(numericCol: DG.Column,
+  threshold: number, sign: EQUALITY_SIGN): {column: DG.Column, tooltip: string} {
+  const boolArr = new Array<boolean>(numericCol.length);
+  const numericArr = numericCol.getRawData();
+
+  const comparator = getComparator(sign);
+
+  for (let i = 0; i < numericCol.length; ++i)
+    boolArr[i] = comparator(numericArr[i], threshold);
+
+  return {
+    column: DG.Column.fromList(DG.COLUMN_TYPE.BOOL, '', boolArr),
+    tooltip: `Desirability based on the condition:\n\n **${numericCol.name} ${sign} ${threshold}**`,
+  };
+}
+
+/** Checks whether the desirability column is valid based on the given threshold and equality sign.
+ * @param desCol Desirability column to check.
+ * @param threshold Threshold value for comparison.
+ * @param sign Equality sign for comparison ('<', '<=', '>', '>=').
+ * @return True if the desirability column is valid, false otherwise.
+*/
+export function isDesirabilityValid(desCol: DG.Column, threshold: number, sign: EQUALITY_SIGN): boolean {
+  const min = desCol.stats.min;
+  const max = desCol.stats.max;
+
+  switch (sign) {
+  case EQUALITY_SIGN.LESS:
+    return (max >= threshold) && (min < threshold);
+
+  case EQUALITY_SIGN.LESS_OR_EQUAL:
+    return (max > threshold) && (min <= threshold);
+
+  case EQUALITY_SIGN.GREATER:
+    return (min <= threshold) && (max > threshold);
+
+  default:
+    return (min < threshold) && (max >= threshold);
   }
 }
