@@ -42,17 +42,17 @@ export class ClaudeRuntimeClient {
     if (this.connected)
       return;
 
-    // try {
-    //   const containers = await grok.dapi.docker.dockerContainers.filter('name = "claude-runtime"').list();
-    //   if (containers.length > 0) {
-    //     this.containerId = containers[0].id;
-    //     this.ws = await grok.dapi.docker.dockerContainers.webSocketProxy(
-    //       this.containerId, '/ws', 120000,
-    //     ) as unknown as WebSocket;
-    //   }
-    // } catch (e) {
-    //   console.error('Failed to connect to Claude runtime:', e);
-    // }
+    try {
+      const containers = await grok.dapi.docker.dockerContainers.filter('name = "claude-runtime"').list();
+      if (containers.length > 0) {
+        this.containerId = containers[0].id;
+        this.ws = await grok.dapi.docker.dockerContainers.webSocketProxy(
+          this.containerId, '/ws', 120000,
+        ) as unknown as WebSocket;
+      }
+    } catch (e) {
+      console.error('Failed to connect to Claude runtime:', e);
+    }
 
     if (!this.ws)
       this.ws = new WebSocket(CLAUDE_RUNTIME_WS_URL);

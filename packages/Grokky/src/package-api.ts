@@ -9,75 +9,75 @@ import * as DG from 'datagrok-api/dg';
 
 export namespace funcs {
   export async function init(): Promise<void> {
-    return await grok.functions.call('ChatGPT:Init', {});
+    return await grok.functions.call('Grokky:Init', {});
   }
 
   export async function autostart(): Promise<void> {
-    return await grok.functions.call('ChatGPT:Autostart', {});
+    return await grok.functions.call('Grokky:Autostart', {});
   }
 
   export async function combinedLLMSearchProvider(): Promise<any> {
-    return await grok.functions.call('ChatGPT:CombinedLLMSearchProvider', {});
+    return await grok.functions.call('Grokky:CombinedLLMSearchProvider', {});
   }
 
   /**
   Get answers from DeepGROK AI assistant based on Datagrok documentation and public code.
   */
   export async function askHelpLLMProvider(prompt: string ): Promise<any> {
-    return await grok.functions.call('ChatGPT:AskHelpLLMProvider', { prompt });
+    return await grok.functions.call('Grokky:AskHelpLLMProvider', { prompt });
   }
 
   /**
   Plans and executes function steps to achieve needed results
   */
   export async function smartChainExecutionProvider(prompt: string ): Promise<any> {
-    return await grok.functions.call('ChatGPT:SmartChainExecutionProvider', { prompt });
+    return await grok.functions.call('Grokky:SmartChainExecutionProvider', { prompt });
   }
 
   /**
   Tries to find a query which has the similar pattern as the prompt user entered and executes it
   */
   export async function llmSearchQueryProvider(prompt: string ): Promise<any> {
-    return await grok.functions.call('ChatGPT:LlmSearchQueryProvider', { prompt });
+    return await grok.functions.call('Grokky:LlmSearchQueryProvider', { prompt });
   }
 
   export async function askAIGeneralCached(model: string , systemPrompt: string , prompt: string , schema: any ): Promise<string> {
-    return await grok.functions.call('ChatGPT:AskAIGeneralCached', { model, systemPrompt, prompt, schema });
+    return await grok.functions.call('Grokky:AskAIGeneralCached', { model, systemPrompt, prompt, schema });
   }
 
   export async function ask(question: string ): Promise<string> {
-    return await grok.functions.call('ChatGPT:Ask', { question });
+    return await grok.functions.call('Grokky:Ask', { question });
   }
 
   export async function getExecutionPlan(userGoal: string ): Promise<string> {
-    return await grok.functions.call('ChatGPT:GetExecutionPlan', { userGoal });
+    return await grok.functions.call('Grokky:GetExecutionPlan', { userGoal });
   }
 
   export async function findMatchingPatternQuery(prompt: string ): Promise<string> {
-    return await grok.functions.call('ChatGPT:FindMatchingPatternQuery', { prompt });
+    return await grok.functions.call('Grokky:FindMatchingPatternQuery', { prompt });
   }
 
   export async function askDocumentationCached(prompt: string ): Promise<string> {
-    return await grok.functions.call('ChatGPT:AskDocumentationCached', { prompt });
+    return await grok.functions.call('Grokky:AskDocumentationCached', { prompt });
   }
 
   export async function setupAIQueryEditor(view: DG.View , connectionID: string , queryEditorRoot: any , setAndRunFunc: any ): Promise<boolean> {
-    return await grok.functions.call('ChatGPT:SetupAIQueryEditor', { view, connectionID, queryEditorRoot, setAndRunFunc });
+    return await grok.functions.call('Grokky:SetupAIQueryEditor', { view, connectionID, queryEditorRoot, setAndRunFunc });
   }
 
   export async function moveMetaToDB(dbName: string ): Promise<void> {
-    return await grok.functions.call('ChatGPT:MoveMetaToDB', { dbName });
+    return await grok.functions.call('Grokky:MoveMetaToDB', { dbName });
   }
 
   export async function setupVectorStore(): Promise<void> {
-    return await grok.functions.call('ChatGPT:SetupVectorStore', {});
+    return await grok.functions.call('Grokky:SetupVectorStore', {});
   }
 
   export async function searchForSomething(): Promise<void> {
-    return await grok.functions.call('ChatGPT:SearchForSomething', {});
+    return await grok.functions.call('Grokky:SearchForSomething', {});
   }
 
   export async function indexDatabaseSchema(): Promise<void> {
-    return await grok.functions.call('ChatGPT:IndexDatabaseSchema', {});
+    return await grok.functions.call('Grokky:IndexDatabaseSchema', {});
   }
 }
