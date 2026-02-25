@@ -53,7 +53,7 @@
     "build-powergrid": "webpack",
     "powergrid-deploy": "webpack & grok publish",
     "build-typescript": "tsc",
-    "build": "grok api && grok check --soft && tsc && webpack",
+    "build": "grok api && grok check --soft && webpack",
     "debug-powergrid-dev": "grok publish dev",
     "release-powergrid-dev": "grok publish dev --release",
     "debug-powergrid-public": "grok publish public",
