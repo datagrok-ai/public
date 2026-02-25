@@ -1234,9 +1234,36 @@ export async function mpoProfilesApp(path?: string) : Promise<any> {
 }
 
 //input: dynamic treeNode 
-//input: view browseView 
-export async function mpoProfilesAppTreeBrowser(treeNode: any, browseView: any) : Promise<void> {
-  await PackageFunctions.mpoProfilesAppTreeBrowser(treeNode, browseView);
+//input: view _browseView 
+export async function mpoProfilesAppTreeBrowser(treeNode: any, _browseView: any) : Promise<void> {
+  await PackageFunctions.mpoProfilesAppTreeBrowser(treeNode, _browseView);
+}
+
+//name: removeWaterAndSalts
+//description: Removes water and salts from the list of molecules
+//input: dataframe table 
+//input: column molecules 
+//output: column result { semType: Molecule }
+//top-menu: Chem | Transform | Remove Water and Salts...
+//friendlyName: Remove Water and Salts
+export async function removeWaterAndSaltsTopMenu(table: DG.DataFrame, molecules: DG.Column) {
+  return await PackageFunctions.removeWaterAndSaltsTopMenu(table, molecules);
+}
+
+//name: transformationReactions
+//description: Runs reaction based on the reaction SMARTS and list of reactants
+//top-menu: Chem | Transform | Run Reaction...
+//friendlyName: Run Reaction
+export async function transformationReactionsTopMenu() : Promise<void> {
+  await PackageFunctions.transformationReactionsTopMenu();
+}
+
+//name: twoComponentReaction
+//description: Runs a reaction between molecules from two columns
+//top-menu: Chem | Transform | Two-Component Reaction...
+//friendlyName: Two-Component Reaction
+export async function twoComponentReactionTopMenu() : Promise<void> {
+  await PackageFunctions.twoComponentReactionTopMenu();
 }
 
 //name: Chemistry | MPO
