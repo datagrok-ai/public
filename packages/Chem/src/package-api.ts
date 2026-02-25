@@ -528,10 +528,17 @@ export namespace funcs {
   }
 
   /**
-  Search in synthon chemical space and return products with precursor structures
+  Search in synthon chemical space and return products with synthon structures
   */
-  export async function synthonSearchFunc(spaceName: string , molecule: string , maxHits: number , searchType: string , similarityCutoff?: number | null): Promise<DG.DataFrame> {
-    return await grok.functions.call('Chem:SynthonSearchFunc', { spaceName, molecule, maxHits, searchType, similarityCutoff });
+  export async function synthonSearchFunc(spaceName: string , molecule: string , maxHits: number , searchType: string , similarityCutoff: number | undefined| null, returnSynthons: boolean ): Promise<DG.DataFrame> {
+    return await grok.functions.call('Chem:SynthonSearchFunc', { spaceName, molecule, maxHits, searchType, similarityCutoff, returnSynthons });
+  }
+
+  /**
+  Get all available synthon spaces from Chem package files
+  */
+  export async function getSynthonSpacesFunc(): Promise<any> {
+    return await grok.functions.call('Chem:GetSynthonSpacesFunc', {});
   }
 
   export async function convertMoleculeNotation(molecule: DG.Column , targetNotation: string , kekulize?: boolean | null): Promise<DG.Column> {

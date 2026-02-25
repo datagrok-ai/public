@@ -4,28 +4,15 @@ import * as DG from 'datagrok-api/dg';
 import {_package} from '../package';
 import {scripts} from '../package-api';
 
-const synthonLibraryCache: Map<string, DG.FileInfo> = new Map();
 const synthonLookupCache: Map<string, Map<string, string>> = new Map();
-let availableLibraries: string[] | null = null;
 
-export async function listSynthonLibraries(): Promise<string[]> {
-  if (!availableLibraries) {
-    try {
-      const files = await _package.files.list('synthon-data/', false, 'csv');
-      availableLibraries = files.map((f) => f.name);
-    } catch (_e) {
-      availableLibraries = [];
-    }
+export async function getSynthonSpaces(): Promise<string[]> {
+  try {
+    const files = await _package.files.list('synthon-data/', false, 'csv');
+    return files.map((f) => f.name);
+  } catch (_e) {
+    return [];
   }
-  return availableLibraries;
-}
-
-async function getSynthonLibrary(fileName: string): Promise<DG.FileInfo> {
-  if (!synthonLibraryCache.has(fileName)) {
-    const csv = await _package.files.readAsText(`synthon-data/${fileName}`);
-    synthonLibraryCache.set(fileName, DG.FileInfo.fromString(fileName, csv));
-  }
-  return synthonLibraryCache.get(fileName)!;
 }
 
 async function getSynthonLookup(fileName: string): Promise<Map<string, string>> {
@@ -38,100 +25,100 @@ async function getSynthonLookup(fileName: string): Promise<Map<string, string>> 
       throw new Error(`${fileName} doesn't contain molecule column`);
     const idCol = df.col('syntnon #') ?? df.getCol('synton_id');
     for (let i = 0; i < df.rowCount; i++)
-      lookup.set(idCol.get(i), smilesCol.get(i));
+      lookup.set(idCol.get(i).toString(), smilesCol.get(i));
     synthonLookupCache.set(fileName, lookup);
   }
   return synthonLookupCache.get(fileName)!;
 }
 
 function buildResultDf(
-  searchDf: DG.DataFrame, isSimilarity: boolean, lookup: Map<string, string>,
+  searchDf: DG.DataFrame, isSimilarity: boolean,
+  returnSynthons: boolean, lookup?: Map<string, string>,
 ): DG.DataFrame {
+  const requiredCols = isSimilarity ? ['smiles', 'similarity'] : ['smiles'];
+  const resultDf = searchDf.clone(undefined, requiredCols);
+  resultDf.getCol('smiles').semType = DG.SEMTYPE.MOLECULE;
+
+  if (!returnSynthons)
+    return resultDf;
+
   const rowCount = searchDf.rowCount;
   const nameCol = searchDf.getCol('name');
 
-  let maxPrecursors = 0;
+  // Parse names and find max synthon count in a single pass
+  const parsed: {reactionId: string; synthonIds: string[]}[] = new Array(rowCount);
+  let maxSynthons = 0;
   for (let i = 0; i < rowCount; i++) {
     const name: string = nameCol.get(i) ?? '';
     const parts = name.split(';');
-    const count = parts.length > 1 ? parts.length - 1 : 0;
-    if (count > maxPrecursors)
-      maxPrecursors = count;
-  }
-
-  const cols: DG.Column[] = [];
-  const structureCol = DG.Column.fromType(DG.COLUMN_TYPE.STRING, 'product', rowCount);
-  structureCol.semType = DG.SEMTYPE.MOLECULE;
-  cols.push(structureCol);
-
-  const reactionIdCol = DG.Column.fromType(DG.COLUMN_TYPE.STRING, 'reaction_id', rowCount);
-  cols.push(reactionIdCol);
-
-  let simCol: DG.Column | null = null;
-  if (isSimilarity) {
-    simCol = DG.Column.fromType(DG.COLUMN_TYPE.FLOAT, 'similarity', rowCount);
-    cols.push(simCol);
-  }
-
-  const precursorCols: DG.Column[] = [];
-  const precursorIdCols: DG.Column[] = [];
-  for (let p = 0; p < maxPrecursors; p++) {
-    const molCol = DG.Column.fromType(DG.COLUMN_TYPE.STRING, `precursor_${p + 1}`, rowCount);
-    molCol.semType = DG.SEMTYPE.MOLECULE;
-    const idCol = DG.Column.fromType(DG.COLUMN_TYPE.STRING, `precursor_${p + 1}_id`, rowCount);
-    precursorCols.push(molCol);
-    precursorIdCols.push(idCol);
-    cols.push(molCol);
-    cols.push(idCol);
-  }
-
-  const smilesCol = searchDf.getCol('smiles');
-  const srcSimCol = isSimilarity ? searchDf.getCol('similarity') : null;
-
-  for (let i = 0; i < rowCount; i++) {
-    structureCol.set(i, smilesCol.get(i));
-    const name: string = nameCol.get(i) ?? '';
-    const parts = name.split(';');
-
     if (parts.length > 1) {
-      reactionIdCol.set(i, parts[parts.length - 1]);
-      for (let p = 0; p < parts.length - 1; p++) {
-        const synthonId = parts[p].trim();
-        precursorIdCols[p].set(i, synthonId);
-        precursorCols[p].set(i, lookup.get(synthonId) ?? '');
-      }
-    }
-
-    if (srcSimCol)
-      simCol!.set(i, srcSimCol.get(i));
+      const synthonIds = parts.slice(0, -1).map((s) => s.trim());
+      parsed[i] = {reactionId: parts[parts.length - 1], synthonIds};
+      if (synthonIds.length > maxSynthons)
+        maxSynthons = synthonIds.length;
+    } else
+      parsed[i] = {reactionId: '', synthonIds: []};
   }
 
-  return DG.DataFrame.fromColumns(cols);
+  // Create and populate synthon columns
+  const reactionIdCol = DG.Column.fromType(DG.COLUMN_TYPE.STRING, 'reaction_id', rowCount);
+  const synthonCols: DG.Column[] = [];
+  const synthonIdCols: DG.Column[] = [];
+  for (let p = 0; p < maxSynthons; p++) {
+    const molCol = DG.Column.fromType(DG.COLUMN_TYPE.STRING, `synthon_${p + 1}`, rowCount);
+    molCol.semType = DG.SEMTYPE.MOLECULE;
+    synthonCols.push(molCol);
+    synthonIdCols.push(DG.Column.fromType(DG.COLUMN_TYPE.STRING, `synthon_${p + 1}_id`, rowCount));
+  }
+
+  for (let i = 0; i < rowCount; i++) {
+    const {reactionId, synthonIds} = parsed[i];
+    reactionIdCol.set(i, reactionId);
+    for (let p = 0; p < synthonIds.length; p++) {
+      synthonIdCols[p].set(i, synthonIds[p]);
+      synthonCols[p].set(i, lookup!.get(synthonIds[p]) ?? '');
+    }
+  }
+
+  // Add columns to resultDf
+  resultDf.columns.add(reactionIdCol);
+  for (let p = 0; p < maxSynthons; p++) {
+    resultDf.columns.add(synthonCols[p]);
+    resultDf.columns.add(synthonIdCols[p]);
+  }
+
+  return resultDf;
 }
 
 export async function synthonSearch(
   spaceName: string, molecule: string, maxHits: number,
-  searchType: string, similarityCutoff?: number,
+  searchType: string, similarityCutoff?: number, returnSynthons?: boolean,
 ): Promise<DG.DataFrame> {
+  const isExact = searchType === 'exact';
+  const isSimilarity = searchType === 'similarity' || isExact;
+  const includeSimilarity = isSimilarity && !isExact;
+  const cutoff = isExact ? 1.0 : (similarityCutoff ?? 0.5);
+
   const fileName = spaceName.endsWith('.csv') ? spaceName : `${spaceName}.csv`;
-  const lib = await getSynthonLibrary(fileName);
-  const lookup = await getSynthonLookup(fileName);
+  const lib = DG.FileInfo.fromString(fileName, await _package.files.readAsText(`synthon-data/${fileName}`));
 
   let df: DG.DataFrame;
-  if (searchType === 'similarity')
-    df = await scripts.synthonSimilaritySearch(molecule, lib, fileName, maxHits, similarityCutoff ?? 0.5);
+  if (isSimilarity)
+    df = await scripts.synthonSimilaritySearch(molecule, lib, fileName, maxHits, cutoff);
   else
     df = await scripts.synthonSubstructureSearch(molecule, lib, fileName, maxHits);
 
   if (!df || df.rowCount === 0) {
-    return buildResultDf(DG.DataFrame.fromColumns([
+    const emptyDf = DG.DataFrame.fromColumns([
       DG.Column.fromStrings('smiles', []),
       DG.Column.fromStrings('name', []),
-      ...(searchType === 'similarity' ? [DG.Column.fromFloat32Array('similarity', new Float32Array(0))] : []),
-    ]), searchType === 'similarity', lookup);
+      ...(isSimilarity ? [DG.Column.fromFloat32Array('similarity', new Float32Array(0))] : []),
+    ]);
+    return buildResultDf(emptyDf, includeSimilarity, !!returnSynthons);
   }
 
-  return buildResultDf(df, searchType === 'similarity', lookup);
+  const lookup = returnSynthons ? await getSynthonLookup(fileName) : undefined;
+  return buildResultDf(df, includeSimilarity, !!returnSynthons, lookup);
 }
 
 // Widget
@@ -146,7 +133,7 @@ async function synthonSearchWidget(
   resultsHost.style.minHeight = '50px';
   const headerHost = ui.div([]);
 
-  const libraries = await listSynthonLibraries();
+  const libraries = await getSynthonSpaces();
   if (libraries.length === 0)
     return new DG.Widget(ui.divText('No synthon spaces found in synthon-data/'));
 
@@ -158,7 +145,7 @@ async function synthonSearchWidget(
 
   const maxHitsInput = ui.input.int('Max hits', {value: 100, onValueChanged: () => runSearch()});
 
-  const controlsDiv = ui.divV([libraryInput.root, maxHitsInput.root]);
+  const returnSynthonsInput = ui.input.bool('Return synthons', {value: false, onValueChanged: () => runSearch()});
 
   let cutoffInput: DG.InputBase<number | null> | null = null;
   if (isSimilarity) {
@@ -169,10 +156,15 @@ async function synthonSearchWidget(
     cutoffInput.value = 0.5;
     cutoffInput.root.querySelector('.ui-input-editor')?.addEventListener('mouseup', () => runSearch());
     cutoffInput.addOptions(cutoffValueLabel);
-    controlsDiv.appendChild(cutoffInput.root);
   }
 
-  const panel = ui.divV([controlsDiv, headerHost, resultsHost]);
+  const inputs: DG.InputBase[] = [libraryInput, maxHitsInput];
+  if (cutoffInput)
+    inputs.push(cutoffInput);
+  inputs.push(returnSynthonsInput);
+
+  const form = ui.form(inputs);
+  const panel = ui.divV([form, headerHost, resultsHost]);
   const searchLabel = isSimilarity ? 'Similarity search is running...' : 'Substructure search is running...';
 
   async function runSearch(): Promise<void> {
@@ -182,7 +174,7 @@ async function synthonSearchWidget(
     try {
       const resultDf = await synthonSearch(
         libraryInput.value!, molecule, maxHitsInput.value ?? 100,
-        searchType, cutoffInput?.value ?? 0.5,
+        searchType, cutoffInput?.value ?? 0.5, returnSynthonsInput.value,
       );
       resultDf.name = tableName;
 

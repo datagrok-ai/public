@@ -638,18 +638,26 @@ export async function synthonSimilaritySearchWidget(molecule: string) : Promise<
   return await PackageFunctions.synthonSimilaritySearchWidget(molecule);
 }
 
-//name: synthonSearch
-//description: Search in synthon chemical space and return products with precursor structures
-//input: string spaceName 
+//name: Search Synthons
+//description: Search in synthon chemical space and return products with synthon structures
+//input: string spaceName { choices: Chem:getSynthonSpacesFunc(); nullable: false }
 //input: string molecule { semType: Molecule }
 //input: double maxHits = 100 
-//input: string searchType { choices: ["substructure","similarity"] }
+//input: string searchType { choices: ["substructure","similarity","exact"] }
 //input: double similarityCutoff = 0.5 { optional: true; nullable: true }
+//input: bool returnSynthons = false 
 //output: dataframe result
 //meta.cache: client
 //meta.cache.invalidateOn: 0 * * * *
-export async function synthonSearchFunc(spaceName: string, molecule: string, maxHits: number, searchType: string, similarityCutoff?: number) : Promise<any> {
-  return await PackageFunctions.synthonSearchFunc(spaceName, molecule, maxHits, searchType, similarityCutoff);
+export async function synthonSearchFunc(spaceName: string, molecule: string, maxHits: number, searchType: string, similarityCutoff?: number, returnSynthons?: boolean) : Promise<any> {
+  return await PackageFunctions.synthonSearchFunc(spaceName, molecule, maxHits, searchType, similarityCutoff, returnSynthons);
+}
+
+//name: Get Synthon Spaces
+//description: Get all available synthon spaces from Chem package files
+//output: list<string> result
+export async function getSynthonSpacesFunc() : Promise<string[]> {
+  return await PackageFunctions.getSynthonSpacesFunc();
 }
 
 //input: column molecule { semType: Molecule }

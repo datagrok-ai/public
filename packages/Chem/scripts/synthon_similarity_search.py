@@ -20,6 +20,8 @@ if 'M  END' in molecule:
   mol = Chem.MolFromMolBlock(molecule, sanitize=True)
 else:
   mol = Chem.MolFromSmiles(molecule, sanitize=True)
+  if mol is None:
+    mol = Chem.MolFromSmarts(molecule)
 
 if mol is None:
   result = pd.DataFrame({'smiles': pd.Series(dtype='str'), 'name': pd.Series(dtype='str'), 'similarity': pd.Series(dtype='float'), 'reaction_id': pd.Series(dtype='str'), 'component_count': pd.Series(dtype='int')})

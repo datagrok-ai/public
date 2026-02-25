@@ -30,7 +30,7 @@ import {addPropertiesAsColumns, getChemPropertyFunc, getPropertiesAsColumns, pro
 import {structuralAlertsWidget} from './widgets/structural-alerts';
 import {structure2dWidget} from './widgets/structure2d';
 import {getToxicityRisksColumns, toxicityWidget} from './widgets/toxicity';
-import {_synthonSubstructureSearchWidget, _synthonSimilaritySearchWidget, synthonSearch} from './widgets/synthon-search';
+import {_synthonSubstructureSearchWidget, _synthonSimilaritySearchWidget, synthonSearch, getSynthonSpaces} from './widgets/synthon-search';
 
 //panels imports
 import {getInchiKeysImpl, getInchisImpl} from './panels/inchi';
@@ -1463,21 +1463,31 @@ export class PackageFunctions {
   }
 
   @grok.decorators.func({
-    name: 'synthonSearch',
-    description: 'Search in synthon chemical space and return products with precursor structures',
+    name: 'Search Synthons',
+    description: 'Search in synthon chemical space and return products with synthon structures',
     meta: {
       cache: 'client',
       cacheInvalidateOn: '0 * * * *',
     },
   })
   static async synthonSearchFunc(
-    @grok.decorators.param({description: 'Synthon space name (file name in synthon-data/)'}) spaceName: string,
+    @grok.decorators.param({options: {choices: 'Chem:getSynthonSpacesFunc()', nullable: false}}) spaceName: string,
     @grok.decorators.param({options: {semType: 'Molecule'}, description: 'Query molecule'}) molecule: string,
     @grok.decorators.param({options: {initialValue: '100'}, description: 'Maximum number of hits'}) maxHits: number,
-    @grok.decorators.param({options: {choices: ['substructure', 'similarity']}, description: 'Search type'}) searchType: string,
+    @grok.decorators.param({options: {choices: ['substructure', 'similarity', 'exact']}, description: 'Search type'}) searchType: string,
     @grok.decorators.param({options: {initialValue: '0.5', optional: true, nullable: true}, description: 'Similarity cutoff (0-1)'}) similarityCutoff?: number,
+    @grok.decorators.param({options: {initialValue: 'false'}, description: 'Return synthon structures and IDs'}) returnSynthons?: boolean,
   ): Promise<DG.DataFrame> {
-    return synthonSearch(spaceName, molecule, maxHits, searchType, similarityCutoff);
+    return synthonSearch(spaceName, molecule, maxHits, searchType, similarityCutoff, returnSynthons);
+  }
+
+  @grok.decorators.func({
+    name: 'Get Synthon Spaces',
+    description: 'Get all available synthon spaces from Chem package files',
+
+  })
+  static async getSynthonSpacesFunc(): Promise<string[]> {
+    return await getSynthonSpaces();
   }
 
   @grok.decorators.func({
