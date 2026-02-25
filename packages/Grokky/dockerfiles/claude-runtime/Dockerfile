@@ -1,11 +1,14 @@
 FROM node:20-slim
 
+RUN apt-get update && apt-get install -y --no-install-recommends git && \
+    rm -rf /var/lib/apt/lists/*
+
 WORKDIR /app
 
 ARG HOME_DIR=/home/grok
 RUN groupadd -g 2001 grok && \
     useradd -m -d ${HOME_DIR} -g grok -u 1001 grok && \
-    mkdir -p /workspace && \
+    git clone --depth 1 https://github.com/datagrok-ai/public.git /workspace && \
     chown -R grok:grok ${HOME_DIR} /workspace
 
 COPY --chown=grok:grok package.json package-lock.json* tsconfig.json ./
