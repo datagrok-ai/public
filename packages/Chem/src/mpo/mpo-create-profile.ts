@@ -21,6 +21,7 @@ import {MpoProfileManager} from './mpo-profile-manager';
 
 const METHOD_MANUAL = 'Manual';
 const METHOD_PROBABILISTIC = 'Probabilistic';
+const MAX_PROFILE_COLUMNS = 20;
 
 const MPO_CREATE_STORAGE = 'mpo-create';
 const MPO_HINTS_KEY = 'hints';
@@ -482,6 +483,8 @@ export class MpoProfileCreateView {
 
     const existingLower = new Set(Object.keys(merged.properties).map((n) => n.toLowerCase()));
     for (const col of df.columns.numerical) {
+      if (Object.keys(merged.properties).length >= MAX_PROFILE_COLUMNS)
+        break;
       if (!existingLower.has(col.name.toLowerCase()))
         merged.properties[col.name] = createDefaultNumerical(1, col.min, col.max);
     }
@@ -517,8 +520,13 @@ export class MpoProfileCreateView {
 
   private createProfileForDf(): DesirabilityProfile {
     const props: {[key: string]: PropertyDesirability} = {};
-    for (const col of this.df!.columns.numerical)
+    let count = 0;
+    for (const col of this.df!.columns.numerical) {
+      if (count >= MAX_PROFILE_COLUMNS)
+        break;
       props[col.name] = createDefaultNumerical(1, col.min, col.max);
+      count++;
+    }
 
     return {type: DESIRABILITY_PROFILE_TYPE, name: '', description: '', properties: props};
   }
