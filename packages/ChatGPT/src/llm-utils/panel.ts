@@ -6,12 +6,15 @@ import * as rxjs from 'rxjs';
 // @ts-ignore .... idk why it does not like it
 import '../../css/ai.css';
 import {dartLike, fireAIAbortEvent, getAIPanelToggleSubscription} from '../utils';
+import {buildViewContext, executeDatagrokBlocks} from '../claude-code/claude-panel';
 import {ConversationStorage, StoredConversationWithContext} from './storage';
 import {ModelOption, ModelType} from './LLM-client';
 import {LanguageModelV3Message, LanguageModelV3Content} from '@ai-sdk/provider';
 
 // in future might extend it with other types for response API
 export type MessageType = LanguageModelV3Message;
+
+export type AIEngine = 'DeepGROK' | 'Claude';
 
 type AIPanelInputs = {
     prompt: string,
@@ -50,8 +53,8 @@ export interface UIMessage {
   messageOptions?: UIMessageOptions;
 }
 
-export type PanleMesageRet = {
-  confirmPromie: Promise<boolean>,
+export type PanelMessageRet = {
+  confirmPromise: Promise<boolean>,
 }
 
 export type AIPanelFuncs<T extends MessageType = LanguageModelV3Message> = {
@@ -74,10 +77,10 @@ export class AIPanel<T extends MessageType = LanguageModelV3Message, K extends A
   private inputArea: HTMLElement;
   protected header: HTMLElement;
   protected outputArea: HTMLElement;
-  private textArea: HTMLTextAreaElement;
+  protected textArea: HTMLTextAreaElement;
   private textAreaDiv: HTMLElement;
   private runButton: HTMLElement;
-  private modelInput: DG.InputBase<ModelOption>;
+  protected modelInput: DG.InputBase<ModelOption>;
   private newChatButton: HTMLElement;
   private copyConversationButton: HTMLElement;
   private historyButton: HTMLElement;
@@ -290,12 +293,70 @@ export class AIPanel<T extends MessageType = LanguageModelV3Message, K extends A
   }
 
   protected _aiMessagesAccordionPane: HTMLElement | null = null;
+
+  protected ensureAccordionPane(): void {
+    if (this._aiMessagesAccordionPane)
+      return;
+    const acord = ui.accordion();
+    this._aiMessagesAccordionPane = ui.divV([], 'd4-ai-messages-accordion-pane');
+    const pane = acord.addPane('Responses', () => this._aiMessagesAccordionPane!, true, undefined, false);
+    pane.expanded = true;
+    acord.root.style.width = 'calc(100% - 35px)';
+    this.outputArea.appendChild(acord.root);
+  }
+
+  protected createStyledMarkdown(content: string): HTMLElement {
+    const markDown = ui.markdown(content);
+    markDown.style.position = 'relative';
+    dartLike(markDown.style).set('userSelect', 'text').set('maxWidth', '100%');
+    if (markDown.querySelector('pre > code')) {
+      const copyButton = ui.icons.copy(() => {}, 'Copy Code');
+      copyButton.classList.add('d4-ai-copy-code-button');
+      markDown.appendChild(copyButton);
+      copyButton.addEventListener('click', () => {
+        const codeElement = markDown.querySelector('pre > code');
+        if (codeElement) {
+          const header = markDown.children[0];
+          if (header && header.tagName?.toLowerCase() !== 'pre')
+            (header as HTMLElement).style.marginRight = '16px';
+          navigator.clipboard.writeText(codeElement.textContent || '').then(() => {
+            copyButton.classList.add('d4-ai-copy-code-button-copied');
+            setTimeout(() => copyButton.classList.remove('d4-ai-copy-code-button-copied'), 600);
+          }).catch(() => grok.shell.error('Failed to copy code to clipboard.'));
+        }
+      });
+    }
+    return markDown;
+  }
+
+  protected appendFeedbackButtons(markDown: HTMLElement, onFeedback?: (helpful: boolean) => void): void {
+    const feedbackDiv = ui.divH([], 'd4-ai-panel-feedback-div');
+    const thumbsUp = ui.iconFA('thumbs-up', () => {
+      grok.shell.info('Thanks for your feedback!');
+      handleFeedback(true);
+    }, 'Helpful');
+    const thumbsDown = ui.iconFA('thumbs-down', () => {
+      grok.shell.info('Thanks for your feedback!');
+      handleFeedback(false);
+    }, 'Not Helpful');
+    [thumbsUp, thumbsDown].forEach((el) => dartLike(el.style).set('padding', '2px').set('borderRadius', '6px'));
+    function handleFeedback(helpful: boolean) {
+      [thumbsUp, thumbsDown].forEach((el) => { el.style.backgroundColor = ''; });
+      (helpful ? thumbsUp : thumbsDown).style.backgroundColor = helpful ? 'rgba(0, 150, 30, 0.2)' : 'rgba(200, 0, 0, 0.2)';
+      onFeedback?.(helpful);
+    }
+    feedbackDiv.appendChild(thumbsUp);
+    feedbackDiv.appendChild(thumbsDown);
+    dartLike(feedbackDiv.style).set('gap', '8px').set('alignItems', 'center').set('width', '100%').set('paddingBottom', '8px').set('paddingLeft', '4px');
+    markDown.appendChild(feedbackDiv);
+  }
+
   protected appendMessage(
     aiMessage: T, uiMessage: {
       title: string, content: string, fromUser: boolean, onlyAddToMessages?: boolean, uiOnly?: boolean, messageOptions?: UIMessageOptions
     }, loader?: HTMLElement
-  ): PanleMesageRet | undefined {
-    let ret: PanleMesageRet | undefined = undefined;
+  ): PanelMessageRet | undefined {
+    let ret: PanelMessageRet | undefined = undefined;
     if (!uiMessage.uiOnly)
       this._messages.push(aiMessage);
     if (uiMessage.onlyAddToMessages)
@@ -307,82 +368,24 @@ export class AIPanel<T extends MessageType = LanguageModelV3Message, K extends A
       this.outputArea.appendChild(userDiv);
       this._aiMessagesAccordionPane = null; // reset accordion pane so that next AI message creates a new one
     } else {
-      if (!this._aiMessagesAccordionPane) {
-        const acord = ui.accordion();
-        this._aiMessagesAccordionPane = ui.divV([], 'd4-ai-messages-accordion-pane');
-        const pane = acord.addPane('Responses', () => this._aiMessagesAccordionPane!, true, undefined, false);
-        pane.expanded = true;
-        acord.root.style.width = 'calc(100% - 35px)';
-        this.outputArea.appendChild(acord.root);
-      }
-      const markDown = ui.markdown(uiMessage.content);
-      // if there is code block, make it copyable
-      markDown.style.position = 'relative';
-      if (markDown.querySelector('pre > code')) {
-        const copyButton = ui.icons.copy(() => {}, 'Copy Code');
-        //dartLike(copyButton.style).set('position', 'absolute').set('top', '5px').set('right', '5px').set('width', '20px').set('height', '20px').set('opacity', '0.6').set('cursor', 'pointer');
-        copyButton.classList.add('d4-ai-copy-code-button');
-        markDown.appendChild(copyButton);
-        copyButton.addEventListener('click', () => {
-          const codeElement = markDown.querySelector('pre > code');
-          if (codeElement) {
-            // make sure the header of the code is not overlapped with the button
-            const header = markDown.children[0];
-            if (header && header.tagName?.toLowerCase() !== 'pre')
-              (header as HTMLElement).style.marginRight = '16px';
-
-            navigator.clipboard.writeText(codeElement.textContent || '').then(() => {
-              copyButton.classList.add('d4-ai-copy-code-button-copied');
-              setTimeout(() => {
-                copyButton.classList.remove('d4-ai-copy-code-button-copied');
-              }, 600);
-            }).catch((err) => {
-              grok.shell.error('Failed to copy code to clipboard.');
-              console.error('Failed to copy code to clipboard:', err);
-            });
-          }
-        });
-      }
+      this.ensureAccordionPane();
+      const markDown = this.createStyledMarkdown(uiMessage.content);
 
       if (uiMessage?.messageOptions?.finalResult && !uiMessage.fromUser) {
-        // if it is a final message from AI, add thumbs up/down,
-        const feedbackDiv = ui.divH([], 'd4-ai-panel-feedback-div');
-        const thumbsUp = ui.iconFA('thumbs-up', () => {
-          grok.shell.info('Thanks for your feedback!');
-          handleFeedback(true);
-        }, 'Helpful');
-        const thumbsDown = ui.iconFA('thumbs-down', () => {
-          grok.shell.info('Thanks for your feedback!');
-          handleFeedback(false);
-        }, 'Not Helpful');
-        [thumbsUp, thumbsDown].forEach((el) => {
-          dartLike(el.style).set('padding', '2px').set('borderRadius', '6px');
-        });
-
-        const that = this;
-        function handleFeedback(helpful: boolean) {
-          [thumbsUp, thumbsDown].forEach((el) => {
-            el.style.backgroundColor = '';
-          });
-          (helpful ? thumbsUp : thumbsDown).style.backgroundColor = helpful ? 'rgba(0, 150, 30, 0.2)' : 'rgba(200, 0, 0, 0.2)';
+        this.appendFeedbackButtons(markDown, (helpful) => {
           receiveFeedback(
-            that._uiMessages[0]?.text ?? '',
+            this._uiMessages[0]?.text ?? '',
             uiMessage?.messageOptions?.finalResult!,
-            that.contextId,
+            this.contextId,
             helpful
           );
-        }
-        feedbackDiv.appendChild(thumbsUp);
-        feedbackDiv.appendChild(thumbsDown);
-        dartLike(feedbackDiv.style).set('gap', '8px').set('alignItems', 'center').set('width', '100%').set('paddingBottom', '8px').set('paddingLeft', '4px');
-        markDown.appendChild(feedbackDiv);
+        });
       }
 
-      // if the action from AI requires confirmation, add confirm section with buttons
       if (uiMessage?.messageOptions?.confirm && !uiMessage.fromUser) {
         let resolve: (value: boolean) => void = () => {};
         const confirmPromise = new Promise<boolean>((res) => { resolve = res; });
-        ret = {confirmPromie: confirmPromise};
+        ret = {confirmPromise: confirmPromise};
         const confirmDiv = ui.divV([], 'd4-ai-panel-confirmation-div');
         const confirmText = ui.divText(uiMessage?.messageOptions?.confirm.message ?? 'Allow Datagrok to proceed?', 'd4-ai-panel-confirmation-text');
         const buttonsDiv = ui.divH([], 'd4-ai-panel-confirmation-buttons-div');
@@ -412,10 +415,9 @@ export class AIPanel<T extends MessageType = LanguageModelV3Message, K extends A
           handleConfirmResult(uiMessage?.messageOptions?.confirm.confirmResult); // already have a result
       }
 
-      dartLike(markDown.style).set('userSelect', 'text').set('maxWidth', '100%');
       const titleText = uiMessage.title ? [ui.h3(uiMessage.title, 'd4-ai-assistant-response-title')] : [];
       const assistantDiv = ui.divV([...titleText, markDown], 'd4-ai-assistant-response-container');
-      this._aiMessagesAccordionPane.appendChild(assistantDiv);
+      this._aiMessagesAccordionPane!.appendChild(assistantDiv);
     }
     // reapend loader to the end
     if (loader)
@@ -439,7 +441,7 @@ export class AIPanel<T extends MessageType = LanguageModelV3Message, K extends A
         addEngineMessage: (aiMessage) => this.appendMessage(aiMessage, {title: '', content: '', fromUser: false, onlyAddToMessages: true}, loader),
         addUiMessage: (msg: string, fromUser: boolean, messageOptions?: UIMessageOptions) => this.appendMessage('' as any, {title: '', content: msg, fromUser: fromUser, uiOnly: true, messageOptions: messageOptions}, loader),
         addUserMessage: (aiMsg, content) => this.appendMessage(aiMsg, {title: '', content: content, fromUser: true}, loader),
-        addConfirmMessage: (msg?: string) => this.appendMessage('' as any, {title: '', content: '', fromUser: false, uiOnly: true, messageOptions: {confirm: {message: msg}}}, loader)!.confirmPromie,
+        addConfirmMessage: (msg?: string) => this.appendMessage('' as any, {title: '', content: '', fromUser: false, uiOnly: true, messageOptions: {confirm: {message: msg}}}, loader)!.confirmPromise,
       },
       endSession: () => {
         this.runButton.classList.remove('fas', 'fa-stop');
@@ -716,21 +718,121 @@ export class DBAIPanel extends AIPanel<MessageType, DBAIPanelInputs> {
 }
 
 export class TVAIPanel extends AIPanel<MessageType, TVAIPanelInputs> {
-  protected get placeHolder() { return 'Ask about your table data...'; }
+  protected get placeHolder() {
+    return this._engine === 'Claude' ? 'Ask Claude about your data...' : 'Ask about your table data...';
+  }
   protected tableView: DG.TableView;
+
+  private _engine: AIEngine = 'DeepGROK';
+  private _engineInput: DG.InputBase<AIEngine>;
+
+  private _streamingContainer: HTMLElement | null = null;
+  private _streamingMarkdownEl: HTMLElement | null = null;
+  private _sessionId: string;
+  private _contextSent = false;
+
+  get currentEngine(): AIEngine { return this._engine; }
+  get sessionId(): string { return this._sessionId; }
+
   constructor(view: DG.TableView) {
     super(view.dataFrame?.name ?? view.name ?? 'AI-Table-context', view); // context ID is table name
     this.tableView = view;
+    this._sessionId = `claude-${view.dataFrame?.name ?? 'view'}-${crypto.randomUUID()}`;
+
+    this._engineInput = ui.input.choice('Engine', {
+      items: ['DeepGROK', 'Claude'] as AIEngine[],
+      value: 'DeepGROK' as AIEngine,
+      nullable: false,
+    }) as DG.InputBase<AIEngine>;
+    this._engineInput.input.style.marginBottom = '0';
+    this._engineInput.input.classList.add('d4-ai-engine-selector');
+
+    const rightButtons = this.header.querySelector('.d4-ai-panel-header-right-buttons');
+    if (rightButtons)
+      this.header.insertBefore(this._engineInput.input, rightButtons);
+    else
+      this.header.appendChild(this._engineInput.input);
+
+    this._engineInput.onChanged.subscribe(() => {
+      this._engine = this._engineInput.value!;
+      this._onEngineChanged();
+    });
   }
 
-  // meta of TVAIPanel will store the layout of the table view
+  private _onEngineChanged(): void {
+    this.modelInput.input.style.display = this._engine === 'Claude' ? 'none' : '';
+    this.textArea.placeholder = this.placeHolder;
+    this._clearAndReset();
+  }
+
+  private _clearAndReset(): void {
+    this.outputArea.innerHTML = '';
+    this._uiMessages = [];
+    this.resetSession();
+  }
+
+  resetSession(): void {
+    this._sessionId = `claude-${crypto.randomUUID()}`;
+    this._contextSent = false;
+    this._streamingContainer = null;
+    this._streamingMarkdownEl = null;
+  }
+
+  prependViewContext(prompt: string, view: DG.ViewBase): string {
+    if (this._contextSent)
+      return prompt;
+    const ctx = buildViewContext(view);
+    if (!ctx)
+      return prompt;
+    this._contextSent = true;
+    return ctx + '\n---\n\n' + prompt;
+  }
+
+  updateStreaming(content: string, loader: HTMLElement): void {
+    if (!this._streamingContainer) {
+      loader.style.display = 'none';
+      this.ensureAccordionPane();
+      this._streamingMarkdownEl = ui.markdown(content);
+      dartLike(this._streamingMarkdownEl.style).set('userSelect', 'text').set('maxWidth', '100%');
+      this._streamingContainer = ui.divV([this._streamingMarkdownEl], 'd4-ai-assistant-response-container');
+      this._aiMessagesAccordionPane!.appendChild(this._streamingContainer);
+    } else {
+      const md = ui.markdown(content);
+      dartLike(md.style).set('userSelect', 'text').set('maxWidth', '100%');
+      this._streamingMarkdownEl!.replaceWith(md);
+      this._streamingMarkdownEl = md;
+    }
+    this.outputArea.scrollTop = this.outputArea.scrollHeight;
+  }
+
+  finalizeStreaming(content: string, view: DG.ViewBase): void {
+    if (!this._streamingContainer || !this._streamingMarkdownEl)
+      return;
+
+    const markDown = this.createStyledMarkdown(content);
+    this.appendFeedbackButtons(markDown);
+
+    this._streamingMarkdownEl.replaceWith(markDown);
+    this._streamingMarkdownEl = null;
+    this._streamingContainer = null;
+
+    this._uiMessages.push({fromUser: false, text: content, messageOptions: {finalResult: content}});
+
+    executeDatagrokBlocks(content, view);
+  }
+
+  clearStreaming(): void {
+    this._streamingContainer?.remove();
+    this._streamingContainer = null;
+    this._streamingMarkdownEl = null;
+  }
+
   protected getConversationMeta() {
     return this.tableView.saveLayout().viewState;
   }
 
   protected afterConversationLoad(conversation: StoredConversationWithContext<MessageType>) {
     const currentViewers = Array.from(this.tableView.viewers);
-    // only apply layout if the view is standard grid and there is layout meta
     if (!!conversation.meta && currentViewers.length === 1 && currentViewers[0].type === DG.VIEWER.GRID) {
       const layout = DG.ViewLayout.fromViewState(conversation.meta);
       this.tableView.loadLayout(layout, true);

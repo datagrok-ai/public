@@ -16,6 +16,7 @@ import {generateAISqlQueryWithTools} from './sql-tools';
 import {BuiltinDBInfoMeta} from './query-meta-utils';
 import {processTableViewAIRequest} from './tableview-tools';
 import {DBAIPanel, ScriptingAIPanel, TVAIPanel} from './panel';
+import {ClaudeRuntimeClient} from '../claude-code/claude-runtime-client';
 import {generateDatagrokScript} from './script-tools';
 
 
@@ -170,22 +171,89 @@ export async function setupTableViewAIPanelUI() {
 
     // Setup request handler
     panel.onRunRequest.subscribe(async (args) => {
-      const session = panel.startChatSession();
-      try {
-        await processTableViewAIRequest(
-          args.currentPrompt.prompt,
-          tableView,
-          {
-            oldMessages: args.prevMessages,
-            aiPanel: session.session,
-            modelType: panel.getCurrentInputs().model,
-          }
-        );
-      } catch (error: any) {
-        grok.shell.error('Error during AI table view processing');
-        console.error('Error during AI table view processing:', error);
+      if (panel.currentEngine === 'Claude') {
+        const chatSession = panel.startChatSession();
+        const sessionId = panel.sessionId;
+        let accumulated = '';
+        let toolStatus = '';
+        const subs: {unsubscribe: () => void}[] = [];
+        const cleanup = () => { subs.forEach((s) => s.unsubscribe()); subs.length = 0; };
+
+        try {
+          const client = ClaudeRuntimeClient.getInstance();
+          await client.ensureConnected();
+
+          chatSession.session.addUiMessage(args.currentPrompt.prompt, true);
+
+          subs.push(client.onChunk.subscribe((evt) => {
+            if (evt.sessionId !== sessionId) return;
+            accumulated += evt.content;
+            toolStatus = '';
+            panel.updateStreaming(accumulated, chatSession.loader);
+          }));
+
+          subs.push(client.onToolActivity.subscribe((evt) => {
+            if (evt.sessionId !== sessionId) return;
+            toolStatus = `\n\n---\n**${evt.summary}**`;
+            panel.updateStreaming(accumulated + toolStatus, chatSession.loader);
+          }));
+
+          subs.push(client.onToolResult.subscribe((evt) => {
+            if (evt.sessionId !== sessionId) return;
+            toolStatus = `\n\n---\n\`\`\`\n${evt.content}\n\`\`\``;
+            panel.updateStreaming(accumulated + toolStatus, chatSession.loader);
+          }));
+
+          subs.push(client.onFinal.subscribe((evt) => {
+            if (evt.sessionId !== sessionId) return;
+            panel.finalizeStreaming(evt.content, tableView);
+            chatSession.endSession();
+            cleanup();
+          }));
+
+          subs.push(client.onError.subscribe((evt) => {
+            if (evt.sessionId !== sessionId) return;
+            panel.clearStreaming();
+            grok.shell.error(`Claude: ${evt.message}`);
+            chatSession.endSession();
+            cleanup();
+          }));
+
+          subs.push(client.onClose.subscribe(() => {
+            panel.clearStreaming();
+            grok.shell.error('Claude: connection lost');
+            chatSession.endSession();
+            cleanup();
+          }));
+
+          const prompt = panel.prependViewContext(args.currentPrompt.prompt, tableView);
+          client.send(sessionId, prompt);
+        }
+        catch (e: any) {
+          panel.clearStreaming();
+          grok.shell.error(`Claude runtime: ${e.message}`);
+          console.error('Claude runtime error:', e);
+          chatSession.endSession();
+          cleanup();
+        }
+      } else {
+        const chatSession = panel.startChatSession();
+        try {
+          await processTableViewAIRequest(
+            args.currentPrompt.prompt,
+            tableView,
+            {
+              oldMessages: args.prevMessages,
+              aiPanel: chatSession.session,
+              modelType: panel.getCurrentInputs().model,
+            }
+          );
+        } catch (error: any) {
+          grok.shell.error('Error during AI table view processing');
+          console.error('Error during AI table view processing:', error);
+        }
+        chatSession.endSession();
       }
-      session.endSession();
     });
   };
   // also handle already opened views
