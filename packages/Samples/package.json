@@ -3,8 +3,8 @@
   "friendlyName": "Samples",
   "version": "1.4.2",
   "author": {
-    "name": "Savenko Stanislav",
-    "email": "ssavenko@datagrok.ai"
+    "name": "Dmytro Kovalyov",
+    "email": "dkovalyov@datagrok.ai"
   },
   "description": "*Samples* contains sample [data connectors](https://datagrok.ai/help/access/databases/connectors/) and demonstrates [scripting](https://datagrok.ai/help/compute/scripting) and [notebooks](https://datagrok.ai/help/compute/jupyter-notebook) functionality.",
   "repository": {

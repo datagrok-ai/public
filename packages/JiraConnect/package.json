@@ -4,8 +4,8 @@
   "version": "1.2.3",
   "description": "Pakcages for Jira integration into Datagrok",
   "author": {
-    "name": "Savenko Stanislav",
-    "email": "ssavenko@datagrok.ai"
+    "name": "Dmytro Kovalyov",
+    "email": "dkovalyov@datagrok.ai"
   },
   "dependencies": {
     "@datagrok-libraries/utils": "^4.6.5",

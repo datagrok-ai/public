@@ -4,8 +4,8 @@
   "version": "1.3.0",
   "description": "Datagrok package for NMR data visualization",
   "author": {
-    "name": "Savenko Stanislav",
-    "email": "ssavenko@datagrok.ai"
+    "name": "Davit Rizhinashvili",
+    "email": "drizhinashvili@datagrok.ai"
   },
   "dependencies": {
     "@blueprintjs/core": "^5.11.0",

@@ -96,7 +96,6 @@ jobs:
         uses: ./.github/actions/slack-user-action
         with:
           slack-token: ${{ secrets.SLACKBOT_TOKEN }}
-          emails: "ssavenko@datagrok.ai"
       - name: Prepare Slack Message
         id: slack-prepare
         if: ${{ steps.publish.outcome == 'success' }}
