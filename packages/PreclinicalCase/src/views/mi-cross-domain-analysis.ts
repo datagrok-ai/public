@@ -5,7 +5,7 @@ import {studies} from '../utils/app-utils';
 import {createVisitDayStrCol} from '../data-preparation/data-preparation';
 import {DOMAIN, MIANTREG, MIDIR, MIDY, MIDY_STR, MILAT, MISEV, MISPEC, MISTRESC, PLANNED_TRT_ARM, SUBJECT_ID,
   VISIT_DAY_STR} from '../constants/columns-constants';
-import {awaitCheck} from '@datagrok-libraries/test/src/test';
+import {awaitCheck} from '@datagrok-libraries/utils/src/test';
 import { StudyTableViewParams } from '../utils/views-creation-utils';
 import { restoreBrowsePanelOnRemoval } from '../utils/utils';
 

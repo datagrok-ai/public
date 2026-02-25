@@ -7,7 +7,7 @@ import {StudyTableViewParams} from '../utils/views-creation-utils';
 import {restoreBrowsePanelOnRemoval} from '../utils/utils';
 import {createAllMeasurementsDf} from '../data-preparation/data-preparation';
 import {createSubjectProfileView} from './subject-profile-view';
-import {awaitCheck} from '@datagrok-libraries/test/src/test';
+import {awaitCheck} from '@datagrok-libraries/utils/src/test';
 import {subjectClicked$, PADDING_X, PADDING_Y, getArmColorStr, getEnabledArms} from '../utils/combined-measurements-cell-renderer';
 import * as PinnedUtils from '@datagrok-libraries/gridext/src/pinned/PinnedUtils';
 import {Subscription} from 'rxjs';

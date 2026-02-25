@@ -4,7 +4,7 @@ import * as DG from 'datagrok-api/dg';
 import {closeAllAccordionPanes, demoScaffold, getAccordionPane, openMoleculeDataset,
   openSketcher, scrollTable} from '../utils/demo-utils';
 import {DemoScript} from '@datagrok-libraries/tutorials/src/demo-script';
-import {awaitCheck, delay} from '@datagrok-libraries/test/src/test';
+import {awaitCheck} from '@datagrok-libraries/utils/src/test';
 import {_package, PackageFunctions} from '../package';
 import {rGroupAnalysis} from '../analysis/r-group-analysis';
 import {CLIFFS_DF_NAME, activityCliffsIdx} from '@datagrok-libraries/ml/src/viewers/activity-cliffs';
@@ -64,7 +64,7 @@ export async function _demoChemOverview(): Promise<void> {
       tv = await openMoleculeDataset('demo_files/demo_smiles.csv');
       const layoutString = await _package.files.readAsText('demo_files/Overview_demo.layout');
       const layout = DG.ViewLayout.fromJson(layoutString);
-      await delay(100);
+      await DG.delay(100);
       tv.loadLayout(layout);
       grok.shell.windows.showHelp = false;
       grok.shell.windows.context.visible = true;
@@ -79,32 +79,32 @@ export async function _demoChemOverview(): Promise<void> {
       Click any other molecule in dataset to re-calculate properties.
       `, delay: 3000})
     .step('Fast rendering', async () => {
-      await delay(1000);
+      await DG.delay(1000);
       canvas = tv.grid.root.getElementsByTagName('canvas')[2];
       await scrollTable(canvas, 20000, 50, 20);
     }, {description: 'Molecules are rendered immediately when scrolling dataset', delay: 2000})
     .step('Filter molecules by substructure', async () => {
-      await delay(1000);
+      await DG.delay(1000);
       filters = tv.getFiltersGroup();
-      await delay(1000);
+      await DG.delay(1000);
       const sketcherDlg = await openSketcher(filters.root, 'sketch-link');
       const sketcherInput = sketcherDlg!
         .getElementsByClassName('grok-sketcher-input')[0]?.children[0] as HTMLInputElement;
       sketcherInput.value = 'C1CCCCC1';
       sketcherInput.dispatchEvent(new KeyboardEvent('keydown', {key: 'Enter'}));
-      await delay(3000);
+      await DG.delay(3000);
       Array.from(sketcherDlg!.getElementsByTagName('span')).find((el) => el.textContent === 'OK')?.click();
     }, {description: 'Filtering dataset by substructure', delay: 2000})
     .step('Align by scaffold', async () => {
       filters.close();
-      await delay(1000);
+      await DG.delay(1000);
       grok.shell.o = tv.dataFrame.col('smiles');
-      await delay(2000);
+      await DG.delay(2000);
       grok.shell.windows.showHelp = false;
       closeAllAccordionPanes(propPanel!);
       const chemistryPaneContent = getAccordionPane('Chemistry', propPanel!);
       const renderingPaneContent = getAccordionPane('Rendering', chemistryPaneContent!) as HTMLElement;
-      await delay(1000);
+      await DG.delay(1000);
       const scaffoldSketcher = await openSketcher(renderingPaneContent, 'sketch-link');
       const scaffoldSketcherInput = scaffoldSketcher!
         .getElementsByClassName('grok-sketcher-input')[0]?.children[0] as HTMLInputElement;
@@ -116,7 +116,7 @@ export async function _demoChemOverview(): Promise<void> {
       const evt = new ClipboardEvent('paste', {clipboardData: dT});
         evt.clipboardData!.setData('text/plain', demoScaffold);
         scaffoldSketcherInput.value = demoScaffold;
-        await delay(100);
+        await DG.delay(100);
         scaffoldSketcherInput.dispatchEvent(evt);
         Array.from(scaffoldSketcher!.getElementsByTagName('span')).find((el) => el.textContent === 'OK')?.click();
     }, {description: 'Aligning structures by scaffold', delay: 1000})
@@ -151,15 +151,15 @@ export async function _demoSimilaritySearch(): Promise<void> {
       grok.shell.windows.showHelp = false;
     }, {description: 'Load dataset with molecule columns', delay: 2000})
     .step('Show molecules, most similar to the current', async () => {
-      await delay(1000);
+      await DG.delay(1000);
       const similarityViewer = tv.addViewer('Chem Similarity Search');
       grok.shell.o = similarityViewer;
     }, {description: 'Open similarity search viewer. Selected molecule becomes target.', delay: 2000})
     .step('Change target molecule', async () => {
       table.currentRowIdx = 2;
-      await delay(3000);
+      await DG.delay(3000);
       table.currentRowIdx = 10;
-      await delay(3000);
+      await DG.delay(3000);
       table.currentRowIdx = 3;
     }, {description: 'Fast similarity search re-calculating when changing current molecule', delay: 3000})
     .step('Final', async () => console.log('Finished'))
@@ -171,7 +171,7 @@ export async function _demoSimilarityDiversitySearch(): Promise<void> {
   const tv = await openMoleculeDataset('demo_files/smiles.csv');
   _package.files.readAsText('demo_files/similarity_diversity.layout').then(async (layoutString: string) => {
     const layout = DG.ViewLayout.fromJson(layoutString);
-    await delay(100);
+    await DG.delay(100);
     tv.loadLayout(layout);
     grok.shell.windows.showHelp = true;
     setTimeout(() => grok.shell.windows.help.showHelp('/help/datagrok/solutions/domains/chem/chem#similarity-and-diversity-search'), 1000);
@@ -221,17 +221,17 @@ export async function _demoMoleculesVisualizations(): Promise<void> {
       grok.shell.windows.showHelp = false;
     }, {description: 'Load dataset with molecule columns', delay: 2000})
     .step('Adding scatter plot', async () => {
-      await delay(1000);
+      await DG.delay(1000);
       tv.scatterPlot({x: 'R2', y: 'R1', jitterSize: 4, size: 'MolWt'});
     }, {description: 'Adding a scatter plot with molecule columns for x and y axes', delay: 2000})
     .step('Filtering data', async () => {
       tv.getFiltersGroup();
-      await delay(1000);
+      await DG.delay(1000);
       const startMolwt = 240;
       const stopMolWt = 350;
       for (let i = startMolwt; i < stopMolWt; i + 20) {
         tv.dataFrame.rows.match(`ExactMolWt > ${i}`).filter();
-        await delay(500);
+        await DG.delay(500);
       }
     }, {description: 'Results of filtering are interactively shown on scatter plot', delay: 3000})
     .step('Final', async () => console.log('Finished'))
@@ -263,14 +263,14 @@ export async function _demoRgroupAnalysis(): Promise<void> {
       grok.shell.windows.showHelp = false;
     }, {description: 'Load dataset with molecule columns', delay: 2000})
     .step('Specify scaffold', async () => {
-      await delay(1000);
+      await DG.delay(1000);
       rGroupAnalysis(table.col('smiles')!);
-      await delay(3000);
+      await DG.delay(3000);
       sketcher = document.getElementsByClassName('d4-dialog')[0];
       sketcherInput = sketcher!.getElementsByClassName('grok-sketcher-input')[0]?.children[0] as HTMLInputElement;
       sketcherInput.value = 'O=C1CN=C(c2ccccc2N1)C3CCCCC3';
       const progressBar = DG.TaskBarProgressIndicator.create(`Sketcher initialization in progress...`);
-      await delay(3000);
+      await DG.delay(3000);
       progressBar.close();
       sketcherInput.dispatchEvent(new KeyboardEvent('keydown', {key: 'Enter'}));
     }, {description: 'Open R Group Analysis viewer and enter scaffold structure', delay: 2000})
@@ -284,7 +284,7 @@ export async function _demoRgroupAnalysis(): Promise<void> {
       'r group analysis has not been loaded', 30000);
     }, {description: 'Trellis plot is created from R Group Analysis results', delay: 2000})
     .step('Explore results in various viewers', async () => {
-      await delay(1000);
+      await DG.delay(1000);
       tv.scatterPlot({x: 'R1', y: 'R2', jitterSize: 4, size: 'LD(50)', color: 'Mol Wt.', autoAxisSize: false});
       tv.barChart({split: 'R1'});
     }, {description: 'Any other type of viewer can be easily created on R Group analysis results', delay: 2000})
@@ -320,30 +320,30 @@ export async function _demoActivityCliffs(): Promise<void> {
         }
         return false;
       }, '', 10000);
-      await delay(1000);
+      await DG.delay(1000);
     }, {description: `Results are shown on a scatter plot. Each point on a scatter plot corresponds to a molecule from a dataset.
     Pairs of molecules with similarity higher than specified cutoff, are connected by lines. Marker color corresponds to molecule activity.
     Line opacity corresponds to molecule pair SALI value (Structure−Activity Landscape Index - activity difference divided by 1 minus similarity).
     Marker size corresponds to highest SALI value detected for the molecule.`, delay: 2000})
     .step('Explore activity cliffs', async () => {
-      await delay(1000);
+      await DG.delay(1000);
       const link = Array.from(scatterPlot!.root.getElementsByClassName('scatter_plot_link'));
       if (link.length)
         (link[0] as HTMLElement).click();
-      await delay(1000);
+      await DG.delay(1000);
     }, {description: `Detected cliffs are available in a separate table. 
     Cliffs are pairs of molecules with similarity higher than cutoff. Cliffs are sorted by SALI value.`, delay: 2000})
     .step('Select cliffs', async () => {
-      await delay(1000);
+      await DG.delay(1000);
       let cliffsGrid: DG.Viewer | null = null;
       for (const i of tv.viewers) {
         if (i.dataFrame.name === `${CLIFFS_DF_NAME}${activityCliffsIdx}`)
           cliffsGrid = i;
       }
       cliffsGrid!.dataFrame.currentRowIdx = 35;
-      await delay(3000);
+      await DG.delay(3000);
       cliffsGrid!.dataFrame.currentRowIdx = 6;
-      await delay(3000);
+      await DG.delay(3000);
       cliffsGrid!.dataFrame.currentRowIdx = 5;
     }, {description: `To zoom scatter plot to exact cliff, click on a row in the cliffs table. 
     Additional information about molecule pair is on the context panel. Non common fragments are highlighted in molecules.`, delay: 3000})

@@ -4,10 +4,8 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {basicSetup, EditorView} from 'codemirror';
-import {EditorState} from '@codemirror/state';
-import {python} from '@codemirror/lang-python';
-import {autocompletion} from '@codemirror/autocomplete';
+import type {EditorView} from 'codemirror';
+import type {EditorState} from '@codemirror/state';
 import {SensitivityAnalysisView} from '@datagrok-libraries/compute-utils/function-views/src/sensitivity-analysis-view';
 import {FittingView} from '@datagrok-libraries/compute-utils/function-views/src/fitting-view';
 import {getFormatted} from '@datagrok-libraries/compute-utils/function-views/src/shared/lookup-tools';
@@ -36,6 +34,26 @@ import {ModelError, showModelErrorHint, getIsNotDefined, getUnexpected, getNullO
 import '../css/app-styles.css';
 
 import {_package} from './package';
+
+let _cm: {
+  basicSetup: typeof import('codemirror')['basicSetup'];
+  EditorView: typeof EditorView;
+  EditorState: typeof EditorState;
+  python: typeof import('@codemirror/lang-python')['python'];
+  autocompletion: typeof import('@codemirror/autocomplete')['autocompletion'];
+} | null = null;
+async function getCM() {
+  if (!_cm) {
+    const [{basicSetup, EditorView}, {EditorState}, {python}, {autocompletion}] = await Promise.all([
+      import('codemirror'),
+      import('@codemirror/state'),
+      import('@codemirror/lang-python'),
+      import('@codemirror/autocomplete'),
+    ]);
+    _cm = {basicSetup, EditorView, EditorState, python, autocompletion};
+  }
+  return _cm;
+}
 
 const COLORS = DG.Color.categoricalPalette;
 const COLORS_COUNT = COLORS.length;
@@ -247,7 +265,7 @@ export class DiffStudio {
   /** Run Diff Studio application */
   public async runSolverApp(content?: string, state?: EDITOR_STATE, path?: string): Promise<DG.ViewBase> {
     closeWindows();
-    this.createEditorView(content);
+    await this.createEditorView(content);
     this.solverView.setRibbonPanels(this.getRibbonPanels());
     this.updateRibbonWgts();
 
@@ -310,7 +328,7 @@ export class DiffStudio {
 
   /** Run Diff Studio demo application */
   public async runSolverDemoApp(): Promise<void> {
-    this.createEditorView(DEMO_TEMPLATE);
+    await this.createEditorView(DEMO_TEMPLATE);
     closeWindows();
     this.solverView.setRibbonPanels(this.getRibbonPanels());
     this.updateRibbonWgts();
@@ -335,7 +353,7 @@ export class DiffStudio {
     if (file.fullPath.includes(PATH.SLASH)) // Check that current file is from platform files, not drag-n-dropped
       await this.saveModelToRecent(file.fullPath, true);
 
-    this.createEditorView(equations);
+    await this.createEditorView(equations);
 
     // Set the "model from file" routing
     this.mainPath = `${PATH.FILE}/${file.fullPath.replace(':', '.')}`;
@@ -403,7 +421,7 @@ export class DiffStudio {
   /** Run Diff Studio with the specified content */
   public async handleContent(content: string): Promise<void> {
     closeWindows();
-    this.createEditorView(content);
+    await this.createEditorView(content);
     this.solverView.setRibbonPanels(this.getRibbonPanels());
     this.updateRibbonWgts();
     this.toChangePath = true;
@@ -418,7 +436,7 @@ export class DiffStudio {
   /** Run Diff Studio with the specified content */
   public async runModel(content: string): Promise<void> {
     closeWindows();
-    this.createEditorView(content);
+    await this.createEditorView(content);
     this.solverView.setRibbonPanels([[this.fittingWgt, this.sensAnWgt]]);
     this.updateRibbonWgts();
     this.toChangePath = false;
@@ -752,7 +770,8 @@ export class DiffStudio {
   }
 
   /** Create model editor */
-  private createEditorView(content?: string): void {
+  private async createEditorView(content?: string): Promise<void> {
+    const {basicSetup, EditorView, python, autocompletion} = await getCM();
     this.editorView = new EditorView({
       doc: content ?? TEMPLATES.BASIC,
       extensions: [basicSetup, python(), autocompletion({override: [contrCompletions]})],
@@ -893,6 +912,7 @@ export class DiffStudio {
     if (toClearStartingInputs)
       this.startingInputs = null;
 
+    const {basicSetup, EditorState, python, autocompletion} = await getCM();
     const newState = EditorState.create({
       doc: text ?? MODEL_BY_STATE.get(state) as string,
       extensions: [basicSetup, python(), autocompletion({override: [contrCompletions]})],
@@ -2177,6 +2197,7 @@ export class DiffStudio {
       const equations = await getEquationsFromFile(lastModel.info);
 
       if (equations !== null) {
+        const {basicSetup, EditorState, python, autocompletion} = await getCM();
         const newState = EditorState.create({
           doc: equations,
           extensions: [basicSetup, python(), autocompletion({override: [contrCompletions]})],
