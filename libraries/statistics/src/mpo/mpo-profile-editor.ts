@@ -49,6 +49,7 @@ export class MpoProfileEditor {
       },
     });
     this.aggregationInput.setTooltip('Score aggregation method');
+    this.aggregationInput.addPostfix('How individual property scores combine into the final MPO score');
   }
 
   private newRowId(): string {
