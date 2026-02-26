@@ -775,21 +775,21 @@ export class Pmpo {
 
     let areComputationsBlocked = false;
 
-    const signInput = ui.input.choice(' ', {
+    const signInput = ui.input.choice('Condition', {
       value: EQUALITY_SIGN.DEFAULT,
       items: SIGN_OPTIONS,
       nullable: false,
-      tooltipText: 'Comparison operator',
+      tooltipText: 'How to compare numeric Desirability column values against the threshold.',
       onValueChanged: (_value) => {
         areTunedSettingsUsed = false;
         checkAutoTuneAndRun();
       },
     });
 
-    const desirabilityThresholdInput = ui.input.float(' ', {
+    const desirabilityThresholdInput = ui.input.float('Threshold', {
       value: Math.round(initDesirability.stats.avg * 100) / 100,
       nullable: false,
-      tooltipText: '',
+      tooltipText: 'Boundary value that separates desired from non-desired compounds.',
       format: '0.00',
       onValueChanged: (value) => {
         if (value != null) {
@@ -861,48 +861,54 @@ export class Pmpo {
       if (descrInput.value == null || desInput.value == null)
         res = false;
       else {
-        if (descrInput.value.includes(desInput.value)) {
+        if (descrInput.value.length < 1) {
           res = false;
           descrInput.input.classList.add('d4-invalid');
-          desInput.input.classList.add('d4-invalid');
-          ui.tooltip.bind(descrInput.input, 'Desirability column cannot be used as a descriptor.');
-          ui.tooltip.bind(desInput.input, 'Desirability column cannot be used as a descriptor.');
+          ui.tooltip.bind(descrInput.input, 'Select at least one descriptor column.');
         } else {
-          descrInput.input.classList.remove('d4-invalid');
-          ui.tooltip.bind(descrInput.input, 'Descriptor columns used for model construction.');
-
-          if (desInput.value.type === DG.COLUMN_TYPE.BOOL) {
-            if (desInput.value.stats.stdev > 0) {
-              desInput.input.classList.remove('d4-invalid');
-              ui.tooltip.bind(desInput.input, 'Desirability column.');
-            } else {
-              res = false;
-              desInput.input.classList.add('d4-invalid');
-              ui.tooltip.bind(desInput.input, 'Desirability column contains only a single value.');
-            }
+          if (descrInput.value.includes(desInput.value)) {
+            res = false;
+            descrInput.input.classList.add('d4-invalid');
+            desInput.input.classList.add('d4-invalid');
+            ui.tooltip.bind(descrInput.input, 'Desirability column cannot be used as a descriptor.');
+            ui.tooltip.bind(desInput.input, 'Desirability column cannot be used as a descriptor.');
           } else {
-            if (desInput.value.stats.stdev > 0) {
-              if (desirabilityThresholdInput.value != null) {
-                if (!isDesirabilityValid(desInput.value, desirabilityThresholdInput.value, signInput.value as EQUALITY_SIGN)) {
+            descrInput.input.classList.remove('d4-invalid');
+            ui.tooltip.bind(descrInput.input, 'Descriptor columns used for model construction.');
+
+            if (desInput.value.type === DG.COLUMN_TYPE.BOOL) {
+              if (desInput.value.stats.stdev > 0) {
+                desInput.input.classList.remove('d4-invalid');
+                ui.tooltip.bind(desInput.input, 'Desirability column.');
+              } else {
+                res = false;
+                desInput.input.classList.add('d4-invalid');
+                ui.tooltip.bind(desInput.input, 'Desirability column contains only a single value.');
+              }
+            } else {
+              if (desInput.value.stats.stdev > 0) {
+                if (desirabilityThresholdInput.value != null) {
+                  if (!isDesirabilityValid(desInput.value, desirabilityThresholdInput.value, signInput.value as EQUALITY_SIGN)) {
+                    res = false;
+                    desInput.input.classList.add('d4-invalid');
+                    desirabilityThresholdInput.input.classList.add('d4-invalid');
+                    ui.tooltip.bind(desInput.input, `All compounds are either desired or non-desired for ${desInput.value.name} ${signInput.value} ${desirabilityThresholdInput.value}. Adjust the threshold or condition to get both groups.`);
+                  } else {
+                    desInput.input.classList.remove('d4-invalid');
+                    desirabilityThresholdInput.input.classList.remove('d4-invalid');
+                    ui.tooltip.bind(desInput.input, `Desirability rule: ${desInput.value.name} ${signInput.value} ${desirabilityThresholdInput.value}. Matching rows → desired, the rest → non-desired.`);
+                    ui.tooltip.bind(desirabilityThresholdInput.input, 'Boundary value that separates desired from non-desired compounds.');
+                  }
+                } else {
                   res = false;
                   desInput.input.classList.add('d4-invalid');
-                  desirabilityThresholdInput.input.classList.add('d4-invalid');
-                  ui.tooltip.bind(desInput.input, 'Invalid desirability threshold: all values are on the same side of the threshold according to the selected sign.');
-                } else {
-                  desInput.input.classList.remove('d4-invalid');
-                  desirabilityThresholdInput.input.classList.remove('d4-invalid');
-                  ui.tooltip.bind(desInput.input, 'Desirability column.');
-                  ui.tooltip.bind(desirabilityThresholdInput.input, 'Desirability threshold for non-boolean desirability column.');
+                  ui.tooltip.bind(desInput.input, 'Specify non-null desirability threshold.');
                 }
               } else {
                 res = false;
                 desInput.input.classList.add('d4-invalid');
-                ui.tooltip.bind(desInput.input, 'Specify non-null desirability threshold.');
+                ui.tooltip.bind(desInput.input, 'Desirability column has zero variance.');
               }
-            } else {
-              res = false;
-              desInput.input.classList.add('d4-invalid');
-              ui.tooltip.bind(desInput.input, 'Desirability column has zero variance.');
             }
           }
         }

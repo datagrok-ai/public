@@ -19,7 +19,7 @@ export class ParetoOptimizer {
   private toUpdatePcCols = false;
   private paretoFrontViewer: DG.Viewer;
   private resultColName: string;
-  private intervalId: NodeJS.Timeout | null = null;
+  private intervalId: ReturnType<typeof setInterval> | null = null;
   private inputsMap = new Map<string, DG.InputBase>();
   private pcPlotNode: DG.DockNode | null = null;
   private inputFormNode: DG.DockNode | null = null;
