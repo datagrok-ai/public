@@ -6,7 +6,6 @@ import type {SDKMessage} from '@anthropic-ai/claude-agent-sdk';
 import type {UserMessage, OutgoingMessage, ToolInputs, McpInputs, ToolName, McpName} from './types';
 
 const WORKSPACE = process.env['CLAUDE_WORKSPACE'] || '/workspace';
-const MCP_SERVER_URL = process.env['MCP_SERVER_URL'] || '';
 const PORT = 5355;
 const MAX_SESSIONS = 200;
 
@@ -71,21 +70,44 @@ async function* promptStream(message: string) {
   };
 }
 
-function buildOptions(resume?: string) {
+function rewriteForDocker(url: string): string {
+  return url.replace('//localhost', '//host.docker.internal');
+}
+
+function buildMcpHeaders(apiKey?: string, apiUrl?: string): Record<string, string> {
+  const headers: Record<string, string> = {};
+  if (apiKey) {
+    headers['Authorization'] = apiKey;
+    headers['x-user-api-key'] = apiKey;
+  }
+  if (apiUrl)
+    headers['x-datagrok-api-url'] = apiUrl;
+  return headers;
+}
+
+function apiUrlFromMcpUrl(mcpUrl: string): string | undefined {
+  const idx = mcpUrl.indexOf('/docker/containers/proxy/');
+  return idx > 0 ? mcpUrl.substring(0, idx) : undefined;
+}
+
+function buildOptions(resume?: string, apiKey?: string, mcpServerUrl?: string) {
+  const mcpUrl = mcpServerUrl || '';
+  const apiUrl = mcpUrl ? apiUrlFromMcpUrl(mcpUrl) : undefined;
   return {
     systemPrompt: DATAGROK_PROMPT,
     allowedTools: ['Read', 'Glob', 'Grep', 'Edit', 'Write', 'Bash', 'WebSearch', 'WebFetch'],
-    ...(MCP_SERVER_URL ? {
+    ...(mcpUrl ? {
       mcpServers: {
         datagrok: {
           type: 'http' as const,
-          url: MCP_SERVER_URL,
+          url: mcpUrl,
+          headers: buildMcpHeaders(apiKey, apiUrl),
         },
       },
     } : {}),
     permissionMode: 'bypassPermissions' as const,
     allowDangerouslySkipPermissions: true,
-    model: 'sonnet' as const,
+    model: 'opus' as const,
     includePartialMessages: true,
     cwd: WORKSPACE,
     ...(resume ? {resume} : {}),
@@ -187,9 +209,11 @@ async function handleMessage(ws: WsSender, data: UserMessage): Promise<void> {
   if (!message)
     return emit(ws, {type: 'error', sessionId: sid, message: 'Empty message'});
 
+  const mcpUrl = rewriteForDocker(data.mcpServerUrl || '');
+
   let gotResult = false;
   try {
-    const opts = buildOptions(getSession(sid));
+    const opts = buildOptions(getSession(sid), data.apiKey, mcpUrl);
     for await (const event of query({prompt: promptStream(message), options: opts})) {
       if (event.type === 'result')
         gotResult = true;
@@ -209,7 +233,7 @@ app.get('/health', (c) => c.json({status: 'ok'}));
 app.get('/ws', upgradeWebSocket(() => {
   let busy = false;
   return {
-    onMessage(evt, ws) {
+    onMessage(evt: any, ws: any) {
       const sender = ws as unknown as WsSender;
       let data: any;
       try {

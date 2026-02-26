@@ -25,6 +25,8 @@ export interface UserMessage {
   type: 'user_message';
   sessionId: string;
   message: string;
+  apiKey?: string;
+  mcpServerUrl?: string;
 }
 
 export type OutgoingMessage =

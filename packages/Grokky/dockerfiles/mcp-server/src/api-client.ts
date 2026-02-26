@@ -1,5 +1,22 @@
-const BASE_URL = process.env.DATAGROK_API_URL ?? 'http://localhost:8082/api';
-const API_KEY = process.env.DATAGROK_API_KEY ?? '';
+import {AsyncLocalStorage} from 'node:async_hooks';
+
+interface RequestContext {
+  apiKey: string;
+  apiUrl: string;
+}
+
+const ctxStore = new AsyncLocalStorage<RequestContext>();
+
+function _ctx(): RequestContext {
+  const ctx = ctxStore.getStore();
+  if (!ctx)
+    throw new Error('No request context — missing x-user-api-key / x-datagrok-api-url headers');
+  return ctx;
+}
+
+export function runWithContext<T>(ctx: RequestContext, fn: () => T): T {
+  return ctxStore.run(ctx, fn);
+}
 
 interface Connection {
   id: string;
@@ -13,12 +30,13 @@ function toGrokPath(name: string): string {
 async function request<T = unknown>(
   method: string, path: string, body?: unknown, headers?: Record<string, string>,
 ): Promise<T> {
-  const url = `${BASE_URL}/${path.replace(/^\//, '')}`;
+  const ctx = _ctx();
+  const url = `${ctx.apiUrl}/${path.replace(/^\//, '')}`;
   const res = await fetch(url, {
     method,
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': API_KEY,
+      'Authorization': ctx.apiKey,
       ...headers,
     },
     body: body !== undefined ? JSON.stringify(body) : undefined,

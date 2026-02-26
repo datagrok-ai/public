@@ -1,4 +1,3 @@
-#!/usr/bin/env node
 import {Hono} from 'hono';
 import {serve} from '@hono/node-server';
 import {McpServer} from '@modelcontextprotocol/sdk/server/mcp.js';
@@ -6,7 +5,7 @@ import {WebStandardStreamableHTTPServerTransport} from '@modelcontextprotocol/sd
 import {z} from 'zod/v4';
 import * as api from './api-client.js';
 
-const PORT = parseInt(process.env['MCP_PORT'] ?? '3000', 10);
+const PORT = 3003;
 
 type ToolResult = {content: {type: 'text'; text: string}[]};
 
@@ -18,13 +17,16 @@ function formatResult(data: unknown): ToolResult {
 async function runTool(
   name: string, args: Record<string, unknown>, fn: () => Promise<unknown>,
 ): Promise<ToolResult> {
+  const tag = `[MCP] ${name}(${JSON.stringify(args)})`;
   const startMs = Date.now();
+  console.log(`${tag} ...`);
   try {
     const result = formatResult(await fn());
-    console.log(`[MCP] ${name}(${JSON.stringify(args)}) OK in ${Date.now() - startMs}ms`);
+    const len = result.content[0]?.text.length ?? 0;
+    console.log(`${tag} OK ${len} chars in ${Date.now() - startMs}ms`);
     return result;
-  } catch (e) {
-    console.error(`[MCP] ${name}(${JSON.stringify(args)}) FAILED in ${Date.now() - startMs}ms:`, e);
+  } catch (e: any) {
+    console.error(`${tag} FAILED in ${Date.now() - startMs}ms: ${e.message ?? e}`);
     throw e;
   }
 }
@@ -138,11 +140,15 @@ const app = new Hono();
 app.get('/health', (c) => c.json({status: 'ok'}));
 
 app.all('/mcp', async (c) => {
-  console.log(`[MCP] ${c.req.method} /mcp`);
-  const transport = new WebStandardStreamableHTTPServerTransport();
-  const server = createServer();
-  await server.connect(transport);
-  return transport.handleRequest(c.req.raw);
+  const apiKey = c.req.header('x-user-api-key') ?? '';
+  const apiUrl = c.req.header('x-datagrok-api-url') ?? '';
+  const handler = async () => {
+    const transport = new WebStandardStreamableHTTPServerTransport();
+    const server = createServer();
+    await server.connect(transport);
+    return transport.handleRequest(c.req.raw);
+  };
+  return api.runWithContext({apiKey, apiUrl}, handler);
 });
 
 serve({fetch: app.fetch, port: PORT});
