@@ -43,7 +43,7 @@ export class ClaudeRuntimeClient {
       return;
 
     try {
-      const containers = await grok.dapi.docker.dockerContainers.filter('name = "claude-runtime"').list();
+      const containers = await grok.dapi.docker.dockerContainers.filter('name = "grokky-claude-runtime"').list();
       if (containers.length > 0) {
         this.containerId = containers[0].id;
         this.ws = await grok.dapi.docker.dockerContainers.webSocketProxy(

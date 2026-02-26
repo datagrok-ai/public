@@ -3,11 +3,11 @@ import {serve} from '@hono/node-server';
 import {createNodeWebSocket} from '@hono/node-ws';
 import {query} from '@anthropic-ai/claude-agent-sdk';
 import type {SDKMessage} from '@anthropic-ai/claude-agent-sdk';
-import type {UserMessage, OutgoingMessage} from './types';
+import type {UserMessage, OutgoingMessage, ToolInputs, McpInputs, ToolName, McpName} from './types';
 
 const WORKSPACE = process.env['CLAUDE_WORKSPACE'] || '/workspace';
 const MCP_SERVER_URL = process.env['MCP_SERVER_URL'] || '';
-const PORT = 5353;
+const PORT = 5355;
 const MAX_SESSIONS = 200;
 
 const DATAGROK_PROMPT = `\
@@ -92,29 +92,33 @@ function buildOptions(resume?: string) {
   };
 }
 
-function toolSummary(name: string, input: Record<string, any>): string {
-  if (['Read', 'Write', 'Edit'].includes(name))
-    return `${name} ${input.file_path ?? ''}`;
-  if (name === 'Bash')
-    return `Bash: ${(input.command ?? '').slice(0, 120)}`;
-  if (name === 'Glob')
-    return `Glob ${input.pattern ?? ''} ${input.path ? 'in ' + input.path : ''}`.trim();
-  if (name === 'Grep')
-    return `Grep '${input.pattern ?? ''}' ${input.path ? 'in ' + input.path : ''}`.trim();
-  if (name === 'WebSearch')
-    return `WebSearch: ${input.query ?? ''}`;
-  if (name === 'WebFetch')
-    return `WebFetch: ${input.url ?? ''}`;
+const toolFormatters: {[K in ToolName]: (i: ToolInputs[K]) => string} = {
+  Read: (i) => `Read ${i.file_path ?? ''}`,
+  Write: (i) => `Write ${i.file_path ?? ''}`,
+  Edit: (i) => `Edit ${i.file_path ?? ''}`,
+  Bash: (i) => `Bash: ${(i.command ?? '').slice(0, 120)}`,
+  Glob: (i) => `Glob ${i.pattern ?? ''} ${i.path ? 'in ' + i.path : ''}`.trim(),
+  Grep: (i) => `Grep '${i.pattern ?? ''}' ${i.path ? 'in ' + i.path : ''}`.trim(),
+  WebSearch: (i) => `WebSearch: ${i.query ?? ''}`,
+  WebFetch: (i) => `WebFetch: ${i.url ?? ''}`,
+};
+
+const mcpFormatters: {[K in McpName]: (i: McpInputs[K]) => string} = {
+  call_function: (i) => `Call ${i.name ?? 'function'}`,
+  list_functions: (i) => `List functions${i.filter ? ': ' + i.filter : ''}`,
+  get_function: (i) => `Get function ${i.id ?? ''}`,
+  list_files: (i) => `list files ${i.path ?? ''}`.trim(),
+  download_file: (i) => `download file ${i.path ?? ''}`.trim(),
+  upload_file: (i) => `upload file ${i.path ?? ''}`.trim(),
+};
+
+function toolSummary(name: string, input: Record<string, unknown>): string {
+  if (name in toolFormatters)
+    return toolFormatters[name as ToolName](input as ToolInputs[ToolName]);
   const mcp = name.replace(/^mcp__[^_]+__/, '');
   if (mcp !== name) {
-    if (mcp === 'call_function')
-      return `Call ${input.name ?? 'function'}`;
-    if (mcp === 'list_functions')
-      return `List functions${input.filter ? ': ' + input.filter : ''}`;
-    if (mcp === 'get_function')
-      return `Get function ${input.id ?? ''}`;
-    if (['list_files', 'download_file', 'upload_file'].includes(mcp))
-      return `${mcp.replace(/_/g, ' ')} ${input.path ?? ''}`.trim();
+    if (mcp in mcpFormatters)
+      return mcpFormatters[mcp as McpName](input as McpInputs[McpName]);
     return mcp.replace(/_/g, ' ');
   }
   return name;
