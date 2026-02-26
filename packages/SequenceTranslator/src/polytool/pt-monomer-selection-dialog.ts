@@ -3,17 +3,19 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {HelmType, PolymerType} from '@datagrok-libraries/bio/src/helm/types';
-import {IMonomerLib, Monomer} from '@datagrok-libraries/bio/src/types/monomer-library';
+import {IMonomerLib, IMonomerLibHelper, Monomer} from '@datagrok-libraries/bio/src/types/monomer-library';
 import {polymerTypeToHelmType} from '@datagrok-libraries/bio/src/utils/macromolecule/utils';
 
 import {parseMonomerSymbolList} from './pt-placeholders-input';
 
 const MAX_SUGGESTIONS = 20;
 
-/** Shows a dialog for selecting monomers with autocomplete and tag-based display.
- * @returns comma-separated monomer symbols, or null if cancelled */
+/** Shows a dialog for selecting monomers with autocomplete, tag-based display,
+ * and bulk-add from monomer libraries or collections.
+ * @returns monomer symbols array, or null if cancelled */
 export async function showMonomerSelectionDialog(
   monomerLib: IMonomerLib, polymerType: PolymerType, presetMonomers?: string[],
+  libHelper?: IMonomerLibHelper,
 ): Promise<string[] | null> {
   return new Promise<string[] | null>((resolve) => {
     const helmType: HelmType = polymerTypeToHelmType(polymerType);
@@ -21,11 +23,19 @@ export async function showMonomerSelectionDialog(
 
     const selectedMonomers: string[] = presetMonomers ? [...presetMonomers] : [];
 
-    const tagsHost = ui.div([], {style: {display: 'flex', flexWrap: 'wrap', gap: '4px', marginTop: '8px', maxWidth: '400px'}});
-    const input = ui.input.string('Monomers', {value: ''});
+    // --- Tags display (selected monomers) ---
+    const tagsHost = ui.div([], {style: {display: 'flex', flexWrap: 'wrap', gap: '4px', marginTop: '4px', maxHeight: '150px', overflowY: 'auto'}});
+    const countLabel = ui.divText('', {style: {fontSize: '11px', color: 'var(--grey-4)', marginTop: '4px'}});
+
+    function updateCountLabel(): void {
+      countLabel.textContent = selectedMonomers.length > 0 ? `${selectedMonomers.length} monomer(s) selected` : '';
+    }
+
+    // --- Autocomplete input ---
+    const input = ui.input.string('Search', {value: ''});
     const inputEl = input.input as HTMLInputElement;
     inputEl.setAttribute('autocomplete', 'off');
-    inputEl.placeholder = 'Type to search...';
+    inputEl.placeholder = 'Type to search monomers...';
 
     let currentMenu: DG.Menu | null = null;
     let menuItems: HTMLElement[] = [];
@@ -39,6 +49,7 @@ export async function showMonomerSelectionDialog(
           if (idx >= 0) {
             selectedMonomers.splice(idx, 1);
             renderTags();
+            updateCountLabel();
           }
         });
         removeBtn.style.marginLeft = '4px';
@@ -53,7 +64,7 @@ export async function showMonomerSelectionDialog(
           },
         });
         // Tooltip on hover
-        tag.addEventListener('mouseenter', (e) => {
+        tag.addEventListener('mouseenter', () => {
           const tooltip = monomerLib.getTooltip(helmType, symbol);
           ui.tooltip.show(tooltip, tag.getBoundingClientRect().left, tag.getBoundingClientRect().bottom + 16);
         });
@@ -61,6 +72,7 @@ export async function showMonomerSelectionDialog(
 
         tagsHost.appendChild(tag);
       }
+      updateCountLabel();
     }
 
     function addMonomer(symbol: string): void {
@@ -71,6 +83,18 @@ export async function showMonomerSelectionDialog(
       inputEl.value = '';
       hideMenu();
       inputEl.focus();
+    }
+
+    function addMonomers(symbols: string[]): void {
+      let added = false;
+      for (const symbol of symbols) {
+        if (!selectedMonomers.includes(symbol)) {
+          selectedMonomers.push(symbol);
+          added = true;
+        }
+      }
+      if (added)
+        renderTags();
     }
 
     function hideMenu(): void {
@@ -222,14 +246,105 @@ export async function showMonomerSelectionDialog(
       }
     });
 
+    // --- Bulk add: from monomer library ---
+    const librarySection = ui.div([], {style: {marginTop: '8px'}});
+    if (libHelper) {
+      const libraryInput = ui.input.choice('Add from library', {items: [] as string[], nullable: true}) as DG.ChoiceInput<string>;
+      const libraryStatus = ui.divText('', {style: {fontSize: '11px', color: 'var(--green-2)', marginLeft: '8px', minHeight: '16px'}});
+
+      // Load library names asynchronously
+      libHelper.getAvaliableLibraryNames().then((libNames) => {
+        libraryInput.items = libNames;
+      });
+
+      libraryInput.onChanged.subscribe(async () => {
+        const libName = libraryInput.value;
+        if (!libName)
+          return;
+
+        libraryStatus.textContent = 'Loading...';
+        try {
+          const lib = await libHelper.readSingleLibraryByName(libName);
+          if (lib) {
+            const symbols = lib.getMonomerSymbolsByType(polymerType);
+            const before = selectedMonomers.length;
+            addMonomers(symbols);
+            const added = selectedMonomers.length - before;
+            libraryStatus.textContent = `Added ${added} monomer(s) from "${libName}"`;
+          } else {
+            libraryStatus.textContent = `Library "${libName}" not found`;
+          }
+        } catch (err: any) {
+          libraryStatus.textContent = `Error loading library`;
+        }
+        // Clear the selector after use
+        libraryInput.value = null as any;
+        setTimeout(() => { libraryStatus.textContent = ''; }, 4000);
+      });
+
+      librarySection.appendChild(ui.divV([libraryInput.root, libraryStatus]));
+    }
+
+    // --- Bulk add: from monomer collection ---
+    const collectionSection = ui.div([], {style: {marginTop: '4px'}});
+    if (libHelper) {
+      const collectionInput = ui.input.choice('Add from collection', {items: [] as string[], nullable: true}) as DG.ChoiceInput<string>;
+      const collectionStatus = ui.divText('', {style: {fontSize: '11px', color: 'var(--green-2)', marginLeft: '8px', minHeight: '16px'}});
+
+      // Load collection names asynchronously
+      libHelper.listMonomerCollections().then((collectionNames) => {
+        collectionInput.items = collectionNames;
+      });
+
+      collectionInput.onChanged.subscribe(async () => {
+        const collectionName = collectionInput.value;
+        if (!collectionName)
+          return;
+
+        collectionStatus.textContent = 'Loading...';
+        try {
+          const collection = await libHelper.readMonomerCollection(collectionName);
+          const symbols = collection.monomerSymbols ?? [];
+          const before = selectedMonomers.length;
+          addMonomers(symbols);
+          const added = selectedMonomers.length - before;
+          const displayName = collectionName.replace(/\.json$/, '');
+          collectionStatus.textContent = `Added ${added} monomer(s) from "${displayName}"`;
+        } catch (err: any) {
+          collectionStatus.textContent = `Error loading collection`;
+        }
+        // Clear the selector after use
+        collectionInput.value = null as any;
+        setTimeout(() => { collectionStatus.textContent = ''; }, 4000);
+      });
+
+      collectionSection.appendChild(ui.divV([collectionInput.root, collectionStatus]));
+    }
+
+    // --- Clear all button ---
+    const clearBtn = ui.button('Clear all', () => {
+      selectedMonomers.length = 0;
+      renderTags();
+    });
+    clearBtn.style.fontSize = '11px';
+    clearBtn.style.marginTop = '4px';
+
     renderTags();
 
-    const dlg = ui.dialog({title: 'Select Monomers', showFooter: true})
-      .add(ui.div([input.root, tagsHost], {style: {minWidth: '350px', minHeight: '200px'}}))
+    // --- Dialog layout ---
+    const contentDiv = ui.div([
+      input.root,
+      librarySection,
+      collectionSection,
+      ui.divH([countLabel, clearBtn], {style: {justifyContent: 'space-between', alignItems: 'center'}}),
+      tagsHost,
+    ], {style: {minWidth: '400px', minHeight: '250px'}});
+
+    const _dlg = ui.dialog({title: 'Select Monomers', showFooter: true})
+      .add(contentDiv)
       .onOK(() => { resolve(selectedMonomers); })
       .onCancel(() => { resolve(null); })
       .show({resizable: true});
-    // dlg.root.addEventListener('close', () => { hideMenu(); });
 
     inputEl.focus();
     setTimeout(() => { showSuggestions(); }, 0);
