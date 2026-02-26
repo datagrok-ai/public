@@ -1,5 +1,11 @@
 # Bio changelog
 
+## 2.25.15 (2026-02-26)
+
+* Monomer collections
+* Handling edge cases of r groups in monomer libraries
+* Fixing some issues with custom notation provider
+
 ## 2.25.12 (2026-02-20)
 
 * Isotope support in monomers

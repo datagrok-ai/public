@@ -5,7 +5,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {ILogger} from '@datagrok-libraries/bio/src/utils/logger';
-import {DEFAULT_FILES_LIB_PROVIDER_NAME, findProviderWithLibraryName, IMonomerLib, IMonomerSet} from '@datagrok-libraries/bio/src/types/monomer-library';
+import {DEFAULT_FILES_LIB_PROVIDER_NAME, findProviderWithLibraryName, IMonomerLib, IMonomerSet, MonomerCollection} from '@datagrok-libraries/bio/src/types/monomer-library';
 import {
   getUserLibSettings, setUserLibSettings,
 } from '@datagrok-libraries/bio/src/monomer-works/lib-settings';
@@ -19,6 +19,7 @@ import {_package} from '../../package';
 import {IMonomerLibHelper, IMonomerLibProvider} from '@datagrok-libraries/bio/src/types/monomer-library';
 import {merge, Observable, Subject} from 'rxjs';
 import {MonomerLibFromFilesProvider} from './library-file-manager/monomers-lib-provider';
+const MONOMER_COLLECTION_STORAGE_PATH = 'System:AppData/Bio/monomer-collections/';
 
 type MonomerLibWindowType = Window & { $monomerLibHelperPromise?: Promise<MonomerLibManager> };
 declare const window: MonomerLibWindowType;
@@ -407,6 +408,39 @@ export class MonomerLibManager implements IMonomerLibHelper {
       `${err instanceof Error ? err.message : err.toString()}`);
       return null;
     }
+  }
+
+  async listMonomerCollections(): Promise<string[]> {
+    // these are provider less functions. coleections will be in files storage in txt format
+    const collections = (await grok.dapi.files.list(MONOMER_COLLECTION_STORAGE_PATH))
+      .filter((file) => file.extension === 'json' || file.name.endsWith('.json'));
+    return collections.map((file) => file.name);
+  }
+
+  async deleteMonomerCollection(collectionName: string): Promise<void> {
+    if (!collectionName.endsWith('.json'))
+      collectionName += '.json';
+    if (await grok.dapi.files.exists(MONOMER_COLLECTION_STORAGE_PATH + collectionName))
+      await grok.dapi.files.delete(MONOMER_COLLECTION_STORAGE_PATH + collectionName);
+  }
+
+  async readMonomerCollection(collectionName: string): Promise<MonomerCollection> {
+    if (!collectionName.endsWith('.json'))
+      collectionName += '.json';
+    const file = await grok.dapi.files.readAsText(MONOMER_COLLECTION_STORAGE_PATH + collectionName);
+    return JSON.parse(file) as MonomerCollection;
+  }
+
+  async addOrUpdateMonomerCollection(collectionName: string, monomerSymbols: string[], desc?: string): Promise<void> {
+    if (!collectionName.endsWith('.json'))
+      collectionName += '.json';
+    const content = JSON.stringify({
+      description: desc,
+      monomerSymbols: monomerSymbols,
+      updatedBy: DG.User.current().login,
+      updatedOn: new Date().toISOString(),
+    } satisfies MonomerCollection, null, 2);
+    await grok.dapi.files.writeAsText(MONOMER_COLLECTION_STORAGE_PATH + collectionName, content);
   }
 
   // -- Instance singleton --

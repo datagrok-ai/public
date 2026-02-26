@@ -255,6 +255,58 @@ export class MonomerManager implements IMonomerManager {
     }
   }
 
+  async createNewMonomersCollectionDialog(monomerSymbols: string[]) {
+    const existingCollections = (await this.monomerLibManamger.listMonomerCollections()).map((name) => name.toLowerCase());
+    const nameInput = ui.input.string('Collection Name', {tooltipText: 'Name of the monomer collection, should be unique', placeholder: 'Enter collection name', nullable: false});
+    const descriptionInput = ui.input.string('Description', {tooltipText: 'Description of the monomer collection', placeholder: 'Enter collection description', nullable: true});
+    const d = ui.dialog('Create New Monomer Collection')
+      .add(nameInput)
+      .add(descriptionInput)
+      .addButton('Add', async () => {
+        if (!nameInput.value || !nameInput.value.trim()) {
+          grok.shell.warning('Collection name cannot be empty');
+          return;
+        }
+        const saveAction = async (symbols: string[]) => {
+          await this.monomerLibManamger.addOrUpdateMonomerCollection(nameInput.value!, symbols, descriptionInput.value ?? undefined);
+          grok.shell.info(`Collection ${nameInput.value} saved successfully`);
+        };
+        if (existingCollections.includes(nameInput.value!.toLowerCase()) || existingCollections.includes(nameInput.value!.toLowerCase() + '.json')) {
+          const confD = ui.dialog('Collection already exists')
+            .add(ui.divText(`A collection with the name ${nameInput.value} already exists. Do you want to merge or overwrite it?`));
+          confD.addButton('Merge', async () => {
+            const existingCollection = await this.monomerLibManamger.readMonomerCollection(nameInput.value!);
+            const mergedSymbols = Array.from(new Set([...(existingCollection.monomerSymbols ?? []), ...monomerSymbols]));
+            try {
+              await saveAction(mergedSymbols);
+            } catch (e) {
+              grok.shell.error('Error merging monomer collection');
+              console.error(e);
+            }
+            confD.close();
+          });
+          confD.addButton('Overwrite', async () => {
+            try {
+              await saveAction(monomerSymbols);
+            } catch (e) {
+              grok.shell.error('Error overwriting monomer collection');
+              console.error(e);
+            }
+            confD.close();
+          });
+          confD.show();
+        } else {
+          try {
+            await saveAction(monomerSymbols);
+          } catch (e) {
+            grok.shell.error('Error creating monomer collection');
+            console.error(e);
+          }
+        }
+        d.close();
+      }).show();
+  }
+
   async createNewLibDialog(monomers?: Monomer[]) {
     const monomerLibs = await this.monomerLibManamger.getAvaliableLibraryNames();
     const libNameInput = ui.input.string('Library Name', {
@@ -321,26 +373,36 @@ export class MonomerManager implements IMonomerManager {
           args.context.tableView.id !== (this.tv!.id ?? '') || !args.item || !args.item.isTableCell || (args.item.tableRowIndex ?? -1) < 0)
           return;
         const rowIdx = args.item.tableRowIndex;
-        args.menu.item('Edit Monomer', async () => {
+        const menu = args.menu as DG.Menu;
+        menu.item('Edit Monomer', async () => {
           await this.editMonomer(this.tv!.dataFrame.rows.get(rowIdx));
         });
 
-        args.menu.item('Fix all monomers', () => {
+        menu.item('Fix all monomers', () => {
           this.fixAllMonomers();
         });
         if (this.tv!.dataFrame.selection.trueCount > 0) {
-          args.menu.item('Remove Selected Monomers', async () => {
+          const group = menu.group('Selected Monomers');
+          group.item('Remove', async () => {
             const monomers = await Promise.all(Array.from(this.tv!.dataFrame.selection.getSelectedIndexes())
               .map((r) => monomerFromDfRow(this.tv!.dataFrame.rows.get(r))));
             this._newMonomerForm.removeMonomers(monomers, this.libInput.value!);
           });
-          args.menu.item('Selection To New Library', async () => {
+          group.item('Create Library', async () => {
             const monomers = await Promise.all(Array.from(this.tv!.dataFrame.selection.getSelectedIndexes())
               .map((r) => monomerFromDfRow(this.tv!.dataFrame.rows.get(r))));
             this.createNewLibDialog(monomers);
           });
+          group.item('Create Collection', async () => {
+            const monomerSymbols = Array.from(this.tv!.dataFrame.selection.getSelectedIndexes())
+              .map((r) => this.tv!.dataFrame.col(MONOMER_DF_COLUMN_NAMES.SYMBOL)!.get(r) as string)
+              .filter((s): s is string => !!s && s.trim().length > 0);
+            if (monomerSymbols.length === 0)
+              return grok.shell.warning('No valid monomer symbols found in selection');
+            this.createNewMonomersCollectionDialog(monomerSymbols);
+          });
         } else {
-          args.menu.item('Remove Monomer', async () => {
+          menu.item('Remove Monomer', async () => {
             const monomer = await monomerFromDfRow(this.tv!.dataFrame.rows.get(rowIdx));
             this._newMonomerForm.removeMonomers([monomer], this.libInput.value!);
           });
