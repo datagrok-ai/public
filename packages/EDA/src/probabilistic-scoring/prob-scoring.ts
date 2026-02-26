@@ -892,11 +892,25 @@ export class Pmpo {
                     res = false;
                     desInput.input.classList.add('d4-invalid');
                     desirabilityThresholdInput.input.classList.add('d4-invalid');
-                    ui.tooltip.bind(desInput.input, `All compounds are either desired or non-desired for ${desInput.value.name} ${signInput.value} ${desirabilityThresholdInput.value}. Adjust the threshold or condition to get both groups.`);
+                    ui.tooltip.bind(
+                      desInput.input,
+                      () => ui.markdown(`All compounds are either desired or non-desired for
+                      <div align="center">
+                      **${desInput.value!.name} ${signInput.value} ${desirabilityThresholdInput.value}.**
+                      </div>
+                      Adjust the threshold or condition to get both groups.`),
+                    );
                   } else {
                     desInput.input.classList.remove('d4-invalid');
                     desirabilityThresholdInput.input.classList.remove('d4-invalid');
-                    ui.tooltip.bind(desInput.input, `Desirability rule: ${desInput.value.name} ${signInput.value} ${desirabilityThresholdInput.value}. Matching rows → desired, the rest → non-desired.`);
+                    ui.tooltip.bind(
+                      desInput.input,
+                      () => ui.markdown(`Desirability rule: 
+                        <div align="center">
+                        **${desInput.value!.name} ${signInput.value} ${desirabilityThresholdInput.value}**.
+                        </div>
+                        Matching compounds → desired, the rest → non-desired.`),
+                    );
                     ui.tooltip.bind(desirabilityThresholdInput.input, 'Boundary value that separates desired from non-desired compounds.');
                   }
                 } else {
