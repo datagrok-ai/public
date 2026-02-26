@@ -69,6 +69,7 @@ export type DesirabilityProfile = {
   type: typeof DESIRABILITY_PROFILE_TYPE;
   name: string;
   description: string;
+  aggregation?: WeightedAggregation;
   properties: { [key: string]: PropertyDesirability };
 }
 
@@ -79,6 +80,7 @@ export function isDesirabilityProfile(x: any): x is DesirabilityProfile {
 export const WEIGHTED_AGGREGATIONS = ['Average', 'Sum', 'Product', 'Geomean', 'Min', 'Max'] as const;
 export const WEIGHTED_AGGREGATIONS_LIST: WeightedAggregation[] = [...WEIGHTED_AGGREGATIONS];
 export type WeightedAggregation = typeof WEIGHTED_AGGREGATIONS[number];
+export const DEFAULT_AGGREGATION: WeightedAggregation = 'Average';
 
 /// Calculates the desirability score for a given x value
 /// Returns 0 if x is outside the range of the desirability line

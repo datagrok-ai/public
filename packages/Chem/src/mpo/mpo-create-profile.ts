@@ -8,15 +8,13 @@ import {
   DESIRABILITY_PROFILE_TYPE,
   DesirabilityProfile,
   PropertyDesirability,
-  WEIGHTED_AGGREGATIONS_LIST,
-  WeightedAggregation,
   createDefaultNumerical,
 } from '@datagrok-libraries/statistics/src/mpo/mpo';
 import {MpoProfileEditor} from '@datagrok-libraries/statistics/src/mpo/mpo-profile-editor';
 import {MPO_SCORE_CHANGED_EVENT} from '@datagrok-libraries/statistics/src/mpo/utils';
 
 import {MpoContextPanel} from './mpo-context-panel';
-import {MpoPathMode, MPO_PROFILE_DELETED_EVENT, updateMpoPath} from './utils';
+import {MAX_MPO_PROPERTIES, MpoPathMode, MPO_PROFILE_DELETED_EVENT, updateMpoPath} from './utils';
 import {MpoProfileManager} from './mpo-profile-manager';
 
 const METHOD_MANUAL = 'Manual';
@@ -45,7 +43,6 @@ export class MpoProfileCreateView {
   profileViewContainer: HTMLDivElement = ui.div();
   methodInput?: DG.ChoiceInput<string | null>;
   datasetInput?: DG.InputBase;
-  aggregationInput?: DG.ChoiceInput<WeightedAggregation | null>;
   fileName?: string | null = null;
   saveButton: HTMLElement | null = null;
 
@@ -230,14 +227,7 @@ export class MpoProfileCreateView {
     this.datasetInput.setTooltip('Load data to preview desirability scores as you edit the profile');
     controls.push(this.datasetInput);
 
-    this.aggregationInput = ui.input.choice('Aggregation', {
-      items: WEIGHTED_AGGREGATIONS_LIST,
-      nullable: false,
-      onValueChanged: () => grok.events.fireCustomEvent(MPO_SCORE_CHANGED_EVENT, {}),
-    });
-    this.aggregationInput.enabled = false;
-    this.updateAggregationTooltip();
-    controls.push(this.aggregationInput);
+    controls.push(this.editor.aggregationInput);
 
     const headerDiv = ui.divV([ui.h1(`${this.view.name} Profile`), ui.form(controls)]);
     headerDiv.classList.add('chem-profile-header');
@@ -271,9 +261,8 @@ export class MpoProfileCreateView {
         position: ui.hints.POSITION.RIGHT,
       },
       {
-        element: this.aggregationInput!.input,
-        text: 'Choose how individual property scores combine into the final MPO score. ' +
-          'Enabled when a dataset is loaded.',
+        element: this.editor.aggregationInput.input,
+        text: 'Choose how individual property scores combine into the final MPO score.',
         position: ui.hints.POSITION.RIGHT,
       },
     );
@@ -308,11 +297,6 @@ export class MpoProfileCreateView {
       if (this.methodInput?.value === METHOD_MANUAL || !this.showMethod) {
         this.editor.design = true;
         this.editor.dataFrame = this.df ?? null as any;
-        if (this.aggregationInput) {
-          this.aggregationInput.enabled = !!this.df;
-          this.updateAggregationTooltip();
-        }
-
         if (this.showMethod) {
           this.profile = this.df ?
             this.createProfileForDf() :
@@ -438,8 +422,13 @@ export class MpoProfileCreateView {
 
   private createProfileForDf(): DesirabilityProfile {
     const props: {[key: string]: PropertyDesirability} = {};
-    for (const col of this.df!.columns.numerical)
+    let count = 0;
+    for (const col of this.df!.columns.numerical) {
+      if (count >= MAX_MPO_PROPERTIES)
+        break;
       props[col.name] = createDefaultNumerical(1, col.min, col.max);
+      count++;
+    }
 
     return {type: DESIRABILITY_PROFILE_TYPE, name: '', description: '', properties: props};
   }
@@ -469,7 +458,8 @@ export class MpoProfileCreateView {
     if (this.df!.currentRowIdx === -1 && this.df!.rowCount > 0)
       this.df!.currentCell = this.df!.cell(0, this.df!.columns.byIndex(0).name);
 
-    await this.mpoContextPanel!.render(this.profile, this.editor.columnMapping, 'Average');
+    await this.mpoContextPanel!.render(this.profile, this.editor.columnMapping,
+      this.editor.aggregationInput.value ?? undefined);
   }
 
   private listenForProfileChanges() {
@@ -477,8 +467,8 @@ export class MpoProfileCreateView {
       this.saveButton!.style.display = 'initial';
       if (!this.df || !this.profile || !this.mpoContextPanel) return;
 
-      const agg = this.aggregationInput?.value ?? 'Average';
-      await this.mpoContextPanel.render(this.profile, this.editor.columnMapping, agg);
+      await this.mpoContextPanel.render(this.profile, this.editor.columnMapping,
+        this.editor.aggregationInput.value ?? undefined);
     }));
 
     this.subs.push(grok.events.onCustomEvent(MPO_PROFILE_DELETED_EVENT).subscribe((data) => {
@@ -499,15 +489,7 @@ export class MpoProfileCreateView {
   }
 
   private setAggregationVisible(visible: boolean): void {
-    if (this.aggregationInput)
-      this.aggregationInput.root.classList.toggle('chem-mpo-d-none', !visible);
-  }
-
-  private updateAggregationTooltip(): void {
-    const tip = this.aggregationInput!.enabled ?
-      'Score aggregation method' :
-      'Score aggregation method; select a dataset to enable';
-    this.aggregationInput!.setTooltip(tip);
+    this.editor.aggregationInput.root.classList.toggle('chem-mpo-d-none', !visible);
   }
 
   private closeContextPanel(): void {

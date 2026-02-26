@@ -4,7 +4,8 @@ import * as grok from 'datagrok-api/grok';
 
 import {Subject, Subscription} from 'rxjs';
 import {
-  DesirabilityProfile, PropertyDesirability,
+  DEFAULT_AGGREGATION, WEIGHTED_AGGREGATIONS_LIST,
+  DesirabilityProfile, PropertyDesirability, WeightedAggregation,
   createDefaultCategorical, createDefaultNumerical, isNumerical, migrateDesirability,
 } from './mpo';
 import {DesirabilityEditor, DesirabilityEditorFactory} from './editors/desirability-editor-factory';
@@ -19,6 +20,7 @@ const MAX_CATEGORICAL_CATEGORIES = 20;
 export class MpoProfileEditor {
   readonly root = ui.div([]);
   readonly onChanged = new Subject<void>();
+  readonly aggregationInput: DG.ChoiceInput<WeightedAggregation | null>;
 
   profile?: DesirabilityProfile;
   dataFrame?: DG.DataFrame;
@@ -36,6 +38,17 @@ export class MpoProfileEditor {
     this.dataFrame = dataFrame;
     this.design = design;
     this.preview = preview;
+    this.aggregationInput = ui.input.choice('Aggregation', {
+      items: WEIGHTED_AGGREGATIONS_LIST,
+      value: DEFAULT_AGGREGATION,
+      nullable: false,
+      onValueChanged: (v) => {
+        if (this.profile)
+          this.profile.aggregation = v;
+        this.emitChange();
+      },
+    });
+    this.aggregationInput.setTooltip('Score aggregation method');
   }
 
   private newRowId(): string {
@@ -57,6 +70,7 @@ export class MpoProfileEditor {
     this.rowSubs.clear();
 
     this.profile = profile;
+    this.aggregationInput.value = profile?.aggregation ?? DEFAULT_AGGREGATION;
     this.columnMapping = {};
     this.rows = {};
     this.rowIds = {};

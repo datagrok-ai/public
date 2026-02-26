@@ -2,6 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
 import {
+  DEFAULT_AGGREGATION,
   DESIRABILITY_PROFILE_TYPE,
   DesirabilityProfile,
   PropertyDesirability,
@@ -22,6 +23,7 @@ export enum MpoPathMode {
 
 export const MPO_TEMPLATE_PATH = 'System:AppData/Chem/mpo';
 export const MPO_PATH = 'Mpo';
+export const MAX_MPO_PROPERTIES = 20;
 
 export async function loadMpoProfiles(): Promise<MpoProfileInfo[]> {
   const files = await grok.dapi.files.list(MPO_TEMPLATE_PATH);
@@ -37,6 +39,7 @@ export async function loadMpoProfiles(): Promise<MpoProfileInfo[]> {
         fileName: file.name,
         name: content.name ?? file.name.replace(/\.json$/i, ''),
         description: content.description ?? '',
+        aggregation: content.aggregation,
         properties: content.properties,
       });
     } catch (e) {
@@ -76,7 +79,7 @@ export async function computeMpo(
     df: df,
     profileName,
     currentProperties: JSON.stringify(mappedProperties),
-    aggregation: aggregation ?? 'Average',
+    aggregation: aggregation ?? profile.aggregation ?? DEFAULT_AGGREGATION,
     silent,
   });
   return df.col(profileName) ? [profileName] : [];

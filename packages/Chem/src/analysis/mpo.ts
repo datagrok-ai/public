@@ -3,11 +3,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {Subscription} from 'rxjs';
-import {
-  DesirabilityProfile,
-  WeightedAggregation,
-  WEIGHTED_AGGREGATIONS_LIST,
-} from '@datagrok-libraries/statistics/src/mpo/mpo';
+import {DesirabilityProfile} from '@datagrok-libraries/statistics/src/mpo/mpo';
 import {MpoProfileEditor} from '@datagrok-libraries/statistics/src/mpo/mpo-profile-editor';
 import {MPO_SCORE_CHANGED_EVENT} from '@datagrok-libraries/statistics/src/mpo/utils';
 
@@ -19,7 +15,6 @@ import {computeMpo, MpoProfileInfo, deepEqual, findSuitableProfiles} from '../mp
 export class MpoProfileDialog {
   dataFrame: DG.DataFrame;
   mpoProfileEditor: MpoProfileEditor;
-  aggregationInput: DG.ChoiceInput<WeightedAggregation | null>;
   profileInput: DG.ChoiceInput<string | null>;
   designModeInput: DG.InputBase<boolean>;
   addParetoFront: DG.InputBase<boolean>;
@@ -39,12 +34,6 @@ export class MpoProfileDialog {
   constructor(dataFrame?: DG.DataFrame) {
     this.dataFrame = dataFrame ?? grok.shell.t;
     this.mpoProfileEditor = new MpoProfileEditor(this.dataFrame);
-
-    this.aggregationInput = ui.input.choice('Aggregation', {
-      items: WEIGHTED_AGGREGATIONS_LIST,
-      nullable: false,
-      onValueChanged: () => grok.events.fireCustomEvent(MPO_SCORE_CHANGED_EVENT, {}),
-    });
 
     this.profileInput = ui.input.choice('Profile', {
       nullable: false,
@@ -115,7 +104,7 @@ export class MpoProfileDialog {
         await this.mpoContextPanel.render(
           this.currentProfile,
           this.mpoProfileEditor.columnMapping,
-          this.aggregationInput.value ?? undefined,
+          this.mpoProfileEditor.aggregationInput.value ?? undefined,
         );
       }
     }));
@@ -211,7 +200,7 @@ export class MpoProfileDialog {
         this.dataFrame,
         this.currentProfile!,
         this.mpoProfileEditor.columnMapping,
-        this.aggregationInput.value!,
+        this.mpoProfileEditor.aggregationInput.value!,
       );
 
       if (columnNames.length && this.addParetoFront.value)
@@ -227,7 +216,7 @@ export class MpoProfileDialog {
 
   private getMpoControls(): HTMLElement {
     return ui.divV([
-      this.aggregationInput.root,
+      this.mpoProfileEditor.aggregationInput.root,
       this.designModeInput.root,
       this.mpoProfileEditor.root,
       this.addParetoFront.root,
