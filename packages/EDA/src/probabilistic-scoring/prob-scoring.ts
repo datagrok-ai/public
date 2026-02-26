@@ -81,12 +81,6 @@ export class Pmpo {
       return false;
     }
 
-    // Check desirability
-    if (desirability.type !== DG.COLUMN_TYPE.BOOL) {
-      showWarning(`: "${desirability.name}" must be boolean column.`);
-      return false;
-    }
-
     if (desirability.stats.stdev === 0) { // TRUE & FALSE
       showWarning(`: "${desirability.name}" has a single category.`);
       return false;

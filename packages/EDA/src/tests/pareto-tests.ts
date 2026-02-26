@@ -13,7 +13,7 @@ import {OPT_TYPE, NumericArray} from '../pareto-optimization/defs';
 
 const TIMEOUT = 5000;
 
-// Test dataset sizes 
+// Test dataset sizes
 const ROWS_COUNT = 1000000;
 const M = 1000000;
 const COLS_COUNT = 2;
@@ -48,11 +48,11 @@ function generateSense(nDims: number, pattern: 'all-min' | 'all-max' | 'mixed'):
   const sense: OPT_TYPE[] = [];
 
   for (let d = 0; d < nDims; d++) {
-    if (pattern === 'all-min') {
+    if (pattern === 'all-min')
       sense.push(OPT_TYPE.MIN);
-    } else if (pattern === 'all-max') {
+    else if (pattern === 'all-max')
       sense.push(OPT_TYPE.MAX);
-    } else {
+    else {
       // Mixed: alternate between MIN and MAX
       sense.push(d % 2 === 0 ? OPT_TYPE.MIN : OPT_TYPE.MAX);
     }
@@ -68,31 +68,29 @@ function generateNullIndices(nPoints: number, nullRatio: number): Set<number> {
 
   // Distribute null indices evenly
   const step = Math.floor(nPoints / nullCount);
-  for (let i = 0; i < nullCount; i++) {
+  for (let i = 0; i < nullCount; i++)
     nullIndices.add(i * step);
-  }
+
 
   return nullIndices;
 }
 
 /** Validates Pareto mask result */
 function validateParetoMask(mask: boolean[], nPoints: number): void {
-  if (mask.length !== nPoints) {
+  if (mask.length !== nPoints)
     throw new Error(`Invalid mask length: expected ${nPoints}, got ${mask.length}`);
-  }
 
-  const optimalCount = mask.filter(x => x).length;
-  if (optimalCount === 0) {
+
+  const optimalCount = mask.filter((x) => x).length;
+  if (optimalCount === 0)
     throw new Error('No optimal points found');
-  }
 
-  if (optimalCount === nPoints) {
+
+  if (optimalCount === nPoints)
     grok.shell.warning('All points are optimal - data may be degenerate');
-  }
 }
 
 category('Pareto optimization', () => {
-
   test(`Performance: ${DATASET_SIZE_LABEL}`, async () => {
     let mask: boolean[] | null = null;
     let error: Error | null = null;
@@ -246,7 +244,7 @@ category('Pareto optimization', () => {
 
     expect(mask !== null, true, 'Failed to compute Pareto mask');
     expect(mask!.length, 100, 'Should return mask with correct length');
-    const optimalCount = mask!.filter(x => x).length;
+    const optimalCount = mask!.filter((x) => x).length;
     expect(optimalCount > 0, true, 'At least some identical points should be optimal');
     expect(error === null, true, error?.message ?? '');
   }, {timeout: TIMEOUT});

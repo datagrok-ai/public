@@ -53,7 +53,7 @@ function getScoreMaxDeviation(sourceDrugCol: DG.Column, sourceScores: DG.Column,
   return mad;
 } // getScoreMaxDeviation
 
-category('Probabilistic MPO', () => {
+category('Probabilistic MPO computation', () => {
   // Correctness tests: compare pMPO scores with reference scores
   PMPO_MODES.forEach((refScoreName) => {
     const useSigmoid = (refScoreName == SIGMOIDAL);
@@ -154,4 +154,318 @@ category('Probabilistic MPO', () => {
     expect(desirability !== null, true, 'Inconsistent source data: no column ' + DESIRABILITY_COL_NAME);
     expect(descriptors.length, DESCRIPTOR_NAMES.length, 'Inconsistent source data: no enough of columns');
   }, {timeout: TIMEOUT});
+});
+
+/** Creates a test DataFrame with clearly separated desired/non-desired groups */
+function createValidTestDf(rowCount: number = 20): DG.DataFrame {
+  const half = Math.floor(rowCount / 2);
+  const desList: boolean[] = [];
+  const d1 = new Float64Array(rowCount);
+  const d2 = new Float64Array(rowCount);
+  const d3 = new Float64Array(rowCount);
+
+  for (let i = 0; i < rowCount; i++) {
+    desList.push(i < half);
+    const j = i < half ? i : i - half;
+    const t = j / Math.max(half - 1, 1);
+    // d1, d2: clearly separated groups → low p-value
+    d1[i] = i < half ? 9 + 2 * t : 1 + 2 * t;
+    d2[i] = i < half ? 18 + 4 * t : 3 + 4 * t;
+    // d3: same distribution in both groups → high p-value
+    d3[i] = 5 + 0.1 * j;
+  }
+
+  return DG.DataFrame.fromColumns([
+    DG.Column.fromList(DG.COLUMN_TYPE.BOOL, 'des', desList),
+    DG.Column.fromFloat64Array('d1', d1),
+    DG.Column.fromFloat64Array('d2', d2),
+    DG.Column.fromFloat64Array('d3', d3),
+  ]);
+}
+
+/** Extracts a ColumnList of named descriptors from the DataFrame */
+function getDescrCols(df: DG.DataFrame, names: string[]): DG.ColumnList {
+  return DG.DataFrame.fromColumns(df.columns.byNames(names)).columns;
+}
+
+category('Probabilistic MPO API', () => {
+  // --- isApplicable: validates input thresholds, sample count, desirability, and descriptor quality ---
+
+  // pValThresh = 0.0001 < P_VAL_TRES_MIN (0.001) → rejected
+  test('isApplicable: rejects p-value below minimum', async () => {
+    const df = createValidTestDf();
+    const des = df.col('des')!;
+    const descr = getDescrCols(df, ['d1', 'd2']);
+    expect(Pmpo.isApplicable(descr, des, 0.0001, R2_DEFAULT, Q_CUTOFF_DEFAULT), false);
+  });
+
+  // r2Tresh = 0.001 < R2_MIN (0.01) → rejected
+  test('isApplicable: rejects R² below minimum', async () => {
+    const df = createValidTestDf();
+    const des = df.col('des')!;
+    const descr = getDescrCols(df, ['d1', 'd2']);
+    expect(Pmpo.isApplicable(descr, des, P_VAL_TRES_DEFAULT, 0.001, Q_CUTOFF_DEFAULT), false);
+  });
+
+  // qCutoff = 0.001 < Q_CUTOFF_MIN (0.01) → rejected
+  test('isApplicable: rejects q-cutoff below minimum', async () => {
+    const df = createValidTestDf();
+    const des = df.col('des')!;
+    const descr = getDescrCols(df, ['d1', 'd2']);
+    expect(Pmpo.isApplicable(descr, des, P_VAL_TRES_DEFAULT, R2_DEFAULT, 0.001), false);
+  });
+
+  // 8 rows < MIN_SAMPLES_COUNT (10) → rejected
+  test('isApplicable: rejects too few samples', async () => {
+    const df = createValidTestDf(8);
+    const des = df.col('des')!;
+    const descr = getDescrCols(df, ['d1', 'd2']);
+    expect(Pmpo.isApplicable(descr, des, P_VAL_TRES_DEFAULT, R2_DEFAULT, Q_CUTOFF_DEFAULT), false);
+  });
+
+  // All-true desirability → stdev = 0 → rejected
+  test('isApplicable: rejects single-category desirability', async () => {
+    const n = 20;
+    const df = DG.DataFrame.fromColumns([
+      DG.Column.fromList(DG.COLUMN_TYPE.BOOL, 'des', new Array(n).fill(true)),
+      DG.Column.fromFloat64Array('d1', Float64Array.from({length: n}, (_, i) => i + 1)),
+      DG.Column.fromFloat64Array('d2', Float64Array.from({length: n}, (_, i) => i * 2)),
+    ]);
+    const des = df.col('des')!;
+    const descr = getDescrCols(df, ['d1', 'd2']);
+    expect(Pmpo.isApplicable(descr, des, P_VAL_TRES_DEFAULT, R2_DEFAULT, Q_CUTOFF_DEFAULT), false);
+  });
+
+  // String column among descriptors → not numerical → rejected
+  test('isApplicable: rejects non-numerical descriptor', async () => {
+    const n = 20;
+    const half = n / 2;
+    const df = DG.DataFrame.fromColumns([
+      DG.Column.fromList(DG.COLUMN_TYPE.BOOL, 'des',
+        Array.from({length: n}, (_, i) => i < half)),
+      DG.Column.fromFloat64Array('d1', Float64Array.from({length: n}, (_, i) => i + 1)),
+      DG.Column.fromStrings('strCol', Array.from({length: n}, (_, i) => 'a' + i)),
+    ]);
+    const des = df.col('des')!;
+    const descr = getDescrCols(df, ['d1', 'strCol']);
+    expect(Pmpo.isApplicable(descr, des, P_VAL_TRES_DEFAULT, R2_DEFAULT, Q_CUTOFF_DEFAULT), false);
+  });
+
+  // Descriptor with null at index 0 → missingValueCount > 0 → rejected
+  test('isApplicable: rejects descriptor with missing values', async () => {
+    const n = 20;
+    const half = n / 2;
+    const vals: (number | null)[] = Array.from({length: n}, (_, i) => i + 1);
+    vals[0] = null;
+    const df = DG.DataFrame.fromColumns([
+      DG.Column.fromList(DG.COLUMN_TYPE.BOOL, 'des',
+        Array.from({length: n}, (_, i) => i < half)),
+      DG.Column.fromFloat64Array('d1', Float64Array.from({length: n}, (_, i) => i + 1)),
+      DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'dNull', vals),
+    ]);
+    const des = df.col('des')!;
+    const descr = getDescrCols(df, ['d1', 'dNull']);
+    expect(Pmpo.isApplicable(descr, des, P_VAL_TRES_DEFAULT, R2_DEFAULT, Q_CUTOFF_DEFAULT), false);
+  });
+
+  // Both descriptors are constant (stdev = 0) → no non-constant columns → rejected
+  test('isApplicable: rejects all-constant descriptors', async () => {
+    const n = 20;
+    const half = n / 2;
+    const df = DG.DataFrame.fromColumns([
+      DG.Column.fromList(DG.COLUMN_TYPE.BOOL, 'des',
+        Array.from({length: n}, (_, i) => i < half)),
+      DG.Column.fromFloat64Array('c1', new Float64Array(n).fill(5)),
+      DG.Column.fromFloat64Array('c2', new Float64Array(n).fill(3)),
+    ]);
+    const des = df.col('des')!;
+    const descr = getDescrCols(df, ['c1', 'c2']);
+    expect(Pmpo.isApplicable(descr, des, P_VAL_TRES_DEFAULT, R2_DEFAULT, Q_CUTOFF_DEFAULT), false);
+  });
+
+  // Exactly MIN_SAMPLES_COUNT (10) rows with valid descriptors → accepted
+  test('isApplicable: accepts valid data at minimum sample count', async () => {
+    const df = createValidTestDf(10);
+    const des = df.col('des')!;
+    const descr = getDescrCols(df, ['d1', 'd2']);
+    expect(Pmpo.isApplicable(descr, des, P_VAL_TRES_DEFAULT, R2_DEFAULT, Q_CUTOFF_DEFAULT), true);
+  });
+
+  // --- isTableValid: validates table structure (row count and numeric column variance) ---
+
+  // 1 row < minimum of 2 → rejected
+  test('isTableValid: rejects table with 1 row', async () => {
+    const df = DG.DataFrame.fromColumns([
+      DG.Column.fromFloat64Array('a', new Float64Array([1])),
+      DG.Column.fromFloat64Array('b', new Float64Array([2])),
+    ]);
+    expect(Pmpo.isTableValid(df, false), false);
+  });
+
+  // All columns filled with a single value → 0 non-constant columns < 2 → rejected
+  test('isTableValid: rejects all-constant numeric columns', async () => {
+    const n = 10;
+    const df = DG.DataFrame.fromColumns([
+      DG.Column.fromFloat64Array('a', new Float64Array(n).fill(5)),
+      DG.Column.fromFloat64Array('b', new Float64Array(n).fill(3)),
+    ]);
+    expect(Pmpo.isTableValid(df, false), false);
+  });
+
+  // Only 1 column with variance > 0, need at least 2 → rejected
+  test('isTableValid: rejects single non-constant numeric column', async () => {
+    const n = 10;
+    const df = DG.DataFrame.fromColumns([
+      DG.Column.fromFloat64Array('a', Float64Array.from({length: n}, (_, i) => i)),
+      DG.Column.fromFloat64Array('b', new Float64Array(n).fill(3)),
+    ]);
+    expect(Pmpo.isTableValid(df, false), false);
+  });
+
+  // Exactly 2 columns with variance > 0 → minimum met → accepted
+  test('isTableValid: accepts two non-constant numeric columns', async () => {
+    const n = 10;
+    const df = DG.DataFrame.fromColumns([
+      DG.Column.fromFloat64Array('a', Float64Array.from({length: n}, (_, i) => i)),
+      DG.Column.fromFloat64Array('b', Float64Array.from({length: n}, (_, i) => i * 2)),
+    ]);
+    expect(Pmpo.isTableValid(df, false), true);
+  });
+
+  // --- fit: trains pMPO model, computes statistics, filters descriptors by p-value and correlation ---
+
+  // Valid data with well-separated groups → at least one descriptor selected
+  test('fit: returns non-empty params', async () => {
+    const df = createValidTestDf();
+    const trainRes = Pmpo.fit(df, getDescrCols(df, ['d1', 'd2']), df.col('des')!,
+      P_VAL_TRES_DEFAULT, R2_DEFAULT, Q_CUTOFF_DEFAULT);
+    expect(trainRes.params.size > 0, true, 'Expected non-empty params');
+  });
+
+  // Weights are z-scores normalized by their sum → must equal 1
+  test('fit: weights sum to 1', async () => {
+    const df = createValidTestDf();
+    const trainRes = Pmpo.fit(df, getDescrCols(df, ['d1', 'd2']), df.col('des')!,
+      P_VAL_TRES_DEFAULT, R2_DEFAULT, Q_CUTOFF_DEFAULT);
+    let sum = 0;
+    trainRes.params.forEach((p) => sum += p.weight);
+    expect(Math.abs(sum - 1.0) < 1e-10, true, `Weights sum ${sum} should equal 1.0`);
+  });
+
+  // Correlation filtering can only remove from p-value-selected set, never add
+  test('fit: selectedByCorr is subset of selectedByPvalue', async () => {
+    const df = createValidTestDf();
+    const trainRes = Pmpo.fit(df, getDescrCols(df, ['d1', 'd2', 'd3']), df.col('des')!,
+      P_VAL_TRES_DEFAULT, R2_DEFAULT, Q_CUTOFF_DEFAULT);
+    const allInPvalue = trainRes.selectedByCorr.every((d) => trainRes.selectedByPvalue.includes(d));
+    expect(allInPvalue, true, 'selectedByCorr must be a subset of selectedByPvalue');
+  });
+
+  // Statistics table should contain one row per input descriptor (3)
+  test('fit: statistics table row count matches descriptor count', async () => {
+    const descrNames = ['d1', 'd2', 'd3'];
+    const df = createValidTestDf();
+    const trainRes = Pmpo.fit(df, getDescrCols(df, descrNames), df.col('des')!,
+      P_VAL_TRES_DEFAULT, R2_DEFAULT, Q_CUTOFF_DEFAULT);
+    expect(trainRes.descrStatsTable.rowCount, descrNames.length);
+  });
+
+  // 8 rows < MIN_SAMPLES_COUNT → isApplicable fails → fit throws
+  test('fit: throws on non-applicable data', async () => {
+    const df = createValidTestDf(8); // too few samples
+    let threw = false;
+    try {
+      Pmpo.fit(df, getDescrCols(df, ['d1', 'd2']), df.col('des')!,
+        P_VAL_TRES_DEFAULT, R2_DEFAULT, Q_CUTOFF_DEFAULT);
+    } catch (_) {
+      threw = true;
+    }
+    expect(threw, true, 'Expected fit to throw on non-applicable data');
+  });
+
+  // Both groups have identical distributions → t ≈ 0, p ≈ 1 → all filtered → throws
+  test('fit: throws when no descriptors pass p-value filter', async () => {
+    const n = 20;
+    const half = n / 2;
+    // Same distribution in both groups → p-value ≈ 1 → all filtered
+    const df = DG.DataFrame.fromColumns([
+      DG.Column.fromList(DG.COLUMN_TYPE.BOOL, 'des', Array.from({length: n}, (_, i) => i < half)),
+      DG.Column.fromFloat64Array('d1', Float64Array.from({length: n}, (_, i) => (i % half) + 1)),
+      DG.Column.fromFloat64Array('d2', Float64Array.from({length: n}, (_, i) => ((i % half) + 1) * 2)),
+    ]);
+    let threw = false;
+    try {
+      Pmpo.fit(df, getDescrCols(df, ['d1', 'd2']), df.col('des')!,
+        P_VAL_TRES_DEFAULT, R2_DEFAULT, Q_CUTOFF_DEFAULT);
+    } catch (_) {
+      threw = true;
+    }
+    expect(threw, true, 'Expected fit to throw when no descriptors pass p-value filter');
+  });
+
+  // --- predict: applies trained pMPO parameters to compute scores ---
+
+  // Output column length must match input DataFrame row count
+  test('predict: returns column with correct length', async () => {
+    const df = createValidTestDf();
+    const trainRes = Pmpo.fit(df, getDescrCols(df, ['d1', 'd2']), df.col('des')!,
+      P_VAL_TRES_DEFAULT, R2_DEFAULT, Q_CUTOFF_DEFAULT);
+    const prediction = Pmpo.predict(df, trainRes.params, true, SCORES_NAME);
+    expect(prediction.length, df.rowCount);
+  });
+
+  // Scores = sum of weight * gaussian * sigmoid, all components >= 0
+  test('predict: scores are non-negative', async () => {
+    const df = createValidTestDf();
+    const trainRes = Pmpo.fit(df, getDescrCols(df, ['d1', 'd2']), df.col('des')!,
+      P_VAL_TRES_DEFAULT, R2_DEFAULT, Q_CUTOFF_DEFAULT);
+    const prediction = Pmpo.predict(df, trainRes.params, true, SCORES_NAME);
+    const raw = prediction.getRawData();
+    let allNonNeg = true;
+    for (let i = 0; i < raw.length; i++)
+      if (raw[i] < 0) {allNonNeg = false; break;}
+    expect(allNonNeg, true, 'All scores should be non-negative');
+  });
+
+  // Weights sum to 1, gaussian in [0,1], sigmoid in [0,1] → score <= 1
+  test('predict: scores do not exceed 1', async () => {
+    const df = createValidTestDf();
+    const trainRes = Pmpo.fit(df, getDescrCols(df, ['d1', 'd2']), df.col('des')!,
+      P_VAL_TRES_DEFAULT, R2_DEFAULT, Q_CUTOFF_DEFAULT);
+    const prediction = Pmpo.predict(df, trainRes.params, true, SCORES_NAME);
+    const raw = prediction.getRawData();
+    let maxScore = 0;
+    for (let i = 0; i < raw.length; i++) maxScore = Math.max(maxScore, raw[i]);
+    expect(maxScore <= 1.0 + 1e-10, true, `Max score ${maxScore} should not exceed 1.0`);
+  });
+
+  // Sigmoid correction divides by (1 + b*c^(-dx)) → different from pure Gaussian
+  test('predict: sigmoid and Gaussian modes produce different scores', async () => {
+    const df = createValidTestDf();
+    const trainRes = Pmpo.fit(df, getDescrCols(df, ['d1', 'd2']), df.col('des')!,
+      P_VAL_TRES_DEFAULT, R2_DEFAULT, Q_CUTOFF_DEFAULT);
+    const sigScores = Pmpo.predict(df, trainRes.params, true, 'sig').getRawData();
+    const gauScores = Pmpo.predict(df, trainRes.params, false, 'gau').getRawData();
+    let differ = false;
+    for (let i = 0; i < df.rowCount; i++)
+      if (Math.abs(sigScores[i] - gauScores[i]) > 1e-12) {differ = true; break;}
+    expect(differ, true, 'Sigmoid and Gaussian modes should produce different scores');
+  });
+
+  // Params reference descriptor columns not present in the target DataFrame → throws
+  test('predict: throws for missing column', async () => {
+    const df = createValidTestDf();
+    const trainRes = Pmpo.fit(df, getDescrCols(df, ['d1', 'd2']), df.col('des')!,
+      P_VAL_TRES_DEFAULT, R2_DEFAULT, Q_CUTOFF_DEFAULT);
+    const incompleteDf = DG.DataFrame.fromColumns([
+      DG.Column.fromFloat64Array('other', Float64Array.from({length: 5}, (_, i) => i)),
+    ]);
+    let threw = false;
+    try {
+      Pmpo.predict(incompleteDf, trainRes.params, true, SCORES_NAME);
+    } catch (_) {
+      threw = true;
+    }
+    expect(threw, true, 'Expected predict to throw for missing column');
+  });
 });
