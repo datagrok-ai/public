@@ -1,5 +1,5 @@
 // Utility functions for probabilistic scoring (pMPO)
-// Link: https://pmc.ncbi.nlm.nih.gov/articles/PMC4716604/
+// Source paper https://pmc.ncbi.nlm.nih.gov/articles/PMC4716604/
 
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';

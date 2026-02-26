@@ -1,6 +1,6 @@
 /* eslint-disable max-len */
 // Probabilistic scoring (pMPO) features
-// Link: https://pmc.ncbi.nlm.nih.gov/articles/PMC4716604/
+// Source paper https://pmc.ncbi.nlm.nih.gov/articles/PMC4716604/
 
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
@@ -121,20 +121,20 @@ export class Pmpo {
       return false;
     }
 
-    let validNumericColsCount = 0;
+    let validColsCount = 0;
 
     // Check numeric columns and boolean columns
     for (const col of df.columns) {
-      if (col.isNumerical) {
+      if (col.isNumerical || (col.type === DG.TYPE.BOOL)) {
         if (col.stats.stdev > 0)
-          ++validNumericColsCount;
+          ++validColsCount;
       }
     }
 
     // Check valid numeric columns count
-    if (validNumericColsCount < 2) {
+    if (validColsCount < 2) {
       if (toShowMsg)
-        grok.shell.warning(PMPO_NON_APPLICABLE + ': not enough of numeric columns with non-zero variance.');
+        grok.shell.warning(PMPO_NON_APPLICABLE + ': not enough of non-constant columns.');
       return false;
     }
 
@@ -669,9 +669,7 @@ export class Pmpo {
   private getInputForm(addBtn: boolean): Controls {
     const form = ui.form([]);
     form.append(ui.h2('Training data'));
-    const numericColNames = this.numericCols.map((col) => col.name);
     const initDesirability = getInitCol(this.desirabilityColumns);
-    const checkedNumericColNames = numericColNames.filter((name) => name !== initDesirability.name);
 
     // returns the desirability column to be used for computations, based on the input desirability column and threshold settings
     const getDesirabilityColumn = (): DG.Column => {
@@ -729,8 +727,10 @@ export class Pmpo {
     const descrInput = ui.input.columns('Descriptors', {
       table: this.table,
       nullable: false,
-      available: numericColNames,
-      checked: checkedNumericColNames,
+      available: this.numericCols.map((col) => col.name),
+      checked: this.numericCols.filter((col) => {
+        return (col.name !== initDesirability.name) && (col.stats.stdev > 0);
+      }).map((col) => col.name),
       tooltipText: 'Descriptor columns used for model construction.',
       onValueChanged: (value) => {
         if (value != null) {
@@ -764,6 +764,12 @@ export class Pmpo {
           checkAutoTuneAndRun();
         }
       }, // onValueChanged
+    });
+    desInput.addValidator((value: string) => {
+      const col = this.table.col(value);
+      if (col != null && col.stats.stdev === 0)
+        return 'Desirability column has zero variance.';
+      return null;
     });
     form.append(desInput.root);
 
@@ -867,8 +873,15 @@ export class Pmpo {
             ui.tooltip.bind(descrInput.input, 'Desirability column cannot be used as a descriptor.');
             ui.tooltip.bind(desInput.input, 'Desirability column cannot be used as a descriptor.');
           } else {
-            descrInput.input.classList.remove('d4-invalid');
-            ui.tooltip.bind(descrInput.input, 'Descriptor columns used for model construction.');
+            const zeroStdevCols = descrInput.value.filter((col) => col.stats.stdev === 0).map((col) => col.name);
+            if (zeroStdevCols.length > 0) {
+              res = false;
+              descrInput.input.classList.add('d4-invalid');
+              ui.tooltip.bind(descrInput.input, () => ui.markdown(`Descriptor columns with zero variance cannot be used: **${zeroStdevCols.join(', ')}**`));
+            } else {
+              descrInput.input.classList.remove('d4-invalid');
+              ui.tooltip.bind(descrInput.input, 'Descriptor columns used for model construction.');
+            }
 
             if (desInput.value.type === DG.COLUMN_TYPE.BOOL) {
               if (desInput.value.stats.stdev > 0) {
@@ -1060,7 +1073,7 @@ export class Pmpo {
     const res: DG.Column[] = [];
 
     for (const col of this.table.columns) {
-      if (((col.type === DG.COLUMN_TYPE.BOOL) || (col.isNumerical)) && (col.stats.stdev > 0))
+      if (((col.type === DG.COLUMN_TYPE.BOOL) || (col.isNumerical)))
         res.push(col);
     }
 
@@ -1072,7 +1085,7 @@ export class Pmpo {
     const res: DG.Column[] = [];
 
     for (const col of this.table.columns) {
-      if ((col.isNumerical) && (col.stats.missingValueCount < 1) && (col.stats.stdev > 0))
+      if ((col.isNumerical) && (col.stats.missingValueCount < 1))
         res.push(col);
     }
 

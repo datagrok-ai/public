@@ -1,5 +1,5 @@
 // Constants and type definitions for probabilistic scoring (pMPO)
-// Link: https://pmc.ncbi.nlm.nih.gov/articles/PMC4716604/
+// Source paper https://pmc.ncbi.nlm.nih.gov/articles/PMC4716604/
 
 /** Minimum number of samples required to compute pMPO */
 export const MIN_SAMPLES_COUNT = 10;

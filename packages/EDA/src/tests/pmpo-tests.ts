@@ -1,6 +1,6 @@
 // Tests for Probabilistic MPO (pMPO)
 // Reference scores are pre-computed and stored in the 'drugs-props-train-scores.csv' file.
-// This scores are computed using the library: https://github.com/Merck/pmpo
+// This scores are computed using the library https://github.com/Merck/pmpo
 
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
