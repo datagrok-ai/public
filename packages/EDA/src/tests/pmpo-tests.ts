@@ -53,7 +53,7 @@ function getScoreMaxDeviation(sourceDrugCol: DG.Column, sourceScores: DG.Column,
   return mad;
 } // getScoreMaxDeviation
 
-category('Probabilistic MPO computation', () => {
+category('Probabilistic MPO: Computation', () => {
   // Correctness tests: compare pMPO scores with reference scores
   PMPO_MODES.forEach((refScoreName) => {
     const useSigmoid = (refScoreName == SIGMOIDAL);
@@ -188,7 +188,7 @@ function getDescrCols(df: DG.DataFrame, names: string[]): DG.ColumnList {
   return DG.DataFrame.fromColumns(df.columns.byNames(names)).columns;
 }
 
-category('Probabilistic MPO API', () => {
+category('Probabilistic MPO: API', () => {
   // --- isApplicable: validates input thresholds, sample count, desirability, and descriptor quality ---
 
   // pValThresh = 0.0001 < P_VAL_TRES_MIN (0.001) → rejected

@@ -879,19 +879,7 @@ export class Pmpo {
       runComputations();
     };
 
-    // Validates all inputs before running computations. Cases checked:
-    // 1. Settings are not null: p-value, R², and q-cutoff must all be specified.
-    // 2. Settings are in valid ranges: p-value in (0, 1], R² in [0, 1], q-cutoff in (0, 1].
-    // 3. Column inputs are not null: both descriptor columns and desirability column must be selected.
-    // 4. At least one descriptor column is selected.
-    // 5. Desirability column is not also used as a descriptor (overlap not allowed).
-    // 6. No descriptor columns have zero variance (constant columns carry no information).
-    // 7. No descriptor columns consist entirely of missing values.
-    // 8. Boolean desirability column must have both true and false values (non-zero variance).
-    // 9. Numeric desirability column must have non-zero variance.
-    // 10. Numeric desirability threshold must be specified (non-null).
-    // 11. Numeric desirability threshold must produce both desired and non-desired groups
-    //     (threshold that classifies all compounds into one group is not useful).
+    // Validates all inputs before running computations
     const areInputsValid = (): boolean => {
       let res = true;
 
@@ -1004,7 +992,7 @@ export class Pmpo {
       } // areInputsValid
 
       return res;
-    };
+    }; // areInputsValid
 
     const checkAutoTuneAndRun = () => {
       if (autoTuneInput.value)
