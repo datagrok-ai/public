@@ -105,7 +105,7 @@ import {MpoProfileManager} from './mpo/mpo-profile-manager';
 import {MpoProfileHandler} from './mpo/mpo-profile-handler';
 import {findSuitableProfiles, MPO_PROFILE_CHANGED_EVENT, MpoProfileInfo} from './mpo/utils';
 import {removeWaterAndSalts} from './utils/reactions/reactions';
-import {transformationReactionsUI, twoComponentReactionUI} from './utils/reactions/ui';
+import {transformationReactionsUI, transformationReactionsView, twoComponentReactionsView, twoComponentReactionUI} from './utils/reactions/ui';
 
 export {getMCS};
 export * from './package.g';
@@ -2508,7 +2508,7 @@ export class PackageFunctions {
   }
 
   @grok.decorators.func({
-    'top-menu': 'Chem | Transform | Deprotect...',
+    'top-menu': 'Chem | Transform | Reactions | Deprotect...',
     'name': 'Deprotect',
     'description': 'Removes drawn protecting groups / fragments from molecules',
     'editor': 'Chem:DeprotectEditor',
@@ -2751,7 +2751,7 @@ export class PackageFunctions {
   }
 
   @grok.decorators.func({
-    topMenu: 'Chem | Transform | Remove Water and Salts...',
+    topMenu: 'Chem | Transform | Reactions | Remove Water and Salts...',
     name: 'removeWaterAndSalts',
     friendlyName: 'Remove Water and Salts',
     description: 'Removes water and salts from the list of molecules',
@@ -2765,7 +2765,7 @@ export class PackageFunctions {
   }
 
   @grok.decorators.func({
-    topMenu: 'Chem | Transform | Run Reaction...',
+    topMenu: 'Chem | Transform | Reactions | Transformation...',
     name: 'transformationReactions',
     friendlyName: 'Run Reaction',
     description: 'Runs reaction based on the reaction SMARTS and list of reactants',
@@ -2775,7 +2775,7 @@ export class PackageFunctions {
   }
 
   @grok.decorators.func({
-    topMenu: 'Chem | Transform | Two-Component Reaction...',
+    topMenu: 'Chem | Transform | Reactions | Two-Component Reaction...',
     name: 'twoComponentReaction',
     friendlyName: 'Two-Component Reaction',
     description: 'Runs a reaction between molecules from two columns',
@@ -2784,6 +2784,23 @@ export class PackageFunctions {
     twoComponentReactionUI(grok.shell.t);
   }
 
+  @grok.decorators.func({
+    name: 'Transformation Reactions', meta: {browsePath: 'Chem | Reactions', role: 'app'},
+    tags: ['app'],
+    result: {name: 'result', type: 'view'},
+  })
+  static async transformationReactionsApp(@grok.decorators.param({options: {metaUrl: true, optional: true}}) _path?: string,): Promise<DG.ViewBase> {
+    return await transformationReactionsView(grok.shell.tables[0]);
+  }
+
+  @grok.decorators.func({
+    name: 'Two-Component Reactions', meta: {browsePath: 'Chem | Reactions', role: 'app'},
+    tags: ['app'],
+    result: {name: 'result', type: 'view'},
+  })
+  static async twoComponentReactionsApp(@grok.decorators.param({options: {metaUrl: true, optional: true}}) _path?: string,): Promise<DG.ViewBase> {
+    return await twoComponentReactionsView(grok.shell.tables[0]);
+  }
 
   @grok.decorators.panel({
     name: 'Chemistry | MPO',

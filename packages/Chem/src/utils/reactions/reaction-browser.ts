@@ -63,6 +63,7 @@ export class ReactionBrowser {
     this.searchInput.root.style.marginBottom = '0';
     this.searchInput.root.style.flexGrow = '1';
     this.searchInput.root.style.minWidth = '200px';
+    this.searchInput.input.style.width = '60%';
     ui.tooltip.bind(this.searchInput.input, 'Search reactions by name, description, tags, or category');
     (this.searchInput.input as HTMLInputElement).placeholder = 'Search reactions...';
 
@@ -210,6 +211,7 @@ export class ReactionBrowser {
     const card = ui.divV([canvas, nameLabel, categoryLabel, sourceLabel], {style: {
       width: `${CARD_WIDTH}px`,
       minHeight: `${CARD_HEIGHT}px`,
+      maxHeight: `${CARD_HEIGHT + 60}px`,
       border: '1px solid var(--grey-2)',
       borderRadius: '6px',
       padding: '5px',
@@ -267,6 +269,7 @@ export class ReactionBrowser {
     const card = ui.divV([icon, label], {style: {
       width: `${CARD_WIDTH}px`,
       minHeight: `${CARD_HEIGHT}px`,
+      maxHeight: `${CARD_HEIGHT + 60}px`,
       border: '2px dashed var(--grey-2)',
       borderRadius: '6px',
       padding: '5px',

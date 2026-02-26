@@ -1136,7 +1136,7 @@ export async function isInteractiveNN(df: DG.DataFrame, predictColumn: DG.Column
 //input: column molecules { semType: Molecule }
 //input: string fragment = 'O=C([N:1])OCC1c2ccccc2-c2ccccc21' { semType: Molecule }
 //meta.role: transform
-//top-menu: Chem | Transform | Deprotect...
+//top-menu: Chem | Transform | Reactions | Deprotect...
 //editor: Chem:DeprotectEditor
 export async function deprotect(table: DG.DataFrame, molecules: DG.Column, fragment: string) : Promise<void> {
   await PackageFunctions.deprotect(table, molecules, fragment);
@@ -1252,7 +1252,7 @@ export async function mpoProfilesAppTreeBrowser(treeNode: any, _browseView: any)
 //input: dataframe table 
 //input: column molecules 
 //output: column result { semType: Molecule }
-//top-menu: Chem | Transform | Remove Water and Salts...
+//top-menu: Chem | Transform | Reactions | Remove Water and Salts...
 //friendlyName: Remove Water and Salts
 export async function removeWaterAndSaltsTopMenu(table: DG.DataFrame, molecules: DG.Column) {
   return await PackageFunctions.removeWaterAndSaltsTopMenu(table, molecules);
@@ -1260,7 +1260,7 @@ export async function removeWaterAndSaltsTopMenu(table: DG.DataFrame, molecules:
 
 //name: transformationReactions
 //description: Runs reaction based on the reaction SMARTS and list of reactants
-//top-menu: Chem | Transform | Run Reaction...
+//top-menu: Chem | Transform | Reactions | Transformation...
 //friendlyName: Run Reaction
 export async function transformationReactionsTopMenu() : Promise<void> {
   await PackageFunctions.transformationReactionsTopMenu();
@@ -1268,10 +1268,30 @@ export async function transformationReactionsTopMenu() : Promise<void> {
 
 //name: twoComponentReaction
 //description: Runs a reaction between molecules from two columns
-//top-menu: Chem | Transform | Two-Component Reaction...
+//top-menu: Chem | Transform | Reactions | Two-Component Reaction...
 //friendlyName: Two-Component Reaction
 export async function twoComponentReactionTopMenu() : Promise<void> {
   await PackageFunctions.twoComponentReactionTopMenu();
+}
+
+//name: Transformation Reactions
+//tags: app
+//input: string _path { meta.url: true; optional: true }
+//output: view result
+//meta.browsePath: Chem | Reactions
+//meta.role: app
+export async function transformationReactionsApp(_path?: string) : Promise<any> {
+  return await PackageFunctions.transformationReactionsApp(_path);
+}
+
+//name: Two-Component Reactions
+//tags: app
+//input: string _path { meta.url: true; optional: true }
+//output: view result
+//meta.browsePath: Chem | Reactions
+//meta.role: app
+export async function twoComponentReactionsApp(_path?: string) : Promise<any> {
+  return await PackageFunctions.twoComponentReactionsApp(_path);
 }
 
 //name: Chemistry | MPO

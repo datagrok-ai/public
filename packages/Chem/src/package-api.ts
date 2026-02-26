@@ -887,8 +887,37 @@ export namespace funcs {
     return await grok.functions.call('Chem:MpoProfilesApp', { path });
   }
 
-  export async function mpoProfilesAppTreeBrowser(treeNode: any , browseView: DG.View ): Promise<void> {
-    return await grok.functions.call('Chem:MpoProfilesAppTreeBrowser', { treeNode, browseView });
+  export async function mpoProfilesAppTreeBrowser(treeNode: any , _browseView: DG.View ): Promise<void> {
+    return await grok.functions.call('Chem:MpoProfilesAppTreeBrowser', { treeNode, _browseView });
+  }
+
+  /**
+  Removes water and salts from the list of molecules
+  */
+  export async function removeWaterAndSaltsTopMenu(table: DG.DataFrame , molecules: DG.Column ): Promise<DG.Column> {
+    return await grok.functions.call('Chem:RemoveWaterAndSaltsTopMenu', { table, molecules });
+  }
+
+  /**
+  Runs reaction based on the reaction SMARTS and list of reactants
+  */
+  export async function transformationReactionsTopMenu(): Promise<void> {
+    return await grok.functions.call('Chem:TransformationReactionsTopMenu', {});
+  }
+
+  /**
+  Runs a reaction between molecules from two columns
+  */
+  export async function twoComponentReactionTopMenu(): Promise<void> {
+    return await grok.functions.call('Chem:TwoComponentReactionTopMenu', {});
+  }
+
+  export async function transformationReactionsApp(_path?: string ): Promise<DG.View> {
+    return await grok.functions.call('Chem:TransformationReactionsApp', { _path });
+  }
+
+  export async function twoComponentReactionsApp(_path?: string ): Promise<DG.View> {
+    return await grok.functions.call('Chem:TwoComponentReactionsApp', { _path });
   }
 
   export async function mpoWidget(smiles: any ): Promise<any> {
