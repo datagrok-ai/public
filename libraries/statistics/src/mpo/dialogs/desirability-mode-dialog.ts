@@ -29,15 +29,29 @@ export class DesirabilityModeDialog {
     private mappedCol?: DG.Column | null,
   ) {}
 
-  private buildDefaultScoreInput(prop: PropertyDesirability): DG.InputBase {
-    const input = ui.input.float('Default score', {value: prop.defaultScore ?? 0, min: 0, max: 1, format: '#0.000',
+  private buildDefaultScoreInput(prop: PropertyDesirability): HTMLElement {
+    const hasFallback = prop.defaultScore != null;
+    const scoreInput = ui.input.float('Default score', {value: prop.defaultScore ?? 0, min: 0, max: 1, format: '#0.000',
       onValueChanged: (v) => {
         prop.defaultScore = v ?? 0;
-        this.onUpdate({defaultScore: prop.defaultScore} as any);
+        this.onUpdate({defaultScore: prop.defaultScore});
       },
     });
-    input.setTooltip('Desirability score (0–1) used when a cell value is missing or a category is unmatched. If not set, the row is excluded from scoring.');
-    return input;
+    scoreInput.root.style.display = hasFallback ? '' : 'none';
+
+    const choiceInput = ui.input.choice('If missing', {
+      items: ['Exclude row', 'Use default score'],
+      value: hasFallback ? 'Use default score' : 'Exclude row',
+      onValueChanged: (v) => {
+        const use = v === 'Use default score';
+        prop.defaultScore = use ? (scoreInput.value ?? 0) : undefined;
+        scoreInput.root.style.display = use ? '' : 'none';
+        this.onUpdate({defaultScore: prop.defaultScore});
+      },
+    });
+    choiceInput.setTooltip('Score to assign when a value is missing or unmatched.');
+    scoreInput.setTooltip('Desirability score (0–1) to use as fallback.');
+    return ui.form([choiceInput, scoreInput]);
   }
 
   show(): void {
@@ -70,7 +84,7 @@ export class DesirabilityModeDialog {
       buildContent();
     }});
 
-    const buildNumericalContent = () => {
+    const buildNumericalContent = (acc: DG.Accordion) => {
       const prop = this.prop as NumericalDesirability;
       prop.mode ??= 'freeform';
 
@@ -119,8 +133,7 @@ export class DesirabilityModeDialog {
         if (prop.mode === 'sigmoid')
           form.push(inputs.get('x0')!, inputs.get('k')!);
 
-        paramPanel.append(ui.h3('Parameters'));
-        paramPanel.append(ui.form(form));
+        paramPanel.append(ui.form(form), previewEditor.root);
       };
 
       previewEditor.onParamsChanged = (p) => {
@@ -137,7 +150,8 @@ export class DesirabilityModeDialog {
 
       updateParams();
 
-      contentPanel.append(modeInput.root, paramPanel, previewEditor.root);
+      contentPanel.append(modeInput.root);
+      acc.addPane('Parameters', () => paramPanel, true);
     };
 
     const buildCategoricalContent = () => {
@@ -158,17 +172,23 @@ export class DesirabilityModeDialog {
       dispose();
       ui.empty(contentPanel);
 
+      if (!this.mappedCol)
+        contentPanel.append(typeInput.root);
+
+      const acc = ui.accordion();
+
       if (isNumerical(this.prop))
-        buildNumericalContent();
+        buildNumericalContent(acc);
       else
         buildCategoricalContent();
 
-      contentPanel.append(ui.h3('Fallback'), ui.form([this.buildDefaultScoreInput(this.prop)]));
+      acc.addPane('Missing values', () => this.buildDefaultScoreInput(this.prop), true);
+      contentPanel.append(acc.root);
     };
 
     buildContent();
 
-    dialog.add(ui.divV([...(!this.mappedCol ? [typeInput.root] : []), contentPanel]));
+    dialog.add(contentPanel);
 
     dialog.onOK(() => {
       dispose();
