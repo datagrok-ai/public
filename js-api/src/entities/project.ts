@@ -8,6 +8,7 @@ import {MapProxy} from "../proxies";
 import {DataFrame} from "../dataframe";
 import {IDartApi} from "../api/grok_api.g";
 import {Entity} from "./entity";
+import {TableView} from "../views/view";
 
 const api: IDartApi = (typeof window !== 'undefined' ? window : global.window) as any;
 
@@ -106,4 +107,8 @@ export class Project extends Entity {
     api.grok_Project_RemoveRelation(this.dart, entity.dart);
   }
 
+  /** Adds a table to this project and opens it as a view */
+  addTableView(table: DataFrame): TableView {
+    return toJs(api.grok_Project_AddTableView(this.dart, table.dart));
+  }
 }

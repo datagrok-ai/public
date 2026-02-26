@@ -85,6 +85,11 @@ export class Shell {
     return toJs(api.grok_Project());
   }
 
+  /** Returns the list of currently opened projects */
+  get projects(): Project[] {
+    return toJs(api.grok_Shell_Get_Projects());
+  }
+
   /** Adds a table to the workspace. */
   addTable(table: DataFrame): DataFrame {
     api.grok_AddTable(table.dart);
