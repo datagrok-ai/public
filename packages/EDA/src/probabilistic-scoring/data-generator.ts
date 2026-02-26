@@ -18,6 +18,18 @@ export async function getSynteticPmpoData(samplesCount: number): Promise<DG.Data
   genTable.columns.add(DG.Column.fromList(DG.COLUMN_TYPE.BOOL, 'Const bool', new Array(samplesCount).fill(true)));
   genTable.columns.add(DG.Column.fromInt32Array('Const int', new Int32Array(samplesCount).fill(1)));
 
+  // Add a copy of the first numeric column with 5 missing values
+  const firstNumCol = genTable.columns.toList().find((col) => col.isNumerical);
+  if (firstNumCol) {
+    const colWithMissing = firstNumCol.clone();
+    colWithMissing.name = `${firstNumCol.name} (missing)`;
+    for (let i = 0; i < Math.min(5, colWithMissing.length); ++i)
+      colWithMissing.set(i, DG.FLOAT_NULL);
+    genTable.columns.add(colWithMissing);
+  }
+
+  genTable.columns.add(DG.Column.fromFloat32Array('Nulls', new Float32Array(samplesCount).fill(DG.FLOAT_NULL)));
+
   return genTable;
 }
 

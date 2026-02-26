@@ -251,23 +251,6 @@ category('Probabilistic MPO API', () => {
     expect(Pmpo.isApplicable(descr, des, P_VAL_TRES_DEFAULT, R2_DEFAULT, Q_CUTOFF_DEFAULT), false);
   });
 
-  // Descriptor with null at index 0 → missingValueCount > 0 → rejected
-  test('isApplicable: rejects descriptor with missing values', async () => {
-    const n = 20;
-    const half = n / 2;
-    const vals: (number | null)[] = Array.from({length: n}, (_, i) => i + 1);
-    vals[0] = null;
-    const df = DG.DataFrame.fromColumns([
-      DG.Column.fromList(DG.COLUMN_TYPE.BOOL, 'des',
-        Array.from({length: n}, (_, i) => i < half)),
-      DG.Column.fromFloat64Array('d1', Float64Array.from({length: n}, (_, i) => i + 1)),
-      DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'dNull', vals),
-    ]);
-    const des = df.col('des')!;
-    const descr = getDescrCols(df, ['d1', 'dNull']);
-    expect(Pmpo.isApplicable(descr, des, P_VAL_TRES_DEFAULT, R2_DEFAULT, Q_CUTOFF_DEFAULT), false);
-  });
-
   // Both descriptors are constant (stdev = 0) → no non-constant columns → rejected
   test('isApplicable: rejects all-constant descriptors', async () => {
     const n = 20;

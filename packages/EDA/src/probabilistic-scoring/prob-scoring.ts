@@ -17,8 +17,7 @@ import {MIN_SAMPLES_COUNT, PMPO_NON_APPLICABLE, DescriptorStatistics, P_VAL_TRES
   P_VAL_TRES_DEFAULT, R2_DEFAULT, Q_CUTOFF_DEFAULT, USE_SIGMOID_DEFAULT, ROC_TRESHOLDS,
   FPR_TITLE, TPR_TITLE, COLORS, THRESHOLD, AUTO_TUNE_MAX_APPLICABLE_ROWS, DEFAULT_OPTIMIZATION_SETTINGS,
   P_VAL_TRES_MAX, R2_MAX, Q_CUTOFF_MAX, OptimalPoint, LOW_PARAMS_BOUNDS, HIGH_PARAMS_BOUNDS, FORMAT,
-  EQUALITY_SIGN, SIGN_OPTIONS, THRESHOLDED_DESIRABILITY_COL_NAME,
-  PMPO_COMPUTE_FAILED} from './pmpo-defs';
+  EQUALITY_SIGN, SIGN_OPTIONS, THRESHOLDED_DESIRABILITY_COL_NAME, PMPO_COMPUTE_FAILED} from './pmpo-defs';
 import {addSelectedDescriptorsCol, getDescriptorStatisticsTable, getFilteredByPvalue, getFilteredByCorrelations,
   getModelParams, getDescrTooltip, saveModel, getScoreTooltip, getDesirabilityProfileJson, getCorrelationTriples,
   addCorrelationColumns, setPvalColumnColorCoding, setCorrColumnColorCoding, PmpoError, getInitCol,
@@ -26,6 +25,7 @@ import {addSelectedDescriptorsCol, getDescriptorStatisticsTable, getFilteredByPv
 import {getOutputPalette} from '../pareto-optimization/utils';
 import {OPT_TYPE} from '../pareto-optimization/defs';
 import {optimizeNM} from './nelder-mead';
+import {getMissingValsIndices} from '../missing-values-imputation/knn-imputer';
 
 export type PmpoTrainingResult = {
   params: Map<string, PmpoParams>,
@@ -95,8 +95,8 @@ export class Pmpo {
         return false;
       }
 
-      if (col.stats.missingValueCount > 0) {
-        showWarning(`: "${col.name}" contains missing values.`);
+      if (col.stats.missingValueCount === col.length) {
+        showWarning(`: "${col.name}" contains only missing values.`);
         return false;
       }
 
@@ -198,10 +198,12 @@ export class Pmpo {
   static predict(df: DG.DataFrame, params: Map<string, PmpoParams>, useSigmoid: boolean, predictionName: string): DG.Column {
     const count = df.rowCount;
     const scores = new Float64Array(count).fill(0);
+    const colsWithMissingVals: DG.Column[] = [];
 
     // Compute pMPO scores (see https://pmc.ncbi.nlm.nih.gov/articles/PMC4716604/
     params.forEach((param, name) => {
       const col = df.col(name);
+
       const b = param.b;
       const c = param.c;
       const x0 = param.cutoff;
@@ -212,6 +214,9 @@ export class Pmpo {
 
       if (col == null)
         throw new Error(`Failed to apply pMPO: inconsistent data, no column "${name}" in the table "${df.name}"`);
+
+      if (col.stats.missingValueCount > 0)
+        colsWithMissingVals.push(col);
 
       const vals = col.getRawData();
 
@@ -240,6 +245,7 @@ export class Pmpo {
   private view: DG.TableView;
   private desirabilityColumns: DG.Column[];
   private numericCols: DG.Column[];
+  private missingValsIndeces: Map<string, number[]>;
 
   private initTable = DG.DataFrame.create();
 
@@ -275,6 +281,7 @@ export class Pmpo {
     this.desirabilityColumns = this.getDesirabilityColumns();
     this.numericCols = this.getValidNumericCols();
     this.predictionName = df.columns.getUnusedName(SCORES_TITLE);
+    this.missingValsIndeces = getMissingValsIndices(this.numericCols);
   };
 
   /** Sets the ribbon panels in the table view (removes the first panel) */
@@ -585,6 +592,26 @@ export class Pmpo {
     });
   } // updateConfusionMatrix
 
+  /** Sets null values for the predicted scores in rows with missing values in any of the descriptors */
+  private getIndecesOfMissingValues(colNames: string[]): number[] {
+    const indeces: number[] = [];
+
+    colNames.forEach((name) => {
+      const inds = this.missingValsIndeces.get(name);
+
+      if (inds != null)
+        indeces.push(...inds);
+    });
+
+    return indeces;
+  }
+
+  /** Sets null values for the predicted scores in rows with missing values in any of the descriptors */
+  private setNulls(scores: DG.Column, indeces: number[]): void {
+    const raw = scores.getRawData();
+    indeces.forEach((ind) => raw[ind] = DG.FLOAT_NULL);
+  }
+
   /** Fits the pMPO model to the given data and updates the viewers accordingly */
   private fitAndUpdateViewers(df: DG.DataFrame, descriptors: DG.ColumnList, desirability: DG.Column,
     pValTresh: number, r2Tresh: number, qCutoff: number, useSigmoid: boolean): void {
@@ -597,6 +624,10 @@ export class Pmpo {
     const descriptorNames = descriptors.names();
 
     const prediction = Pmpo.predict(df, this.params, useSigmoid, this.predictionName);
+
+    // Set nulls for rows with missing values in any of the selected descriptors
+    const indecesOfMissingVals = this.getIndecesOfMissingValues(selectedByCorr);
+    this.setNulls(prediction, indecesOfMissingVals);
 
     // Mark predictions with a color
     prediction.colors.setLinear(getOutputPalette(OPT_TYPE.MAX), {min: prediction.stats.min, max: prediction.stats.max});
@@ -729,7 +760,7 @@ export class Pmpo {
       nullable: false,
       available: this.numericCols.map((col) => col.name),
       checked: this.numericCols.filter((col) => {
-        return (col.name !== initDesirability.name) && (col.stats.stdev > 0);
+        return (col.name !== initDesirability.name) && (col.stats.stdev > 0) && (col.stats.missingValueCount < col.length);
       }).map((col) => col.name),
       tooltipText: 'Descriptor columns used for model construction.',
       onValueChanged: (value) => {
@@ -848,24 +879,42 @@ export class Pmpo {
       runComputations();
     };
 
+    // Validates all inputs before running computations. Cases checked:
+    // 1. Settings are not null: p-value, R², and q-cutoff must all be specified.
+    // 2. Settings are in valid ranges: p-value in (0, 1], R² in [0, 1], q-cutoff in (0, 1].
+    // 3. Column inputs are not null: both descriptor columns and desirability column must be selected.
+    // 4. At least one descriptor column is selected.
+    // 5. Desirability column is not also used as a descriptor (overlap not allowed).
+    // 6. No descriptor columns have zero variance (constant columns carry no information).
+    // 7. No descriptor columns consist entirely of missing values.
+    // 8. Boolean desirability column must have both true and false values (non-zero variance).
+    // 9. Numeric desirability column must have non-zero variance.
+    // 10. Numeric desirability threshold must be specified (non-null).
+    // 11. Numeric desirability threshold must produce both desired and non-desired groups
+    //     (threshold that classifies all compounds into one group is not useful).
     const areInputsValid = (): boolean => {
       let res = true;
 
+      // Case 1: settings are not null
       if (pInput.value == null || rInput.value == null || qInput.value == null)
         res = false;
       else {
+        // Case 2: settings are in valid ranges
         if ((pInput.value <= 0) || (pInput.value > 1) || (rInput.value < 0) || (rInput.value > 1) || (qInput.value <= 0) || (qInput.value > 1))
           res = false;
       }
 
+      // Case 3: column inputs are not null
       if (descrInput.value == null || desInput.value == null)
         res = false;
       else {
+        // Case 4: at least one descriptor column is selected
         if (descrInput.value.length < 1) {
           res = false;
           descrInput.input.classList.add('d4-invalid');
           ui.tooltip.bind(descrInput.input, 'Select at least one descriptor column.');
         } else {
+          // Case 5: desirability column is not among the descriptor columns
           if (descrInput.value.includes(desInput.value)) {
             res = false;
             descrInput.input.classList.add('d4-invalid');
@@ -873,17 +922,33 @@ export class Pmpo {
             ui.tooltip.bind(descrInput.input, 'Desirability column cannot be used as a descriptor.');
             ui.tooltip.bind(desInput.input, 'Desirability column cannot be used as a descriptor.');
           } else {
+            let areDescriptorsValid = true;
+
+            // Case 6: no descriptor columns with zero variance (constant columns)
             const zeroStdevCols = descrInput.value.filter((col) => col.stats.stdev === 0).map((col) => col.name);
             if (zeroStdevCols.length > 0) {
               res = false;
+              areDescriptorsValid = false;
               descrInput.input.classList.add('d4-invalid');
               ui.tooltip.bind(descrInput.input, () => ui.markdown(`Descriptor columns with zero variance cannot be used: **${zeroStdevCols.join(', ')}**`));
-            } else {
+            }
+
+            // Case 7: no descriptor columns consisting entirely of missing values
+            const nullCols = descrInput.value.filter((col) => col.stats.missingValueCount === col.length).map((col) => col.name);
+            if (nullCols.length > 0) {
+              res = false;
+              areDescriptorsValid = false;
+              descrInput.input.classList.add('d4-invalid');
+              ui.tooltip.bind(descrInput.input, () => ui.markdown(`Descriptor columns with only missing values cannot be used: **${nullCols.join(', ')}**`));
+            }
+
+            if (areDescriptorsValid) {
               descrInput.input.classList.remove('d4-invalid');
               ui.tooltip.bind(descrInput.input, 'Descriptor columns used for model construction.');
             }
 
             if (desInput.value.type === DG.COLUMN_TYPE.BOOL) {
+              // Case 8: boolean desirability column must have both true and false values
               if (desInput.value.stats.stdev > 0) {
                 desInput.input.classList.remove('d4-invalid');
                 ui.tooltip.bind(desInput.input, 'Desirability column.');
@@ -893,8 +958,11 @@ export class Pmpo {
                 ui.tooltip.bind(desInput.input, 'Desirability column contains only a single value.');
               }
             } else {
+              // Case 9: numeric desirability column must have non-zero variance
               if (desInput.value.stats.stdev > 0) {
+                // Case 10: desirability threshold must be specified
                 if (desirabilityThresholdInput.value != null) {
+                  // Case 11: threshold must produce both desired and non-desired groups
                   if (!isDesirabilityValid(desInput.value, desirabilityThresholdInput.value, signInput.value as EQUALITY_SIGN)) {
                     res = false;
                     desInput.input.classList.add('d4-invalid');
@@ -912,7 +980,7 @@ export class Pmpo {
                     desirabilityThresholdInput.input.classList.remove('d4-invalid');
                     ui.tooltip.bind(
                       desInput.input,
-                      () => ui.markdown(`Desirability rule: 
+                      () => ui.markdown(`Desirability rule:
                         <div align="center">
                         **${desInput.value!.name} ${signInput.value} ${desirabilityThresholdInput.value}**.
                         </div>
@@ -1085,7 +1153,7 @@ export class Pmpo {
     const res: DG.Column[] = [];
 
     for (const col of this.table.columns) {
-      if ((col.isNumerical) && (col.stats.missingValueCount < 1))
+      if (col.isNumerical)
         res.push(col);
     }
 
