@@ -10,7 +10,7 @@ The package is accessible via **Apps > Compute > Diff Studio** in the Datagrok p
 
 ## Key Dependencies
 
-- **diff-grok** (v1.0.8+) - Core ODE solver library implementing LSODA, MRT, ROS3PRw, ROS34PRw, RK3, RK4, RKDP, AB4, and AB5 methods
+- **diff-grok** (v1.2.0+) - Core ODE solver library implementing CVODE, LSODA, MRT, ROS3PRw, ROS34PRw, RK3, RK4, RKDP, AB4, and AB5 methods
 - **@datagrok-libraries/compute-utils** - Provides sensitivity analysis and fitting views
 - **CodeMirror 6** - Code editor for IVP formula editing
 - **@datagrok-libraries/test** - Testing utilities
@@ -222,7 +222,8 @@ npm run debug-odes   # Publish to test server
 
 Diff Studio implements the following methods from `diff-grok`:
 
-**Automatic stiffness-detecting method:**
+**Automatic stiffness-detecting methods:**
+- **CVODE** - `method: 'cvode'` - variable-order, variable-step BDF solver from SUNDIALS v7.5.0 port (Hindmarsh et al., 2005); uses dense direct linear solver (LU decomposition) with warmup strategy for extremely stiff problems
 - **LSODA** - `method: 'lsoda'` - variable-order Nordsieck-based solver with automatic switching between Adams (non-stiff) and BDF (stiff)
 
 **Implicit methods (for stiff ODEs) - Rosenbrock-Wanner type:**
@@ -239,7 +240,7 @@ Diff Studio implements the following methods from `diff-grok`:
 - **AB4** (predictor-corrector of order 4) - `method: 'ab4'`
 - **AB5** (predictor-corrector of order 5) - `method: 'ab5'`
 
-ROS34PRw is the default method. LSODA is recommended as a general-purpose solver that auto-detects stiffness.
+ROS34PRw is the default method. CVODE and LSODA are recommended as general-purpose solvers that auto-detect stiffness.
 
 ## Important Constants
 

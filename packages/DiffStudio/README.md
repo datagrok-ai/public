@@ -89,7 +89,7 @@ The solver has built-in use cases. Get access to them via the context menu. You 
   * describes a chemical reaction part of the air pollution [model](https://archimede.uniba.it/~testset/report/pollu.pdf) consisting of 25 reaction and 20 reacting compounds
   * demonstrates the simulation of processes described by a stiff system of ODEs
 
-Datagrok's ODEs suite has tools for solving both [stiff](https://en.wikipedia.org/wiki/Stiff_equation) and non-stiff equations. It provides a [numerical solution](https://en.wikipedia.org/wiki/Numerical_methods_for_ordinary_differential_equations). The primary solver is [LSODA](https://doi.org/10.1137/0904010) — a variable-order method that automatically detects stiffness and switches between Adams (non-stiff) and BDF (stiff) formulations.
+Datagrok's ODEs suite has tools for solving both [stiff](https://en.wikipedia.org/wiki/Stiff_equation) and non-stiff equations. It provides a [numerical solution](https://en.wikipedia.org/wiki/Numerical_methods_for_ordinary_differential_equations). The primary solvers are [CVODE](https://sundials.readthedocs.io/en/latest/cvode/index.html) and [LSODA](https://doi.org/10.1137/0904010) — variable-order methods that automatically detect stiffness and switch between Adams (non-stiff) and BDF (stiff) formulations.
 
 ## Model structure
 
@@ -171,19 +171,20 @@ You can manage the solver of ODEs. Specify its settings in the `#meta.solver`-li
 
 Diff Studio implements the following numerical methods for solving ODEs:
 
-Automatic stiffness-detecting method:
+Automatic stiffness-detecting methods:
 
 |Method|Value|
 |-------------|--------|
+|[CVODE](https://sundials.readthedocs.io/en/latest/cvode/index.html) - variable-order, variable-step BDF solver from [SUNDIALS](https://github.com/LLNL/sundials) ([Hindmarsh et al., 2005](https://doi.org/10.1145/1089014.1089020); [Cohen & Hindmarsh, 1996](https://doi.org/10.1063/1.4822377))|`'cvode'`|
 |[LSODA](https://doi.org/10.1137/0904010) - variable-order solver with automatic switching between Adams (non-stiff) and BDF (stiff)|`'lsoda'`|
 
-Implicit methods (for [stiff](https://en.wikipedia.org/wiki/Stiff_equation) ODEs) - [Rosenbrock–Wanner](https://doi.org/10.1016/j.cam.2015.03.010) type:
+Implicit methods (for [stiff](https://en.wikipedia.org/wiki/Stiff_equation) ODEs) - [Rosenbrock-Wanner](https://doi.org/10.1016/j.cam.2015.03.010) type:
 
 |Method|Value|
 |-------------|--------|
-|the modified Rosenbrock triple (MRT)|`'mrt'`|
-|the ROS3PRw method|`'ros3prw'`|
-|the ROS34PRw method|`'ros34prw'`|
+|the modified Rosenbrock triple ([MRT](https://doi.org/10.1016/j.cam.2015.03.010))|`'mrt'`|
+|the [ROS3PRw](https://doi.org/10.1016/j.cam.2015.03.010) method|`'ros3prw'`|
+|the [ROS34PRw](https://doi.org/10.1016/j.cam.2015.03.010) method|`'ros34prw'`|
 
 Explicit methods (for non-stiff ODEs) - [Runge-Kutta](https://en.wikipedia.org/wiki/Runge%E2%80%93Kutta_methods) type:
 
@@ -197,8 +198,8 @@ Explicit methods (for non-stiff ODEs) - [Adams-Bashforth](https://en.wikipedia.o
 
 |Method|Value|
 |-------------|--------|
-|the predictor-corrector method of order 4 (AB4)|`'ab4'`|
-|the predictor-corrector method of order 5 (AB5)|`'ab5'`|
+|the predictor-corrector method of order 4 ([AB4](https://en.wikipedia.org/wiki/Linear_multistep_method))|`'ab4'`|
+|the predictor-corrector method of order 5 ([AB5](https://en.wikipedia.org/wiki/Linear_multistep_method))|`'ab5'`|
 
 By default, Diff Studio uses ROS34PRw. You may specify the method as follows:
 
@@ -260,16 +261,18 @@ Diff Studio solvers ensure fast **in-browser** intergration of ODEs. The followi
   * a stiff system of 20 non-linear equations
   * describes a chemical reaction part of the air pollution model designed at The Dutch National Institute of Public Health and Environmental Protection
 
-The LSODA, MRT, ROS3PRw and ROS34PRw methods demonstrate the following time performance (AMD Ryzen 5 5600H 3.30 GHz CPU):
+The LSODA, CVODE, MRT, ROS3PRw and ROS34PRw methods demonstrate the following time performance (AMD Ryzen 5 5600H 3.30 GHz CPU):
 
-|Problem|Segment|Points|Tolerance|LSODA, ms|MRT, ms|ROS3PRw, ms|ROS34PRw, ms|
-|-|-|-|-|-|-|-|-|
-|[Rober](https://archimede.uniba.it/~testset/report/rober.pdf)|[0, 10E+11]|40K|1E-7|67|175|446|285|
-|[HIRES](https://archimede.uniba.it/~testset/report/hires.pdf)|[0, 321.8122]|32K|1E-10|125|122|362|215|
-|[VDPOL](https://archimede.uniba.it/~testset/report/vdpol.pdf)|[0, 2000]|20K|1E-12|268|492|1576|760|
-|[OREGO](https://archimede.uniba.it/~testset/report/orego.pdf)|[0, 360]|36K|1E-8|76|205|483|199|
-|[E5](https://archimede.uniba.it/~testset/report/e5.pdf)|[0, 10E+13]|40K|1E-6|7|6|17|8|
-|[Pollution](https://archimede.uniba.it/~testset/report/pollu.pdf)|[0, 60]|30K|1E-6|12|18|50|23|
+|Problem|Segment|Points|Tolerance|LSODA, ms|CVODE, ms|MRT, ms|ROS3PRw, ms|ROS34PRw, ms|
+|-|-|-|-|-|-|-|-|-|
+|[Rober](https://archimede.uniba.it/~testset/report/rober.pdf)|[0, 10E+11]|40K|1E-7|67|85|175|446|285|
+|[HIRES](https://archimede.uniba.it/~testset/report/hires.pdf)|[0, 321.8122]|32K|1E-10|125|142|122|362|215|
+|[VDPOL](https://archimede.uniba.it/~testset/report/vdpol.pdf)|[0, 2000]|20K|1E-12|268|352|492|1576|760|
+|[OREGO](https://archimede.uniba.it/~testset/report/orego.pdf)|[0, 360]|36K|1E-8|76|98|205|483|199|
+|[E5](https://archimede.uniba.it/~testset/report/e5.pdf)|[0, 10E+13]|40K|1E-6|7|\*|6|17|8|
+|[Pollution](https://archimede.uniba.it/~testset/report/pollu.pdf)|[0, 60]|30K|1E-6|12|15|18|50|23|
+
+\* E5 is skipped for CVODE: the extremely stiff rate constants (spanning 20 orders of magnitude) cause convergence failures with the dense direct linear solver.
 
 This table compares the efficiency of the methods when solving each test problem on a fixed segment and providing solutions at a specified number of points with a given tolerance.
 

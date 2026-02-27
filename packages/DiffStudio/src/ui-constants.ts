@@ -316,6 +316,7 @@ export enum METHOD {
   AB4 = 'ab4',
   AB5 = 'ab5',
   LSODA = 'lsoda',
+  CVODE = 'cvode',
 };
 
 /** Dock ratios */

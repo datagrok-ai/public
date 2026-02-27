@@ -4,7 +4,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {ODEs, SolverOptions, mrt, ros3prw, ros34prw, rk4, ab5, rk3, rkdp, ab4, lsoda} from 'diff-grok';
+import {ODEs, SolverOptions, mrt, ros3prw, ros34prw, rk4, ab5, rk3, rkdp, ab4, lsoda, cvode} from 'diff-grok';
 import {getCallback} from './callbacks/callback-tools';
 import {METHOD} from './ui-constants';
 
@@ -60,9 +60,6 @@ const getMethod = (options?: Partial<SolverOptions>) => {
   case METHOD.ROS34PRw:
     return ros34prw;
 
-  case METHOD.ROS34PRw:
-    return ros34prw;
-
   case METHOD.RK3:
     return rk3;
 
@@ -80,6 +77,9 @@ const getMethod = (options?: Partial<SolverOptions>) => {
 
   case METHOD.LSODA:
     return lsoda;
+
+  case METHOD.CVODE:
+    return cvode;
 
   default:
     return ros34prw;

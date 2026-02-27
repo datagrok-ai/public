@@ -2,7 +2,7 @@
 import {_package} from '../package-test';
 import {category, expect, test} from '@datagrok-libraries/test/src/test';
 import {mrt, ros3prw, ros34prw, CorrProblem, ODEs, corrProbs, perfProbs,
-  rk3, rk4, rkdp, ab4, ab5, lsoda} from 'diff-grok';
+  rk3, rk4, rkdp, ab4, ab5, lsoda, cvode} from 'diff-grok';
 
 /** Return numerical solution error: maximum absolute deviation between approximate & exact solutions */
 function getError(method: (odes: ODEs) => Float64Array[], corProb: CorrProblem): number {
@@ -38,6 +38,12 @@ const implicitMethods = new Map([
   ['ROS3PRw', ros3prw],
   ['ROS34PRw', ros34prw],
   ['LSODA', lsoda],
+  ['CVODE', cvode],
+]);
+
+/** Performance problems to skip per method (known limitations) */
+const perfExclusions = new Map<string, Set<string>>([
+  ['CVODE', new Set(['E5'])],
 ]);
 
 const explicitMethods = new Map([
@@ -51,11 +57,10 @@ const explicitMethods = new Map([
 const allMethods = new Map([...implicitMethods, ...explicitMethods]);
 
 // Correctness tests
-category('Correctness', () => {
-  allMethods.forEach((method, name) => {
-    corrProbs.forEach((problem) => test(`Method: ${name}, problem: ${problem.odes.name}`, async () => {
+allMethods.forEach((method, name) => {
+  category(`Correctness: ${name}`, () => {
+    corrProbs.forEach((problem) => test(problem.odes.name, async () => {
       const error = getError(method, problem);
-      console.log(`Method: ${name}, problem: ${problem.odes.name}, ERROR: ${error}`);
       expect(
         error < TINY,
         true,
@@ -66,10 +71,14 @@ category('Correctness', () => {
 }); // Correctness
 
 // Performance tests
-category('Performance', () => {
-  implicitMethods.forEach((method, methodName) => {
+implicitMethods.forEach((method, methodName) => {
+  category(`Performance: ${methodName}`, () => {
+    const excluded = perfExclusions.get(methodName);
     perfProbs.forEach((odes) => {
-      test(`Method: ${methodName}, problem: ${odes.name}`, async () => {
+      if (excluded?.has(odes.name))
+        return;
+
+      test(odes.name, async () => {
         const rows = method(odes)[0].length;
         expect(
           rows > MIN_ROWS,
