@@ -1,12 +1,10 @@
 # Compute
 
-Provides additional analytical and UI blocks for [Datagrok scientific computing](../../help/compute/compute.md)
+Legacy compute version for existing models, provides:
 
-* Model browser
 * Outlier selector tool
-* Universal export tool
-* Step-by-step wizard for onboarding new models
-* Model renderers
-* Function views
-  * Function parameter grid
+* Function view
+* Excel export
+* Run history
+* Functions based wizzard view
 * A set of examples
