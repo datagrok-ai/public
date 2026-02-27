@@ -42,14 +42,14 @@ function createServer(): McpServer {
 
   server.tool(
     'get_function', 'Get detailed information about a function',
-    {id: z.string().describe('Function ID or Grok name (e.g. "Namespace:FuncName")')},
+    {id: z.string().describe('Function ID or name (e.g. "Namespace:FuncName")')},
     ({id}) => runTool('get_function', {id}, () => api.getFunction(id)),
   );
 
   server.tool(
     'call_function', 'Execute a Datagrok function',
     {
-      name: z.string().describe('Grok name of the function (e.g. "Namespace:FuncName")'),
+      name: z.string().describe('Name of the function (e.g. "Namespace:FuncName")'),
       params: z.record(z.string(), z.unknown()).optional()
         .describe('Parameters to pass to the function'),
     },
@@ -99,7 +99,7 @@ function createServer(): McpServer {
   server.tool(
     'list_files', 'List files in a connector directory',
     {
-      connector: z.string().describe('Connector Grok name (e.g. "System:DemoFiles")'),
+      connector: z.string().describe('Connector name (e.g. "System:DemoFiles")'),
       path: z.string().optional().describe('Directory path within the connector'),
     },
     ({connector, path}) => runTool('list_files', {connector, path},
@@ -109,7 +109,7 @@ function createServer(): McpServer {
   server.tool(
     'download_file', 'Download a file from a connector',
     {
-      connector: z.string().describe('Connector Grok name (e.g. "System:DemoFiles")'),
+      connector: z.string().describe('Connector name (e.g. "System:DemoFiles")'),
       path: z.string().describe('File path within the connector'),
     },
     ({connector, path}) => runTool('download_file', {connector, path},
@@ -119,7 +119,7 @@ function createServer(): McpServer {
   server.tool(
     'upload_file', 'Upload content to a file in a connector',
     {
-      connector: z.string().describe('Connector Grok name (e.g. "System:DemoFiles")'),
+      connector: z.string().describe('Connector name (e.g. "System:DemoFiles")'),
       path: z.string().describe('File path within the connector'),
       content: z.string().describe('File content to upload'),
     },

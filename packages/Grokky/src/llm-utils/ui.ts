@@ -157,6 +157,73 @@ export async function setupAIQueryEditorUI(v: DG.ViewBase, connectionID: string,
   return true;
 }
 
+async function runClaudeStreaming(panel: TVAIPanel, userPrompt: string, tableView: DG.TableView) {
+  const chatSession = panel.startChatSession();
+  const sessionId = panel.sessionId;
+  let accumulated = '';
+  let toolStatus = '';
+  const subs: {unsubscribe: () => void}[] = [];
+  const cleanup = () => subs.forEach((s) => s.unsubscribe());
+
+  const forSession = <T extends {sessionId: string}>(
+    source: {subscribe: (cb: (evt: T) => void) => {unsubscribe: () => void}},
+    handler: (evt: T) => void,
+  ) => subs.push(source.subscribe((evt) => {
+    if (evt.sessionId === sessionId)
+      handler(evt);
+  }));
+
+  const endWithError = (msg: string) => {
+    panel.clearStreaming();
+    grok.shell.error(msg);
+    chatSession.endSession();
+    cleanup();
+  };
+
+  try {
+    const client = ClaudeRuntimeClient.getInstance();
+    await client.ensureConnected();
+
+    chatSession.session.addUiMessage(userPrompt, true);
+
+    forSession(client.onChunk, (evt) => {
+      accumulated += evt.content;
+      toolStatus = '';
+      panel.updateStreaming(accumulated, chatSession.loader);
+    });
+
+    forSession(client.onToolActivity, (evt) => {
+      toolStatus = `\n\n---\n**${evt.summary}**`;
+      panel.updateStreaming(accumulated + toolStatus, chatSession.loader);
+    });
+
+    forSession(client.onToolResult, (evt) => {
+      toolStatus = `\n\n---\n\`\`\`\n${evt.content}\n\`\`\``;
+      panel.updateStreaming(accumulated + toolStatus, chatSession.loader);
+    });
+
+    forSession(client.onFinal, (evt) => {
+      panel.finalizeStreaming(evt.content, tableView);
+      chatSession.endSession();
+      cleanup();
+    });
+
+    forSession(client.onError, (evt) => endWithError(`Claude: ${evt.message}`));
+
+    subs.push(client.onClose.subscribe(() => endWithError('Claude: connection lost')));
+
+    const prompt = panel.prependViewContext(userPrompt, tableView);
+    client.send(sessionId, prompt);
+  }
+  catch (e: any) {
+    panel.clearStreaming();
+    grok.shell.error(`Claude runtime: ${e.message}`);
+    console.error('Claude runtime error:', e);
+    chatSession.endSession();
+    cleanup();
+  }
+}
+
 export async function setupTableViewAIPanelUI() {
   if (!grok.ai.config.configured)
     return;
@@ -172,70 +239,7 @@ export async function setupTableViewAIPanelUI() {
     // Setup request handler
     panel.onRunRequest.subscribe(async (args) => {
       if (panel.currentEngine === 'Claude') {
-        const chatSession = panel.startChatSession();
-        const sessionId = panel.sessionId;
-        let accumulated = '';
-        let toolStatus = '';
-        const subs: {unsubscribe: () => void}[] = [];
-        const cleanup = () => { subs.forEach((s) => s.unsubscribe()); subs.length = 0; };
-
-        try {
-          const client = ClaudeRuntimeClient.getInstance();
-          await client.ensureConnected();
-
-          chatSession.session.addUiMessage(args.currentPrompt.prompt, true);
-
-          subs.push(client.onChunk.subscribe((evt) => {
-            if (evt.sessionId !== sessionId) return;
-            accumulated += evt.content;
-            toolStatus = '';
-            panel.updateStreaming(accumulated, chatSession.loader);
-          }));
-
-          subs.push(client.onToolActivity.subscribe((evt) => {
-            if (evt.sessionId !== sessionId) return;
-            toolStatus = `\n\n---\n**${evt.summary}**`;
-            panel.updateStreaming(accumulated + toolStatus, chatSession.loader);
-          }));
-
-          subs.push(client.onToolResult.subscribe((evt) => {
-            if (evt.sessionId !== sessionId) return;
-            toolStatus = `\n\n---\n\`\`\`\n${evt.content}\n\`\`\``;
-            panel.updateStreaming(accumulated + toolStatus, chatSession.loader);
-          }));
-
-          subs.push(client.onFinal.subscribe((evt) => {
-            if (evt.sessionId !== sessionId) return;
-            panel.finalizeStreaming(evt.content, tableView);
-            chatSession.endSession();
-            cleanup();
-          }));
-
-          subs.push(client.onError.subscribe((evt) => {
-            if (evt.sessionId !== sessionId) return;
-            panel.clearStreaming();
-            grok.shell.error(`Claude: ${evt.message}`);
-            chatSession.endSession();
-            cleanup();
-          }));
-
-          subs.push(client.onClose.subscribe(() => {
-            panel.clearStreaming();
-            grok.shell.error('Claude: connection lost');
-            chatSession.endSession();
-            cleanup();
-          }));
-
-          const prompt = panel.prependViewContext(args.currentPrompt.prompt, tableView);
-          client.send(sessionId, prompt);
-        }
-        catch (e: any) {
-          panel.clearStreaming();
-          grok.shell.error(`Claude runtime: ${e.message}`);
-          console.error('Claude runtime error:', e);
-          chatSession.endSession();
-          cleanup();
-        }
+        await runClaudeStreaming(panel, args.currentPrompt.prompt, tableView);
       } else {
         const chatSession = panel.startChatSession();
         try {
