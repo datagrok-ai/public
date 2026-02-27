@@ -535,17 +535,9 @@
                     <groupId>com.zaxxer</groupId>
                     <artifactId>HikariCP</artifactId>
                 </exclusion>
-                <exclusion> <!-- remediating vulnerability CVE-2024-47561, CVE-2023-39410 -->
-                    <groupId>org.apache.avro</groupId>
-                    <artifactId>*</artifactId>
-                </exclusion>
                 <exclusion> <!-- remediating vulnerability CVE-2023-44981 -->
                     <groupId>org.apache.zookeeper</groupId>
                     <artifactId>zookeeper</artifactId>
-                </exclusion>
-                <exclusion> <!-- remediating vulnerability CVE-2023-34610 -->
-                    <groupId>com.cedarsoftware</groupId>
-                    <artifactId>json-io</artifactId>
                 </exclusion>
                 <exclusion> <!-- remediating vulnerability CVE-2024-36114 -->
                     <groupId>io.airlift</groupId>
@@ -565,10 +557,6 @@
                 <exclusion>
                     <groupId>com.google.guava</groupId>
                     <artifactId>guava</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>org.apache.avro</groupId>
-                    <artifactId>*</artifactId>
                 </exclusion>
             </exclusions>
         </dependency>
@@ -611,14 +599,6 @@
                 </exclusion>
                 <exclusion>
                     <groupId>org.junit.jupiter</groupId>
-                    <artifactId>*</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>org.apache.avro</groupId>
-                    <artifactId>*</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>org.apache.avro</groupId>
                     <artifactId>*</artifactId>
                 </exclusion>
                 <exclusion>
@@ -752,11 +732,6 @@
             <groupId>io.airlift</groupId>
             <artifactId>aircompressor</artifactId>
             <version>0.27</version>
-        </dependency>
-        <dependency> <!-- remediating vulnerability CVE-2023-34610 -->
-            <groupId>com.cedarsoftware</groupId>
-            <artifactId>json-io</artifactId>
-            <version>4.14.1</version>
         </dependency>
         <!--Hive1-->
         <dependency>
