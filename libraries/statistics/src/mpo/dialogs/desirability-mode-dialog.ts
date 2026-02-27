@@ -40,7 +40,7 @@ export class DesirabilityModeDialog {
     scoreInput.root.style.display = hasFallback ? '' : 'none';
 
     const choiceInput = ui.input.choice('If missing', {
-      items: ['Exclude row', 'Use default score'],
+      items: ['Exclude row', 'Use default score', 'Skip property'],
       value: hasFallback ? 'Use default score' : 'Exclude row',
       onValueChanged: (v) => {
         const use = v === 'Use default score';
@@ -60,6 +60,7 @@ export class DesirabilityModeDialog {
     const dialog = ui.dialog({
       title: `Desirability Settings: ${this.propertyName}`,
     });
+    dialog.root.classList.add('statistics-mpo-desirability-dialog');
 
     const contentPanel = ui.divV([]);
     const cached: Record<string, PropertyDesirability> = {[original.functionType]: structuredClone(original)};
@@ -121,20 +122,24 @@ export class DesirabilityModeDialog {
           inputs.get(cfg.key)!.value = prop[cfg.key] ?? cfg.fallback();
       };
 
-      const paramPanel = ui.divV([]);
+      const form = ui.form([
+        inputs.get('min')!, inputs.get('max')!,
+        inputs.get('mean')!, inputs.get('sigma')!,
+        inputs.get('x0')!, inputs.get('k')!,
+      ]);
+
+      const HIDDEN = 'statistics-mpo-hidden';
 
       const updateParams = () => {
-        ui.empty(paramPanel);
-
-        const form: DG.InputBase[] = [inputs.get('min')!, inputs.get('max')!];
-
-        if (prop.mode === 'gaussian')
-          form.push(inputs.get('mean')!, inputs.get('sigma')!);
-        if (prop.mode === 'sigmoid')
-          form.push(inputs.get('x0')!, inputs.get('k')!);
-
-        paramPanel.append(ui.form(form), previewEditor.root);
+        inputs.get('mean')!.root.classList.toggle(HIDDEN, prop.mode !== 'gaussian');
+        inputs.get('sigma')!.root.classList.toggle(HIDDEN, prop.mode !== 'gaussian');
+        inputs.get('x0')!.root.classList.toggle(HIDDEN, prop.mode !== 'sigmoid');
+        inputs.get('k')!.root.classList.toggle(HIDDEN, prop.mode !== 'sigmoid');
       };
+
+      updateParams();
+
+      const paramPanel = ui.divV([form, previewEditor.root]);
 
       previewEditor.onParamsChanged = (p) => {
         Object.assign(prop, p);
@@ -147,8 +152,6 @@ export class DesirabilityModeDialog {
         prop.line = line;
         this.onUpdate({line} as any);
       }));
-
-      updateParams();
 
       contentPanel.append(modeInput.root);
       acc.addPane('Parameters', () => paramPanel, true);
