@@ -1,4 +1,5 @@
 import * as grok from 'datagrok-api/grok';
+import * as DG from 'datagrok-api/dg';
 
 import {anyObject, getSmiles, paramsType, pubChemIdType, pubChemSearchType, urlParamsFromObject} from './utils';
 import {pubChemPug, pubChemRest} from './tests/const';
