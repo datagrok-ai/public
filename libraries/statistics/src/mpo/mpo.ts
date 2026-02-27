@@ -8,9 +8,14 @@ export type DesirabilityLine = number[][];
 
 export type DesirabilityMode = 'freeform' | 'gaussian' | 'sigmoid';
 
+export type MissingValueConfig =
+  | { strategy: 'exclude' }
+  | { strategy: 'default'; score: number }
+  | { strategy: 'skip' };
+
 type BasePropertyDesirability = {
   weight: number; /// 0-1
-  defaultScore?: number;
+  missingValues?: MissingValueConfig;
 }
 
 export type NumericalDesirability = BasePropertyDesirability & {
@@ -43,6 +48,17 @@ export function isNumerical(p: PropertyDesirability): p is NumericalDesirability
   return p.functionType === 'numerical';
 }
 
+export function createDefaultNumerical(weight = 1, min = 0, max = 1): NumericalDesirability {
+  return {functionType: 'numerical', weight, mode: 'freeform', min, max, line: []};
+}
+
+export function createDefaultCategorical(
+  weight = 1,
+  categories?: {name: string; desirability: number}[],
+): CategoricalDesirability {
+  return {functionType: 'categorical', weight, categories: categories ?? [{name: 'Category 1', desirability: 1}]};
+}
+
 export function migrateDesirability(raw: any): PropertyDesirability {
   if (raw.functionType)
     return raw;
@@ -51,16 +67,25 @@ export function migrateDesirability(raw: any): PropertyDesirability {
   return {...raw, functionType: 'numerical'};
 }
 
+export const DESIRABILITY_PROFILE_TYPE = 'MPO Desirability Profile';
+
 /// A map of desirability lines with their weights
 export type DesirabilityProfile = {
+  type: typeof DESIRABILITY_PROFILE_TYPE;
   name: string;
   description: string;
+  aggregation?: WeightedAggregation;
   properties: { [key: string]: PropertyDesirability };
+}
+
+export function isDesirabilityProfile(x: any): x is DesirabilityProfile {
+  return x != null && typeof x === 'object' && x.type === DESIRABILITY_PROFILE_TYPE;
 }
 
 export const WEIGHTED_AGGREGATIONS = ['Average', 'Sum', 'Product', 'Geomean', 'Min', 'Max'] as const;
 export const WEIGHTED_AGGREGATIONS_LIST: WeightedAggregation[] = [...WEIGHTED_AGGREGATIONS];
 export type WeightedAggregation = typeof WEIGHTED_AGGREGATIONS[number];
+export const DEFAULT_AGGREGATION: WeightedAggregation = 'Average';
 
 /// Calculates the desirability score for a given x value
 /// Returns 0 if x is outside the range of the desirability line
@@ -92,7 +117,7 @@ export function categoricalDesirabilityScore(
   prop: CategoricalDesirability,
 ): number | null {
   const found = prop.categories.find((c) => c.name === value);
-  return found?.desirability ?? prop.defaultScore ?? null;
+  return found?.desirability ?? null;
 }
 
 /** Calculates the multi parameter optimization score, 0-100, 100 is the maximum */
@@ -120,12 +145,21 @@ export function mpo(
       const desirability = desirabilityTemplates[j];
       const value = columns[j].get(i);
 
-      if (columns[j].isNone(i))
-        return desirability.defaultScore ?? NaN;
+      let score: number | null;
 
-      const score = isNumerical(desirability) ?
-        desirabilityScore(value, desirability.line) :
-        categoricalDesirabilityScore(value, desirability);
+      if (columns[j].isNone(i)) {
+        const mv = desirability.missingValues;
+        if (!mv || mv.strategy === 'exclude')
+          return NaN;
+        if (mv.strategy === 'skip')
+          continue;
+        score = mv.score;
+      }
+      else {
+        score = isNumerical(desirability) ?
+          desirabilityScore(value, desirability.line) :
+          categoricalDesirabilityScore(String(value), desirability);
+      }
 
       if (score === null)
         return NaN;
@@ -133,6 +167,9 @@ export function mpo(
       scores.push(score);
       weights.push(desirability.weight);
     }
+
+    if (scores.length === 0)
+      return NaN;
 
     return aggregate(scores, weights, aggregation);
   });

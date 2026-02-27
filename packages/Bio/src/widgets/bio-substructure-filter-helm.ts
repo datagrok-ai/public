@@ -9,7 +9,6 @@ import {App, IHelmWebEditor} from '@datagrok-libraries/bio/src/helm/types';
 import {getHelmHelper} from '@datagrok-libraries/bio/src/helm/helm-helper';
 import {ILogger} from '@datagrok-libraries/bio/src/utils/logger';
 import {errInfo} from '@datagrok-libraries/bio/src/utils/err-info';
-import {delay} from '@datagrok-libraries/test/src/test';
 import {ISeqHelper} from '@datagrok-libraries/bio/src/utils/seq-helper';
 
 import {updateDivInnerHTML} from '../utils/ui-utils';
@@ -141,7 +140,7 @@ export class HelmBioFilter extends BioFilterBase<BioFilterProps> /* implements I
     const logPrefix = `${this.viewerToLog()}.substructureSearch( column = <${column.name}> )`;
     _package.logger.debug(`${logPrefix}, start`);
     try {
-      await delay(10);
+      await DG.delay(10);
       const res = await helmSubstructureSearch(this.props.substructure, column, this.seqHelper);
       return res;
     } finally {
@@ -163,7 +162,7 @@ export class HelmBioFilter extends BioFilterBase<BioFilterProps> /* implements I
   // async awaitRendered(timeout: number = 10000): Promise<void> {
   //   const callLog = `awaitRendered( ${timeout} )`;
   //   const logPrefix = `${this.viewerToLog()}.${callLog}`;
-  //   await delay(0);
+  //   await DG.delay(0);
   //   await testEvent(this.onRendered, () => {
   //     this.logger.debug(`${logPrefix}, ` + '_onRendered event caught');
   //   }, () => {

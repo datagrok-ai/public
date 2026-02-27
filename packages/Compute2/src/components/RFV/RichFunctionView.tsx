@@ -134,14 +134,6 @@ const tabToProperties = (fc: DG.FuncCall) => {
   return tabsToProps;
 };
 
-const getMetaSnapshot = (meta?: Record<string, BehaviorSubject<any>>) => {
-  const snapshot: Record<string, any> = {};
-  Object.entries(meta ?? {}).forEach(([k, v]) => {
-    snapshot[k] = v.value;
-  });
-  return snapshot;
-}
-
 export const RichFunctionView = Vue.defineComponent({
   name: 'RichFunctionView',
   props: {
@@ -297,12 +289,14 @@ export const RichFunctionView = Vue.defineComponent({
 
     const showRun = Vue.computed(() => props.showRunButton && (isOutputOutdated.value || allowRerun.value));
 
-    const reportHandler = async (func: string) => {
-      await DG.Func.byName(func).apply({
+    const reportHandler = async (nqName: string) => {
+      await DG.Func.byName(nqName).apply({
+        startDownload: true,
         funcCall: currentCall.value,
-        callMeta: getMetaSnapshot(callMeta.value),
         validationState: validationState.value,
-        consistencyState: consistencyState.value});
+        consistencyState: consistencyState.value,
+        isOutputOutdated: isOutputOutdated.value,
+      });
     }
 
     const exports = Vue.computed(() => {

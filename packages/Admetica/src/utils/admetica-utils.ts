@@ -219,9 +219,10 @@ function createPieSettings(table: DG.DataFrame, columnNames: string[], propertie
 }
 
 export function addSparklines(table: DG.DataFrame, columnNames: string[], index: number, name?: string): void {
-  const tv = grok.shell.getTableView(table.name); ;
-  const { grid } = tv;
-  if (!tv) return;
+  const tv = grok.shell.getTableView(table.name);
+  if (!tv)
+    return;
+  const {grid} = tv;
 
   let pieChartIdx: number;
   if (tablePieChartIndexMap.has(table.name)) {

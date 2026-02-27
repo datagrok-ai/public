@@ -2,7 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 import {ValidationResult, IssueDetail} from '../types/validation-result';
-import {awaitCheck} from '@datagrok-libraries/test/src/test';
+import {awaitCheck} from '@datagrok-libraries/utils/src/test';
 import {studies} from '../utils/app-utils';
 import {validationFixFunctions} from '../utils/validation-fix-utils';
 import {setupValidationErrorColumns, setupValidationErrorIndicators} from '../utils/views-validation-utils';
@@ -57,7 +57,7 @@ export function createValidationView(studyId: string): StudyTableViewParams {
       currentDomainDf = null;
     } else {
       const domain: string = issueSummaryDf!.get('dataset', issueSummaryDf!.currentRowIdx);
-      const domainWithoutExtension = domain.replace('.xpt', '').replace('.csv', '');
+      const domainWithoutExtension = domain.toLowerCase().replace('.xpt', '').replace('.csv', '');
       let domainDf: DG.DataFrame | null = null;
       if (domainWithoutExtension.startsWith('supp')) {
         const domainIdx = studies[studyId].domains.supp.findIndex((it) => it.name === domainWithoutExtension);

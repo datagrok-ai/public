@@ -47,7 +47,9 @@ const PK_PD_MODEL = `#name: PK-PD
   Q = 1 {caption: inter rate; category: PK parameters; min: 0.1; max: 1} [Intercompartmental rate]
   V3 = 30 {caption: peri volume; category: PK parameters; min: 20; max: 40} [Peripheral compartment volume]
   EC50 = 8 {caption: effect; category: PD parameters; min: 1; max: 10}
-  Rate = 0.2 {category: PD parameters; min: 0.1; max: 0.5} [Effective rate]`;
+  Rate = 0.2 {category: PD parameters; min: 0.1; max: 0.5} [Effective rate]
+  
+#meta.solver: {method: 'lsoda'}`;
 
 /** UI options */
 const UI_OPTS = {

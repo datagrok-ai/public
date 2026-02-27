@@ -1575,7 +1575,40 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
       this.assignScaffoldColors();
   }
 
-  private getOrCreateColumn(columnName: string, description: string): IColumnResult {
+  private getPeerViewers(): ScaffoldTreeViewer[] {
+    return (Array.from(grok.shell.tv?.viewers) ?? []).filter(
+      (v) => v !== this && v.type === ScaffoldTreeViewer.TYPE &&
+        (v as ScaffoldTreeViewer).molColumn?.name === this.molColumn?.name,
+    ) as ScaffoldTreeViewer[];
+  }
+
+  private renamePeerColumns(): void {
+    for (const peer of this.getPeerViewers())
+      peer.renameOwnColumns();
+  }
+
+  private renameOwnColumns(): void {
+    if (this.fragmentsColumn)
+      this.fragmentsColumn.name = this.resolveColumnName('colors');
+    if (this.labelsColumn)
+      this.labelsColumn.name = this.resolveColumnName('labels');
+  }
+
+  private resolveColumnName(suffix: string): string {
+    const baseName = `${this.molColumn?.name} ${suffix}`;
+    return this.getPeerViewers().length > 0 ? `${this.title} ${baseName}` : baseName;
+  }
+
+  private ensureColumn(
+    suffix: string, existingColumn: DG.Column | null, description: string, hidden: boolean = true,
+  ): IColumnResult {
+    const columnName = this.resolveColumnName(suffix);
+    if (existingColumn)
+      existingColumn.name = columnName;
+    return this.getOrCreateColumn(columnName, description, hidden);
+  }
+
+  private getOrCreateColumn(columnName: string, description: string, hidden: boolean = true): IColumnResult {
     let column = this.dataFrame!.columns.byName(columnName);
     const isNew = !column;
 
@@ -1583,7 +1616,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     // This prevents unintended scrolling behavior when adding the column to the DataFrame.
     // After adding the column, we remove the '~' prefix to ensure it is recognized and used in the viewers.
     if (!column) {
-      column = this.dataFrame!.columns.addNewString(`~${columnName}`);
+      column = this.dataFrame!.columns.addNewString(hidden ? `~${columnName}` : columnName);
       column.name = columnName;
       column.setTag(DG.TAGS.DESCRIPTION, description);
       column.setTag(EXCLUDE_FROM_FILTER_COLUMN_SELECT, 'true');
@@ -1592,9 +1625,11 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     }
 
     if (isNew) {
-      const gridColumn = grok.shell.getTableView(this.dataFrame!.name).grid.columns.byName(columnName);
-      if (gridColumn)
-        gridColumn.visible = false;
+      const gridColumn = grok.shell.getTableView(this.dataFrame!.name)?.grid.columns.byName(columnName);
+      if (gridColumn) {
+        gridColumn.visible = !hidden;
+        gridColumn.isTextColorCoded = !hidden;
+      }
     }
 
     return {column, isNew};
@@ -1615,6 +1650,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
       if (categoryName == null)
         continue;
       categoryColorMap.set(categoryName, colorMap.get(smiles));
+
       if (bitset && bitset.trueCount > 0) {
         let index = bitset.findNext(-1, true);
         while (index !== -1) {
@@ -1630,42 +1666,58 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     ));
   }
 
+  private collectNodes(): {colorCodedNodes: DG.TreeViewNode[], scaffoldColorMap: Map<string, string | undefined>} {
+    const scaffoldColorMap = new Map(this.colorCodedScaffolds.map((scaffold) => [scaffold.molecule, scaffold.color]));
+    const colorCodedNodes: DG.TreeViewNode[] = [];
+
+    for (const child of this.tree.items) {
+      if (scaffoldColorMap.has(value(child).smiles))
+        colorCodedNodes.push(child);
+    }
+
+    colorCodedNodes.sort((a, b) => value(b).bitset!.trueCount - value(a).bitset!.trueCount);
+
+    return {colorCodedNodes, scaffoldColorMap};
+  }
+
   assignScaffoldColors() {
     if (!this.dataFrame)
       return;
 
-    const scaffoldColorMap = new Map(this.colorCodedScaffolds.map((scaffold) => [scaffold.molecule, scaffold.color]));
+    const {colorCodedNodes, scaffoldColorMap} = this.collectNodes();
 
-    const childNodes = [];
-    for (const child of this.tree.items) {
-      const smiles = value(child).smiles;
-      if (scaffoldColorMap.has(smiles))
-        childNodes.push(child);
-    }
-
-    childNodes.sort((a, b) => value(b).bitset!.trueCount - value(a).bitset!.trueCount);
-
-    const fragmentsColumnName = `${this.title}_${this.molColumn?.name}_colors`;
-    const {column: fragmentsCol} = this.getOrCreateColumn(fragmentsColumnName,
-      'Column with scaffold tree fragments used to retain scaffold-based coloring in plots.');
+    const {column: fragmentsCol} = this.ensureColumn(
+      'colors', this.fragmentsColumn, 'Column with scaffold tree fragments used to retain scaffold-based coloring in plots.');
     this.fragmentsColumn = fragmentsCol;
     this.fragmentsColumn.semType ??= DG.SEMTYPE.MOLECULE;
     // @ts-ignore // temporary compatibility for older versions
     this.fragmentsColumn.meta.allowColorPicking = false;
-    this.fillColumnFromNodes(this.fragmentsColumn, childNodes, 'smiles', scaffoldColorMap);
+    this.fillColumnFromNodes(this.fragmentsColumn, colorCodedNodes, 'smiles', scaffoldColorMap);
 
-    this.updateLabelsColumn(childNodes, scaffoldColorMap);
+    this.updateLabelsColumn(colorCodedNodes, scaffoldColorMap);
   }
 
-  private updateLabelsColumn(childNodes: DG.TreeViewNode[], scaffoldColorMap: Map<string, string | undefined>): void {
-    if (this.showLabels) {
-      const labelsColumnName = `${this.title}_${this.molColumn?.name}_labels`;
-      const {column: labelsCol} = this.getOrCreateColumn(labelsColumnName,
-        'Column with scaffold tree labels used for color-coded legends.');
-      this.labelsColumn = labelsCol;
-      this.fillColumnFromNodes(this.labelsColumn, childNodes, 'label', scaffoldColorMap);
-    } else
+  private updateLabelsColumn(nodes?: DG.TreeViewNode[], scaffoldColorMap?: Map<string, string | undefined>): void {
+    if (!this.showLabels) {
       this.removeLabelsColumn();
+      return;
+    }
+
+    if (!nodes || !scaffoldColorMap) {
+      const collected = this.collectNodes();
+      nodes = collected.colorCodedNodes;
+      scaffoldColorMap = collected.scaffoldColorMap;
+    }
+
+    if (!nodes.some((n) => value(n).label)) {
+      this.removeLabelsColumn();
+      return;
+    }
+
+    const {column: labelsCol} = this.ensureColumn(
+      'labels', this.labelsColumn, 'Column with scaffold tree labels used for color-coded legends.', false);
+    this.labelsColumn = labelsCol;
+    this.fillColumnFromNodes(this.labelsColumn, nodes, 'label', scaffoldColorMap);
   }
 
   removeLabelsColumn(): void {
@@ -1876,7 +1928,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
       const text = labelInput.value.trim();
       value(group).label = text || undefined;
       this.treeEncode = JSON.stringify(this.serializeTrees(this.tree));
-      this.assignScaffoldColors();
+      this.updateLabelsColumn();
     };
     labelInput.onChanged.subscribe(() => {
       value(group).label = labelInput.value || undefined;
@@ -2136,12 +2188,9 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
       this.updateSizes();
       updateVisibleMols(this);
       this.updateUI();
-    } else if (p.name === 'title') {
-      if (this.fragmentsColumn)
-        this.fragmentsColumn.name = `${this.title}_${this.molColumn?.name}_colors`;
-      if (this.labelsColumn)
-        this.labelsColumn.name = `${this.title}_${this.molColumn?.name}_labels`;
-    } else if (p.name === 'showLabels') {
+    } else if (p.name === 'title')
+      this.renameOwnColumns();
+    else if (p.name === 'showLabels') {
       for (const item of this.tree.items) {
         const labelEl = value(item).labelElement;
         if (labelEl)
@@ -2281,6 +2330,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     }));
 
     this.render();
+    this.renamePeerColumns();
     this.message = '<br><b>Scaffold Tree is empty</b><br>Use icons above to add scaffolds';
     this.updateIcons();
     updateVisibleMols(this);
@@ -2311,6 +2361,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
       this.setScaffoldTag(this.molColumn, [], true);
     this.removeFragmentsColumn();
     this.removeLabelsColumn();
+    this.renamePeerColumns();
 
     disconnectExistingObservers(this);
     super.detach();

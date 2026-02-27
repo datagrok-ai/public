@@ -73,6 +73,66 @@ category('PolyTool: Enumerate', () => {
         {seq: 'PEPTIDE1{[Ac(1)].F.W.G.P.L.T.[C(1)].G.[NH2]}$$$$V2.0', name: '-[Tic]7T'},
       ]
     },
+    'parallel1': {
+      src: 'PEPTIDE1{[Ac(1)].F.W.G.P.L.[Tic].[C(1)].G.[NH2]}$$$$V2.0',
+      params: {
+        type: PolyToolEnumeratorTypes.Parallel,
+        placeholders: [
+          {position: 1, monomers: ['D', 'L']},
+          {position: 6, monomers: ['Y', 'T']},
+        ],
+      },
+      tgt: [
+        {seq: 'PEPTIDE1{[Ac(1)].D.W.G.P.L.Y.[C(1)].G.[NH2]}$$$$V2.0', name: '-F2D-[Tic]7Y'},
+        {seq: 'PEPTIDE1{[Ac(1)].L.W.G.P.L.T.[C(1)].G.[NH2]}$$$$V2.0', name: '-F2L-[Tic]7T'},
+      ],
+    },
+    'parallel-three-positions': {
+      src: 'PEPTIDE1{[Ac(1)].F.W.G.P.L.[Tic].[C(1)].G.[NH2]}$$$$V2.0',
+      params: {
+        type: PolyToolEnumeratorTypes.Parallel,
+        placeholders: [
+          {position: 1, monomers: ['D', 'L', 'K']},
+          {position: 4, monomers: ['K', 'P', 'F4COO']},
+          {position: 6, monomers: ['Y', 'T', 'A']},
+        ],
+      },
+      tgt: [
+        {seq: 'PEPTIDE1{[Ac(1)].D.W.G.K.L.Y.[C(1)].G.[NH2]}$$$$V2.0', name: '-F2D-P5K-[Tic]7Y'},
+        {seq: 'PEPTIDE1{[Ac(1)].L.W.G.P.L.T.[C(1)].G.[NH2]}$$$$V2.0', name: '-F2L-P5P-[Tic]7T'},
+        {seq: 'PEPTIDE1{[Ac(1)].K.W.G.[F4COO].L.A.[C(1)].G.[NH2]}$$$$V2.0', name: '-F2K-P5[F4COO]-[Tic]7A'},
+      ],
+    },
+    'parallel-with-original': {
+      src: 'PEPTIDE1{[Ac(1)].F.W.G.P.L.[Tic].[C(1)].G.[NH2]}$$$$V2.0',
+      params: {
+        type: PolyToolEnumeratorTypes.Parallel,
+        placeholders: [
+          {position: 1, monomers: ['D', 'L']},
+          {position: 6, monomers: ['Y', 'T']},
+        ],
+        keepOriginal: true,
+      },
+      tgt: [
+        {seq: 'PEPTIDE1{[Ac(1)].F.W.G.P.L.[Tic].[C(1)].G.[NH2]}$$$$V2.0', name: ''},
+        {seq: 'PEPTIDE1{[Ac(1)].D.W.G.P.L.Y.[C(1)].G.[NH2]}$$$$V2.0', name: '-F2D-[Tic]7Y'},
+        {seq: 'PEPTIDE1{[Ac(1)].L.W.G.P.L.T.[C(1)].G.[NH2]}$$$$V2.0', name: '-F2L-[Tic]7T'},
+      ],
+    },
+    'parallel-single-position': {
+      src: 'PEPTIDE1{[Ac(1)].F.W.G.P.L.[Tic].[C(1)].G.[NH2]}$$$$V2.0',
+      params: {
+        type: PolyToolEnumeratorTypes.Parallel,
+        placeholders: [
+          {position: 4, monomers: ['K', 'P', 'F4COO']},
+        ],
+      },
+      tgt: [
+        {seq: 'PEPTIDE1{[Ac(1)].F.W.G.K.L.[Tic].[C(1)].G.[NH2]}$$$$V2.0', name: '-P5K'},
+        {seq: 'PEPTIDE1{[Ac(1)].F.W.G.P.L.[Tic].[C(1)].G.[NH2]}$$$$V2.0', name: '-P5P'},
+        {seq: 'PEPTIDE1{[Ac(1)].F.W.G.[F4COO].L.[Tic].[C(1)].G.[NH2]}$$$$V2.0', name: '-P5[F4COO]'},
+      ],
+    },
     'matrix1': {
       src: 'PEPTIDE1{[Ac(1)].F.W.G.P.L.[Tic].[C(1)].G.[NH2]}$$$$V2.0',
       params:

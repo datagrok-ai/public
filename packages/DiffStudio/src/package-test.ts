@@ -2,6 +2,7 @@ import * as DG from 'datagrok-api/dg';
 import {runTests, tests, TestContext, initAutoTests as initTests} from '@datagrok-libraries/test/src/test';
 import './tests/numerical-methods-tests';
 import './tests/features-tests';
+import './tests/parser-tests';
 import './tests/platform-funcs-tests';
 import './tests/pipeline-tests';
 import './tests/demo-models-tests';

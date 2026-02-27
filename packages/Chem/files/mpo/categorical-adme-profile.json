@@ -2,6 +2,7 @@
   "type": "MPO Desirability Profile",
   "name": "ADME Profile with Categorical Property",
   "description": "MPO profile for ADME properties including one categorical feature",
+  "aggregation": "Average",
   "properties": {
     "Caco2": {
       "functionType": "numerical",

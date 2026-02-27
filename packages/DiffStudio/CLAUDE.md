@@ -4,13 +4,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Overview
 
-**Diff Studio** is a Datagrok package that provides in-browser tools for solving initial value problems (IVP) for systems of ordinary differential equations (ODEs). It implements Rosenbrock-Wanner numerical methods for solving both stiff and non-stiff ODEs directly in the browser.
+**Diff Studio** is a Datagrok package that provides in-browser tools for solving initial value problems (IVP) for systems of ordinary differential equations (ODEs). It implements multiple numerical methods for solving both stiff and non-stiff ODEs directly in the browser, including the automatic stiffness-detecting LSODA method, Rosenbrock-Wanner implicit methods, Runge-Kutta explicit methods, and Adams-Bashforth multistep methods.
 
 The package is accessible via **Apps > Compute > Diff Studio** in the Datagrok platform.
 
 ## Key Dependencies
 
-- **diff-grok** (v1.0.8+) - Core ODE solver library implementing MRT, ROS3PRw, and ROS34PRw methods
+- **diff-grok** (v1.0.8+) - Core ODE solver library implementing LSODA, MRT, ROS3PRw, ROS34PRw, RK3, RK4, RKDP, AB4, and AB5 methods
 - **@datagrok-libraries/compute-utils** - Provides sensitivity analysis and fitting views
 - **CodeMirror 6** - Code editor for IVP formula editing
 - **@datagrok-libraries/test** - Testing utilities
@@ -49,9 +49,10 @@ grok check --soft          # Validate package
 - ~2500+ lines - the heart of the user interface
 
 **solver-tools.ts**
-- Thin wrapper around `diff-grok` methods (mrt, ros3prw, ros34prw)
+- Thin wrapper around `diff-grok` methods (lsoda, mrt, ros3prw, ros34prw, rk3, rk4, rkdp, ab4, ab5)
 - `solveDefault()` - uses ROS34PRw by default
 - `solveIVP()` - customizable solver with options
+- `getMethod()` - resolves method name from solver options
 - Converts solver output to Datagrok DataFrames
 
 **scripting-tools.ts**
@@ -219,13 +220,26 @@ npm run debug-odes   # Publish to test server
 
 ## Numerical Methods
 
-Diff Studio implements three Rosenbrock-Wanner methods from `diff-grok`:
+Diff Studio implements the following methods from `diff-grok`:
 
+**Automatic stiffness-detecting method:**
+- **LSODA** - `method: 'lsoda'` - variable-order Nordsieck-based solver with automatic switching between Adams (non-stiff) and BDF (stiff)
+
+**Implicit methods (for stiff ODEs) - Rosenbrock-Wanner type:**
 - **MRT** (Modified Rosenbrock Triple) - `method: 'mrt'`
 - **ROS3PRw** - `method: 'ros3prw'`
 - **ROS34PRw** (default) - `method: 'ros34prw'`
 
-All methods handle stiff and non-stiff equations. ROS34PRw is the default for best accuracy/performance balance.
+**Explicit methods (for non-stiff ODEs) - Runge-Kutta type:**
+- **RK3** (Bogacki-Shampine 3(2)) - `method: 'rk3'`
+- **RK4** (Runge-Kutta-Fehlberg 4(5)) - `method: 'rk4'`
+- **RKDP** (Dormand-Prince 5(4)) - `method: 'rkdp'`
+
+**Explicit methods (for non-stiff ODEs) - Adams-Bashforth type:**
+- **AB4** (predictor-corrector of order 4) - `method: 'ab4'`
+- **AB5** (predictor-corrector of order 5) - `method: 'ab5'`
+
+ROS34PRw is the default method. LSODA is recommended as a general-purpose solver that auto-detects stiffness.
 
 ## Important Constants
 

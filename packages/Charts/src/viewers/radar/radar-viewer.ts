@@ -22,8 +22,6 @@ const WARNING_CLASS = 'radar-warning';
   icon: 'icons/radar-viewer.svg',
 })
 export class RadarViewer extends EChartViewer {
-  get type(): string {return 'RadarViewer';}
-
   min: MinimalIndicator;
   max: MaximumIndicator;
   showCurrentRow: boolean;

@@ -3,8 +3,8 @@
   "friendlyName": "UI Tests",
   "version": "1.3.0",
   "author": {
-    "name": "Savenko Stanislav",
-    "email": "ssavenko@datagrok.ai"
+    "name": "Dmytro Kovalyov",
+    "email": "dkovalyov@datagrok.ai"
   },
   "servicePackage": true,
   "description": "Automated UI tests",
@@ -20,7 +20,6 @@
   "devDependencies": {
     "@typescript-eslint/eslint-plugin": "^8.8.1",
     "@typescript-eslint/parser": "^8.8.1",
-    "datagrok-tools": "^5.0.0",
     "eslint": "^8.57.1",
     "eslint-config-google": "^0.14.0",
     "ts-loader": "^9.5.1",

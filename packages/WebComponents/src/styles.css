@@ -2,3 +2,43 @@
     right: -37.5px;
     left: unset !important;
 }
+
+dg-input-form .ui-form-condensed .ui-input-multi-choice .grok-wait {
+    height: auto !important;
+    min-height: 28px;
+    width: 100% !important;
+    padding-bottom: 8px;
+}
+
+dg-input-form .ui-input-multi-choice .ui-input-multi-choice-tree-wrap {
+    margin-left: 0 !important;
+}
+
+dg-input-form .ui-form-condensed .ui-input-choice select.ui-input-editor {
+    box-sizing: border-box !important;
+}
+
+dg-input-form .ui-form-condensed .ui-input-multi-choice {
+    flex-direction: column;
+    align-items: flex-start !important;
+    padding-top: 8px !important;
+}
+
+dg-input-form .ui-form-condensed .ui-input-multi-choice label.ui-input-label {
+    justify-content: flex-start !important;
+    width: 100% !important;
+    height: auto !important;
+    min-height: 24px;
+    margin-bottom: 4px;
+    overflow: visible;
+}
+
+dg-input-form .ui-form-condensed .ui-input-multi-choice .ui-input-options {
+    height: 0;
+}
+
+dg-input-form .ui-form-condensed .ui-input-multi-choice label.ui-input-label > span {
+    margin-top: 0 !important;
+    display: inline-flex;
+    align-items: center;
+}

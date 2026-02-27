@@ -9,14 +9,16 @@ import {StudyConfig} from './types/types';
 import {SUMMARY_VIEW_NAME} from './constants/view-names-constants';
 import {funcs} from './package-api';
 import {Subject} from 'rxjs';
-import {ValidationResult, IssueDetail} from './types/validation-result';
+import {ValidationResult, IssueDetail, VariableError} from './types/validation-result';
 import {COLUMN_FROM_DM_TAG} from './constants/constants';
+import {resolveVariableRoles} from './utils/rule-target-resolvers';
 
 export class PreclinicalDomains {
   ag: DG.DataFrame | null = null;
   bg: DG.DataFrame | null = null;
   bw: DG.DataFrame | null = null;
   cl: DG.DataFrame | null = null;
+  cv: DG.DataFrame | null = null;
   co: DG.DataFrame | null = null;
   dd: DG.DataFrame | null = null;
   dm: DG.DataFrame | null = null;
@@ -27,8 +29,10 @@ export class PreclinicalDomains {
   ey: DG.DataFrame | null = null;
   fw: DG.DataFrame | null = null;
   ig: DG.DataFrame | null = null;
+  is: DG.DataFrame | null = null;
   lb: DG.DataFrame | null = null;
   ma: DG.DataFrame | null = null;
+  mb: DG.DataFrame | null = null;
   mi: DG.DataFrame | null = null;
   ml: DG.DataFrame | null = null;
   nc: DG.DataFrame | null = null;
@@ -37,6 +41,8 @@ export class PreclinicalDomains {
   pm: DG.DataFrame | null = null;
   po: DG.DataFrame | null = null;
   pp: DG.DataFrame | null = null;
+  re: DG.DataFrame | null = null;
+  rp: DG.DataFrame | null = null;
   relrec: DG.DataFrame | null = null;
   sc: DG.DataFrame | null = null;
   se: DG.DataFrame | null = null;
@@ -233,10 +239,12 @@ export class PreclinicalStudy {
       hasErrorsCol.set(rowIndex, true);
       violatedRulesCol.set(rowIndex, JSON.stringify(rowIssues));
 
-      const errorsByVariable: {[variable: string]: Array<{ruleID: string, message: string, value: string}>} = {};
+      const errorsByVariable: {[variable: string]: VariableError[]} = {};
 
       for (const issue of rowIssues) {
         if (issue.variables && issue.values) {
+          const {context} = resolveVariableRoles(issue);
+
           for (let varIndex = 0; varIndex < issue.variables.length; varIndex++) {
             const variable = issue.variables[varIndex];
 
@@ -254,6 +262,7 @@ export class PreclinicalStudy {
                 ruleID: issue.core_id,
                 message: issue.message,
                 value: value,
+                isContext: context.has(variable),
               });
 
               const errorCol = variableErrorColumns[variable];

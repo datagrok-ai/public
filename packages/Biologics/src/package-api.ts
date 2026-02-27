@@ -9,6 +9,13 @@ import * as DG from 'datagrok-api/dg';
 
 export namespace queries {
   /**
+  "Get comprehensive antibody profile filtered by organism and target, including structure, HC/LC regions, and all assay data."
+  */
+  export async function antibodyProfileByOrganismAndTarget(organism: string , target: string ): Promise<DG.DataFrame> {
+    return await grok.data.query('Biologics:AntibodyProfileByOrganismAndTarget', { organism, target });
+  }
+
+  /**
   "Find biologics assays for a specified organism."
   */
   export async function assaysByOrganism(organism: string ): Promise<DG.DataFrame> {

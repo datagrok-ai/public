@@ -3,12 +3,9 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {Subscription} from 'rxjs';
-import {
-  DesirabilityProfile,
-  WeightedAggregation,
-  WEIGHTED_AGGREGATIONS_LIST,
-} from '@datagrok-libraries/statistics/src/mpo/mpo';
-import {MPO_SCORE_CHANGED_EVENT, MpoProfileEditor} from '@datagrok-libraries/statistics/src/mpo/mpo-profile-editor';
+import {DesirabilityProfile} from '@datagrok-libraries/statistics/src/mpo/mpo';
+import {MpoProfileEditor} from '@datagrok-libraries/statistics/src/mpo/mpo-profile-editor';
+import {MPO_SCORE_CHANGED_EVENT} from '@datagrok-libraries/statistics/src/mpo/utils';
 
 import {MpoContextPanel} from '../mpo/mpo-context-panel';
 import {MpoProfileManager} from '../mpo/mpo-profile-manager';
@@ -18,7 +15,6 @@ import {computeMpo, MpoProfileInfo, deepEqual, findSuitableProfiles} from '../mp
 export class MpoProfileDialog {
   dataFrame: DG.DataFrame;
   mpoProfileEditor: MpoProfileEditor;
-  aggregationInput: DG.ChoiceInput<WeightedAggregation | null>;
   profileInput: DG.ChoiceInput<string | null>;
   designModeInput: DG.InputBase<boolean>;
   addParetoFront: DG.InputBase<boolean>;
@@ -38,12 +34,6 @@ export class MpoProfileDialog {
   constructor(dataFrame?: DG.DataFrame) {
     this.dataFrame = dataFrame ?? grok.shell.t;
     this.mpoProfileEditor = new MpoProfileEditor(this.dataFrame);
-
-    this.aggregationInput = ui.input.choice('Aggregation', {
-      items: WEIGHTED_AGGREGATIONS_LIST,
-      nullable: false,
-      onValueChanged: () => grok.events.fireCustomEvent(MPO_SCORE_CHANGED_EVENT, {}),
-    });
 
     this.profileInput = ui.input.choice('Profile', {
       nullable: false,
@@ -72,15 +62,15 @@ export class MpoProfileDialog {
   }
 
   async init(): Promise<void> {
-    this.mpoProfiles = await MpoProfileManager.ensureLoaded();
-    this.suitableProfileNames = findSuitableProfiles(this.dataFrame, this.mpoProfiles).map((p) => p.fileName);
+    this.mpoProfiles = await MpoProfileManager.load();
+    this.suitableProfileNames = findSuitableProfiles(this.dataFrame, this.mpoProfiles).map((p) => p.name);
 
-    this.profileInput.items = this.mpoProfiles.map((p) => p.fileName);
+    this.profileInput.items = this.mpoProfiles.map((p) => p.name);
     requestAnimationFrame(() => this.highlightSuitableProfiles(this.suitableProfileNames));
 
     const defaultProfile = this.suitableProfileNames.length > 0 ?
       this.suitableProfileNames[0] :
-      this.mpoProfiles[0]?.fileName ?? null;
+      this.mpoProfiles[0]?.name ?? null;
 
     if (defaultProfile) {
       this.profileInput.value = defaultProfile;
@@ -98,11 +88,11 @@ export class MpoProfileDialog {
     for (let i = 0; i < select.options.length; i++) {
       const option = select.options[i];
       const text = option.textContent ?? '';
-      if (text.startsWith('⭐') || text.startsWith('\u2003'))
+      if (text.startsWith('✓') || text.startsWith('\u2003'))
         continue;
 
       const isApplicable = suitableFileNames.includes(option.value);
-      option.textContent = `${isApplicable ? '⭐' : STAR_PLACEHOLDER} ${text}`;
+      option.textContent = `${isApplicable ? '✓' : STAR_PLACEHOLDER} ${text}`;
     }
   }
 
@@ -114,26 +104,22 @@ export class MpoProfileDialog {
         await this.mpoContextPanel.render(
           this.currentProfile,
           this.mpoProfileEditor.columnMapping,
-          this.aggregationInput.value ?? undefined,
+          this.mpoProfileEditor.aggregationInput.value ?? undefined,
         );
       }
     }));
   }
 
-  private async loadProfile(fileName: string | null): Promise<void> {
-    if (!fileName)
+  private async loadProfile(profileName: string | null): Promise<void> {
+    if (!profileName)
       return;
 
-    const profileInfo = this.mpoProfiles.find((p) => p.fileName === fileName);
+    const profileInfo = this.mpoProfiles.find((p) => p.name === profileName);
     if (!profileInfo)
       return;
 
-    this.currentProfileFileName = fileName;
-    this.currentProfile = structuredClone({
-      name: profileInfo.name,
-      description: profileInfo.description,
-      properties: profileInfo.properties,
-    });
+    this.currentProfileFileName = profileInfo.fileName;
+    this.currentProfile = structuredClone(profileInfo);
     this.mpoProfileEditor.setProfile(this.currentProfile);
     this.originalProfile = structuredClone(this.currentProfile);
     this.updateSaveButtonVisibility();
@@ -214,7 +200,7 @@ export class MpoProfileDialog {
         this.dataFrame,
         this.currentProfile!,
         this.mpoProfileEditor.columnMapping,
-        this.aggregationInput.value!,
+        this.mpoProfileEditor.aggregationInput.value!,
       );
 
       if (columnNames.length && this.addParetoFront.value)
@@ -230,7 +216,7 @@ export class MpoProfileDialog {
 
   private getMpoControls(): HTMLElement {
     return ui.divV([
-      this.aggregationInput.root,
+      this.mpoProfileEditor.aggregationInput.root,
       this.designModeInput.root,
       this.mpoProfileEditor.root,
       this.addParetoFront.root,
@@ -260,7 +246,7 @@ export class MpoProfileDialog {
   }
 
   private detach(): void {
-    this.mpoContextPanel?.close();
+    this.mpoContextPanel?.release();
     this.subs.forEach((sub) => sub.unsubscribe());
     this.subs = [];
   }

@@ -169,7 +169,7 @@ enum ANNOT {
   DOUBLE_INPUT = '//input: double',
   INT_INPUT = '//input: int',
   OUTPUT = `//output: dataframe ${DF_NAME}`,
-  EDITOR = '//editor: Compute:RichFunctionViewEditor',
+  EDITOR = '//editor: Compute2:RichFunctionViewEditor',
   SIDEBAR = '//sidebar: @compute',
   CAPTION = 'caption:',
   ARG_INIT = '{caption: Initial; category: Argument}',

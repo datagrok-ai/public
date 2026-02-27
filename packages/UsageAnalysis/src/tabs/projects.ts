@@ -1,21 +1,62 @@
 import {UaView} from "./ua";
 import {UaToolbox} from "../ua-toolbox";
 import * as ui from "datagrok-api/ui";
-import * as grok from "datagrok-api/grok";
 import * as DG from "datagrok-api/dg";
 import {UaFilterableQueryViewer} from "../viewers/ua-filterable-query-viewer";
+import {loadUsers, setupUserIconRenderer} from "../utils";
 
 export class ProjectsView extends UaView {
-    constructor(uaToolbox: UaToolbox) {
+    constructor(uaToolbox?: UaToolbox) {
         super(uaToolbox);
         this.name = 'Projects';
     }
 
     async initViewers(path?: string): Promise<void> {
+        const users = await loadUsers();
+        let syncing = false;
+
+        const syncViewers = (projectName: string, source: 'scatter' | 'bar' | 'grid') => {
+            if (syncing) return;
+            syncing = true;
+            try {
+                if (source !== 'scatter') {
+                    const df = projectsViewer.viewer?.dataFrame;
+                    if (df) {
+                        const col = df.getCol('project_name');
+                        df.selection.init((i) => col.get(i) === projectName);
+                    }
+                }
+                if (source !== 'bar') {
+                    const df = uniqueUsersPerProject.viewer?.dataFrame;
+                    if (df) {
+                        const col = df.getCol('project_name');
+                        df.selection.init((i) => col.get(i) === projectName);
+                    }
+                }
+                if (source !== 'grid') {
+                    const df = dailyProjectAccess.viewer?.dataFrame;
+                    if (df) {
+                        const col = df.getCol('project_name');
+                        df.selection.init((i) => col.get(i) === projectName);
+                    }
+                }
+            }
+            finally {
+                syncing = false;
+            }
+        };
+
         const projectsViewer = new UaFilterableQueryViewer({
             filterSubscription: this.uaToolbox.filterStream,
             name: 'Projects Usage',
             queryName: 'AccessCountPerPeriodPerProject',
+            processDataFrame: (t: DG.DataFrame) => {
+                t.onCurrentRowChanged.subscribe(() => {
+                    if (t.currentRowIdx < 0) return;
+                    syncViewers(t.get('project_name', t.currentRowIdx), 'scatter');
+                });
+                return t;
+            },
             createViewer: (t: DG.DataFrame) => {
                 return DG.Viewer.scatterPlot(t, {
                     x: 'period',
@@ -38,7 +79,7 @@ export class ProjectsView extends UaView {
             name: 'Unique Users Per Project',
             queryName: 'UniqueUsersPerProject',
             createViewer: (t: DG.DataFrame) => {
-                return DG.Viewer.barChart(t, {
+                const viewer = DG.Viewer.barChart(t, {
                     'valueColumnName': 'unique_users',
                     'valueAggrType': 'sum',
                     'barSortType': 'by value',
@@ -55,35 +96,42 @@ export class ProjectsView extends UaView {
                     'description': 'Counts the number of distinct users accessing each project.',
                     'descriptionVisibilityMode': DG.VisibilityMode.Never
                 });
+                viewer.onEvent('d4-bar-chart-on-category-clicked').subscribe((args: any) => {
+                    syncViewers(args.args.options.categories[0], 'bar');
+                });
+                return viewer;
             }
         });
 
-        const accessFrequencyPerProject = new UaFilterableQueryViewer({
+        const dailyProjectAccess = new UaFilterableQueryViewer({
             filterSubscription: this.uaToolbox.filterStream,
-            name: 'Access Frequency',
-            queryName: 'UserAccessFrequencyPerProject',
+            name: 'Daily Project Access',
+            queryName: 'DailyProjectAccess',
             processDataFrame: (t: DG.DataFrame) => {
                 t.getCol('project_name').setTag('friendlyName', 'Project Name');
-                t.getCol('unique_users').setTag('friendlyName', 'Avg Unique Users Daily');
-                t.getCol('avg_days_between_accesses').setTag('friendlyName', 'Days Between Access');
+                t.getCol('access_date').setTag('friendlyName', 'Date');
+                t.getCol('user_name').setTag('friendlyName', 'User');
+                t.onCurrentRowChanged.subscribe(() => {
+                    if (t.currentRowIdx < 0) return;
+                    syncViewers(t.get('project_name', t.currentRowIdx), 'grid');
+                });
                 return t;
             },
             createViewer: (t: DG.DataFrame) => {
                 const grid = DG.Viewer.grid(t, {
-                    'title': 'Access Frequency Daily',
-                    'description': 'Provides average number of days between user accesses and average users count daily for projects that have more than one access.',
+                    'title': 'Daily Project Access',
+                    'description': 'Shows which unique users opened each project per day.',
                     'descriptionVisibilityMode': DG.VisibilityMode.Never
                 });
-                grid.sort(['unique_users', 'avg_days_between_accesses'], [false, true]);
+                grid.sort(['access_date'], [false]);
+                setupUserIconRenderer(grid, users, ['user_name']);
                 return grid;
             }
         });
 
         this.viewers.push(projectsViewer);
         this.viewers.push(uniqueUsersPerProject);
-        this.viewers.push(accessFrequencyPerProject);
-        // this.viewers.push(packagesTimeViewer);
-        // packagesTimeViewer.root.style.display = 'none';
+        this.viewers.push(dailyProjectAccess);
         this.root.append(projectsViewer.root);
 
         this.root.append(
@@ -91,7 +139,7 @@ export class ProjectsView extends UaView {
                     projectsViewer.root,
                     ui.splitH([
                         ui.box(uniqueUsersPerProject.root, {style: {height: '100%'}}),
-                        ui.box(accessFrequencyPerProject.root, {style: {height: '100%'}}),
+                        ui.box(dailyProjectAccess.root, {style: {height: '100%'}}),
                     ])
                 ]
             )

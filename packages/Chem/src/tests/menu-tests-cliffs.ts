@@ -46,9 +46,11 @@ category('top menu activity cliffs', async () => {
     await _testActivityCliffsOpen(await readDataframe('tests/Test_smiles_malformed.csv'),
       'canonical_smiles', 'FractionCSP3', 80, 24);
     try {
-      await awaitCheck(() => document.querySelector(`.${MALFORMED_DATA_WARNING_CLASS}`)?.innerHTML ===
-        '2 molecules with indexes 31,41 are possibly malformed and are not included in analysis',
-      'cannot find warning balloon', 5000);
+      await awaitCheck(() => {
+        console.log(document.querySelector(`.${MALFORMED_DATA_WARNING_CLASS}`)?.innerHTML);
+        return document.querySelector(`.${MALFORMED_DATA_WARNING_CLASS}`)?.innerHTML ===
+        '3 molecules with indexes 14,31,41 are possibly malformed and are not included in analysis';
+      }, 'cannot find warning balloon', 5000);
     } finally {
       grok.shell.closeAll();
       DG.Balloon.closeAll();

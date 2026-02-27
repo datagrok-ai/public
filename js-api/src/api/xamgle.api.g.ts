@@ -111,6 +111,8 @@ export interface SettingsInterface {
 
   allowEventScripts: boolean;
 
+  enableMcpServers: boolean;
+
   enableIndexedDBTablesCache: boolean;
 
   dateFormat: string;

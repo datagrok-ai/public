@@ -103,6 +103,8 @@ export interface IBarChartSettings {
 
   showValueAxisLine: boolean;
 
+  showCategoryZeroBaseline: boolean;
+
   barBorderLineMouseOverWidth: number;
 
   barBorderLineWidth: number;
@@ -118,6 +120,10 @@ export interface IBarChartSettings {
   axisFont: string;
 
   minTextHeight: number;
+
+  /// When enabled, shows hatched areas and arrows on bars
+  /// that are clipped by the value axis range.
+  showClippedBarIndicators: boolean;
 
   backColor: number;
 
@@ -162,10 +168,6 @@ export interface IBarChartSettings {
 
   // Properties common for all viewers
   // todo: use code generation
-  // Properties common for all viewers
-  // todo: use code generation
-  // Properties common for all viewers
-  // todo: use code generation
   showContextMenu: boolean;
 
   title: string;
@@ -176,27 +178,15 @@ export interface IBarChartSettings {
 
   /// Viewer description that gets shown at the *Descriptor Position*.
   /// Markup is supported.
-  /// Viewer description that gets shown at the *Descriptor Position*.
-  /// Markup is supported.
-  /// Viewer description that gets shown at the *Descriptor Position*.
-  /// Markup is supported.
   description: string;
 
-  /// Help to be shown when user clicks on the '?' icon on top.
-  /// Could either be in markdown, or a URL (starting with '/' or 'http').
-  /// Help to be shown when user clicks on the '?' icon on top.
-  /// Could either be in markdown, or a URL (starting with '/' or 'http').
   /// Help to be shown when user clicks on the '?' icon on top.
   /// Could either be in markdown, or a URL (starting with '/' or 'http').
   help: string;
 
   /// Namespace-qualified function that gets executed when a viewer is initialized
-  /// Namespace-qualified function that gets executed when a viewer is initialized
-  /// Namespace-qualified function that gets executed when a viewer is initialized
   initializationFunction: string;
 
-  /// JavaScript that gets executed after a viewer is initialized and added to the TableView
-  /// JavaScript that gets executed after a viewer is initialized and added to the TableView
   /// JavaScript that gets executed after a viewer is initialized and added to the TableView
   onInitializedScript: string;
 
@@ -413,6 +403,8 @@ export interface IBoxPlotSettings {
   showQ3: boolean;
 
   viewport: string;
+
+  allowColorSynchronization: boolean;
 
   autoLayout: boolean;
 
@@ -2975,6 +2967,10 @@ export interface IScatterPlotSettings {
   /// When true, selected markers are highlighted using the selected rows color.
   /// When false, selected markers use their regular color coding.
   showSelectedRows: boolean;
+
+  /// When true, clicking on the background (no point hit) clears the current selection.
+  /// Set to false to preserve the selection when accidentally clicking outside of the markers.
+  resetSelectionOnBackgroundClick: boolean;
 
   /// Shows tickmarks and labels for minimum and maximum value on each axis.
   showMinMaxTickmarks: boolean;

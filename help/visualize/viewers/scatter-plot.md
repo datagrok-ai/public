@@ -308,6 +308,7 @@ Youtube")](https://www.youtube.com/watch?v=7MBXWzdC0-I&t=214s)
 | Show Mouse Over Point | boolean | Controls the indication of the mouse-over row |
 | Show Mouse Over Row Group | boolean | Highlight ''mouse-over'' rows (such as the ones that fall into a histogram bin that the mouse is currently hovering over). |
 | Show Selected Rows | boolean | When true, selected markers are highlighted using the selected rows color. When false, selected markers use their regular color coding. |
+| Reset Selection On Background Click | boolean | When true, clicking on the background (no point hit) clears the current selection. Set to false to preserve the selection when accidentally clicking outside of the markers. |
 | **Style** | | |
 | Auto Layout | boolean |  |
 | Back Color | number |  |

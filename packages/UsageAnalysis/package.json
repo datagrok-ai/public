@@ -50,7 +50,6 @@
     "@typescript-eslint/eslint-plugin": "^5.32.0",
     "@typescript-eslint/parser": "^5.32.0",
     "css-loader": "^6.4.0",
-    "datagrok-tools": "^5.0.0",
     "eslint": "^8.57.1",
     "eslint-config-google": "^0.14.0",
     "style-loader": "^3.3.0",

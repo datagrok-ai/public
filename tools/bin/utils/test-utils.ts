@@ -46,6 +46,18 @@ export async function getToken(url: string, key: string) {
     throw new Error('Unable to login to server. Check your dev key');
 }
 
+export async function isPackageOnServer(hostKey: string, packageName: string): Promise<boolean> {
+  try {
+    const {url, key} = getDevKey(hostKey);
+    const token = await getToken(url, key);
+    const response = await fetch(`${url}/packages/published/current`, {headers: {Authorization: token}});
+    const packages = await response.json();
+    return Array.isArray(packages) && packages.some((p: any) => p.name?.toLowerCase() === packageName.toLowerCase());
+  } catch {
+    return false;
+  }
+}
+
 export async function getWebUrl(url: string, token: string) {
   const response = await fetch(`${url}/admin/plugins/admin/settings`, {headers: {Authorization: token}});
   const json = await response.json();

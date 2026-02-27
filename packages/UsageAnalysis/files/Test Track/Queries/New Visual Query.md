@@ -15,6 +15,13 @@
 8. Run the saved query - check the parameter
 8. On the **Toolbar**, change the parameter value and click **Refresh** - check
 8. Close all
+
+**Cross-catalog visual query (MS SQL)**
+1. Go to **Browse** > **Databases** > **MS SQL** > **NorthwindTest** > **Catalogs** > pick a catalog > pick a schema. A list of tables opens
+2. Right-click a table and select **New Visual Query...** from the context menu
+3. In **Data**, add a column from a table in a different catalog
+4. Verify the cross-catalog join is reflected in the **Debug** tab
+5. Run the query — it should return results without errors
 ---
 {
   "order": 11

@@ -152,7 +152,6 @@ export namespace historyUtils {
         const fileInfo = callCopy.inputs[input.name] as DG.FileInfo;
         const filledFileInfo = DG.FileInfo.fromBytes(fileInfo.name, await fileInfo.readAsBytes());
         await grok.dapi.files.write(filledFileInfo);
-        await grok.dapi.permissions.grant(filledFileInfo, allGroup, false);
         callCopy.inputs[input.name] = {id: filledFileInfo.id, name: filledFileInfo.name};
 
         return Promise.resolve();

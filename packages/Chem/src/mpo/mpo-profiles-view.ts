@@ -122,7 +122,12 @@ export class MpoProfilesView {
 
   private buildDescription(text: string): HTMLElement {
     const span = ui.divText(text, 'chem-mpo-description');
-    span.addEventListener('click', () => span.classList.toggle('expanded'));
+    requestAnimationFrame(() => {
+      if (span.scrollHeight > span.clientHeight) {
+        span.classList.add('chem-mpo-description-expandable');
+        span.onclick = () => span.classList.toggle('expanded');
+      }
+    });
     return span;
   }
 

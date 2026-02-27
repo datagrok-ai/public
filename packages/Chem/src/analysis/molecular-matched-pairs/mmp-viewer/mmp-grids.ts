@@ -449,14 +449,12 @@ export class MmpPairedGrids {
     return [idxPairs];
   }
 
-  refilterMatchedPairsByFragments(cats: [number, number]): void {
+  refilterMatchedPairsByFragments(fFrom: string, fTo: string): void {
     this.mmpMaskFrag.setAll(false);
 
     let idx = -1;
     const colFrom = this.fpGrid.dataFrame.columns.byName(MMP_NAMES.FROM);
     const colTo = this.fpGrid.dataFrame.columns.byName(MMP_NAMES.TO);
-    const fFrom = this.fpCatsFrom[cats[0]];
-    const fTo = this.fpCatsTo[cats[1]];
 
     for (let i = 0; i < this.fpGrid.dataFrame.rowCount; i++) {
       if (colFrom.get(i) == fFrom && colTo.get(i) == fTo) {

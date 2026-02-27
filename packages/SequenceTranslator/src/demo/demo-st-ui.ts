@@ -2,7 +2,6 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {delay} from '@datagrok-libraries/test/src/test';
 import {PackageFunctions} from '../package';
 import {tryCatch} from '../apps/common/model/helpers';
 
@@ -23,7 +22,7 @@ export async function demoOligoPatternUI() {
 export async function demoOligoStructureUI() {
   await tryCatch(async () => {
     async function setInputValue(idx: number, sequence: string): Promise<void> {
-      await delay(500);
+      await DG.delay(500);
       const textInputs: NodeListOf<HTMLTextAreaElement> = document.querySelectorAll('.st-colored-text-input > textarea');
       const textarea = textInputs[idx];
       textarea.value = sequence;

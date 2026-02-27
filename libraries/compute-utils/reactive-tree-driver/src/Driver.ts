@@ -313,7 +313,7 @@ export class Driver {
       tap((state) => {
         this.states$.next(state);
         this.currentMetaCallData$.next({});
-        this.wasEdited$.next(true);
+        this.wasEdited$.next(false);
       }),
     );
   }

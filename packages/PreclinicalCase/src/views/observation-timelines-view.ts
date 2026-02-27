@@ -7,14 +7,16 @@ import {StudyTableViewParams} from '../utils/views-creation-utils';
 import {restoreBrowsePanelOnRemoval} from '../utils/utils';
 import {createAllMeasurementsDf} from '../data-preparation/data-preparation';
 import {createSubjectProfileView} from './subject-profile-view';
-import {awaitCheck} from '@datagrok-libraries/test/src/test';
+import {awaitCheck} from '@datagrok-libraries/utils/src/test';
 import {subjectClicked$, PADDING_X, PADDING_Y, getArmColorStr, getEnabledArms} from '../utils/combined-measurements-cell-renderer';
-import * as PinnedUtils from '@datagrok-libraries/gridext/src/pinned/PinnedUtils';
+import {Subscription} from 'rxjs';
 
 type ArmEntry = {values: number[], subjects: string[]};
 type ArmValues = {[arm: string]: ArmEntry};
 type DayMap = {[day: number]: ArmValues};
 type GroupData = {domain: string, category: string, test: string, units: string, days: DayMap};
+
+let subjectClickedSub: Subscription | null = null;
 
 export function createObservationTimelinesView(studyId: string): StudyTableViewParams {
   const allMeasurements = createAllMeasurementsDf(studyId);
@@ -103,8 +105,8 @@ export function createObservationTimelinesView(studyId: string): StudyTableViewP
     dayColumns.push(col);
   }
 
-  const rowMinCol = pivotedDf.columns.addNewFloat('~rowMin');
-  const rowMaxCol = pivotedDf.columns.addNewFloat('~rowMax');
+  const rowMinCol = pivotedDf.columns.addNewFloat('rowMin');
+  const rowMaxCol = pivotedDf.columns.addNewFloat('rowMax');
 
   let rowIdx = 0;
   for (const [_key, group] of groupMap) {
@@ -156,7 +158,8 @@ export function createObservationTimelinesView(studyId: string): StudyTableViewP
     await awaitCheck(() => tableView.grid !== null, '', 1000);
 
     const grid = tableView.grid;
-    const metaCols = [DOMAIN, 'category', 'test', 'units'];
+    grid.setOptions({showMouseOverRowIndicator: false, showCurrentRowIndicator: false});
+    const metaCols = [DOMAIN, 'category', 'test'];
     const dayColNames = sortedDays.map((d) => `Day ${d}`);
     grid.columns.setOrder(metaCols.concat(['Y axis']).concat(dayColNames));
 
@@ -169,9 +172,8 @@ export function createObservationTimelinesView(studyId: string): StudyTableViewP
       if (gridCol)
         gridCol.width = 120;
     }
-
-    const minGridCol = grid.col('~rowMin');
-    const maxGridCol = grid.col('~rowMax');
+    const minGridCol = grid.col('rowMin');
+    const maxGridCol = grid.col('rowMax');
     if (minGridCol) minGridCol.visible = false;
     if (maxGridCol) maxGridCol.visible = false;
 
@@ -252,7 +254,7 @@ export function createObservationTimelinesView(studyId: string): StudyTableViewP
     for (const colName of ['test', 'Y axis']) {
       const pinCol = grid.col(colName);
       if (pinCol)
-        PinnedUtils.addPinnedColumn(pinCol);
+        pinCol.pin();
     }
 
     const subjectInput = ui.input.choice('Subject', {
@@ -311,7 +313,8 @@ export function createObservationTimelinesView(studyId: string): StudyTableViewP
     const connectPointsInput = ui.input.bool('Connect subject points', {value: false, onValueChanged: () => grid.invalidate()});
     tableView.setRibbonPanels([[subjectInput.root, connectPointsInput.root, legendDiv]]);
 
-    subjectClicked$.subscribe((subject) => {
+    subjectClickedSub?.unsubscribe();
+    subjectClickedSub = subjectClicked$.subscribe((subject) => {
       subjectInput.value = subject;
       grid.invalidate();
     });
@@ -359,8 +362,8 @@ export function createObservationTimelinesView(studyId: string): StudyTableViewP
       if (!overlayCtx)
         return;
 
-      const minCol = pivotedDf.col('~rowMin')!;
-      const maxCol = pivotedDf.col('~rowMax')!;
+      const minCol = pivotedDf.col('rowMin')!;
+      const maxCol = pivotedDf.col('rowMax')!;
       const visibleDayColNames = dayColNames.filter((n) => {
         const gc = grid.col(n);
         return gc && gc.visible;
@@ -429,7 +432,6 @@ export function createObservationTimelinesView(studyId: string): StudyTableViewP
         }
       }
     });
-
     restoreBrowsePanelOnRemoval();
   };
 

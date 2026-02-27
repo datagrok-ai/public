@@ -114,7 +114,9 @@ export const richFunctionViewReport = async (
       exportWorkbook.addWorksheet(getSheetName(visibleTitle, exportWorkbook));
 
         const currentDf = lastCall.inputs[dfInput.name];
-        dfToSheet({sheet: currentDfSheet, dfCounter, df: currentDf});
+        const validation = validationStates?.[dfInput.name];
+        const consistency = consistencyStates?.[dfInput.name];
+        dfToSheet({sheet: currentDfSheet, dfCounter, df: currentDf, validation, consistency});
         dfCounter++;
       });
 
@@ -141,7 +143,9 @@ export const richFunctionViewReport = async (
       exportWorkbook.addWorksheet(getSheetName(visibleTitle, exportWorkbook));
 
         const currentDf = lastCall.outputs[dfOutput.name];
-        dfToSheet({sheet: currentDfSheet, dfCounter, df: currentDf});
+        const validation = validationStates?.[dfOutput.name];
+        const consistency = consistencyStates?.[dfOutput.name];
+        dfToSheet({sheet: currentDfSheet, dfCounter, df: currentDf, validation, consistency});
         dfCounter++;
       });
 
@@ -237,15 +241,6 @@ export const richFunctionViewReport = async (
   throw new Error('Format is not supported');
 };
 
-export const reportFuncCallExcel = async (funccall: DG.FuncCall) => {
-  return richFunctionViewReport(
-    'Excel',
-    funccall.func,
-    funccall,
-    dfToViewerMapping(funccall),
-  );
-};
-
 export const formatNumber = (val: any, format?: string) => {
   try {
     return (Number.isFinite(val) && format) ? DG.format(val, format) : val;
@@ -267,12 +262,10 @@ export const scalarsToSheet = (sheet: ExcelJS.Worksheet,
   sheet.addRow(cols).font = {bold: true};
   scalars.forEach((scalar) => {
     const vals = [scalar.caption, formatNumber(scalar.value, scalar.format), scalar.units];
-    if (validationStates?.[scalar.name])
-      vals.push(getValidationString(validationStates[scalar.name]));
-    if (consistencyStates?.[scalar.name])
-      vals.push(getConsistencyString(consistencyStates[scalar.name]));
+    vals.push(getValidationString(validationStates?.[scalar.name]));
+    vals.push(getConsistencyString(consistencyStates?.[scalar.name]));
 
-    sheet.addRow([scalar.caption, formatNumber(scalar.value, scalar.format), scalar.units]);
+    sheet.addRow(vals);
   });
 
   sheet.getColumn(1).width = Math.max(
@@ -283,11 +276,13 @@ export const scalarsToSheet = (sheet: ExcelJS.Worksheet,
   sheet.getColumn(3).width = Math.max(
     ...scalars.map((scalar) => scalar.units.toString().length), 'Units'.length) * 1.2;
 
-  sheet.getColumn(4).width = 250;
-  sheet.getColumn(5).width = 250;
+  sheet.getColumn(4).width = 100;
+  sheet.getColumn(5).width = 100;
 };
 
-const getValidationString = (data: ValidationResult) => {
+const getValidationString = (data?: ValidationResult) => {
+  if (data == null)
+    return '';
   const validations = (['errors', 'warnings'] as const)
     .filter((category) => !!data?.[category]?.length)
     .flatMap((category) => data![category]!.map((advice) =>({category, advice})))
@@ -296,7 +291,9 @@ const getValidationString = (data: ValidationResult) => {
   return validations;
 };
 
-const getConsistencyString = (data: ConsistencyInfo) => {
+const getConsistencyString = (data?: ConsistencyInfo) => {
+  if (data == null)
+    return '';
   if (data.inconsistent && (data.restriction === 'disabled' || data.restriction === 'restricted'))
     return `Inconsistent: value should be ${String(data.assignedValue)}`;
   return;
@@ -325,7 +322,7 @@ const dfToSheet = (
       const col = df.col(colIdx)!;
       const rawVal = df.get(col.name, rowIdx);
       if (col?.type === 'double') {
-        const format = col?.tags?.['format'] ?? '.00';
+        const format = col?.tags?.['format'] ?? '0.00';
         const val = formatNumber(rawVal, format);
         row.push(val);
       } else
@@ -345,14 +342,14 @@ const dfToSheet = (
     col.alignment = {wrapText: true};
   });
   const metaCol = nCols + 1;
-  if (validation) {
-    sheet.getCell(1, metaCol).value = getValidationString(validation);
-    sheet.getColumn(metaCol).width = 250;
-  }
-  if (consistency) {
-    sheet.getCell(1, metaCol).value = getConsistencyString(consistency);
-    sheet.getColumn(metaCol).width = 250;
-  }
+  sheet.getColumn(metaCol).width = 100;
+  sheet.getCell(1, metaCol).value = 'Validation and Consistency';
+  if (validation)
+    sheet.getCell(2, metaCol).value = getValidationString(validation);
+
+  if (consistency)
+    sheet.getCell(3, metaCol).value = getConsistencyString(consistency);
+
 }
 
 const isDataFrame = (prop: DG.Property) => (prop.propertyType === DG.TYPE.DATA_FRAME);

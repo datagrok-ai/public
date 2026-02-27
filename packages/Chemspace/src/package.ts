@@ -4,7 +4,6 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {COUNTRY_CODES} from './country-codes';
 import {ChemspacePriceColumns, ChemspaceOffer, ChemspacePricesTableItem, ChemspaceResult} from './model';
-import {delay} from '@datagrok-libraries/test/src/test';
 
 export * from './package.g';
 
@@ -394,7 +393,7 @@ export class PackageFunctions {
           while (response.status === 429 && totalAttempts > 0) {
             totalAttempts--;
             attemptsCount++;
-            await delay(delayMs * attemptsCount);
+            await DG.delay(delayMs * attemptsCount);
             await rerunRequest();
           }
         } else

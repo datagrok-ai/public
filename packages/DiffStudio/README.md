@@ -89,7 +89,7 @@ The solver has built-in use cases. Get access to them via the context menu. You 
   * describes a chemical reaction part of the air pollution [model](https://archimede.uniba.it/~testset/report/pollu.pdf) consisting of 25 reaction and 20 reacting compounds
   * demonstrates the simulation of processes described by a stiff system of ODEs
 
-Datagrok's ODEs suite has tools for solving both [stiff](https://en.wikipedia.org/wiki/Stiff_equation) and non-stiff equations. It provides a [numerical solution](https://en.wikipedia.org/wiki/Numerical_methods_for_ordinary_differential_equations).
+Datagrok's ODEs suite has tools for solving both [stiff](https://en.wikipedia.org/wiki/Stiff_equation) and non-stiff equations. It provides a [numerical solution](https://en.wikipedia.org/wiki/Numerical_methods_for_ordinary_differential_equations). The primary solver is [LSODA](https://doi.org/10.1137/0904010) — a variable-order method that automatically detects stiffness and switches between Adams (non-stiff) and BDF (stiff) formulations.
 
 ## Model structure
 
@@ -169,7 +169,15 @@ You can manage the solver of ODEs. Specify its settings in the `#meta.solver`-li
 * the maximum number of iterations (`maxIterations`)
 * the maximum computation time (`maxTimeMs`)
 
-Diff Studio implements the following [Rosenbrock–Wanner](https://doi.org/10.1016/j.cam.2015.03.010) methods for solving ODEs:
+Diff Studio implements the following numerical methods for solving ODEs:
+
+Automatic stiffness-detecting method:
+
+|Method|Value|
+|-------------|--------|
+|[LSODA](https://doi.org/10.1137/0904010) - variable-order solver with automatic switching between Adams (non-stiff) and BDF (stiff)|`'lsoda'`|
+
+Implicit methods (for [stiff](https://en.wikipedia.org/wiki/Stiff_equation) ODEs) - [Rosenbrock–Wanner](https://doi.org/10.1016/j.cam.2015.03.010) type:
 
 |Method|Value|
 |-------------|--------|
@@ -177,10 +185,25 @@ Diff Studio implements the following [Rosenbrock–Wanner](https://doi.org/10.10
 |the ROS3PRw method|`'ros3prw'`|
 |the ROS34PRw method|`'ros34prw'`|
 
+Explicit methods (for non-stiff ODEs) - [Runge-Kutta](https://en.wikipedia.org/wiki/Runge%E2%80%93Kutta_methods) type:
+
+|Method|Value|
+|-------------|--------|
+|the Bogacki-Shampine 3(2) method ([RK3](https://en.wikipedia.org/wiki/Bogacki%E2%80%93Shampine_method))|`'rk3'`|
+|the Runge-Kutta-Fehlberg 4(5) method ([RK4](https://en.wikipedia.org/wiki/Runge%E2%80%93Kutta%E2%80%93Fehlberg_method))|`'rk4'`|
+|the Dormand-Prince 5(4) method ([RKDP](https://en.wikipedia.org/wiki/Dormand%E2%80%93Prince_method))|`'rkdp'`|
+
+Explicit methods (for non-stiff ODEs) - [Adams-Bashforth](https://en.wikipedia.org/wiki/Linear_multistep_method) type:
+
+|Method|Value|
+|-------------|--------|
+|the predictor-corrector method of order 4 (AB4)|`'ab4'`|
+|the predictor-corrector method of order 5 (AB5)|`'ab5'`|
+
 By default, Diff Studio uses ROS34PRw. You may specify the method as follows:
 
 ```python
-#meta.solver: {method: 'mrt'}
+#meta.solver: {method: 'lsoda'}
 ```
 
 To check correctness of formulas, set the maximum number of iterations:
@@ -237,16 +260,16 @@ Diff Studio solvers ensure fast **in-browser** intergration of ODEs. The followi
   * a stiff system of 20 non-linear equations
   * describes a chemical reaction part of the air pollution model designed at The Dutch National Institute of Public Health and Environmental Protection
 
-The MRT, ROS3PRw and ROS34PRw methods demonstrate the following time performance (AMD Ryzen 5 5600H 3.30 GHz CPU):
+The LSODA, MRT, ROS3PRw and ROS34PRw methods demonstrate the following time performance (AMD Ryzen 5 5600H 3.30 GHz CPU):
 
-|Problem|Segment|Points|Tolerance|MRT, ms|ROS3PRw, ms|ROS34PRw, ms|
-|-|-|-|-|-|-|-|
-|[Rober](https://archimede.uniba.it/~testset/report/rober.pdf)|[0, 10E+11]|40K|1E-7|103|446|285|
-|[HIRES](https://archimede.uniba.it/~testset/report/hires.pdf)|[0, 321.8122]|32K|1E-10|222|362|215|
-|[VDPOL](https://archimede.uniba.it/~testset/report/vdpol.pdf)|[0, 2000]|20K|1E-12|963|1576|760|
-|[OREGO](https://archimede.uniba.it/~testset/report/orego.pdf)|[0, 360]|36K|1E-8|381|483|199|
-|[E5](https://archimede.uniba.it/~testset/report/e5.pdf)|[0, 10E+13]|40K|1E-6|14|17|8|
-|[Pollution](https://archimede.uniba.it/~testset/report/pollu.pdf)|[0, 60]|30K|1E-6|36|50|23|
+|Problem|Segment|Points|Tolerance|LSODA, ms|MRT, ms|ROS3PRw, ms|ROS34PRw, ms|
+|-|-|-|-|-|-|-|-|
+|[Rober](https://archimede.uniba.it/~testset/report/rober.pdf)|[0, 10E+11]|40K|1E-7|67|175|446|285|
+|[HIRES](https://archimede.uniba.it/~testset/report/hires.pdf)|[0, 321.8122]|32K|1E-10|125|122|362|215|
+|[VDPOL](https://archimede.uniba.it/~testset/report/vdpol.pdf)|[0, 2000]|20K|1E-12|268|492|1576|760|
+|[OREGO](https://archimede.uniba.it/~testset/report/orego.pdf)|[0, 360]|36K|1E-8|76|205|483|199|
+|[E5](https://archimede.uniba.it/~testset/report/e5.pdf)|[0, 10E+13]|40K|1E-6|7|6|17|8|
+|[Pollution](https://archimede.uniba.it/~testset/report/pollu.pdf)|[0, 60]|30K|1E-6|12|18|50|23|
 
 This table compares the efficiency of the methods when solving each test problem on a fixed segment and providing solutions at a specified number of points with a given tolerance.
 
