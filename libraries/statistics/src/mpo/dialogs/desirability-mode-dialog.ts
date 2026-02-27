@@ -29,27 +29,40 @@ export class DesirabilityModeDialog {
     private mappedCol?: DG.Column | null,
   ) {}
 
+  private static strategyToLabel(strategy?: string): string {
+    switch (strategy) {
+    case 'default': return 'Use default score';
+    case 'skip': return 'Skip property';
+    default: return 'Exclude row';
+    }
+  }
+
   private buildDefaultScoreInput(prop: PropertyDesirability): HTMLElement {
-    const hasFallback = prop.defaultScore != null;
-    const scoreInput = ui.input.float('Default score', {value: prop.defaultScore ?? 0, min: 0, max: 1, format: '#0.000',
+    const mv = prop.missingValues;
+    const scoreInput = ui.input.float('Default score', {value: mv?.strategy === 'default' ? mv.score : 0, min: 0, max: 1, format: '#0.000',
       onValueChanged: (v) => {
-        prop.defaultScore = v ?? 0;
-        this.onUpdate({defaultScore: prop.defaultScore});
+        prop.missingValues = {strategy: 'default', score: v};
+        this.onUpdate({missingValues: prop.missingValues});
       },
     });
-    scoreInput.root.style.display = hasFallback ? '' : 'none';
+    scoreInput.root.style.display = mv?.strategy === 'default' ? '' : 'none';
 
     const choiceInput = ui.input.choice('If missing', {
       items: ['Exclude row', 'Use default score', 'Skip property'],
-      value: hasFallback ? 'Use default score' : 'Exclude row',
+      value: DesirabilityModeDialog.strategyToLabel(mv?.strategy),
       onValueChanged: (v) => {
         const use = v === 'Use default score';
-        prop.defaultScore = use ? (scoreInput.value ?? 0) : undefined;
+        if (v === 'Skip property')
+          prop.missingValues = {strategy: 'skip'};
+        else if (use)
+          prop.missingValues = {strategy: 'default', score: scoreInput.value ?? 0};
+        else
+          prop.missingValues = {strategy: 'exclude'};
         scoreInput.root.style.display = use ? '' : 'none';
-        this.onUpdate({defaultScore: prop.defaultScore});
+        this.onUpdate({missingValues: prop.missingValues} as any);
       },
     });
-    choiceInput.setTooltip('Score to assign when a value is missing or unmatched.');
+    choiceInput.setTooltip('How to handle missing values.');
     scoreInput.setTooltip('Desirability score (0–1) to use as fallback.');
     return ui.form([choiceInput, scoreInput]);
   }
