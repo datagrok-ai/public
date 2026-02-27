@@ -556,7 +556,7 @@ const AI_GENERATED_IDENTIFIER_TAG = 'AI-generated-identifier';
 /**
  * Context class that manages tool execution for table view operations
  */
-class TableViewContext {
+export class TableViewContext {
   private dummy: DG.DataFrame;
   constructor(private tableView: DG.TableView) {
     // Initialize with existing viewers

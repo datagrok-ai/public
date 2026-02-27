@@ -5,5 +5,5 @@
  * The class name consists of <PackageName> and the `PackageDetectors` suffix.
  * Follow this naming convention to ensure that your detectors are properly loaded.
  */
-class ChatGPTPackageDetectors extends DG.Package {
+class GrokkyPackageDetectors extends DG.Package {
 }

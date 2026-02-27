@@ -1,8 +1,8 @@
 {
-  "name": "@datagrok/chatgpt",
-  "friendlyName": "ChatGPT",
+  "name": "@datagrok/grokky",
+  "friendlyName": "Grokky",
   "version": "1.0.4",
-  "description": "ChatGPT integration",
+  "description": "Grokky AI assistant for Datagrok",
   "author": "oserhiienko@datagrok.ai",
   "dependencies": {
     "@ai-sdk/anthropic": "^3.0.31",
@@ -35,14 +35,14 @@
   },
   "scripts": {
     "link-all": "grok link",
-    "debug-chatgpt": "webpack && grok publish",
-    "release-chatgpt": "webpack && grok publish --release",
-    "build-chatgpt": "webpack",
+    "debug-grokky": "webpack && grok publish",
+    "release-grokky": "webpack && grok publish --release",
+    "build-grokky": "webpack",
     "build": "grok api && grok check --soft && webpack",
-    "debug-chatgpt-dev": "webpack && grok publish dev",
-    "release-chatgpt-dev": "webpack && grok publish dev --release",
-    "debug-chatgpt-public": "webpack && grok publish public",
-    "release-chatgpt-public": "webpack && grok publish public --release"
+    "debug-grokky-dev": "webpack && grok publish dev",
+    "release-grokky-dev": "webpack && grok publish dev --release",
+    "debug-grokky-public": "webpack && grok publish public",
+    "release-grokky-public": "webpack && grok publish public --release"
   },
   "canEdit": [
     "Administrators"
@@ -53,7 +53,7 @@
   "repository": {
     "type": "git",
     "url": "https://github.com/datagrok-ai/public.git",
-    "directory": "packages/ChatGPT"
+    "directory": "packages/Grokky"
   },
   "sources": [
     "css/ai.css"

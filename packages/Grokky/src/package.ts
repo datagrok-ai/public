@@ -16,7 +16,6 @@ import {genDBConnectionMeta, moveDBMetaToStickyMetaOhCoolItEvenRhymes} from './l
 import {biologicsIndex} from './llm-utils/indexes/biologics-index';
 import {chemblIndex} from './llm-utils/indexes/chembl-index';
 import {uploadFilesToVectorStroreOneByOne} from './llm-utils/indexes/dg-repository-index';
-
 export * from './package.g';
 
 export class ChatGPTPackage extends DG.Package {
@@ -72,6 +71,7 @@ export class PackageFunctions {
     //   console.log(e);
     // }
   }
+
 
   @grok.decorators.func({
     meta: {role: 'searchProvider'},
