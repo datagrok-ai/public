@@ -4,6 +4,7 @@ import { getApiKey, getApiUrl } from "./credentials-utils";
 import * as grok from 'datagrok-api/grok';
 import { SignalsSearchParams, SignalsSearchQuery } from "./signals-search-query";
 import { MAX_RETURN_ROWS } from "./constants";
+import { delay } from "@datagrok-libraries/utils/src/test";
 
 // Top-level response interface
 export interface RevvityApiResponse<T = any, I = any> {
@@ -111,7 +112,7 @@ async function request<T>(
       // Handle 429 (Too Many Requests) - retry after delay
       if (response.status === 429 && attempt < maxRetries) {
        // console.log(`${attempt} attempt for ${path} failed`);
-        await DG.delay(1000);
+        await delay(1000);
         continue; // Retry the request
       }
 
@@ -134,7 +135,7 @@ async function request<T>(
       
       // Only retry if we got a 429 error and have retries left
       if (lastResponseStatus === 429 && attempt < maxRetries) {
-        await DG.delay(1000);
+        await delay(1000);
         continue;
       }
       

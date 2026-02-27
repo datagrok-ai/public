@@ -195,7 +195,7 @@ export async function createViewFromPreDefinedQuery(treeNode: DG.TreeViewGroup, 
 
   const df = DG.DataFrame.create();
   const tv = grok.shell.addTablePreview(df);
-  const icon = ui.iconImage('', `${_package.webRoot}img/revvity.png`);
+  // const icon = ui.iconImage('', `${_package.webRoot}img/revvity.png`);
   //tv.setIcon(icon); TODO!!! Uncomment when setIcon method is available in js-api
 
   openedView = tv;
