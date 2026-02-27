@@ -1,6 +1,7 @@
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 import $ from 'cash-dom';
+import '../../css/styles.css';
 import {IChemFunctionsDialogResult, IComputeDialogResult, IDescriptorTree,
   TemplateCompute,
   IFunctionArgs, ComputeFunctions} from './types';
@@ -41,7 +42,7 @@ export async function chemFunctionsDialog(
         args: template?.compute?.queries?.find((ts) => ts.id === q.id)?.args ?? {}});
     });
 
-  const host = ui.div([], {classes: 'hit-triage-compute-dialog-host'});
+  const host = ui.div([], {classes: 'statistics-compute-dialog-host'});
   const descriptorItems: DG.TreeViewNode[] = [];
   const descriptorsGroup = ui.tree();
   const descriptorsGroupHost = ui.wait(async () => {
@@ -50,7 +51,7 @@ export async function chemFunctionsDialog(
         return ui.divText('No descriptors provider configured');
       // tree groups
       const descriptorsTree = await descriptorsProvider();
-      descriptorsGroup.root.classList.add('hit-triage-compute-dialog-descriptors-group');
+      descriptorsGroup.root.classList.add('statistics-compute-dialog-descriptors-group');
 
       function createTreeGroup(name: string, treeNode: DG.TreeViewGroup): DG.TreeViewGroup {
         const res = treeNode.group(name, null, false);
@@ -147,7 +148,7 @@ export async function chemFunctionsDialog(
         }});
       functionCheck.setTooltip('Toggle calculation of this function');
       pane.header.appendChild(functionCheck.root);
-      pane.header.classList.add('hit-triage-compute-dialog-pane-header');
+      pane.header.classList.add('statistics-compute-dialog-pane-header');
     });
   }
 

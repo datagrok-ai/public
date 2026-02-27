@@ -305,7 +305,6 @@ export class MpoProfileEditor {
       this.openModeDialog(name, rowId, prop, editor, col);
     });
 
-    gear.classList.add('statistics-mpo-gear');
     return gear;
   }
 
