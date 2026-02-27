@@ -144,7 +144,7 @@ category('Features: Structure', () => {
     const ivp = getIVP(USE_CASES.NIMOTUZUMAB);
     expect(ivp.outputs !== null, true, 'Nimotuzumab model must have an #output block');
     let allNoFormula = true;
-    ivp.outputs!.forEach((out) => { if (out.formula !== null) allNoFormula = false; });
+    ivp.outputs!.forEach((out) => {if (out.formula !== null) allNoFormula = false;});
     expect(allNoFormula, true, 'All Nimotuzumab #output entries must have formula === null');
   });
 

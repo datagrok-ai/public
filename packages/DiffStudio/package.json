@@ -17,7 +17,7 @@
     "@datagrok-libraries/compute-utils": "../../libraries/compute-utils",
     "@datagrok-libraries/tutorials": "^1.6.1",
     "@datagrok-libraries/utils": "^4.6.8",
-    "diff-grok": "1.1.0",
+    "diff-grok": "1.2.0",
     "cash-dom": "^8.1.5",
     "codemirror": "^6.0.1",
     "css-loader": "^7.1.2",
