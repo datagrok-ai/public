@@ -2,5 +2,5 @@
 // https://datagrok.ai/help/learn/
 
 let t1 = await grok.data.loadTable('https://public.datagrok.ai/demo/demog.csv');
-let t2 = await grok.ml.applyModel('Samples:Models:PredictSexByBasicDemographics', t1);
+let t2 = await grok.ml.applyModel('ApiSamples:Models:PredictSexByBasicDemographics', t1);
 grok.shell.addTableView(t2);

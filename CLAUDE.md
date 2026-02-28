@@ -269,6 +269,10 @@ The `grok check` command validates that imports match webpack externals.
 
 - To update `grok` tool: `npm i datagrok-tools --g`
 
+## Package File Storage
+
+`System:AppData/<PackageName>/` in Datagrok runtime maps to `<PackageName>/files/` on disk. For example, `System:AppData/Chem/molblocks.csv` corresponds to `packages/Chem/files/molblocks.csv`.
+
 ## Code Style
 
 - 2-space indentation
