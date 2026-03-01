@@ -213,13 +213,14 @@ export interface IMonomerLibHelper {
   /** reads single collection and returns monomer symbols in it . name should be extention qualified*/
   readMonomerCollection(collectionName: string): Promise<MonomerCollection>;
   /** add or update monomer collecion */
-  addOrUpdateMonomerCollection(collectionName: string, monomerSymbols: string[], description?: string): Promise<void>;
+  addOrUpdateMonomerCollection(collectionName: string, monomerSymbols: string[], description?: string, tags?: string[]): Promise<void>;
 
   deleteMonomerCollection(collectionName: string): Promise<void>;
 }
 
 export type MonomerCollection = {
   description?: string;
+  tags?: string[];
   monomerSymbols: string[];
   updatedBy: string;
   updatedOn: string;
