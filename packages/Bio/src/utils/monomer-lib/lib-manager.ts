@@ -431,11 +431,12 @@ export class MonomerLibManager implements IMonomerLibHelper {
     return JSON.parse(file) as MonomerCollection;
   }
 
-  async addOrUpdateMonomerCollection(collectionName: string, monomerSymbols: string[], desc?: string): Promise<void> {
+  async addOrUpdateMonomerCollection(collectionName: string, monomerSymbols: string[], desc?: string, tags?: string[]): Promise<void> {
     if (!collectionName.endsWith('.json'))
       collectionName += '.json';
     const content = JSON.stringify({
       description: desc,
+      tags: tags,
       monomerSymbols: monomerSymbols,
       updatedBy: DG.User.current().login,
       updatedOn: new Date().toISOString(),
