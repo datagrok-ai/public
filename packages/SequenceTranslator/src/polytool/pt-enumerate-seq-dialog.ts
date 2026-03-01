@@ -24,7 +24,7 @@ import {SeqTemps} from '@datagrok-libraries/bio/src/utils/macromolecule/seq-hand
 import {PolyToolEnumeratorParams, PolyToolEnumeratorType, PolyToolEnumeratorTypes} from './types';
 import {doPolyToolEnumerateHelm, PT_HELM_EXAMPLE} from './pt-enumeration-helm';
 import {PolyToolPlaceholdersInput} from './pt-placeholders-input';
-import {showMonomerSelectionDialog} from './pt-monomer-selection-dialog';
+import {showMonomerSelectionDialog} from '@datagrok-libraries/bio/src/utils/monomer-selection-dialog';
 import {defaultErrorHandler} from '../utils/err-info';
 import {PolyToolPlaceholdersBreadthInput} from './pt-placeholders-breadth-input';
 import {PT_ENUM_TYPE_TOOLTIPS, PT_UI_DIALOG_ENUMERATION, PT_UI_GET_HELM, PT_UI_HIGHLIGHT_MONOMERS, PT_UI_RULES_USED, PT_UI_USE_CHIRALITY} from './const';
