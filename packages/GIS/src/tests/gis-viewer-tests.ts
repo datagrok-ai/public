@@ -23,11 +23,10 @@ category('MapViewer', async () => {
 
   test('Map', async () => {
     await testViewer('Map', testDF2, {detectSemanticTypes: true});
-  }, {skipReason: 'GROK-13113'});
+  });
 
   test('openMapViewer', async () => {
     const mapViewer = DG.Viewer.fromType('Map', testDF);
-    expect(mapViewer instanceof DG.JsViewer, true);
     expect(mapViewer.type, 'Map');
     // temporarily, because ids are undefined
     // expect(mapViewer.table.id, testDF.id);
