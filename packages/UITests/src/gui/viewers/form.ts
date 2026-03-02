@@ -62,7 +62,6 @@ category('Viewers: Form', () => {
 
   test('form.api', async () => {
     tv = grok.shell.addTableView(demog);
-    debugger
     const form = tv.form({
       title: 'SuperTitle',
       description: 'SuperDescription',

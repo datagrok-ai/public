@@ -45,7 +45,6 @@ category('UI: Accordion', () => {
   });
 
   test('accordion.removePane', async () => {
-    debugger
     acc.removePane(acc.getPane('New pane3'));
     if (acc.getPane('New pane3') != undefined)
       throw new Error('getPane error');
