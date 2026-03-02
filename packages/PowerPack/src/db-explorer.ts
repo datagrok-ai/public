@@ -635,11 +635,17 @@ export async function runEnrichmentFromConfig(conn: DG.DataConnection, schema: s
 async function executeEnrichQuery(query: DG.TableQuery, df: DG.DataFrame, keyCol: string): Promise<void> {
   try {
     query.limit = undefined;
-    const keyColValues = df.getCol(keyCol).toList();
+    const dfKeyCol = df.columns.firstWhere(col => col.tags.get(DG.Tags.DbColumn) === keyCol);
+    if (!dfKeyCol) {
+      grok.shell.error('Could not resolve the column.');
+      return;
+    }
+    const keyColValues = dfKeyCol.toList();
+    const dataType = dfKeyCol.type;
     let res: DG.DataFrame | undefined;
     for (let i = 0; i < keyColValues.length; i += 200) {
       const inValues = keyColValues.slice(i, i + 200);
-      query.where = [{field: `${query.table}.${keyCol}`, pattern: `in (${inValues.join(',')})`, dataType: df.getCol(keyCol).type}];
+      query.where = [{field: `${query.table}.${keyCol}`, pattern: `in (${inValues.join(',')})`, dataType}];
       const queryCall = query.prepare();
       const run = await queryCall.call(false, undefined,
         {processed: true, report: false});
@@ -662,7 +668,7 @@ async function executeEnrichQuery(query: DG.TableQuery, df: DG.DataFrame, keyCol
     joinTable.applySync({
       'table1': df,
       'table2': res,
-      'keys1': [keyCol],
+      'keys1': [dfKeyCol.name],
       'keys2': [keyCol],
       'values1': df.columns.names(),
       'values2': res.columns.names().filter((n) => n !== keyCol),
