@@ -405,6 +405,20 @@ export namespace scripts {
   }
 
   /**
+  reverse a string using stringi from a custom env
+  */
+  export async function rEnvStringReverse(input_string: string ): Promise<string> {
+    return await grok.functions.call('CVMTests:REnvStringReverse', { input_string });
+  }
+
+  /**
+  reverse a string using stringi from a yaml env file
+  */
+  export async function rEnvFileStringReverse(input_string: string ): Promise<string> {
+    return await grok.functions.call('CVMTests:REnvFileStringReverse', { input_string });
+  }
+
+  /**
   file lines count
   */
   export async function rLinesCount(file: DG.FileInfo , header: boolean , separator: string , dec: string ): Promise<number> {
