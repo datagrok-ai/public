@@ -40,7 +40,7 @@ export class MpoProfileCreateView {
   tableView: DG.TableView;
   private tableViewVisible: boolean = false;
   private subs: Subscription[] = [];
-  private lastOpenedHint: HTMLDivElement | null = null;
+
   private profileModified = false;
   private updatingLayout = false;
   private stashedManualProfile: { profile: DesirabilityProfile; modified: boolean } | null = null;
@@ -168,7 +168,6 @@ export class MpoProfileCreateView {
               modified: this.profileModified,
             };
             this.clearPreviousLayout();
-            this.setAggregationVis  ible(false);
             this.closeContextPanel();
             if (!this.df) {
               this.showError('Probabilistic MPO requires a dataset. Please select a dataset first.');
@@ -265,9 +264,6 @@ export class MpoProfileCreateView {
       if (this.methodInput?.value === METHOD_MANUAL || !this.showMethod) {
         this.editor.design = true;
         this.editor.dataFrame = this.df ?? null as any;
-        if (this.aggregationInput) {
-          this.aggregationInput.enabled = !!this.df;
-          this.updateAggregationTooltip();
         if (this.showMethod) {
           this.profile = this.df ?
             this.createProfileForDf() :
@@ -370,7 +366,6 @@ export class MpoProfileCreateView {
 
   private prepareManualLayout(): void {
     this.clearPreviousLayout();
-    this.setAggregationVisible(true);
     this.closePMpoPanels();
     this.setTableViewVisible(false);
   }
@@ -520,10 +515,6 @@ export class MpoProfileCreateView {
       if (isOwnView(data.args?.view))
         this.detach();
     }));
-  }
-
-  private setAggregationVisible(visible: boolean): void {
-    this.editor.aggregationInput.root.classList.toggle('chem-mpo-d-none', !visible);
   }
 
   private closeContextPanel(): void {
