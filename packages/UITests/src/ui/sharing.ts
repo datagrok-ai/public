@@ -18,7 +18,7 @@ category('UI: Sharing', () => {
     newScript.name = entityName;
     await grok.dapi.scripts.save(newScript);
     try {
-      await testEntityUI('Functions', 'scripts', '.d4-gallery-card');
+      await testEntityUI(['Platform', 'Functions', 'Scripts'], '.d4-gallery-card');
     } finally {
       await grok.dapi.scripts.delete(newScript);
     }
@@ -29,7 +29,7 @@ category('UI: Sharing', () => {
     newProject.name = entityName;
     await grok.dapi.projects.save(newProject);
     try {
-      await testEntityUI('Data', 'projects', '.d4-gallery-card');
+      await testEntityUI(['Dashboards'], '.d4-gallery-card');
     } finally {
       await grok.dapi.projects.delete(newProject);
     }
@@ -37,13 +37,13 @@ category('UI: Sharing', () => {
 
   test('connections.ui', async () => {
     const newConnection = DG.DataConnection.create(entityName, {
-      dataSource: '',
+      dataSource: 'Files',
       server: '',
       db: '',
     });
     await grok.dapi.connections.save(newConnection);
     try {
-      await testEntityUI('Manage', 'connections', '.d4-link-label');
+      await testEntityUI(['Databases'], '.d4-link-label', 'apitest_db');
     } finally {
       await grok.dapi.connections.delete(newConnection);
     }
@@ -77,10 +77,14 @@ category('UI: Sharing', () => {
     }
   }
 
-  async function testEntityUI(paneName: string, elName: string, selector: string) {
-    const pane = grok.shell.sidebar.getPane(paneName);
-    const el = pane.content.querySelector(`[data-view=${elName}]`) as HTMLElement;
-    el.click();
+  async function testEntityUI(path: string[], selector: string, friendlyName?: string) {
+    let treeGroupToClick: DG.TreeViewGroup | DG.TreeViewNode = grok.shell.browsePanel.mainTree;
+    for (let i = 0; i < path.length; i++) {
+      const name = path[i];
+      treeGroupToClick = i === path.length - 1 ? (treeGroupToClick as DG.TreeViewGroup).children.find((g) => g.text === name)! :
+        (treeGroupToClick as DG.TreeViewGroup).getOrCreateGroup(name);
+    }
+    treeGroupToClick.root.click();
     await awaitCheck(() => (document.querySelector('.grok-gallery-grid')?.children?.length ?? 0) > 0,
       'cannot load gallery grid', 3000);
     v = grok.shell.v;
@@ -90,6 +94,7 @@ category('UI: Sharing', () => {
     search.dispatchEvent(new MouseEvent('input'));
     await awaitCheck(() => document.querySelector('.grok-gallery-grid')?.children?.length === 1,
       'more than one testing entity present', 3000);
+    await delay(2000);
     let entity = gallery.querySelector('.grok-gallery-grid')!.children[0];
     if (entity.className !== selector.slice(1)) entity = entity.querySelector(selector)!;
     entity.dispatchEvent(new MouseEvent('contextmenu'));
@@ -100,9 +105,9 @@ category('UI: Sharing', () => {
       .find((el) => el.textContent === 'Share...') as HTMLElement;
     share.click();
     await awaitCheck(() => DG.Dialog.getOpenDialogs().find((d) => d.root.style.position === 'fixed' &&
-      d.title.toLowerCase() === `share ${entityName}`) !== undefined, 'cannot find dialog', 10000);
+      (d.title.toLowerCase() === `share ${entityName}` || d.title.toLowerCase() === `share ${(friendlyName ?? '').toLowerCase()}`)) !== undefined, 'cannot find dialog', 10000);
     const shareDialog = DG.Dialog.getOpenDialogs().find((d) => d.root.style.position === 'fixed' &&
-      d.title.toLowerCase() === `share ${entityName}`);
+      (d.title.toLowerCase() === `share ${entityName}` || d.title.toLowerCase() === `share ${(friendlyName ?? '').toLowerCase()}`));
     const shareDialogRoot = shareDialog!.root;
     await awaitCheck(() => shareDialogRoot.querySelector('.d4-user-selector-input') !== null,
       'cannot enter user for sharing', 3000);
@@ -114,11 +119,15 @@ category('UI: Sharing', () => {
     await delay(100); // no way to handle it
     inputUser.dispatchEvent(new KeyboardEvent('keydown', {keyCode: 40}));
     await delay(100); // no way to handle it
+    inputUser.dispatchEvent(new KeyboardEvent('keydown', {keyCode: 40}));
+    await delay(100); // no way to handle it
     inputUser.dispatchEvent(new KeyboardEvent('keydown', {keyCode: 13}));
+    await delay(300); // no way to handle it
     shareDialogRoot.querySelector('textarea')!.value = 'Message1!';
     (shareDialogRoot.querySelector('.ui-btn.ui-btn-ok.enabled') as HTMLElement).click();
     DG.Balloon.closeAll();
-    await awaitCheck(() => (document.querySelector('.d4-balloon.info') as HTMLElement).innerText === 'Shared',
+    await delay(100);
+    await awaitCheck(() => (document.querySelector('.d4-balloon.info') as HTMLElement)?.innerText === 'Shared',
       'cannot find info balloon', 3000);
     v.close();
   }

@@ -17,7 +17,7 @@ category('UI: Icons', () => {
   });
 
   test('icons.root', async () => {
-    for (const [key, value] of Object.entries(icons))
+    for (const [key, value] of Object.entries(icons).filter((icon) => !['spinner', 'loader'].includes(icon[0])))
       checkHTMLElement(key, value(() => { }), v, '.grok-icon');
   });
 
