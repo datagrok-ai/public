@@ -348,6 +348,10 @@ export namespace funcs {
     return await grok.functions.call('Bio:ManageMonomerLibrariesViewTreeBrowser', { treeNode });
   }
 
+  export async function monomerCollectionsApp(): Promise<DG.View> {
+    return await grok.functions.call('Bio:MonomerCollectionsApp', {});
+  }
+
   /**
   As FASTA...
   */
