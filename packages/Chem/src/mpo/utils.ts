@@ -22,7 +22,7 @@ export enum MpoPathMode {
 }
 
 export const MPO_TEMPLATE_PATH = 'System:AppData/Chem/mpo';
-export const MPO_PATH = 'Mpo';
+export const MPO_PATH = 'MPOProfiles';
 export const MAX_MPO_PROPERTIES = 20;
 
 export async function loadMpoProfiles(): Promise<MpoProfileInfo[]> {

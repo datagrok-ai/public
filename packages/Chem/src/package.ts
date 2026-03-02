@@ -2687,7 +2687,7 @@ export class PackageFunctions {
     const url = new URL(window.location.href);
     const params = url.searchParams;
 
-    const hasPath = !!path;
+    const hasPath = path != null;
 
     if (hasPath && url.pathname.endsWith('/Mpo/create-profile')) {
       const view = new MpoProfileCreateView();
