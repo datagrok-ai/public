@@ -233,3 +233,5 @@ export const SIGN_OPTIONS = [
 ];
 
 export const THRESHOLDED_DESIRABILITY_COL_NAME = 'Desirability';
+
+export const PREFERABLE_CATEGORIES = ['perfect', 'good', 'true', 't', 'g', 'active', 'a', 'yes', 'y'];

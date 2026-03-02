@@ -11,27 +11,57 @@ import * as jStat from 'jstat';
 /** Generates synthetic data for pMPO model training and testing
  * @param samplesCount Number of samples to generate
  * @returns DataFrame with generated data */
-export async function getSynteticPmpoData(samplesCount: number): Promise<DG.DataFrame> {
+export async function getSynteticPmpoData(samplesCount: number, isTest: boolean = true): Promise<DG.DataFrame> {
   const df = await grok.dapi.files.readCsv(SOURCE_PATH);
   const generator = new PmpoDataGenerator(df, 'Drug', 'CNS', 'Smiles');
   const genTable = generator.getGenerated(samplesCount);
-  genTable.columns.add(DG.Column.fromList(DG.COLUMN_TYPE.BOOL, 'Const bool', new Array(samplesCount).fill(true)));
-  genTable.columns.add(DG.Column.fromInt32Array('Const int', new Int32Array(samplesCount).fill(1)));
 
-  // Add a copy of the first numeric column with 5 missing values
-  const firstNumCol = genTable.columns.toList().find((col) => col.isNumerical);
-  if (firstNumCol) {
-    const colWithMissing = firstNumCol.clone();
-    colWithMissing.name = `${firstNumCol.name} (missing)`;
-    for (let i = 0; i < Math.min(5, colWithMissing.length); ++i)
-      colWithMissing.set(i, DG.FLOAT_NULL);
-    genTable.columns.add(colWithMissing);
+  if (!isTest) {
+    genTable.columns.add(DG.Column.fromList(DG.COLUMN_TYPE.BOOL, 'Const bool', new Array(samplesCount).fill(true)));
+    genTable.columns.add(DG.Column.fromInt32Array('Const int', new Int32Array(samplesCount).fill(1)));
+
+    // Add a copy of the first numeric column with 5 missing values
+    const firstNumCol = genTable.columns.toList().find((col) => col.isNumerical);
+    if (firstNumCol) {
+      const colWithMissing = firstNumCol.clone();
+      colWithMissing.name = `${firstNumCol.name} (missing)`;
+      for (let i = 0; i < Math.min(5, colWithMissing.length); ++i)
+        colWithMissing.set(i, DG.FLOAT_NULL);
+      genTable.columns.add(colWithMissing);
+    }
+
+    // Add a column with all null values
+    genTable.columns.add(DG.Column.fromFloat32Array('Nulls', new Float32Array(samplesCount).fill(DG.FLOAT_NULL)));
+
+    // Add categorical columns
+    const categoricalCols = getCategoricalColumns(genTable.col('CNS')!, samplesCount);
+    for (const col of categoricalCols)
+      genTable.columns.add(col);
   }
 
-  genTable.columns.add(DG.Column.fromFloat32Array('Nulls', new Float32Array(samplesCount).fill(DG.FLOAT_NULL)));
-
   return genTable;
-}
+} // getSynteticPmpoData
+
+/** Generates categorical columns based on a boolean source column
+ * @param sourceBoolCol Source boolean column to base the categorical columns on
+ * @param samplesCount Number of samples to generate
+ * @returns Array of generated categorical columns */
+function getCategoricalColumns(sourceBoolCol: DG.Column, samplesCount: number): DG.Column[] {
+  const source = sourceBoolCol.toList();
+  const stringLabels = new Array<string>(samplesCount);
+  const threeCats = new Array<string>(samplesCount);
+
+  for (let i = 0; i < samplesCount; ++i) {
+    stringLabels[i] = source[i] ? 'active' : 'non-active';
+    threeCats[i] = source[i] ? (Math.random() < 0.5 ? 'perfect' : 'good') : (Math.random() < 0.5 ? 'bad' : 'worst');
+  }
+
+  return [
+    DG.Column.fromList(DG.COLUMN_TYPE.STRING, 'CNS (strings)', stringLabels),
+    DG.Column.fromList(DG.COLUMN_TYPE.STRING, 'CNS (4 categories)', threeCats),
+    DG.Column.fromList(DG.COLUMN_TYPE.STRING, 'Single category', new Array<string>(samplesCount).fill('Unknown')),
+  ];
+} // getCategoricalColumns
 
 /** Class for generating synthetic data for pMPO model training and testing */
 export class PmpoDataGenerator {

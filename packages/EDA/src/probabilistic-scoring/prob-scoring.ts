@@ -21,7 +21,9 @@ import {MIN_SAMPLES_COUNT, PMPO_NON_APPLICABLE, DescriptorStatistics, P_VAL_TRES
 import {addSelectedDescriptorsCol, getDescriptorStatisticsTable, getFilteredByPvalue, getFilteredByCorrelations,
   getModelParams, getDescrTooltip, saveModel, getScoreTooltip, getDesirabilityProfileJson, getCorrelationTriples,
   addCorrelationColumns, setPvalColumnColorCoding, setCorrColumnColorCoding, PmpoError, getInitCol,
-  getBoolDesirabilityColData, isDesirabilityValid} from './pmpo-utils';
+  getBoolDesirabilityColData, isDesirabilityValid,
+  getDesirabilityColumnFromCategories,
+  getSelectedCategories} from './pmpo-utils';
 import {getOutputPalette} from '../pareto-optimization/utils';
 import {OPT_TYPE} from '../pareto-optimization/defs';
 import {optimizeNM} from './nelder-mead';
@@ -710,25 +712,25 @@ export class Pmpo {
         this.tresholdedColumn = null;
       }
 
-      // if the column is not boolean, create a thresholded column based on the input threshold and sign;
-      if (desInput.value!.type !== DG.COLUMN_TYPE.BOOL) {
-        const boolDesirabilityData = getBoolDesirabilityColData(
-              desInput.value!,
-              desirabilityThresholdInput.value!,
-              signInput.value as EQUALITY_SIGN,
+      if (desInput.value!.type === DG.COLUMN_TYPE.BOOL)
+        return desInput.value!;
+
+      const boolDesirabilityData = (desInput.value!.type === DG.COLUMN_TYPE.STRING) ?
+        getDesirabilityColumnFromCategories(desInput.value!, desirableCategoriesInput!.value!) :
+        getBoolDesirabilityColData(
+          desInput.value!,
+          desirabilityThresholdInput.value!,
+          signInput.value as EQUALITY_SIGN,
         );
-        this.tresholdedColumn = boolDesirabilityData.column;
-        this.threshColTooltip = boolDesirabilityData.tooltip;
 
-        this.tresholdedColumn.name = this.table.columns.getUnusedName(THRESHOLDED_DESIRABILITY_COL_NAME);
-        this.table.columns.add(this.tresholdedColumn);
+      this.tresholdedColumn = boolDesirabilityData.column;
+      this.threshColTooltip = boolDesirabilityData.tooltip;
 
-        return this.tresholdedColumn;
-      }
+      this.tresholdedColumn.name = this.table.columns.getUnusedName(THRESHOLDED_DESIRABILITY_COL_NAME);
+      this.table.columns.add(this.tresholdedColumn);
 
-      // otherwise, use the boolean column as is
-      return desInput.value!;
-    };
+      return this.tresholdedColumn;
+    }; // getDesirabilityColumn
 
     // Function to run computations on input changes
     const runComputations = () => {
@@ -736,8 +738,6 @@ export class Pmpo {
         return;
 
       try {
-      //grok.shell.info('Running...');
-
         this.fitAndUpdateViewers(
           this.table,
           DG.DataFrame.fromColumns(descrInput.value).columns,
@@ -748,11 +748,21 @@ export class Pmpo {
           useSigmoidInput.value,
         );
       } catch (err) {
-        err instanceof PmpoError ?
-          grok.shell.warning(err.message) :
-          grok.shell.error(err instanceof Error ? err.message : PMPO_COMPUTE_FAILED + ': the platform issue.');
+        if (err instanceof PmpoError) {
+          grok.shell.warning(err.message);
+          ui.tooltip.bind(desInput.input, err.message);
+          ui.tooltip.bind(descrInput.input, err.message);
+        } else {
+          const msg = err instanceof Error ? err.message : PMPO_COMPUTE_FAILED + ': the platform issue.';
+          grok.shell.error(msg);
+          ui.tooltip.bind(desInput.input, msg);
+          ui.tooltip.bind(descrInput.input, msg);
+        };
+
+        desInput.input.classList.add('d4-invalid');
+        descrInput.input.classList.add('d4-invalid');
       }
-    };
+    }; // runComputations
 
     // Descriptor columns input
     const descrInput = ui.input.columns('Descriptors', {
@@ -772,11 +782,17 @@ export class Pmpo {
     });
     form.append(descrInput.root);
 
-    const setVisibilityOfDesirabilityThreshold = (value: DG.Column) => {
-      const hidden = value.type === DG.COLUMN_TYPE.BOOL;
-      desirabilityThresholdInput.root.hidden = hidden;
-      signInput.root.hidden = hidden;
-    };
+    // Desirability column input and related controls
+    const setVisibilityOfDesirabilityAuxInputs = (value: DG.Column) => {
+      if (value.type === DG.COLUMN_TYPE.BOOL)
+        desOptionsInputDiv.hidden = true;
+      else {
+        desOptionsInputDiv.hidden = false;
+        const isString = (value.type === DG.COLUMN_TYPE.STRING);
+        desirabilityThresholdInput.root.hidden = isString;
+        signInput.root.hidden = isString;
+      }
+    }; // setVisibilityOfDesirabilityAuxInputs
 
     const desInput = ui.input.column('Desirability', {
       nullable: false,
@@ -786,21 +802,15 @@ export class Pmpo {
       tooltipText: 'Desirability column.',
       onValueChanged: (value) => {
         if (value != null) {
-          setVisibilityOfDesirabilityThreshold(value);
+          updateDesirableCategoriesInput();
+          setVisibilityOfDesirabilityAuxInputs(value);
           areComputationsBlocked = true;
           desirabilityThresholdInput.value = Math.round(value.stats.avg * 100) / 100;
           areComputationsBlocked = false;
-
           areTunedSettingsUsed = false;
           checkAutoTuneAndRun();
         }
       }, // onValueChanged
-    });
-    desInput.addValidator((value: string) => {
-      const col = this.table.col(value);
-      if (col != null && col.stats.stdev === 0)
-        return 'Desirability column has zero variance.';
-      return null;
     });
     form.append(desInput.root);
 
@@ -832,9 +842,42 @@ export class Pmpo {
       },
     });
 
-    form.append(signInput.root);
-    form.append(desirabilityThresholdInput.root);
-    setVisibilityOfDesirabilityThreshold(desInput.value!);
+    const desOptionsInputDiv = ui.divV([signInput.root, desirabilityThresholdInput.root]);
+
+    form.append(desOptionsInputDiv);
+
+    let desirableCategoriesInput: DG.InputBase<string[] | null> | null = null;
+
+    // For string columns - input for selecting which categories are considered desirable
+    const updateDesirableCategoriesInput = () => {
+      if (desirableCategoriesInput != null) {
+        desirableCategoriesInput.root.remove();
+        desirableCategoriesInput = null;
+      }
+
+      if (desInput.value?.type === DG.COLUMN_TYPE.STRING) {
+        desirableCategoriesInput = ui.input.multiChoice('Preferred', {
+          value: getSelectedCategories(desInput.value!.categories),
+          items: desInput.value!.categories,
+          nullable: false,
+          tooltipText: 'Select which categories should be treated as desirable.',
+          onValueChanged: (value) => {
+            if (value != null) {
+              if (areComputationsBlocked)
+                return;
+              areTunedSettingsUsed = false;
+              checkAutoTuneAndRun();
+            }
+          },
+        });
+
+        desOptionsInputDiv.append(desirableCategoriesInput.root);
+      }
+    }; // updateDesirableCategoriesInput
+
+    setVisibilityOfDesirabilityAuxInputs(desInput.value!);
+
+    // Settings inputs
 
     const header = ui.h2('Settings');
     form.append(header);
@@ -856,6 +899,7 @@ export class Pmpo {
     // Flag indicating whether optimal parameters from auto-tuning are currently used
     let areTunedSettingsUsed = false;
 
+    // Auto-tune parameters and run computations; if auto-tune is not applicable, just run computations with current settings
     const setOptimalParametersAndRun = async () => {
       if (!areInputsValid())
         return;
@@ -877,7 +921,7 @@ export class Pmpo {
       }
 
       runComputations();
-    };
+    }; // setOptimalParametersAndRun
 
     // Validates all inputs before running computations
     const areInputsValid = (): boolean => {
@@ -943,7 +987,29 @@ export class Pmpo {
               } else {
                 res = false;
                 desInput.input.classList.add('d4-invalid');
-                ui.tooltip.bind(desInput.input, 'Desirability column contains only a single value.');
+                ui.tooltip.bind(desInput.input, 'All desirability values are the same - scoring is not feasible.');
+              }
+            } else if (desInput.value.type === DG.COLUMN_TYPE.STRING) {
+              // Case 8: string desirability column must have at least 2 categories
+              const catsCount = desInput.value.categories.length;
+              const selectedCatsCount = desirableCategoriesInput?.value?.length ?? 0;
+
+              if (catsCount < 2) {
+                res = false;
+                desInput.input.classList.add('d4-invalid');
+                ui.tooltip.bind(desInput.input, 'String desirability column must have at least 2 categories.');
+              } else if (selectedCatsCount === 0) {
+                res = false;
+                desInput.input.classList.add('d4-invalid');
+                ui.tooltip.bind(desInput.input, 'Select at least one preferable category.');
+              } else if (selectedCatsCount === catsCount) {
+                res = false;
+                desInput.input.classList.add('d4-invalid');
+                ui.tooltip.bind(desInput.input, 'At least one category must be non-preferable.');
+              } else {
+                desInput.input.classList.remove('d4-invalid');
+                ui.tooltip.bind(desInput.input, 'Desirability column.');
+                ui.tooltip.bind(desirableCategoriesInput!.input, 'Select which categories should be treated as desirable.');
               }
             } else {
               // Case 9: numeric desirability column must have non-zero variance
@@ -984,7 +1050,12 @@ export class Pmpo {
               } else {
                 res = false;
                 desInput.input.classList.add('d4-invalid');
-                ui.tooltip.bind(desInput.input, 'Desirability column has zero variance.');
+                ui.tooltip.bind(
+                  desInput.input,
+                  desInput.value.stats.missingValueCount < desInput.value.length ?
+                    'All desirability values are the same - scoring is not feasible.' :
+                    'Empty column cannot be used as desirability column.',
+                );
               }
             }
           }
@@ -1129,7 +1200,7 @@ export class Pmpo {
     const res: DG.Column[] = [];
 
     for (const col of this.table.columns) {
-      if (((col.type === DG.COLUMN_TYPE.BOOL) || (col.isNumerical)))
+      if (((col.type === DG.COLUMN_TYPE.BOOL) || (col.isNumerical) || (col.type === DG.COLUMN_TYPE.STRING)))
         res.push(col);
     }
 
@@ -1157,40 +1228,40 @@ export class Pmpo {
       success: false,
     };
 
-    const descriptorNames = descriptors.names();
-    const {desired, nonDesired} = getDesiredTables(this.table, desirability);
-
-    // Compute descriptors' statistics
-    const descrStats = new Map<string, DescriptorStatistics>();
-    descriptorNames.forEach((name) => {
-      descrStats.set(name, getDescriptorStatistics(desired.col(name)!, nonDesired.col(name)!));
-    });
-    const descrStatsTable = getDescriptorStatisticsTable(descrStats);
-
-    // Filter by p-value
-    const selectedByPvalue = getFilteredByPvalue(descrStatsTable, P_VAL_TRES_DEFAULT);
-    if (selectedByPvalue.length < 1)
-      return failedResult;
-
-    const correlationTriples = getCorrelationTriples(descriptors, selectedByPvalue);
-
-    const funcToBeMinimized = (point: Float32Array) => {
-      // Filter by correlations
-      const selectedByCorr = getFilteredByCorrelations(descriptors, selectedByPvalue, descrStats, point[0], correlationTriples);
-
-      // Compute pMPO parameters - training
-      const params = getModelParams(desired, nonDesired, selectedByCorr, point[1]);
-
-      // Get predictions
-      const prediction = Pmpo.predict(this.table, params, useSigmoid, this.predictionName);
-
-      // Evaluate predictions and return 1 - AUC (since optimization minimizes the function, but we want to maximize AUC)
-      return 1 - getPmpoEvaluation(desirability, prediction).auc;
-    }; // funcToBeMinimized
-
     const pi = DG.TaskBarProgressIndicator.create('Optimizing... ', {cancelable: true});
 
     try {
+      const descriptorNames = descriptors.names();
+      const {desired, nonDesired} = getDesiredTables(this.table, desirability);
+
+      // Compute descriptors' statistics
+      const descrStats = new Map<string, DescriptorStatistics>();
+      descriptorNames.forEach((name) => {
+        descrStats.set(name, getDescriptorStatistics(desired.col(name)!, nonDesired.col(name)!));
+      });
+      const descrStatsTable = getDescriptorStatisticsTable(descrStats);
+
+      // Filter by p-value
+      const selectedByPvalue = getFilteredByPvalue(descrStatsTable, P_VAL_TRES_DEFAULT);
+      if (selectedByPvalue.length < 1)
+        return failedResult;
+
+      const correlationTriples = getCorrelationTriples(descriptors, selectedByPvalue);
+
+      const funcToBeMinimized = (point: Float32Array) => {
+      // Filter by correlations
+        const selectedByCorr = getFilteredByCorrelations(descriptors, selectedByPvalue, descrStats, point[0], correlationTriples);
+
+        // Compute pMPO parameters - training
+        const params = getModelParams(desired, nonDesired, selectedByCorr, point[1]);
+
+        // Get predictions
+        const prediction = Pmpo.predict(this.table, params, useSigmoid, this.predictionName);
+
+        // Evaluate predictions and return 1 - AUC (since optimization minimizes the function, but we want to maximize AUC)
+        return 1 - getPmpoEvaluation(desirability, prediction).auc;
+      }; // funcToBeMinimized
+
       const optimalResult = await optimizeNM(
         pi,
         funcToBeMinimized,

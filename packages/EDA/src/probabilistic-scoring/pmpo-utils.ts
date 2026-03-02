@@ -11,7 +11,8 @@ import '../../css/pmpo.css';
 import {COLORS, DESCR_TABLE_TITLE, DESCR_TITLE, DescriptorStatistics, DesirabilityProfileProperties,
   DESIRABILITY_COL_NAME, FOLDER, P_VAL, PMPO_COMPUTE_FAILED, PmpoParams, SCORES_TITLE,
   SELECTED_TITLE, STAT_TO_TITLE_MAP, TINY, WEIGHT_TITLE, CorrelationTriple,
-  BASIC_RANGE_SIGMA_COEFFS, EXTENDED_RANGE_SIGMA_COEFFS, EQUALITY_SIGN} from './pmpo-defs';
+  BASIC_RANGE_SIGMA_COEFFS, EXTENDED_RANGE_SIGMA_COEFFS, EQUALITY_SIGN,
+  PREFERABLE_CATEGORIES} from './pmpo-defs';
 import {computeSigmoidParamsFromX0, getCutoffs, gaussDesirabilityFunc, sigmoidS,
   solveNormalIntersection} from './stat-tools';
 import {getColorScaleDiv} from '../pareto-optimization/utils';
@@ -652,4 +653,42 @@ export function isDesirabilityValid(desCol: DG.Column, threshold: number, sign: 
   default:
     return (min < threshold) && (max >= threshold);
   }
+}
+
+/** Converts a string column to a boolean column based on the given desirable categories.
+ * @param stringCol String column to convert.
+ * @param desirableCategories List of categories that should be considered as desirable.
+ * @return Boolean column resulting from the conversion and a tooltip describing the desirability.
+*/
+export function getDesirabilityColumnFromCategories(stringCol: DG.Column, desirableCategories: string[]):
+ {column: DG.Column, tooltip: string} {
+  const boolArr = new Array<boolean>(stringCol.length);
+  const raw = stringCol.getRawData();
+  const categories = stringCol.categories;
+
+  for (let i = 0; i < stringCol.length; ++i)
+    boolArr[i] = desirableCategories.includes(categories[raw[i]]);
+
+  const nonDesirableCategories = categories.filter((cat) => !desirableCategories.includes(cat));
+
+  const c = `\u2705 ${desirableCategories.join(', ')}`;
+  const unchecked = `\u274c ${nonDesirableCategories.join(', ')}`;
+
+  return {
+    column: DG.Column.fromList(DG.COLUMN_TYPE.BOOL, '', boolArr),
+    tooltip: `Desirability based on the selected categories:\n\n **${c}**\n\n **${unchecked}**`,
+  };
+} // getDesirabilityColumnFromCategories
+
+/** Returns a list of selected categories based on the given list of categories and preferable categories.
+ * @param categories List of categories to select from.
+ * @return List of selected categories.
+*/
+export function getSelectedCategories(categories: string[]): string[] {
+  const selected = categories.filter((cat) => PREFERABLE_CATEGORIES.includes(cat));
+
+  if (selected.length > 0)
+    return selected;
+
+  return [categories[0]];
 }
