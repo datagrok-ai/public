@@ -25,6 +25,7 @@
   },
   "devDependencies": {
     "css-loader": "^5.0.0",
+    "datagrok-tools": "^5.0.0",
     "source-map-loader": "^4.0.1",
     "style-loader": "^2.0.0",
     "ts-loader": "^9.5.1",
