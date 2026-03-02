@@ -1032,15 +1032,4 @@ export class PackageFunctions {
     return df;
   }
 
-  @grok.decorators.func({
-    'name': 'fitPmpoProfile',
-    'description': 'Fit pMPO model and return desirability profile',
-    'outputs': [{name: 'profile', type: 'object'}],
-  })
-  static fitPmpoProfile(
-    @grok.decorators.param({'type': 'dataframe'}) df: DG.DataFrame,
-    @grok.decorators.param({'type': 'string'}) desirabilityColumn: string,
-  ): any {
-    return Pmpo.fitProfile(df, desirabilityColumn);
-  }
 }

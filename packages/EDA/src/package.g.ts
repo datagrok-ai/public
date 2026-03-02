@@ -563,11 +563,3 @@ export function getPmpoAppItems(view: any) : any {
 export async function generatePmpoDataset(samples: number) : Promise<any> {
   return await PackageFunctions.generatePmpoDataset(samples);
 }
-
-//description: Fit pMPO model and return desirability profile
-//input: dataframe df 
-//input: string desirabilityColumn 
-//output: object profile
-export function fitPmpoProfile(df: DG.DataFrame, desirabilityColumn: string) : any {
-  return PackageFunctions.fitPmpoProfile(df, desirabilityColumn);
-}

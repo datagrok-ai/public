@@ -8,7 +8,6 @@ import {
   DESIRABILITY_PROFILE_TYPE,
   DesirabilityProfile,
   PropertyDesirability,
-  WeightedAggregation,
   WEIGHTED_AGGREGATIONS_LIST,
 } from '@datagrok-libraries/statistics/src/mpo/mpo';
 import {MpoProfileEditor} from '@datagrok-libraries/statistics/src/mpo/mpo-profile-editor';
@@ -43,17 +42,13 @@ export class MpoProfileDialog {
 
   private pmpoSettingsIcon: HTMLElement;
   private methodInput: DG.ChoiceInput<string | null>;
-  private boolColInput: DG.ChoiceInput<string | null>;
   private pmpoSettingsContainer: HTMLElement;
   private pmpoSettingsOpened = false;
-  private hasBoolColumns: boolean;
   aggregationInput: any;
 
   constructor(dataFrame?: DG.DataFrame) {
     this.dataFrame = dataFrame ?? grok.shell.t;
     this.mpoProfileEditor = new MpoProfileEditor(this.dataFrame);
-
-    this.hasBoolColumns = [...this.dataFrame.columns].some((c) => c.type === DG.COLUMN_TYPE.BOOL);
 
     this.aggregationInput = ui.input.choice('Aggregation', {
       items: WEIGHTED_AGGREGATIONS_LIST,
@@ -97,27 +92,14 @@ export class MpoProfileDialog {
       nullable: false,
       value: 'Manual',
       onValueChanged: async (value) => {
-        this.boolColInput.root.style.display = value === 'Probabilistic' ? '' : 'none';
-        if (value === 'Probabilistic') {
-          const boolCol = this.boolColInput.value;
-          if (boolCol)
-            await this.createProbabilisticProfile(boolCol);
-        } else
+        if (value === 'Probabilistic')
+          await this.createProbabilisticProfile();
+        else
           this.createManualProfile();
       },
     });
 
-    this.boolColInput = ui.input.choice('Activity column', {
-      items: [],
-      nullable: true,
-      onValueChanged: async (value) => {
-        if (value && this.methodInput.value === 'Probabilistic')
-          await this.createProbabilisticProfile(value);
-      },
-    });
-    this.boolColInput.root.style.display = 'none';
-
-    this.pmpoSettingsContainer = ui.divV([this.methodInput.root, this.boolColInput.root],
+    this.pmpoSettingsContainer = ui.divV([this.methodInput.root],
       {style: {display: 'none'}});
 
     this.pmpoSettingsIcon = ui.icons.settings(() => {
@@ -204,16 +186,10 @@ export class MpoProfileDialog {
     this.isNewProfile = true;
     this.pmpoSettingsOpened = false;
     this.pmpoSettingsContainer.style.display = 'none';
-    this.boolColInput.root.style.display = 'none';
+    this.methodInput.value = 'Manual';
 
-    if (this.hasBoolColumns) {
-      const boolCols = [...this.dataFrame.columns].filter((c) => c.type === DG.COLUMN_TYPE.BOOL);
-      this.boolColInput.items = boolCols.map((c) => c.name);
-      this.boolColInput.nullable = true;
-      this.boolColInput.value = null;
-      this.methodInput.value = 'Manual';
-      this.pmpoSettingsIcon.style.display = '';
-    }
+    const hasBoolColumns = [...this.dataFrame.columns].some((c) => c.type === DG.COLUMN_TYPE.BOOL);
+    this.pmpoSettingsIcon.style.display = hasBoolColumns ? '' : 'none';
 
     this.createManualProfile();
   }
@@ -234,16 +210,22 @@ export class MpoProfileDialog {
     this.updateOkButtonState();
   }
 
-  private async createProbabilisticProfile(boolColName: string): Promise<void> {
-    try {
-      const profile = await grok.functions.call('EDA:fitPmpoProfile',
-        {df: this.dataFrame, desirabilityColumn: boolColName});
+  private async createProbabilisticProfile(): Promise<void> {
+    const tableView = grok.shell.getTableView(this.dataFrame.name);
+    if (!tableView) {
+      grok.shell.error('No table view found for the current dataframe');
+      return;
+    }
 
-      this.currentProfile = profile;
+    try {
+      const pMpoItems = await grok.functions.call('EDA:getPmpoAppItems', {view: tableView});
+      if (!pMpoItems?.profile)
+        throw new Error('pMPO is not applicable for this dataset');
+
+      this.currentProfile = pMpoItems.profile;
       this.currentProfileFileName = null;
       this.originalProfile = null;
       this.isNewProfile = true;
-
       this.mpoProfileEditor.setProfile(this.currentProfile!);
       this.designModeInput.value = true;
       this.saveButton.classList.remove('chem-mpo-d-none');
