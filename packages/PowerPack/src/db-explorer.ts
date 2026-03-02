@@ -397,9 +397,15 @@ Supported types are ${[DG.COLUMN_TYPE.STRING, DG.COLUMN_TYPE.BIG_INT, DG.COLUMN_
       return ui.info('Column is not linked to database table.');
 
     return ui.wait(async () => {
-      const conn = connId.includes(':') ?
-        (await grok.dapi.connections.filter(`namespace = "${connId.split(':')[0]}:" and shortName = "${connId.split(':')[1]}"`).list()).find((_) => true) :
-        await grok.dapi.connections.find(connId);
+      let conn: DG.DataConnection | undefined;
+      if (isGuid(connId))
+        conn = await grok.dapi.connections.find(connId);
+      else {
+        const parts = connId.split(':');
+        conn = parts.length === 2 ?
+          (await grok.dapi.connections.filter(`namespace = "${parts[0]}:" and shortName = "${parts[1]}"`).list()).find((_) => true) :
+          (await grok.dapi.connections.filter(`shortName = "${connId}"`).list()).find((_) => true);
+      }
       if (!conn)
         return ui.info('Failed to find connection for this column.');
       const tables: DG.TableInfo[] = await grok.dapi.connections.getSchema(conn, schemaName, tableName, dbName ?? null);
@@ -414,7 +420,7 @@ Supported types are ${[DG.COLUMN_TYPE.STRING, DG.COLUMN_TYPE.BIG_INT, DG.COLUMN_
       addEnrichBtn.append(ui.icons.add(() => {}), ui.span(['Add enrichment']));
       addEnrichBtn.classList.add('power-pack-enrich-add');
       addEnrichBtn.onclick = () => showEnrichDialog(mainTable, df, dbColName, () => {
-        enrichmentsRoot.replaceWith(getEnrichmentsDiv(conn, mainTable.tags.get(DG.Tags.TableSchema), mainTable.friendlyName, dbColName, dbName, df));
+        enrichmentsRoot.replaceWith(getEnrichmentsDiv(conn!, mainTable.tags.get(DG.Tags.TableSchema), mainTable.friendlyName, dbColName, dbName, df));
       }, undefined, undefined, dbName);
       return ui.div([
         enrichmentsRoot,
@@ -667,6 +673,11 @@ async function executeEnrichQuery(query: DG.TableQuery, df: DG.DataFrame, keyCol
   } catch (e: any) {
     grok.shell.error(`Failed to enrich:\n ${e}`);
   }
+}
+
+function isGuid(str: string): boolean {
+  const guidRegex = /^[\da-f]{8}-[\da-f]{4}-[\da-f]{4}-[\da-f]{4}-[\da-f]{12}$/i;
+  return guidRegex.test(str);
 }
 
 interface Enrichment {
