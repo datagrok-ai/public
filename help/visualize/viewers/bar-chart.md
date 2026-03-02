@@ -45,8 +45,8 @@ Year - Month' and 'Year - Quarter':
 |----------|------|-------------|
 | **Data** | | |
 | Row Source | string | Determines the rows shown on the scatter plot. |
-| Filter | string | Formula that filters out rows to show. Example: `${AGE}` > 20 or (`${WEIGHT}` / 2) > 100 |
 | On Click | string | Determines what happens when you click on a bar. |
+| Filter | string | Formula that filters out rows to show. Examples: `${AGE}` > 20 or `${WEIGHT / 2)}` > 100, `${SEVERITY}` == ''Medium'', `${RACE}`.endsWith(''sian'') |
 | Table | string |  |
 | **Value** | | |
 | Value Column Name | string | Value column. See *Value Aggr Type* for aggregation options. |
