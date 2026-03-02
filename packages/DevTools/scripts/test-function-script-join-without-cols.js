@@ -1,6 +1,7 @@
 //name: TestFunctionScriptJoinWithoutCols
 //language: javascript
 //input: dataframe data [demog.csv]
+//meta.vectorFunc: true
 //output: dataframe result {action:join(data); meta: {"StudyTag": {"description": "Arbitrary study-level tag/label for demo purposes", "Tag.Category": "Demo", "Tag.Source": "Script"}, "SiteCode": {"description": "Arbitrary site code for demo purposes", "Tag.Category": "Demo", "Tag.Source": "Script"}, "QCFlag": {"description": "Arbitrary QC flag for demo purposes", "Tag.Category": "Demo", "Tag.Source": "Script"}, "Notes": {"description": "Free-text notes for demo purposes", "Tag.Category": "Demo", "Tag.Source": "Script"}}} [Columns to join back to the original table]
 
 result = DG.DataFrame.create(data.rowCount);
