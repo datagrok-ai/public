@@ -44,17 +44,10 @@ export class MpoProfileDialog {
   private methodInput: DG.ChoiceInput<string | null>;
   private pmpoSettingsContainer: HTMLElement;
   private pmpoSettingsOpened = false;
-  aggregationInput: any;
 
   constructor(dataFrame?: DG.DataFrame) {
     this.dataFrame = dataFrame ?? grok.shell.t;
     this.mpoProfileEditor = new MpoProfileEditor(this.dataFrame);
-
-    this.aggregationInput = ui.input.choice('Aggregation', {
-      items: WEIGHTED_AGGREGATIONS_LIST,
-      nullable: false,
-      onValueChanged: () => grok.events.fireCustomEvent(MPO_SCORE_CHANGED_EVENT, {}),
-    });
 
     this.profileInput = ui.input.choice('Profile', {
       nullable: false,
@@ -377,7 +370,7 @@ export class MpoProfileDialog {
   private getMpoControls(): HTMLElement {
     return ui.divV([
       this.pmpoSettingsContainer,
-      this.aggregationInput.root,
+      this.mpoProfileEditor.aggregationInput.root,
       this.designModeInput.root,
       this.mpoProfileEditor.root,
       this.addParetoFront.root,
