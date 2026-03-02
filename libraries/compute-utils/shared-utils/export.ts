@@ -364,26 +364,22 @@ const configToViewer = async (df: DG.DataFrame | undefined, config: Record<strin
   return viewer;
 };
 
-export const dfToViewerMapping = (funcCall: DG.FuncCall) => {
+export const dfToViewerMapping = async (funcCall: DG.FuncCall) => {
   const func = funcCall.func;
 
   const mapping = {} as Record<string, (DG.Viewer | undefined)[]>;
-  Promise.all(func.inputs
+  await Promise.all(func.inputs
     .filter((output) => isDataFrame(output))
     .map(async (p) => {
       mapping[p.name] = await Promise.all(getPropViewers(p).config
         .map((config) => configToViewer(funcCall.inputs[p.name], config)));
-
-      return mapping[p.name];
     }));
 
-  Promise.all(func.outputs
+  await Promise.all(func.outputs
     .filter((output) => isDataFrame(output))
     .map(async (p) => {
       mapping[p.name] = await Promise.all(getPropViewers(p).config
         .map((config) => configToViewer(funcCall.outputs[p.name], config)));
-
-      return mapping[p.name];
     }));
 
   return mapping;
