@@ -1,6 +1,4 @@
 const path = require('path');
-const CopyWebpackPlugin = require('copy-webpack-plugin');
-
 const packageName = path.parse(require('./package.json').name).name.toLowerCase().replace(/-/g, '');
 
 module.exports = {
@@ -71,17 +69,7 @@ module.exports = {
     'html2canvas': 'html2canvas',
     'escher': 'escher',
   },
-  plugins: [
-    // Ensure glpk-wasm runtime .wasm files are copied next to bundles
-    new CopyWebpackPlugin({
-      patterns: [
-        {
-          from: 'node_modules/glpk-wasm/dist/glpk.all.wasm',
-          to: '[name][ext]'
-        },
-      ],
-    }),
-  ],
+  plugins: [],
   output: {
     filename: '[name].js',
     library: packageName,

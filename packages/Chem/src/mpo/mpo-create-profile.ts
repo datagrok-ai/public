@@ -8,28 +8,17 @@ import {
   DESIRABILITY_PROFILE_TYPE,
   DesirabilityProfile,
   PropertyDesirability,
-  WEIGHTED_AGGREGATIONS_LIST,
-  WeightedAggregation,
   createDefaultNumerical,
 } from '@datagrok-libraries/statistics/src/mpo/mpo';
 import {MpoProfileEditor} from '@datagrok-libraries/statistics/src/mpo/mpo-profile-editor';
 import {MPO_SCORE_CHANGED_EVENT} from '@datagrok-libraries/statistics/src/mpo/utils';
 
 import {MpoContextPanel} from './mpo-context-panel';
-import {MpoPathMode, MPO_PROFILE_DELETED_EVENT, updateMpoPath} from './utils';
+import {MAX_MPO_PROPERTIES, MpoPathMode, MPO_PROFILE_DELETED_EVENT, updateMpoPath} from './utils';
 import {MpoProfileManager} from './mpo-profile-manager';
 
 const METHOD_MANUAL = 'Manual';
 const METHOD_PROBABILISTIC = 'Probabilistic';
-
-const MPO_CREATE_STORAGE = 'mpo-create';
-const MPO_HINTS_KEY = 'hints';
-
-type MpoHint = {
-  text: string;
-  element: HTMLElement;
-  position: ui.hints.POSITION;
-};
 
 export class MpoProfileCreateView {
   readonly view: DG.View;
@@ -45,7 +34,6 @@ export class MpoProfileCreateView {
   profileViewContainer: HTMLDivElement = ui.div();
   methodInput?: DG.ChoiceInput<string | null>;
   datasetInput?: DG.InputBase;
-  aggregationInput?: DG.ChoiceInput<WeightedAggregation | null>;
   fileName?: string | null = null;
   saveButton: HTMLElement | null = null;
 
@@ -180,7 +168,7 @@ export class MpoProfileCreateView {
               modified: this.profileModified,
             };
             this.clearPreviousLayout();
-            this.setAggregationVisible(false);
+            this.setAggregationVis  ible(false);
             this.closeContextPanel();
             if (!this.df) {
               this.showError('Probabilistic MPO requires a dataset. Please select a dataset first.');
@@ -206,6 +194,7 @@ export class MpoProfileCreateView {
           this.attachLayout(false, keepChanges);
         },
       });
+      this.methodInput.addPostfix('Manual desirability curve editing or probabilistic MPO trained from labeled data');
       controls.push(this.methodInput);
     }
 
@@ -252,17 +241,11 @@ export class MpoProfileCreateView {
         }
       },
     });
-    this.datasetInput.setTooltip('Load data to preview desirability scores as you edit the profile');
+    this.datasetInput.addOptions(
+      ui.divText('Load data to preview desirability scores as you edit the profile', 'ui-input-description'));
     controls.push(this.datasetInput);
 
-    this.aggregationInput = ui.input.choice('Aggregation', {
-      items: WEIGHTED_AGGREGATIONS_LIST,
-      nullable: false,
-      onValueChanged: () => grok.events.fireCustomEvent(MPO_SCORE_CHANGED_EVENT, {}),
-    });
-    this.aggregationInput.enabled = false;
-    this.updateAggregationTooltip();
-    controls.push(this.aggregationInput);
+    controls.push(this.editor.aggregationInput);
 
     const headerDiv = ui.divV([ui.h1(`${this.view.name} Profile`), ui.form(controls)]);
     headerDiv.classList.add('chem-profile-header');
@@ -271,57 +254,6 @@ export class MpoProfileCreateView {
     this.profileViewContainer.classList.add('chem-profile-view');
 
     this.view.root.append(this.profileViewContainer);
-    this.initHints();
-  }
-
-  private initHints(): void {
-    if (grok.userSettings.getValue(MPO_CREATE_STORAGE, MPO_HINTS_KEY) === 'shown')
-      return;
-
-    const hints: MpoHint[] = [];
-
-    if (this.methodInput) {
-      hints.push({
-        element: this.methodInput.input,
-        text: 'Choose between manual desirability curve editing and probabilistic MPO trained from labeled data.',
-        position: ui.hints.POSITION.RIGHT,
-      });
-    }
-
-    hints.push(
-      {
-        element: this.datasetInput!.input,
-        text: 'Optionally load a dataset to preview desirability scores in real-time as you edit the profile. ' +
-          'Numerical columns will be automatically mapped to profile properties.',
-        position: ui.hints.POSITION.RIGHT,
-      },
-      {
-        element: this.aggregationInput!.input,
-        text: 'Choose how individual property scores combine into the final MPO score. ' +
-          'Enabled when a dataset is loaded.',
-        position: ui.hints.POSITION.RIGHT,
-      },
-    );
-
-    setTimeout(() => {
-      this.setupHint(hints, 0);
-      grok.userSettings.add(MPO_CREATE_STORAGE, MPO_HINTS_KEY, 'shown');
-    }, 1000);
-  }
-
-  private setupHint(hints: MpoHint[], i: number): void {
-    if (i >= hints.length)
-      return;
-
-    this.lastOpenedHint?.remove();
-
-    const hintContent = ui.div();
-    hintContent.append(ui.divText(hints[i].text));
-    hintContent.append(i < hints.length - 1 ?
-      ui.button('Next', () => this.setupHint(hints, i + 1)) :
-      ui.button('Close', () => this.lastOpenedHint?.remove()));
-
-    this.lastOpenedHint = ui.hints.addHint(hints[i].element, hintContent, hints[i].position);
   }
 
   private async attachLayout(skipProfileResolution = false, keepChanges: boolean = false) {
@@ -336,6 +268,10 @@ export class MpoProfileCreateView {
         if (this.aggregationInput) {
           this.aggregationInput.enabled = !!this.df;
           this.updateAggregationTooltip();
+        if (this.showMethod) {
+          this.profile = this.df ?
+            this.createProfileForDf() :
+            this.createDefaultProfile();
         }
       }
 
@@ -517,8 +453,13 @@ export class MpoProfileCreateView {
 
   private createProfileForDf(): DesirabilityProfile {
     const props: {[key: string]: PropertyDesirability} = {};
-    for (const col of this.df!.columns.numerical)
+    let count = 0;
+    for (const col of this.df!.columns.numerical) {
+      if (count >= MAX_MPO_PROPERTIES)
+        break;
       props[col.name] = createDefaultNumerical(1, col.min, col.max);
+      count++;
+    }
 
     return {type: DESIRABILITY_PROFILE_TYPE, name: '', description: '', properties: props};
   }
@@ -548,7 +489,8 @@ export class MpoProfileCreateView {
     if (this.df!.currentRowIdx === -1 && this.df!.rowCount > 0)
       this.df!.currentCell = this.df!.cell(0, this.df!.columns.byIndex(0).name);
 
-    await this.mpoContextPanel!.render(this.profile, this.editor.columnMapping, 'Average');
+    await this.mpoContextPanel!.render(this.profile, this.editor.columnMapping,
+      this.editor.aggregationInput.value ?? undefined);
   }
 
   private listenForProfileChanges() {
@@ -559,8 +501,8 @@ export class MpoProfileCreateView {
       }
       if (!this.df || !this.profile || !this.mpoContextPanel) return;
 
-      const agg = this.aggregationInput?.value ?? 'Average';
-      await this.mpoContextPanel.render(this.profile, this.editor.columnMapping, agg);
+      await this.mpoContextPanel.render(this.profile, this.editor.columnMapping,
+        this.editor.aggregationInput.value ?? undefined);
     }));
 
     this.subs.push(grok.events.onCustomEvent(MPO_PROFILE_DELETED_EVENT).subscribe((data) => {
@@ -581,15 +523,7 @@ export class MpoProfileCreateView {
   }
 
   private setAggregationVisible(visible: boolean): void {
-    if (this.aggregationInput)
-      this.aggregationInput.root.classList.toggle('chem-mpo-d-none', !visible);
-  }
-
-  private updateAggregationTooltip(): void {
-    const tip = this.aggregationInput!.enabled ?
-      'Score aggregation method' :
-      'Score aggregation method; select a dataset to enable';
-    this.aggregationInput!.setTooltip(tip);
+    this.editor.aggregationInput.root.classList.toggle('chem-mpo-d-none', !visible);
   }
 
   private closeContextPanel(): void {
@@ -597,7 +531,6 @@ export class MpoProfileCreateView {
   }
 
   private detach(): void {
-    this.lastOpenedHint?.remove();
     this.closeContextPanel();
     this.subs.forEach((sub) => sub.unsubscribe());
     this.subs = [];

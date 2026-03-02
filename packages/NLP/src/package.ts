@@ -15,7 +15,6 @@ import {CLOSEST_COUNT, DELIMETER, POLAR_FREQ, TINY} from './stemming-tools/const
 import {SentenceSimilarityViewer} from './utils/sentence-similarity-viewer';
 
 import '../css/stemming-search.css';
-import {delay} from '@datagrok-libraries/test/src/test';
 import {DimReductionMethods} from '@datagrok-libraries/ml/src/multi-column-dimensionality-reduction/types';
 import {VectorMetricsNames} from '@datagrok-libraries/ml/src/typed-metrics';
 import {DistanceAggregationMethods} from '@datagrok-libraries/ml/src/distance-matrix/types';
@@ -421,7 +420,7 @@ export class PackageFunctions {
       } catch (e) {
         // not an admin
       }
-      await delay(5000);
+      await DG.delay(5000);
     }
 
     // do a warmup fetch to avoid errors

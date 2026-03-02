@@ -3,8 +3,8 @@
   "friendlyName": "Samples",
   "version": "1.4.2",
   "author": {
-    "name": "Savenko Stanislav",
-    "email": "ssavenko@datagrok.ai"
+    "name": "Dmytro Kovalyov",
+    "email": "dkovalyov@datagrok.ai"
   },
   "description": "*Samples* contains sample [data connectors](https://datagrok.ai/help/access/databases/connectors/) and demonstrates [scripting](https://datagrok.ai/help/compute/scripting) and [notebooks](https://datagrok.ai/help/compute/jupyter-notebook) functionality.",
   "repository": {
@@ -25,6 +25,7 @@
     "@datagrok/dendrogram": "^1.2.33",
     "@typescript-eslint/eslint-plugin": "^5.32.0",
     "@typescript-eslint/parser": "^5.32.0",
+    "datagrok-tools": "^5.0.0",
     "eslint": "^8.21.0",
     "eslint-config-google": "^0.14.0",
     "webpack": "^5.95.0",

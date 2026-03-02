@@ -310,6 +310,13 @@ export enum METHOD {
   MRT = 'mrt',
   ROS3PRw = 'ros3prw',
   ROS34PRw = 'ros34prw',
+  RK3 = 'rk3',
+  RK4 = 'rk4',
+  RK5 = 'rkdp',
+  AB4 = 'ab4',
+  AB5 = 'ab5',
+  LSODA = 'lsoda',
+  CVODE = 'cvode',
 };
 
 /** Dock ratios */

@@ -40,3 +40,9 @@ export const PT_UI_DIALOG_CONVERSION = 'Poly Tool Conversion';
 export const PT_UI_DIALOG_UNRULE = 'Poly Tool Unrule';
 export const PT_UI_DIALOG_ENUMERATION = 'Poly Tool Enumeration';
 export const PT_UI_RULES_USED = 'Rules used';
+
+export const PT_ENUM_TYPE_TOOLTIPS: Record<string, string> = {
+  'single': 'Each position is enumerated independently. Total results = sum of monomers across all positions.',
+  'parallel': 'The i-th result uses the i-th monomer from every position (zip). All positions must have the same number of monomers. Total results = number of monomers per position.',
+  'matrix': 'Cartesian product of all positions. Total results = product of monomer counts across all positions.',
+};

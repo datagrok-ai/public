@@ -6,8 +6,7 @@ import * as DG from 'datagrok-api/dg';
 
 category('UI: Users', () => {
   before(async () => {
-    const mng: DG.TabPane = grok.shell.sidebar.getPane('Browse');
-    mng.header.click();
+    grok.shell.windows.showBrowse = true;
     await delay(1000);
     let platform: any;
     await awaitCheck(() => {
@@ -100,8 +99,7 @@ category('UI: Users', () => {
     }, 'cannot load all users', 3000);
     const user = document.querySelector('.grok-gallery-grid')!.children[0] as HTMLElement;
     grok.shell.windows.showProperties = true;
-    const regex = new RegExp('Groups', 'g');
-    console.log('usr click')
+    const regex = new RegExp('Member of', 'g');
     user.click();
     await delay(100);
     await awaitCheck(() => {
@@ -112,7 +110,7 @@ category('UI: Users', () => {
     const userInfo = document.querySelector('.grok-entity-prop-panel') as HTMLElement;
     const pict = userInfo.querySelector('.grok-user-profile-picture');
     const desc = userInfo.innerText;
-    const b = (pict !== null) && desc.includes('Groups') && desc.includes('Joined');
+    const b = (pict !== null) && desc.includes('Member of') && desc.includes('Roles');
     expect(b, true);
   }, { timeout: 100000 });
 

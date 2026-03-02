@@ -23,8 +23,6 @@ export function testTemplate(name: string, problem: string): void {
     let call: DG.FuncCall | null = null;
     let solution: DG.DataFrame | null = null;
 
-    console.log(problem);
-
     try {
       ivp = getIVP(problem);
       code = getScriptLines(ivp).join('\n');

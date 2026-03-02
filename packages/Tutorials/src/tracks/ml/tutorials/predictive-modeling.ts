@@ -4,7 +4,6 @@ import * as ui from 'datagrok-api/ui';
 import $ from 'cash-dom';
 import { filter, map } from 'rxjs/operators';
 import { Tutorial, TutorialPrerequisites } from '@datagrok-libraries/tutorials/src/tutorial';
-import {delay} from '@datagrok-libraries/test/src/test';
 import { interval, Observable } from 'rxjs';
 
 
@@ -78,7 +77,7 @@ export class PredictiveModelingTutorial extends Tutorial {
       await this.choiceInputAction(pmv.root, `Set "Method" to "${method}"`, 'Method', method);
       await this.buttonClickAction(pmv.root, 'Click the "Train" button', 'TRAIN');
 
-      await delay(3000); // model training delay
+      await DG.delay(3000); // model training delay
     };
 
     this.title('Train a model');

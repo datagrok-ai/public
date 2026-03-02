@@ -657,6 +657,8 @@ export class GisViewer extends DG.JsViewer {
 
   async render(fit: boolean = false, reloadData: boolean = true): Promise<void> {
     try {
+      if (!this.dataFrame)
+        return;
       if (reloadData)
         this.getCoordinates();
 

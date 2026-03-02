@@ -117,7 +117,9 @@ export class DataSourceType {
 
   static get GCP(): any { return api.grok_DataSourceType_Get_GCP(); };
 
-  static fileDataSources = ['Azure Blob', 'Dropbox', 'Files', 'GitHub', 'GoogleCloud', 'S3', 'CoreWeave', 'SharePoint', 'Amazon EFS'];
+  static Git = 'Git';
+
+  static fileDataSources = ['Azure Blob', 'Dropbox', 'Files', 'GitHub', 'GoogleCloud', 'S3', 'CoreWeave', 'Git', 'SharePoint', 'Amazon EFS'];
 
   static systemDataSources = ['PostgresDart'];
 

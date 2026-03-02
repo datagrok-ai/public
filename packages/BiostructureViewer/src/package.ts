@@ -14,7 +14,6 @@ import {NglGlServiceBase} from '@datagrok-libraries/bio/src/viewers/ngl-gl-servi
 import {IBiostructureViewer} from '@datagrok-libraries/bio/src/viewers/molstar-viewer';
 import {IBiotrackViewer} from '@datagrok-libraries/bio/src/viewers/biotrack';
 import {BiostructureDataJson} from '@datagrok-libraries/bio/src/pdb/types';
-import {delay} from '@datagrok-libraries/test/src/test';
 
 import {byData, byId, MolstarViewer} from './viewers/molstar-viewer';
 import {SaguaroViewer} from './viewers/saguaro-viewer';
@@ -561,7 +560,7 @@ export class PackageFunctions {
         if (progress - lastProgress >= 0.01) {
           pi.update(100 * progress, 'demoFix1 parsing ...');
           lastProgress = progress;
-          await delay(0);
+          await DG.delay(0);
         }
       }
 
@@ -620,7 +619,7 @@ export class PackageFunctions {
         if (progress - lastProgress >= 0.01) {
           pi.update(100 * progress, 'demoFix3 pdbqt -> mol ...');
           lastProgress = progress;
-          await delay(0);
+          await DG.delay(0);
         }
       }
 

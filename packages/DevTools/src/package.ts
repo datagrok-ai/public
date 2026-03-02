@@ -248,7 +248,9 @@ export class PackageFunctions {
     return colList.length > 0 ? DG.DataFrame.fromColumns(colList) : DG.DataFrame.create(data.rowCount);
   }
 
+
   @grok.decorators.func({
+    meta: {vectorFunc: 'true'},
     outputs: [{name: 'result', type: 'dataframe', options: {action: 'join(data)'}}],
   })
   static async testFunctionNewJoinWithoutFormula(data: DG.DataFrame): Promise<DG.DataFrame> {

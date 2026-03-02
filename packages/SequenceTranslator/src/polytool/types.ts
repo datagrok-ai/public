@@ -6,8 +6,8 @@ import {PolymerType} from '@datagrok-libraries/bio/src/helm/types';
 
 export enum PolyToolEnumeratorTypes {
   Single = 'single',
+  Parallel = 'parallel',
   Matrix = 'matrix',
-  Library = 'library',
 }
 
 export type PolyToolEnumeratorType = typeof PolyToolEnumeratorTypes[keyof typeof PolyToolEnumeratorTypes];
@@ -27,6 +27,7 @@ export type PolyToolEnumeratorParams = {
   breadthPlaceholders?: PolyToolBreadthPlaceholder[];
   keepOriginal?: boolean;
   trivialName?: boolean;
+  fromHelmNotation?: {convert:(helm: string) => string; notationName: string};
 }
 
 export class MonomerNotFoundError extends Error {

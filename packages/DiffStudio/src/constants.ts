@@ -5,6 +5,8 @@ export const DF_NAME = 'df';
 const META = `${CONTROL_TAG}meta`;
 export const MAX_LINE_CHART = 4;
 
+export const METHOD_KEY_WORD = 'method';
+
 /** Control expressions for the problem specifying */
 export enum CONTROL_EXPR {
     NAME = `${CONTROL_TAG}name`,

@@ -78,6 +78,7 @@ import {molecular3DStructureWidget, toAtomicLevelWidget, toAtomicLevelSingle} fr
 import {handleSequenceHeaderRendering} from './widgets/sequence-scrolling-widget';
 import {PolymerType} from '@datagrok-libraries/js-draw-lite/src/types/org';
 import {BilnNotationProvider} from './utils/biln';
+import {showMonomerCollectionsView} from './utils/monomer-lib/monomer-collections-view';
 
 import * as api from './package-api';
 export const _package = new BioPackage(/*{debug: true}/**/);
@@ -1184,6 +1185,16 @@ export class PackageFunctions {
         monomerManager.resetCurrentRowFollowing();
       });
     });
+  }
+
+  @grok.decorators.app({
+    tags: ['app'],
+    name: 'Monomer Collections',
+    browsePath: 'Peptides',
+    icon: 'files/icons/monomers.png',
+  })
+  static async monomerCollectionsApp(): Promise<DG.ViewBase> {
+    return await showMonomerCollectionsView(false);
   }
 
   @grok.decorators.fileExporter({description: 'As FASTA...'})

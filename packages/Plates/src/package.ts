@@ -22,12 +22,6 @@ import {autoDetectDrcMappings} from './plate/analyses/drc/utils';
 export const _package = new DG.Package();
 
 
-//meta.role: autostart
-export async function autostart(): Promise<void> {
-  await PackageFunctions.createDummyPlateData();
-}
-
-
 export class PackageFunctions {
   @grok.decorators.func({
     name: 'Assay Plates',

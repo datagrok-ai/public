@@ -1,6 +1,6 @@
 try {
   let df = await grok.data.db
-    .buildQuery('Samples:PostgresNorthwind', 'orders')
+    .buildQuery('ApiSamples:PostgresNorthwind', 'orders')
     .select(['shipcity', 'shipcountry', 'orderdate'])
     .where('orderdate', 'before 1996-08-26', DG.TYPE.DATE_TIME)
     .sortBy('orderdate', false)

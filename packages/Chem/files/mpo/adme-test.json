@@ -2,6 +2,7 @@
   "type": "MPO Desirability Profile",
   "name": "ADME Test",
   "description": "Test ADME properties",
+  "aggregation": "Average",
   "properties": {
     "Caco2": {
       "functionType": "numerical",

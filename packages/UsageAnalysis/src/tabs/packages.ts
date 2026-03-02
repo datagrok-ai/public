@@ -6,7 +6,6 @@ import '../../css/usage_analysis.css';
 import {UaToolbox} from '../ua-toolbox';
 import {Filter, UaView} from './ua';
 import {UaFilterableQueryViewer} from '../viewers/ua-filterable-query-viewer';
-import {awaitCheck} from '@datagrok-libraries/test/src/test';
 import {getTime} from '../utils';
 
 const format = 'es-pa-u-hc-h23';
@@ -193,7 +192,7 @@ export class PackagesView extends UaView {
         for (const k of Object.keys(data)) {
           const el = ui.render(`#{x.${k}}`);
           try {
-            await awaitCheck(() => el.innerHTML !== '<span data-markup-ready="false"></span>', '', 200);
+            await _awaitCheck(() => el.innerHTML !== '<span data-markup-ready="false"></span>', 200);
           } catch (e: any) {}
           data1[k] = el.innerHTML !== '<span></span>' && el.innerText !== 'error' ? el : k.split(':')[1];
         }
@@ -258,4 +257,20 @@ export class PackagesView extends UaView {
   switchRout(): void {
     this.rout = this.rout === '/Usage' ? '/InstallationTime' : '/Usage';
   }
+}
+
+async function _awaitCheck(check: () => boolean, wait: number = 500, interval: number = 50): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const tid = setTimeout(() => {
+      clearInterval(iid);
+      reject(new Error('Timeout'));
+    }, wait);
+    const iid = setInterval(() => {
+      if (check()) {
+        clearInterval(iid);
+        clearTimeout(tid);
+        resolve();
+      }
+    }, interval);
+  });
 }

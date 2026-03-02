@@ -1,7 +1,8 @@
 // Tests of numerical methods
 import {_package} from '../package-test';
 import {category, expect, test} from '@datagrok-libraries/test/src/test';
-import {mrt, ros3prw, ros34prw, CorrProblem, ODEs, corrProbs, perfProbs} from 'diff-grok';
+import {mrt, ros3prw, ros34prw, CorrProblem, ODEs, corrProbs, perfProbs,
+  rk3, rk4, rkdp, ab4, ab5, lsoda, cvode} from 'diff-grok';
 
 /** Return numerical solution error: maximum absolute deviation between approximate & exact solutions */
 function getError(method: (odes: ODEs) => Float64Array[], corProb: CorrProblem): number {
@@ -32,18 +33,34 @@ const TIMEOUT = 4000;
 const TINY = 0.1;
 const MIN_ROWS = 1000;
 
-const methods = new Map([
+const implicitMethods = new Map([
   ['MRT', mrt],
   ['ROS3PRw', ros3prw],
   ['ROS34PRw', ros34prw],
+  ['LSODA', lsoda],
+  ['CVODE', cvode],
 ]);
 
+/** Performance problems to skip per method (known limitations) */
+const perfExclusions = new Map<string, Set<string>>([
+  ['CVODE', new Set(['E5'])],
+]);
+
+const explicitMethods = new Map([
+  ['RK3', rk3],
+  ['RK4', rk4],
+  ['RKDP', rkdp],
+  ['AB4', ab4],
+  ['AB5', ab5],
+]);
+
+const allMethods = new Map([...implicitMethods, ...explicitMethods]);
+
 // Correctness tests
-category('Correctness', () => {
-  methods.forEach((method, name) => {
-    corrProbs.forEach((problem) => test(`Method: ${name}, problem: ${problem.odes.name}`, async () => {
+allMethods.forEach((method, name) => {
+  category(`Correctness: ${name}`, () => {
+    corrProbs.forEach((problem) => test(problem.odes.name, async () => {
       const error = getError(method, problem);
-      console.log(`Method: ${name}, problem: ${problem.odes.name}, ERROR: ${error}`);
       expect(
         error < TINY,
         true,
@@ -54,15 +71,19 @@ category('Correctness', () => {
 }); // Correctness
 
 // Performance tests
-category('Performance', () => {
-  methods.forEach((method, methodName) => {
+implicitMethods.forEach((method, methodName) => {
+  category(`Performance: ${methodName}`, () => {
+    const excluded = perfExclusions.get(methodName);
     perfProbs.forEach((odes) => {
-      test(`Method: ${methodName}, problem: ${odes.name}`, async () => {
+      if (excluded?.has(odes.name))
+        return;
+
+      test(odes.name, async () => {
         const rows = method(odes)[0].length;
         expect(
           rows > MIN_ROWS,
           true,
-          `The ${name} method failed, solution DF rows: ${rows}`,
+          `The ${methodName} method failed, solution DF rows: ${rows}`,
         );
       }, {benchmark: true});
     });

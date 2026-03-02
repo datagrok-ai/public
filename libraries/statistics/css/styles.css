@@ -89,6 +89,14 @@
   width: 70px;
 }
 
+.statistics-mpo-hidden {
+  display: none !important;
+}
+
+.statistics-mpo-desirability-dialog .d4-accordion-pane-content {
+  margin: 0;
+}
+
 @media (max-width: 500px) {
   .statistics-mpo-row {
     flex-direction: column;

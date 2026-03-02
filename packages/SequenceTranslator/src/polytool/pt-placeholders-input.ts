@@ -52,6 +52,19 @@ export class PolyToolPlaceholdersInput extends DG.JsInputBase<DG.DataFrame> {
 
   private subs: Unsubscribable[] = [];
 
+  public invalidateGrid(): void {
+    if (this.grid) {
+      const oldW = this.grid.root.style.width;
+      this.grid.root.style.width = '99.9%';
+      setTimeout(() => {
+        if (oldW)
+          this.grid.root.style.width = oldW;
+        else
+          this.grid.root.style.removeProperty('width');
+      }, 100);
+    }
+  }
+
   protected constructor(
     private readonly name: string | undefined,
     heightRowCount?: number, options?: {},

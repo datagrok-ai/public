@@ -24,7 +24,6 @@ const CREATE_NEW_PROFILE_ITEM = '+ Create New...';
 export class MpoProfileDialog {
   dataFrame: DG.DataFrame;
   mpoProfileEditor: MpoProfileEditor;
-  aggregationInput: DG.ChoiceInput<WeightedAggregation | null>;
   profileInput: DG.ChoiceInput<string | null>;
   designModeInput: DG.InputBase<boolean>;
   addParetoFront: DG.InputBase<boolean>;
@@ -48,6 +47,7 @@ export class MpoProfileDialog {
   private pmpoSettingsContainer: HTMLElement;
   private pmpoSettingsOpened = false;
   private hasBoolColumns: boolean;
+  aggregationInput: any;
 
   constructor(dataFrame?: DG.DataFrame) {
     this.dataFrame = dataFrame ?? grok.shell.t;
@@ -173,7 +173,7 @@ export class MpoProfileDialog {
         await this.mpoContextPanel.render(
           this.currentProfile,
           this.mpoProfileEditor.columnMapping,
-          this.aggregationInput.value ?? undefined,
+          this.mpoProfileEditor.aggregationInput.value ?? undefined,
         );
       }
     }));
@@ -377,7 +377,7 @@ export class MpoProfileDialog {
         this.dataFrame,
         this.currentProfile!,
         this.mpoProfileEditor.columnMapping,
-        this.aggregationInput.value!,
+        this.mpoProfileEditor.aggregationInput.value!,
       );
 
       if (columnNames.length && this.addParetoFront.value)

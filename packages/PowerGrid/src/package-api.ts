@@ -90,6 +90,10 @@ export namespace funcs {
     return await grok.functions.call('PowerGrid:DemoTestUnitsCellRenderer', {});
   }
 
+  export async function addPinnedColumn(gridCol: any ): Promise<any> {
+    return await grok.functions.call('PowerGrid:AddPinnedColumn', { gridCol });
+  }
+
   export async function autoPowerGrid(): Promise<void> {
     return await grok.functions.call('PowerGrid:AutoPowerGrid', {});
   }

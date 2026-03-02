@@ -1,0 +1,20 @@
+{
+  "#type": "DataConnection",
+  "name": "MSSQLNorthwind",
+  "friendlyName": "Northwind",
+  "parameters": {
+    "cacheResults": true,
+    "cacheSchema": true,
+    "server": "db.datagrok.ai",
+    "port": 14331,
+    "db": "northwind"
+  },
+  "credentials" : {
+    "parameters" : {
+      "login": "datagrok",
+      "password": "7fekQBc4UFRTzHxx3ufOOmlw2L4pbKAfIHQy"
+    }
+  },
+  "dataSource": "MS SQL",
+  "description": "Northwind database"
+}

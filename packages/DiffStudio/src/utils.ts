@@ -5,8 +5,9 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {MISC, INPUTS_DF, LOOKUP_DF_FAIL, LOOKUP_EXPR_FAIL, TITLE, PATH, UI_TIME} from './ui-constants';
-import {CONTROL_EXPR} from './constants';
+import {CONTROL_EXPR, METHOD_KEY_WORD} from './constants';
 import {CONTROL_SEP, BRACE_OPEN, BRACE_CLOSE, BRACKET_OPEN, BRACKET_CLOSE, ANNOT_SEPAR} from './scripting-tools';
+import {DEFAULT_OPTIONS} from './solver-tools';
 
 const ERR_POSTFIX = `check ${CONTROL_EXPR.INPUTS}'-line.`;
 
@@ -352,4 +353,17 @@ export function removeTitleBar(node: DG.DockNode) {
 /** No models message */
 export function noModels(): void {
   grok.shell.info(`No models`);
+}
+
+/** Return try run options */
+export function getTryRunOptions(opts: string): string {
+  // if method is not specified, we use default one with maxIterations = 1
+  if (!opts.includes(METHOD_KEY_WORD))
+    return DEFAULT_OPTIONS.SCRIPTING;
+
+  const methodIdx = opts.indexOf(METHOD_KEY_WORD);
+  const methodEndIdx = opts.indexOf(';', methodIdx);
+
+  // if maxIterations is not specified, we add it to options: we preserve the method and set maxIterations = 1
+  return `{${opts.slice(methodIdx, methodEndIdx)}; ${DEFAULT_OPTIONS.MAX_TIME}}`;
 }
