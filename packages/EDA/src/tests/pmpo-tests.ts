@@ -11,7 +11,7 @@ import {category, expect, test} from '@datagrok-libraries/test/src/test';
 
 import {Pmpo} from '../probabilistic-scoring/prob-scoring';
 import {P_VAL_TRES_DEFAULT, Q_CUTOFF_DEFAULT, R2_DEFAULT, SCORES_PATH,
-  SOURCE_PATH} from '../probabilistic-scoring/pmpo-defs';
+  SOURCE_PATH, EQUALITY_SIGN} from '../probabilistic-scoring/pmpo-defs';
 import {getSynteticPmpoData} from '../probabilistic-scoring/data-generator';
 
 const TIMEOUT = 10000;
@@ -450,5 +450,348 @@ category('Probabilistic MPO: API', () => {
       threw = true;
     }
     expect(threw, true, 'Expected predict to throw for missing column');
+  });
+});
+
+/** Returns default valid params for validateInputs */
+function getValidInputParams(): {
+  descriptors: DG.Column[] | null,
+  desirability: DG.Column | null,
+  threshold: number | null,
+  sign: EQUALITY_SIGN,
+  desirableCategories: string[] | null,
+  pValue: number | null,
+  r2: number | null,
+  qCutoff: number | null,
+} {
+  const df = createValidTestDf();
+  return {
+    descriptors: df.columns.byNames(['d1', 'd2']),
+    desirability: df.col('des')!,
+    threshold: null,
+    sign: EQUALITY_SIGN.DEFAULT,
+    desirableCategories: null,
+    pValue: P_VAL_TRES_DEFAULT,
+    r2: R2_DEFAULT,
+    qCutoff: Q_CUTOFF_DEFAULT,
+  };
+}
+
+category('Probabilistic MPO: validateInputs', () => {
+  // --- Settings validation ---
+
+  test('validateInputs: rejects null p-value', async () => {
+    const params = getValidInputParams();
+    params.pValue = null;
+    const result = Pmpo.validateInputs(params);
+    expect(result.valid, false);
+    expect(result.errors.size, 0, 'No input-specific errors for null settings');
+  });
+
+  test('validateInputs: rejects null R²', async () => {
+    const params = getValidInputParams();
+    params.r2 = null;
+    expect(Pmpo.validateInputs(params).valid, false);
+  });
+
+  test('validateInputs: rejects null q-cutoff', async () => {
+    const params = getValidInputParams();
+    params.qCutoff = null;
+    expect(Pmpo.validateInputs(params).valid, false);
+  });
+
+  test('validateInputs: rejects p-value out of range', async () => {
+    const params = getValidInputParams();
+    params.pValue = 0;
+    expect(Pmpo.validateInputs(params).valid, false);
+    params.pValue = 1.5;
+    expect(Pmpo.validateInputs(params).valid, false);
+  });
+
+  test('validateInputs: rejects R² out of range', async () => {
+    const params = getValidInputParams();
+    params.r2 = -0.1;
+    expect(Pmpo.validateInputs(params).valid, false);
+    params.r2 = 1.5;
+    expect(Pmpo.validateInputs(params).valid, false);
+  });
+
+  test('validateInputs: rejects q-cutoff out of range', async () => {
+    const params = getValidInputParams();
+    params.qCutoff = 0;
+    expect(Pmpo.validateInputs(params).valid, false);
+    params.qCutoff = 1.5;
+    expect(Pmpo.validateInputs(params).valid, false);
+  });
+
+  // --- Column input validation ---
+
+  test('validateInputs: rejects null descriptors', async () => {
+    const params = getValidInputParams();
+    params.descriptors = null;
+    expect(Pmpo.validateInputs(params).valid, false);
+  });
+
+  test('validateInputs: rejects null desirability', async () => {
+    const params = getValidInputParams();
+    params.desirability = null;
+    expect(Pmpo.validateInputs(params).valid, false);
+  });
+
+  test('validateInputs: rejects empty descriptors', async () => {
+    const params = getValidInputParams();
+    params.descriptors = [];
+    const result = Pmpo.validateInputs(params);
+    expect(result.valid, false);
+    expect(result.errors.has('descriptors'), true);
+  });
+
+  // --- Descriptor quality validation ---
+
+  test('validateInputs: rejects desirability among descriptors', async () => {
+    const df = createValidTestDf();
+    const des = df.col('des')!;
+    const result = Pmpo.validateInputs({
+      descriptors: [df.col('d1')!, des],
+      desirability: des,
+      threshold: null,
+      sign: EQUALITY_SIGN.DEFAULT,
+      desirableCategories: null,
+      pValue: P_VAL_TRES_DEFAULT,
+      r2: R2_DEFAULT,
+      qCutoff: Q_CUTOFF_DEFAULT,
+    });
+    expect(result.valid, false);
+    expect(result.errors.has('descriptors'), true);
+    expect(result.errors.has('desirability'), true);
+  });
+
+  test('validateInputs: rejects zero-variance descriptors', async () => {
+    const n = 20;
+    const half = n / 2;
+    const df = DG.DataFrame.fromColumns([
+      DG.Column.fromList(DG.COLUMN_TYPE.BOOL, 'des', Array.from({length: n}, (_, i) => i < half)),
+      DG.Column.fromFloat64Array('d1', Float64Array.from({length: n}, (_, i) => i + 1)),
+      DG.Column.fromFloat64Array('constCol', new Float64Array(n).fill(5)),
+    ]);
+    const result = Pmpo.validateInputs({
+      descriptors: [df.col('d1')!, df.col('constCol')!],
+      desirability: df.col('des')!,
+      threshold: null,
+      sign: EQUALITY_SIGN.DEFAULT,
+      desirableCategories: null,
+      pValue: P_VAL_TRES_DEFAULT,
+      r2: R2_DEFAULT,
+      qCutoff: Q_CUTOFF_DEFAULT,
+    });
+    expect(result.valid, false);
+    expect(result.errors.has('descriptors'), true);
+  });
+
+  // --- Boolean desirability validation ---
+
+  test('validateInputs: accepts valid boolean desirability', async () => {
+    const params = getValidInputParams();
+    const result = Pmpo.validateInputs(params);
+    expect(result.valid, true);
+    expect(result.errors.size, 0);
+  });
+
+  test('validateInputs: rejects all-true boolean desirability', async () => {
+    const n = 20;
+    const df = DG.DataFrame.fromColumns([
+      DG.Column.fromList(DG.COLUMN_TYPE.BOOL, 'des', new Array(n).fill(true)),
+      DG.Column.fromFloat64Array('d1', Float64Array.from({length: n}, (_, i) => i + 1)),
+      DG.Column.fromFloat64Array('d2', Float64Array.from({length: n}, (_, i) => i * 2)),
+    ]);
+    const result = Pmpo.validateInputs({
+      descriptors: [df.col('d1')!, df.col('d2')!],
+      desirability: df.col('des')!,
+      threshold: null,
+      sign: EQUALITY_SIGN.DEFAULT,
+      desirableCategories: null,
+      pValue: P_VAL_TRES_DEFAULT,
+      r2: R2_DEFAULT,
+      qCutoff: Q_CUTOFF_DEFAULT,
+    });
+    expect(result.valid, false);
+    expect(result.errors.has('desirability'), true);
+  });
+
+  // --- String desirability validation ---
+
+  test('validateInputs: rejects string desirability with single category', async () => {
+    const n = 20;
+    const df = DG.DataFrame.fromColumns([
+      DG.Column.fromStrings('des', new Array(n).fill('active')),
+      DG.Column.fromFloat64Array('d1', Float64Array.from({length: n}, (_, i) => i + 1)),
+      DG.Column.fromFloat64Array('d2', Float64Array.from({length: n}, (_, i) => i * 2)),
+    ]);
+    const result = Pmpo.validateInputs({
+      descriptors: [df.col('d1')!, df.col('d2')!],
+      desirability: df.col('des')!,
+      threshold: null,
+      sign: EQUALITY_SIGN.DEFAULT,
+      desirableCategories: ['active'],
+      pValue: P_VAL_TRES_DEFAULT,
+      r2: R2_DEFAULT,
+      qCutoff: Q_CUTOFF_DEFAULT,
+    });
+    expect(result.valid, false);
+    expect(result.errors.has('desirability'), true);
+  });
+
+  test('validateInputs: rejects no selected categories', async () => {
+    const n = 20;
+    const half = n / 2;
+    const df = DG.DataFrame.fromColumns([
+      DG.Column.fromStrings('des', Array.from({length: n}, (_, i) => i < half ? 'active' : 'inactive')),
+      DG.Column.fromFloat64Array('d1', Float64Array.from({length: n}, (_, i) => i + 1)),
+      DG.Column.fromFloat64Array('d2', Float64Array.from({length: n}, (_, i) => i * 2)),
+    ]);
+    const result = Pmpo.validateInputs({
+      descriptors: [df.col('d1')!, df.col('d2')!],
+      desirability: df.col('des')!,
+      threshold: null,
+      sign: EQUALITY_SIGN.DEFAULT,
+      desirableCategories: [],
+      pValue: P_VAL_TRES_DEFAULT,
+      r2: R2_DEFAULT,
+      qCutoff: Q_CUTOFF_DEFAULT,
+    });
+    expect(result.valid, false);
+    expect(result.errors.has('desirability'), true);
+  });
+
+  test('validateInputs: rejects all categories selected', async () => {
+    const n = 20;
+    const half = n / 2;
+    const df = DG.DataFrame.fromColumns([
+      DG.Column.fromStrings('des', Array.from({length: n}, (_, i) => i < half ? 'active' : 'inactive')),
+      DG.Column.fromFloat64Array('d1', Float64Array.from({length: n}, (_, i) => i + 1)),
+      DG.Column.fromFloat64Array('d2', Float64Array.from({length: n}, (_, i) => i * 2)),
+    ]);
+    const result = Pmpo.validateInputs({
+      descriptors: [df.col('d1')!, df.col('d2')!],
+      desirability: df.col('des')!,
+      threshold: null,
+      sign: EQUALITY_SIGN.DEFAULT,
+      desirableCategories: ['active', 'inactive'],
+      pValue: P_VAL_TRES_DEFAULT,
+      r2: R2_DEFAULT,
+      qCutoff: Q_CUTOFF_DEFAULT,
+    });
+    expect(result.valid, false);
+    expect(result.errors.has('desirability'), true);
+  });
+
+  test('validateInputs: accepts valid string desirability', async () => {
+    const n = 20;
+    const half = n / 2;
+    const df = DG.DataFrame.fromColumns([
+      DG.Column.fromStrings('des', Array.from({length: n}, (_, i) => i < half ? 'active' : 'inactive')),
+      DG.Column.fromFloat64Array('d1', Float64Array.from({length: n}, (_, i) => i < half ? i + 10 : i)),
+      DG.Column.fromFloat64Array('d2', Float64Array.from({length: n}, (_, i) => i < half ? i * 3 : i)),
+    ]);
+    const result = Pmpo.validateInputs({
+      descriptors: [df.col('d1')!, df.col('d2')!],
+      desirability: df.col('des')!,
+      threshold: null,
+      sign: EQUALITY_SIGN.DEFAULT,
+      desirableCategories: ['active'],
+      pValue: P_VAL_TRES_DEFAULT,
+      r2: R2_DEFAULT,
+      qCutoff: Q_CUTOFF_DEFAULT,
+    });
+    expect(result.valid, true);
+    expect(result.errors.size, 0);
+  });
+
+  // --- Numeric desirability validation ---
+
+  test('validateInputs: rejects constant numeric desirability', async () => {
+    const n = 20;
+    const df = DG.DataFrame.fromColumns([
+      DG.Column.fromFloat64Array('des', new Float64Array(n).fill(5)),
+      DG.Column.fromFloat64Array('d1', Float64Array.from({length: n}, (_, i) => i + 1)),
+      DG.Column.fromFloat64Array('d2', Float64Array.from({length: n}, (_, i) => i * 2)),
+    ]);
+    const result = Pmpo.validateInputs({
+      descriptors: [df.col('d1')!, df.col('d2')!],
+      desirability: df.col('des')!,
+      threshold: 5,
+      sign: EQUALITY_SIGN.DEFAULT,
+      desirableCategories: null,
+      pValue: P_VAL_TRES_DEFAULT,
+      r2: R2_DEFAULT,
+      qCutoff: Q_CUTOFF_DEFAULT,
+    });
+    expect(result.valid, false);
+    expect(result.errors.has('desirability'), true);
+  });
+
+  test('validateInputs: rejects null threshold for numeric desirability', async () => {
+    const n = 20;
+    const df = DG.DataFrame.fromColumns([
+      DG.Column.fromFloat64Array('des', Float64Array.from({length: n}, (_, i) => i)),
+      DG.Column.fromFloat64Array('d1', Float64Array.from({length: n}, (_, i) => i + 1)),
+      DG.Column.fromFloat64Array('d2', Float64Array.from({length: n}, (_, i) => i * 2)),
+    ]);
+    const result = Pmpo.validateInputs({
+      descriptors: [df.col('d1')!, df.col('d2')!],
+      desirability: df.col('des')!,
+      threshold: null,
+      sign: EQUALITY_SIGN.DEFAULT,
+      desirableCategories: null,
+      pValue: P_VAL_TRES_DEFAULT,
+      r2: R2_DEFAULT,
+      qCutoff: Q_CUTOFF_DEFAULT,
+    });
+    expect(result.valid, false);
+    expect(result.errors.has('desirability'), true);
+  });
+
+  test('validateInputs: rejects threshold producing single group', async () => {
+    const n = 20;
+    // All values in [0, 19], threshold 100 with <= → all desired, none non-desired
+    const df = DG.DataFrame.fromColumns([
+      DG.Column.fromFloat64Array('des', Float64Array.from({length: n}, (_, i) => i)),
+      DG.Column.fromFloat64Array('d1', Float64Array.from({length: n}, (_, i) => i + 1)),
+      DG.Column.fromFloat64Array('d2', Float64Array.from({length: n}, (_, i) => i * 2)),
+    ]);
+    const result = Pmpo.validateInputs({
+      descriptors: [df.col('d1')!, df.col('d2')!],
+      desirability: df.col('des')!,
+      threshold: 100,
+      sign: EQUALITY_SIGN.LESS_OR_EQUAL,
+      desirableCategories: null,
+      pValue: P_VAL_TRES_DEFAULT,
+      r2: R2_DEFAULT,
+      qCutoff: Q_CUTOFF_DEFAULT,
+    });
+    expect(result.valid, false);
+    expect(result.errors.has('desirability'), true);
+    expect(result.errors.has('threshold'), true);
+  });
+
+  test('validateInputs: accepts valid numeric desirability with threshold', async () => {
+    const n = 20;
+    const df = DG.DataFrame.fromColumns([
+      DG.Column.fromFloat64Array('des', Float64Array.from({length: n}, (_, i) => i)),
+      DG.Column.fromFloat64Array('d1', Float64Array.from({length: n}, (_, i) => i + 1)),
+      DG.Column.fromFloat64Array('d2', Float64Array.from({length: n}, (_, i) => i * 2)),
+    ]);
+    const result = Pmpo.validateInputs({
+      descriptors: [df.col('d1')!, df.col('d2')!],
+      desirability: df.col('des')!,
+      threshold: 10,
+      sign: EQUALITY_SIGN.LESS_OR_EQUAL,
+      desirableCategories: null,
+      pValue: P_VAL_TRES_DEFAULT,
+      r2: R2_DEFAULT,
+      qCutoff: Q_CUTOFF_DEFAULT,
+    });
+    expect(result.valid, true);
+    expect(result.errors.size, 0);
   });
 });

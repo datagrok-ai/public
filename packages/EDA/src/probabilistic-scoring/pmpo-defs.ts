@@ -235,3 +235,11 @@ export const SIGN_OPTIONS = [
 export const THRESHOLDED_DESIRABILITY_COL_NAME = 'Desirability';
 
 export const PREFERABLE_CATEGORIES = ['perfect', 'good', 'true', 't', 'g', 'active', 'a', 'yes', 'y'];
+
+export type PmpoInputId = 'descriptors' | 'desirability' | 'threshold' | 'categories';
+export type TooltipContent = string | (() => HTMLElement);
+
+export interface PmpoValidationResult {
+  valid: boolean;
+  errors: Map<PmpoInputId, TooltipContent>;
+}

@@ -17,7 +17,8 @@ import {MIN_SAMPLES_COUNT, PMPO_NON_APPLICABLE, DescriptorStatistics, P_VAL_TRES
   P_VAL_TRES_DEFAULT, R2_DEFAULT, Q_CUTOFF_DEFAULT, USE_SIGMOID_DEFAULT, ROC_TRESHOLDS,
   FPR_TITLE, TPR_TITLE, COLORS, THRESHOLD, AUTO_TUNE_MAX_APPLICABLE_ROWS, DEFAULT_OPTIMIZATION_SETTINGS,
   P_VAL_TRES_MAX, R2_MAX, Q_CUTOFF_MAX, OptimalPoint, LOW_PARAMS_BOUNDS, HIGH_PARAMS_BOUNDS, FORMAT,
-  EQUALITY_SIGN, SIGN_OPTIONS, THRESHOLDED_DESIRABILITY_COL_NAME, PMPO_COMPUTE_FAILED} from './pmpo-defs';
+  EQUALITY_SIGN, SIGN_OPTIONS, THRESHOLDED_DESIRABILITY_COL_NAME, PMPO_COMPUTE_FAILED,
+  PmpoInputId, TooltipContent, PmpoValidationResult} from './pmpo-defs';
 import {addSelectedDescriptorsCol, getDescriptorStatisticsTable, getFilteredByPvalue, getFilteredByCorrelations,
   getModelParams, getDescrTooltip, saveModel, getScoreTooltip, getDesirabilityProfileJson, getCorrelationTriples,
   addCorrelationColumns, setPvalColumnColorCoding, setCorrColumnColorCoding, PmpoError, getInitCol,
@@ -923,146 +924,70 @@ export class Pmpo {
       runComputations();
     }; // setOptimalParametersAndRun
 
-    // Validates all inputs before running computations
-    const areInputsValid = (): boolean => {
-      let res = true;
+    // Default tooltips for valid inputs
+    const defaultTooltips: Partial<Record<PmpoInputId, TooltipContent>> = {
+      'descriptors': 'Descriptor columns used for model construction.',
+      'desirability': 'Desirability column.',
+      'threshold': 'Boundary value that separates desired from non-desired compounds.',
+      'categories': 'Select which categories should be treated as desirable.',
+    };
 
-      // Case 1: settings are not null
-      if (pInput.value == null || rInput.value == null || qInput.value == null)
-        res = false;
-      else {
-        // Case 2: settings are in valid ranges
-        if ((pInput.value <= 0) || (pInput.value > 1) || (rInput.value < 0) || (rInput.value > 1) || (qInput.value <= 0) || (qInput.value > 1))
-          res = false;
+    // Gets the valid-state tooltip for desirability (contextual for numeric columns)
+    const getDesirabilityValidTooltip = (): TooltipContent => {
+      if (desInput.value != null && desInput.value.type !== DG.COLUMN_TYPE.BOOL &&
+        desInput.value.type !== DG.COLUMN_TYPE.STRING && desirabilityThresholdInput.value != null) {
+        return () => ui.markdown(`Desirability rule:
+          <div align="center">
+          **${desInput.value!.name} ${signInput.value} ${desirabilityThresholdInput.value}**.
+          </div>
+          Matching compounds → desired, the rest → non-desired.`);
       }
 
-      // Case 3: column inputs are not null
-      if (descrInput.value == null || desInput.value == null)
-        res = false;
-      else {
-        // Case 4: at least one descriptor column is selected
-        if (descrInput.value.length < 1) {
-          res = false;
-          descrInput.input.classList.add('d4-invalid');
-          ui.tooltip.bind(descrInput.input, 'Select at least one descriptor column.');
+      return defaultTooltips['desirability']!;
+    };
+
+    // Applies validation result to the UI
+    const applyValidationState = (result: PmpoValidationResult) => {
+      const inputElements: Partial<Record<PmpoInputId, HTMLElement>> = {
+        'descriptors': descrInput.input,
+        'desirability': desInput.input,
+        'threshold': desirabilityThresholdInput.input,
+      };
+
+      if (desirableCategoriesInput != null)
+        inputElements['categories'] = desirableCategoriesInput.input;
+
+      for (const [id, element] of Object.entries(inputElements) as [PmpoInputId, HTMLElement][]) {
+        const error = result.errors.get(id);
+
+        if (error != null) {
+          element.classList.add('d4-invalid');
+          ui.tooltip.bind(element, error);
         } else {
-          // Case 5: desirability column is not among the descriptor columns
-          if (descrInput.value.includes(desInput.value)) {
-            res = false;
-            descrInput.input.classList.add('d4-invalid');
-            desInput.input.classList.add('d4-invalid');
-            ui.tooltip.bind(descrInput.input, 'Desirability column cannot be used as a descriptor.');
-            ui.tooltip.bind(desInput.input, 'Desirability column cannot be used as a descriptor.');
-          } else {
-            let areDescriptorsValid = true;
+          element.classList.remove('d4-invalid');
+          const tooltip = id === 'desirability' ? getDesirabilityValidTooltip() : defaultTooltips[id];
 
-            // Case 6: no descriptor columns with zero variance (constant columns)
-            const zeroStdevCols = descrInput.value.filter((col) => col.stats.stdev === 0).map((col) => col.name);
-            if (zeroStdevCols.length > 0) {
-              res = false;
-              areDescriptorsValid = false;
-              descrInput.input.classList.add('d4-invalid');
-              ui.tooltip.bind(descrInput.input, () => ui.markdown(`Descriptor columns with zero variance cannot be used: **${zeroStdevCols.join(', ')}**`));
-            }
-
-            // Case 7: no descriptor columns consisting entirely of missing values
-            const nullCols = descrInput.value.filter((col) => col.stats.missingValueCount === col.length).map((col) => col.name);
-            if (nullCols.length > 0) {
-              res = false;
-              areDescriptorsValid = false;
-              descrInput.input.classList.add('d4-invalid');
-              ui.tooltip.bind(descrInput.input, () => ui.markdown(`Descriptor columns with only missing values cannot be used: **${nullCols.join(', ')}**`));
-            }
-
-            if (areDescriptorsValid) {
-              descrInput.input.classList.remove('d4-invalid');
-              ui.tooltip.bind(descrInput.input, 'Descriptor columns used for model construction.');
-            }
-
-            if (desInput.value.type === DG.COLUMN_TYPE.BOOL) {
-              // Case 8: boolean desirability column must have both true and false values
-              if (desInput.value.stats.stdev > 0) {
-                desInput.input.classList.remove('d4-invalid');
-                ui.tooltip.bind(desInput.input, 'Desirability column.');
-              } else {
-                res = false;
-                desInput.input.classList.add('d4-invalid');
-                ui.tooltip.bind(desInput.input, 'All desirability values are the same - scoring is not feasible.');
-              }
-            } else if (desInput.value.type === DG.COLUMN_TYPE.STRING) {
-              // Case 8: string desirability column must have at least 2 categories
-              const catsCount = desInput.value.categories.length;
-              const selectedCatsCount = desirableCategoriesInput?.value?.length ?? 0;
-
-              if (catsCount < 2) {
-                res = false;
-                desInput.input.classList.add('d4-invalid');
-                ui.tooltip.bind(desInput.input, 'String desirability column must have at least 2 categories.');
-              } else if (selectedCatsCount === 0) {
-                res = false;
-                desInput.input.classList.add('d4-invalid');
-                ui.tooltip.bind(desInput.input, 'Select at least one preferable category.');
-              } else if (selectedCatsCount === catsCount) {
-                res = false;
-                desInput.input.classList.add('d4-invalid');
-                ui.tooltip.bind(desInput.input, 'At least one category must be non-preferable.');
-              } else {
-                desInput.input.classList.remove('d4-invalid');
-                ui.tooltip.bind(desInput.input, 'Desirability column.');
-                ui.tooltip.bind(desirableCategoriesInput!.input, 'Select which categories should be treated as desirable.');
-              }
-            } else {
-              // Case 9: numeric desirability column must have non-zero variance
-              if (desInput.value.stats.stdev > 0) {
-                // Case 10: desirability threshold must be specified
-                if (desirabilityThresholdInput.value != null) {
-                  // Case 11: threshold must produce both desired and non-desired groups
-                  if (!isDesirabilityValid(desInput.value, desirabilityThresholdInput.value, signInput.value as EQUALITY_SIGN)) {
-                    res = false;
-                    desInput.input.classList.add('d4-invalid');
-                    desirabilityThresholdInput.input.classList.add('d4-invalid');
-                    ui.tooltip.bind(
-                      desInput.input,
-                      () => ui.markdown(`All compounds are either desired or non-desired for
-                      <div align="center">
-                      **${desInput.value!.name} ${signInput.value} ${desirabilityThresholdInput.value}.**
-                      </div>
-                      Adjust the threshold or condition to get both groups.`),
-                    );
-                  } else {
-                    desInput.input.classList.remove('d4-invalid');
-                    desirabilityThresholdInput.input.classList.remove('d4-invalid');
-                    ui.tooltip.bind(
-                      desInput.input,
-                      () => ui.markdown(`Desirability rule:
-                        <div align="center">
-                        **${desInput.value!.name} ${signInput.value} ${desirabilityThresholdInput.value}**.
-                        </div>
-                        Matching compounds → desired, the rest → non-desired.`),
-                    );
-                    ui.tooltip.bind(desirabilityThresholdInput.input, 'Boundary value that separates desired from non-desired compounds.');
-                  }
-                } else {
-                  res = false;
-                  desInput.input.classList.add('d4-invalid');
-                  ui.tooltip.bind(desInput.input, 'Specify non-null desirability threshold.');
-                }
-              } else {
-                res = false;
-                desInput.input.classList.add('d4-invalid');
-                ui.tooltip.bind(
-                  desInput.input,
-                  desInput.value.stats.missingValueCount < desInput.value.length ?
-                    'All desirability values are the same - scoring is not feasible.' :
-                    'Empty column cannot be used as desirability column.',
-                );
-              }
-            }
-          }
+          if (tooltip != null)
+            ui.tooltip.bind(element, tooltip);
         }
-      } // areInputsValid
+      }
+    };
 
-      return res;
+    // Validates all inputs before running computations
+    const areInputsValid = (): boolean => {
+      const result = Pmpo.validateInputs({
+        descriptors: descrInput.value,
+        desirability: desInput.value,
+        threshold: desirabilityThresholdInput.value,
+        sign: signInput.value as EQUALITY_SIGN,
+        desirableCategories: desirableCategoriesInput?.value ?? null,
+        pValue: pInput.value,
+        r2: rInput.value,
+        qCutoff: qInput.value,
+      });
+
+      applyValidationState(result);
+      return result.valid;
     }; // areInputsValid
 
     const checkAutoTuneAndRun = () => {
@@ -1194,6 +1119,92 @@ export class Pmpo {
       saveBtn: saveBtn,
     };
   } // getInputForm
+
+  /** Validates all pMPO inputs and returns structured errors without mutating the DOM */
+  static validateInputs(params: {
+    descriptors: DG.Column[] | null,
+    desirability: DG.Column | null,
+    threshold: number | null,
+    sign: EQUALITY_SIGN,
+    desirableCategories: string[] | null,
+    pValue: number | null,
+    r2: number | null,
+    qCutoff: number | null,
+  }): PmpoValidationResult {
+    const errors = new Map<PmpoInputId, TooltipContent>();
+    const {descriptors, desirability, threshold, sign, desirableCategories, pValue, r2, qCutoff} = params;
+
+    // Settings null or out of range
+    if (pValue == null || r2 == null || qCutoff == null)
+      return {valid: false, errors};
+
+    if ((pValue <= 0) || (pValue > 1) || (r2 < 0) || (r2 > 1) || (qCutoff <= 0) || (qCutoff > 1))
+      return {valid: false, errors};
+
+    // Column inputs null
+    if (descriptors == null || desirability == null)
+      return {valid: false, errors};
+
+    // At least one descriptor
+    if (descriptors.length < 1) {
+      errors.set('descriptors', 'Select at least one descriptor column.');
+      return {valid: false, errors};
+    }
+
+    // Desirability column must not be among descriptors
+    if (descriptors.includes(desirability)) {
+      const msg = 'Desirability column cannot be used as a descriptor.';
+      errors.set('descriptors', msg);
+      errors.set('desirability', msg);
+      return {valid: false, errors};
+    }
+
+    // No zero-variance descriptor columns
+    const zeroStdevCols = descriptors.filter((col) => col.stats.stdev === 0).map((col) => col.name);
+    if (zeroStdevCols.length > 0)
+      errors.set('descriptors', () => ui.markdown(`Descriptor columns with zero variance cannot be used: **${zeroStdevCols.join(', ')}**`));
+
+    // No all-null descriptor columns
+    const nullCols = descriptors.filter((col) => col.stats.missingValueCount === col.length).map((col) => col.name);
+    if (nullCols.length > 0)
+      errors.set('descriptors', () => ui.markdown(`Descriptor columns with only missing values cannot be used: **${nullCols.join(', ')}**`));
+
+    // Validate desirability column based on its type
+    if (desirability.type === DG.COLUMN_TYPE.BOOL) {
+      if (desirability.stats.stdev === 0)
+        errors.set('desirability', 'All desirability values are the same - scoring is not feasible.');
+    } else if (desirability.type === DG.COLUMN_TYPE.STRING) {
+      const catsCount = desirability.categories.length;
+      const selectedCatsCount = desirableCategories?.length ?? 0;
+
+      if (catsCount < 2)
+        errors.set('desirability', 'String desirability column must have at least 2 categories.');
+      else if (selectedCatsCount === 0)
+        errors.set('desirability', 'Select at least one preferable category.');
+      else if (selectedCatsCount === catsCount)
+        errors.set('desirability', 'At least one category must be non-preferable.');
+    } else {
+      // Numeric desirability
+      if (desirability.stats.stdev === 0) {
+        errors.set('desirability',
+          desirability.stats.missingValueCount < desirability.length ?
+            'All desirability values are the same - scoring is not feasible.' :
+            'Empty column cannot be used as desirability column.',
+        );
+      } else if (threshold == null)
+        errors.set('desirability', 'Specify non-null desirability threshold.');
+      else if (!isDesirabilityValid(desirability, threshold, sign)) {
+        errors.set('desirability', () => ui.markdown(`All compounds are either desired or non-desired for
+          <div align="center">
+          **${desirability.name} ${sign} ${threshold}.**
+          </div>
+          Adjust the threshold or condition to get both groups.`));
+        errors.set('threshold', 'Adjust the threshold to get both desired and non-desired groups.');
+      }
+    }
+
+    return {valid: !errors.size, errors};
+  } // validateInputs
 
   /** Retrieves acceptable desirability columns (boolean or numerical with non-zero standard deviation) from the data frame */
   private getDesirabilityColumns(): DG.Column[] {
