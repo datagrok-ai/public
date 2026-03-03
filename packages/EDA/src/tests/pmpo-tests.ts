@@ -188,6 +188,30 @@ function getDescrCols(df: DG.DataFrame, names: string[]): DG.ColumnList {
   return DG.DataFrame.fromColumns(df.columns.byNames(names)).columns;
 }
 
+/** Returns default valid params for validateInputs */
+function getValidInputParams(): {
+  descriptors: DG.Column[] | null,
+  desirability: DG.Column | null,
+  threshold: number | null,
+  sign: EQUALITY_SIGN,
+  desirableCategories: string[] | null,
+  pValue: number | null,
+  r2: number | null,
+  qCutoff: number | null,
+  } {
+  const df = createValidTestDf();
+  return {
+    descriptors: df.columns.byNames(['d1', 'd2']),
+    desirability: df.col('des')!,
+    threshold: null,
+    sign: EQUALITY_SIGN.DEFAULT,
+    desirableCategories: null,
+    pValue: P_VAL_TRES_DEFAULT,
+    r2: R2_DEFAULT,
+    qCutoff: Q_CUTOFF_DEFAULT,
+  };
+}
+
 category('Probabilistic MPO: API', () => {
   // --- isApplicable: validates input thresholds, sample count, desirability, and descriptor quality ---
 
@@ -451,33 +475,9 @@ category('Probabilistic MPO: API', () => {
     }
     expect(threw, true, 'Expected predict to throw for missing column');
   });
-});
 
-/** Returns default valid params for validateInputs */
-function getValidInputParams(): {
-  descriptors: DG.Column[] | null,
-  desirability: DG.Column | null,
-  threshold: number | null,
-  sign: EQUALITY_SIGN,
-  desirableCategories: string[] | null,
-  pValue: number | null,
-  r2: number | null,
-  qCutoff: number | null,
-} {
-  const df = createValidTestDf();
-  return {
-    descriptors: df.columns.byNames(['d1', 'd2']),
-    desirability: df.col('des')!,
-    threshold: null,
-    sign: EQUALITY_SIGN.DEFAULT,
-    desirableCategories: null,
-    pValue: P_VAL_TRES_DEFAULT,
-    r2: R2_DEFAULT,
-    qCutoff: Q_CUTOFF_DEFAULT,
-  };
-}
+  // --- validateInputs ---
 
-category('Probabilistic MPO: validateInputs', () => {
   // --- Settings validation ---
 
   test('validateInputs: rejects null p-value', async () => {
