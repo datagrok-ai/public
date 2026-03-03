@@ -379,13 +379,13 @@ function getEnrichDiv(col: DG.Column): HTMLElement {
   const enrichAcc = ui.accordion('Enrich Column');
   enrichAcc.addPane('Enrich', () => {
     if ([DG.COLUMN_TYPE.BOOL, DG.COLUMN_TYPE.DATE_TIME].includes(col.type as DG.COLUMN_TYPE)) {
-      return ui.info(`Cannot use column of ${col.type} type for enrichment. 
-Supported types are ${[DG.COLUMN_TYPE.STRING, DG.COLUMN_TYPE.BIG_INT, DG.COLUMN_TYPE.INT, DG.COLUMN_TYPE.FLOAT].join(', ')}.`);
+      return ui.divText(`Cannot use column of ${col.type} type for enrichment. Supported types are ${[DG.COLUMN_TYPE.STRING, DG.COLUMN_TYPE.BIG_INT, DG.COLUMN_TYPE.INT, DG.COLUMN_TYPE.FLOAT].join(', ')}.`,
+        'power-pack-enrich-info');
     }
 
     const df = col.dart ? col.dataFrame : null;
     if (!df || df.rowCount === 0)
-      return ui.info('Data frame is empty or not available.');
+      return ui.divText('Data frame is empty or not available.', 'power-pack-enrich-info');
 
     const dbName = col.tags.get(DG.Tags.Db);
     const schemaName = col.tags.get(DG.Tags.DbSchema);
@@ -394,7 +394,7 @@ Supported types are ${[DG.COLUMN_TYPE.STRING, DG.COLUMN_TYPE.BIG_INT, DG.COLUMN_
     const tableName = col.tags.get(DG.Tags.DbTable);
 
     if (!connId || !dbColName || !tableName)
-      return ui.info('Column is not linked to database table.');
+      return ui.divText('Column is not linked to database table.', 'power-pack-enrich-info');
 
     return ui.wait(async () => {
       let conn: DG.DataConnection | undefined;
@@ -407,12 +407,12 @@ Supported types are ${[DG.COLUMN_TYPE.STRING, DG.COLUMN_TYPE.BIG_INT, DG.COLUMN_
           (await grok.dapi.connections.filter(`shortName = "${connId}"`).list()).find((_) => true);
       }
       if (!conn)
-        return ui.info('Failed to find connection for this column.');
+        return ui.divText('Failed to find connection for this column.', 'power-pack-enrich-info');
       const tables: DG.TableInfo[] = await grok.dapi.connections.getSchema(conn, schemaName, tableName, dbName ?? null);
       if (tables.length === 0)
-        return ui.info('Could not find a main table used for SQL query. Please, try to specify full "<schema>.<table>" name in SQL query.');
+        return ui.divText('Could not find a main table used for SQL query. Please, try to specify full "<schema>.<table>" name in SQL query.', 'power-pack-enrich-info');
       if (tables.length > 1)
-        return ui.info('Ambiguous table name — specify full "<schema>.<table>" name in SQL query.');
+        return ui.divText('Ambiguous table name — specify full "<schema>.<table>" name in SQL query.', 'power-pack-enrich-info');
 
       const mainTable: DG.TableInfo = tables[0];
       const enrichmentsRoot = getEnrichmentsDiv(conn, mainTable.tags.get(DG.Tags.TableSchema), mainTable.friendlyName, dbColName, dbName, df);
