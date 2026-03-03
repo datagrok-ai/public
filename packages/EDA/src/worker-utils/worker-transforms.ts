@@ -67,6 +67,28 @@ export function toWorkerColumn(col: DG.Column): WorkerColumn {
 }
 
 /**
+ * Converts a {@link DG.ColumnList} to an array of {@link WorkerColumn} objects.
+ *
+ * Each column is converted via {@link toWorkerColumn}. The resulting array is
+ * structured-cloneable and can be sent to a web worker via `postMessage`.
+ *
+ * @param columns - source Datagrok column list
+ * @returns array of plain worker columns
+ *
+ * @example
+ * // Send selected features to a web worker:
+ * const worker = new Worker('pca-worker.ts');
+ * const features = toWorkerColumns(table.columns.byNames(['x', 'y', 'z']));
+ * worker.postMessage({features, components: 2});
+ */
+export function toWorkerColumns(columns: DG.ColumnList): WorkerColumn[] {
+  const result: WorkerColumn[] = [];
+  for (const col of columns)
+    result.push(toWorkerColumn(col));
+  return result;
+}
+
+/**
  * Extracts a plain {@link WorkerDataFrame} from a {@link DG.DataFrame}.
  *
  * Converts each column via {@link toWorkerColumn}. The result is structured-cloneable
