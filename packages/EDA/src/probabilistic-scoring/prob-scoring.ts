@@ -962,6 +962,8 @@ export class Pmpo {
 
     // Auto-tune parameters and run computations; if auto-tune is not applicable, just run computations with current settings
     const setOptimalParametersAndRun = async () => {
+      await new Promise((resolve) => setTimeout(resolve, 50));
+
       if (!areInputsValid())
         return;
 
@@ -978,13 +980,12 @@ export class Pmpo {
           qInput.value = Math.max(optimalSettings.qCutoff, Q_CUTOFF_MIN);
           areTunedSettingsUsed = true;
           runComputations();
-        } else {
+        } else
           grok.shell.warning(optimalSettings.msg);
-          descrInput.input.classList.add('d4-invalid');
+          /*descrInput.input.classList.add('d4-invalid');
           desInput.input.classList.add('d4-invalid');
           ui.tooltip.bind(descrInput.input, optimalSettings.msg);
-          ui.tooltip.bind(desInput.input, optimalSettings.msg);
-        }
+          ui.tooltip.bind(desInput.input, optimalSettings.msg);*/
       } else
         runComputations();
     }; // setOptimalParametersAndRun
