@@ -6,6 +6,7 @@
  * (first) track in the MSA header when annotation data exists.
  */
 import * as DG from 'datagrok-api/dg';
+import * as ui from 'datagrok-api/ui';
 
 import {MSAHeaderTrack} from './sequence-position-scroller';
 import {TAGS as bioTAGS} from './macromolecule/consts';
@@ -23,6 +24,13 @@ interface RegionSpan {
   color: string;
   startIdx: number;
   endIdx: number;
+  /** Scheme position name for start, e.g. "27" in IMGT */
+  startPos: string;
+  /** Scheme position name for end */
+  endPos: string;
+  /** Source numbering scheme, e.g. "IMGT" */
+  sourceScheme?: string;
+  description?: string;
 }
 
 export class AnnotationTrack extends MSAHeaderTrack {
@@ -42,6 +50,40 @@ export class AnnotationTrack extends MSAHeaderTrack {
   hasRegions(): boolean {
     this._ensureUpToDate();
     return this.regions.length > 0;
+  }
+
+  /** Returns the region covering the given 0-based position index, or null. */
+  getRegionAtPosition(posIdx: number): RegionSpan | null {
+    this._ensureUpToDate();
+    for (const region of this.regions) {
+      if (posIdx >= region.startIdx && posIdx <= region.endIdx)
+        return region;
+    }
+    return null;
+  }
+
+  /** Override: provide tooltip content for the annotation track. */
+  public getTooltipContent(position: number, _monomer: string | null): HTMLElement | null {
+    this._ensureUpToDate();
+    const region = this.getRegionAtPosition(position);
+    if (!region) return null;
+
+    const scheme = region.sourceScheme ?? '';
+    const posName = position < this.posList.length ? this.posList[position] : '';
+
+    const lines: HTMLElement[] = [];
+    const nameEl = document.createElement('b');
+    nameEl.textContent = region.name;
+    lines.push(ui.div([nameEl], {style: {fontSize: '13px', marginBottom: '4px'}}));
+    if (scheme)
+      lines.push(ui.divText(`Scheme: ${scheme}`, {style: {fontSize: '12px', color: '#555'}}));
+    lines.push(ui.divText(`Range: ${region.startPos} \u2013 ${region.endPos}`, {style: {fontSize: '12px', color: '#555'}}));
+    if (posName)
+      lines.push(ui.divText(`Position: ${posName}`, {style: {fontSize: '12px', color: '#555'}}));
+    if (region.description)
+      lines.push(ui.divText(region.description, {style: {fontSize: '11px', color: '#888', marginTop: '2px'}}));
+
+    return ui.divV(lines, {style: {padding: '4px'}});
   }
 
   draw(
@@ -133,6 +175,10 @@ export class AnnotationTrack extends MSAHeaderTrack {
         color: annot.color ?? this._defaultColor(annot),
         startIdx,
         endIdx,
+        startPos: annot.start,
+        endPos: annot.end,
+        sourceScheme: annot.sourceScheme,
+        description: annot.description,
       });
     }
   }

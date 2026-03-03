@@ -1,3 +1,4 @@
+/* eslint-disable max-len */
 import * as DG from 'datagrok-api/dg';
 
 import {ISeqHandler} from '@datagrok-libraries/bio/src/utils/macromolecule/seq-handler';
@@ -8,7 +9,7 @@ import {
 } from '@datagrok-libraries/bio/src/utils/macromolecule/annotations';
 import {
   getOrCreateAnnotationColumn, setColumnAnnotations, setRowAnnotations,
-  getColumnAnnotations,
+  getColumnAnnotations, getRowAnnotations, mergeRowHits,
 } from './annotation-manager';
 
 /** A single liability scanning rule. */
@@ -123,10 +124,12 @@ export function applyLiabilityScanResults(
     .filter((a) => a.category !== AnnotationCategory.Liability);
   setColumnAnnotations(seqCol, [...existing, ...result.annotations]);
 
-  // Write per-row data to hidden companion column
+  // Write per-row data to hidden companion column, preserving region hits from numbering
   const annotCol = getOrCreateAnnotationColumn(df, seqCol);
-  for (let i = 0; i < result.rowData.length; i++)
-    setRowAnnotations(annotCol, i, result.rowData[i]);
+  for (let i = 0; i < result.rowData.length; i++) {
+    const existingHits = getRowAnnotations(annotCol, i) ?? [];
+    setRowAnnotations(annotCol, i, mergeRowHits(existingHits, result.rowData[i], false, true));
+  }
 }
 
 /** Creates a liability summary count column (total hits per row). */

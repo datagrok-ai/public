@@ -61,6 +61,10 @@ export interface SeqAnnotationHit {
   annotationId: string;
   /** 0-based index in the row's sequence */
   positionIndex: number;
+  /** End index (inclusive) for range-based hits (e.g. region spans).
+   *  When set, the hit covers positionIndex..endPositionIndex.
+   *  Unset for point/motif liability hits. */
+  endPositionIndex?: number;
   /** Position name from positionNames (for display) */
   positionName?: string;
   /** The actual residues matched */

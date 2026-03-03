@@ -109,6 +109,7 @@ position_names_list = []
 chain_types = []
 region_annotations_list = []
 numbering_results = []
+numbering_maps = []
 
 regions_def = SCHEME_REGIONS.get(scheme, IMGT_REGIONS)
 
@@ -118,6 +119,7 @@ for seq in sequences:
         chain_types.append('')
         region_annotations_list.append('[]')
         numbering_results.append('')
+        numbering_maps.append('')
         continue
 
     numbering, pct_identity, chain_type_code, err = annotator.analyze_seq(seq)
@@ -127,6 +129,7 @@ for seq in sequences:
         chain_types.append('')
         region_annotations_list.append('[]')
         numbering_results.append('')
+        numbering_maps.append('')
         continue
 
     # Determine chain type
@@ -137,15 +140,17 @@ for seq in sequences:
     else:
         chain_type = 'Unknown'
 
-    # Build position names and numbering detail from the alignment.
+    # Build position names, numbering detail, and position-to-character-index map.
     # numbering is a list with the same length as the input sequence;
     # each element is a position code string or '-' for residues outside the variable region.
     pos_names = []
     numbering_detail = []
+    pos_to_char_idx = {}
     for i, pos_code in enumerate(numbering):
         if pos_code != '-':
             pos_names.append(pos_code)
             numbering_detail.append({'position': pos_code, 'aa': seq[i]})
+            pos_to_char_idx[pos_code] = i
 
     position_names_list.append(', '.join(pos_names))
     chain_types.append(chain_type)
@@ -169,6 +174,7 @@ for seq in sequences:
 
     region_annotations_list.append(json.dumps(annotations))
     numbering_results.append(json.dumps(numbering_detail))
+    numbering_maps.append(json.dumps(pos_to_char_idx))
 
 # Build result DataFrame
 result = pd.DataFrame({
@@ -176,4 +182,5 @@ result = pd.DataFrame({
     'chain_type': chain_types,
     'annotations_json': region_annotations_list,
     'numbering_detail': numbering_results,
+    'numbering_map': numbering_maps,
 })

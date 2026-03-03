@@ -142,3 +142,22 @@ export function removeColumnAnnotation(col: DG.Column<string>, annotationId: str
   const existing = getColumnAnnotations(col).filter((a) => a.id !== annotationId);
   setColumnAnnotations(col, existing);
 }
+
+/** Merges row-level annotation hits by replacing hits of one kind while preserving the rest.
+ *  @param existingHits Current per-row hits
+ *  @param newHits New hits to add
+ *  @param replaceRegions If true, removes existing region span hits (endPositionIndex set) before merging.
+ *  @param replaceLiabilities If true, removes existing non-region hits before merging. */
+export function mergeRowHits(
+  existingHits: SeqAnnotationHit[],
+  newHits: SeqAnnotationHit[],
+  replaceRegions: boolean,
+  replaceLiabilities: boolean,
+): SeqAnnotationHit[] {
+  let kept = existingHits;
+  if (replaceRegions)
+    kept = kept.filter((h) => h.endPositionIndex == null);
+  if (replaceLiabilities)
+    kept = kept.filter((h) => h.endPositionIndex != null);
+  return [...kept, ...newHits];
+}

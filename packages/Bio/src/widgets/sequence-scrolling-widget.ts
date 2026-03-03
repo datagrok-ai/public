@@ -400,16 +400,20 @@ export function handleSequenceHeaderRendering() {
 
         // Do not Skip if sequences are too short, rather, just don't render the tracks by default
 
+        // Annotation track adds 24px (20px track + 4px gap) when structure annotations exist
+        const hasAnnotations = !!seqCol.getTag(bioTAGS.annotations);
+        const annotationSpace = hasAnnotations ? 24 : 0; // ANNOTATION_TRACK_HEIGHT(20) + TRACK_GAP(4)
+
         const STRICT_THRESHOLDS = {
           WITH_TITLE: 58, // BASE + TITLE_HEIGHT(16) + TRACK_GAP(4)
-          WITH_WEBLOGO: 107, // WITH_TITLE + DEFAULT_TRACK_HEIGHT(45) + TRACK_GAP(4)
-          WITH_BOTH: 156 // WITH_WEBLOGO + DEFAULT_TRACK_HEIGHT(45) + TRACK_GAP(4)
+          WITH_WEBLOGO: 107 + annotationSpace, // WITH_TITLE + DEFAULT_TRACK_HEIGHT(45) + TRACK_GAP(4) + annotation
+          WITH_BOTH: 156 + annotationSpace, // WITH_WEBLOGO + DEFAULT_TRACK_HEIGHT(45) + TRACK_GAP(4) + annotation
         };
 
         let initialHeaderHeight: number;
         if (seqCol.length > 100_000 || maxSeqLen < 50) {
-          // Single sequence: just dotted cells
-          initialHeaderHeight = STRICT_THRESHOLDS.WITH_TITLE;
+          // Single sequence: just dotted cells (+ annotation track if present)
+          initialHeaderHeight = STRICT_THRESHOLDS.WITH_TITLE + annotationSpace;
         } else {
           if (seqCol.length > 50_000)
             initialHeaderHeight = STRICT_THRESHOLDS.WITH_WEBLOGO;

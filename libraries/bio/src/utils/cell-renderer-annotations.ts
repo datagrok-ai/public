@@ -4,7 +4,8 @@
  * Performance contract:
  * - When no annotations exist, `hasAnnotations()` returns false and callers skip all drawing.
  * - Parsed annotation data is cached by column version; re-parsed only on change.
- * - The companion row-data column (hidden, name starting with ~) is looked up once and cached.
+ * - The companion row-data column (hidden, name starting with ~) is re-looked up when the
+ *   sequence column version changes (so it's found even when created after first render).
  */
 import * as DG from 'datagrok-api/dg';
 
@@ -33,7 +34,10 @@ interface RowDataCache {
 export class AnnotationRenderer {
   private _cache: AnnotationCache | null = null;
   private _rowCache: RowDataCache | null = null;
-  private _annotCol: DG.Column<string> | null | undefined = undefined; // undefined = not yet searched
+  private _annotCol: DG.Column<string> | null = null;
+  /** Version of tableCol at which _annotCol was last looked up.
+   *  Re-lookup when version changes (setting .annotationColumnName tag bumps it). */
+  private _annotColLookupVersion: number = -1;
 
   constructor(
     private tableCol: DG.Column<string>,
@@ -51,20 +55,34 @@ export class AnnotationRenderer {
     return this._cache?.annotations ?? [];
   }
 
-  /** Returns the region name at a given position, or null. */
-  getRegionNameAtPosition(posIdx: number): string | null {
+  /** Returns the region name at a given position for a specific row.
+   *  Checks per-row region spans first; falls back to column-level only when
+   *  the row has no per-row region data at all. */
+  getRegionNameAtPosition(posIdx: number, rowIdx?: number): string | null {
+    // Check per-row region spans first
+    if (rowIdx != null) {
+      const hit = this._findRowRegionHit(rowIdx, posIdx);
+      if (hit) {
+        const annot = this._cache?.annotations.find((a) => a.id === hit.annotationId);
+        return annot?.name ?? null;
+      }
+      // If this row has per-row region data, don't fall back to column-level
+      if (this._rowHasRegionData(rowIdx))
+        return null;
+    }
+    // Fall back to column-level position map
     this._ensureCache();
     return this._cache?.positionRegionNames.get(posIdx) ?? null;
   }
 
-  /** Returns liability hits for a specific row and position index. */
+  /** Returns liability hits (non-region) for a specific row and position index. */
   getHitsAtPosition(rowIdx: number, posIdx: number): SeqAnnotationHit[] {
     this._ensureRowCache();
     if (!this._rowCache) return [];
     const rowData = this._rowCache.data[rowIdx];
     if (!rowData) return [];
     return rowData.filter((h) => {
-      // Check if the hit starts at or covers this position
+      if (h.endPositionIndex != null) return false; // Skip region spans
       return h.positionIndex === posIdx || (h.matchedMonomers.length > 1 && posIdx > h.positionIndex && posIdx < h.positionIndex + h.matchedMonomers.length);
     });
   }
@@ -80,8 +98,20 @@ export class AnnotationRenderer {
     this._ensureCache();
     if (!this._cache) return;
 
-    // Region background
-    const regionColor = this._cache.positionRegionColors.get(posIdx);
+    this._ensureRowCache();
+
+    // Region background — check per-row region spans first, then column-level.
+    // If per-row region data exists for this row, use ONLY that (don't fall back
+    // to column-level, which has generic positions that don't match this row).
+    let regionColor: string | undefined;
+    const rowRegionHit = this._findRowRegionHit(rowIdx, posIdx);
+    if (rowRegionHit) {
+      const annot = this._cache.annotations.find((a) => a.id === rowRegionHit.annotationId);
+      regionColor = annot?.color ?? (annot ? this._getDefaultRegionColor(annot) : undefined);
+    }
+    if (!regionColor && !this._rowHasRegionData(rowIdx))
+      regionColor = this._cache.positionRegionColors.get(posIdx);
+
     if (regionColor) {
       g.save();
       g.globalAlpha = REGION_BG_OPACITY;
@@ -91,11 +121,11 @@ export class AnnotationRenderer {
     }
 
     // Liability underline — snapped to text bottom when textBottomY is provided
-    this._ensureRowCache();
     if (this._rowCache) {
       const rowData = this._rowCache.data[rowIdx];
       if (rowData) {
         for (const hit of rowData) {
+          if (hit.endPositionIndex != null) continue; // Skip region spans
           if (posIdx >= hit.positionIndex && posIdx < hit.positionIndex + hit.matchedMonomers.length) {
             const annot = this._cache.annotations.find((a) => a.id === hit.annotationId);
             if (annot?.color) {
@@ -118,18 +148,35 @@ export class AnnotationRenderer {
     const lines: string[] = [];
     if (!this._cache) return lines;
 
-    const regionName = this._cache.positionRegionNames.get(posIdx);
-    if (regionName) {
-      const annot = this._cache.annotations.find((a) => a.name === regionName && a.category === AnnotationCategory.Structure);
-      const scheme = annot?.sourceScheme ?? '';
-      lines.push(`Region: ${regionName}${scheme ? ` (${scheme} ${annot?.start}-${annot?.end})` : ''}`);
+    this._ensureRowCache();
+
+    // Region info — check per-row region spans first; fall back to column-level
+    // only when the row has no per-row region data at all.
+    let regionName: string | null = null;
+    const rowRegionHit = this._findRowRegionHit(rowIdx, posIdx);
+    if (rowRegionHit) {
+      const annot = this._cache.annotations.find((a) => a.id === rowRegionHit.annotationId);
+      if (annot) {
+        regionName = annot.name;
+        const scheme = annot.sourceScheme ?? '';
+        lines.push(`Region: ${annot.name}${scheme ? ` (${scheme} ${annot.start}-${annot.end})` : ''}`);
+      }
+    }
+    if (!regionName && !this._rowHasRegionData(rowIdx)) {
+      const colRegionName = this._cache.positionRegionNames.get(posIdx);
+      if (colRegionName) {
+        const annot = this._cache.annotations.find((a) => a.name === colRegionName && a.category === AnnotationCategory.Structure);
+        const scheme = annot?.sourceScheme ?? '';
+        lines.push(`Region: ${colRegionName}${scheme ? ` (${scheme} ${annot?.start}-${annot?.end})` : ''}`);
+      }
     }
 
-    this._ensureRowCache();
+    // Liability hits
     if (this._rowCache) {
       const rowData = this._rowCache.data[rowIdx];
       if (rowData) {
         for (const hit of rowData) {
+          if (hit.endPositionIndex != null) continue; // Skip region spans
           if (posIdx >= hit.positionIndex && posIdx < hit.positionIndex + hit.matchedMonomers.length) {
             const annot = this._cache.annotations.find((a) => a.id === hit.annotationId);
             if (annot) {
@@ -142,6 +189,29 @@ export class AnnotationRenderer {
     }
 
     return lines;
+  }
+
+  /** Finds a per-row region span hit covering the given position, or null. */
+  private _findRowRegionHit(rowIdx: number, posIdx: number): SeqAnnotationHit | null {
+    this._ensureRowCache();
+    if (!this._rowCache) return null;
+    const rowData = this._rowCache.data[rowIdx];
+    if (!rowData) return null;
+    for (const hit of rowData) {
+      if (hit.endPositionIndex != null && posIdx >= hit.positionIndex && posIdx <= hit.endPositionIndex)
+        return hit;
+    }
+    return null;
+  }
+
+  /** Returns true if the row has any per-row region span data (hits with endPositionIndex set).
+   *  When true, column-level region mapping should NOT be used as fallback for this row. */
+  private _rowHasRegionData(rowIdx: number): boolean {
+    this._ensureRowCache();
+    if (!this._rowCache) return false;
+    const rowData = this._rowCache.data[rowIdx];
+    if (!rowData) return false;
+    return rowData.some((h) => h.endPositionIndex != null);
   }
 
   // --- Internal caching ---
@@ -193,7 +263,12 @@ export class AnnotationRenderer {
   }
 
   private _ensureRowCache(): void {
-    if (this._annotCol === undefined) {
+    // Re-lookup companion column when the sequence column version changes.
+    // This ensures we pick up the companion column if it was created after
+    // the first render (e.g., liability scan creates it later).
+    const seqVersion = this.tableCol.version;
+    if (this._annotColLookupVersion !== seqVersion) {
+      this._annotColLookupVersion = seqVersion;
       const annotColName = this.tableCol.getTag(bioTAGS.annotationColumnName);
       if (annotColName) {
         try {

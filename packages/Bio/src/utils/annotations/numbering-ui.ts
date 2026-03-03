@@ -4,10 +4,13 @@ import * as DG from 'datagrok-api/dg';
 
 import {TAGS as bioTAGS} from '@datagrok-libraries/bio/src/utils/macromolecule';
 import {
-  SeqAnnotation, AnnotationCategory, AnnotationVisualType,
+  SeqAnnotation, SeqAnnotationHit, AnnotationCategory,
 } from '@datagrok-libraries/bio/src/utils/macromolecule/annotations';
 import {NumberingScheme} from '@datagrok-libraries/bio/src/utils/macromolecule/numbering-schemes';
-import {setColumnAnnotations, getColumnAnnotations} from './annotation-manager';
+import {
+  setColumnAnnotations, getColumnAnnotations,
+  getOrCreateAnnotationColumn, getRowAnnotations, setRowAnnotations, mergeRowHits,
+} from './annotation-manager';
 import {_package} from '../../package';
 
 export function showNumberingSchemeDialog(): void {
@@ -40,12 +43,10 @@ export function showNumberingSchemeDialog(): void {
       ui.divText('Uses AntPack (Python) for numbering. No external dependencies required.', {style: {fontSize: '11px', color: '#888', marginTop: '8px'}}),
     ]))
     .onOK(async () => {
+      const seqCol = seqInput.value!;
+      const schemeName = schemeInput.value!;
+      const pi = DG.TaskBarProgressIndicator.create(`Applying ${schemeName} numbering...`);
       try {
-        const seqCol = seqInput.value!;
-        const schemeName = schemeInput.value!;
-
-        grok.shell.info(`Running AntPack numbering (${schemeName})...`);
-
         // Call Python script
         const result: DG.DataFrame = await grok.functions.call(
           'Bio:NumberAntibodySequences', {
@@ -64,6 +65,7 @@ export function showNumberingSchemeDialog(): void {
         const posNamesCol = result.getCol('position_names');
         const chainTypeCol = result.getCol('chain_type');
         const annotJsonCol = result.getCol('annotations_json');
+        const numberingMapCol = result.col('numbering_map');
 
         // Use the first non-empty result for column-level position names
         let positionNames = '';
@@ -89,14 +91,54 @@ export function showNumberingSchemeDialog(): void {
         seqCol.setTag(bioTAGS.positionNames, positionNames);
         seqCol.setTag(bioTAGS.numberingScheme, schemeName);
 
-        // Set region annotations
+        // Set column-level region annotations
+        let regionAnnotations: SeqAnnotation[] = [];
         if (populateRegions.value) {
           try {
-            const regionAnnotations: SeqAnnotation[] = JSON.parse(annotationsJson);
+            regionAnnotations = JSON.parse(annotationsJson);
             const existing = getColumnAnnotations(seqCol).filter((a) => a.category !== AnnotationCategory.Structure);
             setColumnAnnotations(seqCol, [...existing, ...regionAnnotations]);
           } catch (err) {
             console.warn('Failed to parse region annotations from AntPack result:', err);
+          }
+        }
+
+        // Store per-row region spans in the companion annotation column
+        if (populateRegions.value && numberingMapCol) {
+          try {
+            const annotCol = getOrCreateAnnotationColumn(df, seqCol);
+            for (let i = 0; i < result.rowCount; i++) {
+              const mapStr = numberingMapCol.get(i);
+              const rowAnnotJson = annotJsonCol.get(i);
+              if (!mapStr || !rowAnnotJson) {
+                // Preserve existing liability hits for rows with no numbering
+                continue;
+              }
+              const posToCharIdx: Record<string, number> = JSON.parse(mapStr);
+              const rowRegions: SeqAnnotation[] = JSON.parse(rowAnnotJson);
+
+              // Convert region annotations to row-level hits with character indices
+              const regionHits: SeqAnnotationHit[] = [];
+              for (const region of rowRegions) {
+                if (region.start == null || region.end == null) continue;
+                const startCharIdx = posToCharIdx[region.start];
+                const endCharIdx = posToCharIdx[region.end];
+                if (startCharIdx == null || endCharIdx == null) continue;
+                regionHits.push({
+                  annotationId: region.id,
+                  positionIndex: startCharIdx,
+                  endPositionIndex: endCharIdx,
+                  positionName: region.start,
+                  matchedMonomers: '',
+                });
+              }
+
+              // Merge: preserve existing liability hits, replace region hits
+              const existingHits = getRowAnnotations(annotCol, i) ?? [];
+              setRowAnnotations(annotCol, i, mergeRowHits(existingHits, regionHits, true, false));
+            }
+          } catch (err) {
+            console.warn('Failed to store per-row region data:', err);
           }
         }
 
@@ -114,6 +156,8 @@ export function showNumberingSchemeDialog(): void {
       } catch (err: any) {
         grok.shell.error(`Numbering failed: ${err.message ?? err}`);
         console.error(err);
+      } finally {
+        pi.close();
       }
     });
 

@@ -1,13 +1,11 @@
 /* eslint-disable max-len */
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
-import * as ui from 'datagrok-api/ui';
 
 import {ALPHABET, NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';
 import {ISeqHelper} from '@datagrok-libraries/bio/src/utils/seq-helper';
 
 import {_package} from '../package';
-import {TAGS as bioTags} from '@datagrok-libraries/bio/src/utils/macromolecule';
 import {AnnotationRenderer} from '@datagrok-libraries/bio/src/utils/cell-renderer-annotations';
 import {getColumnAnnotations} from './annotations/annotation-manager';
 import {AnnotationCategory} from '@datagrok-libraries/bio/src/utils/macromolecule/annotations';
@@ -36,36 +34,26 @@ export function addCopyMenuUI(cell: DG.Cell, menu: DG.Menu, seqHelper: ISeqHelpe
 
   // Annotation context menu items
   const srcCol = cell.column;
-  const srcRowIdx = cell.rowIndex;
   const annotations = getColumnAnnotations(srcCol);
   if (annotations.length > 0) {
-    const sh = seqHelper.getSeqHandler(srcCol);
     const annotRenderer = new AnnotationRenderer(srcCol);
     if (annotRenderer.hasAnnotations()) {
-      // Determine position from cell
-      const positionShift = Math.max(parseInt(srcCol.getTag(bioTags.positionShift) ?? '0'), 0);
-      const seqSS = sh.getSplitted(srcRowIdx);
-
       // Add annotation info submenu
       const structAnnots = annotations.filter((a) => a.category === AnnotationCategory.Structure);
       if (structAnnots.length > 0) {
         const annotMenu = menu.group('Annotations');
 
-        // Extract region actions
+        // Extract region actions (uses per-row data for unaligned sequences)
         for (const annot of structAnnots) {
           if (annot.start && annot.end) {
             annotMenu.item(`Extract ${annot.name} as Column`, () => {
-              try {
-                const regCol = sh.getRegion(
-                  sh.posList.indexOf(annot.start!),
-                  sh.posList.indexOf(annot.end!),
-                  `${srcCol.name}(${annot.name})`,
-                );
-                srcCol.dataFrame.columns.add(regCol);
-                grok.data.detectSemanticTypes(srcCol.dataFrame);
-              } catch (err: any) {
-                grok.shell.error(`Failed to extract region: ${err.message ?? err}`);
-              }
+              import('./annotations/annotation-actions').then((m) => {
+                try {
+                  m.extractAnnotatedRegion(srcCol.dataFrame, srcCol, annot.name, seqHelper);
+                } catch (err: any) {
+                  grok.shell.error(`Failed to extract region: ${err.message ?? err}`);
+                }
+              });
             });
           }
         }
