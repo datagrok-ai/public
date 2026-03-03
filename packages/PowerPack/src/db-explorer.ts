@@ -389,7 +389,7 @@ Supported types are ${[DG.COLUMN_TYPE.STRING, DG.COLUMN_TYPE.BIG_INT, DG.COLUMN_
 
     const dbName = col.tags.get(DG.Tags.Db);
     const schemaName = col.tags.get(DG.Tags.DbSchema);
-    const connId: string = df.tags.get(DG.Tags.DataConnectionNqName) ?? df.tags.get(DG.Tags.DataConnectionId);
+    const connId: string = df.tags.get(DG.Tags.DataConnectionNqName)?.length > 0 ? df.tags.get(DG.Tags.DataConnectionNqName) : df.tags.get(DG.Tags.DataConnectionId);
     const dbColName = col.tags.get(DG.Tags.DbColumn);
     const tableName = col.tags.get(DG.Tags.DbTable);
 
