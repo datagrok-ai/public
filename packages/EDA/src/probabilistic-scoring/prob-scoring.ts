@@ -783,6 +783,20 @@ export class Pmpo {
     });
     form.append(descrInput.root);
 
+    descrInput.addValidator(() => {
+      if (descrInput.value == null || descrInput.value.length < 1)
+        return 'Select at least one descriptor column.';
+      if (desInput.value != null && descrInput.value.includes(desInput.value))
+        return 'Desirability column cannot be used as a descriptor.';
+      const zeroStdevCols = descrInput.value.filter((col) => col.stats.stdev === 0).map((col) => col.name);
+      if (zeroStdevCols.length > 0)
+        return `Descriptor columns with zero variance: ${zeroStdevCols.join(', ')}`;
+      const nullCols = descrInput.value.filter((col) => col.stats.missingValueCount === col.length).map((col) => col.name);
+      if (nullCols.length > 0)
+        return `Descriptor columns with only missing values: ${nullCols.join(', ')}`;
+      return null;
+    });
+
     // Desirability column input and related controls
     const setVisibilityOfDesirabilityAuxInputs = (value: DG.Column) => {
       if (value.type === DG.COLUMN_TYPE.BOOL)
@@ -815,6 +829,33 @@ export class Pmpo {
     });
     form.append(desInput.root);
 
+    desInput.addValidator(() => {
+      if (desInput.value == null)
+        return 'Select a desirability column.';
+      if (descrInput.value != null && descrInput.value.includes(desInput.value))
+        return 'Desirability column cannot be used as a descriptor.';
+      if (desInput.value.type === DG.COLUMN_TYPE.BOOL) {
+        if (desInput.value.stats.stdev === 0)
+          return 'All desirability values are the same - scoring is not feasible.';
+      } else if (desInput.value.type === DG.COLUMN_TYPE.STRING) {
+        if (desInput.value.categories.length < 2)
+          return 'String desirability column must have at least 2 categories.';
+      } else {
+        if (desInput.value.stats.stdev === 0) {
+          return desInput.value.stats.missingValueCount < desInput.value.length ?
+            'All desirability values are the same - scoring is not feasible.' :
+            'Empty column cannot be used as desirability column.';
+        }
+        if (desirabilityThresholdInput.value == null)
+          return 'Specify non-null desirability threshold.';
+        if (!isDesirabilityValid(desInput.value, desirabilityThresholdInput.value, signInput.value as EQUALITY_SIGN)) {
+          return `All compounds are either desired or non-desired for ${desInput.value.name} ` +
+            `${signInput.value} ${desirabilityThresholdInput.value}. Adjust the threshold or condition.`;
+        }
+      }
+      return null;
+    });
+
     let areComputationsBlocked = false;
 
     const signInput = ui.input.choice('Condition', {
@@ -841,6 +882,17 @@ export class Pmpo {
           checkAutoTuneAndRun();
         }
       },
+    });
+
+    desirabilityThresholdInput.addValidator(() => {
+      if (desInput.value == null || desInput.value.type === DG.COLUMN_TYPE.BOOL ||
+        desInput.value.type === DG.COLUMN_TYPE.STRING)
+        return null;
+      if (desirabilityThresholdInput.value == null)
+        return 'Specify non-null desirability threshold.';
+      if (!isDesirabilityValid(desInput.value, desirabilityThresholdInput.value, signInput.value as EQUALITY_SIGN))
+        return 'Adjust the threshold to get both desired and non-desired groups.';
+      return null;
     });
 
     const desOptionsInputDiv = ui.divV([signInput.root, desirabilityThresholdInput.root]);
@@ -870,6 +922,14 @@ export class Pmpo {
               checkAutoTuneAndRun();
             }
           },
+        });
+
+        desirableCategoriesInput.addValidator(() => {
+          if (desirableCategoriesInput!.value == null || desirableCategoriesInput!.value.length === 0)
+            return 'Select at least one preferable category.';
+          if (desInput.value != null && desirableCategoriesInput!.value.length === desInput.value.categories.length)
+            return 'At least one category must be non-preferable.';
+          return null;
         });
 
         desOptionsInputDiv.append(desirableCategoriesInput.root);
@@ -919,83 +979,31 @@ export class Pmpo {
           areTunedSettingsUsed = true;
           runComputations();
         } else {
-          applyValidationState({
-            valid: false,
-            errors: new Map<PmpoInputId, string>([
-              ['descriptors', optimalSettings.msg],
-              ['desirability', optimalSettings.msg],
-            ]),
-          });
-          //autoTuneInput.value = false; // revert to manual mode if optimization failed
+          grok.shell.warning(optimalSettings.msg);
+          descrInput.input.classList.add('d4-invalid');
+          desInput.input.classList.add('d4-invalid');
+          ui.tooltip.bind(descrInput.input, optimalSettings.msg);
+          ui.tooltip.bind(desInput.input, optimalSettings.msg);
         }
       } else
         runComputations();
     }; // setOptimalParametersAndRun
 
-    // Default tooltips for valid inputs
-    const defaultTooltips: Partial<Record<PmpoInputId, TooltipContent>> = {
-      'descriptors': 'Descriptor columns used for model construction.',
-      'desirability': 'Desirability column.',
-      'threshold': 'Boundary value that separates desired from non-desired compounds.',
-      'categories': 'Select which categories should be treated as desirable.',
-    };
-
-    // Gets the valid-state tooltip for desirability (contextual for numeric columns)
-    const getDesirabilityValidTooltip = (): TooltipContent => {
-      if (desInput.value != null && desInput.value.type !== DG.COLUMN_TYPE.BOOL &&
-        desInput.value.type !== DG.COLUMN_TYPE.STRING && desirabilityThresholdInput.value != null) {
-        return () => ui.markdown(`Desirability rule:
-          <div align="center">
-          **${desInput.value!.name} ${signInput.value} ${desirabilityThresholdInput.value}**.
-          </div>
-          Matching compounds → desired, the rest → non-desired.`);
-      }
-
-      return defaultTooltips['desirability']!;
-    };
-
-    // Applies validation result to the UI
-    const applyValidationState = (result: PmpoValidationResult) => {
-      const inputElements: Partial<Record<PmpoInputId, HTMLElement>> = {
-        'descriptors': descrInput.input,
-        'desirability': desInput.input,
-        'threshold': desirabilityThresholdInput.input,
-      };
+    // Validates all inputs before running computations using registered validators
+    const areInputsValid = (): boolean => {
+      const results = [
+        descrInput.validate(),
+        desInput.validate(),
+        desirabilityThresholdInput.validate(),
+        pInput.validate(),
+        rInput.validate(),
+        qInput.validate(),
+      ];
 
       if (desirableCategoriesInput != null)
-        inputElements['categories'] = desirableCategoriesInput.input;
+        results.push(desirableCategoriesInput.validate());
 
-      for (const [id, element] of Object.entries(inputElements) as [PmpoInputId, HTMLElement][]) {
-        const error = result.errors.get(id);
-
-        if (error != null) {
-          element.classList.add('d4-invalid');
-          ui.tooltip.bind(element, error);
-        } else {
-          element.classList.remove('d4-invalid');
-          const tooltip = id === 'desirability' ? getDesirabilityValidTooltip() : defaultTooltips[id];
-
-          if (tooltip != null)
-            ui.tooltip.bind(element, tooltip);
-        }
-      }
-    };
-
-    // Validates all inputs before running computations
-    const areInputsValid = (): boolean => {
-      const result = Pmpo.validateInputs({
-        descriptors: descrInput.value,
-        desirability: desInput.value,
-        threshold: desirabilityThresholdInput.value,
-        sign: signInput.value as EQUALITY_SIGN,
-        desirableCategories: desirableCategoriesInput?.value ?? null,
-        pValue: pInput.value,
-        r2: rInput.value,
-        qCutoff: qInput.value,
-      });
-
-      applyValidationState(result);
-      return result.valid;
+      return results.every((r) => r);
     }; // areInputsValid
 
     const checkAutoTuneAndRun = () => {
@@ -1046,6 +1054,14 @@ export class Pmpo {
     });
     form.append(pInput.root);
 
+    pInput.addValidator(() => {
+      if (pInput.value == null)
+        return 'P-value is required.';
+      if (pInput.value < P_VAL_TRES_MIN || pInput.value > P_VAL_TRES_MAX)
+        return `P-value must be between ${P_VAL_TRES_MIN} and ${P_VAL_TRES_MAX}.`;
+      return null;
+    });
+
     // R² threshold input
     const rInput = ui.input.float('R²', {
       // @ts-ignore
@@ -1070,6 +1086,14 @@ export class Pmpo {
     });
     form.append(rInput.root);
 
+    rInput.addValidator(() => {
+      if (rInput.value == null)
+        return 'R² is required.';
+      if (rInput.value < R2_MIN || rInput.value > R2_MAX)
+        return `R² must be between ${R2_MIN} and ${R2_MAX}.`;
+      return null;
+    });
+
     // q-cutoff input
     const qInput = ui.input.float('q-cutoff', {
       // @ts-ignore
@@ -1092,6 +1116,14 @@ export class Pmpo {
       },
     });
     form.append(qInput.root);
+
+    qInput.addValidator(() => {
+      if (qInput.value == null)
+        return 'Q-cutoff is required.';
+      if (qInput.value < Q_CUTOFF_MIN || qInput.value > Q_CUTOFF_MAX)
+        return `Q-cutoff must be between ${Q_CUTOFF_MIN} and ${Q_CUTOFF_MAX}.`;
+      return null;
+    });
 
     const setEnability = (toEnable: boolean) => {
       pInput.enabled = toEnable;
