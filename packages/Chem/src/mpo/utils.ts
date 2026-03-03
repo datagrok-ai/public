@@ -2,10 +2,12 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
 import {
+  DEFAULT_AGGREGATION,
   DESIRABILITY_PROFILE_TYPE,
   DesirabilityProfile,
   PropertyDesirability,
   WeightedAggregation,
+  createDefaultNumerical,
 } from '@datagrok-libraries/statistics/src/mpo/mpo';
 
 export {MPO_PROFILE_CHANGED_EVENT, MPO_PROFILE_DELETED_EVENT} from '@datagrok-libraries/statistics/src/mpo/utils';
@@ -21,7 +23,8 @@ export enum MpoPathMode {
 }
 
 export const MPO_TEMPLATE_PATH = 'System:AppData/Chem/mpo';
-export const MPO_PATH = 'Mpo';
+export const MPO_PATH = 'MPOProfiles';
+export const MAX_MPO_PROPERTIES = 20;
 
 export async function loadMpoProfiles(): Promise<MpoProfileInfo[]> {
   const files = await grok.dapi.files.list(MPO_TEMPLATE_PATH);
@@ -37,6 +40,7 @@ export async function loadMpoProfiles(): Promise<MpoProfileInfo[]> {
         fileName: file.name,
         name: content.name ?? file.name.replace(/\.json$/i, ''),
         description: content.description ?? '',
+        aggregation: content.aggregation,
         properties: content.properties,
       });
     } catch (e) {
@@ -76,7 +80,7 @@ export async function computeMpo(
     df: df,
     profileName,
     currentProperties: JSON.stringify(mappedProperties),
-    aggregation: aggregation ?? 'Average',
+    aggregation: aggregation ?? profile.aggregation ?? DEFAULT_AGGREGATION,
     silent,
   });
   return df.col(profileName) ? [profileName] : [];
@@ -129,6 +133,48 @@ export function updateMpoPath(
     window.history.replaceState({}, '', newPath);
 
   view.path = newPath;
+}
+
+export function createDefaultProfile(): DesirabilityProfile {
+  return {
+    type: DESIRABILITY_PROFILE_TYPE,
+    name: '',
+    description: '',
+    properties: {
+      'Property 1': createDefaultNumerical(),
+      'Property 2': createDefaultNumerical(),
+      'Property 3': createDefaultNumerical(),
+    },
+  };
+}
+
+export function createProfileForDf(df: DG.DataFrame): DesirabilityProfile {
+  const props: {[key: string]: PropertyDesirability} = {};
+  let count = 0;
+  for (const col of df.columns.numerical) {
+    if (count >= MAX_MPO_PROPERTIES)
+      break;
+    props[col.name] = createDefaultNumerical(1, col.min, col.max);
+    count++;
+  }
+  return {type: DESIRABILITY_PROFILE_TYPE, name: '', description: '', properties: props};
+}
+
+export function mergeProfileWithDf(existing: DesirabilityProfile, df: DG.DataFrame): DesirabilityProfile {
+  const merged: DesirabilityProfile = {
+    ...existing,
+    properties: structuredClone(existing.properties),
+  };
+
+  const existingLower = new Set(Object.keys(merged.properties).map((n) => n.toLowerCase()));
+  for (const col of df.columns.numerical) {
+    if (Object.keys(merged.properties).length >= MAX_MPO_PROPERTIES)
+      break;
+    if (!existingLower.has(col.name.toLowerCase()))
+      merged.properties[col.name] = createDefaultNumerical(1, col.min, col.max);
+  }
+
+  return merged;
 }
 
 export function deepEqual<T>(current: T, original: T): boolean {

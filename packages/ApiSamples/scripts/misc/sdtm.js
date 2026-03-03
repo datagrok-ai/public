@@ -8,7 +8,7 @@ let result = null;
 
 let getTable = async function(domain) {
   let info = links[domain];
-  let df = await grok.data.files.openTable(`System:AppData/ClinicalCase/${domain}.csv`);
+  let df = await grok.data.files.openTable(`System:AppData/ApiSamples/${domain}.csv`);
   let t = df.clone(null, Object.keys(info).map(e => info[e]));
   t.columns.addNew('domain', DG.TYPE.STRING).init(domain);
   for (let name in info)

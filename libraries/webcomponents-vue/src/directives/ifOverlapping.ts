@@ -21,11 +21,9 @@ export const ifOverlapping = {
     const updateFn = (isOverlapping: boolean) => {
       if (isOverlapping && loader) {
         el.append(loader);
-        el.classList.add('ui-box');
       }
       if (!isOverlapping && loader) {
         loader.remove();
-        el.classList.remove('ui-box');
       }
     };
 

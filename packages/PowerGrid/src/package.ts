@@ -19,8 +19,6 @@ import {PieChartCellRenderer} from './sparklines/piechart';
 import {RadarChartCellRender} from './sparklines/radar-chart';
 import {ScatterPlotCellRenderer} from './sparklines/scatter-plot';
 import {names, SparklineType, sparklineTypes, SummarySettingsBase} from './sparklines/shared';
-import * as PinnedUtils from '@datagrok-libraries/gridext/src/pinned/PinnedUtils';
-import {PinnedColumn} from '@datagrok-libraries/gridext/src/pinned/PinnedColumn';
 import {FormsViewer} from '@datagrok-libraries/utils/src/viewers/forms-viewer';
 import {FormCellRenderer} from './forms/forms';
 import {scWebGPUPointHitTest, scWebGPURender} from './webgpu/scatterplot';
@@ -270,13 +268,6 @@ export class PackageFunctions {
   }
 
 
-  @grok.decorators.func({outputs: [{type: 'object', name: 'result'}]})
-  static addPinnedColumn(
-    @grok.decorators.param({'type': 'object'}) gridCol: DG.GridColumn) : PinnedColumn {
-    return PinnedUtils.addPinnedColumn(gridCol);
-  }
-
-
   @grok.decorators.func()
   static demoTestUnitsCellRenderer() {
     const col1 = DG.Column.fromStrings('kg', ['a', 'b']).setTag('foo', 'bar');
@@ -291,10 +282,17 @@ export class PackageFunctions {
     grok.shell.info('Different renderers even though semantic types are the same');
   }
 
+  @grok.decorators.func({outputs: [{type: 'object', name: 'result'}]})
+  static addPinnedColumn(
+    @grok.decorators.param({'type': 'object'}) gridCol: DG.GridColumn) {
+    gridCol.pin();
+    return gridCol;
+  }
+
 
   @grok.decorators.autostart({tags: ['autostart']})
   static async _autoPowerGrid() {
-    PinnedUtils.registerPinnedColumns();
+    //PinnedUtils.registerPinnedColumns();
     DG.GridCellRenderer.register(new ScatterPlotCellRenderer());
 
     // handling column remove/rename in sparkline columns

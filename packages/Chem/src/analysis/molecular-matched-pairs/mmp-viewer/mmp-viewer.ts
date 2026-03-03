@@ -459,12 +459,12 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
   setupFragmentsTab(): void {
     //Fragments tab
     this.tp = getMmpTrellisPlot(this.pairedGrids!.fpGrid, this.activityMeanNames, this.colorPalette!);
-    this.tp.onEvent('d4-trellis-plot-inner-viewer-clicked').subscribe((cats) => {
-      //grok.shell.info(cats);
-      this.pairedGrids?.refilterMatchedPairsByFragments(cats);
+    (this.tp as DG.TrellisPlotViewer).onTrellisCurrentCellChanged.subscribe((event) => {
+      const matchCond = (event as any).args.matchCondition;
+      !Object.keys(matchCond).length ? this.pairedGrids?.mmpMaskFrag.setAll(false) :
+        this.pairedGrids?.refilterMatchedPairsByFragments(matchCond[MMP_NAMES.FROM], matchCond[MMP_NAMES.TO]);
       this.pairedGrids?.mmpGridFrag.dataFrame.rows.requestFilter();
     });
-
     //setup trellis filters
     const trellisTv = DG.TableView.create(this.pairedGrids!.fpGrid.dataFrame, false);
     this.pairedGrids!.filters = trellisTv.getFiltersGroup();

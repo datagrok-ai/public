@@ -541,6 +541,8 @@ export interface IDartApi {
   grok_Grid_TableRowToGrid(grid: any, tableRow: Num): any;
   grok_Grid_GridRowToTable(grid: any, gridRow: Num): any;
   grok_Grid_Render(grid: any, g: any, bounds: any): any;
+  grok_Grid_pinColumns(grid: any, columns: any): any;
+  grok_Grid_unpinColumns(grid: any, columns: any): any;
   grok_User(): any;
   grok_User_Get_Picture(u: any): any;
   grok_SemanticValue_Get_GridCell(v: any): any;
@@ -551,6 +553,8 @@ export interface IDartApi {
   grok_Project(): any;
   grok_Project_Get_IsLocal(p: any): any;
   grok_Project_Open(p: any, closeAll: Bool, openViews: Bool, createViews: Bool): Promise<any>;
+  grok_Shell_Get_Projects(): any;
+  grok_Project_AddTableView(p: any, t: any): any;
   grok_ColorPicker(color: any, onChanged: any, colorDiv: any, onOk: any, onCancel: any): any;
   grok_CodeEditor(script: String, mode: String, placeholder: String, root: any): any;
   grok_TaskBarProgressIndicator_Create(name: String, cancelable: Bool, pausable: Bool, spinner: Bool): any;
@@ -1148,7 +1152,7 @@ export interface IDartApi {
   grok_DataFrame_GetSortedOrder(t: any, sortByColumnIds: any, sortOrders: any, mask: any): any;
   grok_DataFrame_FromByteArray(bytes: any): any;
   grok_DataFrame_ToByteArray(t: any): any;
-  grok_DataFrame_ToParquet(t: any, compress: any): any;
+  grok_DataFrame_ToParquet(t: any, compress: Bool): any;
   grok_DataFrame_ToArrow(t: any): any;
   grok_DataFrame_ExportAndReopen(t: any): any;
   grok_Map_Get(map: any, key: any): any;

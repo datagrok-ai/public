@@ -550,6 +550,16 @@ export async function manageMonomerLibrariesViewTreeBrowser(treeNode: any) : Pro
   await PackageFunctions.manageMonomerLibrariesViewTreeBrowser(treeNode);
 }
 
+//name: Monomer Collections
+//tags: app
+//output: view result
+//meta.role: app
+//meta.browsePath: Peptides
+//meta.icon: files/icons/monomers.png
+export async function monomerCollectionsApp() : Promise<any> {
+  return await PackageFunctions.monomerCollectionsApp();
+}
+
 //description: As FASTA...
 //meta.role: fileExporter
 export function saveAsFasta() : void {

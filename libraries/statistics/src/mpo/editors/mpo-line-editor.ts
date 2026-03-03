@@ -3,9 +3,17 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import Konva from 'konva';
+import type Konva from 'konva';
 import {DesirabilityLine, NumericalDesirability} from '../mpo';
 import {Subject} from 'rxjs';
+
+let _konva: typeof Konva | undefined;
+
+async function getKonva(): Promise<typeof Konva> {
+  if (!_konva)
+    _konva = (await import('konva')).default;
+  return _konva;
+}
 
 type Point = [number, number];
 
@@ -61,7 +69,7 @@ export class MpoDesirabilityLineEditor {
   supportsModeDialog: boolean = true;
 
   private _prop: NumericalDesirability;
-  private barsLayer: Konva.Layer;
+  private barsLayer?: Konva.Layer;
   private pendingBarValues?: number[];
 
   private stage?: Konva.Stage;
@@ -79,10 +87,16 @@ export class MpoDesirabilityLineEditor {
   // Flag to prevent touchpad right-click from adding a new point
   private ignoreNextClick = false;
 
+  private dragScaleX = 0;
+  private dragScaleY = 0;
+  private _width: number;
+  private _height: number;
+
   constructor(prop: NumericalDesirability, width: number, height: number) {
     this._prop = prop;
+    this._width = width;
+    this._height = height;
     this.ensureDefaultLine();
-    this.barsLayer = new Konva.Layer();
     this.root.style.width = `${width}px`;
     this.root.style.height = `${height}px`;
     this.root.style.position = 'relative';
@@ -99,6 +113,13 @@ export class MpoDesirabilityLineEditor {
     this._prop.line = [[min, 0.5], [max, 0.5]];
   }
 
+  private updateDragScales(): void {
+    const plotWidth = this._width - EDITOR_PADDING.left - EDITOR_PADDING.right;
+    const plotHeight = this._height - EDITOR_PADDING.top - EDITOR_PADDING.bottom;
+    this.dragScaleX = (this.getMaxX() - this.getMinX()) / plotWidth;
+    this.dragScaleY = 1 / plotHeight;
+  }
+
   private isInPlotArea(pos: {x: number, y: number}, width: number, height: number) {
     return (
       pos.x >= EDITOR_PADDING.left &&
@@ -108,11 +129,14 @@ export class MpoDesirabilityLineEditor {
     );
   }
 
-  private initKonva(width: number, height: number) {
+  private async initKonva(width: number, height: number) {
     if (!this.root.parentElement) {
       console.warn('Konva container not attached to DOM yet.');
       return;
     }
+
+    const Konva = await getKonva();
+    this.barsLayer = new Konva.Layer();
 
     this.stage = new Konva.Stage({
       container: this.root,
@@ -342,6 +366,7 @@ export class MpoDesirabilityLineEditor {
 
     // Enable curve drag (smooth)
     this.enableCurveDrag(width, height);
+    this.updateDragScales();
 
     // Initial draw
     if (this.pendingBarValues) {
@@ -393,18 +418,18 @@ export class MpoDesirabilityLineEditor {
 
   private drawAxes(minX: number, maxX: number, width: number, height: number) {
     this.layer!.add(
-      new Konva.Line({
+      new _konva!.Line({
         points: [EDITOR_PADDING.left, height - EDITOR_PADDING.bottom, width - EDITOR_PADDING.right, height - EDITOR_PADDING.bottom],
         stroke: 'grey',
         strokeWidth: 1,
       }),
-      new Konva.Line({
+      new _konva!.Line({
         points: [EDITOR_PADDING.left, EDITOR_PADDING.top, EDITOR_PADDING.left, height - EDITOR_PADDING.bottom],
         stroke: 'grey',
         strokeWidth: 1,
       }),
-      new Konva.Text({x: EDITOR_PADDING.left, y: height - EDITOR_PADDING.bottom + 3, text: minX.toFixed(1), fontSize: 9, fill: 'grey'}),
-      new Konva.Text({x: width - EDITOR_PADDING.right - 15, y: height - EDITOR_PADDING.bottom + 3, text: maxX.toFixed(1), fontSize: 9, fill: 'grey'}),
+      new _konva!.Text({x: EDITOR_PADDING.left, y: height - EDITOR_PADDING.bottom + 3, text: minX.toFixed(1), fontSize: 9, fill: 'grey'}),
+      new _konva!.Text({x: width - EDITOR_PADDING.right - 15, y: height - EDITOR_PADDING.bottom + 3, text: maxX.toFixed(1), fontSize: 9, fill: 'grey'}),
     );
   }
 
@@ -454,12 +479,14 @@ export class MpoDesirabilityLineEditor {
   }
 
   drawBars(values?: number[]) {
-    if (!this.barsLayer)
-      return;
-    this.barsLayer.destroyChildren();
-
     if (values)
       this.barValues = values;
+
+    if (!this.barsLayer) {
+      this.pendingBarValues = values;
+      return;
+    }
+    this.barsLayer.destroyChildren();
 
     if (!this.barValues || this.barValues.length === 0)
       return;
@@ -498,7 +525,7 @@ export class MpoDesirabilityLineEditor {
       const barW = (binWidth / (maxX - minX)) * plotWidth - 1;
       const barH = (count / maxCount) * plotHeight;
 
-      const rect = new Konva.Rect({
+      const rect = new _konva!.Rect({
         x: barX,
         y: EDITOR_PADDING.top + plotHeight - barH,
         width: barW,
@@ -508,10 +535,10 @@ export class MpoDesirabilityLineEditor {
         strokeWidth: 0.5,
       });
 
-      this.barsLayer.add(rect);
+      this.barsLayer!.add(rect);
     });
 
-    this.barsLayer.batchDraw();
+    this.barsLayer!.batchDraw();
   }
 
   private enableCurveDrag(width: number, height: number) {
@@ -524,12 +551,6 @@ export class MpoDesirabilityLineEditor {
     let startSigma = 0;
     let startX0 = 0;
     let startK = 0;
-
-    const plotWidth = width - EDITOR_PADDING.left - EDITOR_PADDING.right;
-    const plotHeight = height - EDITOR_PADDING.top - EDITOR_PADDING.bottom;
-
-    const scaleX = (this.getMaxX() - this.getMinX()) / plotWidth;
-    const scaleY = 1 / plotHeight;
 
     this.stage.on('mousedown touchstart', (evt) => {
       if (this._prop.mode === 'freeform')
@@ -567,13 +588,13 @@ export class MpoDesirabilityLineEditor {
       const dy = pos.y - startPointer.y;
 
       if (this._prop.mode === 'gaussian') {
-        this._prop.mean = startMean + dx * scaleX;
-        this._prop.sigma = Math.max(0.01, startSigma + (-dy) * scaleY * (this.getMaxX() - this.getMinX()));
+        this._prop.mean = startMean + dx * this.dragScaleX;
+        this._prop.sigma = Math.max(0.01, startSigma + (-dy) * this.dragScaleY * (this.getMaxX() - this.getMinX()));
       }
 
       if (this._prop.mode === 'sigmoid') {
-        this._prop.x0 = startX0 + dx * scaleX;
-        this._prop.k = Math.max(0.1, startK + (-dy) * scaleY * 50);
+        this._prop.x0 = startX0 + dx * this.dragScaleX;
+        this._prop.k = Math.max(0.1, startK + (-dy) * this.dragScaleY * 50);
       }
 
       this._prop.line = this.computeLine();
@@ -612,7 +633,7 @@ export class MpoDesirabilityLineEditor {
     const coords = mapper.toCanvasCoords([x, y]);
 
     if (!this.specialHandle) {
-      this.specialHandle = new Konva.Circle({
+      this.specialHandle = new _konva!.Circle({
         x: coords.x,
         y: coords.y,
         radius: 7,
@@ -647,6 +668,40 @@ export class MpoDesirabilityLineEditor {
       this.specialHandle.position(coords);
     }
     this.layer!.batchDraw();
+  }
+
+  setRange(min: number, max: number): void {
+    const oldMin = this.getMinX();
+    const oldMax = this.getMaxX();
+    const oldRange = oldMax - oldMin;
+    const newRange = max - min;
+
+    if (oldRange !== 0 && newRange !== 0) {
+      const scale = newRange / oldRange;
+      const remap = (x: number) => min + (x - oldMin) * scale;
+
+      if (this._prop.mean != null)
+        this._prop.mean = remap(this._prop.mean);
+      if (this._prop.sigma != null)
+        this._prop.sigma *= scale;
+      if (this._prop.x0 != null)
+        this._prop.x0 = remap(this._prop.x0);
+      if (this._prop.k != null)
+        this._prop.k /= scale;
+
+      for (const p of this._prop.line)
+        p[0] = remap(p[0]);
+
+      if (this._prop.freeformLine) {
+        for (const p of this._prop.freeformLine)
+          p[0] = remap(p[0]);
+      }
+    }
+
+    this._prop.min = min;
+    this._prop.max = max;
+    this.updateDragScales();
+    this.redrawAll(false);
   }
 
   setColumn(col: DG.Column | null): void {

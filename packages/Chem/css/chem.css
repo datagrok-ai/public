@@ -1092,6 +1092,14 @@
   flex: 0 0 auto;
 }
 
+.chem-profile-header .ui-input-root > .ui-input-options {
+  border-bottom: none !important;
+}
+
+.chem-profile-header .ui-input-root > .ui-input-options > .ui-input-description {
+  order: initial;
+}
+
 .chem-profile-editor-container {
   flex: 1 1 0;
   width: 100%;

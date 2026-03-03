@@ -2,7 +2,6 @@ import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
 
-import {delay} from '@datagrok-libraries/utils/src/test';
 
 
 /** Type for {@link DemoScript} step */
@@ -222,7 +221,7 @@ export class DemoScript {
     this._scrollTo(this._root, currentStep.offsetTop - this._mainHeader.offsetHeight);
     if (this._isAutomatic) {
       await this._countdown(entry as HTMLElement, entryIndicator as HTMLElement, stepDelay);
-      await delay(stepDelay);
+      await DG.delay(stepDelay);
     }
 
     const newEntryIndicator = ui.iconFA('check');

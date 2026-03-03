@@ -50,9 +50,19 @@ export class SeqHandler implements ISeqHandler {
     if (col.type !== DG.TYPE.STRING)
       throw new Error(`Unexpected column type '${col.type}', must be '${DG.TYPE.STRING}'.`);
     this._column = col;
-    const units: string | null = this._column.meta.units;
-    if (!units)
-      throw new Error('Units are not specified in column');
+    let units: string | null = this._column.meta.units;
+    if (!units) {
+      // it may be from layout that the macromolecule semtype is set but every other tag is missing, so we manually run detectors
+      if (!this._column.temp['seqHandlerDetectorRun']) {
+        this._column.temp['seqHandlerDetectorRun'] = true;
+        const detectorFunc = DG.Func.find({name: 'detectMacromolecule', meta: {role: 'semTypeDetector'}})[0];
+        if (detectorFunc)
+          detectorFunc.applySync({col: this._column});
+        units = this._column.meta.units;
+      }
+      if (!units)
+        throw new Error('Units are not specified in column');
+    }
     this._units = units!;
 
     this._notation = this.getNotation();
@@ -182,7 +192,7 @@ export class SeqHandler implements ISeqHandler {
 
       let aligned = uh.column.getTag(TAGS.aligned);
       if (aligned == null) {
-        aligned = uh.stats.sameLength ? ALIGNMENT.SEQ_MSA : ALIGNMENT.SEQ;
+        aligned = uh.stats.sameLength || uh.column.categories.slice(0, 5).filter((a) => !!a).every((a) => a.length > 100) ? ALIGNMENT.SEQ_MSA : ALIGNMENT.SEQ;
         uh.column.setTag(TAGS.aligned, aligned);
       }
 

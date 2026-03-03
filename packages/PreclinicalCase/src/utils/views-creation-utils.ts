@@ -8,7 +8,7 @@ import {createValidationView} from '../views/validation-table-view';
 import {createMatrixTableView} from '../views/matrix-table-view';
 import {createMeasurementProfileTableView} from '../views/measurement-profile-table-view';
 import {createMICrossDomainView} from '../views/mi-cross-domain-analysis';
-import {awaitCheck} from '@datagrok-libraries/test/src/test';
+import {awaitCheck} from '@datagrok-libraries/utils/src/test';
 
 export type StudyTableViewParams = {
   df: DG.DataFrame;

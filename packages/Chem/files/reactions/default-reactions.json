@@ -1,0 +1,576 @@
+[
+  {
+    "id": "suzuki-coupling",
+    "name": "Suzuki Coupling",
+    "reactionSmarts": "[c:1][Br].[#5]([OH])([OH])[c:2]>>[c:1][c:2]",
+    "mode": "two-component",
+    "category": "C-C Bond Formation",
+    "description": "Pd-catalyzed cross-coupling of an aryl halide with an aryl boronic acid to form a biaryl C-C bond.",
+    "tags": ["palladium", "cross-coupling", "biaryl"],
+    "exampleReactants": ["c1ccc(Br)cc1", "OB(O)c1ccccc1"]
+  },
+  {
+    "id": "suzuki-coupling-chloride",
+    "name": "Suzuki Coupling (Chloride)",
+    "reactionSmarts": "[c:1][Cl].[#5]([OH])([OH])[c:2]>>[c:1][c:2]",
+    "mode": "two-component",
+    "category": "C-C Bond Formation",
+    "description": "Pd-catalyzed cross-coupling of an aryl chloride with an aryl boronic acid.",
+    "tags": ["palladium", "cross-coupling", "biaryl"],
+    "exampleReactants": ["c1ccc(Cl)cc1", "OB(O)c1ccccc1"]
+  },
+  {
+    "id": "heck-reaction",
+    "name": "Heck Reaction",
+    "reactionSmarts": "[C:1]=[C:2].[c:3][Br]>>[C:1]=[C:2][c:3]",
+    "mode": "two-component",
+    "category": "C-C Bond Formation",
+    "description": "Pd-catalyzed coupling of an aryl halide with an alkene.",
+    "tags": ["palladium", "alkene", "vinylation"],
+    "exampleReactants": ["C=C", "c1ccc(Br)cc1"]
+  },
+  {
+    "id": "sonogashira-coupling",
+    "name": "Sonogashira Coupling",
+    "reactionSmarts": "[C:1]#[CH].[c:2][Br]>>[C:1]#[C][c:2]",
+    "mode": "two-component",
+    "category": "C-C Bond Formation",
+    "description": "Pd/Cu-catalyzed coupling of a terminal alkyne with an aryl halide.",
+    "tags": ["palladium", "copper", "alkyne"],
+    "exampleReactants": ["C#C", "c1ccc(Br)cc1"]
+  },
+  {
+    "id": "negishi-coupling",
+    "name": "Negishi Coupling",
+    "reactionSmarts": "[c:1][Br].[c:2][Zn][Cl]>>[c:1][c:2]",
+    "mode": "two-component",
+    "category": "C-C Bond Formation",
+    "description": "Pd-catalyzed cross-coupling of an aryl halide with an organozinc reagent.",
+    "tags": ["palladium", "zinc", "cross-coupling"]
+  },
+  {
+    "id": "stille-coupling",
+    "name": "Stille Coupling",
+    "reactionSmarts": "[c:1][Br].[c:2][Sn]([CH3])([CH3])[CH3]>>[c:1][c:2]",
+    "mode": "two-component",
+    "category": "C-C Bond Formation",
+    "description": "Pd-catalyzed cross-coupling of an aryl halide with an organotin compound.",
+    "tags": ["palladium", "tin", "cross-coupling"]
+  },
+  {
+    "id": "grignard-ketone",
+    "name": "Grignard Addition to Ketone",
+    "reactionSmarts": "[C:1][Mg][Br].[C:2](=[O:3])[C:4]>>[C:2]([O:3])([C:1])[C:4]",
+    "mode": "two-component",
+    "category": "C-C Bond Formation",
+    "description": "Addition of a Grignard reagent to a ketone forming a tertiary alcohol.",
+    "tags": ["grignard", "magnesium", "alcohol"]
+  },
+  {
+    "id": "grignard-aldehyde",
+    "name": "Grignard Addition to Aldehyde",
+    "reactionSmarts": "[C:1][Mg][Br].[CH:2]=[O:3]>>[CH:2]([O:3])[C:1]",
+    "mode": "two-component",
+    "category": "C-C Bond Formation",
+    "description": "Addition of a Grignard reagent to an aldehyde forming a secondary alcohol.",
+    "tags": ["grignard", "magnesium", "alcohol"]
+  },
+  {
+    "id": "wittig-reaction",
+    "name": "Wittig Reaction",
+    "reactionSmarts": "[C:1]=[P]([c])(c)c.[C:2]=O>>[C:2]=[C:1]",
+    "mode": "two-component",
+    "category": "C-C Bond Formation",
+    "description": "Reaction of a phosphorus ylide with an aldehyde/ketone to form an alkene.",
+    "tags": ["phosphorus", "alkene", "olefination"]
+  },
+  {
+    "id": "aldol-condensation",
+    "name": "Aldol Condensation",
+    "reactionSmarts": "[CH2:1][C:2]=O.[CH:3]=O>>[CH:1]([C:2]=O)[CH:3][OH]",
+    "mode": "two-component",
+    "category": "C-C Bond Formation",
+    "description": "Base-catalyzed condensation between two carbonyl compounds forming a beta-hydroxy carbonyl.",
+    "tags": ["aldol", "enolate", "condensation"]
+  },
+  {
+    "id": "amide-coupling",
+    "name": "Amide Coupling",
+    "reactionSmarts": "[C:1](=[O:2])[OH].[NH2:3]>>[C:1](=[O:2])[NH:3]",
+    "mode": "two-component",
+    "category": "Amide Bond Formation",
+    "description": "Condensation of a carboxylic acid with a primary amine to form an amide bond.",
+    "tags": ["amide", "peptide", "condensation"],
+    "exampleReactants": ["OC(=O)c1ccccc1", "Nc1ccccc1"]
+  },
+  {
+    "id": "amide-coupling-secondary",
+    "name": "Amide Coupling (Secondary Amine)",
+    "reactionSmarts": "[C:1](=[O:2])[OH].[NH:3]>>[C:1](=[O:2])[N:3]",
+    "mode": "two-component",
+    "category": "Amide Bond Formation",
+    "description": "Condensation of a carboxylic acid with a secondary amine.",
+    "tags": ["amide", "condensation"],
+    "exampleReactants": ["OC(=O)c1ccccc1", "c1ccc(NC)cc1"]
+  },
+  {
+    "id": "sulfonamide-formation",
+    "name": "Sulfonamide Formation",
+    "reactionSmarts": "[S:1](=[O:2])(=[O:3])[Cl].[NH2:4]>>[S:1](=[O:2])(=[O:3])[NH:4]",
+    "mode": "two-component",
+    "category": "Amide Bond Formation",
+    "description": "Reaction of a sulfonyl chloride with a primary amine to form a sulfonamide.",
+    "tags": ["sulfonamide", "sulfonyl chloride"],
+    "exampleReactants": ["O=S(=O)(Cl)c1ccccc1", "Nc1ccccc1"]
+  },
+  {
+    "id": "urea-formation",
+    "name": "Urea Formation",
+    "reactionSmarts": "[NH2:1].[O]=[C]=[O].[NH2:2]>>[NH:1]C(=O)[NH:2]",
+    "mode": "two-component",
+    "category": "Amide Bond Formation",
+    "description": "Reaction of two amines with phosgene or an isocyanate to form a urea.",
+    "tags": ["urea", "carbonyl"]
+  },
+  {
+    "id": "acyl-chloride-amine",
+    "name": "Acyl Chloride + Amine",
+    "reactionSmarts": "[C:1](=[O:2])[Cl].[NH2:3]>>[C:1](=[O:2])[NH:3]",
+    "mode": "two-component",
+    "category": "Amide Bond Formation",
+    "description": "Reaction of an acyl chloride with a primary amine to form an amide.",
+    "tags": ["acyl chloride", "amide"],
+    "exampleReactants": ["O=C(Cl)c1ccccc1", "Nc1ccccc1"]
+  },
+  {
+    "id": "cuaac-click",
+    "name": "CuAAC Click Reaction",
+    "reactionSmarts": "[C:1]#[CH].[CH2:2][N]=[N]=[N]>>[C:1]1=C([CH2:2])N=NN1",
+    "mode": "two-component",
+    "category": "Click Chemistry",
+    "description": "Copper(I)-catalyzed azide-alkyne cycloaddition forming a 1,2,3-triazole.",
+    "tags": ["click", "triazole", "copper", "cycloaddition"]
+  },
+  {
+    "id": "thiol-ene",
+    "name": "Thiol-Ene Click",
+    "reactionSmarts": "[SH:1].[C:2]=[C:3]>>[S:1][C:2][C:3]",
+    "mode": "two-component",
+    "category": "Click Chemistry",
+    "description": "Radical or nucleophilic addition of a thiol across an alkene.",
+    "tags": ["click", "thiol", "radical"]
+  },
+  {
+    "id": "thiol-michael",
+    "name": "Thiol-Michael Addition",
+    "reactionSmarts": "[SH:1].[C:2]=[C:3][C:4]=[O:5]>>[S:1][C:2][C:3][C:4]=[O:5]",
+    "mode": "two-component",
+    "category": "Click Chemistry",
+    "description": "Conjugate addition of a thiol to an alpha,beta-unsaturated carbonyl.",
+    "tags": ["click", "thiol", "michael"]
+  },
+  {
+    "id": "diels-alder",
+    "name": "Diels-Alder Reaction",
+    "reactionSmarts": "[C:1]=[C:2][C:3]=[C:4].[C:5]=[C:6]>>[C:1]1[C:2]=[C:3][C:4][C:6][C:5]1",
+    "mode": "two-component",
+    "category": "Ring Formation",
+    "description": "[4+2] cycloaddition of a diene and a dienophile to form a cyclohexene.",
+    "tags": ["cycloaddition", "pericyclic", "diene"]
+  },
+  {
+    "id": "reductive-amination",
+    "name": "Reductive Amination",
+    "reactionSmarts": "[C:1]=O.[NH2:2]>>[C:1][NH:2]",
+    "mode": "two-component",
+    "category": "C-N Bond Formation",
+    "description": "Condensation of a carbonyl with an amine followed by reduction to form a secondary amine.",
+    "tags": ["amine", "imine", "reduction"],
+    "exampleReactants": ["O=Cc1ccccc1", "Nc1ccccc1"]
+  },
+  {
+    "id": "buchwald-hartwig",
+    "name": "Buchwald-Hartwig Amination",
+    "reactionSmarts": "[c:1][Br].[NH2:2]>>[c:1][NH:2]",
+    "mode": "two-component",
+    "category": "C-N Bond Formation",
+    "description": "Pd-catalyzed C-N coupling of an aryl halide with an amine.",
+    "tags": ["palladium", "amination", "cross-coupling"],
+    "exampleReactants": ["c1ccc(Br)cc1", "NC1CCCCC1"]
+  },
+  {
+    "id": "williamson-ether",
+    "name": "Williamson Ether Synthesis",
+    "reactionSmarts": "[O-:1].[C:2][Br]>>[O:1][C:2]",
+    "mode": "two-component",
+    "category": "C-O Bond Formation",
+    "description": "SN2 reaction of an alkoxide with an alkyl halide to form an ether.",
+    "tags": ["ether", "sn2", "alkoxide"]
+  },
+  {
+    "id": "ester-formation",
+    "name": "Fischer Esterification",
+    "reactionSmarts": "[C:1](=[O:2])[OH].[OH:3][C:4]>>[C:1](=[O:2])[O:3][C:4]",
+    "mode": "two-component",
+    "category": "C-O Bond Formation",
+    "description": "Acid-catalyzed condensation of a carboxylic acid with an alcohol to form an ester.",
+    "tags": ["ester", "condensation", "alcohol"],
+    "exampleReactants": ["OC(=O)c1ccccc1", "CO"]
+  },
+  {
+    "id": "fmoc-deprotection",
+    "name": "Fmoc Deprotection",
+    "reactionSmarts": "[#8]=[#6](-[#7:1])-[#8]-[#6]-[#6]1-[#6]2:[#6]:[#6]:[#6]:[#6]:[#6]:2-[#6]2:[#6]:[#6]:[#6]:[#6]:[#6]:2-1>>[*:1][*${rGroupNumber}]",
+    "mode": "transformation",
+    "category": "Deprotection",
+    "description": "Remove the Fmoc (fluorenylmethyloxycarbonyl) protecting group from an amine.",
+    "tags": ["fmoc", "amine", "protecting group"],
+    "variables": {
+      "rGroupNumber": {"name": "R Group Number", "type": "int", "defaultValue": 1, "description": "R-group number to assign"}
+    }
+  },
+  {
+    "id": "fmoc-substitution",
+    "name": "Fmoc Substitution",
+    "reactionSmarts": "[#8]=[#6](-[#7:1])-[#8]-[#6]-[#6]1-[#6]2:[#6]:[#6]:[#6]:[#6]:[#6]:2-[#6]2:[#6]:[#6]:[#6]:[#6]:[#6]:2-1>>[*:1]${smiles}",
+    "mode": "transformation",
+    "category": "Deprotection",
+    "description": "Replace the Fmoc group with a custom substituent.",
+    "tags": ["fmoc", "substitution"],
+    "variables": {
+      "smiles": {"name": "Replacement SMILES", "type": "string", "defaultValue": "CCCC", "description": "SMILES of the replacement group"}
+    }
+  },
+  {
+    "id": "boc-deprotection",
+    "name": "Boc Deprotection",
+    "reactionSmarts": "[CH3][C]([CH3])([CH3])[O]C(=O)[NH:1]>>[NH2:1]",
+    "mode": "transformation",
+    "category": "Deprotection",
+    "description": "Remove the Boc (tert-butyloxycarbonyl) protecting group from an amine.",
+    "tags": ["boc", "amine", "protecting group", "acid"]
+  },
+  {
+    "id": "cbz-deprotection",
+    "name": "Cbz Deprotection",
+    "reactionSmarts": "[c:1]1[c:2][c:3][c:4][c:5][c:6]1[CH2][O]C(=O)[NH:7]>>[NH2:7]",
+    "mode": "transformation",
+    "category": "Deprotection",
+    "description": "Remove the Cbz (benzyloxycarbonyl) protecting group from an amine.",
+    "tags": ["cbz", "amine", "protecting group", "hydrogenolysis"]
+  },
+  {
+    "id": "benzyl-ether-removal",
+    "name": "O-Debenzylation",
+    "reactionSmarts": "[c:1]1[c:2][c:3][c:4][c:5][c:6]1[CH2][O:7]>>[O:7][H]",
+    "mode": "transformation",
+    "category": "Deprotection",
+    "description": "Remove a benzyl ether protecting group via catalytic hydrogenolysis.",
+    "tags": ["benzyl", "ether", "hydrogenolysis", "protecting group"]
+  },
+  {
+    "id": "acetyl-deprotection",
+    "name": "O-Deacetylation",
+    "reactionSmarts": "[CH3]C(=O)[O:1]>>[O:1][H]",
+    "mode": "transformation",
+    "category": "Deprotection",
+    "description": "Remove an acetyl protecting group from an alcohol.",
+    "tags": ["acetyl", "deprotection", "ester hydrolysis"]
+  },
+  {
+    "id": "o-t-butyl-deprotection",
+    "name": "O-T-Butyl Deprotection",
+    "reactionSmarts": "[#6]-[#6](-[#6])(-[#6])-[O]-[C:4]>>[C:4]-[*${rGroupNumber}]",
+    "mode": "transformation",
+    "category": "Deprotection",
+    "description": "Remove the tert-butyl ether protecting group under acidic conditions.",
+    "tags": ["t-butyl", "ether", "protecting group"],
+    "variables": {
+      "rGroupNumber": {"name": "R Group Number", "type": "int", "defaultValue": 1, "description": "R-group number to assign"}
+    }
+  },
+  {
+    "id": "o-t-butyl-substitution",
+    "name": "O-T-Butyl Substitution",
+    "reactionSmarts": "[#6]-[#6](-[#6])(-[#6])-[O]-[C:4]>>[C:4]-${smiles}",
+    "mode": "transformation",
+    "category": "Deprotection",
+    "description": "Replace the tert-butyl ether group with a custom substituent.",
+    "tags": ["t-butyl", "substitution"],
+    "variables": {
+      "smiles": {"name": "Replacement SMILES", "type": "string", "defaultValue": "CCCC", "description": "SMILES of the replacement group"}
+    }
+  },
+  {
+    "id": "boc-protection",
+    "name": "Boc Protection",
+    "reactionSmarts": "[NH2:1]>>[NH:1]C(=O)OC(C)(C)C",
+    "mode": "transformation",
+    "category": "Protection",
+    "description": "Protect a primary amine with a Boc (tert-butyloxycarbonyl) group.",
+    "tags": ["boc", "amine", "protecting group"],
+    "exampleReactants": ["Nc1ccccc1"]
+  },
+  {
+    "id": "acetylation",
+    "name": "Acetylation",
+    "reactionSmarts": "[OH:1]>>[O:1]C(=O)C",
+    "mode": "transformation",
+    "category": "Protection",
+    "description": "Protect an alcohol with an acetyl group.",
+    "tags": ["acetyl", "alcohol", "protecting group"],
+    "exampleReactants": ["OC1CCCCC1"]
+  },
+  {
+    "id": "benzylation",
+    "name": "O-Benzylation",
+    "reactionSmarts": "[OH:1]>>[O:1]Cc1ccccc1",
+    "mode": "transformation",
+    "category": "Protection",
+    "description": "Protect an alcohol or phenol with a benzyl group.",
+    "tags": ["benzyl", "alcohol", "protecting group"],
+    "exampleReactants": ["Oc1ccccc1"]
+  },
+  {
+    "id": "fmoc-protection",
+    "name": "Fmoc Protection",
+    "reactionSmarts": "[NH2:1]>>[NH:1]C(=O)OCC1c2ccccc2-c2ccccc21",
+    "mode": "transformation",
+    "category": "Protection",
+    "description": "Protect a primary amine with an Fmoc group.",
+    "tags": ["fmoc", "amine", "protecting group"]
+  },
+  {
+    "id": "primary-alcohol-to-aldehyde",
+    "name": "Primary Alcohol to Aldehyde",
+    "reactionSmarts": "[CH2:1][OH:2]>>[CH:1]=[O:2]",
+    "mode": "transformation",
+    "category": "Oxidation",
+    "description": "Oxidation of a primary alcohol to an aldehyde (e.g. Swern, PCC, DMP).",
+    "tags": ["oxidation", "alcohol", "aldehyde", "swern"],
+    "exampleReactants": ["OCC1CCCCC1"]
+  },
+  {
+    "id": "primary-alcohol-to-acid",
+    "name": "Primary Alcohol to Carboxylic Acid",
+    "reactionSmarts": "[CH2:1][OH:2]>>[C:1](=[O:2])O",
+    "mode": "transformation",
+    "category": "Oxidation",
+    "description": "Oxidation of a primary alcohol to a carboxylic acid (e.g. Jones, KMnO4).",
+    "tags": ["oxidation", "alcohol", "carboxylic acid", "jones"],
+    "exampleReactants": ["OCC1CCCCC1"]
+  },
+  {
+    "id": "aldehyde-oxidation",
+    "name": "Aldehyde Oxidation",
+    "reactionSmarts": "[CH:1]=[O:2]>>[C:1](=[O:2])O",
+    "mode": "transformation",
+    "category": "Oxidation",
+    "description": "Oxidation of an aldehyde to a carboxylic acid.",
+    "tags": ["oxidation", "aldehyde", "carboxylic acid"],
+    "exampleReactants": ["O=Cc1ccccc1"]
+  },
+  {
+    "id": "secondary-alcohol-oxidation",
+    "name": "Secondary Alcohol to Ketone",
+    "reactionSmarts": "[CH:1][O:2]>>[C:1]=[O:2]",
+    "mode": "transformation",
+    "category": "Oxidation",
+    "description": "Oxidation of a secondary alcohol to a ketone.",
+    "tags": ["oxidation", "alcohol", "ketone"],
+    "exampleReactants": ["OC(C)c1ccccc1"]
+  },
+  {
+    "id": "epoxidation",
+    "name": "Epoxidation",
+    "reactionSmarts": "[C:1]=[C:2]>>[C:1]1[O][C:2]1",
+    "mode": "transformation",
+    "category": "Oxidation",
+    "description": "Oxidation of an alkene to an epoxide (e.g. mCPBA, Sharpless).",
+    "tags": ["oxidation", "alkene", "epoxide"],
+    "exampleReactants": ["C=Cc1ccccc1"]
+  },
+  {
+    "id": "baeyer-villiger",
+    "name": "Baeyer-Villiger Oxidation",
+    "reactionSmarts": "[C:1](=[O:2])[C:3]>>[C:1](=[O:2])[O][C:3]",
+    "mode": "transformation",
+    "category": "Oxidation",
+    "description": "Oxidation of a ketone to an ester (or lactone) using a peracid.",
+    "tags": ["oxidation", "ketone", "ester", "lactone"],
+    "exampleReactants": ["O=C1CCCCC1"]
+  },
+  {
+    "id": "thiol-to-disulfide",
+    "name": "Thiol to Disulfide",
+    "reactionSmarts": "[SH:1]>>[S:1][S]",
+    "mode": "transformation",
+    "category": "Oxidation",
+    "description": "Oxidative coupling of a thiol to form a disulfide.",
+    "tags": ["oxidation", "thiol", "disulfide"]
+  },
+  {
+    "id": "alkene-reduction",
+    "name": "Alkene Hydrogenation",
+    "reactionSmarts": "[C:1]=[C:2]>>[C:1][C:2]",
+    "mode": "transformation",
+    "category": "Reduction",
+    "description": "Catalytic hydrogenation of a C=C double bond.",
+    "tags": ["reduction", "hydrogenation", "alkene"],
+    "exampleReactants": ["C=Cc1ccccc1"]
+  },
+  {
+    "id": "alkyne-to-alkene",
+    "name": "Partial Alkyne Reduction",
+    "reactionSmarts": "[C:1]#[C:2]>>[C:1]=[C:2]",
+    "mode": "transformation",
+    "category": "Reduction",
+    "description": "Partial reduction of an alkyne to a cis-alkene (e.g. Lindlar catalyst).",
+    "tags": ["reduction", "alkyne", "alkene", "lindlar"]
+  },
+  {
+    "id": "ketone-to-alcohol",
+    "name": "Ketone/Aldehyde to Alcohol",
+    "reactionSmarts": "[C:1]=[O:2]>>[C:1][O:2]",
+    "mode": "transformation",
+    "category": "Reduction",
+    "description": "Reduction of a ketone or aldehyde to an alcohol (e.g. NaBH4, LiAlH4).",
+    "tags": ["reduction", "ketone", "aldehyde", "alcohol"],
+    "exampleReactants": ["O=C(C)c1ccccc1"]
+  },
+  {
+    "id": "ester-to-alcohol",
+    "name": "Ester to Alcohol",
+    "reactionSmarts": "[C:1](=[O:2])[O:3][C:4]>>[C:1][O:2]",
+    "mode": "transformation",
+    "category": "Reduction",
+    "description": "Reduction of an ester to a primary alcohol using LiAlH4.",
+    "tags": ["reduction", "ester", "alcohol", "lialh4"]
+  },
+  {
+    "id": "nitrile-to-amine",
+    "name": "Nitrile to Amine",
+    "reactionSmarts": "[C:1]#[N:2]>>[C:1][NH2:2]",
+    "mode": "transformation",
+    "category": "Reduction",
+    "description": "Reduction of a nitrile to a primary amine.",
+    "tags": ["reduction", "nitrile", "amine"],
+    "exampleReactants": ["N#Cc1ccccc1"]
+  },
+  {
+    "id": "nitro-to-amine",
+    "name": "Nitro to Amine",
+    "reactionSmarts": "[c:1][N+](=O)[O-]>>[c:1][NH2]",
+    "mode": "transformation",
+    "category": "Reduction",
+    "description": "Reduction of an aromatic nitro group to a primary amine.",
+    "tags": ["reduction", "nitro", "amine"],
+    "exampleReactants": ["O=[N+]([O-])c1ccccc1"]
+  },
+  {
+    "id": "amide-to-amine",
+    "name": "Amide to Amine",
+    "reactionSmarts": "[C:1](=[O:2])[NH:3]>>[C:1][NH:3]",
+    "mode": "transformation",
+    "category": "Reduction",
+    "description": "Reduction of an amide to an amine using LiAlH4.",
+    "tags": ["reduction", "amide", "amine", "lialh4"]
+  },
+  {
+    "id": "alcohol-to-chloride",
+    "name": "Alcohol to Chloride (Appel)",
+    "reactionSmarts": "[C:1][OH:2]>>[C:1][Cl]",
+    "mode": "transformation",
+    "category": "Functional Group Interconversion",
+    "description": "Convert an alcohol to an alkyl chloride via Appel reaction (PPh3/CCl4).",
+    "tags": ["halogenation", "appel", "chloride"],
+    "exampleReactants": ["OCC1CCCCC1"]
+  },
+  {
+    "id": "alcohol-to-bromide",
+    "name": "Alcohol to Bromide",
+    "reactionSmarts": "[C:1][OH:2]>>[C:1][Br]",
+    "mode": "transformation",
+    "category": "Functional Group Interconversion",
+    "description": "Convert an alcohol to an alkyl bromide (e.g. PBr3 or Appel).",
+    "tags": ["halogenation", "bromide"]
+  },
+  {
+    "id": "acid-to-acid-chloride",
+    "name": "Acid to Acid Chloride",
+    "reactionSmarts": "[C:1](=[O:2])[OH]>>[C:1](=[O:2])[Cl]",
+    "mode": "transformation",
+    "category": "Functional Group Interconversion",
+    "description": "Convert a carboxylic acid to an acyl chloride using SOCl2.",
+    "tags": ["acid chloride", "acylation"],
+    "exampleReactants": ["OC(=O)c1ccccc1"]
+  },
+  {
+    "id": "alcohol-to-mesylate",
+    "name": "Alcohol to Mesylate",
+    "reactionSmarts": "[C:1][OH:2]>>[C:1][O:2]S(=O)(=O)C",
+    "mode": "transformation",
+    "category": "Functional Group Interconversion",
+    "description": "Convert an alcohol to a mesylate leaving group.",
+    "tags": ["mesylate", "leaving group", "activation"]
+  },
+  {
+    "id": "alcohol-to-tosylate",
+    "name": "Alcohol to Tosylate",
+    "reactionSmarts": "[C:1][OH:2]>>[C:1][O:2]S(=O)(=O)c1ccc(C)cc1",
+    "mode": "transformation",
+    "category": "Functional Group Interconversion",
+    "description": "Convert an alcohol to a tosylate leaving group.",
+    "tags": ["tosylate", "leaving group", "activation"]
+  },
+  {
+    "id": "nitrile-hydrolysis-amide",
+    "name": "Nitrile Hydrolysis (to Amide)",
+    "reactionSmarts": "[C:1]#[N:2]>>[C:1](=[O])[NH2:2]",
+    "mode": "transformation",
+    "category": "Functional Group Interconversion",
+    "description": "Partial hydrolysis of a nitrile to an amide.",
+    "tags": ["hydrolysis", "nitrile", "amide"],
+    "exampleReactants": ["N#Cc1ccccc1"]
+  },
+  {
+    "id": "nitrile-hydrolysis-acid",
+    "name": "Nitrile Hydrolysis (to Acid)",
+    "reactionSmarts": "[C:1]#[N:2]>>[C:1](=[O])O",
+    "mode": "transformation",
+    "category": "Functional Group Interconversion",
+    "description": "Full hydrolysis of a nitrile to a carboxylic acid.",
+    "tags": ["hydrolysis", "nitrile", "carboxylic acid"],
+    "exampleReactants": ["N#Cc1ccccc1"]
+  },
+  {
+    "id": "ester-hydrolysis",
+    "name": "Ester Hydrolysis (Saponification)",
+    "reactionSmarts": "[C:1](=[O:2])[O:3][C:4]>>[C:1](=[O:2])[OH]",
+    "mode": "transformation",
+    "category": "Functional Group Interconversion",
+    "description": "Hydrolysis of an ester to a carboxylic acid.",
+    "tags": ["hydrolysis", "ester", "carboxylic acid", "saponification"],
+    "exampleReactants": ["COC(=O)c1ccccc1"]
+  },
+  {
+    "id": "aromatic-bromination",
+    "name": "Aromatic Bromination",
+    "reactionSmarts": "[cH:1]>>[c:1]Br",
+    "mode": "transformation",
+    "category": "Functional Group Interconversion",
+    "description": "Electrophilic aromatic bromination.",
+    "tags": ["bromination", "electrophilic", "aromatic"],
+    "exampleReactants": ["c1ccccc1"]
+  },
+  {
+    "id": "aromatic-nitration",
+    "name": "Aromatic Nitration",
+    "reactionSmarts": "[cH:1]>>[c:1][N+](=O)[O-]",
+    "mode": "transformation",
+    "category": "Functional Group Interconversion",
+    "description": "Electrophilic aromatic nitration.",
+    "tags": ["nitration", "electrophilic", "aromatic"],
+    "exampleReactants": ["c1ccccc1"]
+  }
+]

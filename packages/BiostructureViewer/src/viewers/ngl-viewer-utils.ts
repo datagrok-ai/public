@@ -5,7 +5,7 @@ import * as DG from 'datagrok-api/dg';
 import {Subject} from 'rxjs';
 import * as ngl from 'NGL';
 
-import {delay, testEvent} from '@datagrok-libraries/test/src/test';
+import {testEvent} from '@datagrok-libraries/utils/src/test';
 
 import {_package} from '../package';
 
@@ -23,5 +23,5 @@ export async function awaitNgl(ngl: ngl.Stage, callLogPrefix: string): Promise<v
     () => {
       ngl!.viewer.requestRender();
     }, 1000, 'timeout creating NGL stage await');
-  await delay(50);
+  await DG.delay(50);
 }

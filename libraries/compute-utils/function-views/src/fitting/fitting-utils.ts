@@ -105,7 +105,8 @@ export function getErrors(expArg: DG.Column | null, expFuncs: DG.Column[],
 
 
 /** Get call funcCall with the specified inputs */
-export function makeGetCalledFuncCall(func: DG.Func, inputs: Record<string, any>, variedInputNames: string[], useClone: boolean) {
+export function makeGetCalledFuncCall(func: DG.Func, inputs: Record<string, any>,
+  variedInputNames: string[], useClone: boolean) {
   const funcCall = func.prepare(inputs);
   const resetSharedCall = () => {
     for (const param of funcCall.inputParams.values())
@@ -578,3 +579,13 @@ export function getEarlyStoppingInputs(overrides: Record<string, any> = {}) {
     settings: settings,
   };
 } // getEarlyStoppingInputs
+
+/** Get row index from the cell, return 0 if it is not possible */
+export function getRowIndex(cell: DG.GridCell): number {
+  let index = 0;
+  try {
+    index = cell.tableRowIndex ?? 0;
+  } catch (e) {}
+
+  return index;
+}

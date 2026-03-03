@@ -12,6 +12,40 @@ import {execSync} from 'child_process';
 
 const warns = ['Latest package version', 'Datagrok API version should contain'];
 const forbiddenNames = ['function', 'class', 'export'];
+
+interface HeavyImportRule {
+  /** Substring matched against the import specifier */
+  pattern: string;
+  reason: string;
+  suggestion: string;
+}
+
+/** Static imports of these libraries significantly increase the main bundle size. */
+const HEAVY_IMPORT_RULES: HeavyImportRule[] = [
+  // Test utilities — should never reach production bundles
+  {
+    pattern: '@datagrok-libraries/test',
+    reason: 'test-only library imported in production code',
+    suggestion: 'replace delay() with DG.delay(), testEvent() with alternatives from utils',
+  },
+  // Heavy UI/editor libraries — only flagged when not the package\'s core purpose
+  {
+    pattern: 'codemirror',
+    reason: 'heavy text editor (~870 KB) statically bundled',
+    suggestion: 'use dynamic import() inside the function that opens the editor',
+  },
+  {
+    pattern: 'konva',
+    reason: 'heavy canvas library (~410 KB) statically bundled',
+    suggestion: 'use dynamic import() to load on demand',
+  },
+  // Heavy data-processing libraries
+  {
+    pattern: 'exceljs',
+    reason: 'heavy Excel library (~940 KB) statically bundled',
+    suggestion: 'offload to a web worker (see PowerPack/src/workers/exceljs-worker.ts)',
+  },
+];
 const namesInFiles = new Map<string, string[]>();
 
 export function check(args: CheckArgs): boolean {
@@ -34,10 +68,10 @@ function runChecks(packagePath: string, soft: boolean = false, noExit: boolean =
   if (packagePath.includes(`${path.sep}node_modules${path.sep}`))
     return true;
   const files = (walk.sync({path: packagePath, ignoreFiles: ['.npmignore', '.gitignore']})).filter((e) => !e.includes('node_modules'));
-  const jsTsFiles = files.filter((f) => (f.startsWith('src' + path.sep) || f.startsWith('queries' + path.sep) || f.startsWith('scripts' + path.sep)) && (f.endsWith('.js') || f.endsWith('.ts') || f.endsWith('.sql') || f.endsWith('.py')));
+  const jsTsFiles = files.filter((f) => (f.startsWith('src/') || f.startsWith('queries/') || f.startsWith('scripts/')) && (f.endsWith('.js') || f.endsWith('.ts') || f.endsWith('.sql') || f.endsWith('.py')));
   const packageFiles = ['src/package.ts', 'src/detectors.ts', 'src/package.js', 'src/detectors.js',
     'src/package-test.ts', 'src/package-test.js', 'package.js', 'detectors.js'];
-  // const funcFiles = jsTsFiles.filter((f) => packageFiles.includes(f)); 
+  // const funcFiles = jsTsFiles.filter((f) => packageFiles.includes(f));
   const errors: string[] = [];
   const warnings: string[] = [];
   const packageFilePath = path.join(packagePath, 'package.json');
@@ -52,7 +86,7 @@ function runChecks(packagePath: string, soft: boolean = false, noExit: boolean =
   let isReleaseCandidateVersion: boolean = false;
   let externals: { [key: string]: string } | null = null;
 
-  if (major === 0) 
+  if (major === 0)
     isPre1Version = true;
 
   if (/\d+.\d+.\d+-rc(.[A-Za-z0-9]*.[A-Za-z0-9]*)?/.test(json.version))
@@ -64,6 +98,7 @@ function runChecks(packagePath: string, soft: boolean = false, noExit: boolean =
       errors.push(...checkImportStatements(packagePath, jsTsFiles, externals));
   }
   errors.push(...checkDatagrokApiImports(packagePath, jsTsFiles));
+  warnings.push(...checkHeavyImports(packagePath, jsTsFiles, path.basename(packagePath)));
   if (!soft)
     errors.push(...checkSourceMap(packagePath));
   errors.push(...checkNpmIgnore(packagePath));
@@ -210,6 +245,41 @@ export function checkDatagrokApiImports(packagePath: string, files: string[]): s
 
   return errors;
 }
+
+export function checkHeavyImports(packagePath: string, files: string[], packageName: string = ''): string[] {
+  const warnings: string[] = [];
+  const isTestPackage = /tests?$/i.test(packageName);
+  const staticImportRegex = /^\s*import\s+(?!type\s).*['"]([^'"]+)['"]/;
+  for (const file of files) {
+    const isTestFile = file.includes('/tests/') || file.includes('/test/') || path.basename(file).includes('-test.') ||
+      path.basename(file).includes('-testing.') || path.basename(file) === 'package-test.ts' || path.basename(file) === 'package-test.js';
+    const isWorkerFile = file.includes('/workers/');
+    const isVendoredLib = file.includes('/libs/');
+    if (isWorkerFile || isVendoredLib)
+      continue;
+
+    const content = fs.readFileSync(path.join(packagePath, file), {encoding: 'utf-8'});
+    for (const line of content.split('\n')) {
+      const m = line.match(staticImportRegex);
+      if (!m)
+        continue;
+      const specifier = m[1];
+      for (const rule of HEAVY_IMPORT_RULES) {
+        if (!specifier.includes(rule.pattern))
+          continue;
+        if (isTestFile || isTestPackage)
+          continue;
+        warnings.push(
+          `File "${file}": ${rule.reason}.\n` +
+          `  Found: ${line.trim()}\n` +
+          `  Hint: ${rule.suggestion}\n`,
+        );
+      }
+    }
+  }
+  return warnings;
+}
+
 const TYPE_ALIASES: Record<string, string[]> = {
   file: ['fileinfo'],
   dynamic: ['searchprovider'],
@@ -258,7 +328,7 @@ function validateFunctionSignature(func: FuncMetadata, roleDesc: FuncRoleDescrip
   const messages: string[] = [];
 
   const addError = (msg: string) => {
-    valid = false; 
+    valid = false;
     messages.push(msg);
   };
 
@@ -314,7 +384,7 @@ function validateFunctionSignature(func: FuncMetadata, roleDesc: FuncRoleDescrip
   if (parsed.outputs.length > 0) {
     if (!func.outputs?.length) {
       if (!parsed.outputs.some((o) => o.type === 'void'))
-        addError(`Output missing: expected one of (${fmtTypes(parsed.outputs.map((o) => o.type!))})`); 
+        addError(`Output missing: expected one of (${fmtTypes(parsed.outputs.map((o) => o.type!))})`);
     } else {
       const matches = func.outputs.some((actual) =>
         parsed.outputs.some((expected) => matchesExpected(actual.type, expected.type)),
@@ -701,11 +771,11 @@ function getFuncMetadata(script: string, fileExtension: string): { meta: FuncMet
   const scriptHeaderLines: string[] = [];
   while (i < lines.length) {
     const line = lines[i].trim();
-    if (line.startsWith('//')) 
+    if (line.startsWith('//'))
       scriptHeaderLines.push(line);
-    else if (line === '') 
+    else if (line === '')
       break;
-    else 
+    else
       break;
     i++;
   }

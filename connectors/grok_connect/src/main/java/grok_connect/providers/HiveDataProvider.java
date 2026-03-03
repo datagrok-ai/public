@@ -65,6 +65,12 @@ public class HiveDataProvider extends JdbcDataProvider {
 
     @Override
     public Connection getConnection(DataConnection conn) throws SQLException, GrokConnectException {
+        try {
+            Class.forName(driverClassName);
+        }
+        catch (ClassNotFoundException e) {
+            throw new GrokConnectException("JDBC driver not found: " + driverClassName, e);
+        }
         return DriverManager.getConnection(getConnectionString(conn), getProperties(conn));
     }
 

@@ -1,5 +1,5 @@
 import {ScatterPlotCellRenderer} from './sparklines/scatter-plot';
-import {RawPNGRenderer} from './pngRenderer';
+import {RawPNGRenderer} from './png-renderer';
 import {PackageFunctions} from './package';
 import {HtmlTestCellRenderer} from './cell-types/test-cell-renderer';
 import {StarsCellRenderer} from './cell-types/stars-cell-renderer';
@@ -181,15 +181,15 @@ export function testUnitsTonCellRenderer() {
   return PackageFunctions.testUnitsTonCellRenderer();
 }
 
-//input: object gridCol 
-//output: object result
-export function addPinnedColumn(gridCol: any) : any {
-  return PackageFunctions.addPinnedColumn(gridCol);
-}
-
 //name: demoTestUnitsCellRenderer
 export function demoTestUnitsCellRenderer() : void {
   PackageFunctions.demoTestUnitsCellRenderer();
+}
+
+//input: object gridCol 
+//output: object result
+export function addPinnedColumn(gridCol: any) {
+  return PackageFunctions.addPinnedColumn(gridCol);
 }
 
 //tags: autostart

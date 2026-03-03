@@ -7,8 +7,7 @@ import * as DG from 'datagrok-api/dg';
 import {parse, HtmlGenerator} from 'latex.js';
 import {_package} from '../package';
 
-import {basicSetup, EditorView} from 'codemirror';
-import {latex} from 'codemirror-lang-latex';
+import type {EditorView} from 'codemirror';
 import {HIGH, LIMIT, LOW, MARGIN_IDX} from './constants';
 import {debounce, isActionKey, isCutPaste} from './utils';
 
@@ -44,7 +43,10 @@ export class LatexViewer {
       console.log('Length:', latexText.length);
       const exist = await grok.dapi.files.exists(file);
 
-      return new LatexViewer(file, latexText, exist);
+      const viewer = new LatexViewer(file, latexText, exist);
+      if (latexText != null)
+        await viewer.initEditor(latexText);
+      return viewer;
     } catch (err) {
       if (err instanceof Error)
         grok.shell.error(err.message);
@@ -84,15 +86,19 @@ export class LatexViewer {
 
         this.prevNode = this.contentDiv.appendChild(ui.h2('LaTeX code contains errors!'));
       }
-
-      this.editorView = new EditorView({
-        doc: latexText,
-        extensions: [basicSetup, latex()],
-      });
-
-      this.buildIO();
+      // Editor is created asynchronously in initEditor(), called from create()
     }
   };
+
+  private async initEditor(latexText: string): Promise<void> {
+    const {basicSetup, EditorView} = await import('codemirror');
+    const {latex} = await import('codemirror-lang-latex');
+    this.editorView = new EditorView({
+      doc: latexText,
+      extensions: [basicSetup, latex()],
+    });
+    this.buildIO();
+  }
 
   private getElementWithLatexContent(latexText: string): HTMLIFrameElement {
     const generator = new HtmlGenerator({hyphenate: false});

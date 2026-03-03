@@ -1,0 +1,15 @@
+{
+  "name": "datagrok-mcp-server",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "main": "dist/index.js",
+  "bin": { "datagrok-mcp": "dist/index.js" },
+  "scripts": { "start": "node dist/index.js", "build": "tsc" },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.21.1",
+    "@hono/node-server": "^1.13.0",
+    "hono": "^4.6.0"
+  },
+  "devDependencies": { "@types/node": "^20.3.1", "typescript": "^5.1.3" }
+}

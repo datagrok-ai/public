@@ -1,5 +1,9 @@
 # WebComponents changelog
 
+## 1.2.12 (2026-03-02)
+
+- Form styles fixes for 1.26
+
 ## 1.2.10 (2025-11-20)
 
 - Tweak consistency icons in forms

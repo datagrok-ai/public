@@ -3,7 +3,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule/consts';
+import {NOTATION, NOTATION_PROVIDER_CONSTRUCTOR_ROLE} from '@datagrok-libraries/bio/src/utils/macromolecule/consts';
 import {SeqTemps} from '@datagrok-libraries/bio/src/utils/macromolecule/seq-handler';
 
 import {OligoToolkitPackage} from './apps/common/model/oligo-toolkit-package';
@@ -399,6 +399,14 @@ export class PackageFunctions {
     col.meta.units = NOTATION.CUSTOM;
     col.tags[PolyToolTags.dataRole] = 'template';
     col.temp[SeqTemps.notationProvider] = new CyclizedNotationProvider(separator, _package.helmHelper);
+  }
+
+  @grok.decorators.func({
+    name: 'harmonizedSequenceNotationProviderConstructor',
+    meta: {role: 'notationProviderConstructor'}
+  })
+  static async harmonizedSequenceNotationProviderConstructor(): Promise<typeof CyclizedNotationProvider> {
+    return CyclizedNotationProvider;
   }
 }
 

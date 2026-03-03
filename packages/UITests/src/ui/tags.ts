@@ -17,8 +17,7 @@ category('UI: Tags', () => {
   let v1: DG.View;
 
   before(async () => {
-    const mng: DG.TabPane = grok.shell.sidebar.getPane('Browse');
-    mng.header.click();
+    grok.shell.windows.showBrowse = true;
     let groups: any;
     await delay(1000);
     await awaitCheck(() => {

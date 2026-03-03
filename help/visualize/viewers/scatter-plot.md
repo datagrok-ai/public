@@ -268,6 +268,7 @@ Youtube")](https://www.youtube.com/watch?v=7MBXWzdC0-I&t=214s)
 | Marker Max Size | number |  |
 | **General** | | |
 | Lines Order Column Name | string | When defined, a line would be drawn for each series (defined by the categorical color column) using the order specified by Lines Order |
+| Lines By Column Name | string | When defined, lines are split into separate series by this categorical column instead of the color column. |
 | Lines Width | number | Defines the width of the lines connecting the markers. See **Lines Width**. |
 | Show Min Max Tickmarks | boolean | Shows tickmarks and labels for minimum and maximum value on each axis. |
 | Show Drop Lines | boolean | Shows exact X and Y coordinates for the mouse cursor. |
@@ -308,6 +309,7 @@ Youtube")](https://www.youtube.com/watch?v=7MBXWzdC0-I&t=214s)
 | Show Mouse Over Point | boolean | Controls the indication of the mouse-over row |
 | Show Mouse Over Row Group | boolean | Highlight ''mouse-over'' rows (such as the ones that fall into a histogram bin that the mouse is currently hovering over). |
 | Show Selected Rows | boolean | When true, selected markers are highlighted using the selected rows color. When false, selected markers use their regular color coding. |
+| Reset Selection On Background Click | boolean | When true, clicking on the background (no point hit) clears the current selection. Set to false to preserve the selection when accidentally clicking outside of the markers. |
 | **Style** | | |
 | Auto Layout | boolean |  |
 | Back Color | number |  |

@@ -31,6 +31,20 @@ chemical structures after performing [R-Group Analysis](../../datagrok/solutions
 
 ![R-Group Analysis](../../uploads/chem/r-group-analysis.png "R-Group Analysis")
 
+## Axes
+
+Each inner viewer can have independent axis bounds. Use the **Global Scale** option to synchronize axes across all inner viewers:
+
+- **Unchecked** (default): Each inner viewer has its own axis bounds based on its data. Use the inner axes range sliders to adjust the viewport for individual viewers.
+- **Checked**: All inner viewers use the same axis bounds calculated from the selected axis columns. This makes it easier to compare values across categories.
+
+When **Show Range Sliders** is enabled, interactive sliders appear on the inner viewer axes (available when axes are visible). These sliders allow you to:
+
+- Adjust the axis range for viewing specific data intervals
+- When **Global Scale** is enabled, move the range slider on one viewer simultaneously adjusts the visible bounds for all other viewers, providing synchronized navigation across all inner viewers
+
+![](img/trellis-inner-axes.gif)
+
 ## Videos
 
 [![Trellis Plot](../../uploads/youtube/visualizations2.png "Open on Youtube")](https://www.youtube.com/watch?v=7MBXWzdC0-I&t=1560s)

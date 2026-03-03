@@ -34,6 +34,7 @@ import './tests/clone-layout-tests';
 import './tests/mmpa-tests';
 import './tests/chemprop-tests';
 import './tests/vector-funcs-tests';
+import './tests/synthon-search-tests';
 
 import './tests/viewers';
 

@@ -20,6 +20,23 @@ General:
 
 ![Histogram](../../uploads/gifs/histogram.gif "Histogram")
 
+## Show bin values
+
+Enable **Show Values** to display the bin count on top of each bar. The value shown reflects the current row source configuration (filtered, selected, or all rows), making it easy to see bin sizes at a glance.
+
+![](img/histogram-bin-values.gif)
+
+## Distribution lines
+
+When a **Split Column** is defined, enable **Show Distribution Lines** to overlay distribution curves over the histogram. This feature works with:
+- Stacked bins (when **Split Stack** is enabled)
+- Spline curves (when displaying multiple distributions)
+- Filled splines (when both **Spline** and **Fill Spline** are enabled)
+
+Distribution lines help visualize and compare the distribution patterns across different categories.
+
+![](img/histogram-distribution-lines.gif)
+
 ## Videos
 
 [![Histogram](../../uploads/youtube/visualizations2.png "Open on Youtube")](https://www.youtube.com/watch?v=7MBXWzdC0-I&t=485s)

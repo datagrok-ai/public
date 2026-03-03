@@ -29,15 +29,42 @@ export class DesirabilityModeDialog {
     private mappedCol?: DG.Column | null,
   ) {}
 
-  private buildDefaultScoreInput(prop: PropertyDesirability): DG.InputBase {
-    const input = ui.input.float('Default score', {value: prop.defaultScore ?? 0, min: 0, max: 1, format: '#0.000',
+  private static strategyToLabel(strategy?: string): string {
+    switch (strategy) {
+    case 'default': return 'Use default score';
+    case 'skip': return 'Skip property';
+    default: return 'Exclude row';
+    }
+  }
+
+  private buildDefaultScoreInput(prop: PropertyDesirability): HTMLElement {
+    const mv = prop.missingValues;
+    const scoreInput = ui.input.float('Default score', {value: mv?.strategy === 'default' ? mv.score : 0, min: 0, max: 1, format: '#0.000',
       onValueChanged: (v) => {
-        prop.defaultScore = v ?? 0;
-        this.onUpdate({defaultScore: prop.defaultScore} as any);
+        prop.missingValues = {strategy: 'default', score: v};
+        this.onUpdate({missingValues: prop.missingValues});
       },
     });
-    input.setTooltip('Desirability score (0–1) used when a cell value is missing or a category is unmatched. If not set, the row is excluded from scoring.');
-    return input;
+    scoreInput.root.style.display = mv?.strategy === 'default' ? '' : 'none';
+
+    const choiceInput = ui.input.choice('If missing', {
+      items: ['Exclude row', 'Use default score', 'Skip property'],
+      value: DesirabilityModeDialog.strategyToLabel(mv?.strategy),
+      onValueChanged: (v) => {
+        const use = v === 'Use default score';
+        if (v === 'Skip property')
+          prop.missingValues = {strategy: 'skip'};
+        else if (use)
+          prop.missingValues = {strategy: 'default', score: scoreInput.value ?? 0};
+        else
+          prop.missingValues = {strategy: 'exclude'};
+        scoreInput.root.style.display = use ? '' : 'none';
+        this.onUpdate({missingValues: prop.missingValues} as any);
+      },
+    });
+    choiceInput.setTooltip('How to handle missing values.');
+    scoreInput.setTooltip('Desirability score (0–1) to use as fallback.');
+    return ui.form([choiceInput, scoreInput]);
   }
 
   show(): void {
@@ -46,6 +73,7 @@ export class DesirabilityModeDialog {
     const dialog = ui.dialog({
       title: `Desirability Settings: ${this.propertyName}`,
     });
+    dialog.root.classList.add('statistics-mpo-desirability-dialog');
 
     const contentPanel = ui.divV([]);
     const cached: Record<string, PropertyDesirability> = {[original.functionType]: structuredClone(original)};
@@ -70,7 +98,7 @@ export class DesirabilityModeDialog {
       buildContent();
     }});
 
-    const buildNumericalContent = () => {
+    const buildNumericalContent = (acc: DG.Accordion) => {
       const prop = this.prop as NumericalDesirability;
       prop.mode ??= 'freeform';
 
@@ -107,21 +135,24 @@ export class DesirabilityModeDialog {
           inputs.get(cfg.key)!.value = prop[cfg.key] ?? cfg.fallback();
       };
 
-      const paramPanel = ui.divV([]);
+      const form = ui.form([
+        inputs.get('min')!, inputs.get('max')!,
+        inputs.get('mean')!, inputs.get('sigma')!,
+        inputs.get('x0')!, inputs.get('k')!,
+      ]);
+
+      const HIDDEN = 'statistics-mpo-hidden';
 
       const updateParams = () => {
-        ui.empty(paramPanel);
-
-        const form: DG.InputBase[] = [inputs.get('min')!, inputs.get('max')!];
-
-        if (prop.mode === 'gaussian')
-          form.push(inputs.get('mean')!, inputs.get('sigma')!);
-        if (prop.mode === 'sigmoid')
-          form.push(inputs.get('x0')!, inputs.get('k')!);
-
-        paramPanel.append(ui.h3('Parameters'));
-        paramPanel.append(ui.form(form));
+        inputs.get('mean')!.root.classList.toggle(HIDDEN, prop.mode !== 'gaussian');
+        inputs.get('sigma')!.root.classList.toggle(HIDDEN, prop.mode !== 'gaussian');
+        inputs.get('x0')!.root.classList.toggle(HIDDEN, prop.mode !== 'sigmoid');
+        inputs.get('k')!.root.classList.toggle(HIDDEN, prop.mode !== 'sigmoid');
       };
+
+      updateParams();
+
+      const paramPanel = ui.divV([form, previewEditor.root]);
 
       previewEditor.onParamsChanged = (p) => {
         Object.assign(prop, p);
@@ -135,9 +166,8 @@ export class DesirabilityModeDialog {
         this.onUpdate({line} as any);
       }));
 
-      updateParams();
-
-      contentPanel.append(modeInput.root, paramPanel, previewEditor.root);
+      contentPanel.append(modeInput.root);
+      acc.addPane('Parameters', () => paramPanel, true);
     };
 
     const buildCategoricalContent = () => {
@@ -158,17 +188,23 @@ export class DesirabilityModeDialog {
       dispose();
       ui.empty(contentPanel);
 
+      if (!this.mappedCol)
+        contentPanel.append(typeInput.root);
+
+      const acc = ui.accordion();
+
       if (isNumerical(this.prop))
-        buildNumericalContent();
+        buildNumericalContent(acc);
       else
         buildCategoricalContent();
 
-      contentPanel.append(ui.h3('Fallback'), ui.form([this.buildDefaultScoreInput(this.prop)]));
+      acc.addPane('Missing values', () => this.buildDefaultScoreInput(this.prop), true);
+      contentPanel.append(acc.root);
     };
 
     buildContent();
 
-    dialog.add(ui.divV([...(!this.mappedCol ? [typeInput.root] : []), contentPanel]));
+    dialog.add(contentPanel);
 
     dialog.onOK(() => {
       dispose();

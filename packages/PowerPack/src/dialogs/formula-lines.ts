@@ -1,6 +1,5 @@
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {delay} from '@datagrok-libraries/test/src/test';
 
 /** Formula Line types */
 const enum ITEM_TYPE {
@@ -316,7 +315,7 @@ class Table {
       }
 
       if (itemIdx !== -1) {
-        delay(1).then((_) => {
+        DG.delay(1).then((_) => {
           this.currentItemIdx = itemIdx;
         });
       }
@@ -538,7 +537,7 @@ class Preview {
         showViewerAnnotationRegions: true,
         showContextMenu: false,
         axesFollowFilter: false,
-        axisFont: '11px Arial',
+        axisFont: 'normal normal 11px "Arial"',
         legendVisibility: DG.VisibilityMode.Never,
         xAxisHeight: 25,
       });
@@ -561,7 +560,7 @@ class Preview {
         showMouseOverPoint: false,
         showCurrentPoint: false,
         zoomAndFilter: 'no action',
-        axisFont: '11px Arial',
+        axisFont: 'normal normal 11px "Arial"',
         legendVisibility: DG.VisibilityMode.Never,
         xAxisHeight: 25,
       });

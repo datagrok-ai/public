@@ -65,10 +65,10 @@ category('Shell', () => {
     grok.shell.addTable(grok.data.demo.demog(10));
     grok.shell.closeAll();
     const views = Array.from(grok.shell.views);
-    expect(views.length == 0 || views.every((v) => v.name === 'Datagrok' || v.name == 'Test Manager'), true);
+    expect(views.length == 0 || views.every((v) => v.name === 'Datagrok' || v.name === 'Home' || v.name == 'Test Manager'), true);
     expect(document.querySelector(".dockManagerTest"), null);
   });
-  
+
   test('getSetVar', async () => {
     let x  = { test: 'test1' };
     //@ts-ignore
@@ -81,20 +81,20 @@ category('Shell', () => {
     //@ts-ignore
     expect(x?.test, grok.shell.getVar('c')?.test);
   });
-  
+
   test('clearDirtyFlag', async () => {
     grok.shell.addTableView(grok.data.demo.demog(1000))
     await DG.delay(1000);
-    expect(grok.shell.project.isDirty, true); 
+    expect(grok.shell.project.isDirty, true);
     grok.shell.clearDirtyFlag();
     expect(grok.shell.project.isDirty, false);
   });
-  
+
   test('sideBar', async () => {
     grok.shell.sidebar.addPane('testSideBarElement', ()=>ui.div());
     let pane = document.querySelector('[name="testSideBarElement"]');
     expect(pane !== null, true);
-    grok.shell.sidebar.clear();    
+    grok.shell.sidebar.clear();
     pane = document.querySelector('[name="testSideBarElement"]');
     expect(pane === null, true);
   });

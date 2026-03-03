@@ -29,6 +29,19 @@ export class PolyToolPlaceholdersBreadthInput extends DG.JsInputBase<DG.DataFram
     this.setDataFrame(value);
   }
 
+  public invalidateGrid(): void {
+    if (this.grid) {
+      const oldW = this.grid.root.style.width;
+      this.grid.root.style.width = '99.9%';
+      setTimeout(() => {
+        if (oldW)
+          this.grid.root.style.width = oldW;
+        else
+          this.grid.root.style.removeProperty('width');
+      }, 100);
+    }
+  }
+
   getStringValue(): string { return this.grid.dataFrame.toCsv(); }
 
   setStringValue(str: string): void {

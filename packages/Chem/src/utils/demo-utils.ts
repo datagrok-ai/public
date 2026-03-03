@@ -1,4 +1,3 @@
-import {delay} from '@datagrok-libraries/test/src/test';
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
@@ -29,17 +28,17 @@ M  END
 export async function scrollTable(el: HTMLElement, delta: number, cycles: number, secDelay: number) {
   for (let i = 0; i < cycles; i++) {
     el.dispatchEvent(new WheelEvent('wheel', {deltaY: delta}));
-    await delay(secDelay);
+    await DG.delay(secDelay);
   }
 }
 
 export async function openSketcher(parent: HTMLElement, className: string) {
   const sketcherFilter = parent.getElementsByClassName(className)[0];
     sketcherFilter!.classList.add('chem-demo-sketcher-link');
-    await delay(1000);
+    await DG.delay(1000);
     (sketcherFilter as HTMLElement).click();
     sketcherFilter!.classList.remove('chem-demo-sketcher-link');
-    await delay(1000);
+    await DG.delay(1000);
     return document.getElementsByClassName('d4-dialog')[0];
 }
 

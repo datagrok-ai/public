@@ -62,8 +62,8 @@ export function getArmColorStr(armIndex: number, alpha: number = 1): string {
 function getRowMinMax(gridCell: DG.GridCell): {min: number, max: number} {
   const df = gridCell.grid.dataFrame;
   const tableRowIdx = gridCell.cell.rowIndex;
-  const minCol = df.col('~rowMin');
-  const maxCol = df.col('~rowMax');
+  const minCol = df.col('rowMin');
+  const maxCol = df.col('rowMax');
   if (minCol && maxCol)
     return {min: minCol.get(tableRowIdx), max: maxCol.get(tableRowIdx)};
   return {min: 0, max: 0};

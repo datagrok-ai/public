@@ -26,6 +26,7 @@ export class PackageFunctions {
   @grok.decorators.func({
     name: 'EsmFold',
     'top-menu': 'Bio | Folding | EsmFold...',
+    meta: {vectorFunc: 'true'},
     outputs: [{name: 'result', type: 'dataframe', options: {action: 'join(table)'}}],
   })
   static async esmFoldModel(
@@ -110,6 +111,7 @@ export class PackageFunctions {
   @grok.decorators.func({
     name: 'DiffDock',
     'top-menu': 'Chem | Docking | DiffDock...',
+    meta: {vectorFunc: 'true'},
     outputs: [{name: 'result', type: 'dataframe', options: {action: 'join(table)'}}],
   })
   static async diffDockModel(

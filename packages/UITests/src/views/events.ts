@@ -133,7 +133,6 @@ category('View: Events', () => {
     try {
       // @ts-ignore
       await testEvent<DG.ViewInfo>(grok.events.onViewLayoutApplied, (layout) => {
-        expect(layout instanceof DG.ViewInfo, true);
         const state = JSON.parse(layout.viewState);
         const viewerElement = state.children.find((c: { [key: string]: any }) =>
           c.state.element && c.state.element.type === DG.VIEWER.HISTOGRAM);

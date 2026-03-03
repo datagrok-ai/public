@@ -165,15 +165,15 @@ export namespace scripts {
   /**
   Fingerprint similarity search in synthon chemical space using RDKit SynthonSpaceSearch
   */
-  export async function synthonSimilaritySearch(molecule: string , synthonLibrary: DG.FileInfo , maxHits: number , similarityCutoff: number ): Promise<DG.DataFrame> {
-    return await grok.functions.call('Chem:SynthonSimilaritySearch', { molecule, synthonLibrary, maxHits, similarityCutoff });
+  export async function synthonSimilaritySearch(molecule: string , synthonLibrary: DG.FileInfo , libraryName: string , maxHits: number , similarityCutoff: number ): Promise<DG.DataFrame> {
+    return await grok.functions.call('Chem:SynthonSimilaritySearch', { molecule, synthonLibrary, libraryName, maxHits, similarityCutoff });
   }
 
   /**
   Substructure search in synthon chemical space using RDKit SynthonSpaceSearch
   */
-  export async function synthonSubstructureSearch(molecule: string , synthonLibrary: DG.FileInfo , maxHits: number ): Promise<DG.DataFrame> {
-    return await grok.functions.call('Chem:SynthonSubstructureSearch', { molecule, synthonLibrary, maxHits });
+  export async function synthonSubstructureSearch(molecule: string , synthonLibrary: DG.FileInfo , libraryName: string , maxHits: number ): Promise<DG.DataFrame> {
+    return await grok.functions.call('Chem:SynthonSubstructureSearch', { molecule, synthonLibrary, libraryName, maxHits });
   }
 
   /**
@@ -514,10 +514,31 @@ export namespace funcs {
   }
 
   /**
+  Substructure search in synthon chemical space using RDKit SynthonSpaceSearch
+  */
+  export async function synthonSubstructureSearchWidget(molecule: string ): Promise<any> {
+    return await grok.functions.call('Chem:SynthonSubstructureSearchWidget', { molecule });
+  }
+
+  /**
   Fingerprint similarity search in synthon chemical space using RDKit SynthonSpaceSearch
   */
-  export async function synthonSimilaritySearch(molecule: string ): Promise<any> {
-    return await grok.functions.call('Chem:SynthonSimilaritySearch', { molecule });
+  export async function synthonSimilaritySearchWidget(molecule: string ): Promise<any> {
+    return await grok.functions.call('Chem:SynthonSimilaritySearchWidget', { molecule });
+  }
+
+  /**
+  Search in synthon chemical space and return products with synthon structures
+  */
+  export async function synthonSearchFunc(spaceName: string , molecule: string , maxHits: number , searchType: string , similarityCutoff: number | undefined| null, returnSynthons: boolean ): Promise<DG.DataFrame> {
+    return await grok.functions.call('Chem:SynthonSearchFunc', { spaceName, molecule, maxHits, searchType, similarityCutoff, returnSynthons });
+  }
+
+  /**
+  Get all available synthon spaces from Chem package files
+  */
+  export async function getSynthonSpacesFunc(): Promise<any> {
+    return await grok.functions.call('Chem:GetSynthonSpacesFunc', {});
   }
 
   export async function convertMoleculeNotation(molecule: DG.Column , targetNotation: string , kekulize?: boolean | null): Promise<DG.Column> {
@@ -866,8 +887,37 @@ export namespace funcs {
     return await grok.functions.call('Chem:MpoProfilesApp', { path });
   }
 
-  export async function mpoProfilesAppTreeBrowser(treeNode: any , browseView: DG.View ): Promise<void> {
-    return await grok.functions.call('Chem:MpoProfilesAppTreeBrowser', { treeNode, browseView });
+  export async function mpoProfilesAppTreeBrowser(treeNode: any , _browseView: DG.View ): Promise<void> {
+    return await grok.functions.call('Chem:MpoProfilesAppTreeBrowser', { treeNode, _browseView });
+  }
+
+  /**
+  Removes water and salts from the list of molecules
+  */
+  export async function removeWaterAndSaltsTopMenu(table: DG.DataFrame , molecules: DG.Column ): Promise<DG.Column> {
+    return await grok.functions.call('Chem:RemoveWaterAndSaltsTopMenu', { table, molecules });
+  }
+
+  /**
+  Runs reaction based on the reaction SMARTS and list of reactants
+  */
+  export async function transformationReactionsTopMenu(): Promise<void> {
+    return await grok.functions.call('Chem:TransformationReactionsTopMenu', {});
+  }
+
+  /**
+  Runs a reaction between molecules from two columns
+  */
+  export async function twoComponentReactionTopMenu(): Promise<void> {
+    return await grok.functions.call('Chem:TwoComponentReactionTopMenu', {});
+  }
+
+  export async function transformationReactionsApp(_path?: string ): Promise<DG.View> {
+    return await grok.functions.call('Chem:TransformationReactionsApp', { _path });
+  }
+
+  export async function twoComponentReactionsApp(_path?: string ): Promise<DG.View> {
+    return await grok.functions.call('Chem:TwoComponentReactionsApp', { _path });
   }
 
   export async function mpoWidget(smiles: any ): Promise<any> {
