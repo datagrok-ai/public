@@ -433,18 +433,6 @@ class BioPackageDetectors extends DG.Package {
         return symbol;
       if (this.forbiddenMulticharLast.includes(symbol[symbolLen - 1]))
         return symbol;
-      const ssqCount = Array.from(symbol).filter((s) => s === '[').length;
-      const sseCount = Array.from(symbol).filter((s) => s === ']').length;
-      if (ssqCount !== sseCount)
-        return symbol; // unbalanced brackets are not allowed in multichar monomers
-      // also make sure that brackets are correctly balanced
-      let balance = 0;
-      for (const c of symbol) {
-        if (c === '[') balance++;
-        else if (c === ']') balance--;
-        if (balance < 0) return symbol;
-      }
-
       for (let cI = 1; cI < symbolLen - 1; ++cI) {
         const c = symbol[cI];
         if (this.forbiddenMulticharAll.includes(c))
