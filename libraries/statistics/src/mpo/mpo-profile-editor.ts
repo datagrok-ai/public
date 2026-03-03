@@ -49,7 +49,6 @@ export class MpoProfileEditor {
       },
     });
     this.aggregationInput.setTooltip('Score aggregation method');
-    this.aggregationInput.addPostfix('How individual property scores combine into the final MPO score');
   }
 
   private newRowId(): string {
@@ -116,8 +115,13 @@ export class MpoProfileEditor {
       return this.rows[rowId];
     });
 
-    if (!rows.length)
+    if (!rows.length) {
+      if (!this.preview)
+        this.root.append(this.buildHeader());
+      if (this.design)
+        return this.renderDesignEmpty();
       return this.renderEmpty('No properties defined.');
+    }
 
     if (!this.preview)
       this.root.append(this.buildHeader());
@@ -126,6 +130,38 @@ export class MpoProfileEditor {
 
   private renderEmpty(text: string): void {
     this.root.append(ui.divText(text));
+  }
+
+  private renderDesignEmpty(): void {
+    const icon = ui.iconFA('chart-line');
+    icon.style.cursor = 'default';
+    icon.style.pointerEvents = 'none';
+    const heading = ui.divText('No properties yet', 'statistics-mpo-empty-heading');
+    const msg = ui.div([
+      'Select a dataset to auto-populate properties from its numerical columns, or add them manually.',
+    ], 'description');
+    const addBtn = ui.element('a');
+    addBtn.textContent = '+ Add Property';
+    addBtn.classList.add('d4-link-action', 'statistics-mpo-empty-add');
+    addBtn.addEventListener('click', () => this.addProperty());
+    const container = ui.divV([icon, heading, msg, addBtn], 'statistics-mpo-empty-state');
+    this.root.append(container);
+  }
+
+  addProperty(): void {
+    if (!this.profile)
+      return;
+
+    const newName = `NewProperty${Object.keys(this.profile.properties).length + 1}`;
+    const newRowId = this.newRowId();
+
+    this.profile.properties[newName] = createDefaultNumerical();
+    this.rowIds[newName] = newRowId;
+    this.propertyOrder.push(newName);
+
+    this.rows = {};
+    this.render();
+    this.emitChange();
   }
 
   private buildHeader(): HTMLElement {
@@ -395,8 +431,13 @@ export class MpoProfileEditor {
     if (idx >= 0)
       this.propertyOrder.splice(idx, 1);
 
-    this.rows[rowId]?.remove();
+    const rowEl = this.rows[rowId];
     delete this.rows[rowId];
+
+    if (this.propertyOrder.length === 0)
+      this.render();
+    else
+      rowEl?.remove();
 
     this.emitChange();
   }

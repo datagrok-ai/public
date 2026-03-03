@@ -92,8 +92,7 @@ export class MpoProfileDialog {
       },
     });
 
-    this.pmpoSettingsContainer = ui.divV([this.methodInput.root],
-      {style: {display: 'none'}});
+    this.pmpoSettingsContainer = ui.divV([this.methodInput.root], {style: {display: 'none'}});
 
     this.pmpoSettingsIcon = ui.icons.settings(() => {
       this.pmpoSettingsOpened = !this.pmpoSettingsOpened;

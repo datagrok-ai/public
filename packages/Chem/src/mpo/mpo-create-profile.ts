@@ -89,7 +89,6 @@ export class MpoProfileCreateView {
     );
 
     this.initControls(showMethod);
-    this.initSaveButton();
     this.attachLayout();
     this.listenForProfileChanges();
   }
@@ -115,8 +114,6 @@ export class MpoProfileCreateView {
   }
 
   private initControls(showMethod: boolean) {
-    const controls: DG.InputBase[] = [];
-
     if (showMethod) {
       this.methodInput = ui.input.choice('Method', {
         items: [METHOD_MANUAL, METHOD_PROBABILISTIC],
@@ -125,7 +122,6 @@ export class MpoProfileCreateView {
         onValueChanged: () => this.onMethodChanged(),
       });
       this.methodInput.addPostfix('Manual desirability curve editing or probabilistic MPO trained from labeled data');
-      controls.push(this.methodInput);
     }
 
     this.datasetInput = ui.input.table('Dataset', {
@@ -134,28 +130,34 @@ export class MpoProfileCreateView {
     });
     this.datasetInput.addOptions(
       ui.divText('Load data to preview desirability scores as you edit the profile', 'ui-input-description'));
-    controls.push(this.datasetInput);
 
+    this.editor.aggregationInput.addPostfix('How individual property scores combine into the final MPO score');
+
+    const controls: DG.InputBase[] = [];
+    if (this.methodInput)
+      controls.push(this.methodInput);
+    controls.push(this.datasetInput);
     controls.push(this.editor.aggregationInput);
 
-    const headerDiv = ui.divV([ui.h1(`${this.view.name} Profile`), ui.form(controls)]);
-    headerDiv.classList.add('chem-profile-header');
+    this.saveButton = ui.bigButton('Save', () => this.showSaveDialog());
+    this.saveButton.classList.add('d4-disabled');
 
-    this.profileViewContainer = ui.divV([headerDiv]);
+    const header = ui.h1(this.isEditMode ? `Edit ${this.profile.name || 'MPO'}` : 'Create MPO Profile');
+    header.classList.add('chem-profile-header');
+
+    const toolbarWithSave = ui.divV([ui.form(controls), this.saveButton], 'chem-profile-toolbar-wrap');
+
+    this.profileViewContainer = ui.divV([header, toolbarWithSave]);
     this.profileViewContainer.classList.add('chem-profile-view');
 
     this.view.root.append(this.profileViewContainer);
   }
 
-  private initSaveButton() {
-    this.saveButton = ui.bigButton('Save', () => this.showSaveDialog());
-    this.saveButton.style.display = 'none';
-    this.activeView.setRibbonPanels([[this.saveButton]]);
-  }
-
   // --- Event handlers ---
 
   private async onMethodChanged(): Promise<void> {
+    this.editor.aggregationInput.root.style.display = this.isManualMode ? '' : 'none';
+
     if (this.methodInput!.value === METHOD_PROBABILISTIC) {
       this.stashedManualProfile = {
         profile: structuredClone(this.profile),
@@ -249,7 +251,7 @@ export class MpoProfileCreateView {
         const saved = await MpoProfileManager.save(this.profile, fileName);
         if (saved) {
           this.fileName = fileName;
-          this.saveButton!.style.display = 'none';
+          this.saveButton!.classList.add('d4-disabled');
           this.profileModified = false;
         }
       })
@@ -279,7 +281,7 @@ export class MpoProfileCreateView {
       }
 
       if (this.profileModified && this.saveButton)
-        this.saveButton.style.display = 'initial';
+        this.saveButton.classList.remove('d4-disabled');
 
       if (!this.df) {
         this.profileViewContainer.append(this.profileEditorContainer);
@@ -294,9 +296,12 @@ export class MpoProfileCreateView {
 
   private clearPreviousLayout() {
     const header = this.profileViewContainer.children[0];
+    const toolbar = this.profileViewContainer.children[1];
     ui.empty(this.profileViewContainer);
     if (header)
       this.profileViewContainer.append(header);
+    if (toolbar)
+      this.profileViewContainer.append(toolbar);
   }
 
   private async setupGridAndContextPanel() {
@@ -426,8 +431,6 @@ export class MpoProfileCreateView {
     }
 
     this.pMpoDockedItems = null;
-    if (this.saveButton)
-      this.activeView.setRibbonPanels([[this.saveButton]]);
   }
 
   private prepareManualLayout(): void {
@@ -477,7 +480,7 @@ export class MpoProfileCreateView {
 
     this.subs.push(grok.events.onCustomEvent(MPO_SCORE_CHANGED_EVENT).subscribe(async () => {
       if (!this.updatingLayout) {
-        this.saveButton!.style.display = 'initial';
+        this.saveButton!.classList.remove('d4-disabled');
         this.profileModified = true;
       }
       if (!this.df || !this.profile || !this.mpoContextPanel)
