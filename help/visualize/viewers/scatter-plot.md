@@ -268,6 +268,7 @@ Youtube")](https://www.youtube.com/watch?v=7MBXWzdC0-I&t=214s)
 | Marker Max Size | number |  |
 | **General** | | |
 | Lines Order Column Name | string | When defined, a line would be drawn for each series (defined by the categorical color column) using the order specified by Lines Order |
+| Lines By Column Name | string | When defined, lines are split into separate series by this categorical column instead of the color column. |
 | Lines Width | number | Defines the width of the lines connecting the markers. See **Lines Width**. |
 | Show Min Max Tickmarks | boolean | Shows tickmarks and labels for minimum and maximum value on each axis. |
 | Show Drop Lines | boolean | Shows exact X and Y coordinates for the mouse cursor. |
