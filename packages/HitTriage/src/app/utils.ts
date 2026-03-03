@@ -14,8 +14,10 @@ import {
   getSavedFunctionOrdering as _getSavedFunctionOrdering,
   setSavedFunctionOrdering as _setSavedFunctionOrdering,
   getReorderingInput as _getReorderingInput,
+  normalizeTemplateCompute,
 } from '@datagrok-libraries/statistics/src/compute-functions/utils';
 import type {FunctionOrdering} from '@datagrok-libraries/statistics/src/compute-functions/utils';
+import type {TemplateCompute} from '@datagrok-libraries/statistics/src/compute-functions/types';
 
 // Wrappers that bind the HitTriage-specific localStorage key
 export function getSavedFunctionOrdering(): FunctionOrdering {
@@ -479,4 +481,11 @@ export function timeoutOneTimeEventListener(element: HTMLElement, eventName: str
 
 export function isNil(something: any) {
   return something === '' || something === null || something === undefined || (typeof something == 'number' && isNaN(something));
+}
+
+export async function loadTemplate<T extends {compute: TemplateCompute}>(path: string): Promise<T> {
+  const raw = JSON.parse(await _package.files.readAsText(path));
+  if (raw.compute)
+    raw.compute = normalizeTemplateCompute(raw.compute);
+  return raw as T;
 }

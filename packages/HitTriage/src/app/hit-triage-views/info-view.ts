@@ -7,7 +7,7 @@ import {HitTriageTemplate} from '../types';
 import {CampaignIdKey, CampaignJsonName, i18n} from '../consts';
 import {HitTriageCampaign} from '../types';
 import '../../../css/hit-triage.css';
-import {addBreadCrumbsToRibbons, checkEditPermissions, checkViewPermissions, modifyUrl, popRibbonPannels} from '../utils';
+import {addBreadCrumbsToRibbons, checkEditPermissions, checkViewPermissions, loadTemplate, modifyUrl, popRibbonPannels} from '../utils';
 import {newCampaignAccordeon} from '../accordeons/new-campaign-accordeon';
 import $ from 'cash-dom';
 import {createTemplateAccordeon} from '../accordeons/new-template-accordeon';
@@ -79,7 +79,7 @@ export class InfoView extends HitBaseView<HitTriageTemplate, HitTriageApp> {
     const onTemmplateChange = async () => {
       const templateName = templatesInput.value;
       const template: HitTriageTemplate = presetTemplate && presetTemplate.name === templateName ? presetTemplate :
-        JSON.parse(await _package.files.readAsText('Hit Triage/templates/' + templateName + '.json'));
+        await loadTemplate<HitTriageTemplate>('Hit Triage/templates/' + templateName + '.json');
       const newCampaignAccordeon = await this.getNewCampaignAccordeon(template, containerDiv);
       $(containerDiv).empty();
       containerDiv.className = 'ui-form';
@@ -126,8 +126,8 @@ export class InfoView extends HitBaseView<HitTriageTemplate, HitTriageApp> {
       this.app.campaign = campaign;
     }
     // Load the template and modify it
-    const template: HitTriageTemplate = JSON.parse(
-      await _package.files.readAsText(`Hit Triage/templates/${campaign.templateName}.json`),
+    const template: HitTriageTemplate = await loadTemplate<HitTriageTemplate>(
+      `Hit Triage/templates/${campaign.templateName}.json`,
     );
     // modify the template with path to the campaign's precalculated table
     this.app.setTemplate(template, campaign.filters, campaignId!, campaign.ingest);

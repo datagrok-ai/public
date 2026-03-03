@@ -6,4 +6,4 @@ export {discoverComputeFunctions} from './discovery';
 export {calculateCellValues, calculateColumns, ComputeExecutionOptions} from './execution';
 export {chemFunctionsDialog} from './dialog';
 export {joinQueryResults, getSavedFunctionOrdering, setSavedFunctionOrdering,
-  getReorderingInput, getFuncPackageNameSafe, FunctionOrdering} from './utils';
+  getReorderingInput, getFuncPackageNameSafe, normalizeTemplateCompute, FunctionOrdering} from './utils';
