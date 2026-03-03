@@ -1938,6 +1938,7 @@ export class PackageFunctions {
     if (DG.Detector.sampleCategories(col, PackageFunctions.isSmiles, min, 10, 0.8)) {
       col.meta.units = DG.UNITS.Molecule.SMILES;
       col.semType = DG.SEMTYPE.MOLECULE;
+      col.meta.cellRenderer = 'Molecule';
     }
   }
 

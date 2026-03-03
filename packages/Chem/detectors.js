@@ -48,6 +48,7 @@ class ChemPackageDetectors extends DG.Package {
   detectMolecules(col) {
     if (DG.Detector.sampleCategories(col, (s) => s.includes('M  END'), 1)) {
       col.meta.units = DG.UNITS.Molecule.MOLBLOCK;
+      col.meta.cellRenderer = 'Molecule';
       return DG.SEMTYPE.MOLECULE;
     }
 
