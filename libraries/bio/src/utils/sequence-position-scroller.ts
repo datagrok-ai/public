@@ -1555,8 +1555,11 @@ export class MSAScrollingHeader {
       return;
     }
 
-    if (this.isInsideColumnHeaderArea(x, y))
+    if (this.isInsideColumnHeaderArea(x, y)) {
+      if (this.seqColumn)
+        grok.shell.o = this.seqColumn;
       return;
+    }
 
     const sliderTop = this.config.headerHeight - LAYOUT_CONSTANTS.SLIDER_HEIGHT;
 

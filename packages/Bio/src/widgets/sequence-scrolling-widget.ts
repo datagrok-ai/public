@@ -10,6 +10,7 @@ import * as ui from 'datagrok-api/ui';
 import {ConservationTrack, MSAHeaderTrack, MSAScrollingHeader, WebLogoTrack} from '@datagrok-libraries/bio/src/utils/sequence-position-scroller';
 import {MonomerPlacer} from '@datagrok-libraries/bio/src/utils/cell-renderer-monomer-placer';
 import {ALPHABET, TAGS as bioTAGS} from '@datagrok-libraries/bio/src/utils/macromolecule';
+import {AnnotationTrack} from '@datagrok-libraries/bio/src/utils/annotation-track';
 import {_package} from '../package';
 import {ISeqHandler} from '@datagrok-libraries/bio/src/utils/macromolecule/seq-handler';
 import * as rxjs from 'rxjs';
@@ -442,18 +443,11 @@ export function handleSequenceHeaderRendering() {
         const initializeHeaders = (monomerLib: IMonomerLib) => {
           const tracks: { id: string, track: MSAHeaderTrack, priority: number }[] = [];
 
-          // Create lazy tracks only for MSA sequences
-
-          // OPTIMIZED: Pass seqHandler directly instead of column/splitter
-          const conservationTrack = new LazyConservationTrack(
-            sh,
-            maxSeqLen,
-            45, // DEFAULT_TRACK_HEIGHT
-            'default',
-            'Conservation'
-          );
-          conservationTrackRef = conservationTrack; // Store reference
-          tracks.push({id: 'conservation', track: conservationTrack, priority: 1});
+          // Priority ordering: annotations (0) → weblogo (1) → conservation (2)
+          // Annotation track is primary when annotation data exists
+          const annotationTrack = new AnnotationTrack(seqCol, 'Annotations');
+          if (annotationTrack.hasRegions())
+            tracks.push({id: 'annotations', track: annotationTrack, priority: 0});
 
           // OPTIMIZED: Pass seqHandler directly
           const webLogoTrack = new LazyWebLogoTrack(
@@ -470,7 +464,18 @@ export function handleSequenceHeaderRendering() {
           }
 
           webLogoTrack.setupDefaultTooltip();
-          tracks.push({id: 'weblogo', track: webLogoTrack, priority: 2});
+          tracks.push({id: 'weblogo', track: webLogoTrack, priority: 1});
+
+          // OPTIMIZED: Pass seqHandler directly instead of column/splitter
+          const conservationTrack = new LazyConservationTrack(
+            sh,
+            maxSeqLen,
+            45, // DEFAULT_TRACK_HEIGHT
+            'default',
+            'Conservation'
+          );
+          conservationTrackRef = conservationTrack; // Store reference
+          tracks.push({id: 'conservation', track: conservationTrack, priority: 2});
 
           // Create the scrolling header
           const scroller = new MSAScrollingHeader({
@@ -503,7 +508,8 @@ export function handleSequenceHeaderRendering() {
 
           scroller.setupTooltipHandling();
 
-          // Add tracks to scroller
+          // Add tracks to scroller sorted by priority (annotations first, then weblogo, then conservation)
+          tracks.sort((a, b) => a.priority - b.priority);
           tracks.forEach(({id, track}) => {
             scroller.addTrack(id, track);
           });

@@ -223,6 +223,27 @@ export async function getRegionTopMenu(table: DG.DataFrame, sequence: DG.Column,
   await PackageFunctions.getRegionTopMenu(table, sequence, start, end, name);
 }
 
+//name: Apply Numbering Scheme
+//description: Assigns antibody numbering (IMGT/Kabat/Chothia/AHo) using AntPack
+//top-menu: Bio | Annotate | Apply Numbering Scheme...
+export function applyNumberingScheme() : void {
+  PackageFunctions.applyNumberingScheme();
+}
+
+//name: Scan Liabilities
+//description: Scans macromolecule sequences for deamidation, oxidation, and other liabilities
+//top-menu: Bio | Annotate | Scan Liabilities...
+export function scanLiabilities() : void {
+  PackageFunctions.scanLiabilities();
+}
+
+//name: Manage Annotations
+//description: View and manage sequence annotations on macromolecule columns
+//top-menu: Bio | Annotate | Manage Annotations...
+export function manageAnnotations() : void {
+  PackageFunctions.manageAnnotations();
+}
+
 //name: Sequence Activity Cliffs
 //description: Detects pairs of molecules with similar structure and significant difference in any given property
 //input: dataframe table { description: Input data table }

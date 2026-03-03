@@ -459,6 +459,35 @@ export class PackageFunctions {
     await grok.data.detectSemanticTypes(sequence.dataFrame); // to set renderer
   }
 
+  // -- Annotation menu entries --
+
+  @grok.decorators.func({
+    name: 'Apply Numbering Scheme',
+    description: 'Assigns antibody numbering (IMGT/Kabat/Chothia/AHo) using AntPack',
+    'top-menu': 'Bio | Annotate | Apply Numbering Scheme...',
+  })
+  static applyNumberingScheme(): void {
+    import('./utils/annotations/numbering-ui').then((m) => m.showNumberingSchemeDialog());
+  }
+
+  @grok.decorators.func({
+    name: 'Scan Liabilities',
+    description: 'Scans macromolecule sequences for deamidation, oxidation, and other liabilities',
+    'top-menu': 'Bio | Annotate | Scan Liabilities...',
+  })
+  static scanLiabilities(): void {
+    import('./utils/annotations/liability-scanner-ui').then((m) => m.showLiabilityScannerDialog());
+  }
+
+  @grok.decorators.func({
+    name: 'Manage Annotations',
+    description: 'View and manage sequence annotations on macromolecule columns',
+    'top-menu': 'Bio | Annotate | Manage Annotations...',
+  })
+  static manageAnnotations(): void {
+    import('./utils/annotations/annotation-manager-ui').then((m) => m.showAnnotationManagerDialog());
+  }
+
   @grok.decorators.func({
     name: 'Sequence Activity Cliffs',
     description: 'Detects pairs of molecules with similar structure and significant difference in any given property',
