@@ -912,16 +912,24 @@ export class Pmpo {
           useSigmoidInput.value,
         );
 
-        if (optimalSettings.success) {
+        if (optimalSettings.state === 'success') {
           pInput.value = Math.max(optimalSettings.pValTresh, P_VAL_TRES_MIN);
           rInput.value = Math.max(optimalSettings.r2Tresh, R2_MIN);
           qInput.value = Math.max(optimalSettings.qCutoff, Q_CUTOFF_MIN);
           areTunedSettingsUsed = true;
-        } else
-          autoTuneInput.value = false; // revert to manual mode if optimization failed
-      }
-
-      runComputations();
+          runComputations();
+        } else {
+          applyValidationState({
+            valid: false,
+            errors: new Map<PmpoInputId, string>([
+              ['descriptors', optimalSettings.msg],
+              ['desirability', optimalSettings.msg],
+            ]),
+          });
+          //autoTuneInput.value = false; // revert to manual mode if optimization failed
+        }
+      } else
+        runComputations();
     }; // setOptimalParametersAndRun
 
     // Default tooltips for valid inputs
@@ -1010,6 +1018,8 @@ export class Pmpo {
         // If auto-tuning is turned on, set optimal parameters and run computations
         if (value)
           await setOptimalParametersAndRun();
+        else
+          runComputations();
       },
     });
     form.append(autoTuneInput.root);
@@ -1232,13 +1242,6 @@ export class Pmpo {
 
   /** Fits the pMPO model to the given data and updates the viewers accordingly */
   private async getOptimalSettings(descriptors: DG.ColumnList, desirability: DG.Column, useSigmoid: boolean): Promise<OptimalPoint> {
-    const failedResult: OptimalPoint = {
-      pValTresh: 0,
-      r2Tresh: 0,
-      qCutoff: 0,
-      success: false,
-    };
-
     const pi = DG.TaskBarProgressIndicator.create('Optimizing... ', {cancelable: true});
 
     try {
@@ -1254,8 +1257,17 @@ export class Pmpo {
 
       // Filter by p-value
       const selectedByPvalue = getFilteredByPvalue(descrStatsTable, P_VAL_TRES_DEFAULT);
-      if (selectedByPvalue.length < 1)
-        return failedResult;
+      if (selectedByPvalue.length < 1) {
+        pi.close();
+
+        return {
+          pValTresh: 0,
+          r2Tresh: 0,
+          qCutoff: 0,
+          state: 'failed',
+          msg: 'No descriptors passed the p-value threshold filter.',
+        };
+      }
 
       const correlationTriples = getCorrelationTriples(descriptors, selectedByPvalue);
 
@@ -1290,14 +1302,28 @@ export class Pmpo {
           pValTresh: P_VAL_TRES_DEFAULT,
           r2Tresh: optimalResult.optimalPoint[0],
           qCutoff: optimalResult.optimalPoint[1],
-          success: true,
+          state: 'success',
+          msg: 'Optimization completed successfully.',
         };
-      } else
-        return failedResult;
+      } else {
+        return {
+          pValTresh: 0,
+          r2Tresh: 0,
+          qCutoff: 0,
+          state: 'canceled',
+          msg: 'Auto-tuning was canceled by the user.',
+        };
+      }
     } catch (err) {
       pi.close();
 
-      return failedResult;
+      return {
+        pValTresh: 0,
+        r2Tresh: 0,
+        qCutoff: 0,
+        state: 'failed',
+        msg: err instanceof Error ? err.message : 'Optimization failed due to an unexpected error.',
+      };
     }
   } // getOptimalSettings
 }; // Pmpo

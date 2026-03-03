@@ -208,7 +208,8 @@ export type OptimalPoint = {
   pValTresh: number,
   r2Tresh: number,
   qCutoff: number,
-  success: boolean,
+  state: 'success' | 'canceled' | 'failed',
+  msg: string,
 };
 
 /** Minimum bounds for pMPO parameters during optimization */
