@@ -2312,7 +2312,7 @@ export class PackageFunctions {
 
   static async getContainer() {
     if (!container)
-      container = await grok.dapi.docker.dockerContainers.filter('chemprop').first();
+      container = await grok.dapi.docker.dockerContainers.filter('name = "chem-chemprop"').first();
     return container;
   }
 
