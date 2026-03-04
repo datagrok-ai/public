@@ -263,12 +263,26 @@ function profileAlign(
     }
   }
 
-  // Second pass: handle insertions (residues aligned to gap positions
-  // that were already used, or residues near gap positions)
+  // Determine the alignment span: only create insertions between the first
+  // and last directly-matched profile positions. Residues outside this span
+  // (leader peptide, constant region, etc.) should remain as '-'.
+  let firstMatchedSeqIdx = -1;
+  let lastMatchedSeqIdx = -1;
+  for (const [seqIdx, profIdx] of alignment) {
+    if (profIdx >= 0 && seqIdx >= 0) {
+      if (firstMatchedSeqIdx === -1) firstMatchedSeqIdx = seqIdx;
+      lastMatchedSeqIdx = seqIdx;
+    }
+  }
+
+  // Second pass: handle insertions (residues within the alignment span
+  // that weren't directly matched to a profile position)
   // Insertion codes use letters: A, B, C, ...
   const insertionCounters = new Map<string, number>();
   for (let si = 0; si < n; si++) {
     if (positionCodes[si] !== '-') continue;
+    // Only create insertions within the alignment span
+    if (si < firstMatchedSeqIdx || si > lastMatchedSeqIdx) continue;
     // Find the nearest assigned position before this one
     let prevPos = '';
     for (let k = si - 1; k >= 0; k--) {
@@ -376,8 +390,9 @@ function findCTerminal(seq: string, chain: ChainType): number {
   let bestScore = -Infinity;
   let bestPos = -1;
 
-  // Scan for best match in the last portion of the sequence
-  const searchStart = Math.max(0, seq.length - motifLen - 30);
+  // Scan for best match across the sequence (variable region FW4 can be
+  // far from the C-terminus in sequences with constant regions)
+  const searchStart = Math.max(0, Math.floor(seq.length * 0.3));
   for (let start = searchStart; start <= seq.length - motifLen; start++) {
     let score = 0;
     for (let j = 0; j < motifLen; j++) {
@@ -411,32 +426,66 @@ export function alignSequence(
     return { numbering: [], percentIdentity: 0, chainType: 'H', error: 'Sequence too short' };
   }
 
+  // Pre-compute CTERM positions for all chain types
+  const ctermPositions = new Map<ChainType, number>();
+  for (const chain of chains) {
+    const idx = findCTerminal(seq, chain);
+    if (idx >= 0) ctermPositions.set(chain, idx);
+  }
+
+  // Detect scFv: if Heavy and Light CTERM positions are both found
+  // and far apart, this is a single-chain variable fragment (VH + VL)
+  const ctermH = ctermPositions.get('H') ?? -1;
+  const ctermK = ctermPositions.get('K') ?? -1;
+  const ctermL = ctermPositions.get('L') ?? -1;
+  const ctermLight = Math.max(ctermK, ctermL);
+  const lightChain: ChainType = ctermK >= ctermL ? 'K' : 'L';
+
+  const scfvDomainStart = new Map<ChainType, number>();
+  if (ctermH >= 0 && ctermLight >= 0 && Math.abs(ctermH - ctermLight) > 80) {
+    if (ctermLight < ctermH) {
+      // VL-linker-VH: Light domain first, Heavy domain second.
+      // Trim Heavy to skip past VL domain so it aligns cleanly to VH.
+      const ctLen = getCtermProfile(lightChain).length;
+      scfvDomainStart.set('H', ctermLight + ctLen);
+    }
+    // For VH-VL: Heavy is already at position 0 and aligns well naturally.
+    // Don't trim Light - leaving it untrimmed means VH residues confuse
+    // the Light alignment, keeping Heavy as the best match.
+  }
+
+  const isScfv = ctermH >= 0 && ctermLight >= 0 && Math.abs(ctermH - ctermLight) > 80;
+
   let bestResult: AlignmentResult | null = null;
   let bestIdentity = -1;
+  let heavyResult: AlignmentResult | null = null;
+  let heavyIdentity = -1;
 
   for (const chain of chains) {
     const profile = getConsensusProfile(scheme, chain);
 
-    // Try to trim the sequence to the variable region using C-terminal finder
     let trimmedSeq = seq;
     let seqOffset = 0;
-    const ctermIdx = findCTerminal(seq, chain);
+    const ctermIdx = ctermPositions.get(chain) ?? -1;
     const ctermLen = getCtermProfile(chain).length;
+
+    // C-terminal trimming
     if (ctermIdx >= 0) {
-      // Include the C-terminal motif plus a small buffer for positions
-      // not covered by the short CTERM profile (e.g. IMGT position 128).
       const ctermEnd = Math.min(seq.length, ctermIdx + ctermLen + 5);
       trimmedSeq = seq.substring(0, ctermEnd);
     }
 
-    // Also try to find a reasonable N-terminal start
-    // Antibody variable regions typically start with specific residues
-    if (trimmedSeq.length > 180) {
-      // Try different start points
+    // N-terminal trimming
+    const domainStart = scfvDomainStart.get(chain);
+    if (domainStart !== undefined && domainStart > 0 && domainStart < trimmedSeq.length - 80) {
+      // scFv: skip past the other domain
+      seqOffset = domainStart;
+      trimmedSeq = trimmedSeq.substring(domainStart);
+    } else if (trimmedSeq.length > 180) {
+      // Long sequence (with constant region): try a few N-terminal start positions
       const starts = [0];
-      // Look for common N-terminal patterns
+      const firstAAs = profile.slice(0, 5).map(p => p[1]).flat();
       for (let i = 1; i < Math.min(30, trimmedSeq.length - 80); i++) {
-        const firstAAs = profile.slice(0, 5).map(p => p[1]).flat();
         if (firstAAs.includes(trimmedSeq[i])) {
           starts.push(i);
           break;
@@ -444,7 +493,6 @@ export function alignSequence(
       }
 
       let bestLocalIdentity = -1;
-      let bestLocalResult: { positionCodes: string[]; matchedPositions: number; totalProfilePositions: number } | null = null;
       let bestOffset = 0;
 
       for (const start of starts) {
@@ -453,12 +501,11 @@ export function alignSequence(
         const identity = computeIdentity(subSeq, result.positionCodes, profile);
         if (identity > bestLocalIdentity) {
           bestLocalIdentity = identity;
-          bestLocalResult = result;
           bestOffset = start;
         }
       }
 
-      if (bestLocalResult) {
+      if (bestOffset > 0) {
         seqOffset = bestOffset;
         trimmedSeq = trimmedSeq.substring(seqOffset);
       }
@@ -467,25 +514,64 @@ export function alignSequence(
     const result = profileAlign(trimmedSeq, profile);
     const identity = computeIdentity(trimmedSeq, result.positionCodes, profile);
 
+    // Build full numbering array
+    const fullNumbering: string[] = new Array(seq.length).fill('-');
+    for (let i = 0; i < trimmedSeq.length; i++) {
+      fullNumbering[seqOffset + i] = result.positionCodes[i];
+    }
+
+    // KABAT CDR-H1 insertion placement: insertions should go after position 35
+    // (not left-aligned after 31). Redistribute if needed.
+    if (scheme === 'kabat' && chain === 'H') {
+      const cdr1Indices: number[] = [];
+      for (let i = 0; i < fullNumbering.length; i++) {
+        if (fullNumbering[i] === '-') continue;
+        const baseNum = parseInt(fullNumbering[i], 10);
+        if (!isNaN(baseNum) && baseNum >= 31 && baseNum <= 35) {
+          cdr1Indices.push(i);
+        }
+      }
+      if (cdr1Indices.length > 5) {
+        // First 5 get base positions 31-35, rest get 35A, 35B, etc.
+        for (let j = 0; j < cdr1Indices.length; j++) {
+          if (j < 5) {
+            fullNumbering[cdr1Indices[j]] = String(31 + j);
+          } else {
+            fullNumbering[cdr1Indices[j]] = '35' + String.fromCharCode(64 + j - 4);
+          }
+        }
+      }
+    }
+
+    const validationError = validateConserved(trimmedSeq, result.positionCodes, profile);
+
+    const chainResult: AlignmentResult = {
+      numbering: fullNumbering,
+      percentIdentity: identity,
+      chainType: chain,
+      error: identity < 0.3 ? 'Low sequence identity; may not be an antibody variable region' :
+             validationError || '',
+    };
+
+    // Save Heavy result for scFv preference
+    if (chain === 'H') {
+      heavyResult = chainResult;
+      heavyIdentity = identity;
+    }
+
     if (identity > bestIdentity) {
       bestIdentity = identity;
-
-      // Build full numbering array
-      const fullNumbering: string[] = new Array(seq.length).fill('-');
-      for (let i = 0; i < trimmedSeq.length; i++) {
-        fullNumbering[seqOffset + i] = result.positionCodes[i];
-      }
-
-      const validationError = validateConserved(trimmedSeq, result.positionCodes, profile);
-
-      bestResult = {
-        numbering: fullNumbering,
-        percentIdentity: identity,
-        chainType: chain,
-        error: identity < 0.3 ? 'Low sequence identity; may not be an antibody variable region' :
-               validationError || '',
-      };
+      bestResult = chainResult;
     }
+  }
+
+  // For scFv sequences, prefer Heavy chain when identities are close.
+  // In scFv constructs, both VH and VL domains match their respective
+  // profiles well. AntPack (HMMER-based) naturally picks VH; we replicate
+  // this by preferring Heavy when its identity is within 0.05 of the best.
+  if (isScfv && bestResult && bestResult.chainType !== 'H' &&
+      heavyResult && heavyIdentity > 0.9 && bestIdentity - heavyIdentity < 0.05) {
+    bestResult = heavyResult;
   }
 
   return bestResult!;
