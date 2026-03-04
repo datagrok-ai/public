@@ -69,6 +69,13 @@ category('Shell', () => {
     expect(document.querySelector(".dockManagerTest"), null);
   });
 
+  test('ViewBase rename after toDart-toJs conversion', async () => {
+    const view = DG.toJs(DG.toDart(new DG.ViewBase())) as DG.ViewBase;
+    const testName = 'TestViewName';
+    view.name = testName;
+    expect(view.name, testName);
+  });
+
   test('getSetVar', async () => {
     let x  = { test: 'test1' };
     //@ts-ignore
