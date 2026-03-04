@@ -856,7 +856,7 @@ export namespace funcs {
     return await grok.functions.call('Chem:MpoCalculate', { df, columns, profileName, aggregation });
   }
 
-  export async function mpoTransformFunction(df: DG.DataFrame , profileName: string , aggregation: string , currentProperties: string , silent: boolean ): Promise<DG.DataFrame> {
+  export async function mpoTransformFunction(df: DG.DataFrame , profileName: string , aggregation: string , currentProperties: string , silent: boolean ): Promise<any> {
     return await grok.functions.call('Chem:MpoTransformFunction', { df, profileName, aggregation, currentProperties, silent });
   }
 

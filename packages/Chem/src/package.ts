@@ -2560,6 +2560,7 @@ export class PackageFunctions {
   }
 
   @grok.decorators.func({
+    meta: {vectorFunc: 'true'},
     outputs: [{name: 'result', type: 'dataframe', options: {action: 'join(df)'}}],
   })
   static mpoCalculate(
@@ -2568,22 +2569,24 @@ export class PackageFunctions {
     profileName: string,
     @grok.decorators.param({type: 'string'}) aggregation: WeightedAggregation,
   ): DG.DataFrame | null {
-    const resultCol = mpo(df, Array.from(columns), profileName, aggregation);
-    if (resultCol && !df.col(resultCol.name))
-      return DG.DataFrame.fromColumns([resultCol]);
+    const cols = Array.from(columns);
+    const isDifferent = df.rowCount !== cols[0].length;
+    const resultColumn = mpo(df, cols, profileName, aggregation, isDifferent);
+    if (resultColumn && (!df.col(resultColumn.name) || isDifferent))
+      return DG.DataFrame.fromColumns([resultColumn]);
     return null;
   }
 
   @grok.decorators.func({
     meta: {role: 'transform'},
   })
-  static async mpoTransformFunction(
+  static mpoTransformFunction(
     df: DG.DataFrame,
     profileName: string,
     @grok.decorators.param({type: 'string'}) aggregation: WeightedAggregation,
     @grok.decorators.param({type: 'string'}) currentProperties: string,
     silent: boolean = false,
-  ): Promise<DG.DataFrame> {
+  ): DG.Column[] {
     const parsedProperties: Record<string, PropertyDesirability> = JSON.parse(currentProperties);
     const columns: DG.Column[] = [];
 
@@ -2601,12 +2604,9 @@ export class PackageFunctions {
     if (columns.length === 0) {
       if (!silent)
         grok.shell.error('No valid columns found matching the profile properties.');
-      return DG.DataFrame.create();
     }
 
-    // Temporary fix until proper support for list<column> is implemented
-    const colList = DG.DataFrame.fromColumns(columns).columns;
-    return await grok.functions.call('Chem:mpoCalculate', {df, columns: colList, profileName, aggregation});
+    return columns;
   }
 
   @grok.decorators.fileViewer({

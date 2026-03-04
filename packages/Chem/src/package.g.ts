@@ -1176,6 +1176,7 @@ export async function _mpo() : Promise<void> {
 //input: string profileName 
 //input: string aggregation 
 //output: dataframe result { action: join(df) }
+//meta.vectorFunc: true
 export function mpoCalculate(df: DG.DataFrame, columns: DG.ColumnList, profileName: string, aggregation: any) : any {
   return PackageFunctions.mpoCalculate(df, columns, profileName, aggregation);
 }
@@ -1185,10 +1186,10 @@ export function mpoCalculate(df: DG.DataFrame, columns: DG.ColumnList, profileNa
 //input: string aggregation 
 //input: string currentProperties 
 //input: bool silent 
-//output: dataframe result
+//output: list<column> result
 //meta.role: transform
-export async function mpoTransformFunction(df: DG.DataFrame, profileName: string, aggregation: any, currentProperties: string, silent: boolean) : Promise<any> {
-  return await PackageFunctions.mpoTransformFunction(df, profileName, aggregation, currentProperties, silent);
+export function mpoTransformFunction(df: DG.DataFrame, profileName: string, aggregation: any, currentProperties: string, silent: boolean) : any {
+  return PackageFunctions.mpoTransformFunction(df, profileName, aggregation, currentProperties, silent);
 }
 
 //input: file file 
