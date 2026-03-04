@@ -514,7 +514,7 @@
                   "valueAggrType": "count",
                   "barSortType": "by value",
                   "barSortOrder": "desc",
-                  "splitColumnName": "~test_0",
+                  "splitColumnName": "test",
                   "showCategoryValues": false,
                   "showCategorySelector": false,
                   "stackColumnName": "needs_attention",
