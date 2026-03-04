@@ -218,6 +218,9 @@ async function getPolyToolEnumerateDialog(
     let ruleInputs: RuleInputs;
     const trivialNameSampleDiv = ui.divText('', {style: {marginLeft: '8px', marginTop: '2px'}});
     const warningsTextDiv = ui.divText('', {style: {color: 'red'}});
+    const resultCountDiv = ui.divText('', {style: {
+      fontSize: '11px', color: 'var(--grey-4)', marginTop: '2px', marginLeft: '4px', whiteSpace: 'nowrap',
+    }});
 
     // === INPUT DEFINITIONS ===
     inputs = {
@@ -511,7 +514,9 @@ async function getPolyToolEnumerateDialog(
         defaultErrorHandler(err);
       }
     }));
-    subs.push(inputs.placeholders.onChanged.subscribe(() => { updateViewMol(); }));
+    subs.push(inputs.placeholders.onChanged.subscribe(() => { updateViewMol(); updateResultCount(); }));
+    subs.push(inputs.placeholdersBreadth.onChanged.subscribe(() => { updateResultCount(); }));
+    subs.push(inputs.keepOriginal.onChanged.subscribe(() => { updateResultCount(); }));
 
     // TODO: suspect
     subs.push(ui.onSizeChanged(inputs.placeholders.root).subscribe(() => {
@@ -587,6 +592,48 @@ async function getPolyToolEnumerateDialog(
       //resizeInputs();
     };
 
+    // Computes expected result count from current placeholders, breadth, and enumeration type
+    const updateResultCount = () => {
+      try {
+        const phs = inputs.placeholders.placeholdersValue.filter((ph) => ph.monomers.length > 0);
+        const bphs = inputs.placeholdersBreadth.placeholdersBreadthValue
+          .filter((ph) => ph.monomers.length > 0 && ph.start != null && ph.end != null);
+
+        let regularCount = 0;
+        switch (inputs.enumeratorType.value) {
+        case PolyToolEnumeratorTypes.Single:
+          regularCount = phs.reduce((sum, ph) => sum + ph.monomers.length, 0);
+          break;
+        case PolyToolEnumeratorTypes.Parallel: {
+          if (phs.length > 0) {
+            const allEqual = phs.every((ph) => ph.monomers.length === phs[0].monomers.length);
+            regularCount = allEqual ? phs[0].monomers.length : 0;
+          }
+          break;
+        }
+        case PolyToolEnumeratorTypes.Matrix:
+          regularCount = phs.length > 0 ? phs.reduce((prod, ph) => prod * ph.monomers.length, 1) : 0;
+          break;
+        }
+
+        let breadthCount = 0;
+        if (bphs.length > 0) {
+          breadthCount = bphs.reduce((prod, ph) => {
+            const rangeSize = Math.abs(ph.end - ph.start) + 1;
+            return prod * (ph.monomers.length * rangeSize);
+          }, 1);
+        }
+
+        let total = regularCount + breadthCount;
+        if (inputs.keepOriginal.value && total > 0)
+          total += 1;
+
+        resultCountDiv.textContent = total > 0 ? `${total} sequence${total !== 1 ? 's' : ''} will be generated` : '';
+      } catch (_) {
+        resultCountDiv.textContent = '';
+      }
+    };
+
     const fillTrivialNameList = (table?: DG.DataFrame) => {
       if (table) {
         inputs.trivialNameCol.setColumnInputTable(table);
@@ -607,6 +654,7 @@ async function getPolyToolEnumerateDialog(
 
     fillForCurrentCell(seqValue, dataRole, cell);
     updateViewRules();
+    updateResultCount();
 
     // === EXECUTION (OK button handler) ===
     // Pre-flight validates inputs, builds params, and runs enumeration.
@@ -677,7 +725,8 @@ async function getPolyToolEnumerateDialog(
       .add(ui.divH([
         ui.divV([
           inputs.placeholders.root,
-          inputs.enumeratorType.root],
+          ui.divH([inputs.enumeratorType.root, resultCountDiv],
+            {style: {alignItems: 'center'}})],
         {style: {width: '50%'}}
         ),
         ui.divV([
@@ -742,6 +791,7 @@ async function getPolyToolEnumerateDialog(
         setTimeout(() => {
           inputs.placeholders.invalidateGrid();
           inputs.placeholdersBreadth.invalidateGrid();
+          updateResultCount();
         }, 100);
       });
     return dialog;
