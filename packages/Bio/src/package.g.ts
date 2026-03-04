@@ -217,7 +217,7 @@ export function getRegion(sequence: DG.Column<any>, start?: string, end?: string
 //input: string start { optional: true; description: Region start position name }
 //input: string end { optional: true; description: Region end position name }
 //input: string name { optional: true; description: Region column name }
-//top-menu: Bio | Calculate | Get Region...
+//top-menu: Bio | Calculate | Extract Region...
 //editor: Bio:GetRegionEditor
 export async function getRegionTopMenu(table: DG.DataFrame, sequence: DG.Column, start?: string, end?: string, name?: string) : Promise<void> {
   await PackageFunctions.getRegionTopMenu(table, sequence, start, end, name);
