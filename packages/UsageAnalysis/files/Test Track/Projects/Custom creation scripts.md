@@ -26,7 +26,7 @@ result = DG.DataFrame.fromCsv(csv);
   ```
 2. Add some viewers and save the project with data sync enabled
 1. Close all
-1. Update any CSV file in the 'System:DemoFiles/chem' folder
+1. Update any CSV file in the 'System:DemoFiles/chem' folder (add file with numeric suffix or rename any file (add numeric suffix) since the script sorts by numeric suffix)
 1. Open the saved project - verify, that:
   - No errors occur
   - The most recently created or modified file in the `chem` folder is loaded
