@@ -74,6 +74,8 @@ export function isModel(jsEnt: any) {
   return hasModelRole || hasModelTag;
 }
 
+export const MODEL_FILTER = '(#model or options.role like "%model%")';
+
 export class ModelHandler extends DG.ObjectHandler {
   override get type() {
     return 'Model';
