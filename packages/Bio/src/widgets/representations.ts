@@ -8,7 +8,9 @@ import {TAGS as mmcrTAGS} from '@datagrok-libraries/bio/src/utils/cell-renderer'
 import {MmcrTemps, rendererSettingsChangedState} from '@datagrok-libraries/bio/src/utils/cell-renderer-consts';
 
 import {_package} from '../package';
-import {NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';
+import {NOTATION, TAGS as bioTAGS} from '@datagrok-libraries/bio/src/utils/macromolecule';
+import {getColumnAnnotations, clearAnnotations} from '../utils/annotations/annotation-manager';
+import {AnnotationCategory} from '@datagrok-libraries/bio/src/utils/macromolecule/annotations';
 
 /**
  * @export
@@ -142,5 +144,54 @@ export function getMacromoleculeColumnPropertyPanel(col: DG.Column): DG.Widget {
 
 
   const sequenceConfigInputs = ui.inputs(inputsArray);
-  return new DG.Widget(sequenceConfigInputs);
+
+  // --- Annotations section ---
+  const annotations = getColumnAnnotations(col);
+  const annotationsDiv = ui.divV([]);
+
+  if (annotations.length > 0) {
+    const scheme = col.getTag(bioTAGS.numberingScheme);
+    const structAnnots = annotations.filter((a) => a.category === AnnotationCategory.Structure);
+    const liabAnnots = annotations.filter((a) => a.category === AnnotationCategory.Liability);
+
+    if (scheme)
+      annotationsDiv.append(ui.divText(`Numbering: ${scheme}`, {style: {fontSize: '12px', marginBottom: '4px'}}));
+
+    if (structAnnots.length > 0) {
+      const regionNames = structAnnots.map((a) => a.name).join(', ');
+      annotationsDiv.append(ui.divText(`Regions: ${regionNames}`, {style: {fontSize: '12px', marginBottom: '4px'}}));
+    }
+
+    if (liabAnnots.length > 0) {
+      const totalHits = liabAnnots.reduce((sum, a) => {
+        const match = a.description?.match(/\((\d+) hits\)/);
+        return sum + (match ? parseInt(match[1]) : 0);
+      }, 0);
+      annotationsDiv.append(ui.divText(`Liabilities: ${liabAnnots.length} rules (${totalHits} hits)`, {style: {fontSize: '12px', marginBottom: '4px'}}));
+    }
+
+    const manageBtn = ui.button('Manage', () => {
+      import('../utils/annotations/annotation-manager-ui').then((m) => m.showAnnotationManagerDialog());
+    });
+    const clearBtn = ui.button('Clear All', () => {
+      clearAnnotations(col.dataFrame, col);
+      col.dataFrame.fireValuesChanged();
+    });
+    annotationsDiv.append(ui.divH([manageBtn, clearBtn], {style: {gap: '4px', marginTop: '4px'}}));
+  } else {
+    annotationsDiv.append(ui.divText('No annotations', {style: {fontSize: '12px', color: '#888'}}));
+    const scanBtn = ui.button('Scan Liabilities', () => {
+      import('../utils/annotations/liability-scanner-ui').then((m) => m.showLiabilityScannerDialog());
+    });
+    const numberBtn = ui.button('Apply Numbering', () => {
+      import('../utils/annotations/numbering-ui').then((m) => m.showNumberingSchemeDialog());
+    });
+    annotationsDiv.append(ui.divH([scanBtn, numberBtn], {style: {gap: '4px', marginTop: '4px'}}));
+  }
+
+  const acc = ui.accordion();
+  acc.addPane('Renderer Settings', () => sequenceConfigInputs);
+  acc.addPane('Annotations', () => annotationsDiv);
+
+  return new DG.Widget(acc.root);
 }

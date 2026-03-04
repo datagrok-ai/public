@@ -35,6 +35,9 @@ export enum TAGS {
   positionShift = '.positionShift',
   selectedPosition = '.selectedPosition',
   polymerTypeColumnName = '.polymerTypeColumnName',
+  annotations = '.annotations',
+  numberingScheme = '.numberingScheme',
+  annotationColumnName = '.annotationColumnName',
 }
 
 export {TAGS as BioTags};

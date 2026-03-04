@@ -10,6 +10,7 @@ import * as ui from 'datagrok-api/ui';
 import {ConservationTrack, MSAHeaderTrack, MSAScrollingHeader, WebLogoTrack} from '@datagrok-libraries/bio/src/utils/sequence-position-scroller';
 import {MonomerPlacer} from '@datagrok-libraries/bio/src/utils/cell-renderer-monomer-placer';
 import {ALPHABET, TAGS as bioTAGS} from '@datagrok-libraries/bio/src/utils/macromolecule';
+import {AnnotationTrack} from '@datagrok-libraries/bio/src/utils/annotation-track';
 import {_package} from '../package';
 import {ISeqHandler} from '@datagrok-libraries/bio/src/utils/macromolecule/seq-handler';
 import * as rxjs from 'rxjs';
@@ -399,16 +400,20 @@ export function handleSequenceHeaderRendering() {
 
         // Do not Skip if sequences are too short, rather, just don't render the tracks by default
 
+        // Annotation track adds 24px (20px track + 4px gap) when structure annotations exist
+        const hasAnnotations = !!seqCol.getTag(bioTAGS.annotations);
+        const annotationSpace = hasAnnotations ? 24 : 0; // ANNOTATION_TRACK_HEIGHT(20) + TRACK_GAP(4)
+
         const STRICT_THRESHOLDS = {
           WITH_TITLE: 58, // BASE + TITLE_HEIGHT(16) + TRACK_GAP(4)
-          WITH_WEBLOGO: 107, // WITH_TITLE + DEFAULT_TRACK_HEIGHT(45) + TRACK_GAP(4)
-          WITH_BOTH: 156 // WITH_WEBLOGO + DEFAULT_TRACK_HEIGHT(45) + TRACK_GAP(4)
+          WITH_WEBLOGO: 107 + annotationSpace, // WITH_TITLE + DEFAULT_TRACK_HEIGHT(45) + TRACK_GAP(4) + annotation
+          WITH_BOTH: 156 + annotationSpace, // WITH_WEBLOGO + DEFAULT_TRACK_HEIGHT(45) + TRACK_GAP(4) + annotation
         };
 
         let initialHeaderHeight: number;
         if (seqCol.length > 100_000 || maxSeqLen < 50) {
-          // Single sequence: just dotted cells
-          initialHeaderHeight = STRICT_THRESHOLDS.WITH_TITLE;
+          // Single sequence: just dotted cells (+ annotation track if present)
+          initialHeaderHeight = STRICT_THRESHOLDS.WITH_TITLE + annotationSpace;
         } else {
           if (seqCol.length > 50_000)
             initialHeaderHeight = STRICT_THRESHOLDS.WITH_WEBLOGO;
@@ -442,18 +447,11 @@ export function handleSequenceHeaderRendering() {
         const initializeHeaders = (monomerLib: IMonomerLib) => {
           const tracks: { id: string, track: MSAHeaderTrack, priority: number }[] = [];
 
-          // Create lazy tracks only for MSA sequences
-
-          // OPTIMIZED: Pass seqHandler directly instead of column/splitter
-          const conservationTrack = new LazyConservationTrack(
-            sh,
-            maxSeqLen,
-            45, // DEFAULT_TRACK_HEIGHT
-            'default',
-            'Conservation'
-          );
-          conservationTrackRef = conservationTrack; // Store reference
-          tracks.push({id: 'conservation', track: conservationTrack, priority: 1});
+          // Priority ordering: annotations (0) → weblogo (1) → conservation (2)
+          // Annotation track is primary when annotation data exists
+          const annotationTrack = new AnnotationTrack(seqCol, 'Annotations');
+          if (annotationTrack.hasRegions())
+            tracks.push({id: 'annotations', track: annotationTrack, priority: 0});
 
           // OPTIMIZED: Pass seqHandler directly
           const webLogoTrack = new LazyWebLogoTrack(
@@ -470,7 +468,18 @@ export function handleSequenceHeaderRendering() {
           }
 
           webLogoTrack.setupDefaultTooltip();
-          tracks.push({id: 'weblogo', track: webLogoTrack, priority: 2});
+          tracks.push({id: 'weblogo', track: webLogoTrack, priority: 1});
+
+          // OPTIMIZED: Pass seqHandler directly instead of column/splitter
+          const conservationTrack = new LazyConservationTrack(
+            sh,
+            maxSeqLen,
+            45, // DEFAULT_TRACK_HEIGHT
+            'default',
+            'Conservation'
+          );
+          conservationTrackRef = conservationTrack; // Store reference
+          tracks.push({id: 'conservation', track: conservationTrack, priority: 2});
 
           // Create the scrolling header
           const scroller = new MSAScrollingHeader({
@@ -503,7 +512,8 @@ export function handleSequenceHeaderRendering() {
 
           scroller.setupTooltipHandling();
 
-          // Add tracks to scroller
+          // Add tracks to scroller sorted by priority (annotations first, then weblogo, then conservation)
+          tracks.sort((a, b) => a.priority - b.priority);
           tracks.forEach(({id, track}) => {
             scroller.addTrack(id, track);
           });
