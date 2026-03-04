@@ -2,6 +2,7 @@
 #description: Assigns antibody numbering (IMGT/Kabat/Chothia/AHo) using AntPack
 #language: python
 #environment: channels: [conda-forge, defaults], dependencies: [python=3.9, pip, pip: [antpack==0.3.8.6,pyside6,qt_material]]
+#meta.role: antibodyNumbering
 #input: dataframe df
 #input: column seqCol {semType: Macromolecule}
 #input: string scheme {choices: ["imgt", "kabat", "chothia", "aho"]} [Numbering scheme]
