@@ -4,7 +4,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {take} from 'rxjs/operators';
 import {ModelCatalogView} from './model-catalog-view';
-import {ModelHandler} from './model-handler';
+import {isModel, ModelHandler} from './model-handler';
 
 export interface ModelCatalogConfig {
   segment: string,
@@ -56,10 +56,10 @@ export function setModelCatalogEventHandlers(options: ModelCatalogConfig) {
   });
 
   grok.functions.onBeforeRunAction.subscribe((fc) => {
-    if (fc.func.hasTag('model')) {
+    if (isModel(fc.func)) {
       const view = findOrCreateViewWithCore(options);
       ViewClass.bindModel(view!, fc);
-    } else if (fc.inputs?.['call']?.func instanceof DG.Func && fc.inputs['call'].func.hasTag('model')) {
+    } else if (isModel(fc?.inputs?.['call']?.func)) {
       const view = findOrCreateViewWithCore(options);
       ViewClass.bindModel(view!, fc.inputs['call']);
     }

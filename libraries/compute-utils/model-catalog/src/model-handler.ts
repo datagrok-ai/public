@@ -66,6 +66,14 @@ async function requestMembership(groupName: string) {
   }
 }
 
+export function isModel(jsEnt: any) {
+  if (!(jsEnt instanceof DG.Func))
+    return false;
+  const hasModelRole = ((jsEnt?.options?.role as string) ?? '').split(',').includes('model');
+  const hasModelTag = jsEnt.hasTag('model');
+  return hasModelRole || hasModelTag;
+}
+
 export class ModelHandler extends DG.ObjectHandler {
   override get type() {
     return 'Model';
@@ -131,8 +139,7 @@ export class ModelHandler extends DG.ObjectHandler {
   // Checks whether this is the handler for x
   override isApplicable(x: any) {
     const js = DG.toJs(x);
-    const hasModelRole = ((js?.options?.role as string) ?? '').split(',').includes('model');
-    return js instanceof DG.Func && (js.hasTag('model') || hasModelRole);
+    return isModel(js);
   }
 
   private userGroups = new BehaviorSubject<DG.Group[] | undefined>(undefined);
