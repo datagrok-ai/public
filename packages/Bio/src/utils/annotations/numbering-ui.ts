@@ -1,3 +1,4 @@
+/* eslint-disable max-len */
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
@@ -14,10 +15,41 @@ import {
 import {_package} from '../../package';
 import type {NumberingResult, Scheme} from '../antibody-numbering (WIP)';
 
-const ENGINE_BUILTIN = 'Built-in (TypeScript)';
-const ENGINE_ANTPACK = 'AntPack (Python)';
+const BUILTIN_ENGINE_KEY = '__builtin__';
+const BUILTIN_ENGINE_LABEL = 'Built-in (TypeScript)';
 
-/** Converts TS NumberingResult[] to a DG.DataFrame matching the Python script output shape.
+/** An engine entry: either a dynamically discovered DG.Func or the built-in TS engine. */
+interface NumberingEngine {
+  /** Display label for the dropdown */
+  label: string;
+  /** Unique key — nqName for DG.Func engines, BUILTIN_ENGINE_KEY for built-in */
+  key: string;
+  /** The DG.Func to call, or null for the built-in engine */
+  func: DG.Func | null;
+}
+
+/** Discovers all registered antibody numbering engines + the built-in TS engine.
+ *  Dynamic engines (meta.role = 'antibodyNumbering') come first; built-in is last. */
+function discoverEngines(): NumberingEngine[] {
+  const engines: NumberingEngine[] = [];
+
+  const funcs = DG.Func.find({meta: {role: 'antibodyNumbering'}});
+  for (const f of funcs) {
+    const pkgName = f.package?.name ?? '';
+    const label = f.friendlyName || f.name;
+    engines.push({
+      label: pkgName ? `${label} (${pkgName})` : label,
+      key: pkgName ? `${pkgName}:${f.name}` : f.name,
+      func: f,
+    });
+  }
+
+  // Built-in TS engine is always last
+  engines.push({label: BUILTIN_ENGINE_LABEL, key: BUILTIN_ENGINE_KEY, func: null});
+  return engines;
+}
+
+/** Converts TS NumberingResult[] to a DG.DataFrame matching the expected output shape.
  *  Columns: position_names, chain_type, annotations_json, numbering_detail, numbering_map. */
 export function numberingResultsToDataFrame(results: NumberingResult[]): DG.DataFrame {
   const n = results.length;
@@ -77,6 +109,8 @@ export function showNumberingSchemeDialog(): void {
     return;
   }
 
+  const engines = discoverEngines();
+  const engineLabels = engines.map((e) => e.label);
   const schemeChoices = Object.values(NumberingScheme);
 
   const tableInput = ui.input.table('Table', {value: df});
@@ -86,47 +120,36 @@ export function showNumberingSchemeDialog(): void {
   });
   const schemeInput = ui.input.choice('Scheme', {value: NumberingScheme.IMGT, items: schemeChoices});
   const engineInput = ui.input.choice('Engine', {
-    value: ENGINE_BUILTIN, items: [ENGINE_BUILTIN, ENGINE_ANTPACK],
+    value: engineLabels[0], items: engineLabels,
   });
-  const populateRegions = ui.input.bool('Populate FR/CDR regions', {value: true});
-  const openVdRegions = ui.input.bool('Open VD Regions viewer', {value: true});
-
-  const hintDiv = ui.div([
-    ui.divText('Built-in engine runs in-browser. AntPack requires Python environment.', {style: {fontSize: '11px', color: '#888', marginTop: '8px'}}),
-  ]);
+  // const populateRegions = ui.input.bool('Populate FR/CDR regions', {value: true});
+  // const openVdRegions = ui.input.bool('Open VD Regions viewer', {value: true});
 
   const dialog = ui.dialog({title: 'Apply Antibody Numbering'})
-    .add(ui.inputs([tableInput, seqInput, schemeInput, engineInput, populateRegions, openVdRegions]))
-    .add(hintDiv)
+    .add(ui.inputs([tableInput, seqInput, schemeInput, engineInput]))
     .onOK(async () => {
       const seqCol = seqInput.value!;
       const schemeName = schemeInput.value!;
-      const engine = engineInput.value!;
+      const selectedLabel = engineInput.value!;
+      const engine = engines.find((e) => e.label === selectedLabel) ?? engines[engines.length - 1];
       const pi = DG.TaskBarProgressIndicator.create(`Applying ${schemeName} numbering...`);
       try {
         let result: DG.DataFrame;
-        if (engine === ENGINE_ANTPACK) {
-          result = await grok.functions.call(
-            'Bio:NumberAntibodySequences', {
-              df: df,
-              seqCol: seqCol,
-              scheme: schemeName.toLowerCase(),
-            },
-          );
-        } else {
+        if (engine.func)
+          result = await engine.func.apply({df: df, seqCol: seqCol, scheme: schemeName.toLowerCase()});
+        else
           result = await runBuiltinNumbering(seqCol, schemeName);
-        }
 
-        applyNumberingResults(df, seqCol, result, schemeName, populateRegions.value!, engine);
+        applyNumberingResults(df, seqCol, result, schemeName, true, engine.label);
 
-        // Open VD Regions viewer
-        if (openVdRegions.value && grok.shell.tv) {
-          try {
-            await grok.shell.tv.dataFrame.plot.fromType('VdRegions', {});
-          } catch (err) {
-            console.warn('Could not open VD Regions viewer:', err);
-          }
-        }
+        // // Open VD Regions viewer
+        // if (openVdRegions.value && grok.shell.tv) {
+        //   try {
+        //     await grok.shell.tv.dataFrame.plot.fromType('VdRegions', {});
+        //   } catch (err) {
+        //     console.warn('Could not open VD Regions viewer:', err);
+        //   }
+        // }
       } catch (err: any) {
         grok.shell.error(`Numbering failed: ${err.message ?? err}`);
         console.error(err);
@@ -141,7 +164,7 @@ export function showNumberingSchemeDialog(): void {
 /** Applies numbering results (from either engine) to the sequence column and dataframe. */
 function applyNumberingResults(
   df: DG.DataFrame, seqCol: DG.Column<string>, result: DG.DataFrame,
-  schemeName: string, populateRegions: boolean, engine: string,
+  schemeName: string, populateRegions: boolean, engineLabel: string,
 ): void {
   if (!result || result.rowCount === 0) {
     grok.shell.warning('No numbering results returned');
@@ -153,23 +176,31 @@ function applyNumberingResults(
   const annotJsonCol = result.getCol('annotations_json');
   const numberingMapCol = result.col('numbering_map');
 
-  // Use the first non-empty result for column-level position names
-  let positionNames = '';
-  let chainType = '';
-  let annotationsJson = '[]';
+  // Pick the row with the most annotations for column-level data.
+  // Some rows may only have partial numbering (e.g. FR1+CDR1 only),
+  // so we want the most complete one as the column-level representative.
+  let bestRowIdx = -1;
+  let bestAnnotCount = -1;
 
   for (let i = 0; i < result.rowCount; i++) {
     const pn = posNamesCol.get(i);
-    if (pn && pn.length > 0) {
-      positionNames = pn;
-      chainType = chainTypeCol.get(i) ?? '';
-      annotationsJson = annotJsonCol.get(i) ?? '[]';
-      break;
+    if (!pn || pn.length === 0) continue;
+    const aj = annotJsonCol.get(i);
+    let count = 0;
+    if (aj)
+      try { count = JSON.parse(aj).length; } catch { /* skip */ }
+    if (count > bestAnnotCount) {
+      bestAnnotCount = count;
+      bestRowIdx = i;
+      break; // Prefer the first complete one, no need to scan all rows for now. remove if necessary
     }
   }
 
+  const positionNames = bestRowIdx >= 0 ? (posNamesCol.get(bestRowIdx) ?? '') : '';
+  const chainType = bestRowIdx >= 0 ? (chainTypeCol.get(bestRowIdx) ?? '') : '';
+  const annotationsJson = bestRowIdx >= 0 ? (annotJsonCol.get(bestRowIdx) ?? '[]') : '[]';
+
   if (!positionNames) {
-    const engineLabel = engine === ENGINE_ANTPACK ? 'AntPack' : 'Built-in engine';
     grok.shell.warning(`${engineLabel} could not number the sequences. Check that they are valid antibody variable region sequences.`);
     return;
   }
