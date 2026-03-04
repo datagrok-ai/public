@@ -34,8 +34,10 @@ function discoverEngines(): NumberingEngine[] {
   const engines: NumberingEngine[] = [];
 
   const funcs = DG.Func.find({meta: {role: 'antibodyNumbering'}});
-  if (funcs.length === 0)
+  if (funcs.length === 0) {
+    grok.shell.error('No antibody numbering engines found. Make sure that Proteomics plugin is installed and up to date.');
     throw new Error('No external antibody numbering engines found. Make sure that Proteomics plugin is installed and up to date.');
+  }
   for (const f of funcs) {
     const pkgName = f.package?.name ?? '';
     const label = f.friendlyName || f.name;

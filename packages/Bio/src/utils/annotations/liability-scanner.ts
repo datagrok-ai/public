@@ -45,7 +45,7 @@ function getCanonicalString(sh: ISeqHandler, rowIdx: number): string {
   const splitted = sh.getSplitted(rowIdx);
   const chars: string[] = new Array(splitted.length);
   for (let i = 0; i < splitted.length; i++)
-    chars[i] = splitted.getCanonical(i);
+    chars[i] = splitted.getOriginal(i);
   return chars.join('');
 }
 
