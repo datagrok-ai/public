@@ -3,9 +3,9 @@
 #tags: demo, viewers
 #sample: cars.csv
 #input: dataframe t
-#input: column topColumnName {type:numerical;auto}
-#input: column leftColumnName {type:numerical;auto}
-#input: column rightColumnName {type:numerical;auto}
+#input: column topColumnName {type:numerical}
+#input: column leftColumnName {type:numerical}
+#input: column rightColumnName {type:numerical}
 #input: int pointSize = 3
 #output: graphics
 
