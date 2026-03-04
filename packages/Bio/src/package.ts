@@ -445,7 +445,7 @@ export class PackageFunctions {
   @grok.decorators.func({
     name: 'Get Region Top Menu',
     description: 'Get sequences for a region specified from a Macromolecule',
-    'top-menu': 'Bio | Calculate | Get Region...',
+    'top-menu': 'Bio | Calculate | Extract Region...',
     editor: 'Bio:GetRegionEditor'})
   static async getRegionTopMenu(
     @grok.decorators.param({options: {description: 'Input data table'}})table: DG.DataFrame,
