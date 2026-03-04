@@ -333,7 +333,7 @@ function applyNumberingResults(
 
   // If the source column is already aligned (MSA), remap numbering_map indices
   // from ungapped to gapped, since numbering engines strip gaps before processing.
-  const isAligned = seqCol.getTag(bioTAGS.aligned) === ALIGNMENT.SEQ_MSA;
+  const isAligned = true; // always treat as aligned to handle remapping
   if (isAligned && numberingMapCol) {
     for (let i = 0; i < result.rowCount; i++) {
       const mapStr = numberingMapCol.get(i);
@@ -428,7 +428,10 @@ function applyNumberingResults(
   // --- Aligned column: column-level annotations only ---
   const alignment = createAlignedColumn(df, seqCol, result);
   if (alignment) {
-    df.columns.add(alignment.alignedCol);
+    df.columns.insert(alignment.alignedCol, df.columns.toList().indexOf(seqCol) + 1);
+    if (grok.shell.tv?.dataFrame === df)
+      grok.shell.tv.grid.scrollToCell(seqCol, 0);
+
     alignment.alignedCol.setTag(bioTAGS.numberingScheme, schemeName);
 
     if (populateRegions) {

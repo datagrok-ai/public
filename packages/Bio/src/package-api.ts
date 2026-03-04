@@ -20,27 +20,6 @@ export namespace scripts {
   }
 
   /**
-  [Legacy] Assigns antibody numbering (IMGT/Kabat/Chothia/AHo) using AbNumber
-  */
-  export async function numberAntibodySequencesAbNumber(df: DG.DataFrame , seqCol: DG.Column , scheme: string ): Promise<DG.DataFrame> {
-    return await grok.functions.call('Bio:NumberAntibodySequencesAbNumber', { df, seqCol, scheme });
-  }
-
-  /**
-  [Legacy] Assigns antibody numbering (IMGT/Kabat/Chothia/AHo) using ANARCI directly
-  */
-  export async function numberAntibodySequencesANARCI(df: DG.DataFrame , seqCol: DG.Column , scheme: string ): Promise<DG.DataFrame> {
-    return await grok.functions.call('Bio:NumberAntibodySequencesANARCI', { df, seqCol, scheme });
-  }
-
-  /**
-  Assigns antibody numbering (IMGT/Kabat/Chothia/AHo) using AntPack
-  */
-  export async function numberAntibodySequences(df: DG.DataFrame , seqCol: DG.Column , scheme: string ): Promise<DG.DataFrame> {
-    return await grok.functions.call('Bio:NumberAntibodySequences', { df, seqCol, scheme });
-  }
-
-  /**
   Create the model peptides/DNA sequences with peptides data
   */
   export async function sequenceGenerator(clusters: number , num_sequences: number , alphabet_key: string , motif_length: number , max_variants_position: number , random_length: number , dispersion: number , activity_range: number , cliff_probability: number , cliff_strength: number , cliff_strength_dispersion: number , assay_noise_levels: string , assay_scales: string , disable_negatives: boolean , fasta_separator: string | null, helm_library_file: DG.FileInfo | null, helm_connection_mode: string ): Promise<DG.DataFrame> {
