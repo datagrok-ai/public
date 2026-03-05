@@ -644,13 +644,13 @@ export async function synthonSimilaritySearchWidget(molecule: string) : Promise<
 //input: string molecule { semType: Molecule }
 //input: double maxHits = 100 
 //input: string searchType { choices: ["substructure","similarity","exact"] }
-//input: double similarityCutoff = 0.5 { optional: true; nullable: true }
-//input: bool returnSynthons = false 
+//input: double similarityCutoff = 0.5 { optional: true; nullable: true; min: 0; max: 1 }
+//input: bool includeSynthons = false 
 //output: dataframe result
 //meta.cache: client
 //meta.cache.invalidateOn: 0 * * * *
-export async function synthonSearchFunc(spaceName: string, molecule: string, maxHits: number, searchType: string, similarityCutoff?: number, returnSynthons?: boolean) : Promise<any> {
-  return await PackageFunctions.synthonSearchFunc(spaceName, molecule, maxHits, searchType, similarityCutoff, returnSynthons);
+export async function synthonSearchFunc(spaceName: string, molecule: string, maxHits: number, searchType: string, similarityCutoff?: number, includeSynthons?: boolean) : Promise<any> {
+  return await PackageFunctions.synthonSearchFunc(spaceName, molecule, maxHits, searchType, similarityCutoff, includeSynthons);
 }
 
 //name: Get Synthon Spaces
