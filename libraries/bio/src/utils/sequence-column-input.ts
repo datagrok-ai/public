@@ -5,10 +5,10 @@ export interface ISequenceColumnInput {
     get root(): HTMLElement;
     get value(): DG.Column | null;
     set value(col: DG.Column | null);
-    get inputBase(): DG.InputBase<DG.Column | null> | undefined | null;
+    get inputBase(): DG.InputBase<DG.Column | null>;
 }
 
-class SequenceColumnInputBase implements ISequenceColumnInput {
+export class SequenceColumnInputBase implements ISequenceColumnInput {
     private readonly _inputBase: DG.InputBase<DG.Column | null>;
     constructor(inp: DG.InputBase<DG.Column | null>) {
         this._inputBase = inp;
