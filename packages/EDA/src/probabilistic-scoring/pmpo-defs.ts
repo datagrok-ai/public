@@ -1,5 +1,5 @@
 // Constants and type definitions for probabilistic scoring (pMPO)
-// Link: https://pmc.ncbi.nlm.nih.gov/articles/PMC4716604/
+// Source paper https://pmc.ncbi.nlm.nih.gov/articles/PMC4716604/
 
 /** Minimum number of samples required to compute pMPO */
 export const MIN_SAMPLES_COUNT = 10;
@@ -208,7 +208,8 @@ export type OptimalPoint = {
   pValTresh: number,
   r2Tresh: number,
   qCutoff: number,
-  success: boolean,
+  state: 'success' | 'canceled' | 'failed',
+  msg: string,
 };
 
 /** Minimum bounds for pMPO parameters during optimization */
@@ -216,3 +217,30 @@ export const LOW_PARAMS_BOUNDS = new Float32Array([0.5, Q_CUTOFF_MIN]);
 
 /** Maximum bounds for pMPO parameters during optimization */
 export const HIGH_PARAMS_BOUNDS = new Float32Array([R2_MAX, Q_CUTOFF_MAX]);
+
+export enum EQUALITY_SIGN {
+  GREATER = '>',
+  LESS = '<',
+  GREATER_OR_EQUAL = '≥',
+  LESS_OR_EQUAL = '≤',
+  DEFAULT = LESS_OR_EQUAL,
+};
+
+export const SIGN_OPTIONS = [
+  EQUALITY_SIGN.GREATER,
+  EQUALITY_SIGN.LESS,
+  EQUALITY_SIGN.GREATER_OR_EQUAL,
+  EQUALITY_SIGN.LESS_OR_EQUAL,
+];
+
+export const THRESHOLDED_DESIRABILITY_COL_NAME = 'Desirability';
+
+export const PREFERABLE_CATEGORIES = ['perfect', 'good', 'true', 't', 'g', 'active', 'a', 'yes', 'y'];
+
+export type PmpoInputId = 'descriptors' | 'desirability' | 'threshold' | 'categories';
+export type TooltipContent = string | (() => HTMLElement);
+
+export interface PmpoValidationResult {
+  valid: boolean;
+  errors: Map<PmpoInputId, TooltipContent>;
+}
