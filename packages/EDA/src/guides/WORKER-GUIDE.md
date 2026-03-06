@@ -59,9 +59,31 @@ interface WorkerDataFrame {
 
 ---
 
+## Missing Values Strategy
+
+**Before implementing any new worker-based method, define the missing values strategy.** Different methods require different approaches:
+
+| Strategy | When to use | Example |
+|----------|-------------|---------|
+| **Skip** | Aggregation, statistics | Skip rows where any input column has a null |
+| **Impute before computation** | Methods that require complete data (e.g., matrix operations) | Mean/median fill on the main thread before posting to worker |
+| **Propagate** | Result column should reflect original nulls | Copy null sentinel to output at the same index |
+| **Reject** | Method cannot handle nulls at all | Check `missingValueCount` on the main thread, throw before posting |
+
+Document the chosen strategy in the worker's interface or function header. When multiple input columns are involved, specify per-column behavior.
+
+For more details, see `COMPUTATION-PATTERNS.md`.
+
+---
+
 ## Working with WorkerColumn Inside a Worker
 
+**IMPORTANT:** The `rawData` array's `.length` may be larger than `col.length` (due to internal buffer allocation). Always use `col.length` for iteration bounds, never `rawData.length`.
+
 ### Reading numerical data
+
+Check `col.stats.missingValueCount` before processing. If there are no missing values, skip all null checks
+in the loop — this eliminates a branch per iteration and significantly speeds up computation.
 
 ```typescript
 // worker.ts
@@ -70,12 +92,18 @@ import {WorkerColumn} from './worker-defs';
 onmessage = (e: MessageEvent) => {
   const col: WorkerColumn = e.data;
   const raw = col.rawData as Float32Array;
-  const nullVal = col.stats.nullValue;
   const n = col.length;
 
-  for (let i = 0; i < n; i++) {
-    if (raw[i] === nullVal) continue; // skip missing
-    // process raw[i]
+  if (col.stats.missingValueCount > 0) {
+    const nullVal = col.stats.nullValue;
+    for (let i = 0; i < n; i++) {
+      if (raw[i] === nullVal) continue; // skip missing
+      // process raw[i]
+    }
+  } else {
+    for (let i = 0; i < n; i++) {
+      // process raw[i] — no null checks needed
+    }
   }
 };
 ```
@@ -101,6 +129,19 @@ function centerAndScale(col: WorkerColumn): Float32Array {
 ```
 
 ### Building a feature matrix from WorkerColumn[]
+
+Choose the matrix layout based on the method's primary access pattern — this directly affects
+CPU cache utilization:
+
+- **Column-major**: sequential access within each column. Optimal when columns are processed
+  independently (centering, scaling, per-feature statistics, WASM interop).
+- **Row-major flat**: sequential access across features of each row. Optimal for distance
+  computation, KNN, nearest neighbor search.
+- **Row-major typed**: same access pattern as row-major flat, but each row is a separate
+  `Float32Array`. Use as a drop-in replacement for `number[][]`.
+
+Avoid random access patterns — a cache miss per access can be up to 100x slower than sequential traversal.
+For more details on data locality, see `COMPUTATION-PATTERNS.md` (Data Locality section).
 
 ```typescript
 // Row-major flat Float32Array: data[i * nCols + j]
@@ -260,54 +301,4 @@ onmessage = (e: MessageEvent<MyWorkerInput>) => {
 
 ## Parallel Execution
 
-For distributing independent computations across multiple workers.
-
-### Worker count
-
-```typescript
-import {MIN_WORKERS_COUNT, WORKERS_COUNT_DOWNSHIFT} from './worker-utils/worker-defs';
-
-const workerCount = Math.max(MIN_WORKERS_COUNT, navigator.hardwareConcurrency - WORKERS_COUNT_DOWNSHIFT);
-```
-
-### Fan-out / fan-in pattern
-
-```typescript
-async function runParallel<TInput, TOutput>(
-  inputs: TInput[],
-  workerUrl: URL,
-): Promise<TOutput[]> {
-  const nWorkers = Math.min(
-    Math.max(MIN_WORKERS_COUNT, navigator.hardwareConcurrency - WORKERS_COUNT_DOWNSHIFT),
-    inputs.length,
-  );
-
-  // Distribute inputs round-robin
-  const chunks: TInput[][] = Array.from({length: nWorkers}, () => []);
-  for (let i = 0; i < inputs.length; i++)
-    chunks[i % nWorkers].push(inputs[i]);
-
-  const promises = chunks.map((chunk) =>
-    new Promise<TOutput[]>((resolve, reject) => {
-      const worker = new Worker(workerUrl);
-      worker.postMessage(chunk);
-      worker.onmessage = (e) => {
-        worker.terminate();
-        if (e.data.success)
-          resolve(e.data.data);
-        else
-          reject(new Error(e.data.error));
-      };
-      worker.onerror = (e) => {
-        worker.terminate();
-        reject(new Error(e.message));
-      };
-    }),
-  );
-
-  const results = await Promise.all(promises);
-  return results.flat();
-}
-```
-
----
+For distributing independent computations across multiple workers, see `PARALLEL-EXECUTION.md`.
