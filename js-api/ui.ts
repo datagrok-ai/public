@@ -28,7 +28,7 @@ import {
   DropDownOptions,
   TypeAhead,
   TypeAheadConfig,
-  ChoiceInput, InputForm, CodeInput, CodeConfig, MarkdownInput, MarkdownConfig,
+  ChoiceInput, MultiChoiceInput, InputForm, CodeInput, CodeConfig, MarkdownInput, MarkdownConfig,
 } from './src/widgets';
 import {toDart, toJs} from './src/wrappers';
 import {Functions} from './src/functions';
@@ -1010,8 +1010,8 @@ export namespace input {
     return _create(d4.InputType.Choice, name, options) as ChoiceInput<T>;
   }
 
-  export function multiChoice<T>(name: string, options?: IMultiChoiceInputInitOptions<T>): InputBase<T[] | null> {
-    return _create(d4.InputType.MultiChoice, name, options);
+  export function multiChoice<T>(name: string, options?: IMultiChoiceInputInitOptions<T>): MultiChoiceInput<T> {
+    return _create(d4.InputType.MultiChoice, name, options) as MultiChoiceInput<T>;
   }
 
   export function string(name: string, options?: IStringInputInitOptions<string>): InputBase<string> {

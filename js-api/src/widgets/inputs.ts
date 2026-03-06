@@ -1,5 +1,5 @@
 /**
- * Input classes: DateInput, ChoiceInput, TypeAhead, CodeInput.
+ * Input classes: DateInput, ChoiceInput, MultiChoiceInput, TypeAhead, CodeInput.
  * @module widgets/inputs
  */
 
@@ -42,6 +42,18 @@ export class ChoiceInput<T> extends InputBase<T> {
 
   get items(): T[] { return toJs(api.grok_ChoiceInput_Get_Items(this.dart)); }
   set items(s: T[]) { api.grok_ChoiceInput_Set_Items(this.dart, toDart(s)); }
+}
+
+
+export class MultiChoiceInput<T> extends InputBase<T[] | null> {
+  declare dart: any;
+
+  constructor(dart: any, onChanged: any = null) {
+    super(dart, onChanged);
+  }
+
+  get items(): T[] { return toJs(api.grok_MultiChoiceInput_Get_Items(this.dart)); }
+  set items(s: T[]) { api.grok_MultiChoiceInput_Set_Items(this.dart, toDart(s)); }
 }
 
 
