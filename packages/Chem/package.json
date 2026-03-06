@@ -42,7 +42,7 @@
     "@datagrok-libraries/math": "^1.2.7",
     "@datagrok-libraries/ml": "6.10.9",
     "@datagrok-libraries/statistics": "../../libraries/statistics",
-    "@datagrok-libraries/tutorials": "^1.7.3",
+    "@datagrok-libraries/tutorials": "^1.7.5",
     "@datagrok-libraries/utils": "^4.6.14",
     "@types/pako": "^2.0.3",
     "@webgpu/types": "^0.1.40",
