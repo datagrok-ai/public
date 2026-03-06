@@ -126,11 +126,14 @@ export function mpo(
   columns: DG.Column[],
   profileName: string,
   aggregation: WeightedAggregation,
+  isDifferent: boolean = false,
 ): DG.Column {
   if (columns.length === 0)
     throw new Error('No columns provided for MPO calculation.');
 
-  const resultColumn = dataFrame.col(profileName) ?? DG.Column.float(profileName, columns[0].length);
+  const resultColumn = isDifferent ?
+    DG.Column.float(profileName, columns[0].length) :
+    (dataFrame.col(profileName) ?? DG.Column.float(profileName, columns[0].length));
 
   const desirabilityTemplates = columns.map((column) => {
     const tag = column.getTag('desirabilityTemplate');

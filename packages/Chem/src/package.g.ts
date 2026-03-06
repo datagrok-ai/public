@@ -644,13 +644,13 @@ export async function synthonSimilaritySearchWidget(molecule: string) : Promise<
 //input: string molecule { semType: Molecule }
 //input: double maxHits = 100 
 //input: string searchType { choices: ["substructure","similarity","exact"] }
-//input: double similarityCutoff = 0.5 { optional: true; nullable: true }
-//input: bool returnSynthons = false 
+//input: double similarityCutoff = 0.5 { optional: true; nullable: true; min: 0; max: 1 }
+//input: bool includeSynthons = false 
 //output: dataframe result
 //meta.cache: client
 //meta.cache.invalidateOn: 0 * * * *
-export async function synthonSearchFunc(spaceName: string, molecule: string, maxHits: number, searchType: string, similarityCutoff?: number, returnSynthons?: boolean) : Promise<any> {
-  return await PackageFunctions.synthonSearchFunc(spaceName, molecule, maxHits, searchType, similarityCutoff, returnSynthons);
+export async function synthonSearchFunc(spaceName: string, molecule: string, maxHits: number, searchType: string, similarityCutoff?: number, includeSynthons?: boolean) : Promise<any> {
+  return await PackageFunctions.synthonSearchFunc(spaceName, molecule, maxHits, searchType, similarityCutoff, includeSynthons);
 }
 
 //name: Get Synthon Spaces
@@ -1176,6 +1176,7 @@ export async function _mpo() : Promise<void> {
 //input: string profileName 
 //input: string aggregation 
 //output: dataframe result { action: join(df) }
+//meta.vectorFunc: true
 export function mpoCalculate(df: DG.DataFrame, columns: DG.ColumnList, profileName: string, aggregation: any) : any {
   return PackageFunctions.mpoCalculate(df, columns, profileName, aggregation);
 }
@@ -1185,10 +1186,10 @@ export function mpoCalculate(df: DG.DataFrame, columns: DG.ColumnList, profileNa
 //input: string aggregation 
 //input: string currentProperties 
 //input: bool silent 
-//output: dataframe result
+//output: list<column> result
 //meta.role: transform
-export async function mpoTransformFunction(df: DG.DataFrame, profileName: string, aggregation: any, currentProperties: string, silent: boolean) : Promise<any> {
-  return await PackageFunctions.mpoTransformFunction(df, profileName, aggregation, currentProperties, silent);
+export function mpoTransformFunction(df: DG.DataFrame, profileName: string, aggregation: any, currentProperties: string, silent: boolean) : any {
+  return PackageFunctions.mpoTransformFunction(df, profileName, aggregation, currentProperties, silent);
 }
 
 //input: file file 

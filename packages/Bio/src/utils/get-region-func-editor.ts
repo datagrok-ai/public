@@ -140,8 +140,24 @@ export class GetRegionFuncEditor {
 
   private updateRegionItems(): void {
     const seqCol = this.inputs.sequence.value;
-    const regionsTagTxt: string | null = seqCol ? seqCol.getTag(bioTAGS.regions) : null;
-    const regionList: SeqRegion[] | null = regionsTagTxt ? JSON.parse(regionsTagTxt) : null;
+    // Read from .annotations first (new system), fall back to .regions (legacy)
+    let regionList: SeqRegion[] | null = null;
+    const annotationsTag: string | null = seqCol ? seqCol.getTag(bioTAGS.annotations) : null;
+    if (annotationsTag) {
+      try {
+        const annotations = JSON.parse(annotationsTag);
+        const structAnnots = annotations.filter((a: any) => a.category === 'structure' && a.start && a.end);
+        if (structAnnots.length > 0) {
+          regionList = structAnnots.map((a: any) => ({
+            name: a.name, description: a.description ?? '', start: a.start, end: a.end,
+          }));
+        }
+      } catch { /* ignore parse errors */ }
+    }
+    if (!regionList) {
+      const regionsTagTxt: string | null = seqCol ? seqCol.getTag(bioTAGS.regions) : null;
+      regionList = regionsTagTxt ? JSON.parse(regionsTagTxt) : null;
+    }
 
     const regionSE = (this.inputs.region.input as HTMLSelectElement);
     for (let i = regionSE.options.length - 1; i >= 0; --i) regionSE.options.remove(i);

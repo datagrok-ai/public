@@ -55,19 +55,13 @@ export async function deleteMpoProfile(profile: MpoProfileInfo): Promise<void> {
   await grok.dapi.files.delete(`${MPO_TEMPLATE_PATH}/${profile.fileName}`);
 }
 
-export type MpoCalculationResult = {
-  columnNames: string[];
-  resultColumn?: DG.Column;
-  warnings: string[];
-  error?: string;
-};
-
 export async function computeMpo(
   df: DG.DataFrame,
   profile: DesirabilityProfile,
   columnMapping: Record<string, string | null>,
   aggregation?: WeightedAggregation,
   silent: boolean = false,
+  processed: boolean = false,
 ): Promise<string[]> {
   const mappedProperties: Record<string, PropertyDesirability> = {};
   for (const [propName, prop] of Object.entries(profile.properties)) {
@@ -76,13 +70,28 @@ export async function computeMpo(
   }
 
   const profileName = profile.name || 'MPO';
-  await grok.functions.call('Chem:mpoTransformFunction', {
-    df: df,
+  if (!processed) {
+    const existingCol = df.col(profileName);
+    if (existingCol)
+      df.columns.remove(existingCol, false);
+  }
+
+  const resolvedAggregation = aggregation ?? profile.aggregation ?? DEFAULT_AGGREGATION;
+  const call = await DG.Func.find({package: 'Chem', name: 'mpoTransformFunction'})[0].prepare({
+    df,
     profileName,
     currentProperties: JSON.stringify(mappedProperties),
-    aggregation: aggregation ?? profile.aggregation ?? DEFAULT_AGGREGATION,
+    aggregation: resolvedAggregation,
     silent,
-  });
+  }).call(undefined, undefined, {processed});
+
+  const result = call.getOutputParamValue() as DG.Column[];
+
+  // Temporary fix until proper support for list<column> is implemented
+  const colList = DG.DataFrame.fromColumns(result).columns;
+  await DG.Func.find({package: 'Chem', name: 'mpoCalculate'})[0].prepare({
+    df, columns: colList, profileName, aggregation: resolvedAggregation,
+  }).call(undefined, undefined, {processed});
   return df.col(profileName) ? [profileName] : [];
 }
 

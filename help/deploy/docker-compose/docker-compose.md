@@ -66,7 +66,7 @@ Minimal hardware requirements: 40 GB of free disk space, 2 CPUs, 4 GB RAM.
    the following command:
 
    ```shell
-   chmod +x datagrok-install-local.sh
+   chmod +x datagrok-install-local-macos-silicon.sh
    bash datagrok-install-local-macos-silicon.sh
    ```
 

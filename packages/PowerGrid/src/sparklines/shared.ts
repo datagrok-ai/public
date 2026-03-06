@@ -35,8 +35,8 @@ export interface SummarySettingsBase {
   columnNames: string[];
   logColumnNames: string[];
   invertColumnNames: string[];
-  minValues: Map<string, number>;
-  maxValues: Map<string, number>;
+  minValues: Record<string, number>;
+  maxValues: Record<string, number>;
   colorCode: SummaryColumnColoringType;
   normalization: NormalizationType;
   useFilteredData: boolean;
@@ -61,12 +61,12 @@ export function getSettingsBase<T extends SummarySettingsBase>(
     } as unknown as T);
 
   if (!settings.minValues || !settings.maxValues) {
-    settings.minValues = new Map<string, number>();
-    settings.maxValues = new Map<string, number>();
+    settings.minValues = {};
+    settings.maxValues = {};
 
     for (const col of gc.grid.dataFrame.columns) {
-      settings.minValues.set(col.name, col.min);
-      settings.maxValues.set(col.name, col.max);
+      settings.minValues[col.name] = col.min;
+      settings.maxValues[col.name] = col.max;
     }
   }
 
@@ -91,8 +91,8 @@ export const sparklineTypes: string[] = [
 ];
 
 type AxisScaleSettings = ScaleSettings & {
-  minValues?: Map<string, number>;
-  maxValues?: Map<string, number>;
+  minValues?: Record<string, number>;
+  maxValues?: Record<string, number>;
   useFilteredData?: boolean;
 };
 
@@ -139,8 +139,8 @@ export function getScaledNumber(
   const scaleValue = (v: number): number => logScale ? toLogSafe(v) : v;
 
   const resolveMinMax = (column: DG.Column): { min: number; max: number } => {
-    const rawMin = minValues?.get(column.name);
-    const rawMax = maxValues?.get(column.name);
+    const rawMin = minValues?.[column.name];
+    const rawMax = maxValues?.[column.name];
 
     let colMin: number;
     let colMax: number;
@@ -253,17 +253,17 @@ export function createBaseInputs(gridColumn: DG.GridColumn, settings: SummarySet
   }
 
   function getMinMaxProperties(): DG.Property[] | null {
-    if (isSmartForm || !settings.minValues?.size || !settings.maxValues?.size)
+    if (isSmartForm || !Object.keys(settings.minValues ?? {}).length || !Object.keys(settings.maxValues ?? {}).length)
       return null;
 
     return [
       DG.Property.create('min', DG.TYPE.FLOAT,
-        (col: string) => settings.minValues.get(col),
-        (col: string, value: number) => settings.minValues.set(col, value)
+        (col: string) => settings.minValues[col],
+        (col: string, value: number) => settings.minValues[col] = value
       ),
       DG.Property.create('max', DG.TYPE.FLOAT,
-        (col: string) => settings.maxValues.get(col),
-        (col: string, value: number) => settings.maxValues.set(col, value)
+        (col: string) => settings.maxValues[col],
+        (col: string, value: number) => settings.maxValues[col] = value
       ),
     ];
   }

@@ -155,8 +155,7 @@ export class FormCellRenderer extends DG.GridCellRenderer {
         const r = b.getLeftPart(cols.length, i);
         const e = new GridCellElement(r, cell);
         scene.elements.push(e);
-      }
-      else {
+      } else {
         const layoutColIndex = Math.floor(i / rowsPerCol);
         const layoutRowIndex = i % rowsPerCol;
         const xOffset = b.x + (layoutColIndex * effectiveWidth);
@@ -205,8 +204,12 @@ export class FormCellRenderer extends DG.GridCellRenderer {
   }
 
   makeBestScene(gridCell: DG.GridCell): Scene {
+    const df = gridCell.grid.dataFrame;
     const height = getSettings(gridCell.gridColumn).columnNames
-      .map((name) => gridCell.tableColumn?.semType === DG.SEMTYPE.MOLECULE ? 150 : 20)
+      .map((name) => {
+        const col = df.columns.byName(name);
+        return col?.semType === DG.SEMTYPE.MOLECULE ? 150 : 20;
+      })
       //.map(name => gridCell.grid.cell(name, gridCell.gridRow).renderer.getDefaultSize(gridCell.gridColumn).height)
       .reduce((sum, height) => sum! + height!, 0)!;
     return FormCellRenderer

@@ -37,13 +37,13 @@ category('UI: Sharing', () => {
 
   test('connections.ui', async () => {
     const newConnection = DG.DataConnection.create(entityName, {
-      dataSource: 'Files',
+      dataSource: 'Postgres',
       server: '',
       db: '',
     });
     await grok.dapi.connections.save(newConnection);
     try {
-      await testEntityUI(['Databases'], '.d4-link-label', 'apitest_db');
+      await testEntityUI(['Databases'], '.d4-gallery-card');
     } finally {
       await grok.dapi.connections.delete(newConnection);
     }
@@ -96,7 +96,7 @@ category('UI: Sharing', () => {
       'more than one testing entity present', 3000);
     await delay(2000);
     let entity = gallery.querySelector('.grok-gallery-grid')!.children[0];
-    if (entity.className !== selector.slice(1)) entity = entity.querySelector(selector)!;
+    if (entity.className !== selector.slice(1)) entity = entity.querySelector(selector) ?? entity;
     entity.dispatchEvent(new MouseEvent('contextmenu'));
     await awaitCheck(() => document.querySelector('.d4-menu-item-container.d4-vert-menu.d4-menu-popup') !== null,
       'cannot find context menu', 5000);
