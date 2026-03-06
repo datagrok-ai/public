@@ -441,7 +441,7 @@ export const TreeWizard = Vue.defineComponent({
           return res;
         },
       };
-      await exportData.handler(treeState.value!, utils);
+      return exportData.handler(treeState.value!, utils);
     }
 
     ////
