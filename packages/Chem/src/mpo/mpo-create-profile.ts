@@ -9,6 +9,9 @@ import {
 } from '@datagrok-libraries/statistics/src/mpo/mpo';
 import {MpoProfileEditor} from '@datagrok-libraries/statistics/src/mpo/mpo-profile-editor';
 import {MPO_SCORE_CHANGED_EVENT} from '@datagrok-libraries/statistics/src/mpo/utils';
+import {discoverComputeFunctions} from '@datagrok-libraries/statistics/src/compute-functions/discovery';
+import {chemFunctionsDialog} from '@datagrok-libraries/statistics/src/compute-functions/dialog';
+import {IComputeDialogResult, IFunctionArgs} from '@datagrok-libraries/statistics/src/compute-functions/types';
 
 import {MpoContextPanel} from './mpo-context-panel';
 import {
@@ -18,11 +21,17 @@ import {
   createDefaultProfile,
   createProfileForDf,
   mergeProfileWithDf,
+  templateFromCallString,
 } from './utils';
 import {MpoProfileManager} from './mpo-profile-manager';
 
 const METHOD_MANUAL = 'Manual';
 const METHOD_PROBABILISTIC = 'Probabilistic';
+
+function buildCallString(funcKey: string, args: IFunctionArgs): string {
+  const vals = Object.values(args);
+  return vals.length ? `${funcKey}(${vals.map((v) => JSON.stringify(v)).join(', ')})` : funcKey;
+}
 
 export class MpoProfileCreateView {
   readonly view: DG.View;
@@ -72,6 +81,7 @@ export class MpoProfileCreateView {
     this.profile = existingProfile ?? createDefaultProfile();
     this.editor = new MpoProfileEditor(undefined, true);
     this.editor.setProfile(this.profile);
+    this.editor.onComputeRequested.subscribe((propName) => this.openComputeDialog(propName));
     this.profileEditorContainer = ui.divV([this.editor.root]);
     this.profileEditorContainer.classList.add('chem-profile-editor-container');
 
@@ -468,6 +478,32 @@ export class MpoProfileCreateView {
         .onCancel(() => safeResolve(false))
         .show({center: true});
     });
+  }
+
+  private async openComputeDialog(propName: string): Promise<void> {
+    const prop = this.profile.properties[propName];
+    const template = prop?.function ? templateFromCallString(prop.function) : undefined;
+
+    const computeFunctions = discoverComputeFunctions('HitTriageFunction');
+    let dialogResult: IComputeDialogResult | null = null;
+
+    const {root, okProxy} = await chemFunctionsDialog(
+      computeFunctions, (res) => { dialogResult = res; }, () => {},
+      template, false,
+    );
+
+    ui.dialog('Compute Properties')
+      .add(root)
+      .onOK(() => {
+        okProxy();
+        if (!dialogResult)
+          return;
+        const entry = Object.entries(dialogResult.externals)[0];
+        const prop = this.profile.properties[propName];
+        if (entry && prop)
+          prop.function = buildCallString(entry[0], entry[1]);
+      })
+      .show({resizable: true});
   }
 
   // --- Lifecycle ---

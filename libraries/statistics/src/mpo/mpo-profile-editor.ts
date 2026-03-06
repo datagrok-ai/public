@@ -20,6 +20,7 @@ const MAX_CATEGORICAL_CATEGORIES = 20;
 export class MpoProfileEditor {
   readonly root = ui.div([]);
   readonly onChanged = new Subject<void>();
+  readonly onComputeRequested = new Subject<string>();
   readonly aggregationInput: DG.ChoiceInput<WeightedAggregation | null>;
 
   profile?: DesirabilityProfile;
@@ -324,9 +325,12 @@ export class MpoProfileEditor {
   }
 
   private buildRowControls(rowId: string): HTMLElement {
+    const name = this.getPropertyNameByRowId(rowId);
+    const compute = ui.iconFA('bolt', () => { if (name) this.onComputeRequested.next(name); }, 'Compute');
+    compute.classList.add('statistics-mpo-compute-icon');
     const add = ui.icons.add(() => this.insertRowAfterRow(rowId));
     const del = ui.icons.delete(() => this.deleteRow(rowId));
-    return ui.divH([add, del], 'statistics-mpo-control-buttons');
+    return ui.divH([compute, add, del], 'statistics-mpo-control-buttons');
   }
 
   private openModeDialog(

@@ -130,6 +130,18 @@
   overflow-y: scroll;
 }
 
+.statistics-mpo-compute-icon {
+  font-size: 11px;
+  color: var(--grey-4);
+  cursor: pointer;
+  margin-right: 4px;
+  align-self: center;
+}
+
+.statistics-mpo-compute-icon:hover {
+  color: var(--blue-1);
+}
+
 .statistics-mpo-hidden {
   display: none !important;
 }
