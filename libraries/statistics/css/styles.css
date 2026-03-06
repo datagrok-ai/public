@@ -48,7 +48,8 @@
   visibility: hidden;
 }
 
-.statistics-mpo-row:hover .statistics-mpo-control-buttons {
+.statistics-mpo-row:hover .statistics-mpo-control-buttons,
+.statistics-mpo-cat-row:hover .statistics-mpo-control-buttons {
   visibility: visible;
 }
 
@@ -87,7 +88,7 @@
 
 .statistics-mpo-cat-editor {
   width: 280px;
-  margin-left: 20px;
+  margin-left: 30px;
 }
 
 .statistics-mpo-cat-row {
