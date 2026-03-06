@@ -108,6 +108,8 @@ export class DesirabilityModeDialog {
       prop.mode ??= 'freeform';
 
       const previewEditor = new MpoDesirabilityLineEditor(prop, 300, 80);
+      if (this.mappedCol?.isNumerical)
+        previewEditor.setColumn(this.mappedCol);
 
       const modeInput = ui.input.choice('Mode', {items: DESIRABILITY_MODES, value: prop.mode, onValueChanged: (v) => {
         prop.mode = v as DesirabilityMode;
