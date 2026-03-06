@@ -62,7 +62,12 @@ export class DesirabilityModeDialog {
         this.onUpdate({missingValues: prop.missingValues} as any);
       },
     });
-    choiceInput.setTooltip('How to handle missing values.');
+    choiceInput.setTooltip(
+      'How to handle missing values:<br>' +
+      '• <b>Exclude row</b> — assign an MPO score of 0 to the row<br>' +
+      '• <b>Use default score</b> — use a fixed fallback desirability value<br>' +
+      '• <b>Skip property</b> — calculate the score from the remaining properties',
+    );
     scoreInput.setTooltip('Desirability score (0–1) to use as fallback.');
     return ui.form([choiceInput, scoreInput]);
   }
@@ -71,7 +76,7 @@ export class DesirabilityModeDialog {
     const original = structuredClone(this.prop);
 
     const dialog = ui.dialog({
-      title: `Desirability Settings: ${this.propertyName}`,
+      title: `${this.propertyName}`,
     });
     dialog.root.classList.add('statistics-mpo-desirability-dialog');
 
@@ -134,6 +139,9 @@ export class DesirabilityModeDialog {
         for (const cfg of configs)
           inputs.get(cfg.key)!.value = prop[cfg.key] ?? cfg.fallback();
       };
+
+      inputs.get('min')!.setTooltip('Minimum property value');
+      inputs.get('max')!.setTooltip('Maximum property value');
 
       const form = ui.form([
         inputs.get('min')!, inputs.get('max')!,
