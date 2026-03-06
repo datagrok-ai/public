@@ -14,8 +14,8 @@ export function Peptides() : any {
 
 //name: Bio Peptides
 //top-menu: Bio | Analyze | SAR...
-export function peptidesDialog() : any {
-  return PackageFunctions.peptidesDialog();
+export async function peptidesDialog() : Promise<any> {
+  return await PackageFunctions.peptidesDialog();
 }
 
 //input: viewer v 
@@ -28,8 +28,8 @@ export async function testInitFunctionPeptides(v: any) : Promise<void> {
 //input: column col { semType: Macromolecule }
 //output: widget result
 //meta.role: widgets,panel
-export function peptidesPanel(col: DG.Column) : any {
-  return PackageFunctions.peptidesPanel(col);
+export async function peptidesPanel(col: DG.Column) : Promise<any> {
+  return await PackageFunctions.peptidesPanel(col);
 }
 
 //name: Sequence Variability Map
