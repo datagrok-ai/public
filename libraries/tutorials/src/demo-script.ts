@@ -235,6 +235,7 @@ export class DemoScript {
     this._isStepProcessed = false;
 
     if (this._currentStep === this.stepNumber) {
+      this._restartBtn.disabled = false;
       this._isAutomatic ? this._stopStartBtn.replaceWith(this._restartBtn) :
         this._nextStepBtn.replaceWith(this._restartBtn);
       return;
@@ -333,6 +334,7 @@ export class DemoScript {
 
   /** Restarts the script */
   private async _restartScript(): Promise<void> {
+    this._restartBtn.disabled = true;
     grok.shell.dockManager.close(this._node!);
     this._clearRoot();
     this._setInitParams();
@@ -398,12 +400,9 @@ export class DemoScript {
 
   /** Starts the demo script */
   async start(): Promise<void> {
-    this._initRoot();
-    if (grok.shell.v.name === this.name) {
+    if (grok.shell.v?.name === this.name)
       grok.shell.v.close();
-      this._node = grok.shell.dockManager.dock(this._root, DG.DOCK_TYPE.FILL,
-        grok.shell.dockManager.findNode(grok.shell.browsePanel.root), this.name);
-    }
+    this._initRoot();
 
     if (this._isAutomatic) {
       await this._startScript();
