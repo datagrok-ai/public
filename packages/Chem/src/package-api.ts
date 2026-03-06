@@ -163,17 +163,10 @@ export namespace scripts {
   }
 
   /**
-  Fingerprint similarity search in synthon chemical space using RDKit SynthonSpaceSearch
+  Search in synthon chemical space using RDKit SynthonSpaceSearch
   */
-  export async function synthonSimilaritySearch(molecule: string , synthonLibrary: DG.FileInfo , libraryName: string , maxHits: number , similarityCutoff: number ): Promise<DG.DataFrame> {
-    return await grok.functions.call('Chem:SynthonSimilaritySearch', { molecule, synthonLibrary, libraryName, maxHits, similarityCutoff });
-  }
-
-  /**
-  Substructure search in synthon chemical space using RDKit SynthonSpaceSearch
-  */
-  export async function synthonSubstructureSearch(molecule: string , synthonLibrary: DG.FileInfo , libraryName: string , maxHits: number ): Promise<DG.DataFrame> {
-    return await grok.functions.call('Chem:SynthonSubstructureSearch', { molecule, synthonLibrary, libraryName, maxHits });
+  export async function synthonSearch(molecule: string , synthonLibrary: DG.FileInfo , libraryName: string , maxHits: number , searchType: string , similarityCutoff: number , includeSynthons: boolean ): Promise<DG.DataFrame> {
+    return await grok.functions.call('Chem:SynthonSearch', { molecule, synthonLibrary, libraryName, maxHits, searchType, similarityCutoff, includeSynthons });
   }
 
   /**
@@ -530,8 +523,8 @@ export namespace funcs {
   /**
   Search in synthon chemical space and return products with synthon structures
   */
-  export async function synthonSearchFunc(spaceName: string , molecule: string , maxHits: number , searchType: string , similarityCutoff: number | undefined| null, returnSynthons: boolean ): Promise<DG.DataFrame> {
-    return await grok.functions.call('Chem:SynthonSearchFunc', { spaceName, molecule, maxHits, searchType, similarityCutoff, returnSynthons });
+  export async function synthonSearchFunc(spaceName: string , molecule: string , maxHits: number , searchType: string , similarityCutoff: number | undefined| null, includeSynthons: boolean ): Promise<DG.DataFrame> {
+    return await grok.functions.call('Chem:SynthonSearchFunc', { spaceName, molecule, maxHits, searchType, similarityCutoff, includeSynthons });
   }
 
   /**
@@ -856,7 +849,7 @@ export namespace funcs {
     return await grok.functions.call('Chem:MpoCalculate', { df, columns, profileName, aggregation });
   }
 
-  export async function mpoTransformFunction(df: DG.DataFrame , profileName: string , aggregation: string , currentProperties: string , silent: boolean ): Promise<DG.DataFrame> {
+  export async function mpoTransformFunction(df: DG.DataFrame , profileName: string , aggregation: string , currentProperties: string , silent: boolean ): Promise<any> {
     return await grok.functions.call('Chem:MpoTransformFunction', { df, profileName, aggregation, currentProperties, silent });
   }
 

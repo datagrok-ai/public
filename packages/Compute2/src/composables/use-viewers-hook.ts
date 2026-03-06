@@ -3,7 +3,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import * as Vue from 'vue';
 import {useSubscription, from} from '@vueuse/rxjs';
-import {BehaviorSubject, combineLatest, EMPTY, merge, Subject} from 'rxjs';
+import {BehaviorSubject, combineLatest, EMPTY, merge, Subject, of} from 'rxjs';
 import {catchError, switchMap, tap, map, debounceTime, withLatestFrom, shareReplay} from 'rxjs/operators';
 import {ViewersHook} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineConfiguration';
 
@@ -68,9 +68,9 @@ export function useViewersHook(
         hooksDeps[io].viewers$ = viewers$;
       }
       const hookRuns = [...Object.entries(hooksDeps)].map(([io, {meta$, viewers$}]) => {
-        if (!meta$ || !viewers$)
+        if (!viewers$)
           return EMPTY;
-        return combineLatest([viewers$, meta$]).pipe(
+        return combineLatest([viewers$, meta$ ?? of(undefined)]).pipe(
           tap(([viewers, meta]) => runViewersHook(viewersHook, io, viewers, meta)),
           catchError((e) => {
             grok.shell.error(e);

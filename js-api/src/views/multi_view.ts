@@ -79,6 +79,7 @@ export class MultiView extends ViewBase {
 
   set name(s: string) {
     this._fixedName = s;
+    super.name = s;
   }
 
   get currentView(): ViewBase { return this._currentView; }

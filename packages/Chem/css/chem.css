@@ -1070,6 +1070,11 @@
   margin-top: 10px !important;
 }
 
+.chem-mpo-profile-actions {
+  gap: 10px;
+  align-items: center;
+}
+
 .chem-mpo-scores-viewer {
   display: flex !important;
   flex-direction: column;
@@ -1087,17 +1092,32 @@
 }
 
 .chem-profile-header {
-  gap: 10px;
-  padding: 5px;
+  font-size: 18px;
+  font-weight: 600;
   flex: 0 0 auto;
 }
 
-.chem-profile-header .ui-input-root > .ui-input-options {
+.chem-profile-toolbar-wrap {
+  padding: 0 12px 8px;
+  border-bottom: 1px solid var(--grey-2);
+  flex: 0 0 auto;
+}
+
+.chem-profile-toolbar-wrap > .ui-btn {
+  width: 80px;
+  align-self: flex-end;
+}
+
+.chem-profile-toolbar-wrap .ui-input-root > .ui-input-options {
   border-bottom: none !important;
 }
 
-.chem-profile-header .ui-input-root > .ui-input-options > .ui-input-description {
+.chem-profile-toolbar-wrap .ui-input-root > .ui-input-options > .ui-input-description {
   order: initial;
+}
+
+.chem-profile-view-loading {
+  visibility: hidden;
 }
 
 .chem-profile-editor-container {

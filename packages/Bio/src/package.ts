@@ -445,7 +445,7 @@ export class PackageFunctions {
   @grok.decorators.func({
     name: 'Get Region Top Menu',
     description: 'Get sequences for a region specified from a Macromolecule',
-    'top-menu': 'Bio | Calculate | Get Region...',
+    'top-menu': 'Bio | Calculate | Extract Region...',
     editor: 'Bio:GetRegionEditor'})
   static async getRegionTopMenu(
     @grok.decorators.param({options: {description: 'Input data table'}})table: DG.DataFrame,
@@ -457,6 +457,35 @@ export class PackageFunctions {
     const regCol = getRegionDo(sequence, start ?? null, end ?? null, name ?? null);
     sequence.dataFrame.columns.add(regCol);
     await grok.data.detectSemanticTypes(sequence.dataFrame); // to set renderer
+  }
+
+  // -- Annotation menu entries --
+
+  @grok.decorators.func({
+    name: 'Apply Numbering Scheme',
+    description: 'Assigns antibody numbering (IMGT/Kabat/Chothia/AHo) using AntPack',
+    'top-menu': 'Bio | Annotate | Apply Numbering Scheme...',
+  })
+  static applyNumberingScheme(): void {
+    import('./utils/annotations/numbering-ui').then((m) => m.showNumberingSchemeDialog());
+  }
+
+  @grok.decorators.func({
+    name: 'Scan Liabilities',
+    description: 'Scans macromolecule sequences for deamidation, oxidation, and other liabilities',
+    'top-menu': 'Bio | Annotate | Scan Liabilities...',
+  })
+  static scanLiabilities(): void {
+    import('./utils/annotations/liability-scanner-ui').then((m) => m.showLiabilityScannerDialog());
+  }
+
+  @grok.decorators.func({
+    name: 'Manage Annotations',
+    description: 'View and manage sequence annotations on macromolecule columns',
+    'top-menu': 'Bio | Annotate | Manage Annotations...',
+  })
+  static manageAnnotations(): void {
+    import('./utils/annotations/annotation-manager-ui').then((m) => m.showAnnotationManagerDialog());
   }
 
   @grok.decorators.func({

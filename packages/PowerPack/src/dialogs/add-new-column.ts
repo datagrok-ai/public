@@ -1437,7 +1437,8 @@ export class AddNewColumnDialog {
         const name = this.widget ? this.call!.getParamValue('name') : this.inputName!.value;
         const type = this.widget ? this.call.getParamValue('type') : this.getSelectedType()[0];
         const treatAsString = this.widget ? this.call.getParamValue('treatAsString') : this.getSelectedType()[1];
-        await colToUpdate.applyFormula(this.codeMirror!.state.doc.toString().trim(), type, treatAsString);
+        const expression = this.codeMirror!.state.doc.toString();
+        await colToUpdate.applyFormula(treatAsString ? expression : expression.trim(), type, treatAsString);
         if (name !== colToUpdate.name)
           colToUpdate.name = this.sourceDf?.columns.getUnusedName(name) ?? name;
         grok.shell.o = colToUpdate;
@@ -1447,7 +1448,8 @@ export class AddNewColumnDialog {
       if (!this.call.getParamValue('table'))
         this.call.setParamValue('table', this.sourceDf);
       this.call.setParamValue('name', this.edit ? this.inputName!.value : this.getResultColumnName().unusedName);
-      this.call.setParamValue('expression', this.codeMirror!.state.doc.toString().trim());
+      const expression = this.codeMirror!.state.doc.toString();
+      this.call.setParamValue('expression', this.getSelectedType()[1] ? expression : expression.trim());
       this.call.setParamValue('type', this.getSelectedType()[0]);
       this.call.setParamValue('treatAsString', this.getSelectedType()[1]);
       if (!this.edit)

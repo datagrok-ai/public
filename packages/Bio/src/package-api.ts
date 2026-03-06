@@ -158,6 +158,27 @@ export namespace funcs {
   }
 
   /**
+  Assigns antibody numbering (IMGT/Kabat/Chothia/AHo) using AntPack
+  */
+  export async function applyNumberingScheme(): Promise<void> {
+    return await grok.functions.call('Bio:ApplyNumberingScheme', {});
+  }
+
+  /**
+  Scans macromolecule sequences for deamidation, oxidation, and other liabilities
+  */
+  export async function scanLiabilities(): Promise<void> {
+    return await grok.functions.call('Bio:ScanLiabilities', {});
+  }
+
+  /**
+  View and manage sequence annotations on macromolecule columns
+  */
+  export async function manageAnnotations(): Promise<void> {
+    return await grok.functions.call('Bio:ManageAnnotations', {});
+  }
+
+  /**
   Detects pairs of molecules with similar structure and significant difference in any given property
   */
   export async function activityCliffs(table: DG.DataFrame , molecules: string , activities: DG.Column , similarity: number , methodName: string , similarityMetric: string , preprocessingFunction: any , options?: any , demo?: boolean ): Promise<void> {

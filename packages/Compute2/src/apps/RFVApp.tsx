@@ -5,11 +5,12 @@ import * as Vue from 'vue';
 import {Subject, BehaviorSubject, of, from} from 'rxjs';
 import dayjs from 'dayjs';
 import {RichFunctionView} from '../components/RFV/RichFunctionView';
-import {historyUtils, saveIsFavorite} from '@datagrok-libraries/compute-utils';
+import {getViewersHook, historyUtils, saveIsFavorite} from '@datagrok-libraries/compute-utils';
 import {debounceTime, switchMap, take, withLatestFrom} from 'rxjs/operators';
 import {IconFA, RibbonPanel} from '@datagrok-libraries/webcomponents-vue';
 import {useUrlSearchParams} from '@vueuse/core';
 import {EditRunMetadataDialog} from '@datagrok-libraries/compute-utils/shared-components/src/history-dialogs';
+import {ViewersHook} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineConfiguration';
 
 const RUN_DEBOUNCE_TIME = 250;
 const OUTPUT_OUTDATED_PATH = 'OUTPUT_OUTDATED';
@@ -27,6 +28,12 @@ export const RFVApp = Vue.defineComponent({
     },
   },
   setup(props) {
+    const currentFuncCall = Vue.shallowRef(Vue.markRaw(props.funcCall));
+
+    const viewersHook = Vue.shallowRef<ViewersHook | undefined>(undefined);
+
+    const viewersHookMakerName = getViewersHook(currentFuncCall.value.func);
+
     const runRequests$ = new Subject<true>();
     const isFormValid$ = new BehaviorSubject<boolean>(false);
 
@@ -40,7 +47,6 @@ export const RFVApp = Vue.defineComponent({
       }),
     ).subscribe();
 
-    const currentFuncCall = Vue.shallowRef(Vue.markRaw(props.funcCall));
     const currentCallState = Vue.ref(
       {isRunning: false, isOutputOutdated: true, isRunnable: false, runError: undefined, pendingDependencies: []},
     );
@@ -151,6 +157,12 @@ export const RFVApp = Vue.defineComponent({
       sub.unsubscribe();
     });
 
+    // TODO: better async handling
+    if (viewersHookMakerName) {
+      const hookMaker = DG.Func.byName(viewersHookMakerName);
+      hookMaker.apply().then((hook) => viewersHook.value = hook)
+    }
+
     return () => (
       <div class='w-full h-full flex'>
         <RibbonPanel view={currentView.value}>
@@ -164,6 +176,7 @@ export const RFVApp = Vue.defineComponent({
         <RichFunctionView
           funcCall={currentFuncCall.value}
           callState={currentCallState.value}
+          viewersHook={viewersHook.value}
           onUpdate:funcCall={(fc) => currentFuncCall.value = Vue.markRaw(fc)}
           onRunClicked={() => runRequests$.next(true)}
           onFormReplaced={onUpdateForm}

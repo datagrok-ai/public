@@ -20,10 +20,6 @@ category('UI: Users', () => {
       .find((el) => el.textContent === 'Users') as HTMLElement;
     groups.click();
     await delay(500);
-
-    let userToDelete = await grok.dapi.users.filter('login = "newlogin"').first();;
-    if (userToDelete)
-      grok.dapi.users.delete(userToDelete);
   });
 
   /*
@@ -65,12 +61,11 @@ category('UI: Users', () => {
 
   test('actions.addUser', async () => {
     const user = DG.User.create();
-    user.login = 'newlogin';
+    user.login = crypto.randomUUID();
     user.status = DG.USER_STATUS.STATUS_NEW;
     user.firstName = 'new';
     user.lastName = 'user';
     await grok.dapi.users.save(user);
-    await grok.dapi.users.delete(user);
   });
 
   test('actions.addServiceUser', async () => {

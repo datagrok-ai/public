@@ -154,7 +154,7 @@ For JS API method questions, check these files first:
 | UI components, dialogs, inputs  | `src/widgets/`                     |
 | Server/HTTP API                 | `src/dapi.ts`                      |
 | Viewers                         | `src/viewer.ts`                    |
-| Grid                            | `src/grid.ts`                      |
+| Grid                            | `src/grid.ts` · [usage guide](src/grid.md) |
 | Events                          | `src/events.ts`                    |
 | Shell (views, tables, windows)  | `src/shell.ts`                     |
 | Constants and enums             | `src/const.ts`                     |
