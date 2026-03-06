@@ -30,7 +30,7 @@ const identifiersVals: {[key: string]: string} = {
 const additionalIdentifiers: { [key: string]: string } = {
   'Chembl': 'CHEMBL16293',
   'PubChem': '931',
-  'bindingdb': '51011039',
+  'bindingdb': '50159249',
   'pdb': 'NPY',
   'chebi': 'CHEBI:16482',
   'fdasrs': '2166IN72UN',
