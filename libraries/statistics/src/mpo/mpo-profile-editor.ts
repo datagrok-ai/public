@@ -209,24 +209,20 @@ export class MpoProfileEditor {
   }
 
   private buildPropertyCell(rowId: string, name: string): HTMLElement | null {
-    if (!this.design)
+    if (this.dataFrame)
       return ui.divText(name, 'statistics-mpo-property-name');
 
-    if (!this.dataFrame) {
-      let currentName = name;
+    let currentName = name;
 
-      const propNameInp = ui.input.string('', {value: name, onValueChanged: (v) => {
-        if (!v || v === currentName)
-          return;
-        this.renameProperty(currentName, v);
-        currentName = v;
-      }});
+    const propNameInp = ui.input.string('', {value: name, onValueChanged: (v) => {
+      if (!v || v === currentName)
+        return;
+      this.renameProperty(currentName, v);
+      currentName = v;
+    }});
 
-      ui.tooltip.bind(propNameInp.input, () => currentName);
-      return propNameInp.root;
-    }
-
-    return null;
+    ui.tooltip.bind(propNameInp.input, () => currentName);
+    return propNameInp.root;
   }
 
   private buildWeightCell(
@@ -243,9 +239,9 @@ export class MpoProfileEditor {
 
     weightInput.root.classList.add(
       'statistics-mpo-weight-input',
-      this.design ?
-        'statistics-mpo-weight-design' :
-        'statistics-mpo-weight-view',
+      this.dataFrame ?
+        'statistics-mpo-weight-view' :
+        'statistics-mpo-weight-design',
     );
     return weightInput.root;
   }

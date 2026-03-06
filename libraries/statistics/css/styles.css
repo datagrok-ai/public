@@ -21,13 +21,11 @@
 
 .statistics-mpo-header > *:nth-child(3) {
   flex-grow: 1;
-  margin-left: 25px;
 }
 
 .statistics-mpo-property-name {
   width: 110px;
   padding-top: 5px;
-  margin-left: 4px;
 }
 
 .statistics-mpo-weight-input {
