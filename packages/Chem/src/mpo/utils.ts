@@ -149,11 +149,7 @@ export function createDefaultProfile(): DesirabilityProfile {
     type: DESIRABILITY_PROFILE_TYPE,
     name: '',
     description: '',
-    properties: {
-      'Property 1': createDefaultNumerical(),
-      'Property 2': createDefaultNumerical(),
-      'Property 3': createDefaultNumerical(),
-    },
+    properties: {},
   };
 }
 

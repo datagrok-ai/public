@@ -1,24 +1,27 @@
 .statistics-mpo-header {
   margin-top: 10px;
   padding-bottom: 5px;
-  border-bottom: 1px solid #ccc;
+  border-bottom: 1px solid var(--grey-2);
+  gap: 10px;
 }
 
-.statistics-mpo-header-property {
+.statistics-mpo-header > * {
   font-weight: bold;
+}
+
+.statistics-mpo-header > *:first-child {
   width: 110px;
+  min-width: 110px;
 }
 
-.statistics-mpo-header-weight {
-  font-weight: bold;
+.statistics-mpo-header > *:nth-child(2) {
   width: 60px;
+  min-width: 60px;
 }
 
-.statistics-mpo-header-desirability {
-  font-weight: bold;
+.statistics-mpo-header > *:nth-child(3) {
   flex-grow: 1;
-  padding-left: 30px;
-  padding-right: 10px;
+  margin-left: 25px;
 }
 
 .statistics-mpo-property-name {
@@ -29,6 +32,7 @@
 
 .statistics-mpo-weight-input {
   width: 60px;
+  min-width: 60px;
 }
 
 .statistics-mpo-weight-view {
@@ -43,6 +47,11 @@
   gap: 10px;
   margin-left: 10px;
   color: var(--blue-1);
+  visibility: hidden;
+}
+
+.statistics-mpo-row:hover .statistics-mpo-control-buttons {
+  visibility: visible;
 }
 
 .statistics-mpo-range-input {
@@ -53,7 +62,7 @@
   display: flex;
   align-items: center;
   justify-content: flex-start;
-  margin-bottom: 10px;
+  padding: 8px 0;
   min-height: 70px;
   gap: 10px;
 
@@ -62,7 +71,16 @@
 
 .statistics-mpo-row > * {
   flex: 0 0 auto;
-  min-width: 100px;
+}
+
+.statistics-mpo-row > *:first-child {
+  width: 110px;
+  min-width: 110px;
+}
+
+.statistics-mpo-row > *:nth-child(2) {
+  width: 60px;
+  min-width: 60px;
 }
 
 .statistics-mpo-row .ui-input-choice .ui-input-editor {
@@ -91,6 +109,35 @@
 
 .statistics-mpo-hidden {
   display: none !important;
+}
+
+.statistics-mpo-empty-state {
+  text-align: center;
+  padding: 48px 24px;
+  color: var(--grey-4);
+  border: 1px dashed var(--grey-2);
+  border-radius: 8px;
+  margin: 16px 12px;
+}
+
+.statistics-mpo-empty-state i {
+  font-size: 48px;
+  margin-bottom: 16px;
+  display: block;
+  color: var(--blue-1);
+  opacity: 0.3;
+  cursor: default;
+  pointer-events: none;
+}
+
+.statistics-mpo-empty-state h3 {
+  color: var(--grey-5);
+}
+
+.statistics-mpo-empty-state p {
+  color: var(--grey-3);
+  max-width: 360px;
+  margin-inline: auto;
 }
 
 .statistics-mpo-desirability-dialog .d4-accordion-pane-content {
