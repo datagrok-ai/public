@@ -701,6 +701,8 @@ export interface IDartApi {
   grok_Windows_Set_ShowSidebar(x: Bool): any;
   grok_Windows_Get_ShowToolbox(): any;
   grok_Windows_Set_ShowToolbox(x: Bool): any;
+  grok_Windows_Get_AutoShowToolbox(): any;
+  grok_Windows_Set_AutoShowToolbox(x: Bool): any;
   grok_Windows_Get_ShowFavorites(): any;
   grok_Windows_Set_ShowFavorites(x: Bool): any;
   grok_Windows_Get_ShowBrowse(): any;
