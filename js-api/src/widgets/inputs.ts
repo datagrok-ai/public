@@ -52,7 +52,7 @@ export class MultiChoiceInput<T> extends InputBase<T[] | null> {
     super(dart, onChanged);
   }
 
-  get items(): T[] { return toJs(api.grok_ChoiceInput_Get_Items(this.dart)); }
+  get items(): T[] { return toJs(api.grok_MultiChoiceInput_Get_Items(this.dart)); }
   set items(s: T[]) { api.grok_MultiChoiceInput_Set_Items(this.dart, toDart(s)); }
 }
 
