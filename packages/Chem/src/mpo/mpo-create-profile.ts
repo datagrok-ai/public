@@ -107,8 +107,7 @@ export class MpoProfileCreateView {
     if (!this.isEditMode) {
       setTimeout(() => {
         this.tableView._onAdded();
-        this.tableView.grid.root.style.visibility = 'hidden';
-        this.tableView.dockManager.dock(this.view.root, DG.DOCK_TYPE.TOP, null, '', 0.99);
+        this.setTableViewVisible(false);
       }, 0);
     }
   }
@@ -139,7 +138,7 @@ export class MpoProfileCreateView {
     controls.push(this.datasetInput);
     controls.push(this.editor.aggregationInput);
 
-    this.saveButton = ui.bigButton('Save', () => this.showSaveDialog());
+    this.saveButton = ui.button('Save', () => this.showSaveDialog());
     this.saveButton.classList.add('d4-disabled');
 
     const header = ui.h1(this.isEditMode ? `Edit ${this.profile.name || 'MPO'}` : 'Create MPO Profile');
@@ -196,7 +195,7 @@ export class MpoProfileCreateView {
 
     this.closePMpoPanels();
     const indicatorRoot = this.tableViewVisible ? this.tableView.root : this.view.root;
-    ui.setUpdateIndicator(indicatorRoot, true, 'Switching dataset...');
+    this.setLoading(indicatorRoot, true, 'Switching dataset...');
     await new Promise((r) => setTimeout(r, 0));
 
     try {
@@ -229,7 +228,7 @@ export class MpoProfileCreateView {
       this.setTableViewVisible(false);
       await this.attachLayout();
     } finally {
-      ui.setUpdateIndicator(indicatorRoot, false);
+      this.setLoading(indicatorRoot, false);
     }
   }
 
@@ -265,7 +264,7 @@ export class MpoProfileCreateView {
   // --- Layout ---
 
   private async attachLayout(): Promise<void> {
-    ui.setUpdateIndicator(this.view.root, true, 'Updating layout...');
+    this.setLoading(this.view.root, true, 'Updating layout...');
     try {
       if (this.isManualMode) {
         this.editor.design = true;
@@ -290,7 +289,7 @@ export class MpoProfileCreateView {
 
       await this.setupGridAndContextPanel();
     } finally {
-      ui.setUpdateIndicator(this.view.root, false);
+      this.setLoading(this.view.root, false);
     }
   }
 
@@ -332,19 +331,26 @@ export class MpoProfileCreateView {
     await this.renderContextPanel();
   }
 
-  private setTableViewVisible(visible: boolean, ratio = 0.25): void {
+  private setTableViewVisible(visible: boolean, ratio = 0.78): void {
     if (this.isEditMode)
       return;
 
     this.tableViewVisible = visible;
     this.tableView.grid.root.style.visibility = visible ? 'visible' : 'hidden';
-    this.tableView.dockManager.dock(
-      this.view.root,
-      DG.DOCK_TYPE.TOP,
-      null,
-      '',
-      visible ? ratio : 0.99,
-    );
+    const viewNode = this.tableView.dockManager.findNode(this.view.root);
+
+    if (visible) {
+      if (!viewNode)
+        this.tableView.dockManager.dock(this.view.root, DG.DOCK_TYPE.FILL, null, '');
+      const gridNode = this.tableView.dockManager.findNode(this.tableView.grid.root);
+      const vNode = this.tableView.dockManager.findNode(this.view.root);
+      if (gridNode && vNode)
+        this.tableView.dockManager.dock(this.tableView.grid.root, DG.DOCK_TYPE.DOWN, vNode, '', ratio);
+    }
+    else {
+      this.tableView.dockManager.dock(this.tableView.grid.root, DG.DOCK_TYPE.FILL, null, '');
+      this.tableView.dockManager.dock(this.view.root, DG.DOCK_TYPE.FILL, null, '');
+    }
   }
 
   private async renderContextPanel(): Promise<void> {
@@ -353,6 +359,11 @@ export class MpoProfileCreateView {
       this.editor.columnMapping,
       this.editor.aggregationInput.value ?? undefined,
     );
+  }
+
+  private setLoading(root: HTMLElement, loading: boolean, message?: string) {
+    ui.setUpdateIndicator(root, loading, message);
+    this.profileViewContainer.style.visibility = loading ? 'hidden' : '';
   }
 
   private showError(message: string) {
@@ -368,7 +379,7 @@ export class MpoProfileCreateView {
     if (!this.df)
       return;
 
-    ui.setUpdateIndicator(this.view.root, true, 'Running probabilistic MPO...');
+    this.setLoading(this.view.root, true, 'Running probabilistic MPO...');
 
     try {
       this.closePMpoPanels();
@@ -405,7 +416,7 @@ export class MpoProfileCreateView {
         },
       };
     } finally {
-      ui.setUpdateIndicator(this.view.root, false);
+      this.setLoading(this.view.root, false);
     }
   }
 
