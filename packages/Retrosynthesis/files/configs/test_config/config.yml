@@ -1,0 +1,13 @@
+search:
+  max_transforms: 1
+expansion:
+  uspto:
+    - /app/configs/test_config/my_model.onnx
+    - /app/configs/test_config/my_templates.csv.gz
+  ringbreaker:
+    - /app/configs/default/uspto_ringbreaker_model.onnx
+    - /app/configs/default/uspto_ringbreaker_templates.csv.gz
+filter:
+  uspto: /app/configs/default/uspto_filter_model.onnx
+stock:
+  zinc: /app/configs/default/zinc_stock.hdf5
