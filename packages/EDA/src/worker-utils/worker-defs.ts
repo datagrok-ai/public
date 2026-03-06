@@ -145,3 +145,9 @@ export interface WorkerDataFrame {
   /** Columns in order. */
   columns: WorkerColumn[];
 }
+
+/** Minimum number of workers to use for parallel processing. */
+export const MIN_WORKERS_COUNT = 1;
+
+/** Maximum number of workers to use for parallel processing. */
+export const WORKERS_COUNT_DOWNSHIFT = 2;

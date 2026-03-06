@@ -89,6 +89,10 @@ The package combines TypeScript, WASM modules, and web workers for performance-c
   - Export to MPO desirability profiles (integration with `@datagrok-libraries/statistics`)
 - Sample data in `files/` directory for testing and demos
 
+### Web Workers and Data Transfer
+
+**IMPORTANT:** When implementing any new ML/analysis method that runs in a web worker, you MUST first read `src/worker-utils/WORKER-DATA-TRANSFER.md`. It defines the `WorkerColumn`/`WorkerDataFrame` types, transform functions (`toWorker*`/`fromWorker*`), null-handling conventions, and the standard worker lifecycle pattern. All worker-based methods must follow this guide.
+
 ### WASM Integration
 
 WASM modules are initialized asynchronously in `PackageFunctions.init()`:

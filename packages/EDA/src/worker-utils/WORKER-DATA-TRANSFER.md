@@ -185,8 +185,12 @@ async function runInWorker(
 
     worker.onmessage = (e) => {
       worker.terminate();
-      const result = e.data.columns as WorkerColumn[];
-      resolve(result.map(fromWorkerColumn));
+      if (e.data.success) {
+        const result = e.data.data.columns as WorkerColumn[];
+        resolve(result.map(fromWorkerColumn));
+      } else {
+        reject(new Error(e.data.error));
+      }
     };
 
     worker.onerror = (e) => {
@@ -208,40 +212,102 @@ interface MyWorkerInput {
 }
 
 interface MyWorkerOutput {
-  columns: WorkerColumn[];
+  success: true;
+  data: {columns: WorkerColumn[]};
+} | {
+  success: false;
+  error: string;
 }
 
 onmessage = (e: MessageEvent<MyWorkerInput>) => {
-  const {features, components} = e.data;
+  try {
+    const {features, components} = e.data;
 
-  // Access raw data directly:
-  const nRows = features[0].length;
-  const nCols = features.length;
+    // Access raw data directly:
+    const nRows = features[0].length;
+    const nCols = features.length;
 
-  // Use stats:
-  for (const f of features) {
-    const avg = f.stats.avg;
-    const stdev = f.stats.stdev;
-    const nullVal = f.stats.nullValue;
-    // ...
+    // Use stats:
+    for (const f of features) {
+      const avg = f.stats.avg;
+      const stdev = f.stats.stdev;
+      const nullVal = f.stats.nullValue;
+      // ...
+    }
+
+    // Build result columns:
+    const resultCols: WorkerColumn[] = [];
+    for (let c = 0; c < components; c++) {
+      const data = new Float32Array(nRows);
+      // ... fill data ...
+      resultCols.push({
+        name: `Component ${c + 1}`,
+        type: 'float32',
+        length: nRows,
+        rawData: data,
+        stats: { /* fill or leave defaults */ } as any,
+      });
+    }
+
+    postMessage({success: true, data: {columns: resultCols}} satisfies MyWorkerOutput);
+  } catch (err) {
+    postMessage({success: false, error: String(err)});
   }
-
-  // Build result columns:
-  const resultCols: WorkerColumn[] = [];
-  for (let c = 0; c < components; c++) {
-    const data = new Float32Array(nRows);
-    // ... fill data ...
-    resultCols.push({
-      name: `Component ${c + 1}`,
-      type: 'float32',
-      length: nRows,
-      rawData: data,
-      stats: { /* fill or leave defaults */ } as any,
-    });
-  }
-
-  postMessage({columns: resultCols} satisfies MyWorkerOutput);
 };
+```
+
+---
+
+## Parallel Execution
+
+For distributing independent computations across multiple workers.
+
+### Worker count
+
+```typescript
+import {MIN_WORKERS_COUNT, WORKERS_COUNT_DOWNSHIFT} from './worker-utils/worker-defs';
+
+const workerCount = Math.max(MIN_WORKERS_COUNT, navigator.hardwareConcurrency - WORKERS_COUNT_DOWNSHIFT);
+```
+
+### Fan-out / fan-in pattern
+
+```typescript
+async function runParallel<TInput, TOutput>(
+  inputs: TInput[],
+  workerUrl: URL,
+): Promise<TOutput[]> {
+  const nWorkers = Math.min(
+    Math.max(MIN_WORKERS_COUNT, navigator.hardwareConcurrency - WORKERS_COUNT_DOWNSHIFT),
+    inputs.length,
+  );
+
+  // Distribute inputs round-robin
+  const chunks: TInput[][] = Array.from({length: nWorkers}, () => []);
+  for (let i = 0; i < inputs.length; i++)
+    chunks[i % nWorkers].push(inputs[i]);
+
+  const promises = chunks.map((chunk) =>
+    new Promise<TOutput[]>((resolve, reject) => {
+      const worker = new Worker(workerUrl);
+      worker.postMessage(chunk);
+      worker.onmessage = (e) => {
+        worker.terminate();
+        if (e.data.success)
+          resolve(e.data.data);
+        else
+          reject(new Error(e.data.error));
+      };
+      worker.onerror = (e) => {
+        worker.terminate();
+        reject(new Error(e.message));
+      };
+    }),
+  );
+
+  const results = await Promise.all(promises);
+  return results.flat();
+}
 ```
 
 ---

@@ -1,6 +1,6 @@
 import * as DG from 'datagrok-api/dg';
 import {WorkerColumn, WorkerDataFrame, ColumnType} from './worker-defs';
-import {getNullValue} from '../missing-values-imputation/knn-imputer';
+import {getNullValue} from '../utils';
 
 /**
  * Resolves the worker {@link ColumnType} from a {@link DG.Column},
