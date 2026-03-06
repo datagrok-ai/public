@@ -418,6 +418,11 @@ export class Windows {
   get showToolbox(): boolean { return api.grok_Windows_Get_ShowToolbox(); }
   set showToolbox(x: boolean) { api.grok_Windows_Set_ShowToolbox(x); }
 
+  /** When true (default), opening a view automatically shows the toolbox.
+   * Set false to prevent the toolbox from appearing automatically. */
+  get autoShowToolbox(): boolean { return api.grok_Windows_Get_AutoShowToolbox(); }
+  set autoShowToolbox(x: boolean) { api.grok_Windows_Set_AutoShowToolbox(x); }
+
   /** Controls the visibility of the browse. */
   get showBrowse(): boolean { return api.grok_Windows_Get_ShowBrowse(); }
   set showBrowse(x: boolean) { api.grok_Windows_Set_ShowBrowse(x); }
