@@ -24,7 +24,7 @@ category('Radar', () => {
 
   test('Creation', async () => {
     const viewer = DG.Viewer.fromType(TYPE, df);
-    expect(viewer instanceof DG.JsViewer, true);
+    expect(viewer instanceof DG.Viewer, true);
     expect(viewer.type, TYPE);
     expect(viewer.table.id, df.id);
   });
@@ -39,7 +39,7 @@ category('Radar', () => {
       max: '95',
       showCurrentRow: true,
       showMouseOverRow: true,
-      showMouseOverRowGroup: true, 
+      showMouseOverRowGroup: true,
       showTooltip: true,
       colorColumnName: null,
       backgroundMinColor: 0xFFBB845D,

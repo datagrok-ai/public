@@ -171,6 +171,20 @@ for (const lang of languages) {
         expect(49090022, result);
       }, {timeout: 240000, skipReason: 'Unstable'});
     }
+
+    if (lang === 'R') {
+      test('Environment string', async () => {
+        const result = await grok.functions.call('CVMTests:REnvStringReverse',
+          {'input_string': 'datagrok'});
+        expect(result, 'korgatad');
+      }, {timeout: 240000});
+
+      test('Environment yaml file', async () => {
+        const result = await grok.functions.call('CVMTests:REnvFileStringReverse',
+          {'input_string': 'hello'});
+        expect(result, 'olleh');
+      }, {timeout: 240000});
+    }
   });
 
   category(`Benchmarks: Scripts: ${lang} scripts`, () => {

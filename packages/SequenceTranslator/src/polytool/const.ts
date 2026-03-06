@@ -45,5 +45,4 @@ export const PT_ENUM_TYPE_TOOLTIPS: Record<string, string> = {
   'single': 'Each position is enumerated independently. Total results = sum of monomers across all positions.',
   'parallel': 'The i-th result uses the i-th monomer from every position (zip). All positions must have the same number of monomers. Total results = number of monomers per position.',
   'matrix': 'Cartesian product of all positions. Total results = product of monomer counts across all positions.',
-  'library': 'Substitutes all monomers from a selected library at a single position.',
 };

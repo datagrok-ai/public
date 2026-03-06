@@ -2,6 +2,7 @@
   "type": "MPO Desirability Profile",
   "name": "drugs-props-train-to",
   "description": " ",
+  "aggregation": "Average",
   "properties": {
     "TPSA": {
       "weight": 0.27,

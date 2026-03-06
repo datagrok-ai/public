@@ -2,7 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import $ from 'cash-dom';
-import CodeMirror from 'codemirror';
+import type CodeMirror from 'codemirror';
 import {
   dfExts,
   entExtract,
@@ -103,6 +103,7 @@ export async function _renderDevPanel(ent: EntityType, minifiedClassNameMap: {})
     Object.keys(links[key]).map((title) => ui.link(title, links[key][title], 'Open wiki reference')) :
     ui.link(`${type} ${key}`, links[key], `Open ${key} reference`));
 
+  const CodeMirror = (await import('codemirror')).default;
   const editor = ui.input.textArea('', {value: template});
   const codeMirror = CodeMirror.fromTextArea(editor.input as HTMLTextAreaElement, {
     mode: 'javascript',

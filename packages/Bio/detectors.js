@@ -435,14 +435,8 @@ class BioPackageDetectors extends DG.Package {
         return symbol;
       for (let cI = 1; cI < symbolLen - 1; ++cI) {
         const c = symbol[cI];
-        const ssqCount = Array.from(symbol).filter((s) => s === '[').length;
-        const sseCount = Array.from(symbol).filter((s) => s === ']').length;
-        if (this.forbiddenMulticharMiddle.includes(c)) {
-          // the entry can be something like [Ab]*Ba
-          if (((symbol.startsWith('[') && c === ']') || (symbol.endsWith(']') && c === '[')) && ssqCount === sseCount)
-            continue;
+        if (this.forbiddenMulticharAll.includes(c))
           return symbol;
-        }
       }
       if (symbol.match(/^\d+\W+.*/))
         // symbols like '2,...' are forbidden

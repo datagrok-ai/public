@@ -22,7 +22,7 @@ import {defaults, molecule3dFileExtensions} from './consts';
 import {parseAndVisualsData} from './molstar-viewer-open';
 import {PluginCommands} from 'molstar/lib/mol-plugin/commands';
 import {PluginLayoutControlsDisplay, PluginLayoutStateProps} from 'molstar/lib/mol-plugin/layout';
-import {delay, testEvent} from '@datagrok-libraries/test/src/test';
+import {testEvent} from '@datagrok-libraries/utils/src/test';
 import {_package} from '../../package';
 
 /** Creates viewer, ensures to complete creation awaiting first render */
@@ -53,7 +53,7 @@ export async function createRcsbViewer(
 export async function disposeRcsbViewer(viewer: RcsbViewer, container: HTMLElement): Promise<void> {
   await viewer.clear(); // alternative free
   viewer.plugin.dispose();
-  await delay(2000);
+  await DG.delay(2000);
   $(container).empty();
 }
 

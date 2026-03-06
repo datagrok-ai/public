@@ -8,9 +8,14 @@ export type DesirabilityLine = number[][];
 
 export type DesirabilityMode = 'freeform' | 'gaussian' | 'sigmoid';
 
+export type MissingValueConfig =
+  | { strategy: 'exclude' }
+  | { strategy: 'default'; score: number }
+  | { strategy: 'skip' };
+
 type BasePropertyDesirability = {
   weight: number; /// 0-1
-  defaultScore?: number;
+  missingValues?: MissingValueConfig;
 }
 
 export type NumericalDesirability = BasePropertyDesirability & {
@@ -69,6 +74,7 @@ export type DesirabilityProfile = {
   type: typeof DESIRABILITY_PROFILE_TYPE;
   name: string;
   description: string;
+  aggregation?: WeightedAggregation;
   properties: { [key: string]: PropertyDesirability };
 }
 
@@ -79,6 +85,7 @@ export function isDesirabilityProfile(x: any): x is DesirabilityProfile {
 export const WEIGHTED_AGGREGATIONS = ['Average', 'Sum', 'Product', 'Geomean', 'Min', 'Max'] as const;
 export const WEIGHTED_AGGREGATIONS_LIST: WeightedAggregation[] = [...WEIGHTED_AGGREGATIONS];
 export type WeightedAggregation = typeof WEIGHTED_AGGREGATIONS[number];
+export const DEFAULT_AGGREGATION: WeightedAggregation = 'Average';
 
 /// Calculates the desirability score for a given x value
 /// Returns 0 if x is outside the range of the desirability line
@@ -110,7 +117,7 @@ export function categoricalDesirabilityScore(
   prop: CategoricalDesirability,
 ): number | null {
   const found = prop.categories.find((c) => c.name === value);
-  return found?.desirability ?? prop.defaultScore ?? null;
+  return found?.desirability ?? null;
 }
 
 /** Calculates the multi parameter optimization score, 0-100, 100 is the maximum */
@@ -119,11 +126,14 @@ export function mpo(
   columns: DG.Column[],
   profileName: string,
   aggregation: WeightedAggregation,
+  isDifferent: boolean = false,
 ): DG.Column {
   if (columns.length === 0)
     throw new Error('No columns provided for MPO calculation.');
 
-  const resultColumn = dataFrame.col(profileName) ?? DG.Column.float(profileName, columns[0].length);
+  const resultColumn = isDifferent ?
+    DG.Column.float(profileName, columns[0].length) :
+    (dataFrame.col(profileName) ?? DG.Column.float(profileName, columns[0].length));
 
   const desirabilityTemplates = columns.map((column) => {
     const tag = column.getTag('desirabilityTemplate');
@@ -140,8 +150,14 @@ export function mpo(
 
       let score: number | null;
 
-      if (columns[j].isNone(i))
-        score = desirability.defaultScore ?? null;
+      if (columns[j].isNone(i)) {
+        const mv = desirability.missingValues;
+        if (!mv || mv.strategy === 'exclude')
+          return NaN;
+        if (mv.strategy === 'skip')
+          continue;
+        score = mv.score;
+      }
       else {
         score = isNumerical(desirability) ?
           desirabilityScore(value, desirability.line) :
@@ -154,6 +170,9 @@ export function mpo(
       scores.push(score);
       weights.push(desirability.weight);
     }
+
+    if (scores.length === 0)
+      return NaN;
 
     return aggregate(scores, weights, aggregation);
   });

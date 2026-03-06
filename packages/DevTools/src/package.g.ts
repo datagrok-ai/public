@@ -82,6 +82,7 @@ export async function testFunctionJoinColumnList(data: DG.DataFrame, columns: DG
 
 //input: dataframe data 
 //output: dataframe result { action: join(data) }
+//meta.vectorFunc: true
 export async function testFunctionNewJoinWithoutFormula(data: DG.DataFrame) : Promise<any> {
   return await PackageFunctions.testFunctionNewJoinWithoutFormula(data);
 }

@@ -35,7 +35,7 @@ public class SqlAnnotator {
 
         try {
             statements = CCJSqlParserUtil.parseStatements(
-                    query.query,
+                    query.query.replaceAll("@", ""),
                     parser -> parser
                             .withSquareBracketQuotation(withSquareBrackets)
                             .withAllowComplexParsing(true)

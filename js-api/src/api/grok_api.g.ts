@@ -553,6 +553,8 @@ export interface IDartApi {
   grok_Project(): any;
   grok_Project_Get_IsLocal(p: any): any;
   grok_Project_Open(p: any, closeAll: Bool, openViews: Bool, createViews: Bool): Promise<any>;
+  grok_Shell_Get_Projects(): any;
+  grok_Project_AddTableView(p: any, t: any): any;
   grok_ColorPicker(color: any, onChanged: any, colorDiv: any, onOk: any, onCancel: any): any;
   grok_CodeEditor(script: String, mode: String, placeholder: String, root: any): any;
   grok_TaskBarProgressIndicator_Create(name: String, cancelable: Bool, pausable: Bool, spinner: Bool): any;

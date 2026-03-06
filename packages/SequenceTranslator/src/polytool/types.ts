@@ -8,7 +8,6 @@ export enum PolyToolEnumeratorTypes {
   Single = 'single',
   Parallel = 'parallel',
   Matrix = 'matrix',
-  Library = 'library',
 }
 
 export type PolyToolEnumeratorType = typeof PolyToolEnumeratorTypes[keyof typeof PolyToolEnumeratorTypes];

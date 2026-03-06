@@ -29,6 +29,7 @@ import {getOutputPalette} from '../pareto-optimization/utils';
 import {OPT_TYPE} from '../pareto-optimization/defs';
 import {optimizeNM} from './nelder-mead';
 import {getMissingValsIndices} from '../missing-values-imputation/knn-imputer';
+import {DesirabilityProfile} from '@datagrok-libraries/statistics/src/mpo/mpo';
 
 export type PmpoTrainingResult = {
   params: Map<string, PmpoParams>,
@@ -46,6 +47,7 @@ export type PmpoAppItems = {
   rocCurve: DG.Viewer;
   confusionMatrix: DG.Viewer;
   controls: Controls;
+  profile: DesirabilityProfile | null;
 };
 
 /** Class implementing probabilistic MPO (pMPO) model training and prediction */
@@ -243,6 +245,7 @@ export class Pmpo {
   } // predict
 
   private params: Map<string, PmpoParams> | null = null;
+  private desirabilityProfile: DesirabilityProfile | null = null;
 
   private table: DG.DataFrame;
   private view: DG.TableView;
@@ -514,6 +517,7 @@ export class Pmpo {
     this.desirabilityProfileRoots.clear();
 
     const desirabilityProfile = getDesirabilityProfileJson(this.params, useSigmoidalCorrection, '', '', true);
+    this.desirabilityProfile = getDesirabilityProfileJson(this.params, useSigmoidalCorrection, '', '', false);
 
     // Set weights
     const descrNames = descrStatsTable.col(DESCR_TITLE)!.toList();
@@ -696,6 +700,7 @@ export class Pmpo {
       rocCurve: this.rocCurve,
       confusionMatrix: this.confusionMatrix,
       controls: this.getInputForm(false),
+      profile: this.desirabilityProfile,
     };
   } // getViewers
 

@@ -22,7 +22,7 @@ import {
   findNextStep,
   findNextSubStep,
   findNodeWithPathByUuid, findPrevStep, findTreeNodeByPath,
-  findTreeNodeParrent, getRelevantGlobalActions, hasInconsistencies, hasSubtreeFixableInconsistencies,
+  findTreeNodeParrent, getRelevantGlobalActions, getViewers, hasInconsistencies, hasSubtreeFixableInconsistencies,
   reportTree,
 } from '../../utils';
 import {useReactiveTreeDriver} from '../../composables/use-reactive-tree-driver';
@@ -30,9 +30,10 @@ import {take} from 'rxjs/operators';
 import {EditRunMetadataDialog} from '@datagrok-libraries/compute-utils/shared-components/src/history-dialogs';
 import {PipelineInstanceConfig} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineInstance';
 import {setHelpService} from '../../composables/use-help';
-import {CustomExport, ExportCbInput} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineConfiguration';
+import {CustomExport, ExportCbInput, ViewersHook} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineConfiguration';
 import * as Utils from '@datagrok-libraries/compute-utils/shared-utils/utils';
-import {dfToViewerMapping, richFunctionViewReport} from '@datagrok-libraries/compute-utils';
+import {richFunctionViewReport} from '@datagrok-libraries/compute-utils';
+import {BehaviorSubject} from 'rxjs';
 
 const DEVELOPERS_GROUP = 'Developers';
 
@@ -383,6 +384,7 @@ export const TreeWizard = Vue.defineComponent({
           treeState: treeState.value!,
           meta: currentMetaCallData.value,
           callInfoStates: states.calls,
+          metaStates: states.meta,
           validationStates: states.validations,
           consistencyStates: states.consistency,
           descriptions: states.descriptions,
@@ -395,12 +397,13 @@ export const TreeWizard = Vue.defineComponent({
       if (!treeState.value)
         return
       const utils = {
-        reportFuncCallExcel: async (fc: DG.FuncCall, uuid: string) => {
+        reportFuncCallExcel: async (fc: DG.FuncCall, uuid: string, viewersHook?: ViewersHook, metaState?: Record<string, BehaviorSubject<any>>) => {
+          const viewers = await getViewers(fc, viewersHook, metaState);
           return richFunctionViewReport(
             'Excel',
             fc.func,
             fc,
-            dfToViewerMapping(fc),
+            viewers,
             states.validations?.[uuid],
             states.consistency?.[uuid],
           );
@@ -411,6 +414,7 @@ export const TreeWizard = Vue.defineComponent({
             treeState: state,
             meta: currentMetaCallData.value,
             callInfoStates: states.calls,
+            metaStates: states.meta,
             validationStates: states.validations,
             consistencyStates: states.consistency,
             descriptions: states.descriptions,

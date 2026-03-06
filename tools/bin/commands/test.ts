@@ -70,8 +70,6 @@ export async function test(args: TestArgs): Promise<boolean> {
 
   isArgsValid(args);
 
-  utils.setHost(args.host, config);
-
   // If running from a core Dart library directory, delegate to DevTools package
   if (!args.package) {
     const detectedCategory = detectDartLibraryCategory();
@@ -84,7 +82,8 @@ export async function test(args: TestArgs): Promise<boolean> {
         color.error(`Run 'grok test --category="${category}"' from 'public/packages/DevTools' instead.`);
         process.exit(1);
       }
-      color.info(`Detected core library directory. Delegating to DevTools with category: "${category}"`);
+      const hostAlias = args.host ?? config.default;
+      color.info(`Detected core library directory. Delegating to DevTools with category: "${category}"${hostAlias ? ` (host: ${hostAlias})` : ''}`);
       const cmdArgs = ['test', `--category=${category}`];
       if (args.host) cmdArgs.push(`--host=${args.host}`);
       if (args.test) cmdArgs.push(`--test=${args.test}`);
@@ -102,11 +101,20 @@ export async function test(args: TestArgs): Promise<boolean> {
       if (args.debug) cmdArgs.push('--debug');
       if (args['ci-cd']) cmdArgs.push('--ci-cd');
       if (args['no-retry']) cmdArgs.push('--no-retry');
+      if (!args['skip-publish']) {
+        const isDevToolsOnServer = await testUtils.isPackageOnServer(args.host ?? '', 'DevTools');
+        if (isDevToolsOnServer) {
+          cmdArgs.push('--skip-publish');
+          if (!args['skip-build']) cmdArgs.push('--skip-build');
+        }
+      }
       const grokScript = path.resolve(__dirname, '..', 'grok.js');
       const result = spawnSync(process.execPath, [grokScript, ...cmdArgs], {cwd: devToolsDir, stdio: 'inherit'});
       process.exit(result.status ?? 1);
     }
   }
+
+  utils.setHost(args.host, config, true);
 
   let packageJsonData = undefined;
   if (!args.package)
@@ -114,7 +122,7 @@ export async function test(args: TestArgs): Promise<boolean> {
   const packageName = args.package ? utils.kebabToCamelCase(args.package) : utils.kebabToCamelCase(utils.removeScope(packageJsonData.name));
   const packagesDir = path.basename(curDir) === 'packages' ? curDir : path.dirname(curDir);
 
-  console.log('Environment variable `TARGET_PACKAGE` is set to', packageName);
+  console.log(`HOST: ${process.env.HOST}, TARGET_PACKAGE: ${packageName}`);
 
   if (args.platform && packageName !== 'ApiTests')
     color.warn('--platform flag can only be used in the ApiTests package');
@@ -337,9 +345,9 @@ async function updateResultsByReproduced(curentResult: ResultObject, reproducedR
 
   table1.rows.forEach((row) => {
     const key = `${row['category']},${row['name']}`;
-    if (key in flakingMap) 
+    if (key in flakingMap)
       row['flaking'] = flakingMap[key];
-    
+
   });
 
   curentResult.csv = Papa.unparse(table1.rows, {columns: table1.headers}); ;
@@ -352,9 +360,9 @@ function readCSVResultData(data: string): { headers: string[], rows: Record<stri
     header: true,
     skipEmptyLines: true,
   });
-  if (parsed.errors.length > 0) 
+  if (parsed.errors.length > 0)
     throw new Error(`Error parsing CSV file: ${parsed.errors[0].message}`);
-  
+
   return {headers: parsed.meta.fields || [], rows: parsed.data as Record<string, string>[]};
 }
 

@@ -7,6 +7,7 @@ import {PipelineOutline, PipelineState, StepParallelInitialConfig, StepSequentia
 import type ExcelJS from 'exceljs';
 import {ConsistencyInfo} from '../runtime/StateTreeNodes';
 import {Zippable} from 'fflate';
+import {BehaviorSubject} from 'rxjs';
 
 //
 // Pipeline public configuration
@@ -54,6 +55,7 @@ export interface ExportCbInput {
   runError?: string,
   validation?: Record<string, ValidationResult>,
   consistency?: Record<string, ConsistencyInfo>,
+  meta: Record<string, BehaviorSubject<any>>,
   description?: Record<string, string | string[]>,
 }
 

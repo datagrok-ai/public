@@ -16,6 +16,9 @@ class WebGPUCache {
   yCol: DG.Column | null = null;
   xColVersion = -1;
   yColVersion = -1;
+  colorColVersion = -1;
+  sizeColumnVersion = -1;
+  markerColVersion = -1;
   xColLength = -1;
   yColLength = -1;
   markerSizesBuffer: GPUBuffer | null = null;
@@ -95,11 +98,12 @@ class WebGPUCache {
   }
 
   isMarkerSizesParamsChanged(sc: DG.ScatterPlotViewer) {
-    return sc.props.markerDefaultSize != this.markerDefaultSize || sc.props.sizeColumnName != this.sizeColumnName;
+    return sc.props.markerDefaultSize != this.markerDefaultSize || sc.props.sizeColumnName != this.sizeColumnName || (sc.props.sizeColumnName && this.sizeColumnVersion != sc.dataFrame.col(sc.props.sizeColumnName)?.version) || (sc.props.markersColumnName && sc.dataFrame.col(sc.props.markersColumnName)?.version != this.markerColVersion);
   }
 
   isColorChanged(sc: DG.ScatterPlotViewer) {
     return sc.props.colorColumnName != this.colorColumnName ||
+     (sc.dataFrame.col(sc.props.colorColumnName) && sc.dataFrame.col(sc.props.colorColumnName)!.version !== this.colorColVersion) ||
      sc.props.selectedRowsColor != this.selectedRowsColor ||
      sc.props.filteredRowsColor != this.filteredRowsColor ||
      sc.props.filteredOutRowsColor != this.filteredOutRowsColor ||
@@ -202,6 +206,7 @@ class WebGPUCache {
   setMarkerSizes(sc: DG.ScatterPlotViewer, device: GPUDevice) {
     this.markerDefaultSize = sc.props.markerDefaultSize;
     this.sizeColumnName = sc.props.sizeColumnName;
+    this.sizeColumnVersion = sc.props.sizeColumnName ? sc.dataFrame.col(sc.props.sizeColumnName)?.version ?? -1 : -1;
     if (!sc.props.sizeColumnName) {
       const size = Math.max(sc.getMarkerSize(0), 2);
       this.markerSizesLength = 1;
@@ -229,6 +234,7 @@ class WebGPUCache {
 
   setColor(sc: DG.ScatterPlotViewer, device: GPUDevice) {
     this.colorColumnName = sc.props.colorColumnName;
+    this.colorColVersion = sc.dataFrame.col(sc.props.colorColumnName)?.version ?? -1;
     const colors = sc.getMarkerColors();
     this.colorLength = colors.length;
     this.selectedRowsColor = sc.props.selectedRowsColor;

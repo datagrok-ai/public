@@ -44,7 +44,7 @@ const api: IDartApi = (typeof window !== 'undefined' ? window : global.window) a
  * Subclass ViewBase to implement a Datagrok view in JavaScript.
  * */
 export class ViewBase extends Widget {
-  dart: any;
+  declare dart: any;
   subs: Subscription[];
   private _helpUrl: string | null = null;
   private _closing: boolean;

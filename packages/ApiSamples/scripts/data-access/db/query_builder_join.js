@@ -1,6 +1,6 @@
 try {
   let df = await grok.data.db
-    .buildQuery('Samples:PostgresNorthwind', 'products')
+    .buildQuery('ApiSamples:PostgresNorthwind', 'products')
     .leftJoin('categories', ['categoryid'], ['categoryid'])
     .innerJoin('suppliers', ['supplierid'], ['supplierid'])
     .groupBy(['companyname', 'products.supplierid', 'country'])

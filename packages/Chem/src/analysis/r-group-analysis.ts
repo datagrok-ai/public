@@ -10,7 +10,6 @@ import {IRGroupAnalysisResult} from '../rdkit-service/rdkit-service-worker-subst
 import {getRdKitService} from '../utils/chem-common-rdkit';
 import {_convertMolNotation} from '../utils/convert-notation-utils';
 import {SCAFFOLD_COL} from '../constants';
-import {delay} from '@datagrok-libraries/test/src/test';
 import {hasNewLines, hexToPercentRgb} from '../utils/chem-common';
 import {getQueryMolSafe} from '../utils/mol-creation_rdkit';
 import {MolfileHandler} from '@datagrok-libraries/chem-meta/src/parsing-utils/molfile-handler';
@@ -170,7 +169,7 @@ export function rGroupAnalysis(col: DG.Column): void {
       try {
         if (replaceLatest.value) {
           removeLatestAnalysis(col);
-          await delay(50);
+          await DG.delay(50);
         }
         const smarts = await sketcher.getSmarts();
         const funcCall = await DG.Func.find({name: 'rGroupDecomposition'})[0].prepare({

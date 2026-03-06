@@ -68,26 +68,14 @@ export function studyConfigToMap(studyConfig: StudyConfig): {[key: string]: any}
 }
 
 export function restoreBrowsePanelOnRemoval(): void {
-  const browseRoot = grok.shell.browsePanel.root;
-  const parent = browseRoot.closest('.tab-host');
-  if (!parent)
-    return;
-
-  const observer = new MutationObserver((mutations) => {
-    for (const mutation of mutations) {
-      for (const removed of Array.from(mutation.removedNodes)) {
-        if (removed === browseRoot || (removed instanceof Element && removed.contains(browseRoot))) {
-          observer.disconnect();
-          const handle = document.querySelector('[name = "view-handle: Browse"]') as HTMLElement;
+  const endTime = Date.now() + 5000;
+  const intervalId = setInterval(() => {
+    const handle = document.querySelector('[name = "view-handle: Browse"]') as HTMLElement;
           if (handle)
             handle.click();
-          return;
-        }
-      }
-    }
-  });
-
-  observer.observe(parent, {childList: true, subtree: true});
+    if (Date.now() >= endTime)
+      clearInterval(intervalId);
+  }, 20);
 }
 
 export function hideValidationColumns(tv: DG.TableView) {
@@ -100,7 +88,7 @@ export function hideValidationColumns(tv: DG.TableView) {
 
 export function addDomainFilters(tv: DG.TableView, studyId: string): DG.FilterGroup | null {
   const dmDomainColNames = studies[studyId].domains.dm!.columns.names();
-  const firstColumnsNames = [SPECIES, SEX, AGETXT, PLANNED_TRT_ARM, ACT_TRT_ARM, SUBJECT_ID];
+  const firstColumnsNames = [SUBJECT_ID, SPECIES, SEX, AGETXT, PLANNED_TRT_ARM, ACT_TRT_ARM, SUBJECT_ID];
   const otherCols = dmDomainColNames
     .filter((it) => !firstColumnsNames.includes(it) && it !== HAS_VALIDATION_ERRORS_COL);
   const filterCols: {colName: string, filterType: DG.FILTER_TYPE}[] = [];
@@ -116,8 +104,8 @@ export function addDomainFilters(tv: DG.TableView, studyId: string): DG.FilterGr
       }
     }
   };
-  addFilterColNames(firstColumnsNames);
   addFilterColNames(otherCols);
+  addFilterColNames(firstColumnsNames);
   const fg = tv.getFiltersGroup({createDefaultFilters: false});
   if (filterCols.length) {
     for (const filter of filterCols) {

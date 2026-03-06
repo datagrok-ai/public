@@ -17,7 +17,8 @@ import {zipSync, Zippable} from 'fflate';
 import {dfToViewerMapping, getStartedOrNull, replaceForWindowsPath, richFunctionViewReport, ValidationResult} from '@datagrok-libraries/compute-utils';
 import {ConsistencyInfo, FuncCallStateInfo, MetaCallInfo} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/StateTreeNodes';
 import type Dayjs from 'dayjs';
-import {ExportCbInput} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineConfiguration';
+import {ExportCbInput, ViewersHook} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineConfiguration';
+import {BehaviorSubject} from 'rxjs';
 
 export type NodeWithPath = {
   state: PipelineState,
@@ -167,12 +168,28 @@ export const hasInconsistencies = (consistencyStates?: Record<string, Consistenc
   return !!firstInconsistency;
 };
 
+export async function getViewers(call: DG.FuncCall, viewersHook?: ViewersHook, metaState?: Record<string, BehaviorSubject<any>>) {
+  const mappings = await dfToViewerMapping(call);
+  if (viewersHook) {
+    for (const [ioName, viewers] of Object.entries(mappings ?? {})) {
+      for (const viewer of viewers) {
+        if (!viewer)
+          continue;
+        const meta = metaState?.[ioName]?.value;
+        viewersHook(ioName, viewer.type, viewer, meta);
+      }
+    }
+  }
+  return mappings;
+}
+
 export async function reportTree(
   {
     startDownload,
     treeState,
     meta = {},
     callInfoStates,
+    metaStates,
     validationStates,
     consistencyStates,
     descriptions,
@@ -183,6 +200,7 @@ export async function reportTree(
     treeState: PipelineState;
     meta?: MetaCallInfo;
     callInfoStates?: Record<string, FuncCallStateInfo | undefined>,
+    metaStates?: Record<string, Record<string, BehaviorSubject<any>> | undefined>,
     validationStates?: Record<string, Record<string, ValidationResult> | undefined>,
     consistencyStates?: Record<string, Record<string, ConsistencyInfo> | undefined>,
     descriptions?: Record<string, Record<string, string | string[]> | undefined>,
@@ -204,13 +222,15 @@ export async function reportTree(
       const validation = validationStates?.[state.uuid];
       const consistency = consistencyStates?.[state.uuid];
       const description = descriptions?.[state.uuid];
+      const metaState = metaStates?.[state.uuid];
       const {isOutputOutdated, runError} = callInfo;
+      const viewers = await getViewers(funcCall, state.viewersHook, metaState);
 
       const [blob, wb] = await richFunctionViewReport(
         'Excel',
         funcCall.func,
         funcCall,
-        dfToViewerMapping(funcCall),
+        viewers,
         validation,
         consistency,
       );
@@ -230,6 +250,7 @@ export async function reportTree(
           runError,
           validation,
           consistency,
+          meta: metaState ?? {},
           description
         });
       }

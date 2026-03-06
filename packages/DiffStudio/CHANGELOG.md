@@ -9,7 +9,7 @@ Implemented new methods:
   * Runge-Kutta-Fehlberg 4(5)
   * Dormand-Prince 5(4)
 * Adams-Bashforth - multistep predictor-correctors of order 4 and 5
-* LSODA - automatic stiffness detection
+* LSODA, CVODE - automatic stiffness detection solvers
 
 Fixed minor bugs
 

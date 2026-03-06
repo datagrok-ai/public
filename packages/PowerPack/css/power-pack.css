@@ -764,6 +764,13 @@ body.dartium .power-pack-widgets-host.ui-div {
     opacity: 0.85;
 }
 
+.power-pack-enrich-info {
+    font-size: 12px;
+    color: var(--grey-4);
+    padding: 6px 8px;
+    margin: 4px 0;
+}
+
 .power-pack-enrich-empty {
     margin-left: 16px;
     margin-top: 6px;

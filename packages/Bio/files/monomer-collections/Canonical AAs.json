@@ -1,0 +1,27 @@
+{
+  "monomerSymbols": [
+    "A",
+    "C",
+    "D",
+    "E",
+    "F",
+    "G",
+    "H",
+    "I",
+    "K",
+    "L",
+    "M",
+    "N",
+    "P",
+    "Q",
+    "R",
+    "S",
+    "T",
+    "V",
+    "W",
+    "Y"
+  ],
+  "description": "Canonical amino acids collection",
+  "updatedBy": "rizhi",
+  "updatedOn": "2026-01-01T12:00:00Z"
+}

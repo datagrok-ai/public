@@ -537,7 +537,7 @@ class Preview {
         showViewerAnnotationRegions: true,
         showContextMenu: false,
         axesFollowFilter: false,
-        axisFont: '11px Arial',
+        axisFont: 'normal normal 11px "Arial"',
         legendVisibility: DG.VisibilityMode.Never,
         xAxisHeight: 25,
       });
@@ -560,7 +560,7 @@ class Preview {
         showMouseOverPoint: false,
         showCurrentPoint: false,
         zoomAndFilter: 'no action',
-        axisFont: '11px Arial',
+        axisFont: 'normal normal 11px "Arial"',
         legendVisibility: DG.VisibilityMode.Never,
         xAxisHeight: 25,
       });

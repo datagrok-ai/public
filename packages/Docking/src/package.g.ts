@@ -35,6 +35,7 @@ export async function dockLigandCached(jsonForm: string, containerId: string) : 
 //input: string target 
 //input: double poses 
 //output: dataframe result { action: join(table) }
+//meta.vectorFunc: true
 export async function getAutodockResults(table: DG.DataFrame, ligands: DG.Column, target: string, poses: number) : Promise<any> {
   return await PackageFunctions.getAutodockResults(table, ligands, target, poses);
 }
@@ -42,7 +43,7 @@ export async function getAutodockResults(table: DG.DataFrame, ligands: DG.Column
 //name: AutoDock
 //description: Autodock plugin UI
 //input: dataframe table { description: 'Input data table' }
-//input: categorical ligands { type: categorical; semType: Molecule; description: 'Small molecules to dock' }
+//input: column ligands { type: categorical; semType: Molecule; description: 'Small molecules to dock' }
 //input: string target { choices: Docking:getConfigFiles; description: 'Folder with config and macromolecule' }
 //input: int poses = 10 { description: 'Number of output conformations for each small molecule' }
 //meta.role: hitTriageFunction
