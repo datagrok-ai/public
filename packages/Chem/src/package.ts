@@ -2589,6 +2589,8 @@ export class PackageFunctions {
     profileName: string,
     @grok.decorators.param({type: 'string'}) aggregation: WeightedAggregation,
   ): DG.DataFrame | null {
+    if (columns.length === 0)
+      return null;
     const cols = Array.from(columns);
     const isDifferent = df.rowCount !== cols[0].length;
     const resultColumn = mpo(df, cols, profileName, aggregation, isDifferent);
