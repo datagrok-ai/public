@@ -8,7 +8,6 @@ import {
   DESIRABILITY_PROFILE_TYPE,
   DesirabilityProfile,
   PropertyDesirability,
-  WEIGHTED_AGGREGATIONS_LIST,
 } from '@datagrok-libraries/statistics/src/mpo/mpo';
 import {MpoProfileEditor} from '@datagrok-libraries/statistics/src/mpo/mpo-profile-editor';
 import {MPO_SCORE_CHANGED_EVENT} from '@datagrok-libraries/statistics/src/mpo/utils';
@@ -19,6 +18,7 @@ import {PackageFunctions} from '../package';
 import {computeMpo, MpoProfileInfo, deepEqual, findSuitableProfiles} from '../mpo/utils';
 
 const CREATE_NEW_PROFILE_ITEM = '+ Create New...';
+const UNTITLED_PROFILE = 'Untitled Profile';
 
 export class MpoProfileDialog {
   dataFrame: DG.DataFrame;
@@ -92,13 +92,13 @@ export class MpoProfileDialog {
       },
     });
 
-    this.pmpoSettingsContainer = ui.divV([this.methodInput.root], {style: {display: 'none'}});
+    this.pmpoSettingsContainer = ui.divV([this.methodInput.root], 'chem-mpo-d-none');
 
     this.pmpoSettingsIcon = ui.icons.settings(() => {
       this.pmpoSettingsOpened = !this.pmpoSettingsOpened;
-      this.pmpoSettingsContainer.style.display = this.pmpoSettingsOpened ? '' : 'none';
+      this.pmpoSettingsContainer.classList.toggle('chem-mpo-d-none', !this.pmpoSettingsOpened);
     }, 'Generate from data (pMPO)');
-    this.pmpoSettingsIcon.style.display = 'none';
+    this.pmpoSettingsIcon.classList.add('chem-mpo-d-none');
   }
 
   async init(): Promise<void> {
@@ -106,7 +106,10 @@ export class MpoProfileDialog {
     this.suitableProfileNames = findSuitableProfiles(this.dataFrame, this.mpoProfiles).map((p) => p.name);
 
     this.profileInput.items = [CREATE_NEW_PROFILE_ITEM, ...this.mpoProfiles.map((p) => p.name)];
-    requestAnimationFrame(() => this.highlightSuitableProfiles(this.suitableProfileNames));
+    requestAnimationFrame(() => {
+      this.addCreateNewSeparator();
+      this.highlightSuitableProfiles(this.suitableProfileNames);
+    });
 
     const defaultProfile = this.suitableProfileNames.length > 0 ?
       this.suitableProfileNames[0] :
@@ -119,6 +122,14 @@ export class MpoProfileDialog {
 
     this.listenForProfileChanges();
     this.mpoContextPanel = new MpoContextPanel(this.dataFrame);
+  }
+
+  private addCreateNewSeparator(): void {
+    const select = this.profileInput.input as HTMLSelectElement;
+    if (select.options.length < 2)
+      return;
+    const separator = document.createElement('hr');
+    select.insertBefore(separator, select.options[1]);
   }
 
   private highlightSuitableProfiles(suitableFileNames: string[]): void {
@@ -163,8 +174,12 @@ export class MpoProfileDialog {
 
     this.isNewProfile = false;
     this.pmpoSettingsOpened = false;
-    this.pmpoSettingsIcon.style.display = 'none';
-    this.pmpoSettingsContainer.style.display = 'none';
+    this.pmpoSettingsIcon.classList.add('chem-mpo-d-none');
+    this.pmpoSettingsContainer.classList.add('chem-mpo-d-none');
+
+    const select = this.profileInput.input as HTMLSelectElement;
+    if (select.options.length > 0)
+      select.options[0].textContent = CREATE_NEW_PROFILE_ITEM;
 
     this.currentProfileFileName = profileInfo.fileName;
     this.currentProfile = structuredClone(profileInfo);
@@ -177,11 +192,15 @@ export class MpoProfileDialog {
   private async startNewProfile(): Promise<void> {
     this.isNewProfile = true;
     this.pmpoSettingsOpened = false;
-    this.pmpoSettingsContainer.style.display = 'none';
+    this.pmpoSettingsContainer.classList.add('chem-mpo-d-none');
     this.methodInput.value = 'Manual';
 
+    const select = this.profileInput.input as HTMLSelectElement;
+    if (select.options.length > 0)
+      select.options[0].textContent = UNTITLED_PROFILE;
+
     const hasBoolColumns = [...this.dataFrame.columns].some((c) => c.type === DG.COLUMN_TYPE.BOOL);
-    this.pmpoSettingsIcon.style.display = hasBoolColumns ? '' : 'none';
+    this.pmpoSettingsIcon.classList.toggle('chem-mpo-d-none', !hasBoolColumns);
 
     this.createManualProfile();
   }
@@ -191,7 +210,7 @@ export class MpoProfileDialog {
     for (const col of this.dataFrame.columns.numerical)
       props[col.name] = createDefaultNumerical(1, col.min, col.max);
 
-    this.currentProfile = {type: DESIRABILITY_PROFILE_TYPE, name: '', description: '', properties: props};
+    this.currentProfile = {type: DESIRABILITY_PROFILE_TYPE, name: UNTITLED_PROFILE, description: '', properties: props};
     this.currentProfileFileName = null;
     this.originalProfile = null;
     this.isNewProfile = true;
@@ -292,7 +311,7 @@ export class MpoProfileDialog {
 
   private showSaveNewProfileDialog(): Promise<boolean> {
     return new Promise((resolve) => {
-      const nameInput = ui.input.string('Name', {value: '', nullable: false});
+      const nameInput = ui.input.string('Name', {value: this.currentProfile?.name || UNTITLED_PROFILE, nullable: false});
       const descInput = ui.input.textArea('Description', {value: ''});
 
       ui.dialog({title: 'Save MPO Profile'})
@@ -312,8 +331,8 @@ export class MpoProfileDialog {
           if (saved) {
             this.isNewProfile = false;
             this.pmpoSettingsOpened = false;
-            this.pmpoSettingsIcon.style.display = 'none';
-            this.pmpoSettingsContainer.style.display = 'none';
+            this.pmpoSettingsIcon.classList.add('chem-mpo-d-none');
+            this.pmpoSettingsContainer.classList.add('chem-mpo-d-none');
             await this.refreshProfilesDropdown(this.currentProfile!.name);
             this.originalProfile = structuredClone(this.currentProfile!);
             this.updateSaveButtonVisibility();
@@ -329,7 +348,10 @@ export class MpoProfileDialog {
     this.mpoProfiles = await MpoProfileManager.load();
     this.suitableProfileNames = findSuitableProfiles(this.dataFrame, this.mpoProfiles).map((p) => p.name);
     this.profileInput.items = [CREATE_NEW_PROFILE_ITEM, ...this.mpoProfiles.map((p) => p.name)];
-    requestAnimationFrame(() => this.highlightSuitableProfiles(this.suitableProfileNames));
+    requestAnimationFrame(() => {
+      this.addCreateNewSeparator();
+      this.highlightSuitableProfiles(this.suitableProfileNames);
+    });
     this.profileInput.value = selectName;
   }
 
@@ -363,7 +385,7 @@ export class MpoProfileDialog {
 
   private getProfileControls(): HTMLElement {
     return ui.divH([this.profileInput.root, this.pmpoSettingsIcon, this.manageButton, this.saveButton],
-      {style: {gap: '10px'}});
+      'chem-mpo-profile-actions');
   }
 
   private getMpoControls(): HTMLElement {

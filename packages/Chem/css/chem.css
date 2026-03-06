@@ -1070,6 +1070,11 @@
   margin-top: 10px !important;
 }
 
+.chem-mpo-profile-actions {
+  gap: 10px;
+  align-items: center;
+}
+
 .chem-mpo-scores-viewer {
   display: flex !important;
   flex-direction: column;

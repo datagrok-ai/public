@@ -2710,7 +2710,7 @@ export class PackageFunctions {
 
     const hasPath = path != null;
 
-    if (hasPath && url.pathname.endsWith('/Mpo/create-profile')) {
+    if (hasPath && url.pathname.endsWith('/create-profile')) {
       const view = new MpoProfileCreateView();
       return view.tableView!;
     }
