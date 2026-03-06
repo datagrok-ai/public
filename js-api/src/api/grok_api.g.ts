@@ -635,6 +635,7 @@ export interface IDartApi {
   grok_ChoiceInput_Get_Items(input: any): any;
   grok_ChoiceInput_Set_Items(input: any, x: any): any;
   grok_RadioInput_Set_Items(input: any, x: any): any;
+  grok_MultiChoiceInput_Get_Items(input: any): any;
   grok_MultiChoiceInput_Set_Items(input: any, x: any): any;
   grok_TagsInput_Set_Allow_New(input: any, x: any): any;
   grok_TagsInput_Set_MultiValue(input: any, x: any): any;
