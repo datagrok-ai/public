@@ -14,6 +14,8 @@ import {
 } from './annotation-manager';
 import {_package} from '../../package';
 import type {NumberingResult, Scheme} from '../antibody-numbering (WIP)';
+import {VdRegionsViewer} from '../../viewers/vd-regions-viewer';
+import { VdRegion, VdRegionType } from '@datagrok-libraries/bio/src/viewers/vd-regions';
 
 const BUILTIN_ENGINE_KEY = '__builtin__';
 const BUILTIN_ENGINE_LABEL = 'Built-in (TypeScript)';
@@ -441,6 +443,23 @@ function applyNumberingResults(
         const regionAnnotations: SeqAnnotation[] = JSON.parse(annotationsJson);
         const existing = getColumnAnnotations(alignment.alignedCol).filter((a) => a.category !== AnnotationCategory.Structure);
         setColumnAnnotations(alignment.alignedCol, [...existing, ...regionAnnotations]);
+        // chunk for vd regions viewer if that becomes a desired feature in the future
+        // if (grok.shell.tv?.dataFrame === df) {
+        //   (async () => {
+        //     const vdRegionsViewer: VdRegionsViewer = await grok.shell.tv.dataFrame.plot.fromType('VdRegions',) as VdRegionsViewer;
+        //     vdRegionsViewer.chains = [chainType];
+        //     vdRegionsViewer.setData(regionAnnotations.map((a, i) => ({
+        //       type: a.name?.toLowerCase().startsWith('cdr') ? VdRegionType.CDR : VdRegionType.FR,
+        //       name: a.name,
+        //       chain: chainType,
+        //       order: i,
+        //       sequenceColumnName: alignment.alignedCol.name,
+        //       positionStartName: a.start ?? '',
+        //       positionEndName: a.end ?? '',
+        //     } satisfies VdRegion)));
+        //     grok.shell.tv.addViewer(vdRegionsViewer);
+        //   })();
+        // }
       } catch (err) {
         console.warn('Failed to set column-level annotations on aligned column:', err);
       }
@@ -448,5 +467,6 @@ function applyNumberingResults(
   }
 
   df.fireValuesChanged();
+
   grok.shell.info(`Numbering applied: ${schemeName}, chain type: ${chainType}`);
 }
