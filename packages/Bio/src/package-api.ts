@@ -179,6 +179,13 @@ export namespace funcs {
   }
 
   /**
+  Creates a new input for sequence columns with ability to extract a region
+  */
+  export async function sequenceColumnInput(name: string , options: any ): Promise<any> {
+    return await grok.functions.call('Bio:SequenceColumnInput', { name, options });
+  }
+
+  /**
   Detects pairs of molecules with similar structure and significant difference in any given property
   */
   export async function activityCliffs(table: DG.DataFrame , molecules: string , activities: DG.Column , similarity: number , methodName: string , similarityMetric: string , preprocessingFunction: any , options?: any , demo?: boolean ): Promise<void> {

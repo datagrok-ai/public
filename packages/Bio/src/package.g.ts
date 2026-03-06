@@ -244,6 +244,15 @@ export function manageAnnotations() : void {
   PackageFunctions.manageAnnotations();
 }
 
+//name: Sequence Column Input
+//description: Creates a new input for sequence columns with ability to extract a region
+//input: string name 
+//input: dynamic options 
+//output: dynamic result
+export function sequenceColumnInput(name: string, options: any) : any {
+  return PackageFunctions.sequenceColumnInput(name, options);
+}
+
 //name: Sequence Activity Cliffs
 //description: Detects pairs of molecules with similar structure and significant difference in any given property
 //input: dataframe table { description: Input data table }

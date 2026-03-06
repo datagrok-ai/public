@@ -79,6 +79,8 @@ import {handleSequenceHeaderRendering} from './widgets/sequence-scrolling-widget
 import {PolymerType} from '@datagrok-libraries/js-draw-lite/src/types/org';
 import {BilnNotationProvider} from './utils/biln';
 import {showMonomerCollectionsView} from './utils/monomer-lib/monomer-collections-view';
+import {ISequenceColumnInput} from '@datagrok-libraries/bio/src/utils/sequence-column-input';
+import {SequenceColumnInput} from './utils/sequence-column-input';
 
 import * as api from './package-api';
 export const _package = new BioPackage(/*{debug: true}/**/);
@@ -486,6 +488,14 @@ export class PackageFunctions {
   })
   static manageAnnotations(): void {
     import('./utils/annotations/annotation-manager-ui').then((m) => m.showAnnotationManagerDialog());
+  }
+
+  @grok.decorators.func({
+    name: 'Sequence Column Input',
+    description: 'Creates a new input for sequence columns with ability to extract a region',
+  })
+  static sequenceColumnInput(name: string, options: any): ISequenceColumnInput {
+    return SequenceColumnInput.create(name, options);
   }
 
   @grok.decorators.func({
