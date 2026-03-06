@@ -310,7 +310,11 @@ export function createObservationTimelinesView(studyId: string): StudyTableViewP
       legendDiv.appendChild(label);
     }
 
-    const connectPointsInput = ui.input.bool('Connect subject points', {value: false, onValueChanged: () => grid.invalidate()});
+    const connectPointsInput = ui.input.bool('Connect subject points', {value: false, onValueChanged: (value) => {
+      if (value && !subjectInput.value && sortedSubjects.length > 0)
+        subjectInput.value = sortedSubjects[0];
+      grid.invalidate();
+    }});
     tableView.setRibbonPanels([[subjectInput.root, connectPointsInput.root, legendDiv]]);
 
     subjectClickedSub?.unsubscribe();
