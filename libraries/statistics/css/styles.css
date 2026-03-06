@@ -130,25 +130,14 @@
   pointer-events: none;
 }
 
-.statistics-mpo-empty-heading {
-  font-size: 15px;
-  font-weight: bold;
+.statistics-mpo-empty-state h3 {
   color: var(--grey-5);
-  margin-bottom: 8px;
 }
 
-.statistics-mpo-empty-state .description {
-  font-size: 13px;
-  line-height: 1.5;
-  margin-bottom: 20px;
+.statistics-mpo-empty-state p {
+  color: var(--grey-3);
   max-width: 360px;
   margin-inline: auto;
-  color: var(--grey-3);
-}
-
-.statistics-mpo-empty-add {
-  font-size: 13px;
-  cursor: pointer;
 }
 
 .statistics-mpo-desirability-dialog .d4-accordion-pane-content {
