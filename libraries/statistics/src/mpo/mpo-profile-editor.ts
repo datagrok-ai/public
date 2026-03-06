@@ -134,16 +134,11 @@ export class MpoProfileEditor {
 
   private renderDesignEmpty(): void {
     const icon = ui.iconFA('chart-line');
-    icon.style.cursor = 'default';
-    icon.style.pointerEvents = 'none';
     const heading = ui.divText('No properties yet', 'statistics-mpo-empty-heading');
     const msg = ui.div([
       'Select a dataset to auto-populate properties from its numerical columns, or add them manually.',
     ], 'description');
-    const addBtn = ui.element('a');
-    addBtn.textContent = '+ Add Property';
-    addBtn.classList.add('d4-link-action', 'statistics-mpo-empty-add');
-    addBtn.addEventListener('click', () => this.addProperty());
+    const addBtn = ui.link('+ Add Property', () => this.addProperty(), '', 'statistics-mpo-empty-add');
     const container = ui.divV([icon, heading, msg, addBtn], 'statistics-mpo-empty-state');
     this.root.append(container);
   }

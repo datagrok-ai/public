@@ -1111,6 +1111,10 @@
   order: initial;
 }
 
+.chem-profile-view-loading {
+  visibility: hidden;
+}
+
 .chem-profile-editor-container {
   flex: 1 1 0;
   width: 100%;

@@ -41,6 +41,9 @@ export class MpoProfileCreateView {
   fileName?: string | null = null;
   saveButton: HTMLElement | null = null;
 
+  private headerEl!: HTMLElement;
+  private toolbarEl!: HTMLElement;
+
   tableView: DG.TableView;
   private tableViewVisible: boolean = false;
   private subs: Subscription[] = [];
@@ -141,12 +144,12 @@ export class MpoProfileCreateView {
     this.saveButton = ui.button('Save', () => this.showSaveDialog());
     this.saveButton.classList.add('d4-disabled');
 
-    const header = ui.h1(this.isEditMode ? `Edit ${this.profile.name || 'MPO'}` : 'Create MPO Profile');
-    header.classList.add('chem-profile-header');
+    this.headerEl = ui.h1(this.isEditMode ? `Edit ${this.profile.name || 'MPO'}` : 'Create MPO Profile');
+    this.headerEl.classList.add('chem-profile-header');
 
-    const toolbarWithSave = ui.divV([ui.form(controls), this.saveButton], 'chem-profile-toolbar-wrap');
+    this.toolbarEl = ui.divV([ui.form(controls), this.saveButton], 'chem-profile-toolbar-wrap');
 
-    this.profileViewContainer = ui.divV([header, toolbarWithSave]);
+    this.profileViewContainer = ui.divV([this.headerEl, this.toolbarEl]);
     this.profileViewContainer.classList.add('chem-profile-view');
 
     this.view.root.append(this.profileViewContainer);
@@ -155,7 +158,7 @@ export class MpoProfileCreateView {
   // --- Event handlers ---
 
   private async onMethodChanged(): Promise<void> {
-    this.editor.aggregationInput.root.style.display = this.isManualMode ? '' : 'none';
+    this.editor.aggregationInput.root.classList.toggle('chem-mpo-d-none', !this.isManualMode);
 
     if (this.methodInput!.value === METHOD_PROBABILISTIC) {
       this.stashedManualProfile = {
@@ -294,13 +297,8 @@ export class MpoProfileCreateView {
   }
 
   private clearPreviousLayout() {
-    const header = this.profileViewContainer.children[0];
-    const toolbar = this.profileViewContainer.children[1];
     ui.empty(this.profileViewContainer);
-    if (header)
-      this.profileViewContainer.append(header);
-    if (toolbar)
-      this.profileViewContainer.append(toolbar);
+    this.profileViewContainer.append(this.headerEl, this.toolbarEl);
   }
 
   private async setupGridAndContextPanel() {
@@ -336,7 +334,7 @@ export class MpoProfileCreateView {
       return;
 
     this.tableViewVisible = visible;
-    this.tableView.grid.root.style.visibility = visible ? 'visible' : 'hidden';
+    this.tableView.grid.root.classList.toggle('chem-profile-view-loading', !visible);
     const viewNode = this.tableView.dockManager.findNode(this.view.root);
 
     if (visible) {
@@ -363,7 +361,7 @@ export class MpoProfileCreateView {
 
   private setLoading(root: HTMLElement, loading: boolean, message?: string) {
     ui.setUpdateIndicator(root, loading, message);
-    this.profileViewContainer.style.visibility = loading ? 'hidden' : '';
+    this.profileViewContainer.classList.toggle('chem-profile-view-loading', loading);
   }
 
   private showError(message: string) {

@@ -1,7 +1,7 @@
 .statistics-mpo-header {
   margin-top: 10px;
   padding-bottom: 5px;
-  border-bottom: 1px solid #ccc;
+  border-bottom: 1px solid var(--grey-2);
   gap: 10px;
 }
 
@@ -126,6 +126,8 @@
   display: block;
   color: var(--blue-1);
   opacity: 0.3;
+  cursor: default;
+  pointer-events: none;
 }
 
 .statistics-mpo-empty-heading {
