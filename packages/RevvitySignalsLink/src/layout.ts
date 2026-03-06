@@ -13,6 +13,8 @@ export function saveRevvityLayout(grid: DG.Grid, libName: string, entityType: st
     if (look.isGrid == undefined)
         look.isGrid = true;
     const tags: {[key: string]: [string, string][]} = {};
+    if (!grid.dataFrame)
+        return;
     for (const colName of grid.dataFrame.columns.names()) {
         tags[colName] = Object.entries(grid.dataFrame.col(colName)?.tags);
     }
