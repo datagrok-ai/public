@@ -344,13 +344,13 @@ this example:
 --input: list<string> company {choices: Query("SELECT DISTINCT company from research_companies")}
 ```
 
-![img_1.png](multiple-choice-input.png)
-
 To specify initial values for a multiple choice, use a JavaScript array:
 
 ```sql
 --input: list<string> shipCountries = ["France", "Germany"] {choices: ['France', 'Italy', 'Germany']}
 ```
+
+![img_1.png](multiple-choice-input.png)
 
 :::caution Limited support for scripts
 

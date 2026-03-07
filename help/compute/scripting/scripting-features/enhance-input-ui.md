@@ -121,14 +121,14 @@ You can use it to pass to the script one value from a pre-populated list or a li
 <TabItem value="single" label="Single choice" default>
 ```
 
-![Single Choices example](../_pics/scripting-choice-single.png)
+![Single Choices example](../../../datagrok/concepts/functions/single-choice-input.png)
 
 ```mdx-code-block
 </TabItem>
 <TabItem value="multiple" label="Multiple choices" default>
 ```
 
-![Multiple Choices example](../_pics/scripting-choice-multi.png)
+![Multiple Choices example](../../../datagrok/concepts/functions/multiple-choice-input.png)
 
 ```mdx-code-block
 </TabItem>
