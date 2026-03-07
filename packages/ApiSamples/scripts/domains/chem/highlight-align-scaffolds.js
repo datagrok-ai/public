@@ -1,4 +1,4 @@
-// Highlights or align scaffolds
+// Highlight or align scaffolds
 
 const t = grok.data.demo.molecules();
 
