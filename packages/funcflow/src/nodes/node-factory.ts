@@ -1,0 +1,93 @@
+import {LiteGraph} from 'litegraph.js';
+import * as DG from 'datagrok-api/dg';
+import {createFuncNodeClass} from './func-node';
+import {registerInputNodes} from './input-nodes';
+import {registerOutputNodes} from './output-nodes';
+import {registerUtilityNodes} from './utility-nodes';
+import {registerComparisonNodes} from './comparison-nodes';
+import {getRole, getTags, getPackageName} from '../utils/dart-proxy-utils';
+import {registerSlotColors} from '../types/type-map';
+
+export interface FuncInfo {
+  func: DG.Func;
+  name: string;
+  role: string | null;
+  tags: string[];
+  packageName: string;
+  nodeTypeName: string;
+}
+
+let registeredFuncs: FuncInfo[] = [];
+
+/** Clear all default LiteGraph node types (math, basic, etc.) keeping only ours */
+function clearDefaultNodeTypes(): void {
+  const registered = LiteGraph.registered_node_types;
+  for (const key of Object.keys(registered)) {
+    // Keep our custom categories
+    if (key.startsWith('Inputs/') || key.startsWith('Outputs/') ||
+        key.startsWith('Utilities/') || key.startsWith('Constants/') ||
+        key.startsWith('Comparisons/') || key.startsWith('DG Functions/'))
+      continue;
+    delete registered[key];
+  }
+}
+
+/** Register all built-in nodes (inputs, outputs, utilities) */
+export function registerBuiltinNodes(): void {
+  // Clear LiteGraph defaults first (math, basic, etc.)
+  clearDefaultNodeTypes();
+
+  registerInputNodes();
+  registerOutputNodes();
+  registerUtilityNodes();
+  registerComparisonNodes();
+}
+
+/** Register all DG.Func as LiteGraph node types and return metadata */
+export function registerAllFunctions(): FuncInfo[] {
+  registerSlotColors();
+
+  const allFuncs = DG.Func.find({});
+  registeredFuncs = [];
+  const seenNames = new Set<string>();
+
+  for (const func of allFuncs) {
+    try {
+      // Skip functions with no inputs and no outputs (not useful in a chain)
+      if (func.inputs.length === 0 && func.outputs.length === 0) continue;
+
+      const role = getRole(func);
+      const tags = getTags(func);
+      // Use safe getter to avoid Dart proxy crash on func.package
+      const pkgName = getPackageName(func);
+      const category = role || 'Uncategorized';
+
+      let typeName = `DG Functions/${category}/${func.name}`;
+      if (seenNames.has(typeName))
+        typeName = `DG Functions/${category}/${pkgName}:${func.name}`;
+      if (seenNames.has(typeName)) continue;
+      seenNames.add(typeName);
+
+      const nodeClass = createFuncNodeClass(func);
+      LiteGraph.registerNodeType(typeName, nodeClass);
+
+      registeredFuncs.push({
+        func,
+        name: func.name,
+        role,
+        tags,
+        packageName: pkgName,
+        nodeTypeName: typeName,
+      });
+    } catch (e) {
+      // Silently skip functions that fail (Dart proxy issues, etc.)
+    }
+  }
+
+  return registeredFuncs;
+}
+
+/** Get the cached list of registered functions */
+export function getRegisteredFuncs(): FuncInfo[] {
+  return registeredFuncs;
+}

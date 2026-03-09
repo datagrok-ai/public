@@ -1,0 +1,285 @@
+/* FuncFlow styles */
+
+.funcflow-root {
+  display: flex;
+  flex-direction: row;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+/* Left panel - Function Browser */
+.funcflow-left-panel {
+  width: 250px;
+  min-width: 200px;
+  max-width: 350px;
+  display: flex;
+  flex-direction: column;
+  border-right: 1px solid var(--grey-2, #ccc);
+  background: var(--grey-1, #f5f5f5);
+  overflow: hidden;
+}
+
+.funcflow-browser {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+}
+
+.funcflow-search-input {
+  width: calc(100% - 16px);
+  margin: 8px;
+  padding: 6px 10px;
+  border: 1px solid var(--grey-2, #ddd);
+  border-radius: 4px;
+  font-size: 13px;
+  outline: none;
+}
+
+.funcflow-search-input:focus {
+  border-color: var(--blue-1, #2185d0);
+}
+
+.funcflow-groupby-select {
+  width: calc(100% - 16px);
+  margin: 0 8px 8px 8px;
+  padding: 4px 8px;
+  border: 1px solid var(--grey-2, #ddd);
+  border-radius: 4px;
+  font-size: 12px;
+  background: white;
+}
+
+.funcflow-tree-container {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0 4px;
+}
+
+.funcflow-section-header {
+  padding: 6px 8px;
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--grey-6, #333);
+  background: var(--grey-1, #f0f0f0);
+  border-bottom: 1px solid var(--grey-2, #e0e0e0);
+  cursor: pointer;
+  user-select: none;
+}
+
+.funcflow-section-header:hover {
+  background: var(--grey-2, #e8e8e8);
+}
+
+.funcflow-section-header::before {
+  content: '\25BC ';
+  font-size: 10px;
+}
+
+.funcflow-section-header.collapsed::before {
+  content: '\25B6 ';
+}
+
+.funcflow-func-item {
+  padding: 4px 12px;
+  font-size: 12px;
+  color: var(--grey-5, #555);
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.funcflow-func-item:hover {
+  background: var(--blue-0, #e3f2fd);
+  color: var(--blue-2, #1565c0);
+}
+
+/* Center panel - Canvas */
+.funcflow-canvas-container {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+  background: #e8e8e8;
+}
+
+/* Right panel - Properties */
+.funcflow-right-panel {
+  width: 250px;
+  min-width: 200px;
+  max-width: 350px;
+  display: flex;
+  flex-direction: column;
+  border-left: 1px solid var(--grey-2, #ccc);
+  background: var(--grey-1, #f5f5f5);
+  overflow-y: auto;
+}
+
+.funcflow-property-panel {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.funcflow-panel-header {
+  padding: 8px 12px;
+  font-weight: 600;
+  font-size: 14px;
+  border-bottom: 1px solid var(--grey-2, #ddd);
+  background: var(--grey-1, #f0f0f0);
+}
+
+.funcflow-property-content {
+  flex: 1;
+  padding: 8px;
+  overflow-y: auto;
+}
+
+.funcflow-prop-section {
+  margin-bottom: 12px;
+}
+
+.funcflow-prop-section-header {
+  font-weight: 600;
+  font-size: 12px;
+  color: var(--grey-5, #666);
+  padding: 4px 0;
+  border-bottom: 1px solid var(--grey-2, #e0e0e0);
+  margin-bottom: 4px;
+}
+
+.funcflow-prop-row {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 3px 0;
+  font-size: 12px;
+}
+
+.funcflow-prop-row label {
+  font-weight: 500;
+  color: var(--grey-5, #666);
+  font-size: 11px;
+}
+
+.funcflow-prop-input {
+  width: 100%;
+  padding: 4px 6px;
+  border: 1px solid var(--grey-2, #ddd);
+  border-radius: 3px;
+  font-size: 12px;
+  box-sizing: border-box;
+}
+
+/* Status bar */
+.funcflow-status-bar {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 4px 12px;
+  font-size: 12px;
+  color: var(--grey-5, #666);
+  border-top: 1px solid var(--grey-2, #ddd);
+  background: var(--grey-1, #f5f5f5);
+  min-height: 24px;
+}
+
+/* Script preview dialog */
+.funcflow-script-preview {
+  font-family: 'Roboto', 'Consolas', 'Monaco', monospace;
+  font-size: 13px;
+  width: 100%;
+  min-height: 300px;
+  padding: 12px;
+  border: 1px solid var(--grey-2, #ddd);
+  background: #1e1e1e;
+  color: #d4d4d4;
+  white-space: pre;
+  overflow: auto;
+  border-radius: 4px;
+}
+
+/* LiteGraph context menu - light theme overrides.
+   Must match or exceed litegraph.css specificity which uses
+   .litegraph.litecontextmenu .litemenu-entry.submenu (4 classes + !important) */
+
+.litegraph.litecontextmenu.litemenubar-panel {
+  background-color: #fff !important;
+  color: #333 !important;
+  border: 1px solid #ccc !important;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15) !important;
+}
+
+.litegraph.litecontextmenu.litemenubar-panel .litemenu-title {
+  color: #333 !important;
+  background-color: #f5f5f5 !important;
+  border-bottom: 1px solid #ddd !important;
+}
+
+.litegraph.litecontextmenu .litemenu-entry.submenu {
+  background-color: #fff !important;
+  color: #333 !important;
+}
+
+.litegraph.litecontextmenu.dark .litemenu-entry.submenu {
+  background-color: #fff !important;
+  color: #333 !important;
+}
+
+.litegraph.litecontextmenu .litemenu-entry {
+  color: #333 !important;
+  background-color: #fff !important;
+}
+
+.litegraph .litemenu-entry:hover:not(.disabled):not(.separator) {
+  background-color: #e3f2fd !important;
+  color: #1565c0 !important;
+}
+
+.litegraph .litemenu-entry.has_submenu {
+  border-right: 2px solid #42A5F5 !important;
+}
+
+.litegraph .litemenu-entry.separator {
+  background-color: transparent !important;
+  border-top: 1px solid #ddd !important;
+  border-bottom: 1px solid #eee !important;
+}
+
+/* LiteGraph search box - light theme */
+.litegraph.litesearchbox {
+  background-color: #fff !important;
+  color: #333 !important;
+  border: 1px solid #ccc !important;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15) !important;
+}
+
+.litegraph.litesearchbox input {
+  background-color: #f5f5f5 !important;
+  color: #333 !important;
+  border: 1px solid #ddd !important;
+}
+
+.litegraph.litesearchbox .name {
+  color: #333 !important;
+}
+
+.litegraph.litesearchbox .name:hover {
+  background-color: #e3f2fd !important;
+}
+
+/* LiteGraph dialog - light theme */
+.litegraph .dialog {
+  background-color: #fff !important;
+  color: #333 !important;
+  border: 1px solid #ccc !important;
+}
+
+.litegraph .dialog input,
+.litegraph .dialog textarea,
+.litegraph .dialog select {
+  background-color: #f5f5f5 !important;
+  color: #333 !important;
+  border: 1px solid #ddd !important;
+}
