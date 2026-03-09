@@ -1141,7 +1141,7 @@ export interface IDartApi {
   grok_DataFrame_ToCsv(t: any, options: any, grid: any): any;
   grok_DataFrame_GroupBy(t: any, colNames: any): any;
   grok_DataFrame_Unpivot(t: any, copyColumnNames: any, mergeColumnNames: any, categoryColumnName: String, valueColumnName: String): any;
-  grok_DataFrame_Clone(t: any, rowMask: any, columnIds: any, saveSelection: Bool): any;
+  grok_DataFrame_Clone(t: any, rowMask: any, columnIds: any, saveSelection: Bool, saveTags: Bool): any;
   grok_DataFrame_OnFilterChanged(t: any, f: any): any;
   grok_DataFrame_OnSelectionChanged(t: any, f: any): any;
   grok_DataFrame_OnDataChanged(t: any, f: any): any;
