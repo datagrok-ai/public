@@ -86,7 +86,6 @@ export class MpoDesirabilityLineEditor {
 
   // Flag to prevent touchpad right-click from adding a new point
   private ignoreNextClick = false;
-
   private dragScaleX = 0;
   private dragScaleY = 0;
   private _width: number;
@@ -293,7 +292,7 @@ export class MpoDesirabilityLineEditor {
           const circle = evt.target as Konva.Circle;
           const pos = circle.position();
           const dataCoords = mapper.toDataCoords(pos.x, pos.y);
-          const tooltipText = `X: ${dataCoords.x.toFixed(2)}, Y: ${dataCoords.y.toFixed(2)}<br><br>Drag to move, right-click to delete`;
+          const tooltipText = `X: ${dataCoords.x.toFixed(2)}, Y: ${dataCoords.y.toFixed(2)}<br><br>Drag to move, double-click to edit, right-click to delete`;
           ui.tooltip.show(tooltipText, evt.evt.clientX, evt.evt.clientY);
         });
 
@@ -303,6 +302,15 @@ export class MpoDesirabilityLineEditor {
 
           this.stage!.container().style.cursor = 'default';
           ui.tooltip.hide();
+        });
+
+        pointCircle.on('dblclick dbltap', (evt) => {
+          if (this._prop.mode !== 'freeform')
+            return;
+          this.ignoreNextClick = true;
+          ui.tooltip.hide();
+          const dataIndex = (evt.target as Konva.Circle).getAttr('_dataIndex') as number;
+          this.showPointEditor(dataIndex, evt.evt.clientX, evt.evt.clientY);
         });
 
         this.pointsGroup!.add(pointCircle);
@@ -668,6 +676,42 @@ export class MpoDesirabilityLineEditor {
       this.specialHandle.position(coords);
     }
     this.layer!.batchDraw();
+  }
+
+  private showPointEditor(dataIndex: number, clientX: number, clientY: number): void {
+    const point = this._prop.line[dataIndex];
+    const xInput = ui.input.float('X', {value: point[0], min: this.getMinX(), max: this.getMaxX(), format: '#0.00', step: 0.01});
+    const yInput = ui.input.float('Y', {value: point[1], min: 0, max: 1, format: '#0.00', step: 0.01});
+
+    const close = () => {
+      content.removeEventListener('keydown', onKey);
+      popup.remove();
+    };
+
+    const apply = () => {
+      const x = xInput.value;
+      const y = yInput.value;
+      if (x == null || y == null || isNaN(x) || isNaN(y))
+        return;
+      this._prop.line[dataIndex] = [x, y];
+      this.redrawAll();
+    };
+
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Enter') {
+        apply();
+        close();
+      }
+      if (e.key === 'Escape')
+        close();
+    };
+
+    const content = ui.inputs([xInput, yInput]);
+    content.style.overflow = 'hidden';
+    content.addEventListener('keydown', onKey);
+
+    const rootRect = this.root.getBoundingClientRect();
+    const popup = ui.showPopup(content, this.root, {dx: clientX - rootRect.left, dy: clientY - rootRect.bottom, smart: false});
   }
 
   setRange(min: number, max: number): void {
