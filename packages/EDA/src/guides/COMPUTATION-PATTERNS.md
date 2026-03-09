@@ -2,7 +2,7 @@
 
 Reference for implementing computational methods in the EDA package.
 For worker-based methods, see `WORKER-GUIDE.md`.
-For UI and dialog patterns, see `UI-PATTERNS.md`.
+For array allocation and reuse patterns, see `ARRAY-OPERATIONS.md`.
 
 ## Raw Typed Arrays
 
@@ -23,7 +23,7 @@ for (let i = 0; i < len; i++) {
 }
 ```
 
-Reference: `anova/anova-tools.ts` (lines 221-222), `missing-values-imputation/knn-imputer.ts` (lines 107-111).
+Reference: `anova/anova-tools.ts` (`FactorizedData` constructor), `missing-values-imputation/knn-imputer.ts` (`KnnImputer.transform`).
 
 ---
 
@@ -77,7 +77,7 @@ import {getNullValue} from '../utils';
 const nullValue = getNullValue(col);
 const raw = col.getRawData();
 
-for (let i = 0; i < raw.length; i++) {
+for (let i = 0; i < col.length; i++) {
   if (raw[i] === nullValue) continue; // skip missing
   // process raw[i]
 }
@@ -94,7 +94,7 @@ for (let i = 0; i < size; i++) {
 }
 ```
 
-Reference: `anova/anova-tools.ts` (lines 256-270), `missing-values-imputation/knn-imputer.ts` (lines 104-106).
+Reference: `anova/anova-tools.ts` (`FactorizedData.setStats`), `missing-values-imputation/knn-imputer.ts` (`KnnImputer.transform`).
 
 ---
 
@@ -146,7 +146,7 @@ for (let i = 0; i < size; i++) {
 }
 ```
 
-Reference: `anova/anova-tools.ts` (lines 230-254).
+Reference: `anova/anova-tools.ts` (`FactorizedData.setStats`, bool branch).
 
 ---
 

@@ -94,7 +94,6 @@ The package combines TypeScript, WASM modules, and web workers for performance-c
 The package has dedicated guides for implementing new methods:
 
 - **`src/guides/COMPUTATION-PATTERNS.md`** — raw typed array access, manual null handling, single-pass aggregation, bool column bitwise extraction, data locality, module structure. **Read this before implementing any new computational method.**
-- **`src/guides/UI-PATTERNS-WIP.md`** — dialog construction, dynamic input validation, async dialog pattern, docking results, result grids with tooltips. **Read this before implementing any new UI for a method.** *(Work in progress)*
 - **`src/guides/WORKER-GUIDE.md`** — `WorkerColumn`/`WorkerDataFrame` types, transform functions (`toWorker*`/`fromWorker*`), null-handling conventions, worker lifecycle. **Read this before implementing any worker-based method.**
 - **`src/guides/PARALLEL-EXECUTION.md`** — fan-out/fan-in pattern, worker count configuration. **Read this when distributing work across multiple workers.**
 

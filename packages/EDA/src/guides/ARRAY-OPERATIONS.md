@@ -23,7 +23,7 @@ for (let iter = 0; iter < maxIter; iter++) {
 }
 ```
 
-Reference: `probabilistic-scoring/nelder-mead.ts` (lines 103-106) — `centroid`, `reflectionPoint`,
+Reference: `probabilistic-scoring/nelder-mead.ts` (`nelderMead`) — `centroid`, `reflectionPoint`,
 `expansionPoint`, `contractionPoint` are allocated once and reused across all Nelder-Mead iterations.
 
 ---
@@ -64,7 +64,7 @@ for (let iter = 0; iter < iterations; iter++) {
 }
 ```
 
-Reference: `workers/softmax-worker.ts` (lines 48-56).
+Reference: `workers/softmax-worker.ts` (`onmessage` handler, buffer allocation before training loop).
 
 ---
 
@@ -93,7 +93,7 @@ for (let j = 0; j < m; j++) {
 }
 ```
 
-Reference: `workers/softmax-worker.ts` (lines 62-76) — `xBuf`, `wBuf`, `zBuf` aliases in forward propagation.
+Reference: `workers/softmax-worker.ts` (forward propagation loop) — `xBuf`, `wBuf`, `zBuf` aliases.
 
 ---
 
@@ -117,7 +117,7 @@ for (let j = 1; j < featuresCount; j++) {
 }
 ```
 
-Reference: `regression.ts` (`getPredictionByLinearRegression`, lines 105-120).
+Reference: `regression.ts` (`getPredictionByLinearRegression`).
 
 ---
 
@@ -143,7 +143,7 @@ for (let i = 0; i < properIndicesCount; i++)
   sum += bufferVector[properIndices[i]];
 ```
 
-Reference: `missing-values-imputation/knn-imputer.ts` (lines 139-162).
+Reference: `missing-values-imputation/knn-imputer.ts` (`KnnImputer.transform`, `getProperIndices` helper).
 
 ---
 
@@ -157,7 +157,7 @@ function normalizeInPlace(arr: Float32Array, len: number, avg: number, stdev: nu
 }
 ```
 
-Reference: `regression.ts` (`getTestDatasetForLinearRegression`, lines 148-154).
+Reference: `regression.ts` (`getTestDatasetForLinearRegression`).
 
 **Caution:** Only use in-place transforms when you own the array. Never modify arrays obtained
 via `col.getRawData()` on user data — this mutates the underlying DataFrame column.
@@ -243,8 +243,7 @@ history[0] = recycled;
 computeValues(history[0]);
 ```
 
-Reference: `diff-grok` library, `solver-tools/ab5-method.ts` (lines 343-347) — reference
-shift with N=5.
+Reference: `diff-grok` library, `solver-tools/ab5-method.ts` (`ab5Step`, reference shift with N=5).
 
 ---
 
@@ -282,7 +281,7 @@ Guidelines:
 - **Never read previous-stage contents** — each stage must fully overwrite before reading.
 - **Watch for aliasing** — never pass the same buffer as both source and destination.
 
-Reference: `diff-grok` library, `solver-tools/mrt-method.ts` (lines 218-219, 257-283).
+Reference: `diff-grok` library, `solver-tools/mrt-method.ts` (`mrtStep`, scratch buffer reuse across Jacobian/derivative/solve stages).
 
 ---
 

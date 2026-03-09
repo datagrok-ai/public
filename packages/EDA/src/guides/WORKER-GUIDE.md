@@ -61,18 +61,7 @@ interface WorkerDataFrame {
 
 ## Missing Values Strategy
 
-**Before implementing any new worker-based method, define the missing values strategy.** Different methods require different approaches:
-
-| Strategy | When to use | Example |
-|----------|-------------|---------|
-| **Skip** | Aggregation, statistics | Skip rows where any input column has a null |
-| **Impute before computation** | Methods that require complete data (e.g., matrix operations) | Mean/median fill on the main thread before posting to worker |
-| **Propagate** | Result column should reflect original nulls | Copy null sentinel to output at the same index |
-| **Reject** | Method cannot handle nulls at all | Check `missingValueCount` on the main thread, throw before posting |
-
-Document the chosen strategy in the worker's interface or function header. When multiple input columns are involved, specify per-column behavior.
-
-For more details, see `COMPUTATION-PATTERNS.md`.
+Before implementing any new worker-based method, define the missing values strategy (skip, impute, propagate, or reject). See `COMPUTATION-PATTERNS.md` (Missing Values Strategy section) for the full decision table and per-column behavior guidelines.
 
 ---
 
