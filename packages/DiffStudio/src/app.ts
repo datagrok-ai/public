@@ -561,9 +561,14 @@ export class DiffStudio {
     };
 
     if (toDockTabCtrl && !isFilePreview) {
-      if (!toAddTableView)
-        setTimeout(dockTabCtrl, UI_TIME.DOCK_EDITOR_TIMEOUT);
-      else
+      if (!toAddTableView) {
+        const sub = grok.events.onViewAdded.subscribe((v) => {
+          if (v.dart === this.solverView.dart) {
+            sub.unsubscribe();
+            dockTabCtrl();
+          }
+        });
+      } else
         dockTabCtrl();
     }
 
