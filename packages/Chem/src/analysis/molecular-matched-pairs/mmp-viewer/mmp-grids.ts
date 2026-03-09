@@ -83,6 +83,8 @@ export class MmpPairedGrids {
 
 
     subs.push(this.fpGrid.onCellClick.subscribe((gc) => {
+      if (!gc.isTableCell)
+        return;
       const actIndex = activityMeanNames.indexOf(gc.cell?.column?.name);
       if (actIndex !== -1) {
         ui.empty(this.pcPlotContextPanelDiv);
