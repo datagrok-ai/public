@@ -28,6 +28,5 @@ dist/
 .idea/**/shelf
 .idea/codeStyles/
 
-**/*.d.ts
 # Emitted *.js files
 src/**/*.js
