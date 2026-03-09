@@ -180,6 +180,16 @@
   -webkit-text-stroke-color: #784d24;
 }
 
+.chem-orphans-folder-icon {
+  font-size: 66px;
+  color: hsla(0, 0%, 0%, 0) !important;
+}
+
+.chem-orphans-folder-host {
+  align-items: center;
+  justify-content: center;
+}
+
 .d4-update-shadow {
   background-color: white;
   opacity: 1.0;
