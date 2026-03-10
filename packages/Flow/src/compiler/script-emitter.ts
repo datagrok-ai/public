@@ -89,6 +89,20 @@ function buildInputLine(step: CompiledStep, node: FuncFlowNode): string | null {
     qualifiers.push(`type: ${step.properties['typeFilter']}`);
   if (step.properties['semTypeFilter'])
     qualifiers.push(`semType: ${step.properties['semTypeFilter']}`);
+  if (step.properties['nullable'] === true)
+    qualifiers.push('nullable: true');
+  if (step.properties['caption'])
+    qualifiers.push(`caption: ${step.properties['caption']}`);
+  if (step.properties['choices']) {
+    const items = step.properties['choices'].split(',').map((s: string) => s.trim()).filter(Boolean);
+    qualifiers.push(`choices: [${items.map((s: string) => `"${s}"`).join(', ')}]`);
+  }
+  if (step.properties['min'] !== undefined && step.properties['min'] !== '')
+    qualifiers.push(`min: ${step.properties['min']}`);
+  if (step.properties['max'] !== undefined && step.properties['max'] !== '')
+    qualifiers.push(`max: ${step.properties['max']}`);
+  if (step.properties['showSlider'] === true)
+    qualifiers.push('showSlider: true');
 
   if (qualifiers.length > 0)
     line += ` {${qualifiers.join('; ')}}`;
@@ -125,6 +139,10 @@ function emitUtilityStep(step: CompiledStep): string | null {
     const colNames = (step.properties['columnNames'] || '').split(',').map((n: string) => n.trim()).filter(Boolean);
     const colExprs = colNames.map((n: string) => `${tableExpr}.col('${n}')`).join(', ');
     return `let ${step.variableName} = [${colExprs}];`;
+  }
+  case 'Add Table View': {
+    const tableExpr = step.inputs.get('table') || 'undefined';
+    return `let ${step.variableName} = grok.shell.addTableView(${tableExpr});`;
   }
   case 'Log': {
     const valueExpr = step.inputs.get('value') || 'undefined';

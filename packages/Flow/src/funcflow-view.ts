@@ -1,7 +1,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {LGraphNode} from 'litegraph.js';
+import {LGraphNode, LiteGraph} from 'litegraph.js';
 
 import 'litegraph.js/css/litegraph.css';
 import '../css/funcflow.css';
@@ -107,6 +107,9 @@ export class FuncFlowView extends DG.ViewBase {
     mainLayout.style.flex = '1';
     mainLayout.style.overflow = 'hidden';
 
+    // Make canvas container droppable for files
+    this.setupFileDropTarget();
+
     // Initialize canvas after DOM is ready
     setTimeout(() => this.initCanvas(), 50);
   }
@@ -124,6 +127,59 @@ export class FuncFlowView extends DG.ViewBase {
       },
     });
     this.canvasController.startRendering();
+  }
+
+  /** Makes the canvas container accept file drops from the platform file browser */
+  private setupFileDropTarget(): void {
+    ui.makeDroppable(this.canvasContainer, {
+      acceptDrop: (dragObject: any) => {
+        return dragObject instanceof DG.FileInfo && dragObject.isFile;
+      },
+      doDrop: (dragObject: any, _copying: boolean) => {
+        const fileInfo = dragObject as DG.FileInfo;
+        // console.log(fileInfo.fullPath);
+        this.addOpenFileNode(fileInfo.fullPath);
+      },
+    });
+  }
+
+  /** Adds an OpenFile function node to the canvas with the given file path */
+  private addOpenFileNode(filePath: string): void {
+    if (!this.canvasController) return;
+
+    // Find and add the OpenFile function node
+    const nodeTypeName = this.findOpenFileNodeType();
+    if (nodeTypeName) {
+      const node = this.canvasController.addNodeAtCenter(nodeTypeName);
+      if (node) {
+        // Set the path parameter on the node
+        if (node.properties)
+          node.properties['_input_fullPath'] = filePath;
+        // Try to set the widget value too
+        if ((node as any).widgets) {
+          for (const w of (node as any).widgets) {
+            if (w.name === 'fullPath') {
+              w.value = filePath;
+              break;
+            }
+          }
+        }
+        this.updateStatusBar();
+        grok.shell.info(`Added OpenFile node for: ${filePath}`);
+      }
+    } else {
+      grok.shell.warning('OpenFile function not found in registered nodes');
+    }
+  }
+
+  /** Searches registered node types for the OpenFile function */
+  private findOpenFileNodeType(): string | null {
+    const registered = LiteGraph.registered_node_types;
+    for (const key of Object.keys(registered)) {
+      if (key.includes('OpenFile') || key.includes('openFile'))
+        return key;
+    }
+    return null;
   }
 
   private setupRibbon(): void {

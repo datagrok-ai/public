@@ -61,6 +61,32 @@ class SelectColumnsNode extends LGraphNode {
   }
 }
 
+// --- Add Table View ---
+
+class AddTableViewNode extends LGraphNode {
+  static title = 'Add Table View';
+  static desc = 'Opens a dataframe in a new table view using grok.shell.addTableView()';
+  dgNodeType = 'utility';
+
+  constructor() {
+    super('Add Table View');
+    this.properties = {};
+
+    const inSlot = this.addInput('table', 'dataframe');
+    inSlot.color_on = getSlotColor('dataframe');
+    inSlot.color_off = getSlotColor('dataframe');
+
+    const outSlot = this.addOutput('view', 'view');
+    outSlot.color_on = getSlotColor('view');
+    outSlot.color_off = getSlotColor('view');
+
+    this.color = '#42A5F5';
+    this.bgcolor = '#ffffff';
+    this.size = this.computeSize();
+    this.size[0] = Math.max(this.size[0], 180);
+  }
+}
+
 // --- Log (console.log) ---
 
 class LogNode extends LGraphNode {
@@ -291,6 +317,7 @@ class ConstListNode extends LGraphNode {
 export function registerUtilityNodes(): void {
   LiteGraph.registerNodeType('Utilities/Select Column', SelectColumnNode);
   LiteGraph.registerNodeType('Utilities/Select Columns', SelectColumnsNode);
+  LiteGraph.registerNodeType('Utilities/Add Table View', AddTableViewNode);
   LiteGraph.registerNodeType('Utilities/Log', LogNode);
   LiteGraph.registerNodeType('Utilities/Info', InfoNode);
   LiteGraph.registerNodeType('Utilities/Warning', WarningNode);

@@ -22,6 +22,8 @@ export const DG_TYPE_MAP: Record<string, {slotType: string; color: string}> = {
   'num': {slotType: 'num', color: '#26C6DA'},
   'viewer': {slotType: 'viewer', color: '#42A5F5'},
   'graphics': {slotType: 'graphics', color: '#66BB6A'},
+  'blob': {slotType: 'byte_array', color: '#607D8B'},
+  'view': {slotType: 'view', color: '#5C6BC0'},
 };
 
 /** Role → node color mapping (light theme: white body, colored title bar) */

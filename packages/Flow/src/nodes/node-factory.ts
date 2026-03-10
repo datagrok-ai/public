@@ -17,6 +17,18 @@ export interface FuncInfo {
   nodeTypeName: string;
 }
 
+/** Tags that cause a function to be excluded from the node catalog.
+ * Add tag strings here to filter out unwanted functions. */
+export const EXCLUDED_TAGS: string[] = [
+  // Add tags to exclude, e.g.: 'internal', 'deprecated'
+];
+
+/** Roles that cause a function to be excluded from the node catalog.
+ * Add role strings here to filter out unwanted functions. */
+export const EXCLUDED_ROLES: string[] = [
+  // Add roles to exclude, e.g.: 'semTypeDetector', 'cellRenderer'
+];
+
 let registeredFuncs: FuncInfo[] = [];
 
 /** Clear all default LiteGraph node types (math, basic, etc.) keeping only ours */
@@ -30,6 +42,19 @@ function clearDefaultNodeTypes(): void {
       continue;
     delete registered[key];
   }
+}
+
+/** Check if a function should be excluded based on its tags and role */
+function shouldExcludeFunc(role: string | null, tags: string[]): boolean {
+  if (role && EXCLUDED_ROLES.length > 0 && EXCLUDED_ROLES.includes(role))
+    return true;
+  if (tags.length > 0 && EXCLUDED_TAGS.length > 0) {
+    for (const tag of tags) {
+      if (EXCLUDED_TAGS.includes(tag))
+        return true;
+    }
+  }
+  return false;
 }
 
 /** Register all built-in nodes (inputs, outputs, utilities) */
@@ -58,6 +83,10 @@ export function registerAllFunctions(): FuncInfo[] {
 
       const role = getRole(func);
       const tags = getTags(func);
+
+      // Skip functions with excluded tags or roles
+      if (shouldExcludeFunc(role, tags)) continue;
+
       // Use safe getter to avoid Dart proxy crash on func.package
       const pkgName = getPackageName(func);
       const category = role || 'Uncategorized';

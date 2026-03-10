@@ -84,11 +84,17 @@ export class FunctionBrowser {
     const inputNodes = [
       {name: 'Table Input', type: 'Inputs/Table Input'},
       {name: 'Column Input', type: 'Inputs/Column Input'},
+      {name: 'Column List Input', type: 'Inputs/Column List Input'},
       {name: 'String Input', type: 'Inputs/String Input'},
       {name: 'Number Input', type: 'Inputs/Number Input'},
       {name: 'Int Input', type: 'Inputs/Int Input'},
       {name: 'Boolean Input', type: 'Inputs/Boolean Input'},
+      {name: 'DateTime Input', type: 'Inputs/DateTime Input'},
+      {name: 'File Input', type: 'Inputs/File Input'},
+      {name: 'Map Input', type: 'Inputs/Map Input'},
+      {name: 'Dynamic Input', type: 'Inputs/Dynamic Input'},
       {name: 'String List Input', type: 'Inputs/String List Input'},
+      {name: 'Blob Input', type: 'Inputs/Blob Input'},
     ];
     const outputNodes = [
       {name: 'Table Output', type: 'Outputs/Table Output'},
@@ -97,6 +103,7 @@ export class FunctionBrowser {
     const utilityNodes = [
       {name: 'Select Column', type: 'Utilities/Select Column'},
       {name: 'Select Columns', type: 'Utilities/Select Columns'},
+      {name: 'Add Table View', type: 'Utilities/Add Table View'},
       {name: 'Log', type: 'Utilities/Log'},
       {name: 'Info', type: 'Utilities/Info'},
       {name: 'Warning', type: 'Utilities/Warning'},
