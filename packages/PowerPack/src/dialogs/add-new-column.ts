@@ -1456,6 +1456,8 @@ export class AddNewColumnDialog {
         this.call.setParamValue('subscribeOnChanges', true);
       await this.call.call(false, undefined, {processed: false});
     }
+    if (this.sourceDf)
+      grok.data.detectSemanticTypes(this.sourceDf);
   }
 
   /** Closes Add New Column Dialog Window. */
