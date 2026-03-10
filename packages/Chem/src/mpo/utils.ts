@@ -16,6 +16,8 @@ export type MpoProfileInfo = DesirabilityProfile & {
   fileName: string;
 };
 
+export type MpoSaveResult = {saved: boolean; fileName: string};
+
 export enum MpoPathMode {
   List = 'list',
   Edit = 'edit',

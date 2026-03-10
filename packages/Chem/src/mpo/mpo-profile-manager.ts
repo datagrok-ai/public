@@ -5,7 +5,7 @@ import {DesirabilityProfile} from '@datagrok-libraries/statistics/src/mpo/mpo';
 import {generateMpoFileName, getNextAvailable} from '@datagrok-libraries/statistics/src/mpo/utils';
 
 import {deleteMpoProfile, loadMpoProfiles, MPO_PROFILE_CHANGED_EVENT, MPO_PROFILE_DELETED_EVENT,
-  MPO_TEMPLATE_PATH, MpoProfileInfo} from './utils';
+  MPO_TEMPLATE_PATH, MpoProfileInfo, MpoSaveResult} from './utils';
 
 class MpoProfileManagerImpl {
   private profiles: MpoProfileInfo[] = [];
@@ -74,6 +74,36 @@ class MpoProfileManagerImpl {
         }
       })
       .show();
+  }
+
+  async showSaveDialog(profile: DesirabilityProfile, existingFileName?: string | null): Promise<MpoSaveResult> {
+    await this.ensureLoaded();
+    const isExisting = !!existingFileName;
+    return new Promise((resolve) => {
+      const nameInput = ui.input.string('Name', {value: profile.name ?? '', nullable: false});
+      const descInput = ui.input.textArea('Description', {value: profile.description ?? ''});
+      const overrideInput = isExisting ? ui.input.bool('Override existing', {value: true}) : null;
+
+      const inputs: HTMLElement[] = [nameInput.root, descInput.root];
+      if (overrideInput)
+        inputs.push(overrideInput.root);
+
+      const dlg = ui.dialog({title: 'Save MPO Profile'})
+        .add(ui.divV(inputs))
+        .onOK(async () => {
+          profile.name = nameInput.value!;
+          profile.description = descInput.value || '';
+          const fileName = isExisting && overrideInput?.value ? existingFileName! : this.generateFileName(profile.name);
+          const saved = await this.save(profile, fileName);
+          resolve({saved, fileName});
+        })
+        .onCancel(() => resolve({saved: false, fileName: ''}))
+        .show();
+
+      const okButton = dlg.getButton('OK');
+      okButton.disabled = !nameInput.validate();
+      nameInput.onInput.subscribe(() => okButton.disabled = !nameInput.validate());
+    });
   }
 
   async save(profile: DesirabilityProfile, fileName: string): Promise<boolean> {

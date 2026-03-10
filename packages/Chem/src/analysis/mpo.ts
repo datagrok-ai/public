@@ -301,47 +301,17 @@ export class MpoProfileDialog {
     if (!this.currentProfile)
       return;
 
-    if (!this.currentProfileFileName) {
-      const saved = await this.showSaveNewProfileDialog();
-      if (!saved)
-        return;
-    } else
-      await MpoProfileManager.save(this.currentProfile, this.currentProfileFileName);
-  }
-
-  private showSaveNewProfileDialog(): Promise<boolean> {
-    return new Promise((resolve) => {
-      const nameInput = ui.input.string('Name', {value: this.currentProfile?.name || UNTITLED_PROFILE, nullable: false});
-      const descInput = ui.input.textArea('Description', {value: ''});
-
-      ui.dialog({title: 'Save MPO Profile'})
-        .add(ui.divV([nameInput.root, descInput.root]))
-        .onOK(async () => {
-          const name = nameInput.value!.trim();
-          if (!name) {
-            grok.shell.warning('Profile name cannot be empty');
-            resolve(false);
-            return;
-          }
-
-          this.currentProfile!.name = name;
-          this.currentProfile!.description = descInput.value || '';
-          this.currentProfileFileName = MpoProfileManager.generateFileName(name);
-          const saved = await MpoProfileManager.save(this.currentProfile!, this.currentProfileFileName!);
-          if (saved) {
-            this.isNewProfile = false;
-            this.pmpoSettingsOpened = false;
-            this.pmpoSettingsIcon.classList.add('chem-mpo-d-none');
-            this.pmpoSettingsContainer.classList.add('chem-mpo-d-none');
-            await this.refreshProfilesDropdown(this.currentProfile!.name);
-            this.originalProfile = structuredClone(this.currentProfile!);
-            this.updateSaveButtonVisibility();
-          }
-          resolve(saved);
-        })
-        .onCancel(() => resolve(false))
-        .show();
-    });
+    const result = await MpoProfileManager.showSaveDialog(this.currentProfile, this.currentProfileFileName);
+    if (result.saved) {
+      this.currentProfileFileName = result.fileName;
+      this.isNewProfile = false;
+      this.pmpoSettingsOpened = false;
+      this.pmpoSettingsIcon.classList.add('chem-mpo-d-none');
+      this.pmpoSettingsContainer.classList.add('chem-mpo-d-none');
+      await this.refreshProfilesDropdown(this.currentProfile!.name);
+      this.originalProfile = structuredClone(this.currentProfile!);
+      this.updateSaveButtonVisibility();
+    }
   }
 
   private async refreshProfilesDropdown(selectName: string): Promise<void> {

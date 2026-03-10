@@ -240,32 +240,12 @@ export class MpoProfileCreateView {
   }
 
   private async showSaveDialog(): Promise<void> {
-    await MpoProfileManager.ensureLoaded();
-
-    const nameInput = ui.input.string('Name', {value: this.profile.name ?? '', nullable: false});
-    const descInput = ui.input.textArea('Description', {value: this.profile.description ?? ''});
-
-    const dlg = ui.dialog({title: 'Save MPO Profile'})
-      .add(ui.divV([nameInput, descInput]))
-      .onOK(async () => {
-        this.profile.name = nameInput.value || '';
-        this.profile.description = descInput.value || '';
-
-        const fileName = this.isEditMode ?
-          this.fileName! :
-          MpoProfileManager.generateFileName(nameInput.value!.trim());
-        const saved = await MpoProfileManager.save(this.profile, fileName);
-        if (saved) {
-          this.fileName = fileName;
-          this.saveButton!.classList.add('d4-disabled');
-          this.profileModified = false;
-        }
-      })
-      .show();
-
-    const okButton = dlg.getButton('OK');
-    okButton.disabled = !nameInput.validate();
-    nameInput.onInput.subscribe(() => okButton.disabled = !nameInput.validate());
+    const result = await MpoProfileManager.showSaveDialog(this.profile, this.isEditMode ? this.fileName : undefined);
+    if (result.saved) {
+      this.fileName = result.fileName;
+      this.saveButton!.classList.add('d4-disabled');
+      this.profileModified = false;
+    }
   }
 
   // --- Layout ---
@@ -348,8 +328,7 @@ export class MpoProfileCreateView {
       const vNode = this.tableView.dockManager.findNode(this.view.root);
       if (gridNode && vNode)
         this.tableView.dockManager.dock(this.tableView.grid.root, DG.DOCK_TYPE.DOWN, vNode, '', ratio);
-    }
-    else {
+    } else {
       this.tableView.dockManager.dock(this.tableView.grid.root, DG.DOCK_TYPE.FILL, null, '');
       this.tableView.dockManager.dock(this.view.root, DG.DOCK_TYPE.FILL, null, '');
     }
