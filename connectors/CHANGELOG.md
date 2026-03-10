@@ -1,6 +1,19 @@
 # Grok Connect changelog
 
-# 2.5.6 (2025-12-18) WIP
+# 2.6.0 (2026-03-10)
+
+* Database catalogs support (multi-catalog browsing for Postgres, MySQL, MS SQL, Databricks, Snowflake)
+* VisualQuery: Cross-catalog joins
+* SqlAnnotator: Query annotation with column metadata (types, tags)
+* Athena: Exposed UseResultsetStreaming property
+* Support bigint in/not in patterns
+* Databricks: Improved Unity Catalog detection with fallback logic
+* String column encoding speed-up
+* Refactored serialization, reduced code size
+* Connection pool cleanup and locking improvements
+* Remediated ~20 CVEs from vulnerability scan
+
+# 2.5.6 (2025-12-18)
 
 * Databricks: Correction in detection of environment
 * Minor fixes and improvements in TableQueries
