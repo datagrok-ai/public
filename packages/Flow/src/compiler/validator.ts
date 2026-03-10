@@ -43,18 +43,29 @@ export function validateGraph(graph: LGraph): ValidationResult[] {
     }
 
     if (node.dgFunc && node.inputs) {
+      const func = node.dgFunc;
       for (let i = 0; i < node.inputs.length; i++) {
         const inp = node.inputs[i];
         const connected = node.isInputConnected(i);
         if (!connected) {
-          const hasDefault = node.properties[`_input_${inp.name}`] !== undefined;
-          if (!hasDefault)
-            node.properties[`_input_${inp.name}`] = null;
-            // results.push({
-            //   severity: 'error',
-            //   message: `Required input '${inp.name}' on node '${node.title}' is not connected and has no default value`,
-            //   nodeId: node.id,
-            // });
+          const propKey = `_input_${inp.name}`;
+          const storedVal = node.properties[propKey];
+          // 0 and false are valid values; only undefined/null/empty-string mean "no value"
+          const hasValue = storedVal !== undefined && storedVal !== null &&
+            (typeof storedVal !== 'string' || storedVal !== '');
+
+          // Check if the function parameter is nullable
+          const funcParam = func.inputs.find((p: any) => p.name === inp.name);
+          const isNullable = funcParam?.nullable === true || funcParam?.options?.optional === true || funcParam?.options?.nullable === true;
+
+          if (!hasValue && !isNullable) {
+            results.push({
+              severity: 'error',
+              message: `Required input '${inp.name}' on node '${node.title}' is not connected and has no value`,
+              nodeId: node.id,
+            });
+          } else if (!hasValue)
+            node.properties[propKey] = node.properties[propKey] ?? null;
         }
       }
     }

@@ -124,36 +124,16 @@
   text-overflow: ellipsis;
 }
 
-/* Right panel - Properties */
-.funcflow-right-panel {
-  width: 250px;
-  min-width: 200px;
-  max-width: 350px;
-  display: flex;
-  flex-direction: column;
-  border-left: 1px solid var(--grey-2, #ccc);
-  background: var(--grey-1, #f5f5f5);
-  overflow-y: auto;
-}
-
+/* Property panel — renders inside Datagrok native context panel */
 .funcflow-property-panel {
   display: flex;
   flex-direction: column;
-  height: 100%;
-}
-
-.funcflow-panel-header {
-  padding: 8px 12px;
-  font-weight: 600;
-  font-size: 14px;
-  border-bottom: 1px solid var(--grey-2, #ddd);
-  background: var(--grey-1, #f0f0f0);
+  background: transparent;
+  font-family: 'Roboto', 'Roboto Local', Arial, sans-serif;
 }
 
 .funcflow-property-content {
-  flex: 1;
   padding: 8px;
-  overflow-y: auto;
 }
 
 .funcflow-prop-section {
@@ -161,12 +141,12 @@
 }
 
 .funcflow-prop-section-header {
-  font-weight: 600;
+  font-weight: 700;
   font-size: 12px;
-  color: var(--grey-5, #666);
-  padding: 4px 0;
-  border-bottom: 1px solid var(--grey-2, #e0e0e0);
-  margin-bottom: 4px;
+  color: var(--grey-6, #333);
+  padding: 6px 0 4px;
+  border-bottom: 2px solid var(--grey-3, #ccc);
+  margin-bottom: 6px;
 }
 
 .funcflow-prop-row {
@@ -222,6 +202,32 @@
   width: 16px;
   height: 16px;
   cursor: pointer;
+}
+
+/* Connection summary rows */
+.funcflow-conn-row {
+  flex-direction: row !important;
+  flex-wrap: wrap;
+  align-items: baseline;
+  font-size: 12px;
+}
+
+.funcflow-conn-dir {
+  font-weight: 700;
+  color: var(--grey-6, #333);
+}
+
+.funcflow-conn-type {
+  color: var(--grey-4, #888);
+  font-style: italic;
+}
+
+.funcflow-conn-ok {
+  color: #43a047;
+}
+
+.funcflow-conn-off {
+  color: var(--grey-4, #999);
 }
 
 /* Status bar */

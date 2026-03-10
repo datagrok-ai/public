@@ -50,6 +50,9 @@ export class FuncFlowView extends DG.ViewBase {
     this.setupRibbon();
     this.setupStatusBar();
 
+    // Show the native context panel
+    grok.shell.windows.showContextPanel = true;
+
     // Register DG functions asynchronously (may take time)
     setTimeout(() => {
       try {
@@ -79,10 +82,8 @@ export class FuncFlowView extends DG.ViewBase {
     // Center: Canvas
     this.canvasContainer = ui.div([], 'funcflow-canvas-container');
 
-    // Right panel: Property Panel
+    // Property Panel (renders into context panel, not inline)
     this.propertyPanel = new PropertyPanel();
-    this.propertyPanel.clear();
-    const rightPanel = ui.div([this.propertyPanel.root], 'funcflow-right-panel');
 
     // Status bar
     this.nodeCountLabel = ui.divText('Nodes: 0');
@@ -95,8 +96,8 @@ export class FuncFlowView extends DG.ViewBase {
       'funcflow-status-bar',
     );
 
-    // Main layout
-    const mainLayout = ui.div([leftPanel, this.canvasContainer, rightPanel], 'funcflow-root');
+    // Main layout — no right panel, just left + canvas
+    const mainLayout = ui.div([leftPanel, this.canvasContainer], 'funcflow-root');
 
     this.root.style.width = '100%';
     this.root.style.height = '100%';
@@ -120,9 +121,11 @@ export class FuncFlowView extends DG.ViewBase {
     this.canvasController = new CanvasController(this.canvasContainer, this.graphManager, {
       onNodeSelected: (node: LGraphNode) => {
         this.propertyPanel.showNode(node);
+        grok.shell.o = this.propertyPanel.root;
       },
       onNodeDeselected: () => {
         this.propertyPanel.clear();
+        grok.shell.o = this.propertyPanel.root;
       },
       onGraphChanged: () => {
         this.updateStatusBar();

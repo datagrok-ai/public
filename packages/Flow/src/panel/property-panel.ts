@@ -38,7 +38,7 @@ const OUTPUT_TYPE_VALUES = [
   'map', 'datetime', 'blob', 'funccall',
 ];
 
-/** Right sidebar: shows properties of the selected node */
+/** Property panel: renders into the Datagrok native context panel via grok.shell.o */
 export class PropertyPanel {
   root: HTMLElement;
   private contentDiv: HTMLElement;
@@ -46,7 +46,6 @@ export class PropertyPanel {
   constructor() {
     this.contentDiv = ui.div([], 'funcflow-property-content');
     this.root = ui.divV([
-      ui.div([ui.label('Properties')], 'funcflow-panel-header'),
       this.contentDiv,
     ], 'funcflow-property-panel');
   }
@@ -321,9 +320,18 @@ export class PropertyPanel {
         const inp = node.inputs[i];
         const connected = node.isInputConnected(i);
         const status = connected ? 'connected' : 'disconnected';
-        section.appendChild(
-          ui.div([ui.divText(`IN: ${inp.name} (${inp.type}) - ${status}`)], 'funcflow-prop-row'),
-        );
+        const dir = ui.element('span');
+        dir.textContent = 'IN';
+        dir.className = 'funcflow-conn-dir';
+        const detail = ui.element('span');
+        detail.textContent = ` ${inp.name} `;
+        const typeSpan = ui.element('span');
+        typeSpan.textContent = `(${inp.type})`;
+        typeSpan.className = 'funcflow-conn-type';
+        const statusSpan = ui.element('span');
+        statusSpan.textContent = ` — ${status}`;
+        statusSpan.className = connected ? 'funcflow-conn-ok' : 'funcflow-conn-off';
+        section.appendChild(ui.div([dir, detail, typeSpan, statusSpan], 'funcflow-prop-row funcflow-conn-row'));
       }
     }
 
@@ -333,9 +341,18 @@ export class PropertyPanel {
         const connected = node.isOutputConnected(i);
         const linkCount = out.links ? out.links.length : 0;
         const status = connected ? `${linkCount} connection(s)` : 'disconnected';
-        section.appendChild(
-          ui.div([ui.divText(`OUT: ${out.name} (${out.type}) - ${status}`)], 'funcflow-prop-row'),
-        );
+        const dir = ui.element('span');
+        dir.textContent = 'OUT';
+        dir.className = 'funcflow-conn-dir';
+        const detail = ui.element('span');
+        detail.textContent = ` ${out.name} `;
+        const typeSpan = ui.element('span');
+        typeSpan.textContent = `(${out.type})`;
+        typeSpan.className = 'funcflow-conn-type';
+        const statusSpan = ui.element('span');
+        statusSpan.textContent = ` — ${status}`;
+        statusSpan.className = connected ? 'funcflow-conn-ok' : 'funcflow-conn-off';
+        section.appendChild(ui.div([dir, detail, typeSpan, statusSpan], 'funcflow-prop-row funcflow-conn-row'));
       }
     }
 
