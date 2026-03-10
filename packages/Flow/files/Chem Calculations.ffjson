@@ -1,0 +1,984 @@
+{
+  "version": "1.0",
+  "name": "Chem Calculations",
+  "description": "Chem Calculations and add new column",
+  "author": "admin",
+  "created": "2026-03-10T18:42:53.018Z",
+  "modified": "2026-03-10T18:42:53.018Z",
+  "graph": {
+    "last_node_id": 19,
+    "last_link_id": 20,
+    "nodes": [
+      {
+        "id": 5,
+        "type": "DG Functions/Uncategorized/AddNewColumn",
+        "pos": {
+          "0": 544,
+          "1": 334,
+          "2": 0,
+          "3": 0,
+          "4": 0,
+          "5": 0,
+          "6": 0,
+          "7": 0,
+          "8": 0,
+          "9": 0
+        },
+        "size": {
+          "0": 329.20001220703125,
+          "1": 166
+        },
+        "flags": {
+          "collapsed": true
+        },
+        "order": 4,
+        "mode": 0,
+        "inputs": [
+          {
+            "name": "table",
+            "type": "dataframe",
+            "link": 4,
+            "color_on": "#E67E22",
+            "color_off": "#E67E22"
+          },
+          {
+            "name": "expression",
+            "type": "string",
+            "link": null,
+            "color_on": "#2ECC71",
+            "color_off": "#2ECC71"
+          },
+          {
+            "name": "name",
+            "type": "string",
+            "link": null,
+            "color_on": "#2ECC71",
+            "color_off": "#2ECC71"
+          },
+          {
+            "name": "type",
+            "type": "string",
+            "link": null,
+            "color_on": "#2ECC71",
+            "color_off": "#2ECC71"
+          },
+          {
+            "name": "treatAsString",
+            "type": "bool",
+            "link": null,
+            "color_on": "#E74C3C",
+            "color_off": "#E74C3C"
+          },
+          {
+            "name": "subscribeOnChanges",
+            "type": "bool",
+            "link": null,
+            "color_on": "#E74C3C",
+            "color_off": "#E74C3C"
+          },
+          {
+            "name": "errorBehavior",
+            "type": "calccolerrorbehavior",
+            "link": null,
+            "color_on": "#95A5A6",
+            "color_off": "#95A5A6"
+          }
+        ],
+        "outputs": [
+          {
+            "name": "table →",
+            "type": "dataframe",
+            "links": [
+              19
+            ],
+            "color_on": "#E67E22",
+            "color_off": "#E67E22",
+            "slot_index": 0
+          },
+          {
+            "name": "expression →",
+            "type": "string",
+            "links": null,
+            "color_on": "#2ECC71",
+            "color_off": "#2ECC71"
+          },
+          {
+            "name": "name →",
+            "type": "string",
+            "links": null,
+            "color_on": "#2ECC71",
+            "color_off": "#2ECC71"
+          },
+          {
+            "name": "type →",
+            "type": "string",
+            "links": null,
+            "color_on": "#2ECC71",
+            "color_off": "#2ECC71"
+          },
+          {
+            "name": "treatAsString →",
+            "type": "bool",
+            "links": null,
+            "color_on": "#E74C3C",
+            "color_off": "#E74C3C"
+          },
+          {
+            "name": "subscribeOnChanges →",
+            "type": "bool",
+            "links": null,
+            "color_on": "#E74C3C",
+            "color_off": "#E74C3C"
+          },
+          {
+            "name": "errorBehavior →",
+            "type": "calccolerrorbehavior",
+            "links": null,
+            "color_on": "#95A5A6",
+            "color_off": "#95A5A6"
+          },
+          {
+            "name": "result",
+            "type": "column",
+            "links": [],
+            "color_on": "#3498DB",
+            "color_off": "#3498DB",
+            "slot_index": 7
+          }
+        ],
+        "properties": {
+          "_input_expression": "${MW} * 2",
+          "_input_name": "Double Weight",
+          "_input_type": "auto",
+          "_input_treatAsString": false,
+          "_input_subscribeOnChanges": true,
+          "_passthroughCount": 7,
+          "_input_errorBehavior": null
+        },
+        "color": "#BDBDBD",
+        "bgcolor": "#ffffff"
+      },
+      {
+        "id": 4,
+        "type": "DG Functions/hitTriageFunction,transform/addChemPropertiesColumns",
+        "pos": {
+          "0": 274,
+          "1": 333,
+          "2": 0,
+          "3": 0,
+          "4": 0,
+          "5": 0,
+          "6": 0,
+          "7": 0,
+          "8": 0,
+          "9": 0
+        },
+        "size": {
+          "0": 262,
+          "1": 226
+        },
+        "flags": {
+          "collapsed": true
+        },
+        "order": 2,
+        "mode": 0,
+        "inputs": [
+          {
+            "name": "table",
+            "type": "dataframe",
+            "link": 2,
+            "color_on": "#E67E22",
+            "color_off": "#E67E22"
+          },
+          {
+            "name": "molecules",
+            "type": "column",
+            "link": 3,
+            "color_on": "#3498DB",
+            "color_off": "#3498DB"
+          },
+          {
+            "name": "MW",
+            "type": "bool",
+            "link": null,
+            "color_on": "#E74C3C",
+            "color_off": "#E74C3C",
+            "slot_index": 2
+          },
+          {
+            "name": "HBA",
+            "type": "bool",
+            "link": null,
+            "color_on": "#E74C3C",
+            "color_off": "#E74C3C"
+          },
+          {
+            "name": "HBD",
+            "type": "bool",
+            "link": null,
+            "color_on": "#E74C3C",
+            "color_off": "#E74C3C"
+          },
+          {
+            "name": "logP",
+            "type": "bool",
+            "link": null,
+            "color_on": "#E74C3C",
+            "color_off": "#E74C3C"
+          },
+          {
+            "name": "logS",
+            "type": "bool",
+            "link": null,
+            "color_on": "#E74C3C",
+            "color_off": "#E74C3C"
+          },
+          {
+            "name": "PSA",
+            "type": "bool",
+            "link": null,
+            "color_on": "#E74C3C",
+            "color_off": "#E74C3C"
+          },
+          {
+            "name": "rotatableBonds",
+            "type": "bool",
+            "link": null,
+            "color_on": "#E74C3C",
+            "color_off": "#E74C3C"
+          },
+          {
+            "name": "stereoCenters",
+            "type": "bool",
+            "link": null,
+            "color_on": "#E74C3C",
+            "color_off": "#E74C3C"
+          },
+          {
+            "name": "moleculeCharge",
+            "type": "bool",
+            "link": null,
+            "color_on": "#E74C3C",
+            "color_off": "#E74C3C"
+          }
+        ],
+        "outputs": [
+          {
+            "name": "table →",
+            "type": "dataframe",
+            "links": [
+              4
+            ],
+            "color_on": "#E67E22",
+            "color_off": "#E67E22",
+            "slot_index": 0
+          },
+          {
+            "name": "molecules →",
+            "type": "column",
+            "links": null,
+            "color_on": "#3498DB",
+            "color_off": "#3498DB"
+          },
+          {
+            "name": "MW →",
+            "type": "bool",
+            "links": null,
+            "color_on": "#E74C3C",
+            "color_off": "#E74C3C"
+          },
+          {
+            "name": "HBA →",
+            "type": "bool",
+            "links": null,
+            "color_on": "#E74C3C",
+            "color_off": "#E74C3C"
+          },
+          {
+            "name": "HBD →",
+            "type": "bool",
+            "links": null,
+            "color_on": "#E74C3C",
+            "color_off": "#E74C3C"
+          },
+          {
+            "name": "logP →",
+            "type": "bool",
+            "links": null,
+            "color_on": "#E74C3C",
+            "color_off": "#E74C3C"
+          },
+          {
+            "name": "logS →",
+            "type": "bool",
+            "links": null,
+            "color_on": "#E74C3C",
+            "color_off": "#E74C3C"
+          },
+          {
+            "name": "PSA →",
+            "type": "bool",
+            "links": null,
+            "color_on": "#E74C3C",
+            "color_off": "#E74C3C"
+          },
+          {
+            "name": "rotatableBonds →",
+            "type": "bool",
+            "links": null,
+            "color_on": "#E74C3C",
+            "color_off": "#E74C3C"
+          },
+          {
+            "name": "stereoCenters →",
+            "type": "bool",
+            "links": null,
+            "color_on": "#E74C3C",
+            "color_off": "#E74C3C"
+          },
+          {
+            "name": "moleculeCharge →",
+            "type": "bool",
+            "links": null,
+            "color_on": "#E74C3C",
+            "color_off": "#E74C3C"
+          }
+        ],
+        "properties": {
+          "_input_MW": true,
+          "_input_HBA": true,
+          "_input_HBD": true,
+          "_input_logP": false,
+          "_input_logS": false,
+          "_input_PSA": false,
+          "_input_rotatableBonds": false,
+          "_input_stereoCenters": false,
+          "_input_moleculeCharge": false,
+          "_passthroughCount": 11
+        },
+        "color": "#BDBDBD",
+        "bgcolor": "#ffffff"
+      },
+      {
+        "id": 12,
+        "type": "Outputs/Table Output",
+        "pos": {
+          "0": 750,
+          "1": 332,
+          "2": 0,
+          "3": 0,
+          "4": 0,
+          "5": 0,
+          "6": 0,
+          "7": 0,
+          "8": 0,
+          "9": 0
+        },
+        "size": {
+          "0": 140,
+          "1": 26
+        },
+        "flags": {
+          "collapsed": false
+        },
+        "order": 6,
+        "mode": 0,
+        "inputs": [
+          {
+            "name": "table",
+            "type": "dataframe",
+            "link": 19,
+            "color_on": "#E67E22",
+            "color_off": "#E67E22"
+          }
+        ],
+        "outputs": [],
+        "properties": {
+          "paramName": "result",
+          "description": ""
+        },
+        "color": "#EF5350",
+        "bgcolor": "#ffffff"
+      },
+      {
+        "id": 2,
+        "type": "Utilities/Select Column",
+        "pos": {
+          "0": 24,
+          "1": 434,
+          "2": 0,
+          "3": 0,
+          "4": 0,
+          "5": 0,
+          "6": 0,
+          "7": 0,
+          "8": 0,
+          "9": 0
+        },
+        "size": {
+          "0": 140,
+          "1": 26
+        },
+        "flags": {
+          "collapsed": true
+        },
+        "order": 1,
+        "mode": 0,
+        "inputs": [
+          {
+            "name": "table",
+            "type": "dataframe",
+            "link": 1,
+            "color_on": "#E67E22",
+            "color_off": "#E67E22"
+          }
+        ],
+        "outputs": [
+          {
+            "name": "column",
+            "type": "column",
+            "links": [
+              3,
+              14
+            ],
+            "color_on": "#3498DB",
+            "color_off": "#3498DB",
+            "slot_index": 0
+          }
+        ],
+        "properties": {
+          "columnName": "molecule"
+        },
+        "color": "#78909C",
+        "bgcolor": "#ffffff"
+      },
+      {
+        "id": 1,
+        "type": "DG Functions/Uncategorized/OpenFile",
+        "pos": {
+          "0": 25,
+          "1": 356,
+          "2": 0,
+          "3": 0,
+          "4": 0,
+          "5": 0,
+          "6": 0,
+          "7": 0,
+          "8": 0,
+          "9": 0
+        },
+        "size": {
+          "0": 178,
+          "1": 66
+        },
+        "flags": {
+          "collapsed": true
+        },
+        "order": 0,
+        "mode": 0,
+        "inputs": [
+          {
+            "name": "fullPath",
+            "type": "string",
+            "link": null,
+            "color_on": "#2ECC71",
+            "color_off": "#2ECC71"
+          },
+          {
+            "name": "sheetName",
+            "type": "string",
+            "link": null,
+            "color_on": "#2ECC71",
+            "color_off": "#2ECC71"
+          }
+        ],
+        "outputs": [
+          {
+            "name": "fullPath →",
+            "type": "string",
+            "links": null,
+            "color_on": "#2ECC71",
+            "color_off": "#2ECC71"
+          },
+          {
+            "name": "sheetName →",
+            "type": "string",
+            "links": null,
+            "color_on": "#2ECC71",
+            "color_off": "#2ECC71"
+          },
+          {
+            "name": "result",
+            "type": "dataframe",
+            "links": [
+              1,
+              2,
+              15
+            ],
+            "color_on": "#E67E22",
+            "color_off": "#E67E22",
+            "slot_index": 2
+          }
+        ],
+        "properties": {
+          "_input_fullPath": "System:AppData/Chem/mol1K.csv",
+          "_input_sheetName": "",
+          "_passthroughCount": 2
+        },
+        "color": "#BDBDBD",
+        "bgcolor": "#ffffff"
+      },
+      {
+        "id": 18,
+        "type": "DG Functions/transform/runStructuralAlerts",
+        "pos": {
+          "0": 293,
+          "1": 462,
+          "2": 0,
+          "3": 0,
+          "4": 0,
+          "5": 0,
+          "6": 0,
+          "7": 0,
+          "8": 0,
+          "9": 0
+        },
+        "size": {
+          "0": 228.39999389648438,
+          "1": 226
+        },
+        "flags": {
+          "collapsed": true
+        },
+        "order": 3,
+        "mode": 0,
+        "inputs": [
+          {
+            "name": "table",
+            "type": "dataframe",
+            "link": 15,
+            "color_on": "#E67E22",
+            "color_off": "#E67E22"
+          },
+          {
+            "name": "molecules",
+            "type": "column",
+            "link": 14,
+            "color_on": "#3498DB",
+            "color_off": "#3498DB"
+          },
+          {
+            "name": "pains",
+            "type": "bool",
+            "link": null,
+            "color_on": "#E74C3C",
+            "color_off": "#E74C3C"
+          },
+          {
+            "name": "bms",
+            "type": "bool",
+            "link": null,
+            "color_on": "#E74C3C",
+            "color_off": "#E74C3C"
+          },
+          {
+            "name": "sureChembl",
+            "type": "bool",
+            "link": null,
+            "color_on": "#E74C3C",
+            "color_off": "#E74C3C"
+          },
+          {
+            "name": "mlsmr",
+            "type": "bool",
+            "link": null,
+            "color_on": "#E74C3C",
+            "color_off": "#E74C3C"
+          },
+          {
+            "name": "dundee",
+            "type": "bool",
+            "link": null,
+            "color_on": "#E74C3C",
+            "color_off": "#E74C3C"
+          },
+          {
+            "name": "inpharmatica",
+            "type": "bool",
+            "link": null,
+            "color_on": "#E74C3C",
+            "color_off": "#E74C3C"
+          },
+          {
+            "name": "lint",
+            "type": "bool",
+            "link": null,
+            "color_on": "#E74C3C",
+            "color_off": "#E74C3C"
+          },
+          {
+            "name": "glaxo",
+            "type": "bool",
+            "link": null,
+            "color_on": "#E74C3C",
+            "color_off": "#E74C3C"
+          }
+        ],
+        "outputs": [
+          {
+            "name": "table →",
+            "type": "dataframe",
+            "links": [
+              20
+            ],
+            "color_on": "#E67E22",
+            "color_off": "#E67E22",
+            "slot_index": 0
+          },
+          {
+            "name": "molecules →",
+            "type": "column",
+            "links": null,
+            "color_on": "#3498DB",
+            "color_off": "#3498DB"
+          },
+          {
+            "name": "pains →",
+            "type": "bool",
+            "links": null,
+            "color_on": "#E74C3C",
+            "color_off": "#E74C3C"
+          },
+          {
+            "name": "bms →",
+            "type": "bool",
+            "links": null,
+            "color_on": "#E74C3C",
+            "color_off": "#E74C3C"
+          },
+          {
+            "name": "sureChembl →",
+            "type": "bool",
+            "links": null,
+            "color_on": "#E74C3C",
+            "color_off": "#E74C3C"
+          },
+          {
+            "name": "mlsmr →",
+            "type": "bool",
+            "links": null,
+            "color_on": "#E74C3C",
+            "color_off": "#E74C3C"
+          },
+          {
+            "name": "dundee →",
+            "type": "bool",
+            "links": null,
+            "color_on": "#E74C3C",
+            "color_off": "#E74C3C"
+          },
+          {
+            "name": "inpharmatica →",
+            "type": "bool",
+            "links": null,
+            "color_on": "#E74C3C",
+            "color_off": "#E74C3C"
+          },
+          {
+            "name": "lint →",
+            "type": "bool",
+            "links": null,
+            "color_on": "#E74C3C",
+            "color_off": "#E74C3C"
+          },
+          {
+            "name": "glaxo →",
+            "type": "bool",
+            "links": null,
+            "color_on": "#E74C3C",
+            "color_off": "#E74C3C"
+          },
+          {
+            "name": "result",
+            "type": "dataframe",
+            "links": [],
+            "color_on": "#E67E22",
+            "color_off": "#E67E22",
+            "slot_index": 10
+          }
+        ],
+        "properties": {
+          "_input_pains": true,
+          "_input_bms": false,
+          "_input_sureChembl": false,
+          "_input_mlsmr": false,
+          "_input_dundee": false,
+          "_input_inpharmatica": false,
+          "_input_lint": false,
+          "_input_glaxo": true,
+          "_passthroughCount": 10
+        },
+        "color": "#26A69A",
+        "bgcolor": "#ffffff"
+      },
+      {
+        "id": 19,
+        "type": "DG Functions/Uncategorized/AddNewColumn",
+        "pos": {
+          "0": 535,
+          "1": 464,
+          "2": 0,
+          "3": 0,
+          "4": 0,
+          "5": 0,
+          "6": 0,
+          "7": 0,
+          "8": 0,
+          "9": 0
+        },
+        "size": {
+          "0": 329.20001220703125,
+          "1": 166
+        },
+        "flags": {
+          "collapsed": true
+        },
+        "order": 5,
+        "mode": 0,
+        "inputs": [
+          {
+            "name": "table",
+            "type": "dataframe",
+            "link": 20,
+            "color_on": "#E67E22",
+            "color_off": "#E67E22"
+          },
+          {
+            "name": "expression",
+            "type": "string",
+            "link": null,
+            "color_on": "#2ECC71",
+            "color_off": "#2ECC71"
+          },
+          {
+            "name": "name",
+            "type": "string",
+            "link": null,
+            "color_on": "#2ECC71",
+            "color_off": "#2ECC71"
+          },
+          {
+            "name": "type",
+            "type": "string",
+            "link": null,
+            "color_on": "#2ECC71",
+            "color_off": "#2ECC71"
+          },
+          {
+            "name": "treatAsString",
+            "type": "bool",
+            "link": null,
+            "color_on": "#E74C3C",
+            "color_off": "#E74C3C"
+          },
+          {
+            "name": "subscribeOnChanges",
+            "type": "bool",
+            "link": null,
+            "color_on": "#E74C3C",
+            "color_off": "#E74C3C"
+          },
+          {
+            "name": "errorBehavior",
+            "type": "calccolerrorbehavior",
+            "link": null,
+            "color_on": "#95A5A6",
+            "color_off": "#95A5A6"
+          }
+        ],
+        "outputs": [
+          {
+            "name": "table →",
+            "type": "dataframe",
+            "links": [],
+            "color_on": "#E67E22",
+            "color_off": "#E67E22",
+            "slot_index": 0
+          },
+          {
+            "name": "expression →",
+            "type": "string",
+            "links": null,
+            "color_on": "#2ECC71",
+            "color_off": "#2ECC71"
+          },
+          {
+            "name": "name →",
+            "type": "string",
+            "links": null,
+            "color_on": "#2ECC71",
+            "color_off": "#2ECC71"
+          },
+          {
+            "name": "type →",
+            "type": "string",
+            "links": null,
+            "color_on": "#2ECC71",
+            "color_off": "#2ECC71"
+          },
+          {
+            "name": "treatAsString →",
+            "type": "bool",
+            "links": null,
+            "color_on": "#E74C3C",
+            "color_off": "#E74C3C"
+          },
+          {
+            "name": "subscribeOnChanges →",
+            "type": "bool",
+            "links": null,
+            "color_on": "#E74C3C",
+            "color_off": "#E74C3C"
+          },
+          {
+            "name": "errorBehavior →",
+            "type": "calccolerrorbehavior",
+            "links": null,
+            "color_on": "#95A5A6",
+            "color_off": "#95A5A6"
+          },
+          {
+            "name": "result",
+            "type": "column",
+            "links": [],
+            "color_on": "#3498DB",
+            "color_off": "#3498DB",
+            "slot_index": 7
+          }
+        ],
+        "properties": {
+          "_input_expression": "${pains (molecule)} && ${glaxo (molecule)}",
+          "_input_name": "Has Both pains and glaxo",
+          "_input_type": "auto",
+          "_input_treatAsString": false,
+          "_input_subscribeOnChanges": true,
+          "_passthroughCount": 7,
+          "_input_errorBehavior": null
+        },
+        "color": "#BDBDBD",
+        "bgcolor": "#ffffff"
+      }
+    ],
+    "links": [
+      [
+        1,
+        1,
+        2,
+        2,
+        0,
+        "dataframe"
+      ],
+      [
+        2,
+        1,
+        2,
+        4,
+        0,
+        "dataframe"
+      ],
+      [
+        3,
+        2,
+        0,
+        4,
+        1,
+        "column"
+      ],
+      [
+        4,
+        4,
+        0,
+        5,
+        0,
+        "dataframe"
+      ],
+      [
+        14,
+        2,
+        0,
+        18,
+        1,
+        "column"
+      ],
+      [
+        15,
+        1,
+        2,
+        18,
+        0,
+        "dataframe"
+      ],
+      [
+        19,
+        5,
+        0,
+        12,
+        0,
+        "dataframe"
+      ],
+      [
+        20,
+        18,
+        0,
+        19,
+        0,
+        "dataframe"
+      ]
+    ],
+    "groups": [],
+    "config": {},
+    "extra": {},
+    "version": 0.4
+  },
+  "metadata": {
+    "nodes": {
+      "1": {
+        "dgFuncName": "OpenFile",
+        "dgNodeType": "func"
+      },
+      "2": {
+        "dgFuncName": "Select Column",
+        "dgNodeType": "utility"
+      },
+      "4": {
+        "dgFuncName": "Chem:addChemPropertiesColumns",
+        "dgNodeType": "func"
+      },
+      "5": {
+        "dgFuncName": "AddNewColumn",
+        "dgNodeType": "func"
+      },
+      "12": {
+        "dgFuncName": "Table Output",
+        "dgNodeType": "output",
+        "paramName": "result",
+        "description": ""
+      },
+      "18": {
+        "dgFuncName": "Chem:runStructuralAlerts",
+        "dgNodeType": "func"
+      },
+      "19": {
+        "dgFuncName": "AddNewColumn",
+        "dgNodeType": "func"
+      }
+    },
+    "settings": {
+      "scriptName": "Chem Calculations",
+      "scriptDescription": "Chem Calculations and add new column",
+      "tags": [
+        "funcflow"
+      ]
+    }
+  }
+}
