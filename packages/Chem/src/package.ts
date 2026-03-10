@@ -2752,6 +2752,7 @@ export class PackageFunctions {
           const editView = new MpoProfileCreateView(profile, false, profile.fileName);
           openedView = editView.view;
           grok.shell.addPreview(editView.view);
+          editView.setupBreadcrumbs();
         });
 
         item.captionLabel.addEventListener('contextmenu', (ev) => {

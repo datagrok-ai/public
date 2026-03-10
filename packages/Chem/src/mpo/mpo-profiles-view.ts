@@ -7,13 +7,13 @@ import {Subscription} from 'rxjs';
 import {u2} from '@datagrok-libraries/utils/src/u2';
 
 import {_package} from '../package';
-import {MpoProfileInfo, updateMpoPath, MpoPathMode, MPO_PROFILE_CHANGED_EVENT, MPO_PROFILE_DELETED_EVENT} from './utils';
+import {MpoProfileInfo, updateMpoPath, MpoPathMode, MPO_PROFILES_NAME, MPO_PROFILE_CHANGED_EVENT, MPO_PROFILE_DELETED_EVENT} from './utils';
 import {MpoProfileCreateView} from './mpo-create-profile';
 import {MpoProfileManager} from './mpo-profile-manager';
 import {MpoProfileHandler} from './mpo-profile-handler';
 
 export class MpoProfilesView {
-  name = 'MPO Profiles';
+  name = MPO_PROFILES_NAME;
   root = ui.divV([]);
   view: DG.View;
 
@@ -138,6 +138,7 @@ export class MpoProfilesView {
   private openCreateProfile(): void {
     const view = new MpoProfileCreateView();
     grok.shell.v = grok.shell.addPreview(view.tableView!);
+    view.setupBreadcrumbs();
   }
 
   private listenForChanges(): void {

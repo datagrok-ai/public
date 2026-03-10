@@ -1,5 +1,6 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
+import * as ui from 'datagrok-api/ui';
 
 import {
   DEFAULT_AGGREGATION,
@@ -26,6 +27,7 @@ export enum MpoPathMode {
 
 export const MPO_TEMPLATE_PATH = 'System:AppData/Chem/mpo';
 export const MPO_PATH = 'MPOProfiles';
+export const MPO_PROFILES_NAME = 'MPO Profiles';
 export const MAX_MPO_PROPERTIES = 20;
 
 export async function loadMpoProfiles(): Promise<MpoProfileInfo[]> {
@@ -206,4 +208,31 @@ export function deepEqual<T>(current: T, original: T): boolean {
       return false;
   }
   return true;
+}
+
+export function setupMpoBreadcrumbs(view: DG.ViewBase, lastSegment: string): void {
+  const breadcrumbs = ui.breadcrumbs(['Home', MPO_PROFILES_NAME, lastSegment]);
+
+  breadcrumbs.onPathClick.subscribe((path) => {
+    const clicked = path[path.length - 1];
+    if (clicked === lastSegment)
+      return;
+    if (clicked === MPO_PROFILES_NAME) {
+      const listView = Array.from(grok.shell.views).find((v) => v.name === MPO_PROFILES_NAME);
+      if (listView)
+        grok.shell.v = listView;
+    }
+  });
+
+  const homeEl = breadcrumbs.root.firstElementChild;
+  if (homeEl) {
+    const homeIcon = ui.iconFA('home', () => grok.shell.v = DG.View.createByType(DG.VIEW_TYPE.HOME));
+    homeEl.replaceWith(homeIcon);
+  }
+
+  const viewNameRoot = view.ribbonMenu.root.parentElement?.getElementsByClassName('d4-ribbon-name')[0];
+  if (viewNameRoot) {
+    viewNameRoot.textContent = '';
+    viewNameRoot.appendChild(breadcrumbs.root);
+  }
 }

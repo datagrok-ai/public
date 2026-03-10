@@ -52,12 +52,14 @@ export class MpoProfileHandler extends DG.ObjectHandler<MpoProfileInfo> {
     const editable = structuredClone(profile);
     const view = new MpoProfileCreateView(editable, false, profile.fileName);
     grok.shell.v = grok.shell.addView(view.view);
+    view.setupBreadcrumbs();
   }
 
   static clone(profile: MpoProfileInfo): void {
     const {profile: clonedProfile, fileName} = MpoProfileManager.prepareClone(profile);
     const view = new MpoProfileCreateView(clonedProfile, false, fileName);
     grok.shell.v = grok.shell.addView(view.view);
+    view.setupBreadcrumbs();
   }
 
   static delete(profile: MpoProfileInfo): void {

@@ -15,6 +15,7 @@ import {
   MpoPathMode,
   MPO_PROFILE_DELETED_EVENT,
   updateMpoPath,
+  setupMpoBreadcrumbs,
   createDefaultProfile,
   createProfileForDf,
   mergeProfileWithDf,
@@ -49,6 +50,7 @@ export class MpoProfileCreateView {
 
   private headerEl!: HTMLElement;
   private toolbarEl!: HTMLElement;
+  private aggregationField!: HTMLElement;
 
   tableView: DG.TableView;
   private tableViewVisible: boolean = false;
@@ -85,10 +87,7 @@ export class MpoProfileCreateView {
     this.profileEditorContainer.classList.add('chem-profile-editor-container');
 
     this.tableView = DG.TableView.create(DG.DataFrame.create(0), false);
-    const tabName = this.isEditMode ?
-      `Edit ${this.profile.name || 'MPO'}` :
-      'Create MPO';
-    this.tableView.name = this.view.name = tabName;
+    this.tableView.name = this.view.name = this.displayName;
     this.dockTableView();
 
     updateMpoPath(
@@ -104,6 +103,14 @@ export class MpoProfileCreateView {
 
   private get activeView(): DG.View {
     return this.isEditMode ? this.view : this.tableView;
+  }
+
+  private get displayName(): string {
+    return this.isEditMode ? (this.profile.name || 'MPO') : 'Create MPO';
+  }
+
+  setupBreadcrumbs(): void {
+    setupMpoBreadcrumbs(this.activeView, this.displayName);
   }
 
   private get isManualMode(): boolean {
@@ -143,12 +150,13 @@ export class MpoProfileCreateView {
     if (this.methodInput)
       controls.push(field(this.methodInput));
     controls.push(field(this.datasetInput));
-    controls.push(field(this.editor.aggregationInput));
+    this.aggregationField = field(this.editor.aggregationInput);
+    controls.push(this.aggregationField);
 
     this.saveButton = ui.button('Save', () => this.showSaveDialog());
     this.saveButton.classList.add('d4-disabled');
 
-    this.headerEl = ui.h1(this.isEditMode ? `Edit ${this.profile.name || 'MPO'}` : 'Create MPO Profile');
+    this.headerEl = ui.h1(this.displayName);
     this.headerEl.classList.add('chem-profile-header');
 
     this.toolbarEl = ui.divV([ui.divV(controls), this.saveButton], 'chem-profile-toolbar-wrap');
@@ -162,7 +170,7 @@ export class MpoProfileCreateView {
   // --- Event handlers ---
 
   private async onMethodChanged(): Promise<void> {
-    this.editor.aggregationInput.root.classList.toggle('chem-mpo-d-none', !this.isManualMode);
+    this.aggregationField.classList.toggle('chem-mpo-d-none', !this.isManualMode);
 
     if (this.methodInput!.value === METHOD_PROBABILISTIC) {
       this.stashedManualProfile = {
