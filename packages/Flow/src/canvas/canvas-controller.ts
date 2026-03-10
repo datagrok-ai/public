@@ -14,6 +14,7 @@ export class CanvasController {
   graphCanvas: LGraphCanvas;
   canvas: HTMLCanvasElement;
   graphManager: GraphManager;
+  private tooltipEl!: HTMLDivElement;
 
   constructor(container: HTMLElement, graphManager: GraphManager, callbacks?: CanvasCallbacks) {
     this.graphManager = graphManager;
@@ -37,6 +38,12 @@ export class CanvasController {
     this.graphCanvas = new LGraphCanvas(this.canvas, graphManager.graph, {
       autoresize: false,
     });
+
+    // Set Roboto font for all canvas text
+    (this.graphCanvas as any).title_text_font =
+      '' + LiteGraph.NODE_TEXT_SIZE + 'px \'Roboto\', \'Roboto Local\', Arial, sans-serif';
+    (this.graphCanvas as any).inner_text_font =
+      'normal ' + (LiteGraph as any).NODE_SUBTEXT_SIZE + 'px \'Roboto\', \'Roboto Local\', Arial, sans-serif';
 
     // Configure appearance - light theme
     this.graphCanvas.render_curved_connections = true;
@@ -73,6 +80,12 @@ export class CanvasController {
       graph.onLinkRemoved = () => onChange();
     }
 
+    // Canvas tooltip element for hover hints
+    this.tooltipEl = document.createElement('div');
+    this.tooltipEl.className = 'funcflow-canvas-tooltip';
+    container.appendChild(this.tooltipEl);
+    this.setupCanvasTooltips();
+
     // Observe container resize
     const resizeObserver = new ResizeObserver(() => {
       this.resizeToContainer(container);
@@ -104,7 +117,7 @@ export class CanvasController {
     (LGraphCanvas as any).DEFAULT_BACKGROUND_COLOR = '#e8e8e8';
     LiteGraph.NODE_DEFAULT_COLOR = '#BDBDBD';
     LiteGraph.NODE_DEFAULT_BGCOLOR = '#ffffff';
-    LiteGraph.NODE_DEFAULT_BOXCOLOR = 'transparent';
+    LiteGraph.NODE_DEFAULT_BOXCOLOR = '#888';
     LiteGraph.NODE_TEXT_COLOR = '#333';
     LiteGraph.NODE_TITLE_COLOR = '#BDBDBD';
     (LiteGraph as any).NODE_SELECTED_TITLE_COLOR = '#000';
@@ -160,6 +173,102 @@ export class CanvasController {
       ctx.stroke();
       ctx.restore();
     };
+  }
+
+  /** Detects hover over node collapse icon and I/O slots; shows cursor + tooltip */
+  private setupCanvasTooltips(): void {
+    const titleH = (LiteGraph as any).NODE_TITLE_HEIGHT || 30;
+    const boxSize = 10;
+    let lastTip = '';
+
+    this.canvas.addEventListener('mousemove', (e: MouseEvent) => {
+      const gc = this.graphCanvas as any;
+      const ds = gc.ds;
+      // Convert mouse to graph coordinates
+      const rect = this.canvas.getBoundingClientRect();
+      const mx = (e.clientX - rect.left) / ds.scale - ds.offset[0];
+      const my = (e.clientY - rect.top) / ds.scale - ds.offset[1];
+
+      let tip = '';
+      let cursor = '';
+
+      const graph = this.graphManager.graph;
+      const nodes = (graph as any)._nodes as LGraphNode[];
+      if (nodes) {
+        for (let i = nodes.length - 1; i >= 0; i--) {
+          const node = nodes[i];
+          const nx = node.pos[0];
+          const ny = node.pos[1];
+
+          // Check collapse icon area (top-left of title bar)
+          const iconX = nx + boxSize * 0.5;
+          const iconY = ny - titleH + boxSize * 0.5;
+          if (mx >= iconX - 6 && mx <= iconX + 12 && my >= iconY - 6 && my <= iconY + 12) {
+            tip = node.flags?.collapsed ? 'Expand node' : 'Collapse node';
+            cursor = 'pointer';
+            break;
+          }
+
+          // Check if over node title bar (for general info)
+          if (mx >= nx && mx <= nx + node.size[0] && my >= ny - titleH && my < ny) {
+            // Over title — show node description if it's a func node
+            const desc = (node as any).dgFunc?.description;
+            if (desc) {
+              tip = desc;
+              break;
+            }
+          }
+
+          // Check I/O slots
+          if (node.inputs) {
+            for (let s = 0; s < node.inputs.length; s++) {
+              const slotY = ny + (LiteGraph as any).NODE_TITLE_HEIGHT * 0.5 + s * (LiteGraph as any).NODE_SLOT_HEIGHT;
+              if (Math.abs(mx - nx) < 12 && Math.abs(my - slotY) < 8) {
+                const inp = node.inputs[s];
+                tip = `${inp.name} (${inp.type})`;
+                break;
+              }
+            }
+          }
+          if (!tip && node.outputs) {
+            for (let s = 0; s < node.outputs.length; s++) {
+              const slotY = ny + (LiteGraph as any).NODE_TITLE_HEIGHT * 0.5 + s * (LiteGraph as any).NODE_SLOT_HEIGHT;
+              if (Math.abs(mx - (nx + node.size[0])) < 12 && Math.abs(my - slotY) < 8) {
+                const out = node.outputs[s];
+                tip = `${out.name} (${out.type})`;
+                break;
+              }
+            }
+          }
+
+          if (tip) break;
+        }
+      }
+
+      // Update cursor
+      if (cursor)
+        this.canvas.style.cursor = cursor || '';
+
+      // Update tooltip
+      if (tip !== lastTip) {
+        lastTip = tip;
+        if (tip) {
+          this.tooltipEl.textContent = tip;
+          this.tooltipEl.style.display = 'block';
+        } else
+          this.tooltipEl.style.display = 'none';
+      }
+      if (tip) {
+        this.tooltipEl.style.left = (e.clientX - rect.left + 12) + 'px';
+        this.tooltipEl.style.top = (e.clientY - rect.top + 12) + 'px';
+      }
+    });
+
+    this.canvas.addEventListener('mouseleave', () => {
+      this.tooltipEl.style.display = 'none';
+      this.canvas.style.cursor = '';
+      lastTip = '';
+    });
   }
 
   private resizeToContainer(container: HTMLElement): void {

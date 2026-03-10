@@ -20,14 +20,10 @@ class SelectColumnNode extends LGraphNode {
     outSlot.color_on = getSlotColor('column');
     outSlot.color_off = getSlotColor('column');
 
-    this.addWidget('text', 'Column Name', '', (v: any) => {
-      this.properties['columnName'] = v;
-    }, {property: 'columnName'});
-
     this.color = '#78909C';
     this.bgcolor = '#ffffff';
     this.size = this.computeSize();
-    this.size[0] = Math.max(this.size[0], 180);
+    this.size[0] = Math.max(this.size[0], 140);
   }
 }
 
@@ -50,14 +46,10 @@ class SelectColumnsNode extends LGraphNode {
     outSlot.color_on = getSlotColor('column_list');
     outSlot.color_off = getSlotColor('column_list');
 
-    this.addWidget('text', 'Column Names', '', (v: any) => {
-      this.properties['columnNames'] = v;
-    }, {property: 'columnNames'});
-
     this.color = '#78909C';
     this.bgcolor = '#ffffff';
     this.size = this.computeSize();
-    this.size[0] = Math.max(this.size[0], 200);
+    this.size[0] = Math.max(this.size[0], 160);
   }
 }
 
@@ -83,7 +75,7 @@ class AddTableViewNode extends LGraphNode {
     this.color = '#42A5F5';
     this.bgcolor = '#ffffff';
     this.size = this.computeSize();
-    this.size[0] = Math.max(this.size[0], 180);
+    this.size[0] = Math.max(this.size[0], 140);
   }
 }
 
@@ -102,14 +94,10 @@ class LogNode extends LGraphNode {
     inSlot.color_on = getSlotColor('dynamic');
     inSlot.color_off = getSlotColor('dynamic');
 
-    this.addWidget('text', 'Label', '', (v: any) => {
-      this.properties['label'] = v;
-    }, {property: 'label'});
-
     this.color = '#78909C';
     this.bgcolor = '#ffffff';
     this.size = this.computeSize();
-    this.size[0] = Math.max(this.size[0], 140);
+    this.size[0] = Math.max(this.size[0], 100);
   }
 }
 
@@ -131,7 +119,7 @@ class InfoNode extends LGraphNode {
     this.color = '#66BB6A';
     this.bgcolor = '#ffffff';
     this.size = this.computeSize();
-    this.size[0] = Math.max(this.size[0], 140);
+    this.size[0] = Math.max(this.size[0], 100);
   }
 }
 
@@ -153,7 +141,7 @@ class WarningNode extends LGraphNode {
     this.color = '#FFA726';
     this.bgcolor = '#ffffff';
     this.size = this.computeSize();
-    this.size[0] = Math.max(this.size[0], 140);
+    this.size[0] = Math.max(this.size[0], 100);
   }
 }
 
@@ -179,11 +167,11 @@ class ToStringNode extends LGraphNode {
     this.color = '#78909C';
     this.bgcolor = '#ffffff';
     this.size = this.computeSize();
-    this.size[0] = Math.max(this.size[0], 140);
+    this.size[0] = Math.max(this.size[0], 100);
   }
 }
 
-// --- Constant String ---
+// --- Constant String (EXCEPTION: keeps widget on node) ---
 
 class ConstStringNode extends LGraphNode {
   static title = 'String';
@@ -224,14 +212,10 @@ class ConstIntNode extends LGraphNode {
     outSlot.color_on = getSlotColor('int');
     outSlot.color_off = getSlotColor('int');
 
-    this.addWidget('number', 'Value', 0, (v: any) => {
-      this.properties['value'] = Math.round(v);
-    }, {precision: 0, step: 10, property: 'value'});
-
     this.color = '#66BB6A';
     this.bgcolor = '#ffffff';
     this.size = this.computeSize();
-    this.size[0] = Math.max(this.size[0], 140);
+    this.size[0] = Math.max(this.size[0], 100);
   }
 }
 
@@ -250,14 +234,10 @@ class ConstDoubleNode extends LGraphNode {
     outSlot.color_on = getSlotColor('double');
     outSlot.color_off = getSlotColor('double');
 
-    this.addWidget('number', 'Value', 0, (v: any) => {
-      this.properties['value'] = v;
-    }, {precision: 4, property: 'value'});
-
     this.color = '#66BB6A';
     this.bgcolor = '#ffffff';
     this.size = this.computeSize();
-    this.size[0] = Math.max(this.size[0], 140);
+    this.size[0] = Math.max(this.size[0], 100);
   }
 }
 
@@ -276,14 +256,10 @@ class ConstBoolNode extends LGraphNode {
     outSlot.color_on = getSlotColor('bool');
     outSlot.color_off = getSlotColor('bool');
 
-    this.addWidget('toggle', 'Value', false, (v: any) => {
-      this.properties['value'] = v;
-    }, {property: 'value'});
-
     this.color = '#66BB6A';
     this.bgcolor = '#ffffff';
     this.size = this.computeSize();
-    this.size[0] = Math.max(this.size[0], 140);
+    this.size[0] = Math.max(this.size[0], 100);
   }
 }
 
@@ -302,14 +278,10 @@ class ConstListNode extends LGraphNode {
     outSlot.color_on = getSlotColor('list');
     outSlot.color_off = getSlotColor('list');
 
-    this.addWidget('text', 'Values', '', (v: any) => {
-      this.properties['value'] = v;
-    }, {property: 'value'});
-
     this.color = '#66BB6A';
     this.bgcolor = '#ffffff';
     this.size = this.computeSize();
-    this.size[0] = Math.max(this.size[0], 180);
+    this.size[0] = Math.max(this.size[0], 100);
   }
 }
 
@@ -335,7 +307,7 @@ class FromJsonNode extends LGraphNode {
     this.color = '#78909C';
     this.bgcolor = '#ffffff';
     this.size = this.computeSize();
-    this.size[0] = Math.max(this.size[0], 140);
+    this.size[0] = Math.max(this.size[0], 100);
   }
 }
 
@@ -361,7 +333,7 @@ class ToJsonNode extends LGraphNode {
     this.color = '#78909C';
     this.bgcolor = '#ffffff';
     this.size = this.computeSize();
-    this.size[0] = Math.max(this.size[0], 140);
+    this.size[0] = Math.max(this.size[0], 100);
   }
 }
 

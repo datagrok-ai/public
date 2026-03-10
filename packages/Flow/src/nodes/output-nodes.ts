@@ -17,14 +17,10 @@ class TableOutputNode extends LGraphNode {
     slot.color_on = getSlotColor('dataframe');
     slot.color_off = getSlotColor('dataframe');
 
-    this.addWidget('text', 'Param Name', 'result', (v: any) => {
-      this.properties['paramName'] = v;
-    }, {property: 'paramName'});
-
     this.color = '#EF5350';
     this.bgcolor = '#ffffff';
     this.size = this.computeSize();
-    this.size[0] = Math.max(this.size[0], 160);
+    this.size[0] = Math.max(this.size[0], 140);
   }
 }
 
@@ -35,8 +31,6 @@ class ValueOutputNode extends LGraphNode {
   static desc = 'Marks a result value for the script output';
   dgNodeType = 'output';
 
-  private typeWidget: any;
-
   constructor() {
     super('Value Output');
     this.properties = {paramName: 'result', outputType: 'double', description: ''};
@@ -45,24 +39,10 @@ class ValueOutputNode extends LGraphNode {
     slot.color_on = getSlotColor('dynamic');
     slot.color_off = getSlotColor('dynamic');
 
-    this.addWidget('text', 'Param Name', 'result', (v: any) => {
-      this.properties['paramName'] = v;
-    }, {property: 'paramName'});
-    this.typeWidget = this.addWidget('combo', 'Type', 'double', (v: any) => {
-      this.properties['outputType'] = v;
-    }, {values: [
-      'string', 'int', 'double', 'bool',
-      'dataframe', 'column', 'column_list',
-      'object', 'dynamic', 'list',
-      'view', 'viewer', 'widget',
-      'graphics', 'grid_cell_renderer', 'filter',
-      'map', 'datetime', 'blob', 'funccall',
-    ], property: 'outputType'});
-
     this.color = '#EF5350';
     this.bgcolor = '#ffffff';
     this.size = this.computeSize();
-    this.size[0] = Math.max(this.size[0], 160);
+    this.size[0] = Math.max(this.size[0], 140);
   }
 
   /** Auto-detect type from connected source node's output slot */
@@ -73,7 +53,7 @@ class ValueOutputNode extends LGraphNode {
     _link_info: any,
     _input_info: any,
   ): void {
-    if (type !== 1 || slotIndex !== 0) return; // only care about input slot 0
+    if (type !== 1 || slotIndex !== 0) return;
     if (!isConnected || !this.graph) return;
 
     const inp = this.inputs[0];
@@ -90,12 +70,8 @@ class ValueOutputNode extends LGraphNode {
     if (!sourceSlot?.type) return;
 
     const detectedType = String(sourceSlot.type);
-    // Only auto-set if it's a known concrete type (not dynamic/object)
-    if (detectedType && detectedType !== 'dynamic' && detectedType !== 'object' && detectedType !== '*') {
+    if (detectedType && detectedType !== 'dynamic' && detectedType !== 'object' && detectedType !== '*')
       this.properties['outputType'] = detectedType;
-      if (this.typeWidget)
-        this.typeWidget.value = detectedType;
-    }
   }
 }
 

@@ -1,32 +1,6 @@
 import {LGraphNode, LiteGraph} from 'litegraph.js';
 import {getSlotColor} from '../types/type-map';
 
-/** Base class for all input (source) nodes - these become //input: lines in generated scripts */
-class BaseInputNode extends LGraphNode {
-  static category = 'Inputs';
-  dgNodeType = 'input';
-
-  constructor(title: string, outputType: string, defaultParamName: string) {
-    super(title);
-    this.properties = {
-      paramName: defaultParamName,
-      defaultValue: '',
-      description: '',
-    };
-
-    const slot = this.addOutput('value', outputType);
-    slot.color_on = getSlotColor(outputType);
-    slot.color_off = getSlotColor(outputType);
-
-    this.addWidget('text', 'Param Name', defaultParamName, (v: any) => {
-      this.properties['paramName'] = v;
-    }, {property: 'paramName'});
-
-    this.color = '#66BB6A';
-    this.bgcolor = '#ffffff';
-  }
-}
-
 // --- Table Input ---
 
 class TableInputNode extends LGraphNode {
@@ -43,14 +17,10 @@ class TableInputNode extends LGraphNode {
     slot.color_on = getSlotColor('dataframe');
     slot.color_off = getSlotColor('dataframe');
 
-    this.addWidget('text', 'Param Name', 'df', (v: any) => {
-      this.properties['paramName'] = v;
-    }, {property: 'paramName'});
-
     this.color = '#66BB6A';
     this.bgcolor = '#ffffff';
     this.size = this.computeSize();
-    this.size[0] = Math.max(this.size[0], 160);
+    this.size[0] = Math.max(this.size[0], 140);
   }
 }
 
@@ -70,20 +40,10 @@ class ColumnInputNode extends LGraphNode {
     slot.color_on = getSlotColor('column');
     slot.color_off = getSlotColor('column');
 
-    this.addWidget('text', 'Param Name', 'col', (v: any) => {
-      this.properties['paramName'] = v;
-    }, {property: 'paramName'});
-    this.addWidget('combo', 'Type Filter', '', (v: any) => {
-      this.properties['typeFilter'] = v;
-    }, {values: ['', 'numerical', 'categorical', 'string', 'int', 'double', 'bool'], property: 'typeFilter'});
-    this.addWidget('text', 'SemType Filter', '', (v: any) => {
-      this.properties['semTypeFilter'] = v;
-    }, {property: 'semTypeFilter'});
-
     this.color = '#66BB6A';
     this.bgcolor = '#ffffff';
     this.size = this.computeSize();
-    this.size[0] = Math.max(this.size[0], 180);
+    this.size[0] = Math.max(this.size[0], 140);
   }
 }
 
@@ -103,20 +63,10 @@ class ColumnListInputNode extends LGraphNode {
     slot.color_on = getSlotColor('column_list');
     slot.color_off = getSlotColor('column_list');
 
-    this.addWidget('text', 'Param Name', 'cols', (v: any) => {
-      this.properties['paramName'] = v;
-    }, {property: 'paramName'});
-    this.addWidget('combo', 'Type Filter', '', (v: any) => {
-      this.properties['typeFilter'] = v;
-    }, {values: ['', 'numerical', 'categorical', 'string', 'int', 'double', 'bool'], property: 'typeFilter'});
-    this.addWidget('text', 'SemType Filter', '', (v: any) => {
-      this.properties['semTypeFilter'] = v;
-    }, {property: 'semTypeFilter'});
-
     this.color = '#66BB6A';
     this.bgcolor = '#ffffff';
     this.size = this.computeSize();
-    this.size[0] = Math.max(this.size[0], 200);
+    this.size[0] = Math.max(this.size[0], 160);
   }
 }
 
@@ -139,29 +89,10 @@ class StringInputNode extends LGraphNode {
     slot.color_on = getSlotColor('string');
     slot.color_off = getSlotColor('string');
 
-    this.addWidget('text', 'Param Name', 'text', (v: any) => {
-      this.properties['paramName'] = v;
-    }, {property: 'paramName'});
-    this.addWidget('text', 'Default', '', (v: any) => {
-      this.properties['defaultValue'] = v;
-    }, {property: 'defaultValue'});
-    this.addWidget('toggle', 'Nullable', false, (v: any) => {
-      this.properties['nullable'] = v;
-    }, {property: 'nullable'});
-    this.addWidget('text', 'Caption', '', (v: any) => {
-      this.properties['caption'] = v;
-    }, {property: 'caption'});
-    this.addWidget('text', 'Choices (comma-sep)', '', (v: any) => {
-      this.properties['choices'] = v;
-    }, {property: 'choices'});
-    this.addWidget('combo', 'SemType', '', (v: any) => {
-      this.properties['semType'] = v;
-    }, {values: ['', 'Molecule', 'Macromolecule'], property: 'semType'});
-
     this.color = '#66BB6A';
     this.bgcolor = '#ffffff';
     this.size = this.computeSize();
-    this.size[0] = Math.max(this.size[0], 200);
+    this.size[0] = Math.max(this.size[0], 140);
   }
 }
 
@@ -184,32 +115,10 @@ class NumberInputNode extends LGraphNode {
     slot.color_on = getSlotColor('double');
     slot.color_off = getSlotColor('double');
 
-    this.addWidget('text', 'Param Name', 'value', (v: any) => {
-      this.properties['paramName'] = v;
-    }, {property: 'paramName'});
-    this.addWidget('number', 'Default', 0, (v: any) => {
-      this.properties['defaultValue'] = v;
-    }, {precision: 3, step: 1, property: 'defaultValue'});
-    this.addWidget('toggle', 'Nullable', false, (v: any) => {
-      this.properties['nullable'] = v;
-    }, {property: 'nullable'});
-    this.addWidget('text', 'Caption', '', (v: any) => {
-      this.properties['caption'] = v;
-    }, {property: 'caption'});
-    this.addWidget('text', 'Min', '', (v: any) => {
-      this.properties['min'] = v;
-    }, {property: 'min'});
-    this.addWidget('text', 'Max', '', (v: any) => {
-      this.properties['max'] = v;
-    }, {property: 'max'});
-    this.addWidget('toggle', 'Show Slider', false, (v: any) => {
-      this.properties['showSlider'] = v;
-    }, {property: 'showSlider'});
-
     this.color = '#66BB6A';
     this.bgcolor = '#ffffff';
     this.size = this.computeSize();
-    this.size[0] = Math.max(this.size[0], 200);
+    this.size[0] = Math.max(this.size[0], 140);
   }
 }
 
@@ -232,32 +141,10 @@ class IntInputNode extends LGraphNode {
     slot.color_on = getSlotColor('int');
     slot.color_off = getSlotColor('int');
 
-    this.addWidget('text', 'Param Name', 'n', (v: any) => {
-      this.properties['paramName'] = v;
-    }, {property: 'paramName'});
-    this.addWidget('number', 'Default', 0, (v: any) => {
-      this.properties['defaultValue'] = Math.round(v);
-    }, {precision: 0, step: 10, property: 'defaultValue'});
-    this.addWidget('toggle', 'Nullable', false, (v: any) => {
-      this.properties['nullable'] = v;
-    }, {property: 'nullable'});
-    this.addWidget('text', 'Caption', '', (v: any) => {
-      this.properties['caption'] = v;
-    }, {property: 'caption'});
-    this.addWidget('text', 'Min', '', (v: any) => {
-      this.properties['min'] = v;
-    }, {property: 'min'});
-    this.addWidget('text', 'Max', '', (v: any) => {
-      this.properties['max'] = v;
-    }, {property: 'max'});
-    this.addWidget('toggle', 'Show Slider', false, (v: any) => {
-      this.properties['showSlider'] = v;
-    }, {property: 'showSlider'});
-
     this.color = '#66BB6A';
     this.bgcolor = '#ffffff';
     this.size = this.computeSize();
-    this.size[0] = Math.max(this.size[0], 200);
+    this.size[0] = Math.max(this.size[0], 140);
   }
 }
 
@@ -280,23 +167,10 @@ class BooleanInputNode extends LGraphNode {
     slot.color_on = getSlotColor('bool');
     slot.color_off = getSlotColor('bool');
 
-    this.addWidget('text', 'Param Name', 'flag', (v: any) => {
-      this.properties['paramName'] = v;
-    }, {property: 'paramName'});
-    this.addWidget('toggle', 'Default', false, (v: any) => {
-      this.properties['defaultValue'] = v;
-    }, {property: 'defaultValue'});
-    this.addWidget('toggle', 'Nullable', false, (v: any) => {
-      this.properties['nullable'] = v;
-    }, {property: 'nullable'});
-    this.addWidget('text', 'Caption', '', (v: any) => {
-      this.properties['caption'] = v;
-    }, {property: 'caption'});
-
     this.color = '#66BB6A';
     this.bgcolor = '#ffffff';
     this.size = this.computeSize();
-    this.size[0] = Math.max(this.size[0], 200);
+    this.size[0] = Math.max(this.size[0], 140);
   }
 }
 
@@ -319,23 +193,10 @@ class DateTimeInputNode extends LGraphNode {
     slot.color_on = getSlotColor('datetime');
     slot.color_off = getSlotColor('datetime');
 
-    this.addWidget('text', 'Param Name', 'date', (v: any) => {
-      this.properties['paramName'] = v;
-    }, {property: 'paramName'});
-    this.addWidget('text', 'Default', '', (v: any) => {
-      this.properties['defaultValue'] = v;
-    }, {property: 'defaultValue'});
-    this.addWidget('toggle', 'Nullable', false, (v: any) => {
-      this.properties['nullable'] = v;
-    }, {property: 'nullable'});
-    this.addWidget('text', 'Caption', '', (v: any) => {
-      this.properties['caption'] = v;
-    }, {property: 'caption'});
-
     this.color = '#66BB6A';
     this.bgcolor = '#ffffff';
     this.size = this.computeSize();
-    this.size[0] = Math.max(this.size[0], 200);
+    this.size[0] = Math.max(this.size[0], 140);
   }
 }
 
@@ -358,20 +219,10 @@ class FileInputNode extends LGraphNode {
     slot.color_on = getSlotColor('file');
     slot.color_off = getSlotColor('file');
 
-    this.addWidget('text', 'Param Name', 'file', (v: any) => {
-      this.properties['paramName'] = v;
-    }, {property: 'paramName'});
-    this.addWidget('toggle', 'Nullable', false, (v: any) => {
-      this.properties['nullable'] = v;
-    }, {property: 'nullable'});
-    this.addWidget('text', 'Caption', '', (v: any) => {
-      this.properties['caption'] = v;
-    }, {property: 'caption'});
-
     this.color = '#66BB6A';
     this.bgcolor = '#ffffff';
     this.size = this.computeSize();
-    this.size[0] = Math.max(this.size[0], 200);
+    this.size[0] = Math.max(this.size[0], 140);
   }
 }
 
@@ -394,20 +245,10 @@ class MapInputNode extends LGraphNode {
     slot.color_on = getSlotColor('map');
     slot.color_off = getSlotColor('map');
 
-    this.addWidget('text', 'Param Name', 'params', (v: any) => {
-      this.properties['paramName'] = v;
-    }, {property: 'paramName'});
-    this.addWidget('toggle', 'Nullable', false, (v: any) => {
-      this.properties['nullable'] = v;
-    }, {property: 'nullable'});
-    this.addWidget('text', 'Caption', '', (v: any) => {
-      this.properties['caption'] = v;
-    }, {property: 'caption'});
-
     this.color = '#66BB6A';
     this.bgcolor = '#ffffff';
     this.size = this.computeSize();
-    this.size[0] = Math.max(this.size[0], 200);
+    this.size[0] = Math.max(this.size[0], 140);
   }
 }
 
@@ -430,23 +271,10 @@ class DynamicInputNode extends LGraphNode {
     slot.color_on = getSlotColor('dynamic');
     slot.color_off = getSlotColor('dynamic');
 
-    this.addWidget('text', 'Param Name', 'value', (v: any) => {
-      this.properties['paramName'] = v;
-    }, {property: 'paramName'});
-    this.addWidget('text', 'Default', '', (v: any) => {
-      this.properties['defaultValue'] = v;
-    }, {property: 'defaultValue'});
-    this.addWidget('toggle', 'Nullable', false, (v: any) => {
-      this.properties['nullable'] = v;
-    }, {property: 'nullable'});
-    this.addWidget('text', 'Caption', '', (v: any) => {
-      this.properties['caption'] = v;
-    }, {property: 'caption'});
-
     this.color = '#66BB6A';
     this.bgcolor = '#ffffff';
     this.size = this.computeSize();
-    this.size[0] = Math.max(this.size[0], 200);
+    this.size[0] = Math.max(this.size[0], 140);
   }
 }
 
@@ -466,17 +294,10 @@ class StringListInputNode extends LGraphNode {
     slot.color_on = getSlotColor('string_list');
     slot.color_off = getSlotColor('string_list');
 
-    this.addWidget('text', 'Param Name', 'items', (v: any) => {
-      this.properties['paramName'] = v;
-    }, {property: 'paramName'});
-    this.addWidget('text', 'Default (comma-sep)', '', (v: any) => {
-      this.properties['defaultValue'] = v;
-    }, {property: 'defaultValue'});
-
     this.color = '#66BB6A';
     this.bgcolor = '#ffffff';
     this.size = this.computeSize();
-    this.size[0] = Math.max(this.size[0], 200);
+    this.size[0] = Math.max(this.size[0], 140);
   }
 }
 
@@ -499,20 +320,10 @@ class BlobInputNode extends LGraphNode {
     slot.color_on = getSlotColor('byte_array');
     slot.color_off = getSlotColor('byte_array');
 
-    this.addWidget('text', 'Param Name', 'data', (v: any) => {
-      this.properties['paramName'] = v;
-    }, {property: 'paramName'});
-    this.addWidget('toggle', 'Nullable', false, (v: any) => {
-      this.properties['nullable'] = v;
-    }, {property: 'nullable'});
-    this.addWidget('text', 'Caption', '', (v: any) => {
-      this.properties['caption'] = v;
-    }, {property: 'caption'});
-
     this.color = '#66BB6A';
     this.bgcolor = '#ffffff';
     this.size = this.computeSize();
-    this.size[0] = Math.max(this.size[0], 200);
+    this.size[0] = Math.max(this.size[0], 140);
   }
 }
 

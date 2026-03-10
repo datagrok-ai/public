@@ -1,15 +1,15 @@
-import {LGraphNode, IWidget} from 'litegraph.js';
+import {LGraphNode} from 'litegraph.js';
 import * as DG from 'datagrok-api/dg';
 import {dgTypeToSlotType, getNodeColors, getSlotColor} from '../types/type-map';
 import {getRole, getFuncQualifiedName} from '../utils/dart-proxy-utils';
 
-/** Primitive types that get inline widgets on nodes */
-const WIDGET_TYPES: Record<string, {widgetType: string; defaultVal: any}> = {
-  'string': {widgetType: 'text', defaultVal: ''},
-  'int': {widgetType: 'number', defaultVal: 0},
-  'double': {widgetType: 'number', defaultVal: 0},
-  'num': {widgetType: 'number', defaultVal: 0},
-  'bool': {widgetType: 'toggle', defaultVal: false},
+/** Primitive types that get default values stored in properties */
+const PRIMITIVE_DEFAULTS: Record<string, any> = {
+  'string': '',
+  'int': 0,
+  'double': 0,
+  'num': 0,
+  'bool': false,
 };
 
 /**
@@ -30,14 +30,12 @@ export function createFuncNodeClass(func: DG.Func): {new(): LGraphNode} {
     dgFunc: DG.Func;
     dgFuncName: string;
     dgRole: string | null;
-    inputWidgets: Record<string, IWidget>;
 
     constructor() {
       super(func.name);
       this.dgFunc = func;
       this.dgFuncName = qualifiedName;
       this.dgRole = role;
-      this.inputWidgets = {};
 
       this.color = colors.color;
       this.bgcolor = colors.bgcolor;
@@ -48,23 +46,9 @@ export function createFuncNodeClass(func: DG.Func): {new(): LGraphNode} {
         slot.color_on = getSlotColor(slotType);
         slot.color_off = getSlotColor(slotType);
 
-        const wInfo = WIDGET_TYPES[inp.propertyType];
-        if (wInfo) {
-          const defaultVal = inp.defaultValue ?? wInfo.defaultVal;
-          const propKey = `_input_${inp.name}`;
-          const opts: any = {property: propKey};
-          if (wInfo.widgetType === 'number') {
-            opts.precision = inp.propertyType === 'int' ? 0 : 3;
-            opts.step = inp.propertyType === 'int' ? 10 : 1;
-          }
-          const w = this.addWidget(
-            wInfo.widgetType as IWidget['type'],
-            inp.name,
-            defaultVal,
-            (v: any) => {this.properties[propKey] = v;},
-            opts,
-          );
-          this.inputWidgets[inp.name] = w;
+        // Store default values in properties for primitive types
+        if (inp.propertyType in PRIMITIVE_DEFAULTS) {
+          const defaultVal = inp.defaultValue ?? PRIMITIVE_DEFAULTS[inp.propertyType];
           this.properties[`_input_${inp.name}`] = defaultVal;
         }
       }
@@ -77,7 +61,7 @@ export function createFuncNodeClass(func: DG.Func): {new(): LGraphNode} {
       }
 
       this.size = this.computeSize();
-      this.size[0] = Math.max(this.size[0], 180);
+      this.size[0] = Math.max(this.size[0], 140);
     }
 
     getInputValue(name: string, slotIndex: number): any {
@@ -88,18 +72,6 @@ export function createFuncNodeClass(func: DG.Func): {new(): LGraphNode} {
 
     hasHardcodedValue(name: string): boolean {
       return this.properties[`_input_${name}`] !== undefined;
-    }
-
-    onConnectionsChange(
-      type: number,
-      slotIndex: number,
-      isConnected: boolean,
-    ): void {
-      if (type === 1) {
-        const inp = this.inputs[slotIndex];
-        if (inp && this.inputWidgets[inp.name])
-          (this.inputWidgets[inp.name] as any)._hidden = isConnected;
-      }
     }
   }
 

@@ -88,6 +88,8 @@ export class FuncFlowView extends DG.ViewBase {
     this.nodeCountLabel = ui.divText('Nodes: 0');
     this.linkCountLabel = ui.divText('Links: 0');
     this.validationLabel = ui.divText('');
+    ui.tooltip.bind(this.nodeCountLabel, 'Total number of nodes in the graph');
+    ui.tooltip.bind(this.linkCountLabel, 'Total number of connections between nodes');
     this.statusBar = ui.div(
       [this.nodeCountLabel, this.linkCountLabel, this.validationLabel],
       'funcflow-status-bar',

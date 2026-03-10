@@ -131,12 +131,12 @@ export class FunctionBrowser {
       {name: 'Is Null', type: 'Comparisons/Is Null'},
     ];
 
-    const sections: {title: string; nodes: {name: string; type: string}[]; collapsed?: boolean}[] = [
-      {title: 'Inputs', nodes: inputNodes},
-      {title: 'Outputs', nodes: outputNodes},
-      {title: 'Constants', nodes: constantNodes},
-      {title: 'Comparisons', nodes: comparisonNodes, collapsed: true},
-      {title: 'Utilities', nodes: utilityNodes},
+    const sections: {title: string; nodes: {name: string; type: string}[]; collapsed?: boolean; tip?: string}[] = [
+      {title: 'Inputs', nodes: inputNodes, tip: 'Script input parameters (become //input: lines)'},
+      {title: 'Outputs', nodes: outputNodes, tip: 'Script output parameters (become //output: lines)'},
+      {title: 'Constants', nodes: constantNodes, tip: 'Constant literal values'},
+      {title: 'Comparisons', nodes: comparisonNodes, collapsed: true, tip: 'Comparison and logical operators'},
+      {title: 'Utilities', nodes: utilityNodes, tip: 'Helper operations (logging, type conversion, etc.)'},
     ];
 
     for (const section of sections) {
@@ -145,21 +145,23 @@ export class FunctionBrowser {
         section.nodes;
       if (filtered.length === 0) continue;
 
-      const sectionEl = this.createBuiltinSection(section.title, filtered, section.collapsed);
+      const sectionEl = this.createBuiltinSection(section.title, filtered, section.collapsed, section.tip);
       this.treeContainer.appendChild(sectionEl);
     }
   }
 
-  private createBuiltinSection(title: string, nodes: {name: string; type: string}[], startCollapsed?: boolean): HTMLElement {
+  private createBuiltinSection(title: string, nodes: {name: string; type: string}[], startCollapsed?: boolean, tooltip?: string): HTMLElement {
     const header = ui.div([], 'funcflow-section-header');
     header.textContent = title;
     header.style.cursor = 'pointer';
+    if (tooltip)
+      ui.tooltip.bind(header, tooltip);
 
     const content = ui.div([], 'funcflow-section-content');
     for (const node of nodes) {
       const item = ui.div([], 'funcflow-func-item');
       item.textContent = node.name;
-      item.title = `Double-click to add ${node.name}`;
+      ui.tooltip.bind(item, `Double-click to add ${node.name}`);
       item.addEventListener('dblclick', () => {
         this.callbacks.onBuiltinNodeDoubleClick(node.type);
       });
@@ -192,9 +194,10 @@ export class FunctionBrowser {
     for (const info of items) {
       const item = ui.div([], 'funcflow-func-item');
       item.textContent = info.name;
-      item.title = info.func.description || info.name;
+      let tip = info.func.description || info.name;
       if (info.packageName)
-        item.title += ` (${info.packageName})`;
+        tip += ` (${info.packageName})`;
+      ui.tooltip.bind(item, tip);
       item.addEventListener('dblclick', () => {
         this.callbacks.onFunctionDoubleClick(info);
       });

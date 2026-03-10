@@ -1,6 +1,8 @@
 /* FuncFlow styles */
+/* @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;600&display=swap'); */
 
 .funcflow-root {
+  font-family: 'Roboto', 'Roboto Local', Arial, sans-serif;
   display: flex;
   flex-direction: row;
   width: 100%;
@@ -34,6 +36,7 @@
   border: 1px solid var(--grey-2, #ddd);
   border-radius: 4px;
   font-size: 13px;
+  font-family: 'Roboto', 'Roboto Local', Arial, sans-serif;
   outline: none;
 }
 
@@ -104,6 +107,23 @@
   background: #e8e8e8;
 }
 
+.funcflow-canvas-tooltip {
+  display: none;
+  position: absolute;
+  padding: 4px 8px;
+  background: rgba(50, 50, 50, 0.9);
+  color: #fff;
+  font-size: 11px;
+  font-family: 'Roboto', 'Roboto Local', Arial, sans-serif;
+  border-radius: 3px;
+  pointer-events: none;
+  white-space: nowrap;
+  z-index: 100;
+  max-width: 300px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 /* Right panel - Properties */
 .funcflow-right-panel {
   width: 250px;
@@ -169,7 +189,39 @@
   border: 1px solid var(--grey-2, #ddd);
   border-radius: 3px;
   font-size: 12px;
+  font-family: 'Roboto', 'Roboto Local', Arial, sans-serif;
   box-sizing: border-box;
+}
+
+.funcflow-prop-textarea {
+  width: 100%;
+  padding: 4px 6px;
+  border: 1px solid var(--grey-2, #ddd);
+  border-radius: 3px;
+  font-size: 12px;
+  font-family: 'Roboto', 'Roboto Local', Arial, sans-serif;
+  box-sizing: border-box;
+  resize: vertical;
+  min-height: 24px;
+  overflow: hidden;
+}
+
+.funcflow-prop-textarea:focus,
+.funcflow-prop-input:focus {
+  border-color: var(--blue-1, #2185d0);
+  outline: none;
+}
+
+.funcflow-prop-toggle-row {
+  flex-direction: row !important;
+  align-items: center;
+  gap: 6px !important;
+}
+
+.funcflow-prop-checkbox {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
 }
 
 /* Status bar */
@@ -187,7 +239,7 @@
 
 /* Script preview dialog */
 .funcflow-script-preview {
-  font-family: 'Roboto', 'Consolas', 'Monaco', monospace;
+  font-family: 'Roboto', 'Roboto Local', 'Consolas', 'Monaco', monospace;
   font-size: 13px;
   width: 100%;
   min-height: 300px;

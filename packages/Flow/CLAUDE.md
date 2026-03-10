@@ -138,6 +138,21 @@ npm install
 npm run build    # grok api && grok check --soft && webpack
 ```
 
+## UI Architecture: Widgets vs Property Panel
+
+**Nodes have NO inline widgets** (except ConstStringNode). All property editing happens in the right-side Property Panel when a node is selected.
+
+- **Node classes** only define `this.properties = {...}` with default values — no `addWidget()` calls
+- **Property Panel** (`property-panel.ts`) reads `node.properties` and creates appropriate editors:
+  - `string` properties → `<textarea>` (auto-resizing)
+  - `number` properties → `<input type="number">` with step (1 for int, 0.1 for double)
+  - `boolean` properties → `<input type="checkbox">`
+  - enum properties → `<select>` dropdown
+- **Exception**: `ConstStringNode` keeps its inline `text` widget for quick editing
+- **Func nodes**: primitive input defaults stored as `_input_${name}` properties, edited in panel
+- **Collapse icon**: `NODE_DEFAULT_BOXCOLOR = '#888'` (visible on light theme)
+- **Font**: Roboto via Google Fonts import + LiteGraph canvas font overrides
+
 ## Key Dependencies
 
 - `litegraph.js` ^0.7.18 - Graph canvas library
@@ -145,7 +160,7 @@ npm run build    # grok api && grok check --soft && webpack
 
 ## Development Guidelines
 
-1. **Adding new input nodes**: Add class in `input-nodes.ts`, register in `registerInputNodes()`, add to `inputNodes` array in `function-browser.ts`, handle in `buildInputLine()` in `script-emitter.ts` if special qualifiers needed
-2. **Adding new utility nodes**: Add class in `utility-nodes.ts`, register in `registerUtilityNodes()`, add to `utilityNodes` array in `function-browser.ts`, add case in `emitUtilityStep()` in `script-emitter.ts`
+1. **Adding new input nodes**: Add class in `input-nodes.ts` (properties only, no widgets), register in `registerInputNodes()`, add to `inputNodes` array in `function-browser.ts`, handle in `buildInputLine()` in `script-emitter.ts` if special qualifiers needed. Property panel auto-discovers properties by key name.
+2. **Adding new utility nodes**: Add class in `utility-nodes.ts` (properties only, no widgets), register in `registerUtilityNodes()`, add to `utilityNodes` array in `function-browser.ts`, add case in `emitUtilityStep()` in `script-emitter.ts`. Property panel uses generic property iteration for utility nodes.
 3. **Adding new types**: Add to `DG_TYPE_MAP` in `type-map.ts`, add compatibility rules to `COMPATIBLE_TYPES`
 4. **After any change**: Update this CLAUDE.md file
