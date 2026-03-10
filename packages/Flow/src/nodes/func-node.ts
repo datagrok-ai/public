@@ -53,8 +53,10 @@ export function createFuncNodeClass(func: DG.Func): {new(): LGraphNode} {
           const defaultVal = inp.defaultValue ?? wInfo.defaultVal;
           const propKey = `_input_${inp.name}`;
           const opts: any = {property: propKey};
-          if (wInfo.widgetType === 'number')
+          if (wInfo.widgetType === 'number') {
             opts.precision = inp.propertyType === 'int' ? 0 : 3;
+            opts.step = inp.propertyType === 'int' ? 10 : 1;
+          }
           const w = this.addWidget(
             wInfo.widgetType as IWidget['type'],
             inp.name,

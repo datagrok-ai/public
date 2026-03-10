@@ -132,7 +132,7 @@ class StringInputNode extends LGraphNode {
     super('String Input');
     this.properties = {
       paramName: 'text', defaultValue: '', description: '',
-      nullable: false, caption: '', choices: '',
+      nullable: false, caption: '', choices: '', semType: '',
     };
 
     const slot = this.addOutput('value', 'string');
@@ -154,6 +154,9 @@ class StringInputNode extends LGraphNode {
     this.addWidget('text', 'Choices (comma-sep)', '', (v: any) => {
       this.properties['choices'] = v;
     }, {property: 'choices'});
+    this.addWidget('combo', 'SemType', '', (v: any) => {
+      this.properties['semType'] = v;
+    }, {values: ['', 'Molecule', 'Macromolecule'], property: 'semType'});
 
     this.color = '#66BB6A';
     this.bgcolor = '#ffffff';
@@ -186,7 +189,7 @@ class NumberInputNode extends LGraphNode {
     }, {property: 'paramName'});
     this.addWidget('number', 'Default', 0, (v: any) => {
       this.properties['defaultValue'] = v;
-    }, {precision: 3, property: 'defaultValue'});
+    }, {precision: 3, step: 1, property: 'defaultValue'});
     this.addWidget('toggle', 'Nullable', false, (v: any) => {
       this.properties['nullable'] = v;
     }, {property: 'nullable'});
@@ -234,7 +237,7 @@ class IntInputNode extends LGraphNode {
     }, {property: 'paramName'});
     this.addWidget('number', 'Default', 0, (v: any) => {
       this.properties['defaultValue'] = Math.round(v);
-    }, {precision: 0, property: 'defaultValue'});
+    }, {precision: 0, step: 10, property: 'defaultValue'});
     this.addWidget('toggle', 'Nullable', false, (v: any) => {
       this.properties['nullable'] = v;
     }, {property: 'nullable'});

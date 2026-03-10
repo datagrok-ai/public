@@ -167,9 +167,8 @@ export class FuncFlowView extends DG.ViewBase {
         this.updateStatusBar();
         grok.shell.info(`Added OpenFile node for: ${filePath}`);
       }
-    } else {
+    } else
       grok.shell.warning('OpenFile function not found in registered nodes');
-    }
   }
 
   /** Searches registered node types for the OpenFile function */
@@ -201,8 +200,9 @@ export class FuncFlowView extends DG.ViewBase {
       .item('Zoom In', () => this.canvasController?.zoomIn())
       .item('Zoom Out', () => this.canvasController?.zoomOut())
       .endGroup()
-      .group('Generate')
-      .item('Generate Script', () => this.generateAndPreview())
+      .group('Script')
+      .item('Run Script', () => this.runScript())
+      .item('View Script', () => this.generateAndPreview())
       .item('Copy Script to Clipboard', () => this.copyScriptToClipboard())
       .item('Export as .js File', () => this.exportAsJs())
       .separator()
@@ -212,7 +212,8 @@ export class FuncFlowView extends DG.ViewBase {
     // Ribbon button panels
     this.setRibbonPanels([
       [
-        ui.iconFA('play', () => this.generateAndPreview(), 'Generate Script'),
+        ui.iconFA('play', () => this.runScript(), 'Run Script'),
+        ui.iconFA('code', () => this.generateAndPreview(), 'View Script'),
         ui.iconFA('copy', () => this.copyScriptToClipboard(), 'Copy Script'),
         ui.iconFA('download', () => this.exportAsJs(), 'Export .js'),
       ],
@@ -316,6 +317,13 @@ export class FuncFlowView extends DG.ViewBase {
     }
   }
 
+  /** Compiles, validates and runs the script directly */
+  private runScript(): void {
+    const script = this.generateScript();
+    if (!script) return;
+    DG.Script.create(script).prepare().edit();
+  }
+
   private generateAndPreview(): void {
     const script = this.generateScript();
     if (!script) return;
@@ -339,7 +347,12 @@ export class FuncFlowView extends DG.ViewBase {
         a.click();
         URL.revokeObjectURL(url);
       })
-      .addButton('Run Script', () => {
+      .addButton('Open in Script View', () => {
+        const sv = DG.ScriptView.create(DG.Script.create(script));
+        grok.shell.addView(sv);
+        d.close();
+      })
+      .addButton('Run', () => {
         DG.Script.create(script).prepare().edit();
         d.close();
       })

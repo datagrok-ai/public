@@ -89,6 +89,8 @@ function buildInputLine(step: CompiledStep, node: FuncFlowNode): string | null {
     qualifiers.push(`type: ${step.properties['typeFilter']}`);
   if (step.properties['semTypeFilter'])
     qualifiers.push(`semType: ${step.properties['semTypeFilter']}`);
+  if (step.properties['semType'])
+    qualifiers.push(`semType: ${step.properties['semType']}`);
   if (step.properties['nullable'] === true)
     qualifiers.push('nullable: true');
   if (step.properties['caption'])
@@ -115,7 +117,9 @@ function buildInputLine(step: CompiledStep, node: FuncFlowNode): string | null {
 
 function buildOutputLine(step: CompiledStep, node: FuncFlowNode): string | null {
   const paramName = step.properties['paramName'];
-  const outputType = node.dgOutputType || step.properties['outputType'] || 'dynamic';
+  // For Value Output nodes, use the user-selected outputType property;
+  // for Table Output, use the fixed dgOutputType ('dataframe')
+  const outputType = step.properties['outputType'] || node.dgOutputType || 'dynamic';
   return `//output: ${outputType} ${paramName}`;
 }
 
@@ -233,6 +237,14 @@ function emitUtilityStep(step: CompiledStep): string | null {
   case 'Is Null': {
     const val = step.inputs.get('value') || 'undefined';
     return `let ${step.variableName} = (${val}) == null;`;
+  }
+  case 'FromJSON': {
+    const jsonExpr = step.inputs.get('json') || '\'{}\'';
+    return `let ${step.variableName} = JSON.parse(${jsonExpr});`;
+  }
+  case 'ToJSON': {
+    const valExpr = step.inputs.get('value') || 'undefined';
+    return `let ${step.variableName} = JSON.stringify(${valExpr});`;
   }
   default:
     return `// Unknown utility: ${step.funcName}`;

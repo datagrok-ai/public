@@ -65,7 +65,7 @@ Become `//input:` annotation lines in generated scripts.
 | Table Input | dataframe | - |
 | Column Input | column | type, semType filters |
 | Column List Input | column_list | type, semType filters |
-| String Input | string | nullable, choices, caption |
+| String Input | string | nullable, choices, caption, semType |
 | Number Input | double | nullable, min, max, showSlider, caption |
 | Int Input | int | nullable, min, max, showSlider, caption |
 | Boolean Input | bool | nullable, caption |
@@ -82,7 +82,7 @@ Become `//output:` annotation lines.
 | Node | Notes |
 |------|-------|
 | Table Output | Fixed dataframe type |
-| Value Output | Configurable type selector |
+| Value Output | Configurable type: string, int, double, bool, dataframe, column, column_list, object, dynamic, list, view, viewer, widget, graphics, grid_cell_renderer, filter, map, datetime, blob, funccall |
 
 ### Utility Nodes (src/nodes/utility-nodes.ts)
 Generate inline code in script body.
@@ -96,6 +96,8 @@ Generate inline code in script body.
 | Info | `grok.shell.info(msg)` |
 | Warning | `grok.shell.warning(msg)` |
 | ToString | `(value).toString()` |
+| FromJSON | `JSON.parse(json)` |
+| ToJSON | `JSON.stringify(value)` |
 | Constants | String, Int, Double, Boolean, List literals |
 
 ### Comparison Nodes (src/nodes/comparison-nodes.ts)
@@ -117,7 +119,7 @@ The compiler pipeline:
 
 Input annotation qualifiers are generated from node widget values:
 - `{type: numerical}` from Column type filter
-- `{semType: Molecule}` from Column semType filter
+- `{semType: Molecule}` from Column semType filter or String semType combo
 - `{nullable: true}` from nullable toggle
 - `{caption: Name}` from caption field
 - `{choices: ["a","b"]}` from choices field

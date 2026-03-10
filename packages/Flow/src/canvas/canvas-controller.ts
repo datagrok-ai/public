@@ -46,7 +46,7 @@ export class CanvasController {
     this.graphCanvas.render_shadows = false;
     this.graphCanvas.clear_background = true;
     this.graphCanvas.links_render_mode = 2; // SPLINE_LINK
-    this.graphCanvas.allow_searchbox = true;
+    this.graphCanvas.allow_searchbox = false;
     (this.graphCanvas as any).show_info = false;
     (this.graphCanvas as any).render_canvas_border = false;
 

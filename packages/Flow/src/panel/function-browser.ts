@@ -108,6 +108,8 @@ export class FunctionBrowser {
       {name: 'Info', type: 'Utilities/Info'},
       {name: 'Warning', type: 'Utilities/Warning'},
       {name: 'ToString', type: 'Utilities/ToString'},
+      {name: 'FromJSON', type: 'Utilities/FromJSON'},
+      {name: 'ToJSON', type: 'Utilities/ToJSON'},
     ];
     const constantNodes = [
       {name: 'String', type: 'Constants/String'},

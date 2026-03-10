@@ -226,7 +226,7 @@ class ConstIntNode extends LGraphNode {
 
     this.addWidget('number', 'Value', 0, (v: any) => {
       this.properties['value'] = Math.round(v);
-    }, {precision: 0, property: 'value'});
+    }, {precision: 0, step: 10, property: 'value'});
 
     this.color = '#66BB6A';
     this.bgcolor = '#ffffff';
@@ -313,6 +313,58 @@ class ConstListNode extends LGraphNode {
   }
 }
 
+// --- FromJSON ---
+
+class FromJsonNode extends LGraphNode {
+  static title = 'FromJSON';
+  static desc = 'Parses a JSON string into an object using JSON.parse()';
+  dgNodeType = 'utility';
+
+  constructor() {
+    super('FromJSON');
+    this.properties = {};
+
+    const inSlot = this.addInput('json', 'string');
+    inSlot.color_on = getSlotColor('string');
+    inSlot.color_off = getSlotColor('string');
+
+    const outSlot = this.addOutput('value', 'dynamic');
+    outSlot.color_on = getSlotColor('dynamic');
+    outSlot.color_off = getSlotColor('dynamic');
+
+    this.color = '#78909C';
+    this.bgcolor = '#ffffff';
+    this.size = this.computeSize();
+    this.size[0] = Math.max(this.size[0], 140);
+  }
+}
+
+// --- ToJSON ---
+
+class ToJsonNode extends LGraphNode {
+  static title = 'ToJSON';
+  static desc = 'Converts a value to a JSON string using JSON.stringify()';
+  dgNodeType = 'utility';
+
+  constructor() {
+    super('ToJSON');
+    this.properties = {};
+
+    const inSlot = this.addInput('value', 'dynamic');
+    inSlot.color_on = getSlotColor('dynamic');
+    inSlot.color_off = getSlotColor('dynamic');
+
+    const outSlot = this.addOutput('json', 'string');
+    outSlot.color_on = getSlotColor('string');
+    outSlot.color_off = getSlotColor('string');
+
+    this.color = '#78909C';
+    this.bgcolor = '#ffffff';
+    this.size = this.computeSize();
+    this.size[0] = Math.max(this.size[0], 140);
+  }
+}
+
 /** Register all utility node types */
 export function registerUtilityNodes(): void {
   LiteGraph.registerNodeType('Utilities/Select Column', SelectColumnNode);
@@ -327,4 +379,6 @@ export function registerUtilityNodes(): void {
   LiteGraph.registerNodeType('Constants/Double', ConstDoubleNode);
   LiteGraph.registerNodeType('Constants/Boolean', ConstBoolNode);
   LiteGraph.registerNodeType('Constants/List', ConstListNode);
+  LiteGraph.registerNodeType('Utilities/FromJSON', FromJsonNode);
+  LiteGraph.registerNodeType('Utilities/ToJSON', ToJsonNode);
 }

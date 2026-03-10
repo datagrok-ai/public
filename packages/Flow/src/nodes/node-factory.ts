@@ -26,6 +26,11 @@ export const EXCLUDED_TAGS: string[] = [
 /** Roles that cause a function to be excluded from the node catalog.
  * Add role strings here to filter out unwanted functions. */
 export const EXCLUDED_ROLES: string[] = [
+  DG.FUNC_TYPES.APP, 'aiSearchProvider', 'antibodyNumbering', 'appTreeBrowser', 'canonicalizer',
+  DG.FUNC_TYPES.CELL_RENDERER, 'dashboard', DG.FUNC_TYPES.FILE_VIEWER, DG.FUNC_TYPES.FILE_IMPORTER,
+  DG.FUNC_TYPES.FILE_EXPORTER, DG.FUNC_TYPES.FILTER, DG.FUNC_TYPES.FOLDER_VIEWER, DG.FUNC_TYPES.MOLECULE_SKETCHER,
+  'notationProviderConstructor', 'notationRefiner', 'packageSettingsEditor', 'searchProvider', 'semTypeDetector',
+  'semValueExtractor', 'valueEditor',
   // Add roles to exclude, e.g.: 'semTypeDetector', 'cellRenderer'
 ];
 
