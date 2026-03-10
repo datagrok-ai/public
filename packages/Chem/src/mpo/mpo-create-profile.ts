@@ -159,12 +159,13 @@ export class MpoProfileCreateView {
     this.headerEl = ui.h1(this.displayName);
     this.headerEl.classList.add('chem-profile-header');
 
-    this.toolbarEl = ui.divV([ui.divV(controls), this.saveButton], 'chem-profile-toolbar-wrap');
+    this.toolbarEl = ui.divV([ui.divV(controls)], 'chem-profile-toolbar-wrap');
 
     this.profileViewContainer = ui.divV([this.headerEl, this.toolbarEl]);
     this.profileViewContainer.classList.add('chem-profile-view');
 
     this.view.root.append(this.profileViewContainer);
+    this.activeView.setRibbonPanels([[this.saveButton!]]);
   }
 
   // --- Event handlers ---

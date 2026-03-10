@@ -183,6 +183,7 @@ export class MpoProfileDialog {
 
     this.currentProfileFileName = profileInfo.fileName;
     this.currentProfile = structuredClone(profileInfo);
+    this.designModeInput.value = false;
     this.mpoProfileEditor.setProfile(this.currentProfile);
     this.originalProfile = structuredClone(this.currentProfile);
     this.updateSaveButtonVisibility();
