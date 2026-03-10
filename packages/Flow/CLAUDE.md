@@ -106,6 +106,15 @@ Generate inline code in script body.
 ### Function Nodes (src/nodes/func-node.ts)
 Dynamically created for each DG.Func. Generate `await grok.functions.call(...)`.
 
+#### Pass-Through Outputs
+Every func node automatically gets **pass-through output slots** mirroring each input, named `inputName →` (with arrow suffix). These solve the execution ordering problem for mutating functions:
+
+- **Problem**: If `addNewColumn(table)` and `doSomething(table)` both take the same table input, topological sort can't determine order since there's no edge between them.
+- **Solution**: Connect `table` to `addNewColumn`'s input, then connect `addNewColumn`'s `table →` pass-through output to `doSomething`'s input. This creates a topological edge enforcing `addNewColumn` runs first.
+- **Compiler behavior**: Pass-through outputs resolve to the same variable as the corresponding input — no new code is generated. `_passthroughCount` stores how many pass-through slots are at the start of the outputs array.
+- **Visual layout**: Pass-through outputs come **first** (aligned with their corresponding input slots on the left), real outputs come **last** with arrow-shaped slots (`LiteGraph.ARROW_SHAPE`). The `→` suffix on pass-through names also distinguishes them.
+- **Tooltips**: Hovering a pass-through slot shows "pass-through" label + hint to connect for execution ordering.
+
 ## Function Filtering (src/nodes/node-factory.ts)
 
 Functions are filtered during registration using `EXCLUDED_TAGS` and `EXCLUDED_ROLES` constants. Functions with any excluded tag or role are skipped. Edit these arrays in `node-factory.ts` to control which DG functions appear.

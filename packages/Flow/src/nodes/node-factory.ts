@@ -35,6 +35,8 @@ export const EXCLUDED_ROLES: string[] = [
 ];
 
 let registeredFuncs: FuncInfo[] = [];
+let builtinsRegistered = false;
+let funcsRegistered = false;
 
 /** Clear all default LiteGraph node types (math, basic, etc.) keeping only ours */
 function clearDefaultNodeTypes(): void {
@@ -62,8 +64,11 @@ function shouldExcludeFunc(role: string | null, tags: string[]): boolean {
   return false;
 }
 
-/** Register all built-in nodes (inputs, outputs, utilities) */
+/** Register all built-in nodes (inputs, outputs, utilities). No-op on subsequent calls. */
 export function registerBuiltinNodes(): void {
+  if (builtinsRegistered) return;
+  builtinsRegistered = true;
+
   // Clear LiteGraph defaults first (math, basic, etc.)
   clearDefaultNodeTypes();
 
@@ -73,8 +78,11 @@ export function registerBuiltinNodes(): void {
   registerComparisonNodes();
 }
 
-/** Register all DG.Func as LiteGraph node types and return metadata */
+/** Register all DG.Func as LiteGraph node types and return metadata. No-op on subsequent calls. */
 export function registerAllFunctions(): FuncInfo[] {
+  if (funcsRegistered) return registeredFuncs;
+  funcsRegistered = true;
+
   registerSlotColors();
 
   const allFuncs = DG.Func.find({});

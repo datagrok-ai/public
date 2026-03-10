@@ -82,10 +82,12 @@ export function compileGraph(graph: LGraph): CompiledStep[] {
     // Function node
     const funcName = n.dgFuncName || node.title;
 
-    // Generate variable name from func name + first output
+    // Generate variable name from func name + first real output (skip pass-throughs)
+    const ptCount = node.properties['_passthroughCount'] ?? 0;
     let varBase = toCamelCase(node.title);
-    if (node.outputs && node.outputs.length > 0)
-      varBase = `${toCamelCase(node.title)}_${node.outputs[0].name}`;
+    const firstRealOut = node.outputs?.[ptCount];
+    if (firstRealOut)
+      varBase = `${toCamelCase(node.title)}_${firstRealOut.name}`;
 
     const varName = uniqueVarName(varBase, usedVarNames);
     usedVarNames.add(varName);
@@ -108,12 +110,20 @@ export function compileGraph(graph: LGraph): CompiledStep[] {
     }
 
     // Map output slots to variable names
+    // Layout: pass-throughs first (indices 0.._passthroughCount-1), then real outputs
     const outputMap = new Map<string, string>();
     if (node.outputs) {
       for (let i = 0; i < node.outputs.length; i++) {
-        const outVarName = node.outputs.length === 1 ? varName : `${varName}_${node.outputs[i].name}`;
-        outputMap.set(node.outputs[i].name, outVarName);
-        outputVarMap.set(`${nodeId}:${i}`, outVarName);
+        if (i < ptCount) {
+          // Pass-through output: resolves to the corresponding input's variable
+          const inputExpr = inputMap.get(node.inputs?.[i]?.name || '') || 'undefined';
+          outputVarMap.set(`${nodeId}:${i}`, inputExpr);
+        } else {
+          const realCount = node.outputs.length - ptCount;
+          const outVarName = realCount === 1 ? varName : `${varName}_${node.outputs[i].name}`;
+          outputMap.set(node.outputs[i].name, outVarName);
+          outputVarMap.set(`${nodeId}:${i}`, outVarName);
+        }
       }
     }
 

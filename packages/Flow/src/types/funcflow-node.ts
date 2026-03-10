@@ -9,6 +9,8 @@ export interface FuncFlowNode extends LGraphNode {
   dgFuncName?: string;
   dgRole?: string | null;
   inputWidgets?: Record<string, IWidget>;
+  /** Number of pass-through output slots at the start (func nodes only) */
+  _passthroughCount?: number;
 }
 
 /** Helper to access FuncFlow properties on a generic LGraphNode */

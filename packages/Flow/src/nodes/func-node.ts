@@ -1,4 +1,4 @@
-import {LGraphNode} from 'litegraph.js';
+import {LiteGraph, LGraphNode} from 'litegraph.js';
 import * as DG from 'datagrok-api/dg';
 import {dgTypeToSlotType, getNodeColors, getSlotColor} from '../types/type-map';
 import {getRole, getFuncQualifiedName} from '../utils/dart-proxy-utils';
@@ -53,11 +53,25 @@ export function createFuncNodeClass(func: DG.Func): {new(): LGraphNode} {
         }
       }
 
+      // Pass-through outputs first: mirror each input as an output for ordering control.
+      // Placed first so they visually align with the corresponding input slots.
+      // When a function mutates its input (e.g. addNewColumn modifies a table),
+      // connecting the pass-through output to the next node enforces execution order.
+      this.properties['_passthroughCount'] = funcInputs.length;
+      for (const inp of funcInputs) {
+        const slotType = dgTypeToSlotType(inp.propertyType);
+        const slot = this.addOutput(`${inp.name} \u2192`, slotType);
+        slot.color_on = getSlotColor(slotType);
+        slot.color_off = getSlotColor(slotType);
+      }
+
+      // Real outputs after pass-throughs, with arrow shape to distinguish them
       for (const out of funcOutputs) {
         const slotType = dgTypeToSlotType(out.propertyType);
         const slot = this.addOutput(out.name, slotType);
         slot.color_on = getSlotColor(slotType);
         slot.color_off = getSlotColor(slotType);
+        slot.shape = LiteGraph.SQUARE_SHAPE;
       }
 
       this.size = this.computeSize();

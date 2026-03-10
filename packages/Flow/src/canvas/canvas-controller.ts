@@ -231,11 +231,16 @@ export class CanvasController {
             }
           }
           if (!tip && node.outputs) {
+            const ptCount = (node as any).properties?.['_passthroughCount'] ?? 0;
             for (let s = 0; s < node.outputs.length; s++) {
-              const slotY = ny + (LiteGraph as any).NODE_TITLE_HEIGHT * 0.5 + s * (LiteGraph as any).NODE_SLOT_HEIGHT;
+              const slotY = ny + (LiteGraph as any).NODE_TITLE_HEIGHT * 0.5 +
+                s * (LiteGraph as any).NODE_SLOT_HEIGHT;
               if (Math.abs(mx - (nx + node.size[0])) < 12 && Math.abs(my - slotY) < 8) {
                 const out = node.outputs[s];
-                tip = `${out.name} (${out.type})`;
+                if (s < ptCount)
+                  tip = `${out.name} \u2014 pass-through (${out.type}). Connect to enforce execution order`;
+                else
+                  tip = `${out.name} (${out.type})`;
                 break;
               }
             }

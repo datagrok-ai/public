@@ -362,48 +362,73 @@ export class PropertyPanel {
     const section = ui.div([], 'funcflow-prop-section');
     section.appendChild(ui.div([ui.label('Connections')], 'funcflow-prop-section-header'));
 
-    if (node.inputs) {
+    const ptCount = (node as any).properties?.['_passthroughCount'] ?? 0;
+
+    // --- Inputs ---
+    if (node.inputs && node.inputs.length > 0) {
+      section.appendChild(this.connGroupLabel('Inputs'));
       for (let i = 0; i < node.inputs.length; i++) {
         const inp = node.inputs[i];
         const connected = node.isInputConnected(i);
-        const status = connected ? 'connected' : 'disconnected';
-        const dir = ui.element('span');
-        dir.textContent = 'IN';
-        dir.className = 'funcflow-conn-dir';
-        const detail = ui.element('span');
-        detail.textContent = ` ${inp.name} `;
-        const typeSpan = ui.element('span');
-        typeSpan.textContent = `(${inp.type})`;
-        typeSpan.className = 'funcflow-conn-type';
-        const statusSpan = ui.element('span');
-        statusSpan.textContent = ` — ${status}`;
-        statusSpan.className = connected ? 'funcflow-conn-ok' : 'funcflow-conn-off';
-        section.appendChild(ui.div([dir, detail, typeSpan, statusSpan], 'funcflow-prop-row funcflow-conn-row'));
+        section.appendChild(this.buildConnRow(
+          'IN', inp.name, inp.type as string, connected ? 'connected' : 'disconnected', connected));
       }
     }
 
-    if (node.outputs) {
-      for (let i = 0; i < node.outputs.length; i++) {
+    // --- Pass-through outputs ---
+    if (ptCount > 0 && node.outputs) {
+      section.appendChild(this.connSeparator());
+      section.appendChild(this.connGroupLabel('Pass-through'));
+      for (let i = 0; i < ptCount && i < node.outputs.length; i++) {
         const out = node.outputs[i];
         const connected = node.isOutputConnected(i);
         const linkCount = out.links ? out.links.length : 0;
-        const status = connected ? `${linkCount} connection(s)` : 'disconnected';
-        const dir = ui.element('span');
-        dir.textContent = 'OUT';
-        dir.className = 'funcflow-conn-dir';
-        const detail = ui.element('span');
-        detail.textContent = ` ${out.name} `;
-        const typeSpan = ui.element('span');
-        typeSpan.textContent = `(${out.type})`;
-        typeSpan.className = 'funcflow-conn-type';
-        const statusSpan = ui.element('span');
-        statusSpan.textContent = ` — ${status}`;
-        statusSpan.className = connected ? 'funcflow-conn-ok' : 'funcflow-conn-off';
-        section.appendChild(ui.div([dir, detail, typeSpan, statusSpan], 'funcflow-prop-row funcflow-conn-row'));
+        const status = connected ? `${linkCount} link(s)` : 'disconnected';
+        section.appendChild(this.buildConnRow('PT', out.name, out.type as string, status, connected));
+      }
+    }
+
+    // --- Real outputs ---
+    if (node.outputs && node.outputs.length > ptCount) {
+      section.appendChild(this.connSeparator());
+      section.appendChild(this.connGroupLabel('Outputs'));
+      for (let i = ptCount; i < node.outputs.length; i++) {
+        const out = node.outputs[i];
+        const connected = node.isOutputConnected(i);
+        const linkCount = out.links ? out.links.length : 0;
+        const status = connected ? `${linkCount} link(s)` : 'disconnected';
+        section.appendChild(this.buildConnRow('OUT', out.name, out.type as string, status, connected));
       }
     }
 
     this.contentDiv.appendChild(section);
+  }
+
+  private buildConnRow(
+    dir: string, name: string, type: string, status: string, connected: boolean,
+  ): HTMLElement {
+    const dirSpan = ui.element('span');
+    dirSpan.textContent = dir;
+    dirSpan.className = 'funcflow-conn-dir';
+    const detail = ui.element('span');
+    detail.textContent = ` ${name} `;
+    const typeSpan = ui.element('span');
+    typeSpan.textContent = `(${type})`;
+    typeSpan.className = 'funcflow-conn-type';
+    const statusSpan = ui.element('span');
+    statusSpan.textContent = ` \u2014 ${status}`;
+    statusSpan.className = connected ? 'funcflow-conn-ok' : 'funcflow-conn-off';
+    return ui.div([dirSpan, detail, typeSpan, statusSpan], 'funcflow-prop-row funcflow-conn-row');
+  }
+
+  private connSeparator(): HTMLElement {
+    return ui.div([], 'funcflow-conn-separator');
+  }
+
+  private connGroupLabel(text: string): HTMLElement {
+    const label = ui.div([], 'funcflow-conn-group-label');
+    label.textContent = text;
+    return label;
   }
 
   // --- Editor helpers ---

@@ -327,6 +327,21 @@
   background-color: #e3f2fd !important;
 }
 
+/* Connection group separators and labels */
+.funcflow-conn-separator {
+  border-top: 1px solid #ddd;
+  margin: 4px 0;
+}
+
+.funcflow-conn-group-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: #888;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin: 2px 0 1px 0;
+}
+
 /* LiteGraph dialog - light theme */
 .litegraph .dialog {
   background-color: #fff !important;

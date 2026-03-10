@@ -58,7 +58,7 @@ export function validateGraph(graph: LGraph): ValidationResult[] {
           const funcParam = func.inputs.find((p: any) => p.name === inp.name);
           const isNullable = funcParam?.nullable === true || funcParam?.options?.optional === true || funcParam?.options?.nullable === true;
 
-          if (!hasValue && !isNullable) {
+          if (false && !hasValue && !isNullable) { // not working for now, bunch of functions have falsly non-nullable params
             results.push({
               severity: 'error',
               message: `Required input '${inp.name}' on node '${node.title}' is not connected and has no value`,
