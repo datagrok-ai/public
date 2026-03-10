@@ -97,6 +97,9 @@ interface Preventable {
 interface MSAHeaderState {
   isDragging: boolean;
   dragStartX: number;
+  dragMode: 'none' | 'slider' | 'header';
+  dragStartWindowPosition: number;
+  dragOccurred: boolean;
 }
 
 // Track visibility configuration
@@ -667,7 +670,7 @@ export class MSAScrollingHeader {
     this.eventElement.style.position = 'absolute';
     this.config.canvas.parentElement?.appendChild(this.eventElement);
 
-    this.state = {isDragging: false, dragStartX: 0};
+    this.state = {isDragging: false, dragStartX: 0, dragMode: 'none', dragStartWindowPosition: 1, dragOccurred: false};
     this.setupEventListeners();
     this.init();
   }
@@ -1308,9 +1311,10 @@ export class MSAScrollingHeader {
     this.eventElement.addEventListener('mousemove', (e) => {
       if (!this.isValid) return;
 
-      if (this.isInSliderDraggableArea(e)) this.eventElement.style.cursor = 'grab';
+      if (this.state.isDragging && this.state.dragMode === 'header') this.eventElement.style.cursor = 'grabbing';
+      else if (this.isInSliderDraggableArea(e)) this.eventElement.style.cursor = 'grab';
       else if (this.isInSliderArea(e)) this.eventElement.style.cursor = 'pointer';
-      else if (this.isInHeaderArea(e)) this.eventElement.style.cursor = 'pointer';
+      else if (this.isInHeaderArea(e)) this.eventElement.style.cursor = 'grab';
       else this.eventElement.style.cursor = 'default';
     });
 
@@ -1326,6 +1330,7 @@ export class MSAScrollingHeader {
   }
 
   private handleSelectionClick(e: MouseEvent): void {
+    if (this.state.dragOccurred) return;
     if (!this.isValid || !this.dataFrame || !this.seqColumn || !this.seqHandler) return;
 
     const {x, y} = this.getCoords(e);
@@ -1455,11 +1460,20 @@ export class MSAScrollingHeader {
 
   private handleMouseDown(e: MouseEvent): void {
     if (!this.isValid) return;
-    const {x} = this.getCoords(e);
+    const {x, y} = this.getCoords(e);
     if (this.isInSliderDraggableArea(e)) {
       this.state.isDragging = true;
+      this.state.dragMode = 'slider';
       this.state.dragStartX = x;
       this.handleSliderDrag(x);
+      e.preventDefault();
+      e.stopPropagation();
+      e.stopImmediatePropagation();
+    } else if (this.isInHeaderArea(e) && !this.isInSliderArea(e)) {
+      this.state.isDragging = true;
+      this.state.dragMode = 'header';
+      this.state.dragStartX = x;
+      this.state.dragStartWindowPosition = this.config.windowStartPosition;
       e.preventDefault();
       e.stopPropagation();
       e.stopImmediatePropagation();
@@ -1492,7 +1506,22 @@ export class MSAScrollingHeader {
     const rect = this.canvas!.getBoundingClientRect();
     const x = e.clientX - rect.left - this.config.x;
 
-    this.handleSliderDrag(x);
+    this.state.dragOccurred = true;
+
+    if (this.state.dragMode === 'slider') {
+      this.handleSliderDrag(x);
+    } else if (this.state.dragMode === 'header') {
+      const deltaX = x - this.state.dragStartX;
+      const deltaPositions = Math.round(deltaX / this.config.positionWidth);
+      const visiblePositions = Math.floor(this.config.width / this.config.positionWidth);
+      const maxStart = this.config.totalPositions - visiblePositions + 1;
+      this.config.windowStartPosition = Math.max(1, Math.min(maxStart,
+        this.state.dragStartWindowPosition - deltaPositions));
+
+      if (typeof this.config.onPositionChange === 'function')
+        this.config.onPositionChange(this.config.currentPosition, this.getWindowRange());
+    }
+
     e.preventDefault();
     e.stopPropagation();
     e.stopImmediatePropagation();
@@ -1539,6 +1568,10 @@ export class MSAScrollingHeader {
 
   private handleMouseUp(): void {
     this.state.isDragging = false;
+    this.state.dragMode = 'none';
+    // Reset dragOccurred asynchronously so click handlers (which fire after mouseup) can still see it
+    if (this.state.dragOccurred)
+      setTimeout(() => { this.state.dragOccurred = false; }, 0);
   }
 
   private handleSliderDrag(x: number): void {
@@ -1568,6 +1601,7 @@ export class MSAScrollingHeader {
   }
 
   private handleClick(e: MouseEvent): void {
+    if (this.state.dragOccurred) return;
     if (!this.isValid) return;
 
     const absoluteX = e.clientX - this.canvas!.getBoundingClientRect().left;
