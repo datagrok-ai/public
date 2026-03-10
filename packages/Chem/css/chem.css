@@ -1118,12 +1118,11 @@
   align-self: flex-end;
 }
 
-.chem-profile-toolbar-wrap .ui-input-root > .ui-input-options {
-  border-bottom: none !important;
-}
-
-.chem-profile-toolbar-wrap .ui-input-root > .ui-input-options > .ui-input-description {
-  order: initial;
+.chem-profile-field-desc {
+  color: var(--grey-4);
+  font-size: 12px;
+  margin: 4px 0 8px;
+  font-style: italic;
 }
 
 .chem-profile-view-loading {

@@ -24,6 +24,12 @@ import {MpoProfileManager} from './mpo-profile-manager';
 const METHOD_MANUAL = 'Manual';
 const METHOD_PROBABILISTIC = 'Probabilistic';
 
+const FIELD_DESCRIPTIONS: Record<string, string> = {
+  'Method': 'Manual desirability curve editing or probabilistic MPO trained from labeled data',
+  'Dataset': 'Load data to preview desirability scores as you edit the profile',
+  'Aggregation': 'How individual property scores combine into the final MPO score',
+};
+
 export class MpoProfileCreateView {
   readonly view: DG.View;
   readonly showMethod: boolean;
@@ -123,23 +129,21 @@ export class MpoProfileCreateView {
         nullable: false,
         onValueChanged: () => this.onMethodChanged(),
       });
-      this.methodInput.addPostfix('Manual desirability curve editing or probabilistic MPO trained from labeled data');
     }
 
     this.datasetInput = ui.input.table('Dataset', {
       nullable: true,
       onValueChanged: (df) => this.onDatasetChanged(df),
     });
-    this.datasetInput.addOptions(
-      ui.divText('Load data to preview desirability scores as you edit the profile', 'ui-input-description'));
 
-    this.editor.aggregationInput.addPostfix('How individual property scores combine into the final MPO score');
+    const field = (input: DG.InputBase) =>
+      ui.divV([input.root, ui.divText(FIELD_DESCRIPTIONS[input.caption], 'chem-profile-field-desc')]);
 
-    const controls: DG.InputBase[] = [];
+    const controls: HTMLElement[] = [];
     if (this.methodInput)
-      controls.push(this.methodInput);
-    controls.push(this.datasetInput);
-    controls.push(this.editor.aggregationInput);
+      controls.push(field(this.methodInput));
+    controls.push(field(this.datasetInput));
+    controls.push(field(this.editor.aggregationInput));
 
     this.saveButton = ui.button('Save', () => this.showSaveDialog());
     this.saveButton.classList.add('d4-disabled');
@@ -147,7 +151,7 @@ export class MpoProfileCreateView {
     this.headerEl = ui.h1(this.isEditMode ? `Edit ${this.profile.name || 'MPO'}` : 'Create MPO Profile');
     this.headerEl.classList.add('chem-profile-header');
 
-    this.toolbarEl = ui.divV([ui.form(controls), this.saveButton], 'chem-profile-toolbar-wrap');
+    this.toolbarEl = ui.divV([ui.divV(controls), this.saveButton], 'chem-profile-toolbar-wrap');
 
     this.profileViewContainer = ui.divV([this.headerEl, this.toolbarEl]);
     this.profileViewContainer.classList.add('chem-profile-view');
