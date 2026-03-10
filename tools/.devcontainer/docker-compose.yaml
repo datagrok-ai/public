@@ -1,0 +1,236 @@
+# Packages Dev — lightweight JS/TS package development environment
+# Usage: docker compose up -d
+#
+# All images are pre-built on Docker Hub. No local build step needed.
+# The Dockerfile.pkg_dev in this directory is the build recipe for the
+# datagrok/tools-dev image — used by CI, not by end users.
+#
+# On Windows, use `grok claude` instead — it handles path conversion
+# and Docker socket mapping automatically.
+
+services:
+  postgres:
+    image: pgvector/pgvector:pg17
+    command: postgres -c 'max_connections=1000'
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    shm_size: 2gb
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      retries: 10
+    networks:
+      dg:
+        aliases:
+          - database
+          - postgres
+    restart: unless-stopped
+
+  rabbitmq:
+    image: rabbitmq:4.0.5-management
+    platform: linux/amd64
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    networks:
+      dg:
+        aliases:
+          - rabbitmq
+    restart: unless-stopped
+
+  grok_pipe:
+    image: datagrok/grok_pipe:${DG_VERSION:-latest}
+    platform: linux/amd64
+    environment:
+      API_KEY: test-key
+    networks:
+      dg:
+        aliases:
+          - grok_pipe
+    restart: unless-stopped
+
+  datagrok:
+    image: datagrok/datagrok:${DG_VERSION:-latest}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_started
+    environment:
+      GROK_PARAMETERS: |
+        {
+          "dbServer": "database",
+          "db": "datagrok",
+          "dbLogin": "dg",
+          "dbPassword": "dg",
+          "dbAdminLogin": "postgres",
+          "dbAdminPassword": "postgres",
+          "adminPassword": "admin",
+          "adminDevKey": "admin",
+          "webRoot": "http://datagrok:8080",
+          "apiRoot": "http://datagrok:8080/api",
+          "deployDemo": true,
+          "deployTestDemo": false
+        }
+    ports:
+      - "${DG_PORT:-0}:8080"
+    volumes:
+      - datagrok_data:/home/grok/data
+      - datagrok_cfg:/home/grok/cfg
+    networks:
+      dg:
+        aliases:
+          - datagrok
+    restart: on-failure
+
+  # ── Optional services (use --profile to enable) ──────────────
+
+  grok_connect:
+    image: datagrok/grok_connect:${DG_VERSION:-latest}
+    platform: linux/amd64
+    environment:
+      GROK_CONNECT_PORT: 1234
+    networks:
+      dg:
+        aliases:
+          - grok_connect
+    restart: unless-stopped
+    profiles: ["full"]
+
+  grok_spawner:
+    image: datagrok/grok_spawner:${DG_VERSION:-latest}
+    platform: linux/amd64
+    user: root
+    environment:
+      X_API_KEY: test-x-api-key
+      GROK_SPAWNER_ENVIRONMENT: ${COMPOSE_PROJECT_NAME:-dg-pkg}
+      GROK_SPAWNER_CORE_MODE: "false"
+      GROK_SPAWNER_FORCE_DOCKER_TYPE_HOST: "true"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      dg:
+        aliases:
+          - grok_spawner
+    restart: unless-stopped
+    profiles: ["full"]
+
+  jupyter_kernel_gateway:
+    image: datagrok/jupyter_kernel_gateway:${DG_VERSION:-latest}
+    platform: linux/amd64
+    depends_on:
+      rabbitmq:
+        condition: service_started
+    environment:
+      GROK_PARAMETERS: |
+        {
+          "queueSettings": {
+            "useQueue": true,
+            "amqpHost": "rabbitmq",
+            "amqpUser": "guest",
+            "amqpPassword": "guest",
+            "amqpPort": 5672,
+            "pipeHost": "grok_pipe",
+            "pipePort": 3000,
+            "pipeKey": "test-key",
+            "maxConcurrentCalls": 16
+          }
+        }
+    networks:
+      dg:
+        aliases:
+          - jupyter_kernel_gateway
+    restart: unless-stopped
+    profiles: ["scripting", "full"]
+
+  world:
+    image: datagrok/demo_db_postgres:12-1.1.0
+    environment:
+      POSTGRES_DB: world
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    volumes:
+      - demo_world:/var/lib/postgresql/data
+    networks:
+      dg:
+        aliases:
+          - world
+    restart: on-failure
+    profiles: ["demo", "full"]
+
+  test_db:
+    image: datagrok/demo_db_postgres:12-1.1.0
+    environment:
+      POSTGRES_DB: test
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    volumes:
+      - demo_test:/var/lib/postgresql/data
+    networks:
+      dg:
+        aliases:
+          - test_db
+    restart: on-failure
+    profiles: ["demo", "full"]
+
+  northwind:
+    image: datagrok/demo_db_postgres:12-1.1.0
+    environment:
+      POSTGRES_DB: northwind
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    volumes:
+      - demo_northwind:/var/lib/postgresql/data
+    networks:
+      dg:
+        aliases:
+          - northwind
+    restart: on-failure
+    profiles: ["demo", "full"]
+
+  # ── Package dev container (pre-built image from Docker Hub) ──
+
+  tools-dev:
+    image: datagrok/tools-dev:${DG_TOOLS_DEV_VERSION:-latest}
+    cap_add:
+      - SYS_ADMIN
+    security_opt:
+      - seccomp=unconfined
+    volumes:
+      - ${WORKTREE_PATH:-.}:/workspace
+      - ${HOST_HOME:-${HOME}}/.claude:/home/node/.claude
+      - ${HOST_HOME:-${HOME}}/.grok:/home/node/.grok
+      - /var/run/docker.sock:/var/run/docker.sock
+      - npm_cache:/home/node/.npm
+    environment:
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
+      DG_VERSION: ${DG_VERSION:-latest}
+      DG_PUBLIC_REPO: ${DG_PUBLIC_REPO:-https://github.com/datagrok-ai/public.git}
+      DG_PUBLIC_BRANCH: ${DG_PUBLIC_BRANCH:-}
+      JIRA_URL: ${JIRA_URL:-https://reddata.atlassian.net}
+      JIRA_USERNAME: ${JIRA_USERNAME}
+      JIRA_TOKEN: ${JIRA_TOKEN}
+      GITHUB_TOKEN: ${GITHUB_TOKEN}
+    networks:
+      dg:
+        aliases:
+          - tools-dev
+    stdin_open: true
+    tty: true
+    restart: unless-stopped
+
+volumes:
+  pgdata:
+  datagrok_data:
+  datagrok_cfg:
+  demo_world:
+  demo_test:
+  demo_northwind:
+  npm_cache:
+
+networks:
+  dg:
+    name: dg-pkg-${TASK_KEY:-default}-net

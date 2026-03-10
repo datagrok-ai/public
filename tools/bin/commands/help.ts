@@ -11,6 +11,7 @@ Commands:
     api       Create wrapper functions
     build     Build a package or multiple packages
     check     Check package content (function signatures, etc.)
+    claude    Launch Claude Code in a Datagrok dev container
     config    Create and manage config files
     create    Create a package
     init      Modify a package template
@@ -25,6 +26,45 @@ To get help on a particular command, use:
 
 Read more about the package development workflow:
 https://datagrok.ai/help/develop/develop
+`;
+
+const HELP_CLAUDE = `
+Usage: grok claude <project>              Start or reattach to a project
+       grok claude destroy <project>      Stop containers + remove worktree
+       grok claude destroy-all            Destroy all projects
+
+Launch Claude Code inside a Datagrok dev container. Creates a git worktree
+for the project, starts a full Datagrok stack (postgres, rabbitmq, grok_pipe,
+datagrok) and opens Claude Code in a tools-dev container.
+
+Version is auto-detected: bleeding-edge for the public repo,
+latest stable release (from Docker Hub) for other repos.
+
+Options:
+[--version <tag>] [--profile <name>] [--keep]
+[--port <N>] [--prompt <text>] [--in-place]
+[--grok-connect-version <tag>] [--grok-spawner-version <tag>]
+[--jkg-version <tag>] [--tools-dev-version <tag>]
+
+--version               Datagrok image version (default: bleeding-edge for public repo, latest otherwise)
+--profile               Compose profile: demo, scripting, full (default: none)
+--keep                  Don't stop containers on exit
+--port                  Datagrok host port (default: random available)
+--prompt                Pass initial prompt to Claude Code (non-interactive)
+--in-place              Use current directory instead of creating a git worktree
+--grok-connect-version  grok_connect image version (default: latest)
+--grok-spawner-version  grok_spawner image version (default: latest)
+--jkg-version           jupyter_kernel_gateway image version (default: latest)
+--tools-dev-version     tools-dev image version (default: latest)
+
+Examples:
+  grok claude GROK-12345                        Start working on a task
+  grok claude GROK-12345 --version 1.22.0       Use specific Datagrok version
+  grok claude GROK-12345 --profile full --keep   Start all services, keep running
+  grok claude GROK-12345 --prompt "fix the bug"  One-shot command
+  grok claude GROK-12345 --in-place              Work in current directory
+  grok claude destroy GROK-12345                 Tear down a task
+  grok claude destroy-all                        Tear down everything
 `;
 
 const HELP_ADD = `
@@ -281,6 +321,7 @@ export const help = {
   api: HELP_API,
   build: HELP_BUILD,
   check: HELP_CHECK,
+  claude: HELP_CLAUDE,
   config: HELP_CONFIG,
   create: HELP_CREATE,
   init: HELP_INIT,

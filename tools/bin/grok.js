@@ -10,6 +10,7 @@ const commands = {
   api: require('./commands/api').api,
   build: require('./commands/build').build,
   check: require('./commands/check').check,
+  claude: require('./commands/claude').claude,
   config: require('./commands/config').config,
   create: require('./commands/create').create,
   init: require('./commands/init').init,
@@ -32,9 +33,24 @@ if (command in commands) {
     } else if (argv.all && onPackageCommandNames.includes(command)) {
       runAllCommand(process.cwd(),
         `grok ${process.argv.slice(2).join(' ')}`.replace('--all', ''), {});
-    } else if (!commands[command](argv)) {
-      console.log(help[command]);
-      exitWithCode(1);
+    } else {
+      const result = commands[command](argv);
+      if (result && typeof result.then === 'function') {
+        result.then((ok) => {
+          if (!ok) {
+            console.log(help[command]);
+            exitWithCode(1);
+          }
+        }).catch((err) => {
+          console.error(err);
+          console.log(help[command]);
+          exitWithCode(255);
+        });
+      }
+      else if (!result) {
+        console.log(help[command]);
+        exitWithCode(1);
+      }
     }
   } catch (err) {
     console.error(err);
