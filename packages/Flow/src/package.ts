@@ -15,7 +15,7 @@ export function info() {
 
 export class PackageFunctions {
   @grok.decorators.app({
-    name: 'FuncFlow',
+    name: 'Flow',
     description: 'Interactive function chain designer',
     tags: ['app'],
   })

@@ -5,5 +5,5 @@
  * The class name is comprised of <PackageName> and the `PackageDetectors` suffix.
  * Follow this naming convention to ensure that your detectors are properly loaded.
  */
-class FuncflowPackageDetectors extends DG.Package {
+class FlowPackageDetectors extends DG.Package {
 }

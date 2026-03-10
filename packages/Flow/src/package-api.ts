@@ -9,17 +9,17 @@ import * as DG from 'datagrok-api/dg';
 
 export namespace funcs {
   export async function info(): Promise<void> {
-    return await grok.functions.call('funcflow:Info', {});
+    return await grok.functions.call('Flow:Info', {});
   }
 
   /**
   Interactive function chain designer
   */
   export async function funcflowApp(path?: string ): Promise<DG.View> {
-    return await grok.functions.call('funcflow:FuncflowApp', { path });
+    return await grok.functions.call('Flow:FuncflowApp', { path });
   }
 
   export async function viewFuncFlow(file: DG.FileInfo ): Promise<DG.View> {
-    return await grok.functions.call('funcflow:ViewFuncFlow', { file });
+    return await grok.functions.call('Flow:ViewFuncFlow', { file });
   }
 }

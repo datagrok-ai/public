@@ -1,8 +1,8 @@
 {
-  "name": "@datagrok/funcflow",
-  "friendlyName": "funcflow",
+  "name": "@datagrok/flow",
+  "friendlyName": "Flow",
   "version": "0.0.1",
-  "description": "funcflow package",
+  "description": "Flow package",
   "author": {
     "name": "Davit Rizhinashvili",
     "email": "drizhinashvili@datagrok.ai"

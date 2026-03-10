@@ -1,7 +1,7 @@
 import {PackageFunctions} from './package';
 import * as DG from 'datagrok-api/dg';
 
-//name: FuncFlow
+//name: Flow
 //description: Interactive function chain designer
 //tags: app
 //input: string path { meta.url: true; optional: true }
