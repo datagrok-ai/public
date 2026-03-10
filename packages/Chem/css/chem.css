@@ -1069,7 +1069,7 @@
   color: var(--grey-5);
 }
 
-.chem-mpo-create-profile-button {
+.chem-mpo-action-button {
   display: block !important;
   text-align: start;
   margin-left: 0 !important;

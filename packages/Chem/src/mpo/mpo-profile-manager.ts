@@ -1,7 +1,8 @@
 import * as grok from 'datagrok-api/grok';
+import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 
-import {DesirabilityProfile} from '@datagrok-libraries/statistics/src/mpo/mpo';
+import {DesirabilityProfile, isDesirabilityProfile} from '@datagrok-libraries/statistics/src/mpo/mpo';
 import {generateMpoFileName, getNextAvailable} from '@datagrok-libraries/statistics/src/mpo/utils';
 
 import {deleteMpoProfile, loadMpoProfiles, MPO_PROFILE_CHANGED_EVENT, MPO_PROFILE_DELETED_EVENT,
@@ -117,6 +118,29 @@ class MpoProfileManagerImpl {
       grok.shell.error(`Failed to save profile: ${e instanceof Error ? e.message : e}`);
       return false;
     }
+  }
+
+  importFromFile(): void {
+    DG.Utils.openFile({accept: '.json', open: async (file) => {
+      try {
+        const text = await file.text();
+        const parsed = JSON.parse(text);
+        if (!isDesirabilityProfile(parsed)) {
+          grok.shell.warning('Import failed: not a valid MPO profile');
+          return;
+        }
+        if (!parsed.name)
+          parsed.name = file.name.replace(/\.json$/i, '');
+        await this.save(parsed, this.generateFileName(parsed.name));
+      } catch (e) {
+        grok.shell.warning('Import failed: invalid JSON file');
+      }
+    }});
+  }
+
+  exportToFile(profile: MpoProfileInfo): void {
+    const {fileName, ...data} = profile;
+    DG.Utils.download(fileName, JSON.stringify(data, null, 2), 'application/json');
   }
 
   fireChanged(): void {
