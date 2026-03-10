@@ -1,0 +1,45 @@
+{
+  "name": "interactivesciapptest",
+  "friendlyName": "InteractiveSciAppTest",
+  "version": "0.0.1",
+  "description": "InteractiveSciAppTest package",
+  "dependencies": {
+    "@datagrok-libraries/utils": "^4.6.5",
+    "cash-dom": "^8.1.5",
+    "datagrok-api": "^1.26.0",
+    "dayjs": "^1.11.13",
+    "diff-grok": "^1.2.0"
+  },
+  "devDependencies": {
+    "css-loader": "^7.1.2",
+    "style-loader": "^4.0.0",
+    "ts-loader": "latest",
+    "typescript": "latest",
+    "webpack": "^5.95.0",
+    "webpack-cli": "^5.1.4"
+  },
+  "scripts": {
+    "debug-interactivesciapptest": "webpack && grok publish",
+    "release-interactivesciapptest": "webpack && grok publish --release",
+    "build-interactivesciapptest": "webpack",
+    "build": "grok api && grok check --soft && webpack",
+    "test": "grok test",
+    "debug-interactivesciapptest-dev": "webpack && grok publish dev",
+    "release-interactivesciapptest-dev": "webpack && grok publish dev --release",
+    "debug-interactivesciapptest-local": "webpack && grok publish local",
+    "release-interactivesciapptest-local": "webpack && grok publish local --release",
+    "debug-interactivesciapptest-release": "webpack && grok publish release",
+    "release-interactivesciapptest-release": "webpack && grok publish release --release"
+  },
+  "canEdit": [
+    "Developers"
+  ],
+  "canView": [
+    "All users"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/datagrok-ai/public.git",
+    "directory": "packages/InteractiveSciAppTest"
+  }
+}
