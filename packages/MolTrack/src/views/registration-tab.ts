@@ -4,7 +4,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {FileInputUtils} from '@datagrok-libraries/tutorials/src/utils/file-input-utils';
 
-import {ErrorHandlingLabels, MOLTRACK_MAPPING_VALIDATION_CHANGED, MOLTRACK_REQUEST_TITLE_UPDATE, ScopeLabels, ScopeLabelsReduced} from '../utils/constants';
+import {ErrorHandlingLabels, MOLTRACK_MAPPING_VALIDATION_CHANGED, MOLTRACK_REQUEST_TITLE_UPDATE, ScopeLabels, ScopeLabelsReduced, ScopeToEntityType} from '../utils/constants';
 import {renderMappingEditor, TargetProperty} from '../components/mapping_editor';
 import {MolTrackDockerService} from '../services/moltrack-docker-service';
 import {fetchSchema} from '../package';
@@ -195,17 +195,21 @@ export class RegistrationView {
       });
 
       const value = this.entityTypeInput?.value ?? '';
-
-      const corporateId =
-        value in ScopeLabelsReduced ?
-          `corporate_${value.toLowerCase().replace(/(es|s)$/, '')}_id` :
-          '';
+      const scope = ScopeLabels[value];
+      const corporateId = value in ScopeLabelsReduced ? `corporate_${ScopeToEntityType[scope]}_id` : '';
 
       const joinColumns = [
         'registration_status',
         'registration_error_message',
         ...(corporateId && df.columns.names().includes(corporateId) ? [corporateId] : []),
       ];
+
+      const renamedColumns: string[] = [];
+      for (const col of joinColumns) {
+        const newName = this.uploadedDf.columns.getUnusedName(col);
+        df.col(col)!.name = newName;
+        renamedColumns.push(newName);
+      }
 
       const firstColName = this.uploadedDf.columns.names()[0];
 
@@ -214,12 +218,13 @@ export class RegistrationView {
         [firstColName],
         [firstColName],
         null,
-        joinColumns,
+        renamedColumns,
         DG.JOIN_TYPE.INNER,
         true,
       );
 
-      this.createSummary();
+      const statusColName = renamedColumns[0];
+      this.createSummary(statusColName);
     } catch (err: any) {
       grok.shell.error(`Registration failed: ${err.message}`);
     } finally {
@@ -229,10 +234,10 @@ export class RegistrationView {
     }
   }
 
-  private createSummary() {
+  private createSummary(statusColName: string = 'registration_status') {
     if (!this.uploadedDf) return;
 
-    const statuses = this.uploadedDf.getCol('registration_status').toList();
+    const statuses = this.uploadedDf.getCol(statusColName).toList();
     const successCount = statuses.filter((v) => v === 'success').length;
     const failedCount = statuses.filter((v) => v === 'failed').length;
     const notProcessedCount = statuses.filter((v) => v === 'not_processed').length;
@@ -278,8 +283,10 @@ export class RegistrationView {
     ];
 
     let autoMapping: Map<string, string> = new Map();
-    if (this.uploadedDf)
-      autoMapping = await MolTrackDockerService.getAutoMapping(this.uploadedDf!.columns.names(), 'COMPOUND');
+    if (this.uploadedDf) {
+      const scope = ScopeLabels[value ?? this.entityTypeInput?.value];
+      autoMapping = await MolTrackDockerService.getAutoMapping(this.uploadedDf!.columns.names(), ScopeToEntityType[scope]);
+    }
 
     const sourceColumns = this.uploadedDf ? this.uploadedDf.columns.names() : [''];
     const mappings = new Map<string, string>();
@@ -289,19 +296,21 @@ export class RegistrationView {
       if (exists) mappings.set(source, cleanTarget);
     }
 
-    const normalizeType = (t: string) =>
-      t.toLowerCase().replace(/(es|s)$/, '');
-
-    const handleMap = (source: string, target: string) => {
+    const handleMap = (target: string, source: string) => {
       if (!this.uploadedDf)
         return;
 
-      const entityType = normalizeType(this.entityTypeInput?.value ?? '');
-      const isSmiles = source === 'smiles';
-      this.mappingDict[source] = isSmiles ? 'smiles' : `${entityType}_details.${target}`;
+      const scope = ScopeLabels[this.entityTypeInput?.value ?? ''];
+      const entityType = ScopeToEntityType[scope];
+      this.mappingDict[source] = target === 'smiles' ? 'smiles' : `${entityType}_details.${target}`;
     };
 
-    const handleUndo = () => grok.shell.info('Mapping undone');
+    const handleUndo = (target: string) => {
+      for (const [key, val] of Object.entries(this.mappingDict)) {
+        if (val.endsWith(`.${target}`) || val === target)
+          delete this.mappingDict[key];
+      }
+    };
 
     renderMappingEditor(this.mappingEditorDiv, {
       targetProperties,
