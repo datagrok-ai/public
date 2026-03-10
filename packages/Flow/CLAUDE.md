@@ -11,7 +11,7 @@ Flow (FuncFlow) is an interactive visual function chain designer for Datagrok. I
 ```
 src/
 ├── package.ts                    # Entry: @funcflowApp, @fileViewer decorators
-├── funcflow-view.ts              # Main view: 3-panel layout, ribbon, status bar
+├── funcflow-view.ts              # Main view: 2-panel layout + native context panel, ribbon, status bar
 ├── canvas/
 │   ├── canvas-controller.ts      # LGraphCanvas wrapper, type validation, theme
 │   └── graph-manager.ts          # LGraph state wrapper, change notifications
@@ -25,12 +25,12 @@ src/
 ├── compiler/
 │   ├── graph-compiler.ts         # Graph → CompiledStep[]
 │   ├── script-emitter.ts         # CompiledStep[] → JavaScript source
-│   ├── validator.ts              # Pre-compilation validation
+│   ├── validator.ts              # Pre-compilation validation (cycles, required inputs, duplicates)
 │   ├── topological-sort.ts       # Kahn's algorithm
 │   └── graph-utils.ts            # Safe LGraph node accessor
 ├── panel/
 │   ├── function-browser.ts       # Left sidebar: searchable function catalog
-│   └── property-panel.ts         # Right sidebar: node properties editor
+│   └── property-panel.ts         # Context panel content: node properties editor with tooltips
 ├── serialization/
 │   ├── flow-schema.ts            # .ffjson type definitions
 │   └── flow-serializer.ts        # Load/save/download
@@ -117,6 +117,17 @@ The compiler pipeline:
 2. **Compile** - Each node becomes a CompiledStep with inputs/outputs resolved
 3. **Emit** - Steps become JavaScript lines with `//input:`, `//output:` headers
 
+### Validation (`validator.ts`)
+Runs before compilation. Checks:
+- Empty graph (warning)
+- Cycles via topological sort (error)
+- Column input without Table input (error)
+- **Required (non-nullable) func inputs**: unconnected inputs with no stored value are errors. `0` and `false` are valid values; only `undefined`/`null`/empty string = missing. Nullable check: `param.nullable || param.options.optional || param.options.nullable`
+- Disconnected nodes (warning)
+- Output nodes with no incoming connection (warning)
+- Empty or invalid parameter names (error)
+- Duplicate parameter names (error)
+
 Input annotation qualifiers are generated from node widget values:
 - `{type: numerical}` from Column type filter
 - `{semType: Molecule}` from Column semType filter or String semType combo
@@ -140,10 +151,15 @@ npm run build    # grok api && grok check --soft && webpack
 
 ## UI Architecture: Widgets vs Property Panel
 
-**Nodes have NO inline widgets** (except ConstStringNode). All property editing happens in the right-side Property Panel when a node is selected.
+**Nodes have NO inline widgets** (except ConstStringNode). All property editing happens in Datagrok's native context panel (right side) when a node is selected.
 
-- **Node classes** only define `this.properties = {...}` with default values — no `addWidget()` calls
-- **Property Panel** (`property-panel.ts`) reads `node.properties` and creates appropriate editors:
+### Context Panel Integration
+- `grok.shell.windows.showContextPanel = true` enables the native panel
+- `grok.shell.o = propertyPanel.root` sets its content on node selection
+- Layout is 2-panel: `[leftPanel (FunctionBrowser), canvasContainer]` — no custom right panel
+
+### Property Panel (`property-panel.ts`)
+- Reads `node.properties` and creates appropriate editors:
   - `string` properties → `<textarea>` (auto-resizing)
   - `number` properties → `<input type="number">` with step (1 for int, 0.1 for double)
   - `boolean` properties → `<input type="checkbox">`
@@ -153,6 +169,18 @@ npm run build    # grok api && grok check --soft && webpack
 - **Collapse icon**: `NODE_DEFAULT_BOXCOLOR = '#888'` (visible on light theme)
 - **Font**: Roboto via Google Fonts import + LiteGraph canvas font overrides
 
+### Tooltip System
+- **PROP_TOOLTIPS**: Maps label names (e.g. 'Param Name', 'Nullable') to tooltip strings for input/output node properties
+- **UTILITY_PROP_TOOLTIPS**: Maps `node.title → property name → tooltip` for utility/constant nodes (e.g. List → value → "Comma-separated list of values")
+- **buildFuncInputTooltip(param)**: Builds rich tooltips for DG.Func input parameters from `DG.Property` metadata: description, type, default value, nullable status
+- Tooltips are bound to both **labels** and **input elements** via `ui.tooltip.bind()`
+- All editor helpers (`createTextarea`, `createNumberInput`, `createToggle`, `createCombo`) accept optional `inputTooltip` parameter
+
+### Function Browser Tooltips
+- All built-in nodes (inputs, outputs, utilities, constants, comparisons) have descriptive tooltips
+- Format: `"<description>. Double-click to add"` — e.g. "Dataframe input parameter. Double-click to add"
+- DG function nodes show their `func.description` plus package name
+
 ## Key Dependencies
 
 - `litegraph.js` ^0.7.18 - Graph canvas library
@@ -160,7 +188,7 @@ npm run build    # grok api && grok check --soft && webpack
 
 ## Development Guidelines
 
-1. **Adding new input nodes**: Add class in `input-nodes.ts` (properties only, no widgets), register in `registerInputNodes()`, add to `inputNodes` array in `function-browser.ts`, handle in `buildInputLine()` in `script-emitter.ts` if special qualifiers needed. Property panel auto-discovers properties by key name.
-2. **Adding new utility nodes**: Add class in `utility-nodes.ts` (properties only, no widgets), register in `registerUtilityNodes()`, add to `utilityNodes` array in `function-browser.ts`, add case in `emitUtilityStep()` in `script-emitter.ts`. Property panel uses generic property iteration for utility nodes.
+1. **Adding new input nodes**: Add class in `input-nodes.ts` (properties only, no widgets), register in `registerInputNodes()`, add to `inputNodes` array with `desc` in `function-browser.ts`, handle in `buildInputLine()` in `script-emitter.ts` if special qualifiers needed. Property panel auto-discovers properties by key name.
+2. **Adding new utility nodes**: Add class in `utility-nodes.ts` (properties only, no widgets), register in `registerUtilityNodes()`, add to `utilityNodes` array with `desc` in `function-browser.ts`, add case in `emitUtilityStep()` in `script-emitter.ts`. Add property tooltips to `UTILITY_PROP_TOOLTIPS` in `property-panel.ts`.
 3. **Adding new types**: Add to `DG_TYPE_MAP` in `type-map.ts`, add compatibility rules to `COMPATIBLE_TYPES`
 4. **After any change**: Update this CLAUDE.md file

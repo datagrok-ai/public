@@ -13,7 +13,10 @@ interface FuncFlowNode extends LGraphNode {
 
 /** Tooltips for property labels that aren't self-explanatory */
 const PROP_TOOLTIPS: Record<string, string> = {
+  'Title': 'Display name shown on the node',
   'Param Name': 'Variable name used in the generated script',
+  'Description': 'Description shown in the script run dialog',
+  'Default': 'Default value when no input is provided',
   'Nullable': 'Allow null/empty values for this input',
   'SemType': 'Semantic type annotation (e.g. Molecule)',
   'SemType Filter': 'Only show columns matching this semantic type',
@@ -25,6 +28,30 @@ const PROP_TOOLTIPS: Record<string, string> = {
   'Min': 'Minimum allowed value',
   'Max': 'Maximum allowed value',
 };
+
+/** Tooltips for utility node properties keyed by node title → property name */
+const UTILITY_PROP_TOOLTIPS: Record<string, Record<string, string>> = {
+  'Select Column': {columnName: 'Column name to extract from the table'},
+  'Select Columns': {columnNames: 'Comma-separated column names to extract'},
+  'Log': {label: 'Optional label prefix for the log message'},
+  'String': {value: 'The constant string value to output'},
+  'Int': {value: 'The constant integer value to output'},
+  'Double': {value: 'The constant floating-point value to output'},
+  'Boolean': {value: 'The constant true/false value to output'},
+  'List': {value: 'Comma-separated list of values'},
+};
+
+/** Build a rich tooltip for a DG.Func input parameter */
+function buildFuncInputTooltip(param: DG.Property): string {
+  const parts: string[] = [];
+  const desc = param.description;
+  if (desc) parts.push(desc);
+  parts.push(`Type: ${param.propertyType}`);
+  if (param.defaultValue !== undefined && param.defaultValue !== null && param.defaultValue !== '')
+    parts.push(`Default: ${param.defaultValue}`);
+  if (param.nullable) parts.push('Nullable');
+  return parts.join(' | ');
+}
 
 /** Known combo values for specific properties */
 const TYPE_FILTER_VALUES = ['', 'numerical', 'categorical', 'string', 'int', 'double', 'bool'];
@@ -106,44 +133,62 @@ export class PropertyPanel {
       for (let i = 0; i < func.inputs.length; i++) {
         const inp = func.inputs[i];
         const propKey = `_input_${inp.name}`;
+        const tip = buildFuncInputTooltip(inp);
 
         // Only show editors for primitive types that have stored values
         if (n.properties[propKey] === undefined) {
-          inputSection.appendChild(
-            ui.div([ui.divText(`${inp.name}: ${inp.propertyType} (connected only)`)], 'funcflow-prop-row'),
+          const row = ui.div(
+            [ui.divText(`${inp.name}: ${inp.propertyType} (connected only)`)],
+            'funcflow-prop-row',
           );
+          ui.tooltip.bind(row, tip);
+          inputSection.appendChild(row);
           continue;
         }
 
         const connectedAtSlot = n.isInputConnected(i);
         if (connectedAtSlot) {
-          inputSection.appendChild(
-            ui.div([ui.divText(`${inp.name}: connected`)], 'funcflow-prop-row'),
+          const row = ui.div(
+            [ui.divText(`${inp.name}: connected`)], 'funcflow-prop-row',
           );
+          ui.tooltip.bind(row, tip);
+          inputSection.appendChild(row);
           continue;
         }
 
         switch (inp.propertyType) {
         case 'string':
-          inputSection.appendChild(this.createTextarea(inp.name, String(n.properties[propKey] || ''), (v) => {
-            n.properties[propKey] = v;
-          }));
+          inputSection.appendChild(this.createTextarea(
+            inp.name, String(n.properties[propKey] || ''),
+            (v) => {
+              n.properties[propKey] = v;
+            }, tip,
+          ));
           break;
         case 'int':
-          inputSection.appendChild(this.createNumberInput(inp.name, Number(n.properties[propKey] || 0), (v) => {
-            n.properties[propKey] = Math.round(v);
-          }, 0, 1));
+          inputSection.appendChild(this.createNumberInput(
+            inp.name, Number(n.properties[propKey] || 0),
+            (v) => {
+              n.properties[propKey] = Math.round(v);
+            }, 0, 1, tip,
+          ));
           break;
         case 'double':
         case 'num':
-          inputSection.appendChild(this.createNumberInput(inp.name, Number(n.properties[propKey] || 0), (v) => {
-            n.properties[propKey] = v;
-          }, 3, 0.1));
+          inputSection.appendChild(this.createNumberInput(
+            inp.name, Number(n.properties[propKey] || 0),
+            (v) => {
+              n.properties[propKey] = v;
+            }, 3, 0.1, tip,
+          ));
           break;
         case 'bool':
-          inputSection.appendChild(this.createToggle(inp.name, Boolean(n.properties[propKey]), (v) => {
-            n.properties[propKey] = v;
-          }));
+          inputSection.appendChild(this.createToggle(
+            inp.name, Boolean(n.properties[propKey]),
+            (v) => {
+              n.properties[propKey] = v;
+            }, tip,
+          ));
           break;
         }
       }
@@ -280,12 +325,14 @@ export class PropertyPanel {
 
     const section = ui.div([], 'funcflow-prop-section');
     section.appendChild(ui.div([ui.label('Configuration')], 'funcflow-prop-section-header'));
+    const nodeTips = UTILITY_PROP_TOOLTIPS[node.title] || {};
 
     for (const [key, val] of props) {
+      const tip = nodeTips[key];
       if (typeof val === 'boolean') {
         section.appendChild(this.createToggle(key, val, (v) => {
           node.properties[key] = v;
-        }));
+        }, tip));
       } else if (typeof val === 'number') {
         const isInt = Number.isInteger(val);
         section.appendChild(this.createNumberInput(key, val, (v) => {
@@ -295,7 +342,7 @@ export class PropertyPanel {
             const w = node.widgets.find((w) => w.options?.property === key);
             if (w) w.value = node.properties[key];
           }
-        }, isInt ? 0 : 3, isInt ? 1 : 0.1));
+        }, isInt ? 0 : 3, isInt ? 1 : 0.1, tip));
       } else {
         section.appendChild(this.createTextarea(key, String(val), (v) => {
           node.properties[key] = v;
@@ -304,7 +351,7 @@ export class PropertyPanel {
             const w = node.widgets.find((w) => w.options?.property === key);
             if (w) w.value = v;
           }
-        }));
+        }, tip));
       }
     }
 
@@ -361,16 +408,18 @@ export class PropertyPanel {
 
   // --- Editor helpers ---
 
-  /** Create a label element, attaching a tooltip if one is defined in PROP_TOOLTIPS */
-  private labelWithTooltip(text: string): HTMLElement {
+  /** Create a label element, attaching a tooltip if one is defined in PROP_TOOLTIPS or explicitly given */
+  private labelWithTooltip(text: string, explicitTip?: string): HTMLElement {
     const lbl = ui.label(text);
-    const tip = PROP_TOOLTIPS[text];
+    const tip = explicitTip || PROP_TOOLTIPS[text];
     if (tip)
       ui.tooltip.bind(lbl, tip);
     return lbl;
   }
 
-  private createTextarea(label: string, value: string, onChange: (v: string) => void): HTMLElement {
+  private createTextarea(
+    label: string, value: string, onChange: (v: string) => void, inputTooltip?: string,
+  ): HTMLElement {
     const textarea = document.createElement('textarea');
     textarea.value = value;
     textarea.className = 'funcflow-prop-textarea';
@@ -386,12 +435,13 @@ export class PropertyPanel {
       textarea.style.height = 'auto';
       textarea.style.height = textarea.scrollHeight + 'px';
     }, 0);
-    return ui.div([this.labelWithTooltip(label), textarea], 'funcflow-prop-row');
+    if (inputTooltip) ui.tooltip.bind(textarea, inputTooltip);
+    return ui.div([this.labelWithTooltip(label, inputTooltip), textarea], 'funcflow-prop-row');
   }
 
   private createNumberInput(
     label: string, value: number, onChange: (v: number) => void,
-    decimals: number, step: number,
+    decimals: number, step: number, inputTooltip?: string,
   ): HTMLElement {
     const input = document.createElement('input');
     input.type = 'number';
@@ -403,10 +453,13 @@ export class PropertyPanel {
       if (!isNaN(parsed))
         onChange(parsed);
     });
-    return ui.div([this.labelWithTooltip(label), input], 'funcflow-prop-row');
+    if (inputTooltip) ui.tooltip.bind(input, inputTooltip);
+    return ui.div([this.labelWithTooltip(label, inputTooltip), input], 'funcflow-prop-row');
   }
 
-  private createToggle(label: string, value: boolean, onChange: (v: boolean) => void): HTMLElement {
+  private createToggle(
+    label: string, value: boolean, onChange: (v: boolean) => void, inputTooltip?: string,
+  ): HTMLElement {
     const input = document.createElement('input');
     input.type = 'checkbox';
     input.checked = value;
@@ -414,13 +467,15 @@ export class PropertyPanel {
     input.addEventListener('change', () => {
       onChange(input.checked);
     });
-    const lbl = this.labelWithTooltip(label);
+    if (inputTooltip) ui.tooltip.bind(input, inputTooltip);
+    const lbl = this.labelWithTooltip(label, inputTooltip);
     const row = ui.div([input, lbl], 'funcflow-prop-row funcflow-prop-toggle-row');
     return row;
   }
 
   private createCombo(
     label: string, value: string, options: string[], onChange: (v: string) => void,
+    inputTooltip?: string,
   ): HTMLElement {
     const select = document.createElement('select');
     select.className = 'funcflow-prop-input';
@@ -434,7 +489,8 @@ export class PropertyPanel {
     select.addEventListener('change', () => {
       onChange(select.value);
     });
-    return ui.div([this.labelWithTooltip(label), select], 'funcflow-prop-row');
+    if (inputTooltip) ui.tooltip.bind(select, inputTooltip);
+    return ui.div([this.labelWithTooltip(label, inputTooltip), select], 'funcflow-prop-row');
   }
 
   clear(): void {
