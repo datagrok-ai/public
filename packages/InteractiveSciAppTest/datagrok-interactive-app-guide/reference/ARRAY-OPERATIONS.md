@@ -2,7 +2,7 @@
 
 Reference for implementing efficient array operations in Datagrok packages.
 
-> **End-to-end example:** package `InteractiveSciAppTest` — typed arrays in `src/levins/core.ts` (`Float64Array` results) and `src/levins/optimize-worker.ts`.
+> **End-to-end example:** typed arrays in `../example/code/src/levins/core.ts` (`Float64Array` results) and `../example/code/src/levins/optimize-worker.ts`.
 
 For raw data access and null handling, see `COMPUTATION-PATTERNS.md`.
 For worker-specific patterns, see `WORKER-GUIDE.md`.

@@ -1,14 +1,14 @@
 # Guide: Building Interactive Scientific Web Applications on Datagrok
 
-> **End-to-end example:** package `InteractiveSciAppTest`, application **Levins Metapopulation Model**.
-> All file references are relative to the package root.
-> Application specification: `guides/levins-metapopulation-spec.md`.
+> **End-to-end example:** application **Levins Metapopulation Model** (see `example/` directory).
+> All file references are relative to the `guides/` directory.
+> Application specification: `example/levins-metapopulation-spec.md`.
 
 ## 1. General Architecture
 
 An application is a Datagrok package function registered with the `//tags: app` comment.
 
-► **Implementation:** `src/package.ts` — function `levinsMetapopulationModelApp`, registered via `//name: Levins Metapopulation Model` / `//tags: app`. Delegates logic to `src/levins/app.ts` → `levinsMetapopulationApp()`.
+► **Implementation:** `example/code/src/package.ts` — function `levinsMetapopulationModelApp`, registered via `//name: Levins Metapopulation Model` / `//tags: app`. Delegates logic to `example/code/src/levins/app.ts` → `levinsMetapopulationApp()`.
 
 The application architecture follows the "ports and adapters" pattern (hexagonal architecture). The application consists of three layers and a coordinator.
 
@@ -25,7 +25,7 @@ The core contains one or more computational tasks. Each task is a self-contained
 - Parallelization: whether parallelization is possible and the strategy.
 - Complex validation logic for input parameters.
 
-► **Implementation:** `src/levins/core.ts` — core with two tasks:
+► **Implementation:** `example/code/src/levins/core.ts` — core with two tasks:
 - **`task_primary`** (synchronous, main thread) — `solve(inputs)` solves the Levins model ODE and returns the trajectory `p(t)`.
 - **`task_optimize`** (asynchronous, web workers) — searches for the optimal `m` across 10,000 points, executed in parallel in a worker pool.
 
@@ -61,7 +61,7 @@ Both Level 1 and Level 2 content can be placed directly in the main application 
 Level 2 need not be complete before implementation begins, but must be complete before the computational part is considered verified.
 
 ► **Implementation:**
-- **Level 1** is defined in the application specification (`guides/levins-metapopulation-spec.md`): variables `p, m, e₀` with units and domains; ODE `dp/dt = m·p·(1−p) − e(p)·p` with two modes (`e = e₀` and `e = e₀·(1−p)`); output property `p(t) ∈ [0, 1]`; equilibrium `p* = 1 − e₀/m`; reference examples for each mode verified in tests (`Math: Levins func` — 5 tests covering base model and rescue effect at specific `p` values).
+- **Level 1** is defined in the application specification (`example/levins-metapopulation-spec.md`): variables `p, m, e₀` with units and domains; ODE `dp/dt = m·p·(1−p) − e(p)·p` with two modes (`e = e₀` and `e = e₀·(1−p)`); output property `p(t) ∈ [0, 1]`; equilibrium `p* = 1 − e₀/m`; reference examples for each mode verified in tests (`Math: Levins func` — 5 tests covering base model and rescue effect at specific `p` values).
 - **Level 2:** equilibrium analysis, MRT method justification (A-stable implicit method suitable for stiff ODEs), convergence properties — documented in the specification. MRT solver verified against analytical solutions in `Math: MRT solver` tests (non-stiff and stiff reference problems from Chapra & Canale).
 
 #### Computation Implementation
@@ -77,9 +77,9 @@ Computations for each task are implemented using one or a combination of the fol
 A single task can combine multiple approaches — for example, a custom method for data preprocessing, an external library for numerical solution, and a Datagrok computation method for postprocessing.
 
 ► **Implementation:**
-- `task_primary` combines an **external library** (`diff-grok`, function `mrt`) and a **custom method** (`getEquilibrium` in `src/levins/model.ts`).
-- `task_optimize` uses an **external library** (`diff-grok`, `mrt`) inside workers (`src/levins/optimize-worker.ts`) and a **custom method** (finding the maximum `p_end` in `src/levins/app.ts`, lines 421–425).
-- The `mrt` call is wrapped in `createLevinsODE()` (`src/levins/model.ts`), which allows reusing the ODE specification in both the main thread and workers.
+- `task_primary` combines an **external library** (`diff-grok`, function `mrt`) and a **custom method** (`getEquilibrium` in `example/code/src/levins/model.ts`).
+- `task_optimize` uses an **external library** (`diff-grok`, `mrt`) inside workers (`example/code/src/levins/optimize-worker.ts`) and a **custom method** (finding the maximum `p_end` in `example/code/src/levins/app.ts`, lines 421–425).
+- The `mrt` call is wrapped in `createLevinsODE()` (`example/code/src/levins/model.ts`), which allows reusing the ODE specification in both the main thread and workers.
 
 Execution environment constraint: tasks that use Datagrok API computation methods can only run on the main thread. Tasks that use only external libraries and custom methods can run on either the main thread or in a web worker.
 
@@ -90,7 +90,7 @@ General core properties:
 - Does not depend on how data is obtained or how results are displayed.
 - Easily testable in isolation — each task is tested separately.
 
-► **Implementation:** `src/levins/core.ts` does not import `datagrok-api` or `ui` — only `diff-grok` and `./model`. Core tests in `src/tests/levins-api-tests.ts` test `validate`, `solve`, `validateOptimize`, `getEquilibrium` without UI.
+► **Implementation:** `example/code/src/levins/core.ts` does not import `datagrok-api` or `ui` — only `diff-grok` and `./model`. Core tests in `example/code/src/tests/levins-api-tests.ts` test `validate`, `solve`, `validateOptimize`, `getEquilibrium` without UI.
 
 Computation core implementation references: patterns for working with raw data and null handling (`reference/COMPUTATION-PATTERNS.md`), efficient typed array operations (`reference/ARRAY-OPERATIONS.md`).
 
@@ -108,12 +108,12 @@ Additionally, at the application level:
 - **Data port** — interface for loading data from external resources.
 
 ► **Implementation:**
-- **Input port `task_primary`:** interface `LevinsParams` (`src/levins/model.ts`, line 6) — `{ p0, m, e0, rescueEffect, t_start, t_end, t_step, tolerance }`.
-- **Output port `task_primary`:** interface `LevinsSolution` (`src/levins/core.ts`, line 14) — `{ t: Float64Array, p: Float64Array, p_star: number }`.
-- **Input port `task_optimize`:** interface `WorkerTask` (`src/levins/core.ts`, line 129) — data passed to the worker via `postMessage`.
-- **Output port `task_optimize`:** interface `WorkerResult` (`src/levins/core.ts`, line 140) — `{ m_i, p_end, error? }`.
-- **Progress port:** in `task_optimize` implemented via `DG.TaskBarProgressIndicator` (`src/levins/app.ts`, line 302). Progress is updated upon each completed worker.
-- **Cancellation port:** `canceled` flag (`src/levins/app.ts`, line 303), checked before sending the next task to a worker.
+- **Input port `task_primary`:** interface `LevinsParams` (`example/code/src/levins/model.ts`, line 6) — `{ p0, m, e0, rescueEffect, t_start, t_end, t_step, tolerance }`.
+- **Output port `task_primary`:** interface `LevinsSolution` (`example/code/src/levins/core.ts`, line 14) — `{ t: Float64Array, p: Float64Array, p_star: number }`.
+- **Input port `task_optimize`:** interface `WorkerTask` (`example/code/src/levins/core.ts`, line 129) — data passed to the worker via `postMessage`.
+- **Output port `task_optimize`:** interface `WorkerResult` (`example/code/src/levins/core.ts`, line 140) — `{ m_i, p_end, error? }`.
+- **Progress port:** in `task_optimize` implemented via `DG.TaskBarProgressIndicator` (`example/code/src/levins/app.ts`, line 302). Progress is updated upon each completed worker.
+- **Cancellation port:** `canceled` flag (`example/code/src/levins/app.ts`, line 303), checked before sending the next task to a worker.
 - **Data port:** not used (the application does not load external data).
 
 ### 1.3. Adapters
@@ -126,10 +126,10 @@ Concrete implementations of ports for the Datagrok environment.
 - **Progress adapter** — Datagrok progress bar. Implements the progress port.
 - **Data adapter** — loading from a specific resource. Which resource and which mechanism — defined by the specification.
 
-► **Implementation in `src/levins/app.ts`:**
+► **Implementation in `example/code/src/levins/app.ts`:**
 - **UI adapter:** controls `ctrlP0`, `ctrlM`, `ctrlE0`, `ctrlRescue`, `ctrlTStart`, `ctrlTEnd`, `ctrlTStep`, `ctrlTolerance` (lines 43–99). Function `getInputs()` (line 154) converts control state to `LevinsParams`.
 - **Display adapter:** `updateDataFrame()` (line 265) updates the `DG.DataFrame` and the `line chart` viewer; `updateColorCoding()` (line 188) sets conditional color coding for the `p` column.
-- **Worker adapter:** `src/levins/optimize-worker.ts` — the worker receives `WorkerTask` via `onmessage`, calls `mrt(createLevinsODE(...))`, returns `WorkerResult`. The worker pool is created in `runOptimization()` (line 292).
+- **Worker adapter:** `example/code/src/levins/optimize-worker.ts` — the worker receives `WorkerTask` via `onmessage`, calls `mrt(createLevinsODE(...))`, returns `WorkerResult`. The worker pool is created in `runOptimization()` (line 292).
 - **Progress adapter:** `DG.TaskBarProgressIndicator.create('Optimizing m...')` (line 302), updated via `pi.update(...)` (line 365).
 - **Data adapter:** not used.
 
@@ -145,7 +145,7 @@ The coordinator connects adapters and the core. It:
 - Passes results to the display adapter.
 - Manages resource lifecycle (subscriptions, workers).
 
-► **Implementation:** function `levinsMetapopulationApp()` in `src/levins/app.ts` fulfills all coordinator roles:
+► **Implementation:** function `levinsMetapopulationApp()` in `example/code/src/levins/app.ts` fulfills all coordinator roles:
 - Listens to `onValueChanged` via input callbacks (lines 43–99).
 - Reactivity: `updateRhoBadge()` (line 124), `updateRescueLabel()` (line 136).
 - Validation and computation: `runPrimary()` (line 226).
@@ -162,7 +162,7 @@ Input behavior does not depend on the core's computational part. The UI adapter 
 
 The application has a main view. If a scientific application is based on a table, the main view should be `DG.TableView`.
 
-► **Implementation:** `src/levins/app.ts`, line 33: `const view = grok.shell.addTableView(df)`.
+► **Implementation:** `example/code/src/levins/app.ts`, line 33: `const view = grok.shell.addTableView(df)`.
 
 ## 3. Controls (Inputs)
 
@@ -173,7 +173,7 @@ Users set input parameters for computations through controls. Control types:
 - **Custom HTMLElement** — for example, a `div` element with specific styles that performs an action when clicked. Each custom element is described in a separate document — a UI component specification. The UI component specification contains: visual description (sketch/mockup), states (normal, hover, disabled, active), events (what it emits on interaction), styles (CSS classes), accessibility (tooltips, aria). The main application specification includes a brief element description and a link to the UI component specification document.
 
 ► **Implementation:**
-- **Standard inputs:** 7 numeric + 1 toggle in `src/levins/app.ts`, lines 43–99 (`ctrlP0`, `ctrlM`, `ctrlE0`, `ctrlRescue`, `ctrlTStart`, `ctrlTEnd`, `ctrlTStep`, `ctrlTolerance`).
+- **Standard inputs:** 7 numeric + 1 toggle in `example/code/src/levins/app.ts`, lines 43–99 (`ctrlP0`, `ctrlM`, `ctrlE0`, `ctrlRescue`, `ctrlTStart`, `ctrlTEnd`, `ctrlTStep`, `ctrlTolerance`).
 - **Buttons:** `optimizeBtn = ui.iconFA('search', ...)` (line 503), `resetBtn = ui.iconFA('undo', ...)` (line 505).
 - **Custom HTMLElement:** `rhoBadge = ui.div([], 'd4-tag levins-rho-badge')` (line 37) — a rho = e0/m indicator with dynamic color switching via CSS classes.
 
@@ -221,7 +221,7 @@ By default, these elements are docked to the main view.
 
 The placement of controls and display elements (panels, ribbon, toolbar, side panels, docking area) is defined by the application specification.
 
-► **Implementation (`src/levins/app.ts`):**
+► **Implementation (`example/code/src/levins/app.ts`):**
 - **Left panel:** `ui.form` with groups via `ui.h2` (lines 523–540), docked as `DG.DOCK_TYPE.LEFT`, ratio `0.2` (line 543).
 - **Toolbar (ribbon):** `view.setRibbonPanels([[optimizeBtn, resetBtn]])` (line 520).
 - **Main area:** `DG.TableView` (grid) — default.
@@ -237,8 +237,8 @@ All visual styles of the application are placed in a separate CSS file (`css/<ap
 The CSS file is imported via ES import (`import '../css/<app-name>.css'`). Webpack with `style-loader` + `css-loader` injects styles into the DOM when the bundle loads.
 
 ► **Implementation:**
-- CSS file: `css/levins.css` — contains classes `.levins-rho-badge`, `.levins-rho-badge--persists`, `.levins-rho-badge--extinct`, `.levins-btn--disabled`.
-- Import: `import '../../css/levins.css'` (`src/levins/app.ts`, line 12).
+- CSS file: `example/code/css/levins.css` — contains classes `.levins-rho-badge`, `.levins-rho-badge--persists`, `.levins-rho-badge--extinct`, `.levins-btn--disabled`.
+- Import: `import '../../css/levins.css'` (`example/code/src/levins/app.ts`, line 12).
 - **Static styles:** `rhoBadge` is created with classes `'d4-tag levins-rho-badge'` (line 37).
 - **Dynamic styles:** `rhoBadge.classList.toggle('levins-rho-badge--persists', persists)` (line 130); `optimizeBtn.classList.toggle('levins-btn--disabled', !enabled)` (line 289).
 
@@ -258,7 +258,7 @@ The CSS file is imported via ES import (`import '../css/<app-name>.css'`). Webpa
 
 Validators are added to standard Datagrok inputs — they display inline hints about the validity of the current value.
 
-► **Implementation:** function `addValidators()` (`src/levins/app.ts`, line 168) adds a validator to each input. The validator calls `validate(getInputs())` from the core and returns an error for the specific `InputId`.
+► **Implementation:** function `addValidators()` (`example/code/src/levins/app.ts`, line 168) adds a validator to each input. The validator calls `validate(getInputs())` from the core and returns an error for the specific `InputId`.
 
 ### 6.3. Progress Bar
 
@@ -275,8 +275,8 @@ Validation is performed through the Datagrok validator mechanism. Each computati
 Validation is complex: the entire set of task inputs is analyzed as a whole. If a combination of values is invalid, a `Map` with error specifications is returned. This specification is then used by the Datagrok validator mechanism to display errors on the corresponding inputs.
 
 ► **Implementation:**
-- `task_primary`: function `validate(inputs: LevinsParams): ValidationErrors` (`src/levins/core.ts`, line 40) — returns `Map<InputId, string>`. Rules val_01…val_09 check both individual values and combinations (e.g., val_05: `m <= e0` when `rescueEffect = false`; val_08: `t_step >= t_end - t_start`).
-- `task_optimize`: function `validateOptimize(opt, e0, rescueEffect)` (`src/levins/core.ts`, line 106) — returns `{ errors: Map<OptInputId, string>, warning: string | null }`. Rules opt_val_01…opt_val_04.
+- `task_primary`: function `validate(inputs: LevinsParams): ValidationErrors` (`example/code/src/levins/core.ts`, line 40) — returns `Map<InputId, string>`. Rules val_01…val_09 check both individual values and combinations (e.g., val_05: `m <= e0` when `rescueEffect = false`; val_08: `t_step >= t_end - t_start`).
+- `task_optimize`: function `validateOptimize(opt, e0, rescueEffect)` (`example/code/src/levins/core.ts`, line 106) — returns `{ errors: Map<OptInputId, string>, warning: string | null }`. Rules opt_val_01…opt_val_04.
 
 ### 7.2. Validation Order
 
@@ -302,7 +302,7 @@ The primary pipeline is bound to the main application controls and operates reac
 
 **Result display.** The core returns results through the task's output port. The coordinator passes them to the display adapter (see section 4).
 
-► **Implementation:** function `runPrimary()` (`src/levins/app.ts`, line 226):
+► **Implementation:** function `runPrimary()` (`example/code/src/levins/app.ts`, line 226):
 1. Checks `computationsBlocked` (line 227).
 2. Collects inputs: `getInputs()` (line 230).
 3. Validates: `validate(inputs)` (line 231).
@@ -376,7 +376,7 @@ The coordinator supports a computation blocking mode:
 
 Example: the user launches parameter optimization (secondary task). Upon optimization completion, the coordinator blocks the primary pipeline, substitutes the found parameter values into all controls, removes the block — the primary pipeline runs once for the complete set of optimal parameters.
 
-► **Implementation:** the `computationsBlocked` flag (`src/levins/app.ts`, line 19) is used in three scenarios:
+► **Implementation:** the `computationsBlocked` flag (`example/code/src/levins/app.ts`, line 19) is used in three scenarios:
 1. **Format initialization** (lines 102–110): blocking prevents side-effect recomputations during `format` assignment.
 2. **Reset** (lines 506–518): `computationsBlocked = true` → reset all values → `computationsBlocked = false` → `runPrimary()`.
 3. **Optimization result** (lines 428–437): `computationsBlocked = true` → `ctrlM.value = best.m_i` → `computationsBlocked = false` → `runPrimary()`.
@@ -401,7 +401,7 @@ Reactivity can be temporarily suspended by the coordinator in batch input update
 
 The primary approach is manual entry through application controls.
 
-► **Implementation:** all model parameters are entered by the user through the form in the left panel. The initial state uses default values from `DEFAULTS` (`src/levins/core.ts`, line 27). `task_primary` runs automatically on initialization: `solve(DEFAULTS)` (line 26).
+► **Implementation:** all model parameters are entered by the user through the form in the left panel. The initial state uses default values from `DEFAULTS` (`example/code/src/levins/core.ts`, line 27). `task_primary` runs automatically on initialization: `solve(DEFAULTS)` (line 26).
 
 ### 10.2. Loading from a Resource
 
@@ -413,7 +413,7 @@ Via buttons or icons — loading data from an external resource. Which specific 
 
 The strategy for handling data loading errors, network errors, invalid input files, and incorrect application state is defined by the application specification.
 
-► **Implementation:** see specification (`guides/levins-metapopulation-spec.md`, section 11). Examples:
+► **Implementation:** see specification (`example/levins-metapopulation-spec.md`, section 11). Examples:
 - Worker creation error: `reject(new Error('Failed to start parallel computations...'))` (line 380).
 - Partial worker errors: `errorCount` counting and `grok.shell.warning(...)` (lines 305, 412–413).
 - Error writing to control: fallback with `grok.shell.warning(...)` (line 436).
@@ -424,7 +424,7 @@ The strategy for handling data loading errors, network errors, invalid input fil
 
 All Datagrok event subscriptions (`onValueChanged`, `onAfterDraw`, etc.) must be collected and unsubscribed when the application closes via `sub.unsubscribe()`.
 
-► **Implementation:** array `subs` (`src/levins/app.ts`, line 21) collects subscriptions. On close — `for (const sub of subs) sub.unsubscribe()` (line 564).
+► **Implementation:** array `subs` (`example/code/src/levins/app.ts`, line 21) collects subscriptions. On close — `for (const sub of subs) sub.unsubscribe()` (line 564).
 
 ### 12.2. Worker Termination
 
@@ -441,7 +441,7 @@ When the application closes, the coordinator performs:
 - All associated UI elements are closed (including open secondary task dialogs).
 - Pending requests are cancelled.
 
-► **Implementation:** handler `grok.events.onViewRemoved.subscribe(...)` (`src/levins/app.ts`, lines 561–568):
+► **Implementation:** handler `grok.events.onViewRemoved.subscribe(...)` (`example/code/src/levins/app.ts`, lines 561–568):
 1. `terminateWorkers()` — terminates all active workers.
 2. `for (const sub of subs) sub.unsubscribe()` — unsubscribes subscriptions.
 3. `clearTimeout(debounceTimer)` — cancels pending debounce.
@@ -460,17 +460,17 @@ Core correctness verification: unit tests for each computational task separately
 
 ► **Implementation:** tests are split across two files:
 
-**`src/tests/levins-api-tests.ts`** — 2 categories:
+**`example/code/src/tests/levins-api-tests.ts`** — 2 categories:
 - **API: Validation** — 24 tests: val_01…val_09 + boundary values + dependency order + multiple errors + defaults.
 - **API: Optimization Validation** — 7 tests: opt_val_01…opt_val_04 + valid input data.
 
-**`src/tests/levins-math-tests.ts`** — 4 categories:
+**`example/code/src/tests/levins-math-tests.ts`** — 4 categories:
 - **Math: MRT solver** — 3 tests: non-stiff 1D, stiff 1D, stiff 2D (van der Pol) — verifying the `mrt` solver against analytical/reference solutions.
 - **Math: Levins func** — 5 tests: ODE right-hand side correctness for the base model and rescue effect at specific `p` values.
 - **Math: Equilibrium** — 4 tests: `getEquilibrium` for the base model and rescue effect.
 - **Math: Solve output properties** — 8 tests: output invariants of `solve()` — bounds `p ∈ [0, 1]`, initial conditions, convergence to `p*`, monotonicity in `m`.
 
-Tests are run via `grok test` (entry point: `src/package-test.ts`).
+Tests are run via `grok test` (entry point: `example/code/src/package-test.ts`).
 
 ### 15.2. Inputs
 

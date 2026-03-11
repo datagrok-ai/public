@@ -2,13 +2,13 @@
 
 For interactive scientific applications.
 
-> **End-to-end example:** package `InteractiveSciAppTest`, UI setup in `src/levins/app.ts`.
+> **End-to-end example:** UI setup in `../example/code/src/levins/app.ts`.
 
 ## 1. Inputs (`ui.input.*`)
 
 All inputs return an object inheriting from [`InputBase`](https://datagrok.ai/api/js/dg/classes/InputBase).
 
-UI Documentation: [Datagrok UI](../../help/develop/advanced/ui.md) | Namespace [`ui.input`](https://datagrok.ai/api/js/ui/namespaces/input/)
+UI Documentation: [Datagrok UI](https://datagrok.ai/help/develop/advanced/ui.md) | Namespace [`ui.input`](https://datagrok.ai/api/js/ui/namespaces/input/)
 
 ### 1.1. Input Catalog
 
@@ -98,7 +98,7 @@ const isValid = input.validate(); // true / false
 const subs: rxjs.Subscription[] = ui.bindInputs([input1, input2, input3]);
 ```
 
-### 1.5. Grouping Inputs into a Form ([`ui.inputs`](https://datagrok.ai/api/js/ui/functions/inputs) | [UI: Forms](../../help/develop/advanced/ui.md#forms))
+### 1.5. Grouping Inputs into a Form ([`ui.inputs`](https://datagrok.ai/api/js/ui/functions/inputs) | [UI: Forms](https://datagrok.ai/help/develop/advanced/ui.md#forms))
 
 ```typescript
 // Vertical form
@@ -142,43 +142,43 @@ ui.tooltip.showRowGroup(dataFrame, predicate, x, y);
 
 ## 4. Viewers ([`DG.Viewer`](https://datagrok.ai/api/js/dg/classes/JsViewer))
 
-Documentation: [Viewers](../../help/visualize/viewers/) | [Viewer API](https://datagrok.ai/api/js/dg/classes/JsViewer) | [UI: Viewers](../../help/develop/advanced/ui.md#viewers)
+Documentation: [Viewers](https://datagrok.ai/help/visualize/viewers/) | [Viewer API](https://datagrok.ai/api/js/dg/classes/JsViewer) | [UI: Viewers](https://datagrok.ai/help/develop/advanced/ui.md#viewers)
 
 ### 4.1. Standard Viewer Catalog
 
 | Factory Method | TableView Method | Description | Docs |
 |---|---|---|---|
-| `DG.Viewer.barChart(df, options?)` | `view.barChart(options?)` | Bar chart | [Bar Chart](../../help/visualize/viewers/bar-chart.md) |
-| `DG.Viewer.boxPlot(df, options?)` | `view.boxPlot(options?)` | Box plot | [Box Plot](../../help/visualize/viewers/box-plot.md) |
-| `DG.Viewer.calendar(df, options?)` | `view.calendar(options?)` | Calendar | [Calendar](../../help/visualize/viewers/calendar.md) |
-| `DG.Viewer.correlationPlot(df, options?)` | `view.corrPlot(options?)` | Correlation matrix | [Correlation Plot](../../help/visualize/viewers/correlation-plot.md) |
-| `DG.Viewer.densityPlot(df, options?)` | `view.densityPlot(options?)` | Point density | [Density Plot](../../help/visualize/viewers/density-plot.md) |
-| `DG.Viewer.filters(df, options?)` | `view.filters(options?)` | Filter set | [Filters](../../help/visualize/viewers/filters.md) |
-| `DG.Viewer.form(df, options?)` | `view.form(options?)` | Form (single row) | [Form](../../help/visualize/viewers/form.md) |
-| `DG.Viewer.grid(df, options?)` | `view.grid` | Table grid | [Grid](../../help/visualize/viewers/grid.md) |
-| `DG.Viewer.heatMap(df, options?)` | `view.heatMap(options?)` | Heat map | [Heat Map](../../help/visualize/viewers/heat-map.md) |
-| `DG.Viewer.histogram(df, options?)` | `view.histogram(options?)` | Histogram | [Histogram](../../help/visualize/viewers/histogram.md) |
-| `DG.Viewer.lineChart(df, options?)` | `view.lineChart(options?)` | Line chart | [Line Chart](../../help/visualize/viewers/line-chart.md) |
-| `DG.Viewer.markup(df, options?)` | `view.markup(options?)` | HTML/Markdown | [Markup](../../help/visualize/viewers/markup.md) |
-| `DG.Viewer.matrixPlot(df, options?)` | `view.matrixPlot(options?)` | Matrix of plots | [Matrix Plot](../../help/visualize/viewers/matrix-plot.md) |
-| `DG.Viewer.network(df, options?)` | `view.networkDiagram(options?)` | Network diagram | [Network Diagram](../../help/visualize/viewers/network-diagram.md) |
-| `DG.Viewer.pcPlot(df, options?)` | `view.pcPlot(options?)` | Parallel coordinates | [PC Plot](../../help/visualize/viewers/pc-plot.md) |
-| `DG.Viewer.pieChart(df, options?)` | — | Pie chart | [Pie Chart](../../help/visualize/viewers/pie-chart.md) |
-| `DG.Viewer.scatterPlot(df, options?)` | `view.scatterPlot(options?)` | Scatter plot | [Scatter Plot](../../help/visualize/viewers/scatter-plot.md) |
-| `DG.Viewer.scatterPlot3d(df, options?)` | `view.scatterPlot3d(options?)` | 3D scatter plot | [3D Scatter Plot](../../help/visualize/viewers/3d-scatter-plot.md) |
-| `DG.Viewer.statistics(df, options?)` | `view.statistics(options?)` | Descriptive statistics | [Statistics](../../help/visualize/viewers/statistics.md) |
-| `DG.Viewer.tile(df, options?)` | `view.tileViewer(options?)` | Tile view | [Tile Viewer](../../help/visualize/viewers/tile-viewer.md) |
-| `DG.Viewer.treeMap(df, options?)` | `view.treeMap(options?)` | Tree map | [Tree Map](../../help/visualize/viewers/tree-map.md) |
-| `DG.Viewer.trellisPlot(df, options?)` | — | Facet grid | [Trellis Plot](../../help/visualize/viewers/trellis-plot.md) |
-| `DG.Viewer.wordCloud(df, options?)` | — | Word cloud | [Word Cloud](../../help/visualize/viewers/word-cloud.md) |
+| `DG.Viewer.barChart(df, options?)` | `view.barChart(options?)` | Bar chart | [Bar Chart](https://datagrok.ai/help/visualize/viewers/bar-chart.md) |
+| `DG.Viewer.boxPlot(df, options?)` | `view.boxPlot(options?)` | Box plot | [Box Plot](https://datagrok.ai/help/visualize/viewers/box-plot.md) |
+| `DG.Viewer.calendar(df, options?)` | `view.calendar(options?)` | Calendar | [Calendar](https://datagrok.ai/help/visualize/viewers/calendar.md) |
+| `DG.Viewer.correlationPlot(df, options?)` | `view.corrPlot(options?)` | Correlation matrix | [Correlation Plot](https://datagrok.ai/help/visualize/viewers/correlation-plot.md) |
+| `DG.Viewer.densityPlot(df, options?)` | `view.densityPlot(options?)` | Point density | [Density Plot](https://datagrok.ai/help/visualize/viewers/density-plot.md) |
+| `DG.Viewer.filters(df, options?)` | `view.filters(options?)` | Filter set | [Filters](https://datagrok.ai/help/visualize/viewers/filters.md) |
+| `DG.Viewer.form(df, options?)` | `view.form(options?)` | Form (single row) | [Form](https://datagrok.ai/help/visualize/viewers/form.md) |
+| `DG.Viewer.grid(df, options?)` | `view.grid` | Table grid | [Grid](https://datagrok.ai/help/visualize/viewers/grid.md) |
+| `DG.Viewer.heatMap(df, options?)` | `view.heatMap(options?)` | Heat map | [Heat Map](https://datagrok.ai/help/visualize/viewers/heat-map.md) |
+| `DG.Viewer.histogram(df, options?)` | `view.histogram(options?)` | Histogram | [Histogram](https://datagrok.ai/help/visualize/viewers/histogram.md) |
+| `DG.Viewer.lineChart(df, options?)` | `view.lineChart(options?)` | Line chart | [Line Chart](https://datagrok.ai/help/visualize/viewers/line-chart.md) |
+| `DG.Viewer.markup(df, options?)` | `view.markup(options?)` | HTML/Markdown | [Markup](https://datagrok.ai/help/visualize/viewers/markup.md) |
+| `DG.Viewer.matrixPlot(df, options?)` | `view.matrixPlot(options?)` | Matrix of plots | [Matrix Plot](https://datagrok.ai/help/visualize/viewers/matrix-plot.md) |
+| `DG.Viewer.network(df, options?)` | `view.networkDiagram(options?)` | Network diagram | [Network Diagram](https://datagrok.ai/help/visualize/viewers/network-diagram.md) |
+| `DG.Viewer.pcPlot(df, options?)` | `view.pcPlot(options?)` | Parallel coordinates | [PC Plot](https://datagrok.ai/help/visualize/viewers/pc-plot.md) |
+| `DG.Viewer.pieChart(df, options?)` | — | Pie chart | [Pie Chart](https://datagrok.ai/help/visualize/viewers/pie-chart.md) |
+| `DG.Viewer.scatterPlot(df, options?)` | `view.scatterPlot(options?)` | Scatter plot | [Scatter Plot](https://datagrok.ai/help/visualize/viewers/scatter-plot.md) |
+| `DG.Viewer.scatterPlot3d(df, options?)` | `view.scatterPlot3d(options?)` | 3D scatter plot | [3D Scatter Plot](https://datagrok.ai/help/visualize/viewers/3d-scatter-plot.md) |
+| `DG.Viewer.statistics(df, options?)` | `view.statistics(options?)` | Descriptive statistics | [Statistics](https://datagrok.ai/help/visualize/viewers/statistics.md) |
+| `DG.Viewer.tile(df, options?)` | `view.tileViewer(options?)` | Tile view | [Tile Viewer](https://datagrok.ai/help/visualize/viewers/tile-viewer.md) |
+| `DG.Viewer.treeMap(df, options?)` | `view.treeMap(options?)` | Tree map | [Tree Map](https://datagrok.ai/help/visualize/viewers/tree-map.md) |
+| `DG.Viewer.trellisPlot(df, options?)` | — | Facet grid | [Trellis Plot](https://datagrok.ai/help/visualize/viewers/trellis-plot.md) |
+| `DG.Viewer.wordCloud(df, options?)` | — | Word cloud | [Word Cloud](https://datagrok.ai/help/visualize/viewers/word-cloud.md) |
 
 Additional viewers (require data with coordinates):
 
 | Viewer | Description | Docs |
 |---|---|---|
-| `view.googleMap(options?)` | Google Maps with data overlay | [Google Map](../../help/visualize/viewers/google-map.md) |
-| `DG.Viewer.fromType('Globe', df)` | 3D globe | [Globe](../../help/visualize/viewers/globe.md) |
-| `view.shapeMap(options?)` | Region map | [Shape Map](../../help/visualize/viewers/shape-map.md) |
+| `view.googleMap(options?)` | Google Maps with data overlay | [Google Map](https://datagrok.ai/help/visualize/viewers/google-map.md) |
+| `DG.Viewer.fromType('Globe', df)` | 3D globe | [Globe](https://datagrok.ai/help/visualize/viewers/globe.md) |
+| `view.shapeMap(options?)` | Region map | [Shape Map](https://datagrok.ai/help/visualize/viewers/shape-map.md) |
 
 ### 4.2. Creating by Type
 
@@ -205,7 +205,7 @@ plot.setOptions({
 });
 ```
 
-### 4.4. Docking to TableView ([UI: Docking](../../help/develop/advanced/ui.md#docking))
+### 4.4. Docking to TableView ([UI: Docking](https://datagrok.ai/help/develop/advanced/ui.md#docking))
 
 ```typescript
 const view = grok.shell.addTableView(df);
@@ -230,7 +230,7 @@ grok.shell.warning('Warning');
 grok.shell.error('Error message');
 ```
 
-## 6. Dialogs ([`ui.dialog`](https://datagrok.ai/api/js/ui/functions/dialog) | [UI: Dialogs](../../help/develop/advanced/ui.md#dialogs))
+## 6. Dialogs ([`ui.dialog`](https://datagrok.ai/api/js/ui/functions/dialog) | [UI: Dialogs](https://datagrok.ai/help/develop/advanced/ui.md#dialogs))
 
 ```typescript
 // Standard dialog
@@ -274,7 +274,7 @@ pi.update(50, 'Progress 50%');
 pi.close();
 ```
 
-## 9. Layouts and Containers ([UI: Layouts](../../help/develop/advanced/ui.md#layouts))
+## 9. Layouts and Containers ([UI: Layouts](https://datagrok.ai/help/develop/advanced/ui.md#layouts))
 
 | Method | Description | Docs |
 |---|---|---|

@@ -2,7 +2,7 @@
 
 Reference for implementing computational methods in Datagrok packages.
 
-> **End-to-end example:** package `InteractiveSciAppTest`, core `src/levins/core.ts` + `src/levins/model.ts`.
+> **End-to-end example:** core `../example/code/src/levins/core.ts` + `../example/code/src/levins/model.ts`.
 
 For worker-based methods, see `WORKER-GUIDE.md`.
 For array allocation and reuse patterns, see `ARRAY-OPERATIONS.md`.

@@ -2,7 +2,7 @@
 
 Reference for implementing in-worker computations using the `worker-utils` infrastructure.
 
-> **End-to-end example:** package `InteractiveSciAppTest`, optimization worker `src/levins/optimize-worker.ts`.
+> **End-to-end example:** optimization worker `../example/code/src/levins/optimize-worker.ts`.
 > For architectural context (ports, adapters, coordinator) see `../datagrok-interactive-app-guide.md` (sections 1.2–1.3).
 
 ## Worker-Utils Infrastructure

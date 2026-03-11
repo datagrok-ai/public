@@ -2,7 +2,7 @@
 
 Reference for distributing independent computations across multiple web workers.
 
-> **End-to-end example:** package `InteractiveSciAppTest`, function `runOptimization()` in `src/levins/app.ts` — worker pool with task queue, progress bar, partial error handling.
+> **End-to-end example:** function `runOptimization()` in `../example/code/src/levins/app.ts` — worker pool with task queue, progress bar, partial error handling.
 
 For single-worker patterns, see `WORKER-GUIDE.md`.
 
