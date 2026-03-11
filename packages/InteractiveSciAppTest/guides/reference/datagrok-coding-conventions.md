@@ -1,5 +1,7 @@
 # Coding Standard: Datagrok Interactive Scientific Applications
 
+> **End-to-end example:** package `InteractiveSciAppTest`, application code in `src/levins/`.
+
 Extracted from the `DiffStudio` package (`packages/DiffStudio`).
 
 ## 1. File Structure
@@ -277,7 +279,12 @@ export function getIsNotDefined(msg: string): ModelError {
 
 ## 7. Package Function Registration
 
-Decorators `@grok.decorators.*` are used:
+Datagrok supports two function registration approaches:
+
+1. **JSDoc-style comments** (traditional) — `//name:`, `//tags: app`, `//input:`, `//output:`. Processed by `grok api` and `grok check`.
+2. **Decorators** `@grok.decorators.*` (modern) — type-safe alternative used in newer packages.
+
+Both approaches are valid. The example below uses decorators (as in the DiffStudio package):
 
 ```typescript
 export class PackageFunctions {

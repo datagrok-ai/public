@@ -3,48 +3,50 @@
 ## Common Part (reusable, identical for all applications)
 
 ```
-datagrok-guide/
+guides/
 │
 ├── 1. Architecture and Philosophy
 │   datagrok-interactive-app-guide.md
 │   "Ports and adapters" pattern, pipelines, lifecycle,
 │   subscriptions, teardown, testing.
 │
-├── 2. Datagrok API Reference
-│   datagrok-api-reference.md
-│   Catalog of inputs, viewers, buttons, tooltips, dialogs,
-│   layouts, notifications, subscriptions. With links to documentation.
-│
-├── 3. Coding Standard
-│   datagrok-coding-conventions.md
-│   File structure, constants, types, classes, functions,
-│   error handling, naming, formatting, testing.
-│
-├── 4. Specification Template
+├── 2. Specification Template
 │   datagrok-app-specification-template.md
 │   Empty template defining the specification structure
 │   for a specific application.
 │
-├── 5. End-to-End Application Example
-│   datagrok-example-app/
-│   Completed specification + full code demonstrating
-│   all architecture layers. Serves as a reference for generation.
+├── 3. End-to-End Application Example
+│   levins-metapopulation-spec.md
+│   Completed specification for the Levins Metapopulation Model.
+│   Serves as a reference for generation.
 │
-└── 6. Implementation References (provided during core implementation phase)
-    COMPUTATION-PATTERNS.md
-    Working with raw data, null handling, single-pass aggregation,
-    data locality, bool columns, module structure.
+└── reference/
+    │
+    ├── 4. Datagrok API Reference
+    │   datagrok-api-reference.md
+    │   Catalog of inputs, viewers, buttons, tooltips, dialogs,
+    │   layouts, notifications, subscriptions. With links to documentation.
+    │
+    ├── 5. Coding Standard
+    │   datagrok-coding-conventions.md
+    │   File structure, constants, types, classes, functions,
+    │   error handling, naming, formatting, testing.
+    │
+    └── 6. Implementation References (provided during core implementation phase)
+        COMPUTATION-PATTERNS.md
+        Working with raw data, null handling, single-pass aggregation,
+        data locality, bool columns, module structure.
 
-    ARRAY-OPERATIONS.md
-    Typed array patterns: buffer reuse, out-parameter,
-    scratch buffers, ring buffer, array pool, in-place transforms.
+        ARRAY-OPERATIONS.md
+        Typed array patterns: buffer reuse, out-parameter,
+        scratch buffers, ring buffer, array pool, in-place transforms.
 
-    WORKER-GUIDE.md
-    Worker-utils infrastructure, WorkerColumn/WorkerDataFrame,
-    DG↔Worker transforms, matrix layouts, lifecycle.
+        WORKER-GUIDE.md
+        Worker-utils infrastructure, WorkerColumn/WorkerDataFrame,
+        DG↔Worker transforms, matrix layouts, lifecycle.
 
-    PARALLEL-EXECUTION.md
-    Fan-out/fan-in, distribution across workers, worker count.
+        PARALLEL-EXECUTION.md
+        Fan-out/fan-in, distribution across workers, worker count.
 ```
 
 ## Application-Specific Part (unique for each application)

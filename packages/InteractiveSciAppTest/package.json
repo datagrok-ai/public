@@ -3,6 +3,10 @@
   "friendlyName": "InteractiveSciAppTest",
   "version": "0.0.1",
   "description": "InteractiveSciAppTest package",
+  "author": {
+    "name": "CC",
+    "email": "vmakarichev@datagrok.ai"
+  },
   "dependencies": {
     "@datagrok-libraries/utils": "^4.6.5",
     "cash-dom": "^8.1.5",

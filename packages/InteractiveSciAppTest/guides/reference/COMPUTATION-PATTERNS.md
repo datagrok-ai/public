@@ -6,7 +6,7 @@ Reference for implementing computational methods in Datagrok packages.
 
 For worker-based methods, see `WORKER-GUIDE.md`.
 For array allocation and reuse patterns, see `ARRAY-OPERATIONS.md`.
-For architectural context (core tasks, pipelines, specification structure), see `datagrok-interactive-app-guide.md` and `datagrok-app-specification-template.md`.
+For architectural context (core tasks, pipelines, specification structure), see `../datagrok-interactive-app-guide.md` and `../datagrok-app-specification-template.md`.
 
 ## Raw Typed Arrays
 

@@ -2,6 +2,8 @@
 
 For interactive scientific applications.
 
+> **End-to-end example:** package `InteractiveSciAppTest`, UI setup in `src/levins/app.ts`.
+
 ## 1. Inputs (`ui.input.*`)
 
 All inputs return an object inheriting from [`InputBase`](https://datagrok.ai/api/js/dg/classes/InputBase).
@@ -40,6 +42,8 @@ UI Documentation: [Datagrok UI](../../help/develop/advanced/ui.md) | Namespace [
 | `icon` | `string \| HTMLElement` | Icon in the field (for string types) |
 | `clearIcon` | `boolean` | Clear icon (for string types) |
 | `escClears` | `boolean` | Esc clears the field (for string types) |
+| `tooltipText` | `string` | Tooltip text displayed on hover |
+| `onValueChanged` | `(value) => void` | Callback fired when the value changes (shorthand for subscribing to `.onChanged`) |
 
 ### 1.3. Properties and Methods of [`InputBase`](https://datagrok.ai/api/js/dg/classes/InputBase)
 
@@ -56,6 +60,10 @@ UI Documentation: [Datagrok UI](../../help/develop/advanced/ui.md) | Namespace [
 #### Tooltips
 
 ```typescript
+// At creation time (preferred):
+const input = ui.input.float('Rate', { tooltipText: 'Parameter description' });
+
+// Or after creation:
 input.setTooltip('Parameter description');
 ```
 
@@ -80,6 +88,8 @@ const isValid = input.validate(); // true / false
 | `.onInput` | Value changed by user. Subscribe: `.onInput.subscribe(callback)` |
 | `.fireChanged()` | Programmatically trigger the `onChanged` event |
 | `.fireInput()` | Programmatically trigger the `onInput` event |
+
+> **Note:** The `onValueChanged` callback in input options (section 1.2) is a convenience shorthand equivalent to subscribing to `.onChanged`. Use `onValueChanged` when setting up the callback at creation time; use `.onChanged.subscribe(...)` when subscribing later or when you need the `rxjs.Subscription` for cleanup.
 
 ### 1.4. Binding Inputs ([`ui.bindInputs`](https://datagrok.ai/api/js/ui/functions/bindInputs))
 

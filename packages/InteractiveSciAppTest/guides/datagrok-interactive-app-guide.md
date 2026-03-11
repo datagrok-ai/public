@@ -38,15 +38,41 @@ Tasks can be independent or linked (the secondary task uses results from the pri
 
 ► **Implementation:** `task_optimize` does not depend on the results of `task_primary`, but uses the current input values of the primary pipeline (snapshot). After optimization completes, the result is written to the `ctrl_m` control via batch update, which triggers a single run of `task_primary`.
 
+#### Computation Formulas and Model
+
+Each computational task is based on a defined transformation of inputs into outputs — from a single formula to a complex system of equations. In this guide, the term "model" refers to any such definition: individual formulas, chains of transformations, ODE/PDE systems, optimization problems, or statistical procedures. The model exists independently of its implementation (custom code, external library, or platform API). The model definition is the primary source of verification criteria: what cannot be defined cannot be verified.
+
+The model definition has two levels.
+
+**Level 1 — required minimum (before implementation):**
+
+- **Variables:** name, meaning, units of measurement, valid domain (e.g., `p ∈ (0, 1]`, `m > 0`).
+- **Relationships:** equations, recurrences, algorithmic steps that connect inputs to outputs. The notation must be unambiguous — another developer must be able to independently implement the same computation from this description.
+- **Output properties:** constraints that must hold on the result — bounds, monotonicity, symmetry, conservation laws, limiting/degenerate cases. These properties directly become verification tests.
+- **Reference examples:** for each computational path (each mode, branch, or regime of the model), at least one concrete input → expected output pair with the source (manual calculation, literature, reference implementation).
+
+**Level 2 — full formalization (can be developed incrementally alongside the implementation):**
+
+- **Complete mathematical formulation:** equations, initial/boundary conditions, parameterization. For ODE/PDE — the system in explicit form.
+- **Analytical properties:** equilibria, asymptotic behavior, stability conditions, bifurcation points.
+- **Numerical method justification:** why this particular method is chosen, its properties (stability, order of accuracy, applicability to stiff/non-stiff problems), reference to literature or documentation.
+Both Level 1 and Level 2 content can be placed directly in the main application specification or extracted into a separate model specification document — depending on complexity. For simple models (a few formulas), the application specification is sufficient. For complex models (multi-step pipelines, multiple computational paths, extensive reference data), a separate document avoids cluttering the main specification. The main application specification then includes a brief model description and a link to the model specification.
+
+Level 2 need not be complete before implementation begins, but must be complete before the computational part is considered verified.
+
+► **Implementation:**
+- **Level 1** is defined in the application specification (`guides/levins-metapopulation-spec.md`): variables `p, m, e₀` with units and domains; ODE `dp/dt = m·p·(1−p) − e(p)·p` with two modes (`e = e₀` and `e = e₀·(1−p)`); output property `p(t) ∈ [0, 1]`; equilibrium `p* = 1 − e₀/m`; reference examples for each mode verified in tests (`Math: Levins func` — 5 tests covering base model and rescue effect at specific `p` values).
+- **Level 2:** equilibrium analysis, MRT method justification (A-stable implicit method suitable for stiff ODEs), convergence properties — documented in the specification. MRT solver verified against analytical solutions in `Math: MRT solver` tests (non-stiff and stiff reference problems from Chapra & Canale).
+
 #### Computation Implementation
 
 Computations for each task are implemented using one or a combination of the following approaches:
 
 - **Datagrok API computation methods.** The core can use computation methods provided by the Datagrok API. Available only on the main thread — the Datagrok API is not available in web workers.
 
-- **External libraries.** Computations are performed using third-party libraries. At the specification stage, the following is determined: which specific libraries are used, which versions, which functions/methods are applied, and a link to the library documentation (API reference, README, or guide). A documentation link is mandatory — without it, it is impossible to correctly implement and verify the calls. The order of library usage (which calls, in what sequence, with what parameters) is either defined in the specification or deferred to a separate agreement — if the usage approach is non-trivial or allows for variations.
+- **External libraries.** Computations are performed using third-party libraries. At the specification stage, the following is determined: which specific libraries are used, which versions, which functions/methods are applied, and a link to the library documentation (API reference, README, or guide). A documentation link is mandatory — without it, it is impossible to correctly implement and verify the calls. The order of library usage (which calls, in what sequence, with what parameters) is either defined in the specification or deferred to a separate agreement — if the usage approach is non-trivial or allows for variations. Additionally, for libraries that implement numerical methods (solvers, optimizers, fitting): the specification states which properties of the method are relevant (stability, order of accuracy, applicability class), expected accuracy for the application's use case, and the verification strategy — how the library's results will be validated (reference problems with known solutions, comparison with an alternative implementation, etc.). See section 15.3.
 
-- **Custom methods.** Computations are implemented within the application. Each custom method is described in a separate document — a method specification. The method specification contains: mathematical formulation (formulas, equations), step-by-step algorithm, input and output data, constraints and assumptions, edge cases, and references to literature. The main application specification includes a brief method description and a link to the method specification document.
+- **Custom methods.** Computations are implemented within the application. Each custom method is described in a separate document — a method specification. The method specification contains: mathematical formulation (formulas, equations), step-by-step algorithm, input and output data, constraints and assumptions, edge cases, and references to literature. The main application specification includes a brief method description and a link to the method specification document. Additionally, the method specification defines expected accuracy and the verification strategy: reference examples with expected outputs and their sources (manual calculation, literature, reference implementation). See section 15.3.
 
 A single task can combine multiple approaches — for example, a custom method for data preprocessing, an external library for numerical solution, and a Datagrok computation method for postprocessing.
 
@@ -64,9 +90,9 @@ General core properties:
 - Does not depend on how data is obtained or how results are displayed.
 - Easily testable in isolation — each task is tested separately.
 
-► **Implementation:** `src/levins/core.ts` does not import `datagrok-api` or `ui` — only `diff-grok` and `./model`. Core tests in `src/tests/levins-core-tests.ts` test `validate`, `solve`, `validateOptimize`, `getEquilibrium` without UI.
+► **Implementation:** `src/levins/core.ts` does not import `datagrok-api` or `ui` — only `diff-grok` and `./model`. Core tests in `src/tests/levins-api-tests.ts` test `validate`, `solve`, `validateOptimize`, `getEquilibrium` without UI.
 
-Computation core implementation references: patterns for working with raw data and null handling (`COMPUTATION-PATTERNS.md`), efficient typed array operations (`ARRAY-OPERATIONS.md`).
+Computation core implementation references: patterns for working with raw data and null handling (`reference/COMPUTATION-PATTERNS.md`), efficient typed array operations (`reference/ARRAY-OPERATIONS.md`).
 
 ### 1.2. Ports
 
@@ -87,7 +113,7 @@ Additionally, at the application level:
 - **Input port `task_optimize`:** interface `WorkerTask` (`src/levins/core.ts`, line 129) — data passed to the worker via `postMessage`.
 - **Output port `task_optimize`:** interface `WorkerResult` (`src/levins/core.ts`, line 140) — `{ m_i, p_end, error? }`.
 - **Progress port:** in `task_optimize` implemented via `DG.TaskBarProgressIndicator` (`src/levins/app.ts`, line 302). Progress is updated upon each completed worker.
-- **Cancellation port:** `canceled` flag (`src/levins/app.ts`, line 304), checked before sending the next task to a worker.
+- **Cancellation port:** `canceled` flag (`src/levins/app.ts`, line 303), checked before sending the next task to a worker.
 - **Data port:** not used (the application does not load external data).
 
 ### 1.3. Adapters
@@ -96,7 +122,7 @@ Concrete implementations of ports for the Datagrok environment.
 
 - **UI adapter** — Datagrok inputs (`ui.input.*`), buttons, custom `HTMLElement`. Converts user input into typed data for the task's input port.
 - **Display adapter** — Datagrok viewers, custom `HTMLElement`, docking to the main view. Receives data from the task's output port and visualizes it.
-- **Worker adapter** — wrapper for running the core in a web worker. Implements input and output ports via `postMessage`. Implementation references: worker-utils infrastructure and lifecycle (`WORKER-GUIDE.md`), distribution across multiple workers (`PARALLEL-EXECUTION.md`).
+- **Worker adapter** — wrapper for running the core in a web worker. Implements input and output ports via `postMessage`. Implementation references: worker-utils infrastructure and lifecycle (`reference/WORKER-GUIDE.md`), distribution across multiple workers (`reference/PARALLEL-EXECUTION.md`).
 - **Progress adapter** — Datagrok progress bar. Implements the progress port.
 - **Data adapter** — loading from a specific resource. Which resource and which mechanism — defined by the specification.
 
@@ -277,7 +303,7 @@ The primary pipeline is bound to the main application controls and operates reac
 **Result display.** The core returns results through the task's output port. The coordinator passes them to the display adapter (see section 4).
 
 ► **Implementation:** function `runPrimary()` (`src/levins/app.ts`, line 226):
-1. Checks `computationsBlocked` (line 228).
+1. Checks `computationsBlocked` (line 227).
 2. Collects inputs: `getInputs()` (line 230).
 3. Validates: `validate(inputs)` (line 231).
 4. On errors — visually marks invalid inputs (`d4-invalid`) and calls `clearResults()` (lines 237–245).
@@ -323,7 +349,7 @@ Controls may become disabled during computations — which ones and for which pi
 
 During long computations, the standard Datagrok progress bar is displayed with cancellation support.
 
-► **Implementation:** `task_primary` — no progress bar. `task_optimize` — `DG.TaskBarProgressIndicator` with completion percentage and cancellation via the `canceled` flag (line 304).
+► **Implementation:** `task_primary` — no progress bar. `task_optimize` — `DG.TaskBarProgressIndicator` with completion percentage and cancellation via the `canceled` flag (line 303).
 
 #### Computation Error Handling
 
@@ -355,7 +381,7 @@ Example: the user launches parameter optimization (secondary task). Upon optimiz
 2. **Reset** (lines 506–518): `computationsBlocked = true` → reset all values → `computationsBlocked = false` → `runPrimary()`.
 3. **Optimization result** (lines 428–437): `computationsBlocked = true` → `ctrlM.value = best.m_i` → `computationsBlocked = false` → `runPrimary()`.
 
-Blocking check: `runPrimary()` first checks `if (computationsBlocked) return` (line 228).
+Blocking check: `runPrimary()` first checks `if (computationsBlocked) return` (line 227).
 
 ## 9. Reactivity and Dependencies Between Inputs
 
@@ -432,11 +458,17 @@ Keyboard shortcuts, context menus, undo/redo, and other UX elements are defined 
 
 Core correctness verification: unit tests for each computational task separately. The core is tested in isolation — without UI and adapters.
 
-► **Implementation:** `src/tests/levins-core-tests.ts` — 4 test categories:
-- **Levins: Validation** — 18 tests: val_01…val_09 + boundary values + multiple errors.
-- **Levins: Optimization Validation** — 7 tests: opt_val_01…opt_val_04 + valid input data.
-- **Levins: Equilibrium** — 4 tests: `getEquilibrium` for the base model and rescue effect.
-- **Levins: Solver** — 8 tests: `solve()` correctness — dimensionality, range `p in [0, 1]`, initial conditions, convergence to `p*`, monotonicity in `m`.
+► **Implementation:** tests are split across two files:
+
+**`src/tests/levins-api-tests.ts`** — 2 categories:
+- **API: Validation** — 24 tests: val_01…val_09 + boundary values + dependency order + multiple errors + defaults.
+- **API: Optimization Validation** — 7 tests: opt_val_01…opt_val_04 + valid input data.
+
+**`src/tests/levins-math-tests.ts`** — 4 categories:
+- **Math: MRT solver** — 3 tests: non-stiff 1D, stiff 1D, stiff 2D (van der Pol) — verifying the `mrt` solver against analytical/reference solutions.
+- **Math: Levins func** — 5 tests: ODE right-hand side correctness for the base model and rescue effect at specific `p` values.
+- **Math: Equilibrium** — 4 tests: `getEquilibrium` for the base model and rescue effect.
+- **Math: Solve output properties** — 8 tests: output invariants of `solve()` — bounds `p ∈ [0, 1]`, initial conditions, convergence to `p*`, monotonicity in `m`.
 
 Tests are run via `grok test` (entry point: `src/package-test.ts`).
 
@@ -449,3 +481,31 @@ Input verification for each task: all cases including edge cases (boundary value
 - Invalid combinations: `m <= e0` without rescue, `t_step >= t_end - t_start`.
 - Dependencies between rules: val_05 is skipped when val_03 fails, val_08 is skipped when val_06/val_07 fail.
 - Multiple errors: simultaneously invalid `p0`, `m`, `e0`, `t_step`, `tolerance`.
+
+### 15.3. Mathematical Verification
+
+Verification that the implemented computation matches the model definition (see section 1.1, "Computation Formulas and Model"). Test categories correspond to the two levels of the model definition. Verification criteria — reference examples, expected accuracies, output property constraints, reference problems for the numerical method — are defined by the model specification, not invented during test writing. Tests implement what is specified; the specification is the source of truth.
+
+#### Level 1 verification (required)
+
+**Formula/equation verification.** The implemented transformation is checked at control points with manually computed expected values. For each computational path (mode, branch, regime), at least one test substitutes concrete inputs and compares the output against a hand-calculated result.
+
+**Output property verification.** Constraints declared in the model definition (bounds, monotonicity, conservation laws, limiting cases) are checked on actual computation results. These tests do not compare against a specific expected value — they verify that the result satisfies a declared invariant.
+
+► **Implementation:**
+- **Formula verification:** `Math: Levins func` — 5 tests. Each test substitutes specific `(m, e₀, p)` into the ODE right-hand side and compares `dp/dt` against a hand-calculated value (e.g., `func_01`: `dp/dt = 0.5·0.5·0.5 − 0.2·0.5 = 0.025`). Both computational paths are covered: base model (3 tests) and rescue effect (2 tests).
+- **Equilibrium verification:** `Math: Equilibrium` — 4 tests. `getEquilibrium` is checked against the analytical formula `p* = 1 − e₀/m` for the base model, and `NaN` for the rescue effect (no closed-form equilibrium).
+- **Output properties:** `Math: Solve output properties` — 8 tests. Verifies invariants declared in the specification: `p(t) ∈ [0, 1]` (solve_02, solve_06), `p(0) = p0` (solve_03, solve_08), convergence to `p*` (solve_05), monotonicity in `m` (solve_07), non-empty output arrays (solve_01), `t[0] = t_start` (solve_04).
+
+#### Level 2 verification (for full formalization)
+
+**Numerical method verification.** The solver (or library) is tested on reference problems with known analytical solutions. The test verifies that the numerical error stays within the expected tolerance. Reference problems should cover the solver's applicability range (e.g., non-stiff and stiff problems for an ODE solver). Each reference problem must cite its source (textbook, paper, test suite).
+
+**Convergence verification.** Solving the same problem with decreasing step size or tolerance produces solutions that converge. The test compares solutions at two different precision levels and verifies that the discrepancy decreases.
+
+**Asymptotic/equilibrium behavior.** The numerical solution on a sufficiently long interval approaches the analytically predicted equilibrium or asymptote.
+
+► **Implementation:**
+- **Numerical method:** `Math: MRT solver` — 3 tests. Non-stiff 1D and stiff 1D problems verified against analytical solutions (Chapra & Canale, pp. 736, 767). Stiff 2D van der Pol (µ=1000) verified for solver stability (reference: VDPOL test set). Tolerance threshold: max absolute error < 0.1.
+- **Convergence:** not yet covered. Candidate: solve the Levins ODE with `tolerance = 1e-5` and `tolerance = 1e-9`, verify that the discrepancy between solutions decreases.
+- **Asymptotic behavior:** not yet covered. Candidate: verify that `p(t_end)` approaches `p* = 1 − e₀/m` for sufficiently large `t_end`.

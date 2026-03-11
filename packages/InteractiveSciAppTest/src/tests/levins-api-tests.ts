@@ -1,13 +1,10 @@
-// Levins Metapopulation Model — Core tests
+// Levins Metapopulation Model — API tests
 
-import {category, test, expect, expectFloat} from '@datagrok-libraries/utils/src/test';
+import {category, test, expect} from '@datagrok-libraries/utils/src/test';
 
-import {
-  DEFAULTS, validate, solve, validateOptimize,
-  getEquilibrium, LevinsParams,
-} from '../levins/core';
+import {DEFAULTS, validate, validateOptimize} from '../levins/core';
 
-category('Levins: Validation', () => {
+category('API: Validation', () => {
   // --- val_01: p0 <= 0 ---
   test('val_01: p0 = 0', async () => {
     const errors = validate({...DEFAULTS, p0: 0});
@@ -147,7 +144,7 @@ category('Levins: Validation', () => {
   });
 });
 
-category('Levins: Optimization Validation', () => {
+category('API: Optimization Validation', () => {
   // --- opt_val_01: m_min <= 0 ---
   test('opt_val_01: m_min = 0', async () => {
     const {errors} = validateOptimize({m_min: 0, m_max: 1}, 0.2, false);
@@ -192,74 +189,3 @@ category('Levins: Optimization Validation', () => {
   });
 });
 
-category('Levins: Equilibrium', () => {
-  test('p* = 1 - e0/m (base model)', async () => {
-    expectFloat(getEquilibrium(0.5, 0.2, false), 0.6, 1e-10);
-  });
-
-  test('p* = 0 when m <= e0', async () => {
-    expectFloat(getEquilibrium(0.2, 0.5, false), 0, 1e-10);
-  });
-
-  test('p* = 0 when m = e0', async () => {
-    expectFloat(getEquilibrium(0.5, 0.5, false), 0, 1e-10);
-  });
-
-  test('p* = NaN with rescue effect', async () => {
-    expect(isNaN(getEquilibrium(0.5, 0.2, true)), true, 'Should be NaN with rescue');
-  });
-});
-
-category('Levins: Solver', () => {
-  test('Default parameters produce valid solution', async () => {
-    const result = solve(DEFAULTS);
-    expect(result.t.length > 0, true, 'Should produce t array');
-    expect(result.p.length > 0, true, 'Should produce p array');
-    expect(result.t.length, result.p.length, 't and p must have same length');
-  });
-
-  test('Solution values in [0, 1]', async () => {
-    const result = solve(DEFAULTS);
-    for (let i = 0; i < result.p.length; i++) {
-      expect(result.p[i] >= 0 && result.p[i] <= 1, true, `p[${i}] = ${result.p[i]} out of [0, 1]`);
-    }
-  });
-
-  test('p(0) = p0', async () => {
-    const result = solve(DEFAULTS);
-    expectFloat(result.p[0], DEFAULTS.p0, 1e-6);
-  });
-
-  test('t starts at t_start', async () => {
-    const result = solve(DEFAULTS);
-    expectFloat(result.t[0], DEFAULTS.t_start, 1e-10);
-  });
-
-  test('p converges to p* (base model)', async () => {
-    const params: LevinsParams = {...DEFAULTS, m: 0.5, e0: 0.2, t_end: 200};
-    const result = solve(params);
-    const pEnd = result.p[result.p.length - 1];
-    expectFloat(pEnd, result.p_star, 0.01);
-  });
-
-  test('Rescue effect: solution stays bounded', async () => {
-    const params: LevinsParams = {...DEFAULTS, m: 0.3, e0: 0.5, rescueEffect: true, t_end: 100};
-    const result = solve(params);
-    for (let i = 0; i < result.p.length; i++) {
-      expect(result.p[i] >= 0 && result.p[i] <= 1, true, `p[${i}] = ${result.p[i]} out of [0, 1]`);
-    }
-  });
-
-  test('Higher m leads to higher p(t_end)', async () => {
-    const result1 = solve({...DEFAULTS, m: 0.5, e0: 0.2});
-    const result2 = solve({...DEFAULTS, m: 1.0, e0: 0.2});
-    const pEnd1 = result1.p[result1.p.length - 1];
-    const pEnd2 = result2.p[result2.p.length - 1];
-    expect(pEnd2 > pEnd1, true, 'Higher m should yield higher p(t_end)');
-  });
-
-  test('Custom p0 is used', async () => {
-    const result = solve({...DEFAULTS, p0: 0.9});
-    expectFloat(result.p[0], 0.9, 1e-6);
-  });
-});

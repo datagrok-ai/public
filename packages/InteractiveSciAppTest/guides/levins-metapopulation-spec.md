@@ -5,7 +5,7 @@
 | Field | Value |
 |---|---|
 | Application name | Levins Metapopulation Model |
-| Package | MetapopulationDynamics |
+| Package | InteractiveSciAppTest |
 | Entry function | `levinsMetapopulationApp()` |
 | Brief description | Interactive ODE solution for the Levins model: simulation of occupied patch fraction dynamics p(t) with support for the basic model and the extended model (rescue effect). |
 | Main view | `DG.TableView` |
@@ -36,16 +36,16 @@
 
 **Input parameters:**
 
-| Parameter | Type | Description |
-|---|---|---|
-| `p0` | `number` | Initial fraction of occupied patches |
-| `m` | `number` | Colonization rate |
-| `e0` | `number` | Baseline extinction rate |
-| `rescueEffect` | `boolean` | Enable rescue effect: `e(p) = e0·(1−p)` |
-| `t_start` | `number` | Start of integration interval |
-| `t_end` | `number` | End of interval |
-| `t_step` | `number` | Grid step |
-| `tolerance` | `number` | Numerical tolerance of the MRT method |
+| Parameter | Type | Units | Domain | Description |
+|---|---|---|---|---|
+| `p0` | `number` | dimensionless | `(0, 1]` | Initial fraction of occupied patches |
+| `m` | `number` | 1/time | `> 0` | Colonization rate |
+| `e0` | `number` | 1/time | `> 0` | Baseline extinction rate |
+| `rescueEffect` | `boolean` | — | — | Enable rescue effect: `e(p) = e0·(1−p)` |
+| `t_start` | `number` | time | `≥ 0` | Start of integration interval |
+| `t_end` | `number` | time | `> t_start` | End of interval |
+| `t_step` | `number` | time | `> 0, < t_end − t_start` | Grid step |
+| `tolerance` | `number` | dimensionless | `> 0` | Numerical tolerance of the MRT method |
 
 **Output data:**
 
@@ -55,12 +55,29 @@
 | `p` | `Float64Array` | Values of p(t) |
 | `p_star` | `number` | Equilibrium value: `1 − e0/m` (for the basic model) |
 
+**Output properties (invariants):**
+
+- `p(t) ∈ [0, 1]` for all `t` — the fraction of occupied patches is bounded.
+- `p(0) = p0` — the initial condition is preserved.
+- For the basic model with `m > e0`: `p(t) → p* = 1 − e0/m` as `t → ∞` — convergence to equilibrium.
+- Higher `m` (other parameters fixed) → higher `p(t_end)` — monotonicity in colonization rate.
+
 **Computation implementation:**
 
 | Step | Implementation method | Details | Documentation |
 |---|---|---|---|
-| 1 | External library | `diff-grok` v1.2.0, function `mrt(task: ODEs)` | [diff-grok README](https://github.com/datagrok-ai/diff-grok) |
-| 2 | Custom method | Computation of `p_star = 1 − e0/m`; for rescue effect, analytical equilibrium is not used | See model specification (separate document) |
+| 1 | External library | `diff-grok` v1.2.0, function `mrt(task: ODEs)`. MRT is an A-stable implicit method suitable for both stiff and non-stiff ODEs. | [diff-grok README](https://github.com/datagrok-ai/diff-grok) |
+| 2 | Custom method | Computation of `p_star = 1 − e0/m` (basic model); for rescue effect (`e(p) = e0·(1−p)`), no closed-form equilibrium exists — `p_star` is not computed | — |
+
+**ODE right-hand side reference examples:**
+
+| # | Mode | m | e0 | p | Hand-calculated dp/dt | Derivation |
+|---|---|---|---|---|---|---|
+| 1 | Base | 0.5 | 0.2 | 0.5 | `0.5·0.5·0.5 − 0.2·0.5 = 0.025` | `m·p·(1−p) − e0·p` |
+| 2 | Base | 1.0 | 0.3 | 0.1 | `1.0·0.1·0.9 − 0.3·0.1 = 0.06` | `m·p·(1−p) − e0·p` |
+| 3 | Base | 0.5 | 0.2 | 0.6 | `0.5·0.6·0.4 − 0.2·0.6 = 0.0` | At equilibrium `p* = 1 − e0/m = 0.6` |
+| 4 | Rescue | 0.5 | 0.2 | 0.5 | `0.5·0.5·0.5 − 0.2·0.5·0.5 = 0.075` | `e = e0·(1−p) = 0.1` |
+| 5 | Rescue | 0.3 | 0.5 | 0.8 | `0.3·0.8·0.2 − 0.5·0.2·0.8 = −0.032` | `e = e0·(1−p) = 0.1` |
 
 **Library call:**
 
@@ -83,7 +100,7 @@ const solution = mrt(task);
 
 ---
 
-### 2.2. Task Description: `task_optimize`
+### 2.3. Task Description: `task_optimize`
 
 **General characteristics:**
 
@@ -136,7 +153,7 @@ Number of workers = Math.max(1, navigator.hardwareConcurrency - 2)
   → after all 10000: find max(p_end) → m_optimal
 ```
 
-### 2.3. Dependencies Between Tasks
+### 2.4. Dependencies Between Tasks
 
 ```
 task_primary  — independent
@@ -302,11 +319,11 @@ Map<inputId, errorMessage>
 
 ### 6.1. Primary Pipeline (`task_primary`)
 
-#### Control Locking
+#### Control Blocking
 
-| Control ID | Locked | Note |
+| Control ID | Blocked | Note |
 |---|---|---|
-| `ctrl_p0` | No | Computation takes < 100 ms — locking is unnecessary |
+| `ctrl_p0` | No | Computation takes < 100 ms — blocking is unnecessary |
 | `ctrl_m` | No | Same |
 | `ctrl_e0` | No | Same |
 | `ctrl_rescue` | No | Same |
@@ -332,13 +349,13 @@ Selected strategy: **Reset results + message**.
 | Strategy | Description |
 |---|---|
 | Reset results | Clear the p(t) chart and the p* value |
-| Message | Show an inline message below the chart with the error text |
+| Message | `grok.shell.error(msg)` — Datagrok platform toast notification with the error text |
 
 ### 6.2. Secondary Pipeline (`task_optimize`)
 
-#### Control Locking
+#### Control Blocking
 
-| Control ID | Locked | Note |
+| Control ID | Blocked | Note |
 |---|---|---|
 | `btn_optimize` | Yes | Re-launch is not possible until completion or cancellation |
 | All other controls | No | The main UI remains fully accessible |
@@ -364,13 +381,13 @@ Selected strategy: **Last valid + message**.
 
 ---
 
-## 7. Computation Locking and Batch Update
+## 7. Computation Blocking and Batch Update
 
 ### 7.1. Batch Update Scenarios
 
 | Source (task) | Target controls (ID) | Locked pipelines |
 |---|---|---|
-| `task_optimize` | `ctrl_m` | Primary |
+| `task_optimize` | `ctrl_m` | Primary (blocked) |
 
 ### 7.2. Reactivity Mode During Batch Update
 
@@ -387,7 +404,7 @@ Selected strategy: **Last valid + message**.
 | ID | Type | Associated output data | Docking location |
 |---|---|---|---|
 | `view_p_t` | Datagrok viewer `line chart` | `task_primary.t`, `task_primary.p` | Main area |
-| `view_p_star` | Custom HTMLElement `comp_rho_badge` | `task_primary.p_star` | Left panel, below "Parameters" group controls |
+| `view_rho_badge` | Custom HTMLElement `comp_rho_badge` | `ctrl_e0`, `ctrl_m` (displays ρ = e₀/m) | Left panel, below "Parameters" group controls |
 
 **Details for `view_p_t`:**
 
@@ -529,7 +546,7 @@ External data loading is not supported.
 5. task_primary error
    → the DataFrame is cleared (columns [t, p] are zeroed out)
    → view_p_t displays an empty chart
-   → an inline error message is shown below the chart
+   → grok.shell.error(msg) shows a toast notification with the error text
 ```
 
 ### 10.4. Data Lifecycle for `task_optimize`
@@ -592,9 +609,23 @@ Supported: **No**.
 
 ## 13. Testing
 
-### 13.1. Computation Part (Core)
+### 13.1. Mathematical Verification
 
-#### Tests for `getEquilibrium`
+Tests in this section verify that the implementation matches the mathematical model. Verification criteria are defined by the model (section 2.2: ODE, output properties, reference examples).
+
+#### 13.1.1. ODE Right-Hand Side Verification (formula verification)
+
+Verifies that the implemented ODE function produces correct `dp/dt` at specific points. Reference values are hand-calculated (see section 2.2, "ODE right-hand side reference examples").
+
+| Test ID | Mode | Input `(m, e0, p)` | Expected `dp/dt` |
+|---|---|---|---|
+| `func_01` | Base | `(0.5, 0.2, 0.5)` | `0.025` |
+| `func_02` | Base | `(1.0, 0.3, 0.1)` | `0.06` |
+| `func_03` | Base (equilibrium) | `(0.5, 0.2, 0.6)` | `0.0` |
+| `func_04` | Rescue | `(0.5, 0.2, 0.5)` | `0.075` |
+| `func_05` | Rescue | `(0.3, 0.5, 0.8)` | `−0.032` |
+
+#### 13.1.2. Equilibrium Verification
 
 | Test ID | Description | Input data | Expected result |
 |---|---|---|---|
@@ -603,7 +634,9 @@ Supported: **No**.
 | `eq_03` | p* = 0 when m = e0 | `m=0.5, e0=0.5, rescue=false` | `p* = 0` |
 | `eq_04` | NaN with rescue effect | `m=0.5, e0=0.2, rescue=true` | `NaN` |
 
-#### Tests for `solve` (task_primary)
+#### 13.1.3. Output Property Verification (`solve`)
+
+Verifies that output invariants declared in section 2.2 ("Output properties") hold on actual `solve()` results.
 
 | Test ID | Description | Input data | Verified property |
 |---|---|---|---|
@@ -615,6 +648,16 @@ Supported: **No**.
 | `solve_06` | Rescue effect: p in [0, 1] | `m=0.3, e0=0.5, rescue=true, t_end=100` | All `p[i] ∈ [0, 1]` |
 | `solve_07` | Higher m → higher p(t_end) | `m=0.5` vs `m=1.0`, `e0=0.2` | `p_end(m=1) > p_end(m=0.5)` |
 | `solve_08` | Custom p0 | `p0=0.9` | `p[0] ≈ 0.9` |
+
+#### 13.1.4. Numerical Method Verification (MRT solver)
+
+Verifies that the `mrt` solver from `diff-grok` produces correct results on reference problems with known analytical solutions.
+
+| Test ID | Description | Reference | Expected |
+|---|---|---|---|
+| `mrt_01` | Non-stiff 1D: `dy/dt = 4·exp(0.8t) − 0.5y` | Chapra & Canale, p. 736 | Max absolute error < 0.1 |
+| `mrt_02` | Stiff 1D: `dy/dt = −1000y + 3000 − 2000·exp(−t)` | Chapra & Canale, p. 767 | Max absolute error < 0.1 |
+| `mrt_03` | Stiff 2D: van der Pol (µ=1000) | [VDPOL test set](https://archimede.uniba.it/~testset/report/vdpol.pdf) | Solver completes without divergence |
 
 ### 13.2. Validation for task_primary
 
