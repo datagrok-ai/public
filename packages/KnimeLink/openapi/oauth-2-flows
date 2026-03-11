@@ -1,0 +1,402 @@
+openapi: 3.0.3
+info:
+  title: knime-hub-oauth2-flow-service
+  description: knime-hub-oauth2-flow-service is designed to temporarily store the callback parameters returned by an
+    OAuth2 IDP. It is used by the Secret Store service, as well as OAuth2 Authenticator nodes running on a Hub
+    executor to manage interactive OAuth2 logins
+    (see [RFC 6749 - The OAuth 2.0 Authorization Framework](https://datatracker.ietf.org/doc/html/rfc6749))
+  termsOfService: "https://www.knime.com/terms-forum-hub"
+  contact:
+    name: KNIME Support
+    url: "https://www.knime.com/support"
+    email: support@knime.com
+  version: 0.1.0
+
+paths:
+  /oauth2-flows/flows:
+    post:
+      tags:
+        - OAuth2
+      summary: Creates a new OAuth2 login flow.
+      description: |
+        Creates a new login flow. The flow can optionally be associated with a secret, which must also be in the scope of
+        the current user.
+        
+        The created flow represents an interactive OAuth2 login (aka three-legged OAuth2 aka authorization code grant). The response
+        contains a random state value and a redirect URI that must be used to create the authorization URL.
+        
+        Note that a flow expires after 10 minutes and will be automatically deleted.
+      security:
+        - AuthHeader: [ ]
+        - AuthCookie: [ ]
+      parameters:
+        - $ref: '#/components/parameters/X-Request-Id'
+        - $ref: '#/components/parameters/X-Correlation-Id'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateOAuth2Flow'
+      responses:
+        '201':
+          description: The login flow has been created.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OAuth2Flow'
+              examples:
+                CreateFlowSuccess:
+                  $ref: '#/components/examples/FlowStartedWithState'
+                CreateFlowSuccessWithSecret:
+                  $ref: '#/components/examples/FlowStartedWithStateAndSecret'
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/X-Request-Id'
+            X-Correlation-Id:
+              $ref: '#/components/headers/X-Correlation-Id'
+        '400':
+          $ref: '#/components/responses/400'
+        '401':
+          $ref: '#/components/responses/401'
+        '422':
+          $ref: '#/components/responses/422'
+        '500':
+          $ref: '#/components/responses/500'
+  /oauth2-flows/flows/{flowId}:
+    get:
+      summary: Get an OAuth2 flow by id
+      description: Retrieves an OAuth2 login flow by its id. Only the creator of a flow can retrieve the flow.
+      tags:
+        - OAuth2
+      parameters:
+        - $ref: '#/components/parameters/flowId'
+        - $ref: '#/components/parameters/X-Request-Id'
+        - $ref: '#/components/parameters/X-Correlation-Id'
+      security:
+        - AuthHeader: [ ]
+        - AuthCookie: [ ]
+      responses:
+        '200':
+          description: The OAuth2 flow.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OAuth2Flow'
+              examples:
+                FlowStarted:
+                  $ref: '#/components/examples/FlowStarted'
+                FlowSuccess:
+                  $ref: '#/components/examples/FlowSuccess'
+                FlowFailed:
+                  $ref: '#/components/examples/FlowFailed'
+                FlowFinished:
+                  $ref: '#/components/examples/FlowFinished'
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/X-Request-Id'
+            X-Correlation-Id:
+              $ref: '#/components/headers/X-Correlation-Id'
+        '400':
+          $ref: '#/components/responses/400'
+        '401':
+          $ref: '#/components/responses/401'
+        '404':
+          $ref: '#/components/responses/404'
+        '500':
+          $ref: '#/components/responses/500'
+  /oauth2-flows/callback:
+    get:
+      tags:
+        - OAuth2
+      summary: IDP redirect endpoint.
+      description: |
+        Endpoint that the identity provider (IDP) redirects to after a successful or failed login attempt by the user
+        (see [RFC 6749](https://datatracker.ietf.org/doc/html/rfc6749#section-4.1.2)
+        The `state` query parameter provided by the IDP is used to look up the corresponding flow.
+      security:
+        - AuthHeader: [ ]
+        - AuthCookie: [ ]
+      parameters:
+        - name: state
+          in: query
+          description: The random state value which was returned when creating the flow.
+          required: true
+          schema:
+            type: string
+          example: "913396f8a98b400fa1164c5b6a8c8e46"
+        - $ref: '#/components/parameters/X-Request-Id'
+        - $ref: '#/components/parameters/X-Correlation-Id'
+      responses:
+        '303':
+          description: Redirects to a static page that shows the result of the successful/failed login flow.
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/X-Request-Id'
+            X-Correlation-Id:
+              $ref: '#/components/headers/X-Correlation-Id'
+        '400':
+          $ref: '#/components/responses/400'
+        '401':
+          $ref: '#/components/responses/401'
+        '404':
+          $ref: '#/components/responses/404'
+        '500':
+          $ref: '#/components/responses/500'
+components:
+  schemas:
+    CreateOAuth2Flow:
+      type: object
+      properties:
+        secretId:
+          $ref: '#/components/parameters/secretId'
+    OAuth2Flow:
+      type: object
+      required:
+        - id
+        - createdAt
+        - updatedAt
+        - creatorId
+        - status
+        - redirectUri
+      properties:
+        id:
+          $ref: '#/components/parameters/flowId'
+        createdAt:
+          type: string
+          format: date-time
+          example: "2023-10-10T12:34:56Z"
+        updatedAt:
+          type: string
+          format: date-time
+          example: "2023-10-10T12:44:56Z"
+        creatorId:
+          description: The Hub account that created the flow. The creator is always a user account.
+          type: string
+          example: "account:user:c7e95dc0-d92a-409c-99da-e06002a13612"
+        status:
+          description:
+            The status of the flow. After creation a flow is "started". If the flow references a secret then
+            it can transition to "success" or "failed". Otherwise it can only transition to "finished".
+          type: string
+          enum:
+            - started
+            - failed
+            - success
+            - finished
+          example: "started"
+        secretId:
+          $ref: '#/components/parameters/secretId'
+        redirectUri:
+          description: |
+            The URL of the callback endpoint, that the IDP should redirect the user browser to after a login.
+          type: string
+          format: uri
+          example: "https://api.hub.mycompany.com/oauth2-flows/callback"
+        oauth2State:
+          description: |
+            Optional field that is only returned once after creation of the flow. It holds a random state value, that prevents
+            hijacking of the OAuth2 login flow. The state must be embedded into the authorization URL of the IDP that is opened
+            in the user browser, and it must be specified by the IDP when redirecting to the callback endpoint.
+          type: string
+          example: "913396f8a98b400fa1164c5b6a8c8e46"
+        queryParams:
+          description: |
+            Only present when the status of the flow is "finished". In this case, this field holds the query parameters
+            (application/x-www-form-urlencoded) that the IDP has provided during its redirect after authorization
+            (see [RFC 6749](https://datatracker.ietf.org/doc/html/rfc6749#section-4.1.2)).
+          type: string
+          format: uri
+          example: "code=dd872b936ffe427d8a158948bc01da87&state=c9c9c2926332433cb5d214ceacff78ca"
+        error:
+          $ref: '#/components/schemas/OAuth2Error'
+    OAuth2Error:
+      type: object
+      description:  Only present when the status of the flow is "failed".
+      required:
+        - message
+      properties:
+        message:
+          type: string
+          description: An error message that summarizes what went wrong.
+        idpCorrelationId:
+          type: string
+          description: A request/correlation ID to trace the error at the identity provider.
+        idpResponse:
+          $ref: '#/components/schemas/OAuth2ErrorIdpResponse'
+    OAuth2ErrorIdpResponse:
+      type: object
+      description: The error returned by the token endpoint of the identity provider, see [RFC 6749](https://datatracker.ietf.org/doc/html/rfc6749#section-5.2).
+      required:
+        - code
+      properties:
+        code:
+          type: string
+          readOnly: true
+          example: "access_denied"
+        description:
+          type: string
+          readOnly: true
+          example: "The resource owner or authorization server denied the request."
+        uri:
+          type: string
+          readOnly: true
+          example: "https://oauth.net/errors/access_denied"
+  responses:
+    '400':
+      description: Bad Request
+      headers:
+        X-Request-Id:
+          $ref: '#/components/headers/X-Request-Id'
+        X-Correlation-Id:
+          $ref: '#/components/headers/X-Correlation-Id'
+    '401':
+      description: Unauthorized
+      headers:
+        X-Request-Id:
+          $ref: '#/components/headers/X-Request-Id'
+        X-Correlation-Id:
+          $ref: '#/components/headers/X-Correlation-Id'
+    '404':
+      description: Not Found
+      headers:
+        X-Request-Id:
+          $ref: '#/components/headers/X-Request-Id'
+        X-Correlation-Id:
+          $ref: '#/components/headers/X-Correlation-Id'
+    '422':
+      description: Unprocessable Content
+      headers:
+        X-Request-Id:
+          $ref: '#/components/headers/X-Request-Id'
+        X-Correlation-Id:
+          $ref: '#/components/headers/X-Correlation-Id'
+    '500':
+      description: Internal Server Error
+      headers:
+        X-Request-Id:
+          $ref: '#/components/headers/X-Request-Id'
+        X-Correlation-Id:
+          $ref: '#/components/headers/X-Correlation-Id'
+  examples:
+    FlowStartedWithState:
+      summary: A created OAuth2 login flow
+      value:
+        id: "oauth2-flow:037ceda9-ad07-42dc-9876-215442063fa7"
+        createdAt: "2023-10-10T12:34:56Z"
+        updatedAt: "2023-10-10T12:34:56Z"
+        creatorId: "account:user:c7e95dc0-d92a-409c-99da-e06002a13612"
+        status: "started"
+        redirectUri: "https://api.hub.mycompany.com/oauth2-flows/flows/callback"
+        oauth2State: "913396f8a98b400fa1164c5b6a8c8e46"
+    FlowStartedWithStateAndSecret:
+      summary: A created OAuth2 login flow with secret
+      value:
+        id: "oauth2-flow:037ceda9-ad07-42dc-9876-215442063fa7"
+        createdAt: "2023-10-10T12:34:56Z"
+        updatedAt: "2023-10-10T12:34:56Z"
+        creatorId: "account:user:c7e95dc0-d92a-409c-99da-e06002a13612"
+        status: "started"
+        secretId: "secret:c828420e-4050-47e0-9c2e-62b1e47e2f3f"
+        redirectUri: "https://api.hub.mycompany.com/oauth2-flows/flows/callback"
+        oauth2State: "913396f8a98b400fa1164c5b6a8c8e46"
+    FlowStarted:
+      summary: A started OAuth2 login flow
+      value:
+        id: "oauth2-flow:037ceda9-ad07-42dc-9876-215442063fa7"
+        createdAt: "2023-10-10T12:34:56Z"
+        updatedAt: "2023-10-10T12:34:56Z"
+        creatorId: "account:user:c7e95dc0-d92a-409c-99da-e06002a13612"
+        status: "started"
+        secretId: "secret:c828420e-4050-47e0-9c2e-62b1e47e2f3f"
+        redirectUri: "https://api.hub.mycompany.com/oauth2-flows/flows/callback"
+    FlowSuccess:
+      summary: A sucessfully completed OAuth2 login flow
+      value:
+        id: "oauth2-flow:037ceda9-ad07-42dc-9876-215442063fa7"
+        createdAt: "2023-10-10T12:34:56Z"
+        updatedAt: "2023-10-10T12:35:15Z"
+        creatorId: "account:user:c7e95dc0-d92a-409c-99da-e06002a13612"
+        status: "success"
+        secretId: "secret:c828420e-4050-47e0-9c2e-62b1e47e2f3f"
+        redirectUri: "https://api.hub.mycompany.com/oauth2-flows/flows/callback"
+    FlowFailed:
+      summary: A failed OAuth2 login flow
+      value:
+        id: "oauth2-flow:037ceda9-ad07-42dc-9876-215442063fa7"
+        createdAt: "2023-10-10T12:34:56Z"
+        updatedAt: "2023-10-10T12:35:15Z"
+        creatorId: "account:user:c7e95dc0-d92a-409c-99da-e06002a13612"
+        status: "failed"
+        secretId: "secret:c828420e-4050-47e0-9c2e-62b1e47e2f3f"
+        redirectUri: "https://api.hub.mycompany.com/oauth2-flows/flows/callback"
+        error:
+          message: "The client is not authorized to request an authorization code using this method. (unauthorized_client)"
+          idpCorrelationId: 8dfbca65-bd84-43f6-9a83-0171da49fdce
+          idpResponse:
+            code: "unauthorized_client"
+            description: "The client is not authorized to request an authorization code using this method."
+            uri: "https://docs.idp.com/login-errors"
+    FlowFinished:
+      summary: A finished OAuth2 login flow
+      value:
+        id: "oauth2-flow:037ceda9-ad07-42dc-9876-215442063fa7"
+        createdAt: "2023-10-10T12:34:56Z"
+        updatedAt: "2023-10-10T12:35:15Z"
+        creatorId: "account:user:c7e95dc0-d92a-409c-99da-e06002a13612"
+        status: "finished"
+        secretId: "secret:c828420e-4050-47e0-9c2e-62b1e47e2f3f"
+        redirectUri: "https://api.hub.mycompany.com/oauth2-flows/flows/callback"
+        queryParams: "code=dd872b936ffe427d8a158948bc01da87&state=c9c9c2926332433cb5d214ceacff78ca"
+  parameters:
+    flowId:
+      name: flowId
+      in: path
+      description: The globally unique ID of the OAuth2 login flow, always prefixed with "oauth2-flow:"
+      required: true
+      schema:
+        type: string
+      example: "oauth2-flow:c828420e-4050-47e0-9c2e-62b1e47e2f3f"
+    secretId:
+      name: secretId
+      in: query
+      description: |
+        The globally unique ID of a secret, always prefixed with "secret:". This field is optional and associates
+        the flow with a secret.
+      schema:
+        type: string
+      example: "secret:c828420e-4050-47e0-9c2e-62b1e47e2f3f"
+    X-Request-Id:
+      in: header
+      name: X-Request-Id
+      schema:
+        $ref: '#/components/headers/X-Request-Id'
+    X-Correlation-Id:
+      in: header
+      name: X-Correlation-Id
+      schema:
+        $ref: '#/components/headers/X-Correlation-Id'
+  headers:
+    X-Request-Id:
+      description: The X-Request-Id.
+      schema:
+        type: string
+        format: uuid
+      example: 8b6bdb96-f585-4eef-8654-5077902d9f29
+    X-Correlation-Id:
+      description: The X-Correlation-Id
+      schema:
+        type: string
+        format: uuid
+      example: 8b6bdb96-f585-4eef-8654-5077902d9f17
+  securitySchemes:
+    AuthHeader:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT token
+    AuthCookie:
+      type: apiKey
+      description: Cookie containing JWT token
+      in: cookie
+      name: knime_hub_auth

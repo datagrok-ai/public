@@ -1,0 +1,2714 @@
+---
+openapi: 3.0.3
+info:
+  title: KNIME Hub Account Service REST API
+  description: RESTful services for the KNIME Hub account service.
+  contact:
+    name: KNIME Support
+    url: http://www.knime.com
+    email: support@knime.com
+  version: v1
+servers:
+- url: /
+  description: KNIME Hub
+tags:
+- name: Accounts
+  description: Requests relating to accounts.
+- name: Passwords
+  description: Requests relating to application passwords
+- name: SCIM
+  description: Requests relating to the System for Cross-domain Identity Management
+    (SCIM).
+- name: Limits
+  description: Requests related to limits.
+- name: Permissions
+  description: Requests related to permissions.
+paths:
+  /accounts:
+    post:
+      tags:
+      - Accounts
+      summary: Creates a new account.
+      description: "Creates a new account. Currently it's only possible to create\
+        \ team accounts. If no team name is supplied, it will be generated in the\
+        \  style of 'MyUser's Team', with a rolling index if that name is  already\
+        \ taken."
+      parameters:
+      - $ref: "#/components/parameters/PreferHeader"
+      requestBody:
+        description: An account.
+        content:
+          application/json:
+            schema:
+              required:
+              - creator
+              allOf:
+              - type: object
+                properties:
+                  creator:
+                    description: The id of the team account creator
+                    type: string
+                    example: account:user:a885bb42-d808-4557-9a7f-9f10c5777739
+              - $ref: "#/components/schemas/UpdateTeamAccount"
+      responses:
+        "201":
+          description: The created account.
+          content:
+            application/vnd.mason+json:
+              schema:
+                $ref: "#/components/schemas/TeamAccount"
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TeamAccount"
+        "403":
+          description: The calling user does not have the rights to create an account.
+        "404":
+          description: The calling account cannot be found in the identity provider.
+        "422":
+          description: The provided account information is invalid.
+        "500":
+          description: An internal error occurred.
+    get:
+      tags:
+      - Accounts
+      summary: List all existing user or team accounts.
+      description: "Allows you to list all existing user and team accounts. This functionality\
+        \ is only available to super admins and internal service accounts. If called\
+        \ without the `page` parameter, cursor-based pagination will be used. It is\
+        \ much faster than page-based pagination and should be preferred. The Mason\
+        \ controls and the `pagination` property contain the cursor information for\
+        \ the next page."
+      parameters:
+      - name: type
+        in: query
+        description: "The requested account type, either team or user."
+        required: true
+        schema:
+          default: team
+          enum:
+          - team
+          - user
+          type: string
+          example: user
+      - $ref: "#/components/parameters/AccountFilterQuery"
+      - $ref: "#/components/parameters/AccountSortQuery"
+      - $ref: "#/components/parameters/PageQuery"
+      - $ref: "#/components/parameters/CursorQuery"
+      - $ref: "#/components/parameters/PagelenQuery"
+      - $ref: "#/components/parameters/PreferHeader"
+      responses:
+        "200":
+          description: A list of accounts.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AccountList"
+        "400":
+          description: The requested account type is unknown
+        "403":
+          description: The calling user does not have the rights to create an account.
+        "500":
+          description: An internal error occurred.
+  /accounts/{id}:
+    get:
+      tags:
+      - Accounts
+      summary: Returns the information of the account.
+      description: "Returns the information of the account, such as name, avatar URL\
+        \ etc."
+      parameters:
+      - name: id
+        in: path
+        description: The account's ID.
+        required: true
+        schema:
+          type: string
+          example: account:team:c151cdc8-b864-441f-9fce-a6e4a30afc0d
+      - $ref: "#/components/parameters/PreferHeader"
+      responses:
+        "200":
+          description: The account information.
+          content:
+            application/vnd.mason+json:
+              schema:
+                anyOf:
+                - $ref: "#/components/schemas/TeamAccount"
+                - $ref: "#/components/schemas/UserAccount"
+                - $ref: "#/components/schemas/ApplicationPassword"
+            application/json:
+              schema:
+                anyOf:
+                - $ref: "#/components/schemas/TeamAccount"
+                - $ref: "#/components/schemas/UserAccount"
+                - $ref: "#/components/schemas/ApplicationPassword"
+        "400":
+          description: The caller is not a valid user.
+        "403":
+          description: The calling user does not have the rights to retrieve the information.
+        "404":
+          description: The account is unknown.
+        "500":
+          description: An internal error occurred.
+    put:
+      tags:
+      - Accounts
+      summary: Updates an account
+      description: "Updates an account, such as email and description for users or\
+        \ description and name for teams."
+      requestBody:
+        description: An account.
+        content:
+          application/json:
+            schema:
+              anyOf:
+              - $ref: "#/components/schemas/UpdateTeamAccount"
+              - $ref: "#/components/schemas/UpdateUserAccount"
+      parameters:
+      - name: id
+        in: path
+        description: The account's ID.
+        required: true
+        schema:
+          type: string
+          example: account:team:c151cdc8-b864-441f-9fce-a6e4a30afc0d
+      - $ref: "#/components/parameters/PreferHeader"
+      responses:
+        "200":
+          description: The updated account information.
+          content:
+            application/vnd.mason+json:
+              schema:
+                anyOf:
+                - $ref: "#/components/schemas/TeamAccount"
+                - $ref: "#/components/schemas/UserAccount"
+            application/json:
+              schema:
+                anyOf:
+                - $ref: "#/components/schemas/TeamAccount"
+                - $ref: "#/components/schemas/UserAccount"
+        "400":
+          description: The caller is not a valid user.
+        "403":
+          description: The calling user does not have the rights to update the account
+            metadata.
+        "404":
+          description: The account is unknown.
+        "500":
+          description: An internal error occurred.
+    delete:
+      tags:
+      - Accounts
+      summary: Deletes an account.
+      description: Deletes the account and all related information like groups.
+      parameters:
+      - name: id
+        in: path
+        description: The account's ID.
+        required: true
+        schema:
+          type: string
+          example: account:team:c151cdc8-b864-441f-9fce-a6e4a30afc0d
+      responses:
+        "204":
+          description: The account has been deleted.
+        "403":
+          description: The calling user does not have the rights to delete the account.
+        "404":
+          description: The account is unknown.
+        "500":
+          description: An internal error occurred.
+  /accounts/hub:global:
+    get:
+      tags:
+      - Accounts
+      summary: "Returns information about this KNIME Hub installation, including global\
+        \ groups."
+      description: Returns information about this KNIME Hub installation such as the
+        enabled features or global groups (both external and internal).
+      responses:
+        "200":
+          description: The KNIME Hub information.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HubInstallationAccount"
+  /accounts/identity:
+    get:
+      tags:
+      - Accounts
+      summary: Returns the information of the account doing the request.
+      description: "Returns the information of the account doing the request, such\
+        \ as name, avatar URL etc."
+      parameters:
+      - $ref: "#/components/parameters/PreferHeader"
+      - name: include
+        in: query
+        description: "A list of field names to be additionally included in the response,\
+          \ currently only \"managedProperties\" is supported. Unsupported values\
+          \ are ignored."
+        required: false
+      responses:
+        "200":
+          description: The account information.
+          content:
+            application/vnd.mason+json:
+              schema:
+                anyOf:
+                - $ref: "#/components/schemas/UserAccount"
+                - $ref: "#/components/schemas/ServiceAccount"
+                - $ref: "#/components/schemas/ApplicationPassword"
+                - $ref: "#/components/schemas/UserAccountWithManagedProperties"
+            application/json:
+              schema:
+                anyOf:
+                - $ref: "#/components/schemas/UserAccount"
+                - $ref: "#/components/schemas/ServiceAccount"
+                - $ref: "#/components/schemas/ApplicationPassword"
+        "400":
+          description: The caller is not a valid user.
+        "403":
+          description: The calling user does not have the rights to retrieve the information.
+        "404":
+          description: The account is unknown.
+        "500":
+          description: An internal error occurred.
+  /accounts/identity/identifiers:
+    get:
+      tags:
+      - Accounts
+      summary: Returns the identifiers of the account doing the request.
+      description: "Returns the identifiers of the account doing the request, used\
+        \ for permission checks."
+      responses:
+        "200":
+          description: The identifiers.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/IdentifierResponse"
+        "400":
+          description: The caller is not a valid user.
+        "403":
+          description: The calling user does not have the rights to retrieve the information.
+        "404":
+          description: The account is unknown.
+        "500":
+          description: An internal error occurred.
+  /accounts/identity/properties:
+    get:
+      tags:
+      - Accounts
+      - Properties
+      summary: Gets all properties attached to the user account making the request.
+      description: Returns all properties that are known for the account. The response
+        is a JSON object with the keys at the root being the property keys and their
+        values being the corresponding property values. If there are no properties
+        yet an empty object will be returned.
+      responses:
+        "200":
+          description: All properties for the account.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AnyValue"
+              example: "{\"string\": \"value\", \"object\": { \"foo\": 42 }}"
+        "404":
+          description: The account is unknown.
+        "500":
+          description: An internal error occurred.
+    delete:
+      tags:
+      - Accounts
+      - Properties
+      summary: Deletes all properties attached to the user account making the request.
+      responses:
+        "204":
+          description: All properties were successfully deleted.
+        "404":
+          description: The account is unknown.
+        "500":
+          description: An internal error occurred.
+  /accounts/identity/properties/{key}:
+    get:
+      tags:
+      - Accounts
+      - Properties
+      summary: Gets the account property with the provided key.
+      description: Returns a single property for the account. The response is the
+        property value which can be an arbitrary JSON value.
+      parameters:
+      - name: key
+        in: path
+        description: The property key.
+        required: true
+        schema:
+          type: string
+          example: property-name
+      responses:
+        "200":
+          description: A single property for the account.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AnyValue"
+              examples:
+                object:
+                  value: "{ \"this-is-the-value\": 42 }"
+                array:
+                  value: "[ \"foo\", \"bar\" ]"
+                string:
+                  value: '"foo"'
+                number:
+                  value: "42"
+        "404":
+          description: The account or the property is unknown.
+        "500":
+          description: An internal error occurred.
+    put:
+      tags:
+      - Accounts
+      - Properties
+      summary: Create or updates the account property with the provided key.
+      description: Creates or updates a single property for the account. The request
+        body must contain the property as an arbitrary JSON value. Note that there
+        is a size limit for both the key and the value.
+      parameters:
+      - name: key
+        in: path
+        description: The property key.
+        required: true
+        schema:
+          type: string
+          example: property-name
+      requestBody:
+        description: An arbitrary JSON value.
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AnyValue"
+      responses:
+        "200":
+          description: The property has been successfully created or updated.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AnyValue"
+        "404":
+          description: The account or the property is unknown.
+        "413":
+          description: The size limit for either the key or the value has been exceeded.
+        "500":
+          description: An internal error occurred.
+    delete:
+      tags:
+      - Accounts
+      - Properties
+      summary: Deletes the account property with the provided key.
+      description: Deletes a single property for the account.
+      parameters:
+      - name: key
+        in: path
+        description: The property key.
+        required: true
+        schema:
+          type: string
+          example: property-name
+      responses:
+        "204":
+          description: The property was successfully deleted.
+        "404":
+          description: The account or the property is unknown.
+        "500":
+          description: An internal error occurred.
+  /accounts/name/{name}:
+    get:
+      tags:
+      - Accounts
+      summary: Returns the information of the account.
+      description: "Returns the information of the account, such as name, avatar URL\
+        \ etc."
+      parameters:
+      - name: name
+        in: path
+        description: The account's name.
+        required: true
+        schema:
+          type: string
+          example: MyTeam
+      - $ref: "#/components/parameters/PreferHeader"
+      responses:
+        "200":
+          description: The account information.
+          content:
+            application/vnd.mason+json:
+              schema:
+                anyOf:
+                - $ref: "#/components/schemas/TeamAccount"
+                - $ref: "#/components/schemas/UserAccount"
+            application/json:
+              schema:
+                anyOf:
+                - $ref: "#/components/schemas/TeamAccount"
+                - $ref: "#/components/schemas/UserAccount"
+        "400":
+          description: The caller is not a valid user.
+        "403":
+          description: The calling user does not have the rights to retrieve the information.
+        "404":
+          description: The account is unknown.
+        "500":
+          description: An internal error occurred.
+  /accounts/hub:global/groups/{name}:
+    put:
+      tags:
+      - Groups
+      summary: Creates or modifies a global group.
+      description: Creates a new group if it does not exist. Updates the group information
+        otherwise.
+      parameters:
+      - name: name
+        in: path
+        description: The name of the group. In case of an externally managed group
+          it must match the group name in the external identity provider.
+        required: true
+        schema:
+          type: string
+          example: MyGroup
+      - $ref: "#/components/parameters/PreferHeader"
+      requestBody:
+        description: Information about the group.
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                displayName:
+                  description: An arbitrary display name for the group.
+                  type: string
+                  example: My Fäncy Speciäl Gröup Näme
+                external:
+                  description: "Whether this group is an external group, i.e. membership\
+                    \ is provided externally through JWT properties."
+                  default: false
+                  type: boolean
+      responses:
+        "200":
+          description: The updated group in case it already existed.
+          content:
+            application/vnd.mason+json:
+              schema:
+                $ref: "#/components/schemas/Group"
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Group"
+        "201":
+          description: The created group.
+          content:
+            application/vnd.mason+json:
+              schema:
+                $ref: "#/components/schemas/Group"
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Group"
+        "403":
+          description: The calling user does not have the rights to create a group.
+        "422":
+          description: The requested group name is invalid.
+        "500":
+          description: An internal error occurred.
+    delete:
+      tags:
+      - Groups
+      summary: Deletes a global group.
+      description: Deletes the global group.
+      parameters:
+      - name: name
+        in: path
+        description: The name of the group to delete.
+        required: true
+        schema:
+          type: string
+          example: MyGroup
+      responses:
+        "204":
+          description: The group has been deleted.
+        "403":
+          description: The calling user does not have the rights to delete the group.
+        "404":
+          description: The group is unknown.
+        "500":
+          description: An internal error occurred.
+    get:
+      tags:
+      - Groups
+      summary: Retrieves information about this global group.
+      parameters:
+      - name: name
+        in: path
+        description: The name of the group.
+        required: true
+        schema:
+          type: string
+          example: MyGroup
+      - $ref: "#/components/parameters/PreferHeader"
+      responses:
+        "200":
+          description: The group information.
+          content:
+            application/vnd.mason+json:
+              schema:
+                $ref: "#/components/schemas/Group"
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Group"
+        "404":
+          description: The group is unknown.
+        "500":
+          description: An internal error occurred.
+  /accounts/hub:global/groups/{name}/members:
+    post:
+      tags:
+      - Groups
+      summary: Adds members to an existing global group
+      description: "Sending this requests with a list of user account IDs and/or group\
+        \ IDs in the request body lets you add members to a global group. If a user\
+        \ account or group in the list does not exist, the whole request will fail.\
+        \ I.e. either all members/groups are added or none. User accounts or groups\
+        \ that are already group members will be silently ignored. In order to add\
+        \ group members the caller must have appropriate permissions."
+      parameters:
+      - name: name
+        in: path
+        description: The name of the group.
+        required: true
+        schema:
+          type: string
+          example: MyGroup
+      - $ref: "#/components/parameters/PreferHeader"
+      requestBody:
+        description: The users and/or groups that should be added to this group.
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GroupMembershipChangeList"
+      responses:
+        "200":
+          description: The group information.
+          content:
+            application/vnd.mason+json:
+              schema:
+                $ref: "#/components/schemas/Group"
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Group"
+        "400":
+          description: If not all required information has been provided in the request.
+        "403":
+          description: The calling user does not have the rights to add members to
+            the group.
+        "404":
+          description: The group does not exist.
+        "500":
+          description: An internal error occurred.
+    delete:
+      tags:
+      - Groups
+      summary: Removes members from an existing global group
+      description: Sending this requests with a list of user account IDs and/or group
+        IDs in the request body lets you remove members from a global group. User
+        accounts or groups that are not group members will be silently ignored. In
+        order to remove group members the caller must have appropriate permissions.
+      parameters:
+      - name: name
+        in: path
+        description: The name of the group.
+        required: true
+        schema:
+          type: string
+          example: MyGroup
+      requestBody:
+        description: The users and/or groups that should be removed from this group.
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GroupMembershipChangeList"
+      responses:
+        "200":
+          description: The group information.
+          content:
+            application/vnd.mason+json:
+              schema:
+                $ref: "#/components/schemas/Group"
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Group"
+        "400":
+          description: If not all required information has been provided in the request.
+        "403":
+          description: The calling user does not have the rights to remove members
+            from the group.
+        "404":
+          description: The group does not exist.
+        "500":
+          description: An internal error occurred.
+  /accounts/{id}/groups/{name}:
+    put:
+      tags:
+      - Groups
+      summary: Creates a new group in a team account.
+      description: Creates a new group if it does not exist. Updates the group information
+        otherwise.
+      parameters:
+      - name: id
+        in: path
+        description: The account's ID. Must be a team account.
+        required: true
+        schema:
+          type: string
+          example: account:team:c151cdc8-b864-441f-9fce-a6e4a30afc0d
+      - name: name
+        in: path
+        description: The name of the group.
+        required: true
+        schema:
+          type: string
+          example: MyGroup
+      - $ref: "#/components/parameters/PreferHeader"
+      requestBody:
+        description: "Optionally a display name. If no display name is supplied, the\
+          \ group name is used instead."
+        content:
+          application/json:
+            schema:
+              description: The group's changed values.
+              type: object
+              properties:
+                displayName:
+                  type: string
+                  example: My Fäncy Speciäl Gröup Näme
+      responses:
+        "200":
+          description: The updated group.
+          content:
+            application/vnd.mason+json:
+              schema:
+                $ref: "#/components/schemas/Group"
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Group"
+        "201":
+          description: The created group.
+          content:
+            application/vnd.mason+json:
+              schema:
+                $ref: "#/components/schemas/Group"
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Group"
+        "403":
+          description: The calling user does not have the rights to create a group.
+        "404":
+          description: The account or group is unknown.
+        "422":
+          description: The account id does not reference a team account or the account
+            id or  provided group information is invalid.
+        "500":
+          description: An internal error occurred.
+    delete:
+      tags:
+      - Groups
+      summary: Deletes a group from an account.
+      description: Deletes the group and all related information like its members.
+      parameters:
+      - name: id
+        in: path
+        description: The account's ID. Must be a team account.
+        required: true
+        schema:
+          type: string
+          example: account:team:c151cdc8-b864-441f-9fce-a6e4a30afc0d
+      - name: name
+        in: path
+        description: The name of the group to delete.
+        required: true
+        schema:
+          type: string
+          example: MyGroup
+      responses:
+        "204":
+          description: The group has been deleted.
+        "403":
+          description: The calling user does not have the rights to delete the group.
+        "404":
+          description: The account or group is unknown.
+        "422":
+          description: The account id does not reference a team account or is invalid.
+        "500":
+          description: An internal error occurred.
+    get:
+      tags:
+      - Groups
+      summary: Retrieves the members of the group.
+      description: Retrieves the members of the group.
+      parameters:
+      - name: id
+        in: path
+        description: The account's ID. Must be a team account.
+        required: true
+        schema:
+          type: string
+          example: account:team:c151cdc8-b864-441f-9fce-a6e4a30afc0d
+      - name: name
+        in: path
+        description: The name of the group.
+        required: true
+        schema:
+          type: string
+          example: MyGroup
+      - $ref: "#/components/parameters/PreferHeader"
+      responses:
+        "200":
+          description: The group members.
+          content:
+            application/vnd.mason+json:
+              schema:
+                $ref: "#/components/schemas/Group"
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Group"
+        "403":
+          description: The calling user does not have the rights to view the members.
+        "404":
+          description: The account or group is unknown.
+        "422":
+          description: The account id does not reference a team account or the account
+            id or  provided group information is invalid.
+        "500":
+          description: An internal error occurred.
+  /accounts/{id}/groups/{name}/members:
+    post:
+      tags:
+      - Groups
+      summary: Adds members to an existing group of an account
+      description: "Sending this requests with a list of user account IDs and/or a\
+        \ list of group IDs in the request body lets you add members to a group of\
+        \ a team. If a user account or group in the list does not exist, or a user\
+        \ is not a member of the team, the whole request will fail. I.e. either all\
+        \ members/groups are added or none. User accounts or groups that are already\
+        \ group members will be silently ignored. In order to add group members the\
+        \ caller must have appropriate permissions for the team account."
+      parameters:
+      - name: id
+        in: path
+        description: The account's ID. Must be a team account.
+        required: true
+        schema:
+          type: string
+          example: account:team:c151cdc8-b864-441f-9fce-a6e4a30afc0d
+      - name: name
+        in: path
+        description: The name of the group.
+        required: true
+        schema:
+          type: string
+          example: MyGroup
+      - $ref: "#/components/parameters/PreferHeader"
+      requestBody:
+        description: The users and/or groups that should be added to this group.
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GroupMembershipChangeList"
+      responses:
+        "200":
+          description: The group information.
+          content:
+            application/vnd.mason+json:
+              schema:
+                $ref: "#/components/schemas/Group"
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Group"
+        "400":
+          description: If not all required information has been provided in the request.
+        "403":
+          description: The calling user does not have the rights to add members to
+            the group of the team.
+        "404":
+          description: The team or the group does not exist.
+        "500":
+          description: An internal error occurred.
+    delete:
+      tags:
+      - Groups
+      summary: Removes members from an existing group of an account
+      description: Sending this requests with a list of user account IDs in the request
+        body lets you remove members from a group of a team. User accounts or groups
+        that are not group members will be silently ignored. In order to remove group
+        members the caller must have appropriate permissions.
+      parameters:
+      - name: id
+        in: path
+        description: The account's ID. Must be a team account.
+        required: true
+        schema:
+          type: string
+          example: account:team:c151cdc8-b864-441f-9fce-a6e4a30afc0d
+      - name: name
+        in: path
+        description: The name of the group.
+        required: true
+        schema:
+          type: string
+          example: MyGroup
+      requestBody:
+        description: The users and/or groups that should be added to this group.
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GroupMembershipChangeList"
+      responses:
+        "200":
+          description: The group information.
+          content:
+            application/vnd.mason+json:
+              schema:
+                $ref: "#/components/schemas/Group"
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Group"
+        "400":
+          description: If not all required information has been provided in the request.
+        "403":
+          description: The calling user does not have the rights to remove members
+            from the group of the team.
+        "404":
+          description: The team or the group does not exist.
+        "500":
+          description: An internal error occurred.
+  /accounts/{id}/avatar:
+    put:
+      tags:
+      - Accounts
+      summary: Uploads a new avatar.
+      description: Uploads and replaces the avatar of an account.
+      parameters:
+      - name: id
+        in: path
+        description: The account's ID.
+        required: true
+        schema:
+          type: string
+          example: account:team:c151cdc8-b864-441f-9fce-a6e4a30afc0d
+      - $ref: "#/components/parameters/PreferHeader"
+      requestBody:
+        description: The avatar image.
+        content:
+          image/png:
+            schema:
+              format: byte
+              description: A PNG image.
+              type: string
+          image/webp:
+            schema:
+              format: byte
+              description: A WEBP image.
+              type: string
+          image/jpeg:
+            schema:
+              format: byte
+              description: A JPEG image.
+              type: string
+      responses:
+        "200":
+          description: The updated account containing the new URL to the avatar.
+          content:
+            application/vnd.mason+json:
+              schema:
+                anyOf:
+                - $ref: "#/components/schemas/UserAccount"
+                - $ref: "#/components/schemas/TeamAccount"
+            application/json:
+              schema:
+                anyOf:
+                - $ref: "#/components/schemas/UserAccount"
+                - $ref: "#/components/schemas/TeamAccount"
+        "400":
+          description: The request is inavlid.
+        "403":
+          description: The calling user does not have the rights to change the avatar.
+        "404":
+          description: The account does not exist.
+        "422":
+          description: The user provided either an image that is either invalid or
+            too large.
+        "500":
+          description: An internal error occurred.
+    delete:
+      tags:
+      - Accounts
+      summary: Deletes the avatar from the account.
+      description: Deletes the avatar from the account.
+      parameters:
+      - name: id
+        in: path
+        description: The account's ID.
+        required: true
+        schema:
+          type: string
+          example: account:team:c151cdc8-b864-441f-9fce-a6e4a30afc0d
+      responses:
+        "204":
+          description: The avatar has been deleted.
+        "400":
+          description: If not all required information has been provided in the request.
+        "403":
+          description: The calling user does not have the rights to remove the avatar.
+        "404":
+          description: The account does not exist.
+        "500":
+          description: An internal error occurred.
+  /application-passwords/user:
+    post:
+      tags:
+      - Passwords
+      summary: Adds a user application password for the calling user
+      description: Sending this request with a body containing the application password
+        name lets you create a user application password for your account. If the
+        application password name is not provided the request will fail. This creates
+        application passwords of type USER.
+      parameters:
+      - $ref: "#/components/parameters/PreferHeader"
+      requestBody:
+        description: An object containing the application password name
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateApplicationPassword"
+      responses:
+        "201":
+          description: The application password information.
+          content:
+            application/vnd.mason+json:
+              schema:
+                $ref: "#/components/schemas/ApplicationPassword"
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApplicationPassword"
+        "403":
+          description: The calling user does not have the rights to create application
+            passwords.
+        "422":
+          description: If the application password name is missing from the request.
+        "500":
+          description: An internal error occurred.
+    get:
+      tags:
+      - Passwords
+      summary: Returns all user application passwords for the calling user
+      description: Returns all user application passwords created by the calling user.
+        This only returns application passwords of type USER.
+      parameters:
+      - $ref: "#/components/parameters/PreferHeader"
+      responses:
+        "200":
+          description: A list of application passwords.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/BaseApplicationPassword"
+        "403":
+          description: If the calling user does not have the rights to list application
+            passwords.
+        "422":
+          description: If the calling user cannot be identified.
+        "500":
+          description: An internal error occurred.
+  /application-passwords/application:
+    post:
+      tags:
+      - Passwords
+      summary: Adds an application password for the provided scope.
+      description: "Sending this request with a body containing the application password\
+        \ name creates an application password. If the application password name is\
+        \ not provided the request will fail. The application password is created\
+        \ under the provided scope, or the calling user's scope when no scope is provided.\
+        \ This creates application passwords of type APPLICATION."
+      parameters:
+      - $ref: "#/components/parameters/PreferHeader"
+      - name: scope
+        in: query
+        required: false
+        description: The scope under which the application passwords should be created.
+        schema:
+          type: string
+          example: account:team:f22060e4-e551-43a4-a66c-bad0a1a593b4
+      requestBody:
+        description: An object containing the application password name and scope
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateApplicationPasswordWithScope"
+      responses:
+        "201":
+          description: The application password information.
+          content:
+            application/vnd.mason+json:
+              schema:
+                $ref: "#/components/schemas/ApplicationPassword"
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApplicationPassword"
+        "403":
+          description: The calling user does not have the rights to create application
+            passwords.
+        "422":
+          description: If the application password name is missing from the request
+            or if the scope is malformed.
+        "500":
+          description: An internal error occurred.
+    get:
+      tags:
+      - Passwords
+      summary: "Returns all application passwords for the provided scope, or the calling\
+        \ user if no scope is specified."
+      description: Returns all application passwords under the provided scope or the
+        scope of the calling user if no scope is specified. This only returns application
+        passwords of type APPLICATION.
+      parameters:
+      - $ref: "#/components/parameters/PreferHeader"
+      - name: scope
+        in: query
+        required: false
+        description: The scope under which the application passwords should be returned.
+        schema:
+          type: string
+          example: account:team:f22060e4-e551-43a4-a66c-bad0a1a593b4
+      responses:
+        "200":
+          description: A list of application passwords.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/BaseApplicationPassword"
+        "403":
+          description: If the calling user is not permitted to list application passwords
+            for the scope
+        "422":
+          description: If the calling user cannot be identified.
+        "500":
+          description: An internal error occurred.
+  /application-passwords/{id}:
+    delete:
+      tags:
+      - Passwords
+      summary: Deletes the specified application password
+      description: Removes the specified application password if the user has the
+        permission to delete it.
+      parameters:
+      - name: id
+        in: path
+        description: The ID of the application password that should be deleted
+        required: true
+        schema:
+          type: string
+          example: account:app-pw:b61cd10d-db64-4846-b2bd-308e14434576
+      responses:
+        "204":
+          description: If the password was deleted successfully.
+        "403":
+          description: If the calling user does not have the rights to delete the
+            application password.
+        "404":
+          description: If the application password cannot be found.
+        "422":
+          description: If the calling user cannot be identified
+        "500":
+          description: An internal error occurred.
+  /application-passwords/identity:
+    get:
+      tags:
+      - Passwords
+      summary: Retrieves the identity for the user that is calling the endpoint
+      description: Returns the identity response of the user that the application
+        password that is provided as BASIC authorization header belongs to.
+      parameters:
+      - $ref: "#/components/parameters/PreferHeader"
+      responses:
+        "200":
+          description: The account information of the authorized user
+          content:
+            application/vnd.mason+json:
+              schema:
+                $ref: "#/components/schemas/UserAccountWithTeams"
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserAccountWithTeams"
+        "403":
+          description: If the user does not have the rights to retrieve the user account
+            information.
+        "422":
+          description: If the calling user cannot be identified
+        "500":
+          description: An internal error occurred.
+  /application-passwords/keys/public-key:
+    get:
+      tags:
+      - Passwords
+      summary: Retrieves the public key for application passwords
+      description: Returns the public key for application passwords. It can be used
+        to verify the application password's password.
+      responses:
+        "200":
+          description: The Base64 encoded public key.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApplicationPasswordPublicKey"
+  /scim/client-auth:
+    post:
+      tags:
+      - SCIM
+      summary: Creates new SCIM client authentication credentials.
+      description: Creates and returns new SCIM client authentication credentials.
+      responses:
+        "201":
+          description: The application password created as SCIM client authentication
+            credentials.
+          content:
+            application/vnd.mason+json:
+              schema:
+                $ref: "#/components/schemas/ApplicationPassword"
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApplicationPassword"
+        "400":
+          description: SCIM client authentication credentials are already created
+            and need to be deleted before they can be recreated.
+        "403":
+          description: If the calling user does not have the rights to manage SCIM
+            client authentication credentials.
+    get:
+      tags:
+      - SCIM
+      summary: Retrieves existing SCIM client authentication credentials.
+      description: "Get's the currently created SCIM client authentication credentials,\
+        \ if they exist."
+      responses:
+        "200":
+          description: The application password for SCIM client auuthentication.
+          content:
+            application/vnd.mason+json:
+              schema:
+                $ref: "#/components/schemas/ApplicationPassword"
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApplicationPassword"
+        "403":
+          description: If the calling user does not have the rights to manage SCIM
+            client authentication credentials.
+        "404":
+          description: If there are no SCIM client authentication credentials.
+    delete:
+      tags:
+      - SCIM
+      summary: Deletes existing SCIM client authentication credentials.
+      description: "Deletes SCIM client authentication credentials, if they exist."
+      responses:
+        "204":
+          description: If the SCIM client authentication credentials where successfully
+            removed.
+        "403":
+          description: If the calling user does not have the rights to manage SCIM
+            client authentication credentials.
+        "404":
+          description: If there are no SCIM client authentication credentials.
+  /accounts/{id}/managed-properties:
+    get:
+      tags:
+      - Accounts
+      - Managed Properties
+      summary: Gets all managed properties attached to the account with given ID
+      description: Returns all managed properties that are known for the account.
+        The response is a JSON object with the keys  at the root being the property
+        keys and their values being the corresponding managed property values. If  there
+        are no managed properties yet an empty object will be returned.
+      parameters:
+      - name: id
+        in: path
+        description: The account's ID.
+        required: true
+        schema:
+          type: string
+          example: account:team:c151cdc8-b864-441f-9fce-a6e4a30afc0d
+      responses:
+        "200":
+          description: All managed properties for the given account.
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: "#/components/schemas/AnyValue"
+                example: "{\"string\": \"value\", \"object\": { \"foo\": 42 }}"
+        "400":
+          description: The given ID is invalid.
+        "401":
+          description: The request was unauthenticated.
+        "403":
+          description: The requester does not have permission to view managed properties
+            of the given account.
+        "404":
+          description: The account is unknown.
+        "500":
+          description: An internal error occurred.
+    delete:
+      tags:
+      - Accounts
+      - Managed Properties
+      summary: Deletes all managed properties attached to the account with the given
+        ID.
+      parameters:
+      - name: id
+        in: path
+        description: The account's ID.
+        required: true
+        schema:
+          type: string
+          example: account:team:c151cdc8-b864-441f-9fce-a6e4a30afc0d
+      responses:
+        "204":
+          description: All properties were successfully deleted.
+        "400":
+          description: The given ID is invalid.
+        "401":
+          description: The request was unauthenticated.
+        "403":
+          description: The requester does not have permission to delete managed properties
+            of the given account.
+        "404":
+          description: The account is unknown.
+        "500":
+          description: An internal error occurred.
+  /accounts/{id}/managed-properties/{key}:
+    get:
+      tags:
+      - Accounts
+      - Managed Properties
+      summary: Gets the account property with the provided key.
+      description: Returns a single managed property for the given account. The response
+        is the managed property value  which can be an arbitrary JSON value.
+      parameters:
+      - name: id
+        in: path
+        description: The account's ID.
+        required: true
+        schema:
+          type: string
+          example: account:team:c151cdc8-b864-441f-9fce-a6e4a30afc0d
+      - name: key
+        in: path
+        description: The managed property key.
+        required: true
+        schema:
+          type: string
+          example: man-property-name
+      responses:
+        "200":
+          description: A single managed property for the account.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AnyValue"
+        "400":
+          description: The given account ID is invalid.
+        "401":
+          description: The request was unauthenticated.
+        "403":
+          description: The requester does not have permission to view the managed
+            property of the given account.
+        "404":
+          description: The account or the managed property is unknown.
+        "500":
+          description: An internal error occurred.
+    put:
+      tags:
+      - Accounts
+      - Managed Properties
+      summary: Create or updates the managed account property with the provided key
+        of the given account.
+      description: Creates or updates a single managed property for the given account.
+        The request body must contain the  property as an arbitrary JSON value. Note
+        that there is a size limit for both the key and the value.
+      parameters:
+      - name: id
+        in: path
+        description: The account's ID.
+        required: true
+        schema:
+          type: string
+          example: account:team:c151cdc8-b864-441f-9fce-a6e4a30afc0d
+      - name: key
+        in: path
+        description: The managed property key.
+        required: true
+        schema:
+          type: string
+          example: man-property-name
+      requestBody:
+        description: An arbitrary JSON value.
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AnyValue"
+      responses:
+        "200":
+          description: The managed property has been successfully created or updated.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AnyValue"
+        "400":
+          description: The given account ID is invalid.
+        "401":
+          description: The request was unauthenticated.
+        "403":
+          description: The requester does not have permission to create or update
+            the managed property of the given account.
+        "404":
+          description: The account or the managed property is unknown.
+        "413":
+          description: The size limit for either the key or the value has been exceeded.
+        "422":
+          description: The number of allowed managed properties has been exceeded.
+        "500":
+          description: An internal error occurred.
+    delete:
+      tags:
+      - Accounts
+      - Managed Properties
+      summary: Deletes the account managed property with the provided key for the
+        given account.
+      description: Deletes a single managed property of the account.
+      parameters:
+      - name: id
+        in: path
+        description: The account's ID.
+        required: true
+        schema:
+          type: string
+          example: account:team:c151cdc8-b864-441f-9fce-a6e4a30afc0d
+      - name: key
+        in: path
+        description: The managed property key.
+        required: true
+        schema:
+          type: string
+          example: man-property-name
+      responses:
+        "204":
+          description: The managed property was successfully deleted.
+        "400":
+          description: The given account ID is invalid.
+        "401":
+          description: The request was unauthenticated.
+        "403":
+          description: The requester does not have permission to delete the managed
+            property of the given account.
+        "404":
+          description: The account or the managed property is unknown.
+        "500":
+          description: An internal error occurred.
+  /limits/{scopeId}/{limitKey}:
+    put:
+      tags:
+      - Limits
+      summary: Creates a new or updates an existing limit.
+      description: Sets a new limit or overrides the value of an existing one.
+      parameters:
+      - name: scopeId
+        in: path
+        description: "The scope ID. Could be any string describing a scope, e.g.,\
+          \ a team account id, an execution context id, or a global identifier."
+        required: true
+        schema:
+          type: string
+          example: account:team:c151cdc8-b864-441f-9fce-a6e4a30afc0d
+      - name: limitKey
+        in: path
+        description: The limit key describing the kind of limit.
+        required: true
+        schema:
+          type: string
+          example: account-cpu-cores
+      requestBody:
+        description: "The limit value to set, a non-negative number."
+        content:
+          text/plain:
+            schema:
+              minimum: 0
+              type: integer
+              example: 10
+      responses:
+        "200":
+          description: The created or updated limit.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ScopedLimit"
+        "400":
+          description: The current usage exceeds the limit value.
+        "403":
+          description: The user does not have permissions to create or update the
+            limit.
+        "404":
+          description: The limit key is unknown.
+        "422":
+          description: The provided scope id or limit value is invalid.
+        "500":
+          description: An internal error occurred.
+    get:
+      tags:
+      - Limits
+      summary: "Returns the information of a limit. If the limit has not previously\
+        \ been set, its default value will be returned."
+      description: "Returns the information of a limit, such as the limit value and\
+        \ current usage."
+      parameters:
+      - name: scopeId
+        in: path
+        description: "The scope ID. Could be any string describing a scope, e.g.,\
+          \ a team account id, an execution context id, or a global identifier."
+        required: true
+        schema:
+          type: string
+          example: account:team:c151cdc8-b864-441f-9fce-a6e4a30afc0d
+      - name: limitKey
+        in: path
+        description: The limit key describing the kind of limit.
+        required: true
+        schema:
+          type: string
+          example: account-cpu-cores
+      responses:
+        "200":
+          description: The limit.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ScopedLimit"
+        "403":
+          description: The user does not have permissions to view the limit.
+        "404":
+          description: The limit key is unknown.
+        "422":
+          description: The provided scope id is invalid.
+        "500":
+          description: An internal error occurred.
+    delete:
+      tags:
+      - Limits
+      summary: Deletes the limit.
+      description: Deletes the limit which resets it to the default value.
+      parameters:
+      - name: scopeId
+        in: path
+        description: "The scope ID. Could be any string describing a scope, e.g.,\
+          \ a team account id, an execution context id, or a global identifier."
+        required: true
+        schema:
+          type: string
+          example: account:team:c151cdc8-b864-441f-9fce-a6e4a30afc0d
+      - name: limitKey
+        in: path
+        description: The limit key describing the kind of limit.
+        required: true
+        schema:
+          type: string
+          example: account-cpu-cores
+      responses:
+        "204":
+          description: The limit has been deleted.
+        "400":
+          description: The limit cannot be removed as its current usage would exceed
+            the default limit value.
+        "403":
+          description: The user does not have permissions to remove the limit.
+        "404":
+          description: No limit with the provided key and scope found.
+        "500":
+          description: An internal error occurred.
+  /limits/{scopeId}:
+    get:
+      tags:
+      - Limits
+      summary: Returns the information of all limits with the provided scope.
+      description: "Returns the information of all limits with the provided scope,\
+        \ such as the limit values and current usages. Only the limits that the current\
+        \ user is allowed to view are returned."
+      parameters:
+      - name: scopeId
+        in: path
+        description: "The scope ID. Could be any string describing a scope, e.g.,\
+          \ a team account id, an execution context id, or a global identifier."
+        required: true
+        schema:
+          type: string
+          example: account:team:c151cdc8-b864-441f-9fce-a6e4a30afc0d
+      responses:
+        "200":
+          description: The collection of limits.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ScopedLimitCollection"
+        "500":
+          description: An internal error occurred.
+    delete:
+      tags:
+      - Limits
+      summary: Deletes all limits with the provided scope.
+      description: Deletes all limits with the provided scope.
+      parameters:
+      - name: scopeId
+        in: path
+        description: "The scope ID. Could be any string describing a scope, e.g.,\
+          \ a team account id, an execution context id, or a global identifier."
+        required: true
+        schema:
+          type: string
+          example: account:team:c151cdc8-b864-441f-9fce-a6e4a30afc0d
+      responses:
+        "204":
+          description: The limits have been deleted.
+        "400":
+          description: At least on of the limits with the provided scope cannot be
+            removed as its current usage would exceed the default limit value.
+        "403":
+          description: "For at least one limit of the provided scope, the user does\
+            \ not have permissions to remove it."
+        "500":
+          description: An internal error occurred.
+  /permissions/policies/{resourceType}/{resourceId}:
+    get:
+      tags:
+      - Permissions
+      summary: Returns list of policies for the resource.
+      description: Returns a list of all policies for the provided resource.
+      parameters:
+      - name: resourceType
+        in: path
+        description: The type of the resource for which the policies should be returned.
+        required: true
+        schema:
+          type: string
+          example: execution_context
+      - name: resourceId
+        in: path
+        description: The resource ID of the resource for which the policies should
+          be returned.
+        required: true
+        schema:
+          type: string
+          example: 09ea2e9d-befd-4bc1-b061-b09a55d5a09b
+      responses:
+        "200":
+          description: The updated list of policies for the given resource.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/PolicyWithId"
+        "403":
+          description: The user does not have permissions to manage permissions for
+            the given resource.
+        "404":
+          description: The provided resource does not exist.
+        "400":
+          description: The provided resource type is invalid
+        "500":
+          description: An internal error occurred.
+    post:
+      tags:
+      - Permissions
+      summary: Adds policies for the resource.
+      description: Creates policies for the provided resource according to the provided
+        list.
+      parameters:
+      - name: resourceType
+        in: path
+        description: The type of the resource for which policies should be added.
+        required: true
+        schema:
+          type: string
+          example: execution_context
+      - name: resourceId
+        in: path
+        description: The resource ID of the resource for which policies should be
+          added.
+        required: true
+        schema:
+          type: string
+          example: 09ea2e9d-befd-4bc1-b061-b09a55d5a09b
+      requestBody:
+        description: A list of policies to be added.
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: "#/components/schemas/BasePolicy"
+      responses:
+        "200":
+          description: The updated list of policies for the given resource.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/PolicyWithId"
+        "403":
+          description: The user does not have permissions to manage permissions for
+            the given resource.
+        "404":
+          description: The provided resource does not exist.
+        "400":
+          description: The provided resource type is invalid.
+        "422":
+          description: A provided user or group identifier is invalid.
+        "500":
+          description: An internal error occurred.
+    put:
+      tags:
+      - Permissions
+      summary: Updates policies for resource
+      description: Creates or keeps policies for the given resource
+      parameters:
+      - name: resourceType
+        in: path
+        description: The type of the resource for which the policies should be updated.
+        required: true
+        schema:
+          type: string
+          example: execution_context
+      - name: resourceId
+        in: path
+        description: The resource ID of the resource for which the policies should
+          be updated.
+        required: true
+        schema:
+          type: string
+          example: 09ea2e9d-befd-4bc1-b061-b09a55d5a09b
+      requestBody:
+        description: A list of policies to be either kept or added. Policies that
+          exist but are not part of the body will be removed.
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: "#/components/schemas/BasePolicy"
+      responses:
+        "200":
+          description: The updated list of policies for the given resource.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/PolicyWithId"
+        "403":
+          description: The user does not have permissions to manage permissions for
+            the given resource.
+        "404":
+          description: The provided resource does not exist.
+        "400":
+          description: The provided resource type is invalid.
+        "422":
+          description: A provided user or group identifier is invalid.
+        "500":
+          description: An internal error occurred.
+    delete:
+      tags:
+      - Permissions
+      summary: Deletes list of policies for the resource.
+      description: Deletes the provides list of policies for the given resource type
+        and ID.
+      parameters:
+      - name: resourceType
+        in: path
+        description: The type of the resource for which the policies should be deleted.
+        required: true
+        schema:
+          type: string
+          example: execution_context
+      - name: resourceId
+        in: path
+        description: The resource ID of the resource for which the policies should
+          be deleted.
+        required: true
+        schema:
+          type: string
+          example: 09ea2e9d-befd-4bc1-b061-b09a55d5a09b
+      requestBody:
+        description: A list of policy IDs.
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PolicyIdList"
+      responses:
+        "200":
+          description: The updated list of policies for the given resource.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/PolicyWithId"
+        "403":
+          description: The user is not allowed to manage permissions for the resource.
+        "404":
+          description: The resource does not exist.
+        "422":
+          description: The resource type cannot be identified.
+        "500":
+          description: An internal error occurred.
+  /permissions/policies/{resourceType}/{resourceId}/{id}:
+    delete:
+      tags:
+      - Permissions
+      summary: Deletes the policy for the resource.
+      description: Deletes the provided policy for the given resource.
+      parameters:
+      - name: resourceType
+        in: path
+        description: The type of the resource for which the policies should be deleted.
+        required: true
+        schema:
+          type: string
+          example: execution_context
+      - name: resourceId
+        in: path
+        description: The resource ID of the resource for which the policies should
+          be deleted.
+        required: true
+        schema:
+          type: string
+          example: 09ea2e9d-befd-4bc1-b061-b09a55d5a09b
+      - name: id
+        in: path
+        description: The policy ID of the policy that should be removed.
+        required: true
+        schema:
+          format: uuid
+          type: string
+          example: 6498f0ab-0772-4a99-8f3f-3745e8d66f99
+      responses:
+        "204":
+          description: The policy was deleted.
+        "403":
+          description: The user is not allowed to manage permissions for the resource.
+        "404":
+          description: The resource does not exist.
+        "400":
+          description: The provided resource type is invalid.
+        "500":
+          description: An internal error occurred.
+  /permissions/resources/resource-types:
+    get:
+      tags:
+      - Permissions
+      summary: Returns a list of all known resource types.
+      description: Returns a list of all resource types for which policies can be
+        managed.
+      responses:
+        "200":
+          description: A list of all known resource types.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ResourceTypes"
+components:
+  schemas:
+    AnyValue: {}
+    Control:
+      description: A hypermedia element associated with this resource.
+      type: object
+      properties:
+        href:
+          type: string
+        method:
+          type: string
+        encoding:
+          enum:
+          - None
+          - Json
+          - JsonPlusFiles
+          - Raw
+          type: string
+        isHrefTemplate:
+          type: boolean
+        accept:
+          type: array
+          items:
+            type: string
+        output:
+          type: array
+          items:
+            type: string
+        template:
+          type: object
+        title:
+          type: string
+        type:
+          type: string
+          writeOnly: true
+    Error:
+      description: A potential error attached to this Mason object.
+      type: object
+      properties:
+        '@id':
+          type: string
+        '@message':
+          type: string
+        '@code':
+          type: string
+        '@messages':
+          type: array
+          items:
+            type: string
+    Namespace:
+      description: A (possibly empty) map with the namespaces for this object.
+      type: object
+      properties:
+        name:
+          type: string
+    HubInstallationAccount:
+      description: A basic account.
+      required:
+      - id
+      - name
+      - type
+      - clusterId
+      - features
+      type: object
+      allOf:
+      - type: object
+        properties:
+          id:
+            description: The id of the account.
+            enum:
+            - hub:global
+            type: string
+          name:
+            description: The unique name of the account.
+            type: string
+            example: MyTeam
+          type:
+            description: The type of the account.
+            enum:
+            - installation
+            type: string
+          version:
+            description: The optional Business Hub version
+            type: string
+            example: 1.8.0
+          clusterId:
+            description: The ID of the Kubernetes cluster. The license is usually
+              tied to this ID.
+            type: string
+            example: 0a430c98-2179-42a7-b578-1e65ccb98d3b
+          features:
+            description: All features that are available to this KNIME Hub installation
+            type: array
+            items:
+              description: A features that is available to this KNIME Hub installation
+              type: string
+              example: AnonymousBrowsing
+          groups:
+            description: A list of global groups.
+            type: array
+            items:
+              $ref: "#/components/schemas/Group"
+    TeamAccount:
+      description: A team account.
+      type: object
+      allOf:
+      - type: object
+        properties:
+          '@controls':
+            description: A (possibly empty) map with all controls for this object.
+            type: object
+            additionalProperties:
+              $ref: "#/components/schemas/Control"
+          '@error':
+            $ref: "#/components/schemas/Error"
+          '@namespaces':
+            description: A (possibly empty) map with the namespaces for this object.
+            type: object
+            additionalProperties:
+              $ref: "#/components/schemas/Namespace"
+          id:
+            description: The id of the account.
+            type: string
+            example: account:team:a885bb42-d808-4557-9a7f-9f10c5777739
+          fullyQualifiedId:
+            description: The fully qualified ID of the team.
+            type: string
+            example: account:team:a885bb42-d808-4557-9a7f-9f10c5777739
+          members:
+            type: array
+            items:
+              description: The members of the team.
+              type: object
+              properties:
+                id:
+                  description: The ID of the user.
+                  type: string
+                  example: account:user:12345678-abcd-1234-abcd-123456789abc
+                name:
+                  description: The unique username of the user
+                  type: string
+                  example: userX
+          creationDate:
+            format: date-time
+            description: The creation date of the account in UTC.
+            type: string
+            example: 2022-06-10T10:59:50.000Z
+          lastModificationDate:
+            format: date-time
+            description: The last modification date of the user account in UTC.
+            type: string
+            example: 2022-06-10T10:59:50.000Z
+          groups:
+            description: The groups of the team.
+            type: array
+            items:
+              type: object
+              properties:
+                name:
+                  description: The name of the group.
+                  type: string
+                  example: AdminGroup
+                displayName:
+                  description: The display name of the group.
+                  type: string
+                  example: Admin Group
+                id:
+                  description: The fully qualified ID of the group.
+                  type: string
+                  example: account:team:a885bb42-d808-4557-9a7f-9f10c5777739:group:AdminGroup
+                members:
+                  type: array
+                  items:
+                    description: The IDs of the members of the group.
+                    type: string
+                    example: account:user:a885bb42-d808-4557-9a7f-9f10c5777739
+      - $ref: "#/components/schemas/UpdateTeamAccount"
+    UpdateTeamAccount:
+      required:
+      - type
+      type: object
+      properties:
+        type:
+          description: The type of the account.
+          enum:
+          - TEAM
+          type: string
+        name:
+          description: The unique name of the account.
+          type: string
+          example: MyTeam
+        description:
+          description: The description of the account.
+          type: string
+          example: External Team
+        location:
+          description: The location of the account.
+          type: string
+          example: "Konstanz, Germany"
+        websiteUrl:
+          description: The website of the account.
+          type: string
+          example: https://knime.com
+    UserAccount:
+      description: "A user account, including JWT groups"
+      type: object
+      allOf:
+      - type: object
+        properties:
+          jwtGroupIdentifiers:
+            description: Group identifiers of the groups defined in the JWT.
+            type: array
+            items:
+              description: The fully qualified ID of the JWT group.
+              type: string
+              example: jwt:group:admin
+          globalGroups:
+            description: Group identifiers of global groups in which the user is a
+              member.
+            type: array
+            items:
+              type: object
+              properties:
+                name:
+                  description: The name of the group.
+                  type: string
+                  example: AdminGroup
+                displayName:
+                  description: The display name of the group.
+                  type: string
+                  example: Admin Group
+                id:
+                  description: The fully qualified ID of the group.
+                  type: string
+                  example: account:hub:global:group:AdminGroup
+                indirect:
+                  description: "If true, this user is not a direct member of this\
+                    \ group but a member of a descendant of the group."
+                  type: boolean
+      - $ref: "#/components/schemas/UserAccountWithTeams"
+    UserAccountWithTeams:
+      description: A user account including teams.
+      type: object
+      allOf:
+      - type: object
+        properties:
+          teams:
+            description: The teams the user is a member of.
+            type: array
+            items:
+              $ref: "#/components/schemas/BaseTeam"
+          forumBadges:
+            description: In case the service is connected to the KNIME Forum this
+              field contains the forum badges the user has. In case there is no forum
+              connected this field is missing.
+            type: array
+            items:
+              type: object
+              properties:
+                name:
+                  description: The name of the badge.
+                  type: string
+                  example: Nice Topic
+                groupId:
+                  format: int64
+                  description: the group id of the badge.
+                  type: number
+                  example: 13
+      - $ref: "#/components/schemas/UserAccountWithoutTeams"
+    UserAccountWithoutTeams:
+      description: A user account
+      required:
+      - type
+      - id
+      - name
+      - lastModificationDate
+      - active
+      type: object
+      allOf:
+      - type: object
+        properties:
+          type:
+            description: The type of the account.
+            enum:
+            - USER
+            type: string
+          id:
+            description: The id of the account.
+            type: string
+            example: account:user:a885bb42-d808-4557-9a7f-9f10c5777739
+          name:
+            description: The unique name of the account.
+            type: string
+            example: userX
+          avatarUrl:
+            description: The URL to the publicly available user avatar.
+            type: string
+            example: https://hub.knime.com/path/to/avatar.png
+          lastModificationDate:
+            format: date-time
+            description: The last modification date of the user account in UTC.
+            type: string
+            example: 2022-06-10T10:59:50.000Z
+          active:
+            description: Indicates whether the user account is active.
+            type: boolean
+      - $ref: "#/components/schemas/UpdateUserAccount"
+    UserAccountWithManagedProperties:
+      description: A user account with managed properties
+      type: object
+      allOf:
+      - type: object
+        properties:
+          managedProperties:
+            description: a map containing managed properties
+            type: object
+            example: "{\"string\": \"value\", \"object\": { \"foo\": 42 }}"
+          teams:
+            description: The teams the user is a member of.
+            type: array
+            items:
+              allOf:
+              - type: object
+                properties:
+                  managedProperties:
+                    description: a map containing managed properties
+                    type: object
+                    example: "{\"string\": \"value\", \"object\": { \"foo\": 42 }}"
+              - $ref: "#/components/schemas/BaseTeam"
+      - $ref: "#/components/schemas/UserAccount"
+    BaseTeam:
+      description: An account of type team
+      type: object
+      properties:
+        id:
+          description: The ID of the account.
+          type: string
+          example: account:team:c151cdc8-b864-441f-9fce-a6e4a30afc0d
+        fullyQualifiedId:
+          description: The fully qualified ID of the team.
+          type: string
+          example: account:team:c151cdc8-b864-441f-9fce-a6e4a30afc0d
+        name:
+          description: The unique name of the account.
+          type: string
+          example: MyTeam
+        avatarUrl:
+          description: A link to the avatar of the account.
+          type: string
+          example: "https://{example-host}/path/to/avatar.png"
+        groups:
+          description: The groups the user is in.
+          type: array
+          items:
+            type: object
+            properties:
+              name:
+                description: The name of the group.
+                type: string
+                example: AdminGroup
+              displayName:
+                description: The display name of the group.
+                type: string
+                example: Admin Group
+              id:
+                description: The fully qualified ID of the group.
+                type: string
+                example: account:team:c151cdc8-b864-441f-9fce-a6e4a30afc0d:group:AdminGroup
+              indirect:
+                description: "If true, this user is not a direct member of this group\
+                  \ but a member of a descendant of the group."
+                type: boolean
+    UpdateUserAccount:
+      type: object
+      properties:
+        email:
+          description: The email address of the account.
+          type: string
+          example: support@knime.com
+        description:
+          description: The description of the account.
+          type: string
+          example: Data Analyst
+        creationDate:
+          format: date-time
+          description: The creation date of the account in UTC.
+          type: string
+          example: 2022-06-10T10:59:50.000Z
+        location:
+          description: The location of the account.
+          type: string
+          example: "Konstanz, Germany"
+        websiteUrl:
+          description: The website of the account.
+          type: string
+          example: https://knime.com
+        realName:
+          description: The real name of the user.
+          type: string
+          example: Hans Jürgen
+    AccountList:
+      description: A collection of accounts.
+      required:
+      - accounts
+      type: object
+      properties:
+        '@controls':
+          description: A (possibly empty) map with all controls for this object.
+          type: object
+          additionalProperties:
+            $ref: "#/components/schemas/Control"
+        '@namespaces':
+          description: A (possibly empty) map with the namespaces for this object.
+          type: object
+          additionalProperties:
+            $ref: "#/components/schemas/Namespace"
+        pagination:
+          $ref: "#/components/schemas/PaginationInfo"
+        accounts:
+          type: array
+          items:
+            type: object
+            anyOf:
+            - $ref: "#/components/schemas/UserAccountWithoutTeams"
+            - $ref: "#/components/schemas/TeamAccount"
+    Group:
+      description: A team or global group.
+      required:
+      - name
+      type: object
+      properties:
+        '@controls':
+          description: A (possibly empty) map with all controls for this object.
+          type: object
+          additionalProperties:
+            $ref: "#/components/schemas/Control"
+        '@error':
+          $ref: "#/components/schemas/Error"
+        '@namespaces':
+          description: A (possibly empty) map with the namespaces for this object.
+          type: object
+          additionalProperties:
+            $ref: "#/components/schemas/Namespace"
+        name:
+          description: The group name.
+          type: string
+          example: MyGroup
+        displayName:
+          description: The display name of the group.
+          type: string
+          example: My Group
+        id:
+          description: The fully qualified ID of the group.
+          type: string
+          example: account:team:12345678-abcd-1234-abcd-123456789abc:group:MyGroup
+        external:
+          description: Indicates whether this is an external group or a group managed
+            by KNIME Hub.
+          default: false
+          type: boolean
+        scimManaged:
+          description: Indicates whether this external group is managed by SCIM.
+          default: false
+          type: boolean
+        members:
+          description: The group members. These can be user accounts and/or other
+            groups.
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                description: The ID of the user or group.
+                type: string
+                example: account:user:12345678-abcd-1234-abcd-123456789abc
+              name:
+                description: The unique name of the user or group.
+                type: string
+                example: userX
+              type:
+                description: "The member type, which is either user or group."
+                enum:
+                - user
+                - group
+                type: string
+                example: user
+              indirect:
+                description: If true the user or group is not a direct member of this
+                  group but a member of one of its descendant groups.
+                type: boolean
+    UserIdList:
+      description: A list of user account IDs.
+      type: object
+      properties:
+        userIDs:
+          type: array
+          items:
+            description: A qualified user ID
+            type: string
+            example: account:user:12345678-abcd-1234-abcd-123456789abc
+    GroupMembershipChangeList:
+      description: An object with a list of user IDs and/or a list of group IDs.
+      type: object
+      properties:
+        userIDs:
+          type: array
+          items:
+            description: A user ID
+            type: string
+            example: account:user:12345678-abcd-1234-abcd-123456789abc
+        groupIDs:
+          type: array
+          items:
+            description: A group ID
+            type: string
+            example: hub:global:group:a-global-group
+    ServiceAccount:
+      description: A service account.
+      type: object
+      properties:
+        type:
+          description: The type of the account.
+          enum:
+          - SERVICE
+          type: string
+        id:
+          description: The ID of the account.
+          type: string
+          example: service:12345678-abcd-1234-abcd-123456789abc
+        fullyQualifiedId:
+          description: The fully qualified ID of the account.
+          type: string
+          example: account:service:12345678-abcd-1234-abcd-123456789abc
+        jwtGroupIdentifiers:
+          description: Group identifiers of the groups defined in the JWT.
+          type: array
+          items:
+            description: The fully qualified ID of the JWT group.
+            type: string
+            example: jwt:group:impersonator
+    CreateApplicationPassword:
+      required:
+      - name
+      type: object
+      properties:
+        name:
+          description: The name of the user application password
+          type: string
+          example: My application password name
+    CreateApplicationPasswordWithScope:
+      allOf:
+      - required:
+        - name
+        type: object
+        properties:
+          scope:
+            description: The scope of the application password
+            type: string
+            example: account:team:961c5cac-6890-4954-ab57-aef12e2a7730
+      - $ref: "#/components/schemas/CreateApplicationPassword"
+    ApplicationPassword:
+      allOf:
+      - type: object
+        properties:
+          '@controls':
+            description: A (possibly empty) map with all controls for this object.
+            type: object
+            additionalProperties:
+              $ref: "#/components/schemas/Control"
+          '@error':
+            $ref: "#/components/schemas/Error"
+          '@namespaces':
+            description: A (possibly empty) map with the namespaces for this object.
+            type: object
+            additionalProperties:
+              $ref: "#/components/schemas/Namespace"
+          password:
+            description: The password for the application password.
+            type: string
+            example: 8ec6NIWBX60Gj8YF9r8nAG7QBIuD74LI-DQ7YovERfwoFbFBw_5LMKfSNSB-oO8Fm70hb7KsOWDg6J1jZN1mAA
+          authToken:
+            description: "The authToken, to be used for basic auth or the authToken\
+              \ query parameter."
+            type: string
+            example: UzF5QWtaZDBYRHVpOHlRUEVmSFZvRUxKSWdKRFJtZUJNRzZKV2dlbDZQdzo4ZWM2TklXQlg2MEdqOFlGOXI4bkFHN1FCSXVENzRMSS1EUTdZb3ZFUmZ3b0ZiRkJ3XzVMTUtmU05TQi1vTzhGbTcwaGI3S3NPV0RnNkoxalpOMW1BQQ==
+      - $ref: "#/components/schemas/BaseApplicationPassword"
+    BaseApplicationPassword:
+      type: object
+      properties:
+        id:
+          description: The ID of the application password
+          type: string
+          example: account:app-pw:c15f2b86-a944-494f-bac9-63b2901d6939
+        pwId:
+          description: The password ID of the application password
+          type: string
+          example: S1yAkZd0XDui8yQPEfHVoELJIgJDRmeBMG6JWgel6Pw
+        name:
+          description: The name of the application password
+          type: string
+          example: My application password name
+        creator:
+          description: The creator of the application password
+          type: string
+          example: account:user:11111111-1111-1111-1111-111111111111
+        createdAt:
+          format: date-time
+          description: The date and time this job was created.
+          type: string
+          example: "2022-02-22T22:10:00.000000+01:00[Europe/Berlin]"
+        lastUsed:
+          format: date
+          description: The date this application password was used the last time.
+          type: string
+          example: 2022-02-22
+        type:
+          description: The type of application password. Either USER or APPLICATION.
+          enum:
+          - USER
+          - APPLICATION
+          type: string
+        scope:
+          description: The scope of the application password. This is the account
+            to which the application password belongs.
+          type: string
+          example: account:team:52f4e122-b62c-4651-97af-0a8257cfae9d
+    ApplicationPasswordPublicKey:
+      type: object
+      properties:
+        publicKey:
+          description: The Base64 encoded public key.
+          type: string
+          example: MCowBQYDK2VwAyEAgs7IoLY745unVWEiusbj59mURLSk2RZ1SeHzwwNoAZw
+    PaginationInfo:
+      description: Information about item pagination.
+      required:
+      - totalItemCount
+      - totalPageCount
+      type: object
+      properties:
+        totalItemCount:
+          description: The total number of items.
+          type: number
+          example: 42
+        totalPageCount:
+          description: The total number of pages that can be returned based on the
+            requested page size.
+          type: number
+          example: 5
+        nextPageCursor:
+          description: The cursor for the next page. Only available if cursor-based
+            pagination was requested and there is a next page.
+          type: string
+          example: eyJzIjpbIi1uYW1lIl0sImx2IjpbInVzZXIxIl0sInEiOiJqb2JTdGF0ZT1MT0FESU5HIn0
+    IdentifierResponse:
+      type: object
+      properties:
+        id:
+          description: The ID of the account.
+          type: string
+          example: account:user:c15f2b86-a944-494f-bac9-63b2901d6939
+        name:
+          description: The unique name of the account.
+          type: string
+          example: userX
+        type:
+          description: The type of the account.
+          enum:
+          - USER
+          - APPLICATION
+          - PASSWORD
+          - SERVICE
+          - ANONYMOUS
+          type: string
+        identifiers:
+          description: The identifiers of the account.
+          type: array
+          items:
+            type: string
+          example:
+          - account:team:52f4e122-b62c-4651-97af-0a8257cfae9d:group:MyGroup
+    ScopedLimit:
+      description: Information about a limit for a provided scope and limit key.
+      type: object
+      allOf:
+      - type: object
+        properties:
+          limit:
+            description: The limit value.
+            minimum: 0
+            type: integer
+            example: 10
+          currentUsage:
+            description: The current usage of the limit.
+            minimum: 0
+            type: integer
+            example: 5
+          defaultLimit:
+            description: The default limit value.
+            minimum: 0
+            type: integer
+            example: 5
+    ScopedLimitCollection:
+      description: Information about all limits for a provided scope.
+      type: object
+      allOf:
+      - type: object
+        properties:
+          limit-key-1:
+            $ref: "#/components/schemas/ScopedLimit"
+          limit-key-2:
+            $ref: "#/components/schemas/ScopedLimit"
+    BasePolicy:
+      description: A single policy.
+      type: object
+      properties:
+        uogId:
+          description: The user or group .
+          type: string
+          example: account:user:d5f5fe86-db25-49a5-a17f-dc1fcae0a83a
+        role:
+          description: The role identifier.
+          type: string
+          example: account:*:theRole
+    Policy:
+      description: A single policy with metadata.
+      type: object
+      allOf:
+      - type: object
+        properties:
+          createdAt:
+            format: date-time
+            description: The date and time this policy was created.
+            type: string
+            example: 2022-02-22T21:10:20.000Z
+          createdBy:
+            description: "Information about who created this policy. This can either\
+              \ be an account identifier (user or service account), \"template\" which\
+              \ means the policy was automatically created based on a template policy\
+              \ or \"unknown\" in case the policy was created before policy metadata\
+              \ was introduced."
+            type: string
+            example: account:user:d5f5fe86-db25-49a5-a17f-dc1fcae0a83a
+          creationType:
+            description: "Information about how this policy was created. This can\
+              \ be \"manually added\" if it was created explicitly by a user using\
+              \ the REST API, \"from template\" if it was automatically created based\
+              \ on a template policy, or \"unknown\" in case the policy was created\
+              \ before policy metadata was introduced."
+            enum:
+            - manually added
+            - from template
+            - unknown
+            type: string
+      - $ref: "#/components/schemas/BasePolicy"
+    PolicyWithId:
+      description: A single policy with it's policy ID.
+      type: object
+      allOf:
+      - type: object
+        properties:
+          id:
+            format: uuid
+            description: The policy ID.
+            type: string
+            example: 6ab87535-2f27-4be7-8784-84b916ca50e7
+      - $ref: "#/components/schemas/Policy"
+    PolicyIdList:
+      description: List of policy IDs.
+      type: array
+      items:
+        format: uuid
+        description: A policy ID.
+        type: string
+        example: 6ab87535-2f27-4be7-8784-84b916ca50e7
+    ResourceTypes:
+      description: All known resource types.
+      type: object
+      properties:
+        resourceTypes:
+          type: array
+          items:
+            type: string
+            example:
+            - jobs
+            - deployments
+  parameters:
+    PreferHeader:
+      name: Prefer
+      in: header
+      description: "Controls how much HATEOS information should be in the response.\
+        \ By default the response contains full Mason information, i.e. both the possible\
+        \ actions and their corresponding hyperlinks. If you pass `representation=minimal`\
+        \ no Mason controls will be sent. If you pass `representation=basic` only\
+        \ the possible actions without any hyperlinks and description will be sent."
+      schema:
+        enum:
+        - representation=minimal
+        - representation=basic
+        type: string
+    AccountFilterQuery:
+      name: q
+      in: query
+      description: |
+        An optional filter to only show the accounts that match the filter. Only a single attribute can be used for filtering right now. Available attributes are:
+          - `team` : ID of a team in which the returned users must be members; only applies to searching user accounts
+          - `member` : ID of a user which must be a member of the returned teams; only applies to searching team accounts
+      schema:
+        type: string
+      examples:
+        team:
+          value: account:team:4009d85f-236a-420b-84fe-8ef273f2c2a8
+          summary: filter users by membership in the provided team
+        member:
+          value: account:user:2a33bfef-ce10-4abf-a1bf-99c4cb44ff03
+          summary: filter team by user which must be a member
+    AccountSortQuery:
+      name: sort
+      in: query
+      description: |
+        An optional parameter for sorting. By default results are sorted in ascending order. If you prefix the attribute with `-` the sort order is descending. You can provide multiple attributes separated by commas. The default sorting is `id`. Available attributes for sorting are:
+          - `id` : the ID of the accounts
+          - `name` : the name of the accounts
+          - `email`: the e-mail of the accounts; only applies to user accounts
+          - `creationDate`: the timestamp when the account was created
+          - `lastModificationDate`: the timestamp when the account was last modified
+      schema:
+        enum:
+        - id
+        - -id
+        - name
+        - -name
+        - email
+        - -email
+        - creationDate
+        - -creationDate
+        - lastModificationDate
+        - -lastModificationDate
+        type: string
+      examples:
+        nonDescending:
+          value: name
+          summary: sort by account name in ascending order
+        nonAscending:
+          value: "-creationDate,name"
+          summary: sort by creation timestamp in descending order and then by name
+            in ascending order
+    PageQuery:
+      name: page
+      in: query
+      description: The page number to be displayed.
+      schema:
+        type: integer
+      example: 1
+    CursorQuery:
+      name: cursor
+      in: query
+      description: "The cursor for the next page. It is provided by the previous response,\
+        \ you cannot construct it yourself."
+      schema:
+        type: string
+      example: eyJzIjpbIi1uYW1lIl0sImx2IjpbInVzZXIxIl0sInEiOiJqb2JTdGF0ZT1MT0FESU5HIn0
+    PagelenQuery:
+      name: pagelen
+      in: query
+      description: "Number of accounts to be displayed on a single page. An optional\
+        \ parameter, if not provided a default value (usually 100) will be used. Note\
+        \ that there is a limit on the page length (usually 100). In addition the\
+        \ actual response may contain less items than requested."
+      schema:
+        maximum: 100
+        minimum: 1
+        type: integer
+      example: 20
+  securitySchemes:
+    SecurityScheme:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Authentication
