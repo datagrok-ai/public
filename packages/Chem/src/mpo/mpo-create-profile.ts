@@ -23,10 +23,10 @@ import {
 import {MpoProfileManager} from './mpo-profile-manager';
 
 const METHOD_MANUAL = 'Manual';
-const METHOD_PROBABILISTIC = 'Probabilistic';
+const METHOD_PROBABILISTIC = 'Data-driven';
 
 const FIELD_DESCRIPTIONS: Record<string, string> = {
-  'Method': 'Manual desirability curve editing or probabilistic MPO trained from labeled data',
+  'Method': 'Manual desirability curve editing or data-driven MPO trained from labeled data',
   'Dataset': 'Load data to preview desirability scores as you edit the profile',
   'Aggregation': 'How individual property scores combine into the final MPO score',
 };
@@ -181,7 +181,7 @@ export class MpoProfileCreateView {
       this.clearPreviousLayout();
       this.closeContextPanel();
       if (!this.df) {
-        this.showError('Probabilistic MPO requires a dataset. Please select a dataset first.');
+        this.showError('Data-driven MPO requires a dataset. Please select a dataset first.');
         return;
       }
       this.tableView.dataFrame = this.df;
@@ -221,7 +221,7 @@ export class MpoProfileCreateView {
 
         if (!this.isManualMode) {
           this.clearPreviousLayout();
-          this.showError('Probabilistic MPO requires a dataset. Please select a dataset first.');
+          this.showError('Data-driven MPO requires a dataset. Please select a dataset first.');
         } else {
           if (this.showMethod)
             this.profile = this.resolveProfileForTransition(keepChanges);
@@ -369,7 +369,7 @@ export class MpoProfileCreateView {
     if (!this.df)
       return;
 
-    this.setLoading(this.view.root, true, 'Running probabilistic MPO...');
+    this.setLoading(this.view.root, true, 'Running data-driven MPO...');
 
     try {
       this.closePMpoPanels();
@@ -391,7 +391,9 @@ export class MpoProfileCreateView {
       const controlsNode = dockMng.dock(pMpoAppItems.controls.form, DG.DOCK_TYPE.LEFT, gridNode, undefined, 0.1);
       const statGridNode = dockMng.dock(pMpoAppItems.statsGrid, DG.DOCK_TYPE.DOWN, gridNode, undefined, 0.5);
       const rocNode = dockMng.dock(pMpoAppItems.rocCurve, DG.DOCK_TYPE.RIGHT, statGridNode, undefined, 0.3);
-      const confusionNode = dockMng.dock(pMpoAppItems.confusionMatrix, DG.DOCK_TYPE.RIGHT, rocNode, undefined, 0.2);
+      dockMng.dock(this.tableView.grid.root, DG.DOCK_TYPE.DOWN, rocNode, 'Training Data', 0.5);
+      const gridTabNode = dockMng.findNode(this.tableView.grid.root);
+      const confusionNode = dockMng.dock(pMpoAppItems.confusionMatrix, DG.DOCK_TYPE.FILL, gridTabNode);
 
       if (pMpoAppItems.controls.saveBtn)
         this.tableView.setRibbonPanels([[pMpoAppItems.controls.saveBtn]]);
