@@ -16,6 +16,7 @@ import {MpoContextPanel} from '../mpo/mpo-context-panel';
 import {MpoProfileManager} from '../mpo/mpo-profile-manager';
 import {PackageFunctions} from '../package';
 import {computeMpo, MpoProfileInfo, deepEqual, findSuitableProfiles} from '../mpo/utils';
+import {checkPackage} from '../utils/elemental-analysis-utils';
 
 const CREATE_NEW_PROFILE_ITEM = '+ Create New...';
 const UNTITLED_PROFILE = 'Untitled Profile';
@@ -26,6 +27,7 @@ export class MpoProfileDialog {
   profileInput: DG.ChoiceInput<string | null>;
   designModeInput: DG.InputBase<boolean>;
   addParetoFront: DG.InputBase<boolean>;
+  addRadarInCell: DG.InputBase<boolean>;
   mpoProfiles: MpoProfileInfo[] = [];
   currentProfile: DesirabilityProfile | null = null;
   currentProfileFileName: string | null = null;
@@ -66,6 +68,7 @@ export class MpoProfileDialog {
     });
 
     this.addParetoFront = ui.input.bool('Pareto front');
+    this.addRadarInCell = ui.input.bool('Add radar');
 
     this.manageButton = ui.button('Manage...', async () => {
       grok.shell.addView(await PackageFunctions.mpoProfilesApp());
@@ -340,18 +343,44 @@ export class MpoProfileDialog {
 
   private async runMpoCalculation(): Promise<void> {
     try {
-      const columnNames = await computeMpo(
+      const radarRequested = this.addRadarInCell.value;
+      const profile = this.currentProfile!;
+      const profileName = profile.name || 'MPO';
+      const scoreColumnNames = await computeMpo(
         this.dataFrame,
-        this.currentProfile!,
+        profile,
         this.mpoProfileEditor.columnMapping,
         this.mpoProfileEditor.aggregationInput.value!,
+        false,
+        false,
+        radarRequested,
       );
 
-      if (columnNames.length && this.addParetoFront.value)
-        this.addParetoFrontViewer(columnNames);
+      if (scoreColumnNames.length && this.addParetoFront.value)
+        this.addParetoFrontViewer(scoreColumnNames);
+
+      if (radarRequested) {
+        const mapping = this.mpoProfileEditor.columnMapping;
+        const desirabilityColumnNames = Object.keys(profile.properties)
+          .map((prop) => `${mapping[prop] ?? prop} (${profileName} desirability)`);
+        this.addRadarInCellViewer(desirabilityColumnNames);
+      }
     } catch (e) {
       grok.shell.error(`Failed to run MPO calculation: ${e instanceof Error ? e.message : e}`);
     }
+  }
+
+  private addRadarInCellViewer(desirabilityColumnNames: string[]): void {
+    const view = grok.shell.getTableView(this.dataFrame.name);
+    if (!checkPackage('PowerGrid', 'radarCellRenderer')) {
+      grok.shell.warning('PowerGrid package is not installed');
+      return;
+    }
+    const gc = view.grid.columns.add({
+      gridColumnName: `MPO (${this.currentProfile!.name})`,
+      cellType: 'radar',
+    });
+    gc.settings = {columnNames: desirabilityColumnNames};
   }
 
   private getProfileControls(): HTMLElement {
@@ -366,6 +395,7 @@ export class MpoProfileDialog {
       this.designModeInput.root,
       this.mpoProfileEditor.root,
       this.addParetoFront.root,
+      this.addRadarInCell.root,
     ]);
   }
 

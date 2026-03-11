@@ -121,6 +121,11 @@ export function categoricalDesirabilityScore(
   return found?.desirability ?? null;
 }
 
+export type MpoResult = {
+  scoreColumn: DG.Column;
+  desirabilityColumns?: DG.Column[];
+}
+
 /** Calculates the multi parameter optimization score, 0-100, 100 is the maximum */
 export function mpo(
   dataFrame: DG.DataFrame,
@@ -128,7 +133,8 @@ export function mpo(
   profileName: string,
   aggregation: WeightedAggregation,
   isDifferent: boolean = false,
-): DG.Column {
+  createDesirabilityColumns: boolean = false,
+): MpoResult {
   if (columns.length === 0)
     throw new Error('No columns provided for MPO calculation.');
 
@@ -145,6 +151,9 @@ export function mpo(
     desirabilityTemplates.push(d);
     weightColumns.push(d.weightColumn ? dataFrame.col(d.weightColumn) ?? null : null);
   }
+
+  const desirabilityColumns = createDesirabilityColumns ?
+    columns.map((col) => DG.Column.float(`${col.name} (${profileName} desirability)`, rowCount)) : undefined;
 
   resultColumn.init((i) => {
     const scores: number[] = [];
@@ -173,6 +182,9 @@ export function mpo(
       if (score === null)
         return NaN;
 
+      if (createDesirabilityColumns)
+        desirabilityColumns![j].set(i, score, false);
+
       scores.push(score);
       const wCol = weightColumns[j];
       const w = wCol && !wCol.isNone(i) ? Math.max(0, Math.min(1, wCol.get(i))) : desirability.weight;
@@ -185,7 +197,7 @@ export function mpo(
     return aggregate(scores, weights, aggregation);
   });
 
-  return resultColumn;
+  return {scoreColumn: resultColumn, desirabilityColumns};
 }
 
 export function aggregate(scores: number[], weights: number[], aggregation: WeightedAggregation): number {

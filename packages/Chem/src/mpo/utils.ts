@@ -66,6 +66,7 @@ export async function computeMpo(
   aggregation?: WeightedAggregation,
   silent: boolean = false,
   processed: boolean = false,
+  createDesirabilityColumns: boolean = false,
 ): Promise<string[]> {
   const mappedProperties: Record<string, PropertyDesirability> = {};
   for (const [propName, prop] of Object.entries(profile.properties)) {
@@ -94,8 +95,9 @@ export async function computeMpo(
   // Temporary fix until proper support for list<column> is implemented
   const colList = DG.DataFrame.fromColumns(result).columns;
   await DG.Func.find({package: 'Chem', name: 'mpoCalculate'})[0].prepare({
-    df, columns: colList, profileName, aggregation: resolvedAggregation,
+    df, columns: colList, profileName, aggregation: resolvedAggregation, createDesirabilityColumns,
   }).call(undefined, undefined, {processed});
+
   return df.col(profileName) ? [profileName] : [];
 }
 

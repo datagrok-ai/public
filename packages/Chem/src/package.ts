@@ -2588,15 +2588,19 @@ export class PackageFunctions {
     @grok.decorators.param({type: 'column_list'}) columns: DG.ColumnList,
     profileName: string,
     @grok.decorators.param({type: 'string'}) aggregation: WeightedAggregation,
+    createDesirabilityColumns: boolean = false,
   ): DG.DataFrame | null {
     if (columns.length === 0)
       return null;
     const cols = Array.from(columns);
     const isDifferent = df.rowCount !== cols[0].length;
-    const resultColumn = mpo(df, cols, profileName, aggregation, isDifferent);
-    if (resultColumn && (!df.col(resultColumn.name) || isDifferent))
-      return DG.DataFrame.fromColumns([resultColumn]);
-    return null;
+    const {scoreColumn, desirabilityColumns} = mpo(df, cols, profileName, aggregation, isDifferent, createDesirabilityColumns);
+    const resultColumns: DG.Column[] = [];
+    if (scoreColumn && (!df.col(scoreColumn.name) || isDifferent))
+      resultColumns.push(scoreColumn);
+    if (desirabilityColumns)
+      resultColumns.push(...desirabilityColumns);
+    return resultColumns.length > 0 ? DG.DataFrame.fromColumns(resultColumns) : null;
   }
 
   @grok.decorators.func({
@@ -2822,7 +2826,7 @@ export class PackageFunctions {
     tags: ['app'],
     result: {name: 'result', type: 'view'},
   })
-  static async twoComponentReactionsApp(@grok.decorators.param({options: {metaUrl: true, optional: true}}) _path?: string,): Promise<DG.ViewBase> {
+  static async twoComponentReactionsApp(@grok.decorators.param({options: {metaUrl: true, optional: true}}) _path?: string): Promise<DG.ViewBase> {
     return await twoComponentReactionsView(grok.shell.tables[0]);
   }
 
@@ -2892,7 +2896,7 @@ export class PackageFunctions {
           column.setTag('desirabilityTemplate', newTagValue);
       }
 
-      const score = mpo(
+      const scoreResult = mpo(
         dataFrame,
         columns,
         selected.name,
@@ -2901,20 +2905,20 @@ export class PackageFunctions {
 
       ui.empty(resultDiv);
 
-      const mpoValue = score.get(semValue.cell.rowIndex);
+      const mpoValue = scoreResult.scoreColumn.get(semValue.cell.rowIndex);
       const valueHost = ui.divH([], {style: {position: 'relative', alignItems: 'center'}});
 
       const addColumnIcon = ui.iconFA(
         'plus',
         () => {
-          const col = mpo(
+          const result = mpo(
             dataFrame,
             columns,
             selected.name,
             aggregationInput.value as WeightedAggregation,
           );
-          if (!dataFrame.col(col.name))
-            dataFrame.columns.add(col);
+          if (!dataFrame.col(result.scoreColumn.name))
+            dataFrame.columns.add(result.scoreColumn);
         },
         'Add MPO score as a column',
       );

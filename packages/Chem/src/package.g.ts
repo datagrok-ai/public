@@ -300,7 +300,7 @@ export function ChemSpaceEditor(call: DG.FuncCall) : void {
 //output: object result
 //meta.supportedSemTypes: Molecule
 //meta.supportedDistanceFunctions: Tanimoto,Asymmetric,Cosine,Sokal
-//meta.role: dimRedPreprocessingFunction
+//meta.role: dim-red-preprocessing-function
 export async function getFingerprints(col: DG.Column, _metric: string | undefined, fingerprintType: any) {
   return await PackageFunctions.getFingerprints(col, _metric, fingerprintType);
 }
@@ -1175,10 +1175,11 @@ export async function _mpo() : Promise<void> {
 //input: column_list columns 
 //input: string profileName 
 //input: string aggregation 
+//input: bool createDesirabilityColumns 
 //output: dataframe result { action: join(df) }
 //meta.vectorFunc: true
-export function mpoCalculate(df: DG.DataFrame, columns: DG.ColumnList, profileName: string, aggregation: any) : any {
-  return PackageFunctions.mpoCalculate(df, columns, profileName, aggregation);
+export function mpoCalculate(df: DG.DataFrame, columns: DG.ColumnList, profileName: string, aggregation: any, createDesirabilityColumns: boolean) : any {
+  return PackageFunctions.mpoCalculate(df, columns, profileName, aggregation, createDesirabilityColumns);
 }
 
 //input: dataframe df 
