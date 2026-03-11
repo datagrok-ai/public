@@ -158,7 +158,6 @@ services:
       dg:
         aliases: [grok_connect]
     restart: unless-stopped
-    profiles: ["full"]
 
   grok_spawner:
     image: datagrok/grok_spawner:\${GROK_SPAWNER_VERSION:-latest}
@@ -600,7 +599,7 @@ export async function claude(args: ClaudeArgs): Promise<boolean> {
 
   // Determine whether this is a public repo and compute Claude working directory
   const isPublic = repoRoot ? isPublicRepo(repoRoot) : false;
-  const claudeWorkDir = isPublic ? '/workspace/repo' : `/workspace/public/packages/${taskKey}`;
+  const claudeWorkDir = isPublic ? '/workspace/repo/public' : `/workspace/public/packages/${taskKey}`;
 
   // Fix ownership on bind-mounted directories (host UID may differ from container node user)
   const containerName = `dg-pkg-${taskKey.toLowerCase()}-tools-dev-1`;
