@@ -1,0 +1,66 @@
+/* Lotka-Volterra Predator-Prey Simulation — Application Styles */
+
+/* Equilibrium and stats display panel */
+.lv-stats-panel {
+  font-size: 13px;
+  padding: 8px;
+  border-radius: 4px;
+  background-color: #f5f5f5;
+  margin-top: 8px;
+  line-height: 1.6;
+}
+
+.lv-stats-panel .lv-stats-label {
+  font-weight: 600;
+  color: #555;
+}
+
+.lv-stats-panel .lv-stats-value {
+  font-family: monospace;
+  color: #333;
+}
+
+/* Optimize button */
+.lv-optimize-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 16px;
+  border-radius: 4px;
+  background-color: #2196F3;
+  color: white;
+  border: none;
+  cursor: pointer;
+  font-size: 13px;
+  margin-top: 8px;
+  width: 100%;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.lv-optimize-btn:hover {
+  background-color: #1976D2;
+}
+
+.lv-optimize-btn--disabled {
+  pointer-events: none;
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+/* Progress bar inside the optimize button */
+.lv-optimize-btn .lv-progress-bar {
+  position: absolute;
+  left: 0;
+  top: 0;
+  height: 100%;
+  background-color: rgba(255, 255, 255, 0.3);
+  transition: width 0.1s linear;
+}
+
+/* Disabled icon button (ui.iconFA) */
+.lv-btn--disabled {
+  pointer-events: none;
+  opacity: 0.4;
+}
