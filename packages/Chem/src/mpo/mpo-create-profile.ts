@@ -47,6 +47,7 @@ export class MpoProfileCreateView {
   datasetInput?: DG.InputBase;
   fileName?: string | null = null;
   saveButton: HTMLElement | null = null;
+  resetButton: HTMLElement | null = null;
 
   private headerEl!: HTMLElement;
   private toolbarEl!: HTMLElement;
@@ -56,6 +57,7 @@ export class MpoProfileCreateView {
   private tableViewVisible: boolean = false;
   private subs: Subscription[] = [];
 
+  private originalProfile: DesirabilityProfile;
   private profileModified = false;
   private updatingLayout = false;
   private stashedManualProfile: { profile: DesirabilityProfile; modified: boolean } | null = null;
@@ -81,6 +83,7 @@ export class MpoProfileCreateView {
     this.fileName = fileName;
 
     this.profile = existingProfile ?? createDefaultProfile();
+    this.originalProfile = structuredClone(this.profile);
     this.editor = new MpoProfileEditor(undefined, true);
     this.editor.setProfile(this.profile);
     this.profileEditorContainer = ui.divV([this.editor.root]);
@@ -154,7 +157,8 @@ export class MpoProfileCreateView {
     controls.push(this.aggregationField);
 
     this.saveButton = ui.button('Save', () => this.showSaveDialog());
-    this.saveButton.classList.add('d4-disabled');
+    this.resetButton = ui.button('Reset', () => this.resetProfile());
+    this.setModified(false);
 
     this.headerEl = ui.h1(this.displayName);
     this.headerEl.classList.add('chem-profile-header');
@@ -165,7 +169,7 @@ export class MpoProfileCreateView {
     this.profileViewContainer.classList.add('chem-profile-view');
 
     this.view.root.append(this.profileViewContainer);
-    this.activeView.setRibbonPanels([[this.saveButton!]]);
+    this.activeView.setRibbonPanels([[this.saveButton!, this.resetButton!]]);
   }
 
   // --- Event handlers ---
@@ -192,6 +196,8 @@ export class MpoProfileCreateView {
     if (this.stashedManualProfile) {
       this.profile = this.stashedManualProfile.profile;
       this.profileModified = this.stashedManualProfile.modified;
+      if (!this.profileModified)
+        this.originalProfile = structuredClone(this.profile);
       this.stashedManualProfile = null;
       this.prepareManualLayout();
       await this.attachLayout();
@@ -252,9 +258,27 @@ export class MpoProfileCreateView {
     const result = await MpoProfileManager.showSaveDialog(this.profile, this.isEditMode ? this.fileName : undefined);
     if (result.saved) {
       this.fileName = result.fileName;
-      this.saveButton!.classList.add('d4-disabled');
-      this.profileModified = false;
+      this.originalProfile = structuredClone(this.profile);
+      this.setModified(false);
     }
+  }
+
+  private setModified(modified: boolean): void {
+    this.profileModified = modified;
+    this.saveButton!.classList.toggle('d4-disabled', !modified);
+    this.resetButton!.classList.toggle('d4-disabled', !modified);
+  }
+
+  private async resetProfile(): Promise<void> {
+    this.profile = structuredClone(this.originalProfile);
+    this.setModified(false);
+    this.updatingLayout = true;
+    try {
+      this.editor.setProfile(this.profile);
+    } finally {
+      this.updatingLayout = false;
+    }
+    await this.renderContextPanel();
   }
 
   // --- Layout ---
@@ -275,8 +299,8 @@ export class MpoProfileCreateView {
         this.updatingLayout = false;
       }
 
-      if (this.profileModified && this.saveButton)
-        this.saveButton.classList.remove('d4-disabled');
+      this.activeView.setRibbonPanels([[this.saveButton!, this.resetButton!]]);
+      this.setModified(this.profileModified);
 
       if (!this.df) {
         this.profileViewContainer.append(this.profileEditorContainer);
@@ -448,7 +472,9 @@ export class MpoProfileCreateView {
     if (!keepChanges) {
       this.profileModified = false;
       this.stashedManualProfile = null;
-      return this.df ? createProfileForDf(this.df) : createDefaultProfile();
+      const profile = this.df ? createProfileForDf(this.df) : createDefaultProfile();
+      this.originalProfile = structuredClone(profile);
+      return profile;
     }
 
     if (this.df)
@@ -482,11 +508,9 @@ export class MpoProfileCreateView {
     const isOwnView = (v: DG.View | null) => v && (v.id === this.view.id || v.id === this.tableView.id);
 
     this.subs.push(grok.events.onCustomEvent(MPO_SCORE_CHANGED_EVENT).subscribe(async () => {
-      if (!this.updatingLayout) {
-        this.saveButton!.classList.remove('d4-disabled');
-        this.profileModified = true;
-      }
-      if (!this.df || !this.profile || !this.mpoContextPanel)
+      if (!this.updatingLayout)
+        this.setModified(true);
+      if (!this.df || !this.profile || !this.mpoContextPanel || !isOwnView(grok.shell.v as DG.View))
         return;
       await this.renderContextPanel();
     }));
@@ -498,7 +522,7 @@ export class MpoProfileCreateView {
 
     this.subs.push(grok.events.onCurrentViewChanged.subscribe(() => {
       if (!isOwnView(grok.shell.v as DG.View))
-        this.closeContextPanel();
+        this.mpoContextPanel?.release();
     }));
     this.subs.push(grok.events.onViewRemoving.subscribe((data: DG.EventData) => {
       if (isOwnView(data.args?.view))

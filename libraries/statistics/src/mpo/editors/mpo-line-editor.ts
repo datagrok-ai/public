@@ -309,7 +309,7 @@ export class MpoDesirabilityLineEditor {
       // --- Add special handle (Gaussian peak / Sigmoid inflection) ---
       this.addSpecialHandle(width, height);
 
-      if (notify && this._prop.mode === 'freeform')
+      if (notify)
         this.onChanged.next(this._prop.line);
     };
 
