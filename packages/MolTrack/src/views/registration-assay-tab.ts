@@ -84,10 +84,24 @@ export class AssayRegistrationView extends RegistrationViewBase {
     return columns.map((col) => col.name);
   }
 
+  private handleImportClick() {
+    DG.Utils.openFile({accept: '.json', open: async (file) => {
+      try {
+        const json = await file.text();
+        const response = await registerAssays(json);
+        const {status} = JSON.parse(response);
+        this.showRegistrationMessage(status);
+      } catch (err) {
+        this.showRegistrationMessage('error', (err as Error).message);
+      }
+    }});
+  }
+
   private async buildUI() {
     this.registerButton = ui.bigButton('REGISTER', () => this.handleRegisterClick());
+    const importButton = ui.bigButton('IMPORT', () => this.handleImportClick());
     const clearAllButton = ui.iconFA('eraser', () => this.clearInputs(this.assayInputs), 'Clear all');
-    this.view.setRibbonPanels([[this.registerButton, clearAllButton]]);
+    this.view.setRibbonPanels([[this.registerButton, importButton, clearAllButton]]);
 
     const [assayProps, assayResultProps] = await Promise.all([
       this.fetchAssayProperties(),

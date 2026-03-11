@@ -20,7 +20,7 @@
 }
 
 .moltrack-info-container {
-  flex: 0 0 11%;
+  flex: 0 0 auto;
   overflow: auto;
 }
 
@@ -34,7 +34,7 @@
   min-width: 200px;
   max-height: 30vh;
   overflow-y: auto;
-  padding-right: 8px;
+  scrollbar-gutter: stable;
 }
 
 .moltrack-compound-form {
@@ -112,6 +112,15 @@
 .moltrack-input-row {
   max-height: fit-content;
   margin-bottom: 35px;
+}
+
+.moltrack-mapping-editor {
+  overflow-y: auto;
+  flex: 1 1 0;
+}
+
+.moltrack-left-panel {
+  overflow: hidden;
 }
 
 .moltrack-search-aggr-header-div {
