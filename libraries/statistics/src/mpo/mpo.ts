@@ -15,6 +15,7 @@ export type MissingValueConfig =
 
 type BasePropertyDesirability = {
   weight: number; /// 0-1
+  weightColumn?: string; /// optional column name to read per-row weights from (0-1)
   missingValues?: MissingValueConfig;
 }
 
@@ -131,14 +132,19 @@ export function mpo(
   if (columns.length === 0)
     throw new Error('No columns provided for MPO calculation.');
 
+  const rowCount = columns[0].length;
   const resultColumn = isDifferent ?
-    DG.Column.float(profileName, columns[0].length) :
-    (dataFrame.col(profileName) ?? DG.Column.float(profileName, columns[0].length));
+    DG.Column.float(profileName, rowCount) :
+    (dataFrame.col(profileName) ?? DG.Column.float(profileName, rowCount));
 
-  const desirabilityTemplates = columns.map((column) => {
+  const desirabilityTemplates: PropertyDesirability[] = [];
+  const weightColumns: (DG.Column | null)[] = [];
+  for (const column of columns) {
     const tag = column.getTag('desirabilityTemplate');
-    return migrateDesirability(JSON.parse(tag));
-  });
+    const d = migrateDesirability(JSON.parse(tag));
+    desirabilityTemplates.push(d);
+    weightColumns.push(d.weightColumn ? dataFrame.col(d.weightColumn) ?? null : null);
+  }
 
   resultColumn.init((i) => {
     const scores: number[] = [];
@@ -168,7 +174,9 @@ export function mpo(
         return NaN;
 
       scores.push(score);
-      weights.push(desirability.weight);
+      const wCol = weightColumns[j];
+      const w = wCol && !wCol.isNone(i) ? Math.max(0, Math.min(1, wCol.get(i))) : desirability.weight;
+      weights.push(w);
     }
 
     if (scores.length === 0)

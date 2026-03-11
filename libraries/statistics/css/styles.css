@@ -15,7 +15,7 @@
 }
 
 .statistics-mpo-header > *:nth-child(2) {
-  width: 60px;
+  width: 120px;
   min-width: 60px;
 }
 
@@ -23,22 +23,22 @@
   flex-grow: 1;
 }
 
-.statistics-mpo-property-name {
+.statistics-mpo-property-cell {
   width: 110px;
-  padding-top: 5px;
+  min-width: 110px;
+  align-self: flex-end;
+  margin-bottom: 20px !important;
 }
 
 .statistics-mpo-weight-input {
-  width: 60px;
-  min-width: 60px;
+  width: 100px;
 }
 
-.statistics-mpo-weight-view {
-  margin-top: 21px;
-}
-
-.statistics-mpo-weight-design {
-  margin-top: 0;
+.statistics-mpo-weight-cell {
+  align-self: flex-end;
+  margin-bottom: 20px !important;
+  align-items: center;
+  gap: 4px;
 }
 
 .statistics-mpo-control-buttons {
@@ -72,15 +72,6 @@
   flex: 0 0 auto;
 }
 
-.statistics-mpo-row > *:first-child {
-  width: 110px;
-  min-width: 110px;
-}
-
-.statistics-mpo-row > *:nth-child(2) {
-  width: 60px;
-  min-width: 60px;
-}
 
 .statistics-mpo-row .ui-input-choice .ui-input-editor {
   width: 100px !important;
@@ -104,6 +95,24 @@
 
 .statistics-mpo-cat-desirability {
   width: 70px;
+}
+
+.statistics-mpo-weight-toggle {
+  cursor: pointer;
+  color: var(--grey-3);
+  font-size: 12px;
+}
+
+.statistics-mpo-weight-toggle:hover {
+  color: var(--grey-5);
+}
+
+.statistics-mpo-weight-toggle-active {
+  color: var(--blue-1);
+}
+
+.statistics-mpo-weight-toggle-active:hover {
+  color: var(--blue-2);
 }
 
 .statistics-mpo-hidden {
@@ -154,7 +163,7 @@
     margin-bottom: 5px;
   }
 
-  .statistics-mpo-weight-input {
+  .statistics-mpo-weight-cell {
     margin-top: 0 !important;
   }
 }
