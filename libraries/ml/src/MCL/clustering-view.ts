@@ -178,26 +178,35 @@ export async function markovCluster(
 
 
 export class SCLinesRenderer {
-  private renderFlag = false;
-  renderSub: rxjs.Subscription;
+  private idle = false;
+  private selfDraw = false;
+  private stabilizeTimeout: ReturnType<typeof setTimeout> | null = null;
+  private afterDrawSub: rxjs.Subscription;
+  private beforeDrawSub: rxjs.Subscription;
   constructor(public sc: DG.ScatterPlotViewer, public from: ArrayLike<number>,
     public to: ArrayLike<number>, public shortLineThreshold: number, public width: number, public color: string) {
-    this.renderSub = DG.debounce(sc.onAfterDrawScene, 200).subscribe(() => {
-      if (this.renderFlag) {
-        this.renderFlag = false;
+    this.beforeDrawSub = sc.onBeforeDrawScene.subscribe(() => {
+      if (this.idle)
+        this.render();
+    });
+
+    this.afterDrawSub = sc.onAfterDrawScene.subscribe(() => {
+      if (this.selfDraw) {
+        this.selfDraw = false;
         return;
       }
-      this.renderFlag = true;
-      const tempSub = sc.onBeforeDrawScene.subscribe((_) => {
-        this.render();
-        tempSub.unsubscribe();
-      });
-      setTimeout(() => {
+      this.idle = false;
+      if (this.stabilizeTimeout)
+        clearTimeout(this.stabilizeTimeout);
+      this.stabilizeTimeout = setTimeout(() => {
+        this.stabilizeTimeout = null;
+        this.idle = true;
+        this.selfDraw = true;
         this.sc.invalidateCanvas();
-        // this.renderFlag = false;
-      });
+      }, 200);
     });
-    sc.subs.push(this.renderSub);
+
+    sc.subs.push(this.beforeDrawSub, this.afterDrawSub);
   }
 
   render() {
@@ -235,6 +244,9 @@ export class SCLinesRenderer {
   }
 
   destroy() {
-    this.renderSub.unsubscribe();
+    this.beforeDrawSub.unsubscribe();
+    this.afterDrawSub.unsubscribe();
+    if (this.stabilizeTimeout)
+      clearTimeout(this.stabilizeTimeout);
   }
 }
