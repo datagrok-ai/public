@@ -5,7 +5,7 @@
   "description": "Exploratory Data Analysis Tools",
   "dependencies": {
     "@datagrok-libraries/math": "^1.2.6",
-    "@datagrok-libraries/ml": "^6.10.8",
+    "@datagrok-libraries/ml": "^6.10.10",
     "@datagrok-libraries/statistics": "../../libraries/statistics",
     "@datagrok-libraries/tutorials": "^1.7.4",
     "@datagrok-libraries/utils": "../../libraries/utils",
