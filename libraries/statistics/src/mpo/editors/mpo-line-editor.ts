@@ -22,9 +22,10 @@ const EDITOR_PADDING = {top: 10, right: 10, bottom: 20, left: 30};
 const POINT_RADIUS = 3;
 
 const COLORS = {
-  line: '#2077b4',
-  point: '#d72f30',
-  barFill: 'rgba(160,196,255,0.5)',
+  line: DG.Color.toHtml(DG.Color.filteredRows),
+  handle: DG.Color.toHtml(DG.Color.selectedRows),
+  barFill: DG.Color.toHtml(DG.Color.histogramBar),
+  barStroke: DG.Color.toHtml(DG.Color.lightGray),
 };
 
 class CoordMapper {
@@ -192,14 +193,17 @@ export class MpoDesirabilityLineEditor {
         const coords = mapper.toCanvasCoords([p[0], p[1]]);
         konvaPoints.push(coords.x, coords.y);
 
+        if (this._prop.mode !== 'freeform')
+          return;
+
         const pointCircle = new Konva.Circle({
           x: coords.x,
           y: coords.y,
           radius: POINT_RADIUS,
-          fill: COLORS.point,
-          stroke: 'black',
+          fill: 'white',
+          stroke: COLORS.line,
           strokeWidth: 1,
-          draggable: this._prop.mode === 'freeform',
+          draggable: true,
           hitStrokeWidth: 5,
         });
 
@@ -207,9 +211,6 @@ export class MpoDesirabilityLineEditor {
         pointCircle.setAttr('_dataIndex', sortedIndices[index]);
 
         pointCircle.on('dragmove', (evt) => {
-          if (this._prop.mode !== 'freeform')
-            return;
-
           const circle = evt.target as Konva.Circle;
           const pos = circle.position();
           const dataIndex = circle.getAttr('_dataIndex');
@@ -253,17 +254,11 @@ export class MpoDesirabilityLineEditor {
         });
 
         pointCircle.on('dragend', () => {
-          if (this._prop.mode !== 'freeform')
-            return;
-
           this._prop.line.sort((a, b) => a[0] - b[0]);
           this.redrawFn?.();
         });
 
         pointCircle.on('contextmenu', (evt) => {
-          if (this._prop.mode !== 'freeform')
-            return;
-
           evt.evt.preventDefault();
           if (this._prop.line.length <= 2) {
             grok.shell.warning('Cannot remove points, minimum of 2 required.');
@@ -285,9 +280,6 @@ export class MpoDesirabilityLineEditor {
         });
 
         pointCircle.on('mouseenter', (evt) => {
-          if (this._prop.mode !== 'freeform')
-            return;
-
           this.stage!.container().style.cursor = 'pointer';
           const circle = evt.target as Konva.Circle;
           const pos = circle.position();
@@ -297,16 +289,11 @@ export class MpoDesirabilityLineEditor {
         });
 
         pointCircle.on('mouseleave', () => {
-          if (this._prop.mode !== 'freeform')
-            return;
-
           this.stage!.container().style.cursor = 'default';
           ui.tooltip.hide();
         });
 
         pointCircle.on('dblclick dbltap', (evt) => {
-          if (this._prop.mode !== 'freeform')
-            return;
           this.ignoreNextClick = true;
           ui.tooltip.hide();
           const dataIndex = (evt.target as Konva.Circle).getAttr('_dataIndex') as number;
@@ -425,15 +412,16 @@ export class MpoDesirabilityLineEditor {
   }
 
   private drawAxes(minX: number, maxX: number, width: number, height: number) {
+    const axisColor = getComputedStyle(document.documentElement).getPropertyValue('--grey-2').trim() || '#DBDCDF';
     this.layer!.add(
       new _konva!.Line({
         points: [EDITOR_PADDING.left, height - EDITOR_PADDING.bottom, width - EDITOR_PADDING.right, height - EDITOR_PADDING.bottom],
-        stroke: 'grey',
+        stroke: axisColor,
         strokeWidth: 1,
       }),
       new _konva!.Line({
         points: [EDITOR_PADDING.left, EDITOR_PADDING.top, EDITOR_PADDING.left, height - EDITOR_PADDING.bottom],
-        stroke: 'grey',
+        stroke: axisColor,
         strokeWidth: 1,
       }),
       new _konva!.Text({x: EDITOR_PADDING.left, y: height - EDITOR_PADDING.bottom + 3, text: minX.toFixed(1), fontSize: 9, fill: 'grey'}),
@@ -539,7 +527,8 @@ export class MpoDesirabilityLineEditor {
         width: barW,
         height: barH,
         fill: COLORS.barFill,
-        stroke: COLORS.line,
+        opacity: 0.25,
+        stroke: COLORS.barStroke,
         strokeWidth: 0.5,
       });
 
@@ -645,9 +634,7 @@ export class MpoDesirabilityLineEditor {
         x: coords.x,
         y: coords.y,
         radius: 7,
-        fill: 'orange',
-        stroke: 'black',
-        strokeWidth: 1,
+        fill: COLORS.handle,
         draggable: true,
         hitStrokeWidth: 15,
       });
