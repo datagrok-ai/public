@@ -9,7 +9,7 @@
   "parser": "@typescript-eslint/parser",
   "parserOptions": {
     "ecmaVersion": 2022,
-    "project": "./packages/ChatGPT/tsconfig.json",
+    "project": "./packages/Grokky/tsconfig.json",
     "sourceType": "module"
   },
   "plugins": [

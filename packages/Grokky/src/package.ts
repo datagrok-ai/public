@@ -28,14 +28,14 @@ export const _package = new ChatGPTPackage();
 
 
 export class PackageFunctions {
-  @grok.decorators.init()
+  @grok.decorators.init({tags: ['init']})
   static async init() {
     initModelTypeNames();
     LLMCredsManager.init(_package);
     setupSearchUI();
     setupTableViewAIPanelUI();
     setupScriptsAIPanelUI();
-
+    // LLMClient.getInstance();
     // // @ts-ignore
     // window.openAI = OpenAIClient.getInstance().openai;
 
@@ -45,7 +45,7 @@ export class PackageFunctions {
   }
 
 
-  @grok.decorators.autostart()
+  @grok.decorators.autostart({tags: ['autostart']})
   static autostart() {
     // try {
     //   grok.events.onViewAdded.subscribe((view) => {

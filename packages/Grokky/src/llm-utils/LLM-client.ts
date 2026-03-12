@@ -9,6 +9,7 @@ import {_package} from '../package';
 // import {AIProvider, BuiltinToolSpec} from './AI-API-providers/types';
 import * as osdk from '@ai-sdk/openai';
 import * as asdk from '@ai-sdk/anthropic';
+import * as awsSdk from '@ai-sdk/amazon-bedrock';
 import {LanguageModelV3Message, LanguageModelV3} from '@ai-sdk/provider';
 import {findLast} from '../utils';
 
@@ -81,10 +82,14 @@ export class LLMClient {
 
     // const constr = _package.settings.APIName === 'openai chat completions' ? osdk.openai.chat : osdk.openai.responses;
     // this.aiModels.Fast = constr(ModelType.Fast);
-    const providerConstructor = _package.settings.APIName === LLMApiNames.AntropicMessages ? asdk.createAnthropic : osdk.createOpenAI;
+    const providerConstructor = _package.settings.APIName === LLMApiNames.AntropicMessages ? asdk.createAnthropic :
+      _package.settings.APIName === LLMApiNames.AmazonBedrock ? awsSdk.createAmazonBedrock : osdk.createOpenAI;
+
+
     const provider = providerConstructor({
       baseURL: fullBaseUrl,
       apiKey: grok.ai.config.proxyToken!,
+      ...(_package.settings.APIName === LLMApiNames.AmazonBedrock ? {region: _package.settings.region} : {}),
       fetch: async (input, init) => {
         let url = typeof input === 'string' ? input : input.toString();
         const currentConfig = grok.ai.config.current;
@@ -115,9 +120,9 @@ export class LLMClient {
       },
     });
 
-    const constr = _package.settings.APIName === LLMApiNames.OpenAIChatCompletions ? provider.chat :
+    const constr = _package.settings.APIName === LLMApiNames.OpenAIChatCompletions ? (provider as osdk.OpenAIProvider).chat :
       (_package.settings.APIName === LLMApiNames.OpenAIResponses ? (provider as osdk.OpenAIProvider).responses :
-        (provider as asdk.AnthropicProvider).messages);
+        ((_package.settings.APIName === LLMApiNames.AmazonBedrock ? (provider as awsSdk.AmazonBedrockProvider).languageModel : (provider as asdk.AnthropicProvider).messages)));
     // @ts-ignore
     this.aiModels = {};
     for (const type of Object.keys(ModelType) as ModelOption[])

@@ -5,6 +5,7 @@
   "description": "Grokky AI assistant for Datagrok",
   "author": "oserhiienko@datagrok.ai",
   "dependencies": {
+    "@ai-sdk/amazon-bedrock": "^4.0.77",
     "@ai-sdk/anthropic": "^3.0.31",
     "@ai-sdk/openai": "^3.0.23",
     "@ai-sdk/provider": "^3.0.6",
@@ -97,8 +98,16 @@
       "choices": [
         "OpenAI Chat Completions",
         "OpenAI Responses",
-        "Antropic Messages"
+        "Antropic Messages",
+        "Amazon Bedrock"
       ]
+    },
+    {
+      "name" : "region",
+      "propertyType": "string",
+      "description": "Region for Amazon Bedrock API. Required only if Amazon Bedrock is used as API.",
+      "defaultValue": "us-east-2",
+      "nullable": true
     },
     {
       "name": "apiVersion",
