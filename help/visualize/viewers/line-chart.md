@@ -160,6 +160,7 @@ Toggle each component on/off independently in the **Context Panel** to focus on 
 | **Misc** | | |
 | Axes Use Column Format | boolean | Use column format for axis labels, where possible |
 | Show Aggr Type Selector | boolean |  |
+| Show Mouse Over Row Group | boolean | Determines whether the points and lines are highlighted when you hover over a row group in another viewer. |
 | **Style** | | |
 | Auto Layout | boolean |  |
 | Segments Font | string |  |
