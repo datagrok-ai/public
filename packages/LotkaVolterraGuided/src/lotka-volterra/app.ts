@@ -225,26 +225,12 @@ export function lotkaVolterraApp(_package: DG.Package): void {
   }
 
   // --- Optimization task ---
-  const optimizeBtn = ui.div([], 'lv-optimize-btn');
-  const progressBar = ui.div([], 'lv-progress-bar');
-  optimizeBtn.appendChild(progressBar);
-  const optimizeBtnLabel = ui.div([], '');
-  optimizeBtnLabel.textContent = 'Optimize Max Prey';
-  optimizeBtn.appendChild(optimizeBtnLabel);
-  ui.tooltip.bind(optimizeBtn, 'Run brute-force grid search over all four model coefficients to maximize peak prey population');
+  const optimizeBtn = ui.bigButton('Optimize', () => runOptimization(),
+    'Run brute-force grid search over all four model coefficients to maximize peak prey population');
 
   function setOptimizeEnabled(enabled: boolean): void {
     optimizeBtn.classList.toggle('lv-optimize-btn--disabled', !enabled);
   }
-
-  function setOptimizeProgress(percent: number): void {
-    progressBar.style.width = `${percent}%`;
-    optimizeBtnLabel.textContent = percent < 100 ? `Optimizing... ${percent}%` : 'Optimize Max Prey';
-  }
-
-  optimizeBtn.addEventListener('click', () => {
-    runOptimization();
-  });
 
   async function runOptimization(): Promise<void> {
     const inputs = getInputs();
@@ -255,11 +241,7 @@ export function lotkaVolterraApp(_package: DG.Package): void {
     }
 
     setOptimizeEnabled(false);
-    setOptimizeProgress(0);
 
-    let completed = 0;
-    let errorCount = 0;
-    const results: WorkerResult[] = [];
     const workerCount = Math.max(1, (navigator.hardwareConcurrency ?? 4) - 2);
 
     // Generate grid points: 11 steps per parameter (10% of range each)
@@ -280,82 +262,75 @@ export function lotkaVolterraApp(_package: DG.Package): void {
     }
 
     const workerUrl = _package.webRoot + 'dist/optimize-worker.js';
+    const nWorkers = Math.min(workerCount, tasks.length);
+    const chunks: WorkerTask[][] = Array.from({length: nWorkers}, () => []);
+    for (let i = 0; i < tasks.length; i++)
+      chunks[i % nWorkers].push(tasks[i]);
 
-    try {
-      await new Promise<void>((resolve, reject) => {
-        const taskQueue = [...tasks];
-        activeWorkers = [];
+    activeWorkers = [];
+    const pi = DG.TaskBarProgressIndicator.create('Optimizing Max Prey...', {cancelable: true});
 
-        const createWorker = (): Worker | null => {
-          try {
-            const worker = new Worker(workerUrl);
-            activeWorkers.push(worker);
-            return worker;
-          } catch (_err) {
-            return null;
-          }
-        };
-
-        const processNext = (worker: Worker) => {
-          if (taskQueue.length === 0) {
-            worker.terminate();
-            activeWorkers = activeWorkers.filter((w) => w !== worker);
-            if (activeWorkers.length === 0)
-              resolve();
-            return;
-          }
-
-          const task = taskQueue.shift()!;
-          worker.postMessage(task);
-        };
-
-        const handleResult = (worker: Worker, event: MessageEvent<WorkerResult>) => {
-          const result = event.data;
-          completed++;
-          setOptimizeProgress(Math.round(completed / TOTAL_GRID_POINTS * 100));
-
-          if (result.error)
-            errorCount++;
-          else
-            results.push(result);
-
-          processNext(worker);
-        };
-
-        // Create worker pool
-        for (let i = 0; i < workerCount; i++) {
-          const worker = createWorker();
-          if (worker == null) {
-            if (i === 0) {
-              reject(new Error('Failed to start parallel computations. Try again later.'));
-              return;
-            }
-            break;
-          }
-
-          worker.onmessage = (event) => handleResult(worker, event);
-          worker.onerror = () => {
-            completed++;
-            errorCount++;
-            setOptimizeProgress(Math.round(completed / TOTAL_GRID_POINTS * 100));
-            processNext(worker);
-          };
-
-          processNext(worker);
+    const resolvers = new Array<(value: WorkerResult[]) => void>(chunks.length);
+    const batchPromises = chunks.map((batch, i) =>
+      new Promise<WorkerResult[]>((resolve, reject) => {
+        resolvers[i] = resolve;
+        let worker: Worker;
+        try {
+          worker = new Worker(workerUrl);
+        } catch (_err) {
+          reject(new Error('Failed to start parallel computations. Try again later.'));
+          return;
         }
-      });
-    } catch (err) {
-      grok.shell.error(err instanceof Error ? err.message : 'Failed to start parallel computations.');
-      setOptimizeProgress(0);
-      setOptimizeEnabled(true);
-      return;
-    }
+        activeWorkers.push(worker);
 
+        worker.onmessage = (event: MessageEvent<WorkerResult[]>) => {
+          worker.terminate();
+          activeWorkers = activeWorkers.filter((w) => w !== worker);
+          resolve(event.data);
+        };
+
+        worker.onerror = (err) => {
+          worker.terminate();
+          activeWorkers = activeWorkers.filter((w) => w !== worker);
+          reject(new Error(err.message ?? 'Worker error'));
+        };
+
+        worker.postMessage(batch);
+      }),
+    );
+
+    const cancelSub = pi.onCanceled.subscribe(() => {
+      terminateWorkers();
+      for (const resolve of resolvers)
+        resolve([]);
+    });
+
+    const settled = await Promise.allSettled(batchPromises);
+
+    cancelSub.unsubscribe();
+    pi.close();
     terminateWorkers();
-    setOptimizeProgress(0);
     setOptimizeEnabled(true);
 
-    // Handle results
+    if (pi.canceled)
+      return;
+
+    const results: WorkerResult[] = [];
+    let errorCount = 0;
+    for (let i = 0; i < settled.length; i++) {
+      const outcome = settled[i];
+      if (outcome.status === 'fulfilled') {
+        for (const r of outcome.value) {
+          if (r.error)
+            errorCount++;
+          else
+            results.push(r);
+        }
+      } else {
+        errorCount += chunks[i].length;
+      }
+    }
+
     if (errorCount > 0 && errorCount < TOTAL_GRID_POINTS)
       grok.shell.warning(`${errorCount} of ${TOTAL_GRID_POINTS} points failed. Result based on ${TOTAL_GRID_POINTS - errorCount} points.`);
 
@@ -435,7 +410,7 @@ export function lotkaVolterraApp(_package: DG.Package): void {
   form.append(statsPanel);
 
   const dockMng = view.dockManager;
-  dockMng.dock(form, DG.DOCK_TYPE.LEFT, null, undefined, 0.2);
+  dockMng.dock(form, DG.DOCK_TYPE.LEFT, null, undefined, 0.1);
 
   // --- Line chart (time series) ---
   lineChart = view.addViewer('Line chart', {

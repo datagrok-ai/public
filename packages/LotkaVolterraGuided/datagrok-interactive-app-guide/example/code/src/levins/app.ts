@@ -299,9 +299,7 @@ export function levinsMetapopulationApp(): void {
 
     setOptimizeBtnEnabled(false);
 
-    const pi = DG.TaskBarProgressIndicator.create('Optimizing m...');
-    let canceled = false;
-    let completed = 0;
+    const pi = DG.TaskBarProgressIndicator.create('Optimizing m...', {cancelable: true, spinner: true});
     let errorCount = 0;
 
     const results: {m_i: number; p_end: number}[] = [];
@@ -312,103 +310,86 @@ export function levinsMetapopulationApp(): void {
     for (let i = 0; i < OPTIMIZE_POINTS; i++)
       mValues.push(mMin + i * (mMax - mMin) / (OPTIMIZE_POINTS - 1));
 
-    // Worker pool
+    // Fan-out: distribute tasks round-robin across workers
     const workerUrl = _package.webRoot + 'dist/optimize-worker.js';
+    const tasks: WorkerTask[] = mValues.map((m_i) => ({
+      m_i,
+      p0: inputs.p0,
+      e0: inputs.e0,
+      rescueEffect: inputs.rescueEffect,
+      t_start: inputs.t_start,
+      t_end: inputs.t_end,
+      t_step: inputs.t_step,
+      tolerance: inputs.tolerance,
+    }));
 
-    try {
-      await new Promise<void>((resolve, reject) => {
-        const taskQueue = [...mValues];
-        activeWorkers = [];
+    const nWorkers = Math.min(workerCount, tasks.length);
+    const chunks: WorkerTask[][] = Array.from({length: nWorkers}, () => []);
+    for (let i = 0; i < tasks.length; i++)
+      chunks[i % nWorkers].push(tasks[i]);
 
-        const createWorker = (): Worker | null => {
-          try {
-            const worker = new Worker(workerUrl);
-            activeWorkers.push(worker);
-            return worker;
-          } catch (_err) {
-            return null;
-          }
-        };
+    activeWorkers = [];
 
-        const processNext = (worker: Worker) => {
-          if (canceled) {
-            terminateWorkers();
-            resolve();
-            return;
-          }
-
-          if (taskQueue.length === 0) {
-            worker.terminate();
-            activeWorkers = activeWorkers.filter((w) => w !== worker);
-            if (activeWorkers.length === 0)
-              resolve();
-            return;
-          }
-
-          const m_i = taskQueue.shift()!;
-          const task: WorkerTask = {
-            m_i,
-            p0: inputs.p0,
-            e0: inputs.e0,
-            rescueEffect: inputs.rescueEffect,
-            t_start: inputs.t_start,
-            t_end: inputs.t_end,
-            t_step: inputs.t_step,
-            tolerance: inputs.tolerance,
-          };
-          worker.postMessage(task);
-        };
-
-        const handleResult = (worker: Worker, event: MessageEvent<WorkerResult>) => {
-          const result = event.data;
-          completed++;
-          pi.update(Math.round(completed / OPTIMIZE_POINTS * 100), `${completed}/${OPTIMIZE_POINTS}`);
-
-          if (result.error)
-            errorCount++;
-          else
-            results.push({m_i: result.m_i, p_end: result.p_end});
-
-          processNext(worker);
-        };
-
-        // Create worker pool
-        for (let i = 0; i < workerCount; i++) {
-          const worker = createWorker();
-          if (worker == null) {
-            if (i === 0) {
-              reject(new Error('Failed to start parallel computations. Try again later.'));
-              return;
-            }
-            break;
-          }
-
-          worker.onmessage = (event) => handleResult(worker, event);
-          worker.onerror = () => {
-            completed++;
-            errorCount++;
-            pi.update(Math.round(completed / OPTIMIZE_POINTS * 100), `${completed}/${OPTIMIZE_POINTS}`);
-            processNext(worker);
-          };
-
-          processNext(worker);
+    const resolvers = new Array<(value: WorkerResult[]) => void>(chunks.length);
+    const batchPromises = chunks.map((batch, i) =>
+      new Promise<WorkerResult[]>((resolve, reject) => {
+        resolvers[i] = resolve;
+        let worker: Worker;
+        try {
+          worker = new Worker(workerUrl);
+        } catch (_err) {
+          reject(new Error('Failed to start parallel computations. Try again later.'));
+          return;
         }
-      });
-    } catch (err) {
-      grok.shell.error(err instanceof Error ? err.message : 'Failed to start parallel computations.');
-      pi.close();
-      setOptimizeBtnEnabled(true);
-      return;
-    }
+        activeWorkers.push(worker);
 
+        worker.onmessage = (event: MessageEvent<WorkerResult[]>) => {
+          worker.terminate();
+          activeWorkers = activeWorkers.filter((w) => w !== worker);
+          resolve(event.data);
+        };
+
+        worker.onerror = (err) => {
+          worker.terminate();
+          activeWorkers = activeWorkers.filter((w) => w !== worker);
+          reject(new Error(err.message ?? 'Worker error'));
+        };
+
+        worker.postMessage(batch);
+      }),
+    );
+
+    const cancelSub = pi.onCanceled.subscribe(() => {
+      terminateWorkers();
+      for (const resolve of resolvers)
+        resolve([]);
+    });
+
+    const settled = await Promise.allSettled(batchPromises);
+
+    cancelSub.unsubscribe();
     pi.close();
     terminateWorkers();
     setOptimizeBtnEnabled(true);
 
-    if (canceled)
+    if (pi.canceled)
       return;
 
-    // Handle results
+    // Fan-in: collect results
+    for (let i = 0; i < settled.length; i++) {
+      const outcome = settled[i];
+      if (outcome.status === 'fulfilled') {
+        for (const r of outcome.value) {
+          if (r.error)
+            errorCount++;
+          else
+            results.push({m_i: r.m_i, p_end: r.p_end});
+        }
+      } else {
+        errorCount += chunks[i].length;
+      }
+    }
+
     if (errorCount > 0 && errorCount < OPTIMIZE_POINTS)
       grok.shell.warning(`${errorCount} of ${OPTIMIZE_POINTS} points failed to compute. Result based on ${OPTIMIZE_POINTS - errorCount} points.`);
 
