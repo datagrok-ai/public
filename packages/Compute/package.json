@@ -17,7 +17,7 @@
     "@datagrok-libraries/test": "../../libraries/test",
     "@datagrok-libraries/utils": "../../libraries/utils",
     "cash-dom": "^8.1.5",
-    "datagrok-api": "../../js-api",
+    "datagrok-api": "^1.27.0",
     "dayjs": "^1.11.19",
     "exceljs": "^4.3.0",
     "rxjs": "^6.6.7",
