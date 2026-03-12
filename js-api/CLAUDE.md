@@ -159,6 +159,21 @@ For JS API method questions, check these files first:
 | Shell (views, tables, windows)  | `src/shell.ts`                     |
 | Constants and enums             | `src/const.ts`                     |
 
+## Server API Usage (grok.dapi)
+
+Plugin code accesses the server via `grok.dapi` (instance of `Dapi` class from `src/dapi.ts`).
+
+Key sub-objects: `users`, `groups`, `connections`, `queries`, `tables`, `projects`, `scripts`,
+`packages`, `files`, `docker`, `permissions`, `layouts`, `views`, `functions`, `log`, `spaces`.
+
+Most sub-objects extend `HttpDataSource<T>` providing: `list()`, `find(id)`, `save(entity)`,
+`delete(entity)`, `filter(query)`, `order(field)`, `page(n)`, `by(pageSize)`.
+
+For external HTTP requests from plugins, `grok.dapi.fetchProxy(url, params)` proxies through the
+server to avoid CORS. Raw `fetch()` should never be used in plugin code.
+
+See samples: `packages/ApiSamples/scripts/dapi/`
+
 ## Canonical code samples
 
 See [API usage samples](../packages/ApiSamples/scripts) 
