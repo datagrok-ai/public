@@ -402,7 +402,9 @@ export class MpoProfileEditor {
       name,
       prop,
       (patch) => {
-        this.mutateProperty(name, (p) => Object.assign(p, patch));
+        const p = this.profile?.properties[name];
+        if (p)
+          Object.assign(p, patch);
         editor.redrawAll();
       },
       (newProp) => {

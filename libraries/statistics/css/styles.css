@@ -30,6 +30,10 @@
   margin-bottom: 20px !important;
 }
 
+.ui-form .statistics-mpo-property-cell > div:first-child {
+  padding-left: 4px;
+}
+
 .statistics-mpo-weight-input {
   width: 100px;
 }
@@ -46,6 +50,8 @@
   margin-left: 10px;
   color: var(--blue-1);
   visibility: hidden;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .statistics-mpo-row:hover .statistics-mpo-control-buttons,
@@ -75,6 +81,12 @@
 
 .statistics-mpo-row .ui-input-choice .ui-input-editor {
   width: 100px !important;
+  max-width: none !important;
+}
+
+.ui-form .statistics-mpo-row .ui-input-root {
+  margin-bottom: 0 !important;
+  padding: 0 !important;
 }
 
 .statistics-mpo-cat-editor {

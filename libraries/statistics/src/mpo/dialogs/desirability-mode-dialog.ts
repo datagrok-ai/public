@@ -115,7 +115,7 @@ export class DesirabilityModeDialog {
         prop.mode = v as DesirabilityMode;
         this.onUpdate({mode: prop.mode} as any);
         updateParams();
-        previewEditor.redrawAll();
+        previewEditor.redrawAll(false);
       }});
 
       const configs: ParamConfig[] = [
@@ -133,7 +133,7 @@ export class DesirabilityModeDialog {
           const value = cfg.transform ? cfg.transform(v ?? cfg.fallback()) : (v ?? cfg.fallback());
           prop[cfg.key] = value;
           this.onUpdate({[cfg.key]: value} as any);
-          previewEditor.redrawAll();
+          previewEditor.redrawAll(false);
         }}));
       }
 
@@ -168,12 +168,12 @@ export class DesirabilityModeDialog {
         Object.assign(prop, p);
         syncInputs();
         this.onUpdate(p as any);
-        previewEditor.redrawAll();
       };
 
       subs.push(previewEditor.onChanged.subscribe((line) => {
         prop.line = line;
-        this.onUpdate({line} as any);
+        if (prop.mode === 'freeform')
+          this.onUpdate({line} as any);
       }));
 
       contentPanel.append(modeInput.root);
