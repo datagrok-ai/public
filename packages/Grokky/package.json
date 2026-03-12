@@ -3,7 +3,10 @@
   "friendlyName": "Grokky",
   "version": "1.0.4",
   "description": "Grokky AI assistant for Datagrok",
-  "author": "oserhiienko@datagrok.ai",
+  "author": {
+    "name": "Oleksandra Serhiienko",
+    "email": "oserhiienko@datagrok.ai"
+  },
   "dependencies": {
     "@ai-sdk/amazon-bedrock": "^4.0.77",
     "@ai-sdk/anthropic": "^3.0.31",
