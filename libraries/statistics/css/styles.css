@@ -105,6 +105,23 @@
   width: 120px;
 }
 
+.statistics-mpo-cat-col-header {
+  font-size: 11px;
+  color: var(--grey-3);
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.statistics-mpo-desirability-dialog .statistics-mpo-cat-editor {
+  width: auto;
+  margin-left: 0;
+}
+
+.statistics-mpo-desirability-dialog .statistics-mpo-cat-name {
+  flex: 1;
+  width: auto;
+}
+
 .statistics-mpo-cat-desirability {
   width: 70px;
 }
@@ -160,8 +177,34 @@
   margin-inline: auto;
 }
 
-.statistics-mpo-desirability-dialog .d4-accordion-pane-content {
-  margin: 0;
+.statistics-mpo-dialog-header-row {
+  gap: 12px;
+  align-items: flex-end;
+  margin-bottom: 8px;
+}
+
+.statistics-mpo-dialog-header-row .ui-input-root {
+  flex: 0 1 auto;
+}
+
+.statistics-mpo-section-header {
+  font-size: 11px;
+  text-transform: uppercase;
+  color: var(--blue-1);
+  letter-spacing: 0.5px;
+  border-bottom: 1px solid var(--grey-2);
+  padding-bottom: 4px;
+  margin: 12px 0 8px;
+}
+
+.statistics-mpo-param-grid.ui-form {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0 8px;
+}
+
+.statistics-mpo-desirability-dialog .statistics-mpo-plot {
+  margin: 0 auto;
 }
 
 @media (max-width: 500px) {

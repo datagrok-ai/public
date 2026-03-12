@@ -62,9 +62,15 @@ export class MpoCategoricalEditor {
   }
 
   private buildDesignForm(categories: {name: string; desirability: number}[]): void {
+    const header = ui.divH([
+      ui.divText('Name', 'statistics-mpo-cat-col-header statistics-mpo-cat-name'),
+      ui.divText('Score', 'statistics-mpo-cat-col-header statistics-mpo-cat-desirability'),
+      ...(this.showControls ? [ui.div([], {style: {width: '40px'}})] : []),
+    ], 'statistics-mpo-cat-row statistics-mpo-cat-header-row');
+
     const rows = categories.map((cat, idx) => this.buildCategoryRow(cat, idx));
 
-    this.form = ui.divV(rows);
+    this.form = ui.divV([header, ...rows]);
     this.root.append(this.form);
   }
 

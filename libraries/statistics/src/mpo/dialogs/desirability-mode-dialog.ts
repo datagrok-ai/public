@@ -20,6 +20,10 @@ type ParamConfig = {
   transform?: (v: number) => number;
 };
 
+function sectionHeader(text: string): HTMLElement {
+  return ui.divText(text, 'statistics-mpo-section-header');
+}
+
 export class DesirabilityModeDialog {
   constructor(
     private propertyName: string,
@@ -76,13 +80,15 @@ export class DesirabilityModeDialog {
     const original = structuredClone(this.prop);
 
     const dialog = ui.dialog({
-      title: `${this.propertyName}`,
+      title: this.propertyName,
     });
     dialog.root.classList.add('statistics-mpo-desirability-dialog');
 
     const contentPanel = ui.divV([]);
     const cached: Record<string, PropertyDesirability> = {[original.functionType]: structuredClone(original)};
     const subs: Subscription[] = [];
+
+    let modeInputRoot: HTMLElement | undefined;
 
     const typeInput = ui.input.choice('Type', {items: [...PROPERTY_TYPES], value: this.prop.functionType, onValueChanged: (v) => {
       if (v === this.prop.functionType)
@@ -103,11 +109,11 @@ export class DesirabilityModeDialog {
       buildContent();
     }});
 
-    const buildNumericalContent = (acc: DG.Accordion) => {
+    const buildNumericalContent = () => {
       const prop = this.prop as NumericalDesirability;
       prop.mode ??= 'freeform';
 
-      const previewEditor = new MpoDesirabilityLineEditor(prop, 300, 80);
+      const previewEditor = new MpoDesirabilityLineEditor(prop, 355, 103);
       if (this.mappedCol?.isNumerical)
         previewEditor.setColumn(this.mappedCol);
 
@@ -145,24 +151,21 @@ export class DesirabilityModeDialog {
       inputs.get('min')!.setTooltip('Minimum property value');
       inputs.get('max')!.setTooltip('Maximum property value');
 
-      const form = ui.form([
+      const paramForm = ui.form([
         inputs.get('min')!, inputs.get('max')!,
         inputs.get('mean')!, inputs.get('sigma')!,
         inputs.get('x0')!, inputs.get('k')!,
       ]);
-
-      const HIDDEN = 'statistics-mpo-hidden';
+      paramForm.classList.add('statistics-mpo-param-grid');
 
       const updateParams = () => {
-        inputs.get('mean')!.root.classList.toggle(HIDDEN, prop.mode !== 'gaussian');
-        inputs.get('sigma')!.root.classList.toggle(HIDDEN, prop.mode !== 'gaussian');
-        inputs.get('x0')!.root.classList.toggle(HIDDEN, prop.mode !== 'sigmoid');
-        inputs.get('k')!.root.classList.toggle(HIDDEN, prop.mode !== 'sigmoid');
+        inputs.get('mean')!.root.classList.toggle('statistics-mpo-hidden', prop.mode !== 'gaussian');
+        inputs.get('sigma')!.root.classList.toggle('statistics-mpo-hidden', prop.mode !== 'gaussian');
+        inputs.get('x0')!.root.classList.toggle('statistics-mpo-hidden', prop.mode !== 'sigmoid');
+        inputs.get('k')!.root.classList.toggle('statistics-mpo-hidden', prop.mode !== 'sigmoid');
       };
 
       updateParams();
-
-      const paramPanel = ui.divV([form, previewEditor.root]);
 
       previewEditor.onParamsChanged = (p) => {
         Object.assign(prop, p);
@@ -176,8 +179,9 @@ export class DesirabilityModeDialog {
           this.onUpdate({line} as any);
       }));
 
-      contentPanel.append(modeInput.root);
-      acc.addPane('Parameters', () => paramPanel, true);
+      modeInputRoot = modeInput.root;
+      previewEditor.root.classList.add('statistics-mpo-plot');
+      contentPanel.append(previewEditor.root, sectionHeader('PARAMETERS'), paramForm);
     };
 
     const buildCategoricalContent = () => {
@@ -186,30 +190,34 @@ export class DesirabilityModeDialog {
       if (this.mappedCol?.isCategorical)
         catEditor.setChoices([...this.mappedCol.categories]);
       subs.push(catEditor.onChanged.subscribe(() => this.onUpdate(this.prop)));
-      contentPanel.append(catEditor.root);
+      contentPanel.append(sectionHeader('CATEGORIES'), catEditor.root);
     };
 
     const dispose = () => {
       for (const s of subs)
         s.unsubscribe();
+      subs.length = 0;
     };
 
     const buildContent = () => {
       dispose();
       ui.empty(contentPanel);
-
-      if (!this.mappedCol)
-        contentPanel.append(typeInput.root);
-
-      const acc = ui.accordion();
+      modeInputRoot = undefined;
 
       if (isNumerical(this.prop))
-        buildNumericalContent(acc);
+        buildNumericalContent();
       else
         buildCategoricalContent();
 
-      acc.addPane('Missing values', () => this.buildDefaultScoreInput(this.prop), true);
-      contentPanel.append(acc.root);
+      const headerItems: HTMLElement[] = [];
+      if (!this.mappedCol)
+        headerItems.push(typeInput.root);
+      if (modeInputRoot)
+        headerItems.push(modeInputRoot);
+      if (headerItems.length > 0)
+        contentPanel.prepend(ui.divH(headerItems, 'statistics-mpo-dialog-header-row'));
+
+      contentPanel.append(sectionHeader('MISSING VALUES'), this.buildDefaultScoreInput(this.prop));
     };
 
     buildContent();
