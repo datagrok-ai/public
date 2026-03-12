@@ -162,10 +162,16 @@ export async function convertDo(srcCol: DG.Column, seqHelper: ISeqHelper, target
         return '';
       }
     });
+    newCol.semType = DG.SEMTYPE.MACROMOLECULE;
+    newCol.meta.units = NOTATION.CUSTOM;
+    newCol.setTag('separator', '-');
+    newCol.setTag('aligned', 'SEQ');
+    newCol.setTag('alphabet', 'UN');
+    newCol.setTag('.alphabetIsMultichar', 'true');
     srcCol.dataFrame.columns.add(newCol);
-    const semType = await grok.functions.call('Bio:detectMacromolecule', {col: newCol});
-    if (semType)
-      newCol.semType = semType;
+    // const semType = await grok.functions.call('Bio:detectMacromolecule', {col: newCol});
+    // if (semType)
+    //   newCol.semType = semType;
     await grok.data.detectSemanticTypes(srcCol.dataFrame);
     return newCol;
   } else {
