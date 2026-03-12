@@ -1550,7 +1550,7 @@ let _objectHandlerSubject = new rxjs.Subject<ObjectHandlerResolutionArgs>();
  *
  * Example: {@link https://public.datagrok.ai/js/samples/ui/handlers/handlers} */
 export class ObjectHandler<T = any> {
-
+  dart: any;
   /** Type of the object that this meta handles. */
   get type(): string {
     throw 'Not defined.';
@@ -1632,8 +1632,10 @@ export class ObjectHandler<T = any> {
   }
 
   /** Renders preview list for the item. */
-  renderPreview(x: T, context: any = null): View {
-    return View.create();
+  async renderPreview(x: T, params?: any, path?: string): Promise<View> {
+    if (!this.dart)
+      return View.create();
+    return toJs(await api.grok_Meta_RenderPreview(this.dart, x, params, path));
   }
 
   /** Renders view for the item. */
@@ -1712,7 +1714,6 @@ export class ObjectHandler<T = any> {
 }
 
 export class EntityMetaDartProxy extends ObjectHandler {
-  dart: any;
 
   constructor(d: any) {
     super();
@@ -1728,7 +1729,7 @@ export class EntityMetaDartProxy extends ObjectHandler {
   renderTooltip(x: any, context: any = null): HTMLDivElement { return api.grok_Meta_RenderTooltip(this.dart, x); }
   renderCard(x: any, context: any = null): HTMLDivElement { return api.grok_Meta_RenderCard(this.dart, x); }
   renderProperties(x: any, context: any = null): HTMLDivElement { return api.grok_Meta_RenderProperties(this.dart, x); }
-  renderView(x: any, context: any = null): HTMLDivElement { return api.grok_Meta_RenderProperties(this.dart, x); }
+  renderView(x: any, context: any = null): HTMLDivElement { return api.grok_Meta_RenderView(this.dart, x); }
 }
 
 /**
