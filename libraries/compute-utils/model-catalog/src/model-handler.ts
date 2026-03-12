@@ -218,10 +218,12 @@ export class ModelHandler extends DG.ObjectHandler {
   }
 
   override renderView(x: DG.Func) {
-    return this.renderPreview(x).root;
+    const div = ui.div();
+    this.renderPreview(x).then((v) => div.appendChild(v.root));
+    return div;
   }
 
-  override renderPreview(x: DG.Func): DG.View {
+  override async renderPreview(x: DG.Func): Promise<DG.View> {
     return DG.View.fromViewAsync(async () => {
       const help = await getContextHelp(x);
       const userGroups = await this.awaitUserGroups();
@@ -232,7 +234,7 @@ export class ModelHandler extends DG.ObjectHandler {
         const view = res.getOutputParamValue() as DG.View;
         return view;
       }
-      const v = super.renderPreview(x);
+      const v = await super.renderPreview(x);
       v.name = (x.friendlyName ?? x.name) + ' preview';
 
       const startBtnDiv = missingMandatoryGroups?.length ?
