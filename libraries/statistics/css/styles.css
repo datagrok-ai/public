@@ -10,8 +10,7 @@
 }
 
 .statistics-mpo-header > *:first-child {
-  width: 110px;
-  min-width: 110px;
+  width: 130px;
 }
 
 .statistics-mpo-header > *:nth-child(2) {
@@ -24,14 +23,20 @@
 }
 
 .statistics-mpo-property-cell {
-  width: 110px;
-  min-width: 110px;
+  width: 130px;
+  max-width: 130px;
   align-self: flex-end;
   margin-bottom: 20px !important;
 }
 
 .ui-form .statistics-mpo-property-cell > div:first-child {
   padding-left: 4px;
+}
+
+.statistics-mpo-property-cell > div:first-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .statistics-mpo-weight-input {

@@ -209,8 +209,11 @@ export class MpoProfileEditor {
   }
 
   private buildPropertyCell(rowId: string, name: string): HTMLElement | null {
-    if (this.dataFrame)
-      return ui.divText(name);
+    if (this.dataFrame) {
+      const el = ui.divText(name);
+      ui.tooltip.bind(el, () => name);
+      return el;
+    }
 
     let currentName = name;
 
