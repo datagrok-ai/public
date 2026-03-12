@@ -12,7 +12,7 @@
     "@vueuse/core": "^13.3.0",
     "@vueuse/rxjs": "^13.3.0",
     "cash-dom": "^8.1.4",
-    "datagrok-api": "../../js-api",
+    "datagrok-api": "^1.27.0",
     "dayjs": "^1.11.19",
     "rxjs": "^6.6.7",
     "uuid": "^11.0.5",
