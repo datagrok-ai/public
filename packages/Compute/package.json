@@ -15,7 +15,7 @@
   "dependencies": {
     "@datagrok-libraries/compute-utils": "../../libraries/compute-utils",
     "@datagrok-libraries/test": "../../libraries/test",
-    "@datagrok-libraries/utils": "../../libraries/utils",
+    "@datagrok-libraries/utils": "^4.7.0",
     "cash-dom": "^8.1.5",
     "datagrok-api": "^1.27.0",
     "dayjs": "^1.11.19",

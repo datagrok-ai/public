@@ -12,7 +12,7 @@
     "@datagrok-libraries/compute-api": "../../libraries/compute-api",
     "@datagrok-libraries/compute-utils": "../../libraries/compute-utils",
     "@datagrok-libraries/test": "../../libraries/test",
-    "@datagrok-libraries/utils": "../../libraries/utils",
+    "@datagrok-libraries/utils": "^4.7.0",
     "@datagrok-libraries/webcomponents": "../../libraries/webcomponents",
     "cash-dom": "^8.1.4",
     "datagrok-api": "^1.27.0",
