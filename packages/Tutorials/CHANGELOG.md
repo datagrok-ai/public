@@ -1,5 +1,7 @@
 # Tutorials changelog
 
+## 1.11.0 (2026-03-13)
+
 ## 1.10.6 (2025-12-15)
 
 * Tutorial: Updated the scientific computing tutorials

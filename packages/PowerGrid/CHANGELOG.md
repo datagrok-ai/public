@@ -1,5 +1,7 @@
 # Power Grid changelog
 
+## 1.8.0 (2026-03-13)
+
 ## 1.7.20 (2025-12-15)
 
 * GROK-19378: Forms viewer: Non-molecule semantic type is incorrectly treated as Molecule

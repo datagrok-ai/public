@@ -1,5 +1,7 @@
 # Power Pack changelog
 
+## 1.8.0 (2026-03-13)
+
 ## 1.7.19 (2025-12-19)
 
 * DBExplorer: Handle semtypes

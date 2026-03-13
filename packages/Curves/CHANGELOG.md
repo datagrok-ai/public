@@ -1,5 +1,7 @@
 # Curves changelog
 
+## 1.11.0 (2026-03-13)
+
 ## 1.10.15 (2025-12-02)
 
 * Png Renderer: Fix flickering and moved to PowerGrid
