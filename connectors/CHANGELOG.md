@@ -1,5 +1,9 @@
 # Grok Connect changelog
 
+# 2.6.1 (2026-03-13)
+
+* Databricks: Federated SSO auth mechanism fix
+
 # 2.6.0 (2026-03-10)
 
 * Database catalogs support (multi-catalog browsing for Postgres, MySQL, MS SQL, Databricks, Snowflake)
