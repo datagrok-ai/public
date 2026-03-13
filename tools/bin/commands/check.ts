@@ -215,7 +215,7 @@ export function checkDatagrokApiImports(packagePath: string, files: string[]): s
   const datagrokApiImportRegex = /^\s*(import|export)\s+.*['"]datagrok-api\/[^'"]+['"]/gm;
 
   // Regex to validate if import/export is allowed (only dg, grok, ui)
-  const allowedImportRegex = /^\s*(import|export)\s+.*['"]datagrok-api\/(dg|grok|ui)['"]/;
+  const allowedImportRegex = /^\s*(import|export)\s+.*['"]datagrok-api\/(dg|grok|ui|datagrok)['"]/;
 
   // Regex to extract the import path for error messages
   const importPathRegex = /['"]datagrok-api\/([^'"]+)['"]/;

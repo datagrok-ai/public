@@ -228,8 +228,9 @@ export async function publish(args: PublishArgs) {
       await utils.runScript(`grok link`, curDir);
       await utils.runScript(`npm run build`, curDir);
     }
-    await publishPackage(args);
+    return await publishPackage(args);
   }
+  return true;
 }
 
 async function publishPackage(args: PublishArgs) {
