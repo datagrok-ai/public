@@ -62,11 +62,11 @@ The platform supports a large number of functions, constants and operators. You 
 corresponding sections of the help system:
 
 - [Binning functions](functions/binning-functions.md)
-- [Constants](functions/constants.md)
+- [Constants](formula-syntax.md#constants)
 - [Conversion functions](functions/conversion-functions.md)
 - [DateTime functions](functions/datetime-functions.md)
 - [Math functions](functions/math-functions.md)
-- [Operators](functions/operators.md)
+- [Operators](formula-syntax.md#operators)
 - [Stats functions](functions/stats-functions.md)
 - [Text functions](functions/text-functions.md)
 - [TimeSpan functions](functions/timespan-functions.md)
