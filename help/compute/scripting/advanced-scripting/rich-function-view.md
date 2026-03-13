@@ -73,8 +73,7 @@ Use the RichFunctionView only when you are sure that the script works as expecte
 ### Visualize input data
 
 You can add viewers for input dataframes to review input data before
-starting computations, same way as for [output
-viewers](../scripting-features/scripting-features.md).
+starting computations, same way as for [output viewers](../scripting-features/scripting-features.md).
 
 ```mdx-code-block
 <Tabs>
