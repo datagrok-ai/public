@@ -1,12 +1,14 @@
 # EDA changelog
 
-## 1.4.13 (WIP)
+## 1.5.0 (2026-03-13)
 
-Improved probabilistic multi-parameter optimization (pMPO):
+Probabilistic Multi-Parameter Optimization (pMPO) - Enhancements
 
-* ROC curve and confusion matrix
-* pMPO without sigmoidal correction
-* Correctness tests
+* Added support for both numeric and categorical desirability columns
+* Introduced automatic parameter tuning for streamlined configuration
+* Added option to run pMPO without sigmoidal correction
+* New ROC curve and confusion matrix visualizations for model evaluation
+* Expanded correctness test coverage
 
 ## 1.4.12 (2026-01-16)
 
