@@ -27,7 +27,6 @@
     "style-loader": "^3.3.4"
   },
   "devDependencies": {
-    "@datagrok/compute": "^1.39.0",
     "@typescript-eslint/eslint-plugin": "^5.62.0",
     "@typescript-eslint/parser": "^5.62.0",
     "datagrok-tools": "^5.1.9",
