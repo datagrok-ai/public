@@ -301,10 +301,10 @@ Use this syntax to define the ODE solver configuration and improve performance:
       * The [Bogacki-Shampine](https://en.wikipedia.org/wiki/Bogacki%E2%80%93Shampine_method) 3(2) method (`rk3`)
       * The [Runge-Kutta-Fehlberg](https://en.wikipedia.org/wiki/Runge%E2%80%93Kutta%E2%80%93Fehlberg_method) 4(5) method (`rk4`)
       * The [Dormand-Prince](https://en.wikipedia.org/wiki/Dormand%E2%80%93Prince_method) 5(4) method (`rkdp`)
-      * The [Adams-Bashforth](https://en.wikipedia.org/wiki/Linear_multistep_method) predictor-corrector methods of order 4 and 5 (`ab4`, `ab5`)
-    * Automatic stiffness-detecting methods:
-      * [LSODA](https://doi.org/10.1137/0904010) (`lsoda`) - variable-order solver with automatic switching between Adams (non-stiff) and BDF (stiff)
-      * [CVODE](https://sundials.readthedocs.io/en/latest/cvode/index.html) (`cvode`) - variable-order, variable-step BDF solver from the SUNDIALS suite    
+      * The [Adams](https://en.wikipedia.org/wiki/Linear_multistep_method) multistep predictor-correctors methods of order 4 and 5 (`ab4`, `ab5`)
+    * Adaptive solvers:
+      * [LSODA](https://doi.org/10.1137/0904010) (`lsoda`) – automatic switching between Adams (non-stiff) and BDF (stiff)
+      * [CVODE](https://sundials.readthedocs.io/en/latest/cvode/index.html) (`cvode`) – variable-order Adams and BDF solver from the SUNDIALS suite  
   * **Performance limits**
     * `maxTimeMs`: computation time, in milliseconds (default: 5000ms)
     * `maxIterations`: iteration count for debugging
