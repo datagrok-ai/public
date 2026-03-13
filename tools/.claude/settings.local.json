@@ -1,0 +1,20 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(find /c/repos/Datagrok -type f \\\\\\( -name \"Dockerfile*\" -o -name \"docker-compose*\" \\\\\\) 2>/dev/null | grep -v node_modules | head -20)",
+      "Bash(npm run:*)",
+      "Bash(docker build:*)",
+      "Bash(cd C:/repos/awesome && node C:/repos/Datagrok/public/tools/bin/grok.js claude destroy GROK-PLAYGROUND 2>&1)",
+      "Bash(cd C:/repos/awesome && node C:/repos/Datagrok/public/tools/bin/grok.js claude GROK-PLAYGROUND --in-place --keep --prompt \"echo hello and exit\" 2>&1)",
+      "Bash(cd C:/repos/awesome && node C:/repos/Datagrok/public/tools/bin/grok.js claude GROK-PLAYGROUND --in-place --keep --prompt \"echo done\" 2>&1)",
+      "Bash(git -C C:/repos/awesome rev-parse --show-toplevel 2>&1)",
+      "Bash(cd C:/repos/awesome && node C:/repos/Datagrok/public/tools/bin/grok.js claude GROK-PLAYGROUND 2>&1)",
+      "Bash(cd C:/repos/awesome && node C:/repos/Datagrok/public/tools/bin/grok.js claude GROK-PLAYGROUND --keep 2>&1)",
+      "Bash(MSYS_NO_PATHCONV=1 docker exec dg-pkg-grok-playground-tools-dev-1 ls /workspace/datagrok/ 2>&1)",
+      "Bash(MSYS_NO_PATHCONV=1 docker exec dg-pkg-grok-playground-tools-dev-1 ls -la /workspace/datagrok/packages/awesome 2>&1)",
+      "Bash(MSYS_NO_PATHCONV=1 docker exec dg-pkg-grok-playground-tools-dev-1 ls /workspace/datagrok/packages/awesome/ 2>&1)",
+      "Bash(MSYS_NO_PATHCONV=1 docker exec dg-pkg-grok-playground-tools-dev-1 bash -c 'echo \"=== Symlink ===\" && ls -la /workspace/datagrok/packages/awesome && echo \"=== Package contents ===\" && ls /workspace/datagrok/packages/awesome/ && echo \"=== Public repo root ===\" && ls /workspace/datagrok/js-api /workspace/datagrok/packages /workspace/datagrok/CLAUDE.md 2>&1 | head -5' 2>&1)",
+      "Bash(grep -r \"tools-dev\" /c/repos/Datagrok --include=\"*\" 2>/dev/null | head -20)"
+    ]
+  }
+}

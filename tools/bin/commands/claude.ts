@@ -1,4 +1,4 @@
-import {spawnSync} from 'child_process';
+import {spawn, spawnSync} from 'child_process';
 import fs from 'fs';
 import http from 'http';
 import net from 'net';
@@ -262,11 +262,13 @@ services:
       DG_VERSION: \${DG_VERSION:-latest}
       DG_PUBLIC_REPO: \${DG_PUBLIC_REPO:-https://github.com/datagrok-ai/public.git}
       DG_PUBLIC_BRANCH: \${DG_PUBLIC_BRANCH:-}
+      DG_PUBLIC_DIR: \${DG_PUBLIC_DIR:-/workspace/datagrok}
       JIRA_URL: \${JIRA_URL:-https://reddata.atlassian.net}
       JIRA_USERNAME: \${JIRA_USERNAME:-}
       JIRA_TOKEN: \${JIRA_TOKEN:-}
       GITHUB_TOKEN: \${GITHUB_TOKEN:-}
       TASK_KEY: \${TASK_KEY:-}
+      FOLDER_NAME: \${FOLDER_NAME:-}
     working_dir: /workspace/repo
     networks:
       dg:
@@ -367,6 +369,7 @@ function writeProjectFiles(taskKey: string, args: ClaudeArgs, worktreeRoot: stri
     `GROK_SPAWNER_VERSION=${args['grok-spawner-version'] || 'latest'}`,
     `JKG_VERSION=${args['jkg-version'] || 'latest'}`,
     `TOOLS_DEV_VERSION=${args['tools-dev-version'] || 'latest'}`,
+    `FOLDER_NAME=${path.basename(worktreeRoot)}`,
   ];
 
   for (const env of ['ANTHROPIC_API_KEY', 'DG_PUBLIC_BRANCH', 'JIRA_URL', 'JIRA_USERNAME', 'JIRA_TOKEN', 'GITHUB_TOKEN'])
@@ -592,74 +595,38 @@ export async function claude(args: ClaudeArgs): Promise<boolean> {
     return false;
   }
 
-  // Wait for Datagrok to be healthy
-  const healthy = await waitForDatagrok(dgPort);
-  if (!healthy)
-    color.warn('Datagrok may not be ready. Proceeding anyway...');
-
-  // Determine whether this is a public repo and compute Claude working directory
-  const isPublic = repoRoot ? isPublicRepo(repoRoot) : false;
-  const claudeWorkDir = isPublic ? '/workspace/repo/public' : `/workspace/public/packages/${taskKey}`;
-
-  // Fix ownership on bind-mounted directories (host UID may differ from container node user)
+  // Determine Claude working directory based on repo type
+  // Only trust public-repo markers when we are inside a real git repo — packages can have
+  // public/js-api via node_modules symlinks, which would cause a false positive.
   const containerName = `dg-pkg-${taskKey.toLowerCase()}-tools-dev-1`;
-  spawnSync('docker', ['exec', '-u', 'root', containerName, 'bash', '-c',
-    'chown node:node /workspace 2>/dev/null; ' +
-    'for d in /home/node/.claude /home/node/.npm; do ' +
-    'mkdir -p "$d" 2>/dev/null; chown -R node:node "$d" 2>/dev/null; done; ' +
-    '[ -f /home/node/.claude.json ] && chown node:node /home/node/.claude.json 2>/dev/null; true',
-  ], {stdio: 'inherit'});
+  let claudeWorkDir: string;
+  if (repoRoot && fs.existsSync(path.join(repoRoot, 'js-api')))
+    claudeWorkDir = '/workspace/repo';
+  else if (repoRoot && fs.existsSync(path.join(repoRoot, 'public', 'js-api')))
+    claudeWorkDir = '/workspace/repo/public';
+  else {
+    // External repo: entrypoint clones public repo and creates symlink — wait for it
+    const folderName = path.basename(worktreeRoot);
+    claudeWorkDir = `/workspace/datagrok/packages/${folderName}`;
+    color.info(`Waiting for workspace at ${claudeWorkDir} (streaming container logs)...`);
 
-  // Copy host grok config into container and ensure 'local' server exists
-  spawnSync('docker', ['exec', '-u', 'root', containerName, 'bash', '-c',
-    'mkdir -p /home/node/.grok && chown node:node /home/node/.grok',
-  ], {stdio: 'inherit'});
+    // Stream container logs so the user can see clone progress
+    const logsProc = spawn('docker', ['logs', '-f', containerName], {stdio: 'inherit'});
 
-  const grokConfigPath = path.join(os.homedir(), '.grok', 'config.yaml');
-  if (fs.existsSync(grokConfigPath)) {
-    spawnSync('docker', ['cp', grokConfigPath, `${containerName}:/home/node/.grok/config.yaml`],
-      {stdio: 'inherit'});
-    spawnSync('docker', ['exec', '-u', 'root', containerName,
-      'chown', 'node:node', '/home/node/.grok/config.yaml'],
-      {stdio: 'inherit'});
-    color.info('Copied grok config into container');
-  }
-
-  // Add/ensure 'local' server pointing to compose datagrok (key=admin matches GROK_PARAMETERS)
-  spawnSync('docker', ['exec', containerName, 'node', '-e', `
-    const fs = require('fs');
-    const p = '/home/node/.grok/config.yaml';
-    let t = '';
-    try { t = fs.readFileSync(p, 'utf8'); } catch {}
-    if (!t.trim()) {
-      t = 'default: local\\nservers:\\n  local:\\n    url: http://datagrok:8080/api\\n    key: admin\\n';
-    } else if (!t.includes('datagrok:8080')) {
-      t = t.replace(/^(servers:)/m, '\\$1\\n  local:\\n    url: http://datagrok:8080/api\\n    key: admin');
-      t = t.replace(/^default:.*/m, 'default: local');
-    } else {
-      t = t.replace(/^default:.*/m, 'default: local');
+    let ready = false;
+    for (let i = 0; i < 120; i++) {
+      const check = spawnSync('docker', ['exec', containerName, 'test', '-d', claudeWorkDir]);
+      if (check.status === 0) { ready = true; break; }
+      await new Promise((r) => setTimeout(r, 5000));
     }
-    fs.writeFileSync(p, t);
-  `], {stdio: 'inherit'});
 
-  // Set up workspace context: for non-public repos, bind-mount workspace into public/packages/
-  // so that process.cwd() returns the mount-point path (not the resolved symlink target)
-  // and relative paths like ../../js-api resolve correctly inside the public repo tree.
-  if (!isPublic) {
-    spawnSync('docker', ['exec', '-u', 'root', containerName, 'bash', '-c',
-      'for i in $(seq 1 60); do [ -d /workspace/public/js-api ] && break; sleep 3; done; ' +
-      'if [ -d /workspace/public/js-api ]; then ' +
-      '  mkdir -p /workspace/public/packages 2>/dev/null; ' +
-      `  rm -f /workspace/public/packages/${taskKey} 2>/dev/null; ` +
-      `  if ! mountpoint -q /workspace/public/packages/${taskKey} 2>/dev/null; then ` +
-      `    mkdir -p /workspace/public/packages/${taskKey} && ` +
-      `    mount --bind /workspace/repo /workspace/public/packages/${taskKey}; ` +
-      '  fi; ' +
-      `  echo "[grok claude] Workspace at /workspace/public/packages/${taskKey}"; ` +
-      'else ' +
-      '  echo "[grok claude] Warning: public repo clone not ready"; ' +
-      'fi',
-    ], {stdio: 'inherit'});
+    // Stop streaming logs
+    logsProc.kill();
+
+    if (!ready) {
+      color.warn(`${claudeWorkDir} not available after 600s — falling back to /workspace/repo`);
+      claudeWorkDir = '/workspace/repo';
+    }
   }
 
   const claudeArgs = ['--dangerously-skip-permissions'];

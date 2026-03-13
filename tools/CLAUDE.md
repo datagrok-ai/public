@@ -14,7 +14,7 @@ npm run build                    # Transpile TypeScript to JavaScript using Babe
 npm run debug-source-map         # Build with source maps for debugging
 ```
 
-The build process uses Babel with `@babel/preset-typescript` to transpile TypeScript files from `bin/` (TypeScript source) to `bin/` (JavaScript output). The source TypeScript files are transpiled in-place.
+The build process uses Babel with `@babel/preset-typescript` to transpile TypeScript files from `bin/` to `bin/` (in-place). **Important:** `.ts` source and `.js` output coexist in the same `bin/` directory — `grok.js` requires the transpiled `.js` files, not the `.ts` sources. After editing any `.ts` file, you must run `npm run build` before testing.
 
 ### Link for Local Development
 ```bash
@@ -42,12 +42,17 @@ The CLI uses a modular command pattern. Each command is a separate module that:
 - `add.ts` - Add entities (functions, scripts, queries, etc.) to packages
 - `publish.ts` - Upload and deploy packages to Datagrok servers
 - `check.ts` - Validate package structure, signatures, imports
+- `build.ts` - Build one package or recursively build all packages in a directory
 - `test.ts` - Run Puppeteer-based tests for a single package
 - `test-all.ts` - Run tests across multiple packages
+- `stress-tests.ts` - Run stress tests (must be run from ApiTests package)
 - `api.ts` - Auto-generate TypeScript wrappers for scripts/queries
 - `link.ts` - Link libraries for plugin development
+- `claude.ts` - Launch a Dockerized dev environment with Datagrok + Claude Code
 - `migrate.ts` - Update legacy packages
 - `init.ts` - Apply configuration to existing packages
+
+The commands `api`, `check`, `link`, `publish`, and `test` support the `--all` flag to run recursively across all packages in the current directory.
 
 ### Template System
 
@@ -131,6 +136,29 @@ Tests use Puppeteer for headless browser automation:
 - `--verbose` - Detailed test output
 - `--catchUnhandled` - Catch unhandled exceptions
 - `--debug` - Debug breakpoints (requires `--gui`)
+
+### `grok build` Command
+
+Builds packages with `npm install` + `npm run build`. Supports:
+- Single package: `grok build` (from package directory)
+- Recursive: `grok build --recursive` (discovers and builds all packages in subdirectories)
+- `--filter "name:Chem"` - Filter packages by package.json fields (supports regex, `&&` for multiple conditions)
+- `--parallel N` - Max parallel build jobs (default 4)
+- `--no-incremental` - Force full rebuild (default uses `--env incremental`)
+
+### `grok claude` Command
+
+Launches a full Dockerized development environment (Datagrok + PostgreSQL + RabbitMQ + tools-dev container with Claude Code):
+```bash
+grok claude <project-name>              # Create worktree + start containers + launch Claude
+grok claude <project-name> --in-place   # Use current directory (no worktree)
+grok claude <project-name> --keep       # Leave containers running on exit
+grok claude <project-name> --profile full  # Include spawner, JKG, demo DBs
+grok claude destroy <project-name>      # Tear down containers + worktree
+grok claude destroy-all                 # Destroy all known projects
+```
+
+Creates a git worktree at `~/pkg-worktrees/<project-name>`, writes Docker Compose files to `$TMPDIR/dg-pkg-<project-name>`, and auto-detects the Datagrok version (`bleeding-edge` for public repo, `latest` otherwise). Mounts `~/.claude` into the container for credentials.
 
 ## Key Patterns and Conventions
 
