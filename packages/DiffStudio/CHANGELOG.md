@@ -1,6 +1,6 @@
 # Diff Studio changelog
 
-## 1.5.0 (WIP)
+## 1.5.0 (2026-03-13)
 
 Implemented new methods:
 

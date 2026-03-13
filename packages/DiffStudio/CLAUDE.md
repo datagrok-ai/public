@@ -46,7 +46,7 @@ grok check --soft          # Validate package
 - Manages templates, library examples, and user models
 - Integrates with sensitivity analysis and parameter fitting
 - File preview and browser integration
-- ~2500+ lines - the heart of the user interface
+- ~2300+ lines - the heart of the user interface
 
 **solver-tools.ts**
 - Thin wrapper around `diff-grok` methods (lsoda, mrt, ros3prw, ros34prw, rk3, rk4, rkdp, ab4, ab5)
@@ -67,8 +67,13 @@ grok check --soft          # Validate package
 - Manages model execution with Diff Studio UI
 - Handles dock layout ratios for inputs/graphs
 
+**utils.ts**
+- `error()` - Calculates max absolute deviation between DataFrames
+- `unusedFileName()` - Generates unused IVP file names
+
 **callbacks/** directory
 - `callback-base.ts` - Base callback interface
+- `callback-tools.ts` - Callback manager, creates callbacks based on solver options
 - `iter-checker-callback.ts` - Iteration limit checking
 - `time-checker-callback.ts` - Computation time limit checking
 
@@ -91,9 +96,11 @@ grok check --soft          # Validate package
 - Pollution (air pollution model, 25 reactions)
 
 **demo/** directory - Standalone model demonstrations:
+- `acid-production.ts` - Gluconic acid production model
 - `ball-flight.ts` - Ball trajectory simulation
-- `pk-pd.ts` - PK-PD simulation demo
 - `bioreactor.ts` - Controlled fab-arm exchange mechanism
+- `pk-pd.ts` - PK-PD simulation demo
+- `pollution.ts` - Air pollution model
 
 ### Files Structure
 
@@ -113,6 +120,7 @@ files/
     nimotuzumab.ivp
     bioreactor.ivp
     pollution.ivp
+    energy-n-control.ivp
   icons/              # Model icons
   ball-flight-trajectory.csv
 ```
@@ -164,9 +172,11 @@ Annotations (in `{...}`) control UI generation: `caption`, `category`, `min`, `m
 - `solveODE(problem: string)` - Parse and solve IVP from string
 
 **Model functions:**
+- `acidProduction()` - Gluconic acid production model
 - `ballFlight()` - Ball trajectory model
-- `pkPdNew()` - PK-PD model
 - `Bioreactor()` - Bioreactor model
+- `pkPdNew()` - PK-PD model
+- `pollution()` - Air pollution model
 - `runModel()` - Run model with Diff Studio UI
 
 **Utility functions:**
@@ -195,6 +205,15 @@ Tests are organized in `src/tests/`:
 
 **pipeline-tests.ts**
 - End-to-end pipeline tests
+
+**demo-models-tests.ts**
+- Tests for demo model functions
+
+**parser-tests.ts**
+- Tests for IVP parser
+
+**test-utils.ts**
+- Shared test utilities
 
 Run specific test categories:
 ```bash

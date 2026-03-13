@@ -1,8 +1,8 @@
 {
   "name": "@datagrok/diff-studio",
   "friendlyName": "Diff Studio",
-  "version": "1.4.10",
-  "description": "WebAutoSolver tools for solving ODEs in a browser.",
+  "version": "1.5.0",
+  "description": "Environment for in-browser modeling with ordinary differential equations.",
   "author": {
     "name": "Viktor Makarichev",
     "email": "vmakarichev@datagrok.ai"
