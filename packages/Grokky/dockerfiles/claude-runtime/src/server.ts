@@ -41,7 +41,37 @@ Regular \`\`\`javascript blocks are for explanations only and will NOT run.
 - Keep blocks short and focused: one action per block.
 - Do NOT import \`grok\`, \`ui\`, or \`DG\` — they are already in scope.
 - Prefer the JS API over console commands or scripts.
-- Keep responses concise.`;
+- Keep responses concise.
+
+## Entity References
+
+When your response mentions Datagrok entities (files, scripts, queries, connections, projects, spaces),
+render them as interactive cards by emitting a \`\`\`datagrok-entities fenced block with a JSON array.
+Each entry MUST have \`type\` and \`name\`. Server entities MUST include \`id\`. Files use \`connector\` + \`path\`.
+
+Supported types and required/optional fields:
+
+| type         | required                     | optional                        |
+|--------------|------------------------------|---------------------------------|
+| file         | connector, path, name        | isDirectory, size               |
+| script       | id, name                     | language                        |
+| query        | id, name                     | connectionName                  |
+| connection   | id, name                     | dataSource                      |
+| project      | id, name                     |                                 |
+| space        | id, name                     |                                 |
+
+Example — after listing files or creating a script, emit:
+
+\`\`\`datagrok-entities
+[{"type":"file","connector":"System:DemoFiles","path":"datasets/demog.csv","name":"demog.csv","size":12345}]
+\`\`\`
+
+Rules:
+- ALWAYS use this block when referencing entities the user may want to open or inspect.
+- You get \`id\` values from MCP tool responses — pass them through exactly.
+- For files, \`connector\` is the connection name (e.g. "System:DemoFiles") and \`path\` is relative.
+- Add surrounding text before/after the block as needed for context.
+- Do NOT put entity info as plain text when a datagrok-entities block is appropriate.`;
 
 const sessions = new Map<string, string>();
 

@@ -198,3 +198,10 @@
   color: var(--steel-5);
   opacity: 0.3;
 }
+
+.grokky-entity-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 8px 0;
+}

@@ -6,7 +6,7 @@ import * as rxjs from 'rxjs';
 // @ts-ignore .... idk why it does not like it
 import '../../css/ai.css';
 import {dartLike, fireAIAbortEvent, getAIPanelToggleSubscription} from '../utils';
-import {buildViewContext, executeDatagrokBlocks} from '../claude-code/claude-panel';
+import {buildViewContext, executeDatagrokBlocks, renderEntityBlocks} from '../claude-code/claude-panel';
 import {ConversationStorage, StoredConversationWithContext} from './storage';
 import {ModelOption, ModelType} from './LLM-client';
 import {LanguageModelV3Message, LanguageModelV3Content} from '@ai-sdk/provider';
@@ -794,11 +794,13 @@ export class TVAIPanel extends AIPanel<MessageType, TVAIPanelInputs> {
       this.ensureAccordionPane();
       this._streamingMarkdownEl = ui.markdown(content);
       dartLike(this._streamingMarkdownEl.style).set('userSelect', 'text').set('maxWidth', '100%');
+      renderEntityBlocks(this._streamingMarkdownEl);
       this._streamingContainer = ui.divV([this._streamingMarkdownEl], 'd4-ai-assistant-response-container');
       this._aiMessagesAccordionPane!.appendChild(this._streamingContainer);
     } else {
       const md = ui.markdown(content);
       dartLike(md.style).set('userSelect', 'text').set('maxWidth', '100%');
+      renderEntityBlocks(md);
       this._streamingMarkdownEl!.replaceWith(md);
       this._streamingMarkdownEl = md;
     }
@@ -810,6 +812,7 @@ export class TVAIPanel extends AIPanel<MessageType, TVAIPanelInputs> {
       return;
 
     const markDown = this.createStyledMarkdown(content);
+    renderEntityBlocks(markDown);
     this.appendFeedbackButtons(markDown);
 
     this._streamingMarkdownEl.replaceWith(markDown);
