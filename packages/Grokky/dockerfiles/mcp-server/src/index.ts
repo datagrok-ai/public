@@ -132,6 +132,148 @@ function createServer(): McpServer {
     () => runTool('whoami', {}, () => api.getCurrentUser()),
   );
 
+  // --- Projects ---
+
+  server.tool(
+    'list_projects', 'List projects with optional smart filter',
+    {filter: z.string().optional().describe('Smart search filter')},
+    ({filter}) => runTool('list_projects', {filter}, () => api.listProjects(filter)),
+  );
+
+  server.tool(
+    'get_project', 'Get detailed information about a project',
+    {id: z.string().describe('Project ID')},
+    ({id}) => runTool('get_project', {id}, () => api.getProject(id)),
+  );
+
+  server.tool(
+    'create_project', 'Create a new project',
+    {
+      name: z.string().describe('Project name'),
+      description: z.string().optional().describe('Project description'),
+    },
+    ({name, description}) => runTool('create_project', {name},
+      () => api.createProject(name, description)),
+  );
+
+  server.tool(
+    'delete_project', 'Delete a project',
+    {id: z.string().describe('Project ID')},
+    ({id}) => runTool('delete_project', {id}, () => api.deleteProject(id)),
+  );
+
+  server.tool(
+    'search_project', 'Search for a project by name',
+    {name: z.string().describe('Project name to search for')},
+    ({name}) => runTool('search_project', {name}, () => api.searchProject(name)),
+  );
+
+  server.tool(
+    'list_recent_projects', 'List recently accessed projects', {},
+    () => runTool('list_recent_projects', {}, () => api.listRecentProjects()),
+  );
+
+  // --- Spaces ---
+
+  server.tool(
+    'list_spaces', 'List root spaces with optional smart filter',
+    {filter: z.string().optional().describe('Smart search filter')},
+    ({filter}) => runTool('list_spaces', {filter}, () => api.listSpaces(filter)),
+  );
+
+  server.tool(
+    'get_space', 'Get detailed information about a space',
+    {id: z.string().describe('Space ID')},
+    ({id}) => runTool('get_space', {id}, () => api.getSpace(id)),
+  );
+
+  server.tool(
+    'create_space', 'Create a new root space',
+    {name: z.string().describe('Space name')},
+    ({name}) => runTool('create_space', {name}, () => api.createRootSpace(name)),
+  );
+
+  server.tool(
+    'delete_space', 'Delete a space',
+    {id: z.string().describe('Space ID')},
+    ({id}) => runTool('delete_space', {id}, () => api.deleteSpace(id)),
+  );
+
+  server.tool(
+    'create_subspace', 'Create a subspace within a space',
+    {
+      spaceId: z.string().describe('Parent space ID'),
+      name: z.string().describe('Subspace name'),
+      link: z.boolean().optional().describe('Create as a link reference instead of owned child'),
+    },
+    ({spaceId, name, link}) => runTool('create_subspace', {spaceId, name},
+      () => api.createSubspace(spaceId, name, link)),
+  );
+
+  server.tool(
+    'list_space_children', 'List children of a space (subspaces, entities, etc.)',
+    {
+      spaceId: z.string().describe('Space ID'),
+      types: z.string().optional()
+        .describe('Comma-separated entity types to filter (e.g. "Script,DataQuery,Project")'),
+      includeLinked: z.boolean().optional().describe('Include linked (non-owned) children'),
+    },
+    ({spaceId, types, includeLinked}) => runTool('list_space_children', {spaceId, types},
+      () => api.listSpaceChildren(spaceId, types, includeLinked)),
+  );
+
+  server.tool(
+    'add_entity_to_space', 'Add an entity (script, query, connection, etc.) to a space',
+    {
+      spaceId: z.string().describe('Space ID'),
+      entityId: z.string().describe('Entity ID to add'),
+      link: z.boolean().optional().describe('Add as a link reference instead of owned child'),
+    },
+    ({spaceId, entityId, link}) => runTool('add_entity_to_space', {spaceId, entityId},
+      () => api.addEntityToSpace(spaceId, entityId, link)),
+  );
+
+  server.tool(
+    'remove_entity_from_space', 'Remove an entity from a space',
+    {
+      spaceId: z.string().describe('Space ID'),
+      entityId: z.string().describe('Entity ID to remove'),
+    },
+    ({spaceId, entityId}) => runTool('remove_entity_from_space', {spaceId, entityId},
+      () => api.removeEntityFromSpace(spaceId, entityId)),
+  );
+
+  server.tool(
+    'read_space_file', 'Read a file from space storage',
+    {
+      spaceId: z.string().describe('Space ID'),
+      path: z.string().describe('File path within the space'),
+    },
+    ({spaceId, path}) => runTool('read_space_file', {spaceId, path},
+      () => api.readSpaceFile(spaceId, path)),
+  );
+
+  server.tool(
+    'write_space_file', 'Write a file to space storage',
+    {
+      spaceId: z.string().describe('Space ID'),
+      path: z.string().describe('File path within the space'),
+      content: z.string().describe('File content to write'),
+    },
+    ({spaceId, path, content}) => runTool('write_space_file', {spaceId, path},
+      () => api.writeSpaceFile(spaceId, path, content)),
+  );
+
+  server.tool(
+    'delete_space_file', 'Delete a file from space storage',
+    {
+      spaceId: z.string().describe('Space ID'),
+      path: z.string().describe('File path within the space'),
+    },
+    ({spaceId, path}) => runTool('delete_space_file', {spaceId, path},
+      () => api.deleteSpaceFile(spaceId, path)),
+  );
+
   return server;
 }
 
