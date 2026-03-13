@@ -1596,7 +1596,7 @@ export const helpInfo = [
     "title": "Binning functions"
   },
   {
-    "helpURL": "/help/transform/functions/constants.md",
+    "helpURL": "/help/transform/formula-syntax.md#constants",
     "title": "Constants"
   },
   {
@@ -1612,7 +1612,7 @@ export const helpInfo = [
     "title": "Math functions"
   },
   {
-    "helpURL": "/help/transform/functions/operators.md",
+    "helpURL": "/help/transform/formula-syntax.md#operators",
     "title": "Operators"
   },
   {
