@@ -40,6 +40,11 @@ To configure a custom aggregated tooltip, go to **Context menu > Tooltip > Edit*
 
 ![](img/line-chart-aggregated-tooltip.gif)
 
+## Tools
+
+- **Formula lines**: Add reference lines or bands defined by mathematical formulas to analyze trends and thresholds. See [Scatterplot: Formula lines](scatter-plot.md#formula-lines) for details.
+- **Annotation regions**: Highlight and annotate areas of interest on the chart using rectangular, lasso, or formula-based regions. See [Scatterplot: Annotation regions](scatter-plot.md#annotation-regions) for details.
+
 ## Statistical Process Control
 
 Line chart includes comprehensive Statistical Process Control (SPC) capabilities for monitoring process behavior:

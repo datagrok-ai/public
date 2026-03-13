@@ -10,6 +10,30 @@ keywords:
 See details: [issues](release-history.md), [plugin changelogs](plugins/plugins.mdx), [JS API compatibility](compatibility/compatibility.mdx)
 Community: [Plugin releases](https://community.datagrok.ai/t/plugin-releases/775/149), [Platform releases](https://community.datagrok.ai/t/platform-releases/73/18)
 
+## 1.27.0 || 2026-Mar
+
+### Developer updates
+
+* [Breaking changes](https://datagrok.ai/help/deploy/releases/compatibility/?from=1.27.0&to=1.26.8&breakingchanges=true):  
+  This release introduces non-backward-compatible database changes. After upgrading to **1.27.0** and migrating the database, older versions (including **1.26.8**) will no longer work. Rolling back to **1.26.N** requires manually reverting the changes or restoring a pre-upgrade backup.    
+**JS API:**
+  * **Renamed:** `TableView.refresh` → `TableView.reloadData`; viewer field `saveZoom` → `saveWithData`
+  * **Removed:** deprecated `fetchProxy` (use `fetch` or `grok.dapi.fetchProxy`)
+  * **Changed:** canvas viewport accessors moved from `CanvasViewerMixin` to `CanvasViewportMixin`; removed unnecessary fields from `IInputInitOptions`
+  * **Pie chart:** label properties restructured (`showValue` added; existing label properties renamed)  
+
+  **Packages:** Package access tags migrated to roles. Packages using tag-based access control must be updated to role-based permissions.
+
+### Service compatible versions
+
+| Service                | Version          |
+|------------------------|------------------|
+| Grok Connect           | 2.6.0   |
+| Grok Pipe              | 1.0.1   |
+| Grok Spawner           | 1.12.0  |
+| RabbitMQ               | 4.0.5-management |
+| Jupyter Kernel Gateway | 1.17.0  |
+
 ## 1.26.7 || 2025-Nov
 
 ### Developer updates

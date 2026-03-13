@@ -98,11 +98,10 @@ but can point to any table available in the current context.
 Options include `Filtered` (default), `All`, `Selected`, `SelectedOrCurrent`, 
 `FilteredSelected`, `MouseOverGroup`, `CurrentRow`, and `MouseOverRow`. 
 
-* **Filter** allows additional filtering of rows shown in the viewer using formulas with the `${COLUMN_NAME}` syntax.  
+* **Filter** allows additional filtering of rows shown in the viewer using [formula syntax](../transform/formula-syntax.md).
 Examples include:
-  * `${AGE} > 18`
-  * `${SEVERITY} == 'Medium'`
-  * `${RACE}.endsWith('sian')` or `${RACE} in ['Black', 'Asian', 'Other']` 
+  * `${AGE} > 18 && ${SEVERITY} == 'Medium'`
+  * `Contains(${RACE},'sian')` or `In(${RACE}, ['Black', 'Asian', 'Other'])` 
 
 ![viewer-property-panel](../datagrok/navigation/views/img/viewer-property-panel.gif)
 
