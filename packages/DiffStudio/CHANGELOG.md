@@ -1,5 +1,9 @@
 # Diff Studio changelog
 
+## 1.5.1 (2026-03-14)
+
+Fixed Model Hub issue
+
 ## 1.5.0 (2026-03-13)
 
 Implemented new methods:

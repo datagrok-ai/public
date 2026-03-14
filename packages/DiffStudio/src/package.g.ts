@@ -122,7 +122,7 @@ export async function demoSimPKPD() : Promise<any> {
 
 //description: Controlled fab-arm exchange mechanism simulation
 //tags: model
-//meta.icon: files/icons/bioreactor.png
+//meta.icon: files/icons/_bioreactor.png
 export async function Bioreactor() : Promise<void> {
   await PackageFunctions.Bioreactor();
 }

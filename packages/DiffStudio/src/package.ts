@@ -247,7 +247,7 @@ export class PackageFunctions {
   @grok.decorators.model({
     name: 'Bioreactor',
     description: 'Controlled fab-arm exchange mechanism simulation',
-    icon: 'files/icons/bioreactor.png',
+    icon: 'files/icons/_bioreactor.png',
   })
   static async Bioreactor(): Promise<void> {
     const model = new Model(BIOREACTOR_MODEL_INFO);
