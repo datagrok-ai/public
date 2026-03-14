@@ -249,7 +249,7 @@ export class PackageFunctions {
     description: 'Controlled fab-arm exchange mechanism simulation',
     icon: 'files/icons/_bioreactor.png',
   })
-  static async Bioreactor(): Promise<void> {
+  static async BioreactorNew(): Promise<void> {
     const model = new Model(BIOREACTOR_MODEL_INFO);
     await model.run();
   }

@@ -99,8 +99,8 @@ export namespace funcs {
   /**
   Controlled fab-arm exchange mechanism simulation
   */
-  export async function bioreactor(): Promise<void> {
-    return await grok.functions.call('DiffStudio:Bioreactor', {});
+  export async function bioreactorNew(): Promise<void> {
+    return await grok.functions.call('DiffStudio:BioreactorNew', {});
   }
 
   /**

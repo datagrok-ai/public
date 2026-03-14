@@ -1,5 +1,9 @@
 # Diff Studio changelog
 
+## 1.5.2 (2026-03-14)
+
+Updated the bioreactor model
+
 ## 1.5.1 (2026-03-14)
 
 Fixed Model Hub issue
