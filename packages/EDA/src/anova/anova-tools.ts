@@ -19,7 +19,7 @@ import * as DG from 'datagrok-api/dg';
 //@ts-ignore: no types
 import * as jStat from 'jstat';
 
-import {getNullValue} from '../missing-values-imputation/knn-imputer';
+import {getNullValue} from '../utils';
 
 enum ERROR_MSG {
   NON_EQUAL_FACTORS_VALUES_SIZE = 'non-equal sizes of factor and values arrays',

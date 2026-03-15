@@ -35,6 +35,30 @@ const INCORRECT_STEPS_MES = 'steps must be non-negative.';
 const INCORRECT_CYCLES_MES = 'cycles must be positive.';
 const INCORRECT_CUTOFF_MES = 'cutoff must be non-negative.';
 
+/**
+ * Returns the null sentinel value for the raw typed array of the given column.
+ *
+ * - Int-backed columns (int, string, bool) use {@link DG.INT_NULL} (-2147483648)
+ * - Float-backed columns (float, datetime, qnum) use {@link DG.FLOAT_NULL}
+ *
+ * @param col - source Datagrok column
+ * @returns null sentinel value used in the column's raw data
+ */
+export function getNullValue(col: DG.Column): number {
+  switch (col.type) {
+  case DG.COLUMN_TYPE.INT:
+  case DG.COLUMN_TYPE.STRING:
+  case DG.COLUMN_TYPE.BOOL:
+    return DG.INT_NULL;
+  case DG.COLUMN_TYPE.FLOAT:
+  case DG.COLUMN_TYPE.DATE_TIME:
+  case DG.COLUMN_TYPE.QNUM:
+    return DG.FLOAT_NULL;
+  default:
+    return DG.FLOAT_NULL;
+  }
+}
+
 /** Check column type */
 export function checkColumnType(col: DG.Column): void {
   if ((col.type != DG.COLUMN_TYPE.FLOAT) && (col.type != DG.COLUMN_TYPE.INT))
@@ -288,7 +312,7 @@ export function describeElements(roots: HTMLElement[], description: string[], po
   }, 'Go to the next viewer');
 
   const prevBtn = ui.button('prev', () => {
-    idx -= 1;    
+    idx -= 1;
     popup.remove();
     step();
   }, 'Go to the previous viewer');
@@ -296,8 +320,8 @@ export function describeElements(roots: HTMLElement[], description: string[], po
   const doneBtn = ui.button('done', () => popup.remove(), 'Go to the next step');
 
   const btnsDiv = ui.divH([prevBtn, nextBtn, doneBtn]);
- btnsDiv.style.marginLeft = 'auto';
- btnsDiv.style.marginRight = '0px';
+  btnsDiv.style.marginLeft = 'auto';
+  btnsDiv.style.marginRight = '0px';
 
   const step = () => {
     if (idx < roots.length) {
@@ -306,7 +330,7 @@ export function describeElements(roots: HTMLElement[], description: string[], po
       doneBtn.hidden = (idx < roots.length - 1);
       nextBtn.hidden = (idx === roots.length - 1);
       prevBtn.hidden = (idx < 1);
-      
+
       closeIcn = popup.querySelector('i') as HTMLElement;
       closeIcn.onclick = () => doneBtn.click();
     }
