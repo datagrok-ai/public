@@ -273,7 +273,7 @@ For details, see [Filters updates](https://community.datagrok.ai/t/filters-updat
 #### [Charts](https://github.com/datagrok-ai/public/tree/master/packages/Charts)
 
 * [#3483](https://github.com/datagrok-ai/public/issues/3483): Radar in-cell renderer: Enabled multiple columns edit in column grid
-*  [#3524](https://github.com/datagrok-ai/public/issues/3524):  [Radar viewer](../../visualize/viewers/radar-viewer.md): Added options for axis scale
+*  [#3524](https://github.com/datagrok-ai/public/issues/3524):  [Radar viewer](../../visualize/viewers/radar.md): Added options for axis scale
 * [Sankey](../../visualize/viewers/sankey.md): introduced support for color-coding nodes and links
 * [#3221](https://github.com/datagrok-ai/public/issues/3221): [Tree viewer](../../visualize/viewers/tree.md): configuration to hide overlapping labels
 * [Sunburst](../../visualize/viewers/sunburst.md): added collaborative filtering 
