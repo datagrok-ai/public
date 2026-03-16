@@ -2,6 +2,28 @@
 
 ## 1.8.0 (2026-03-13)
 
+### Features
+
+* Cell Renderers:
+  * [#3654](https://github.com/datagrok-ai/public/issues/3654): Introduced 'Confidence interval' cell renderer
+  * [#3653](https://github.com/datagrok-ai/public/issues/3653): Introduced 'Stars' cell renderer
+* Sparklines:
+  * [#3524](https://github.com/datagrok-ai/public/issues/3524): Added axis scale options to radar plots (normalize by column or by filtered data)
+  * Added Tags renderer to summary columns
+  * Added additional column properties to the column grid
+* GROK-19588: Smartform: Improved layout for boolean columns with tag-style rendering
+* GROK-1255: Pinned columns feature removed from PowerGrid — column freezing is now natively available in the platform Grid
+* Removed gridext library dependency
+* Reduced bundle size by making MPO/Konva imports dynamic
+* Updated WebGPU cache invalidation logic
+
+### Bug Fixes
+
+* GROK-19810: Smartform preview rendering issues
+* GROK-19769: Summary columns no longer throw an error when applying a saved layout
+* GROK-19203: Smartform incorrect structure display; select columns now show selected items first
+* Fixed async issues
+
 ## 1.7.20 (2025-12-15)
 
 * GROK-19378: Forms viewer: Non-molecule semantic type is incorrectly treated as Molecule

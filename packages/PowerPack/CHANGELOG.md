@@ -2,6 +2,36 @@
 
 ## 1.8.0 (2026-03-13)
 
+### Features
+
+* Enrichments:
+  * Added data sync support
+  * Added catalog support for tables coming from a different connection than the one configured
+  * Disabled for datetime and boolean columns
+* DB Explorer:
+  * Added progressive loaders
+  * Excluded file data sources from the list
+* Cron Input: Introduced new cron schedule input widget
+* Formula Lines: Added formula editor support for viewer filters
+* GROK-19533: Viewers Gallery: Confusion matrix is now available in the gallery
+* GROK-19524: Welcome View: Activity Dashboard no longer jumps at startup
+* Power Search: Integrated AI query support
+* Added entity similarity search
+* Reduced bundle size by ~60% by making CodeMirror imports dynamic
+
+### Bug Fixes
+
+* GROK-19754: New enrichment no longer throws an error when opened in a different table
+* GROK-19739: Formula lines dialog no longer errors on opening
+* GROK-19657: Incorrect autocomplete when referencing an entire column in the Add New Column dialog
+* GROK-19005: Specialty viewers (Chem, Sequence Similarity/Diversity Search) no longer available for incompatible datasets in the Add Viewer dialog
+* [#3204](https://github.com/datagrok-ai/public/issues/3204): Formula lines validation messages added for cases where formula lines cannot be edited
+* Formula Lines: Formula editor in the context menu now works correctly
+* Formula Lines: Validation for formula lines and bands
+* Add New Column: String trimming in plain text mode now works correctly
+* Enrichments: Fixed errors when column name differs from the key column
+* Molecule columns: Renderer now applied correctly to all columns created from plain text, not only the first one
+
 ## 1.7.19 (2025-12-19)
 
 * DBExplorer: Handle semtypes
