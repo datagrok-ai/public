@@ -682,7 +682,7 @@ or press Alt+C.
 | Show Default Popup Menu | boolean | Whether items applicable to all viewers (such as Pickup Style) should be shown in a popup menu. Also requires *Show Context Menu*. |
 | Allow Block Selection | boolean | Mouse drag on the data cells selects both rows and columns |
 | Allow Col Selection | boolean | Shift+click on a header to select a column Shift+mouse drag on the headers to select multiple columns Ctrl+click to invert selection Ctrl+Shift+click to deselect |
-| Allow Row Reordering | boolean | Mouse drag on the rows header selects rows Reorder rows by dragging them |
+| Allow Row Reordering | boolean | Drag any cell (except the row number) to reorder rows Drag the row number column to select rows |
 | Allow Sorting | boolean | Whether to sort when user double-clicks on the column header |
 | Allow Row Selection | boolean | Mouse drag on the rows headers selects rows Ctrl+click to invert selection Shift+mouse drag to select multiple rows Ctrl+Shift+mouse drag to unselect |
 | Allow Content Panning | boolean | Right-click and drag to pan content |
