@@ -236,7 +236,7 @@ This release introduces non-backward-compatible database changes. You can upgrad
 
 #### [Filter Panel](../../visualize/viewers/filters.md)
 
-* Added [Multi-value filter](../../visualize/viewers/filters#multi-value-filter) for columns with multi-value cells
+* Added [Multi-value filter](../../visualize/viewers/filters.md#multi-value-filter#multi-value-filter) for columns with multi-value cells
 * Added the ability to switch between numeric and categorical filter types
 
 For details, see [Filters updates](https://community.datagrok.ai/t/filters-updates/603/3).
