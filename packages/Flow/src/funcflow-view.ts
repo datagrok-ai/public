@@ -10,7 +10,7 @@ import {GraphManager} from './canvas/graph-manager';
 import {CanvasController} from './canvas/canvas-controller';
 import {FunctionBrowser} from './panel/function-browser';
 import {PropertyPanel} from './panel/property-panel';
-import {registerBuiltinNodes, registerAllFunctions, FuncInfo} from './nodes/node-factory';
+import {registerBuiltinNodes, registerAllFunctions, getRegisteredFuncs, FuncInfo} from './nodes/node-factory';
 import {validateGraph, ValidationResult} from './compiler/validator';
 import {emitScript} from './compiler/script-emitter';
 import {serializeFlow, deserializeFlow, downloadFlow, loadFlowFromFile} from './serialization/flow-serializer';
@@ -134,15 +134,19 @@ export class FuncFlowView extends DG.ViewBase {
     this.canvasController.startRendering();
   }
 
-  /** Makes the canvas container accept file drops from the platform file browser */
+  /** Makes the canvas container accept drops from the platform (files and functions) */
   private setupFileDropTarget(): void {
     ui.makeDroppable(this.canvasContainer, {
       acceptDrop: (dragObject: any) => {
-        return dragObject instanceof DG.FileInfo && dragObject.isFile;
+        return (dragObject instanceof DG.FileInfo && dragObject.isFile) ||
+          dragObject instanceof DG.Func;
       },
       doDrop: (dragObject: any, _copying: boolean) => {
+        if (dragObject instanceof DG.Func) {
+          this.addFuncNode(dragObject);
+          return;
+        }
         const fileInfo = dragObject as DG.FileInfo;
-        // console.log(fileInfo.fullPath);
         this.addOpenFileNode(fileInfo.fullPath);
       },
     });
@@ -174,6 +178,21 @@ export class FuncFlowView extends DG.ViewBase {
       }
     } else
       grok.shell.warning('OpenFile function not found in registered nodes');
+  }
+
+  /** Adds a function node to the canvas for the given DG.Func */
+  private addFuncNode(func: DG.Func): void {
+    if (!this.canvasController) return;
+
+    const info = getRegisteredFuncs().find((f) => f.func.name === func.name);
+    if (info) {
+      const node = this.canvasController.addNodeAtCenter(info.nodeTypeName);
+      if (node) {
+        this.updateStatusBar();
+        grok.shell.info(`Added node: ${func.name}`);
+      }
+    } else
+      grok.shell.warning(`Function "${func.name}" is not available as a node`);
   }
 
   /** Searches registered node types for the OpenFile function */

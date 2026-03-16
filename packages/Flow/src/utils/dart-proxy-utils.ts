@@ -66,3 +66,11 @@ export function getFuncQualifiedName(func: DG.Func): string {
   const name = func.name || '';
   return pkg ? `${pkg}:${name}` : name;
 }
+
+/** Returns the display name for a function node header.
+ * Prefers friendlyName over name, then splits by '|' and takes the last segment. */
+export function getFuncDisplayName(func: DG.Func): string {
+  const raw = func.friendlyName || func.name || '';
+  const parts = raw.split('|');
+  return parts[parts.length - 1].trim();
+}

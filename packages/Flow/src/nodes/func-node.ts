@@ -1,7 +1,7 @@
 import {LiteGraph, LGraphNode} from 'litegraph.js';
 import * as DG from 'datagrok-api/dg';
 import {dgTypeToSlotType, getNodeColors, getSlotColor} from '../types/type-map';
-import {getRole, getFuncQualifiedName} from '../utils/dart-proxy-utils';
+import {getRole, getFuncQualifiedName, getFuncDisplayName} from '../utils/dart-proxy-utils';
 
 /** Primitive types that get default values stored in properties */
 const PRIMITIVE_DEFAULTS: Record<string, any> = {
@@ -20,11 +20,12 @@ export function createFuncNodeClass(func: DG.Func): {new(): LGraphNode} {
   const role = getRole(func);
   const colors = getNodeColors(role);
   const qualifiedName = getFuncQualifiedName(func);
+  const displayName = getFuncDisplayName(func);
   const funcInputs = func.inputs;
   const funcOutputs = func.outputs;
 
   class FuncNode extends LGraphNode {
-    static title = func.name;
+    static title = displayName;
     static desc = func.description || '';
 
     dgFunc: DG.Func;
@@ -32,7 +33,7 @@ export function createFuncNodeClass(func: DG.Func): {new(): LGraphNode} {
     dgRole: string | null;
 
     constructor() {
-      super(func.name);
+      super(displayName);
       this.dgFunc = func;
       this.dgFuncName = qualifiedName;
       this.dgRole = role;

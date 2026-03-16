@@ -117,11 +117,10 @@
   font-family: 'Roboto', 'Roboto Local', Arial, sans-serif;
   border-radius: 3px;
   pointer-events: none;
-  white-space: nowrap;
+  white-space: normal;
+  word-wrap: break-word;
   z-index: 100;
   max-width: 300px;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 
 /* Property panel — renders inside Datagrok native context panel */

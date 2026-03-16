@@ -47,13 +47,19 @@ src/
 ## Data Flow
 
 ```
-User double-clicks function in FunctionBrowser
+User double-clicks function in FunctionBrowser (or drags DG.Func / FileInfo onto canvas)
   → CanvasController.addNodeAtCenter(nodeTypeName)
   → User connects nodes visually
   → Generate Script action:
       validateGraph() → compileGraph() → emitScript()
       → JavaScript source with //input: //output: annotations
 ```
+
+## Drag-and-Drop
+
+The canvas accepts drops from the Datagrok browse tree via `ui.makeDroppable()`:
+- **DG.FileInfo** (files) → creates an OpenFile function node with the file path pre-filled
+- **DG.Func** (queries, scripts, functions) → finds the matching registered node type and adds it
 
 ## Node Types
 
@@ -105,6 +111,9 @@ Generate inline code in script body.
 
 ### Function Nodes (src/nodes/func-node.ts)
 Dynamically created for each DG.Func. Generate `await grok.functions.call(...)`.
+
+#### Node Display Name
+Node headers use `func.friendlyName` (falling back to `func.name`), then split by `|` and take the last segment trimmed. E.g. `"Browse | CHEM | All ChEMBL structures"` → `"All ChEMBL structures"`. Helper: `getFuncDisplayName()` in `dart-proxy-utils.ts`.
 
 #### Pass-Through Outputs
 Every func node automatically gets **pass-through output slots** mirroring each input, named `inputName →` (with arrow suffix). These solve the execution ordering problem for mutating functions:
