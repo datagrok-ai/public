@@ -299,3 +299,24 @@ Always link all dependencies in a single command. When linking to local js-api, 
 - **Peptides** - peptide SAR
 - **PowerPack** - useful platform enhancement
 - **PowerGrid** - grid enhancements: many cell renderers, sparklines, forms, pinned columns
+
+## Function Roles
+
+Functions are discovered and integrated with the platform at runtime based on special tags:
+
+| Tag | Role | Template command |
+|-----|------|-----------------|
+| `#app` | Application entry point | `grok add app <name>` |
+| `#panel` | Info panel (extends context panel) | `grok add function panel <name>` |
+| `#init` | Package initialization (runs once before first function call) | `grok add function init <name>` |
+| `#autostart` | Runs at platform startup (use `meta.autostartImmediate: true` for immediate) | — |
+| `#semTypeDetector` | Semantic type detector | `grok add detector <name>` |
+| `#cellRenderer` | Custom cell renderer (`cellRenderer-<type>`) | — |
+| `#fileViewer` | File viewer for specific extensions (`fileViewer-<ext>`) | — |
+| `#fileExporter` | Data export function | — |
+| `#dashboard` | Dashboard | — |
+| `#packageSettingsEditor` | Custom settings editor UI | — |
+
+Additionally, `meta.role: converter` with `meta.inputRegexp` registers type converters.
+
+Find functions by tag: `DG.Func.find({tags: [DG.FUNC_TYPES.APP]})`.
