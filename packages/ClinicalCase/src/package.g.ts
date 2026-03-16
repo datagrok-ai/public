@@ -10,26 +10,11 @@ export async function clinicalCaseApp() : Promise<any> {
   return await PackageFunctions.clinicalCaseApp();
 }
 
-//name: Preclinical Case
-//output: view result
-//meta.role: app
-//meta.icon: /img/preclinical_case_icon.png
-export async function PreclinicalCaseApp() : Promise<any> {
-  return await PackageFunctions.PreclinicalCaseApp();
-}
-
 //input: dynamic treeNode 
 //meta.role: appTreeBrowser
 //meta.app: Clinical Case
 export async function clinicalCaseAppTreeBrowser(treeNode: any) : Promise<void> {
   await PackageFunctions.clinicalCaseAppTreeBrowser(treeNode);
-}
-
-//input: dynamic treeNode 
-//meta.role: appTreeBrowser
-//meta.app: Preclinical Case
-export async function preclinicalCaseAppTreeBrowser(treeNode: any) : Promise<void> {
-  await PackageFunctions.preclinicalCaseAppTreeBrowser(treeNode);
 }
 
 //name: Get list of studies
