@@ -1,5 +1,12 @@
 # ChEMBL changelog
 
+## 1.4.12 (2026-03-16)
+
+* Chembl: Add descriptions to all queries
+* Chembl: Fix validation
+* Chembl: Enrichments: Added samples
+* GROK-19836: UI: Demo: Chem: Database Queries: Structure is cut
+
 ## 1.4.11 (2025-01-06)
 
 * Migrated tags to roles
