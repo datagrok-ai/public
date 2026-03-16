@@ -16,6 +16,7 @@ import {emitScript} from './compiler/script-emitter';
 import {serializeFlow, deserializeFlow, downloadFlow, loadFlowFromFile} from './serialization/flow-serializer';
 import {FlowSettings} from './serialization/flow-schema';
 import {UndoManager} from './history/undo-manager';
+import {ExecutionController} from './execution/execution-controller';
 
 /** Main FuncFlow view - the full-screen function chain designer */
 export class FuncFlowView extends DG.ViewBase {
@@ -24,6 +25,7 @@ export class FuncFlowView extends DG.ViewBase {
   private functionBrowser!: FunctionBrowser;
   private propertyPanel!: PropertyPanel;
   private undoManager: UndoManager;
+  private executionController!: ExecutionController;
 
   private canvasContainer!: HTMLElement;
   private statusBar!: HTMLElement;
@@ -120,7 +122,8 @@ export class FuncFlowView extends DG.ViewBase {
   private initCanvas(): void {
     this.canvasController = new CanvasController(this.canvasContainer, this.graphManager, {
       onNodeSelected: (node: LGraphNode) => {
-        this.propertyPanel.showNode(node);
+        const execState = this.executionController?.state.getNodeState(node.id);
+        this.propertyPanel.showNodeWithExecution(node, execState);
         grok.shell.o = this.propertyPanel.root;
       },
       onNodeDeselected: () => {
@@ -129,9 +132,20 @@ export class FuncFlowView extends DG.ViewBase {
       },
       onGraphChanged: () => {
         this.updateStatusBar();
+        this.executionController?.onGraphChanged();
       },
     });
     this.canvasController.startRendering();
+
+    // Initialize execution controller
+    this.executionController = new ExecutionController(this.canvasController, this.graphManager);
+    this.executionController.onBreakpointHit = (_nodeId: number) => {
+      grok.shell.info('Breakpoint hit — click Continue in the ribbon to resume');
+    };
+    this.executionController.onRunEnd = (success: boolean) => {
+      if (success)
+        grok.shell.info('Flow execution completed');
+    };
   }
 
   /** Makes the canvas container accept drops from the platform (files and functions) */
@@ -225,18 +239,31 @@ export class FuncFlowView extends DG.ViewBase {
       .item('Zoom Out', () => this.canvasController?.zoomOut())
       .endGroup()
       .group('Script')
-      .item('Run Script', () => this.runScript())
+      .item('Run Script (Classic)', () => this.runScript())
       .item('View Script', () => this.generateAndPreview())
       .item('Copy Script to Clipboard', () => this.copyScriptToClipboard())
       .item('Export as .js File', () => this.exportAsJs())
       .separator()
       .item('Validate Graph', () => this.showValidation())
+      .endGroup()
+      .group('Execution')
+      .item('Run', () => this.runInstrumented())
+      .item('Debug', () => this.debugInstrumented())
+      .item('Continue', () => this.executionController?.continueBreakpoint())
+      .item('Stop', () => this.executionController?.stopRun())
+      .separator()
+      .item('Reset Visuals', () => this.executionController?.resetVisuals())
       .endGroup();
 
     // Ribbon button panels
     this.setRibbonPanels([
       [
-        ui.iconFA('play', () => this.runScript(), 'Run Script'),
+        ui.iconFA('play', () => this.runInstrumented(), 'Run'),
+        ui.iconFA('bug', () => this.debugInstrumented(), 'Debug'),
+        ui.iconFA('forward', () => this.executionController?.continueBreakpoint(), 'Continue'),
+        ui.iconFA('stop', () => this.executionController?.stopRun(), 'Stop'),
+      ],
+      [
         ui.iconFA('code', () => this.generateAndPreview(), 'View Script'),
         ui.iconFA('copy', () => this.copyScriptToClipboard(), 'Copy Script'),
         ui.iconFA('download', () => this.exportAsJs(), 'Export .js'),
@@ -314,6 +341,24 @@ export class FuncFlowView extends DG.ViewBase {
         this.flowSettings.tags = tagsInput.value.split(',').map((s: string) => s.trim()).filter(Boolean);
       })
       .show();
+  }
+
+  private runInstrumented(): void {
+    if (!this.executionController) return;
+    this.executionController.runInstrumented(this.graphManager.graph, {
+      name: this.flowSettings.scriptName,
+      description: this.flowSettings.scriptDescription,
+      tags: this.flowSettings.tags,
+    });
+  }
+
+  private debugInstrumented(): void {
+    if (!this.executionController) return;
+    this.executionController.debugInstrumented(this.graphManager.graph, {
+      name: this.flowSettings.scriptName,
+      description: this.flowSettings.scriptDescription,
+      tags: this.flowSettings.tags,
+    });
   }
 
   private generateScript(): string | null {

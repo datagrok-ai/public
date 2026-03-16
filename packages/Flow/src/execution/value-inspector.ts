@@ -1,0 +1,152 @@
+/** Builds context panel section for displaying runtime execution values */
+import * as ui from 'datagrok-api/ui';
+import {NodeExecState, NodeExecStatus, ValueSummary} from './execution-state';
+
+/** Creates the execution results section for the property panel */
+export function buildValuePanel(state: NodeExecState): HTMLElement {
+  const container = ui.div([], 'funcflow-value-inspector');
+
+  // Status badge
+  const statusEl = buildStatusBadge(state);
+  container.appendChild(statusEl);
+
+  // Duration
+  if (state.startTime && state.endTime) {
+    const duration = state.endTime - state.startTime;
+    const durationEl = ui.divText(`Duration: ${duration}ms`);
+    durationEl.style.fontSize = '11px';
+    durationEl.style.color = '#666';
+    durationEl.style.marginBottom = '8px';
+    container.appendChild(durationEl);
+  }
+
+  // Outputs
+  if (state.outputs && Object.keys(state.outputs).length > 0) {
+    const header = ui.divText('Outputs');
+    header.style.fontWeight = 'bold';
+    header.style.marginBottom = '4px';
+    container.appendChild(header);
+
+    for (const [name, summary] of Object.entries(state.outputs))
+      container.appendChild(buildValueRow(name, summary));
+  }
+
+  // Error
+  if (state.error) {
+    const errorHeader = ui.divText('Error');
+    errorHeader.style.fontWeight = 'bold';
+    errorHeader.style.color = '#F44336';
+    errorHeader.style.marginTop = '8px';
+    container.appendChild(errorHeader);
+
+    const errorMsg = ui.divText(state.error);
+    errorMsg.style.color = '#F44336';
+    errorMsg.style.fontSize = '12px';
+    errorMsg.style.whiteSpace = 'pre-wrap';
+    errorMsg.style.wordBreak = 'break-word';
+    container.appendChild(errorMsg);
+
+    if (state.stack) {
+      const stackDetails = document.createElement('details');
+      const stackSummary = document.createElement('summary');
+      stackSummary.textContent = 'Stack trace';
+      stackSummary.style.cursor = 'pointer';
+      stackSummary.style.fontSize = '11px';
+      stackSummary.style.color = '#999';
+      stackDetails.appendChild(stackSummary);
+
+      const stackPre = document.createElement('pre');
+      stackPre.textContent = state.stack;
+      stackPre.style.fontSize = '10px';
+      stackPre.style.maxHeight = '150px';
+      stackPre.style.overflow = 'auto';
+      stackPre.style.margin = '4px 0';
+      stackDetails.appendChild(stackPre);
+
+      container.appendChild(stackDetails);
+    }
+  }
+
+  return container;
+}
+
+function buildStatusBadge(state: NodeExecState): HTMLElement {
+  const colors: Record<string, string> = {
+    [NodeExecStatus.idle]: '#888',
+    [NodeExecStatus.running]: '#FFA000',
+    [NodeExecStatus.completed]: '#4CAF50',
+    [NodeExecStatus.errored]: '#F44336',
+    [NodeExecStatus.stale]: '#9E9E9E',
+  };
+
+  const labels: Record<string, string> = {
+    [NodeExecStatus.idle]: 'Idle',
+    [NodeExecStatus.running]: 'Running...',
+    [NodeExecStatus.completed]: 'Completed',
+    [NodeExecStatus.errored]: 'Error',
+    [NodeExecStatus.stale]: 'Stale',
+  };
+
+  const badge = ui.div([], 'funcflow-exec-badge');
+  badge.style.display = 'flex';
+  badge.style.alignItems = 'center';
+  badge.style.gap = '6px';
+  badge.style.marginBottom = '8px';
+
+  const dot = document.createElement('span');
+  dot.style.width = '10px';
+  dot.style.height = '10px';
+  dot.style.borderRadius = '50%';
+  dot.style.backgroundColor = colors[state.status] || '#888';
+  dot.style.display = 'inline-block';
+  badge.appendChild(dot);
+
+  let label = labels[state.status] || state.status;
+  if (state.status === NodeExecStatus.completed && state.startTime && state.endTime)
+    label += ` (${state.endTime - state.startTime}ms)`;
+  badge.appendChild(ui.divText(label));
+
+  return badge;
+}
+
+function buildValueRow(name: string, summary: ValueSummary): HTMLElement {
+  const row = ui.div([], 'funcflow-value-row');
+  row.style.marginBottom = '4px';
+  row.style.fontSize = '12px';
+
+  switch (summary.type) {
+  case 'dataframe':
+    row.appendChild(ui.divText(`${name}: DataFrame (${summary.rows} rows x ${summary.cols} cols)`));
+    if (summary.colNames) {
+      const colList = ui.divText(`  Columns: ${summary.colNames.join(', ')}`);
+      colList.style.fontSize = '11px';
+      colList.style.color = '#666';
+      colList.style.marginLeft = '8px';
+      row.appendChild(colList);
+    }
+    break;
+  case 'column':
+    row.appendChild(ui.divText(
+      `${name}: Column "${summary.name}" (${summary.length} values)`,
+    ));
+    if (summary.sample) {
+      const sampleEl = ui.divText(`  Sample: [${summary.sample.join(', ')}]`);
+      sampleEl.style.fontSize = '11px';
+      sampleEl.style.color = '#666';
+      sampleEl.style.marginLeft = '8px';
+      row.appendChild(sampleEl);
+    }
+    break;
+  case 'primitive':
+    row.appendChild(ui.divText(`${name} = ${JSON.stringify(summary.value)}`));
+    break;
+  case 'object':
+    row.appendChild(ui.divText(`${name}: ${summary.str || '[object]'}`));
+    break;
+  case 'null':
+    row.appendChild(ui.divText(`${name} = null`));
+    break;
+  }
+
+  return row;
+}

@@ -341,6 +341,25 @@
   margin: 2px 0 1px 0;
 }
 
+/* Execution value inspector */
+.funcflow-value-inspector {
+  padding: 4px 0;
+}
+
+.funcflow-exec-badge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 8px;
+  font-size: 12px;
+}
+
+.funcflow-value-row {
+  margin-bottom: 4px;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
 /* LiteGraph dialog - light theme */
 .litegraph .dialog {
   background-color: #fff !important;

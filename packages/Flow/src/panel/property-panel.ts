@@ -1,6 +1,8 @@
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {LGraphNode} from 'litegraph.js';
+import {NodeExecState} from '../execution/execution-state';
+import {buildValuePanel} from '../execution/value-inspector';
 
 /** Common shape for our custom node properties */
 interface FuncFlowNode extends LGraphNode {
@@ -516,6 +518,17 @@ export class PropertyPanel {
     });
     if (inputTooltip) ui.tooltip.bind(select, inputTooltip);
     return ui.div([this.labelWithTooltip(label, inputTooltip), select], 'funcflow-prop-row');
+  }
+
+  /** Shows node properties with optional execution state section appended */
+  showNodeWithExecution(node: LGraphNode, execState?: NodeExecState): void {
+    this.showNode(node);
+    if (execState) {
+      const separator = ui.div([], 'funcflow-prop-section-header');
+      separator.textContent = 'Execution';
+      this.contentDiv.appendChild(separator);
+      this.contentDiv.appendChild(buildValuePanel(execState));
+    }
   }
 
   clear(): void {

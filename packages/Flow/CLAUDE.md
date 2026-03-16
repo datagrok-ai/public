@@ -21,13 +21,19 @@ src/
 │   ├── output-nodes.ts           # Sink nodes (become //output: lines)
 │   ├── func-node.ts              # Dynamic node generator for DG.Func
 │   ├── utility-nodes.ts          # Utility + constant nodes
-│   └── comparison-nodes.ts       # Comparison operator nodes
+│   ├── comparison-nodes.ts       # Comparison operator nodes
+│   └── breakpoint-node.ts        # Debug breakpoint node (pauses in debug mode)
 ├── compiler/
 │   ├── graph-compiler.ts         # Graph → CompiledStep[]
-│   ├── script-emitter.ts         # CompiledStep[] → JavaScript source
+│   ├── script-emitter.ts         # CompiledStep[] → JavaScript source (+ instrumented mode)
 │   ├── validator.ts              # Pre-compilation validation (cycles, required inputs, duplicates)
 │   ├── topological-sort.ts       # Kahn's algorithm
 │   └── graph-utils.ts            # Safe LGraph node accessor
+├── execution/
+│   ├── execution-state.ts        # NodeExecStatus enum, NodeExecState, ExecutionState class
+│   ├── execution-controller.ts   # Run lifecycle, event subscriptions, breakpoint control
+│   ├── execution-visualizer.ts   # Maps execution state → node visual properties (colors, overlays)
+│   └── value-inspector.ts        # Builds context panel section for runtime value display
 ├── panel/
 │   ├── function-browser.ts       # Left sidebar: searchable function catalog
 │   └── property-panel.ts         # Context panel content: node properties editor with tooltips
@@ -155,6 +161,53 @@ Input annotation qualifiers are generated from node widget values:
 - `{min: 0; max: 100}` from min/max fields
 - `{showSlider: true}` from showSlider toggle (Number/Int only)
 
+### Instrumented Mode (`EmitOptions`)
+
+`emitScript()` accepts an optional `EmitOptions` parameter:
+
+```typescript
+interface EmitOptions {
+  instrumented?: boolean;     // false = clean script, true = try/catch + events
+  runId?: string;             // UUID for this run (required when instrumented)
+  enableBreakpoints?: boolean; // emit breakpoint pause code (debug mode)
+  haltOnError?: boolean;      // throw on first error (default true)
+}
+```
+
+When `instrumented=true`, each step is wrapped in try/catch and fires custom events via `grok.events.fireCustomEvent()` on channel `funcflow.exec.{runId}`. Event types: `run-start`, `node-start`, `node-complete`, `node-error`, `breakpoint-hit`, `run-complete`. Output values are summarized (DataFrame → row/col count, Column → name + sample, etc.) to avoid large payloads.
+
+**Variable hoisting**: When `wrapInstrumented()` encounters a code line starting with `let varName = ...`, it hoists the declaration (`let varName;`) before the `try` block and puts only the assignment (`varName = ...`) inside. This ensures variables are accessible to downstream nodes outside the try/catch scope.
+
+## Execution Visualization
+
+KNIME-inspired live execution feedback. The script runs in the same browser context and communicates back to the Flow view via custom events.
+
+### Architecture
+- **ExecutionController** (`execution-controller.ts`): Orchestrates runs. Subscribes to `funcflow.exec.{runId}` events, updates `ExecutionState`, drives `ExecutionVisualizer`.
+- **ExecutionState** (`execution-state.ts`): Tracks per-node status (idle/running/completed/errored/stale) and runtime output summaries.
+- **ExecutionVisualizer** (`execution-visualizer.ts`): Maps status → node visual properties (`boxcolor`, `bgcolor`, `onDrawForeground` overlay dot).
+- **ValueInspector** (`value-inspector.ts`): Renders runtime output values in the context panel when a completed/errored node is selected.
+
+### Visual States
+| State | boxcolor | bgcolor | Overlay |
+|---|---|---|---|
+| Idle | `#888` | `#ffffff` | none |
+| Running | `#FFA000` (amber) | `#FFF8E1` | pulsing amber dot |
+| Completed | `#4CAF50` (green) | `#ffffff` | solid green dot |
+| Errored | `#F44336` (red) | `#FFEBEE` | red dot with "!" |
+| Stale | `#9E9E9E` (gray) | `#f5f5f5` | dimmed dot |
+
+### Execution Modes
+- **Run**: Instrumented script with live visualization. Breakpoint nodes are skipped.
+- **Debug**: Same as Run but breakpoint nodes pause execution via `await new Promise(...)` that resolves when the user clicks "Continue" (fires `funcflow.exec.{runId}.continue` event).
+- **Run Script (Classic)**: Opens in Datagrok script editor with no instrumentation.
+
+### Invalidation
+Graph structural changes increment a version counter. If the graph changes after a run, all completed/errored nodes become **stale** (dimmed gray, still inspectable). Starting a new run resets all states.
+
+### Breakpoint Node (`breakpoint-node.ts`)
+Pass-through node (dynamic in → dynamic out) in the "Debug" category. In debug mode, emits code that fires `breakpoint-hit` event and awaits a `continue` event from the view. In normal run mode, the node is skipped entirely.
+
 ## File Format
 
 `.ffjson` files store the full flow state including LiteGraph graph data and FuncFlow metadata.
@@ -209,4 +262,6 @@ npm run build    # grok api && grok check --soft && webpack
 1. **Adding new input nodes**: Add class in `input-nodes.ts` (properties only, no widgets), register in `registerInputNodes()`, add to `inputNodes` array with `desc` in `function-browser.ts`, handle in `buildInputLine()` in `script-emitter.ts` if special qualifiers needed. Property panel auto-discovers properties by key name.
 2. **Adding new utility nodes**: Add class in `utility-nodes.ts` (properties only, no widgets), register in `registerUtilityNodes()`, add to `utilityNodes` array with `desc` in `function-browser.ts`, add case in `emitUtilityStep()` in `script-emitter.ts`. Add property tooltips to `UTILITY_PROP_TOOLTIPS` in `property-panel.ts`.
 3. **Adding new types**: Add to `DG_TYPE_MAP` in `type-map.ts`, add compatibility rules to `COMPATIBLE_TYPES`
-4. **After any change**: Update this CLAUDE.md file
+4. **Modifying script emission**: All code generation (clean and instrumented) lives in `script-emitter.ts`. The `EmitOptions.instrumented` flag controls whether try/catch + event code is emitted. Add new step types to both the clean and instrumented paths.
+5. **Adding execution visual states**: Modify `execution-visualizer.ts` `STATUS_COLORS` map. Node overlays are drawn via `onDrawForeground` hooks.
+6. **After any change**: Update this CLAUDE.md file

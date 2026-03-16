@@ -131,12 +131,17 @@ export class FunctionBrowser {
       {name: 'Is Null', type: 'Comparisons/Is Null', desc: 'Tests if a value is null or undefined'},
     ];
 
+    const debugNodes = [
+      {name: 'Breakpoint', type: 'Debug/Breakpoint', desc: 'Pauses execution in debug mode until Continue is clicked'},
+    ];
+
     const sections: {title: string; nodes: {name: string; type: string; desc?: string}[]; collapsed?: boolean; tip?: string}[] = [
       {title: 'Inputs', nodes: inputNodes, tip: 'Script input parameters (become //input: lines)'},
       {title: 'Outputs', nodes: outputNodes, tip: 'Script output parameters (become //output: lines)'},
       {title: 'Constants', nodes: constantNodes, tip: 'Constant literal values'},
       {title: 'Comparisons', nodes: comparisonNodes, collapsed: true, tip: 'Comparison and logical operators'},
       {title: 'Utilities', nodes: utilityNodes, tip: 'Helper operations (logging, type conversion, etc.)'},
+      {title: 'Debug', nodes: debugNodes, tip: 'Debugging and execution control nodes'},
     ];
 
     for (const section of sections) {

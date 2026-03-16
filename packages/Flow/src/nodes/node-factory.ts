@@ -5,6 +5,7 @@ import {registerInputNodes} from './input-nodes';
 import {registerOutputNodes} from './output-nodes';
 import {registerUtilityNodes} from './utility-nodes';
 import {registerComparisonNodes} from './comparison-nodes';
+import {registerBreakpointNode} from './breakpoint-node';
 import {getRole, getTags, getPackageName} from '../utils/dart-proxy-utils';
 import {registerSlotColors} from '../types/type-map';
 
@@ -76,6 +77,7 @@ export function registerBuiltinNodes(): void {
   registerOutputNodes();
   registerUtilityNodes();
   registerComparisonNodes();
+  registerBreakpointNode();
 }
 
 /** Register all DG.Func as LiteGraph node types and return metadata. No-op on subsequent calls. */

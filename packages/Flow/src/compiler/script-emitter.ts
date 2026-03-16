@@ -8,10 +8,24 @@ export interface ScriptSettings {
   tags: string[];
 }
 
-/** Generates a valid Datagrok script from compiled steps */
-export function emitScript(graph: LGraph, settings: ScriptSettings): string {
+export interface EmitOptions {
+  /** When true, wraps each step in try/catch with event-firing instrumentation */
+  instrumented?: boolean;
+  /** UUID for this run — required when instrumented=true */
+  runId?: string;
+  /** Enable breakpoint node code emission (debug mode) */
+  enableBreakpoints?: boolean;
+  /** Halt execution on first error (default true) */
+  haltOnError?: boolean;
+}
+
+/** Generates a valid Datagrok script from compiled steps.
+ * When options.instrumented is true, wraps each step in try/catch with
+ * event-firing code for live execution visualization. */
+export function emitScript(graph: LGraph, settings: ScriptSettings, options?: EmitOptions): string {
   const steps = compileGraph(graph);
   const lines: string[] = [];
+  const inst = options?.instrumented === true;
 
   // --- Header ---
   lines.push(`//name: ${settings.name}`);
@@ -50,24 +64,54 @@ export function emitScript(graph: LGraph, settings: ScriptSettings): string {
 
   lines.push('');
 
+  // --- Instrumentation preamble ---
+  if (inst)
+    lines.push(...emitPreamble(options!.runId!));
+
   // --- Body ---
   for (const step of steps) {
     if (step.nodeType === 'input') continue;
+
     if (step.nodeType === 'output') {
       const inputExpr = step.inputs.get('value') || 'undefined';
-      if (inputExpr !== 'undefined')
-        lines.push(`${step.variableName} = ${inputExpr};`);
+      if (inputExpr !== 'undefined') {
+        if (inst) {
+          lines.push(...wrapInstrumented(
+            `${step.variableName} = ${inputExpr};`,
+            step, options!, {outputExpr: step.variableName},
+          ));
+        } else
+          lines.push(`${step.variableName} = ${inputExpr};`);
+      }
       continue;
     }
 
     if (step.nodeType === 'utility') {
+      // Handle breakpoint nodes
+      if (step.funcName === 'Breakpoint') {
+        if (inst && options?.enableBreakpoints)
+          lines.push(...emitBreakpointCode(step));
+        continue;
+      }
       const codeLine = emitUtilityStep(step);
-      if (codeLine) lines.push(codeLine);
+      if (codeLine) {
+        if (inst)
+          lines.push(...wrapInstrumented(codeLine, step, options!, {outputExpr: step.variableName}));
+        else
+          lines.push(codeLine);
+      }
       continue;
     }
 
-    lines.push(emitFuncStep(step));
+    // Function step
+    if (inst)
+      lines.push(...emitFuncStepInstrumented(step, options!));
+    else
+      lines.push(emitFuncStep(step));
   }
+
+  if (inst)
+    lines.push(`__ff_emit('run-complete', -1, {success: true});`);
 
   return lines.join('\n');
 }
@@ -249,6 +293,102 @@ function emitUtilityStep(step: CompiledStep): string | null {
   default:
     return `// Unknown utility: ${step.funcName}`;
   }
+}
+
+// --- Instrumentation helpers ---
+
+function emitPreamble(runId: string): string[] {
+  return [
+    `const __ff_runId = '${runId}';`,
+    `const __ff_ch = 'funcflow.exec.' + __ff_runId;`,
+    'function __ff_summarize(v) {',
+    '  if (v == null) return {type:\'null\', value:null};',
+    '  if (v.rowCount !== undefined && v.columns !== undefined)',
+    '    return {type:\'dataframe\', rows:v.rowCount, cols:v.columns.length, colNames:v.columns.names()};',
+    '  if (v.length !== undefined && v.name !== undefined && v.toList)',
+    '    return {type:\'column\', name:v.name, length:v.length, sample:v.toList().slice(0,5)};',
+    '  if (typeof v === \'object\') return {type:\'object\', str:String(v).slice(0,200)};',
+    '  return {type:\'primitive\', value:v};',
+    '}',
+    'function __ff_emit(type, nodeId, data) {',
+    '  grok.events.fireCustomEvent(__ff_ch, Object.assign({type, nodeId, timestamp:Date.now()}, data||{}));',
+    '}',
+    `__ff_emit('run-start', -1);`,
+    '',
+  ];
+}
+
+function wrapInstrumented(
+  codeLine: string, step: CompiledStep, options: EmitOptions,
+  extra?: {outputExpr?: string},
+): string[] {
+  const lines: string[] = [];
+  lines.push(`__ff_emit('node-start', ${step.nodeId});`);
+
+  // Hoist variable declaration before try block so it's accessible to downstream nodes
+  let bodyLine = codeLine;
+  const letMatch = codeLine.match(/^let\s+(\w+)\s*=/);
+  if (letMatch) {
+    lines.push(`let ${letMatch[1]};`);
+    bodyLine = codeLine.replace(/^let\s+/, '');
+  }
+
+  lines.push('try {');
+  lines.push(`  ${bodyLine}`);
+  if (extra?.outputExpr) {
+    lines.push(`  __ff_emit('node-complete', ${step.nodeId}, ` +
+      `{outputs:{${extra.outputExpr}: __ff_summarize(${extra.outputExpr})}});`);
+  } else
+    lines.push(`  __ff_emit('node-complete', ${step.nodeId});`);
+  lines.push('} catch (__ff_err) {');
+  lines.push(`  __ff_emit('node-error', ${step.nodeId}, {error: __ff_err.message, stack: __ff_err.stack});`);
+  if (options.haltOnError !== false) {
+    lines.push(`  __ff_emit('run-complete', -1, {success: false});`);
+    lines.push('  throw __ff_err;');
+  }
+  lines.push('}');
+  return lines;
+}
+
+function emitFuncStepInstrumented(step: CompiledStep, options: EmitOptions): string[] {
+  const params: string[] = [];
+  for (const [name, expr] of step.inputs.entries())
+    params.push(`${name}: ${expr}`);
+  const paramsStr = params.length > 0 ? `{${params.join(', ')}}` : '{}';
+
+  const lines: string[] = [];
+  lines.push(`__ff_emit('node-start', ${step.nodeId});`);
+  lines.push(`let ${step.variableName};`);
+  lines.push('try {');
+  lines.push(`  ${step.variableName} = await grok.functions.call('${step.funcName}', ${paramsStr});`);
+
+  // Build outputs summary
+  const outputEntries: string[] = [];
+  for (const [, varName] of step.outputs.entries())
+    outputEntries.push(`${varName}: __ff_summarize(${varName})`);
+  const outputsObj = outputEntries.length > 0 ? `{${outputEntries.join(', ')}}` : '{}';
+  lines.push(`  __ff_emit('node-complete', ${step.nodeId}, {outputs: ${outputsObj}});`);
+
+  lines.push('} catch (__ff_err) {');
+  lines.push(`  __ff_emit('node-error', ${step.nodeId}, {error: __ff_err.message, stack: __ff_err.stack});`);
+  if (options.haltOnError !== false) {
+    lines.push(`  __ff_emit('run-complete', -1, {success: false});`);
+    lines.push('  throw __ff_err;');
+  }
+  lines.push('}');
+  return lines;
+}
+
+function emitBreakpointCode(step: CompiledStep): string[] {
+  return [
+    `__ff_emit('breakpoint-hit', ${step.nodeId});`,
+    'await new Promise((resolve) => {',
+    `  const sub = grok.events.onCustomEvent(__ff_ch + '.continue').subscribe(() => {`,
+    '    sub.unsubscribe();',
+    '    resolve();',
+    '  });',
+    '});',
+  ];
 }
 
 function formatHeaderDefault(value: any, type: string): string {
