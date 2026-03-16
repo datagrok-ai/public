@@ -1,5 +1,11 @@
 # CDD Vault Link changelog
 
+## 1.1.0 (2026-03-16)
+
+### Bug fixes
+
+* GROK-19523: AppTreeBrowser decorator: Fixed behavior, so it finds the app properly, fixed usages
+
 ## 1.0.5 (2025-12-24)
 
 ### Bug fixes
