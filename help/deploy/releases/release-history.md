@@ -21,7 +21,7 @@ See also:
 - [Versioning policy](../../develop/dev-process/versioning-policy.md)
 - [Docker-Compose](../docker-compose/docker-compose.md)
 
-## 2026-03-07 Datagrok 1.27.0 release
+## 2026-03-12 Datagrok 1.27.0 release
 
 The Datagrok 1.27.0 release introduces AI-powered features, brings improvements to visualization, strengthens access control and analytics, and delivers a range of usability enhancements.
 
