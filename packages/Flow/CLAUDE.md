@@ -206,7 +206,7 @@ KNIME-inspired live execution feedback. The script runs in the same browser cont
 Graph structural changes increment a version counter. If the graph changes after a run, all completed/errored nodes become **stale** (dimmed gray, still inspectable). Starting a new run resets all states.
 
 ### Breakpoint Node (`breakpoint-node.ts`)
-Pass-through node (dynamic in → dynamic out) in the "Debug" category. In debug mode, emits code that fires `breakpoint-hit` event and awaits a `continue` event from the view. In normal run mode, the node is skipped entirely.
+Pass-through node (dynamic in → dynamic out) in the "Debug" category. In debug mode, emits code that fires `breakpoint-hit` event and awaits a `continue` event from the view. In normal run mode, the node is skipped entirely. The compiler treats Breakpoint specially: its output slots resolve to its input expression (pure pass-through), so no `breakpoint` variable is declared — downstream nodes reference the original input variable directly.
 
 ## File Format
 

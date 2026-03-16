@@ -388,6 +388,7 @@ function emitBreakpointCode(step: CompiledStep): string[] {
     '    resolve();',
     '  });',
     '});',
+    `__ff_emit('node-complete', ${step.nodeId});`,
   ];
 }
 

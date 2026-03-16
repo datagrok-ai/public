@@ -67,6 +67,25 @@ export function compileGraph(graph: LGraph): CompiledStep[] {
     }
 
     if (nodeType === 'utility') {
+      // Breakpoint is a pure pass-through: its output resolves to its input expression
+      if (node.title === 'Breakpoint') {
+        const inputExpr = resolveInputExpression(node, 0, links, outputVarMap);
+        if (node.outputs) {
+          for (let i = 0; i < node.outputs.length; i++)
+            outputVarMap.set(`${nodeId}:${i}`, inputExpr);
+        }
+        steps.push({
+          nodeId,
+          nodeType: 'utility',
+          funcName: 'Breakpoint',
+          variableName: '',
+          inputs: new Map([['in', inputExpr]]),
+          outputs: new Map(),
+          properties: {...node.properties},
+        });
+        continue;
+      }
+
       const step = compileUtilityNode(node, links, outputVarMap, usedVarNames);
       if (step) {
         steps.push(step);
