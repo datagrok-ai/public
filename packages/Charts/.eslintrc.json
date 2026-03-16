@@ -25,7 +25,7 @@
     "valid-jsdoc": "off",
     "spaced-comment": "off",
     "linebreak-style": "off",
-    "object-curly-spacing": "off",
+    "object-curly-spacing": ["error", "never"],
     "curly": [
       "error",
       "multi-or-nest"

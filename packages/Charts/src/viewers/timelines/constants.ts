@@ -1,15 +1,7 @@
 import * as DG from 'datagrok-api/dg';
 
-
-export enum VISIBILITY_MODE {
-  ALWAYS = 'Always',
-  AUTO = 'Auto',
-  NEVER = 'Never',
-};
-
 export type markerType = 'circle' | 'rect' | 'ring' | 'diamond';
 export type markerPosition = 'main line' | 'above main line' | 'scatter';
-export type visibilityMode = `${VISIBILITY_MODE}`;
 export type timePoint = Date | number | null;
 
 export interface Indexable {
