@@ -36,8 +36,8 @@ else
     git clone --depth 1 --branch "$branch" --filter=blob:none --no-checkout "$REPO" "$PUBLIC_DIR" \
       && git -C "$PUBLIC_DIR" sparse-checkout set --no-cone \
            '/*' '!connectors/' '!docker/' '!docusaurus/' '!docusaurus-static/' \
-           '!environments/' '!hooks/' '!misc/' '!python-api/' '!datagrok-celery-task/' \
-           '/js-api/**' '/libraries/**' '/help/**' '/packages/**' '/tools/**' \
+           '!environments/' '!hooks/' '!misc/' 'python-api/' '!datagrok-celery-task/' \
+           '/js-api/**' '/libraries/**' '/help/**' '/packages/**' '!help/uploads/**' \
       && git -C "$PUBLIC_DIR" checkout
   }
   echo "[tools-dev] Cloning public repo ($BRANCH, sparse) into $PUBLIC_DIR..."

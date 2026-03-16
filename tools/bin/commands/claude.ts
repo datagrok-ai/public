@@ -257,6 +257,7 @@ services:
       - \${WORKTREE_PATH:-.}:/workspace/repo
       - \${DOCKER_SOCK}:/var/run/docker.sock
       - npm_cache:/home/node/.npm
+      - public_repo:/workspace/datagrok
     environment:
       ANTHROPIC_API_KEY: \${ANTHROPIC_API_KEY:-}
       DG_VERSION: \${DG_VERSION:-latest}
@@ -285,6 +286,7 @@ volumes:
   demo_test:
   demo_northwind:
   npm_cache:
+  public_repo:
 
 networks:
   dg:
@@ -610,18 +612,23 @@ export async function claude(args: ClaudeArgs): Promise<boolean> {
     claudeWorkDir = `/workspace/datagrok/packages/${folderName}`;
     color.info(`Waiting for workspace at ${claudeWorkDir} (streaming container logs)...`);
 
-    // Stream container logs so the user can see clone progress
-    const logsProc = spawn('docker', ['logs', '-f', containerName], {stdio: 'inherit'});
+    // Stream container logs so the user can see clone progress (don't inherit stdin)
+    const logsProc = spawn('docker', ['logs', '-f', containerName], {
+      stdio: ['ignore', 'inherit', 'inherit'],
+    });
 
     let ready = false;
+    const waitStart = Date.now();
     for (let i = 0; i < 120; i++) {
       const check = spawnSync('docker', ['exec', containerName, 'test', '-d', claudeWorkDir]);
       if (check.status === 0) { ready = true; break; }
+      if (i > 0 && i % 12 === 0)
+        color.info(`Still waiting for workspace... (${Math.round((Date.now() - waitStart) / 1000)}s elapsed)`);
       await new Promise((r) => setTimeout(r, 5000));
     }
 
     // Stop streaming logs
-    logsProc.kill();
+    logsProc.kill('SIGKILL');
 
     if (!ready) {
       color.warn(`${claudeWorkDir} not available after 600s — falling back to /workspace/repo`);

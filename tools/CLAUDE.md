@@ -148,17 +148,78 @@ Builds packages with `npm install` + `npm run build`. Supports:
 
 ### `grok claude` Command
 
-Launches a full Dockerized development environment (Datagrok + PostgreSQL + RabbitMQ + tools-dev container with Claude Code):
+Launches a full Dockerized development environment with Datagrok + Claude Code. The compose configuration is embedded in `claude.ts` — no external files needed.
+
 ```bash
-grok claude <project-name>              # Create worktree + start containers + launch Claude
-grok claude <project-name> --in-place   # Use current directory (no worktree)
-grok claude <project-name> --keep       # Leave containers running on exit
-grok claude <project-name> --profile full  # Include spawner, JKG, demo DBs
-grok claude destroy <project-name>      # Tear down containers + worktree
-grok claude destroy-all                 # Destroy all known projects
+grok claude <project>                      # Create worktree + start containers + launch Claude
+grok claude <project> --in-place           # Use current directory (no worktree)
+grok claude <project> --keep               # Leave containers running on exit
+grok claude <project> --version 1.22.0     # Pin Datagrok version
+grok claude <project> --profile full       # Include spawner, JKG, demo DBs
+grok claude <project> --profile scripting  # Include JKG for Python/R/Julia
+grok claude <project> --port 8080          # Fix Datagrok port (default: random free port)
+grok claude <project> --prompt "fix bug"   # Pass prompt to Claude Code (-p flag)
+grok claude destroy <project>              # Tear down containers + worktree + temp files
+grok claude destroy-all                    # Destroy all known projects
 ```
 
-Creates a git worktree at `~/pkg-worktrees/<project-name>`, writes Docker Compose files to `$TMPDIR/dg-pkg-<project-name>`, and auto-detects the Datagrok version (`bleeding-edge` for public repo, `latest` otherwise). Mounts `~/.claude` into the container for credentials.
+**Project name restrictions:** `master` and `main` are rejected.
+
+**Lifecycle:**
+1. Creates git worktree at `~/pkg-worktrees/<project>` (unless `--in-place` or not in a git repo)
+2. Writes `docker-compose.yaml` + `.env` + optional `docker-compose.override.yaml` to `$TMPDIR/dg-pkg-<project>`
+3. Runs `docker compose up -d --wait`
+4. Detects Claude working directory based on repo type (see below)
+5. Launches `claude --dangerously-skip-permissions` inside the `tools-dev` container
+6. On exit: stops containers (unless `--keep`)
+
+**Version resolution:** `--version` flag > `bleeding-edge` (if inside public repo) > `latest`
+
+**Compose services (embedded template):**
+- Always started: `postgres` (pgvector:pg17), `rabbitmq`, `grok_pipe`, `datagrok`, `grok_connect`, `tools-dev`
+- Profile `full`: adds `grok_spawner`
+- Profile `scripting`/`full`: adds `jupyter_kernel_gateway`
+- Profile `demo`/`full`: adds `world`, `test_db`, `northwind` demo databases
+
+**Note:** The embedded template in `claude.ts` differs from `.devcontainer/docker-compose.yaml`:
+- Embedded uses separate version vars per service (`DATAGROK_VERSION`, `GROK_CONNECT_VERSION`, `GROK_SPAWNER_VERSION`, `JKG_VERSION`, `TOOLS_DEV_VERSION`); `.devcontainer/` uses a single `DG_VERSION` for all
+- Embedded mounts workspace at `/workspace/repo`; `.devcontainer/` mounts at `/workspace`
+- Embedded has `grok_connect` always-on (no profile); `.devcontainer/` puts it under `profiles: ["full"]`
+- Embedded uses `grok_pipe:latest`; `.devcontainer/` uses `grok_pipe:${DG_VERSION}`
+- Embedded doesn't mount `~/.grok` from host; `.devcontainer/` does
+
+**Host config override:** If `~/.claude` (or `CLAUDE_HOME`) is found on the host, a `docker-compose.override.yaml` is generated to bind-mount it into the container. Also mounts `~/.claude.json` if present.
+
+**Working directory detection inside container:**
+- Public repo root (has `js-api/`): `/workspace/repo`
+- Monorepo (has `public/js-api/`): `/workspace/repo/public`
+- External repo: `/workspace/datagrok/packages/<folder-name>` (waits up to 600s for entrypoint to clone public repo)
+
+#### tools-dev Container (`Dockerfile.pkg_dev`)
+
+Based on `node:22-bookworm-slim`. Pre-installed:
+- Google Chrome stable (for Puppeteer), Playwright + Chromium
+- `datagrok-tools` (grok CLI) and `@anthropic-ai/claude-code` (global npm)
+- git, curl, jq, docker CLI
+- Runs as `node` user (UID 1000, added to `docker` group)
+
+#### Entrypoint (`entrypoint.sh`)
+
+1. **Repo detection:** checks if `/workspace/repo` is the public repo (has `.git` + `js-api/`) or monorepo (`public/js-api/`)
+2. **Auto-clone:** if workspace is not the public repo, sparse-clones it to `$DG_PUBLIC_DIR` (default `/workspace/datagrok`) — excludes `connectors/`, `docker/`, `environments/`, `python-api/`, etc. for speed. Branch resolved as: `DG_PUBLIC_BRANCH` > `DG_VERSION` mapped to branch > `master` fallback
+3. **Workspace linking:** for non-public repos, symlinks `/workspace/repo` into the cloned repo's `packages/` dir and links `.claude`/`CLAUDE.md` at `/workspace/` for context discovery
+4. **Grok config:** auto-creates `~/.grok/config.yaml` pointing to `http://datagrok:8080/api` with key `admin` (only if config doesn't already exist)
+
+#### Profiles
+
+| Profile | Additional services |
+|---------|-------------------|
+| (none) | postgres, rabbitmq, grok_pipe, datagrok, grok_connect, tools-dev |
+| `scripting` | + jupyter_kernel_gateway |
+| `demo` | + world, test_db, northwind |
+| `full` | + grok_spawner, JKG, demo DBs |
+
+See `.devcontainer/PACKAGES_DEV.md` for detailed usage docs, architecture diagram, MCP plugin setup (Jira/GitHub), and troubleshooting.
 
 ## Key Patterns and Conventions
 

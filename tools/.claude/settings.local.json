@@ -14,7 +14,9 @@
       "Bash(MSYS_NO_PATHCONV=1 docker exec dg-pkg-grok-playground-tools-dev-1 ls -la /workspace/datagrok/packages/awesome 2>&1)",
       "Bash(MSYS_NO_PATHCONV=1 docker exec dg-pkg-grok-playground-tools-dev-1 ls /workspace/datagrok/packages/awesome/ 2>&1)",
       "Bash(MSYS_NO_PATHCONV=1 docker exec dg-pkg-grok-playground-tools-dev-1 bash -c 'echo \"=== Symlink ===\" && ls -la /workspace/datagrok/packages/awesome && echo \"=== Package contents ===\" && ls /workspace/datagrok/packages/awesome/ && echo \"=== Public repo root ===\" && ls /workspace/datagrok/js-api /workspace/datagrok/packages /workspace/datagrok/CLAUDE.md 2>&1 | head -5' 2>&1)",
-      "Bash(grep -r \"tools-dev\" /c/repos/Datagrok --include=\"*\" 2>/dev/null | head -20)"
+      "Bash(grep -r \"tools-dev\" /c/repos/Datagrok --include=\"*\" 2>/dev/null | head -20)",
+      "Bash(find /c/repos/Datagrok/public/tools/.devcontainer -type f -name \".*\" 2>/dev/null | sort)",
+      "Bash(grep -r \"tools-dev\" /c/repos/Datagrok/public/tools/bin --include=\"*.ts\" 2>/dev/null | head -20)"
     ]
   }
 }
