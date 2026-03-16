@@ -9,6 +9,12 @@ Datagrok package for integrating with the KNIME Business Hub.
 - Passes inputs (tables, parameters, files) and executes workflows
 - Displays results as Datagrok DataFrames (REST deployments) or provides link to KNIME Hub (data-app deployments)
 
+## Maintenance Rule
+
+When making significant logic changes (new files, changed architecture, renamed conventions,
+altered data flow, new/removed functions), update this CLAUDE.md to reflect the change before
+considering the task complete.
+
 ## Setup
 
 All settings are configured via standard Datagrok package settings: **Manage > Plugins > KnimeLink**.
@@ -69,6 +75,8 @@ The package uses different execution strategies based on deployment type (determ
 | `src/knime-client.ts` | `IKnimeClient` interface |
 | `src/knime-hub-client.ts` | Business Hub implementation (with `api.` URL derivation) |
 | `src/knime-client-factory.ts` | Factory creating `KnimeHubClient` from settings |
+| `src/function-registry.ts` | Dynamic Datagrok function registration from KNIME deployment specs |
+| `src/function-cache.ts` | Persistent cache via `grok.userSettings`: sync load at startup, async background refresh with diff |
 | `src/data-conversion.ts` | DataFrame <-> KNIME JSON table format |
 | `src/workflow-input-form.ts` | Dynamic input form from workflow parameter descriptors |
 | `src/utils.ts` | Async job polling with `DG.TaskBarProgressIndicator`, timeout management |
@@ -124,6 +132,42 @@ When the workflow has file inputs (detected from the OpenAPI spec's multipart sc
 request is sent as `multipart/form-data` instead of JSON. Non-file inputs (tables, variables) are
 serialized to JSON and included as a separate `data` part. This applies to both sync (`/execution`)
 and async (`/jobs/{uuid}`) execution paths.
+
+### Dynamic Function Registration
+
+`function-registry.ts` dynamically registers Datagrok functions from KNIME deployment OpenAPI specs at runtime
+via `grok.functions.register()`. When a deployment is selected in the tree browser, `getOrRegisterFunc()`:
+
+1. Fetches the workflow's OpenAPI spec via `client.getWorkflowInputs()`
+2. Builds `ParamMeta[]` from the parsed `KnimeInputParam[]`, sanitizing names for Datagrok compatibility
+3. Generates a function signature string (e.g., `dataframe MyWorkflow(dataframe input_table, string threshold)`)
+4. Creates a run callback that converts Datagrok types to KNIME formats, executes, and extracts results
+5. Registers the function with `grok.functions.register()` and sets descriptions/defaults on input properties
+
+**Grouped parameters**: When a KNIME input is an object with typed sub-properties, each sub-property becomes
+a separate function input with a sanitized name `{group}_{param}`. The description for grouped inputs
+includes `Part of "{group}" parameter` (with the parent's description appended if available), so users
+understand which inputs belong together. At execution time, grouped inputs are reassembled into a nested
+object under the original parent key before being sent to KNIME.
+
+**Name sanitization**: Function names are prefixed with `Knime_` and stripped of non-alphanumeric characters
+(e.g., `My Workflow` → `Knime_My_Workflow`). Parameter names are stripped similarly; numeric-leading
+param names get a `p_` prefix; duplicate names get a numeric suffix.
+
+### Persistent Function Cache
+
+The autostart function (`knimeLinkAutostart`) registers KNIME workflow functions in two phases:
+
+**Phase 1 — instant from `grok.userSettings` (synchronous, no network)**:
+`loadCachedEntries()` reads deployment specs from `grok.userSettings` (storage: `KnimeLinkFuncCache`).
+This is a synchronous in-memory read — functions appear instantly on startup with zero async calls.
+Each entry stores `KnimeDeployment`, `KnimeWorkflowSpec`, and a pre-computed signature for diff detection.
+
+**Phase 2 — background refresh (async, network)**:
+`refreshAndUpdateCache()` fetches live deployments and specs from KNIME Hub, computes signature diffs
+against cached entries, registers new/changed functions, and writes updated entries back to `grok.userSettings`
+so the next startup's Phase 1 has fresh data. Per-deployment spec fetch failures are handled individually —
+the cached version is kept.
 
 ### Exported Functions
 

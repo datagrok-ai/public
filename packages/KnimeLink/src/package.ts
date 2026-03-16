@@ -5,12 +5,35 @@ import * as DG from 'datagrok-api/dg';
 import {u2} from '@datagrok-libraries/utils/src/u2';
 import {getKnimeClient} from './knime-client-factory';
 import {getOrRegisterFunc} from './function-registry';
+import {loadCachedEntries, registerFromCache, refreshAndUpdateCache} from './function-cache';
 import '../css/knime-link.css';
 
 export * from './package.g';
 export const _package = new DG.Package();
 
 export class PackageFunctions {
+  @grok.decorators.autostart({description: 'KnimeLink function registration'})
+  static async knimeLinkAutostart(): Promise<void> {
+    let client;
+    try {
+      client = getKnimeClient();
+    }
+    catch {
+      return;
+    }
+
+    const cached = loadCachedEntries();
+    if (cached.length > 0)
+      registerFromCache(cached, client);
+
+    try {
+      await refreshAndUpdateCache(client);
+    }
+    catch (e) {
+      console.warn('KnimeLink: background cache refresh failed:', e);
+    }
+  }
+
   @grok.decorators.app({
     browsePath: 'Compute',
     name: 'KNIME',

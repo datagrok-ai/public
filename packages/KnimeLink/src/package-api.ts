@@ -8,6 +8,13 @@ import * as DG from 'datagrok-api/dg';
 
 
 export namespace funcs {
+  /**
+  KnimeLink function registration
+  */
+  export async function knimeLinkAutostart(): Promise<void> {
+    return await grok.functions.call('KnimeLink:KnimeLinkAutostart', {});
+  }
+
   export async function knimeLinkApp(): Promise<DG.View> {
     return await grok.functions.call('KnimeLink:KnimeLinkApp', {});
   }

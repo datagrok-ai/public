@@ -1,6 +1,12 @@
 import {PackageFunctions} from './package';
 import * as DG from 'datagrok-api/dg';
 
+//description: KnimeLink function registration
+//meta.role: autostart
+export async function knimeLinkAutostart() : Promise<void> {
+  await PackageFunctions.knimeLinkAutostart();
+}
+
 //name: KNIME
 //output: view result
 //meta.role: app

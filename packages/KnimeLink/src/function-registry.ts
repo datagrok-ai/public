@@ -1,7 +1,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import {IKnimeClient} from './knime-client';
-import {KnimeInputParam, KnimeOutputParam, KnimeParamType, KnimeDeployment, KnimeExecutionResult} from './types';
+import {KnimeInputParam, KnimeOutputParam, KnimeParamType, KnimeDeployment, KnimeExecutionResult, KnimeWorkflowSpec} from './types';
 import {dataFrameToKnimeTable, knimeTableToDataFrame, knimeSpecDataToDataFrame} from './data-conversion';
 import {pollJobUntilComplete} from './utils';
 
@@ -29,7 +29,7 @@ export function sanitizeFuncName(name: string, id: string): string {
   let result = name.replace(/[^a-zA-Z0-9_]/g, '_').replace(/_+/g, '_').replace(/^_|_$/g, '');
   if (!result)
     result = id.replace(/[^a-zA-Z0-9_]/g, '_').replace(/_+/g, '_').substring(0, 20);
-  return result;
+  return 'Knime_' + result;
 }
 
 export function sanitizeParamName(name: string): string {
@@ -39,7 +39,7 @@ export function sanitizeParamName(name: string): string {
   return result;
 }
 
-function buildParamMeta(params: KnimeInputParam[]): ParamMeta[] {
+export function buildParamMeta(params: KnimeInputParam[]): ParamMeta[] {
   const meta: ParamMeta[] = [];
   const usedNames = new Set<string>();
 
@@ -80,7 +80,7 @@ function determineReturnType(outputs: KnimeOutputParam[]): string {
   return knimeTypeToDgType[outputs[0].type] ?? 'object';
 }
 
-function buildSignature(funcName: string, paramMeta: ParamMeta[], outputs: KnimeOutputParam[]): string {
+export function buildSignature(funcName: string, paramMeta: ParamMeta[], outputs: KnimeOutputParam[]): string {
   const parts: string[] = [];
   for (const pm of paramMeta) {
     const dgType = knimeTypeToDgType[pm.type] ?? 'string';
@@ -196,17 +196,12 @@ function extractReturnValue(result: KnimeExecutionResult, returnType: string): a
   return null;
 }
 
-export async function getOrRegisterFunc(
+export function registerFuncFromSpec(
   deployment: KnimeDeployment,
+  spec: KnimeWorkflowSpec,
   client: IKnimeClient,
-): Promise<DG.Func> {
+): DG.Func {
   const funcName = sanitizeFuncName(deployment.name, deployment.id);
-
-  const existing = DG.Func.find({package: 'KnimeLink', name: funcName});
-  if (existing.length > 0)
-    return existing[0];
-
-  const spec = await client.getWorkflowInputs(deployment.id);
   const paramMeta = buildParamMeta(spec.inputs);
   const signature = buildSignature(funcName, paramMeta, spec.outputs);
   const runCallback = createRunCallback(deployment, paramMeta, spec.outputs, client);
@@ -218,11 +213,6 @@ export async function getOrRegisterFunc(
     namespace: 'KnimeLink',
   });
 
-  console.log('^^^^^^^^^^^^^^ function registered');
-  console.log(func.nqName);
-  //console.log(func.package);
-
-  // Set descriptions and default values on input properties
   for (const prop of func.inputs) {
     const pm = paramMeta.find((m) => m.sanitizedName === prop.name);
     if (pm) {
@@ -250,4 +240,18 @@ export async function getOrRegisterFunc(
   }
 
   return func;
+}
+
+export async function getOrRegisterFunc(
+  deployment: KnimeDeployment,
+  client: IKnimeClient,
+): Promise<DG.Func> {
+  const funcName = sanitizeFuncName(deployment.name, deployment.id);
+
+  const existing = DG.Func.find({package: 'KnimeLink', name: funcName});
+  if (existing.length > 0)
+    return existing[0];
+
+  const spec = await client.getWorkflowInputs(deployment.id);
+  return registerFuncFromSpec(deployment, spec, client);
 }

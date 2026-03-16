@@ -1,5 +1,11 @@
 import {KnimeJobState} from './constants';
 
+export interface CachedDeploymentEntry {
+  deployment: KnimeDeployment;
+  spec: KnimeWorkflowSpec;
+  signature: string;
+}
+
 export type KnimeParamType = 'table' | 'string' | 'int' | 'double' | 'boolean' | 'file' | 'json';
 
 export interface KnimeInputParam {
