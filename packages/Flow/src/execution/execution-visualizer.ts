@@ -98,7 +98,13 @@ export class ExecutionVisualizer {
   }
 
   private drawStatusDot(ctx: CanvasRenderingContext2D, node: LGraphNode, status: NodeExecStatus): void {
-    const x = node.size[0] - DOT_MARGIN;
+    // When collapsed, the node only renders as a title bar — use collapsed width
+    const isCollapsed = !!(node.flags as any)?.collapsed;
+    const nodeWidth = isCollapsed ?
+      ((node as any)._collapsed_width || node.size[0]) :
+      node.size[0];
+
+    const x = nodeWidth - DOT_MARGIN;
     const y = -DOT_MARGIN;
 
     ctx.save();

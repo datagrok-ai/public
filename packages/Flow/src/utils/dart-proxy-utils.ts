@@ -54,7 +54,7 @@ export function getTags(func: DG.Func): string[] {
 export function getPackageName(func: DG.Func): string {
   try {
     if (func.package && func.package.name)
-      return func.package.name;
+      return (func.package as DG.Package).name! as string;
     return '';
   } catch {
     return '';

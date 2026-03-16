@@ -209,8 +209,14 @@ export class CanvasController {
             break;
           }
 
+          // Account for collapsed nodes — they only show the title bar
+          const isCollapsed = !!(node.flags as any)?.collapsed;
+          const nodeW = isCollapsed ?
+            ((node as any)._collapsed_width || node.size[0]) :
+            node.size[0];
+
           // Check if over node title bar (for general info)
-          if (mx >= nx && mx <= nx + node.size[0] && my >= ny - titleH && my < ny) {
+          if (mx >= nx && mx <= nx + nodeW && my >= ny - titleH && my < ny) {
             // Over title — show node description if it's a func node
             const desc = (node as any).dgFunc?.description;
             if (desc) {
@@ -219,29 +225,32 @@ export class CanvasController {
             }
           }
 
-          // Check I/O slots
-          if (node.inputs) {
-            for (let s = 0; s < node.inputs.length; s++) {
-              const slotY = ny + (LiteGraph as any).NODE_TITLE_HEIGHT * 0.5 + s * (LiteGraph as any).NODE_SLOT_HEIGHT;
-              if (Math.abs(mx - nx) < 12 && Math.abs(my - slotY) < 8) {
-                const inp = node.inputs[s];
-                tip = `${inp.name} (${inp.type})`;
-                break;
+          // Skip I/O slot tooltips when collapsed (slots are not visible)
+          if (!isCollapsed) {
+            // Check I/O slots
+            if (node.inputs) {
+              for (let s = 0; s < node.inputs.length; s++) {
+                const slotY = ny + (LiteGraph as any).NODE_TITLE_HEIGHT * 0.5 + s * (LiteGraph as any).NODE_SLOT_HEIGHT;
+                if (Math.abs(mx - nx) < 12 && Math.abs(my - slotY) < 8) {
+                  const inp = node.inputs[s];
+                  tip = `${inp.name} (${inp.type})`;
+                  break;
+                }
               }
             }
-          }
-          if (!tip && node.outputs) {
-            const ptCount = (node as any).properties?.['_passthroughCount'] ?? 0;
-            for (let s = 0; s < node.outputs.length; s++) {
-              const slotY = ny + (LiteGraph as any).NODE_TITLE_HEIGHT * 0.5 +
-                s * (LiteGraph as any).NODE_SLOT_HEIGHT;
-              if (Math.abs(mx - (nx + node.size[0])) < 12 && Math.abs(my - slotY) < 8) {
-                const out = node.outputs[s];
-                if (s < ptCount)
-                  tip = `${out.name} \u2014 pass-through (${out.type}). Connect to enforce execution order`;
-                else
-                  tip = `${out.name} (${out.type})`;
-                break;
+            if (!tip && node.outputs) {
+              const ptCount = (node as any).properties?.['_passthroughCount'] ?? 0;
+              for (let s = 0; s < node.outputs.length; s++) {
+                const slotY = ny + (LiteGraph as any).NODE_TITLE_HEIGHT * 0.5 +
+                  s * (LiteGraph as any).NODE_SLOT_HEIGHT;
+                if (Math.abs(mx - (nx + node.size[0])) < 12 && Math.abs(my - slotY) < 8) {
+                  const out = node.outputs[s];
+                  if (s < ptCount)
+                    tip = `${out.name} \u2014 pass-through (${out.type}). Connect to enforce execution order`;
+                  else
+                    tip = `${out.name} (${out.type})`;
+                  break;
+                }
               }
             }
           }

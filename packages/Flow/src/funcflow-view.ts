@@ -3,7 +3,9 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {LGraphNode, LiteGraph} from 'litegraph.js';
 
+// @ts-ignore
 import 'litegraph.js/css/litegraph.css';
+// @ts-ignore
 import '../css/funcflow.css';
 
 import {GraphManager} from './canvas/graph-manager';

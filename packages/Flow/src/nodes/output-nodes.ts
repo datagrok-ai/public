@@ -1,3 +1,4 @@
+/* eslint-disable camelcase */
 import {LGraphNode, LiteGraph} from 'litegraph.js';
 import {getSlotColor} from '../types/type-map';
 
