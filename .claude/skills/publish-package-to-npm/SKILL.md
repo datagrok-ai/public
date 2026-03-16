@@ -1,5 +1,5 @@
 ---
-name: publish-package
+name: publish-package-to-npm
 description: Publish a Datagrok package to NPM (public) or directly to a platform instance (private)
 ---
 
