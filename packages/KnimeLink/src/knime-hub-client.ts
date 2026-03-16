@@ -1,6 +1,6 @@
 import * as grok from 'datagrok-api/grok';
 import {IKnimeClient} from './knime-client';
-import {KnimeInputParam, KnimeWorkflowSpec, KnimeParamType, KnimeExecutionInput, KnimeExecutionResult, KnimeJobStatus, KnimeDeployment, KnimeOutputResource} from './types';
+import {KnimeInputParam, KnimeOutputParam, KnimeWorkflowSpec, KnimeParamType, KnimeExecutionInput, KnimeExecutionResult, KnimeJobStatus, KnimeDeployment, KnimeOutputResource} from './types';
 import {KnimeJobState} from './constants';
 import {getCredentials, getBasicAuthHeader} from './credentials';
 
@@ -83,18 +83,19 @@ export class KnimeHubClient implements IKnimeClient {
   }
 
   // ----------------------------------------------------------- deployments
-  async listDeployments(): Promise<KnimeDeployment[]> {
+  async listDeployments(typeFilter?: string): Promise<KnimeDeployment[]> {
     const scopes = await this.getTeamScopes();
+    const typeSuffix = typeFilter ? `/${typeFilter.toLowerCase()}` : '';
     const list: KnimeDeployment[] = [];
     for (const scope of scopes) {
       try {
-        const data = await this.request<any>('GET', `/deployments/${scope}`);
+        const data = await this.request<any>('GET', `/deployments/${scope}${typeSuffix}`);
         const items = Array.isArray(data) ? data : data?.deployments ?? data?.items ?? [];
         for (const d of items)
           list.push({
             id: d.id,
             name: d.name ?? d.workflowPath ?? d.id,
-            type: d.type ?? 'REST',
+            type: d.type ?? typeFilter ?? 'REST',
             state: d.state,
             workflowPath: d.workflowPath,
           });
@@ -137,11 +138,12 @@ export class KnimeHubClient implements IKnimeClient {
       const spec = await this.request<any>('GET', `/deployments/${id}/open-api`);
       return {
         inputs: this.parseOpenApiInputs(spec),
+        outputs: this.parseOpenApiOutputs(spec),
         hasFileOutputs: this.detectFileOutputs(spec),
       };
     }
     catch {
-      return {inputs: [], hasFileOutputs: false};
+      return {inputs: [], outputs: [], hasFileOutputs: false};
     }
   }
 
@@ -207,6 +209,42 @@ export class KnimeHubClient implements IKnimeClient {
         description: prop.description, defaultValue: prop.default,
       });
     }
+    return params;
+  }
+
+  private parseOpenApiOutputs(spec: any): KnimeOutputParam[] {
+    const params: KnimeOutputParam[] = [];
+
+    // Check response schema from the /execution endpoint
+    const paths = spec?.paths;
+    if (paths)
+      for (const [pathKey, pathVal] of Object.entries(paths) as [string, any][]) {
+        if (!pathKey.endsWith('/execution'))
+          continue;
+        const responseSchema = pathVal?.post?.responses?.['200']?.content?.['application/json']?.schema;
+        if (responseSchema?.properties)
+          for (const [name, prop] of Object.entries(responseSchema.properties) as [string, any][])
+            params.push({name, type: this.isTableInput(prop) ? 'table' : this.mapScalarType(prop)});
+        break;
+      }
+
+    // Check OutputParameters in components.schemas
+    if (params.length === 0) {
+      const outputSchema = spec?.components?.schemas?.OutputValues;
+      if (outputSchema?.properties)
+        for (const [name, prop] of Object.entries(outputSchema.properties) as [string, any][])
+          params.push({name, type: this.isTableInput(prop) ? 'table' : this.mapScalarType(prop)});
+    }
+
+    // Check output resources
+    if (spec?.paths)
+      for (const [, pathVal] of Object.entries(spec.paths) as [string, any][]) {
+        const resources = pathVal?.post?.['x-knime-output-resources']?.schema?.properties;
+        if (resources)
+          for (const [name] of Object.entries(resources) as [string, any][])
+            params.push({name, type: 'file'});
+      }
+
     return params;
   }
 

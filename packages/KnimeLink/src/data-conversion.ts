@@ -77,27 +77,3 @@ export function base64ToBlob(base64: string, mimeType: string = 'application/oct
     buffer[i] = bytes.charCodeAt(i);
   return new Blob([buffer], {type: mimeType});
 }
-
-/** Try to parse KNIME execution output into DataFrames. */
-export function parseKnimeOutputs(outputs: {[key: string]: any}): {tables: DG.DataFrame[]; variables: {[key: string]: any}} {
-  const tables: DG.DataFrame[] = [];
-  const variables: {[key: string]: any} = {};
-
-  for (const key of Object.keys(outputs)) {
-    const val = outputs[key];
-    if (Array.isArray(val) && val.length > 0 && typeof val[0] === 'object') {
-      const df = knimeTableToDataFrame(val, key);
-      df.name = key;
-      tables.push(df);
-    }
-    else if (typeof val === 'object' && val !== null && val['table-spec'] && val['table-data']) {
-      const df = knimeSpecDataToDataFrame(val['table-spec'], val['table-data']);
-      df.name = key;
-      tables.push(df);
-    }
-    else
-      variables[key] = val;
-  }
-
-  return {tables, variables};
-}

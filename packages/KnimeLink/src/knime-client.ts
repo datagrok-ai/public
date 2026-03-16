@@ -1,7 +1,7 @@
 import {KnimeInputParam, KnimeWorkflowSpec, KnimeExecutionInput, KnimeExecutionResult, KnimeJobStatus, KnimeDeployment, KnimeOutputResource} from './types';
 
 export interface IKnimeClient {
-  listDeployments(): Promise<KnimeDeployment[]>;
+  listDeployments(typeFilter?: string): Promise<KnimeDeployment[]>;
   getWorkflowInputs(id: string): Promise<KnimeWorkflowSpec>;
   executeSyncWorkflow(id: string, input: KnimeExecutionInput): Promise<KnimeExecutionResult>;
   startAsyncJob(id: string, input: KnimeExecutionInput): Promise<string>;

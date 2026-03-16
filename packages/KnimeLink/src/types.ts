@@ -17,8 +17,14 @@ export interface KnimeInputParam {
   tableSpec?: {name: string; type: string}[];
 }
 
+export interface KnimeOutputParam {
+  name: string;
+  type: KnimeParamType;
+}
+
 export interface KnimeWorkflowSpec {
   inputs: KnimeInputParam[];
+  outputs: KnimeOutputParam[];
   hasFileOutputs: boolean;
 }
 

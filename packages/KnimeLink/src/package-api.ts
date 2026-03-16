@@ -15,8 +15,4 @@ export namespace funcs {
   export async function knimeLinkAppTreeBrowser(treeNode: any ): Promise<void> {
     return await grok.functions.call('KnimeLink:KnimeLinkAppTreeBrowser', { treeNode });
   }
-
-  export async function executeKnimeWorkflow(workflowId: string , inputJson: string | null, inputTable: DG.DataFrame | null, tableParamName: string | null): Promise<DG.DataFrame> {
-    return await grok.functions.call('KnimeLink:ExecuteKnimeWorkflow', { workflowId, inputJson, inputTable, tableParamName });
-  }
 }
