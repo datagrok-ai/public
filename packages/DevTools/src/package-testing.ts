@@ -107,14 +107,9 @@ export class TestManager extends DG.ViewBase {
       pathSegments = pathSegments.map((it) => it ? it.replace(/%20/g, ' ') : undefined);
     }
 
-    // we need to init Compute package here, before loading any of
-    // compute model packages, since theirs top level might implicitly
-    // depend on Compute provided globals
-    try {
-      await initComputeApi();
-    } catch (e) {
-      console.error(e);
-    }
+    // we need to init Compute package before loading any compute model packages,
+    // but don't block tree generation — fire and forget
+    initComputeApi().catch((e) => console.error(e));
 
     let searchInvoked = false;
     this.searchInput.onChanged.subscribe(async (value) => {
@@ -167,7 +162,7 @@ export class TestManager extends DG.ViewBase {
     let resultPromise: Promise<void>;
 
     if (!this.packagePromises.has(f.package.name)) {
-      this.packagePromises[f.package.name] = new Promise<void>(async (resolve) => {
+      this.packagePromises.set(f.package.name, new Promise<void>(async (resolve) => {
         const selectedPackage = this.packagesTests.find((pt) => pt.name === f.package.name);
         if (this.testFunctions.filter((it) => it.package.name === f.package.name).length !== 0 &&
           selectedPackage.categories === null && selectedPackage.check === false) {
@@ -228,10 +223,10 @@ export class TestManager extends DG.ViewBase {
           }
         }
         resolve();
-      });
+      }));
     }
 
-    await this.packagePromises[f.package.name];
+    await this.packagePromises.get(f.package.name);
 
     return resultPromise;
   }
@@ -294,10 +289,6 @@ export class TestManager extends DG.ViewBase {
       const packNode = this.tree.group(pack.package.friendlyName,
         null, testFromUrl && pack.package.name === testFromUrl.packName);
       this.setRunTestsMenuAndLabelClick(packNode, pack, NODE_TYPE.PACKAGE);
-      if (testFromUrl && testFromUrl.packName === pack.package.name) {
-        this.selectedNode = packNode;
-        await this.collectPackageTests(packNode, pack, testFromUrl);
-      }
       packNode.root.children[0].appendChild(testPassed);
       packNode.onNodeExpanding.subscribe(() => {
         if (this.isSearchIniting && !this.packagePromises.has(packNode.text))
@@ -306,6 +297,13 @@ export class TestManager extends DG.ViewBase {
         packNode.root.children[0].appendChild(ui.loader());
         this.collectPackageTests(packNode, pack).then((_) => packNode.root.children[0].lastChild.remove());
       });
+      if (testFromUrl && testFromUrl.packName === pack.package.name) {
+        this.selectedNode = packNode;
+        // Don't await — show the tree immediately
+        packNode.root.children[0].appendChild(ui.loader());
+        this.collectPackageTests(packNode, pack, testFromUrl)
+          .then(() => packNode.root.children[0].lastChild.remove());
+      }
       this.packNodes.push([pack, packNode]);
     }
 
@@ -798,7 +796,7 @@ export class TestManager extends DG.ViewBase {
 
   private searchEvent() {
     if (!this.isSearchIniting) {
-      if (this.testFunctions.length === this.packagePromises.values.length)
+      if (this.testFunctions.length === this.packagePromises.size)
         this.searchTreeItems(this.searchInput.value);
 
       else {
@@ -815,16 +813,15 @@ export class TestManager extends DG.ViewBase {
     for (const packNode of this.packNodes)
       packNode[1].root.children[0].appendChild(ui.loader());
 
-
-    for (const packNode of this.packNodes) {
+    await Promise.all(this.packNodes.map(async (packNode) => {
       await this.collectPackageTests(packNode[1], packNode[0]);
       packNode[1].root.children[0].lastChild.remove();
       if (this.searchInput.value.length > 0)
         this.searchTreeItems(this.searchInput.value);
-    }
+    }));
   }
 
-  private async searchTreeItems(stringToSearch: string) {
+  private searchTreeItems(stringToSearch: string) {
     const dom = this.tree.root.getElementsByClassName('d4-tree-view-node');
     const regExpToSearch = new RegExp(stringToSearch.toLowerCase());
     const listToShow: HTMLElement[] = [];

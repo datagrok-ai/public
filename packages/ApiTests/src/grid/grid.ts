@@ -16,10 +16,11 @@ export function hasTag(colTags: string[], colTagValue: string): boolean {
 
 category('Grid', () => {
   let grid: DG.Grid;
-  const demog = grok.data.demo.demog(100);
-  demog.columns.byName('study').name = '~study';
+  let demog: DG.DataFrame;
 
   before(async () => {
+    demog = grok.data.demo.demog(100);
+    demog.columns.byName('study').name = '~study';
     grid = demog.plot.grid();
   });
 
