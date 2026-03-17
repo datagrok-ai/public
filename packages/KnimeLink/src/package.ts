@@ -29,8 +29,8 @@ export class PackageFunctions {
     try {
       await refreshAndUpdateCache(client);
     }
-    catch (e) {
-      console.warn('KnimeLink: background cache refresh failed:', e);
+    catch (e: any) {
+      grok.shell.error('KnimeLink: background cache refresh failed:', e);
     }
   }
 
@@ -90,28 +90,34 @@ export class PackageFunctions {
     };
 
     treeNode.items.length = 0;
+    const errors: string[] = [];
     try {
       const deployments = await client.listDeployments('rest');
-      if (deployments.length === 0) {
-        treeNode.item('No deployments found');
-        return;
-      }
       for (const dep of deployments) {
-        const node = treeNode.item(dep.name);
-        node.onSelected.subscribe(async () => {
-          if (!node.value) {
-            setBreadcrumbs(['Home', 'KNIME', dep.name], treeNode);
-            const func = await getOrRegisterFunc(dep, client);
-            node.value = func;
-          }
-          const objHandler = DG.ObjectHandler.forEntity(node.value);
-          if (objHandler)
-            grok.shell.addPreview(await (objHandler.renderPreview(node.value)))
-        });
+        try {
+          const node = treeNode.item(dep.name);
+          node.onSelected.subscribe(async () => {
+            if (!node.value) {
+              setBreadcrumbs(['Home', 'KNIME', dep.name], treeNode);
+              const func = await getOrRegisterFunc(dep, client);
+              node.value = func;
+            }
+            const objHandler = DG.ObjectHandler.forEntity(node.value);
+            if (objHandler)
+              grok.shell.addPreview(await (objHandler.renderPreview(node.value)))
+          });
+        }
+        catch (e: any) {
+          errors.push(`${dep.name}: ${e?.message ?? e}`);
+        }
       }
+      if (treeNode.items.length === 0 && errors.length === 0)
+        treeNode.item('No deployments found');
     }
     catch (e: any) {
-      treeNode.item(`Error loading deployments: ${e?.message ?? e}`);
+      errors.push(e?.message ?? e);
     }
+    if (errors.length > 0)
+      grok.shell.warning(`KNIME: Failed to load some workflows:\n${errors.join('\n')}`);
   }
 }
