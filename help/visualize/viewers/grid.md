@@ -309,6 +309,30 @@ The `Tags` renderer is used to display comma-separated values from a string colu
 
 The `Stars` cell type applies to the integer column, and lets you "rate" something with stars.
 
+#### Color
+
+The `Color` renderer displays a filled color swatch in the cell instead of raw text. It supports
+all standard CSS color formats:
+
+| Format | Example |
+|--------|---------|
+| Hex (3-digit) | `#F00` |
+| Hex (6-digit) | `#FF5733` |
+| Hex (8-digit with alpha) | `#FF573380` |
+| RGB | `rgb(255, 87, 51)` |
+| RGBA | `rgba(255, 87, 51, 0.5)` |
+| HSL | `hsl(14, 100%, 60%)` |
+| HSLA | `hsla(14, 100%, 60%, 0.5)` |
+| Named CSS colors | `red`, `cornflowerblue` |
+
+The renderer is applied automatically when Datagrok detects that a string column contains
+color values. You can also apply it manually by setting the column renderer to `Color` in the
+**Context Panel** under **Renderer**.
+
+Hovering over a cell shows the raw color value in a tooltip. Empty cells and unrecognized
+values are shown as blank. The swatch is padded within the cell, scaling down gracefully
+for small cell sizes.
+
 ### Summary columns
 
 Summary columns show data from multiple columns within a row. To simply display
