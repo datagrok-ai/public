@@ -12,6 +12,26 @@ Community: [Plugin releases](https://community.datagrok.ai/t/plugin-releases/775
 
 ## 1.27.0 || 2026-Mar
 
+### Visualization and analysis
+
+|<div style={{ width:220 }}></div>| <div style={{ width:500 }}></div> |
+|----------------- | -----------------------------------|
+| **Scatterplot**: Highlight and annotate areas of interest directly on the scatterplot and line chart with new **annotation regions**. They support overlapping, data selection, and work consistently with log scales, inverted axes, and axis transformations. Learn more: [scatterplot](../../visualize/viewers/scatter-plot.md#adding-annotation-regions), [line chart](../../visualize/viewers/line-chart.md#tools) | ![annotation-regions](img/1.27-annotation-regions.gif) |
+| **Scatterplot**: Control whether selected rows are visually highlighted on the plot with the new **Show Selected Rows** property. Note: for **Row Sources** `Selected` and `Filtered Selected`, color highlighting does not occur regardless of this setting | ![Show-Selected-Rows](img/1.27-show-selected-rows.gif) |
+| **Scatterplot**: Explore the distribution of each axis variable with **Show X/Y Histograms** property, which displays histograms along the scatterplot axes | ![scatter-plot-histograms](img/1.27-scatter-plot-histograms.gif) |
+| **Scatterplot**: Control line grouping and coloring independently with the new **Lines By** property. For example, lines can represent individual patients or experiments while color reflects treatment group or status | ![Lines-by](img/1.27-lines-by.gif) |
+| **Scatterplot**: Regression statistics (equation, r², ρ, r, MAE) are now **interactive** — hover over any statistic to see a tooltip with its description, or click it to open the corresponding Wikipedia page | ![statistics](img/1.27-statistics.gif) |
+| **Grid**: Color one column by another with the new **Linked** color coding scheme — it reuses the reference column's color scheme regardless of the target column's data type [Learn more](../../visualize/viewers/grid.md#color-code-columns) | ![color-coding-linked](img/1.27-color-coding-linked.gif) |
+| **Grid**: Blur column values to safely share screenshots without exposing sensitive data using the new **Blur** rendering option. Enable via **Context Panel > Settings > Blur content** | ![blur](img/1.27-blur.gif) |
+| **Grid**: Visualize confidence intervals directly in grid cells with the new [**Confidence interval renderer**](../../visualize/viewers/grid.md#summary-columns) | ![confidence-interval](img/1.27-confidence-interval.gif) |
+| **Histogram**: Display the bin count on top of each bar with the new [**Show Values**](../../visualize/viewers/histogram.md#show-bin-values) property. The value reflects the current row source (filtered, selected, or all rows) |  ![histogram-bin-values](../../visualize/viewers/img/histogram-bin-values.gif) |
+| **Histogram**: Overlay distribution curves over the histogram bars with [**Show Distribution Lines**](../../visualize/viewers/histogram.md#distribution-lines). Works with stacked bins, splines, and filled splines. Requires a **Split Column** to be defined | ![histogram-distribution-lines](../../visualize/viewers/img/histogram-distribution-lines.gif) |
+| **Pie chart**: Labels are now displayed outside the slices for better readability when working with many categories | ![pie-chart-labels](img/1.27-pie-chart-labels.gif) |
+| **Trellis plot**: Customize the color scheme for the inner heatmap viewer with the new **Color Scheme** setting (**Context Panel > Heatmap > Style**). The heatmap also automatically picks up color coding from the grid, which takes priority over the selected scheme | ![heatmap-color-customization](img/1.27-heatmap-color-customization.gif) |
+| **Filter panel**: Filter columns that contain multiple values per cell with the new [**Multi-value filter**](../../visualize/viewers/filters.md#multi-value-filter) | ![multi-value-filter](img/1.27-multi-value-filter.gif) |
+| **Filter panel**: Switch a numeric filter to a categorical filter and back — the selected type persists in the layout and the project. Use the filter type toggle in the filter header |  ![switch-filter-type](img/1.27-switch-filter-type.gif) |
+| **In-viewer filter**: Edit filter expressions in the new **Edit Formula** dialog with real-time preview, autocomplete, and validation| ![edit-formula](img/1.27-edit-formula.gif) |
+
 ### Developer updates
 
 * [Breaking changes](https://datagrok.ai/help/deploy/releases/compatibility/?from=1.27.0&to=1.26.8&breakingchanges=true):  
