@@ -1,6 +1,5 @@
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
-import {GridCellRenderer} from "datagrok-api/dg";
 
 
 const STAR_PADDING = 2;
@@ -59,7 +58,7 @@ export class StarsCellRenderer extends DG.GridCellRenderer {
     const starSize = Math.min((w - STAR_PADDING) / maxStars - STAR_PADDING, h - STAR_PADDING * 2);
 
     if (starSize < MIN_STAR_SIZE || (!gridCell.cell.isNone() && (value < 0 || value > maxStars))) {
-      GridCellRenderer.byName('number')?.render(g, x, y, w, h, gridCell, cellStyle);
+      DG.GridCellRenderer.byName('number')?.render(g, x, y, w, h, gridCell, cellStyle);
       return;
     }
 

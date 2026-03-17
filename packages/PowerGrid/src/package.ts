@@ -26,6 +26,7 @@ import {scWebGPUPointHitTest, scWebGPURender} from './webgpu/scatterplot';
 import {getGPUDevice} from '@datagrok-libraries/math/src/webGPU/getGPUDevice';
 import {TagsCellRenderer} from './cell-types/tags-cell-renderer';
 import {ConfidenceIntervalCellRenderer} from './cell-types/confidence-interval-cell-renderer';
+import {StarsCellRenderer} from './cell-types/stars-cell-renderer';
 export * from './package.g';
 export const _package = new DG.Package();
 
@@ -295,6 +296,7 @@ export class PackageFunctions {
   static async _autoPowerGrid() {
     //PinnedUtils.registerPinnedColumns();
     DG.GridCellRenderer.register(new ScatterPlotCellRenderer());
+    DG.GridCellRenderer.register(new StarsCellRenderer());
 
     // handling column remove/rename in sparkline columns
     grok.events.onViewerAdded.subscribe((args) => {
