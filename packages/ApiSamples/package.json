@@ -2,14 +2,14 @@
   "name": "@datagrok/api-samples",
   "version": "1.2.2",
   "author": {
-    "name": "Savenko Stanislav",
-    "email": "ssavenko@datagrok.ai"
+    "name": "Dmytro Kovalyov",
+    "email": "dkovalyov@datagrok.ai"
   },
   "servicePackage": true,
   "dependencies": {
     "@datagrok-libraries/test": "^1.1.0",
     "cash-dom": "^8.1.1",
-    "datagrok-api": "../../js-api",
+    "datagrok-api": "^1.27.0",
     "dayjs": "^1.11.13",
     "rxjs": "^6.6.7",
     "wu": "^2.1.0"
@@ -22,14 +22,13 @@
     "@datagrok/charts": "^1.4.0",
     "@datagrok/chem": "^1.13.0",
     "@datagrok/chembl": "^1.2.0",
-    "@datagrok/clinical-case": "^1.1.0",
     "@datagrok/helm": "^2.7.0",
     "@datagrok/power-grid": "^1.5.0",
-    "@datagrok/samples": "^1.0.4",
     "@datagrok/usage-analysis": "^2.2.1",
     "@types/wu": "^2.1.42",
     "@typescript-eslint/eslint-plugin": "^5.26.0",
     "@typescript-eslint/parser": "^5.26.0",
+    "datagrok-tools": "^5.0.0",
     "eslint": "^8.16.0",
     "eslint-config-google": "^0.14.0",
     "root-require": "^0.3.1",

@@ -278,6 +278,48 @@ export namespace scripts {
   }
 
   /**
+  Environment with extra conda-only dependencies beyond base
+  */
+  export async function pythonEnvCondaExtras(text: string ): Promise<string> {
+    return await grok.functions.call('CVMTests:PythonEnvCondaExtras', { text });
+  }
+
+  /**
+  Environment with both conda extras and pip packages
+  */
+  export async function pythonEnvMixedDeps(data: string ): Promise<string> {
+    return await grok.functions.call('CVMTests:PythonEnvMixedDeps', { data });
+  }
+
+  /**
+  Verifies numpy ABI compatibility when pip packages depend on numpy
+  */
+  export async function pythonEnvNumpyCompat(rows: number ): Promise<number> {
+    return await grok.functions.call('CVMTests:PythonEnvNumpyCompat', { rows });
+  }
+
+  /**
+  Environment with pip-only extra dependencies
+  */
+  export async function pythonEnvPipOnly(text: string ): Promise<string> {
+    return await grok.functions.call('CVMTests:PythonEnvPipOnly', { text });
+  }
+
+  /**
+  Environment with Python 3.12 template
+  */
+  export async function pythonEnvPy312(text: string ): Promise<string> {
+    return await grok.functions.call('CVMTests:PythonEnvPy312', { text });
+  }
+
+  /**
+  Tests that existing environment is correctly detected and reused
+  */
+  export async function pythonEnvReuse(text: string ): Promise<string> {
+    return await grok.functions.call('CVMTests:PythonEnvReuse', { text });
+  }
+
+  /**
   anchors count in html
   */
   export async function pythonAnchorsCount(html: string ): Promise<number> {
@@ -402,6 +444,20 @@ export namespace scripts {
   */
   export async function rDate(input_datetime: any ): Promise<any> {
     return await grok.functions.call('CVMTests:RDate', { input_datetime });
+  }
+
+  /**
+  reverse a string using stringi from a custom env
+  */
+  export async function rEnvStringReverse(input_string: string ): Promise<string> {
+    return await grok.functions.call('CVMTests:REnvStringReverse', { input_string });
+  }
+
+  /**
+  reverse a string using stringi from a yaml env file
+  */
+  export async function rEnvFileStringReverse(input_string: string ): Promise<string> {
+    return await grok.functions.call('CVMTests:REnvFileStringReverse', { input_string });
   }
 
   /**

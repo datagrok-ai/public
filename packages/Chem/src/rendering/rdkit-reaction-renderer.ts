@@ -1,6 +1,7 @@
 import * as DG from 'datagrok-api/dg';
 import {RDModule, RDReaction} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 import {drawErrorCross, drawRdKitReactionToOffscreenCanvas} from '../utils/chem-common-rdkit';
+import {USE_RDKIT_REACTION_RENDERER} from '../utils/reactions/consts';
 
 export class RDKitReactionRenderer extends DG.GridCellRenderer {
   rdKitModule: RDModule;
@@ -47,7 +48,7 @@ export class RDKitReactionRenderer extends DG.GridCellRenderer {
 
   _rendererGetOrCreate(
     width: number, height: number, reactionString: string): ImageData {
-    const rdkitRxn = this._fetchRxn(reactionString, {useSmiles: true});
+    const rdkitRxn = this._fetchRxn(reactionString);
 
     const canvas = this.ensureCanvasSize(width, height);//new OffscreenCanvas(width, height);
     const ctx = canvas.getContext('2d', {willReadFrequently: true})!;
@@ -75,6 +76,21 @@ export class RDKitReactionRenderer extends DG.GridCellRenderer {
         onscreenCanvas.getContext('2d', {willReadFrequently: true})!.putImageData(imageData, x, y);
   }
 
+  /** Render a reaction SMARTS string directly onto an HTML canvas element.
+   *  Useful for standalone preview canvases outside of grid cells. */
+  renderToCanvas(canvas: HTMLCanvasElement, reactionString: string, width?: number, height?: number): boolean {
+    if (!reactionString)
+      return false;
+    const w = width ?? canvas.width;
+    const h = height ?? canvas.height;
+    try {
+      this._drawReaction(0, 0, w, h, canvas, reactionString);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
   render(g: any, x: number, y: number, w: number, h: number,
     gridCell: DG.GridCell): void {
     const reactionString = gridCell.cell.value;
@@ -96,5 +112,41 @@ export class RDKitReactionRenderer extends DG.GridCellRenderer {
       this._drawReaction(x, yUpdated, w, h, g.canvas, part);
       yUpdated = yUpdated + h;
     });
+  }
+}
+
+// ---- Standalone rendering utility ----
+
+let _sharedRenderer: RDKitReactionRenderer | null = null;
+
+/**
+ * Render a reaction SMARTS to an HTML canvas.
+ * When USE_RDKIT_REACTION_RENDERER is true, uses the RDKitReactionRenderer class
+ * with offscreen canvas + LRU cache. When false, uses simple direct RDKit rendering:
+ * get_rxn() → draw_to_canvas() → delete().
+ */
+export function renderReactionToCanvas(
+  rdkit: RDModule, canvas: HTMLCanvasElement, smarts: string, w?: number, h?: number,
+): boolean {
+  if (!smarts) return false;
+  const width = w ?? canvas.width;
+  const height = h ?? canvas.height;
+
+  if (USE_RDKIT_REACTION_RENDERER) {
+    if (!_sharedRenderer) _sharedRenderer = new RDKitReactionRenderer(rdkit);
+    return _sharedRenderer.renderToCanvas(canvas, smarts, width, height);
+  }
+
+  // Simple direct RDKit approach
+  let rxn: RDReaction | null = null;
+  try {
+    rxn = rdkit.get_rxn(smarts);
+    if (!rxn) return false;
+    rxn.draw_to_canvas(canvas, width, height);
+    return true;
+  } catch {
+    return false;
+  } finally {
+    try {rxn?.delete();} catch {/* noop */}
   }
 }

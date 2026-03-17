@@ -8,7 +8,6 @@ import type {BuilderType} from '../escher_src/src/Builder';
 import type {CobraModelData, ReactionBounds, SamplingFunctionResult} from '../escher_src/src/ts/types';
 import {WorkerCobraSolver} from './cobra';
 import {ItemsGrid} from '@datagrok-libraries/utils/src/items-grid';
-import {solveUsingGLPKJvail} from './cobra/glpkJS';
 
 export function parsePath(path?: string): string | null {
   if (!path)
@@ -443,6 +442,7 @@ export async function runFBADialog(builder: BuilderType) {
     dialog.close();
     // run FBA
     try {
+      const {solveUsingGLPKJvail} = await import('./cobra/glpkJS');
       console.log(await solveUsingGLPKJvail(builder.model_data));
       // const solution = await runGLPKFBA(builder.model_data);
       const solution = await WorkerCobraSolver.run_optimization(builder.model_data);

@@ -1027,8 +1027,9 @@ export class PackageFunctions {
     'outputs': [{name: 'Synthetic', type: 'dataframe'}],
   })
   static async generatePmpoDataset(@grok.decorators.param({'type': 'int'}) samples: number): Promise<DG.DataFrame> {
-    const df = await getSynteticPmpoData(samples);
+    const df = await getSynteticPmpoData(samples, false);
     df.name = 'Synthetic';
     return df;
   }
+
 }

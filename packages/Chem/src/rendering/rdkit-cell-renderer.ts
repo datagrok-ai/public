@@ -14,9 +14,12 @@ import {ISubstruct} from '@datagrok-libraries/chem-meta/src/types';
 
 import {
   ALIGN_BY_SCAFFOLD_LAYOUT_PERSISTED_TAG,
-  ALIGN_BY_SCAFFOLD_TAG, FILTER_SCAFFOLD_TAG, HIGHLIGHT_BY_SCAFFOLD_COL,
+  ALIGN_BY_SCAFFOLD_TAG, FILTER_SCAFFOLD_TAG,
+  HIGHLIGHT_BY_SCAFFOLD_COL, HIGHLIGHT_BY_SCAFFOLD_COL_SYNC,
   HIGHLIGHT_BY_SCAFFOLD_TAG, MIN_MOL_IMAGE_SIZE, PARENT_MOL_COL,
-  REGENERATE_COORDS, SCAFFOLD_COL, SCAFFOLD_TREE_HIGHLIGHT,
+  REGENERATE_COORDS, REGENERATE_COORDS_SYNC,
+  SCAFFOLD_COL, SCAFFOLD_COL_SYNC, SCAFFOLD_TREE_HIGHLIGHT,
+  getSyncTag,
 } from '../constants';
 import {hexToPercentRgb} from '../utils/chem-common';
 import {_rdKitModule, drawErrorCross, drawRdKitMoleculeToOffscreenCanvas} from '../utils/chem-common-rdkit';
@@ -510,8 +513,7 @@ M  END
 
   highlightByScaffoldCol(g: any, x: number, y: number, w: number, h: number, gridCell: DG.GridCell,
     cellStyle: DG.GridCellStyle, colTemp: any, molString: string, highlightScaffolds?: IColoredScaffold[]): void {
-    let molRegenerateCoords =
-      gridCell.cell.column.tags[REGENERATE_COORDS] === 'true'|| colTemp?.[REGENERATE_COORDS] === 'true';
+    let molRegenerateCoords = getSyncTag(gridCell.cell.column, REGENERATE_COORDS_SYNC, REGENERATE_COORDS) === 'true';
     let scaffoldRegenerateCoords = false;
     const df = gridCell.cell.dataFrame;
     let rowScaffoldCol = null;
@@ -520,7 +522,7 @@ M  END
 
     // if given, take the 'scaffold-col' col
     if (colTemp) {
-      let rowScaffoldColName = gridCell.cell.column.tags[SCAFFOLD_COL] ?? colTemp[SCAFFOLD_COL];
+      let rowScaffoldColName = getSyncTag(gridCell.cell.column, SCAFFOLD_COL_SYNC, SCAFFOLD_COL);
       if (!rowScaffoldColName) {
         rowScaffoldColName = colTemp[PARENT_MOL_COL];
         haveParentMol = !!rowScaffoldColName;
@@ -528,16 +530,14 @@ M  END
       if (rowScaffoldColName) {
         const rowScaffoldColProbe = df.columns.byName(rowScaffoldColName);
         if (rowScaffoldColProbe !== null) {
-          const scaffoldColTemp = rowScaffoldColProbe.temp;
           if (haveParentMol) {
-            const parentMolScaffoldColName = rowScaffoldColProbe.tags[SCAFFOLD_COL] ?? scaffoldColTemp[SCAFFOLD_COL];
+            const parentMolScaffoldColName = getSyncTag(rowScaffoldColProbe, SCAFFOLD_COL_SYNC, SCAFFOLD_COL);
             if (parentMolScaffoldColName) {
               const idx = gridCell.tableRowIndex; // TODO: supposed to be != null?
               parentMolScaffoldMolString = df.get(parentMolScaffoldColName, idx!);
             }
           }
-          scaffoldRegenerateCoords =
-            scaffoldColTemp?.[REGENERATE_COORDS] === 'true' || rowScaffoldColProbe.tags[REGENERATE_COORDS] === 'true';
+          scaffoldRegenerateCoords = getSyncTag(rowScaffoldColProbe, REGENERATE_COORDS_SYNC, REGENERATE_COORDS) === 'true';
           molRegenerateCoords = scaffoldRegenerateCoords;
           rowScaffoldCol = rowScaffoldColProbe;
         }
@@ -588,8 +588,7 @@ M  END
     } else {
       // drawing with a per-row scaffold
       const scaffoldMolString = df.get(rowScaffoldCol.name, idx!);
-      const highlightScaffold = gridCell.cell.column.tags[HIGHLIGHT_BY_SCAFFOLD_COL] === 'true' ||
-        colTemp?.[HIGHLIGHT_BY_SCAFFOLD_COL] === 'true';
+      const highlightScaffold = getSyncTag(gridCell.cell.column, HIGHLIGHT_BY_SCAFFOLD_COL_SYNC, HIGHLIGHT_BY_SCAFFOLD_COL) === 'true';
       const details = (haveParentMol ? {
         mappedDummiesAreRGroups: true,
         useCoordGen: false,

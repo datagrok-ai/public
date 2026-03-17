@@ -147,4 +147,8 @@ export namespace funcs {
   export async function applyNotationProviderForCyclized(col: DG.Column , separator: string ): Promise<void> {
     return await grok.functions.call('SequenceTranslator:ApplyNotationProviderForCyclized', { col, separator });
   }
+
+  export async function harmonizedSequenceNotationProviderConstructor(): Promise<any> {
+    return await grok.functions.call('SequenceTranslator:HarmonizedSequenceNotationProviderConstructor', {});
+  }
 }

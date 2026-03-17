@@ -300,7 +300,7 @@ export function ChemSpaceEditor(call: DG.FuncCall) : void {
 //output: object result
 //meta.supportedSemTypes: Molecule
 //meta.supportedDistanceFunctions: Tanimoto,Asymmetric,Cosine,Sokal
-//meta.role: dimRedPreprocessingFunction
+//meta.role: dim-red-preprocessing-function
 export async function getFingerprints(col: DG.Column, _metric: string | undefined, fingerprintType: any) {
   return await PackageFunctions.getFingerprints(col, _metric, fingerprintType);
 }
@@ -616,6 +616,48 @@ export function structure2d(molecule: string) : any {
 //help-url: /help/domains/chem/info-panels/toxicity-risks.md
 export function toxicity(smiles: DG.SemanticValue) : any {
   return PackageFunctions.toxicity(smiles);
+}
+
+//name: Databases | Synthon Search | Substructure Search
+//description: Substructure search in synthon chemical space using RDKit SynthonSpaceSearch
+//input: string molecule { semType: Molecule }
+//output: widget result
+//meta.role: widgets,panel
+//meta.domain: chem
+export async function synthonSubstructureSearchWidget(molecule: string) : Promise<any> {
+  return await PackageFunctions.synthonSubstructureSearchWidget(molecule);
+}
+
+//name: Databases | Synthon Search | Similarity Search
+//description: Fingerprint similarity search in synthon chemical space using RDKit SynthonSpaceSearch
+//input: string molecule { semType: Molecule }
+//output: widget result
+//meta.role: widgets,panel
+//meta.domain: chem
+export async function synthonSimilaritySearchWidget(molecule: string) : Promise<any> {
+  return await PackageFunctions.synthonSimilaritySearchWidget(molecule);
+}
+
+//name: Search Synthons
+//description: Search in synthon chemical space and return products with synthon structures
+//input: string spaceName { choices: Chem:getSynthonSpacesFunc(); nullable: false }
+//input: string molecule { semType: Molecule }
+//input: double maxHits = 100 
+//input: string searchType { choices: ["substructure","similarity","exact"] }
+//input: double similarityCutoff = 0.5 { optional: true; nullable: true; min: 0; max: 1 }
+//input: bool includeSynthons = false 
+//output: dataframe result
+//meta.cache: client
+//meta.cache.invalidateOn: 0 * * * *
+export async function synthonSearchFunc(spaceName: string, molecule: string, maxHits: number, searchType: string, similarityCutoff?: number, includeSynthons?: boolean) : Promise<any> {
+  return await PackageFunctions.synthonSearchFunc(spaceName, molecule, maxHits, searchType, similarityCutoff, includeSynthons);
+}
+
+//name: Get Synthon Spaces
+//description: Get all available synthon spaces from Chem package files
+//output: list<string> result
+export async function getSynthonSpacesFunc() : Promise<string[]> {
+  return await PackageFunctions.getSynthonSpacesFunc();
 }
 
 //input: column molecule { semType: Molecule }
@@ -1094,7 +1136,7 @@ export async function isInteractiveNN(df: DG.DataFrame, predictColumn: DG.Column
 //input: column molecules { semType: Molecule }
 //input: string fragment = 'O=C([N:1])OCC1c2ccccc2-c2ccccc21' { semType: Molecule }
 //meta.role: transform
-//top-menu: Chem | Transform | Deprotect...
+//top-menu: Chem | Transform | Reactions | Deprotect...
 //editor: Chem:DeprotectEditor
 export async function deprotect(table: DG.DataFrame, molecules: DG.Column, fragment: string) : Promise<void> {
   await PackageFunctions.deprotect(table, molecules, fragment);
@@ -1133,9 +1175,11 @@ export async function _mpo() : Promise<void> {
 //input: column_list columns 
 //input: string profileName 
 //input: string aggregation 
+//input: bool createDesirabilityColumns 
 //output: dataframe result { action: join(df) }
-export function mpoCalculate(df: DG.DataFrame, columns: DG.ColumnList, profileName: string, aggregation: any) : any {
-  return PackageFunctions.mpoCalculate(df, columns, profileName, aggregation);
+//meta.vectorFunc: true
+export function mpoCalculate(df: DG.DataFrame, columns: DG.ColumnList, profileName: string, aggregation: any, createDesirabilityColumns: boolean) : any {
+  return PackageFunctions.mpoCalculate(df, columns, profileName, aggregation, createDesirabilityColumns);
 }
 
 //input: dataframe df 
@@ -1143,10 +1187,10 @@ export function mpoCalculate(df: DG.DataFrame, columns: DG.ColumnList, profileNa
 //input: string aggregation 
 //input: string currentProperties 
 //input: bool silent 
-//output: dataframe result
+//output: list<column> result
 //meta.role: transform
-export async function mpoTransformFunction(df: DG.DataFrame, profileName: string, aggregation: any, currentProperties: string, silent: boolean) : Promise<any> {
-  return await PackageFunctions.mpoTransformFunction(df, profileName, aggregation, currentProperties, silent);
+export function mpoTransformFunction(df: DG.DataFrame, profileName: string, aggregation: any, currentProperties: string, silent: boolean) : any {
+  return PackageFunctions.mpoTransformFunction(df, profileName, aggregation, currentProperties, silent);
 }
 
 //input: file file 
@@ -1200,9 +1244,56 @@ export async function mpoProfilesApp(path?: string) : Promise<any> {
 }
 
 //input: dynamic treeNode 
-//input: view browseView 
-export async function mpoProfilesAppTreeBrowser(treeNode: any, browseView: any) : Promise<void> {
-  await PackageFunctions.mpoProfilesAppTreeBrowser(treeNode, browseView);
+//input: view _browseView 
+export async function mpoProfilesAppTreeBrowser(treeNode: any, _browseView: any) : Promise<void> {
+  await PackageFunctions.mpoProfilesAppTreeBrowser(treeNode, _browseView);
+}
+
+//name: removeWaterAndSalts
+//description: Removes water and salts from the list of molecules
+//input: dataframe table 
+//input: column molecules 
+//output: column result { semType: Molecule }
+//top-menu: Chem | Transform | Reactions | Remove Water and Salts...
+//friendlyName: Remove Water and Salts
+export async function removeWaterAndSaltsTopMenu(table: DG.DataFrame, molecules: DG.Column) {
+  return await PackageFunctions.removeWaterAndSaltsTopMenu(table, molecules);
+}
+
+//name: transformationReactions
+//description: Runs reaction based on the reaction SMARTS and list of reactants
+//top-menu: Chem | Transform | Reactions | Transformation...
+//friendlyName: Run Reaction
+export async function transformationReactionsTopMenu() : Promise<void> {
+  await PackageFunctions.transformationReactionsTopMenu();
+}
+
+//name: twoComponentReaction
+//description: Runs a reaction between molecules from two columns
+//top-menu: Chem | Transform | Reactions | Two-Component Reaction...
+//friendlyName: Two-Component Reaction
+export async function twoComponentReactionTopMenu() : Promise<void> {
+  await PackageFunctions.twoComponentReactionTopMenu();
+}
+
+//name: Transformation Reactions
+//tags: app
+//input: string _path { meta.url: true; optional: true }
+//output: view result
+//meta.browsePath: Chem | Reactions
+//meta.role: app
+export async function transformationReactionsApp(_path?: string) : Promise<any> {
+  return await PackageFunctions.transformationReactionsApp(_path);
+}
+
+//name: Two-Component Reactions
+//tags: app
+//input: string _path { meta.url: true; optional: true }
+//output: view result
+//meta.browsePath: Chem | Reactions
+//meta.role: app
+export async function twoComponentReactionsApp(_path?: string) : Promise<any> {
+  return await PackageFunctions.twoComponentReactionsApp(_path);
 }
 
 //name: Chemistry | MPO

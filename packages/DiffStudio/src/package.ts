@@ -10,6 +10,13 @@ import {getIVP, IVP, getScriptLines, getScriptParams, ARG_INPUT_KEYS, SCRIPTING,
 
 import {getBallFlightSim} from './demo/ball-flight';
 import {CONTROL_EXPR, DF_NAME, LOOP} from './constants';
+
+export {Model} from './model';
+import {PK_PD_MODEL_INFO} from './demo/pk-pd';
+import {BIOREACTOR_MODEL_INFO} from './demo/bioreactor';
+import {ACID_PRODUCTION_MODEL_INFO} from './demo/acid-production';
+import {POLLUTION_MODEL_INFO} from './demo/pollution';
+
 import {UI_TIME} from './ui-constants';
 
 import {ODEs, SolverOptions} from 'diff-grok';
@@ -144,6 +151,10 @@ export class PackageFunctions {
     name: 'Ball flight',
     description: 'Ball flight simulation',
     editor: 'Compute2:RichFunctionViewEditor',
+<<<<<<< HEAD
+=======
+    sidebar: '@compute',
+>>>>>>> master
     runOnOpen: 'true',
     runOnInput: 'true',
     features: '{"sens-analysis": true, "fitting": true}',
@@ -213,6 +224,74 @@ export class PackageFunctions {
     return call.outputs[DF_NAME];
   }
 
+<<<<<<< HEAD
+=======
+  @grok.decorators.model({
+    name: 'PK-PD',
+    description: 'In-browser two-compartment pharmacokinetic-pharmacodynamic (PK-PD) simulation',
+    icon: 'files/icons/pkpd.png',
+  })
+  static async pkPdNew(): Promise<void> {
+    const model = new Model(PK_PD_MODEL_INFO);
+    await model.run();
+  }
+
+  @grok.decorators.demo({
+    name: 'PK-PD Simulation Demo',
+    description: 'In-browser two-compartment pharmacokinetic-pharmacodynamic (PK-PD) simulation',
+    demoPath: 'Compute | PK-PD Modeling',
+    test: {
+      test: 'demoSimPKPD()',
+      wait: '100',
+    },
+  })
+  static async demoSimPKPD(): Promise<any> {
+    const model = new Model(PK_PD_MODEL_INFO);
+    await model.runDemo();
+  }
+
+  @grok.decorators.model({
+    name: 'Bioreactor',
+    description: 'Controlled fab-arm exchange mechanism simulation',
+    icon: 'files/icons/_bioreactor.png',
+  })
+  static async BioreactorNew(): Promise<void> {
+    const model = new Model(BIOREACTOR_MODEL_INFO);
+    await model.run();
+  }
+
+  @grok.decorators.demo({
+    name: 'Bioreactor Demo',
+    description: 'In-browser simulation of controlled fab-arm exchange mechanism',
+    demoPath: 'Compute | Bioreactor',
+    test: {test: 'demoBioreactor()', wait: '100'},
+  })
+  static async demoBioreactor(): Promise<any> {
+    const model = new Model(BIOREACTOR_MODEL_INFO);
+    await model.runDemo();
+  }
+
+  @grok.decorators.model({
+    name: 'Acid Production',
+    description: 'Gluconic acid (GA) production by Aspergillus niger modeling',
+    icon: 'files/icons/ga-production.png',
+  })
+  static async acidProduction(): Promise<void> {
+    const model = new Model(ACID_PRODUCTION_MODEL_INFO);
+    await model.run();
+  }
+
+  @grok.decorators.model({
+    name: 'Pollution',
+    description: 'The chemical reaction part of the air pollution model developed at The Dutch National Institute of Public Health and Environmental Protection',
+    icon: 'files/icons/pollution.png',
+  })
+  static async pollution(): Promise<void> {
+    const model = new Model(POLLUTION_MODEL_INFO);
+    await model.run();
+  }
+
+>>>>>>> master
   @grok.decorators.func({
     description: 'Run model with Diff Studio UI',
   })

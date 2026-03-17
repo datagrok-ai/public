@@ -35,6 +35,9 @@ export enum TAGS {
   positionShift = '.positionShift',
   selectedPosition = '.selectedPosition',
   polymerTypeColumnName = '.polymerTypeColumnName',
+  annotations = '.annotations',
+  numberingScheme = '.numberingScheme',
+  annotationColumnName = '.annotationColumnName',
 }
 
 export {TAGS as BioTags};
@@ -76,3 +79,4 @@ export const GapOriginals: {
 };
 
 export const MONOMER_MOTIF_SPLITTER = ' , ';
+export const NOTATION_PROVIDER_CONSTRUCTOR_ROLE = 'notationProviderConstructor';

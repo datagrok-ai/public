@@ -21,8 +21,7 @@ It has all the features of the [basic scripting](../scripting-features/scripting
 
 :::caution Package dependency
 
-The `RichFunctionViewEditor` is a part of the `Compute2` package.
-Ensure that the `Compute2` package is installed before working with `RichFunctionViewEditor`
+Ensure that the `Compute2` and `WebComponents` packages are installed
 
 :::
 
@@ -73,9 +72,8 @@ Use the RichFunctionView only when you are sure that the script works as expecte
 
 ### Visualize input data
 
-You can add viewers for input dataframes to review input data before starting computations,
-same way as for
-[output viewers](../scripting-features/scripting-features.md).
+You can add viewers for input dataframes to review input data before
+starting computations, same way as for [output viewers](../scripting-features/scripting-features.md).
 
 ```mdx-code-block
 <Tabs>
@@ -114,11 +112,51 @@ test2 = test.clone();
 ```
 
 You can specify input viewer's properties to control their appearance.
-Viewer's properties are listed in the braces right after the viewer's name.
-A full list of the viewer's properties may be found by right-clicking on it and selecting the `Properties...` menu item.
+Viewer's properties are listed in the braces right after the viewer's
+name. A full list of the viewer's properties may be found by
+right-clicking on it and selecting the `Properties...` (dev tools) menu item.
 
-RichFunctionView supports the `block` option to control the viewer's width.
-By default, any viewer occupies all available space.
+Some options could be set directly in a chart annotaion via
+`Grid(prop: val)` syntax, however for many options a js viewer object
+must be used. To obtain js properties object a Dev Tools platform
+package must be installed. Right click on the chart, then `To Script`,
+then `To JavaScript`. The second argument is the properties
+object. For the purpose of directly using this object there is a
+`viewersHook` annotation. It must be a js function full name. Since
+viewer hook is synchronous, `viewersHook` function must just return
+another js function, which accepts the following arguments:
+
+1. ioName: `string` - name of the input or output
+2. type: `string` - viwer type
+3. viewer: `DG.Viewer` - viewer js object
+4. meta?: `any` - optional io metadata, available only in workflows.
+
+```typescript
+function MyScriptViewersHookMaker() {
+  return (ioName: string, type: string, viewer: DG.Viewer) => {
+    viewer.setOptions(...)
+  }
+}
+```
+
+RichFunctionView supports the `dockSpawnConfig` option to control the
+viewer's width. By default, any viewer occupies all available
+space. Inside `dockSpawnConfig` there must be a json map with a viewer
+tab name and the following config.
+
+```typescript
+interface DockSpawnConfigItem {
+  'dock-spawn-dock-type'?: 'left' | 'right' | 'up' | 'down',
+  'dock-spawn-dock-to'?: string,
+  'dock-spawn-dock-ratio'?: number,
+}
+```
+
+Viewer tab name is this context should match exactly (including
+spaces) the viewer name rendered in the app, for example a line chart
+for output named Trajectory will be `Trajectory / Line
+chart`. `dock-spawn-dock-to` is also using this naming convention.
+
 
 ```mdx-code-block
 <Tabs>
@@ -133,7 +171,7 @@ By default, any viewer occupies all available space.
 ```
 
 ```javascript title="Your script header"
-//input: dataframe demog { viewer: Line chart(block: 75) | Filters(block: 25) }
+//input: dataframe demog { viewer: Line chart | Filters }
 ```
 
 ```mdx-code-block
@@ -312,7 +350,7 @@ See the details about packages in the
 //language: javascript
 //tags: demo
 //input: dataframe inputDf {caption: Input dataframe; viewer: Grid(); category: Input data}
-//output: dataframe outputDf {caption: Output dataframe; viewer: Line chart(block: 50) | Scatter plot(block: 50) | Statistics(block: 100); category: Stats}
+//output: dataframe outputDf {caption: Output dataframe; viewer: Line chart | Scatter plot | Statistics; category: Stats}
 //editor: Compute2:RichFunctionViewEditor
 //meta.runOnInput: true
 
@@ -439,8 +477,6 @@ With **RichFunctionView** you can use the powerful built-in optimization functio
 [Sensitivity analysis](../../function-analysis.md#sensitivity-analysis)  automatically runs the computation multiple times with varying inputs,
 and analyzes the relationship between inputs and outputs.
 
-Enable this feature and click **<i class="fas fa-analytics"></i> SA** icon on the top panel.
-
 ```mdx-code-block
 <Tabs>
 <TabItem value="result" label="Result">
@@ -509,17 +545,16 @@ simulation = DG.DataFrame.fromColumns([
 ```
 
 
-### Parameters fitting
+### Parameters optimization
 
-The parameters fitting solves an inverse problem to the
-[sensitivity analysis](../../function-analysis.md#sensitivity-analysis):
-finding the input conditions that lead to a specified output of the model.
-It computes inputs minimizing deviation measured by loss function.
+The [parameters optimization](../../function-analysis.md#parameter-optimization) solves an
+inverse problem to the [sensitivity analysis](../../function-analysis.md#sensitivity-analysis): finding
+the input conditions that lead to a specified output of the model. It
+computes inputs minimizing deviation measured by loss function.
 
 :::warning High-intensity computation
 
-Both **Sensitivity** analysis and **Parameter optimization**
-trigger many simultaneous runs of the model.
-We recommend using these features
-on fast `Javascript` and `WebAssembly` scripts to avoid repeatable
-running of heavy server-side code.
+Both **Sensitivity** analysis and **Parameter optimization** trigger
+many simultaneous runs of the model.  We recommend using these
+features on fast `Javascript` and `WebAssembly` scripts to avoid
+repeatable running of heavy server-side code.

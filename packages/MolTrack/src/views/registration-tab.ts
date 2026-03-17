@@ -4,7 +4,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {FileInputUtils} from '@datagrok-libraries/tutorials/src/utils/file-input-utils';
 
-import {ErrorHandlingLabels, MOLTRACK_MAPPING_VALIDATION_CHANGED, MOLTRACK_REQUEST_TITLE_UPDATE, ScopeLabels, ScopeLabelsReduced} from '../utils/constants';
+import {ErrorHandlingLabels, MOLTRACK_MAPPING_VALIDATION_CHANGED, MOLTRACK_REQUEST_TITLE_UPDATE, Scope, ScopeLabels, ScopeLabelsReduced, ScopeToEntityType} from '../utils/constants';
 import {renderMappingEditor, TargetProperty} from '../components/mapping_editor';
 import {MolTrackDockerService} from '../services/moltrack-docker-service';
 import {fetchSchema} from '../package';
@@ -78,7 +78,9 @@ export class RegistrationView {
       this.errorStrategyInput!,
     ], 'moltrack-input-row');
 
+    this.mappingEditorDiv.classList.add('moltrack-mapping-editor');
     const leftPanel = ui.divV([inputRow, this.mappingEditorDiv]);
+    leftPanel.classList.add('moltrack-left-panel');
 
     const dragDropInput = FileInputUtils.createFileInputPane(async (file: File) => {
       await this.loadFile(file);
@@ -195,17 +197,21 @@ export class RegistrationView {
       });
 
       const value = this.entityTypeInput?.value ?? '';
-
-      const corporateId =
-        value in ScopeLabelsReduced ?
-          `corporate_${value.toLowerCase().replace(/(es|s)$/, '')}_id` :
-          '';
+      const scope = ScopeLabels[value];
+      const corporateId = value in ScopeLabelsReduced ? `corporate_${ScopeToEntityType[scope]}_id` : '';
 
       const joinColumns = [
         'registration_status',
         'registration_error_message',
         ...(corporateId && df.columns.names().includes(corporateId) ? [corporateId] : []),
       ];
+
+      const renamedColumns: string[] = [];
+      for (const col of joinColumns) {
+        const newName = this.uploadedDf.columns.getUnusedName(col);
+        df.col(col)!.name = newName;
+        renamedColumns.push(newName);
+      }
 
       const firstColName = this.uploadedDf.columns.names()[0];
 
@@ -214,12 +220,13 @@ export class RegistrationView {
         [firstColName],
         [firstColName],
         null,
-        joinColumns,
+        renamedColumns,
         DG.JOIN_TYPE.INNER,
         true,
       );
 
-      this.createSummary();
+      const statusColName = renamedColumns[0];
+      this.createSummary(statusColName);
     } catch (err: any) {
       grok.shell.error(`Registration failed: ${err.message}`);
     } finally {
@@ -229,10 +236,10 @@ export class RegistrationView {
     }
   }
 
-  private createSummary() {
+  private createSummary(statusColName: string = 'registration_status') {
     if (!this.uploadedDf) return;
 
-    const statuses = this.uploadedDf.getCol('registration_status').toList();
+    const statuses = this.uploadedDf.getCol(statusColName).toList();
     const successCount = statuses.filter((v) => v === 'success').length;
     const failedCount = statuses.filter((v) => v === 'failed').length;
     const notProcessedCount = statuses.filter((v) => v === 'not_processed').length;
@@ -261,47 +268,78 @@ export class RegistrationView {
     this.messageContainer.appendChild(infoDiv);
   }
 
-  private async createMapping(value?: string) {
-    const parsedProps = JSON.parse(await fetchSchema());
-    const targetProperties: TargetProperty[] = [
-      ...parsedProps
-        .filter((p: any) => ScopeLabels[value ?? this.entityTypeInput?.value].includes(p.entity_type.toLowerCase()))
-        .map((p: any) => ({
-          name: p.friendly_name ?? p.name,
-          min: p.min,
-          max: p.max,
-          semType: p.semantic_type ? p.semantic_type['name'] : null,
-          type: p.value_type,
-          required: false,
-        })),
-      {name: 'smiles', required: true, semType: DG.SEMTYPE.MOLECULE},
+  private getScope(value?: string): Scope {
+    return ScopeLabels[value ?? this.entityTypeInput?.value];
+  }
+
+  private buildTargetProperties(parsedProps: any[], scope: Scope): TargetProperty[] {
+    const needsAssayName = scope === Scope.ASSAY_RUNS || scope === Scope.ASSAY_RESULTS;
+    const isAssayResults = scope === Scope.ASSAY_RESULTS;
+    const needsSmiles = scope === Scope.COMPOUNDS || scope === Scope.BATCHES;
+    const entityScopes = isAssayResults ? [Scope.BATCHES, Scope.ASSAY_RUNS, Scope.ASSAY_RESULTS] : [scope];
+
+    return [
+      ...(needsAssayName ? [{name: 'assay.name', required: true, type: 'string'}] : []),
+      ...entityScopes.flatMap((entityScope) => parsedProps
+        .filter((p: any) => entityScope.includes(p.entity_type.toLowerCase()))
+        .map((p: any) => {
+          const propName = p.friendly_name ?? p.name;
+          // For assay results, prefix cross-entity properties so the backend groups them correctly
+          const prefix = isAssayResults && entityScope !== scope ? `${ScopeToEntityType[entityScope]}_details.` : '';
+          return {
+            name: `${prefix}${propName}`,
+            min: p.min,
+            max: p.max,
+            semType: p.semantic_type ? p.semantic_type['name'] : null,
+            type: p.value_type,
+            required: false,
+          };
+        }),
+      ),
+      ...(needsSmiles ? [{name: 'smiles', required: true, semType: DG.SEMTYPE.MOLECULE}] : []),
     ];
+  }
 
-    let autoMapping: Map<string, string> = new Map();
-    if (this.uploadedDf)
-      autoMapping = await MolTrackDockerService.getAutoMapping(this.uploadedDf!.columns.names(), 'COMPOUND');
-
-    const sourceColumns = this.uploadedDf ? this.uploadedDf.columns.names() : [''];
+  private resolveAutoMapping(
+    autoMapping: Record<string, string>, targetProperties: TargetProperty[],
+  ): Map<string, string> {
     const mappings = new Map<string, string>();
     for (const [source, target] of Object.entries(autoMapping)) {
-      const cleanTarget = target.replace(/^.*?_details\./, '');
-      const exists = targetProperties.some((tp: TargetProperty) => tp.name === cleanTarget);
-      if (exists) mappings.set(source, cleanTarget);
+      const unprefixed = target.replace(/^.*?_details\./, '');
+      const matched = targetProperties.find((tp) => tp.name === target || tp.name === unprefixed);
+      if (matched)
+        mappings.set(matched.name, source);
     }
+    return mappings;
+  }
 
-    const normalizeType = (t: string) =>
-      t.toLowerCase().replace(/(es|s)$/, '');
+  private async createMapping(value?: string) {
+    this.mappingDict = {};
+    const parsedProps = JSON.parse(await fetchSchema());
+    const scope = this.getScope(value);
+    const targetProperties = this.buildTargetProperties(parsedProps, scope);
 
-    const handleMap = (source: string, target: string) => {
+    let autoMapping: Record<string, string> = {};
+    if (this.uploadedDf)
+      autoMapping = await MolTrackDockerService.getAutoMapping(this.uploadedDf.columns.names(), ScopeToEntityType[scope]);
+
+    const sourceColumns = this.uploadedDf ? this.uploadedDf.columns.names() : [''];
+    const mappings = this.resolveAutoMapping(autoMapping, targetProperties);
+
+    // Passthrough targets: dotted keys (assay.name, batch_details.X) and smiles are sent as-is
+    const isPassthrough = (target: string) => target.includes('.') || target === 'smiles';
+    const handleMap = (target: string, source: string) => {
       if (!this.uploadedDf)
         return;
-
-      const entityType = normalizeType(this.entityTypeInput?.value ?? '');
-      const isSmiles = source === 'smiles';
-      this.mappingDict[source] = isSmiles ? 'smiles' : `${entityType}_details.${target}`;
+      this.mappingDict[source] = isPassthrough(target) ? target : `${ScopeToEntityType[scope]}_details.${target}`;
     };
 
-    const handleUndo = () => grok.shell.info('Mapping undone');
+    const handleUndo = (target: string) => {
+      for (const [key, val] of Object.entries(this.mappingDict)) {
+        if (val.endsWith(`.${target}`) || val === target)
+          delete this.mappingDict[key];
+      }
+    };
 
     renderMappingEditor(this.mappingEditorDiv, {
       targetProperties,

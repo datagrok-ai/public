@@ -2,15 +2,15 @@
   "name": "preclinicalcase",
   "friendlyName": "PreclinicalCase",
   "version": "0.0.1",
-  "author": {
+    "author": {
     "name": "Maria Dolotova",
     "email": "mdolotova@datagrok.ai"
   },
   "description": "PreclinicalCase package",
   "dependencies": {
-    "@datagrok-libraries/utils": "../../libraries/utils",
+    "@datagrok-libraries/utils": "^4.7.0",
     "@datagrok-libraries/gridext": "^1.5.3",
-    "datagrok-api": "../../js-api",
+    "datagrok-api": "^1.27.0",
     "rxjs": "^6.5.5",
     "x2js": "^3.4.4",
     "dayjs": "^1.11.13",
@@ -20,6 +20,7 @@
     "@typescript-eslint/eslint-plugin": "^5.32.0",
     "@typescript-eslint/parser": "^5.32.0",
     "css-loader": "^7.1.2",
+    "datagrok-tools": "^5.1.5",
     "eslint": "^8.21.0",
     "eslint-config-google": "^0.14.0",
     "style-loader": "^4.0.0",
@@ -57,7 +58,7 @@
   "canView": [
     "All users"
   ],
-  "category": "Health",
+    "category": "Health",
   "overrides": {
     "datagrok-api": "$datagrok-api"
   },

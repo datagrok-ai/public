@@ -11,15 +11,350 @@ unlisted: true
 
 | Service                                                                   | Docker Image                                                                                      |
 |---------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------|
-| [Datagrok](../../develop/under-the-hood/infrastructure.md#1-core-components) | [datagrok/datagrok:1.18.6](https://hub.docker.com/r/datagrok/datagrok)                            |
-| [Grok Connect](../../develop/under-the-hood/infrastructure.md#3-external-database-connectivity) | [datagrok/grok_connect:2.1.10](https://hub.docker.com/r/datagrok/grok_connect)                    |
-| Grok Spawner                                                              | [datagrok/grok_spawner:1.4.8](https://hub.docker.com/r/datagrok/grok_spawner)                     |
-| [Jupyter Kernel Gateway](../../compute/scripting/scripting.mdx)           | [datagrok/jupyter_kernel_gateway:1.6.2](https://hub.docker.com/r/datagrok/jupyter_kernel_gateway) |
+| [Datagrok](../../develop/under-the-hood/infrastructure.md#1-core-components) | [datagrok/datagrok:1.27.0](https://hub.docker.com/r/datagrok/datagrok)                            |
+| [Grok Connect](../../develop/under-the-hood/infrastructure.md#3-external-database-connectivity) | [datagrok/grok_connect:2.6.0](https://hub.docker.com/r/datagrok/grok_connect)                    |
+| Grok Spawner                                                              | [datagrok/grok_spawner:1.12.0](https://hub.docker.com/r/datagrok/grok_spawner)                     |
+| [Jupyter Kernel Gateway](../../compute/scripting/scripting.mdx)           | [datagrok/jupyter_kernel_gateway:1.17.0](https://hub.docker.com/r/datagrok/jupyter_kernel_gateway) |
 
 
 See also:
 - [Versioning policy](../../develop/dev-process/versioning-policy.md)
 - [Docker-Compose](../docker-compose/docker-compose.md)
+
+## 2026-03-12 Datagrok 1.27.0 release
+
+The Datagrok 1.27.0 release introduces AI-powered features, brings improvements to visualization, strengthens access control and analytics, and delivers a range of usability enhancements.
+
+### Breaking changes
+
+This release introduces non-backward-compatible database changes. You can upgrade to version 1.27.0 automatically; however, once the database is migrated, older versions (including 1.26.8) will no longer be compatible. If you need to roll back to 1.26.N, you must manually revert the changes or restore a pre-upgrade backup.
+
+**JS API:**
+
+* Renamed:
+  * `TableView.refresh` renamed to `TableView.reloadData`
+  * Viewer field `saveZoom` renamed to `saveWithData`
+* Changed:
+  * Canvas viewer viewport accessors moved from `CanvasViewerMixin` to `CanvasViewportMixin`
+  * Removed unnecessary fields from `IInputInitOptions`
+* Pie chart label properties restructured: added `showValue` and renamed existing label-related properties
+* Deprecated `fetchProxy`. Use `fetch` or `grok.dapi.fetchProxy` instead
+
+**Packages:** Function tags (such as `app`, `viewer`, `fileViewer`, `fileImporter`, `panel`) are now migrated to the `meta.role` property. If your package uses `//tags:` to declare function types, switch to `//meta.role:` instead
+
+### Main updates
+
+* **AI-powered semantic search** now lets you find connections, queries, scripts, projects,
+  and other platform entities using natural language. Requires a configured AI provider endpoint
+* **AI-assisted query and script generation**: ask questions in plain English and get SQL queries
+  or scripts generated automatically, without writing code. Requires a configured AI provider endpoint
+* **Database metadata annotations** let you add context to databases, schemas, tables, and columns —
+  descriptions and hints that improve AI query generation accuracy and enrich query results for your team
+* **Dataframe metadata annotations** preserve the link between query results and their source tables,
+  so downstream analysis always knows where the data came from
+* **Data enrichment** lets you pull in additional columns from related tables without writing SQL —
+  Datagrok infers joins automatically so you can extend any dataset in one click.
+  For details, see [Data enrichment](../../access/databases/databases.md#data-enrichment)
+* **Roles** give administrators a structured way to define access levels and assign permissions
+  to groups of users at once, simplifying access management across the platform
+* **Projects** are now more resilient to changes in their underlying dependencies (queries, scripts, etc.).
+  A new **Creation Script** editor lets you fix and retry the script without reopening the project
+* **Script layouts** let you save and restore viewer configurations, column coloring, and styles
+  alongside your script, so your analytical setup is always ready to reuse
+* **Scheduled function impersonation** lets you specify which user a scheduled function runs as,
+  giving you finer control over permissions and audit trails
+* **Click tracking** gives platform administrators usage analytics based on user interactions across the UI
+
+### Platform
+
+* AI
+  * Introduced Anthropic AI provider
+* Access control
+  * Improved role permissions management with a new permissions editor
+  * Improved global permissions with granular entity permissions, see [Global permissions](https://datagrok.ai/help/govern/access-control/#global-permissions) for details
+  * [#3457](https://github.com/datagrok-ai/public/issues/3457) Introduced AzureAD cert-based authentication support
+* Search
+  * Introduced entity fuzzy search in card views
+  * Enabled embeddings-based semantic search for entities in data source card views
+* Scripting
+  * Introduced multi-selection choices for list`<string>` in all scripting languages
+  * Introduced files input with multiple file selection support
+  * Extended R environment support for custom conda environments
+  * Autogenerated OpenAPI, Python, and JS API clients
+* Data
+  * Enabled boolean to numeric column conversion
+  * Added support for a new datetime format: `Thu Jan 8 17:17:25 2015 +0000`
+  * Introduced the `Renderer` property for columns (editable in column context panel)
+* Infrastructure
+  * Enabled Google IAP support
+  * Exposed `isPinned` getter and `pin()` method for views
+  * [#3395](https://github.com/datagrok-ai/public/issues/3395) Enabled calling `DG.FuncCall` from Pyodide scripts
+* Fixed:
+  * [#3550](https://github.com/datagrok-ai/public/issues/3550): Renaming the Query after it's been used in a Project now updates the script
+  * [#2837](https://github.com/datagrok-ai/public/issues/2837): Column properties maintained when Project is reopened or Layout applied
+  * [#3637](https://github.com/datagrok-ai/public/issues/3637): Projects can now be saved as ZIP in all cases
+  * [#661](https://github.com/datagrok-ai/public/issues/661): Tooltips now allow hovering over clickable links
+  * [#3215](https://github.com/datagrok-ai/public/issues/3215): CSV parser: JSON fields with empty values no longer break parsing
+  * [#3470](https://github.com/datagrok-ai/public/issues/3470): Error when using Pivot Table and Link Table together
+
+#### Data Access
+
+* Visual Query: Enabled joining tables from different schemas
+* Introduced database catalogs support with enrichments
+* Enabled Databricks federated token exchange and schema browsing
+* Implemented data query post-processing progress indication
+
+#### Browse
+
+* Breadcrumb now shows full navigation path
+* Introduced filter panel for data source card views
+* Improved files view with paginated list and recursive search
+* Fixed:
+  * [#3668](https://github.com/datagrok-ai/public/issues/3668): Scrolling in plugin Credentials frame
+
+### [JS API](https://datagrok.ai/help/develop/js-api)
+
+* Views and UI:
+  * Added `Shell.preview` getter/setter
+  * Added `Shell.projects` and `Project.addTableView`
+  * Added `ui.icons.spinner`, `ui.icons.loader`, and `ui.iconSvg`
+  * Added `WidgetDescriptor` and `TreeNode.icon`
+
+* Inputs:
+  * Added `DG.MultiChoiceInput`
+
+* Data:
+  * Added `DataFrame.toArrow` method
+  * Added `BitSet.fromBase64` and `BitSet.toBase64` methods
+  * Extended `DG.Color.scaleColor` with `below` and `above` parameters
+
+* Other:
+  * Added `log.onLog` to listen to logs
+  * Added `user` getter for `DG.Group`
+  * Added Spaces API, Filter base, and catalog parameters
+  * Added pinned columns API methods
+  * Added `DataSource` and `DataQueryView`
+  * Extended `EventArgs`
+  * Exposed `LogEvent.eventType` and other fields
+  * Renamed `TableView.refresh` to `TableView.reloadData`
+
+### Viewers
+
+* Introduced [annotation regions](../../visualize/viewers/scatter-plot.md#annotation-regions) for scatterplot and line chart viewers, enabling data markup with shapes, formulas, polygon areas, and visual indicators directly on plots
+* In-viewer filter expressions can now be edited in the new **Edit Formula** dialog, see [In-viewer Filter updates](https://community.datagrok.ai/t/visualization-related-updates/521/45)
+* [#3394](https://github.com/datagrok-ai/public/issues/3394): Enabled changing the font size of axis titles (column names)
+* [#3444](https://github.com/datagrok-ai/public/issues/3444): Introduced font property for viewers to change both font name and size
+* [#3356](https://github.com/datagrok-ai/public/issues/3356): Viewer parameters now persist data-specific state (e.g., zoom coordinates)
+* [#3530](https://github.com/datagrok-ai/public/issues/3530): Introduced option to export CSV with UTF-8 BOM
+* [Correlation plot](../../visualize/viewers/correlation-plot.md): [#3500](https://github.com/datagrok-ai/public/issues/3500): Enabled adjusting text size of column and row names
+* [3D Scatterplot](../../visualize/viewers/3d-scatter-plot.md): [#3594](https://github.com/datagrok-ai/public/issues/3594): Introduced support for categorical (string) values on axes
+* [Pie chart](../../visualize/viewers/pie-chart.md): Introduced the **Show Value** property and automatic external labels, see [Pie chart updates](https://community.datagrok.ai/t/visualization-related-updates/521/47)
+* Confusion matrix: visual improvements (text color, borders, layout)
+* Viewers now save zoom state by default
+* Column selectors: columns can now be selected by typing the name and pressing ENTER
+* Fixed:
+  * [#3492](https://github.com/datagrok-ai/public/issues/3492): Correlation plot: row names disappear after hiding grid row
+  * [#3412](https://github.com/datagrok-ai/public/issues/3412): Sunburst: opening of the color editor on the Scatterplot removes color from the Sunburst
+ 
+#### [Grid](../../visualize/viewers/grid.md)
+
+* Introduced new grid options, for details, see [Grid updates](https://community.datagrok.ai/t/visualization-related-updates/521/46):
+  * Color one column's values based on another column (Linked color coding)
+  * [#3568](https://github.com/datagrok-ai/public/issues/3568) Blur rendering option for columns to enable safe screenshot sharing in external presentations
+* [#3607](https://github.com/datagrok-ai/public/issues/3607): Added the ability to change the type for multiple columns at once
+* Completely rewrote pinned columns to address long-standing reliability issues
+* Multiline header display now splits by word boundaries based on content
+* Added the ability to display a friendly column name underneath the original column name
+* Fixed:
+  * [#3364](https://github.com/datagrok-ai/public/issues/3364): Quick height toggle causing unreadable content
+  * [#3505](https://github.com/datagrok-ai/public/issues/3505): Column width in column selection dialog
+  * [#3507](https://github.com/datagrok-ai/public/issues/3507): Hidden the plus icon in Tabs mode
+  
+#### [Scatterplot](../../visualize/viewers/scatter-plot.md)
+
+* Introduced new scatterplot options — for details, see [Visualization-related updates](https://community.datagrok.ai/t/visualization-related-updates/521/44):
+  * [#3613](https://github.com/datagrok-ai/public/issues/3613): **Show Selected Rows** property
+  * Axis histograms
+  * Interactable regression statistics
+  * **Lines By** property for independent line series grouping
+* Introduced font size customization for formula lines
+
+* [#3179](https://github.com/datagrok-ai/public/issues/3179): Regression lines now show Root Mean Square Error and Spearman/Pearson correlations
+* [#3489](https://github.com/datagrok-ai/public/issues/3489): Enabled regression line coloring customization
+* [#3575](https://github.com/datagrok-ai/public/issues/3575): Enabled selecting specific markers for categories in legend
+* Fixed:
+  * [#3476](https://github.com/datagrok-ai/public/issues/3476): Filter formula is not refreshed when text is selected
+  * [#3644](https://github.com/datagrok-ai/public/issues/3644): Regression line equations background updates when selecting categories in legend
+  * [#3449](https://github.com/datagrok-ai/public/issues/3449): Adjacent column not changing upon changing axes in formula line preview
+  * [#3204](https://github.com/datagrok-ai/public/issues/3204): Formula lines cannot be edited in some cases
+  
+#### [Line Chart](../../visualize/viewers/line-chart.md)
+
+* [#2967](https://github.com/datagrok-ai/public/issues/2967): Enabled hiding X axis points with no corresponding data on Y axis
+* [#3575](https://github.com/datagrok-ai/public/issues/3575): Enabled marker icon support
+* Added whisker width option
+* Added axes grid lines
+* Added Y axes context menu
+* Introduced common context marker menu with marker by color
+* Marker opacity now adjusts based on whisker visibility
+* Implemented SPC (Statistical Process Control) lines with rules and bounds
+* Fixed:
+  * [#3495](https://github.com/datagrok-ai/public/issues/3495): Multiaxis mode: broken coloring for split enabled viewer
+  * [#3463](https://github.com/datagrok-ai/public/issues/3463): Split legend showing entries with no related data
+  
+#### [Bar chart](../../visualize/viewers/bar-chart.md)
+
+* [#3573](https://github.com/datagrok-ai/public/issues/3573): Introduced scroll bar and min/max settings for value axis
+* Introduced value axis context menu
+* Fixed:
+  * [#3597](https://github.com/datagrok-ai/public/issues/3597): Stacking now supported for negative aggregated values
+  * [#3621](https://github.com/datagrok-ai/public/issues/3621): Incorrect axis label coloring when column color coding enabled in trellis
+  
+#### [Histogram](../../visualize/viewers/histogram.md)
+
+* Added [distribution lines](../../visualize/viewers/histogram.md#distribution-lines) with spline support
+* Added [Show Values](../../visualize/viewers/histogram.md#show-bin-values) setting to display the value on top of each bin
+* Added `min` and `max` properties to control the displayed range
+
+#### [Box plot](../../visualize/viewers/box-plot.md)
+
+* [#3455](https://github.com/datagrok-ai/public/issues/3455): Enhanced statistics panel
+* [#3450](https://github.com/datagrok-ai/public/issues/3450): Category column width now adjusts to font size for two X axis
+* [#3643](https://github.com/datagrok-ai/public/issues/3643): Added **Zoom Values By Filter** for the Y axis, see [Box plot updates](https://community.datagrok.ai/t/visualization-related-updates/521/49)
+* Fixed:
+  * [#3469](https://github.com/datagrok-ai/public/issues/3469): Column selected for coloring no longer changes when axis column changes
+ 
+#### [Trellis plot](../../visualize/viewers/trellis-plot.md)
+
+* [#3502](https://github.com/datagrok-ai/public/issues/3502): Introduced inner x and y axes sliders with inactive axes
+* [#3652](https://github.com/datagrok-ai/public/issues/3652): Heatmap: enabled color-coding based on grid column coloring and added heatmap color scheme option, see [Trellis plot updates](https://community.datagrok.ai/t/visualization-related-updates/521/48)
+* Summary viewer now displays values when two or more columns are selected
+* Sparklines: Introduced legend and tooltips
+* Introduced properties to hide axis lines
+
+#### [Filter Panel](../../visualize/viewers/filters.md)
+
+* Added [Multi-value filter](../../visualize/viewers/filters.md#multi-value-filter) for columns with multi-value cells
+* Added the ability to switch between numeric and categorical filter types
+
+For details, see [Filters updates](https://community.datagrok.ai/t/filters-updates/603/3).
+
+
+### Packages
+
+#### [Bio](https://github.com/datagrok-ai/public/tree/master/packages/Bio)
+
+* Antibodies: Introduced support for numbering schemes, highlighting, alignment, liabilities detection, and region extraction
+* Monomer collections view with improved handling of R groups
+* Introduced isotope support in monomers
+* Enabled complex R-groups in monomer libraries
+* Custom notation provider support with HELM workflow
+* CHEMS and SMILES support in HELM
+
+#### [Chem](https://github.com/datagrok-ai/public/tree/master/packages/Chem)
+
+* **[MPO](https://datagrok.ai/help/datagrok/solutions/domains/chem/#multiparameter-optimization)** :
+  * Implemented profile management: added ability to create, clone, delete, import, and export profiles
+  * Added breadcrumbs for navigation
+  * Introduced aggregation as part of the profile definition
+  * Added highlighting of matching profiles in the profiles input
+  * Added radar plot checkbox for adding it to the grid
+  * Added pMPO-generated demo profile to the Chem folder
+* [#3658](https://github.com/datagrok-ai/public/pull/3658) Scaffold Tree: Added support for custom labels 
+* Added BitBIRCH clustering for O(N) incremental molecule clustering
+* Implemented Synthon search
+* Added explicit SMILES setting for sketchers
+* Moved Generate Conformers to the Calculate menu
+* Introduced Reaction Toolkit with initial UI and improved reactions editor
+* MMP: Improved data rendering for molecule pairs in the context panel
+
+#### [Charts](https://github.com/datagrok-ai/public/tree/master/packages/Charts)
+
+* [#3483](https://github.com/datagrok-ai/public/issues/3483): Radar in-cell renderer: Enabled multiple columns edit in column grid
+*  [#3524](https://github.com/datagrok-ai/public/issues/3524):  [Radar viewer](../../visualize/viewers/radar.md): Added options for axis scale
+* [Sankey](../../visualize/viewers/sankey.md): introduced support for color-coding nodes and links
+* [#3221](https://github.com/datagrok-ai/public/issues/3221): [Tree viewer](../../visualize/viewers/tree.md): configuration to hide overlapping labels
+* [Sunburst](../../visualize/viewers/sunburst.md): added collaborative filtering 
+
+#### [DiffStudio](https://github.com/datagrok-ai/public/tree/master/packages/DiffStudio)
+
+* Implemented new ODE solvers: Bogacki-Shampine 3(2), Runge-Kutta-Fehlberg 4(5), Dormand-Prince 5(4)
+* Added Adams-Bashforth multistep predictor-correctors of order 4 and 5
+* Added LSODA, CVODE automatic stiffness detection solvers
+
+#### [EDA](https://github.com/datagrok-ai/public/tree/master/packages/EDA)
+
+Probabilistic multiparameter optimization ([pMPO](https://pmc.ncbi.nlm.nih.gov/articles/PMC4716604/)) enhancements:
+
+* Added support for both numeric and categorical desirability columns
+* Introduced automatic parameter tuning for streamlined configuration
+* Added option to run pMPO without sigmoidal correction
+* New ROC curve and confusion matrix visualizations for model evaluation
+
+#### [Grokky](https://github.com/datagrok-ai/public/tree/master/packages/Grokky)
+
+* Introduced Anthropic AI provider support
+* Added Azure-compatible AI client
+* Added AI API providers abstraction layer
+* Implemented entity embeddings for semantic search
+* Introduced scripting AI capabilities
+
+#### [Power Grid](https://github.com/datagrok-ai/public/tree/master/packages/PowerGrid)
+
+* Pinned columns functionality has been moved to the platform core and no longer requires Power Grid to be installed
+* [#3654](https://github.com/datagrok-ai/public/issues/3654): Introduced **Confidence Interval** cell renderer (see also [Grid: Summary columns](https://datagrok.ai/help/visualize/viewers/grid#summary-columns))
+* [#3653](https://github.com/datagrok-ai/public/issues/3653): Introduced **Stars** cell renderer    
+For details, see [Grid updates](https://community.datagrok.ai/t/visualization-related-updates/521/46)
+
+#### [Power Pack](https://github.com/datagrok-ai/public/tree/master/packages/PowerPack)
+
+* Implemented the **Activity Dashboard** widget with tips of the day, demos, tutorials, and recent entities
+* Add new column dialog: Added case-insensitive packages search for hints
+* DBExplorer: Added semantic type handling
+* Removed the **Recent Projects** widget
+
+#### [Usage Analysis](https://github.com/datagrok-ai/public/tree/master/packages/UsageAnalysis)
+
+* [#3213](https://github.com/datagrok-ai/public/issues/3213): Introduced Projects tab
+* Implemented click tracking with elements inspect
+
+#### [Curves](https://github.com/datagrok-ai/public/tree/master/packages/Curves)
+
+* Curves: Added MSR script
+* Data-to-Curves:
+  * Added well-level additional columns support
+  * Added joining options
+  * Fully covered script with history, datasync, and 2-tier support
+* MultiCurveViewer: Added `legendColumnName` property
+* 4PL dose-response: Added 4PL dose-response curve fitting function
+
+#### [Peptides](https://github.com/datagrok-ai/public/tree/master/packages/Peptides)
+
+* Introduced the sequence mutation cliffs viewer with support for current row tracking
+* Enabled full filter reactivity for all panels, tooltips, aggregations, and viewers
+* Reworked mutation cliffs and tooltips, showing information about sequence pairs and their statistics
+* Added sum columns for the sequence variability map viewer
+* Removed target column for peptides analysis
+* Fixed:
+  * Corrected aggregate calculations, statistics, and mean difference comparisons
+  * Fixed premature shutdown of MCL viewer on loading
+  * Fixed distribution tooltips not showing on WebLogo hover
+
+#### [Dendrogram](https://github.com/datagrok-ai/public/tree/master/packages/Dendrogram)
+
+* Hierarchical clustering: 
+   * Added ability to assign clusters by number or threshold (see [Cheminformatics updates](https://community.datagrok.ai/t/cheminformatics-updates/457/37?u=oahadzhanian.datagrok.ai) for details)
+   * Enabled resizing of the dendrogram attached to the grid
+   * Introduced horizontal zooming of dendrogram with mouse wheel and pinch gesture
+* Fixed: Grid interactivity issues, including disappearing grid slider
+
+#### [HitTriage](https://github.com/datagrok-ai/public/tree/master/packages/HitTriage)
+
+* Added global V-id system and molecule tracking across multiple campaigns
+* Improved support for collaboration with automatic signaling of changes in campaigns between multiple users, see [release post](https://community.datagrok.ai/t/plugin-releases/775/146?u=oahadzhanian.datagrok.ai) for visual
+* Campaigns table enhancements:
+  * Added the ability to sort columns via double-click
+  * Added the ability to hide or show custom columns in the campaigns table
 
 ## 2025-11-13 Datagrok 1.26.8 release
 

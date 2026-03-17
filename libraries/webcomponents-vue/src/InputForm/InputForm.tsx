@@ -109,8 +109,16 @@ export const InputForm = Vue.defineComponent({
             try {
               if (paramItems)
                 (input as DG.ChoiceInput<any>).items = paramItems;
-              else if (param.property.options.choices)
-                (input as DG.ChoiceInput<any>).items = JSON.parse(param.property.options.choices);
+              else if (param.property.options.choices && skipInit.value) {
+                let items = undefined;
+                let isParsed = false;
+                try {
+                  items = JSON.parse(param.property.options.choices);
+                  isParsed = true;
+                } catch {}
+                if (isParsed)
+                  (input as DG.ChoiceInput<any>).items = items;
+              }
             } catch(e) {
               console.error(e);
             } finally {

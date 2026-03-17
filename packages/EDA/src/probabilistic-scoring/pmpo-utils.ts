@@ -1,16 +1,18 @@
 // Utility functions for probabilistic scoring (pMPO)
-// Link: https://pmc.ncbi.nlm.nih.gov/articles/PMC4716604/
+// Source paper https://pmc.ncbi.nlm.nih.gov/articles/PMC4716604/
 
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
+import {generateMpoFileName, MPO_PROFILE_CHANGED_EVENT} from '@datagrok-libraries/statistics/src/mpo/utils';
 import '../../css/pmpo.css';
 
 import {COLORS, DESCR_TABLE_TITLE, DESCR_TITLE, DescriptorStatistics, DesirabilityProfileProperties,
   DESIRABILITY_COL_NAME, FOLDER, P_VAL, PMPO_COMPUTE_FAILED, PmpoParams, SCORES_TITLE,
   SELECTED_TITLE, STAT_TO_TITLE_MAP, TINY, WEIGHT_TITLE, CorrelationTriple,
-  BASIC_RANGE_SIGMA_COEFFS, EXTENDED_RANGE_SIGMA_COEFFS} from './pmpo-defs';
+  BASIC_RANGE_SIGMA_COEFFS, EXTENDED_RANGE_SIGMA_COEFFS, EQUALITY_SIGN,
+  PREFERABLE_CATEGORIES} from './pmpo-defs';
 import {computeSigmoidParamsFromX0, getCutoffs, gaussDesirabilityFunc, sigmoidS,
   solveNormalIntersection} from './stat-tools';
 import {getColorScaleDiv} from '../pareto-optimization/utils';
@@ -369,37 +371,12 @@ export function getDesirabilityProfileJson(params: Map<string, PmpoParams>, useS
  */
 export async function saveModel(params: Map<string, PmpoParams>, modelName: string,
   useSigmoidalCorrection: boolean): Promise<void> {
-  let fileName = modelName;
-  const nameInput = ui.input.string('File', {
-    value: fileName,
-    nullable: false,
-    onValueChanged: (val) => {
-      fileName = val;
-      dlg.getButton('Save').disabled = (fileName.length < 1) || (folderName.length < 1);
-    },
+  const nameInput = ui.input.string('Name', {value: modelName, nullable: false});
+  const descriptionInput = ui.input.textArea('Description', {value: ' ', nullable: true});
+  const typeInput = ui.input.bool('Desirability Profile', {
+    value: true,
+    tooltipText: 'Save the model as an MPO Desirability Profile. If disabled, the model is saved in the pMPO format.',
   });
-
-  let folderName = FOLDER;
-  const folderInput = ui.input.string('Folder', {
-    value: folderName,
-    nullable: false,
-    onValueChanged: (val) => {
-      folderName = val;
-      dlg.getButton('Save').disabled = (fileName.length < 1) || (folderName.length < 1);
-    },
-  });
-
-  const save = async () => {
-    const path = `${folderName}/${fileName}.json`;
-    try {
-      const jsonString = JSON.stringify(objectToSave(), null, 2);
-      await grok.dapi.files.writeAsText(path, jsonString);
-      grok.shell.info(`Saved to ${path}`);
-    } catch (err) {
-      grok.shell.error(`Failed to save: ${err instanceof Error ? err.message : 'the platform issue'}.`);
-    }
-    dlg.close();
-  };
 
   const objectToSave = () => {
     if (typeInput.value) {
@@ -420,34 +397,29 @@ export async function saveModel(params: Map<string, PmpoParams>, modelName: stri
     };
   };
 
-  const modelNameInput = ui.input.string('Name', {value: modelName, nullable: true});
-  const descriptionInput = ui.input.textArea('Description', {value: ' ', nullable: true});
-  const typeInput = ui.input.bool('Desirability Profile', {
-    value: true,
-    tooltipText: 'Save the model as an MPO Desirability Profile. If disabled, the model is saved in the pMPO format.',
-  });
-
   const dlg = ui.dialog({title: 'Save model'})
-    .add(ui.h2('Path'))
-    .add(folderInput)
     .add(nameInput)
-    .add(ui.h2('Model'))
-    .add(modelNameInput)
     .add(descriptionInput)
     .add(typeInput)
     .addButton('Save', async () => {
-      const exist = await grok.dapi.files.exists(`${folderName}/${fileName}.json`);
-      if (!exist)
-        await save();
-      else {
-        // Handle overwrite confirmation
-        ui.dialog({title: 'Warning'})
-          .add(ui.label('Overwrite existing file?'))
-          .onOK(async () => await save())
-          .show();
+      try {
+        const files = await grok.dapi.files.list(FOLDER);
+        const existingFileNames = new Set(files.map((f) => f.name));
+        const fileName = generateMpoFileName(nameInput.value, existingFileNames);
+        const path = `${FOLDER}/${fileName}`;
+        const jsonString = JSON.stringify(objectToSave(), null, 2);
+        await grok.dapi.files.writeAsText(path, jsonString);
+        grok.events.fireCustomEvent(MPO_PROFILE_CHANGED_EVENT, {});
+        grok.shell.info(`Saved to ${path}`);
+      } catch (err) {
+        grok.shell.error(`Failed to save: ${err instanceof Error ? err.message : 'the platform issue'}.`);
       }
+      dlg.close();
     })
     .show();
+
+  dlg.getButton('Save').disabled = !nameInput.validate();
+  nameInput.onInput.subscribe(() => dlg.getButton('Save').disabled = !nameInput.validate());
 } // saveModel
 
 /** Adds columns with correlation coefficients between descriptors.
@@ -600,4 +572,123 @@ export class PmpoError extends Error {
     super(message);
     this.name = 'PmpoError';
   }
+}
+
+/** Returns the initial column for the desirability input, preferring boolean columns.
+ * @param cols List of columns to choose from.
+ * @return The initial column for the desirability input.
+*/
+export function getInitCol(cols: DG.Column[]): DG.Column {
+  for (const col of cols) {
+    if ((col.type === DG.COLUMN_TYPE.BOOL) && (col.stats.stdev > 0))
+      return col;
+  }
+
+  for (const col of cols) {
+    if ((col.isNumerical) && (col.stats.stdev > 0))
+      return col;
+  }
+
+  return cols[0];
+}
+
+/** Returns a comparator function based on the given equality sign.
+ * @param sign Equality sign ('<', '<=', '>', '>=').
+ * @return Comparator function that takes two numbers and returns a boolean.
+*/
+function getComparator(sign: EQUALITY_SIGN): (a: number, b: number) => boolean {
+  switch (sign) {
+  case EQUALITY_SIGN.LESS: return (a, b) => a < b;
+  case EQUALITY_SIGN.LESS_OR_EQUAL: return (a, b) => a <= b;
+  case EQUALITY_SIGN.GREATER: return (a, b) => a > b;
+  case EQUALITY_SIGN.GREATER_OR_EQUAL: return (a, b) => a >= b;
+
+  default:
+    throw new Error(`Unsupported sign: ${sign}`);
+  }
+}
+
+/** Converts a numeric column to a boolean column based on the given threshold and equality sign.
+ * @param numericCol Numeric column to convert.
+ * @param threshold Threshold value for comparison.
+ * @param sign Equality sign for comparison ('<', '<=', '>', '>=').
+ * @return Boolean column resulting from the comparison.
+*/
+export function getBoolDesirabilityColData(numericCol: DG.Column,
+  threshold: number, sign: EQUALITY_SIGN): {column: DG.Column, tooltip: string} {
+  const boolArr = new Array<boolean>(numericCol.length);
+  const numericArr = numericCol.getRawData();
+
+  const comparator = getComparator(sign);
+
+  for (let i = 0; i < numericCol.length; ++i)
+    boolArr[i] = comparator(numericArr[i], threshold);
+
+  return {
+    column: DG.Column.fromList(DG.COLUMN_TYPE.BOOL, '', boolArr),
+    tooltip: `Desirability based on the condition:\n\n **${numericCol.name} ${sign} ${threshold}**`,
+  };
+}
+
+/** Checks whether the desirability column is valid based on the given threshold and equality sign.
+ * @param desCol Desirability column to check.
+ * @param threshold Threshold value for comparison.
+ * @param sign Equality sign for comparison ('<', '<=', '>', '>=').
+ * @return True if the desirability column is valid, false otherwise.
+*/
+export function isDesirabilityValid(desCol: DG.Column, threshold: number, sign: EQUALITY_SIGN): boolean {
+  const min = desCol.stats.min;
+  const max = desCol.stats.max;
+
+  switch (sign) {
+  case EQUALITY_SIGN.LESS:
+    return (max >= threshold) && (min < threshold);
+
+  case EQUALITY_SIGN.LESS_OR_EQUAL:
+    return (max > threshold) && (min <= threshold);
+
+  case EQUALITY_SIGN.GREATER:
+    return (min <= threshold) && (max > threshold);
+
+  default:
+    return (min < threshold) && (max >= threshold);
+  }
+}
+
+/** Converts a string column to a boolean column based on the given desirable categories.
+ * @param stringCol String column to convert.
+ * @param desirableCategories List of categories that should be considered as desirable.
+ * @return Boolean column resulting from the conversion and a tooltip describing the desirability.
+*/
+export function getDesirabilityColumnFromCategories(stringCol: DG.Column, desirableCategories: string[]):
+ {column: DG.Column, tooltip: string} {
+  const boolArr = new Array<boolean>(stringCol.length);
+  const raw = stringCol.getRawData();
+  const categories = stringCol.categories;
+
+  for (let i = 0; i < stringCol.length; ++i)
+    boolArr[i] = desirableCategories.includes(categories[raw[i]]);
+
+  const nonDesirableCategories = categories.filter((cat) => !desirableCategories.includes(cat));
+
+  const c = `\u2705 ${desirableCategories.join(', ')}`;
+  const unchecked = `\u274c ${nonDesirableCategories.join(', ')}`;
+
+  return {
+    column: DG.Column.fromList(DG.COLUMN_TYPE.BOOL, '', boolArr),
+    tooltip: `Desirability based on the selected categories:\n\n **${c}**\n\n **${unchecked}**`,
+  };
+} // getDesirabilityColumnFromCategories
+
+/** Returns a list of selected categories based on the given list of categories and preferable categories.
+ * @param categories List of categories to select from.
+ * @return List of selected categories.
+*/
+export function getSelectedCategories(categories: string[]): string[] {
+  const selected = categories.filter((cat) => PREFERABLE_CATEGORIES.includes(cat));
+
+  if (selected.length > 0)
+    return selected;
+
+  return [categories[0]];
 }

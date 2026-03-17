@@ -29,12 +29,15 @@ export class ChoiceInputGroups extends ChoiceInputBase {
         return {value: g.id, label: g.friendlyName};
       }));
     });
-    const all = await grok.dapi.groups.list();
+    const [all, allUsersGroups] = await Promise.all([
+      grok.dapi.groups.list(),
+      grok.dapi.groups.getGroupsLookup('All users'),
+    ]);
     choices.setChoices(() => all.map((g: DG.Group) => {
       return {value: g.id, label: g.friendlyName};
     }));
 
-    return new ChoiceInputGroups(choices, field, (await grok.dapi.groups.getGroupsLookup('All users'))[0].id);
+    return new ChoiceInputGroups(choices, field, allUsersGroups[0].id);
   }
 
   private constructor(choices: Choices, field: DG.InputBase, allUsers: string) {

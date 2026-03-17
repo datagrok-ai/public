@@ -36,6 +36,24 @@ export type PlsInput = {
 
 type TypedArray = Int32Array | Float32Array | Uint32Array | Float64Array;
 
+/** Set style for input element depending on the validity of the value */
+function setStyle(valid: boolean, element: HTMLElement, tooltip: string, errorMsg: string) {
+  if (valid) {
+    element.style.color = COLOR.VALID_TEXT;
+    element.style.borderBottomColor = COLOR.VALID_LINE;
+    ui.tooltip.bind(element, tooltip);
+  } else {
+    element.style.color = COLOR.INVALID;
+    element.style.borderBottomColor = COLOR.INVALID;
+    ui.tooltip.bind(element, () => {
+      const hint = ui.label(tooltip);
+      const err = ui.label(errorMsg);
+      err.style.color = COLOR.INVALID;
+      return ui.divV([hint, err]);
+    });
+  }
+};
+
 /** Return lines */
 export function getLines(names: string[]): DG.FormulaLine[] {
   const lines: DG.FormulaLine[] = [];
@@ -137,7 +155,7 @@ function getQuadraticPlsInput(input: PlsInput): PlsInput {
 
     for (let j = i; j < colsCount; ++j) {
       col2 = cols[j];
-      raw2 = col2.getRawData();      
+      raw2 = col2.getRawData();
       qaudrRaw = new Float32Array(rowsCount);
 
       for (let k = 0; k < rowsCount; ++k)
@@ -268,7 +286,7 @@ async function performMVA(input: PlsInput, analysisType: PLS_ANALYSIS): Promise<
   });
 
 
-  // 4.3) create lines & circles  
+  // 4.3) create lines & circles
   view.addViewer(scoresScatter);
   scoresScatter.meta.formulaLines.addAll(getLines(scoreNames));
 
@@ -321,7 +339,7 @@ async function performMVA(input: PlsInput, analysisType: PLS_ANALYSIS): Promise<
   }));
 
   // emphasize viewers in the demo case
-  if (analysisType === PLS_ANALYSIS.DEMO) {    
+  if (analysisType === PLS_ANALYSIS.DEMO) {
     grok.shell.windows.help.showHelp(ui.markdown(DEMO_RESULTS_MD));
 
     describeElements(
@@ -372,38 +390,32 @@ export async function runMVA(analysisType: PLS_ANALYSIS): Promise<void> {
     return;
   }
 
-  let features: DG.Column[] = numCols.slice(0, numCols.length - 1);
-  let predict = numCols[numCols.length - 1];
-  let components = min(numColNames.length - 1, COMPONENTS.DEFAULT as number);
-  let isQuadratic = false;
-
-  const isPredictValid = () => {
-    for (const col of features)
-      if (col.name === predict.name)
-        return false;
-    return true;
+  const doFeaturesIncludePredict = () => {
+    return featuresInput.value.some((col) => col.name === predictInput.value!.name);
   };
 
   const isCompConsistent = () => {
-    if (components < 1)
+    if (componentsInput.value! < 1)
       return false;
 
-    const n = features.length;
+    if (componentsInput.value! > table.rowCount)
+      return false;
 
-    if (isQuadratic)      
-      return components <= (n + 1) * n / 2 + n;
+    const n = featuresInput.value.length;
 
-    return components <= n;
-  }
+    if (isQuadraticInput.value)
+      return componentsInput.value! <= (n + 1) * n / 2 + n;
+
+    return componentsInput.value! <= n;
+  };
 
   // response (to predict)
   const predictInput = ui.input.column(TITLE.PREDICT, {
     table: table,
-    value: predict,
+    value: numCols[numCols.length - 1],
     nullable: false,
-    onValueChanged: (value) => {
-      predict = value;
-      updateIputs();
+    onValueChanged: (_) => {
+      updateInputStyles();
     },
     filter: (col: DG.Column) => isValidNumeric(col),
     tooltipText: HINT.PREDICT,
@@ -413,21 +425,21 @@ export async function runMVA(analysisType: PLS_ANALYSIS): Promise<void> {
   const featuresInput = ui.input.columns(TITLE.USING, {
     table: table,
     available: numColNames,
-    value: features,
-    onValueChanged: (val) => {
-      features = val;
-      updateIputs();      
+    value: numCols.slice(0, numCols.length - 1),
+    onValueChanged: (_) => {
+      updateInputStyles();
     },
     tooltipText: HINT.FEATURES,
+    nullable: false,
   });
 
   // components count
   const componentsInput = ui.input.int(TITLE.COMPONENTS, {
-    value: components,
+    value: min(numColNames.length - 1, COMPONENTS.DEFAULT as number),
     showPlusMinus: true,
-    onValueChanged: (val) => {
-      components = val;
-      updateIputs();
+    nullable: false,
+    onValueChanged: (_) => {
+      updateInputStyles();
     },
     tooltipText: HINT.COMPONENTS,
   });
@@ -446,28 +458,14 @@ export async function runMVA(analysisType: PLS_ANALYSIS): Promise<void> {
     dlgRunBtnTooltip = HINT.MVA;
   }
 
-  const setStyle = (valid: boolean, element: HTMLElement, tooltip: string, errorMsg: string) => {
-    if (valid) {
-      element.style.color = COLOR.VALID_TEXT;
-      element.style.borderBottomColor = COLOR.VALID_LINE;
-      ui.tooltip.bind(element, tooltip);
-    } else {
-      element.style.color = COLOR.INVALID;
-      element.style.borderBottomColor = COLOR.INVALID;
-      ui.tooltip.bind(element, () => {
-        const hint = ui.label(tooltip);
-        const err = ui.label(errorMsg);
-        err.style.color = COLOR.INVALID;
-        return ui.divV([hint, err]);
-      });
-    }    
-  };
-
-  const updateIputs = () => {
-    const predValid = isPredictValid();
+  const updateInputStyles = () => {
+    const featuresValid = featuresInput.value.length >= 1;
+    const predValid = featuresValid && !doFeaturesIncludePredict();
     let compValid: boolean;
 
-    if (predValid) {
+    if (!featuresValid)
+      setStyle(false, featuresInput.input, HINT.FEATURES, ERROR_MSG.ENOUGH);
+    else if (predValid) {
       setStyle(true, predictInput.input, HINT.PREDICT, '');
       setStyle(true, featuresInput.input, HINT.FEATURES, '');
     } else {
@@ -475,9 +473,12 @@ export async function runMVA(analysisType: PLS_ANALYSIS): Promise<void> {
       setStyle(false, featuresInput.input, HINT.FEATURES, ERROR_MSG.PREDICT);
     }
 
-    if (components < 1) {
+    if (componentsInput.value == null) {
+      setStyle(false, componentsInput.input, HINT.COMPONENTS, ERROR_MSG.NULL_COMPS);
+      compValid = false;
+    } else if (componentsInput.value < 1) {
       setStyle(false, componentsInput.input, HINT.COMPONENTS, ERROR_MSG.COMPONENTS);
-      compValid = false;  
+      compValid = false;
     } else {
       compValid = isCompConsistent();
 
@@ -486,7 +487,9 @@ export async function runMVA(analysisType: PLS_ANALYSIS): Promise<void> {
         if (predValid)
           setStyle(true, featuresInput.input, HINT.FEATURES, '');
       } else {
-        const errMsg = isQuadratic ? ERROR_MSG.COMP_QUA_PLS : ERROR_MSG.COMP_LIN_PLS;
+        const errMsg = componentsInput.value! > table.rowCount ?
+          ERROR_MSG.COMP_ROWS :
+          isQuadraticInput.value ? ERROR_MSG.COMP_QUA_PLS : ERROR_MSG.COMP_LIN_PLS;
         setStyle(false, componentsInput.input, HINT.COMPONENTS, errMsg);
         setStyle(false, featuresInput.input, HINT.FEATURES, ERROR_MSG.ENOUGH);
       }
@@ -497,10 +500,18 @@ export async function runMVA(analysisType: PLS_ANALYSIS): Promise<void> {
     dlg.getButton(TITLE.RUN).disabled = !isValid;
 
     return isValid;
+  }; // updateInputStyles
+
+  const getStrColWithUniqueVals = () => {
+    for (const col of strCols) {
+      if (col.stats.uniqueCount === table.rowCount)
+        return col;
+    }
+    return undefined;
   };
 
   // names of samples
-  let names = (strCols.length > 0) ? strCols[0] : undefined;
+  let names = getStrColWithUniqueVals();
   const namesInputs = ui.input.column(TITLE.NAMES, {
     table: table,
     value: names,
@@ -512,11 +523,10 @@ export async function runMVA(analysisType: PLS_ANALYSIS): Promise<void> {
 
   // quadratic/linear model
   const isQuadraticInput = ui.input.bool(TITLE.QUADRATIC, {
-    value: isQuadratic,
+    value: false,
     tooltipText: HINT.QUADRATIC,
-    onValueChanged: (val) => {
-      isQuadratic = val;
-      updateIputs();
+    onValueChanged: (_) => {
+      updateInputStyles();
     },
   });
 
@@ -527,20 +537,14 @@ export async function runMVA(analysisType: PLS_ANALYSIS): Promise<void> {
 
       await performMVA({
         table: table,
-        features: DG.DataFrame.fromColumns(features).columns,
-        predict: predict,
-        components: components,
-        isQuadratic: isQuadratic,
+        features: DG.DataFrame.fromColumns(featuresInput.value).columns,
+        predict: predictInput.value!,
+        components: componentsInput.value!,
+        isQuadratic: isQuadraticInput.value,
         names: names,
       }, analysisType);
     }, undefined, dlgRunBtnTooltip)
     .show({x: X_COORD, y: Y_COORD});
-
-  // the following delay provides correct styles (see https://reddata.atlassian.net/browse/GROK-15196)
-  setTimeout(() => {
-    featuresInput.value = numCols.filter((col) => col !== predict);
-    features = featuresInput.value;
-  }, TIMEOUT);
 
   grok.shell.v.append(dlg.root);
 } // runMVA

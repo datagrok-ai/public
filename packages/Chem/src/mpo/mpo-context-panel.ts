@@ -19,6 +19,9 @@ export class MpoContextPanel {
   private bestScoreViewer?: MpoScoreViewer;
   private worstScoreViewer?: MpoScoreViewer;
   private currentObjectChangingSub: Subscription | null = null;
+  private currentRowChangedSub: Subscription | null = null;
+  private panelMouseDown = false;
+  private scoreViewerInteraction = false;
 
   // Uncomment to disable interactivity
   // showCurrentRow: false,
@@ -43,6 +46,9 @@ export class MpoContextPanel {
     this.panel.addTitle(ui.span([icon, ui.label('MPO not calculated yet')]));
 
     this.histogramHost.classList.add('chem-mpo-histogram-compact');
+
+    this.root.addEventListener('mousedown', () => this.panelMouseDown = true, true);
+    this.root.addEventListener('mouseup', () => this.panelMouseDown = false, true);
   }
 
   show(): void {
@@ -87,26 +93,26 @@ export class MpoContextPanel {
     if (grok.shell.o !== this.root)
       this.show();
 
-    const columnNames = await computeMpo(this.df, profile, columnMapping, aggregation, true);
-    if (!columnNames.length)
+    const scoreColumnNames = await computeMpo(this.df, profile, columnMapping, aggregation, true, true);
+    if (!scoreColumnNames.length)
       return;
 
     this.updateTitle('MPO Profile');
 
     if (!this.histogram) {
-      this.histogram = this.createHistogram(columnNames[0]);
+      this.histogram = this.createHistogram(scoreColumnNames[0]);
       this.histogramHost.appendChild(this.histogram.root);
       this.panel.addPane('Scores', () => this.histogramHost, true);
     }
-    this.histogram.apply({valueColumnName: columnNames[0]});
+    this.histogram.apply({valueColumnName: scoreColumnNames[0]});
 
     if (!this.bestScoreViewer) {
-      this.bestScoreViewer = this.createScoreViewer(columnNames[0], 'best');
+      this.bestScoreViewer = this.createScoreViewer(scoreColumnNames[0], 'best');
       this.panel.addPane('Best scores', () => this.bestScoreViewer!.root, true);
     }
 
     if (!this.worstScoreViewer) {
-      this.worstScoreViewer = this.createScoreViewer(columnNames[0], 'worst');
+      this.worstScoreViewer = this.createScoreViewer(scoreColumnNames[0], 'worst');
       this.panel.addPane('Worst scores', () => this.worstScoreViewer!.root, true);
     }
 
@@ -119,14 +125,27 @@ export class MpoContextPanel {
       return;
 
     this.currentObjectChangingSub = grok.events.onEvent('d4-current-object-changing').subscribe((e) => {
-      if (e.newObject !== this.root)
+      if (e.newObject === this.root)
+        return;
+      if (this.panelMouseDown || this.scoreViewerInteraction) {
         e.preventDefault();
+        this.scoreViewerInteraction = false;
+      }
+    });
+
+    this.currentRowChangedSub = this.df.onCurrentRowChanged.subscribe(() => {
+      if (this.bestScoreViewer?.interacting || this.worstScoreViewer?.interacting)
+        this.scoreViewerInteraction = true;
     });
   }
 
   release(): void {
     this.currentObjectChangingSub?.unsubscribe();
+    this.currentRowChangedSub?.unsubscribe();
     this.currentObjectChangingSub = null;
+    this.currentRowChangedSub = null;
+    this.panelMouseDown = false;
+    this.scoreViewerInteraction = false;
   }
 
   close(): void {

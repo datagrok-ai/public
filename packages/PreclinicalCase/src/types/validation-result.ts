@@ -54,6 +54,13 @@ export interface RuleReport {
   status: 'SUCCESS' | 'SKIPPED' | 'FAILED';
 }
 
+export interface VariableError {
+  ruleID: string;
+  message: string;
+  value: string;
+  isContext: boolean;
+}
+
 export interface ValidationResult {
   Conformance_Details: ConformanceDetails;
   Dataset_Details: DatasetDetail[];

@@ -309,6 +309,30 @@ The `Tags` renderer is used to display comma-separated values from a string colu
 
 The `Stars` cell type applies to the integer column, and lets you "rate" something with stars.
 
+#### Color
+
+The `Color` renderer displays a filled color swatch in the cell instead of raw text. It supports
+all standard CSS color formats:
+
+| Format | Example |
+|--------|---------|
+| Hex (3-digit) | `#F00` |
+| Hex (6-digit) | `#FF5733` |
+| Hex (8-digit with alpha) | `#FF573380` |
+| RGB | `rgb(255, 87, 51)` |
+| RGBA | `rgba(255, 87, 51, 0.5)` |
+| HSL | `hsl(14, 100%, 60%)` |
+| HSLA | `hsla(14, 100%, 60%, 0.5)` |
+| Named CSS colors | `red`, `cornflowerblue` |
+
+The renderer is applied automatically when Datagrok detects that a string column contains
+color values. You can also apply it manually by setting the column renderer to `Color` in the
+**Context Panel** under **Renderer**.
+
+Hovering over a cell shows the raw color value in a tooltip. Empty cells and unrecognized
+values are shown as blank. The swatch is padded within the cell, scaling down gracefully
+for small cell sizes.
+
 ### Summary columns
 
 Summary columns show data from multiple columns within a row. To simply display
@@ -616,16 +640,15 @@ To unpin rows, select the **Unpin** option from the **Pin** context menu.
 
 You can color code columns with these schemes: 
    
-* For categorical columns (`string` and `bool` data types), "categorical"
-* For numeric columns, "conditional" or "linear"
-* For `datetime` columns, "linear"
+* For categorical columns (`string` and `bool` data types), "categorical" or "linked"
+* For numeric columns, "conditional" or "linear" or "linked"
+* For `datetime` columns, "linear" or "linked"
 
-To color-code a column, right click its header and select the desired scheme
+To color code a column, right-click its header and select the desired scheme
 from the **Color Coding** submenu. This applies color to the
-column's background. To customize color-coding settings, click the column's
-header and adjust them in the **Context Panel** under **Colors**.
+column's background. To customize color-coding settings, right-click the column's header, choose **Edit** from the **Color Coding** submenu, and adjust the settings.
 
-![](img/grid-color-coding.gif)
+![Color Coding](img/grid-color-coding-new.gif)
 
 To copy color coding from one column to others, use the **Pick Up Coloring** and
 **Apply Coloring** commands from the column's **Color Coding** menu. These
@@ -675,6 +698,7 @@ or press Alt+C.
 | Col Header Height | number | Column header height. If not specified, it is calculated automatically. See also *Col Labels Orientation*, *Horz Col Labels Height* |
 | Vert Col Labels Height | number | Height of the column labels when the orientation is vertical, and *Col Header Height* is not specified. |
 | Horz Col Labels Height | number | Height of the column labels when the orientation is horizontal, and *Col Header Height* is not specified. |
+| Frozen Columns | number |  |
 | Max Heatmap Columns | number |  |
 | **General** | | |
 | Show Friendly Name | boolean | When checked, friendly name gets shown underneath the column name. |
@@ -682,7 +706,7 @@ or press Alt+C.
 | Show Default Popup Menu | boolean | Whether items applicable to all viewers (such as Pickup Style) should be shown in a popup menu. Also requires *Show Context Menu*. |
 | Allow Block Selection | boolean | Mouse drag on the data cells selects both rows and columns |
 | Allow Col Selection | boolean | Shift+click on a header to select a column Shift+mouse drag on the headers to select multiple columns Ctrl+click to invert selection Ctrl+Shift+click to deselect |
-| Allow Row Reordering | boolean | Mouse drag on the rows header selects rows Reorder rows by dragging them |
+| Allow Row Reordering | boolean | Drag any cell (except the row number) to reorder rows Drag the row number column to select rows |
 | Allow Sorting | boolean | Whether to sort when user double-clicks on the column header |
 | Allow Row Selection | boolean | Mouse drag on the rows headers selects rows Ctrl+click to invert selection Shift+mouse drag to select multiple rows Ctrl+Shift+mouse drag to unselect |
 | Allow Content Panning | boolean | Right-click and drag to pan content |

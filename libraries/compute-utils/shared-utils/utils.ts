@@ -77,6 +77,10 @@ export const getCustomExports = (func: DG.Func): {name: string, function: string
   return JSON.parse(func.options['customExports'] ?? '[]');
 };
 
+export const getViewersHook = (func: DG.Func): string | undefined => {
+  return func.options['viewersHook'];
+};
+
 export const getFeature = (features: Record<string, boolean> | string[], featureName: string, defaultValue: boolean) => {
   if (features instanceof Array)
     return features.includes(featureName);

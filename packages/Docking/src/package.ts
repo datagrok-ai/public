@@ -84,6 +84,7 @@ export class PackageFunctions{
 
   @grok.decorators.func({
     name: 'getAutodockResults',
+    meta: {vectorFunc: 'true'},
     outputs: [{name: 'result', type: 'dataframe', options: {action: 'join(table)'}}],
   })
   static async getAutodockResults(

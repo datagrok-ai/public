@@ -4,16 +4,13 @@ import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
 
 import * as echarts from 'echarts';
-import { format } from 'echarts/lib/util/time';
+import {format} from 'echarts/lib/util/time';
 import $ from 'cash-dom';
 
-import { EChartViewer } from '../echart/echart-viewer';
-import { options, deepCopy } from './echarts-options';
-import { ColumnData, ColumnsData, Indexable, markerPosition, markerType, timePoint,
-  visibilityMode, VISIBILITY_MODE, DateFormats } from './constants';
-
-import '../../../css/timelines-viewer.css';
-
+import {EChartViewer} from '../echart/echart-viewer';
+import {options, deepCopy} from './echarts-options';
+import {ColumnData, ColumnsData, Indexable, markerPosition, markerType, timePoint, DateFormats} from './constants';
+import {LegendHelper, VISIBILITY_MODE, VisibilityMode} from '../../utils/legend-utils';
 
 export class TimelinesViewer extends EChartViewer {
   splitByColumnName: string;
@@ -31,7 +28,7 @@ export class TimelinesViewer extends EChartViewer {
   dateFormat: string;
   axisPointer: string;
   showZoomSliders: boolean;
-  legendVisibility: visibilityMode;
+  legendVisibility: VisibilityMode;
   splitByRegexps: RegExp[];
   colorByRegexps: RegExp[];
   eventRegexps: any[];
@@ -47,7 +44,7 @@ export class TimelinesViewer extends EChartViewer {
   tooltipOffset: number;
   initialized: boolean;
   titleDiv: HTMLDivElement = ui.div();
-  legendDiv: HTMLDivElement = ui.div();
+  legendHelper: LegendHelper = new LegendHelper();
   colorMap: Indexable | null = null;
   dataMax: any;
 
@@ -63,17 +60,17 @@ export class TimelinesViewer extends EChartViewer {
     this.eventsColumnNames = this.addProperty('eventsColumnNames', DG.TYPE.COLUMN_LIST);
     this.showEventInTooltip = this.bool('showEventInTooltip', true, {category: 'Tooltip'});
 
-    this.marker = <markerType> this.string('marker', 'circle', { choices: ['circle', 'rect', 'ring', 'diamond'] });
+    this.marker = <markerType> this.string('marker', 'circle', {choices: ['circle', 'rect', 'ring', 'diamond']});
     this.markerSize = this.int('markerSize', 6);
     this.markerPosition = <markerPosition> this.string('markerPosition', 'main line',
-      { choices: ['main line', 'above main line', 'scatter'] });
+      {choices: ['main line', 'above main line', 'scatter']});
     this.lineWidth = this.int('lineWidth', 3);
     this.dateFormat = this.string('dateFormat'); // TODO: add an extendable dropdown
     this.axisPointer = this.string('axisPointer', 'shadow',
-      { choices: ['cross', 'line', 'shadow', 'none'] });
+      {choices: ['cross', 'line', 'shadow', 'none']});
     this.showZoomSliders = this.bool('showZoomSliders', true);
-    this.legendVisibility = <visibilityMode> this.string('legendVisibility', VISIBILITY_MODE.AUTO,
-      { choices: Object.values(VISIBILITY_MODE) });
+    this.legendVisibility = <VisibilityMode> this.string('legendVisibility', VISIBILITY_MODE.AUTO,
+      {choices: Object.values(VISIBILITY_MODE)});
 
     this.splitByRegexps = [/^USUBJID$/, /id/i];
     this.colorByRegexps = [/^([A-Z]{2}(TERM|TEST|TRT|VAL)|(ACT)?ARM|MIDS(TYPE)?|VISIT)$/, /event/i];
@@ -91,6 +88,7 @@ export class TimelinesViewer extends EChartViewer {
     this.tooltipOffset = 10;
     this.initialized = false;
     this.option = deepCopy(options);
+    this.legendHelper.onCategoriesChanged = () => this.render();
   }
 
   init() {
@@ -114,6 +112,12 @@ export class TimelinesViewer extends EChartViewer {
           this.zoomState = [[0, 100], [0, 100], [0, 100], [0, 100]];
           this.render();
         });
+      }));
+
+      this.subs.push(this.dataFrame.onMetadataChanged.subscribe((ev) => {
+        if (this.columnData.colorColumnName && ev.args.key === '.color-coding-categorical')
+          this.colorMap = this.getColorMap(this.columnData.colorColumnName.column);
+        this.render();
       }));
 
       this.chart.on('rendered', () => {
@@ -141,7 +145,7 @@ export class TimelinesViewer extends EChartViewer {
       this.option.tooltip.axisPointer.type = this.axisPointer;
 
       this.root.appendChild(this.titleDiv);
-      this.root.appendChild(this.legendDiv);
+      this.root.appendChild(this.legendHelper.legendDiv);
       this.initialized = true;
     }
   }
@@ -162,8 +166,8 @@ export class TimelinesViewer extends EChartViewer {
       if (property.get(this)) {
         const columnData = this.updateColumnData(property);
         if (property.name === 'colorColumnName') {
-          this.colorMap = this.getColorMap(columnData!.categories);
-          this.updateLegend(columnData!.column);
+          this.colorMap = this.getColorMap(columnData!.column);
+          this.legendHelper.update(columnData!.column);
           this.switchLegendVisibility(this.legendVisibility);
         }
 
@@ -174,7 +178,7 @@ export class TimelinesViewer extends EChartViewer {
       } else {
         this.columnData[property.name] = null;
         if (property.name === 'colorColumnName') {
-          this.hideLegend();
+          this.legendHelper.hide(this.chart.getDom());
           this.colorMap = null;
         }
       }
@@ -221,9 +225,10 @@ export class TimelinesViewer extends EChartViewer {
     }
   }
 
-  getColorMap(categories: string[]) {
-    return categories.reduce((colorMap, c, i) => {
-      colorMap[c] = DG.Color.toRgb(DG.Color.getCategoricalColor(i));
+  getColorMap(column: DG.Column) {
+    const rawData = column.getRawData();
+    return column.categories.reduce((colorMap, c, i) => {
+      colorMap[c] = DG.Color.toRgb(DG.Color.getRowColor(column, rawData.indexOf(i)));
       return colorMap;
     }, <Indexable>{});
   }
@@ -285,8 +290,8 @@ export class TimelinesViewer extends EChartViewer {
       this.columnData.endColumnName = null;
     }
 
-    this.colorMap = this.getColorMap(this.columnData.colorColumnName!.categories!);
-    this.updateLegend(this.columnData.colorColumnName!.column);
+    this.colorMap = this.getColorMap(this.columnData.colorColumnName!.column);
+    this.legendHelper.update(this.columnData.colorColumnName!.column);
     this.switchLegendVisibility(this.legendVisibility);
 
     const timeColumns = [this.columnData.startColumnName?.column, this.columnData.endColumnName?.column,
@@ -458,47 +463,18 @@ export class TimelinesViewer extends EChartViewer {
     });
   }
 
-  updateLegend(column: DG.Column): void {
-    $(this.legendDiv).empty();
-    const legend = DG.Legend.create(column);
-    const {categories} = column;
-    legend.onViewerLegendChanged = () => {
-      let filteredIdxs = legend.selectedCategories;
-      if (!filteredIdxs) return;
-      if (filteredIdxs.length === 0)
-        filteredIdxs = Array.from({ length: categories.length }, (_, i) => i);
-      this.updateOnLegendChange(filteredIdxs, categories);
-    };
-    this.legendDiv.appendChild(legend.root);
-    $(legend.root).addClass('charts-legend');
-  }
-
-  showLegend(): void {
-    $(this.legendDiv).show();
-    $(this.chart.getDom()).css('marginRight', '100px');
-  }
-
-  hideLegend(): void {
-    $(this.legendDiv).hide();
-    $(this.chart.getDom()).css('marginRight', '');
-  }
-
-  switchLegendVisibility(mode: visibilityMode): void {
-    const { column, categories } = this.columnData.colorColumnName as ColumnData;
-    const autoShow = column.matches(DG.TYPE.CATEGORICAL) && categories!.length < 100;
-    if (mode === VISIBILITY_MODE.ALWAYS || (mode === VISIBILITY_MODE.AUTO && autoShow))
-      this.showLegend();
-    else
-      this.hideLegend();
+  switchLegendVisibility(mode: VisibilityMode): void {
+    const {column} = this.columnData.colorColumnName as ColumnData;
+    this.legendHelper.switchVisibility(mode, column, this.chart.getDom());
   }
 
   getStrValue(columnData: ColumnData, idx: number): string {
-    const { column, categories, data } = columnData;
+    const {column, categories, data} = columnData;
     return column.type === DG.COLUMN_TYPE.STRING ? categories![data[idx]] : column.getString(idx);
   }
 
   getSafeValue(columnData: ColumnData, idx: number): timePoint {
-    const { column, data } = columnData;
+    const {column, data} = columnData;
     return column.isNone(idx) ? null : column.type === DG.COLUMN_TYPE.DATE_TIME ?
       new Date(data[idx] * 1e-3) : data[idx];
   }
@@ -599,14 +575,14 @@ export class TimelinesViewer extends EChartViewer {
     this.option.xAxis = {
       type: 'time',
       boundaryGap: ['5%', '5%'],
-      axisLabel: { formatter: this.dateFormat },
+      axisLabel: {formatter: this.dateFormat},
     };
   }
 
   removeTimeOptions(): void {
     this.option.xAxis = {
       type: 'value',
-      axisLabel: { formatter: null },
+      axisLabel: {formatter: null},
       min: 'dataMin',
       max: (value: { min: number; max: number; }) => this.dataMax = value.max,
     };
@@ -641,7 +617,7 @@ export class TimelinesViewer extends EChartViewer {
   showErrorMessage(msg: string): void {
     this.titleDiv.innerText = msg;
     $(this.titleDiv).addClass('d4-viewer-error');
-    $(this.legendDiv).hide();
+    this.legendHelper.hide();
     $(this.chart.getDom()).hide();
   }
 
@@ -659,16 +635,10 @@ export class TimelinesViewer extends EChartViewer {
       this.showErrorMessage('The Timelines viewer requires a minimum of 1 column.');
       return;
     }
-    this.option.series[0].data = this.getSeriesData();
-    this.updateZoom();
-    this.chart.setOption(this.option);
-  }
-
-  updateOnLegendChange(filteredIdxs: number[], legendLabels: string[]): void {
     const data = this.getSeriesData();
-    this.data = filteredIdxs.length === 0 ?
-      data :
-      data.filter((item) => filteredIdxs.some((idx) => legendLabels[idx] === item[3][0]));
+    const selectedCategories = this.legendHelper.selectedCategories;
+    if (selectedCategories)
+      this.data = data.filter((item) => selectedCategories.includes(item[3][0]));
     this.option.series[0].data = this.data;
     this.updateZoom();
     this.chart.setOption(this.option);

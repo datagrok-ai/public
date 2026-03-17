@@ -1,0 +1,101 @@
+id,color,label
+1,#FF5733,hex6 orange-red
+2,#33FF57,hex6 green
+3,#3357FF,hex6 blue
+4,#F0F0F0,hex6 light grey
+5,#000000,hex6 black
+6,#FFFFFF,hex6 white
+7,#1A2B3C,hex6 dark blue
+8,#AABBCC,hex6 muted blue
+9,#DEADBE,hex6 dead beef
+10,#FFA500,hex6 orange
+11,#800080,hex6 purple
+12,#008080,hex6 teal
+13,#DC143C,hex6 crimson
+14,#7FFFD4,hex6 aquamarine
+15,#FF69B4,hex6 hot pink
+16,#4B0082,hex6 indigo
+17,#FF4500,hex6 orange-red 2
+18,#2E8B57,hex6 sea green
+19,#708090,hex6 slate grey
+20,#E6E6FA,hex6 lavender
+21,#B22222,hex6 firebrick
+22,#228B22,hex6 forest green
+23,#FF1493,hex6 deep pink
+24,#556B2F,hex6 dark olive
+25,#20B2AA,hex6 light sea green
+26,#F00,hex3 red
+27,#0F0,hex3 green
+28,#00F,hex3 blue
+29,#FFF,hex3 white
+30,#000,hex3 black
+31,#ABC,hex3 arbitrary
+32,#369,hex3 arbitrary 2
+33,#C0C,hex3 magenta-ish
+34,#FF0A,hex4 red semi-transparent
+35,#0F08,hex4 green semi-transparent
+36,#00FF00FF,hex8 green opaque
+37,#FF000080,hex8 red half-transparent
+38,#0000FF40,hex8 blue quarter-transparent
+39,#FFFFFF00,hex8 white fully transparent
+40,#00000099,hex8 black 60% transparent
+41,"rgb(255, 0, 0)",rgb red
+42,"rgb(0, 255, 0)",rgb green
+43,"rgb(0, 0, 255)",rgb blue
+44,"rgb(128, 128, 128)",rgb grey
+45,"rgb(255, 165, 0)",rgb orange
+46,"rgb(75, 0, 130)",rgb indigo
+47,"rgb(238, 130, 238)",rgb violet
+48,"rgb(64, 224, 208)",rgb turquoise
+49,"rgb(0, 139, 139)",rgb dark cyan
+50,"rgb(210, 180, 140)",rgb tan
+51,"rgba(255, 0, 0, 0.5)",rgba red 50%
+52,"rgba(0, 128, 255, 0.8)",rgba blue 80%
+53,"rgba(0, 0, 0, 0)",rgba black transparent
+54,"rgba(255, 255, 255, 1)",rgba white opaque
+55,"rgba(34, 139, 34, 0.75)",rgba forest green 75%
+56,"rgba(147, 112, 219, 0.85)",rgba medium purple 85%
+57,"rgba(255, 215, 0, 1)",rgba gold opaque
+58,"hsl(0, 100%, 50%)",hsl red
+59,"hsl(120, 100%, 50%)",hsl green
+60,"hsl(240, 100%, 50%)",hsl blue
+61,"hsl(60, 100%, 50%)",hsl yellow
+62,"hsl(300, 100%, 25%)",hsl dark magenta
+63,"hsl(180, 50%, 70%)",hsl muted cyan
+64,"hsl(30, 80%, 60%)",hsl warm orange
+65,"hsla(0, 100%, 50%, 0.5)",hsla red 50%
+66,"hsla(240, 100%, 50%, 0.3)",hsla blue 30%
+67,"hsla(120, 60%, 40%, 0.9)",hsla dark green 90%
+68,"hsla(180, 50%, 50%, 0.7)",hsla cyan 70%
+69,"hsla(30, 80%, 60%, 1)",hsla orange opaque
+70,,empty 1
+71,,empty 2
+72,,empty 3
+73,,empty 4
+74,,empty 5
+75,#ff5733,hex6 lowercase
+76,#aabbcc,hex6 lowercase 2
+77,#DeAdBe,hex6 mixed case
+78,"rgb(256, 0, 0)",rgb out-of-range clamped by browser
+79,"rgb(-10, 200, 50)",rgb negative clamped by browser
+80,"hsl(720, 100%, 50%)",hsl hue overflow wrapped by browser
+81,"rgba(0, 0, 0, 2)",rgba alpha overflow clamped by browser
+82,"rgb(255, 99, 71)",rgb tomato
+83,"hsl(210, 100%, 56%)",hsl cornflower
+84,"rgba(147, 112, 219, 0.85)",rgba medium purple
+85,#93C572,hex6 pistachio
+86,#C9A227,hex6 saffron
+87,#6A0572,hex6 grape
+88,"rgb(135, 206, 235)",rgb sky blue
+89,"rgba(255, 127, 80, 0.9)",rgba coral
+90,"hsl(15, 80%, 55%)",hsl terracotta
+91,#4682B4,hex6 steel blue
+92,#D2691E,hex6 chocolate
+93,"hsl(275, 60%, 45%)",hsl medium purple
+94,"rgba(144, 238, 144, 0.6)",rgba light green
+95,#FA8072,hex6 salmon
+96,#40E0D0,hex6 turquoise hex
+97,"rgb(218, 112, 214)",rgb orchid
+98,"hsla(200, 80%, 40%, 0.8)",hsla ocean
+99,#7B68EE,hex6 medium slate blue
+100,#F4A460,hex6 sandy brown

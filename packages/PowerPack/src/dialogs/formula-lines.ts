@@ -1,6 +1,5 @@
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {delay} from '@datagrok-libraries/test/src/test';
 
 /** Formula Line types */
 const enum ITEM_TYPE {
@@ -316,7 +315,7 @@ class Table {
       }
 
       if (itemIdx !== -1) {
-        delay(1).then((_) => {
+        DG.delay(1).then((_) => {
           this.currentItemIdx = itemIdx;
         });
       }
@@ -506,7 +505,7 @@ class Preview {
     if (src instanceof DG.DataFrame)
       this.dataFrame = src;
     else if (src instanceof DG.Viewer) {
-      if (src.getOptions()['type'] === DG.VIEWER.LINE_CHART) {
+      if (src.type === DG.VIEWER.LINE_CHART) {
         const viewer = new DG.LineChartViewer(src.dart);
         this.dataFrame = new DG.DataFrame(viewer.activeFrame!);
         this.originalDataFrame = src.dataFrame;
@@ -514,7 +513,7 @@ class Preview {
         const yCol = this.dataFrame.columns.toList()
           .find((col) => col.isNumerical && col.name !== src.props.xColumnName && yCols.some((n) => col.name.includes(n)));
         this.srcAxes = {x: src.props.xColumnName, xMap: src.props.xMap, y: yCol === undefined ? src.props.xColumnName : yCol.name};
-      } else if (src.getOptions()['type'] === DG.VIEWER.TRELLIS_PLOT) {
+      } else if (src.type === DG.VIEWER.TRELLIS_PLOT) {
         this.dataFrame = src.dataFrame!;
         const innerLook = src.getOptions()['look']['innerViewerLook'];
         this.srcAxes = {y: innerLook['yColumnName'], x: innerLook['xColumnName'], yMap: innerLook['yMap'], xMap: innerLook['xMap']};
@@ -525,30 +524,37 @@ class Preview {
     } else
       throw new Error('Host is not DataFrame or Viewer.');
 
-    if (src instanceof DG.Viewer && src.getOptions()['type'] === DG.VIEWER.LINE_CHART)
-      this.viewer = DG.Viewer.lineChart(this.dataFrame, {
-        yAxisType: src.props.yAxisType,
-        xAxisType: src.props.xAxisType,
-        splitColumnNames: src.props.splitColumnNames,
-        invertXAxis: src.props.invertXAxis,
-        showLabels: 'Never',
-        showDataframeFormulaLines: false,
-        showViewerFormulaLines: true,
-        showDataframeAnnotationRegions: false,
-        showViewerAnnotationRegions: true,
-        showContextMenu: false,
-        axesFollowFilter: false,
-        axisFont: '11px Arial',
-        legendVisibility: DG.VisibilityMode.Never,
-        xAxisHeight: 25,
-      });
+    const isViewer = src instanceof DG.Viewer;
+    const isTrellis = isViewer && src.type === DG.VIEWER.TRELLIS_PLOT;
+    if (isViewer && (src.type === DG.VIEWER.LINE_CHART ||
+      src.type === DG.VIEWER.TRELLIS_PLOT && src.getOptions().look['viewerType'] === DG.VIEWER.LINE_CHART)) {
+        const look = isTrellis ? src.getOptions().look['innerViewerLook'] : src.getOptions().look;
+        this.viewer = DG.Viewer.lineChart(this.dataFrame, {
+          yColumnNames: look.yColumnNames?.length ? [look.yColumnNames[0]] : [],
+          yAxisType: look.yAxisType,
+          xAxisType: look.xAxisType,
+          splitColumnNames: look.splitColumnNames,
+          invertXAxis: look.invertXAxis,
+          showLabels: 'Never',
+          showDataframeFormulaLines: false,
+          showViewerFormulaLines: true,
+          showDataframeAnnotationRegions: false,
+          showViewerAnnotationRegions: true,
+          showContextMenu: false,
+          axesFollowFilter: false,
+          axisFont: 'normal normal 11px "Arial"',
+          legendVisibility: DG.VisibilityMode.Never,
+          xAxisHeight: 25,
+        });
+      }
     else {
+      const look = isViewer ? (isTrellis ? src.getOptions().look['innerViewerLook'] : src.getOptions().look) : null;
       this.viewer = DG.Viewer.scatterPlot(this.dataFrame, {
-        ...(src as DG.ScatterPlotViewer).props,
-        yAxisType: src instanceof DG.Viewer && src.getOptions()['type'] === DG.VIEWER.SCATTER_PLOT ? src.props.yAxisType : 'linear',
-        xAxisType: src instanceof DG.Viewer && src.getOptions()['type'] === DG.VIEWER.SCATTER_PLOT ? src.props.xAxisType : 'linear',
-        invertXAxis: src instanceof DG.Viewer && src.getOptions()['type'] === DG.VIEWER.SCATTER_PLOT ? src.props.invertXAxis : false,
-        invertYAxis: src instanceof DG.Viewer && src.getOptions()['type'] === DG.VIEWER.SCATTER_PLOT ? src.props.invertYAxis : false,
+        ...(look ?? {}),
+        yAxisType: isViewer ? look.yAxisType : 'linear',
+        xAxisType: isViewer ? look.xAxisType : 'linear',
+        invertXAxis: isViewer ? look.invertXAxis : false,
+        invertYAxis: isViewer ? look.invertYAxis : false,
         showDataframeFormulaLines: false,
         showViewerFormulaLines: true,
         showDataframeAnnotationRegions: false,
@@ -561,7 +567,7 @@ class Preview {
         showMouseOverPoint: false,
         showCurrentPoint: false,
         zoomAndFilter: 'no action',
-        axisFont: '11px Arial',
+        axisFont: 'normal normal 11px "Arial"',
         legendVisibility: DG.VisibilityMode.Never,
         xAxisHeight: 25,
       });

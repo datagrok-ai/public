@@ -1,6 +1,6 @@
 {
   "name": "@datagrok-libraries/webcomponents",
-  "version": "0.2.4",
+  "version": "0.3.0",
   "author": {
     "name": "Andrey Sharapov",
     "email": "andrey.sharapov@softwarecountry.com"
@@ -8,15 +8,17 @@
   "description": "Datagrok web components wrappers",
   "dependencies": {
     "cash-dom": "^8.1.4",
-    "datagrok-api": "^1.24.0",
-    "dayjs": "=1.11.10",
+    "datagrok-api": "^1.27.0",
+    "dayjs": "1.11.19",
     "rxjs": "^6.6.7",
     "wu": "^2.1.0"
   },
   "devDependencies": {
+    "@types/node": "^25.3.0",
     "@types/wu": "^2.1.0",
     "@typescript-eslint/eslint-plugin": "^8.8.1",
     "@typescript-eslint/parser": "^8.8.1",
+    "datagrok-tools": "^5.1.9",
     "eslint": "^8.57.1",
     "eslint-config-google": "^0.14.0",
     "typescript": "^5.6.3"
@@ -26,7 +28,7 @@
     "link-api": "npm link datagrok-api",
     "link-all": "npm link datagrok-api",
     "clean": "npx tsc --build --clean",
-    "build": "grok check --soft && npx tsc --build",
+    "build": "grok check --soft && tsc",
     "lint": "eslint . --ext .ts",
     "lint-fix": "eslint . --ext .ts --fix",
     "build-all": "npm --prefix ./../../js-api run build && npm run build"

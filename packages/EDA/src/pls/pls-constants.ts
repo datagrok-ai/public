@@ -17,8 +17,10 @@ export enum ERROR_MSG {
   ENOUGH = 'Not enough of features',
   COMP_LIN_PLS = 'Components count must be less than the number of features',
   COMP_QUA_PLS = 'Too large components count for the quadratic PLS regression',
-  COMPONENTS = 'Components count must be greater than 1',
+  COMP_ROWS = 'Components count must not exceed the number of rows',
+  COMPONENTS = 'Components count must be at least 1',
   INV_INP = 'Invalid inputs',
+  NULL_COMPS = 'Components count is not specified',
 }
 
 /** Widget titles */

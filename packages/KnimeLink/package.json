@@ -1,0 +1,74 @@
+{
+  "name": "@datagrok/knimelink",
+  "friendlyName": "KnimeLink",
+  "version": "0.0.1",
+  "description": "Enables seamless interaction with the KNIME analytics platform",
+  "author": {
+    "name": "Maria Dolotova",
+    "email": "mdolotova@datagrok.ai"
+  },
+  "properties": [
+    {
+      "name": "baseUrl",
+      "propertyType": "string",
+      "defaultValue": "",
+      "description": "Base URL of the KNIME instance (e.g. https://hub.knime.com)"
+    },
+    {
+      "name": "timeoutMinutes",
+      "propertyType": "int",
+      "defaultValue": "10",
+      "description": "Maximum time to wait for workflow execution (minutes)"
+    },
+    {
+      "name": "pollingIntervalMs",
+      "propertyType": "int",
+      "defaultValue": "3000",
+      "description": "Status polling interval for async jobs (milliseconds)"
+    }
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/datagrok-ai/public.git",
+    "directory": "packages/KnimeLink"
+  },
+  "dependencies": {
+    "@datagrok-libraries/utils": "^4.6.14",
+    "cash-dom": "^8.1.5",
+    "datagrok-api": "^1.27.0",
+    "dayjs": "^1.11.13",
+    "@datagrok-libraries/test": "^1.1.0"
+  },
+  "devDependencies": {
+    "css-loader": "^7.1.2",
+    "datagrok-tools": "^5.0.0",
+    "style-loader": "^4.0.0",
+    "ts-loader": "^9.5.4",
+    "typescript": "^5.9.3",
+    "webpack": "^5.95.0",
+    "webpack-cli": "^5.1.4"
+  },
+  "scripts": {
+    "link-api": "npm link datagrok-api",
+    "link-all": "grok link",
+    "debug-knimelink": "webpack && grok publish",
+    "release-knimelink": "webpack && grok publish --release",
+    "build-knimelink": "webpack",
+    "build": "grok api && grok check --soft && webpack",
+    "debug-knimelink-dev": "webpack && grok publish dev",
+    "release-knimelink-dev": "webpack && grok publish dev --release",
+    "debug-knimelink-public": "webpack && grok publish public",
+    "release-knimelink-public": "webpack && grok publish public --release",
+    "test": "grok test"
+  },
+  "canEdit": [
+    "Developers"
+  ],
+  "canView": [
+    "All users"
+  ],
+  "category": "Compute",
+  "overrides": {
+    "datagrok-api": "$datagrok-api"
+  }
+}

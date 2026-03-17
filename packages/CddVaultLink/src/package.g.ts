@@ -13,6 +13,8 @@ export async function cddVaultApp(path: string, filter: string) : Promise<any> {
 }
 
 //input: dynamic treeNode 
+//meta.role: appTreeBrowser
+//meta.app: CDD Vault
 export async function cddVaultAppTreeBrowser(treeNode: any) : Promise<void> {
   await PackageFunctions.cddVaultAppTreeBrowser(treeNode);
 }
@@ -112,8 +114,8 @@ export async function getSavedSearchResults(vaultId: number, searchId: number, t
 
 //name: CDD Vault Search Async
 //input: int vaultId { nullable: true }
-//input: string structure { category: Structure; nullable: true; semType: Molecule; description: SMILES; cxsmiles or mol string }
-//input: string structure_search_type { category: Structure; nullable: true; choices: ["exact","similarity","substructure"]; description: SMILES; cxsmiles or mol string }
+//input: string structure { category: Structure; nullable: true; semType: Molecule }
+//input: string structure_search_type { category: Structure; nullable: true; choices: ["exact","similarity","substructure"] }
 //input: double structure_similarity_threshold { category: Structure; nullable: true; description: A number between 0 and 1 }
 //input: int protocol { category: Protocol; nullable: true; description: Protocol id }
 //input: int run { category: Protocol; nullable: true; description: Specific run id }

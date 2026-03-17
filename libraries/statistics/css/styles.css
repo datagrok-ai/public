@@ -1,48 +1,67 @@
 .statistics-mpo-header {
   margin-top: 10px;
   padding-bottom: 5px;
-  border-bottom: 1px solid #ccc;
+  border-bottom: 1px solid var(--grey-2);
+  gap: 10px;
 }
 
-.statistics-mpo-header-property {
+.statistics-mpo-header > * {
   font-weight: bold;
-  width: 110px;
 }
 
-.statistics-mpo-header-weight {
-  font-weight: bold;
-  width: 60px;
+.statistics-mpo-header > *:first-child {
+  width: 130px;
 }
 
-.statistics-mpo-header-desirability {
-  font-weight: bold;
+.statistics-mpo-header > *:nth-child(2) {
+  width: 120px;
+  min-width: 60px;
+}
+
+.statistics-mpo-header > *:nth-child(3) {
   flex-grow: 1;
-  padding-left: 30px;
-  padding-right: 10px;
 }
 
-.statistics-mpo-property-name {
-  width: 110px;
-  padding-top: 5px;
-  margin-left: 4px;
+.statistics-mpo-property-cell {
+  width: 130px;
+  max-width: 130px;
+  align-self: flex-end;
+  margin-bottom: 20px !important;
+}
+
+.ui-form .statistics-mpo-property-cell > div:first-child {
+  padding-left: 4px;
+}
+
+.statistics-mpo-property-cell > div:first-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .statistics-mpo-weight-input {
-  width: 60px;
+  width: 100px;
 }
 
-.statistics-mpo-weight-view {
-  margin-top: 21px;
-}
-
-.statistics-mpo-weight-design {
-  margin-top: 0;
+.statistics-mpo-weight-cell {
+  align-self: flex-end;
+  margin-bottom: 20px !important;
+  align-items: center;
+  gap: 4px;
 }
 
 .statistics-mpo-control-buttons {
   gap: 10px;
   margin-left: 10px;
   color: var(--blue-1);
+  visibility: hidden;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.statistics-mpo-row:hover .statistics-mpo-control-buttons,
+.statistics-mpo-cat-row:hover .statistics-mpo-control-buttons {
+  visibility: visible;
 }
 
 .statistics-mpo-range-input {
@@ -53,7 +72,7 @@
   display: flex;
   align-items: center;
   justify-content: flex-start;
-  margin-bottom: 10px;
+  padding: 8px 0;
   min-height: 70px;
   gap: 10px;
 
@@ -62,16 +81,22 @@
 
 .statistics-mpo-row > * {
   flex: 0 0 auto;
-  min-width: 100px;
 }
+
 
 .statistics-mpo-row .ui-input-choice .ui-input-editor {
   width: 100px !important;
+  max-width: none !important;
+}
+
+.ui-form .statistics-mpo-row .ui-input-root {
+  margin-bottom: 0 !important;
+  padding: 0 !important;
 }
 
 .statistics-mpo-cat-editor {
   width: 280px;
-  margin-left: 20px;
+  margin-left: 30px;
 }
 
 .statistics-mpo-cat-row {
@@ -85,8 +110,106 @@
   width: 120px;
 }
 
+.statistics-mpo-cat-col-header {
+  font-size: 11px;
+  color: var(--grey-3);
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.statistics-mpo-desirability-dialog .statistics-mpo-cat-editor {
+  width: auto;
+  margin-left: 0;
+}
+
+.statistics-mpo-desirability-dialog .statistics-mpo-cat-name {
+  flex: 1;
+  width: auto;
+}
+
 .statistics-mpo-cat-desirability {
   width: 70px;
+}
+
+.statistics-mpo-weight-toggle {
+  cursor: pointer;
+  color: var(--grey-3);
+  font-size: 12px;
+}
+
+.statistics-mpo-weight-toggle:hover {
+  color: var(--grey-5);
+}
+
+.statistics-mpo-weight-toggle-active {
+  color: var(--blue-1);
+}
+
+.statistics-mpo-weight-toggle-active:hover {
+  color: var(--blue-2);
+}
+
+.statistics-mpo-hidden {
+  display: none !important;
+}
+
+.statistics-mpo-empty-state {
+  text-align: center;
+  padding: 48px 24px;
+  color: var(--grey-4);
+  border: 1px dashed var(--grey-2);
+  border-radius: 8px;
+  margin: 16px 12px;
+}
+
+.statistics-mpo-empty-state i {
+  font-size: 48px;
+  margin-bottom: 16px;
+  display: block;
+  color: var(--blue-1);
+  opacity: 0.3;
+  cursor: default;
+  pointer-events: none;
+}
+
+.statistics-mpo-empty-state h3 {
+  color: var(--grey-5);
+}
+
+.statistics-mpo-empty-state p {
+  color: var(--grey-3);
+  max-width: 360px;
+  margin-inline: auto;
+}
+
+.statistics-mpo-dialog-header-row {
+  gap: 12px;
+  align-items: flex-end;
+  margin-bottom: 8px;
+}
+
+.statistics-mpo-dialog-header-row .ui-input-root {
+  flex: 0 1 auto;
+}
+
+.statistics-mpo-section-header {
+  font-size: 11px;
+  text-transform: uppercase;
+  color: var(--blue-1);
+  letter-spacing: 0.5px;
+  border-bottom: 1px solid var(--grey-2);
+  padding-bottom: 4px;
+  margin: 12px 0 8px;
+}
+
+.statistics-mpo-param-grid.ui-form {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0 8px;
+}
+
+.statistics-mpo-desirability-dialog .statistics-mpo-plot {
+  margin: 0 auto;
 }
 
 @media (max-width: 500px) {
@@ -100,7 +223,7 @@
     margin-bottom: 5px;
   }
 
-  .statistics-mpo-weight-input {
+  .statistics-mpo-weight-cell {
     margin-top: 0 !important;
   }
 }

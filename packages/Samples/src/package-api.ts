@@ -466,8 +466,4 @@ export namespace queries {
   export async function domainUsage(): Promise<DG.DataFrame> {
     return await grok.data.query('Samples:DomainUsage', {});
   }
-
-  export async function sqliteOrders(): Promise<DG.DataFrame> {
-    return await grok.data.query('Samples:SQLiteOrders', {});
-  }
 }

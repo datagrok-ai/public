@@ -1,0 +1,1041 @@
+---
+openapi: 3.0.3
+info:
+  title: KNIME Hub instrumentation job REST API
+  description: RESTful services for the KNIME Hub instrumentation job service.
+  contact:
+    name: KNIME Support
+    url: http://www.knime.com
+    email: support@knime.com
+  version: v1
+servers:
+- url: /
+  description: KNIME Hub
+tags:
+- name: Job Infos
+  description: Requests relating to aggregated job infos.
+- name: Job History
+  description: Requests relating to job histories.
+- name: Executor History
+  description: Requests relating to executor histories.
+paths:
+  /jobs/infos:
+    get:
+      tags:
+      - Job Infos
+      summary: List the aggregated job infos.
+      description: Allows you to list all job infos.
+      parameters:
+      - $ref: "#/components/parameters/FilterQuery"
+      - $ref: "#/components/parameters/SortQuery"
+      - $ref: "#/components/parameters/PageQuery"
+      - $ref: "#/components/parameters/PagelenQuery"
+      - $ref: "#/components/parameters/PreferHeader"
+      responses:
+        "200":
+          description: A list of the aggregated job infos.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/JobInfoList"
+        "403":
+          description: The user isn't allowed to view all aggregated job infos.
+        "422":
+          description: The user provided a malformed filter.
+        "500":
+          description: An internal error occurred.
+  /jobs/infos/{scope}:
+    get:
+      tags:
+      - Job Infos
+      summary: List the aggregated job infos for a given scope.
+      description: Allows you to list job infos the user is allowed to see for a given
+        scope.
+      parameters:
+      - name: scope
+        in: path
+        description: The scope of the jobs.
+        required: true
+        schema:
+          type: string
+          example: account:team:27d64eb1-a426-4f3b-b973-98c81d7350f3
+      - $ref: "#/components/parameters/FilterQuery"
+      - $ref: "#/components/parameters/SortQuery"
+      - $ref: "#/components/parameters/PageQuery"
+      - $ref: "#/components/parameters/PagelenQuery"
+      - $ref: "#/components/parameters/PreferHeader"
+      responses:
+        "200":
+          description: A list of the aggregated job infos.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/JobInfoList"
+        "422":
+          description: The user provided a malformed filter.
+        "500":
+          description: An internal error occurred.
+  /execution/jobs/history/{scope}:
+    get:
+      tags:
+      - Job History
+      summary: Lists the state and session history of all jobs in a given scope.
+      description: "Lists the state and session history of all jobs in the given scope.\
+        \ Optionally allows to limit the retrieved history to a specific time window.\
+        \ If requested, the response also contains the number of jobs per job type\
+        \ (ad-hoc, data-app, schedule) for the same scope and time window."
+      parameters:
+      - name: scope
+        in: path
+        required: true
+        description: The scope of the jobs.
+        schema:
+          type: string
+          example: account:team:27d64eb1-a426-4f3b-b973-98c81d7350f3
+      - name: start
+        in: query
+        description: "The start time from which on to retrieve the history. If a state\
+          \ or session or executor intersects with the start time, it is included\
+          \ in the history with its start time clipped to the specified start time."
+        schema:
+          format: date-time
+          type: string
+          example: 2022-02-22T00:00:00Z
+      - name: end
+        in: query
+        description: "The end time up to which to retrieve the history. If a state\
+          \ or session or executor intersects with the end time, it is included in\
+          \ the history with its end time clipped to the specified end time."
+        schema:
+          format: date-time
+          type: string
+          example: 2022-02-23T23:59:59Z
+      - name: includeCounts
+        in: query
+        description: "Whether to include the number of jobs per job type in the response.\
+          \ If omitted, blank, or \"false\", the field `jobCounts` is omitted from\
+          \ the response. If \"true\", the field `jobCounts` is included and contains\
+          \ the number of ad-hoc jobs, data-apps, and schedules in the given scope\
+          \ and time window."
+        schema:
+          type: boolean
+        example: true
+      - $ref: "#/components/parameters/JobSortQuery"
+      - $ref: "#/components/parameters/PageQuery"
+      - $ref: "#/components/parameters/CursorQuery"
+      - $ref: "#/components/parameters/PagelenQuery"
+      - $ref: "#/components/parameters/PreferHeader"
+      responses:
+        "200":
+          description: "The state and session histories of all jobs in the scope,\
+            \ the executor uptimes used by those jobs, and if requested the number\
+            \ of jobs per job type."
+          content:
+            application/json:
+              schema:
+                type: object
+                allOf:
+                - type: object
+                  properties:
+                    jobCounts:
+                      description: The number of jobs per job type (only present when
+                        `includeCounts=true`).
+                      allOf:
+                      - $ref: "#/components/schemas/JobCounts"
+                      nullable: true
+                - $ref: "#/components/schemas/JobHistory"
+        "401":
+          description: The client is not authenticated.
+        "403":
+          description: The client does not have permission to view the state and session
+            history of the given scope.
+        "422":
+          description: "The provided start, end or includeCounts values are invalid."
+  /execution/executors/history/{executionContextId}:
+    get:
+      tags:
+      - Executor History
+      summary: Lists the history of executor uptimes for a given execution context.
+      description: Lists the history of executor uptimes for the given execution context.
+        Optionally allows to limit the retrieved history to a specific time window.
+      parameters:
+      - name: executionContextId
+        in: path
+        required: true
+        description: The ID of the execution context.
+        schema:
+          type: string
+          example: ed43f811-6860-489c-a3f9-e710bdc92d5b
+      - name: start
+        in: query
+        description: "The start time from which on to retrieve the history. If an\
+          \ executor uptime intersects with the start time, it is included in the\
+          \ history with its start time clipped to the specified start time."
+        schema:
+          format: date-time
+          type: string
+          example: 2022-02-22T00:00:00Z
+      - name: end
+        in: query
+        description: "The end time up to which to retrieve the history. If an executor\
+          \ uptime intersects with the end time, it is included in the history with\
+          \ its end time clipped to the specified end time."
+        schema:
+          format: date-time
+          type: string
+          example: 2022-02-23T23:59:59Z
+      responses:
+        "200":
+          description: Executor uptimes
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ExecutorUptimes"
+        "401":
+          description: The client is not authenticated.
+        "403":
+          description: The client does not have permission to view the history of
+            executor uptimes of the execution context.
+        "422":
+          description: The provided start or end times are invalid.
+  /execution/executors/history/{scope}:
+    get:
+      tags:
+      - Executor History
+      summary: Lists the history of executor uptimes for a given scope.
+      description: Lists the history of executor uptimes for the given scope. Optionally
+        allows to limit the retrieved history to a specific time window.
+      parameters:
+      - name: scope
+        in: path
+        description: The scope of the jobs.
+        required: true
+        schema:
+          type: string
+          example: account:team:27d64eb1-a426-4f3b-b973-98c81d7350f3
+      - name: start
+        in: query
+        description: "The start time from which on to retrieve the history. If an\
+          \ executor uptime intersects with the start time, it is included in the\
+          \ history with its start time clipped to the specified start time."
+        schema:
+          format: date-time
+          type: string
+          example: 2022-02-22T00:00:00Z
+      - name: end
+        in: query
+        description: "The end time up to which to retrieve the history. If an executor\
+          \ uptime intersects with the end time, it is included in the history with\
+          \ its end time clipped to the specified end time."
+        schema:
+          format: date-time
+          type: string
+          example: 2022-02-23T23:59:59Z
+      responses:
+        "200":
+          description: Executor uptimes
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ExecutorUptimesOfScope"
+        "401":
+          description: The client is not authenticated.
+        "403":
+          description: The client does not have permission to view the history of
+            executor uptimes of the scope.
+        "422":
+          description: The provided start or end times are invalid.
+components:
+  schemas:
+    Control:
+      description: A hypermedia element associated with this resource.
+      type: object
+      properties:
+        href:
+          type: string
+        method:
+          type: string
+        encoding:
+          enum:
+          - None
+          - Json
+          - JsonPlusFiles
+          - Raw
+          type: string
+        isHrefTemplate:
+          type: boolean
+        accept:
+          type: array
+          items:
+            type: string
+        output:
+          type: array
+          items:
+            type: string
+        template:
+          type: object
+        title:
+          type: string
+        type:
+          type: string
+          writeOnly: true
+    Namespace:
+      description: A (possibly empty) map with the namespaces for this object.
+      type: object
+      properties:
+        name:
+          type: string
+    ExecutorUptimes:
+      description: Executor uptimes of an execution context
+      required:
+      - id
+      - executors
+      type: object
+      properties:
+        id:
+          description: The ID of the execution context.
+          type: string
+          example: ed43f811-6860-489c-a3f9-e710bdc92d5b
+        scope:
+          description: The scope of the execution context. This property may be absent
+            if the list of executor uptimes is empty.
+          type: string
+          example: account:team:27d64eb1-a426-4f3b-b973-98c81d7350f3
+        executors:
+          description: The history of executor uptimes.
+          type: array
+          items:
+            description: A period of uptime of an executor.
+            required:
+            - id
+            - vCores
+            - start
+            - end
+            type: object
+            properties:
+              id:
+                description: The ID of the executor.
+                type: string
+                example: a68c5d2b-c498-4787-9c8b-4e43bb8da402@ed43f811-6860-489c-a3f9-e710bdc92d5b
+              vCores:
+                description: The number of virtual cores of the executor.
+                type: integer
+                example: 4
+              ram:
+                description: The amount of RAM of the executor in MB. This property
+                  may be absent if the RAM is not known.
+                type: integer
+                example: 4096
+              start:
+                format: date-time
+                description: The time at which the executor started running.
+                type: string
+                example: 2022-02-22T22:10:20.000281+01:00Z
+              end:
+                format: date-time
+                description: The time at which the executor stopped running.
+                type: string
+                example: 2022-02-23T02:10:11.000281+01:00Z
+    ExecutorUptimesOfScope:
+      description: Executor uptimes of a scope.
+      required:
+      - scope
+      - executors
+      type: object
+      properties:
+        scope:
+          description: The scope of the execution context. This property may be absent
+            if the list of executor uptimes is empty.
+          type: string
+          example: account:team:27d64eb1-a426-4f3b-b973-98c81d7350f3
+        executors:
+          description: The history of executor uptimes.
+          type: array
+          items:
+            description: A period of uptime of an executor.
+            required:
+            - id
+            - vCores
+            - start
+            - end
+            type: object
+            properties:
+              id:
+                description: The ID of the executor.
+                type: string
+                example: a68c5d2b-c498-4787-9c8b-4e43bb8da402@ed43f811-6860-489c-a3f9-e710bdc92d5b
+              executionContextId:
+                description: The ID of the execution context.
+                type: string
+                example: ed43f811-6860-489c-a3f9-e710bdc92d5b
+              vCores:
+                description: The number of virtual cores of the executor.
+                type: integer
+                example: 4
+              ram:
+                description: The amount of RAM of the executor in MB. This property
+                  may be absent if the RAM is not known.
+                type: integer
+                example: 4096
+              start:
+                format: date-time
+                description: The time at which the executor started running.
+                type: string
+                example: 2022-02-22T22:10:20.000281+01:00Z
+              end:
+                format: date-time
+                description: The time at which the executor stopped running.
+                type: string
+                example: 2022-02-23T02:10:11.000281+01:00Z
+    JobHistory:
+      description: State and session histories
+      required:
+      - history
+      type: object
+      properties:
+        '@controls':
+          description: A (possibly empty) map with all controls for this object.
+          type: object
+          additionalProperties:
+            $ref: "#/components/schemas/Control"
+        '@namespaces':
+          description: A (possibly empty) map with the namespaces for this object.
+          type: object
+          additionalProperties:
+            $ref: "#/components/schemas/Namespace"
+        pagination:
+          $ref: "#/components/schemas/PaginationInfoWithCursor"
+        history:
+          description: The list of state and session histories per job.
+          type: array
+          items:
+            description: "The state, workflow state, and session history of a job."
+            required:
+            - id
+            - creator
+            - creatorName
+            - scope
+            - workflow
+            - workflowPath
+            - executionContext
+            - jobStates
+            - workflowStates
+            - sessions
+            type: object
+            properties:
+              id:
+                description: The ID of the job.
+                type: string
+                example: c151cdc8-b864-441f-9fce-a6e4a30afc0d
+              creator:
+                description: The creator of the job.
+                type: string
+                example: account:user:43d30780-8321-44d3-9a93-ca8ac649c9dd
+              creatorName:
+                description: The username of the creator of the job.
+                type: string
+                example: my-user
+              scope:
+                description: The scope of the job.
+                type: string
+                example: account:team:27d64eb1-a426-4f3b-b973-98c81d7350f3
+              workflow:
+                description: The ID of the workflow.
+                type: string
+                example: '*workflowId'
+              workflowPath:
+                description: The path of the workflow.
+                type: string
+                example: /Users/my-user/my-workflow
+              itemVersion:
+                description: "The version of the workflow, if it is versioned."
+                type: string
+                example: 1
+              executionContext:
+                description: The ID of the execution context of the job.
+                type: string
+                example: 43d30780-8321-44d3-9a93-ca8ac649c9dd
+              deployment:
+                description: "The deployment of the job, if any."
+                required:
+                - id
+                - name
+                - type
+                - creator
+                type: object
+                properties:
+                  id:
+                    description: The ID of the deployment.
+                    type: string
+                    example: data-app:43d30780-8321-44d3-9a93-ca8ac649c9dd
+                  name:
+                    description: The name of the deployment.
+                    type: string
+                    example: my-deployment
+                  type:
+                    description: The type of the deployment.
+                    enum:
+                    - schedule
+                    - rest
+                    - trigger
+                    - data-app
+                    type: string
+                    example: data-app
+                  creator:
+                    description: The creator of the deployment.
+                    type: string
+                    example: account:user:43d30780-8321-44d3-9a93-ca8ac649c9dd
+              startedExecutionAt:
+                format: date-time
+                description: "The date and time this job started execution, if it\
+                  \ already did."
+                type: string
+                example: 2022-02-22T22:10:20.000281+01:00Z
+              jobStates:
+                description: The state history of the job.
+                type: array
+                items:
+                  description: The state of a job for a specific time period.
+                  required:
+                  - state
+                  - start
+                  type: object
+                  properties:
+                    state:
+                      description: The state of the job.
+                      enum:
+                      - UNDEFINED
+                      - LOAD_REQUESTED
+                      - LOADING
+                      - LOADED
+                      - LOAD_ERROR
+                      - SWAP_REQUESTED
+                      - SWAPPING
+                      - SWAPPED
+                      - VANISHED
+                      - DISCARD_REQUESTED
+                      - DISCARDED
+                      type: string
+                    executor:
+                      description: The executor running the job. This property may
+                        be absent if the job is not running on an executor anymore
+                        in the present state (e.g. because it was unloaded).
+                      type: string
+                      example: a68c5d2b-c498-4787-9c8b-4e43bb8da402@ed43f811-6860-489c-a3f9-e710bdc92d5b
+                    start:
+                      format: date-time
+                      description: The start time of the state.
+                      type: string
+                      example: 2022-02-22T22:10:20.000281+01:00Z
+                    end:
+                      format: date-time
+                      description: The end time of the state.
+                      type: string
+                      example: 2022-02-23T02:10:11.000281+01:00Z
+              workflowStates:
+                description: The workflow state history of the job.
+                type: array
+                items:
+                  description: The workflow state of a job for a specific time period.
+                  required:
+                  - state
+                  - start
+                  type: object
+                  properties:
+                    state:
+                      description: The workflow state of the job.
+                      enum:
+                      - UNDEFINED
+                      - CONFIGURED
+                      - IDLE
+                      - NOT_EXECUTABLE
+                      - EXECUTING
+                      - EXECUTED
+                      - EXECUTION_FAILED
+                      - EXECUTION_CANCELLED
+                      - EXECUTION_FINISHED
+                      - INTERACTION_REQUIRED
+                      - EXECUTION_FAILED_WITH_CONTENT
+                      type: string
+                    start:
+                      format: date-time
+                      description: The start time of the state.
+                      type: string
+                      example: 2022-02-22T22:10:20.000281+01:00Z
+                    end:
+                      format: date-time
+                      description: The end time of the state.
+                      type: string
+                      example: 2022-02-23T02:10:11.000281+01:00Z
+              sessions:
+                description: The session history of the job..
+                type: array
+                items:
+                  description: The session running on a job for a specific time period.
+                  required:
+                  - type
+                  - executor
+                  - start
+                  type: object
+                  properties:
+                    type:
+                      description: The type of the session.
+                      enum:
+                      - INSPECTION
+                      - EDITING
+                      - DATA_APP_INTERACTION
+                      type: string
+                    executor:
+                      description: The executor running the job.
+                      type: string
+                      example: a68c5d2b-c498-4787-9c8b-4e43bb8da402@ed43f811-6860-489c-a3f9-e710bdc92d5b
+                    start:
+                      format: date-time
+                      description: The start time of the session.
+                      type: string
+                      example: 2022-02-22T22:10:20.000281+01:00Z
+                    end:
+                      format: date-time
+                      description: The end time of the session.
+                      type: string
+                      example: 2022-02-23T02:10:11.000281+01:00Z
+        executors:
+          description: The history of executor uptimes used in the jobs.
+          type: array
+          items:
+            description: A period of uptime of an executor.
+            required:
+            - id
+            - vCores
+            - start
+            - end
+            type: object
+            properties:
+              id:
+                description: The ID of the executor.
+                type: string
+                example: a68c5d2b-c498-4787-9c8b-4e43bb8da402@ed43f811-6860-489c-a3f9-e710bdc92d5b
+              executionContextId:
+                description: The ID of the execution context.
+                type: string
+                example: ed43f811-6860-489c-a3f9-e710bdc92d5b
+              scope:
+                description: The scope of the executor.
+                type: string
+                example: account:team:27d64eb1-a426-4f3b-b973-98c81d7350f3
+              vCores:
+                description: The number of virtual cores of the executor.
+                type: integer
+                example: 4
+              ram:
+                description: The amount of RAM of the executor in MB. This property
+                  may be absent if the RAM is not known.
+                type: integer
+                example: 4096
+              start:
+                format: date-time
+                description: The time at which the executor started running.
+                type: string
+                example: 2022-02-22T22:10:20.000281+01:00Z
+              end:
+                format: date-time
+                description: The time at which the executor stopped running.
+                type: string
+                example: 2022-02-23T02:10:11.000281+01:00Z
+    JobCounts:
+      description: Number of jobs per job type.
+      type: object
+      properties:
+        ad-hoc:
+          description: Number of ad-hoc jobs.
+          type: integer
+        data-app:
+          description: Number of data-app jobs.
+          type: integer
+        schedule:
+          description: Number of scheduled jobs.
+          type: integer
+        trigger:
+          description: Number of trigger jobs.
+          type: integer
+        rest:
+          description: Number of rest jobs.
+          type: integer
+      example:
+        ad-hoc: 3
+        data-app: 1
+        schedule: 4
+        trigger: 2
+        rest: 0
+    JobInfo:
+      description: An aggregated job info.
+      required:
+      - id
+      - scope
+      - creator
+      - workflowId
+      - executionContext
+      type: object
+      properties:
+        id:
+          description: The id of the job.
+          type: string
+          example: 43d30780-8321-44d3-9a93-ca8ac649c9dd
+        creator:
+          description: The creator of the job.
+          type: string
+          example: account:user:43d30780-8321-44d3-9a93-ca8ac649c9dd
+        initiatorId:
+          description: The initiator of the job.
+          type: string
+          example: account:user:43d30780-8321-44d3-9a93-ca8ac649c9dd
+        scope:
+          description: The scope of the job.
+          type: string
+          example: account:team:43d30780-8321-44d3-9a93-ca8ac649c9dd
+        workflowId:
+          description: The ID of the workflow.
+          type: string
+          example: '*workflowId'
+        itemVersion:
+          description: The version of the job.
+          type: string
+          example: 1
+        executionContext:
+          description: The ID of the execution context of the job.
+          type: string
+          example: 43d30780-8321-44d3-9a93-ca8ac649c9dd
+        state:
+          description: The current state of the job. This property is deprecated.
+            Use `jobState` and `workflowState` instead.
+          enum:
+          - EXECUTING
+          - CONFIGURED
+          - IDLE
+          - UNDEFINED
+          - DISCARDED
+          - LOAD_ERROR
+          - EXECUTION_FAILED
+          - EXECUTION_CANCELLED
+          - EXECUTION_FINISHED
+          - INTERACTION_REQUIRED
+          - EXECUTION_FAILED_WITH_CONTENT
+          - LOADING
+          - NOT_EXECUTABLE
+          - SWAPPING
+          - VANISHED
+          type: string
+          deprecated: true
+        jobState:
+          description: The current state of the job.
+          enum:
+          - UNDEFINED
+          - LOAD_REQUESTED
+          - LOADING
+          - LOADED
+          - LOAD_ERROR
+          - SWAP_REQUESTED
+          - SWAPPING
+          - SWAPPED
+          - VANISHED
+          - DISCARD_REQUESTED
+          - DISCARDED
+          type: string
+        workflowState:
+          description: "The current state of the workflow behind this job. Once a\
+            \ job has finished execution the workflow state will not be updated any\
+            \ more, e.g. if the user steps back in a data app."
+          enum:
+          - UNDEFINED
+          - CONFIGURED
+          - IDLE
+          - NOT_EXECUTABLE
+          - EXECUTING
+          - EXECUTED
+          - EXECUTION_FAILED
+          - EXECUTION_CANCELLED
+          - EXECUTION_FINISHED
+          - INTERACTION_REQUIRED
+          - EXECUTION_FAILED_WITH_CONTENT
+          type: string
+        lastKnownState:
+          description: The last known state before the job vanished. This property
+            is deprecated. Use `workflowState` instead.
+          enum:
+          - EXECUTING
+          - EXECUTED
+          - CONFIGURED
+          - IDLE
+          - DISCARDED
+          - LOAD_ERROR
+          - EXECUTION_FAILED
+          - EXECUTION_CANCELLED
+          - EXECUTION_FINISHED
+          - INTERACTION_REQUIRED
+          - EXECUTION_FAILED_WITH_CONTENT
+          - LOADING
+          - NOT_EXECUTABLE
+          - VANISHED
+          type: string
+          example: EXCUTED
+          deprecated: true
+        isDiscarded:
+          description: If the job has been discarded. This property is deprecated.
+            Use `jobState` instead.
+          type: boolean
+          example: false
+          deprecated: true
+        createdAt:
+          format: date-time
+          description: The date and time this job was created.
+          type: string
+          example: 2022-02-23T02:10:11.000281+01:00Z
+        createdVia:
+          description: Returns the created by info inferred from the client type.
+          enum:
+          - KNIME Explorer
+          - Workflow
+          - Hub UI
+          - Schedule Handler
+          - Trigger Service
+          - Post Execution Handler
+          - generic client
+          type: string
+          example: generic client
+        createdBy:
+          description: Contains the created by info in case the client provided it
+            when creating the job.
+          type: string
+        lastStateChange:
+          format: date-time
+          description: The date and time of the last state change.
+          type: string
+          example: 2022-02-23T02:10:11.000281+01:00Z
+        startedExecutionAt:
+          format: date-time
+          description: The date and time this job started execution.
+          type: string
+          example: 2022-02-22T22:10:20.000281+01:00Z
+        finishedExecutionAt:
+          format: date-time
+          description: The date and time this job finished execution for the first
+            time.
+          type: string
+          example: 2022-02-23T02:10:11.000281+01:00Z
+        executorConnectorVersion:
+          description: The version of the executor connector plugin.
+          type: string
+          example: 5.17.3
+        analyticsPlatformVersion:
+          description: The version of the underlying KNIME Analytics Platform.
+          type: string
+          example: 7.3.1
+        parentId:
+          format: uuid
+          description: The id of the parent job that caused this job.
+          type: string
+          example: d85e287b-485e-4d6b-9b4c-5840e524800
+        deployment:
+          description: The deployment of the job.
+          required:
+          - id
+          - type
+          - scope
+          - creator
+          type: object
+          properties:
+            id:
+              description: The ID of the deployment.
+              type: string
+              example: data-app:43d30780-8321-44d3-9a93-ca8ac649c9dd
+            type:
+              description: The type of the deployment.
+              enum:
+              - schedule
+              - rest
+              - trigger
+              - data-app
+              type: string
+              example: data-app
+            scope:
+              description: The scope of the deployment.
+              type: string
+              example: account:team:43d30780-8321-44d3-9a93-ca8ac649c9dd
+            creator:
+              description: The creator of the deployment.
+              type: string
+              example: account:user:43d30780-8321-44d3-9a93-ca8ac649c9dd
+    JobInfoList:
+      description: A collection of aggregated job infos.
+      required:
+      - jobInfos
+      type: object
+      properties:
+        '@controls':
+          description: A (possibly empty) map with all controls for this object.
+          type: object
+          additionalProperties:
+            $ref: "#/components/schemas/Control"
+        '@namespaces':
+          description: A (possibly empty) map with the namespaces for this object.
+          type: object
+          additionalProperties:
+            $ref: "#/components/schemas/Namespace"
+        pagination:
+          $ref: "#/components/schemas/PaginationInfo"
+        jobInfoRetention:
+          format: duration
+          description: The maximum time a job info is kept before being cleaned up.
+          type: string
+          example: PT30D
+        jobInfos:
+          type: array
+          items:
+            $ref: "#/components/schemas/JobInfo"
+    PaginationInfo:
+      description: Information about item pagination.
+      required:
+      - totalItemCount
+      - totalPageCount
+      type: object
+      properties:
+        totalItemCount:
+          description: The total number of items.
+          type: number
+          example: 42
+        totalPageCount:
+          description: The total number of pages that can be returned based on the
+            requested page size.
+          type: number
+          example: 5
+    PaginationInfoWithCursor:
+      description: Information about item pagination.
+      required:
+      - totalItemCount
+      - totalPageCount
+      type: object
+      properties:
+        totalItemCount:
+          description: The total number of items.
+          type: number
+          example: 42
+        totalPageCount:
+          description: The total number of pages that can be returned based on the
+            requested page size.
+          type: number
+          example: 5
+        nextPageCursor:
+          description: The cursor for the next page. Only available if cursor-based
+            pagination was requested and there is a next page.
+          type: string
+          example: eyJzIjpbIi1uYW1lIl0sImx2IjpbInVzZXIxIl0sInEiOiJqb2JTdGF0ZT1MT0FESU5HIn0
+  parameters:
+    FilterQuery:
+      name: q
+      in: query
+      description: |
+        An optional filter to only show the jobs that match the filter. Only a single attribute can be used for filtering right now.
+        Available attributes are:
+          - `creator`: the account ID of the creator of the job
+          - `initiatorId`: the account ID of the initiator of the job
+          - `workflowId`: the ID of the workflow the job was created from
+          - `executionContextId`: the ID of the execution context in which the job was created
+          - `deploymentId`: the ID of the deployment from which the job was created
+      schema:
+        type: string
+      examples:
+        creator:
+          value: creator=account:user:43d30780-8321-44d3-9a93-ca8ac649c9dd
+          summary: Filter by the creator of the job.
+        deploymentId:
+          value: deploymentId=data-app:43d30780-8321-44d3-9a93-ca8ac649c9dd
+          summary: Filter by the deployment of the job.
+    SortQuery:
+      name: sort
+      in: query
+      description: |
+        An optional parameter for sorting. By default results are sorted in ascending order. If you prefix the attribute with `-` the sort order is descending.
+        Available attributes for sorting are:
+          - `id`: the ID of the job
+          - `workflowId`: the ID of the workflow
+          - `itemVersion`: the version of the workflow
+          - `jobState`: the last state of the job
+          - `workflowState`: the last state of the job's workflow
+          - `creator`: the ID of the job's creator
+          - `initiatorId`: the account ID of the initiator of the job
+          - `deploymentId`: the ID of the deployment from which the job was created
+          - `startedAt`: the execution starting time of the job
+          - `finishedAt`: the execution finished time of the job
+          - `createdAt`: the creation time of the job
+      schema:
+        default: -createdAt
+        type: string
+      examples:
+        nonDescending:
+          value: jobState
+          summary: sort by string value of state in ascending order
+        nonAscending:
+          value: -jobState
+          summary: sort by string value of state in descending order
+    JobSortQuery:
+      name: sort
+      in: query
+      description: |
+        An optional parameter for sorting. By default results are sorted in descending order by 'createdAt' (i.e., '-createdAt'). If you provide an attribute without a prefix, sorting is ascending. If you prefix the attribute with `-` the sort order is descending.  You can provide multiple attributes separated by commas. The default sorting is `-createdAt`. Available attributes for sorting are:
+          - `createdAt`: the creation time of the job
+      schema:
+        default: -createdAt
+        type: string
+      examples:
+        nonDescending:
+          value: createdAt
+          summary: sort by creation timestamp in ascending order
+        nonAscending:
+          value: -createdAt
+          summary: sort by creation timestamp in descending order
+    PageQuery:
+      name: page
+      in: query
+      description: The page number to be returned. If not provided the first page
+        will be returned.
+      schema:
+        type: integer
+      example: 1
+    PagelenQuery:
+      name: pagelen
+      in: query
+      description: The number of items to be displayed in a single page. If not provided
+        the maximum allowed length is used.
+      schema:
+        default: 100
+        maximum: 100
+        minimum: 1
+        type: integer
+      example: 20
+    CursorQuery:
+      name: cursor
+      in: query
+      description: "The cursor for the next page. It is provided by the previous response,\
+        \ you cannot construct it yourself."
+      schema:
+        type: string
+      example: eyJzIjpbIi1uYW1lIl0sImx2IjpbInVzZXIxIl0sInEiOiJqb2JTdGF0ZT1MT0FESU5HIn0
+    PreferHeader:
+      name: Prefer
+      in: header
+      description: "Controls how much HATEOS information should be in the response.\
+        \ By default the response contains full Mason information, i.e. both the possible\
+        \ actions and their corresponding hyperlinks. If you pass `representation=minimal`\
+        \ no Mason controls will be sent. If you pass `representation=basic` only\
+        \ the possible actions without any hyperlinks and description will be sent."
+      schema:
+        enum:
+        - representation=minimal
+        - representation=basic
+        type: string
+  securitySchemes:
+    SecurityScheme:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Authentication

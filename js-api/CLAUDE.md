@@ -100,12 +100,20 @@ Large modules are split into focused sub-modules for maintainability. The main f
 
 ### Dart-JavaScript Interop
 
-The API mostly wraps a Dart backend (in `../../core/client`). Key patterns:
+The API wraps a Dart backend. Key patterns:
 
-- **`api` object**: Global interface to Dart functions (`IDartApi` from `src/api/grok_api.g.ts`)
-- **`toJs(dart)`**: Convert Dart objects to JavaScript (`wrappers.ts`)
-- **`toDart(js)`**: Convert JavaScript objects to Dart (`wrappers.ts`)
-- **`.dart` property**: Most API classes hold a reference to their Dart counterpart
+- **`api` object**: `window` cast as `IDartApi` — all `grok_*` functions are Dart handlers
+- **`.dart` property**: every wrapper class holds the Dart handle — always pass `x.dart` to `api.grok_*`, never the wrapper itself
+- **`toJs(dart)`**: wrap Dart results on the JS side for `reg`-based (sync) calls — `ra*` async calls do it automatically
+- **`toDart(x)`**: extracts `.dart`, calls `.toDart()`, converts `dayjs`→DateTime, plain `{}`→Map
+
+```typescript
+// sync — needs toJs()
+get columns(): ColumnList { return toJs(api.grok_DataFrame_Columns(this.dart)); }
+
+// async — toJs() already applied
+async find(id: string): Promise<Entity> { return toJs(await api.grok_MyClass_Find(this.dart, id)); }
+```
 
 ### Generated API Files (in `src/api/`)
 
@@ -152,12 +160,44 @@ For JS API method questions, check these files first:
 | DataFrame operations            | `src/dataframe/data-frame.ts`      |
 | Column operations               | `src/dataframe/column.ts`          |
 | UI components, dialogs, inputs  | `src/widgets/`                     |
+| Filter panel                    | `src/viewer.ts` (`FilterGroup`)    |
 | Server/HTTP API                 | `src/dapi.ts`                      |
 | Viewers                         | `src/viewer.ts`                    |
-| Grid                            | `src/grid.ts`                      |
+| Grid                            | `src/grid.ts` · [usage guide](src/grid.md) |
 | Events                          | `src/events.ts`                    |
 | Shell (views, tables, windows)  | `src/shell.ts`                     |
 | Constants and enums             | `src/const.ts`                     |
+
+## Filter Panel (`FilterGroup`)
+
+Access via `tv.getFiltersGroup()` on a `TableView`. Use `{ createDefaultFilters: false }` in plugins to avoid adding unwanted default filters.
+
+```typescript
+const fg = tv.getFiltersGroup({ createDefaultFilters: false });
+fg.updateOrAdd({ type: DG.FILTER_TYPE.HISTOGRAM, column: 'age', min: 20, max: 60 });
+fg.updateOrAdd({ type: DG.FILTER_TYPE.CATEGORICAL, column: 'sex' }, false); // false = defer filtering
+await DG.delay(200); // wait for the filter to be applied
+```
+
+- `fg.filters` — mixed array: built-in filters are **opaque Dart handles**, custom JS filters are `DG.Filter` instances — don't introspect built-in ones directly, use `fg.getStates(colName, filterType)` instead
+- `fg.setEnabled(f, false)` — disable one filter; `fg.setActive(false)` — disable the whole group
+- `column` is the canonical state field (`columnName` is a backwards-compat alias)
+- Use `DG.delay` for timing
+
+## Server API Usage (grok.dapi)
+
+Plugin code accesses the server via `grok.dapi` (instance of `Dapi` class from `src/dapi.ts`).
+
+Key sub-objects: `users`, `groups`, `connections`, `queries`, `tables`, `projects`, `scripts`,
+`packages`, `files`, `docker`, `permissions`, `layouts`, `views`, `functions`, `log`, `spaces`.
+
+Most sub-objects extend `HttpDataSource<T>` providing: `list()`, `find(id)`, `save(entity)`,
+`delete(entity)`, `filter(query)`, `order(field)`, `page(n)`, `by(pageSize)`.
+
+For external HTTP requests from plugins, `grok.dapi.fetchProxy(url, params)` proxies through the
+server to avoid CORS. Raw `fetch()` should never be used in plugin code.
+
+See samples: `packages/ApiSamples/scripts/dapi/`
 
 ## Canonical code samples
 

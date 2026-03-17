@@ -9,6 +9,7 @@ sidebar_position: 5
 |------|-------|------------|---------------|-------|
 |[Power Pack](https://github.com/datagrok-ai/public/tree/master/packages/PowerPack)| Platform | Recommended| Commonly used platform enhancements| Stable|
 | [Tutorials](https://github.com/datagrok-ai/public/tree/master/packages/Tutorials)| Resources |Recommended| App for learning Datagrok with interactive tutorials, Demo app| Stable |
+|[Grokky](https://github.com/datagrok-ai/public/tree/master/packages/Grokky)| AI | Recommended| AI assistant for Datagrok with support for OpenAI, Anthropic, and Amazon Bedrock| Stable|     
 
 ## Access
 

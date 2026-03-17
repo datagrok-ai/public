@@ -1,18 +1,23 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
+import * as ui from 'datagrok-api/ui';
 
 import {
+  DEFAULT_AGGREGATION,
+  DESIRABILITY_PROFILE_TYPE,
   DesirabilityProfile,
   PropertyDesirability,
   WeightedAggregation,
+  createDefaultNumerical,
 } from '@datagrok-libraries/statistics/src/mpo/mpo';
 
-export type MpoProfileInfo = {
+export {MPO_PROFILE_CHANGED_EVENT, MPO_PROFILE_DELETED_EVENT} from '@datagrok-libraries/statistics/src/mpo/utils';
+
+export type MpoProfileInfo = DesirabilityProfile & {
   fileName: string;
-  name: string;
-  description: string;
-  properties: Record<string, PropertyDesirability>;
 };
+
+export type MpoSaveResult = {saved: boolean; fileName: string};
 
 export enum MpoPathMode {
   List = 'list',
@@ -21,9 +26,9 @@ export enum MpoPathMode {
 }
 
 export const MPO_TEMPLATE_PATH = 'System:AppData/Chem/mpo';
-export const MPO_PATH = 'Mpo';
-export const MPO_PROFILE_CHANGED_EVENT = 'chem-mpo-profile-changed';
-export const MPO_PROFILE_DELETED_EVENT = 'chem-mpo-profile-deleted';
+export const MPO_PATH = 'MPOProfiles';
+export const MPO_PROFILES_NAME = 'MPO Profiles';
+export const MAX_MPO_PROPERTIES = 20;
 
 export async function loadMpoProfiles(): Promise<MpoProfileInfo[]> {
   const files = await grok.dapi.files.list(MPO_TEMPLATE_PATH);
@@ -35,9 +40,11 @@ export async function loadMpoProfiles(): Promise<MpoProfileInfo[]> {
       const content = JSON.parse(text) as DesirabilityProfile;
 
       profiles.push({
+        type: DESIRABILITY_PROFILE_TYPE,
         fileName: file.name,
         name: content.name ?? file.name.replace(/\.json$/i, ''),
         description: content.description ?? '',
+        aggregation: content.aggregation,
         properties: content.properties,
       });
     } catch (e) {
@@ -52,19 +59,14 @@ export async function deleteMpoProfile(profile: MpoProfileInfo): Promise<void> {
   await grok.dapi.files.delete(`${MPO_TEMPLATE_PATH}/${profile.fileName}`);
 }
 
-export type MpoCalculationResult = {
-  columnNames: string[];
-  resultColumn?: DG.Column;
-  warnings: string[];
-  error?: string;
-};
-
 export async function computeMpo(
   df: DG.DataFrame,
   profile: DesirabilityProfile,
   columnMapping: Record<string, string | null>,
   aggregation?: WeightedAggregation,
   silent: boolean = false,
+  processed: boolean = false,
+  createDesirabilityColumns: boolean = false,
 ): Promise<string[]> {
   const mappedProperties: Record<string, PropertyDesirability> = {};
   for (const [propName, prop] of Object.entries(profile.properties)) {
@@ -73,13 +75,29 @@ export async function computeMpo(
   }
 
   const profileName = profile.name || 'MPO';
-  await grok.functions.call('Chem:mpoTransformFunction', {
-    df: df,
+  if (!processed) {
+    const existingCol = df.col(profileName);
+    if (existingCol)
+      df.columns.remove(existingCol, false);
+  }
+
+  const resolvedAggregation = aggregation ?? profile.aggregation ?? DEFAULT_AGGREGATION;
+  const call = await DG.Func.find({package: 'Chem', name: 'mpoTransformFunction'})[0].prepare({
+    df,
     profileName,
     currentProperties: JSON.stringify(mappedProperties),
-    aggregation: aggregation ?? 'Average',
+    aggregation: resolvedAggregation,
     silent,
-  });
+  }).call(undefined, undefined, {processed});
+
+  const result = call.getOutputParamValue() as DG.Column[];
+
+  // Temporary fix until proper support for list<column> is implemented
+  const colList = DG.DataFrame.fromColumns(result).columns;
+  await DG.Func.find({package: 'Chem', name: 'mpoCalculate'})[0].prepare({
+    df, columns: colList, profileName, aggregation: resolvedAggregation, createDesirabilityColumns,
+  }).call(undefined, undefined, {processed});
+
   return df.col(profileName) ? [profileName] : [];
 }
 
@@ -132,6 +150,44 @@ export function updateMpoPath(
   view.path = newPath;
 }
 
+export function createDefaultProfile(): DesirabilityProfile {
+  return {
+    type: DESIRABILITY_PROFILE_TYPE,
+    name: '',
+    description: '',
+    properties: {},
+  };
+}
+
+export function createProfileForDf(df: DG.DataFrame): DesirabilityProfile {
+  const props: {[key: string]: PropertyDesirability} = {};
+  let count = 0;
+  for (const col of df.columns.numerical) {
+    if (count >= MAX_MPO_PROPERTIES)
+      break;
+    props[col.name] = createDefaultNumerical(1, col.min, col.max);
+    count++;
+  }
+  return {type: DESIRABILITY_PROFILE_TYPE, name: '', description: '', properties: props};
+}
+
+export function mergeProfileWithDf(existing: DesirabilityProfile, df: DG.DataFrame): DesirabilityProfile {
+  const merged: DesirabilityProfile = {
+    ...existing,
+    properties: structuredClone(existing.properties),
+  };
+
+  const existingLower = new Set(Object.keys(merged.properties).map((n) => n.toLowerCase()));
+  for (const col of df.columns.numerical) {
+    if (Object.keys(merged.properties).length >= MAX_MPO_PROPERTIES)
+      break;
+    if (!existingLower.has(col.name.toLowerCase()))
+      merged.properties[col.name] = createDefaultNumerical(1, col.min, col.max);
+  }
+
+  return merged;
+}
+
 export function deepEqual<T>(current: T, original: T): boolean {
   if (current === original)
     return true;
@@ -154,4 +210,31 @@ export function deepEqual<T>(current: T, original: T): boolean {
       return false;
   }
   return true;
+}
+
+export function setupMpoBreadcrumbs(view: DG.ViewBase, lastSegment: string): void {
+  const breadcrumbs = ui.breadcrumbs(['Home', MPO_PROFILES_NAME, lastSegment]);
+
+  breadcrumbs.onPathClick.subscribe((path) => {
+    const clicked = path[path.length - 1];
+    if (clicked === lastSegment)
+      return;
+    if (clicked === MPO_PROFILES_NAME) {
+      const listView = Array.from(grok.shell.views).find((v) => v.name === MPO_PROFILES_NAME);
+      if (listView)
+        grok.shell.v = listView;
+    }
+  });
+
+  const homeEl = breadcrumbs.root.firstElementChild;
+  if (homeEl) {
+    const homeIcon = ui.iconFA('home', () => grok.shell.v = DG.View.createByType(DG.VIEW_TYPE.HOME));
+    homeEl.replaceWith(homeIcon);
+  }
+
+  const viewNameRoot = view.ribbonMenu.root.parentElement?.getElementsByClassName('d4-ribbon-name')[0];
+  if (viewNameRoot) {
+    viewNameRoot.textContent = '';
+    viewNameRoot.appendChild(breadcrumbs.root);
+  }
 }

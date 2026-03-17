@@ -5,10 +5,6 @@ export interface IBarChartSettings {
   /// Determines the rows shown on the scatter plot.
   rowSource: keyof typeof RowSet;
 
-  /// Formula that filters out rows to show.
-  /// Example: "${AGE} > 20 or (${WEIGHT} / 2) > 100"
-  filter: string;
-
   /// Determines what happens when you click on a bar.
   onClick: keyof typeof RowGroupAction;
 
@@ -103,6 +99,8 @@ export interface IBarChartSettings {
 
   showValueAxisLine: boolean;
 
+  showCategoryZeroBaseline: boolean;
+
   barBorderLineMouseOverWidth: number;
 
   barBorderLineWidth: number;
@@ -118,6 +116,10 @@ export interface IBarChartSettings {
   axisFont: string;
 
   minTextHeight: number;
+
+  /// When enabled, shows hatched areas and arrows on bars
+  /// that are clipped by the value axis range.
+  showClippedBarIndicators: boolean;
 
   backColor: number;
 
@@ -155,15 +157,18 @@ export interface IBarChartSettings {
 
   legendPosition: keyof typeof FlexAutoPosition;
 
+  /// Formula that filters out rows to show.
+  /// Examples:
+  ///   ${AGE} > 20 or ${WEIGHT / 2)} > 100,
+  ///   ${SEVERITY} == 'Medium',
+  ///   ${RACE}.endsWith('sian')
+  filter: string;
+
   /// Viewer controls elements font.
   controlsFont: string;
 
   allowDynamicMenus: boolean;
 
-  // Properties common for all viewers
-  // todo: use code generation
-  // Properties common for all viewers
-  // todo: use code generation
   // Properties common for all viewers
   // todo: use code generation
   showContextMenu: boolean;
@@ -176,27 +181,15 @@ export interface IBarChartSettings {
 
   /// Viewer description that gets shown at the *Descriptor Position*.
   /// Markup is supported.
-  /// Viewer description that gets shown at the *Descriptor Position*.
-  /// Markup is supported.
-  /// Viewer description that gets shown at the *Descriptor Position*.
-  /// Markup is supported.
   description: string;
 
-  /// Help to be shown when user clicks on the '?' icon on top.
-  /// Could either be in markdown, or a URL (starting with '/' or 'http').
-  /// Help to be shown when user clicks on the '?' icon on top.
-  /// Could either be in markdown, or a URL (starting with '/' or 'http').
   /// Help to be shown when user clicks on the '?' icon on top.
   /// Could either be in markdown, or a URL (starting with '/' or 'http').
   help: string;
 
   /// Namespace-qualified function that gets executed when a viewer is initialized
-  /// Namespace-qualified function that gets executed when a viewer is initialized
-  /// Namespace-qualified function that gets executed when a viewer is initialized
   initializationFunction: string;
 
-  /// JavaScript that gets executed after a viewer is initialized and added to the TableView
-  /// JavaScript that gets executed after a viewer is initialized and added to the TableView
   /// JavaScript that gets executed after a viewer is initialized and added to the TableView
   onInitializedScript: string;
 
@@ -413,6 +406,8 @@ export interface IBoxPlotSettings {
   showQ3: boolean;
 
   viewport: string;
+
+  allowColorSynchronization: boolean;
 
   autoLayout: boolean;
 
@@ -1067,8 +1062,8 @@ export interface IGridSettings {
   /// Ctrl+Shift+click to deselect
   allowColSelection: boolean;
 
-  /// Mouse drag on the rows header selects rows
-  /// Reorder rows by dragging them
+  /// Drag any cell (except the row number) to reorder rows
+  /// Drag the row number column to select rows
   allowRowReordering: boolean;
 
   /// Whether to sort when user double-clicks on the column header
@@ -1710,6 +1705,9 @@ export interface ILineChartSettings {
   axesUseColumnFormat: boolean;
 
   showAggrTypeSelector: boolean;
+
+  /// Determines whether the points and lines are highlighted when you hover over a row group in another viewer.
+  showMouseOverRowGroup: boolean;
 
   /// Marker type for showing the distribution of the aggregated values
   /// when multiple values have the same X value
@@ -2907,6 +2905,10 @@ export interface IScatterPlotSettings {
   linesOrder: string;
   linesOrderColumnName: string;
 
+  /// When defined, lines are split into separate series by this categorical column instead of the color column.
+  linesBy: string;
+  linesByColumnName: string;
+
   /// Defines the width of the lines connecting the markers. See **Lines Width**.
   linesWidth: number;
 
@@ -2975,6 +2977,10 @@ export interface IScatterPlotSettings {
   /// When true, selected markers are highlighted using the selected rows color.
   /// When false, selected markers use their regular color coding.
   showSelectedRows: boolean;
+
+  /// When true, clicking on the background (no point hit) clears the current selection.
+  /// Set to false to preserve the selection when accidentally clicking outside of the markers.
+  resetSelectionOnBackgroundClick: boolean;
 
   /// Shows tickmarks and labels for minimum and maximum value on each axis.
   showMinMaxTickmarks: boolean;

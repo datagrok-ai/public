@@ -158,6 +158,34 @@ export namespace funcs {
   }
 
   /**
+  Assigns antibody numbering (IMGT/Kabat/Chothia/AHo) using AntPack
+  */
+  export async function applyNumberingScheme(): Promise<void> {
+    return await grok.functions.call('Bio:ApplyNumberingScheme', {});
+  }
+
+  /**
+  Scans macromolecule sequences for deamidation, oxidation, and other liabilities
+  */
+  export async function scanLiabilities(): Promise<void> {
+    return await grok.functions.call('Bio:ScanLiabilities', {});
+  }
+
+  /**
+  View and manage sequence annotations on macromolecule columns
+  */
+  export async function manageAnnotations(): Promise<void> {
+    return await grok.functions.call('Bio:ManageAnnotations', {});
+  }
+
+  /**
+  Creates a new input for sequence columns with ability to extract a region
+  */
+  export async function sequenceColumnInput(name: string , options: any ): Promise<any> {
+    return await grok.functions.call('Bio:SequenceColumnInput', { name, options });
+  }
+
+  /**
   Detects pairs of molecules with similar structure and significant difference in any given property
   */
   export async function activityCliffs(table: DG.DataFrame , molecules: string , activities: DG.Column , similarity: number , methodName: string , similarityMetric: string , preprocessingFunction: any , options?: any , demo?: boolean ): Promise<void> {
@@ -346,6 +374,10 @@ export namespace funcs {
 
   export async function manageMonomerLibrariesViewTreeBrowser(treeNode: any ): Promise<void> {
     return await grok.functions.call('Bio:ManageMonomerLibrariesViewTreeBrowser', { treeNode });
+  }
+
+  export async function monomerCollectionsApp(): Promise<DG.View> {
+    return await grok.functions.call('Bio:MonomerCollectionsApp', {});
   }
 
   /**

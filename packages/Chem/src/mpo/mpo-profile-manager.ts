@@ -1,10 +1,12 @@
 import * as grok from 'datagrok-api/grok';
+import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 
-import {DesirabilityProfile} from '@datagrok-libraries/statistics/src/mpo/mpo';
+import {DesirabilityProfile, isDesirabilityProfile} from '@datagrok-libraries/statistics/src/mpo/mpo';
+import {generateMpoFileName, getNextAvailable} from '@datagrok-libraries/statistics/src/mpo/utils';
 
 import {deleteMpoProfile, loadMpoProfiles, MPO_PROFILE_CHANGED_EVENT, MPO_PROFILE_DELETED_EVENT,
-  MPO_TEMPLATE_PATH, MpoProfileInfo} from './utils';
+  MPO_TEMPLATE_PATH, MpoProfileInfo, MpoSaveResult} from './utils';
 
 class MpoProfileManagerImpl {
   private profiles: MpoProfileInfo[] = [];
@@ -39,13 +41,13 @@ class MpoProfileManagerImpl {
     const baseFileName = this.getBaseFileName(profile.fileName);
 
     const clone = structuredClone(profile);
-    clone.name = this.getNextAvailable(
+    clone.name = getNextAvailable(
       baseName,
       this.existingNames,
       (b, n) => n ? `${b} (Copy ${n})` : `${b} (Copy)`,
     );
 
-    const cloneFileName = this.getNextAvailable(
+    const cloneFileName = getNextAvailable(
       baseFileName,
       this.existingFileNames,
       (b, n) => n ? `${b}-copy-${n}.json` : `${b}-copy.json`,
@@ -55,8 +57,7 @@ class MpoProfileManagerImpl {
   }
 
   generateFileName(profileName: string): string {
-    const base = profileName.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
-    return this.getNextAvailable(base, this.existingFileNames, (b, n) => n ? `${b}-${n}.json` : `${b}.json`);
+    return generateMpoFileName(profileName, this.existingFileNames);
   }
 
   confirmDelete(profile: MpoProfileInfo, onDeleted?: () => void): void {
@@ -76,17 +77,70 @@ class MpoProfileManagerImpl {
       .show();
   }
 
+  async showSaveDialog(profile: DesirabilityProfile, existingFileName?: string | null): Promise<MpoSaveResult> {
+    await this.ensureLoaded();
+    const isExisting = !!existingFileName;
+    return new Promise((resolve) => {
+      const nameInput = ui.input.string('Name', {value: profile.name ?? '', nullable: false});
+      const descInput = ui.input.textArea('Description', {value: profile.description ?? ''});
+      const overrideInput = isExisting ? ui.input.bool('Override existing', {value: true}) : null;
+
+      const inputs: HTMLElement[] = [nameInput.root, descInput.root];
+      if (overrideInput)
+        inputs.push(overrideInput.root);
+
+      const dlg = ui.dialog({title: 'Save MPO Profile'})
+        .add(ui.divV(inputs))
+        .onOK(async () => {
+          profile.name = nameInput.value!;
+          profile.description = descInput.value || '';
+          const fileName = isExisting && overrideInput?.value ? existingFileName! : this.generateFileName(profile.name);
+          const saved = await this.save(profile, fileName);
+          resolve({saved, fileName});
+        })
+        .onCancel(() => resolve({saved: false, fileName: ''}))
+        .show();
+
+      const okButton = dlg.getButton('OK');
+      okButton.disabled = !nameInput.validate();
+      nameInput.onInput.subscribe(() => okButton.disabled = !nameInput.validate());
+    });
+  }
+
   async save(profile: DesirabilityProfile, fileName: string): Promise<boolean> {
     try {
       await grok.dapi.files.writeAsText(`${MPO_TEMPLATE_PATH}/${fileName}`, JSON.stringify(profile));
       await this.load();
       this.fireChanged();
-      grok.shell.info(`Profile "${profile.name}" saved.`);
+      grok.shell.info(`Profile "${profile.name}" saved as ${fileName}.`);
       return true;
     } catch (e) {
       grok.shell.error(`Failed to save profile: ${e instanceof Error ? e.message : e}`);
       return false;
     }
+  }
+
+  importFromFile(): void {
+    DG.Utils.openFile({accept: '.json', open: async (file) => {
+      try {
+        const text = await file.text();
+        const parsed = JSON.parse(text);
+        if (!isDesirabilityProfile(parsed)) {
+          grok.shell.warning('Import failed: not a valid MPO profile');
+          return;
+        }
+        if (!parsed.name)
+          parsed.name = file.name.replace(/\.json$/i, '');
+        await this.save(parsed, this.generateFileName(parsed.name));
+      } catch (e) {
+        grok.shell.warning('Import failed: invalid JSON file');
+      }
+    }});
+  }
+
+  exportToFile(profile: MpoProfileInfo): void {
+    const {fileName, ...data} = profile;
+    DG.Utils.download(fileName, JSON.stringify(data, null, 2), 'application/json');
   }
 
   fireChanged(): void {
@@ -99,22 +153,6 @@ class MpoProfileManagerImpl {
 
   private getBaseFileName(fileName: string): string {
     return fileName.replace(/(-copy(?:-\d+)?)?\.json$/i, '');
-  }
-
-  private getNextAvailable(
-    base: string,
-    existing: Set<string>,
-    format: (base: string, num?: number) => string,
-  ): string {
-    const first = format(base);
-    if (!existing.has(first))
-      return first;
-
-    let num = 2;
-    while (existing.has(format(base, num)))
-      num++;
-
-    return format(base, num);
   }
 }
 

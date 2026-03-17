@@ -21,7 +21,6 @@ export interface IUserReport {
 
   /** Property description. It will be shown in the UI where possible. */
   /// Model description
-  /** Property description. It will be shown in the UI where possible. */
   /// Free-text description.
   description: string;
 

@@ -45,36 +45,24 @@ category('Viewers: Line Chart', () => {
       xColumnName: 'age',
       yColumnNames: ['height', 'weight'],
       yAggrTypes: ['avg', 'min'],
+      splitColumnName: 'race',
     });
     await awaitCheck(() => document.querySelector('.d4-line-chart') !== null, 'line chart not found', 3000);
 
     if (lineChart.props.splitColumnName != 'race')
       throw 'Split column has not been set';
-    if (lineChart.props.valueColumnName != 'height')
+    if (lineChart.props.yColumnNames[0] != 'height')
       throw 'Value column has not been set';
-    if (lineChart.props.valueAggrType != 'max')
+    if (lineChart.props.yAggrTypes[0] != 'avg')
       throw 'Aggregation has not been set';
 
     lineChart.setOptions({
       title: 'Test Line chart',
-      relativeValues: true,
-      onClick: 'Filter',
-      barBorderLineMouseOverWidth: 10,
     });
 
     await awaitCheck(() => (document.
       querySelector('#elementContent > div.d4-layout-top > div > textarea') as HTMLSelectElement).
       value === 'Test Line chart', 'title property has not been set', 2000);
-    if (!lineChart.props.relativeValues)
-      throw 'relativeValues property has not been set';
-    if (lineChart.props.onClick != 'Filter')
-      throw 'onClick property has not been set';
-    if (lineChart.props.barBorderLineMouseOverWidth != 10)
-      throw 'barBorderLineMouseOverWidth property has not been set';
-    if (lineChart.props.barSortOrder != 'desc')
-      throw 'barSortOrder property (default) has not been set';
-    if (lineChart.props.barSortType != 'by value')
-      throw 'barSortType property (default) has not been set';
   });
 
   // Does not work through Test Manager

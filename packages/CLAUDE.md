@@ -7,6 +7,22 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 This directory contains 70+ Datagrok plugins. Each plugin is a self-contained TypeScript plugin that extends
 the Datagrok data analytics platform with viewers, connectors, scientific tools, and more.
 
+## Grok utility
+
+Use `grok` utility (part of `datagrok-tools` at `../tools`) for working with plugins in a universal way.
+Invoke it from the plugin folder:
+
+```bash
+grok --help   # help, or grok <command> --help
+grok publish  # uploads plugin to a Datagrok server
+grok add      # add an object template
+grok api      # create a TS file with the client code to work with functions exposed by the plugin
+grok check    # check package content for validity (such as function signatures)
+grok link     # link `datagrok-api` and libraries for local development
+grok test     # run package test
+grok testall  # run tests in all packages (invoked from the folder containing all plugins)
+```
+
 ## Build Commands
 
 Every package follows the same build pattern. Run from within a package directory:
@@ -43,7 +59,7 @@ grok test --gui --debug              # With breakpoints
 ```
 
 ## Package Structure
-
+!
 A package is a versionable unit of content distribution. Beyond TypeScript source, packages can bundle
 scripts, queries, connections, Docker containers, databases, and static files — all recognized by the
 platform automatically.
@@ -204,6 +220,50 @@ Packages import three namespaces from `datagrok-api`:
 - **`ui`** — UI components: dialogs, inputs, menus, viewers
 - **`DG`** (from `datagrok-api/dg`) — all types, constants, classes (DataFrame, Column, Viewer, etc.)
 
+## Server API (grok.dapi)
+
+Use `grok.dapi.*` for all server interactions. Never use raw `fetch()` for Datagrok server endpoints.
+
+| Need to...                          | Use                                                |
+|-------------------------------------|----------------------------------------------------|
+| CRUD on entities (users, groups...) | `grok.dapi.users`, `grok.dapi.groups`, etc.        |
+| Run/find data queries               | `grok.dapi.queries`                                |
+| Manage data connections             | `grok.dapi.connections`                             |
+| Work with projects                  | `grok.dapi.projects`                                |
+| Upload/download tables              | `grok.dapi.tables`                                  |
+| File operations                     | `grok.dapi.files` or `_package.files`               |
+| Manage scripts                      | `grok.dapi.scripts`                                 |
+| Call Docker containers              | `grok.dapi.docker.dockerContainers.fetchProxy(...)` |
+| Fetch external URLs (bypass CORS)   | `grok.dapi.fetchProxy(url, params)`                 |
+| Permissions                         | `grok.dapi.permissions`                              |
+| User settings storage               | `grok.userSettings`                                  |
+
+Most dapi sub-objects extend `HttpDataSource<T>` with methods: `list()`, `find(id)`,
+`save(entity)`, `delete(entity)`, `filter(query)`, `order(field)`, `page(n)`, `by(pageSize)`.
+
+### Common patterns
+
+```typescript
+// List/find entities
+const users = await grok.dapi.users.list();
+const q = await grok.dapi.queries.filter('name = "myQuery"').first();
+
+// Save entity
+await grok.dapi.connections.save(connection);
+
+// External URL (DO NOT use raw fetch — CORS will fail)
+const resp = await grok.dapi.fetchProxy('https://api.example.com/data');
+const json = await resp.json();
+```
+
+### Anti-patterns
+
+- **Never `fetch('/api/...')`** — use `grok.dapi.*` which handles auth, routing, and types
+- **Never `fetch('https://external.com/...')`** — use `grok.dapi.fetchProxy()` to avoid CORS
+- **Never build REST URLs manually** — the dapi layer already maps to all server endpoints
+
+See samples: `packages/ApiSamples/scripts/dapi/`
+
 ## Linking for Local Development
 
 When modifying `js-api` or `@datagrok-libraries/*` alongside a package:
@@ -239,3 +299,24 @@ Always link all dependencies in a single command. When linking to local js-api, 
 - **Peptides** - peptide SAR
 - **PowerPack** - useful platform enhancement
 - **PowerGrid** - grid enhancements: many cell renderers, sparklines, forms, pinned columns
+
+## Function Roles
+
+Functions are discovered and integrated with the platform at runtime based on special tags:
+
+| Tag | Role | Template command |
+|-----|------|-----------------|
+| `#app` | Application entry point | `grok add app <name>` |
+| `#panel` | Info panel (extends context panel) | `grok add function panel <name>` |
+| `#init` | Package initialization (runs once before first function call) | `grok add function init <name>` |
+| `#autostart` | Runs at platform startup (use `meta.autostartImmediate: true` for immediate) | — |
+| `#semTypeDetector` | Semantic type detector | `grok add detector <name>` |
+| `#cellRenderer` | Custom cell renderer (`cellRenderer-<type>`) | — |
+| `#fileViewer` | File viewer for specific extensions (`fileViewer-<ext>`) | — |
+| `#fileExporter` | Data export function | — |
+| `#dashboard` | Dashboard | — |
+| `#packageSettingsEditor` | Custom settings editor UI | — |
+
+Additionally, `meta.role: converter` with `meta.inputRegexp` registers type converters.
+
+Find functions by tag: `DG.Func.find({tags: [DG.FUNC_TYPES.APP]})`.

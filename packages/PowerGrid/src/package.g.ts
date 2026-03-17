@@ -1,14 +1,16 @@
 import {ScatterPlotCellRenderer} from './sparklines/scatter-plot';
-import {RawPNGRenderer} from './pngRenderer';
+import {RawPNGRenderer} from './png-renderer';
 import {PackageFunctions} from './package';
 import {HtmlTestCellRenderer} from './cell-types/test-cell-renderer';
 import {StarsCellRenderer} from './cell-types/stars-cell-renderer';
 import {MultiChoiceCellRenderer} from './cell-types/multi-choice-cell-renderer';
 import {ImageCellRenderer} from './cell-types/image-cell-renderer';
 import {HyperlinkCellRenderer} from './cell-types/hyperlink-cell-renderer';
+import {ColorCellRenderer} from './cell-types/color-cell-renderer';
 import {BinaryImageCellRenderer} from './cell-types/binary-image-cell-renderer';
 import * as DG from 'datagrok-api/dg';
 //name: binaryImageCellRenderer
+//tags: cellRenderer
 //output: grid_cell_renderer renderer
 //meta.role: cellRenderer
 //meta.cellType: BinaryImage
@@ -16,7 +18,16 @@ export function _BinaryImageCellRenderer() {
   return new BinaryImageCellRenderer();
 }
 
+//name: Color
+//output: grid_cell_renderer renderer
+//meta.role: cellRenderer
+//meta.cellType: Color
+export function _ColorCellRenderer() {
+  return new ColorCellRenderer();
+}
+
 //name: hyperlinkCellRenderer
+//tags: cellRenderer
 //output: grid_cell_renderer renderer
 //meta.role: cellRenderer
 //meta.cellType: Hyperlink
@@ -25,6 +36,7 @@ export function _HyperlinkCellRenderer() {
 }
 
 //name: imageUrlCellRenderer
+//tags: cellRenderer
 //output: grid_cell_renderer renderer
 //meta.role: cellRenderer
 //meta.cellType: ImageUrl
@@ -33,6 +45,7 @@ export function _ImageCellRenderer() {
 }
 
 //name: Multi Choice
+//tags: cellRenderer
 //output: grid_cell_renderer renderer
 //meta.role: cellRenderer
 //meta.cellType: MultiChoice
@@ -41,6 +54,7 @@ export function _MultiChoiceCellRenderer() {
 }
 
 //name: Stars
+//tags: cellRenderer
 //output: grid_cell_renderer renderer
 //meta.role: cellRenderer
 //meta.cellType: Stars
@@ -49,6 +63,7 @@ export function _StarsCellRenderer() {
 }
 
 //name: htestCellRenderer
+//tags: cellRenderer
 //output: grid_cell_renderer renderer
 //meta.role: cellRenderer
 //meta.cellType: htest
@@ -57,6 +72,7 @@ export function _HtmlTestCellRenderer() {
 }
 
 
+//tags: cellRenderer
 //output: grid_cell_renderer result
 //meta.gridChart: true
 //meta.cellType: bar
@@ -66,6 +82,7 @@ export function barCellRenderer() {
 }
 
 //name: Sparklines
+//tags: cellRenderer
 //output: grid_cell_renderer result
 //meta.cellType: sparkline
 //meta.gridChart: true
@@ -76,6 +93,7 @@ export function sparklineCellRenderer() {
 }
 
 //name: Bar Chart
+//tags: cellRenderer
 //output: grid_cell_renderer result
 //meta.cellType: barchart
 //meta.gridChart: true
@@ -86,6 +104,7 @@ export function barchartCellRenderer() {
 }
 
 //name: Pie Chart
+//tags: cellRenderer
 //output: grid_cell_renderer result
 //meta.cellType: piechart
 //meta.gridChart: true
@@ -96,6 +115,7 @@ export function piechartCellRenderer() {
 }
 
 //name: Radar
+//tags: cellRenderer
 //output: grid_cell_renderer result
 //meta.cellType: radar
 //meta.gridChart: true
@@ -106,6 +126,7 @@ export function radarCellRenderer() {
 }
 
 //name: Smart Form
+//tags: cellRenderer
 //output: grid_cell_renderer result
 //meta.cellType: smartform
 //meta.gridChart: true
@@ -116,6 +137,7 @@ export function smartFormCellRenderer() {
 }
 
 //name: Tags
+//tags: cellRenderer
 //output: grid_cell_renderer result
 //meta.cellType: Tags
 //meta.gridChart: true
@@ -126,6 +148,7 @@ export function tagsCellRenderer() {
 }
 
 //name: Confidence Interval
+//tags: cellRenderer
 //output: grid_cell_renderer result
 //meta.cellType: ConfidenceInterval
 //meta.gridChart: true
@@ -149,6 +172,7 @@ export function addFormColumn(columns: DG.Column[]) : void {
   PackageFunctions.addFormColumn(columns);
 }
 
+//tags: cellRenderer
 //output: grid_cell_renderer result
 //meta.cellType: testUnitsKg
 //meta.columnTags: foo=bar,units=kg
@@ -157,6 +181,7 @@ export function testUnitsKgCellRenderer() {
   return PackageFunctions.testUnitsKgCellRenderer();
 }
 
+//tags: cellRenderer
 //output: grid_cell_renderer result
 //meta.cellType: testUnitsTon
 //meta.columnTags: foo=bar,units=ton
@@ -165,17 +190,18 @@ export function testUnitsTonCellRenderer() {
   return PackageFunctions.testUnitsTonCellRenderer();
 }
 
-//input: object gridCol 
-//output: object result
-export function addPinnedColumn(gridCol: any) : any {
-  return PackageFunctions.addPinnedColumn(gridCol);
-}
-
 //name: demoTestUnitsCellRenderer
 export function demoTestUnitsCellRenderer() : void {
   PackageFunctions.demoTestUnitsCellRenderer();
 }
 
+//input: object gridCol 
+//output: object result
+export function addPinnedColumn(gridCol: any) {
+  return PackageFunctions.addPinnedColumn(gridCol);
+}
+
+//tags: autostart
 //meta.role: autostart
 export async function _autoPowerGrid() : Promise<void> {
   await PackageFunctions._autoPowerGrid();
@@ -183,6 +209,7 @@ export async function _autoPowerGrid() : Promise<void> {
 
 //name: Forms
 //description: Forms viewer
+//tags: viewer
 //output: viewer result
 //meta.icon: files/icons/formviewer.svg
 //meta.viewerPosition: bottom
@@ -194,6 +221,7 @@ export function formsViewer() {
 
 //name: Content
 //description: Image content
+//tags: widgets, panel
 //input: string imageUrl { semType: ImageUrl }
 //output: widget result
 //meta.role: widgets,panel
@@ -230,6 +258,7 @@ export function isWebGPURenderValid(sc: any) : boolean {
   return PackageFunctions.isWebGPURenderValid(sc);
 }
 //name: rawPng
+//tags: cellRenderer
 //output: grid_cell_renderer renderer
 //meta.role: cellRenderer
 //meta.cellType: rawPng
@@ -238,6 +267,7 @@ export function _RawPNGRenderer() {
 }
 
 //name: Scatter Plot
+//tags: cellRenderer
 //output: grid_cell_renderer renderer
 //meta.role: cellRenderer
 //meta.cellType: scatterplot

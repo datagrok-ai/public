@@ -4,13 +4,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Overview
 
-**Diff Studio** is a Datagrok package that provides in-browser tools for solving initial value problems (IVP) for systems of ordinary differential equations (ODEs). It implements Rosenbrock-Wanner numerical methods for solving both stiff and non-stiff ODEs directly in the browser.
+**Diff Studio** is a Datagrok package that provides in-browser tools for solving initial value problems (IVP) for systems of ordinary differential equations (ODEs). It implements multiple numerical methods for solving both stiff and non-stiff ODEs directly in the browser, including the automatic stiffness-detecting LSODA method, Rosenbrock-Wanner implicit methods, Runge-Kutta explicit methods, and Adams-Bashforth multistep methods.
 
 The package is accessible via **Apps > Compute > Diff Studio** in the Datagrok platform.
 
 ## Key Dependencies
 
-- **diff-grok** (v1.0.8+) - Core ODE solver library implementing MRT, ROS3PRw, and ROS34PRw methods
+- **diff-grok** (v1.2.0+) - Core ODE solver library implementing CVODE, LSODA, MRT, ROS3PRw, ROS34PRw, RK3, RK4, RKDP, AB4, and AB5 methods
 - **@datagrok-libraries/compute-utils** - Provides sensitivity analysis and fitting views
 - **CodeMirror 6** - Code editor for IVP formula editing
 - **@datagrok-libraries/test** - Testing utilities
@@ -46,12 +46,13 @@ grok check --soft          # Validate package
 - Manages templates, library examples, and user models
 - Integrates with sensitivity analysis and parameter fitting
 - File preview and browser integration
-- ~2500+ lines - the heart of the user interface
+- ~2300+ lines - the heart of the user interface
 
 **solver-tools.ts**
-- Thin wrapper around `diff-grok` methods (mrt, ros3prw, ros34prw)
+- Thin wrapper around `diff-grok` methods (lsoda, mrt, ros3prw, ros34prw, rk3, rk4, rkdp, ab4, ab5)
 - `solveDefault()` - uses ROS34PRw by default
 - `solveIVP()` - customizable solver with options
+- `getMethod()` - resolves method name from solver options
 - Converts solver output to Datagrok DataFrames
 
 **scripting-tools.ts**
@@ -66,8 +67,13 @@ grok check --soft          # Validate package
 - Manages model execution with Diff Studio UI
 - Handles dock layout ratios for inputs/graphs
 
+**utils.ts**
+- `error()` - Calculates max absolute deviation between DataFrames
+- `unusedFileName()` - Generates unused IVP file names
+
 **callbacks/** directory
 - `callback-base.ts` - Base callback interface
+- `callback-tools.ts` - Callback manager, creates callbacks based on solver options
 - `iter-checker-callback.ts` - Iteration limit checking
 - `time-checker-callback.ts` - Computation time limit checking
 
@@ -90,9 +96,11 @@ grok check --soft          # Validate package
 - Pollution (air pollution model, 25 reactions)
 
 **demo/** directory - Standalone model demonstrations:
+- `acid-production.ts` - Gluconic acid production model
 - `ball-flight.ts` - Ball trajectory simulation
-- `pk-pd.ts` - PK-PD simulation demo
 - `bioreactor.ts` - Controlled fab-arm exchange mechanism
+- `pk-pd.ts` - PK-PD simulation demo
+- `pollution.ts` - Air pollution model
 
 ### Files Structure
 
@@ -112,6 +120,7 @@ files/
     nimotuzumab.ivp
     bioreactor.ivp
     pollution.ivp
+    energy-n-control.ivp
   icons/              # Model icons
   ball-flight-trajectory.csv
 ```
@@ -163,9 +172,11 @@ Annotations (in `{...}`) control UI generation: `caption`, `category`, `min`, `m
 - `solveODE(problem: string)` - Parse and solve IVP from string
 
 **Model functions:**
+- `acidProduction()` - Gluconic acid production model
 - `ballFlight()` - Ball trajectory model
-- `pkPdNew()` - PK-PD model
 - `Bioreactor()` - Bioreactor model
+- `pkPdNew()` - PK-PD model
+- `pollution()` - Air pollution model
 - `runModel()` - Run model with Diff Studio UI
 
 **Utility functions:**
@@ -195,6 +206,15 @@ Tests are organized in `src/tests/`:
 **pipeline-tests.ts**
 - End-to-end pipeline tests
 
+**demo-models-tests.ts**
+- Tests for demo model functions
+
+**parser-tests.ts**
+- Tests for IVP parser
+
+**test-utils.ts**
+- Shared test utilities
+
 Run specific test categories:
 ```bash
 grok test --category "Correctness"
@@ -219,13 +239,27 @@ npm run debug-odes   # Publish to test server
 
 ## Numerical Methods
 
-Diff Studio implements three Rosenbrock-Wanner methods from `diff-grok`:
+Diff Studio implements the following methods from `diff-grok`:
 
+**Automatic stiffness-detecting methods:**
+- **CVODE** - `method: 'cvode'` - variable-order, variable-step BDF solver from SUNDIALS v7.5.0 port (Hindmarsh et al., 2005); uses dense direct linear solver (LU decomposition) with warmup strategy for extremely stiff problems
+- **LSODA** - `method: 'lsoda'` - variable-order Nordsieck-based solver with automatic switching between Adams (non-stiff) and BDF (stiff)
+
+**Implicit methods (for stiff ODEs) - Rosenbrock-Wanner type:**
 - **MRT** (Modified Rosenbrock Triple) - `method: 'mrt'`
 - **ROS3PRw** - `method: 'ros3prw'`
 - **ROS34PRw** (default) - `method: 'ros34prw'`
 
-All methods handle stiff and non-stiff equations. ROS34PRw is the default for best accuracy/performance balance.
+**Explicit methods (for non-stiff ODEs) - Runge-Kutta type:**
+- **RK3** (Bogacki-Shampine 3(2)) - `method: 'rk3'`
+- **RK4** (Runge-Kutta-Fehlberg 4(5)) - `method: 'rk4'`
+- **RKDP** (Dormand-Prince 5(4)) - `method: 'rkdp'`
+
+**Explicit methods (for non-stiff ODEs) - Adams-Bashforth type:**
+- **AB4** (predictor-corrector of order 4) - `method: 'ab4'`
+- **AB5** (predictor-corrector of order 5) - `method: 'ab5'`
+
+ROS34PRw is the default method. CVODE and LSODA are recommended as general-purpose solvers that auto-detect stiffness.
 
 ## Important Constants
 

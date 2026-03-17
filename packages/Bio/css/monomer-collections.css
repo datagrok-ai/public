@@ -1,0 +1,184 @@
+.monomer-collections-view {
+  padding: 16px;
+  overflow-y: auto;
+  height: 100%;
+}
+
+.monomer-collections-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  align-content: flex-start;
+}
+
+.monomer-collection-card {
+  width: 20%;
+  min-width: 240px;
+  height: 300px;
+  border: 1px solid var(--grey-2);
+  border-radius: 8px;
+  background: var(--white);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  transition: box-shadow 0.2s ease;
+}
+
+.monomer-collection-card:hover {
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.12);
+}
+
+.monomer-collection-card-header {
+  padding: 12px 14px 8px 14px;
+  border-bottom: 1px solid var(--grey-2);
+  flex-shrink: 0;
+}
+
+.monomer-collection-card-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--grey-6);
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.monomer-collection-card-description {
+  font-size: 11px;
+  color: var(--grey-4);
+  margin: 4px 0 0 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.monomer-collection-card-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+  margin: 4px 0 0 0;
+}
+
+.monomer-collection-card-tag {
+  display: inline-block;
+  padding: 1px 6px;
+  border-radius: 3px;
+  background: #e8f0fe;
+  border: 1px solid var(--blue-2, #aecbfa);
+  font-size: 10px;
+  color: var(--blue-3, #4285f4);
+}
+
+.monomer-collection-card-meta {
+  font-size: 10px;
+  color: var(--grey-3);
+  margin: 4px 0 0 0;
+}
+
+.monomer-collections-search {
+  margin-bottom: 12px;
+}
+
+.monomer-collections-search input {
+  width: 100%;
+  max-width: 400px;
+}
+
+.monomer-collection-card-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 10px 14px;
+  min-height: 0;
+}
+
+.monomer-collection-card-actions {
+  padding: 8px 14px;
+  border-top: 1px solid var(--grey-2);
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  flex-shrink: 0;
+}
+
+.monomer-collection-card-actions .ui-btn {
+  font-size: 11px;
+  padding: 2px 10px;
+}
+
+.monomer-collection-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.monomer-collection-tag {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 4px;
+  background: var(--grey-1);
+  border: 1px solid var(--grey-2);
+  font-size: 11px;
+  color: var(--grey-5);
+  cursor: default;
+  transition: background 0.15s ease;
+}
+
+.monomer-collection-tag:hover {
+  background: var(--blue-1, #e8f0fe);
+  border-color: var(--blue-2, #aecbfa);
+}
+
+.monomer-collection-add-card {
+  width: 20%;
+  min-width: 240px;
+  height: 300px;
+  border: 2px dashed var(--grey-3);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: border-color 0.2s ease, background 0.2s ease;
+}
+
+.monomer-collection-add-card:hover {
+  border-color: var(--blue-2, #aecbfa);
+  background: var(--blue-1, #e8f0fe);
+}
+
+.monomer-collection-add-card-content {
+  text-align: center;
+  color: var(--grey-4);
+}
+
+.monomer-collection-add-card-content .grok-icon {
+  font-size: 32px;
+  margin-bottom: 8px;
+}
+
+.monomer-collection-add-card-content span {
+  display: block;
+  font-size: 13px;
+}
+
+.monomer-collections-load-more {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  padding: 16px 0;
+}
+
+.monomer-collections-load-more .ui-btn {
+  min-width: 200px;
+}
+
+.monomer-collection-empty-state {
+  width: 100%;
+  text-align: center;
+  padding: 60px 20px;
+  color: var(--grey-4);
+  font-size: 14px;
+}

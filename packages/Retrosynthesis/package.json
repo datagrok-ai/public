@@ -1,6 +1,6 @@
 {
   "name": "@datagrok/retrosynthesis",
-  "version": "1.0.5",
+  "version": "1.0.6",
   "description": "Creates retrosynthesis paths for the selected molecule",
   "author": {
     "name": "Maria Dolotova",
@@ -29,6 +29,7 @@
     "@typescript-eslint/eslint-plugin": "^5.62.0",
     "@typescript-eslint/parser": "^5.62.0",
     "css-loader": "^7.1.2",
+    "datagrok-tools": "^5.0.0",
     "eslint": "^8.21.0",
     "eslint-config-google": "^0.14.0",
     "style-loader": "^4.0.0",

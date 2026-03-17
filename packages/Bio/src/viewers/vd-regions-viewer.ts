@@ -4,7 +4,7 @@ import * as DG from 'datagrok-api/dg';
 
 import {fromEvent, Observable, Subject, Unsubscribable} from 'rxjs';
 
-import {testEvent} from '@datagrok-libraries/test/src/test';
+import {testEvent} from '@datagrok-libraries/utils/src/test';
 import {
   IVdRegionsViewer,
   VdRegion, VdRegionType,
@@ -322,6 +322,8 @@ export class VdRegionsViewer extends DG.JsViewer implements IVdRegionsViewer {
       for (const chain of this.chains) {
         const region: VdRegion | undefined = regionsFiltered
           .find((r) => r.order == orderList[orderI] && r.chain == chain);
+        if (!region)
+          continue;
         logoPromiseList.push((async (): Promise<[number, string, WebLogoViewer]> => {
           const wl: WebLogoViewer = await this.dataFrame.plot.fromType('WebLogo', {
             sequenceColumnName: region!.sequenceColumnName,

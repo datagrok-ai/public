@@ -1,5 +1,26 @@
 # Diff Studio changelog
 
+## 1.5.2 (2026-03-14)
+
+Updated the bioreactor model
+
+## 1.5.1 (2026-03-14)
+
+Fixed Model Hub issue
+
+## 1.5.0 (2026-03-13)
+
+Implemented new methods:
+
+* Runge-Kutta for non-stiff ODEs:
+  * Bogacki-Shampine 3(2)
+  * Runge-Kutta-Fehlberg 4(5)
+  * Dormand-Prince 5(4)
+* Adams-Bashforth - multistep predictor-correctors of order 4 and 5
+* LSODA, CVODE - automatic stiffness detection solvers
+
+Fixed minor bugs
+
 ## 1.4.10 (2026-01-14)
 
 Path update

@@ -284,9 +284,11 @@ export class DataFrame {
   /** Creates a new dataframe from the specified row mask and a list of columns.
    * @param {BitSet} rowMask - Rows to include.
    * @param {string[]} columnIds - Columns to include.
-   * @param {boolean} saveSelection - Whether selection should be saved. */
-  clone(rowMask: BitSet | null = null, columnIds: string[] | null = null, saveSelection: boolean = false): DataFrame {
-    return new DataFrame(api.grok_DataFrame_Clone(this.dart, toDart(rowMask), columnIds, saveSelection));
+   * @param {boolean} saveSelection - Whether selection should be saved.
+   * @param {boolean} saveTags - Whether tags should be copied to the new dataframe.
+   * */
+  clone(rowMask: BitSet | null = null, columnIds: string[] | null = null, saveSelection: boolean = false, saveTags: boolean = true): DataFrame {
+    return new DataFrame(api.grok_DataFrame_Clone(this.dart, toDart(rowMask), columnIds, saveSelection, saveTags));
   }
 
   /** Current row.

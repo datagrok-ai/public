@@ -27,6 +27,7 @@ import {useHelp} from '../../composables/use-help';
 import {useObservable} from '@vueuse/rxjs';
 import {getIvp2WebWorker, getPipelineCreator} from 'diff-grok';
 import {_package} from '../../package-instance';
+import { getViewers } from '../../utils';
 
 interface ScalarsState {
   type: 'scalars',
@@ -205,12 +206,13 @@ export const RichFunctionView = Vue.defineComponent({
       changeHelpFunc,
     } = useHelp();
 
+    const viewersHook = Vue.toRef(props, 'viewersHook');
+    const callMeta = Vue.toRef(props, 'callMeta');
+
     const currentCall = Vue.computed(() => Vue.markRaw(props.funcCall));
     const currentView = Vue.computed(() => Vue.markRaw(props.view));
     const currentUuid = Vue.computed(() => props.uuid);
     const isFormValid = Vue.ref(false);
-
-    const callMeta = Vue.computed(() => props.callMeta);
 
     const isOutputOutdated = Vue.computed(() => props.callState?.isOutputOutdated);
     const isRunning = Vue.computed(() => props.callState?.isRunning);
@@ -248,9 +250,10 @@ export const RichFunctionView = Vue.defineComponent({
     // FuncCall related
     ////
 
+
     const {setViewerRef} = useViewersHook(
-      Vue.toRef(props, 'viewersHook'),
-      Vue.toRef(props, 'callMeta'),
+      viewersHook,
+      callMeta,
       currentCall,
     );
 
@@ -469,11 +472,12 @@ export const RichFunctionView = Vue.defineComponent({
           { isReportEnabled.value && !isOutputOutdated.value && <IconFA
             name='arrow-to-bottom'
             onClick={async () => {
+              const viewers = await getViewers(currentCall.value, viewersHook.value, callMeta.value);
               const [blob] = await richFunctionViewReport(
                 'Excel',
                 currentCall.value.func,
                 currentCall.value,
-                dfToViewerMapping(currentCall.value),
+                viewers,
               );
               DG.Utils.download(`${currentCall.value.func.nqName} - ${Utils.getStartedOrNull(currentCall.value) ?? 'Not completed'}.xlsx`, blob);
             }}

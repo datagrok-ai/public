@@ -40,10 +40,21 @@ To configure a custom aggregated tooltip, go to **Context menu > Tooltip > Edit*
 
 ![](img/line-chart-aggregated-tooltip.gif)
 
+## Tools
+
+- **Formula lines**: Add reference lines or bands defined by mathematical formulas to analyze trends and thresholds. See [Scatterplot: Formula lines](scatter-plot.md#formula-lines) for details.
+- **Annotation regions**: Highlight and annotate areas of interest on the chart using rectangular, lasso, or formula-based regions. See [Scatterplot: Annotation regions](scatter-plot.md#annotation-regions) for details.
+
 ## Statistical Process Control
 
-Line chart supports Statistical Process Control (SPC) features out of the box, including contol limits and adjustable rules.
-![SPC Chart](../../uploads/gifs/line-chart-spc.png "SPC Chart")
+Line chart includes comprehensive Statistical Process Control (SPC) capabilities for monitoring process behavior:
+
+- Control limits (manually configurable) and process mean line
+- Sigma bands (±1σ and ±2σ) to visualize process variation
+- Western Electric rules for anomaly detection: outliers, bias, trends, oscillation, shifts, and suppressed variation
+
+Toggle each component on/off independently in the **Context Panel** to focus on relevant process signals.
+![](img/line-chart-spc.gif)
 
 ## Videos
 
@@ -154,6 +165,7 @@ Line chart supports Statistical Process Control (SPC) features out of the box, i
 | **Misc** | | |
 | Axes Use Column Format | boolean | Use column format for axis labels, where possible |
 | Show Aggr Type Selector | boolean |  |
+| Show Mouse Over Row Group | boolean | Determines whether the points and lines are highlighted when you hover over a row group in another viewer. |
 | **Style** | | |
 | Auto Layout | boolean |  |
 | Segments Font | string |  |

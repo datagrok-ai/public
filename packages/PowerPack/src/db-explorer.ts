@@ -379,34 +379,40 @@ function getEnrichDiv(col: DG.Column): HTMLElement {
   const enrichAcc = ui.accordion('Enrich Column');
   enrichAcc.addPane('Enrich', () => {
     if ([DG.COLUMN_TYPE.BOOL, DG.COLUMN_TYPE.DATE_TIME].includes(col.type as DG.COLUMN_TYPE)) {
-      return ui.info(`Cannot use column of ${col.type} type for enrichment. 
-Supported types are ${[DG.COLUMN_TYPE.STRING, DG.COLUMN_TYPE.BIG_INT, DG.COLUMN_TYPE.INT, DG.COLUMN_TYPE.FLOAT].join(', ')}.`);
+      return ui.divText(`Cannot use column of ${col.type} type for enrichment. Supported types are ${[DG.COLUMN_TYPE.STRING, DG.COLUMN_TYPE.BIG_INT, DG.COLUMN_TYPE.INT, DG.COLUMN_TYPE.FLOAT].join(', ')}.`,
+        'power-pack-enrich-info');
     }
 
     const df = col.dart ? col.dataFrame : null;
     if (!df || df.rowCount === 0)
-      return ui.info('Data frame is empty or not available.');
+      return ui.divText('Data frame is empty or not available.', 'power-pack-enrich-info');
 
     const dbName = col.tags.get(DG.Tags.Db);
     const schemaName = col.tags.get(DG.Tags.DbSchema);
-    const connId: string = df.tags.get(DG.Tags.DataConnectionNqName) ?? df.tags.get(DG.Tags.DataConnectionId);
+    const connId: string = df.tags.get(DG.Tags.DataConnectionNqName)?.length > 0 ? df.tags.get(DG.Tags.DataConnectionNqName) : df.tags.get(DG.Tags.DataConnectionId);
     const dbColName = col.tags.get(DG.Tags.DbColumn);
     const tableName = col.tags.get(DG.Tags.DbTable);
 
     if (!connId || !dbColName || !tableName)
-      return ui.info('Column is not linked to database table.');
+      return ui.divText('Column is not linked to database table.', 'power-pack-enrich-info');
 
     return ui.wait(async () => {
-      const conn = connId.includes(':') ?
-        (await grok.dapi.connections.filter(`namespace = "${connId.split(':')[0]}:" and shortName = "${connId.split(':')[1]}"`).list()).find((_) => true) :
-        await grok.dapi.connections.find(connId);
+      let conn: DG.DataConnection | undefined;
+      if (isGuid(connId))
+        conn = await grok.dapi.connections.find(connId);
+      else {
+        const parts = connId.split(':');
+        conn = parts.length === 2 ?
+          (await grok.dapi.connections.filter(`namespace = "${parts[0]}:" and shortName = "${parts[1]}"`).list()).find((_) => true) :
+          (await grok.dapi.connections.filter(`shortName = "${connId}"`).list()).find((_) => true);
+      }
       if (!conn)
-        return ui.info('Failed to find connection for this column.');
+        return ui.divText('Failed to find connection for this column.', 'power-pack-enrich-info');
       const tables: DG.TableInfo[] = await grok.dapi.connections.getSchema(conn, schemaName, tableName, dbName ?? null);
       if (tables.length === 0)
-        return ui.info('Could not find a main table used for SQL query. Please, try to specify full "<schema>.<table>" name in SQL query.');
+        return ui.divText('Could not find a main table used for SQL query. Please, try to specify full "<schema>.<table>" name in SQL query.', 'power-pack-enrich-info');
       if (tables.length > 1)
-        return ui.info('Ambiguous table name — specify full "<schema>.<table>" name in SQL query.');
+        return ui.divText('Ambiguous table name — specify full "<schema>.<table>" name in SQL query.', 'power-pack-enrich-info');
 
       const mainTable: DG.TableInfo = tables[0];
       const enrichmentsRoot = getEnrichmentsDiv(conn, mainTable.tags.get(DG.Tags.TableSchema), mainTable.friendlyName, dbColName, dbName, df);
@@ -414,7 +420,7 @@ Supported types are ${[DG.COLUMN_TYPE.STRING, DG.COLUMN_TYPE.BIG_INT, DG.COLUMN_
       addEnrichBtn.append(ui.icons.add(() => {}), ui.span(['Add enrichment']));
       addEnrichBtn.classList.add('power-pack-enrich-add');
       addEnrichBtn.onclick = () => showEnrichDialog(mainTable, df, dbColName, () => {
-        enrichmentsRoot.replaceWith(getEnrichmentsDiv(conn, mainTable.tags.get(DG.Tags.TableSchema), mainTable.friendlyName, dbColName, dbName, df));
+        enrichmentsRoot.replaceWith(getEnrichmentsDiv(conn!, mainTable.tags.get(DG.Tags.TableSchema), mainTable.friendlyName, dbColName, dbName, df));
       }, undefined, undefined, dbName);
       return ui.div([
         enrichmentsRoot,
@@ -629,11 +635,17 @@ export async function runEnrichmentFromConfig(conn: DG.DataConnection, schema: s
 async function executeEnrichQuery(query: DG.TableQuery, df: DG.DataFrame, keyCol: string): Promise<void> {
   try {
     query.limit = undefined;
-    const keyColValues = df.getCol(keyCol).toList();
+    const dfKeyCol = df.columns.firstWhere(col => col.tags.get(DG.Tags.DbColumn) === keyCol);
+    if (!dfKeyCol) {
+      grok.shell.error('Could not resolve the column.');
+      return;
+    }
+    const keyColValues = dfKeyCol.toList();
+    const dataType = dfKeyCol.type;
     let res: DG.DataFrame | undefined;
     for (let i = 0; i < keyColValues.length; i += 200) {
       const inValues = keyColValues.slice(i, i + 200);
-      query.where = [{field: `${query.table}.${keyCol}`, pattern: `in (${inValues.join(',')})`, dataType: df.getCol(keyCol).type}];
+      query.where = [{field: `${query.table}.${keyCol}`, pattern: `in (${inValues.join(',')})`, dataType}];
       const queryCall = query.prepare();
       const run = await queryCall.call(false, undefined,
         {processed: true, report: false});
@@ -656,7 +668,7 @@ async function executeEnrichQuery(query: DG.TableQuery, df: DG.DataFrame, keyCol
     joinTable.applySync({
       'table1': df,
       'table2': res,
-      'keys1': [keyCol],
+      'keys1': [dfKeyCol.name],
       'keys2': [keyCol],
       'values1': df.columns.names(),
       'values2': res.columns.names().filter((n) => n !== keyCol),
@@ -667,6 +679,11 @@ async function executeEnrichQuery(query: DG.TableQuery, df: DG.DataFrame, keyCol
   } catch (e: any) {
     grok.shell.error(`Failed to enrich:\n ${e}`);
   }
+}
+
+function isGuid(str: string): boolean {
+  const guidRegex = /^[\da-f]{8}-[\da-f]{4}-[\da-f]{4}-[\da-f]{4}-[\da-f]{12}$/i;
+  return guidRegex.test(str);
 }
 
 interface Enrichment {

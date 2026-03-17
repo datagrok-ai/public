@@ -85,6 +85,11 @@ export class Shell {
     return toJs(api.grok_Project());
   }
 
+  /** Returns the list of currently opened projects */
+  get projects(): Project[] {
+    return toJs(api.grok_Shell_Get_Projects());
+  }
+
   /** Adds a table to the workspace. */
   addTable(table: DataFrame): DataFrame {
     api.grok_AddTable(table.dart);
@@ -412,6 +417,11 @@ export class Windows {
   /** Controls the visibility of the toolbox. */
   get showToolbox(): boolean { return api.grok_Windows_Get_ShowToolbox(); }
   set showToolbox(x: boolean) { api.grok_Windows_Set_ShowToolbox(x); }
+
+  /** When true (default), opening a view automatically shows the toolbox.
+   * Set false to prevent the toolbox from appearing automatically. */
+  get autoShowToolbox(): boolean { return api.grok_Windows_Get_AutoShowToolbox(); }
+  set autoShowToolbox(x: boolean) { api.grok_Windows_Set_AutoShowToolbox(x); }
 
   /** Controls the visibility of the browse. */
   get showBrowse(): boolean { return api.grok_Windows_Get_ShowBrowse(); }

@@ -8,9 +8,15 @@ export type DesirabilityLine = number[][];
 
 export type DesirabilityMode = 'freeform' | 'gaussian' | 'sigmoid';
 
+export type MissingValueConfig =
+  | { strategy: 'exclude' }
+  | { strategy: 'default'; score: number }
+  | { strategy: 'skip' };
+
 type BasePropertyDesirability = {
   weight: number; /// 0-1
-  defaultScore?: number;
+  weightColumn?: string; /// optional column name to read per-row weights from (0-1)
+  missingValues?: MissingValueConfig;
 }
 
 export type NumericalDesirability = BasePropertyDesirability & {
@@ -62,16 +68,25 @@ export function migrateDesirability(raw: any): PropertyDesirability {
   return {...raw, functionType: 'numerical'};
 }
 
+export const DESIRABILITY_PROFILE_TYPE = 'MPO Desirability Profile';
+
 /// A map of desirability lines with their weights
 export type DesirabilityProfile = {
+  type: typeof DESIRABILITY_PROFILE_TYPE;
   name: string;
   description: string;
+  aggregation?: WeightedAggregation;
   properties: { [key: string]: PropertyDesirability };
+}
+
+export function isDesirabilityProfile(x: any): x is DesirabilityProfile {
+  return x != null && typeof x === 'object' && x.type === DESIRABILITY_PROFILE_TYPE;
 }
 
 export const WEIGHTED_AGGREGATIONS = ['Average', 'Sum', 'Product', 'Geomean', 'Min', 'Max'] as const;
 export const WEIGHTED_AGGREGATIONS_LIST: WeightedAggregation[] = [...WEIGHTED_AGGREGATIONS];
 export type WeightedAggregation = typeof WEIGHTED_AGGREGATIONS[number];
+export const DEFAULT_AGGREGATION: WeightedAggregation = 'Average';
 
 /// Calculates the desirability score for a given x value
 /// Returns 0 if x is outside the range of the desirability line
@@ -103,7 +118,12 @@ export function categoricalDesirabilityScore(
   prop: CategoricalDesirability,
 ): number | null {
   const found = prop.categories.find((c) => c.name === value);
-  return found?.desirability ?? prop.defaultScore ?? null;
+  return found?.desirability ?? null;
+}
+
+export type MpoResult = {
+  scoreColumn: DG.Column;
+  desirabilityColumns?: DG.Column[];
 }
 
 /** Calculates the multi parameter optimization score, 0-100, 100 is the maximum */
@@ -112,16 +132,28 @@ export function mpo(
   columns: DG.Column[],
   profileName: string,
   aggregation: WeightedAggregation,
-): DG.Column {
+  isDifferent: boolean = false,
+  createDesirabilityColumns: boolean = false,
+): MpoResult {
   if (columns.length === 0)
     throw new Error('No columns provided for MPO calculation.');
 
-  const resultColumn = dataFrame.col(profileName) ?? DG.Column.float(profileName, columns[0].length);
+  const rowCount = columns[0].length;
+  const resultColumn = isDifferent ?
+    DG.Column.float(profileName, rowCount) :
+    (dataFrame.col(profileName) ?? DG.Column.float(profileName, rowCount));
 
-  const desirabilityTemplates = columns.map((column) => {
+  const desirabilityTemplates: PropertyDesirability[] = [];
+  const weightColumns: (DG.Column | null)[] = [];
+  for (const column of columns) {
     const tag = column.getTag('desirabilityTemplate');
-    return migrateDesirability(JSON.parse(tag));
-  });
+    const d = migrateDesirability(JSON.parse(tag));
+    desirabilityTemplates.push(d);
+    weightColumns.push(d.weightColumn ? dataFrame.col(d.weightColumn) ?? null : null);
+  }
+
+  const desirabilityColumns = createDesirabilityColumns ?
+    columns.map((col) => DG.Column.float(`${col.name} (${profileName} desirability)`, rowCount)) : undefined;
 
   resultColumn.init((i) => {
     const scores: number[] = [];
@@ -131,24 +163,41 @@ export function mpo(
       const desirability = desirabilityTemplates[j];
       const value = columns[j].get(i);
 
-      if (columns[j].isNone(i))
-        return desirability.defaultScore ?? NaN;
+      let score: number | null;
 
-      const score = isNumerical(desirability) ?
-        desirabilityScore(value, desirability.line) :
-        categoricalDesirabilityScore(String(value), desirability);
+      if (columns[j].isNone(i)) {
+        const mv = desirability.missingValues;
+        if (!mv || mv.strategy === 'exclude')
+          return NaN;
+        if (mv.strategy === 'skip')
+          continue;
+        score = mv.score;
+      }
+      else {
+        score = isNumerical(desirability) ?
+          desirabilityScore(value, desirability.line) :
+          categoricalDesirabilityScore(String(value), desirability);
+      }
 
       if (score === null)
         return NaN;
 
+      if (createDesirabilityColumns)
+        desirabilityColumns![j].set(i, score, false);
+
       scores.push(score);
-      weights.push(desirability.weight);
+      const wCol = weightColumns[j];
+      const w = wCol && !wCol.isNone(i) ? Math.max(0, Math.min(1, wCol.get(i))) : desirability.weight;
+      weights.push(w);
     }
+
+    if (scores.length === 0)
+      return NaN;
 
     return aggregate(scores, weights, aggregation);
   });
 
-  return resultColumn;
+  return {scoreColumn: resultColumn, desirabilityColumns};
 }
 
 export function aggregate(scores: number[], weights: number[], aggregation: WeightedAggregation): number {

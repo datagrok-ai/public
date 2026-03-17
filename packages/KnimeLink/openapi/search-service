@@ -1,0 +1,495 @@
+---
+openapi: 3.1.0
+components:
+  schemas:
+    AccountSearchItem:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        displayName:
+          type: string
+    Icon:
+      type: object
+      required:
+      - data
+      - type
+      - inPorts
+      - outPorts
+      description: "Information required to generate a node icon. If a node in the\
+        \ database is missing one of the required Icon fields, the entire Icon object\
+        \ is not included in the response object. Clients should then provide some\
+        \ default icon."
+      properties:
+        data:
+          type: string
+          format: byte
+        type:
+          type: string
+          description: "Node type, e.g. `Learner`, `LoopEnd`, `LoopStart`, `Manipulator`"
+        deprecated:
+          type: boolean
+          default: false
+        streamable:
+          type: boolean
+          default: false
+        inPorts:
+          type: array
+          items:
+            $ref: "#/components/schemas/Port"
+          description: "List of input ports, potentially empty"
+        outPorts:
+          type: array
+          items:
+            $ref: "#/components/schemas/Port"
+          description: "List of output ports, potentially empty"
+        hasDynInPorts:
+          type: boolean
+          default: false
+        hasDynOutPorts:
+          type: boolean
+          default: false
+    ItemTypeEnum:
+      type: string
+      enum:
+      - Workflow
+      - Node
+      - Extension
+      - Component
+      - Collection
+    Port:
+      type: object
+      required:
+      - color
+      - optional
+      - dataType
+      properties:
+        color:
+          type: string
+        optional:
+          type: boolean
+        dataType:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        objectClass:
+          type: string
+    SearchItem:
+      type: object
+      required:
+      - itemType
+      - pathToResource
+      - id
+      - owner
+      discriminator:
+        propertyName: itemType
+        mapping:
+          WORKFLOW: "#/components/schemas/SearchItemWorkflow"
+          NODE: "#/components/schemas/SearchItemNode"
+          EXTENSION: "#/components/schemas/SearchItemExtension"
+          COMPONENT: "#/components/schemas/SearchItemComponent"
+          COLLECTION: "#/components/schemas/SearchItemCollection"
+      properties:
+        title:
+          type: string
+        titleHighlighted:
+          type: string
+        description:
+          type: string
+        itemType:
+          $ref: "#/components/schemas/ItemTypeEnum"
+        pathToResource:
+          type: string
+        id:
+          type: string
+          examples:
+          - '*YK_q3iKGm3WUlAzo'
+          pattern: "^\\*[a-zA-Z0-9_\\-]{16}$"
+          description: The item's unique ID.
+        owner:
+          type: string
+        ownerAccountId:
+          type: string
+        explanation:
+          type: string
+        matchedQueries:
+          type: array
+          items:
+            type: string
+        score:
+          type: number
+          format: float
+        kudosCount:
+          type: integer
+          format: int32
+          description: The number of kudos for this workflow
+        private:
+          type: boolean
+          description: Whether the item is in a private space or not
+    SearchItemCollection:
+      type: object
+      required:
+      - tags
+      allOf:
+      - $ref: "#/components/schemas/SearchItem"
+      properties:
+        tags:
+          type: array
+          items:
+            type: string
+          description: Potentially empty list of tags
+    SearchItemComponent:
+      type: object
+      required:
+      - tags
+      allOf:
+      - $ref: "#/components/schemas/SearchItem"
+      properties:
+        icon:
+          $ref: "#/components/schemas/Icon"
+        tags:
+          type: array
+          items:
+            type: string
+          description: Potentially empty list of tags
+        downloadCount:
+          type: integer
+          format: int32
+          description: The number of downloads of this component
+        isEncrypted:
+          type: boolean
+          description: States if component is encrypted or not
+          default: false
+        isVersioned:
+          type: boolean
+          description: States if the component is versioned or not
+          default: false
+        version:
+          type: integer
+          format: int32
+          description: The version number if the component is versioned
+          default: false
+        versionCreatedOn:
+          type: string
+          description: The time the component was versioned
+          default: "false"
+        lastEditedOn:
+          type: string
+          description: The time the component was last edited
+          default: "false"
+    SearchItemExtension:
+      type: object
+      allOf:
+      - $ref: "#/components/schemas/SearchItem"
+      properties:
+        vendor:
+          type: string
+          description: The extensions's vendor.
+        trusted:
+          type: boolean
+          description: If the extension is trusted.
+    SearchItemNode:
+      type: object
+      required:
+      - featureSymbolicName
+      allOf:
+      - $ref: "#/components/schemas/SearchItem"
+      properties:
+        icon:
+          $ref: "#/components/schemas/Icon"
+        featureSymbolicName:
+          type: string
+        tags:
+          type: array
+          items:
+            type: string
+          description: "List with tags, potentially empty"
+        keywords:
+          type: array
+          items:
+            type: string
+          description: "List with keywords, potentially empty"
+    SearchItemWorkflow:
+      type: object
+      required:
+      - tags
+      allOf:
+      - $ref: "#/components/schemas/SearchItem"
+      properties:
+        tags:
+          type: array
+          items:
+            type: string
+          description: Potentially empty list of tags
+        downloadCount:
+          type: integer
+          format: int32
+          description: The number of downloads of this workflow
+        isVersioned:
+          type: boolean
+          description: States if the workflow is versioned or not
+          default: false
+        version:
+          type: integer
+          format: int32
+          description: The version number if the workflow is versioned
+          default: false
+        versionCreatedOn:
+          type: string
+          description: The time the workflow was versioned
+          default: "false"
+        lastEditedOn:
+          type: string
+          description: The time the workflow was last edited
+          default: "false"
+    SearchResults:
+      type: object
+      properties:
+        countByCategory:
+          $ref: "#/components/schemas/SearchResultsCountByCategory"
+        results:
+          type: array
+          items:
+            $ref: "#/components/schemas/SearchItem"
+        suggestedTags:
+          type: array
+          items:
+            type: string
+          description: Contains a list of tags that match the query (only instant-search).
+        suggestedUsernames:
+          type: array
+          items:
+            type: string
+          description: Contains a list of usernames that match the query (only instant-search).
+        suggestedTeamnames:
+          type: array
+          items:
+            type: string
+          description: Contains a list of teamnames that match the query (only instant-search).
+        suggestedExternalGroups:
+          type: array
+          items:
+            $ref: "#/components/schemas/AccountSearchItem"
+          description: Contains a list of external groups that match the query (only
+            instant-search).
+        relatedTags:
+          type: array
+          items:
+            type: string
+          description: Contains a list of tags that are included in tags list of matched
+            documents.
+        relatedPathTags:
+          type: array
+          items:
+            type: string
+          description: Contains a list of tags that are included in path tags list
+            of matched documents.
+        took:
+          type: integer
+          format: int64
+        esQuery:
+          type: string
+        esResult:
+          type: string
+    SearchResultsCountByCategory:
+      type: object
+      properties:
+        all:
+          type: integer
+          format: int64
+        workflows:
+          type: integer
+          format: int64
+        nodes:
+          type: integer
+          format: int64
+        extensions:
+          type: integer
+          format: int64
+        components:
+          type: integer
+          format: int64
+        collections:
+          type: integer
+          format: int64
+  securitySchemes:
+    SecurityScheme:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Authentication
+info:
+  contact:
+    email: support@knime.com
+    name: KNIME GmbH
+    url: https://www.knime.com/
+  description: RESTful API for the KNIME Search Service
+  title: KNIME Search API
+  version: 1.0.0
+tags:
+- name: Search
+  description: Endpoints related to Search
+servers:
+- url: /
+  description: Default search microservice
+paths:
+  /instant-search:
+    get:
+      summary: Workflows and Nodes as part of an instant-search
+      operationId: Instant-Search
+      parameters:
+      - description: Number of results to be returned in the search response.
+        name: limit
+        in: query
+        schema:
+          type: integer
+          format: int32
+          default: 10
+      - description: Whether to include accessible private repository items in the
+          search results. Requires authentication.
+        name: privateSearchMode
+        in: query
+        schema:
+          type: string
+          enum:
+          - include
+          - exclude
+          - auto
+          default: auto
+      - description: "Text string to be used in search request. If an empty string\
+          \ is supplied, all items are returned."
+        name: query
+        in: query
+        schema:
+          type: string
+      responses:
+        "200":
+          description: 200 response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SearchResults"
+        "400":
+          description: Response if invalid query parameters are provided.
+        "401":
+          description: Response if provided optional authentication token is invalid
+        "500":
+          description: Response if an unexpected server error occurs.
+      tags:
+      - Instant Search Impl
+  /search:
+    get:
+      summary: Search Workflows and Nodes
+      operationId: Search
+      parameters:
+      - description: Number of results to be returned in the search response.
+        name: limit
+        in: query
+        schema:
+          type: integer
+          format: int32
+          default: 10
+      - description: The offset (items) used to return pagination results. This value
+          corresponds to the first entry returned.
+        name: offset
+        in: query
+        schema:
+          type: integer
+          format: int32
+          default: 0
+      - description: Filter results by owner of the document.
+        name: owner
+        in: query
+        schema:
+          type: string
+      - description: Whether to include accessible private repository items in the
+          search results. Requires authentication.
+        name: privateSearchMode
+        in: query
+        schema:
+          type: string
+          enum:
+          - include
+          - exclude
+          - auto
+          default: auto
+      - description: "Text string to be used in search request. If an empty string\
+          \ is supplied, all items are returned."
+        name: query
+        in: query
+        schema:
+          type: string
+      - description: The criteria used for sorting search results. If none given then
+          the service will determine the most relevant results.
+        name: sort
+        in: query
+        schema:
+          type: string
+          enum:
+          - new
+          - old
+          - best
+          - maxDownloads
+          - minDownloads
+          - maxKudos
+          - minKudos
+          default: best
+      - description: Filter results by one or more tags that documents must contain.
+          Case insensitive.
+        name: tag
+        in: query
+        schema:
+          type: array
+          items:
+            type: string
+      - description: The type of query to be performed. Case insensitive.
+        name: type
+        in: query
+        schema:
+          type: string
+          enum:
+          - workflow
+          - component
+          - node
+          - extension
+          - collection
+          - all
+          default: all
+      responses:
+        "200":
+          description: 200 response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SearchResults"
+        "400":
+          description: Response if invalid query parameters are provided.
+        "401":
+          description: Response if provided authentication token is invalid
+        "500":
+          description: Response if an unexpected server error occurs.
+      tags:
+      - Search Impl
+  /search-counts:
+    get:
+      summary: Get counts of all indices
+      operationId: Counts
+      responses:
+        "200":
+          description: 200 response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SearchResultsCountByCategory"
+        "400":
+          description: Response if invalid query parameters are provided.
+        "401":
+          description: Response if provided authentication token is invalid
+        "500":
+          description: Response if an unexpected server error occurs.
+      tags:
+      - Counts Impl

@@ -217,10 +217,40 @@ export function getRegion(sequence: DG.Column<any>, start?: string, end?: string
 //input: string start { optional: true; description: Region start position name }
 //input: string end { optional: true; description: Region end position name }
 //input: string name { optional: true; description: Region column name }
-//top-menu: Bio | Calculate | Get Region...
+//top-menu: Bio | Calculate | Extract Region...
 //editor: Bio:GetRegionEditor
 export async function getRegionTopMenu(table: DG.DataFrame, sequence: DG.Column, start?: string, end?: string, name?: string) : Promise<void> {
   await PackageFunctions.getRegionTopMenu(table, sequence, start, end, name);
+}
+
+//name: Apply Numbering Scheme
+//description: Assigns antibody numbering (IMGT/Kabat/Chothia/AHo) using AntPack
+//top-menu: Bio | Annotate | Apply Numbering Scheme...
+export function applyNumberingScheme() : void {
+  PackageFunctions.applyNumberingScheme();
+}
+
+//name: Scan Liabilities
+//description: Scans macromolecule sequences for deamidation, oxidation, and other liabilities
+//top-menu: Bio | Annotate | Scan Liabilities...
+export function scanLiabilities() : void {
+  PackageFunctions.scanLiabilities();
+}
+
+//name: Manage Annotations
+//description: View and manage sequence annotations on macromolecule columns
+//top-menu: Bio | Annotate | Manage Annotations...
+export function manageAnnotations() : void {
+  PackageFunctions.manageAnnotations();
+}
+
+//name: Sequence Column Input
+//description: Creates a new input for sequence columns with ability to extract a region
+//input: string name 
+//input: dynamic options 
+//output: dynamic result
+export function sequenceColumnInput(name: string, options: any) : any {
+  return PackageFunctions.sequenceColumnInput(name, options);
 }
 
 //name: Sequence Activity Cliffs
@@ -548,6 +578,16 @@ export async function manageMonomerLibrariesView() : Promise<any> {
 //meta.app: Manage Monomer Libraries
 export async function manageMonomerLibrariesViewTreeBrowser(treeNode: any) : Promise<void> {
   await PackageFunctions.manageMonomerLibrariesViewTreeBrowser(treeNode);
+}
+
+//name: Monomer Collections
+//tags: app
+//output: view result
+//meta.role: app
+//meta.browsePath: Peptides
+//meta.icon: files/icons/monomers.png
+export async function monomerCollectionsApp() : Promise<any> {
+  return await PackageFunctions.monomerCollectionsApp();
 }
 
 //description: As FASTA...

@@ -130,10 +130,6 @@ export namespace queries {
 }
 
 export namespace funcs {
-  export async function autostart(): Promise<void> {
-    return await grok.functions.call('Plates:Autostart', {});
-  }
-
   /**
   Assasy plates with concentration, layout and readout data
   */

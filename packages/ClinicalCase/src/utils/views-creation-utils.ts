@@ -16,7 +16,7 @@ import {createValidationView} from '../views/validation-table-view';
 import {createMatrixTableView} from '../views/matrix-table-view';
 import {createMeasurementProfileTableView} from '../views/measurement-profile-table-view';
 import {awaitCheck} from '@datagrok-libraries/test/src/test';
-import { createMICrossDomainView } from '../views/mi-cross-domain-analysis';
+import {createMICrossDomainView} from '../views/mi-cross-domain-analysis';
 
 
 export function createAEBrowserHelper(studyId: string): any {

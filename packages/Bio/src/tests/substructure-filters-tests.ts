@@ -428,6 +428,7 @@ category('bio-substructure-filters', async () => {
     await awaitGrid(view.grid);
 
     const seqFilter = fg.filters[0] as BioSubstructureFilter;
+    await awaitCheck(() => seqFilter.bioFilter !== null, 'FastaBioFilter hasn\'t been created', 1000);
     const seqBf = seqFilter.bioFilter as FastaBioFilter;
     await testEvent(df.onRowsFiltered, () => {}, () => {
       seqBf.props = new BioFilterProps(fSubStr, undefined, _package.logger);

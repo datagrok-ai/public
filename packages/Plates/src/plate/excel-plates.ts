@@ -1,5 +1,5 @@
 import * as DG from 'datagrok-api/dg';
-import * as ExcelJS from 'exceljs';
+import type * as ExcelJS from 'exceljs';
 import wu from 'wu';
 import {Plate} from './plate';
 import {DataFrame} from 'datagrok-api/dg';

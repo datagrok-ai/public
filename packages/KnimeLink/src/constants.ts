@@ -1,0 +1,17 @@
+export enum KnimeJobState {
+  Idle = 'IDLE',
+  Configured = 'CONFIGURED',
+  Executing = 'EXECUTING',
+  ExecutionFinished = 'EXECUTION_FINISHED',
+  ExecutionFailed = 'EXECUTION_FAILED',
+  ExecutionCancelled = 'EXECUTION_CANCELLED',
+  ExecutionFailedWithContent = 'EXECUTION_FAILED_WITH_CONTENT',
+  InteractionRequired = 'INTERACTION_REQUIRED',
+  Loading = 'LOADING',
+  Undefined = 'UNDEFINED',
+  Discarded = 'DISCARDED',
+  LoadError = 'LOAD_ERROR',
+  NotExecutable = 'NOT_EXECUTABLE',
+  Swapping = 'SWAPPING',
+  Vanished = 'VANISHED',
+}

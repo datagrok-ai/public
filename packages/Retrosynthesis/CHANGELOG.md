@@ -1,4 +1,12 @@
-# REtrosynthesis changelog
+# Retrosynthesis changelog
+
+## 1.0.6 (2025-03-16)
+
+* Re-calculate on config change
+* Use celery for aizynthfinder
+* Requests cancellation, widget debounce
+* GROK-18930: Retrosynthesis: Loader in the property panel intrudes into the Descriptors tab
+* Image build fixes
 
 ## 1.0.5 (2025-05-29)
 

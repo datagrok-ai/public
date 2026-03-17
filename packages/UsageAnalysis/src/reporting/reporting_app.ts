@@ -3,11 +3,11 @@ import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 import * as rx from "rxjs";
 import {delay} from 'rxjs/operators'
+import {loadUsers, setupUserIconRenderer} from '../utils';
 
 export class ReportingApp {
   static readonly APP_NAME = 'Reports';
   view: DG.TableView = DG.TableView.create(DG.DataFrame.create());
-  users: { [_: string]: any; } = {};
   parentCall: DG.FuncCall;
   currentFilter?: DG.Viewer;
   isInit: boolean = false;
@@ -15,25 +15,13 @@ export class ReportingApp {
   constructor(parentCall: DG.FuncCall) {
     this.parentCall = parentCall;
     this.view.name = ReportingApp.APP_NAME;
-    const loader: HTMLElement = ui.loader();
-    loader.style.flexGrow = 'initial!important';
-    this.view.root.append(loader);
-    this.view.root.style.display = 'flex';
-    this.view.root.style.alignItems = 'center';
-    this.view.root.style.justifyContent = 'center';
     this.view.path = '';
     this.view.setRibbonPanels([[ui.button('Add rule...', async () =>
         await DG.UserReportsRule.showAddDialog())]]);
   }
 
   async init(path?: string): Promise<void> {
-    (await grok.dapi.users.list()).forEach((user: DG.User) => {
-      this.users[user.friendlyName] = {
-        'avatar': user.picture,
-        'name': user.friendlyName,
-        'data': user,
-      };
-    });
+    const indicatorTimer = setTimeout(() => ui.setUpdateIndicator(this.view.root, true, 'Loading...'), 200);
 
     let reportNumber: number | undefined;
     if (path && path !== '/') {
@@ -41,41 +29,57 @@ export class ReportingApp {
       if (segments.length === 1)
         reportNumber = parseInt(segments[0]);
     }
-    let table: DG.DataFrame = await grok.dapi.reports.getReports(reportNumber);
-    this.view.table = table;
 
-    await this.refresh(table, this.view!.grid);
+    const allReportsPromise = grok.dapi.reports.getReports();
+
     if (reportNumber) {
-      const progress = DG.TaskBarProgressIndicator.create('Loading reports...');
       try {
-        const reports = await grok.dapi.reports.getReports();
-        reports.rows.removeWhere((r) => r.get('number') === reportNumber);
-        const columns = reports.columns.toList();
-        for (const col of columns) {
-          if (!table.col(col.name))
-            table.columns.add(DG.Column.fromType(col.type, col.name, table.rowCount))
+        const singleTable = await grok.dapi.reports.getReports(reportNumber);
+        if (singleTable.rowCount > 0) {
+          const reportId = singleTable.getCol('id').get(0);
+          const report = await grok.dapi.reports.find(reportId);
+          if (report)
+            grok.shell.setCurrentObject(report, false);
         }
-        table.appendMerge(reports);
-        await this.refresh(table, this.view!.grid);
-        setTimeout(async () => {
-          const length = table.rowCount;
-          for (let i = 0; i < length; i++) {
-            if (this.view?.grid.cell('number', i).cell.value == reportNumber) {
-              this.view?.grid.scrollToCell('date', i);
-              break;
-            }
-          }
-        }, 200);
-      } catch (e) {
+      }
+      catch (e) {
         console.error(e);
-      } finally {
-        progress.close();
       }
     }
 
+    let table: DG.DataFrame = await allReportsPromise;
+    this.view.table = table;
+
+    if (reportNumber) {
+      const numberCol = table.getCol('number');
+      for (let i = 0; i < table.rowCount; i++) {
+        if (numberCol.get(i) === reportNumber) {
+          table.currentRowIdx = i;
+          break;
+        }
+      }
+    }
+
+    await this.refresh(table, this.view!.grid);
+    clearTimeout(indicatorTimer);
+    ui.setUpdateIndicator(this.view.root, false);
+
+    if (reportNumber) {
+      setTimeout(async () => {
+        const length = table.rowCount;
+        for (let i = 0; i < length; i++) {
+          if (this.view?.grid.cell('number', i).cell.value == reportNumber) {
+            table.currentRowIdx = this.view.grid.cell('number', i).cell.rowIndex;
+            this.view?.grid.scrollToCell('date', i);
+            await this.showPropertyPanel(table);
+            break;
+          }
+        }
+      }, 200);
+    }
   }
 
-  refresh(table: DG.DataFrame, grid: DG.Grid) {
+  async refresh(table: DG.DataFrame, grid: DG.Grid) {
     if (table.rowCount > 0 && !this.isInit) {
       grid.sort(['is_resolved', 'last_occurrence', 'errors_count'], [true, false, false]);
       for (const col of table.columns)
@@ -87,39 +91,12 @@ export class ReportingApp {
       table.getCol('description').semType = 'Text';
       table.getCol('error_stack_trace').semType = 'Text';
 
-      // table.getCol('reporter').semType = 'User';
-      // table.getCol('reporter').setTag('cell.renderer', 'User');
-      //
-      // table.getCol('assignee').semType = 'User';
-      // table.getCol('assignee').setTag('cell.renderer', 'User');
       table.getCol('jira').semType = 'JIRA Ticket';
       table.getCol('jira').setTag('cell.renderer', 'JIRA Ticket');
 
       this.applyStyle(grid);
-      grid.onCellPrepare(async (gc) => {
-        if ((gc.gridColumn.name === 'reporter' || gc.gridColumn.name === 'assignee') && gc.cell.value) {
-          const user = this.users[gc.cell.value];
-          const icon = DG.ObjectHandler.forEntity(user.data)?.renderIcon(user.data.dart);
-          if (icon) {
-            icon.style.top = 'calc(50% - 8px)';
-            icon.style.left = 'calc(50% - 8px)';
-            gc.style.element = ui.tooltip.bind(icon, () => {
-              return DG.ObjectHandler.forEntity(user.data)?.renderTooltip(user.data.dart)!;
-            });
-          }
-        }
-        // if (gc.gridColumn.name === 'jira' && gc.cell.value) {
-        //   const link = ui.link((gc.cell.value as string).replace('GROK-', ''), `https://reddata.atlassian.net/jira/software/c/projects/GROK/issues/${gc.cell.value}`);
-        //   link.addEventListener('click', (e) => {
-        //     e.preventDefault();
-        //     window.open(link.href, '_blank');
-        //   });
-        //   link.style.position = 'absolute';
-        //   link.style.top = 'calc(50% - 8px)';
-        //   link.style.left = '3px';
-        //   gc.style.element = ui.tooltip.bind(link, () => 'Link to JIRA ticket');
-        // }
-      });
+      const users = await loadUsers();
+      setupUserIconRenderer(grid, users, ['reporter', 'assignee']);
       table.getCol('labels').meta.multiValueSeparator = ',';
       this.view!.subs.push(
           grid.onCellRender.subscribe((gc) => {
@@ -188,10 +165,6 @@ export class ReportingApp {
 
   applyStyle(viewer: DG.Grid) {
     viewer.columns.setOrder(['date', 'auto', 'number', 'users', 'errors_count', 'reporter', 'assignee', 'description', 'jira', 'labels', 'error_stack_trace', 'id', 'last_occurrence', 'first_occurrence']);
-    viewer.col('reporter')!.width = 25;
-    viewer.col('reporter')!.cellType = 'html';
-    viewer.col('assignee')!.width = 25;
-    viewer.col('assignee')!.cellType = 'html';
 
     viewer.col('jira')!.cellType = 'html';
     viewer.col('jira')!.width = 55;

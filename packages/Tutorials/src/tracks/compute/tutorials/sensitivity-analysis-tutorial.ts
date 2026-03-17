@@ -179,13 +179,13 @@ export class SensitivityAnalysisTutorial extends Tutorial {
       return;      
     }
     
-    const rightPanel = ribbonPannels[ribbonPannels.length - 1];
-    if (rightPanel.length < 2) {
+    const rightPanel = ribbonPannels[0];
+    if (rightPanel.length < 3) {
       grok.shell.warning('Failed to load model analysis features');
       return;      
     }
     
-    const senAnIcnRoot = rightPanel[rightPanel.length - 1];
+    const senAnIcnRoot = rightPanel[2];
 
     await this.action(
       'Run sensitivity analysis',

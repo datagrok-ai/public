@@ -12,6 +12,10 @@ export namespace funcs {
     return await grok.functions.call('PowerGrid:BinaryImageCellRenderer', {});
   }
 
+  export async function colorCellRenderer(): Promise<any> {
+    return await grok.functions.call('PowerGrid:ColorCellRenderer', {});
+  }
+
   export async function hyperlinkCellRenderer(): Promise<any> {
     return await grok.functions.call('PowerGrid:HyperlinkCellRenderer', {});
   }
@@ -86,12 +90,12 @@ export namespace funcs {
     return await grok.functions.call('PowerGrid:TestUnitsTonCellRenderer', {});
   }
 
-  export async function addPinnedColumn(gridCol: any ): Promise<any> {
-    return await grok.functions.call('PowerGrid:AddPinnedColumn', { gridCol });
-  }
-
   export async function demoTestUnitsCellRenderer(): Promise<void> {
     return await grok.functions.call('PowerGrid:DemoTestUnitsCellRenderer', {});
+  }
+
+  export async function addPinnedColumn(gridCol: any ): Promise<any> {
+    return await grok.functions.call('PowerGrid:AddPinnedColumn', { gridCol });
   }
 
   export async function autoPowerGrid(): Promise<void> {

@@ -2,11 +2,22 @@
 
 .st-structure-body {
   padding-right: 20px;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
 }
 
 .st-structure-mol-img {
-  margin-right: 30px;
-  float: right;
+  flex: 1 1 0;
+  min-height: 100px;
+  min-width: 0;
+  transform: translateX(-50px);
+  overflow: hidden;
+}
+
+.st-structure-mol-img canvas {
+  max-width: 100% !important;
+  height: auto !important;
 }
 
 .st-structure-bool-button-block {
@@ -15,8 +26,9 @@
 }
 
 .st-structure-bottom {
-  flex-direction: row-reverse;
+  flex: 1 1 0;
   padding-top: 20px;
+  min-height: 0;
 }
 
 .st-structure-clear-buttons {

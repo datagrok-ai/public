@@ -9,7 +9,9 @@ Datagrok's package management tool
 Commands:
     add       Add an object template
     api       Create wrapper functions
+    build     Build a package or multiple packages
     check     Check package content (function signatures, etc.)
+    claude    Launch Claude Code in a Datagrok dev container
     config    Create and manage config files
     create    Create a package
     init      Modify a package template
@@ -24,6 +26,45 @@ To get help on a particular command, use:
 
 Read more about the package development workflow:
 https://datagrok.ai/help/develop/develop
+`;
+
+const HELP_CLAUDE = `
+Usage: grok claude <project>              Start or reattach to a project
+       grok claude destroy <project>      Stop containers + remove worktree
+       grok claude destroy-all            Destroy all projects
+
+Launch Claude Code inside a Datagrok dev container. Creates a git worktree
+for the project, starts a full Datagrok stack (postgres, rabbitmq, grok_pipe,
+datagrok) and opens Claude Code in a tools-dev container.
+
+Version is auto-detected: bleeding-edge for the public repo,
+latest stable release (from Docker Hub) for other repos.
+
+Options:
+[--version <tag>] [--profile <name>] [--keep]
+[--port <N>] [--prompt <text>] [--in-place]
+[--grok-connect-version <tag>] [--grok-spawner-version <tag>]
+[--jkg-version <tag>] [--tools-dev-version <tag>]
+
+--version               Datagrok image version (default: bleeding-edge for public repo, latest otherwise)
+--profile               Compose profile: demo, scripting, full (default: none)
+--keep                  Don't stop containers on exit
+--port                  Datagrok host port (default: random available)
+--prompt                Pass initial prompt to Claude Code (non-interactive)
+--in-place              Use current directory instead of creating a git worktree
+--grok-connect-version  grok_connect image version (default: latest)
+--grok-spawner-version  grok_spawner image version (default: latest)
+--jkg-version           jupyter_kernel_gateway image version (default: latest)
+--tools-dev-version     tools-dev image version (default: latest)
+
+Examples:
+  grok claude GROK-12345                        Start working on a task
+  grok claude GROK-12345 --version 1.22.0       Use specific Datagrok version
+  grok claude GROK-12345 --profile full --keep   Start all services, keep running
+  grok claude GROK-12345 --prompt "fix the bug"  One-shot command
+  grok claude GROK-12345 --in-place              Work in current directory
+  grok claude destroy GROK-12345                 Tear down a task
+  grok claude destroy-all                        Tear down everything
 `;
 
 const HELP_ADD = `
@@ -149,15 +190,15 @@ const HELP_TEST = `
 Usage: grok test
 
 Options:
-[--package] [--category] [--test] [--host] [--csv] [--gui] [--skip-build] [--skip-publish] [--link] [--catchUnhandled] [--report] [--record] [--verbose] [--platform] [--benchmark] [--stress-test] [--debug] [--all]
+[--package] [--category] [--test] [--host] [--csv] [--gui] [--skip-build] [--skip-publish] [--link] [--catchUnhandled] [--report] [--record] [--verbose] [--platform] [--benchmark] [--stress-test] [--debug] [--all] [-r | --recursive] [--filter] [--parallel N]
 
 --package           Specify a package name to run tests for
 --category          Specify a category name to run tests for
---test              Specify a test name to run 
+--test              Specify a test name to run
 --host              Host alias as in the config file
 --csv               Save the test report in a CSV file
 --gui               Launch graphical interface (non-headless mode)
---debug             Enables debug point on tests run (useless without gui mode) 
+--debug             Enables debug point on tests run (useless without gui mode)
 --verbose           Show debug information
 --retry --no-retry  Enables or disables browser reload after a failed test
 --report            Report failed tests to audit, notifies package author (default=false)
@@ -170,8 +211,17 @@ Options:
 --benchmark   	    Runs tests in benchmark mode
 --stress-test       Runs shuffled stress-test only
 --all               Runs tests for all available packages(run in packages directory)
- 
+--recursive         Test all packages in the current directory (parallel, table output)
+--filter            Filter packages by package.json fields (e.g. --filter "category:Cheminformatics")
+--parallel N        Max parallel test jobs (default: 4)
+
 Run package tests
+
+Examples:
+  grok test -r                                       Test all packages
+  grok test -r --filter "category:Cheminformatics"   Test matching packages
+  grok test -r --parallel 2 --host dev               Test with 2 jobs against dev
+  grok test -r --skip-build --skip-publish            Test without rebuilding
 
 See instructions:
 https://datagrok.ai/help/develop/how-to/test-packages#local-testing
@@ -236,6 +286,29 @@ Example:
   meta: { role: 'viewer,ml' }
 `;
 
+const HELP_BUILD = `
+Usage: grok build
+
+Build a package in the current directory, or recursively build multiple packages.
+
+Options:
+[-r | --recursive] [-s | --silent] [--filter] [--no-incremental] [--parallel N] [-v | --verbose]
+
+--recursive       Build all packages in the current directory
+--silent          Skip confirmation prompt (for recursive builds)
+--filter          Filter packages by package.json fields (e.g. --filter "category:Cheminformatics")
+--no-incremental  Run a full build instead of the default incremental build
+--parallel N      Max parallel builds (default: 4)
+--verbose         Print detailed output
+
+Examples:
+  grok build                                          Build the current package
+  grok build -r                                       Build all packages in the current directory
+  grok build -r -s                                    Build all packages without confirmation
+  grok build -r --filter "category:Cheminformatics"   Build only matching packages
+  grok build -r --parallel 8                          Build with 8 parallel jobs
+`;
+
 // const HELP_MIGRATE = `
 // Usage: grok migrate
 
@@ -246,7 +319,9 @@ Example:
 export const help = {
   add: HELP_ADD,
   api: HELP_API,
+  build: HELP_BUILD,
   check: HELP_CHECK,
+  claude: HELP_CLAUDE,
   config: HELP_CONFIG,
   create: HELP_CREATE,
   init: HELP_INIT,

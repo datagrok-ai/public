@@ -1,7 +1,7 @@
 {
   "name": "@datagrok/cddvaultlink",
   "friendlyName": "CDD Vault Link",
-  "version": "1.0.5",
+  "version": "1.1.0",
   "description": "Integration with CDD Vault registration system",
   "author": {
     "name": "Maria Dolotova",
@@ -11,12 +11,13 @@
     "@datagrok-libraries/utils": "^4.6.5",
     "@datagrok/chem": "^1.15.0",
     "cash-dom": "^8.1.5",
-    "datagrok-api": "../../js-api",
+    "datagrok-api": "^1.27.0",
     "dayjs": "^1.11.13",
     "@datagrok-libraries/test": "^1.1.0"
   },
   "devDependencies": {
     "css-loader": "^7.1.2",
+    "datagrok-tools": "^5.0.0",
     "style-loader": "^4.0.0",
     "ts-loader": "^9.5.4",
     "typescript": "^5.9.3",

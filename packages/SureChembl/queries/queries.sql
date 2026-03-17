@@ -28,7 +28,7 @@ with molecules as (select m, schembl_chem_id from rdk.mols mols where m@>@patter
 --meta.cache.invalidateOn: 0 0 * * *
 --meta.batchMode: true
 --input: string pattern {semType: Molecule}
---input: double threshold = 0.6 { min: 0, max: 1 }
+--input: double threshold = 0.6 { min: 0; max: 1 }
 --input: int maxMols = 10
 select set_config('rdkit.tanimoto_threshold', @threshold::text, true);
 --batch

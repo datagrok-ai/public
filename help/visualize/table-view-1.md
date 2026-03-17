@@ -98,13 +98,20 @@ but can point to any table available in the current context.
 Options include `Filtered` (default), `All`, `Selected`, `SelectedOrCurrent`, 
 `FilteredSelected`, `MouseOverGroup`, `CurrentRow`, and `MouseOverRow`. 
 
-* **Filter** allows additional filtering of rows shown in the viewer using formulas with the `${COLUMN_NAME}` syntax.  
+* **Filter** allows additional filtering of rows shown in the viewer using [formula syntax](../transform/formula-syntax.md).
 Examples include:
-  * `${AGE} > 18`
-  * `${SEVERITY} == 'Medium'`
-  * `${RACE}.endsWith('sian')` or `${RACE} in ['Black', 'Asian', 'Other']` 
+  * `${AGE} > 18 && ${SEVERITY} == 'Medium'`
+  * `Contains(${RACE},'sian')` or `In(${RACE}, ['Black', 'Asian', 'Other'])` 
 
 ![viewer-property-panel](../datagrok/navigation/views/img/viewer-property-panel.gif)
+
+#### Viewer coloring
+
+Core viewers like [scatterplot](viewers/scatter-plot.md), [box plot](viewers/box-plot.md), and [PC plot](viewers/pc-plot.md) support color-coding data based on a column. The coloring behavior depends on the data type of the color column:
+
+**Categorical columns:** When the color column is categorical, the viewer displays a legend showing each category with its assigned color. You can change the color of any category by clicking on the color swatch in the legend or through the grid context menu. If the column has more categories than the supported limit (100), the viewer uses the categorical color scheme defined in the viewer's properties or context menu instead of showing individual legend items.
+
+**Numerical columns:** For numerical color columns, the viewer uses a linear color scheme by default to represent the value range. If a custom linear color scheme is defined for the column in the grid, the viewer uses that instead. When conditional coloring is applied to a numerical column, the viewer displays range bins as categorical legend items, allowing you to customize individual bin colors via the legend color picker.
 
 ### Tooltips
 
@@ -418,6 +425,17 @@ To embed:
 1. Copy the generated iframe and use it on your site.
 
 <img src={EmbedViewerDialog} width="450"/>
+
+## Viewer controls font
+
+Many viewers allow you to customize fonts for different elements to match your presentation style. **Controls Font** is used for control elements like column selectors, combo boxes, and other UI controls on the viewer. **Axis Font** is used for axis labels and tick marks in chart viewers. Individual viewers may also provide additional font properties for specialized elements such as labels, formulas, annotations, and statistics.
+
+To customize fonts, access the viewer's **Context Panel** and look for font properties in the **Style** section or use context menu.
+
+![](viewers/img/viewers-font.gif)
+
+## Viewer coloring
+<!-- TODO: Write about coloring -->
 
 ## Utilities
 

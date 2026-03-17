@@ -4,6 +4,7 @@ import * as ui from 'datagrok-api/ui';
 
 import {MpoProfileEditor} from '@datagrok-libraries/statistics/src/mpo/mpo-profile-editor';
 
+import {isDesirabilityProfile} from '@datagrok-libraries/statistics/src/mpo/mpo';
 import {MpoProfileInfo} from './utils';
 import {MpoProfileCreateView} from './mpo-create-profile';
 import {MpoProfileManager} from './mpo-profile-manager';
@@ -14,11 +15,7 @@ export class MpoProfileHandler extends DG.ObjectHandler<MpoProfileInfo> {
   }
 
   isApplicable(x: any): boolean {
-    return x != null &&
-      typeof x === 'object' &&
-      typeof x.name === 'string' &&
-      typeof x.properties === 'object' &&
-      x.properties != null;
+    return isDesirabilityProfile(x);
   }
 
   renderTooltip(profile: MpoProfileInfo): HTMLElement {
@@ -55,12 +52,14 @@ export class MpoProfileHandler extends DG.ObjectHandler<MpoProfileInfo> {
     const editable = structuredClone(profile);
     const view = new MpoProfileCreateView(editable, false, profile.fileName);
     grok.shell.v = grok.shell.addView(view.view);
+    view.setupBreadcrumbs();
   }
 
   static clone(profile: MpoProfileInfo): void {
     const {profile: clonedProfile, fileName} = MpoProfileManager.prepareClone(profile);
     const view = new MpoProfileCreateView(clonedProfile, false, fileName);
     grok.shell.v = grok.shell.addView(view.view);
+    view.setupBreadcrumbs();
   }
 
   static delete(profile: MpoProfileInfo): void {

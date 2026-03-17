@@ -11,6 +11,10 @@ const sep = '\n';
 const packageFuncDirs = ['package.ts', 'package.g.ts'];
 const apiFile = 'package-api.ts';
 
+function normEol(s: string): string {
+  return s.replace(/\r\n/g, '\n');
+}
+
 const curDir = process.cwd();
 const srcDir = path.join(curDir, 'src');
 const funcFilePath = path.join(fs.existsSync(srcDir) ? srcDir : curDir, apiFile);
@@ -158,12 +162,12 @@ function saveWrappersToFile(namespaceName: string, wrappers: string[]) {
   const scriptApi = new utils.TemplateBuilder(utils.namespaceTemplate)
     .replace('PACKAGE_NAMESPACE', namespaceName)
     .replace('NAME', wrappers.join(sep.repeat(2)));
-  fs.appendFileSync(funcFilePath, sep + scriptApi.build() + sep);
+  fs.appendFileSync(funcFilePath, normEol(sep + scriptApi.build() + sep));
   color.log(`Successfully generated file ${apiFile}${sep}`, 'success');
 }
 
 function createApiFile() {
-  fs.writeFileSync(funcFilePath, annotationForApiFile + utils.dgImports + sep, 'utf8');
+  fs.writeFileSync(funcFilePath, normEol(annotationForApiFile + utils.dgImports + sep), 'utf8');
 }
 
 function checkNameColision(name: string) {

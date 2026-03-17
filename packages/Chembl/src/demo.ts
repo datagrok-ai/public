@@ -38,7 +38,7 @@ export async function _demoDatabasesChembl(): Promise<void> {
     'Query SQL': ui.div(queryPanel.root),
   });
   tabControl.root.style.width = '100%';
-  tabControl.root.style.height = '310px';
+  tabControl.root.style.height = '375px';
 
   const totalDiv = ui.divV([
     tabControl.root,

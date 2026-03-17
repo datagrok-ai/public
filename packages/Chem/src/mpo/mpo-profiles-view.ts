@@ -7,13 +7,13 @@ import {Subscription} from 'rxjs';
 import {u2} from '@datagrok-libraries/utils/src/u2';
 
 import {_package} from '../package';
-import {MpoProfileInfo, updateMpoPath, MpoPathMode, MPO_PROFILE_CHANGED_EVENT, MPO_PROFILE_DELETED_EVENT} from './utils';
+import {MpoProfileInfo, updateMpoPath, MpoPathMode, MPO_PROFILES_NAME, MPO_PROFILE_CHANGED_EVENT, MPO_PROFILE_DELETED_EVENT} from './utils';
 import {MpoProfileCreateView} from './mpo-create-profile';
 import {MpoProfileManager} from './mpo-profile-manager';
 import {MpoProfileHandler} from './mpo-profile-handler';
 
 export class MpoProfilesView {
-  name = 'MPO Profiles';
+  name = MPO_PROFILES_NAME;
   root = ui.divV([]);
   view: DG.View;
 
@@ -32,14 +32,16 @@ export class MpoProfilesView {
   async render(): Promise<void> {
     ui.setUpdateIndicator(this.root, true);
     const createButton = ui.button(ui.h2('Create profile'), () => this.openCreateProfile());
-    createButton.classList.add('chem-mpo-create-profile-button');
+    createButton.classList.add('chem-mpo-action-button');
+    const importButton = ui.button(ui.h2('Import'), () => MpoProfileManager.importFromFile());
+    importButton.classList.add('chem-mpo-action-button');
     try {
       ui.empty(this.root);
       this.root.append(
         this.buildHeader(),
         ui.h1('Manage Profiles'),
         this.tableContainer,
-        createButton,
+        ui.divH([createButton, importButton]),
       );
 
       await this.reloadProfiles();
@@ -111,6 +113,8 @@ export class MpoProfilesView {
         ui.popupMenu()
           .item('Edit', () => MpoProfileHandler.edit(profile))
           .item('Clone', () => MpoProfileHandler.clone(profile))
+          .item('Export to file', () => MpoProfileManager.exportToFile(profile))
+          .separator()
           .item('Delete', () => MpoProfileHandler.delete(profile))
           .show();
       },
@@ -134,6 +138,7 @@ export class MpoProfilesView {
   private openCreateProfile(): void {
     const view = new MpoProfileCreateView();
     grok.shell.v = grok.shell.addPreview(view.tableView!);
+    view.setupBreadcrumbs();
   }
 
   private listenForChanges(): void {

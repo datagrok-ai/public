@@ -6,6 +6,7 @@ import {ItemId, LinkSpecString, NqName} from '../data/common-types';
 import {callHandler} from '../utils';
 import {LinkIOParsed, parseLinkIO} from './LinkSpec';
 import wu from 'wu';
+import {getViewersHook} from '../../../shared-utils/utils';
 
 //
 // Internal config processing
@@ -148,7 +149,14 @@ function processSequentialConfig(conf: PipelineConfigurationSequentialInitial) {
 async function processStepConfig(conf: PipelineStepConfiguration<LinkSpecString, never>) {
   const actions = processStepActions(conf.actions ?? []);
   const io = await getFuncCallIO(conf.nqName);
-  return {...conf, io, actions};
+  const func = DG.Func.byName(conf.nqName);
+  const viewersHookMakerName = getViewersHook(func);
+  let viewersHook = conf.viewersHook;
+  if (!viewersHook && viewersHookMakerName) {
+    const hookMaker = DG.Func.byName(viewersHookMakerName);
+    viewersHook = await hookMaker.apply();
+  }
+  return {...conf, viewersHook, io, actions};
 }
 
 async function getFuncCallIO(nqName: NqName): Promise<FuncCallIODescription[]> {

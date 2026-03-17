@@ -6,7 +6,7 @@ For instance, to create a specific user configuration named 'my_config':
 
 * place all your user specific models and stock files inside 'my_config' folder
 
-* place config.yml file with configurations next to models inside 'my_config' file. Paths to models should be recorded as follows:
+* place config.yml file with configurations next to models inside 'my_config' folder. Paths to models should be recorded as follows:
  /app/configs/<your_custom_config_name>/uspto_model.onnx
 Proper paths naming is very important!!! Below is the example of config.yml contents:
 

@@ -6,7 +6,6 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import { getNMRiumComponent } from "../nmrium-wrapper/src/NMRiumWrapper";
 import { NMRiumEvents } from "../nmrium-wrapper/src/NMRiumWrapper";
-import { delay } from '@datagrok-libraries/test/src/test';
 
 export function getNMRiumView() {
     const root = ui.div([], {classes:'d4-nmrium-wrapper'});
@@ -23,7 +22,7 @@ export function getNMRiumView() {
 export async function loadNMRiumData(fileName: string, fileString: string, nmriumId: string) {
     const blob = new Blob([fileString], { type: 'text/plain' });
     const file = new File([blob], fileName, { type: "text/plain" });
-    await delay(100);
+    await DG.delay(100);
     NMRiumEvents.trigger('load', {
         data: [file],
         type: 'file',

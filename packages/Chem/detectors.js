@@ -2,7 +2,6 @@ const CHEMICAL_MIXTURE_SEM_TYPE = 'ChemicalMixture';
 const MIX_FILE_VERSION = 'mixfileVersion';
 
 class ChemPackageDetectors extends DG.Package {
-
   static likelyNames = [
     'structure', 'mol', 'molecule', 'smiles', 'rdkit',
     'canonical_smiles', 'core', 'scaffold'];
@@ -49,12 +48,13 @@ class ChemPackageDetectors extends DG.Package {
   detectMolecules(col) {
     if (DG.Detector.sampleCategories(col, (s) => s.includes('M  END'), 1)) {
       col.meta.units = DG.UNITS.Molecule.MOLBLOCK;
+      col.meta.cellRenderer = 'Molecule';
       return DG.SEMTYPE.MOLECULE;
     }
 
-    let lowerCaseName = col.name.toLowerCase();
-    let likelyMolName = ChemPackageDetectors.likelyChemicalName(lowerCaseName);
-    let minUnique = likelyMolName ? 1 : 3;
+    const lowerCaseName = col.name.toLowerCase();
+    const likelyMolName = ChemPackageDetectors.likelyChemicalName(lowerCaseName);
+    const minUnique = likelyMolName ? 1 : 3;
     let longest = '';
     try {
       longest = col.aggregate('longest') ?? '';
@@ -64,12 +64,12 @@ class ChemPackageDetectors extends DG.Package {
 
     // temporary workaround to make it understand r-groups like "CC[*:2]"
     if (likelyMolName) {
-      grok.functions.call('Chem:detectSmiles', { col: col, min: minUnique }).then(() => {});
+      grok.functions.call('Chem:detectSmiles', {col: col, min: minUnique}).then(() => {});
       return null;
     }
 
     if (DG.Detector.sampleCategories(col, ChemPackageDetectors.likelyValidSmiles, minUnique, 10, 0.8))
-      grok.functions.call('Chem:detectSmiles', { col: col, min: minUnique }).then(() => {});
+      grok.functions.call('Chem:detectSmiles', {col: col, min: minUnique}).then(() => {});
   }
 
   //meta.role: semTypeDetector
