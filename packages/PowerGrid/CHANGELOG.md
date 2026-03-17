@@ -1,5 +1,7 @@
 # Power Grid changelog
 
+## 1.8.1 (2026-03-17)
+
 ## 1.8.0 (2026-03-13)
 
 ### Features
