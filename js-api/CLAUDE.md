@@ -160,12 +160,29 @@ For JS API method questions, check these files first:
 | DataFrame operations            | `src/dataframe/data-frame.ts`      |
 | Column operations               | `src/dataframe/column.ts`          |
 | UI components, dialogs, inputs  | `src/widgets/`                     |
+| Filter panel                    | `src/viewer.ts` (`FilterGroup`)    |
 | Server/HTTP API                 | `src/dapi.ts`                      |
 | Viewers                         | `src/viewer.ts`                    |
 | Grid                            | `src/grid.ts` · [usage guide](src/grid.md) |
 | Events                          | `src/events.ts`                    |
 | Shell (views, tables, windows)  | `src/shell.ts`                     |
 | Constants and enums             | `src/const.ts`                     |
+
+## Filter Panel (`FilterGroup`)
+
+Access via `tv.getFiltersGroup()` on a `TableView`. Use `{ createDefaultFilters: false }` in plugins to avoid adding unwanted default filters.
+
+```typescript
+const fg = tv.getFiltersGroup({ createDefaultFilters: false });
+fg.updateOrAdd({ type: DG.FILTER_TYPE.HISTOGRAM, column: 'age', min: 20, max: 60 });
+fg.updateOrAdd({ type: DG.FILTER_TYPE.CATEGORICAL, column: 'sex' }, false); // false = defer filtering
+await DG.delay(200); // wait for the filter to be applied
+```
+
+- `fg.filters` — mixed array: built-in filters are **opaque Dart handles**, custom JS filters are `DG.Filter` instances — don't introspect built-in ones directly, use `fg.getStates(colName, filterType)` instead
+- `fg.setEnabled(f, false)` — disable one filter; `fg.setActive(false)` — disable the whole group
+- `column` is the canonical state field (`columnName` is a backwards-compat alias)
+- Use `DG.delay` for timing
 
 ## Server API Usage (grok.dapi)
 
