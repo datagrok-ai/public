@@ -32,23 +32,30 @@ export function lotkaVolterraApp(_package: DG.Package): void {
     DG.Column.fromFloat64Array('Predators', initSolution.y),
   ]);
   df.name = 'Lotka-Volterra';
+  df.col('Prey')!.meta.colors.setLinear([DG.Color.darkRed, DG.Color.yellow, DG.Color.darkGreen]);
+  df.col('Predators')!.meta.colors.setLinear([DG.Color.darkRed, DG.Color.yellow, DG.Color.darkGreen]);
 
   const view = grok.shell.addTableView(df);
   view.name = 'Lotka-Volterra Predator-Prey';
 
   // --- Stats panel ---
-  const statsPanel = ui.div([], 'lv-stats-panel');
+  const eqLabel = ui.label('');
+  const maxPreyLabel = ui.label('');
+  const maxPredatorsLabel = ui.label('');
+  const stepsLabel = ui.label('');
+
+  const statsPanel = ui.divV([
+    ui.divH([ui.label('Equilibrium:'), eqLabel], 'lotka-volterra-app-stats-row'),
+    ui.divH([ui.label('Max prey:'), maxPreyLabel], 'lotka-volterra-app-stats-row'),
+    ui.divH([ui.label('Max predators:'), maxPredatorsLabel], 'lotka-volterra-app-stats-row'),
+    ui.divH([ui.label('Steps:'), stepsLabel], 'lotka-volterra-app-stats-row'),
+  ], 'lotka-volterra-app-stats-panel');
 
   function updateStatsPanel(sol: LotkaVolterraSolution): void {
-    statsPanel.innerHTML = '';
-    const lines = [
-      `<span class="lv-stats-label">Equilibrium:</span>`,
-      `<span class="lv-stats-value">  x* = ${sol.xStar.toFixed(2)}, y* = ${sol.yStar.toFixed(2)}</span>`,
-      `<span class="lv-stats-label">Max prey:</span> <span class="lv-stats-value">${sol.maxPrey.toFixed(2)}</span>`,
-      `<span class="lv-stats-label">Max predators:</span> <span class="lv-stats-value">${sol.maxPredators.toFixed(2)}</span>`,
-      `<span class="lv-stats-label">Steps:</span> <span class="lv-stats-value">${sol.stepCount}</span>`,
-    ];
-    statsPanel.innerHTML = lines.join('<br>');
+    eqLabel.textContent = `x* = ${sol.xStar.toFixed(2)}, y* = ${sol.yStar.toFixed(2)}`;
+    maxPreyLabel.textContent = sol.maxPrey.toFixed(2);
+    maxPredatorsLabel.textContent = sol.maxPredators.toFixed(2);
+    stepsLabel.textContent = `${sol.stepCount}`;
   }
   updateStatsPanel(initSolution);
 
@@ -200,6 +207,11 @@ export function lotkaVolterraApp(_package: DG.Package): void {
   }
 
   // --- Update DataFrame ---
+  function applyColorCoding(targetDf: DG.DataFrame): void {
+    targetDf.col('Prey')!.meta.colors.setLinear([DG.Color.darkRed, DG.Color.yellow, DG.Color.darkGreen]);
+    targetDf.col('Predators')!.meta.colors.setLinear([DG.Color.darkRed, DG.Color.yellow, DG.Color.darkGreen]);
+  }
+
   function updateDataFrame(result: LotkaVolterraSolution): void {
     const newDf = DG.DataFrame.fromColumns([
       DG.Column.fromFloat64Array('Time', result.t),
@@ -207,6 +219,7 @@ export function lotkaVolterraApp(_package: DG.Package): void {
       DG.Column.fromFloat64Array('Predators', result.y),
     ]);
     newDf.name = 'Lotka-Volterra';
+    applyColorCoding(newDf);
     view.dataFrame = newDf;
     lineChart.dataFrame = newDf;
     scatterPlot.dataFrame = newDf;
@@ -229,7 +242,7 @@ export function lotkaVolterraApp(_package: DG.Package): void {
     'Run brute-force grid search over all four model coefficients to maximize peak prey population');
 
   function setOptimizeEnabled(enabled: boolean): void {
-    optimizeBtn.classList.toggle('lv-optimize-btn--disabled', !enabled);
+    optimizeBtn.classList.toggle('lotka-volterra-app-optimize-btn--disabled', !enabled);
   }
 
   async function runOptimization(): Promise<void> {
@@ -388,7 +401,13 @@ export function lotkaVolterraApp(_package: DG.Package): void {
     runPrimary();
   }, 'Reset all parameters to default values');
 
-  view.setRibbonPanels([[resetBtn]]);
+  const helpBtn = ui.icons.help(
+    () => window.open('https://en.wikipedia.org/wiki/Lotka%E2%80%93Volterra_equations', '_blank'),
+    'Learn more about the Predator-Prey model. Opens in a separate page.',
+  );
+  helpBtn.classList.add('lotka-volterra-app-help-icon');
+
+  view.setRibbonPanels([[resetBtn], [helpBtn]]);
 
   // --- Layout: left panel with form ---
   const form = ui.form([]);
@@ -435,6 +454,36 @@ export function lotkaVolterraApp(_package: DG.Package): void {
     if (lineChartNode != null)
       dockMng.dock(scatterPlot, DG.DOCK_TYPE.DOWN, lineChartNode, undefined, 0.5);
   }
+
+  // --- Grid column header tooltips ---
+  function columnTooltip(colName: string): HTMLElement {
+    const col = view.dataFrame.col(colName);
+    const minVal = col?.min ?? 0;
+    const maxVal = col?.max ?? 0;
+
+    const minSpan = ui.label(`min ${minVal.toFixed(2)}`);
+    minSpan.classList.add('lotka-volterra-app-tooltip-min');
+
+    const maxSpan = ui.label(`max ${maxVal.toFixed(2)}`);
+    maxSpan.classList.add('lotka-volterra-app-tooltip-max');
+
+    return ui.divV([
+      ui.h2(colName),
+      ui.div([minSpan, document.createTextNode(' ... '), maxSpan], 'lotka-volterra-app-tooltip-range'),
+    ], 'lotka-volterra-app-col-tooltip');
+  }
+
+  view.grid.onCellTooltip((cell, x, y) => {
+    if (!cell.isColHeader)
+      return false;
+
+    const colName = cell.tableColumn?.name;
+    if (colName === 'Prey' || colName === 'Predators') {
+      ui.tooltip.show(columnTooltip(colName), x, y);
+      return true;
+    }
+    return false;
+  });
 
   // --- Cleanup on close ---
   subs.push(grok.events.onViewRemoved.subscribe((v: any) => {

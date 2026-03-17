@@ -1,6 +1,8 @@
 # Application Specification: Lotka-Volterra Predator-Prey Simulation
 
-## 1. General Information
+## 1. General Architecture
+
+### 1.0. General Information
 
 | Field | Value |
 |---|---|
@@ -8,20 +10,26 @@
 | Package | LotkaVolterraGuided |
 | Entry function | `lotkaVolterraApp()` |
 | Brief description | Interactive ODE simulation of the Lotka-Volterra predator-prey model with real-time visualization, phase portrait, and brute-force parameter optimization via web workers. |
-| Main view | `DG.TableView` |
+| Main view type | `DG.TableView` |
 
----
+### 1.1. Core
 
-## 2. Computational Tasks (Core)
+#### Task List
 
-### 2.1. Task List
+| Task ID | Name | Pipeline type | Trigger | Synchronicity | Execution environment | Parallelization |
+|---|---|---|---|---|---|---|
+| `task_primary` | Lotka-Volterra MRT solution | Primary (reactive) | Any input change | Sync | Main thread | No |
+| `task_optimize` | Optimize max prey (grid search) | Secondary (on demand) | Button `btn_optimize` | Async | WebWorkers (parallel) | Yes — grid points distributed across worker pool of size `Math.max(1, navigator.hardwareConcurrency - 2)` |
 
-| Task ID | Name | Pipeline type | Trigger |
-|---|---|---|---|
-| `task_primary` | Lotka-Volterra MRT solution | Primary (reactive) | Any input change |
-| `task_optimize` | Optimize max prey (grid search) | Secondary (on demand) | Button `btn_optimize` |
+#### Dependencies Between Tasks
 
-### 2.2. Task Description: `task_primary`
+```
+task_primary  — independent
+task_optimize — does not depend on task_primary results;
+                after completion, triggers a single run of task_primary
+```
+
+#### Task: `task_primary`
 
 **General characteristics:**
 
@@ -29,9 +37,6 @@
 |---|---|
 | Name | Lotka-Volterra MRT solution |
 | Description | Numerical solution of the 2D ODE system `dx/dt = αx − βxy`, `dy/dt = δxy − γy` using MRT, returning trajectories x(t) and y(t), equilibrium points, and summary statistics |
-| Synchronicity | Synchronous |
-| Execution environment | Main thread |
-| Parallelization | No |
 | Dependency on other tasks | No |
 
 **Computation Formulas and Model**
@@ -77,9 +82,9 @@ Reference examples:
 
 | # | Inputs | Expected output | Source |
 |---|---|---|---|
-| 1 | `α=1.0, β=0.1, δ=0.075, γ=1.5, x₀=10, y₀=5` | `dx/dt = 1.0·10 − 0.1·10·5 = 5.0`, `dy/dt = 0.075·10·5 − 1.5·5 = −3.75` | Manual calculation |
+| 1 | `α=1.0, β=0.1, δ=0.075, γ=1.5, x₀=10, y₀=5` | `dx/dt = 5.0`, `dy/dt = −3.75` | Manual calculation |
 | 2 | At equilibrium `x*=γ/δ=20, y*=α/β=10` | `dx/dt = 0`, `dy/dt = 0` | Manual calculation |
-| 3 | `α=1.0, β=0.1, δ=0.075, γ=1.5, x=30, y=4` | `dx/dt = 1.0·30 − 0.1·30·4 = 18`, `dy/dt = 0.075·30·4 − 1.5·4 = 3.0` | Manual calculation |
+| 3 | `α=1.0, β=0.1, δ=0.075, γ=1.5, x=30, y=4` | `dx/dt = 18`, `dy/dt = 3.0` | Manual calculation |
 
 **Level 2 — full formalization:**
 
@@ -87,7 +92,7 @@ Reference examples:
 - Analytical properties: non-trivial equilibrium at (γ/δ, α/β); solutions are periodic orbits around the equilibrium; conserved quantity H = δx + βy − γ ln(x) − α ln(y).
 - Numerical method: MRT (adaptive multi-rate), suitable for both stiff and non-stiff problems.
 
-**Input parameters:**
+**Task input parameters:**
 
 | Parameter | Type | Units | Domain | Description |
 |---|---|---|---|---|
@@ -99,7 +104,7 @@ Reference examples:
 | `y0` | `number` | individuals | `> 0` | Initial predator population |
 | `T` | `number` | time | `> 0` | Total simulation time |
 
-**Output data:**
+**Task output data:**
 
 | Parameter | Type | Description |
 |---|---|---|
@@ -146,9 +151,11 @@ const solution = mrt(task);
 | 4 | 2.0 | 0.5 | 0.3 | 1.0 | 5 | 2 | 5.0 | 1.0 | `2.0·5−0.5·5·2=5`, `0.3·5·2−1.0·2=1` |
 | 5 | 0.5 | 0.02 | 0.01 | 0.3 | 50 | 10 | 15.0 | 2.0 | `0.5·50−0.02·50·10=15`, `0.01·50·10−0.3·10=2` |
 
+**Execution environment constraint:** task uses Datagrok API — main thread only.
+
 ---
 
-### 2.3. Task Description: `task_optimize`
+#### Task: `task_optimize`
 
 **General characteristics:**
 
@@ -156,12 +163,9 @@ const solution = mrt(task);
 |---|---|
 | Name | Optimize Max Prey (grid search) |
 | Description | Brute-force grid search over 4 coefficients (α, β, δ, γ) with 10% step size. For each combination, solves the ODE and finds the peak prey population. Returns the combination that maximizes peak prey. |
-| Synchronicity | Asynchronous |
-| Execution environment | WebWorkers (parallel) |
-| Parallelization | Yes — grid points distributed across worker pool of size `Math.max(1, navigator.hardwareConcurrency - 2)` |
 | Dependency on other tasks | Uses current x₀, y₀, T from primary pipeline controls |
 
-**Input parameters:**
+**Task input parameters:**
 
 | Parameter | Type | Description |
 |---|---|---|
@@ -171,7 +175,7 @@ const solution = mrt(task);
 | `gamma_min, gamma_max` | `number` | Current slider range for γ |
 | `x0, y0, T` | `number` | Taken from current state of main UI controls (snapshot) |
 
-**Output data:**
+**Task output data:**
 
 | Parameter | Type | Description |
 |---|---|---|
@@ -203,116 +207,111 @@ Number of workers = Math.max(1, navigator.hardwareConcurrency - 2)
   → after all complete: find max(maxPrey) → optimal params
 ```
 
-### 2.4. Dependencies Between Tasks
+---
 
-```
-task_primary  — independent
-task_optimize — does not depend on task_primary results;
-                after completion, triggers a single run of task_primary
-```
+### 1.2. Ports
+
+#### Task ports: `task_primary`
+
+| Port | Type | Interface / format | Description |
+|---|---|---|---|
+| Input | `LotkaVolterraParams` | `{ alpha, beta, delta, gamma, x0, y0, T }` | 7 validated numeric parameters |
+| Output | `LotkaVolterraSolution` | `{ t, x, y, xStar, yStar, maxPrey, maxPredators, stepCount }` | Solution arrays + derived stats |
+
+#### Task ports: `task_optimize`
+
+| Port | Type | Interface / format | Description |
+|---|---|---|---|
+| Input | `WorkerTask[]` | `{ alpha, beta, delta, gamma, x0, y0, T }[]` | Grid of parameter combinations |
+| Output | `WorkerResult[]` | `{ alpha, beta, delta, gamma, maxPrey, error? }[]` | Per-point results |
+
+#### Application-level ports
+
+| Port | Used | Description |
+|---|---|---|
+| Progress | Yes | `DG.TaskBarProgressIndicator` for `task_optimize` (indeterminate, cancelable) |
+| Cancellation | Yes | `pi.onCanceled` → terminates workers, resolves promises with empty arrays |
+| Data | No | No external data loading |
+
+### 1.3. Adapters
+
+| Adapter | Used | Implementation |
+|---|---|---|
+| UI adapter | Yes | Datagrok inputs (`ui.input.float` × 7), `ui.bigButton`, `ui.iconFA`, `ui.icons.help` |
+| Display adapter | Yes | Datagrok viewers (line chart, scatter plot, grid), custom `comp_equilibrium` (section 3.5) |
+| Worker adapter | Yes | Web Worker wrapper for `task_optimize` (`optimize-worker.ts`) |
+| Progress adapter | Yes | `DG.TaskBarProgressIndicator` (indeterminate, cancelable) |
+| Data adapter | No | No external data loading |
+
+### 1.4. Coordinator
+
+The coordinator is the `lotkaVolterraApp()` function in `app.ts`:
+
+- **Input listening:** each `ui.input.float` calls `debouncedRun()` from `onValueChanged`.
+- **Reactivity management:** all 7 controls trigger the same primary pipeline; no cascading dependencies between controls.
+- **Validation trigger:** `runPrimary()` calls `validate(inputs)` before computation; validators are also attached to each input via `addValidator()` for inline hints.
+- **Control state during computations:** `computationsBlocked` flag prevents `runPrimary()` during batch updates (format setting, optimization result write, reset).
+- **Computation blocking:** `computationsBlocked = true` before batch writes, `= false` after, then single `runPrimary()`.
+- **Results to display:** `updateDataFrame()` creates new `DG.DataFrame` and assigns to `view.dataFrame`, `lineChart.dataFrame`, `scatterPlot.dataFrame`; `updateStatsPanel()` updates labels via `textContent`.
+- **Resource lifecycle:** `subs[]` collects subscriptions; `activeWorkers[]` tracks workers; both cleaned up in `onViewRemoved` handler.
+
+### 1.5. Independence Principle
+
+Confirmed. Input controls and their reactivity (debounce, validation hints) function independently of the computational core. The core receives a ready `LotkaVolterraParams` object; it has no knowledge of UI elements. The `validate()` function is a pure function in `core.ts`.
 
 ---
 
-## 3. Controls
+## 2. Main View
+
+| Field | Value |
+|---|---|
+| View type | `DG.TableView` |
+| Description | Table view with docked line chart, scatter plot, grid, and left-panel form with controls and stats |
+
+---
+
+## 3. Controls (Inputs)
 
 ### 3.1. Primary Pipeline Controls
 
-| ID | Name (label) | Control type | Data type | Default | Min | Max | Step | Format | Nullable | Tooltip text | Group |
-|---|---|---|---|---|---|---|---|---|---|---|---|
-| `ctrl_alpha` | Prey birth rate α | `ui.input.float` | `number` | `1.0` | `0.1` | `3.0` | — | `0.00` | No | Rate at which prey reproduce. Higher α → faster prey growth in the absence of predators. | Model Coefficients |
-| `ctrl_beta` | Predation rate β | `ui.input.float` | `number` | `0.1` | `0.01` | `0.5` | — | `0.000` | No | Rate at which predators consume prey. Higher β → more prey eaten per encounter, reducing prey population faster. | Model Coefficients |
-| `ctrl_delta` | Predator efficiency δ | `ui.input.float` | `number` | `0.075` | `0.01` | `0.5` | — | `0.000` | No | Efficiency of converting consumed prey into predator growth. Higher δ → predators grow faster from each prey consumed. | Model Coefficients |
-| `ctrl_gamma` | Predator death rate γ | `ui.input.float` | `number` | `1.5` | `0.1` | `3.0` | — | `0.00` | No | Natural death rate of predators. Higher γ → predators die off faster without sufficient prey. | Model Coefficients |
-| `ctrl_x0` | Initial prey x₀ | `ui.input.float` | `number` | `10` | `1` | `200` | — | `0.0` | No | Starting prey population at time t=0. | Initial Conditions |
-| `ctrl_y0` | Initial predators y₀ | `ui.input.float` | `number` | `5` | `1` | `100` | — | `0.0` | No | Starting predator population at time t=0. | Initial Conditions |
-| `ctrl_T` | Simulation time T | `ui.input.float` | `number` | `100` | `10` | `500` | — | `0.0` | No | Total simulation time. Longer T shows more oscillation cycles. | Initial Conditions |
+| ID | Label | Control type | Data type | Default | Min | Max | Format | Nullable | Tooltip text | Group |
+|---|---|---|---|---|---|---|---|---|---|---|
+| `ctrl_alpha` | Prey birth rate α | `ui.input.float` | `number` | `1.0` | `0.1` | `3.0` | `0.00` | No | Rate at which prey reproduce. Higher α → faster prey growth in the absence of predators. | Model Coefficients |
+| `ctrl_beta` | Predation rate β | `ui.input.float` | `number` | `0.1` | `0.01` | `0.5` | `0.000` | No | Rate at which predators consume prey. Higher β → more prey eaten per encounter, reducing prey population faster. | Model Coefficients |
+| `ctrl_delta` | Predator efficiency δ | `ui.input.float` | `number` | `0.075` | `0.01` | `0.5` | `0.000` | No | Efficiency of converting consumed prey into predator growth. Higher δ → predators grow faster from each prey consumed. | Model Coefficients |
+| `ctrl_gamma` | Predator death rate γ | `ui.input.float` | `number` | `1.5` | `0.1` | `3.0` | `0.00` | No | Natural death rate of predators. Higher γ → predators die off faster without sufficient prey. | Model Coefficients |
+| `ctrl_x0` | Initial prey x₀ | `ui.input.float` | `number` | `10` | `1` | `200` | `0.0` | No | Starting prey population at time t=0. | Initial Conditions |
+| `ctrl_y0` | Initial predators y₀ | `ui.input.float` | `number` | `5` | `1` | `100` | `0.0` | No | Starting predator population at time t=0. | Initial Conditions |
+| `ctrl_T` | Simulation time T | `ui.input.float` | `number` | `100` | `10` | `500` | `0.0` | No | Total simulation time. Longer T shows more oscillation cycles. | Initial Conditions |
 
 ### 3.2. Secondary Task Triggers
 
-| ID | Name / icon | Triggers task | Tooltip text | Availability condition |
+| ID | Label / icon | Launches task | Tooltip text | Availability condition |
 |---|---|---|---|---|
-| `btn_optimize` | `Optimize` button | `task_optimize` | Run brute-force grid search over all four model coefficients to maximize peak prey population | Always (disabled during optimization) |
+| `btn_optimize` | `ui.bigButton('Optimize')` | `task_optimize` | Run brute-force grid search over all four model coefficients to maximize peak prey population | Always (disabled during optimization) |
 
-### 3.3. Other Buttons and Actions
+### 3.3. Secondary Task Controls
 
-| ID | Name / icon | Action | Tooltip text | Availability condition |
-|---|---|---|---|---|
-| `btn_reset` | `ui.iconFA('undo')` | Reset all controls to default values | Reset all parameters to default values | Always |
+N/A — `task_optimize` has no dedicated UI; it uses the current slider ranges and primary control values as input.
 
-### 3.4. Custom UI Components
+### 3.4. Other Buttons and Actions
+
+| ID | Label / icon | Action | Tooltip text | Ribbon group | Availability condition |
+|---|---|---|---|---|---|
+| `btn_reset` | `ui.iconFA('undo')` | Reset all controls to default values | Reset all parameters to default values | Actions | Always |
+| `btn_help` | `ui.icons.help` (`.lotka-volterra-app-help-icon`) | Open Wikipedia article on Lotka-Volterra equations in a new tab | Learn more about the Predator-Prey model. Opens in a separate page. | Help | Always |
+
+### 3.5. Custom UI Components
 
 | Component ID | Brief description | Role |
 |---|---|---|
-| `comp_equilibrium` | Display panel showing equilibrium (x*, y*) and summary stats | Display |
+| `comp_equilibrium` | Display panel showing equilibrium (x*, y*) and summary stats. Built with `ui.divV`/`ui.divH`/`ui.label` components; values updated via `textContent`. Styled via CSS classes `.lotka-volterra-app-stats-panel` and `.lotka-volterra-app-stats-row`. | Display |
 
 ---
 
-## 4. Validation
+## 4. Result Display Elements
 
-### 4.1. Primary Pipeline Validation
-
-| Rule ID | Condition (invalid) | Affected inputs (ID) | Error message |
-|---|---|---|---|
-| `val_01` | `alpha ≤ 0` | `ctrl_alpha` | "Prey birth rate must be positive" |
-| `val_02` | `beta ≤ 0` | `ctrl_beta` | "Predation rate must be positive" |
-| `val_03` | `delta ≤ 0` | `ctrl_delta` | "Predator efficiency must be positive" |
-| `val_04` | `gamma ≤ 0` | `ctrl_gamma` | "Predator death rate must be positive" |
-| `val_05` | `x0 ≤ 0` | `ctrl_x0` | "Initial prey population must be positive" |
-| `val_06` | `y0 ≤ 0` | `ctrl_y0` | "Initial predator population must be positive" |
-| `val_07` | `T ≤ 0` | `ctrl_T` | "Simulation time must be positive" |
-
-Validation order: val_01 through val_07 (all independent, checked in sequence).
-
----
-
-## 5. Reactivity and Input Dependencies
-
-### 5.1. Dependency Graph
-
-| Source (input ID) | Target | Reaction type | Logic |
-|---|---|---|---|
-| Any `ctrl_*` | `comp_equilibrium` | Display update | Recalculate equilibrium and stats |
-| Any `ctrl_*` | All viewers | Reactive update | Rerun `task_primary`, update charts and table |
-
-### 5.2. Debounce / Throttle
-
-| Input ID | Strategy | Interval (ms) |
-|---|---|---|
-| All `ctrl_*` | debounce | 50 |
-
----
-
-## 6. Behavior During Computations
-
-### 6.1. Primary Pipeline (`task_primary`)
-
-- Controls blocked: No (computation < 100ms)
-- Progress bar: No
-- Error behavior: Clear results + `grok.shell.error(msg)`
-
-### 6.2. Secondary Pipeline (`task_optimize`)
-
-- `btn_optimize` blocked: Yes
-- All other controls: No
-- Progress bar: Yes — indeterminate (shown via `DG.TaskBarProgressIndicator`)
-- Cancellation support: Yes (via progress indicator cancel)
-- Error behavior: Keep previous results + `grok.shell.error(msg)`
-
----
-
-## 7. Computation Blocking and Batch Update
-
-| Source (task) | Target controls (ID) | Locked pipelines |
-|---|---|---|
-| `task_optimize` | `ctrl_alpha`, `ctrl_beta`, `ctrl_delta`, `ctrl_gamma` | Primary (blocked) |
-
-Reactivity mode during batch update: Primary pipeline is paused during writing, then runs once with the new values.
-
----
-
-## 8. Result Display
-
-### 8.1. Primary Pipeline Display Elements
+### 4.1. Primary Pipeline Display Elements
 
 | ID | Type | Associated output data | Docking location |
 |---|---|---|---|
@@ -336,17 +335,30 @@ Reactivity mode during batch update: Primary pipeline is paused during writing, 
 | X axis | `Prey` |
 | Y axis | `Predators` |
 
+**Details for `view_table`:**
+
+| Property | Value |
+|---|---|
+| Color coding on `Prey` | Linear: dark red (min) → yellow (mid) → dark green (max), via `col.meta.colors.setLinear([DG.Color.darkRed, DG.Color.yellow, DG.Color.darkGreen])` |
+| Color coding on `Predators` | Linear: dark red (min) → yellow (mid) → dark green (max), via `col.meta.colors.setLinear([DG.Color.darkRed, DG.Color.yellow, DG.Color.darkGreen])` |
+| Reapplied | On every DataFrame replacement |
+| Column header tooltip (`Prey`, `Predators`) | Custom `ui.divV` (`.lotka-volterra-app-col-tooltip`) shown via `view.grid.onCellTooltip`: `ui.h2(colName)` + range line (`.lotka-volterra-app-tooltip-range`) with **min** (`.lotka-volterra-app-tooltip-min`, bold, dark red) `...` **max** (`.lotka-volterra-app-tooltip-max`, bold, dark green) showing current column min/max values. All styles in CSS. |
+
+### 4.2. Secondary Task Display Elements
+
+N/A — `task_optimize` writes results back to primary pipeline controls (batch update), which triggers `task_primary` and updates all primary display elements.
+
 ---
 
-## 9. Layout
+## 5. Layout and UI Element Placement
 
-### 9.1. Control Placement
+### 5.1. Control Placement
 
 | Area | Content |
 |---|---|
 | Left panel | `ui.form` with grouped controls + equilibrium/stats display |
-| Center area | Time-series chart (top) + Phase portrait (bottom) |
-| Right area | Data table (grid) |
+| Ribbon (Actions group) | `btn_reset` |
+| Ribbon (Help group) | `btn_help` |
 
 **Structure of left panel form:**
 
@@ -368,6 +380,175 @@ ui.h2('Equilibrium & Stats')
   comp_equilibrium
 ```
 
+### 5.2. Display Element Placement
+
+| Element ID | Docking area | Position / ratio |
+|---|---|---|
+| `form` (left panel) | `DG.DOCK_TYPE.LEFT` relative to root | ratio `0.1` |
+| `view_timeseries` | `DG.DOCK_TYPE.LEFT` relative to grid node | ratio `0.65` |
+| `view_phase` | `DG.DOCK_TYPE.DOWN` relative to line chart node | ratio `0.5` |
+| `view_table` (grid) | Default position (right) | — |
+
+### 5.3. Styles
+
+CSS file: `css/lotka-volterra.css`. Import: `import '../../css/lotka-volterra.css'`. All custom classes use the `lotka-volterra-app-` prefix for isolation.
+
+**Static styles:**
+
+| Element | CSS class(es) | Description |
+|---|---|---|
+| Stats panel | `.lotka-volterra-app-stats-panel` | Background, padding, border-radius, gap |
+| Stats row | `.lotka-volterra-app-stats-row` | Horizontal layout with space-between alignment |
+| Stats row label | `.lotka-volterra-app-stats-row > label:first-child` | Bold, grey color, no-wrap |
+| Stats row value | `.lotka-volterra-app-stats-row > label:last-child` | Monospace font, right-aligned |
+| Help icon | `.lotka-volterra-app-help-icon` | `font-size: large`, `font-weight: bold`, right margin |
+| Tooltip container | `.lotka-volterra-app-col-tooltip` | Vertical gap between header and range |
+| Tooltip range row | `.lotka-volterra-app-tooltip-range` | Flex row, baseline-aligned |
+| Tooltip min label | `.lotka-volterra-app-tooltip-min` | Bold, dark red (`#8B0000`) |
+| Tooltip max label | `.lotka-volterra-app-tooltip-max` | Bold, dark green (`#006400`) |
+
+**Dynamic styles:**
+
+| Element | CSS class(es) | Condition | Description |
+|---|---|---|---|
+| Optimize button | `.lotka-volterra-app-optimize-btn--disabled` | During optimization | Disables pointer events, reduces opacity |
+
+---
+
+## 6. User Feedback
+
+### 6.1. Control Tooltips
+
+| Control ID | Tooltip text | Mechanism |
+|---|---|---|
+| `ctrl_alpha` | Rate at which prey reproduce. Higher α → faster prey growth in the absence of predators. | `tooltipText` property |
+| `ctrl_beta` | Rate at which predators consume prey. Higher β → more prey eaten per encounter, reducing prey population faster. | `tooltipText` property |
+| `ctrl_delta` | Efficiency of converting consumed prey into predator growth. Higher δ → predators grow faster from each prey consumed. | `tooltipText` property |
+| `ctrl_gamma` | Natural death rate of predators. Higher γ → predators die off faster without sufficient prey. | `tooltipText` property |
+| `ctrl_x0` | Starting prey population at time t=0. | `tooltipText` property |
+| `ctrl_y0` | Starting predator population at time t=0. | `tooltipText` property |
+| `ctrl_T` | Total simulation time. Longer T shows more oscillation cycles. | `tooltipText` property |
+| `btn_optimize` | Run brute-force grid search over all four model coefficients to maximize peak prey population | `ui.bigButton` third argument |
+| `btn_reset` | Reset all parameters to default values | `ui.iconFA` third argument |
+| `btn_help` | Learn more about the Predator-Prey model. Opens in a separate page. | `ui.icons.help` second argument |
+
+### 6.2. Validators as Feedback
+
+| Input ID | Validation source | Description |
+|---|---|---|
+| `ctrl_alpha` … `ctrl_T` | `validate()` from core | Each input has `addValidator()` calling `validate(getInputs())` and returning the error for its own ID, or `null`. Displays inline hint on invalid value. |
+
+### 6.3. Progress Bar
+
+| Task | Progress bar | Type | Cancellation support |
+|---|---|---|---|
+| `task_primary` | No | — | — |
+| `task_optimize` | Yes | Indeterminate (`DG.TaskBarProgressIndicator`) | Yes (`pi.onCanceled` → terminates workers) |
+
+---
+
+## 7. Validation
+
+### 7.1. Primary Pipeline Validation
+
+| Rule ID | Condition (invalid) | Affected inputs (ID) | Error message |
+|---|---|---|---|
+| `val_01` | `alpha ≤ 0` | `ctrl_alpha` | "Prey birth rate must be positive" |
+| `val_02` | `beta ≤ 0` | `ctrl_beta` | "Predation rate must be positive" |
+| `val_03` | `delta ≤ 0` | `ctrl_delta` | "Predator efficiency must be positive" |
+| `val_04` | `gamma ≤ 0` | `ctrl_gamma` | "Predator death rate must be positive" |
+| `val_05` | `x0 ≤ 0` | `ctrl_x0` | "Initial prey population must be positive" |
+| `val_06` | `y0 ≤ 0` | `ctrl_y0` | "Initial predator population must be positive" |
+| `val_07` | `T ≤ 0` | `ctrl_T` | "Simulation time must be positive" |
+
+Validation order: val_01 through val_07 (all independent, checked in sequence).
+
+Returned map format: `Map<InputId, string>` where `InputId = 'ctrl_alpha' | ... | 'ctrl_T'`.
+
+### 7.2. Secondary Task Validation
+
+N/A — `task_optimize` reuses the primary pipeline validation. If `validate(inputs).size > 0`, optimization is rejected with `grok.shell.error('Invalid parameters. Fix inputs before optimizing.')`.
+
+---
+
+## 8. Main Pipeline
+
+### 8.1. Primary Pipeline
+
+| Step | Description |
+|---|---|
+| Parameter input | User sets values through 7 `ui.input.float` controls → `getInputs()` converts to `LotkaVolterraParams` |
+| Validation | `validate(inputs)` returns `Map<InputId, string>`. On errors: mark invalid inputs with `d4-invalid` class, call `clearResults()` |
+| Computation | `solve(inputs)` — synchronous ODE solution via `mrt()` |
+| Result display | `updateDataFrame(result)` creates new DataFrame, assigns to view and viewers; `updateStatsPanel(result)` updates labels |
+
+Reactive trigger: `onValueChanged` with debounce 50 ms.
+
+Error behavior on validation failure: clear results (empty DataFrame).
+
+Error behavior on computation failure: clear results + `grok.shell.error(msg)`.
+
+### 8.2. Secondary Pipelines
+
+#### Task pipeline: `task_optimize`
+
+| Step | Description |
+|---|---|
+| Trigger | `btn_optimize` click |
+| Custom UI | N/A — no dialog |
+| Validation | `validate(getInputs())` — reuses primary validation |
+| Computation | Generate 14641 grid points → distribute across WebWorkers → collect results → find max `maxPrey` |
+| Result display | N/A — no dedicated display |
+| Feedback to primary | Optimal `alpha`, `beta`, `delta`, `gamma` written to `ctrl_alpha`, `ctrl_beta`, `ctrl_delta`, `ctrl_gamma` via batch update |
+
+### 8.3. Common Pipeline Aspects
+
+#### Control Behavior During Computations
+
+| Pipeline / task | Controls blocked | Which controls |
+|---|---|---|
+| `task_primary` | No | — (computation < 100ms) |
+| `task_optimize` | `btn_optimize` only | `btn_optimize` disabled via `.lotka-volterra-app-optimize-btn--disabled` |
+
+#### Computation Error Handling
+
+| Pipeline / task | Strategy | Notification method |
+|---|---|---|
+| `task_primary` | Clear results | `grok.shell.error` |
+| `task_optimize` (partial failures) | Skip failed points, use valid results | `grok.shell.warning` |
+| `task_optimize` (all fail) | Abort optimization | `grok.shell.error` |
+
+### 8.4. Computation Blocking and Batch Input Updates
+
+| Scenario | Source (task) | Target controls (ID) | Blocked pipelines |
+|---|---|---|---|
+| Optimization result write | `task_optimize` | `ctrl_alpha`, `ctrl_beta`, `ctrl_delta`, `ctrl_gamma` | Primary (blocked) |
+| Reset to defaults | `btn_reset` | All `ctrl_*` | Primary (blocked) |
+| Format setting on init | Coordinator | All `ctrl_*` | Primary (blocked) |
+
+Reactivity mode during batch update:
+
+| Scenario | Reactivity mode |
+|---|---|
+| All above | `computationsBlocked = true` → writes → `computationsBlocked = false` → single `runPrimary()` |
+
+---
+
+## 9. Reactivity and Dependencies Between Inputs
+
+### 9.1. Dependency Graph
+
+| Source (input ID) | Target | Reaction type | Logic |
+|---|---|---|---|
+| Any `ctrl_*` | `comp_equilibrium` | Display update | Recalculate equilibrium and stats |
+| Any `ctrl_*` | All viewers | Reactive update | Rerun `task_primary`, update charts and table |
+
+### 9.2. Debounce / Throttle
+
+| Input ID | Strategy | Interval (ms) |
+|---|---|---|
+| All `ctrl_*` | debounce | 50 |
+
 ---
 
 ## 10. Data Lifecycle
@@ -378,7 +559,11 @@ Primary method: manual input via `ui.form` controls.
 
 Initial state: all controls initialized with defaults. `task_primary` runs automatically on initialization.
 
-### 10.2. Results Table Lifecycle
+### 10.2. Loading from Resources
+
+N/A — no external data loading.
+
+### 10.3. Results Table Lifecycle
 
 Update strategy: **DataFrame replacement** — on each recomputation a new `DG.DataFrame` is created and assigned to `view.dataFrame` and all viewers. This avoids in-place mutation and ensures viewers always reflect a consistent snapshot.
 
@@ -403,7 +588,7 @@ Update strategy: **DataFrame replacement** — on each recomputation a new `DG.D
 
 ---
 
-## 11. Error Handling
+## 11. Error Handling Beyond Computations
 
 | Error type | Strategy | Notification method |
 |---|---|---|
@@ -414,47 +599,110 @@ Update strategy: **DataFrame replacement** — on each recomputation a new `DG.D
 
 ---
 
-## 12. Testing
+## 12. Subscriptions and Resource Management
 
-### 12.1. Mathematical Verification
+### 12.1. Event Subscriptions
 
-#### ODE Right-Hand Side Verification
-
-| Test ID | Input `(α, β, δ, γ, x, y)` | Expected `(dx/dt, dy/dt)` |
+| Subscription | Event | Cleanup mechanism |
 |---|---|---|
-| `func_01` | `(1.0, 0.1, 0.075, 1.5, 10, 5)` | `(5.0, −3.75)` |
-| `func_02` | `(1.0, 0.1, 0.075, 1.5, 20, 10)` | `(0.0, 0.0)` |
-| `func_03` | `(1.0, 0.1, 0.075, 1.5, 30, 4)` | `(18.0, 3.0)` |
-| `func_04` | `(2.0, 0.5, 0.3, 1.0, 5, 2)` | `(5.0, 1.0)` |
-| `func_05` | `(0.5, 0.02, 0.01, 0.3, 50, 10)` | `(15.0, 2.0)` |
+| View removal | `grok.events.onViewRemoved` | `sub.unsubscribe()` in cleanup handler |
+| Optimization cancel | `pi.onCanceled` | `cancelSub.unsubscribe()` after `Promise.allSettled` |
 
-#### Equilibrium Verification
+All subscriptions are collected in `subs[]` and unsubscribed when the view is removed.
 
-| Test ID | Input `(α, β, δ, γ)` | Expected `(x*, y*)` |
+### 12.2. Worker Termination
+
+| Worker pool | Created in | Termination mechanism |
 |---|---|---|
-| `eq_01` | `(1.0, 0.1, 0.075, 1.5)` | `(20, 10)` |
-| `eq_02` | `(2.0, 0.5, 0.3, 1.0)` | `(10/3, 4)` |
+| Optimization workers | `runOptimization()` | `w.terminate()` for each worker in `terminateWorkers()`, called on completion, cancellation, and view close |
 
-#### Output Property Verification (solve)
+---
 
-| Test ID | Description | Verified property |
+## 13. Application Closure
+
+On view close (`grok.events.onViewRemoved`), the coordinator performs:
+
+- [x] All event subscriptions unsubscribed (`subs[]` iteration)
+- [x] All web workers terminated (`terminateWorkers()`)
+- [x] Pending debounce timer cleared (`clearTimeout(debounceTimer)`)
+- [x] No open secondary task dialogs (optimization has no dialog)
+
+---
+
+## 14. Accessibility and UX
+
+### 14.1. Keyboard Shortcuts
+
+N/A — no custom keyboard shortcuts.
+
+### 14.2. Context Menus
+
+N/A — no custom context menus.
+
+### 14.3. Undo / Redo
+
+Not supported. The `btn_reset` button resets all controls to default values as the only rollback mechanism.
+
+---
+
+## 15. Testing
+
+### 15.1. Computational Part (Core)
+
+| File | Categories | Test count | Description |
+|---|---|---|---|
+| `src/tests/lotka-volterra-math-tests.ts` | Math: LV func, Math: LV Equilibrium, Math: LV Solve properties, Math: MRT solver | 16 | ODE RHS verification, equilibrium, solve properties, MRT solver reference problems |
+| `src/tests/lotka-volterra-api-tests.ts` | API: Validation | 18 | Validation rules for all 7 inputs, defaults, boundaries, multiple errors |
+
+Tests are run via `grok test` (entry point: `src/package-test.ts`).
+
+### 15.2. Inputs
+
+| Category | Coverage | Description |
 |---|---|---|
-| `solve_01` | Default parameters | Non-empty arrays, equal length |
-| `solve_02` | x,y values ≥ 0 | All `x[i] ≥ 0`, `y[i] ≥ 0` |
-| `solve_03` | Initial conditions | `x[0] = x₀`, `y[0] = y₀` |
-| `solve_04` | Time starts at zero | `t[0] = 0` |
-| `solve_05` | Equilibrium start → stays near equilibrium | Start at (x*, y*), verify `x(T) ≈ x*`, `y(T) ≈ y*` |
-| `solve_06` | Summary stats computed correctly | `maxPrey > 0`, `maxPredators > 0`, `stepCount = t.length`, `maxPrey ≥ x₀` |
-| `solve_07` | Custom initial conditions | `x[0] = 40`, `y[0] = 15` for `x₀=40, y₀=15` |
+| Boundary values | `v_bnd_alpha` (`alpha=0.1`), `v_bnd_x0` (`x0=1`) | Lower allowed bounds |
+| Invalid values | `v_01a`–`v_07b` (14 tests) | Zero and negative for each of 7 parameters |
+| Multiple simultaneous errors | `v_multi` | `alpha=0, beta=0, x0=0, T=0` → ≥ 4 errors |
+| Valid defaults | `v_def` | All defaults pass validation |
 
-#### MRT Solver Verification
+### 15.3. Mathematical Verification
 
-| Test ID | Description | Verified property |
+#### Level 1 Verification
+
+**Formula/equation verification:**
+
+| Test category | Test count | What is verified | Reference source |
+|---|---|---|---|
+| Math: LV func | 5 | ODE RHS: concrete (α, β, δ, γ, x, y) → expected (dx/dt, dy/dt) | Manual calculation |
+| Math: LV Equilibrium | 2 | Equilibrium point: (α, β, δ, γ) → expected (x*, y*) | Manual calculation |
+
+**Output property verification:**
+
+| Test category | Test count | Properties verified |
 |---|---|---|
-| `mrt_01` | Non-stiff 1D: `dy/dt = 4·exp(0.8t) − 0.5y`, y(0)=2, t∈[0,4] | Max error vs analytical solution < 0.1 |
-| `mrt_02` | Stiff 1D: `dy/dt = −1000y + 3000 − 2000·exp(−t)`, y(0)=0, t∈[0,4] | Max error vs analytical solution < 0.1 |
+| Math: LV Solve properties | 7 | Non-empty arrays, non-negativity, initial conditions, t starts at 0, equilibrium stability, summary stats, custom initial conditions |
 
-### 12.2. Validation Tests
+#### Level 2 Verification
+
+**Numerical method verification:**
+
+| Test category | Test count | Reference problems | Tolerance | Source |
+|---|---|---|---|---|
+| Math: MRT solver | 2 | Non-stiff 1D (`dy/dt = 4·exp(0.8t) − 0.5y`), Stiff 1D (`dy/dt = −1000y + 3000 − 2000·exp(−t)`) | Max error < 0.1 | Chapra & Canale textbook |
+
+**Convergence verification:**
+
+| Status | Description |
+|---|---|
+| Not yet covered | Could verify that reducing tolerance decreases discrepancy between solutions |
+
+**Asymptotic/equilibrium behavior:**
+
+| Status | Description |
+|---|---|
+| Implemented | `solve_05`: start at (x*, y*), verify `x(T) ≈ x*`, `y(T) ≈ y*` after T=50 |
+
+#### Validation Tests
 
 | Test ID | Rule | Input data | Expected result |
 |---|---|---|---|

@@ -231,6 +231,7 @@ The placement of controls and display elements (panels, ribbon, toolbar, side pa
 
 All visual styles of the application are placed in a separate CSS file (`css/<app-name>.css`). Inline styles in TypeScript code are not allowed — CSS classes are used instead.
 
+- **Style isolation** — all custom CSS classes must use a unique application-specific prefix (`<app-name>-`) to prevent collisions with platform styles and other packages. For example, `levins-rho-badge`, `lotka-volterra-app-stats-panel`. Do not use generic class names without a prefix.
 - **Static styles** — element styling that does not change during operation. Set via CSS class when creating the element.
 - **Dynamic styles** — styles that depend on application state (e.g., indicator color, button activity). Implemented via CSS class toggling (`classList.toggle`, `classList.add/remove`), not via direct `element.style.*` assignment.
 

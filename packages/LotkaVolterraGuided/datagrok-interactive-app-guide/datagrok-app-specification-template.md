@@ -265,6 +265,8 @@ Where results are displayed: additional viewers in main view / dialog content / 
 
 CSS file: `css/<app-name>.css`
 
+All custom CSS classes must use a unique application-specific prefix (`<app-name>-`) to prevent collisions with platform styles and other packages (e.g., `levins-rho-badge`, `lotka-volterra-app-stats-panel`).
+
 **Static styles** (do not change during operation):
 
 | Element / class | CSS class(es) | Description |
