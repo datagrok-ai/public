@@ -146,7 +146,7 @@ For each task, define input/output ports. Additionally, define application-level
 |---|---|---|
 | UI adapter | Yes / No | Datagrok inputs (`ui.input.*`), buttons, custom HTMLElement |
 | Display adapter | Yes / No | Datagrok viewers, custom HTMLElement, docking |
-| Worker adapter | Yes / No | Web worker wrapper for core tasks |
+| Worker adapter | Yes / No | Web worker wrapper for core tasks. Worker files in `src/<app-name>/workers/`. |
 | Progress adapter | Yes / No | Datagrok progress bar |
 | Data adapter | Yes / No | Loading from a specific resource |
 

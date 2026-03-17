@@ -130,3 +130,24 @@ export interface WorkerResult {
   maxPrey: number;
   error?: string;
 }
+
+// --- Equilibrium exploration types ---
+
+export type ParamName = 'alpha' | 'beta' | 'delta' | 'gamma' | 'x0' | 'y0' | 'T';
+
+export const PARAM_NAMES: ParamName[] = ['alpha', 'beta', 'delta', 'gamma', 'x0', 'y0', 'T'];
+
+export interface EquilibriumTask {
+  paramName: ParamName;
+  paramMin: number;
+  paramMax: number;
+  steps: number;
+  baseParams: LotkaVolterraParams;
+}
+
+export interface EquilibriumResult {
+  paramValues: number[];
+  xStar: number[];
+  yStar: number[];
+  error?: string;
+}

@@ -2,8 +2,8 @@
 
 import {mrt} from 'diff-grok';
 
-import {createLotkaVolterraODE} from './model';
-import {WorkerTask, WorkerResult} from './core';
+import {createLotkaVolterraODE} from '../model';
+import {WorkerTask, WorkerResult} from '../core';
 
 const ctx: Worker = self as unknown as Worker;
 

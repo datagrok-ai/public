@@ -1,5 +1,10 @@
 /* Lotka-Volterra Predator-Prey Simulation — Application Styles */
 
+/* Left panel form */
+.lotka-volterra-app-form {
+  max-width: 400px;
+}
+
 /* Equilibrium and stats display panel */
 .lotka-volterra-app-stats-panel {
   padding: 8px;

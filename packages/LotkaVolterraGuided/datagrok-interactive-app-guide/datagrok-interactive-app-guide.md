@@ -122,7 +122,7 @@ Concrete implementations of ports for the Datagrok environment.
 
 - **UI adapter** — Datagrok inputs (`ui.input.*`), buttons, custom `HTMLElement`. Converts user input into typed data for the task's input port.
 - **Display adapter** — Datagrok viewers, custom `HTMLElement`, docking to the main view. Receives data from the task's output port and visualizes it.
-- **Worker adapter** — wrapper for running the core in a web worker. Implements input and output ports via `postMessage`. Implementation references: worker-utils infrastructure and lifecycle (`reference/WORKER-GUIDE.md`), distribution across multiple workers (`reference/PARALLEL-EXECUTION.md`).
+- **Worker adapter** — wrapper for running the core in a web worker. Implements input and output ports via `postMessage`. Worker source files must be placed in a dedicated `workers/` subdirectory (e.g., `src/<app-name>/workers/optimize-worker.ts`) to separate them from the main application code. Implementation references: worker-utils infrastructure and lifecycle (`reference/WORKER-GUIDE.md`), distribution across multiple workers (`reference/PARALLEL-EXECUTION.md`).
 - **Progress adapter** — Datagrok progress bar. Implements the progress port.
 - **Data adapter** — loading from a specific resource. Which resource and which mechanism — defined by the specification.
 

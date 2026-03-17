@@ -20,13 +20,15 @@
 |---|---|---|---|---|---|---|
 | `task_primary` | Lotka-Volterra MRT solution | Primary (reactive) | Any input change | Sync | Main thread | No |
 | `task_optimize` | Optimize max prey (grid search) | Secondary (on demand) | Button `btn_optimize` | Async | WebWorkers (parallel) | Yes — grid points distributed across worker pool of size `Math.max(1, navigator.hardwareConcurrency - 2)` |
+| `task_equilibrium` | Explore equilibrium point | Secondary (on demand) | Button `btn_analyze` → dialog → Run | Async | WebWorker (single) | No |
 
 #### Dependencies Between Tasks
 
 ```
-task_primary  — independent
-task_optimize — does not depend on task_primary results;
-                after completion, triggers a single run of task_primary
+task_primary     — independent
+task_optimize    — does not depend on task_primary results;
+                   after completion, triggers a single run of task_primary
+task_equilibrium — independent; opens results in a new TableView
 ```
 
 #### Task: `task_primary`
@@ -209,6 +211,43 @@ Number of workers = Math.max(1, navigator.hardwareConcurrency - 2)
 
 ---
 
+#### Task: `task_equilibrium`
+
+**General characteristics:**
+
+| Field | Value |
+|---|---|
+| Name | Explore Equilibrium Point |
+| Description | Varies a user-selected model parameter across its full range (100000 steps) while keeping other parameters fixed. For each value, computes the non-trivial equilibrium point (x* = γ/δ, y* = α/β). Opens results in a new TableView with a line chart. |
+| Dependency on other tasks | Uses current parameter values from primary pipeline controls |
+
+**Task input parameters:**
+
+| Parameter | Type | Description |
+|---|---|---|
+| `paramName` | `ParamName` | Selected parameter to vary (`alpha`, `beta`, `delta`, `gamma`, `x0`, `y0`, `T`) |
+| `paramMin, paramMax` | `number` | Range of the selected parameter (from `RANGES`) |
+| `steps` | `number` | Number of steps (100000) |
+| `baseParams` | `LotkaVolterraParams` | Current values of all parameters (snapshot) |
+
+**Task output data:**
+
+| Parameter | Type | Description |
+|---|---|---|
+| `paramValues` | `number[]` | Values of the varied parameter |
+| `xStar` | `number[]` | Equilibrium prey for each parameter value |
+| `yStar` | `number[]` | Equilibrium predator for each parameter value |
+
+**Computation implementation:**
+
+| Step | Implementation method | Details |
+|---|---|---|
+| 1 | Custom method in worker | Generate 100000 values of the selected parameter via linspace |
+| 2 | Custom method in worker | For each value: `x* = gamma / delta`, `y* = alpha / beta` (with the varied param substituted) |
+| 3 | Datagrok API | Create DataFrame with columns `[paramName, Prey*, Predator*]`, open new TableView, add line chart |
+
+---
+
 ### 1.2. Ports
 
 #### Task ports: `task_primary`
@@ -225,21 +264,28 @@ Number of workers = Math.max(1, navigator.hardwareConcurrency - 2)
 | Input | `WorkerTask[]` | `{ alpha, beta, delta, gamma, x0, y0, T }[]` | Grid of parameter combinations |
 | Output | `WorkerResult[]` | `{ alpha, beta, delta, gamma, maxPrey, error? }[]` | Per-point results |
 
+#### Task ports: `task_equilibrium`
+
+| Port | Type | Interface / format | Description |
+|---|---|---|---|
+| Input | `EquilibriumTask` | `{ paramName, paramMin, paramMax, steps, baseParams }` | Parameter to vary + base values |
+| Output | `EquilibriumResult` | `{ paramValues[], xStar[], yStar[], error? }` | Equilibrium arrays |
+
 #### Application-level ports
 
 | Port | Used | Description |
 |---|---|---|
-| Progress | Yes | `DG.TaskBarProgressIndicator` for `task_optimize` (indeterminate, cancelable) |
-| Cancellation | Yes | `pi.onCanceled` → terminates workers, resolves promises with empty arrays |
+| Progress | Yes | `DG.TaskBarProgressIndicator` for `task_optimize` and `task_equilibrium` (indeterminate, cancelable) |
+| Cancellation | Yes | `pi.onCanceled` → terminates workers, resolves promises |
 | Data | No | No external data loading |
 
 ### 1.3. Adapters
 
 | Adapter | Used | Implementation |
 |---|---|---|
-| UI adapter | Yes | Datagrok inputs (`ui.input.float` × 7), `ui.bigButton`, `ui.iconFA`, `ui.icons.help` |
+| UI adapter | Yes | Datagrok inputs (`ui.input.float` × 7), `ui.bigButton`, `ui.iconFA`, `ui.icons.help`, `ui.dialog`, `ui.input.choice` |
 | Display adapter | Yes | Datagrok viewers (line chart, scatter plot, grid), custom `comp_equilibrium` (section 3.5) |
-| Worker adapter | Yes | Web Worker wrapper for `task_optimize` (`optimize-worker.ts`) |
+| Worker adapter | Yes | Web Worker wrappers for `task_optimize` (`workers/optimize-worker.ts`) and `task_equilibrium` (`workers/equilibrium-worker.ts`) |
 | Progress adapter | Yes | `DG.TaskBarProgressIndicator` (indeterminate, cancelable) |
 | Data adapter | No | No external data loading |
 
@@ -288,17 +334,31 @@ Confirmed. Input controls and their reactivity (debounce, validation hints) func
 
 | ID | Label / icon | Launches task | Tooltip text | Availability condition |
 |---|---|---|---|---|
-| `btn_optimize` | `ui.bigButton('Optimize')` | `task_optimize` | Run brute-force grid search over all four model coefficients to maximize peak prey population | Always (disabled during optimization) |
+| `btn_optimize` | `ui.bigButton('Optimize')` | `task_optimize` | Run brute-force grid search over all four model coefficients to maximize peak prey population | Always (disabled during optimization and equilibrium exploration) |
+| `btn_analyze` | `ui.iconFA('chart-line')` on ribbon | `task_equilibrium` (via dialog) | Explore equilibrium point | Always |
 
 ### 3.3. Secondary Task Controls
 
-N/A — `task_optimize` has no dedicated UI; it uses the current slider ranges and primary control values as input.
+`task_optimize` has no dedicated UI; it uses the current slider ranges and primary control values as input.
+
+#### Task controls: `task_equilibrium`
+
+UI type: Datagrok dialog (`ui.dialog('Explore Equilibrium Point')`).
+
+| ID | Label | Control type | Data type | Default | Nullable | Tooltip text |
+|---|---|---|---|---|---|---|
+| `dlg_param` | Parameter to vary | `ui.input.choice` | `ParamName` | `'alpha'` | No | Select a model parameter to vary across its full range while keeping all other parameters fixed. |
+
+Dialog buttons:
+- **Cancel** — closes dialog
+- **Run** — closes dialog, launches `task_equilibrium`. Tooltip: "Run equilibrium point dependency exploration for the selected input"
 
 ### 3.4. Other Buttons and Actions
 
 | ID | Label / icon | Action | Tooltip text | Ribbon group | Availability condition |
 |---|---|---|---|---|---|
 | `btn_reset` | `ui.iconFA('undo')` | Reset all controls to default values | Reset all parameters to default values | Actions | Always |
+| `btn_analyze` | `ui.iconFA('chart-line')` | Open equilibrium exploration dialog | Explore equilibrium point | Analyze | Always |
 | `btn_help` | `ui.icons.help` (`.lotka-volterra-app-help-icon`) | Open Wikipedia article on Lotka-Volterra equations in a new tab | Learn more about the Predator-Prey model. Opens in a separate page. | Help | Always |
 
 ### 3.5. Custom UI Components
@@ -346,7 +406,16 @@ N/A — `task_optimize` has no dedicated UI; it uses the current slider ranges a
 
 ### 4.2. Secondary Task Display Elements
 
-N/A — `task_optimize` writes results back to primary pipeline controls (batch update), which triggers `task_primary` and updates all primary display elements.
+`task_optimize` writes results back to primary pipeline controls (batch update), which triggers `task_primary` and updates all primary display elements.
+
+#### Task display: `task_equilibrium`
+
+Results are displayed in a **new TableView** (separate from main view).
+
+| ID | Type | Associated output data | Placement |
+|---|---|---|---|
+| `eq_view` | `DG.TableView` | DataFrame `[paramName, Prey*, Predator*]` | New view |
+| `eq_chart` | Datagrok viewer `line chart` | X: `paramName`, Y: `Prey*` and `Predator*` | Docked `DG.DOCK_TYPE.RIGHT` relative to grid, ratio `0.8` |
 
 ---
 
@@ -358,6 +427,7 @@ N/A — `task_optimize` writes results back to primary pipeline controls (batch 
 |---|---|
 | Left panel | `ui.form` with grouped controls + equilibrium/stats display |
 | Ribbon (Actions group) | `btn_reset` |
+| Ribbon (Analyze group) | `btn_analyze` |
 | Ribbon (Help group) | `btn_help` |
 
 **Structure of left panel form:**
@@ -430,6 +500,7 @@ CSS file: `css/lotka-volterra.css`. Import: `import '../../css/lotka-volterra.cs
 | `ctrl_T` | Total simulation time. Longer T shows more oscillation cycles. | `tooltipText` property |
 | `btn_optimize` | Run brute-force grid search over all four model coefficients to maximize peak prey population | `ui.bigButton` third argument |
 | `btn_reset` | Reset all parameters to default values | `ui.iconFA` third argument |
+| `btn_analyze` | Explore equilibrium point | `ui.iconFA` third argument |
 | `btn_help` | Learn more about the Predator-Prey model. Opens in a separate page. | `ui.icons.help` second argument |
 
 ### 6.2. Validators as Feedback
@@ -444,6 +515,7 @@ CSS file: `css/lotka-volterra.css`. Import: `import '../../css/lotka-volterra.cs
 |---|---|---|---|
 | `task_primary` | No | — | — |
 | `task_optimize` | Yes | Indeterminate (`DG.TaskBarProgressIndicator`) | Yes (`pi.onCanceled` → terminates workers) |
+| `task_equilibrium` | Yes | Indeterminate (`DG.TaskBarProgressIndicator`) | Yes (`pi.onCanceled` → terminates worker) |
 
 ---
 
@@ -501,6 +573,17 @@ Error behavior on computation failure: clear results + `grok.shell.error(msg)`.
 | Result display | N/A — no dedicated display |
 | Feedback to primary | Optimal `alpha`, `beta`, `delta`, `gamma` written to `ctrl_alpha`, `ctrl_beta`, `ctrl_delta`, `ctrl_gamma` via batch update |
 
+#### Task pipeline: `task_equilibrium`
+
+| Step | Description |
+|---|---|
+| Trigger | `btn_analyze` click → opens dialog |
+| Custom UI | Dialog with `ui.input.choice` for parameter selection (section 3.3) |
+| Validation | N/A — parameter choice is always valid |
+| Computation | Single WebWorker: vary selected parameter across its range (100000 steps), compute equilibrium for each |
+| Result display | New `DG.TableView` with DataFrame `[paramName, Prey*, Predator*]` + line chart (section 4.2) |
+| Feedback to primary | No |
+
 ### 8.3. Common Pipeline Aspects
 
 #### Control Behavior During Computations
@@ -509,6 +592,7 @@ Error behavior on computation failure: clear results + `grok.shell.error(msg)`.
 |---|---|---|
 | `task_primary` | No | — (computation < 100ms) |
 | `task_optimize` | `btn_optimize` only | `btn_optimize` disabled via `.lotka-volterra-app-optimize-btn--disabled` |
+| `task_equilibrium` | All inputs + `btn_optimize` | All `ctrl_*` disabled via `input.enabled = false`; `btn_optimize` disabled via CSS class |
 
 #### Computation Error Handling
 
@@ -517,6 +601,7 @@ Error behavior on computation failure: clear results + `grok.shell.error(msg)`.
 | `task_primary` | Clear results | `grok.shell.error` |
 | `task_optimize` (partial failures) | Skip failed points, use valid results | `grok.shell.warning` |
 | `task_optimize` (all fail) | Abort optimization | `grok.shell.error` |
+| `task_equilibrium` | Abort, no results view | `grok.shell.error` |
 
 ### 8.4. Computation Blocking and Batch Input Updates
 
@@ -615,6 +700,7 @@ All subscriptions are collected in `subs[]` and unsubscribed when the view is re
 | Worker pool | Created in | Termination mechanism |
 |---|---|---|
 | Optimization workers | `runOptimization()` | `w.terminate()` for each worker in `terminateWorkers()`, called on completion, cancellation, and view close |
+| Equilibrium worker | `runEquilibriumExploration()` | `worker.terminate()` on completion, error, or cancellation via `pi.onCanceled` |
 
 ---
 

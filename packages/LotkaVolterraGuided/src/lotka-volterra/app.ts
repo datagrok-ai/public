@@ -7,6 +7,7 @@ import * as DG from 'datagrok-api/dg';
 import {
   DEFAULTS, RANGES, validate, solve,
   LotkaVolterraParams, LotkaVolterraSolution, InputId, WorkerTask, WorkerResult,
+  PARAM_NAMES, ParamName, EquilibriumTask, EquilibriumResult,
 } from './core';
 
 import '../../css/lotka-volterra.css';
@@ -14,6 +15,7 @@ import '../../css/lotka-volterra.css';
 const DEBOUNCE_MS = 50;
 const GRID_STEPS = 11; // 0%, 10%, ..., 100% of range
 const TOTAL_GRID_POINTS = GRID_STEPS ** 4; // 14641
+const EQUILIBRIUM_STEPS = 100000;
 
 export function lotkaVolterraApp(_package: DG.Package): void {
   // --- State ---
@@ -52,7 +54,7 @@ export function lotkaVolterraApp(_package: DG.Package): void {
   ], 'lotka-volterra-app-stats-panel');
 
   function updateStatsPanel(sol: LotkaVolterraSolution): void {
-    eqLabel.textContent = `x* = ${sol.xStar.toFixed(2)}, y* = ${sol.yStar.toFixed(2)}`;
+    eqLabel.textContent = `Prey* = ${sol.xStar.toFixed(2)}, Predator* = ${sol.yStar.toFixed(2)}`;
     maxPreyLabel.textContent = sol.maxPrey.toFixed(2);
     maxPredatorsLabel.textContent = sol.maxPredators.toFixed(2);
     stepsLabel.textContent = `${sol.stepCount}`;
@@ -387,6 +389,106 @@ export function lotkaVolterraApp(_package: DG.Package): void {
     return arr;
   }
 
+  // --- Equilibrium exploration ---
+  function setControlsEnabled(enabled: boolean): void {
+    for (const input of Object.values(inputMap))
+      input.enabled = enabled;
+    optimizeBtn.classList.toggle('lotka-volterra-app-optimize-btn--disabled', !enabled);
+  }
+
+  async function runEquilibriumExploration(paramName: ParamName): Promise<void> {
+    setControlsEnabled(false);
+
+    const range = RANGES[paramName];
+    const task: EquilibriumTask = {
+      paramName,
+      paramMin: range.min,
+      paramMax: range.max,
+      steps: EQUILIBRIUM_STEPS,
+      baseParams: getInputs(),
+    };
+
+    const workerUrl = _package.webRoot + 'dist/equilibrium-worker.js';
+    const pi = DG.TaskBarProgressIndicator.create('Exploring equilibrium...', {cancelable: true});
+
+    let worker: Worker;
+    try {
+      worker = new Worker(workerUrl);
+    } catch (_err) {
+      pi.close();
+      setControlsEnabled(true);
+      grok.shell.error('Failed to start equilibrium exploration.');
+      return;
+    }
+
+    const resultPromise = new Promise<EquilibriumResult>((resolve) => {
+      worker.onmessage = (event: MessageEvent<EquilibriumResult>) => {
+        worker.terminate();
+        resolve(event.data);
+      };
+
+      worker.onerror = (err) => {
+        worker.terminate();
+        resolve({paramValues: [], xStar: [], yStar: [], error: err.message ?? 'Worker error'});
+      };
+
+      pi.onCanceled.subscribe(() => {
+        worker.terminate();
+        resolve({paramValues: [], xStar: [], yStar: [], error: 'canceled'});
+      });
+
+      worker.postMessage(task);
+    });
+
+    const result = await resultPromise;
+    pi.close();
+    setControlsEnabled(true);
+
+    if (pi.canceled)
+      return;
+
+    if (result.error) {
+      grok.shell.error(`Equilibrium exploration failed: ${result.error}`);
+      return;
+    }
+
+    const eqDf = DG.DataFrame.fromColumns([
+      DG.Column.fromFloat64Array(paramName, new Float64Array(result.paramValues)),
+      DG.Column.fromFloat64Array('Prey*', new Float64Array(result.xStar)),
+      DG.Column.fromFloat64Array('Predator*', new Float64Array(result.yStar)),
+    ]);
+    eqDf.name = `Equilibrium vs ${paramName}`;
+
+    const eqView = grok.shell.addTableView(eqDf);
+    eqView.name = `Equilibrium vs ${paramName}`;
+
+    const eqChart = eqView.addViewer('Line chart', {
+      xColumnName: paramName,
+      yColumnNames: ['Prey*', 'Predator*'],
+      title: `Equilibrium point vs ${paramName}`,
+    });
+
+    const eqGridNode = eqView.dockManager.findNode(eqView.grid.root);
+    if (eqGridNode != null)
+      eqView.dockManager.dock(eqChart, DG.DOCK_TYPE.RIGHT, eqGridNode, undefined, 0.8);
+  }
+
+  function showEquilibriumDialog(): void {
+    const choiceInput = ui.input.choice('Parameter to vary', {
+      items: PARAM_NAMES as unknown as string[],
+      value: PARAM_NAMES[0],
+      nullable: false,
+      tooltipText: 'Select a model parameter to vary across its full range while keeping all other parameters fixed.',
+    });
+
+    const dlg = ui.dialog('Explore Equilibrium Point')
+      .add(choiceInput)
+      .addButton('Run', () => { dlg.close(); runEquilibriumExploration(choiceInput.value as ParamName); })
+      .show();
+
+    ui.tooltip.bind(dlg.getButton('Run')!, 'Run equilibrium point dependency exploration for the selected input');
+  }
+
   // --- Toolbar buttons ---
   const resetBtn = ui.iconFA('undo', () => {
     computationsBlocked = true;
@@ -401,16 +503,20 @@ export function lotkaVolterraApp(_package: DG.Package): void {
     runPrimary();
   }, 'Reset all parameters to default values');
 
+  const analyzeBtn = ui.iconFA('chart-line', () => showEquilibriumDialog(),
+    'Explore equilibrium point and show the results in a new view.');
+
   const helpBtn = ui.icons.help(
     () => window.open('https://en.wikipedia.org/wiki/Lotka%E2%80%93Volterra_equations', '_blank'),
     'Learn more about the Predator-Prey model. Opens in a separate page.',
   );
   helpBtn.classList.add('lotka-volterra-app-help-icon');
 
-  view.setRibbonPanels([[resetBtn], [helpBtn]]);
+  view.setRibbonPanels([[resetBtn], [analyzeBtn], [helpBtn]]);
 
   // --- Layout: left panel with form ---
   const form = ui.form([]);
+  form.classList.add('lotka-volterra-app-form');
 
   form.append(ui.h2('Model Coefficients'));
   form.append(ctrlAlpha.root);
