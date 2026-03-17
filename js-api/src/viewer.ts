@@ -78,7 +78,6 @@ export class Viewer<TSettings = any> extends Widget<TSettings> {
 
   public tags: any;
   private _meta: ViewerMetaHelper | undefined;
-  private _filter: BitSet | null = null;
 
   /** @constructs Viewer */
   constructor(dart: any, root?: HTMLElement) {
@@ -88,12 +87,8 @@ export class Viewer<TSettings = any> extends Widget<TSettings> {
 
   /** combined filter of the viewer */
   get filter(): BitSet {
-    return this._filter ??= this.dart ? toJs(api.grok_Viewer_Get_Filter(this.dart)) : BitSet.create(0);
+    return this.dart ? toJs(api.grok_Viewer_Get_Filter(this.dart)) : BitSet.create(0);
   }
-  set filter(f: BitSet) {
-    this._filter = f;
-  }
-
   /** Descriptor of this widget. */
   get descriptor(): WidgetDescriptor { return api.grok_Viewer_Get_Descriptor(this.dart); }
 
