@@ -2,7 +2,7 @@
 
 For interactive scientific applications.
 
-> **End-to-end example:** UI setup in `../example/code/src/levins/app.ts`.
+> **End-to-end example:** UI setup in `../example/code/src/lotka-volterra/app.ts`.
 
 ## 1. Inputs (`ui.input.*`)
 

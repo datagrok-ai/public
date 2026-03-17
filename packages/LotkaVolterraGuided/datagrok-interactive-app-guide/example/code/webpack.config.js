@@ -31,7 +31,8 @@ module.exports = {
   entry: {
     test: {filename: 'package-test.js', library: {type: 'var', name: `${packageName}_test`}, import: './src/package-test.ts'},
     package: './src/package.ts',
-    'optimize-worker': {filename: 'optimize-worker.js', import: './src/levins/optimize-worker.ts'},
+    'optimize-worker': {filename: 'optimize-worker.js', import: './src/lotka-volterra/workers/optimize-worker.ts'},
+    'equilibrium-worker': {filename: 'equilibrium-worker.js', import: './src/lotka-volterra/workers/equilibrium-worker.ts'},
   },
   resolve: {
     symlinks: false,

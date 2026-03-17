@@ -1,6 +1,6 @@
 # Coding Standard: Datagrok Interactive Scientific Applications
 
-> **End-to-end example:** application code in `../example/code/src/levins/`.
+> **End-to-end example:** application code in `../example/code/src/lotka-volterra/`.
 
 Extracted from the `DiffStudio` package (`packages/DiffStudio`).
 

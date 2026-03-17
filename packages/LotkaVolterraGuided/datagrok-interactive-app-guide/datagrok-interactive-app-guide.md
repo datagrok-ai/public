@@ -1,14 +1,14 @@
 # Guide: Building Interactive Scientific Web Applications on Datagrok
 
-> **End-to-end example:** application **Levins Metapopulation Model** (see `example/` directory).
-> All file references are relative to the `guides/` directory.
-> Application specification: `example/levins-metapopulation-spec.md`.
+> **End-to-end example:** application **Lotka-Volterra Predator-Prey Simulation** (see `example/` directory).
+> All file references are relative to the `datagrok-interactive-app-guide/` directory.
+> Application specification: `example/lotka-volterra-spec.md`.
 
 ## 1. General Architecture
 
 An application is a Datagrok package function registered with the `//tags: app` comment.
 
-► **Implementation:** `example/code/src/package.ts` — function `levinsMetapopulationModelApp`, registered via `//name: Levins Metapopulation Model` / `//tags: app`. Delegates logic to `example/code/src/levins/app.ts` → `levinsMetapopulationApp()`.
+► **Implementation:** `example/code/src/package.ts` — function `lotkaVolterraSimulation`, registered via `//name: Lotka-Volterra Simulation` / `//tags: app`. Delegates logic to `example/code/src/lotka-volterra/app.ts` → `lotkaVolterraApp()`.
 
 The application architecture follows the "ports and adapters" pattern (hexagonal architecture). The application consists of three layers and a coordinator.
 
@@ -25,9 +25,10 @@ The core contains one or more computational tasks. Each task is a self-contained
 - Parallelization: whether parallelization is possible and the strategy.
 - Complex validation logic for input parameters.
 
-► **Implementation:** `example/code/src/levins/core.ts` — core with two tasks:
-- **`task_primary`** (synchronous, main thread) — `solve(inputs)` solves the Levins model ODE and returns the trajectory `p(t)`.
-- **`task_optimize`** (asynchronous, web workers) — searches for the optimal `m` across 10,000 points, executed in parallel in a worker pool.
+► **Implementation:** `example/code/src/lotka-volterra/core.ts` — core with three tasks:
+- **`task_primary`** (synchronous, main thread) — `solve(inputs)` solves the Lotka-Volterra 2D ODE system and returns trajectories `x(t)`, `y(t)`, equilibrium point, and summary statistics.
+- **`task_optimize`** (asynchronous, web workers) — brute-force grid search over 4 coefficients (α, β, δ, γ) with 11 steps each (14,641 points total), executed in parallel in a worker pool.
+- **`task_equilibrium`** (asynchronous, single web worker) — varies a selected parameter across its range (100,000 steps), computing the equilibrium point for each value. Opens results in a new TableView.
 
 Examples of computational tasks within a single application:
 
@@ -36,7 +37,7 @@ Examples of computational tasks within a single application:
 
 Tasks can be independent or linked (the secondary task uses results from the primary one).
 
-► **Implementation:** `task_optimize` does not depend on the results of `task_primary`, but uses the current input values of the primary pipeline (snapshot). After optimization completes, the result is written to the `ctrl_m` control via batch update, which triggers a single run of `task_primary`.
+► **Implementation:** `task_optimize` does not depend on the results of `task_primary`, but uses the current input values of the primary pipeline (snapshot of `x0`, `y0`, `T`). After optimization completes, the result is written to `ctrl_alpha`, `ctrl_beta`, `ctrl_delta`, `ctrl_gamma` controls via batch update, which triggers a single run of `task_primary`. `task_equilibrium` is fully independent — it opens results in a new view.
 
 #### Computation Formulas and Model
 
@@ -46,7 +47,7 @@ The model definition has two levels.
 
 **Level 1 — required minimum (before implementation):**
 
-- **Variables:** name, meaning, units of measurement, valid domain (e.g., `p ∈ (0, 1]`, `m > 0`).
+- **Variables:** name, meaning, units of measurement, valid domain (e.g., `x ≥ 0`, `α > 0`).
 - **Relationships:** equations, recurrences, algorithmic steps that connect inputs to outputs. The notation must be unambiguous — another developer must be able to independently implement the same computation from this description.
 - **Output properties:** constraints that must hold on the result — bounds, monotonicity, symmetry, conservation laws, limiting/degenerate cases. These properties directly become verification tests.
 - **Reference examples:** for each computational path (each mode, branch, or regime of the model), at least one concrete input → expected output pair with the source (manual calculation, literature, reference implementation).
@@ -61,8 +62,8 @@ Both Level 1 and Level 2 content can be placed directly in the main application 
 Level 2 need not be complete before implementation begins, but must be complete before the computational part is considered verified.
 
 ► **Implementation:**
-- **Level 1** is defined in the application specification (`example/levins-metapopulation-spec.md`): variables `p, m, e₀` with units and domains; ODE `dp/dt = m·p·(1−p) − e(p)·p` with two modes (`e = e₀` and `e = e₀·(1−p)`); output property `p(t) ∈ [0, 1]`; equilibrium `p* = 1 − e₀/m`; reference examples for each mode verified in tests (`Math: Levins func` — 5 tests covering base model and rescue effect at specific `p` values).
-- **Level 2:** equilibrium analysis, MRT method justification (A-stable implicit method suitable for stiff ODEs), convergence properties — documented in the specification. MRT solver verified against analytical solutions in `Math: MRT solver` tests (non-stiff and stiff reference problems from Chapra & Canale).
+- **Level 1** is defined in the application specification (`example/lotka-volterra-spec.md`): variables `x, y, α, β, δ, γ` with units and domains; ODE system `dx/dt = αx − βxy`, `dy/dt = δxy − γy`; output properties `x(t) ≥ 0`, `y(t) ≥ 0`, `x(0) = x₀`, `y(0) = y₀`; equilibrium `(x*, y*) = (γ/δ, α/β)`; 5 reference examples verified in tests (`Math: LV func` — 5 tests covering different parameter sets and equilibrium point).
+- **Level 2:** equilibrium analysis (periodic orbits around non-trivial equilibrium, conserved Hamiltonian `H = δx + βy − γ ln(x) − α ln(y)`), MRT method justification — documented in the specification. MRT solver verified against analytical solutions in `Math: MRT solver` tests (non-stiff and stiff reference problems from Chapra & Canale).
 
 #### Computation Implementation
 
@@ -77,20 +78,21 @@ Computations for each task are implemented using one or a combination of the fol
 A single task can combine multiple approaches — for example, a custom method for data preprocessing, an external library for numerical solution, and a Datagrok computation method for postprocessing.
 
 ► **Implementation:**
-- `task_primary` combines an **external library** (`diff-grok`, function `mrt`) and a **custom method** (`getEquilibrium` in `example/code/src/levins/model.ts`).
-- `task_optimize` uses an **external library** (`diff-grok`, `mrt`) inside workers (`example/code/src/levins/optimize-worker.ts`) and a **custom method** (finding the maximum `p_end` in `example/code/src/levins/app.ts`, lines 421–425).
-- The `mrt` call is wrapped in `createLevinsODE()` (`example/code/src/levins/model.ts`), which allows reusing the ODE specification in both the main thread and workers.
+- `task_primary` combines an **external library** (`diff-grok`, function `mrt`) and a **custom method** (`getEquilibrium` in `example/code/src/lotka-volterra/model.ts`, plus summary stats computation in `solve()` in `core.ts`).
+- `task_optimize` uses an **external library** (`diff-grok`, `mrt`) inside workers (`example/code/src/lotka-volterra/workers/optimize-worker.ts`) and a **custom method** (grid generation via `linspace()` and finding the maximum `maxPrey` in `example/code/src/lotka-volterra/app.ts`).
+- `task_equilibrium` uses a **custom method** in a worker (`example/code/src/lotka-volterra/workers/equilibrium-worker.ts`) — computing `x* = γ/δ`, `y* = α/β` for each parameter value.
+- The `mrt` call is wrapped in `createLotkaVolterraODE()` (`example/code/src/lotka-volterra/model.ts`), which allows reusing the ODE specification in both the main thread and workers.
 
 Execution environment constraint: tasks that use Datagrok API computation methods can only run on the main thread. Tasks that use only external libraries and custom methods can run on either the main thread or in a web worker.
 
-► **Implementation:** `task_primary` runs on the main thread (synchronous, < 100 ms). `task_optimize` is distributed across workers — `diff-grok` does not depend on the Datagrok API.
+► **Implementation:** `task_primary` runs on the main thread (synchronous, < 100 ms). `task_optimize` is distributed across workers — `diff-grok` does not depend on the Datagrok API. `task_equilibrium` runs in a single worker.
 
 General core properties:
 
 - Does not depend on how data is obtained or how results are displayed.
 - Easily testable in isolation — each task is tested separately.
 
-► **Implementation:** `example/code/src/levins/core.ts` does not import `datagrok-api` or `ui` — only `diff-grok` and `./model`. Core tests in `example/code/src/tests/levins-api-tests.ts` test `validate`, `solve`, `validateOptimize`, `getEquilibrium` without UI.
+► **Implementation:** `example/code/src/lotka-volterra/core.ts` does not import `datagrok-api` or `ui` — only `diff-grok` and `./model`. Core tests in `example/code/src/tests/lotka-volterra-api-tests.ts` test `validate`, `solve`, `getEquilibrium` without UI.
 
 Computation core implementation references: patterns for working with raw data and null handling (`reference/COMPUTATION-PATTERNS.md`), efficient typed array operations (`reference/ARRAY-OPERATIONS.md`).
 
@@ -108,12 +110,14 @@ Additionally, at the application level:
 - **Data port** — interface for loading data from external resources.
 
 ► **Implementation:**
-- **Input port `task_primary`:** interface `LevinsParams` (`example/code/src/levins/model.ts`, line 6) — `{ p0, m, e0, rescueEffect, t_start, t_end, t_step, tolerance }`.
-- **Output port `task_primary`:** interface `LevinsSolution` (`example/code/src/levins/core.ts`, line 14) — `{ t: Float64Array, p: Float64Array, p_star: number }`.
-- **Input port `task_optimize`:** interface `WorkerTask` (`example/code/src/levins/core.ts`, line 129) — data passed to the worker via `postMessage`.
-- **Output port `task_optimize`:** interface `WorkerResult` (`example/code/src/levins/core.ts`, line 140) — `{ m_i, p_end, error? }`.
-- **Progress port:** in `task_optimize` implemented via `DG.TaskBarProgressIndicator` (`example/code/src/levins/app.ts`, line 302). Progress is updated upon each completed worker.
-- **Cancellation port:** `canceled` flag (`example/code/src/levins/app.ts`, line 303), checked before sending the next task to a worker.
+- **Input port `task_primary`:** interface `LotkaVolterraParams` (`example/code/src/lotka-volterra/model.ts`, line 6) — `{ alpha, beta, delta, gamma, x0, y0, T }`.
+- **Output port `task_primary`:** interface `LotkaVolterraSolution` (`example/code/src/lotka-volterra/core.ts`, line 14) — `{ t, x, y, xStar, yStar, maxPrey, maxPredators, stepCount }`.
+- **Input port `task_optimize`:** interface `WorkerTask` (`example/code/src/lotka-volterra/core.ts`, line 115) — `{ alpha, beta, delta, gamma, x0, y0, T }` passed to worker via `postMessage`.
+- **Output port `task_optimize`:** interface `WorkerResult` (`example/code/src/lotka-volterra/core.ts`, line 125) — `{ alpha, beta, delta, gamma, maxPrey, error? }`.
+- **Input port `task_equilibrium`:** interface `EquilibriumTask` (`example/code/src/lotka-volterra/core.ts`, line 140) — `{ paramName, paramMin, paramMax, steps, baseParams }`.
+- **Output port `task_equilibrium`:** interface `EquilibriumResult` (`example/code/src/lotka-volterra/core.ts`, line 148) — `{ paramValues[], xStar[], yStar[], error? }`.
+- **Progress port:** `DG.TaskBarProgressIndicator` (indeterminate, cancelable) for both `task_optimize` and `task_equilibrium`.
+- **Cancellation port:** `pi.onCanceled` → terminates workers and resolves promises.
 - **Data port:** not used (the application does not load external data).
 
 ### 1.3. Adapters
@@ -126,11 +130,11 @@ Concrete implementations of ports for the Datagrok environment.
 - **Progress adapter** — Datagrok progress bar. Implements the progress port.
 - **Data adapter** — loading from a specific resource. Which resource and which mechanism — defined by the specification.
 
-► **Implementation in `example/code/src/levins/app.ts`:**
-- **UI adapter:** controls `ctrlP0`, `ctrlM`, `ctrlE0`, `ctrlRescue`, `ctrlTStart`, `ctrlTEnd`, `ctrlTStep`, `ctrlTolerance` (lines 43–99). Function `getInputs()` (line 154) converts control state to `LevinsParams`.
-- **Display adapter:** `updateDataFrame()` (line 265) updates the `DG.DataFrame` and the `line chart` viewer; `updateColorCoding()` (line 188) sets conditional color coding for the `p` column.
-- **Worker adapter:** `example/code/src/levins/optimize-worker.ts` — the worker receives `WorkerTask` via `onmessage`, calls `mrt(createLevinsODE(...))`, returns `WorkerResult`. The worker pool is created in `runOptimization()` (line 292).
-- **Progress adapter:** `DG.TaskBarProgressIndicator.create('Optimizing m...')` (line 302), updated via `pi.update(...)` (line 365).
+► **Implementation in `example/code/src/lotka-volterra/app.ts`:**
+- **UI adapter:** controls `ctrlAlpha`, `ctrlBeta`, `ctrlDelta`, `ctrlGamma`, `ctrlX0`, `ctrlY0`, `ctrlT` (lines 76–124). Function `getInputs()` (line 149) converts control state to `LotkaVolterraParams`.
+- **Display adapter:** `updateDataFrame()` (line 226) updates the `DG.DataFrame` and all viewers (line chart, scatter plot, grid); `updateStatsPanel()` (line 65) updates equilibrium and max labels; `applyColorCoding()` (line 221) sets linear color coding on `Prey` and `Predators` columns.
+- **Worker adapter:** `example/code/src/lotka-volterra/workers/optimize-worker.ts` — receives `WorkerTask[]` via `onmessage`, calls `mrt(createLotkaVolterraODE(...))`, returns `WorkerResult[]`. `example/code/src/lotka-volterra/workers/equilibrium-worker.ts` — receives `EquilibriumTask`, computes equilibrium for each parameter value, returns `EquilibriumResult`. The worker pools are created in `runOptimization()` (line 261) and `runEquilibriumExploration()` (line 410).
+- **Progress adapter:** `DG.TaskBarProgressIndicator.create(...)` — indeterminate, cancelable — used for both `task_optimize` (line 297) and `task_equilibrium` (line 423).
 - **Data adapter:** not used.
 
 ### 1.4. Coordinator (Application Service)
@@ -145,24 +149,24 @@ The coordinator connects adapters and the core. It:
 - Passes results to the display adapter.
 - Manages resource lifecycle (subscriptions, workers).
 
-► **Implementation:** function `levinsMetapopulationApp()` in `example/code/src/levins/app.ts` fulfills all coordinator roles:
-- Listens to `onValueChanged` via input callbacks (lines 43–99).
-- Reactivity: `updateRhoBadge()` (line 124), `updateRescueLabel()` (line 136).
-- Validation and computation: `runPrimary()` (line 226).
-- Blocking: `computationsBlocked` flag (line 19), used during input formatting (lines 102–110), during reset (lines 506–518), and after optimization (lines 428–437).
-- Lifecycle: `subs[]` (line 21), `activeWorkers[]` (line 22), cleanup in `onViewRemoved` (line 561).
+► **Implementation:** function `lotkaVolterraApp()` in `example/code/src/lotka-volterra/app.ts` fulfills all coordinator roles:
+- Listens to `onValueChanged` via input callbacks (lines 76–124).
+- Reactivity: all 7 controls trigger `debouncedRun()` — no cascading dependencies between controls in this application.
+- Validation and computation: `runPrimary()` (line 182).
+- Blocking: `computationsBlocked` flag (line 22), used during input formatting (lines 127–135), during reset (lines 505–516), and after optimization (lines 376–387).
+- Lifecycle: `subs[]` (line 24), `activeWorkers[]` (line 25), cleanup in `onViewRemoved` (line 605).
 
 ### 1.5. Independence Principle
 
 Input behavior does not depend on the core's computational part. The UI adapter and reactivity between inputs form a standalone layer managed by the coordinator based on the specification. The core receives a ready, validated set of parameters.
 
-► **Implementation:** the function `runPrimary()` first calls `validate(inputs)` from the core, and only if `errors.size === 0` passes the data to `solve(inputs)`. The core (`core.ts`) is unaware of the inputs' existence — it accepts a plain `LevinsParams`.
+► **Implementation:** the function `runPrimary()` first calls `validate(inputs)` from the core, and only if `errors.size === 0` passes the data to `solve(inputs)`. The core (`core.ts`) is unaware of the inputs' existence — it accepts a plain `LotkaVolterraParams`.
 
 ## 2. Main View
 
 The application has a main view. If a scientific application is based on a table, the main view should be `DG.TableView`.
 
-► **Implementation:** `example/code/src/levins/app.ts`, line 33: `const view = grok.shell.addTableView(df)`.
+► **Implementation:** `example/code/src/lotka-volterra/app.ts`, line 40: `const view = grok.shell.addTableView(df)`.
 
 ## 3. Controls (Inputs)
 
@@ -173,9 +177,9 @@ Users set input parameters for computations through controls. Control types:
 - **Custom HTMLElement** — for example, a `div` element with specific styles that performs an action when clicked. Each custom element is described in a separate document — a UI component specification. The UI component specification contains: visual description (sketch/mockup), states (normal, hover, disabled, active), events (what it emits on interaction), styles (CSS classes), accessibility (tooltips, aria). The main application specification includes a brief element description and a link to the UI component specification document.
 
 ► **Implementation:**
-- **Standard inputs:** 7 numeric + 1 toggle in `example/code/src/levins/app.ts`, lines 43–99 (`ctrlP0`, `ctrlM`, `ctrlE0`, `ctrlRescue`, `ctrlTStart`, `ctrlTEnd`, `ctrlTStep`, `ctrlTolerance`).
-- **Buttons:** `optimizeBtn = ui.iconFA('search', ...)` (line 503), `resetBtn = ui.iconFA('undo', ...)` (line 505).
-- **Custom HTMLElement:** `rhoBadge = ui.div([], 'd4-tag levins-rho-badge')` (line 37) — a rho = e0/m indicator with dynamic color switching via CSS classes.
+- **Standard inputs:** 7 numeric inputs in `example/code/src/lotka-volterra/app.ts`, lines 76–124 (`ctrlAlpha`, `ctrlBeta`, `ctrlDelta`, `ctrlGamma`, `ctrlX0`, `ctrlY0`, `ctrlT`).
+- **Buttons:** `optimizeBtn = ui.bigButton('Optimize', ...)` (line 254), `resetBtn = ui.iconFA('undo', ...)` (line 505), `analyzeBtn = ui.iconFA('chart-line', ...)` (line 518), `helpBtn = ui.icons.help(...)` (line 521).
+- **Custom HTMLElement:** `statsPanel` — a `ui.divV` panel with `ui.label` components (lines 46–63) showing equilibrium values and max population statistics.
 
 ### 3.1. Input Options
 
@@ -187,7 +191,7 @@ When creating standard Datagrok inputs (`ui.input.*`), the specification defines
 
 Input options differ from validation (section 7): options set basic control-level constraints (range, format), while validation checks complex conditions across combinations of multiple input values.
 
-► **Implementation:** min/max are set during input creation (e.g., `ctrlP0`: `min: 0.001, max: 1`). Formats are set in a separate block (lines 102–109), wrapped in `computationsBlocked = true/false` — so that format assignment does not trigger a side-effect recomputation.
+► **Implementation:** min/max are set during input creation from `RANGES` (e.g., `ctrlAlpha`: `min: RANGES.alpha.min, max: RANGES.alpha.max`). Formats are set in a separate block (lines 127–134), wrapped in `computationsBlocked = true/false` — so that format assignment does not trigger a side-effect recomputation.
 
 ### 3.2. Control Classification
 
@@ -198,9 +202,9 @@ Controls are classified by ownership:
 - **Secondary task controls** — inputs placed in the secondary task's own UI (e.g., in a dialog).
 
 ► **Implementation:**
-- **Main view controls:** `ctrlP0`…`ctrlTolerance` — in the left panel form.
-- **Secondary task trigger:** `optimizeBtn` (`ui.iconFA('search')`, line 503) → opens the optimization dialog.
-- **Secondary task controls:** `dlgMMin`, `dlgMMax` — dialog inputs in `showOptimizeDialog()` (lines 448–499).
+- **Main view controls:** `ctrlAlpha`…`ctrlT` — in the left panel form.
+- **Secondary task triggers:** `optimizeBtn` (`ui.bigButton('Optimize')`, line 254) → launches optimization directly; `analyzeBtn` (`ui.iconFA('chart-line')`, line 518) → opens the equilibrium exploration dialog.
+- **Secondary task controls:** `choiceInput` (`ui.input.choice`) — dialog input in `showEquilibriumDialog()` (line 488) for selecting the parameter to vary.
 
 ## 4. Result Display Elements
 
@@ -212,36 +216,36 @@ Computation results are displayed using:
 By default, these elements are docked to the main view.
 
 ► **Implementation:**
-- **Viewer:** `line chart` — `view.addViewer('Line chart', {...})` (line 546), docked to the right of the grid.
-- **Custom element:** `rhoBadge` — displays the current rho value with color indication (green/red).
-- **Color coding of column `p`:** `updateColorCoding()` (line 188) sets conditional colors (green — persistence zone, red — extinction threat) with dynamic threshold recalculation `e0/m`.
-- **Column `p` header tooltip:** `setupGridTooltip()` (line 202) via `view.grid.onCellTooltip`.
+- **Viewers:** `line chart` — `view.addViewer('Line chart', {...})` (line 552), showing Time vs Prey and Predators; `scatter plot` — `view.addViewer('Scatter plot', {...})` (line 559), showing the phase portrait (Prey vs Predators).
+- **Custom element:** `statsPanel` — displays equilibrium point (`Prey* = γ/δ`, `Predator* = α/β`) and maximum population values, updated via `updateStatsPanel()` (line 65).
+- **Color coding:** `applyColorCoding()` (line 221) sets linear color coding on `Prey` and `Predators` columns (dark red → yellow → dark green). Grid columns have `isTextColorCoded = true` (lines 42–43, 237–238).
+- **Column header tooltips:** `columnTooltip()` (line 575) via `view.grid.onCellTooltip` (line 592) — shows column name, min (dark red), and max (dark green) for `Prey` and `Predators` columns.
 
 ## 5. Layout and UI Element Placement
 
 The placement of controls and display elements (panels, ribbon, toolbar, side panels, docking area) is defined by the application specification.
 
-► **Implementation (`example/code/src/levins/app.ts`):**
-- **Left panel:** `ui.form` with groups via `ui.h2` (lines 523–540), docked as `DG.DOCK_TYPE.LEFT`, ratio `0.2` (line 543).
-- **Toolbar (ribbon):** `view.setRibbonPanels([[optimizeBtn, resetBtn]])` (line 520).
+► **Implementation (`example/code/src/lotka-volterra/app.ts`):**
+- **Left panel:** `ui.form` with groups via `ui.h2` (lines 530–547), docked as `DG.DOCK_TYPE.LEFT`, ratio `0.6` (line 549).
+- **Ribbon:** three groups — `[resetBtn]` (Actions), `[analyzeBtn]` (Analyze), `[helpBtn]` (Help) — set via `view.setRibbonPanels([[resetBtn], [analyzeBtn], [helpBtn]])` (line 527).
 - **Main area:** `DG.TableView` (grid) — default.
-- **Right area:** `line chart`, docked `DG.DOCK_TYPE.RIGHT` relative to the grid, ratio `0.5` (lines 552–554).
+- **Right area:** `line chart`, docked `DG.DOCK_TYPE.RIGHT`, ratio `0.7` (line 569); `scatter plot`, docked `DG.DOCK_TYPE.DOWN` relative to line chart, ratio `0.5` (line 572).
 
 ## 5.1. Styles
 
 All visual styles of the application are placed in a separate CSS file (`css/<app-name>.css`). Inline styles in TypeScript code are not allowed — CSS classes are used instead.
 
-- **Style isolation** — all custom CSS classes must use a unique application-specific prefix (`<app-name>-`) to prevent collisions with platform styles and other packages. For example, `levins-rho-badge`, `lotka-volterra-app-stats-panel`. Do not use generic class names without a prefix.
+- **Style isolation** — all custom CSS classes must use a unique application-specific prefix (`<app-name>-`) to prevent collisions with platform styles and other packages. For example, `lotka-volterra-app-stats-panel`, `lotka-volterra-app-tooltip-min`. Do not use generic class names without a prefix.
 - **Static styles** — element styling that does not change during operation. Set via CSS class when creating the element.
 - **Dynamic styles** — styles that depend on application state (e.g., indicator color, button activity). Implemented via CSS class toggling (`classList.toggle`, `classList.add/remove`), not via direct `element.style.*` assignment.
 
 The CSS file is imported via ES import (`import '../css/<app-name>.css'`). Webpack with `style-loader` + `css-loader` injects styles into the DOM when the bundle loads.
 
 ► **Implementation:**
-- CSS file: `example/code/css/levins.css` — contains classes `.levins-rho-badge`, `.levins-rho-badge--persists`, `.levins-rho-badge--extinct`, `.levins-btn--disabled`.
-- Import: `import '../../css/levins.css'` (`example/code/src/levins/app.ts`, line 12).
-- **Static styles:** `rhoBadge` is created with classes `'d4-tag levins-rho-badge'` (line 37).
-- **Dynamic styles:** `rhoBadge.classList.toggle('levins-rho-badge--persists', persists)` (line 130); `optimizeBtn.classList.toggle('levins-btn--disabled', !enabled)` (line 289).
+- CSS file: `example/code/css/lotka-volterra.css` — contains classes `.lotka-volterra-app-stats-panel`, `.lotka-volterra-app-stats-value`, `.lotka-volterra-app-optimize-btn--disabled`, `.lotka-volterra-app-help-icon`, `.lotka-volterra-app-col-tooltip`, `.lotka-volterra-app-tooltip-range`, `.lotka-volterra-app-tooltip-min`, `.lotka-volterra-app-tooltip-max`.
+- Import: `import '../../css/lotka-volterra.css'` (`example/code/src/lotka-volterra/app.ts`, line 13).
+- **Static styles:** `statsPanel` is created with class `'lotka-volterra-app-stats-panel'` (line 63); stats value labels with `'lotka-volterra-app-stats-value'` (lines 51–54); `helpBtn` with `'lotka-volterra-app-help-icon'` (line 525).
+- **Dynamic styles:** `optimizeBtn.classList.toggle('lotka-volterra-app-optimize-btn--disabled', !enabled)` (line 258).
 
 ## 6. User Feedback
 
@@ -251,21 +255,21 @@ The CSS file is imported via ES import (`import '../css/<app-name>.css'`). Webpa
 - For elements that are not Datagrok inputs, tooltips are bound via `ui.tooltip.bind`.
 
 ► **Implementation:**
-- All inputs have `tooltipText` (e.g., `ctrlP0`: `tooltipText: 'Fraction of patches occupied at t=0...'`, line 46).
-- `rhoBadge`: `ui.tooltip.bind(rhoBadge, '...')` (line 38).
-- Buttons `optimizeBtn` and `resetBtn`: tooltip is passed as the third argument of `ui.iconFA` (lines 503, 518).
+- All inputs have `tooltipText` (e.g., `ctrlAlpha`: `tooltipText: 'Rate at which prey reproduce...'`, line 79).
+- Buttons `optimizeBtn`, `resetBtn`, `analyzeBtn`: tooltip is passed as the third argument of `ui.bigButton` / `ui.iconFA` (lines 254, 505, 518).
+- `helpBtn`: tooltip is passed as the second argument of `ui.icons.help` (line 522).
 
 ### 6.2. Validators as Feedback
 
 Validators are added to standard Datagrok inputs — they display inline hints about the validity of the current value.
 
-► **Implementation:** function `addValidators()` (`example/code/src/levins/app.ts`, line 168) adds a validator to each input. The validator calls `validate(getInputs())` from the core and returns an error for the specific `InputId`.
+► **Implementation:** function `addValidators()` (`example/code/src/lotka-volterra/app.ts`, line 162) adds a validator to each input. The validator calls `validate(getInputs())` from the core and returns an error for the specific `InputId`.
 
 ### 6.3. Progress Bar
 
 During long computations, the standard Datagrok progress bar indicator is displayed with cancellation support.
 
-► **Implementation:** `task_optimize` uses `DG.TaskBarProgressIndicator.create('Optimizing m...')` (line 302), updated via `pi.update(percent, label)` upon each completed worker (line 365).
+► **Implementation:** `task_optimize` uses `DG.TaskBarProgressIndicator.create('Optimizing Max Prey...')` (line 297) — indeterminate, cancelable. `task_equilibrium` uses `DG.TaskBarProgressIndicator.create('Exploring equilibrium...')` (line 423) — indeterminate, cancelable.
 
 ## 7. Validation
 
@@ -276,16 +280,15 @@ Validation is performed through the Datagrok validator mechanism. Each computati
 Validation is complex: the entire set of task inputs is analyzed as a whole. If a combination of values is invalid, a `Map` with error specifications is returned. This specification is then used by the Datagrok validator mechanism to display errors on the corresponding inputs.
 
 ► **Implementation:**
-- `task_primary`: function `validate(inputs: LevinsParams): ValidationErrors` (`example/code/src/levins/core.ts`, line 40) — returns `Map<InputId, string>`. Rules val_01…val_09 check both individual values and combinations (e.g., val_05: `m <= e0` when `rescueEffect = false`; val_08: `t_step >= t_end - t_start`).
-- `task_optimize`: function `validateOptimize(opt, e0, rescueEffect)` (`example/code/src/levins/core.ts`, line 106) — returns `{ errors: Map<OptInputId, string>, warning: string | null }`. Rules opt_val_01…opt_val_04.
+- `task_primary`: function `validate(inputs: LotkaVolterraParams): ValidationErrors` (`example/code/src/lotka-volterra/core.ts`, line 56) — returns `Map<InputId, string>`. Rules val_01…val_07 check that each of the 7 parameters is positive. All rules are independent — no combinatorial dependencies.
+- `task_optimize`: reuses `validate()` from the primary pipeline. If validation fails, optimization is rejected with `grok.shell.error('Invalid parameters. Fix inputs before optimizing.')`.
+- `task_equilibrium`: no validation needed — the parameter choice is always valid.
 
 ### 7.2. Validation Order
 
 The order of determining input set validity is defined by the specification for each task.
 
-► **Implementation:** in `validate()`, combinatorial rules are checked only after basic rules pass:
-- val_05 is checked only if val_03 and val_04 passed (line 59: `if (!errors.has('ctrl_m') && !errors.has('ctrl_e0') && ...)`).
-- val_08 is checked only if val_06 and val_07 passed (line 73: `if (!errors.has('ctrl_t_end') && !errors.has('ctrl_t_step') && ...)`).
+► **Implementation:** in `validate()`, all 7 rules are independent and checked in sequence (val_01 through val_07). There are no combinatorial rules that depend on other rules passing first.
 
 ## 8. Main Pipeline
 
@@ -303,20 +306,20 @@ The primary pipeline is bound to the main application controls and operates reac
 
 **Result display.** The core returns results through the task's output port. The coordinator passes them to the display adapter (see section 4).
 
-► **Implementation:** function `runPrimary()` (`example/code/src/levins/app.ts`, line 226):
-1. Checks `computationsBlocked` (line 227).
-2. Collects inputs: `getInputs()` (line 230).
-3. Validates: `validate(inputs)` (line 231).
-4. On errors — visually marks invalid inputs (`d4-invalid`) and calls `clearResults()` (lines 237–245).
-5. On success — `solve(inputs)` (line 248), then `updateDataFrame(result)` + `updateColorCoding()` (lines 249–250).
+► **Implementation:** function `runPrimary()` (`example/code/src/lotka-volterra/app.ts`, line 182):
+1. Checks `computationsBlocked` (line 183).
+2. Collects inputs: `getInputs()` (line 186).
+3. Validates: `validate(inputs)` (line 187).
+4. On errors — visually marks invalid inputs (`d4-invalid`) and calls `clearResults()` (lines 193–200).
+5. On success — `solve(inputs)` (line 204), then `updateDataFrame(result)` + `updateStatsPanel(result)` (lines 205–206).
 
-Reactive trigger: each input has `onValueChanged: () => debouncedRun()` (debounce 50 ms, line 258).
+Reactive trigger: each input has `onValueChanged: () => debouncedRun()` (debounce 50 ms, line 214).
 
 ### 8.2. Secondary Pipelines
 
 A secondary pipeline is bound to an explicit user action (button, icon, menu item) and runs on demand.
 
-**Trigger.** The user initiates an action (e.g., clicks the "Sensitivity Analysis" button).
+**Trigger.** The user initiates an action (e.g., clicks the "Optimize" button).
 
 **Custom UI.** A secondary pipeline may have its own parameter input interface — for example, a Datagrok dialog with its own set of inputs, validation, and tooltips. This UI is defined by the secondary task specification.
 
@@ -329,12 +332,20 @@ A secondary pipeline is bound to an explicit user action (button, icon, menu ite
 **Feedback to primary pipeline.** The secondary task may return values that are substituted into primary pipeline controls. In this case, the computation blocking and batch update mechanism is used (see section 8.4).
 
 ► **Implementation of `task_optimize`:**
-1. **Trigger:** `optimizeBtn` → `showOptimizeDialog()` (line 503).
-2. **Custom UI:** dialog `ui.dialog('Find optimal m')` with inputs `dlgMMin`, `dlgMMax` (lines 448–499), with its own validators and tooltips.
-3. **Validation:** `validateDialog()` (line 463) calls `validateOptimize()` from the core.
-4. **Computation:** `runOptimization(mMin, mMax)` (line 292) — creates a worker pool, distributes 10,000 tasks, collects results.
-5. **Display:** `grok.shell.info(...)` with the found optimum (line 433).
-6. **Feedback:** `ctrlM.value = best.m_i` via batch update (lines 428–433).
+1. **Trigger:** `optimizeBtn` click (line 254).
+2. **Custom UI:** none — uses current slider ranges and primary control values.
+3. **Validation:** `validate(getInputs())` — reuses primary validation (line 263).
+4. **Computation:** `runOptimization()` (line 261) — generates 14,641 grid points (11⁴), distributes across worker pool, collects results.
+5. **Display:** no dedicated display — result fed back to primary pipeline.
+6. **Feedback:** `ctrlAlpha.value = best.alpha`, `ctrlBeta.value = best.beta`, etc. via batch update (lines 376–387).
+
+► **Implementation of `task_equilibrium`:**
+1. **Trigger:** `analyzeBtn` → `showEquilibriumDialog()` (line 518).
+2. **Custom UI:** dialog `ui.dialog('Explore Equilibrium Point')` with `ui.input.choice` for parameter selection (line 488).
+3. **Validation:** none — parameter choice is always valid.
+4. **Computation:** `runEquilibriumExploration(paramName)` (line 410) — single worker, 100,000 steps.
+5. **Display:** new `DG.TableView` with DataFrame `[paramName, Prey*, Predator*]` and a line chart docked right (lines 466–485).
+6. **Feedback:** none — results displayed in a separate view.
 
 ### 8.3. Common Pipeline Aspects
 
@@ -344,21 +355,22 @@ The following aspects are defined by the specification for each pipeline indepen
 
 Controls may become disabled during computations — which ones and for which pipeline is defined by the specification.
 
-► **Implementation:** `task_primary` does not block controls (< 100 ms). `task_optimize` blocks only `optimizeBtn` via `setOptimizeBtnEnabled(false)` (lines 288–289, 300).
+► **Implementation:** `task_primary` does not block controls (< 100 ms). `task_optimize` blocks only `optimizeBtn` via CSS class `lotka-volterra-app-optimize-btn--disabled` (line 258). `task_equilibrium` blocks all inputs via `input.enabled = false` and `optimizeBtn` via CSS class (function `setControlsEnabled()`, line 404).
 
 #### Progress and Cancellation
 
 During long computations, the standard Datagrok progress bar is displayed with cancellation support.
 
-► **Implementation:** `task_primary` — no progress bar. `task_optimize` — `DG.TaskBarProgressIndicator` with completion percentage and cancellation via the `canceled` flag (line 303).
+► **Implementation:** `task_primary` — no progress bar. `task_optimize` — `DG.TaskBarProgressIndicator` (indeterminate, cancelable) with cancellation via `pi.onCanceled` → `terminateWorkers()` (line 328). `task_equilibrium` — `DG.TaskBarProgressIndicator` (indeterminate, cancelable) with cancellation via `pi.onCanceled` → `worker.terminate()` (line 446).
 
 #### Computation Error Handling
 
 The course of action upon computation failure is defined by the specification for each task.
 
 ► **Implementation:**
-- `task_primary`: `catch` → `clearResults()` + `grok.shell.error(msg)` (lines 251–255).
-- `task_optimize`: partial errors (some workers failed) → `grok.shell.warning(...)` (line 413); complete failure → `grok.shell.error(...)` (line 416); error writing to control → `grok.shell.warning(...)` with instructions to enter manually (line 436).
+- `task_primary`: `catch` → `clearResults()` + `grok.shell.error(msg)` (lines 207–211).
+- `task_optimize`: partial errors (some workers failed) → `grok.shell.warning(...)` (line 361); complete failure → `grok.shell.error(...)` (line 364); error writing to controls → `grok.shell.warning(...)` (line 386).
+- `task_equilibrium`: worker error → `grok.shell.error(...)` (line 462).
 
 ### 8.4. Computation Blocking and Batch Input Updates
 
@@ -377,12 +389,12 @@ The coordinator supports a computation blocking mode:
 
 Example: the user launches parameter optimization (secondary task). Upon optimization completion, the coordinator blocks the primary pipeline, substitutes the found parameter values into all controls, removes the block — the primary pipeline runs once for the complete set of optimal parameters.
 
-► **Implementation:** the `computationsBlocked` flag (`example/code/src/levins/app.ts`, line 19) is used in three scenarios:
-1. **Format initialization** (lines 102–110): blocking prevents side-effect recomputations during `format` assignment.
-2. **Reset** (lines 506–518): `computationsBlocked = true` → reset all values → `computationsBlocked = false` → `runPrimary()`.
-3. **Optimization result** (lines 428–437): `computationsBlocked = true` → `ctrlM.value = best.m_i` → `computationsBlocked = false` → `runPrimary()`.
+► **Implementation:** the `computationsBlocked` flag (`example/code/src/lotka-volterra/app.ts`, line 22) is used in three scenarios:
+1. **Format initialization** (lines 127–135): blocking prevents side-effect recomputations during `format` assignment.
+2. **Reset** (lines 506–516): `computationsBlocked = true` → reset all 7 values → `computationsBlocked = false` → `runPrimary()`.
+3. **Optimization result** (lines 376–387): `computationsBlocked = true` → set `ctrlAlpha.value`, `ctrlBeta.value`, `ctrlDelta.value`, `ctrlGamma.value` → `computationsBlocked = false` → `runPrimary()`.
 
-Blocking check: `runPrimary()` first checks `if (computationsBlocked) return` (line 227).
+Blocking check: `runPrimary()` first checks `if (computationsBlocked) return` (line 183).
 
 ## 9. Reactivity and Dependencies Between Inputs
 
@@ -390,11 +402,7 @@ Dependencies between inputs (cascading updates of ranges, defaults, availability
 
 Reactivity can be temporarily suspended by the coordinator in batch input update mode (see section 8.4).
 
-► **Implementation:**
-- **`ctrl_m` / `ctrl_e0` → `rhoBadge`:** `updateRhoBadge()` (line 124) is called from `onValueChanged` of both inputs. Recalculates `rho = e0/m`, updates text and CSS class.
-- **`ctrl_rescue` → `ctrl_e0` (label + tooltip):** `updateRescueLabel()` (line 136) switches caption and tooltip based on the toggle state.
-- **`ctrl_t_start` / `ctrl_t_end` → ranges:** `updateArgRanges()` (line 149) — scaffold for range updates; actual checking via complex validation (val_06, val_07, val_08).
-- **Debounce:** numeric inputs use `debouncedRun()` (debounce 50 ms, line 258), toggle `ctrl_rescue` calls `runPrimary()` directly (without debounce).
+► **Implementation:** in this application, there are no cascading dependencies between inputs — all 7 controls independently trigger `debouncedRun()` (debounce 50 ms, line 214). Any input change causes validation and recomputation via the primary pipeline. The `statsPanel` (equilibrium and max values) is updated as part of the primary pipeline result display, not as a separate reactive dependency.
 
 ## 10. Data Lifecycle
 
@@ -402,7 +410,7 @@ Reactivity can be temporarily suspended by the coordinator in batch input update
 
 The primary approach is manual entry through application controls.
 
-► **Implementation:** all model parameters are entered by the user through the form in the left panel. The initial state uses default values from `DEFAULTS` (`example/code/src/levins/core.ts`, line 27). `task_primary` runs automatically on initialization: `solve(DEFAULTS)` (line 26).
+► **Implementation:** all model parameters are entered by the user through the form in the left panel. The initial state uses default values from `DEFAULTS` (`example/code/src/lotka-volterra/core.ts`, line 32). `task_primary` runs automatically on initialization: `solve(DEFAULTS)` (line 30).
 
 ### 10.2. Loading from a Resource
 
@@ -414,10 +422,10 @@ Via buttons or icons — loading data from an external resource. Which specific 
 
 The strategy for handling data loading errors, network errors, invalid input files, and incorrect application state is defined by the application specification.
 
-► **Implementation:** see specification (`example/levins-metapopulation-spec.md`, section 11). Examples:
-- Worker creation error: `reject(new Error('Failed to start parallel computations...'))` (line 380).
-- Partial worker errors: `errorCount` counting and `grok.shell.warning(...)` (lines 305, 412–413).
-- Error writing to control: fallback with `grok.shell.warning(...)` (line 436).
+► **Implementation:** see specification (`example/lotka-volterra-spec.md`, section 11). Examples:
+- Worker creation error: `reject(new Error('Failed to start parallel computations...'))` (line 307).
+- Partial worker errors: `errorCount` counting and `grok.shell.warning(...)` (lines 345, 361).
+- Equilibrium worker error: `grok.shell.error(...)` (line 462).
 
 ## 12. Subscriptions and Resource Management
 
@@ -425,13 +433,13 @@ The strategy for handling data loading errors, network errors, invalid input fil
 
 All Datagrok event subscriptions (`onValueChanged`, `onAfterDraw`, etc.) must be collected and unsubscribed when the application closes via `sub.unsubscribe()`.
 
-► **Implementation:** array `subs` (`example/code/src/levins/app.ts`, line 21) collects subscriptions. On close — `for (const sub of subs) sub.unsubscribe()` (line 564).
+► **Implementation:** array `subs` (`example/code/src/lotka-volterra/app.ts`, line 24) collects subscriptions. On close — `for (const sub of subs) sub.unsubscribe()` (line 609).
 
 ### 12.2. Worker Termination
 
 When the application closes, all web workers must be properly terminated.
 
-► **Implementation:** array `activeWorkers` (line 22), function `terminateWorkers()` (line 440) calls `w.terminate()` for each worker. Called on close (line 563) and after optimization completes (line 405).
+► **Implementation:** array `activeWorkers` (line 25), function `terminateWorkers()` (line 390) calls `w.terminate()` for each worker. Called on close (line 607) and after optimization completes (line 338). Equilibrium worker is terminated individually on completion, error, or cancellation (lines 437, 442, 447).
 
 ## 13. Application Closure
 
@@ -442,8 +450,8 @@ When the application closes, the coordinator performs:
 - All associated UI elements are closed (including open secondary task dialogs).
 - Pending requests are cancelled.
 
-► **Implementation:** handler `grok.events.onViewRemoved.subscribe(...)` (`example/code/src/levins/app.ts`, lines 561–568):
-1. `terminateWorkers()` — terminates all active workers.
+► **Implementation:** handler `grok.events.onViewRemoved.subscribe(...)` (`example/code/src/lotka-volterra/app.ts`, lines 605–613):
+1. `terminateWorkers()` — terminates all active optimization workers.
 2. `for (const sub of subs) sub.unsubscribe()` — unsubscribes subscriptions.
 3. `clearTimeout(debounceTimer)` — cancels pending debounce.
 
@@ -451,7 +459,7 @@ When the application closes, the coordinator performs:
 
 Keyboard shortcuts, context menus, undo/redo, and other UX elements are defined by the application specification.
 
-► **Implementation:** in the current version of the application, keyboard shortcuts, context menus, and undo/redo are not implemented (see specification, section 12).
+► **Implementation:** in the current version of the application, keyboard shortcuts, context menus, and undo/redo are not implemented (see specification, section 14). The `btn_reset` button resets all controls to default values as the only rollback mechanism. The `btn_help` button opens the Wikipedia article on Lotka-Volterra equations in a new browser tab.
 
 ## 15. Testing
 
@@ -461,15 +469,14 @@ Core correctness verification: unit tests for each computational task separately
 
 ► **Implementation:** tests are split across two files:
 
-**`example/code/src/tests/levins-api-tests.ts`** — 2 categories:
-- **API: Validation** — 24 tests: val_01…val_09 + boundary values + dependency order + multiple errors + defaults.
-- **API: Optimization Validation** — 7 tests: opt_val_01…opt_val_04 + valid input data.
+**`example/code/src/tests/lotka-volterra-api-tests.ts`** — 1 category:
+- **API: Validation** — 18 tests: val_01…val_07 (zero and negative values for each of 7 parameters) + boundary values + valid defaults + multiple simultaneous errors.
 
-**`example/code/src/tests/levins-math-tests.ts`** — 4 categories:
-- **Math: MRT solver** — 3 tests: non-stiff 1D, stiff 1D, stiff 2D (van der Pol) — verifying the `mrt` solver against analytical/reference solutions.
-- **Math: Levins func** — 5 tests: ODE right-hand side correctness for the base model and rescue effect at specific `p` values.
-- **Math: Equilibrium** — 4 tests: `getEquilibrium` for the base model and rescue effect.
-- **Math: Solve output properties** — 8 tests: output invariants of `solve()` — bounds `p ∈ [0, 1]`, initial conditions, convergence to `p*`, monotonicity in `m`.
+**`example/code/src/tests/lotka-volterra-math-tests.ts`** — 4 categories:
+- **Math: LV func** — 5 tests: ODE right-hand side correctness at specific `(α, β, δ, γ, x, y)` points, including equilibrium.
+- **Math: LV Equilibrium** — 2 tests: `getEquilibrium` verified against analytical formulas `x* = γ/δ`, `y* = α/β`.
+- **Math: LV Solve properties** — 7 tests: output invariants of `solve()` — non-negativity, initial conditions, equilibrium stability, summary stats.
+- **Math: MRT solver** — 2 tests: non-stiff 1D and stiff 1D reference problems verified against analytical solutions (Chapra & Canale).
 
 Tests are run via `grok test` (entry point: `example/code/src/package-test.ts`).
 
@@ -478,10 +485,10 @@ Tests are run via `grok test` (entry point: `example/code/src/package-test.ts`).
 Input verification for each task: all cases including edge cases (boundary values, invalid combinations, empty values, extreme values).
 
 ► **Implementation:** validation tests cover:
-- Boundary values: `p0 = 0.001` (lower allowed bound), `p0 = 1` (upper).
-- Invalid combinations: `m <= e0` without rescue, `t_step >= t_end - t_start`.
-- Dependencies between rules: val_05 is skipped when val_03 fails, val_08 is skipped when val_06/val_07 fail.
-- Multiple errors: simultaneously invalid `p0`, `m`, `e0`, `t_step`, `tolerance`.
+- Boundary values: `alpha = 0.1` (lower allowed bound), `x0 = 1` (lower allowed bound).
+- Invalid values: zero and negative for each of the 7 parameters (14 tests).
+- Multiple errors: simultaneously invalid `alpha=0`, `beta=0`, `x0=0`, `T=0` → ≥ 4 errors.
+- Valid defaults: all default values pass validation.
 
 ### 15.3. Mathematical Verification
 
@@ -494,9 +501,9 @@ Verification that the implemented computation matches the model definition (see 
 **Output property verification.** Constraints declared in the model definition (bounds, monotonicity, conservation laws, limiting cases) are checked on actual computation results. These tests do not compare against a specific expected value — they verify that the result satisfies a declared invariant.
 
 ► **Implementation:**
-- **Formula verification:** `Math: Levins func` — 5 tests. Each test substitutes specific `(m, e₀, p)` into the ODE right-hand side and compares `dp/dt` against a hand-calculated value (e.g., `func_01`: `dp/dt = 0.5·0.5·0.5 − 0.2·0.5 = 0.025`). Both computational paths are covered: base model (3 tests) and rescue effect (2 tests).
-- **Equilibrium verification:** `Math: Equilibrium` — 4 tests. `getEquilibrium` is checked against the analytical formula `p* = 1 − e₀/m` for the base model, and `NaN` for the rescue effect (no closed-form equilibrium).
-- **Output properties:** `Math: Solve output properties` — 8 tests. Verifies invariants declared in the specification: `p(t) ∈ [0, 1]` (solve_02, solve_06), `p(0) = p0` (solve_03, solve_08), convergence to `p*` (solve_05), monotonicity in `m` (solve_07), non-empty output arrays (solve_01), `t[0] = t_start` (solve_04).
+- **Formula verification:** `Math: LV func` — 5 tests. Each test substitutes specific `(α, β, δ, γ, x, y)` into the ODE right-hand side and compares `(dx/dt, dy/dt)` against hand-calculated values (e.g., `func_01`: `dx/dt = 1.0·10 − 0.1·10·5 = 5.0`, `dy/dt = 0.075·10·5 − 1.5·5 = −3.75`). Multiple parameter sets are covered (3 tests with default coefficients, 2 tests with different coefficients).
+- **Equilibrium verification:** `Math: LV Equilibrium` — 2 tests. `getEquilibrium` is checked against analytical formulas `x* = γ/δ`, `y* = α/β` for two different parameter sets.
+- **Output properties:** `Math: LV Solve properties` — 7 tests. Verifies invariants declared in the specification: `x(t) ≥ 0, y(t) ≥ 0` (solve_02), `x(0) = x₀, y(0) = y₀` (solve_03, solve_07), equilibrium stability (solve_05), `t[0] = 0` (solve_04), non-empty arrays (solve_01), summary stats correctness (solve_06).
 
 #### Level 2 verification (for full formalization)
 
@@ -507,6 +514,6 @@ Verification that the implemented computation matches the model definition (see 
 **Asymptotic/equilibrium behavior.** The numerical solution on a sufficiently long interval approaches the analytically predicted equilibrium or asymptote.
 
 ► **Implementation:**
-- **Numerical method:** `Math: MRT solver` — 3 tests. Non-stiff 1D and stiff 1D problems verified against analytical solutions (Chapra & Canale, pp. 736, 767). Stiff 2D van der Pol (µ=1000) verified for solver stability (reference: VDPOL test set). Tolerance threshold: max absolute error < 0.1.
-- **Convergence:** not yet covered. Candidate: solve the Levins ODE with `tolerance = 1e-5` and `tolerance = 1e-9`, verify that the discrepancy between solutions decreases.
-- **Asymptotic behavior:** not yet covered. Candidate: verify that `p(t_end)` approaches `p* = 1 − e₀/m` for sufficiently large `t_end`.
+- **Numerical method:** `Math: MRT solver` — 2 tests. Non-stiff 1D and stiff 1D problems verified against analytical solutions (Chapra & Canale, pp. 736, 767). Tolerance threshold: max absolute error < 0.1.
+- **Convergence:** not yet covered. Candidate: solve the Lotka-Volterra system with `tolerance = 1e-4` and `tolerance = 1e-8`, verify that the discrepancy between solutions decreases.
+- **Asymptotic behavior:** partially covered in `solve_05`: starting at equilibrium `(x*, y*)`, verify that the solution stays near equilibrium after T=50.

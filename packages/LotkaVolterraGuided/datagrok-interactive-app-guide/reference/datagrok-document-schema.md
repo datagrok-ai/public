@@ -3,7 +3,7 @@
 ## Common Part (reusable, identical for all applications)
 
 ```
-guides/
+datagrok-interactive-app-guide/
 │
 ├── 1. Architecture and Philosophy
 │   datagrok-interactive-app-guide.md
@@ -16,8 +16,8 @@ guides/
 │   for a specific application.
 │
 ├── 3. End-to-End Application Example
-│   levins-metapopulation-spec.md
-│   Completed specification for the Levins Metapopulation Model.
+│   lotka-volterra-spec.md
+│   Completed specification for the Lotka-Volterra Predator-Prey Simulation.
 │   Serves as a reference for generation.
 │
 └── reference/

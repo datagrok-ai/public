@@ -1,8 +1,8 @@
 import { runTests, tests, TestContext , initAutoTests as initTests } from '@datagrok-libraries/utils/src/test';
 import * as DG from 'datagrok-api/dg';
 
-import './tests/levins-api-tests';
-import './tests/levins-math-tests';
+import './tests/lotka-volterra-api-tests';
+import './tests/lotka-volterra-math-tests';
 
 export let _package = new DG.Package();
 export { tests };

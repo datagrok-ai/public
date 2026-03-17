@@ -4,19 +4,18 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 export * from './package.g';
 
-import {levinsMetapopulationApp, setPackage} from './levins/app';
-
 export const _package = new DG.Package();
+
+import {lotkaVolterraApp} from './lotka-volterra/app';
 
 //name: info
 export function info() {
   grok.shell.info(_package.webRoot);
 }
 
-//name: Levins Metapopulation Model
+//name: Lotka-Volterra Simulation
 //tags: app
-//description: Interactive ODE solver for the Levins model: simulation of occupied patch fraction p(t) dynamics
-export function levinsMetapopulationModelApp(): void {
-  setPackage(_package);
-  levinsMetapopulationApp();
+//description: Interactive ODE simulation of the Lotka-Volterra predator-prey model
+export function lotkaVolterraSimulation(): void {
+  lotkaVolterraApp(_package);
 }

@@ -9,13 +9,13 @@ import * as DG from 'datagrok-api/dg';
 
 export namespace funcs {
   export async function info(): Promise<void> {
-    return await grok.functions.call('InteractiveSciAppTest:Info', {});
+    return await grok.functions.call('LotkaVolterraExample:Info', {});
   }
 
   /**
-  Interactive ODE solver for the Levins model: simulation of occupied patch fraction p(t) dynamics
+  Interactive ODE simulation of the Lotka-Volterra predator-prey model
   */
-  export async function levinsMetapopulationModelApp(): Promise<void> {
-    return await grok.functions.call('InteractiveSciAppTest:LevinsMetapopulationModelApp', {});
+  export async function lotkaVolterraSimulation(): Promise<void> {
+    return await grok.functions.call('LotkaVolterraExample:LotkaVolterraSimulation', {});
   }
 }
