@@ -43,7 +43,7 @@ Community: [Plugin releases](https://community.datagrok.ai/t/plugin-releases/775
   * **Changed:** canvas viewport accessors moved from `CanvasViewerMixin` to `CanvasViewportMixin`; removed unnecessary fields from `IInputInitOptions`
   * **Pie chart:** label properties restructured (`showValue` added; existing label properties renamed)  
 
-  **Packages:** Package access tags migrated to roles. Packages using tag-based access control must be updated to role-based permissions.
+  **Packages:** Function tags (such as `app`, `viewer`, `fileViewer`, `fileImporter`, `panel`) are now migrated to the `meta.role` property. If your package uses `//tags:` to declare function types, switch to `//meta.role:` instead.
 
 ### Service compatible versions
 

@@ -40,9 +40,7 @@ This release introduces non-backward-compatible database changes. You can upgrad
 * Pie chart label properties restructured: added `showValue` and renamed existing label-related properties
 * Deprecated `fetchProxy`. Use `fetch` or `grok.dapi.fetchProxy` instead
 
-**Packages:**
-
-* Package access tags migrated to roles. Packages using tag-based access control must be updated to role-based permissions
+**Packages:** Function tags (such as `app`, `viewer`, `fileViewer`, `fileImporter`, `panel`) are now migrated to the `meta.role` property. If your package uses `//tags:` to declare function types, switch to `//meta.role:` instead
 
 ### Main updates
 
