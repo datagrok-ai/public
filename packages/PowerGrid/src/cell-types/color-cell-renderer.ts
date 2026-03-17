@@ -7,7 +7,7 @@ const COLOR_CELL_PADDING_PX = 4;
 const COLOR_CELL_TYPE = 'Color';
 
 /** Validates any CSS color string (hex, rgb/rgba, hsl/hsla, named) without rendering. */
-function isValidColor(color: string): boolean {
+export function isValidColor(color: string): boolean {
   const s = new Option().style;
   s.color = color;
   return s.color !== '';

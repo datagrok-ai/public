@@ -78,9 +78,9 @@ category('ColorCellRenderer', () => {
     expect(await detect(values), null);
   });
 
-  test('detects named CSS colors', async () => {
+  test('does not detect named CSS colors', async () => {
     const values = ['red', 'green', 'blue', 'yellow', 'orange', 'purple', 'teal', 'pink', 'lime', 'navy'];
-    expect(await detect(values), COLOR_SEM_TYPE);
+    expect(await detect(values), null);
   });
 
   test('does not detect plain text', async () => {
@@ -94,7 +94,7 @@ category('ColorCellRenderer', () => {
   });
 
   test('does not detect invalid hex strings', async () => {
-    const values = ['#GGGGGG', '#12345', '#1234567', '#GGG', '#XYZ', '#ZZZZZZ', '#!!@@##', '#GGHH', '#12G', '#AABBCX'];
+    const values = ['#FE', '#GGGGGG', '#12345', '#1234567', '#GGG', '#XYZ', '#ZZZZZZ', '#!!@@##', '#12G', '#AABBCX'];
     expect(await detect(values), null);
   });
 

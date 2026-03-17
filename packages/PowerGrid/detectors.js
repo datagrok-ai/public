@@ -37,6 +37,8 @@ class PowerGridPackageDetectors extends DG.Package {
   //output: string semType
   detectColorColumn(col) {
     if (DG.Detector.sampleCategories(col, (s) => {
+      if (!s || !/^#|^rgba?\s*\(|^hsla?\s*\(/i.test(s.trim()))
+        return false;
       const opt = new Option().style;
       opt.color = s.trim();
       return opt.color !== '';
