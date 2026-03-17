@@ -27,9 +27,9 @@ export function lotkaVolterraApp(_package: DG.Package): void {
   // --- Initial DataFrame ---
   const initSolution = solve(DEFAULTS);
   const df = DG.DataFrame.fromColumns([
-    DG.Column.fromFloat64Array('t', initSolution.t),
-    DG.Column.fromFloat64Array('x', initSolution.x),
-    DG.Column.fromFloat64Array('y', initSolution.y),
+    DG.Column.fromFloat64Array('Time', initSolution.t),
+    DG.Column.fromFloat64Array('Prey', initSolution.x),
+    DG.Column.fromFloat64Array('Predators', initSolution.y),
   ]);
   df.name = 'Lotka-Volterra';
 
@@ -202,9 +202,9 @@ export function lotkaVolterraApp(_package: DG.Package): void {
   // --- Update DataFrame ---
   function updateDataFrame(result: LotkaVolterraSolution): void {
     const newDf = DG.DataFrame.fromColumns([
-      DG.Column.fromFloat64Array('t', result.t),
-      DG.Column.fromFloat64Array('x', result.x),
-      DG.Column.fromFloat64Array('y', result.y),
+      DG.Column.fromFloat64Array('Time', result.t),
+      DG.Column.fromFloat64Array('Prey', result.x),
+      DG.Column.fromFloat64Array('Predators', result.y),
     ]);
     newDf.name = 'Lotka-Volterra';
     view.dataFrame = newDf;
@@ -214,9 +214,9 @@ export function lotkaVolterraApp(_package: DG.Package): void {
 
   function clearResults(): void {
     const emptyDf = DG.DataFrame.fromColumns([
-      DG.Column.fromFloat64Array('t', new Float64Array(0)),
-      DG.Column.fromFloat64Array('x', new Float64Array(0)),
-      DG.Column.fromFloat64Array('y', new Float64Array(0)),
+      DG.Column.fromFloat64Array('Time', new Float64Array(0)),
+      DG.Column.fromFloat64Array('Prey', new Float64Array(0)),
+      DG.Column.fromFloat64Array('Predators', new Float64Array(0)),
     ]);
     emptyDf.name = 'Lotka-Volterra';
     view.dataFrame = emptyDf;
@@ -414,15 +414,15 @@ export function lotkaVolterraApp(_package: DG.Package): void {
 
   // --- Line chart (time series) ---
   lineChart = view.addViewer('Line chart', {
-    xColumnName: 't',
-    yColumnNames: ['x', 'y'],
+    xColumnName: 'Time',
+    yColumnNames: ['Prey', 'Predators'],
     title: 'Population Dynamics',
   });
 
   // --- Phase portrait (scatter plot) ---
   scatterPlot = view.addViewer('Scatter plot', {
-    xColumnName: 'x',
-    yColumnName: 'y',
+    xColumnName: 'Prey',
+    yColumnName: 'Predators',
     title: 'Phase Portrait',
     markerDefaultSize: 2,
   });

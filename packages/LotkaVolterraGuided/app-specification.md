@@ -18,7 +18,7 @@
 
 | Task ID | Name | Pipeline type | Trigger |
 |---|---|---|---|
-| `task_primary` | Lotka-Volterra RK4 solution | Primary (reactive) | Any input change |
+| `task_primary` | Lotka-Volterra MRT solution | Primary (reactive) | Any input change |
 | `task_optimize` | Optimize max prey (grid search) | Secondary (on demand) | Button `btn_optimize` |
 
 ### 2.2. Task Description: `task_primary`
@@ -27,8 +27,8 @@
 
 | Field | Value |
 |---|---|
-| Name | Lotka-Volterra RK4 solution |
-| Description | Numerical solution of the 2D ODE system `dx/dt = αx − βxy`, `dy/dt = δxy − γy` using RK4, returning trajectories x(t) and y(t), equilibrium points, and summary statistics |
+| Name | Lotka-Volterra MRT solution |
+| Description | Numerical solution of the 2D ODE system `dx/dt = αx − βxy`, `dy/dt = δxy − γy` using MRT, returning trajectories x(t) and y(t), equilibrium points, and summary statistics |
 | Synchronicity | Synchronous |
 | Execution environment | Main thread |
 | Parallelization | No |
@@ -85,7 +85,7 @@ Reference examples:
 
 - Complete mathematical formulation: classical Lotka-Volterra predator-prey ODE system with constant coefficients. No boundary conditions (IVP).
 - Analytical properties: non-trivial equilibrium at (γ/δ, α/β); solutions are periodic orbits around the equilibrium; conserved quantity H = δx + βy − γ ln(x) − α ln(y).
-- Numerical method: RK4 (4th-order Runge-Kutta), explicit method, O(h⁴) local truncation error, suitable for non-stiff problems.
+- Numerical method: MRT (adaptive multi-rate), suitable for both stiff and non-stiff problems.
 
 **Input parameters:**
 
@@ -113,14 +113,14 @@ Reference examples:
 
 | Step | Implementation method | Details | Documentation |
 |---|---|---|---|
-| 1 | External library | `diff-grok` v1.2.0, function `rk4(task: ODEs)`. RK4 is a 4th-order explicit method suitable for non-stiff ODEs. | [diff-grok README](https://github.com/datagrok-ai/diff-grok) |
+| 1 | External library | `diff-grok` v1.2.0, function `mrt(task: ODEs)`. MRT is an adaptive multi-rate method suitable for both stiff and non-stiff ODEs. | [diff-grok README](https://github.com/datagrok-ai/diff-grok) |
 | 2 | Custom method | Equilibrium: `xStar = gamma / delta`, `yStar = alpha / beta` | — |
 | 3 | Custom method | Summary stats: `maxPrey = max(x)`, `maxPredators = max(y)`, `stepCount = t.length` | — |
 
 **Library call:**
 
 ```typescript
-import { ODEs, rk4 } from 'diff-grok';
+import { ODEs, mrt } from 'diff-grok';
 
 const task: ODEs = {
   name: 'LotkaVolterra',
@@ -133,7 +133,7 @@ const task: ODEs = {
   tolerance: 1e-6,
   solutionColNames: ['x(t)', 'y(t)'],
 };
-const solution = rk4(task);
+const solution = mrt(task);
 ```
 
 **ODE right-hand side reference examples:**
@@ -144,7 +144,7 @@ const solution = rk4(task);
 | 2 | 1.0 | 0.1 | 0.075 | 1.5 | 20 | 10 | 0.0 | 0.0 | At equilibrium (γ/δ=20, α/β=10) |
 | 3 | 1.0 | 0.1 | 0.075 | 1.5 | 30 | 4 | 18.0 | 3.0 | `1.0·30−0.1·30·4=18`, `0.075·30·4−1.5·4=3` |
 | 4 | 2.0 | 0.5 | 0.3 | 1.0 | 5 | 2 | 5.0 | 1.0 | `2.0·5−0.5·5·2=5`, `0.3·5·2−1.0·2=1` |
-| 5 | 0.5 | 0.02 | 0.01 | 0.3 | 50 | 10 | 15.0 | −2.0 | `0.5·50−0.02·50·10=15`, `0.01·50·10−0.3·10=2` |
+| 5 | 0.5 | 0.02 | 0.01 | 0.3 | 50 | 10 | 15.0 | 2.0 | `0.5·50−0.02·50·10=15`, `0.01·50·10−0.3·10=2` |
 
 ---
 
@@ -186,7 +186,7 @@ const solution = rk4(task);
 | Step | Implementation method | Details |
 |---|---|---|
 | 1 | Custom method | Generate grid: 11 values per parameter (0%, 10%, ..., 100% of range), total 11⁴ = 14641 points |
-| 2 | External library in workers | `diff-grok` v1.2.0, `rk4(task)` — for each grid point in a WebWorker |
+| 2 | External library in workers | `diff-grok` v1.2.0, `mrt(task)` — for each grid point in a WebWorker |
 | 3 | Custom method | Find grid point with maximum peak prey |
 | 4 | Datagrok API | Write optimal values to sliders via batch update |
 
@@ -200,7 +200,6 @@ Number of workers = Math.max(1, navigator.hardwareConcurrency - 2)
   → tasks distributed to workers as they become available (queue)
   → each worker receives: { alpha, beta, delta, gamma, x0, y0, T }
   → each worker returns: { alpha, beta, delta, gamma, maxPrey }
-  → as each task completes: progressBar += 1/totalPoints
   → after all complete: find max(maxPrey) → optimal params
 ```
 
@@ -232,7 +231,7 @@ task_optimize — does not depend on task_primary results;
 
 | ID | Name / icon | Triggers task | Tooltip text | Availability condition |
 |---|---|---|---|---|
-| `btn_optimize` | `Optimize Max Prey` button | `task_optimize` | Run brute-force grid search over all four model coefficients to maximize peak prey population | Always (disabled during optimization) |
+| `btn_optimize` | `Optimize` button | `task_optimize` | Run brute-force grid search over all four model coefficients to maximize peak prey population | Always (disabled during optimization) |
 
 ### 3.3. Other Buttons and Actions
 
@@ -245,7 +244,6 @@ task_optimize — does not depend on task_primary results;
 | Component ID | Brief description | Role |
 |---|---|---|
 | `comp_equilibrium` | Display panel showing equilibrium (x*, y*) and summary stats | Display |
-| `comp_start_marker` | Scatter marker showing the starting point on the phase portrait | Display (via viewer options) |
 
 ---
 
@@ -294,10 +292,10 @@ Validation order: val_01 through val_07 (all independent, checked in sequence).
 
 ### 6.2. Secondary Pipeline (`task_optimize`)
 
-- `btn_optimize` blocked: Yes (shows progress bar percentage)
+- `btn_optimize` blocked: Yes
 - All other controls: No
-- Progress bar: Yes — determinate (0–100%), with percentage shown on button
-- Cancellation support: No
+- Progress bar: Yes — indeterminate (shown via `DG.TaskBarProgressIndicator`)
+- Cancellation support: Yes (via progress indicator cancel)
 - Error behavior: Keep previous results + `grok.shell.error(msg)`
 
 ---
@@ -318,26 +316,25 @@ Reactivity mode during batch update: Primary pipeline is paused during writing, 
 
 | ID | Type | Associated output data | Docking location |
 |---|---|---|---|
-| `view_timeseries` | Datagrok viewer `line chart` | `task_primary.t`, `task_primary.x`, `task_primary.y` | Center area, top |
-| `view_phase` | Datagrok viewer `scatter plot` | `task_primary.x`, `task_primary.y` | Center area, bottom |
-| `view_table` | `DG.TableView` grid | `task_primary.t`, `task_primary.x`, `task_primary.y` | Right area |
+| `view_timeseries` | Datagrok viewer `line chart` | `Time`, `Prey`, `Predators` | Center area, top |
+| `view_phase` | Datagrok viewer `scatter plot` | `Prey`, `Predators` | Center area, bottom |
+| `view_table` | `DG.TableView` grid | `Time`, `Prey`, `Predators` | Right area |
 | `comp_equilibrium` | Custom HTMLElement | Equilibrium + stats | Left panel, below controls |
 
 **Details for `view_timeseries`:**
 
 | Property | Value |
 |---|---|
-| X axis | `t`, label "Time" |
-| Y axis | `x(t)` and `y(t)`, two series |
-| Series | Prey (x) — line, Predators (y) — line |
+| X axis | `Time` |
+| Y axis | `Prey` and `Predators`, two series |
+| Series | Prey — line, Predators — line |
 
 **Details for `view_phase`:**
 
 | Property | Value |
 |---|---|
-| X axis | `x` (prey) |
-| Y axis | `y` (predators) |
-| Start point | Marked with distinct marker at (x₀, y₀) |
+| X axis | `Prey` |
+| Y axis | `Predators` |
 
 ---
 
@@ -383,22 +380,25 @@ Initial state: all controls initialized with defaults. `task_primary` runs autom
 
 ### 10.2. Results Table Lifecycle
 
+Update strategy: **DataFrame replacement** — on each recomputation a new `DG.DataFrame` is created and assigned to `view.dataFrame` and all viewers. This avoids in-place mutation and ensures viewers always reflect a consistent snapshot.
+
 ```
 1. Application initialization
-   → solve with DEFAULTS → DG.DataFrame with columns [t, x, y]
+   → solve with DEFAULTS → new DG.DataFrame with columns [Time, Prey, Predators]
    → DataFrame added to TableView
 
 2. task_primary completion
-   → DataFrame updated with new arrays
+   → new DataFrame created from solution arrays
+   → assigned to view.dataFrame, lineChart.dataFrame, scatterPlot.dataFrame
    → All viewers redrawn reactively
 
 3. task_optimize completion
    → Optimal values written to sliders (batch update)
-   → task_primary runs once → DataFrame updated
+   → task_primary runs once → new DataFrame created and assigned
 
 4. btn_reset press
    → All controls reset to defaults
-   → task_primary runs → DataFrame updated
+   → task_primary runs → new DataFrame created and assigned
 ```
 
 ---
@@ -426,7 +426,7 @@ Initial state: all controls initialized with defaults. `task_primary` runs autom
 | `func_02` | `(1.0, 0.1, 0.075, 1.5, 20, 10)` | `(0.0, 0.0)` |
 | `func_03` | `(1.0, 0.1, 0.075, 1.5, 30, 4)` | `(18.0, 3.0)` |
 | `func_04` | `(2.0, 0.5, 0.3, 1.0, 5, 2)` | `(5.0, 1.0)` |
-| `func_05` | `(0.5, 0.02, 0.01, 0.3, 50, 10)` | `(15.0, −2.0)` |
+| `func_05` | `(0.5, 0.02, 0.01, 0.3, 50, 10)` | `(15.0, 2.0)` |
 
 #### Equilibrium Verification
 
@@ -442,18 +442,37 @@ Initial state: all controls initialized with defaults. `task_primary` runs autom
 | `solve_01` | Default parameters | Non-empty arrays, equal length |
 | `solve_02` | x,y values ≥ 0 | All `x[i] ≥ 0`, `y[i] ≥ 0` |
 | `solve_03` | Initial conditions | `x[0] = x₀`, `y[0] = y₀` |
-| `solve_04` | Equilibrium: dx/dt ≈ 0, dy/dt ≈ 0 at (x*, y*) | `dx/dt < ε`, `dy/dt < ε` |
+| `solve_04` | Time starts at zero | `t[0] = 0` |
+| `solve_05` | Equilibrium start → stays near equilibrium | Start at (x*, y*), verify `x(T) ≈ x*`, `y(T) ≈ y*` |
+| `solve_06` | Summary stats computed correctly | `maxPrey > 0`, `maxPredators > 0`, `stepCount = t.length`, `maxPrey ≥ x₀` |
+| `solve_07` | Custom initial conditions | `x[0] = 40`, `y[0] = 15` for `x₀=40, y₀=15` |
+
+#### MRT Solver Verification
+
+| Test ID | Description | Verified property |
+|---|---|---|
+| `mrt_01` | Non-stiff 1D: `dy/dt = 4·exp(0.8t) − 0.5y`, y(0)=2, t∈[0,4] | Max error vs analytical solution < 0.1 |
+| `mrt_02` | Stiff 1D: `dy/dt = −1000y + 3000 − 2000·exp(−t)`, y(0)=0, t∈[0,4] | Max error vs analytical solution < 0.1 |
 
 ### 12.2. Validation Tests
 
 | Test ID | Rule | Input data | Expected result |
 |---|---|---|---|
-| `v_01` | val_01 | `alpha=0` | Error on `ctrl_alpha` |
-| `v_02` | val_02 | `beta=-0.1` | Error on `ctrl_beta` |
-| `v_03` | val_03 | `delta=0` | Error on `ctrl_delta` |
-| `v_04` | val_04 | `gamma=-1` | Error on `ctrl_gamma` |
-| `v_05` | val_05 | `x0=0` | Error on `ctrl_x0` |
-| `v_06` | val_06 | `y0=-5` | Error on `ctrl_y0` |
-| `v_07` | val_07 | `T=0` | Error on `ctrl_T` |
+| `v_01a` | val_01 | `alpha=0` | Error on `ctrl_alpha` |
+| `v_01b` | val_01 | `alpha=-1` | Error on `ctrl_alpha` |
+| `v_02a` | val_02 | `beta=0` | Error on `ctrl_beta` |
+| `v_02b` | val_02 | `beta=-0.1` | Error on `ctrl_beta` |
+| `v_03a` | val_03 | `delta=0` | Error on `ctrl_delta` |
+| `v_03b` | val_03 | `delta=-0.05` | Error on `ctrl_delta` |
+| `v_04a` | val_04 | `gamma=0` | Error on `ctrl_gamma` |
+| `v_04b` | val_04 | `gamma=-1` | Error on `ctrl_gamma` |
+| `v_05a` | val_05 | `x0=0` | Error on `ctrl_x0` |
+| `v_05b` | val_05 | `x0=-5` | Error on `ctrl_x0` |
+| `v_06a` | val_06 | `y0=0` | Error on `ctrl_y0` |
+| `v_06b` | val_06 | `y0=-5` | Error on `ctrl_y0` |
+| `v_07a` | val_07 | `T=0` | Error on `ctrl_T` |
+| `v_07b` | val_07 | `T=-10` | Error on `ctrl_T` |
 | `v_def` | all defaults | DEFAULTS | `errors.size = 0` |
+| `v_bnd_alpha` | valid boundary | `alpha=0.1` | No error on `ctrl_alpha` |
+| `v_bnd_x0` | valid boundary | `x0=1` | No error on `ctrl_x0` |
 | `v_multi` | multiple | `alpha=0, beta=0, x0=0, T=0` | ≥ 4 errors |

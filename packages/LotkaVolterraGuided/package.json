@@ -1,6 +1,10 @@
 {
   "name": "lotkavolterraguided",
   "friendlyName": "LotkaVolterraGuided",
+  "author": {
+    "name": "Viktor Makarichev",
+    "email": "vmakarichev@datagrok.ai"
+  },
   "version": "0.0.1",
   "description": "LotkaVolterraGuided package",
   "dependencies": {
