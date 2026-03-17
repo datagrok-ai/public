@@ -66,6 +66,16 @@ async function requestMembership(groupName: string) {
   }
 }
 
+export function isModel(jsEnt: any) {
+  if (!(jsEnt instanceof DG.Func))
+    return false;
+  const hasModelRole = ((jsEnt?.options?.role as string) ?? '').split(',').includes('model');
+  const hasModelTag = jsEnt.hasTag('model');
+  return hasModelRole || hasModelTag;
+}
+
+export const MODEL_FILTER = '(#model or options.role like "%model%")';
+
 export class ModelHandler extends DG.ObjectHandler {
   override get type() {
     return 'Model';
@@ -131,8 +141,7 @@ export class ModelHandler extends DG.ObjectHandler {
   // Checks whether this is the handler for x
   override isApplicable(x: any) {
     const js = DG.toJs(x);
-    const hasModelRole = ((js?.options?.role as string) ?? '').split(',').includes('model');
-    return js instanceof DG.Func && (js.hasTag('model') || hasModelRole);
+    return isModel(js);
   }
 
   private userGroups = new BehaviorSubject<DG.Group[] | undefined>(undefined);
@@ -220,17 +229,26 @@ export class ModelHandler extends DG.ObjectHandler {
   }
 
   override renderView(x: DG.Func) {
-    return this.renderPreview(x).root;
+    const div = ui.div();
+    this.renderPreview(x).then((v) => div.appendChild(v.root));
+    return div;
   }
 
-  override renderPreview(x: DG.Func): DG.View {
-    const v = super.renderPreview(x);
-    v.name = (x.friendlyName ?? x.name) + ' description';
+  override async renderPreview(x: DG.Func): Promise<DG.View> {
     return DG.View.fromViewAsync(async () => {
       const help = await getContextHelp(x);
       const userGroups = await this.awaitUserGroups();
       const missingMandatoryGroups = ModelHandler.getMissingGroups(x, userGroups);
-      const startBtnDiv = missingMandatoryGroups.length ?
+      if (!missingMandatoryGroups?.length && (x.options.editor === 'Compute2:TreeWizardEditor' || x.options.editor === 'Compute2:RichFunctionViewEditor')) {
+        const call = x.prepare();
+        const res = await DG.Func.byName(x.options.editor).prepare({call}).call();
+        const view = res.getOutputParamValue() as DG.View;
+        return view;
+      }
+      const v = await super.renderPreview(x);
+      v.name = (x.friendlyName ?? x.name) + ' preview';
+
+      const startBtnDiv = missingMandatoryGroups?.length ?
         ui.div([this.makeMandatoryGroupsInfo(missingMandatoryGroups)], {style: {
           border: '2px solid var(--red-3)',
           padding: '10px',
