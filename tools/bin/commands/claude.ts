@@ -357,6 +357,12 @@ function writeProjectFiles(taskKey: string, args: ClaudeArgs, worktreeRoot: stri
     ? '//var/run/docker.sock'
     : '/var/run/docker.sock';
 
+  // Resolve entrypoint.sh path — bind-mount from repo so fixes take effect without image rebuild
+  const entrypointPath = path.resolve(__dirname, '..', '..', '.devcontainer', 'entrypoint.sh');
+  const hasLocalEntrypoint = fs.existsSync(entrypointPath);
+  if (!hasLocalEntrypoint)
+    color.warn('Local entrypoint.sh not found — using image built-in.');
+
   // Generate .env — all paths use forward slashes for Docker compatibility
   const envLines: string[] = [
     `WORKTREE_PATH=${toDockerPath(worktreeRoot)}`,
@@ -380,6 +386,10 @@ function writeProjectFiles(taskKey: string, args: ClaudeArgs, worktreeRoot: stri
 
   // Write host config compose override (mirrors deploy/fat_dev/dg-claude approach)
   const volumes: string[] = [];
+
+  // Bind-mount local entrypoint so fixes take effect without rebuilding the image
+  if (hasLocalEntrypoint)
+    volumes.push(`      - "${toDockerPath(entrypointPath)}:/usr/local/bin/entrypoint.sh"`);
 
   // Claude profile (~/.claude + ~/.claude.json)
   const claudeHome = findClaudeHome();

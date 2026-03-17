@@ -29,8 +29,9 @@ else
   else
     BRANCH=$(resolve_branch "${DG_VERSION:-latest}")
   fi
-  # Sparse checkout: only fetch dirs needed for package context (js-api, libraries, help, packages)
-  # plus root files (CLAUDE.md, .claude/, etc.). Much faster than a full clone.
+  # Sparse checkout: only fetch dirs needed for package context (js-api, libraries, packages)
+  # plus root files (CLAUDE.md, .claude/, etc.). Uses --depth 1 without blob filter so all
+  # blobs arrive in one pack — avoids slow on-demand fetching during checkout.
   sparse_clone() {
     local branch="$1"
     # Use init+fetch instead of clone to handle pre-existing directories (e.g. mount points)
@@ -40,7 +41,7 @@ else
            '/*' '!connectors/' '!docker/' '!docusaurus/' '!docusaurus-static/' \
            '!environments/' '!hooks/' '!misc/' 'python-api/' '!datagrok-celery-task/' \
            '/js-api/**' '/libraries/**' '/packages/**' \
-      && git -C "$PUBLIC_DIR" fetch --depth 1 --filter=blob:none origin "$branch" \
+      && git -C "$PUBLIC_DIR" fetch --depth 1 origin "$branch" \
       && git -C "$PUBLIC_DIR" checkout -B "$branch" FETCH_HEAD
   }
   # Clear directory contents without removing the dir itself (may be a mount point)
