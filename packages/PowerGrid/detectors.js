@@ -35,6 +35,19 @@ class PowerGridPackageDetectors extends DG.Package {
   //meta.role: semTypeDetector
   //input: column col
   //output: string semType
+  detectColorColumn(col) {
+    if (DG.Detector.sampleCategories(col, (s) => {
+      const opt = new Option().style;
+      opt.color = s.trim();
+      return opt.color !== '';
+    }, 1))
+      return 'Color';
+    return null;
+  }
+
+  //meta.role: semTypeDetector
+  //input: column col
+  //output: string semType
   detectRawPng(col) {
     if (col.type === DG.COLUMN_TYPE.STRING && DG.Detector.sampleCategories(col, (s) => {
       return s && s.length > 1000 && s.startsWith('iVBORw0KGgo');

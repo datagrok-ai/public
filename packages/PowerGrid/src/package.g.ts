@@ -6,6 +6,7 @@ import {StarsCellRenderer} from './cell-types/stars-cell-renderer';
 import {MultiChoiceCellRenderer} from './cell-types/multi-choice-cell-renderer';
 import {ImageCellRenderer} from './cell-types/image-cell-renderer';
 import {HyperlinkCellRenderer} from './cell-types/hyperlink-cell-renderer';
+import {ColorCellRenderer} from './cell-types/color-cell-renderer';
 import {BinaryImageCellRenderer} from './cell-types/binary-image-cell-renderer';
 import * as DG from 'datagrok-api/dg';
 //name: binaryImageCellRenderer
@@ -15,6 +16,14 @@ import * as DG from 'datagrok-api/dg';
 //meta.cellType: BinaryImage
 export function _BinaryImageCellRenderer() {
   return new BinaryImageCellRenderer();
+}
+
+//name: Color
+//output: grid_cell_renderer renderer
+//meta.role: cellRenderer
+//meta.cellType: Color
+export function _ColorCellRenderer() {
+  return new ColorCellRenderer();
 }
 
 //name: hyperlinkCellRenderer

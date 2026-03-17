@@ -12,6 +12,10 @@ export namespace funcs {
     return await grok.functions.call('PowerGrid:BinaryImageCellRenderer', {});
   }
 
+  export async function colorCellRenderer(): Promise<any> {
+    return await grok.functions.call('PowerGrid:ColorCellRenderer', {});
+  }
+
   export async function hyperlinkCellRenderer(): Promise<any> {
     return await grok.functions.call('PowerGrid:HyperlinkCellRenderer', {});
   }
