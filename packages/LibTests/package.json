@@ -16,7 +16,7 @@
     "@datagrok-libraries/webcomponents": "../../libraries/webcomponents",
     "cash-dom": "^8.1.4",
     "datagrok-api": "^1.27.0",
-    "dayjs": "^1.11.19",
+    "dayjs": "1.11.19",
     "fast-equals": "^5.2.2",
     "fflate": "^0.8.2",
     "lodash.clonedeepwith": "^4.5.0",
