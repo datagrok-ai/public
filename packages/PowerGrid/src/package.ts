@@ -27,6 +27,7 @@ import {getGPUDevice} from '@datagrok-libraries/math/src/webGPU/getGPUDevice';
 import {TagsCellRenderer} from './cell-types/tags-cell-renderer';
 import {ConfidenceIntervalCellRenderer} from './cell-types/confidence-interval-cell-renderer';
 import {StarsCellRenderer} from './cell-types/stars-cell-renderer';
+// import {isValidColor} from './cell-types/color-cell-renderer';
 export * from './package.g';
 export const _package = new DG.Package();
 
@@ -157,6 +158,30 @@ export class PackageFunctions {
     static confidenceIntervalCellRenderer() {
       return new ConfidenceIntervalCellRenderer();
     }
+
+
+  // @grok.decorators.func({
+  //   description: 'Color',
+  //   meta: {role: 'cellEditor'},
+  // })
+  // static editColorCell(
+  //   @grok.decorators.param({type: 'grid_cell'}) cell: DG.GridCell): void {
+  //   const originalValue = cell.cell.isNone() ? null : cell.cell.valueString;
+  //   const current = cell.cell.valueString.trim();
+  //   const initialColor = current && isValidColor(current) ? DG.Color.fromHtml(current) : 0;
+  //   let picked = initialColor;
+  //   ui.colorPicker(initialColor, (c) => {
+  //     picked = c;
+  //     cell.cell.value = DG.Color.toHtml(c);
+  //     cell.render();
+  //   }, null, () => {
+  //     cell.cell.value = DG.Color.toHtml(picked);
+  //     cell.render();
+  //   }, () => {
+  //     cell.cell.value = originalValue;
+  //     cell.render();
+  //   });
+  // }
 
 
   @grok.decorators.func({
