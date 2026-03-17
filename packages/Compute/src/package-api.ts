@@ -26,3 +26,68 @@ export namespace scripts {
     return await grok.functions.call('Compute:Vmax', { test_data, test_area, vbatch, tbatch, sf });
   }
 }
+
+export namespace funcs {
+  export async function init(): Promise<void> {
+    return await grok.functions.call('Compute:Init', {});
+  }
+
+  export async function openModelFromFuncall(funccall: any ): Promise<void> {
+    return await grok.functions.call('Compute:OpenModelFromFuncall', { funccall });
+  }
+
+  /**
+  Creates an outliers selection viewer
+  */
+  export async function outliersSelection(): Promise<any> {
+    return await grok.functions.call('Compute:OutliersSelection', {});
+  }
+
+  export async function richFunctionViewEditor(call: any ): Promise<DG.View> {
+    return await grok.functions.call('Compute:RichFunctionViewEditor', { call });
+  }
+
+  export async function pipelineStepEditor(call: any ): Promise<any> {
+    return await grok.functions.call('Compute:PipelineStepEditor', { call });
+  }
+
+  export async function customDataUploader(func: any ): Promise<any> {
+    return await grok.functions.call('Compute:CustomDataUploader', { func });
+  }
+
+  export async function customUploader(params: any ): Promise<{uploadWidget: any, uploadFuncCall: any}> {
+    return await grok.functions.call('Compute:CustomUploader', { params });
+  }
+
+  export async function customCustomizer(params: any ): Promise<void> {
+    return await grok.functions.call('Compute:CustomCustomizer', { params });
+  }
+
+  export async function simTimeValidator(params: any ): Promise<any> {
+    return await grok.functions.call('Compute:SimTimeValidator', { params });
+  }
+
+  export async function desiredTempValidator(params: any ): Promise<any> {
+    return await grok.functions.call('Compute:DesiredTempValidator', { params });
+  }
+
+  export async function initialTempValidator(params: any ): Promise<any> {
+    return await grok.functions.call('Compute:InitialTempValidator', { params });
+  }
+
+  export async function ambTempValidator(params: any ): Promise<any> {
+    return await grok.functions.call('Compute:AmbTempValidator', { params });
+  }
+
+  export async function heatCapValidator(params: any ): Promise<any> {
+    return await grok.functions.call('Compute:HeatCapValidator', { params });
+  }
+
+  export async function customStringInput(params: any ): Promise<any> {
+    return await grok.functions.call('Compute:CustomStringInput', { params });
+  }
+
+  export async function objectCoolingSelector(params: any ): Promise<any> {
+    return await grok.functions.call('Compute:ObjectCoolingSelector', { params });
+  }
+}
