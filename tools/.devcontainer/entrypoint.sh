@@ -33,17 +33,24 @@ else
   # plus root files (CLAUDE.md, .claude/, etc.). Much faster than a full clone.
   sparse_clone() {
     local branch="$1"
-    git clone --depth 1 --branch "$branch" --filter=blob:none --no-checkout "$REPO" "$PUBLIC_DIR" \
+    # Use init+fetch instead of clone to handle pre-existing directories (e.g. mount points)
+    git init "$PUBLIC_DIR" \
+      && git -C "$PUBLIC_DIR" remote add origin "$REPO" \
       && git -C "$PUBLIC_DIR" sparse-checkout set --no-cone \
            '/*' '!connectors/' '!docker/' '!docusaurus/' '!docusaurus-static/' \
            '!environments/' '!hooks/' '!misc/' 'python-api/' '!datagrok-celery-task/' \
-           '/js-api/**' '/libraries/**' '/help/**' '/packages/**' '!help/uploads/**' \
-      && git -C "$PUBLIC_DIR" checkout
+           '/js-api/**' '/libraries/**' '/help/**/*.md*' '/packages/**' '!help/uploads/**' \
+      && git -C "$PUBLIC_DIR" fetch --depth 1 --filter=blob:none origin "$branch" \
+      && git -C "$PUBLIC_DIR" checkout -B "$branch" FETCH_HEAD
+  }
+  # Clear directory contents without removing the dir itself (may be a mount point)
+  clear_dir() {
+    find "$1" -mindepth 1 -delete 2>/dev/null || rm -rf "$1"/* "$1"/.[!.]* 2>/dev/null || true
   }
   echo "[tools-dev] Cloning public repo ($BRANCH, sparse) into $PUBLIC_DIR..."
   sparse_clone "$BRANCH" \
-    || { echo "[tools-dev] Branch '$BRANCH' not found, falling back to master."
-         rm -rf "$PUBLIC_DIR"
+    || { echo "[tools-dev] Branch '$BRANCH' clone failed, falling back to master."
+         clear_dir "$PUBLIC_DIR"
          sparse_clone "master"; }
   echo "[tools-dev] Public repo ready at $PUBLIC_DIR (branch: $(git -C "$PUBLIC_DIR" branch --show-current))."
 fi
