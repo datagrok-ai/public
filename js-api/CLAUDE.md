@@ -100,12 +100,20 @@ Large modules are split into focused sub-modules for maintainability. The main f
 
 ### Dart-JavaScript Interop
 
-The API mostly wraps a Dart backend (in `../../core/client`). Key patterns:
+The API wraps a Dart backend. Key patterns:
 
-- **`api` object**: Global interface to Dart functions (`IDartApi` from `src/api/grok_api.g.ts`)
-- **`toJs(dart)`**: Convert Dart objects to JavaScript (`wrappers.ts`)
-- **`toDart(js)`**: Convert JavaScript objects to Dart (`wrappers.ts`)
-- **`.dart` property**: Most API classes hold a reference to their Dart counterpart
+- **`api` object**: `window` cast as `IDartApi` — all `grok_*` functions are Dart handlers
+- **`.dart` property**: every wrapper class holds the Dart handle — always pass `x.dart` to `api.grok_*`, never the wrapper itself
+- **`toJs(dart)`**: wrap Dart results on the JS side for `reg`-based (sync) calls — `ra*` async calls do it automatically
+- **`toDart(x)`**: extracts `.dart`, calls `.toDart()`, converts `dayjs`→DateTime, plain `{}`→Map
+
+```typescript
+// sync — needs toJs()
+get columns(): ColumnList { return toJs(api.grok_DataFrame_Columns(this.dart)); }
+
+// async — toJs() already applied
+async find(id: string): Promise<Entity> { return toJs(await api.grok_MyClass_Find(this.dart, id)); }
+```
 
 ### Generated API Files (in `src/api/`)
 
