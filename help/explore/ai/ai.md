@@ -17,28 +17,28 @@ exposes an MCP server that can be used by external orchestrator.
 
 ---
 
-## Overview
-
-AI in Datagrok spans multiple layers:
-
-- Smart Assistant 
-- AI-assisted querying and database exploration
-- AI-assisted visualizations
-- Context-aware suggestions, insights, and actions
-- Vibe-coded app generation
-- AI-driven UI navigation
-- Help and troubleshooting
-
----
-
-# Smart Assistant / NLP-driven UI
+# Smart Assistant
 
 The Smart Assistant enables users to interact with datasets, molecules, sequences, 
 viewers, dashboards, notebooks, and databases using natural language. It interprets user 
-intent and converts it into Datagrok operations.
+intent and converts it into Datagrok operations. Can be operated via voice input, 
+optimized for quick interactions and hands-free workflows, as well as for presentations.
 
-The assistant can be operated via voice input, optimized for quick interactions and 
-hands-free workflows, as well as for presentations.
+Widgets in Datagrok expose:
+- Applicable functions
+- Properties
+- Named events
+- Parent-child hierarchy
+
+AI uses this to understand the interface and execute commands such as:
+
+- “Zoom in on the scatter plot”
+- “Close the histogram”
+- “Color by age”
+
+The interpretation layer converts natural-language prompts into `Func()` objects for predictable, reviewable execution.
+
+![](ai-visualizations.gif)
 
 
 ## Natural-language queries
@@ -233,43 +233,20 @@ Agents are long-running, context-aware processes that can:
 
 - Perform multi-step tasks
 - Monitor datasets
-- Trigger workflows
+- Trigger workflows and react to triggers
 - Collaborate with users through memory and iterative refinement
 
-They operate through the same unified function and context model.
+They operate through the same unified function and context model. A few ways to start them:
 
----
-
-# Driving the UI and Visualizations
-
-Widgets in Datagrok expose:
- Applicable functions
-- Properties
-- Named events
-- Parent-child hierarchy
-
-AI uses this to understand the interface and execute commands such as:
-
-- “Zoom in on the scatter plot”
-- “Close the histogram”
-- “Color by age”
-
-The interpretation layer converts natural-language prompts into `Func()` objects for predictable, reviewable execution.
-
-![](ai-visualizations.gif)
-
----
-
-# User Interface Integration
-
-AI capabilities are available through:
-
-- Global search
-- Voice-controlled search
-- “Visualize” button on tables
-- “AI Query” button on database connections
-- AI side panel (chat-style UI, similar to Cursor)
-- Context panels offering intelligent suggestions
+- **User-Initiated**: scientist types intent in natural language inside Datagrok; agent translates to precise tool calls
+  and returns results into the live session. Examples: SAR narrative from a grid selection, compound registration with
+  dedup, PK model fitting, retrosynthesis scouting.
+- **Event-Triggered**: agents watch data feeds. CRO delivers results → auto hit picking. Tox data exceeds threshold →
+  safety escalation. SEND dataset uploaded → FDA conformance validation. Inventory drops → procurement initiated. Zero
+  polling burden on scientists.
+- **Scheduled**: always-on intelligence. Weekly project briefs synthesized before Monday standup. Nightly competitive CI
+  scan of patents/trials/preprints. 6-hour EDC surveillance during active trials. Weekly model drift detection with
+  auto-retraining.
 
 ---
 
