@@ -9,19 +9,12 @@
   gap: 4px;
 }
 
-.lotka-volterra-app-stats-row {
-  justify-content: space-between;
-  align-items: baseline;
-  gap: 8px;
-}
-
-.lotka-volterra-app-stats-row > label:first-child {
+.lotka-volterra-app-stats-panel > label {
   font-weight: 600;
   color: var(--grey-5, #555);
-  white-space: nowrap;
 }
 
-.lotka-volterra-app-stats-row > label:last-child {
+.lotka-volterra-app-stats-value {
   font-family: var(--font-family-monospace, monospace);
   color: var(--grey-6, #333);
   text-align: right;

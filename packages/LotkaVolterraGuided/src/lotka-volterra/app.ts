@@ -39,25 +39,34 @@ export function lotkaVolterraApp(_package: DG.Package): void {
 
   const view = grok.shell.addTableView(df);
   view.name = 'Lotka-Volterra Predator-Prey';
+  view.grid.col('Prey')!.isTextColorCoded = true;
+  view.grid.col('Predators')!.isTextColorCoded = true;
 
   // --- Stats panel ---
-  const eqLabel = ui.label('');
+  const eqPreyLabel = ui.label('');
+  const eqPredatorLabel = ui.label('');
   const maxPreyLabel = ui.label('');
-  const maxPredatorsLabel = ui.label('');
-  const stepsLabel = ui.label('');
+  const maxPredatorLabel = ui.label('');
+
+  eqPreyLabel.classList.add('lotka-volterra-app-stats-value');
+  eqPredatorLabel.classList.add('lotka-volterra-app-stats-value');
+  maxPreyLabel.classList.add('lotka-volterra-app-stats-value');
+  maxPredatorLabel.classList.add('lotka-volterra-app-stats-value');
 
   const statsPanel = ui.divV([
-    ui.divH([ui.label('Equilibrium:'), eqLabel], 'lotka-volterra-app-stats-row'),
-    ui.divH([ui.label('Max prey:'), maxPreyLabel], 'lotka-volterra-app-stats-row'),
-    ui.divH([ui.label('Max predators:'), maxPredatorsLabel], 'lotka-volterra-app-stats-row'),
-    ui.divH([ui.label('Steps:'), stepsLabel], 'lotka-volterra-app-stats-row'),
+    ui.label('Equilibrium'),
+    eqPreyLabel,
+    eqPredatorLabel,
+    ui.label('Max'),
+    maxPreyLabel,
+    maxPredatorLabel,
   ], 'lotka-volterra-app-stats-panel');
 
   function updateStatsPanel(sol: LotkaVolterraSolution): void {
-    eqLabel.textContent = `Prey* = ${sol.xStar.toFixed(2)}, Predator* = ${sol.yStar.toFixed(2)}`;
-    maxPreyLabel.textContent = sol.maxPrey.toFixed(2);
-    maxPredatorsLabel.textContent = sol.maxPredators.toFixed(2);
-    stepsLabel.textContent = `${sol.stepCount}`;
+    eqPreyLabel.textContent = `Prey* = ${sol.xStar.toFixed(2)}`;
+    eqPredatorLabel.textContent = `Predator* = ${sol.yStar.toFixed(2)}`;
+    maxPreyLabel.textContent = `Prey = ${sol.maxPrey.toFixed(2)}`;
+    maxPredatorLabel.textContent = `Predator = ${sol.maxPredators.toFixed(2)}`;
   }
   updateStatsPanel(initSolution);
 
@@ -225,6 +234,8 @@ export function lotkaVolterraApp(_package: DG.Package): void {
     view.dataFrame = newDf;
     lineChart.dataFrame = newDf;
     scatterPlot.dataFrame = newDf;
+    view.grid.col('Prey')!.isTextColorCoded = true;
+    view.grid.col('Predators')!.isTextColorCoded = true;
   }
 
   function clearResults(): void {
@@ -535,7 +546,7 @@ export function lotkaVolterraApp(_package: DG.Package): void {
   form.append(statsPanel);
 
   const dockMng = view.dockManager;
-  dockMng.dock(form, DG.DOCK_TYPE.LEFT, null, undefined, 0.5);
+  dockMng.dock(form, DG.DOCK_TYPE.LEFT, null, undefined, 0.6);
 
   // --- Line chart (time series) ---
   lineChart = view.addViewer('Line chart', {
@@ -550,10 +561,12 @@ export function lotkaVolterraApp(_package: DG.Package): void {
     yColumnName: 'Predators',
     title: 'Phase Portrait',
     markerDefaultSize: 2,
+    sizeColumnName: 'Predators',
+    colorColumnName: 'Prey',
   });
 
   // Dock: line chart top-right, phase portrait bottom-right
-  dockMng.dock(lineChart, DG.DOCK_TYPE.RIGHT, null, undefined, 0.5);
+  dockMng.dock(lineChart, DG.DOCK_TYPE.RIGHT, null, undefined, 0.7);
   const lineChartNode = dockMng.findNode(lineChart.root);
   if (lineChartNode != null)
     dockMng.dock(scatterPlot, DG.DOCK_TYPE.DOWN, lineChartNode, undefined, 0.5);

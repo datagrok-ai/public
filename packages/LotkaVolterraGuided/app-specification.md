@@ -365,7 +365,7 @@ Dialog buttons:
 
 | Component ID | Brief description | Role |
 |---|---|---|
-| `comp_equilibrium` | Display panel showing equilibrium (x*, y*) and summary stats. Built with `ui.divV`/`ui.divH`/`ui.label` components; values updated via `textContent`. Styled via CSS classes `.lotka-volterra-app-stats-panel` and `.lotka-volterra-app-stats-row`. | Display |
+| `comp_equilibrium` | Display panel showing equilibrium and max values. Built with `ui.divV`/`ui.label` components; values updated via `textContent`. Section headers ("Equilibrium", "Max") are bold labels; values ("Prey* = ...", "Predator* = ...") are right-aligned via `.lotka-volterra-app-stats-value`. Styled via `.lotka-volterra-app-stats-panel`. | Display |
 
 ---
 
@@ -394,13 +394,15 @@ Dialog buttons:
 |---|---|
 | X axis | `Prey` |
 | Y axis | `Predators` |
+| Size | `Predators` |
+| Color | `Prey` |
 
 **Details for `view_table`:**
 
 | Property | Value |
 |---|---|
-| Color coding on `Prey` | Linear: dark red (min) → yellow (mid) → dark green (max), via `col.meta.colors.setLinear([DG.Color.darkRed, DG.Color.yellow, DG.Color.darkGreen])` |
-| Color coding on `Predators` | Linear: dark red (min) → yellow (mid) → dark green (max), via `col.meta.colors.setLinear([DG.Color.darkRed, DG.Color.yellow, DG.Color.darkGreen])` |
+| Color coding on `Prey` | Linear: dark red (min) → yellow (mid) → dark green (max), applied to text. `col.meta.colors.setLinear(...)` + `grid.col('Prey')!.isTextColorCoded = true` |
+| Color coding on `Predators` | Linear: dark red (min) → yellow (mid) → dark green (max), applied to text. `col.meta.colors.setLinear(...)` + `grid.col('Predators')!.isTextColorCoded = true` |
 | Reapplied | On every DataFrame replacement |
 | Column header tooltip (`Prey`, `Predators`) | Custom `ui.divV` (`.lotka-volterra-app-col-tooltip`) shown via `view.grid.onCellTooltip`: `ui.h2(colName)` + range line (`.lotka-volterra-app-tooltip-range`) with **min** (`.lotka-volterra-app-tooltip-min`, bold, dark red) `...` **max** (`.lotka-volterra-app-tooltip-max`, bold, dark green) showing current column min/max values. All styles in CSS. |
 
@@ -454,8 +456,8 @@ ui.h2('Equilibrium & Stats')
 
 | Element ID | Docking area | Position / ratio |
 |---|---|---|
-| `form` (left panel) | `DG.DOCK_TYPE.LEFT` relative to root | ratio `0.5` |
-| `view_timeseries` | `DG.DOCK_TYPE.RIGHT` relative to root | ratio `0.5` |
+| `form` (left panel) | `DG.DOCK_TYPE.LEFT` relative to root | ratio `0.6` |
+| `view_timeseries` | `DG.DOCK_TYPE.RIGHT` relative to root | ratio `0.7` |
 | `view_phase` | `DG.DOCK_TYPE.DOWN` relative to line chart node | ratio `0.5` |
 | `view_table` (grid) | Default position (center) | — |
 
@@ -468,9 +470,8 @@ CSS file: `css/lotka-volterra.css`. Import: `import '../../css/lotka-volterra.cs
 | Element | CSS class(es) | Description |
 |---|---|---|
 | Stats panel | `.lotka-volterra-app-stats-panel` | Background, padding, border-radius, gap |
-| Stats row | `.lotka-volterra-app-stats-row` | Horizontal layout with space-between alignment |
-| Stats row label | `.lotka-volterra-app-stats-row > label:first-child` | Bold, grey color, no-wrap |
-| Stats row value | `.lotka-volterra-app-stats-row > label:last-child` | Monospace font, right-aligned |
+| Stats section header | `.lotka-volterra-app-stats-panel > label` | Bold, grey color |
+| Stats value | `.lotka-volterra-app-stats-value` | Monospace font, right-aligned |
 | Help icon | `.lotka-volterra-app-help-icon` | `font-size: large`, `font-weight: bold`, right margin |
 | Tooltip container | `.lotka-volterra-app-col-tooltip` | Vertical gap between header and range |
 | Tooltip range row | `.lotka-volterra-app-tooltip-range` | Flex row, baseline-aligned |
