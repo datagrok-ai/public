@@ -257,7 +257,6 @@ services:
       - \${WORKTREE_PATH:-.}:/workspace/repo
       - \${DOCKER_SOCK}:/var/run/docker.sock
       - npm_cache:/home/node/.npm
-      - public_repo:/workspace/datagrok
     environment:
       ANTHROPIC_API_KEY: \${ANTHROPIC_API_KEY:-}
       DG_VERSION: \${DG_VERSION:-latest}
@@ -286,7 +285,6 @@ volumes:
   demo_test:
   demo_northwind:
   npm_cache:
-  public_repo:
 
 networks:
   dg:
