@@ -39,7 +39,7 @@ else
       && git -C "$PUBLIC_DIR" sparse-checkout set --no-cone \
            '/*' '!connectors/' '!docker/' '!docusaurus/' '!docusaurus-static/' \
            '!environments/' '!hooks/' '!misc/' 'python-api/' '!datagrok-celery-task/' \
-           '/js-api/**' '/libraries/**' '/help/**/*.md*' '/packages/**' '!help/uploads/**' \
+           '/js-api/**' '/libraries/**' '/packages/**' \
       && git -C "$PUBLIC_DIR" fetch --depth 1 --filter=blob:none origin "$branch" \
       && git -C "$PUBLIC_DIR" checkout -B "$branch" FETCH_HEAD
   }
