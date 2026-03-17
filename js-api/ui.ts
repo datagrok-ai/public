@@ -1127,7 +1127,7 @@ export function inputsRow(name: string, inputs: InputBase[]): HTMLElement {
   return d;
 }
 
-export function colorPicker(color: number, onChanged: (color: number) => void, colorDiv: HTMLElement, onOk: Function | null, onCancel: Function | null = null): HTMLElement {
+export function colorPicker(color: number, onChanged: (color: number) => void, colorDiv: HTMLElement | null, onOk: Function | null, onCancel: Function | null = null): HTMLElement | null {
   return api.grok_ColorPicker(color, onChanged, colorDiv, onOk, onCancel);
 }
 
