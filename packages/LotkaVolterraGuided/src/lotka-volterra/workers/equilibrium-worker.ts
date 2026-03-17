@@ -7,7 +7,7 @@ const ctx: Worker = self as unknown as Worker;
 ctx.onmessage = (event: MessageEvent<EquilibriumTask>) => {
   const {paramName, paramMin, paramMax, steps, baseParams} = event.data;
 
-  // TODO: remove — artificial delay for testing
+  // DO NOT USE this artificial delay in production code! It's here just to simulate a long-running computation for demonstration purposes.
   const start = Date.now();
   while (Date.now() - start < 5000) { /* busy wait */ }
 
