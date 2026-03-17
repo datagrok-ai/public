@@ -11,6 +11,10 @@ functions, viewers, widgets, schemas, and UI state in a structured way.
 This enables accurate natural-language control, automated workflows,
 permissions and governance, and context-aware assistance throughout the platform.
 
+Datagrok takes advantage of the existing AI ecosystem by connecting and using MCP servers
+and other external integrations in a managed way. At the same time, Datagrok also 
+exposes an MCP server that can be used by external orchestrator.
+
 ---
 
 ## Overview
@@ -82,7 +86,7 @@ Semantic types (molecule, sequence, plate, ID, assay, gene) guide contextual sug
 - “Try clustering these compounds on similarity”
 - “Convert sequences to molecules and compute descriptors”
 
-## Auto-narrative insights
+## Auto-narrative insight
 
 For dashboards and result sets, AI generates textual insights:
 
@@ -98,6 +102,17 @@ For dashboards and result sets, AI generates textual insights:
 - Activity summaries
 - Plate analysis
 
+---
+
+# AI-assisted visualizations
+
+Visualize and transform data with natural language:
+
+- "Plot height by weight"
+- "Average weight by race and gender"
+- "Show me distribution of activity by compound"
+- "Show me the chemical space"
+- "Do the R-group analysis" 
 
 ---
 
@@ -134,20 +149,6 @@ You can create curated SQL queries with:
 AI maps user intent to the closest SQL template and fills parameters safely.
 
 ![](search-integrated-queries-1.png)
-
-## 2. Visual query builder
-
-The visual query builder benefits from AI through schema-aware suggestions:
-
-- Intelligent join recommendations
-- Column relevance ranking
-- Guided aggregations and pivots
-- Type-aware filters
-- Query metadata inspection
-
-The final result is always a clean, parameterized SQL query.
-
-![](../../access/databases/img/visual-query-editor.gif)
 
 ## 3. Fully AI-driven ad-hoc querying
 
@@ -217,6 +218,15 @@ I press SUBMIT the molecule should be registered in MolTrack.”
 
 ---
 
+# Context and Skills
+
+Describe the context and skills required to do a particular task, and associate it 
+with a particular Datagrok group or role. This will be used by agentic AI.
+
+For instance, for the "Chemists" group you might provide the knowledge of
+how to use the compound registration system, and what standard procedures
+or workflows to follow.
+
 # Agents
 
 Agents are long-running, context-aware processes that can:
@@ -270,6 +280,7 @@ Datagrok uses a multi-tiered model strategy:
 - Regex-based intent parsing for fast, obvious cases
 - Client-side Gemini Nano for classification and triage
 - Server-side LLMs (ChatGPT, enterprise-provided models) for advanced reasoning
+- Agentic AI (Claude Code) for autonomous work
 
 Enterprise users can plug in their own model endpoints.
 
