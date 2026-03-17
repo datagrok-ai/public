@@ -88,8 +88,7 @@ export class TimelinesViewer extends EChartViewer {
     this.tooltipOffset = 10;
     this.initialized = false;
     this.option = deepCopy(options);
-    this.legendHelper.onCategoriesChanged = (filteredIdxs, categories) =>
-      this.updateOnLegendChange(filteredIdxs, categories);
+    this.legendHelper.onCategoriesChanged = () => this.render();
   }
 
   init() {
@@ -113,6 +112,12 @@ export class TimelinesViewer extends EChartViewer {
           this.zoomState = [[0, 100], [0, 100], [0, 100], [0, 100]];
           this.render();
         });
+      }));
+
+      this.subs.push(this.dataFrame.onMetadataChanged.subscribe((ev) => {
+        if (this.columnData.colorColumnName && ev.args.key === '.color-coding-categorical')
+          this.colorMap = this.getColorMap(this.columnData.colorColumnName.column);
+        this.render();
       }));
 
       this.chart.on('rendered', () => {
@@ -161,7 +166,7 @@ export class TimelinesViewer extends EChartViewer {
       if (property.get(this)) {
         const columnData = this.updateColumnData(property);
         if (property.name === 'colorColumnName') {
-          this.colorMap = this.getColorMap(columnData!.categories);
+          this.colorMap = this.getColorMap(columnData!.column);
           this.legendHelper.update(columnData!.column);
           this.switchLegendVisibility(this.legendVisibility);
         }
@@ -220,9 +225,10 @@ export class TimelinesViewer extends EChartViewer {
     }
   }
 
-  getColorMap(categories: string[]) {
-    return categories.reduce((colorMap, c, i) => {
-      colorMap[c] = DG.Color.toRgb(DG.Color.getCategoricalColor(i));
+  getColorMap(column: DG.Column) {
+    const rawData = column.getRawData();
+    return column.categories.reduce((colorMap, c, i) => {
+      colorMap[c] = DG.Color.toRgb(DG.Color.getRowColor(column, rawData.indexOf(i)));
       return colorMap;
     }, <Indexable>{});
   }
@@ -284,7 +290,7 @@ export class TimelinesViewer extends EChartViewer {
       this.columnData.endColumnName = null;
     }
 
-    this.colorMap = this.getColorMap(this.columnData.colorColumnName!.categories!);
+    this.colorMap = this.getColorMap(this.columnData.colorColumnName!.column);
     this.legendHelper.update(this.columnData.colorColumnName!.column);
     this.switchLegendVisibility(this.legendVisibility);
 
@@ -629,16 +635,10 @@ export class TimelinesViewer extends EChartViewer {
       this.showErrorMessage('The Timelines viewer requires a minimum of 1 column.');
       return;
     }
-    this.option.series[0].data = this.getSeriesData();
-    this.updateZoom();
-    this.chart.setOption(this.option);
-  }
-
-  updateOnLegendChange(filteredIdxs: number[], legendLabels: string[]): void {
     const data = this.getSeriesData();
-    this.data = filteredIdxs.length === 0 ?
-      data :
-      data.filter((item) => filteredIdxs.some((idx) => legendLabels[idx] === item[3][0]));
+    const selectedCategories = this.legendHelper.selectedCategories;
+    if (selectedCategories)
+      this.data = data.filter((item) => selectedCategories.includes(item[3][0]));
     this.option.series[0].data = this.data;
     this.updateZoom();
     this.chart.setOption(this.option);
