@@ -415,7 +415,7 @@ Results are displayed in a **new TableView** (separate from main view).
 | ID | Type | Associated output data | Placement |
 |---|---|---|---|
 | `eq_view` | `DG.TableView` | DataFrame `[paramName, Prey*, Predator*]` | New view |
-| `eq_chart` | Datagrok viewer `line chart` | X: `paramName`, Y: `Prey*` and `Predator*` | Docked `DG.DOCK_TYPE.RIGHT` relative to grid, ratio `0.8` |
+| `eq_chart` | Datagrok viewer `line chart` | X: `paramName`, Y: `Prey*` and `Predator*`. `lineWidth: 3`. | Docked `DG.DOCK_TYPE.RIGHT` relative to grid, ratio `0.75` |
 
 ---
 
@@ -454,10 +454,10 @@ ui.h2('Equilibrium & Stats')
 
 | Element ID | Docking area | Position / ratio |
 |---|---|---|
-| `form` (left panel) | `DG.DOCK_TYPE.LEFT` relative to root | ratio `0.1` |
-| `view_timeseries` | `DG.DOCK_TYPE.LEFT` relative to grid node | ratio `0.65` |
+| `form` (left panel) | `DG.DOCK_TYPE.LEFT` relative to root | ratio `0.5` |
+| `view_timeseries` | `DG.DOCK_TYPE.RIGHT` relative to root | ratio `0.5` |
 | `view_phase` | `DG.DOCK_TYPE.DOWN` relative to line chart node | ratio `0.5` |
-| `view_table` (grid) | Default position (right) | — |
+| `view_table` (grid) | Default position (center) | — |
 
 ### 5.3. Styles
 

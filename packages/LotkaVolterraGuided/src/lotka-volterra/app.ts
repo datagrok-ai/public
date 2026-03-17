@@ -466,11 +466,12 @@ export function lotkaVolterraApp(_package: DG.Package): void {
       xColumnName: paramName,
       yColumnNames: ['Prey*', 'Predator*'],
       title: `Equilibrium point vs ${paramName}`,
+      lineWidth: 3,
     });
 
     const eqGridNode = eqView.dockManager.findNode(eqView.grid.root);
     if (eqGridNode != null)
-      eqView.dockManager.dock(eqChart, DG.DOCK_TYPE.RIGHT, eqGridNode, undefined, 0.8);
+      eqView.dockManager.dock(eqChart, DG.DOCK_TYPE.RIGHT, eqGridNode, undefined, 0.75);
   }
 
   function showEquilibriumDialog(): void {
@@ -516,7 +517,6 @@ export function lotkaVolterraApp(_package: DG.Package): void {
 
   // --- Layout: left panel with form ---
   const form = ui.form([]);
-  form.classList.add('lotka-volterra-app-form');
 
   form.append(ui.h2('Model Coefficients'));
   form.append(ctrlAlpha.root);
@@ -535,7 +535,7 @@ export function lotkaVolterraApp(_package: DG.Package): void {
   form.append(statsPanel);
 
   const dockMng = view.dockManager;
-  dockMng.dock(form, DG.DOCK_TYPE.LEFT, null, undefined, 0.1);
+  dockMng.dock(form, DG.DOCK_TYPE.LEFT, null, undefined, 0.5);
 
   // --- Line chart (time series) ---
   lineChart = view.addViewer('Line chart', {
@@ -552,14 +552,11 @@ export function lotkaVolterraApp(_package: DG.Package): void {
     markerDefaultSize: 2,
   });
 
-  // Dock: line chart top-center, phase portrait bottom-center, grid right
-  const gridNode = dockMng.findNode(view.grid.root);
-  if (gridNode != null) {
-    dockMng.dock(lineChart, DG.DOCK_TYPE.LEFT, gridNode, undefined, 0.65);
-    const lineChartNode = dockMng.findNode(lineChart.root);
-    if (lineChartNode != null)
-      dockMng.dock(scatterPlot, DG.DOCK_TYPE.DOWN, lineChartNode, undefined, 0.5);
-  }
+  // Dock: line chart top-right, phase portrait bottom-right
+  dockMng.dock(lineChart, DG.DOCK_TYPE.RIGHT, null, undefined, 0.5);
+  const lineChartNode = dockMng.findNode(lineChart.root);
+  if (lineChartNode != null)
+    dockMng.dock(scatterPlot, DG.DOCK_TYPE.DOWN, lineChartNode, undefined, 0.5);
 
   // --- Grid column header tooltips ---
   function columnTooltip(colName: string): HTMLElement {
