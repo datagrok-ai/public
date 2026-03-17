@@ -1,5 +1,9 @@
 # Chem changelog
 
+## 1.17.1 (2026-03-17)
+
+* GROK-19867: Chem: Alignment setting (Scaffold column) is not saved to the data-sync project
+
 ## 1.17.0 (2026-03-13)
 
 * Chem: MPO: Fix desirability label positioning and rename templates to profiles
