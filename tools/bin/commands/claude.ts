@@ -273,6 +273,7 @@ services:
     networks:
       dg:
         aliases: [tools-dev]
+    user: root
     stdin_open: true
     tty: true
     restart: unless-stopped
@@ -344,7 +345,7 @@ function findFreePort(): Promise<number> {
   });
 }
 
-function writeProjectFiles(taskKey: string, args: ClaudeArgs, worktreeRoot: string, dgPort: number): string {
+function writeProjectFiles(taskKey: string, args: ClaudeArgs, worktreeRoot: string, dgPort: number, repoRoot: string | undefined): string {
   const projectDir = getProjectDir(taskKey);
   if (!fs.existsSync(projectDir))
     fs.mkdirSync(projectDir, {recursive: true});
@@ -390,6 +391,14 @@ function writeProjectFiles(taskKey: string, args: ClaudeArgs, worktreeRoot: stri
   // Bind-mount local entrypoint so fixes take effect without rebuilding the image
   if (hasLocalEntrypoint)
     volumes.push(`      - "${toDockerPath(entrypointPath)}:/usr/local/bin/entrypoint.sh"`);
+
+  // For external repos, also mount workspace inside the public repo tree so Claude Code
+  // sees the real path (not a symlink that resolves back to /workspace/repo).
+  const isPublic = repoRoot ? isPublicRepo(repoRoot) : false;
+  if (!isPublic) {
+    const folderName = path.basename(worktreeRoot);
+    volumes.push(`      - "${toDockerPath(worktreeRoot)}:/workspace/datagrok/packages/${folderName}"`);
+  }
 
   // Claude profile: credentials are copied into the container after startup (not bind-mounted)
   // to avoid permission issues — host files may have different UID/GID than the container's
@@ -591,7 +600,7 @@ export async function claude(args: ClaudeArgs): Promise<boolean> {
   color.info(`Datagrok UI will be at: http://localhost:${dgPort}`);
 
   // Write compose + .env to temp dir (no external file dependencies)
-  const projectDir = writeProjectFiles(taskKey, args, worktreeRoot, dgPort);
+  const projectDir = writeProjectFiles(taskKey, args, worktreeRoot, dgPort, repoRoot);
   color.info(`Workspace: ${worktreeRoot}`);
 
   // Start containers
@@ -663,7 +672,7 @@ export async function claude(args: ClaudeArgs): Promise<boolean> {
     claudeArgs.push('-p', args.prompt);
 
   color.info(`Launching Claude Code in container ${containerName}...`);
-  spawnSync('docker', ['exec', '-it', '-w', claudeWorkDir, containerName, 'claude', ...claudeArgs], {
+  spawnSync('docker', ['exec', '-it', '-u', 'node', '-w', claudeWorkDir, containerName, 'claude', ...claudeArgs], {
     stdio: 'inherit',
   });
 

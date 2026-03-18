@@ -13,6 +13,11 @@ resolve_branch() {
 }
 
 PUBLIC_DIR="${DG_PUBLIC_DIR:-/workspace/datagrok}"
+# Ensure workspace dirs are writable by node user (bind-mounts create parents as root)
+chown node:node /workspace "$PUBLIC_DIR" 2>/dev/null || true
+# Allow git to operate on dirs owned by different users (root runs git, dir owned by node)
+git config --global --add safe.directory "$PUBLIC_DIR" 2>/dev/null || true
+git config --global init.defaultBranch master 2>/dev/null || true
 # Detect if /workspace/repo IS the public repo.
 # Require .git to avoid false positives from packages that have public/js-api via npm link.
 if [ -e "/workspace/repo/.git" ] && [ -d "/workspace/repo/js-api" ]; then
@@ -35,24 +40,34 @@ else
   sparse_clone() {
     local branch="$1"
     # Use init+fetch instead of clone to handle pre-existing directories (e.g. mount points)
-    git init "$PUBLIC_DIR" \
-      && git -C "$PUBLIC_DIR" remote add origin "$REPO" \
+    git init -q "$PUBLIC_DIR" \
+      && (git -C "$PUBLIC_DIR" remote add origin "$REPO" 2>/dev/null || git -C "$PUBLIC_DIR" remote set-url origin "$REPO") \
       && git -C "$PUBLIC_DIR" config remote.origin.promisor true \
       && git -C "$PUBLIC_DIR" config remote.origin.partialclonefilter blob:none \
       && git -C "$PUBLIC_DIR" sparse-checkout set --cone .claude js-api libraries packages/ApiSamples \
-      && git -C "$PUBLIC_DIR" fetch --depth 1 --filter=blob:none origin "$branch" \
-      && git -C "$PUBLIC_DIR" checkout -B "$branch" FETCH_HEAD
+      && git -C "$PUBLIC_DIR" fetch -q --depth 1 --filter=blob:none origin "$branch" \
+      && git -C "$PUBLIC_DIR" checkout -q -B "$branch" FETCH_HEAD
   }
-  # Clear directory contents without removing the dir itself (may be a mount point)
-  clear_dir() {
-    find "$1" -mindepth 1 -delete 2>/dev/null || rm -rf "$1"/* "$1"/.[!.]* 2>/dev/null || true
+  # Clear git state without touching bind-mounted subdirs (e.g. packages/awesome)
+  clear_git() {
+    rm -rf "$1/.git" 2>/dev/null || true
   }
   echo "[tools-dev] Cloning public repo ($BRANCH, sparse) into $PUBLIC_DIR..."
-  sparse_clone "$BRANCH" \
-    || { echo "[tools-dev] Branch '$BRANCH' clone failed, falling back to master."
-         clear_dir "$PUBLIC_DIR"
-         sparse_clone "master"; }
-  echo "[tools-dev] Public repo ready at $PUBLIC_DIR (branch: $(git -C "$PUBLIC_DIR" branch --show-current))."
+  if sparse_clone "$BRANCH"; then
+    echo "[tools-dev] Public repo ready."
+  elif [ "$BRANCH" != "master" ]; then
+    echo "[tools-dev] Branch '$BRANCH' clone failed, falling back to master."
+    clear_git "$PUBLIC_DIR"
+    if sparse_clone "master"; then
+      echo "[tools-dev] Public repo ready (branch: master)."
+    else
+      echo "[tools-dev] WARNING: Failed to clone public repo."
+    fi
+  else
+    echo "[tools-dev] WARNING: Failed to clone public repo."
+  fi
+  # Ensure node user can read cloned files (entrypoint runs as root)
+  chown -R node:node "$PUBLIC_DIR" 2>/dev/null || true
 fi
 
 # ── Mount workspace inside public repo for non-public workspaces ──
@@ -63,21 +78,20 @@ if [ -e "/workspace/repo/.git" ] && [ -d "/workspace/repo/js-api" ]; then
 elif [ -e "/workspace/repo/.git" ] && [ -d "/workspace/repo/public/js-api" ]; then
   echo "[tools-dev] Monorepo detected — public context at /workspace/repo/public/."
 elif [ -d "$PUBLIC_DIR/js-api" ]; then
-  # Cloned public repo — link workspace into packages/ and expose context at /workspace/
   LINK_NAME="${FOLDER_NAME:-$TASK_KEY}"
   if [ -n "$LINK_NAME" ]; then
     mkdir -p "$PUBLIC_DIR/packages" 2>/dev/null || true
-    ln -sfn /workspace/repo "$PUBLIC_DIR/packages/$LINK_NAME"
-    echo "[tools-dev] Workspace linked at $PUBLIC_DIR/packages/$LINK_NAME"
+    if [ ! -d "$PUBLIC_DIR/packages/$LINK_NAME" ]; then
+      ln -sfn /workspace/repo "$PUBLIC_DIR/packages/$LINK_NAME"
+    fi
+    echo "[tools-dev] Workspace at $PUBLIC_DIR/packages/$LINK_NAME"
   fi
   PUBLIC_BASENAME=$(basename "$PUBLIC_DIR")
   ln -sfn "$PUBLIC_BASENAME/.claude" /workspace/.claude 2>/dev/null || true
   ln -sfn "$PUBLIC_BASENAME/CLAUDE.md" /workspace/CLAUDE.md 2>/dev/null || true
-  [ -L /workspace/.claude ] && echo "[tools-dev] Linked public repo context at /workspace/"
 fi
 
 # Auto-configure grok CLI to point to the local Datagrok instance.
-# Only creates the config if it doesn't already exist (preserves host config).
 GROK_DIR="/home/node/.grok"
 GROK_CFG="$GROK_DIR/config.yaml"
 if [ ! -f "$GROK_CFG" ] || [ ! -s "$GROK_CFG" ]; then
@@ -90,9 +104,10 @@ servers:
     key: admin
 YAML
   [ -s "$GROK_CFG" ] && echo "[tools-dev] Created grok config at $GROK_CFG"
-elif ! grep -q "datagrok:8080" "$GROK_CFG" 2>/dev/null; then
-  echo "[tools-dev] Note: existing grok config found. Add 'local' server with:"
-  echo "  grok config add --alias local --server http://datagrok:8080/api --key admin --default"
 fi
 
+# Drop to node user for the main process (entrypoint runs as root for permission fixes)
+if [ "$(id -u)" = "0" ]; then
+  exec setpriv --reuid=node --regid=node --init-groups "$@"
+fi
 exec "$@"
