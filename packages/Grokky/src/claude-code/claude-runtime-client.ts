@@ -6,6 +6,7 @@ export type ToolActivityEvent = {sessionId: string, summary: string};
 export type ToolResultEvent = {sessionId: string, content: string};
 export type FinalEvent = {sessionId: string, content: string};
 export type ErrorEvent = {sessionId: string, message: string};
+export type AbortedEvent = {sessionId: string};
 
 export class ClaudeRuntimeClient {
   private static instance: ClaudeRuntimeClient | null = null;
@@ -18,6 +19,7 @@ export class ClaudeRuntimeClient {
   public onToolResult = new rxjs.Subject<ToolResultEvent>();
   public onFinal = new rxjs.Subject<FinalEvent>();
   public onError = new rxjs.Subject<ErrorEvent>();
+  public onAborted = new rxjs.Subject<AbortedEvent>();
   public onClose = new rxjs.Subject<void>();
 
   private constructor() {}
@@ -84,6 +86,9 @@ export class ClaudeRuntimeClient {
       case 'error':
         this.onError.next({sessionId: data.sessionId, message: data.message});
         break;
+      case 'aborted':
+        this.onAborted.next({sessionId: data.sessionId});
+        break;
       }
     };
 
@@ -105,6 +110,12 @@ export class ClaudeRuntimeClient {
       apiKey: grok.dapi.token,
       mcpServerUrl: this.mcpServerUrl,
     }));
+  }
+
+  abort(sessionId: string): void {
+    if (!this.ws || this.ws.readyState !== WebSocket.OPEN)
+      return;
+    this.ws.send(JSON.stringify({type: 'abort', sessionId}));
   }
 
   async query(message: string, sessionId?: string): Promise<string> {
@@ -137,12 +148,14 @@ export class ClaudeRuntimeClient {
     this.onToolResult.complete();
     this.onFinal.complete();
     this.onError.complete();
+    this.onAborted.complete();
     this.onClose.complete();
     this.onChunk = new rxjs.Subject<ChunkEvent>();
     this.onToolActivity = new rxjs.Subject<ToolActivityEvent>();
     this.onToolResult = new rxjs.Subject<ToolResultEvent>();
     this.onFinal = new rxjs.Subject<FinalEvent>();
     this.onError = new rxjs.Subject<ErrorEvent>();
+    this.onAborted = new rxjs.Subject<AbortedEvent>();
     this.onClose = new rxjs.Subject<void>();
   }
 }

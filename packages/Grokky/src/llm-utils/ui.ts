@@ -11,7 +11,7 @@ import {ChatGptAssistant} from '../prompt-engine/chatgpt-assistant';
 import * as api from '../package-api';
 import {Plan} from '../prompt-engine/interfaces';
 import {AssistantRenderer} from '../prompt-engine/rendering-tools';
-import {fireAIAbortEvent, fireAIPanelToggleEvent} from '../utils';
+import {fireAIAbortEvent, fireAIPanelToggleEvent, getAIAbortSubscription} from '../utils';
 import {generateAISqlQueryWithTools} from './sql-tools';
 import {BuiltinDBInfoMeta} from './query-meta-utils';
 import {processTableViewAIRequest} from './tableview-tools';
@@ -182,6 +182,8 @@ async function runClaudeStreaming(panel: TVAIPanel, userPrompt: string, tableVie
 
   try {
     const client = ClaudeRuntimeClient.getInstance();
+    const prompt = panel.prependViewContext(userPrompt, tableView);
+
     await client.ensureConnected();
 
     chatSession.session.addUiMessage(userPrompt, true);
@@ -210,9 +212,19 @@ async function runClaudeStreaming(panel: TVAIPanel, userPrompt: string, tableVie
 
     forSession(client.onError, (evt) => endWithError(`Claude: ${evt.message}`));
 
+    forSession(client.onAborted, () => {
+      panel.clearStreaming();
+      chatSession.session.addUiMessage('**Processing aborted by user**', false);
+      chatSession.endSession();
+      cleanup();
+    });
+
     subs.push(client.onClose.subscribe(() => endWithError('Claude: connection lost')));
 
-    const prompt = panel.prependViewContext(userPrompt, tableView);
+    subs.push(getAIAbortSubscription().subscribe(() => {
+      client.abort(sessionId);
+    }));
+
     client.send(sessionId, prompt);
   }
   catch (e: any) {
@@ -238,13 +250,15 @@ export async function setupTableViewAIPanelUI() {
 
     // Setup request handler
     panel.onRunRequest.subscribe(async (args) => {
+      const prompt = args.currentPrompt.prompt;
+
       if (panel.currentEngine === 'Claude') {
-        await runClaudeStreaming(panel, args.currentPrompt.prompt, tableView);
+        await runClaudeStreaming(panel, prompt, tableView);
       } else {
         const chatSession = panel.startChatSession();
         try {
           await processTableViewAIRequest(
-            args.currentPrompt.prompt,
+            prompt,
             tableView,
             {
               oldMessages: args.prevMessages,

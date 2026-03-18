@@ -3,7 +3,7 @@ import {serve} from '@hono/node-server';
 import {createNodeWebSocket} from '@hono/node-ws';
 import {query} from '@anthropic-ai/claude-agent-sdk';
 import type {SDKMessage} from '@anthropic-ai/claude-agent-sdk';
-import type {UserMessage, OutgoingMessage, ToolInputs, McpInputs, ToolName, McpName} from './types';
+import type {UserMessage, AbortMessage, OutgoingMessage, ToolInputs, McpInputs, ToolName, McpName} from './types';
 
 const WORKSPACE = process.env['CLAUDE_WORKSPACE'] || '/workspace';
 const PORT = 5355;
@@ -233,6 +233,13 @@ function forwardEvent(ws: WsSender, sid: string, event: SDKMessage): void {
   }
 }
 
+interface ActiveQuery {
+  abortController: AbortController;
+  queryHandle: ReturnType<typeof query> | null;
+}
+
+const activeQueries = new Map<WsSender, ActiveQuery>();
+
 async function handleMessage(ws: WsSender, data: UserMessage): Promise<void> {
   const sid = data.sessionId ?? '';
   const message = data.message ?? '';
@@ -240,19 +247,40 @@ async function handleMessage(ws: WsSender, data: UserMessage): Promise<void> {
     return emit(ws, {type: 'error', sessionId: sid, message: 'Empty message'});
 
   const mcpUrl = rewriteForDocker(data.mcpServerUrl || '');
+  const abortController = new AbortController();
+  const active: ActiveQuery = {abortController, queryHandle: null};
+  activeQueries.set(ws, active);
 
   let gotResult = false;
   try {
     const opts = buildOptions(getSession(sid), data.apiKey, mcpUrl);
-    for await (const event of query({prompt: promptStream(message), options: opts})) {
+    const q = query({prompt: promptStream(message), options: {...opts, abortController}});
+    active.queryHandle = q;
+    for await (const event of q) {
+      if (abortController.signal.aborted)
+        break;
       if (event.type === 'result')
         gotResult = true;
       forwardEvent(ws, sid, event);
     }
   } catch (e: any) {
-    if (!gotResult || !/exited with code/i.test(String(e.message)))
+    if (!abortController.signal.aborted && (!gotResult || !/exited with code/i.test(String(e.message))))
       emit(ws, {type: 'error', sessionId: sid, message: String(e.message || e)});
+  } finally {
+    activeQueries.delete(ws);
   }
+}
+
+function handleAbort(ws: WsSender, data: AbortMessage): void {
+  const active = activeQueries.get(ws);
+  if (!active)
+    return;
+  active.abortController.abort();
+  try {
+    if (active.queryHandle)
+      active.queryHandle.close();
+  } catch { /* query may have already finished */ }
+  emit(ws, {type: 'aborted', sessionId: data.sessionId});
 }
 
 const app = new Hono();
@@ -270,6 +298,11 @@ app.get('/ws', upgradeWebSocket(() => {
         data = JSON.parse(String(evt.data));
       } catch {
         return emit(sender, {type: 'error', sessionId: '', message: 'Invalid JSON'});
+      }
+
+      if (data.type === 'abort') {
+        handleAbort(sender, data);
+        return;
       }
 
       if (data.type !== 'user_message') {
