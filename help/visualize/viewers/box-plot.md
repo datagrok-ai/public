@@ -140,7 +140,7 @@ For instance, you would get the upper whisker inverted on the following data: [0
 | Category Font | string |  |
 | Statistics Font | string |  |
 | Whisker Line Width | number |  |
-| Interquartile Line Width | number |  |
+| Interquartile Line Width | number | Width of interquartile line, if **Auto Layout** is enabled, it will be scaled when violins are too narrow. |
 | Whisker Width Ratio | number |  |
 | Axis Use Column Format | boolean |  |
 | Bins | number | Number of KDE bins to display a violin plot. |
