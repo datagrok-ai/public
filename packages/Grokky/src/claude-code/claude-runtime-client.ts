@@ -7,6 +7,7 @@ export type ToolResultEvent = {sessionId: string, content: string};
 export type FinalEvent = {sessionId: string, content: string};
 export type ErrorEvent = {sessionId: string, message: string};
 export type AbortedEvent = {sessionId: string};
+export type InputRequestEvent = {sessionId: string, toolName: string, input: any};
 
 export class ClaudeRuntimeClient {
   private static instance: ClaudeRuntimeClient | null = null;
@@ -20,6 +21,7 @@ export class ClaudeRuntimeClient {
   public onFinal = new rxjs.Subject<FinalEvent>();
   public onError = new rxjs.Subject<ErrorEvent>();
   public onAborted = new rxjs.Subject<AbortedEvent>();
+  public onInputRequest = new rxjs.Subject<InputRequestEvent>();
   public onClose = new rxjs.Subject<void>();
 
   private constructor() {}
@@ -89,6 +91,9 @@ export class ClaudeRuntimeClient {
       case 'aborted':
         this.onAborted.next({sessionId: data.sessionId});
         break;
+      case 'input_request':
+        this.onInputRequest.next({sessionId: data.sessionId, toolName: data.toolName, input: data.input});
+        break;
       }
     };
 
@@ -116,6 +121,12 @@ export class ClaudeRuntimeClient {
     if (!this.ws || this.ws.readyState !== WebSocket.OPEN)
       return;
     this.ws.send(JSON.stringify({type: 'abort', sessionId}));
+  }
+
+  respondToInput(sessionId: string, value: any): void {
+    if (!this.ws || this.ws.readyState !== WebSocket.OPEN)
+      return;
+    this.ws.send(JSON.stringify({type: 'input_response', sessionId, value}));
   }
 
   async query(message: string, sessionId?: string): Promise<string> {
@@ -149,6 +160,7 @@ export class ClaudeRuntimeClient {
     this.onFinal.complete();
     this.onError.complete();
     this.onAborted.complete();
+    this.onInputRequest.complete();
     this.onClose.complete();
     this.onChunk = new rxjs.Subject<ChunkEvent>();
     this.onToolActivity = new rxjs.Subject<ToolActivityEvent>();
@@ -156,6 +168,7 @@ export class ClaudeRuntimeClient {
     this.onFinal = new rxjs.Subject<FinalEvent>();
     this.onError = new rxjs.Subject<ErrorEvent>();
     this.onAborted = new rxjs.Subject<AbortedEvent>();
+    this.onInputRequest = new rxjs.Subject<InputRequestEvent>();
     this.onClose = new rxjs.Subject<void>();
   }
 }

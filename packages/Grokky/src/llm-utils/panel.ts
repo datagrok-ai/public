@@ -34,6 +34,27 @@ type TVAIPanelInputs = AIPanelInputs & {
     mode: 'agent' | 'ask',
 }
 
+interface AskUserOption {
+  label: string;
+  description?: string;
+}
+
+interface AskUserQuestion {
+  question: string;
+  header?: string;
+  options: AskUserOption[];
+  multiSelect?: boolean;
+}
+
+interface AskUserInput {
+  questions: AskUserQuestion[];
+}
+
+interface AskUserResponse {
+  questions: AskUserQuestion[];
+  answers: Record<string, string>;
+}
+
 const actionButtionValues = {
   run: 'Run AI Prompt',
   stop: 'Stop AI Generation',
@@ -473,7 +494,7 @@ export class AIPanel<T extends MessageType = LanguageModelV3Message, K extends A
     fireAIAbortEvent();
   }
 
-  private handleRun() {
+  protected handleRun() {
     const inputs = this.getCurrentInputs();
     this.textArea.value = '';
     this._onRunRequest.next({
@@ -730,6 +751,7 @@ export class TVAIPanel extends AIPanel<MessageType, TVAIPanelInputs> {
   private _streamingMarkdownEl: HTMLElement | null = null;
   private _sessionId: string;
   private _contextSent = false;
+  private _pendingInputResolve: ((value: AskUserResponse | null) => void) | null = null;
 
   get currentEngine(): AIEngine { return this._engine; }
   get sessionId(): string { return this._sessionId; }
@@ -844,6 +866,56 @@ export class TVAIPanel extends AIPanel<MessageType, TVAIPanelInputs> {
       const layout = DG.ViewLayout.fromViewState(viewState);
       this.tableView.loadLayout(layout, true);
     }
+  }
+
+  showInputRequest(input: AskUserInput): Promise<AskUserResponse | null> {
+    const questions = input.questions ?? [];
+    let resolved = false;
+    const choiceInputs: DG.InputBase<string>[] = [];
+
+    for (const q of questions) {
+      const items = q.options.map((o) => o.label);
+      choiceInputs.push(ui.input.choice(q.header ?? '', {items, value: items[0], nullable: false}) as DG.InputBase<string>);
+    }
+    const form = ui.divV(questions.map((q, i) => ui.divV([ui.divText(q.question), choiceInputs[i].root])));
+
+    return new Promise<AskUserResponse | null>((resolve) => {
+      const doResolve = (value: AskUserResponse | null) => {
+        if (resolved)
+          return;
+        resolved = true;
+        this._pendingInputResolve = null;
+        for (const inp of choiceInputs)
+          (inp.input as HTMLSelectElement).disabled = true;
+        resolve(value);
+      };
+
+      form.appendChild(ui.button('Submit', () => {
+        const answers: Record<string, string> = {};
+        for (let i = 0; i < questions.length; i++)
+          answers[questions[i].question] = choiceInputs[i].value!;
+        doResolve({questions, answers});
+      }));
+
+      this._pendingInputResolve = doResolve;
+      this.ensureAccordionPane();
+      const wrapper = ui.divV([form], 'd4-ai-assistant-response-container');
+      this._aiMessagesAccordionPane!.appendChild(wrapper);
+      this.outputArea.scrollTop = this.outputArea.scrollHeight;
+    });
+  }
+
+  cancelInputRequest(): void {
+    if (this._pendingInputResolve) {
+      this._pendingInputResolve(null);
+      this._pendingInputResolve = null;
+    }
+  }
+
+  protected handleRun(): void {
+    if (this._pendingInputResolve)
+      return;
+    super.handleRun();
   }
 }
 

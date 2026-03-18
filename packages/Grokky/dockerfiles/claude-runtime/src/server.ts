@@ -3,7 +3,7 @@ import {serve} from '@hono/node-server';
 import {createNodeWebSocket} from '@hono/node-ws';
 import {query} from '@anthropic-ai/claude-agent-sdk';
 import type {SDKMessage} from '@anthropic-ai/claude-agent-sdk';
-import type {UserMessage, AbortMessage, OutgoingMessage, ToolInputs, McpInputs, ToolName, McpName} from './types';
+import type {UserMessage, AbortMessage, InputResponseMessage, OutgoingMessage, ToolInputs, McpInputs, ToolName, McpName} from './types';
 
 const WORKSPACE = process.env['CLAUDE_WORKSPACE'] || '/workspace';
 const PORT = 5355;
@@ -42,6 +42,16 @@ Regular \`\`\`javascript blocks are for explanations only and will NOT run.
 - Do NOT import \`grok\`, \`ui\`, or \`DG\` — they are already in scope.
 - Prefer the JS API over console commands or scripts.
 - Keep responses concise.
+
+## Clarifying ambiguous requests
+
+You have the AskUserQuestion tool available. When the user's request could reasonably be interpreted in multiple ways, you MUST use AskUserQuestion to clarify before acting. Examples of ambiguous requests:
+- "add a plot" → ask which plot type (scatter, histogram, bar chart, etc.)
+- "filter the data" → ask which column and criteria
+- "clean up the data" → ask what kind of cleanup
+- "correlate columns" → ask which columns
+
+NEVER guess when there are multiple valid options. Always ask first.
 
 ## Entity References
 
@@ -125,7 +135,7 @@ function buildOptions(resume?: string, apiKey?: string, mcpServerUrl?: string) {
   const apiUrl = mcpUrl ? apiUrlFromMcpUrl(mcpUrl) : undefined;
   return {
     systemPrompt: DATAGROK_PROMPT,
-    allowedTools: ['Read', 'Glob', 'Grep', 'Edit', 'Write', 'Bash', 'WebSearch', 'WebFetch'],
+    allowedTools: ['Read', 'Glob', 'Grep', 'Edit', 'Write', 'Bash', 'WebSearch', 'WebFetch', 'AskUserQuestion'],
     ...(mcpUrl ? {
       mcpServers: {
         datagrok: {
@@ -135,8 +145,7 @@ function buildOptions(resume?: string, apiKey?: string, mcpServerUrl?: string) {
         },
       },
     } : {}),
-    permissionMode: 'bypassPermissions' as const,
-    allowDangerouslySkipPermissions: true,
+    permissionMode: 'acceptEdits' as const,
     model: 'opus' as const,
     includePartialMessages: true,
     cwd: WORKSPACE,
@@ -153,6 +162,7 @@ const toolFormatters: {[K in ToolName]: (i: ToolInputs[K]) => string} = {
   Grep: (i) => `Grep '${i.pattern ?? ''}' ${i.path ? 'in ' + i.path : ''}`.trim(),
   WebSearch: (i) => `WebSearch: ${i.query ?? ''}`,
   WebFetch: (i) => `WebFetch: ${i.url ?? ''}`,
+  AskUserQuestion: (i) => `Asking: ${i.questions?.[0]?.question ?? 'a question'}`,
 };
 
 const mcpFormatters: {[K in McpName]: (i: McpInputs[K]) => string} = {
@@ -236,9 +246,19 @@ function forwardEvent(ws: WsSender, sid: string, event: SDKMessage): void {
 interface ActiveQuery {
   abortController: AbortController;
   queryHandle: ReturnType<typeof query> | null;
+  pendingInputResolve: ((value: any) => void) | null;
 }
 
 const activeQueries = new Map<WsSender, ActiveQuery>();
+
+function handleInputResponse(ws: WsSender, data: InputResponseMessage): void {
+  const active = activeQueries.get(ws);
+  if (active?.pendingInputResolve) {
+    const resolve = active.pendingInputResolve;
+    active.pendingInputResolve = null;
+    resolve(data.value);
+  }
+}
 
 async function handleMessage(ws: WsSender, data: UserMessage): Promise<void> {
   const sid = data.sessionId ?? '';
@@ -248,13 +268,27 @@ async function handleMessage(ws: WsSender, data: UserMessage): Promise<void> {
 
   const mcpUrl = rewriteForDocker(data.mcpServerUrl || '');
   const abortController = new AbortController();
-  const active: ActiveQuery = {abortController, queryHandle: null};
+  const active: ActiveQuery = {abortController, queryHandle: null, pendingInputResolve: null};
   activeQueries.set(ws, active);
 
   let gotResult = false;
   try {
     const opts = buildOptions(getSession(sid), data.apiKey, mcpUrl);
-    const q = query({prompt: promptStream(message), options: {...opts, abortController}});
+    const canUseTool = async (toolName: string, input: any) => {
+      if (toolName === 'AskUserQuestion') {
+        emit(ws, {type: 'input_request', sessionId: sid, toolName, input});
+        const updatedInput = await new Promise<any>((resolve, reject) => {
+          active.pendingInputResolve = resolve;
+          abortController.signal.addEventListener('abort', () => {
+            active.pendingInputResolve = null;
+            reject(new Error('aborted'));
+          }, {once: true});
+        });
+        return {behavior: 'allow' as const, updatedInput};
+      }
+      return {behavior: 'allow' as const, updatedInput: input};
+    };
+    const q = query({prompt: promptStream(message), options: {...opts, canUseTool, abortController}});
     active.queryHandle = q;
     for await (const event of q) {
       if (abortController.signal.aborted)
@@ -302,6 +336,11 @@ app.get('/ws', upgradeWebSocket(() => {
 
       if (data.type === 'abort') {
         handleAbort(sender, data);
+        return;
+      }
+
+      if (data.type === 'input_response') {
+        handleInputResponse(sender, data);
         return;
       }
 

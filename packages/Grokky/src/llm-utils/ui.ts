@@ -207,19 +207,36 @@ async function runClaudeStreaming(panel: TVAIPanel, userPrompt: string, tableVie
     });
 
     forSession(client.onFinal, (evt) => {
+      panel.cancelInputRequest();
       chatSession.session.addEngineMessage({role: 'assistant', content: [{type: 'text', text: evt.content}]});
       panel.finalizeStreaming(evt.content, tableView);
       chatSession.endSession();
       cleanup();
     });
 
-    forSession(client.onError, (evt) => endWithError(`Claude: ${evt.message}`));
+    forSession(client.onError, (evt) => {
+      panel.cancelInputRequest();
+      endWithError(`Claude: ${evt.message}`);
+    });
 
     forSession(client.onAborted, () => {
+      panel.cancelInputRequest();
       panel.clearStreaming();
       chatSession.session.addUiMessage('**Processing aborted by user**', false);
       chatSession.endSession();
       cleanup();
+    });
+
+    forSession(client.onInputRequest, async (evt) => {
+      accumulated = '';
+      toolStatus = '';
+      panel.clearStreaming();
+      const response = await panel.showInputRequest(evt.input);
+      if (response) {
+        client.respondToInput(sessionId, response);
+        const answerText = Object.values(response.answers).join(', ');
+        chatSession.session.addEngineMessage({role: 'user', content: [{type: 'text', text: answerText}]});
+      }
     });
 
     subs.push(client.onClose.subscribe(() => endWithError('Claude: connection lost')));

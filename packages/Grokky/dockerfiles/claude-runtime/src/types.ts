@@ -7,6 +7,7 @@ export interface ToolInputs {
   Grep: {pattern?: string; path?: string};
   WebSearch: {query?: string};
   WebFetch: {url?: string};
+  AskUserQuestion: {questions?: {question?: string}[]};
 }
 
 export interface McpInputs {
@@ -34,7 +35,13 @@ export interface AbortMessage {
   sessionId: string;
 }
 
-export type IncomingMessage = UserMessage | AbortMessage;
+export interface InputResponseMessage {
+  type: 'input_response';
+  sessionId: string;
+  value: any;
+}
+
+export type IncomingMessage = UserMessage | AbortMessage | InputResponseMessage;
 
 export type OutgoingMessage =
   | {type: 'chunk'; sessionId: string; content: string}
@@ -42,4 +49,5 @@ export type OutgoingMessage =
   | {type: 'tool_result'; sessionId: string; content: string}
   | {type: 'final'; sessionId: string; content: string}
   | {type: 'error'; sessionId: string; message: string}
-  | {type: 'aborted'; sessionId: string};
+  | {type: 'aborted'; sessionId: string}
+  | {type: 'input_request'; sessionId: string; toolName: string; input: any};
