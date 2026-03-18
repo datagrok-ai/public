@@ -89,7 +89,7 @@ export class AIPanel<T extends MessageType = LanguageModelV3Message, K extends A
   private recognition: SpeechRecognition | null = null;
   private isRecognizing: boolean = false;
   private _onRunRequest = new rxjs.Subject<{prevMessages: T[], currentPrompt: K}>();
-  private _messages: T[] = [];
+  protected _messages: T[] = [];
   protected _uiMessages: UIMessage[] = [];
   protected get placeHolder() { return 'Type your prompt here...'; }
   public get onRunRequest() {
@@ -767,6 +767,7 @@ export class TVAIPanel extends AIPanel<MessageType, TVAIPanelInputs> {
 
   private _clearAndReset(): void {
     this.outputArea.innerHTML = '';
+    this._messages = [];
     this._uiMessages = [];
     this.resetSession();
   }
@@ -831,13 +832,16 @@ export class TVAIPanel extends AIPanel<MessageType, TVAIPanelInputs> {
   }
 
   protected getConversationMeta() {
-    return this.tableView.saveLayout().viewState;
+    return {viewState: this.tableView.saveLayout().viewState, sessionId: this._sessionId};
   }
 
   protected afterConversationLoad(conversation: StoredConversationWithContext<MessageType>) {
+    if (conversation.meta?.sessionId)
+      this._sessionId = conversation.meta.sessionId;
+    const viewState = conversation.meta?.viewState ?? conversation.meta;
     const currentViewers = Array.from(this.tableView.viewers);
-    if (!!conversation.meta && currentViewers.length === 1 && currentViewers[0].type === DG.VIEWER.GRID) {
-      const layout = DG.ViewLayout.fromViewState(conversation.meta);
+    if (!!viewState && currentViewers.length === 1 && currentViewers[0].type === DG.VIEWER.GRID) {
+      const layout = DG.ViewLayout.fromViewState(viewState);
       this.tableView.loadLayout(layout, true);
     }
   }

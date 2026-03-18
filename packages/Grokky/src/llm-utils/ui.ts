@@ -4,7 +4,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {askDeepWiki} from './deepwikiclient';
-import {askOpenAIHelp, ModelType} from './LLM-client';
+import {askOpenAIHelp} from './LLM-client';
 import {CombinedAISearchAssistant} from './combined-search';
 import {ChatGPTPromptEngine} from '../prompt-engine/prompt-engine';
 import {ChatGptAssistant} from '../prompt-engine/chatgpt-assistant';
@@ -169,9 +169,9 @@ async function runClaudeStreaming(panel: TVAIPanel, userPrompt: string, tableVie
     source: {subscribe: (cb: (evt: T) => void) => {unsubscribe: () => void}},
     handler: (evt: T) => void,
   ) => subs.push(source.subscribe((evt) => {
-    if (evt.sessionId === sessionId)
-      handler(evt);
-  }));
+      if (evt.sessionId === sessionId)
+        handler(evt);
+    }));
 
   const endWithError = (msg: string) => {
     panel.clearStreaming();
@@ -186,7 +186,7 @@ async function runClaudeStreaming(panel: TVAIPanel, userPrompt: string, tableVie
 
     await client.ensureConnected();
 
-    chatSession.session.addUiMessage(userPrompt, true);
+    chatSession.session.addUserMessage({role: 'user', content: [{type: 'text', text: userPrompt}]}, userPrompt);
 
     forSession(client.onChunk, (evt) => {
       accumulated += evt.content;
@@ -197,14 +197,17 @@ async function runClaudeStreaming(panel: TVAIPanel, userPrompt: string, tableVie
     forSession(client.onToolActivity, (evt) => {
       toolStatus = `\n\n---\n**${evt.summary}**`;
       panel.updateStreaming(accumulated + toolStatus, chatSession.loader);
+      chatSession.session.addEngineMessage({role: 'assistant', content: [{type: 'text', text: `[tool-activity] ${evt.summary}`}]});
     });
 
     forSession(client.onToolResult, (evt) => {
       toolStatus = `\n\n---\n\`\`\`\n${evt.content}\n\`\`\``;
       panel.updateStreaming(accumulated + toolStatus, chatSession.loader);
+      chatSession.session.addEngineMessage({role: 'assistant', content: [{type: 'text', text: `[tool-result] ${evt.content}`}]});
     });
 
     forSession(client.onFinal, (evt) => {
+      chatSession.session.addEngineMessage({role: 'assistant', content: [{type: 'text', text: evt.content}]});
       panel.finalizeStreaming(evt.content, tableView);
       chatSession.endSession();
       cleanup();
@@ -226,8 +229,7 @@ async function runClaudeStreaming(panel: TVAIPanel, userPrompt: string, tableVie
     }));
 
     client.send(sessionId, prompt);
-  }
-  catch (e: any) {
+  } catch (e: any) {
     panel.clearStreaming();
     grok.shell.error(`Claude runtime: ${e.message}`);
     console.error('Claude runtime error:', e);
@@ -252,9 +254,9 @@ export async function setupTableViewAIPanelUI() {
     panel.onRunRequest.subscribe(async (args) => {
       const prompt = args.currentPrompt.prompt;
 
-      if (panel.currentEngine === 'Claude') {
+      if (panel.currentEngine === 'Claude')
         await runClaudeStreaming(panel, prompt, tableView);
-      } else {
+      else {
         const chatSession = panel.startChatSession();
         try {
           await processTableViewAIRequest(
