@@ -1127,8 +1127,16 @@ export function inputsRow(name: string, inputs: InputBase[]): HTMLElement {
   return d;
 }
 
-export function colorPicker(color: number, onChanged: (color: number) => void, colorDiv: HTMLElement | null, onOk: Function | null, onCancel: Function | null = null): HTMLElement | null {
+/** Creates a color picker bound to {@link colorDiv}: clicking the element opens the picker,
+ * and its background updates live to preview the selected color. */
+export function colorPicker(color: number, onChanged: (color: number) => void, colorDiv: HTMLElement, onOk: Function | null, onCancel: Function | null = null): HTMLElement {
   return api.grok_ColorPicker(color, onChanged, colorDiv, onOk, onCancel);
+}
+
+/** Opens a standalone color picker modal immediately, without a trigger element.
+ * Use when there is no persistent UI element to bind to (e.g. editing a canvas-rendered grid cell). */
+export function showColorPicker(color: number, onChanged: (color: number) => void, onOk: Function | null = null, onCancel: Function | null = null): void {
+  api.grok_ColorPicker_Show(color, onChanged, onOk, onCancel);
 }
 
 export function patternsInput(colors: { [key: string]: string }): HTMLElement {
