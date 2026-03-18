@@ -1,0 +1,40 @@
+{
+  "name": "@datagrok/lotka-volterra",
+  "friendlyName": "Lotka Volterra",
+  "version": "0.0.1",
+  "description": "Lotka-Volterra Predator-Prey Simulation (guide example)",
+  "author": {
+    "name": "Viktor Makarichev",
+    "email": "vmakarichev@datagrok.ai"
+  },
+  "dependencies": {
+    "@datagrok-libraries/utils": "^4.6.5",
+    "cash-dom": "^8.1.5",
+    "datagrok-api": "^1.26.0",
+    "dayjs": "^1.11.13",
+    "diff-grok": "^1.2.0"
+  },
+  "devDependencies": {
+    "css-loader": "^7.1.2",
+    "style-loader": "^4.0.0",
+    "ts-loader": "latest",
+    "typescript": "latest",
+    "webpack": "^5.95.0",
+    "webpack-cli": "^5.1.4"
+  },
+  "scripts": {
+    "build": "grok api && grok check --soft && webpack",
+    "test": "grok test"
+  },
+  "canEdit": [
+    "Developers"
+  ],
+  "canView": [
+    "All users"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/datagrok-ai/public.git",
+    "directory": "packages/LotkaVolterraGuided/datagrok-interactive-app-guide/example/code"
+  }
+}

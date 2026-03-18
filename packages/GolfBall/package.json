@@ -1,0 +1,49 @@
+{
+  "name": "@datagrok/golfball",
+  "friendlyName": "GolfBall",
+  "version": "0.0.1",
+  "description": "GolfBall package - test of the sci app creation skill",
+  "dependencies": {
+    "datagrok-api": "^1.26.0",
+    "cash-dom": "^8.1.5",
+    "dayjs": "^1.11.13",
+    "@datagrok-libraries/utils": "^4.6.5",
+    "diff-grok": "^1.2.0"
+  },
+  "devDependencies": {
+    "css-loader": "^7.1.2",
+    "style-loader": "^4.0.0",
+    "webpack": "^5.95.0",
+    "webpack-cli": "^5.1.4",
+    "ts-loader": "latest",
+    "typescript": "latest"
+  },
+  "author": {
+    "name": "CC",
+    "email": "vmakarichev@datagrok.ai"
+  },
+  "scripts": {
+    "debug-golfball": "webpack && grok publish",
+    "release-golfball": "webpack && grok publish --release",
+    "build-golfball": "webpack",
+    "build": "grok api && grok check --soft && webpack",
+    "test": "grok test",
+    "debug-golfball-dev": "webpack && grok publish dev",
+    "release-golfball-dev": "webpack && grok publish dev --release",
+    "debug-golfball-local": "webpack && grok publish local",
+    "release-golfball-local": "webpack && grok publish local --release",
+    "debug-golfball-release": "webpack && grok publish release",
+    "release-golfball-release": "webpack && grok publish release --release"
+  },
+  "canEdit": [
+    "Developers"
+  ],
+  "canView": [
+    "All users"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/datagrok-ai/public.git",
+    "directory": "packages/GolfBall"
+  }
+}
