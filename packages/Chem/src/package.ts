@@ -286,15 +286,19 @@ export class PackageFunctions {
 
     const tooltip = document.querySelector('.d4-tooltip');
     if (tooltip) {
-      const {width, height} = tooltip.getBoundingClientRect();
+      const rect = tooltip.getBoundingClientRect();
+      const {width, height} = rect;
       const isWideTooltip = width + initialWidth > tooltipMaxWidth;
+      const fitsRight = rect.right + initialWidth + 20 <= window.innerWidth;
 
-      Object.assign(widget.root.style, {
-        left: isWideTooltip ? '0' : `${width - widget.root.offsetWidth}px`,
-        top: isWideTooltip ? '0' : `${30 - height}px`,
-        width: `${isWideTooltip ? initialWidth : initialWidth + width}px`,
-        height: isWideTooltip ? `${initialHeight}px` : '0',
-      });
+      if (!isWideTooltip && fitsRight) {
+        Object.assign(widget.root.style, {
+          left: `${width}px`,
+          top: `${30 - height}px`,
+          width: `${initialWidth + width}px`,
+          height: '0',
+        });
+      }
     }
 
     setTimeout(() => getDiverseStructures(), 10);
