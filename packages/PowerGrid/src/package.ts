@@ -170,11 +170,11 @@ export class PackageFunctions {
   //   const current = cell.cell.valueString.trim();
   //   const initialColor = current && isValidColor(current) ? DG.Color.fromHtml(current) : 0;
   //   let picked = initialColor;
-  //   ui.colorPicker(initialColor, (c) => {
+  //   ui.showColorPicker(initialColor, (c) => {
   //     picked = c;
   //     cell.cell.value = DG.Color.toHtml(c);
   //     cell.render();
-  //   }, null, () => {
+  //   }, () => {
   //     cell.cell.value = DG.Color.toHtml(picked);
   //     cell.render();
   //   }, () => {
