@@ -391,22 +391,12 @@ function writeProjectFiles(taskKey: string, args: ClaudeArgs, worktreeRoot: stri
   if (hasLocalEntrypoint)
     volumes.push(`      - "${toDockerPath(entrypointPath)}:/usr/local/bin/entrypoint.sh"`);
 
-  // Claude profile: mount only credential/settings files, not the whole directory.
-  // Mounting ~/.claude entirely makes subdirs (session-env/, sessions/) unwritable by the
-  // container's node user due to host filesystem permission mapping.
+  // Claude profile: credentials are copied into the container after startup (not bind-mounted)
+  // to avoid permission issues — host files may have different UID/GID than the container's
+  // node user.
   const claudeHome = findClaudeHome();
-  if (claudeHome) {
-    const claudeFiles = ['.credentials.json', 'settings.json', 'settings.local.json'];
-    for (const file of claudeFiles) {
-      const filePath = path.join(claudeHome, file);
-      if (fs.existsSync(filePath) && fs.statSync(filePath).isFile())
-        volumes.push(`      - "${toDockerPath(filePath)}:/home/node/.claude/${file}:ro"`);
-    }
-    const claudeState = path.join(path.dirname(claudeHome), '.claude.json');
-    if (fs.existsSync(claudeState) && fs.statSync(claudeState).isFile())
-      volumes.push(`      - "${toDockerPath(claudeState)}:/home/node/.claude.json:ro"`);
+  if (claudeHome)
     color.info(`Claude profile: ${claudeHome}`);
-  }
   else
     color.warn('No Claude profile found. Set CLAUDE_HOME or run "claude" locally to log in.');
 
@@ -612,10 +602,27 @@ export async function claude(args: ClaudeArgs): Promise<boolean> {
     return false;
   }
 
+  const containerName = `dg-pkg-${taskKey.toLowerCase()}-tools-dev-1`;
+
+  // Copy Claude credentials into the container (avoids bind-mount permission issues)
+  const claudeHomePath = findClaudeHome();
+  if (claudeHomePath) {
+    const claudeFiles = ['.credentials.json', 'settings.json', 'settings.local.json'];
+    for (const file of claudeFiles) {
+      const filePath = path.join(claudeHomePath, file);
+      if (fs.existsSync(filePath) && fs.statSync(filePath).isFile())
+        spawnSync('docker', ['cp', filePath, `${containerName}:/home/node/.claude/${file}`]);
+    }
+    const claudeState = path.join(path.dirname(claudeHomePath), '.claude.json');
+    if (fs.existsSync(claudeState) && fs.statSync(claudeState).isFile())
+      spawnSync('docker', ['cp', claudeState, `${containerName}:/home/node/.claude.json`]);
+    // Fix ownership — docker cp creates files as root
+    spawnSync('docker', ['exec', '-u', 'root', containerName, 'chown', '-R', 'node:node', '/home/node/.claude']);
+  }
+
   // Determine Claude working directory based on repo type
   // Only trust public-repo markers when we are inside a real git repo — packages can have
   // public/js-api via node_modules symlinks, which would cause a false positive.
-  const containerName = `dg-pkg-${taskKey.toLowerCase()}-tools-dev-1`;
   let claudeWorkDir: string;
   if (repoRoot && fs.existsSync(path.join(repoRoot, 'js-api')))
     claudeWorkDir = '/workspace/repo';

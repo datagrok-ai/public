@@ -39,7 +39,7 @@ else
       && git -C "$PUBLIC_DIR" remote add origin "$REPO" \
       && git -C "$PUBLIC_DIR" config remote.origin.promisor true \
       && git -C "$PUBLIC_DIR" config remote.origin.partialclonefilter blob:none \
-      && git -C "$PUBLIC_DIR" sparse-checkout set --cone js-api libraries packages/ApiSamples \
+      && git -C "$PUBLIC_DIR" sparse-checkout set --cone .claude js-api libraries packages/ApiSamples \
       && git -C "$PUBLIC_DIR" fetch --depth 1 --filter=blob:none origin "$branch" \
       && git -C "$PUBLIC_DIR" checkout -B "$branch" FETCH_HEAD
   }
@@ -67,13 +67,13 @@ elif [ -d "$PUBLIC_DIR/js-api" ]; then
   LINK_NAME="${FOLDER_NAME:-$TASK_KEY}"
   if [ -n "$LINK_NAME" ]; then
     mkdir -p "$PUBLIC_DIR/packages" 2>/dev/null || true
-    [ ! -e "$PUBLIC_DIR/packages/$LINK_NAME" ] && ln -s /workspace/repo "$PUBLIC_DIR/packages/$LINK_NAME"
+    ln -sfn /workspace/repo "$PUBLIC_DIR/packages/$LINK_NAME"
     echo "[tools-dev] Workspace linked at $PUBLIC_DIR/packages/$LINK_NAME"
   fi
   PUBLIC_BASENAME=$(basename "$PUBLIC_DIR")
-  [ ! -e /workspace/.claude ] && ln -s "$PUBLIC_BASENAME/.claude" /workspace/.claude
-  [ ! -e /workspace/CLAUDE.md ] && ln -s "$PUBLIC_BASENAME/CLAUDE.md" /workspace/CLAUDE.md
-  echo "[tools-dev] Linked public repo context at /workspace/"
+  ln -sfn "$PUBLIC_BASENAME/.claude" /workspace/.claude 2>/dev/null || true
+  ln -sfn "$PUBLIC_BASENAME/CLAUDE.md" /workspace/CLAUDE.md 2>/dev/null || true
+  [ -L /workspace/.claude ] && echo "[tools-dev] Linked public repo context at /workspace/"
 fi
 
 # Auto-configure grok CLI to point to the local Datagrok instance.
