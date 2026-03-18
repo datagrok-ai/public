@@ -5,7 +5,7 @@ import {_package} from '../package-test';
 
 import {category, expect, test} from '@datagrok-libraries/test/src/test';
 import {getIVP, getScriptLines, getScriptParams} from '../scripting-tools';
-import {ModelError} from '../error-utils';
+import {ModelError} from '../shared-utils';
 import {TEMPLATES, ENERGY_N_CONTROL} from '../templates';
 import {USE_CASES} from '../use-cases';
 import {MAX_LINE_CHART} from '../constants';

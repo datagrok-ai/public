@@ -83,34 +83,6 @@ export namespace funcs {
   }
 
   /**
-  In-browser two-compartment pharmacokinetic-pharmacodynamic (PK-PD) simulation
-  */
-  export async function pkPdNew(): Promise<void> {
-    return await grok.functions.call('DiffStudio:PkPdNew', {});
-  }
-
-  /**
-  In-browser two-compartment pharmacokinetic-pharmacodynamic (PK-PD) simulation
-  */
-  export async function demoSimPKPD(): Promise<any> {
-    return await grok.functions.call('DiffStudio:DemoSimPKPD', {});
-  }
-
-  /**
-  Controlled fab-arm exchange mechanism simulation
-  */
-  export async function bioreactorNew(): Promise<void> {
-    return await grok.functions.call('DiffStudio:BioreactorNew', {});
-  }
-
-  /**
-  In-browser simulation of controlled fab-arm exchange mechanism
-  */
-  export async function demoBioreactor(): Promise<any> {
-    return await grok.functions.call('DiffStudio:DemoBioreactor', {});
-  }
-
-  /**
   Gluconic acid (GA) production by Aspergillus niger modeling
   */
   export async function acidProduction(): Promise<void> {
@@ -129,5 +101,13 @@ export namespace funcs {
   */
   export async function runModel(model: string , inputsTabDockRatio: number , graphsDockRatio: number ): Promise<void> {
     return await grok.functions.call('DiffStudio:RunModel', { model, inputsTabDockRatio, graphsDockRatio });
+  }
+
+  export async function ivpLanguageHandler(ivpCall: any ): Promise<void> {
+    return await grok.functions.call('DiffStudio:IvpLanguageHandler', { ivpCall });
+  }
+
+  export async function ivpLanguageParser(code: string ): Promise<any> {
+    return await grok.functions.call('DiffStudio:IvpLanguageParser', { code });
   }
 }

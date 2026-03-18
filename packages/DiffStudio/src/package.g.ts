@@ -72,7 +72,6 @@ export async function runDiffStudioTreeBrowser(treeNode: any) : Promise<void> {
 //output: double maxHeight { caption: Max height }
 //output: dataframe df { caption: Trajectory; viewer: Line chart(multiAxis: "false", multiAxisLegendPosition: "RightCenter", autoLayout: "false", showAggrSelectors: "false") | Grid() }
 //editor: Compute2:RichFunctionViewEditor
-//sidebar: @compute
 //meta.runOnOpen: true
 //meta.runOnInput: true
 //meta.features: {"sens-analysis": true, "fitting": true}
@@ -103,40 +102,6 @@ export async function solveODE(problem: string) : Promise<any> {
   return await PackageFunctions.solveODE(problem);
 }
 
-//name: PK-PD
-//description: In-browser two-compartment pharmacokinetic-pharmacodynamic (PK-PD) simulation
-//tags: model
-//meta.icon: files/icons/pkpd.png
-export async function pkPdNew() : Promise<void> {
-  await PackageFunctions.pkPdNew();
-}
-
-//name: PK-PD Simulation Demo
-//description: In-browser two-compartment pharmacokinetic-pharmacodynamic (PK-PD) simulation
-//output: dynamic result
-//meta.demoPath: Compute | PK-PD Modeling
-//test: demoSimPKPD() //wait: 100 
-export async function demoSimPKPD() : Promise<any> {
-  return await PackageFunctions.demoSimPKPD();
-}
-
-//name: Bioreactor
-//description: Controlled fab-arm exchange mechanism simulation
-//tags: model
-//meta.icon: files/icons/_bioreactor.png
-export async function BioreactorNew() : Promise<void> {
-  await PackageFunctions.BioreactorNew();
-}
-
-//name: Bioreactor Demo
-//description: In-browser simulation of controlled fab-arm exchange mechanism
-//output: dynamic result
-//meta.demoPath: Compute | Bioreactor
-//test: demoBioreactor() //wait: 100 
-export async function demoBioreactor() : Promise<any> {
-  return await PackageFunctions.demoBioreactor();
-}
-
 //name: Acid Production
 //description: Gluconic acid (GA) production by Aspergillus niger modeling
 //tags: model
@@ -159,4 +124,23 @@ export async function pollution() : Promise<void> {
 //input: int graphsDockRatio 
 export async function runModel(model: string, inputsTabDockRatio: number, graphsDockRatio: number) : Promise<void> {
   await PackageFunctions.runModel(model, inputsTabDockRatio, graphsDockRatio);
+}
+
+//tags: scriptHandler
+//input: funccall ivpCall 
+//meta.scriptHandler.language: ivp
+//meta.scriptHandler.extensions: ivp
+//meta.scriptHandler.commentStart: #
+//meta.scriptHandler.codeEditorMode: python
+//meta.scriptHandler.parserFunction: DiffStudio:ivpLanguageParser
+//meta.scriptHandler.templateScript: #name: Template\n#language: ivp\n#equations:\n  dy/dt = -y + sin(t) / t\n\n#argument: t\n  initial = 0.01 {min: 0.01; max: 10}\n  final = 15 {min: 15; max: 150}\n  step = 0.01 {min: 0.001; max: 0.1}\n\n#inits:\n  y = 0 {min: 0; max: 9}\n
+//meta.icon: files/icons/package.png
+export async function ivpLanguageHandler(ivpCall: DG.FuncCall) : Promise<void> {
+  await PackageFunctions.ivpLanguageHandler(ivpCall);
+}
+
+//input: string code 
+//output: dynamic result
+export function ivpLanguageParser(code: string) : any {
+  return PackageFunctions.ivpLanguageParser(code);
 }

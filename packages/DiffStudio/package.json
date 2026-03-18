@@ -44,6 +44,7 @@
     "release-odes": "webpack && grok publish --release",
     "build-odes": "webpack",
     "build": "grok api && grok check --soft && webpack",
+    "update-preparser": "webpack --config ./webpack-preparser.config.js",
     "test": "grok test",
     "debug-odes-dev": "webpack && grok publish dev",
     "release-odes-dev": "webpack && grok publish dev --release",

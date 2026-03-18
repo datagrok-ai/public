@@ -153,6 +153,11 @@ export class ModelHandler extends DG.ObjectHandler {
   getLanguageIcon(language: string) {
     if (language == 'grok')
       return ui.iconSvg('project');
+    if (language == 'ivp') {
+      const func = DG.Func.find({package: 'DiffStudio', name: 'ivpLanguageParser'})[0];
+      const iconUrl = func.package.getIconUrl();
+      return ui.iconImage('ivp', iconUrl);
+    }
     return ui.iconImage('script', `/images/entities/${language}.png`);
   }
 
@@ -214,7 +219,6 @@ export class ModelHandler extends DG.ObjectHandler {
       return ui.iconSvg('project');
 
     let iconUrl = fpackage?.getIconUrl();
-
     if (func.options['icon'] != null) {
       const packagePathSegments = iconUrl.split('/');
       packagePathSegments.pop();
