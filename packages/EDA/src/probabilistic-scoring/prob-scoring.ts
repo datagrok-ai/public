@@ -540,13 +540,12 @@ export class Pmpo {
     const rows = rootsCol.querySelectorAll('div.d4-flex-row.ui-div.statistics-mpo-row');
 
     rows.forEach((row, idx) => {
-      const children = row.children;
-      if (children.length < 2) // expecting descriptor name, weight & profile
+      const editor = row.querySelector('.statistics-mpo-line-editor') as HTMLElement;
+      if (!editor)
         return;
 
-      const profileRoot = children[2] as HTMLElement;
-      profileRoot.style.width = '100%';
-      this.desirabilityProfileRoots.set(names[idx], profileRoot);
+      editor.style.width = '100%';
+      this.desirabilityProfileRoots.set(names[idx], editor);
     });
   } // updateDesirabilityProfileData
 
