@@ -140,6 +140,7 @@ export class TestManager extends DG.ViewBase {
     this.testManagerView.path = APP_PREFIX;
     this.testManagerView.temp['ignoreCloseAll'] = true;
     this.ribbonPanelDiv = testUIElements.ribbonPanelDiv;
+    this.testManagerView.root.style.overflow = 'hidden';
     this.testManagerView.append(ui.div(this.searchInput.root, {style: {maxHeight: '30px', minHeight: '30px'}}));
     this.testManagerView.append(testUIElements.ribbonPanelDiv);
     this.testManagerView.append(testUIElements.testsTree.root);
@@ -272,6 +273,8 @@ export class TestManager extends DG.ViewBase {
       this.selectedNode = res;
     });
     this.tree.root.style.width = '100%';
+    this.tree.root.style.flexShrink = '1';
+    this.tree.root.style.minHeight = '0';
     this.tree.root.onkeyup = (e) => {
       if (e.key === 'Enter')
         this.runTestsForSelectedNode();
