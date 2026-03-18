@@ -1,6 +1,6 @@
 # Datagrok Interactive Scientific Application Specification Template
 
-> This template follows the structure of `guide.md`.
+> This template follows the structure of `guide-for-spec.md`.
 > Top-level section numbers (1–15) match the guide. Subsection numbering
 > within sections 3, 4, 5, and 9 is template-specific (finer-grained than the guide).
 > Fill in every section. Mark sections that do not apply as "N/A" with a brief explanation.
