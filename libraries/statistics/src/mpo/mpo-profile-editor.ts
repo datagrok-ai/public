@@ -183,6 +183,7 @@ export class MpoProfileEditor {
     }
 
     const editor = DesirabilityEditorFactory.create(prop, 300, 80, this.design);
+    editor.root.classList.add('statistics-mpo-editor-fill');
     this.rowSubs.get(rowId)?.unsubscribe();
     this.rowSubs.set(rowId, editor.onChanged.subscribe(() => this.emitChange()));
 

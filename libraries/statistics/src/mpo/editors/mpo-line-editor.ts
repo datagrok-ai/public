@@ -65,7 +65,7 @@ class CoordMapper {
 }
 
 export class MpoDesirabilityLineEditor {
-  root = ui.div();
+  root = ui.div([], 'statistics-mpo-line-editor');
   onChanged = new Subject<DesirabilityLine>();
   supportsModeDialog: boolean = true;
 
@@ -184,7 +184,7 @@ export class MpoDesirabilityLineEditor {
       this.pointsGroup!.destroyChildren();
       const konvaPoints: number[] = [];
 
-      const mapper = new CoordMapper(minX, maxX, width, height);
+      const mapper = new CoordMapper(minX, maxX, this._width, this._height);
       const sortedIndices = [...this._prop.line.keys()]
         .sort((a, b) => this._prop.line[a][0] - this._prop.line[b][0]);
       const sortedLine = sortedIndices.map((idx) => this._prop.line[idx]);
@@ -230,7 +230,7 @@ export class MpoDesirabilityLineEditor {
           pos.x = Math.max(minCanvasX, Math.min(maxCanvasX, pos.x));
 
           const plotTop = EDITOR_PADDING.top;
-          const plotBottom = height - EDITOR_PADDING.bottom;
+          const plotBottom = this._height - EDITOR_PADDING.bottom;
           pos.y = Math.max(plotTop, Math.min(plotBottom, pos.y));
 
           circle.position(pos);
@@ -307,7 +307,7 @@ export class MpoDesirabilityLineEditor {
       this.layer!.batchDraw();
 
       // --- Add special handle (Gaussian peak / Sigmoid inflection) ---
-      this.addSpecialHandle(width, height);
+      this.addSpecialHandle(this._width, this._height);
 
       if (notify)
         this.onChanged.next(this._prop.line);
@@ -350,7 +350,7 @@ export class MpoDesirabilityLineEditor {
         return;
 
       if (this._prop.mode !== 'freeform') {
-        if (this.isInPlotArea(pos, width, height))
+        if (this.isInPlotArea(pos, this._width, this._height))
           this.stage.container().style.cursor = 'grab';
         else
           this.stage.container().style.cursor = 'default';
@@ -360,8 +360,14 @@ export class MpoDesirabilityLineEditor {
     this.stage.on('mouseout', () => ui.tooltip.hide());
 
     // Enable curve drag (smooth)
-    this.enableCurveDrag(width, height);
+    this.enableCurveDrag();
     this.updateDragScales();
+
+    ui.onSizeChanged(this.root).subscribe((_) => {
+      const {clientWidth: w, clientHeight: h} = this.root;
+      if (w > 0 && h > 0)
+        this.resize(w, h);
+    });
 
     // Initial draw
     if (this.pendingBarValues) {
@@ -474,6 +480,21 @@ export class MpoDesirabilityLineEditor {
       this.drawBars();
   }
 
+  resize(width: number, height: number): void {
+    if (width === this._width && height === this._height)
+      return;
+
+    this._width = width;
+    this._height = height;
+
+    if (this.stage) {
+      this.stage.width(width);
+      this.stage.height(height);
+      this.updateDragScales();
+      this.redrawAll(false);
+    }
+  }
+
   drawBars(values?: number[]) {
     if (values)
       this.barValues = values;
@@ -538,7 +559,7 @@ export class MpoDesirabilityLineEditor {
     this.barsLayer!.batchDraw();
   }
 
-  private enableCurveDrag(width: number, height: number) {
+  private enableCurveDrag() {
     if (!this.stage)
       return;
 
@@ -559,7 +580,7 @@ export class MpoDesirabilityLineEditor {
       if (!pos)
         return;
 
-      if (!this.isInPlotArea(pos, width, height))
+      if (!this.isInPlotArea(pos, this._width, this._height))
         return;
 
       dragging = true;
