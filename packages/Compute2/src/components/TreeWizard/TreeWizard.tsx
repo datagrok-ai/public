@@ -376,21 +376,27 @@ export const TreeWizard = Vue.defineComponent({
     const exports = Vue.computed(() => {
       if (!treeState.value || isFuncCallState(treeState.value))
         return [];
-      const defaultExport: CustomExport = {
-        id: 'default',
-        friendlyName: 'Default Excel',
-        handler: () => reportTree({
-          startDownload: true,
-          treeState: treeState.value!,
-          meta: currentMetaCallData.value,
-          callInfoStates: states.calls,
-          metaStates: states.meta,
-          validationStates: states.validations,
-          consistencyStates: states.consistency,
-          descriptions: states.descriptions,
-          hasNotSavedEdits: hasNotSavedEdits.value
-        })};
-      return [defaultExport,...(treeState.value.customExports ?? [])];
+      const activeExports: CustomExport[] = [];
+      if (!treeState.value.disableDefaultExport) {
+        const defaultExport: CustomExport = {
+          id: 'default',
+          friendlyName: 'Default Excel',
+          handler: () => reportTree({
+            startDownload: true,
+            treeState: treeState.value!,
+            meta: currentMetaCallData.value,
+            callInfoStates: states.calls,
+            metaStates: states.meta,
+            validationStates: states.validations,
+            consistencyStates: states.consistency,
+            descriptions: states.descriptions,
+            hasNotSavedEdits: hasNotSavedEdits.value
+          })
+        };
+        activeExports.push(defaultExport);
+      }
+      activeExports.push(...(treeState.value.customExports ?? []));
+      return activeExports;
     });
 
     const exportHandler = async (exportData: CustomExport) => {
