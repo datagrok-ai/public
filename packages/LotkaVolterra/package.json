@@ -1,5 +1,5 @@
 {
-  "name": "lotka-volterra",
+  "name": "@datagrok/lotka-volterra",
   "friendlyName": "Lotka Volterra",
   "version": "0.0.1",
   "description": "Lotka-Volterra Predator-Prey Simulation (guide example)",

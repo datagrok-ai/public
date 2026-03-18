@@ -1,5 +1,5 @@
 {
-  "name": "golfball",
+  "name": "@datagrok/golfball",
   "friendlyName": "GolfBall",
   "version": "0.0.1",
   "description": "GolfBall package - test of the sci app creation skill",
