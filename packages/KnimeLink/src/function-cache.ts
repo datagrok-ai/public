@@ -40,8 +40,8 @@ export function registerFromCache(entries: CachedDeploymentEntry[], client: IKni
     try {
       registerFuncFromSpec(entry.deployment, entry.spec, client);
     }
-    catch (e) {
-      grok.shell.error(`KnimeLink: failed to register cached function for ${entry.deployment.name}:`, e);
+    catch (e: any) {
+      grok.shell.error(`KnimeLink: failed to register cached function for ${entry.deployment.name}: ${e}`);
     }
   }
 }
@@ -77,8 +77,8 @@ export async function refreshAndUpdateCache(client: IKnimeClient): Promise<void>
 
       freshEntries.push({deployment: dep, spec, signature});
     }
-    catch (e) {
-      grok.shell.error(`KnimeLink: failed to fetch spec for ${dep.name}, keeping cached version:`, e);
+    catch (e: any) {
+      grok.shell.error(`KnimeLink: failed to fetch spec for ${dep.name}, keeping cached version: ${e}`);
       const old = oldEntries.get(dep.id);
       if (old)
         freshEntries.push(old);

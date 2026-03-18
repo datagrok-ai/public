@@ -69,6 +69,21 @@ export function fileToBase64(file: File): Promise<string> {
   });
 }
 
+/** Map a KNIME column type string to the compatible Datagrok column types. */
+export function knimeTypeToDgColumnTypes(knimeType: string): string[] {
+  switch (knimeType) {
+    case 'int': return [DG.COLUMN_TYPE.INT, DG.COLUMN_TYPE.BIG_INT];
+    case 'long': return [DG.COLUMN_TYPE.INT, DG.COLUMN_TYPE.BIG_INT];
+    case 'double': return [DG.COLUMN_TYPE.FLOAT, DG.COLUMN_TYPE.INT, DG.COLUMN_TYPE.QNUM];
+    case 'boolean': return [DG.COLUMN_TYPE.BOOL];
+    case 'localdatetime':
+    case 'localdate':
+    case 'localtime':
+    case 'zoneddatetime': return [DG.COLUMN_TYPE.DATE_TIME];
+    default: return [DG.COLUMN_TYPE.STRING];
+  }
+}
+
 /** Decode a base64 string to a Blob. */
 export function base64ToBlob(base64: string, mimeType: string = 'application/octet-stream'): Blob {
   const bytes = atob(base64);

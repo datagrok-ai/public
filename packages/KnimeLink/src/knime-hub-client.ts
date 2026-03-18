@@ -421,7 +421,7 @@ export class KnimeHubClient implements IKnimeClient {
           fetchedResources.push({name: result.outputResources![resourceId] || resourceId, resource});
         }
         catch (e: any) {
-          grok.shell.error(`Failed to fetch output resource '${resourceId}':`, e);
+          grok.shell.error(`Failed to fetch output resource '${resourceId}': ${e}`);
         }
       }));
       if (fetchedResources.length > 0)

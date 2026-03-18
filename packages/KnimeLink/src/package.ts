@@ -11,6 +11,8 @@ import '../css/knime-link.css';
 export * from './package.g';
 export const _package = new DG.Package();
 
+const TEST_PREFIX = 'datagrok_test_';
+
 export class PackageFunctions {
   @grok.decorators.autostart({description: 'KnimeLink function registration'})
   static async knimeLinkAutostart(): Promise<void> {
@@ -30,7 +32,7 @@ export class PackageFunctions {
       await refreshAndUpdateCache(client);
     }
     catch (e: any) {
-      grok.shell.error('KnimeLink: background cache refresh failed:', e);
+      grok.shell.error(`KnimeLink: background cache refresh failed: ${e}`);
     }
   }
 
@@ -93,22 +95,36 @@ export class PackageFunctions {
     const errors: string[] = [];
     try {
       const deployments = await client.listDeployments('rest');
+      const testDeployments: typeof deployments = [];
+      const addDeploymentNode = (dep: typeof deployments[0], parent: DG.TreeViewGroup) => {
+        const node = parent.item(dep.name);
+        node.onSelected.subscribe(async () => {
+          if (!node.value) {
+            setBreadcrumbs(['Home', 'KNIME', dep.name], treeNode);
+            const func = await getOrRegisterFunc(dep, client);
+            node.value = func;
+          }
+          const objHandler = DG.ObjectHandler.forEntity(node.value);
+          if (objHandler)
+            grok.shell.addPreview(await (objHandler.renderPreview(node.value)))
+        });
+      };
       for (const dep of deployments) {
         try {
-          const node = treeNode.item(dep.name);
-          node.onSelected.subscribe(async () => {
-            if (!node.value) {
-              setBreadcrumbs(['Home', 'KNIME', dep.name], treeNode);
-              const func = await getOrRegisterFunc(dep, client);
-              node.value = func;
-            }
-            const objHandler = DG.ObjectHandler.forEntity(node.value);
-            if (objHandler)
-              grok.shell.addPreview(await (objHandler.renderPreview(node.value)))
-          });
+          if (dep.name.toLowerCase().startsWith(TEST_PREFIX))
+            testDeployments.push(dep);
+          else
+            addDeploymentNode(dep, treeNode);
         }
         catch (e: any) {
           errors.push(`${dep.name}: ${e?.message ?? e}`);
+        }
+      }
+      if (testDeployments.length > 0) {
+        const testGroup = treeNode.group('Test workflows', undefined, false);
+        for (const dep of testDeployments) {
+          try { addDeploymentNode(dep, testGroup); }
+          catch (e: any) { errors.push(`${dep.name}: ${e?.message ?? e}`); }
         }
       }
       if (treeNode.items.length === 0 && errors.length === 0)

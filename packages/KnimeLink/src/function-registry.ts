@@ -2,7 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import {IKnimeClient} from './knime-client';
 import {KnimeInputParam, KnimeOutputParam, KnimeParamType, KnimeDeployment, KnimeExecutionResult, KnimeWorkflowSpec} from './types';
-import {dataFrameToKnimeTable, knimeTableToDataFrame, knimeSpecDataToDataFrame} from './data-conversion';
+import {dataFrameToKnimeTable, knimeTableToDataFrame, knimeSpecDataToDataFrame, knimeTypeToDgColumnTypes} from './data-conversion';
 import {pollJobUntilComplete} from './utils';
 
 interface ParamMeta {
@@ -13,6 +13,7 @@ interface ParamMeta {
   groupDescription?: string;
   description?: string;
   defaultValue?: any;
+  tableSpec?: {name: string; type: string}[];
 }
 
 const knimeTypeToDgType: Record<KnimeParamType, string> = {
@@ -63,6 +64,7 @@ export function buildParamMeta(params: KnimeInputParam[]): ParamMeta[] {
       groupDescription: param.groupDescription,
       description: param.description,
       defaultValue: param.defaultValue,
+      tableSpec: param.tableSpec,
     });
   }
 
@@ -99,6 +101,27 @@ function createRunCallback(
   const returnType = determineReturnType(outputs);
 
   return async (...args: any[]) => {
+    // Validate table schemas before execution
+    for (let i = 0; i < paramMeta.length; i++) {
+      const pm = paramMeta[i];
+      const val = args[i];
+      if (pm.type === 'table' && pm.tableSpec && pm.tableSpec.length > 0 && val instanceof DG.DataFrame) {
+        const errors: string[] = [];
+        for (const expected of pm.tableSpec) {
+          const col = val.columns.byName(expected.name);
+          if (!col) {
+            errors.push(`Missing column "${expected.name}"`);
+            continue;
+          }
+          const compatibleTypes = knimeTypeToDgColumnTypes(expected.type);
+          if (!compatibleTypes.includes(col.type))
+            errors.push(`Column "${expected.name}": expected ${expected.type}, got ${col.type}`);
+        }
+        if (errors.length > 0)
+          throw new Error(`Input "${pm.originalName}" schema mismatch: ${errors.join('; ')}`);
+      }
+    }
+
     const inputs: {[key: string]: any} = {};
 
     for (let i = 0; i < paramMeta.length; i++) {
