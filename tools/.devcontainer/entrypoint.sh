@@ -29,19 +29,18 @@ else
   else
     BRANCH=$(resolve_branch "${DG_VERSION:-latest}")
   fi
-  # Sparse checkout: only fetch dirs needed for package context (js-api, libraries, packages)
-  # plus root files (CLAUDE.md, .claude/, etc.). Uses --depth 1 without blob filter so all
-  # blobs arrive in one pack — avoids slow on-demand fetching during checkout.
+  # Sparse checkout (cone mode) with partial clone: only fetch js-api, libraries, and
+  # ApiSamples. Cone mode integrates with --filter=blob:none so the server only sends
+  # blobs for the included directories (~3 MB vs 1.67 GB for the full tree).
   sparse_clone() {
     local branch="$1"
     # Use init+fetch instead of clone to handle pre-existing directories (e.g. mount points)
     git init "$PUBLIC_DIR" \
       && git -C "$PUBLIC_DIR" remote add origin "$REPO" \
-      && git -C "$PUBLIC_DIR" sparse-checkout set --no-cone \
-           '/*' '!connectors/' '!docker/' '!docusaurus/' '!docusaurus-static/' \
-           '!environments/' '!hooks/' '!misc/' 'python-api/' '!datagrok-celery-task/' \
-           '/js-api/**' '/libraries/**' '/packages/**' \
-      && git -C "$PUBLIC_DIR" fetch --depth 1 origin "$branch" \
+      && git -C "$PUBLIC_DIR" config remote.origin.promisor true \
+      && git -C "$PUBLIC_DIR" config remote.origin.partialclonefilter blob:none \
+      && git -C "$PUBLIC_DIR" sparse-checkout set --cone js-api libraries packages/ApiSamples \
+      && git -C "$PUBLIC_DIR" fetch --depth 1 --filter=blob:none origin "$branch" \
       && git -C "$PUBLIC_DIR" checkout -B "$branch" FETCH_HEAD
   }
   # Clear directory contents without removing the dir itself (may be a mount point)

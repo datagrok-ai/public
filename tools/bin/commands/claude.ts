@@ -391,13 +391,20 @@ function writeProjectFiles(taskKey: string, args: ClaudeArgs, worktreeRoot: stri
   if (hasLocalEntrypoint)
     volumes.push(`      - "${toDockerPath(entrypointPath)}:/usr/local/bin/entrypoint.sh"`);
 
-  // Claude profile (~/.claude + ~/.claude.json)
+  // Claude profile: mount only credential/settings files, not the whole directory.
+  // Mounting ~/.claude entirely makes subdirs (session-env/, sessions/) unwritable by the
+  // container's node user due to host filesystem permission mapping.
   const claudeHome = findClaudeHome();
   if (claudeHome) {
-    volumes.push(`      - "${toDockerPath(claudeHome)}:/home/node/.claude"`);
+    const claudeFiles = ['.credentials.json', 'settings.json', 'settings.local.json'];
+    for (const file of claudeFiles) {
+      const filePath = path.join(claudeHome, file);
+      if (fs.existsSync(filePath) && fs.statSync(filePath).isFile())
+        volumes.push(`      - "${toDockerPath(filePath)}:/home/node/.claude/${file}:ro"`);
+    }
     const claudeState = path.join(path.dirname(claudeHome), '.claude.json');
     if (fs.existsSync(claudeState) && fs.statSync(claudeState).isFile())
-      volumes.push(`      - "${toDockerPath(claudeState)}:/home/node/.claude.json"`);
+      volumes.push(`      - "${toDockerPath(claudeState)}:/home/node/.claude.json:ro"`);
     color.info(`Claude profile: ${claudeHome}`);
   }
   else
