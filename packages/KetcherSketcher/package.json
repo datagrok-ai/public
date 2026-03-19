@@ -1,7 +1,7 @@
 {
   "name": "@datagrok/ketcher-sketcher",
   "friendlyName": "Ketcher Sketcher",
-  "version": "2.4.0",
+  "version": "2.4.1",
   "author": {
     "name": "Maria Dolotova",
     "email": "mdolotova@datagrok.ai"
@@ -17,9 +17,10 @@
     "@types/react-dom": "^18.2.0",
     "datagrok-api": "^1.27.0",
     "file-loader": "^6.2.0",
-    "ketcher-core": "^2.21.0",
-    "ketcher-react": "^2.21.0",
-    "ketcher-standalone": "^2.21.0",
+    "ketcher-core": "^3.12.0",
+    "ketcher-react": "^3.12.0",
+    "ketcher-standalone": "^3.12.0",
+    "ketcher-macromolecules": "^3.12.0",
     "@datagrok-libraries/test": "^1.1.0"
   },
   "devDependencies": {

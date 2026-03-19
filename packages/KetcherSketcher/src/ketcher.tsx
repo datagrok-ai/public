@@ -10,7 +10,7 @@ import {Ketcher} from 'ketcher-core';
 import 'ketcher-react/dist/index.css';
 import '../css/editor.css';
 import {chem} from 'datagrok-api/grok';
-import {KETCHER_MOLV2000, KETCHER_MOLV3000, KETCHER_OPTIONS, KETCHER_USER_STORAGE, KETCHER_WINDOW_OBJECT} from './constants';
+import {KETCHER_MOLV2000, KETCHER_MOLV3000, KETCHER_WINDOW_OBJECT} from './constants';
 
 let sketcherId = 0;
 
@@ -21,6 +21,7 @@ export class KetcherSketcher extends grok.chem.SketcherBase {
   _smarts: string | null = null;
   _sketcher: Ketcher | null = null;
   ketcherHost: HTMLDivElement;
+  reactRoot: ReactDOM.Root | null = null;
 
   constructor() {
     super();
@@ -67,8 +68,8 @@ export class KetcherSketcher extends grok.chem.SketcherBase {
     this.ketcherHost = ui.div([], 'ketcher-host');
 
     const component = React.createElement(Editor, props, null);
-    const root = ReactDOM.createRoot(this.ketcherHost);
-    root.render(component);
+    this.reactRoot = ReactDOM.createRoot(this.ketcherHost);
+    this.reactRoot.render(component);
 
     this.root.appendChild(this.ketcherHost);
   }
@@ -190,6 +191,9 @@ export class KetcherSketcher extends grok.chem.SketcherBase {
 
   detach() {
     // grok.dapi.userDataStorage.postValue(KETCHER_OPTIONS, KETCHER_USER_STORAGE, JSON.stringify(this._sketcher?.editor.options()), true);
+    this.reactRoot?.unmount();
+    this.reactRoot = null;
+    this._sketcher = null;
     super.detach();
   }
 }

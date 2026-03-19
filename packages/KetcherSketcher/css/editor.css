@@ -33,3 +33,20 @@ button[title="About"], button[title="Help (?)"] {
 body > div.MuiPopover-root.MuiMenu-root {
     z-index: 20000;
 }
+
+body > div.MuiPopover-root {
+    z-index: 20000;
+}
+
+/* Ketcher renders the macromolecules editor inside a display:none container.
+   RulerArea reads SVGLength.value on mount, which throws when the SVG is
+   hidden via display:none. Override to visibility-based hiding so SVG
+   measurements still work during initialization. Once the user toggles to
+   macro mode, the inline style is removed and this rule no longer matches. */
+[data-ketcher-editor][style*="display: none"] {
+    display: block !important;
+    visibility: hidden !important;
+    height: 0 !important;
+    overflow: hidden !important;
+    position: absolute !important;
+}
