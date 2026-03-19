@@ -6,7 +6,7 @@
   "dependencies": {
     "@datagrok-libraries/math": "^1.2.6",
     "@datagrok-libraries/ml": "^6.10.10",
-    "@datagrok-libraries/statistics": "../../libraries/statistics",
+    "@datagrok-libraries/statistics": "^1.12.1",
     "@datagrok-libraries/tutorials": "^1.7.4",
     "@datagrok-libraries/utils": "^4.7.0",
     "@keckelt/tsne": "^1.0.2",
