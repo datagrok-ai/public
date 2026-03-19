@@ -1,5 +1,9 @@
 # compute-api changelog
 
+## 0.7.2 (2026-03-19)
+
+- 1.27 platform support
+
 ## 0.6.7 (2025-11-20)
 
 - New workflows config properties added
