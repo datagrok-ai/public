@@ -43,6 +43,7 @@ and built to support interactive exploration of vast amounts of scientific data.
 | Jump to first column                  | Home                            |
 | Jump to last column                   | End                             |
 | Prev / next selected row              | Ctrl + ↑↓                       |
+| Scroll horizontally                   | Shift+Scroll                    |
 | Show in full screen                   | Alt+F                           |
 |<h4>**Sort**</h4>||
 | Sort a column                          | Double-click column header      |
