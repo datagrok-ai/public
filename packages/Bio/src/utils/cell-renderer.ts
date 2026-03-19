@@ -220,7 +220,7 @@ export class MacromoleculeDifferenceCellRendererBack extends CellRendererWithMon
     w = getUpdatedWidth(grid, g, x, w, dpr);
     //TODO: can this be replaced/merged with splitSequence?
     const [s1, s2] = s.split('#');
-    const splitter = this.tableCol.temp[SeqTemps.notationProvider]?.separatorSplitter ?? getSplitter(units, separator);
+    const splitter = this.tableCol.temp[SeqTemps.notationProvider]?.separatorSplitter ?? this.tableCol.temp[SeqTemps.notationProvider]?.splitter ?? getSplitter(units, separator);
     const s1SS = splitter(s1);
     const s2SS = splitter(s2);
     const subParts1 = wu.count(0).take(s1SS.length).map((posIdx) => s1SS.getCanonical(posIdx)).toArray();
