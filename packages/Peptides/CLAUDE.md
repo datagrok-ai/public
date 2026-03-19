@@ -2,6 +2,8 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+**IMPORTANT: Always update this CLAUDE.md file after finishing any task that adds, removes, or changes functionality in this package.**
+
 ## Overview
 
 **Peptides** (`@datagrok/peptides`) is a Datagrok plugin for **Structure-Activity Relationship (SAR) analysis** of peptide collections. It detects macromolecule columns automatically, renders amino acids with color-coded monomers, and provides interactive viewers to identify point mutations and residues causing major activity changes.
@@ -83,13 +85,21 @@ Key types:
 
 | File | Class | Purpose |
 |---|---|---|
-| `sar-viewer.ts` | `SARViewer` (abstract) | Base for MonomerPosition and MostPotentResidues. Manages mutation cliffs computation, invariant map stats, selection, mode switching (Invariant Map / Mutation Cliffs) |
+| `sar-viewer.ts` | `SARViewer` (abstract) | Base for MonomerPosition and MostPotentResidues. Manages mutation cliffs computation, invariant map stats, selection, mode switching (Invariant Map / Mutation Cliffs). Context menu provides Export functions (see below) |
 | `sar-viewer.ts` | `MonomerPosition` | Horizontal heatmap: monomers × positions. Two modes: Invariant Map (colored by aggregated stats) and Mutation Cliffs (circle size=count, color=mean diff). Has monomer search/filter |
 | `sar-viewer.ts` | `MostPotentResidues` | Vertical viewer: one row per position showing the most potent monomer with mean difference, p-value, count, ratio |
 | `logo-summary.ts` | `LogoSummaryTable` | Per-cluster summary grid: WebLogo, activity distribution histogram, members count, mean difference, p-value. Supports original + custom clusters, filtering small clusters |
 | `mutation-cliffs-viewer.ts` | `MutationCliffsViewer` | Line chart of mutation cliffs at a selected position. Splits by series column, syncs selection with main dataframe |
 | `cluster-max-activity-viewer.ts` | `ClusterMaxActivityViewer` | Scatter plot: cluster size vs max activity per cluster. Draws threshold lines, supports auto-selection of top quadrants |
 | `position-statistics-viewer.ts` | `SequencePositionStatsViewer` | Box/violin plot of numerical values grouped by monomers at a selected position. Configurable motif overhang |
+
+### Export Features (context menu on Sequence Variability Map / Most Potent Residues)
+
+Both SAR viewers expose two export actions via right-click context menu → Export:
+
+- **Export Mutation Cliffs**: Opens a dialog with `ui.input.columns` to pick additional columns from the original table. Creates a new TableView with columns: Seq 1, Seq 2 (both with copied sequence tags excluding notation provider), Mutation (MacromoleculeDifference semtype, `seq1#seq2` format), Seq 1/Seq 2 activity, Delta, plus paired columns for each chosen extra column. Each row is a unique mutation cliff pair. Implementation: `SARViewer.exportMutationCliffs()` → `SARViewer._doExportMutationCliffs()`.
+
+- **Export Invariant Map**: Creates a new TableView with monomer column + one column per position, cells containing the count of sequences with that monomer at that position. Implementation: `SARViewer.exportInvariantMap()`.
 
 ## Widgets (`src/widgets/`)
 
@@ -180,5 +190,6 @@ Receives a chunk of the upper-triangular pairwise comparison matrix. For each pa
 | Selection logic (Shift/Ctrl) | `src/utils/misc.ts` → `modifySelection` |
 | Tooltips for monomer-position cells | `src/utils/tooltips.ts` |
 | Settings dialog UI | `src/widgets/settings.ts` |
+| Export mutation cliffs / invariant map | `src/viewers/sar-viewer.ts` → `SARViewer.exportMutationCliffs()`, `SARViewer.exportInvariantMap()` |
 | Demo data files | `files/aligned.csv`, `aligned_2.csv`, `aligned_3.csv` |
 | Benchmark test data | `files/tests/` (5k–200k .d42 files) |
