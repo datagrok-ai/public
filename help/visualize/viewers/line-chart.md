@@ -142,6 +142,7 @@ Toggle each component on/off independently in the **Context Panel** to focus on 
 | Marker Size | number |  |
 | Marker Opacity | number |  |
 | Show Markers | visibilitymode | A boolean column that determines whether to show markers. |
+| Markers Size Column Name | string |  |
 | Markers Visibility Column Name | string |  |
 | **Selection** | | |
 | Show Current Row Line | boolean | Show vertical line reflecting the position of the current row See also *Current Line Color* |

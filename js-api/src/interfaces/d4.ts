@@ -1657,6 +1657,9 @@ export interface ILineChartSettings {
   /// A boolean column that determines whether to show markers.
   showMarkers: keyof typeof VisibilityMode;
 
+  markersSize: string;
+  markersSizeColumnName: string;
+
   markersVisibility: string;
   markersVisibilityColumnName: string;
 
