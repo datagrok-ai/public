@@ -67,7 +67,7 @@ async function fetchEntity(ref: DgEntityRef): Promise<any> {
 function renderEntityRef(ref: DgEntityRef): HTMLElement | null {
   const placeholder = ui.divText(ref.name);
   fetchEntity(ref).then((entity) => {
-    if (entity)
+    if (entity && document.contains(placeholder))
       placeholder.replaceWith(ui.renderCard(entity));
   }).catch(() => {});
   return placeholder;

@@ -817,13 +817,11 @@ export class TVAIPanel extends AIPanel<MessageType, TVAIPanelInputs> {
       this.ensureAccordionPane();
       this._streamingMarkdownEl = ui.markdown(content);
       dartLike(this._streamingMarkdownEl.style).set('userSelect', 'text').set('maxWidth', '100%');
-      renderEntityBlocks(this._streamingMarkdownEl);
       this._streamingContainer = ui.divV([this._streamingMarkdownEl], 'd4-ai-assistant-response-container');
       this._aiMessagesAccordionPane!.appendChild(this._streamingContainer);
     } else {
       const md = ui.markdown(content);
       dartLike(md.style).set('userSelect', 'text').set('maxWidth', '100%');
-      renderEntityBlocks(md);
       this._streamingMarkdownEl!.replaceWith(md);
       this._streamingMarkdownEl = md;
     }
