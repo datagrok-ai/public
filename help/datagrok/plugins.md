@@ -9,7 +9,7 @@ sidebar_position: 5
 |------|-------|------------|---------------|-------|
 |[Power Pack](https://github.com/datagrok-ai/public/tree/master/packages/PowerPack)| Platform | Recommended| Commonly used platform enhancements| Stable|
 | [Tutorials](https://github.com/datagrok-ai/public/tree/master/packages/Tutorials)| Resources |Recommended| App for learning Datagrok with interactive tutorials, Demo app| Stable |
-|[Grokky](https://github.com/datagrok-ai/public/tree/master/packages/Grokky)| AI | Recommended| AI assistant for Datagrok with support for OpenAI, Anthropic, and Amazon Bedrock| Stable|     
+<!--|[Grokky](https://github.com/datagrok-ai/public/tree/master/packages/Grokky)| AI | Recommended| AI assistant for Datagrok with support for OpenAI, Anthropic, and Amazon Bedrock| Stable| -->    
 
 ## Access
 
@@ -74,8 +74,8 @@ sidebar_position: 5
 |Plugin <div style={{ width:140 }}></div> |Area <div style={{ width:130 }}></div>|  Tag <div style={{ width:110 }}></div> |Description <div style={{ width:315 }}></div> | Release|
 |------|-------|-------------------|---------------|---|
 |[Chem](https://github.com/datagrok-ai/public/tree/master/packages/Chem) | General | Required| Cheminformatics support ([wiki](solutions/domains/chem/chem.md)).<br/>Comes with OpenChemLib sketcher | Stable|
+|[Ketcher Sketcher](https://github.com/datagrok-ai/public/tree/master/packages/KetcherSketcher) | Sketchers | Recommended| Integration with [Ketcher](https://lifescience.opensource.epam.com/ketcher/index.html) (Apache license, version 2.0) | Stable|
 |[Marvin](https://github.com/datagrok-ai/labs/tree/master/packages/Marvin) | Sketchers | Optional| Integration with Marvin JS (commercial 3rd party license) | Stable|
-|[Ketcher Sketcher](https://github.com/datagrok-ai/public/tree/master/packages/KetcherSketcher) | Sketchers | Optional| Integration with [Ketcher](https://lifescience.opensource.epam.com/ketcher/index.html) (Apache license, version 2.0) | Stable|
 |[Chem Draw Sketcher](https://github.com/datagrok-ai/labs/tree/master/packages/ChemDraw) | Sketchers | Optional| Integration with ChemDraw (commercial 3rd party license) | Stable|
 |[ChEMBL](https://github.com/datagrok-ai/public/tree/master/packages/Chembl) | Database search | Recommended| ChEMBL database for on-premise deployment | Stable|
 |[DrugBank](https://github.com/datagrok-ai/public/tree/master/packages/DrugBank) | Database search | Optional| Information on 11,300 drugs from [DrugBank](https://go.drugbank.com/)| Stable|
