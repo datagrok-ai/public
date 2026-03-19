@@ -216,10 +216,12 @@ export class MacromoleculeDifferenceCellRendererBack extends CellRendererWithMon
     const cell = gridCell.cell;
     const s: string = cell.value ?? '';
     const separator = this.tableCol.tags[bioTAGS.separator];
-    const units: string = this.tableCol.meta.units!;
+    let units: string = this.tableCol.meta.units!;
     w = getUpdatedWidth(grid, g, x, w, dpr);
     //TODO: can this be replaced/merged with splitSequence?
     const [s1, s2] = s.split('#');
+    if (units === NOTATION.CUSTOM && !this.tableCol.temp[SeqTemps.notationProvider])
+      units = NOTATION.SEPARATOR;
     const splitter = this.tableCol.temp[SeqTemps.notationProvider]?.separatorSplitter ?? this.tableCol.temp[SeqTemps.notationProvider]?.splitter ?? getSplitter(units, separator);
     const s1SS = splitter(s1);
     const s2SS = splitter(s2);
