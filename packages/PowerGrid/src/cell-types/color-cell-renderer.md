@@ -13,12 +13,6 @@ All standard CSS color formats are supported:
 - **HSL / HSLA**: `hsl(14, 100%, 60%)`, `hsla(14, 100%, 60%, 0.5)`
 - **Named CSS colors**: `red`, `cornflowerblue`, `teal`
 
-## Auto-detection
-
-The renderer is applied automatically when Datagrok detects a string column whose values are
-color codes (hex, rgb, hsl). Named CSS colors are also detected when all sampled values are
-valid CSS color names.
-
 ## Behavior
 
 - Empty cells and invalid color strings are rendered as blank

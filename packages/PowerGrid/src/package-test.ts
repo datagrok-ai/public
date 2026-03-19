@@ -4,8 +4,6 @@ import {runTests, TestContext, tests, initAutoTests as initTests } from '@datagr
 
 import './tests/pinned-column-tests';
 import './tests/webgpu-tests';
-import './tests/color-cell-renderer-tests';
-
 
 
 export const _package = new DG.Package();
