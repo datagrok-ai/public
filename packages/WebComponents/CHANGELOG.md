@@ -1,5 +1,9 @@
 # WebComponents changelog
 
+## 1.3.0 (2025-03-19)
+
+- 1.27 platform support
+
 ## 1.2.10 (2025-11-20)
 
 - Tweak consistency icons in forms
