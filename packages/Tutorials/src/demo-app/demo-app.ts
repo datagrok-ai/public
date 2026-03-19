@@ -80,11 +80,17 @@ export class DemoView extends DG.ViewBase {
       ui.setUpdateIndicator(updateIndicatorRoot, false);
     } else {
       ui.setUpdateIndicator(updateIndicatorRoot, true);
-      await func.apply();
-      this.currentView = grok.shell.v;
-      if (grok.shell.tv instanceof DG.TableView)
-        await grok.data.detectSemanticTypes(grok.shell.tv.dataFrame);
-      this._initWindowOptions();
+      const prevAutoShowToolbox = grok.shell.windows.autoShowToolbox;
+      grok.shell.windows.autoShowToolbox = false;
+      try {
+        await func.apply();
+        this.currentView = grok.shell.v;
+        if (grok.shell.tv instanceof DG.TableView)
+          await grok.data.detectSemanticTypes(grok.shell.tv.dataFrame);
+        this._initWindowOptions();
+      } finally {
+        grok.shell.windows.autoShowToolbox = prevAutoShowToolbox;
+      }
       this.tree.rootNode.root.focus();
       this._guardTreeFocus();
       ui.setUpdateIndicator(updateIndicatorRoot, false);
