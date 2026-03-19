@@ -828,7 +828,7 @@ export class TVAIPanel extends AIPanel<MessageType, TVAIPanelInputs> {
     this.outputArea.scrollTop = this.outputArea.scrollHeight;
   }
 
-  finalizeStreaming(content: string, view: DG.ViewBase): void {
+  async finalizeStreaming(content: string, view: DG.ViewBase): Promise<void> {
     if (!this._streamingContainer || !this._streamingMarkdownEl)
       return;
 
@@ -842,7 +842,13 @@ export class TVAIPanel extends AIPanel<MessageType, TVAIPanelInputs> {
 
     this._uiMessages.push({fromUser: false, text: content, messageOptions: {finalResult: content}});
 
-    executeDatagrokBlocks(content, view);
+    const results = await executeDatagrokBlocks(content, view);
+    for (const el of results) {
+      this.ensureAccordionPane();
+      this._aiMessagesAccordionPane!.appendChild(
+        ui.divV([el], 'd4-ai-assistant-response-container'),
+      );
+    }
   }
 
   clearStreaming(): void {

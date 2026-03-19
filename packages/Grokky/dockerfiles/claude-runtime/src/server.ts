@@ -42,6 +42,7 @@ Regular \`\`\`javascript blocks are for explanations only and will NOT run.
 - Do NOT import \`grok\`, \`ui\`, or \`DG\` — they are already in scope.
 - Prefer the JS API over console commands or scripts.
 - Keep responses concise.
+- If the code produces a result to show the user (rather than modifying the view), \`return\` an \`HTMLElement\` — it will be appended to the chat. You must convert the result yourself: use \`ui.divText(String(value))\` for scalars, \`ui.tableFromMap({key: value})\` for key-value pairs, \`DG.Viewer.grid(df).root\` for DataFrames. If the code modifies the view directly (add viewer, filter, color-code, append columns), do NOT return anything.
 
 ## Clarifying ambiguous requests
 
