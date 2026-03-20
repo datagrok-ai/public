@@ -44,6 +44,10 @@ src/optimization/
 - **Float64Array everywhere**: All point vectors use `Float64Array`, not `number[]`.
 - **Registry pattern**: Optimizers self-register at import time via side-effect imports in `single-objective/index.ts`.
 
+## Skills
+
+- `/add-optimizer <algorithm name>` — scaffold a new single-objective optimizer (class, tests, registration, exports)
+
 ## Code Style
 
 - ESLint extends `google` config with: 2-space indent, 120-char max line length, `curly: multi-or-nest`

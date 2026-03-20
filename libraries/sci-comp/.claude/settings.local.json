@@ -6,6 +6,9 @@
       "Bash(npx jest:*)",
       "Bash(npm test:*)",
       "Bash(npx ts-node:*)"
+    ],
+    "additionalDirectories": [
+      "c:\\Users\\vmaka\\Datagrok\\public\\libraries\\sci-comp\\.claude\\skills"
     ]
   }
 }
