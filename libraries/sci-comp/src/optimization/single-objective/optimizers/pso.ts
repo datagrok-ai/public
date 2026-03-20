@@ -116,7 +116,8 @@ export class PSO extends Optimizer<PSOSettings> {
     const swarm = this.initSwarm(fn, x0, swarmSize, rangeLo, rangeHi, vMax, rng);
 
     // Global best
-    const gBest = Float64Array.from(swarm[0].bestPosition);
+    const gBest = new Float64Array(n);
+    gBest.set(swarm[0].bestPosition);
     let gBestVal = swarm[0].bestValue;
     for (const p of swarm) {
       if (p.bestValue < gBestVal) {
@@ -125,14 +126,15 @@ export class PSO extends Optimizer<PSOSettings> {
       }
     }
 
-    const costHistory: number[] = [];
+    const costHistory = new Float64Array(maxIter);
+    let costLen = 0;
     let iteration = 0;
     let prevBest = Infinity;
     let noImprovement = 0;
     let converged = false;
 
     while (iteration < maxIter) {
-      costHistory.push(gBestVal);
+      costHistory[costLen++] = gBestVal;
 
       // --- Convergence ---
       if (iteration > 0 && prevBest - gBestVal > tol)
@@ -196,7 +198,7 @@ export class PSO extends Optimizer<PSOSettings> {
       value: gBestVal,
       iterations: iteration,
       converged,
-      costHistory,
+      costHistory: costHistory.subarray(0, costLen),
     };
   }
 
@@ -215,13 +217,16 @@ export class PSO extends Optimizer<PSOSettings> {
     const swarm: Particle[] = [];
 
     // First particle starts at x0
-    const p0 = Float64Array.from(x0);
+    const p0 = new Float64Array(n);
+    p0.set(x0);
     const val0 = fn(p0);
+    const bp0 = new Float64Array(n);
+    bp0.set(p0);
     swarm.push({
       position: p0,
       velocity: new Float64Array(n),
       value: val0,
-      bestPosition: Float64Array.from(p0),
+      bestPosition: bp0,
       bestValue: val0,
     });
 
@@ -236,12 +241,14 @@ export class PSO extends Optimizer<PSOSettings> {
       }
 
       const val = fn(pos);
+      const bestPos = new Float64Array(n);
+      bestPos.set(pos);
 
       swarm.push({
         position: pos,
         velocity: vel,
         value: val,
-        bestPosition: Float64Array.from(pos),
+        bestPosition: bestPos,
         bestValue: val,
       });
     }

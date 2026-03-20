@@ -69,31 +69,30 @@ export class NelderMead extends Optimizer<NelderMeadSettings> {
     const simplex = this.buildSimplex(fn, x0, s);
 
     // Index array sorted by objective value
-    const idx = Array.from({length: nVerts}, (_, i) => i);
-    const worst = () => idx[idx.length - 1];
-    const best = () => idx[0];
+    const idx = new Uint32Array(nVerts);
+    for (let i = 0; i < nVerts; i++) idx[i] = i;
 
     const centroid = new Float64Array(n);
     const trial = new Float64Array(n);
-    const costHistory: number[] = [];
+    const savedRefl = new Float64Array(n);
+    const costHistory = new Float64Array(maxIter);
+    let costLen = 0;
 
     let iteration = 0;
     let prevBest = Infinity;
     let noImprovement = 0;
     let converged = false;
 
-    const sortIdx = () =>
-      idx.sort((a, b) => simplex[a].value - simplex[b].value);
-
-    sortIdx();
+    // Full sort once; after that, maintain order via insertSorted / re-sort only after shrink
+    this.sortIdx(idx, simplex);
 
     while (iteration < maxIter) {
-      sortIdx();
-
-      const bestVal = simplex[best()].value;
-      const secondWorstVal = simplex[idx[idx.length - 2]].value;
-      const worstVal = simplex[worst()].value;
-      costHistory.push(bestVal);
+      const bestIdx = idx[0];
+      const worstIdx = idx[nVerts - 1];
+      const bestVal = simplex[bestIdx].value;
+      const secondWorstVal = simplex[idx[nVerts - 2]].value;
+      const worstVal = simplex[worstIdx].value;
+      costHistory[costLen++] = bestVal;
 
       // --- Convergence check ---
       if (iteration > 0 && prevBest - bestVal > tol)
@@ -108,28 +107,27 @@ export class NelderMead extends Optimizer<NelderMeadSettings> {
       if (this.notify(s.onIteration, {
         iteration,
         bestValue: bestVal,
-        bestPoint: simplex[best()].point,
+        bestPoint: simplex[bestIdx].point,
       }))
         break;
 
-
       // --- Centroid (exclude worst vertex) ---
-      this.computeCentroid(centroid, simplex, idx, worst(), n);
+      this.computeCentroid(centroid, simplex, idx, nVerts, n);
 
       // --- Reflection ---
-      this.transformPoint(trial, centroid, simplex[worst()].point, s.reflection!, n);
+      this.transformPoint(trial, centroid, simplex[worstIdx].point, s.reflection!, n);
       const reflVal = fn(trial);
 
       if (reflVal < bestVal) {
         // Reflected is best so far — try expansion
-        const savedRefl = Float64Array.from(trial);
-        this.transformPoint(trial, centroid, simplex[worst()].point, s.expansion!, n);
+        savedRefl.set(trial);
+        this.transformPoint(trial, centroid, simplex[worstIdx].point, s.expansion!, n);
         const expVal = fn(trial);
 
         if (expVal < reflVal)
-          this.accept(simplex, worst(), trial, expVal);
+          this.acceptAndInsert(simplex, idx, worstIdx, trial, expVal);
         else
-          this.accept(simplex, worst(), savedRefl, reflVal);
+          this.acceptAndInsert(simplex, idx, worstIdx, savedRefl, reflVal);
 
         iteration++;
         continue;
@@ -137,7 +135,7 @@ export class NelderMead extends Optimizer<NelderMeadSettings> {
 
       if (reflVal < secondWorstVal) {
         // Reflected is better than second-worst — accept reflection
-        this.accept(simplex, worst(), trial, reflVal);
+        this.acceptAndInsert(simplex, idx, worstIdx, trial, reflVal);
         iteration++;
         continue;
       }
@@ -145,42 +143,42 @@ export class NelderMead extends Optimizer<NelderMeadSettings> {
       // --- Contraction (reflected is >= second-worst) ---
       if (reflVal < worstVal) {
         // Outside contraction: reflected is between second-worst and worst
-        this.transformPoint(trial, centroid, simplex[worst()].point, s.contraction!, n);
+        this.transformPoint(trial, centroid, simplex[worstIdx].point, s.contraction!, n);
         const contrVal = fn(trial);
 
         if (contrVal <= reflVal) {
-          this.accept(simplex, worst(), trial, contrVal);
+          this.acceptAndInsert(simplex, idx, worstIdx, trial, contrVal);
           iteration++;
           continue;
         }
       } else {
         // Inside contraction: reflected is worse than or equal to worst
-        this.transformPoint(trial, centroid, simplex[worst()].point, -s.contraction!, n);
+        this.transformPoint(trial, centroid, simplex[worstIdx].point, -s.contraction!, n);
         const contrVal = fn(trial);
 
         if (contrVal < worstVal) {
-          this.accept(simplex, worst(), trial, contrVal);
+          this.acceptAndInsert(simplex, idx, worstIdx, trial, contrVal);
           iteration++;
           continue;
         }
       }
 
-      // --- Shrink ---
-      this.shrinkSimplex(simplex, idx, best(), s.shrink!, fn);
+      // --- Shrink (changes all vertices — full re-sort) ---
+      this.shrinkSimplex(simplex, idx, idx[0], s.shrink!, fn);
+      this.sortIdx(idx, simplex);
       iteration++;
     }
 
-    sortIdx();
-
-    const finalVal = simplex[best()].value;
-    while (costHistory.length < iteration) costHistory.push(finalVal);
+    const finalBestIdx = idx[0];
+    const finalVal = simplex[finalBestIdx].value;
+    while (costLen < iteration) costHistory[costLen++] = finalVal;
 
     return {
-      point: simplex[best()].point,
+      point: simplex[finalBestIdx].point,
       value: finalVal,
       iterations: iteration,
       converged,
-      costHistory,
+      costHistory: costHistory.subarray(0, costLen),
     };
   }
 
@@ -206,19 +204,29 @@ export class NelderMead extends Optimizer<NelderMeadSettings> {
     return simplex;
   }
 
+  /** Full sort of idx by simplex values. Used once at start and after shrink. */
+  private sortIdx(
+    idx: Uint32Array,
+    simplex: { value: number }[],
+  ): void {
+    idx.sort((a, b) => simplex[a].value - simplex[b].value);
+  }
+
+  /** Centroid of all vertices except the last one in idx (worst). */
   private computeCentroid(
     out: Float64Array,
     simplex: { point: Float64Array }[],
-    idx: number[],
-    worstIdx: number,
+    idx: Uint32Array,
+    nVerts: number,
     n: number,
   ): void {
     out.fill(0);
-    for (const j of idx) {
-      if (j === worstIdx) continue;
-      for (let i = 0; i < n; i++) out[i] += simplex[j].point[i];
+    const count = nVerts - 1; // exclude worst (last in sorted idx)
+    for (let k = 0; k < count; k++) {
+      const pt = simplex[idx[k]].point;
+      for (let i = 0; i < n; i++) out[i] += pt[i];
     }
-    for (let i = 0; i < n; i++) out[i] /= n;
+    for (let i = 0; i < n; i++) out[i] /= count;
   }
 
   /** centroid + scale * (centroid - worst) */
@@ -233,25 +241,43 @@ export class NelderMead extends Optimizer<NelderMeadSettings> {
       out[i] = centroid[i] + scale * (centroid[i] - worstPoint[i]);
   }
 
-  private accept(
+  /**
+   * Replace vertex `at` with new point/value, then re-insert into sorted idx.
+   * O(n) insertion instead of O(n log n) full sort.
+   */
+  private acceptAndInsert(
     simplex: { point: Float64Array; value: number }[],
+    idx: Uint32Array,
     at: number,
     pt: Float64Array,
     val: number,
   ): void {
     simplex[at].point.set(pt);
     simplex[at].value = val;
+
+    // Find current position of `at` in idx (it's always last — worst)
+    const len = idx.length;
+    let pos = len - 1;
+
+    // Shift left while predecessor has higher value
+    while (pos > 0 && simplex[idx[pos - 1]].value > val) {
+      idx[pos] = idx[pos - 1];
+      pos--;
+    }
+    idx[pos] = at;
   }
 
   private shrinkSimplex(
     simplex: { point: Float64Array; value: number }[],
-    idx: number[],
+    idx: Uint32Array,
     bestIdx: number,
     sigma: number,
     fn: ObjectiveFunction,
   ): void {
     const bestPt = simplex[bestIdx].point;
-    for (const j of idx) {
+    const len = idx.length;
+    for (let k = 0; k < len; k++) {
+      const j = idx[k];
       if (j === bestIdx) continue;
       const pt = simplex[j].point;
       for (let i = 0; i < pt.length; i++)

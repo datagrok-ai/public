@@ -50,10 +50,13 @@ export abstract class Optimizer<S extends CommonSettings = CommonSettings> {
     const effective = this.applyConstraints(negated, settings);
     const result = this.runInternal(effective, x0, this.withDefaults(settings));
 
+    const ch = result.costHistory;
+    for (let i = 0; i < ch.length; i++) ch[i] = -ch[i];
+
     return {
       ...result,
       value: -result.value,
-      costHistory: result.costHistory.map((v) => -v),
+      costHistory: ch,
     };
   }
 

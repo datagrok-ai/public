@@ -28,6 +28,8 @@ export function applyPenalty(
   const method = options.method ?? 'quadratic';
   const mu = options.mu ?? 1000;
 
+  const len = constraints.length;
+
   if (method === 'barrier') {
     if (constraints.some((c) => c.type === 'eq'))
       throw new Error('Barrier method does not support equality constraints');
@@ -35,8 +37,8 @@ export function applyPenalty(
     return (x: Float64Array): number => {
       let penalty = 0;
 
-      for (const c of constraints) {
-        const g = c.fn(x);
+      for (let i = 0; i < len; i++) {
+        const g = constraints[i].fn(x);
         if (g >= 0) return Infinity; // outside feasible region
         penalty -= Math.log(-g);
       }
@@ -49,7 +51,8 @@ export function applyPenalty(
   return (x: Float64Array): number => {
     let penalty = 0;
 
-    for (const c of constraints) {
+    for (let i = 0; i < len; i++) {
+      const c = constraints[i];
       const val = c.fn(x);
 
       if (c.type === 'ineq') {

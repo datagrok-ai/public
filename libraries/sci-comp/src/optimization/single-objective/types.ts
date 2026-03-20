@@ -25,7 +25,7 @@ export interface OptimizationResult {
   /** True if a convergence criterion was met (not just maxIter). */
   converged: boolean;
   /** Per-iteration best value history. */
-  costHistory: number[];
+  costHistory: Float64Array;
 }
 
 /** Callback invoked after every iteration. Return `true` to stop early. */
