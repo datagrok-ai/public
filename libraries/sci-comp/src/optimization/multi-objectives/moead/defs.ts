@@ -1,4 +1,4 @@
-// The MOEA/D method for multi-objective optimization: https://ieeexplore.ieee.org/document/4358754
+// The MOEA/D method for multi-objective optimization https://ieeexplore.ieee.org/document/4358754
 // The method specific definitions
 
 export type Func = (x: Float32Array) => Promise<Float32Array>;

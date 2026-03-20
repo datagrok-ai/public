@@ -1,5 +1,5 @@
 /* eslint-disable valid-jsdoc */
-// The MOEA/D method for multi-objective optimization: https://ieeexplore.ieee.org/document/4358754
+// The MOEA/D method for multi-objective optimization (https://ieeexplore.ieee.org/document/4358754)
 
 //@ts-ignore: no types
 import * as jStat from 'jstat';
