@@ -35,6 +35,17 @@ const quadratic3d = (x: Float64Array): number =>
 const productSurface = (x: Float64Array): number =>
   x[0] * x[1] * (1 - x[0] - x[1]);
 
+/** z = x^2 + 12xy + 2y^2: constrained by 4x^2 + y^2 = 25 */
+const quadraticMixed = (x: Float64Array): number =>
+  x[0] ** 2 + 12 * x[0] * x[1] + 2 * x[1] ** 2;
+
+const negQuadraticMixed = (x: Float64Array): number =>
+  -(x[0] ** 2 + 12 * x[0] * x[1] + 2 * x[1] ** 2);
+
+const ellipseConstraint: Constraint[] = [
+  {type: 'eq', fn: (x) => 4 * x[0] ** 2 + x[1] ** 2 - 25},
+];
+
 /** z = exp(-x^2 - y^2) * (2x^2 + y^2): min = 0 at (0,0), max = 2/e at (±1, 0) */
 const gaussianBump = (x: Float64Array): number =>
   Math.exp(-(x[0] ** 2 + x[1] ** 2)) * (2 * x[0] ** 2 + x[1] ** 2);
@@ -191,6 +202,28 @@ describe('Optimization', () => {
       expect(r.converged).toBe(true);
       expect(r.value).toBeCloseTo(-9, 4);
       expectPointClose(r, [2, 1, 1], 1e-3);
+    });
+
+    it('minimize x²+12xy+2y² s.t. 4x²+y²=25 → min = -50 at (2, -3)', () => {
+      const penalized = applyPenalty(quadraticMixed, ellipseConstraint, {mu: 1_000_000});
+      const r = nm.minimize(penalized, new Float64Array([1, -2]), {
+        maxIterations: 10_000,
+        tolerance: 1e-12,
+      });
+      expect(r.converged).toBe(true);
+      expect(r.value).toBeCloseTo(-50, 0);
+      expectPointClose(r, [2, -3], 0.05);
+    });
+
+    it('maximize x²+12xy+2y² s.t. 4x²+y²=25 → max = 106.25 at (1.5, 4)', () => {
+      const penalized = applyPenalty(negQuadraticMixed, ellipseConstraint, {mu: 1_000_000});
+      const r = nm.minimize(penalized, new Float64Array([1, 2]), {
+        maxIterations: 10_000,
+        tolerance: 1e-12,
+      });
+      expect(r.converged).toBe(true);
+      expect(-r.value).toBeCloseTo(106.25, 0);
+      expectPointClose(r, [1.5, 4], 0.05);
     });
 
     it('throws on empty x0', () => {
