@@ -84,6 +84,7 @@ export class PSO extends Optimizer<PSOSettings> {
       maxVelocityFraction: s.maxVelocityFraction ?? 0.2,
       noImprovementLimit: s.noImprovementLimit ?? 50,
       searchRange: s.searchRange,
+      seed: s.seed,
       onIteration: s.onIteration,
     };
   }

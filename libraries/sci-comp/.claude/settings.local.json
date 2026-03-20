@@ -2,7 +2,8 @@
   "permissions": {
     "allow": [
       "Bash(npx eslint:*)",
-      "Bash(npx tsx:*)"
+      "Bash(npx tsx:*)",
+      "Bash(npx jest:*)"
     ]
   }
 }
