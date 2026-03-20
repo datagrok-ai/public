@@ -182,12 +182,25 @@ async function initChemInt(): Promise<void> {
   if (sketcherFunc)
     DG.chem.currentSketcherType = sketcherFunc.friendlyName;
   else {
-    if (!!storedSketcherType) {
-      grok.shell.warning(
-        `Package with ${storedSketcherType} function is not installed.Switching to ${DG.DEFAULT_SKETCHER}.`);
+    // Try the default sketcher (Ketcher), fall back to OpenChemLib if not installed
+    const defaultFunc = sketcherFunctions.find((e) => e.friendlyName === DG.DEFAULT_SKETCHER);
+    const fallbackFunc = sketcherFunctions.find((e) => e.friendlyName === DG.FALLBACK_SKETCHER);
+    if (defaultFunc) {
+      if (!!storedSketcherType)
+        grok.shell.warning(`Package with ${storedSketcherType} sketcher is not installed. Switching to ${DG.DEFAULT_SKETCHER}.`);
+      DG.chem.currentSketcherType = DG.DEFAULT_SKETCHER;
     }
-
-    DG.chem.currentSketcherType = DG.DEFAULT_SKETCHER;
+    else if (fallbackFunc) {
+      if (!!storedSketcherType)
+        grok.shell.warning(`Package with ${storedSketcherType} sketcher is not installed. Switching to ${DG.FALLBACK_SKETCHER}.`);
+      else
+        grok.shell.warning(`${DG.DEFAULT_SKETCHER} package is not installed. Switching to ${DG.FALLBACK_SKETCHER}.`);
+      DG.chem.currentSketcherType = DG.FALLBACK_SKETCHER;
+    }
+    else {
+      grok.shell.warning('No molecule sketcher packages are installed.');
+      DG.chem.currentSketcherType = DG.DEFAULT_SKETCHER;
+    }
   }
   _renderers = new Map();
 }

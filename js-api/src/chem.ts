@@ -20,7 +20,8 @@ const api: IDartApi = (typeof window !== 'undefined' ? window : global.window) a
 
 declare let grok: any;
 
-export const DEFAULT_SKETCHER = 'OpenChemLib';
+export const DEFAULT_SKETCHER = 'Ketcher';
+export const FALLBACK_SKETCHER = 'OpenChemLib';
 export const WHITE_MOLBLOCK = `
   Datagrok empty molecule
 
@@ -607,7 +608,9 @@ export namespace chem {
         this._setSketcherSize(); //set default size to show update indicator
         ui.setUpdateIndicator(this.host, true);
         this.changedSub?.unsubscribe();
-        const sketcherFunc = this.sketcherFunctions.find(e => e.friendlyName == sketcherType|| e.name === sketcherType) ?? this.sketcherFunctions.find(e => e.friendlyName == DEFAULT_SKETCHER);
+        const sketcherFunc = this.sketcherFunctions.find(e => e.friendlyName == sketcherType|| e.name === sketcherType)
+          ?? this.sketcherFunctions.find(e => e.friendlyName == DEFAULT_SKETCHER)
+          ?? this.sketcherFunctions.find(e => e.friendlyName == FALLBACK_SKETCHER);
         const sketcher = await sketcherFunc!.apply();
         await ui.tools.waitForElementInDom(this.root);
         if(currentSketcherType !== sketcherType) //in case sketcher type has been changed while previous sketcher was loading
