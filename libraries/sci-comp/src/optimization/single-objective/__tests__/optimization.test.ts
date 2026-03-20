@@ -25,6 +25,20 @@ const sphere = (x: Float64Array): number => {
 const gaussian = (x: Float64Array): number =>
   Math.exp(-(x[0] ** 2 + x[1] ** 2));
 
+/** w = 3x^2 + 5y^2 + 2z^2 - 6xy + 2yz - 6x - 6z: min = -9 at (2, 1, 1) */
+const quadratic3d = (x: Float64Array): number =>
+  3 * x[0] ** 2 + 5 * x[1] ** 2 + 2 * x[2] ** 2 -
+  6 * x[0] * x[1] + 2 * x[1] * x[2] -
+  6 * x[0] - 6 * x[2];
+
+/** z = xy(1 - x - y): max = 1/27 at (1/3, 1/3) */
+const productSurface = (x: Float64Array): number =>
+  x[0] * x[1] * (1 - x[0] - x[1]);
+
+/** z = exp(-x^2 - y^2) * (2x^2 + y^2): min = 0 at (0,0), max = 2/e at (±1, 0) */
+const gaussianBump = (x: Float64Array): number =>
+  Math.exp(-(x[0] ** 2 + x[1] ** 2)) * (2 * x[0] ** 2 + x[1] ** 2);
+
 /* ================================================================== */
 /*  Helpers                                                            */
 /* ================================================================== */
@@ -73,6 +87,46 @@ describe('Optimization', () => {
       expect(r.converged).toBe(true);
       expect(r.value).toBeCloseTo(1, 4);
       expectPointClose(r, [0, 0], 1e-2);
+    });
+
+    it('maximize Product Surface → max = 1/27 at (1/3, 1/3)', () => {
+      const r = nm.maximize(productSurface, new Float64Array([0.1, 0.1]), {
+        maxIterations: 5_000,
+        tolerance: 1e-12,
+      });
+      expect(r.converged).toBe(true);
+      expect(r.value).toBeCloseTo(1 / 27, 6);
+      expectPointClose(r, [1 / 3, 1 / 3], 1e-4);
+    });
+
+    it('minimize Gaussian Bump → min = 0 at (0, 0)', () => {
+      const r = nm.minimize(gaussianBump, new Float64Array([0.1, 0.1]), {
+        maxIterations: 5_000,
+        tolerance: 1e-12,
+      });
+      expect(r.converged).toBe(true);
+      expect(r.value).toBeCloseTo(0, 6);
+      expectPointClose(r, [0, 0], 1e-4);
+    });
+
+    it('maximize Gaussian Bump (x0 = [2, 2]) → max = 2/e at (1, 0)', () => {
+      const r = nm.maximize(gaussianBump, new Float64Array([2, 2]), {
+        maxIterations: 5_000,
+        tolerance: 1e-12,
+      });
+      expect(r.converged).toBe(true);
+      expect(r.value).toBeCloseTo(2 / Math.E, 4);
+      expectPointClose(r, [1, 0], 1e-3);
+    });
+
+    it('maximize Gaussian Bump (x0 = [-3, -2]) → max = 2/e at (-1, 0)', () => {
+      const r = nm.maximize(gaussianBump, new Float64Array([-3, -2]), {
+        maxIterations: 5_000,
+        tolerance: 1e-12,
+      });
+      expect(r.converged).toBe(true);
+      expect(r.value).toBeCloseTo(2 / Math.E, 4);
+      expectPointClose(r, [-1, 0], 1e-3);
     });
 
     it('minimize Sphere 2D with box constraints [2,5]² → min = 8 at (2, 2)', () => {
@@ -129,6 +183,16 @@ describe('Optimization', () => {
       expectPointClose(r, [2, 2], 0.05);
     });
 
+    it('minimize Quadratic 3D → min = -9 at (2, 1, 1)', () => {
+      const r = nm.minimize(quadratic3d, new Float64Array([0, 0, 0]), {
+        maxIterations: 5_000,
+        tolerance: 1e-12,
+      });
+      expect(r.converged).toBe(true);
+      expect(r.value).toBeCloseTo(-9, 4);
+      expectPointClose(r, [2, 1, 1], 1e-3);
+    });
+
     it('throws on empty x0', () => {
       expect(() => nm.minimize(sphere, new Float64Array([]), {}))
         .toThrow('at least one element');
@@ -152,6 +216,17 @@ describe('Optimization', () => {
       expectPointClose(r, [1, 1], 0.05);
     });
 
+    it('minimize Sphere 3D → min = 0 at (0, 0, 0)', () => {
+      const r = pso.minimize(sphere, new Float64Array([5, -3, 7]), {
+        swarmSize: 40,
+        maxIterations: 3_000,
+        seed: 42,
+      });
+      expect(r.converged).toBe(true);
+      expect(r.value).toBeCloseTo(0, 4);
+      expectPointClose(r, [0, 0, 0], 1e-2);
+    });
+
     it('maximize Gaussian 2D → max = 1 at (0, 0)', () => {
       const r = pso.maximize(gaussian, new Float64Array([2, -3]), {
         swarmSize: 40,
@@ -161,6 +236,114 @@ describe('Optimization', () => {
       expect(r.converged).toBe(true);
       expect(r.value).toBeCloseTo(1, 2);
       expectPointClose(r, [0, 0], 0.01);
+    });
+
+    it('maximize Product Surface → max = 1/27 at (1/3, 1/3)', () => {
+      const r = pso.maximize(productSurface, new Float64Array([0.1, 0.1]), {
+        swarmSize: 80,
+        maxIterations: 5_000,
+        seed: 42,
+        constraints: boxConstraints(new Float64Array([0, 0]), new Float64Array([1, 1])),
+        penaltyOptions: {mu: 10_000},
+      });
+      expect(r.value).toBeCloseTo(1 / 27, 2);
+      expectPointClose(r, [1 / 3, 1 / 3], 0.05);
+    });
+
+    it('minimize Gaussian Bump → min = 0 at (0, 0)', () => {
+      const r = pso.minimize(gaussianBump, new Float64Array([0.1, 0.1]), {
+        swarmSize: 40,
+        maxIterations: 3_000,
+        seed: 42,
+        constraints: boxConstraints(new Float64Array([-1, -1]), new Float64Array([1, 1])),
+        penaltyOptions: {mu: 10_000},
+      });
+      expect(r.value).toBeCloseTo(0, 2);
+      expectPointClose(r, [0, 0], 0.05);
+    });
+
+    it('maximize Gaussian Bump → max = 2/e at (±1, 0)', () => {
+      const r = pso.maximize(gaussianBump, new Float64Array([2, 2]), {
+        swarmSize: 40,
+        maxIterations: 3_000,
+        seed: 42,
+      });
+      expect(r.value).toBeCloseTo(2 / Math.E, 2);
+      expect(Math.abs(r.point[0])).toBeCloseTo(1, 1);
+      expect(r.point[1]).toBeCloseTo(0, 1);
+    });
+
+    it('minimize Sphere 2D with box constraints [2,5]² → min = 8 at (2, 2)', () => {
+      const boxed = applyPenalty(
+        sphere,
+        boxConstraints(new Float64Array([2, 2]), new Float64Array([5, 5])),
+        {mu: 10_000},
+      );
+      const r = pso.minimize(boxed, new Float64Array([3, 3]), {
+        swarmSize: 40,
+        maxIterations: 3_000,
+        seed: 42,
+      });
+      expect(r.converged).toBe(true);
+      expect(r.value).toBeCloseTo(8, 1);
+      expectPointClose(r, [2, 2], 0.01);
+    });
+
+    it('maximize Gaussian with box constraints [1,5]² via settings → max ≈ 0.1353 at (1, 1)', () => {
+      const r = pso.maximize(gaussian, new Float64Array([2, 2]), {
+        swarmSize: 40,
+        maxIterations: 3_000,
+        seed: 42,
+        constraints: boxConstraints(new Float64Array([1, 1]), new Float64Array([5, 5])),
+        penaltyOptions: {mu: 10_000},
+      });
+      expect(r.converged).toBe(true);
+      expect(r.value).toBeCloseTo(Math.exp(-2), 2);
+      expectPointClose(r, [1, 1], 0.01);
+    });
+
+    it('minimize with custom ineq + eq constraints → min = 2 at (2, 2)', () => {
+      const fn = (x: Float64Array) => (x[0] - 3) ** 2 + (x[1] - 3) ** 2;
+      const constraints: Constraint[] = [
+        {type: 'ineq', fn: (x) => x[0] + x[1] - 4},
+        {type: 'eq', fn: (x) => x[0] - x[1]},
+      ];
+      const constrained = applyPenalty(fn, constraints, {mu: 100_000});
+      const r = pso.minimize(constrained, new Float64Array([0, 0]), {
+        swarmSize: 80,
+        maxIterations: 5_000,
+        seed: 42,
+      });
+      expect(r.converged).toBe(true);
+      expect(r.value).toBeCloseTo(2, 0);
+      expectPointClose(r, [2, 2], 0.1);
+    });
+
+    it('minimize Sphere 2D with log-barrier [2,5]² → min ≈ 8 at (2, 2)', () => {
+      const barriered = applyPenalty(
+        sphere,
+        boxConstraints(new Float64Array([2, 2]), new Float64Array([5, 5])),
+        {method: 'barrier', mu: 0.01},
+      );
+      const r = pso.minimize(barriered, new Float64Array([3, 3]), {
+        swarmSize: 40,
+        maxIterations: 3_000,
+        seed: 42,
+      });
+      expect(r.converged).toBe(true);
+      expect(r.value).toBeCloseTo(8, 0);
+      expectPointClose(r, [2, 2], 0.05);
+    });
+
+    it('minimize Quadratic 3D → min = -9 at (2, 1, 1)', () => {
+      const r = pso.minimize(quadratic3d, new Float64Array([0, 0, 0]), {
+        swarmSize: 40,
+        maxIterations: 3_000,
+        seed: 42,
+      });
+      expect(r.converged).toBe(true);
+      expect(r.value).toBeCloseTo(-9, 2);
+      expectPointClose(r, [2, 1, 1], 0.05);
     });
 
     it('produces deterministic results with the same seed', () => {

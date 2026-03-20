@@ -3,7 +3,9 @@
     "allow": [
       "Bash(npx eslint:*)",
       "Bash(npx tsx:*)",
-      "Bash(npx jest:*)"
+      "Bash(npx jest:*)",
+      "Bash(npm test:*)",
+      "Bash(npx ts-node:*)"
     ]
   }
 }
