@@ -12,7 +12,7 @@ Pure TypeScript library of numerical methods for the [Datagrok](https://datagrok
 ## Installation
 
 ```bash
-npm install @datagrok/sci-comp
+npm install @datagrok-libraries/sci-comp
 ```
 
 ## Optimization
