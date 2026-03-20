@@ -48,8 +48,6 @@ export class KetcherSketcher extends grok.chem.SketcherBase {
         //     this._sketcher?.editor.setOptions(opts);
         //   }
         // });
-        //@ts-ignore
-        window[KETCHER_WINDOW_OBJECT] = ketcher;
         this.setMoleculeFromHost();
         (this._sketcher.editor as any).subscribe('change', async (_: any) => {
           this.explicitMol = null;
@@ -193,7 +191,6 @@ export class KetcherSketcher extends grok.chem.SketcherBase {
     // grok.dapi.userDataStorage.postValue(KETCHER_OPTIONS, KETCHER_USER_STORAGE, JSON.stringify(this._sketcher?.editor.options()), true);
     this.reactRoot?.unmount();
     this.reactRoot = null;
-    this._sketcher = null;
     super.detach();
   }
 }
