@@ -37,8 +37,7 @@
     "debug-boltz1-dev": "webpack && grok publish dev",
     "release-boltz1-dev": "webpack && grok publish dev --release",
     "debug-boltz1-local": "webpack && grok publish local",
-    "release-boltz1-local": "webpack && grok publish local --release",
-    "test": "grok test"
+    "release-boltz1-local": "webpack && grok publish local --release"
   },
   "canEdit": [
     "Administrators"
