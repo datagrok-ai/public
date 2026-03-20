@@ -17,6 +17,10 @@ export interface McpInputs {
   list_files: {path?: string};
   download_file: {path?: string};
   upload_file: {path?: string};
+  index_codebase: {path?: string};
+  search_code: {query?: string};
+  get_indexing_status: {path?: string};
+  clear_index: {path?: string};
 }
 
 export type ToolName = keyof ToolInputs;

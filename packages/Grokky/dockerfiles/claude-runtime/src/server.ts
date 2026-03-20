@@ -131,21 +131,39 @@ function apiUrlFromMcpUrl(mcpUrl: string): string | undefined {
   return idx > 0 ? mcpUrl.substring(0, idx) : undefined;
 }
 
-function buildOptions(resume?: string, apiKey?: string, mcpServerUrl?: string) {
+function buildMcpServers(apiKey?: string, mcpServerUrl?: string): Record<string, any> | undefined {
+  const servers: Record<string, any> = {};
+
   const mcpUrl = mcpServerUrl || '';
-  const apiUrl = mcpUrl ? apiUrlFromMcpUrl(mcpUrl) : undefined;
+  if (mcpUrl) {
+    const apiUrl = apiUrlFromMcpUrl(mcpUrl);
+    servers['datagrok'] = {
+      type: 'http' as const,
+      url: mcpUrl,
+      headers: buildMcpHeaders(apiKey, apiUrl),
+    };
+  }
+
+  if (process.env['MILVUS_TOKEN']) {
+    const env: Record<string, string> = {MILVUS_TOKEN: process.env['MILVUS_TOKEN']!};
+    if (process.env['OPENAI_API_KEY'])
+      env['OPENAI_API_KEY'] = process.env['OPENAI_API_KEY'];
+    servers['claude-context'] = {
+      command: 'claude-context-mcp',
+      args: [] as string[],
+      env,
+    };
+  }
+
+  return Object.keys(servers).length > 0 ? servers : undefined;
+}
+
+function buildOptions(resume?: string, apiKey?: string, mcpServerUrl?: string) {
+  const mcpServers = buildMcpServers(apiKey, mcpServerUrl);
   return {
     systemPrompt: DATAGROK_PROMPT,
     allowedTools: ['Read', 'Glob', 'Grep', 'Edit', 'Write', 'Bash', 'WebSearch', 'WebFetch', 'AskUserQuestion'],
-    ...(mcpUrl ? {
-      mcpServers: {
-        datagrok: {
-          type: 'http' as const,
-          url: mcpUrl,
-          headers: buildMcpHeaders(apiKey, apiUrl),
-        },
-      },
-    } : {}),
+    ...(mcpServers ? {mcpServers} : {}),
     permissionMode: 'acceptEdits' as const,
     model: 'opus' as const,
     includePartialMessages: true,
@@ -173,6 +191,10 @@ const mcpFormatters: {[K in McpName]: (i: McpInputs[K]) => string} = {
   list_files: (i) => `list files ${i.path ?? ''}`.trim(),
   download_file: (i) => `download file ${i.path ?? ''}`.trim(),
   upload_file: (i) => `upload file ${i.path ?? ''}`.trim(),
+  index_codebase: (i) => `Index codebase ${i.path ?? ''}`.trim(),
+  search_code: (i) => `Search code: ${i.query ?? ''}`,
+  get_indexing_status: (i) => `Indexing status ${i.path ?? ''}`.trim(),
+  clear_index: (i) => `Clear index ${i.path ?? ''}`.trim(),
 };
 
 function toolSummary(name: string, input: Record<string, unknown>): string {
