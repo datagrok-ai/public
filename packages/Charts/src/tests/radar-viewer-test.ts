@@ -51,6 +51,7 @@ category('Radar', () => {
       showMax: false,
       showValues: false,
       valuesColumnNames: ['AGE', 'COUNTRYID'],
+      legendVisibility: 'Auto',
     };
     expect(JSON.stringify(standardOptions), JSON.stringify(await getOptions(viewer)));
   });

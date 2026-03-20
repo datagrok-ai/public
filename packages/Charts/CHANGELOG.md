@@ -1,5 +1,17 @@
 # Charts changelog
 
+## 1.7.0 (2026-03-20)
+
+### Features
+
+* Charts: Radar: Added legend
+
+### Bug Fixes
+
+* Charts: Timelines: Fixed legend color changes not reflected on chart
+* GROK-15543: Charts | Sunburst: Does not support collaborative filtering
+* GROK-18321: Charts | Tree viewer: Broken molecular label for radial layout
+
 ## 1.6.2 (2026-02-06)
 
 ### Features
