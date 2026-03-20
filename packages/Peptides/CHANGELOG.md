@@ -1,5 +1,18 @@
 # Peptides changelog
 
+## 1.27.4 - 1.27.7 (2026-03-20)
+
+### Features
+
+* [#3604](https://github.com/datagrok-ai/public/issues/3604): Migrated tags to roles
+* Variability Map: Added export functionality
+* SAR: Added extraction support
+* Multi Position Statistics: Introduced multi-position statistics viewer
+
+### Bug Fixes
+
+* SAR: Absent monomers are now filtered out
+
 ## 1.27.3 (2025-11-12)
 
 * Fix mutation cliffs viewer not updating on filter change

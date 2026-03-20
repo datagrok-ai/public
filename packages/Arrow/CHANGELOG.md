@@ -1,5 +1,9 @@
 # Arrow changelog
 
+## 1.5.0 (2026-03-20)
+
+* [#3604](https://github.com/datagrok-ai/public/issues/3604): Migrated tags to roles
+
 ## 1.4.2 (2025-09-23)
 
 * Fixes conversion of 'bigint' columns
