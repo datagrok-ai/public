@@ -150,7 +150,7 @@ const result = nm.minimize(constrained, new Float64Array([0, 0]), {
 
 Minimize the Rosenbrock function with PSO using a fixed seed for deterministic results:
 
-$$f(x, y) = 100\,(y - x^2)^2 + (1 - x)^2$$
+$$f(x, y) = 100(y - x^2)^2 + (1 - x)^2$$
 
 - **Goal:** minimize
 - **Start:** $x_0 = (-1.2,\; 1.0)$
