@@ -4,8 +4,9 @@ Pure TypeScript library of numerical methods for the [Datagrok](https://datagrok
 
 * Optimization:
   * single-objective:
-    - [Nelder-Mead](https://en.wikipedia.org/wiki/Nelder%E2%80%93Mead_method) — derivative-free simplex method
-    - [PSO (Particle Swarm Optimization)](https://en.wikipedia.org/wiki/Particle_swarm_optimization) — stochastic population-based method
+    - [Nelder-Mead](https://en.wikipedia.org/wiki/Nelder%E2%80%93Mead_method) - derivative-free simplex method
+    - [PSO (Particle Swarm Optimization)](https://en.wikipedia.org/wiki/Particle_swarm_optimization) - stochastic population-based method
+    - [Gradient Descent](https://en.wikipedia.org/wiki/Gradient_descent) - first-order method with numerical gradients, momentum, and learning rate decay
   * multi-objective:
     - [MOEA/D](https://ieeexplore.ieee.org/document/4358754)
 
@@ -25,10 +26,11 @@ const {NelderMead, PSO, applyPenalty, applyPenaltyAsync, boxConstraints, getOpti
 
 ### Single-objective
 
-Two built-in solvers, each supporting synchronous and asynchronous objective functions:
+Three built-in solvers, each supporting synchronous and asynchronous objective functions:
 
-- [Nelder-Mead](https://en.wikipedia.org/wiki/Nelder%E2%80%93Mead_method) — derivative-free simplex method
-- [PSO (Particle Swarm Optimization)](https://en.wikipedia.org/wiki/Particle_swarm_optimization) — stochastic population-based method
+- [Nelder-Mead](https://en.wikipedia.org/wiki/Nelder%E2%80%93Mead_method) - derivative-free simplex method
+- [PSO (Particle Swarm Optimization)](https://en.wikipedia.org/wiki/Particle_swarm_optimization) - stochastic population-based method
+- [Gradient Descent](https://en.wikipedia.org/wiki/Gradient_descent) - first-order method with numerical gradients, momentum, and learning rate decay
 
 | Method | Sync | Async |
 |--------|------|-------|
@@ -93,7 +95,7 @@ $$f(x, y) = x^2 + y^2$$
 - **Start:** $x_0 = (3, 3)$
 - **Expected:** $\min = 8$ at $(2, 2)$
 
-Constraints can be passed directly via settings — the penalty is applied
+Constraints can be passed directly via settings - the penalty is applied
 with the correct sign for both `minimize` and `maximize`:
 
 ```typescript

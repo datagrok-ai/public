@@ -7,7 +7,8 @@
       "Bash(npm test:*)",
       "Bash(npx ts-node:*)",
       "Bash(npm run:*)",
-      "Edit(/.claude/skills/add-optimizer/**)"
+      "Edit(/.claude/skills/add-optimizer/**)",
+      "Read(//c/Users/vmaka/Datagrok/public/.claude/skills/implement-interactive-scientific-application-from-spec/references/reference/**)"
     ],
     "additionalDirectories": [
       "c:\\Users\\vmaka\\Datagrok\\public\\libraries\\sci-comp\\.claude\\skills"
