@@ -338,22 +338,22 @@ const optimizers: OptimizerConfig[] = [
   {
     name: 'Nelder-Mead',
     optimizer: new NelderMead(),
-    settings: {maxIterations: 5_000},
+    settings: {maxIterations: 10_000},
   },
   {
     name: 'PSO',
     optimizer: new PSO(),
-    settings: {maxIterations: 3_000, swarmSize: 30, seed: 42},
+    settings: {maxIterations: 10_000, swarmSize: 50, seed: 42},
   },
   {
     name: 'GradientDescent',
     optimizer: new GradientDescent(),
-    settings: {maxIterations: 10_000, learningRate: 0.01},
+    settings: {maxIterations: 10_000, learningRate: 0.001, momentum: 0.9},
   },
   {
     name: 'Adam',
     optimizer: new Adam(),
-    settings: {maxIterations: 10_000, learningRate: 0.001},
+    settings: {maxIterations: 10_000, learningRate: 0.1},
   },
 ];
 
@@ -414,6 +414,7 @@ function distToOptimum(problem: BenchmarkProblem, point: Float64Array): number {
 /* ================================================================== */
 
 interface RowData {
+  icon: string;
   method: string;
   settings: string;
   foundValue: string;
@@ -427,6 +428,7 @@ interface RowData {
 }
 
 const COL_HEADERS: Record<keyof RowData, string> = {
+  icon: '',
   method: 'Method',
   settings: 'Settings',
   foundValue: 'Found Value',
@@ -449,8 +451,10 @@ function printTable(rows: RowData[]): void {
 
   for (const k of keys) {
     widths[k] = COL_HEADERS[k].length;
-    for (const r of rows)
-      if (r[k].length > widths[k]) widths[k] = r[k].length;
+    for (const r of rows) {
+      const len = k === 'icon' ? 2 : r[k].length;
+      if (len > widths[k]) widths[k] = len;
+    }
   }
 
   const header = keys.map((k) => pad(COL_HEADERS[k], widths[k])).join(' | ');
@@ -459,9 +463,10 @@ function printTable(rows: RowData[]): void {
   console.log('  ' + separator);
 
   for (const r of rows) {
-    const line = keys.map((k) =>
-      RIGHT_ALIGNED.has(k) ? padLeft(r[k], widths[k]) : pad(r[k], widths[k]),
-    ).join(' | ');
+    const line = keys.map((k) => {
+      if (k === 'icon') return r[k] + ' ';
+      return RIGHT_ALIGNED.has(k) ? padLeft(r[k], widths[k]) : pad(r[k], widths[k]);
+    }).join(' | ');
     console.log('  ' + line);
   }
 }
@@ -502,6 +507,7 @@ function runBenchmarks(): void {
         );
       } catch (e: any) {
         rows.push({
+          icon: '\u274C',
           method: cfg.name,
           settings: fmtSettings(cfg.settings),
           foundValue: 'ERROR',
@@ -519,12 +525,23 @@ function runBenchmarks(): void {
       const elapsed = performance.now() - t0;
       const distOpt = distToOptimum(problem, result.point);
 
+      const absError = Math.abs(result.value - problem.knownMin);
+      const quality = Math.max(absError, distOpt);
+      let icon: string;
+      if (!result.converged)
+        icon = '\u274C';
+      else if (quality < 1e-3)
+        icon = '\u2705';
+      else
+        icon = '\u26A0';
+
       rows.push({
+        icon,
         method: cfg.name,
         settings: fmtSettings(cfg.settings),
         foundValue: fmtNum(result.value),
         foundPoint: fmtPoint(result.point),
-        error: fmtNum(Math.abs(result.value - problem.knownMin)),
+        error: fmtNum(absError),
         distToOpt: fmtNum(distOpt),
         converged: result.converged ? 'yes' : 'no',
         iterations: String(result.iterations),

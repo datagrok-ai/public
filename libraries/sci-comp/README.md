@@ -218,7 +218,7 @@ const result = optimizer.minimize(sphere, new Float64Array([5, -3, 7]), {
 
 ### Benchmarks
 
-Run all 15 standard test functions (Sphere, Rosenbrock, Beale, Booth, Matyas, Himmelblau, Three-Hump Camel,
+Run 15 [standard test functions](./src/optimization/single-objective/benchmarks/unconstrained-benchmark-functions.md) (Sphere, Rosenbrock, Beale, Booth, Matyas, Himmelblau, Three-Hump Camel,
 Rastrigin, Ackley, Lévi N.13, Griewank, Styblinski-Tang, Easom, Goldstein-Price, McCormick) across all
 4 optimizers with default hyperparameters:
 
@@ -228,6 +228,8 @@ npx tsx src/optimization/single-objective/benchmarks/unconstrained-benchmarks.ts
 
 The output is a per-problem comparison table showing found value, distance to optimum, convergence status,
 iteration count, function evaluations, and wall-clock time.
+
+Find the results in [this summary](./src/optimization/single-objective/benchmarks/unconstrained-benchmarks.md).
 
 ### Running examples
 
