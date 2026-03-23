@@ -1,6 +1,7 @@
 // Types
 export type {
   ObjectiveFunction,
+  AsyncObjectiveFunction,
   IterationState,
   OptimizationResult,
   IterationCallback,
@@ -17,7 +18,7 @@ export {Optimizer} from './optimizer';
 export {registerOptimizer, getOptimizer, listOptimizers} from './registry';
 
 // Penalty / constraints layer
-export {applyPenalty, boxConstraints} from './penalty';
+export {applyPenalty, applyPenaltyAsync, boxConstraints} from './penalty';
 
 // Built-in optimizers
 export {NelderMead} from './optimizers/nelder-mead';

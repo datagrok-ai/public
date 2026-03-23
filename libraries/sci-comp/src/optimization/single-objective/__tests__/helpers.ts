@@ -1,4 +1,4 @@
-import type {Constraint, OptimizationResult} from '..';
+import type {Constraint, OptimizationResult, AsyncObjectiveFunction, ObjectiveFunction} from '..';
 
 /* ================================================================== */
 /*  Test functions                                                     */
@@ -48,6 +48,10 @@ export const gaussianBump = (x: Float64Array): number =>
 /* ================================================================== */
 /*  Helpers                                                            */
 /* ================================================================== */
+
+/** Wrap a sync objective function as async. */
+export const toAsync = (fn: ObjectiveFunction): AsyncObjectiveFunction =>
+  async (x: Float64Array) => fn(x);
 
 /** Check that every component of result.point is close to the expected value. */
 export function expectPointClose(r: OptimizationResult, expected: number[], tol: number) {

@@ -18,7 +18,7 @@ npm install @datagrok-libraries/sci-comp
 ## Optimization
 
 ```typescript
-import {singleObjective} from '@datagrok/sci-comp';
+import {singleObjective} from '@datagrok-libraries/sci-comp';
 
 const {NelderMead, PSO, applyPenalty, boxConstraints, getOptimizer, listOptimizers} = singleObjective;
 ```

@@ -1,4 +1,4 @@
-import type {ObjectiveFunction, Constraint, PenaltyOptions} from './types';
+import type {ObjectiveFunction, AsyncObjectiveFunction, Constraint, PenaltyOptions} from './types';
 
 /**
  * Wraps an objective function with a penalty term that encodes constraints.
@@ -20,6 +20,48 @@ import type {ObjectiveFunction, Constraint, PenaltyOptions} from './types';
  *     • Equality constraints are not supported (throws).
  *     • Smaller μ → tighter approximation of the boundary.
  */
+
+/* ================================================================== */
+/*  Shared penalty computation (constraints are always synchronous)    */
+/* ================================================================== */
+
+function computeQuadraticPenalty(x: Float64Array, constraints: Constraint[], len: number): number {
+  let penalty = 0;
+
+  for (let i = 0; i < len; i++) {
+    const c = constraints[i];
+    const val = c.fn(x);
+
+    if (c.type === 'ineq') {
+      if (val > 0) penalty += val * val;
+    } else
+      penalty += val * val;
+  }
+
+  return penalty;
+}
+
+function computeBarrierPenalty(x: Float64Array, constraints: Constraint[], len: number): number {
+  let penalty = 0;
+
+  for (let i = 0; i < len; i++) {
+    const g = constraints[i].fn(x);
+    if (g >= 0) return Infinity;
+    penalty -= Math.log(-g);
+  }
+
+  return penalty;
+}
+
+function validateBarrier(constraints: Constraint[]): void {
+  if (constraints.some((c) => c.type === 'eq'))
+    throw new Error('Barrier method does not support equality constraints');
+}
+
+/* ================================================================== */
+/*  Synchronous wrapper                                                */
+/* ================================================================== */
+
 export function applyPenalty(
   fn: ObjectiveFunction,
   constraints: Constraint[],
@@ -27,50 +69,44 @@ export function applyPenalty(
 ): ObjectiveFunction {
   const method = options.method ?? 'quadratic';
   const mu = options.mu ?? 1000;
-
   const len = constraints.length;
 
   if (method === 'barrier') {
-    if (constraints.some((c) => c.type === 'eq'))
-      throw new Error('Barrier method does not support equality constraints');
-
-    return (x: Float64Array): number => {
-      let penalty = 0;
-
-      for (let i = 0; i < len; i++) {
-        const g = constraints[i].fn(x);
-        if (g >= 0) return Infinity; // outside feasible region
-        penalty -= Math.log(-g);
-      }
-
-      return fn(x) + mu * penalty;
-    };
+    validateBarrier(constraints);
+    return (x: Float64Array): number =>
+      fn(x) + mu * computeBarrierPenalty(x, constraints, len);
   }
 
-  // quadratic (exterior penalty)
-  return (x: Float64Array): number => {
-    let penalty = 0;
-
-    for (let i = 0; i < len; i++) {
-      const c = constraints[i];
-      const val = c.fn(x);
-
-      if (c.type === 'ineq') {
-        // g(x) <= 0 → penalise positive values
-        if (val > 0) penalty += val * val;
-      } else {
-        // h(x) = 0 → penalise any deviation
-        penalty += val * val;
-      }
-    }
-
-    return fn(x) + mu * penalty;
-  };
+  return (x: Float64Array): number =>
+    fn(x) + mu * computeQuadraticPenalty(x, constraints, len);
 }
 
-/* ------------------------------------------------------------------ */
+/* ================================================================== */
+/*  Asynchronous wrapper                                               */
+/* ================================================================== */
+
+export function applyPenaltyAsync(
+  fn: AsyncObjectiveFunction,
+  constraints: Constraint[],
+  options: PenaltyOptions = {},
+): AsyncObjectiveFunction {
+  const method = options.method ?? 'quadratic';
+  const mu = options.mu ?? 1000;
+  const len = constraints.length;
+
+  if (method === 'barrier') {
+    validateBarrier(constraints);
+    return async (x: Float64Array): Promise<number> =>
+      (await fn(x)) + mu * computeBarrierPenalty(x, constraints, len);
+  }
+
+  return async (x: Float64Array): Promise<number> =>
+    (await fn(x)) + mu * computeQuadraticPenalty(x, constraints, len);
+}
+
+/* ================================================================== */
 /*  Convenience: box constraints → Constraint[]                        */
-/* ------------------------------------------------------------------ */
+/* ================================================================== */
 
 /**
  * Converts box constraints (lower ≤ x ≤ upper) into an array
@@ -95,7 +131,7 @@ export function boxConstraints(
       const idx = i;
       constraints.push({
         type: 'ineq',
-        fn: (x) => lo - x[idx], // lo - x ≤ 0  ⟺  x ≥ lo
+        fn: (x) => lo - x[idx],
       });
     }
 
@@ -103,7 +139,7 @@ export function boxConstraints(
       const idx = i;
       constraints.push({
         type: 'ineq',
-        fn: (x) => x[idx] - hi, // x - hi ≤ 0  ⟺  x ≤ hi
+        fn: (x) => x[idx] - hi,
       });
     }
   }

@@ -2,8 +2,11 @@
  * Core types for the optimization library.
  */
 
-/** Objective function signature. */
+/** Synchronous objective function. */
 export type ObjectiveFunction = (x: Float64Array) => number;
+
+/** Asynchronous objective function (API calls, simulations, file I/O, etc.). */
+export type AsyncObjectiveFunction = (x: Float64Array) => Promise<number>;
 
 /** Snapshot of solver state after each iteration — fed to callbacks. */
 export interface IterationState {
