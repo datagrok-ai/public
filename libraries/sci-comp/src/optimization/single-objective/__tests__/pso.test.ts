@@ -130,6 +130,23 @@ describe('PSO', () => {
     });
   });
 
+  describe('maximize Gaussian Bump (x0 = [-3, -2]) → max ≈ 2/e at (-1, 0)', () => {
+    const x0 = new Float64Array([-3, -2]);
+    const settings = {swarmSize: 40, maxIterations: 3_000, seed: 42};
+
+    it('sync', () => {
+      const r = pso.maximize(gaussianBump, x0, settings);
+      expect(r.value).toBeCloseTo(2 / Math.E, 2);
+      expectPointClose(r, [-1, 0], 0.1);
+    });
+
+    it('async', async () => {
+      const r = await pso.maximizeAsync(toAsync(gaussianBump), x0, settings);
+      expect(r.value).toBeCloseTo(2 / Math.E, 2);
+      expectPointClose(r, [-1, 0], 0.1);
+    });
+  });
+
   describe('minimize Sphere 2D with box constraints [2,5]² → min ≈ 8 at (2, 2)', () => {
     const x0 = new Float64Array([3, 3]);
     const box = boxConstraints(new Float64Array([2, 2]), new Float64Array([5, 5]));
@@ -244,6 +261,19 @@ describe('PSO', () => {
       expectPointClose(r, [2, 1, 1], 0.05);
     });
   });
+
+  // NOTE: The following problems from the Nelder-Mead suite are intentionally
+  // excluded because PSO with default-range settings struggles with them:
+  //
+  //  - minimize x²+12xy+2y² s.t. 4x²+y²=25 (equality constraint on ellipse)
+  //  - maximize x²+12xy+2y² s.t. 4x²+y²=25 (equality constraint on ellipse)
+  //
+  // PSO explores the search space stochastically, so equality constraints
+  // (h(x) = 0) encoded via quadratic penalty create a narrow feasible
+  // manifold that the swarm rarely samples well. The result is sensitive
+  // to swarmSize, maxIterations, and the penalty coefficient μ.
+  // Nelder-Mead handles these better because simplex moves can track the
+  // constraint surface more precisely.
 
   describe('deterministic seed', () => {
     it('produces identical results with the same seed', () => {

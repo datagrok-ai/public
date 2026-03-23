@@ -6,7 +6,8 @@
       "Bash(npx jest:*)",
       "Bash(npm test:*)",
       "Bash(npx ts-node:*)",
-      "Bash(npm run:*)"
+      "Bash(npm run:*)",
+      "Edit(/.claude/skills/add-optimizer/**)"
     ],
     "additionalDirectories": [
       "c:\\Users\\vmaka\\Datagrok\\public\\libraries\\sci-comp\\.claude\\skills"

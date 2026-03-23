@@ -24,14 +24,14 @@ The library is organized by numerical domain, currently **optimization**:
 index.ts                          # Entry point: re-exports {singleObjective, multiObjective} namespaces
 src/optimization/
   single-objective/
-    types.ts                      # ObjectiveFunction, OptimizationResult, Constraint, CommonSettings
-    optimizer.ts                  # Abstract Optimizer<S> base class (validation, penalty wiring, minimize/maximize)
-    penalty.ts                    # applyPenalty(), boxConstraints() — constraint → penalized objective
+    types.ts                      # ObjectiveFunction, AsyncObjectiveFunction, OptimizationResult, Constraint, CommonSettings
+    optimizer.ts                  # Abstract Optimizer<S> base class (validation, penalty wiring, minimize/maximize + async variants)
+    penalty.ts                    # applyPenalty(), applyPenaltyAsync(), boxConstraints() — constraint → penalized objective
     registry.ts                   # registerOptimizer/getOptimizer/listOptimizers — name-based lookup
     optimizers/
       nelder-mead.ts              # NelderMead extends Optimizer<NelderMeadSettings>
       pso.ts                      # PSO extends Optimizer<PSOSettings>
-    __tests__/                    # Jest tests per optimizer + registry
+    __tests__/                    # Jest tests per optimizer + registry (sync & async)
     examples/                     # Runnable examples (npx tsx src/optimization/single-objective/examples/*.ts)
   multi-objectives/
     moead/                        # MOEA/D multi-objective optimizer (defs.ts, moead.ts, utils.ts)
@@ -39,10 +39,23 @@ src/optimization/
 
 ### Key design patterns
 
-- **Optimizer base class** (`optimizer.ts`): All solvers extend `Optimizer<S>`. Subclasses implement `runInternal()` and `withDefaults()`. The base class handles input validation, constraint penalty wrapping, and the minimize/maximize inversion.
+- **Optimizer base class** (`optimizer.ts`): All solvers extend `Optimizer<S>`. Subclasses implement `runInternal()`, `runInternalAsync()`, and `withDefaults()`. The base class handles input validation, constraint penalty wrapping, and the minimize/maximize inversion.
+- **Sync + async API**: Each optimizer exposes `minimize`/`maximize` (sync) and `minimizeAsync`/`maximizeAsync` (for async objective functions). Penalty wrappers have sync (`applyPenalty`) and async (`applyPenaltyAsync`) variants.
 - **Namespace re-exports**: The public API uses namespace re-exports (`singleObjective`, `multiObjective`) to avoid name collisions between submodules. Consumers import as `import {singleObjective} from '@datagrok-libraries/sci-comp'`.
 - **Float64Array everywhere**: All point vectors use `Float64Array`, not `number[]`.
 - **Registry pattern**: Optimizers self-register at import time via side-effect imports in `single-objective/index.ts`.
+- **Iteration callbacks**: `onIteration` callback in settings allows progress monitoring and early stopping (return `true` to stop).
+
+### Test structure
+
+Tests are grouped by problem, each containing `sync` and `async` variants:
+
+```
+describe('minimize Rosenbrock 2D → min ≈ 0 at (1, 1)', () => {
+  it('sync', () => { ... });
+  it('async', async () => { ... });
+});
+```
 
 ## Skills
 

@@ -30,10 +30,11 @@ function printProblem(lines: string[]) {
 
 function printResult(label: string, r: OptimizationResult) {
   console.log(`\n--- ${label} ---`);
-  console.log(`  value:      ${r.value.toExponential(6)}`);
+  console.log(`  value:      ${r.value.toFixed(6)}`);
   console.log(`  point:      [${[...r.point].map((v) => v.toFixed(6)).join(', ')}]`);
   console.log(`  iterations: ${r.iterations}`);
   console.log(`  converged:  ${r.converged}`);
+  if (!r.converged) console.warn('  WARNING: optimizer did not converge');
 }
 
 /* ================================================================== */

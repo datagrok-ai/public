@@ -20,15 +20,20 @@ npm install @datagrok-libraries/sci-comp
 ```typescript
 import {singleObjective} from '@datagrok-libraries/sci-comp';
 
-const {NelderMead, PSO, applyPenalty, boxConstraints, getOptimizer, listOptimizers} = singleObjective;
+const {NelderMead, PSO, applyPenalty, applyPenaltyAsync, boxConstraints, getOptimizer, listOptimizers} = singleObjective;
 ```
 
 ### Single-objective
 
-Two built-in solvers:
+Two built-in solvers, each supporting synchronous and asynchronous objective functions:
 
 - [Nelder-Mead](https://en.wikipedia.org/wiki/Nelder%E2%80%93Mead_method) — derivative-free simplex method
 - [PSO (Particle Swarm Optimization)](https://en.wikipedia.org/wiki/Particle_swarm_optimization) — stochastic population-based method
+
+| Method | Sync | Async |
+|--------|------|-------|
+| Minimize | `minimize(fn, x0, settings)` | `minimizeAsync(fn, x0, settings)` |
+| Maximize | `maximize(fn, x0, settings)` | `maximizeAsync(fn, x0, settings)` |
 
 #### Unconstrained minimize
 
@@ -156,6 +161,44 @@ const result = pso.minimize(rosenbrock, new Float64Array([-1.2, 1.0]), {
 });
 ```
 
+#### Async objective function
+
+When the objective function involves asynchronous work (API calls, simulations, file I/O),
+use `minimizeAsync` / `maximizeAsync`:
+
+```typescript
+const asyncObjective = async (x: Float64Array): Promise<number> => {
+  // e.g. call a remote simulation service
+  return rosenbrock(x);
+};
+
+const nm = new NelderMead();
+const result = await nm.minimizeAsync(asyncObjective, new Float64Array([-1.2, 1.0]), {
+  maxIterations: 5_000,
+  tolerance: 1e-12,
+});
+```
+
+Async penalty wrappers are also available via `applyPenaltyAsync`.
+
+#### Iteration callback
+
+Use `onIteration` to monitor progress or stop early:
+
+```typescript
+const result = nm.minimize(sphere, new Float64Array([5, -3, 7]), {
+  maxIterations: 5_000,
+  onIteration: (state) => {
+    // Log every 100th iteration
+    if (state.iteration % 100 === 0)
+      console.log(`iter ${state.iteration}: best = ${state.bestValue}`);
+
+    // Return true to stop early
+    if (state.bestValue < 1e-6) return true;
+  },
+});
+```
+
 #### Registry
 
 Optimizers can be looked up by name:
@@ -182,4 +225,7 @@ npx tsx src/optimization/single-objective/examples/constrained.ts
 
 # Registry usage
 npx tsx src/optimization/single-objective/examples/registry.ts
+
+# Async objective functions and onIteration callbacks
+npx tsx src/optimization/single-objective/examples/async-and-callbacks.ts
 ```
