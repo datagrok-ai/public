@@ -34,7 +34,16 @@ src/optimization/
       gradient-descent.ts         # GradientDescent extends Optimizer<GradientDescentSettings>
       adam.ts                     # Adam extends Optimizer<AdamSettings>
     __tests__/                    # Jest tests per optimizer + registry (sync & async)
+      helpers.ts                  # Test utilities: rosenbrock, sphere, gaussian, quadratic3d, etc.
     examples/                     # Runnable examples (npx tsx src/optimization/single-objective/examples/*.ts)
+      unconstrained.ts            # Rosenbrock, Sphere, Gaussian examples
+      constrained.ts              # Box constraints example
+      async-and-callbacks.ts      # Async objective functions + iteration callbacks
+      gradient-descent.ts         # Gradient descent specific example
+      adam.ts                     # Adam specific example
+      registry.ts                 # Registry lookup example
+    benchmarks/
+      unconstrained-benchmarks.ts # 15 standard test functions (Sphere, Rosenbrock, Ackley, etc.) with comparison runner
   multi-objectives/
     moead/                        # MOEA/D multi-objective optimizer (defs.ts, moead.ts, utils.ts)
 ```
