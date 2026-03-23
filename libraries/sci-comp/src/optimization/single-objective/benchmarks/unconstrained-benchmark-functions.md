@@ -112,7 +112,7 @@ Source: [Test functions for optimization — Wikipedia](https://en.wikipedia.org
 
 | Property | Value |
 |---|---|
-| Formula | $f(x, y) = -20 \exp\!\left[ -0.2\sqrt{0.5(x^2 + y^2)} \right] - \exp\!\left[ 0.5(\cos 2\pi x + \cos 2\pi y) \right] + e + 20$ |
+| Formula | $f(x, y) = -20 \exp\left[ -0.2\sqrt{0.5(x^2 + y^2)} \right] - \exp\left[ 0.5(\cos 2\pi x + \cos 2\pi y) \right] + e + 20$ |
 | Dimension | 2 |
 | Type | Multimodal, differentiable |
 | Search domain | $-5 \le x, y \le 5$ |
@@ -138,7 +138,7 @@ Source: [Test functions for optimization — Wikipedia](https://en.wikipedia.org
 
 | Property | Value |
 |---|---|
-| Formula | $f(\mathbf{x}) = 1 + \dfrac{1}{4000} \sum_{i=1}^{n} x_i^2 - \prod_{i=1}^{n} \cos\!\left(\dfrac{x_i}{\sqrt{i}}\right)$ |
+| Formula | $f(\mathbf{x}) = 1 + \dfrac{1}{4000} \sum_{i=1}^{n} x_i^2 - \prod_{i=1}^{n} \cos\left(\dfrac{x_i}{\sqrt{i}}\right)$ |
 | Dimension | $n$ (tested: 2) |
 | Type | Multimodal, differentiable |
 | Search domain | $-600 \le x_i \le 600$ |
@@ -164,7 +164,7 @@ Source: [Test functions for optimization — Wikipedia](https://en.wikipedia.org
 
 | Property | Value |
 |---|---|
-| Formula | $f(x, y) = -\cos(x) \cdot \cos(y) \cdot \exp\!\left(-\left((x - \pi)^2 + (y - \pi)^2\right)\right)$ |
+| Formula | $f(x, y) = -\cos(x) \cdot \cos(y) \cdot \exp\left(-\left((x - \pi)^2 + (y - \pi)^2\right)\right)$ |
 | Dimension | 2 |
 | Type | Unimodal (nearly flat everywhere except near $(\pi, \pi)$), differentiable |
 | Search domain | $-100 \le x, y \le 100$ |
