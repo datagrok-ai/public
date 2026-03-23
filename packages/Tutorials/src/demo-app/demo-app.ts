@@ -77,11 +77,13 @@ export class DemoView extends DG.ViewBase {
       ])]);
       grok.shell.addView(v);
       this.currentView = v;
+      v.path = `${this.DEMO_APP_PATH}/${path.replaceAll(' ', '-')}`;
       ui.setUpdateIndicator(updateIndicatorRoot, false);
     } else {
       ui.setUpdateIndicator(updateIndicatorRoot, true);
       const prevAutoShowToolbox = grok.shell.windows.autoShowToolbox;
       grok.shell.windows.autoShowToolbox = false;
+      const viewBeforeApply = grok.shell.v;
       try {
         await func.apply();
         this.currentView = grok.shell.v;
@@ -94,11 +96,12 @@ export class DemoView extends DG.ViewBase {
       this.tree.rootNode.root.focus();
       this._guardTreeFocus();
       ui.setUpdateIndicator(updateIndicatorRoot, false);
+      if (grok.shell.v !== viewBeforeApply) {
+        grok.shell.v.name = splitViewPath[splitViewPath.length - 1].trim();
+        grok.shell.v.path = `${this.DEMO_APP_PATH}/${path.replaceAll(' ', '-')}`;
+        this._setBreadcrumbsInViewName(viewPath.split('|').map((s) => s.trim()));
+      }
     }
-
-    this._setViewName(splitViewPath[splitViewPath.length - 1].trim());
-    grok.shell.v.path = `${this.DEMO_APP_PATH}/${path.replaceAll(' ', '-')}`;
-    this._setBreadcrumbsInViewName(viewPath.split('|').map((s) => s.trim()));
   }
 
   private _setBreadcrumbsInViewName(viewPath: string[], view?: DG.View): void {
@@ -128,11 +131,6 @@ export class DemoView extends DG.ViewBase {
         viewNameRoot.appendChild(breadcrumbs.root);
       }
     }
-  }
-
-  private _setViewName(name: string): void {
-    if (grok.shell.v)
-      grok.shell.v.name = name;
   }
 
   private _closeDemoScript(): void {
