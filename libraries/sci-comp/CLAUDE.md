@@ -32,6 +32,7 @@ src/optimization/
       nelder-mead.ts              # NelderMead extends Optimizer<NelderMeadSettings>
       pso.ts                      # PSO extends Optimizer<PSOSettings>
       gradient-descent.ts         # GradientDescent extends Optimizer<GradientDescentSettings>
+      adam.ts                     # Adam extends Optimizer<AdamSettings>
     __tests__/                    # Jest tests per optimizer + registry (sync & async)
     examples/                     # Runnable examples (npx tsx src/optimization/single-objective/examples/*.ts)
   multi-objectives/

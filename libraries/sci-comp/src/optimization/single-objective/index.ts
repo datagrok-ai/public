@@ -30,12 +30,17 @@ export type {PSOSettings} from './optimizers/pso';
 export {GradientDescent} from './optimizers/gradient-descent';
 export type {GradientDescentSettings} from './optimizers/gradient-descent';
 
+export {Adam} from './optimizers/adam';
+export type {AdamSettings} from './optimizers/adam';
+
 // --- Auto-register built-in optimizers ---
 import {registerOptimizer} from './registry';
 import {NelderMead} from './optimizers/nelder-mead';
 import {PSO} from './optimizers/pso';
 import {GradientDescent} from './optimizers/gradient-descent';
+import {Adam} from './optimizers/adam';
 
 registerOptimizer('nelder-mead', () => new NelderMead());
 registerOptimizer('pso', () => new PSO());
 registerOptimizer('gradient-descent', () => new GradientDescent());
+registerOptimizer('adam', () => new Adam());

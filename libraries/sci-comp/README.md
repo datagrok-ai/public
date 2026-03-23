@@ -7,6 +7,7 @@ Pure TypeScript library of numerical methods for the [Datagrok](https://datagrok
     - [Nelder-Mead](https://en.wikipedia.org/wiki/Nelder%E2%80%93Mead_method) - derivative-free simplex method
     - [PSO (Particle Swarm Optimization)](https://en.wikipedia.org/wiki/Particle_swarm_optimization) - stochastic population-based method
     - [Gradient Descent](https://en.wikipedia.org/wiki/Gradient_descent) - first-order method with numerical gradients, momentum, and learning rate decay
+    - [Adam](https://arxiv.org/abs/1412.6980) - adaptive moment estimation with per-parameter learning rates
   * multi-objective:
     - [MOEA/D](https://ieeexplore.ieee.org/document/4358754)
 
@@ -26,11 +27,12 @@ const {NelderMead, PSO, applyPenalty, applyPenaltyAsync, boxConstraints, getOpti
 
 ### Single-objective
 
-Three built-in solvers, each supporting synchronous and asynchronous objective functions:
+Four built-in solvers, each supporting synchronous and asynchronous objective functions:
 
 - [Nelder-Mead](https://en.wikipedia.org/wiki/Nelder%E2%80%93Mead_method) - derivative-free simplex method
 - [PSO (Particle Swarm Optimization)](https://en.wikipedia.org/wiki/Particle_swarm_optimization) - stochastic population-based method
 - [Gradient Descent](https://en.wikipedia.org/wiki/Gradient_descent) - first-order method with numerical gradients, momentum, and learning rate decay
+- [Adam](https://arxiv.org/abs/1412.6980) - adaptive moment estimation with per-parameter learning rates
 
 | Method | Sync | Async |
 |--------|------|-------|
