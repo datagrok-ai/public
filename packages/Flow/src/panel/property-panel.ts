@@ -83,327 +83,329 @@ export class PropertyPanel {
     this.contentDiv.innerHTML = '';
     const n = node as FuncFlowNode;
 
-    // Title
+    // Title row (always visible at top, outside accordion)
     const titleInput = this.createTextarea('Title', node.title || '', (v) => {
       node.title = v;
     });
-    this.contentDiv.appendChild(titleInput);
-
-    // Node type label
     const nodeType = n.dgNodeType || 'function';
-    this.contentDiv.appendChild(
-      ui.div([ui.label('Type'), ui.divText(nodeType)], 'funcflow-prop-row'),
-    );
+    const typeBadge = ui.div([], 'funcflow-type-badge');
+    typeBadge.textContent = nodeType;
+    const titleRow = ui.div([titleInput, typeBadge], 'funcflow-title-row');
+    this.contentDiv.appendChild(titleRow);
+
+    // Build accordion
+    const acc = ui.accordion('funcflow-context-panel');
 
     // Type-specific editors
     if (n.dgFunc)
-      this.showFuncNodeProps(n);
+      this.addFuncNodePanes(acc, n);
     if (n.dgNodeType === 'input')
-      this.showInputNodeProps(node);
+      this.addInputNodePane(acc, node);
     if (n.dgNodeType === 'output')
-      this.showOutputNodeProps(node);
+      this.addOutputNodePane(acc, node);
     if (n.dgNodeType === 'utility')
-      this.showUtilityNodeProps(node);
+      this.addUtilityNodePane(acc, node);
 
-    this.showConnectionsSummary(node);
+    this.addConnectionsPane(acc, node);
+
+    this.contentDiv.appendChild(acc.root);
   }
 
-  private showFuncNodeProps(n: FuncFlowNode): void {
+  private addFuncNodePanes(acc: DG.Accordion, n: FuncFlowNode): void {
     const func = n.dgFunc;
     if (!func) return;
 
-    // Function info section
-    const section = ui.div([], 'funcflow-prop-section');
-    section.appendChild(ui.div([ui.label('Function')], 'funcflow-prop-section-header'));
+    // Function info pane
+    acc.addPane('Function', () => {
+      const content = ui.div([], 'funcflow-accordion-content');
+      if (func.description)
+        content.appendChild(ui.div([ui.label('Description'), ui.divText(func.description)], 'funcflow-prop-row'));
+      const qualName = n.dgFuncName || func.name;
+      content.appendChild(ui.div([ui.label('Full Name'), ui.divText(qualName)], 'funcflow-prop-row'));
+      if (n.dgRole)
+        content.appendChild(ui.div([ui.label('Role'), ui.divText(n.dgRole)], 'funcflow-prop-row'));
+      return content;
+    }, true);
 
-    if (func.description)
-      section.appendChild(ui.div([ui.label('Description'), ui.divText(func.description)], 'funcflow-prop-row'));
-
-    const qualName = n.dgFuncName || func.name;
-    section.appendChild(ui.div([ui.label('Full Name'), ui.divText(qualName)], 'funcflow-prop-row'));
-
-    if (n.dgRole)
-      section.appendChild(ui.div([ui.label('Role'), ui.divText(n.dgRole)], 'funcflow-prop-row'));
-
-    this.contentDiv.appendChild(section);
-
-    // Editable input parameters section
+    // Editable input parameters pane
     if (func.inputs.length > 0) {
-      const inputSection = ui.div([], 'funcflow-prop-section');
-      inputSection.appendChild(ui.div([ui.label('Input Parameters')], 'funcflow-prop-section-header'));
+      acc.addPane('Input Parameters', () => {
+        const content = ui.div([], 'funcflow-accordion-content');
+        for (let i = 0; i < func.inputs.length; i++) {
+          const inp = func.inputs[i];
+          const propKey = `_input_${inp.name}`;
+          const tip = buildFuncInputTooltip(inp);
 
-      for (let i = 0; i < func.inputs.length; i++) {
-        const inp = func.inputs[i];
-        const propKey = `_input_${inp.name}`;
-        const tip = buildFuncInputTooltip(inp);
+          // Only show editors for primitive types that have stored values
+          if (n.properties[propKey] === undefined) {
+            const row = ui.div(
+              [ui.divText(`${inp.name}: ${inp.propertyType} (connected only)`)],
+              'funcflow-prop-row',
+            );
+            ui.tooltip.bind(row, tip);
+            content.appendChild(row);
+            continue;
+          }
 
-        // Only show editors for primitive types that have stored values
-        if (n.properties[propKey] === undefined) {
-          const row = ui.div(
-            [ui.divText(`${inp.name}: ${inp.propertyType} (connected only)`)],
-            'funcflow-prop-row',
-          );
-          ui.tooltip.bind(row, tip);
-          inputSection.appendChild(row);
-          continue;
+          const connectedAtSlot = n.isInputConnected(i);
+          if (connectedAtSlot) {
+            const row = ui.div(
+              [ui.divText(`${inp.name}: connected`)], 'funcflow-prop-row',
+            );
+            ui.tooltip.bind(row, tip);
+            content.appendChild(row);
+            continue;
+          }
+
+          switch (inp.propertyType) {
+          case 'string':
+            content.appendChild(this.createTextarea(
+              inp.name, String(n.properties[propKey] || ''),
+              (v) => {
+                n.properties[propKey] = v;
+              }, tip,
+            ));
+            break;
+          case 'int':
+            content.appendChild(this.createNumberInput(
+              inp.name, Number(n.properties[propKey] || 0),
+              (v) => {
+                n.properties[propKey] = Math.round(v);
+              }, 0, 1, tip,
+            ));
+            break;
+          case 'double':
+          case 'num':
+            content.appendChild(this.createNumberInput(
+              inp.name, Number(n.properties[propKey] || 0),
+              (v) => {
+                n.properties[propKey] = v;
+              }, 3, 0.1, tip,
+            ));
+            break;
+          case 'bool':
+            content.appendChild(this.createToggle(
+              inp.name, Boolean(n.properties[propKey]),
+              (v) => {
+                n.properties[propKey] = v;
+              }, tip,
+            ));
+            break;
+          }
         }
+        return content;
+      }, true);
+    }
+  }
 
-        const connectedAtSlot = n.isInputConnected(i);
-        if (connectedAtSlot) {
-          const row = ui.div(
-            [ui.divText(`${inp.name}: connected`)], 'funcflow-prop-row',
-          );
-          ui.tooltip.bind(row, tip);
-          inputSection.appendChild(row);
-          continue;
-        }
+  private addInputNodePane(acc: DG.Accordion, node: LGraphNode): void {
+    acc.addPane('Input Configuration', () => {
+      const content = ui.div([], 'funcflow-accordion-content');
 
-        switch (inp.propertyType) {
-        case 'string':
-          inputSection.appendChild(this.createTextarea(
-            inp.name, String(n.properties[propKey] || ''),
-            (v) => {
-              n.properties[propKey] = v;
-            }, tip,
-          ));
-          break;
-        case 'int':
-          inputSection.appendChild(this.createNumberInput(
-            inp.name, Number(n.properties[propKey] || 0),
-            (v) => {
-              n.properties[propKey] = Math.round(v);
-            }, 0, 1, tip,
-          ));
-          break;
-        case 'double':
-        case 'num':
-          inputSection.appendChild(this.createNumberInput(
-            inp.name, Number(n.properties[propKey] || 0),
-            (v) => {
-              n.properties[propKey] = v;
-            }, 3, 0.1, tip,
-          ));
-          break;
-        case 'bool':
-          inputSection.appendChild(this.createToggle(
-            inp.name, Boolean(n.properties[propKey]),
-            (v) => {
-              n.properties[propKey] = v;
-            }, tip,
-          ));
-          break;
-        }
+      // paramName
+      content.appendChild(this.createTextarea('Param Name', node.properties['paramName'] || '', (v) => {
+        node.properties['paramName'] = v;
+      }));
+
+      // description
+      content.appendChild(this.createTextarea('Description', node.properties['description'] || '', (v) => {
+        node.properties['description'] = v;
+      }));
+
+      const outputType = (node as any).dgOutputType;
+
+      // defaultValue - varies by type
+      if (outputType === 'bool') {
+        content.appendChild(this.createToggle('Default', Boolean(node.properties['defaultValue']), (v) => {
+          node.properties['defaultValue'] = v;
+        }));
+      } else if (outputType === 'int') {
+        content.appendChild(this.createNumberInput('Default', Number(node.properties['defaultValue'] || 0), (v) => {
+          node.properties['defaultValue'] = Math.round(v);
+        }, 0, 1));
+      } else if (outputType === 'double') {
+        content.appendChild(this.createNumberInput('Default', Number(node.properties['defaultValue'] || 0), (v) => {
+          node.properties['defaultValue'] = v;
+        }, 3, 0.1));
+      } else if (node.properties['defaultValue'] !== undefined && outputType !== 'dataframe' &&
+                 outputType !== 'file' && outputType !== 'map' && outputType !== 'blob') {
+        content.appendChild(this.createTextarea('Default', String(node.properties['defaultValue'] || ''), (v) => {
+          node.properties['defaultValue'] = v;
+        }));
       }
 
-      this.contentDiv.appendChild(inputSection);
-    }
+      // nullable
+      if (node.properties['nullable'] !== undefined) {
+        content.appendChild(this.createToggle('Nullable', Boolean(node.properties['nullable']), (v) => {
+          node.properties['nullable'] = v;
+        }));
+      }
+
+      // caption
+      if (node.properties['caption'] !== undefined) {
+        content.appendChild(this.createTextarea('Caption', String(node.properties['caption'] || ''), (v) => {
+          node.properties['caption'] = v;
+        }));
+      }
+
+      // typeFilter (Column, Column List)
+      if (node.properties['typeFilter'] !== undefined) {
+        content.appendChild(this.createCombo('Type Filter', String(node.properties['typeFilter'] || ''),
+          TYPE_FILTER_VALUES, (v) => {
+            node.properties['typeFilter'] = v;
+          }));
+      }
+
+      // semTypeFilter (Column, Column List)
+      if (node.properties['semTypeFilter'] !== undefined) {
+        content.appendChild(this.createTextarea('SemType Filter', String(node.properties['semTypeFilter'] || ''), (v) => {
+          node.properties['semTypeFilter'] = v;
+        }));
+      }
+
+      // semType (String Input)
+      if (node.properties['semType'] !== undefined) {
+        content.appendChild(this.createCombo('SemType', String(node.properties['semType'] || ''),
+          SEMTYPE_VALUES, (v) => {
+            node.properties['semType'] = v;
+          }));
+      }
+
+      // choices (String Input)
+      if (node.properties['choices'] !== undefined) {
+        content.appendChild(this.createTextarea('Choices (comma-sep)', String(node.properties['choices'] || ''), (v) => {
+          node.properties['choices'] = v;
+        }));
+      }
+
+      // min, max (Number, Int)
+      if (node.properties['min'] !== undefined) {
+        content.appendChild(this.createTextarea('Min', String(node.properties['min'] || ''), (v) => {
+          node.properties['min'] = v;
+        }));
+      }
+      if (node.properties['max'] !== undefined) {
+        content.appendChild(this.createTextarea('Max', String(node.properties['max'] || ''), (v) => {
+          node.properties['max'] = v;
+        }));
+      }
+
+      // showSlider (Number, Int)
+      if (node.properties['showSlider'] !== undefined) {
+        content.appendChild(this.createToggle('Show Slider', Boolean(node.properties['showSlider']), (v) => {
+          node.properties['showSlider'] = v;
+        }));
+      }
+
+      return content;
+    }, true);
   }
 
-  private showInputNodeProps(node: LGraphNode): void {
-    const section = ui.div([], 'funcflow-prop-section');
-    section.appendChild(ui.div([ui.label('Input Configuration')], 'funcflow-prop-section-header'));
+  private addOutputNodePane(acc: DG.Accordion, node: LGraphNode): void {
+    acc.addPane('Output Configuration', () => {
+      const content = ui.div([], 'funcflow-accordion-content');
 
-    // paramName
-    section.appendChild(this.createTextarea('Param Name', node.properties['paramName'] || '', (v) => {
-      node.properties['paramName'] = v;
-    }));
-
-    // description
-    section.appendChild(this.createTextarea('Description', node.properties['description'] || '', (v) => {
-      node.properties['description'] = v;
-    }));
-
-    const outputType = (node as any).dgOutputType;
-
-    // defaultValue - varies by type
-    if (outputType === 'bool') {
-      section.appendChild(this.createToggle('Default', Boolean(node.properties['defaultValue']), (v) => {
-        node.properties['defaultValue'] = v;
+      // paramName
+      content.appendChild(this.createTextarea('Param Name', node.properties['paramName'] || '', (v) => {
+        node.properties['paramName'] = v;
       }));
-    } else if (outputType === 'int') {
-      section.appendChild(this.createNumberInput('Default', Number(node.properties['defaultValue'] || 0), (v) => {
-        node.properties['defaultValue'] = Math.round(v);
-      }, 0, 1));
-    } else if (outputType === 'double') {
-      section.appendChild(this.createNumberInput('Default', Number(node.properties['defaultValue'] || 0), (v) => {
-        node.properties['defaultValue'] = v;
-      }, 3, 0.1));
-    } else if (node.properties['defaultValue'] !== undefined && outputType !== 'dataframe' &&
-               outputType !== 'file' && outputType !== 'map' && outputType !== 'blob') {
-      section.appendChild(this.createTextarea('Default', String(node.properties['defaultValue'] || ''), (v) => {
-        node.properties['defaultValue'] = v;
-      }));
-    }
 
-    // nullable
-    if (node.properties['nullable'] !== undefined) {
-      section.appendChild(this.createToggle('Nullable', Boolean(node.properties['nullable']), (v) => {
-        node.properties['nullable'] = v;
-      }));
-    }
+      // outputType (Value Output only)
+      if (node.properties['outputType'] !== undefined) {
+        content.appendChild(this.createCombo('Output Type', String(node.properties['outputType'] || 'dynamic'),
+          OUTPUT_TYPE_VALUES, (v) => {
+            node.properties['outputType'] = v;
+          }));
+      }
 
-    // caption
-    if (node.properties['caption'] !== undefined) {
-      section.appendChild(this.createTextarea('Caption', String(node.properties['caption'] || ''), (v) => {
-        node.properties['caption'] = v;
-      }));
-    }
-
-    // typeFilter (Column, Column List)
-    if (node.properties['typeFilter'] !== undefined) {
-      section.appendChild(this.createCombo('Type Filter', String(node.properties['typeFilter'] || ''),
-        TYPE_FILTER_VALUES, (v) => {
-          node.properties['typeFilter'] = v;
-        }));
-    }
-
-    // semTypeFilter (Column, Column List)
-    if (node.properties['semTypeFilter'] !== undefined) {
-      section.appendChild(this.createTextarea('SemType Filter', String(node.properties['semTypeFilter'] || ''), (v) => {
-        node.properties['semTypeFilter'] = v;
-      }));
-    }
-
-    // semType (String Input)
-    if (node.properties['semType'] !== undefined) {
-      section.appendChild(this.createCombo('SemType', String(node.properties['semType'] || ''),
-        SEMTYPE_VALUES, (v) => {
-          node.properties['semType'] = v;
-        }));
-    }
-
-    // choices (String Input)
-    if (node.properties['choices'] !== undefined) {
-      section.appendChild(this.createTextarea('Choices (comma-sep)', String(node.properties['choices'] || ''), (v) => {
-        node.properties['choices'] = v;
-      }));
-    }
-
-    // min, max (Number, Int)
-    if (node.properties['min'] !== undefined) {
-      section.appendChild(this.createTextarea('Min', String(node.properties['min'] || ''), (v) => {
-        node.properties['min'] = v;
-      }));
-    }
-    if (node.properties['max'] !== undefined) {
-      section.appendChild(this.createTextarea('Max', String(node.properties['max'] || ''), (v) => {
-        node.properties['max'] = v;
-      }));
-    }
-
-    // showSlider (Number, Int)
-    if (node.properties['showSlider'] !== undefined) {
-      section.appendChild(this.createToggle('Show Slider', Boolean(node.properties['showSlider']), (v) => {
-        node.properties['showSlider'] = v;
-      }));
-    }
-
-    this.contentDiv.appendChild(section);
+      return content;
+    }, true);
   }
 
-  private showOutputNodeProps(node: LGraphNode): void {
-    const section = ui.div([], 'funcflow-prop-section');
-    section.appendChild(ui.div([ui.label('Output Configuration')], 'funcflow-prop-section-header'));
-
-    // paramName
-    section.appendChild(this.createTextarea('Param Name', node.properties['paramName'] || '', (v) => {
-      node.properties['paramName'] = v;
-    }));
-
-    // outputType (Value Output only)
-    if (node.properties['outputType'] !== undefined) {
-      section.appendChild(this.createCombo('Output Type', String(node.properties['outputType'] || 'dynamic'),
-        OUTPUT_TYPE_VALUES, (v) => {
-          node.properties['outputType'] = v;
-        }));
-    }
-
-    this.contentDiv.appendChild(section);
-  }
-
-  private showUtilityNodeProps(node: LGraphNode): void {
+  private addUtilityNodePane(acc: DG.Accordion, node: LGraphNode): void {
     const props = Object.entries(node.properties).filter(([key]) => !key.startsWith('_'));
     if (props.length === 0) return;
 
-    const section = ui.div([], 'funcflow-prop-section');
-    section.appendChild(ui.div([ui.label('Configuration')], 'funcflow-prop-section-header'));
-    const nodeTips = UTILITY_PROP_TOOLTIPS[node.title] || {};
+    acc.addPane('Configuration', () => {
+      const content = ui.div([], 'funcflow-accordion-content');
+      const nodeTips = UTILITY_PROP_TOOLTIPS[node.title] || {};
 
-    for (const [key, val] of props) {
-      const tip = nodeTips[key];
-      if (typeof val === 'boolean') {
-        section.appendChild(this.createToggle(key, val, (v) => {
-          node.properties[key] = v;
-        }, tip));
-      } else if (typeof val === 'number') {
-        const isInt = Number.isInteger(val);
-        section.appendChild(this.createNumberInput(key, val, (v) => {
-          node.properties[key] = isInt ? Math.round(v) : v;
-          // Sync widget if it exists (e.g., ConstString)
-          if (node.widgets) {
-            const w = node.widgets.find((w) => w.options?.property === key);
-            if (w) w.value = node.properties[key];
-          }
-        }, isInt ? 0 : 3, isInt ? 1 : 0.1, tip));
-      } else {
-        section.appendChild(this.createTextarea(key, String(val), (v) => {
-          node.properties[key] = v;
-          // Sync widget if it exists (e.g., ConstString)
-          if (node.widgets) {
-            const w = node.widgets.find((w) => w.options?.property === key);
-            if (w) w.value = v;
-          }
-        }, tip));
+      for (const [key, val] of props) {
+        const tip = nodeTips[key];
+        if (typeof val === 'boolean') {
+          content.appendChild(this.createToggle(key, val, (v) => {
+            node.properties[key] = v;
+          }, tip));
+        } else if (typeof val === 'number') {
+          const isInt = Number.isInteger(val);
+          content.appendChild(this.createNumberInput(key, val, (v) => {
+            node.properties[key] = isInt ? Math.round(v) : v;
+            if (node.widgets) {
+              const w = node.widgets.find((w) => w.options?.property === key);
+              if (w) w.value = node.properties[key];
+            }
+          }, isInt ? 0 : 3, isInt ? 1 : 0.1, tip));
+        } else {
+          content.appendChild(this.createTextarea(key, String(val), (v) => {
+            node.properties[key] = v;
+            if (node.widgets) {
+              const w = node.widgets.find((w) => w.options?.property === key);
+              if (w) w.value = v;
+            }
+          }, tip));
+        }
       }
-    }
 
-    this.contentDiv.appendChild(section);
+      return content;
+    }, true);
   }
 
-  private showConnectionsSummary(node: LGraphNode): void {
-    const section = ui.div([], 'funcflow-prop-section');
-    section.appendChild(ui.div([ui.label('Connections')], 'funcflow-prop-section-header'));
+  private addConnectionsPane(acc: DG.Accordion, node: LGraphNode): void {
+    acc.addPane('Connections', () => {
+      const content = ui.div([], 'funcflow-accordion-content');
+      const ptCount = (node as any).properties?.['_passthroughCount'] ?? 0;
 
-    const ptCount = (node as any).properties?.['_passthroughCount'] ?? 0;
-
-    // --- Inputs ---
-    if (node.inputs && node.inputs.length > 0) {
-      section.appendChild(this.connGroupLabel('Inputs'));
-      for (let i = 0; i < node.inputs.length; i++) {
-        const inp = node.inputs[i];
-        const connected = node.isInputConnected(i);
-        section.appendChild(this.buildConnRow(
-          'IN', inp.name, inp.type as string, connected ? 'connected' : 'disconnected', connected));
+      // --- Inputs ---
+      if (node.inputs && node.inputs.length > 0) {
+        content.appendChild(this.connGroupLabel('Inputs'));
+        for (let i = 0; i < node.inputs.length; i++) {
+          const inp = node.inputs[i];
+          const connected = node.isInputConnected(i);
+          content.appendChild(this.buildConnRow(
+            'IN', inp.name, inp.type as string, connected ? 'connected' : 'disconnected', connected));
+        }
       }
-    }
 
-    // --- Pass-through outputs ---
-    if (ptCount > 0 && node.outputs) {
-      section.appendChild(this.connSeparator());
-      section.appendChild(this.connGroupLabel('Pass-through'));
-      for (let i = 0; i < ptCount && i < node.outputs.length; i++) {
-        const out = node.outputs[i];
-        const connected = node.isOutputConnected(i);
-        const linkCount = out.links ? out.links.length : 0;
-        const status = connected ? `${linkCount} link(s)` : 'disconnected';
-        section.appendChild(this.buildConnRow('PT', out.name, out.type as string, status, connected));
+      // --- Pass-through outputs (compact display) ---
+      if (ptCount > 0 && node.outputs) {
+        content.appendChild(this.connSeparator());
+        content.appendChild(this.connGroupLabel('Pass-through'));
+        for (let i = 0; i < ptCount && i < node.outputs.length; i++) {
+          const out = node.outputs[i];
+          const connected = node.isOutputConnected(i);
+          const linkCount = out.links ? out.links.length : 0;
+          const status = connected ? `${linkCount} link(s)` : 'disconnected';
+          // Use the corresponding input name for display
+          const baseName = node.inputs?.[i]?.name || out.name;
+          content.appendChild(this.buildConnRow('PT', baseName, out.type as string, status, connected));
+        }
       }
-    }
 
-    // --- Real outputs ---
-    if (node.outputs && node.outputs.length > ptCount) {
-      section.appendChild(this.connSeparator());
-      section.appendChild(this.connGroupLabel('Outputs'));
-      for (let i = ptCount; i < node.outputs.length; i++) {
-        const out = node.outputs[i];
-        const connected = node.isOutputConnected(i);
-        const linkCount = out.links ? out.links.length : 0;
-        const status = connected ? `${linkCount} link(s)` : 'disconnected';
-        section.appendChild(this.buildConnRow('OUT', out.name, out.type as string, status, connected));
+      // --- Real outputs ---
+      if (node.outputs && node.outputs.length > ptCount) {
+        content.appendChild(this.connSeparator());
+        content.appendChild(this.connGroupLabel('Outputs'));
+        for (let i = ptCount; i < node.outputs.length; i++) {
+          const out = node.outputs[i];
+          const connected = node.isOutputConnected(i);
+          const linkCount = out.links ? out.links.length : 0;
+          const status = connected ? `${linkCount} link(s)` : 'disconnected';
+          content.appendChild(this.buildConnRow('OUT', out.name, out.type as string, status, connected));
+        }
       }
-    }
 
-    this.contentDiv.appendChild(section);
+      return content;
+    }, false); // Collapsed by default
   }
 
   private buildConnRow(
@@ -524,10 +526,20 @@ export class PropertyPanel {
   showNodeWithExecution(node: LGraphNode, execState?: NodeExecState): void {
     this.showNode(node);
     if (execState) {
-      const separator = ui.div([], 'funcflow-prop-section-header');
-      separator.textContent = 'Execution';
-      this.contentDiv.appendChild(separator);
-      this.contentDiv.appendChild(buildValuePanel(execState));
+      // Find the accordion and add execution pane
+      const accRoot = this.contentDiv.querySelector('.d4-accordion');
+      if (accRoot) {
+        // Create a simple execution section appended after the accordion
+        const execHeader = ui.div([], 'funcflow-prop-section-header');
+        execHeader.textContent = 'Execution';
+        this.contentDiv.appendChild(execHeader);
+        this.contentDiv.appendChild(buildValuePanel(execState));
+      } else {
+        const separator = ui.div([], 'funcflow-prop-section-header');
+        separator.textContent = 'Execution';
+        this.contentDiv.appendChild(separator);
+        this.contentDiv.appendChild(buildValuePanel(execState));
+      }
     }
   }
 

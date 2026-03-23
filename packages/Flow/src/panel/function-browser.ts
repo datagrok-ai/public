@@ -174,7 +174,8 @@ export class FunctionBrowser {
       content.appendChild(item);
     }
 
-    let collapsed = !!startCollapsed;
+    const hasSearch = !!this.searchInput.value;
+    let collapsed = hasSearch ? false : !!startCollapsed;
     if (collapsed) {
       content.style.display = 'none';
       header.classList.add('collapsed');
@@ -194,8 +195,6 @@ export class FunctionBrowser {
     header.style.cursor = 'pointer';
 
     const content = ui.div([], 'funcflow-section-content');
-    // Start collapsed for DG functions since there can be many
-    content.style.display = 'none';
 
     for (const info of items) {
       const item = ui.div([], 'funcflow-func-item');
@@ -210,8 +209,14 @@ export class FunctionBrowser {
       content.appendChild(item);
     }
 
-    let collapsed = true;
-    header.classList.add('collapsed');
+    const hasSearch = !!this.searchInput.value;
+    let collapsed = !hasSearch;
+    if (collapsed) {
+      content.style.display = 'none';
+      header.classList.add('collapsed');
+    } else {
+      content.style.display = 'block';
+    }
     header.addEventListener('click', () => {
       collapsed = !collapsed;
       content.style.display = collapsed ? 'none' : 'block';

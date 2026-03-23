@@ -6,7 +6,7 @@ import {registerOutputNodes} from './output-nodes';
 import {registerUtilityNodes} from './utility-nodes';
 import {registerComparisonNodes} from './comparison-nodes';
 import {registerBreakpointNode} from './breakpoint-node';
-import {getRole, getTags, getPackageName} from '../utils/dart-proxy-utils';
+import {getRole, getTags, getPackageName, getFuncDisplayName} from '../utils/dart-proxy-utils';
 import {registerSlotColors} from '../types/type-map';
 
 export interface FuncInfo {
@@ -117,7 +117,7 @@ export function registerAllFunctions(): FuncInfo[] {
 
       registeredFuncs.push({
         func,
-        name: func.name,
+        name: getFuncDisplayName(func) || func.name,
         role,
         tags,
         packageName: pkgName,

@@ -15,6 +15,7 @@ export class CanvasController {
   canvas: HTMLCanvasElement;
   graphManager: GraphManager;
   private tooltipEl!: HTMLDivElement;
+  private _animationTimer: ReturnType<typeof setInterval> | null = null;
 
   constructor(container: HTMLElement, graphManager: GraphManager, callbacks?: CanvasCallbacks) {
     this.graphManager = graphManager;
@@ -45,26 +46,35 @@ export class CanvasController {
     (this.graphCanvas as any).inner_text_font =
       'normal ' + (LiteGraph as any).NODE_SUBTEXT_SIZE + 'px \'Roboto\', \'Roboto Local\', Arial, sans-serif';
 
-    // Configure appearance - light theme
+    // Configure appearance - Spotfire-inspired light theme
     this.graphCanvas.render_curved_connections = true;
     this.graphCanvas.render_connection_arrows = false;
     this.graphCanvas.render_connections_border = false;
     this.graphCanvas.highquality_render = true;
-    this.graphCanvas.render_shadows = false;
+    this.graphCanvas.render_shadows = true;
     this.graphCanvas.clear_background = true;
     this.graphCanvas.links_render_mode = 2; // SPLINE_LINK
     this.graphCanvas.allow_searchbox = false;
     (this.graphCanvas as any).show_info = false;
     (this.graphCanvas as any).render_canvas_border = false;
 
-    // Light theme: the key properties for background rendering
-    this.graphCanvas.background_image = '';
-    (this.graphCanvas as any).clear_background_color = '#e8e8e8';
-    this.graphCanvas.default_link_color = '#555';
-    (this.graphCanvas as any).connections_width = 2;
+    // Spotfire-inspired: clean background with subtle dot grid
+    this.graphCanvas.background_image = this.createDotGridImage();
+    (this.graphCanvas as any).clear_background_color = '#ebedf2';
+    // Prevent background darkening on zoom (LiteGraph overlays the tile on the solid fill)
+    (this.graphCanvas as any).zoom_modify_alpha = false;
+    (this.graphCanvas as any).editor_alpha = 1.0;
+    this.graphCanvas.default_link_color = '#8892a0';
+    (this.graphCanvas as any).connections_width = 2.5;
 
-    // Dark title text — readable on both white and colored title bars
+    // Dark title text — visible on both white (expanded) and colored (collapsed) backgrounds
     (this.graphCanvas as any).node_title_color = '#333';
+
+    // Suppress the default LiteGraph selected box outline (we draw our own in patchNodeRendering)
+    (this.graphCanvas as any).node_box_outline_color = 'transparent';
+
+    // Patch node rendering for clean visuals + colored title bars
+    this.patchNodeRendering();
 
     // Setup callbacks
     if (callbacks?.onNodeSelected)
@@ -112,64 +122,85 @@ export class CanvasController {
     };
   }
 
-  /** Apply light theme color constants globally */
+  /** Apply Spotfire-inspired light theme color constants globally */
   private applyLightThemeGlobals(): void {
-    (LGraphCanvas as any).DEFAULT_BACKGROUND_COLOR = '#e8e8e8';
+    (LGraphCanvas as any).DEFAULT_BACKGROUND_COLOR = '#ebedf2';
     LiteGraph.NODE_DEFAULT_COLOR = '#BDBDBD';
     LiteGraph.NODE_DEFAULT_BGCOLOR = '#ffffff';
-    LiteGraph.NODE_DEFAULT_BOXCOLOR = '#888';
+    LiteGraph.NODE_DEFAULT_BOXCOLOR = '#90a4ae';
     LiteGraph.NODE_TEXT_COLOR = '#333';
     LiteGraph.NODE_TITLE_COLOR = '#BDBDBD';
-    (LiteGraph as any).NODE_SELECTED_TITLE_COLOR = '#000';
-    (LiteGraph as any).NODE_BOX_OUTLINE_COLOR = '#666';
+    (LiteGraph as any).NODE_SELECTED_TITLE_COLOR = '#1565c0';
+    // Make the default box outline transparent — our patchNodeRendering handles selection border
+    (LiteGraph as any).NODE_BOX_OUTLINE_COLOR = 'transparent';
     (LiteGraph as any).WIDGET_BGCOLOR = '#f5f5f5';
     (LiteGraph as any).WIDGET_TEXT_COLOR = '#333';
     (LiteGraph as any).WIDGET_OUTLINE_COLOR = 'transparent';
-    (LiteGraph as any).LINK_COLOR = '#666';
-    (LiteGraph as any).EVENT_LINK_COLOR = '#666';
-    (LiteGraph as any).CONNECTING_LINK_COLOR = '#444';
-
-    // this.patchNodeRendering();
+    (LiteGraph as any).LINK_COLOR = '#8892a0';
+    (LiteGraph as any).EVENT_LINK_COLOR = '#8892a0';
+    (LiteGraph as any).CONNECTING_LINK_COLOR = '#1976d2';
   }
 
-  /** Replace LiteGraph's drawNodeShape to fix light-theme rendering artifacts.
+  /** Replace LiteGraph's drawNodeShape for Spotfire-inspired visuals.
    *
-   * The original method draws a semi-transparent separator line at the
-   * title/body junction and leaves the node body without a stroke, which
-   * produces faint white edge artifacts on a light background. This
-   * replacement keeps all the original rendering but:
-   *  - Skips the separator fillRect
-   *  - Adds a subtle border stroke around the whole node shape */
+   * For expanded nodes: draws colored title bar + white title text on top of original render.
+   * For collapsed nodes: LiteGraph already draws a colored bar, we just set node_title_color='#333'
+   * as safe fallback but the collapsed path in LiteGraph uses fgcolor (node.color) natively.
+   * Also adds: soft shadow, separator fix, blue selection border. */
   private patchNodeRendering(): void {
     const origDrawNodeShape = (LGraphCanvas.prototype as any).drawNodeShape;
     (LGraphCanvas.prototype as any).drawNodeShape = function(
       node: any, ctx: CanvasRenderingContext2D, size: number[],
       fgcolor: string, bgcolor: string, selected: boolean, mouse_over: boolean,
     ) {
-      // Call the original rendering
-      origDrawNodeShape.call(this, node, ctx, size, fgcolor, bgcolor, selected, mouse_over);
+      const title_height = (LiteGraph as any).NODE_TITLE_HEIGHT;
+      const rr = (this as any).round_radius || 10;
+      const isCollapsed = node.flags?.collapsed;
 
-      // Overdraw the separator with the node bgcolor to suppress the artifact
-      if (!node.flags.collapsed) {
+      // 1) Draw soft shadow
+      ctx.save();
+      ctx.shadowColor = 'rgba(0,0,0,0.10)';
+      ctx.shadowBlur = 10;
+      ctx.shadowOffsetX = 0;
+      ctx.shadowOffsetY = 3;
+      ctx.beginPath();
+      if (isCollapsed) {
+        const cw = (node as any)._collapsed_width || size[0];
+        (ctx as any).roundRect(0, -title_height, cw, title_height, [rr]);
+      } else {
+        (ctx as any).roundRect(0, -title_height, size[0], size[1] + title_height, [rr]);
+      }
+      ctx.fillStyle = 'rgba(255,255,255,0.01)';
+      ctx.fill();
+      ctx.restore();
+
+      // 2) Call original (selected=false to suppress default gray outline)
+      origDrawNodeShape.call(this, node, ctx, size, fgcolor, bgcolor, false, mouse_over);
+
+      // 3) Fix separator line between title and body
+      if (!isCollapsed) {
         ctx.fillStyle = bgcolor || '#ffffff';
         ctx.fillRect(0, -1, size[0] + 1, 2);
       }
 
-      // Draw a clean border around the node to mask any edge artifacts
-      const title_height = (LiteGraph as any).NODE_TITLE_HEIGHT;
-      const shape = node._shape || node.constructor.shape || (LiteGraph as any).ROUND_SHAPE;
-      const rr = (this as any).round_radius || 10;
-
+      // 4) Selection border: blue when selected, subtle gray when not
       ctx.save();
-      ctx.globalAlpha = 0.25;
-      ctx.strokeStyle = '#888';
-      ctx.lineWidth = 1;
+      if (selected) {
+        ctx.strokeStyle = '#1976d2';
+        ctx.lineWidth = 1.5;
+        ctx.globalAlpha = 1.0;
+      } else {
+        ctx.strokeStyle = '#b0bec5';
+        ctx.lineWidth = 1;
+        ctx.globalAlpha = 0.4;
+      }
       ctx.beginPath();
-      if (shape === (LiteGraph as any).BOX_SHAPE)
-        ctx.rect(0, -title_height, size[0] + 1, size[1] + title_height);
-      else
-        (ctx as any).roundRect(0, -title_height, size[0] + 1, size[1] + title_height, [rr]);
-
+      if (isCollapsed) {
+        const cw = (node as any)._collapsed_width || size[0];
+        (ctx as any).roundRect(0, -title_height, cw, title_height, [rr]);
+      } else {
+        (ctx as any).roundRect(0, -title_height, size[0], size[1] + title_height, [rr]);
+      }
       ctx.stroke();
       ctx.restore();
     };
@@ -245,9 +276,10 @@ export class CanvasController {
                   s * (LiteGraph as any).NODE_SLOT_HEIGHT;
                 if (Math.abs(mx - (nx + node.size[0])) < 12 && Math.abs(my - slotY) < 8) {
                   const out = node.outputs[s];
-                  if (s < ptCount)
-                    tip = `${out.name} \u2014 pass-through (${out.type}). Connect to enforce execution order`;
-                  else
+                  if (s < ptCount) {
+                    const inputName = node.inputs?.[s]?.name || out.name;
+                    tip = `${inputName} \u2014 pass-through (${out.type}). Connect to enforce execution order`;
+                  } else
                     tip = `${out.name} (${out.type})`;
                   break;
                 }
@@ -314,6 +346,39 @@ export class CanvasController {
 
   stopRendering(): void {
     this.graphCanvas.stopRendering();
+  }
+
+  /** Start a periodic dirty flag to force canvas redraws for animations */
+  startAnimationLoop(): void {
+    if (this._animationTimer) return;
+    this._animationTimer = setInterval(() => {
+      this.graphCanvas.setDirty(true, true);
+    }, 60); // ~16fps for smooth pulsing
+  }
+
+  /** Stop the periodic animation redraw */
+  stopAnimationLoop(): void {
+    if (this._animationTimer) {
+      clearInterval(this._animationTimer);
+      this._animationTimer = null;
+    }
+  }
+
+  /** Generate a small tiled dot-grid image as a data URL for the canvas background */
+  private createDotGridImage(): string {
+    const size = 20;
+    const sq = 1; // half-size of the square
+    const cx = size / 2;
+    const cy = size / 2;
+    const c = document.createElement('canvas');
+    c.width = size;
+    c.height = size;
+    const ctx = c.getContext('2d')!;
+    ctx.fillStyle = '#ebedf2';
+    ctx.fillRect(0, 0, size, size);
+    ctx.fillStyle = '#8b8b8b';
+    ctx.fillRect(cx - sq, cy - sq, sq * 2, sq * 2);
+    return c.toDataURL();
   }
 
   addNodeAtCenter(nodeType: string): LGraphNode | null {

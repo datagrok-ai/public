@@ -72,10 +72,10 @@ export function buildValuePanel(state: NodeExecState): HTMLElement {
 
 function buildStatusBadge(state: NodeExecState): HTMLElement {
   const colors: Record<string, string> = {
-    [NodeExecStatus.idle]: '#888',
-    [NodeExecStatus.running]: '#FFA000',
-    [NodeExecStatus.completed]: '#4CAF50',
-    [NodeExecStatus.errored]: '#F44336',
+    [NodeExecStatus.idle]: '#78909c',
+    [NodeExecStatus.running]: '#1976d2',
+    [NodeExecStatus.completed]: '#43a047',
+    [NodeExecStatus.errored]: '#e53935',
     [NodeExecStatus.stale]: '#9E9E9E',
   };
 

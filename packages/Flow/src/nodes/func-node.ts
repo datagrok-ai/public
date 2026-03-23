@@ -27,6 +27,7 @@ export function createFuncNodeClass(func: DG.Func): {new(): LGraphNode} {
   class FuncNode extends LGraphNode {
     static title = displayName;
     static desc = func.description || '';
+    static title_color = colors.color;
 
     dgFunc: DG.Func;
     dgFuncName: string;
@@ -54,14 +55,12 @@ export function createFuncNodeClass(func: DG.Func): {new(): LGraphNode} {
         }
       }
 
-      // Pass-through outputs first: mirror each input as an output for ordering control.
-      // Placed first so they visually align with the corresponding input slots.
-      // When a function mutates its input (e.g. addNewColumn modifies a table),
-      // connecting the pass-through output to the next node enforces execution order.
+      // Pass-through outputs: show only "→" to save space (no name duplication).
+      // These enforce execution ordering for mutating functions.
       this.properties['_passthroughCount'] = funcInputs.length;
       for (const inp of funcInputs) {
         const slotType = dgTypeToSlotType(inp.propertyType);
-        const slot = this.addOutput(`${inp.name} \u2192`, slotType);
+        const slot = this.addOutput('\u2192', slotType);
         slot.color_on = getSlotColor(slotType);
         slot.color_off = getSlotColor(slotType);
       }

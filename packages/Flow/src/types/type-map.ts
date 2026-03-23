@@ -26,23 +26,23 @@ export const DG_TYPE_MAP: Record<string, {slotType: string; color: string}> = {
   'view': {slotType: 'view', color: '#5C6BC0'},
 };
 
-/** Role → node color mapping (light theme: white body, colored title bar) */
+/** Role → node color mapping (light theme: colored title bar, white body) */
 export const ROLE_COLORS: Record<string, {color: string; bgcolor: string}> = {
-  'app': {color: '#5C6BC0', bgcolor: '#ffffff'},
-  'panel': {color: '#7E57C2', bgcolor: '#ffffff'},
-  'viewer': {color: '#42A5F5', bgcolor: '#ffffff'},
-  'transform': {color: '#26A69A', bgcolor: '#ffffff'},
-  'Transform': {color: '#26A69A', bgcolor: '#ffffff'},
-  'filter': {color: '#FFCA28', bgcolor: '#ffffff'},
-  'converter': {color: '#FFA726', bgcolor: '#ffffff'},
-  'widget': {color: '#EC407A', bgcolor: '#ffffff'},
-  'cellRenderer': {color: '#8D6E63', bgcolor: '#ffffff'},
-  'semTypeDetector': {color: '#C0CA33', bgcolor: '#ffffff'},
-  'fileViewer': {color: '#26C6DA', bgcolor: '#ffffff'},
-  'fileExporter': {color: '#26C6DA', bgcolor: '#ffffff'},
-  'editor': {color: '#29B6F6', bgcolor: '#ffffff'},
-  'searchProvider': {color: '#9CCC65', bgcolor: '#ffffff'},
-  'tooltip': {color: '#FF7043', bgcolor: '#ffffff'},
+  'app': {color: '#7986CB', bgcolor: '#ffffff'},
+  'panel': {color: '#9575CD', bgcolor: '#ffffff'},
+  'viewer': {color: '#64B5F6', bgcolor: '#ffffff'},
+  'transform': {color: '#4DB6AC', bgcolor: '#ffffff'},
+  'Transform': {color: '#4DB6AC', bgcolor: '#ffffff'},
+  'filter': {color: '#FFD54F', bgcolor: '#ffffff'},
+  'converter': {color: '#FFB74D', bgcolor: '#ffffff'},
+  'widget': {color: '#F06292', bgcolor: '#ffffff'},
+  'cellRenderer': {color: '#A1887F', bgcolor: '#ffffff'},
+  'semTypeDetector': {color: '#DCE775', bgcolor: '#ffffff'},
+  'fileViewer': {color: '#4DD0E1', bgcolor: '#ffffff'},
+  'fileExporter': {color: '#4DD0E1', bgcolor: '#ffffff'},
+  'editor': {color: '#4FC3F7', bgcolor: '#ffffff'},
+  'searchProvider': {color: '#AED581', bgcolor: '#ffffff'},
+  'tooltip': {color: '#FF8A65', bgcolor: '#ffffff'},
 };
 
 export const DEFAULT_NODE_COLOR = '#BDBDBD';

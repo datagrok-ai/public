@@ -1,4 +1,4 @@
-/* FuncFlow styles */
+/* FuncFlow styles — Spotfire-inspired visual design */
 /* @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;600&display=swap'); */
 
 .funcflow-root {
@@ -17,8 +17,8 @@
   max-width: 350px;
   display: flex;
   flex-direction: column;
-  border-right: 1px solid var(--grey-2, #ccc);
-  background: var(--grey-1, #f5f5f5);
+  border-right: 1px solid var(--grey-2, #d0d0d0);
+  background: var(--grey-1, #f7f8fa);
   overflow: hidden;
 }
 
@@ -38,10 +38,13 @@
   font-size: 13px;
   font-family: 'Roboto', 'Roboto Local', Arial, sans-serif;
   outline: none;
+  background: #fff;
+  transition: border-color 0.2s, box-shadow 0.2s;
 }
 
 .funcflow-search-input:focus {
   border-color: var(--blue-1, #2185d0);
+  box-shadow: 0 0 0 2px rgba(33, 133, 208, 0.15);
 }
 
 .funcflow-groupby-select {
@@ -99,28 +102,29 @@
   color: var(--blue-2, #1565c0);
 }
 
-/* Center panel - Canvas */
+/* Center panel - Canvas (dot grid rendered via LiteGraph background_image) */
 .funcflow-canvas-container {
   flex: 1;
   position: relative;
   overflow: hidden;
-  background: #e8e8e8;
+  background-color: #ebedf2;
 }
 
 .funcflow-canvas-tooltip {
   display: none;
   position: absolute;
-  padding: 4px 8px;
-  background: rgba(50, 50, 50, 0.9);
+  padding: 5px 10px;
+  background: rgba(40, 44, 52, 0.92);
   color: #fff;
   font-size: 11px;
   font-family: 'Roboto', 'Roboto Local', Arial, sans-serif;
-  border-radius: 3px;
+  border-radius: 4px;
   pointer-events: none;
   white-space: normal;
   word-wrap: break-word;
   z-index: 100;
   max-width: 300px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.18);
 }
 
 /* Property panel — renders inside Datagrok native context panel */
@@ -132,7 +136,30 @@
 }
 
 .funcflow-property-content {
-  padding: 8px;
+  padding: 4px 0;
+}
+
+/* Accordion: fit inside Datagrok context panel without overflow */
+.funcflow-property-panel .d4-accordion {
+  width: 90%;
+}
+
+.funcflow-property-panel .d4-accordion-pane-content {
+  box-sizing: border-box;
+}
+
+/* Accordion pane content padding */
+.funcflow-accordion-content {
+  padding: 6px 4px;
+  box-sizing: border-box;
+}
+
+/* Ensure inputs/textareas inside accordion panes fill available width */
+.funcflow-accordion-content .funcflow-prop-input,
+.funcflow-accordion-content .funcflow-prop-textarea,
+.funcflow-accordion-content select {
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .funcflow-prop-section {
@@ -189,6 +216,7 @@
 .funcflow-prop-input:focus {
   border-color: var(--blue-1, #2185d0);
   outline: none;
+  box-shadow: 0 0 0 2px rgba(33, 133, 208, 0.12);
 }
 
 .funcflow-prop-toggle-row {
@@ -238,7 +266,7 @@
   font-size: 12px;
   color: var(--grey-5, #666);
   border-top: 1px solid var(--grey-2, #ddd);
-  background: var(--grey-1, #f5f5f5);
+  background: var(--grey-1, #f7f8fa);
   min-height: 24px;
 }
 
@@ -265,7 +293,8 @@
   background-color: #fff !important;
   color: #333 !important;
   border: 1px solid #ccc !important;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.15) !important;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.12) !important;
+  border-radius: 6px !important;
 }
 
 .litegraph.litecontextmenu.litemenubar-panel .litemenu-title {
@@ -309,7 +338,8 @@
   background-color: #fff !important;
   color: #333 !important;
   border: 1px solid #ccc !important;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.15) !important;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.12) !important;
+  border-radius: 6px !important;
 }
 
 .litegraph.litesearchbox input {
@@ -373,4 +403,39 @@
   background-color: #f5f5f5 !important;
   color: #333 !important;
   border: 1px solid #ddd !important;
+}
+
+/* Pass-through compact indicator */
+.funcflow-pt-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 10px;
+  color: #999;
+  padding: 1px 4px;
+  border-radius: 3px;
+  background: #f0f0f0;
+  cursor: help;
+}
+
+.funcflow-pt-arrow {
+  font-size: 11px;
+  color: #aaa;
+}
+
+/* Title row in property panel */
+.funcflow-title-row {
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--grey-2, #e0e0e0);
+  margin-bottom: 4px;
+}
+
+.funcflow-type-badge {
+  display: inline-block;
+  font-size: 10px;
+  color: #888;
+  background: #f0f0f0;
+  padding: 1px 6px;
+  border-radius: 3px;
+  margin-top: 2px;
 }

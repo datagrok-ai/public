@@ -191,11 +191,13 @@ KNIME-inspired live execution feedback. The script runs in the same browser cont
 ### Visual States
 | State | boxcolor | bgcolor | Overlay |
 |---|---|---|---|
-| Idle | `#888` | `#ffffff` | none |
-| Running | `#FFA000` (amber) | `#FFF8E1` | pulsing amber dot |
-| Completed | `#4CAF50` (green) | `#ffffff` | solid green dot |
-| Errored | `#F44336` (red) | `#FFEBEE` | red dot with "!" |
+| Idle | `#78909c` | `#ffffff` | none |
+| Running | `#1976d2` (blue) | `#e3f2fd` | pulsing blue dot (top-left, at collapse icon) |
+| Completed | `#43a047` (green) | `#ffffff` | green dot with checkmark (top-left) |
+| Errored | `#e53935` (red) | `#ffebee` | red dot with "!" (top-left) |
 | Stale | `#9E9E9E` (gray) | `#f5f5f5` | dimmed dot |
+
+The status dot is positioned at the top-left of the title bar (same area as the collapse icon) for consistent visibility. During the running state, a periodic animation timer forces canvas redraws to ensure smooth pulsing even without mouse movement.
 
 ### Execution Modes
 - **Run**: Instrumented script with live visualization. Breakpoint nodes are skipped.
@@ -230,6 +232,8 @@ npm run build    # grok api && grok check --soft && webpack
 - Layout is 2-panel: `[leftPanel (FunctionBrowser), canvasContainer]` — no custom right panel
 
 ### Property Panel (`property-panel.ts`)
+- Uses `ui.accordion()` with `accordion.addPane()` for collapsible sections
+- **Connections pane** is collapsed by default
 - Reads `node.properties` and creates appropriate editors:
   - `string` properties → `<textarea>` (auto-resizing)
   - `number` properties → `<input type="number">` with step (1 for int, 0.1 for double)
@@ -237,8 +241,9 @@ npm run build    # grok api && grok check --soft && webpack
   - enum properties → `<select>` dropdown
 - **Exception**: `ConstStringNode` keeps its inline `text` widget for quick editing
 - **Func nodes**: primitive input defaults stored as `_input_${name}` properties, edited in panel
-- **Collapse icon**: `NODE_DEFAULT_BOXCOLOR = '#888'` (visible on light theme)
+- **Collapse icon**: `NODE_DEFAULT_BOXCOLOR = '#78909c'` (Spotfire-inspired blue-gray)
 - **Font**: Roboto via Google Fonts import + LiteGraph canvas font overrides
+- **Theme**: Spotfire-inspired with soft shadows, subtle dot-grid background, blue selection highlight, rounded nodes
 
 ### Tooltip System
 - **PROP_TOOLTIPS**: Maps label names (e.g. 'Param Name', 'Nullable') to tooltip strings for input/output node properties
