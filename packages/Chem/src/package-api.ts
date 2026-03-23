@@ -216,8 +216,8 @@ export namespace funcs {
     return await grok.functions.call('Chem:SubstructureFilter', {});
   }
 
-  export async function canvasMol(x: number , y: number , w: number , h: number , canvas: any , molString: string , scaffoldMolString: string , options?: any ): Promise<void> {
-    return await grok.functions.call('Chem:CanvasMol', { x, y, w, h, canvas, molString, scaffoldMolString, options });
+  export async function canvasMol(x: number , y: number , w: number , h: number , canvas: any , molString: string , scaffoldMolString: string , options?: any , renderingOptions?: any ): Promise<void> {
+    return await grok.functions.call('Chem:CanvasMol', { x, y, w, h, canvas, molString, scaffoldMolString, options, renderingOptions });
   }
 
   export async function drawMolecule(molStr: string , w?: number , h?: number , popupMenu?: boolean ): Promise<any> {

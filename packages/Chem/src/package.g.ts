@@ -69,8 +69,9 @@ export function substructureFilter() : any {
 //input: string molString 
 //input: string scaffoldMolString 
 //input: object options { optional: true }
-export function canvasMol(x: number, y: number, w: number, h: number, canvas: any, molString: string, scaffoldMolString: any, options: any) : void {
-  PackageFunctions.canvasMol(x, y, w, h, canvas, molString, scaffoldMolString, options);
+//input: object renderingOptions { optional: true }
+export function canvasMol(x: number, y: number, w: number, h: number, canvas: any, molString: string, scaffoldMolString: any, options: any, renderingOptions: any) : void {
+  PackageFunctions.canvasMol(x, y, w, h, canvas, molString, scaffoldMolString, options, renderingOptions);
 }
 
 //input: string molStr 

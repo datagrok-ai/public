@@ -106,7 +106,8 @@ function createRenderingOpts(addSettings: {[key: string]: any}): {[key: string]:
 }
 
 export function drawRdKitMoleculeToOffscreenCanvas(
-  molCtx: IMolContext, w: number, h: number, offscreenCanvas: OffscreenCanvas, substruct: Object | null) {
+  molCtx: IMolContext, w: number, h: number, offscreenCanvas: OffscreenCanvas, substruct: Object | null,
+  renderingOptions: {[key: string]: any} = {}): void {
   const g = offscreenCanvas.getContext('2d', {willReadFrequently: true}) as OffscreenCanvasRenderingContext2D;
   const rdKitMol: RDMol | null = molCtx.mol;
   if (rdKitMol === null) {
@@ -138,6 +139,8 @@ export function drawRdKitMoleculeToOffscreenCanvas(
   const addChiralHs = false;
   if (useMolBlockWedging)
     Object.assign(opts, {useMolBlockWedging, wedgeBonds, addChiralHs});
+  if (renderingOptions)
+    Object.assign(opts, renderingOptions);
 
   try {
     rdKitMol.draw_to_canvas_with_highlights((offscreenCanvas as unknown) as HTMLCanvasElement, JSON.stringify(opts));
@@ -159,7 +162,8 @@ export function drawRdKitReactionToOffscreenCanvas(
 
 export function drawMoleculeToCanvas(x: number, y: number, w: number, h: number,
   onscreenCanvas: HTMLCanvasElement, molString: string, scaffoldMolString: string | null = null,
-  options = {normalizeDepiction: true, straightenDepiction: true}, scaffoldStruct: ISubstruct | null = null) {
+  options = {normalizeDepiction: true, straightenDepiction: true}, scaffoldStruct: ISubstruct | null = null,
+  renderingOptions?: {[key: string]: any}): void {
   if (!w || !h) {
     console.error('Width and height cannot be zero.');
     return;
@@ -219,7 +223,7 @@ export function drawMoleculeToCanvas(x: number, y: number, w: number, h: number,
       }
       substruct = JSON.parse(substructJson);
     }
-    drawRdKitMoleculeToOffscreenCanvas(molCtx, nW, nH, offscreenCanvas, substruct);
+    drawRdKitMoleculeToOffscreenCanvas(molCtx, nW, nH, offscreenCanvas, substruct, renderingOptions);
     const image = offscreenCanvas!.getContext('2d')!.getImageData(0, 0, nW, nH);
     const context = onscreenCanvas.getContext('2d')!;
     context.putImageData(image, x, y);

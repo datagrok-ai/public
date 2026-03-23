@@ -334,10 +334,11 @@ export class PackageFunctions {
     @grok.decorators.param({type: 'string'}) molString: string,
     @grok.decorators.param({type: 'string'}) scaffoldMolString: string | null = null,
     @grok.decorators.param({type: 'object', options: {optional: true}}) options : any = {normalizeDepiction: true, straightenDepiction: true},
+    @grok.decorators.param({type: 'object', options: {optional: true}}) renderingOptions: any = {},
   ): void {
     drawMoleculeToCanvas(x, y, w, h, canvas,
       molString, scaffoldMolString == '' ? null : scaffoldMolString,
-      options);
+      options, null, renderingOptions);
   }
 
   @grok.decorators.func({outputs: [{type: 'object', name: 'canvas'}]})

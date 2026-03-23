@@ -39,6 +39,7 @@ export const getSearchQueryAndType = (molecule: string | null, type: string, fp:
 export const FILTER_SCAFFOLD_TAG = 'chem-scaffold-filter';
 export const ALIGN_BY_SCAFFOLD_TAG = '.chem-scaffold-align'; // todo: Remove this tag in future, should be replaced with ALIGN_BY_SCAFFOLD_LAYOUT_PERSISTED_TAG
 export const ALIGN_BY_SCAFFOLD_LAYOUT_PERSISTED_TAG = '.%chem-scaffold-align';
+export const FIXED_SCALE_TAG = '.%chem-fixed-scale';
 export const HIGHLIGHT_BY_SCAFFOLD_TAG = '.%chem-scaffold-highlight';
 export const SCAFFOLD_COL = 'scaffold-col';
 export const SCAFFOLD_COL_SYNC = '%scaffold-col';

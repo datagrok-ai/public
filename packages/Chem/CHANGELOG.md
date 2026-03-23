@@ -1,5 +1,9 @@
 # Chem changelog
 
+## 1.17.2 (2026-03-23)
+
+RDKit render: Render without fixed scaling if rendered outside the global context (for single values like in custom tooltips).
+
 ## 1.17.1 (2026-03-17)
 
 * GROK-19867: Chem: Alignment setting (Scaffold column) is not saved to the data-sync project
