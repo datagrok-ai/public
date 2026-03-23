@@ -74,13 +74,15 @@ class ChemPackageDetectors extends DG.Package {
 
   static likelyReactionNames = ['reaction', 'rxn'];
 
-  // Check if a string looks like a reaction SMILES/SMARTS.
-  // Supports three formats:
+  // Check if a string looks like a reaction SMILES/SMARTS or RXN block.
+  // Supports four formats:
   //   "reactants>>products"           — standard reaction SMILES
   //   "reactants>agents>products"      — SMIRKS with agent/reagent field
   //   "A>>B>>C>>D"                     — multi-step reaction chain
+  //   "$RXN..."                        — MDL RXN format (molblock-based)
   static isLikelyReaction(s) {
-    if (s.includes('M  END')) return false;
+    // RXN format: structured block starting with $RXN
+    if (s.trimStart().startsWith('$RXN')) return true;
 
     // Standard/multi-step: contains ">>"
     if (s.includes('>>')) {
