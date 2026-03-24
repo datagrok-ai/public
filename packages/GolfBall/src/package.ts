@@ -14,8 +14,9 @@ export function info() {
 }
 
 //name: Golf Ball Flight Simulator
-//tags: app
 //description: Interactive 2D golf ball flight simulation with drag, trajectory optimization, and sensitivity analysis
+//meta.role: app
+//meta.browsePath: Compute | Simulations
 export function golfBallFlightSimulator(): void {
   golfBallApp(_package);
 }

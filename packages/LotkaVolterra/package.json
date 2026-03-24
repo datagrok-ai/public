@@ -32,6 +32,7 @@
   "canView": [
     "All users"
   ],
+  "category": "Compute",
   "repository": {
     "type": "git",
     "url": "https://github.com/datagrok-ai/public.git",

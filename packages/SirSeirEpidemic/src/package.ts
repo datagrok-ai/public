@@ -14,8 +14,9 @@ export function info() {
 }
 
 //name: SIR / SEIR Epidemic Simulation
-//tags: app
 //description: Interactive ODE simulation of SIR and SEIR epidemiological models
+//meta.role: app
+//meta.browsePath: Compute | Simulations
 export function sirSeirEpidemicSimulation(): void {
   sirSeirEpidemicApp(_package);
 }

@@ -14,8 +14,9 @@ export function info() {
 }
 
 //name: Circular Restricted Three-Body Problem
-//tags: app
 //description: Interactive simulation of the CR3BP in the co-rotating frame with orbits, Lagrange points, Jacobi constant, and zero-velocity curves
+//meta.role: app
+//meta.browsePath: Compute | Simulations
 export function threeBodyProblemAppEntry(): void {
   threeBodyProblemApp(_package);
 }

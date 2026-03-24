@@ -14,8 +14,9 @@ export function info() {
 }
 
 //name: Lotka-Volterra Simulation
-//tags: app
 //description: Interactive ODE simulation of the Lotka-Volterra predator-prey model
+//meta.role: app
+//meta.browsePath: Compute | Simulations
 export function lotkaVolterraSimulation(): void {
   lotkaVolterraApp(_package);
 }

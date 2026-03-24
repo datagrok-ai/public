@@ -14,8 +14,9 @@ export function info() {
 }
 
 //name: Multi-Compartment PK Model
-//tags: app
 //description: Interactive two- and three-compartment pharmacokinetic model with IV bolus, IV infusion, and oral absorption input modes. Includes brute-force grid search parameter optimization.
+//meta.role: app
+//meta.browsePath: Compute | Simulations
 export function compartmentalPkModelApp(): void {
   compartmentalPkApp(_package);
 }

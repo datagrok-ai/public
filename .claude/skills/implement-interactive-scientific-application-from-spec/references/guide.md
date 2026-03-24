@@ -5,9 +5,9 @@
 
 ## 1. General Architecture
 
-An application is a Datagrok package function registered with the `//tags: app` comment.
+An application is a Datagrok package function registered with the `//meta.role: app` comment.
 
-► **Implementation:** `./examples/lotka-volterra-spec/code/src/package.ts` — function `lotkaVolterraSimulation`, registered via `//name: Lotka-Volterra Simulation` / `//tags: app`. Delegates logic to `./examples/lotka-volterra-spec/code/src/lotka-volterra/app.ts` → `lotkaVolterraApp()`.
+► **Implementation:** `./examples/lotka-volterra-spec/code/src/package.ts` — function `lotkaVolterraSimulation`, registered via `//name: Lotka-Volterra Simulation` / `//meta.role: app`. Delegates logic to `./examples/lotka-volterra-spec/code/src/lotka-volterra/app.ts` → `lotkaVolterraApp()`.
 
 The application architecture follows the "ports and adapters" pattern (hexagonal architecture). The application consists of three layers and a coordinator.
 
