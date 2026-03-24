@@ -1,9 +1,11 @@
 /** Orchestrates instrumented script runs: event subscriptions, state, visualization */
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
+import * as ui from 'datagrok-api/ui';
 import {LGraph} from 'litegraph.js';
 import {ExecutionState, NodeExecStatus, ExecEvent} from './execution-state';
 import {ExecutionVisualizer} from './execution-visualizer';
+import {OutputPreviewPanel} from './output-preview';
 import {CanvasController} from '../canvas/canvas-controller';
 import {GraphManager} from '../canvas/graph-manager';
 import {emitScript, ScriptSettings, EmitOptions} from '../compiler/script-emitter';
@@ -15,6 +17,7 @@ export class ExecutionController {
   private graphManager: GraphManager;
   private subscription: any = null;
   private graphVersion: number = 0;
+  outputPreview: OutputPreviewPanel = new OutputPreviewPanel();
 
   /** Callback fired when a breakpoint is hit (so the view can show Continue button) */
   onBreakpointHit?: (nodeId: number) => void;
@@ -72,7 +75,23 @@ export class ExecutionController {
 
     try {
       const script = emitScript(graph, settings, options);
-      DG.Script.create(script).prepare().edit();
+      const typeHints = this.getOutputTypeHints(graph);
+      const func = DG.Script.create(script);
+      const fc = func.prepare();
+      const onComplete = (outputs: Record<string, any>) => {
+        this.outputPreview.showOutputs(outputs, typeHints);
+      };
+
+      if (func.inputs.length === 0)
+        fc.call(undefined, undefined, {processed: true}).then(() => onComplete(fc.outputs));
+      else {
+        fc.getEditor().then((e: HTMLElement) => {
+          ui.dialog().add(e).show().onOK(async () => {
+            await fc.call(undefined, undefined, {processed: true});
+            onComplete(fc.outputs);
+          });
+        });
+      }
     } catch (e: any) {
       grok.shell.error(`Script generation failed: ${e.message}`);
       this.stopRun();
@@ -155,6 +174,21 @@ export class ExecutionController {
   resetVisuals(): void {
     this.visualizer.resetAllNodes();
     this.state.reset();
+  }
+
+  /** Extract output name → declared DG type from the graph's output nodes */
+  getOutputTypeHints(graph: LGraph): Record<string, string> {
+    const hints: Record<string, string> = {};
+    const nodes = (graph as any)._nodes as any[] | undefined;
+    if (!nodes) return hints;
+    for (const node of nodes) {
+      if (node.dgNodeType !== 'output') continue;
+      const paramName = node.properties?.['paramName'];
+      const outputType = node.properties?.['outputType'] || node.dgOutputType;
+      if (paramName && outputType)
+        hints[paramName] = outputType;
+    }
+    return hints;
   }
 
   dispose(): void {

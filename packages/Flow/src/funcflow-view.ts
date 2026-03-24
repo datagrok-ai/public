@@ -13,7 +13,7 @@ import {CanvasController} from './canvas/canvas-controller';
 import {FunctionBrowser} from './panel/function-browser';
 import {PropertyPanel} from './panel/property-panel';
 import {registerBuiltinNodes, registerAllFunctions, getRegisteredFuncs, FuncInfo} from './nodes/node-factory';
-import {validateGraph, ValidationResult} from './compiler/validator';
+import {validateGraph} from './compiler/validator';
 import {emitScript} from './compiler/script-emitter';
 import {serializeFlow, deserializeFlow, downloadFlow, loadFlowFromFile} from './serialization/flow-serializer';
 import {FlowSettings} from './serialization/flow-schema';
@@ -141,6 +141,7 @@ export class FuncFlowView extends DG.ViewBase {
 
     // Initialize execution controller
     this.executionController = new ExecutionController(this.canvasController, this.graphManager);
+    this.executionController.outputPreview.setViewRoot(this.root);
     this.executionController.onBreakpointHit = (_nodeId: number) => {
       grok.shell.info('Breakpoint hit — click Continue in the ribbon to resume');
     };
@@ -388,11 +389,26 @@ export class FuncFlowView extends DG.ViewBase {
     }
   }
 
-  /** Compiles, validates and runs the script directly */
+  /** Compiles, validates and runs the script via call (outputs handled by preview panel) */
   private runScript(): void {
     const script = this.generateScript();
     if (!script) return;
-    DG.Script.create(script).prepare().edit();
+    const typeHints = this.executionController.getOutputTypeHints(this.graphManager.graph);
+    const func = DG.Script.create(script);
+    const fc = func.prepare();
+    const onComplete = (outputs: Record<string, any>) => {
+      this.executionController.outputPreview.showOutputs(outputs, typeHints);
+    };
+    if (func.inputs.length === 0)
+      fc.call(undefined, undefined, {processed: true}).then(() => onComplete(fc.outputs));
+    else {
+      fc.getEditor().then((e: HTMLElement) => {
+        ui.dialog().add(e).show().onOK(async () => {
+          await fc.call(undefined, undefined, {processed: true});
+          onComplete(fc.outputs);
+        });
+      });
+    }
   }
 
   private generateAndPreview(): void {

@@ -1,4 +1,6 @@
 /** Builds context panel section for displaying runtime execution values */
+import * as grok from 'datagrok-api/grok';
+import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 import {NodeExecState, NodeExecStatus, ValueSummary} from './execution-state';
 
@@ -115,16 +117,43 @@ function buildValueRow(name: string, summary: ValueSummary): HTMLElement {
   row.style.fontSize = '12px';
 
   switch (summary.type) {
-  case 'dataframe':
-    row.appendChild(ui.divText(`${name}: DataFrame (${summary.rows} rows x ${summary.cols} cols)`));
+  case 'dataframe': {
+    // Header line with size info and + button to add to workspace
+    const headerLine = ui.div([], {style: {display: 'flex', alignItems: 'center', gap: '6px'}});
+    headerLine.appendChild(ui.divText(`${name}: DataFrame (${summary.rows} rows \u00d7 ${summary.cols} cols)`));
+
+    if (summary.clone) {
+      const addBtn = ui.iconFA('plus-circle', () => {
+        grok.shell.addTableView(summary.clone as DG.DataFrame);
+      }, 'Add to workspace');
+      addBtn.style.cursor = 'pointer';
+      addBtn.style.color = '#1976d2';
+      addBtn.style.fontSize = '13px';
+      headerLine.appendChild(addBtn);
+    }
+    row.appendChild(headerLine);
+
     if (summary.colNames) {
-      const colList = ui.divText(`  Columns: ${summary.colNames.join(', ')}`);
+      const colList = ui.divText(`Columns: ${summary.colNames.join(', ')}`);
       colList.style.fontSize = '11px';
       colList.style.color = '#666';
       colList.style.marginLeft = '8px';
       row.appendChild(colList);
     }
+
+    // Full table preview when clone is available
+    if (summary.clone) {
+      try {
+        summary.clone.meta.detectSemanticTypes();
+        const grid = DG.Viewer.grid(summary.clone as DG.DataFrame);
+        grid.root.style.width = '100%';
+        grid.root.style.minHeight = '350px';
+        grid.root.style.marginTop = '4px';
+        row.appendChild(grid.root);
+      } catch { /* grid preview failed, show text only */ }
+    }
     break;
+  }
   case 'column':
     row.appendChild(ui.divText(
       `${name}: Column "${summary.name}" (${summary.length} values)`,
