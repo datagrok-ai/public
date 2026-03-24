@@ -58,7 +58,7 @@ jobs:
           DATAGROK_VERSION='bleeding-edge'
           export DATAGROK_VERSION
 
-          docker compose -p datagrok -f "docker/localhost.docker-compose.yaml" --profile datagrok --profile db up -d
+          docker compose -p datagrok -f "docker/localhost.docker-compose.yaml" --profile datagrok --profile db --profile grok_connect up -d
 
           apiUrl='http://127.0.0.1:8080/api'
           echo "apiUrl=$apiUrl" >> $GITHUB_OUTPUT
