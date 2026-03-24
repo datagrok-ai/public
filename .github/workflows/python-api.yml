@@ -55,7 +55,7 @@ jobs:
           sed -i '/"amqpHost": "rabbitmq"/a\ \ \ \ \ \ \ \ \ \ "useQueue": false,' docker/localhost.docker-compose.yaml
           sed -i '/"grokSpawnerHost": "grok_spawner"/a\ \ \ \ \ \ \ \ \ \ "useGrokSpawner": false,' docker/localhost.docker-compose.yaml
 
-          DATAGROK_VERSION='latest'
+          DATAGROK_VERSION='bleeding-edge'
           export DATAGROK_VERSION
 
           docker compose -p datagrok -f "docker/localhost.docker-compose.yaml" --profile datagrok --profile db up -d
