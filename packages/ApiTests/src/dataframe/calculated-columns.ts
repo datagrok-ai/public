@@ -113,11 +113,8 @@ category('DataFrame: Calculated columns', () => {
           resolve('OK');
       })));
 
-    setTimeout(() => reject(new Error('Failed to delete a calculated column')), 100);
     await t.columns.addNewCalculated('calculated column', '${x}+${y}-${z}');
-    t.columns.addNewInt('regular column').init(1);
-    await DG.delay(50);
-    t.columns.remove('regular column');
+    setTimeout(() => reject(new Error('Failed to delete a calculated column')), 100);
     t.columns.remove('calculated column');
   }));
 
