@@ -143,12 +143,26 @@ export class OutputPreviewPanel {
     }
   }
 
-  private buildDataframePreview(name: string, df: DG.DataFrame): HTMLElement {
-    const container = ui.div([], {style: {width: '100%', height: '100%'}});
+  private buildDataframePreview(_name: string, df: DG.DataFrame): HTMLElement {
+    const container = ui.div([], {style: {width: '100%', height: '100%', display: 'flex', flexDirection: 'column'}});
+
+    // Toolbar with + button
+    const toolbar = ui.div([], {style: {
+      display: 'flex', alignItems: 'center', gap: '6px',
+      padding: '4px 8px', flexShrink: '0',
+    }});
+    const addBtn = ui.div([ui.iconFA('plus'), ui.inlineText(['Add to workspace'])], {style: {
+      display: 'flex', alignItems: 'center', gap: '4px',
+      cursor: 'pointer', color: '#1976d2', fontSize: '12px',
+    }});
+    addBtn.addEventListener('click', () => grok.shell.addTableView(df));
+    toolbar.appendChild(addBtn);
+    container.appendChild(toolbar);
+
     const grid = DG.Viewer.grid(df);
-    container.appendChild(grid.root);
     grid.root.style.width = '100%';
-    grid.root.style.height = '100%';
+    grid.root.style.flex = '1';
+    container.appendChild(grid.root);
     return container;
   }
 

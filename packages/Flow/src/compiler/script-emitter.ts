@@ -75,10 +75,12 @@ export function emitScript(graph: LGraph, settings: ScriptSettings, options?: Em
     if (step.nodeType === 'output') {
       const inputExpr = step.inputs.get('value') || 'undefined';
       if (inputExpr !== 'undefined') {
+        const node = graph.getNodeById(step.nodeId) as FuncFlowNode | undefined;
+        const declaredType = step.properties['outputType'] || node?.dgOutputType || undefined;
         if (inst) {
           lines.push(...wrapInstrumented(
             `${step.variableName} = ${inputExpr};`,
-            step, options!, {outputExpr: step.variableName},
+            step, options!, {outputExpr: step.variableName, declaredType},
           ));
         } else
           lines.push(`${step.variableName} = ${inputExpr};`);
@@ -105,7 +107,7 @@ export function emitScript(graph: LGraph, settings: ScriptSettings, options?: Em
 
     // Function step
     if (inst)
-      lines.push(...emitFuncStepInstrumented(step, options!));
+      lines.push(...emitFuncStepInstrumented(step, options!, graph));
     else
       lines.push(emitFuncStep(step));
   }
@@ -301,13 +303,15 @@ function emitPreamble(runId: string): string[] {
   return [
     `const __ff_runId = '${runId}';`,
     `const __ff_ch = 'funcflow.exec.' + __ff_runId;`,
-    'function __ff_summarize(v) {',
+    'function __ff_summarize(v, declaredType) {',
     '  if (v == null) return {type:\'null\', value:null};',
     '  if (v.rowCount !== undefined && v.columns !== undefined)',
     '    return {type:\'dataframe\', rows:v.rowCount, cols:v.columns.length,',
     '      colNames:v.columns.names(), clone:v.clone()};',
     '  if (v.length !== undefined && v.name !== undefined && v.toList)',
     '    return {type:\'column\', name:v.name, length:v.length, sample:v.toList().slice(0,5)};',
+    '  if (declaredType === \'graphics\' && typeof v === \'string\')',
+    '    return {type:\'graphics\', value:v};',
     '  if (typeof v === \'object\') return {type:\'object\', str:String(v).slice(0,200)};',
     '  return {type:\'primitive\', value:v};',
     '}',
@@ -321,7 +325,7 @@ function emitPreamble(runId: string): string[] {
 
 function wrapInstrumented(
   codeLine: string, step: CompiledStep, options: EmitOptions,
-  extra?: {outputExpr?: string},
+  extra?: {outputExpr?: string; declaredType?: string},
 ): string[] {
   const lines: string[] = [];
   lines.push(`__ff_emit('node-start', ${step.nodeId});`);
@@ -337,8 +341,9 @@ function wrapInstrumented(
   lines.push('try {');
   lines.push(`  ${bodyLine}`);
   if (extra?.outputExpr) {
+    const typeArg = extra.declaredType ? `, '${extra.declaredType}'` : '';
     lines.push(`  __ff_emit('node-complete', ${step.nodeId}, ` +
-      `{outputs:{${extra.outputExpr}: __ff_summarize(${extra.outputExpr})}});`);
+      `{outputs:{${extra.outputExpr}: __ff_summarize(${extra.outputExpr}${typeArg})}});`);
   } else
     lines.push(`  __ff_emit('node-complete', ${step.nodeId});`);
   lines.push('} catch (__ff_err) {');
@@ -351,7 +356,7 @@ function wrapInstrumented(
   return lines;
 }
 
-function emitFuncStepInstrumented(step: CompiledStep, options: EmitOptions): string[] {
+function emitFuncStepInstrumented(step: CompiledStep, options: EmitOptions, graph: LGraph): string[] {
   const params: string[] = [];
   for (const [name, expr] of step.inputs.entries())
     params.push(`${name}: ${expr}`);
@@ -363,10 +368,18 @@ function emitFuncStepInstrumented(step: CompiledStep, options: EmitOptions): str
   lines.push('try {');
   lines.push(`  ${step.variableName} = await grok.functions.call('${step.funcName}', ${paramsStr});`);
 
-  // Build outputs summary
+  // Build outputs summary — pass declared output type for each slot
+  const node = graph.getNodeById(step.nodeId) as FuncFlowNode | undefined;
+  const ptCount = node?.properties?.['_passthroughCount'] ?? 0;
   const outputEntries: string[] = [];
-  for (const [, varName] of step.outputs.entries())
-    outputEntries.push(`${varName}: __ff_summarize(${varName})`);
+  let outIdx = 0;
+  for (const [, varName] of step.outputs.entries()) {
+    const slotIdx = ptCount + outIdx;
+    const slotType = node?.outputs?.[slotIdx]?.type as string | undefined;
+    const typeArg = slotType ? `, '${slotType}'` : '';
+    outputEntries.push(`${varName}: __ff_summarize(${varName}${typeArg})`);
+    outIdx++;
+  }
   const outputsObj = outputEntries.length > 0 ? `{${outputEntries.join(', ')}}` : '{}';
   lines.push(`  __ff_emit('node-complete', ${step.nodeId}, {outputs: ${outputsObj}});`);
 

@@ -166,6 +166,21 @@ function buildValueRow(name: string, summary: ValueSummary): HTMLElement {
       row.appendChild(sampleEl);
     }
     break;
+  case 'graphics': {
+    row.appendChild(ui.divText(`${name}: Graphics`));
+    const imageData = summary.value as string;
+    const preview = ui.div([], {style: {
+      width: '100%', minHeight: '200px', marginTop: '4px',
+      backgroundPosition: 'left', backgroundRepeat: 'no-repeat', backgroundSize: 'contain',
+      aspectRatio: '1',
+    }});
+    if (imageData.startsWith('<svg'))
+      preview.innerHTML = imageData;
+    else
+      preview.style.backgroundImage = `url('data:image/png;base64,${imageData}')`;
+    row.appendChild(preview);
+    break;
+  }
   case 'primitive':
     row.appendChild(ui.divText(`${name} = ${JSON.stringify(summary.value)}`));
     break;
