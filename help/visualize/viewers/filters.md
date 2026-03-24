@@ -21,7 +21,11 @@ General:
 
 ![Filter](../../uploads/gifs/filter.gif "Filter")
 
-## Search
+## Categorical filter
+
+Categorical filter displays a list of unique column values with checkboxes, allowing you to include or exclude specific categories.
+
+### Search
 
 Each categorical filter group has a search field for filtered values. Click the Search icon to the right of the filter
 caption to open it. This icon appears when you hover the mouse over the filter.
@@ -36,6 +40,32 @@ only those values that match the search criteria. In contrary case if the checkb
 and not select them.
 
 ![Filter](../../uploads/gifs/filter-checkbox.gif "Filter")
+
+### Radio mode
+
+By default, categorical filter uses **Multi-Select** mode — multiple categories can be checked simultaneously. To filter by a single category without switching modes, click its label directly (rather than the checkbox).
+To restrict selection to one category at a time, switch to **Radio** mode: click the filter menu icon and select **Mode** > **Radio**. To return to multi-select behavior, select **Mode** > **Multi-Select**.
+
+![Filter Radio mode](img/filter-radio-mode.gif "Radio mode")
+
+## Numerical filter
+
+Numerical filter displays a histogram of value distribution with a range slider underneath. Use the range slider to filter rows by value range.
+
+The filter menu provides the following options:
+  * **Reset**: Restores the range to its full extent.
+  * **Histogram**: shows or hides the histogram.
+  * **Slider**: shows or hides the range slider handles.
+  * **Min / max**: shows or hides the min and max value input fields for precise
+    range entry.
+  * **Missing values**: controls how missing values are handled 
+  (keep, exclude, or show only missing values).
+
+### Switch to categorical filter
+
+To select specific numeric values instead of a range, switch the filter to categorical type: click the **Switch to categorical filter** icon in the filter header. The histogram is replaced by a list of individual values with checkboxes. To switch back, click the **Switch to histogram filter** icon.
+
+![Switching to categorical filter](img/switch-filter-type.gif "Switching to categorical filter")
 
 ## Structure filter
 
@@ -153,7 +183,7 @@ In case if column name contains spaces, you can put the column name inside of es
 
 ## Hierarchical filter
 
-A hierarchical filter organizes column values in a tree-like structure. This filter is used for columns that have categories. For example, if the dataset contains two columns, _Sex_ and _Name_, the hierarchical filter shows the values of the _Name_ column grouped by sex categories, and each category or sub-category can be expanded, collapsed, turned on or off.
+Hierarchical filter organizes column values in a tree-like structure. This filter is used for columns that have categories. For example, if the dataset contains two columns, _Sex_ and _Name_, the hierarchical filter shows the values of the _Name_ column grouped by sex categories, and each category or sub-category can be expanded, collapsed, turned on or off.
 
 The hierarchical filter can be added from the filters hamburger menu. After the filter is added, it detects existing hierarchies based on the values (for example `Country`, `City`, `Street`). 
 
@@ -202,7 +232,6 @@ You can save a filter configuration for later use:
 
 Restore this configuration through **Save or apply** in the context menu.
 
-
 ## Column tags
 
 * For **molecular columns**, use the **.structure-filter-type** column tag to
@@ -250,7 +279,6 @@ column.tags[DG.TAGS.STRUCTURE_FILTER_TYPE] = 'Categorical';
 Drag-and-drop columns right from the grid to add the corresponding filters:
 
 ![filters-drag-column](img/filters-drag-column.gif)
-
 
 ## Properties
 
