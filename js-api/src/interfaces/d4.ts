@@ -1660,6 +1660,8 @@ export interface ILineChartSettings {
   markersSize: string;
   markersSizeColumnName: string;
 
+  markersSizeAggrType: string;
+
   markersVisibility: string;
   markersVisibilityColumnName: string;
 
