@@ -5,7 +5,7 @@ Datagrok package for integrating with the KNIME Business Hub.
 ## What It Does
 
 - Connects to KNIME Business Hub (hub.knime.com or self-hosted) via REST API
-- Lists all deployments (REST, data-app, schedule, trigger) for teams the user belongs to
+- Lists REST service deployments for teams the user belongs to
 - Passes inputs (tables, parameters, files) and executes workflows
 - Displays results as Datagrok DataFrames (REST deployments) or provides link to KNIME Hub (data-app deployments)
 
@@ -32,7 +32,7 @@ If settings are not configured, the app shows a warning toast instead of a non-f
 
 To create an Application Password: click your avatar on hub.knime.com > switch to your **personal** account (not the PRO team) > go to your profile > **Settings** > **Application Passwords** > Create.
 
-**Important**: All deployment types (REST, data-app, schedule, trigger) appear in the tree. Only REST service deployments return API-consumable output data. Data-app deployments produce interactive sessions viewable on KNIME Hub. Raw workflows in your Hub space are not directly executable via API. To deploy: upload workflow to Hub space > create a Deployment.
+**Important**: Only REST service deployments appear in the tree and are executable via the API. Raw workflows in your Hub space are not directly executable via API. To deploy: upload workflow to Hub space > create a REST Deployment.
 
 ## Architecture
 
@@ -78,14 +78,15 @@ The package uses different execution strategies based on deployment type (determ
 | `src/function-registry.ts` | Dynamic Datagrok function registration from KNIME deployment specs |
 | `src/function-cache.ts` | Persistent cache via `grok.userSettings`: sync load at startup, async background refresh with diff |
 | `src/data-conversion.ts` | DataFrame <-> KNIME JSON table format |
-| `src/workflow-input-form.ts` | Dynamic input form from workflow parameter descriptors |
 | `src/utils.ts` | Async job polling with `DG.TaskBarProgressIndicator`, timeout management |
-| `css/knime-link.css` | Styles for workflow view, forms, results, file outputs |
+| `css/knime-link.css` | Styles for breadcrumbs, progress indicators, results display |
 
 ### Tree Browser
 
-Discovers teams via `/accounts/identity`, then lists deployments per team via `GET /deployments/{scope}`.
-Each item opens an execution view. The header includes a custom breadcrumb navigation UI.
+Discovers teams via `/accounts/identity`, then lists REST deployments per team via `GET /deployments/{scope}/rest`.
+Selecting a deployment registers it as a Datagrok function and opens its preview via `DG.ObjectHandler`.
+Test deployments (prefixed with `datagrok_test_`) are grouped under a "Test workflows" node.
+The header includes a custom breadcrumb navigation UI.
 
 ### Data Conversion
 
@@ -99,32 +100,26 @@ Each item opens an execution view. The header includes a custom breadcrumb navig
 Results are extracted from the sync response or job response:
 
 - **`outputValues`** — inline key-value results; objects with `table-data` become DataFrames, scalars become variable rows
-- **`outputResources`** — named resources fetched via `GET /jobs/{uuid}/output-resources/{resourceId}`; text responses (CSV/TSV/JSON) are auto-parsed into DataFrames via `tryParseTextAsDataFrame()`; binary content is shown as a download link with extension guessed from `Content-Type`
+- **`outputResources`** — named resources fetched via `GET /jobs/{uuid}/output-resources/{resourceId}`; JSON arrays are parsed via `knimeTableToDataFrame()`, CSV/TSV text is parsed via `DG.DataFrame.fromCsv()`; binary content is returned as a blob
 - **Output resource pre-fetching** — resources are fetched immediately when a job completes (before any job cleanup) to prevent race conditions with S3 pre-signed URL expiry
-- **Error handling** — both `nodeMessages` and `errors` arrays from failed executions are extracted and shown via `grok.shell.error`
+- **Error handling** — both `nodeMessages` and `errors` arrays from failed executions are extracted; errors throw exceptions
 - **Flat result parsing** — handles responses where `table-spec`/`table-data` appears at the top level rather than wrapped in `outputValues`/`outputResources`
-- If no outputs, shows "Workflow completed with no output."
 
 ### Workflow Input Discovery
 
 Input parameters are discovered via `GET /deployments/{id}/open-api`, which returns the workflow's OpenAPI spec.
 The parser reads `components.schemas.InputParameters.properties` directly (not from paths — the `/execution`
 endpoint references `InputParameters` via `$ref`). File inputs are extracted from the `/execution` endpoint's
-`multipart/form-data` schema via `parseMultipartFileInputs()`. Each property is mapped to a Datagrok input
-type via `ui.input.forInputType()` using a `KnimeParamType` → `DG.InputType` mapping.
-
-**Input form features:**
-- Parameters are grouped into accordion sections when groups are present in the spec
-- Input descriptions are shown via info icons with hover tooltips
-- Table inputs display column schema in their tooltip
-- Default values from the spec are pre-populated in the form
-- A "Variables (JSON)" text area is always included for passing flow variables
+`multipart/form-data` schema via the private `parseMultipartFileInputs()` method. Each property is mapped
+to a `KnimeParamType` and then to a Datagrok function parameter type via the `knimeTypeToDgType` mapping.
+There is no custom input form — inputs are exposed as Datagrok function parameters via `grok.functions.register()`,
+and the platform's built-in function UI handles the form rendering.
 
 **Important limitations of the OpenAPI spec:**
 - Only **Container Input (Table)**, **Container Input (JSON)**, and **Container Input (File)** nodes are exposed.
-- **Container Input (Variable)** nodes are NOT included in the spec. Use the "Variables (JSON)" text area.
+- **Container Input (Variable)** nodes are NOT included in the spec.
 
-When no spec is available, a fallback form with a table picker and "Table Parameter Name" field is shown (default: `table-input`).
+When no spec is available (fetch fails), the function is registered with no input parameters.
 
 ### Multipart File Upload
 
@@ -146,7 +141,7 @@ via `grok.functions.register()`. When a deployment is selected in the tree brows
 
 **Grouped parameters**: When a KNIME input is an object with typed sub-properties, each sub-property becomes
 a separate function input with a sanitized name `{group}_{param}`. The description for grouped inputs
-includes `Part of "{group}" parameter` (with the parent's description appended if available), so users
+includes `Part of "{group}" parameter` (with the parent's description in parentheses if available); the input's own description is prepended before the group label, so users
 understand which inputs belong together. At execution time, grouped inputs are reassembled into a nested
 object under the original parent key before being sent to KNIME.
 
@@ -171,7 +166,10 @@ the cached version is kept.
 
 ### Exported Functions
 
-- `executeKnimeWorkflow(workflowId, inputJson?, inputTable?, tableParamName?)` — programmatic workflow execution
+The package exports three decorated functions:
+- `knimeLinkAutostart()` — autostart function that registers KNIME functions from cache, then refreshes in background
+- `knimeLinkApp()` — app entry point at Browse > Compute > KNIME
+- `knimeLinkAppTreeBrowser()` — tree browser that lists REST deployments per team
 
 ## Build
 
