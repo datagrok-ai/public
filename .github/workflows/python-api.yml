@@ -91,6 +91,7 @@ jobs:
       - name: Publish ApiTests package
         run: |
           npm install
+          npm run build
           count=0
           retries=5
           until grok publish ci --release; do
