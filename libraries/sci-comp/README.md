@@ -43,7 +43,7 @@ Four built-in solvers, each supporting synchronous and asynchronous objective fu
 
 Minimize the [Rosenbrock function](https://en.wikipedia.org/wiki/Rosenbrock_function):
 
-$$f(x, y) = 100\,(y - x^2)^2 + (1 - x)^2$$
+$$f(x, y) = 100(y - x^2)^2 + (1 - x)^2$$
 
 - **Goal:** minimize
 - **Start:** $x_0 = (-1.2,\; 1.0)$
