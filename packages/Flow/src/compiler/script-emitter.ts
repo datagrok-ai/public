@@ -383,6 +383,20 @@ function emitFuncStepInstrumented(step: CompiledStep, options: EmitOptions, grap
     outputEntries.push(`${varName}: __ff_summarize(${varName}${typeArg})`);
     outIdx++;
   }
+  // In-place mutating functions: has dataframe input(s) but 0 real outputs (only pass-throughs).
+  // Send a clone of the first dataframe input so the modified table can be previewed.
+  if (node && step.outputs.size === 0 && node.inputs) {
+    for (let i = 0; i < node.inputs.length; i++) {
+      if (node.inputs[i]?.type === 'dataframe') {
+        const inputExpr = step.inputs.get(node.inputs[i].name);
+        if (inputExpr && inputExpr !== 'undefined') {
+          outputEntries.push(`'${node.inputs[i].name} (modified)': __ff_summarize(${inputExpr}, 'dataframe')`);
+          break;
+        }
+      }
+    }
+  }
+
   const outputsObj = outputEntries.length > 0 ? `{${outputEntries.join(', ')}}` : '{}';
   lines.push(`  __ff_emit('node-complete', ${step.nodeId}, {outputs: ${outputsObj}});`);
 

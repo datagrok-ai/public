@@ -154,18 +154,35 @@ function buildValueRow(name: string, summary: ValueSummary): HTMLElement {
     }
     break;
   }
-  case 'column':
+  case 'column': {
     row.appendChild(ui.divText(
       `${name}: Column "${summary.name}" (${summary.length} values)`,
     ));
-    if (summary.sample) {
-      const sampleEl = ui.divText(`  Sample: [${summary.sample.join(', ')}]`);
-      sampleEl.style.fontSize = '11px';
-      sampleEl.style.color = '#666';
-      sampleEl.style.marginLeft = '8px';
-      row.appendChild(sampleEl);
+    if (summary.sample && summary.sample.length > 0) {
+      const table = document.createElement('table');
+      table.style.cssText = 'font-size:11px; color:#555; margin:4px 0 0 8px; border-collapse:collapse;';
+      const headerRow = table.insertRow();
+      const idxTh = document.createElement('th');
+      idxTh.textContent = '#';
+      idxTh.style.cssText = 'padding:2px 8px; text-align:right; color:#999; font-weight:normal;';
+      headerRow.appendChild(idxTh);
+      const valTh = document.createElement('th');
+      valTh.textContent = 'Value';
+      valTh.style.cssText = 'padding:2px 8px; text-align:left; font-weight:normal; color:#999;';
+      headerRow.appendChild(valTh);
+      for (let i = 0; i < summary.sample.length; i++) {
+        const tr = table.insertRow();
+        const idxTd = tr.insertCell();
+        idxTd.textContent = String(i);
+        idxTd.style.cssText = 'padding:1px 8px; text-align:right; color:#999;';
+        const valTd = tr.insertCell();
+        valTd.textContent = String(summary.sample[i]);
+        valTd.style.cssText = 'padding:1px 8px; border-bottom:1px solid #000000;';
+      }
+      row.appendChild(table);
     }
     break;
+  }
   case 'graphics': {
     row.appendChild(ui.divText(`${name}: Graphics`));
     const imageData = summary.value as string;
