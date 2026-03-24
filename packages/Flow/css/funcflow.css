@@ -152,6 +152,7 @@
 .funcflow-accordion-content {
   padding: 6px 4px;
   box-sizing: border-box;
+  width: 100%;
 }
 
 /* Ensure inputs/textareas inside accordion panes fill available width */

@@ -2,6 +2,7 @@
 import {LiteGraph, LGraphCanvas, LGraphNode} from 'litegraph.js';
 import {GraphManager} from './graph-manager';
 import {areTypesCompatible} from '../types/type-map';
+import {drawTitleBoxWithStatus} from '../execution/execution-visualizer';
 
 export interface CanvasCallbacks {
   onNodeSelected?: (node: LGraphNode) => void;
@@ -37,7 +38,7 @@ export class CanvasController {
 
     // Create LGraphCanvas
     this.graphCanvas = new LGraphCanvas(this.canvas, graphManager.graph, {
-      autoresize: false,
+      autoresize: false, skip_render: true,
     });
 
     // Set Roboto font for all canvas text
@@ -75,6 +76,9 @@ export class CanvasController {
 
     // Patch node rendering for clean visuals + colored title bars
     this.patchNodeRendering();
+
+    // Unified status/collapse circle: install onDrawTitleBox on all nodes
+    this.patchTitleBox();
 
     // Setup callbacks
     if (callbacks?.onNodeSelected)
@@ -203,6 +207,15 @@ export class CanvasController {
       }
       ctx.stroke();
       ctx.restore();
+    };
+  }
+
+  /** Install unified status/collapse circle on all nodes via LGraphNode prototype */
+  private patchTitleBox(): void {
+    (LGraphNode.prototype as any).onDrawTitleBox = function(
+      ctx: CanvasRenderingContext2D, title_height: number, size: number[], scale: number,
+    ) {
+      drawTitleBoxWithStatus(ctx, this, title_height, size, scale);
     };
   }
 
