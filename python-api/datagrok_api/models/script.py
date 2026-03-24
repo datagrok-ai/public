@@ -112,14 +112,19 @@ class Script(Func):
     def to_dict(self):
         d = super().to_dict()
         d["script"] = self.script
-        d["language"] = self.language.value
+        d["language"] = self.language.value if isinstance(self.language, ScriptLanguage) else self.language
         return d
     
     @classmethod
     def _from_dict(cls, data: dict) -> "Script":
+        lang = data.get("language")
+        try:
+            lang = ScriptLanguage(lang) if lang else None
+        except ValueError:
+            pass
         return cls(
             script=data.get("script"),
-            language=ScriptLanguage(data.get("language")),
+            language=lang,
             id=data.get("id"),
             name=data.get("name"),
             friendly_name=data.get("friendlyName"),

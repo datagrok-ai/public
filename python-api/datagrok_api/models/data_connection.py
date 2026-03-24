@@ -2,6 +2,7 @@ from enum import Enum
 from typing import List, Optional, Union
 from datetime import datetime
 from datagrok_api.models.model import Model, NamedModel
+from datagrok_api.models.group import Group
 
 
 class DataSourceType(str, Enum):
@@ -112,28 +113,38 @@ class Credentials(Model):
     >>> print(aws_creds.access_key)     # Access AWS access key
     >>> aws_creds.secret_key = "NEW_SECRET"  # Update secret key dynamically
     """
-    _explicit_attrs = {"id", "parameters", "open_parameters"}
-    def __init__(self, **kwargs):
+    _explicit_attrs = {"id", "parameters", "open_parameters", "entity_bind_id", "group"}
+    def __init__(self, entity_bind_id: Optional[str] = None, group: Optional['Group'] = None, **kwargs):
         super().__init__(None)
         self.parameters = dict(kwargs)
         self.open_parameters = dict()
+        self.entity_bind_id = entity_bind_id
+        self.group = group
 
     def get(self, key, default=None):
         return self.parameters.get(key, default)
     
     def to_dict(self):
-        return {
+        d = {
             "id": self.id,
             "parameters": self.parameters,
-            "openParameters": self.open_parameters
-        } 
+            "openParameters": self.open_parameters,
+            "entityBindId": self.entity_bind_id,
+        }
+        if self.group is not None:
+            d["group"] = self.group.to_dict()
+        return d
 
     @classmethod
     def from_dict(cls, data: dict) -> 'Credentials':
-        creds = cls(**data.get('parameters', {}))
+        group_data = data.get('group')
+        group = Group.from_dict(group_data) if group_data else None
+        creds = cls(entity_bind_id=data.get('entityBindId'),
+                    group=group,
+                    **data.get('parameters', {}))
         creds.id = data.get('id')
         creds.open_parameters = data.get('openParameters', {})
-        return creds   
+        return creds
 
     def __getattr__(self, name):
         if name in self.parameters:
