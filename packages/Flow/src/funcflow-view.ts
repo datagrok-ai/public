@@ -402,8 +402,8 @@ export class FuncFlowView extends DG.ViewBase {
     if (func.inputs.length === 0)
       fc.call(undefined, undefined, {processed: true}).then(() => onComplete(fc.outputs));
     else {
-      fc.getEditor().then((e: HTMLElement) => {
-        ui.dialog().add(e).show().onOK(async () => {
+      fc.getEditor(false).then((e: HTMLElement) => {
+        ui.dialog({title: func.friendlyName ?? func.name}).add(e).show().onOK(async () => {
           await fc.call(undefined, undefined, {processed: true});
           onComplete(fc.outputs);
         });
