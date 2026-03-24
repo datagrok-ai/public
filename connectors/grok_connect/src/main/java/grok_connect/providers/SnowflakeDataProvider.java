@@ -37,6 +37,7 @@ public class SnowflakeDataProvider extends JdbcDataProvider {
     private static final List<String> AVAILABLE_CLOUDS =
             Collections.unmodifiableList(Arrays.asList("aws", "azure", "gcp", "privatelink"));
     private static final String RSA_METHOD = "Username/Private key";
+    private static final String OAUTH_JWT = "OAuth (JWT)";
 
     public SnowflakeDataProvider() {
         init();
@@ -74,6 +75,21 @@ public class SnowflakeDataProvider extends JdbcDataProvider {
         if (GrokConnectUtil.isNotEmpty(method) && method.equals(RSA_METHOD)) {
             SnowflakeBasicDataSource ds = getDataSource(conn);
             return ConnectionPool.getConnection(ds, getDataSourceKey(conn, ds));
+        }
+        else if (OAUTH_JWT.equals(method)) {
+            try {
+                Class.forName(driverClassName);
+            }
+            catch (ClassNotFoundException e) {
+                throw new GrokConnectException(e);
+            }
+            Properties properties = getProperties(conn);
+            String token = (String) conn.credentials.parameters.get("#token");
+            properties.setProperty("authenticator", "oauth");
+            properties.setProperty("token", token);
+            properties.remove(DbCredentials.LOGIN);
+            properties.remove(DbCredentials.PWD);
+            return java.sql.DriverManager.getConnection(getConnectionString(conn), properties);
         }
         else
             return ConnectionPool.getConnection(getConnectionString(conn), getProperties(conn), driverClassName);
@@ -156,6 +172,8 @@ public class SnowflakeDataProvider extends JdbcDataProvider {
         descriptor.credentialsTemplate = DbCredentials.getDbCredentialsTemplate();
         descriptor.credentialsTemplate.add(new Property(Property.STRING_TYPE, DbCredentials.PRIVATE_KEY, null, RSA_METHOD, new Prop("rsa"), ".pem,.der"));
         descriptor.credentialsTemplate.add(new Property(Property.STRING_TYPE, "passPhrase", "Passphrase for decrypting private key.", RSA_METHOD, new Prop("password")));
+        descriptor.credentialsTemplate.add(new Property(Property.STRING_TYPE, "jwtSigningKey", "Private key for signing JWT tokens. The matching public key must be configured in Snowflake's External OAuth integration.", OAUTH_JWT, new Prop("rsa"), ".pem,.der"));
+        descriptor.credentialsTemplate.add(new Property(Property.STRING_TYPE, "jwtAudience", "Audience claim for JWT tokens. Must match EXTERNAL_OAUTH_AUDIENCE_LIST in Snowflake.", OAUTH_JWT));
         descriptor.credentialsTemplate.stream().filter(p -> p.name.equals(DbCredentials.LOGIN)).forEach(p -> p.category = "Username/Password," + RSA_METHOD);
         descriptor.nameBrackets = "\"";
 

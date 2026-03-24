@@ -169,6 +169,25 @@ Defined in `GrokConnect.java` using Spark Java:
 | `/test_connection` | POST | Test connectivity |
 | `/cancel` | POST | Cancel running query |
 
+### Adding a New Auth Method to a Provider
+
+1. **Define constant** in the provider (e.g., `private static final String MY_METHOD = "My Method"`)
+2. **Add credential fields** to `descriptor.credentialsTemplate` with the method as category (4th arg)
+3. **Handle in `getConnection()`** — branch on `#chosen-auth-method`
+4. **Server side** (`credentials_service.dart`) — add branch in `readCredentials()` if server
+   needs to transform credentials (e.g., mint tokens, exchange tokens)
+5. **Server side** (`grok_server.dart`) — add method to decrypt condition in
+   `getCredentialsForEntity()` if the flow needs credential resolution
+6. **Connection pool** — bypass `ConnectionPool` for short-lived per-user tokens
+   (use `DriverManager.getConnection()` directly, requires `Class.forName(driverClassName)`)
+
+Credential field properties:
+- `new Prop("password")` — masked input
+- `new Prop("rsa")` with accept `.pem,.der` — file upload for keys
+- `new Prop("textarea")` — multiline text
+- Category parameter (4th arg) controls which auth method tab shows the field
+- Same field name in different categories will collide — use unique names
+
 ### Request/Response Flow
 
 ```
