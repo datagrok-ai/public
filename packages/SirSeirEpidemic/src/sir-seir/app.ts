@@ -322,6 +322,8 @@ export function sirSeirEpidemicApp(_package: DG.Package): void {
   form.append(ui.h2('Epidemic Summary'));
   form.append(summaryPanel);
 
+  form.classList.add('sir-seir-app-input-panel');
+
   const dockMng = view.dockManager;
   dockMng.dock(form, DG.DOCK_TYPE.LEFT, null, undefined, 0.6);
 
@@ -349,7 +351,7 @@ export function sirSeirEpidemicApp(_package: DG.Package): void {
   });
 
   // Dock viewers: line chart top-right, R_eff middle-right, phase portrait bottom-right
-  dockMng.dock(lineChart, DG.DOCK_TYPE.RIGHT, null, undefined, 0.7);
+  dockMng.dock(lineChart, DG.DOCK_TYPE.RIGHT, null, undefined, 0.4);
   const lineChartNode = dockMng.findNode(lineChart.root);
   if (lineChartNode != null) {
     dockMng.dock(rEffChart, DG.DOCK_TYPE.DOWN, lineChartNode, undefined, 0.35);

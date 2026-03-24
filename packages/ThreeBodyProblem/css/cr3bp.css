@@ -38,3 +38,7 @@
   flex-direction: row;
   gap: 4px;
 }
+
+.cr3bp-app-input-panel {
+  padding-left: 6px;
+}

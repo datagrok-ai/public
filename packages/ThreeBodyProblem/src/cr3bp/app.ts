@@ -315,6 +315,8 @@ export function threeBodyProblemApp(_package: DG.Package): void {
   form.append(ui.h2('Lagrange Points'));
   form.append(lagrangeInfoDiv);
 
+  form.classList.add('cr3bp-app-input-panel');
+
   const dockMng = view.dockManager;
   dockMng.dock(form, DG.DOCK_TYPE.LEFT, null, undefined, 0.6);
 
@@ -344,7 +346,7 @@ export function threeBodyProblemApp(_package: DG.Package): void {
   });
 
   // --- Docking: orbit top-right, ZVC bottom-left, Jacobi bottom-right ---
-  dockMng.dock(orbitViewer, DG.DOCK_TYPE.RIGHT, null, undefined, 0.7);
+  dockMng.dock(orbitViewer, DG.DOCK_TYPE.RIGHT, null, undefined, 0.5);
   const orbitNode = dockMng.findNode(orbitViewer.root);
   if (orbitNode != null) {
     const zvcNode = dockMng.dock(zvcViewer, DG.DOCK_TYPE.DOWN, orbitNode, undefined, 0.5);

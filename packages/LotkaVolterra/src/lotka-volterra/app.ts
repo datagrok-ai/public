@@ -545,8 +545,10 @@ export function lotkaVolterraApp(_package: DG.Package): void {
   form.append(ui.h2('Equilibrium & Stats'));
   form.append(statsPanel);
 
+  form.classList.add('lotka-volterra-app-input-panel');
+
   const dockMng = view.dockManager;
-  dockMng.dock(form, DG.DOCK_TYPE.LEFT, null, undefined, 0.6);
+  dockMng.dock(form, DG.DOCK_TYPE.LEFT, null, undefined, 0.7);
 
   // --- Line chart (time series) ---
   lineChart = view.addViewer('Line chart', {
@@ -566,7 +568,7 @@ export function lotkaVolterraApp(_package: DG.Package): void {
   });
 
   // Dock: line chart top-right, phase portrait bottom-right
-  dockMng.dock(lineChart, DG.DOCK_TYPE.RIGHT, null, undefined, 0.7);
+  dockMng.dock(lineChart, DG.DOCK_TYPE.RIGHT, null, undefined, 0.5);
   const lineChartNode = dockMng.findNode(lineChart.root);
   if (lineChartNode != null)
     dockMng.dock(scatterPlot, DG.DOCK_TYPE.DOWN, lineChartNode, undefined, 0.5);

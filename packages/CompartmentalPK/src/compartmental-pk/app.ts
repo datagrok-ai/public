@@ -1329,7 +1329,7 @@ export function compartmentalPkApp(pkg: DG.Package): void {
   rightPanel.classList.add('cpk-panel');
 
   // Dock panels
-  view.dockManager.dock(leftPanel, DG.DOCK_TYPE.LEFT, null, 'Model Parameters', 0.3);
+  view.dockManager.dock(leftPanel, DG.DOCK_TYPE.LEFT, null, 'Model Parameters', 0.5);
 
   // Concentration-time chart
   const yColumns = ['Concentration (mg/L)', 'MEC (mg/L)', 'MTC (mg/L)'];
@@ -1360,7 +1360,7 @@ export function compartmentalPkApp(pkg: DG.Package): void {
   view.dockManager.dock(diagramPanel, DG.DOCK_TYPE.RIGHT, compNode, 'Diagram', 0.5);
 
   // Dock right panel
-  view.dockManager.dock(rightPanel, DG.DOCK_TYPE.RIGHT, null, 'Optimization', 0.3);
+  view.dockManager.dock(rightPanel, DG.DOCK_TYPE.RIGHT, null, 'Optimization', 0.2);
 
   // ===================== INITIALIZATION =====================
 

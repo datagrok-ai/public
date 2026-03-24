@@ -545,6 +545,8 @@ export function lotkaVolterraApp(_package: DG.Package): void {
   form.append(ui.h2('Equilibrium & Stats'));
   form.append(statsPanel);
 
+  form.classList.add('lotka-volterra-app-input-panel');
+
   const dockMng = view.dockManager;
   dockMng.dock(form, DG.DOCK_TYPE.LEFT, null, undefined, 0.6);
 

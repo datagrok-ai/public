@@ -53,3 +53,7 @@
   font-weight: bold;
   color: #006400;
 }
+
+.lotka-volterra-app-input-panel {
+  padding-left: 6px;
+}

@@ -564,6 +564,8 @@ export function golfBallApp(_package: DG.Package): void {
   form.append(ui.h2('Flight Statistics'));
   form.append(statsPanel);
 
+  form.classList.add('golf-ball-app-input-panel');
+
   const dockMng = view.dockManager;
   dockMng.dock(form, DG.DOCK_TYPE.LEFT, null, undefined, 0.6);
 
@@ -583,7 +585,7 @@ export function golfBallApp(_package: DG.Package): void {
   });
 
   // Dock: trajectory top-right, time series bottom-right
-  dockMng.dock(trajectoryPlot, DG.DOCK_TYPE.RIGHT, null, undefined, 0.7);
+  dockMng.dock(trajectoryPlot, DG.DOCK_TYPE.RIGHT, null, undefined, 0.5);
   const trajectoryNode = dockMng.findNode(trajectoryPlot.root);
   if (trajectoryNode != null)
     dockMng.dock(timeSeriesChart, DG.DOCK_TYPE.DOWN, trajectoryNode, undefined, 0.5);

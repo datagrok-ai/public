@@ -33,3 +33,7 @@
 .sir-seir-app-sigma-hidden {
   display: none;
 }
+
+.sir-seir-app-input-panel {
+  padding-left: 6px;
+}
