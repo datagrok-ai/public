@@ -110,6 +110,9 @@ export function emitScript(graph: LGraph, settings: ScriptSettings, options?: Em
       lines.push(...emitFuncStepInstrumented(step, options!, graph));
     else
       lines.push(emitFuncStep(step));
+
+    // Auto-detect semantic types on any dataframe outputs
+    lines.push(...emitDetectSemanticTypes(step, graph));
   }
 
   if (inst)
@@ -390,6 +393,28 @@ function emitFuncStepInstrumented(step: CompiledStep, options: EmitOptions, grap
     lines.push('  throw __ff_err;');
   }
   lines.push('}');
+  return lines;
+}
+
+/** Emit `await varName.meta.detectSemanticTypes()` for each dataframe output of the step */
+function emitDetectSemanticTypes(step: CompiledStep, graph: LGraph): string[] {
+  const node = graph.getNodeById(step.nodeId) as FuncFlowNode | undefined;
+  if (!node) return [];
+
+  const lines: string[] = [];
+  const ptCount = node.properties?.['_passthroughCount'] ?? 0;
+
+  if (node.outputs) {
+    for (let i = ptCount; i < node.outputs.length; i++) {
+      const slotType = node.outputs[i]?.type as string | undefined;
+      if (slotType === 'dataframe') {
+        const varName = step.outputs.get(node.outputs[i].name);
+        if (varName)
+          lines.push(`if (${varName} != null) await ${varName}.meta.detectSemanticTypes();`);
+      }
+    }
+  }
+
   return lines;
 }
 
