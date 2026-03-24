@@ -21,6 +21,21 @@ See also:
 - [Versioning policy](../../develop/dev-process/versioning-policy.md)
 - [Docker-Compose](../docker-compose/docker-compose.md)
 
+## 2026-03-20 Datagrok 1.27.1 release
+
+### Improvements:
+
+* Implemented EKS Pod Identity support
+* Filter Panel: Introduced radio mode for categorical filters
+* JS API: Exposed ColorPicker.show() method for displaying a color picker without a DOM element
+* Scatterplot: Improved WebGPU rendering performance
+
+### Fixed:
+
+* Trellis plot now restores correctly when **Data Source** is set to `Selected`
+* Grid tooltip no longer exposes blurred columns
+* Summary columns now display correct names
+
 ## 2026-03-12 Datagrok 1.27.0 release
 
 The Datagrok 1.27.0 release introduces AI-powered features, brings improvements to visualization, strengthens access control and analytics, and delivers a range of usability enhancements.
