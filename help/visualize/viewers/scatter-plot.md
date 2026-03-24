@@ -323,7 +323,7 @@ Youtube")](https://www.youtube.com/watch?v=7MBXWzdC0-I&t=214s)
 | Show Pearson Correlation | boolean |  |
 | Show Mean Absolute Error | boolean |  |
 | Show Root Mean Square Error | boolean |  |
-| Regression Per Category | boolean |  |
+| Regression Per Category | boolean | Supports up to 20 categories. Otherwise, a common regression line is shown. |
 | Show Dataframe Formula Lines | boolean | Control the visibility of dataframe-originated formula lines. Edit formula lines by right-clicking and selecting Tools \| Formula Lines from the popup menu. Requires the PowerPack plugin. |
 | Show Viewer Formula Lines | boolean | Control the visibility of dataframe-originated formula lines. Edit formula lines by right-clicking and selecting Tools \| Formula Lines from the popup menu. Requires the PowerPack plugin. |
 | **Selection** | | |

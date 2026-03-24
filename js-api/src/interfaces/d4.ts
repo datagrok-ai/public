@@ -2972,6 +2972,7 @@ export interface IScatterPlotSettings {
 
   showRootMeanSquareError: boolean;
 
+  /// Supports up to 20 categories. Otherwise, a common regression line is shown.
   regressionPerCategory: boolean;
 
   /// Control the visibility of dataframe-originated formula lines.
