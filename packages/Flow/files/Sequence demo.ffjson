@@ -1,0 +1,793 @@
+{
+  "version": "1.0",
+  "name": "Sequence demo",
+  "description": "Sequence conversion and calculations",
+  "author": "admin",
+  "created": "2026-03-24T16:41:40.687Z",
+  "modified": "2026-03-24T16:41:40.688Z",
+  "graph": {
+    "last_node_id": 10,
+    "last_link_id": 10,
+    "nodes": [
+      {
+        "id": 9,
+        "type": "DG Functions/Uncategorized/AddNewColumn",
+        "pos": {
+          "0": 333,
+          "1": 542,
+          "2": 0,
+          "3": 0,
+          "4": 0,
+          "5": 0,
+          "6": 0,
+          "7": 0,
+          "8": 0,
+          "9": 0
+        },
+        "size": {
+          "0": 211.60000610351562,
+          "1": 166
+        },
+        "flags": {
+          "collapsed": true
+        },
+        "order": 5,
+        "mode": 0,
+        "inputs": [
+          {
+            "name": "table",
+            "type": "dataframe",
+            "link": 9,
+            "color_on": "#E67E22",
+            "color_off": "#E67E22"
+          },
+          {
+            "name": "expression",
+            "type": "string",
+            "link": null,
+            "color_on": "#2ECC71",
+            "color_off": "#2ECC71"
+          },
+          {
+            "name": "name",
+            "type": "string",
+            "link": null,
+            "color_on": "#2ECC71",
+            "color_off": "#2ECC71"
+          },
+          {
+            "name": "type",
+            "type": "string",
+            "link": null,
+            "color_on": "#2ECC71",
+            "color_off": "#2ECC71"
+          },
+          {
+            "name": "treatAsString",
+            "type": "bool",
+            "link": null,
+            "color_on": "#E74C3C",
+            "color_off": "#E74C3C"
+          },
+          {
+            "name": "subscribeOnChanges",
+            "type": "bool",
+            "link": null,
+            "color_on": "#E74C3C",
+            "color_off": "#E74C3C"
+          },
+          {
+            "name": "errorBehavior",
+            "type": "calccolerrorbehavior",
+            "link": null,
+            "color_on": "#95A5A6",
+            "color_off": "#95A5A6"
+          }
+        ],
+        "outputs": [
+          {
+            "name": "→",
+            "type": "dataframe",
+            "links": [
+              10
+            ],
+            "color_on": "#E67E22",
+            "color_off": "#E67E22",
+            "slot_index": 0
+          },
+          {
+            "name": "→",
+            "type": "string",
+            "links": null,
+            "color_on": "#2ECC71",
+            "color_off": "#2ECC71"
+          },
+          {
+            "name": "→",
+            "type": "string",
+            "links": null,
+            "color_on": "#2ECC71",
+            "color_off": "#2ECC71"
+          },
+          {
+            "name": "→",
+            "type": "string",
+            "links": null,
+            "color_on": "#2ECC71",
+            "color_off": "#2ECC71"
+          },
+          {
+            "name": "→",
+            "type": "bool",
+            "links": null,
+            "color_on": "#E74C3C",
+            "color_off": "#E74C3C"
+          },
+          {
+            "name": "→",
+            "type": "bool",
+            "links": null,
+            "color_on": "#E74C3C",
+            "color_off": "#E74C3C"
+          },
+          {
+            "name": "→",
+            "type": "calccolerrorbehavior",
+            "links": null,
+            "color_on": "#95A5A6",
+            "color_off": "#95A5A6"
+          },
+          {
+            "name": "result",
+            "type": "column",
+            "links": null,
+            "color_on": "#3498DB",
+            "color_off": "#3498DB"
+          }
+        ],
+        "properties": {
+          "_input_expression": "${logs} / ${logp}",
+          "_input_name": "logs / logp",
+          "_input_type": "auto",
+          "_input_treatAsString": false,
+          "_input_subscribeOnChanges": true,
+          "_passthroughCount": 7,
+          "_input_errorBehavior": null
+        },
+        "color": "#BDBDBD",
+        "bgcolor": "#ffffff",
+        "boxcolor": "#43a047"
+      },
+      {
+        "id": 6,
+        "type": "DG Functions/hitTriageFunction,transform/addChemPropertiesColumns",
+        "pos": {
+          "0": 88,
+          "1": 546,
+          "2": 0,
+          "3": 0,
+          "4": 0,
+          "5": 0,
+          "6": 0,
+          "7": 0,
+          "8": 0,
+          "9": 0
+        },
+        "size": {
+          "0": 159.60000610351562,
+          "1": 226
+        },
+        "flags": {
+          "collapsed": true
+        },
+        "order": 4,
+        "mode": 0,
+        "inputs": [
+          {
+            "name": "table",
+            "type": "dataframe",
+            "link": 6,
+            "color_on": "#E67E22",
+            "color_off": "#E67E22"
+          },
+          {
+            "name": "molecules",
+            "type": "column",
+            "link": 8,
+            "color_on": "#3498DB",
+            "color_off": "#3498DB"
+          },
+          {
+            "name": "MW",
+            "type": "bool",
+            "link": null,
+            "color_on": "#E74C3C",
+            "color_off": "#E74C3C"
+          },
+          {
+            "name": "HBA",
+            "type": "bool",
+            "link": null,
+            "color_on": "#E74C3C",
+            "color_off": "#E74C3C"
+          },
+          {
+            "name": "HBD",
+            "type": "bool",
+            "link": null,
+            "color_on": "#E74C3C",
+            "color_off": "#E74C3C"
+          },
+          {
+            "name": "logP",
+            "type": "bool",
+            "link": null,
+            "color_on": "#E74C3C",
+            "color_off": "#E74C3C"
+          },
+          {
+            "name": "logS",
+            "type": "bool",
+            "link": null,
+            "color_on": "#E74C3C",
+            "color_off": "#E74C3C"
+          },
+          {
+            "name": "PSA",
+            "type": "bool",
+            "link": null,
+            "color_on": "#E74C3C",
+            "color_off": "#E74C3C"
+          },
+          {
+            "name": "rotatableBonds",
+            "type": "bool",
+            "link": null,
+            "color_on": "#E74C3C",
+            "color_off": "#E74C3C"
+          },
+          {
+            "name": "stereoCenters",
+            "type": "bool",
+            "link": null,
+            "color_on": "#E74C3C",
+            "color_off": "#E74C3C"
+          },
+          {
+            "name": "moleculeCharge",
+            "type": "bool",
+            "link": null,
+            "color_on": "#E74C3C",
+            "color_off": "#E74C3C"
+          }
+        ],
+        "outputs": [
+          {
+            "name": "→",
+            "type": "dataframe",
+            "links": [
+              9
+            ],
+            "color_on": "#E67E22",
+            "color_off": "#E67E22",
+            "slot_index": 0
+          },
+          {
+            "name": "→",
+            "type": "column",
+            "links": null,
+            "color_on": "#3498DB",
+            "color_off": "#3498DB"
+          },
+          {
+            "name": "→",
+            "type": "bool",
+            "links": null,
+            "color_on": "#E74C3C",
+            "color_off": "#E74C3C"
+          },
+          {
+            "name": "→",
+            "type": "bool",
+            "links": null,
+            "color_on": "#E74C3C",
+            "color_off": "#E74C3C"
+          },
+          {
+            "name": "→",
+            "type": "bool",
+            "links": null,
+            "color_on": "#E74C3C",
+            "color_off": "#E74C3C"
+          },
+          {
+            "name": "→",
+            "type": "bool",
+            "links": null,
+            "color_on": "#E74C3C",
+            "color_off": "#E74C3C"
+          },
+          {
+            "name": "→",
+            "type": "bool",
+            "links": null,
+            "color_on": "#E74C3C",
+            "color_off": "#E74C3C"
+          },
+          {
+            "name": "→",
+            "type": "bool",
+            "links": null,
+            "color_on": "#E74C3C",
+            "color_off": "#E74C3C"
+          },
+          {
+            "name": "→",
+            "type": "bool",
+            "links": null,
+            "color_on": "#E74C3C",
+            "color_off": "#E74C3C"
+          },
+          {
+            "name": "→",
+            "type": "bool",
+            "links": null,
+            "color_on": "#E74C3C",
+            "color_off": "#E74C3C"
+          },
+          {
+            "name": "→",
+            "type": "bool",
+            "links": null,
+            "color_on": "#E74C3C",
+            "color_off": "#E74C3C"
+          }
+        ],
+        "properties": {
+          "_input_MW": true,
+          "_input_HBA": true,
+          "_input_HBD": true,
+          "_input_logP": true,
+          "_input_logS": true,
+          "_input_PSA": false,
+          "_input_rotatableBonds": false,
+          "_input_stereoCenters": false,
+          "_input_moleculeCharge": false,
+          "_passthroughCount": 11
+        },
+        "color": "#BDBDBD",
+        "bgcolor": "#ffffff",
+        "boxcolor": "#43a047"
+      },
+      {
+        "id": 1,
+        "type": "DG Functions/Uncategorized/OpenFile",
+        "pos": {
+          "0": 92,
+          "1": 366,
+          "2": 0,
+          "3": 0,
+          "4": 0,
+          "5": 0,
+          "6": 0,
+          "7": 0,
+          "8": 0,
+          "9": 0
+        },
+        "size": {
+          "0": 140,
+          "1": 66
+        },
+        "flags": {
+          "collapsed": true
+        },
+        "order": 0,
+        "mode": 0,
+        "inputs": [
+          {
+            "name": "fullPath",
+            "type": "string",
+            "link": null,
+            "color_on": "#2ECC71",
+            "color_off": "#2ECC71"
+          },
+          {
+            "name": "sheetName",
+            "type": "string",
+            "link": null,
+            "color_on": "#2ECC71",
+            "color_off": "#2ECC71"
+          }
+        ],
+        "outputs": [
+          {
+            "name": "→",
+            "type": "string",
+            "links": null,
+            "color_on": "#2ECC71",
+            "color_off": "#2ECC71"
+          },
+          {
+            "name": "→",
+            "type": "string",
+            "links": null,
+            "color_on": "#2ECC71",
+            "color_off": "#2ECC71"
+          },
+          {
+            "name": "result",
+            "type": "dataframe",
+            "links": [
+              2,
+              4
+            ],
+            "color_on": "#E67E22",
+            "color_off": "#E67E22",
+            "slot_index": 2
+          }
+        ],
+        "title": "Open HELM File",
+        "properties": {
+          "_input_fullPath": "System:AppData/Bio/samples/HELM_cyclic.tsv",
+          "_input_sheetName": "",
+          "_passthroughCount": 2
+        },
+        "color": "#BDBDBD",
+        "bgcolor": "#ffffff",
+        "boxcolor": "#43a047"
+      },
+      {
+        "id": 4,
+        "type": "Utilities/Select Column",
+        "pos": {
+          "0": 93,
+          "1": 404,
+          "2": 0,
+          "3": 0,
+          "4": 0,
+          "5": 0,
+          "6": 0,
+          "7": 0,
+          "8": 0,
+          "9": 0
+        },
+        "size": {
+          "0": 140,
+          "1": 26
+        },
+        "flags": {
+          "collapsed": true
+        },
+        "order": 1,
+        "mode": 0,
+        "inputs": [
+          {
+            "name": "table",
+            "type": "dataframe",
+            "link": 2,
+            "color_on": "#E67E22",
+            "color_off": "#E67E22"
+          }
+        ],
+        "outputs": [
+          {
+            "name": "column",
+            "type": "column",
+            "links": [
+              5
+            ],
+            "color_on": "#3498DB",
+            "color_off": "#3498DB",
+            "slot_index": 0
+          }
+        ],
+        "properties": {
+          "columnName": "sequence"
+        },
+        "color": "#78909C",
+        "bgcolor": "#ffffff",
+        "boxcolor": "#43a047"
+      },
+      {
+        "id": 10,
+        "type": "Outputs/Table Output",
+        "pos": {
+          "0": 538,
+          "1": 457,
+          "2": 0,
+          "3": 0,
+          "4": 0,
+          "5": 0,
+          "6": 0,
+          "7": 0,
+          "8": 0,
+          "9": 0
+        },
+        "size": {
+          "0": 140,
+          "1": 26
+        },
+        "flags": {
+          "collapsed": true
+        },
+        "order": 6,
+        "mode": 0,
+        "inputs": [
+          {
+            "name": "table",
+            "type": "dataframe",
+            "link": 10,
+            "color_on": "#E67E22",
+            "color_off": "#E67E22"
+          }
+        ],
+        "outputs": [],
+        "properties": {
+          "paramName": "result",
+          "description": ""
+        },
+        "color": "#EF5350",
+        "bgcolor": "#ffffff",
+        "boxcolor": "#43a047"
+      },
+      {
+        "id": 8,
+        "type": "Utilities/Select Column",
+        "pos": {
+          "0": 351,
+          "1": 405,
+          "2": 0,
+          "3": 0,
+          "4": 0,
+          "5": 0,
+          "6": 0,
+          "7": 0,
+          "8": 0,
+          "9": 0
+        },
+        "size": {
+          "0": 140,
+          "1": 26
+        },
+        "flags": {
+          "collapsed": true
+        },
+        "order": 3,
+        "mode": 0,
+        "inputs": [
+          {
+            "name": "table",
+            "type": "dataframe",
+            "link": 7,
+            "color_on": "#E67E22",
+            "color_off": "#E67E22"
+          }
+        ],
+        "outputs": [
+          {
+            "name": "column",
+            "type": "column",
+            "links": [
+              8
+            ],
+            "color_on": "#3498DB",
+            "color_off": "#3498DB",
+            "slot_index": 0
+          }
+        ],
+        "properties": {
+          "columnName": "molfile(sequence)"
+        },
+        "color": "#78909C",
+        "bgcolor": "#ffffff",
+        "boxcolor": "#43a047"
+      },
+      {
+        "id": 5,
+        "type": "DG Functions/Uncategorized/toAtomicLevel",
+        "pos": {
+          "0": 352,
+          "1": 372,
+          "2": 0,
+          "3": 0,
+          "4": 0,
+          "5": 0,
+          "6": 0,
+          "7": 0,
+          "8": 0,
+          "9": 0
+        },
+        "size": {
+          "0": 140,
+          "1": 86
+        },
+        "flags": {
+          "collapsed": true
+        },
+        "order": 2,
+        "mode": 0,
+        "inputs": [
+          {
+            "name": "table",
+            "type": "dataframe",
+            "link": 4,
+            "color_on": "#E67E22",
+            "color_off": "#E67E22"
+          },
+          {
+            "name": "seqCol",
+            "type": "column",
+            "link": 5,
+            "color_on": "#3498DB",
+            "color_off": "#3498DB"
+          },
+          {
+            "name": "nonlinear",
+            "type": "bool",
+            "link": null,
+            "color_on": "#E74C3C",
+            "color_off": "#E74C3C"
+          },
+          {
+            "name": "highlight",
+            "type": "bool",
+            "link": null,
+            "color_on": "#E74C3C",
+            "color_off": "#E74C3C"
+          }
+        ],
+        "outputs": [
+          {
+            "name": "→",
+            "type": "dataframe",
+            "links": [
+              6,
+              7
+            ],
+            "color_on": "#E67E22",
+            "color_off": "#E67E22",
+            "slot_index": 0
+          },
+          {
+            "name": "→",
+            "type": "column",
+            "links": null,
+            "color_on": "#3498DB",
+            "color_off": "#3498DB"
+          },
+          {
+            "name": "→",
+            "type": "bool",
+            "links": null,
+            "color_on": "#E74C3C",
+            "color_off": "#E74C3C"
+          },
+          {
+            "name": "→",
+            "type": "bool",
+            "links": null,
+            "color_on": "#E74C3C",
+            "color_off": "#E74C3C"
+          }
+        ],
+        "properties": {
+          "_input_nonlinear": true,
+          "_input_highlight": false,
+          "_passthroughCount": 4
+        },
+        "color": "#BDBDBD",
+        "bgcolor": "#ffffff",
+        "boxcolor": "#43a047"
+      }
+    ],
+    "links": [
+      [
+        2,
+        1,
+        2,
+        4,
+        0,
+        "dataframe"
+      ],
+      [
+        4,
+        1,
+        2,
+        5,
+        0,
+        "dataframe"
+      ],
+      [
+        5,
+        4,
+        0,
+        5,
+        1,
+        "column"
+      ],
+      [
+        6,
+        5,
+        0,
+        6,
+        0,
+        "dataframe"
+      ],
+      [
+        7,
+        5,
+        0,
+        8,
+        0,
+        "dataframe"
+      ],
+      [
+        8,
+        8,
+        0,
+        6,
+        1,
+        "column"
+      ],
+      [
+        9,
+        6,
+        0,
+        9,
+        0,
+        "dataframe"
+      ],
+      [
+        10,
+        9,
+        0,
+        10,
+        0,
+        "dataframe"
+      ]
+    ],
+    "groups": [],
+    "config": {},
+    "extra": {},
+    "version": 0.4
+  },
+  "metadata": {
+    "nodes": {
+      "1": {
+        "dgFuncName": "OpenFile",
+        "dgNodeType": "func"
+      },
+      "4": {
+        "dgFuncName": "Select Column",
+        "dgNodeType": "utility"
+      },
+      "5": {
+        "dgFuncName": "Bio:toAtomicLevel",
+        "dgNodeType": "func"
+      },
+      "6": {
+        "dgFuncName": "Chem:addChemPropertiesColumns",
+        "dgNodeType": "func"
+      },
+      "8": {
+        "dgFuncName": "Select Column",
+        "dgNodeType": "utility"
+      },
+      "9": {
+        "dgFuncName": "AddNewColumn",
+        "dgNodeType": "func"
+      },
+      "10": {
+        "dgFuncName": "Table Output",
+        "dgNodeType": "output",
+        "paramName": "result",
+        "description": ""
+      }
+    },
+    "settings": {
+      "scriptName": "Sequence demo",
+      "scriptDescription": "Sequence conversion and calculations",
+      "tags": []
+    }
+  }
+}

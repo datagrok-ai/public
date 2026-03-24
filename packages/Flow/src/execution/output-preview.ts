@@ -155,7 +155,13 @@ export class OutputPreviewPanel {
       display: 'flex', alignItems: 'center', gap: '4px',
       cursor: 'pointer', color: '#1976d2', fontSize: '12px',
     }});
-    addBtn.addEventListener('click', () => grok.shell.addTableView(df));
+    addBtn.addEventListener('click', () => {
+      grok.shell.addTableView(df);
+      try {
+        const node = grok.shell.dockManager.findNode(container);
+        if (node) grok.shell.dockManager.close(node);
+      } catch { /* already closed */}
+    });
     toolbar.appendChild(addBtn);
     container.appendChild(toolbar);
 

@@ -156,7 +156,7 @@ function buildValueRow(name: string, summary: ValueSummary): HTMLElement {
   }
   case 'column': {
     row.appendChild(ui.divText(
-      `${name}: Column "${summary.name}" (${summary.length} values)`,
+      `${name}: Column "${summary.name}" preview (${summary.length} values)`,
     ));
     if (summary.sample && summary.sample.length > 0) {
       const table = document.createElement('table');

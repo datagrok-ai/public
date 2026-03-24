@@ -49,7 +49,7 @@ export class CanvasController {
 
     // Configure appearance - Spotfire-inspired light theme
     this.graphCanvas.render_curved_connections = true;
-    this.graphCanvas.render_connection_arrows = false;
+    this.graphCanvas.render_connection_arrows = true;
     this.graphCanvas.render_connections_border = false;
     this.graphCanvas.highquality_render = true;
     this.graphCanvas.render_shadows = true;
