@@ -456,10 +456,13 @@ async function runTests(testParams: { package: any, params: any }): Promise<any>
                 testCallParams.returnOnFail = testParams.params.returnOnFail;
         }
 
+        const testFuncName = testParams.package + ':test';
         const df: DG.DataFrame = await (<any>window).grok.functions.call(
-            testParams.package + ':test',
+            testFuncName,
             Object.keys(testCallParams).length > 0 ? testCallParams : undefined
         );
+        if (df == null)
+            throw new Error(`${testFuncName} returned null instead of a DataFrame. Check that the test function exists and returns a valid result.`);
         if (!df.getCol('flaking')) {
             const flakingCol = (<any>window).DG.Column.fromType((<any>window).DG.COLUMN_TYPE.BOOL, 'flaking', df.rowCount);
             df.columns.add(flakingCol);
