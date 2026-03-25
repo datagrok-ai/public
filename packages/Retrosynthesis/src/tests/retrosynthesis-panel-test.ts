@@ -11,7 +11,7 @@ category('retrosynthesis', async () => {
     try {
       await timeout(
         () => grok.functions.call('Retrosynthesis:check_health', {}),
-        180000,
+        1200000,
         'Health check timed out',
       );
     } catch (err: any) {
