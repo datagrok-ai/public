@@ -545,6 +545,7 @@ export class Pmpo {
         return;
 
       editor.style.width = '100%';
+      editor.style.height = '100%';
       this.desirabilityProfileRoots.set(names[idx], editor);
     });
   } // updateDesirabilityProfileData
