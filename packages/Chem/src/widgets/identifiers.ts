@@ -5,7 +5,7 @@ import {checkMoleculeValid, getRdKitModule, getRdKitWebRoot} from '../utils/chem
 import {_convertMolNotation} from '../utils/convert-notation-utils';
 import {getMolSafe} from '../utils/mol-creation_rdkit';
 import {checkPackage} from '../utils/elemental-analysis-utils';
-import {inchiToInchiKey, inchiToSmiles, smilesToCanonical, smilesToInchi, smilesToInchiKey} from "../docker/api";
+import {inchiToInchiKey, inchiToSmiles, smilesToCanonical, smilesToInchi, smilesToInchiKey} from '../docker/api';
 
 const CHEMBL = 'Chembl';
 const PUBCHEM = 'PubChem';
@@ -114,7 +114,7 @@ class UniChemSource {
 }
 
 async function getCompoundsIds(inchiKey: string): Promise<{[k:string]: any}> {
-  const json = await grok.functions.call(`ChemblApi:getCompoundsIds`, { 'inchiKey': inchiKey });
+  const json = await grok.functions.call(`ChemblApi:getCompoundsIds`, {'inchiKey': inchiKey});
   const sources: {[key: string]: any}[] = json.filter((s: {[key: string]: string | number}) => {
     const srcId = parseInt(`${s['src_id']}`);
     s['src_id'] = srcId;
@@ -191,8 +191,10 @@ function createIdentifiersMap(molfile: string, inchi: string, inchiKey: string,
 
 function addNameField(map: { [key: string]: any }, smiles: string) {
   const packageExists = checkPackage('PubchemApi', 'GetIupacName');
-  if (packageExists)
-    map['Name'] = ui.wait(async () => ui.divText(await grok.functions.call(`PubChemApi:GetIupacName`, { 'smiles': smiles })));
+  if (packageExists) {
+    map['Name'] = ui.wait(async () =>
+      ui.divText(await grok.functions.call(`PubChemApi:GetIupacName`, {'smiles': smiles})));
+  }
 }
 
 export async function openMapIdentifiersDialog() {
@@ -207,8 +209,7 @@ export async function openMapIdentifiersDialog() {
     grok.shell.warning('Chem Map Identifiers is applicable only to chemical datasets');
     return;
   }
-  const columnSelector = ui.input.column('Ids', {table: table, value: moleculeColumns[0],
-    filter: (col: DG.Column) => col.semType === DG.SEMTYPE.MOLECULE});
+  const columnSelector = ui.input.column('Ids', {table: table, value: moleculeColumns[0]});
   columnSelector.root.children[0].classList.add('d4-chem-descriptors-molecule-column-input');
   const fromSource = ui.input.choice('From Source', {value: SMILES,
     items: UniChemSource.idNamesChoices, nullable: false});
@@ -224,7 +225,12 @@ export async function openMapIdentifiersDialog() {
     }
     const prog = DG.TaskBarProgressIndicator.create('Receiving identifiers...');
     try {
-      await getMapIdentifiers(table, columnSelector.value!, fromSource.value!, toSource.value!);
+      await DG.Func.find({name: 'mapIdentifiersTransform'})[0].prepare({
+        table: table,
+        molecules: columnSelector.value!,
+        fromSource: fromSource.value!,
+        toSource: toSource.value!,
+      }).call(undefined, undefined, {processed: false});
     } catch (e) {
       throw e;
     } finally {
@@ -235,7 +241,7 @@ export async function openMapIdentifiersDialog() {
 }
 
 export async function getMapIdentifiers(table: DG.DataFrame, ids: DG.Column, fromSource: string,
-                                               toSource: string) {
+  toSource: string) {
   const chembl = CHEMBL.toLowerCase();
   let result: string[] | DG.Column | null = null;
 
@@ -243,74 +249,75 @@ export async function getMapIdentifiers(table: DG.DataFrame, ids: DG.Column, fro
     keys = Array.isArray(keys) ? DG.Column.fromList(DG.COLUMN_TYPE.STRING, 'key', keys) : keys;
     let tmp = await _chemMapViaQuery(keys, INCHI_KEY_TO_CHEMBL, chembl);
     if (toSource !== chembl)
-      tmp = await _chemMapIdentifiersUnichem(tmp, chembl, toSource);
+      tmp = await _chemMapIdentifiersUnichem(tmp.getCol(chembl), chembl, toSource);
     result = tmp.getCol(toSource);
     tmp.columns.remove(result.name);
   }
 
-  async function unichemToSourceViaQuery(queryName: string)  {
-    let res = await _chemMapIdentifiersUnichem(table, fromSource, chembl);
+  async function unichemToSourceViaQuery(queryName: string) {
+    const res = await _chemMapIdentifiersUnichem(ids, fromSource, chembl);
     if (res.rowCount !== 0)
       result = (await _chemMapViaQuery(res.getCol(res.columns.names()[0]), queryName, toSource)).getCol(toSource);
   }
 
   switch (fromSource) {
+  case SMILES:
+    switch (toSource) {
     case SMILES:
-      switch (toSource) {
-        case SMILES:
-          result = await smilesToCanonical(ids.toList());
-          break;
-        case INCHI:
-          result = await smilesToInchi(ids.toList());
-          break;
-        case INCHI_KEY:
-          result = await smilesToInchiKey(ids.toList());
-          break;
-        default:
-          await handleDefaultCase(await smilesToInchiKey(ids.toList()));
-          break;
-      }
+      result = await smilesToCanonical(ids.toList());
       break;
     case INCHI:
-      switch (toSource) {
-        case SMILES:
-          result = await inchiToSmiles(ids.toList());
-          break;
-        case INCHI_KEY:
-          result = await inchiToInchiKey(ids.toList());
-          break;
-        default:
-          await handleDefaultCase(await inchiToInchiKey(ids.toList()));
-          break;
-      }
+      result = await smilesToInchi(ids.toList());
       break;
     case INCHI_KEY:
-      switch (toSource) {
-        case SMILES:
-        case INCHI:
-          result = (await _chemMapViaQuery(ids,  `inchiKeyTo${toSource.charAt(0).toUpperCase() + toSource.slice(1)}`, toSource)).col(toSource);
-          break;
-        default:
-          await handleDefaultCase(ids);
-          break;
-      }
+      result = await smilesToInchiKey(ids.toList());
       break;
     default:
-      switch (toSource) {
-        case SMILES:
-          await unichemToSourceViaQuery(CHEMBL_TO_SMILES);
-          break;
-        case INCHI:
-          await unichemToSourceViaQuery(CHEMBL_TO_INCHI);
-          break;
-        case INCHI_KEY:
-          await unichemToSourceViaQuery(CHEMBL_TO_INCHI_KEY);
-          break;
-        default:
-          const tmp = await _chemMapIdentifiersUnichem(table, fromSource, toSource);
-          result = tmp.getCol(toSource);
-          tmp.columns.remove(result.name);
-      }
+      await handleDefaultCase(await smilesToInchiKey(ids.toList()));
+      break;
+    }
+    break;
+  case INCHI:
+    switch (toSource) {
+    case SMILES:
+      result = await inchiToSmiles(ids.toList());
+      break;
+    case INCHI_KEY:
+      result = await inchiToInchiKey(ids.toList());
+      break;
+    default:
+      await handleDefaultCase(await inchiToInchiKey(ids.toList()));
+      break;
+    }
+    break;
+  case INCHI_KEY:
+    switch (toSource) {
+    case SMILES:
+    case INCHI:
+      result = (await _chemMapViaQuery(ids,
+        `inchiKeyTo${toSource.charAt(0).toUpperCase() + toSource.slice(1)}`, toSource)).col(toSource);
+      break;
+    default:
+      await handleDefaultCase(ids);
+      break;
+    }
+    break;
+  default:
+    switch (toSource) {
+    case SMILES:
+      await unichemToSourceViaQuery(CHEMBL_TO_SMILES);
+      break;
+    case INCHI:
+      await unichemToSourceViaQuery(CHEMBL_TO_INCHI);
+      break;
+    case INCHI_KEY:
+      await unichemToSourceViaQuery(CHEMBL_TO_INCHI_KEY);
+      break;
+    default:
+      const tmp = await _chemMapIdentifiersUnichem(ids, fromSource, toSource);
+      result = tmp.getCol(toSource);
+      tmp.columns.remove(result.name);
+    }
   }
 
   if (result) {
@@ -318,8 +325,7 @@ export async function getMapIdentifiers(table: DG.DataFrame, ids: DG.Column, fro
       result.name = table.columns.getUnusedName(result.name);
       result.setTag('MoleculeId', toSource);
       table.columns.add(result);
-    }
-    else if (Array.isArray(result))
+    } else if (Array.isArray(result))
       table.columns.add(DG.Column.fromList(DG.COLUMN_TYPE.STRING, table.columns.getUnusedName(toSource), result));
   }
 }
@@ -328,41 +334,45 @@ async function _chemMapViaQuery(keys: DG.Column, queryName: string, resultColumn
   const query: DG.DataQuery = await grok.functions.eval(`chembl:${queryName}`);
   if (!query) throw new Error('Missing Chembl package');
   const df = DG.DataFrame.fromColumns([keys]);
-  df.columns.add(DG.Column.fromList(DG.COLUMN_TYPE.INT, 'order', [...Array(df.rowCount).keys()]))
-  const call: DG.FuncCall = await (query.prepare({'ids' : df})).call();
+  df.columns.add(DG.Column.fromList(DG.COLUMN_TYPE.INT, 'order', [...Array(df.rowCount).keys()]));
+  const call: DG.FuncCall = await (query.prepare({'ids': df})).call();
   const result: DG.DataFrame = call.getOutputParamValue() as DG.DataFrame;
   result.getCol(result.columns.names()[0]).name = resultColumnName;
   return result;
 }
 
-async function _chemMapIdentifiersUnichem(table: DG.DataFrame, fromSource: string, toSource: string): Promise<DG.DataFrame> {
+async function _chemMapIdentifiersUnichem(keysCol: DG.Column,
+  fromSource: string, toSource: string): Promise<DG.DataFrame> {
   if (fromSource === toSource)
-    return table;
+    return DG.DataFrame.fromColumns([keysCol]);
   await UniChemSource.refreshSources();
-  let fromId = UniChemSource.byName(fromSource)!.id;
-  let toId = UniChemSource.byName(toSource)!.id;
+  const fromId = UniChemSource.byName(fromSource)!.id;
+  const toId = UniChemSource.byName(toSource)!.id;
   const conn: DG.DataConnection = await grok.functions.eval('chembl:unichem');
-  table.getCol(table.columns.names()[0]).name = 'keys'
+  // Build a temporary DataFrame with a copy of the keys column — never mutate the original
+  const keysCopy = keysCol.clone();
+  keysCopy.name = 'keys';
+  const tmpDf = DG.DataFrame.fromColumns([keysCopy]);
   let n: number = fromId;
   let m: number = toId;
   if (n > m) {
     n = toId;
     m = fromId;
   }
-  let tableName = `src${n}src${m}`;
-  table.columns.add(DG.Column.fromList(DG.COLUMN_TYPE.INT, 'order', [...Array(table.rowCount).keys()]));
+  const tableName = `src${n}src${m}`;
+  tmpDf.columns.add(DG.Column.fromList(DG.COLUMN_TYPE.INT, 'order', [...Array(tmpDf.rowCount).keys()]));
   const dataQuery: DG.DataQuery = conn.query('', `--input: dataframe ids\n
 select (select ${n == fromId ? 'to_id' : 'from_id'} from ${tableName}
-where ids.keys = ${tableName}.${n == fromId ? 'from_id' : 'to_id'} limit 1) from  
+where ids.keys = ${tableName}.${n == fromId ? 'from_id' : 'to_id'} limit 1) from
 ids order by ids.order`);
-  const call = await (dataQuery.prepare({'ids': table})).call()
+  const call = await (dataQuery.prepare({'ids': tmpDf})).call();
   const result: DG.DataFrame = call.getOutputParamValue() as DG.DataFrame;
   result.getCol(result.columns.names()[0]).name = toSource;
   return result;
 }
 
 
-function isInchi(s: string){
+function isInchi(s: string) {
   return s && s.startsWith('InChI=') && s.length > 8;
 }
 
@@ -370,12 +380,13 @@ function isInchiKey(s: string) {
   if (s?.length !== 27 || s[14] !== '-' || s[25] !== '-')
     return false;
 
-  for (let i = 0; i < s.length; i++)
+  for (let i = 0; i < s.length; i++) {
     if (i != 14 && i != 15) {
-      let c = s.charCodeAt(i);
+      const c = s.charCodeAt(i);
       if (!(c >= 65 && c <= 90))
         return false;
     }
+  }
 
   return true;
 }

@@ -228,6 +228,15 @@ export async function getMapIdentifiers() : Promise<void> {
   await PackageFunctions.getMapIdentifiers();
 }
 
+//input: dataframe table 
+//input: column molecules { semType: Molecule }
+//input: string fromSource 
+//input: string toSource 
+//meta.role: transform
+export async function mapIdentifiersTransform(table: DG.DataFrame, molecules: DG.Column, fromSource: string, toSource: string) : Promise<void> {
+  await PackageFunctions.mapIdentifiersTransform(table, molecules, fromSource, toSource);
+}
+
 //input: string molfile 
 //output: string result
 export async function freeTextToSmiles(molfile: string) : Promise<any> {

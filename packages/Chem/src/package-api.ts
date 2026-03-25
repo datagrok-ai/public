@@ -311,6 +311,10 @@ export namespace funcs {
     return await grok.functions.call('Chem:GetMapIdentifiers', {});
   }
 
+  export async function mapIdentifiersTransform(table: DG.DataFrame , molecules: DG.Column , fromSource: string , toSource: string ): Promise<void> {
+    return await grok.functions.call('Chem:MapIdentifiersTransform', { table, molecules, fromSource, toSource });
+  }
+
   export async function freeTextToSmiles(molfile: string ): Promise<string> {
     return await grok.functions.call('Chem:FreeTextToSmiles', { molfile });
   }

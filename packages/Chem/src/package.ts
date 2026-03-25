@@ -21,7 +21,7 @@ import {MAX_SUBSTRUCTURE_SEARCH_ROW_COUNT, EMPTY_MOLECULE_MESSAGE,
 import {similarityMetric} from '@datagrok-libraries/ml/src/distance-metrics-methods';
 import {calculateDescriptors, getDescriptorsTree} from './docker/api';
 import {addDescriptorsColsToDf, getDescriptorsSingle, getSelected, openDescriptorsDialogDocker} from './descriptors/descriptors-calculation';
-import {identifiersWidget, openMapIdentifiersDialog, textToSmiles} from './widgets/identifiers';
+import {identifiersWidget, getMapIdentifiers, openMapIdentifiersDialog, textToSmiles} from './widgets/identifiers';
 
 //widget imports
 import {SubstructureFilter} from './widgets/chem-substructure-filter';
@@ -593,6 +593,19 @@ export class PackageFunctions {
   })
   static async getMapIdentifiers() {
     await openMapIdentifiersDialog();
+  }
+
+  @grok.decorators.func({
+    name: 'mapIdentifiersTransform',
+    meta: {role: 'transform'},
+  })
+  static async mapIdentifiersTransform(
+    table: DG.DataFrame,
+    @grok.decorators.param({options: {semType: 'Molecule'}}) molecules: DG.Column,
+    fromSource: string,
+    toSource: string,
+  ): Promise<void> {
+    await getMapIdentifiers(table, molecules, fromSource, toSource);
   }
 
   @grok.decorators.func()

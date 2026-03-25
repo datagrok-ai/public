@@ -151,6 +151,51 @@ category('projects', () => {
     await delay(100);
   }, {timeout: 60000});
 
+  test('map_identifiers_smiles_to_inchi', async () => {
+    await runSaveAndOpenProjectTest('tests/sar-small_test.csv', runMapIdentifiersToInchi,
+      ['smiles', 'inchi'], '');
+  });
+
+  test('map_identifiers_smiles_to_inchi_sync', async () => {
+    await runSaveAndOpenProjectTest('tests/sar-small_test.csv', runMapIdentifiersToInchi,
+      ['smiles', 'inchi'], '', true);
+  });
+
+  test('map_identifiers_smiles_to_inchi_key', async () => {
+    await runSaveAndOpenProjectTest('tests/sar-small_test.csv', runMapIdentifiersToInchiKey,
+      ['smiles', 'inchi_key'], '');
+  });
+
+  test('map_identifiers_smiles_to_inchi_key_sync', async () => {
+    await runSaveAndOpenProjectTest('tests/sar-small_test.csv', runMapIdentifiersToInchiKey,
+      ['smiles', 'inchi_key'], '', true);
+  });
+
+  test('map_identifiers_smiles_to_chembl', async () => {
+    const chemblPackInstalled = DG.Func.find({package: 'ChemblApi', name: 'getCompoundsIds'}).length;
+    if (chemblPackInstalled) {
+      await runSaveAndOpenProjectTest('tests/sar-small_test.csv', runMapIdentifiersToChembl,
+        ['smiles', 'chembl'], '');
+    }
+  }, {timeout: 60000});
+
+  test('map_identifiers_smiles_to_chembl_sync', async () => {
+    const chemblPackInstalled = DG.Func.find({package: 'ChemblApi', name: 'getCompoundsIds'}).length;
+    if (chemblPackInstalled) {
+      await runSaveAndOpenProjectTest('tests/sar-small_test.csv', runMapIdentifiersToChembl,
+        ['smiles', 'chembl'], '', true);
+    }
+  }, {timeout: 60000});
+
+  test('map_identifiers_no_column_mutation', async () => {
+    const tv = await createTableView('tests/sar-small_test.csv');
+    const originalColName = tv.dataFrame.col('smiles')!.name;
+    await runMapIdentifiersToInchi(tv);
+    expect(tv.dataFrame.col('smiles') != null, true);
+    expect(tv.dataFrame.col('smiles')!.name, originalColName);
+    expect(tv.dataFrame.col('order') == null, true);
+  });
+
   after(async () => {
     grok.shell.closeAll();
   });
@@ -379,6 +424,33 @@ async function checkViewerAdded(viewerType: string): Promise<void> {
     }
     return false;
   }, `${viewerType} hasn\'t been added`, 5000);
+}
+
+async function runMapIdentifiersToInchi(tv: DG.TableView): Promise<void> {
+  await DG.Func.find({package: 'Chem', name: 'mapIdentifiersTransform'})[0].prepare({
+    table: tv.dataFrame,
+    molecules: tv.dataFrame.col('smiles'),
+    fromSource: 'smiles',
+    toSource: 'inchi',
+  }).call(undefined, undefined, {processed: false});
+}
+
+async function runMapIdentifiersToInchiKey(tv: DG.TableView): Promise<void> {
+  await DG.Func.find({package: 'Chem', name: 'mapIdentifiersTransform'})[0].prepare({
+    table: tv.dataFrame,
+    molecules: tv.dataFrame.col('smiles'),
+    fromSource: 'smiles',
+    toSource: 'inchi_key',
+  }).call(undefined, undefined, {processed: false});
+}
+
+async function runMapIdentifiersToChembl(tv: DG.TableView): Promise<void> {
+  await DG.Func.find({package: 'Chem', name: 'mapIdentifiersTransform'})[0].prepare({
+    table: tv.dataFrame,
+    molecules: tv.dataFrame.col('smiles'),
+    fromSource: 'smiles',
+    toSource: 'chembl',
+  }).call(undefined, undefined, {processed: false});
 }
 
 export async function checkActivityCliffsCustomInit(tv: DG.TableView): Promise<void> {
