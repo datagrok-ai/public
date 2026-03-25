@@ -19,6 +19,7 @@ import {FitConstants} from '@datagrok-libraries/statistics/src/fit/const';
 
 import * as api from './package-api';
 import {convertDataToCurves, dataToCurvesUI} from './fit/data-to-curves';
+import {parsePzfxXml, pzfxTableToFitChartData, pzfxToFitDataFrame, pzfxTableToDataFrame} from './formats/pzfx/pzfx-parser';
 
 export const _package = new DG.Package();
 
@@ -167,5 +168,46 @@ export class PackageFunctions {
       });
     df.columns.insert(column, df.columns.names().indexOf(colName) + 1);
     return column;
+  }
+
+  @grok.decorators.fileViewer({fileViewer: 'pzfx'})
+  static async previewPzfx(file: DG.FileInfo): Promise<DG.View> {
+    const view = DG.View.create();
+    view.name = file.name;
+
+    const text = await file.readAsString();
+    const tables = parsePzfxXml(text);
+    const xyTables = tables.filter((t) => t.tableType === 'XY');
+
+    if (xyTables.length === 0) {
+      const nonXyDfs = tables.map(pzfxTableToDataFrame);
+      for (const df of nonXyDfs)
+        view.append(DG.Viewer.grid(df).root);
+      return view;
+    }
+
+    const df = pzfxToFitDataFrame(xyTables);
+    const grid = DG.Viewer.grid(df);
+    grid.root.style.width = '100%';
+    grid.root.style.height = '100%';
+    view.append(grid.root);
+
+    return view;
+  }
+
+  @grok.decorators.fileHandler({ext: 'pzfx'})
+  static pzfxFileHandler(@grok.decorators.param({type: 'list'}) bytes: Uint8Array): DG.DataFrame[] {
+    const text = new TextDecoder().decode(new Uint8Array(bytes));
+    const tables = parsePzfxXml(text);
+    const results: DG.DataFrame[] = [];
+
+    const xyTables = tables.filter((t) => t.tableType === 'XY');
+    if (xyTables.length > 0)
+      results.push(pzfxToFitDataFrame(xyTables));
+
+    for (const table of tables.filter((t) => t.tableType !== 'XY'))
+      results.push(pzfxTableToDataFrame(table));
+
+    return results;
   }
 }

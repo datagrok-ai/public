@@ -86,3 +86,19 @@ export function addStatisticsColumn(table: DG.DataFrame, colName: string, propNa
 export function addAggrStatisticsColumn(table: DG.DataFrame, colName: string, propName: string, aggrType: string) : any {
   return PackageFunctions.addAggrStatisticsColumn(table, colName, propName, aggrType);
 }
+
+//input: file file 
+//output: view result
+//meta.role: fileViewer
+//meta.fileViewer: pzfx
+export async function previewPzfx(file: DG.FileInfo) : Promise<any> {
+  return await PackageFunctions.previewPzfx(file);
+}
+
+//input: list bytes 
+//output: list<dataframe> result
+//meta.role: fileHandler
+//meta.ext: pzfx
+export function pzfxFileHandler(bytes: Uint8Array) : any {
+  return PackageFunctions.pzfxFileHandler(bytes);
+}

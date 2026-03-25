@@ -1,0 +1,178 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<GraphPadPrismFile xmlns="http://graphpad.com/prism/Prism.htm" PrismXMLVersion="5.00">
+  <Created>
+    <OriginalVersion CreatedByProgram="GraphPad Prism" CreatedByVersion="9.0.0.0" />
+  </Created>
+  <InfoSequence>
+    <Ref ID="Info0" Selected="1" />
+  </InfoSequence>
+  <Info ID="Info0">
+    <Title>Project info 1</Title>
+    <Notes>Sample dose-response data for Datagrok Curves viewer</Notes>
+  </Info>
+  <TableSequence>
+    <Ref ID="Table0" Selected="1" />
+  </TableSequence>
+  <Table ID="Table0" XFormat="numbers" YFormat="replicates" Replicates="3" TableType="XY" EVFormat="AsteriskAfterNumber">
+    <Title>Dose Response</Title>
+    <XColumn Width="100" Decimals="2" Subcolumns="1">
+      <Title>Concentration (M)</Title>
+      <Subcolumn>
+        <d>1e-10</d>
+        <d>1e-9</d>
+        <d>3e-9</d>
+        <d>1e-8</d>
+        <d>3e-8</d>
+        <d>1e-7</d>
+        <d>3e-7</d>
+        <d>1e-6</d>
+        <d>3e-6</d>
+        <d>1e-5</d>
+      </Subcolumn>
+    </XColumn>
+    <YColumn Width="100" Decimals="2" Subcolumns="3">
+      <Title>Compound A</Title>
+      <Subcolumn>
+        <d>2.1</d>
+        <d>3.5</d>
+        <d>5.8</d>
+        <d>15.2</d>
+        <d>35.7</d>
+        <d>62.4</d>
+        <d>81.3</d>
+        <d>92.6</d>
+        <d>96.1</d>
+        <d>98.3</d>
+      </Subcolumn>
+      <Subcolumn>
+        <d>1.8</d>
+        <d>2.9</d>
+        <d>6.2</d>
+        <d>17.1</d>
+        <d>33.4</d>
+        <d>65.1</d>
+        <d>79.8</d>
+        <d>91.2</d>
+        <d>97.5</d>
+        <d>99.1</d>
+      </Subcolumn>
+      <Subcolumn>
+        <d>2.5</d>
+        <d>3.1</d>
+        <d>4.9</d>
+        <d>14.8</d>
+        <d>37.2</d>
+        <d>60.8</d>
+        <d>83.1</d>
+        <d>93.4</d>
+        <d>95.8</d>
+        <d>97.9</d>
+      </Subcolumn>
+    </YColumn>
+    <YColumn Width="100" Decimals="2" Subcolumns="3">
+      <Title>Compound B</Title>
+      <Subcolumn>
+        <d>1.2</d>
+        <d>1.8</d>
+        <d>2.5</d>
+        <d>4.1</d>
+        <d>8.7</d>
+        <d>22.5</d>
+        <d>48.3</d>
+        <d>71.6</d>
+        <d>85.2</d>
+        <d>93.7</d>
+      </Subcolumn>
+      <Subcolumn>
+        <d>0.9</d>
+        <d>2.1</d>
+        <d>2.8</d>
+        <d>5.3</d>
+        <d>9.2</d>
+        <d>24.1</d>
+        <d>45.7</d>
+        <d>73.2</d>
+        <d>87.1</d>
+        <d>92.5</d>
+      </Subcolumn>
+      <Subcolumn>
+        <d>1.5</d>
+        <d>1.5</d>
+        <d>3.1</d>
+        <d>3.8</d>
+        <d>7.9</d>
+        <d>21.8</d>
+        <d>50.1</d>
+        <d>70.4</d>
+        <d>84.8</d>
+        <d>94.3</d>
+      </Subcolumn>
+    </YColumn>
+    <YColumn Width="100" Decimals="2" Subcolumns="3">
+      <Title>Compound C (partial)</Title>
+      <Subcolumn>
+        <d>0.5</d>
+        <d>1.2</d>
+        <d>1.8</d>
+        <d>3.2</d>
+        <d>5.1</d>
+        <d>9.8</d>
+        <d>18.4</d>
+        <d>32.1</d>
+        <d>42.7</d>
+        <d>48.5</d>
+      </Subcolumn>
+      <Subcolumn>
+        <d>0.8</d>
+        <d>1.5</d>
+        <d>2.1</d>
+        <d>2.9</d>
+        <d>5.8</d>
+        <d>10.5</d>
+        <d>17.2</d>
+        <d>30.8</d>
+        <d>44.1</d>
+        <d>49.2</d>
+      </Subcolumn>
+      <Subcolumn>
+        <d>0.3</d>
+        <d>0.9</d>
+        <d>1.5</d>
+        <d>3.5</d>
+        <d>4.7</d>
+        <d>11.2</d>
+        <d>19.8</d>
+        <d>33.5</d>
+        <d>41.5</d>
+        <d>47.8</d>
+      </Subcolumn>
+    </YColumn>
+    <YColumn Width="100" Decimals="2" Subcolumns="2">
+      <Title>Compound D (with outliers)</Title>
+      <Subcolumn>
+        <d>3.2</d>
+        <d>4.8</d>
+        <d>9.5</d>
+        <d>25.3</d>
+        <d>52.1</d>
+        <d>78.4</d>
+        <d Excluded="1">12.5</d>
+        <d>95.8</d>
+        <d>98.2</d>
+        <d>99.5</d>
+      </Subcolumn>
+      <Subcolumn>
+        <d>2.8</d>
+        <d>5.2</d>
+        <d>10.1</d>
+        <d>23.7</d>
+        <d>54.8</d>
+        <d>76.9</d>
+        <d>90.1</d>
+        <d>96.3</d>
+        <d Excluded="1">45.0</d>
+        <d>99.1</d>
+      </Subcolumn>
+    </YColumn>
+  </Table>
+</GraphPadPrismFile>

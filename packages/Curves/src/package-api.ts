@@ -54,4 +54,12 @@ export namespace funcs {
   export async function addAggrStatisticsColumn(table: DG.DataFrame , colName: string , propName: string , aggrType: string ): Promise<DG.Column> {
     return await grok.functions.call('Curves:AddAggrStatisticsColumn', { table, colName, propName, aggrType });
   }
+
+  export async function previewPzfx(file: DG.FileInfo ): Promise<DG.View> {
+    return await grok.functions.call('Curves:PreviewPzfx', { file });
+  }
+
+  export async function pzfxFileHandler(bytes: any ): Promise<any> {
+    return await grok.functions.call('Curves:PzfxFileHandler', { bytes });
+  }
 }
