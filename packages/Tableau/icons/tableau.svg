@@ -1,0 +1,13 @@
+<svg width="36" height="36" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Tableau-style cross/plus pattern -->
+  <rect x="16" y="2" width="4" height="10" rx="1" fill="#E8762D"/>
+  <rect x="11" y="5" width="14" height="4" rx="1" fill="#E8762D"/>
+  <rect x="4" y="14" width="10" height="4" rx="1" fill="#59A14F"/>
+  <rect x="7" y="11" width="4" height="10" rx="1" fill="#59A14F"/>
+  <rect x="22" y="14" width="10" height="4" rx="1" fill="#4E79A7"/>
+  <rect x="25" y="11" width="4" height="10" rx="1" fill="#4E79A7"/>
+  <rect x="16" y="24" width="4" height="10" rx="1" fill="#F28E2B"/>
+  <rect x="11" y="27" width="14" height="4" rx="1" fill="#F28E2B"/>
+  <rect x="14" y="14" width="8" height="4" rx="1" fill="#76B7B2"/>
+  <rect x="16" y="12" width="4" height="8" rx="1" fill="#76B7B2"/>
+</svg>
