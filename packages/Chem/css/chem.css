@@ -1105,10 +1105,11 @@
   font-size: 18px;
   font-weight: 600;
   flex: 0 0 auto;
+  outline: none;
 }
 
 .chem-profile-toolbar-wrap {
-  padding: 0 12px 8px;
+  padding: 0 0 8px;
   border-bottom: 1px solid var(--grey-2);
   flex: 0 0 auto;
 }
@@ -1116,6 +1117,16 @@
 .chem-profile-toolbar-wrap > .ui-btn {
   width: 80px;
   align-self: flex-end;
+}
+
+.chem-profile-description {
+  color: var(--grey-4);
+  font-weight: normal;
+  font-style: italic;
+  outline: none;
+  margin-top: -8px;
+  margin-bottom: 12px;
+  max-width: 400px;
 }
 
 .chem-profile-field-desc {

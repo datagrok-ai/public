@@ -77,34 +77,11 @@ class MpoProfileManagerImpl {
       .show();
   }
 
-  async showSaveDialog(profile: DesirabilityProfile, existingFileName?: string | null): Promise<MpoSaveResult> {
+  async saveProfile(profile: DesirabilityProfile, existingFileName?: string | null): Promise<MpoSaveResult> {
     await this.ensureLoaded();
-    const isExisting = !!existingFileName;
-    return new Promise((resolve) => {
-      const nameInput = ui.input.string('Name', {value: profile.name ?? '', nullable: false});
-      const descInput = ui.input.textArea('Description', {value: profile.description ?? ''});
-      const overrideInput = isExisting ? ui.input.bool('Override existing', {value: true}) : null;
-
-      const inputs: HTMLElement[] = [nameInput.root, descInput.root];
-      if (overrideInput)
-        inputs.push(overrideInput.root);
-
-      const dlg = ui.dialog({title: 'Save MPO Profile'})
-        .add(ui.divV(inputs))
-        .onOK(async () => {
-          profile.name = nameInput.value!;
-          profile.description = descInput.value || '';
-          const fileName = isExisting && overrideInput?.value ? existingFileName! : this.generateFileName(profile.name);
-          const saved = await this.save(profile, fileName);
-          resolve({saved, fileName});
-        })
-        .onCancel(() => resolve({saved: false, fileName: ''}))
-        .show();
-
-      const okButton = dlg.getButton('OK');
-      okButton.disabled = !nameInput.validate();
-      nameInput.onInput.subscribe(() => okButton.disabled = !nameInput.validate());
-    });
+    const fileName = existingFileName ?? this.generateFileName(profile.name);
+    const saved = await this.save(profile, fileName);
+    return {saved, fileName};
   }
 
   async save(profile: DesirabilityProfile, fileName: string): Promise<boolean> {

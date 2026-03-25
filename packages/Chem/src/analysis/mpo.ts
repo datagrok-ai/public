@@ -305,7 +305,7 @@ export class MpoProfileDialog {
     if (!this.currentProfile)
       return;
 
-    const result = await MpoProfileManager.showSaveDialog(this.currentProfile, this.currentProfileFileName);
+    const result = await MpoProfileManager.saveProfile(this.currentProfile, this.currentProfileFileName);
     if (result.saved) {
       this.currentProfileFileName = result.fileName;
       this.isNewProfile = false;

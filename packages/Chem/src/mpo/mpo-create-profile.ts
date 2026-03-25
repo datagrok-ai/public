@@ -50,6 +50,7 @@ export class MpoProfileCreateView {
   resetButton: HTMLElement | null = null;
 
   private headerEl!: HTMLElement;
+  private descEl!: HTMLElement;
   private toolbarEl!: HTMLElement;
   private aggregationField!: HTMLElement;
 
@@ -156,16 +157,40 @@ export class MpoProfileCreateView {
     this.aggregationField = field(this.editor.aggregationInput);
     controls.push(this.aggregationField);
 
-    this.saveButton = ui.button('Save', () => this.showSaveDialog());
+    this.saveButton = ui.button('Save', () => this.saveProfile());
     this.resetButton = ui.button('Reset', () => this.resetProfile());
     this.setModified(false);
 
-    this.headerEl = ui.h1(this.displayName);
+    const editable = (el: HTMLElement, onChanged: () => void, singleLine = false) => {
+      el.contentEditable = 'true';
+      el.addEventListener('input', () => {
+        if (!this.updatingLayout) {
+          onChanged();
+          this.setModified(true);
+        }
+      });
+      if (singleLine) {
+        el.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter')
+            e.preventDefault();
+        });
+      }
+      return el;
+    };
+
+    this.headerEl = editable(ui.h1(this.profile.name || ''), () => {
+      this.profile.name = this.headerEl.textContent?.trim() ?? '';
+    }, true);
     this.headerEl.classList.add('chem-profile-header');
+
+    this.descEl = editable(ui.h3(this.profile.description || ''), () => {
+      this.profile.description = this.descEl.textContent?.trim() ?? '';
+    });
+    this.descEl.classList.add('chem-profile-description');
 
     this.toolbarEl = ui.divV([ui.divV(controls)], 'chem-profile-toolbar-wrap');
 
-    this.profileViewContainer = ui.divV([this.headerEl, this.toolbarEl]);
+    this.profileViewContainer = ui.divV([this.headerEl, this.descEl, this.toolbarEl]);
     this.profileViewContainer.classList.add('chem-profile-view');
 
     this.view.root.append(this.profileViewContainer);
@@ -254,8 +279,8 @@ export class MpoProfileCreateView {
     }
   }
 
-  private async showSaveDialog(): Promise<void> {
-    const result = await MpoProfileManager.showSaveDialog(this.profile, this.isEditMode ? this.fileName : undefined);
+  private async saveProfile(): Promise<void> {
+    const result = await MpoProfileManager.saveProfile(this.profile, this.fileName);
     if (result.saved) {
       this.fileName = result.fileName;
       this.originalProfile = structuredClone(this.profile);
@@ -274,6 +299,8 @@ export class MpoProfileCreateView {
     this.setModified(false);
     this.updatingLayout = true;
     try {
+      this.headerEl.textContent = this.profile.name ?? '';
+      this.descEl.textContent = this.profile.description ?? '';
       this.editor.setProfile(this.profile);
     } finally {
       this.updatingLayout = false;
@@ -315,7 +342,7 @@ export class MpoProfileCreateView {
 
   private clearPreviousLayout() {
     ui.empty(this.profileViewContainer);
-    this.profileViewContainer.append(this.headerEl, this.toolbarEl);
+    this.profileViewContainer.append(this.headerEl, this.descEl, this.toolbarEl);
   }
 
   private async setupGridAndContextPanel() {
