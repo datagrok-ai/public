@@ -262,7 +262,7 @@ export class MpoProfileEditor {
         toggle.classList.toggle('statistics-mpo-weight-toggle-active', isColumn);
       };
 
-      const toggle = ui.iconFA('columns', () => {
+      const toggle = ui.iconFA('exchange-alt', () => {
         isColumn = !isColumn;
         syncToggle();
         if (!isColumn && name)
