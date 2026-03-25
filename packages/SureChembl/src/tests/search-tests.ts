@@ -4,7 +4,7 @@ import * as DG from 'datagrok-api/dg';
 import {category, test, expect} from '@datagrok-libraries/test/src/test';
 import {ensureContainerRunning} from '@datagrok-libraries/test/src/test-container-utils';
 
-export const CONTAINER_TIMEOUT = 900000;
+export const CONTAINER_TIMEOUT = 1200000;
 
 category('Search tests', () => {
   test('Substructure search', async () => {
