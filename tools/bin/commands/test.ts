@@ -137,10 +137,8 @@ export async function test(args: TestArgs): Promise<boolean> {
               args.host,
               args['skip-publish'],
               args['skip-build'], args.link);
-      } catch (e) {
-          console.error('\n');
-          // @ts-ignore
-          console.error(e.message);
+      } catch (e: any) {
+          console.error(e.message || 'Package build/publish failed with no output. Run with --verbose for details.');
           process.exit(1);
       }
   }
