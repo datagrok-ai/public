@@ -2,9 +2,11 @@ servers:
   dev:
     url: 'https://dev.datagrok.ai/api'
     key: ''
+    registry: 'registry.dev.datagrok.ai'
   public:
     url: 'https://public.datagrok.ai/api'
     key: ''
+    registry: 'registry.public.datagrok.ai'
   local:
     url: 'http://127.0.0.1:8080/api'
     key: ''

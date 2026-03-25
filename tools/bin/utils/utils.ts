@@ -279,7 +279,8 @@ export interface Config {
   servers: {
     [alias: string]: {
       url: string,
-      key: string
+      key: string,
+      registry?: string
     }
   },
   default: string,

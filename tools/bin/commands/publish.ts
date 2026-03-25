@@ -14,7 +14,7 @@ import {loadPackages} from '../utils/test-utils';
 import * as color from '../utils/color-utils';
 import {check} from './check';
 
-const {exec} = require('child_process');
+const {exec, execSync} = require('child_process');
 
 const grokDir = path.join(os.homedir(), '.grok');
 const confPath = path.join(grokDir, 'config.yaml');
@@ -29,7 +29,199 @@ const packageFiles = [
 ];
 let config: utils.Config;
 
-export async function processPackage(debug: boolean, rebuild: boolean, host: string, devKey: string, packageName: any, dropDb: boolean, suffix?: string, hostAlias?: string) {
+const BLEEDING_EDGE_TAG = 'bleeding-edge';
+
+interface DockerImageInfo {
+  imageName: string;
+  imageTag: string;
+  dirName: string;
+  fullLocalName: string;
+}
+
+interface DockerImageResult {
+  image: string | null;
+  fallback: boolean;
+  requestedVersion?: string;
+}
+
+function discoverDockerfiles(packageName: string, version: string): DockerImageInfo[] {
+  const dockerfilesDir = path.join(curDir, 'dockerfiles');
+  if (!fs.existsSync(dockerfilesDir))
+    return [];
+
+  const results: DockerImageInfo[] = [];
+  const entries = fs.readdirSync(dockerfilesDir, {withFileTypes: true});
+  for (const entry of entries) {
+    if (!entry.isDirectory())
+      continue;
+    const dockerfilePath = path.join(dockerfilesDir, entry.name, 'Dockerfile');
+    if (!fs.existsSync(dockerfilePath))
+      continue;
+    const cleanName = utils.removeScope(packageName).toLowerCase();
+    const imageName = `${cleanName}-${entry.name.toLowerCase()}`;
+    results.push({
+      imageName,
+      imageTag: `${version}.X`,
+      dirName: entry.name,
+      fullLocalName: `${imageName}:${version}.X`,
+    });
+  }
+  return results;
+}
+
+function dockerCommand(args: string): string {
+  return execSync(`docker ${args}`, {encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe']}).trim();
+}
+
+function localImageExists(fullName: string): boolean {
+  try {
+    const output = dockerCommand(`images --format "{{.Repository}}:{{.Tag}}"`);
+    return output.split('\n').some((line: string) => line.trim() === fullName);
+  } catch {
+    return false;
+  }
+}
+
+function dockerLogin(registry: string, devKey: string): boolean {
+  try {
+    dockerCommand(`login ${registry} -u ${devKey} -p ${devKey}`);
+    return true;
+  } catch (e: any) {
+    color.warn(`Docker login to ${registry} failed: ${e.message || e}`);
+    return false;
+  }
+}
+
+function dockerTag(source: string, target: string): boolean {
+  try {
+    dockerCommand(`tag ${source} ${target}`);
+    return true;
+  } catch (e: any) {
+    color.error(`Failed to tag ${source} as ${target}: ${e.message || e}`);
+    return false;
+  }
+}
+
+function dockerPush(image: string): boolean {
+  try {
+    dockerCommand(`push ${image}`);
+    return true;
+  } catch (e: any) {
+    color.error(`Failed to push ${image}: ${e.message || e}`);
+    return false;
+  }
+}
+
+function dockerBuild(imageName: string, dockerfilePath: string, context: string): boolean {
+  try {
+    color.log(`Building Docker image ${imageName}...`);
+    execSync(`docker build -t ${imageName} -f ${dockerfilePath} ${context}`, {
+      encoding: 'utf-8',
+      stdio: ['pipe', 'pipe', 'pipe'],
+    });
+    return true;
+  } catch (e: any) {
+    color.error(`Failed to build ${imageName}: ${e.message || e}`);
+    return false;
+  }
+}
+
+async function resolveLatestCompatible(host: string, devKey: string, dockerName: string): Promise<{version: string, image: string} | null> {
+  try {
+    // Login with dev key to get a session token
+    const loginResp = await fetch(`${host}/users/login/dev/${devKey}`, {method: 'POST'});
+    if (loginResp.status !== 200)
+      return null;
+    const loginData = await loginResp.json();
+    const token = loginData.token;
+
+    const url = `${host}/docker/images/${encodeURIComponent(dockerName)}/latest-compatible`;
+    const resp = await fetch(url, {
+      headers: {'Authorization': token},
+    });
+    if (resp.status === 200)
+      return await resp.json();
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+async function processDockerImages(
+  packageName: string,
+  version: string,
+  registry: string | undefined,
+  devKey: string,
+  host: string,
+  rebuildDocker: boolean,
+  zip: any,
+  localTimestamps: Indexable
+): Promise<void> {
+  const dockerImages = discoverDockerfiles(packageName, version);
+  if (dockerImages.length === 0)
+    return;
+
+  color.log(`Found ${dockerImages.length} Dockerfile(s)`);
+
+  if (registry)
+    dockerLogin(registry, devKey);
+
+  for (const img of dockerImages) {
+    let result: DockerImageResult;
+
+    if (rebuildDocker) {
+      const dockerfileDir = path.join('dockerfiles', img.dirName);
+      const dockerfilePath = path.join(dockerfileDir, 'Dockerfile');
+      if (dockerBuild(img.fullLocalName, dockerfilePath, dockerfileDir)) {
+        result = pushImage(img, registry, version);
+        color.success(`Built and tagged ${img.fullLocalName}`);
+      } else {
+        result = await fallbackImage(img, host, devKey, registry);
+      }
+    } else if (localImageExists(img.fullLocalName)) {
+      result = pushImage(img, registry, version);
+      color.success(`Found local image ${img.fullLocalName}`);
+    } else {
+      result = await fallbackImage(img, host, devKey, registry);
+      color.warn(`Local image not found. Expected: ${img.fullLocalName}` +
+        (result.image ? `. Falling back to ${result.image}` : ''));
+      color.log(`  Build it with: docker build -t ${img.fullLocalName} -f dockerfiles/${img.dirName}/Dockerfile dockerfiles/${img.dirName}`);
+    }
+
+    const imageJsonPath = path.join('dockerfiles', img.dirName, 'image.json');
+    zip.append(JSON.stringify(result, null, 2), {name: imageJsonPath});
+    localTimestamps[imageJsonPath.replace(/\\/g, '/')] = new Date().toUTCString();
+    color.log(`Added ${imageJsonPath}`);
+  }
+}
+
+function pushImage(img: DockerImageInfo, registry: string | undefined, version: string): DockerImageResult {
+  if (registry) {
+    const remoteTag = `${registry}/${img.imageName}:${version}`;
+    dockerTag(img.fullLocalName, remoteTag);
+    if (dockerPush(remoteTag))
+      return {image: remoteTag, fallback: false};
+    color.warn(`Push failed, image tagged locally only: ${remoteTag}`);
+    return {image: remoteTag, fallback: false};
+  }
+  color.warn('No registry configured. Image tagged locally only.');
+  return {image: img.fullLocalName, fallback: false};
+}
+
+async function fallbackImage(
+  img: DockerImageInfo,
+  host: string,
+  devKey: string,
+  registry: string | undefined,
+): Promise<DockerImageResult> {
+  const latest = await resolveLatestCompatible(host, devKey, img.imageName);
+  if (latest)
+    return {image: latest.image, fallback: true, requestedVersion: img.imageTag};
+  color.warn('No previous version available. Container will not be available until an image is built.');
+  return {image: null, fallback: true, requestedVersion: img.imageTag};
+}
+
+export async function processPackage(debug: boolean, rebuild: boolean, host: string, devKey: string, packageName: any, dropDb: boolean, suffix?: string, hostAlias?: string, registry?: string, rebuildDocker?: boolean) {
   // Get the server timestamps
   let timestamps: Indexable = {};
   let url = `${host}/packages/dev/${devKey}/${packageName}`;
@@ -147,6 +339,10 @@ export async function processPackage(debug: boolean, rebuild: boolean, host: str
     return 1;
   }
 
+  // Process Docker images and inject image.json into the ZIP
+  const packageVersion = json.version;
+  await processDockerImages(packageName, packageVersion, registry, devKey, host, rebuildDocker ?? false, zip, localTimestamps);
+
   zip.append(JSON.stringify(localTimestamps), {name: 'timestamps.json'});
 
   // Upload
@@ -259,16 +455,22 @@ async function publishPackage(args: PublishArgs) {
   if (nArgs === 2) host = args['_'][1];
   let key = '';
   let url = '';
+  let registry: string | undefined;
 
   // The host can be passed either as a URL or an alias
   try {
     url = new URL(host).href;
     if (url.endsWith('/')) url = url.slice(0, -1);
-    if (url in urls) key = config['servers'][urls[url]]['key'];
+    if (url in urls) {
+      const alias = urls[url];
+      key = config['servers'][alias]['key'];
+      registry = config['servers'][alias]['registry'];
+    }
   } catch (error) {
     if (!(host in config.servers)) return color.error(`Unknown server alias. Please add it to ${confPath}`);
     url = config['servers'][host]['url'];
     key = config['servers'][host]['key'];
+    registry = config['servers'][host]['registry'];
   }
 
   // Update the developer key
@@ -299,7 +501,7 @@ async function publishPackage(args: PublishArgs) {
           args.suffix = stdout.toString().substring(0, 8);
       });
       await utils.delay(100);
-      code = await processPackage(!args.release, Boolean(args.rebuild), url, key, packageName, args.dropDb ?? false, args.suffix, host);
+      code = await processPackage(!args.release, Boolean(args.rebuild), url, key, packageName, args.dropDb ?? false, args.suffix, host, registry, args['rebuild-docker']);
     } catch (error) {
       console.error(error);
       code = 1;
@@ -316,6 +518,7 @@ interface PublishArgs {
   build?: boolean,
   ['skip-check']?: boolean,
   rebuild?: boolean,
+  ['rebuild-docker']?: boolean,
   debug?: boolean,
   release?: boolean,
   key?: string,
