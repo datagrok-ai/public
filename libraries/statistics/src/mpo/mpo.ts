@@ -69,10 +69,12 @@ export function migrateDesirability(raw: any): PropertyDesirability {
 }
 
 export const DESIRABILITY_PROFILE_TYPE = 'MPO Desirability Profile';
+export const CURRENT_MPO_VERSION = 1;
 
 /// A map of desirability lines with their weights
 export type DesirabilityProfile = {
   type: typeof DESIRABILITY_PROFILE_TYPE;
+  version?: number;
   name: string;
   description: string;
   aggregation?: WeightedAggregation;
@@ -81,6 +83,21 @@ export type DesirabilityProfile = {
 
 export function isDesirabilityProfile(x: any): x is DesirabilityProfile {
   return x != null && typeof x === 'object' && x.type === DESIRABILITY_PROFILE_TYPE;
+}
+
+export function migrateProfile(raw: DesirabilityProfile): DesirabilityProfile {
+  const version = raw.version ?? 0;
+  if (version >= CURRENT_MPO_VERSION)
+    return raw;
+
+  // v0 → v1: backfill functionType on properties
+  if (version < 1) {
+    for (const key in raw.properties)
+      raw.properties[key] = migrateDesirability(raw.properties[key]);
+    raw.version = CURRENT_MPO_VERSION;
+  }
+
+  return raw;
 }
 
 export const WEIGHTED_AGGREGATIONS = ['Average', 'Sum', 'Product', 'Geomean', 'Min', 'Max'] as const;

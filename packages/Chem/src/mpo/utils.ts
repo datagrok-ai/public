@@ -9,6 +9,7 @@ import {
   PropertyDesirability,
   WeightedAggregation,
   createDefaultNumerical,
+  migrateProfile,
 } from '@datagrok-libraries/statistics/src/mpo/mpo';
 
 export {MPO_PROFILE_CHANGED_EVENT, MPO_PROFILE_DELETED_EVENT} from '@datagrok-libraries/statistics/src/mpo/utils';
@@ -37,10 +38,11 @@ export async function loadMpoProfiles(): Promise<MpoProfileInfo[]> {
   for (const file of files) {
     try {
       const text = await grok.dapi.files.readAsText(`${MPO_TEMPLATE_PATH}/${file.name}`);
-      const content = JSON.parse(text) as DesirabilityProfile;
+      const content = migrateProfile(JSON.parse(text) as DesirabilityProfile);
 
       profiles.push({
         type: DESIRABILITY_PROFILE_TYPE,
+        version: content.version,
         fileName: file.name,
         name: content.name ?? file.name.replace(/\.json$/i, ''),
         description: content.description ?? '',

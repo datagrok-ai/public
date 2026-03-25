@@ -2,7 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 
-import {DesirabilityProfile, isDesirabilityProfile} from '@datagrok-libraries/statistics/src/mpo/mpo';
+import {CURRENT_MPO_VERSION, DesirabilityProfile, isDesirabilityProfile, migrateProfile} from '@datagrok-libraries/statistics/src/mpo/mpo';
 import {generateMpoFileName, getNextAvailable} from '@datagrok-libraries/statistics/src/mpo/utils';
 
 import {deleteMpoProfile, loadMpoProfiles, MPO_PROFILE_CHANGED_EVENT, MPO_PROFILE_DELETED_EVENT,
@@ -129,6 +129,11 @@ class MpoProfileManagerImpl {
           grok.shell.warning('Upload failed: not a valid MPO profile');
           return;
         }
+        if ((parsed.version ?? 0) > CURRENT_MPO_VERSION) {
+          grok.shell.warning('Upload failed: profile was created with a newer version of the application');
+          return;
+        }
+        migrateProfile(parsed);
         if (!parsed.name)
           parsed.name = file.name.replace(/\.json$/i, '');
         await this.save(parsed, this.generateFileName(parsed.name));
