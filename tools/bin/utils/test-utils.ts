@@ -394,9 +394,9 @@ export function printBrowsersResult(browserResult: ResultObject, verbose: boolea
         }
       }
     }
-    console.log('Passed amount:  ' + browserResult?.passedAmount);
-    console.log('Skipped amount: ' + browserResult?.skippedAmount);
-    console.log('Failed amount:  ' + browserResult?.failedAmount);
+    console.log('Passed tests:  ' + (browserResult?.passedAmount ?? 0));
+    console.log('Skipped tests: ' + (browserResult?.skippedAmount ?? 0));
+    console.log('Failed tests:  ' + (browserResult?.failedAmount ?? 0));
   }
 
   if (browserResult.failed) {
@@ -512,8 +512,21 @@ async function runTests(testParams: { package: any, params: any }): Promise<any>
             // df: resultDF?.toJson()
         };
     } catch (e) {
-        console.log(`DEBUG: runTests: IN CATCH: ERROR: ${e}`);
-        return {failed: true, retrySupported: false, error: `${e}, ${await (<any>window).DG.Logger.translateStackTrace((e as any).stack)}`}
+        let stack = '';
+        try { stack = await (<any>window).DG.Logger.translateStackTrace((e as any).stack); }
+        catch (_) { stack = (e as any).stack ?? ''; }
+        return {
+          failed: true,
+          retrySupported: false,
+          verbosePassed: verbosePassed,
+          verboseSkipped: verboseSkipped,
+          verboseFailed: verboseFailed,
+          passedAmount: countPassed,
+          skippedAmount: countSkipped,
+          failedAmount: countFailed,
+          csv: '',
+          error: `${e}` + (stack ? `, ${stack}` : ''),
+        };
     }
 
     /*
@@ -899,12 +912,11 @@ export async function runBrowser(
               verbosePassed: '',
               verboseSkipped: '',
               verboseFailed: '',
-              error: JSON.stringify(e),
+              error: (e?.message ?? '') + (e?.stack ? '\n' + e.stack : '') || JSON.stringify(e),
               passedAmount: 0,
               skippedAmount: 0,
               failedAmount: 1,
               csv: '',
-              df: undefined,
             });
           });
 

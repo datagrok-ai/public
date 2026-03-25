@@ -240,7 +240,7 @@ async function runTesting(args: TestArgs): Promise<ResultObject> {
         browserSession = r.browserSession;
 
       if (r.error) {
-        console.log(`\nexecution error:`);
+        color.error(`\nTest execution failed:`);
         console.log(r.error);
         // Close browser on error
         if (browserSession?.browser)
@@ -444,9 +444,9 @@ function buildTestArgs(args: TestArgs): string[] {
 }
 
 function parseTestOutput(stdout: string): {passed: number, failed: number, skipped: number} | null {
-  const passedMatch = stdout.match(/Passed amount:\s*(\d+)/);
-  const failedMatch = stdout.match(/Failed amount:\s*(\d+)/);
-  const skippedMatch = stdout.match(/Skipped amount:\s*(\d+)/);
+  const passedMatch = stdout.match(/Passed (?:amount|tests):\s*(\d+)/);
+  const failedMatch = stdout.match(/Failed (?:amount|tests):\s*(\d+)/);
+  const skippedMatch = stdout.match(/Skipped (?:amount|tests):\s*(\d+)/);
   if (!passedMatch && !failedMatch)
     return null;
   return {
