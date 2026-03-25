@@ -234,6 +234,7 @@ export function registerFuncFromSpec(
     run: runCallback,
     isAsync: true,
     namespace: 'KnimeLink',
+    options: {'role': 'knimeWorkflow'},
   });
 
   for (const prop of func.inputs) {
