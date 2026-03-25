@@ -98,6 +98,7 @@ export class KnimeHubClient implements IKnimeClient {
             type: d.type ?? typeFilter ?? 'REST',
             state: d.state,
             workflowPath: d.workflowPath,
+            workflowId: d.workflowId,
           });
       }
       catch {
@@ -435,35 +436,22 @@ export class KnimeHubClient implements IKnimeClient {
     const creds = await getCredentials();
     const url = `${this.apiUrl}/jobs/${jobId}/output-resources/${resourceId}`;
 
-    // Step 1: Request with redirect: manual to get the S3 pre-signed URL
-    // (KNIME redirects to S3 which doesn't have CORS headers for our origin)
-    const redirectResponse = await grok.dapi.fetchProxy(url, {
+    // Use URL-embedded credentials + redirect: follow to handle S3 redirects
+    // (see fetchWithRedirect for the full explanation)
+    const parsed = new URL(url);
+    parsed.username = creds.id;
+    parsed.password = creds.secret;
+
+    const response = await grok.dapi.fetchProxy(parsed.toString(), {
       method: 'GET',
-      headers: {
-        'Authorization': getBasicAuthHeader(creds.id, creds.secret),
-      },
-      redirect: 'manual',
+      redirect: 'follow',
     });
 
-    // If we got a redirect, fetch the target URL through the proxy
-    if (redirectResponse.type === 'opaqueredirect' || redirectResponse.status === 301 || redirectResponse.status === 302 || redirectResponse.status === 307) {
-      const location = redirectResponse.headers.get('location');
-      if (location) {
-        const response = await grok.dapi.fetchProxy(location, {method: 'GET'});
-        if (!response.ok) {
-          const text = await response.text();
-          throw new Error(`KNIME resource download error ${response.status}: ${text}`);
-        }
-        return this.parseResourceResponse(response);
-      }
+    if (!response.ok) {
+      const text = await response.text();
+      throw new Error(`KNIME Hub API error ${response.status}: ${text}`);
     }
-
-    // No redirect — parse the response directly
-    if (!redirectResponse.ok) {
-      const text = await redirectResponse.text();
-      throw new Error(`KNIME Hub API error ${redirectResponse.status}: ${text}`);
-    }
-    return this.parseResourceResponse(redirectResponse);
+    return this.parseResourceResponse(response);
   }
 
   private async parseResourceResponse(response: Response): Promise<KnimeOutputResource> {
@@ -484,6 +472,36 @@ export class KnimeHubClient implements IKnimeClient {
 
   async cancelJob(jobId: string): Promise<void> {
     await this.request<any>('DELETE', `/jobs/${jobId}/execution`);
+  }
+
+  /**
+   * Build a proxy URL for the workflow SVG image, suitable for use as `<img src="...">`.
+   *
+   * The KNIME catalog `:image` endpoint returns a 307 redirect to an S3 pre-signed URL.
+   * Using `fetch()` fails because:
+   * - `redirect: 'follow'`: proxy forwards our Authorization header to S3, conflicting
+   *   with S3's own query-string auth.
+   * - `redirect: 'manual'`: browser returns an opaque redirect (status 0, per Fetch spec),
+   *   so we cannot read the Location header.
+   * - Default: proxy returns 307, browser follows to S3, CORS blocks the response.
+   *
+   * Solution: use an `<img>` element. Images are exempt from CORS — the browser follows
+   * redirects transparently. KNIME auth is embedded in the URL (`https://user:pass@host`)
+   * so the proxy sends it to KNIME but the browser does not forward it to S3 on redirect.
+   */
+  async getWorkflowImageUrl(workflowId: string): Promise<string | null> {
+    if (!workflowId)
+      return null;
+    try {
+      const creds = await getCredentials();
+      const parsed = new URL(`${this.apiUrl}/knime/rest/v4/repository/${workflowId}:image`);
+      parsed.username = creds.id;
+      parsed.password = creds.secret;
+      return `${grok.dapi.root}/connectors/proxy?url=${encodeURIComponent(parsed.toString())}`;
+    }
+    catch {
+      return null;
+    }
   }
 
   // --------------------------------------------------------------- helpers

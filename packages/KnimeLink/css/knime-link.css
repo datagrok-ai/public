@@ -86,6 +86,30 @@
   text-align: left;
 }
 
+.knime-workflow-preview {
+  padding: 12px;
+  overflow: auto;
+}
+
+.knime-preview-header {
+  margin: 0 0 8px 0;
+  font-size: 14px;
+  color: var(--grey-5);
+}
+
+.knime-workflow-svg-container {
+  min-height: 100px;
+  position: relative;
+}
+
+img.knime-workflow-svg {
+  width: 100%;
+  height: auto;
+  border: 1px solid var(--grey-2);
+  border-radius: 4px;
+  background: white;
+}
+
 .knime-file-output {
   display: flex;
   align-items: center;

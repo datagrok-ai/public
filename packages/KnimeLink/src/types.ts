@@ -80,4 +80,6 @@ export interface KnimeDeployment {
   type: string;
   state?: string;
   workflowPath?: string;
+  /** Repository item ID of the underlying workflow (e.g. `*YK_q3iKGm3WUlAzo`). */
+  workflowId?: string;
 }

@@ -10,6 +10,7 @@ execute workflows, and visualize results — all without leaving Datagrok.
 
 - Connect to KNIME Business Hub
 - Browse and run REST deployments organized by team
+- Preview workflow diagrams in the context panel
 - Pass tables, parameters, and files as workflow input
 - View execution results as Datagrok DataFrames
 - Auto-register KNIME workflows as Datagrok functions (available in search, pipelines, etc.)
@@ -42,6 +43,13 @@ In the same settings panel, open **Credentials** and provide:
 
 Open the app from **Browse > Compute > KNIME**. The sidebar tree shows all deployments
 grouped by team.
+
+### Workflow preview
+
+Select a deployment from the tree to see its workflow diagram in the context panel
+and the function signature with inputs/outputs in the preview panel. The SVG shows
+all nodes and connections, giving you a quick overview of what the workflow does
+before running it.
 
 ### Executing a workflow
 

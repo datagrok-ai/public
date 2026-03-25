@@ -55,11 +55,12 @@ The package uses different execution strategies based on deployment type (determ
 - `GET /accounts/identity` — get current user + teams[]
 - `GET /deployments/{scope}` — list deployments for a team (scope = URL-encoded `account:team:{uuid}`)
 - `GET /deployments/{id}/open-api` — get workflow OpenAPI spec (input parameter names and types)
+- `GET /knime/rest/v4/repository/{workflowId}:image` — workflow SVG diagram (catalog service); loaded via `<img>` element, not `fetch()`, because the endpoint redirects to S3 and all `fetch()` approaches fail (see `getWorkflowImageUrl()` JSDoc for details)
 - `POST /deployments/{id}/execution` — sync execution for REST services; sends JSON body or `multipart/form-data` when files are present
 - `POST /deployments/{id}/jobs` — create async job (auto-executes with defaults, no body input)
 - `POST /jobs/{uuid}?async=true` — execute existing job with input body (for async flow)
 - `GET /jobs/{uuid}` — poll job status; `workflowState` field: `EXECUTION_FINISHED`, `EXECUTION_FAILED`, etc.; response includes `outputValues`, `outputResources`, `nodeMessages`, and `@controls`
-- `GET /jobs/{uuid}/output-resources/{resourceId}` — fetch a named output resource (table/file); handles S3 pre-signed URL redirects via `redirect: 'manual'`
+- `GET /jobs/{uuid}/output-resources/{resourceId}` — fetch a named output resource (table/file); handles S3 pre-signed URL redirects via URL-embedded credentials + `redirect: 'follow'`
 - `DELETE /jobs/{uuid}/execution` — cancel running job
 - Auth: Application Password as HTTP Basic
 - Team discovery: calls `/accounts/identity`, extracts `teams[].id` for deployment scopes
@@ -70,7 +71,7 @@ The package uses different execution strategies based on deployment type (determ
 |------|---------|
 | `src/package.ts` | App entry, tree browser, exported functions |
 | `src/constants.ts` | `KnimeJobState` enum |
-| `src/types.ts` | `KnimeDeployment`, `KnimeInputParam`, `KnimeJobStatus` (with `_rawData` cache), etc. |
+| `src/types.ts` | `KnimeDeployment` (includes `workflowId`), `KnimeInputParam`, `KnimeJobStatus` (with `_rawData` cache), etc. |
 | `src/credentials.ts` | `_package.getCredentials()` with session caching |
 | `src/knime-client.ts` | `IKnimeClient` interface |
 | `src/knime-hub-client.ts` | Business Hub implementation (with `api.` URL derivation) |
@@ -79,12 +80,19 @@ The package uses different execution strategies based on deployment type (determ
 | `src/function-cache.ts` | Persistent cache via `grok.userSettings`: sync load at startup, async background refresh with diff |
 | `src/data-conversion.ts` | DataFrame <-> KNIME JSON table format |
 | `src/utils.ts` | Async job polling with `DG.TaskBarProgressIndicator`, timeout management |
-| `css/knime-link.css` | Styles for breadcrumbs, progress indicators, results display |
+| `css/knime-link.css` | Styles for workflow preview, breadcrumbs, progress indicators, results display |
 
 ### Tree Browser
 
 Discovers teams via `/accounts/identity`, then lists REST deployments per team via `GET /deployments/{scope}/rest`.
-Selecting a deployment registers it as a Datagrok function and opens its preview via `DG.ObjectHandler`.
+Selecting a deployment registers it as a Datagrok function and shows two previews:
+- **Function preview** (`grok.shell.preview`) — the platform's built-in function preview with inputs/outputs
+- **Workflow image** (`grok.shell.o`, context panel) — SVG diagram loaded via an `<img>` element using
+  `getWorkflowImageUrl()`, which builds a Datagrok proxy URL with KNIME credentials embedded in the URL.
+  The `<img>` approach is required because the KNIME catalog `:image` endpoint returns a 307 redirect to an
+  S3 pre-signed URL, and all `fetch()`-based approaches fail (see `getWorkflowImageUrl()` JSDoc).
+
+The `workflowId` (repository item ID) is captured from the deployment metadata.
 Test deployments (prefixed with `datagrok_test_`) are grouped under a "Test workflows" node.
 The header includes a custom breadcrumb navigation UI.
 
@@ -183,6 +191,7 @@ npm run build    # grok api && grok check --soft && webpack
 The `openapi/` folder contains swagger specs downloaded from `api.hub.knime.com/api-doc/`:
 - `accounts-service` — user identity, teams, permissions
 - `execution-service` — deployments, jobs, execution contexts, executors
+- `catalog-service` — repository items, workflow images (`GET /repository/{id}:image`)
 
 Key schemas: `UserAccount` (includes `teams[]` of `BaseTeam`), `Deployment` (types: rest, schedule, data-app, trigger), `WorkflowJob` (states in `workflowState` field, outputs in `outputValues`/`outputResources`, errors in `nodeMessages`/`errors`, session URL in `@controls`), `InputParameters` (map of param name to value — tables use `table-spec`/`table-data` format).
 

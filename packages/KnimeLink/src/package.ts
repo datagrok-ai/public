@@ -6,6 +6,8 @@ import {u2} from '@datagrok-libraries/utils/src/u2';
 import {getKnimeClient} from './knime-client-factory';
 import {getOrRegisterFunc} from './function-registry';
 import {loadCachedEntries, registerFromCache, refreshAndUpdateCache} from './function-cache';
+import {IKnimeClient} from './knime-client';
+import type {KnimeDeployment} from './types';
 import '../css/knime-link.css';
 
 export * from './package.g';
@@ -106,7 +108,8 @@ export class PackageFunctions {
           }
           const objHandler = DG.ObjectHandler.forEntity(node.value);
           if (objHandler)
-            grok.shell.addPreview(await (objHandler.renderPreview(node.value)))
+            grok.shell.preview = await objHandler.renderPreview(node.value);
+          showWorkflowImage(dep, client);
         });
       };
       for (const dep of deployments) {
@@ -136,4 +139,31 @@ export class PackageFunctions {
     if (errors.length > 0)
       grok.shell.warning(`KNIME: Failed to load some workflows:\n${errors.join('\n')}`);
   }
+}
+
+async function showWorkflowImage(dep: KnimeDeployment, client: IKnimeClient): Promise<void> {
+  if (!dep.workflowId)
+    return;
+  const imageUrl = await client.getWorkflowImageUrl(dep.workflowId);
+  if (!imageUrl)
+    return;
+  const header = ui.h2(`${dep.name} workflow preview`);
+  header.className = 'knime-preview-header';
+  const imgContainer = ui.div([], 'knime-workflow-svg-container');
+  const container = ui.div([header, imgContainer], 'knime-workflow-preview');
+  grok.shell.o = container;
+
+  ui.setUpdateIndicator(imgContainer, true, 'Loading workflow image...');
+  const img = document.createElement('img');
+  img.className = 'knime-workflow-svg';
+  img.alt = `Workflow: ${dep.name}`;
+  img.onload = () => {
+    ui.setUpdateIndicator(imgContainer, false);
+    imgContainer.appendChild(img);
+  };
+  img.onerror = () => {
+    ui.setUpdateIndicator(imgContainer, false);
+    imgContainer.appendChild(ui.divText('Failed to load workflow image'));
+  };
+  img.src = imageUrl;
 }

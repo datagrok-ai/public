@@ -10,4 +10,6 @@ export interface IKnimeClient {
   buildJobResult(jobId: string, data: any): Promise<KnimeExecutionResult>;
   fetchOutputResource(jobId: string, resourceId: string): Promise<KnimeOutputResource>;
   cancelJob(jobId: string): Promise<void>;
+  /** Build a proxy URL for the workflow SVG image, suitable for use as img.src. */
+  getWorkflowImageUrl(workflowId: string): Promise<string | null>;
 }
