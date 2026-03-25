@@ -33,7 +33,7 @@ export class MpoProfilesView {
     ui.setUpdateIndicator(this.root, true);
     const createButton = ui.button(ui.h2('Create profile'), () => this.openCreateProfile());
     createButton.classList.add('chem-mpo-action-button');
-    const importButton = ui.button(ui.h2('Import'), () => MpoProfileManager.importFromFile());
+    const importButton = ui.button(ui.h2('Upload'), () => MpoProfileManager.upload());
     importButton.classList.add('chem-mpo-action-button');
     try {
       ui.empty(this.root);
@@ -113,7 +113,7 @@ export class MpoProfilesView {
         ui.popupMenu()
           .item('Edit', () => MpoProfileHandler.edit(profile))
           .item('Clone', () => MpoProfileHandler.clone(profile))
-          .item('Export to file', () => MpoProfileManager.exportToFile(profile))
+          .item('Download', () => MpoProfileManager.download(profile))
           .separator()
           .item('Delete', () => MpoProfileHandler.delete(profile))
           .show();

@@ -45,6 +45,7 @@ export class MpoProfileHandler extends DG.ObjectHandler<MpoProfileInfo> {
     super();
     this.registerParamFunc('Edit', (p: MpoProfileInfo) => MpoProfileHandler.edit(p));
     this.registerParamFunc('Clone', (p: MpoProfileInfo) => MpoProfileHandler.clone(p));
+    this.registerParamFunc('Download', (p: MpoProfileInfo) => MpoProfileManager.download(p));
     this.registerParamFunc('Delete', (p: MpoProfileInfo) => MpoProfileHandler.delete(p));
   }
 

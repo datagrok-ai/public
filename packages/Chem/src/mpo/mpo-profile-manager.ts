@@ -120,25 +120,25 @@ class MpoProfileManagerImpl {
     }
   }
 
-  importFromFile(): void {
+  upload(): void {
     DG.Utils.openFile({accept: '.json', open: async (file) => {
       try {
         const text = await file.text();
         const parsed = JSON.parse(text);
         if (!isDesirabilityProfile(parsed)) {
-          grok.shell.warning('Import failed: not a valid MPO profile');
+          grok.shell.warning('Upload failed: not a valid MPO profile');
           return;
         }
         if (!parsed.name)
           parsed.name = file.name.replace(/\.json$/i, '');
         await this.save(parsed, this.generateFileName(parsed.name));
       } catch (e) {
-        grok.shell.warning('Import failed: invalid JSON file');
+        grok.shell.warning('Upload failed: invalid JSON file');
       }
     }});
   }
 
-  exportToFile(profile: MpoProfileInfo): void {
+  download(profile: MpoProfileInfo): void {
     const {fileName, ...data} = profile;
     DG.Utils.download(fileName, JSON.stringify(data, null, 2), 'application/json');
   }
