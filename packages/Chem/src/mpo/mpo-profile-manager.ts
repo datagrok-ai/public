@@ -80,8 +80,35 @@ class MpoProfileManagerImpl {
   async saveProfile(profile: DesirabilityProfile, existingFileName?: string | null): Promise<MpoSaveResult> {
     await this.ensureLoaded();
     const fileName = existingFileName ?? this.generateFileName(profile.name);
+
+    if (existingFileName && this.existingFileNames.has(existingFileName)) {
+      const confirmed = await this.confirmOverwrite(profile.name);
+      if (!confirmed)
+        return {saved: false, fileName};
+    }
+
     const saved = await this.save(profile, fileName);
     return {saved, fileName};
+  }
+
+  private confirmOverwrite(profileName: string): Promise<boolean> {
+    return new Promise((resolve) => {
+      let resolved = false;
+      const safeResolve = (value: boolean) => {
+        if (resolved)
+          return;
+        resolved = true;
+        dlg.close();
+        resolve(value);
+      };
+
+      const dlg = ui.dialog('Replace profile')
+        .add(ui.divText(`"${profileName}" already exists. Do you want to replace it?`))
+        .add(ui.divText('Replacing it will overwrite the current contents.'))
+        .addButton('Replace', () => safeResolve(true))
+        .onCancel(() => safeResolve(false))
+        .show();
+    });
   }
 
   async save(profile: DesirabilityProfile, fileName: string): Promise<boolean> {

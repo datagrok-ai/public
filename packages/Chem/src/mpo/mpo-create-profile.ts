@@ -110,7 +110,7 @@ export class MpoProfileCreateView {
   }
 
   private get displayName(): string {
-    return this.isEditMode ? (this.profile.name || 'MPO') : 'Create MPO';
+    return this.profile.name || 'Untitled Profile';
   }
 
   setupBreadcrumbs(): void {
@@ -178,15 +178,17 @@ export class MpoProfileCreateView {
       return el;
     };
 
-    this.headerEl = editable(ui.h1(this.profile.name || ''), () => {
-      this.profile.name = this.headerEl.textContent?.trim() ?? '';
+    this.headerEl = editable(ui.h1(this.displayName), () => {
+      this.profile.name = this.textOf(this.headerEl);
     }, true);
     this.headerEl.classList.add('chem-profile-header');
 
     this.descEl = editable(ui.h3(this.profile.description || ''), () => {
-      this.profile.description = this.descEl.textContent?.trim() ?? '';
+      this.profile.description = this.textOf(this.descEl);
+      this.updateDescPlaceholder();
     });
     this.descEl.classList.add('chem-profile-description');
+    this.updateDescPlaceholder();
 
     this.toolbarEl = ui.divV([ui.divV(controls)], 'chem-profile-toolbar-wrap');
 
@@ -285,7 +287,17 @@ export class MpoProfileCreateView {
       this.fileName = result.fileName;
       this.originalProfile = structuredClone(this.profile);
       this.setModified(false);
+      this.tableView.name = this.view.name = this.displayName;
+      this.setupBreadcrumbs();
     }
+  }
+
+  private textOf(el: HTMLElement): string {
+    return el.innerText?.trim() ?? '';
+  }
+
+  private updateDescPlaceholder(): void {
+    this.descEl.classList.toggle('chem-placeholder', !this.profile.description);
   }
 
   private setModified(modified: boolean): void {
@@ -299,8 +311,9 @@ export class MpoProfileCreateView {
     this.setModified(false);
     this.updatingLayout = true;
     try {
-      this.headerEl.textContent = this.profile.name ?? '';
-      this.descEl.textContent = this.profile.description ?? '';
+      this.headerEl.innerText = this.displayName;
+      this.descEl.innerText = this.profile.description;
+      this.updateDescPlaceholder();
       this.editor.setProfile(this.profile);
     } finally {
       this.updatingLayout = false;
