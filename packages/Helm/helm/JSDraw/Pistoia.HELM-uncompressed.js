@@ -8133,6 +8133,8 @@ org.helm.webeditor.App = scil.extend(scil._base, {
                 format = this.getValueByKey(this.sequencebuttons, "format");
 
             s = scil.Utils.trim(scil.Utils.getInnerText(this.sequence));
+            if (s == null || s === "")
+                return;
             if (/^((RNA)|(PEPTIDE)|(CHEM)|(BLOB))[0-9]+/.test(s)) {
                 format = "HELM";
             }

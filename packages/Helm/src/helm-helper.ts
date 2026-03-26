@@ -275,7 +275,7 @@ export class HelmHelper implements IHelmHelper {
         } catch (err) {
           const [errMsg, errStack] = errInfo(err);
           this.logger.error(`${logPrefixInt}, Error: ${errMsg}`, undefined, errStack);
-          throw err;
+          return null;
         }
       },
       getMonomerSet: (a: HelmAtom | HelmType | null): MonomerSetType | null => {

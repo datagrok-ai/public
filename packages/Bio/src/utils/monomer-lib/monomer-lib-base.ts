@@ -163,6 +163,8 @@ export class MonomerLibBase implements IMonomerLibBase {
   /** Substitutes {@link org.helm.webeditor.Monomers.getMonomer()} */
   getWebEditorMonomer(a: HelmAtom | HelmType, argName?: string): IWebEditorMonomer | null {
     const [biotype, elem] = getMonomerHandleArgs(a, argName);
+    if (!elem)
+      return null;
     const pt = helmTypeToPolymerType(biotype);
 
     /** Get or create {@link Monomer} object (in case it is missing in monomer library current config) */
