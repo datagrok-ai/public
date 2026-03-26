@@ -1,5 +1,9 @@
 # Chem changelog
 
+## 1.17.3 (2026-03-26)
+
+* Improved reaction renderer supporting smiles reactions.
+
 ## 1.17.2 (2026-03-23)
 
 RDKit render: Render without fixed scaling if rendered outside the global context (for single values like in custom tooltips).

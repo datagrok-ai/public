@@ -151,13 +151,17 @@ export class RDKitReactionRenderer extends DG.GridCellRenderer {
   private _smilesToSmartsCache: DG.LruCache<string, string> = new DG.LruCache<string, string>(500);
 
   private _reactionToSmarts(rxnString: string): string {
-    if (rxnString?.includes('M  END') || !rxnString.includes('>>'))
-      return rxnString; // looks like a mol block or is not a reaction at all, return as-is
     try {
       const parts = rxnString.split('>>');
       return parts.map((part) => {
         return this._smilesToSmartsCache.getOrCreate(part, (p) => {
-          return _convertMolNotation(p, DG.chem.Notation.Unknown, DG.chem.Notation.Smarts, this.rdKitModule, false);
+          try {
+            if (p.includes('M  END'))
+              return p;
+            return _convertMolNotation(p, DG.chem.Notation.Unknown, DG.chem.Notation.Smarts, this.rdKitModule, false);
+          } catch (e) {
+            return p;
+          }
         });
       }).join('>>');
     } catch (e) {
