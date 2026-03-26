@@ -103,6 +103,8 @@ export const X_COORD = 200;
 export const Y_COORD = 200;
 export const DELAY = 2000;
 
+export const MAX_ROWS_IN_PREDICTION_TOOLTIP = 20;
+
 export const NUMS_AFTER_COMMA = 3;
 
 /** Curves colors */

@@ -4,10 +4,10 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {PLS_ANALYSIS, ERROR_MSG, TITLE, HINT, LINK, COMPONENTS, INT, TIMEOUT,
+import {PLS_ANALYSIS, ERROR_MSG, TITLE, HINT, LINK, COMPONENTS,
   RESULT_NAMES, WASM_OUTPUT_IDX, RADIUS, LINE_WIDTH, COLOR, X_COORD, Y_COORD,
-  DEMO_INTRO_MD, DEMO_RESULTS_MD, DEMO_RESULTS,
-  NUMS_AFTER_COMMA} from './pls-constants';
+  DEMO_INTRO_MD, DEMO_RESULTS_MD, DEMO_RESULTS, NUMS_AFTER_COMMA,
+  MAX_ROWS_IN_PREDICTION_TOOLTIP} from './pls-constants';
 import {checkWasmDimensionReducerInputs, checkColumnType, checkMissingVals, describeElements} from '../utils';
 import {_partialLeastSquareRegressionInWebWorker} from '../../wasm/EDAAPI';
 import {carsDataframe} from '../data-generators';
@@ -611,12 +611,18 @@ function getPredictionTooltip(modelTerms: Map<string, number>, predCol: DG.Colum
     ++idx;
   }
 
-  modelTerms.forEach((value, key) => {
-    if (key === TITLE.BIAS)
-      return;
+  const sortedTerms = [...modelTerms.entries()]
+    .filter(([key]) => key !== TITLE.BIAS)
+    .sort((a, b) => Math.abs(b[1]) - Math.abs(a[1]));
 
+  const maxFeatureRows = MAX_ROWS_IN_PREDICTION_TOOLTIP - elements.length;
+  const hasOverflow = sortedTerms.length > maxFeatureRows;
+  const visibleTerms = hasOverflow ? sortedTerms.slice(0, maxFeatureRows - 1) : sortedTerms;
+
+  for (const [key, value] of visibleTerms) {
     const signEl = ui.divText(idx > 0 ? '+ ' : '');
     signEl.style.marginRight = '4px';
+    signEl.style.marginLeft = '4px';
 
     const featureEl = ui.divText(`${key}`);
     featureEl.style.fontWeight = 'bold';
@@ -629,7 +635,16 @@ function getPredictionTooltip(modelTerms: Map<string, number>, predCol: DG.Colum
     elements.push(rowEl);
 
     ++idx;
-  });
+  }
+
+  if (hasOverflow) {
+    const hidden = sortedTerms.length - visibleTerms.length;
+    const ellipsisEl = ui.divText(`(${hidden} more term${hidden > 1 ? 's' : ''})`);
+    ellipsisEl.style.marginTop = '4px';
+    ellipsisEl.style.marginLeft = '4px';
+    ellipsisEl.style.fontStyle = 'italic';
+    elements.push(ellipsisEl);
+  }
 
   const headerEl = ui.divText('Formula:');
 
@@ -641,4 +656,4 @@ function getPredictionTooltip(modelTerms: Map<string, number>, predCol: DG.Colum
   elementsContainer.style.marginTop = '4px';
 
   return ui.divV([headerEl, leftEl, elementsContainer]);
-};
+}
