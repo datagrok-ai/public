@@ -604,7 +604,10 @@ function getPredictionTooltip(modelTerms: Map<string, number>, predCol: DG.Colum
   const bias = modelTerms.get(TITLE.BIAS) ?? 0;
   const elements: HTMLElement[] = [];
   if (Math.abs(bias) > 0) {
-    elements.push(ui.divText(`${bias}`));
+    const biasEl = ui.divText(`${bias}`);
+    biasEl.style.marginTop = '2px';
+    biasEl.style.marginLeft = '4px';
+    elements.push(biasEl);
     ++idx;
   }
 
@@ -621,13 +624,21 @@ function getPredictionTooltip(modelTerms: Map<string, number>, predCol: DG.Colum
     const valueEl = ui.divText(` * ${value > 0 ? value : `(${value})`}`);
     valueEl.style.marginLeft = '4px';
 
-    elements.push(ui.divH([signEl, featureEl, valueEl]));
+    const rowEl = ui.divH([signEl, featureEl, valueEl]);
+    rowEl.style.marginTop = '4px';
+    elements.push(rowEl);
 
     ++idx;
   });
 
+  const headerEl = ui.divText('Formula:');
+
   const leftEl = ui.divText(`${predCol.name} = `);
   leftEl.style.fontWeight = 'bold';
+  leftEl.style.marginTop = '4px';
 
-  return ui.divV([ui.h2('Formula'), leftEl, ui.divV(elements)]);
+  const elementsContainer = ui.divV(elements);
+  elementsContainer.style.marginTop = '4px';
+
+  return ui.divV([headerEl, leftEl, elementsContainer]);
 };
