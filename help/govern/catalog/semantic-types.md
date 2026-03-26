@@ -69,6 +69,7 @@ Out of the box, the following semantic types are automatically detected based on
 | **Specialized types**    |                 |                        |
 | Curve data              | `fit`              | [Curves](https://github.com/datagrok-ai/public/tree/master/packages/Curves)                 |
 | PNG images               | `rawPng`           | [Power Grid](https://github.com/datagrok-ai/public/tree/master/packages/PowerGrid)                 |
+| SVG images               | `SVG`              | [Power Grid](https://github.com/datagrok-ai/public/tree/master/packages/PowerGrid)                 |
 <!--| Chemical reaction       | 'ChemicalReaction' | [Chem](https://github.com/datagrok-ai/public/tree/master/packages/Chem)                   |-->
 
 ## Custom semantic types

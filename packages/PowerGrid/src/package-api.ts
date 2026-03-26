@@ -32,6 +32,10 @@ export namespace funcs {
     return await grok.functions.call('PowerGrid:StarsCellRenderer', {});
   }
 
+  export async function svgCellRenderer(): Promise<any> {
+    return await grok.functions.call('PowerGrid:SvgCellRenderer', {});
+  }
+
   export async function htmlTestCellRenderer(): Promise<any> {
     return await grok.functions.call('PowerGrid:HtmlTestCellRenderer', {});
   }

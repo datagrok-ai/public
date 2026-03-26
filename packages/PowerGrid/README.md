@@ -44,6 +44,18 @@ We are working to get that fixed.
 
 ![image-url-detection](images/image-url-detection.png)
 
+### SVG images
+
+Datagrok automatically detects string columns containing SVG markup and renders
+them directly on canvas. The renderer uses a content-based LRU cache so that
+identical SVGs across rows are decoded only once, keeping scrolling and zooming
+smooth even with hundreds of visible cells.
+
+If auto-detection does not trigger, set the column's `quality` to `SVG` and
+`cell.renderer` to `SVG` manually.
+
+Double-click a cell to open a resizable preview dialog.
+
 ### Forms viewer
 
 **Forms viewer** shows rows in forms positioned side-by-side.

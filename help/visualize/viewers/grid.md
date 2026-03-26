@@ -310,6 +310,19 @@ The `Tags` renderer is used to display comma-separated values from a string colu
 
 The `Stars` cell type applies to the integer column, and lets you "rate" something with stars.
 
+#### SVG
+
+The `SVG` renderer displays SVG markup stored in string cells directly on the
+canvas. It is applied automatically when Datagrok detects that a column contains
+SVG strings (starting with `<svg` or an XML declaration followed by `<svg`). You
+can also apply it manually by setting the column renderer to `SVG`.
+
+The renderer converts each SVG string to a data-URL image, caches the result in
+a content-based LRU cache, and draws it on canvas via `drawImage`. Because
+identical SVG strings share a single cache entry, performance stays smooth even
+when hundreds of cells are visible. Double-click a cell to open a resizable
+preview.
+
 #### Color
 
 The `Color` renderer displays a filled color swatch in the cell instead of raw text. It supports

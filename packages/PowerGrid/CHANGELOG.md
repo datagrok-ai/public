@@ -1,5 +1,10 @@
 # Power Grid changelog
 
+## v.next
+
+* Introduced SVG cell renderer with content-based LRU caching for canvas rendering
+* Added SVG semantic type auto-detector
+
 ## 1.8.1 (2026-03-17)
 
 ## 1.8.0 (2026-03-13)

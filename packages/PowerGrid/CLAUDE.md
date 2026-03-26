@@ -32,6 +32,7 @@ canvas drawing. Registered with `meta.role: 'cellRenderer'` and a unique `meta.c
 | `hyperlink-cell-renderer.ts`    | `Hyperlink`                  | Clickable URL links                                       |
 | `multi-choice-cell-renderer.ts` | `MultiChoice`                | Checkbox multi-select (uses `column.meta.choices`)        |
 | `tags-cell-renderer.ts`         | `Tags`                       | Tag/badge rendering with auto-splitting on `,`            |
+| `svg-cell-renderer.ts`          | `SVG`                        | Renders SVG markup on canvas with content-based LRU cache |
 | `test-cell-renderer.ts`         | `testUnitsKg`/`testUnitsTon` | Demo renderers using `columnTags` for tag-based detection |
 
 ### Sparklines (`src/sparklines/`)

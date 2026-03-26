@@ -9,11 +9,28 @@ const RAW_PNG_SEM_TYPE = 'rawPng';
 class PowerGridPackageDetectors extends DG.Package {
   /* @param s {String} - string to check
    * @returns {boolean} */
+  static likelySvg(s) {
+    if (s == null || s.length < 50)
+      return false;
+    const t = s.trimStart();
+    return t.startsWith('<svg') || (t.startsWith('<?xml') && t.substring(0, 200).includes('<svg'));
+  }
+
   static likelyImageUrl(s) {
     if (s == null)
       return false;
     s = s.toLowerCase();
     return (s.startsWith('http') || s.startsWith('system:')) && ['png', 'jpg', 'jpeg'].some((x) => s.endsWith(x));
+  }
+
+  //meta.role: semTypeDetector
+  //input: column col
+  //output: string semType
+  detectSvg(col) {
+    if (col.type === DG.COLUMN_TYPE.STRING &&
+        DG.Detector.sampleCategories(col, (s) => PowerGridPackageDetectors.likelySvg(s), 1))
+      return 'SVG';
+    return null;
   }
 
   //meta.role: semTypeDetector
