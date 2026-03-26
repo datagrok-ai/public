@@ -8,7 +8,7 @@ WITH user_events AS (
   JOIN event_parameters pu ON pu.id = vu.parameter_id
   WHERE pu.name = 'user'
     AND vu.value_uuid = @user
-    AND e.event_time > NOW() - INTERVAL '60 days'
+    AND e.event_time > NOW() - INTERVAL '30 days'
 )
 SELECT
   en.id,
