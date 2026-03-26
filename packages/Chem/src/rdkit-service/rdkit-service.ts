@@ -431,6 +431,14 @@ export class RdKitService {
     return filteredMolecules;
   }
 
+  getCoordGenCoords(molecules: string[]) {
+    const res = this._initParallelWorkers(molecules, (i, segment) => {
+      return this.parallelWorkers[i].getCoordGenCoords(segment);
+    }, (data) => {
+      return ([] as string[]).concat(...data);
+    });
+    return res;
+  }
 
   /**
    * Returns fingerprints for provied molecules

@@ -171,6 +171,47 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
     }
   }
 
+  async getCoordGenCoords(molecules: string[]): Promise<string[]> {
+    if (!molecules || this._requestTerminated)
+      return [];
+    // no need to cache these
+    const results = new Array<string>(molecules.length).fill('');
+    for (let i = 0; i < molecules!.length; ++i) {
+      if (i % this._terminationCheckDelay === 0)
+        await new Promise((r) => setTimeout(r, 0));
+      if (this._requestTerminated)
+        return results;
+      const item = molecules[i];
+      if (!item) {
+        results[i] = '';
+        continue;
+      }
+      let isInCache = false;
+      let rdMol = this._molsCache?.get(molecules[i]);
+      if (!rdMol) {
+        const mol: IMolContext = getMolSafe(item, {}, this._rdKitModule);
+        rdMol = mol?.mol;
+        if (rdMol)
+          rdMol.is_qmol = mol?.isQMol;
+      } else
+        isInCache = true;
+
+      if (rdMol) {
+        try {
+          results[i] = rdMol.get_new_coords(true);
+        } catch {
+          // nothing to do, fp is already null
+        } finally {
+          if (!isInCache) {
+            //do not delete mol in case it is in cache
+            rdMol?.delete();
+          }
+        }
+      }
+    }
+    return results;
+  }
+
   async beautifyMoleculesV3K(molecules: string[]) {
     if (!molecules || this._requestTerminated)
       return [];

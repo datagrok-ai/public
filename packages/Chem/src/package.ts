@@ -222,16 +222,26 @@ export class PackageFunctions {
   static async initChemAutostart(): Promise<void> { }
 
   @grok.decorators.func({'top-menu': 'Chem | Transform | Recalculate Coordinates...', 'name': 'Recalculate Coordinates',
-    'description': 'Recalculates 2D coordinates for molecules in the column using Open Chem Lib',
+    'description': 'Recalculates 2D coordinates for molecules in the column using RDKit CoordGen or Open Chem Lib',
     'meta': {'role': 'transform'},
   })
-  static async recalculateCoordsViaOCL(@grok.decorators.param({}) table: DG.DataFrame,
+  static async recalculateCoords(@grok.decorators.param({}) table: DG.DataFrame,
   @grok.decorators.param({options: {semType: 'Molecule'}}) molecules: DG.Column,
+  @grok.decorators.param({options: {choices: ['OCL', 'CoordGen']}, initialValue: 'OCL', nullable: false}) method: string = 'OCL',
   @grok.decorators.param({options: {initialValue: 'true'}}) join: boolean = true,
   ): Promise<DG.Column | void> {
-    const oclService = new OCLService();
-    const newMols = await oclService.recalculateCoordinates(molecules.toList());
-    oclService.terminate();
+    let newMols: string[] | null = null;
+    if (method === 'OCL') {
+      const oclService = new OCLService();
+      newMols = await oclService.recalculateCoordinates(molecules.toList());
+      oclService.terminate();
+    } else {
+      const rdKitService = await chemCommonRdKit.getRdKitService();
+      newMols = await rdKitService.getCoordGenCoords(molecules.toList());
+    }
+
+    if (!newMols)
+      throw new Error('Failed to recalculate coordinates with ' + method);
     const newCol = DG.Column.fromStrings(table.columns.getUnusedName(`${molecules.name}_recalcCoords`), newMols);
     newCol.semType = 'Molecule';
     if (!join)
@@ -2835,7 +2845,7 @@ export class PackageFunctions {
     tags: ['app'],
     result: {name: 'result', type: 'view'},
   })
-  static async transformationReactionsApp(@grok.decorators.param({options: {metaUrl: true, optional: true}}) _path?: string,): Promise<DG.ViewBase> {
+  static async transformationReactionsApp(@grok.decorators.param({options: {metaUrl: true, optional: true}}) _path?: string): Promise<DG.ViewBase> {
     return await transformationReactionsView(grok.shell.tables[0]);
   }
 

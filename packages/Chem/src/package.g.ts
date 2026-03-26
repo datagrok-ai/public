@@ -26,12 +26,13 @@ export async function initChemAutostart() : Promise<void> {
 //description: Recalculates 2D coordinates for molecules in the column using Open Chem Lib
 //input: dataframe table 
 //input: column molecules { semType: Molecule }
+//input: string method { choices: ["OCL","CoordGen"] }
 //input: bool join = true 
 //output: column result
 //meta.role: transform
 //top-menu: Chem | Transform | Recalculate Coordinates...
-export async function recalculateCoordsViaOCL(table: DG.DataFrame, molecules: DG.Column, join: boolean) : Promise<any> {
-  return await PackageFunctions.recalculateCoordsViaOCL(table, molecules, join);
+export async function recalculateCoords(table: DG.DataFrame, molecules: DG.Column, method: string, join: boolean) : Promise<any> {
+  return await PackageFunctions.recalculateCoords(table, molecules, method, join);
 }
 
 //name: Chemistry | Most Diverse Structures

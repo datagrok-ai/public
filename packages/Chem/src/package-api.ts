@@ -197,8 +197,8 @@ export namespace funcs {
   /**
   Recalculates 2D coordinates for molecules in the column using Open Chem Lib
   */
-  export async function recalculateCoordsViaOCL(table: DG.DataFrame , molecules: DG.Column , join: boolean ): Promise<DG.Column> {
-    return await grok.functions.call('Chem:RecalculateCoordsViaOCL', { table, molecules, join });
+  export async function recalculateCoords(table: DG.DataFrame , molecules: DG.Column , method: string , join: boolean ): Promise<DG.Column> {
+    return await grok.functions.call('Chem:RecalculateCoords', { table, molecules, method, join });
   }
 
   export async function chemTooltip(col: DG.Column ): Promise<any> {
