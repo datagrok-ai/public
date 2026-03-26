@@ -154,7 +154,7 @@ export function drawRdKitMoleculeToOffscreenCanvas(
 
 export function drawRdKitReactionToOffscreenCanvas(
   rdKitReaction: RDReaction, w: number, h: number, offscreenCanvas: OffscreenCanvas) {
-  const opts = createRenderingOpts({width: Math.floor(w), height: Math.floor(h)});
+  const opts = createRenderingOpts({width: Math.floor(w), height: Math.floor(h), fixedScale: undefined});
   const g = offscreenCanvas.getContext('2d', {willReadFrequently: true});
   g?.clearRect(0, 0, w, h);
   rdKitReaction.draw_to_canvas_with_highlights((offscreenCanvas as unknown) as HTMLCanvasElement, JSON.stringify(opts));

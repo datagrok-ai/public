@@ -2,6 +2,7 @@ import * as DG from 'datagrok-api/dg';
 import {RDModule, RDReaction} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 import {drawErrorCross, drawRdKitReactionToOffscreenCanvas} from '../utils/chem-common-rdkit';
 import {USE_RDKIT_REACTION_RENDERER} from '../utils/reactions/consts';
+import { _convertMolNotation } from '../utils/convert-notation-utils';
 
 /** Width in pixels reserved for the arrow drawn between consecutive reaction steps. */
 const STEP_ARROW_WIDTH = 30;
@@ -147,9 +148,29 @@ export class RDKitReactionRenderer extends DG.GridCellRenderer {
       this._rendererGetOrCreate(width, height, reactionString));
   }
 
+  private _smilesToSmartsCache: DG.LruCache<string, string> = new DG.LruCache<string, string>(500);
+
+  private _reactionToSmarts(rxnString: string): string {
+    if (rxnString?.includes('M  END') || !rxnString.includes('>>'))
+      return rxnString; // looks like a mol block or is not a reaction at all, return as-is
+    try {
+      const parts = rxnString.split('>>');
+      return parts.map((part) => {
+        return this._smilesToSmartsCache.getOrCreate(part, (p) => {
+          return _convertMolNotation(p, DG.chem.Notation.Unknown, DG.chem.Notation.Smarts, this.rdKitModule, false);
+        });
+      }).join('>>');
+    } catch (e) {
+      return rxnString;
+    }
+  }
+
   _drawReaction(x: number, y: number, w: number, h: number, onscreenCanvas: HTMLCanvasElement,
     reactionString: string): void {
-    const imageData = this._fetchRender(w, h, reactionString);
+    // reactions can be in smarts or smiles. rdkit will treat both as smarts and will render smiles in a very bad way.
+    const reactionSmarts = this._reactionToSmarts(reactionString);
+
+    const imageData = this._fetchRender(w, h, reactionSmarts);
         onscreenCanvas.getContext('2d', {willReadFrequently: true})!.putImageData(imageData, x, y);
   }
 
@@ -165,7 +186,8 @@ export class RDKitReactionRenderer extends DG.GridCellRenderer {
     const numRows = Math.ceil(steps.length / MAX_STEPS_PER_ROW);
     const rowH = Math.floor(h / numRows);
     const isLastRow = (row: number) => row === numRows - 1;
-
+    const dpr = window.devicePixelRatio;
+    const arrowWidth = STEP_ARROW_WIDTH;
     for (let row = 0; row < numRows; row++) {
       const rowStart = row * MAX_STEPS_PER_ROW;
       const rowEnd = Math.min(rowStart + MAX_STEPS_PER_ROW, steps.length);
@@ -174,20 +196,19 @@ export class RDKitReactionRenderer extends DG.GridCellRenderer {
       // Reserve arrow slots between steps, plus one at the end if the row wraps
       const hasWrapArrow = !isLastRow(row);
       const arrowCount = stepsInRow - 1 + (hasWrapArrow ? 1 : 0);
-      const totalArrowW = arrowCount * STEP_ARROW_WIDTH;
+      const totalArrowW = arrowCount * arrowWidth * dpr;
       const stepW = Math.floor((w - totalArrowW) / stepsInRow);
       const rowY = y + row * rowH;
       const ctx = canvas.getContext('2d', {willReadFrequently: true})!;
-
       for (let i = 0; i < stepsInRow; i++) {
-        const stepX = x + i * (stepW + STEP_ARROW_WIDTH);
+        const stepX = x + i * (stepW + arrowWidth * dpr);
         this._drawReaction(stepX, rowY, stepW, rowH, canvas, steps[rowStart + i]);
 
         // Draw arrow after each step except the very last one overall
         const globalIdx = rowStart + i;
         if (globalIdx < steps.length - 1) {
           const arrowX = stepX + stepW;
-          drawStepArrow(ctx, arrowX, rowY, STEP_ARROW_WIDTH, rowH, globalIdx + 2);
+          drawStepArrow(ctx, arrowX / dpr, rowY / dpr, arrowWidth, rowH / dpr, globalIdx + 2);
         }
       }
     }
@@ -282,7 +303,9 @@ export function renderReactionToCanvas(
   // Multi-step — render each step into its own region of the canvas
   const ctx = canvas.getContext('2d')!;
   const arrowCount = steps.length - 1;
-  const totalArrowW = arrowCount * STEP_ARROW_WIDTH;
+  const dpr = window.devicePixelRatio || 1;
+  const arrowWidth = STEP_ARROW_WIDTH * dpr;
+  const totalArrowW = arrowCount * arrowWidth;
   const stepW = Math.floor((width - totalArrowW) / steps.length);
 
   for (let i = 0; i < steps.length; i++) {
@@ -297,12 +320,12 @@ export function renderReactionToCanvas(
       tmpCanvas.height = height;
       rxn.draw_to_canvas(tmpCanvas, stepW, height);
 
-      const stepX = i * (stepW + STEP_ARROW_WIDTH);
+      const stepX = i * (stepW + arrowWidth);
       ctx.drawImage(tmpCanvas, stepX, 0);
 
       // Draw connecting arrow after each step except the last
       if (i < steps.length - 1)
-        drawStepArrow(ctx, stepX + stepW, 0, STEP_ARROW_WIDTH, height, i + 2);
+        drawStepArrow(ctx, stepX + stepW, 0, arrowWidth, height, i + 2);
     } catch {
       // skip failed step
     } finally {
