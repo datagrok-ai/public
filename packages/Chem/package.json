@@ -41,7 +41,7 @@
     "@datagrok-libraries/chem-meta": "^1.2.10",
     "@datagrok-libraries/math": "^1.2.7",
     "@datagrok-libraries/ml": "6.10.9",
-    "@datagrok-libraries/statistics": "^1.12.1",
+    "@datagrok-libraries/statistics": "^1.12.2",
     "@datagrok-libraries/tutorials": "^1.7.6",
     "@datagrok-libraries/utils": "^4.6.14",
     "@datagrok-libraries/gridext": "^1.5.4",

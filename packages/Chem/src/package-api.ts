@@ -195,7 +195,7 @@ export namespace funcs {
   }
 
   /**
-  Recalculates 2D coordinates for molecules in the column using Open Chem Lib
+  Recalculates 2D coordinates for molecules in the column using RDKit CoordGen or Open Chem Lib
   */
   export async function recalculateCoords(table: DG.DataFrame , molecules: DG.Column , method: string , join: boolean ): Promise<DG.Column> {
     return await grok.functions.call('Chem:RecalculateCoords', { table, molecules, method, join });

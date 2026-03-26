@@ -23,7 +23,7 @@ export async function initChemAutostart() : Promise<void> {
 }
 
 //name: Recalculate Coordinates
-//description: Recalculates 2D coordinates for molecules in the column using Open Chem Lib
+//description: Recalculates 2D coordinates for molecules in the column using RDKit CoordGen or Open Chem Lib
 //input: dataframe table 
 //input: column molecules { semType: Molecule }
 //input: string method { choices: ["OCL","CoordGen"] }
