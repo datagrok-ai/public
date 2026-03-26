@@ -53,19 +53,19 @@ multiple packages and libraries.
 - `compute-utils` library is the main source of all code related to
   dealing with FuncCalls. The main things here are `Model Hub`,
   `Reactive Tree Driver`, `Rich Function View` and `Tree Wizard`. It
-  also includes fitting and optimization related code with ui.
+  includes fitting and optimization related code with ui. Also
+  includes leagacy views, provided by `Compute` package.
 
-- `Compute` Provides `Model Hub` app via package functions.
+- `Compute` provides legacy function views for old packages support.
 
 - `Compute2` contains Vue.js UI code for, `Rich Function View` and
-  `Tree Wizard` and provides Vue.js based editors.
+  `Tree Wizard` and provides Vue.js based editors. It also provides
+  `Model Hub` app via package functions.
 
 - `compute-api` is a library which provides a way for other packages
-  to depend on a dynamically loaded version of `compute-utils`. The
-  code is loaded in the `Compute` package initialization, so for it to
-  work, `Compute` must be loaded before using `compute-api`. It is
-  used to update `Standalone Function View` without a need to rebuild
-  and redeploy custom JS UI models.
+  to depend on a dynamically loaded code of `compute-utils` in
+  `Compute` pacakge, it is mostly used for legacy `Compute` views. For
+  `Compute2` it provides typings and `Standalone Function View`.
 
 - `webcomponents` library has wrappers around platform forms and
   viewers.
@@ -85,21 +85,23 @@ multiple packages and libraries.
 
 Here is an initialization sequence:
 
-1. `Compute` package is starting. This could be triggered via an URL
-   or via starting Model Hub app from UI.
+1. `Compute2` package is starting. This could be triggered via an URL
+   or via starting Model Hub app from UI. It will also make avaliable
+   `Standalone Function View`.
 
-2. `compute-api` initialization is done during `Compute` init.
+2. `Compute2` will initilize `WebComponents` package, making
+   webcomponents avaliable in DOM. If present `Compute` will be
+   initilized as well.
 
-3. `Compute` initialization is done. `compute-api` dependent code
-   can be launched, since all dynamic dependencies are ready.
+3. `compute-api` legacy views code initialization is done during
+   `Compute` init, and `Standalone Function View` code initialization
+   is done in `Compute2` init.
 
-4. `Compute2` initialization is done when starting a `Rich Function
-   View` or `Tree Wizard`.
+4. The model code and package are loaded and initilized, model related
+   FuncCalls are created.
 
-5. `WebComponents` initialization is done during `Compute2` init.
-
-6. `Compute2` initialization is done, `Rich Function View` or `Tree
-   Wizard` based views can be rendered.
+5. Initialization are done, `Rich Function View` or `Tree Wizard` can
+   be rendered.
 
 
 Note that `Compute2` depends only on `webomponents-vue` library, which
