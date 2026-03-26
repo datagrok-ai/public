@@ -602,9 +602,9 @@ function setPredictionTooltip(view: DG.TableView, predCol: DG.Column, modelTerms
 function getPredictionTooltip(modelTerms: Map<string, number>, predCol: DG.Column): HTMLElement {
   let idx = 0;
   const bias = modelTerms.get(TITLE.BIAS) ?? 0;
-  const lines: string[] = [];
+  const elements: HTMLElement[] = [];
   if (Math.abs(bias) > 0) {
-    lines.push(`${bias}`);
+    elements.push(ui.divText(`${bias}`));
     ++idx;
   }
 
@@ -612,9 +612,22 @@ function getPredictionTooltip(modelTerms: Map<string, number>, predCol: DG.Colum
     if (key === TITLE.BIAS)
       return;
 
-    lines.push((idx > 0 ? '\+ ' : '') + `**${key}** * ${value > 0 ? value : `(${value})`}`);
+    const signEl = ui.divText(idx > 0 ? '+ ' : '');
+    signEl.style.marginRight = '4px';
+
+    const featureEl = ui.divText(`${key}`);
+    featureEl.style.fontWeight = 'bold';
+
+    const valueEl = ui.divText(` * ${value > 0 ? value : `(${value})`}`);
+    valueEl.style.marginLeft = '4px';
+
+    elements.push(ui.divH([signEl, featureEl, valueEl]));
+
     ++idx;
   });
 
-  return ui.divV([ui.h2(predCol.name), 'Formula:', ui.markdown(lines.join('\n\n'))]);
+  const leftEl = ui.divText(`${predCol.name} = `);
+  leftEl.style.fontWeight = 'bold';
+
+  return ui.divV([ui.h2('Formula'), leftEl, ui.divV(elements)]);
 };
