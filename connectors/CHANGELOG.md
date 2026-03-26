@@ -1,5 +1,9 @@
 # Grok Connect changelog
 
+# 2.6.2 (2026-03-26)
+
+* Snowflake: OAuth (JWT) authentication with per-user identity
+
 # 2.6.1 (2026-03-13)
 
 * Databricks: Federated SSO auth mechanism fix
