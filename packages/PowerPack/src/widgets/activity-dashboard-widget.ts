@@ -284,7 +284,8 @@ export class ActivityDashboardWidget extends DG.Widget {
         ent instanceof DG.UserReport || ent instanceof DG.TableInfo || (ent instanceof DG.Func && !(ent instanceof DG.Script ||
         ent instanceof DG.DataQuery || ent instanceof DG.DataJob)) || ent instanceof DG.ViewInfo || ent instanceof DG.DataConnection || ent == null ||
         //@ts-ignore
-        (ent instanceof DG.Project && (!ent.isDashboard || ent.isPackage)) || (ent.hasOwnProperty('npmScope') && ent['npmScope'] == 'datagrok')) && lastEventTimeCol && lastEventTimeCol.get(i)) {
+        (ent instanceof DG.Project && (!ent.isDashboard || ent.isPackage)) || (ent.hasOwnProperty('npmScope') && ent['npmScope'] == 'datagrok')) &&
+        lastEventTimeCol && lastEventTimeCol.get(i) && ent.friendlyName != null && ent.friendlyName != '') {
         this.recentEntities.push(ent);
         this.recentEntityTimes.push(lastEventTimeCol.get(i));
       }
