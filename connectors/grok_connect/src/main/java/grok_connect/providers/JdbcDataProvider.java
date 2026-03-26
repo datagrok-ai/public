@@ -721,11 +721,19 @@ public abstract class JdbcDataProvider extends DataProvider {
         return "datetime('" + param.value.toString() + "')";
     }
 
-    public static java.util.Properties defaultConnectionProperties(DataConnection conn) {
+    public java.util.Properties defaultConnectionProperties(DataConnection conn) {
         java.util.Properties properties = new java.util.Properties();
         if (conn.credentials != null) {
-            setIfNotNull(properties, "user", conn.credentials.getLogin());
-            setIfNotNull(properties, "password", conn.credentials.getPassword());
+            String method = (String) conn.credentials.parameters.get("#chosen-auth-method");
+            boolean includeLogin = method == null || descriptor == null
+                    || descriptor.credentialsTemplate == null
+                    || descriptor.credentialsTemplate.stream()
+                        .filter(p -> p.name.equals(DbCredentials.LOGIN))
+                        .anyMatch(p -> p.category != null && p.category.contains(method));
+            if (includeLogin) {
+                setIfNotNull(properties, "user", conn.credentials.getLogin());
+                setIfNotNull(properties, "password", conn.credentials.getPassword());
+            }
         }
         return properties;
     }

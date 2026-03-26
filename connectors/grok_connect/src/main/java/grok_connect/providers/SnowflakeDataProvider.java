@@ -87,8 +87,6 @@ public class SnowflakeDataProvider extends JdbcDataProvider {
             String token = (String) conn.credentials.parameters.get("#token");
             properties.setProperty("authenticator", "oauth");
             properties.setProperty("token", token);
-            properties.remove(DbCredentials.LOGIN);
-            properties.remove(DbCredentials.PWD);
             return java.sql.DriverManager.getConnection(getConnectionString(conn), properties);
         }
         else
