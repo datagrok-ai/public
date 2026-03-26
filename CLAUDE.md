@@ -283,3 +283,7 @@ The `grok check` command validates that imports match webpack externals.
 - File naming: kebab-case (`my-component.ts`)
 - Package naming: letters, numbers, underscores, hyphens
 - Semantic versioning: `X.Y.Z` or `X.Y.Z-rc` or `X.Y.Z-rc.N`
+
+## Before Implementing
+
+Before creating or adding any package artifact, check `public/.claude/skills/` for a matching skill and follow it.
