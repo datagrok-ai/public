@@ -551,6 +551,10 @@ class Preview {
       const look = isViewer ? (isTrellis ? src.getOptions().look['innerViewerLook'] : src.getOptions().look) : null;
       this.viewer = DG.Viewer.scatterPlot(this.dataFrame, {
         ...(look ?? {}),
+        showXAxis: true,
+        showYAxis: true,
+        showXSelector: true,
+        showYSelector: true,
         yAxisType: isViewer ? look.yAxisType : 'linear',
         xAxisType: isViewer ? look.xAxisType : 'linear',
         invertXAxis: isViewer ? look.invertXAxis : false,
