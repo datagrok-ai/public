@@ -6,7 +6,8 @@ import * as DG from 'datagrok-api/dg';
 
 import {PLS_ANALYSIS, ERROR_MSG, TITLE, HINT, LINK, COMPONENTS, INT, TIMEOUT,
   RESULT_NAMES, WASM_OUTPUT_IDX, RADIUS, LINE_WIDTH, COLOR, X_COORD, Y_COORD,
-  DEMO_INTRO_MD, DEMO_RESULTS_MD, DEMO_RESULTS} from './pls-constants';
+  DEMO_INTRO_MD, DEMO_RESULTS_MD, DEMO_RESULTS,
+  NUMS_AFTER_COMMA} from './pls-constants';
 import {checkWasmDimensionReducerInputs, checkColumnType, checkMissingVals, describeElements} from '../utils';
 import {_partialLeastSquareRegressionInWebWorker} from '../../wasm/EDAAPI';
 import {carsDataframe} from '../data-generators';
@@ -53,6 +54,19 @@ function setStyle(valid: boolean, element: HTMLElement, tooltip: string, errorMs
     });
   }
 };
+
+function getModelFormulaTerms(loadingsRegrCoefsTable: DG.DataFrame, bias: number): Map<string, number> {
+  const featureNames = loadingsRegrCoefsTable.col(TITLE.FEATURE)!.toList() as string[];
+  const regrCoefs = loadingsRegrCoefsTable.col(TITLE.REGR_COEFS)!.getRawData();
+
+  const terms = new Map([[TITLE.BIAS as string, bias]]);
+
+  featureNames.forEach((name, idx) => {
+    terms.set(name, regrCoefs[idx]);
+  });
+
+  return terms;
+}
 
 /** Return lines */
 export function getLines(names: string[]): DG.FormulaLine[] {
@@ -115,7 +129,7 @@ export async function getPlsAnalysis(input: PlsInput): Promise<PlsOutput> {
 
 /** Return debiased predction by PLS regression */
 function debiasedPrediction(features: DG.ColumnList, params: DG.Column,
-  target: DG.Column, biasedPrediction: DG.Column): DG.Column {
+  target: DG.Column, biasedPrediction: DG.Column): {debiased: DG.Column, bias: number} {
   const samples = target.length;
   const dim = features.length;
   const rawParams = params.getRawData();
@@ -131,7 +145,7 @@ function debiasedPrediction(features: DG.ColumnList, params: DG.Column,
   for (let i = 0; i < samples; ++i)
     debiased[i] = bias + biased[i];
 
-  return DG.Column.fromFloat32Array('Debiased', debiased, samples);
+  return {debiased: DG.Column.fromFloat32Array('Debiased', debiased, samples), bias: bias};
 }
 
 /** Return an input for the quadratic PLS regression */
@@ -223,7 +237,8 @@ async function performMVA(input: PlsInput, analysisType: PLS_ANALYSIS): Promise<
 
   // 1. Predicted vs Reference scatter plot
   // Debias prediction (since PLS center data)
-  const pred = debiasedPrediction(features, result.regressionCoefficients, input.predict, result.prediction);
+  const debiased = debiasedPrediction(features, result.regressionCoefficients, input.predict, result.prediction);
+  const pred = debiased.debiased;
   pred.name = cols.getUnusedName(`${input.predict.name} ${RESULT_NAMES.SUFFIX}`);
   cols.add(pred);
   const predictVsReferScatter = view.addViewer(DG.Viewer.scatterPlot(sourceTable, {
@@ -250,6 +265,9 @@ async function performMVA(input: PlsInput, analysisType: PLS_ANALYSIS): Promise<
     help: LINK.COEFFS,
     showValueSelector: false,
     showStackSelector: false,
+    description: `bias = ${debiased.bias.toFixed(NUMS_AFTER_COMMA)}`,
+    descriptionVisibilityMode: 'Always',
+    descriptionPosition: 'Bottom',
   }));
 
   // 3. Loadings Scatter Plot
@@ -348,6 +366,10 @@ async function performMVA(input: PlsInput, analysisType: PLS_ANALYSIS): Promise<
       ['left', 'left', 'right', 'right', 'left'],
     );
   }
+
+  // Add formula tooltip to the prediction column
+  const modelFormulaTerms = getModelFormulaTerms(loadingsRegrCoefsTable, debiased.bias);
+  setPredictionTooltip(view, pred, modelFormulaTerms);
 } // performMVA
 
 /** Run multivariate analysis (PLS) */
@@ -559,3 +581,40 @@ export async function runDemoMVA(): Promise<void> {
 
   await runMVA(PLS_ANALYSIS.DEMO);
 }
+
+function setPredictionTooltip(view: DG.TableView, predCol: DG.Column, modelTerms: Map<string, number>): void {
+  view.grid.onCellTooltip((cell, x, y) => {
+    if (cell.isColHeader) {
+      const cellCol = cell.tableColumn;
+
+      if (cellCol == null)
+        return false;
+
+      if (cellCol.name === predCol.name) {
+        ui.tooltip.show(getPredictionTooltip(modelTerms, predCol), x, y);
+        return true;
+      }
+    }
+    return false;
+  });
+}
+
+function getPredictionTooltip(modelTerms: Map<string, number>, predCol: DG.Column): HTMLElement {
+  let idx = 0;
+  const bias = modelTerms.get(TITLE.BIAS) ?? 0;
+  const lines: string[] = [];
+  if (Math.abs(bias) > 0) {
+    lines.push(`${bias}`);
+    ++idx;
+  }
+
+  modelTerms.forEach((value, key) => {
+    if (key === TITLE.BIAS)
+      return;
+
+    lines.push((idx > 0 ? '\+ ' : '') + `**${key}** * ${value > 0 ? value : `(${value})`}`);
+    ++idx;
+  });
+
+  return ui.divV([ui.h2(predCol.name), 'Formula:', ui.markdown(lines.join('\n\n'))]);
+};

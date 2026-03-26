@@ -46,6 +46,7 @@ export enum TITLE {
   BROWSE = 'Browse',
   ANALYSIS = 'Features Analysis',
   QUADRATIC = 'Quadratic',
+  BIAS = 'bias',
 }
 
 /** Tooltips */
@@ -101,6 +102,8 @@ export const LINE_WIDTH = 1;
 export const X_COORD = 200;
 export const Y_COORD = 200;
 export const DELAY = 2000;
+
+export const NUMS_AFTER_COMMA = 3;
 
 /** Curves colors */
 export enum COLOR {
