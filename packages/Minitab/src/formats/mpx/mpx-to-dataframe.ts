@@ -5,5 +5,5 @@ import {mwxWorksheetToDataFrame} from '../mwx/mwx-to-dataframe';
 
 /** Converts all worksheets in an MPX project to Datagrok DataFrames. */
 export function mpxProjectToDataFrames(project: MpxProject): DG.DataFrame[] {
-  return project.worksheets.map((ws) => mwxWorksheetToDataFrame(ws));
+  return project.worksheets.map((ws) => mwxWorksheetToDataFrame(ws, 'mpx'));
 }

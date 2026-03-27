@@ -1,4 +1,4 @@
-import {MwxColumn, MwxColumnType} from '../mwx/mwx-types';
+import {MwxColumn, MwxColumnType, MwxColumnFormat} from '../mwx/mwx-types';
 
 
 /** Parses the columns from a Minitab sheet.json `Data` object. Shared by MWX and MPX. */
@@ -41,6 +41,7 @@ function parseColumn(raw: any): MwxColumn | null {
 
   const type = detectColumnType(body, varData);
   const values = extractValues(type, varDataBody, body);
+  const format = extractFormat(body);
 
   let categories: {[key: string]: number} | undefined;
   const ordering = varData.Ordering;
@@ -50,7 +51,31 @@ function parseColumn(raw: any): MwxColumn | null {
       categories[entry.Key] = entry.Value;
   }
 
-  return {name, description, type, values, categories};
+  return {name, description, type, values, categories, format};
+}
+
+
+function extractFormat(body: any): MwxColumnFormat | undefined {
+  const fmt = body.Format;
+  if (!fmt)
+    return undefined;
+
+  const result: MwxColumnFormat = {formatKey: fmt.Key ?? 0};
+  const val = fmt.Value;
+  if (!val)
+    return result;
+
+  result.autoFormat = val.AutoFormat;
+  if (val.NumDecPlaces != null)
+    result.numDecPlaces = val.NumDecPlaces;
+  if (val.MinValue != null)
+    result.minValue = val.MinValue;
+  if (val.MaxValue != null)
+    result.maxValue = val.MaxValue;
+  if (val.CharCt != null)
+    result.charCount = val.CharCt;
+
+  return result;
 }
 
 

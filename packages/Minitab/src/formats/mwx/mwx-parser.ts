@@ -23,7 +23,8 @@ export async function parseMwx(bytes: Uint8Array): Promise<MwxWorksheet> {
   const sheet = JSON.parse(await sheetFile.async('text'));
   const data = sheet.Data ?? sheet;
   const title = data.PrivateTitle ?? wsName;
+  const worksheetId = data.WorksheetId_DEP ?? undefined;
   const {columns, rowCount} = parseSheetColumns(data);
 
-  return {name: title, version, columns, rowCount};
+  return {name: title, version, worksheetId, columns, rowCount};
 }

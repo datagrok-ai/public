@@ -4,7 +4,7 @@ import * as DG from 'datagrok-api/dg';
 
 import {parseMwx} from './formats/mwx/mwx-parser';
 import {mwxWorksheetToDataFrame} from './formats/mwx/mwx-to-dataframe';
-import {buildMwxView} from './formats/mwx/mwx-viewer';
+import {createMwxTableView} from './formats/mwx/mwx-viewer';
 import {parseMpx} from './formats/mpx/mpx-parser';
 import {mpxProjectToDataFrames} from './formats/mpx/mpx-to-dataframe';
 import {buildMpxView, openMpxProject} from './formats/mpx/mpx-viewer';
@@ -25,22 +25,10 @@ export class MinitabPackageFunctions {
 
   @grok.decorators.fileViewer({fileViewer: 'mwx'})
   static async previewMwx(file: DG.FileInfo): Promise<DG.View> {
-    const view = DG.View.create();
-    view.name = file.name;
-
     const bytes = await file.readAsBytes();
     const ws = await parseMwx(bytes);
-
-    if (ws.columns.length === 0) {
-      view.append(ui.divText('No data found in the .mwx file.'));
-      return view;
-    }
-
-    const content = buildMwxView(ws);
-    content.style.width = '100%';
-    content.style.height = '100%';
-    view.append(content);
-
+    const view = createMwxTableView(ws);
+    view.name = file.name;
     return view;
   }
 
@@ -65,7 +53,9 @@ export class MinitabPackageFunctions {
       return view;
     }
 
-    const content = buildMpxView(project, () => openMpxProject(project));
+    view.setRibbonPanels([[ui.bigButton('Open All', () => openMpxProject(project))]]);
+
+    const content = buildMpxView(project);
     content.style.width = '100%';
     content.style.height = '100%';
     view.append(content);
