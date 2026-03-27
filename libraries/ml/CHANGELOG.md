@@ -1,5 +1,9 @@
 # ml changelog
 
+## 6.10.11 (2026-03-27)
+
+Dimentionality reduction: pass embeddings and cluster columns names as optional parameters
+
 ## 6.10.3 (2025-06-30)
 
 Activity cliffs: Fixed activities choice in the function editor
