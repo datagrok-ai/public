@@ -29,33 +29,6 @@ const tabs = ui.tabControl({
 });
 ```
 
-## File Viewers
-
-- When the result is a single DataFrame, return a `DG.TableView` directly — do not
-  wrap a grid in a custom `DG.View`
-- Transfer all source metadata to tags (table-level and column-level) so it survives
-  round-trips through the platform
-
-```typescript
-// Good — file viewer for a single-table format
-static async previewFoo(file: DG.FileInfo): Promise<DG.View> {
-  const bytes = await file.readAsBytes();
-  const data = await parseFoo(bytes);
-  const df = toDataFrame(data);
-  const view = DG.TableView.create(df, false);
-  view.name = file.name;
-  return view;
-}
-```
-
-## Metadata Preservation
-
-- Set `df.setTag('source.format', '...')` to record where the data came from
-- Preserve column-level metadata (description, format, categories) as tags
-- Use a namespace prefix for format-specific tags (e.g., `minitab.version`, `prism.sheetId`)
-- Use the standard `format` tag for display formatting (e.g., `#.00` for 2 decimal places)
-- Use the standard `description` tag for column descriptions
-
 ## Grids and Viewers
 
 - Prefer `DG.Viewer.grid(df)` for embedding a grid inside a composite layout

@@ -284,6 +284,12 @@ The `grok check` command validates that imports match webpack externals.
 - Package naming: letters, numbers, underscores, hyphens
 - Semantic versioning: `X.Y.Z` or `X.Y.Z-rc` or `X.Y.Z-rc.N`
 
+## UI Building
+
+When building UI components (viewers, file viewers, dialogs, layouts), use the `/ui` skill
+for authoritative guidelines on tab controls, grids, metadata preservation, and performance.
+
+
 ## Before Implementing
 
 Before creating or adding any package artifact, check `public/.claude/skills/` for a matching skill and follow it.
