@@ -648,9 +648,9 @@ class Preview {
  */
 class Editor {
   public get root(): HTMLElement { return this.form; }
+  public columnInput: DG.InputBase<DG.Column | null> | undefined;
 
   private form: HTMLElement;
-  private columnInput: DG.InputBase<DG.Column | null> | undefined;
 
   /** The title must be accessible from other inputs, because it may depend on the formula */
   private ibTitle?: DG.InputBase;
@@ -1512,21 +1512,41 @@ export class FormulaLinesDialog {
 
     this.dialog.sub(this.preview.viewer.onPropertyValueChanged.subscribe((typeArgs) => {
       const currentItem = this.currentTable?.currentItem;
-      if (!this.editor || this.editor.inputColumn2Changing || !this.preview?.viewer || currentItem?.type !== ITEM_TYPE.BAND)
+      if (!this.editor || this.editor.inputColumn2Changing || !this.preview?.viewer ||
+        !currentItem || (currentItem.type !== ITEM_TYPE.BAND && currentItem.type !== ITEM_TYPE.LINE))
         return;
 
-      const band = currentItem as DG.FormulaLine;
       const { property } = typeArgs.args as unknown as { property: DG.Property };
       if (!['xColumnName', 'yColumnName', 'yColumnNames'].includes(property.name))
         return;
-      
-      const isHorz = band.orientation === ITEM_ORIENTATION.HORIZONTAL;
-      if (isHorz && property.name === 'xColumnName') {
-        band.column2 = this.preview.axisCols.x.name;
-        this.editor.update(this.currentTable.currentItemIdx, true);
-      } else if (!isHorz && (property.name === 'yColumnName' || property.name === 'yColumnNames')) {
-        band.column2 = this.preview.axisCols.y.name;
-        this.editor.update(this.currentTable.currentItemIdx, true);
+
+      const item = currentItem as DG.FormulaLine;
+      const isHorz = item.orientation === ITEM_ORIENTATION.HORIZONTAL;
+
+      if (currentItem.type === ITEM_TYPE.BAND) {
+        if (isHorz && property.name === 'xColumnName') {
+          item.column2 = this.preview.axisCols.x.name;
+          this.editor.update(this.currentTable.currentItemIdx, true);
+        } else if (!isHorz && (property.name === 'yColumnName' || property.name === 'yColumnNames')) {
+          item.column2 = this.preview.axisCols.y.name;
+          this.editor.update(this.currentTable.currentItemIdx, true);
+        }
+      } else if (currentItem.type === ITEM_TYPE.LINE) {
+        const meta = DG.FormulaLinesHelper.getMeta(item);
+        if (!meta.argName) {
+          const newCol = isHorz
+            ? (property.name === 'yColumnName' || property.name === 'yColumnNames') ? this.preview.axisCols.y.name : null
+            : property.name === 'xColumnName' ? this.preview.axisCols.x.name : null;
+          if (newCol) {
+            this.editor.inputColumn2Changing = true;
+            item.formula = '${' + newCol + '} = ' + (meta.expression ?? '0');
+            const col = this.preview.dataFrame.col(newCol);
+            if (this.editor.columnInput && col)
+              this.editor.columnInput.value = col;
+            this.preview.update(this.currentTable.currentItemIdx, true);
+            this.editor.inputColumn2Changing = false;
+          }
+        }
       }
     }));
   }
