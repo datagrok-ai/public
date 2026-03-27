@@ -2,31 +2,26 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {TwbFile, TwbWorksheet} from './tableau-types';
+import {TwbFile, TwbDatasource, TwbWorksheet} from './tableau-types';
 import {twbDatasourceToDataFrame} from './tableau-to-dataframe';
 
 
-function buildWorksheetPane(ws: TwbWorksheet): HTMLElement {
-  const items: HTMLElement[] = [];
+function findDatasource(twbFile: TwbFile, ws: TwbWorksheet): TwbDatasource | null {
+  return twbFile.datasources.find((ds) => ds.name === ws.datasourceName) || null;
+}
 
-  if (ws.datasourceName)
-    items.push(ui.divText(`Datasource: ${ws.datasourceName}`));
-  if (ws.markClass)
-    items.push(ui.divText(`Mark type: ${ws.markClass}`));
-  if (ws.rows)
-    items.push(ui.divText(`Rows: ${ws.rows}`));
-  if (ws.cols)
-    items.push(ui.divText(`Cols: ${ws.cols}`));
 
-  if (ws.usedColumns.length > 0) {
-    items.push(ui.h3('Used Columns'));
-    items.push(ui.list(ws.usedColumns));
+function buildWorksheetPane(twbFile: TwbFile, ws: TwbWorksheet): HTMLElement {
+  const ds = findDatasource(twbFile, ws);
+  if (!ds) {
+    return ui.divText(`Datasource '${ws.datasourceName}' not found.`);
   }
 
-  const container = ui.divV(items, {style: {padding: '8px', overflow: 'auto'}});
-  container.style.width = '100%';
-  container.style.height = '100%';
-  return container;
+  const df = twbDatasourceToDataFrame(ds);
+  const grid = DG.Viewer.grid(df);
+  grid.root.style.width = '100%';
+  grid.root.style.height = '100%';
+  return grid.root;
 }
 
 
@@ -41,7 +36,7 @@ export function buildTableauView(twbFile: TwbFile): HTMLElement {
 
   const tabControl = ui.tabControl();
   for (const ws of twbFile.worksheets)
-    tabControl.addPane(ws.name, () => buildWorksheetPane(ws));
+    tabControl.addPane(ws.name, () => buildWorksheetPane(twbFile, ws));
   tabControl.root.style.width = '100%';
   tabControl.root.style.flex = '1';
 
