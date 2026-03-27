@@ -1,5 +1,9 @@
 # EDA changelog
 
+## 1.5.1 (2026-03-27)
+
+Add formula for prediction in multivariate analysis
+
 ## 1.5.0 (2026-03-13)
 
 Probabilistic Multi-Parameter Optimization (pMPO) - Enhancements
