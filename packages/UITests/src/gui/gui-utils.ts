@@ -102,8 +102,9 @@ export async function uploadProject(projectName: string, tableInfo: DG.TableInfo
   const project = DG.Project.create();
   project.name = projectName;
   project.addChild(tableInfo);
-  project.addChild(view.saveLayout());
-  await grok.dapi.layouts.save(view.saveLayout());
+  const layout = view.saveLayout();
+  project.addChild(layout);
+  await grok.dapi.layouts.save(layout);
   await grok.dapi.tables.uploadDataFrame(df);
   await grok.dapi.tables.save(tableInfo);
   await grok.dapi.projects.save(project);
