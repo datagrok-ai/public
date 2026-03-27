@@ -75,6 +75,10 @@ Combine it with the [Loadings](#loadings) scatterplot to explore features:
 
 ![add-to-workspace](multivariate-analysis/pls-regr-coeffs-n-loadings.gif)
 
+Tooltip for the prediction column header shows the model formula:
+
+![add-to-workspace](multivariate-analysis/pls-formula.gif)
+
 ### Explained variance
 
 The **Explained Variance** bar chart shows the explained variance of variables by PLS-components, cumulative sum by each of components.
