@@ -5,7 +5,7 @@ export interface DomainInfo {
 
 export const DOMAINS_DESCRIPTIONS: {[key: string]: DomainInfo} = {
   ag: {description: 'Additional Genetic Tests', category: 'Genetics / Genomics'},
-  bg: {description: 'Background Genetics', category: 'Genetics / Genomics'},
+  bg: {description: 'Body weight gain', category: 'Findings'},
   bw: {description: 'Body Weights', category: 'Findings'},
   cl: {description: 'Clinical Observations', category: 'Findings'},
   co: {description: 'Comments', category: 'Core / Special Purpose'},
