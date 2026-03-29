@@ -91,9 +91,15 @@ export function getDevKey(hostKey: string): { url: string, key: string } {
   return {url, key};
 }
 
+function appendUrlParams(url: string, extraParams?: string): string {
+  if (!extraParams) return url;
+  return url + (url.includes('?') ? '&' : '?') + extraParams;
+}
+
 export async function getBrowserPage(
-  puppeteer: PuppeteerNode, 
-  params: any = defaultLaunchParameters): Promise<{ browser: Browser, page: Page }> {
+  puppeteer: PuppeteerNode,
+  params: any = defaultLaunchParameters,
+  urlParams?: string): Promise<{ browser: Browser, page: Page }> {
   let url: string = process.env.HOST ?? '';
   const cfg = getDevKey(url);
   url = cfg.url;
@@ -131,7 +137,7 @@ export async function getBrowserPage(
   await page.evaluate((token: string) => {
     window.localStorage.setItem('auth', token);
   }, token);
-  await page.goto(url);
+  await page.goto(appendUrlParams(url, urlParams));
   try {
     //    await page.waitForSelector('.grok-preloader', { timeout: 1800000 });
     await page.waitForFunction(() => document.querySelector('.grok-preloader') == null, {timeout: 3600000});
@@ -688,7 +694,7 @@ export async function runBrowser(
       // Remove old console listeners before refresh to avoid stale state references
       page.removeAllListeners('console');
 
-      await page.goto(webUrl);
+      await page.goto(appendUrlParams(webUrl, browserOptions.urlParams));
       try {
         await page.waitForFunction(() => document.querySelector('.grok-preloader') == null, {timeout: 3600000});
       } catch (error) {
@@ -701,7 +707,7 @@ export async function runBrowser(
       }, defaultLaunchParameters);
       if (browserOptions.gui)
         params['headless'] = false;
-      const out = await getBrowserPage(puppeteer, params);
+      const out = await getBrowserPage(puppeteer, params, browserOptions.urlParams);
       browser = out.browser;
       page = out.page;
       webUrl = await getWebUrlFromPage(page);
@@ -1012,7 +1018,7 @@ export interface BrowserOptions {
   path?: string, catchUnhandled?: boolean, core?: boolean,
   report?: boolean, record?: boolean, verbose?: boolean, benchmark?: boolean, platform?: boolean, category?: string, test?: string,
   stressTest?: boolean, gui?: boolean, stopOnTimeout?: boolean, reproduce?: boolean, ciCd?: boolean, debug?: boolean,
-  skipToCategory?: string, skipToTest?: string, keepBrowserOpen?: boolean
+  skipToCategory?: string, skipToTest?: string, keepBrowserOpen?: boolean, urlParams?: string
 }
 
 export type ResultObject = {

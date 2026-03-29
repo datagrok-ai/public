@@ -20,7 +20,7 @@ import {setAlphabeticalOrder} from '../utils/order-functions';
 const testInvocationTimeout = 3600000;
 
 const availableCommandOptions = ['host', 'package', 'csv', 'gui', 'catchUnhandled', 'platform', 'core',
-  'report', 'skip-build', 'skip-publish', 'path', 'record', 'verbose', 'benchmark', 'category', 'test', 'stress-test', 'link', 'tag', 'ci-cd', 'debug', 'no-retry', 'dartium', 'f'];
+  'report', 'skip-build', 'skip-publish', 'path', 'record', 'verbose', 'benchmark', 'category', 'test', 'stress-test', 'link', 'tag', 'ci-cd', 'debug', 'no-retry', 'dartium', 'f', 'params'];
 
 const curDir = process.cwd();
 
@@ -331,7 +331,8 @@ async function runTesting(args: TestArgs): Promise<ResultObject> {
         debug: args['debug'] ?? false,
         skipToCategory: currentSkipToCategory,
         skipToTest: currentSkipToTest,
-        keepBrowserOpen: useRetry, // Keep browser open if retry is enabled
+        keepBrowserOpen: useRetry,
+        urlParams: args.params,
       }, browserId, testInvocationTimeout, browserSession);
 
       // Store browser session for potential reuse
@@ -490,6 +491,7 @@ interface TestArgs {
   parallel?: number,
   dartium?: boolean | string,
   f?: string,
+  params?: string,
 }
 
 interface TestResult {
@@ -588,10 +590,15 @@ async function testDartium(args: TestArgs): Promise<boolean> {
 
   // Build URL
   const filter = resolveFilter(args) || '';
-  const params = new URLSearchParams();
-  params.set('token', token);
-  params.set('tests', filter);
-  const testUrl = `${webUrl}/?${params.toString()}`;
+  const urlParams = new URLSearchParams();
+  urlParams.set('token', token);
+  urlParams.set('tests', filter);
+  if (args.params)
+    for (const pair of args.params.split('&')) {
+      const [k, ...v] = pair.split('=');
+      if (k) urlParams.set(k.trim(), v.join('='));
+    }
+  const testUrl = `${webUrl}/?${urlParams.toString()}`;
 
   // User-data-dir in temp
   const userDataDir = path.join(os.tmpdir(), 'dartium-grok-test');
