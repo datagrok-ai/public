@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 const argv = require('minimist')(process.argv.slice(2), {
   alias: {k: 'key', h: 'help', r: 'recursive', s: 'silent'},
+  boolean: ['dartium'],
 });
 const help = require('./commands/help').help;
 const runAllCommand = require('./utils/utils').runAll;

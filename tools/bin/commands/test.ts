@@ -1,9 +1,10 @@
 /* eslint-disable max-len */
-import {exec, execFile, spawnSync} from 'child_process';
+import {exec, execFile, spawn, spawnSync} from 'child_process';
 import {promisify} from 'util';
 import fs from 'fs';
 import os from 'os';
 import path from 'path';
+import readline from 'readline';
 import yaml from 'js-yaml';
 import * as utils from '../utils/utils';
 import * as color from '../utils/color-utils';
@@ -19,9 +20,82 @@ import {setAlphabeticalOrder} from '../utils/order-functions';
 const testInvocationTimeout = 3600000;
 
 const availableCommandOptions = ['host', 'package', 'csv', 'gui', 'catchUnhandled', 'platform', 'core',
-  'report', 'skip-build', 'skip-publish', 'path', 'record', 'verbose', 'benchmark', 'category', 'test', 'stress-test', 'link', 'tag', 'ci-cd', 'debug', 'no-retry'];
+  'report', 'skip-build', 'skip-publish', 'path', 'record', 'verbose', 'benchmark', 'category', 'test', 'stress-test', 'link', 'tag', 'ci-cd', 'debug', 'no-retry', 'dartium', 'f'];
 
 const curDir = process.cwd();
+
+/** Expands camelCase to space-separated lowercase: "dataManipulation" → "data manipulation" */
+function expandCamelCase(s: string): string {
+  return s.replace(/([a-z])([A-Z])/g, '$1 $2').toLowerCase();
+}
+
+/** Checks if a segment matches a filter segment (case-insensitive substring, with camelCase expansion) */
+function segmentMatches(testSegment: string, filterSegment: string): boolean {
+  if (filterSegment === '*')
+    return true;
+  const t = expandCamelCase(testSegment.trim());
+  const f = expandCamelCase(filterSegment.trim());
+  return t.includes(f);
+}
+
+/**
+ * Fluent test name filter. Matches a full test name like "Core: d4 | Viewers | Data Manipulation | Scatter plot".
+ *
+ * Supports: substring search, `/`-anchored paths, `|`/`/` delimited segments, camelCase expansion, `*` wildcards.
+ */
+export function matchesFilter(fullName: string, filter: string): boolean {
+  // Normalize test name: strip "Core: " prefix, split by " | "
+  const normalized = fullName.replace(/^Core:\s*/, '');
+  const testSegments = normalized.split(/\s*\|\s*/);
+
+  // Detect anchored mode: ^ prefix
+  const anchored = filter.startsWith('^');
+  const rawFilter = anchored ? filter.slice(1) : filter;
+
+  // Split filter by / or | (with optional spaces)
+  const filterParts = rawFilter.split(/\s*[/|]\s*/).map((s) => s.trim()).filter((s) => s.length > 0);
+
+  // Substring mode: single segment, no delimiters, no anchor
+  if (filterParts.length <= 1 && !anchored) {
+    const f = expandCamelCase(filterParts[0] || '');
+    const full = expandCamelCase(normalized);
+    return full.includes(f);
+  }
+
+  // Segment mode: find filterParts in order within testSegments
+  if (anchored) {
+    // Anchored: filter[0] must match testSegments[0], filter[1] must match testSegments[1], etc.
+    if (filterParts.length > testSegments.length)
+      return false;
+    for (let i = 0; i < filterParts.length; i++) {
+      if (!segmentMatches(testSegments[i], filterParts[i]))
+        return false;
+    }
+    return true;
+  }
+
+  // Unanchored: find filter segments in order (with possible gaps, unless wildcard forces position)
+  let ti = 0;
+  for (let fi = 0; fi < filterParts.length; fi++) {
+    let found = false;
+    while (ti < testSegments.length) {
+      if (segmentMatches(testSegments[ti], filterParts[fi])) {
+        ti++;
+        found = true;
+        break;
+      }
+      // If previous filter was wildcard (exact position), don't skip
+      if (fi > 0 && filterParts[fi - 1] === '*') {
+        // Wildcard consumed exactly one segment, so this filter must match next
+        return false;
+      }
+      ti++;
+    }
+    if (!found)
+      return false;
+  }
+  return true;
+}
 const grokDir = path.join(os.homedir(), '.grok');
 const confPath = path.join(grokDir, 'config.yaml');
 const consoleLogOutputDir = path.join(curDir, 'test-console-output.log');
@@ -63,12 +137,33 @@ function findGitRoot(startDir: string): string | undefined {
 }
 
 export async function test(args: TestArgs): Promise<boolean> {
+  if (args.dartium)
+    return await testDartium(args);
+
   if (args.recursive)
     return await testRecursive(process.cwd(), args);
 
   const config = yaml.load(fs.readFileSync(confPath, {encoding: 'utf-8'})) as utils.Config;
 
   isArgsValid(args);
+
+  // Resolve fluent filter into category/test for normal mode (best-effort)
+  const filter = resolveFilter(args);
+  if (filter && !args.category && !args.test) {
+    const anchored = filter.startsWith('/');
+    const raw = anchored ? filter.slice(1) : filter;
+    const parts = raw.split(/\s*[/|]\s*/).map((s) => s.trim()).filter((s) => s.length > 0);
+    if (parts.length > 1) {
+      // Multi-segment: use all but last as category, last as test
+      args.category = 'Core: ' + parts.slice(0, -1).join(': ');
+      args.test = parts[parts.length - 1];
+    }
+    else if (parts.length === 1) {
+      // Single segment: use as test name filter
+      args.test = parts[0];
+    }
+    color.info(`Filter "${filter}" → category: "${args.category || ''}", test: "${args.test || ''}"`);
+  }
 
   // If running from a core Dart library directory, delegate to DevTools package
   if (!args.package) {
@@ -159,9 +254,13 @@ export async function test(args: TestArgs): Promise<boolean> {
   return true;
 }
 
+function resolveFilter(args: TestArgs): string | undefined {
+  return args.f || (args['_'].length > 1 ? String(args['_'][1]) : undefined);
+}
+
 function isArgsValid(args: TestArgs): boolean {
   const options = Object.keys(args).slice(1);
-  if (args['_'].length > 1 || options.length > availableCommandOptions.length || (options.length > 0 &&
+  if (args['_'].length > 2 || options.length > availableCommandOptions.length || (options.length > 0 &&
     !options.every((op) => availableCommandOptions.includes(op))))
     return false;
   return true;
@@ -389,6 +488,8 @@ interface TestArgs {
   recursive?: boolean,
   filter?: string,
   parallel?: number,
+  dartium?: boolean | string,
+  f?: string,
 }
 
 interface TestResult {
@@ -397,6 +498,286 @@ interface TestResult {
   tests: string;
   time: string;
   success: boolean;
+}
+
+const DARTIUM_WELL_KNOWN_PATHS = [
+  'C:\\programs\\dartium-win-ia32-stable-1.24.2.0\\chrome.exe',
+  path.join(os.homedir(), 'dartium', 'chrome.exe'),
+  path.join(os.homedir(), 'dartium', 'chrome'),
+];
+
+const DARTIUM_INACTIVITY_TIMEOUT = 180000; // 3 minutes
+
+function resolveDartiumPath(arg: boolean | string): string {
+  if (typeof arg === 'string' && arg !== 'true') {
+    if (!fs.existsSync(arg))
+      throw new Error(`Dartium not found at: ${arg}`);
+    return arg;
+  }
+  const envPath = process.env.DARTIUM_PATH;
+  if (envPath) {
+    if (!fs.existsSync(envPath))
+      throw new Error(`DARTIUM_PATH set but not found: ${envPath}`);
+    return envPath;
+  }
+  for (const p of DARTIUM_WELL_KNOWN_PATHS) {
+    if (fs.existsSync(p))
+      return p;
+  }
+  throw new Error('Dartium not found. Use --dartium=/path/to/chrome.exe or set DARTIUM_PATH');
+}
+
+function extractConsoleMessage(line: string): string | null {
+  const match = line.match(/INFO:CONSOLE\(\d+\)\] "(.*)", source:/);
+  return match ? match[1] : null;
+}
+
+interface DartiumTestResult {
+  name: string;
+  category: string;
+  testName: string;
+  success: boolean;
+  ms: number;
+  skipped: boolean;
+  error: string;
+}
+
+function parseAutotestLine(msg: string): DartiumTestResult | null {
+  // AUTOTEST_PASS: d4 | Viewers | Inputs (42ms)
+  // AUTOTEST_FAIL: d4 | Viewers | Inputs (42ms) - error message
+  // AUTOTEST_SKIP: d4 | Viewers | Inputs - reason
+  const passMatch = msg.match(/^AUTOTEST_PASS: (.+?) \((\d+)ms\)$/);
+  if (passMatch) {
+    const parts = passMatch[1].split(' | ');
+    return {
+      name: passMatch[1], category: parts.slice(0, -1).join(' | '),
+      testName: parts[parts.length - 1], success: true, ms: parseInt(passMatch[2]),
+      skipped: false, error: '',
+    };
+  }
+  const failMatch = msg.match(/^AUTOTEST_FAIL: (.+?) \((\d+)ms\) - (.*)$/);
+  if (failMatch) {
+    const parts = failMatch[1].split(' | ');
+    return {
+      name: failMatch[1], category: parts.slice(0, -1).join(' | '),
+      testName: parts[parts.length - 1], success: false, ms: parseInt(failMatch[2]),
+      skipped: false, error: failMatch[3],
+    };
+  }
+  const skipMatch = msg.match(/^AUTOTEST_SKIP: (.+?) - (.*)$/);
+  if (skipMatch) {
+    const parts = skipMatch[1].split(' | ');
+    return {
+      name: skipMatch[1], category: parts.slice(0, -1).join(' | '),
+      testName: parts[parts.length - 1], success: true, ms: 0,
+      skipped: true, error: skipMatch[2],
+    };
+  }
+  return null;
+}
+
+async function testDartium(args: TestArgs): Promise<boolean> {
+  const config = yaml.load(fs.readFileSync(confPath, {encoding: 'utf-8'})) as utils.Config;
+  const dartiumPath = resolveDartiumPath(args.dartium!);
+  color.info(`Using Dartium: ${dartiumPath}`);
+
+  // Get auth token
+  const {url, key} = testUtils.getDevKey(args.host ?? '');
+  const token = await testUtils.getToken(url, key);
+  const webUrl = await testUtils.getWebUrl(url, token);
+
+  // Build URL
+  const filter = resolveFilter(args) || '';
+  const params = new URLSearchParams();
+  params.set('token', token);
+  params.set('tests', filter);
+  const testUrl = `${webUrl}/?${params.toString()}`;
+
+  // User-data-dir in temp
+  const userDataDir = path.join(os.tmpdir(), 'dartium-grok-test');
+
+  color.info(`Opening: ${webUrl} (tests: ${filter || 'all'})`);
+
+  // Spawn Dartium
+  const dartium = spawn(dartiumPath, [
+    '--enable-logging=stderr',
+    '--no-first-run',
+    `--user-data-dir=${userDataDir}`,
+    testUrl,
+  ], {stdio: ['ignore', 'ignore', 'pipe']});
+
+  const results: DartiumTestResult[] = [];
+  let currentCategory = '';
+  let passed = 0;
+  let failed = 0;
+  let skipped = 0;
+  let totalExpected = 0;
+  let done = false;
+  let lastActivityTime = Date.now();
+
+  // Category-level tracking for summary lines
+  const categoryResults: Map<string, {passed: number, failed: number, skipped: number}> = new Map();
+  const categoryFailures: Map<string, {testName: string, error: string}[]> = new Map();
+
+  const printCategorySummary = (cat: string) => {
+    const r = categoryResults.get(cat);
+    if (!r) return;
+    const skippedSuffix = r.skipped > 0 ? `, \x1b[33m${r.skipped} skipped\x1b[0m` : '';
+    if (r.failed > 0) {
+      console.log(`\x1b[31m\u274C ${cat}\x1b[31m (\x1b[32m${r.passed} passed${skippedSuffix}\x1b[31m, ${r.failed} failed)\x1b[0m`);
+      const failures = categoryFailures.get(cat) || [];
+      for (const f of failures)
+        console.log(`  \x1b[31m\u274C ${f.testName}\x1b[0m${f.error ? `: ${f.error}` : ''}`);
+    }
+    else
+      console.log(`\x1b[32m\u2714 ${cat} (${r.passed} passed${skippedSuffix})\x1b[0m`);
+  };
+
+  return new Promise<boolean>((resolve) => {
+    const rl = readline.createInterface({input: dartium.stderr!});
+
+    // Inactivity timeout check
+    const inactivityCheck = setInterval(() => {
+      if (Date.now() - lastActivityTime > DARTIUM_INACTIVITY_TIMEOUT && !done) {
+        process.stdout.write('\r\x1b[K');
+        color.error(`\nTest appears stuck (no output for ${DARTIUM_INACTIVITY_TIMEOUT / 1000}s). Killing Dartium.`);
+        done = true;
+        dartium.kill();
+      }
+    }, 10000);
+
+    rl.on('line', (line: string) => {
+      const msg = extractConsoleMessage(line);
+      if (!msg || !msg.startsWith('AUTOTEST_'))
+        return;
+
+      lastActivityTime = Date.now();
+
+      if (msg.startsWith('AUTOTEST_START:')) {
+        const countMatch = msg.match(/(\d+) test/);
+        totalExpected = countMatch ? parseInt(countMatch[1]) : 0;
+        color.info(`Running ${totalExpected} test(s)...\n`);
+        return;
+      }
+
+      if (msg.startsWith('AUTOTEST_RUN:')) {
+        const name = msg.replace('AUTOTEST_RUN: ', '');
+        process.stdout.write(`\r\x1b[K  \x1b[90m\u25B6 ${name}\x1b[0m`);
+        return;
+      }
+
+      if (msg.startsWith('AUTOTEST_DONE:')) {
+        process.stdout.write('\r\x1b[K');
+        // Print last category summary
+        if (currentCategory)
+          printCategorySummary(currentCategory);
+
+        console.log('');
+        const doneMatch = msg.match(/total=(\d+) passed=(\d+) failed=(\d+)/);
+        if (doneMatch) {
+          const total = parseInt(doneMatch[1]);
+          const p = parseInt(doneMatch[2]);
+          const f = parseInt(doneMatch[3]);
+          const s = total - p - f;
+          if (f > 0)
+            color.error(`\nResults: ${p} passed, ${f} failed${s > 0 ? `, ${s} skipped` : ''} (${total} total)`);
+          else
+            color.success(`\nResults: ${p} passed${s > 0 ? `, ${s} skipped` : ''} (${total} total)`);
+        }
+        done = true;
+        dartium.kill();
+        return;
+      }
+
+      const result = parseAutotestLine(msg);
+      if (!result) return;
+
+      process.stdout.write('\r\x1b[K');
+
+      // Category change - print summary of previous category
+      if (result.category !== currentCategory) {
+        if (currentCategory)
+          printCategorySummary(currentCategory);
+        currentCategory = result.category;
+      }
+
+      // Track category results
+      if (!categoryResults.has(result.category))
+        categoryResults.set(result.category, {passed: 0, failed: 0, skipped: 0});
+      const catR = categoryResults.get(result.category)!;
+
+      if (result.skipped) {
+        skipped++;
+        catR.skipped++;
+      }
+      else if (result.success) {
+        passed++;
+        catR.passed++;
+      }
+      else {
+        failed++;
+        catR.failed++;
+        if (!categoryFailures.has(result.category))
+          categoryFailures.set(result.category, []);
+        categoryFailures.get(result.category)!.push({testName: result.testName, error: result.error});
+      }
+
+      results.push(result);
+
+      // Verbose: print every test
+      if (args.verbose) {
+        if (result.skipped)
+          console.log(`  \x1b[33m\u25CB ${result.testName} (skipped: ${result.error})\x1b[0m`);
+        else if (result.success)
+          console.log(`  \x1b[32m\u2714 ${result.testName} (${result.ms}ms)\x1b[0m`);
+        else
+          console.log(`  \x1b[31m\u274C ${result.testName} (${result.ms}ms) - ${result.error}\x1b[0m`);
+      }
+    });
+
+    dartium.on('close', () => {
+      clearInterval(inactivityCheck);
+      rl.close();
+
+      if (!done) {
+        // Print last category
+        if (currentCategory)
+          printCategorySummary(currentCategory);
+        console.log('');
+        color.warn(`Dartium exited before tests completed (${passed + failed + skipped}/${totalExpected || '?'} tests ran)`);
+      }
+
+      // CSV output
+      if (args.csv && results.length > 0) {
+        const now = new Date().toISOString();
+        const csvRows = results.map((r) => ({
+          date: now, category: r.category, name: r.testName,
+          success: r.success, result: r.skipped ? r.error : (r.success ? 'OK' : r.error),
+          ms: r.ms, skipped: r.skipped, error: r.success ? '' : r.error,
+        }));
+        const csv = Papa.unparse(csvRows);
+        fs.writeFileSync(csvReportDir, csv, 'utf8');
+        color.info('Saved `test-report.csv`');
+      }
+
+      console.log(`\nPassed tests: ${passed}`);
+      console.log(`Failed tests: ${failed}`);
+      console.log(`Skipped tests: ${skipped}`);
+
+      if (failed > 0)
+        testUtils.exitWithCode(1);
+      else
+        testUtils.exitWithCode(0);
+      resolve(failed === 0);
+    });
+
+    // Handle ctrl+C
+    process.on('SIGINT', () => {
+      color.warn('\nInterrupted. Killing Dartium...');
+      done = true;
+      dartium.kill();
+    });
+  });
 }
 
 async function testRecursive(baseDir: string, args: TestArgs): Promise<boolean> {
