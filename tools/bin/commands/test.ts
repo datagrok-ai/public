@@ -99,7 +99,13 @@ export function matchesFilter(fullName: string, filter: string): boolean {
 const grokDir = path.join(os.homedir(), '.grok');
 const confPath = path.join(grokDir, 'config.yaml');
 const consoleLogOutputDir = path.join(curDir, 'test-console-output.log');
-const csvReportDir = path.join(curDir, 'test-report.csv');
+const defaultCsvReportDir = path.join(curDir, 'test-report.csv');
+
+function resolveCsvPath(csv: boolean | string | undefined): string {
+  if (typeof csv === 'string' && csv !== 'true' && csv.length > 0)
+    return path.resolve(csv);
+  return defaultCsvReportDir;
+}
 
 /**
  * Detects if the current directory is within a Dart library folder (d4, xamgle, ddt, dml)
@@ -137,6 +143,9 @@ function findGitRoot(startDir: string): string | undefined {
 }
 
 export async function test(args: TestArgs): Promise<boolean> {
+  if (args['_'][1] === 'list')
+    return await listTests(args);
+
   if (args.dartium)
     return await testDartium(args);
 
@@ -242,7 +251,7 @@ export async function test(args: TestArgs): Promise<boolean> {
   if (args.csv) {
       res.csv = addColumnToCsv(res.csv, 'stress_test', args['stress-test'] ?? false);
       res.csv = addColumnToCsv(res.csv, 'benchmark', args.benchmark ?? false);
-      saveCsvResults([res.csv], csvReportDir);
+      saveCsvResults([res.csv], resolveCsvPath(args.csv));
   }
   printBrowsersResult(res, args.verbose);
   if (res.failed) {
@@ -470,7 +479,7 @@ interface TestArgs {
   test?: string,
   host?: string,
   package?: string,
-  csv?: boolean,
+  csv?: boolean | string,
   gui?: boolean,
   'debug'?: boolean,
   catchUnhandled?: boolean,
@@ -530,8 +539,12 @@ function resolveDartiumPath(arg: boolean | string): string {
 }
 
 function extractConsoleMessage(line: string): string | null {
+  // Try full format first: "message", source: URL (line)
   const match = line.match(/INFO:CONSOLE\(\d+\)\] "(.*)", source:/);
-  return match ? match[1] : null;
+  if (match) return match[1];
+  // Truncated format (long messages): "message" without source suffix
+  const truncated = line.match(/INFO:CONSOLE\(\d+\)\] "(.*)"?\s*$/);
+  return truncated ? truncated[1] : null;
 }
 
 interface DartiumTestResult {
@@ -542,6 +555,7 @@ interface DartiumTestResult {
   ms: number;
   skipped: boolean;
   error: string;
+  stack?: string[];
 }
 
 function parseAutotestLine(msg: string): DartiumTestResult | null {
@@ -578,6 +592,68 @@ function parseAutotestLine(msg: string): DartiumTestResult | null {
   return null;
 }
 
+async function listTests(args: TestArgs): Promise<boolean> {
+  const config = yaml.load(fs.readFileSync(confPath, {encoding: 'utf-8'})) as utils.Config;
+  const dartiumPath = resolveDartiumPath(args.dartium || true);
+  const filter = args.f || (args['_'].length > 2 ? String(args['_'][2]) : '') ;
+
+  const {url, key} = testUtils.getDevKey(args.host ?? '');
+  const token = await testUtils.getToken(url, key);
+  const webUrl = await testUtils.getWebUrl(url, token);
+
+  const urlParams = new URLSearchParams();
+  urlParams.set('token', token);
+  urlParams.set('listTests', filter);
+  urlParams.set('excludePackages', '');
+  const testUrl = `${webUrl}/?${urlParams.toString()}`;
+  const userDataDir = path.join(os.tmpdir(), 'dartium-grok-test');
+
+  color.info(`Listing tests${filter ? ` matching "${filter}"` : ''}...`);
+
+  const dartium = spawn(dartiumPath, [
+    '--enable-logging=stderr',
+    '--no-first-run',
+    `--user-data-dir=${userDataDir}`,
+    testUrl,
+  ], {stdio: ['ignore', 'ignore', 'pipe']});
+
+  return new Promise<boolean>((resolve) => {
+    const rl = readline.createInterface({input: dartium.stderr!});
+    const tests: string[] = [];
+
+    const inactivityCheck = setInterval(() => {
+      color.error('Timed out waiting for test list.');
+      dartium.kill();
+    }, DARTIUM_INACTIVITY_TIMEOUT);
+
+    rl.on('line', (line: string) => {
+      const msg = extractConsoleMessage(line);
+      if (!msg) return;
+
+      if (msg.startsWith('AUTOTEST_LIST_DONE:')) {
+        clearInterval(inactivityCheck);
+        console.log('');
+        for (const t of tests)
+          console.log(t);
+        console.log(`\n${tests.length} test(s)`);
+        dartium.kill();
+        return;
+      }
+
+      if (msg.startsWith('AUTOTEST_LIST: '))
+        tests.push(msg.replace('AUTOTEST_LIST: ', ''));
+    });
+
+    dartium.on('close', () => {
+      clearInterval(inactivityCheck);
+      rl.close();
+      resolve(true);
+    });
+
+    process.on('SIGINT', () => { dartium.kill(); });
+  });
+}
+
 async function testDartium(args: TestArgs): Promise<boolean> {
   const config = yaml.load(fs.readFileSync(confPath, {encoding: 'utf-8'})) as utils.Config;
   const dartiumPath = resolveDartiumPath(args.dartium!);
@@ -593,6 +669,8 @@ async function testDartium(args: TestArgs): Promise<boolean> {
   const urlParams = new URLSearchParams();
   urlParams.set('token', token);
   urlParams.set('tests', filter);
+  if (!urlParams.has('excludePackages'))
+    urlParams.set('excludePackages', '');
   if (args.params)
     for (const pair of args.params.split('&')) {
       const [k, ...v] = pair.split('=');
@@ -624,7 +702,7 @@ async function testDartium(args: TestArgs): Promise<boolean> {
 
   // Category-level tracking for summary lines
   const categoryResults: Map<string, {passed: number, failed: number, skipped: number}> = new Map();
-  const categoryFailures: Map<string, {testName: string, error: string}[]> = new Map();
+  const categoryFailures: Map<string, {testName: string, error: string, stack: string[]}[]> = new Map();
 
   const printCategorySummary = (cat: string) => {
     const r = categoryResults.get(cat);
@@ -633,8 +711,11 @@ async function testDartium(args: TestArgs): Promise<boolean> {
     if (r.failed > 0) {
       console.log(`\x1b[31m\u274C ${cat}\x1b[31m (\x1b[32m${r.passed} passed${skippedSuffix}\x1b[31m, ${r.failed} failed)\x1b[0m`);
       const failures = categoryFailures.get(cat) || [];
-      for (const f of failures)
+      for (const f of failures) {
         console.log(`  \x1b[31m\u274C ${f.testName}\x1b[0m${f.error ? `: ${f.error}` : ''}`);
+        for (const sl of f.stack)
+          console.log(`    \x1b[90m${sl}\x1b[0m`);
+      }
     }
     else
       console.log(`\x1b[32m\u2714 ${cat} (${r.passed} passed${skippedSuffix})\x1b[0m`);
@@ -670,6 +751,20 @@ async function testDartium(args: TestArgs): Promise<boolean> {
       if (msg.startsWith('AUTOTEST_RUN:')) {
         const name = msg.replace('AUTOTEST_RUN: ', '');
         process.stdout.write(`\r\x1b[K  \x1b[90m\u25B6 ${name}\x1b[0m`);
+        return;
+      }
+
+      if (msg.startsWith('AUTOTEST_STACK:')) {
+        const stackLine = msg.replace('AUTOTEST_STACK: ', '');
+        // Attach to last failed result and its category failure entry
+        const lastResult = results.length > 0 ? results[results.length - 1] : null;
+        if (lastResult && !lastResult.success && !lastResult.skipped) {
+          if (!lastResult.stack) lastResult.stack = [];
+          lastResult.stack.push(stackLine);
+          const catFailures = categoryFailures.get(lastResult.category);
+          if (catFailures && catFailures.length > 0)
+            catFailures[catFailures.length - 1].stack.push(stackLine);
+        }
         return;
       }
 
@@ -726,7 +821,7 @@ async function testDartium(args: TestArgs): Promise<boolean> {
         catR.failed++;
         if (!categoryFailures.has(result.category))
           categoryFailures.set(result.category, []);
-        categoryFailures.get(result.category)!.push({testName: result.testName, error: result.error});
+        categoryFailures.get(result.category)!.push({testName: result.testName, error: result.error, stack: []});
       }
 
       results.push(result);
@@ -763,13 +858,16 @@ async function testDartium(args: TestArgs): Promise<boolean> {
           ms: r.ms, skipped: r.skipped, error: r.success ? '' : r.error,
         }));
         const csv = Papa.unparse(csvRows);
-        fs.writeFileSync(csvReportDir, csv, 'utf8');
+        const csvPath = resolveCsvPath(args.csv);
+        fs.writeFileSync(csvPath, csv, 'utf8');
         color.info('Saved `test-report.csv`');
       }
 
+      const totalTestMs = results.reduce((sum, r) => sum + r.ms, 0);
       console.log(`\nPassed tests: ${passed}`);
       console.log(`Failed tests: ${failed}`);
       console.log(`Skipped tests: ${skipped}`);
+      console.log(`Total test time: ${(totalTestMs / 1000).toFixed(1)}s`);
 
       if (failed > 0)
         testUtils.exitWithCode(1);
