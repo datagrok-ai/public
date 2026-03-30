@@ -72,11 +72,12 @@ Runs up to 15 iterations (extendable via user prompt).
 
 Generates SQL queries from natural language using database schema metadata and tool calls.
 
-### Claude Runtime (`src/claude-code/`)
+### Claude Code Runtime (`src/claude-code/`)
 
-`ClaudeRuntimeClient` connects via WebSocket to a Docker container (`grokky-claude-runtime`) for streaming Claude
-responses. Supports chunk/tool-activity/tool-result/final/error/abort/input-request events. A
-companion `grokky-mcp-server` container exposes an MCP endpoint.
+The browser-facing layer for the Claude runtime.
+
+- **`ClaudeRuntimeClient`** — singleton WebSocket client. Discovers `claude-runtime` and `mcp-server` containers via `grok.dapi.docker`, then exposes RxJS subjects for streaming events. API: `send()`, `abort()`, `respondToInput()`, and promise-based `query()` for one-shot calls.
+- **`claude-panel.ts`** — processes two special fenced blocks in Claude responses: `datagrok-exec` (runs JS with `grok`/`ui`/`DG`/`view`/`t` globals) and `datagrok-entities` (renders interactive entity cards).
 
 ### AI Panels (`src/llm-utils/panel.ts`)
 
@@ -91,8 +92,8 @@ via `ConversationStorage`.
 
 ### Docker Containers (`dockerfiles/`)
 
-- `claude-runtime/` — Node.js WebSocket server hosting Claude AI sessions
-- `mcp-server/` — MCP (Model Context Protocol) server for Datagrok tool access
+- `claude-runtime/` — Hono + WebSocket server wrapping `@anthropic-ai/claude-agent-sdk`. Runs Claude sessions with a Datagrok-specific system prompt and resumable session support. Streams structured events to the browser: `chunk`, `tool_activity`, `tool_result`, `final`, `error`, `aborted`, `input_request`.
+- `mcp-server/` — MCP server (`@modelcontextprotocol/sdk`, HTTP transport) exposing Datagrok operations as tools: functions (list/get/call/create), files (list/download/upload), projects, spaces, and user info. Auth via per-request `x-user-api-key` / `x-datagrok-api-url` headers.
 
 ## Key Singletons
 
@@ -108,9 +109,12 @@ Most core classes use singleton pattern with `getInstance()`:
 
 Configured via Datagrok package properties (in `package.json`):
 
-- `APIName` — LLM
-  provider: `"OpenAI Chat Completions"` | `"OpenAI Responses"` | `"Anthropic Messages"` | `"Amazon Bedrock"`
-- `defaultFastModel`, `defaultDeepResearchModel`, `defaultCodingModel` — model names per tier
-- `vectorStoreId` — OpenAI vector store for documentation search
-- `region` — AWS region (Bedrock only)
-- `apiVersion` — API version path segment
+| Setting | Purpose |
+|---------|---------|
+| `APIName` | LLM provider: `OpenAI Chat Completions`, `OpenAI Responses`, `Anthropic Messages`, or `Amazon Bedrock` |
+| `defaultFastModel` | Model for simple tasks (default: `gpt-4o-mini`) |
+| `defaultDeepResearchModel` | Model for complex tasks (default: `gpt-5.2`) |
+| `defaultCodingModel` | Model for code generation (default: `gpt-5.1-codex-max`) |
+| `vectorStoreId` | OpenAI vector store ID for documentation search |
+| `region` | AWS region (Bedrock only) |
+| `apiVersion` | API version path segment |
