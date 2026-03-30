@@ -1,6 +1,7 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+This is the Datagrok documentation site, built with **Docusaurus 3**. Source files are GitHub-flavored Markdown (`.md`)
+and MDX (`.mdx`). The Docusaurus config lives in `../docusaurus/`, not here.
 
 ## Purpose
 
@@ -9,21 +10,36 @@ This documentation serves multiple purposes:
 2. In-application [Context Help](datagrok/navigation/panels/panels.md#context-help)
 3. A resource for answering user questions using AI.
 
-## Overview
+## Documentation principles
 
-This is the Datagrok documentation site, built with **Docusaurus 3**. Source files are GitHub-flavored Markdown (`.md`)
-and MDX (`.mdx`). The Docusaurus config lives in `../docusaurus/`, not here.
+- **Every page is page one.** Each page is self-contained — a reader can land anywhere and understand
+  the topic without having read anything else. Cross-link rather than repeat.
+- **Single source of truth.** The wiki is the authoritative reference for deploying, using, and
+  troubleshooting Datagrok. If information doesn't exist here, add it — don't answer in Slack alone.
+- **Live content.** Pages are automatically updated from platform core and plugin sources where
+  possible. Tutorials are coded into the platform, then linked from docs — not duplicated as prose.
+- **Link, don't repeat.** Reference cross-cutting concepts (functions, entities, viewers) by linking
+  to their canonical page. Re-explaining creates drift.
+- **User-oriented structure.** Organized by what users need: capabilities that build on each other →
+  domain support (chem, bio, NLP) → fit-for-purpose apps.
+- **Dual rendering.** The same markdown renders as the online wiki (datagrok.ai/help) and as
+  in-app Context Help. Avoid complex HTML/MDX that won't work in the in-app widget.
+- **Reference pages use tables.** Lookup-oriented pages present information in table format for
+  quick scanning.
+- **How-to pages are for complex procedures only.** Simple tasks get a sentence or a `<details>`
+  block — not a dedicated page.
 
-Broken links are fatal: Docusaurus is configured with `onBrokenLinks: 'throw'` and `onBrokenMarkdownLinks: 'throw'`.
+### Writing style
 
-## Building and previewing
+- US English, active voice, second person ("you").
+- Concise: avoid nominalizations, filler words, passive constructions.
+- Goal → Location → Action clause order for instructions.
+- Bold UI elements: **Top Menu**, **Sidebar**, **Context Panel**.
+- Oxford commas. No semicolons (use two sentences).
+- Spell out zero through nine; use numerals for 10+.
+- Punctuation outside quotation marks (British style); everything else US English.
+- Contractions OK except noun+verb forms.
 
-```bash
-cd ../docusaurus
-npm install
-npm start             # Local dev server with hot reload
-npm run build         # Full production build (catches broken links)
-```
 
 ## Directory layout
 
@@ -100,35 +116,16 @@ preferred.
 Lowercase, no spaces, kebab-case, short.
 When a `.md` filename matches its parent folder name, clicking the folder shows that page.
 
-## Documentation principles
+## Building and previewing
 
-- **Every page is page one.** Each page is self-contained — a reader can land anywhere and understand
-  the topic without having read anything else. Cross-link rather than repeat.
-- **Single source of truth.** The wiki is the authoritative reference for deploying, using, and
-  troubleshooting Datagrok. If information doesn't exist here, add it — don't answer in Slack alone.
-- **Live content.** Pages are automatically updated from platform core and plugin sources where
-  possible. Tutorials are coded into the platform, then linked from docs — not duplicated as prose.
-- **Link, don't repeat.** Reference cross-cutting concepts (functions, entities, viewers) by linking
-  to their canonical page. Re-explaining creates drift.
-- **User-oriented structure.** Organized by what users need: capabilities that build on each other →
-  domain support (chem, bio, NLP) → fit-for-purpose apps.
-- **Dual rendering.** The same markdown renders as the online wiki (datagrok.ai/help) and as
-  in-app Context Help. Avoid complex HTML/MDX that won't work in the in-app widget.
-- **Reference pages use tables.** Lookup-oriented pages present information in table format for
-  quick scanning.
-- **How-to pages are for complex procedures only.** Simple tasks get a sentence or a `<details>`
-  block — not a dedicated page.
+Broken links are fatal: Docusaurus is configured with `onBrokenLinks: 'throw'` and `onBrokenMarkdownLinks: 'throw'`.
 
-### Writing style
-
-- US English, active voice, second person ("you").
-- Concise: avoid nominalizations, filler words, passive constructions.
-- Goal → Location → Action clause order for instructions.
-- Bold UI elements: **Top Menu**, **Sidebar**, **Context Panel**.
-- Oxford commas. No semicolons (use two sentences).
-- Spell out zero through nine; use numerals for 10+.
-- Punctuation outside quotation marks (British style); everything else US English.
-- Contractions OK except noun+verb forms.
+```bash
+cd ../docusaurus
+npm install
+npm start             # Local dev server with hot reload
+npm run build         # Full production build (catches broken links)
+```
 
 ## Pre-commit checklist
 
@@ -137,3 +134,4 @@ When a `.md` filename matches its parent folder name, clicking the folder shows 
 3. No H1 in body.
 4. No broken links or images.
 5. Code snippets render correctly.
+
