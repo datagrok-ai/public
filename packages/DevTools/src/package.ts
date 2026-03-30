@@ -77,6 +77,14 @@ export class PackageFunctions {
   }
 
 
+  @grok.decorators.appTreeBrowser({app: 'Test Manager'})
+  static async testManagerAppTreeBrowser(treeNode: DG.TreeViewGroup): Promise<void> {
+    const tm = new TestManager('Test Manager', false);
+    tm.testFunctions = await tm.collectPackages();
+    await tm.populateTree(treeNode);
+  }
+
+
   @grok.decorators.func({
     name: 'TestDetectors',
     'top-menu': 'Tools | Dev | Test | Detectors...',

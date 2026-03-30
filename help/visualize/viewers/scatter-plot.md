@@ -365,6 +365,7 @@ Youtube")](https://www.youtube.com/watch?v=7MBXWzdC0-I&t=214s)
 | Show Labels | visibilitymode |  |
 | Data Values | string | Controls whether columns on X and Y axes are displayed in tooltip * Do not add: they are not shown * Data values only: only they are shown * Merge: standard behavior |
 | Row Tooltip | string | Newline-separated list of column names to be used in a tooltip. Requires *showTooltip* to be enabled. |
+| Tooltip Delay | number | Delay in milliseconds before showing row tooltip |
 | Row Group Tooltip | string |  |
 | **Description** | | |
 | Show Title | boolean |  |

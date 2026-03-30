@@ -266,19 +266,7 @@ export class TestManager extends DG.ViewBase {
     return category.totalTests;
   }
 
-  async createTestManagerUI(testFromUrl: ITestFromUrl): Promise<ITestManagerUI> {
-    this.tree = ui.tree();
-    this.tree.root.classList.add('test-manager');
-    this.tree.onSelectedNodeChanged.subscribe((res) => {
-      this.selectedNode = res;
-    });
-    this.tree.root.style.width = '100%';
-    this.tree.root.style.flexShrink = '1';
-    this.tree.root.style.minHeight = '0';
-    this.tree.root.onkeyup = (e) => {
-      if (e.key === 'Enter')
-        this.runTestsForSelectedNode();
-    };
+  async populateTree(targetTree: DG.TreeViewGroup, testFromUrl?: ITestFromUrl): Promise<void> {
     for (const pack of this.testFunctions) {
       const testPassed = ui.div();
       this.packagesTests.push({
@@ -289,7 +277,7 @@ export class TestManager extends DG.ViewBase {
         resultDiv: testPassed,
         check: false,
       });
-      const packNode = this.tree.group(pack.package.friendlyName,
+      const packNode = targetTree.group(pack.package.friendlyName,
         null, testFromUrl && pack.package.name === testFromUrl.packName);
       this.setRunTestsMenuAndLabelClick(packNode, pack, NODE_TYPE.PACKAGE);
       packNode.root.children[0].appendChild(testPassed);
@@ -309,6 +297,22 @@ export class TestManager extends DG.ViewBase {
       }
       this.packNodes.push([pack, packNode]);
     }
+  }
+
+  async createTestManagerUI(testFromUrl: ITestFromUrl): Promise<ITestManagerUI> {
+    this.tree = ui.tree();
+    this.tree.root.classList.add('test-manager');
+    this.tree.onSelectedNodeChanged.subscribe((res) => {
+      this.selectedNode = res;
+    });
+    this.tree.root.style.width = '100%';
+    this.tree.root.style.flexShrink = '1';
+    this.tree.root.style.minHeight = '0';
+    this.tree.root.onkeyup = (e) => {
+      if (e.key === 'Enter')
+        this.runTestsForSelectedNode();
+    };
+    await this.populateTree(this.tree, testFromUrl);
 
     const {runAll, run, debug, benchmark, runSkipped} = this.createButtons();
     const {runAll: runAll1, run: run1, debug: debug1,
