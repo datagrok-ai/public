@@ -14,6 +14,7 @@ const commands = {
   claude: require('./commands/claude').claude,
   config: require('./commands/config').config,
   create: require('./commands/create').create,
+  'docker-gen': require('./commands/docker-gen').dockerGen,
   init: require('./commands/init').init,
   link: require('./commands/link').link,
   publish: require('./commands/publish').publish,

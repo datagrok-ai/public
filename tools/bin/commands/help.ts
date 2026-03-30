@@ -7,19 +7,20 @@ Usage: grok <command>
 Datagrok's package management tool
 
 Commands:
-    add       Add an object template
-    api       Create wrapper functions
-    build     Build a package or multiple packages
-    check     Check package content (function signatures, etc.)
-    claude    Launch Claude Code in a Datagrok dev container
-    config    Create and manage config files
-    create    Create a package
-    init      Modify a package template
-    link      Link \`datagrok-api\` and libraries for local development
-    publish   Upload a package
-    test      Run package tests
-    testall      Run packages tests
-    migrate   Migrate legacy tags to meta.role
+    add         Add an object template
+    api         Create wrapper functions
+    build       Build a package or multiple packages
+    check       Check package content (function signatures, etc.)
+    claude      Launch Claude Code in a Datagrok dev container
+    config      Create and manage config files
+    create      Create a package
+    docker-gen  Generate Celery Docker artifacts from Python functions
+    init        Modify a package template
+    link        Link \`datagrok-api\` and libraries for local development
+    publish     Upload a package
+    test        Run package tests
+    testall     Run packages tests
+    migrate     Migrate legacy tags to meta.role
 
 To get help on a particular command, use:
     grok <command> --help
@@ -124,13 +125,14 @@ Usage: grok config
 Create or update a configuration file
 
 Options:
-[--reset] [--server] [--alias] [-k | --key]
+[--reset] [--server] [--alias] [-k | --key] [--registry]
 
 --reset     Restore the default config file template
 --server    Use to add a server to the config (\`grok config add --alias alias --server url --key key\`)
 --alias     Use in conjunction with the \`server\` option to set the server name
 --key       Use in conjunction with the \`server\` option to set the developer key
 --default   Use in conjunction with the \`server\` option to set the added server as default
+--registry  Docker registry URL (default: registry.{server hostname})
 `;
 
 const HELP_CREATE = `
@@ -276,6 +278,18 @@ Options:
 --all               Links all available packages(run in packages directory)
 `;
 
+const HELP_DOCKER_GEN = `
+Usage: grok docker-gen
+
+Generate Celery Docker artifacts from annotated Python functions in the python/ directory.
+Produces Dockerfile, tasks.yaml, and Celery entry point in dockerfiles/<name>/.
+
+Options:
+[-v | --verbose]
+
+--verbose         Print detailed output
+`;
+
 const HELP_MIGRATE = `
 Usage: grok migrate
 
@@ -325,6 +339,7 @@ export const help = {
   claude: HELP_CLAUDE,
   config: HELP_CONFIG,
   create: HELP_CREATE,
+  'docker-gen': HELP_DOCKER_GEN,
   init: HELP_INIT,
   link: HELP_LINK,
   publish: HELP_PUBLISH,

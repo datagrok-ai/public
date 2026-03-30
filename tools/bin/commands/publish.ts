@@ -13,6 +13,7 @@ import {Indexable} from '../utils/utils';
 import {loadPackages} from '../utils/test-utils';
 import * as color from '../utils/color-utils';
 import {check} from './check';
+import {generateCeleryArtifacts} from '../utils/python-celery-gen';
 
 const {exec, execSync} = require('child_process');
 
@@ -44,7 +45,7 @@ interface DockerImageResult {
   requestedVersion?: string;
 }
 
-function discoverDockerfiles(packageName: string, version: string): DockerImageInfo[] {
+function discoverDockerfiles(packageName: string, version: string, debug: boolean): DockerImageInfo[] {
   const dockerfilesDir = path.join(curDir, 'dockerfiles');
   if (!fs.existsSync(dockerfilesDir))
     return [];
@@ -57,13 +58,14 @@ function discoverDockerfiles(packageName: string, version: string): DockerImageI
     const dockerfilePath = path.join(dockerfilesDir, entry.name, 'Dockerfile');
     if (!fs.existsSync(dockerfilePath))
       continue;
-    const cleanName = utils.removeScope(packageName).toLowerCase();
+    const cleanName = utils.removeScope(packageName).replace(/-/g, '').toLowerCase();
     const imageName = `${cleanName}-${entry.name.toLowerCase()}`;
+    const imageTag = debug ? version : `${version}.X`;
     results.push({
       imageName,
-      imageTag: `${version}.X`,
+      imageTag,
       dirName: entry.name,
-      fullLocalName: `${imageName}:${version}.X`,
+      fullLocalName: `${imageName}:${imageTag}`,
     });
   }
   return results;
@@ -117,7 +119,7 @@ function dockerBuild(imageName: string, dockerfilePath: string, context: string)
     color.log(`Building Docker image ${imageName}...`);
     execSync(`docker build -t ${imageName} -f ${dockerfilePath} ${context}`, {
       encoding: 'utf-8',
-      stdio: ['pipe', 'pipe', 'pipe'],
+      stdio: 'inherit',
     });
     return true;
   } catch (e: any) {
@@ -126,24 +128,49 @@ function dockerBuild(imageName: string, dockerfilePath: string, context: string)
   }
 }
 
-async function resolveLatestCompatible(host: string, devKey: string, dockerName: string): Promise<{version: string, image: string} | null> {
+async function getUserLogin(host: string, devKey: string): Promise<{login: string, token: string} | null> {
+  let loginResp;
   try {
-    // Login with dev key to get a session token
-    const loginResp = await fetch(`${host}/users/login/dev/${devKey}`, {method: 'POST'});
-    if (loginResp.status !== 200)
+    loginResp = await fetch(`${host}/users/login/dev/${devKey}`, {method: 'POST'});
+  } catch (e: any) {
+    color.warn(`Cannot reach server ${host}: ${e.message || e}`);
+    return null;
+  }
+  if (loginResp.status !== 200)
+    return null;
+  const loginData = await loginResp.json();
+  const token = loginData.token;
+  try {
+    const userResp = await fetch(`${host}/users/current`, {headers: {'Authorization': token}});
+    if (userResp.status !== 200)
       return null;
-    const loginData = await loginResp.json();
-    const token = loginData.token;
+    const userData = await userResp.json();
+    return {login: userData.login, token};
+  } catch (e: any) {
+    return null;
+  }
+}
 
+interface FallbackResult {
+  found: {version: string, image: string} | null;
+  serverError: string | null;
+}
+
+async function resolveLatestCompatible(host: string, devKey: string, dockerName: string): Promise<FallbackResult> {
+  const userInfo = await getUserLogin(host, devKey);
+  if (!userInfo)
+    return {found: null, serverError: `Authentication failed. Check your developer key.`};
+
+  try {
     const url = `${host}/docker/images/${encodeURIComponent(dockerName)}/latest-compatible`;
-    const resp = await fetch(url, {
-      headers: {'Authorization': token},
-    });
+    const resp = await fetch(url, {headers: {'Authorization': userInfo.token}});
     if (resp.status === 200)
-      return await resp.json();
-    return null;
-  } catch {
-    return null;
+      return {found: await resp.json(), serverError: null};
+    if (resp.status === 404)
+      return {found: null, serverError: null};
+    return {found: null, serverError: `Unexpected response (HTTP ${resp.status}) from latest-compatible endpoint`};
+  } catch (e: any) {
+    return {found: null, serverError: `Failed to query latest-compatible: ${e.message || e}`};
   }
 }
 
@@ -155,9 +182,10 @@ async function processDockerImages(
   host: string,
   rebuildDocker: boolean,
   zip: any,
-  localTimestamps: Indexable
+  localTimestamps: Indexable,
+  debug: boolean,
 ): Promise<void> {
-  const dockerImages = discoverDockerfiles(packageName, version);
+  const dockerImages = discoverDockerfiles(packageName, version, debug);
   if (dockerImages.length === 0)
     return;
 
@@ -173,19 +201,37 @@ async function processDockerImages(
       const dockerfileDir = path.join('dockerfiles', img.dirName);
       const dockerfilePath = path.join(dockerfileDir, 'Dockerfile');
       if (dockerBuild(img.fullLocalName, dockerfilePath, dockerfileDir)) {
-        result = pushImage(img, registry, version);
+        result = pushImage(img, registry);
         color.success(`Built and tagged ${img.fullLocalName}`);
       } else {
         result = await fallbackImage(img, host, devKey, registry);
       }
     } else if (localImageExists(img.fullLocalName)) {
-      result = pushImage(img, registry, version);
+      result = pushImage(img, registry);
       color.success(`Found local image ${img.fullLocalName}`);
     } else {
-      result = await fallbackImage(img, host, devKey, registry);
-      color.warn(`Local image not found. Expected: ${img.fullLocalName}` +
-        (result.image ? `. Falling back to ${result.image}` : ''));
+      color.warn(`Local image not found. Expected: ${img.fullLocalName}`);
       color.log(`  Build it with: docker build -t ${img.fullLocalName} -f dockerfiles/${img.dirName}/Dockerfile dockerfiles/${img.dirName}`);
+      const fallback = await fallbackImage(img, host, devKey, registry);
+      if (fallback.serverError) {
+        color.error(`Cannot resolve fallback: ${fallback.serverError}`);
+        result = {image: null, fallback: true, requestedVersion: img.imageTag};
+      } else if (fallback.image) {
+        result = fallback;
+        color.warn(`Falling back to ${fallback.image}`);
+      } else {
+        // No fallback and no local image — must build
+        color.warn(`No fallback available. Building ${img.fullLocalName}...`);
+        const dockerfileDir = path.join('dockerfiles', img.dirName);
+        const dockerfilePath = path.join(dockerfileDir, 'Dockerfile');
+        if (dockerBuild(img.fullLocalName, dockerfilePath, dockerfileDir)) {
+          result = pushImage(img, registry);
+          color.success(`Built and tagged ${img.fullLocalName}`);
+        } else {
+          result = {image: null, fallback: true, requestedVersion: img.imageTag};
+          color.error(`Failed to build ${img.fullLocalName}. No container will be available.`);
+        }
+      }
     }
 
     const imageJsonPath = path.join('dockerfiles', img.dirName, 'image.json');
@@ -195,17 +241,22 @@ async function processDockerImages(
   }
 }
 
-function pushImage(img: DockerImageInfo, registry: string | undefined, version: string): DockerImageResult {
+function pushImage(img: DockerImageInfo, registry: string | undefined): DockerImageResult {
+  const canonicalImage = `datagrok/${img.fullLocalName}`;
   if (registry) {
-    const remoteTag = `${registry}/${img.imageName}:${version}`;
+    const remoteTag = `${registry}/${canonicalImage}`;
     dockerTag(img.fullLocalName, remoteTag);
     if (dockerPush(remoteTag))
-      return {image: remoteTag, fallback: false};
+      return {image: canonicalImage, fallback: false};
     color.warn(`Push failed, image tagged locally only: ${remoteTag}`);
-    return {image: remoteTag, fallback: false};
+    return {image: canonicalImage, fallback: false};
   }
   color.warn('No registry configured. Image tagged locally only.');
-  return {image: img.fullLocalName, fallback: false};
+  return {image: canonicalImage, fallback: false};
+}
+
+interface FallbackImageResult extends DockerImageResult {
+  serverError?: string;
 }
 
 async function fallbackImage(
@@ -213,32 +264,34 @@ async function fallbackImage(
   host: string,
   devKey: string,
   registry: string | undefined,
-): Promise<DockerImageResult> {
-  const latest = await resolveLatestCompatible(host, devKey, img.imageName);
-  if (latest)
-    return {image: latest.image, fallback: true, requestedVersion: img.imageTag};
-  color.warn('No previous version available. Container will not be available until an image is built.');
+): Promise<FallbackImageResult> {
+  const {found, serverError} = await resolveLatestCompatible(host, devKey, img.imageName);
+  if (serverError)
+    return {image: null, fallback: true, requestedVersion: img.imageTag, serverError};
+  if (found)
+    return {image: found.image, fallback: true, requestedVersion: img.imageTag};
   return {image: null, fallback: true, requestedVersion: img.imageTag};
 }
 
 export async function processPackage(debug: boolean, rebuild: boolean, host: string, devKey: string, packageName: any, dropDb: boolean, suffix?: string, hostAlias?: string, registry?: string, rebuildDocker?: boolean) {
-  // Get the server timestamps
+  // Validate server connectivity and dev key
   let timestamps: Indexable = {};
   let url = `${host}/packages/dev/${devKey}/${packageName}`;
-  if (debug) {
-    try {
-      timestamps = await (await fetch(url + '/timestamps')).json();
-      if (timestamps['#type'] === 'ApiError') {
-        color.error(timestamps.message);
-        return 1;
-      }
-    } catch (error) {
-      if (utils.isConnectivityError(error))
-        color.error(`Server is possibly offline: ${host}`);
-      if (color.isVerbose())
-        console.error(error);
+  try {
+    const checkResp = await fetch(url + '/timestamps');
+    const checkData = await checkResp.json();
+    if (checkData['#type'] === 'ApiError') {
+      color.error(checkData.message);
       return 1;
     }
+    if (debug)
+      timestamps = checkData;
+  } catch (error) {
+    if (utils.isConnectivityError(error))
+      color.error(`Server is possibly offline: ${host}`);
+    if (color.isVerbose())
+      console.error(error);
+    return 1;
   }
 
   const zip = archiver('zip', {store: false});
@@ -339,9 +392,17 @@ export async function processPackage(debug: boolean, rebuild: boolean, host: str
     return 1;
   }
 
+  // Generate Celery Docker artifacts from python/ if present
+  generateCeleryArtifacts(curDir);
+
   // Process Docker images and inject image.json into the ZIP
-  const packageVersion = json.version;
-  await processDockerImages(packageName, packageVersion, registry, devKey, host, rebuildDocker ?? false, zip, localTimestamps);
+  let dockerVersion = json.version;
+  if (debug) {
+    const userInfo = await getUserLogin(host, devKey);
+    if (userInfo)
+      dockerVersion = userInfo.login;
+  }
+  await processDockerImages(packageName, dockerVersion, registry, devKey, host, rebuildDocker ?? false, zip, localTimestamps, debug);
 
   zip.append(JSON.stringify(localTimestamps), {name: 'timestamps.json'});
 
