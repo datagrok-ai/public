@@ -101,7 +101,7 @@
       "choices": [
         "OpenAI Chat Completions",
         "OpenAI Responses",
-        "Antropic Messages",
+        "Anthropic Messages",
         "Amazon Bedrock"
       ]
     },
