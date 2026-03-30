@@ -7,6 +7,19 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
 
+export namespace scripts {
+  /**
+  Counts subsequence occurrences for each sequence in a dataframe
+  */
+  export async function countSubsequencePythonDataframe(sequences: DG.DataFrame , columnName: DG.Column , subsequence: string ): Promise<DG.DataFrame> {
+    return await grok.functions.call('valerij_developer_exercise_1:CountSubsequencePythonDataframe', { sequences, columnName, subsequence });
+  }
+
+  export async function countSubsequencePythonlocal(sequence: string , subsequence: string ): Promise<number> {
+    return await grok.functions.call('valerij_developer_exercise_1:CountSubsequencePythonlocal', { sequence, subsequence });
+  }
+}
+
 export namespace funcs {
   export async function info(): Promise<void> {
     return await grok.functions.call('valerij_developer_exercise_1:Info', {});
