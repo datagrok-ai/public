@@ -4,7 +4,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {u2} from '@datagrok-libraries/utils/src/u2';
 import {getKnimeClient} from './knime-client-factory';
-import {getOrRegisterFunc} from './function-registry';
+import {getOrRegisterFunc, sanitizeFuncName} from './function-registry';
 import {loadCachedEntries, registerFromCache, refreshAndUpdateCache} from './function-cache';
 import {IKnimeClient} from './knime-client';
 import type {KnimeDeployment} from './types';
@@ -95,46 +95,111 @@ export class PackageFunctions {
 
     treeNode.items.length = 0;
     const errors: string[] = [];
-    try {
-      const deployments = await client.listDeployments('rest');
-      const testDeployments: typeof deployments = [];
-      const addDeploymentNode = (dep: typeof deployments[0], parent: DG.TreeViewGroup) => {
-        const node = parent.item(dep.name);
-        node.onSelected.subscribe(async () => {
-          if (!node.value) {
-            setBreadcrumbs(['Home', 'KNIME', dep.name], treeNode);
-            const func = await getOrRegisterFunc(dep, client);
-            node.value = func;
-          }
-          const objHandler = DG.ObjectHandler.forEntity(node.value);
-          if (objHandler)
-            grok.shell.preview = await objHandler.renderPreview(node.value);
-          showWorkflowImage(dep, client);
-        });
-      };
+
+    const addNode = (dep: KnimeDeployment, parent: DG.TreeViewGroup, func?: DG.Func): DG.TreeViewNode => {
+      const node = parent.item(dep.name);
+      if (func)
+        node.value = func;
+      node.onSelected.subscribe(async () => {
+        setBreadcrumbs(['Home', 'KNIME', dep.name], treeNode);
+        if (!node.value) {
+          const f = await getOrRegisterFunc(dep, client!);
+          node.value = f;
+        }
+        const objHandler = DG.ObjectHandler.forEntity(node.value);
+        if (objHandler)
+          grok.shell.preview = await objHandler.renderPreview(node.value);
+        showWorkflowImage(dep, client!);
+      });
+      return node;
+    };
+
+    const removeStaleItems = (cached: Map<string, DG.TreeViewNode>, liveNames: Set<string>) => {
+      for (const [name, node] of cached) {
+        if (!liveNames.has(name))
+          node.remove();
+      }
+    };
+
+    const updateOrAddNodes = async (
+      deployments: KnimeDeployment[], parent: DG.TreeViewGroup,
+      cached: Map<string, DG.TreeViewNode>,
+    ) => {
       for (const dep of deployments) {
         try {
-          if (dep.name.toLowerCase().startsWith(TEST_PREFIX))
-            testDeployments.push(dep);
+          const existingNode = cached.get(dep.name);
+          if (existingNode)
+            existingNode.value = await getOrRegisterFunc(dep, client!);
           else
-            addDeploymentNode(dep, treeNode);
+            addNode(dep, parent);
         }
         catch (e: any) {
           errors.push(`${dep.name}: ${e?.message ?? e}`);
         }
       }
-      if (testDeployments.length > 0) {
-        const testGroup = treeNode.group('Test workflows', undefined, false);
-        for (const dep of testDeployments) {
-          try { addDeploymentNode(dep, testGroup); }
-          catch (e: any) { errors.push(`${dep.name}: ${e?.message ?? e}`); }
-        }
+    };
+
+    // Phase 1: Create tree items from cached functions
+    const cached = loadCachedEntries();
+    const cachedItemsByName = new Map<string, DG.TreeViewNode>();
+    const cachedTestItemsByName = new Map<string, DG.TreeViewNode>();
+    let testGroup: DG.TreeViewGroup | null = null;
+
+    const cachedTest: typeof cached = [];
+    for (const entry of cached) {
+      if (entry.deployment.name.toLowerCase().startsWith(TEST_PREFIX)) {
+        cachedTest.push(entry);
+        continue;
       }
+      const funcName = sanitizeFuncName(entry.deployment.name, entry.deployment.id);
+      const existing = DG.Func.find({package: 'KnimeLink', name: funcName});
+      cachedItemsByName.set(entry.deployment.name,
+        addNode(entry.deployment, treeNode, existing.length > 0 ? existing[0] : undefined));
+    }
+    if (cachedTest.length > 0) {
+      testGroup = treeNode.group('Test workflows', undefined, false);
+      for (const entry of cachedTest) {
+        const funcName = sanitizeFuncName(entry.deployment.name, entry.deployment.id);
+        const existing = DG.Func.find({package: 'KnimeLink', name: funcName});
+        cachedTestItemsByName.set(entry.deployment.name,
+          addNode(entry.deployment, testGroup, existing.length > 0 ? existing[0] : undefined));
+      }
+    }
+
+    // Phase 2: Refresh from live API with progress
+    const pi = DG.TaskBarProgressIndicator.create('Updating KNIME deployments...');
+    try {
+      const deployments = await client.listDeployments('rest');
+      const liveNames = new Set(deployments.map((d) => d.name));
+
+      removeStaleItems(cachedItemsByName, liveNames);
+      removeStaleItems(cachedTestItemsByName, liveNames);
+
+      const regularDeps: KnimeDeployment[] = [];
+      const testDeps: KnimeDeployment[] = [];
+      for (const dep of deployments) {
+        if (dep.name.toLowerCase().startsWith(TEST_PREFIX))
+          testDeps.push(dep);
+        else
+          regularDeps.push(dep);
+      }
+
+      await updateOrAddNodes(regularDeps, treeNode, cachedItemsByName);
+
+      if (testDeps.length > 0) {
+        if (!testGroup)
+          testGroup = treeNode.group('Test workflows', undefined, false);
+        await updateOrAddNodes(testDeps, testGroup, cachedTestItemsByName);
+      }
+
       if (treeNode.items.length === 0 && errors.length === 0)
         treeNode.item('No deployments found');
     }
     catch (e: any) {
       errors.push(e?.message ?? e);
+    }
+    finally {
+      pi.close();
     }
     if (errors.length > 0)
       grok.shell.warning(`KNIME: Failed to load some workflows:\n${errors.join('\n')}`);

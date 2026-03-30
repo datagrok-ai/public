@@ -84,7 +84,15 @@ The package uses different execution strategies based on deployment type (determ
 
 ### Tree Browser
 
-Discovers teams via `/accounts/identity`, then lists REST deployments per team via `GET /deployments/{scope}/rest`.
+Uses a two-phase approach:
+- **Phase 1 (cached)**: Loads cached entries via `loadCachedEntries()` and creates tree items immediately
+  with already-registered functions (from autostart). Items are usable before the network request completes.
+- **Phase 2 (live refresh)**: Shows a `TaskBarProgressIndicator`, fetches live deployments from the API,
+  updates existing items' values with fresh functions, adds new items, and removes items whose deployment
+  names are no longer found on the Hub.
+
+Test deployments (prefixed with `datagrok_test_`) are always grouped last under a "Test workflows" node.
+
 Selecting a deployment registers it as a Datagrok function and shows two previews:
 - **Function preview** (`grok.shell.preview`) — the platform's built-in function preview with inputs/outputs
 - **Workflow image** (`grok.shell.o`, context panel) — SVG diagram loaded via an `<img>` element using
@@ -108,7 +116,7 @@ The header includes a custom breadcrumb navigation UI.
 Results are extracted from the sync response or job response:
 
 - **`outputValues`** — inline key-value results; objects with `table-data` become DataFrames, scalars become variable rows
-- **`outputResources`** — named resources fetched via `GET /jobs/{uuid}/output-resources/{resourceId}`; JSON arrays are parsed via `knimeTableToDataFrame()`, CSV/TSV text is parsed via `DG.DataFrame.fromCsv()`; binary content is returned as a blob
+- **`outputResources`** — named resources fetched via `GET /jobs/{uuid}/output-resources/{resourceId}`; plain string values are returned as scalars; JSON arrays are parsed via `knimeTableToDataFrame()`, CSV/TSV text is parsed via `DG.DataFrame.fromCsv()`; binary content is returned as a blob
 - **Output resource pre-fetching** — resources are fetched immediately when a job completes (before any job cleanup) to prevent race conditions with S3 pre-signed URL expiry
 - **Error handling** — both `nodeMessages` and `errors` arrays from failed executions are extracted; errors throw exceptions
 - **Flat result parsing** — handles responses where `table-spec`/`table-data` appears at the top level rather than wrapped in `outputValues`/`outputResources`
@@ -119,7 +127,7 @@ Input parameters are discovered via `GET /deployments/{id}/open-api`, which retu
 The parser reads `components.schemas.InputParameters.properties` directly (not from paths — the `/execution`
 endpoint references `InputParameters` via `$ref`). File inputs are extracted from the `/execution` endpoint's
 `multipart/form-data` schema via the private `parseMultipartFileInputs()` method. Each property is mapped
-to a `KnimeParamType` and then to a Datagrok function parameter type via the `knimeTypeToDgType` mapping.
+to a `KnimeParamType` and then to a Datagrok function parameter type via the `knimeInputTypeToDgType` mapping.
 There is no custom input form — inputs are exposed as Datagrok function parameters via `grok.functions.register()`,
 and the platform's built-in function UI handles the form rendering.
 
@@ -143,15 +151,26 @@ via `grok.functions.register()`. When a deployment is selected in the tree brows
 
 1. Fetches the workflow's OpenAPI spec via `client.getWorkflowInputs()`
 2. Builds `ParamMeta[]` from the parsed `KnimeInputParam[]`, sanitizing names for Datagrok compatibility
-3. Generates a function signature string (e.g., `dataframe MyWorkflow(dataframe input_table, string threshold)`)
-4. Creates a run callback that converts Datagrok types to KNIME formats, executes, and extracts results
-5. Registers the function with `grok.functions.register()` and sets descriptions/defaults on input properties
+3. Builds `OutputMeta[]` from parsed `KnimeOutputParam[]`, with sanitized names and Datagrok types
+4. Generates a function signature string (e.g., `object MyWorkflow(dataframe input_table, string threshold)`)
+5. Creates a run callback that converts Datagrok types to KNIME formats, executes, and extracts results
+6. Registers the function with `grok.functions.register()`, passing `outputs` array for multi-output workflows, and sets descriptions/defaults on input properties
+
+**Multiple outputs**: Workflows with multiple outputs (tables, scalars, resources) register each output as a
+separate named output parameter via the `outputs` field of `grok.functions.register()`. The run callback
+returns a named object `{outputName: value}` keyed by sanitized output names. Single-output workflows
+return the value directly for backward compatibility.
 
 **Grouped parameters**: When a KNIME input is an object with typed sub-properties, each sub-property becomes
 a separate function input with a sanitized name `{group}_{param}`. The description for grouped inputs
 includes `Part of "{group}" parameter` (with the parent's description in parentheses if available); the input's own description is prepended before the group label, so users
 understand which inputs belong together. At execution time, grouped inputs are reassembled into a nested
 object under the original parent key before being sent to KNIME.
+
+**Input/output type mapping**: Input parameters use `knimeInputTypeToDgType` (KNIME `file` → DG `file`),
+while output parameters use `knimeOutputTypeToDgType` (KNIME `file` → DG `string`). File outputs map to
+`string` because KNIME returns filenames, not `DG.FileInfo` objects, and the platform's `FileInput` widget
+would crash trying to call `get$fullPath` on a plain string.
 
 **Name sanitization**: Function names are prefixed with `Knime_` and stripped of non-alphanumeric characters
 (e.g., `My Workflow` → `Knime_My_Workflow`). Parameter names are stripped similarly; numeric-leading

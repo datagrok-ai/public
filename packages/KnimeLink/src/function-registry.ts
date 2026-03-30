@@ -2,7 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import {IKnimeClient} from './knime-client';
 import {KnimeInputParam, KnimeOutputParam, KnimeParamType, KnimeDeployment, KnimeExecutionResult, KnimeWorkflowSpec} from './types';
-import {dataFrameToKnimeTable, knimeTableToDataFrame, knimeSpecDataToDataFrame, knimeTypeToDgColumnTypes} from './data-conversion';
+import {dataFrameToKnimeTable, knimeTableToDataFrame, knimeSpecDataToDataFrame} from './data-conversion';
 import {pollJobUntilComplete} from './utils';
 
 interface ParamMeta {
@@ -16,9 +16,19 @@ interface ParamMeta {
   tableSpec?: {name: string; type: string}[];
 }
 
-const knimeTypeToDgType: Record<KnimeParamType, string> = {
+const knimeInputTypeToDgType: Record<KnimeParamType, string> = {
   'table': 'dataframe',
   'file': 'file',
+  'string': 'string',
+  'int': 'int',
+  'double': 'double',
+  'boolean': 'bool',
+  'json': 'string',
+};
+
+const knimeOutputTypeToDgType: Record<KnimeParamType, string> = {
+  'table': 'dataframe',
+  'file': 'string',
   'string': 'string',
   'int': 'int',
   'double': 'double',
@@ -71,56 +81,69 @@ export function buildParamMeta(params: KnimeInputParam[]): ParamMeta[] {
   return meta;
 }
 
-function determineReturnType(outputs: KnimeOutputParam[]): string {
-  if (outputs.length === 0)
-    return 'object';
-  if (outputs.length === 1)
-    return knimeTypeToDgType[outputs[0].type] ?? 'object';
-  const tableOutput = outputs.find((o) => o.type === 'table');
-  if (tableOutput)
-    return 'dataframe';
-  return knimeTypeToDgType[outputs[0].type] ?? 'object';
+export interface OutputMeta {
+  sanitizedName: string;
+  originalName: string;
+  dgType: string;
+}
+
+export function buildOutputMeta(outputs: KnimeOutputParam[]): OutputMeta[] {
+  const meta: OutputMeta[] = [];
+  const usedNames = new Set<string>();
+  for (const out of outputs) {
+    let name = sanitizeParamName(out.name);
+    let n = 2;
+    const baseName = name;
+    while (usedNames.has(name)) {
+      name = `${baseName}_${n}`;
+      n++;
+    }
+    usedNames.add(name);
+    meta.push({sanitizedName: name, originalName: out.name, dgType: knimeOutputTypeToDgType[out.type] ?? 'object'});
+  }
+  return meta;
 }
 
 export function buildSignature(funcName: string, paramMeta: ParamMeta[], outputs: KnimeOutputParam[]): string {
   const parts: string[] = [];
   for (const pm of paramMeta) {
-    const dgType = knimeTypeToDgType[pm.type] ?? 'string';
+    const dgType = knimeInputTypeToDgType[pm.type] ?? 'string';
     parts.push(`${dgType} ${pm.sanitizedName}`);
   }
-  const returnType = determineReturnType(outputs);
+  const returnType = outputs.length === 1
+    ? (knimeOutputTypeToDgType[outputs[0].type] ?? 'object')
+    : 'object';
   return `${returnType} ${funcName}(${parts.join(', ')})`;
 }
 
 function createRunCallback(
   deployment: KnimeDeployment,
   paramMeta: ParamMeta[],
-  outputs: KnimeOutputParam[],
+  outputMeta: OutputMeta[],
   client: IKnimeClient,
 ): Function {
-  const returnType = determineReturnType(outputs);
-
   return async (...args: any[]) => {
-    // Validate table schemas before execution
-    for (let i = 0; i < paramMeta.length; i++) {
-      const pm = paramMeta[i];
-      const val = args[i];
-      if (pm.type === 'table' && pm.tableSpec && pm.tableSpec.length > 0 && val instanceof DG.DataFrame) {
-        const errors: string[] = [];
-        for (const expected of pm.tableSpec) {
-          const col = val.columns.byName(expected.name);
-          if (!col) {
-            errors.push(`Missing column "${expected.name}"`);
-            continue;
-          }
-          const compatibleTypes = knimeTypeToDgColumnTypes(expected.type);
-          if (!compatibleTypes.includes(col.type))
-            errors.push(`Column "${expected.name}": expected ${expected.type}, got ${col.type}`);
-        }
-        if (errors.length > 0)
-          throw new Error(`Input "${pm.originalName}" schema mismatch: ${errors.join('; ')}`);
-      }
-    }
+    // TODO: table schema validation disabled — the tableSpec comes from OpenAPI examples
+    // and doesn't reliably represent the actual required schema.
+    // for (let i = 0; i < paramMeta.length; i++) {
+    //   const pm = paramMeta[i];
+    //   const val = args[i];
+    //   if (pm.type === 'table' && pm.tableSpec && pm.tableSpec.length > 0 && val instanceof DG.DataFrame) {
+    //     const errors: string[] = [];
+    //     for (const expected of pm.tableSpec) {
+    //       const col = val.columns.byName(expected.name);
+    //       if (!col) {
+    //         errors.push(`Missing column "${expected.name}"`);
+    //         continue;
+    //       }
+    //       const compatibleTypes = knimeTypeToDgColumnTypes(expected.type);
+    //       if (!compatibleTypes.includes(col.type))
+    //         errors.push(`Column "${expected.name}": expected ${expected.type}, got ${col.type}`);
+    //     }
+    //     if (errors.length > 0)
+    //       throw new Error(`Input "${pm.originalName}" schema mismatch: ${errors.join('; ')}`);
+    //   }
+    // }
 
     const inputs: {[key: string]: any} = {};
 
@@ -164,59 +187,100 @@ function createRunCallback(
       result = await pollJobUntilComplete(client, jobId);
     }
 
-    return extractReturnValue(result, returnType);
+    return extractReturnValue(result, outputMeta);
   };
 }
 
-function extractReturnValue(result: KnimeExecutionResult, returnType: string): any {
-  const tables: DG.DataFrame[] = [];
-  const variables: {[key: string]: any} = {};
+function parseTable(t: any): DG.DataFrame {
+  if (t?.['table-spec'] && t?.['table-data'])
+    return knimeSpecDataToDataFrame(t['table-spec'], t['table-data']);
+  return Array.isArray(t) ? knimeTableToDataFrame(t) : knimeTableToDataFrame([t]);
+}
 
-  if (result.outputTables)
-    for (const t of result.outputTables) {
-      const df = t?.['table-spec'] && t?.['table-data']
-        ? knimeSpecDataToDataFrame(t['table-spec'], t['table-data'])
-        : Array.isArray(t) ? knimeTableToDataFrame(t) : knimeTableToDataFrame([t]);
-      tables.push(df);
-    }
-
-  if (result.fetchedResources)
-    for (const {name: fileName, resource} of result.fetchedResources) {
-      if (resource.json !== undefined && Array.isArray(resource.json)) {
-        const df = knimeTableToDataFrame(resource.json, fileName);
+function parseResource(fileName: string, resource: any): DG.DataFrame | null {
+  if (resource.json !== undefined && Array.isArray(resource.json)) {
+    const df = knimeTableToDataFrame(resource.json, fileName);
+    df.name = fileName;
+    return df;
+  }
+  if (resource.text !== undefined) {
+    const isCsv = resource.contentType.includes('csv') || fileName.endsWith('.csv');
+    const isTsv = resource.contentType.includes('tab-separated') || fileName.endsWith('.tsv');
+    if (isCsv || isTsv) {
+      try {
+        const df = DG.DataFrame.fromCsv(resource.text);
         df.name = fileName;
-        tables.push(df);
+        return df;
       }
-      else if (resource.text !== undefined) {
-        const isCsv = resource.contentType.includes('csv') || fileName.endsWith('.csv');
-        const isTsv = resource.contentType.includes('tab-separated') || fileName.endsWith('.tsv');
-        if (isCsv || isTsv) {
-          try {
-            const df = DG.DataFrame.fromCsv(resource.text);
-            df.name = fileName;
-            tables.push(df);
-          }
-          catch { /* not parseable */ }
-        }
-      }
+      catch { /* not parseable */ }
+    }
+  }
+  return null;
+}
+
+function extractReturnValue(result: KnimeExecutionResult, outputMeta: OutputMeta[]): any {
+  // Build named maps of parsed outputs
+  const parsedTables = new Map<string, DG.DataFrame>();
+  const parsedScalars = new Map<string, any>();
+
+  // Parse outputValues — inline key-value results
+  if (result.outputs)
+    for (const [key, val] of Object.entries(result.outputs)) {
+      if (val && typeof val === 'object' && val['table-spec'] && val['table-data'])
+        parsedTables.set(key, parseTable(val));
+      else
+        parsedScalars.set(key, val);
     }
 
-  if (returnType === 'dataframe')
-    return tables.length > 0 ? tables[0] : DG.DataFrame.create();
+  // Parse outputTables (unnamed, positional)
+  const unnamedTables: DG.DataFrame[] = [];
+  if (result.outputTables)
+    for (const t of result.outputTables)
+      unnamedTables.push(parseTable(t));
 
-  if (returnType === 'object') {
-    if (tables.length > 0)
-      return tables[0];
-    if (Object.keys(variables).length > 0)
-      return variables;
+  // Parse fetchedResources (named)
+  if (result.outputResources)
+    for (const fileName of Object.keys(result.outputResources)) {
+      const resource = result.outputResources[fileName];
+      if (typeof resource === 'string') {
+        parsedScalars.set(fileName, resource);
+        continue;
+      }
+      const df = parseResource(fileName, resource);
+      if (df)
+        parsedTables.set(fileName, df);
+    }
+
+  // Single output — return the value directly for backward compatibility
+  if (outputMeta.length === 1) {
+    const om = outputMeta[0];
+    if (om.dgType === 'dataframe')
+      return parsedTables.get(om.originalName) ?? unnamedTables[0] ?? DG.DataFrame.create();
+    return parsedScalars.get(om.originalName) ?? null;
+  }
+
+  // No known outputs — legacy fallback
+  if (outputMeta.length === 0) {
+    if (unnamedTables.length > 0)
+      return unnamedTables[0];
+    if (parsedTables.size > 0)
+      return parsedTables.values().next().value;
     return result.outputs;
   }
 
-  // Scalar types — return first variable value
-  const vals = Object.values(variables);
-  if (vals.length > 0)
-    return vals[0];
-  return null;
+  // Multiple outputs — return named object keyed by sanitized output names
+  const ret: {[key: string]: any} = {};
+  let tableIdx = 0;
+  for (const om of outputMeta) {
+    if (om.dgType === 'dataframe') {
+      ret[om.sanitizedName] = parsedTables.get(om.originalName)
+        ?? unnamedTables[tableIdx++]
+        ?? DG.DataFrame.create();
+    }
+    else
+      ret[om.sanitizedName] = parsedScalars.get(om.originalName) ?? null;
+  }
+  return ret;
 }
 
 export function registerFuncFromSpec(
@@ -226,8 +290,13 @@ export function registerFuncFromSpec(
 ): DG.Func {
   const funcName = sanitizeFuncName(deployment.name, deployment.id);
   const paramMeta = buildParamMeta(spec.inputs);
+  const outputMeta = buildOutputMeta(spec.outputs);
   const signature = buildSignature(funcName, paramMeta, spec.outputs);
-  const runCallback = createRunCallback(deployment, paramMeta, spec.outputs, client);
+  const runCallback = createRunCallback(deployment, paramMeta, outputMeta, client);
+
+  const registrationOutputs = outputMeta.length > 1
+    ? outputMeta.map((om) => ({name: om.sanitizedName, type: om.dgType}))
+    : undefined;
 
   const func = grok.functions.register({
     signature,
@@ -235,6 +304,7 @@ export function registerFuncFromSpec(
     isAsync: true,
     namespace: 'KnimeLink',
     options: {'role': 'knimeWorkflow'},
+    outputs: registrationOutputs,
   });
 
   for (const prop of func.inputs) {
