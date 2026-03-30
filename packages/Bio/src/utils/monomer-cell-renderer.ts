@@ -3,7 +3,8 @@ import * as DG from 'datagrok-api/dg';
 import {GridCell} from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 import {ALPHABET, monomerToShort} from '@datagrok-libraries/bio/src/utils/macromolecule';
-import {BioTags, GAP_SYMBOL, MONOMER_MOTIF_SPLITTER, TAGS as bioTAGS,} from '@datagrok-libraries/bio/src/utils/macromolecule/consts';
+import {BioTags, GAP_SYMBOL, MONOMER_CANONICALIZER_FUNC_TAG, MONOMER_CANONICALIZER_TEMP, MONOMER_MOTIF_SPLITTER, TAGS as bioTAGS,} from '@datagrok-libraries/bio/src/utils/macromolecule/consts';
+import {IMonomerCanonicalizer} from '@datagrok-libraries/bio/src/utils/macromolecule/types';
 import {MONOMER_RENDERER_TAGS} from '@datagrok-libraries/bio/src/utils/cell-renderer';
 import {getGridCellColTemp} from '@datagrok-libraries/bio/src/utils/cell-renderer-back-base';
 
@@ -24,6 +25,34 @@ export class MonomerCellRendererBack extends CellRendererWithMonomerLibBackBase 
     super(gridCol, tableCol);
   }
 
+  private static readonly _canonLoadingKey = MONOMER_CANONICALIZER_TEMP + '.loading';
+
+  /** Lazily resolves and caches the IMonomerCanonicalizer from the column tag/temp.
+   *  Uses async apply() so the plugin package doesn't need to be loaded yet.
+   *  Returns null while loading; the resolved instance is cached for subsequent calls. */
+  private getCanonicalizer(col: DG.Column): IMonomerCanonicalizer | null {
+    const cached: IMonomerCanonicalizer | null = col.temp[MONOMER_CANONICALIZER_TEMP] ?? null;
+    if (cached) return cached;
+    // Already loading — don't fire another request
+    if (col.temp[MonomerCellRendererBack._canonLoadingKey]) return null;
+    const funcName = col.getTag(MONOMER_CANONICALIZER_FUNC_TAG);
+    if (!funcName) return null;
+    const parts = funcName.includes(':') ? funcName.split(':') : [undefined, funcName];
+    const funcs = DG.Func.find({name: parts[1], package: parts[0]});
+    if (funcs.length === 0) return null;
+    col.temp[MonomerCellRendererBack._canonLoadingKey] = true;
+    funcs[0].apply({}).then((canon: IMonomerCanonicalizer) => {
+      col.temp[MONOMER_CANONICALIZER_TEMP] = canon;
+      col.temp[MonomerCellRendererBack._canonLoadingKey] = false;
+      // Invalidate the grid so cells re-render with the canonicalizer
+      if (this.gridCol?.grid?.invalidate)
+        this.gridCol.grid.invalidate();
+    }).catch(() => {
+      col.temp[MonomerCellRendererBack._canonLoadingKey] = false;
+    });
+    return null;
+  }
+
   render(g: CanvasRenderingContext2D,
     x: number, y: number, w: number, h: number, gridCell: DG.GridCell, cellStyle: DG.GridCellStyle
   ): void {
@@ -41,6 +70,10 @@ export class MonomerCellRendererBack extends CellRendererWithMonomerLibBackBase 
       g.textAlign = 'left';
 
       let value: string = gridCell.cell.value;
+      // render original value
+      // const canonicalizer = this.getCanonicalizer(gridCell.cell.column);
+      // if (canonicalizer && value)
+      //   value = canonicalizer.canonicalize(value);
       if (!value || value === GAP_SYMBOL)
         value = DASH_GAP_SYMBOL;
       const symbols = value.split(MONOMER_MOTIF_SPLITTER).map((s) => !s || s === GAP_SYMBOL ? DASH_GAP_SYMBOL : s.trim());
@@ -88,12 +121,16 @@ export class MonomerCellRendererBack extends CellRendererWithMonomerLibBackBase 
     ) return false;
 
     const alphabet = tableCol.getTag(bioTAGS.alphabet) as ALPHABET;
-    const monomerName: string = gridCell.cell.value;
+    const rawMonomerName: string = gridCell.cell.value;
+    const canonicalizer = this.getCanonicalizer(tableCol);
+    const monomerName = canonicalizer && rawMonomerName ? canonicalizer.canonicalize(rawMonomerName) : rawMonomerName;
     const canvasClientRect = gridCell.grid.canvas.getBoundingClientRect();
     const x1 = gridCell.bounds.right + canvasClientRect.left - 4;
     const y1 = gridCell.bounds.bottom + canvasClientRect.top - 4;
 
-    if (!monomerName || monomerName == GAP_SYMBOL || monomerName == DASH_GAP_SYMBOL) {
+    const isGap = !rawMonomerName || rawMonomerName == GAP_SYMBOL || rawMonomerName == DASH_GAP_SYMBOL ||
+      (canonicalizer != null && canonicalizer.isGap(rawMonomerName));
+    if (isGap) {
       ui.tooltip.show(ui.divText('gap'), x1, y1);
       return true;
     }
