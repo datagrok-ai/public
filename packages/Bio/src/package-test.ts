@@ -37,6 +37,7 @@ import './tests/mm-distance-tests';
 import './tests/activity-cliffs-tests';
 import './tests/sequence-space-test';
 import './tests/scoring';
+import './tests/projects-tests';
 
 
 export const _package = new DG.Package();

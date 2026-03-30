@@ -270,6 +270,25 @@ export async function activityCliffs(table: DG.DataFrame, molecules: DG.Column<a
   return await PackageFunctions.activityCliffs(table, molecules, activities, similarity, methodName, similarityMetric, preprocessingFunction, options, demo);
 }
 
+//input: viewer sp 
+export async function seqActivityCliffsInitFunction(sp: any) : Promise<void> {
+  await PackageFunctions.seqActivityCliffsInitFunction(sp);
+}
+
+//input: dataframe table { description: Input data table }
+//input: column molecules { semType: Macromolecule }
+//input: column activities { type: numerical }
+//input: double similarity = 80 { description: Similarity cutoff }
+//input: string methodName 
+//input: string similarityMetric 
+//input: string options { optional: true }
+//input: bool isDemo { optional: true }
+//input: list<string> axesNames { optional: true }
+//meta.role: transform
+export async function seqActivityCliffsTransform(table: DG.DataFrame, molecules: DG.Column, activities: DG.Column, similarity: number, methodName: any, similarityMetric: any, options?: string, isDemo?: boolean, axesNames?: string[]) : Promise<void> {
+  await PackageFunctions.seqActivityCliffsTransform(table, molecules, activities, similarity, methodName, similarityMetric, options, isDemo, axesNames);
+}
+
 //name: Encode Sequences
 //tags: dim-red-preprocessing-function
 //input: column col { semType: Macromolecule }
@@ -309,10 +328,26 @@ export async function helmPreprocessingFunction(col: DG.Column<any>, _metric: an
 //input: object options { optional: true }
 //input: bool clusterEmbeddings = true { optional: true }
 //input: bool isDemo { optional: true }
+//output: viewer result
 //top-menu: Bio | Analyze | Sequence Space...
 //editor: Bio:SequenceSpaceEditor
 export async function sequenceSpaceTopMenu(table: DG.DataFrame, molecules: DG.Column, methodName: any, similarityMetric: any, plotEmbeddings: boolean, preprocessingFunction?: any, options?: any, clusterEmbeddings?: boolean, isDemo?: boolean) : Promise<any> {
   return await PackageFunctions.sequenceSpaceTopMenu(table, molecules, methodName, similarityMetric, plotEmbeddings, preprocessingFunction, options, clusterEmbeddings, isDemo);
+}
+
+//input: dataframe table 
+//input: column molecules { semType: Macromolecule }
+//input: string methodName 
+//input: string similarityMetric 
+//input: bool plotEmbeddings = true 
+//input: string options { optional: true }
+//input: bool clusterEmbeddings { optional: true }
+//input: list<string> embedColsNames { optional: true }
+//input: string clusterColName { optional: true }
+//output: viewer result
+//meta.role: transform
+export async function sequenceSpaceTransform(table: DG.DataFrame, molecules: DG.Column, methodName: any, similarityMetric: any, plotEmbeddings: boolean, options?: string, clusterEmbeddings?: boolean, embedColsNames?: string[], clusterColName?: string) : Promise<any> {
+  return await PackageFunctions.sequenceSpaceTransform(table, molecules, methodName, similarityMetric, plotEmbeddings, options, clusterEmbeddings, embedColsNames, clusterColName);
 }
 
 //name: Molecules to HELM

@@ -192,6 +192,14 @@ export namespace funcs {
     return await grok.functions.call('Bio:ActivityCliffs', { table, molecules, activities, similarity, methodName, similarityMetric, preprocessingFunction, options, demo });
   }
 
+  export async function seqActivityCliffsInitFunction(sp: any ): Promise<void> {
+    return await grok.functions.call('Bio:SeqActivityCliffsInitFunction', { sp });
+  }
+
+  export async function seqActivityCliffsTransform(table: DG.DataFrame , molecules: DG.Column , activities: DG.Column , similarity: number , methodName: string , similarityMetric: string , options?: string , isDemo?: boolean , axesNames?: any ): Promise<void> {
+    return await grok.functions.call('Bio:SeqActivityCliffsTransform', { table, molecules, activities, similarity, methodName, similarityMetric, options, isDemo, axesNames });
+  }
+
   export async function macromoleculePreprocessingFunction(col: DG.Column , metric: string , gapOpen?: number , gapExtend?: number , fingerprintType?: string ): Promise<any> {
     return await grok.functions.call('Bio:MacromoleculePreprocessingFunction', { col, metric, gapOpen, gapExtend, fingerprintType });
   }
@@ -203,8 +211,12 @@ export namespace funcs {
   /**
   Creates 2D sequence space with projected sequences by pairwise distance
   */
-  export async function sequenceSpaceTopMenu(table: DG.DataFrame , molecules: DG.Column , methodName: string , similarityMetric: string , plotEmbeddings: boolean , preprocessingFunction?: any , options?: any , clusterEmbeddings?: boolean , isDemo?: boolean ): Promise<void> {
+  export async function sequenceSpaceTopMenu(table: DG.DataFrame , molecules: DG.Column , methodName: string , similarityMetric: string , plotEmbeddings: boolean , preprocessingFunction?: any , options?: any , clusterEmbeddings?: boolean , isDemo?: boolean ): Promise<any> {
     return await grok.functions.call('Bio:SequenceSpaceTopMenu', { table, molecules, methodName, similarityMetric, plotEmbeddings, preprocessingFunction, options, clusterEmbeddings, isDemo });
+  }
+
+  export async function sequenceSpaceTransform(table: DG.DataFrame , molecules: DG.Column , methodName: string , similarityMetric: string , plotEmbeddings: boolean , options?: string , clusterEmbeddings?: boolean , embedColsNames?: any , clusterColName?: string ): Promise<any> {
+    return await grok.functions.call('Bio:SequenceSpaceTransform', { table, molecules, methodName, similarityMetric, plotEmbeddings, options, clusterEmbeddings, embedColsNames, clusterColName });
   }
 
   /**

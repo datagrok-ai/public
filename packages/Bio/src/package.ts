@@ -9,7 +9,7 @@ import * as DG from 'datagrok-api/dg';
 
 import {Options} from '@datagrok-libraries/utils/src/type-declarations';
 import {DimReductionBaseEditor, PreprocessFunctionReturnType} from '@datagrok-libraries/ml/src/functionEditors/dimensionality-reduction-editor';
-import {getActivityCliffs} from '@datagrok-libraries/ml/src/viewers/activity-cliffs';
+import {getActivityCliffsEmbeddings, runActivityCliffs} from '@datagrok-libraries/ml/src/viewers/activity-cliffs';
 import {MmDistanceFunctionsNames} from '@datagrok-libraries/ml/src/macromolecule-distance-functions';
 import {BitArrayMetrics, KnownMetrics} from '@datagrok-libraries/ml/src/typed-metrics';
 import {ALPHABET, NOTATION, TAGS as bioTAGS} from '@datagrok-libraries/bio/src/utils/macromolecule';
@@ -38,7 +38,7 @@ import {MacromoleculeDifferenceCellRenderer, MacromoleculeSequenceCellRenderer,}
 import {VdRegionsViewer} from './viewers/vd-regions-viewer';
 import {SequenceAlignment} from './seq_align';
 import {getEncodedSeqSpaceCol} from './analysis/sequence-space';
-import {createLinesGrid, createPropPanelElement, createTooltipElement,} from './analysis/sequence-activity-cliffs';
+import {createLinesGrid, createPropPanelElement, createTooltipElement, SeqActivityCliffsParams} from './analysis/sequence-activity-cliffs';
 import {SequenceSimilarityViewer} from './analysis/sequence-similarity-viewer';
 import {SequenceDiversityViewer} from './analysis/sequence-diversity-viewer';
 import {invalidateMols, MONOMERIC_COL_TAGS, SubstructureSearchDialog} from './substructure-search/substructure-search';
@@ -522,38 +522,6 @@ export class PackageFunctions {
     }
     if (!checkInputColumnUI(molecules, 'Activity Cliffs'))
       return;
-    const axesNames = getEmbeddingColsNames(table);
-    const tags = {
-      'units': molecules.meta.units!,
-      'aligned': molecules.getTag(bioTAGS.aligned),
-      'separator': molecules.getTag(bioTAGS.separator),
-      'alphabet': molecules.getTag(bioTAGS.alphabet),
-    };
-    const columnDistanceMetric: MmDistanceFunctionsNames | BitArrayMetrics = similarityMetric;
-    const seqCol = molecules;
-
-    const runCliffs = async () => {
-      const sp = await getActivityCliffs(
-        table,
-        seqCol,
-        axesNames,
-        'Activity cliffs', //scatterTitle
-        activities,
-        similarity,
-        columnDistanceMetric, //similarityMetric
-        methodName,
-        {...(options ?? {})},
-        DG.SEMTYPE.MACROMOLECULE,
-        tags,
-        preprocessingFunction,
-        createTooltipElement,
-        createPropPanelElement,
-        createLinesGrid,
-        undefined,
-        demo
-      );
-      return sp;
-    };
 
     const allowedRowCount = methodName === DimReductionMethods.UMAP ? 200_000 : 20_000;
     const fastRowCount = methodName === DimReductionMethods.UMAP ? 5_000 : 2_000;
@@ -562,29 +530,124 @@ export class PackageFunctions {
       return;
     }
 
+    const axesNames = getEmbeddingColsNames(table);
+
+    const runCliffs = async (): Promise<void> => {
+      await DG.Func.find({name: 'seqActivityCliffsTransform'})[0].prepare({
+        table: table,
+        molecules: molecules,
+        activities: activities,
+        similarity: similarity,
+        methodName: methodName,
+        similarityMetric: similarityMetric,
+        options: JSON.stringify(options),
+        isDemo: demo,
+        axesNames: axesNames,
+      }).call(undefined, undefined, {processed: false});
+
+      const view = grok.shell.tv;
+
+      const description = `Molecules: ${molecules.name}, activities: ${activities.name}, method: ${methodName}, ${options ? `options: ${JSON.stringify(options)},` : ``} similarity: ${similarityMetric}, similarity cutoff: ${similarity}`;
+      view.addViewer(DG.VIEWER.SCATTER_PLOT, {
+        xColumnName: axesNames[0],
+        yColumnName: axesNames[1],
+        color: activities.name,
+        showXSelector: false,
+        showYSelector: false,
+        showSizeSelector: false,
+        showColorSelector: false,
+        markerMinSize: 5,
+        markerMaxSize: 25,
+        title: 'Activity cliffs',
+        initializationFunction: 'seqActivityCliffsInitFunction',
+        description: description,
+        descriptionVisibilityMode: 'Never',
+      }) as DG.ScatterPlotViewer;
+    };
+
     const pi = DG.TaskBarProgressIndicator.create(`Running sequence activity cliffs ...`);
-    const scRes = (await new Promise<DG.Viewer | undefined>((resolve, reject) => {
+    try {
       if (table.rowCount > fastRowCount && !options?.[BYPASS_LARGE_DATA_WARNING]) {
-        ui.dialog().add(ui.divText(`Activity cliffs analysis might take several minutes.
+        await new Promise<void>((resolve, reject) => {
+          ui.dialog().add(ui.divText(`Activity cliffs analysis might take several minutes.
     Do you want to continue?`))
-          .onOK(async () => {
-            runCliffs().then((res) => resolve(res)).catch((err) => reject(err));
-          })
-          .onCancel(() => { resolve(undefined); })
-          .show();
+            .onOK(async () => {
+              runCliffs().then(() => resolve()).catch((err) => reject(err));
+            })
+            .onCancel(() => { resolve(); })
+            .show();
+        });
       } else
-        runCliffs().then((res) => resolve(res)).catch((err) => reject(err));
-    }).catch((err: any) => {
+        await runCliffs();
+    } catch (err: any) {
       const [errMsg, errStack] = errInfo(err);
       _package.logger.error(errMsg, undefined, errStack);
       throw err;
-    }).finally(() => { pi.close(); })) as DG.ScatterPlotViewer | undefined;
-    if (scRes?.props?.xColumnName && scRes?.props?.yColumnName && table.col(scRes.props.xColumnName) && table.col(scRes.props.yColumnName)) {
-    table.col(scRes.props.xColumnName)!.set(0, table.col(scRes.props.xColumnName)!.get(0)); // to trigger rendering
-    table.col(scRes.props.yColumnName)!.set(0, table.col(scRes.props.yColumnName)!.get(0)); // to trigger rendering
+    } finally {
+      pi.close();
     }
+  }
 
-    return scRes;
+  @grok.decorators.func({
+    name: 'seqActivityCliffsInitFunction',
+  })
+  static async seqActivityCliffsInitFunction(
+    @grok.decorators.param({type: 'viewer'}) sp: DG.ScatterPlotViewer): Promise<void> {
+    const tag = sp.dataFrame.getTag('seqActivityCliffsParams');
+    if (!tag) {
+      grok.shell.error(`Sequence activity cliffs parameters not found in table tags`);
+      return;
+    }
+    const actCliffsParams: SeqActivityCliffsParams = JSON.parse(tag);
+    const molCol = sp.dataFrame.col(actCliffsParams.seqColName)!
+    const actCol = sp.dataFrame.col(actCliffsParams.activityColName)!;
+
+    const preprocessingFunction = DG.Func.find({name: 'macromoleculePreprocessingFunction', package: 'Bio'})[0];
+    const encodedColWithOptions = await preprocessingFunction.apply({
+      col: molCol, metric: actCliffsParams.similarityMetric,
+    });
+
+    const axesNames = [sp.getOptions().look['xColumnName'], sp.getOptions().look['yColumnName']];
+    const tags = {
+      'units': molCol.meta.units!,
+      'aligned': molCol.getTag(bioTAGS.aligned),
+      'separator': molCol.getTag(bioTAGS.separator),
+      'alphabet': molCol.getTag(bioTAGS.alphabet),
+    };
+
+    await runActivityCliffs(sp, sp.dataFrame, molCol, encodedColWithOptions, actCol, axesNames,
+      actCliffsParams.similarity, actCliffsParams.similarityMetric, actCliffsParams.options ?? {},
+      DG.SEMTYPE.MACROMOLECULE, tags,
+      createTooltipElement, createPropPanelElement, createLinesGrid, undefined, actCliffsParams.isDemo);
+  }
+
+  @grok.decorators.func({
+    meta: {role: 'transform'},
+  })
+  static async seqActivityCliffsTransform(
+    @grok.decorators.param({options: {description: 'Input data table'}}) table: DG.DataFrame,
+    @grok.decorators.param({type: 'column', options: {semType: 'Macromolecule'}}) molecules: DG.Column,
+    @grok.decorators.param({type: 'column', options: {type: 'numerical'}}) activities: DG.Column,
+    @grok.decorators.param({options: {description: 'Similarity cutoff', initialValue: '80'}}) similarity: number,
+    @grok.decorators.param({type: 'string'}) methodName: DimReductionMethods,
+    @grok.decorators.param({type: 'string'}) similarityMetric: MmDistanceFunctionsNames | BitArrayMetrics,
+    @grok.decorators.param({options: {optional: true}}) options?: string,
+    @grok.decorators.param({options: {optional: true}}) isDemo?: boolean,
+    @grok.decorators.param({options: {optional: true}}) axesNames?: string[]): Promise<void> {
+    const preprocessingFunction = DG.Func.find({name: 'macromoleculePreprocessingFunction', package: 'Bio'})[0];
+    if (!axesNames)
+      axesNames = getEmbeddingColsNames(table);
+    await getActivityCliffsEmbeddings(table, molecules, axesNames, similarity,
+      similarityMetric, methodName, JSON.parse(options ?? '{}'), preprocessingFunction);
+    const tagContent: SeqActivityCliffsParams = {
+      seqColName: molecules.name,
+      activityColName: activities.name,
+      similarityMetric: similarityMetric,
+      similarity: similarity,
+      options: options ?? {},
+      isDemo: isDemo,
+    };
+    table.setTag('seqActivityCliffsParams', JSON.stringify(tagContent));
   }
 
   @grok.decorators.func({
@@ -644,7 +707,7 @@ export class PackageFunctions {
     description: 'Creates 2D sequence space with projected sequences by pairwise distance',
     'top-menu': 'Bio | Analyze | Sequence Space...',
     editor: 'Bio:SequenceSpaceEditor',
-    outputs: [],
+    outputs: [{type: 'viewer', name: 'result'}],
   })
   static async sequenceSpaceTopMenu(
     table: DG.DataFrame,
@@ -662,22 +725,64 @@ export class PackageFunctions {
       grok.shell.error(`Table ${table.name} is not a current table view`);
       return;
     }
-    const tableView =
-      grok.shell.tv.dataFrame == table ? grok.shell.tv : undefined;
     if (!checkInputColumnUI(molecules, 'Sequence Space'))
       return;
-    if (!preprocessingFunction)
-      preprocessingFunction = DG.Func.find({name: 'macromoleculePreprocessingFunction', package: 'Bio'})[0];
-    options ??= {};
+    const clusterColName = table.columns.getUnusedName('Cluster (DBSCAN)');
+    const embedColsNames: string[] = getEmbeddingColsNames(table);
+    await DG.Func.find({name: 'sequenceSpaceTransform'})[0].prepare({
+      table: table,
+      molecules: molecules,
+      methodName: methodName,
+      similarityMetric: similarityMetric,
+      plotEmbeddings: false,
+      options: JSON.stringify(options),
+      clusterEmbeddings: clusterEmbeddings,
+      embedColsNames: embedColsNames,
+      clusterColName: clusterColName,
+    }).call(undefined, undefined, {processed: false});
+
+    let res: DG.ScatterPlotViewer | undefined;
+    if (plotEmbeddings) {
+      const tv = grok.shell.tv;
+      res = tv.scatterPlot({x: embedColsNames[0], y: embedColsNames[1], title: 'Sequence space'});
+      const description = `Molecules column: ${molecules.name}, method: ${methodName}, ${options ? `options: ${JSON.stringify(options)},` : ``} similarity: ${similarityMetric}`;
+      res.setOptions({description: description, descriptionVisibilityMode: 'Never'});
+      if (clusterEmbeddings)
+        res.props.colorColumnName = clusterColName;
+    }
+    return res;
+  }
+
+  @grok.decorators.func({
+    outputs: [{type: 'viewer', name: 'result'}],
+    meta: {role: 'transform'},
+  })
+  static async sequenceSpaceTransform(
+    table: DG.DataFrame,
+    @grok.decorators.param({options: {semType: 'Macromolecule'}}) molecules: DG.Column,
+    @grok.decorators.param({type: 'string'}) methodName: DimReductionMethods,
+    @grok.decorators.param({type: 'string'}) similarityMetric: BitArrayMetrics | MmDistanceFunctionsNames,
+    @grok.decorators.param({options: {initialValue: 'true'}}) plotEmbeddings: boolean,
+    @grok.decorators.param({options: {optional: true}}) options?: string,
+    @grok.decorators.param({options: {optional: true}}) clusterEmbeddings?: boolean,
+    @grok.decorators.param({options: {optional: true}}) embedColsNames?: string[],
+    @grok.decorators.param({options: {optional: true}}) clusterColName?: string,
+  ): Promise<DG.ScatterPlotViewer | undefined> {
+    const preprocessingFunction = DG.Func.find({name: 'macromoleculePreprocessingFunction', package: 'Bio'})[0];
+    const parsedOptions: any = JSON.parse(options ?? '{}');
+    const tableView =
+      grok.shell.tv?.dataFrame == table ? grok.shell.tv : undefined;
     const res = await multiColReduceDimensionality(table, [molecules], methodName,
       [similarityMetric as KnownMetrics], [1], [preprocessingFunction], 'MANHATTAN',
       plotEmbeddings, clusterEmbeddings ?? false,
-      /* dimRedOptions */ {...options, preprocessingFuncArgs: [options.preprocessingFuncArgs ?? {}]},
+      /* dimRedOptions */ {...parsedOptions, preprocessingFuncArgs: [parsedOptions.preprocessingFuncArgs ?? {}]},
       /* uiOptions */{
         fastRowCount: 10000,
         scatterPlotName: 'Sequence space',
-        bypassLargeDataWarning: options?.[BYPASS_LARGE_DATA_WARNING],
+        bypassLargeDataWarning: parsedOptions?.[BYPASS_LARGE_DATA_WARNING],
         tableView: tableView,
+        embedColsNames: embedColsNames,
+        clusterColName: clusterColName,
       });
     return res;
   }
