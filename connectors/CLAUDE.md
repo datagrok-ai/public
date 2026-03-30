@@ -39,16 +39,7 @@ java -classpath "grok_connect/target/grok_connect.jar:grok_connect/lib/*" grok_c
 
 ### Testing
 
-```bash
-# Run all tests
-mvn test
-
-# Run specific test class
-mvn -Dtest=PostgresDataProviderTest test
-
-# Run with TestContainers (requires Docker)
-mvn verify
-```
+Use `/test-connectors` to run tests.
 
 ### Docker
 
