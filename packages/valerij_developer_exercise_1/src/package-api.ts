@@ -50,4 +50,20 @@ export namespace funcs {
   export async function getOrders(): Promise<DG.DataFrame> {
     return await grok.functions.call('valerij_developer_exercise_1:GetOrders', {});
   }
+
+  export async function openTableViaDemo(filepath: string ): Promise<DG.DataFrame> {
+    return await grok.functions.call('valerij_developer_exercise_1:OpenTableViaDemo', { filepath });
+  }
+
+  export async function openTableViaFiles(filepath: string ): Promise<DG.DataFrame> {
+    return await grok.functions.call('valerij_developer_exercise_1:OpenTableViaFiles', { filepath });
+  }
+
+  export async function openTableViaServerFile(filepath: string ): Promise<DG.DataFrame> {
+    return await grok.functions.call('valerij_developer_exercise_1:OpenTableViaServerFile', { filepath });
+  }
+
+  export async function addTables(): Promise<void> {
+    return await grok.functions.call('valerij_developer_exercise_1:AddTables', {});
+  }
 }

@@ -74,3 +74,48 @@ export async function countSubsequenceTableAugment(sequences: DG.DataFrame, colu
 export async function getOrders() {
   return await grok.data.query('valerij_developer_exercise_1:ordersByCountry', { country: 'USA' });
 }
+
+//name: openTableViaDemo
+//input: string filepath
+//output: dataframe df
+export async function openTableViaDemo(filepath: string): Promise<DG.DataFrame> {
+  const df = await grok.data.getDemoTable(filepath);
+  grok.shell.addTableView(df);
+  return df;
+}
+
+//name: openTableViaFiles
+//input: string filepath
+//output: dataframe df
+export async function openTableViaFiles(filepath: string): Promise<DG.DataFrame> {
+  const df = await grok.data.files.openTable(`System:/${filepath}`);
+  grok.shell.addTableView(df);
+  return df;
+}
+
+//name: openTableViaServerFile
+//input: string filepath
+//output: dataframe df
+export async function openTableViaServerFile(filepath: string): Promise<DG.DataFrame> {
+  const df = (await grok.functions.eval(`OpenServerFile("System:DemoFiles/${filepath}")`))[0];
+  grok.shell.addTableView(df);
+  return df;
+}
+
+//name: Add Tables
+export async function addTables(): Promise<void> {
+   // Recursively list package files
+   const files = await _package.files.list('', true);
+
+   // Filter files by extension
+   const csvFiles = files.filter((f) => f.extension === 'csv');
+
+   // Load every table and add a view for it
+   for (const file of csvFiles) {
+      const df = await _package.files.readCsv(file.name);
+      grok.shell.addTableView(df);
+      // Alternative ways to read a table are:
+      // const df = await grok.data.loadTable(`${_package.webRoot}${file.path}`);
+      // const df = await grok.data.files.openTable(`System:AppData/${_package.name}/${file.fileName}`);
+   }
+}
