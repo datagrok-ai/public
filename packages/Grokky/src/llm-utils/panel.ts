@@ -34,12 +34,12 @@ type TVAIPanelInputs = AIPanelInputs & {
     mode: 'agent' | 'ask',
 }
 
-interface AskUserOption {
+export interface AskUserOption {
   label: string;
   description?: string;
 }
 
-interface AskUserQuestion {
+export interface AskUserQuestion {
   question: string;
   header?: string;
   options: AskUserOption[];
@@ -89,7 +89,8 @@ export type AIPanelFuncs<T extends MessageType = LanguageModelV3Message> = {
   addUiMessage: (msg: string, fromUser: boolean, messageOptions?: UIMessageOptions) => void
   /**Adds confirmation section to the panel and awaits result */
   addConfirmMessage: (msg?: string) => Promise<boolean>,
-
+  /** Shows options to the user and returns their selection */
+  showInputRequest?: (input: AskUserInput) => Promise<AskUserResponse | null>,
 }
 
 export class AIPanel<T extends MessageType = LanguageModelV3Message, K extends AIPanelInputs = AIPanelInputs> {
@@ -464,6 +465,7 @@ export class AIPanel<T extends MessageType = LanguageModelV3Message, K extends A
         addUiMessage: (msg: string, fromUser: boolean, messageOptions?: UIMessageOptions) => this.appendMessage('' as any, {title: '', content: msg, fromUser: fromUser, uiOnly: true, messageOptions: messageOptions}, loader),
         addUserMessage: (aiMsg, content) => this.appendMessage(aiMsg, {title: '', content: content, fromUser: true}, loader),
         addConfirmMessage: (msg?: string) => this.appendMessage('' as any, {title: '', content: '', fromUser: false, uiOnly: true, messageOptions: {confirm: {message: msg}}}, loader)!.confirmPromise,
+        showInputRequest: (input: AskUserInput) => this.showInputRequest(input),
       },
       endSession: () => {
         this.runButton.classList.remove('fas', 'fa-stop');
@@ -478,6 +480,10 @@ export class AIPanel<T extends MessageType = LanguageModelV3Message, K extends A
 
   get isShown(): boolean {
     return document.contains(this.root);
+  }
+
+  protected showInputRequest(_input: AskUserInput): Promise<AskUserResponse | null> {
+    return Promise.resolve(null);
   }
 
   private tryAgain() {

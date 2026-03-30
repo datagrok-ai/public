@@ -5,7 +5,7 @@ import * as DG from 'datagrok-api/dg';
 import {ModelOption, ModelType, LLMClient} from './LLM-client';
 import {ChatModel} from 'openai/resources/shared';
 import {findLast, getAIAbortSubscription} from '../utils';
-import {AIPanelFuncs, MessageType} from './panel';
+import {AIPanelFuncs, AskUserQuestion, MessageType} from './panel';
 import {LLMCredsManager} from './creds';
 import {LanguageModelV3, LanguageModelV3FunctionTool, LanguageModelV3Message} from '@ai-sdk/provider';
 
@@ -120,7 +120,11 @@ CRITICAL RULES:
 - If adjust_viewer fails because viewer doesn't exist, add it instead
 - Format your responses in markdown for better readability
 - If the user asks a general question that doesn't require viewer manipulation, just answer it conversationally
-- When user request is ambiguous, ask for clarification
+- When the user's request is ambiguous or could be interpreted in multiple ways, use reply_to_user with the "options" array to clarify before acting. Examples:
+  - "add a plot" → offer plot types (scatter, histogram, bar chart, etc.)
+  - "filter the data" → offer columns to filter by
+  - "clean up the data" → offer cleanup options
+  - "correlate columns" → offer which columns
 - ALWAYS use highlight_element to guide users to UI elements when relevant!${vectorStoreId ? '\n- DOCUMENTATION SEARCH: Use search_documentation tool IMMEDIATELY when the user asks about any Datagrok features, functionality, or workflows that are not directly related to adding/modifying viewers in the current table. This includes questions like "how do I do X" or "where is feature Y". NEVER invent or assume information about Datagrok features, menu locations, package names, or workflows - ALWAYS search documentation first! If documentation search returns no results, tell the user you cannot find information rather than making assumptions.' : ''}
 - STRICT NO-INVENTION POLICY: Do NOT make up menu locations, feature names, dialog boxes, keyboard shortcuts, package names, or step-by-step instructions unless they come directly from documentation search results or are about the specific table/viewer tools you have access to.
 
@@ -295,19 +299,43 @@ Your responses should be informative, explaining what you're doing and why.`;
     {
       type: 'function',
       name: 'reply_to_user',
-      description: 'Send a message to the user to explain reasoning, ask for clarification, or provide updates',
+      description: 'Send a message to the user to explain reasoning, ask for clarification, or provide updates. When you need the user to choose between options, provide the "options" array — the user will see clickable choices and their selection will be returned.',
       inputSchema: {
         type: 'object',
         properties: {
           message: {
             type: 'string',
-            description: 'Message to send to the user'
-          }
+            description: 'Message to send to the user',
+          },
+          questions: {
+            type: 'array',
+            description: 'Optional list of questions with clickable options for the user to answer.',
+            items: {
+              type: 'object',
+              properties: {
+                question: {type: 'string', description: 'The question to ask'},
+                header: {type: 'string', description: 'Short header for the dropdown'},
+                options: {
+                  type: 'array',
+                  items: {
+                    type: 'object',
+                    properties: {
+                      label: {type: 'string', description: 'Short label for the option'},
+                      description: {type: 'string', description: 'Optional longer description'},
+                    },
+                    required: ['label'],
+                    additionalProperties: false,
+                  },
+                },
+              },
+              required: ['question', 'options'],
+              additionalProperties: false,
+            },
+          },
         },
         required: ['message'],
         additionalProperties: false,
       },
-      strict: true,
     }
   ];
 
@@ -457,8 +485,16 @@ Your responses should be informative, explaining what you're doing and why.`;
           break;
         case 'reply_to_user': {
           const message = getStringProp(argsObj, 'message') ?? '';
-          result = 'Message sent to user';
+          const questions = Array.isArray(argsObj?.questions) ? argsObj.questions as unknown as AskUserQuestion[] : null;
           options.aiPanel?.addUiMessage(`💬 ${message}`, false);
+
+          if (questions?.length && options.aiPanel?.showInputRequest) {
+            const response = await options.aiPanel.showInputRequest({questions});
+            const answers = response ? Object.values(response.answers) : null;
+            result = answers ? `User selected: ${answers.join(', ')}` : 'User dismissed the options without selecting';
+          }
+          else
+            result = 'Message sent to user';
           break;
         }
         case 'search_documentation': {
