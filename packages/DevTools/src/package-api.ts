@@ -62,6 +62,10 @@ export namespace funcs {
     return await grok.functions.call('DevTools:TestManager', {});
   }
 
+  export async function testManagerAppTreeBrowser(treeNode: any ): Promise<void> {
+    return await grok.functions.call('DevTools:TestManagerAppTreeBrowser', { treeNode });
+  }
+
   export async function testDetectors(): Promise<void> {
     return await grok.functions.call('DevTools:TestDetectors', {});
   }

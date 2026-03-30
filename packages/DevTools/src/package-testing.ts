@@ -278,7 +278,7 @@ export class TestManager extends DG.ViewBase {
         check: false,
       });
       const packNode = targetTree.group(pack.package.friendlyName,
-        null, testFromUrl && pack.package.name === testFromUrl.packName);
+        null, testFromUrl != null && pack.package.name === testFromUrl.packName);
       this.setRunTestsMenuAndLabelClick(packNode, pack, NODE_TYPE.PACKAGE);
       packNode.root.children[0].appendChild(testPassed);
       packNode.onNodeExpanding.subscribe(() => {
@@ -544,9 +544,11 @@ export class TestManager extends DG.ViewBase {
 
   async runAllTests(node: DG.TreeViewGroup | DG.TreeViewNode, tests: any,
     nodeType: NODE_TYPE, force?: boolean): Promise<void> {
-    this.testManagerView.path = this.getPath(tests, nodeType);
+    const currentPath = this.getPath(tests, nodeType);
+    if (this.testManagerView)
+      this.testManagerView.path = currentPath;
     let catsValuesSorted: ICategory[];
-    localStorage.setItem('TMState', this.testManagerView.path);
+    localStorage.setItem('TMState', currentPath);
     switch (nodeType) {
     case NODE_TYPE.PACKAGE: {
       const progressBar = DG.TaskBarProgressIndicator.create(tests.package.name);

@@ -33,7 +33,7 @@ export async function testManager() : Promise<void> {
   await PackageFunctions.testManager();
 }
 
-//input: dynamic treeNode
+//input: dynamic treeNode 
 //meta.role: appTreeBrowser
 //meta.app: Test Manager
 export async function testManagerAppTreeBrowser(treeNode: any) : Promise<void> {
