@@ -20,6 +20,12 @@ export namespace scripts {
   }
 }
 
+export namespace queries {
+  export async function ordersByCountry(country: string ): Promise<DG.DataFrame> {
+    return await grok.data.query('valerij_developer_exercise_1:OrdersByCountry', { country });
+  }
+}
+
 export namespace funcs {
   export async function info(): Promise<void> {
     return await grok.functions.call('valerij_developer_exercise_1:Info', {});
@@ -39,5 +45,9 @@ export namespace funcs {
 
   export async function countSubsequenceTableAugment(sequences: DG.DataFrame , columnName: DG.Column , subsequence: string ): Promise<void> {
     return await grok.functions.call('valerij_developer_exercise_1:CountSubsequenceTableAugment', { sequences, columnName, subsequence });
+  }
+
+  export async function getOrders(): Promise<DG.DataFrame> {
+    return await grok.functions.call('valerij_developer_exercise_1:GetOrders', {});
   }
 }

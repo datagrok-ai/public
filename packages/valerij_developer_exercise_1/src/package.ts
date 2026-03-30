@@ -68,3 +68,9 @@ export async function countSubsequenceTableAugment(sequences: DG.DataFrame, colu
    countCol.name = `N(${subsequence})`;
    sequences.columns.insert(countCol);
 }
+
+//name: getOrders
+//output: dataframe df
+export async function getOrders() {
+  return await grok.data.query('valerij_developer_exercise_1:ordersByCountry', { country: 'USA' });
+}
