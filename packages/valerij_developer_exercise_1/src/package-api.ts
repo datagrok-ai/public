@@ -36,4 +36,8 @@ export namespace funcs {
   export async function countSubsequencePythonPackageTS(sequence: string , subsequence: string ): Promise<number> {
     return await grok.functions.call('valerij_developer_exercise_1:CountSubsequencePythonPackageTS', { sequence, subsequence });
   }
+
+  export async function countSubsequenceTableAugment(sequences: DG.DataFrame , columnName: DG.Column , subsequence: string ): Promise<void> {
+    return await grok.functions.call('valerij_developer_exercise_1:CountSubsequenceTableAugment', { sequences, columnName, subsequence });
+  }
 }

@@ -4,7 +4,7 @@
 #input: dataframe sequences
 #input: column columnName
 #input: string subsequence = "acc"
-#output: dataframe result {action:join(sequences)}
+#output: dataframe result
 
 def count_occurrences(sequence, subsequence):
     sequence = str(sequence).lower().replace('fasta:', '').strip()

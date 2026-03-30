@@ -1,4 +1,5 @@
 import './tests/count_subsequence-tests';
+import './tests/count_subsequence_table_augment-tests';
 import { runTests, tests, TestContext, initAutoTests as initTests } from '@datagrok-libraries/test/src/test';
 import * as DG from 'datagrok-api/dg';
 

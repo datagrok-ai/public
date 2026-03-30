@@ -57,3 +57,14 @@ export async function countSubsequencePythonPackageTS(sequence: string, subseque
     { sequence, subsequence }
   );
 }
+
+//name: CountSubsequenceTableAugment
+//input: dataframe sequences
+//input: column columnName
+//input: string subsequence = "acc"
+export async function countSubsequenceTableAugment(sequences: DG.DataFrame, columnName: DG.Column, subsequence: string): Promise<void> {
+   const df = await grok.functions.call('valerij_developer_exercise_1:CountSubsequencePythonDataframe', { sequences, columnName, subsequence });
+   const countCol = df.columns.byIndex(0);
+   countCol.name = `N(${subsequence})`;
+   sequences.columns.insert(countCol);
+}
