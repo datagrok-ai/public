@@ -180,7 +180,10 @@ export class AIPanel<T extends MessageType = LanguageModelV3Message, K extends A
       items: Object.keys(ModelType) as ModelOption[],
       value: 'Deep Research',
       nullable: false,
-      tooltipText: 'Select AI model to use',
+      tooltipText: 'Select AI model:<br>' +
+        `- <b>Fast</b> (${ModelType.Fast}): Quick responses for simple tasks.<br>` +
+        `- <b>Deep Research</b> (${ModelType['Deep Research']}): Most capable model for complex analysis.<br>` +
+        `- <b>Coding</b> (${ModelType.Coding}): Optimized for code generation.`,
     }) as DG.InputBase<ModelOption>;
     this.hideContentIcons();
     this.inputControlsDiv = ui.divH([
