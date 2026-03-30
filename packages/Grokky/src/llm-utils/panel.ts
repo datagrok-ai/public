@@ -263,6 +263,7 @@ export class AIPanel<T extends MessageType = LanguageModelV3Message, K extends A
     const contextRoot = grok.shell.windows.context?.root;
     const contextNode = contextRoot && document.contains(contextRoot) ? grok.shell.dockManager.findNode(contextRoot) : null;
     AIPanel._lastDockedPanel = grok.shell.dockManager.dock(this.root, contextNode ? 'down' : 'right', contextNode, '', contextNode ? 0.5 : 0.25);
+    this.textArea.focus();
   }
 
   hide() {
@@ -637,9 +638,16 @@ export class AIPanel<T extends MessageType = LanguageModelV3Message, K extends A
 
       this.recognition.onresult = (event) => {
         const transcript = event.results[0][0].transcript;
-        this.textArea.value = transcript;
-        this.textArea.focus();
         ui.setUpdateIndicator(this.textAreaDiv, false);
+
+        if (transcript === 'stop') {
+          this.stopRecognition();
+          this.textArea.focus();
+          return;
+        }
+
+        this.textArea.value = transcript;
+        this.handleRun();
       };
 
       this.recognition.onerror = (event) => {
@@ -675,7 +683,10 @@ export class AIPanel<T extends MessageType = LanguageModelV3Message, K extends A
       };
 
       this.recognition.onend = () => {
-        this.isRecognizing = false;
+        if (this.isRecognizing) {
+          this.startRecognition();
+          return;
+        }
         this.micButton.classList.remove('fa-stop');
         this.micButton.classList.add('fa-microphone');
         this.micButton.style.color = '';
@@ -691,6 +702,8 @@ export class AIPanel<T extends MessageType = LanguageModelV3Message, K extends A
   }
 
   private stopRecognition() {
+    this.isRecognizing = false;
+
     if (this.recognition) {
       try {
         this.recognition.stop();
@@ -699,8 +712,6 @@ export class AIPanel<T extends MessageType = LanguageModelV3Message, K extends A
       }
       this.recognition = null;
     }
-
-    this.isRecognizing = false;
     this.micButton.classList.remove('fa-stop');
     this.micButton.classList.add('fa-microphone');
     this.micButton.style.color = '';
