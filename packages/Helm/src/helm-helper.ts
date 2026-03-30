@@ -16,7 +16,7 @@ import {HelmTabKeys, HelmTypes, MonomerTypes, PolymerTypes} from '@datagrok-libr
 import {errInfo} from '@datagrok-libraries/bio/src/utils/err-info';
 import {ILogger} from '@datagrok-libraries/bio/src/utils/logger';
 import {
-  HelmConvertRes, HelmInputBase, IHelmHelper, IHelmInputInitOptions
+  HelmConvertRes, HelmInputBase, HelmNotSupportedError, IHelmHelper, IHelmInputInitOptions
 } from '@datagrok-libraries/bio/src/helm/helm-helper';
 import {IHelmWebEditor} from '@datagrok-libraries/bio/src/helm/types';
 import {IMonomerLib, IMonomerLibBase, IMonomerLinkData, IMonomerSetPlaceholder} from '@datagrok-libraries/bio/src/types/monomer-library';
@@ -393,6 +393,11 @@ export class HelmHelper implements IHelmHelper {
           const b = mol.bonds[bI];
           if (b.a1 === a) connectedBonds.push({bI, gapSide: 1}); // gap is a1
           else if (b.a2 === a) connectedBonds.push({bI, gapSide: 2}); // gap is a2
+        }
+
+        if (connectedBonds.length > 2) {
+          throw new HelmNotSupportedError(
+            `Removing gap monomer #${aI} with ${connectedBonds.length} bonds is unsupported (max 2).`);
         }
 
         // Separate into backbone bonds (R1/R2) and other bonds (R3+ cross-polymer)
