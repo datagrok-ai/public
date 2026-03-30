@@ -634,6 +634,7 @@ export class PackageFunctions {
     @grok.decorators.param({options: {optional: true}}) options?: string,
     @grok.decorators.param({options: {optional: true}}) isDemo?: boolean,
     @grok.decorators.param({options: {optional: true}}) axesNames?: string[]): Promise<void> {
+    await table.meta.detectSemanticTypes();  
     const preprocessingFunction = DG.Func.find({name: 'macromoleculePreprocessingFunction', package: 'Bio'})[0];
     if (!axesNames)
       axesNames = getEmbeddingColsNames(table);
@@ -768,6 +769,7 @@ export class PackageFunctions {
     @grok.decorators.param({options: {optional: true}}) embedColsNames?: string[],
     @grok.decorators.param({options: {optional: true}}) clusterColName?: string,
   ): Promise<DG.ScatterPlotViewer | undefined> {
+    await table.meta.detectSemanticTypes();
     const preprocessingFunction = DG.Func.find({name: 'macromoleculePreprocessingFunction', package: 'Bio'})[0];
     const parsedOptions: any = JSON.parse(options ?? '{}');
     const tableView =
