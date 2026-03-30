@@ -1,5 +1,6 @@
 // @ts-ignore
 import archiver from 'archiver-promise';
+import crypto from 'crypto';
 import fs from 'fs';
 // @ts-ignore
 import fetch from 'node-fetch';
@@ -106,7 +107,7 @@ function dockerTag(source: string, target: string): boolean {
 
 function dockerPush(image: string): boolean {
   try {
-    dockerCommand(`push ${image}`);
+    execSync(`docker push ${image}`, {encoding: 'utf-8', stdio: 'inherit'});
     return true;
   } catch (e: any) {
     color.error(`Failed to push ${image}: ${e.message || e}`);
@@ -126,6 +127,38 @@ function dockerBuild(imageName: string, dockerfilePath: string, context: string)
     color.error(`Failed to build ${imageName}: ${e.message || e}`);
     return false;
   }
+}
+
+function calculateFolderHash(dirPath: string): string {
+  const hash = crypto.createHash('sha256');
+  const entries = listRecursive(dirPath, '');
+  entries.sort((a, b) => a.relPath < b.relPath ? -1 : a.relPath > b.relPath ? 1 : 0);
+  for (const entry of entries) {
+    if (entry.isDir) {
+      hash.update(`dir:${entry.relPath}:`);
+    }
+    else {
+      hash.update(`file:${entry.relPath}:`);
+      hash.update(fs.readFileSync(entry.fullPath));
+    }
+  }
+  return hash.digest('hex');
+}
+
+function listRecursive(basePath: string, rel: string): {relPath: string, fullPath: string, isDir: boolean}[] {
+  const results: {relPath: string, fullPath: string, isDir: boolean}[] = [];
+  const fullDir = rel ? path.join(basePath, rel) : basePath;
+  for (const entry of fs.readdirSync(fullDir, {withFileTypes: true})) {
+    const relPath = rel ? `${rel}/${entry.name}` : entry.name;
+    const fullPath = path.join(fullDir, entry.name);
+    if (entry.isDirectory()) {
+      results.push({relPath, fullPath, isDir: true});
+      results.push(...listRecursive(basePath, relPath));
+    }
+    else
+      results.push({relPath, fullPath, isDir: false});
+  }
+  return results;
 }
 
 async function getUserLogin(host: string, devKey: string): Promise<{login: string, token: string} | null> {
@@ -152,17 +185,24 @@ async function getUserLogin(host: string, devKey: string): Promise<{login: strin
 }
 
 interface FallbackResult {
-  found: {version: string, image: string} | null;
+  found: {version: string, image: string, hashMatch?: boolean} | null;
   serverError: string | null;
 }
 
-async function resolveLatestCompatible(host: string, devKey: string, dockerName: string): Promise<FallbackResult> {
+async function resolveLatestCompatible(host: string, devKey: string, dockerName: string, version?: string, contentHash?: string): Promise<FallbackResult> {
   const userInfo = await getUserLogin(host, devKey);
   if (!userInfo)
     return {found: null, serverError: `Authentication failed. Check your developer key.`};
 
   try {
-    const url = `${host}/docker/images/${encodeURIComponent(dockerName)}/latest-compatible`;
+    let url = `${host}/docker/images/${encodeURIComponent(dockerName)}/latest-compatible`;
+    const params: string[] = [];
+    if (version)
+      params.push(`version=${encodeURIComponent(version)}`);
+    if (contentHash)
+      params.push(`contentHash=${encodeURIComponent(contentHash)}`);
+    if (params.length > 0)
+      url += '?' + params.join('&');
     const resp = await fetch(url, {headers: {'Authorization': userInfo.token}});
     if (resp.status === 200)
       return {found: await resp.json(), serverError: null};
@@ -184,6 +224,7 @@ async function processDockerImages(
   zip: any,
   localTimestamps: Indexable,
   debug: boolean,
+  skipDockerRebuild: boolean = false,
 ): Promise<void> {
   const dockerImages = discoverDockerfiles(packageName, version, debug);
   if (dockerImages.length === 0)
@@ -195,35 +236,44 @@ async function processDockerImages(
     dockerLogin(registry, devKey);
 
   for (const img of dockerImages) {
+    color.info(`Processing docker image ${img.fullLocalName}...`);
     let result: DockerImageResult;
+    const dockerfileDir = path.join('dockerfiles', img.dirName);
+    const dockerfilePath = path.join(dockerfileDir, 'Dockerfile');
+    const contentHash = calculateFolderHash(path.join(curDir, dockerfileDir));
 
     if (rebuildDocker) {
-      const dockerfileDir = path.join('dockerfiles', img.dirName);
-      const dockerfilePath = path.join(dockerfileDir, 'Dockerfile');
       if (dockerBuild(img.fullLocalName, dockerfilePath, dockerfileDir)) {
         result = pushImage(img, registry);
         color.success(`Built and tagged ${img.fullLocalName}`);
       } else {
-        result = await fallbackImage(img, host, devKey, registry);
+        result = await fallbackImage(img, host, devKey, registry, version, contentHash);
       }
     } else if (localImageExists(img.fullLocalName)) {
-      result = pushImage(img, registry);
       color.success(`Found local image ${img.fullLocalName}`);
+      result = pushImage(img, registry);
     } else {
       color.warn(`Local image not found. Expected: ${img.fullLocalName}`);
-      color.log(`  Build it with: docker build -t ${img.fullLocalName} -f dockerfiles/${img.dirName}/Dockerfile dockerfiles/${img.dirName}`);
-      const fallback = await fallbackImage(img, host, devKey, registry);
+      color.log(`  Build it with: docker build -t ${img.fullLocalName} -f ${dockerfilePath} ${dockerfileDir}`);
+      const fallback = await fallbackImage(img, host, devKey, registry, version, contentHash);
       if (fallback.serverError) {
         color.error(`Cannot resolve fallback: ${fallback.serverError}`);
         result = {image: null, fallback: true, requestedVersion: img.imageTag};
-      } else if (fallback.image) {
+      } else if (fallback.image && fallback.hashMatch === true) {
         result = fallback;
-        color.warn(`Falling back to ${fallback.image}`);
+        color.success(`Falling back to ${fallback.image} (dockerfile unchanged)`);
+      } else if (fallback.image && fallback.hashMatch === false && !skipDockerRebuild) {
+        color.warn(`Dockerfile folder has changed. Rebuilding image...`);
+        if (dockerBuild(img.fullLocalName, dockerfilePath, dockerfileDir)) {
+          result = pushImage(img, registry);
+          color.success(`Built and tagged ${img.fullLocalName}`);
+        } else {
+          result = {image: fallback.image, fallback: true, requestedVersion: img.imageTag};
+          color.warn(`Build failed. Falling back to ${fallback.image} (hash mismatch)`);
+        }
       } else {
         // No fallback and no local image — must build
         color.warn(`No fallback available. Building ${img.fullLocalName}...`);
-        const dockerfileDir = path.join('dockerfiles', img.dirName);
-        const dockerfilePath = path.join(dockerfileDir, 'Dockerfile');
         if (dockerBuild(img.fullLocalName, dockerfilePath, dockerfileDir)) {
           result = pushImage(img, registry);
           color.success(`Built and tagged ${img.fullLocalName}`);
@@ -257,6 +307,7 @@ function pushImage(img: DockerImageInfo, registry: string | undefined): DockerIm
 
 interface FallbackImageResult extends DockerImageResult {
   serverError?: string;
+  hashMatch?: boolean;
 }
 
 async function fallbackImage(
@@ -264,16 +315,18 @@ async function fallbackImage(
   host: string,
   devKey: string,
   registry: string | undefined,
+  version?: string,
+  contentHash?: string,
 ): Promise<FallbackImageResult> {
-  const {found, serverError} = await resolveLatestCompatible(host, devKey, img.imageName);
+  const {found, serverError} = await resolveLatestCompatible(host, devKey, img.imageName, version, contentHash);
   if (serverError)
     return {image: null, fallback: true, requestedVersion: img.imageTag, serverError};
   if (found)
-    return {image: found.image, fallback: true, requestedVersion: img.imageTag};
+    return {image: found.image, fallback: true, requestedVersion: img.imageTag, hashMatch: found.hashMatch};
   return {image: null, fallback: true, requestedVersion: img.imageTag};
 }
 
-export async function processPackage(debug: boolean, rebuild: boolean, host: string, devKey: string, packageName: any, dropDb: boolean, suffix?: string, hostAlias?: string, registry?: string, rebuildDocker?: boolean) {
+export async function processPackage(debug: boolean, rebuild: boolean, host: string, devKey: string, packageName: any, dropDb: boolean, suffix?: string, hostAlias?: string, registry?: string, rebuildDocker?: boolean, skipDockerRebuild?: boolean) {
   // Validate server connectivity and dev key
   let timestamps: Indexable = {};
   let url = `${host}/packages/dev/${devKey}/${packageName}`;
@@ -402,7 +455,7 @@ export async function processPackage(debug: boolean, rebuild: boolean, host: str
     if (userInfo)
       dockerVersion = userInfo.login;
   }
-  await processDockerImages(packageName, dockerVersion, registry, devKey, host, rebuildDocker ?? false, zip, localTimestamps, debug);
+  await processDockerImages(packageName, dockerVersion, registry, devKey, host, rebuildDocker ?? false, zip, localTimestamps, debug, skipDockerRebuild ?? false);
 
   zip.append(JSON.stringify(localTimestamps), {name: 'timestamps.json'});
 
@@ -562,7 +615,7 @@ async function publishPackage(args: PublishArgs) {
           args.suffix = stdout.toString().substring(0, 8);
       });
       await utils.delay(100);
-      code = await processPackage(!args.release, Boolean(args.rebuild), url, key, packageName, args.dropDb ?? false, args.suffix, host, registry, args['rebuild-docker']);
+      code = await processPackage(!args.release, Boolean(args.rebuild), url, key, packageName, args.dropDb ?? false, args.suffix, host, registry, args['rebuild-docker'], args['skip-docker-rebuild']);
     } catch (error) {
       console.error(error);
       code = 1;
@@ -580,6 +633,7 @@ interface PublishArgs {
   ['skip-check']?: boolean,
   rebuild?: boolean,
   ['rebuild-docker']?: boolean,
+  ['skip-docker-rebuild']?: boolean,
   debug?: boolean,
   release?: boolean,
   key?: string,

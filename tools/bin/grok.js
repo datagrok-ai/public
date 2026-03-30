@@ -27,6 +27,8 @@ const commands = {
 const onPackageCommandNames = ['api', 'check', 'link', 'publish', 'test'];
 
 const command = argv['_'][0];
+if (command !== 'test' && command !== 'stresstest')
+  delete argv.dartium;
 if (command in commands) {
   try {
     if (argv['help']) {

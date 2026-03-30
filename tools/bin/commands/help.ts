@@ -162,16 +162,17 @@ Uploads a package
 Checks for errors before publishing — the package won't be published if there are any.
 
 Options:
-[--all] [--refresh] [--link] [--build] [--release] [--rebuild-docker] [--skip-check] [-v | --verbose]
+[--all] [--refresh] [--link] [--build] [--release] [--rebuild-docker] [--skip-docker-rebuild] [--skip-check] [-v | --verbose]
 
---all             Publish all available packages (run in packages directory)
---refresh         Publish all available already loaded packages (run in packages directory)
---link            Link the package to local packages
---build           Builds the package
---release         Publish package as release version
---rebuild-docker  Force rebuild Docker images locally before pushing to registry
---skip-check      Skip check stage
---verbose         Print detailed output
+--all                  Publish all available packages (run in packages directory)
+--refresh              Publish all available already loaded packages (run in packages directory)
+--link                 Link the package to local packages
+--build                Builds the package
+--release              Publish package as release version
+--rebuild-docker       Force rebuild Docker images locally before pushing to registry
+--skip-docker-rebuild  Skip auto-rebuild when Dockerfile folder has changed
+--skip-check           Skip check stage
+--verbose              Print detailed output
 
 Running \`grok publish\` is the same as running \`grok publish defaultHost --build --debug\`
 `;
