@@ -25,7 +25,7 @@ import {FormsViewer} from '@datagrok-libraries/utils/src/viewers/forms-viewer';
 import {FormCellRenderer} from './forms/forms';
 import {scWebGPUPointHitTest, scWebGPURender} from './webgpu/scatterplot';
 import {getGPUDevice} from '@datagrok-libraries/math/src/webGPU/getGPUDevice';
-import {TagsCellRenderer} from './cell-types/tags-cell-renderer';
+import {TagsCellRenderer, TAGS_CELL_TYPE} from './cell-types/tags-cell-renderer';
 import {ConfidenceIntervalCellRenderer} from './cell-types/confidence-interval-cell-renderer';
 import {StarsCellRenderer} from './cell-types/stars-cell-renderer';
 // import {isValidColor} from './cell-types/color-cell-renderer';
@@ -339,7 +339,7 @@ export class PackageFunctions {
         for (let i = 1; i < grid.columns.length; i++) {
           const gridCol = grid.columns.byIndex(i)!;
           const sparklineSettings = getSparklineSettings(gridCol);
-          if (sparklineTypes.includes(gridCol.cellType) && sparklineSettings?.columnNames?.length > 0 &&
+          if ([...sparklineTypes, TAGS_CELL_TYPE].includes(gridCol.cellType) && sparklineSettings?.columnNames?.length > 0 &&
             columns.some((col) => sparklineSettings.columnNames.includes(col instanceof DG.Column ? col.name : col)))
             summaryCols[summaryCols.length] = gridCol;
         }
