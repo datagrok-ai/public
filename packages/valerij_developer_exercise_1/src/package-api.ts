@@ -66,4 +66,8 @@ export namespace funcs {
   export async function addTables(): Promise<void> {
     return await grok.functions.call('valerij_developer_exercise_1:AddTables', {});
   }
+
+  export async function fuzzyJoin(df1: DG.DataFrame , df2: DG.DataFrame , N: number ): Promise<DG.DataFrame> {
+    return await grok.functions.call('valerij_developer_exercise_1:FuzzyJoin', { df1, df2, N });
+  }
 }

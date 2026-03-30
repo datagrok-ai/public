@@ -119,3 +119,123 @@ export async function addTables(): Promise<void> {
       // const df = await grok.data.files.openTable(`System:AppData/${_package.name}/${file.fileName}`);
    }
 }
+
+//name: fuzzyJoin
+//input: dataframe df1
+//input: dataframe df2
+//input: int N
+//output: dataframe result
+export function fuzzyJoin(df1: DG.DataFrame, df2: DG.DataFrame, N: number): DG.DataFrame {
+  const col1 = findFirstDnaColumn(df1);
+  const col2 = findFirstDnaColumn(df2);
+
+  if (col1 == null)
+    throw new Error('df1 does not contain a column with semType dna_nucleotide');
+
+  if (col2 == null)
+    throw new Error('df2 does not contain a column with semType dna_nucleotide');
+
+  if (N <= 0)
+    throw new Error('N must be greater than 0');
+
+  const seqColName = col1.name;
+
+  const left = df1.clone();
+  const right = df2.clone();
+
+  const rightSeqCol = right.col(col2.name);
+  if (rightSeqCol == null)
+    throw new Error(`Column ${col2.name} was not found in df2 clone`);
+
+  rightSeqCol.name = seqColName;
+  rightSeqCol.semType = 'dna_nucleotide';
+
+  const result = left.clone();
+  result.append(right, true);
+
+  const leftSequences = getNormalizedSequences(df1, col1.name);
+  const rightSequences = getNormalizedSequences(df2, col2.name);
+
+  const countsCol = result.columns.addNewInt('Counts');
+
+  for (let i = 0; i < df1.rowCount; i++) {
+    const source = leftSequences[i];
+    countsCol.set(i, fuzzyCount(source, rightSequences, N));
+  }
+
+  for (let i = 0; i < df2.rowCount; i++) {
+    const source = rightSequences[i];
+    countsCol.set(df1.rowCount + i, fuzzyCount(source, leftSequences, N));
+  }
+
+  grok.shell.addTableView(result);
+  return result;
+}
+
+function findFirstDnaColumn(df: DG.DataFrame): DG.Column | null {
+  for (let i = 0; i < df.columns.length; i++) {
+    const col = df.columns.byIndex(i);
+    if (col.semType === 'dna_nucleotide')
+      return col;
+  }
+
+  const sequenceCol = df.col('sequence');
+  if (sequenceCol != null) {
+    sequenceCol.semType = 'dna_nucleotide';
+    return sequenceCol;
+  }
+
+  return null;
+}
+
+function getNormalizedSequences(df: DG.DataFrame, colName: string): string[] {
+  const col = df.col(colName);
+  if (col == null)
+    throw new Error(`Column ${colName} not found`);
+
+  const values: string[] = [];
+  for (let i = 0; i < df.rowCount; i++)
+    values.push(normalizeSequence(String(col.get(i) ?? '')));
+
+  return values;
+}
+
+
+function normalizeSequence(value: string): string {
+  return value
+    .toUpperCase()
+    .replace(/^FASTA:\s*/, '')
+    .trim();
+}
+
+function getSubsequences(sequence: string, n: number): string[] {
+  if (sequence.length < n)
+    return [];
+
+  const unique = new Set<string>();
+  for (let i = 0; i <= sequence.length - n; i++)
+    unique.add(sequence.substring(i, i + n));
+
+  return Array.from(unique);
+}
+
+function countOccurrences(sequence: string, subsequence: string): number {
+  let count = 0;
+  for (let i = 0; i <= sequence.length - subsequence.length; i++) {
+    if (sequence.substring(i, i + subsequence.length) === subsequence)
+      count++;
+  }
+  return count;
+}
+
+function fuzzyCount(source: string, targets: string[], n: number): number {
+  const subsequences = getSubsequences(source, n);
+  let total = 0;
+
+  for (const subsequence of subsequences) {
+    for (const target of targets)
+      total += countOccurrences(target, subsequence);
+  }
+
+  return total;
+}
