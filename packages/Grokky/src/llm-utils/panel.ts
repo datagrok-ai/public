@@ -177,21 +177,22 @@ export class AIPanel<T extends MessageType = LanguageModelV3Message, K extends A
       this.currentConversationId = null;
     }, 'Start New Chat');
     this.modelInput = ui.input.choice('Model', {
-      items: Object.keys(ModelType) as ModelOption[],
+      items: [...Object.keys(ModelType), 'Claude'],
       value: 'Deep Research',
       nullable: false,
       tooltipText: 'Select AI model:<br>' +
         `- <b>Fast</b> (${ModelType.Fast}): Quick responses for simple tasks.<br>` +
         `- <b>Deep Research</b> (${ModelType['Deep Research']}): Most capable model for complex analysis.<br>` +
-        `- <b>Coding</b> (${ModelType.Coding}): Optimized for code generation.`,
-    }) as DG.InputBase<ModelOption>;
+        `- <b>Coding</b> (${ModelType.Coding}): Optimized for code generation.<br>` +
+        '- <b>Claude</b>: Anthropic Claude for conversational AI.',
+    }) as DG.InputBase<any>;
     this.hideContentIcons();
     this.inputControlsDiv = ui.divH([
       this.micButton,
       this.modelInput.input
     ], 'd4-ai-panel-input-controls');
     this.runButton.style.color = 'var(--blue-1)';
-    const inputControlsRight = ui.divH([this.tryAgainButton, this.runButton], 'd4-ai-panel-run-controls');
+    const inputControlsRight = ui.divH([this.historyButton, this.tryAgainButton, this.runButton], 'd4-ai-panel-run-controls');
     inputControlsRight.style.marginLeft = 'auto';
     const controlsDiv = ui.divH([this.inputControlsDiv, inputControlsRight], 'd4-ai-panel-controls-container');
     this.textAreaDiv = ui.divV([this.textArea], {classes: 'd4-ai-input-textarea-div', style: {position: 'relative'}});
@@ -207,8 +208,8 @@ export class AIPanel<T extends MessageType = LanguageModelV3Message, K extends A
     this.header.appendChild(headerTitle);
     const rightHeaderDiv = ui.divH([], 'd4-ai-panel-header-right-buttons');
     rightHeaderDiv.appendChild(this.newChatButton);
-    rightHeaderDiv.appendChild(this.copyConversationButton);
-    rightHeaderDiv.appendChild(this.historyButton);
+    // TODO: verify per-message copy button (in feedback row) works well before removing this
+    // rightHeaderDiv.appendChild(this.copyConversationButton);
     this.header.appendChild(rightHeaderDiv);
     this.setupSubscriptions();
   }
@@ -365,12 +366,17 @@ export class AIPanel<T extends MessageType = LanguageModelV3Message, K extends A
       grok.shell.info('Thanks for your feedback!');
       handleFeedback(false);
     }, 'Not Helpful');
-    [thumbsUp, thumbsDown].forEach((el) => dartLike(el.style).set('padding', '2px').set('borderRadius', '6px'));
+    const copyMsg = ui.iconFA('copy', () => {
+      navigator.clipboard.writeText(markDown.textContent || '').then(() =>
+        grok.shell.info('Message copied to clipboard'));
+    }, 'Copy Message');
+    [copyMsg, thumbsUp, thumbsDown].forEach((el) => dartLike(el.style).set('padding', '2px').set('borderRadius', '6px'));
     function handleFeedback(helpful: boolean) {
       [thumbsUp, thumbsDown].forEach((el) => { el.style.backgroundColor = ''; });
       (helpful ? thumbsUp : thumbsDown).style.backgroundColor = helpful ? 'rgba(0, 150, 30, 0.2)' : 'rgba(200, 0, 0, 0.2)';
       onFeedback?.(helpful);
     }
+    feedbackDiv.appendChild(copyMsg);
     feedbackDiv.appendChild(thumbsUp);
     feedbackDiv.appendChild(thumbsDown);
     dartLike(feedbackDiv.style).set('gap', '8px').set('alignItems', 'center').set('width', '100%').set('paddingBottom', '8px').set('paddingLeft', '4px');
@@ -516,13 +522,13 @@ export class AIPanel<T extends MessageType = LanguageModelV3Message, K extends A
   protected showContentIcons() {
     this.newChatButton.style.display = 'flex';
     this.tryAgainButton.style.display = 'flex';
-    this.copyConversationButton.style.display = 'flex';
+    // this.copyConversationButton.style.display = 'flex';
   }
 
   protected hideContentIcons() {
     this.newChatButton.style.display = 'none';
     this.tryAgainButton.style.display = 'none';
-    this.copyConversationButton.style.display = 'none';
+    // this.copyConversationButton.style.display = 'none';
   }
 
   private handleClear() {
@@ -765,7 +771,6 @@ export class TVAIPanel extends AIPanel<MessageType, TVAIPanelInputs> {
   protected tableView: DG.TableView;
 
   private _engine: AIEngine = 'DeepGROK';
-  private _engineInput: DG.InputBase<AIEngine>;
 
   private _streamingContainer: HTMLElement | null = null;
   private _streamingMarkdownEl: HTMLElement | null = null;
@@ -781,30 +786,15 @@ export class TVAIPanel extends AIPanel<MessageType, TVAIPanelInputs> {
     this.tableView = view;
     this._sessionId = `claude-${view.dataFrame?.name ?? 'view'}-${crypto.randomUUID()}`;
 
-    this._engineInput = ui.input.choice('Engine', {
-      items: ['DeepGROK', 'Claude'] as AIEngine[],
-      value: 'DeepGROK' as AIEngine,
-      nullable: false,
-    }) as DG.InputBase<AIEngine>;
-    this._engineInput.input.style.marginBottom = '0';
-    this._engineInput.input.classList.add('d4-ai-engine-selector');
-
-    const rightButtons = this.header.querySelector('.d4-ai-panel-header-right-buttons');
-    if (rightButtons)
-      this.header.insertBefore(this._engineInput.input, rightButtons);
-    else
-      this.header.appendChild(this._engineInput.input);
-
-    this._engineInput.onChanged.subscribe(() => {
-      this._engine = this._engineInput.value!;
-      this._onEngineChanged();
+    this.modelInput.onChanged.subscribe(() => {
+      const val = this.modelInput.value as string;
+      const prevEngine = this._engine;
+      this._engine = val === 'Claude' ? 'Claude' : 'DeepGROK';
+      if (this._engine !== prevEngine) {
+        this.textArea.placeholder = this.placeHolder;
+        this._clearAndReset();
+      }
     });
-  }
-
-  private _onEngineChanged(): void {
-    this.modelInput.input.style.display = this._engine === 'Claude' ? 'none' : '';
-    this.textArea.placeholder = this.placeHolder;
-    this._clearAndReset();
   }
 
   private _clearAndReset(): void {
