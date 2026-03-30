@@ -77,3 +77,6 @@ export const AVAILABLE_FPS = [Fingerprint.Morgan, Fingerprint.AtomPair, Fingerpr
   Fingerprint.RDKit, Fingerprint.TopologicalTorsion];
 export const SCAFFOLD_TREE_HIGHLIGHT = '.chem-scaffold-tree-highlight';
 export const CHEM_APPLY_FILTER_SYNC = '.chem-apply-filter-sync';
+
+export const CHEM_SPACE_EMBEDDING_COL = '.%chem-space-embedding-col';
+export const CHEM_SPACE_CLUSTER_COL = '.%chem-space-cluster-col';

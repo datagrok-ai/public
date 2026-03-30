@@ -17,7 +17,9 @@ import {runActivityCliffs, getActivityCliffsEmbeddings, ISequenceSpaceResult} fr
 import {ActivityCliffsEditor as ActivityCliffsFunctionEditor}
   from '@datagrok-libraries/ml/src/functionEditors/activity-cliffs-function-editor';
 import {MAX_SUBSTRUCTURE_SEARCH_ROW_COUNT, EMPTY_MOLECULE_MESSAGE,
-  SMARTS_MOLECULE_MESSAGE, elementsTable} from './constants';
+  SMARTS_MOLECULE_MESSAGE, elementsTable,
+  CHEM_SPACE_EMBEDDING_COL,
+  CHEM_SPACE_CLUSTER_COL} from './constants';
 import {similarityMetric} from '@datagrok-libraries/ml/src/distance-metrics-methods';
 import {calculateDescriptors, getDescriptorsTree} from './docker/api';
 import {addDescriptorsColsToDf, getDescriptorsSingle, getSelected, openDescriptorsDialogDocker} from './descriptors/descriptors-calculation';
@@ -842,6 +844,8 @@ export class PackageFunctions {
       options: JSON.stringify(options),
       preprocessingFunction: preprocessingFunction,
       clusterEmbeddings: clusterEmbeddings,
+      embedColsNames: embedColsNames,
+      clusterColName: clusterColName,
     }).call(undefined, undefined, {processed: false});
     let res: DG.ScatterPlotViewer = funcCall.getOutputParamValue();
 
@@ -879,10 +883,19 @@ export class PackageFunctions {
     @grok.decorators.param({options: {initialValue: 'true'}}) plotEmbeddings: boolean,
     @grok.decorators.param({options: {optional: true}}) options?: string,
     @grok.decorators.param({options: {optional: true}}) clusterEmbeddings?: boolean,
+    @grok.decorators.param({options: {optional: true}}) embedColsNames?: string[],
+    @grok.decorators.param({options: {optional: true}}) clusterColName?: string,
   ): Promise<DG.Viewer | undefined> {
     const res = await runChemSpace(table, molecules, methodName, similarityMetric, plotEmbeddings, JSON.parse(options ?? '{}'),
-      undefined, clusterEmbeddings);
+      undefined, clusterEmbeddings, undefined, embedColsNames, clusterColName);
     console.log(`returned from runChemSpace`);
+    //setting specific tags on columns added by dimentinality reduction - issue https://github.com/datagrok-ai/public/issues/3708 (client request)
+    if (embedColsNames) {
+      for (const colName of embedColsNames)
+        table.col(colName)?.setTag(CHEM_SPACE_EMBEDDING_COL, 'true');
+    }
+    if (clusterColName)
+      table.col(clusterColName)?.setTag(CHEM_SPACE_CLUSTER_COL, 'true');
     return res;
   }
 
@@ -1115,6 +1128,7 @@ export class PackageFunctions {
         similarityMetric: similarityMetric,
         options: JSON.stringify(options),
         isDemo: isDemo,
+        axesNames: axesNames,
       }).call(undefined, undefined, {processed: false});
 
       const view = grok.shell.tv;
@@ -1190,9 +1204,11 @@ export class PackageFunctions {
     @grok.decorators.param({type: 'string', options: {choices: ['UMAP', 't-SNE']}}) methodName: DimReductionMethods,
     @grok.decorators.param({type: 'string', options: {choices: ['Tanimoto', 'Asymmetric', 'Cosine', 'Sokal']}}) similarityMetric: BitArrayMetrics,
     @grok.decorators.param({options: {optional: true}}) options?: string,
-    @grok.decorators.param({options: {optional: true}}) isDemo?: boolean): Promise<void> {
+    @grok.decorators.param({options: {optional: true}}) isDemo?: boolean,
+    @grok.decorators.param({options: {optional: true}}) axesNames?: string[]): Promise<void> {
     const preprocessingFunction = DG.Func.find({name: 'getFingerprints', package: 'Chem'})[0];
-    const axesNames = getEmbeddingColsNames(table);
+    if (!axesNames)
+      axesNames = getEmbeddingColsNames(table);
     await getActivityCliffsEmbeddings(table, molecules, axesNames, similarity,
       similarityMetric, methodName, JSON.parse(options ?? '{}'), preprocessingFunction);
     const tagContent: ActivityCliffsParams = {

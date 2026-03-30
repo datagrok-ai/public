@@ -367,8 +367,8 @@ export namespace funcs {
     return await grok.functions.call('Chem:ChemSpaceTopMenu', { table, molecules, methodName, similarityMetric, plotEmbeddings, options, preprocessingFunction, clusterEmbeddings, clusterMCS });
   }
 
-  export async function chemSpaceTransform(table: DG.DataFrame , molecules: DG.Column , methodName: string , similarityMetric: string , plotEmbeddings: boolean , options?: string , clusterEmbeddings?: boolean ): Promise<any> {
-    return await grok.functions.call('Chem:ChemSpaceTransform', { table, molecules, methodName, similarityMetric, plotEmbeddings, options, clusterEmbeddings });
+  export async function chemSpaceTransform(table: DG.DataFrame , molecules: DG.Column , methodName: string , similarityMetric: string , plotEmbeddings: boolean , options?: string , clusterEmbeddings?: boolean , embedColsNames?: any , clusterColName?: string ): Promise<any> {
+    return await grok.functions.call('Chem:ChemSpaceTransform', { table, molecules, methodName, similarityMetric, plotEmbeddings, options, clusterEmbeddings, embedColsNames, clusterColName });
   }
 
   export async function getChemSpaceEmbeddings(col: string , methodName: string , similarityMetric: string , xAxis: string , yAxis: string , options?: any ): Promise<any> {
@@ -410,8 +410,8 @@ export namespace funcs {
     return await grok.functions.call('Chem:ActivityCliffsInitFunction', { sp });
   }
 
-  export async function activityCliffsTransform(table: DG.DataFrame , molecules: DG.Column , activities: DG.Column , similarity: number , methodName: string , similarityMetric: string , options?: string , isDemo?: boolean ): Promise<void> {
-    return await grok.functions.call('Chem:ActivityCliffsTransform', { table, molecules, activities, similarity, methodName, similarityMetric, options, isDemo });
+  export async function activityCliffsTransform(table: DG.DataFrame , molecules: DG.Column , activities: DG.Column , similarity: number , methodName: string , similarityMetric: string , options?: string , isDemo?: boolean , axesNames?: any ): Promise<void> {
+    return await grok.functions.call('Chem:ActivityCliffsTransform', { table, molecules, activities, similarity, methodName, similarityMetric, options, isDemo, axesNames });
   }
 
   export async function addInchisTopMenu(table: DG.DataFrame , molecules: DG.Column ): Promise<void> {

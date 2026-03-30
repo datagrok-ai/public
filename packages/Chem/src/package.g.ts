@@ -341,10 +341,12 @@ export async function chemSpaceTopMenu(table: DG.DataFrame, molecules: DG.Column
 //input: bool plotEmbeddings = true 
 //input: string options { optional: true }
 //input: bool clusterEmbeddings { optional: true }
+//input: list<string> embedColsNames { optional: true }
+//input: string clusterColName { optional: true }
 //output: viewer result
 //meta.role: transform
-export async function chemSpaceTransform(table: DG.DataFrame, molecules: DG.Column, methodName: any, similarityMetric: any, plotEmbeddings: boolean, options?: string, clusterEmbeddings?: boolean) : Promise<any> {
-  return await PackageFunctions.chemSpaceTransform(table, molecules, methodName, similarityMetric, plotEmbeddings, options, clusterEmbeddings);
+export async function chemSpaceTransform(table: DG.DataFrame, molecules: DG.Column, methodName: any, similarityMetric: any, plotEmbeddings: boolean, options?: string, clusterEmbeddings?: boolean, embedColsNames?: string[], clusterColName?: string) : Promise<any> {
+  return await PackageFunctions.chemSpaceTransform(table, molecules, methodName, similarityMetric, plotEmbeddings, options, clusterEmbeddings, embedColsNames, clusterColName);
 }
 
 //name: Chem Space Embeddings
@@ -443,9 +445,10 @@ export async function activityCliffsInitFunction(sp: any) : Promise<void> {
 //input: string similarityMetric { choices: ["Tanimoto","Asymmetric","Cosine","Sokal"] }
 //input: string options { optional: true }
 //input: bool isDemo { optional: true }
+//input: list<string> axesNames { optional: true }
 //meta.role: transform
-export async function activityCliffsTransform(table: DG.DataFrame, molecules: DG.Column, activities: DG.Column, similarity: number, methodName: any, similarityMetric: any, options?: string, isDemo?: boolean) : Promise<void> {
-  await PackageFunctions.activityCliffsTransform(table, molecules, activities, similarity, methodName, similarityMetric, options, isDemo);
+export async function activityCliffsTransform(table: DG.DataFrame, molecules: DG.Column, activities: DG.Column, similarity: number, methodName: any, similarityMetric: any, options?: string, isDemo?: boolean, axesNames?: string[]) : Promise<void> {
+  await PackageFunctions.activityCliffsTransform(table, molecules, activities, similarity, methodName, similarityMetric, options, isDemo, axesNames);
 }
 
 //name: To InchI
