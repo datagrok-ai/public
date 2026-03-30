@@ -1,0 +1,41 @@
+{
+  "name": "valerij_developer_exercise_1",
+  "friendlyName": "valerij_developer_exercise_1",
+  "version": "0.0.1",
+  "description": "valerij_developer_exercise_1 package",
+  "dependencies": {
+    "datagrok-api": "^1.26.0",
+    "cash-dom": "^8.1.5",
+    "dayjs": "^1.11.13",
+    "@datagrok-libraries/test": "^1.1.0"
+  },
+  "devDependencies": {
+    "datagrok-tools": "^5.1.5",
+    "webpack": "^5.95.0",
+    "webpack-cli": "^5.1.4",
+    "ts-loader": "latest",
+    "typescript": "latest"
+  },
+  "scripts": {
+    "debug-valerij_developer_exercise_1": "webpack && grok publish",
+    "release-valerij_developer_exercise_1": "webpack && grok publish --release",
+    "build-valerij_developer_exercise_1": "webpack",
+    "build": "grok api && grok check --soft && webpack",
+    "test": "grok test",
+    "debug-valerij_developer_exercise_1-dev": "webpack && grok publish dev",
+    "release-valerij_developer_exercise_1-dev": "webpack && grok publish dev --release",
+    "debug-valerij_developer_exercise_1-local": "webpack && grok publish local",
+    "release-valerij_developer_exercise_1-local": "webpack && grok publish local --release"
+  },
+  "canEdit": [
+    "Developers"
+  ],
+  "canView": [
+    "All users"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/datagrok-ai/public",
+    "directory": "packages/valerij_developer_exercise_1"
+  }
+}
