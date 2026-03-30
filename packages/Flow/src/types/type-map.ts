@@ -51,6 +51,7 @@ export const DEFAULT_NODE_BGCOLOR = '#ffffff';
 /** Type compatibility: which types can connect to which */
 const COMPATIBLE_TYPES: Record<string, string[]> = {
   'double': ['int', 'num'],
+  'tableview': ['view'],
   'num': ['int', 'double'],
   'list': ['string_list'],
   'string_list': ['list'],
