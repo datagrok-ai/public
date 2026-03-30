@@ -32,4 +32,8 @@ export namespace funcs {
   export async function complementWidget(nucleotides: string ): Promise<any> {
     return await grok.functions.call('valerij_developer_exercise_1:ComplementWidget', { nucleotides });
   }
+
+  export async function countSubsequencePythonPackageTS(sequence: string , subsequence: string ): Promise<number> {
+    return await grok.functions.call('valerij_developer_exercise_1:CountSubsequencePythonPackageTS', { sequence, subsequence });
+  }
 }

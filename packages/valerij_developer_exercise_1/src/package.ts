@@ -46,3 +46,14 @@ export function complementWidget(nucleotides: string): DG.Widget {
     ])
   );
 }
+
+//name: CountSubsequencePythonPackageTS
+//input: string sequence
+//input: string subsequence
+//output: int count
+export async function countSubsequencePythonPackageTS(sequence: string, subsequence: string): Promise<number> {
+  return await grok.functions.call(
+    'valerij_developer_exercise_1:CountSubsequencePythonlocal',
+    { sequence, subsequence }
+  );
+}
