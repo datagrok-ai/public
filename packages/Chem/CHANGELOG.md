@@ -1,5 +1,9 @@
 # Chem changelog
 
+## 1.17.4 (2026-03-30)
+
+* [#3708](https://github.com/datagrok-ai/public/issues/3708): Chem: Chemical space: Add tags on columns with embeddings
+
 ## 1.17.3 (2026-03-26)
 
 * Improved reaction renderer supporting smiles reactions.
