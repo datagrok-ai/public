@@ -54,7 +54,7 @@ export function complementWidget(nucleotides: string): DG.Widget {
 export async function countSubsequencePythonPackageTS(sequence: string, subsequence: string): Promise<number> {
   return await grok.functions.call(
     'valerij_developer_exercise_1:CountSubsequencePythonlocal',
-    { sequence, subsequence }
+    {sequence, subsequence}
   );
 }
 
@@ -63,16 +63,16 @@ export async function countSubsequencePythonPackageTS(sequence: string, subseque
 //input: column columnName
 //input: string subsequence = "acc"
 export async function countSubsequenceTableAugment(sequences: DG.DataFrame, columnName: DG.Column, subsequence: string): Promise<void> {
-   const df = await grok.functions.call('valerij_developer_exercise_1:CountSubsequencePythonDataframe', { sequences, columnName, subsequence });
-   const countCol = df.columns.byIndex(0);
-   countCol.name = `N(${subsequence})`;
-   sequences.columns.insert(countCol);
+  const df = await grok.functions.call('valerij_developer_exercise_1:CountSubsequencePythonDataframe', {sequences, columnName, subsequence});
+  const countCol = df.columns.byIndex(0);
+  countCol.name = `N(${subsequence})`;
+  sequences.columns.insert(countCol);
 }
 
 //name: getOrders
 //output: dataframe df
 export async function getOrders() {
-  return await grok.data.query('valerij_developer_exercise_1:ordersByCountry', { country: 'USA' });
+  return await grok.data.query('valerij_developer_exercise_1:ordersByCountry', {country: 'USA'});
 }
 
 //name: openTableViaDemo
@@ -104,20 +104,20 @@ export async function openTableViaServerFile(filepath: string): Promise<DG.DataF
 
 //name: Add Tables
 export async function addTables(): Promise<void> {
-   // Recursively list package files
-   const files = await _package.files.list('', true);
+  // Recursively list package files
+  const files = await _package.files.list('', true);
 
-   // Filter files by extension
-   const csvFiles = files.filter((f) => f.extension === 'csv');
+  // Filter files by extension
+  const csvFiles = files.filter((f) => f.extension === 'csv');
 
-   // Load every table and add a view for it
-   for (const file of csvFiles) {
-      const df = await _package.files.readCsv(file.name);
-      grok.shell.addTableView(df);
-      // Alternative ways to read a table are:
-      // const df = await grok.data.loadTable(`${_package.webRoot}${file.path}`);
-      // const df = await grok.data.files.openTable(`System:AppData/${_package.name}/${file.fileName}`);
-   }
+  // Load every table and add a view for it
+  for (const file of csvFiles) {
+    const df = await _package.files.readCsv(file.name);
+    grok.shell.addTableView(df);
+    // Alternative ways to read a table are:
+    // const df = await grok.data.loadTable(`${_package.webRoot}${file.path}`);
+    // const df = await grok.data.files.openTable(`System:AppData/${_package.name}/${file.fileName}`);
+  }
 }
 
 //name: fuzzyJoin
@@ -238,4 +238,86 @@ function fuzzyCount(source: string, targets: string[], n: number): number {
   }
 
   return total;
+}
+
+export class NucleotideBoxCellRenderer extends DG.GridCellRenderer {
+  get name() { return 'Nucleotide cell renderer'; }
+  get cellType() { return 'dna_nucleotide'; }
+
+  render(
+    g: CanvasRenderingContext2D,
+    x: number,
+    y: number,
+    w: number,
+    h: number,
+    gridCell: DG.GridCell,
+    cellStyle: DG.GridCellStyle
+  ) {
+    const raw = String(gridCell.cell.value ?? '')
+      .replace(/^FASTA:\s*/i, '')
+      .trim();
+
+    const ctx = g.canvas.getContext('2d');
+    if (!ctx)
+      return;
+
+    ctx.save();
+
+    ctx.beginPath();
+    ctx.rect(x, y, w, h);
+    ctx.clip();
+
+    ctx.fillStyle = 'white';
+    ctx.fillRect(x, y, w, h);
+
+    const fontSize = Math.max(10, Math.min(14, h - 4));
+    ctx.font = `${fontSize}px monospace`;
+    ctx.textBaseline = 'top';
+
+    const lineHeight = fontSize + 2;
+    const startX = x + 4;
+    let cursorX = startX;
+    let cursorY = y + 4;
+
+    for (let i = 0; i < raw.length; i++) {
+      const ch = raw[i];
+
+      if (ch === '\n') {
+        cursorX = startX;
+        cursorY += lineHeight;
+        continue;
+      }
+
+      const width = ctx.measureText(ch).width;
+
+      if (cursorX + width > x + w - 4) {
+        cursorX = startX;
+        cursorY += lineHeight;
+      }
+
+      ctx.fillStyle = nucleotideColor(ch);
+      ctx.fillText(ch, cursorX, cursorY);
+      cursorX += width;
+    }
+
+    ctx.restore();
+  }
+}
+
+function nucleotideColor(ch: string): string {
+  switch (ch.toUpperCase()) {
+  case 'A': return '#4CAF50'; // green
+  case 'T': return '#E53935'; // red
+  case 'C': return '#1E88E5'; // blue
+  case 'G': return '#222222'; // black/dark gray
+  default: return '#666666';
+  }
+}
+
+//name: nucleotideBoxCellRenderer
+//tags: cellRenderer
+//meta.cellType: dna_nucleotide
+//output: grid_cell_renderer result
+export function nucleotideBoxCellRenderer() {
+  return new NucleotideBoxCellRenderer();
 }

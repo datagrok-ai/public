@@ -22,9 +22,13 @@ class Valerij_developer_exercise_1PackageDetectors extends DG.Package {
         .toString()
         .trim()
         .toUpperCase()
-        .replace(/^FASTA:\s*/, '');
+        .replace(/^FASTA:\s*/, '')
+        .replace(/\s+/g, '');
 
-      if (!/^[ATGC]+$/.test(s))
+      if (s.length === 0)
+        return null;
+
+      if (!/^[ACGTNRYSWKMDHBV-]+$/.test(s))
         return null;
     }
 

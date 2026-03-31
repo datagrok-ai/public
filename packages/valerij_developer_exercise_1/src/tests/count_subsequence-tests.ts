@@ -3,14 +3,17 @@ import { countSubsequencePythonPackageTS } from '../package';
 
 category('CountSubsequencePythonPackageTS', () => {
   test('basic count', async () => {
-    expect(await countSubsequencePythonPackageTS('ATGATC', 'A'), 2);
+    const result = await countSubsequencePythonPackageTS('ATGATC', 'A');
+    expect(result, 2);
   });
 
   test('overlapping count', async () => {
-    expect(await countSubsequencePythonPackageTS('AAAA', 'AA'), 3);
+    const result = await countSubsequencePythonPackageTS('AAAA', 'AA');
+    expect(result, 3);
   });
 
   test('sequence example', async () => {
-    expect(await countSubsequencePythonPackageTS('fasta: gttctctacc', 'acc'), 1);
+    const result = await countSubsequencePythonPackageTS('fasta: gttctctacc', 'acc');
+    expect(result, 1);
   });
 });
