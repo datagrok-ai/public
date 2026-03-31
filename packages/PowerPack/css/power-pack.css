@@ -789,6 +789,16 @@ body.dartium .power-pack-widgets-host.ui-div {
     margin-bottom: 6px;
 }
 
+.power-pack-enrich-via {
+    font-size: 11px;
+    color: var(--grey-4);
+    font-style: italic;
+    margin-left: 4px;
+    pointer-events: none;
+    white-space: nowrap;
+    align-self: baseline;
+}
+
 
 /** Cron Input */
 

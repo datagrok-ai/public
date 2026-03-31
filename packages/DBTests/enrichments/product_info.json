@@ -1,0 +1,22 @@
+{
+  "name": "product info",
+  "connection": "Dbtests:PostgresTest",
+  "keySchema": "public",
+  "keyTable": "products",
+  "keyColumn": "productid",
+  "fields": [
+    "public.products.productid",
+    "public.products.productname",
+    "public.products.unitprice",
+    "public.categories.categoryname"
+  ],
+  "joins": [
+    {
+      "leftTableName": "public.products",
+      "rightTableName": "public.categories",
+      "joinType": "left",
+      "leftTableKeys": ["categoryid"],
+      "rightTableKeys": ["categoryid"]
+    }
+  ]
+}

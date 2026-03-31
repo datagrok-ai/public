@@ -392,8 +392,9 @@ export class PackageFunctions {
   @grok.decorators.func({
     meta: {role: 'transform'}
   })
-  static async runEnrichment(conn: DG.DataConnection, schema: string, table: string, column: string, name: string, df: DG.DataFrame, db: string): Promise<void> {
-    return runEnrichmentFromConfig(conn, schema, table, column, name, df, db);
+  static async runEnrichment(conn: DG.DataConnection, schema: string, table: string, column: string, name: string, df: DG.DataFrame, db: string,
+      @grok.decorators.param({'options': {'optional': true}}) localColumn?: string): Promise<void> {
+    return runEnrichmentFromConfig(conn, schema, table, column, name, df, db, localColumn ?? null);
   }
 }
 
