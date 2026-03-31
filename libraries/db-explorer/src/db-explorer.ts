@@ -138,6 +138,9 @@ export class DBExplorer {
     if (!schemaRefBy[refTable])
       schemaRefBy[refTable] = {};
     schemaRefBy[refTable][refColumn] ??= [];
+    // there already might be this reference, so first check if such ref already exists
+    if (schemaRefBy[refTable][refColumn].find((r) => r.refTable === tableName && r.refColumn === columnName && r.refSchema === schemaName))
+      return;
     schemaRefBy[refTable][refColumn].push({refTable: tableName, refColumn: columnName, refSchema: schemaName});
   }
 
