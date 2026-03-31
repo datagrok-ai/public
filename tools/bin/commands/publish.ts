@@ -135,14 +135,23 @@ function calculateFolderHash(dirPath: string): string {
   entries.sort((a, b) => a.relPath < b.relPath ? -1 : a.relPath > b.relPath ? 1 : 0);
   for (const entry of entries) {
     if (entry.isDir) {
+      color.log(`  Hash entry: dir:${entry.relPath}:`);
       hash.update(`dir:${entry.relPath}:`);
     }
     else {
+      // Normalize CRLF to LF to match server-side storage
+      const raw = fs.readFileSync(entry.fullPath);
+      const content = raw.includes(0x0d) && !raw.includes(0x00)
+        ? Buffer.from(raw.toString('utf8').replace(/\r\n/g, '\n'), 'utf8')
+        : raw;
+      color.log(`  Hash entry: file:${entry.relPath}: (${content.length} bytes)`);
       hash.update(`file:${entry.relPath}:`);
-      hash.update(fs.readFileSync(entry.fullPath));
+      hash.update(content);
     }
   }
-  return hash.digest('hex');
+  const result = hash.digest('hex');
+  color.log(`  Folder hash: ${result}`);
+  return result;
 }
 
 function listRecursive(basePath: string, rel: string): {relPath: string, fullPath: string, isDir: boolean}[] {
