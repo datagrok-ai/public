@@ -74,4 +74,8 @@ export namespace funcs {
   export async function nucleotideBoxCellRenderer(): Promise<any> {
     return await grok.functions.call('valerij_developer_exercise_1:NucleotideBoxCellRenderer', {});
   }
+
+  export async function enaSequence(cellText: string ): Promise<any> {
+    return await grok.functions.call('valerij_developer_exercise_1:EnaSequence', { cellText });
+  }
 }

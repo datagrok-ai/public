@@ -321,3 +321,31 @@ function nucleotideColor(ch: string): string {
 export function nucleotideBoxCellRenderer() {
   return new NucleotideBoxCellRenderer();
 }
+
+//name: ENA Sequence
+//tags: panel, widgets
+//input: string cellText {semType: EnaID}
+//output: widget result
+//condition: true
+export async function enaSequence(cellText: string) {
+  const url = `https://www.ebi.ac.uk/ena/browser/api/fasta/${cellText}`;
+  const fasta = await (await grok.dapi.fetchProxy(url)).text();
+
+  const lines = fasta.split('\n');
+  const header = lines[0]?.replace(/^>/, '').trim() ?? '';
+  const sequence = lines.slice(1).join('').trim();
+
+  const textArea = document.createElement('textarea');
+  textArea.value = sequence;
+  textArea.readOnly = true;
+  textArea.style.fontFamily = 'monospace';
+  textArea.style.width = '100%';
+  textArea.style.height = '200px';
+  textArea.style.wordBreak = 'break-all';
+  textArea.style.resize = 'vertical';
+
+  return new DG.Widget(ui.splitV([
+    ui.h2(header),
+    textArea,
+  ]));
+}

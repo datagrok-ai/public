@@ -34,4 +34,25 @@ class Valerij_developer_exercise_1PackageDetectors extends DG.Package {
 
     return 'dna_nucleotide';
   }
+  //tags: semTypeDetector
+  //input: column col
+  //output: string semType
+  detectENAID(col) {
+    if (col.type !== 'string')
+      return null;
+
+    const categories = col.categories;
+    if (!categories || categories.length === 0)
+      return null;
+
+    for (const value of categories) {
+      if (value == null)
+        continue;
+
+      if (!/^[A-Z]{2}[0-9]{6}$/.test(value.toString().trim()))
+        return null;
+    }
+
+    return 'EnaID';
+  }
 }
