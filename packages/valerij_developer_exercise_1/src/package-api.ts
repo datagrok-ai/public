@@ -78,4 +78,8 @@ export namespace funcs {
   export async function enaSequence(cellText: string ): Promise<any> {
     return await grok.functions.call('valerij_developer_exercise_1:EnaSequence', { cellText });
   }
+
+  export async function formENADataTable(): Promise<void> {
+    return await grok.functions.call('valerij_developer_exercise_1:FormENADataTable', {});
+  }
 }

@@ -349,3 +349,77 @@ export async function enaSequence(cellText: string) {
     textArea,
   ]));
 }
+async function _fetchENASequence(query: string, limit: number, seqLength: number, offset: number = 0): Promise<DG.DataFrame> {
+  const url = `https://www.ebi.ac.uk/ena/browser/api/embl/textsearch?result=sequence&query=${encodeURIComponent(query)}&limit=${limit}&offset=${offset}`;
+  const raw = await (await grok.dapi.fetchProxy(url)).text();
+
+  const ids: string[] = [];
+  const sequences: string[] = [];
+
+  const entries = raw.split('//\n').filter((e) => e.trim().length > 0);
+
+  for (const entry of entries) {
+    const idMatch = entry.match(/^ID\s+(\S+)/m);
+    if (!idMatch)
+      continue;
+
+    const id = idMatch[1].replace(/;$/, '');
+
+    const seqLines: string[] = [];
+    let inSequence = false;
+    for (const line of entry.split('\n')) {
+      if (line.startsWith('SQ'))
+        inSequence = true;
+      else if (inSequence && !line.startsWith('//'))
+        seqLines.push(line.replace(/[\s0-9]/g, ''));
+    }
+
+    const sequence = seqLines.join('').substring(0, seqLength).toUpperCase();
+
+    ids.push(id);
+    sequences.push(sequence);
+  }
+
+  const df = DG.DataFrame.fromColumns([
+    DG.Column.fromList(DG.COLUMN_TYPE.STRING, 'ID', ids),
+    DG.Column.fromList(DG.COLUMN_TYPE.STRING, 'Sequence', sequences),
+  ]);
+
+  df.col('Sequence')!.semType = 'dna_nucleotide';
+  return df;
+}
+
+//name: formENADataTable
+export function formENADataTable(): void {
+  const df = DG.DataFrame.fromColumns([
+    DG.Column.fromList(DG.COLUMN_TYPE.STRING, 'ID', []),
+    DG.Column.fromList(DG.COLUMN_TYPE.STRING, 'Sequence', []),
+  ]);
+
+  const grid = DG.Viewer.grid(df);
+  const queryInput = ui.input.string('Query', {value: 'coronavirus'});
+  const limitInput = ui.input.int('How many rows', {value: 100});
+  const seqLengthInput = ui.input.int('Sequence length', {value: 60});
+  const button = ui.button('Preview', async () => {
+    const previewDf = await _fetchENASequence(queryInput.value, 10, seqLengthInput.value ?? 60);
+    grid.dataFrame = previewDf;
+  });
+
+  ui.dialog('Create sequences table')
+    .add(ui.splitV([
+      ui.splitH([
+        ui.span([queryInput.root]),
+        ui.span([seqLengthInput.root]),
+        button,
+      ]),
+      ui.div([grid]),
+      ui.div([limitInput]),
+    ]))
+    .onOK(async () => {
+      const resultDf = await _fetchENASequence(
+        queryInput.value, limitInput.value ?? 100, seqLengthInput.value ?? 60
+      );
+      grok.shell.addTableView(resultDf);
+    })
+    .show();
+}
