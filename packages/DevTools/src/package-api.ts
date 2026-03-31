@@ -7,20 +7,6 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
 
-export namespace scripts {
-  export async function exceptionScriptJulia(a: number ): Promise<number> {
-    return await grok.functions.call('DevTools:ExceptionScriptJulia', { a });
-  }
-
-  export async function exceptionScriptOctave(a: number ): Promise<number> {
-    return await grok.functions.call('DevTools:ExceptionScriptOctave', { a });
-  }
-
-  export async function exceptionScriptPython(a: number ): Promise<number> {
-    return await grok.functions.call('DevTools:ExceptionScriptPython', { a });
-  }
-}
-
 export namespace queries {
   export async function testHistory(packageName: string | null, category: string | null, test: string | null): Promise<DG.DataFrame> {
     return await grok.data.query('DevTools:TestHistory', { packageName, category, test });
@@ -76,25 +62,5 @@ export namespace funcs {
 
   export async function testFunctions(scope: any ): Promise<DG.DataFrame> {
     return await grok.functions.call('DevTools:TestFunctions', { scope });
-  }
-
-  export async function testFunction(col1: DG.Column , col2: DG.Column , col3: DG.Column , out?: any ): Promise<DG.DataFrame> {
-    return await grok.functions.call('DevTools:TestFunction', { col1, col2, col3, out });
-  }
-
-  export async function testFunctionJoin(data: DG.DataFrame , col1: DG.Column , col2: DG.Column , col3: DG.Column , out?: any ): Promise<DG.DataFrame> {
-    return await grok.functions.call('DevTools:TestFunctionJoin', { data, col1, col2, col3, out });
-  }
-
-  export async function testFunctionJoinColumnList(data: DG.DataFrame , columns: string[] , out?: any ): Promise<DG.DataFrame> {
-    return await grok.functions.call('DevTools:TestFunctionJoinColumnList', { data, columns, out });
-  }
-
-  export async function testFunctionNewJoinWithoutFormula(data: DG.DataFrame ): Promise<DG.DataFrame> {
-    return await grok.functions.call('DevTools:TestFunctionNewJoinWithoutFormula', { data });
-  }
-
-  export async function exceptionFunc(a: number ): Promise<number> {
-    return await grok.functions.call('DevTools:ExceptionFunc', { a });
   }
 }
