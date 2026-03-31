@@ -115,6 +115,9 @@ export function injectTreeForGridUI2(
   }
 
   function alignGridWithTree(): void {
+    if (!grid.dataFrame)
+      return;
+
     const [viewedRoot] = th.setGridOrder(treeRoot, grid, leafColName);
     if (viewedRoot) markupNode(viewedRoot);
 

@@ -1,5 +1,9 @@
 # Dendrogram changelog
 
+## v.next
+
+* GROK-19945: Fixed "DataFrame wasn't found" error when filter changes after dataframe is removed
+
 ## 1.4.8 (2026-02-03)
 
 * Horizontal zooming of dendrogram with mouse wheel and pinch gesture.
