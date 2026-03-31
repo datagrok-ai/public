@@ -242,7 +242,7 @@ export async function tableQueriesFunctionsSearchLlm(s: string): Promise<DG.Widg
     const tableQueriesSearchFunctions = DG.Func.find({meta: {searchPattern: null}, returnType: 'dataframe'})
       .filter((f) => f.options['searchPattern']);
     const matches: PatternQueryMatchResult | null = JSON.parse(await grok.functions
-      .call('ChatGPT:findMatchingPatternQuery', {prompt: s}));
+      .call('Grokky:findMatchingPatternQuery', {prompt: s}));
 
     if (!matches)
       return DG.Widget.fromRoot(ui.divText('Unable to process query. Please try rephrasing.'));
@@ -282,7 +282,7 @@ export async function tableQueriesFunctionsSearchLlm(s: string): Promise<DG.Widg
       ));
     }
   } catch (error) {
-    console.error('Error calling ChatGPT:findMatchingPatternQuery', error);
+    console.error('Error calling Grokky:findMatchingPatternQuery', error);
     return DG.Widget.fromRoot(ui.divText(`Error during AI-powered table query search. Check console for details.`));
   }
   return DG.Widget.fromRoot(ui.divText('No matching query found via AI'));
