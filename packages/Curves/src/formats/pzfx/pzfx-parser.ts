@@ -70,8 +70,7 @@ function parseSubcolumn(subcolEl: Element): PzfxSubcolumn {
     if (text === '') {
       values.push(null);
       excluded.push(false);
-    }
-    else {
+    } else {
       values.push(parseFloat(text));
       excluded.push(d.getAttribute('Excluded') === '1');
     }
@@ -206,6 +205,7 @@ export function pzfxToFitDataFrame(tables: PzfxTable[]): DG.DataFrame {
   }
 
   const df = DG.DataFrame.create(names.length);
+  df.setTag(DG.Tags.Id, crypto.randomUUID());
   df.name = 'PZFX Curves';
 
   const nameCol = df.columns.addNewString('Table');
@@ -228,6 +228,7 @@ export function pzfxTableToDataFrame(table: PzfxTable): DG.DataFrame {
     Math.max(...yc.subcolumns.map((sc) => sc.values.length), 0)), 0);
 
   const df = DG.DataFrame.create(maxRows);
+  df.setTag(DG.Tags.Id, crypto.randomUUID());
   df.name = table.title || table.id;
 
   for (const yCol of table.yColumns) {
@@ -236,8 +237,7 @@ export function pzfxTableToDataFrame(table: PzfxTable): DG.DataFrame {
       const sc = yCol.subcolumns[0];
       for (let i = 0; i < sc.values.length; i++)
         col.set(i, sc.values[i] ?? DG.FLOAT_NULL);
-    }
-    else {
+    } else {
       for (let si = 0; si < yCol.subcolumns.length; si++) {
         const col = df.columns.addNewFloat(`${yCol.title}_${si + 1}`);
         const sc = yCol.subcolumns[si];

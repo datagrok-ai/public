@@ -672,6 +672,7 @@ export async function convertDataToCurves(df: DG.DataFrame,
 
   const resDF = DG.DataFrame.fromColumns(tableColList);
   resDF.name = 'Fitted Curves';
+  resDF.setTag(DG.Tags.Id, crypto.randomUUID());
 
   if (!parentData || !parentData.table) {
     const actualStatNames = {
