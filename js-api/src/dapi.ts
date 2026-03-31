@@ -1020,11 +1020,11 @@ export class DockerImagesDataSource extends HttpDataSource<DockerImage> {
   }
 
   /**
-   * Rebuilds Docker image.
-   * @param imageId - ID of the {@link DockerImage} to rebuild.
+   * Revalidates Docker image (checks that image exists and is pullable).
+   * @param imageId - ID of the {@link DockerImage} to revalidate.
    * @returns {Promise<void>} - promise that resolves with void or throws Exception if something went wrong.
    */
-  rebuild(imageId: string): Promise<void> {
+  revalidate(imageId: string): Promise<void> {
     return api.grok_Dapi_DockerImagesDataSource_Rebuild(this.dart, imageId);
   }
 }
