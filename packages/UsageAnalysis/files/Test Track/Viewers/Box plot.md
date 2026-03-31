@@ -26,13 +26,13 @@
     - Close all.
 9. Visualization zoom:
     - The SPGI_v2 dataset is opened and a Box Plot viewer is added.
-    - Adjust some zoom in the Box Plot viewer.
+    - Adjust viewport in the Box Plot viewer.
     - Save the current project. 
     - Reopen the saved project.
-    - Verify that the zoom level in the Box Plot viewer is preserved.
-    - Adjust the zoom level again (if needed).
+    - Verify that the viewport in the Box Plot viewer is preserved.
+    - Adjust the viewport again (if needed).
     - Save the layout and reload this layout.
-    - Verify that the zoom level is not preserved when reopening the layout.
+    - Verify that the viewport is not preserved when reopening the layout.
 
 
 ---
