@@ -59,7 +59,7 @@ function discoverDockerfiles(packageName: string, version: string, debug: boolea
     const dockerfilePath = path.join(dockerfilesDir, entry.name, 'Dockerfile');
     if (!fs.existsSync(dockerfilePath))
       continue;
-    const cleanName = utils.removeScope(packageName).replace(/-/g, '').toLowerCase();
+    const cleanName = utils.removeScope(packageName).toLowerCase();
     const imageName = `${cleanName}-${entry.name.toLowerCase()}`;
     const imageTag = debug ? version : `${version}.X`;
     results.push({
