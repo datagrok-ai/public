@@ -61,7 +61,7 @@ function discoverDockerfiles(packageName: string, version: string, debug: boolea
       continue;
     const cleanName = utils.removeScope(packageName).toLowerCase();
     const imageName = `${cleanName}-${entry.name.toLowerCase()}`;
-    const imageTag = debug ? version : `${version}.X`;
+    const imageTag = version;
     results.push({
       imageName,
       imageTag,
@@ -76,10 +76,20 @@ function dockerCommand(args: string): string {
   return execSync(`docker ${args}`, {encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe']}).trim();
 }
 
-function localImageExists(fullName: string): boolean {
+function localImageExists(fullName: string, checkPlatform: boolean = true): boolean {
   try {
     const output = dockerCommand(`images --format "{{.Repository}}:{{.Tag}}"`);
-    return output.split('\n').some((line: string) => line.trim() === fullName);
+    if (!output.split('\n').some((line: string) => line.trim() === fullName))
+      return false;
+    if (checkPlatform) {
+      // Verify the image is linux/amd64 — ARM images won't run on Datagrok servers
+      const inspect = dockerCommand(`inspect --format "{{.Os}}/{{.Architecture}}" ${fullName}`);
+      if (inspect.trim() !== 'linux/amd64') {
+        color.warn(`Local image ${fullName} is ${inspect.trim()}, not linux/amd64 — treating as not found`);
+        return false;
+      }
+    }
+    return true;
   } catch {
     return false;
   }
@@ -87,7 +97,7 @@ function localImageExists(fullName: string): boolean {
 
 function dockerLogin(registry: string, devKey: string): boolean {
   try {
-    dockerCommand(`login ${registry} -u ${devKey} -p ${devKey}`);
+    dockerCommand(`login ${registry} -u any -p ${devKey}`);
     return true;
   } catch (e: any) {
     color.warn(`Docker login to ${registry} failed: ${e.message || e}`);
@@ -115,10 +125,25 @@ function dockerPush(image: string): boolean {
   }
 }
 
-function dockerBuild(imageName: string, dockerfilePath: string, context: string): boolean {
+function isLocalhostRegistry(registry: string): boolean {
+  return registry.startsWith('localhost') || registry.startsWith('127.0.0.1');
+}
+
+function dockerRemove(imageName: string): boolean {
   try {
-    color.log(`Building Docker image ${imageName}...`);
-    execSync(`docker build -t ${imageName} -f ${dockerfilePath} ${context}`, {
+    dockerCommand(`rmi ${imageName}`);
+    return true;
+  }
+  catch {
+    return false;
+  }
+}
+
+function dockerBuild(imageName: string, dockerfilePath: string, context: string, usePlatform: boolean = true): boolean {
+  try {
+    const platformFlag = usePlatform ? '--platform linux/amd64 ' : '';
+    color.log(`Building Docker image ${imageName}${usePlatform ? ' (platform: linux/amd64)' : ''}...`);
+    execSync(`docker build ${platformFlag}-t ${imageName} -f ${dockerfilePath} ${context}`, {
       encoding: 'utf-8',
       stdio: 'inherit',
     });
@@ -244,6 +269,8 @@ async function processDockerImages(
   if (registry)
     dockerLogin(registry, devKey);
 
+  const needsPlatform = !!registry && !isLocalhostRegistry(registry);
+
   for (const img of dockerImages) {
     color.info(`Processing docker image ${img.fullLocalName}...`);
     let result: DockerImageResult;
@@ -251,44 +278,78 @@ async function processDockerImages(
     const dockerfilePath = path.join(dockerfileDir, 'Dockerfile');
     const contentHash = calculateFolderHash(path.join(curDir, dockerfileDir));
 
-    if (rebuildDocker) {
-      if (dockerBuild(img.fullLocalName, dockerfilePath, dockerfileDir)) {
-        result = pushImage(img, registry);
-        color.success(`Built and tagged ${img.fullLocalName}`);
-      } else {
-        result = await fallbackImage(img, host, devKey, registry, version, contentHash);
-      }
-    } else if (localImageExists(img.fullLocalName)) {
-      color.success(`Found local image ${img.fullLocalName}`);
-      result = pushImage(img, registry);
-    } else {
-      color.warn(`Local image not found. Expected: ${img.fullLocalName}`);
-      color.log(`  Build it with: docker build -t ${img.fullLocalName} -f ${dockerfilePath} ${dockerfileDir}`);
-      const fallback = await fallbackImage(img, host, devKey, registry, version, contentHash);
-      if (fallback.serverError) {
-        color.error(`Cannot resolve fallback: ${fallback.serverError}`);
-        result = {image: null, fallback: true, requestedVersion: img.imageTag};
-      } else if (fallback.image && fallback.hashMatch === true) {
-        result = fallback;
-        color.success(`Falling back to ${fallback.image} (dockerfile unchanged)`);
-      } else if (fallback.image && fallback.hashMatch === false && !skipDockerRebuild) {
-        color.warn(`Dockerfile folder has changed. Rebuilding image...`);
-        if (dockerBuild(img.fullLocalName, dockerfilePath, dockerfileDir)) {
-          result = pushImage(img, registry);
-          color.success(`Built and tagged ${img.fullLocalName}`);
-        } else {
-          result = {image: fallback.image, fallback: true, requestedVersion: img.imageTag};
-          color.warn(`Build failed. Falling back to ${fallback.image} (hash mismatch)`);
+    // In release mode, append short content hash to tag for cache-busting
+    const shortHash = contentHash.substring(0, 8);
+    const registryTag = debug ? img.imageTag : `${img.imageTag}.${shortHash}`;
+    const remoteFullName = `${img.imageName}:${registryTag}`;
+
+    const buildAndPush = (): DockerImageResult | null => {
+      if (dockerBuild(img.fullLocalName, dockerfilePath, dockerfileDir, needsPlatform)) {
+        if (registry) {
+          const remoteTag = `${registry}/datagrok/${remoteFullName}`;
+          dockerTag(img.fullLocalName, remoteTag);
         }
-      } else {
-        // No fallback and no local image — must build
-        color.warn(`No fallback available. Building ${img.fullLocalName}...`);
-        if (dockerBuild(img.fullLocalName, dockerfilePath, dockerfileDir)) {
-          result = pushImage(img, registry);
-          color.success(`Built and tagged ${img.fullLocalName}`);
-        } else {
-          result = {image: null, fallback: true, requestedVersion: img.imageTag};
-          color.error(`Failed to build ${img.fullLocalName}. No container will be available.`);
+        color.success(`Built and tagged ${img.fullLocalName}`);
+        return pushImage(img.imageName, registryTag, registry);
+      }
+      return null;
+    };
+
+    if (rebuildDocker) {
+      // Delete old images before rebuilding
+      dockerRemove(img.fullLocalName);
+      if (registry)
+        dockerRemove(`${registry}/datagrok/${remoteFullName}`);
+      result = buildAndPush() ?? await fallbackImage(img, host, devKey, registry, version, contentHash);
+    }
+    else {
+      // Look for registry-qualified image first, then unqualified
+      let foundLocalName: string | null = null;
+      if (registry) {
+        const registryQualified = `${registry}/datagrok/${remoteFullName}`;
+        if (localImageExists(registryQualified, needsPlatform))
+          foundLocalName = registryQualified;
+      }
+      if (!foundLocalName && localImageExists(img.fullLocalName, needsPlatform))
+        foundLocalName = img.fullLocalName;
+
+      if (foundLocalName) {
+        color.success(`Found local image ${foundLocalName}`);
+        if (registry) {
+          const remoteTag = `${registry}/datagrok/${remoteFullName}`;
+          if (foundLocalName !== remoteTag)
+            dockerTag(foundLocalName, remoteTag);
+        }
+        result = pushImage(img.imageName, registryTag, registry);
+      }
+      else {
+        color.warn(`Local image not found. Expected: ${img.fullLocalName}`);
+        color.log(`  Build it with: docker build -t ${img.fullLocalName} -f ${dockerfilePath} ${dockerfileDir}`);
+        const fallback = await fallbackImage(img, host, devKey, registry, version, contentHash);
+        if (fallback.serverError) {
+          color.error(`Cannot resolve fallback: ${fallback.serverError}`);
+          result = {image: null, fallback: true, requestedVersion: registryTag};
+        }
+        else if (fallback.image && fallback.hashMatch === true) {
+          result = fallback;
+          color.success(`Falling back to ${fallback.image} (dockerfile unchanged)`);
+        }
+        else if (fallback.image && fallback.hashMatch === false && !skipDockerRebuild) {
+          color.warn(`Dockerfile folder has changed. Rebuilding image...`);
+          result = buildAndPush() ?? {image: fallback.image, fallback: true, requestedVersion: registryTag};
+          if (!result || result.fallback)
+            color.warn(`Build failed. Falling back to ${fallback.image} (hash mismatch)`);
+        }
+        else {
+          // No fallback and no local image — must build
+          color.warn(`No fallback available. Building ${img.fullLocalName}...`);
+          const built = buildAndPush();
+          if (built)
+            result = built;
+          else {
+            result = {image: null, fallback: true, requestedVersion: registryTag};
+            color.error(`Failed to build ${img.fullLocalName}. No container will be available.`);
+          }
         }
       }
     }
@@ -300,11 +361,11 @@ async function processDockerImages(
   }
 }
 
-function pushImage(img: DockerImageInfo, registry: string | undefined): DockerImageResult {
-  const canonicalImage = `datagrok/${img.fullLocalName}`;
+function pushImage(imageName: string, tag: string, registry: string | undefined): DockerImageResult {
+  const canonicalImage = `datagrok/${imageName}:${tag}`;
   if (registry) {
     const remoteTag = `${registry}/${canonicalImage}`;
-    dockerTag(img.fullLocalName, remoteTag);
+    // Image should already be tagged from build or retag step
     if (dockerPush(remoteTag))
       return {image: canonicalImage, fallback: false};
     color.warn(`Push failed, image tagged locally only: ${remoteTag}`);
