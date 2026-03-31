@@ -1,8 +1,10 @@
 /* eslint-disable max-len */
 
+import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 import {ModelType, LLMClient} from './LLM-client';
+import {UsageLimiter} from './usage-limiter';
 /**
  * The idea is to provide single AI search provider which will decide which LLM to use based on user prompt.
  * This class will not care about individual LLM implementations, nor the presence of api keys and other needed things.
@@ -101,6 +103,8 @@ export class CombinedAISearchAssistant {
     if (this.lastUiprompt === prompt)
       return;
     this.lastUiprompt = prompt;
+    if (!await UsageLimiter.getInstance().tryCheckAndIncrement('search', prompt, 'Fast'))
+      return;
     // add components to right places in ui
     const searchResultHost = document.getElementsByClassName('power-pack-search-host')[0];
     if (!searchResultHost) {

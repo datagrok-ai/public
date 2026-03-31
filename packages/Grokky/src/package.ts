@@ -11,6 +11,7 @@ import {PackageSettings, Plan} from './prompt-engine/interfaces';
 import {initModelTypeNames, ModelType, LLMClient} from './llm-utils/LLM-client';
 import {LLMCredsManager} from './llm-utils/creds';
 import {CombinedAISearchAssistant} from './llm-utils/combined-search';
+import {UsageLimiter} from './llm-utils/usage-limiter';
 import {JsonSchema} from './prompt-engine/interfaces';
 import {genDBConnectionMeta, moveDBMetaToStickyMetaOhCoolItEvenRhymes} from './llm-utils/db-index-tools';
 import {biologicsIndex} from './llm-utils/indexes/biologics-index';
@@ -32,6 +33,7 @@ export class PackageFunctions {
   static async init() {
     initModelTypeNames();
     LLMCredsManager.init(_package);
+    await UsageLimiter.getInstance().init();
     setupSearchUI();
     setupTableViewAIPanelUI();
     setupScriptsAIPanelUI();

@@ -18,6 +18,7 @@ import {processTableViewAIRequest} from './tableview-tools';
 import {DBAIPanel, ScriptingAIPanel, TVAIPanel} from './panel';
 import {ClaudeRuntimeClient} from '../claude-code/claude-runtime-client';
 import {generateDatagrokScript} from './script-tools';
+import {UsageLimiter} from './usage-limiter';
 
 
 export async function askWiki(question: string, useOpenAI: boolean = true) {
@@ -136,6 +137,9 @@ export async function setupAIQueryEditorUI(v: DG.ViewBase, connectionID: string,
   panel.show();
 
   panel.onRunRequest.subscribe(async (args) => {
+    if (!await UsageLimiter.getInstance().tryCheckAndIncrement('db-query', args.currentPrompt.prompt, args.currentPrompt.model))
+      return;
+    panel.updateUsageBadge();
     ui.setUpdateIndicator(queryEditorRoot, true, 'Grokking Query...', () => { fireAIAbortEvent(); });
     const session = panel.startChatSession();
     try {
@@ -270,6 +274,9 @@ export async function setupTableViewAIPanelUI() {
     // Setup request handler
     panel.onRunRequest.subscribe(async (args) => {
       const prompt = args.currentPrompt.prompt;
+      if (!await UsageLimiter.getInstance().tryCheckAndIncrement('tableview', args.currentPrompt.prompt, args.currentPrompt.model))
+        return;
+      panel.updateUsageBadge();
 
       if (panel.currentEngine === 'Claude')
         await runClaudeStreaming(panel, prompt, tableView);
@@ -315,6 +322,9 @@ export async function setupScriptsAIPanelUI() {
     const panel = new ScriptingAIPanel(scriptView);
     panel.hide();
     panel.onRunRequest.subscribe(async (args) => {
+      if (!await UsageLimiter.getInstance().tryCheckAndIncrement('scripting', args.currentPrompt.prompt, args.currentPrompt.model))
+        return;
+      panel.updateUsageBadge();
       ui.setUpdateIndicator(scriptView.root, true, 'Vibe-Grokking Script...', () => { fireAIAbortEvent(); });
       const indicator = scriptView.root.querySelector('.d4-update-shadow') as HTMLElement;
       if (indicator)

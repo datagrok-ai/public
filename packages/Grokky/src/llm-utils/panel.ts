@@ -9,6 +9,7 @@ import {dartLike, fireAIAbortEvent, getAIPanelToggleSubscription} from '../utils
 import {buildViewContext, executeDatagrokBlocks, renderEntityBlocks} from '../claude-code/claude-panel';
 import {ConversationStorage, StoredConversationWithContext} from './storage';
 import {ModelOption, ModelType} from './LLM-client';
+import {UsageLimiter} from './usage-limiter';
 import {LanguageModelV3Message, LanguageModelV3Content} from '@ai-sdk/provider';
 
 // in future might extend it with other types for response API
@@ -103,6 +104,7 @@ export class AIPanel<T extends MessageType = LanguageModelV3Message, K extends A
   private textAreaDiv: HTMLElement;
   private runButton: HTMLElement;
   protected modelInput: DG.InputBase<ModelOption>;
+  protected usageBadge: HTMLElement;
   private newChatButton: HTMLElement;
   private copyConversationButton: HTMLElement;
   private historyButton: HTMLElement;
@@ -206,11 +208,14 @@ export class AIPanel<T extends MessageType = LanguageModelV3Message, K extends A
     dartLike(headerTitle.style).set('margin', '0px').set('userSelect', 'none').set('cursor', 'pointer');
     headerTitle.addEventListener('click', () => this.textArea.focus());
     this.header.appendChild(headerTitle);
+    this.usageBadge = ui.divText('');
     const rightHeaderDiv = ui.divH([], 'd4-ai-panel-header-right-buttons');
+    rightHeaderDiv.appendChild(this.usageBadge);
     rightHeaderDiv.appendChild(this.newChatButton);
     // TODO: verify per-message copy button (in feedback row) works well before removing this
     // rightHeaderDiv.appendChild(this.copyConversationButton);
     this.header.appendChild(rightHeaderDiv);
+    this.updateUsageBadge();
     this.setupSubscriptions();
   }
 
@@ -508,6 +513,12 @@ export class AIPanel<T extends MessageType = LanguageModelV3Message, K extends A
 
   private terminate() {
     fireAIAbortEvent();
+  }
+
+  updateUsageBadge(): void {
+    const limiter = UsageLimiter.getInstance();
+    this.usageBadge.textContent = `${limiter.used}/${limiter.limit}`;
+    ui.tooltip.bind(this.usageBadge, `${limiter.remaining} AI requests remaining today`);
   }
 
   protected handleRun() {
