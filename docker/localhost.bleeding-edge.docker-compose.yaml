@@ -46,7 +46,7 @@ services:
           "adminDevKey": "admin",
           "isolatesCount": 2,
           "connectorsSettings": {
-            "dataframeParsingMode":"New Process",
+            "dataframeParsingMode":"New Thread",
             "externalDataFrameCompress":true,
             "grokConnectHost":"grok_connect",
             "grokConnectPort":1234,
@@ -131,7 +131,7 @@ services:
           - jupyter_kernel_gateway
     environment:
       GROK_PARAMETERS: |
-        {           
+        {
           "queueSettings": {"amqpHost": "rabbitmq", "pipeHost": "grok_pipe", "pipeKey": "test-key", "maxConcurrentCalls": 6}
         }
     restart: unless-stopped
