@@ -1,3 +1,4 @@
+/** See {@link ../CLAUDE.md} for developer documentation. */
 /* eslint-disable camelcase */
 /* eslint-disable guard-for-in */
 /* eslint-disable max-params */
