@@ -92,7 +92,7 @@ export async function pdbInfoWidget(pdbId: string): Promise<DG.Widget> {
     if (pdbInfo?.chains)
       basicMap['Chains'] = pdbInfo.chains.join(', ');
 
-    const basicTable = ui.tableFromMap(basicMap);
+    const basicTable = ui.divV([ui.h2('General'), ui.tableFromMap(basicMap)]);
 
     // -- Accordion for subsections --
     const acc = DG.Accordion.create();

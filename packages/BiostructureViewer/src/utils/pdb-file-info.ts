@@ -98,7 +98,7 @@ export function pdbFileInfoWidget(pdbText: string): DG.Widget {
   if (Object.keys(basicMap).length === 0)
     return new DG.Widget(ui.divText('No header information available'));
 
-  const basicTable = ui.tableFromMap(basicMap);
+  const basicTable = ui.divV([ui.h2('General'), ui.tableFromMap(basicMap)]);
 
   // -- Accordion for subsections --
   const acc = DG.Accordion.create();
