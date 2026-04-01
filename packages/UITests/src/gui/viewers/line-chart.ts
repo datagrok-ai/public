@@ -60,9 +60,8 @@ category('Viewers: Line Chart', () => {
       title: 'Test Line chart',
     });
 
-    await awaitCheck(() => (document.
-      querySelector('#elementContent > div.d4-layout-top > div > textarea') as HTMLSelectElement).
-      value === 'Test Line chart', 'title property has not been set', 2000);
+    await awaitCheck(() => (document.querySelector('.d4-line-chart')!.parentElement!.parentElement!
+      .querySelector('.panel-titlebar') as HTMLElement)!.innerText === 'Test Line chart', 'title property has not been set', 2000);
   });
 
   // Does not work through Test Manager
