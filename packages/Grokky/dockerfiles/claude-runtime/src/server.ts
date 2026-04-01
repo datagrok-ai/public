@@ -294,12 +294,18 @@ async function handleMessage(ws: WsSender, data: UserMessage): Promise<void> {
   const active: ActiveQuery = {abortController, queryHandle: null, pendingInputResolve: null};
   activeQueries.set(sid, active);
 
+  const DB_CLIENT_TOOLS = new Set([
+    'mcp__datagrok__db_list_catalogs', 'mcp__datagrok__db_list_schemas',
+    'mcp__datagrok__db_list_tables', 'mcp__datagrok__db_describe_tables',
+    'mcp__datagrok__db_list_joins', 'mcp__datagrok__db_try_sql',
+  ]);
+
   let gotResult = false;
   try {
     const existingSession = getSession(sid);
     const opts = buildOptions(existingSession, data.apiKey, mcpUrl);
     const canUseTool = async (toolName: string, input: any) => {
-      if (toolName === 'AskUserQuestion') {
+      if (toolName === 'AskUserQuestion' || DB_CLIENT_TOOLS.has(toolName)) {
         emit(ws, {type: 'input_request', sessionId: sid, toolName, input});
         const updatedInput = await new Promise<any>((resolve, reject) => {
           active.pendingInputResolve = resolve;

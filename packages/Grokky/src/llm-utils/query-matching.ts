@@ -4,9 +4,6 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {_package} from '../package';
 import {dartLike, fireAIAbortEvent} from '../utils';
-import {AIPanelFuncs, MessageType} from './panel';
-// TODO: Rewrite runQueryAIprompt (commented out below) to use Claude engine for SQL generation
-// when query matching has low confidence. See depr/sql-tools.ts for the old tool-calling approach.
 import {ClaudeRuntimeClient} from '../claude-code/claude-runtime-client';
 
 
@@ -212,7 +209,9 @@ export async function tableQueriesFunctionsSearchLlm(s: string): Promise<DG.Widg
             `but the connection was not found. Please refine your query with more specific details.`
           ));
         }
-        // return runQueryAIprompt(s, connection, tvWidgeFunc);
+        return DG.Widget.fromRoot(ui.divText(
+          `I couldn't find an exact query for "${connection.name}". Open a query editor for this connection and use the AI assistant (Ctrl+I) to generate a custom query.`
+        ));
       }
 
       return DG.Widget.fromRoot(ui.divText(
@@ -225,78 +224,6 @@ export async function tableQueriesFunctionsSearchLlm(s: string): Promise<DG.Widg
   }
   return DG.Widget.fromRoot(ui.divText('No matching query found via AI'));
 }
-
-// function runQueryAIprompt(userPrompt: string, connection: DG.DataConnection, tvWidgetFunc: DG.Func): DG.Widget {
-//   const outputDiv = ui.divV([
-//     ui.h2(`Looks like you are trying to query the "${connection.name}" database`),
-//     ui.divText('Your prompt did not match any known query patterns.'),
-//     ui.divText('Would you like me to help you construct a query?'),
-//     ui.button('Generate Query', async () => {
-//       await runPrompt();
-//     })
-//   ], {style: {width: '100%', height: '100%'}});
-//   const outputWidget = DG.Widget.fromRoot(outputDiv);
-//   const abort = () => {
-//     fireAIAbortEvent();
-//   };
-
-
-//   const dummyAIPanelFuncs: AIPanelFuncs<MessageType> = {
-//     addUserMessage: (_aiMsg: any, _msg: string) => {},
-//     addAIMessage: (_aiMsg: any, _title: string, _msg: string) => {},
-//     addEngineMessage: (_aiMsg: any) => {},
-//     addUiMessage: (msg: string, fromUser: boolean, _messageOptions?: any) => {
-//       if (!fromUser)
-//         ui.setUpdateIndicator(outputDiv, true, msg.substring(0, 40) + (msg.length > 40 ? '...' : ''), abort);
-//     },
-//     addConfirmMessage: (_msg?: string) => Promise.resolve(true),
-//   };
-
-//   async function runPrompt() {
-//     try {
-//       ui.setUpdateIndicator(outputDiv, true, 'Generating query...', abort);
-//       const sqlResult = await generateAISqlQueryWithTools(
-//         userPrompt,
-//         connection.id!,
-//         {
-//           aiPanel: dummyAIPanelFuncs,
-//           modelType: 'Deep Research',
-//           disableVerbose: true
-//         }
-//       );
-//       ui.setUpdateIndicator(outputDiv, false);
-//       if (sqlResult && sqlResult.trim().length > 0) {
-//         const queryFunc = connection.query(userPrompt, sqlResult);
-//         const outWidget = await tvWidgetFunc.apply({func: queryFunc, inputParams: {}});
-//         if (!outWidget)
-//           throw new Error('Failed to generate widget from AI query');
-//         // replace the output div content with the result widget
-//         outputDiv.replaceWith(outWidget.root);
-//         setTimeout(() => {
-//           const plusIcon = outWidget.root.querySelector('.d4-dialog-header .grok-icon.fal.fa-plus');
-//           if (!plusIcon)
-//             return;
-//           const editIcon = ui.icons.edit(() => {
-//             setTimeout(() => {
-//               const qf = connection.query(userPrompt, sqlResult);
-//               const v = DG.DataQueryView.create(qf);
-//               grok.shell.addView(v);
-//               // grok.shell.v = av;
-//             });
-//           }, 'Edit query');
-//           dartLike(editIcon.style).set('fontSize', '14px').set('width', '20px');
-//           plusIcon.parentNode?.insertBefore(editIcon, plusIcon);
-//         }, 1000);
-//       } else
-//         grok.shell.error('No SQL query was generated from the prompt. Please try rephrasing your request.');
-//     } catch (error: any) {
-//       ui.setUpdateIndicator(outputDiv, false);
-//       grok.shell.error(`Error during AI query generation`);
-//       console.error('Error during AI query generation:', error);
-//     }
-//   };
-//   return outputWidget;
-// }
 
 function removeTrailingQuotes(s: string): string {
   let ms = s;

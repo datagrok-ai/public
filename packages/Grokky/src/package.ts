@@ -5,7 +5,6 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {findBestMatchingQuery, tableQueriesFunctionsSearchLlm} from './llm-utils/query-matching';
 import {askWiki, smartExecution, setupAIQueryEditorUI, setupScriptsAIPanelUI, setupSearchUI, setupTableViewAIPanelUI} from './llm-utils/ui';
-import {PackageSettings} from './types';
 import {CombinedAISearchAssistant} from './llm-utils/combined-search';
 import {UsageLimiter} from './llm-utils/usage-limiter';
 import {genDBConnectionMeta, moveDBMetaToStickyMetaOhCoolItEvenRhymes} from './llm-utils/db-index-tools';
@@ -14,9 +13,6 @@ import {chemblIndex} from './llm-utils/indexes/chembl-index';
 export * from './package.g';
 
 export class ChatGPTPackage extends DG.Package {
-  get settings(): PackageSettings {
-    return super.settings as PackageSettings;
-  }
 }
 
 export const _package = new ChatGPTPackage();

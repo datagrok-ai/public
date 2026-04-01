@@ -85,7 +85,18 @@ export type AIPanelFuncs<T extends MessageType = MessageType> = {
   showInputRequest?: (input: AskUserInput) => Promise<AskUserResponse | null>,
 }
 
-export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInputs = AIPanelInputs> {
+export interface StreamingPanel<T extends MessageType = MessageType> {
+  sessionId: string;
+  startChatSession(): {session: AIPanelFuncs<T>, endSession: () => void, loader: HTMLElement};
+  prependViewContext(prompt: string, view: DG.ViewBase): string;
+  updateStreaming(content: string, loader: HTMLElement): void;
+  finalizeStreaming(content: string, view: DG.ViewBase): Promise<void>;
+  clearStreaming(): void;
+  showInputRequest(input: any): Promise<any>;
+  cancelInputRequest(): void;
+}
+
+export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInputs = AIPanelInputs> implements StreamingPanel<T> {
   private root: HTMLElement;
   protected view: DG.View | DG.ViewBase;
   private inputArea: HTMLElement;
@@ -832,8 +843,11 @@ function receiveFeedback(userPrompt: string, aiResponse: string, contextId: stri
 export class DBAIPanel extends AIPanel<MessageType, DBAIPanelInputs> {
   protected get placeHolder() { return 'Ask your database, like "Total sales by regions"'; }
   protected catalogInput: DG.InputBase<string>;
-  constructor(catalogs: string[], defaultCatalog: string, connectionID: string, view: DG.View | DG.ViewBase) {
+  private setAndRunFunc: (query: string) => void;
+
+  constructor(catalogs: string[], defaultCatalog: string, connectionID: string, view: DG.View | DG.ViewBase, setAndRunFunc: (query: string) => void) {
     super(connectionID, view); // context ID is connection ID
+    this.setAndRunFunc = setAndRunFunc;
     this.catalogInput = ui.input.choice('Catalog', {
       items: catalogs,
       value: defaultCatalog,
@@ -850,6 +864,28 @@ export class DBAIPanel extends AIPanel<MessageType, DBAIPanelInputs> {
       ...baseInputs,
       catalogName: this.catalogInput.value!,
     };
+  }
+
+  async finalizeStreaming(content: string, _view: DG.ViewBase): Promise<void> {
+    if (!this._streamingContainer || !this._streamingMarkdownEl)
+      return;
+
+    const markDown = this.createStyledMarkdown(content);
+    renderEntityBlocks(markDown);
+    this.appendFeedbackButtons(markDown);
+
+    this._streamingMarkdownEl.replaceWith(markDown);
+    this._streamingMarkdownEl = null;
+    this._streamingContainer = null;
+
+    this._uiMessages.push({fromUser: false, text: content, messageOptions: {finalResult: content}});
+
+    // Extract SQL from fenced code blocks and inject into query editor
+    const sqlMatch = /```(?:sql)?\n([\s\S]*?)```/.exec(content);
+    if (sqlMatch) {
+      const sql = sqlMatch[1].trimEnd().replace(/;+$/, '');
+      this.setAndRunFunc(sql);
+    }
   }
 }
 

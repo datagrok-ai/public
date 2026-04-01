@@ -6,10 +6,11 @@ import * as DG from 'datagrok-api/dg';
 import {CombinedAISearchAssistant} from './combined-search';
 import {fireAIAbortEvent, fireAIPanelToggleEvent, getAIAbortSubscription} from '../utils';
 import {BuiltinDBInfoMeta} from './query-meta-utils';
-import {AIPanel, DBAIPanel, ScriptingAIPanel, TVAIPanel} from './panel';
+import {DBAIPanel, ScriptingAIPanel, StreamingPanel, TVAIPanel} from './panel';
 import {ClaudeRuntimeClient} from '../claude-code/claude-runtime-client';
 import {executeDatagrokBlocks} from '../claude-code/claude-panel';
 import {UsageLimiter} from './usage-limiter';
+import {SQLGenerationContext} from './sql-tools';
 
 interface ExecutionPlan {
   plan: string[];
@@ -136,7 +137,6 @@ async function aiCombinedSearch(prompt: string) {
   await CombinedAISearchAssistant.instance.searchUI(prompt);
 }
 
-// TODO: rewrite to use Claude engine instead of deprecated sql-tools
 export async function setupAIQueryEditorUI(v: DG.ViewBase, connectionID: string, queryEditorRoot: HTMLElement, setAndRunFunc: (query: string) => void): Promise<boolean> {
   if (!grok.ai.config.configured)
     return false;
@@ -150,19 +150,22 @@ export async function setupAIQueryEditorUI(v: DG.ViewBase, connectionID: string,
   const catalogs = allDbInfos.map((d) => d.name);
   const defaultCatalog = connection.parameters?.['catalog'] ?? connection.parameters?.['db'] ?? catalogs[0] ?? '';
 
-  const panel = new DBAIPanel(catalogs, defaultCatalog, connectionID, v);
+  const panel = new DBAIPanel(catalogs, defaultCatalog, connectionID, v, setAndRunFunc);
   panel.show();
+
+  let sqlContext: SQLGenerationContext | null = null;
 
   panel.onRunRequest.subscribe(async (args) => {
     if (!await UsageLimiter.getInstance().tryCheckAndIncrement('db-query', args.currentPrompt.prompt))
       return;
-    // TODO: route through Claude engine
-    grok.shell.warning('SQL generation is being migrated to the new AI engine.');
+    if (!sqlContext)
+      sqlContext = await SQLGenerationContext.create(connectionID, args.currentPrompt.catalogName);
+    await runClaudeStreaming(panel, args.currentPrompt.prompt, v, (toolName, input) => sqlContext!.handleToolCall(toolName, input));
   });
   return true;
 }
 
-async function runClaudeStreaming(panel: AIPanel<any, any>, userPrompt: string, view: DG.ViewBase) {
+async function runClaudeStreaming(panel: StreamingPanel, userPrompt: string, view: DG.ViewBase, clientToolHandler?: (toolName: string, input: any) => Promise<string>) {
   const chatSession = panel.startChatSession();
   const sessionId = panel.sessionId;
   let accumulated = '';
@@ -233,6 +236,18 @@ async function runClaudeStreaming(panel: AIPanel<any, any>, userPrompt: string, 
     });
 
     forSession(client.onInputRequest, async (evt) => {
+      // Dispatch client-side DB tool calls (arrive as mcp__datagrok__<name>)
+      const mcpToolName = evt.toolName.replace(/^mcp__datagrok__/, '');
+      if (clientToolHandler && mcpToolName !== evt.toolName) {
+        try {
+          const result = await clientToolHandler(mcpToolName, evt.input);
+          client.respondToInput(sessionId, result);
+        } catch (e: any) {
+          client.respondToInput(sessionId, `Error: ${e.message}`);
+        }
+        return;
+      }
+      // Default: AskUserQuestion
       accumulated = '';
       toolStatus = '';
       panel.clearStreaming();

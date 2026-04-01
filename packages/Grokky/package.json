@@ -63,63 +63,6 @@
   "sources": [
     "css/ai.css"
   ],
-  "properties": [
-    {
-      "name": "vectorStoreId",
-      "propertyType": "string",
-      "description": "Vector Store ID with Datagrok documentation",
-      "defaultValue": "",
-      "nullable": true
-    },
-    {
-      "name": "defaultFastModel",
-      "propertyType": "string",
-      "description": "Fast Model name for simple tasks. This must match the model names supported by OpenAI or name of deployed model.",
-      "defaultValue": "gpt-4o-mini",
-      "nullable": false
-    },
-    {
-      "name": "defaultDeepResearchModel",
-      "propertyType": "string",
-      "description": "Deep Research Model name for complex tasks. This must match the model names supported by OpenAI or name of deployed model.",
-      "defaultValue": "gpt-5.2",
-      "nullable": false
-    },
-    {
-      "name": "defaultCodingModel",
-      "propertyType": "string",
-      "description": "Coding Model name for code generation tasks. This must match the model names supported by OpenAI or name of deployed model.",
-      "defaultValue": "gpt-5.1-codex-max",
-      "nullable": false
-    },
-    {
-      "name": "APIName",
-      "propertyType": "string",
-      "description": "OpenAI API endpoint. Responses or Chat completions API can be used.",
-      "defaultValue": "OpenAI Chat Completions",
-      "nullable": false,
-      "choices": [
-        "OpenAI Chat Completions",
-        "OpenAI Responses",
-        "Anthropic Messages",
-        "Amazon Bedrock"
-      ]
-    },
-    {
-      "name" : "region",
-      "propertyType": "string",
-      "description": "Region for Amazon Bedrock API. Required only if Amazon Bedrock is used as API.",
-      "defaultValue": "us-east-2",
-      "nullable": true
-    },
-    {
-      "name": "apiVersion",
-      "propertyType": "string",
-      "description": "API version for OpenAI endpoint. v1 or v2.",
-      "defaultValue": "v1",
-      "nullable": true
-    }
-  ],
   "overrides": {
     "datagrok-api": "$datagrok-api"
   }
