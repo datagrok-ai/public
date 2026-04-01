@@ -144,6 +144,14 @@ export function pdbIdNglPanelWidget(pdbId: string) : any {
   return PackageFunctions.pdbIdNglPanelWidget(pdbId);
 }
 
+//name: Information
+//input: string pdbId { semType: PDB_ID }
+//output: widget result
+//meta.role: panel
+export async function pdbInfoPanel(pdbId: string) : Promise<any> {
+  return await PackageFunctions.pdbInfoPanel(pdbId);
+}
+
 //description: Example app for NGL drawing in grid cells
 export async function nglForGridTestApp() : Promise<void> {
   await PackageFunctions.nglForGridTestApp();

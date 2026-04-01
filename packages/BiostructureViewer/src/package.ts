@@ -24,6 +24,7 @@ import {NglViewer} from './viewers/ngl-viewer';
 import {NglViewerApp} from './apps/ngl-viewer-app';
 import {PdbHelper, PdbResDataFrame} from './utils/pdb-helper';
 import {nglWidgetUI} from './viewers/ngl-ui';
+import {pdbInfoWidget} from './utils/pdb-info';
 import {dockingDemoApp} from './demo/docking';
 import {biostructureInGridApp} from './demo/biostructure-in-grid';
 import {BiotrackViewerApp} from './apps/biotrack-viewer-app';
@@ -215,6 +216,15 @@ export class PackageFunctions {
     @grok.decorators.param({options: {semType: 'PDB_ID'}}) pdbId: string
   ): DG.Widget {
     return nglWidgetUI(pdbId);
+  }
+
+  @grok.decorators.panel({
+    name: 'Information',
+  })
+  static async pdbInfoPanel(
+    @grok.decorators.param({options: {semType: 'PDB_ID'}}) pdbId: string
+  ): Promise<DG.Widget> {
+    return await pdbInfoWidget(pdbId);
   }
 
   // -- Test apps --

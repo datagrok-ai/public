@@ -96,6 +96,10 @@ export namespace funcs {
     return await grok.functions.call('BiostructureViewer:PdbIdNglPanelWidget', { pdbId });
   }
 
+  export async function pdbInfoPanel(pdbId: string ): Promise<any> {
+    return await grok.functions.call('BiostructureViewer:PdbInfoPanel', { pdbId });
+  }
+
   /**
   Example app for NGL drawing in grid cells
   */

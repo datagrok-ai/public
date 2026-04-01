@@ -48,6 +48,20 @@ export class RcsbGraphQLAdapter {
             resolution_combined
             experimental_method
           }
+          rcsb_primary_citation {
+            pdbx_database_id_DOI
+          }
+          struct_keywords {
+            pdbx_keywords
+          }
+          polymer_entities {
+            rcsb_entity_source_organism {
+              ncbi_scientific_name
+            }
+            rcsb_entity_host_organism {
+              ncbi_scientific_name
+            }
+          }
         }
       }
     `,
@@ -252,6 +266,10 @@ export class RcsbGraphQLAdapter {
     title?: string;
     resolution?: number;
     experimentalMethod?: string;
+    doi?: string;
+    classification?: string;
+    organisms?: string[];
+    expressionSystems?: string[];
   }> {
     const data = await this.executeQuery<{
       entry: {
@@ -261,6 +279,16 @@ export class RcsbGraphQLAdapter {
           resolution_combined?: number[];
           experimental_method?: string;
         };
+        rcsb_primary_citation?: {
+          pdbx_database_id_DOI?: string;
+        };
+        struct_keywords?: {
+          pdbx_keywords?: string;
+        };
+        polymer_entities?: Array<{
+          rcsb_entity_source_organism?: Array<{ ncbi_scientific_name?: string }>;
+          rcsb_entity_host_organism?: Array<{ ncbi_scientific_name?: string }>;
+        }>;
       };
     }>(
       this.QUERIES.ENTRY_INFO,
@@ -270,11 +298,28 @@ export class RcsbGraphQLAdapter {
     if (!data.entry)
       throw new Error(`Entry not found for PDB ID: ${pdbId}`);
 
+    const organisms = new Set<string>();
+    const expressionSystems = new Set<string>();
+    for (const entity of data.entry.polymer_entities ?? []) {
+      for (const org of entity.rcsb_entity_source_organism ?? []) {
+        if (org.ncbi_scientific_name)
+          organisms.add(org.ncbi_scientific_name);
+      }
+      for (const host of entity.rcsb_entity_host_organism ?? []) {
+        if (host.ncbi_scientific_name)
+          expressionSystems.add(host.ncbi_scientific_name);
+      }
+    }
+
     return {
       id: data.entry.rcsb_id,
       title: data.entry.struct?.title,
       resolution: data.entry.rcsb_entry_info?.resolution_combined?.[0],
-      experimentalMethod: data.entry.rcsb_entry_info?.experimental_method
+      experimentalMethod: data.entry.rcsb_entry_info?.experimental_method,
+      doi: data.entry.rcsb_primary_citation?.pdbx_database_id_DOI ?? undefined,
+      classification: data.entry.struct_keywords?.pdbx_keywords ?? undefined,
+      organisms: organisms.size > 0 ? [...organisms] : undefined,
+      expressionSystems: expressionSystems.size > 0 ? [...expressionSystems] : undefined,
     };
   }
 
