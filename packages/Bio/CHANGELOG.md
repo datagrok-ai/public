@@ -1,5 +1,15 @@
 # Bio changelog
 
+## 2.26.5 (2026-04-01)
+
+### Features
+
+* Added monomer canonicalization support
+
+### Bug Fixes
+
+* GROK-19928: Sequence space and Activity cliffs now correctly save and restore in datasync projects
+
 ## 2.26.4 (2026-03-20)
 
 ### Features

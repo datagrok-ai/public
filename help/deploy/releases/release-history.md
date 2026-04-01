@@ -21,6 +21,20 @@ See also:
 - [Versioning policy](../../develop/dev-process/versioning-policy.md)
 - [Docker-Compose](../docker-compose/docker-compose.md)
 
+## 2026-03-26 Datagrok 1.27.2 release
+
+### Improvements:
+
+* Snowflake: Introduced JWT authentication support
+* Scatterplot: Added a configurable tooltip delay setting for improved hover behavior
+
+### Fixed:
+
+* Projects: Relations now load correctly after a plugin version upgrade
+* Bar Chart: Relative values indicators now display correctly
+* Trellis plot: Copying a project containing a trellis plot no longer causes errors
+
+
 ## 2026-03-20 Datagrok 1.27.1 release
 
 ### Improvements:

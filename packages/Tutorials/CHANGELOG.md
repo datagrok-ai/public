@@ -1,5 +1,12 @@
 # Tutorials changelog
 
+## 1.11.1 (2026-03-23)
+
+### Bug Fixes
+
+* GROK-17970: Demo app no longer closes user-opened content when running demos
+* GROK-19746: Demo app browse-toolbox no longer flickers when switching between demos
+
 ## 1.11.0 (2026-03-13)
 
 ## 1.10.6 (2025-12-15)
