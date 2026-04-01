@@ -36,6 +36,13 @@ const knimeOutputTypeToDgType: Record<KnimeParamType, string> = {
   'json': 'string',
 };
 
+const MOLECULE_KEYWORDS = ['smiles', 'molecule', 'mol', 'compound', 'structure', 'chemical'];
+
+function containsMoleculeKeyword(name: string): boolean {
+  const lower = name.toLowerCase();
+  return MOLECULE_KEYWORDS.some((kw) => lower.includes(kw));
+}
+
 export function sanitizeFuncName(name: string, id: string): string {
   let result = name.replace(/[^a-zA-Z0-9_]/g, '_').replace(/_+/g, '_').replace(/^_|_$/g, '');
   if (!result)
@@ -283,11 +290,11 @@ function extractReturnValue(result: KnimeExecutionResult, outputMeta: OutputMeta
   return ret;
 }
 
-export function registerFuncFromSpec(
+export async function registerFuncFromSpec(
   deployment: KnimeDeployment,
   spec: KnimeWorkflowSpec,
   client: IKnimeClient,
-): DG.Func {
+): Promise<DG.Func> {
   const funcName = sanitizeFuncName(deployment.name, deployment.id);
   const paramMeta = buildParamMeta(spec.inputs);
   const outputMeta = buildOutputMeta(spec.outputs);
@@ -329,6 +336,17 @@ export function registerFuncFromSpec(
         }
         else
           prop.initialValue = String(pm.defaultValue);
+      }
+      if (pm.type === 'string' && containsMoleculeKeyword(pm.originalName)) {
+        if (pm.defaultValue != null) {
+          try {
+            if (await grok.functions.call('Chem:isSmiles', {s: String(pm.defaultValue)}))
+              prop.semType = 'Molecule';
+          }
+          catch { /* Chem package not available */ }
+        }
+        else
+          prop.semType = 'Molecule';
       }
     }
   }
