@@ -425,8 +425,16 @@ export function parsePdbHeaders(pdbText: string): PdbHeaderInfo {
   // JRNL: citation
   result.citation = parseCitation(lines);
 
-  // Ligands: HET, HETNAM, FORMUL
-  result.ligands = parseLigands(lines);
+  // MODRES: modified residues (parse before ligands to filter them out)
+  result.modifiedResidues = parseModifiedResidues(lines);
+  const modResIds = new Set((result.modifiedResidues ?? []).map((m) => m.resName));
+
+  // Ligands: HET, HETNAM, FORMUL (exclude modified residues)
+  const allLigands = parseLigands(lines);
+  if (allLigands)
+    result.ligands = allLigands.filter((l) => !modResIds.has(l.id));
+  if (result.ligands && result.ligands.length === 0)
+    result.ligands = undefined;
 
   // SEQADV: mutations
   result.mutations = parseMutations(lines);
@@ -444,9 +452,6 @@ export function parsePdbHeaders(pdbText: string): PdbHeaderInfo {
 
   // HELIX/SHEET: secondary structure
   result.secondaryStructure = parseSecondaryStructure(lines);
-
-  // MODRES: modified residues
-  result.modifiedResidues = parseModifiedResidues(lines);
 
   // SSBOND count
   const ssbondCount = lines.filter((l) => l.startsWith('SSBOND')).length;
