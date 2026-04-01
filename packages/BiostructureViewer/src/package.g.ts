@@ -152,14 +152,6 @@ export async function pdbInfoPanel(pdbId: string): Promise<any> {
   return await PackageFunctions.pdbInfoPanel(pdbId);
 }
 
-//name: PDB Information
-//input: semantic_value molecule { semType: Molecule3D }
-//output: widget result
-//meta.role: panel
-export function pdbFileInfoPanel(molecule: DG.SemanticValue): any {
-  return PackageFunctions.pdbFileInfoPanel(molecule);
-}
-
 //description: Example app for NGL drawing in grid cells
 export async function nglForGridTestApp(): Promise<void> {
   await PackageFunctions.nglForGridTestApp();
@@ -372,6 +364,14 @@ export function biostructureDataToJson(binary: boolean, data: any, ext: string, 
 //meta.domain: bio
 export function structure3D(molecule: DG.SemanticValue): any {
   return PackageFunctions.structure3D(molecule);
+}
+
+//name: PDB Information
+//input: semantic_value molecule { semType: Molecule3D }
+//output: widget result
+//meta.role: panel
+export function pdbFileInfoPanel(molecule: DG.SemanticValue): any {
+  return PackageFunctions.pdbFileInfoPanel(molecule);
 }
 
 //name: Fetch PDB Sequences

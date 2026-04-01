@@ -1,8 +1,36 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
+import * as ngl from 'NGL';
 
 import {parsePdbHeaders} from './pdb-parser';
+
+/** Create an NGL 3D viewer from PDB text, showing only specified chains (polymer only). */
+function create3DViewerFromText(pdbText: string, chainSelection: string, height: number = 250): HTMLElement {
+  const host = ui.div([], {style: {width: '100%', height: `${height}px`}});
+  const stage = new ngl.Stage(host);
+  (stage as any).setParameters({backgroundColor: 'white'});
+  const blob = new Blob([pdbText], {type: 'text/plain'});
+
+  stage.loadFile(blob, {defaultRepresentation: false, ext: 'pdb'})
+    .then((component: any) => {
+      component.addRepresentation('cartoon', {sele: `(${chainSelection}) and polymer`, color: 'chainid'});
+      component.autoView(`(${chainSelection}) and polymer`);
+      const canvas = stage.viewer.renderer.domElement;
+      const resize = () => {
+        canvas!.width = Math.floor(canvas!.clientWidth * window.devicePixelRatio);
+        canvas!.height = Math.floor(canvas!.clientHeight * window.devicePixelRatio);
+        stage.handleResize();
+      };
+      ui.onSizeChanged(host).subscribe(() => resize());
+      resize();
+    })
+    .catch(() => {
+      host.appendChild(ui.divText('Failed to load 3D structure'));
+    });
+
+  return host;
+}
 
 /** Fetch SMILES for a list of ligand compound IDs from RCSB Chemical Component Dictionary. */
 async function fetchLigandSmiles(compIds: string[]): Promise<{[compId: string]: string}> {
@@ -59,6 +87,8 @@ export function pdbFileInfoWidget(pdbText: string): DG.Widget {
     basicMap['Organism'] = info.organism;
   if (info.expressionSystem)
     basicMap['Expression System'] = info.expressionSystem;
+  if (info.softwareRemarks)
+    basicMap['Prepared By'] = info.softwareRemarks.join('; ');
   if (info.atomCount != null)
     basicMap['Atom Count'] = info.atomCount.toString();
   if (info.chains)
@@ -124,7 +154,37 @@ export function pdbFileInfoWidget(pdbText: string): DG.Widget {
             map['Chains'] = entity.chains.join(', ');
           if (entity.molecule)
             map['Molecule'] = entity.molecule;
-          return ui.tableFromMap(map);
+          // Show residue count per chain
+          if (entity.chains && info.residueCountByChain) {
+            const counts = entity.chains
+              .filter((c) => info.residueCountByChain![c] != null)
+              .map((c) => `${c}: ${info.residueCountByChain![c]}`);
+            if (counts.length > 0)
+              map['Residues'] = counts.join(', ');
+          }
+          if (entity.engineered)
+            map['Engineered'] = 'Yes';
+          if (entity.mutation)
+            map['Mutation'] = 'Yes';
+          // Show specific mutations for this entity's chains
+          if (info.mutations && entity.chains) {
+            const entityMuts = info.mutations.filter((m) => entity.chains!.includes(m.chain));
+            if (entityMuts.length > 0)
+              map['Mutation(s)'] = entityMuts.map((m) => m.description).join(', ');
+          }
+          const entityParts: HTMLElement[] = [ui.tableFromMap(map)];
+
+          // 3D Structure sub-pane for this entity's chains
+          if (entity.chains && entity.chains.length > 0) {
+            const chainSel = entity.chains.map((c) => `:${c}`).join(' or ');
+            const viewer3dAcc = DG.Accordion.create();
+            viewer3dAcc.addPane('3D Structure', () => {
+              return create3DViewerFromText(pdbText, chainSel);
+            }, false);
+            entityParts.push(viewer3dAcc.root);
+          }
+
+          return ui.divV(entityParts);
         }, false);
       }
       return innerAcc.root;
@@ -147,25 +207,113 @@ export function pdbFileInfoWidget(pdbText: string): DG.Widget {
             map['Name'] = lig.name;
           if (lig.formula)
             map['Formula'] = lig.formula;
-          const parts: HTMLElement[] = [ui.tableFromMap(map)];
+          const tableHost = ui.div();
+          const parts: HTMLElement[] = [tableHost];
 
-          // Fetch 2D structure from RCSB if this is a standard PDB
+          // Fetch SMILES and 2D structure from RCSB if this is a standard PDB
           if (isRcsb) {
             const molHost = ui.div([ui.loader()]);
             parts.push(molHost);
+            tableHost.appendChild(ui.tableFromMap(map));
             fetchLigandSmiles([lig.id]).then((smilesMap) => {
-              molHost.innerHTML = '';
               const smiles = smilesMap[lig.id];
-              if (smiles)
+              if (smiles) {
+                map['SMILES'] = smiles;
+                tableHost.innerHTML = '';
+                tableHost.appendChild(ui.tableFromMap(map));
+                molHost.innerHTML = '';
                 molHost.appendChild(grok.chem.drawMolecule(smiles, 250, 200));
+              } else
+                molHost.innerHTML = '';
             });
-          }
+          } else
+            tableHost.appendChild(ui.tableFromMap(map));
+
 
           return ui.divV(parts);
         }, false);
       }
       return innerAcc.root;
     }, () => info.ligands!.length, false);
+  }
+
+  // -- Binding Sites --
+  if (info.sites && info.sites.length > 0) {
+    acc.addCountPane('Binding Sites', () => {
+      const innerAcc = DG.Accordion.create();
+      for (const site of info.sites!) {
+        innerAcc.addPane(site.name, () => {
+          return ui.divText(site.residues.join(', '));
+        }, false);
+      }
+      return innerAcc.root;
+    }, () => info.sites!.length, false);
+  }
+
+  // -- Secondary Structure --
+  if (info.secondaryStructure) {
+    const ss = info.secondaryStructure;
+    acc.addPane('Secondary Structure', () => {
+      const map: {[key: string]: any} = {};
+      if (ss.helices.length > 0) {
+        map['Helices'] = ss.helices.length.toString();
+        // Summarize by chain
+        const helixByChain: {[c: string]: number} = {};
+        for (const h of ss.helices)
+          helixByChain[h.chain] = (helixByChain[h.chain] || 0) + 1;
+        map['Helices by Chain'] = Object.entries(helixByChain)
+          .map(([c, n]) => `${c}: ${n}`).join(', ');
+      }
+      if (ss.sheets.length > 0) {
+        map['Strands'] = ss.sheets.length.toString();
+        const sheetByChain: {[c: string]: number} = {};
+        for (const s of ss.sheets)
+          sheetByChain[s.chain] = (sheetByChain[s.chain] || 0) + 1;
+        map['Strands by Chain'] = Object.entries(sheetByChain)
+          .map(([c, n]) => `${c}: ${n}`).join(', ');
+      }
+      return ui.tableFromMap(map);
+    }, false);
+  }
+
+  // -- Modified Residues --
+  if (info.modifiedResidues && info.modifiedResidues.length > 0) {
+    acc.addCountPane('Modified Residues', () => {
+      const innerAcc = DG.Accordion.create();
+      for (const mod of info.modifiedResidues!) {
+        const label = `${mod.resName} ${mod.chain}${mod.resSeq}`;
+        innerAcc.addPane(label, () => {
+          const map: {[key: string]: any} = {};
+          map['Modified Residue'] = mod.resName;
+          map['Standard Residue'] = mod.standardRes;
+          map['Chain'] = mod.chain;
+          map['Position'] = mod.resSeq.toString();
+          if (mod.comment)
+            map['Description'] = mod.comment;
+          return ui.tableFromMap(map);
+        }, false);
+      }
+      return innerAcc.root;
+    }, () => info.modifiedResidues!.length, false);
+  }
+
+  // -- Missing Residues --
+  if (info.missingResidues && info.missingResidues.length > 0) {
+    acc.addCountPane('Missing Residues', () => {
+      // Group by chain
+      const byChain: {[chain: string]: string[]} = {};
+      for (const mr of info.missingResidues!) {
+        if (!byChain[mr.chain]) byChain[mr.chain] = [];
+        byChain[mr.chain].push(`${mr.resName} ${mr.resSeq}`);
+      }
+      const innerAcc = DG.Accordion.create();
+      for (const [chain, residues] of Object.entries(byChain)) {
+        innerAcc.addCountPane(`Chain ${chain}`, () => {
+          return ui.divText(residues.join(', '));
+        }, () => residues.length, false);
+      }
+      return innerAcc.root;
+    }, () => info.missingResidues!.length, false);
   }
 
   const parts: HTMLElement[] = [basicTable];

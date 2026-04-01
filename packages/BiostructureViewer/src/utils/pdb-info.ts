@@ -201,6 +201,8 @@ export async function pdbInfoWidget(pdbId: string): Promise<DG.Widget> {
               map['Name'] = ne.name;
             if (ne.formula)
               map['Formula'] = ne.formula;
+            if (ne.smiles)
+              map['SMILES'] = ne.smiles;
             if (ne.inchiKey)
               map['InChI Key'] = ne.inchiKey;
 

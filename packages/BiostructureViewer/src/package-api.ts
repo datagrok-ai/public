@@ -100,10 +100,6 @@ export namespace funcs {
     return await grok.functions.call('BiostructureViewer:PdbInfoPanel', {pdbId});
   }
 
-  export async function pdbFileInfoPanel(molecule: any ): Promise<any> {
-    return await grok.functions.call('BiostructureViewer:PdbFileInfoPanel', {molecule});
-  }
-
   /**
   Example app for NGL drawing in grid cells
   */
@@ -268,6 +264,10 @@ export namespace funcs {
 
   export async function structure3D(molecule: any ): Promise<any> {
     return await grok.functions.call('BiostructureViewer:Structure3D', {molecule});
+  }
+
+  export async function pdbFileInfoPanel(molecule: any ): Promise<any> {
+    return await grok.functions.call('BiostructureViewer:PdbFileInfoPanel', {molecule});
   }
 
   /**
