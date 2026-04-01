@@ -4,7 +4,7 @@ import * as rxjs from 'rxjs';
 export type ChunkEvent = {sessionId: string, content: string};
 export type ToolActivityEvent = {sessionId: string, summary: string};
 export type ToolResultEvent = {sessionId: string, content: string};
-export type FinalEvent = {sessionId: string, content: string};
+export type FinalEvent = {sessionId: string, content: string, structured_output?: any};
 export type ErrorEvent = {sessionId: string, message: string};
 export type AbortedEvent = {sessionId: string};
 export type InputRequestEvent = {sessionId: string, toolName: string, input: any};
@@ -83,6 +83,7 @@ export class ClaudeRuntimeClient {
       case 'final':
         this.onFinal.next({
           sessionId: data.sessionId, content: data.content,
+          ...(data.structured_output ? {structured_output: data.structured_output} : {}),
         });
         break;
       case 'error':
@@ -107,13 +108,14 @@ export class ClaudeRuntimeClient {
     };
   }
 
-  send(sessionId: string, message: string): void {
+  send(sessionId: string, message: string, options?: {outputSchema?: object}): void {
     if (!this.ws || this.ws.readyState !== WebSocket.OPEN)
       throw new Error('ClaudeRuntimeClient: WebSocket is not connected');
     this.ws.send(JSON.stringify({
       type: 'user_message', sessionId, message,
       apiKey: grok.dapi.token,
       mcpServerUrl: this.mcpServerUrl,
+      ...(options?.outputSchema ? {outputSchema: options.outputSchema} : {}),
     }));
   }
 
@@ -129,23 +131,23 @@ export class ClaudeRuntimeClient {
     this.ws.send(JSON.stringify({type: 'input_response', sessionId, value}));
   }
 
-  async query(message: string, sessionId?: string): Promise<string> {
+  async query(message: string, options?: {sessionId?: string, outputSchema?: object}): Promise<any> {
     await this.ensureConnected();
-    const sid = sessionId ?? `query-${Date.now()}`;
-    return new Promise<string>((resolve, reject) => {
+    const sid = options?.sessionId ?? `query-${Date.now()}`;
+    return new Promise((resolve, reject) => {
       const subs: {unsubscribe: () => void}[] = [];
       const cleanup = () => { subs.forEach((s) => s.unsubscribe()); };
       subs.push(this.onFinal.subscribe((evt) => {
         if (evt.sessionId !== sid) return;
         cleanup();
-        resolve(evt.content);
+        resolve(options?.outputSchema && evt.structured_output ? evt.structured_output : evt.content);
       }));
       subs.push(this.onError.subscribe((evt) => {
         if (evt.sessionId !== sid) return;
         cleanup();
         reject(new Error(evt.message));
       }));
-      this.send(sid, message);
+      this.send(sid, message, options?.outputSchema ? {outputSchema: options.outputSchema} : undefined);
     });
   }
 

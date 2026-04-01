@@ -3,8 +3,6 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {getSchemaDescriptor} from '@datagrok-libraries/db-explorer/src/utils';
-import {LLMClient} from './LLM-client';
-import {JsonSchema} from '../prompt-engine/interfaces';
 
 type DBIDWithSchema = `${string}.${string}`;
 type DBReference = `${string}.${string} -> ${string}.${string}`;
@@ -224,297 +222,297 @@ export async function genDBConnectionMeta(connection: DG.DataConnection, schemas
   return out;
 }
 
-// Helper schemas for structured LLM output
-const ConnectionCommentSchema: JsonSchema = {
-  type: 'object',
-  properties: {
-    comment: {type: 'string', description: 'Brief overview of the database purpose and domain'},
-    LLMComment: {type: 'string', description: 'AI-friendly description of database structure and usage patterns'},
-  },
-  required: ['comment', 'LLMComment'],
-  additionalProperties: false,
-};
+// // Helper schemas for structured LLM output
+// const ConnectionCommentSchema: JsonSchema = {
+//   type: 'object',
+//   properties: {
+//     comment: {type: 'string', description: 'Brief overview of the database purpose and domain'},
+//     LLMComment: {type: 'string', description: 'AI-friendly description of database structure and usage patterns'},
+//   },
+//   required: ['comment', 'LLMComment'],
+//   additionalProperties: false,
+// };
 
-const SchemaCommentSchema: JsonSchema = {
-  type: 'object',
-  properties: {
-    comment: {type: 'string', description: 'Brief description of schema purpose'},
-    LLMComment: {type: 'string', description: 'AI-friendly description for query generation'},
-  },
-  required: ['comment', 'LLMComment'],
-  additionalProperties: false,
-};
+// const SchemaCommentSchema: JsonSchema = {
+//   type: 'object',
+//   properties: {
+//     comment: {type: 'string', description: 'Brief description of schema purpose'},
+//     LLMComment: {type: 'string', description: 'AI-friendly description for query generation'},
+//   },
+//   required: ['comment', 'LLMComment'],
+//   additionalProperties: false,
+// };
 
-const TableCommentSchema: JsonSchema = {
-  type: 'object',
-  properties: {
-    comment: {type: 'string', description: 'Brief table description'},
-    LLMComment: {type: 'string', description: 'AI-friendly description with domain context'},
-  },
-  required: ['comment', 'LLMComment'],
-  additionalProperties: false,
-};
+// const TableCommentSchema: JsonSchema = {
+//   type: 'object',
+//   properties: {
+//     comment: {type: 'string', description: 'Brief table description'},
+//     LLMComment: {type: 'string', description: 'AI-friendly description with domain context'},
+//   },
+//   required: ['comment', 'LLMComment'],
+//   additionalProperties: false,
+// };
 
-const ColumnCommentsSchema: JsonSchema = {
-  type: 'object',
-  properties: {
-    columns: {
-      type: 'array',
-      items: {
-        type: 'object',
-        properties: {
-          name: {type: 'string'},
-          comment: {type: 'string', description: 'Brief column description or empty if self-evident'},
-          LLMComment: {type: 'string', description: 'AI-friendly description or empty if self-evident'},
-        },
-        required: ['name', 'comment', 'LLMComment'],
-        additionalProperties: false,
-      },
-    },
-  },
-  required: ['columns'],
-  additionalProperties: false,
-};
+// const ColumnCommentsSchema: JsonSchema = {
+//   type: 'object',
+//   properties: {
+//     columns: {
+//       type: 'array',
+//       items: {
+//         type: 'object',
+//         properties: {
+//           name: {type: 'string'},
+//           comment: {type: 'string', description: 'Brief column description or empty if self-evident'},
+//           LLMComment: {type: 'string', description: 'AI-friendly description or empty if self-evident'},
+//         },
+//         required: ['name', 'comment', 'LLMComment'],
+//         additionalProperties: false,
+//       },
+//     },
+//   },
+//   required: ['columns'],
+//   additionalProperties: false,
+// };
 
-const RelationCommentSchema: JsonSchema = {
-  type: 'object',
-  properties: {
-    comment: {type: 'string', description: 'Brief relation description'},
-    LLMComment: {type: 'string', description: 'Natural language explanation (e.g., "Each activity belongs to one assay")'},
-    cardinality: {type: 'string', enum: ['one-to-one', 'one-to-many', 'many-to-one', 'many-to-many']},
-    IsPrimaryPath: {type: 'boolean', description: 'Is this a recommended join vs legacy join'},
-  },
-  required: ['comment', 'LLMComment', 'cardinality', 'IsPrimaryPath'],
-  additionalProperties: false,
-};
+// const RelationCommentSchema: JsonSchema = {
+//   type: 'object',
+//   properties: {
+//     comment: {type: 'string', description: 'Brief relation description'},
+//     LLMComment: {type: 'string', description: 'Natural language explanation (e.g., "Each activity belongs to one assay")'},
+//     cardinality: {type: 'string', enum: ['one-to-one', 'one-to-many', 'many-to-one', 'many-to-many']},
+//     IsPrimaryPath: {type: 'boolean', description: 'Is this a recommended join vs legacy join'},
+//   },
+//   required: ['comment', 'LLMComment', 'cardinality', 'IsPrimaryPath'],
+//   additionalProperties: false,
+// };
 
-const HiddenRelationsSchema: JsonSchema = {
-  type: 'object',
-  properties: {
-    hiddenRelations: {
-      type: 'array',
-      items: {
-        type: 'object',
-        properties: {
-          fromSchema: {type: 'string'},
-          fromTable: {type: 'string'},
-          fromColumns: {type: 'array', items: {type: 'string'}},
-          toSchema: {type: 'string'},
-          toTable: {type: 'string'},
-          toColumns: {type: 'array', items: {type: 'string'}},
-          comment: {type: 'string'},
-          LLMComment: {type: 'string'},
-          cardinality: {type: 'string', enum: ['one-to-one', 'one-to-many', 'many-to-one', 'many-to-many']},
-          IsPrimaryPath: {type: 'boolean'},
-        },
-        required: ['fromSchema', 'fromTable', 'fromColumns', 'toSchema', 'toTable', 'toColumns', 'comment', 'LLMComment', 'cardinality'],
-        additionalProperties: false,
-      },
-    },
-  },
-  required: ['hiddenRelations'],
-  additionalProperties: false,
-};
+// const HiddenRelationsSchema: JsonSchema = {
+//   type: 'object',
+//   properties: {
+//     hiddenRelations: {
+//       type: 'array',
+//       items: {
+//         type: 'object',
+//         properties: {
+//           fromSchema: {type: 'string'},
+//           fromTable: {type: 'string'},
+//           fromColumns: {type: 'array', items: {type: 'string'}},
+//           toSchema: {type: 'string'},
+//           toTable: {type: 'string'},
+//           toColumns: {type: 'array', items: {type: 'string'}},
+//           comment: {type: 'string'},
+//           LLMComment: {type: 'string'},
+//           cardinality: {type: 'string', enum: ['one-to-one', 'one-to-many', 'many-to-one', 'many-to-many']},
+//           IsPrimaryPath: {type: 'boolean'},
+//         },
+//         required: ['fromSchema', 'fromTable', 'fromColumns', 'toSchema', 'toTable', 'toColumns', 'comment', 'LLMComment', 'cardinality'],
+//         additionalProperties: false,
+//       },
+//     },
+//   },
+//   required: ['hiddenRelations'],
+//   additionalProperties: false,
+// };
 
-/**
- * Post-processes DB metadata by enriching it with LLM-generated comments and insights
- * @param connectionMeta - The raw connection metadata
- * @param openAIModel - The OpenAI model to use (e.g., 'gpt-4o')
- */
-export async function postProcessDBConnectionMeta(connectionMeta: DBConnectionMeta, openAIModel: string): Promise<DBConnectionMeta> {
-  const llmClient = LLMClient.getInstance();
-  const result = {...connectionMeta};
+// /**
+//  * Post-processes DB metadata by enriching it with LLM-generated comments and insights
+//  * @param connectionMeta - The raw connection metadata
+//  * @param openAIModel - The OpenAI model to use (e.g., 'gpt-4o')
+//  */
+// export async function postProcessDBConnectionMeta(connectionMeta: DBConnectionMeta, openAIModel: string): Promise<DBConnectionMeta> {
+//   const llmClient = LLMClient.getInstance();
+//   const result = {...connectionMeta};
 
-  // Step 1: Generate connection-level comment
-  console.log('Generating connection-level comment...');
-  const connectionOverview = generateConnectionOverview(result);
-  const connectionCommentResponse = await llmClient.generalPromptCached(
-    openAIModel,
-    'You are a database documentation expert. Generate concise, informative descriptions for database connections.',
-    `Database: ${result.name}\n\n${connectionOverview}\n\nGenerate a brief overview (comment) and an AI-friendly description (LLMComment) that helps AI models understand this database's purpose and structure.`,
-    ConnectionCommentSchema
-  );
-  const connectionComment = JSON.parse(connectionCommentResponse);
-  result.comment = connectionComment.comment;
-  result.LLMComment = connectionComment.LLMComment;
+//   // Step 1: Generate connection-level comment
+//   console.log('Generating connection-level comment...');
+//   const connectionOverview = generateConnectionOverview(result);
+//   const connectionCommentResponse = await llmClient.generalPromptCached(
+//     openAIModel,
+//     'You are a database documentation expert. Generate concise, informative descriptions for database connections.',
+//     `Database: ${result.name}\n\n${connectionOverview}\n\nGenerate a brief overview (comment) and an AI-friendly description (LLMComment) that helps AI models understand this database's purpose and structure.`,
+//     ConnectionCommentSchema
+//   );
+//   const connectionComment = JSON.parse(connectionCommentResponse);
+//   result.comment = connectionComment.comment;
+//   result.LLMComment = connectionComment.LLMComment;
 
-  // Step 2: Process each schema
-  for (const schema of result.schemas) {
-    console.log(`Processing schema: ${schema.name}`);
+//   // Step 2: Process each schema
+//   for (const schema of result.schemas) {
+//     console.log(`Processing schema: ${schema.name}`);
 
-    // Generate schema comment
-    const schemaOverview = generateSchemaOverview(schema);
-    const schemaCommentResponse = await llmClient.generalPromptCached(
-      openAIModel,
-      'You are a database documentation expert. Generate concise schema descriptions.',
-      `Schema: ${schema.name}\n\n${schemaOverview}\n\nGenerate a brief description and AI-friendly context.`,
-      SchemaCommentSchema
-    );
-    const schemaComment = JSON.parse(schemaCommentResponse);
-    schema.comment = schemaComment.comment;
-    schema.LLMComment = schemaComment.LLMComment;
+//     // Generate schema comment
+//     const schemaOverview = generateSchemaOverview(schema);
+//     const schemaCommentResponse = await llmClient.generalPromptCached(
+//       openAIModel,
+//       'You are a database documentation expert. Generate concise schema descriptions.',
+//       `Schema: ${schema.name}\n\n${schemaOverview}\n\nGenerate a brief description and AI-friendly context.`,
+//       SchemaCommentSchema
+//     );
+//     const schemaComment = JSON.parse(schemaCommentResponse);
+//     schema.comment = schemaComment.comment;
+//     schema.LLMComment = schemaComment.LLMComment;
 
-    // Step 3: Process tables in batches (to provide context)
-    for (const table of schema.tables) {
-      console.log(`Processing table: ${table.name}`);
+//     // Step 3: Process tables in batches (to provide context)
+//     for (const table of schema.tables) {
+//       console.log(`Processing table: ${table.name}`);
 
-      // Generate table comment with full context
-      const tableContext = generateTableContext(table, schema);
-      const tableCommentResponse = await llmClient.generalPromptCached(
-        openAIModel,
-        'You are a database documentation expert. Generate table descriptions that help AI understand the domain.',
-        `Table: ${schema.name}.${table.name}\n\n${tableContext}\n\nGenerate a brief description and AI-friendly context explaining this table's role.`,
-        TableCommentSchema
-      );
-      const tableComment = JSON.parse(tableCommentResponse);
-      table.comment = tableComment.comment;
-      table.LLMComment = tableComment.LLMComment;
+//       // Generate table comment with full context
+//       const tableContext = generateTableContext(table, schema);
+//       const tableCommentResponse = await llmClient.generalPromptCached(
+//         openAIModel,
+//         'You are a database documentation expert. Generate table descriptions that help AI understand the domain.',
+//         `Table: ${schema.name}.${table.name}\n\n${tableContext}\n\nGenerate a brief description and AI-friendly context explaining this table's role.`,
+//         TableCommentSchema
+//       );
+//       const tableComment = JSON.parse(tableCommentResponse);
+//       table.comment = tableComment.comment;
+//       table.LLMComment = tableComment.LLMComment;
 
-      // Step 4: Generate column comments (batch processing for efficiency)
-      const columnContext = generateColumnContext(table);
-      const columnCommentsResponse = await llmClient.generalPromptCached(
-        openAIModel,
-        `You are a database documentation expert. For each column, generate a brief description. 
-If a column is self-evident (like 'id' in a table named 'users' -> 'User ID'), you can use a very short description or leave empty strings.
-Focus on non-obvious columns, semantic types, and domain-specific meanings.`,
-        `Table: ${schema.name}.${table.name}\n\n${columnContext}\n\nFor each column, provide comment and LLMComment. Leave both empty if the column is completely self-evident.`,
-        ColumnCommentsSchema
-      );
-      const columnComments = JSON.parse(columnCommentsResponse);
+//       // Step 4: Generate column comments (batch processing for efficiency)
+//       const columnContext = generateColumnContext(table);
+//       const columnCommentsResponse = await llmClient.generalPromptCached(
+//         openAIModel,
+//         `You are a database documentation expert. For each column, generate a brief description. 
+// If a column is self-evident (like 'id' in a table named 'users' -> 'User ID'), you can use a very short description or leave empty strings.
+// Focus on non-obvious columns, semantic types, and domain-specific meanings.`,
+//         `Table: ${schema.name}.${table.name}\n\n${columnContext}\n\nFor each column, provide comment and LLMComment. Leave both empty if the column is completely self-evident.`,
+//         ColumnCommentsSchema
+//       );
+//       const columnComments = JSON.parse(columnCommentsResponse);
 
-      // Apply column comments
-      for (const colComment of columnComments.columns) {
-        const col = table.columns.find((c) => c.name === colComment.name);
-        if (col) {
-          col.comment = colComment.comment || undefined;
-          col.LLMComment = colComment.LLMComment || undefined;
-        }
-      }
-    }
-  }
+//       // Apply column comments
+//       for (const colComment of columnComments.columns) {
+//         const col = table.columns.find((c) => c.name === colComment.name);
+//         if (col) {
+//           col.comment = colComment.comment || undefined;
+//           col.LLMComment = colComment.LLMComment || undefined;
+//         }
+//       }
+//     }
+//   }
 
-  // Step 5: Process relations
-  console.log('Processing relations...');
-  const relationsContext = generateRelationsContext(result);
-  for (let i = 0; i < result.relations.length; i++) {
-    const relation = result.relations[i];
-    const relationContext = `${relation.fromSchema}.${relation.fromTable}(${relation.fromColumns.join(', ')}) -> ${relation.toSchema}.${relation.toTable}(${relation.toColumns.join(', ')})`;
+//   // Step 5: Process relations
+//   console.log('Processing relations...');
+//   const relationsContext = generateRelationsContext(result);
+//   for (let i = 0; i < result.relations.length; i++) {
+//     const relation = result.relations[i];
+//     const relationContext = `${relation.fromSchema}.${relation.fromTable}(${relation.fromColumns.join(', ')}) -> ${relation.toSchema}.${relation.toTable}(${relation.toColumns.join(', ')})`;
 
-    const relationCommentResponse = await llmClient.generalPromptCached(
-      openAIModel,
-      `You are a database expert. Analyze foreign key relationships and provide:
-1. Brief comment
-2. Natural language explanation (e.g., "Each assay_result belongs to one assay; one assay has many assay_results")
-3. Cardinality (one-to-one, one-to-many, many-to-one, many-to-many)
-4. Whether this is a primary/recommended join path (true) or a legacy/unusual join (false)`,
-      `Relation: ${relationContext}\n\nDatabase context:\n${relationsContext}\n\nAnalyze this relationship.`,
-      RelationCommentSchema
-    );
-    const relationComment = JSON.parse(relationCommentResponse);
-    relation.comment = relationComment.comment;
-    relation.LLMComment = relationComment.LLMComment;
-    relation.cardinality = relationComment.cardinality;
-    relation.IsPrimaryPath = relationComment.IsPrimaryPath;
-  }
+//     const relationCommentResponse = await llmClient.generalPromptCached(
+//       openAIModel,
+//       `You are a database expert. Analyze foreign key relationships and provide:
+// 1. Brief comment
+// 2. Natural language explanation (e.g., "Each assay_result belongs to one assay; one assay has many assay_results")
+// 3. Cardinality (one-to-one, one-to-many, many-to-one, many-to-many)
+// 4. Whether this is a primary/recommended join path (true) or a legacy/unusual join (false)`,
+//       `Relation: ${relationContext}\n\nDatabase context:\n${relationsContext}\n\nAnalyze this relationship.`,
+//       RelationCommentSchema
+//     );
+//     const relationComment = JSON.parse(relationCommentResponse);
+//     relation.comment = relationComment.comment;
+//     relation.LLMComment = relationComment.LLMComment;
+//     relation.cardinality = relationComment.cardinality;
+//     relation.IsPrimaryPath = relationComment.IsPrimaryPath;
+//   }
 
-  // Step 6: Discover hidden relations
-  console.log('Discovering hidden relations...');
-  const hiddenRelationsResponse = await llmClient.generalPromptCached(
-    openAIModel,
-    `You are a database expert. Analyze the database schema and identify potential "hidden" relationships that are not defined as foreign keys but could be logically joined.
-Examples:
-- Tables with similar column names (e.g., user_id in different tables)
-- Semantic relationships (e.g., name fields that could match)
-- Domain-specific relationships
+//   // Step 6: Discover hidden relations
+//   console.log('Discovering hidden relations...');
+//   const hiddenRelationsResponse = await llmClient.generalPromptCached(
+//     openAIModel,
+//     `You are a database expert. Analyze the database schema and identify potential "hidden" relationships that are not defined as foreign keys but could be logically joined.
+// Examples:
+// - Tables with similar column names (e.g., user_id in different tables)
+// - Semantic relationships (e.g., name fields that could match)
+// - Domain-specific relationships
 
-Only suggest high-confidence relationships that would be useful for queries. Return empty array if no hidden relations are found.`,
-    `Database: ${result.name}\n\nSchemas and tables:\n${generateHiddenRelationsContext(result)}\n\nIdentify any hidden relationships.`,
-    HiddenRelationsSchema
-  );
-  const hiddenRelations = JSON.parse(hiddenRelationsResponse);
+// Only suggest high-confidence relationships that would be useful for queries. Return empty array if no hidden relations are found.`,
+//     `Database: ${result.name}\n\nSchemas and tables:\n${generateHiddenRelationsContext(result)}\n\nIdentify any hidden relationships.`,
+//     HiddenRelationsSchema
+//   );
+//   const hiddenRelations = JSON.parse(hiddenRelationsResponse);
 
-  // Add hidden relations to the result
-  if (hiddenRelations.hiddenRelations && hiddenRelations.hiddenRelations.length > 0) {
-    result.relations.push(...hiddenRelations.hiddenRelations);
-    console.log(`Discovered ${hiddenRelations.hiddenRelations.length} hidden relations`);
-  }
+//   // Add hidden relations to the result
+//   if (hiddenRelations.hiddenRelations && hiddenRelations.hiddenRelations.length > 0) {
+//     result.relations.push(...hiddenRelations.hiddenRelations);
+//     console.log(`Discovered ${hiddenRelations.hiddenRelations.length} hidden relations`);
+//   }
 
-  return result;
-}
+//   return result;
+// }
 
-// Helper functions to generate context strings
+// // Helper functions to generate context strings
 
-function generateConnectionOverview(conn: DBConnectionMeta): string {
-  const schemaCount = conn.schemas.length;
-  const tableCount = conn.schemas.reduce((sum, s) => sum + s.tables.length, 0);
-  const relationCount = conn.relations.length;
+// function generateConnectionOverview(conn: DBConnectionMeta): string {
+//   const schemaCount = conn.schemas.length;
+//   const tableCount = conn.schemas.reduce((sum, s) => sum + s.tables.length, 0);
+//   const relationCount = conn.relations.length;
 
-  return `Schemas: ${schemaCount}, Tables: ${tableCount}, Relations: ${relationCount}
-Schema names: ${conn.schemas.map((s) => s.name).join(', ')}`;
-}
+//   return `Schemas: ${schemaCount}, Tables: ${tableCount}, Relations: ${relationCount}
+// Schema names: ${conn.schemas.map((s) => s.name).join(', ')}`;
+// }
 
-function generateSchemaOverview(schema: DBSchemaMeta): string {
-  const tableNames = schema.tables.map((t) => t.name).join(', ');
-  return `Tables (${schema.tables.length}): ${tableNames}`;
-}
+// function generateSchemaOverview(schema: DBSchemaMeta): string {
+//   const tableNames = schema.tables.map((t) => t.name).join(', ');
+//   return `Tables (${schema.tables.length}): ${tableNames}`;
+// }
 
-function generateTableContext(table: DBTableMeta, schema: DBSchemaMeta): string {
-  const colNames = table.columns.map((c) => `${c.name} (${c.type})`).join(', ');
-  const relatedTables = schema.tables
-    .filter((t) => t.name !== table.name)
-    .map((t) => t.name)
-    .join(', ');
+// function generateTableContext(table: DBTableMeta, schema: DBSchemaMeta): string {
+//   const colNames = table.columns.map((c) => `${c.name} (${c.type})`).join(', ');
+//   const relatedTables = schema.tables
+//     .filter((t) => t.name !== table.name)
+//     .map((t) => t.name)
+//     .join(', ');
 
-  return `Row count: ${table.rowCount}
-Columns: ${colNames}
-Other tables in schema: ${relatedTables}`;
-}
+//   return `Row count: ${table.rowCount}
+// Columns: ${colNames}
+// Other tables in schema: ${relatedTables}`;
+// }
 
-function generateColumnContext(table: DBTableMeta): string {
-  const columnDetails = table.columns.map((col) => {
-    const parts = [`${col.name}: ${col.type}`];
-    if (col.semanticType) parts.push(`semantic: ${col.semanticType}`);
-    if (col.isUnique) parts.push('unique');
-    if (col.min !== undefined) parts.push(`range: ${col.min}-${col.max}`);
-    if (col.categoryValues) parts.push(`categories: ${col.categoryValues.slice(0, 5).join(', ')}${col.categoryValues.length > 5 ? '...' : ''}`);
-    return parts.join(', ');
-  }).join('\n');
+// function generateColumnContext(table: DBTableMeta): string {
+//   const columnDetails = table.columns.map((col) => {
+//     const parts = [`${col.name}: ${col.type}`];
+//     if (col.semanticType) parts.push(`semantic: ${col.semanticType}`);
+//     if (col.isUnique) parts.push('unique');
+//     if (col.min !== undefined) parts.push(`range: ${col.min}-${col.max}`);
+//     if (col.categoryValues) parts.push(`categories: ${col.categoryValues.slice(0, 5).join(', ')}${col.categoryValues.length > 5 ? '...' : ''}`);
+//     return parts.join(', ');
+//   }).join('\n');
 
-  return `Table: ${table.name} (${table.rowCount} rows)\nColumns:\n${columnDetails}`;
-}
+//   return `Table: ${table.name} (${table.rowCount} rows)\nColumns:\n${columnDetails}`;
+// }
 
-function generateRelationsContext(conn: DBConnectionMeta): string {
-  // Provide overview of all tables and their columns for context
-  const tablesOverview = conn.schemas.flatMap((schema) =>
-    schema.tables.map((table) =>
-      `${schema.name}.${table.name}: ${table.columns.map((c) => `${c.name}(${c.type})`).join(', ')}`
-    )
-  ).join('\n');
+// function generateRelationsContext(conn: DBConnectionMeta): string {
+//   // Provide overview of all tables and their columns for context
+//   const tablesOverview = conn.schemas.flatMap((schema) =>
+//     schema.tables.map((table) =>
+//       `${schema.name}.${table.name}: ${table.columns.map((c) => `${c.name}(${c.type})`).join(', ')}`
+//     )
+//   ).join('\n');
 
-  return `Tables in database:\n${tablesOverview}`;
-}
+//   return `Tables in database:\n${tablesOverview}`;
+// }
 
-function generateHiddenRelationsContext(conn: DBConnectionMeta): string {
-  // Generate a compact representation of all tables and columns
-  const context = conn.schemas.flatMap((schema) =>
-    schema.tables.map((table) => {
-      const cols = table.columns.map((c) => {
-        const parts = [c.name, c.type];
-        if (c.semanticType) parts.push(`sem:${c.semanticType}`);
-        if (c.isUnique) parts.push('unique');
-        return parts.join(':');
-      }).join(', ');
-      return `${schema.name}.${table.name} [${cols}]`;
-    })
-  ).join('\n');
+// function generateHiddenRelationsContext(conn: DBConnectionMeta): string {
+//   // Generate a compact representation of all tables and columns
+//   const context = conn.schemas.flatMap((schema) =>
+//     schema.tables.map((table) => {
+//       const cols = table.columns.map((c) => {
+//         const parts = [c.name, c.type];
+//         if (c.semanticType) parts.push(`sem:${c.semanticType}`);
+//         if (c.isUnique) parts.push('unique');
+//         return parts.join(':');
+//       }).join(', ');
+//       return `${schema.name}.${table.name} [${cols}]`;
+//     })
+//   ).join('\n');
 
-  // Also include existing relations for reference
-  const existingRels = conn.relations.map((r) =>
-    `${r.fromSchema}.${r.fromTable}(${r.fromColumns.join(',')}) -> ${r.toSchema}.${r.toTable}(${r.toColumns.join(',')})`
-  ).join('\n');
+//   // Also include existing relations for reference
+//   const existingRels = conn.relations.map((r) =>
+//     `${r.fromSchema}.${r.fromTable}(${r.fromColumns.join(',')}) -> ${r.toSchema}.${r.toTable}(${r.toColumns.join(',')})`
+//   ).join('\n');
 
-  return `${context}\n\nExisting relations:\n${existingRels}`;
-}
+//   return `${context}\n\nExisting relations:\n${existingRels}`;
+// }
 
 
 /**

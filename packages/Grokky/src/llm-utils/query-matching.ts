@@ -2,20 +2,16 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {ChatGPTPromptEngine, GeminiPromptEngine, PromptEngine} from '../prompt-engine/prompt-engine';
 import {_package} from '../package';
 import {dartLike, fireAIAbortEvent} from '../utils';
 import {AIPanelFuncs, MessageType} from './panel';
 import {generateAISqlQueryWithTools} from './sql-tools';
-import {ModelType} from './LLM-client';
-import {JsonSchema} from '../prompt-engine/interfaces';
+import {ClaudeRuntimeClient} from '../claude-code/claude-runtime-client';
 
 
 /// Prompt API: https://developer.chrome.com/docs/ai/prompt-api
 /// Enable all Gemini Nano-related flags here:
 /// chrome://flags/#prompt-api-for-gemini-nano
-
-let _progress: DG.TaskBarProgressIndicator | null = null;
 
 export interface QueryMatchResult {
   searchPattern: string;
@@ -23,16 +19,6 @@ export interface QueryMatchResult {
   confidence: number;
   suggestedConnection?: string | null;
   reasoning?: string;
-}
-
-export function geminiDownloadMonitor(m: CreateMonitor) {
-  m.addEventListener('downloadprogress', (e) => {
-    if (!_progress) {
-      grok.shell.info('Gemini model download started. This might take a few minutes.');
-      _progress = DG.TaskBarProgressIndicator.create('Downloading Gemini...');
-    }
-    _progress.update(e.loaded * 100, 'Downloading Gemini...');
-  });
 }
 
 type PatternQueryMatchResult = {
@@ -46,7 +32,7 @@ type PatternQueryMatchResult = {
 export async function findBestMatchingQuery(
   question: string,
 ): Promise<QueryMatchResult | null> {
-  const schema: JsonSchema = {
+  const schema = {
     type: 'object',
     properties: {
       searchPattern: {type: 'string'},
@@ -70,6 +56,7 @@ export async function findBestMatchingQuery(
     required: ['searchPattern', 'parameters', 'confidence', 'suggestedConnection', 'reasoning'],
     additionalProperties: false,
   } as const;
+
   const tableQueriesSearchFunctions = DG.Func.find({meta: {searchPattern: null}, returnType: 'dataframe'})
     .filter((f) => f.options['searchPattern']);
 
@@ -160,68 +147,18 @@ Analyze the user request and return a JSON object with:
 `;
 
   try {
-    let engine: PromptEngine;
+    const rawResult = await ClaudeRuntimeClient.getInstance().query(`${systemPrompt}\n\n${userPrompt}`, {outputSchema: schema});
+    const parametersRecord: Record<string, string> = {};
+    for (const param of rawResult.parameters)
+      parametersRecord[param.key] = param.value;
 
-    const isGeminiAvailable = await ('LanguageModel' in window ? LanguageModel : null)?.availability();
-    if (isGeminiAvailable === 'available') {
-      _package.logger.info('Using built-in Gemini model for fuzzy matching.');
-      engine = GeminiPromptEngine.getInstance(geminiDownloadMonitor);
-    } else {
-      _package.logger.info('Using GPT engine for fuzzy matching.');
-      engine = ChatGPTPromptEngine.getInstance(ModelType.Fast);
-    }
-
-    const responseText = await engine.generate(userPrompt, systemPrompt, schema);
-
-    // Robust parsing with validation
-    let result: QueryMatchResult;
-    try {
-      // Remove any potential markdown formatting that might slip through
-      const cleanedResponse = responseText
-        .replace(/^```json\s*/i, '')
-        .replace(/^```\s*/i, '')
-        .replace(/```\s*$/i, '')
-        .trim();
-
-      const rawResult = JSON.parse(cleanedResponse) as {
-        searchPattern: string;
-        parameters: Array<{key: string; value: string}>;
-        confidence: number;
-        suggestedConnection?: string | null;
-        reasoning?: string;
-      };
-
-      // Validate required fields
-      if (typeof rawResult.searchPattern !== 'string')
-        throw new Error('searchPattern must be a string');
-      if (!Array.isArray(rawResult.parameters))
-        throw new Error('parameters must be an array');
-      if (typeof rawResult.confidence !== 'number' || rawResult.confidence < 0 || rawResult.confidence > 1)
-        throw new Error('confidence must be a number between 0 and 1');
-      if (rawResult.suggestedConnection !== undefined && rawResult.suggestedConnection !== null && typeof rawResult.suggestedConnection !== 'string')
-        throw new Error('suggestedConnection must be a string or null');
-      if (rawResult.reasoning !== undefined && typeof rawResult.reasoning !== 'string')
-        throw new Error('reasoning must be a string');
-
-      // Convert array format to Record format
-      const parametersRecord: Record<string, string> = {};
-      for (const param of rawResult.parameters) {
-        if (typeof param.key !== 'string' || typeof param.value !== 'string')
-          throw new Error('Each parameter must have string key and value properties');
-        parametersRecord[param.key] = param.value;
-      }
-
-      result = {
-        searchPattern: rawResult.searchPattern,
-        parameters: parametersRecord,
-        confidence: rawResult.confidence,
-        suggestedConnection: rawResult.suggestedConnection ?? null,
-        reasoning: rawResult.reasoning ?? 'No reasoning provided',
-      };
-    } catch (parseError) {
-      _package.logger.error(`Failed to parse LLM response: ${parseError}. Response was: ${responseText}`);
-      return null;
-    }
+    const result: QueryMatchResult = {
+      searchPattern: rawResult.searchPattern,
+      parameters: parametersRecord,
+      confidence: rawResult.confidence,
+      suggestedConnection: rawResult.suggestedConnection ?? null,
+      reasoning: rawResult.reasoning ?? 'No reasoning provided',
+    };
 
     _package.logger.info(`Match found with confidence ${result.confidence}. Reasoning: ${result.reasoning}`);
     if (result.suggestedConnection)

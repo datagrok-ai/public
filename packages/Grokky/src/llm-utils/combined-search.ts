@@ -3,7 +3,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
-import {ModelType, LLMClient} from './LLM-client';
+import {ClaudeRuntimeClient} from '../claude-code/claude-runtime-client';
 import {UsageLimiter} from './usage-limiter';
 /**
  * The idea is to provide single AI search provider which will decide which LLM to use based on user prompt.
@@ -135,31 +135,27 @@ export class CombinedAISearchAssistant {
   }
 
   private async getRelevantFunctionOrder(prompt: string) {
-    const fullPrompt = `
-        You are an intelligent assistant that helps to choose the best AI tool for a user's search query.
-        Given the following available functions and their descriptions along with descriptions of when to use them, reply with JSON array of only relevant functions in correct order and nothing else.
-        Make sure to reply WITH ONLY THE JSON PARSABLE ARRAY OF FUNCTION NAMES IN CORRECT ORDER (First being the best choice) and nothing else. no markdown, no backticks, no explanations nothing else.
-        Leave out the functions only if they are super irrelevant, otherwise include them but make sure the best function is first in the list.
-        Available functions:
-        ${Object.values(this.functions).map((f) => `Function name: ${f.func.name}
-        Description: ${f.func.description}
-        Use when: ${f.func.options.useWhen}`).join('\n\n')}
+    const fullPrompt = `You are an intelligent assistant that helps to choose the best AI tool for a user's search query.
+Given the following available functions and their descriptions along with descriptions of when to use them, reply with JSON array of only relevant functions in correct order and nothing else.
+Make sure to reply WITH ONLY THE JSON PARSABLE ARRAY OF FUNCTION NAMES IN CORRECT ORDER (First being the best choice) and nothing else. no markdown, no backticks, no explanations nothing else.
+Leave out the functions only if they are super irrelevant, otherwise include them but make sure the best function is first in the list.
+Available functions:
+${Object.values(this.functions).map((f) => `Function name: ${f.func.name}
+Description: ${f.func.description}
+Use when: ${f.func.options.useWhen}`).join('\n\n')}
 
-        User query: ${prompt}
-
-        `;
-    const res = await LLMClient.getInstance().generalPromptCached(
-      ModelType.Fast, 'You are a helpful assistant that selects the best function for a user query. reply with JSON array only and nothing else', fullPrompt);
+User query: ${prompt}`;
 
     let order = Object.keys(this.functions);
     try {
+      const res = await ClaudeRuntimeClient.getInstance().query(fullPrompt);
       const parsed = JSON.parse(res) as string[];
       if (Array.isArray(parsed) && parsed.every((s) => typeof s === 'string' && this.functions[s]) && parsed.length > 0)
         order = parsed;
       else
         console.error('Invalid function order response:', res);
     } catch (error) {
-      console.error('Error parsing function order response:', error, res);
+      console.error('Error getting function order from Claude:', error);
     }
     return order;
   }

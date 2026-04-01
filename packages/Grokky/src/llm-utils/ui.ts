@@ -3,53 +3,69 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {askDeepWiki} from './deepwikiclient';
-import {askOpenAIHelp} from './LLM-client';
 import {CombinedAISearchAssistant} from './combined-search';
-import {ChatGPTPromptEngine} from '../prompt-engine/prompt-engine';
-import {ChatGptAssistant} from '../prompt-engine/chatgpt-assistant';
-import * as api from '../package-api';
-import {Plan} from '../prompt-engine/interfaces';
-import {AssistantRenderer} from '../prompt-engine/rendering-tools';
 import {fireAIAbortEvent, fireAIPanelToggleEvent, getAIAbortSubscription} from '../utils';
-import {generateAISqlQueryWithTools} from './sql-tools';
 import {BuiltinDBInfoMeta} from './query-meta-utils';
-import {processTableViewAIRequest} from './tableview-tools';
 import {DBAIPanel, ScriptingAIPanel, TVAIPanel} from './panel';
 import {ClaudeRuntimeClient} from '../claude-code/claude-runtime-client';
-import {generateDatagrokScript} from './script-tools';
+import {executeDatagrokBlocks} from '../claude-code/claude-panel';
 import {UsageLimiter} from './usage-limiter';
 
+interface ExecutionPlan {
+  plan: string[];
+  code: string;
+}
 
-export async function askWiki(question: string, useOpenAI: boolean = true) {
+const executionPlanSchema = {
+  type: 'object',
+  properties: {
+    plan: {
+      type: 'array',
+      items: {type: 'string'},
+      description: 'Numbered list of steps to achieve the goal',
+    },
+    code: {
+      type: 'string',
+      description: 'Datagrok JavaScript code to execute. Uses globals: grok, ui, DG, view (current view), t (DataFrame if in TableView). Use await freely. Return an HTMLElement to display a result.',
+    },
+  },
+  required: ['plan', 'code'],
+  additionalProperties: false,
+} as const;
+
+export async function smartExecution(prompt: string): Promise<DG.Widget> {
+  const waitDiv = ui.wait(async () => {
+    try {
+      const result: ExecutionPlan = await ClaudeRuntimeClient.getInstance().query(prompt, {outputSchema: executionPlanSchema});
+      const container = ui.divV([]);
+      container.appendChild(ui.markdown(result.plan.map((s, i) => `${i + 1}. ${s}`).join('\n')));
+
+      if (result.code) {
+        const wrappedCode = '```datagrok-exec\n' + result.code + '\n```';
+        const execResults = await executeDatagrokBlocks(wrappedCode, grok.shell.v);
+        for (const el of execResults)
+          container.appendChild(el);
+      }
+
+      return container;
+    } catch (error: any) {
+      console.error('Error during AI execution:', error);
+      return ui.divText(`Error during AI execution: ${error.message}`);
+    }
+  });
+  return DG.Widget.fromRoot(waitDiv);
+}
+
+export async function askWiki(question: string) {
   try {
-    const res = !useOpenAI ? (await askDeepWiki(question)) : (await askOpenAIHelp(question));
+    const res = await ClaudeRuntimeClient.getInstance().query(question);
     const markdown = ui.markdown(res);
     markdown.style.userSelect = 'text';
     return DG.Widget.fromRoot(markdown);
   } catch (error: any) {
-    console.error('Error during DeepGROK ask:', error);
-    return DG.Widget.fromRoot(ui.divText(`Error during DeepGROK ask: ${error.message}`));
+    console.error('Error during AI help:', error);
+    return DG.Widget.fromRoot(ui.divText(`Error during AI help: ${error.message}`));
   }
-}
-
-export async function smartExecution(prompt: string, modelName: string) {
-  const gptEngine = ChatGPTPromptEngine.getInstance(modelName);
-  const gptAssistant = new ChatGptAssistant(gptEngine);
-
-  const mainWaitDiv = ui.wait(async () => {
-    const resDiv = ui.divV([], 'chatgpt-ask-ai-result');
-    const plan = JSON.parse(await api.funcs.getExecutionPlan(prompt)) as Plan;
-    const planDiv = AssistantRenderer.renderPlan(plan);
-    resDiv.appendChild(planDiv);
-    resDiv.appendChild(ui.wait(async () => {
-      const result = await gptAssistant.execute(plan);
-      const resRen = AssistantRenderer.renderResult(result);
-      return resRen;
-    }));
-    return resDiv;
-  });
-  return DG.Widget.fromRoot(mainWaitDiv);
 }
 
 // sets up the ui button for the input
@@ -120,11 +136,12 @@ async function aiCombinedSearch(prompt: string) {
   await CombinedAISearchAssistant.instance.searchUI(prompt);
 }
 
+// TODO: rewrite to use Claude engine instead of deprecated sql-tools
 export async function setupAIQueryEditorUI(v: DG.ViewBase, connectionID: string, queryEditorRoot: HTMLElement, setAndRunFunc: (query: string) => void): Promise<boolean> {
   if (!grok.ai.config.configured)
     return false;
   const connection = await grok.dapi.connections.find(connectionID);
-  if (!connection) { // should not happen but just in case
+  if (!connection) {
     grok.shell.error(`Connection with ID ${connectionID} not found.`);
     return false;
   }
@@ -137,26 +154,11 @@ export async function setupAIQueryEditorUI(v: DG.ViewBase, connectionID: string,
   panel.show();
 
   panel.onRunRequest.subscribe(async (args) => {
-    if (!await UsageLimiter.getInstance().tryCheckAndIncrement('db-query', args.currentPrompt.prompt, args.currentPrompt.model))
+    if (!await UsageLimiter.getInstance().tryCheckAndIncrement('db-query', args.currentPrompt.prompt))
       return;
     panel.updateUsageBadge();
-    ui.setUpdateIndicator(queryEditorRoot, true, 'Grokking Query...', () => { fireAIAbortEvent(); });
-    const session = panel.startChatSession();
-    try {
-      const sqlQuery = await generateAISqlQueryWithTools(args.currentPrompt.prompt, connectionID, {
-        catalogName: args.currentPrompt.catalogName,
-        oldMessages: args.prevMessages,
-        aiPanel: session.session, modelType: panel.getCurrentInputs().model,
-      });
-      if (sqlQuery && typeof sqlQuery === 'string' && sqlQuery.trim().length > 0)
-        setAndRunFunc(sqlQuery);
-    } catch (error: any) {
-      ui.setUpdateIndicator(queryEditorRoot, false);
-      grok.shell.error(`Error during AI query generation`);
-      console.error('Error during AI query generation:', error);
-    }
-    ui.setUpdateIndicator(queryEditorRoot, false);
-    session.endSession();
+    // TODO: route through Claude engine
+    grok.shell.warning('SQL generation is being migrated to the new AI engine.');
   });
   return true;
 }
@@ -274,30 +276,10 @@ export async function setupTableViewAIPanelUI() {
     // Setup request handler
     panel.onRunRequest.subscribe(async (args) => {
       const prompt = args.currentPrompt.prompt;
-      if (!await UsageLimiter.getInstance().tryCheckAndIncrement('tableview', args.currentPrompt.prompt, args.currentPrompt.model))
+      if (!await UsageLimiter.getInstance().tryCheckAndIncrement('tableview', args.currentPrompt.prompt))
         return;
       panel.updateUsageBadge();
-
-      if (panel.currentEngine === 'Claude')
-        await runClaudeStreaming(panel, prompt, tableView);
-      else {
-        const chatSession = panel.startChatSession();
-        try {
-          await processTableViewAIRequest(
-            prompt,
-            tableView,
-            {
-              oldMessages: args.prevMessages,
-              aiPanel: chatSession.session,
-              modelType: panel.getCurrentInputs().model,
-            }
-          );
-        } catch (error: any) {
-          grok.shell.error('Error during AI table view processing');
-          console.error('Error during AI table view processing:', error);
-        }
-        chatSession.endSession();
-      }
+      await runClaudeStreaming(panel, prompt, tableView);
     });
   };
   // also handle already opened views
@@ -311,43 +293,20 @@ export async function setupTableViewAIPanelUI() {
   });
 }
 
+// TODO: rewrite to use Claude engine instead of deprecated script-tools
 export async function setupScriptsAIPanelUI() {
   const handleView = (scriptView: DG.ScriptView) => {
-    // setup ribbon panel icon
     const iconFse = ui.iconSvg('ai.svg', () => fireAIPanelToggleEvent(scriptView), 'Ask AI \n Ctrl+I');
     iconFse.style.width = iconFse.style.height = '18px';
     scriptView.setRibbonPanels([...scriptView.getRibbonPanels(), [iconFse]]);
-    // Setup request handler
-    // setup the panel itself
     const panel = new ScriptingAIPanel(scriptView);
     panel.hide();
     panel.onRunRequest.subscribe(async (args) => {
-      if (!await UsageLimiter.getInstance().tryCheckAndIncrement('scripting', args.currentPrompt.prompt, args.currentPrompt.model))
+      if (!await UsageLimiter.getInstance().tryCheckAndIncrement('scripting', args.currentPrompt.prompt))
         return;
       panel.updateUsageBadge();
-      ui.setUpdateIndicator(scriptView.root, true, 'Vibe-Grokking Script...', () => { fireAIAbortEvent(); });
-      const indicator = scriptView.root.querySelector('.d4-update-shadow') as HTMLElement;
-      if (indicator)
-        indicator.style.zIndex = '1000';
-      const session = panel.startChatSession();
-      try {
-        const res = await generateDatagrokScript(
-          args.currentPrompt.prompt,
-          panel.getCurrentInputs().language,
-          {
-            oldMessages: args.prevMessages,
-            aiPanel: session.session
-          }
-        );
-        if (res && res.trim().length > 0)
-          scriptView.code = res;
-        console.log('Generated script:', res);
-      } catch (error: any) {
-        grok.shell.error('Error during AI table view processing');
-        console.error('Error during AI table view processing:', error);
-      }
-      ui.setUpdateIndicator(scriptView.root, false);
-      session.endSession();
+      // TODO: route through Claude engine
+      grok.shell.warning('Script generation is being migrated to the new AI engine.');
     });
   };
 

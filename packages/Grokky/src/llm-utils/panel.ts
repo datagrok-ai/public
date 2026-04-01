@@ -8,18 +8,12 @@ import '../../css/ai.css';
 import {dartLike, fireAIAbortEvent, getAIPanelToggleSubscription} from '../utils';
 import {buildViewContext, executeDatagrokBlocks, renderEntityBlocks} from '../claude-code/claude-panel';
 import {ConversationStorage, StoredConversationWithContext} from './storage';
-import {ModelOption, ModelType} from './LLM-client';
 import {UsageLimiter} from './usage-limiter';
-import {LanguageModelV3Message, LanguageModelV3Content} from '@ai-sdk/provider';
 
-// in future might extend it with other types for response API
-export type MessageType = LanguageModelV3Message;
-
-export type AIEngine = 'DeepGROK' | 'Claude';
+export type MessageType = {role: string; content: any};
 
 type AIPanelInputs = {
     prompt: string,
-    model: ModelOption,
 }
 
 type DBAIPanelInputs = AIPanelInputs & {
@@ -31,9 +25,7 @@ export type ScriptingAIPanelInputs = AIPanelInputs & {
 };
 
 
-type TVAIPanelInputs = AIPanelInputs & {
-    mode: 'agent' | 'ask',
-}
+type TVAIPanelInputs = AIPanelInputs;
 
 export interface AskUserOption {
   label: string;
@@ -79,7 +71,7 @@ export type PanelMessageRet = {
   confirmPromise: Promise<boolean>,
 }
 
-export type AIPanelFuncs<T extends MessageType = LanguageModelV3Message> = {
+export type AIPanelFuncs<T extends MessageType = MessageType> = {
   /** Adds @aiMsg to the message stack (from user) and @msg to the UI panel */
   addUserMessage: (aiMsg: T, msg: string) => void,
   /** Adds @aiMsg to the message stack (from AI) and @msg with @title to the UI panel*/
@@ -94,7 +86,7 @@ export type AIPanelFuncs<T extends MessageType = LanguageModelV3Message> = {
   showInputRequest?: (input: AskUserInput) => Promise<AskUserResponse | null>,
 }
 
-export class AIPanel<T extends MessageType = LanguageModelV3Message, K extends AIPanelInputs = AIPanelInputs> {
+export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInputs = AIPanelInputs> {
   private root: HTMLElement;
   private view: DG.View | DG.ViewBase;
   private inputArea: HTMLElement;
@@ -103,7 +95,6 @@ export class AIPanel<T extends MessageType = LanguageModelV3Message, K extends A
   protected textArea: HTMLTextAreaElement;
   private textAreaDiv: HTMLElement;
   private runButton: HTMLElement;
-  protected modelInput: DG.InputBase<ModelOption>;
   protected usageBadge: HTMLElement;
   private newChatButton: HTMLElement;
   private copyConversationButton: HTMLElement;
@@ -178,20 +169,9 @@ export class AIPanel<T extends MessageType = LanguageModelV3Message, K extends A
       this.handleClear();
       this.currentConversationId = null;
     }, 'Start New Chat');
-    this.modelInput = ui.input.choice('Model', {
-      items: [...Object.keys(ModelType), 'Claude'],
-      value: 'Deep Research',
-      nullable: false,
-      tooltipText: 'Select AI model:<br>' +
-        `- <b>Fast</b> (${ModelType.Fast}): Quick responses for simple tasks.<br>` +
-        `- <b>Deep Research</b> (${ModelType['Deep Research']}): Most capable model for complex analysis.<br>` +
-        `- <b>Coding</b> (${ModelType.Coding}): Optimized for code generation.<br>` +
-        '- <b>Claude</b>: Anthropic Claude for conversational AI.',
-    }) as DG.InputBase<any>;
     this.hideContentIcons();
     this.inputControlsDiv = ui.divH([
       this.micButton,
-      this.modelInput.input
     ], 'd4-ai-panel-input-controls');
     this.runButton.style.color = 'var(--blue-1)';
     const inputControlsRight = ui.divH([this.historyButton, this.tryAgainButton, this.runButton], 'd4-ai-panel-run-controls');
@@ -320,7 +300,6 @@ export class AIPanel<T extends MessageType = LanguageModelV3Message, K extends A
   public getCurrentInputs(): K {
     return {
       prompt: this.textArea.value,
-      model: this.modelInput.value!,
     } as K;
   }
 
@@ -776,12 +755,8 @@ export class DBAIPanel extends AIPanel<MessageType, DBAIPanelInputs> {
 }
 
 export class TVAIPanel extends AIPanel<MessageType, TVAIPanelInputs> {
-  protected get placeHolder() {
-    return this._engine === 'Claude' ? 'Ask Claude about your data...' : 'Ask about your table data...';
-  }
+  protected get placeHolder() { return 'Ask Claude about your data...'; }
   protected tableView: DG.TableView;
-
-  private _engine: AIEngine = 'DeepGROK';
 
   private _streamingContainer: HTMLElement | null = null;
   private _streamingMarkdownEl: HTMLElement | null = null;
@@ -789,23 +764,12 @@ export class TVAIPanel extends AIPanel<MessageType, TVAIPanelInputs> {
   private _contextSent = false;
   private _pendingInputResolve: ((value: AskUserResponse | null) => void) | null = null;
 
-  get currentEngine(): AIEngine { return this._engine; }
   get sessionId(): string { return this._sessionId; }
 
   constructor(view: DG.TableView) {
     super(view.dataFrame?.name ?? view.name ?? 'AI-Table-context', view); // context ID is table name
     this.tableView = view;
     this._sessionId = `claude-${view.dataFrame?.name ?? 'view'}-${crypto.randomUUID()}`;
-
-    this.modelInput.onChanged.subscribe(() => {
-      const val = this.modelInput.value as string;
-      const prevEngine = this._engine;
-      this._engine = val === 'Claude' ? 'Claude' : 'DeepGROK';
-      if (this._engine !== prevEngine) {
-        this.textArea.placeholder = this.placeHolder;
-        this._clearAndReset();
-      }
-    });
   }
 
   private _clearAndReset(): void {
