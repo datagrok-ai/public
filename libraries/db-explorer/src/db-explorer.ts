@@ -234,7 +234,7 @@ export class DBExplorer {
       config.customRenderers.forEach((r) => {
         const rendererFunc = getDefaultRendererByName(r.renderer);
         const checkFunc = (tableName: string, colName: string, _value: string | number) => {
-          return tableName === r.table && colName === r.column;
+          return tableName?.toLowerCase() === r.table?.toLowerCase() && colName?.toLowerCase() === r.column?.toLowerCase();
         };
         exp.addCustomRenderer(checkFunc, rendererFunc);
       });
