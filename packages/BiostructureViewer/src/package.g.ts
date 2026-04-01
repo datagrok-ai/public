@@ -144,7 +144,7 @@ export function pdbIdNglPanelWidget(pdbId: string) : any {
   return PackageFunctions.pdbIdNglPanelWidget(pdbId);
 }
 
-//name: Information
+//name: PDB Information
 //input: string pdbId { semType: PDB_ID }
 //output: widget result
 //meta.role: panel

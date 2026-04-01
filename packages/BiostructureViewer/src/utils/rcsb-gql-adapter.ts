@@ -47,6 +47,22 @@ export class RcsbGraphQLAdapter {
           rcsb_entry_info {
             resolution_combined
             experimental_method
+            molecular_weight
+            deposited_atom_count
+            disulfide_bond_count
+          }
+          rcsb_accession_info {
+            deposit_date
+            initial_release_date
+            revision_date
+          }
+          rcsb_binding_affinity {
+            comp_id
+            type
+            value
+            unit
+            symbol
+            provenance_code
           }
           rcsb_primary_citation {
             pdbx_database_id_DOI
@@ -308,12 +324,26 @@ export class RcsbGraphQLAdapter {
     classification?: string;
     organisms?: string[];
     expressionSystems?: string[];
+    molecularWeight?: number;
+    atomCount?: number;
+    disulfideBondCount?: number;
+    depositDate?: string;
+    releaseDate?: string;
+    revisionDate?: string;
     citation?: {
       title?: string;
       journal?: string;
       doi?: string;
       pubmedId?: number;
     };
+    bindingAffinities?: Array<{
+      compId: string;
+      type: string;
+      value: number;
+      unit: string;
+      symbol?: string;
+      provenance?: string;
+    }>;
     polymerEntities?: Array<{
       entityId: string;
       description?: string;
@@ -343,7 +373,23 @@ export class RcsbGraphQLAdapter {
         rcsb_entry_info?: {
           resolution_combined?: number[];
           experimental_method?: string;
+          molecular_weight?: number;
+          deposited_atom_count?: number;
+          disulfide_bond_count?: number;
         };
+        rcsb_accession_info?: {
+          deposit_date?: string;
+          initial_release_date?: string;
+          revision_date?: string;
+        };
+        rcsb_binding_affinity?: Array<{
+          comp_id: string;
+          type: string;
+          value: number;
+          unit: string;
+          symbol?: string;
+          provenance_code?: string;
+        }>;
         rcsb_primary_citation?: {
           pdbx_database_id_DOI?: string;
           pdbx_database_id_PubMed?: number;
@@ -447,6 +493,18 @@ export class RcsbGraphQLAdapter {
       pubmedId: cit.pdbx_database_id_PubMed ?? undefined,
     } : undefined;
 
+    const bindingAffinities = (data.entry.rcsb_binding_affinity ?? []).map((ba) => ({
+      compId: ba.comp_id,
+      type: ba.type,
+      value: ba.value,
+      unit: ba.unit,
+      symbol: ba.symbol ?? undefined,
+      provenance: ba.provenance_code ?? undefined,
+    }));
+
+    const acc = data.entry.rcsb_accession_info;
+    const formatDate = (d?: string) => d ? d.split('T')[0] : undefined;
+
     return {
       id: data.entry.rcsb_id,
       title: data.entry.struct?.title,
@@ -456,7 +514,14 @@ export class RcsbGraphQLAdapter {
       classification: data.entry.struct_keywords?.pdbx_keywords ?? undefined,
       organisms: organisms.size > 0 ? [...organisms] : undefined,
       expressionSystems: expressionSystems.size > 0 ? [...expressionSystems] : undefined,
+      molecularWeight: data.entry.rcsb_entry_info?.molecular_weight ?? undefined,
+      atomCount: data.entry.rcsb_entry_info?.deposited_atom_count ?? undefined,
+      disulfideBondCount: data.entry.rcsb_entry_info?.disulfide_bond_count ?? undefined,
+      depositDate: formatDate(acc?.deposit_date),
+      releaseDate: formatDate(acc?.initial_release_date),
+      revisionDate: formatDate(acc?.revision_date),
       citation,
+      bindingAffinities: bindingAffinities.length > 0 ? bindingAffinities : undefined,
       polymerEntities: polymerEntities.length > 0 ? polymerEntities : undefined,
       nonpolymerEntities: nonpolymerEntities.length > 0 ? nonpolymerEntities : undefined,
     };

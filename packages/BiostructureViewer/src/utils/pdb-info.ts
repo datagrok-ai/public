@@ -1,6 +1,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
+import * as ngl from 'NGL';
 
 import {RcsbGraphQLAdapter} from './rcsb-gql-adapter';
 
@@ -17,6 +18,34 @@ async function fetchPubMedAbstract(pmid: number): Promise<string | undefined> {
     return undefined;
   }
 }
+
+/** Create an NGL 3D viewer div showing only polymer chains (no ligands). */
+function create3DViewer(pdbId: string, selection: string, height: number = 250): HTMLElement {
+  const host = ui.div([], {style: {width: '100%', height: `${height}px`}});
+  const stage = new ngl.Stage(host);
+  (stage as any).setParameters({backgroundColor: 'white'});
+  const pdbUrl = `https://files.rcsb.org/download/${pdbId}.pdb`;
+
+  stage.loadFile(pdbUrl, {defaultRepresentation: false})
+    .then((component: any) => {
+      component.addRepresentation('cartoon', {sele: `(${selection}) and polymer`, color: 'chainid'});
+      component.autoView(`(${selection}) and polymer`);
+      const canvas = stage.viewer.renderer.domElement;
+      const resize = () => {
+        canvas!.width = Math.floor(canvas!.clientWidth * window.devicePixelRatio);
+        canvas!.height = Math.floor(canvas!.clientHeight * window.devicePixelRatio);
+        stage.handleResize();
+      };
+      ui.onSizeChanged(host).subscribe(() => resize());
+      resize();
+    })
+    .catch(() => {
+      host.appendChild(ui.divText('Failed to load 3D structure'));
+    });
+
+  return host;
+}
+
 
 export async function pdbInfoWidget(pdbId: string): Promise<DG.Widget> {
   try {
@@ -45,6 +74,28 @@ export async function pdbInfoWidget(pdbId: string): Promise<DG.Widget> {
 
     // -- Accordion for subsections --
     const acc = DG.Accordion.create();
+
+    // -- Structure Details --
+    const hasDetails = info.molecularWeight != null || info.atomCount != null ||
+      info.disulfideBondCount != null || info.depositDate || info.releaseDate;
+    if (hasDetails) {
+      acc.addPane('Structure Details', () => {
+        const map: {[key: string]: any} = {};
+        if (info.molecularWeight != null)
+          map['Molecular Weight'] = `${info.molecularWeight.toFixed(2)} kDa`;
+        if (info.atomCount != null)
+          map['Atom Count'] = info.atomCount.toString();
+        if (info.disulfideBondCount != null)
+          map['Disulfide Bonds'] = info.disulfideBondCount.toString();
+        if (info.depositDate)
+          map['Deposit Date'] = info.depositDate;
+        if (info.releaseDate)
+          map['Release Date'] = info.releaseDate;
+        if (info.revisionDate)
+          map['Revision Date'] = info.revisionDate;
+        return ui.tableFromMap(map);
+      }, false);
+    }
 
     // -- Literature --
     if (info.citation) {
@@ -79,6 +130,14 @@ export async function pdbInfoWidget(pdbId: string): Promise<DG.Widget> {
       }, false);
     }
 
+    // Build binding affinity lookup by compound ID
+    const affinityByComp: {[compId: string]: Array<{type: string; value: number; unit: string}>} = {};
+    for (const ba of info.bindingAffinities ?? []) {
+      if (!affinityByComp[ba.compId])
+        affinityByComp[ba.compId] = [];
+      affinityByComp[ba.compId].push({type: ba.type, value: ba.value, unit: ba.unit});
+    }
+
     // -- Macromolecules --
     if (info.polymerEntities && info.polymerEntities.length > 0) {
       acc.addCountPane('Macromolecules', () => {
@@ -104,7 +163,19 @@ export async function pdbInfoWidget(pdbId: string): Promise<DG.Widget> {
                 ui.link(id, () => window.open(`https://www.uniprot.org/uniprot/${id}`)),
               ));
             }
-            return ui.tableFromMap(map);
+            const parts: HTMLElement[] = [ui.tableFromMap(map)];
+
+            // 3D Structure sub-pane for this entity's chains
+            if (pe.authChains.length > 0) {
+              const chainSel = pe.authChains.map((c) => `:${c}`).join(' or ');
+              const viewer3dAcc = DG.Accordion.create();
+              viewer3dAcc.addPane('3D Structure', () => {
+                return create3DViewer(pdbId, chainSel);
+              }, false);
+              parts.push(viewer3dAcc.root);
+            }
+
+            return ui.divV(parts);
           }, false);
         }
         return innerAcc.root;
@@ -126,9 +197,20 @@ export async function pdbInfoWidget(pdbId: string): Promise<DG.Widget> {
               map['Formula'] = ne.formula;
             if (ne.inchiKey)
               map['InChI Key'] = ne.inchiKey;
+
+            // Binding affinity for this ligand
+            const affinities = affinityByComp[ne.compId];
+            if (affinities) {
+              for (const ba of affinities)
+                map[ba.type] = `${ba.value} ${ba.unit}`;
+            }
+
             const parts: HTMLElement[] = [ui.tableFromMap(map)];
+
+            // 2D structure
             if (ne.smiles)
               parts.push(grok.chem.drawMolecule(ne.smiles, 250, 200));
+
             return ui.divV(parts);
           }, false);
         }
