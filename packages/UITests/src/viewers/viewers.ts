@@ -14,7 +14,7 @@ category('Viewers: Core Viewers', () => {
     'Network diagram': 'GROK-11707',
     'Shape Map': 'GROK-16568',
   };
-  const regViewers = Object.values(DG.VIEWER).filter((v) => v != DG.VIEWER.GRID &&
+  const regViewers = Object.values(DG.VIEWER).filter((v) => v != DG.VIEWER.GRID && v != DG.VIEWER.HEAT_MAP &&
     !v.startsWith('Surface') && !v.startsWith('Radar') && !v.startsWith('Timelines') &&
     v !== 'Google map' && v !== 'Markup' && v !== 'Word cloud' &&
     //@ts-ignore
