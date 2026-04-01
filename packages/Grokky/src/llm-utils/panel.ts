@@ -87,7 +87,7 @@ export type AIPanelFuncs<T extends MessageType = MessageType> = {
 
 export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInputs = AIPanelInputs> {
   private root: HTMLElement;
-  private view: DG.View | DG.ViewBase;
+  protected view: DG.View | DG.ViewBase;
   private inputArea: HTMLElement;
   protected header: HTMLElement;
   protected outputArea: HTMLElement;
@@ -118,10 +118,19 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
     return this._contextID;// these should be overriden in subclasses
   }
 
+  protected _streamingContainer: HTMLElement | null = null;
+  protected _streamingMarkdownEl: HTMLElement | null = null;
+  private _sessionId: string;
+  private _contextSent = false;
+  private _pendingInputResolve: ((value: AskUserResponse | null) => void) | null = null;
+
+  get sessionId(): string { return this._sessionId; }
+
 
   private currentConversationId: string | null = null;
   constructor(private _contextID: string = 'global-ai-panel', view: DG.View | DG.ViewBase) {
     this.view = view;
+    this._sessionId = `claude-${_contextID}-${crypto.randomUUID()}`;
     this.root = ui.divV([], 'd4-ai-generation-panel');
     this.inputArea = ui.divV([], 'd4-ai-panel-input-area');
     this.outputArea = ui.divV([], 'd4-ai-panel-output-area');
@@ -466,8 +475,111 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
     return document.contains(this.root);
   }
 
-  protected showInputRequest(_input: AskUserInput): Promise<AskUserResponse | null> {
-    return Promise.resolve(null);
+  resetSession(): void {
+    this._sessionId = `claude-${crypto.randomUUID()}`;
+    this._contextSent = false;
+    this._streamingContainer = null;
+    this._streamingMarkdownEl = null;
+  }
+
+  prependViewContext(prompt: string, view: DG.ViewBase): string {
+    if (this._contextSent)
+      return prompt;
+    const ctx = buildViewContext(view);
+    if (!ctx)
+      return prompt;
+    this._contextSent = true;
+    return ctx + '\n---\n\n' + prompt;
+  }
+
+  updateStreaming(content: string, loader: HTMLElement): void {
+    if (!this._streamingContainer) {
+      loader.style.display = 'none';
+      this.ensureAccordionPane();
+      this._streamingMarkdownEl = ui.markdown(content);
+      dartLike(this._streamingMarkdownEl.style).set('userSelect', 'text').set('maxWidth', '100%');
+      this._streamingContainer = ui.divV([this._streamingMarkdownEl], 'd4-ai-assistant-response-container');
+      this._aiMessagesAccordionPane!.appendChild(this._streamingContainer);
+    } else {
+      const md = ui.markdown(content);
+      dartLike(md.style).set('userSelect', 'text').set('maxWidth', '100%');
+      this._streamingMarkdownEl!.replaceWith(md);
+      this._streamingMarkdownEl = md;
+    }
+    this.outputArea.scrollTop = this.outputArea.scrollHeight;
+  }
+
+  async finalizeStreaming(content: string, view: DG.ViewBase): Promise<void> {
+    if (!this._streamingContainer || !this._streamingMarkdownEl)
+      return;
+
+    const markDown = this.createStyledMarkdown(content);
+    renderEntityBlocks(markDown);
+    this.appendFeedbackButtons(markDown);
+
+    this._streamingMarkdownEl.replaceWith(markDown);
+    this._streamingMarkdownEl = null;
+    this._streamingContainer = null;
+
+    this._uiMessages.push({fromUser: false, text: content, messageOptions: {finalResult: content}});
+
+    const results = await executeDatagrokBlocks(content, view);
+    for (const el of results) {
+      this.ensureAccordionPane();
+      this._aiMessagesAccordionPane!.appendChild(
+        ui.divV([el], 'd4-ai-assistant-response-container'),
+      );
+    }
+  }
+
+  clearStreaming(): void {
+    this._streamingContainer?.remove();
+    this._streamingContainer = null;
+    this._streamingMarkdownEl = null;
+  }
+
+  showInputRequest(input: AskUserInput): Promise<AskUserResponse | null> {
+    const questions = input.questions ?? [];
+    let resolved = false;
+    const choiceInputs: DG.InputBase<string>[] = [];
+
+    for (const q of questions) {
+      const items = q.options.map((o) => o.label);
+      choiceInputs.push(ui.input.choice(q.header ?? '', {items, value: items[0], nullable: false}) as DG.InputBase<string>);
+    }
+    const form = ui.divV(questions.map((q, i) => ui.divV([ui.divText(q.question), choiceInputs[i].root])));
+
+    return new Promise<AskUserResponse | null>((resolve) => {
+      const doResolve = (value: AskUserResponse | null) => {
+        if (resolved)
+          return;
+        resolved = true;
+        this._pendingInputResolve = null;
+        for (const inp of choiceInputs)
+          (inp.input as HTMLSelectElement).disabled = true;
+        resolve(value);
+      };
+
+      form.appendChild(ui.button('Submit', () => {
+        const answers: Record<string, string> = {};
+        for (let i = 0; i < questions.length; i++)
+          answers[questions[i].question] = choiceInputs[i].value!;
+        doResolve({questions, answers});
+      }));
+
+      this._pendingInputResolve = doResolve;
+      this.ensureAccordionPane();
+      const wrapper = ui.divV([form], 'd4-ai-assistant-response-container');
+      this._aiMessagesAccordionPane!.appendChild(wrapper);
+      this.outputArea.scrollTop = this.outputArea.scrollHeight;
+    });
+  }
+
+  cancelInputRequest(): void {
+    if (this._pendingInputResolve) {
+      this._pendingInputResolve(null);
+      this._pendingInputResolve = null;
+    }
   }
 
   private tryAgain() {
@@ -486,6 +598,8 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
   }
 
   protected handleRun() {
+    if (this._pendingInputResolve)
+      return;
     const inputs = this.getCurrentInputs();
     this.textArea.value = '';
     this._onRunRequest.next({
@@ -743,153 +857,24 @@ export class TVAIPanel extends AIPanel<MessageType, TVAIPanelInputs> {
   protected get placeHolder() { return 'Ask Claude about your data...'; }
   protected tableView: DG.TableView;
 
-  private _streamingContainer: HTMLElement | null = null;
-  private _streamingMarkdownEl: HTMLElement | null = null;
-  private _sessionId: string;
-  private _contextSent = false;
-  private _pendingInputResolve: ((value: AskUserResponse | null) => void) | null = null;
-
-  get sessionId(): string { return this._sessionId; }
-
   constructor(view: DG.TableView) {
-    super(view.dataFrame?.name ?? view.name ?? 'AI-Table-context', view); // context ID is table name
+    super(view.dataFrame?.name ?? view.name ?? 'AI-Table-context', view);
     this.tableView = view;
-    this._sessionId = `claude-${view.dataFrame?.name ?? 'view'}-${crypto.randomUUID()}`;
-  }
-
-  private _clearAndReset(): void {
-    this.outputArea.innerHTML = '';
-    this._messages = [];
-    this._uiMessages = [];
-    this.resetSession();
-  }
-
-  resetSession(): void {
-    this._sessionId = `claude-${crypto.randomUUID()}`;
-    this._contextSent = false;
-    this._streamingContainer = null;
-    this._streamingMarkdownEl = null;
-  }
-
-  prependViewContext(prompt: string, view: DG.ViewBase): string {
-    if (this._contextSent)
-      return prompt;
-    const ctx = buildViewContext(view);
-    if (!ctx)
-      return prompt;
-    this._contextSent = true;
-    return ctx + '\n---\n\n' + prompt;
-  }
-
-  updateStreaming(content: string, loader: HTMLElement): void {
-    if (!this._streamingContainer) {
-      loader.style.display = 'none';
-      this.ensureAccordionPane();
-      this._streamingMarkdownEl = ui.markdown(content);
-      dartLike(this._streamingMarkdownEl.style).set('userSelect', 'text').set('maxWidth', '100%');
-      this._streamingContainer = ui.divV([this._streamingMarkdownEl], 'd4-ai-assistant-response-container');
-      this._aiMessagesAccordionPane!.appendChild(this._streamingContainer);
-    } else {
-      const md = ui.markdown(content);
-      dartLike(md.style).set('userSelect', 'text').set('maxWidth', '100%');
-      this._streamingMarkdownEl!.replaceWith(md);
-      this._streamingMarkdownEl = md;
-    }
-    this.outputArea.scrollTop = this.outputArea.scrollHeight;
-  }
-
-  async finalizeStreaming(content: string, view: DG.ViewBase): Promise<void> {
-    if (!this._streamingContainer || !this._streamingMarkdownEl)
-      return;
-
-    const markDown = this.createStyledMarkdown(content);
-    renderEntityBlocks(markDown);
-    this.appendFeedbackButtons(markDown);
-
-    this._streamingMarkdownEl.replaceWith(markDown);
-    this._streamingMarkdownEl = null;
-    this._streamingContainer = null;
-
-    this._uiMessages.push({fromUser: false, text: content, messageOptions: {finalResult: content}});
-
-    const results = await executeDatagrokBlocks(content, view);
-    for (const el of results) {
-      this.ensureAccordionPane();
-      this._aiMessagesAccordionPane!.appendChild(
-        ui.divV([el], 'd4-ai-assistant-response-container'),
-      );
-    }
-  }
-
-  clearStreaming(): void {
-    this._streamingContainer?.remove();
-    this._streamingContainer = null;
-    this._streamingMarkdownEl = null;
   }
 
   protected getConversationMeta() {
-    return {viewState: this.tableView.saveLayout().viewState, sessionId: this._sessionId};
+    return {viewState: this.tableView.saveLayout().viewState, sessionId: this.sessionId};
   }
 
   protected afterConversationLoad(conversation: StoredConversationWithContext<MessageType>) {
     if (conversation.meta?.sessionId)
-      this._sessionId = conversation.meta.sessionId;
+      (this as any)._sessionId = conversation.meta.sessionId;
     const viewState = conversation.meta?.viewState ?? conversation.meta;
     const currentViewers = Array.from(this.tableView.viewers);
     if (!!viewState && currentViewers.length === 1 && currentViewers[0].type === DG.VIEWER.GRID) {
       const layout = DG.ViewLayout.fromViewState(viewState);
       this.tableView.loadLayout(layout, true);
     }
-  }
-
-  showInputRequest(input: AskUserInput): Promise<AskUserResponse | null> {
-    const questions = input.questions ?? [];
-    let resolved = false;
-    const choiceInputs: DG.InputBase<string>[] = [];
-
-    for (const q of questions) {
-      const items = q.options.map((o) => o.label);
-      choiceInputs.push(ui.input.choice(q.header ?? '', {items, value: items[0], nullable: false}) as DG.InputBase<string>);
-    }
-    const form = ui.divV(questions.map((q, i) => ui.divV([ui.divText(q.question), choiceInputs[i].root])));
-
-    return new Promise<AskUserResponse | null>((resolve) => {
-      const doResolve = (value: AskUserResponse | null) => {
-        if (resolved)
-          return;
-        resolved = true;
-        this._pendingInputResolve = null;
-        for (const inp of choiceInputs)
-          (inp.input as HTMLSelectElement).disabled = true;
-        resolve(value);
-      };
-
-      form.appendChild(ui.button('Submit', () => {
-        const answers: Record<string, string> = {};
-        for (let i = 0; i < questions.length; i++)
-          answers[questions[i].question] = choiceInputs[i].value!;
-        doResolve({questions, answers});
-      }));
-
-      this._pendingInputResolve = doResolve;
-      this.ensureAccordionPane();
-      const wrapper = ui.divV([form], 'd4-ai-assistant-response-container');
-      this._aiMessagesAccordionPane!.appendChild(wrapper);
-      this.outputArea.scrollTop = this.outputArea.scrollHeight;
-    });
-  }
-
-  cancelInputRequest(): void {
-    if (this._pendingInputResolve) {
-      this._pendingInputResolve(null);
-      this._pendingInputResolve = null;
-    }
-  }
-
-  protected handleRun(): void {
-    if (this._pendingInputResolve)
-      return;
-    super.handleRun();
   }
 }
 
@@ -915,5 +900,31 @@ export class ScriptingAIPanel extends AIPanel<MessageType, ScriptingAIPanelInput
       ...baseInputs,
       language: this.languageInput.value as DG.ScriptingLanguage,
     };
+  }
+
+  async finalizeStreaming(content: string, _view: DG.ViewBase): Promise<void> {
+    if (!this._streamingContainer || !this._streamingMarkdownEl)
+      return;
+
+    const markDown = this.createStyledMarkdown(content);
+    renderEntityBlocks(markDown);
+    this.appendFeedbackButtons(markDown);
+
+    this._streamingMarkdownEl.replaceWith(markDown);
+    this._streamingMarkdownEl = null;
+    this._streamingContainer = null;
+
+    this._uiMessages.push({fromUser: false, text: content, messageOptions: {finalResult: content}});
+
+    // Extract code from datagrok-exec blocks and set on the script editor
+    const codeMatch = /```datagrok-exec\n([\s\S]*?)```/.exec(content);
+    if (codeMatch) {
+      ui.setUpdateIndicator(this.view.root, true, 'Updating script...');
+      const indicator = this.view.root.querySelector('.d4-update-shadow') as HTMLElement;
+      if (indicator)
+        indicator.style.zIndex = '1000';
+      (this.view as DG.ScriptView).code = codeMatch[1].trimEnd();
+      ui.setUpdateIndicator(this.view.root, false);
+    }
   }
 }

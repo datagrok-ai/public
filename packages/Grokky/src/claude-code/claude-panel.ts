@@ -30,8 +30,13 @@ export function buildViewContext(view: DG.ViewBase): string {
     const cols = df.columns.toList().map((c) => `${c.name}(${c.type})`).join(', ');
     return `Table "${df.name}" (${df.rowCount} rows): ${cols}`;
   }
-  if (view.type === 'ScriptView')
-    return `ScriptView "${view.name}"`;
+  if (view.type === 'ScriptView') {
+    const scriptView = view as DG.ScriptView;
+    const code = scriptView.code;
+    if (code)
+      return `ScriptView "${view.name}"\nCurrent script:\n\`\`\`\n${code}\n\`\`\``;
+    return `ScriptView "${view.name}" (empty script)`;
+  }
   return '';
 }
 

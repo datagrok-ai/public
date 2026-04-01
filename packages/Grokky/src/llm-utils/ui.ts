@@ -6,7 +6,7 @@ import * as DG from 'datagrok-api/dg';
 import {CombinedAISearchAssistant} from './combined-search';
 import {fireAIAbortEvent, fireAIPanelToggleEvent, getAIAbortSubscription} from '../utils';
 import {BuiltinDBInfoMeta} from './query-meta-utils';
-import {DBAIPanel, ScriptingAIPanel, TVAIPanel} from './panel';
+import {AIPanel, DBAIPanel, ScriptingAIPanel, TVAIPanel} from './panel';
 import {ClaudeRuntimeClient} from '../claude-code/claude-runtime-client';
 import {executeDatagrokBlocks} from '../claude-code/claude-panel';
 import {UsageLimiter} from './usage-limiter';
@@ -162,7 +162,7 @@ export async function setupAIQueryEditorUI(v: DG.ViewBase, connectionID: string,
   return true;
 }
 
-async function runClaudeStreaming(panel: TVAIPanel, userPrompt: string, tableView: DG.TableView) {
+async function runClaudeStreaming(panel: AIPanel<any, any>, userPrompt: string, view: DG.ViewBase) {
   const chatSession = panel.startChatSession();
   const sessionId = panel.sessionId;
   let accumulated = '';
@@ -187,7 +187,7 @@ async function runClaudeStreaming(panel: TVAIPanel, userPrompt: string, tableVie
 
   try {
     const client = ClaudeRuntimeClient.getInstance();
-    const prompt = panel.prependViewContext(userPrompt, tableView);
+    const prompt = panel.prependViewContext(userPrompt, view);
 
     await client.ensureConnected();
 
@@ -214,7 +214,7 @@ async function runClaudeStreaming(panel: TVAIPanel, userPrompt: string, tableVie
     forSession(client.onFinal, (evt) => {
       panel.cancelInputRequest();
       chatSession.session.addEngineMessage({role: 'assistant', content: [{type: 'text', text: evt.content}]});
-      panel.finalizeStreaming(evt.content, tableView);
+      panel.finalizeStreaming(evt.content, view);
       chatSession.endSession();
       cleanup();
     });
@@ -302,8 +302,7 @@ export async function setupScriptsAIPanelUI() {
     panel.onRunRequest.subscribe(async (args) => {
       if (!await UsageLimiter.getInstance().tryCheckAndIncrement('scripting', args.currentPrompt.prompt))
         return;
-      // TODO: route through Claude engine
-      grok.shell.warning('Script generation is being migrated to the new AI engine.');
+      await runClaudeStreaming(panel, args.currentPrompt.prompt, scriptView);
     });
   };
 
