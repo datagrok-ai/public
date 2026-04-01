@@ -156,7 +156,6 @@ export async function setupAIQueryEditorUI(v: DG.ViewBase, connectionID: string,
   panel.onRunRequest.subscribe(async (args) => {
     if (!await UsageLimiter.getInstance().tryCheckAndIncrement('db-query', args.currentPrompt.prompt))
       return;
-    panel.updateUsageBadge();
     // TODO: route through Claude engine
     grok.shell.warning('SQL generation is being migrated to the new AI engine.');
   });
@@ -278,7 +277,6 @@ export async function setupTableViewAIPanelUI() {
       const prompt = args.currentPrompt.prompt;
       if (!await UsageLimiter.getInstance().tryCheckAndIncrement('tableview', args.currentPrompt.prompt))
         return;
-      panel.updateUsageBadge();
       await runClaudeStreaming(panel, prompt, tableView);
     });
   };
@@ -304,7 +302,6 @@ export async function setupScriptsAIPanelUI() {
     panel.onRunRequest.subscribe(async (args) => {
       if (!await UsageLimiter.getInstance().tryCheckAndIncrement('scripting', args.currentPrompt.prompt))
         return;
-      panel.updateUsageBadge();
       // TODO: route through Claude engine
       grok.shell.warning('Script generation is being migrated to the new AI engine.');
     });

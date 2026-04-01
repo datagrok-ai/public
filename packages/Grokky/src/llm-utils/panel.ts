@@ -8,7 +8,6 @@ import '../../css/ai.css';
 import {dartLike, fireAIAbortEvent, getAIPanelToggleSubscription} from '../utils';
 import {buildViewContext, executeDatagrokBlocks, renderEntityBlocks} from '../claude-code/claude-panel';
 import {ConversationStorage, StoredConversationWithContext} from './storage';
-import {UsageLimiter} from './usage-limiter';
 
 export type MessageType = {role: string; content: any};
 
@@ -95,7 +94,6 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
   protected textArea: HTMLTextAreaElement;
   private textAreaDiv: HTMLElement;
   private runButton: HTMLElement;
-  protected usageBadge: HTMLElement;
   private newChatButton: HTMLElement;
   private copyConversationButton: HTMLElement;
   private historyButton: HTMLElement;
@@ -174,9 +172,10 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
       this.micButton,
     ], 'd4-ai-panel-input-controls');
     this.runButton.style.color = 'var(--blue-1)';
-    const inputControlsRight = ui.divH([this.historyButton, this.tryAgainButton, this.runButton], 'd4-ai-panel-run-controls');
-    inputControlsRight.style.marginLeft = 'auto';
-    const controlsDiv = ui.divH([this.inputControlsDiv, inputControlsRight], 'd4-ai-panel-controls-container');
+    const sessionControls = ui.divH([this.copyConversationButton, this.historyButton, this.newChatButton], 'd4-ai-panel-run-controls');
+    sessionControls.style.marginLeft = 'auto';
+    const messageControls = ui.divH([this.tryAgainButton, this.runButton], 'd4-ai-panel-run-controls');
+    const controlsDiv = ui.divH([this.inputControlsDiv, sessionControls, ui.div([], 'd4-ribbon-separator'), messageControls], 'd4-ai-panel-controls-container');
     this.textAreaDiv = ui.divV([this.textArea], {classes: 'd4-ai-input-textarea-div', style: {position: 'relative'}});
     this.inputArea.appendChild(this.textAreaDiv);
     this.inputArea.appendChild(controlsDiv);
@@ -188,14 +187,6 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
     dartLike(headerTitle.style).set('margin', '0px').set('userSelect', 'none').set('cursor', 'pointer');
     headerTitle.addEventListener('click', () => this.textArea.focus());
     this.header.appendChild(headerTitle);
-    this.usageBadge = ui.divText('');
-    const rightHeaderDiv = ui.divH([], 'd4-ai-panel-header-right-buttons');
-    rightHeaderDiv.appendChild(this.usageBadge);
-    rightHeaderDiv.appendChild(this.newChatButton);
-    // TODO: verify per-message copy button (in feedback row) works well before removing this
-    // rightHeaderDiv.appendChild(this.copyConversationButton);
-    this.header.appendChild(rightHeaderDiv);
-    this.updateUsageBadge();
     this.setupSubscriptions();
   }
 
@@ -494,12 +485,6 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
     fireAIAbortEvent();
   }
 
-  updateUsageBadge(): void {
-    const limiter = UsageLimiter.getInstance();
-    this.usageBadge.textContent = `${limiter.used}/${limiter.limit}`;
-    ui.tooltip.bind(this.usageBadge, `${limiter.remaining} AI requests remaining today`);
-  }
-
   protected handleRun() {
     const inputs = this.getCurrentInputs();
     this.textArea.value = '';
@@ -512,13 +497,13 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
   protected showContentIcons() {
     this.newChatButton.style.display = 'flex';
     this.tryAgainButton.style.display = 'flex';
-    // this.copyConversationButton.style.display = 'flex';
+    this.copyConversationButton.style.display = 'flex';
   }
 
   protected hideContentIcons() {
     this.newChatButton.style.display = 'none';
     this.tryAgainButton.style.display = 'none';
-    // this.copyConversationButton.style.display = 'none';
+    this.copyConversationButton.style.display = 'none';
   }
 
   private handleClear() {
