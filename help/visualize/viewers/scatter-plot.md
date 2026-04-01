@@ -102,13 +102,11 @@ on the context panel. To hide the equation, uncheck "Show Regression Line Equati
 
 ## Formula lines
 
-A scatterplot can show reference lines that represent formulas or equations.
-These lines are used to emphasize specific areas on the chart or data. Common
-examples include a regression line, value bands, and so on.
+Add reference lines to highlight trends, thresholds, or regions—such as
+regression lines or value bands.
 
-To show a custom formula line, right-click a scatterplot, then choose **Tools** > **Formula Lines...** 
-This action opens a **Formula Lines** dialog. Here, enter
-your formula and configure the line settings. Your formula should refer to the
+To add one, right-click the scatterplot and select **Tools** > **Formula Lines...**.
+Enter your formula and configure the line settings. Your formula should refer to the
 columns on the **X** and **Y** axes. The syntax for the formula is similar to
 that used to [Add New Column](../../transform/add-new-column.md).
 

@@ -366,9 +366,8 @@ dynamically to show details about your substructure.
 
 Info panes are displayed based on specific conditions: user, dataset, context, user preferences.
 
-When the current object changes, the conditions of all registered info panes are
-checked against the specified parameters, and matching info panes are displayed
-accordingly. 
+When you select a different object, Datagrok evaluates each info pane's
+conditions and shows only the ones that match. 
 
 Subject to your permissions, you can control the display of an info pane from
 the UI. To hide a specific info pane, click the **Gear** icon on the pane

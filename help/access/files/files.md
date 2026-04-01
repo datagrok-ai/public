@@ -69,10 +69,8 @@ When connecting to _public buckets_ in AWS S3, always check the **Anonymous** ch
 
 :::
 
-Once you have established a connection to a folder in your file system, the
-folder appears in the **File Manager** under the corresponding data source. This
-connection is referred to as a _file share_. You can view the files and
-subfolders within the _file share_ by expanding it.
+A connected folder appears in **File Manager** as a _file share_.
+Expand it to browse its files and subfolders.
 
 :::note
 
@@ -283,7 +281,7 @@ To share a folder, right-click on it, select "Share folder", specify users or gr
 and the privilege (View / Edit). Once the folder is shared, it appears in the recipient's 
 **Files** tree under Browse.
 
-The specified privilege allows the grantee do the following:
+The privilege level determines what the recipient can do:
 
 * _Can view_: View, open, and download. 
 * _Can edit_: Everything under "view", plus rename, edit, delete, and reshare

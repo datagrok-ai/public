@@ -232,9 +232,7 @@ consider:
 
 ## Development
 
-A JavaScript package runs inside the Datagrok platform, which makes the development and debugging experience different
-compared to the more traditional web applications. Essentially, the packages are developed locally, but the platform
-runs remotely. To enable the best possible experience for developers, we established a workflow where the package is
+You develop packages locally, but they run inside the remote Datagrok platform. To enable the best possible experience for developers, we established a workflow where the package is
 uploaded to the remote server at startup, and then gets served from the server. By associating local JavaScript files
 with the remote sources in your favorite IDE, it is possible to hide the complexity of that scenario. For instance, you
 can set breakpoints, do step-by-step execution and generally debug the program in the regular way. Of course, you can
@@ -265,9 +263,8 @@ the `scripts` section in the `package.json` file.
 
 ### Managing dependencies
 
-During the development of your plugin, your new code might start depending on new unreleased features 
-in the core, libraries, or other plugins. Our tooling supports all these cases, but you have to properly
-annotate the nature of the dependencies:
+Your plugin may depend on unreleased features in the core, libraries, or other
+plugins. Our tooling handles this, but you must annotate the dependencies:
 
 * **Dependency on the new code in the libraries**. Modify the package.json file in your plugin, and change
 the library path to the relative path of the corresponding library, like that:
