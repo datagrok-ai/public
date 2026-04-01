@@ -4,6 +4,20 @@ import * as DG from 'datagrok-api/dg';
 import * as ngl from 'NGL';
 
 import {RcsbGraphQLAdapter} from './rcsb-gql-adapter';
+import {parsePdbHeaders, PdbHeaderInfo} from './pdb-parser';
+
+/** Fetch PDB file from RCSB and parse its headers. */
+async function fetchPdbFileHeaders(pdbId: string): Promise<PdbHeaderInfo | undefined> {
+  try {
+    const url = `https://files.rcsb.org/download/${pdbId}.pdb`;
+    const resp = await grok.dapi.fetchProxy(url);
+    if (!resp.ok) return undefined;
+    const pdbText = await resp.text();
+    return parsePdbHeaders(pdbText);
+  } catch {
+    return undefined;
+  }
+}
 
 /** Fetch abstract text from PubMed using the E-utilities API. */
 async function fetchPubMedAbstract(pmid: number): Promise<string | undefined> {
@@ -49,12 +63,18 @@ function create3DViewer(pdbId: string, selection: string, height: number = 250):
 
 export async function pdbInfoWidget(pdbId: string): Promise<DG.Widget> {
   try {
-    const info = await RcsbGraphQLAdapter.getEntryInfo(pdbId);
+    // Fetch GraphQL data and PDB file in parallel
+    const [info, pdbInfo] = await Promise.all([
+      RcsbGraphQLAdapter.getEntryInfo(pdbId),
+      fetchPdbFileHeaders(pdbId).catch(() => undefined),
+    ]);
 
-    // -- Basic info table (Description first) --
+    // -- Basic info table (same order as pdb panel) --
     const basicMap: {[key: string]: any} = {};
     if (info.title)
       basicMap['Description'] = info.title;
+    if (info.classification)
+      basicMap['Classification'] = info.classification;
     if (info.experimentalMethod)
       basicMap['Method'] = info.experimentalMethod;
     if (info.resolution != null)
@@ -63,12 +83,14 @@ export async function pdbInfoWidget(pdbId: string): Promise<DG.Widget> {
       `rcsb.org/structure/${pdbId}`,
       () => window.open(`https://www.rcsb.org/structure/${pdbId}`),
     );
-    if (info.classification)
-      basicMap['Classification'] = info.classification;
     if (info.organisms)
       basicMap['Organism(s)'] = info.organisms.join(', ');
     if (info.expressionSystems)
       basicMap['Expression System'] = info.expressionSystems.join(', ');
+    if (pdbInfo?.atomCount != null)
+      basicMap['Atom Count'] = pdbInfo.atomCount.toString();
+    if (pdbInfo?.chains)
+      basicMap['Chains'] = pdbInfo.chains.join(', ');
 
     const basicTable = ui.tableFromMap(basicMap);
 
@@ -156,6 +178,14 @@ export async function pdbInfoWidget(pdbId: string): Promise<DG.Widget> {
               map['Chains'] = pe.chains.join(', ');
             if (pe.sequenceLength != null)
               map['Sequence Length'] = pe.sequenceLength.toString();
+            // Residue count per chain from PDB file
+            if (pdbInfo?.residueCountByChain && pe.authChains.length > 0) {
+              const counts = pe.authChains
+                .filter((c) => pdbInfo.residueCountByChain![c] != null)
+                .map((c) => `${c}: ${pdbInfo.residueCountByChain![c]}`);
+              if (counts.length > 0)
+                map['Residues'] = counts.join(', ');
+            }
             if (pe.type)
               map['Type'] = pe.type;
             if (pe.organism)
@@ -164,6 +194,12 @@ export async function pdbInfoWidget(pdbId: string): Promise<DG.Widget> {
               map['Mutation(s)'] = pe.mutation;
             else
               map['Mutation(s)'] = '0';
+            // Specific mutations from PDB SEQADV
+            if (pdbInfo?.mutations && pe.authChains.length > 0) {
+              const entityMuts = pdbInfo.mutations.filter((m) => pe.authChains.includes(m.chain));
+              if (entityMuts.length > 0)
+                map['Mutation Details'] = entityMuts.map((m) => m.description).join(', ');
+            }
             if (pe.uniprotIds) {
               map['UniProt'] = ui.divH(pe.uniprotIds.map((id) =>
                 ui.link(id, () => window.open(`https://www.uniprot.org/uniprot/${id}`)),
@@ -224,6 +260,83 @@ export async function pdbInfoWidget(pdbId: string): Promise<DG.Widget> {
         }
         return innerAcc.root;
       }, () => info.nonpolymerEntities!.length, false);
+    }
+
+    // -- Binding Sites (from PDB file) --
+    if (pdbInfo?.sites && pdbInfo.sites.length > 0) {
+      acc.addCountPane('Binding Sites', () => {
+        const innerAcc = DG.Accordion.create();
+        for (const site of pdbInfo.sites!) {
+          innerAcc.addPane(site.name, () => {
+            return ui.divText(site.residues.join(', '));
+          }, false);
+        }
+        return innerAcc.root;
+      }, () => pdbInfo.sites!.length, false);
+    }
+
+    // -- Secondary Structure (from PDB file) --
+    if (pdbInfo?.secondaryStructure) {
+      const ss = pdbInfo.secondaryStructure;
+      acc.addPane('Secondary Structure', () => {
+        const map: {[key: string]: any} = {};
+        if (ss.helices.length > 0) {
+          map['Helices'] = ss.helices.length.toString();
+          const helixByChain: {[c: string]: number} = {};
+          for (const h of ss.helices)
+            helixByChain[h.chain] = (helixByChain[h.chain] || 0) + 1;
+          map['Helices by Chain'] = Object.entries(helixByChain)
+            .map(([c, n]) => `${c}: ${n}`).join(', ');
+        }
+        if (ss.sheets.length > 0) {
+          map['Strands'] = ss.sheets.length.toString();
+          const sheetByChain: {[c: string]: number} = {};
+          for (const s of ss.sheets)
+            sheetByChain[s.chain] = (sheetByChain[s.chain] || 0) + 1;
+          map['Strands by Chain'] = Object.entries(sheetByChain)
+            .map(([c, n]) => `${c}: ${n}`).join(', ');
+        }
+        return ui.tableFromMap(map);
+      }, false);
+    }
+
+    // -- Modified Residues (from PDB file) --
+    if (pdbInfo?.modifiedResidues && pdbInfo.modifiedResidues.length > 0) {
+      acc.addCountPane('Modified Residues', () => {
+        const innerAcc = DG.Accordion.create();
+        for (const mod of pdbInfo.modifiedResidues!) {
+          const label = `${mod.resName} ${mod.chain}${mod.resSeq}`;
+          innerAcc.addPane(label, () => {
+            const map: {[key: string]: any} = {};
+            map['Modified Residue'] = mod.resName;
+            map['Standard Residue'] = mod.standardRes;
+            map['Chain'] = mod.chain;
+            map['Position'] = mod.resSeq.toString();
+            if (mod.comment)
+              map['Description'] = mod.comment;
+            return ui.tableFromMap(map);
+          }, false);
+        }
+        return innerAcc.root;
+      }, () => pdbInfo.modifiedResidues!.length, false);
+    }
+
+    // -- Missing Residues (from PDB file) --
+    if (pdbInfo?.missingResidues && pdbInfo.missingResidues.length > 0) {
+      acc.addCountPane('Missing Residues', () => {
+        const byChain: {[chain: string]: string[]} = {};
+        for (const mr of pdbInfo.missingResidues!) {
+          if (!byChain[mr.chain]) byChain[mr.chain] = [];
+          byChain[mr.chain].push(`${mr.resName} ${mr.resSeq}`);
+        }
+        const innerAcc = DG.Accordion.create();
+        for (const [chain, residues] of Object.entries(byChain)) {
+          innerAcc.addCountPane(`Chain ${chain}`, () => {
+            return ui.divText(residues.join(', '));
+          }, () => residues.length, false);
+        }
+        return innerAcc.root;
+      }, () => pdbInfo.missingResidues!.length, false);
     }
 
     return new DG.Widget(ui.divV([basicTable, acc.root]));
