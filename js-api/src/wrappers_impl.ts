@@ -132,6 +132,8 @@ export function toDart(x: any): any {
     return api.grok_JS_To_Map(x);
   if (typeof x === 'bigint')
     return api.grok_BigIntJs_To_BigInt(x.toString());
+  if (Array.isArray(x))
+    return x.map(toDart);
   return x;
 }
 
