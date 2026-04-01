@@ -111,6 +111,12 @@ export async function pdbInfoWidget(pdbId: string): Promise<DG.Widget> {
             () => window.open(`https://doi.org/${info.citation!.doi}`),
           );
         }
+        if (info.citation!.pubmedId) {
+          citMap['PubMed'] = ui.link(
+            info.citation!.pubmedId.toString(),
+            () => window.open(`https://pubmed.ncbi.nlm.nih.gov/${info.citation!.pubmedId}`),
+          );
+        }
         const container = ui.divV([ui.tableFromMap(citMap)]);
 
         // Fetch abstract asynchronously if PubMed ID is available

@@ -479,8 +479,8 @@ export class RcsbGraphQLAdapter {
       name: ne.nonpolymer_comp?.chem_comp?.name ?? undefined,
       formula: ne.nonpolymer_comp?.chem_comp?.formula ?? undefined,
       inchiKey: ne.nonpolymer_comp?.rcsb_chem_comp_descriptor?.InChIKey ?? undefined,
-      smiles: ne.nonpolymer_comp?.rcsb_chem_comp_descriptor?.SMILES_stereo
-        ?? ne.nonpolymer_comp?.rcsb_chem_comp_descriptor?.SMILES ?? undefined,
+      smiles: ne.nonpolymer_comp?.rcsb_chem_comp_descriptor?.SMILES_stereo ??
+        ne.nonpolymer_comp?.rcsb_chem_comp_descriptor?.SMILES ?? undefined,
       chains: ne.rcsb_nonpolymer_entity_container_identifiers?.asym_ids ?? [],
       authChains: ne.rcsb_nonpolymer_entity_container_identifiers?.auth_asym_ids ?? [],
     }));
