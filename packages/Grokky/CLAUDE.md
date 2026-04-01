@@ -20,101 +20,126 @@ is safe, secure, governed, monitored and measured.
 
 See also [Grokky GitHub issues](https://github.com/datagrok-ai/public/issues/3710). 
 
+## Source Structure
+
+```
+src/
+├── package.ts              # Entry point — registers functions, init, search providers
+├── utils.ts                # Shared utilities (viewer/dataframe descriptions, events)
+├── ai/                     # AI panels, search, and UI wiring
+│   ├── panel.ts            # TVAIPanel, DBAIPanel, ScriptingAIPanel, StreamingPanel
+│   ├── ui.ts               # Setup functions that wire panels into the platform UI
+│   ├── storage.ts          # ConversationStorage — IndexedDB persistence for chat history
+│   ├── usage-limiter.ts    # Per-user daily request limits (group-configurable)
+│   └── search/
+│       ├── combined-search.ts   # Routes user queries to ranked aiSearchProvider functions
+│       └── query-matching.ts    # LLM-based matching of natural-language to DB queries
+├── claude/                 # Browser-facing Claude runtime integration
+│   ├── runtime-client.ts   # WebSocket client to claude-runtime container
+│   └── exec-blocks.ts      # Executes datagrok-exec / datagrok-entities fenced blocks
+├── db/                     # Database tooling
+│   ├── sql-tools.ts        # SQLGenerationContext — tool-call-based SQL generation
+│   ├── db-index-tools.ts   # DBSchemaInfo caching, metadata generation
+│   ├── query-meta-utils.ts # BuiltinDBInfoMeta — extends DG.DbInfo with built-in relations
+│   └── indexes/            # Hardcoded schema indexes for known databases
+│       ├── biologics-index.ts
+│       └── chembl-index.ts
+└── depr/                   # Deprecated code kept for reference (not imported by active code)
+```
+
 ## Architecture
-
-### LLM Client Layer (`src/llm-utils/LLM-client.ts`)
-
-`LLMClient` is the central singleton for all LLM communication. It wraps:
-
-- A raw `OpenAI` client (used only for vector store search)
-- `LanguageModelV3` instances from `@ai-sdk/*` providers, one per `ModelOption` (`Fast`, `Deep Research`, `Coding`)
-
-The provider is chosen based on `PackageSettings.APIName` (enum `LLMApiNames`). Model names are configurable via package
-settings and can be remapped by Azure deployment names.
-
-All LLM requests go through the Datagrok AI proxy (`grok.ai.config.proxyUrl`), authenticated
-with `grok.ai.config.proxyToken`.
-
-### Credentials (`src/llm-utils/creds.ts`)
-
-`LLMCredsManager` — singleton that holds the vector store ID from package settings. Initialized in the `init()`
-function.
 
 ### AI Search Providers (`src/package.ts`)
 
 Three `aiSearchProvider` functions are registered via decorators, each with a `useWhen` clause that
-the `CombinedAISearchAssistant` uses to route user queries:
+`CombinedAISearchAssistant` uses to route user queries:
 
-- **Help** — documentation Q&A via vector store file search
-- **Execute** — plans and runs multi-step function chains (`ChatGptAssistant`)
-- **Query** — finds and executes matching database queries
+- **Help** — documentation Q&A
+- **Execute** — plans and executes JS code using structured output
+- **Query** — matches natural-language to registered database queries
 
-### Combined Search (`src/llm-utils/combined-search.ts`)
+All three route through `ClaudeRuntimeClient` (Help uses plain `query()`, Execute and Query use `query()` with
+a structured output schema).
 
-`CombinedAISearchAssistant` collects all `aiSearchProvider` functions, uses a fast LLM call to rank them by relevance to
-the user query, then presents results in a lazy tab control.
+### Combined Search (`src/ai/search/combined-search.ts`)
 
-### Prompt Engine (`src/prompt-engine/`)
+`CombinedAISearchAssistant` collects all `aiSearchProvider` functions, uses `ClaudeRuntimeClient.query()` to rank them
+by relevance to the user query, then presents results in a lazy tab control.
 
-- `PromptEngine` interface with two implementations: `ChatGPTPromptEngine` (cloud LLM) and `GeminiPromptEngine` (Chrome
-  built-in `LanguageModel`)
-- `ChatGptAssistant` — multi-step planner: selects relevant packages, discovers their functions, asks the LLM to produce
-  a `Plan` (JSON schema-constrained), then executes steps sequentially resolving `$`-prefixed variable references
-  between steps
-
-### Table View AI (`src/llm-utils/tableview-tools.ts`)
-
-Agentic tool-use loop for manipulating viewers in a `TableView`. Provides
-tools: `add_viewer`, `adjust_viewer`, `describe_viewer`, `find_viewers_by_type`, `list_current_viewers`, `highlight_element`, `reply_to_user`, `search_documentation`.
-Runs up to 15 iterations (extendable via user prompt).
-
-### SQL Tools (`src/llm-utils/sql-tools.ts`)
-
-Generates SQL queries from natural language using database schema metadata and tool calls.
-
-### Claude Code Runtime (`src/claude-code/`)
-
-The browser-facing layer for the Claude runtime.
-
-- **`ClaudeRuntimeClient`** — singleton WebSocket client. Discovers `claude-runtime` and `mcp-server` containers via `grok.dapi.docker`, then exposes RxJS subjects for streaming events. API: `send()`, `abort()`, `respondToInput()`, and promise-based `query()` for one-shot calls.
-- **`claude-panel.ts`** — processes two special fenced blocks in Claude responses: `datagrok-exec` (runs JS with `grok`/`ui`/`DG`/`view`/`t` globals) and `datagrok-entities` (renders interactive entity cards).
-
-### AI Panels (`src/llm-utils/panel.ts`)
+### AI Panels (`src/ai/panel.ts`)
 
 Three panel classes handle UI for different contexts:
 
-- `TVAIPanel` — table view assistant (supports DeepGROK and Claude engines)
+- `TVAIPanel` — table view assistant
 - `DBAIPanel` — database query editor assistant
 - `ScriptingAIPanel` — script generation assistant
 
-All panels share a common base with chat history, model selection, streaming display, and conversation persistence
-via `ConversationStorage`.
+All panels stream through `ClaudeRuntimeClient` and share a common `StreamingPanel` base with chat history,
+streaming display, and conversation persistence via `ConversationStorage`.
+
+### AI UI Wiring (`src/ai/ui.ts`)
+
+Setup functions called from `init()` that attach AI panels to platform UI elements:
+
+- `setupSearchUI()` — wires `CombinedAISearchAssistant` into the global search bar
+- `setupTableViewAIPanelUI()` — adds `TVAIPanel` to table views
+- `setupScriptsAIPanelUI()` — adds `ScriptingAIPanel` to script views
+- `setupAIQueryEditorUI()` — adds `DBAIPanel` to the query editor
+
+Also exports `askWiki()` and `smartExecution()`, which back the Help and Execute search providers respectively.
+
+### Usage Limiter (`src/ai/usage-limiter.ts`)
+
+`UsageLimiter` — singleton that enforces per-user daily AI request limits. Limits are group-configurable
+(e.g., "AI Folks" group gets 1000/day, default is 20/day). Counts are persisted in `grok.userSettings`.
+
+### Conversation Storage (`src/ai/storage.ts`)
+
+`ConversationStorage` — IndexedDB-backed persistence for chat conversations. Stores up to 20 conversations
+per context (connection ID, view, etc.), each with full message history and UI state.
+
+### Claude Runtime Client (`src/claude/runtime-client.ts`)
+
+Singleton WebSocket client. Discovers `claude-runtime` and `mcp-server` containers via `grok.dapi.docker`,
+then exposes RxJS subjects for streaming events. API: `send()`, `abort()`, `respondToInput()`, and
+promise-based `query()` for one-shot structured-output calls.
+
+### Executable Blocks (`src/claude/exec-blocks.ts`)
+
+Processes two types of fenced blocks in Claude responses:
+- `` ```datagrok-exec `` — runs JS with `grok`/`ui`/`DG`/`view`/`t` globals
+- `` ```datagrok-entities `` — renders interactive entity cards (files, scripts, queries, connections, projects, spaces)
+
+Also provides `buildViewContext()` — serializes the current view (table columns, script code) for Claude prompts.
+
+### SQL Tools (`src/db/sql-tools.ts`)
+
+`SQLGenerationContext` — manages tool execution for natural-language-to-SQL generation. Supports multiple
+catalogs. Tool calls (`db_list_schemas`, `db_get_table_info`, etc.) are defined in the MCP server and forwarded from the Claude runtime to the browser for execution.
+
+### DB Index Tools (`src/db/db-index-tools.ts`)
+
+`DBSchemaInfo` — caches database schema metadata (table/column info, foreign key references) per connection+schema.
+Also provides `genDBConnectionMeta()` for generating and persisting LLM-friendly schema descriptions.
 
 ### Docker Containers (`dockerfiles/`)
 
 - `claude-runtime/` — Hono + WebSocket server wrapping `@anthropic-ai/claude-agent-sdk`. Runs Claude sessions with a Datagrok-specific system prompt and resumable session support. Streams structured events to the browser: `chunk`, `tool_activity`, `tool_result`, `final`, `error`, `aborted`, `input_request`.
 - `mcp-server/` — MCP server (`@modelcontextprotocol/sdk`, HTTP transport) exposing Datagrok operations as tools: functions (list/get/call/create), files (list/download/upload), projects, spaces, and user info. Auth via per-request `x-user-api-key` / `x-datagrok-api-url` headers.
 
+### Deprecated Code (`src/depr/`)
+
+Contains the previous LLM abstraction layer (`LLMClient`, `ChatGptAssistant`, `PromptEngine`, etc.) and
+earlier implementations of tableview tools, script tools, and AI panels. Kept for reference but not imported
+by active code. All active AI features now route through `ClaudeRuntimeClient`.
+
 ## Key Singletons
 
-Most core classes use singleton pattern with `getInstance()`:
+- `ClaudeRuntimeClient.getInstance()` — WebSocket connection to Claude runtime
+- `CombinedAISearchAssistant.instance` — AI search routing
+- `UsageLimiter.getInstance()` — daily request limit enforcement
 
-- `LLMClient.getInstance()`
-- `LLMCredsManager.getInstance()`
-- `CombinedAISearchAssistant.instance`
-- `ChatGPTPromptEngine.getInstance()`
-- `ClaudeRuntimeClient.getInstance()`
+## Configuration
 
-## Package Settings
-
-Configured via Datagrok package properties (in `package.json`):
-
-| Setting | Purpose |
-|---------|---------|
-| `APIName` | LLM provider: `OpenAI Chat Completions`, `OpenAI Responses`, `Anthropic Messages`, or `Amazon Bedrock` |
-| `defaultFastModel` | Model for simple tasks (default: `gpt-4o-mini`) |
-| `defaultDeepResearchModel` | Model for complex tasks (default: `gpt-5.2`) |
-| `defaultCodingModel` | Model for code generation (default: `gpt-5.1-codex-max`) |
-| `vectorStoreId` | OpenAI vector store ID for documentation search |
-| `region` | AWS region (Bedrock only) |
-| `apiVersion` | API version path segment |
+All LLM requests go through `ClaudeRuntimeClient`, which connects via WebSocket to the `claude-runtime`
+Docker container. The container handles Claude API authentication internally.
