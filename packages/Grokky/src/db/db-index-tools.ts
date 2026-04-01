@@ -3,7 +3,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {getSchemaDescriptor} from '@datagrok-libraries/db-explorer/src/utils';
-import {ClaudeRuntimeClient} from '../claude-code/claude-runtime-client';
+import {ClaudeRuntimeClient} from '../claude/runtime-client';
 
 type DBIDWithSchema = `${string}.${string}`;
 type DBReference = `${string}.${string} -> ${string}.${string}`;

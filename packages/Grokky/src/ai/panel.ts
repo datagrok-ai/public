@@ -6,7 +6,7 @@ import * as rxjs from 'rxjs';
 // @ts-ignore .... idk why it does not like it
 import '../../css/ai.css';
 import {dartLike, fireAIAbortEvent, getAIPanelToggleSubscription} from '../utils';
-import {buildViewContext, executeDatagrokBlocks, renderEntityBlocks} from '../claude-code/claude-panel';
+import {buildViewContext, executeDatagrokBlocks, renderEntityBlocks} from '../claude/exec-blocks';
 import {ConversationStorage, StoredConversationWithContext} from './storage';
 
 export type MessageType = {role: string; content: any};

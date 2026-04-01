@@ -3,13 +3,13 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {findBestMatchingQuery, tableQueriesFunctionsSearchLlm} from './llm-utils/query-matching';
-import {askWiki, smartExecution, setupAIQueryEditorUI, setupScriptsAIPanelUI, setupSearchUI, setupTableViewAIPanelUI} from './llm-utils/ui';
-import {CombinedAISearchAssistant} from './llm-utils/combined-search';
-import {UsageLimiter} from './llm-utils/usage-limiter';
-import {genDBConnectionMeta, moveDBMetaToStickyMetaOhCoolItEvenRhymes} from './llm-utils/db-index-tools';
-import {biologicsIndex} from './llm-utils/indexes/biologics-index';
-import {chemblIndex} from './llm-utils/indexes/chembl-index';
+import {findBestMatchingQuery, tableQueriesFunctionsSearchLlm} from './ai/search/query-matching';
+import {askWiki, smartExecution, setupAIQueryEditorUI, setupScriptsAIPanelUI, setupSearchUI, setupTableViewAIPanelUI} from './ai/ui';
+import {CombinedAISearchAssistant} from './ai/search/combined-search';
+import {UsageLimiter} from './ai/usage-limiter';
+import {genDBConnectionMeta, moveDBMetaToStickyMetaOhCoolItEvenRhymes} from './db/db-index-tools';
+import {biologicsIndex} from './db/indexes/biologics-index';
+import {chemblIndex} from './db/indexes/chembl-index';
 export * from './package.g';
 
 export class ChatGPTPackage extends DG.Package {

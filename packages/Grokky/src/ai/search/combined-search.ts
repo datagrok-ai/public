@@ -3,8 +3,8 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
-import {ClaudeRuntimeClient} from '../claude-code/claude-runtime-client';
-import {UsageLimiter} from './usage-limiter';
+import {ClaudeRuntimeClient} from '../../claude/runtime-client';
+import {UsageLimiter} from '../usage-limiter';
 /**
  * The idea is to provide single AI search provider which will decide which LLM to use based on user prompt.
  * This class will not care about individual LLM implementations, nor the presence of api keys and other needed things.

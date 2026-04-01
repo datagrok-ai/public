@@ -3,14 +3,14 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {CombinedAISearchAssistant} from './combined-search';
+import {CombinedAISearchAssistant} from './search/combined-search';
 import {fireAIAbortEvent, fireAIPanelToggleEvent, getAIAbortSubscription} from '../utils';
-import {BuiltinDBInfoMeta} from './query-meta-utils';
+import {BuiltinDBInfoMeta} from '../db/query-meta-utils';
 import {DBAIPanel, ScriptingAIPanel, StreamingPanel, TVAIPanel} from './panel';
-import {ClaudeRuntimeClient} from '../claude-code/claude-runtime-client';
-import {executeDatagrokBlocks} from '../claude-code/claude-panel';
+import {ClaudeRuntimeClient} from '../claude/runtime-client';
+import {executeDatagrokBlocks} from '../claude/exec-blocks';
 import {UsageLimiter} from './usage-limiter';
-import {SQLGenerationContext} from './sql-tools';
+import {SQLGenerationContext} from '../db/sql-tools';
 
 interface ExecutionPlan {
   plan: string[];

@@ -2,14 +2,9 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {_package} from '../package';
-import {dartLike, fireAIAbortEvent} from '../utils';
-import {ClaudeRuntimeClient} from '../claude-code/claude-runtime-client';
-
-
-/// Prompt API: https://developer.chrome.com/docs/ai/prompt-api
-/// Enable all Gemini Nano-related flags here:
-/// chrome://flags/#prompt-api-for-gemini-nano
+import {_package} from '../../package';
+import {dartLike, fireAIAbortEvent} from '../../utils';
+import {ClaudeRuntimeClient} from '../../claude/runtime-client';
 
 export interface QueryMatchResult {
   searchPattern: string;
