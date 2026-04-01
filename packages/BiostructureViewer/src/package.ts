@@ -219,7 +219,7 @@ export class PackageFunctions {
   }
 
   @grok.decorators.panel({
-    name: 'Information',
+    name: 'PDB Information',
   })
   static async pdbInfoPanel(
     @grok.decorators.param({options: {semType: 'PDB_ID'}}) pdbId: string

@@ -50,16 +50,54 @@ export class RcsbGraphQLAdapter {
           }
           rcsb_primary_citation {
             pdbx_database_id_DOI
+            pdbx_database_id_PubMed
+            title
+            journal_abbrev
           }
           struct_keywords {
             pdbx_keywords
           }
           polymer_entities {
+            rcsb_polymer_entity_container_identifiers {
+              entity_id
+              asym_ids
+              auth_asym_ids
+            }
+            rcsb_polymer_entity {
+              pdbx_description
+              pdbx_mutation
+            }
+            entity_poly {
+              type
+              rcsb_sample_sequence_length
+            }
             rcsb_entity_source_organism {
               ncbi_scientific_name
             }
             rcsb_entity_host_organism {
               ncbi_scientific_name
+            }
+            uniprots {
+              rcsb_id
+            }
+          }
+          nonpolymer_entities {
+            rcsb_nonpolymer_entity_container_identifiers {
+              entity_id
+              asym_ids
+              auth_asym_ids
+            }
+            nonpolymer_comp {
+              chem_comp {
+                id
+                name
+                formula
+              }
+              rcsb_chem_comp_descriptor {
+                InChIKey
+                SMILES_stereo
+                SMILES
+              }
             }
           }
         }
@@ -270,6 +308,33 @@ export class RcsbGraphQLAdapter {
     classification?: string;
     organisms?: string[];
     expressionSystems?: string[];
+    citation?: {
+      title?: string;
+      journal?: string;
+      doi?: string;
+      pubmedId?: number;
+    };
+    polymerEntities?: Array<{
+      entityId: string;
+      description?: string;
+      chains: string[];
+      authChains: string[];
+      sequenceLength?: number;
+      type?: string;
+      organism?: string;
+      mutation?: string;
+      uniprotIds?: string[];
+    }>;
+    nonpolymerEntities?: Array<{
+      entityId: string;
+      compId: string;
+      name?: string;
+      formula?: string;
+      inchiKey?: string;
+      smiles?: string;
+      chains: string[];
+      authChains: string[];
+    }>;
   }> {
     const data = await this.executeQuery<{
       entry: {
@@ -281,13 +346,49 @@ export class RcsbGraphQLAdapter {
         };
         rcsb_primary_citation?: {
           pdbx_database_id_DOI?: string;
+          pdbx_database_id_PubMed?: number;
+          title?: string;
+          journal_abbrev?: string;
         };
         struct_keywords?: {
           pdbx_keywords?: string;
         };
         polymer_entities?: Array<{
+          rcsb_polymer_entity_container_identifiers?: {
+            entity_id: string;
+            asym_ids?: string[];
+            auth_asym_ids?: string[];
+          };
+          rcsb_polymer_entity?: {
+            pdbx_description?: string;
+            pdbx_mutation?: string;
+          };
+          entity_poly?: {
+            type?: string;
+            rcsb_sample_sequence_length?: number;
+          };
           rcsb_entity_source_organism?: Array<{ ncbi_scientific_name?: string }>;
           rcsb_entity_host_organism?: Array<{ ncbi_scientific_name?: string }>;
+          uniprots?: Array<{ rcsb_id: string }>;
+        }>;
+        nonpolymer_entities?: Array<{
+          rcsb_nonpolymer_entity_container_identifiers?: {
+            entity_id: string;
+            asym_ids?: string[];
+            auth_asym_ids?: string[];
+          };
+          nonpolymer_comp?: {
+            chem_comp?: {
+              id: string;
+              name?: string;
+              formula?: string;
+            };
+            rcsb_chem_comp_descriptor?: {
+              InChIKey?: string;
+              SMILES_stereo?: string;
+              SMILES?: string;
+            };
+          };
         }>;
       };
     }>(
@@ -311,6 +412,41 @@ export class RcsbGraphQLAdapter {
       }
     }
 
+    const polymerEntities = (data.entry.polymer_entities ?? []).map((pe) => {
+      const uniprotIds = (pe.uniprots ?? []).map((u) => u.rcsb_id).filter(Boolean);
+      return {
+        entityId: pe.rcsb_polymer_entity_container_identifiers?.entity_id ?? '',
+        description: pe.rcsb_polymer_entity?.pdbx_description ?? undefined,
+        chains: pe.rcsb_polymer_entity_container_identifiers?.asym_ids ?? [],
+        authChains: pe.rcsb_polymer_entity_container_identifiers?.auth_asym_ids ?? [],
+        sequenceLength: pe.entity_poly?.rcsb_sample_sequence_length ?? undefined,
+        type: pe.entity_poly?.type ?? undefined,
+        organism: pe.rcsb_entity_source_organism?.[0]?.ncbi_scientific_name ?? undefined,
+        mutation: pe.rcsb_polymer_entity?.pdbx_mutation ?? undefined,
+        uniprotIds: uniprotIds.length > 0 ? uniprotIds : undefined,
+      };
+    });
+
+    const nonpolymerEntities = (data.entry.nonpolymer_entities ?? []).map((ne) => ({
+      entityId: ne.rcsb_nonpolymer_entity_container_identifiers?.entity_id ?? '',
+      compId: ne.nonpolymer_comp?.chem_comp?.id ?? '',
+      name: ne.nonpolymer_comp?.chem_comp?.name ?? undefined,
+      formula: ne.nonpolymer_comp?.chem_comp?.formula ?? undefined,
+      inchiKey: ne.nonpolymer_comp?.rcsb_chem_comp_descriptor?.InChIKey ?? undefined,
+      smiles: ne.nonpolymer_comp?.rcsb_chem_comp_descriptor?.SMILES_stereo
+        ?? ne.nonpolymer_comp?.rcsb_chem_comp_descriptor?.SMILES ?? undefined,
+      chains: ne.rcsb_nonpolymer_entity_container_identifiers?.asym_ids ?? [],
+      authChains: ne.rcsb_nonpolymer_entity_container_identifiers?.auth_asym_ids ?? [],
+    }));
+
+    const cit = data.entry.rcsb_primary_citation;
+    const citation = cit?.title ? {
+      title: cit.title,
+      journal: cit.journal_abbrev ?? undefined,
+      doi: cit.pdbx_database_id_DOI ?? undefined,
+      pubmedId: cit.pdbx_database_id_PubMed ?? undefined,
+    } : undefined;
+
     return {
       id: data.entry.rcsb_id,
       title: data.entry.struct?.title,
@@ -320,6 +456,9 @@ export class RcsbGraphQLAdapter {
       classification: data.entry.struct_keywords?.pdbx_keywords ?? undefined,
       organisms: organisms.size > 0 ? [...organisms] : undefined,
       expressionSystems: expressionSystems.size > 0 ? [...expressionSystems] : undefined,
+      citation,
+      polymerEntities: polymerEntities.length > 0 ? polymerEntities : undefined,
+      nonpolymerEntities: nonpolymerEntities.length > 0 ? nonpolymerEntities : undefined,
     };
   }
 
