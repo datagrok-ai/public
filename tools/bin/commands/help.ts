@@ -18,6 +18,7 @@ Commands:
     init        Modify a package template
     link        Link \`datagrok-api\` and libraries for local development
     publish     Upload a package
+    report      Manage user error reports (fetch, resolve, create ticket)
     test        Run package tests
     testall     Run packages tests
     migrate     Migrate legacy tags to meta.role
@@ -332,6 +333,24 @@ Examples:
 // file and converting your scripts in the \`package.json\` file
 // `;
 
+const HELP_REPORT = `
+Usage: grok report <subcommand> <instance> <id>
+
+Manage Datagrok user error reports
+
+Subcommands:
+    fetch    Download a report zip from a managed instance
+    resolve  Mark a report as resolved
+    ticket   Create a JIRA ticket for a report via the Datlas API
+
+Examples:
+  grok report fetch dev 1528         Download report #1528 from the 'dev' instance
+  grok report resolve dev 1528       Resolve report #1528 on the 'dev' instance
+  grok report ticket dev <report-uuid>   Create a JIRA ticket for a report
+
+The instance name must match a server alias in ~/.grok/config.yaml.
+`;
+
 export const help = {
   add: HELP_ADD,
   api: HELP_API,
@@ -344,6 +363,7 @@ export const help = {
   init: HELP_INIT,
   link: HELP_LINK,
   publish: HELP_PUBLISH,
+  report: HELP_REPORT,
   test: HELP_TEST,
   testall: HELP_TESTALL,
   migrate: HELP_MIGRATE,
