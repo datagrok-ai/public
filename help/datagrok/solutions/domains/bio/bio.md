@@ -519,7 +519,7 @@ sequences. For non-natural sequences, we use [PepSeA](https://github.com/Merck/P
 
 To perform MSA, do the following:
 
-1. In the Top Menu, select **Bio** > **MSA...** . A dialog opens.
+1. In the Top Menu, select **Bio** > **MSA...**. A dialog opens.
 
    ![Multiple Sequence Alignment dialog](img/MSA_dialog-800.png)<!--replace png with a GIF file showing the steps-->
 

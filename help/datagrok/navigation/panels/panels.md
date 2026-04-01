@@ -129,7 +129,7 @@ Hover over the panel's header to reveal these icons:
 | Back/Forward     | Navigate between viewed objects                             |
 | Clone and detach | Detach a copy of the Context Panel preserving its content   |
 | Collapse all     | Collapse all info panes                                     |
-| Expand all       | Collapse all info panes                                     |
+| Expand all       | Expand all info panes                                       |
 | Favorites        | Show the Context Panel for your favorite object             |
 
 :::note

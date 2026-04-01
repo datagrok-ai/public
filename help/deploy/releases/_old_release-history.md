@@ -2108,7 +2108,7 @@ title: "Release History"
 * sdf reader fix
 * Update package.js
 * # 53 Tutorials package: Multivariate analysis tutorial
-* added survival analisys view
+* added survival analysis view
 * # 53 Tutorials package: temporary ts-ignore for new functionality
 * Wiki: misc small fixes.
 * ApiSamples: a case typo in a sketcher sample.
@@ -2139,7 +2139,7 @@ title: "Release History"
 * Fixed typos
 * # 104 Wiki: Library tour
 * Add ui.switch to examples and docs
-* added creation of survival dataset (for first SAE occurance), updated survival analisys view
+* added creation of survival dataset (for first SAE occurrence), updated survival analysis view
 * UI improvements in survival analysis view
 * ApiSamples: fixed a typo.
 * Docker Compose: a new CVM yaml file.
@@ -2576,7 +2576,7 @@ title: "Release History"
 * Added group delete button to the group row
 * # 150 Chem: Move to webpack and TS. Fix wrong refactoring
 * new release history
-* Molecular Liability Browser: intremidiate commit
+* Molecular Liability Browser: intermediate commit
 * Chembl: added few more queries
 * Added remove group button to group grid
 * add minor improvements
@@ -2816,7 +2816,7 @@ title: "Release History"
 * GitHub Actions: Discovery and Forms packages
 * GitHub Actions: Update packages/Discovery/package-lock.json
 * GitHub Actions: Update packages/Forms/package-lock.json
-* Repertoire Broeser: commit for build
+* Repertoire Browser: commit for build
 * RepertoireBrowser package release
 * GitHub Actions: Update packages/RepertoireBrowser/package-lock.json
 * Fixed analyzer warnings
@@ -3796,7 +3796,7 @@ like [here](https://github.com/datagrok-ai/public/tree/master/packages/Tutorials
 * (Bug) Job: CallFunc processing error
 * Wiki: Update filter help
 * Add ui.switch to examples and docs
-* added creation of survival dataset (for first SAE occurance), updated survival analisys view
+* added creation of survival dataset (for first SAE occurrence), updated survival analysis view
 * UI improvements in survival analysis view
 * ApiSamples: fixed a typo.
 * Popup Menu: Ability to add icon groups
@@ -3829,7 +3829,7 @@ like [here](https://github.com/datagrok-ai/public/tree/master/packages/Tutorials
   to slow down
 * (Bug) Form: Ellipsis truncation is missing after applying a layout
 * (Bug) App's git URL is not well-formed
-* added survival analisys view
+* added survival analysis view
 * Form: Allow editing labels (WIP)
 * Minor code cleanup
 * Filters: Allow to paste a list of values to a filter
@@ -4022,7 +4022,7 @@ like [here](https://github.com/datagrok-ai/public/tree/master/packages/Tutorials
 * JS API: correct event args types
 * \#53 Tutorials package: EDA track (WIP)
 * [Scatter Plot: Add lasso info into help and to community](https://community.datagrok.ai/t/extensions-to-the-scatter-plot-viewer/481)
-* Canceled previous commit fe4817c (commited by mistake)
+* Canceled previous commit fe4817c (committed by mistake)
 * JS API: textual descriptions of currently applied filters (RowList.filters)
 * Create Custom-Machine-Learning.md
 * (Bug) Grid: Sometimes the horizontal scroll bar does not show
@@ -4947,7 +4947,7 @@ presenting a few new of them:
 * Fix a typo
 * Prefix a CSS class
 * Prefix for the link-external class
-* Package Content Validation: allow refering to the common directory
+* Package Content Validation: allow referring to the common directory
 * Sequence Translator: enumerate translated sequences with unique IDs, linked to pattern name
 * RepertoireBrowser: tree dashboard
 * (Bug) Add new column: Strings in functions cannot be enclosed in single quotes
@@ -5018,7 +5018,7 @@ presenting a few new of them:
 * Clinical Case: Timelines View (WIP)
 * Clinical Case: Patient Profile View (WIP)
 * Removed devops position
-* Timelines: remove the additional visulization in favor of MultiPlot
+* Timelines: remove the additional visualization in favor of MultiPlot
 * (Bug) Functions View: Click on the selected category does not remove the check mark
 * Updated copyright messages.
 * JS: grok.functions.call should return JS object for multiple output parameters
@@ -6233,7 +6233,7 @@ improvements, many new features, and new APIs for developers. Here are some of t
 * Package: Chembl Browser (WIP)
 * \* bumped RDKit_minimal version number to 2021.03_05 \* simplified _molIsInMolBlock function to detect if the passed
   molString is a molblock and renamed to _isMolBlock \* now generate_aligned-coords will return the matched substructure
-  JSON if successful and empty string if not, so no need to to call get_substruct_match beforehand \* get_new_coords is
+  JSON if successful and empty string if not, so no need to call get_substruct_match beforehand \* get_new_coords is
   used to generate new coordinates rather than roundtripping through SMILES. This is more efficient and ensures that
   CoordGen is used for coordinate generation
 * delete the Wasm object before reassignment
@@ -6372,7 +6372,7 @@ improvements, many new features, and new APIs for developers. Here are some of t
 * Reflect the change in event naming onRowsResized
 * added TS API Grid::onRowsResized()
 * Internal docs: public API autogenerated files.
-* Cosmetics changes, addd new line between functions
+* Cosmetics changes, added new line between functions
 * GROK: CDR3 regions added to sequence view
 * cosmetics
 * (Bug) Box Plot \- marker size becomes too small, impossible to show tooltips on hi-res display
@@ -7211,7 +7211,7 @@ Histogram: [duplicated Y axis](https://community.datagrok.ai/t/cannot-easily-cha
 *
   * bumped RDKit_minimal version number to 2021.03_05 * simplified _molIsInMolBlock function to detect if the passed
     molString is a molblock and renamed to _isMolBlock * now generate_aligned-coords will return the matched
-    substructure JSON if successful and empty string if not, so no need to to call get_substruct_match beforehand *
+    substructure JSON if successful and empty string if not, so no need to call get_substruct_match beforehand *
     get_new_coords is used to generate new coordinates rather than roundtripping through SMILES. This is more
     efficient and ensures that CoordGen is used for coordinate generation
 * delete the Wasm object before reassignment

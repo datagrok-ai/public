@@ -2612,7 +2612,7 @@ We've added `Qnum` to supported column types and fixed the issue with the execut
 
 * Improvements:
   * Introduced a new feature for application developers. Now you can [place hints](https://community.datagrok.ai/t/javascript-api-updates/526/21) for users in the form of indicators, and popups, as well as describe a series of visual components in the wizard.  UI methods now come equipped with interactive hints, similar to those found in tutorials, that can be attached to various elements. With the addition of these methods, application authors are able to incorporate interactive hints in their app code, allowing them to introduce new features to their users, among other things.
-  * To work with custom filters, we've added `.custom-filter-type` and `.ignore-custom-filter` tags . See [column tags](../../visualize/viewers/filters.md#column-tags) to learn more.
+  * To work with custom filters, we've added `.custom-filter-type` and `.ignore-custom-filter` tags. See [column tags](../../visualize/viewers/filters.md#column-tags) to learn more.
   * Provided `typeAhead`, `dropDown` and `breadcrumbs` controls for the platform.
   * Implemented the capability to export graphics of scatter plot to JS API. You can now render scatter plot viewer to an arbitrary graphics context using JS API. Basically, we've made a viewer that works directly with the cell renderer. This means you can now show cells as viewers and manipulate them in other ways too.
   * Added classes for form viewers in the API: `Form` and `FormViewer`.
@@ -3659,7 +3659,7 @@ We've merged package **Viewers** to **Charts**, removed obsolete viewers, and re
 * JS UI Test: Fingerprints
 * bio lib: Fixed phylocanvas.gl and deck.gl versions
 * Issue #1123: RadarViewer. Add tests for the updated functionality WIP
-* Library gridext: Fixed an issue the the duplicated Grid row header
+* Library gridext: Fixed an issue with the duplicated Grid row header
 * Packages PowerGrid: Bumped up the version of the dependency library gridext
 * Bio: cell.renderer #1120: sequence Add property to highlight common
 * JS UI Test: Groups
@@ -3814,9 +3814,9 @@ We've merged package **Viewers** to **Charts**, removed obsolete viewers, and re
 * Bio: ADMET python venv requirements
 * Charts: version bump
 * Helm: fixed freezing in substructure filter
-* Chem: modified Chem space to call dimentionality reduce results from Bio
+* Chem: modified Chem space to call dimensionality reduce results from Bio
 * Bio: sequence space on fingerprints
-* GIS: detectors sampling of cathegories
+* GIS: detectors sampling of categories
 * GIS: code optimised, some TODO's removed
 * 709 dont close filters menu, just reset them
 * Context menu commands: update conditions for JsViewers
@@ -7558,9 +7558,9 @@ We've merged package **Viewers** to **Charts**, removed obsolete viewers, and re
 * Packages manager WIP Some styling
 * Closes #655: Grid: No auto new line when editing and '+' available
 * Exclude broken integration tests
-* Datagrok incapsulated grok connect
+* Datagrok encapsulated grok connect
 * Packages: context menu improvements (WIP)
-*  695: style paramter for range slider
+*  695: style parameter for range slider
 * Packages: Package install fail timeout
 * Packages: fixed exception on packages without repository
 * PackagesClient.deletePublished

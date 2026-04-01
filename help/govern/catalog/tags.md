@@ -118,7 +118,7 @@ Applicable to tables. Contains comma-separated list of column names to be used a
 ## .row.group.tooltip
 
 JSON-serialized settings of the viewer that is used to visualize a group of rows on a tooltip. It is shown when user
-moves the cursor over the area that represents multiple rows (such a a histogram bin, or a pie chart pie). Applicable to
+moves the cursor over the area that represents multiple rows (such as a histogram bin, or a pie chart pie). Applicable to
 tables.
 
 ## .semantic-detection-duration

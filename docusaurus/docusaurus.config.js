@@ -123,7 +123,7 @@ const config = {
                     editUrl: 'https://github.com/datagrok-ai/public/tree/master/help',
                     path: '../help',
                     routeBasePath: 'help',
-                    exclude: ['**/_*/**', '_*/**', '**/_*', '**/*-test.md'],
+                    exclude: ['**/_*/**', '_*/**', '**/_*', '**/*-test.md', '**/CLAUDE.md', '**/.claude/**'],
                 },
                 googleTagManager: {
                     containerId: 'GTM-PV25ZPW',

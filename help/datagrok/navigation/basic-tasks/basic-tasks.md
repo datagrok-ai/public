@@ -51,7 +51,7 @@ To save:
 1. At the top of your screen, click the **SAVE** button top open the **Save project** dialog.
 1. In the dialog:
    * **For new entities**: Enter a name and, optionally, a
-      description for your project. By default, mew entities are saved to your personal project under **My stuff**. 
+      description for your project. By default, new entities are saved to your personal project under **My stuff**. 
    * **For existing (modified) entities**: Remove any tables you don't want to save. By default, all open tables are included. Select one of the following: 
           * **Save original project**: Updates the original project.
           * **Save a copy**: Useful when you want to edit the project, but don't have the privilege to modify the original one. If you choose this option, you must also decide what happens to each table included in your new project:

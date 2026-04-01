@@ -111,7 +111,7 @@ in the **Context Panel**.
 
 Subject to permissions, you can:
 
-* Change the column's properties (e.g., it's data type or [cell renderer](#cell-renderers))
+* Change the column's properties (e.g., its data type or [cell renderer](#cell-renderers))
 * Customize the column's appearance or behavior (e.g., change the cell's format, color-code values, pin rows, etc.) 
 * Specify who can edit a column. Users without edit permissions will receive a notification when attempting to edit a restricted column.
 

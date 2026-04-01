@@ -226,7 +226,7 @@ Using **Browse**, you can explore relational databases by viewing their schemas,
 </TabItem>
 <TabItem value="apps" label="Apps">
 
-Clicking an app opens an app-specific view, which can be it's landing view or a README.
+Clicking an app opens an app-specific view, which can be its landing view or a README.
 
 ![](img/browse-view-apps.gif)
 

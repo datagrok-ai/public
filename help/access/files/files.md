@@ -227,7 +227,7 @@ and renders the structure graphically.
 
 The [Context Panel](../../datagrok/navigation/panels/panels.md#context-panel)
 provides additional information about a selected file or folder, and the ability
-to execute conext actions. For example, when you click a CSV file, the **Context
+to execute context actions. For example, when you click a CSV file, the **Context
 Panel** updates to show the file's metadata, available context actions, and
 other relevant information. If you subsequently click any of the dataframe's
 columns in the **Preview**, the **Context Panel** will update to display
@@ -263,7 +263,7 @@ displays the augmented file preview and the number of detected cell segments.
 Similarly to [database queries](../databases/databases.md#creating-dynamic-dashboards-for-query-results),
 you can create and publish dashboards with a file as a data source. This file
 is re-read each time a dashboard is open (see also [caching](#caching)), providing you
-up-to-data data.
+up-to-date data.
 
 To create a dashboard with a file as a data source:
 
