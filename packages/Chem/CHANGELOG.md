@@ -1,5 +1,9 @@
 # Chem changelog
 
+## v.next
+
+* Fixed crash in checkCurrentView when table is opened in Files preview without a registered TableView
+
 ## 1.17.4 (2026-03-30)
 
 * [#3708](https://github.com/datagrok-ai/public/issues/3708): Chem: Chemical space: Add tags on columns with embeddings
