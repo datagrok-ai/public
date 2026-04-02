@@ -353,7 +353,7 @@ export function openStudy(treeNode: DG.TreeViewGroup,
       currentViewName = SUMMARY_VIEW_NAME;
     studies[currentStudyName].currentViewName = currentViewName;
     studies[currentStudyName].changeViewToSummary = false;
-    if (treeNode.currentItem !== studyNode)
+    if (treeNode.currentItem !== studyNode || currentOpenedView?.name === 'Preclinical Case')
       treeNode.currentItem = studyNode;
     if (studyNode.expanded)
       openStudyNode(studies[currentStudyName], studyNode, currentViewName);

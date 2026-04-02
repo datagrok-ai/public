@@ -5,6 +5,7 @@ import dayjs from 'dayjs';
 import {SEX, SUBJECT_ID, TSPARMCD, TSVAL, TSPARM} from '../constants/columns-constants';
 import {removeExtension} from '../utils/utils';
 import {studies} from '../utils/app-utils';
+import {_package} from '../package';
 
 const STUDY_OVERVIEW_CODES = new Set([
   'SPECIES', 'STRAIN', 'SSTYP', 'SDESIGN', 'PLESSION',
@@ -31,6 +32,7 @@ export class StudySummaryView extends DG.ViewBase {
     this.name = name;
     this.studyId = studyId;
     this.path = '/summary';
+    this.helpUrl = `${_package.webRoot}/views_help/summary.md`;
     if (errorLinkHandler)
       this.validationErrorLinkHandler = errorLinkHandler;
   }
