@@ -523,7 +523,7 @@ export function buildSecondaryStructurePane(ss: PdbSecondaryStructure): HTMLElem
     map['Strands by Chain'] = Object.entries(sheetByChain)
       .map(([c, n]) => `${c}: ${n}`).join(', ');
   }
-  return ui.tableFromMap(map);
+  return ui.tableFromMap(map, true);
 }
 
 /** Build Modified Residues accordion content with optional 2D visualization. */
@@ -539,7 +539,7 @@ export function buildModifiedResiduesPane(mods: PdbModifiedResidue[], fetch2D: b
       map['Position'] = mod.resSeq.toString();
       if (mod.comment)
         map['Description'] = mod.comment;
-      const modParts: HTMLElement[] = [ui.tableFromMap(map)];
+      const modParts: HTMLElement[] = [ui.tableFromMap(map, true)];
 
       if (fetch2D) {
         const molHost = ui.div([ui.loader()]);

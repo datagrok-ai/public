@@ -68,7 +68,7 @@ export async function pdbInfoWidget(pdbId: string): Promise<DG.Widget> {
     if (pdbInfo?.chains)
       basicMap['Chains'] = pdbInfo.chains.join(', ');
 
-    const basicTable = ui.divV([ui.h2('General'), ui.tableFromMap(basicMap)]);
+    const basicTable = ui.divV([ui.h2('General'), ui.tableFromMap(basicMap, true)]);
 
     // -- Accordion for subsections --
     const acc = DG.Accordion.create('pdb-id-info');
@@ -91,7 +91,7 @@ export async function pdbInfoWidget(pdbId: string): Promise<DG.Widget> {
           map['Release Date'] = info.releaseDate;
         if (info.revisionDate)
           map['Revision Date'] = info.revisionDate;
-        return ui.tableFromMap(map);
+        return ui.tableFromMap(map, true);
       }, false);
     }
 
@@ -115,7 +115,7 @@ export async function pdbInfoWidget(pdbId: string): Promise<DG.Widget> {
             () => window.open(`https://pubmed.ncbi.nlm.nih.gov/${info.citation!.pubmedId}`),
           );
         }
-        const container = ui.divV([ui.tableFromMap(citMap)]);
+        const container = ui.divV([ui.tableFromMap(citMap, true)]);
 
         // Fetch abstract asynchronously if PubMed ID is available
         if (info.citation!.pubmedId) {
@@ -181,7 +181,7 @@ export async function pdbInfoWidget(pdbId: string): Promise<DG.Widget> {
                 ui.link(id, () => window.open(`https://www.uniprot.org/uniprot/${id}`)),
               ));
             }
-            return ui.tableFromMap(map);
+            return ui.tableFromMap(map, true);
           }, false);
         }
         return innerAcc.root;
@@ -213,7 +213,7 @@ export async function pdbInfoWidget(pdbId: string): Promise<DG.Widget> {
                 map[ba.type] = `${ba.value} ${ba.unit}`;
             }
 
-            const parts: HTMLElement[] = [ui.tableFromMap(map)];
+            const parts: HTMLElement[] = [ui.tableFromMap(map, true)];
 
             // 2D structure
             if (ne.smiles)

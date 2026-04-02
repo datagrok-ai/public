@@ -42,7 +42,7 @@ export function pdbFileInfoWidget(pdbText: string): DG.Widget {
   if (Object.keys(basicMap).length === 0)
     return new DG.Widget(ui.divText('No header information available'));
 
-  const basicTable = ui.divV([ui.h2('General'), ui.tableFromMap(basicMap)]);
+  const basicTable = ui.divV([ui.h2('General'), ui.tableFromMap(basicMap, true)]);
 
   // -- Accordion for subsections --
   const acc = DG.Accordion.create('pdb-file-info');
@@ -58,7 +58,7 @@ export function pdbFileInfoWidget(pdbText: string): DG.Widget {
         map['R-factor'] = info.rFactor.toFixed(3);
       if (info.disulfideBondCount != null)
         map['Disulfide Bonds'] = info.disulfideBondCount.toString();
-      return ui.tableFromMap(map);
+      return ui.tableFromMap(map, true);
     }, false);
   }
 
@@ -82,7 +82,7 @@ export function pdbFileInfoWidget(pdbText: string): DG.Widget {
           () => window.open(`https://pubmed.ncbi.nlm.nih.gov/${info.citation!.pmid}`),
         );
       }
-      return ui.tableFromMap(citMap);
+      return ui.tableFromMap(citMap, true);
     }, false);
   }
 
@@ -116,7 +116,7 @@ export function pdbFileInfoWidget(pdbText: string): DG.Widget {
             if (entityMuts.length > 0)
               map['Mutation(s)'] = entityMuts.map((m) => m.description).join(', ');
           }
-          return ui.tableFromMap(map);
+          return ui.tableFromMap(map, true);
         }, false);
       }
       return innerAcc.root;
@@ -146,20 +146,20 @@ export function pdbFileInfoWidget(pdbText: string): DG.Widget {
           if (isRcsb) {
             const molHost = ui.div([ui.loader()]);
             parts.push(molHost);
-            tableHost.appendChild(ui.tableFromMap(map));
+            tableHost.appendChild(ui.tableFromMap(map, true));
             fetchLigandSmiles([lig.id]).then((smilesMap) => {
               const smiles = smilesMap[lig.id];
               if (smiles) {
                 map['SMILES'] = smiles;
                 tableHost.innerHTML = '';
-                tableHost.appendChild(ui.tableFromMap(map));
+                tableHost.appendChild(ui.tableFromMap(map, true));
                 molHost.innerHTML = '';
                 molHost.appendChild(grok.chem.drawMolecule(smiles, 250, 200));
               } else
                 molHost.innerHTML = '';
             });
           } else
-            tableHost.appendChild(ui.tableFromMap(map));
+            tableHost.appendChild(ui.tableFromMap(map, true));
 
 
           return ui.divV(parts);
