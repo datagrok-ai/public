@@ -21,6 +21,7 @@ import {PluginStateObject} from 'molstar/lib/mol-plugin-state/objects';
 import {Sequence} from 'molstar/lib/mol-model/sequence';
 import {Pdbqt} from './pdbqt-parser';
 import {IMPORT} from '../consts-import';
+import {parsePdbHeaders, PdbHeaderInfo} from './pdb-parser';
 
 
 /** {@link https://molstar.org/docs/plugin/#plugincontext-without-built-in-react-ui} */
@@ -102,6 +103,13 @@ export class PdbHelper implements IPdbHelper {
   protected async init(): Promise<void> {
     this.plugin = new PluginContext(MolstarPluginSpec);
     await this.plugin.init();
+  }
+
+  /** Parse PDB file header metadata (TITLE, SOURCE, JRNL, SITE, etc.)
+   *  Complementary to Molstar's parser which handles coordinates/sequences
+   *  but not header metadata. */
+  static parseHeaders(pdbStr: string): PdbHeaderInfo {
+    return parsePdbHeaders(pdbStr);
   }
 
   async pdbToDf(pdbStr: string, _name: string): Promise<PdbResDataFrameType> {
