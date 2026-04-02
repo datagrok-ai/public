@@ -10,10 +10,12 @@ import * as ui from 'datagrok-api/ui';
 import {FitGridCellHandler, calculateSeriesStats, getChartDataAggrStats} from './fit/fit-grid-cell-handler';
 import {getOrCreateParsedChartData, substituteZeroes} from './fit/fit-renderer';
 import {curveDemo} from './fit/fit-demo';
-import {convertXMLToIFitChartData} from './fit/fit-parser';
+import {convertXmlCurveToJson} from './fit/converters/xml-converter';
+import {convertCompactDrToJson} from './fit/converters/compact-dr-converter';
+import {convertPzfxToJson} from './fit/converters/pzfx-converter';
+import {registerCurveConverter, initExternalConverters} from './fit/curve-converter';
 import {LogOptions} from '@datagrok-libraries/statistics/src/fit/fit-data';
 import {FitStatistics} from '@datagrok-libraries/statistics/src/fit/fit-curve';
-import {FitConstants} from '@datagrok-libraries/statistics/src/fit/const';
 
 // import {PlateWidget} from './plate/plate-widget';
 
@@ -61,8 +63,14 @@ export class PackageFunctions {
   // }
 
   @grok.decorators.init()
-  static _initCurves(): void {
+  static async _initCurves(): Promise<void> {
     DG.ObjectHandler.register(new FitGridCellHandler());
+    // Register local converters by format name (avoids circular dependency with DG.Func.find)
+    registerCurveConverter('3dx', convertXmlCurveToJson);
+    registerCurveConverter('compact-dr', convertCompactDrToJson);
+    registerCurveConverter('pzfx', convertPzfxToJson);
+    // Discover converters from external packages (skips already-registered local ones)
+    await initExternalConverters();
   }
 
   @grok.decorators.func()
@@ -124,8 +132,7 @@ export class PackageFunctions {
         const cell = df.cell(i, sourceColName);
         if (!cell || !cell.value)
           return null;
-        const chartData = cell.column.getTag(FitConstants.TAG_FIT_CHART_FORMAT) === FitConstants.TAG_FIT_CHART_FORMAT_3DX ?
-          convertXMLToIFitChartData(cell.value) : getOrCreateParsedChartData(cell, true); // false because there is no dataframe
+        const chartData = getOrCreateParsedChartData(cell, true);
         if (chartData.series![seriesNumber] === undefined || chartData.series![seriesNumber].points.every((p) => p.outlier))
           return null;
         if (chartData.chartOptions?.allowXZeroes && chartData.chartOptions?.logX &&
@@ -155,9 +162,7 @@ export class PackageFunctions {
         const cell = df.cell(i, colName);
         if (!cell || !cell.value)
           return null;
-        const chartData =
-          cell.column.getTag(FitConstants.TAG_FIT_CHART_FORMAT) === FitConstants.TAG_FIT_CHART_FORMAT_3DX ?
-            convertXMLToIFitChartData(cell.value) : getOrCreateParsedChartData(cell);
+        const chartData = getOrCreateParsedChartData(cell);
         if (chartData.series?.every((series) => series.points.every((p) => p.outlier)))
           return null;
         if (chartData.chartOptions?.allowXZeroes && chartData.chartOptions?.logX &&
@@ -168,6 +173,21 @@ export class PackageFunctions {
       });
     df.columns.insert(column, df.columns.names().indexOf(colName) + 1);
     return column;
+  }
+
+  @grok.decorators.func({description: 'Returns XML 3DX curve converter function', meta: {role: 'curveConverter', curveFormat: '3dx'}})
+  static convertXmlCurveToJsonFunc(): (value: string) => string {
+    return convertXmlCurveToJson;
+  }
+
+  @grok.decorators.func({description: 'Returns compact dose-response JSON converter function', meta: {role: 'curveConverter', curveFormat: 'compact-dr'}})
+  static convertCompactDrToJsonFunc(): (value: string) => string {
+    return convertCompactDrToJson;
+  }
+
+  @grok.decorators.func({description: 'Returns PZFX curve converter function', meta: {role: 'curveConverter', curveFormat: 'pzfx'}})
+  static convertPzfxToJsonFunc(): (value: string) => string {
+    return convertPzfxToJson;
   }
 
   @grok.decorators.fileViewer({fileViewer: 'pzfx'})

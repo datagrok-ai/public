@@ -3,6 +3,7 @@ import {IFitSeries} from './fit-curve';
 export class FitConstants {
   static TAG_FIT_CHART_FORMAT = '.fitChartFormat';
   static TAG_FIT_CHART_FORMAT_3DX = '3dx';
+  static TAG_CURVE_FORMAT = '.%curve-format';
   static FIT_SEM_TYPE = 'fit';
   static FIT_CELL_TYPE = 'fit';
   static TAG_FIT = '.fit';

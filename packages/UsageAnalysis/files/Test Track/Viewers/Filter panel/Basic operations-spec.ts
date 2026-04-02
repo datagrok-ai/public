@@ -1,9 +1,9 @@
-// @verified — passed on dev 2026-03-26. Do not overwrite.
 import {test, expect, Page} from '@playwright/test';
 
 async function login(page: Page) {
-  await page.goto('/?selenium=true');
+  await page.goto('/');
   await page.locator('[name="Browse"]').waitFor({timeout: 120000});
+  await page.evaluate(() => { document.body.classList.add('selenium'); grok.shell.settings.showFiltersIconsConstantly = true; });
   await waitForPlatform(page);
 }
 
