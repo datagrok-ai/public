@@ -278,7 +278,7 @@ export class TreeHelper implements ITreeHelper {
 
     const dataDf: DG.DataFrame = grid.dataFrame;
     if (!dataDf)
-      throw new Error('DataFrame wasn\'t found');
+      return [tree!, []];
 
     const missedDataNodeList: string[] = [];
     const missedTreeLeafList: string[] = [];

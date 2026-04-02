@@ -1,5 +1,9 @@
 # Dendrogram changelog
 
+## v.next
+
+* Fixed crash in setGridOrder when grid DataFrame is detached during view navigation
+
 ## 1.4.8 (2026-02-03)
 
 * Horizontal zooming of dendrogram with mouse wheel and pinch gesture.
