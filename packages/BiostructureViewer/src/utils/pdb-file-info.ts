@@ -45,7 +45,7 @@ export function pdbFileInfoWidget(pdbText: string): DG.Widget {
   const basicTable = ui.divV([ui.h2('General'), ui.tableFromMap(basicMap)]);
 
   // -- Accordion for subsections --
-  const acc = DG.Accordion.create();
+  const acc = DG.Accordion.create('pdb-file-info');
 
   // -- Structure Details --
   const hasDetails = info.rFactor != null || info.disulfideBondCount != null || info.depositDate;
@@ -89,7 +89,7 @@ export function pdbFileInfoWidget(pdbText: string): DG.Widget {
   // -- Macromolecules --
   if (info.entities && info.entities.length > 0) {
     acc.addCountPane('Macromolecules', () => {
-      const innerAcc = DG.Accordion.create();
+      const innerAcc = DG.Accordion.create('pdb-file-macromolecules');
       for (const entity of info.entities!) {
         const label = `Entity ${entity.molId}` + (entity.molecule ? `: ${entity.molecule}` : '');
         innerAcc.addPane(label, () => {
@@ -129,7 +129,7 @@ export function pdbFileInfoWidget(pdbText: string): DG.Widget {
   // -- Small Molecules (Ligands) --
   if (info.ligands && info.ligands.length > 0) {
     acc.addCountPane('Small Molecules', () => {
-      const innerAcc = DG.Accordion.create();
+      const innerAcc = DG.Accordion.create('pdb-file-small-molecules');
       for (const lig of info.ligands!) {
         innerAcc.addPane(lig.id, () => {
           const map: {[key: string]: any} = {};

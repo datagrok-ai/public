@@ -495,7 +495,7 @@ export async function fetchLigandSmiles(compIds: string[]): Promise<{[compId: st
 
 /** Build Binding Sites accordion content from parsed SITE records. */
 export function buildBindingSitesPane(sites: PdbSite[]): HTMLElement {
-  const innerAcc = DG.Accordion.create();
+  const innerAcc = DG.Accordion.create('pdb-binding-sites');
   for (const site of sites) {
     innerAcc.addPane(site.name, () => {
       return ui.divText(site.residues.join(', '));
@@ -528,7 +528,7 @@ export function buildSecondaryStructurePane(ss: PdbSecondaryStructure): HTMLElem
 
 /** Build Modified Residues accordion content with optional 2D visualization. */
 export function buildModifiedResiduesPane(mods: PdbModifiedResidue[], fetch2D: boolean): HTMLElement {
-  const innerAcc = DG.Accordion.create();
+  const innerAcc = DG.Accordion.create('pdb-modified-residues');
   for (const mod of mods) {
     const label = `${mod.resName} ${mod.chain}${mod.resSeq}`;
     innerAcc.addPane(label, () => {
@@ -565,7 +565,7 @@ export function buildMissingResiduesPane(missingResidues: PdbMissingResidue[]): 
     if (!byChain[mr.chain]) byChain[mr.chain] = [];
     byChain[mr.chain].push({resName: mr.resName, resSeq: mr.resSeq});
   }
-  const innerAcc = DG.Accordion.create();
+  const innerAcc = DG.Accordion.create('pdb-missing-residues');
   for (const [chain, residues] of Object.entries(byChain)) {
     innerAcc.addCountPane(`Chain ${chain}`, () => {
       residues.sort((a, b) => a.resSeq - b.resSeq);

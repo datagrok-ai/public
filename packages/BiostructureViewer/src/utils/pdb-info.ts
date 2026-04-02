@@ -71,7 +71,7 @@ export async function pdbInfoWidget(pdbId: string): Promise<DG.Widget> {
     const basicTable = ui.divV([ui.h2('General'), ui.tableFromMap(basicMap)]);
 
     // -- Accordion for subsections --
-    const acc = DG.Accordion.create();
+    const acc = DG.Accordion.create('pdb-id-info');
 
     // -- Structure Details --
     const hasDetails = info.molecularWeight != null || info.atomCount != null ||
@@ -145,7 +145,7 @@ export async function pdbInfoWidget(pdbId: string): Promise<DG.Widget> {
     // -- Macromolecules --
     if (info.polymerEntities && info.polymerEntities.length > 0) {
       acc.addCountPane('Macromolecules', () => {
-        const innerAcc = DG.Accordion.create();
+        const innerAcc = DG.Accordion.create('pdb-id-macromolecules');
         for (const pe of info.polymerEntities!) {
           const label = `Entity ${pe.entityId}` + (pe.description ? `: ${pe.description}` : '');
           innerAcc.addPane(label, () => {
@@ -191,7 +191,7 @@ export async function pdbInfoWidget(pdbId: string): Promise<DG.Widget> {
     // -- Small Molecules --
     if (info.nonpolymerEntities && info.nonpolymerEntities.length > 0) {
       acc.addCountPane('Small Molecules', () => {
-        const innerAcc = DG.Accordion.create();
+        const innerAcc = DG.Accordion.create('pdb-id-small-molecules');
         for (const ne of info.nonpolymerEntities!) {
           innerAcc.addPane(ne.compId, () => {
             const map: {[key: string]: any} = {};
