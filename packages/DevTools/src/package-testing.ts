@@ -74,6 +74,7 @@ export class TestManager extends DG.ViewBase {
   selectedNode: DG.TreeViewGroup | DG.TreeViewNode;
   nodeDict: { [id: string]: any } = {};
   runSkippedMode = false;
+  keepViewsOpen = false;
   tree: DG.TreeViewGroup;
   ribbonPanelDiv = undefined;
   dockLeft?: boolean;
@@ -371,6 +372,10 @@ export class TestManager extends DG.ViewBase {
           .item(`${this.runSkippedMode ? '✓ ' : ''}Run skipped`, () => {
             this.runSkippedMode = !this.runSkippedMode;
             refresh();
+          })
+          .item(`${this.keepViewsOpen ? '✓ ' : ''}Keep views open`, () => {
+            this.keepViewsOpen = !this.keepViewsOpen;
+            refresh();
           });
       };
       refresh();
@@ -496,7 +501,7 @@ export class TestManager extends DG.ViewBase {
         `${t.packageName}:test`, {
           'category': t.test.category,
           'test': t.test.name,
-          'testContext': new TestContext(false),
+          'testContext': Object.assign(new TestContext(false), {closeAll: !this.keepViewsOpen}),
         });
       if (res.getCol('result').type !== 'string')
         res.changeColumnType('result', 'string');
