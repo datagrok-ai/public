@@ -24,6 +24,8 @@ import {NglViewer} from './viewers/ngl-viewer';
 import {NglViewerApp} from './apps/ngl-viewer-app';
 import {PdbHelper, PdbResDataFrame} from './utils/pdb-helper';
 import {nglWidgetUI} from './viewers/ngl-ui';
+import {pdbInfoWidget} from './utils/pdb-info';
+import {pdbFileInfoWidget} from './utils/pdb-file-info';
 import {dockingDemoApp} from './demo/docking';
 import {biostructureInGridApp} from './demo/biostructure-in-grid';
 import {BiotrackViewerApp} from './apps/biotrack-viewer-app';
@@ -215,6 +217,15 @@ export class PackageFunctions {
     @grok.decorators.param({options: {semType: 'PDB_ID'}}) pdbId: string
   ): DG.Widget {
     return nglWidgetUI(pdbId);
+  }
+
+  @grok.decorators.panel({
+    name: 'PDB Information',
+  })
+  static async pdbInfoPanel(
+    @grok.decorators.param({options: {semType: 'PDB_ID'}}) pdbId: string
+  ): Promise<DG.Widget> {
+    return await pdbInfoWidget(pdbId);
   }
 
   // -- Test apps --
@@ -752,6 +763,15 @@ export class PackageFunctions {
       }
     });
     return widget;
+  }
+
+  @grok.decorators.panel({
+    name: 'PDB Information',
+  })
+  static pdbFileInfoPanel(
+    @grok.decorators.param({options: {semType: 'Molecule3D'}}) molecule: DG.SemanticValue
+  ): DG.Widget {
+    return pdbFileInfoWidget(molecule.value);
   }
 
   @grok.decorators.func({
