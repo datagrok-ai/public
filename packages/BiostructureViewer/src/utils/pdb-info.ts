@@ -19,6 +19,38 @@ async function fetchPdbFileHeaders(pdbId: string): Promise<PdbHeaderInfo | undef
   }
 }
 
+/** Fetch SMILES for compound IDs from RCSB Chemical Component Dictionary. */
+async function fetchLigandSmiles(compIds: string[]): Promise<{[compId: string]: string}> {
+  const query = `{
+    chem_comps(comp_ids: [${compIds.map((id) => `"${id}"`).join(', ')}]) {
+      rcsb_id
+      rcsb_chem_comp_descriptor {
+        SMILES_stereo
+        SMILES
+      }
+    }
+  }`;
+  try {
+    const resp = await grok.dapi.fetchProxy('https://data.rcsb.org/graphql', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({query}),
+    });
+    if (!resp.ok) return {};
+    const data = await resp.json();
+    const result: {[compId: string]: string} = {};
+    for (const comp of data.data?.chem_comps ?? []) {
+      const smiles = comp.rcsb_chem_comp_descriptor?.SMILES_stereo ??
+        comp.rcsb_chem_comp_descriptor?.SMILES;
+      if (smiles)
+        result[comp.rcsb_id] = smiles;
+    }
+    return result;
+  } catch {
+    return {};
+  }
+}
+
 /** Fetch abstract text from PubMed using the E-utilities API. */
 async function fetchPubMedAbstract(pmid: number): Promise<string | undefined> {
   try {
@@ -314,7 +346,19 @@ export async function pdbInfoWidget(pdbId: string): Promise<DG.Widget> {
             map['Position'] = mod.resSeq.toString();
             if (mod.comment)
               map['Description'] = mod.comment;
-            return ui.tableFromMap(map);
+            const modParts: HTMLElement[] = [ui.tableFromMap(map)];
+
+            // Fetch 2D structure from RCSB
+            const molHost = ui.div([ui.loader()]);
+            modParts.push(molHost);
+            fetchLigandSmiles([mod.resName]).then((smilesMap) => {
+              molHost.innerHTML = '';
+              const smiles = smilesMap[mod.resName];
+              if (smiles)
+                molHost.appendChild(grok.chem.drawMolecule(smiles, 250, 200));
+            });
+
+            return ui.divV(modParts);
           }, false);
         }
         return innerAcc.root;

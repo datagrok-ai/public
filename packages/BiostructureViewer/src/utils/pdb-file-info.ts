@@ -191,11 +191,11 @@ export function pdbFileInfoWidget(pdbText: string): DG.Widget {
     }, () => info.entities!.length, false);
   }
 
+  // Determine if this is an RCSB PDB (has valid 4-char PDB ID) for SMILES fetching
+  const isRcsb = !!(info.pdbId && /^[A-Za-z0-9]{4}$/.test(info.pdbId));
+
   // -- Small Molecules (Ligands) --
   if (info.ligands && info.ligands.length > 0) {
-    // Determine if this is an RCSB PDB (has valid 4-char PDB ID) for SMILES fetching
-    const isRcsb = !!(info.pdbId && /^[A-Za-z0-9]{4}$/.test(info.pdbId));
-
     acc.addCountPane('Small Molecules', () => {
       const innerAcc = DG.Accordion.create();
       for (const lig of info.ligands!) {
@@ -290,7 +290,21 @@ export function pdbFileInfoWidget(pdbText: string): DG.Widget {
           map['Position'] = mod.resSeq.toString();
           if (mod.comment)
             map['Description'] = mod.comment;
-          return ui.tableFromMap(map);
+          const modParts: HTMLElement[] = [ui.tableFromMap(map)];
+
+          // Fetch 2D structure from RCSB if this is a standard PDB
+          if (isRcsb) {
+            const molHost = ui.div([ui.loader()]);
+            modParts.push(molHost);
+            fetchLigandSmiles([mod.resName]).then((smilesMap) => {
+              molHost.innerHTML = '';
+              const smiles = smilesMap[mod.resName];
+              if (smiles)
+                molHost.appendChild(grok.chem.drawMolecule(smiles, 250, 200));
+            });
+          }
+
+          return ui.divV(modParts);
         }, false);
       }
       return innerAcc.root;

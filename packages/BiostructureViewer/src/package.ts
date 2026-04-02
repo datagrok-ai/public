@@ -771,8 +771,7 @@ export class PackageFunctions {
   static pdbFileInfoPanel(
     @grok.decorators.param({options: {semType: 'Molecule3D'}}) molecule: DG.SemanticValue
   ): DG.Widget {
-    const pdbText: string = molecule.cell.column.get(molecule.cell.rowIndex);
-    return pdbFileInfoWidget(pdbText);
+    return pdbFileInfoWidget(molecule.value);
   }
 
   @grok.decorators.func({
