@@ -1,6 +1,17 @@
 # Curves changelog
 
+## 1.12.0 (2026-04-02)
+
+### Features
+
+* Added PZFX (GraphPad Prism) file viewer and handler
+* Added dynamically extendable format support
+
 ## 1.11.0 (2026-03-13)
+
+### Features
+
+* Added editable GridCellWidget support
 
 ## 1.10.15 (2025-12-02)
 
