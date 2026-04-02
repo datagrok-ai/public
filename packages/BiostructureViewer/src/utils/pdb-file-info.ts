@@ -152,7 +152,7 @@ export function pdbFileInfoWidget(pdbText: string): DG.Widget {
   }
 
   // Determine if this is an RCSB PDB (has valid 4-char PDB ID) for SMILES fetching
-  const isRcsb = !!(info.pdbId && /^[A-Za-z0-9]{4}$/.test(info.pdbId));
+  const isRcsb = !!(info.pdbId && /^\d[A-Za-z0-9]{3}$/.test(info.pdbId));
 
   // -- Small Molecules (Ligands) --
   if (info.ligands && info.ligands.length > 0) {

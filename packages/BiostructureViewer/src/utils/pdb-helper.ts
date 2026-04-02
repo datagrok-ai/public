@@ -352,7 +352,7 @@ export function parsePdbHeaders(pdbText: string): PdbHeaderInfo {
     const dateStr = headerLine.substring(50, 59).trim();
     if (dateStr && /\d{2}-[A-Z]{3}-\d{2}/.test(dateStr)) result.depositDate = dateStr;
     const pdbId = headerLine.substring(62, 66).trim();
-    if (pdbId && /^[A-Za-z0-9]{4}$/.test(pdbId)) result.pdbId = pdbId;
+    if (pdbId && /^\d[A-Za-z0-9]{3}$/.test(pdbId)) result.pdbId = pdbId;
   }
 
   // TITLE
