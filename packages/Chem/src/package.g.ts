@@ -2,23 +2,23 @@ import {PackageFunctions} from './package';
 import * as DG from 'datagrok-api/dg';
 
 //output: object module
-export function getRdKitModule(): any {
+export function getRdKitModule() : any {
   return PackageFunctions.getRdKitModule();
 }
 
 //input: string molString
 //output: object handler
-export function getMolFileHandler(molString: string): any {
+export function getMolFileHandler(molString: string) : any {
   return PackageFunctions.getMolFileHandler(molString);
 }
 
 //meta.role: init
-export async function init(): Promise<void> {
+export async function init() : Promise<void> {
   await PackageFunctions.init();
 }
 
 //meta.role: autostart
-export async function initChemAutostart(): Promise<void> {
+export async function initChemAutostart() : Promise<void> {
   await PackageFunctions.initChemAutostart();
 }
 
@@ -31,7 +31,7 @@ export async function initChemAutostart(): Promise<void> {
 //output: column result
 //meta.role: transform
 //top-menu: Chem | Transform | Recalculate Coordinates...
-export async function recalculateCoords(table: DG.DataFrame, molecules: DG.Column, method: string, join: boolean): Promise<any> {
+export async function recalculateCoords(table: DG.DataFrame, molecules: DG.Column, method: string, join: boolean) : Promise<any> {
   return await PackageFunctions.recalculateCoords(table, molecules, method, join);
 }
 
@@ -39,7 +39,7 @@ export async function recalculateCoords(table: DG.DataFrame, molecules: DG.Colum
 //input: column col { semType: Molecule }
 //output: widget result
 //meta.role: tooltip
-export async function chemTooltip(col: DG.Column): Promise<any> {
+export async function chemTooltip(col: DG.Column) : Promise<any> {
   return await PackageFunctions.chemTooltip(col);
 }
 
@@ -47,7 +47,7 @@ export async function chemTooltip(col: DG.Column): Promise<any> {
 //output: viewer result
 //meta.icon: files/icons/scaffold-tree-icon.svg
 //meta.role: viewer
-export function scaffoldTreeViewer(): any {
+export function scaffoldTreeViewer() : any {
   return PackageFunctions.scaffoldTreeViewer();
 }
 
@@ -58,7 +58,7 @@ export function scaffoldTreeViewer(): any {
 //meta.primaryFilter: true
 //meta.allowMultipleFiltersForColumn: false
 //meta.role: filter
-export function substructureFilter(): any {
+export function substructureFilter() : any {
   return PackageFunctions.substructureFilter();
 }
 
@@ -71,7 +71,7 @@ export function substructureFilter(): any {
 //input: string scaffoldMolString
 //input: object options { optional: true }
 //input: object renderingOptions { optional: true }
-export function canvasMol(x: number, y: number, w: number, h: number, canvas: any, molString: string, scaffoldMolString: any, options: any, renderingOptions: any): void {
+export function canvasMol(x: number, y: number, w: number, h: number, canvas: any, molString: string, scaffoldMolString: any, options: any, renderingOptions: any) : void {
   PackageFunctions.canvasMol(x, y, w, h, canvas, molString, scaffoldMolString, options, renderingOptions);
 }
 
@@ -80,19 +80,19 @@ export function canvasMol(x: number, y: number, w: number, h: number, canvas: an
 //input: int h { optional: true }
 //input: bool popupMenu { optional: true }
 //output: object canvas
-export function drawMolecule(molStr: string, w?: number, h?: number, popupMenu?: boolean): any {
+export function drawMolecule(molStr: string, w?: number, h?: number, popupMenu?: boolean) : any {
   return PackageFunctions.drawMolecule(molStr, w, h, popupMenu);
 }
 
 //input: string smiles { semType: Molecule }
 //output: double result
-export function getCLogP(smiles: string): number {
+export function getCLogP(smiles: string) : number {
   return PackageFunctions.getCLogP(smiles);
 }
 
 //output: grid_cell_renderer result
 //meta.chemRendererName: RDKit
-export async function rdKitCellRenderer(): Promise<any> {
+export async function rdKitCellRenderer() : Promise<any> {
   return await PackageFunctions.rdKitCellRenderer();
 }
 
@@ -100,7 +100,7 @@ export async function rdKitCellRenderer(): Promise<any> {
 //output: grid_cell_renderer result
 //meta.cellType: ChemicalReaction
 //meta.role: cellRenderer
-export async function rdKitReactionRenderer(): Promise<any> {
+export async function rdKitReactionRenderer() : Promise<any> {
   return await PackageFunctions.rdKitReactionRenderer();
 }
 
@@ -108,41 +108,41 @@ export async function rdKitReactionRenderer(): Promise<any> {
 //output: grid_cell_renderer result
 //meta.cellType: ChemicalMixture
 //meta.role: cellRenderer
-export async function rdKitMixtureRenderer(): Promise<any> {
+export async function rdKitMixtureRenderer() : Promise<any> {
   return await PackageFunctions.rdKitMixtureRenderer();
 }
 
 //output: grid_cell_renderer result
 //meta.cellType: Molecule
 //meta.role: cellRenderer
-export async function chemCellRenderer(): Promise<any> {
+export async function chemCellRenderer() : Promise<any> {
   return await PackageFunctions.chemCellRenderer();
 }
 
 //input: column molColumn { semType: Molecule }
 //output: column result
 //meta.vectorFunc: true
-export async function getMorganFingerprints(molColumn: DG.Column): Promise<any> {
+export async function getMorganFingerprints(molColumn: DG.Column) : Promise<any> {
   return await PackageFunctions.getMorganFingerprints(molColumn);
 }
 
 //input: string molString { semType: Molecule }
 //output: object fingerprintBitset { description: Fingerprints }
-export function getMorganFingerprint(molString: string): any {
+export function getMorganFingerprint(molString: string) : any {
   return PackageFunctions.getMorganFingerprint(molString);
 }
 
 //input: column molStringsColumn
 //input: string molString
 //output: dataframe result
-export async function getSimilarities(molStringsColumn: DG.Column, molString: string): Promise<any> {
+export async function getSimilarities(molStringsColumn: DG.Column, molString: string) : Promise<any> {
   return await PackageFunctions.getSimilarities(molStringsColumn, molString);
 }
 
 //input: column molStringsColumn
 //input: int limit
 //output: dataframe result
-export async function getDiversities(molStringsColumn: DG.Column, limit: number): Promise<any> {
+export async function getDiversities(molStringsColumn: DG.Column, limit: number) : Promise<any> {
   return await PackageFunctions.getDiversities(molStringsColumn, limit);
 }
 
@@ -151,7 +151,7 @@ export async function getDiversities(molStringsColumn: DG.Column, limit: number)
 //input: int limit
 //input: int cutoff
 //output: dataframe result
-export async function findSimilar(molStringsColumn: DG.Column, molString: string, limit: number, cutoff: number): Promise<any> {
+export async function findSimilar(molStringsColumn: DG.Column, molString: string, limit: number, cutoff: number) : Promise<any> {
   return await PackageFunctions.findSimilar(molStringsColumn, molString, limit, cutoff);
 }
 
@@ -159,13 +159,13 @@ export async function findSimilar(molStringsColumn: DG.Column, molString: string
 //input: string molString
 //input: string molBlockFailover
 //output: column result
-export async function searchSubstructure(molStringsColumn: DG.Column, molString: string, molBlockFailover: string): Promise<any> {
+export async function searchSubstructure(molStringsColumn: DG.Column, molString: string, molBlockFailover: string) : Promise<any> {
   return await PackageFunctions.searchSubstructure(molStringsColumn, molString, molBlockFailover);
 }
 
 //description: As SDF...
 //meta.role: fileExporter
-export async function saveAsSdf(): Promise<void> {
+export async function saveAsSdf() : Promise<void> {
   await PackageFunctions.saveAsSdf();
 }
 
@@ -173,13 +173,13 @@ export async function saveAsSdf(): Promise<void> {
 //output: viewer result
 //meta.icon: files/icons/chem-similarity-search-viewer.svg
 //meta.role: viewer
-export function similaritySearchViewer(): any {
+export function similaritySearchViewer() : any {
   return PackageFunctions.similaritySearchViewer();
 }
 
 //name: Similarity Search
 //top-menu: Chem | Search | Similarity Search...
-export function similaritySearchTopMenu(): void {
+export function similaritySearchTopMenu() : void {
   PackageFunctions.similaritySearchTopMenu();
 }
 
@@ -187,18 +187,18 @@ export function similaritySearchTopMenu(): void {
 //output: viewer result
 //meta.icon: files/icons/chem-diversity-search-viewer.svg
 //meta.role: viewer
-export function diversitySearchViewer(): any {
+export function diversitySearchViewer() : any {
   return PackageFunctions.diversitySearchViewer();
 }
 
 //name: Diversity Search
 //top-menu: Chem | Search | Diversity Search...
-export function diversitySearchTopMenu(): void {
+export function diversitySearchTopMenu() : void {
   PackageFunctions.diversitySearchTopMenu();
 }
 
 //top-menu: Chem | Calculate | Descriptors...
-export async function descriptorsDocker(): Promise<void> {
+export async function descriptorsDocker() : Promise<void> {
   await PackageFunctions.descriptorsDocker();
 }
 
@@ -206,7 +206,7 @@ export async function descriptorsDocker(): Promise<void> {
 //input: column molecules { semType: Molecule }
 //input: list<string> selected
 //meta.role: transform
-export async function calculateDescriptorsTransform(table: DG.DataFrame, molecules: DG.Column, selected: string[]): Promise<void> {
+export async function calculateDescriptorsTransform(table: DG.DataFrame, molecules: DG.Column, selected: string[]) : Promise<void> {
   await PackageFunctions.calculateDescriptorsTransform(table, molecules, selected);
 }
 
@@ -214,18 +214,18 @@ export async function calculateDescriptorsTransform(table: DG.DataFrame, molecul
 //input: list<string> selected { optional: true }
 //output: dataframe result
 //meta.vectorFunc: true
-export async function getDescriptors(molecules: DG.Column, selected?: string[]): Promise<any> {
+export async function getDescriptors(molecules: DG.Column, selected?: string[]) : Promise<any> {
   return await PackageFunctions.getDescriptors(molecules, selected);
 }
 
 //output: object descriptors
-export async function chemDescriptorsTree(): Promise<any> {
+export async function chemDescriptorsTree() : Promise<any> {
   return await PackageFunctions.chemDescriptorsTree();
 }
 
 //name: Map Identifiers
 //top-menu: Chem | Calculate | Map Identifiers...
-export async function getMapIdentifiers(): Promise<void> {
+export async function getMapIdentifiers() : Promise<void> {
   await PackageFunctions.getMapIdentifiers();
 }
 
@@ -234,27 +234,27 @@ export async function getMapIdentifiers(): Promise<void> {
 //input: string fromSource
 //input: string toSource
 //meta.role: transform
-export async function mapIdentifiersTransform(table: DG.DataFrame, molecules: DG.Column, fromSource: string, toSource: string): Promise<void> {
+export async function mapIdentifiersTransform(table: DG.DataFrame, molecules: DG.Column, fromSource: string, toSource: string) : Promise<void> {
   await PackageFunctions.mapIdentifiersTransform(table, molecules, fromSource, toSource);
 }
 
 //input: string molfile
 //output: string result
-export async function freeTextToSmiles(molfile: string): Promise<any> {
+export async function freeTextToSmiles(molfile: string) : Promise<any> {
   return await PackageFunctions.freeTextToSmiles(molfile);
 }
 
 //input: dataframe table
 //input: column molecules
 //input: list<string> descriptors
-export async function chemDescriptors(table: DG.DataFrame, molecules: DG.Column, descriptors: string[]): Promise<void> {
+export async function chemDescriptors(table: DG.DataFrame, molecules: DG.Column, descriptors: string[]) : Promise<void> {
   await PackageFunctions.chemDescriptors(table, molecules, descriptors);
 }
 
 //name: SearchSubstructureEditor
 //input: funccall call
 //meta.role: editor
-export function searchSubstructureEditor(call: DG.FuncCall): void {
+export function searchSubstructureEditor(call: DG.FuncCall) : void {
   PackageFunctions.searchSubstructureEditor(call);
 }
 
@@ -262,7 +262,7 @@ export function searchSubstructureEditor(call: DG.FuncCall): void {
 //input: column molecules { semType: Molecule }
 //top-menu: Chem | Search | Substructure Search...
 //editor: Chem:SearchSubstructureEditor
-export function SubstructureSearchTopMenu(molecules: DG.Column): void {
+export function SubstructureSearchTopMenu(molecules: DG.Column) : void {
   PackageFunctions.SubstructureSearchTopMenu(molecules);
 }
 
@@ -273,7 +273,7 @@ export function SubstructureSearchTopMenu(molecules: DG.Column): void {
 //input: double threshold = 0.55 { caption: Threshold; min: 0; max: 1 }
 //input: string fingerprintType = 'Morgan' { caption: Fingerprint type; choices: ["Morgan","RDKit","Pattern","AtomPair","MACCS","TopologicalTorsion"] }
 //top-menu: Chem | Calculate | BitBIRCH Clustering...
-export async function bitbirchClusteringTopMenu(table: DG.DataFrame, molecules: DG.Column, threshold: number, fingerprintType: string): Promise<void> {
+export async function bitbirchClusteringTopMenu(table: DG.DataFrame, molecules: DG.Column, threshold: number, fingerprintType: string) : Promise<void> {
   await PackageFunctions.bitbirchClusteringTopMenu(table, molecules, threshold, fingerprintType);
 }
 
@@ -283,7 +283,7 @@ export async function bitbirchClusteringTopMenu(table: DG.DataFrame, molecules: 
 //input: column molCol { semType: Molecule }
 //input: column clusterCol { type: categorical }
 //top-menu: Chem | Calculate | Cluster MCS...
-export async function clusterMCSTopMenu(table: DG.DataFrame, molCol: DG.Column, clusterCol: DG.Column): Promise<void> {
+export async function clusterMCSTopMenu(table: DG.DataFrame, molCol: DG.Column, clusterCol: DG.Column) : Promise<void> {
   await PackageFunctions.clusterMCSTopMenu(table, molCol, clusterCol);
 }
 
@@ -294,13 +294,13 @@ export async function clusterMCSTopMenu(table: DG.DataFrame, molCol: DG.Column, 
 //output: column result { semType: Molecule }
 //meta.vectorFunc: true
 //friendlyName: Cluster MCS
-export async function performClusterMCS(molCol: DG.Column, clusterCol: DG.Column): Promise<any> {
+export async function performClusterMCS(molCol: DG.Column, clusterCol: DG.Column) : Promise<any> {
   return await PackageFunctions.performClusterMCS(molCol, clusterCol);
 }
 
 //input: funccall call
 //meta.role: editor
-export function ChemSpaceEditor(call: DG.FuncCall): void {
+export function ChemSpaceEditor(call: DG.FuncCall) : void {
   PackageFunctions.ChemSpaceEditor(call);
 }
 
@@ -330,7 +330,7 @@ export async function getFingerprints(col: DG.Column, _metric: string | undefine
 //output: viewer result
 //top-menu: Chem | Analyze | Chemical Space...
 //editor: Chem:ChemSpaceEditor
-export async function chemSpaceTopMenu(table: DG.DataFrame, molecules: DG.Column, methodName: any, similarityMetric: any, plotEmbeddings: boolean, options?: any, preprocessingFunction?: any, clusterEmbeddings?: boolean, clusterMCS?: boolean): Promise<any> {
+export async function chemSpaceTopMenu(table: DG.DataFrame, molecules: DG.Column, methodName: any, similarityMetric: any, plotEmbeddings: boolean, options?: any, preprocessingFunction?: any, clusterEmbeddings?: boolean, clusterMCS?: boolean) : Promise<any> {
   return await PackageFunctions.chemSpaceTopMenu(table, molecules, methodName, similarityMetric, plotEmbeddings, options, preprocessingFunction, clusterEmbeddings, clusterMCS);
 }
 
@@ -345,7 +345,7 @@ export async function chemSpaceTopMenu(table: DG.DataFrame, molecules: DG.Column
 //input: string clusterColName { optional: true }
 //output: viewer result
 //meta.role: transform
-export async function chemSpaceTransform(table: DG.DataFrame, molecules: DG.Column, methodName: any, similarityMetric: any, plotEmbeddings: boolean, options?: string, clusterEmbeddings?: boolean, embedColsNames?: string[], clusterColName?: string): Promise<any> {
+export async function chemSpaceTransform(table: DG.DataFrame, molecules: DG.Column, methodName: any, similarityMetric: any, plotEmbeddings: boolean, options?: string, clusterEmbeddings?: boolean, embedColsNames?: string[], clusterColName?: string) : Promise<any> {
   return await PackageFunctions.chemSpaceTransform(table, molecules, methodName, similarityMetric, plotEmbeddings, options, clusterEmbeddings, embedColsNames, clusterColName);
 }
 
@@ -357,7 +357,7 @@ export async function chemSpaceTransform(table: DG.DataFrame, molecules: DG.Colu
 //input: string yAxis
 //input: object options { optional: true }
 //output: object result
-export async function getChemSpaceEmbeddings(col: DG.Column, methodName: any, similarityMetric: any, xAxis: string, yAxis: string, options?: any): Promise<any> {
+export async function getChemSpaceEmbeddings(col: DG.Column, methodName: any, similarityMetric: any, xAxis: string, yAxis: string, options?: any) : Promise<any> {
   return await PackageFunctions.getChemSpaceEmbeddings(col, methodName, similarityMetric, xAxis, yAxis, options);
 }
 
@@ -368,7 +368,7 @@ export async function getChemSpaceEmbeddings(col: DG.Column, methodName: any, si
 //input: string colName
 //input: object simArr
 //output: object result
-export async function getChemSimilaritiesMatrix(dim: number, col: DG.Column, df: DG.DataFrame, colName: string, simArr: DG.Column[]): Promise<any> {
+export async function getChemSimilaritiesMatrix(dim: number, col: DG.Column, df: DG.DataFrame, colName: string, simArr: DG.Column[]) : Promise<any> {
   return await PackageFunctions.getChemSimilaritiesMatrix(dim, col, df, colName, simArr);
 }
 
@@ -378,7 +378,7 @@ export async function getChemSimilaritiesMatrix(dim: number, col: DG.Column, df:
 //input: bool radarViewer = false { description: Add a standalone radar viewer }
 //input: bool radarGrid = false { description: Show radar in grid cells }
 //top-menu: Chem | Analyze | Elemental Analysis...
-export async function elementalAnalysis(table: DG.DataFrame, molecules: DG.Column, radarViewer: boolean, radarGrid: boolean): Promise<void> {
+export async function elementalAnalysis(table: DG.DataFrame, molecules: DG.Column, radarViewer: boolean, radarGrid: boolean) : Promise<void> {
   await PackageFunctions.elementalAnalysis(table, molecules, radarViewer, radarGrid);
 }
 
@@ -386,13 +386,13 @@ export async function elementalAnalysis(table: DG.DataFrame, molecules: DG.Colum
 //input: column molecules { semType: Molecule }
 //output: list res
 //meta.role: transform
-export function runElementalAnalysis(table: DG.DataFrame, molecules: DG.Column): string[] {
+export function runElementalAnalysis(table: DG.DataFrame, molecules: DG.Column) : string[] {
   return PackageFunctions.runElementalAnalysis(table, molecules);
 }
 
 //name: R-Groups Analysis
 //top-menu: Chem | Analyze | R-Groups Analysis...
-export function rGroupsAnalysisMenu(): void {
+export function rGroupsAnalysisMenu() : void {
   PackageFunctions.rGroupsAnalysisMenu();
 }
 
@@ -404,13 +404,13 @@ export function rGroupsAnalysisMenu(): void {
 //input: bool onlyMatchAtRGroups = false { optional: true }
 //output: object result
 //meta.role: transform
-export async function rGroupDecomposition(df: DG.DataFrame, molColName: string, core: string, rGroupName: string, rGroupMatchingStrategy: string, onlyMatchAtRGroups: boolean): Promise<any> {
+export async function rGroupDecomposition(df: DG.DataFrame, molColName: string, core: string, rGroupName: string, rGroupMatchingStrategy: string, onlyMatchAtRGroups: boolean) : Promise<any> {
   return await PackageFunctions.rGroupDecomposition(df, molColName, core, rGroupName, rGroupMatchingStrategy, onlyMatchAtRGroups);
 }
 
 //input: funccall call
 //meta.role: editor
-export function ActivityCliffsEditor(call: DG.FuncCall): void {
+export function ActivityCliffsEditor(call: DG.FuncCall) : void {
   PackageFunctions.ActivityCliffsEditor(call);
 }
 
@@ -428,12 +428,12 @@ export function ActivityCliffsEditor(call: DG.FuncCall): void {
 //input: bool isTest { optional: true }
 //top-menu: Chem | Analyze | Activity Cliffs...
 //editor: Chem:ActivityCliffsEditor
-export async function activityCliffs(table: DG.DataFrame, molecules: DG.Column, activities: DG.Column, similarity: number, methodName: any, similarityMetric: any, preprocessingFunction: any, options?: any, isDemo?: boolean, isTest?: boolean): Promise<void> {
+export async function activityCliffs(table: DG.DataFrame, molecules: DG.Column, activities: DG.Column, similarity: number, methodName: any, similarityMetric: any, preprocessingFunction: any, options?: any, isDemo?: boolean, isTest?: boolean) : Promise<void> {
   await PackageFunctions.activityCliffs(table, molecules, activities, similarity, methodName, similarityMetric, preprocessingFunction, options, isDemo, isTest);
 }
 
 //input: viewer sp
-export async function activityCliffsInitFunction(sp: any): Promise<void> {
+export async function activityCliffsInitFunction(sp: any) : Promise<void> {
   await PackageFunctions.activityCliffsInitFunction(sp);
 }
 
@@ -447,7 +447,7 @@ export async function activityCliffsInitFunction(sp: any): Promise<void> {
 //input: bool isDemo { optional: true }
 //input: list<string> axesNames { optional: true }
 //meta.role: transform
-export async function activityCliffsTransform(table: DG.DataFrame, molecules: DG.Column, activities: DG.Column, similarity: number, methodName: any, similarityMetric: any, options?: string, isDemo?: boolean, axesNames?: string[]): Promise<void> {
+export async function activityCliffsTransform(table: DG.DataFrame, molecules: DG.Column, activities: DG.Column, similarity: number, methodName: any, similarityMetric: any, options?: string, isDemo?: boolean, axesNames?: string[]) : Promise<void> {
   await PackageFunctions.activityCliffsTransform(table, molecules, activities, similarity, methodName, similarityMetric, options, isDemo, axesNames);
 }
 
@@ -456,14 +456,14 @@ export async function activityCliffsTransform(table: DG.DataFrame, molecules: DG
 //input: column molecules { semType: Molecule }
 //meta.role: transform
 //top-menu: Chem | Calculate | To InchI...
-export function addInchisTopMenu(table: DG.DataFrame, col: DG.Column): void {
+export function addInchisTopMenu(table: DG.DataFrame, col: DG.Column) : void {
   PackageFunctions.addInchisTopMenu(table, col);
 }
 
 //input: column<string> molecules { semType: Molecule }
 //output: column result
 //meta.vectorFunc: true
-export function getInchis(molecules: DG.Column): any {
+export function getInchis(molecules: DG.Column) : any {
   return PackageFunctions.getInchis(molecules);
 }
 
@@ -472,14 +472,14 @@ export function getInchis(molecules: DG.Column): any {
 //input: column molecules { semType: Molecule }
 //meta.role: transform
 //top-menu: Chem | Calculate | To InchI Keys...
-export function addInchisKeysTopMenu(table: DG.DataFrame, col: DG.Column): void {
+export function addInchisKeysTopMenu(table: DG.DataFrame, col: DG.Column) : void {
   PackageFunctions.addInchisKeysTopMenu(table, col);
 }
 
 //input: column<string> molecules { semType: Molecule }
 //output: column result
 //meta.vectorFunc: true
-export function getInchiKeys(molecules: DG.Column): any {
+export function getInchiKeys(molecules: DG.Column) : any {
   return PackageFunctions.getInchiKeys(molecules);
 }
 
@@ -498,7 +498,7 @@ export function getInchiKeys(molecules: DG.Column): any {
 //output: dataframe result
 //meta.role: hitTriageFunction
 //top-menu: Chem | Analyze | Structural Alerts...
-export async function structuralAlertsTopMenu(table: DG.DataFrame, molecules: DG.Column, pains: boolean, bms: boolean, sureChembl: boolean, mlsmr: boolean, dundee: boolean, inpharmatica: boolean, lint: boolean, glaxo: boolean): Promise<any> {
+export async function structuralAlertsTopMenu(table: DG.DataFrame, molecules: DG.Column, pains: boolean, bms: boolean, sureChembl: boolean, mlsmr: boolean, dundee: boolean, inpharmatica: boolean, lint: boolean, glaxo: boolean) : Promise<any> {
   return await PackageFunctions.structuralAlertsTopMenu(table, molecules, pains, bms, sureChembl, mlsmr, dundee, inpharmatica, lint, glaxo);
 }
 
@@ -522,7 +522,7 @@ export async function runStructuralAlerts(table: DG.DataFrame, molecules: DG.Col
 //input: list<string> alerts { optional: true }
 //output: dataframe result
 //meta.vectorFunc: true
-export async function getStructuralAlerts(molecules: DG.Column, alerts?: string[]): Promise<any> {
+export async function getStructuralAlerts(molecules: DG.Column, alerts?: string[]) : Promise<any> {
   return await PackageFunctions.getStructuralAlerts(molecules, alerts);
 }
 
@@ -539,7 +539,7 @@ export async function getStructuralAlerts(molecules: DG.Column, alerts?: string[
 //output: dataframe result
 //meta.role: hitTriageFunction
 //top-menu: Chem | Analyze | Pharmacophore Features...
-export async function pharmacophoreFeaturesTopMenu(table: DG.DataFrame, molecules: DG.Column, donor: boolean, acceptor: boolean, hydrophobic: boolean, aromatic: boolean, positive: boolean, negative: boolean): Promise<any> {
+export async function pharmacophoreFeaturesTopMenu(table: DG.DataFrame, molecules: DG.Column, donor: boolean, acceptor: boolean, hydrophobic: boolean, aromatic: boolean, positive: boolean, negative: boolean) : Promise<any> {
   return await PackageFunctions.pharmacophoreFeaturesTopMenu(table, molecules, donor, acceptor, hydrophobic, aromatic, positive, negative);
 }
 
@@ -562,7 +562,7 @@ export async function runPharmacophoreFeatures(table: DG.DataFrame, molecules: D
 //output: widget result
 //meta.exclude-actions-panel: true
 //meta.role: panel
-export function molColumnPropertyPanel(molColumn: DG.Column): any {
+export function molColumnPropertyPanel(molColumn: DG.Column) : any {
   return PackageFunctions.molColumnPropertyPanel(molColumn);
 }
 
@@ -571,7 +571,7 @@ export function molColumnPropertyPanel(molColumn: DG.Column): any {
 //output: widget result
 //meta.exclude-actions-panel: true
 //meta.role: panel
-export function molColumnHighlights(molColumn: DG.Column): any {
+export function molColumnHighlights(molColumn: DG.Column) : any {
   return PackageFunctions.molColumnHighlights(molColumn);
 }
 
@@ -580,7 +580,7 @@ export function molColumnHighlights(molColumn: DG.Column): any {
 //output: widget result
 //meta.role: widgets,panel
 //meta.domain: chem
-export function descriptorsWidget(smiles: string): any {
+export function descriptorsWidget(smiles: string) : any {
   return PackageFunctions.descriptorsWidget(smiles);
 }
 
@@ -591,7 +591,7 @@ export function descriptorsWidget(smiles: string): any {
 //meta.role: widgets,panel
 //meta.domain: chem
 //help-url: /help/domains/chem/info-panels/drug-likeness.md
-export function drugLikeness(smiles: DG.SemanticValue): any {
+export function drugLikeness(smiles: DG.SemanticValue) : any {
   return PackageFunctions.drugLikeness(smiles);
 }
 
@@ -601,14 +601,14 @@ export function drugLikeness(smiles: DG.SemanticValue): any {
 //output: widget result
 //meta.role: widgets,panel
 //meta.domain: chem
-export function properties(smiles: DG.SemanticValue): any {
+export function properties(smiles: DG.SemanticValue) : any {
   return PackageFunctions.properties(smiles);
 }
 
 //description: Return chem property function
 //input: string name
 //output: object result
-export function getChemPropertyFunction(name: string): any {
+export function getChemPropertyFunction(name: string) : any {
   return PackageFunctions.getChemPropertyFunction(name);
 }
 
@@ -619,7 +619,7 @@ export function getChemPropertyFunction(name: string): any {
 //meta.role: widgets,panel
 //meta.domain: chem
 //help-url: /help/domains/chem/info-panels/structural-alerts.md
-export async function structuralAlerts(smiles: string): Promise<any> {
+export async function structuralAlerts(smiles: string) : Promise<any> {
   return await PackageFunctions.structuralAlerts(smiles);
 }
 
@@ -629,7 +629,7 @@ export async function structuralAlerts(smiles: string): Promise<any> {
 //output: widget result
 //meta.role: widgets,panel
 //meta.domain: chem
-export async function pharmacophoreFeatures(smiles: string): Promise<any> {
+export async function pharmacophoreFeatures(smiles: string) : Promise<any> {
   return await PackageFunctions.pharmacophoreFeatures(smiles);
 }
 
@@ -638,7 +638,7 @@ export async function pharmacophoreFeatures(smiles: string): Promise<any> {
 //output: widget result
 //meta.role: widgets,panel
 //meta.domain: chem
-export async function identifiers(smiles: string): Promise<any> {
+export async function identifiers(smiles: string) : Promise<any> {
   return await PackageFunctions.identifiers(smiles);
 }
 
@@ -648,7 +648,7 @@ export async function identifiers(smiles: string): Promise<any> {
 //output: widget result
 //meta.role: widgets,panel
 //meta.domain: chem
-export async function structure3D(molecule: string): Promise<any> {
+export async function structure3D(molecule: string) : Promise<any> {
   return await PackageFunctions.structure3D(molecule);
 }
 
@@ -658,7 +658,7 @@ export async function structure3D(molecule: string): Promise<any> {
 //output: widget result
 //meta.role: widgets,panel
 //meta.domain: chem
-export function structure2d(molecule: string): any {
+export function structure2d(molecule: string) : any {
   return PackageFunctions.structure2d(molecule);
 }
 
@@ -669,7 +669,7 @@ export function structure2d(molecule: string): any {
 //meta.role: widgets,panel
 //meta.domain: chem
 //help-url: /help/domains/chem/info-panels/toxicity-risks.md
-export function toxicity(smiles: DG.SemanticValue): any {
+export function toxicity(smiles: DG.SemanticValue) : any {
   return PackageFunctions.toxicity(smiles);
 }
 
@@ -679,7 +679,7 @@ export function toxicity(smiles: DG.SemanticValue): any {
 //output: widget result
 //meta.role: widgets,panel
 //meta.domain: chem
-export async function synthonSubstructureSearchWidget(molecule: string): Promise<any> {
+export async function synthonSubstructureSearchWidget(molecule: string) : Promise<any> {
   return await PackageFunctions.synthonSubstructureSearchWidget(molecule);
 }
 
@@ -689,7 +689,7 @@ export async function synthonSubstructureSearchWidget(molecule: string): Promise
 //output: widget result
 //meta.role: widgets,panel
 //meta.domain: chem
-export async function synthonSimilaritySearchWidget(molecule: string): Promise<any> {
+export async function synthonSimilaritySearchWidget(molecule: string) : Promise<any> {
   return await PackageFunctions.synthonSimilaritySearchWidget(molecule);
 }
 
@@ -704,14 +704,14 @@ export async function synthonSimilaritySearchWidget(molecule: string): Promise<a
 //output: dataframe result
 //meta.cache: client
 //meta.cache.invalidateOn: 0 * * * *
-export async function synthonSearchFunc(spaceName: string, molecule: string, maxHits: number, searchType: string, similarityCutoff?: number, includeSynthons?: boolean): Promise<any> {
+export async function synthonSearchFunc(spaceName: string, molecule: string, maxHits: number, searchType: string, similarityCutoff?: number, includeSynthons?: boolean) : Promise<any> {
   return await PackageFunctions.synthonSearchFunc(spaceName, molecule, maxHits, searchType, similarityCutoff, includeSynthons);
 }
 
 //name: Get Synthon Spaces
 //description: Get all available synthon spaces from Chem package files
 //output: list<string> result
-export async function getSynthonSpacesFunc(): Promise<string[]> {
+export async function getSynthonSpacesFunc() : Promise<string[]> {
   return await PackageFunctions.getSynthonSpacesFunc();
 }
 
@@ -720,7 +720,7 @@ export async function getSynthonSpacesFunc(): Promise<string[]> {
 //input: bool kekulize = false { optional: true; nullable: true }
 //output: column result
 //meta.vectorFunc: true
-export async function convertMoleculeNotation(molecule: DG.Column, targetNotation: any, kekulize?: boolean): Promise<any> {
+export async function convertMoleculeNotation(molecule: DG.Column, targetNotation: any, kekulize?: boolean) : Promise<any> {
   return await PackageFunctions.convertMoleculeNotation(molecule, targetNotation, kekulize);
 }
 
@@ -730,7 +730,7 @@ export async function convertMoleculeNotation(molecule: DG.Column, targetNotatio
 //input: string targetNotation { choices: ["smiles","cxsmiles","smarts","cxsmarts","molblock","v3Kmolblock"] }
 //output: string result { semType: Molecule }
 //meta.role: unitConverter
-export function convertMolNotation(molecule: string, sourceNotation: any, targetNotation: any): string {
+export function convertMolNotation(molecule: string, sourceNotation: any, targetNotation: any) : string {
   return PackageFunctions.convertMolNotation(molecule, sourceNotation, targetNotation);
 }
 
@@ -744,35 +744,35 @@ export function convertMolNotation(molecule: string, sourceNotation: any, target
 //output: column result
 //meta.role: transform
 //top-menu: Chem | Transform | Convert Notation...
-export async function convertNotation(data: DG.DataFrame, molecules: DG.Column<any>, targetNotation: any, overwrite: boolean, join: boolean, kekulize?: boolean): Promise<any> {
+export async function convertNotation(data: DG.DataFrame, molecules: DG.Column<any>, targetNotation: any, overwrite: boolean, join: boolean, kekulize?: boolean) : Promise<any> {
   return await PackageFunctions.convertNotation(data, molecules, targetNotation, overwrite, join, kekulize);
 }
 
 //name: Convert Notation...
 //input: column col { semType: Molecule }
 //meta.action: Convert Notation...
-export function convertMolNotationAction(col: DG.Column): void {
+export function convertMolNotationAction(col: DG.Column) : void {
   PackageFunctions.convertMolNotationAction(col);
 }
 
 //name: Convert Mixture To Smiles...
 //input: column col { semType: ChemicalMixture }
 //meta.action: Convert mixture to smiles...
-export function convertMixtureToSmiles(col: DG.Column): void {
+export function convertMixtureToSmiles(col: DG.Column) : void {
   PackageFunctions.convertMixtureToSmiles(col);
 }
 
 //description: Molecule
 //input: grid_cell cell
 //meta.role: cellEditor
-export async function editMoleculeCell(cell: any): Promise<void> {
+export async function editMoleculeCell(cell: any) : Promise<void> {
   await PackageFunctions.editMoleculeCell(cell);
 }
 
 //name: OpenChemLib
 //output: widget sketcher
 //meta.role: moleculeSketcher
-export function openChemLibSketcher(): any {
+export function openChemLibSketcher() : any {
   return PackageFunctions.openChemLibSketcher();
 }
 
@@ -781,7 +781,7 @@ export function openChemLibSketcher(): any {
 //output: list<dataframe> result
 //meta.role: fileHandler
 //meta.ext: sdf,mol
-export function importSdf(bytes: Uint8Array): any {
+export function importSdf(bytes: Uint8Array) : any {
   return PackageFunctions.importSdf(bytes);
 }
 
@@ -790,7 +790,7 @@ export function importSdf(bytes: Uint8Array): any {
 //output: list<dataframe> result
 //meta.role: fileHandler
 //meta.ext: smi
-export function importSmi(bytes: Uint8Array): any {
+export function importSmi(bytes: Uint8Array) : any {
   return PackageFunctions.importSmi(bytes);
 }
 
@@ -799,7 +799,7 @@ export function importSmi(bytes: Uint8Array): any {
 //output: list<dataframe> result
 //meta.role: fileHandler
 //meta.ext: mol2
-export function importMol2(bytes: Uint8Array): any {
+export function importMol2(bytes: Uint8Array) : any {
   return PackageFunctions.importMol2(bytes);
 }
 
@@ -808,13 +808,13 @@ export function importMol2(bytes: Uint8Array): any {
 //output: list<dataframe> result
 //meta.role: fileHandler
 //meta.ext: mol
-export function importMol(content: string): any {
+export function importMol(content: string) : any {
   return PackageFunctions.importMol(content);
 }
 
 //output: grid_cell_renderer result
 //meta.chemRendererName: OpenChemLib
-export async function oclCellRenderer(): Promise<any> {
+export async function oclCellRenderer() : Promise<any> {
   return await PackageFunctions.oclCellRenderer();
 }
 
@@ -822,7 +822,7 @@ export async function oclCellRenderer(): Promise<any> {
 //description: Sorts a molecular column by similarity
 //input: semantic_value value { semType: Molecule }
 //meta.action: Sort by similarity
-export async function sortBySimilarity(value: DG.SemanticValue): Promise<void> {
+export async function sortBySimilarity(value: DG.SemanticValue) : Promise<void> {
   await PackageFunctions.sortBySimilarity(value);
 }
 
@@ -830,7 +830,7 @@ export async function sortBySimilarity(value: DG.SemanticValue): Promise<void> {
 //description: Adds this structure as a substructure filter
 //input: semantic_value value { semType: Molecule }
 //meta.action: Use as filter
-export function useAsSubstructureFilter(value: DG.SemanticValue): void {
+export function useAsSubstructureFilter(value: DG.SemanticValue) : void {
   PackageFunctions.useAsSubstructureFilter(value);
 }
 
@@ -839,7 +839,7 @@ export function useAsSubstructureFilter(value: DG.SemanticValue): void {
 //input: semantic_value value { semType: Molecule }
 //meta.action: Copy as...
 //meta.exclude-current-value-menu: true
-export function copyAsAction(value: DG.SemanticValue): void {
+export function copyAsAction(value: DG.SemanticValue) : void {
   PackageFunctions.copyAsAction(value);
 }
 
@@ -848,7 +848,7 @@ export function copyAsAction(value: DG.SemanticValue): void {
 //input: semantic_value value { semType: Molecule }
 //meta.action: Copy as SMILES
 //meta.exclude-actions-panel: true
-export function copyAsSmiles(value: DG.SemanticValue): void {
+export function copyAsSmiles(value: DG.SemanticValue) : void {
   PackageFunctions.copyAsSmiles(value);
 }
 
@@ -857,7 +857,7 @@ export function copyAsSmiles(value: DG.SemanticValue): void {
 //input: semantic_value value { semType: Molecule }
 //meta.action: Copy as MOLFILE V2000
 //meta.exclude-actions-panel: true
-export function copyAsMolfileV2000(value: DG.SemanticValue): void {
+export function copyAsMolfileV2000(value: DG.SemanticValue) : void {
   PackageFunctions.copyAsMolfileV2000(value);
 }
 
@@ -866,7 +866,7 @@ export function copyAsMolfileV2000(value: DG.SemanticValue): void {
 //input: semantic_value value { semType: Molecule }
 //meta.action: Copy as MOLFILE V3000
 //meta.exclude-actions-panel: true
-export function copyAsMolfileV3000(value: DG.SemanticValue): void {
+export function copyAsMolfileV3000(value: DG.SemanticValue) : void {
   PackageFunctions.copyAsMolfileV3000(value);
 }
 
@@ -875,7 +875,7 @@ export function copyAsMolfileV3000(value: DG.SemanticValue): void {
 //input: semantic_value value { semType: Molecule }
 //meta.action: Copy as SMARTS
 //meta.exclude-actions-panel: true
-export function copyAsSmarts(value: DG.SemanticValue): void {
+export function copyAsSmarts(value: DG.SemanticValue) : void {
   PackageFunctions.copyAsSmarts(value);
 }
 
@@ -884,25 +884,25 @@ export function copyAsSmarts(value: DG.SemanticValue): void {
 //input: semantic_value value { semType: Molecule }
 //meta.action: Copy as Image
 //meta.exclude-actions-panel: true
-export function copyAsImage(value: DG.SemanticValue): void {
+export function copyAsImage(value: DG.SemanticValue) : void {
   PackageFunctions.copyAsImage(value);
 }
 
 //input: string s
 //output: bool result
-export function isSmiles(s: string): boolean {
+export function isSmiles(s: string) : boolean {
   return PackageFunctions.isSmiles(s);
 }
 
 //input: string s
 //output: bool result
-export function isSmarts(s: string): boolean {
+export function isSmarts(s: string) : boolean {
   return PackageFunctions.isSmarts(s);
 }
 
 //input: column col
 //input: int min
-export function detectSmiles(col: DG.Column, min: number): void {
+export function detectSmiles(col: DG.Column, min: number) : void {
   PackageFunctions.detectSmiles(col, min);
 }
 
@@ -915,7 +915,7 @@ export function detectSmiles(col: DG.Column, min: number): void {
 //input: int limit
 //input: double minScore
 //output: dataframe result
-export async function callChemSimilaritySearch(df: DG.DataFrame, col: DG.Column, molecule: string, metricName: any, fingerprint: string, limit: number, minScore: number): Promise<any> {
+export async function callChemSimilaritySearch(df: DG.DataFrame, col: DG.Column, molecule: string, metricName: any, fingerprint: string, limit: number, minScore: number) : Promise<any> {
   return await PackageFunctions.callChemSimilaritySearch(df, col, molecule, metricName, fingerprint, limit, minScore);
 }
 
@@ -925,7 +925,7 @@ export async function callChemSimilaritySearch(df: DG.DataFrame, col: DG.Column,
 //input: string fingerprint
 //input: int limit
 //output: dataframe result
-export async function callChemDiversitySearch(col: DG.Column, metricName: any, fingerprint: string, limit: number): Promise<number[]> {
+export async function callChemDiversitySearch(col: DG.Column, metricName: any, fingerprint: string, limit: number) : Promise<number[]> {
   return await PackageFunctions.callChemDiversitySearch(col, metricName, fingerprint, limit);
 }
 
@@ -948,7 +948,7 @@ export async function callChemDiversitySearch(col: DG.Column, metricName: any, f
 //meta.method_info.github: https://github.com/actelion/openchemlib
 //meta.role: hitTriageFunction,transform
 //top-menu: Chem | Calculate | Chemical Properties...
-export async function addChemPropertiesColumns(table: DG.DataFrame, molecules: DG.Column, MW?: boolean, HBA?: boolean, HBD?: boolean, logP?: boolean, logS?: boolean, PSA?: boolean, rotatableBonds?: boolean, stereoCenters?: boolean, moleculeCharge?: boolean): Promise<void> {
+export async function addChemPropertiesColumns(table: DG.DataFrame, molecules: DG.Column, MW?: boolean, HBA?: boolean, HBD?: boolean, logP?: boolean, logS?: boolean, PSA?: boolean, rotatableBonds?: boolean, stereoCenters?: boolean, moleculeCharge?: boolean) : Promise<void> {
   await PackageFunctions.addChemPropertiesColumns(table, molecules, MW, HBA, HBD, logP, logS, PSA, rotatableBonds, stereoCenters, moleculeCharge);
 }
 
@@ -956,7 +956,7 @@ export async function addChemPropertiesColumns(table: DG.DataFrame, molecules: D
 //input: list<string> selected { optional: true }
 //output: dataframe result
 //meta.vectorFunc: true
-export async function getProperties(molecules: DG.Column, selected?: string[]): Promise<any> {
+export async function getProperties(molecules: DG.Column, selected?: string[]) : Promise<any> {
   return await PackageFunctions.getProperties(molecules, selected);
 }
 
@@ -969,7 +969,7 @@ export async function getProperties(molecules: DG.Column, selected?: string[]): 
 //input: bool reproductiveEffects = false
 //meta.role: hitTriageFunction,transform
 //top-menu: Chem | Calculate | Toxicity Risks...
-export async function addChemRisksColumns(table: DG.DataFrame, molecules: DG.Column, mutagenicity?: boolean, tumorigenicity?: boolean, irritatingEffects?: boolean, reproductiveEffects?: boolean): Promise<void> {
+export async function addChemRisksColumns(table: DG.DataFrame, molecules: DG.Column, mutagenicity?: boolean, tumorigenicity?: boolean, irritatingEffects?: boolean, reproductiveEffects?: boolean) : Promise<void> {
   await PackageFunctions.addChemRisksColumns(table, molecules, mutagenicity, tumorigenicity, irritatingEffects, reproductiveEffects);
 }
 
@@ -977,13 +977,13 @@ export async function addChemRisksColumns(table: DG.DataFrame, molecules: DG.Col
 //input: list<string> risks { optional: true }
 //output: dataframe result
 //meta.vectorFunc: true
-export async function getToxicityRisks(molecules: DG.Column, risks?: string[]): Promise<any> {
+export async function getToxicityRisks(molecules: DG.Column, risks?: string[]) : Promise<any> {
   return await PackageFunctions.getToxicityRisks(molecules, risks);
 }
 
 //description: Generates a hierarchical tree based on the scaffolds presented in dataset
 //top-menu: Chem | Analyze | Scaffold Tree
-export function addScaffoldTree(): void {
+export function addScaffoldTree() : void {
   PackageFunctions.addScaffoldTree();
 }
 
@@ -991,13 +991,13 @@ export function addScaffoldTree(): void {
 //output: viewer result
 //meta.showInGallery: false
 //meta.role: viewer
-export function mmpViewer(): any {
+export function mmpViewer() : any {
   return PackageFunctions.mmpViewer();
 }
 
 //input: funccall call
 //meta.role: editor
-export function MMPEditor(call: DG.FuncCall): void {
+export function MMPEditor(call: DG.FuncCall) : void {
   PackageFunctions.MMPEditor(call);
 }
 
@@ -1010,7 +1010,7 @@ export function MMPEditor(call: DG.FuncCall): void {
 //input: double fragmentCutoff = 0.4 { description: Maximum fragment size relative to core }
 //editor: Chem:MMPEditor
 //top-menu: Chem | Analyze | Matched Molecular Pairs...
-export async function mmpAnalysis(table: DG.DataFrame, molecules: DG.Column, activities: DG.Column[], diffTypes: any, scalings: any, fragmentCutoff: number): Promise<void> {
+export async function mmpAnalysis(table: DG.DataFrame, molecules: DG.Column, activities: DG.Column[], diffTypes: any, scalings: any, fragmentCutoff: number) : Promise<void> {
   await PackageFunctions.mmpAnalysis(table, molecules, activities, diffTypes, scalings, fragmentCutoff);
 }
 
@@ -1020,7 +1020,7 @@ export async function mmpAnalysis(table: DG.DataFrame, molecules: DG.Column, act
 //meta.semType: Molecule
 //meta.allowMultipleFiltersForColumn: false
 //meta.role: filter
-export function scaffoldTreeFilter(): any {
+export function scaffoldTreeFilter() : any {
   return PackageFunctions.scaffoldTreeFilter();
 }
 
@@ -1028,7 +1028,7 @@ export function scaffoldTreeFilter(): any {
 //input: int ringCutoff = 10 { description: Ignore molecules with # rings > N }
 //input: bool dischargeAndDeradicalize = false { description: Remove charges and radicals from scaffolds }
 //output: string result
-export async function getScaffoldTree(data: DG.DataFrame, ringCutoff: number, dischargeAndDeradicalize: boolean): Promise<string> {
+export async function getScaffoldTree(data: DG.DataFrame, ringCutoff: number, dischargeAndDeradicalize: boolean) : Promise<string> {
   return await PackageFunctions.getScaffoldTree(data, ringCutoff, dischargeAndDeradicalize);
 }
 
@@ -1036,7 +1036,7 @@ export async function getScaffoldTree(data: DG.DataFrame, ringCutoff: number, di
 //input: list<string> molecules
 //input: string molecule
 //output: list<string> result
-export function removeDuplicates(molecules: string[], molecule: string): string[] {
+export function removeDuplicates(molecules: string[], molecule: string) : string[] {
   return PackageFunctions.removeDuplicates(molecules, molecule);
 }
 
@@ -1045,21 +1045,21 @@ export function removeDuplicates(molecules: string[], molecule: string): string[
 //meta.isDemoScript: true
 //meta.demoSkip: GROK-14320
 //meta.demoPath: Cheminformatics | Overview
-export async function demoChemOverview(): Promise<void> {
+export async function demoChemOverview() : Promise<void> {
   await PackageFunctions.demoChemOverview();
 }
 
 //name: Demo Similarity Search
 //description: Searching for most similar or diverse molecules in dataset
 //meta.demoPath: Cheminformatics | Similarity & Diversity Search
-export async function demoSimilarityDiversitySearch(): Promise<void> {
+export async function demoSimilarityDiversitySearch() : Promise<void> {
   await PackageFunctions.demoSimilarityDiversitySearch();
 }
 
 //name: Demo Matched Molecular Pairs
 //description: Detect matched molecule pairs calculate the difference in activity values between them
 //meta.demoPath: Cheminformatics | Matched Molecular Pairs
-export async function demoMMPA(): Promise<void> {
+export async function demoMMPA() : Promise<void> {
   await PackageFunctions.demoMMPA();
 }
 
@@ -1068,7 +1068,7 @@ export async function demoMMPA(): Promise<void> {
 //meta.demoPath: Cheminformatics | R-Group Analysis
 //meta.demoSkip: GROK-14320
 //meta.isDemoDashboard: true
-export async function demoRgroupAnalysis(): Promise<void> {
+export async function demoRgroupAnalysis() : Promise<void> {
   await PackageFunctions.demoRgroupAnalysis();
 }
 
@@ -1077,7 +1077,7 @@ export async function demoRgroupAnalysis(): Promise<void> {
 //meta.demoPath: Cheminformatics | Molecule Activity Cliffs
 //meta.demoSkip: GROK-14320
 //meta.isDemoDashboard: true
-export async function demoMoleculeActivityCliffs(): Promise<void> {
+export async function demoMoleculeActivityCliffs() : Promise<void> {
   await PackageFunctions.demoMoleculeActivityCliffs();
 }
 
@@ -1085,14 +1085,14 @@ export async function demoMoleculeActivityCliffs(): Promise<void> {
 //description: Maps the dataset to 2D plot based on similarity
 //meta.demoPath: Cheminformatics | Chemical Space
 //meta.demoSkip: GROK-14320
-export async function demoChemicalSpace(): Promise<void> {
+export async function demoChemicalSpace() : Promise<void> {
   await PackageFunctions.demoChemicalSpace();
 }
 
 //name: Demo Scaffold Tree
 //description: Running scaffold analysis with hierarchical tree
 //meta.demoPath: Cheminformatics | Scaffold Tree
-export async function demoScaffold(): Promise<void> {
+export async function demoScaffold() : Promise<void> {
   await PackageFunctions.demoScaffold();
 }
 
@@ -1101,26 +1101,26 @@ export async function demoScaffold(): Promise<void> {
 //input: column names
 //meta.role: transform
 //top-menu: Chem | Transform | Names To Smiles...
-export async function namesToSmiles(data: DG.DataFrame, names: DG.Column<any>): Promise<void> {
+export async function namesToSmiles(data: DG.DataFrame, names: DG.Column<any>) : Promise<void> {
   await PackageFunctions.namesToSmiles(data, names);
 }
 
 //input: string molecule { semType: Molecule }
 //output: string smiles { semType: Molecule }
 //meta.role: canonicalizer
-export function canonicalize(molecule: string): string {
+export function canonicalize(molecule: string) : string {
   return PackageFunctions.canonicalize(molecule);
 }
 
 //input: string molecule { semType: Molecule }
 //output: string molecularFormula
-export function getMolecularFormula(molecule: string): string {
+export function getMolecularFormula(molecule: string) : string {
   return PackageFunctions.getMolecularFormula(molecule);
 }
 
 //input: string s
 //output: object result
-export function validateMolecule(s: string): any {
+export function validateMolecule(s: string) : any {
   return PackageFunctions.validateMolecule(s);
 }
 
@@ -1153,7 +1153,7 @@ export function validateMolecule(s: string): any {
 //output: dynamic model
 //meta.mlname: Chemprop
 //meta.mlrole: train
-export async function trainChemprop(df: DG.DataFrame, predictColumn: DG.Column, dataset_type: string, metric: string, multiclass_num_classes: number, num_folds: number, data_seed: number, split_sizes: any, split_type: string, activation: string, atom_messages: boolean, message_bias: boolean, ensemble_size: number, message_hidden_dim: number, depth: number, dropout: number, ffn_hidden_dim: number, ffn_num_layers: number, epochs: number, batch_size: number, warmup_epochs: number, init_lr: number, max_lr: number, final_lr: number, no_descriptor_scaling: boolean): Promise<any> {
+export async function trainChemprop(df: DG.DataFrame, predictColumn: DG.Column, dataset_type: string, metric: string, multiclass_num_classes: number, num_folds: number, data_seed: number, split_sizes: any, split_type: string, activation: string, atom_messages: boolean, message_bias: boolean, ensemble_size: number, message_hidden_dim: number, depth: number, dropout: number, ffn_hidden_dim: number, ffn_num_layers: number, epochs: number, batch_size: number, warmup_epochs: number, init_lr: number, max_lr: number, final_lr: number, no_descriptor_scaling: boolean) : Promise<any> {
   return await PackageFunctions.trainChemprop(df, predictColumn, dataset_type, metric, multiclass_num_classes, num_folds, data_seed, split_sizes, split_type, activation, atom_messages, message_bias, ensemble_size, message_hidden_dim, depth, dropout, ffn_hidden_dim, ffn_num_layers, epochs, batch_size, warmup_epochs, init_lr, max_lr, final_lr, no_descriptor_scaling);
 }
 
@@ -1193,7 +1193,7 @@ export async function isInteractiveNN(df: DG.DataFrame, predictColumn: DG.Column
 //meta.role: transform
 //top-menu: Chem | Transform | Reactions | Deprotect...
 //editor: Chem:DeprotectEditor
-export async function deprotect(table: DG.DataFrame, molecules: DG.Column, fragment: string): Promise<void> {
+export async function deprotect(table: DG.DataFrame, molecules: DG.Column, fragment: string) : Promise<void> {
   await PackageFunctions.deprotect(table, molecules, fragment);
 }
 
@@ -1201,28 +1201,28 @@ export async function deprotect(table: DG.DataFrame, molecules: DG.Column, fragm
 //input: funccall call
 //output: widget result
 //meta.role: editor
-export function deprotectEditor(call: DG.FuncCall): any {
+export function deprotectEditor(call: DG.FuncCall) : any {
   return PackageFunctions.deprotectEditor(call);
 }
 
 //description: Beautifies the list of molecules and returns the list of beautified molecules
 //input: list<string> mols
 //output: list<string> result
-export async function beautifyMols(mols: string[]): Promise<string[]> {
+export async function beautifyMols(mols: string[]) : Promise<string[]> {
   return await PackageFunctions.beautifyMols(mols);
 }
 
 //description: Converts the list of molecules to V3K format using OCL
 //input: list<string> mols
 //output: list<string> result
-export async function convertToV3KViaOCL(mols: string[]): Promise<string[]> {
+export async function convertToV3KViaOCL(mols: string[]) : Promise<string[]> {
   return await PackageFunctions.convertToV3KViaOCL(mols);
 }
 
 //name: mpo
 //description: Calculates the MPO score for the column of molecules
 //top-menu: Chem | Calculate | MPO Score...
-export async function _mpo(): Promise<void> {
+export async function _mpo() : Promise<void> {
   await PackageFunctions._mpo();
 }
 
@@ -1233,7 +1233,7 @@ export async function _mpo(): Promise<void> {
 //input: bool createDesirabilityColumns
 //output: dataframe result { action: join(df) }
 //meta.vectorFunc: true
-export function mpoCalculate(df: DG.DataFrame, columns: DG.ColumnList, profileName: string, aggregation: any, createDesirabilityColumns: boolean): any {
+export function mpoCalculate(df: DG.DataFrame, columns: DG.ColumnList, profileName: string, aggregation: any, createDesirabilityColumns: boolean) : any {
   return PackageFunctions.mpoCalculate(df, columns, profileName, aggregation, createDesirabilityColumns);
 }
 
@@ -1244,7 +1244,7 @@ export function mpoCalculate(df: DG.DataFrame, columns: DG.ColumnList, profileNa
 //input: bool silent
 //output: list<column> result
 //meta.role: transform
-export function mpoTransformFunction(df: DG.DataFrame, profileName: string, aggregation: any, currentProperties: string, silent: boolean): any {
+export function mpoTransformFunction(df: DG.DataFrame, profileName: string, aggregation: any, currentProperties: string, silent: boolean) : any {
   return PackageFunctions.mpoTransformFunction(df, profileName, aggregation, currentProperties, silent);
 }
 
@@ -1253,7 +1253,7 @@ export function mpoTransformFunction(df: DG.DataFrame, profileName: string, aggr
 //meta.role: fileViewer
 //meta.fileViewer: json
 //meta.fileViewerCheck: Chem:checkJsonMpoProfile
-export function mpoProfileEditor(file: DG.FileInfo): any {
+export function mpoProfileEditor(file: DG.FileInfo) : any {
   return PackageFunctions.mpoProfileEditor(file);
 }
 
@@ -1268,7 +1268,7 @@ export function checkJsonMpoProfile(content: string) {
 //output: widget result
 //meta.role: widgets,panel
 //meta.domain: chem
-export async function mixtureWidget(mixture: string): Promise<any> {
+export async function mixtureWidget(mixture: string) : Promise<any> {
   return await PackageFunctions.mixtureWidget(mixture);
 }
 
@@ -1277,14 +1277,14 @@ export async function mixtureWidget(mixture: string): Promise<any> {
 //output: widget result
 //meta.role: widgets,panel
 //meta.domain: chem
-export async function mixtureTreeWidget(mixture: string): Promise<any> {
+export async function mixtureTreeWidget(mixture: string) : Promise<any> {
   return await PackageFunctions.mixtureTreeWidget(mixture);
 }
 
 //name: Biochemical Properties
 //description: Dynamically discovers and executes tagged biochemical calculators
 //top-menu: Chem | Calculate | Biochemical Properties
-export async function biochemPropsWidget(): Promise<void> {
+export async function biochemPropsWidget() : Promise<void> {
   await PackageFunctions.biochemPropsWidget();
 }
 
@@ -1294,13 +1294,13 @@ export async function biochemPropsWidget(): Promise<void> {
 //meta.browsePath: Chem
 //meta.icon: images/mpo.png
 //meta.role: app
-export async function mpoProfilesApp(path?: string): Promise<any> {
+export async function mpoProfilesApp(path?: string) : Promise<any> {
   return await PackageFunctions.mpoProfilesApp(path);
 }
 
 //input: dynamic treeNode
 //input: view _browseView
-export async function mpoProfilesAppTreeBrowser(treeNode: any, _browseView: any): Promise<void> {
+export async function mpoProfilesAppTreeBrowser(treeNode: any, _browseView: any) : Promise<void> {
   await PackageFunctions.mpoProfilesAppTreeBrowser(treeNode, _browseView);
 }
 
@@ -1319,7 +1319,7 @@ export async function removeWaterAndSaltsTopMenu(table: DG.DataFrame, molecules:
 //description: Runs reaction based on the reaction SMARTS and list of reactants
 //top-menu: Chem | Transform | Reactions | Transformation...
 //friendlyName: Run Reaction
-export async function transformationReactionsTopMenu(): Promise<void> {
+export async function transformationReactionsTopMenu() : Promise<void> {
   await PackageFunctions.transformationReactionsTopMenu();
 }
 
@@ -1327,7 +1327,7 @@ export async function transformationReactionsTopMenu(): Promise<void> {
 //description: Runs a reaction between molecules from two columns
 //top-menu: Chem | Transform | Reactions | Two-Component Reaction...
 //friendlyName: Two-Component Reaction
-export async function twoComponentReactionTopMenu(): Promise<void> {
+export async function twoComponentReactionTopMenu() : Promise<void> {
   await PackageFunctions.twoComponentReactionTopMenu();
 }
 
@@ -1337,7 +1337,7 @@ export async function twoComponentReactionTopMenu(): Promise<void> {
 //output: view result
 //meta.browsePath: Chem | Reactions
 //meta.role: app
-export async function transformationReactionsApp(_path?: string): Promise<any> {
+export async function transformationReactionsApp(_path?: string) : Promise<any> {
   return await PackageFunctions.transformationReactionsApp(_path);
 }
 
@@ -1347,7 +1347,7 @@ export async function transformationReactionsApp(_path?: string): Promise<any> {
 //output: view result
 //meta.browsePath: Chem | Reactions
 //meta.role: app
-export async function twoComponentReactionsApp(_path?: string): Promise<any> {
+export async function twoComponentReactionsApp(_path?: string) : Promise<any> {
   return await PackageFunctions.twoComponentReactionsApp(_path);
 }
 
@@ -1356,6 +1356,6 @@ export async function twoComponentReactionsApp(_path?: string): Promise<any> {
 //output: widget result
 //meta.role: widgets,panel
 //meta.domain: chem
-export async function mpoWidget(semValue: DG.SemanticValue): Promise<any> {
+export async function mpoWidget(semValue: DG.SemanticValue) : Promise<any> {
   return await PackageFunctions.mpoWidget(semValue);
 }

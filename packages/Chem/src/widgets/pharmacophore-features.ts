@@ -39,8 +39,8 @@ const FAMILY_PRIORITY: {[key: string]: number} = {
   'A': 5,
   'P': 4,
   'N': 3,
-  'H': 2,
-  'a': 1,
+  'a': 2,
+  'H': 1,
 };
 
 export interface PharmFeatureMatch {
@@ -243,21 +243,37 @@ export async function pharmacophoreFeaturesWidget(molecule: string): Promise<DG.
     const familyMatches = grouped[familyLetter];
     if (!familyMatches) continue;
 
-    // Deduplicate by feature name — show unique features, not every individual match
-    const uniqueFeatures = new Map<string, PharmFeatureMatch>();
+    // Group all matches by feature name — collect all atom/bond indices per feature
+    const featureMatchGroups = new Map<string, PharmFeatureMatch[]>();
     for (const m of familyMatches) {
-      if (!uniqueFeatures.has(m.featureName))
-        uniqueFeatures.set(m.featureName, m);
+      if (!featureMatchGroups.has(m.featureName))
+        featureMatchGroups.set(m.featureName, []);
+      featureMatchGroups.get(m.featureName)!.push(m);
     }
 
     const familyName = FAMILY_NAMES[familyLetter];
     const matchCount = familyMatches.length;
     const headerColor = FAMILY_COLORS[familyLetter];
 
-    const featureItems = [...uniqueFeatures.values()].map((match) => {
-      const description = ui.divText(match.featureName);
+    const featureItems = [...featureMatchGroups.entries()].map(([featureName, featureMatches]) => {
+      const match = featureMatches[0];
+      const description = ui.divText(featureName);
       const imageHost = ui.canvas(thumbWidth, thumbHeight);
-      drawMoleculeToCanvas(0, 0, thumbWidth, thumbHeight, imageHost, molecule, match.smarts);
+
+      // Build ISubstruct with all matches highlighted in the family color
+      const color = hexToPercentRgb(match.color);
+      const allAtoms: number[] = [];
+      const allBonds: number[] = [];
+      const atomColors: {[key: number]: number[]} = {};
+      const bondColors: {[key: number]: number[]} = {};
+      for (const fm of featureMatches) {
+        for (const a of fm.atoms) { allAtoms.push(a); if (color) atomColors[a] = color; }
+        for (const b of fm.bonds) { allBonds.push(b); if (color) bondColors[b] = color; }
+      }
+      const substruct: ISubstruct = {atoms: allAtoms, bonds: allBonds,
+        highlightAtomColors: atomColors, highlightBondColors: bondColors};
+      drawMoleculeToCanvas(0, 0, thumbWidth, thumbHeight, imageHost, molecule,
+        null, {normalizeDepiction: true, straightenDepiction: true}, substruct);
 
       const moreBtn = ui.iconFA('ellipsis-v', (e: MouseEvent) => {
         e.stopImmediatePropagation();
