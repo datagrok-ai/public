@@ -3,8 +3,8 @@
 
 # Tests: group management
 
-User [group](../users-and-groups#users) allow you to flexible configure user rights. [Users_deprecated/user.mdmd) can request membership
-in [groups](../users-and-groups#users), start chat with other members, view [group](../users-and-groups#users) members and etc.
+User [groups](../users-and-groups#users) let you flexibly configure user rights. Users can request membership
+in [groups](../users-and-groups#users), start chat with other members, view [group](../users-and-groups#users) members, and more.
 
 ## Testing scenarios
 
@@ -66,7 +66,7 @@ in [groups](../users-and-groups#users), start chat with other members, view [gro
    click ```SAVE``` button
 
 * User was not deleted
-* Warning massage "Insufficient privileges"
+* Warning message "Insufficient privileges"
 
 1. Click on delete user icon next to self username ( ```X``` ) in "Edit members" dialog, then click ```SAVE``` button
 

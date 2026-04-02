@@ -1,6 +1,6 @@
 # Supported formats
 
-Datagrok supports over 50 file formats, including domain-specific like SDF, FASTA, and others. It also understands how data is structured or represented within those files (e.g., assay plates within an XLSX, SDTM conventions within a CSV, and notations like SMILES and HELM).
+Datagrok supports over 50 file formats, including domain-specific formats like SDF, FASTA, and others. Datagrok also understands how data is structured or represented within those files (e.g., assay plates within an XLSX, SDTM conventions within a CSV, and notations like SMILES and HELM).
 
 ## Structured and analytical data
 
@@ -12,7 +12,7 @@ Datagrok supports over 50 file formats, including domain-specific like SDF, FAST
 | `.tsv`  | Tab-separated values       | --               |
 | `.txt`  | Plain text                 | --               |
 | `.xlsx` | Microsoft Excel            | --               |
-| `.d42`  | Datagrok [dashboadr]       | --               |
+| `.d42`  | Datagrok [Dashboard]       | --               |
 | `.json` | JavaScript Object Notation | --               |
 | `.xml ` | Extensible Markup Language | --               |
 | `.HTML` | HyperText Markup Language  | --               |

@@ -286,7 +286,7 @@ from one Datagrok function/script to another.
 
 ### Saving data to files
 
-You can use both `file` and `blob` annotations. for output files.
+You can use both `file` and `blob` annotations for output files.
 For example, let's save a dataframe to a JSON file:
 
 ```mdx-code-block
@@ -325,8 +325,8 @@ The file name *always* matches the output variable name.
 Some Python functions
 (for example, Numpy [Save](https://numpy.org/doc/stable/reference/generated/numpy.save.html))
 automatically add an extension to the file name if it is provided without an extension.
-In this case, Datagrok won't be able to locate output file,
-and you'll see empty file in the Datagrok output.
+In this case, Datagrok won't be able to locate the output file,
+and you'll see an empty file in the Datagrok output.
 
 To override this behavior, you can open the file via the Python `open` function,
 and use the file object instead of the file name.
@@ -341,10 +341,10 @@ with open(array_file_binary, 'wb') as npfile:
 
 ## Return graphical objects
 
-Datagrok supports the special data type to transfer graphical data.
+Datagrok supports a special data type for transferring graphical data.
 
 For Python, this variable can contain any graph created by the
-`matplotlib` library (the `matplotlib.figure.Fugure` class).
+`matplotlib` library (the `matplotlib.figure.Figure` class).
 When you run the script manually, Datagrok captures the graphics object
 and creates a separate tab to view the results.
 Datagrok can also save the `graphics` output in a dataframe,
@@ -355,7 +355,7 @@ Out-of-the-box Datagrok contains many blaze-fast flexible interactive
 [viewers](../../../visualize/viewers/viewers.md),
 suitable for almost all data visualization tasks.
 
-We suggest you exploring it before using graphical libraries
+We suggest exploring them before using graphical libraries
 of your programming language.
 :::
 

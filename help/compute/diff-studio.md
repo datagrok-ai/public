@@ -216,7 +216,7 @@ Diff Studio automatically generates the UI, but you can use the following option
 
 * **Captions:**
 
-  * Define the desired captions for the input parameters. If no caption is provided, Diff Studio uses variable name
+  * Define the desired captions for the input parameters. If no caption is provided, Diff Studio uses the variable name
 
      ```python
      #argument: t
@@ -225,7 +225,7 @@ Diff Studio automatically generates the UI, but you can use the following option
        step = 0.01 {caption: Calculation step}
      ```
 
-  * `#output`: Caption column headers in the solution table. If no caption is provided, Diff Studio uses a variable name
+  * `#output`: Caption column headers in the solution table. If no caption is provided, Diff Studio uses the variable name
 
      ```python
      #output:
@@ -344,7 +344,7 @@ Export your model to JavaScript script:
 
 ## Syntax reference
 
-Diff Studio lets you define model in a declarative form using simple syntax:
+Diff Studio lets you define a model in a declarative form using simple syntax:
 
 |Keyword|Specifies|Example|
 |-|-|-|

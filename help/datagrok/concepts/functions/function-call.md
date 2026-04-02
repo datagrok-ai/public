@@ -19,14 +19,11 @@ Each function call contains the following data:
 
 ## Access control
 
-Connections are first-class entities in the Datagrok platform, and as such are subjects to the standard checks and
-routines performed against them whenever they are used in the specific context. Some of the most popular privileges
-are: `view`, `edit`, `delete`, and `share`. Those privileges can be given to individual users, or
-to [groups](../../../govern/access-control/users-and-groups#groups). For more information on the access privilege model, check
-out [privileges](../../../govern/access-control/access-control.md#permissions).
-
-Those privileges can be given to individuals or to groups (which can be defined via dynamic filters)
-. For more information on the access privilege model, refer to the Datagrok - Access Privileges page.
+Connections are first-class entities in Datagrok and follow the standard access checks
+whenever they are used. Common privileges
+include `view`, `edit`, `delete`, and `share`. You can grant these privileges to individual users or
+to [groups](../../../govern/access-control/users-and-groups#groups). For more information on the access privilege model, see
+[privileges](../../../govern/access-control/access-control.md#permissions).
 
 ## Filtering
 
@@ -47,7 +44,7 @@ You can use these fields to filter action runs with [smart search](../../../visu
 
 ## Macro recording
 
-Every UI action (filtering, sorting, selecting columns, etc.) corresponds to a function call. The [Console](../../navigation/navigation.md#console) automatically logs these call, allowing you to:
+Every UI action (filtering, sorting, selecting columns, etc.) corresponds to a function call. The [Console](../../navigation/navigation.md#console) automatically logs these calls, allowing you to:
 
 * examine which functions were triggered by UI events
 * copy commands into a script or pipelines 

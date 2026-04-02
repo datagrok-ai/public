@@ -48,7 +48,7 @@ available ["PowerGrid" public package](https://github.com/datagrok-ai/public/blo
 .
 
 Once a package containing that function is published, the platform will automatically create the corresponding
-renderer when user creates a summary column of specified type. Here is how it looks:
+renderer when a user creates a summary column of the specified type. Here is how it looks:
 
 ![custom-cell-renderers-add-summary-column](custom-cell-renderers-add-summary-column.gif)
 

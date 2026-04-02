@@ -2,7 +2,7 @@
 title: "Postgres"
 ---
 
-Provides access to [PostgreSQL](https://www.postgresql.org/) database using SQL queries via JDBC driver.
+Provides access to [PostgreSQL](https://www.postgresql.org/) database using SQL queries via a JDBC driver.
 
 ```json
 {

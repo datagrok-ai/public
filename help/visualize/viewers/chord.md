@@ -5,7 +5,7 @@ A chord diagram is a graphical method of displaying the inter-relationships
 between data.
 You can use it to visualize complex networks or flows between
 different entities.
-Chrod diagram arranges data radially around a circle and draws the flows
+A chord diagram arranges data radially around a circle and draws the flows
 between the data points as arcs connecting the data.
 The chord width represents the strength of the flow
 between the entities.

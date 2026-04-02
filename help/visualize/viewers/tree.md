@@ -47,8 +47,8 @@ For example, you can:
 
 ## Interaction with other viewers
 
-A tree viewer responds to data filters but has limited interaction in rows
-selection. For the node to be selected, you need to select all rows comprising
+A tree viewer responds to data filters but has limited row
+selection interaction. For a node to appear selected, you need to select all rows comprising
 the node.
 
 ![Tree viewer](img/tree-viewer.gif "Tree viewer")

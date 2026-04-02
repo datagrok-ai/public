@@ -2,8 +2,8 @@
 title: "Add new column"
 ---
 
-Adds a column of the specified type to the current table, and initializes it using the specified expression (
-mathematical function, constants, platform objects properties and functions).
+Adds a column of the specified type to the current table and initializes it using the specified expression (
+mathematical function, constants, platform object properties, and functions).
 
 To add new columns, click on the `Add New Column` icon on the toolbar or go to top menu `Edit` -> `Add New Column`. Key features are:
 
@@ -18,7 +18,7 @@ functions registry on the right or use *plus* icon. You can combine functions wr
 ![functions suggestions](./add_new_column_functions_suggestions.gif)
 * Interactive preview of results as you type
 * Autocompletion for functions (including packages names) and columns. Suggestions appear as you type.
-* Different highlights within formula for better readability. For instance, column names are highlighted with in bold blue font.
+* Different highlights within the formula for better readability. For instance, column names are highlighted in bold blue font.
 * Validation against various types of mistakes including syntax errors, missing columns detection, incorrect data types, unmatching brackets.
 * Resulting column type autodetection
 * Fast function and column search

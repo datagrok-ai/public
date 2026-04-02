@@ -14,7 +14,7 @@ We support the following link types:
 * **Selection:** to filter, to selection.
 
 The value on the left (for the first table) is the synchronization source (to be changed by the user).
-The values on the right (for the second table) determines what gets synchronized as a response to user actions.
+The values on the right (for the second table) determine what gets synchronized in response to user actions.
 
 For example, "current row to filter" means that changing of the current row in the first table triggers
 filtering of the second table. Rows in the second table with the key column values differing from

@@ -15,9 +15,9 @@ import BrowserWindow from '@site/src/components/browser-window';
 You can specify viewers to review output dataframes in a human-friendly way.
 Each dataframe parameter may have a list of viewers.
 
-You may see all available viewers opening
+To see all available viewers, open the
 [demo dataframe](https://public.datagrok.ai/f/Demo.TestJobs.Files.DemoFiles/demog.csv)
-and opening the toolbox on the left.
+and expand the toolbox on the left.
 
 <details>
 <summary> Fantastic viewers and where to find them </summary>
@@ -61,7 +61,7 @@ outputDF = inputDF.copy()
 :::tip
 
 The default script view supports viewers for *output* dataframes only.
-You may specify viewers *input* dataframes using
+You can specify viewers for *input* dataframes using
 [advanced UI editor](../advanced-scripting/rich-function-view.md#visualize-input-data)
 
 :::
@@ -70,10 +70,10 @@ You may specify viewers *input* dataframes using
 
 Each viewer has a list of customizable properties.
 They control how the viewer is rendered and how it behaves.
-For instance, you may specify the dataframe column used as the X-axis on the scatter plot.
+For instance, you can specify the dataframe column used as the X-axis on the scatter plot.
 
 The list of available properties differs for each type of viewer.
-You may right-click on the viewer and select `Properties` item in the context menu.
+Right-click the viewer and select `Properties` in the context menu.
 In the `viewer` tag, you can specify any property listed in the opened property panel.
 
 :::caution only camelCase is accepted
@@ -120,7 +120,7 @@ outputDF = inputDF.copy()
 :::tip More customization
 
 The default script view shows all viewers at once.
-You may divide viewers by different tabs using
+You can divide viewers into separate tabs using
 [advanced UI editor](../advanced-scripting/rich-function-view.md#group-scalar-outputs).
 
 :::

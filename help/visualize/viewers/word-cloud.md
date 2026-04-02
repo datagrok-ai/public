@@ -37,7 +37,7 @@ properties
 
 ## Interactivity
 
-A word cloud viewer doesn't respond to the row selection and data filtering. You
+A word cloud viewer does not respond to row selection and data filtering. You
 can use it to filter other viewers.
 
 ![Word Cloud](img/word-cloud.gif)

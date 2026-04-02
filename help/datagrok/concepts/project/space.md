@@ -22,7 +22,7 @@ Datagrok automatically creates implicit space projects for
 [plugins](../../../develop/how-to/packages/create-package.md) and users:
 * **Plugins**: Each plugin version is a child project under the corresponding
   root space.
-* **Users**: Unless you move entity to an existing space, any entity you create is
+* **Users**: Unless you move an entity to an existing space, any entity you create is
   saved to your personal root space, accessible under **My
   stuff** in the **Browse** view (e.g., `jdoe:MyNewDashboard` or `jdoe:MyNewQuery`). 
 
@@ -68,11 +68,11 @@ Linked entities are visually distinguished by a **Link** (<FAIcon icon="fa-solid
 
 ## Removing entities from spaces
 
-To remove an entity from a space simply move it to any other space.
+To remove an entity from a space, simply move it to any other space.
 
 :::danger
 
-Don't to use the **Delete...** command to remove entities from spaces. If you choose the **Delete...** command, it will permanently delete the entity from the server for all users and projects. This action cannot be undone.
+Don't use the **Delete...** command to remove entities from spaces. If you choose the **Delete...** command, it will permanently delete the entity from the server for all users and projects. This action cannot be undone.
 
 :::
 

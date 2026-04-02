@@ -33,7 +33,7 @@ Sometimes Datagrok can automatically detect parameter names, but this heavily de
 
 MLFlow supports most of the popular tools for predictive modeling. The list is available [here](https://mlflow.org/docs/latest/models.html#built-in-model-flavors).
 
-Here we present a sample Python code that uploads a custom Python model to MLFlow. We do not present model-specific code and consider that it is incasulated in the `create_model` function, which creates a model from model weights, and the `predict()` function, which takes features as input and returns predictions.
+Here we present a sample Python code that uploads a custom Python model to MLFlow. We do not present model-specific code and assume it is encapsulated in the `create_model` function, which creates a model from model weights, and the `predict()` function, which takes features as input and returns predictions.
 
 ```python
 import mlflow.pyfunc

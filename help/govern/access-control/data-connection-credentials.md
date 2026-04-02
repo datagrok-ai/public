@@ -10,7 +10,7 @@ Datagrok supports secure connections to **AWS** and **GCP**, allowing you to:
 
 - Access cloud services such as **BigQuery**, **S3**, and **Athena**.
 - Configure log exports to **CloudWatch** or **Google Cloud Logging**.
-- Securely provide credentials for other Datagrok connections by fetching them from the respective **Secrets Manager**.
+- Securely provide credentials for other Datagrok connections by fetching them from the respective secrets manager.
 
 > **Note:** You must be a member of the **Administrators** or **Developers** group to create these connections.
 

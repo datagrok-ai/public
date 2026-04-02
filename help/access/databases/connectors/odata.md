@@ -2,7 +2,7 @@
 title: "OData"
 ---
 
-Provides access to [OData](https://www.odata.org/) based service.
+Provides access to [OData](https://www.odata.org/)-based services.
 
 ## Connection parameters
 

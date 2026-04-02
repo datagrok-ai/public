@@ -276,7 +276,7 @@ Examples:
 
 Some viewers can require additional initialization actions such as rendering something on top of the viewer, setting some options based on additional computations and so on. A good example is an [Activity cliffs](https://datagrok.ai/help/datagrok/solutions/domains/chem/#activity-cliffs) analysis, which draw lines, adds additional information and buttons on top of the scatter plot.
 
-To add custom such initialization to your viewer:
+To add custom initialization to your viewer:
 
 - create your function which takes `DG.Viewer` as an argument and performs all custom actions with the viewer.
 - pass the name of the function as a `initializationFunction` parameter when creating the viewer.

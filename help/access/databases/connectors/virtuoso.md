@@ -2,7 +2,7 @@
 title: "Virtuoso"
 ---
 
-Provides access to [Virtuoso](https://virtuoso.openlinksw.com/) data virtualization platform via the JDBC driver.
+Provides access to the [Virtuoso](https://virtuoso.openlinksw.com/) data virtualization platform via a JDBC driver.
 
 ```json
 {

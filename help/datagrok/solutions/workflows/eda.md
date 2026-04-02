@@ -41,7 +41,7 @@ What's more, Datagrok understands the nature of your
 * Filter, zoom, aggregate, pivot, and cross-link data on the fly. All our viewers are synchronized, [high-performant, and interactive](../../../develop/under-the-hood/performance.md#viewers).
 * Seamlessly access information with [widgets](../../../visualize/widgets.md)
  and context-driven [info panes](../../navigation/panels/info-panels.md). 
-* Create dashboards in seconds. Share your analysis in easy and
+* Create dashboards in seconds. Share your analysis in an easy and
 [secure](../../../govern/access-control/access-control.md) way. 
 * Use data annotations and team discussions to collaborate on decision-making. 
 

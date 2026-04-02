@@ -45,8 +45,8 @@ discover relevant datasets is essential.
 
 ## Rendering
 
-Unlike business data, more often than not raw values in scientific datasets can not be interpreted by simply looking at
-them. Most common reasons for that are:
+Unlike business data, raw values in scientific datasets often cannot be interpreted by simply looking at
+them. The most common reasons are:
 
 1. A value is encoded. Examples: molecules encoded as SMILES
 2. A value can be interpreted, but only makes sense as part of the bigger picture. Examples: a particular pixel of an
@@ -54,7 +54,7 @@ them. Most common reasons for that are:
 3. A value makes sense only together with other attributes. Examples: (LAT, LNG) points
 4. A value can be interpreted only in the context of the continuous stream of data. Examples: ECG values
 
-In order to present users with a meaningful interpretation of a dataset, the platform tries to infer
+To present users with a meaningful interpretation of a dataset, the platform tries to infer
 the [true meaning of the raw data](../../../govern/catalog/semantic-types.md) and then offers a number of visualizations and actions
 that can be applied either to the whole dataset or an individual point.
 

@@ -48,7 +48,7 @@ We prepared three options for effortless and secure deployments to AWS:
 
 ## Kubernetes deployment
 
-To deploy Datagrok to [Kubernetes](https://kubernetes.io/), we prepared [deployment scripts and ingress configuration](https://github.com/datagrok-ai/public/tree/master/help/deploy/k8s). It creates namespace and allocate all the necessary resources.
+To deploy Datagrok to [Kubernetes](https://kubernetes.io/), we prepared [deployment scripts and ingress configuration](https://github.com/datagrok-ai/public/tree/master/help/deploy/k8s). They create a namespace and allocate all the necessary resources.
 
 ## Regular machine deployment
 

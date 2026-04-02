@@ -2,11 +2,11 @@
 
 Datagrok can send logs to [Amazon CloudWatch](https://aws.amazon.com/cloudwatch/) according to the **Log Export Blocks** you can create.
 
-> Note: You need already configured CloudWatch and created Log group with streams.
+> Note: You need an already configured CloudWatch instance and a created Log group with streams.
 
-To export logs you need to create connection to AWS and configure **Log Export Blocks** in **Settings**.
+To export logs, create a connection to AWS and configure **Log Export Blocks** in **Settings**.
 
-## To create connection to AWS
+## To create a connection to AWS
 
   1. Go to **Data** > **Databases**.
 

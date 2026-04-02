@@ -3,7 +3,7 @@ title: "PI"
 ---
 
 Provides access to the
-[PI](https://techsupport.osisoft.com/products/) database using SQL queries via JDBC driver.
+[PI](https://techsupport.osisoft.com/products/) database using SQL queries via a JDBC driver.
 
 ## Connection parameters
 

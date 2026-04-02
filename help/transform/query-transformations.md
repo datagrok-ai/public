@@ -2,7 +2,7 @@
 title: "Query transformations"
 ---
 
-After the data is retrieved from the data provider, it can be transformed using functions.
+After data is retrieved from the data provider, you can transform it using functions.
 
 There are several ways to add transformations:
 
@@ -10,7 +10,7 @@ There are several ways to add transformations:
 * Add steps manually from toolbox.
 * Use table context menu
 
-All data transformations done via the UI are recorded as macros, and can be replayed.
+All data transformations done via the UI are recorded as macros and can be replayed.
 
 ![Transform query](../uploads/gifs/query-transform-1a.gif "Transform Query")
 

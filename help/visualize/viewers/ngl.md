@@ -41,7 +41,7 @@ You can:
 ## Interaction with other viewers
 
 The NGL viewer shows small molecules (ligands) together with the macromolecule
-when you select it or just hover mouse over it.
+when you select a ligand or hover the mouse over it.
 
 If only one ligand is selected,
 the ligand is displayed with a full-color ball+stick representation.
