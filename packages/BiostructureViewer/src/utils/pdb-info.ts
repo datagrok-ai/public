@@ -1,7 +1,6 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import * as ngl from 'NGL';
 
 import {RcsbGraphQLAdapter} from './rcsb-gql-adapter';
 import {parsePdbHeaders, PdbHeaderInfo} from './pdb-helper';
@@ -63,33 +62,6 @@ async function fetchPubMedAbstract(pmid: number): Promise<string | undefined> {
   } catch {
     return undefined;
   }
-}
-
-/** Create an NGL 3D viewer div showing only polymer chains (no ligands). */
-function create3DViewer(pdbId: string, selection: string, height: number = 250): HTMLElement {
-  const host = ui.div([], {style: {width: '100%', height: `${height}px`}});
-  const stage = new ngl.Stage(host);
-  (stage as any).setParameters({backgroundColor: 'white'});
-  const pdbUrl = `https://files.rcsb.org/download/${pdbId}.pdb`;
-
-  stage.loadFile(pdbUrl, {defaultRepresentation: false})
-    .then((component: any) => {
-      component.addRepresentation('cartoon', {sele: `(${selection}) and polymer`, color: 'chainid'});
-      component.autoView(`(${selection}) and polymer`);
-      const canvas = stage.viewer.renderer.domElement;
-      const resize = () => {
-        canvas!.width = Math.floor(canvas!.clientWidth * window.devicePixelRatio);
-        canvas!.height = Math.floor(canvas!.clientHeight * window.devicePixelRatio);
-        stage.handleResize();
-      };
-      ui.onSizeChanged(host).subscribe(() => resize());
-      resize();
-    })
-    .catch(() => {
-      host.appendChild(ui.divText('Failed to load 3D structure'));
-    });
-
-  return host;
 }
 
 
@@ -237,19 +209,7 @@ export async function pdbInfoWidget(pdbId: string): Promise<DG.Widget> {
                 ui.link(id, () => window.open(`https://www.uniprot.org/uniprot/${id}`)),
               ));
             }
-            const parts: HTMLElement[] = [ui.tableFromMap(map)];
-
-            // 3D Structure sub-pane for this entity's chains
-            if (pe.authChains.length > 0) {
-              const chainSel = pe.authChains.map((c) => `:${c}`).join(' or ');
-              const viewer3dAcc = DG.Accordion.create();
-              viewer3dAcc.addPane('3D Structure', () => {
-                return create3DViewer(pdbId, chainSel);
-              }, false);
-              parts.push(viewer3dAcc.root);
-            }
-
-            return ui.divV(parts);
+            return ui.tableFromMap(map);
           }, false);
         }
         return innerAcc.root;

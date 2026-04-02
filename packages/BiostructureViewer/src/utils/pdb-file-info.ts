@@ -1,36 +1,8 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import * as ngl from 'NGL';
 
 import {parsePdbHeaders} from './pdb-helper';
-
-/** Create an NGL 3D viewer from PDB text, showing only specified chains (polymer only). */
-function create3DViewerFromText(pdbText: string, chainSelection: string, height: number = 250): HTMLElement {
-  const host = ui.div([], {style: {width: '100%', height: `${height}px`}});
-  const stage = new ngl.Stage(host);
-  (stage as any).setParameters({backgroundColor: 'white'});
-  const blob = new Blob([pdbText], {type: 'text/plain'});
-
-  stage.loadFile(blob, {defaultRepresentation: false, ext: 'pdb'})
-    .then((component: any) => {
-      component.addRepresentation('cartoon', {sele: `(${chainSelection}) and polymer`, color: 'chainid'});
-      component.autoView(`(${chainSelection}) and polymer`);
-      const canvas = stage.viewer.renderer.domElement;
-      const resize = () => {
-        canvas!.width = Math.floor(canvas!.clientWidth * window.devicePixelRatio);
-        canvas!.height = Math.floor(canvas!.clientHeight * window.devicePixelRatio);
-        stage.handleResize();
-      };
-      ui.onSizeChanged(host).subscribe(() => resize());
-      resize();
-    })
-    .catch(() => {
-      host.appendChild(ui.divText('Failed to load 3D structure'));
-    });
-
-  return host;
-}
 
 /** Fetch SMILES for a list of ligand compound IDs from RCSB Chemical Component Dictionary. */
 async function fetchLigandSmiles(compIds: string[]): Promise<{[compId: string]: string}> {
@@ -172,19 +144,7 @@ export function pdbFileInfoWidget(pdbText: string): DG.Widget {
             if (entityMuts.length > 0)
               map['Mutation(s)'] = entityMuts.map((m) => m.description).join(', ');
           }
-          const entityParts: HTMLElement[] = [ui.tableFromMap(map)];
-
-          // 3D Structure sub-pane for this entity's chains
-          if (entity.chains && entity.chains.length > 0) {
-            const chainSel = entity.chains.map((c) => `:${c}`).join(' or ');
-            const viewer3dAcc = DG.Accordion.create();
-            viewer3dAcc.addPane('3D Structure', () => {
-              return create3DViewerFromText(pdbText, chainSel);
-            }, false);
-            entityParts.push(viewer3dAcc.root);
-          }
-
-          return ui.divV(entityParts);
+          return ui.tableFromMap(map);
         }, false);
       }
       return innerAcc.root;
