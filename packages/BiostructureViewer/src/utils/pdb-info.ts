@@ -4,7 +4,7 @@ import * as DG from 'datagrok-api/dg';
 import * as ngl from 'NGL';
 
 import {RcsbGraphQLAdapter} from './rcsb-gql-adapter';
-import {parsePdbHeaders, PdbHeaderInfo} from './pdb-parser';
+import {parsePdbHeaders, PdbHeaderInfo} from './pdb-helper';
 
 /** Fetch PDB file from RCSB and parse its headers. */
 async function fetchPdbFileHeaders(pdbId: string): Promise<PdbHeaderInfo | undefined> {

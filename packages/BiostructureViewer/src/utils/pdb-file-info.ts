@@ -3,7 +3,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import * as ngl from 'NGL';
 
-import {parsePdbHeaders} from './pdb-parser';
+import {parsePdbHeaders} from './pdb-helper';
 
 /** Create an NGL 3D viewer from PDB text, showing only specified chains (polymer only). */
 function create3DViewerFromText(pdbText: string, chainSelection: string, height: number = 250): HTMLElement {
