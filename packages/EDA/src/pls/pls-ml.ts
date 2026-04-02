@@ -245,7 +245,16 @@ export class PlsModel {
     if (this.specn === null)
       throw new Error('Predicting failed: model is not trained');
 
-    return getPredictionByLinearRegression(features, this.specn.params);
+    const featureNames = this.specn.names.slice(0, this.specn.dim);
+    const filteredCols = featureNames.map((name) => {
+      const col = features.byName(name);
+      if (col == null)
+        throw new Error(`Feature column '${name}' not found`);
+      return col;
+    });
+    const modelFeatures = DG.DataFrame.fromColumns(filteredCols).columns;
+
+    return getPredictionByLinearRegression(modelFeatures, this.specn.params);
   }
 
   /** Return loadings and regression coefficients viewers */

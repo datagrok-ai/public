@@ -1,5 +1,9 @@
 # EDA changelog
 
+## v.next
+
+* CLAUDE-19: Fixed PLS Regression apply failing with 'Incorrect parameters count' when DataFrame has extra columns
+
 ## 1.5.1 (2026-03-27)
 
 Add formula for prediction in multivariate analysis
