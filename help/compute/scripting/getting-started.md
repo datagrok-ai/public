@@ -302,8 +302,8 @@ To learn more about using complex data types in scripts, see the
 
 ## Handle an error
 
-Datagrok properly handles errors happened during the script execution.
-For example, let's chand the type of `MyData` variable to `int`.
+Datagrok handles errors that occur during script execution.
+For example, change the type of the `MyData` variable to `int`.
 
 ```python
 #input: int myData

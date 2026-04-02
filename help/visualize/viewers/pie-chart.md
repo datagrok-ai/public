@@ -2,9 +2,9 @@
 title: "Pie chart"
 ---
 
-Pie chart is useful for reflecting numerical proportions. Conceptually, it is similar to a bar chart in that it
-represents categorical values. A pie chart shows the relative size of a given category (a slice of the pie) compared to
-the entire dataset (the whole pie).
+A pie chart shows numerical proportions across categories. Like a bar chart, it
+compares categorical values, but emphasizes the relative size of each category
+(a slice of the pie) compared to the whole dataset.
 
 :::note developers 
 

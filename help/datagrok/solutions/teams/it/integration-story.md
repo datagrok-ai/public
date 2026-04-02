@@ -25,8 +25,8 @@ Out of the box, the platform comes with the data connectors
 for [30+ popular databases](../../../../access/databases/connectors/connectors.md), and the list is constantly growing. In addition to
 that, it is possible to develop your own data connectors, and seamlessly integrate them into the platform.
 
-In order to do that, a "Grok Connect" REST endpoint that implements a few methods has to be registered with the
-platform. The methods are:
+To do this, register a "Grok Connect" REST endpoint with the platform. It must
+implement the following methods:
 
 * getConnectors - returns all connectors that the endpoint supports (one for database type)
 * getSchema(connection) - if applicable, returns database schema for the given connection
