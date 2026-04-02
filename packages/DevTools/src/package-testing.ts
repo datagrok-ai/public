@@ -161,11 +161,12 @@ export class TestManager extends DG.ViewBase {
 
   async collectPackageTests(packageNode: DG.TreeViewGroup, f: any, testFromUrl?: ITestFromUrl): Promise<void> {
     let resultPromise: Promise<void>;
+    const coreOnly: boolean = f.package.name === 'Core';
 
     if (!this.packagePromises.has(f.package.name)) {
       this.packagePromises.set(f.package.name, new Promise<void>(async (resolve) => {
         const selectedPackage = this.packagesTests.find((pt) => pt.name === f.package.name);
-        if (this.testFunctions.filter((it) => it.package.name === f.package.name).length !== 0 &&
+        if ((coreOnly || this.testFunctions.filter((it) => it.package.name === f.package.name).length !== 0) &&
           selectedPackage.categories === null && selectedPackage.check === false) {
           selectedPackage.check = true;
           await f.package.load({file: f.options.file});
@@ -176,6 +177,10 @@ export class TestManager extends DG.ViewBase {
           const packageTestsFinal: { [cat: string]: ICategory } = {};
           if (allPackageTests) {
             Object.keys(allPackageTests).forEach((cat) => {
+              if (coreOnly && !cat.startsWith('Core'))
+                return;
+              if (!coreOnly && cat.startsWith('Core'))
+                return;
               const isAllTestsEnabledBenchmarkMode = allPackageTests[cat].benchmarks;
               const tests: IPackageTest[] = allPackageTests[cat].tests.map((t) => {
                 if (t.options.isEnabledBenchmarkMode === undefined) {
@@ -183,10 +188,11 @@ export class TestManager extends DG.ViewBase {
                     t.options = {};
                   t.options.isEnabledBenchmarkMode = isAllTestsEnabledBenchmarkMode || false;
                 }
-                const result = {test: t, packageName: f.package.name};
+                const result = {test: t, packageName: f._callPackageName ?? f.package.name};
                 return result;
               });
-              const subcats = cat.split(':');
+              const effectiveCat = coreOnly && cat.startsWith('Core: ') ? cat.slice(6) : cat;
+              const subcats = effectiveCat.split(':');
               let subcatsFromUrl = [];
               if (testFromUrl && testFromUrl.catName)
                 subcatsFromUrl = testFromUrl.catName.split(':');
@@ -267,7 +273,19 @@ export class TestManager extends DG.ViewBase {
   }
 
   async populateTree(targetTree: DG.TreeViewGroup, testFromUrl?: ITestFromUrl): Promise<void> {
-    for (const pack of this.testFunctions) {
+    const devToolsPack = this.testFunctions.find((p) => p.package.name === 'DevTools');
+    const packs = devToolsPack ? [...this.testFunctions, {
+      package: {
+        name: 'Core', friendlyName: 'Core',
+        load: (opts: any) => devToolsPack.package.load(opts),
+        getModule: (file: string) => devToolsPack.package.getModule(file),
+        getTests: (b: boolean) => devToolsPack.package.getTests(b),
+      },
+      options: devToolsPack.options,
+      _callPackageName: devToolsPack.package.name,
+    }].sort((a, b) => a.package.friendlyName.localeCompare(b.package.friendlyName)) : this.testFunctions;
+
+    for (const pack of packs) {
       const testPassed = ui.div();
       this.packagesTests.push({
         name: pack.package.name,
