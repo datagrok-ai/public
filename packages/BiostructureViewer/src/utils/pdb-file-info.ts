@@ -315,15 +315,36 @@ export function pdbFileInfoWidget(pdbText: string): DG.Widget {
   if (info.missingResidues && info.missingResidues.length > 0) {
     acc.addCountPane('Missing Residues', () => {
       // Group by chain
-      const byChain: {[chain: string]: string[]} = {};
+      const byChain: {[chain: string]: Array<{resName: string; resSeq: number}>} = {};
       for (const mr of info.missingResidues!) {
         if (!byChain[mr.chain]) byChain[mr.chain] = [];
-        byChain[mr.chain].push(`${mr.resName} ${mr.resSeq}`);
+        byChain[mr.chain].push({resName: mr.resName, resSeq: mr.resSeq});
       }
       const innerAcc = DG.Accordion.create();
       for (const [chain, residues] of Object.entries(byChain)) {
         innerAcc.addCountPane(`Chain ${chain}`, () => {
-          return ui.divText(residues.join(', '));
+          residues.sort((a, b) => a.resSeq - b.resSeq);
+          // Group consecutive residues into segments
+          const segments: Array<Array<{resName: string; resSeq: number}>> = [];
+          let current: Array<{resName: string; resSeq: number}> = [residues[0]];
+          for (let i = 1; i < residues.length; i++) {
+            if (residues[i].resSeq === residues[i - 1].resSeq + 1)
+              current.push(residues[i]);
+            else {
+              segments.push(current);
+              current = [residues[i]];
+            }
+          }
+          segments.push(current);
+          const parts: HTMLElement[] = [];
+          for (let i = 0; i < segments.length; i++) {
+            if (i > 0)
+              parts.push(ui.div([], {style: {height: '8px'}}));
+            parts.push(ui.divText(
+              segments[i].map((r) => `${r.resName} ${r.resSeq}`).join(', '),
+            ));
+          }
+          return ui.divV(parts);
         }, () => residues.length, false);
       }
       return innerAcc.root;
