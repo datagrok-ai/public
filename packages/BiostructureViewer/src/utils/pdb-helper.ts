@@ -459,6 +459,142 @@ export function parsePdbHeaders(pdbText: string): PdbHeaderInfo {
 }
 
 
+// -- Shared UI builders and fetch utilities for PDB info panels --
+
+/** Fetch SMILES for compound IDs from RCSB Chemical Component Dictionary. */
+export async function fetchLigandSmiles(compIds: string[]): Promise<{[compId: string]: string}> {
+  const query = `{
+    chem_comps(comp_ids: [${compIds.map((id) => `"${id}"`).join(', ')}]) {
+      rcsb_id
+      rcsb_chem_comp_descriptor {
+        SMILES_stereo
+        SMILES
+      }
+    }
+  }`;
+  try {
+    const resp = await grok.dapi.fetchProxy('https://data.rcsb.org/graphql', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({query}),
+    });
+    if (!resp.ok) return {};
+    const data = await resp.json();
+    const result: {[compId: string]: string} = {};
+    for (const comp of data.data?.chem_comps ?? []) {
+      const smiles = comp.rcsb_chem_comp_descriptor?.SMILES_stereo ??
+        comp.rcsb_chem_comp_descriptor?.SMILES;
+      if (smiles)
+        result[comp.rcsb_id] = smiles;
+    }
+    return result;
+  } catch {
+    return {};
+  }
+}
+
+/** Build Binding Sites accordion content from parsed SITE records. */
+export function buildBindingSitesPane(sites: PdbSite[]): HTMLElement {
+  const innerAcc = DG.Accordion.create();
+  for (const site of sites) {
+    innerAcc.addPane(site.name, () => {
+      return ui.divText(site.residues.join(', '));
+    }, false);
+  }
+  return innerAcc.root;
+}
+
+/** Build Secondary Structure accordion content from parsed HELIX/SHEET records. */
+export function buildSecondaryStructurePane(ss: PdbSecondaryStructure): HTMLElement {
+  const map: {[key: string]: any} = {};
+  if (ss.helices.length > 0) {
+    map['Helices'] = ss.helices.length.toString();
+    const helixByChain: {[c: string]: number} = {};
+    for (const h of ss.helices)
+      helixByChain[h.chain] = (helixByChain[h.chain] || 0) + 1;
+    map['Helices by Chain'] = Object.entries(helixByChain)
+      .map(([c, n]) => `${c}: ${n}`).join(', ');
+  }
+  if (ss.sheets.length > 0) {
+    map['Strands'] = ss.sheets.length.toString();
+    const sheetByChain: {[c: string]: number} = {};
+    for (const s of ss.sheets)
+      sheetByChain[s.chain] = (sheetByChain[s.chain] || 0) + 1;
+    map['Strands by Chain'] = Object.entries(sheetByChain)
+      .map(([c, n]) => `${c}: ${n}`).join(', ');
+  }
+  return ui.tableFromMap(map);
+}
+
+/** Build Modified Residues accordion content with optional 2D visualization. */
+export function buildModifiedResiduesPane(mods: PdbModifiedResidue[], fetch2D: boolean): HTMLElement {
+  const innerAcc = DG.Accordion.create();
+  for (const mod of mods) {
+    const label = `${mod.resName} ${mod.chain}${mod.resSeq}`;
+    innerAcc.addPane(label, () => {
+      const map: {[key: string]: any} = {};
+      map['Modified Residue'] = mod.resName;
+      map['Standard Residue'] = mod.standardRes;
+      map['Chain'] = mod.chain;
+      map['Position'] = mod.resSeq.toString();
+      if (mod.comment)
+        map['Description'] = mod.comment;
+      const modParts: HTMLElement[] = [ui.tableFromMap(map)];
+
+      if (fetch2D) {
+        const molHost = ui.div([ui.loader()]);
+        modParts.push(molHost);
+        fetchLigandSmiles([mod.resName]).then((smilesMap) => {
+          molHost.innerHTML = '';
+          const smiles = smilesMap[mod.resName];
+          if (smiles)
+            molHost.appendChild(grok.chem.drawMolecule(smiles, 250, 200));
+        });
+      }
+
+      return ui.divV(modParts);
+    }, false);
+  }
+  return innerAcc.root;
+}
+
+/** Build Missing Residues accordion content, grouped by chain with consecutive ranges. */
+export function buildMissingResiduesPane(missingResidues: PdbMissingResidue[]): HTMLElement {
+  const byChain: {[chain: string]: Array<{resName: string; resSeq: number}>} = {};
+  for (const mr of missingResidues) {
+    if (!byChain[mr.chain]) byChain[mr.chain] = [];
+    byChain[mr.chain].push({resName: mr.resName, resSeq: mr.resSeq});
+  }
+  const innerAcc = DG.Accordion.create();
+  for (const [chain, residues] of Object.entries(byChain)) {
+    innerAcc.addCountPane(`Chain ${chain}`, () => {
+      residues.sort((a, b) => a.resSeq - b.resSeq);
+      const segments: Array<Array<{resName: string; resSeq: number}>> = [];
+      let current: Array<{resName: string; resSeq: number}> = [residues[0]];
+      for (let i = 1; i < residues.length; i++) {
+        if (residues[i].resSeq === residues[i - 1].resSeq + 1)
+          current.push(residues[i]);
+        else {
+          segments.push(current);
+          current = [residues[i]];
+        }
+      }
+      segments.push(current);
+      const parts: HTMLElement[] = [];
+      for (let i = 0; i < segments.length; i++) {
+        if (i > 0)
+          parts.push(ui.div([], {style: {height: '8px'}}));
+        parts.push(ui.divText(
+          segments[i].map((r) => `${r.resName} ${r.resSeq}`).join(', '),
+        ));
+      }
+      return ui.divV(parts);
+    }, () => residues.length, false);
+  }
+  return innerAcc.root;
+}
+
+
 /** {@link https://molstar.org/docs/plugin/#plugincontext-without-built-in-react-ui} */
 const MolstarPluginSpec: PluginSpec = {
   // eslint-disable-next-line new-cap

@@ -2,39 +2,11 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {parsePdbHeaders} from './pdb-helper';
-
-/** Fetch SMILES for a list of ligand compound IDs from RCSB Chemical Component Dictionary. */
-async function fetchLigandSmiles(compIds: string[]): Promise<{[compId: string]: string}> {
-  const query = `{
-    chem_comps(comp_ids: [${compIds.map((id) => `"${id}"`).join(', ')}]) {
-      rcsb_id
-      rcsb_chem_comp_descriptor {
-        SMILES_stereo
-        SMILES
-      }
-    }
-  }`;
-  try {
-    const resp = await grok.dapi.fetchProxy('https://data.rcsb.org/graphql', {
-      method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({query}),
-    });
-    if (!resp.ok) return {};
-    const data = await resp.json();
-    const result: {[compId: string]: string} = {};
-    for (const comp of data.data?.chem_comps ?? []) {
-      const smiles = comp.rcsb_chem_comp_descriptor?.SMILES_stereo ??
-        comp.rcsb_chem_comp_descriptor?.SMILES;
-      if (smiles)
-        result[comp.rcsb_id] = smiles;
-    }
-    return result;
-  } catch {
-    return {};
-  }
-}
+import {
+  parsePdbHeaders, fetchLigandSmiles,
+  buildBindingSitesPane, buildSecondaryStructurePane,
+  buildModifiedResiduesPane, buildMissingResiduesPane,
+} from './pdb-helper';
 
 export function pdbFileInfoWidget(pdbText: string): DG.Widget {
   const info = parsePdbHeaders(pdbText);
@@ -200,114 +172,28 @@ export function pdbFileInfoWidget(pdbText: string): DG.Widget {
   // -- Binding Sites --
   if (info.sites && info.sites.length > 0) {
     acc.addCountPane('Binding Sites', () => {
-      const innerAcc = DG.Accordion.create();
-      for (const site of info.sites!) {
-        innerAcc.addPane(site.name, () => {
-          return ui.divText(site.residues.join(', '));
-        }, false);
-      }
-      return innerAcc.root;
+      return buildBindingSitesPane(info.sites!);
     }, () => info.sites!.length, false);
   }
 
   // -- Secondary Structure --
   if (info.secondaryStructure) {
-    const ss = info.secondaryStructure;
     acc.addPane('Secondary Structure', () => {
-      const map: {[key: string]: any} = {};
-      if (ss.helices.length > 0) {
-        map['Helices'] = ss.helices.length.toString();
-        // Summarize by chain
-        const helixByChain: {[c: string]: number} = {};
-        for (const h of ss.helices)
-          helixByChain[h.chain] = (helixByChain[h.chain] || 0) + 1;
-        map['Helices by Chain'] = Object.entries(helixByChain)
-          .map(([c, n]) => `${c}: ${n}`).join(', ');
-      }
-      if (ss.sheets.length > 0) {
-        map['Strands'] = ss.sheets.length.toString();
-        const sheetByChain: {[c: string]: number} = {};
-        for (const s of ss.sheets)
-          sheetByChain[s.chain] = (sheetByChain[s.chain] || 0) + 1;
-        map['Strands by Chain'] = Object.entries(sheetByChain)
-          .map(([c, n]) => `${c}: ${n}`).join(', ');
-      }
-      return ui.tableFromMap(map);
+      return buildSecondaryStructurePane(info.secondaryStructure!);
     }, false);
   }
 
   // -- Modified Residues --
   if (info.modifiedResidues && info.modifiedResidues.length > 0) {
     acc.addCountPane('Modified Residues', () => {
-      const innerAcc = DG.Accordion.create();
-      for (const mod of info.modifiedResidues!) {
-        const label = `${mod.resName} ${mod.chain}${mod.resSeq}`;
-        innerAcc.addPane(label, () => {
-          const map: {[key: string]: any} = {};
-          map['Modified Residue'] = mod.resName;
-          map['Standard Residue'] = mod.standardRes;
-          map['Chain'] = mod.chain;
-          map['Position'] = mod.resSeq.toString();
-          if (mod.comment)
-            map['Description'] = mod.comment;
-          const modParts: HTMLElement[] = [ui.tableFromMap(map)];
-
-          // Fetch 2D structure from RCSB if this is a standard PDB
-          if (isRcsb) {
-            const molHost = ui.div([ui.loader()]);
-            modParts.push(molHost);
-            fetchLigandSmiles([mod.resName]).then((smilesMap) => {
-              molHost.innerHTML = '';
-              const smiles = smilesMap[mod.resName];
-              if (smiles)
-                molHost.appendChild(grok.chem.drawMolecule(smiles, 250, 200));
-            });
-          }
-
-          return ui.divV(modParts);
-        }, false);
-      }
-      return innerAcc.root;
+      return buildModifiedResiduesPane(info.modifiedResidues!, isRcsb);
     }, () => info.modifiedResidues!.length, false);
   }
 
   // -- Missing Residues --
   if (info.missingResidues && info.missingResidues.length > 0) {
     acc.addCountPane('Missing Residues', () => {
-      // Group by chain
-      const byChain: {[chain: string]: Array<{resName: string; resSeq: number}>} = {};
-      for (const mr of info.missingResidues!) {
-        if (!byChain[mr.chain]) byChain[mr.chain] = [];
-        byChain[mr.chain].push({resName: mr.resName, resSeq: mr.resSeq});
-      }
-      const innerAcc = DG.Accordion.create();
-      for (const [chain, residues] of Object.entries(byChain)) {
-        innerAcc.addCountPane(`Chain ${chain}`, () => {
-          residues.sort((a, b) => a.resSeq - b.resSeq);
-          // Group consecutive residues into segments
-          const segments: Array<Array<{resName: string; resSeq: number}>> = [];
-          let current: Array<{resName: string; resSeq: number}> = [residues[0]];
-          for (let i = 1; i < residues.length; i++) {
-            if (residues[i].resSeq === residues[i - 1].resSeq + 1)
-              current.push(residues[i]);
-            else {
-              segments.push(current);
-              current = [residues[i]];
-            }
-          }
-          segments.push(current);
-          const parts: HTMLElement[] = [];
-          for (let i = 0; i < segments.length; i++) {
-            if (i > 0)
-              parts.push(ui.div([], {style: {height: '8px'}}));
-            parts.push(ui.divText(
-              segments[i].map((r) => `${r.resName} ${r.resSeq}`).join(', '),
-            ));
-          }
-          return ui.divV(parts);
-        }, () => residues.length, false);
-      }
-      return innerAcc.root;
+      return buildMissingResiduesPane(info.missingResidues!);
     }, () => info.missingResidues!.length, false);
   }
 
