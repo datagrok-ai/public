@@ -7,9 +7,9 @@ enterprise. Data is one of the core assets for an enterprise, making data manage
 help reduce the manual effort required to developed meaningful information and insight of business data, as well as
 significantly enhance data quality._
 
-One of the Datagrok's goals is to provide the relevant information to the user whenever they need it. In many cases,
-that involves presenting additional augmented data without the explicit request. Here are few examples of the platform
-going an extra mile, and delivering these simple insights:
+One of Datagrok's goals is to surface relevant information whenever you need it.
+In many cases, this means presenting augmented data automatically. Here are a few
+examples:
 
 * Showing quick data summary in the column tooltip
   * Histogram
