@@ -200,8 +200,8 @@ export async function pharmacophoreFeaturesWidget(molecule: string): Promise<DG.
     molecule = _convertMolNotation(molecule, DG.chem.Notation.Smiles, DG.chem.Notation.MolBlock, rdKitModule!);
 
   // Combined overview image
-  const overviewWidth = 300;
-  const overviewHeight = 200;
+  const overviewWidth = 255;
+  const overviewHeight = 170;
   const overviewCanvas = ui.canvas(overviewWidth, overviewHeight);
   const combinedSubstruct = buildCombinedSubstruct(matches);
   drawMoleculeToCanvas(0, 0, overviewWidth, overviewHeight, overviewCanvas, molecule,
@@ -257,7 +257,8 @@ export async function pharmacophoreFeaturesWidget(molecule: string): Promise<DG.
 
     const featureItems = [...featureMatchGroups.entries()].map(([featureName, featureMatches]) => {
       const match = featureMatches[0];
-      const description = ui.divText(featureName);
+      const count = featureMatches.length;
+      const description = ui.divText(count > 1 ? `${featureName} (${count})` : featureName);
       const imageHost = ui.canvas(thumbWidth, thumbHeight);
 
       // Build ISubstruct with all matches highlighted in the family color
@@ -267,8 +268,8 @@ export async function pharmacophoreFeaturesWidget(molecule: string): Promise<DG.
       const atomColors: {[key: number]: number[]} = {};
       const bondColors: {[key: number]: number[]} = {};
       for (const fm of featureMatches) {
-        for (const a of fm.atoms) { allAtoms.push(a); if (color) atomColors[a] = color; }
-        for (const b of fm.bonds) { allBonds.push(b); if (color) bondColors[b] = color; }
+        for (const a of fm.atoms) {allAtoms.push(a); if (color) atomColors[a] = color;}
+        for (const b of fm.bonds) {allBonds.push(b); if (color) bondColors[b] = color;}
       }
       const substruct: ISubstruct = {atoms: allAtoms, bonds: allBonds,
         highlightAtomColors: atomColors, highlightBondColors: bondColors};
@@ -318,9 +319,13 @@ export async function pharmacophoreFeaturesWidget(molecule: string): Promise<DG.
   const overviewRow = ui.divH([overviewCanvas, legend],
     {style: {alignItems: 'center', gap: '10px', marginBottom: '8px'}});
 
+  const sectionLabel = ui.divText('Individual pharmacophore features',
+    {style: {fontWeight: 'bold', marginBottom: '4px', borderBottom: '1px solid var(--grey-2)'}});
+
   return new DG.Widget(ui.divV([
     calcForWholeButton,
     overviewRow,
+    sectionLabel,
     ...sections,
   ]));
 }
