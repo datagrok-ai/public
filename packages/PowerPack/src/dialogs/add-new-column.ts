@@ -359,7 +359,7 @@ export class AddNewColumnDialog {
     return Object.fromEntries([
       [this.placeholderName, this.inputName!.value],
       [this.placeholderType, typeForHistory],
-      [this.placeholderExpression, this.codeMirror!.state.doc.toString()],
+      [this.placeholderExpression, this.codeMirror?.state.doc.toString() ?? ''],
     ]);
   }
 
@@ -367,18 +367,21 @@ export class AddNewColumnDialog {
   loadInputHistory(history: any): void {
     this.inputName!.value = history[this.placeholderName];
     this.inputType!.value = history[this.placeholderType];
-    this.codeMirror!.dispatch({changes: {
-      from: 0,
-      to: this.codeMirror!.state.doc.length,
-      insert: history[this.placeholderExpression],
-    }});
+    if (this.codeMirror) {
+      this.codeMirror.dispatch({changes: {
+        from: 0,
+        to: this.codeMirror.state.doc.length,
+        insert: history[this.placeholderExpression],
+      }});
+    }
   }
 
   /** Creates and initializes the "Column Name" input field. */
   initInputName(): DG.InputBase {
     const control = ui.input.string('', {value: ''});
     control.onInput.subscribe(async () => {
-      await this.updatePreview(this.codeMirror!.state.doc.toString(), true);
+      if (!this.codeMirror) return;
+      await this.updatePreview(this.codeMirror.state.doc.toString(), true);
     });
     control.setTooltip(this.tooltips['name']);
 
@@ -401,7 +404,8 @@ export class AddNewColumnDialog {
       this.call.getParamValue('type') : defaultChoice, items: this.supportedTypes});
     control.onInput.subscribe(async () => {
       this.changedType = true;
-      await this.updatePreview(this.codeMirror!.state.doc.toString(), false);
+      if (!this.codeMirror) return;
+      await this.updatePreview(this.codeMirror.state.doc.toString(), false);
     });
     control.setTooltip(this.tooltips['type']);
 

@@ -1,5 +1,9 @@
 # Power Pack changelog
 
+## v.next
+
+* CLAUDE-3: Fixed crash in Add New Column dialog when interacting with inputs before CodeMirror initializes
+
 ## 1.8.0 (2026-03-13)
 
 ### Features
