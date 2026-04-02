@@ -5,13 +5,13 @@ title: "Decorators"
 # Decorators
 
 Package functions are typically registered in the main package file `package.ts`. Each function has a special [parameter annotation](../../datagrok/concepts/functions/func-params-annotation.md) depending on its [role](../function-roles.md).
-You can use [decorators](https://www.typescriptlang.org/docs/handbook/decorators.html) to register annotated functions based on decorated class/object Decorators add the ability to create strong type annotation instead of writing it by hand.
+You can use [decorators](https://www.typescriptlang.org/docs/handbook/decorators.html) to register annotated functions based on decorated classes or objects. Decorators let you create strongly typed annotations instead of writing them by hand.
 
 You can use a decorator `@grok.decorators.<name>`. This is equivalent to adding a function to `package.ts`. When you run the `build` script for your package, the webpack plugin called `FuncGeneratorPlugin` will add a special `package.g.ts` file to your project. Note that it is not on the ignore list, so you should commit this file to the repository.
 
 ## Class decorators
 
-There are a few [Datagrok JS API](https://datagrok.ai/api/js) that can be decorated to register them as annotated functions. You are also able to decorate their subclasses. Here is the list of classes for which decorators are designed for: 
+A few [Datagrok JS API](https://datagrok.ai/api/js) classes can be decorated to register them as annotated functions. You can also decorate their subclasses. Here is the list of classes that support decorators: 
 
 * [custom viewers](../how-to/viewers/develop-custom-viewer.md)
 * [custom filters](../how-to/viewers/custom-filters.md)
@@ -75,11 +75,11 @@ export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
 
 ## Method decorators
 
-Additionally, it is possible to decorate methods. There is no ability to decorate functions, which is why you should decorate static methods in any class you need. The best class for that is `PackageFunctions` in the `package.ts` file.
+Additionally, you can decorate methods. Since you cannot decorate standalone functions, decorate static methods in any class you need. The best class for that is `PackageFunctions` in the `package.ts` file.
 
-This functionality enables the automatic generation of annotated functions from decorated class methods. Base annotation gets created from the method's signature, which is an option in the decorator's input options. You can see [list](https://github.com/datagrok-ai/public/blob/master/js-api/src/decorators/functions.ts) of decorators and their options in the js-api package.
+This functionality automatically generates annotated functions from decorated class methods. The base annotation is created from the method's signature, which you can customize through the decorator's input options. You can see [list](https://github.com/datagrok-ai/public/blob/master/js-api/src/decorators/functions.ts) of decorators and their options in the js-api package.
 
-There is`@grok.decorators.param` decorator that allows setting input options. You can easily set the name, type, and options in the decorator's input object. Most of the types are already [registered](https://github.com/datagrok-ai/public/blob/7ce4edaca2a937b934120a8894ea927c1eca8c7f/js-api/src/const.ts#L82) in `DG.TYPE` enum and you can easily use it to set params type.
+The `@grok.decorators.param` decorator lets you set input options. You can easily set the name, type, and options in the decorator's input object. Most of the types are already [registered](https://github.com/datagrok-ai/public/blob/7ce4edaca2a937b934120a8894ea927c1eca8c7f/js-api/src/const.ts#L82) in `DG.TYPE` enum and you can easily use it to set params type.
 
 ### Example 
 
@@ -168,7 +168,7 @@ export class PackageFunctions {
    }
    ```
 
-1. After the build ensure that there is the next line in the `package.ts` exists(if it doesnt add it):
+1. After the build, ensure that the following line exists in `package.ts` (add it if missing):
 
    ```ts
    export * from './package.g';

@@ -3,7 +3,7 @@ title: "Cassandra"
 ---
 
 Provides access to [Apache Cassandra](https://cassandra.apache.org/) database
-using SQL queries via JDBC driver.
+using SQL queries via a JDBC driver.
 
 ## Connection parameters
 
@@ -41,8 +41,8 @@ using SQL queries via JDBC driver.
 |                        | min-max     |                            |
 |                        | April 2021  |                            |
 
-* (1) If you want to use parameterized queries, you need to add `ALLOW FILTERING`
-  which can lead to sirius performance penalties. Moreover, to be able to use string patterns you need to create secondary indexes for columns in where clause.
+* (1) If you want to use parameterized queries, you need to add `ALLOW FILTERING`,
+  which can lead to serious performance penalties. To use string patterns, you need to create secondary indexes for columns in the WHERE clause.
   See [documentation](https://docs.datastax.com/en/cql-oss/3.3/cql/cql_reference/cqlSelect.html).
 
 ## Supported output types

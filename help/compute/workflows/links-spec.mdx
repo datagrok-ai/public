@@ -96,13 +96,13 @@ selectors:
 ![Base path example1](pics/base_path_example1.svg)
 
 
-Is this example (assuming that mylink1 is defined directly in
+In this example (assuming that mylink1 is defined directly in
 myworkflow), the first segment `expand(workflow1|workflow2)` matches
 both workflow1 and workflow2. The second segment of the base path
 `expand(script1)` is matching script1, and there are 2 matches inside
 each workflow, so 4 script1 items are matching. All base path matches
-are colored via a red border. Note that base queries are targeted
-scirpts or workflows, not scirpt io.
+are colored via a red border. Note that base queries target
+scripts or workflows, not script IO.
 
 The next step is to use this base path matches to create mylink1
 instances. The first segment of both from and to paths
@@ -123,12 +123,12 @@ Matching same item as in the link instance base path.
 
 #### `before`
 
-Matching the first precising item with any of specified ids before the
+Matching the first preceding item with any of the specified IDs before the
 link instance base path.
 
 #### `after`
 
-Matching the first following item with any of specified ids before the
+Matching the first following item with any of the specified IDs after the
 link instance base path.
 
 #### `modifiers`
@@ -144,8 +144,8 @@ the matching process stops.
 
 ### Tag selectors
 
-All selectors could used [tags](configuration#tags) instead of ids to
-make matching (including `expand` in base query), by using prefix `#`
+All selectors can use [tags](configuration#tags) instead of IDs for
+matching (including `expand` in base query), by using the `#`
 selector prefix. Unlike ids, tags lists are matching using `and`,
 since it is possible to define multiple tags on the same script node
 or workflow. Also tags could be used to match items on different
@@ -171,7 +171,7 @@ Will match all items with both tag1 and tag2 first, regardless of how
 deep they are nested, and then match last child item that has id
 script1 or script2.
 
-Note that is possible to match only nested items, tags that are higher
+Note that you can match only nested items. Tags that are higher
 in the tree than a link definition will not be matched.
 
 ### Template queries
@@ -196,7 +196,7 @@ Could be written as
 
 Template option basically creates multiple queries that only differ in
 script io part, and in templates it is possible to use `|` for script
-io. All other path parts could not use template expasion. The name of
+io. All other path parts cannot use template expansion. The name of
 the query will be just a query template name and a script io name.
 
 Also it is possible to use `_(template)` for an empty prefix.

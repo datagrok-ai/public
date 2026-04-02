@@ -144,7 +144,7 @@ gets logs, see [Customize audit logging](#customize-audit-logging).
 When an action modifies the server's state in any way, it's recorded in the
 audit log in addition to the log file. You can see a seven-day history of such
 activity on the **Context Panel** under **Activity**, and the
-high-level overview of the the entity's usage under **Usage**.
+high-level overview of the entity's usage under **Usage**.
 
 By default, each explicitly executed
 [function](../../datagrok/concepts/functions/functions.md) is logged,

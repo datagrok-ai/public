@@ -226,7 +226,7 @@ Using **Browse**, you can explore relational databases by viewing their schemas,
 </TabItem>
 <TabItem value="apps" label="Apps">
 
-Clicking an app opens an app-specific view, which can be it's landing view or a README.
+Clicking an app opens an app-specific view, which can be its landing view or a README.
 
 ![](img/browse-view-apps.gif)
 
@@ -284,9 +284,9 @@ You can [build custom widgets](../../../develop/how-to/packages/home-page-widget
 
 ## Importing text
 
-You can parse delimiter-separated text to table by clicking on the "Open text" icon on top.
-Paste your text or edit it right there, adjust the import parameter until you get it right, 
-and click "DONE" to open the resulting table in the workspace. 
+To parse delimiter-separated text into a table, click the **Open text** icon at
+the top. Paste or edit your text, adjust the import parameters as needed, and
+click **DONE** to open the resulting table. 
 
 ![Text Manager](img/text-manager.gif)
 

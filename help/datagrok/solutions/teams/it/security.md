@@ -6,22 +6,21 @@ Datagrok was designed with security as one of the primary objectives. The platfo
 data, letting them decide exactly what is shared with whom, and using the best security practices across the solution.
 At the same time, it empowers customers' IT to manage the platform.
 
-At the moment, most of the Datagrok customers are big pharma and biotech companies. Due to the nature of the platform (
-you get maximum value when it is integrated with multiple databases and internal systems), and the data it deals with (
-internal databases, often containing proprietary chemical compounds), our clients deploy Datagrok on-premises. On one
-hand, it makes the integration more complicated due to the need to integrate with the internal IT systems and adhere to
-the established regulations. On the other hand, that makes security assessment easier since the platform is used in a
-controlled environment using the systems chosen by the IT.
+Most Datagrok customers are pharma and biotech companies that deploy on-premises
+because the platform works best when integrated with internal databases and systems,
+which often contain proprietary chemical compounds. On-premises deployment requires
+conforming to internal IT regulations but simplifies security assessment because
+the platform runs in a controlled, IT-managed environment.
 
-Datagrok's revolutionary in-browser data processing makes it a lot more secure compared to other products. For instance,
-in other products when you work with local files you need to upload the dataset to the server first in order to do
-anything meaningful, therefore introducing additional layer of complexity and the need to manage that dataset on a
-server. With Datagrok, a lot could be achieved without having to use the server at all. Another mode that Datagrok
-supports is when the algorithm (in a form of a plugin) goes to the dataset already located in the browser - this is also
-a more secure way to work with data than the other way around.
+Datagrok's in-browser data processing improves security. Unlike other products that
+require uploading datasets to a server before you can work with them, Datagrok can
+perform many operations directly in the browser, reducing complexity and attack
+surface. When server-side processing is needed, the platform handles it
+transparently. Plugins can also run algorithms against data already loaded in the
+browser, keeping sensitive data local.
 
-The [apps](../../../../develop/develop.md#packages) built on top of the platform end up a lot more secure than the traditional web applications,
-since they reuse the existing security system and do not have to roll out their own.
+[Apps](../../../../develop/develop.md#packages) built on the platform are more secure than traditional web applications
+because they reuse the platform's security system instead of implementing their own.
 
 ## Authentication
 
@@ -109,9 +108,9 @@ an [ECS CloudFormation deployment template](../../../../deploy/aws/deploy-amazon
 CloudFormation Template is tested by [Snyk](https://snyk.io/) on every change. The results
 are [available publicly](https://github.com/datagrok-ai/public/actions/workflows/iaac.yaml).
 
-In the resulted stand all communications are restricted
-by [Security Groups](https://docs.aws.amazon.com/vpc/latest/userguide/VPC_SecurityGroups.html), services can not be
-accessed directly, all requests goes through Application Load Balancer.
+In the resulting deployment, [Security Groups](https://docs.aws.amazon.com/vpc/latest/userguide/VPC_SecurityGroups.html)
+restrict all communications. Services cannot be accessed directly — all requests
+go through the Application Load Balancer.
 
 ## More information
 

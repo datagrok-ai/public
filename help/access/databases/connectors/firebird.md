@@ -3,7 +3,7 @@ title: "Firebird"
 ---
 
 Provides access to [FirebirdSQL](https://firebirdsql.org/) database using SQL
-queries via JDBC driver.
+queries via a JDBC driver.
 
 ## Connection parameters
 

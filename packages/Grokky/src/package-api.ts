@@ -21,7 +21,7 @@ export namespace funcs {
   }
 
   /**
-  Get answers from DeepGROK AI assistant based on Datagrok documentation and public code.
+  Get answers from AI assistant based on Datagrok documentation and public code.
   */
   export async function askHelpLLMProvider(prompt: string ): Promise<any> {
     return await grok.functions.call('Grokky:AskHelpLLMProvider', { prompt });
@@ -41,24 +41,8 @@ export namespace funcs {
     return await grok.functions.call('Grokky:LlmSearchQueryProvider', { prompt });
   }
 
-  export async function askAIGeneralCached(model: string , systemPrompt: string , prompt: string , schema: any ): Promise<string> {
-    return await grok.functions.call('Grokky:AskAIGeneralCached', { model, systemPrompt, prompt, schema });
-  }
-
-  export async function ask(question: string ): Promise<string> {
-    return await grok.functions.call('Grokky:Ask', { question });
-  }
-
-  export async function getExecutionPlan(userGoal: string ): Promise<string> {
-    return await grok.functions.call('Grokky:GetExecutionPlan', { userGoal });
-  }
-
   export async function findMatchingPatternQuery(prompt: string ): Promise<string> {
     return await grok.functions.call('Grokky:FindMatchingPatternQuery', { prompt });
-  }
-
-  export async function askDocumentationCached(prompt: string ): Promise<string> {
-    return await grok.functions.call('Grokky:AskDocumentationCached', { prompt });
   }
 
   export async function setupAIQueryEditor(view: DG.View , connectionID: string , queryEditorRoot: any , setAndRunFunc: any ): Promise<boolean> {
@@ -67,14 +51,6 @@ export namespace funcs {
 
   export async function moveMetaToDB(dbName: string ): Promise<void> {
     return await grok.functions.call('Grokky:MoveMetaToDB', { dbName });
-  }
-
-  export async function setupVectorStore(): Promise<void> {
-    return await grok.functions.call('Grokky:SetupVectorStore', {});
-  }
-
-  export async function searchForSomething(): Promise<void> {
-    return await grok.functions.call('Grokky:SearchForSomething', {});
   }
 
   export async function indexDatabaseSchema(): Promise<void> {

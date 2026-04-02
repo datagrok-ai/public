@@ -50,8 +50,8 @@ When a **Table View** is open, Datagrok automatically suggests relevant layouts
 from the layout gallery, accessible via **Top Menu > View > Layout > Open
 Gallery**.
 
-A layout is deemed relevant if its "columns of interest" match a subset of
-columns in the current table, determined based on their names, data types,
+A layout is considered relevant if its "columns of interest" match a subset of
+columns in the current table, based on column names, data types,
 semantic types, and other metadata.
 
 When saving a layout, the columns of interest are determined as follows:

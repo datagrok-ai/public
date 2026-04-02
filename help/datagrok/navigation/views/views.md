@@ -92,4 +92,4 @@ views related to the user's profile.
 </TabItem>
 </Tabs>
 
-To show the **Toolbox**, hover over the **Sidebar**. To pin it, clicking the **Pin (<FAIcon icon="fa-solid fa-thumbtack"/>) icon** in the top right corner.  
+To show the **Toolbox**, hover over the **Sidebar**. To pin it, click the **Pin (<FAIcon icon="fa-solid fa-thumbtack"/>) icon** in the top right corner.  

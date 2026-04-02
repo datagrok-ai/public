@@ -4,12 +4,11 @@ title: "Supported connectors"
 
 
 A connector can work with a database, an Excel file, a CSV file, a web service,
-or basically anything that is capable of providing the data. Datagrok currently
-supports over 30 different connectors, and the list is quickly growing. Most of
-Datagrok's data connectors are open-sourced and could be found on
+or basically anything that provides data. Datagrok currently
+supports over 30 different connectors, and the list is quickly growing. Most
+data connectors are open-sourced and can be found on
 [GitHub](https://github.com/datagrok-ai/public/tree/master/connectors) (MIT
-license). The supported connectors with their specific parameters are the
-following:
+license). The supported connectors with their specific parameters are:
 
 | Data Source                      |  Server | Port | DB  | Browse Schema | Cache Schema | Cache Results | SSL | Connection String | Login | Password | Other Parameters                                       |
 |----------------------------------|-------|------|-----|---------------|--------------|---------------|-----|-------------------|-------|----------|--------------------------------------------------------|

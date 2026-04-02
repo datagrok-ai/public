@@ -5,7 +5,7 @@ sidebar_position: 3
 ---
 
 Table Manager, available via **View | Tables**, contains a list of currently open tables. Use it to navigate between
-tables, select them, or perform batch actions. It also allows to view metadata on multiple tables in a tabular format.
+tables, select them, or perform batch actions. You can also view metadata for multiple tables in a tabular format.
 
 The implementation is based on the [grid](../../../visualize/viewers/grid.md), so many of the grid's features apply.
 
@@ -21,8 +21,8 @@ Usage:
 | Popup: Show \        | Toggle visibility of the property "x" |
 | Popup: Open as table | Add tables to workspace (tables in rows) |
 
-If a context menu is open when multiple columns are selected, user will be present with a choice to apply commands to
-either current table, or all selected tables.
+If a context menu is open when multiple tables are selected, you can choose to apply commands to
+either the current table or all selected tables.
 
 See also:
 

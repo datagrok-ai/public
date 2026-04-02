@@ -469,7 +469,8 @@ export abstract class SARViewer extends DG.JsViewer implements ISARViewer {
    */
   onPropertyChanged(property: DG.Property): void {
     super.onPropertyChanged(property);
-
+    if (!this.dataFrame)
+      return;
 
     this.doRender = true;
     switch (property.name) {
@@ -899,6 +900,8 @@ export class MonomerPosition extends SARViewer {
    */
   onPropertyChanged(property: DG.Property): void {
     super.onPropertyChanged(property);
+    if (!this.dataFrame)
+      return;
     switch (property.name) {
     case SAR_PROPERTIES.SEQUENCE:
       this._invariantMapSelection = null;
@@ -1266,7 +1269,7 @@ export class MonomerPosition extends SARViewer {
   /** Renders the MonomerPosition viewer body. */
   render(): void {
     $(this.root).empty();
-    if (!this.activityColumnName || !this.sequenceColumnName) {
+    if (!this.dataFrame || !this.activityColumnName || !this.sequenceColumnName) {
       this.root.appendChild(ui.divText('Please, select a sequence and activity columns in the viewer properties'));
       return;
     }
@@ -1625,7 +1628,7 @@ export class MostPotentResidues extends SARViewer {
   /** Renders the MostPotentResidues viewer body. */
   render(): void {
     $(this.root).empty();
-    if (!this.activityColumnName || !this.sequenceColumnName) {
+    if (!this.dataFrame || !this.activityColumnName || !this.sequenceColumnName) {
       this.root.appendChild(ui.divText('Please, select a sequence and activity columns in the viewer properties'));
       return;
     }

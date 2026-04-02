@@ -56,7 +56,7 @@ The **database server** is a c5.xlarge AWS RDS Postgres
 
 ## Tests
 
-Tests are designed how the platform works under different kind of loads. Some of the tests are parameterized (quite
+Tests are designed to measure how the platform works under different kinds of loads. Some of the tests are parameterized (quite
 often, the parameter is a size of the dataset the test works with)
 
 ### Test: db-query-n

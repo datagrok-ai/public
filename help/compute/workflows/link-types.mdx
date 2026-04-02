@@ -49,17 +49,17 @@ All LQL queries should have at least one match, otherwise the link will not be c
 
 #### `handler`
 
-A function that receives an object with a `controller` instance, which
-type is base on link `type` field. Handler function might be async via
-returning either a `Promise<void>` or an `Observable<void>`. No any
-side effects that are made via controller methods are visible until
-the handler finished. Controller must be the only way to read or write
+A function that receives an object with a `controller` instance, whose
+type is based on the link `type` field. The handler function can be async,
+returning either a `Promise<void>` or an `Observable<void>`. No
+side effects made via controller methods are visible until
+the handler finishes. Controller must be the only way to read or write
 state for any handler. Also handlers must not internally mutate
 received states. If the same handler is triggered before a previous
 invocation is finished, the previous one will be gracefully canceled
 and no changes are applied. Handler is mandatory for all links and
 actions, except for [data links](#data-links),
-where a [default handler](#default-handler) might be used if non is provided.
+where a [default handler](#default-handler) can be used if none is provided.
 
 #### `not`
 
@@ -92,8 +92,8 @@ names using an array of names.
 
 _Optional_
 
-Used to specify link running order if multiple links has the same link
-output script node targets, links with a higher priority will run
+Used to specify link running order if multiple links have the same link
+output script node targets. Links with a higher priority run
 before those with a lower one.
 This is primarily used to order data
 links between script own inputs, since they don't have a well-defined order in the workflow.
@@ -155,7 +155,7 @@ getAdditionalParam(name: string): any | undefined;
 ```
 
 Only used in actions, for passing additional parameters from
-[validatators](#validators).
+[validators](#validators).
 
 
 ### Action options
@@ -207,8 +207,8 @@ Font awesome icon to be shown as a part of the UI action button.
 
 ### Data links
 
-Workflow `links` items with a type field `data`. Are used to pass data
-between scripts io. A script input should be a target of at most 1
+Workflow `links` items with a type field `data`. Used to pass data
+between script IO. A script input should be a target of at most 1
 data link output at the same time. Also script outputs should not be
 data links outputs. The controller has the following additional
 methods:
@@ -285,7 +285,7 @@ LQL strings.  Queries are targeting script nodes or workflows. Actions
 descriptors could be retrieved using
 [`getValidationAction`](#getvalidationaction) controller method and
 later shown alongside validation results via
-[`setValidation`](#setvalidation) controller method. It must recieve
+[`setValidation`](#setvalidation) controller method. It must receive
 `ValidationResult` as a data argument.
 
 
@@ -430,14 +430,14 @@ Sets description to an output query with the specified name.
 
 ### Data actions
 
-Triggered by a user and place inside `actions`, otherwise the same as
+Triggered by a user and placed inside `actions`, otherwise the same as
 [data links](#data-links).
 
 
 ### FuncCall actions
 
-Used to change underlying script node FuncCall, has a type
-`funccall`. FuncCall must be of the same function. Targets script io
+Used to change the underlying script node FuncCall. Has a type
+`funccall`. FuncCall must be of the same function. Targets script IO
 as inputs and script nodes as outputs. Controller has additional
 methods:
 
@@ -452,7 +452,7 @@ Sets FuncCall to an output query with the specified name.
 
 ### Pipeline actions
 
-Used to replace dynamic workflow content, has a type `pipeline`.
+Used to replace dynamic workflow content. Has a type `pipeline`.
 Targets script io as inputs and dynamic workflows as outputs.
 Controller has additional methods:
 
@@ -472,14 +472,14 @@ provide `initialValues` and `inputRestrictions`.
 
 ### Init hook
 
-It is using `onInit` field instead of links and is triggered only once
-when a workflow created. Usually is used to populate static
+Uses the `onInit` field instead of links and is triggered only once
+when a workflow is created. Usually is used to populate static
 [states](configuration.mdx#states). Otherwise, the same as [data links](#data-links).
 
 
 ### Return hook
 
-It is using `onReturn` field instead of links and is triggered only
+Uses the `onReturn` field instead of links and is triggered only
 once when a workflow is started [programmatically](code-usage.mdx) and
 exited via `Accept` button.
 Otherwise, the same as [data links](#data-links).

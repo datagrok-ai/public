@@ -139,7 +139,7 @@ You can also explore the vault data directly in the **Context Panel** (**Databas
 <Tabs>
 <TabItem value="molecules" label="Molecules" default>
 * Shows all molecules available in the selected vault
-* The **Id** column contains contains direct links to corresponding molecules in your vault
+* The **Id** column contains direct links to corresponding molecules in your vault
 <br/>
 ![Molecules tab](img/cdd_molecules.png)
 </TabItem>
@@ -198,7 +198,7 @@ The following info panes are shown by default for the current molecular column:
 <details>
 <summary>Info pane options</summary>
 
-Some info panes can customized. To reveal an info pane's available options, hover over it:
+Some info panes can be customized. To reveal an info pane's available options, hover over it:
 
 * View and/or edit the underlying script (click the **Script** icon).
 * Change parameters (click the **Parameter** icon).
@@ -217,7 +217,7 @@ Info panes can be extended with [functions](../../../concepts/functions/function
 
 :::
 
-Also Datagrok is capable of detecting and rendering mixtures. Mixtures should be in a [Mixfile](https://github.com/cdd/mixtures) format introduced by Collaborative Drug Discovery, Inc.
+Datagrok is also capable of detecting and rendering mixtures. Mixtures should be in a [Mixfile](https://github.com/cdd/mixtures) format introduced by Collaborative Drug Discovery, Inc.
 Mixfiles are automatically detected by Datagrok and the data is assigned with ChemicalMixture semantic type, allowing you to render mixtures of any complexity and retrieve detailed information through context panel.
 The main features are:
 
@@ -253,7 +253,7 @@ You can [add custom viewers](../../../../develop/how-to/viewers/develop-custom-v
 
 ### Chemical space
 
-Analyze chemical space using distance-based dimensionality reduction algorithms, such as [tSNE](https://scikit-learn.org/stable/modules/generated/sklearn.manifold.TSNE.html) and [UMAP](https://umap-learn.readthedocs.io/en/latest/). These algorithms use fingerprints to convert cross-similarities into 2D coordinates. This allows to visualize the similarities between molecular structures and identify clusters of similar molecules, outliers, or patterns that might be difficult to detect otherwise. The results are visualized on the interactive [scatterplot](../../../../visualize/viewers/scatter-plot.md).
+Analyze chemical space using distance-based dimensionality reduction algorithms, such as [tSNE](https://scikit-learn.org/stable/modules/generated/sklearn.manifold.TSNE.html) and [UMAP](https://umap-learn.readthedocs.io/en/latest/). These algorithms use fingerprints to convert cross-similarities into 2D coordinates. This lets you visualize the similarities between molecular structures and identify clusters of similar molecules, outliers, or patterns that might be difficult to detect otherwise. The results are visualized on the interactive [scatterplot](../../../../visualize/viewers/scatter-plot.md).
 
 ![chem-space](../../../../compute/chem-space.gif)
 
@@ -512,7 +512,7 @@ To run the r-group decomposition programmatically, see [this sample script](http
 
 ### Scaffold tree analysis
 
-The scaffold tree viewer viewer organizes molecules into a hierarchical tree
+The scaffold tree viewer organizes molecules into a hierarchical tree
 based on their scaffolds, making it easy to explore structure-activity
 relationships, filter datasets, and navigate chemical space.
 
@@ -536,7 +536,7 @@ Each node represents a scaffold. Nodes form a hierarchy where:
 * The root scaffold is the smallest common substructure
 * Child scaffolds contain their parent as a substructure
 * Each scaffold builds on the structure above it in the tree
-* Orphan nodes contains the parent scaffold but don't have any sibling scaffolds
+* Orphan nodes contain the parent scaffold but don't have any sibling scaffolds
 
 ![Scaffold tree anatomy](scaffold-tree-anatomy.png)
 
@@ -625,7 +625,7 @@ dataset column and the scaffold tree.
 * To assign new color, click the **Palette** icon. The color applies to the scaffold
   and all its child scaffolds unless they already have custom colors.
 * To override an inherited color, assign the new color. Custom node colors
-  takes precedence.
+  take precedence.
 
 ![scaffold-tree-coloring](scaffold-tree-coloring.gif)
 
@@ -1137,7 +1137,7 @@ You can use the `Chem: TwoComponentReaction` function to apply specified chemica
 1. Open the **Two Component Reaction** dialog by executing the `Chem: TwoComponentReaction` function in the **Console**. This opens a parameter input dialog.
 1. In the dialog:
    1. Select the reactants to use.
-   1. Enter reaction in the filed provided.
+   1. Enter a reaction in the field provided.
    1. Choose whether to combine the reactants from two sets, or sequentially, and whether to randomize, by checking or clearing the Matrix Expansion and Randomize checkboxes.
    1. Set other parameters, such as seed, the number of maximum random reactions.
    1. Click **OK** to execute.

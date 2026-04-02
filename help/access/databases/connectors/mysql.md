@@ -3,7 +3,7 @@ title: "MySQL"
 ---
 
 Provides access to [MySQL](https://www.mysql.com/) database using SQL queries
-via JDBC driver.
+via a JDBC driver.
 
 ## Connection parameters
 

@@ -2,8 +2,8 @@
 title: "IT customizations"
 ---
 
-We understand the need to comply to the organization's standards, so we made the platform easily customizable. Here are
-some of the features that can be controlled by the IT:
+We understand the need to comply with your organization's standards, so we made the platform easily customizable. Here are
+some of the features that IT can control:
 
 * [Authentication](../../../../govern/access-control/access-control.md#authentication)
   * Login / password

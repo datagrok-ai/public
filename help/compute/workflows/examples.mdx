@@ -174,7 +174,7 @@ Compile and publish the package:
 npm i && npm run build && grok publish local --release
 ```
 
-Open the workflow and run the first Let's run the workflow. You will see the following:
+Open the workflow and run it. You will see the following:
 
 ![data fetch step](pics/WineQFetch_workflow.png)
 
@@ -183,7 +183,7 @@ and automatically created UI for it.
 
 ## Connecting steps
 
-Now, let's add a step that performes some calculations with the fetched data.
+Now, let's add a step that performs some calculations with the fetched data.
 For example, try to cluster different wine data based on the wine characteristics.
 
 Add to the scripts the second file `clusterwinedata.py` with the following content:
@@ -271,7 +271,7 @@ that the link can use.
 For now, we're using a simple notation defining a static link between two steps.
 Lists `from` and `to` contain only one value, defined in the format
 `<direction>:<step><parameter>`
-Please, not that here `<step>` name refers to the name defined in the pipeline configuration,
+Note that here `<step>` name refers to the name defined in the pipeline configuration,
 not the name of the script itself.
 This allows you to create several steps with different input using the same script
 defining step logic.
@@ -290,19 +290,19 @@ Publish the package:
 npm i && npm run build && grok publish local --release
 ```
 
-Open the workflow pachage in Datagrok and run the first step.
+Open the workflow package in Datagrok and run the first step.
 On the second step you'll see the following:
 
 ![Two-step workflow with wine quaity data](pics/WineQ_two_steps_connection.png)
 
-AS you can see, the fetched dataframe with wine data was automatically
-feeded into the step input.
+As you can see, the fetched dataframe with wine data was automatically
+fed into the step input.
 
 ### Adding output visualization
 
 Let's improve the clustering step input and output.
 First, we can add a visualization to the output data.
-The best way to do it is use **Datagrok Scatterplot** — a high-performant and customixable
+The best way to do this is to use **Datagrok Scatterplot** -- a high-performance and customizable
 scatterplot viewer.
 To do it, modify the output declaration of the clustering script:
 
@@ -312,7 +312,7 @@ To do it, modify the output declaration of the clustering script:
 
 Here we specified dataframe columns for x, y, and color.
 You can here use all scatterplot properties.
-To fine mode about output viewer, visit the page
+To learn more about output viewers, visit the
 [Visualize output data](../scripting/scripting-features/visualize-output-data.md) section
 
 Publish and run the workflow. You'll get the following:
@@ -321,7 +321,7 @@ Publish and run the workflow. You'll get the following:
 
 ### Adding input parameters
 
-To make the clusterign step configurable,
+To make the clustering step configurable,
 let's add number of clusters and PCA components to the script inputs.
 
 Add parameters to the input declaration:
@@ -431,11 +431,11 @@ Both computational steps use data from the data fetch step.
 
 ## Combining outputs
 
-The final step is to combine clusterign and refression data in one step.
+The final step is to combine clustering and regression data in one step.
 
 To do this, first create a simple Python script for the data combining logic.
-The script receives two dataframes and return one combined dataframe,
-containign regression data, and cluster id from the clusterign dataframe.
+The script receives two dataframes and returns one combined dataframe
+containing regression data and cluster ID from the clustering dataframe.
 
 ```python
 #name: mergepredictions
@@ -463,7 +463,7 @@ const c: PipelineConfiguration = {
           friendlyName: 'Merge predictions of two models',
           nqName: 'winequalitywf:mergepredictions',
         }
-        ], // we nned comma here because after it we'll have the `links` section
+        ], // we need a comma here because the `links` section follows
     links: [
       ...
       {
@@ -520,7 +520,7 @@ The clustering analysis, shown by colors, reveals no clear separation between cl
 
 However, the provided examples demonstrate the key capabilities of the
 Datagrok Low-code workflows.
-A simple Javascript code allows you to assemble your scripts in the workflow buildign blocks,
+Simple JavaScript code allows you to assemble your scripts into workflow building blocks,
 combining the flexibility of Python/R with the
 automated UI construction and blaze-fast interactive viewers.
 
@@ -534,10 +534,10 @@ then change number of clusters and rerun the clustering step.
 
 
 As you can see, now we have only three clusters,
-and the final dama merging step was immediately marked by the red circle.
+and the final data merging step was immediately marked by a red circle.
 
 The workflow engine found input data inconsistency and notified us.
-Now the data merge step shows us the **Rerun with consistent** buton,
+Now the data merge step shows the **Rerun with consistent** button,
 suggesting to rerun the step.
 
 The Low-code workflow engine combines flexible data analysis capabilities

@@ -1107,7 +1107,6 @@ export namespace input {
     //put tags into items (for backward compatibility)
     if (config?.tags && !config.items)
         config.items = config.tags as any[];
-    const tagsBaseInput = _create(d4.InputType.Tags, name, config);
     return _create(d4.InputType.Tags, name, config);  
   }
 

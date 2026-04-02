@@ -109,7 +109,8 @@ export interface IFunctionRegistrationData {
   tags?: string;        // comma-separated tags
   isAsync?: boolean;    // whether is can be called synchronously
   namespace?: string;
-  options?: {[key: string]: string}
+  options?: {[key: string]: string};
+  outputs?: {name: string, type: string, semType?: string}[];
 }
 
 

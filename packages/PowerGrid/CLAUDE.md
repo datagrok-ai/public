@@ -78,7 +78,6 @@ The `addPinnedColumn()` function is exposed as a package function.
 
 ### Tests (`src/tests/`)
 
-- `pinned-column-tests.ts` — Pinned column functionality
 - `webgpu-tests.ts` — WebGPU rendering benchmarks
 
 ## Key Patterns

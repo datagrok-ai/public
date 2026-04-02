@@ -3,7 +3,7 @@ title: "Redshift"
 ---
 
 Provides access to [Amazon Redshift](https://aws.amazon.com/en/redshift/)
-database using SQL queries via JDBC driver.
+database using SQL queries via a JDBC driver.
 
 ## Connection parameters
 
@@ -16,8 +16,8 @@ database using SQL queries via JDBC driver.
 }
 ```
 
-* Server parameter should be in a form of: ``examplecluster.abc123xyz789.us-west-2.redshift.amazonaws.com``
-* Also note that credentials should be from admin user account of Redshift service
+* The Server parameter should be in the form: ``examplecluster.abc123xyz789.us-west-2.redshift.amazonaws.com``
+* Credentials should be from the admin user account of the Redshift service
 
 ## Supported Parameters
 

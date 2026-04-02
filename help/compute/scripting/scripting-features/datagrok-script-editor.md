@@ -12,7 +12,7 @@ import BrowserWindow from '@site/src/components/browser-window';
 
  ## Create a script
 
-The simple way to open script described on the
+The simplest way to open a script is described on the
 [Getting started with scripting](../getting-started.md#create-a-script) page.
 
 Alternatively, you can do the following:

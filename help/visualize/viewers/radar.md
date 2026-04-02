@@ -4,12 +4,12 @@ title: "Radar viewer"
 
 Radar viewer (a spider chart) compares multivariate data across several
 dimensions. It plots numerical values of the table columns on axes that radiate
-out of a center: the higher value is, the further it is from the center. The
+out of a center: the higher the value, the further it is from the center. The
 values from the same table row are connected across axes with lines.
 
-On radar viewer, you can compare the numerical values of different columns
-within a row and rows' values within a dataset. Radar viewer is commonly used in
-the comparison, decision-making, and analysis, for example, in [elemental analysis in cheminformatics](../../datagrok/solutions/domains/chem/chem.md#elemental-analysis).
+With a radar viewer, you can compare the numerical values of different columns
+within a row and compare rows' values within a dataset. Radar viewers are commonly used for
+comparison, decision-making, and analysis, for example, in [elemental analysis in cheminformatics](../../datagrok/solutions/domains/chem/chem.md#elemental-analysis).
 
 ![Radar viewer](img/radar-viewer.png)
 
@@ -48,7 +48,7 @@ For example, you can:
 
 ## Interaction with other viewers
 
-A radar viewer responds to the current row selection and doesn't respond to data
+A radar viewer responds to current row selection but does not respond to data
 filters.
 
 ![Radar viewer](img/radar-viewer.gif)

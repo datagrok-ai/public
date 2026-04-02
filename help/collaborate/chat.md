@@ -15,7 +15,7 @@ Shortcuts:
 | @     | Mention a user |
 | #     | Mention a tag  |
 
-Click **Help | Community Forums** to see list of all topics.
+Click **Help | Community Forums** to see a list of all topics.
 
 See also:
 

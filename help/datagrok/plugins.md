@@ -65,7 +65,7 @@ sidebar_position: 5
 |Plugin <div style={{ width:140 }}></div> |Area <div style={{ width:130 }}></div>|  Tag <div style={{ width:110 }}></div> |Description <div style={{ width:315 }}></div> | Release|
 |------|-------|------------|----------------------|---|
 |[Dev Tools](https://github.com/datagrok-ai/public/tree/master/packages/DevTools)| DevTools |Recommended|Developer tools (TestManager, DevPanel, etc.)|Stable|
-|[API Samples](https://github.com/datagrok-ai/public/tree/master/packages/ApiSamples)| Resources |Recommended|Examples of Grok API|Stable|
+|[API Samples](https://github.com/datagrok-ai/public/tree/master/packages/ApiSamples)| Resources |Recommended|Examples of Datagrok API|Stable|
 
 ## Solutions
 
@@ -83,7 +83,7 @@ sidebar_position: 5
 |[PubChem](https://github.com/datagrok-ai/public/tree/master/packages/PubChemApi) | Database search | Optional| Webservice integration: [PubChem](https://pubchem.ncbi.nlm.nih.gov/) | Stable|
 |[Chemspace](https://github.com/datagrok-ai/public/tree/master/packages/Chemspace) | Database search | Optional| Webservice integration: [Chemspace](https://chem-space.com/)  |  Stable|
 |[SureChEMBL](https://github.com/datagrok-ai/public/tree/master/packages/SureChembl)| Database search | Optional| Performs searches through a locally deployed [SureChEMBL](https://www.surechembl.org) database | Beta|
-| [Docking](https://github.com/datagrok-ai/public/tree/master/packages/Docking)| Virtual screening | Optional |Let's you batch screen libraries against AutoDock-prepared targets with interactive visualization | Stable |
+| [Docking](https://github.com/datagrok-ai/public/tree/master/packages/Docking)| Virtual screening | Optional |Lets you batch screen libraries against AutoDock-prepared targets with interactive visualization | Stable |
 |[Hit Triage](https://github.com/datagrok-ai/public/tree/master/packages/HitTriage)| Virtual screening<br/>Hit to lead | Fit-for-purpose| Apps for virtual screening (Hit Triage) and hit design (Hit Design) | Stable|
 | [Retrosynthesis](https://github.com/datagrok-ai/public/tree/master/packages/Retrosynthesis)| Synthetic planning | Optional |Creates retrosynthesis paths for the selected molecule, built on top of [AiZynthFinder](https://github.com/MolecularAI/aizynthfinder) | Beta |
 | [CDD Vault Link](https://github.com/datagrok-ai/public/tree/master/packages/CddVaultLink)| Registration system integration | Optional |Provides integration with [CDD Vault](https://www.collaborativedrug.com/cdd-informatics-platform) registration system | Beta |
@@ -106,7 +106,7 @@ sidebar_position: 5
 |[Sequence Translator](https://github.com/datagrok-ai/public/tree/master/packages/SequenceTranslator) | Oligonucleotides  | Fit-for-purpose| App that converts oligonucleotides into various formats  |Stable|
 |[Oligo Batch Calculator](https://github.com/datagrok-ai/public/tree/master/packages/OligoBatchCalculator) | Oligonucleotides  | Fit-for-purpose| App that calculates oligonucleotide properties |Beta|
 | [Admetica](https://github.com/datagrok-ai/public/tree/master/packages/Admetica) | ADMET | Optional | App that lets you evaluate ADMET properties | Stable |
-| [Docking](https://github.com/datagrok-ai/public/tree/master/packages/Docking) | Docking | Optional | Integration with [Autodock GPU](https://catalog.ngc.nvidia.com/orgs/hpc/containers/autodock) that let's you run docking and analyze the results in Datagrok| Stable |
+| [Docking](https://github.com/datagrok-ai/public/tree/master/packages/Docking) | Docking | Optional | Integration with [Autodock GPU](https://catalog.ngc.nvidia.com/orgs/hpc/containers/autodock) that lets you run docking and analyze the results in Datagrok| Stable |
 | [BioNeMo](https://github.com/datagrok-ai/public/tree/master/packages/BioNeMo) | Protein structure prediction, docking | Fit-for-purpose | Integrates advanced models for protein structure prediction and molecular docking| Beta |
 
 ### NLP

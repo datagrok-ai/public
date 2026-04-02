@@ -2,7 +2,7 @@
 title: "Extending Datagrok"
 ---
 
-Datagrok is built highly extensible, composable and customizable. Many parts of the Datagrok platform can be enhanced by
+Datagrok is built to be highly extensible, composable, and customizable. Many parts of the Datagrok platform can be enhanced by
 plugins using our [JavaScript API](js-api.md). The plugins are structured and delivered to the platform
 using [Datagrok packages](../develop.md#packages). Many features of the platform, such as a
 [Timelines](https://github.com/datagrok-ai/public/tree/master/packages/Charts#timelines) or
@@ -14,7 +14,7 @@ our [guides](../develop.md), [API samples](https://public.datagrok.ai/js)
 
 ## What can be extended
 
-With using our [JavaScript API](js-api.md), you can create your own:
+Using our [JavaScript API](js-api.md), you can create your own:
 
 * [functions](../../datagrok/concepts/functions/functions.md), which may be written in any
   [scripting language we support](../../compute/scripting/scripting.mdx), and later be reused in various contexts, including other

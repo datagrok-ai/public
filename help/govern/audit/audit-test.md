@@ -223,7 +223,7 @@ The implementation is based on the [grid](../../visualize/viewers/grid.md), so m
 
 4. Open *"Datasets..."* on "Welcome" view
 
-5. Share *"audit-test-project"* project to "All users" from it's context menu
+5. Share *"audit-test-project"* project to "All users" from its context menu
 
 6. Open *"audit-test-project"*
 

@@ -126,7 +126,7 @@ category('Layouts: Apply', () => {
       tv.resetLayout();
       await delay(100);
       await awaitCheck(() => [...tv.viewers].length === 1, 'Cannot reset layout', 3000);
-      (list!.childNodes[1].childNodes[0] as HTMLElement).click();
+      (list!.querySelector('.grok-suggestions-chart-host .grok-suggestions-chart-image') as HTMLElement)?.click();
       await awaitCheck(() => [...tv.viewers].length === 2,
         `Layout was not applied, expected 1 viewer, got ${[...tv.viewers].length - 1}`, 3000);
       await delay(100);

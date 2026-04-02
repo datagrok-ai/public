@@ -23,18 +23,18 @@ For API Url use Datagrok's URL followed by `/api`: For example, for `public.data
 
 
 ## Files
-Datagrok files are stored under connectors. File is identified by it's path. Accessing connectors is described [here](#identifiers).
+Datagrok files are stored under connectors. File is identified by its path. Accessing connectors is described [here](#identifiers).
 
 **Endpoints**
 * `GET /public/v1/files/{connector}/{path}` – Download a file from a specified connector by its path.
-* `POST /public/v1/files/{connector}/{path}` – Upload a file to a specified connector under a given path. If file already exists, replace it's content. 
+* `POST /public/v1/files/{connector}/{path}` – Upload a file to a specified connector under a given path. If file already exists, replace its content. 
 
 ## Tables
 Datagrok Rest API supports managing tables, including downloading and uploading tables. Table identifiers are described [here](#identifiers).
 
 **Endpoints**
 * `GET /public/v1/tables/{table}` – Download a table from Datagrok in CSV format.
-* `POST /public/v1/tables/{table}` – Upload a table to Datagrok. If table already exists, replace it's data. If table name specifies project, add uploaded table to a project.
+* `POST /public/v1/tables/{table}` – Upload a table to Datagrok. If table already exists, replace its data. If table name specifies project, add uploaded table to a project.
 
 ## Dashboards
 This section includes endpoints to manage [dashboards](../../datagrok/concepts/project/dashboard) in Datagrok, such as creating dashboards and sharing them with specific groups. To learn more about identifiers of dashboards and tables, refer to [this section](#identifiers).

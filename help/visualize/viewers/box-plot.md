@@ -25,7 +25,7 @@ box plot.
 
 ## Inverted whiskers
 
-On certain datasets, you would see whiskers extending inside the box plot. This is not a rendering bug. The bottom of
+On certain datasets, you may see whiskers extending inside the box plot. This is not a rendering bug. The bottom of
 the box is at the 1st quartile (Q1), and the top is at the 3rd quartile (Q3)
 value. The whiskers are the lines that extend from the top and bottom of the box to the adjacent values. The adjacent
 values are the lowest and highest observations that are still inside the region defined by the following limits:

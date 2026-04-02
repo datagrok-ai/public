@@ -49,7 +49,7 @@ This matrix-style viewer displays positions as columns and monomers as rows, ope
 
     * Circle size represents the number of unique sequences forming a mutation cliff
     * Circle Color indicates mean activity difference and its sign (blue: negative, red: positive, white: zero)
-    * Numbers in cells show the ammount of sequence pairs forming a mutation cliff
+    * Numbers in cells show the amount of sequence pairs forming a mutation cliff
     * Selecting a cell will add [mutation cliffs section](#interactive-features) to the context panel, allowing you to inspect cliff pairs and their corresponding sequences.
     * Configuration options include maximum mutations (1 by default to target single mutation point cliffs) and minimum activity difference threshold.
 

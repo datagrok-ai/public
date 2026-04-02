@@ -5,18 +5,13 @@ import * as ui from 'datagrok-api/ui';
 import '../../css/chem.css';
 
 export function checkCurrentView(dataFrame: DG.DataFrame): void {
-  if (grok.shell.tv.dataFrame === dataFrame)
+  if (grok.shell.tv?.dataFrame === dataFrame)
     return;
   const tv = grok.shell.tableView(dataFrame.name);
   if (tv)
     grok.shell.v = tv;
-  else {
-    // if there is no table view open, but the table exsits in the workspace, open a new one
-    if (grok.shell.tables.find((t) => t === dataFrame))
-      grok.shell.addTableView(dataFrame);
-    else
-      throw Error('No table view found for selected table');
-  }
+  else
+    grok.shell.addTableView(dataFrame);
 }
 
 export function updateDivInnerHTML(div: HTMLElement, content: string | Node): void {

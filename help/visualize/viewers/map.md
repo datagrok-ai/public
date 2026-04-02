@@ -34,8 +34,8 @@ info panels on the **Context Pane**. For example, you can:
 
 ## Custom file viewers
 
-Сustom file viewers give user the opportunity to view files of various geographic extensions.
-To see it, open the file manager, hover your mouse over the file and click on it, as shown below.
+Custom file viewers let you view files of various geographic extensions.
+To see one, open the file manager, hover your mouse over the file, and click on it, as shown below.
 
 ![Custom file viewer](img/map-custom-file-viewer.gif)
 

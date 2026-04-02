@@ -42,7 +42,7 @@ and [datagrok-api package](https://github.com/datagrok-ai/public/actions/workflo
 
 ## Private packages
 
-If the package can not be pushed to the NPM registry, you can publish it to the platform directly.
+If the package cannot be pushed to the NPM registry, you can publish it to the platform directly.
 
 First, you need to [configure local environment](../../dev-process/set-up-environment.md)  to access your Datagrok instance. Then, you can
 publish the package to the platform. See [this guide](../../develop.md#publishing) for details.

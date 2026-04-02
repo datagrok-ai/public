@@ -8,7 +8,7 @@ import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
 ```
 
-Datagrok includes a built-in error reporting system that lets you report issues directly from the platform. It automatically collects logs, system state, and your actions, so you don’t need to do any manual reporting. Reports are sent to the Datagrok support team via email (see the [Configuring error reporting system](#configuring-error-reporting-system) section) and processed promptly to resolve issues quickly and efficiently.
+Datagrok includes a built-in error reporting system that lets you report issues directly from the platform. The system automatically collects logs, system state, and your actions, so you don’t need to do any manual reporting. Reports are sent to the Datagrok support team via email (see [Configuring error reporting system](#configuring-error-reporting-system)) and processed promptly.
 
 ## Full control over what you share
 
@@ -99,7 +99,7 @@ Reports are **never sent externally** and can be viewed in the **Reports** appli
 Administrators can configure error reporting under **Settings > Admin > Error reporting**:
 
 - **Report email:** Specify one or more email addresses (comma-separated) to receive user-submitted reports. `feedback@datagrok.ai` is recommended.
-- **Auto report errors:** Enable to automatic logging of internal exceptions.
+- **Auto report errors:** Enable automatic logging of internal exceptions.
 
 <details>
 <summary>See visual</summary>

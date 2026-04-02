@@ -4,6 +4,7 @@ import * as DG from 'datagrok-api/dg';
 import {ACT_TRT_ARM, PLANNED_TRT_ARM} from '../constants/columns-constants';
 import {studies} from '../utils/app-utils';
 import {calculateLBControlColumns} from '../data-preparation/data-preparation';
+import {_package} from '../package';
 
 interface TreatmentControlRow {
   treatment: string;
@@ -21,6 +22,7 @@ export class ConfigurationView extends DG.ViewBase {
     super();
     this.name = name;
     this.studyId = studyId;
+    this.helpUrl = `${_package.webRoot}/views_help/configuration.md`;
   }
 
   load(): void {

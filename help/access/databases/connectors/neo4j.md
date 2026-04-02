@@ -2,9 +2,9 @@
 title: "Neo4j"
 ---
 
-This is a [connector](./connectors.md) that provides access to the [Neo4j](https://neo4j.com/) graph
-database via JDBC driver. Allows to query Neo4j using [Cypher](https://neo4j.com/developer/cypher-query-language)
-language, and use results in dashboards, data augmentation panels, or via the [JS API](../../../develop/packages/js-api.md).
+This [connector](./connectors.md) provides access to the [Neo4j](https://neo4j.com/) graph
+database via a JDBC driver. You can query Neo4j using [Cypher](https://neo4j.com/developer/cypher-query-language)
+language and use results in dashboards, data augmentation panels, or via the [JS API](../../../develop/packages/js-api.md).
 
 ```json
 {
@@ -66,7 +66,7 @@ language, and use results in dashboards, data augmentation panels, or via the [J
 
 ## Remarks
 
-* There is one limitation due to JDBC driver of Neo4j. If your query return 0 rows you will get an exception.
+* There is one limitation due to the Neo4j JDBC driver. If your query returns 0 rows, you will get an exception.
 * Neo4j uses ``//`` for comments. Use this for parameters declaration in query too.
 
 See also:

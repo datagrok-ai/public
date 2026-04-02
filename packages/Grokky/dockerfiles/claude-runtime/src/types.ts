@@ -32,6 +32,7 @@ export interface UserMessage {
   message: string;
   apiKey?: string;
   mcpServerUrl?: string;
+  outputSchema?: object;
 }
 
 export interface AbortMessage {
@@ -51,7 +52,7 @@ export type OutgoingMessage =
   | {type: 'chunk'; sessionId: string; content: string}
   | {type: 'tool_activity'; sessionId: string; summary: string}
   | {type: 'tool_result'; sessionId: string; content: string}
-  | {type: 'final'; sessionId: string; content: string}
+  | {type: 'final'; sessionId: string; content: string; structured_output?: any}
   | {type: 'error'; sessionId: string; message: string}
   | {type: 'aborted'; sessionId: string}
   | {type: 'input_request'; sessionId: string; toolName: string; input: any};

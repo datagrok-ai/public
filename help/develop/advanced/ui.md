@@ -174,7 +174,7 @@ ui.div([ui.h1('Header'), box])
 
 ### Panels
 
-The panel is a simple container similar to the [Containers](#containers). It has full available wide and its height
+The panel is a simple container similar to [Containers](#containers). It takes the full available width, and its height
 depends on its children. Also, panels have 10px paddings for all sides.
 
 ![Panel preview](../img/panel.png)
@@ -223,8 +223,8 @@ Use the block layout if you want to display section-based content by placing ele
 
 ### Flexbox grid
 
-Flexbox grid allow to divide a layout into multiple columns and rows. The Flexbox container take the full available
-width, and their height is determined by their inner content. A Flexbox layout has a direction in which child elements
+Flexbox grid lets you divide a layout into multiple columns and rows. The Flexbox container takes the full available
+width, and its height is determined by the inner content. A Flexbox layout has a direction in which child elements
 are laid out. The main axis is defined by rows or columns.
 
 ![Flexbox preview](../img/flexbox.png)
@@ -240,8 +240,8 @@ are laid out. The main axis is defined by rows or columns.
 Splitters - help to build the layout that contains several content areas. Each splitter contains
 the [box container](#boxes) which shrinks the content to a certain size.
 
-The splitters can specify by the horizontal or vertical orientation. In order to split vertically and horizontally at
-the same time, splitters need to be nested.
+You can specify splitters with horizontal or vertical orientation. To split vertically and horizontally at
+the same time, nest the splitters.
 
 ![Splitters preview](../img/splitters.png)
 
@@ -277,9 +277,9 @@ let view = grok.shell.newView('Simple View');
 
 ### Viewers
 
-A viewer is a visual component associated with a table.Viewers belonging to the same view all share the same row
-selection and filter. Viewers are saved as part of the project. Also, it is possible to save viewers and views
-individually, and reuse them.
+A viewer is a visual component associated with a table. Viewers belonging to the same view all share the same row
+selection and filter. Viewers are saved as part of the project. You can also save viewers and views
+individually and reuse them.
 
 #### Bar chart
 
@@ -584,7 +584,7 @@ elements. Each collection with elements will be divided by a separator and evenl
 
 ### Toolbox
 
-The toolbox is a container that appears in the left side of the view. It mostly used as a placement for UI controls and
+The toolbox is a container that appears on the left side of the view. It is mostly used for placing UI controls and
 can contain any kind of elements such as buttons, fields, icons, links, dropdown menus, accordions, etc.
 
  ```javascript
@@ -596,7 +596,7 @@ can contain any kind of elements such as buttons, fields, icons, links, dropdown
 
 ## Dialogs
 
-The dialog is a control that informs about the task or contain some necessary information and requires decisions. The
+A dialog is a control that informs the user about a task or displays necessary information and requires a decision. The
 dialog contains the following sections and options:
 
 * Title: Title text appears in the dialog header.
@@ -767,7 +767,7 @@ ui.bigButton('Big button');
 
 ### Forms
 
-A form is used to present UI controls and allow to enter data in a structured way.
+A form presents UI controls and lets users enter data in a structured way.
 
 ```javascript
 ui.inputs([
@@ -825,7 +825,7 @@ ui.input.choice('Label', {value: 'Value 1', items: ['Value 1', 'Value 2']});
 
 #### Selection
 
-The select control let's option to set a binary value (true/false). When the user clicks the selection control, it
+The selection control lets you set a binary value (true/false). When the user clicks the selection control, it
 toggles between checked and unchecked.
 
 ```javascript
@@ -977,7 +977,7 @@ grok.shell.newView('Markdown example',[
 ### Popup menu (context menu)
 
 Menus appear upon interaction with a button, action, or other control. They display a list of choices, with one choice
-per lin. Menu can also have a multilevel list of choices.
+per line. Menus can also have a multilevel list of choices.
 
 ```javascript
 let showMenu = () => {
@@ -994,7 +994,7 @@ text.addEventListener("click", showMenu);
 
 ### Context panel
 
-Context panel is the right sidebar panel that used for showing the active item properties.
+The context panel is the right sidebar panel used for showing the active item's properties.
 
 ```javascript
 grok.shell.o = ui.h1('Context panel');
@@ -1010,7 +1010,7 @@ grok.shell.sidebar.addPane('FIRST', () => ui.divText('A panel'), ui.iconFA('smil
 
 ### Tabs
 
-Tab control organize and allow navigation between a different content area or view.
+Tab controls organize and allow navigation between different content areas or views.
 
 ```javascript
 ui.tabControl({
@@ -1021,8 +1021,7 @@ ui.tabControl({
 
 ### Tag editor
 
-Tag editor is control that are small tag items that mainly serve to visualize selected items. Tags can be added,
-removed.
+Tag editor is a control that displays small tag items, mainly to visualize selected items. You can add and remove tags.
 
 ```javascript
 let editor = DG.TagEditor.create();
@@ -1067,7 +1066,7 @@ view.ribbonMenu = DG.Menu.create()
 
 ### Tooltips
 
-Tooltip control display informative text when user hover over an element.
+Tooltip controls display informative text when the user hovers over an element.
 
 ```javascript
 ui.tooltip.bind(ui.label('Label'), 'Tooltip message');
@@ -1122,7 +1121,7 @@ grok.shell.newView('View', [
 
 ### Update indicator
 
-Update indicator allow to show the updating state for each UI or View.
+Update indicators show the updating state for a UI element or View.
 
 ```javascript
 let view = grok.shell.newView('Update indicator demo');

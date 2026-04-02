@@ -1,3 +1,4 @@
+/** See core/docs/AUDIT_LOGGING.md for cross-cutting documentation. */
 import {LOG_LEVEL} from './const';
 import {toDart} from './wrappers';
 import {Package} from './entities';

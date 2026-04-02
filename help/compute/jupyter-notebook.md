@@ -26,7 +26,9 @@ If you want to link a notebook to a table, use one of the last two methods.
 
 ## Notebooks browser
 
-In the [Notebooks Browser](https://public.datagrok.ai/notebooks), you can navigate over all available notebooks. If a notebook can be applied to any of the opened tables, an **Apply to** option will be available in its context menu.
+The [Notebooks Browser](https://public.datagrok.ai/notebooks) lists all available
+notebooks. If a notebook applies to any open table, its context menu shows an
+**Apply to** option.
 
 ## Apply existing notebooks into tables
 
@@ -36,7 +38,7 @@ your data.
 
 ## Return a table into the platform
 
-Use simple function called "grok". Example:
+To return a table to the platform, call the `grok` function:
 
 ```python
     grok(< table >)
@@ -52,7 +54,8 @@ where table in a Pandas dataframe.
 
 ## Environments
 
-Each script can be run in an isolated environment, with predefined packages configuration, same as for
+You can run each script in an isolated environment with a predefined package
+configuration, just like
 [Script Environments](scripting/advanced-scripting/under-the-hood.mdx#environment-isolation). The environment can be specified in the notebook properties.
 
 ## Importing notebooks

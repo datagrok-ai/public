@@ -32,9 +32,9 @@ upon.
 
 ## Data pipelines
 
-Data pipelines is a core component of the Datagrok platform designed to let end users define
-jobs that would get data from disparate data sources, clean or merge the data if needed, run transformations, build
-interactive dashboards based on the retrieved data, and publish these dashboards.
+Data pipelines are a core Datagrok component. They let you define jobs that
+retrieve data from multiple sources, clean or merge it, run transformations,
+build interactive dashboards, and publish the results.
 
 ## Statistical hypothesis testing
 

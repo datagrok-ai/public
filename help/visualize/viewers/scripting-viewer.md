@@ -5,7 +5,7 @@ title: "Scripting viewer"
 **Scripting viewers** are viewers implemented in R, Python, or Julia. Internally, they
 use [scripting](../../compute/scripting/scripting.mdx) for integration with the Datagrok platform.
 
-While not as interactive as the core Datagrok [viewers](../viewers/viewers.md), they allow to easily use thousands of
+While not as interactive as the core Datagrok [viewers](../viewers/viewers.md), they let you easily use thousands of
 visualizations already developed for these languages.
 
 To add an existing viewer to a table view, on the menu ribbon, click the **Add viewer** icon and select  **Scripting Viewer** in the opened dialog.

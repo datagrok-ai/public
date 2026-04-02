@@ -3,8 +3,8 @@ title: "Functions"
 sidebar_position: 0
 ---
 
-Grok platform provides first-class support for functions, which is an incredibly powerful concept. Pretty much anything
-that can be executed within the platform is a function. Here are some examples of the different types of functions:
+Datagrok provides first-class support for functions. Nearly anything that can be
+executed within the platform is a function. Here are some examples of the different types of functions:
 
 * [Querying](../../../access/access.md#data-query) external Postgres database
 * Executing a [JavaScript function](../../../develop/develop.md) in the browser that uses Grok API for integration purposes
@@ -15,8 +15,9 @@ that can be executed within the platform is a function. Here are some examples o
 * Calculating molecule properties via a [Python script](../../../compute/scripting/scripting.mdx)
 * Showing a dialog.
 
-All of the above-mentioned functions are quite different in terms of what and how they do - some of them execute on the
-server and others in the browser, some of them perform scientific computation while others show UI elements. Yet, they
+These functions differ in what they do and where they run: some execute on the
+server, others in the browser; some perform scientific computation, others display
+UI elements. Yet, they
 all share the same mechanism and therefore have the same features:
 
 * Scriptable - each function call is represented as a string, which can be executed
@@ -35,10 +36,11 @@ all share the same mechanism and therefore have the same features:
 
 ## Macros
 
-Interactive visual data munging is a powerful feature. Every transformation that is triggered visually
-(such as by clicking "Delete selected rows" icon) is backed by a corresponding function. By printing function call in
-the [console](../../navigation/panels/panels.md#console), we get macro recording capability - and unlike Excel, there is no
-need to start recording, simply open `View | Console` to see what had been executed.
+Every visual transformation (such as clicking the "Delete selected rows" icon) is
+backed by a function. Datagrok prints each function call to the
+[console](../../navigation/panels/panels.md#console), giving you automatic macro
+recording. Unlike Excel, you don't need to start recording — open **View** >
+**Console** to see what was executed.
 
 This feature is especially useful for data cleansing, where you would visually clean one dataset and get a script that
 could be used to clean similar datasets. Once you've written something useful that other people would benefit from,

@@ -125,16 +125,29 @@ export const SUPPORTED_VIEWS: string[] = [
   OBSERVATION_TIMELINES_VIEW_NAME, CONFIGURATION_VIEW_NAME,
 ];
 
+const VIEW_HELP_URLS: {[key: string]: string} = {
+  [VALIDATION_VIEW_NAME]: 'views_help/validation.md',
+  [MATRIX_TABLE_VIEW_NAME]: 'views_help/matrix.md',
+  [MEASUREMENT_PROFILE_TABLE_VIEW_NAME]: 'views_help/measurements.md',
+  [MICROSCOPIC_FINDINGS_TABLE_VIEW_NAME]: 'views_help/microscopic_findings.md',
+  [OBSERVATION_TIMELINES_VIEW_NAME]: 'views_help/observation_timelines.md',
+};
+
 export const VIEW_CREATE_FUNC: {[key: string]: (studyId: string, args?: any) => DG.ViewBase | TableView} = {
   [SUMMARY_VIEW_NAME]:
     (studyId, errorLinkHandler?: () => void) => new StudySummaryView(SUMMARY_VIEW_NAME, studyId, errorLinkHandler),
   [CONFIGURATION_VIEW_NAME]: (studyId) => new ConfigurationView(CONFIGURATION_VIEW_NAME, studyId),
-  [VALIDATION_VIEW_NAME]: (studyId) => createTableView(studyId, VALIDATION_VIEW_NAME, createValidationView),
-  [MATRIX_TABLE_VIEW_NAME]: (studyId) => createTableView(studyId, MATRIX_TABLE_VIEW_NAME, createMatrixTableView),
+  [VALIDATION_VIEW_NAME]: (studyId) => createTableView(studyId, VALIDATION_VIEW_NAME,
+    createValidationView, `${_package.webRoot}/${VIEW_HELP_URLS[VALIDATION_VIEW_NAME]}`),
+  [MATRIX_TABLE_VIEW_NAME]: (studyId) => createTableView(studyId, MATRIX_TABLE_VIEW_NAME,
+    createMatrixTableView, `${_package.webRoot}/${VIEW_HELP_URLS[MATRIX_TABLE_VIEW_NAME]}`),
   [MEASUREMENT_PROFILE_TABLE_VIEW_NAME]: (studyId) =>
-    createTableView(studyId, MEASUREMENT_PROFILE_TABLE_VIEW_NAME, createMeasurementProfileTableView),
+    createTableView(studyId, MEASUREMENT_PROFILE_TABLE_VIEW_NAME,
+      createMeasurementProfileTableView, `${_package.webRoot}/${VIEW_HELP_URLS[MEASUREMENT_PROFILE_TABLE_VIEW_NAME]}`),
   [MICROSCOPIC_FINDINGS_TABLE_VIEW_NAME]: (studyId) =>
-    createTableView(studyId, MICROSCOPIC_FINDINGS_TABLE_VIEW_NAME, createMICrossDomainView),
+    createTableView(studyId, MICROSCOPIC_FINDINGS_TABLE_VIEW_NAME,
+      createMICrossDomainView, `${_package.webRoot}/${VIEW_HELP_URLS[MICROSCOPIC_FINDINGS_TABLE_VIEW_NAME]}`),
   [OBSERVATION_TIMELINES_VIEW_NAME]: (studyId) =>
-    createTableView(studyId, OBSERVATION_TIMELINES_VIEW_NAME, createObservationTimelinesView),
+    createTableView(studyId, OBSERVATION_TIMELINES_VIEW_NAME,
+      createObservationTimelinesView, `${_package.webRoot}/${VIEW_HELP_URLS[OBSERVATION_TIMELINES_VIEW_NAME]}`),
 };

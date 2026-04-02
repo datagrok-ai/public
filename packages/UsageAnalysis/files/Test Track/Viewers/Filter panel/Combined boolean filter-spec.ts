@@ -1,9 +1,10 @@
-// @verified
+
 import {test, expect, Page} from '@playwright/test';
 
 async function login(page: Page) {
-  await page.goto('/?selenium=true');
+  await page.goto('/');
   await page.locator('[name="Browse"]').waitFor({timeout: 120000});
+  await page.evaluate(() => { document.body.classList.add('selenium'); grok.shell.settings.showFiltersIconsConstantly = true; });
 }
 
 async function filteredCount(page: Page): Promise<number> {
@@ -85,7 +86,7 @@ test('Combined Boolean Filter: demog', async ({page}) => {
       const fg = grok.shell.tv.getFiltersGroup();
       for (const f of fg.filters) {
         const ft = (f as any).filterType;
-        if (ft === 'combined-boolean' || ft === 'Flags' || ft === 'bool-columns')
+        if (ft === 'bool-columns')
           return {found: true, filterType: ft};
       }
       return {found: false, filterType: 'none'};
@@ -114,7 +115,7 @@ test('Combined Boolean Filter: demog', async ({page}) => {
       const fg = grok.shell.tv.getFiltersGroup();
       for (const f of fg.filters) {
         const ft = (f as any).filterType;
-        if (ft === 'bool-columns' || ft === 'Flags') {
+        if (ft === 'bool-columns') {
           const dart = (f as any).dart ?? f;
           (window as any).grok_GridFilterBase_ApplyState(dart, {
             'true': [true, false],

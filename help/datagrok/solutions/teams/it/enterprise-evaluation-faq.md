@@ -83,7 +83,7 @@ and encrypted.
 
 ## Server API
 
-Datagrok client-side uses HTTP rest API to interact with server-side. Authentication token must be passed to access all
+The Datagrok client uses an HTTP REST API to interact with the server. You must pass an authentication token to access all
 features.
 [Proof of concept video](https://www.youtube.com/watch?v=TjApCwd_3hw)
 
@@ -94,7 +94,7 @@ convenient way to collect and observe metrics and logs.
 
 ## Backup and restore
 
-Amazon has scheduled backup for RDS and S3, but you can backup and restore RDS database as usual Postgres database.
+Amazon has scheduled backups for RDS and S3, but you can back up and restore an RDS database as a standard Postgres database.
 
 ## Disaster recovery
 
@@ -102,7 +102,7 @@ Amazon has scheduled backup for RDS and S3, but you can backup and restore RDS d
 
 ## Infrastructure as a Code
 
-Datagrok Docker containers are built using Jenkins, all software are upgraded and patched on every build.
+Datagrok Docker containers are built using Jenkins. All software is upgraded and patched on every build.
 
 Docker-compose manifest is used to describe and deploy Datagrok applications.
 

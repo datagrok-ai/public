@@ -14,7 +14,7 @@ Datagrok takes a fundamentally different approach. It provides a fluid,
 responsive environment that adapts to how people naturally work with data - what
 we call "free-world data exploration". As users interact, Datagrok
 surfaces relevant tools, computations, models, and linked records. There's no
-need to switch systems, ask for data, or even know the data exists. It's appears
+need to switch systems, ask for data, or even know the data exists. It appears
 in context exactly when needed.
 
 While most of this behavior works out of the box, power users can customize
@@ -67,7 +67,7 @@ control over access, provenance, and auditability.
 
 ### Function annotations
 
-Function annotations let you control how functions (queries, scripts) interact with the Datagrok's
+Function annotations let you control how functions (queries, scripts) interact with Datagrok's
 UI and data context.  
 You can define the input (e.g., `molecule`), output presentation (e.g., tooltip, [info pane](../../navigation/panels/info-panels.md)), and link functions to user-friendly search patterns (e.g., "activity for _Shigella_").
 
@@ -106,7 +106,7 @@ This allows Datagrok to:
 
 ## Custom metadata
 
-Using configurable schemas, you can attach structured, persistent metadata to [entities](../../concepts/objects.md) or custom class of objects (e.g., molecules). Datagrok then automatically shows metadata wherever that entity or object appears.
+Using configurable schemas, you can attach structured, persistent metadata to [entities](../../concepts/objects.md) or a custom class of objects (e.g., molecules). Datagrok then automatically shows metadata wherever that entity or object appears.
 
 For example, SAR comments added to a compound in one project are
 visible when the same structure appears in a screening dataset or

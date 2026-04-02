@@ -8,11 +8,6 @@ import '../css/styles.css';
 
 interface ITestManagerUI {
   testsTree: DG.TreeViewNode;
-  runButton: HTMLButtonElement;
-  runAllButton: HTMLButtonElement;
-  debugButton: DG.InputBase<boolean>;
-  benchmarkButton: DG.InputBase<boolean>;
-  runSkippedButton: DG.InputBase<boolean>;
   ribbonPanelDiv: HTMLDivElement;
 }
 
@@ -79,11 +74,12 @@ export class TestManager extends DG.ViewBase {
   selectedNode: DG.TreeViewGroup | DG.TreeViewNode;
   nodeDict: { [id: string]: any } = {};
   runSkippedMode = false;
+  keepViewsOpen = false;
   tree: DG.TreeViewGroup;
   ribbonPanelDiv = undefined;
   dockLeft?: boolean;
   detailsTable: HTMLTableElement | undefined;
-  searchInput: DG.InputBase = ui.input.search('');
+  searchInput: DG.InputBase = ui.input.search('', {elementOptions: {style: {marginLeft: '6px'}}});
   packagePromises: Map<string, Promise<any>> = new Map<string, Promise<any>>();
   packNodes: any[][] = [];
   isSearchIniting = false;
@@ -161,11 +157,12 @@ export class TestManager extends DG.ViewBase {
 
   async collectPackageTests(packageNode: DG.TreeViewGroup, f: any, testFromUrl?: ITestFromUrl): Promise<void> {
     let resultPromise: Promise<void>;
+    const coreOnly: boolean = f.package.name === 'Core';
 
     if (!this.packagePromises.has(f.package.name)) {
       this.packagePromises.set(f.package.name, new Promise<void>(async (resolve) => {
         const selectedPackage = this.packagesTests.find((pt) => pt.name === f.package.name);
-        if (this.testFunctions.filter((it) => it.package.name === f.package.name).length !== 0 &&
+        if ((coreOnly || this.testFunctions.filter((it) => it.package.name === f.package.name).length !== 0) &&
           selectedPackage.categories === null && selectedPackage.check === false) {
           selectedPackage.check = true;
           await f.package.load({file: f.options.file});
@@ -176,6 +173,10 @@ export class TestManager extends DG.ViewBase {
           const packageTestsFinal: { [cat: string]: ICategory } = {};
           if (allPackageTests) {
             Object.keys(allPackageTests).forEach((cat) => {
+              if (coreOnly && !cat.startsWith('Core'))
+                return;
+              if (!coreOnly && cat.startsWith('Core'))
+                return;
               const isAllTestsEnabledBenchmarkMode = allPackageTests[cat].benchmarks;
               const tests: IPackageTest[] = allPackageTests[cat].tests.map((t) => {
                 if (t.options.isEnabledBenchmarkMode === undefined) {
@@ -183,10 +184,11 @@ export class TestManager extends DG.ViewBase {
                     t.options = {};
                   t.options.isEnabledBenchmarkMode = isAllTestsEnabledBenchmarkMode || false;
                 }
-                const result = {test: t, packageName: f.package.name};
+                const result = {test: t, packageName: f._callPackageName ?? f.package.name};
                 return result;
               });
-              const subcats = cat.split(':');
+              const effectiveCat = coreOnly && cat.startsWith('Core: ') ? cat.slice(6) : cat;
+              const subcats = effectiveCat.split(':');
               let subcatsFromUrl = [];
               if (testFromUrl && testFromUrl.catName)
                 subcatsFromUrl = testFromUrl.catName.split(':');
@@ -267,7 +269,19 @@ export class TestManager extends DG.ViewBase {
   }
 
   async populateTree(targetTree: DG.TreeViewGroup, testFromUrl?: ITestFromUrl): Promise<void> {
-    for (const pack of this.testFunctions) {
+    const devToolsPack = this.testFunctions.find((p) => p.package.name === 'DevTools');
+    const packs = devToolsPack ? [...this.testFunctions, {
+      package: {
+        name: 'Core', friendlyName: 'Core',
+        load: (opts: any) => devToolsPack.package.load(opts),
+        getModule: (file: string) => devToolsPack.package.getModule(file),
+        getTests: (b: boolean) => devToolsPack.package.getTests(b),
+      },
+      options: devToolsPack.options,
+      _callPackageName: devToolsPack.package.name,
+    }].sort((a, b) => a.package.friendlyName.localeCompare(b.package.friendlyName)) : this.testFunctions;
+
+    for (const pack of packs) {
       const testPassed = ui.div();
       this.packagesTests.push({
         name: pack.package.name,
@@ -314,11 +328,9 @@ export class TestManager extends DG.ViewBase {
     };
     await this.populateTree(this.tree, testFromUrl);
 
-    const {runAll, run, debug, benchmark, runSkipped} = this.createButtons();
-    const {runAll: runAll1, run: run1, debug: debug1,
-      benchmark: benchmark1, runSkipped: runSkipped1} = this.createButtons();
+    const {runAll, run, settings} = this.createButtons();
 
-    const ribbonPanelDiv = ui.divH([runAll1, run1, debug1.root, benchmark1.root, runSkipped1.root],
+    const ribbonPanelDiv = ui.divH([runAll, run, settings],
       {
         style: {
           minHeight: '50px', maxHeight: '50px', alignItems: 'Center',
@@ -327,53 +339,50 @@ export class TestManager extends DG.ViewBase {
       });
     ribbonPanelDiv.classList.add('test');
 
-    return {
-      runAllButton: runAll, runButton: run, testsTree: this.tree,
-      debugButton: debug, benchmarkButton: benchmark, runSkippedButton: runSkipped, ribbonPanelDiv: ribbonPanelDiv,
-    };
+    return {testsTree: this.tree, ribbonPanelDiv};
   }
 
-  createButtons(): {
-    runAll: HTMLButtonElement,
-    run: HTMLButtonElement,
-    debug: DG.InputBase<boolean>,
-    benchmark: DG.InputBase<boolean>,
-    runSkipped: DG.InputBase<boolean>
-    } {
-    const runTestsButton = ui.button('Run', async () => {
-      this.runTestsForSelectedNode();
-    }, 'Run selected');
-
-    const runAllButton = ui.bigButton('Run All', async () => {
+  createButtons(): {runAll: HTMLButtonElement, run: HTMLButtonElement, settings: HTMLButtonElement} {
+    const runAll = ui.button([ui.iconFA('forward'), ' Run All'], async () => {
       const nodes = this.tree.items;
       for (const node of nodes) {
         this.selectedNode = node;
         await this.runTestsForSelectedNode();
       }
-    });
-    runTestsButton.classList.add('ui-btn-outline');
+    }, 'Run all tests');
 
-    const debugButton = ui.input.bool('Debug', 
-      {value: DG.Test.isInDebug, onValueChanged: () => {DG.Test.isInDebug = debugButton.value;}});
-    debugButton.classList.add('tm-button');
+    const run = ui.button([ui.iconFA('play'), ' Run'], async () => {
+      this.runTestsForSelectedNode();
+    }, 'Run selected');
 
-    const benchmarkButton = ui.input.bool('Benchmark', {
-      onValueChanged: (value) => {
-        DG.Test.isInBenchmark = value;
-      },
-    });
-    benchmarkButton.classList.add('tm-button');
+    const settings = ui.button(ui.iconFA('cog'), () => {
+      const menu = DG.Menu.popup();
+      menu.closeOnClick = false;
+      const refresh = () => {
+        menu.clear();
+        menu
+          .item(`${DG.Test.isInDebug ? '✓ ' : ''}Debug`, () => {
+            DG.Test.isInDebug = !DG.Test.isInDebug;
+            refresh();
+          })
+          .item(`${DG.Test.isInBenchmark ? '✓ ' : ''}Benchmark`, () => {
+            DG.Test.isInBenchmark = !DG.Test.isInBenchmark;
+            refresh();
+          })
+          .item(`${this.runSkippedMode ? '✓ ' : ''}Run skipped`, () => {
+            this.runSkippedMode = !this.runSkippedMode;
+            refresh();
+          })
+          .item(`${this.keepViewsOpen ? '✓ ' : ''}Keep views open`, () => {
+            this.keepViewsOpen = !this.keepViewsOpen;
+            refresh();
+          });
+      };
+      refresh();
+      menu.show();
+    }, 'Options');
 
-    const runSkippedButton = ui.input.bool('Run skipped', {
-      value: this.runSkippedMode,
-      onValueChanged: () => {this.runSkippedMode = !this.runSkippedMode;},
-    });
-    runSkippedButton.classList.add('tm-button');
-
-    return {
-      runAll: runAllButton, run: runTestsButton, debug: debugButton,
-      benchmark: benchmarkButton, runSkipped: runSkippedButton,
-    };
+    return {runAll, run, settings};
   }
 
   async runTestsForSelectedNode(): Promise<void> {
@@ -492,7 +501,7 @@ export class TestManager extends DG.ViewBase {
         `${t.packageName}:test`, {
           'category': t.test.category,
           'test': t.test.name,
-          'testContext': new TestContext(false),
+          'testContext': Object.assign(new TestContext(false), {closeAll: !this.keepViewsOpen}),
         });
       if (res.getCol('result').type !== 'string')
         res.changeColumnType('result', 'string');

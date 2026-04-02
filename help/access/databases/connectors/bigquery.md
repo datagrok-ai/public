@@ -2,7 +2,7 @@
 title: "BigQuery"
 ---
 
-Provides access to [Google BigQuery](https://cloud.google.com/bigquery/) database using SQL queries via JDBC driver.
+Provides access to [Google BigQuery](https://cloud.google.com/bigquery/) database using SQL queries via a JDBC driver.
 
 ## Connection parameters
 

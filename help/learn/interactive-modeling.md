@@ -6,7 +6,10 @@ The predictive modeling toolkit allows an interactive visualization tool for the
 
 Many classical ML models can be trained quickly. In these cases, Datagrok creates a UI displaying all model parameters.
 
-Such approach is particulary useful for quick prototyping and data analysis. Datagrok automatically analyses data and predictions to provide user with the most relevant models and insights. So, all the machine learning is done automatically. User then has all the tools to analyze the results and continue exploring problem with the guide of the platform.
+This approach is useful for quick prototyping and data analysis. Datagrok
+automatically analyzes data and predictions to suggest the most relevant models
+and insights. You can then analyze the results and continue exploring the problem
+with the platform's guidance.
 
 ![](./interactive-modeling.gif)
 

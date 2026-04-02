@@ -3,16 +3,16 @@ title: "Usage Analysis"
 sidebar_position: 2
 ---
 
-Datagrok provides a fit-for-purpose application called **Usage Analysis** for
+Datagrok provides a dedicated application called **Usage Analysis** for
 monitoring and analyzing user activity. Built on top of Datagrok as a public
 package and developed in our [public git repository](https://github.com/datagrok-ai/public/tree/master/packages/UsageAnalysis),
-**Usage Analysis** is a testament to our belief in
+**Usage Analysis** reflects our belief in
 [dogfooding](https://en.wikipedia.org/wiki/Eating_your_own_dog_food).
 
-**Usage Analysis** offers comprehensive statistics and insights into the usage
-patterns on Datagrok platform. By leveraging this app, you can better understand
+**Usage Analysis** offers comprehensive statistics and insights into usage
+patterns on the Datagrok platform. You can use this app to better understand
 how users interact with the platform and make data-driven decisions that enhance
-user experience and optimize performance. 
+user experience and optimize performance.
 
 To launch **Usage Analysis**:
 
@@ -59,7 +59,7 @@ into platform usage:
 
 ### Native Datagrok capabilities
 
-Like other Datagrok apps, **Usage Analysis** leverages many of Datagrok capabilities:
+Like other Datagrok apps, **Usage Analysis** leverages many Datagrok capabilities:
 * [Global filters](../../visualize/viewers/filters.md): Interact with usage data by focusing your analysis on a specific date range, user groups, or packages.
 
    ![UA App filters](../img/ua-filters.gif)

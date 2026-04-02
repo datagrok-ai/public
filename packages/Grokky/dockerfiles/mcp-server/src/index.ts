@@ -274,6 +274,62 @@ function createServer(): McpServer {
       () => api.deleteSpaceFile(spaceId, path)),
   );
 
+  // Database introspection tools — registered for discoverability.
+  // Execution is intercepted by the Claude runtime and forwarded to the browser client
+  // where SQLGenerationContext handles them with full Datagrok API access.
+
+  server.tool(
+    'db_list_catalogs',
+    'Returns the names of all database catalogs available on this connection. Use this if you need to explore data across different catalogs.',
+    {},
+    () => formatResult('This tool is executed client-side. If you see this message, the runtime interception is not configured.'),
+  );
+
+  server.tool(
+    'db_list_schemas',
+    'Returns the names of all schemas in the specified catalog.',
+    {catalogName: z.string().describe('Name of the catalog to list schemas from')},
+    () => formatResult('This tool is executed client-side.'),
+  );
+
+  server.tool(
+    'db_list_tables',
+    'Returns the list of all table names along with their descriptions/comments. Use this to understand what data is available.',
+    {
+      schemaName: z.string().describe('Name of the schema to list tables from'),
+      catalogName: z.string().describe('Name of the catalog containing the schema'),
+    },
+    () => formatResult('This tool is executed client-side.'),
+  );
+
+  server.tool(
+    'db_describe_tables',
+    'Get detailed information about specific table(s) including all columns, their types, semantic types, comments, value ranges, and category values. Essential for understanding what data is in each table.',
+    {
+      tables: z.array(z.string()).describe('List of table names to describe. Use schema.table format (e.g. public.tableName) or catalog.schema.table format for cross-catalog queries.'),
+    },
+    () => formatResult('This tool is executed client-side.'),
+  );
+
+  server.tool(
+    'db_list_joins',
+    'Lists all foreign key relationships (joins) that involve the specified table(s). CRITICAL: Use this before writing any JOIN clause to verify the relationship exists.',
+    {
+      tables: z.array(z.string()).describe('List of table names to find joins for. Use schema.table or catalog.schema.table format.'),
+    },
+    () => formatResult('This tool is executed client-side.'),
+  );
+
+  server.tool(
+    'db_try_sql',
+    'Execute an SQL query to test it. Returns row count and column names (limited to 10 rows). Use this to validate your query before providing the final answer. If row count is 0, the query might be wrong or the data might genuinely be absent. TRY NOT TO USE ORDER BY in YOUR TEST QUERIES on large tables unless absolutely necessary.',
+    {
+      sql: z.string().describe('The SQL query to test (will be automatically limited to 10 rows)'),
+      description: z.string().describe('Short description of what this SQL is trying to achieve in markdown format. This will be put in ui for user context.'),
+    },
+    () => formatResult('This tool is executed client-side.'),
+  );
+
   return server;
 }
 

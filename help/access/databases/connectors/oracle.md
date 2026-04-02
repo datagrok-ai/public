@@ -82,7 +82,7 @@ using SQL queries via the JDBC driver.
 
 ## Remarks
 
-* Do not finish your queries with ';' or you will get an exception specific to Oracle
+* Do not end your queries with ';', or you will get an Oracle-specific exception
 
 See also:
 

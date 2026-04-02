@@ -259,7 +259,7 @@ function forwardEvent(ws: WsSender, sid: string, event: SDKMessage): void {
     break;
   case 'result':
     if (e.subtype === 'success')
-      emit(ws, {type: 'final', sessionId: sid, content: e.result || ''});
+      emit(ws, {type: 'final', sessionId: sid, content: e.result || '', ...(e.structured_output ? {structured_output: e.structured_output} : {})});
     else
       emit(ws, {type: 'error', sessionId: sid, message: (e.errors ?? []).join(', ') || e.subtype || 'unknown'});
     break;
@@ -272,10 +272,10 @@ interface ActiveQuery {
   pendingInputResolve: ((value: any) => void) | null;
 }
 
-const activeQueries = new Map<WsSender, ActiveQuery>();
+const activeQueries = new Map<string, ActiveQuery>();
 
 function handleInputResponse(ws: WsSender, data: InputResponseMessage): void {
-  const active = activeQueries.get(ws);
+  const active = activeQueries.get(data.sessionId);
   if (active?.pendingInputResolve) {
     const resolve = active.pendingInputResolve;
     active.pendingInputResolve = null;
@@ -292,13 +292,20 @@ async function handleMessage(ws: WsSender, data: UserMessage): Promise<void> {
   const mcpUrl = rewriteForDocker(data.mcpServerUrl || '');
   const abortController = new AbortController();
   const active: ActiveQuery = {abortController, queryHandle: null, pendingInputResolve: null};
-  activeQueries.set(ws, active);
+  activeQueries.set(sid, active);
+
+  const DB_CLIENT_TOOLS = new Set([
+    'mcp__datagrok__db_list_catalogs', 'mcp__datagrok__db_list_schemas',
+    'mcp__datagrok__db_list_tables', 'mcp__datagrok__db_describe_tables',
+    'mcp__datagrok__db_list_joins', 'mcp__datagrok__db_try_sql',
+  ]);
 
   let gotResult = false;
   try {
-    const opts = buildOptions(getSession(sid), data.apiKey, mcpUrl);
+    const existingSession = getSession(sid);
+    const opts = buildOptions(existingSession, data.apiKey, mcpUrl);
     const canUseTool = async (toolName: string, input: any) => {
-      if (toolName === 'AskUserQuestion') {
+      if (toolName === 'AskUserQuestion' || DB_CLIENT_TOOLS.has(toolName)) {
         emit(ws, {type: 'input_request', sessionId: sid, toolName, input});
         const updatedInput = await new Promise<any>((resolve, reject) => {
           active.pendingInputResolve = resolve;
@@ -311,7 +318,8 @@ async function handleMessage(ws: WsSender, data: UserMessage): Promise<void> {
       }
       return {behavior: 'allow' as const, updatedInput: input};
     };
-    const q = query({prompt: promptStream(message), options: {...opts, canUseTool, abortController}});
+    const outputFormat = data.outputSchema ? {type: 'json_schema' as const, schema: data.outputSchema as Record<string, unknown>} : undefined;
+    const q = query({prompt: promptStream(message), options: {...opts, canUseTool, abortController, ...(outputFormat ? {outputFormat} : {})}});
     active.queryHandle = q;
     for await (const event of q) {
       if (abortController.signal.aborted)
@@ -324,12 +332,12 @@ async function handleMessage(ws: WsSender, data: UserMessage): Promise<void> {
     if (!abortController.signal.aborted && (!gotResult || !/exited with code/i.test(String(e.message))))
       emit(ws, {type: 'error', sessionId: sid, message: String(e.message || e)});
   } finally {
-    activeQueries.delete(ws);
+    activeQueries.delete(sid);
   }
 }
 
 function handleAbort(ws: WsSender, data: AbortMessage): void {
-  const active = activeQueries.get(ws);
+  const active = activeQueries.get(data.sessionId);
   if (!active)
     return;
   active.abortController.abort();
@@ -346,7 +354,6 @@ const {injectWebSocket, upgradeWebSocket} = createNodeWebSocket({app});
 app.get('/health', (c) => c.json({status: 'ok'}));
 
 app.get('/ws', upgradeWebSocket(() => {
-  let busy = false;
   return {
     onMessage(evt: any, ws: any) {
       const sender = ws as unknown as WsSender;
@@ -374,15 +381,7 @@ app.get('/ws', upgradeWebSocket(() => {
         });
       }
 
-      if (busy) {
-        return emit(sender, {
-          type: 'error', sessionId: data.sessionId ?? '',
-          message: 'Query already in progress',
-        });
-      }
-
-      busy = true;
-      handleMessage(sender, data).finally(() => { busy = false; });
+      handleMessage(sender, data);
     },
   };
 }));

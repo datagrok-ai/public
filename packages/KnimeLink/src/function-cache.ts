@@ -35,10 +35,10 @@ function saveCacheEntries(entries: CachedDeploymentEntry[]): void {
   grok.userSettings.put(STORAGE_NAME, data);
 }
 
-export function registerFromCache(entries: CachedDeploymentEntry[], client: IKnimeClient): void {
+export async function registerFromCache(entries: CachedDeploymentEntry[], client: IKnimeClient): Promise<void> {
   for (const entry of entries) {
     try {
-      registerFuncFromSpec(entry.deployment, entry.spec, client);
+      await registerFuncFromSpec(entry.deployment, entry.spec, client);
     }
     catch (e: any) {
       grok.shell.error(`KnimeLink: failed to register cached function for ${entry.deployment.name}: ${e}`);
@@ -73,7 +73,7 @@ export async function refreshAndUpdateCache(client: IKnimeClient): Promise<void>
 
       const old = oldEntries.get(dep.id);
       if (!old || old.signature !== signature)
-        registerFuncFromSpec(dep, spec, client);
+        await registerFuncFromSpec(dep, spec, client);
 
       freshEntries.push({deployment: dep, spec, signature});
     }

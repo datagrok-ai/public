@@ -9,7 +9,7 @@ unlisted: false
 import IntAuth from '../img/settings-internal-auth.png';
 ```
 
-Datagrok provides robust security through its authentication, authorization, and credential management systems. These features control access to functionalities and data within the platform, ensuring that only authorized users can operate within their granted permissions.
+Datagrok provides robust security through its authentication, authorization, and credential management systems. These features control access to platform functionalities and data, ensuring that only authorized users can operate within their granted permissions.
 
 ## Authentication
 
@@ -30,11 +30,11 @@ To set up authentication, go to **Sidebar > Settings (<FAIcon icon="fa-solid fa-
 
 If you disable the login/password authentication (for example, after
 setting up the SSO), the platform will no longer accept logging in with the username/password, so 
-be careful to not lock yourself out and make sure SSO works.We recommend to check that SSO works by signing into Datagrok
+be careful not to lock yourself out and make sure SSO works. We recommend checking that SSO works by signing into Datagrok
 using incognito mode before disabling the login/password authentication. 
 
-If you don't provide a functional alternative before disabling the login/password authentication, 
-this may require a platform redeployment to regain access.
+If you disable login/password authentication without providing a functional alternative, 
+you may need to redeploy the platform to regain access.
 
 <img src={IntAuth} width="200" />
 
@@ -42,18 +42,17 @@ this may require a platform redeployment to regain access.
 
 ### Login-password authentication
 
-Datagrok uses a user name and password to authenticate users. Passwords are
+Datagrok uses a username and password to authenticate users. Passwords are
 salted with random data and encrypted with the 1024xSHA-256 algorithm, ensuring
 they cannot be read from the system.
 
-When a user logs in, the user name and password pair is passed to the server. If
+When a user logs in, the username and password pair is passed to the server. If
 the password hash matches the stored hash, a session token is generated. Every
 subsequent API call must be made with the `Authorization: token` HTTP header,
 where `token` is the session token. This token becomes invalid after logging out.
 
 Datagrok doesn't store user passwords after login. If a user forgets their
-password, the only way to regain access is to reset the password using the link
-on the login form or for the Datagrok Administrator to reset the password. 
+password, they can reset it using the link on the login form, or a Datagrok Administrator can reset it.
 
 ![Authentication UML Diagram](../../uploads/features/login-signup.png "Authentication UML Diagram")
 
@@ -186,8 +185,8 @@ Permissions to show or hide nodes in Browse Panel:
 | **Browse Layouts**              | Show Layouts section in Browse Panel                   |
 | **Browse Shared Data**          | Show Shared Data in Browse Panel                       |
 
-You can set Datargok global permissions as a part of `GROK_PARAMETERS`. Get the template JSON in `/settings` view using `{}` button near the server settings section.
-Put any parameter to `settings` map of `GROK_PARAMETERS` respecting the hierarchy.
+You can set Datagrok global permissions as part of `GROK_PARAMETERS`. To get the template JSON, go to the `/settings` view and click the `{}` button near the server settings section.
+Add any parameter to the `settings` map of `GROK_PARAMETERS`, respecting the hierarchy.
 
 See also: [Configuration](../../deploy/configuration.md)
 
@@ -198,21 +197,20 @@ and protects data connection and plugin credentials.
 
 Credentials contain sensitive
 information used to connect to data sources, such as login/password pairs for
-databases or tokens and private keys for webservices.
+databases or tokens and private keys for web services.
 
 Each credential is associated with a
 [group](../access-control/users-and-groups.md#groups) and a
-[connection](../../access/access.md#data-connection) or a plugin. When a user accesses the entity, the system automatically selects the appropriate credential based on
-the user's group membership.
+[connection](../../access/access.md#data-connection) or a plugin. When a user accesses the entity, the system automatically selects the appropriate credential based on the user's group membership.
 
 ![Entities diagram](../../uploads/security/credentials-entities-diagram.png "Entities diagram")
 
 Depending on the connection, the call to the external service is performed
-either on the server or the client side. For client-side calls, the credential
+either on the server or the client side. For client-side calls, the credentials
 are retrieved from the server. Some connections, such as databases, are intended
 to be accessible only from the server side. In such cases, set the
 **Requires Server** flag to true (accessible via the **Edit...** command) to prevent
-the retrieval of credentials by the client. 
+the client from retrieving credentials.
 
 ### Credentials storage
 

@@ -17,6 +17,11 @@ export class UserReport extends Entity {
     super(dart);
   }
 
+  static fromJson(json: object | string): UserReport {
+    const str: string = typeof json === 'string' ?  json : JSON.stringify(json);
+    return toJs(api.grok_UserReport_FromJson(str));
+  }
+
   get isResolved(): boolean {
     return api.grok_UserReport_IsResolved(this.dart);
   }

@@ -3,7 +3,7 @@ title: "SQLite"
 ---
 
 Provides access to [SQLite](https://www.sqlite.org/index.html) DB file using SQL
-queries via JDBC driver. File should be stored on Datagrok files share for
+queries via a JDBC driver. The file should be stored on a Datagrok file share for
 SQLite DBs.
 
 ## Connection parameters

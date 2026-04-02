@@ -199,6 +199,7 @@ export type PipelineConfigurationBase<P> = {
 };
 
 export type NestedItemContext = {
+  disableUIControlls?: boolean;
   disableUIAdding?: boolean;
   disableUIRemoving?: boolean;
   disableUIDragging?: boolean;

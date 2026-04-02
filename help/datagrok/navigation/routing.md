@@ -3,11 +3,10 @@ title: "Routing"
 unlisted: true
 ---
 
-In this article, we will consider in which cases the Datagrok platform retains the state in which it was before
-refreshing the browser page. Routing allows you to quickly share something by simply copying a URL and sending it to
-another person to whom you want to show a particular view, project, application, etc. We will find out which actions
-Datagrok can perform under the hood as the user goes to a specific URL (for example, executing a query with given
-parameters).
+Datagrok uses URL routing to preserve application state across browser refreshes.
+You can share your current view by copying and sending its URL. When someone opens
+the URL, Datagrok restores the exact state — including executing queries with the
+specified parameters.
 
 ## Entity browsers
 

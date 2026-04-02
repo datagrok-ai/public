@@ -213,7 +213,7 @@ determines its access rights ([learn more](../concepts/project/space.md)).
 
 ![Browse](../navigation/img/browse.gif)
 
-Clicking an item in the tree opens it's view in the center, for example:
+Clicking an item in the tree opens its view in the center, for example:
 
 * Tables, dashboards, files open as working documents you can explore and edit
 * Folders open as folder views
@@ -292,7 +292,7 @@ Hover over header to reveal:
 | Back/Forward     | Navigate between viewed objects                             |
 | Clone and detach | Detach a static copy of the **Context Panel** preserving its content. This action opens a copy of the **Context Panel** in a separate window. The content of the cloned panel remains static, while the main **Context Panel** continues to update with the current object.  |
 | Collapse all     | Collapse all info panes                                     |
-| Expand all       | Collapse all info panes                                     |
+| Expand all       | Expand all info panes                                       |
 | Favorites        | Show the **Context Panel** for your favorite object             |
 
 ![](../navigation/panels/img/context-panel-controls.gif)
@@ -366,9 +366,8 @@ dynamically to show details about your substructure.
 
 Info panes are displayed based on specific conditions: user, dataset, context, user preferences.
 
-When the current object changes, the conditions of all registered info panes are
-checked against the specified parameters, and matching info panes are displayed
-accordingly. 
+When you select a different object, Datagrok evaluates each info pane's
+conditions and shows only the ones that match. 
 
 Subject to your permissions, you can control the display of an info pane from
 the UI. To hide a specific info pane, click the **Gear** icon on the pane

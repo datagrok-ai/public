@@ -9,7 +9,7 @@ application development, and user experience across the entire platform.
 AI operates on top of Datagrok’s unified introspectable architecture, which exposes data, 
 functions, viewers, widgets, schemas, and UI state in a structured way. 
 This enables accurate natural-language control, automated workflows,
-permissions and governance, and context-aware assistance throughout the platform.
+permissions, governance, and context-aware assistance throughout the platform.
 
 Datagrok takes advantage of the existing AI ecosystem by connecting and using MCP servers
 and other external integrations in a managed way. At the same time, Datagrok also 
@@ -128,7 +128,7 @@ You can register the identifier patterns using the regular expression
 where it comes from. Datagrok then would recognize these identifier everywhere (even within
 a sentence), and give you a way to drill down and see the associated information on that,
 automatically following the foreign keys defined in the database schema. This is a very
-powerful tool that lets users get the data with minimum setup. It's also integrated with 
+powerful tool that lets users get data with minimum setup. It is also integrated with 
 the smart assistant:
 
 ![](../../develop/how-to/db/chembl-search-everywhere.png)
@@ -137,7 +137,7 @@ Learn more
 - [User Group Meeting 19: Database Identifiers](https://youtu.be/4_NS3q7uvjs?t=2910)
 - For developers: [registering identifier patterns](https://datagrok.ai/help/develop/how-to/grid/register-identifiers)
 
-## 1. Parameterized SQL with metadata annotations
+## 2. Parameterized SQL with metadata annotations
 
 You can create curated SQL queries with:
 

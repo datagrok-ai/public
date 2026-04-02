@@ -30,7 +30,7 @@ To configure login-password authentication:
 2. To use the login-password method, enable '_Internal authentication_' in General section
 3. To disable signup uncheck '_Signup Allowed_' option
 4. To restrict from which domains people can sign up to the platform, use the '_Signup Domains Whitelist_' option. You can set several domains separated with commas.
-5. To force people to use active emails, enable the '_Require Email Confirm_' option .
+5. To force people to use active emails, enable the '_Require Email Confirm_' option.
 
 For login-password authentication, it is important to [configure an email service](configure-smtp.md) that will deliver signup, welcome, confirmation and forgot password emails.
 

@@ -25,7 +25,7 @@ To apply modification:
    * In the **Pattern** input section, choose the sequence basis (DNA/RNA) and pattern length
      for sense and anti-sense strands.
    * Alternatively, load the pattern from the list of saved patterns.  
-     Loading patterns created by other users are also available.
+     Patterns created by other users are also available.
 2. Paste the nucleotide sequences (sense and/or anti-sense) in the text boxes under the pattern image, 
    and obtain modified sequences in the Axolabs format.
 3. When you edit the pattern, OligoToolkit automatically updates the resulting sequences.

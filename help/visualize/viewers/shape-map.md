@@ -3,15 +3,15 @@ title: "Shape map"
 unlisted: true
 ---
 
-Shows a map that is applicable for the specified dataset. Typically, it would represent a geographical area (countries,
+Shows a map applicable to the specified dataset. Typically, the map represents a geographical area (countries,
 states, counties, etc), but it also supports arbitrary shapes (such as a store floor plan, brain regions, or EEG
 electrodes).
 
-When opened, a viewer automatically determines the best map that is applicable to the current dataset. If more than one
-map fits the data, it is chosen arbitrarily; right-click and choose the one you want from the pop-up menu.
+When opened, the viewer automatically determines the best map for the current dataset. If more than one
+map fits the data, the viewer selects one arbitrarily. Right-click and choose the one you want from the pop-up menu.
 
-Geographical regions can be represented by different names (such as Pennsylvania and PA), and there is an elaborate
-system in place that understands synonyms and abbreviations. However, sometimes it can't map names to the regions. To
+Geographical regions can be represented by different names (such as Pennsylvania and PA), and an elaborate
+system understands synonyms and abbreviations. However, sometimes it can't map names to the regions. To
 identify these records, select
 "Select not matching rows" from the popup menu.
 

@@ -127,7 +127,7 @@ viewer hook is synchronous, `viewersHook` function must just return
 another js function, which accepts the following arguments:
 
 1. ioName: `string` - name of the input or output
-2. type: `string` - viwer type
+2. type: `string` - viewer type
 3. viewer: `DG.Viewer` - viewer js object
 4. meta?: `any` - optional io metadata, available only in workflows.
 
@@ -402,13 +402,13 @@ You can customize export using the following annotation:
 //meta.customExports: [{"name": "pdf", "function": "MyPackage:MyPDFExport"}]
 ```
 
-The export function will recieve the following arguments:
+The export function will receive the following arguments:
 
 * `funcCall`: DG.FuncCall, current call.
 * `startDownload`: bool, true if the function should start a file download or just return results.
 * `isOutputOutdated`: bool, true if the function output is outdated.
-* `validationState`: `Record<string, ValidationResult>`, avialiable only if run inside a [workflows](../../workflows/workflows.mdx).
-* `consistencyState`: `Record<string, ConsistencyInfo>`, avialiable only if run inside a [workflows](../../workflows/workflows.mdx).
+* `validationState`: `Record<string, ValidationResult>`, available only if run inside a [workflows](../../workflows/workflows.mdx).
+* `consistencyState`: `Record<string, ConsistencyInfo>`, available only if run inside a [workflows](../../workflows/workflows.mdx).
 
 
 ## Review and compare historical script runs

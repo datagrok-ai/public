@@ -3,7 +3,7 @@ title: "Environment setup"
 sidebar_position: 0
 ---
 
-This article explains how to set up development environment for developing Datagrok [packages](../develop.md#packages).
+This article explains how to set up a development environment for developing Datagrok [packages](../develop.md#packages).
 
 ## Tools
 
@@ -22,7 +22,7 @@ enter the root password if prompted.
 
 _NOTE_: The `Node.js` version from [Snap](https://snapcraft.io/)
 can produce issues with the datagrok tools installation.
-We recommend to avoid using Snap and follow installation instructions provided above.
+We recommend avoiding Snap and following the installation instructions provided above.
 
 ## Configuration
 

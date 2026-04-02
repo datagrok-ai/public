@@ -13,7 +13,7 @@ import '../css/knime-link.css';
 export * from './package.g';
 export const _package = new DG.Package();
 
-const TEST_PREFIX = 'datagrok_test_';
+const TEST_WORKFLOW = 'test_inputs';
 
 export class PackageFunctions {
   @grok.decorators.autostart({description: 'KnimeLink function registration'})
@@ -28,7 +28,7 @@ export class PackageFunctions {
 
     const cached = loadCachedEntries();
     if (cached.length > 0)
-      registerFromCache(cached, client);
+      await registerFromCache(cached, client);
 
     try {
       await refreshAndUpdateCache(client);
@@ -147,7 +147,7 @@ export class PackageFunctions {
 
     const cachedTest: typeof cached = [];
     for (const entry of cached) {
-      if (entry.deployment.name.toLowerCase().startsWith(TEST_PREFIX)) {
+      if (entry.deployment.name.toLowerCase() === TEST_WORKFLOW) {
         cachedTest.push(entry);
         continue;
       }
@@ -178,7 +178,7 @@ export class PackageFunctions {
       const regularDeps: KnimeDeployment[] = [];
       const testDeps: KnimeDeployment[] = [];
       for (const dep of deployments) {
-        if (dep.name.toLowerCase().startsWith(TEST_PREFIX))
+        if (dep.name.toLowerCase() === TEST_WORKFLOW)
           testDeps.push(dep);
         else
           regularDeps.push(dep);

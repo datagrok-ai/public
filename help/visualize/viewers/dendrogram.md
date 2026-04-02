@@ -4,7 +4,7 @@ _Dendrogram_ is a [package](../../develop/develop.md#packages) for phylogenetic 
 
 ## Notations
 
-Now only the _Newick_ tree format is supported.
+Currently, only the _Newick_ tree format is supported.
 
 ## Viewers
 
@@ -15,9 +15,9 @@ Exposed properties allow customizing the viewer appearance for the line width an
 
 ![Dendrogram properties](../../uploads/gifs/dendrogram-properties-1.gif)
 
-The viewer expects a data frame with the tag '.newick' (data frame tree data tag name can be customized with the
-property 'newickTag') containing tree data, but also allowing to set the 'newick' property for data (the 'newick'
-property value has higher priority over data frame tag).
+The viewer expects a data frame with the tag '.newick' (you can customize the tag name with the
+property 'newickTag') containing tree data. You can also set the 'newick' property for data directly (the 'newick'
+property value takes priority over the data frame tag).
 
 ```ts
 //name: Dendrogram
@@ -39,18 +39,18 @@ The Dendrogram viewer is highly optimized to render trees with hundreds of thous
 
 ## File handlers
 
-Opening file with .nwk, .newick extension will be transformed to a DataFrame of nodes (node, parent, leaf, distance
+Opening a file with .nwk or .newick extension transforms it into a DataFrame of nodes (node, parent, leaf, distance
 columns) with a DendrogramViewer docked on the right side of the grid. The dendrogram viewer interacts with the data
-frame on which it is opened on the column with the node names specified in the Node[ColumnName] property. Current state,
+frame through the column with node names specified in the Node[ColumnName] property. Current state,
 hover, and selection are supported and displayed with specific styles in the dendrogram and data frame grid.
 
 ![.nwk file handler with interactivity](../../uploads/gifs/dendrogram-newick-file-handler-with-interactivity.gif)
 
 ## Dendrogram injected to grid, hierarchical clustering
 
-An application developer can inject Dendrogram viewer to a grid linked by row number or leaves' column name.
-For example Top menu function ML | Hierarchical Clustering calculates the tree on selected features/columns set with
-specified pairwise distance metric and aggregation method. Mouse over, current, selected and filtered states, row height
-are synchronized between grid and injected tree in both directions.
+An application developer can inject a Dendrogram viewer into a grid linked by row number or leaf column name.
+For example, the Top menu function **ML | Hierarchical Clustering** calculates the tree on selected features/columns with
+a specified pairwise distance metric and aggregation method. Mouse over, current, selected, and filtered states, as well as row height,
+are synchronized between the grid and injected tree in both directions.
 
 ![ML | Hierarchical Clustering](../../uploads/gifs/dendrogram-hierarchical-clustering-interactivity.gif)

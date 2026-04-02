@@ -155,6 +155,10 @@ via `grok.functions.register()`. When a deployment is selected in the tree brows
 4. Generates a function signature string (e.g., `object MyWorkflow(dataframe input_table, string threshold)`)
 5. Creates a run callback that converts Datagrok types to KNIME formats, executes, and extracts results
 6. Registers the function with `grok.functions.register()`, passing `outputs` array for multi-output workflows, and sets descriptions/defaults on input properties
+7. Detects molecule inputs: string parameters whose names contain molecule keywords (`smiles`, `molecule`,
+   `mol`, `compound`, `structure`, `chemical`) get `semType = 'Molecule'`. If a default value is present,
+   it is verified via `Chem:isSmiles` first; semType is only set if isSmiles returns true. If no default
+   value exists, the name match alone is used. The Chem package being unavailable is silently handled.
 
 **Multiple outputs**: Workflows with multiple outputs (tables, scalars, resources) register each output as a
 separate named output parameter via the `outputs` field of `grok.functions.register()`. The run callback
