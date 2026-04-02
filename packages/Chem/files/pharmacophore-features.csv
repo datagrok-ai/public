@@ -1,0 +1,31 @@
+feature_id,family,family_name,feature_name,smarts,color
+1,a,Aromatic,6-membered ring,a1aaaaa1,#4CAF50
+2,a,Aromatic,5-membered ring,a1aaaa1,#4CAF50
+3,D,Donor,Nitrogen donor,"[#7!H0&!$(N-[SX4](=O)(=O)[CX4](F)(F)F)]",#2196F3
+4,D,Donor,Oxygen donor,"[#8!H0&!$([OH][C,S,P]=O)]",#2196F3
+5,D,Donor,Sulfur donor,[#16!H0],#2196F3
+6,A,Acceptor,Nitrogen acceptor,"[#7&!$([nX3])&!$([NX3]-*=[!#6])&!$([NX3]-[a])&!$([NX4])&!$(N=C([C,N])N)]",#E53935
+7,A,Acceptor,Oxygen acceptor,"[$([O])&!$([OX2](C)C=O)&!$(*(~a)~a)]",#E53935
+8,P,Positive,Tertiary amine,"[$([NX3]([CX4])([CX4,#1])[CX4,#1])&!$([NX3]-*=[!#6])]",#00BCD4
+9,P,Positive,Amidine,"[$([CX3](=N)(-N)[!N])](=N)-N",#00BCD4
+10,P,Positive,Guanidine,N=[CX3](N)-N,#00BCD4
+11,P,Positive,Cationic,"[$([+,+2,+3])&!$(*[-,-2,-3])]",#00BCD4
+12,N,Negative,Tetrazole,c1nn[nH1]n1,#FF9800
+13,N,Negative,Sulfonate/Phosphonate,"[$([SX4,PX4](=O)(=O)[O-,OH])](=O)(=O)[O-,OH]",#FF9800
+14,N,Negative,Carboxylate/Sulfinate,"[$([CX3,SX3,PX3](=O)[O-,OH])](=O)[O-,OH]",#FF9800
+15,N,Negative,Anionic,"[$([-,-2,-3])&!$(*[+,+2,+3])]",#FF9800
+16,H,Hydrophobic,Aromatic 6-ring,a1aaaaa1,#FFEB3B
+17,H,Hydrophobic,Aromatic 5-ring,a1aaaa1,#FFEB3B
+18,H,Hydrophobic,Single halide/alkyl,"[$([CH3X4,CH2X3,CH1X2,F,Cl,Br,I])&!$(**[CH3X4,CH2X3,CH1X2,F,Cl,Br,I])]",#FFEB3B
+19,H,Hydrophobic,Paired halide/alkyl,"[$(*([CH3X4,CH2X3,CH1X2,F,Cl,Br,I])[CH3X4,CH2X3,CH1X2,F,Cl,Br,I])&!$(*([CH3X4,CH2X3,CH1X2,F,Cl,Br,I])([CH3X4,CH2X3,CH1X2,F,Cl,Br,I])[CH3X4,CH2X3,CH1X2,F,Cl,Br,I])]([CH3X4,CH2X3,CH1X2,F,Cl,Br,I])[CH3X4,CH2X3,CH1X2,F,Cl,Br,I]",#FFEB3B
+20,H,Hydrophobic,Branched halide/alkyl,"*([CH3X4,CH2X3,CH1X2,F,Cl,Br,I])([CH3X4,CH2X3,CH1X2,F,Cl,Br,I])[CH3X4,CH2X3,CH1X2,F,Cl,Br,I]",#FFEB3B
+21,H,Hydrophobic,3-membered C-ring,[C&r3]1~[C&r3]~[C&r3]1,#FFEB3B
+22,H,Hydrophobic,4-membered C-ring,[C&r4]1~[C&r4]~[C&r4]~[C&r4]1,#FFEB3B
+23,H,Hydrophobic,5-membered C-ring,[C&r5]1~[C&r5]~[C&r5]~[C&r5]~[C&r5]1,#FFEB3B
+24,H,Hydrophobic,6-membered C-ring,[C&r6]1~[C&r6]~[C&r6]~[C&r6]~[C&r6]~[C&r6]1,#FFEB3B
+25,H,Hydrophobic,7-membered C-ring,[C&r7]1~[C&r7]~[C&r7]~[C&r7]~[C&r7]~[C&r7]~[C&r7]1,#FFEB3B
+26,H,Hydrophobic,8-membered C-ring,[C&r8]1~[C&r8]~[C&r8]~[C&r8]~[C&r8]~[C&r8]~[C&r8]~[C&r8]1,#FFEB3B
+27,H,Hydrophobic,Short alkyl chain,"[CH2X4,CH1X3,CH0X2]~[CH3X4,CH2X3,CH1X2,F,Cl,Br,I]",#FFEB3B
+28,H,Hydrophobic,Medium alkyl chain,"[$([CH2X4,CH1X3,CH0X2]~[$([!#1]);!$([CH2X4,CH1X3,CH0X2])])]~[CH2X4,CH1X3,CH0X2]~[CH2X4,CH1X3,CH0X2]",#FFEB3B
+29,H,Hydrophobic,Long alkyl chain,"[$([CH2X4,CH1X3,CH0X2]~[CH2X4,CH1X3,CH0X2]~[$([CH2X4,CH1X3,CH0X2]~[$([!#1]);!$([CH2X4,CH1X3,CH0X2])])])]~[CH2X4,CH1X3,CH0X2]~[CH2X4,CH1X3,CH0X2]~[CH2X4,CH1X3,CH0X2]",#FFEB3B
+30,H,Hydrophobic,Thioether,"[$([S]~[#6])&!$(S~[!#6])]",#FFEB3B
