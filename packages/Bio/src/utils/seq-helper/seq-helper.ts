@@ -138,6 +138,8 @@ export class SeqHelper implements ISeqHelper {
     if (uh.column.semType !== DG.SEMTYPE.MACROMOLECULE)
       throw new Error(`The column of notation '${NOTATION.SEPARATOR}' must be '${DG.SEMTYPE.MACROMOLECULE}'.`);
     if (!separator)
+      separator = uh.column.getTag(TAGS.separator) ?? undefined;
+    if (!separator)
       throw new Error(`The column of notation '${NOTATION.SEPARATOR}' must have the separator tag.`);
 
     uh.column.meta.units = NOTATION.SEPARATOR;

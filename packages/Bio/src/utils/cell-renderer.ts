@@ -85,8 +85,12 @@ export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
       return _temp.rendererBack;
     let back: CellRendererBackBase<string> | null = null;
     if (this.seqHelper) {
-      const sh = this.seqHelper.getSeqHandler(tableCol);
-      back = sh.getRendererBack(gridCol, tableCol);
+      try {
+        const sh = this.seqHelper.getSeqHandler(tableCol);
+        back = sh.getRendererBack(gridCol, tableCol);
+      } catch (_e) {
+        return null;
+      }
     }
     return back;
   }
