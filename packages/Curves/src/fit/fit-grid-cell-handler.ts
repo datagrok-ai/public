@@ -27,8 +27,8 @@ import {
   mergeProperties,
   substituteZeroes, getOrCreateCachedFitCurve, getOrCreateCachedCurvesDataPoints, FitChartCellRenderer
 } from './fit-renderer';
-import {convertXMLToIFitChartData} from './fit-parser';
 import {FitConstants} from '@datagrok-libraries/statistics/src/fit/const';
+import {parseCellValue, isNativeFormat} from './curve-converter';
 import {ColorType, getSeriesColor} from './render-utils';
 import {fitSeriesProperties} from '@datagrok-libraries/statistics/src/fit/new-fit-API';
 
@@ -128,16 +128,6 @@ function changePlotOptions(chartData: IFitChartData, inputBase: DG.InputBase, op
   }
 }
 
-function convertJnJColumnToJSON(column: DG.Column): void {
-  for (let i = 0; i < column.length; i++) {
-    const value = column.get(i);
-    if (value === '') continue;
-    const chartData: IFitChartData = convertXMLToIFitChartData(value);
-    column.set(i, JSON.stringify(chartData));
-  }
-  column.setTag(FitConstants.TAG_FIT_CHART_FORMAT, '');
-}
-
 function detectSettings(df: DG.DataFrame): void {
   const fitColumns = df.columns.bySemTypeAll(FitConstants.FIT_SEM_TYPE);
   for (let i = 0; i < fitColumns.length; i++) {
@@ -147,12 +137,10 @@ function detectSettings(df: DG.DataFrame): void {
     fitSeriesProperties.map((prop) => {
       fitColumns[i].temp[`${SERIES_OPTIONS}-custom-${prop.name}`] = false;
     });
-    if (fitColumns[i].getTag(FitConstants.TAG_FIT_CHART_FORMAT) === FitConstants.TAG_FIT_CHART_FORMAT_3DX)
-      convertJnJColumnToJSON(fitColumns[i]);
 
     for (let j = 0; j < fitColumns[i].length; j++) {
       if (fitColumns[i].get(j) === '') continue;
-      const chartData = (JSON.parse(fitColumns[i].get(j) ?? '{}') ?? {}) as IFitChartData;
+      const chartData = parseCellValue(fitColumns[i].get(j), fitColumns[i]);
 
       fitChartDataProperties.map((prop) => {
         if (!chartData.chartOptions) return;
@@ -183,6 +171,9 @@ function changeCurvesOptions(gridCell: DG.GridCell, inputBase: DG.InputBase, opt
     (chartOptions.seriesOptions![propertyName as keyof IFitSeriesOptions] as any) = inputBase.value;
 
   if (manipulationLevel === MANIPULATION_LEVEL.CELL) {
+    // Cell-level editing only works for native JSON format
+    if (!isNativeFormat(gridCell.cell.column))
+      return;
     const value = gridCell.cell.value;
     if (value === '') return;
     const chartData: IFitChartData = JSON.parse(value ?? '{}') ?? {};
@@ -206,6 +197,8 @@ function changeCurvesOptions(gridCell: DG.GridCell, inputBase: DG.InputBase, opt
         columns[i].tags[FitConstants.TAG_FIT] = JSON.stringify(columnChartOptions);
       }
       if (columns[i].temp[`${options}-custom-${propertyName}`] === false) continue;
+      // Skip cell-level value mutation for non-native format columns
+      if (!isNativeFormat(columns[i])) continue;
 
       columns[i].init((j) => {
         const value = columns[i].get(j);

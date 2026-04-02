@@ -78,7 +78,7 @@ function getPoints(series: Element): IFitPoint[] {
     points[j] = {
       x: +xCoords[j],
       y: +yCoords[j],
-      outlier: !Boolean(mask[j]),
+      outlier: mask[j] === '0',
     };
   }
 
