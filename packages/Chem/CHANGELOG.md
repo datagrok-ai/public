@@ -1,5 +1,9 @@
 # Chem changelog
 
+## v.next
+
+* CLAUDE-5: Fixed crash in removeDuplicates when molecule from Ketcher is malformed
+
 ## 1.17.4 (2026-03-30)
 
 * [#3708](https://github.com/datagrok-ai/public/issues/3708): Chem: Chemical space: Add tags on columns with embeddings
