@@ -522,6 +522,10 @@ export namespace funcs {
     return await grok.functions.call('UsageAnalysis:TestDashboardsViewer', {});
   }
 
+  export async function specificClicksPanel(): Promise<any> {
+    return await grok.functions.call('UsageAnalysis:SpecificClicksPanel', {});
+  }
+
   export async function describeCurrentObj(): Promise<void> {
     return await grok.functions.call('UsageAnalysis:DescribeCurrentObj', {});
   }

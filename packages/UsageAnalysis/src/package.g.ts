@@ -122,6 +122,13 @@ export function testDashboardsViewer() : any {
   return PackageFunctions.testDashboardsViewer();
 }
 
+//name: Click Events
+//output: widget result
+//meta.inspectorPanel: true
+export function _specificClicksPanel() : any {
+  return PackageFunctions._specificClicksPanel();
+}
+
 //meta.role: autostart
 export function describeCurrentObj() : void {
   PackageFunctions.describeCurrentObj();
