@@ -1,6 +1,8 @@
 ---
 name: add-info-panel
-description: Create info panels that appear in the context panel based on semantic types and conditions
+description: Create info panels that appear in the context panel based on semantic types
+when-to-use: When user asks to add an info panel, context panel, or property panel to a package
+effort: medium
 ---
 
 # Add an Info Panel

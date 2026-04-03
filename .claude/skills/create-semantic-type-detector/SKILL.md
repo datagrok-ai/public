@@ -1,6 +1,8 @@
 ---
 name: create-semantic-type-detector
-description: Define semantic type detectors in detectors.js to auto-detect column data meaning
+description: Define semantic type detectors in detectors.js for auto-detecting column data meaning
+when-to-use: When user asks to create a detector, detect a semantic type, or auto-tag columns
+effort: medium
 ---
 
 # Create a Semantic Type Detector

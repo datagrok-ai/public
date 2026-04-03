@@ -7,18 +7,6 @@
 **Author:** Davit Rizhinashvili
 **Description:** Translates oligonucleotide sequences between different representations (Axolabs, BioSpring, GCRS, Mermade, HELM, nucleotides, etc.). Also provides pattern design, structure visualization, and advanced polymer conversion (PolyTool).
 
-## Quick Reference
-
-```bash
-npm run build          # grok api && grok check --soft && webpack
-npm run build-all      # Build all deps (chem-meta → js-api → utils → bio → tutorials → this)
-npm run link-all       # npm link chem-meta datagrok-api utils bio tutorials
-npm run test           # grok test
-npm run test-local     # grok test --host localhost
-npm run lint           # eslint ./src/**/*.ts
-npm run lint-fix       # eslint --fix
-```
-
 ## Dependencies
 
 | Dependency | Purpose |

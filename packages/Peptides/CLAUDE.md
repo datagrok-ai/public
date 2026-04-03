@@ -1,22 +1,10 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
-
-**IMPORTANT: Always update this CLAUDE.md file after finishing any task that adds, removes, or changes functionality in this package.**
-
 ## Overview
 
 **Peptides** (`@datagrok/peptides`) is a Datagrok plugin for **Structure-Activity Relationship (SAR) analysis** of peptide collections. It detects macromolecule columns automatically, renders amino acids with color-coded monomers, and provides interactive viewers to identify point mutations and residues causing major activity changes.
 
 Category: **Bioinformatics**. Top menu: `Bio | Analyze | SAR...`.
-
-## Build Commands
-
-```bash
-npm install
-npm run build              # grok api && grok check --soft && webpack
-npm run test               # grok test
-```
 
 ## Architecture
 

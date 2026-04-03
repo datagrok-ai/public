@@ -1,16 +1,9 @@
 ---
 name: implement-interactive-scientific-application-from-spec
-description: >
-  Implement an interactive scientific Datagrok application (simulation,
-  mathematical model, ODE/PDE solver, computational tool) from an approved
-  specification (spec.md). NOT for regular CRUD/data apps — use build-app
-  for those. Reads the spec and architecture guide, then builds the application
-  following strict hexagonal architecture: model types, core computation,
-  validation, workers, UI, coordinator, tests. Use this skill when a spec.md
-  already exists and the user wants to implement it. Triggers on: "implement
-  from spec", "implement-from-spec", "code the scientific application",
-  "implement spec.md", or when the user references an existing spec.md file
-  and asks to build/implement it.
+description: Implement an interactive scientific Datagrok application from an approved spec.md
+when-to-use: When a spec.md exists and user asks to implement, code, or build the scientific application from it. NOT for CRUD apps.
+context: fork
+effort: high
 ---
 
 # Implement Datagrok Scientific Application from Specification

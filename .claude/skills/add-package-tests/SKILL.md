@@ -1,6 +1,8 @@
 ---
 name: add-package-tests
 description: Add unit tests to a Datagrok package
+when-to-use: When user asks to add tests, create test files, or set up testing for a package
+effort: high
 argument-hint: "[package-path]"
 ---
 

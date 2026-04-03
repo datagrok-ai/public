@@ -9,12 +9,6 @@ Datagrok package for integrating with the KNIME Business Hub.
 - Passes inputs (tables, parameters, files) and executes workflows
 - Displays results as Datagrok DataFrames (REST deployments) or provides link to KNIME Hub (data-app deployments)
 
-## Maintenance Rule
-
-When making significant logic changes (new files, changed architecture, renamed conventions,
-altered data flow, new/removed functions), update this CLAUDE.md to reflect the change before
-considering the task complete.
-
 ## Setup
 
 All settings are configured via standard Datagrok package settings: **Manage > Plugins > KnimeLink**.
@@ -201,13 +195,6 @@ The package exports three decorated functions:
 - `knimeLinkAutostart()` — autostart function that registers KNIME functions from cache, then refreshes in background
 - `knimeLinkApp()` — app entry point at Browse > Compute > KNIME
 - `knimeLinkAppTreeBrowser()` — tree browser that lists REST deployments per team
-
-## Build
-
-```bash
-npm install
-npm run build    # grok api && grok check --soft && webpack
-```
 
 ## OpenAPI Specs
 

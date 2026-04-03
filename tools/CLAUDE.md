@@ -1,31 +1,12 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
-
 ## Overview
 
 This is **datagrok-tools**, a CLI utility for creating, validating, testing, and publishing packages to Datagrok. The tool is distributed as `grok` command globally via npm.
 
-## Build & Development Commands
+## Build Notes
 
-### Build the CLI
-```bash
-npm run build                    # Transpile TypeScript to JavaScript using Babel
-npm run debug-source-map         # Build with source maps for debugging
-```
-
-The build process uses Babel with `@babel/preset-typescript` to transpile TypeScript files from `bin/` to `bin/` (in-place). **Important:** `.ts` source and `.js` output coexist in the same `bin/` directory — `grok.js` requires the transpiled `.js` files, not the `.ts` sources. After editing any `.ts` file, you must run `npm run build` before testing.
-
-### Link for Local Development
-```bash
-npm link                         # Make 'grok' command available globally for testing
-```
-
-### Testing
-While this CLI tool manages testing for Datagrok packages, it doesn't have its own test suite. To test changes:
-1. Build the tool: `npm run build`
-2. Link it: `npm link`
-3. Test commands manually: `grok create test-package`, `grok check`, etc.
+The build process uses Babel with `@babel/preset-typescript` to transpile TypeScript files from `bin/` to `bin/` (in-place). `.ts` source and `.js` output coexist in the same `bin/` directory -- `grok.js` requires the transpiled `.js` files, not the `.ts` sources. After editing any `.ts` file, you must run `npm run build` before testing.
 
 ## Code Architecture
 
@@ -272,16 +253,6 @@ servers:
     url: 'https://dev.datagrok.ai/api'
     key: ''
 ```
-
-### Webpack Externals
-
-The CLI validates that imports match webpack externals to prevent bundling datagrok-api and other provided libraries. Common externals:
-- `datagrok-api`
-- `rxjs`
-- `cash-dom`
-- `dayjs`
-- `openchemlib/full`
-- `wu`
 
 ## File References
 

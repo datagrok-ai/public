@@ -1,6 +1,8 @@
 ---
 name: create-file-viewer
-description: Create a custom file viewer for Datagrok file share browser
+description: Create a custom file viewer for the Datagrok file share browser
+when-to-use: When user asks to create a file viewer, handle a new file type, or add file preview
+effort: medium
 argument-hint: "[extensions] [package-path]"
 ---
 

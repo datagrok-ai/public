@@ -20,12 +20,6 @@ css/
   power-pack.css         # All styles, loaded via "sources" in package.json
 ```
 
-## Build
-
-```bash
-npm run build    # grok api && grok check --soft && webpack
-```
-
 ## Key Patterns
 
 ### Function Registration

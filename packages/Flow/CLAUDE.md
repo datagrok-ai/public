@@ -1,7 +1,5 @@
 # CLAUDE.md - Flow Package
 
-**IMPORTANT: Always update this file after adding new features, nodes, or changing architecture.**
-
 ## Overview
 
 Flow (FuncFlow) is an interactive visual function chain designer for Datagrok. It uses LiteGraph.js to let users compose Datagrok functions into executable JavaScript scripts via a node-based graph editor.
@@ -214,14 +212,6 @@ Pass-through node (dynamic in → dynamic out) in the "Debug" category. In debug
 
 `.ffjson` files store the full flow state including LiteGraph graph data and FuncFlow metadata.
 
-## Build
-
-```bash
-cd packages/Flow
-npm install
-npm run build    # grok api && grok check --soft && webpack
-```
-
 ## UI Architecture: Widgets vs Property Panel
 
 **Nodes have NO inline widgets** (except ConstStringNode). All property editing happens in Datagrok's native context panel (right side) when a node is selected.
@@ -269,4 +259,3 @@ npm run build    # grok api && grok check --soft && webpack
 3. **Adding new types**: Add to `DG_TYPE_MAP` in `type-map.ts`, add compatibility rules to `COMPATIBLE_TYPES`
 4. **Modifying script emission**: All code generation (clean and instrumented) lives in `script-emitter.ts`. The `EmitOptions.instrumented` flag controls whether try/catch + event code is emitted. Add new step types to both the clean and instrumented paths.
 5. **Adding execution visual states**: Modify `execution-visualizer.ts` `STATUS_COLORS` map. Node overlays are drawn via `onDrawForeground` hooks.
-6. **After any change**: Update this CLAUDE.md file

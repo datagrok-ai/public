@@ -1,6 +1,8 @@
 ---
 name: manage-credentials
-description: Set up and manage package and connection credentials securely in Datagrok
+description: Set up and manage package and connection credentials securely
+when-to-use: When user asks about credentials, secrets, API keys, or connection authentication
+effort: low
 ---
 
 # Manage Credentials

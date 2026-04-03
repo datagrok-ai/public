@@ -1,6 +1,8 @@
 ---
 name: datagrok-logging
-description: Guide for logging errors, warnings, and info messages in Datagrok packages. Use when code needs error handling, user notifications, or server-side logging.
+description: Guide for logging errors, warnings, and info messages in Datagrok packages
+when-to-use: When user asks about logging, error handling, notifications, or progress indicators
+effort: low
 ---
 
 # Datagrok Logging & Notification API

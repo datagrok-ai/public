@@ -1,6 +1,8 @@
 ---
 name: write-demo-script
-description: Create a DemoScript with steps, registration, and demoPath for the Datagrok demo application
+description: Create a DemoScript with steps and registration for the Datagrok demo application
+when-to-use: When user asks to create a demo, demo script, walkthrough, or guided demonstration
+effort: medium
 ---
 
 # Write Demo Script

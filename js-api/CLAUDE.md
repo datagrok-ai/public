@@ -1,7 +1,5 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
-
 ## Overview
 
 This is `datagrok-api`, the JavaScript/TypeScript API for the Datagrok platform - a data analytics and visualization 
@@ -10,11 +8,10 @@ platform. The API provides TypeScript bindings that communicate with a Dart back
 ## Build Commands
 
 ```bash
-npm run build           # Compile TypeScript and bundle with webpack
-npm run build-ts        # TypeScript compile only + ESLint fix
-npm run build-js-api    # Clean src, compile TypeScript, bundle webpack
-npm run build-docker    # Build for Docker deployment
-npm run build-all       # Build chem-meta library dependency first, then build
+npm install
+npm run build           # tsc && webpack
+npm run build-ts        # TypeScript + ESLint fix only
+npm run build-js-api    # Clean, compile, bundle
 ```
 
 ## Architecture
@@ -129,25 +126,6 @@ Do not manually edit `.g.ts` files - they are regenerated from the Dart codebase
 Two build targets in `webpack.config.js`:
 1. **Node target** - Outputs `datagrok.js` (CommonJS) for Node.js/server-side use
 2. **Browser target** - Outputs `js-api.js` to `../../core/client/xamgle/web/js/api` for browser use
-
-## Code Style
-
-- 2-space indentation
-- Single quotes for strings
-- Semicolons required
-- Windows line endings (CRLF)
-- TypeScript strict mode with `strictNullChecks: true`
-- File naming convention is kebab-case: `my-component.ts`
-
-## Tests
-
-API should be tested by running the [ApiTests](../packages/ApiTests) tests that 
-are executed within puppeteer with the running Datagrok. Whenever a change is made
-to JS API, tests should be passed.
-
-```
-grok test
-```
 
 ## Quick Lookups
 

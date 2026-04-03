@@ -1,6 +1,8 @@
 ---
 name: ui
-description: UI building guidelines for Datagrok TypeScript plugins and libraries. Use when creating or reviewing UI components, viewers, dialogs, file viewers, or layouts.
+description: UI building guidelines for Datagrok TypeScript components and viewers
+when-to-use: When creating or modifying UI components, viewers, dialogs, file viewers, layouts, or grids
+effort: low
 ---
 
 # Datagrok UI Building Guidelines

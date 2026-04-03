@@ -1,6 +1,10 @@
 ---
 name: create-custom-viewer
-description: Develop a custom JavaScript viewer extending DG.JsViewer with properties, rendering, and interactivity
+description: Create a custom JavaScript viewer extending DG.JsViewer with properties and rendering
+when-to-use: When user asks to create a viewer, chart, visualization, or custom rendering component
+context: fork
+effort: high
+argument-hint: "[viewer-name] [package-path]"
 ---
 
 # Create a Custom Viewer

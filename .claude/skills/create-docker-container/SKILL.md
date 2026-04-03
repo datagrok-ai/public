@@ -1,6 +1,8 @@
 ---
 name: create-docker-container
-description: Add a Docker container to a Datagrok package with Dockerfile, config, and HTTP/WebSocket access
+description: Add a Docker container to a Datagrok package with Dockerfile and config
+when-to-use: When user asks to add a Docker container, create a Dockerfile, or add server-side processing
+effort: medium
 ---
 
 # Create Docker Container

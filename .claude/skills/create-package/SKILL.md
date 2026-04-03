@@ -1,6 +1,9 @@
 ---
 name: create-package
-description: Scaffold, build, and publish a Datagrok package with functions, viewers, and panels
+description: Scaffold, build, and publish a new Datagrok package
+when-to-use: When user asks to create a new package, scaffold a plugin, or start a new Datagrok project
+context: fork
+effort: high
 ---
 
 # Create a Datagrok Package

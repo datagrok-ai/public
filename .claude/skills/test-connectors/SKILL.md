@@ -1,6 +1,9 @@
 ---
 name: test-connectors
 description: Run Java/Maven tests for the GrokConnect connectors project
+when-to-use: When user asks to test connectors, run connector tests, or verify GrokConnect
+context: fork
+effort: medium
 argument-hint: "[all|<ClassName>|<ClassName>#<method>]"
 ---
 

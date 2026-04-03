@@ -1,6 +1,8 @@
 ---
 name: create-custom-view
 description: Create a custom view for Datagrok by extending ViewBase
+when-to-use: When user asks to create a view, custom page, or new screen for a package
+effort: medium
 argument-hint: "[view-name] [package-path]"
 ---
 

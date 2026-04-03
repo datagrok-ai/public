@@ -1,6 +1,8 @@
 ---
 name: add-curve-format
-description: Add support for a new curve data format from any Datagrok package, integrating with the Curves package converter system
+description: Add support for a new curve data format in the Curves package converter system
+when-to-use: When user asks to add a new curve format, integrate curve data, or extend the Curves converter
+effort: medium
 ---
 
 # Add a New Curve Format

@@ -1,6 +1,8 @@
 ---
 name: create-script-handler
-description: Create a custom script handler for an unsupported scripting language in Datagrok
+description: Create a custom script handler for an unsupported scripting language
+when-to-use: When user asks to add support for a new scripting language or create a script handler
+effort: medium
 ---
 
 # Create Script Handler

@@ -1,7 +1,5 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
-
 ## Overview
 
 PowerGrid is a Datagrok plugin that extends the platform's grid (spreadsheet) with custom cell renderers,

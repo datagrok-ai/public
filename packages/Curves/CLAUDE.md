@@ -1,22 +1,10 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
-
 ## Overview
 
 **Curves** (`@datagrok/curves`) is a Datagrok plugin for **fitted curves** — dose-response curves, sigmoid fits, and general curve fitting. It provides in-grid cell rendering of charts stored in various formats in cells, interactive editing (outlier toggling, property panels), automatic curve fitting, a "Data to Curves" pipeline that converts well-level assay data into fitted curve summaries, a multi-curve overlay viewer, and statistics extraction (IC50, AUC, R², etc.).
 
 Category: **Visualizations**. Top menu: `Data | Curves | ...`.
-
-## Build Commands
-
-```bash
-npm install
-npm run build              # grok api && grok check --soft && webpack
-npm run test               # grok test
-npm run build-all          # Builds js-api → utils → statistics → this package
-npm run link-all           # Links datagrok-api, @datagrok-libraries/utils, @datagrok-libraries/statistics
-```
 
 ## Key Dependencies
 

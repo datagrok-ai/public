@@ -1,6 +1,8 @@
 ---
 name: build-app
 description: Create a Datagrok application with routing, views, and data access
+when-to-use: When user asks to create an app, application, or CRUD tool (NOT scientific/simulation apps)
+effort: high
 ---
 
 # Build a Datagrok Application

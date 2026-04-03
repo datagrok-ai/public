@@ -1,16 +1,9 @@
 ---
 name: create-interactive-scientific-application-spec
-description: >
-  Create a detailed specification for an interactive scientific application
-  (simulation, mathematical model, ODE/PDE solver, computational tool) on the
-  Datagrok platform. NOT for regular CRUD/data apps — use build-app for those.
-  Analyzes the user's request, reads a spec template and architectural guide,
-  fills in every section with full detail, and presents the result for staged
-  approval. Triggers on: "write a spec for a scientific app", "create
-  specification", "spec template", "plan the app before coding", or when the
-  user describes a computation-heavy interactive application. The output is an
-  approved spec.md file — implementation is handled by the
-  implement-interactive-scientific-application-from-spec skill.
+description: Create a specification for an interactive scientific Datagrok application (simulation, ODE/PDE solver, computational tool)
+when-to-use: When user asks to plan, spec, or design a scientific app, simulation, or computation-heavy application. NOT for CRUD apps — use build-app instead.
+context: fork
+effort: high
 ---
 
 # Create Specification for Datagrok Scientific Application

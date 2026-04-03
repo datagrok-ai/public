@@ -160,11 +160,7 @@ const svg = grok.chem.svgMol('CCO', 200, 150);
 const molblock = grok.chem.convert('CCO', DG.chem.Notation.Smiles, DG.chem.Notation.MolBlock);
 ```
 
-## Test
-
-```
-grok test
-```
+## Tests
 
 Test files are in `src/tests/` (20+ files covering rendering, search, filters, MMPA, importers,
 notation, scaffolds, and UI).

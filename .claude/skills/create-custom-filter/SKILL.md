@@ -1,6 +1,8 @@
 ---
 name: create-custom-filter
 description: Create a custom filter for Datagrok by extending DG.Filter
+when-to-use: When user asks to create a filter, custom filtering, or data filtering component
+effort: medium
 argument-hint: "[filter-name] [package-path]"
 ---
 

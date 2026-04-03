@@ -1,20 +1,8 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
-
 ## Overview
 
 `@datagrok-libraries/sci-comp` is a pure TypeScript library of numerical methods for the Datagrok platform. It has **no dependency on datagrok-api**.
-
-## Commands
-
-```bash
-npm run build        # tsc → dist/
-npm run lint         # ESLint (Google style, 120 char max-len, 2-space indent)
-npm run lint-fix     # ESLint with --fix
-npm test             # Jest (ts-jest, all __tests__/*.test.ts files)
-npx jest --testPathPattern nelder-mead   # Run a single test file
-```
 
 ## Architecture
 
@@ -71,9 +59,3 @@ describe('minimize Rosenbrock 2D → min ≈ 0 at (1, 1)', () => {
 ## Skills
 
 - `/add-optimizer <algorithm name>` — scaffold a new single-objective optimizer (class, tests, registration, exports)
-
-## Code Style
-
-- ESLint extends `google` config with: 2-space indent, 120-char max line length, `curly: multi-or-nest`
-- Single quotes, semicolons required
-- TypeScript strict mode

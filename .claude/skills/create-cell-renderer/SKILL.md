@@ -1,6 +1,8 @@
 ---
 name: create-cell-renderer
 description: Create a custom grid cell renderer for Datagrok
+when-to-use: When user asks to create a cell renderer, custom grid rendering, or column visualization
+effort: medium
 argument-hint: "[cell-type] [package-path]"
 ---
 

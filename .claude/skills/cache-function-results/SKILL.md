@@ -1,6 +1,8 @@
 ---
 name: cache-function-results
-description: Add caching to Datagrok functions (scripts, queries, JS functions) using meta.cache annotations
+description: Add caching to Datagrok functions using meta.cache annotations
+when-to-use: When user asks to cache function results, add memoization, or optimize repeated computations
+effort: low
 ---
 
 # Cache Function Results

@@ -1,7 +1,10 @@
 ---
 name: test-package
-description: Run grok test for one or more Datagrok packages against a server host and report results
-argument-hint: <PackageName(s)> [--host host] [--category cat] [--test name] [--verbose] [--skip-build] [--no-retry]
+description: Run grok test for Datagrok packages and report results
+when-to-use: When user asks to test a package, run tests, verify, or validate package functionality
+context: fork
+effort: medium
+argument-hint: "<PackageName(s)> [--host host] [--category cat] [--test name] [--verbose]"
 ---
 
 # Test Package

@@ -1,7 +1,5 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
-
 ## Overview
 
 **Diff Studio** is a Datagrok package that provides in-browser tools for solving initial value problems (IVP) for systems of ordinary differential equations (ODEs). It implements multiple numerical methods for solving both stiff and non-stiff ODEs directly in the browser, including the automatic stiffness-detecting LSODA method, Rosenbrock-Wanner implicit methods, Runge-Kutta explicit methods, and Adams-Bashforth multistep methods.
@@ -14,27 +12,6 @@ The package is accessible via **Apps > Compute > Diff Studio** in the Datagrok p
 - **@datagrok-libraries/compute-utils** - Provides sensitivity analysis and fitting views
 - **CodeMirror 6** - Code editor for IVP formula editing
 - **@datagrok-libraries/test** - Testing utilities
-
-## Build Commands
-
-```bash
-# Standard build pipeline
-npm run build              # grok api && grok check --soft && webpack
-
-# Development/publishing
-npm run debug-odes         # webpack && grok publish (default server)
-npm run debug-odes-dev     # webpack && grok publish dev
-npm run debug-odes-local   # webpack && grok publish local
-npm run release-odes       # webpack && grok publish --release
-
-# Testing
-npm run test               # grok test (against default server)
-
-# Individual steps
-npm run build-odes         # webpack only
-grok api                   # Generate package.g.ts and package-api.ts
-grok check --soft          # Validate package
-```
 
 ## Architecture
 
@@ -214,28 +191,6 @@ Tests are organized in `src/tests/`:
 
 **test-utils.ts**
 - Shared test utilities
-
-Run specific test categories:
-```bash
-grok test --category "Correctness"
-grok test --category "Performance"
-grok test --test "MRT"
-grok test --gui              # Visual debugging
-```
-
-## Development Workflow
-
-1. **Edit IVP format parser** - modify `scripting-tools.ts`
-2. **Change UI behavior** - modify `app.ts` (DiffStudio class)
-3. **Adjust solver integration** - modify `solver-tools.ts`
-4. **Add templates/examples** - add to `templates.ts`, `use-cases.ts`, or `files/`
-5. **Update model demos** - modify files in `demo/`
-
-After changes:
-```bash
-npm run build        # Build and validate
-npm run debug-odes   # Publish to test server
-```
 
 ## Numerical Methods
 

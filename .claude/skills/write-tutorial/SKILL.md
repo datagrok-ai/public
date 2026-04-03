@@ -1,6 +1,8 @@
 ---
 name: write-tutorial
-description: Create a Tutorial class with interactive steps, track assignment, and registration for Datagrok
+description: Create a Tutorial class with interactive steps and track registration
+when-to-use: When user asks to create a tutorial, interactive guide, or learning material
+effort: medium
 ---
 
 # Write Tutorial
