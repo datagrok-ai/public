@@ -97,11 +97,12 @@ export class ClickEventsWidget extends DG.Widget {
           grid.sort(['count'], [false]);
       }
 
+      grid.columns.rowHeader!.width = grid.dataFrame.rowCount.toString().length * 8 + 12;
       if (grid.col('description'))
-        grid.col('description')!.width = 500;
+        grid.col('description')!.width = 260;
       if (grid.col('time')) {
         grid.col('time')!.format = 'yyyy-MM-dd HH:mm:ss';
-        grid.col('time')!.width = 150;
+        grid.col('time')!.width = 140;
       }
       table.fireValuesChanged();
     };
@@ -336,21 +337,26 @@ export class ClickEventsWidget extends DG.Widget {
         lastClickDiv.appendChild(entry);
     }));
 
-    const pickerIcon = ui.iconFA('crosshairs', (e) => {
-      e.preventDefault();
-      this.togglePicker(e.currentTarget as HTMLElement);
-    }, 'Pick element to analyze usage');
+    const pickerIcon = ui.iconFA('crosshairs', undefined, 'Pick element to analyze usage');
     pickerIcon.style.cursor = 'pointer';
+    const pickerRow = ui.divH([pickerIcon, ui.span(['Pick element'])], {
+      style: {alignItems: 'center', gap: '6px', padding: '2px 0 4px 0', cursor: 'pointer', fontSize: '12px'},
+    });
+    pickerRow.addEventListener('click', (e) => {
+      e.preventDefault();
+      this.togglePicker(pickerIcon);
+    });
 
     const form = ui.form([userInput, newUsersChoiceInput, newUsersOnlyInput, chronologyModeInput, highlightZonesInput]);
     form.style.flex = '0 0 auto';
+    lastClickDiv.style.flex = '0 0 auto';
 
     return ui.divV([
-      ui.divH([pickerIcon], {style: {padding: '2px 0 2px 4px'}}),
       form,
+      pickerRow,
       gridWrapper,
       lastClickDiv,
-    ], {classes: 'grok-inspector', style: {marginLeft: '12px'}});
+    ], {classes: 'grok-inspector', style: {marginLeft: '12px', height: '100%'}});
   }
 
   async showElementStats(selector: string) {
