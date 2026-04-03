@@ -659,7 +659,8 @@ export namespace chem {
         storage.length ?
         grok.functions
           .call('Chem:removeDuplicates', { molecules: storage, molecule: molecule })
-          .then((array: any) => localStorage.setItem(localStorageKey, JSON.stringify([molecule, ...array.slice(0, 9)]))) :
+          .then((array: any) => localStorage.setItem(localStorageKey, JSON.stringify([molecule, ...array.slice(0, 9)])))
+          .catch(() => localStorage.setItem(localStorageKey, JSON.stringify([molecule, ...storage.slice(0, 9)]))) :
         localStorage.setItem(localStorageKey, JSON.stringify([molecule]));
       }
     }
