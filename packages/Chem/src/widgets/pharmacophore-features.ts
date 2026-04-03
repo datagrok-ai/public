@@ -22,6 +22,7 @@ const FAMILY_COLORS: {[key: string]: string} = {
   'P': '#00BCD4', // Positive - turquoise
   'N': '#FF9800', // Negative - orange
   'a': '#4CAF50', // Aromatic - green
+  'X': '#9C27B0', // Halogen Bond - purple
 };
 
 const FAMILY_NAMES: {[key: string]: string} = {
@@ -31,12 +32,14 @@ const FAMILY_NAMES: {[key: string]: string} = {
   'P': 'Positive',
   'N': 'Negative',
   'a': 'Aromatic',
+  'X': 'Halogen Bond',
 };
 
 // Priority for overlapping atoms (higher = takes precedence)
 const FAMILY_PRIORITY: {[key: string]: number} = {
-  'D': 6,
-  'A': 5,
+  'D': 7,
+  'A': 6,
+  'X': 5,
   'P': 4,
   'N': 3,
   'a': 2,
@@ -236,7 +239,7 @@ export async function pharmacophoreFeaturesWidget(molecule: string): Promise<DG.
   // Build per-family sections
   const thumbWidth = 200;
   const thumbHeight = 100;
-  const familyOrder = ['D', 'A', 'H', 'P', 'N', 'a'];
+  const familyOrder = ['D', 'A', 'H', 'P', 'N', 'a', 'X'];
   const sections: HTMLElement[] = [];
 
   for (const familyLetter of familyOrder) {

@@ -536,11 +536,12 @@ export async function getStructuralAlerts(molecules: DG.Column, alerts?: string[
 //input: bool aromatic = true { caption: Aromatic; description: "Aromatic features" }
 //input: bool positive = false { caption: Positive; description: "Positive ionizable" }
 //input: bool negative = false { caption: Negative; description: "Negative ionizable" }
+//input: bool halogenBond = false { caption: Halogen Bond; description: "Halogen bond donor" }
 //output: dataframe result
 //meta.role: hitTriageFunction
 //top-menu: Chem | Analyze | Pharmacophore Features...
-export async function pharmacophoreFeaturesTopMenu(table: DG.DataFrame, molecules: DG.Column, donor: boolean, acceptor: boolean, hydrophobic: boolean, aromatic: boolean, positive: boolean, negative: boolean) : Promise<any> {
-  return await PackageFunctions.pharmacophoreFeaturesTopMenu(table, molecules, donor, acceptor, hydrophobic, aromatic, positive, negative);
+export async function pharmacophoreFeaturesTopMenu(table: DG.DataFrame, molecules: DG.Column, donor: boolean, acceptor: boolean, hydrophobic: boolean, aromatic: boolean, positive: boolean, negative: boolean, halogenBond: boolean) : Promise<any> {
+  return await PackageFunctions.pharmacophoreFeaturesTopMenu(table, molecules, donor, acceptor, hydrophobic, aromatic, positive, negative, halogenBond);
 }
 
 //input: dataframe table { caption: Table; description: Input data table }
@@ -551,10 +552,11 @@ export async function pharmacophoreFeaturesTopMenu(table: DG.DataFrame, molecule
 //input: bool aromatic = true { caption: Aromatic; description: "Aromatic features" }
 //input: bool positive = false { caption: Positive; description: "Positive ionizable" }
 //input: bool negative = false { caption: Negative; description: "Negative ionizable" }
+//input: bool halogenBond = false { caption: Halogen Bond; description: "Halogen bond donor" }
 //output: dataframe result
 //meta.role: transform
-export async function runPharmacophoreFeatures(table: DG.DataFrame, molecules: DG.Column, donor: boolean, acceptor: boolean, hydrophobic: boolean, aromatic: boolean, positive: boolean, negative: boolean) {
-  return await PackageFunctions.runPharmacophoreFeatures(table, molecules, donor, acceptor, hydrophobic, aromatic, positive, negative);
+export async function runPharmacophoreFeatures(table: DG.DataFrame, molecules: DG.Column, donor: boolean, acceptor: boolean, hydrophobic: boolean, aromatic: boolean, positive: boolean, negative: boolean, halogenBond: boolean) {
+  return await PackageFunctions.runPharmacophoreFeatures(table, molecules, donor, acceptor, hydrophobic, aromatic, positive, negative, halogenBond);
 }
 
 //name: Chemistry | Rendering

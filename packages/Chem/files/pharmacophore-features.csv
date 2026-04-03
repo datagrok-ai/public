@@ -38,3 +38,4 @@ feature_id,family,family_name,feature_name,smarts,color
 37,H,Hydrophobic,Long alkyl chain,"[$([CH2X4,CH1X3,CH0X2]~[CH2X4,CH1X3,CH0X2]~[$([CH2X4,CH1X3,CH0X2]~[$([!#1]);!$([CH2X4,CH1X3,CH0X2])])])]~[CH2X4,CH1X3,CH0X2]~[CH2X4,CH1X3,CH0X2]~[CH2X4,CH1X3,CH0X2]",#FFEB3B
 38,H,Hydrophobic,Thioether,"[$([S]~[#6])&!$(S~[!#6])]",#FFEB3B
 39,H,Hydrophobic,Standalone Br/I,"[Br,I;X1]",#FFEB3B
+40,X,Halogen Bond,Halogen bond donor,"[Cl,Br,I;X1]-[#6]",#9C27B0

@@ -1386,6 +1386,7 @@ export class PackageFunctions {
     @grok.decorators.param({options: {caption: 'Aromatic', initialValue: 'true', description: '"Aromatic features"'}}) aromatic: boolean,
     @grok.decorators.param({options: {caption: 'Positive', initialValue: 'false', description: '"Positive ionizable"'}}) positive: boolean,
     @grok.decorators.param({options: {caption: 'Negative', initialValue: 'false', description: '"Negative ionizable"'}}) negative: boolean,
+    @grok.decorators.param({options: {caption: 'Halogen Bond', initialValue: 'false', description: '"Halogen bond donor"'}}) halogenBond: boolean,
   ): Promise<DG.DataFrame | void> {
     if (molecules.semType !== DG.SEMTYPE.MOLECULE) {
       grok.shell.error(`Column ${molecules.name} is not of Molecule semantic type`);
@@ -1401,6 +1402,7 @@ export class PackageFunctions {
       aromatic: aromatic,
       positive: positive,
       negative: negative,
+      halogenBond: halogenBond,
     }).call(undefined, undefined, {processed: false});
 
     return table;
@@ -1420,6 +1422,7 @@ export class PackageFunctions {
     @grok.decorators.param({options: {caption: 'Aromatic', initialValue: 'true', description: '"Aromatic features"'}}) aromatic: boolean,
     @grok.decorators.param({options: {caption: 'Positive', initialValue: 'false', description: '"Positive ionizable"'}}) positive: boolean,
     @grok.decorators.param({options: {caption: 'Negative', initialValue: 'false', description: '"Negative ionizable"'}}) negative: boolean,
+    @grok.decorators.param({options: {caption: 'Halogen Bond', initialValue: 'false', description: '"Halogen bond donor"'}}) halogenBond: boolean,
   ): Promise<void> {
     if (table.rowCount > 5000)
       grok.shell.info('Pharmacophore feature detection will take a while to run');
@@ -1427,6 +1430,7 @@ export class PackageFunctions {
     const familySet: PharmFamilySet = {
       'Donor': donor, 'Acceptor': acceptor, 'Hydrophobic': hydrophobic,
       'Aromatic': aromatic, 'Positive': positive, 'Negative': negative,
+      'Halogen Bond': halogenBond,
     };
     const resultDf = await getPharmacophoreFeaturesByFamilies(molecules, familySet);
 

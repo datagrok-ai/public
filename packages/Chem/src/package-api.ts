@@ -448,12 +448,12 @@ export namespace funcs {
   /**
   Detects pharmacophore features (donors, acceptors, hydrophobic, etc.)
   */
-  export async function pharmacophoreFeaturesTopMenu(table: DG.DataFrame, molecules: DG.Column, donor: boolean, acceptor: boolean, hydrophobic: boolean, aromatic: boolean, positive: boolean, negative: boolean ): Promise<DG.DataFrame> {
-    return await grok.functions.call('Chem:PharmacophoreFeaturesTopMenu', {table, molecules, donor, acceptor, hydrophobic, aromatic, positive, negative});
+  export async function pharmacophoreFeaturesTopMenu(table: DG.DataFrame, molecules: DG.Column, donor: boolean, acceptor: boolean, hydrophobic: boolean, aromatic: boolean, positive: boolean, negative: boolean, halogenBond: boolean ): Promise<DG.DataFrame> {
+    return await grok.functions.call('Chem:PharmacophoreFeaturesTopMenu', {table, molecules, donor, acceptor, hydrophobic, aromatic, positive, negative, halogenBond});
   }
 
-  export async function runPharmacophoreFeatures(table: DG.DataFrame, molecules: DG.Column, donor: boolean, acceptor: boolean, hydrophobic: boolean, aromatic: boolean, positive: boolean, negative: boolean ): Promise<DG.DataFrame> {
-    return await grok.functions.call('Chem:RunPharmacophoreFeatures', {table, molecules, donor, acceptor, hydrophobic, aromatic, positive, negative});
+  export async function runPharmacophoreFeatures(table: DG.DataFrame, molecules: DG.Column, donor: boolean, acceptor: boolean, hydrophobic: boolean, aromatic: boolean, positive: boolean, negative: boolean, halogenBond: boolean ): Promise<DG.DataFrame> {
+    return await grok.functions.call('Chem:RunPharmacophoreFeatures', {table, molecules, donor, acceptor, hydrophobic, aromatic, positive, negative, halogenBond});
   }
 
   export async function molColumnPropertyPanel(molColumn: DG.Column ): Promise<any> {

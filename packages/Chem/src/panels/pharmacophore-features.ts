@@ -3,10 +3,10 @@ import * as grok from 'datagrok-api/grok';
 import {RdKitService} from '../rdkit-service/rdkit-service';
 import * as chemCommonRdKit from '../utils/chem-common-rdkit';
 
-export type PharmFamilyId = 'Donor' | 'Acceptor' | 'Hydrophobic' | 'Aromatic' | 'Positive' | 'Negative';
+export type PharmFamilyId = 'Donor' | 'Acceptor' | 'Hydrophobic' | 'Aromatic' | 'Positive' | 'Negative' | 'Halogen Bond';
 export type PharmFamilySet = {[family in PharmFamilyId]: boolean};
 export const PHARM_FAMILY_NAMES: PharmFamilyId[] =
-  ['Donor', 'Acceptor', 'Hydrophobic', 'Aromatic', 'Positive', 'Negative'];
+  ['Donor', 'Acceptor', 'Hydrophobic', 'Aromatic', 'Positive', 'Negative', 'Halogen Bond'];
 
 const FAMILY_LETTER_TO_ID: {[letter: string]: PharmFamilyId} = {
   'D': 'Donor',
@@ -15,6 +15,7 @@ const FAMILY_LETTER_TO_ID: {[letter: string]: PharmFamilyId} = {
   'a': 'Aromatic',
   'P': 'Positive',
   'N': 'Negative',
+  'X': 'Halogen Bond',
 };
 
 export async function runPharmacophoreDetection(
