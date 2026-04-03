@@ -6,6 +6,14 @@ import * as rxjs from 'rxjs';
 
 const AI_SQL_QUERY_ABORT_EVENT = 'd4-ai-generation-abort';
 const AI_PANEL_TOGGLE_EVENT = 'd4-ai-panel-toggle';
+const AI_BEFORE_USER_PROMPT_EVENT = 'd4-ai-before-user-prompt';
+const AI_AFTER_USER_PROMPT_EVENT = 'd4-ai-after-user-prompt';
+
+export type UserPromptEventArgs = {
+  prompt: string;
+  context: any;
+  handled: boolean;
+};
 
 const dummy = grok.data.testData('demog');
 let viewerDescriptions: string = '';
@@ -162,6 +170,22 @@ export function fireAIAbortEvent() {
 
 export function fireAIPanelToggleEvent(v: DG.View | DG.ViewBase) {
   grok.events.fireCustomEvent(AI_PANEL_TOGGLE_EVENT, v);
+}
+
+export function fireBeforeUserPromptEvent(args: UserPromptEventArgs): void {
+  grok.events.fireCustomEvent(AI_BEFORE_USER_PROMPT_EVENT, args);
+}
+
+export function onBeforeUserPromptEvent(): rxjs.Observable<UserPromptEventArgs> {
+  return grok.events.onCustomEvent(AI_BEFORE_USER_PROMPT_EVENT);
+}
+
+export function fireAfterUserPromptEvent(args: UserPromptEventArgs): void {
+  grok.events.fireCustomEvent(AI_AFTER_USER_PROMPT_EVENT, args);
+}
+
+export function onAfterUserPromptEvent(): rxjs.Observable<UserPromptEventArgs> {
+  return grok.events.onCustomEvent(AI_AFTER_USER_PROMPT_EVENT);
 }
 
 export function findLast<T, K extends T>(array: T[], predicate: (value: T, index: number, obj: T[]) => value is K): K | undefined {

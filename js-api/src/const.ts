@@ -944,6 +944,8 @@ export enum EVENT_TYPE {
   // AI events
   AI_GENERATION_ABORT = 'd4-ai-generation-abort',
   AI_PANEL_TOGGLE = 'd4-ai-panel-toggle',
+  AI_BEFORE_USER_PROMPT = 'd4-ai-before-user-prompt',
+  AI_AFTER_USER_PROMPT = 'd4-ai-after-user-prompt',
 
   // Tree view events
   TREE_VIEW_NODE_ADDED = 'd4-tree-view-node-added',

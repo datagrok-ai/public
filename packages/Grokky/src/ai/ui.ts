@@ -4,7 +4,8 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {CombinedAISearchAssistant} from './search/combined-search';
-import {fireAIAbortEvent, fireAIPanelToggleEvent, getAIAbortSubscription} from '../utils';
+import {fireAIAbortEvent, fireAIPanelToggleEvent, getAIAbortSubscription,
+  fireBeforeUserPromptEvent, fireAfterUserPromptEvent, UserPromptEventArgs} from '../utils';
 import {BuiltinDBInfoMeta} from '../db/query-meta-utils';
 import {DBAIPanel, ScriptingAIPanel, StreamingPanel, TVAIPanel} from './panel';
 import {ClaudeRuntimeClient} from '../claude/runtime-client';
@@ -156,13 +157,30 @@ export async function setupAIQueryEditorUI(v: DG.ViewBase, connectionID: string,
   let sqlContext: SQLGenerationContext | null = null;
 
   panel.onRunRequest.subscribe(async (args) => {
-    if (!await UsageLimiter.getInstance().tryCheckAndIncrement('db-query', args.currentPrompt.prompt))
-      return;
     if (!sqlContext)
       sqlContext = await SQLGenerationContext.create(connectionID, args.currentPrompt.catalogName);
-    await runClaudeStreaming(panel, args.currentPrompt.prompt, v, (toolName, input) => sqlContext!.handleToolCall(toolName, input));
+    await runPromptWithLifecycle(panel, args.currentPrompt.prompt, v, 'db-query', (toolName, input) => sqlContext!.handleToolCall(toolName, input));
   });
   return true;
+}
+
+async function runPromptWithLifecycle(
+  panel: StreamingPanel,
+  prompt: string,
+  view: DG.ViewBase,
+  quotaCategory: string,
+  clientToolHandler?: (toolName: string, input: any) => Promise<string>,
+): Promise<void> {
+  const args: UserPromptEventArgs = {prompt, context: view, handled: false};
+  fireBeforeUserPromptEvent(args);
+  if (args.handled)
+    return;
+  if (await grok.ai.processPrompt(prompt))
+    return;
+  if (!await UsageLimiter.getInstance().tryCheckAndIncrement(quotaCategory, prompt))
+    return;
+  await runClaudeStreaming(panel, prompt, view, clientToolHandler);
+  fireAfterUserPromptEvent({prompt, context: view, handled: false});
 }
 
 async function runClaudeStreaming(panel: StreamingPanel, userPrompt: string, view: DG.ViewBase, clientToolHandler?: (toolName: string, input: any) => Promise<string>) {
@@ -290,9 +308,7 @@ export async function setupTableViewAIPanelUI() {
     // Setup request handler
     panel.onRunRequest.subscribe(async (args) => {
       const prompt = args.currentPrompt.prompt;
-      if (!await UsageLimiter.getInstance().tryCheckAndIncrement('tableview', args.currentPrompt.prompt))
-        return;
-      await runClaudeStreaming(panel, prompt, tableView);
+      await runPromptWithLifecycle(panel, prompt, tableView, 'tableview');
     });
   };
   // also handle already opened views
@@ -315,9 +331,7 @@ export async function setupScriptsAIPanelUI() {
     const panel = new ScriptingAIPanel(scriptView);
     panel.hide();
     panel.onRunRequest.subscribe(async (args) => {
-      if (!await UsageLimiter.getInstance().tryCheckAndIncrement('scripting', args.currentPrompt.prompt))
-        return;
-      await runClaudeStreaming(panel, args.currentPrompt.prompt, scriptView);
+      await runPromptWithLifecycle(panel, args.currentPrompt.prompt, scriptView, 'scripting');
     });
   };
 
