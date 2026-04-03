@@ -370,7 +370,7 @@ export class MonomerPlacer extends CellRendererBackBase<string> {
     const logPrefix = `${this.toLog()}.getCellMonomerLengthsForSeq()`;
     // this.logger.debug(`${logPrefix}, start`);
 
-    if (this._monomerLengthList === null)
+    if (this._monomerLengthList == null)
       this._monomerLengthList = new Array(this.tableCol.length).fill(null);
 
     const visibleSeqStart = this.positionShift;
@@ -381,7 +381,7 @@ export class MonomerPlacer extends CellRendererBackBase<string> {
     const visibleSeqEnd: number = Math.min(maxVisibleSeqLength, seqSS.length);
 
     let res: number[] = this._monomerLengthList[rowIdx];
-    if (res === null || res.length != visibleSeqEnd - visibleSeqStart) {
+    if (res == null || res.length != visibleSeqEnd - visibleSeqStart) {
       res = this._monomerLengthList[rowIdx] = new Array<number>(seqSS.length);
 
       let seqWidth: number = 0;
@@ -401,7 +401,7 @@ export class MonomerPlacer extends CellRendererBackBase<string> {
   private getCellMonomerLengthsForSeqMsa(): number[] {
     const logPrefix = `${this.toLog()}.getCellMonomerLengthsForSeqMsa()`;
     // this.logger.debug(`${logPrefix}, start`);
-    if (this._monomerLengthList === null)
+    if (this._monomerLengthList == null)
       this._monomerLengthList = new Array(1).fill(null);
     this._monomerLengthList[0] ??= new Array(0);
     const res = this._monomerLengthList[0];

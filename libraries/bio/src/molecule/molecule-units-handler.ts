@@ -51,7 +51,7 @@ export class MoleculeUnitsHandler extends UnitsHandlerBase<string, MoleculeBase>
     const resCol: DG.Column = DG.Column.fromType(DG.TYPE.STRING, this.column.name, colLength);
     for (let rowI = 0; rowI < colLength; ++rowI) {
       const molVal = this.column.get(rowI);
-      const pdbVal = molVal === null ? null : await ph.molToPdb(molVal);
+      const pdbVal = !molVal ? null : await ph.molToPdb(molVal);
       resCol.set(rowI, pdbVal);
     }
     return resCol;

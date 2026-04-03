@@ -15,7 +15,7 @@ export function buildCompositionTable(
   let maxValue: number | null = null;
   for (const value of Object.values(counts)) {
     sumValue = sumValue + value;
-    maxValue = maxValue === null ? value : Math.max(maxValue, value);
+    maxValue = maxValue == null ? value : Math.max(maxValue, value);
   }
   const maxRatio = maxValue! / sumValue;
   const elMap: { [m: string]: HTMLElement } = Object.assign({}, ...Array.from(Object.entries(counts))

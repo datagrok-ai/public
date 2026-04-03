@@ -29,7 +29,7 @@ export async function calculateScores(
 
   const scoresCol = scoring === SCORE.IDENTITY ? calculateIdentity(refSplitted, splitSeqDf) :
     scoring === SCORE.SIMILARITY ? await calculateSimilarity(refSplitted, splitSeqDf, seqHelper) : null;
-  if (scoresCol === null)
+  if (scoresCol == null)
     throw new Error(`In bio library: Unknown sequence scoring method: ${scoring}`);
   scoresCol.name = table.columns.getUnusedName(scoresCol.name);
   table.columns.add(scoresCol);

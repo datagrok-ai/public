@@ -96,7 +96,7 @@ export abstract class RenderServiceBase<TProps extends PropsBase, TAux> {
     }
 
     this.logger.debug(`${logPrefix}, _queue.push(), ` + `key: ${key?.toString()}`);
-    if (consumerId === null)
+    if (consumerId == null)
       consumerId = ++this.consumerCounter;
     this._queue.push({consumerId, key, task, tryCount, dt: window.performance.now()});
 
@@ -273,7 +273,7 @@ export abstract class RenderServiceBase<TProps extends PropsBase, TAux> {
       window.clearInterval(this._sweeperHandle);
       this._sweeperHandle = null;
     }
-    if (busy && this._sweeperHandle === null) {
+    if (busy && this._sweeperHandle == null) {
       this.logger.debug(`${logPrefix}, enable queue sweeper (busy)`);
       this._sweeperHandle = window.setInterval(() => { this._sweepQueue(); }, 500);
     }
