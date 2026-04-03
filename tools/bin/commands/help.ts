@@ -19,6 +19,7 @@ Commands:
     link        Link \`datagrok-api\` and libraries for local development
     publish     Upload a package
     report      Manage user error reports (fetch, resolve, create ticket)
+    run         Build, publish, and open in browser
     test        Run package tests
     testall     Run packages tests
     migrate     Migrate legacy tags to meta.role
@@ -333,6 +334,26 @@ Examples:
 // file and converting your scripts in the \`package.json\` file
 // `;
 
+const HELP_RUN = `
+Usage: grok run [host]
+
+Build, publish, and open the package in the browser.
+
+Runs \`grok build\`, publishes the package to the server, then opens the server in the default browser.
+
+Options:
+[-k | --key] [--release] [-v | --verbose]
+
+--key       Developer key (overrides config)
+--release   Publish as a release version (default: debug)
+--verbose   Print detailed output
+
+Examples:
+  grok run              Build, publish to default server, and open browser
+  grok run dev          Build, publish to 'dev' server alias, and open browser
+  grok run https://my.datagrok.ai/api --key abc123
+`;
+
 const HELP_REPORT = `
 Usage: grok report <subcommand> <instance> <id>
 
@@ -364,6 +385,7 @@ export const help = {
   link: HELP_LINK,
   publish: HELP_PUBLISH,
   report: HELP_REPORT,
+  run: HELP_RUN,
   test: HELP_TEST,
   testall: HELP_TESTALL,
   migrate: HELP_MIGRATE,

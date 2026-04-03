@@ -19,6 +19,7 @@ const commands = {
   link: require('./commands/link').link,
   publish: require('./commands/publish').publish,
   report: require('./commands/report').report,
+  run: require('./commands/run').run,
   test: require('./commands/test').test,
   testall: require('./commands/test-all').testAll,
   stresstest: require('./commands/stress-tests').stressTests,
