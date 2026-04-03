@@ -75,11 +75,6 @@ category('screening tools', () => {
       '1480010COc1ccc2cc(ccc2c1)C(C)C(=O)OC|CCc3cccnc300040203710400.272729992866516126340');
     tv.close();
   });
-
-  after(async () => {
-    grok.shell.closeAll();
-    DG.Balloon.closeAll();
-  });
 });
 
 

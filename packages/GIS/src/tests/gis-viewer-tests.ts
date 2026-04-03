@@ -104,6 +104,5 @@ category('MapViewer', async () => {
   after(async () => {
     grok.shell.closeTable(testDF as DG.DataFrame);
     grok.shell.closeTable(testDF2 as DG.DataFrame);
-    grok.shell.closeAll();
   });
 });

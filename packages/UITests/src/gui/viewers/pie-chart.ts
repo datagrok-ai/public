@@ -87,7 +87,6 @@ category('Viewers: Pie Chart', () => {
       throw 'Category column has not been deserialized'; 
   }); 
   after(async () => {
-    grok.shell.closeAll();
     await grok.dapi.projects.delete(await grok.dapi.projects.filter('Test project with Pie Chart').first());
-  }); 
+  });
 }, { owner: 'dkovalyov@datagrok.ai' });

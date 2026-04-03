@@ -109,10 +109,6 @@ category('UI: Users', () => {
     expect(b, true);
   }, { timeout: 100000 });
 
-  after(async () => {
-    grok.shell.closeAll();
-  });
-
   async function showDialog(label: string) {
     const cng = Array.from(document.querySelectorAll('.ui-btn'))
       .find((el) => el.textContent === 'New');

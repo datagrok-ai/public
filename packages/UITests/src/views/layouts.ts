@@ -91,10 +91,6 @@ category('Layouts', () => {
       throw e;
     }
   }, {timeout: 100000});
-
-  after(async () => {
-    grok.shell.closeAll();
-  });
 }, {clear: false, owner: 'aparamonov@datagrok.ai'});
 
 category('Layouts: Apply', () => {

@@ -106,9 +106,4 @@ category('scaffold tree', () => {
     saveButton.click();
     await updateVisibleNodes(scaffoldTree);
   }
-  
-  after(async () => {
-    grok.shell.closeAll();
-    DG.Balloon.closeAll();
-  });
 });

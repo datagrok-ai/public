@@ -40,9 +40,4 @@ category('identifiers', () => {
       expect(res![i].src_compound_id, sampleIdentifiers[i].src_compound_id);
     }
   }, {timeout: 30000});
-
-
-  after(async () => {
-    grok.shell.closeAll();
-  });
 });

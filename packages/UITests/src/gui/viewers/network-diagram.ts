@@ -92,10 +92,5 @@ category('Viewers: Network Diagram', () => {
       throw 'suspendSimulation property has not been deserialized';
     if (networkDiagram!.props.title != 'Test Network Diagram')
       throw 'tittle property has not been deserialized'; 
-  }); 
-
-  after(async () => {
-    grok.shell.closeAll();
-    // await grok.dapi.projects.delete(await grok.dapi.projects.filter('Test project with Network Diagram').first());
-  }); 
+  });
 }, { owner: 'dkovalyov@datagrok.ai' });

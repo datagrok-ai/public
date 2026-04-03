@@ -90,9 +90,4 @@ category('Viewers: Line Chart', () => {
     if (lineChart!.props.barSortType != 'by value')
       throw 'barSortType property (default) has not been set';
   });
-
-  after(async () => {
-    grok.shell.closeAll();
-    // await grok.dapi.projects.delete(await grok.dapi.projects.filter('Test project with Line Chart').first());
-  });
 }, { owner: 'dkovalyov@datagrok.ai' });

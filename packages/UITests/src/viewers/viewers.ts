@@ -117,7 +117,6 @@ category('Viewers', () => {
         throw new Error(`Viewer.fromType('${viewerType}', df) should add a Viewer instance`);
       expect(viewer.table.id, df.id);
     }
-    DG.Balloon.closeAll();
   });
 
   test('Reset default properties', async () => {
@@ -237,8 +236,6 @@ category('Viewers', () => {
   }, { skipReason: 'GROK-11485' });
 
   after(async () => {
-    grok.shell.closeAll();
-    DG.Balloon.closeAll();
     for (const viewer of viewerList) {
       try {
         // viewer.removeFromView();

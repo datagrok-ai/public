@@ -50,8 +50,4 @@ category('UI: Range slider', () => {
       range.setValues(minRange, maxRange, min, max);
     }
   });
-
-  after(async () => {
-    grok.shell.closeAll();
-  });
 }, {clear: false});

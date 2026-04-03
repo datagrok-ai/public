@@ -26,10 +26,6 @@ category('UI: Image', () => {
       throw new Error('image size error');
   });
 
-  after(async () => {
-    grok.shell.closeAll();
-  });
-
   function onClick(root: HTMLElement): void {
     v.append(root);
 

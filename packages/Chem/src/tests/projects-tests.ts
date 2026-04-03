@@ -195,10 +195,6 @@ category('projects', () => {
     expect(tv.dataFrame.col('smiles')!.name, originalColName);
     expect(tv.dataFrame.col('order') == null, true);
   });
-
-  after(async () => {
-    grok.shell.closeAll();
-  });
 });
 
 /**

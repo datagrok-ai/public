@@ -93,7 +93,6 @@ category('Viewers: PC Plot', () => {
   }); 
 
   after(async () => {
-    grok.shell.closeAll();
     await grok.dapi.projects.delete(await grok.dapi.projects.filter('Test project with P C Plot').first());
-  }); 
+  });
 }, { owner: 'dkovalyov@datagrok.ai' });

@@ -96,11 +96,6 @@ category('calculate', () => {
     expect(smiles.col('BMS (smiles)')?.get(2), true, `incorrect BMS (smiles) value`);
     expect(smiles.col('SureChEMBL (smiles)')?.get(2), true, `incorrect SureChEMBL (smiles) value`);
   });
-
-
-  after(async () => {
-    grok.shell.closeAll();
-  });
 });
 
 

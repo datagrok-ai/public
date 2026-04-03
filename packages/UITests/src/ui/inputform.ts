@@ -79,8 +79,4 @@ category('UI: Inputs via InputForm', () => {
     for (const value of Object.values(inputs))
       expect(value.input.clientWidth, dummyInput.input.clientWidth);
   });
-
-  after(async () => {
-    grok.shell.closeAll();
-  });
 }, {owner: 'dkovalyov@datagrok.ai'});

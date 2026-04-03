@@ -43,7 +43,6 @@ category('Projects', () => {
     expect(grok.shell.t != null, true);
     expect(grok.shell.t.name, 'demog 1000');
 
-    grok.shell.closeAll();
     await grok.dapi.projects.delete(await grok.dapi.projects.filter('Test upload project').first());
   });
 }, {owner: 'aparamonov@datagrok.ai'});

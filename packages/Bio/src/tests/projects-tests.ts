@@ -195,8 +195,4 @@ category('projects', () => {
     await setUserLibSettings(userLibSettings);
     await monomerLibHelper.loadMonomerLib(true);
   }, {timeout: 60000});
-
-  after(async () => {
-    grok.shell.closeAll();
-  });
 });

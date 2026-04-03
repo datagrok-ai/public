@@ -88,8 +88,4 @@ count = table.shape[0] * table.shape[1]`);
     await awaitCheck(() => !!currentView.root.querySelector('.CodeMirror.cm-s-default'),
       'Code button did not open view', 2000);
   }, {owner:'ppolovyi@datagrok.ai'});
-
-  after(async ()=>{
-    grok.shell.closeAll()
-  });
 });

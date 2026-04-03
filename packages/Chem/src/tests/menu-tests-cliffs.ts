@@ -60,11 +60,6 @@ category('top menu activity cliffs', async () => {
   test('activityCliffs_layout', async () => {
     await _testActivityCliffsOpen(await readDataframe('tests/spgi-100.csv'), 'Structure', 'Chemical Space X', 80, 1);
   });
-
-  after(async () => {
-    grok.shell.closeAll();
-    DG.Balloon.closeAll();
-  });
 });
 
 async function _testActivityCliffsOpen(df: DG.DataFrame, molCol: string, activityCol: string, simCutOff: number,

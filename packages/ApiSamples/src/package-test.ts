@@ -101,7 +101,6 @@ export async function initTests() {
           await runScriptViewer(script);
         else
           await evaluateScript(script);
-        grok.shell.closeAll();
 
         async function runScriptViewer(script: Script) {
           const scriptResult = new Promise<boolean>(async (resolve) => {

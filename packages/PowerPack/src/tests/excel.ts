@@ -32,9 +32,4 @@ category('Excel', () => {
     test('50.2MB', async () => await testExcelImport('System:DemoFiles/test/excel/excel-50.2mb.xlsx', true), {benchmark: true, benchmarkTimeout: 90000, timeout: 90000});
     test('80MB MAX', async () => await testExcelImport('System:DemoFiles/test/excel/excel-80mb-max.xlsx', true), {benchmark: true, benchmarkTimeout: 120000, timeout: 120000});
   });
-
-  after(async () => {
-    grok.shell.closeAll();
-    DG.Balloon.closeAll();
-  });
 }, {owner: 'dkovalyov@datagrok.ai', clear: false});

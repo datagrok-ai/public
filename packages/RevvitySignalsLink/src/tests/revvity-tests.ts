@@ -18,7 +18,6 @@ category('revvity signals app', () => {
     const view = await funcs.revvitySignalsLinkApp();
     //check that statistics view has been created
     await awaitCheck(() => view.root.getElementsByTagName('table') != null, 'Initial statistics hasn\'t been loaded', 30000);
-    grok.shell.closeAll();
   });
 
   test('open compounds|assets node', async () => {
@@ -26,7 +25,6 @@ category('revvity signals app', () => {
     node.expanded = true;
     openRevvityNode(node, ['Compounds'], 'Assets', 'Compounds', 'asset');
     await awaitCheck(() => grok.shell.tv?.dataFrame.rowCount === 100, 'Compounds -> Assests node hasn\'t been loaded', 30000);
-    grok.shell.closeAll();
   }, {timeout: 60000});
 
   test('open compounds|assets with pre-defined query', async () => {
@@ -45,7 +43,6 @@ category('revvity signals app', () => {
     node.expanded = true;
     openRevvityNode(node, ['Compounds'], 'Assets', 'Compounds', 'asset', query);
     await awaitCheck(() => grok.shell.tv?.dataFrame.rowCount === 100, 'Compounds -> Assests node with pre-defined query hasn\'t been loaded', 30000);
-    grok.shell.closeAll();
   }, {timeout: 60000});
 });
 

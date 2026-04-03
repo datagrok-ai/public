@@ -54,10 +54,6 @@ category('sketcher testing', () => {
   test('malformed input', async () => {
     await testMolblock(rdkitModule, funcs, 'V2000', false, true);
   });
-
-  after(async () => {
-    grok.shell.closeAll();
-  });
 });
 
 

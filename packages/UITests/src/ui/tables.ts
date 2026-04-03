@@ -44,10 +44,6 @@ category('UI: Tables', () => {
     await normalize(true);
   });
 
-  after(async () => {
-    grok.shell.closeAll();
-  });
-
   async function normalize(changeMethod: boolean = false) {
     const ageDF = DG.DataFrame.fromColumns([df.getCol('age')]);
     const tv = grok.shell.addTableView(ageDF);

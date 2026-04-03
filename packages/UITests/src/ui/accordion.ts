@@ -49,8 +49,4 @@ category('UI: Accordion', () => {
     if (acc.getPane('New pane3') != undefined)
       throw new Error('getPane error');
   });
-
-  after(async () => {
-    grok.shell.closeAll();
-  });
 }, {clear: false , owner: 'aparamonov@datagrok.ai' });

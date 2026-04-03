@@ -160,8 +160,4 @@ category('Viewers: Histogram', () => {
       grok.shell.closeTable(df);
     }
   });
-
-  after(async () => {
-    grok.shell.closeAll();
-  });
 }, { owner: 'dkovalyov@datagrok.ai' });
