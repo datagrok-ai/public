@@ -1,18 +1,68 @@
 1. Open SPGI
 1. Open the **Filter Panel**
-1. Apply structure, categorical, and numerical filtering
-2.  On the **Filter Panel**, go to **Hamburger menu > Add Filter > Scaffold Tree Filter**
-2. Add viewers and apply filtering on them: 
-   * Scaffold tree viewer, 
-   * Scatterplot (filter by zoom), 
-   * Bar chart, Pie chart, Trellis plot (on click = filter), 
-   * Pivot table (Row source = All),
-   * PC plot (range slider on axes)
-   * Histogram (range slider under X axis)
-1. Verify that collaborative filtering works correctly across all viewers
-1. Hover over the question mark on Filter Panel - **all the filtering should be listed**
-4. Reset filtering for each viewer separately and by the **Reset Filter** icon on the **Filter Panel** - check the question mark each time
 
+#### 1. Apply filters in the Filter Panel
+
+1. For the Structure filter add `c1ccccc1` - (~32 rows filtered)
+1. Hover over the Filter Panel and scroll down to find the **Stereo Category** filter
+1. On the Stereo Category filter, uncheck `S_UNKN` category — the filter applies (rows without S_UNKN shown)
+1. For the **Average Mass** filter set max value to `400`. The filter applies (~4 rows shown).
+
+#### 2. Add Scaffold Tree Filter
+
+1. On the Filter Panel, add a  Scaffold Tree Filter for the Structure column
+1. Add the `Cc1ccccc1` scaffold
+1. Click the checkbox next to the scaffold — the filter applies and the row count changes
+
+#### 3. Scatter Plot
+
+1. Add a **Scatter Plot** viewer
+1. Zoom in to filter the dataset - check the filtering considers the scatter plot and the filters form the Filter Panel
+1. Double-click the Scatter Plot — verify the row count returns to the previous filtered value
+1. Close the Scatter Plot viewer
+
+#### 4. Bar Chart
+
+1. Add a **Bar Chart** viewer
+1. Right-click the bar chart, from the context menu select On Click > Filter
+1. Click the S_ACHIR bar in the Bar Chart — verify the data is filtered 
+1. Click the white space on the bar chart viewer — verify the row count returns to the previous filtered value
+1. Close the Bar Chart viewer
+
+#### 5. Histogram
+
+1. Add a **Histogram** viewer 
+1. Use the range slider under the histogram viewer to filter the dataset — verify the row count update to show only the rows within the selected range
+1. Double-click the histogram viewer on the white space  — verify the row count returns to the previous filtered value
+1. Close the Histogram viewer
+
+#### 6. PC Plot
+
+1. Add a **PC Plot** (Parallel Coordinates Plot) viewer from the Toolbox
+1. Drag the range selector on any axis to filter the dataset — verify the row count update
+1. Double-click the white space on the PC plot viewer — verify the row count returns to the previous filtered value
+1. Close the PC Plot viewer
+
+#### 7. Trellis Plot
+
+1. Add a **Trellis Plot** viewer from the Toolbox
+1. Right-click the trellis plot viewer, from the context menu selest On Click > Filter
+1. Click on a cell in the Trellis Plot — verify the grid and Filter Panel row count update to show only the rows corresponding to the clicked cell
+1. Click the same cell again to reset — verify the row count returns to the previous filtered value
+1. Close the Trellis Plot viewer
+
+#### 8. Pie Chart
+
+1. Add a **Pie Chart** viewer
+1. Right-click the bar chart, from the context menu select On Click > Filter
+1. Click any segment in the pie chart — verify the data is filtered 
+1. Click the white space on the pie chart viewer — verify the row count returns to the previous filtered value
+1. Close the pie chart viewer
+
+#### 9. Reset and cleanup
+
+1. Click the **Reset** icon in the Filter Panel header and confirm all filters are cleared and all rows are shown
+1. Close All
 ---
 {
 "order": 4,
