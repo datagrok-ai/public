@@ -153,7 +153,7 @@ export class ClicksView extends UaView {
     const newUsersChoiceInput = ui.input.choice<DG.User>('User', {items: [], nullable: true});
     newUsersChoiceInput.root.style.display = 'none';
     const newUsersOnlyInput = ui.input.bool('New users only', {value: false});
-    const chronologyModeInput = ui.input.bool('Chronology mode', {value: false, tooltipText: 'Show clicks in the order they were made'});
+    const chronologyModeInput = ui.input.bool('Latest clicks', {value: false, tooltipText: 'Show individual click events sorted by time, newest first'});
     const highlightZonesInput = ui.input.bool('Highlight zones', {value: false, tooltipText: 'Highlight clicks from different zones'});
 
     const grid = DG.Viewer.grid(table);
@@ -257,18 +257,23 @@ export class ClicksView extends UaView {
 
       const userGroups = userInput.value;
       if (userGroups && userGroups.length > 0) {
-        const ids = userGroups.map((ug: any) => `"${ug.user.id}"`).join(',');
-        const filter = `eventType.name="click" && session.user.id in (${ids})`;
-        const logEventList = await grok.dapi.log
-          .filter(filter)
-          .list({pageSize: PAGE_SIZE});
-        logEventList.forEach((clickEvent: any) => {
-          increment({
-            userId: clickEvent.session.user.id,
-            message: clickEvent.description,
-            time: clickEvent.eventTime,
+        ui.setUpdateIndicator(gridWrapper, true);
+        try {
+          const ids = userGroups.map((ug: any) => `"${ug.user.id}"`).join(',');
+          const filter = `eventType.name="click" && session.user.id in (${ids})`;
+          const logEventList = await grok.dapi.log
+            .filter(filter)
+            .list({pageSize: PAGE_SIZE});
+          logEventList.forEach((clickEvent: any) => {
+            increment({
+              userId: clickEvent.session.user.id,
+              message: clickEvent.description,
+              time: clickEvent.eventTime,
+            });
           });
-        });
+        } finally {
+          ui.setUpdateIndicator(gridWrapper, false);
+        }
       }
     };
 
