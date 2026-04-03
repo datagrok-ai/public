@@ -449,11 +449,7 @@ export class ClicksView extends UaView {
     }));
 
     return ui.divV([
-      userInput.root,
-      newUsersChoiceInput.root,
-      newUsersOnlyInput.root,
-      chronologyModeInput.root,
-      highlightZonesInput.root,
+      ui.form([userInput, newUsersChoiceInput, newUsersOnlyInput, chronologyModeInput, highlightZonesInput]),
       gridWrapper,
       lastClickDiv,
     ], {classes: 'grok-inspector', style: {marginLeft: '12px'}});
