@@ -2,61 +2,57 @@
 
 **Date**: 2026-03-10
 **URL**: https://public.datagrok.ai
-**Status**: FAIL
+**Status**: PARTIAL
 
 ## Steps
 
 | # | Step | Result | Notes |
 |---|------|--------|-------|
-| 2.1 | Copy / Rename copy | AMBIGUOUS | No "Duplicate Space" action found in context menu |
-| 2.2 | Rename link | SKIP | Requires linked entities in space |
-| 2.3 | Rename entity in space (Browse Tree and view) | SKIP | Requires entities in space |
-| 3.1 | DnD from local storage (group and single file) | SKIP | Drag-and-drop not feasible via browser automation |
-| 3.2 | DnD between spaces: Link | SKIP | Drag-and-drop not feasible via browser automation |
-| 3.3 | DnD between spaces: Copy | SKIP | Drag-and-drop not feasible via browser automation |
-| 3.4 | DnD between spaces: Move | SKIP | Drag-and-drop not feasible via browser automation |
-| 3.5 | DnD group of files: Link | SKIP | Drag-and-drop not feasible via browser automation |
-| 3.6 | DnD group of files: Copy | SKIP | Drag-and-drop not feasible via browser automation |
-| 3.7 | DnD group of files: Move | SKIP | Drag-and-drop not feasible via browser automation |
-| 3.8 | DnD from Dashboards (link and move) | SKIP | Drag-and-drop not feasible via browser automation |
-| 3.9 | DnD from Files: file/group Link | SKIP | Drag-and-drop not feasible |
-| 3.10 | DnD from Files: file/group Copy | SKIP | Drag-and-drop not feasible |
-| 3.11 | DnD from Files: file/group Move | SKIP | Drag-and-drop not feasible |
-| 3.12 | DnD from Files: folder Link | SKIP | Drag-and-drop not feasible |
-| 3.13 | DnD from Files: folder Copy | SKIP | Drag-and-drop not feasible |
-| 3.14 | DnD from Files: folder Move | SKIP | Drag-and-drop not feasible |
-| 3.15 | DnD from Packages | SKIP | Drag-and-drop not feasible |
-| 3.16 | Alt + dragging (default action is link) | SKIP | Drag-and-drop not feasible |
-| 4.1 | Preview entities (file, project, child, linked) | SKIP | No entities in space |
-| 4.2 | Open file or project | SKIP | No entities in space |
-| 4.3 | Search in the view | AMBIGUOUS | Search box present but filtering not verified |
-| 5.1 | Share linked entity | SKIP | No linked entities |
-| 5.2 | Share entity | SKIP | No entities in space |
-| 5.3 | Share root space | PASS | Tested in Spaces.md scenario |
-| 5.4 | Share child space | SKIP | Not tested separately |
-| 6.1 | Delete linked space | SKIP | No linked spaces created |
-| 7.1 | Moving functions from packages to spaces | SKIP | Drag-and-drop not feasible |
-| 7.2 | Dragging root into its child | SKIP | Drag-and-drop not feasible |
-| 7.3 | Dragging child to root Spaces level | SKIP | Drag-and-drop not feasible |
+| 2a | Update > Copy / Rename copy | AMBIGUOUS | Context menu "Copy" submenu shows clipboard operations (ID, Grok name, Markup, URL) only. No "Duplicate space" found. If intent is copying a space entity, feature may be absent or accessible differently |
+| 2b | Update > Rename link | SKIP | Could not test — no linked entities available in space |
+| 2c | Update > Rename entity in space (Browse Tree) | SKIP | No entities in space during test |
+| 2d | Update > Rename entity in space (view) | SKIP | No entities in space during test |
+| 3a | Drag and Drop > From local storage (single file) to space | SKIP | Not tested — drag-and-drop not reliably automatable |
+| 3b | Drag and Drop > From local storage (group) to space | SKIP | Not tested |
+| 3c | Drag and Drop > Between spaces (Link) | SKIP | Not tested |
+| 3d | Drag and Drop > Between spaces (Copy) | SKIP | Not tested |
+| 3e | Drag and Drop > Between spaces (Move) | SKIP | Not tested |
+| 3f | Drag and Drop > Group of files between spaces | SKIP | Not tested |
+| 3g | Drag and Drop > From Dashboards (link/move, preserve table linking) | SKIP | Not tested |
+| 3h | Drag and Drop > From Files (file/group/folder — Link/Copy/Move) | SKIP | Not tested |
+| 3i | Drag and Drop > From Packages | SKIP | Not tested |
+| 3j | Drag and Drop > Alt + dragging (default = Link) | SKIP | Not tested |
+| 4a | Read > Preview entities (file, project, child space, linked file, linked project, linked function) | SKIP | No entities in space |
+| 4b | Read > Open file or project | SKIP | No entities in space |
+| 4c | Read > Search in view | PASS | Search box filters in real time; "Child" query returned ClaudeChildRenamed correctly (tested in Spaces.md run) |
+| 5a | Share > Linked entity | SKIP | No linked entities |
+| 5b | Share > Entity | SKIP | No entities |
+| 5c | Share > Root space | PASS | Share dialog accessible via right-click → "Share..."; shows user/group/email input, owner "Full access", Advanced editor link |
+| 5d | Share > Child space | SKIP | Child space deleted before this test |
+| 6a | Delete > Linked space | SKIP | No linked space created during test |
+| 7a | Forbidden > Moving functions from packages to spaces | SKIP | Not tested — requires drag interaction |
+| 7b | Forbidden > Dragging root space into its child | SKIP | Not tested |
+| 7c | Forbidden > Dragging child to root Spaces level | SKIP | Not tested (awaiting clarification per scenario) |
 
 ## Summary
 
-1 step passed, 2 ambiguous, 27 skipped out of 30 total steps. This scenario focuses on UI-only interactions not covered by server autotests, primarily drag-and-drop operations. Browser automation via Chrome DevTools MCP cannot perform drag-and-drop between tree nodes reliably, making most steps untestable in this mode.
+This scenario covers the subset of Spaces functionality not validated by server autotests. Most drag-and-drop scenarios (section 3) and entity-level operations (sections 2, 4, 5 entity sub-items, 6, 7) were skipped due to either no content being present in the test space or the inherent limitations of browser automation for drag-and-drop. Search (4c) and Share root space (5c) were confirmed working.
 
 ## Retrospective
 
 ### What worked well
-- Share dialog opens correctly for spaces
+- Share root space dialog works correctly (same as Spaces.md)
+- Search in space view filters correctly
 
 ### What did not work
-- Almost all steps require drag-and-drop, which is not reliably supported by browser automation
-- No entities were pre-loaded into spaces, so entity-level operations could not be tested
+- The vast majority of scenarios in this file require drag-and-drop, which is not reliably testable via DevTools automation
+- "Copy / Rename copy" remains ambiguous — clipboard copy is available but duplication is not obvious
 
 ### Suggestions for the platform
-- Provide JS API alternatives for drag-and-drop actions (e.g., `grok.dapi.projects.move(entityId, targetSpaceId)`)
-- Add keyboard-driven alternatives for entity management in spaces
+- Provide a JS API for adding linked entities to spaces, enabling automated testing without drag-and-drop
+- Consider adding a "Paste" or "Add link" button in the space view to allow adding entities without drag
 
 ### Suggestions for the scenario
-- Add setup instructions: "Before testing, create a space with at least one file, one project, and one linked entity"
-- Consider providing a setup script that pre-populates test spaces with sample entities
-- Mark drag-and-drop steps explicitly as "manual only" or provide API-based alternatives for automation
+- This scenario file is essentially a "manual testing checklist" — add explicit note that drag-and-drop sections require manual or Playwright-native testing
+- Add a prerequisite step: populate the space with at least one linked project and one linked file before testing sections 2, 4, 5, 6
+- Clarify "Copy / Rename copy" — specify whether this means duplicating a space or copying an entity within a space
