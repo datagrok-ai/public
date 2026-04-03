@@ -37,11 +37,11 @@ const FAMILY_NAMES: {[key: string]: string} = {
 
 // Priority for overlapping atoms (higher = takes precedence)
 const FAMILY_PRIORITY: {[key: string]: number} = {
-  'D': 7,
-  'A': 6,
-  'X': 5,
-  'P': 4,
-  'N': 3,
+  'P': 7,
+  'N': 6,
+  'D': 5,
+  'A': 4,
+  'X': 3,
   'a': 2,
   'H': 1,
 };
