@@ -342,9 +342,12 @@ export class ClickEventsWidget extends DG.Widget {
     }, 'Pick element to analyze usage');
     pickerIcon.style.cursor = 'pointer';
 
+    const form = ui.form([userInput, newUsersChoiceInput, newUsersOnlyInput, chronologyModeInput, highlightZonesInput]);
+    form.style.flex = '0 0 auto';
+
     return ui.divV([
       ui.divH([pickerIcon], {style: {padding: '2px 0 2px 4px'}}),
-      ui.form([userInput, newUsersChoiceInput, newUsersOnlyInput, chronologyModeInput, highlightZonesInput]),
+      form,
       gridWrapper,
       lastClickDiv,
     ], {classes: 'grok-inspector', style: {marginLeft: '12px'}});
