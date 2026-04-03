@@ -3,6 +3,7 @@ import * as grok from 'datagrok-api/grok';
 
 const window = grok.shell.windows;
 
+const aiToggle = ui.div([ui.iconFA('user-robot')], 'windows-manager-toggle');
 const topmenuToggle = ui.div([ui.iconFA('window-maximize')], 'windows-manager-toggle');
 const toolboxToogle = ui.div([ui.iconFA('ballot')], 'windows-manager-toggle');
 const propertiesToggle = ui.div([ui.iconFA('sliders-h')], 'windows-manager-toggle');
@@ -19,6 +20,11 @@ presentationToggle.addEventListener('click', ()=> {
 toolboxToogle.addEventListener('click', ()=> {
   window.showToolbox ? window.showToolbox = false : window.showToolbox = true;
   setToggleState(window.showToolbox, toolboxToogle);
+});
+
+aiToggle.addEventListener('click', ()=> {
+  window.showAI = !window.showAI;
+  ui.setClass(aiToggle, 'active', window.showAI);
 });
 
 topmenuToggle.addEventListener('click', ()=> {
@@ -62,6 +68,7 @@ function setButtonsToggleState() {
 
 export function windowsManagerPanel() {
   const root = ui.div([
+    ui.tooltip.bind(aiToggle, () => ui.div(['AI ', ui.span([''], {style: {color: 'var(--grey-4)'}})]), 'top'),
     ui.tooltip.bind(topmenuToggle, () => ui.div(['Tabs ', ui.span([''], {style: {color: 'var(--grey-4)'}})]), 'top'),
     ui.tooltip.bind(toolboxToogle, () => ui.div(['Toolbox ', ui.span([''], {style: {color: 'var(--grey-4)'}})]), 'top'),
     ui.tooltip.bind(propertiesToggle, () => ui.div(['Context Panel ', ui.span(['F4'], {style: {color: 'var(--grey-4)'}})]), 'top'),
