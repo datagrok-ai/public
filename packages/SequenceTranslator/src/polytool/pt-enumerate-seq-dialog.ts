@@ -16,7 +16,6 @@ import {helmTypeToPolymerType} from '@datagrok-libraries/bio/src/monomer-works/m
 import {getSeqHelper} from '@datagrok-libraries/bio/src/utils/seq-helper';
 import '@datagrok-libraries/bio/src/types/input';
 import {errInfo} from '@datagrok-libraries/bio/src/utils/err-info';
-import {InputColumnBase} from '@datagrok-libraries/bio/src/types/input';
 import {SeqValueBase} from '@datagrok-libraries/bio/src/utils/macromolecule/seq-handler';
 import {NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';
 import {SeqTemps} from '@datagrok-libraries/bio/src/utils/macromolecule/seq-handler';
@@ -60,7 +59,8 @@ type PolyToolEnumerateInputs = {
   placeholders: PolyToolPlaceholdersInput;
   placeholdersBreadth: PolyToolPlaceholdersBreadthInput;
   enumeratorType: DG.ChoiceInput<PolyToolEnumeratorType>
-  trivialNameCol: InputColumnBase,
+  trivialName: DG.InputBase<string>,
+  appendToTable: DG.InputBase<DG.DataFrame | null>,
   keepOriginal: DG.InputBase<boolean>;
   toAtomicLevel: DG.InputBase<boolean>;
   generateHelm: DG.InputBase<boolean>;
@@ -75,7 +75,7 @@ type PolyToolEnumerateHelmSerialized = {
   placeholders: string;
   placeholdersBreadth: string;
   enumeratorType: PolyToolEnumeratorType;
-  trivialNameCol: string;
+  trivialName: string;
   keepOriginal: boolean;
   toAtomicLevel: boolean;
   generateHelm: boolean;
@@ -170,7 +170,6 @@ async function getPolyToolEnumerateDialog(
     const libHelper = await getMonomerLibHelper();
     const monomerLib = libHelper.getMonomerLib();
     const seqHelper = await getSeqHelper();
-    const emptyDf: DG.DataFrame = DG.DataFrame.fromColumns([]);
 
     const helmHelper = await getHelmHelper();
     const monomerLibFuncs = helmHelper.buildMonomersFuncsFromLib(monomerLib);
@@ -216,7 +215,6 @@ async function getPolyToolEnumerateDialog(
     let srcId: { value: string, colName: string } | null = null;
     let ruleFileList: string[];
     let ruleInputs: RuleInputs;
-    const trivialNameSampleDiv = ui.divText('', {style: {marginLeft: '8px', marginTop: '2px'}});
     const warningsTextDiv = ui.divText('', {style: {color: 'red'}});
     const resultCountDiv = ui.divText('', {style: {
       fontSize: '11px', color: 'var(--grey-4)', marginTop: '2px', marginLeft: '4px', whiteSpace: 'nowrap',
@@ -291,22 +289,17 @@ async function getPolyToolEnumerateDialog(
           onValueChanged: (value: string[]) => { ruleFileList = value; }
         })).getForm()
       },
-      trivialNameCol: ui.input.column2(
+      trivialName: ui.input.string(
         'Trivial name', {
-          table: cell?.dataFrame,
-          filter: (col: DG.Column): boolean => {
-            return col.type === DG.COLUMN_TYPE.STRING && col != cell?.column; /* id */
+          value: '',
+          onValueChanged: (value: string): void => {
+            const trimmed = value?.trim();
+            srcId = trimmed ? {value: trimmed, colName: 'Trivial name'} : null;
           },
-          onValueChanged: (): void => {
-            const valueCol = inputs.trivialNameCol.value;
-            let newSrcId: typeof srcId = null;
-            if (cell && valueCol) {
-              const originalId = valueCol.get(cell.rowIndex)!;
-              newSrcId = {value: originalId, colName: valueCol.name};
-            }
-            srcId = newSrcId;
-            trivialNameSampleDiv.textContent = srcId ? `Original ID: ${srcId.value}` : '';
-          },
+        }),
+      appendToTable: ui.input.table(
+        'Append to table', {
+          items: grok.shell.tables,
           nullable: true,
         }),
     };
@@ -319,7 +312,22 @@ async function getPolyToolEnumerateDialog(
     };
     updateEnumTypeTooltip();
 
-    inputs.trivialNameCol.addOptions(trivialNameSampleDiv);
+    // Attach a "pick from column" icon button to the trivial name input
+    if (cell?.dataFrame) {
+      const colIcon = ui.iconFA('columns', (e: MouseEvent) => {
+        DG.Menu.popup()
+          .singleColumnSelector(cell.dataFrame, {
+            columnFilter: (col: DG.Column) => col.type === DG.COLUMN_TYPE.STRING && col !== cell.column,
+            onChange: (_grid, col: DG.Column, currentRowChanged: boolean) => {
+              if (currentRowChanged)
+                inputs.trivialName.value = col.get(cell.rowIndex) ?? '';
+            },
+          })
+          .show({x: e.clientX, y: e.clientY});
+      }, 'Pick trivial name from a column');
+      inputs.trivialName.addOptions(colIcon);
+    }
+    inputs.trivialName.root.style.maxWidth = '450px';
 
     // Wire up monomer cell double-click to open selection dialog
     inputs.placeholders.onMonomerCellEdit = async (position: number, currentMonomers: string[]) => {
@@ -634,14 +642,7 @@ async function getPolyToolEnumerateDialog(
       }
     };
 
-    const fillTrivialNameList = (table?: DG.DataFrame) => {
-      if (table) {
-        inputs.trivialNameCol.setColumnInputTable(table);
-        inputs.trivialNameCol.root.style.removeProperty('display');
-      } else {
-        inputs.trivialNameCol.setColumnInputTable(emptyDf);
-        inputs.trivialNameCol.root.style.setProperty('display', 'none');
-      }
+    const fillTrivialNameList = (_table?: DG.DataFrame) => {
       if (resizeInputs)
         resizeInputs();
     };
@@ -711,7 +712,13 @@ async function getPolyToolEnumerateDialog(
               rules: await ruleInputs.getActive()
             } : false,
             helmHelper);
-          grok.shell.addTableView(enumeratorResDf);
+          const appendTarget = inputs.appendToTable.value;
+          if (appendTarget) {
+            appendTarget.append(enumeratorResDf, true);
+            appendTarget.meta.detectSemanticTypes();
+          } else {
+            grok.shell.addTableView(enumeratorResDf);
+          }
         }
       } catch (err: any) {
         defaultErrorHandler(err);
@@ -735,8 +742,9 @@ async function getPolyToolEnumerateDialog(
       {style: {width: '100%'}}))
       .add(ui.divH([
         ui.divV([
-          inputs.trivialNameCol.root,
-          inputs.keepOriginal.root],
+          inputs.trivialName.root,
+          inputs.keepOriginal.root,
+          inputs.appendToTable.root],
         {style: {width: '50%'}}),
         ui.divV([
           ui.divH([inputs.toAtomicLevel.root, inputs.generateHelm.root]),
@@ -767,7 +775,7 @@ async function getPolyToolEnumerateDialog(
           placeholders: inputs.placeholders.stringValue,
           enumeratorType: inputs.enumeratorType.value,
           placeholdersBreadth: inputs.placeholdersBreadth.stringValue,
-          trivialNameCol: inputs.trivialNameCol.stringValue,
+          trivialName: inputs.trivialName.value,
           keepOriginal: inputs.keepOriginal.value,
           toAtomicLevel: inputs.toAtomicLevel.value,
           generateHelm: inputs.generateHelm.value,
@@ -781,7 +789,8 @@ async function getPolyToolEnumerateDialog(
         inputs.enumeratorType.value = x.enumeratorType ?? PolyToolEnumeratorTypes.Single;
         inputs.placeholders.stringValue = x.placeholders;
         inputs.placeholdersBreadth.stringValue = x.placeholdersBreadth;
-        inputs.trivialNameCol.stringValue = x.trivialNameCol;
+        if (x.trivialName)
+          inputs.trivialName.value = x.trivialName;
         inputs.keepOriginal.value = x.keepOriginal ?? false;
         inputs.toAtomicLevel.value = x.toAtomicLevel ?? true;
         inputs.generateHelm.value = x.generateHelm ?? true;
