@@ -4,7 +4,9 @@ import {Entity, Project, User} from './entities';
 import { toDart, toJs } from "./wrappers";
 import { Menu, TabControl } from "./widgets";
 import { DockManager } from "./docking";
-import { DockType, DOCK_TYPE } from "./const";
+import { DockType, DOCK_TYPE, EVENT_TYPE } from "./const";
+import { __obs } from './events';
+import * as rxjs from 'rxjs';
 import { JsViewer, Viewer } from "./viewer";
 import {_toIterable} from "./utils_convert";
 import { FuncCall } from "./functions";
@@ -471,6 +473,13 @@ export class Windows {
   get showRibbon(): boolean { return api.grok_Windows_Get_ShowRibbon(); }
   set showRibbon(x: boolean) { api.grok_Windows_Set_ShowRibbon(x); }
 
+  /** Controls the visibility of the AI panel. */
+  get showAI(): boolean { return api.grok_Windows_Get_ShowAI(); }
+  set showAI(x: boolean) { api.grok_Windows_Set_ShowAI(x); }
+
+  /** The AI panel root element. External functionality places content here. */
+  get ai(): HTMLDivElement { return api.grok_Windows_Get_AI(); }
+
   /** Hide dock tabs in presentation mode **/
   get hideTabsInPresentationMode(): boolean { return api.grok_Get_HideTabsInPresentationMode(); }
   set hideTabsInPresentationMode(x: boolean) { api.grok_Set_HideTabsInPresentationMode(x); }
@@ -482,6 +491,9 @@ export class Windows {
   /** New menu style **/
   get simpleMode(): boolean { return api.grok_Get_SimpleMode(); }
   set simpleMode(x: boolean) { api.grok_Set_SimpleMode(x); }
+
+  /** Fires when any shell panel visibility changes (sidebar, toolbox, console, help, browse, etc.). */
+  get onPanelVisibilityChanged(): rxjs.Observable<any> { return __obs(EVENT_TYPE.PANELS_CHANGED); }
 }
 
 /** User-specific platform settings. */

@@ -726,6 +726,9 @@ export interface IDartApi {
   grok_Windows_Set_ShowHelp(x: Bool): any;
   grok_Windows_Get_ShowRibbon(): any;
   grok_Windows_Set_ShowRibbon(x: Bool): any;
+  grok_Windows_Get_ShowAI(): any;
+  grok_Windows_Set_ShowAI(x: Bool): any;
+  grok_Windows_Get_AI(): any;
   grok_FuncCall_Get_Editor(call: any, condensed: Bool, showTableSelectors: Bool): Promise<any>;
   grok_FuncCall_Build_Editor(call: any, root: any, condensed: Bool, showTableSelectors: Bool): Promise<any>;
   grok_FuncCall_GetOutputViews(c: any): any;

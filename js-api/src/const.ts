@@ -952,6 +952,9 @@ export enum EVENT_TYPE {
 
   // Server events
   SERVER_MESSAGE = 'server-message',
+
+  // Shell events
+  PANELS_CHANGED = 'grok-panels-changed',
 }
 
 /**
