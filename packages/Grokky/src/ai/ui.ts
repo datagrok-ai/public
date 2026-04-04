@@ -171,16 +171,19 @@ async function runPromptWithLifecycle(
   quotaCategory: string,
   clientToolHandler?: (toolName: string, input: any) => Promise<string>,
 ): Promise<void> {
-  const args: UserPromptEventArgs = {prompt, context: view, handled: false};
-  fireBeforeUserPromptEvent(args);
-  if (args.handled)
-    return;
-  if (await grok.ai.processPrompt(prompt))
-    return;
+  if (!panel.rawMode) {
+    const args: UserPromptEventArgs = {prompt, context: view, handled: false};
+    fireBeforeUserPromptEvent(args);
+    if (args.handled)
+      return;
+    if (await grok.ai.processPrompt(prompt))
+      return;
+  }
   if (!await UsageLimiter.getInstance().tryCheckAndIncrement(quotaCategory, prompt))
     return;
   await runClaudeStreaming(panel, prompt, view, clientToolHandler);
-  fireAfterUserPromptEvent({prompt, context: view, handled: false});
+  if (!panel.rawMode)
+    fireAfterUserPromptEvent({prompt, context: view, handled: false});
 }
 
 async function runClaudeStreaming(panel: StreamingPanel, userPrompt: string, view: DG.ViewBase, clientToolHandler?: (toolName: string, input: any) => Promise<string>) {
@@ -208,7 +211,7 @@ async function runClaudeStreaming(panel: StreamingPanel, userPrompt: string, vie
 
   try {
     const client = ClaudeRuntimeClient.getInstance();
-    const prompt = panel.prependViewContext(userPrompt, view);
+    const prompt = panel.rawMode ? userPrompt : panel.prependViewContext(userPrompt, view);
 
     await client.ensureConnected();
 
