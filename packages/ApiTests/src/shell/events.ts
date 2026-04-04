@@ -58,6 +58,17 @@ category('Events', () => {
         expect(subscriptionPassed, true);
     });
 
+    test('onPanelVisibilityChanged', async () => {
+        let fired = false;
+        const initial = grok.shell.windows.showStatusBar;
+        let subscription = grok.shell.windows.onPanelVisibilityChanged.subscribe(() => { fired = true; });
+        grok.shell.windows.showStatusBar = !initial;
+        await delay(500);
+        subscription.unsubscribe();
+        grok.shell.windows.showStatusBar = initial;
+        expect(fired, true);
+    });
+
     test('debounce', async () => {
         let subscriptionPassed = false;
         let tv = grok.shell.addTableView(grok.data.demo.demog())
