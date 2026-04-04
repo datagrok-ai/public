@@ -101,7 +101,7 @@ export class ClicksView extends UaView {
       if (col)
         col.width = width;
     };
-    setGridColWidth('name', 350);
+    setGridColWidth('description', 350);
     setGridColWidth('Level 1', 120);
     setGridColWidth('Level 2', 120);
     setGridColWidth('Level 3', 120);
@@ -109,7 +109,7 @@ export class ClicksView extends UaView {
 
     const filters = ui.box();
     filters.style.maxWidth = '230px';
-    const filtersStyle = {columnNames: ['~Is Package', '~Package Name', 'Level 1', 'Level 2', 'Level 3', 'count']};
+    const filtersStyle = {columnNames: ['event_type', '~Is Package', '~Package Name', 'Level 1', 'Level 2', 'Level 3', 'count']};
     const filtersRootToAdd = DG.Viewer.filters(table, filtersStyle).root;
     const filtersRootToAddChildren = Array.from(filtersRootToAdd.children);
     for (let i = 0; i < filtersRootToAddChildren.length - 1; i++)
