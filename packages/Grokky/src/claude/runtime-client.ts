@@ -60,7 +60,10 @@ export class ClaudeRuntimeClient {
       console.error('Failed to connect to Claude runtime:', e);
     }
 
-    this.ws!.onmessage = (event: MessageEvent) => {
+    if (!this.ws)
+      throw new Error('Claude runtime container is not running');
+
+    this.ws.onmessage = (event: MessageEvent) => {
       let data: any;
       try {
         data = JSON.parse(event.data);
@@ -98,12 +101,12 @@ export class ClaudeRuntimeClient {
       }
     };
 
-    this.ws!.onclose = () => {
+    this.ws.onclose = () => {
       this.ws = null;
       this.onClose.next();
     };
 
-    this.ws!.onerror = () => {
+    this.ws.onerror = () => {
       this.ws = null;
     };
   }
