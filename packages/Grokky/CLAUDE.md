@@ -7,6 +7,8 @@ Grokky is the [AI for Datagrok](../../help/explore/ai/ai.md), enabling the follo
    - writing scripts
    - doing agentic work on behalf of the user, augmented with custom skills
    and company-specific knowledge on processes, infrastruture, etc.
+   - See [docs/CLAUDE_CODE_FLOW.md](docs/CLAUDE_CODE_FLOW.md) for a full description of the
+     deployment, message protocol, and response-to-UI pipeline.
 4. A general-purpose [AI console](...) to work with the platform
 5. Supercharging your daily work:
    - Natural-language database queries

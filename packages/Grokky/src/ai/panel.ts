@@ -928,6 +928,18 @@ export class TVAIPanel extends AIPanel<MessageType, TVAIPanelInputs> {
   }
 }
 
+export class ShellAIPanel extends AIPanel {
+  protected get placeHolder() { return 'Ask AI anything...'; }
+
+  constructor() {
+    super('shell-ai-panel', null as any);
+  }
+
+  protected setupSubscriptions(): void {
+    // Shell panel is not tied to a view — no view-change tracking needed
+  }
+}
+
 export class ScriptingAIPanel extends AIPanel<MessageType, ScriptingAIPanelInputs> {
   protected get placeHolder() { return 'Ask AI to generate a script...'; }
   protected languageInput: DG.InputBase<string>;
