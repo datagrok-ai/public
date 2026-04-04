@@ -94,6 +94,7 @@ export interface StreamingPanel<T extends MessageType = MessageType> {
   clearStreaming(): void;
   showInputRequest(input: any): Promise<any>;
   cancelInputRequest(): void;
+  get rawMode(): boolean;
 }
 
 export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInputs = AIPanelInputs> implements StreamingPanel<T> {
@@ -110,6 +111,8 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
   private historyButton: HTMLElement;
   private tryAgainButton: HTMLElement;
   private micButton: HTMLElement;
+  private rawModeButton: HTMLElement;
+  private _rawMode: boolean = false;
   private recognition: SpeechRecognition | null = null;
   private isRecognizing: boolean = false;
   private _onRunRequest = new rxjs.Subject<{prevMessages: T[], currentPrompt: K}>();
@@ -187,9 +190,14 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
       this.handleClear();
       this.currentConversationId = null;
     }, 'Start New Chat');
+    this.rawModeButton = ui.iconFA('terminal', () => {
+      this._rawMode = !this._rawMode;
+      this.rawModeButton.style.color = this._rawMode ? 'var(--blue-1)' : '';
+      this.root.classList.toggle('d4-ai-raw-mode', this._rawMode);
+    }, 'Toggle raw console');
     this.hideContentIcons();
     this.inputControlsDiv = ui.divH([
-      this.micButton,
+      this.micButton, this.rawModeButton,
     ], 'd4-ai-panel-input-controls');
     this.runButton.style.color = 'var(--blue-1)';
     const sessionControls = ui.divH([this.copyConversationButton, this.historyButton, this.newChatButton], 'd4-ai-panel-run-controls');
@@ -203,10 +211,6 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
     this.root.appendChild(this.outputArea);
     this.root.appendChild(this.inputArea);
 
-    const headerTitle = ui.h2('Chat', 'd4-ai-panel-header-title');
-    dartLike(headerTitle.style).set('margin', '0px').set('userSelect', 'none').set('cursor', 'pointer');
-    headerTitle.addEventListener('click', () => this.textArea.focus());
-    this.header.appendChild(headerTitle);
     this.setupSubscriptions();
   }
 
@@ -250,26 +254,17 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
     });
   }
 
-  private static _lastDockedPanel: DG.DockNode | null = null;
   show() {
-    grok.shell.windows.showHelp = false;
-    // grok.shell.windows.context.root?.style
-    // grok.shell.o = this.root;
-    // grok.shell.setCurrentObject(this.root, true, true);
-    if (AIPanel._lastDockedPanel) {
-      if (AIPanel._lastDockedPanel.container.containerElement.contains(this.root) && document.contains(this.root))
-        return;
-      grok.shell.dockManager.close(AIPanel._lastDockedPanel);
-    }
-    const contextRoot = grok.shell.windows.context?.root;
-    const contextNode = contextRoot && document.contains(contextRoot) ? grok.shell.dockManager.findNode(contextRoot) : null;
-    AIPanel._lastDockedPanel = grok.shell.dockManager.dock(this.root, contextNode ? 'down' : 'right', contextNode, '', contextNode ? 0.5 : 0.25);
+    const aiContainer = grok.shell.windows.ai;
+    if (!aiContainer.contains(this.root))
+      aiContainer.appendChild(this.root);
+    grok.shell.windows.showAI = true;
     this.textArea.focus();
   }
 
   hide() {
-    // save history before hiding
-    grok.shell.dockManager.close(this.root);
+    if (grok.shell.windows.ai.contains(this.root))
+      grok.shell.windows.showAI = false;
   }
 
   formatConversation() {
@@ -297,7 +292,7 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
   }
 
   toggle() {
-    document.contains(this.root) ? this.hide() : this.show();
+    this.isShown ? this.hide() : this.show();
   }
 
   dispose() {
@@ -483,8 +478,10 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
   }
 
   get isShown(): boolean {
-    return document.contains(this.root);
+    return grok.shell.windows.showAI && grok.shell.windows.ai.contains(this.root);
   }
+
+  get rawMode(): boolean { return this._rawMode; }
 
   resetSession(): void {
     this._sessionId = `claude-${crypto.randomUUID()}`;
@@ -503,19 +500,29 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
     return ctx + '\n---\n\n' + prompt;
   }
 
+  private createStreamingEl(content: string): HTMLElement {
+    if (this._rawMode) {
+      const pre = document.createElement('pre');
+      pre.textContent = content;
+      pre.style.cssText = 'white-space:pre-wrap;user-select:text;margin:0';
+      return pre;
+    }
+    const md = ui.markdown(content);
+    dartLike(md.style).set('userSelect', 'text').set('maxWidth', '100%');
+    return md;
+  }
+
   updateStreaming(content: string, loader: HTMLElement): void {
     if (!this._streamingContainer) {
       loader.style.display = 'none';
       this.ensureAccordionPane();
-      this._streamingMarkdownEl = ui.markdown(content);
-      dartLike(this._streamingMarkdownEl.style).set('userSelect', 'text').set('maxWidth', '100%');
+      this._streamingMarkdownEl = this.createStreamingEl(content);
       this._streamingContainer = ui.divV([this._streamingMarkdownEl], 'd4-ai-assistant-response-container');
       this._aiMessagesAccordionPane!.appendChild(this._streamingContainer);
     } else {
-      const md = ui.markdown(content);
-      dartLike(md.style).set('userSelect', 'text').set('maxWidth', '100%');
-      this._streamingMarkdownEl!.replaceWith(md);
-      this._streamingMarkdownEl = md;
+      const el = this.createStreamingEl(content);
+      this._streamingMarkdownEl!.replaceWith(el);
+      this._streamingMarkdownEl = el;
     }
     this.outputArea.scrollTop = this.outputArea.scrollHeight;
   }
@@ -523,6 +530,13 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
   async finalizeStreaming(content: string, view: DG.ViewBase): Promise<void> {
     if (!this._streamingContainer || !this._streamingMarkdownEl)
       return;
+
+    if (this._rawMode) {
+      this._streamingMarkdownEl = null;
+      this._streamingContainer = null;
+      this._uiMessages.push({fromUser: false, text: content, messageOptions: {finalResult: content}});
+      return;
+    }
 
     const markDown = this.createStyledMarkdown(content);
     renderEntityBlocks(markDown);

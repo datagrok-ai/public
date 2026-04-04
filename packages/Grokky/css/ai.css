@@ -205,3 +205,88 @@
   gap: 4px;
   margin: 8px 0;
 }
+
+/* Raw / terminal mode */
+.d4-ai-generation-panel.d4-ai-raw-mode {
+  background: #111;
+  color: #e0e0e0;
+  font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+}
+
+.d4-ai-generation-panel.d4-ai-raw-mode .d4-ai-panel-output-area {
+  background: #111;
+}
+
+.d4-ai-generation-panel.d4-ai-raw-mode .d4-ai-panel-input-area {
+  background: #111;
+  border-top: 1px solid #333;
+}
+
+.d4-ai-generation-panel.d4-ai-raw-mode textarea.d4-ai-input-textarea {
+  background: #0a0a0a;
+  color: #e0e0e0;
+  border-color: #333;
+  box-shadow: none;
+  font-family: inherit;
+}
+
+.d4-ai-generation-panel.d4-ai-raw-mode .d4-ai-panel-header {
+  background: #111;
+  box-shadow: none;
+  border-bottom: 1px solid #333;
+}
+
+.d4-ai-generation-panel.d4-ai-raw-mode .d4-ai-panel-controls-container i {
+  color: #666;
+}
+
+.d4-ai-generation-panel.d4-ai-raw-mode .d4-ai-assistant-response-container {
+  background: transparent;
+  border-radius: 0;
+  padding: 2px 6px;
+  margin-bottom: 0;
+}
+
+.d4-ai-generation-panel.d4-ai-raw-mode .d4-ai-assistant-response-container pre {
+  background: transparent;
+  color: #e0e0e0;
+  filter: none;
+  border: none;
+  padding: 2px 0;
+  overflow: visible;
+}
+
+.d4-ai-generation-panel.d4-ai-raw-mode .d4-ai-user-prompt-container {
+  justify-content: flex-start;
+  padding-left: 0;
+}
+
+.d4-ai-generation-panel.d4-ai-raw-mode .d4-ai-user-prompt-container .d4-ai-user-prompt-divtext {
+  background: transparent;
+  color: #7cb8ff;
+  text-align: left;
+  border-radius: 0;
+  padding: 2px 6px;
+  font-family: inherit;
+}
+
+.d4-ai-generation-panel.d4-ai-raw-mode .d4-ai-user-prompt-container .d4-ai-user-prompt-divtext::before {
+  content: '> ';
+  color: #50fa7b;
+}
+
+.d4-ai-generation-panel.d4-ai-raw-mode .d4-ai-messages-accordion-pane {
+  background: transparent;
+}
+
+.d4-ai-generation-panel.d4-ai-raw-mode::-webkit-scrollbar,
+.d4-ai-generation-panel.d4-ai-raw-mode .d4-ai-panel-output-area::-webkit-scrollbar {
+  width: 6px;
+  background: #1a1a1a;
+}
+
+.d4-ai-generation-panel.d4-ai-raw-mode::-webkit-scrollbar-thumb,
+.d4-ai-generation-panel.d4-ai-raw-mode .d4-ai-panel-output-area::-webkit-scrollbar-thumb {
+  background: #333;
+  border-radius: 3px;
+}
