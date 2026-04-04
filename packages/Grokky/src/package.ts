@@ -4,7 +4,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {findBestMatchingQuery, tableQueriesFunctionsSearchLlm} from './ai/search/query-matching';
-import {askWiki, smartExecution, setupAIQueryEditorUI, setupScriptsAIPanelUI, setupSearchUI, setupTableViewAIPanelUI} from './ai/ui';
+import {askWiki, smartExecution, setupAIQueryEditorUI, setupScriptsAIPanelUI, setupSearchUI, setupShellAIPanelUI, setupTableViewAIPanelUI} from './ai/ui';
 import {CombinedAISearchAssistant} from './ai/search/combined-search';
 import {UsageLimiter} from './ai/usage-limiter';
 import {genDBConnectionMeta, moveDBMetaToStickyMetaOhCoolItEvenRhymes} from './db/db-index-tools';
@@ -30,6 +30,12 @@ export class PackageFunctions {
 
   @grok.decorators.autostart({tags: ['autostart']})
   static autostart() {
+    if (grok.shell.windows.showAI)
+      setupShellAIPanelUI();
+    grok.shell.windows.onPanelVisibilityChanged.subscribe(() => {
+      if (grok.shell.windows.showAI)
+        setupShellAIPanelUI();
+    });
   }
 
 

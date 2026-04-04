@@ -7,7 +7,7 @@ import {CombinedAISearchAssistant} from './search/combined-search';
 import {fireAIAbortEvent, fireAIPanelToggleEvent, getAIAbortSubscription,
   fireBeforeUserPromptEvent, fireAfterUserPromptEvent, UserPromptEventArgs} from '../utils';
 import {BuiltinDBInfoMeta} from '../db/query-meta-utils';
-import {DBAIPanel, ScriptingAIPanel, StreamingPanel, TVAIPanel} from './panel';
+import {DBAIPanel, ScriptingAIPanel, ShellAIPanel, StreamingPanel, TVAIPanel} from './panel';
 import {ClaudeRuntimeClient} from '../claude/runtime-client';
 import {executeDatagrokBlocks} from '../claude/exec-blocks';
 import {UsageLimiter} from './usage-limiter';
@@ -294,6 +294,19 @@ async function runClaudeStreaming(panel: StreamingPanel, userPrompt: string, vie
     chatSession.endSession();
     cleanup();
   }
+}
+
+let _shellAIPanel: ShellAIPanel | null = null;
+
+export function setupShellAIPanelUI(): void {
+  if (!grok.ai.config.configured) return;
+  if (!_shellAIPanel) {
+    _shellAIPanel = new ShellAIPanel();
+    _shellAIPanel.onRunRequest.subscribe(async (args) => {
+      await runPromptWithLifecycle(_shellAIPanel!, args.currentPrompt.prompt, grok.shell.v, 'shell-ai');
+    });
+  }
+  _shellAIPanel.show();
 }
 
 export async function setupTableViewAIPanelUI() {
