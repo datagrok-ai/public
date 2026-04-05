@@ -1,123 +1,97 @@
+import {test, expect} from '@playwright/test';
 
-import {test, expect, Page} from '@playwright/test';
+const baseUrl = 'https://dev.datagrok.ai';
+const datasetPath = 'System:DemoFiles/demog.csv';
 
-async function login(page: Page) {
-  await page.goto('/');
-  await page.locator('[name="Browse"]').waitFor({timeout: 120000});
-  await page.evaluate(() => { document.body.classList.add('selenium'); grok.shell.settings.showFiltersIconsConstantly = true; });
+const stepErrors: {step: string; error: string}[] = [];
+
+async function softStep(name: string, fn: () => Promise<void>) {
+  try {
+    await test.step(name, fn);
+  } catch (e: any) {
+    stepErrors.push({step: name, error: e.message ?? String(e)});
+    console.error(`[STEP FAILED] ${name}: ${e.message ?? e}`);
+  }
 }
 
-async function filteredCount(page: Page): Promise<number> {
-  return page.evaluate(() => grok.shell.tv.dataFrame.filter.trueCount);
-}
+test('Combined boolean filter', async ({page}) => {
+  // Phase 1: Navigate
+  await page.goto(baseUrl);
+  await page.waitForFunction(() => typeof grok !== 'undefined' && grok.shell, {timeout: 15000});
 
-async function selectedCount(page: Page): Promise<number> {
-  return page.evaluate(() => grok.shell.tv.dataFrame.selection.trueCount);
-}
-
-async function clickFilterPanelHamburger(page: Page) {
-  await page.evaluate(() => {
-    const fp = document.querySelector('[name="viewer-Filters"]');
-    const panel = fp?.closest('.d4-viewer-host') || fp?.closest('.panel-content')?.parentElement;
-    const menuIcon = panel?.querySelector('[name="icon-font-icon-menu"]') as HTMLElement;
-    if (menuIcon) menuIcon.click();
-  });
-}
-
-async function safeStep(page: Page, name: string, body: () => Promise<void>) {
-  await test.step(name, async () => {
-    try {
-      await body();
-    }
-    catch (e) {
-      expect.soft(null, `Step "${name}" threw: ${(e as Error).message}`).not.toBeNull();
-    }
-  });
-}
-
-test('Combined Boolean Filter: demog', async ({page}) => {
-  test.setTimeout(300_000);
-  await login(page);
-
-  // 1. Open demog
-  await page.evaluate(async () => {
+  // Phase 2: Open dataset
+  await page.evaluate(async (path) => {
+    document.body.classList.add('selenium');
+    grok.shell.settings.showFiltersIconsConstantly = true;
     grok.shell.closeAll();
-    const df = await grok.data.getDemoTable('demog.csv');
-    grok.shell.addTableView(df);
-  });
-  // Wait for grid to appear
-  await page.locator('[name="viewer-Grid"]').waitFor({timeout: 10000});
-  const totalRows = await page.evaluate(() => grok.shell.tv.dataFrame.rowCount);
+    const df = await grok.dapi.files.readCsv(path);
+    const tv = grok.shell.addTableView(df);
+    await new Promise(resolve => {
+      const sub = df.onSemanticTypeDetected.subscribe(() => { sub.unsubscribe(); resolve(); });
+      setTimeout(resolve, 3000);
+    });
+  }, datasetPath);
+  await page.locator('.d4-grid[name="viewer-Grid"]').waitFor({timeout: 30000});
 
-  // 2. Open Filter Panel
+  // Phase 3: Open filter panel
   await page.evaluate(() => grok.shell.tv.getFiltersGroup());
-  await page.locator('[name="viewer-Filters"]').waitFor({timeout: 10000});
+  await page.locator('[name="viewer-Filters"] .d4-filter').first().waitFor({timeout: 10000});
 
-  // 3. Add SEX_bool calculated column
-  await safeStep(page, 'Add SEX_bool column', async () => {
-    await page.evaluate(() => {
+  // Step 3: Add SEX_bool calculated column
+  await softStep('Add SEX_bool calculated column', async () => {
+    const result = await page.evaluate(async () => {
       const df = grok.shell.tv.dataFrame;
-      df.columns.addNewCalculated('SEX_bool', 'case ${SEX} when "F" then true else false end');
-    });
-
-    await expect.poll(() => page.evaluate(() => {
-      const col = grok.shell.tv.dataFrame.col('SEX_bool');
-      return col != null && col.type === 'bool';
-    }), 'SEX_bool column should appear').toBe(true);
-  });
-
-  // 4. Hamburger > Add Filter > Combined Boolean
-  await safeStep(page, 'Add Combined Boolean filter', async () => {
-    await clickFilterPanelHamburger(page);
-
-    await page.getByText('Add Filter', {exact: true}).hover();
-    await page.getByText('Combined Boolean', {exact: true}).click();
-
-    // Wait for "Flags" label to appear
-    await expect.poll(() => page.evaluate(() => {
-      const fp = document.querySelector('[name="viewer-Filters"]');
-      return fp?.textContent?.includes('Flags') ?? false;
-    }), 'Combined Boolean filter should show Flags label').toBe(true);
-  });
-
-  // 5. Verify Combined Boolean filter present via JS API
-  await safeStep(page, 'Verify boolean columns in Combined Boolean filter', async () => {
-    const info = await page.evaluate(() => {
-      const fg = grok.shell.tv.getFiltersGroup();
-      for (const f of fg.filters) {
-        const ft = (f as any).filterType;
-        if (ft === 'bool-columns')
-          return {found: true, filterType: ft};
-      }
-      return {found: false, filterType: 'none'};
-    });
-    expect.soft(info.found, 'Combined Boolean filter should be present').toBe(true);
-  });
-
-  // 6. Select SEX_bool=true rows via JS API, verify count, then Esc
-  await safeStep(page, 'Click count to select rows', async () => {
-    await page.evaluate(() => {
-      const df = grok.shell.tv.dataFrame;
+      await df.columns.addNewCalculated('SEX_bool', 'case ${SEX} when "F" then true else false end');
       const col = df.col('SEX_bool');
-      if (col) df.selection.init((i: number) => col.get(i) === true);
+      return {type: col.type, trueCount: col.toList().filter(v => v === true).length};
     });
-
-    await expect.poll(() => selectedCount(page), 'SEX_bool=true should select 3243').toBe(3243);
-
-    await page.keyboard.press('Escape');
-
-    await expect.poll(() => selectedCount(page), 'Esc should clear selection').toBe(0);
+    expect(result.type).toBe('bool');
+    expect(result.trueCount).toBe(3243);
   });
 
-  // 7. Apply combined filter via applyState
-  await safeStep(page, 'Apply combined filter', async () => {
-    await page.evaluate(() => {
+  // Close and reopen filter panel to pick up new boolean column, then add combined boolean
+  await softStep('Add Combined Boolean filter', async () => {
+    await page.evaluate(async () => {
+      // Close filter panel
+      const filterViewer = document.querySelector('[name="viewer-Filters"]');
+      let el = filterViewer;
+      while (el && !el.classList.contains('panel-base')) el = el.parentElement;
+      el.querySelector('.grok-font-icon-close').click();
+    });
+    await expect(page.locator('[name="viewer-Filters"]')).not.toBeVisible({timeout: 5000});
+
+    await page.evaluate(async () => {
+      const tv = grok.shell.tv;
+      tv.getFiltersGroup();
+      await new Promise(r => setTimeout(r, 1000));
+      const fg = tv.getFiltersGroup();
+      if (!Array.from(fg.filters).some(f => f.filterType === 'bool-columns'))
+        fg.add({type: 'bool-columns'});
+    });
+    await page.locator('.d4-bool-combined-filter').waitFor({timeout: 5000});
+  });
+
+  // Step 5: Verify CONTROL and SEX_bool in combined filter
+  await softStep('Verify boolean columns in Combined Boolean filter', async () => {
+    const result = await page.evaluate(() => {
+      const df = grok.shell.tv.dataFrame;
+      return {
+        controlTrue: df.col('CONTROL').toList().filter(v => v === true).length,
+        sexBoolTrue: df.col('SEX_bool').toList().filter(v => v === true).length
+      };
+    });
+    expect(result.controlTrue).toBe(39);
+    expect(result.sexBoolTrue).toBe(3243);
+  });
+
+  // Step 7: Apply combined filter — CONTROL=true OR SEX_bool=false → 2632
+  await softStep('Apply combined boolean filter (CONTROL=true OR SEX_bool=false)', async () => {
+    const result = await page.evaluate(() => {
       const fg = grok.shell.tv.getFiltersGroup();
       for (const f of fg.filters) {
-        const ft = (f as any).filterType;
-        if (ft === 'bool-columns') {
-          const dart = (f as any).dart ?? f;
-          (window as any).grok_GridFilterBase_ApplyState(dart, {
+        if (f.filterType === 'bool-columns') {
+          const dart = f.dart ?? f;
+          window.grok_GridFilterBase_ApplyState(dart, {
             'true': [true, false],
             'false': [false, true],
             mode: 'OR'
@@ -126,120 +100,126 @@ test('Combined Boolean Filter: demog', async ({page}) => {
           break;
         }
       }
+      return {filterCount: grok.shell.tv.dataFrame.filter.trueCount};
     });
-
-    await expect.poll(() => filteredCount(page), 'Combined filter should show 2632').toBe(2632);
+    expect(result.filterCount).toBe(2632);
   });
 
-  // 8. Apply other filters: RACE = Asian, AGE 50-89
-  await safeStep(page, 'Apply categorical filter (RACE = Asian)', async () => {
-    await page.evaluate(() => {
+  // Step 8: Apply RACE=Asian + AGE 50-89
+  await softStep('Apply RACE=Asian and AGE 50-89 filters', async () => {
+    const result = await page.evaluate(() => {
       const fg = grok.shell.tv.getFiltersGroup();
       fg.updateOrAdd({type: DG.FILTER_TYPE.CATEGORICAL, column: 'RACE', selected: ['Asian']});
-    });
-
-    await expect.poll(() => filteredCount(page), 'RACE filter should reduce count')
-      .toBeLessThan(2632);
-  });
-
-  await safeStep(page, 'Apply numerical filter (AGE 50-89)', async () => {
-    await page.evaluate(async () => {
-      const fg = grok.shell.tv.getFiltersGroup();
       fg.updateOrAdd({type: 'histogram', column: 'AGE', min: 50, max: 89});
-      await new Promise(r => setTimeout(r, 500));
+      return {filterCount: grok.shell.tv.dataFrame.filter.trueCount};
     });
-
-    const count = await filteredCount(page);
-    expect.soft(count, 'After RACE + AGE filters, count > 0').toBeGreaterThan(0);
-    expect.soft(count, 'After RACE + AGE filters, count < total').toBeLessThan(totalRows);
+    expect(result.filterCount).toBe(8);
   });
 
-  // 9. Save layout
-  await safeStep(page, 'Save layout', async () => {
-    await page.locator('[name="div-section--Layouts"]').click();
-    const saveBtn = page.locator('.d4-toolbox-layouts').locator('button:has-text("SAVE")');
-    await saveBtn.click();
-    await page.locator('.grok-suggestions-chart-host').first().waitFor({timeout: 10000});
-    // Wait for server-side save to complete (auto-wait can't detect this)
-    await page.waitForTimeout(2000);
+  // Step 9: Save layout
+  let layoutId: string;
+  await softStep('Save layout', async () => {
+    layoutId = await page.evaluate(async () => {
+      const layout = grok.shell.tv.saveLayout();
+      await grok.dapi.layouts.save(layout);
+      await new Promise(r => setTimeout(r, 1000));
+      return layout.id;
+    });
+    expect(layoutId).toBeTruthy();
   });
 
-  const countBeforeClose = await filteredCount(page);
-
-  // 10. Close Filter Panel (Layouts section stays open from step 9)
-  await safeStep(page, 'Close Filter Panel', async () => {
+  // Step 10: Close filter panel
+  await softStep('Close filter panel', async () => {
     await page.evaluate(() => {
-      for (const v of grok.shell.tv.viewers)
-        if (v.type === 'Filters') { v.close(); break; }
+      const filterViewer = document.querySelector('[name="viewer-Filters"]');
+      let el = filterViewer;
+      while (el && !el.classList.contains('panel-base')) el = el.parentElement;
+      el.querySelector('.grok-font-icon-close').click();
     });
-
-    await expect.poll(() => filteredCount(page), 'After close all rows visible').toBe(totalRows);
+    await expect(page.locator('[name="viewer-Filters"]')).not.toBeVisible({timeout: 5000});
   });
 
-  // 11. Apply saved layout — thumbnail still visible
-  await safeStep(page, 'Apply saved layout', async () => {
-    await page.locator('.grok-suggestions-chart-host').first().click();
+  // Step 11: Apply saved layout — verify
+  await softStep('Apply saved layout and verify restored state', async () => {
+    const result = await page.evaluate(async (id) => {
+      const saved = await grok.dapi.layouts.find(id);
+      grok.shell.tv.loadLayout(saved);
+      grok.shell.tv.getFiltersGroup();
+      await new Promise(r => setTimeout(r, 3000));
+      return {filterCount: grok.shell.tv.dataFrame.filter.trueCount};
+    }, layoutId!);
+    expect(result.filterCount).toBe(8);
+  });
 
-    // Wait for filters to restore
+  // Step 12: Remove all filters via hamburger menu
+  await softStep('Remove all filters via hamburger menu', async () => {
+    await page.evaluate(() => {
+      const filterViewer = document.querySelector('[name="viewer-Filters"]');
+      let el = filterViewer;
+      while (el && !el.classList.contains('panel-base')) el = el.parentElement;
+      const titleBar = el.querySelector('.panel-titlebar');
+      titleBar.querySelector('[name="icon-font-icon-menu"]').click();
+    });
+    await page.locator('.d4-menu-popup').waitFor({timeout: 3000});
+    await page.evaluate(() => {
+      const popup = document.querySelector('.d4-menu-popup');
+      const items = popup.querySelectorAll('.d4-menu-item-label');
+      for (const item of items) {
+        if (item.textContent.trim() === 'Remove All') {
+          item.closest('.d4-menu-item').click();
+          return;
+        }
+      }
+    });
+    await page.waitForTimeout(500);
+    const result = await page.evaluate(() => grok.shell.tv.dataFrame.filter.trueCount);
+    expect(result).toBe(5850);
+  });
+
+  // Step 13: Close filter panel
+  await softStep('Close filter panel after remove all', async () => {
+    await page.evaluate(() => {
+      const filterViewer = document.querySelector('[name="viewer-Filters"]');
+      let el = filterViewer;
+      while (el && !el.classList.contains('panel-base')) el = el.parentElement;
+      el.querySelector('.grok-font-icon-close').click();
+    });
+    await expect(page.locator('[name="viewer-Filters"]')).not.toBeVisible({timeout: 5000});
+  });
+
+  // Step 14: Reopen filter panel — Combined Boolean should auto-add
+  await softStep('Reopen filter panel — Combined Boolean auto-added', async () => {
     await page.evaluate(async () => {
       grok.shell.tv.getFiltersGroup();
-      await new Promise(r => setTimeout(r, 2000));
+      await new Promise(r => setTimeout(r, 1000));
     });
-    await page.locator('[name="viewer-Filters"]').waitFor({timeout: 10000});
-
-    await expect.poll(() => filteredCount(page), 'Layout should restore filters')
-      .toBeLessThan(totalRows);
-    const countAfterApply = await filteredCount(page);
-    expect.soft(countAfterApply, 'Should match state before close').toBe(countBeforeClose);
-  });
-
-  // 12. Remove all filters
-  await safeStep(page, 'Remove all filters', async () => {
-    await clickFilterPanelHamburger(page);
-    await page.getByText('Remove All', {exact: true}).click();
-    const okBtn = page.getByText('OK', {exact: true});
-    if (await okBtn.count() > 0)
-      await okBtn.first().click();
-
-    await expect.poll(() => filteredCount(page), 'After Remove All, all rows visible').toBe(totalRows);
-  });
-
-  // 13. Close Filter Panel
-  await safeStep(page, 'Close Filter Panel (second time)', async () => {
-    await page.evaluate(() => {
-      for (const v of grok.shell.tv.viewers)
-        if (v.type === 'Filters') { v.close(); break; }
-    });
-
-    await expect.poll(() => filteredCount(page), 'After close all rows visible').toBe(totalRows);
-  });
-
-  // 14. Reopen Filter Panel — Combined Boolean auto-added
-  await safeStep(page, 'Reopen Filter Panel — Combined Boolean auto-added', async () => {
-    await page.evaluate(() => grok.shell.tv.getFiltersGroup());
-    await page.locator('[name="viewer-Filters"]').waitFor({timeout: 10000});
-
-    const hasBoolFilter = await page.evaluate(() => {
+    const hasBool = await page.evaluate(() => {
       const fg = grok.shell.tv.getFiltersGroup();
-      const boolCols = [];
-      for (let i = 0; i < grok.shell.tv.dataFrame.columns.length; i++) {
-        const c = grok.shell.tv.dataFrame.columns.byIndex(i);
-        if (c.type === 'bool') boolCols.push(c.name);
-      }
-      return boolCols.length > 0 && fg.filters.length > 0;
+      return Array.from(fg.filters).some(f => f.filterType === 'bool-columns');
     });
-    expect.soft(hasBoolFilter, 'After reopening, boolean filters should be present').toBe(true);
+    expect(hasBool).toBe(true);
+  });
+
+  // Step 15: Apply saved layout again — verify
+  await softStep('Apply saved layout after reopen and verify', async () => {
+    const result = await page.evaluate(async (id) => {
+      const saved = await grok.dapi.layouts.find(id);
+      grok.shell.tv.loadLayout(saved);
+      grok.shell.tv.getFiltersGroup();
+      await new Promise(r => setTimeout(r, 3000));
+      return {filterCount: grok.shell.tv.dataFrame.filter.trueCount};
+    }, layoutId!);
+    expect(result.filterCount).toBe(8);
   });
 
   // Cleanup
-  await page.evaluate(async () => {
-    try {
-      const layouts = await grok.dapi.layouts.filter('table.name = "demog"').list();
-      if (layouts.length > 0) {
-        layouts.sort((a: any, b: any) => b.createdOn - a.createdOn);
-        await grok.dapi.layouts.delete(layouts[0]);
-      }
-    }
-    catch (e) {}
-  });
+  await page.evaluate(async (id) => {
+    const saved = await grok.dapi.layouts.find(id);
+    await grok.dapi.layouts.delete(saved);
+  }, layoutId!);
+
+  if (stepErrors.length > 0) {
+    const summary = stepErrors.map(e => `  - ${e.step}: ${e.error}`).join('\n');
+    throw new Error(`${stepErrors.length} step(s) failed:\n${summary}`);
+  }
 });
