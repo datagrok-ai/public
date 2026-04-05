@@ -83,7 +83,8 @@ class MonomerLibraryManagerWidget {
 
   private async getWidgetContent(): Promise<HTMLElement> {
     const libControlsForm = await LibraryControlsManager.createControlsForm();
-    $(libControlsForm).addClass('monomer-lib-controls-form');
+    $(libControlsForm).addClass('monomer-lib-controls-form')
+    .addClass('d4-dialog-contents');
     setTimeout(() => {
       libControlsForm && $(libControlsForm) && $(libControlsForm).removeClass('ui-form-condensed');
     }, 200);
@@ -174,7 +175,7 @@ class LibraryControlsManager {
   private async _createControlsForm(): Promise<HTMLElement> {
     const libraryControls = await this.createLibraryControls();
     const inputsForm = ui.wideForm(libraryControls, undefined);
-    $(inputsForm).addClass('monomer-lib-controls-form');
+    $(inputsForm).addClass('monomer-lib-controls-form').addClass('d4-dialog-contents');
 
     return inputsForm;
   }
