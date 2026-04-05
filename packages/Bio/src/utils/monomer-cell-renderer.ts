@@ -14,11 +14,8 @@ import {undefinedColor} from '@datagrok-libraries/bio/src/utils/cell-renderer-mo
 import {HelmType, HelmTypes, PolymerType, PolymerTypes} from '@datagrok-libraries/js-draw-lite/src/types/org';
 import {polymerTypeToHelmType} from '@datagrok-libraries/bio/src/utils/macromolecule/utils';
 
-const Tags = new class {
-  tooltipHandlerTemp = 'tooltip-handler.Monomer';
-}();
-
 const DASH_GAP_SYMBOL = '-';
+const MONOMER_MARGIN = 2;
 
 export class MonomerCellRendererBack extends CellRendererWithMonomerLibBackBase {
   constructor(gridCol: DG.GridColumn | null, tableCol: DG.Column) {
@@ -68,6 +65,8 @@ export class MonomerCellRendererBack extends CellRendererWithMonomerLibBackBase 
       g.font = `12px monospace`;
       g.textBaseline = 'middle';
       g.textAlign = 'left';
+      const mMet = g.measureText('M');
+      const lineHeight = mMet.actualBoundingBoxAscent + mMet.actualBoundingBoxDescent + MONOMER_MARGIN * 4;
 
       let value: string = gridCell.cell.value;
       // render original value
@@ -80,10 +79,11 @@ export class MonomerCellRendererBack extends CellRendererWithMonomerLibBackBase 
       //cell width of monomer should dictate how many characters can be displayed
       // for width 40, 6 characters can be displayed (0.15 is 6 / 40)
       const shortSymbols = symbols.map((s) => monomerToShort(s, Math.max(2, Math.floor(w * 0.15 / symbols.length))));
-      const symbolWidths = shortSymbols.map((s) => g.measureText(s).width);
+      const symbolWidths = shortSymbols.map((s) => g.measureText(s).width + MONOMER_MARGIN * 2);
+      // symbolWidths[symbolWidths.length - 1] -= MONOMER_MARGIN;
       const totalWidth = symbolWidths.reduce((a, b) => a + b, 0);
       const xOffset = (w - totalWidth) / 2;
-      let xPos = x + xOffset;
+      let xPos = x + xOffset + MONOMER_MARGIN;
       const alphabet = this.tableCol.getTag(bioTAGS.alphabet);
       const biotype = alphabet === ALPHABET.RNA || alphabet === ALPHABET.DNA ? HelmTypes.NUCLEOTIDE : HelmTypes.AA;
       for (let i = 0; i < shortSymbols.length; i++) {
@@ -100,9 +100,15 @@ export class MonomerCellRendererBack extends CellRendererWithMonomerLibBackBase 
           } else
             textcolor = this.monomerLib.getMonomerTextColor(actBioType, symbol);
         }
-        if (applyToBackground && symbols.length == 1) {
+        if (applyToBackground) {
           g.fillStyle = backgroundcolor;
-          g.fillRect(x, y, w, h);
+          if (w < 30 || h < 30)
+            g.fillRect(x + i * w / shortSymbols.length, y, w / shortSymbols.length, h);
+          else {
+            const radius = MONOMER_MARGIN;
+            g.roundRect(xPos - MONOMER_MARGIN, y + (h / 2) - lineHeight / 2, symbolWidths[i], lineHeight, radius);
+            g.fill();
+          }
         }
         g.fillStyle = textcolor;
         g.fillText(shortSymbols[i], xPos, y + (h / 2), w);
