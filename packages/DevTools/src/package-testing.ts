@@ -5,6 +5,7 @@ import {delay, Test, TestContext, awaitCheck} from '@datagrok-libraries/test/src
 import {initComputeApi} from '@datagrok-libraries/compute-api';
 import {c} from './package';
 import '../css/styles.css';
+import {merge} from 'rxjs';
 
 interface ITestManagerUI {
   testsTree: DG.TreeViewNode;
@@ -108,8 +109,8 @@ export class TestManager extends DG.ViewBase {
     initComputeApi().catch((e) => console.error(e));
 
     let searchInvoked = false;
-    this.searchInput.onChanged.subscribe(async (value) => {
-      if (value.length > 0) {
+    DG.debounce(merge(this.searchInput.onChanged, this.searchInput.onInput), 300).subscribe(async (_) => {
+      if (this.searchInput.value.length > 0) {
         this.searchEvent();
         searchInvoked = true;
       } else if (searchInvoked) {
@@ -165,10 +166,6 @@ export class TestManager extends DG.ViewBase {
         if ((coreOnly || this.testFunctions.filter((it) => it.package.name === f.package.name).length !== 0) &&
           selectedPackage.categories === null && selectedPackage.check === false) {
           selectedPackage.check = true;
-          await f.package.load({file: f.options.file});
-          const testModule = f.package.getModule(f.options.file);
-          if (!testModule)
-            console.error(`Error getting tests from '${f.package.name}/${f.options.file}' module.`);
           const allPackageTests = await f.package.getTests(true);
           const packageTestsFinal: { [cat: string]: ICategory } = {};
           if (allPackageTests) {
@@ -828,15 +825,21 @@ export class TestManager extends DG.ViewBase {
   }
 
   private async loadAllPackages(): Promise<void> {
-    for (const packNode of this.packNodes)
+    for (const packNode of this.packNodes) {
+      packNode[1].root.dataset.loading = 'true';
       packNode[1].root.children[0].appendChild(ui.loader());
+    }
 
-    await Promise.all(this.packNodes.map(async (packNode) => {
-      await this.collectPackageTests(packNode[1], packNode[0]);
-      packNode[1].root.children[0].lastChild.remove();
-      if (this.searchInput.value.length > 0)
-        this.searchTreeItems(this.searchInput.value);
-    }));
+    const concurrency = 15;
+    for (let i = 0; i < this.packNodes.length; i += concurrency) {
+      await Promise.all(this.packNodes.slice(i, i + concurrency).map(async (packNode) => {
+        await this.collectPackageTests(packNode[1], packNode[0]);
+        packNode[1].root.children[0].lastChild.remove();
+        delete packNode[1].root.dataset.loading;
+        if (this.searchInput.value.length > 0)
+          this.searchTreeItems(this.searchInput.value);
+      }));
+    }
   }
 
   private searchTreeItems(stringToSearch: string) {
@@ -854,7 +857,7 @@ export class TestManager extends DG.ViewBase {
       if (foundFunc) {
         listToShow[listToShow.length] = (item);
         item.classList.remove('hidden');
-      } else
+      } else if (!item.closest('[data-loading]'))
         item.classList.add('hidden');
     }
 
