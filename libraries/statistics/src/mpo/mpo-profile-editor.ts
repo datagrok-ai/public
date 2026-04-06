@@ -10,6 +10,8 @@ import {
 } from './mpo';
 import {DesirabilityEditor, DesirabilityEditorFactory} from './editors/desirability-editor-factory';
 import {DesirabilityModeDialog} from './dialogs/desirability-mode-dialog';
+import {discoverComputeFunctions} from '../compute-functions/discovery';
+import {chemFunctionsDialog} from '../compute-functions/dialog';
 
 import '../../css/styles.css';
 
@@ -30,7 +32,6 @@ export class MpoProfileEditor {
   private rows: Record<string, HTMLElement> = {};
   private rowIds: Record<string, string> = {};
   private rowSubs = new Map<string, Subscription>();
-
   private propertyOrder: string[] = [];
   columnMapping: Record<string, string | null> = {};
 
@@ -80,6 +81,16 @@ export class MpoProfileEditor {
       this.rowIds[name] = this.newRowId();
 
     this.render();
+    this.runAllComputeFunctions();
+  }
+
+  private runAllComputeFunctions(): void {
+    if (!this.dataFrame || !this.profile)
+      return;
+    for (const prop of Object.values(this.profile.properties)) {
+      if (prop.computeFunction)
+        this.runComputeFunction(prop);
+    }
   }
 
   getProfile(): DesirabilityProfile | undefined {
@@ -195,7 +206,7 @@ export class MpoProfileEditor {
       this.buildModeGear(rowId, prop, editor) :
       null;
 
-    const controls = this.design ? this.buildRowControls(rowId) : null;
+    const controls = this.design ? this.buildRowControls(rowId, prop) : null;
 
     row.append(
       ui.divV([propertyCell, columnCell].filter(Boolean), 'statistics-mpo-property-cell'),
@@ -266,7 +277,7 @@ export class MpoProfileEditor {
         isColumn = !isColumn;
         syncToggle();
         if (!isColumn && name)
-          this.mutateProperty(name, (p) => { delete p.weightColumn; });
+          this.mutateProperty(name, (p) => delete p.weightColumn);
         else if (isColumn && name && colInput.value)
           this.mutateProperty(name, (p) => p.weightColumn = colInput.value || undefined);
       });
@@ -388,10 +399,11 @@ export class MpoProfileEditor {
     return gear;
   }
 
-  private buildRowControls(rowId: string): HTMLElement {
+  private buildRowControls(rowId: string, prop: PropertyDesirability): HTMLElement {
+    const compute = this.buildComputeIcon(prop);
     const add = ui.icons.add(() => this.insertRowAfterRow(rowId));
     const del = ui.icons.delete(() => this.deleteRow(rowId));
-    return ui.divH([add, del], 'statistics-mpo-control-buttons');
+    return ui.divH([compute, add, del], 'statistics-mpo-control-buttons');
   }
 
   private openModeDialog(
@@ -507,6 +519,51 @@ export class MpoProfileEditor {
 
     updater(prop);
     this.emitChange();
+  }
+
+  private buildComputeIcon(prop: PropertyDesirability): HTMLElement {
+    const icon = ui.iconFA('calculator', async () => {
+      const computeFunctions = discoverComputeFunctions('HitTriageFunction');
+      const template = {
+        compute: {
+          descriptors: {enabled: false, args: []},
+          functions: prop.computeFunction ? [prop.computeFunction] : [],
+        },
+      };
+      await chemFunctionsDialog(
+        computeFunctions,
+        (result) => {
+          const funcNames = Object.keys(result.externals);
+          if (funcNames.length > 0) {
+            const key = funcNames[0];
+            const [pkg, name] = key.split(':');
+            prop.computeFunction = {package: pkg, name, args: result.externals[key]};
+          } else
+            prop.computeFunction = undefined;
+          this.runComputeFunction(prop);
+          this.emitChange();
+        },
+        () => {},
+        template,
+        true,
+      );
+    }, 'Configure compute function');
+    return icon;
+  }
+
+  private async runComputeFunction(prop: PropertyDesirability): Promise<void> {
+    if (!this.dataFrame || !prop.computeFunction)
+      return;
+    const molCol = this.dataFrame.columns.bySemType(DG.SEMTYPE.MOLECULE);
+    if (!molCol)
+      return;
+    const fs = DG.Func.find({package: prop.computeFunction.package, name: prop.computeFunction.name});
+    if (!fs.length)
+      return;
+    const f = fs[0];
+    const tablePropName = f.inputs[0].name;
+    const colPropName = f.inputs[1].name;
+    await f.apply({...prop.computeFunction.args, [tablePropName]: this.dataFrame, [colPropName]: molCol.name});
   }
 
   private emitChange(): void {

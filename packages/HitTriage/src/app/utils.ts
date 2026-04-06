@@ -9,14 +9,13 @@ import {_package} from '../package';
 
 // Re-export shared compute-function utilities from the statistics library
 export {joinQueryResults, getFuncPackageNameSafe} from '@datagrok-libraries/statistics/src/compute-functions/utils';
-export type {FunctionOrdering} from '@datagrok-libraries/statistics/src/compute-functions/utils';
 import {
   getSavedFunctionOrdering as _getSavedFunctionOrdering,
   setSavedFunctionOrdering as _setSavedFunctionOrdering,
   getReorderingInput as _getReorderingInput,
-  normalizeTemplateCompute,
 } from '@datagrok-libraries/statistics/src/compute-functions/utils';
 import type {FunctionOrdering} from '@datagrok-libraries/statistics/src/compute-functions/utils';
+export type {FunctionOrdering};
 import type {TemplateCompute} from '@datagrok-libraries/statistics/src/compute-functions/types';
 
 // Wrappers that bind the HitTriage-specific localStorage key
@@ -484,8 +483,5 @@ export function isNil(something: any) {
 }
 
 export async function loadTemplate<T extends {compute: TemplateCompute}>(path: string): Promise<T> {
-  const raw = JSON.parse(await _package.files.readAsText(path));
-  if (raw.compute)
-    raw.compute = normalizeTemplateCompute(raw.compute);
-  return raw as T;
+  return JSON.parse(await _package.files.readAsText(path)) as T;
 }

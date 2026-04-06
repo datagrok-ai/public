@@ -1,8 +1,7 @@
 import * as DG from 'datagrok-api/dg';
-import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import {ComputeQueryMolColName} from './consts';
-import {IFunctionArgs, TemplateCompute, TemplateFunction} from './types';
+import {IFunctionArgs} from './types';
 
 // #region Function ordering
 
@@ -87,29 +86,6 @@ export function getReorderingInput(
 }
 
 // #endregion
-
-export function normalizeTemplateCompute(raw: any): TemplateCompute {
-  if (!raw)
-    return {descriptors: {enabled: false, args: []}, functions: []};
-  const functions: TemplateFunction[] = (raw.functions ?? []).map((entry: any) => {
-    if (typeof entry !== 'string')
-      return entry as TemplateFunction;
-    const funcCall = grok.functions.parse(entry);
-    if (!(funcCall instanceof DG.FuncCall)) {
-      console.warn(`Failed to parse compute function: ${entry}`);
-      return null;
-    }
-    const func = funcCall.func;
-    const args: IFunctionArgs = {};
-    for (let i = 2; i < func.inputs.length; i++) {
-      const name = func.inputs[i].name;
-      args[name] = funcCall.inputs[name];
-    }
-    return {package: func.package.name, name: func.name, args};
-  }).filter((f: any): f is TemplateFunction => f !== null);
-
-  return {...raw, functions};
-}
 
 export function getFuncPackageNameSafe(func: DG.Func): string | undefined {
   try {

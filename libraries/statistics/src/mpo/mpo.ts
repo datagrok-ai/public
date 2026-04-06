@@ -18,6 +18,7 @@ type BasePropertyDesirability = {
   weight: number; /// 0-1
   weightColumn?: string; /// optional column name to read per-row weights from (0-1)
   missingValues?: MissingValueConfig;
+  computeFunction?: TemplateFunction;
 }
 
 export type NumericalDesirability = BasePropertyDesirability & {
