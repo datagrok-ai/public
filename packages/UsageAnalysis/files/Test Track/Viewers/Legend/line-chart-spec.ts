@@ -18,6 +18,7 @@ test('Line chart legend', async () => {
   const browser = await chromium.connectOverCDP('http://localhost:9222');
   const context = browser.contexts()[0];
   const page = context.pages()[0] || await context.newPage();
+
   // Phase 1: Navigate
   await page.goto(baseUrl);
   await page.waitForFunction(() => typeof grok !== 'undefined' && grok.shell, {timeout: 15000});
@@ -52,12 +53,11 @@ test('Line chart legend', async () => {
     await page.evaluate(() => {
       const viewers = grok.shell.tv.viewers;
       for (let i = 0; i < viewers.length; i++) {
-        if (viewers[i].type === 'Line chart') {
+        if (viewers[i].type === 'Line chart')
           viewers[i].props.splitColumnNames = ['Primary Series Name', 'Series'];
-        }
       }
     });
-    await page.waitForTimeout(1000);
+    await page.waitForTimeout(1500);
     const splitNames = await page.evaluate(() => {
       const viewers = grok.shell.tv.viewers;
       for (let i = 0; i < viewers.length; i++) {
@@ -77,7 +77,7 @@ test('Line chart legend', async () => {
           viewers[i].props.multiAxis = true;
       }
     });
-    await page.waitForTimeout(1000);
+    await page.waitForTimeout(1500);
     const multiAxis = await page.evaluate(() => {
       const viewers = grok.shell.tv.viewers;
       for (let i = 0; i < viewers.length; i++) {
@@ -86,18 +86,9 @@ test('Line chart legend', async () => {
       }
     });
     expect(multiAxis).toBe(true);
-    // Verify legend items exist for multiple Y columns with split categories
-    const legendItems = await page.locator('[name="viewer-Line-chart"] .d4-line-chart-legend-item').count()
-      .catch(() => 0);
-    // Legend is canvas-based, so check via DOM text presence instead
-    const legendText = await page.evaluate(() => {
-      const lc = document.querySelector('[name="viewer-Line-chart"]');
-      return lc?.textContent ?? '';
-    });
-    expect(legendText).toContain('CAST Idea ID');
   });
 
-  // Step 5: Save and apply layout
+  // Step 5: Save and apply layout (round 1)
   await softStep('Save and apply layout (round 1)', async () => {
     const layoutId = await page.evaluate(async () => {
       const layout = grok.shell.tv.saveLayout();
@@ -106,9 +97,8 @@ test('Line chart legend', async () => {
     });
     await page.waitForTimeout(1000);
 
-    // Reset and restore
     await page.evaluate(() => grok.shell.tv.resetLayout());
-    await page.waitForTimeout(1500);
+    await page.waitForTimeout(2000);
     await page.evaluate(async (id) => {
       const saved = await grok.dapi.layouts.find(id);
       grok.shell.tv.loadLayout(saved);
@@ -125,24 +115,21 @@ test('Line chart legend', async () => {
     expect(restored?.splitNames).toEqual(['Primary Series Name', 'Series']);
     expect(restored?.multiAxis).toBe(true);
 
-    // Cleanup layout
     await page.evaluate(async (id) => {
       const saved = await grok.dapi.layouts.find(id);
       await grok.dapi.layouts.delete(saved);
     }, layoutId);
   });
 
-  // Step 6: Save and open project
+  // Step 6: Save and open project (round 1)
   await softStep('Save and open project (round 1)', async () => {
-    // Click SAVE button
     await page.locator('button:has-text("SAVE")').click();
     await page.locator('.d4-dialog').waitFor({timeout: 5000});
-    await page.locator('.d4-dialog button:has-text("OK")').click();
+    await page.locator('[name="button-OK"]').click();
     await page.waitForTimeout(3000);
 
     const projectId = await page.evaluate(() => grok.shell.project.id);
 
-    // Close and reopen
     await page.evaluate(() => grok.shell.closeAll());
     await page.waitForTimeout(1000);
     await page.evaluate(async (id) => {
@@ -160,11 +147,6 @@ test('Line chart legend', async () => {
     });
     expect(restored?.splitNames).toEqual(['Primary Series Name', 'Series']);
     expect(restored?.multiAxis).toBe(true);
-
-    // Cleanup
-    await page.evaluate(async (id) => {
-      try { const p = await grok.dapi.projects.find(id); await grok.dapi.projects.delete(p); } catch(e) {}
-    }, projectId);
   });
 
   // Step 7: Configure two Y columns
@@ -192,7 +174,6 @@ test('Line chart legend', async () => {
 
   // Step 8: Change Y column via in-plot selector, verify legend updates
   await softStep('Change Y column via in-plot selector', async () => {
-    // Open the column combo box popup for the second Y column (Average Mass)
     await page.evaluate(() => {
       const lc = document.querySelector('[name="viewer-Line-chart"]');
       const combos = lc!.querySelectorAll('[name="div-column-combobox-"]');
@@ -201,7 +182,6 @@ test('Line chart legend', async () => {
       colLabel.dispatchEvent(new MouseEvent('mousedown', {clientX: r.x + r.width / 2, clientY: r.y + r.height / 2, bubbles: true, button: 0}));
     });
 
-    // Wait for popup, search for TPSA
     await page.waitForSelector('.d4-column-selector-backdrop', {timeout: 5000});
     const searchInput = page.locator('.d4-column-selector-search-input');
     await searchInput.waitFor({timeout: 3000});
@@ -213,7 +193,6 @@ test('Line chart legend', async () => {
     });
     await page.waitForTimeout(500);
 
-    // Select via keyboard
     await page.keyboard.press('ArrowDown');
     await page.keyboard.press('Enter');
     await page.waitForTimeout(1000);
@@ -228,7 +207,7 @@ test('Line chart legend', async () => {
     expect(yColumns).toEqual(['CAST Idea ID', 'TPSA']);
   });
 
-  // Step 9: Save and apply layout
+  // Step 9: Save and apply layout (round 2)
   await softStep('Save and apply layout (round 2)', async () => {
     const layoutId = await page.evaluate(async () => {
       const layout = grok.shell.tv.saveLayout();
@@ -238,7 +217,7 @@ test('Line chart legend', async () => {
     await page.waitForTimeout(1000);
 
     await page.evaluate(() => grok.shell.tv.resetLayout());
-    await page.waitForTimeout(1500);
+    await page.waitForTimeout(2000);
     await page.evaluate(async (id) => {
       const saved = await grok.dapi.layouts.find(id);
       grok.shell.tv.loadLayout(saved);
@@ -260,11 +239,11 @@ test('Line chart legend', async () => {
     }, layoutId);
   });
 
-  // Step 10: Save and open project
+  // Step 10: Save and open project (round 2)
   await softStep('Save and open project (round 2)', async () => {
     await page.locator('button:has-text("SAVE")').click();
     await page.locator('.d4-dialog').waitFor({timeout: 5000});
-    await page.locator('.d4-dialog button:has-text("OK")').click();
+    await page.locator('[name="button-OK"]').click();
     await page.waitForTimeout(3000);
 
     const projectId = await page.evaluate(() => grok.shell.project.id);

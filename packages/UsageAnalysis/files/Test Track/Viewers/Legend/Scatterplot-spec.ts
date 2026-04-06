@@ -1,4 +1,4 @@
-import {test, expect} from '@playwright/test';
+import {test, expect, chromium} from '@playwright/test';
 
 const baseUrl = 'http://localhost:8888';
 const datasetPath = 'System:DemoFiles/SPGI.csv';
@@ -15,9 +15,6 @@ async function softStep(name: string, fn: () => Promise<void>) {
 }
 
 async function openDataset(page: any) {
-  await page.goto(baseUrl);
-  await page.waitForFunction(() => typeof grok !== 'undefined' && grok.shell, {timeout: 15000});
-
   await page.evaluate(async (path: string) => {
     document.body.classList.add('selenium');
     grok.shell.settings.showFiltersIconsConstantly = true;
@@ -26,20 +23,24 @@ async function openDataset(page: any) {
     const tv = grok.shell.addTableView(df);
     await new Promise(resolve => {
       const sub = df.onSemanticTypeDetected.subscribe(() => { sub.unsubscribe(); resolve(undefined); });
-      setTimeout(resolve, 3000);
+      setTimeout(() => resolve(undefined), 3000);
     });
   }, datasetPath);
   await page.locator('.d4-grid[name="viewer-Grid"]').waitFor({timeout: 30000});
 }
 
-test('Scatterplot Legend scenarios', async ({page}) => {
-  stepErrors.length = 0;
+test('Scatterplot Legend scenarios', async () => {
+  const browser = await chromium.connectOverCDP('http://localhost:9222');
+  const context = browser.contexts()[0];
+  const page = context.pages()[0] || await context.newPage();
+
+  await page.goto(baseUrl);
+  await page.waitForFunction(() => typeof grok !== 'undefined' && grok.shell, {timeout: 15000});
 
   // ---- Scenario 1: Color/Marker settings and dynamic legends ----
   await softStep('1. Color/Marker settings and dynamic legends', async () => {
     await openDataset(page);
 
-    // Add scatterplot, set Color and Marker to Series
     const result1 = await page.evaluate(async () => {
       const tv = grok.shell.tv;
       const sp = tv.addViewer('Scatter plot');
@@ -52,11 +53,9 @@ test('Scatterplot Legend scenarios', async ({page}) => {
     expect(result1.color).toBe('Series');
     expect(result1.marker).toBe('Series');
 
-    // Verify combined legend exists
     const legendItems = await page.locator('[name="viewer-Scatter-plot"] .d4-legend-item').count();
     expect(legendItems).toBeGreaterThan(0);
 
-    // Save and apply layout
     const layoutResult = await page.evaluate(async () => {
       const tv = grok.shell.tv;
       const layout = tv.saveLayout();
@@ -69,15 +68,16 @@ test('Scatterplot Legend scenarios', async ({page}) => {
       const tv2 = grok.shell.addTableView(df);
       await new Promise(resolve => {
         const sub = df.onSemanticTypeDetected.subscribe(() => { sub.unsubscribe(); resolve(undefined); });
-        setTimeout(resolve, 3000);
+        setTimeout(() => resolve(undefined), 3000);
       });
-
       const saved = await grok.dapi.layouts.find(layoutId);
       tv2.loadLayout(saved);
       await new Promise(r => setTimeout(r, 3000));
 
-      const viewers = Array.from(tv2.viewers);
-      const sp2 = viewers.find((v: any) => v.type === 'Scatter plot') as any;
+      let sp2 = null;
+      for (let i = 0; i < tv2.viewers.length; i++) {
+        if (tv2.viewers[i].type === 'Scatter plot') { sp2 = tv2.viewers[i]; break; }
+      }
       const result = {
         restored: sp2 != null,
         color: sp2?.props.colorColumnName,
@@ -90,14 +90,14 @@ test('Scatterplot Legend scenarios', async ({page}) => {
     expect(layoutResult.color).toBe('Series');
     expect(layoutResult.marker).toBe('Series');
 
-    // Test dynamic color columns
     const dynamicResult = await page.evaluate(async () => {
       const tv = grok.shell.tv;
       const df = tv.dataFrame;
-      const viewers = Array.from(tv.viewers);
-      const sp = viewers.find((v: any) => v.type === 'Scatter plot') as any;
+      let sp = null;
+      for (let i = 0; i < tv.viewers.length; i++) {
+        if (tv.viewers[i].type === 'Scatter plot') { sp = tv.viewers[i]; break; }
+      }
 
-      // Linear legend
       df.columns.addNewCalculated('linear_test',
         'if(${Stereo Category}=="S_UNKN", null, ${Average Mass})');
       await new Promise(r => setTimeout(r, 1000));
@@ -105,7 +105,6 @@ test('Scatterplot Legend scenarios', async ({page}) => {
       await new Promise(r => setTimeout(r, 1000));
       const linearColor = sp.props.colorColumnName;
 
-      // Categorical legend
       df.columns.addNewCalculated('cat_test',
         'if(${Stereo Category}=="S_UNKN", null, ${Series})');
       await new Promise(r => setTimeout(r, 1000));
@@ -113,7 +112,6 @@ test('Scatterplot Legend scenarios', async ({page}) => {
       await new Promise(r => setTimeout(r, 1000));
       const catColor = sp.props.colorColumnName;
 
-      // Set Color=ID, Marker=Core
       sp.props.colorColumnName = 'Id';
       sp.props.markersColumnName = 'Core';
       await new Promise(r => setTimeout(r, 1000));
@@ -148,7 +146,6 @@ test('Scatterplot Legend scenarios', async ({page}) => {
       sp.props.colorColumnName = 'Stereo Category';
       await new Promise(r => setTimeout(r, 1000));
 
-      // Change X to col2
       sp.props.xColumnName = 'col2';
       await new Promise(r => setTimeout(r, 1000));
 
@@ -178,7 +175,6 @@ test('Scatterplot Legend scenarios', async ({page}) => {
       sp2.props.filter = '${Stereo Category} in ["R_ONE", "S_UNKN"]';
       await new Promise(r => setTimeout(r, 1000));
 
-      // Save/apply layout
       const layout = tv.saveLayout();
       await grok.dapi.layouts.save(layout);
       const layoutId = layout.id;
@@ -189,22 +185,21 @@ test('Scatterplot Legend scenarios', async ({page}) => {
       const tv2 = grok.shell.addTableView(df2);
       await new Promise(resolve => {
         const sub = df2.onSemanticTypeDetected.subscribe(() => { sub.unsubscribe(); resolve(undefined); });
-        setTimeout(resolve, 3000);
+        setTimeout(() => resolve(undefined), 3000);
       });
-
       const saved = await grok.dapi.layouts.find(layoutId);
       tv2.loadLayout(saved);
       await new Promise(r => setTimeout(r, 3000));
 
-      const viewers = Array.from(tv2.viewers);
-      const sps = viewers.filter((v: any) => v.type === 'Scatter plot');
-      const filters = sps.map((sp: any) => sp.props.filter);
-      const markers = sps.map((sp: any) => sp.props.markersColumnName);
+      const sps = [];
+      for (let i = 0; i < tv2.viewers.length; i++) {
+        if (tv2.viewers[i].type === 'Scatter plot')
+          sps.push({filter: tv2.viewers[i].props.filter, marker: tv2.viewers[i].props.markersColumnName});
+      }
 
       await grok.dapi.layouts.delete(saved);
       grok.shell.closeAll();
-
-      return {spCount: sps.length, filters, markers};
+      return {spCount: sps.length, filters: sps.map(s => s.filter), markers: sps.map(s => s.marker)};
     });
     expect(result.spCount).toBe(2);
     expect(result.filters[0]).toContain('R_ONE');
@@ -215,7 +210,7 @@ test('Scatterplot Legend scenarios', async ({page}) => {
   await softStep('4. Filtering via Filter Panel', async () => {
     await openDataset(page);
 
-    const result = await page.evaluate(async () => {
+    const filterResult = await page.evaluate(async () => {
       const tv = grok.shell.tv;
       const df = tv.dataFrame;
 
@@ -235,42 +230,48 @@ test('Scatterplot Legend scenarios', async ({page}) => {
       fg.updateOrAdd({type: DG.FILTER_TYPE.CATEGORICAL, column: 'Primary Scaffold Name', selected});
       await new Promise(r => setTimeout(r, 1000));
 
-      const filtered = df.filter.trueCount;
-      return {filtered, total: df.rowCount, selected};
+      return {filtered: df.filter.trueCount, total: df.rowCount};
     });
-    expect(result.filtered).toBeLessThan(result.total);
-    expect(result.filtered).toBeGreaterThan(0);
+    expect(filterResult.filtered).toBeLessThan(filterResult.total);
+    expect(filterResult.filtered).toBeGreaterThan(0);
 
-    // Step 6: Click R_ONE in legend — verify viewer-level legend filtering
-    // Must use page.click() — JS DOM click() does not trigger Dart legend handler
-    const rOneLocator = page.locator('[name="viewer-Scatter-plot"] .d4-legend-item-extra .d4-legend-value',
-      {hasText: 'R_ONE'});
-    await rOneLocator.click();
-    await page.waitForTimeout(1500);
-
-    const legendResult = await page.evaluate(() => {
+    // Click R_ONE in legend via pointer events
+    const legendResult = await page.evaluate(async () => {
       const spContainer = document.querySelector('[name="viewer-Scatter-plot"]');
-      const items = spContainer!.querySelectorAll('.d4-legend-item');
-      const states: {text: string; isCurrent: boolean; isExtra: boolean}[] = [];
-      for (const item of items) {
+      const items = spContainer?.querySelectorAll('.d4-legend-item-extra') || [];
+      let target = null;
+      for (const item of Array.from(items)) {
+        const val = item.querySelector('.d4-legend-value');
+        if (val?.textContent?.trim() === 'R_ONE') { target = item; break; }
+      }
+      if (!target) return {error: 'R_ONE not found'};
+
+      const r = target.getBoundingClientRect();
+      const x = r.x + r.width / 2;
+      const y = r.y + r.height / 2;
+      target.dispatchEvent(new PointerEvent('pointerdown', {clientX: x, clientY: y, bubbles: true, button: 0}));
+      target.dispatchEvent(new PointerEvent('pointerup', {clientX: x, clientY: y, bubbles: true, button: 0}));
+      target.dispatchEvent(new PointerEvent('click', {clientX: x, clientY: y, bubbles: true, button: 0}));
+      await new Promise(r => setTimeout(r, 1500));
+
+      const items2 = spContainer?.querySelectorAll('.d4-legend-item') || [];
+      const states: {text: string; isCurrent: boolean}[] = [];
+      for (const item of Array.from(items2)) {
         const val = item.querySelector('.d4-legend-value');
         states.push({
           text: val?.textContent?.trim() || '',
           isCurrent: item.classList.contains('d4-legend-item-current'),
-          isExtra: item.classList.contains('d4-legend-item-extra'),
         });
       }
       const df = grok.shell.tv.dataFrame;
-      return {states, filter: df.filter.trueCount};
+      return {states, filterCount: df.filter.trueCount};
     });
 
-    // R_ONE should be selected (isCurrent), S_PART and S_UNKN should not
-    const rOne = legendResult.states.find((s: any) => s.text === 'R_ONE');
+    const rOne = legendResult.states?.find((s: any) => s.text === 'R_ONE');
     expect(rOne?.isCurrent).toBe(true);
-    const sPart = legendResult.states.find((s: any) => s.text === 'S_PART');
+    const sPart = legendResult.states?.find((s: any) => s.text === 'S_PART');
     expect(sPart?.isCurrent).toBe(false);
-    // Dataframe filter unchanged (legend filter is viewer-level)
-    expect(legendResult.filter).toBe(result.filtered);
+    expect(legendResult.filterCount).toBe(filterResult.filtered);
 
     await page.evaluate(() => grok.shell.closeAll());
   });
@@ -284,22 +285,20 @@ test('Scatterplot Legend scenarios', async ({page}) => {
 
       const sp = tv.addViewer('Scatter plot');
       await new Promise(r => setTimeout(r, 500));
-      const bp = tv.addViewer('Box plot');
+      tv.addViewer('Box plot');
       await new Promise(r => setTimeout(r, 500));
-      const pc = tv.addViewer('PC plot');
+      tv.addViewer('PC plot');
       await new Promise(r => setTimeout(r, 500));
 
       sp.props.colorColumnName = 'Chemical Space X';
       await new Promise(r => setTimeout(r, 1000));
 
-      // Enable linear color coding on grid
-      const grid = Array.from(tv.viewers).find((v: any) => v.type === 'Grid') as any;
+      const grid = tv.viewers[0];
       const gridCol = grid.columns.byName('Chemical Space X');
       gridCol.colorCodingType = 'Linear';
       gridCol.isTextColorCoded = true;
       await new Promise(r => setTimeout(r, 1000));
 
-      // Save/apply layout
       const layout = tv.saveLayout();
       await grok.dapi.layouts.save(layout);
       const layoutId = layout.id;
@@ -310,27 +309,27 @@ test('Scatterplot Legend scenarios', async ({page}) => {
       const tv2 = grok.shell.addTableView(df2);
       await new Promise(resolve => {
         const sub = df2.onSemanticTypeDetected.subscribe(() => { sub.unsubscribe(); resolve(undefined); });
-        setTimeout(resolve, 3000);
+        setTimeout(() => resolve(undefined), 3000);
       });
-
       const saved = await grok.dapi.layouts.find(layoutId);
       tv2.loadLayout(saved);
       await new Promise(r => setTimeout(r, 3000));
 
-      const viewers2 = Array.from(tv2.viewers);
-      const sp2 = viewers2.find((v: any) => v.type === 'Scatter plot') as any;
-      const grid2 = viewers2.find((v: any) => v.type === 'Grid') as any;
+      let sp2 = null;
+      for (let i = 0; i < tv2.viewers.length; i++) {
+        if (tv2.viewers[i].type === 'Scatter plot') { sp2 = tv2.viewers[i]; break; }
+      }
+      const grid2 = tv2.viewers[0];
       const gridCol2 = grid2.columns.byName('Chemical Space X');
 
       const res = {
-        viewerCount: viewers2.length,
+        viewerCount: tv2.viewers.length,
         spColor: sp2?.props.colorColumnName,
         isTextColorCoded: gridCol2?.isTextColorCoded,
       };
 
       await grok.dapi.layouts.delete(saved);
 
-      // Change to categorical
       gridCol2.colorCodingType = 'Categorical';
       await new Promise(r => setTimeout(r, 1000));
 
