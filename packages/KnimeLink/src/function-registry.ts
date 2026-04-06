@@ -310,7 +310,7 @@ export async function registerFuncFromSpec(
     run: runCallback,
     isAsync: true,
     namespace: 'KnimeLink',
-    options: {'role': 'knimeWorkflow'},
+    options: {'engine': 'KNIME'},
     outputs: registrationOutputs,
   });
 
