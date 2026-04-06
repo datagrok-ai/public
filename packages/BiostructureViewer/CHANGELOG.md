@@ -1,5 +1,9 @@
 # Biostructure Viewer changelog
 
+## v.next
+
+* CLAUDE-33: Fixed Molstar viewer crash when unrelated views are closed
+
 ## 1.4.4 (2025-11-11)
 
 * GROK-13650: DemoFiles: Bio: Some ngl formats are broken
