@@ -1,5 +1,6 @@
 import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
+import * as DG from 'datagrok-api/dg';
 
 const window = grok.shell.windows;
 
@@ -11,6 +12,7 @@ const helpToggle = ui.div([ui.iconFA('info')], 'windows-manager-toggle');
 const vairablesToggle = ui.div([ui.iconFA('value-absolute')], 'windows-manager-toggle');
 const consoleToggle = ui.div([ui.iconFA('terminal')], 'windows-manager-toggle');
 const presentationToggle = ui.div([ui.iconFA('presentation')], 'windows-manager-toggle');
+const inspectorToggle = ui.div([ui.iconFA('tools')], 'windows-manager-toggle');
 
 presentationToggle.addEventListener('click', ()=> {
   window.presentationMode ? window.presentationMode = false : window.presentationMode = true;
@@ -52,6 +54,25 @@ consoleToggle.addEventListener('click', ()=> {
   setToggleState(window.showConsole, consoleToggle);
 });
 
+inspectorToggle.addEventListener('click', () => {
+  if (isInspectorVisible())
+    closeInspectorPane();
+  else {
+    document.dispatchEvent(new KeyboardEvent('keydown', {keyCode: 73, altKey: true, bubbles: true}));
+    setTimeout(() => setToggleState(isInspectorVisible(), inspectorToggle), 300);
+  }
+});
+
+function isInspectorVisible(): boolean {
+  return Array.from(document.querySelectorAll('.tab-handle-text')).some((el) => el.textContent?.trim() === 'Inspector');
+}
+
+function closeInspectorPane(): void {
+  for (const tab of Array.from(document.querySelectorAll('.tab-handle')))
+    if (tab.querySelector('.tab-handle-text')?.textContent?.trim() === 'Inspector')
+      (tab.querySelector('.tab-handle-close-button') as HTMLElement)?.dispatchEvent(new MouseEvent('mousedown', {bubbles: true}));
+}
+
 function setToggleState(v: boolean, toggle: HTMLDivElement) {
   return (v ? toggle.className = 'windows-manager-toggle active' : toggle.className = 'windows-manager-toggle');
 }
@@ -64,10 +85,14 @@ function setButtonsToggleState() {
   setToggleState(window.showVariables, vairablesToggle);
   setToggleState(window.showConsole, consoleToggle);
   setToggleState(window.presentationMode, presentationToggle);
+  setToggleState(isInspectorVisible(), inspectorToggle);
 }
 
-export function windowsManagerPanel() {
-  const root = ui.div([
+export async function windowsManagerPanel() {
+  const userGroup = await grok.dapi.groups.find(grok.shell.user.group.id);
+  const isDeveloper = userGroup.memberships.some((g) => g.id === DG.Group.defaultGroupsIds.Developers);
+
+  const toggles: HTMLElement[] = [
     ui.tooltip.bind(aiToggle, () => ui.div(['AI ', ui.span([''], {style: {color: 'var(--grey-4)'}})]), 'top'),
     ui.tooltip.bind(topmenuToggle, () => ui.div(['Tabs ', ui.span([''], {style: {color: 'var(--grey-4)'}})]), 'top'),
     ui.tooltip.bind(toolboxToogle, () => ui.div(['Toolbox ', ui.span([''], {style: {color: 'var(--grey-4)'}})]), 'top'),
@@ -76,8 +101,11 @@ export function windowsManagerPanel() {
     ui.tooltip.bind(vairablesToggle, () => ui.div(['Variables ', ui.span(['ALT+V'], {style: {color: 'var(--grey-4)'}})]), 'top'),
     ui.tooltip.bind(consoleToggle, () => ui.div(['Console ', ui.span([''], {style: {color: 'var(--grey-4)'}})]), 'top'),
     ui.tooltip.bind(presentationToggle, () => ui.div(['Presentation mode ', ui.span(['F7'], {style: {color: 'var(--grey-4)'}})]), 'top'),
-  ]);
+  ];
+  if (isDeveloper)
+    toggles.unshift(ui.tooltip.bind(inspectorToggle, () => ui.div(['Inspector ', ui.span(['ALT+I'], {style: {color: 'var(--grey-4)'}})]), 'top'));
 
+  const root = ui.div(toggles);
   root.className = 'windows-manager-statusbar';
   document.getElementsByClassName('d4-global-status-panel')[0]?.append(root);
   setButtonsToggleState();

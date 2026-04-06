@@ -98,8 +98,8 @@ export async function powerPackInit() : Promise<void> {
 
 //description: Windows Manager
 //meta.role: autostart
-export function windowsManager() : void {
-  PackageFunctions.windowsManager();
+export async function windowsManager() : Promise<void> {
+  await PackageFunctions.windowsManager();
 }
 
 //description: Open 'Viewer Gallery' dialog

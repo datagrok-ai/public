@@ -345,8 +345,8 @@ export class PackageFunctions {
   }
 
   @grok.decorators.autostart({description: 'Windows Manager'})
-  static windowsManager() {
-    windowsManagerPanel();
+  static async windowsManager() {
+    await windowsManagerPanel();
   }
 
   @grok.decorators.func({description: 'Open \'Viewer Gallery\' dialog'})
