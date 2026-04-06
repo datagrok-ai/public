@@ -165,11 +165,15 @@ export class GlobeViewer extends DG.JsViewer {
       return;
     }
     this.points.length = 0;
-    const lat = this.dataFrame.getCol(this.latitudeColumnName).getRawData();
-    const lon = this.dataFrame.getCol(this.longitudeColumnName).getRawData();
+    const latCol = this.dataFrame.col(this.latitudeColumnName);
+    const lonCol = this.dataFrame.col(this.longitudeColumnName);
+    const colorByCol = this.dataFrame.col(this.colorByColumnName);
+    const mag = this.dataFrame.col(this.magnitudeColumnName);
+    if (!latCol || !lonCol || !colorByCol || !mag)
+      return;
 
-    const colorByCol = this.dataFrame.getCol(this.colorByColumnName);
-    const mag = this.dataFrame.getCol(this.magnitudeColumnName);
+    const lat = latCol.getRawData();
+    const lon = lonCol.getRawData();
 
     const magRange = [mag.min, mag.max];
     const color = scaleSequential().interpolator(interpolateYlOrRd);
