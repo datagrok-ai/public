@@ -708,9 +708,6 @@ export class MpoDesirabilityLineEditor {
     if (!col)
       return;
 
-    if (col.min < this._prop.min! || col.max > this._prop.max!)
-      this.setRange(Math.min(col.min, this._prop.min!), Math.max(col.max, this._prop.max!));
-
     const values = col.toList();
     this.drawBars(values);
   }

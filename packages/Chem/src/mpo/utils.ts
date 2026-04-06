@@ -1,7 +1,5 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
-import {calculateColumns} from '@datagrok-libraries/statistics/src/compute-functions/execution';
-import {TemplateCompute, TemplateFunction} from '@datagrok-libraries/statistics/src/compute-functions/types';
 
 import {
   DEFAULT_AGGREGATION,
@@ -65,9 +63,6 @@ export async function computeMpo(
   silent: boolean = false,
   processed: boolean = false,
 ): Promise<string[]> {
-  // Execute per-property functions for missing columns
-  await executePropertyFunctions(df, profile, columnMapping, silent);
-
   const mappedProperties: Record<string, PropertyDesirability> = {};
   for (const [propName, prop] of Object.entries(profile.properties)) {
     const columnName = columnMapping[propName] ?? propName;
@@ -98,91 +93,6 @@ export async function computeMpo(
     df, columns: colList, profileName, aggregation: resolvedAggregation,
   }).call(undefined, undefined, {processed});
   return df.col(profileName) ? [profileName] : [];
-}
-
-export function parseCallString(callStr: string): TemplateFunction | null {
-  const parenIdx = callStr.indexOf('(');
-  const qualifiedName = parenIdx === -1 ? callStr : callStr.substring(0, parenIdx);
-  const [pkg, name] = qualifiedName.split(':');
-  if (!pkg || !name)
-    return null;
-
-  if (parenIdx === -1)
-    return {package: pkg, name, args: {}};
-
-  try {
-    const argsJson = callStr.substring(parenIdx + 1, callStr.lastIndexOf(')'));
-    const func = DG.Func.find({package: pkg, name})[0];
-    if (!func)
-      return {package: pkg, name, args: {}};
-    const argValues = JSON.parse(`[${argsJson}]`);
-    const args: Record<string, any> = {};
-    for (let i = 0; i < argValues.length && i + 2 < func.inputs.length; i++)
-      args[func.inputs[i + 2].name] = argValues[i];
-    return {package: pkg, name, args};
-  } catch (e) {
-    console.warn(`Failed to parse function call string: ${callStr}`, e);
-    return {package: pkg, name, args: {}};
-  }
-}
-
-export function templateFromCallString(callStr: string): {compute: TemplateCompute} | undefined {
-  const tf = parseCallString(callStr);
-  if (!tf)
-    return undefined;
-  return {compute: {descriptors: {enabled: false, args: []}, functions: [tf]}};
-}
-
-export async function executePropertyFunctions(
-  df: DG.DataFrame,
-  profile: DesirabilityProfile,
-  columnMapping: Record<string, string | null>,
-  silent: boolean,
-): Promise<void> {
-  const molCol = [...df.columns].find((c) => c.semType === DG.SEMTYPE.MOLECULE);
-  if (!molCol)
-    return;
-
-  // Collect unique functions for missing columns, parsing call strings into name + args
-  const callStrings: string[] = [];
-  for (const [propName, prop] of Object.entries(profile.properties)) {
-    if (!prop.function)
-      continue;
-    const columnName = columnMapping[propName] ?? propName;
-    if (df.col(columnName))
-      continue;
-    if (!callStrings.includes(prop.function))
-      callStrings.push(prop.function);
-  }
-
-  if (callStrings.length === 0)
-    return;
-
-  const externals: Record<string, Record<string, any>> = {};
-  for (const callStr of callStrings) {
-    const tf = parseCallString(callStr);
-    if (tf)
-      externals[`${tf.package}:${tf.name}`] = tf.args;
-  }
-
-  const colsBefore = new Set(df.columns.names());
-  await calculateColumns({descriptors: [], externals}, df, molCol.name);
-
-  // Auto-map newly added columns to unmapped properties
-  const newCols = df.columns.names().filter((n) => !colsBefore.has(n));
-  if (newCols.length === 0)
-    return;
-  const newColsLower = new Map(newCols.map((n) => [n.toLowerCase(), n]));
-  for (const [propName, prop] of Object.entries(profile.properties)) {
-    if (!prop.function)
-      continue;
-    const mapped = columnMapping[propName];
-    if (mapped != null && df.col(mapped))
-      continue;
-    const match = newColsLower.get(propName.toLowerCase());
-    if (match)
-      columnMapping[propName] = match;
-  }
 }
 
 export function findSuitableProfiles(df: DG.DataFrame, profiles: MpoProfileInfo[]): MpoProfileInfo[] {

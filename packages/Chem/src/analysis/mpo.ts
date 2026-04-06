@@ -11,14 +11,11 @@ import {
 } from '@datagrok-libraries/statistics/src/mpo/mpo';
 import {MpoProfileEditor} from '@datagrok-libraries/statistics/src/mpo/mpo-profile-editor';
 import {MPO_SCORE_CHANGED_EVENT} from '@datagrok-libraries/statistics/src/mpo/utils';
-import {discoverComputeFunctions} from '@datagrok-libraries/statistics/src/compute-functions/discovery';
-import {chemFunctionsDialog} from '@datagrok-libraries/statistics/src/compute-functions/dialog';
-import {IComputeDialogResult} from '@datagrok-libraries/statistics/src/compute-functions/types';
 
 import {MpoContextPanel} from '../mpo/mpo-context-panel';
 import {MpoProfileManager} from '../mpo/mpo-profile-manager';
 import {PackageFunctions} from '../package';
-import {computeMpo, executePropertyFunctions, templateFromCallString, MpoProfileInfo, deepEqual, findSuitableProfiles} from '../mpo/utils';
+import {computeMpo, MpoProfileInfo, deepEqual, findSuitableProfiles} from '../mpo/utils';
 
 const CREATE_NEW_PROFILE_ITEM = '+ Create New...';
 const UNTITLED_PROFILE = 'Untitled Profile';
@@ -67,8 +64,6 @@ export class MpoProfileDialog {
       value: false,
       onValueChanged: (v) => this.mpoProfileEditor.setDesignMode(!!v),
     });
-
-    this.mpoProfileEditor.onComputeRequested.subscribe((propName) => this.openComputeDialog(propName));
 
     this.addParetoFront = ui.input.bool('Pareto front');
 
@@ -188,11 +183,6 @@ export class MpoProfileDialog {
 
     this.currentProfileFileName = profileInfo.fileName;
     this.currentProfile = structuredClone(profileInfo);
-    try {
-      await executePropertyFunctions(this.dataFrame, this.currentProfile, {}, true);
-    } catch (e) {
-      console.warn('Failed to execute property functions on profile load:', e);
-    }
     this.mpoProfileEditor.setProfile(this.currentProfile);
     this.originalProfile = structuredClone(this.currentProfile);
     this.updateSaveButtonVisibility();
@@ -256,37 +246,6 @@ export class MpoProfileDialog {
       this.methodInput.value = 'Manual';
       this.createManualProfile();
     }
-  }
-
-  private async openComputeDialog(propName: string): Promise<void> {
-    if (!this.currentProfile)
-      return;
-
-    const prop = this.currentProfile.properties[propName];
-    const template = prop?.function ? templateFromCallString(prop.function) : undefined;
-
-    const computeFunctions = discoverComputeFunctions('HitTriageFunction');
-    let dialogResult: IComputeDialogResult | null = null;
-
-    const {root, okProxy} = await chemFunctionsDialog(
-      computeFunctions, (res) => { dialogResult = res; }, () => {},
-      template, false,
-    );
-
-    ui.dialog('Compute Properties')
-      .add(root)
-      .onOK(() => {
-        okProxy();
-        if (!dialogResult)
-          return;
-        const entry = Object.entries(dialogResult.externals)[0];
-        const prop = this.currentProfile!.properties[propName];
-        if (entry && prop) {
-          const vals = Object.values(entry[1]);
-          prop.function = vals.length ? `${entry[0]}(${vals.map((v) => JSON.stringify(v)).join(', ')})` : entry[0];
-        }
-      })
-      .show({resizable: true});
   }
 
   private isProfileModified(): boolean {
