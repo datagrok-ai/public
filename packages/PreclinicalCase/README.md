@@ -1,17 +1,13 @@
 # Preclinical Case
 
-**Preclinical Case** is designed for the analysis and exploration of preclinical study data represented in the [SEND](https://www.cdisc.org/standards/foundational/send) (Standard for Exchange of Nonclinical Data) format.
+**Preclinical Case** is designed for the analysis and exploration of preclinical study data represented in the [SEND](https://www.cdisc.org/standards/foundational/send) (Standard for Exchange of Nonclinical Data) format. It provides a comprehensive suite of analytical tools specifically tailored for preclinical studies, enabling researchers, toxicologists, and data scientists to:
 
-## Overview
-
-Preclinical Case provides a comprehensive suite of analytical tools specifically tailored for preclinical studies, enabling researchers, toxicologists, and data scientists to:
-
-- Visualize and explore SEND-formatted preclinical data
-- Analyze animal study data across multiple domains
-- Track laboratory findings, clinical observations, and pathology data over time
-- Validate SEND data against CDISC standards
-- Identify patterns and trends in preclinical study results
-- Explore data at both study-wide and individual animal levels
+- Visualize and explore SEND-formatted preclinical data across multiple [domains](#domains)
+- Track [laboratory findings, clinical observations, and pathology data](#measurements) over time
+- [Validate](#validation) SEND data against CDISC standards
+- Identify patterns and trends via [matrix tables](#matrix-table) and [observation timelines](#observation-timelines)
+- Analyze [microscopic findings](#microscopic-findings) linked with laboratory data
+- Explore data at both study-wide and [individual animal](#subject-profile) levels
 
 Initial application page contains the list of pre-loaded studies. Click study name to open it. Study summary page is opened. Also study is opened in a tree browser on the left panel. Navigate through available views using tree nodes.
 
