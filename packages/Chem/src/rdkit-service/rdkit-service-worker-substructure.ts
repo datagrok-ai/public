@@ -72,8 +72,14 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
     return numMalformed;
   }
 
+  private getSmiles(mol: RDMol, stereoAgnostic?: boolean): string {
+    return stereoAgnostic ?
+      mol.get_smiles(JSON.stringify({doIsomericSmiles: false})) :
+      mol.get_smiles();
+  }
+
   async searchSubstructure(queryMolString: string, queryMolBlockFailover: string, molecules?: string[],
-    searchType?: SubstructureSearchType): Promise<Uint32Array> {
+    searchType?: SubstructureSearchType, stereoAgnostic?: boolean): Promise<Uint32Array> {
     if (!molecules)
       throw new Error('Chem | Molecules for substructure serach haven\'t been provided');
 
@@ -82,13 +88,14 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
     if (queryMol !== null) {
       if (searchType === SubstructureSearchType.EXACT_MATCH) {
         try {
-          queryCanonicalSmiles = queryMol.get_smiles();
           //need to get canonical smiles from mol (not qmol) since qmol implicitly merges query hydrogens
-          queryCanonicalSmiles = this.getMolWithSmilesCheck(queryMolString)?.get_smiles() ?? '';
+          const mol = this.getMolWithSmilesCheck(queryMolString);
+          queryCanonicalSmiles = mol ? this.getSmiles(mol, stereoAgnostic) : '';
+          mol?.delete();
         } catch {}
       }
       const matches = await this.searchWithPatternFps(queryMol, molecules,
-        searchType ?? SubstructureSearchType.CONTAINS, queryCanonicalSmiles);
+        searchType ?? SubstructureSearchType.CONTAINS, queryCanonicalSmiles, stereoAgnostic);
       queryMol.delete();
       return matches;
     } else
@@ -104,7 +111,7 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
 
 
   async searchWithPatternFps(queryMol: RDMol, molecules: string[], searchType: SubstructureSearchType,
-    queryCanonicalSmiles: string): Promise<Uint32Array> {
+    queryCanonicalSmiles: string, stereoAgnostic?: boolean): Promise<Uint32Array> {
     const matches = new BitArray(molecules.length);
     if (this._requestTerminated)
       return matches.buffer;
@@ -119,7 +126,7 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
       if (this._requestTerminated)
         return matches.buffer;
 
-      if (queryCanonicalSmiles)
+      if (queryCanonicalSmiles && !stereoAgnostic)
         matches.setFast(i, molecules[i] === queryCanonicalSmiles);
       else {
         let mol: RDMol | null = null;
@@ -130,7 +137,9 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
           if (cachedMol || this.addToCache(mol))
             isCached = true;
           if (mol) {
-            if (this.searchBySearchType(mol, queryMol, searchType))
+            if (stereoAgnostic)
+              matches.setFast(i, this.getSmiles(mol, true) === queryCanonicalSmiles);
+            else if (this.searchBySearchType(mol, queryMol, searchType))
               matches.setFast(i, true);
           }
         } catch {

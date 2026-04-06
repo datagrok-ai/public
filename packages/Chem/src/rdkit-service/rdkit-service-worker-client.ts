@@ -19,8 +19,9 @@ export class RdKitServiceWorkerClient extends WorkerMessageBusClient {
     this.call(WORKER_CALL.INIT_MOLECULES_STRUCTURES, [molecules]);
 
   searchSubstructure =
-    async (query: string, queryMolBlockFailover: string, molecules: string[], searchType: SubstructureSearchType) =>
-      this.call(WORKER_CALL.SEARCH_SUBSTRUCTURE, [query, queryMolBlockFailover, molecules, searchType]);
+    async (query: string, queryMolBlockFailover: string, molecules: string[],
+      searchType: SubstructureSearchType, stereoAgnostic?: boolean) =>
+      this.call(WORKER_CALL.SEARCH_SUBSTRUCTURE, [query, queryMolBlockFailover, molecules, searchType, stereoAgnostic]);
 
   freeMoleculesStructures = async () =>
     this.call(WORKER_CALL.FREE_MOLECULES_STRUCTURES);
