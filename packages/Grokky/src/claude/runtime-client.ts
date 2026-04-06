@@ -111,7 +111,7 @@ export class ClaudeRuntimeClient {
     };
   }
 
-  send(sessionId: string, message: string, options?: {outputSchema?: object}): void {
+  send(sessionId: string, message: string, options?: {outputSchema?: object; systemPromptMode?: string}): void {
     if (!this.ws || this.ws.readyState !== WebSocket.OPEN)
       throw new Error('ClaudeRuntimeClient: WebSocket is not connected');
     this.ws.send(JSON.stringify({
@@ -119,6 +119,7 @@ export class ClaudeRuntimeClient {
       apiKey: grok.dapi.token,
       mcpServerUrl: this.mcpServerUrl,
       ...(options?.outputSchema ? {outputSchema: options.outputSchema} : {}),
+      ...(options?.systemPromptMode ? {systemPromptMode: options.systemPromptMode} : {}),
     }));
   }
 

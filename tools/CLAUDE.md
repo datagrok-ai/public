@@ -91,14 +91,32 @@ The `publish` command executes these steps:
 1. Gather files using `ignore-walk` (respects .npmignore/.gitignore/.grokignore)
 2. Run validation checks (signatures, imports, package.json, changelog)
 3. Process environment variables in `/connections/*.json` files (replace `${VAR}`)
-4. Create ZIP archive with archiver-promise
-5. Upload to server: `POST ${host}/packages/dev/${devKey}/${packageName}`
+4. **Process Docker images** (see below)
+5. Create ZIP archive with archiver-promise (includes `image.json` metadata per container)
+6. Upload to server: `POST ${host}/packages/dev/${devKey}/${packageName}`
 
 **Key flags:**
 - `--debug` (default) - Package visible only to developer
 - `--release` - Public package
 - `--build` / `--rebuild` - Control webpack bundling
 - `--skip-check` - Skip validation
+- `--rebuild-docker` - Force rebuild Docker images locally before pushing to registry
+- `--skip-docker-rebuild` - Skip auto-rebuild even when dockerfile folder has changed
+
+### Docker Image Handling in `publish`
+
+Implemented in `bin/commands/publish.ts` (`processDockerImages()`, `discoverDockerfiles()`).
+
+When a package has a `dockerfiles/` directory, `grok publish` automatically manages Docker images:
+
+1. **Discovery** — scans `dockerfiles/` for subdirectories containing a `Dockerfile`. Image name = `<packageName>-<folderName>`.
+2. **Change detection** — computes SHA256 of the entire dockerfile directory. If the hash differs from what the server has, rebuilds automatically (unless `--skip-docker-rebuild`).
+3. **Build** — `docker build --platform linux/amd64` (always cross-compiled for linux/amd64).
+4. **Registry** — tags and pushes to configured Docker registry if one is set.
+5. **Metadata** — writes `image.json` into the ZIP for each container so the server knows which image to use.
+6. **Fallback** — if a local build isn't available, queries the server for a compatible pre-built image.
+
+**Practical implication:** editing any file inside `dockerfiles/<name>/` will cause `grok publish` to rebuild that container image on the next publish, without needing `--rebuild-docker`.
 
 ### Testing Framework
 

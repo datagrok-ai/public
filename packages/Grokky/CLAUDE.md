@@ -29,7 +29,7 @@ src/
 ├── package.ts              # Entry point — registers functions, init, search providers
 ├── utils.ts                # Shared utilities (viewer/dataframe descriptions, events)
 ├── ai/                     # AI panels, search, and UI wiring
-│   ├── panel.ts            # TVAIPanel, DBAIPanel, ScriptingAIPanel, StreamingPanel
+│   ├── panel.ts            # TVAIPanel, DBAIPanel, ScriptingAIPanel, ShellAIPanel, StreamingPanel
 │   ├── ui.ts               # Setup functions that wire panels into the platform UI
 │   ├── storage.ts          # ConversationStorage — IndexedDB persistence for chat history
 │   ├── usage-limiter.ts    # Per-user daily request limits (group-configurable)
@@ -70,14 +70,33 @@ by relevance to the user query, then presents results in a lazy tab control.
 
 ### AI Panels (`src/ai/panel.ts`)
 
-Three panel classes handle UI for different contexts:
+Four panel classes handle UI for different contexts:
 
 - `TVAIPanel` — table view assistant
 - `DBAIPanel` — database query editor assistant
 - `ScriptingAIPanel` — script generation assistant
+- `ShellAIPanel` — context-free shell / general-purpose assistant (set up by `setupShellAIPanelUI()`)
 
 All panels stream through `ClaudeRuntimeClient` and share a common `StreamingPanel` base with chat history,
 streaming display, and conversation persistence via `ConversationStorage`.
+
+#### Shell AI Panel features
+
+**`rawRender` mode** (terminal icon button): switches Claude response rendering from markdown to `<pre>`.
+Only affects rendering — the Datagrok system prompt is still active unless `noPrompt` is also set.
+
+**`!cmd`**: executes the shell command via bash without `DATAGROK_PROMPT`. The `!` prefix is stripped and
+the message is sent with `systemPromptMode: 'bash'` (a minimal "output only stdout" system prompt defined in
+`claude-runtime/src/server.ts`). Works in any mode, independent of `rawRender`.
+`!!cmd` escapes to a literal `!cmd` prompt through the normal AI pipeline.
+
+**`/noprompt`**: client-side slash command intercepted in `setupShellAIPanelUI()` before reaching Claude.
+Calls `panel.enableNoPrompt()`: resets the session, clears output, enables `rawRender`, sets `_noPrompt = true`.
+All subsequent messages in that session use `systemPromptMode: 'none'` (empty system prompt — pure Claude Code).
+
+**System prompt is per-message, not per-session.** `buildOptions()` in `claude-runtime/src/server.ts` is called
+fresh for every WebSocket message. The `resume` field carries conversation history only, so `systemPromptMode`
+can vary per turn without restarting the session.
 
 ### AI UI Wiring (`src/ai/ui.ts`)
 
@@ -87,6 +106,10 @@ Setup functions called from `init()` that attach AI panels to platform UI elemen
 - `setupTableViewAIPanelUI()` — adds `TVAIPanel` to table views
 - `setupScriptsAIPanelUI()` — adds `ScriptingAIPanel` to script views
 - `setupAIQueryEditorUI()` — adds `DBAIPanel` to the query editor
+- `setupShellAIPanelUI()` — adds `ShellAIPanel` to the shell/AI sidebar
+
+`runPromptWithLifecycle()` is the central routing function: intercepts `!`/`!!` prefixes,
+skips `grok.ai.processPrompt()` when `rawRender` is on, and calls `runClaudeStreaming()`.
 
 Also exports `askWiki()` and `smartExecution()`, which back the Help and Execute search providers respectively.
 

@@ -171,7 +171,16 @@ async function runPromptWithLifecycle(
   quotaCategory: string,
   clientToolHandler?: (toolName: string, input: any) => Promise<string>,
 ): Promise<void> {
-  if (!panel.rawMode) {
+  if (prompt.startsWith('!!')) {
+    prompt = prompt.slice(1); // !!cmd → !cmd, falls through to normal pipeline
+  } else if (prompt.startsWith('!')) {
+    const command = prompt.slice(1).trimStart();
+    if (!await UsageLimiter.getInstance().tryCheckAndIncrement(quotaCategory, command))
+      return;
+    await runClaudeStreaming(panel, command, view, clientToolHandler, 'bash');
+    return;
+  }
+  if (!panel.rawRender) {
     const args: UserPromptEventArgs = {prompt, context: view, handled: false};
     fireBeforeUserPromptEvent(args);
     if (args.handled)
@@ -182,11 +191,11 @@ async function runPromptWithLifecycle(
   if (!await UsageLimiter.getInstance().tryCheckAndIncrement(quotaCategory, prompt))
     return;
   await runClaudeStreaming(panel, prompt, view, clientToolHandler);
-  if (!panel.rawMode)
+  if (!panel.rawRender)
     fireAfterUserPromptEvent({prompt, context: view, handled: false});
 }
 
-async function runClaudeStreaming(panel: StreamingPanel, userPrompt: string, view: DG.ViewBase, clientToolHandler?: (toolName: string, input: any) => Promise<string>) {
+async function runClaudeStreaming(panel: StreamingPanel, userPrompt: string, view: DG.ViewBase, clientToolHandler?: (toolName: string, input: any) => Promise<string>, systemPromptMode?: string) {
   const chatSession = panel.startChatSession();
   const sessionId = panel.sessionId;
   let accumulated = '';
@@ -211,7 +220,7 @@ async function runClaudeStreaming(panel: StreamingPanel, userPrompt: string, vie
 
   try {
     const client = ClaudeRuntimeClient.getInstance();
-    const prompt = panel.rawMode ? userPrompt : panel.prependViewContext(userPrompt, view);
+    const prompt = panel.rawRender ? userPrompt : panel.prependViewContext(userPrompt, view);
 
     await client.ensureConnected();
 
@@ -286,7 +295,8 @@ async function runClaudeStreaming(panel: StreamingPanel, userPrompt: string, vie
       client.abort(sessionId);
     }));
 
-    client.send(sessionId, prompt);
+    const resolvedMode = systemPromptMode ?? (panel.noPrompt ? 'none' : undefined);
+    client.send(sessionId, prompt, resolvedMode ? {systemPromptMode: resolvedMode} : undefined);
   } catch (e: any) {
     panel.clearStreaming();
     grok.shell.error(`Claude runtime: ${e.message}`);
@@ -303,6 +313,10 @@ export function setupShellAIPanelUI(): void {
   if (!_shellAIPanel) {
     _shellAIPanel = new ShellAIPanel();
     _shellAIPanel.onRunRequest.subscribe(async (args) => {
+      if (args.currentPrompt.prompt.trim() === '/noprompt') {
+        _shellAIPanel!.enableNoPrompt();
+        return;
+      }
       await runPromptWithLifecycle(_shellAIPanel!, args.currentPrompt.prompt, grok.shell.v, 'shell-ai');
     });
   }

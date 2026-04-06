@@ -94,7 +94,9 @@ export interface StreamingPanel<T extends MessageType = MessageType> {
   clearStreaming(): void;
   showInputRequest(input: any): Promise<any>;
   cancelInputRequest(): void;
-  get rawMode(): boolean;
+  get rawRender(): boolean;
+  get noPrompt(): boolean;
+  enableNoPrompt(): void;
 }
 
 export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInputs = AIPanelInputs> implements StreamingPanel<T> {
@@ -111,8 +113,9 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
   private historyButton: HTMLElement;
   private tryAgainButton: HTMLElement;
   private micButton: HTMLElement;
-  private rawModeButton: HTMLElement;
-  private _rawMode: boolean = false;
+  private rawRenderButton: HTMLElement;
+  private _rawRender: boolean = false;
+  private _noPrompt: boolean = false;
   private recognition: SpeechRecognition | null = null;
   private isRecognizing: boolean = false;
   private _onRunRequest = new rxjs.Subject<{prevMessages: T[], currentPrompt: K}>();
@@ -190,14 +193,14 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
       this.handleClear();
       this.currentConversationId = null;
     }, 'Start New Chat');
-    this.rawModeButton = ui.iconFA('terminal', () => {
-      this._rawMode = !this._rawMode;
-      this.rawModeButton.style.color = this._rawMode ? 'var(--blue-1)' : '';
-      this.root.classList.toggle('d4-ai-raw-mode', this._rawMode);
+    this.rawRenderButton = ui.iconFA('terminal', () => {
+      this._rawRender = !this._rawRender;
+      this.rawRenderButton.style.color = this._rawRender ? 'var(--blue-1)' : '';
+      this.root.classList.toggle('d4-ai-raw-mode', this._rawRender);
     }, 'Toggle raw console');
     this.hideContentIcons();
     this.inputControlsDiv = ui.divH([
-      this.micButton, this.rawModeButton,
+      this.micButton, this.rawRenderButton,
     ], 'd4-ai-panel-input-controls');
     this.runButton.style.color = 'var(--blue-1)';
     const sessionControls = ui.divH([this.copyConversationButton, this.historyButton, this.newChatButton], 'd4-ai-panel-run-controls');
@@ -481,7 +484,19 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
     return grok.shell.windows.showAI && grok.shell.windows.ai.contains(this.root);
   }
 
-  get rawMode(): boolean { return this._rawMode; }
+  get rawRender(): boolean { return this._rawRender; }
+  get noPrompt(): boolean { return this._noPrompt; }
+
+  enableNoPrompt(): void {
+    this._noPrompt = true;
+    if (!this._rawRender) {
+      this._rawRender = true;
+      this.rawRenderButton.style.color = 'var(--blue-1)';
+      this.root.classList.add('d4-ai-raw-mode');
+    }
+    this.resetSession();
+    this.handleClear();
+  }
 
   resetSession(): void {
     this._sessionId = `claude-${crypto.randomUUID()}`;
@@ -501,7 +516,7 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
   }
 
   private createStreamingEl(content: string): HTMLElement {
-    if (this._rawMode) {
+    if (this._rawRender) {
       const pre = document.createElement('pre');
       pre.textContent = content;
       pre.style.cssText = 'white-space:pre-wrap;user-select:text;margin:0';
@@ -531,7 +546,7 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
     if (!this._streamingContainer || !this._streamingMarkdownEl)
       return;
 
-    if (this._rawMode) {
+    if (this._rawRender) {
       this._streamingMarkdownEl = null;
       this._streamingContainer = null;
       this._uiMessages.push({fromUser: false, text: content, messageOptions: {finalResult: content}});
@@ -645,7 +660,7 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
     this.copyConversationButton.style.display = 'none';
   }
 
-  private handleClear() {
+  protected handleClear() {
     this._messages = [];
     this._uiMessages = [];
     this.outputArea.innerHTML = '';

@@ -33,6 +33,7 @@ export interface UserMessage {
   apiKey?: string;
   mcpServerUrl?: string;
   outputSchema?: object;
+  systemPromptMode?: 'datagrok' | 'bash' | 'none';
 }
 
 export interface AbortMessage {

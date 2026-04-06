@@ -9,6 +9,10 @@ const WORKSPACE = process.env['CLAUDE_WORKSPACE'] || '/workspace';
 const PORT = 5355;
 const MAX_SESSIONS = 200;
 
+const BASH_EXEC_PROMPT = `\
+Execute the given shell command using the Bash tool. \
+Output ONLY the exact stdout of the command — no preamble, no explanation, nothing else.`;
+
 const DATAGROK_PROMPT = `\
 You are Datagrok Code Assistant — an AI coding agent embedded in the Datagrok data analytics platform.
 You have full access to the Datagrok public repository at ${WORKSPACE}, including the JS API source,
@@ -158,10 +162,14 @@ function buildMcpServers(apiKey?: string, mcpServerUrl?: string): Record<string,
   return Object.keys(servers).length > 0 ? servers : undefined;
 }
 
-function buildOptions(resume?: string, apiKey?: string, mcpServerUrl?: string) {
+function buildOptions(resume?: string, apiKey?: string, mcpServerUrl?: string, systemPromptMode?: string) {
+  const systemPrompt =
+    systemPromptMode === 'bash' ? BASH_EXEC_PROMPT :
+    systemPromptMode === 'none' ? '' :
+    DATAGROK_PROMPT;
   const mcpServers = buildMcpServers(apiKey, mcpServerUrl);
   return {
-    systemPrompt: DATAGROK_PROMPT,
+    systemPrompt,
     allowedTools: ['Read', 'Glob', 'Grep', 'Edit', 'Write', 'Bash', 'WebSearch', 'WebFetch', 'AskUserQuestion'],
     ...(mcpServers ? {mcpServers} : {}),
     permissionMode: 'acceptEdits' as const,
@@ -303,7 +311,7 @@ async function handleMessage(ws: WsSender, data: UserMessage): Promise<void> {
   let gotResult = false;
   try {
     const existingSession = getSession(sid);
-    const opts = buildOptions(existingSession, data.apiKey, mcpUrl);
+    const opts = buildOptions(existingSession, data.apiKey, mcpUrl, data.systemPromptMode);
     const canUseTool = async (toolName: string, input: any) => {
       if (toolName === 'AskUserQuestion' || DB_CLIENT_TOOLS.has(toolName)) {
         emit(ws, {type: 'input_request', sessionId: sid, toolName, input});
