@@ -25,7 +25,7 @@ box plot.
 
 ## Inverted whiskers
 
-On certain datasets, you would see whiskers extending inside the box plot. This is not a rendering bug. The bottom of
+On certain datasets, you may see whiskers extending inside the box plot. This is not a rendering bug. The bottom of
 the box is at the 1st quartile (Q1), and the top is at the 3rd quartile (Q3)
 value. The whiskers are the lines that extend from the top and bottom of the box to the adjacent values. The adjacent
 values are the lowest and highest observations that are still inside the region defined by the following limits:
@@ -140,7 +140,7 @@ For instance, you would get the upper whisker inverted on the following data: [0
 | Category Font | string |  |
 | Statistics Font | string |  |
 | Whisker Line Width | number |  |
-| Interquartile Line Width | number |  |
+| Interquartile Line Width | number | Width of interquartile line, if **Auto Layout** is enabled, it will be scaled when violins are too narrow. |
 | Whisker Width Ratio | number |  |
 | Axis Use Column Format | boolean |  |
 | Bins | number | Number of KDE bins to display a violin plot. |

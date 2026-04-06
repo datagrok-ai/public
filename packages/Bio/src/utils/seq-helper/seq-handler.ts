@@ -44,6 +44,15 @@ export class SeqHandler implements ISeqHandler {
   private _refinerPromise: Promise<void> = Promise.resolve();
   public get refinerPromise(): Promise<void> { return this._refinerPromise; }
 
+  private runInnerDetector() {
+    if (!this._column.temp['seqHandlerDetectorRun']) {
+      this._column.temp['seqHandlerDetectorRun'] = true;
+      const detectorFunc = DG.Func.find({name: 'detectMacromolecule', meta: {role: 'semTypeDetector'}})[0];
+      if (detectorFunc)
+        detectorFunc.applySync({col: this._column});
+    }
+  }
+
   protected constructor(col: DG.Column<string>,
     private readonly seqHelper: SeqHelper,
   ) {
@@ -53,19 +62,20 @@ export class SeqHandler implements ISeqHandler {
     let units: string | null = this._column.meta.units;
     if (!units) {
       // it may be from layout that the macromolecule semtype is set but every other tag is missing, so we manually run detectors
-      if (!this._column.temp['seqHandlerDetectorRun']) {
-        this._column.temp['seqHandlerDetectorRun'] = true;
-        const detectorFunc = DG.Func.find({name: 'detectMacromolecule', meta: {role: 'semTypeDetector'}})[0];
-        if (detectorFunc)
-          detectorFunc.applySync({col: this._column});
-        units = this._column.meta.units;
-      }
+      this.runInnerDetector();
+      units = this._column.meta.units;
       if (!units)
         throw new Error('Units are not specified in column');
     }
     this._units = units!;
 
     this._notation = this.getNotation();
+    if ([NOTATION.BILN, NOTATION.CUSTOM, NOTATION.SEPARATOR].includes(this._notation) && !this.column.getTag(TAGS.separator)) {
+      this.runInnerDetector();
+      if (!this.column.getTag(TAGS.separator))
+        throw new Error(`Separator tag '${TAGS.separator}' is not set for notation '${this._notation}'.`);
+    }
+
     if (this.isCustom() || this.isBiln()) {
       // this.column.temp[SeqTemps.notationProvider] must be set at detector stage
       this.notationProvider = this.column.temp[SeqTemps.notationProvider] ?? null;
@@ -185,7 +195,7 @@ export class SeqHandler implements ISeqHandler {
   public static setTags(uh: SeqHandler): void {
     const units = uh.column.meta.units as NOTATION;
 
-    if ([NOTATION.FASTA, NOTATION.SEPARATOR].includes(units)) {
+    if ([NOTATION.FASTA, NOTATION.SEPARATOR, NOTATION.BILN].includes(units)) {
       // Empty monomer alphabet is allowed, only if alphabet tag is annotated
       if (!uh.column.getTag(TAGS.alphabet) && Object.keys(uh.stats.freq).length === 0)
         throw new Error('Alphabet is empty and not annotated.');

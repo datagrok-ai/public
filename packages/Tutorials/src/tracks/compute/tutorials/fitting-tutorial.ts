@@ -160,13 +160,13 @@ export class FittingTutorial extends Tutorial {
       return;
     }
 
-    const rightPanel = ribbonPannels[ribbonPannels.length - 1];
+    const rightPanel = ribbonPannels[0];
     if (rightPanel.length < 2) {
       grok.shell.warning('Failed to load model analysis features');
       return;
     }
 
-    const fitIcnRoot = rightPanel[rightPanel.length - 2];
+    const fitIcnRoot = rightPanel[1];
 
     await this.action(
       'Click "Fit inputs"',
@@ -184,6 +184,10 @@ export class FittingTutorial extends Tutorial {
 
     const fitFormRoot = await getElement(fittingView.root, 'div.ui-form');
     await new Promise((resolve) => setTimeout(resolve, 1000));
+    
+    const distFitInputRoot = fitFormRoot!.children[38] as HTMLElement;
+    const distSwitcher = distFitInputRoot.querySelector('input.ui-input-editor') as HTMLInputElement;
+    distSwitcher.value = '0';
 
     const switchers = fitFormRoot!.querySelectorAll('div.ui-input-bool-switch');
     const velocitySwitcher = switchers[3] as HTMLElement;
@@ -218,8 +222,6 @@ export class FittingTutorial extends Tutorial {
     angleOverlay.remove();
 
     // 8. Target value
-    const distFitInputRoot = fitFormRoot!.children[38] as HTMLElement;
-    const distSwitcher = distFitInputRoot.querySelector('input.ui-input-editor') as HTMLInputElement;
     const numSource = fromEvent(distSwitcher, 'input').pipe(map((_) => distSwitcher.value), filter((val) => val === '10'));
 
     await this.action(

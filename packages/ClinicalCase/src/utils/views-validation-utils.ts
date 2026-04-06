@@ -13,7 +13,6 @@ import {updateDivInnerHTML} from './utils';
 import {CDISC_STANDARD} from './types';
 import {VISIT} from '../constants/columns-constants';
 import {studies} from './app-utils';
-import {IssueDetail} from '../types/validation-result';
 import {Subscription} from 'rxjs';
 
 const ERROR_ICON_SIZE = 9;

@@ -3,9 +3,11 @@ import * as DG from 'datagrok-api/dg';
 import {runTests, tests, TestContext, initAutoTests as initTests} from '@datagrok-libraries/test/src/test';
 
 import './tests/detector-tests';
+import './tests/converter-tests';
 import './tests/curves-cell-renderer-tests';
 import './tests/transform-tests';
 import './tests/fit-tests';
+import './tests/pzfx-tests';
 
 export const _package = new DG.Package();
 export {tests};

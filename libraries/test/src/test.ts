@@ -78,6 +78,7 @@ export class TestContext {
   catchUnhandled = true;
   report = false;
   returnOnFail = false;
+  closeAll = true;
 
   constructor(catchUnhandled?: boolean, report?: boolean, returnOnFail?: boolean) {
     if (catchUnhandled !== undefined) this.catchUnhandled = catchUnhandled;
@@ -546,7 +547,7 @@ export async function runTests(options?: TestExecutionOptions) : Promise<TestRes
         }
         // res.push({ ...testRun, memoryDelta: (window?.performance as any)?.memory?.usedJSHeapSize - memoryUsageBefore, widgetsDelta: getWidgetsCountSafe() - widgetsBefore });
 
-        if (!options.nodeOptions) {
+        if (!options.nodeOptions && options.testContext?.closeAll !== false) {
           grok.shell.closeAll();
           DG.Balloon.closeAll();
         }

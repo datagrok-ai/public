@@ -1995,12 +1995,8 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
 
   createOrphansGroup(rootGroup: TreeViewGroup, label: string) : DG.TreeViewGroup {
     const divFolder = ui.iconFA('folder');
-    divFolder.style.fontSize = '66px';
-    divFolder.style.marginLeft = '140px';
-    divFolder.style.marginTop = '55px';
-    divFolder.style.cssText += 'color: hsla(0, 0%, 0%, 0) !important';
     divFolder.classList.remove('fal');
-    divFolder.classList.add('fas', 'icon-fill');
+    divFolder.classList.add('fas', 'icon-fill', 'chem-orphans-folder-icon');
 
     const labelDiv = ui.divText(label);
     const iconsDiv = ui.divV([
@@ -2019,8 +2015,9 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
       ui.iconFA('square', () => this.selectTableRows(group, false), 'Deselect rows'),
     ], 'chem-mol-box-info-buttons');
 
-    const folder = ui.divH([ui.div(ui.div(divFolder), 'mol-host')], 'chem-mol-box');
-    folder.children[0].append(ui.divV([labelDiv, iconsDiv], 'chem-mol-box-info'));
+    const folderHost = ui.div(divFolder, 'mol-host chem-orphans-folder-host');
+    const folder = ui.divH([folderHost], 'chem-mol-box');
+    folderHost.append(ui.divV([labelDiv, iconsDiv], 'chem-mol-box-info'));
 
     const group = rootGroup.group(folder, {orphans: true});
     if (group.children.length === 0)

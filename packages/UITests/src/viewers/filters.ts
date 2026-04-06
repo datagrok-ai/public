@@ -84,10 +84,6 @@ category('Viewers: Filters: Collaborative filtering', () => {
     await delay(1000);
   }, {skipReason: 'GROK-16405'});
 
-  after(async () => {
-    grok.shell.closeAll();
-  });
-
   // FILTERS
 
   async function addCategoricalFilter(n: number = 36) {

@@ -1,22 +1,10 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
-
 ## Overview
 
-**Curves** (`@datagrok/curves`) is a Datagrok plugin for **fitted curves** — dose-response curves, sigmoid fits, and general curve fitting. It provides in-grid cell rendering of charts stored as JSON/XML in cells, interactive editing (outlier toggling, property panels), automatic curve fitting, a "Data to Curves" pipeline that converts well-level assay data into fitted curve summaries, a multi-curve overlay viewer, and statistics extraction (IC50, AUC, R², etc.).
+**Curves** (`@datagrok/curves`) is a Datagrok plugin for **fitted curves** — dose-response curves, sigmoid fits, and general curve fitting. It provides in-grid cell rendering of charts stored in various formats in cells, interactive editing (outlier toggling, property panels), automatic curve fitting, a "Data to Curves" pipeline that converts well-level assay data into fitted curve summaries, a multi-curve overlay viewer, and statistics extraction (IC50, AUC, R², etc.).
 
 Category: **Visualizations**. Top menu: `Data | Curves | ...`.
-
-## Build Commands
-
-```bash
-npm install
-npm run build              # grok api && grok check --soft && webpack
-npm run test               # grok test
-npm run build-all          # Builds js-api → utils → statistics → this package
-npm run link-all           # Links datagrok-api, @datagrok-libraries/utils, @datagrok-libraries/statistics
-```
 
 ## Key Dependencies
 
@@ -31,7 +19,7 @@ npm run link-all           # Links datagrok-api, @datagrok-libraries/utils, @dat
 
 ### Data Model (from `@datagrok-libraries/statistics`)
 
-Cell values are JSON strings conforming to `IFitChartData`:
+The **native format** for curve data in cells is JSON conforming to `IFitChartData`:
 ```
 IFitChartData {
   chartOptions?: IFitChartOptions   // axes bounds, log scale, title, axis names, showStatistics
@@ -41,9 +29,51 @@ IFitChartData {
 ```
 Each `IFitSeries` has `points: IFitPoint[]` (x, y, outlier, color, marker, stdev) plus fit configuration (fitFunction, parameters, colors, showFitLine, clickToToggle, droplines, etc.).
 
-Legacy XML format (3DX `<chart>...</chart>`) is auto-detected and converted to JSON via `fit-parser.ts`.
-
 Options cascade: **DataFrame tags → Column tags → Cell JSON → Series defaults**, merged at render time.
+
+## Curve Converter Architecture
+
+The Curves package supports **multiple curve data formats** through a dynamic converter system. The central format is the native IFitChartData JSON. Other formats (XML 3DX, compact dose-response, PZFX, etc.) are converted to native format on-the-fly via registered converters.
+
+### How It Works
+
+1. **Detection**: Semantic type detectors in `detectors.js` identify curve data in columns. Each detector:
+   - Sets `col.semType = 'fit'`
+   - For non-native formats, sets column tag `.%curve-format` to a friendly format name (e.g. `3dx`, `compact-dr`, `pzfx`)
+   - If no format tag is set, the data is assumed to be in native IFitChartData JSON format
+
+2. **Conversion**: When a cell value needs to be parsed, `parseCellValue()` in `curve-converter.ts`:
+   - Checks the column's `.%curve-format` tag for the format name
+   - If present, looks up the converter function by format name in the registry and applies it
+   - If absent, parses the value directly as JSON
+   - Results are cached in a value-based `DG.LruCache` keyed by `formatName||cellValue`
+
+3. **Registration**: Converters are registered in `_initCurves()` via `registerCurveConverter(formatName, fn)`:
+   - Local converters (in this package) are registered directly by format name to avoid circular dependencies
+   - External converters (from other packages) are discovered via `initExternalConverters()` which finds DG functions tagged with `meta.role: curveConverter` and `meta.curveFormat: '<name>'`
+
+### Key Constants
+
+- `FitConstants.TAG_CURVE_FORMAT` = `'.%curve-format'` — column tag storing format name (e.g. `'3dx'`, `'compact-dr'`, `'pzfx'`)
+- `FitConstants.FIT_SEM_TYPE` = `'fit'` — semantic type for fit curves
+- `FitConstants.TAG_FIT_CHART_FORMAT` = `'.fitChartFormat'` — legacy tag for format identification
+
+### Supported Formats
+
+| Format | Detector | Format Name | File |
+|--------|----------|-------------|------|
+| **Native JSON** (IFitChartData) | `detectFit` — looks for `series` + `points` | None (native) | — |
+| **XML 3DX** (`<chart>...</chart>`) | `detectXMLCurveChart` | `3dx` | `fit/converters/xml-converter.ts` |
+| **Compact Dose-Response** (`{"p":..., "poi":...}`) | `detectCompactDoseResponse` | `compact-dr` | `fit/converters/compact-dr-converter.ts` |
+| **PZFX** (GraphPad Prism XY) | `detectPzfxCurveChart` | `pzfx` | `fit/converters/pzfx-converter.ts` |
+
+### Adding a New Format
+
+To add support for a new curve format, use the `/add-curve-format` skill. In summary:
+1. Create a converter function in `src/fit/converters/` that converts the format to native JSON
+2. Add a detector in `detectors.js` that identifies the format and sets the converter tag
+3. Register the converter in `_initCurves()` in `package.ts`
+4. Add tests in `src/tests/converter-tests.ts`
 
 ## Architecture
 
@@ -52,122 +82,104 @@ Options cascade: **DataFrame tags → Column tags → Cell JSON → Series defau
 `PackageFunctions` class registers all platform-visible functions via `@grok.decorators`:
 
 **Initialization:**
-- `_initCurves` — `@init`: registers `FitGridCellHandler` as an `ObjectHandler` for grid cell property panels
+- `_initCurves` — `@init`: registers `FitGridCellHandler`, registers all local curve converters, discovers external converters
 
 **Registered Functions:**
 
 | Function | Decorator / Meta | Purpose |
 |---|---|---|
 | `curveFitDemo` | `@demo`, `demoPath: Curves \| Curve Fitting` | Loads demo CSV and opens table view |
-| `dataToCurves` | `@func` | Programmatic API: converts well-level data (concentration, readout, batch/compound/assay/run IDs) into a DataFrame with fitted curve JSON column. Supports parent-table join for pre-fit parameters, reported IC50s, etc. |
+| `dataToCurves` | `@func` | Programmatic API: converts well-level data into a DataFrame with fitted curve JSON column |
 | `dataToCurvesTopMenu` | `@func`, `top-menu: Data \| Curves \| Data to Curves` | Opens the Data to Curves dialog UI |
-| `addStatisticsColumn` | `@func`, `vectorFunc`, `role: transform` | Extracts a single fit statistic (e.g., IC50, AUC, R²) from a specific series into a new float column |
-| `addAggrStatisticsColumn` | `@func`, `vectorFunc`, `role: transform` | Same but aggregates across all series using a DG.Stats aggregation (min, max, avg, med, etc.) |
+| `addStatisticsColumn` | `@func`, `vectorFunc`, `role: transform` | Extracts a fit statistic from a specific series into a new float column |
+| `addAggrStatisticsColumn` | `@func`, `vectorFunc`, `role: transform` | Aggregates statistics across all series |
+| `convertXmlCurveToJsonFunc` | `@func`, `role: curveConverter` | Returns XML 3DX converter function |
+| `convertCompactDrToJsonFunc` | `@func`, `role: curveConverter` | Returns compact dose-response converter function |
+| `convertPzfxToJsonFunc` | `@func`, `role: curveConverter` | Returns PZFX converter function |
 
-**Exports**: `_package`, `Sync` (sequential promise runner), auto-generated wrappers from `package.g.ts`
+### Converter Infrastructure — `src/fit/curve-converter.ts`
 
-### Semantic Type Detector — `detectors.js`
+Central module for the converter system:
+- `registerCurveConverter(nqName, fn)` — registers a converter function
+- `initExternalConverters()` — discovers converters from external packages via `DG.Func.find({meta: {role: 'curveConverter'}})`
+- `parseCellValue(cellValue, column)` — **the single entry point** for parsing any cell value; applies converter if needed
+- `convertCellValue(cellValue, column)` — converts using registered converter, with value-based LRU caching
+- `isNativeFormat(column)` / `hasConverter(column)` — check whether a column uses native or converted format
+
+### Semantic Type Detectors — `detectors.js`
 
 `CurvesPackageDetectors` detects columns with semantic type `fit`:
-1. `detectXMLCurveChart` — matches strings starting with `<chart>` and ending with `</chart>`, sets tag `.fitChartFormat = '3dx'`
-2. `detectFit` — matches JSON strings containing both `series` and `points` keywords
+1. `detectXMLCurveChart` — matches `<chart>...</chart>`, sets converter tag
+2. `detectFit` — matches native JSON with `series` + `points`
+3. `detectPzfxCurveChart` — matches PZFX XY table XML
+4. `detectCompactDoseResponse` — matches compact DR JSON with `p` + `poi` fields
 
 ### Cell Renderer — `src/fit/fit-renderer.ts`
 
 `FitChartCellRenderer` (extends `DG.GridCellRenderer`) — the main grid cell renderer for `fit` cells:
-- **Caching**: three `DG.LruCache` instances: `parsedCurves` (parsed JSON), `fittedCurves` (fitted curve results), `curvesDataPoints` (extracted data points)
-- **render()**: parses cell → gets chart data → renders axes, fit lines, points, confidence intervals, droplines, statistics, title, legend
-- **onClick()**: toggles outlier status on points (if `clickToToggle` is enabled), updates dependent statistics columns
+- **Caching**: three `DG.LruCache` instances: `parsedCurves` (parsed IFitChartData), `fittedCurves` (fitted curve results), `curvesDataPoints` (extracted data points)
+- **render()**: parses cell via `parseCellValue()` → renders axes, fit lines, points, confidence intervals, droplines, statistics, title, legend
+- **onClick()**: toggles outlier status on points (native format only), updates dependent statistics columns
 - **onDoubleClick()**: opens `inspectCurve` dialog (resizable chart editor)
-- **onMouseMove()**: shows tooltip with x/y values on point hover; shows enlarged chart tooltip for small cells
-- **Visibility thresholds**: axes, labels, title, legend, points, droplines each have minimum pixel-size thresholds from `FitConstants`
+- **onMouseMove()**: shows tooltip with x/y values on point hover
+- Outlier toggling is only available for native format columns (`isNativeFormat()`)
 
 Key helper functions:
-- `getOrCreateParsedChartData(cell)` — cached JSON parse with options merge (DF → Column → Cell cascade)
+- `getOrCreateParsedChartData(cell)` — cached parse with options merge (DF → Column → Cell cascade)
 - `getOrCreateCachedFitCurve(series, ...)` — cached Nelder-Mead fit
 - `substituteZeroes(data)` — replaces x=0 with calculated substitute when logX is enabled
-- `setOutlier(gridCell, point, ...)` — toggles outlier, updates cell JSON, fires custom event, recalculates stats columns
-- `inspectCurve(gridCell)` — opens a dialog with a `GridCellWidget` for interactive chart editing
+- `setOutlier(gridCell, point, ...)` — toggles outlier, updates cell JSON, fires custom event
 - `layoutChart(rect, ...)` — computes viewport, xAxis, yAxis rectangles with margins
-- `mergeChartOptions(...)` / `mergeSeries(...)` — combine options/series from multiple cells
-- `mergeProperties(properties, source, target)` — cascading property merge
 
 ### Property Panel — `src/fit/fit-grid-cell-handler.ts`
 
 `FitGridCellHandler` (extends `DG.ObjectHandler`) — renders the context panel when a fit cell is selected:
-- **Options pane**: switch level (Dataframe/Column/Cell), series options (fit function, colors, markers, line style, confidence intervals), chart options (log scale, axes bounds, zeroes handling)
+- **Options pane**: switch level (Dataframe/Column/Cell), series and chart options
 - **Chart pane**: enlarged `GridCellWidget` rendering
-- **Fit pane**: displays per-series or aggregated statistics (R², AUC, IC50, slope, top, bottom) with "+" buttons to extract each stat as a new column
-
-Also contains:
-- `calculateSeriesStats()` — computes `FitStatistics` for a single series (uses cached fit curve)
-- `getChartDataAggrStats()` — aggregates statistics across all series using DG.Stats
-- `changeCurvesOptions()` — applies property changes at Dataframe/Column/Cell level
-- `detectSettings()` — scans column to detect which options are custom per-cell vs default
+- **Fit pane**: per-series or aggregated statistics with "+" buttons to extract stats as columns
+- Uses `parseCellValue()` for format-agnostic cell parsing
 
 ### Rendering Utilities — `src/fit/render-utils.ts`
 
-Low-level canvas drawing functions, all using `CanvasRenderingContext2D`:
+Low-level canvas drawing functions using `CanvasRenderingContext2D`:
 
 | Function | What it renders |
 |---|---|
-| `renderPoints` | Data points (circles, markers) and error bars (stdev whiskers) |
-| `renderFitLine` | Fitted curve line (with line style: solid/dotted/dashed/dashdotted) |
-| `renderConfidenceIntervals` | Shaded confidence bands around fit line |
+| `renderPoints` | Data points (circles, markers) and error bars |
+| `renderFitLine` | Fitted curve line (solid/dotted/dashed/dashdotted) |
+| `renderConfidenceIntervals` | Shaded confidence bands |
 | `renderConnectDots` | Direct point-to-point line connections |
-| `renderDroplines` | IC50 droplines (dashed lines from axis to curve) |
+| `renderDroplines` | IC50 droplines |
 | `renderStatistics` | In-chart text labels for selected statistics |
-| `renderTitle` | Chart title above the plot area |
+| `renderTitle` | Chart title |
 | `renderAxesLabels` | X and Y axis name labels |
-| `renderLegend` | Color-coded legend with series names, markers, and optional column labels |
+| `renderLegend` | Color-coded legend |
 
-Also: `getSeriesColor()`, candlestick/box-plot rendering (for replicate data visualization).
+### Converters — `src/fit/converters/`
+
+Each converter is a pure function: `(value: string) => string` (raw cell value → native JSON string).
+
+| File | Function | Source Format |
+|------|----------|---------------|
+| `xml-converter.ts` | `convertXmlCurveToJson` | XML 3DX `<chart>` documents |
+| `compact-dr-converter.ts` | `convertCompactDrToJson` | Compact dose-response JSON (`{p, poi, mxr, mnr, hs, ...}`) |
+| `pzfx-converter.ts` | `convertPzfxToJson` | GraphPad Prism PZFX XY tables |
 
 ### XML Parser — `src/fit/fit-parser.ts`
 
-`convertXMLToIFitChartData(xmlText)` — parses legacy 3DX XML format `<chart>` documents into `IFitChartData`. Extracts grid bounds, axis labels, series parameters (reorders from `[IC50, tan, max, min]` to `[max, tan, IC50, min]`), points, and outlier masks.
+`convertXMLToIFitChartData(xmlText)` — parses legacy 3DX XML format `<chart>` documents into `IFitChartData`. Used by the XML converter. Reorders parameters from `[IC50, tan, max, min]` to `[max, tan, IC50, min]`.
 
 ### Data to Curves — `src/fit/data-to-curves.ts`
 
-The main data transformation pipeline:
-
-**`dataToCurvesUI()`** — dialog with two forms:
-- **Well Table Form**: table, assay, concentration, readout, batch ID, run ID, compound ID, target entity, outliers, additional columns (auto-detects columns by name heuristics)
-- **Parent Table Form**: optional table with pre-fit parameters (Max/Hill/Inflection/Min), reported IC50, qualified IC50, experiment ID, qualifier, fit function selection (4PL dose-response or 4PL regression), use-prefit-params toggle
-- **Join Editor**: columns to join well-level and parent-level data
-- Supports dialog history for re-running with same settings
-
-**`convertDataToCurves()`** — core logic:
-1. Groups well-level rows by compound|assay|target|run (or custom join column)
-2. Builds `IFitSeries` per curve with points sorted by x, outlier flags, per-run marker types, categorical colors
-3. Assigns pre-fit parameters from parent table if available
-4. Creates result DataFrame with: `Fitted Curve` column (JSON, semType=fit), `Compound|Assay|Target` grouping column, info columns (assay, batch, compound, target, run, reported IC50, etc.)
-5. Computes aggregated stats: max percent inhibition, geomean IC50, standard deviation, total/reported result counts
-6. Auto-adds calculated statistics columns (IC50, Max, Min, Hill, AUC) if no parent table
-7. Sets up layout: trellis plot with MultiCurveViewer, selected curves grid, overlay viewer
+The main data transformation pipeline. `convertDataToCurves()` groups well-level assay data by compound|assay|target|run and builds fitted curve JSON.
 
 ### Multi-Curve Viewer — `src/fit/multi-curve-viewer.ts`
 
-`MultiCurveViewer` (extends `DG.JsViewer`) — superimposes curves from multiple rows/columns on one chart:
-- Properties: `curvesColumnNames` (column list), `legendColumnName`, `showSelectedRowsCurves`, `showCurrentRowCurve`, `showMouseOverRowCurve`, `mergeColumnSeries`, `showOutliers`, plus all `IFitChartOptions` properties
-- Reacts to: current cell change, mouse-over row, selection change (debounced 50ms)
-- Merges chart options from all visible cells, assigns categorical colors, adjusts opacity for large selections
-- Supports trellis mode (uses filter instead of selection/current)
-- `fromChartData(chartData)` — static factory for standalone use
+`MultiCurveViewer` (extends `DG.JsViewer`) — superimposes curves from multiple rows/columns on one chart. Supports trellis mode, selection/current/mouseover tracking, and legend columns.
 
-### Fit Inspection — `src/fit/fit-inspection.ts`
+### PZFX Parser — `src/formats/pzfx/pzfx-parser.ts`
 
-`inspectSeries(series, fitFunctionName)` — creates a temporary single-row DataFrame with the series as a fit cell, opens it in the inspect dialog with click-to-toggle and IC50 droplines. Used for programmatic curve inspection.
-
-### Demo — `src/fit/fit-demo.ts`
-
-- `createSigmoidPoints(length, step, pointsPerX)` — generates random sigmoid data with noise
-- `createDemoDataFrame(rowCount, chartsCount, chartsPerCell)` — builds a full demo DataFrame with multiple fit columns
-- `curveDemo()` — loads `files/curves-demo.csv` and opens it
-
-### Python Script — `scripts/calculateMSR.py`
-
-`Calculate MSR` — computes Minimum Significant Ratio using mixed-effects linear models (statsmodels). Groups by compound, assay, target entity; uses log10(IC50) with run dates as random effects. Falls back to simple variance calculation for small sample sizes. Top menu: `Data | Curves | Calculate MSR...`.
+Parses GraphPad Prism `.pzfx` files. Also used by the PZFX converter and the file viewer/handler.
 
 ## Tests — `src/tests/`
 
@@ -175,59 +187,67 @@ Test entry point: `src/package-test.ts` — imports all test files.
 
 | File | What it tests |
 |---|---|
-| `fit-tests.ts` | Core fitting: `getSeriesFitFunction`, `getCurve`, `fitSeries` (sigmoid, linear, log-linear, exponential, polynomial), confidence intervals, statistics, benchmarks |
-| `detector-tests.ts` | Semantic type detection for JSON fit data and XML 3DX format |
-| `curves-cell-renderer-tests.ts` | Cell renderer creation and rendering performance benchmarks |
-| `transform-tests.ts` | Viewport coordinate transformations (world↔screen) |
+| `detector-tests.ts` | Semantic type detection for all formats (JSON, XML, compact DR, PZFX) |
+| `converter-tests.ts` | All converters (XML, compact DR, PZFX), caching, format detection, rendering integration |
+| `fit-tests.ts` | Core fitting algorithms (sigmoid, linear, log-linear, exponential, polynomial) |
+| `curves-cell-renderer-tests.ts` | Cell renderer creation and rendering performance |
+| `transform-tests.ts` | Viewport coordinate transformations |
+| `pzfx-tests.ts` | PZFX file parser |
 
 ## Source Structure
 
 ```
 src/
-  package.ts              — Entry point, PackageFunctions, Sync helper
+  package.ts              — Entry point, PackageFunctions, converter registration
   package.g.ts            — Auto-generated function wrappers (DO NOT EDIT)
-  package-api.ts          — Auto-generated API namespace (scripts, funcs)
+  package-api.ts          — Auto-generated API namespace (DO NOT EDIT)
   package-test.ts         — Test entry point
   fit/
+    curve-converter.ts    — Converter registry, LRU cache, parseCellValue() entry point
     fit-renderer.ts       — FitChartCellRenderer, caching, chart layout, merging
     fit-grid-cell-handler.ts — FitGridCellHandler (property panel), stats calculation
     render-utils.ts       — Canvas drawing functions (points, lines, CIs, droplines, legend)
-    fit-parser.ts         — XML 3DX → IFitChartData converter
+    fit-parser.ts         — XML 3DX → IFitChartData parser (used by xml-converter)
     data-to-curves.ts     — Data to Curves pipeline (UI dialog + conversion logic)
     multi-curve-viewer.ts — MultiCurveViewer (overlay viewer)
     fit-inspection.ts     — inspectSeries helper
     fit-demo.ts           — Demo data generation and demo entry point
+    converters/
+      xml-converter.ts    — XML 3DX format converter
+      compact-dr-converter.ts — Compact dose-response JSON converter
+      pzfx-converter.ts   — PZFX (GraphPad Prism) format converter
+  formats/
+    pzfx/
+      pzfx-parser.ts      — PZFX file parser
   tests/
+    detector-tests.ts     — Semantic type detector tests (all formats)
+    converter-tests.ts    — Converter tests (all formats, caching, integration)
     fit-tests.ts          — Fitting algorithm tests
-    detector-tests.ts     — Semantic type detector tests
     curves-cell-renderer-tests.ts — Renderer benchmarks
     transform-tests.ts    — Viewport transform tests
+    pzfx-tests.ts         — PZFX parser tests
 scripts/
   calculateMSR.py         — MSR calculation (Python, statsmodels)
 files/
   curves-demo.csv         — Demo data
-detectors.js              — Semantic type detectors (XML and JSON fit formats)
+detectors.js              — Semantic type detectors (all curve formats)
 ```
 
 ## Quick Lookups
 
 | Looking for... | Check first |
 |---|---|
+| Adding a new curve format | Use `/add-curve-format` skill |
+| Converter infrastructure | `src/fit/curve-converter.ts` |
+| Existing converters | `src/fit/converters/` |
 | Function/demo/init registration | `src/package.ts` |
-| Cell renderer (render, click, tooltip) | `src/fit/fit-renderer.ts` (`FitChartCellRenderer`) |
-| Property panel (options, stats, chart) | `src/fit/fit-grid-cell-handler.ts` (`FitGridCellHandler`) |
+| Cell renderer (render, click, tooltip) | `src/fit/fit-renderer.ts` |
+| Property panel (options, stats, chart) | `src/fit/fit-grid-cell-handler.ts` |
 | Canvas drawing (points, lines, axes) | `src/fit/render-utils.ts` |
 | Data to Curves dialog & conversion | `src/fit/data-to-curves.ts` |
 | Multi-curve overlay viewer | `src/fit/multi-curve-viewer.ts` |
 | XML 3DX format parsing | `src/fit/fit-parser.ts` |
-| Inspect/edit a single curve | `src/fit/fit-inspection.ts` + `inspectCurve` in `fit-renderer.ts` |
 | Fit data types (IFitChartData, etc.) | `@datagrok-libraries/statistics/src/fit/fit-curve.ts` |
-| Fit functions & optimizer | `@datagrok-libraries/statistics/src/fit/fit-data.ts` |
 | Constants (tags, sizes, thresholds) | `@datagrok-libraries/statistics/src/fit/const.ts` |
-| New fit API (FitFunction classes) | `@datagrok-libraries/statistics/src/fit/new-fit-API.ts` |
-| Viewport (coordinate transforms) | `@datagrok-libraries/utils/src/transform.ts` |
 | Semantic type detection | `detectors.js` |
-| MSR calculation (Python) | `scripts/calculateMSR.py` |
-| Auto-generated function wrappers | `src/package.g.ts` / `src/package-api.ts` |
 | Test entry point | `src/package-test.ts` |
-| Demo data | `files/curves-demo.csv` |

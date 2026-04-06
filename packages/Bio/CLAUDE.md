@@ -1,24 +1,10 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
-
 ## Overview
 
 **Bio** (`@datagrok/bio`) is the main Datagrok plugin for **bioinformatics** — automatic detection, rendering, editing, analysis, and conversion of macromolecule sequences (peptides, DNA, RNA, HELM, BILN). It provides semantic type detection, custom cell renderers, viewers (WebLogo, VD Regions), analysis tools (sequence space, activity cliffs, MSA, similarity/diversity search), monomer library management, substructure filtering, and atomic-level conversion.
 
 Category: **Bioinformatics**. Top menu: `Bio | ...`.
-
-## Build Commands
-
-```bash
-npm install
-npm run build              # grok api && grok check --soft && webpack
-npm run test               # grok test
-npm run lint               # eslint src --ext .ts
-npm run lint-fix
-npm run build-all          # Builds chem-meta → js-api → utils → bio-lib → this package
-npm run link-all           # Links local datagrok-api and @datagrok-libraries/*
-```
 
 ## Key Dependencies
 

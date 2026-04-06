@@ -121,10 +121,6 @@ category('UI: Inputs', () => {
     v.close();
   });
 
-  after(async () => {
-    grok.shell.closeAll();
-  });
-
   function readonly(name: string, input: DG.InputBase, selector: string): void {
     v.append(input.root);
     let value: boolean = false;
@@ -252,10 +248,6 @@ category('UI: Choice input', () => {
     select.value = '';
     expect(select.value, '');
   });
-
-  after(async () => {
-    grok.shell.closeAll();
-  });
 }, {owner: 'dkovalyov@datagrok.ai'});
 
 category('UI: Choice input new', () => {
@@ -344,10 +336,6 @@ category('UI: Choice input new', () => {
     select.value = '';
     expect(select.value, '');
   });
-
-  after(async () => {
-    grok.shell.closeAll();
-  });
 }, {owner: 'dkovalyov@datagrok.ai'});
 
 category('UI: Table input new', () => {
@@ -372,9 +360,5 @@ category('UI: Table input new', () => {
 
     const selector = view.root.querySelector('select.ui-input-editor') as HTMLSelectElement;
     expect(selector.item(0)?.textContent, 'demog 10');
-  });
-
-  after(async () => {
-    grok.shell.closeAll();
   });
 }, {owner: 'dkovalyov@datagrok.ai'});

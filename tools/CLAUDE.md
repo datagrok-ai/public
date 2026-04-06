@@ -1,31 +1,12 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
-
 ## Overview
 
 This is **datagrok-tools**, a CLI utility for creating, validating, testing, and publishing packages to Datagrok. The tool is distributed as `grok` command globally via npm.
 
-## Build & Development Commands
+## Build Notes
 
-### Build the CLI
-```bash
-npm run build                    # Transpile TypeScript to JavaScript using Babel
-npm run debug-source-map         # Build with source maps for debugging
-```
-
-The build process uses Babel with `@babel/preset-typescript` to transpile TypeScript files from `bin/` (TypeScript source) to `bin/` (JavaScript output). The source TypeScript files are transpiled in-place.
-
-### Link for Local Development
-```bash
-npm link                         # Make 'grok' command available globally for testing
-```
-
-### Testing
-While this CLI tool manages testing for Datagrok packages, it doesn't have its own test suite. To test changes:
-1. Build the tool: `npm run build`
-2. Link it: `npm link`
-3. Test commands manually: `grok create test-package`, `grok check`, etc.
+The build process uses Babel with `@babel/preset-typescript` to transpile TypeScript files from `bin/` to `bin/` (in-place). `.ts` source and `.js` output coexist in the same `bin/` directory -- `grok.js` requires the transpiled `.js` files, not the `.ts` sources. After editing any `.ts` file, you must run `npm run build` before testing.
 
 ## Code Architecture
 
@@ -42,12 +23,17 @@ The CLI uses a modular command pattern. Each command is a separate module that:
 - `add.ts` - Add entities (functions, scripts, queries, etc.) to packages
 - `publish.ts` - Upload and deploy packages to Datagrok servers
 - `check.ts` - Validate package structure, signatures, imports
+- `build.ts` - Build one package or recursively build all packages in a directory
 - `test.ts` - Run Puppeteer-based tests for a single package
 - `test-all.ts` - Run tests across multiple packages
+- `stress-tests.ts` - Run stress tests (must be run from ApiTests package)
 - `api.ts` - Auto-generate TypeScript wrappers for scripts/queries
 - `link.ts` - Link libraries for plugin development
+- `claude.ts` - Launch a Dockerized dev environment with Datagrok + Claude Code
 - `migrate.ts` - Update legacy packages
 - `init.ts` - Apply configuration to existing packages
+
+The commands `api`, `check`, `link`, `publish`, and `test` support the `--all` flag to run recursively across all packages in the current directory.
 
 ### Template System
 
@@ -105,14 +91,32 @@ The `publish` command executes these steps:
 1. Gather files using `ignore-walk` (respects .npmignore/.gitignore/.grokignore)
 2. Run validation checks (signatures, imports, package.json, changelog)
 3. Process environment variables in `/connections/*.json` files (replace `${VAR}`)
-4. Create ZIP archive with archiver-promise
-5. Upload to server: `POST ${host}/packages/dev/${devKey}/${packageName}`
+4. **Process Docker images** (see below)
+5. Create ZIP archive with archiver-promise (includes `image.json` metadata per container)
+6. Upload to server: `POST ${host}/packages/dev/${devKey}/${packageName}`
 
 **Key flags:**
 - `--debug` (default) - Package visible only to developer
 - `--release` - Public package
 - `--build` / `--rebuild` - Control webpack bundling
 - `--skip-check` - Skip validation
+- `--rebuild-docker` - Force rebuild Docker images locally before pushing to registry
+- `--skip-docker-rebuild` - Skip auto-rebuild even when dockerfile folder has changed
+
+### Docker Image Handling in `publish`
+
+Implemented in `bin/commands/publish.ts` (`processDockerImages()`, `discoverDockerfiles()`).
+
+When a package has a `dockerfiles/` directory, `grok publish` automatically manages Docker images:
+
+1. **Discovery** — scans `dockerfiles/` for subdirectories containing a `Dockerfile`. Image name = `<packageName>-<folderName>`.
+2. **Change detection** — computes SHA256 of the entire dockerfile directory. If the hash differs from what the server has, rebuilds automatically (unless `--skip-docker-rebuild`).
+3. **Build** — `docker build --platform linux/amd64` (always cross-compiled for linux/amd64).
+4. **Registry** — tags and pushes to configured Docker registry if one is set.
+5. **Metadata** — writes `image.json` into the ZIP for each container so the server knows which image to use.
+6. **Fallback** — if a local build isn't available, queries the server for a compatible pre-built image.
+
+**Practical implication:** editing any file inside `dockerfiles/<name>/` will cause `grok publish` to rebuild that container image on the next publish, without needing `--rebuild-docker`.
 
 ### Testing Framework
 
@@ -131,6 +135,90 @@ Tests use Puppeteer for headless browser automation:
 - `--verbose` - Detailed test output
 - `--catchUnhandled` - Catch unhandled exceptions
 - `--debug` - Debug breakpoints (requires `--gui`)
+
+### `grok build` Command
+
+Builds packages with `npm install` + `npm run build`. Supports:
+- Single package: `grok build` (from package directory)
+- Recursive: `grok build --recursive` (discovers and builds all packages in subdirectories)
+- `--filter "name:Chem"` - Filter packages by package.json fields (supports regex, `&&` for multiple conditions)
+- `--parallel N` - Max parallel build jobs (default 4)
+- `--no-incremental` - Force full rebuild (default uses `--env incremental`)
+
+### `grok claude` Command
+
+Launches a full Dockerized development environment with Datagrok + Claude Code. The compose configuration is embedded in `claude.ts` — no external files needed.
+
+```bash
+grok claude <project>                      # Create worktree + start containers + launch Claude
+grok claude <project> --in-place           # Use current directory (no worktree)
+grok claude <project> --keep               # Leave containers running on exit
+grok claude <project> --version 1.22.0     # Pin Datagrok version
+grok claude <project> --profile full       # Include spawner, JKG, demo DBs
+grok claude <project> --profile scripting  # Include JKG for Python/R/Julia
+grok claude <project> --port 8080          # Fix Datagrok port (default: random free port)
+grok claude <project> --prompt "fix bug"   # Pass prompt to Claude Code (-p flag)
+grok claude destroy <project>              # Tear down containers + worktree + temp files
+grok claude destroy-all                    # Destroy all known projects
+```
+
+**Project name restrictions:** `master` and `main` are rejected.
+
+**Lifecycle:**
+1. Creates git worktree at `~/pkg-worktrees/<project>` (unless `--in-place` or not in a git repo)
+2. Writes `docker-compose.yaml` + `.env` + optional `docker-compose.override.yaml` to `$TMPDIR/dg-pkg-<project>`
+3. Runs `docker compose up -d --wait`
+4. Detects Claude working directory based on repo type (see below)
+5. Launches `claude --dangerously-skip-permissions` inside the `tools-dev` container
+6. On exit: stops containers (unless `--keep`)
+
+**Version resolution:** `--version` flag > `bleeding-edge` (if inside public repo) > `latest`
+
+**Compose services (embedded template):**
+- Always started: `postgres` (pgvector:pg17), `rabbitmq`, `grok_pipe`, `datagrok`, `grok_connect`, `tools-dev`
+- Profile `full`: adds `grok_spawner`
+- Profile `scripting`/`full`: adds `jupyter_kernel_gateway`
+- Profile `demo`/`full`: adds `world`, `test_db`, `northwind` demo databases
+
+**Note:** The embedded template in `claude.ts` differs from `.devcontainer/docker-compose.yaml`:
+- Embedded uses separate version vars per service (`DATAGROK_VERSION`, `GROK_CONNECT_VERSION`, `GROK_SPAWNER_VERSION`, `JKG_VERSION`, `TOOLS_DEV_VERSION`); `.devcontainer/` uses a single `DG_VERSION` for all
+- Embedded mounts workspace at `/workspace/repo`; `.devcontainer/` mounts at `/workspace`
+- Embedded has `grok_connect` always-on (no profile); `.devcontainer/` puts it under `profiles: ["full"]`
+- Embedded uses `grok_pipe:latest`; `.devcontainer/` uses `grok_pipe:${DG_VERSION}`
+- Embedded doesn't mount `~/.grok` from host; `.devcontainer/` does
+
+**Host config override:** If `~/.claude` (or `CLAUDE_HOME`) is found on the host, a `docker-compose.override.yaml` is generated to bind-mount it into the container. Also mounts `~/.claude.json` if present.
+
+**Working directory detection inside container:**
+- Public repo root (has `js-api/`): `/workspace/repo`
+- Monorepo (has `public/js-api/`): `/workspace/repo/public`
+- External repo: `/workspace/datagrok/packages/<folder-name>` (waits up to 600s for entrypoint to clone public repo)
+
+#### tools-dev Container (`Dockerfile.pkg_dev`)
+
+Based on `node:22-bookworm-slim`. Pre-installed:
+- Google Chrome stable (for Puppeteer), Playwright + Chromium
+- `datagrok-tools` (grok CLI) and `@anthropic-ai/claude-code` (global npm)
+- git, curl, jq, docker CLI
+- Runs as `node` user (UID 1000, added to `docker` group)
+
+#### Entrypoint (`entrypoint.sh`)
+
+1. **Repo detection:** checks if `/workspace/repo` is the public repo (has `.git` + `js-api/`) or monorepo (`public/js-api/`)
+2. **Auto-clone:** if workspace is not the public repo, sparse-clones it to `$DG_PUBLIC_DIR` (default `/workspace/datagrok`) — excludes `connectors/`, `docker/`, `environments/`, `python-api/`, etc. for speed. Branch resolved as: `DG_PUBLIC_BRANCH` > `DG_VERSION` mapped to branch > `master` fallback
+3. **Workspace linking:** for non-public repos, symlinks `/workspace/repo` into the cloned repo's `packages/` dir and links `.claude`/`CLAUDE.md` at `/workspace/` for context discovery
+4. **Grok config:** auto-creates `~/.grok/config.yaml` pointing to `http://datagrok:8080/api` with key `admin` (only if config doesn't already exist)
+
+#### Profiles
+
+| Profile | Additional services |
+|---------|-------------------|
+| (none) | postgres, rabbitmq, grok_pipe, datagrok, grok_connect, tools-dev |
+| `scripting` | + jupyter_kernel_gateway |
+| `demo` | + world, test_db, northwind |
+| `full` | + grok_spawner, JKG, demo DBs |
+
+See `.devcontainer/PACKAGES_DEV.md` for detailed usage docs, architecture diagram, MCP plugin setup (Jira/GitHub), and troubleshooting.
 
 ## Key Patterns and Conventions
 
@@ -183,16 +271,6 @@ servers:
     url: 'https://dev.datagrok.ai/api'
     key: ''
 ```
-
-### Webpack Externals
-
-The CLI validates that imports match webpack externals to prevent bundling datagrok-api and other provided libraries. Common externals:
-- `datagrok-api`
-- `rxjs`
-- `cash-dom`
-- `dayjs`
-- `openchemlib/full`
-- `wu`
 
 ## File References
 

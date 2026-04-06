@@ -34,8 +34,7 @@
     "debug-reinvent4-local": "webpack && grok publish local",
     "release-reinvent4-local": "webpack && grok publish local --release",
     "debug-reinvent4-localhost": "webpack && grok publish localhost",
-    "release-reinvent4-localhost": "webpack && grok publish localhost --release",
-    "test": "grok test"
+    "release-reinvent4-localhost": "webpack && grok publish localhost --release"
   },
   "canEdit": [
     "Administrators"

@@ -42,6 +42,8 @@ import {getMonomerLibHelper} from '@datagrok-libraries/bio/src/types/monomer-lib
 import {PolymerTypes} from '@datagrok-libraries/bio/src/helm/consts';
 import {PeptideUtils} from '../peptideUtils';
 import {StringDictionary} from '@datagrok-libraries/utils/src/type-declarations';
+import {SeqTemps} from '@datagrok-libraries/bio/src/utils/macromolecule/seq-handler';
+import {getSeparator} from '../utils/misc';
 
 export enum SELECTION_MODE {
   MUTATION_CLIFFS = 'Mutation Cliffs',
@@ -467,7 +469,8 @@ export abstract class SARViewer extends DG.JsViewer implements ISARViewer {
    */
   onPropertyChanged(property: DG.Property): void {
     super.onPropertyChanged(property);
-
+    if (!this.dataFrame)
+      return;
 
     this.doRender = true;
     switch (property.name) {
@@ -543,6 +546,152 @@ export abstract class SARViewer extends DG.JsViewer implements ISARViewer {
     throw new Error('Not implemented');
   }
 
+  /** Shows a dialog to choose extra columns, then exports all unique mutation cliffs as a new table view. */
+  exportMutationCliffs(): void {
+    if (!this.mutationCliffs) {
+      grok.shell.warning('Mutation cliffs have not been calculated yet.');
+      return;
+    }
+
+    const available = this.dataFrame.columns.toList()
+      .filter((col) => col.name !== this.activityColumnName && col.name !== this.sequenceColumnName &&
+        !this.positionColumns.some((pc) => pc.name === col.name))
+      .map((col) => col.name);
+
+    const columnsInput = ui.input.columns('Extra columns', {table: this.dataFrame, value: [], available, nullable: true});
+
+    ui.dialog('Export Mutation Cliffs')
+      .add(columnsInput.root)
+      .onOK(() => this._doExportMutationCliffs(columnsInput.value ?? []))
+      .show();
+  }
+
+  private _doExportMutationCliffs(extraColumns: DG.Column[]): void {
+    const mc = this.mutationCliffs!;
+    const alignedSeqCol = this.dataFrame.getCol(this.sequenceColumnName);
+    const alignedSeqColCategories = alignedSeqCol.categories;
+    const alignedSeqColData = alignedSeqCol.getRawData();
+    const activityCol = this.dataFrame.getCol(this.activityColumnName);
+    const activityColData = activityCol.getRawData();
+
+    const seq1Array: string[] = [];
+    const seq2Array: string[] = [];
+    const diffArray: string[] = [];
+    const act1Array: (number | null)[] = [];
+    const act2Array: (number | null)[] = [];
+    const deltaArray: (number | null)[] = [];
+    const extraData1: any[][] = extraColumns.map(() => []);
+    const extraData2: any[][] = extraColumns.map(() => []);
+
+    const seenPairs = new Set<string>();
+
+    for (const [_monomer, posMap] of mc.entries()) {
+      for (const [_position, indexMap] of posMap.entries()) {
+        for (const [refIdx, subIndexes] of indexMap.entries()) {
+          for (const subIdx of subIndexes) {
+            const pairKey = refIdx < subIdx ? `${refIdx}-${subIdx}` : `${subIdx}-${refIdx}`;
+            if (seenPairs.has(pairKey))
+              continue;
+            seenPairs.add(pairKey);
+
+            const seq1 = alignedSeqColCategories[alignedSeqColData[refIdx]];
+            const seq2 = alignedSeqColCategories[alignedSeqColData[subIdx]];
+            seq1Array.push(seq1);
+            seq2Array.push(seq2);
+            diffArray.push(`${seq1}#${seq2}`);
+
+            const a1 = activityCol.isNone(refIdx) ? null : activityColData[refIdx];
+            const a2 = activityCol.isNone(subIdx) ? null : activityColData[subIdx];
+            act1Array.push(a1);
+            act2Array.push(a2);
+            deltaArray.push(a1 == null || a2 == null ? null : a1 - a2);
+
+            for (let e = 0; e < extraColumns.length; e++) {
+              const eCol = extraColumns[e];
+              extraData1[e].push(eCol.isNone(refIdx) ? null : eCol.get(refIdx));
+              extraData2[e].push(eCol.isNone(subIdx) ? null : eCol.get(subIdx));
+            }
+          }
+        }
+      }
+    }
+
+    if (seq1Array.length === 0) {
+      grok.shell.warning('No mutation cliffs found to export.');
+      return;
+    }
+
+    const seq1Col = DG.Column.fromStrings('Seq 1', seq1Array);
+    const seq2Col = DG.Column.fromStrings('Seq 2', seq2Array);
+    const diffCol = DG.Column.fromStrings('Mutation', diffArray);
+
+    // Copy sequence tags (without notation provider) so the platform detects the same semtype
+    for (const col of [seq1Col, seq2Col]) {
+      for (const tag of alignedSeqCol.tags.keys()) {
+        if (tag !== '.notationProvider')
+          col.setTag(tag, alignedSeqCol.getTag(tag)!);
+      }
+      col.semType = alignedSeqCol.semType;
+    }
+
+    // Set up macromolecule difference column
+    diffCol.semType = C.SEM_TYPES.MACROMOLECULE_DIFFERENCE;
+    diffCol.setTag(C.TAGS.SEPARATOR, getSeparator(alignedSeqCol));
+    diffCol.setTag(DG.TAGS.UNITS, alignedSeqCol.getTag(DG.TAGS.UNITS) ?? '');
+    diffCol.setTag(DG.TAGS.CELL_RENDERER, 'MacromoleculeDifference');
+    diffCol.temp[SeqTemps.notationProvider] = alignedSeqCol.temp[SeqTemps.notationProvider];
+
+    const act1Col = DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, `Seq 1 ${this.activityColumnName}`, act1Array);
+    const act2Col = DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, `Seq 2 ${this.activityColumnName}`, act2Array);
+    const deltaCol = DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'Delta', deltaArray);
+
+    const columns: DG.Column[] = [seq1Col, seq2Col, diffCol, act1Col, act2Col, deltaCol];
+
+    // Add extra columns (two per extra column: one for seq1, one for seq2)
+    for (let e = 0; e < extraColumns.length; e++) {
+      const eName = extraColumns[e].name;
+      const eType = extraColumns[e].type;
+      columns.push(DG.Column.fromList(eType as DG.COLUMN_TYPE, `Seq 1 ${eName}`, extraData1[e]));
+      columns.push(DG.Column.fromList(eType as DG.COLUMN_TYPE, `Seq 2 ${eName}`, extraData2[e]));
+    }
+
+    const df = DG.DataFrame.fromColumns(columns);
+    df.name = 'Mutation Cliffs';
+    grok.shell.addTableView(df);
+  }
+
+  /** Exports the invariant map as a new table view: monomer × position counts. */
+  exportInvariantMap(): void {
+    const stats = this.monomerPositionStats;
+    const uniqueMonomers = new Set<string>();
+    const positionNames: string[] = [];
+    for (const pos of Object.keys(stats)) {
+      if (pos === 'general')
+        continue;
+      positionNames.push(pos);
+      const posStats = stats[pos]!;
+      for (const monomer of Object.keys(posStats)) {
+        if (monomer === 'general')
+          continue;
+        uniqueMonomers.add(monomer);
+      }
+    }
+
+    const monomersArray = Array.from(uniqueMonomers).sort();
+    const monomerCol = DG.Column.fromStrings(C.COLUMNS_NAMES.MONOMER, monomersArray);
+    const columns: DG.Column[] = [monomerCol];
+
+    for (const pos of positionNames) {
+      const posStats = stats[pos]!;
+      const counts = monomersArray.map((m) => posStats[m]?.count ?? 0);
+      columns.push(DG.Column.fromList(DG.COLUMN_TYPE.INT, pos, counts));
+    }
+
+    const df = DG.DataFrame.fromColumns(columns);
+    df.name = 'Invariant Map';
+    grok.shell.addTableView(df);
+  }
+
   /** Removes all the active subscriptions. */
   detach(): void {
     this.subs.forEach((sub) => sub.unsubscribe());
@@ -567,6 +716,9 @@ export abstract class SARViewer extends DG.JsViewer implements ISARViewer {
         if (!a || !a.causedBy || !a.args || !a.args.menu || !a.causedBy.target || !(a.causedBy.target instanceof HTMLElement) || !this.root.contains(a.causedBy.target))
           return;
         const menu = a.args.menu as DG.Menu;
+        const exportGroup = menu.group('Export');
+        exportGroup.item('Export Mutation Cliffs...', () => this.exportMutationCliffs());
+        exportGroup.item('Export Invariant Map', () => this.exportInvariantMap());
         getMonomerLibHelper().then((lh) => {
           const lib = lh.getMonomerLib();
           const mSymbols = lib.getMonomerSymbolsByType(PolymerTypes.PEPTIDE);
@@ -748,6 +900,8 @@ export class MonomerPosition extends SARViewer {
    */
   onPropertyChanged(property: DG.Property): void {
     super.onPropertyChanged(property);
+    if (!this.dataFrame)
+      return;
     switch (property.name) {
     case SAR_PROPERTIES.SEQUENCE:
       this._invariantMapSelection = null;
@@ -1115,7 +1269,7 @@ export class MonomerPosition extends SARViewer {
   /** Renders the MonomerPosition viewer body. */
   render(): void {
     $(this.root).empty();
-    if (!this.activityColumnName || !this.sequenceColumnName) {
+    if (!this.dataFrame || !this.activityColumnName || !this.sequenceColumnName) {
       this.root.appendChild(ui.divText('Please, select a sequence and activity columns in the viewer properties'));
       return;
     }
@@ -1474,7 +1628,7 @@ export class MostPotentResidues extends SARViewer {
   /** Renders the MostPotentResidues viewer body. */
   render(): void {
     $(this.root).empty();
-    if (!this.activityColumnName || !this.sequenceColumnName) {
+    if (!this.dataFrame || !this.activityColumnName || !this.sequenceColumnName) {
       this.root.appendChild(ui.divText('Please, select a sequence and activity columns in the viewer properties'));
       return;
     }

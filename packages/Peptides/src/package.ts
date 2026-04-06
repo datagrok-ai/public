@@ -128,7 +128,7 @@ export class PackageFunctions {
     'name': 'Bio Peptides',
     'outputs': [],
   })
-  static peptidesDialog(): DG.Dialog | null {
+  static async peptidesDialog(): Promise<DG.Dialog | null> {
     if (!grok.shell.t || !grok.shell.t.columns.bySemType('Macromolecule')?.length) {
       grok.shell.warning('SAR Analysis requires an active table with Macromolecule column');
       return null;
@@ -139,7 +139,7 @@ export class PackageFunctions {
       return null;
     }
 
-    const analyzeObject = analyzePeptidesUI(grok.shell.t);
+    const analyzeObject = await analyzePeptidesUI(grok.shell.t);
     const dialog = ui.dialog('Analyze Peptides').add(analyzeObject.host).onOK(async () => {
       const startSuccess = analyzeObject.callback();
       if (!startSuccess)
@@ -163,11 +163,11 @@ export class PackageFunctions {
     meta: {role: 'widgets'},
     tags: ['widgets', 'panel'],
   })
-  static peptidesPanel(
-    @grok.decorators.param({'options': {'semType': 'Macromolecule'}}) col: DG.Column): DG.Widget {
+  static async peptidesPanel(
+    @grok.decorators.param({'options': {'semType': 'Macromolecule'}}) col: DG.Column): Promise<DG.Widget> {
     if (!col.dataFrame || !DG.Utils.firstOrNull(col.dataFrame.columns.numerical))
       return new DG.Widget(ui.divText('SAR Analysis requires an active table with at least one numerical column for activity'));
-    const analyzeObject = analyzePeptidesUI(col.dataFrame, col);
+    const analyzeObject = await analyzePeptidesUI(col.dataFrame, col);
     return new DG.Widget(analyzeObject.host);
   }
 

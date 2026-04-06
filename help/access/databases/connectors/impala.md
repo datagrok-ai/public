@@ -2,7 +2,7 @@
 title: "Impala"
 ---
 
-Provides access to [Impala](https://impala.apache.org/) query engine via JDBC driver.
+Provides access to [Impala](https://impala.apache.org/) query engine via a JDBC driver.
 
 ## Connection parameters
 

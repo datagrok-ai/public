@@ -146,8 +146,4 @@ category('View: Events', () => {
       tv.resetLayout();
     }
   });
-
-  after(async () => {
-    grok.shell.closeAll();
-  });
 }, {clear: false, owner: 'aparamonov@datagrok.ai' });

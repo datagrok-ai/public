@@ -15,7 +15,7 @@ export const SALT_AND_WATER_FRAGMENTS = [
 
 /** When true, use the RDKitReactionRenderer class (offscreen canvas + LRU cache) for reaction previews.
  *  When false, use simple direct RDKit rendering: get_rxn() → draw_to_canvas() → delete(). */
-export const USE_RDKIT_REACTION_RENDERER = false;
+export const USE_RDKIT_REACTION_RENDERER = true;
 
 /** Storage paths */
 export const REACTIONS_STORAGE_PATH = 'System:AppData/Chem/reactions';

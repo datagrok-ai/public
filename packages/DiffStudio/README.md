@@ -204,7 +204,7 @@ Explicit methods (for non-stiff ODEs) - [Adams-Bashforth](https://en.wikipedia.o
 By default, Diff Studio uses ROS34PRw. You may specify the method as follows:
 
 ```python
-#meta.solver: {method: 'lsoda'}
+#meta.solver: {method: 'cvode'}
 ```
 
 To check correctness of formulas, set the maximum number of iterations:

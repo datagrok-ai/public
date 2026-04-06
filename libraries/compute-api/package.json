@@ -1,16 +1,16 @@
 {
   "name": "@datagrok-libraries/compute-api",
   "friendlyName": "ComputeApi",
-  "version": "0.6.8",
+  "version": "0.7.2",
   "author": {
     "name": "Andrey Sharapov",
     "email": "andrey.sharapov@softwarecountry.com"
   },
   "description": "Datagrok compute global API",
   "dependencies": {
-    "@datagrok-libraries/compute-utils": "../compute-utils",
-    "datagrok-api": "../../js-api",
-    "dayjs": "^1.11.19"
+    "@datagrok-libraries/compute-utils": "^1.45.1",
+    "datagrok-api": "^1.27.0",
+    "dayjs": "1.11.19"
   },
   "devDependencies": {
     "@typescript-eslint/eslint-plugin": "^8.8.1",

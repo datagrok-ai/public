@@ -5,6 +5,23 @@ import * as DG from 'datagrok-api/dg';
 import {DBExplorerConfig, DBValueObject, EntryPointOptions, QueryJoinOptions, ReferencedByObject, SchemaAndConnection, SupportedRenderer} from './types';
 import {queryDB} from './query';
 
+/** Case-insensitive object key lookup */
+function ciGet<T>(obj: {[key: string]: T}, key: string): T | undefined {
+  if (obj[key] !== undefined) return obj[key];
+  const lowerKey = key.toLowerCase();
+  for (const k of Object.keys(obj)) {
+    if (k.toLowerCase() === lowerKey)
+      return obj[k];
+  }
+
+  return undefined;
+}
+
+/** Case-insensitive string comparison */
+function ciEquals(a: string, b: string): boolean {
+  return a.toLowerCase() === b.toLowerCase();
+}
+
 export const MAX_MULTIROW_VALUES = 10;
 /** normal renderer supporting copy and elipsis */
 export function textRenderer(value: string | number, withTooltip = true) {
@@ -292,7 +309,7 @@ export class DBExplorerRenderer {
       return {root: this.renderDataFrame(df, schemaName, tableName), rowCount: 1};
     const acc = ui.accordion(`Multiple rows for ${tableName}`);
     const dfMaxCount = Math.min(df.rowCount, 10);
-    const replaceColName = this.headerReplacers[tableName];
+    const replaceColName = ciGet(this.headerReplacers, tableName);
     for (let i = 0; i < dfMaxCount; i++) {
       let paneName = `Row ${i + 1}`;
       if (replaceColName && df.col(replaceColName)?.get(i)) {
@@ -345,13 +362,19 @@ export class DBExplorerRenderer {
       .map((colName) => [colName, clearedDF.col(colName)!.isNone(0) ? '' : clearedDF.col(colName)!.getString(0)]) as [string, string | number][];
 
     // reverse compatibility: first check schema qualified table name
-    const customSelectedColumnEntries = this.customSelectedColumns[`${schemaName}.${tableName}`] ?? this.customSelectedColumns[tableName];
+    const customSelectedColumnEntries = ciGet(this.customSelectedColumns, `${schemaName}.${tableName}`) ?? ciGet(this.customSelectedColumns, tableName);
     if (!options?.skipCustomSelected && customSelectedColumnEntries) {
-      entries = entries.filter(([key, _]) => customSelectedColumnEntries.has(key));
+      const ciHas = (set: Set<string>, val: string) => {
+        const lower = val.toLowerCase();
+        for (const v of set) if (v.toLowerCase() === lower) return true;
+        return false;
+      };
+      entries = entries.filter(([key, _]) => ciHas(customSelectedColumnEntries, key));
       // reorder entries according to customSelectedColumns if present
       const cols = Array.from(customSelectedColumnEntries);
+      const colsLower = cols.map((c) => c.toLowerCase());
       entries.sort((a, b) => {
-        return cols.indexOf(a[0]) - cols.indexOf(b[0]);
+        return colsLower.indexOf(a[0]?.toLowerCase()) - colsLower.indexOf(b[0]?.toLowerCase());
       });
     }
     // similarly here, the column name in the df might not match the db column name if the df is a result of a query joining multiple tables
@@ -368,7 +391,7 @@ export class DBExplorerRenderer {
         dbColSchemaNames[colName] = col.getTag(DG.Tags.DbSchema)!;
     });
 
-    const isAggregatedFromMultipleTables = Object.keys(dbColTableNames).some((colName) => dbColTableNames[colName] !== tableName);
+    const isAggregatedFromMultipleTables = Object.keys(dbColTableNames).some((colName) => !ciEquals(dbColTableNames[colName], tableName));
 
     const mainTable = ui.table(entries, (entry) => {
       const colName = entry[0];
@@ -393,7 +416,8 @@ export class DBExplorerRenderer {
       if (refedByInfo && refedByInfo.length > 0)
         return [textRenderer(colName), this.refIdRenderer(schemaAndConnection.connection, value, dbSchemaName, dbTableName, dbColName)];
 
-      const isUnqueCol = this.uniqueColNames[dbTableName] === dbColName;
+      const uniqueColForTable = ciGet(this.uniqueColNames, dbTableName);
+      const isUnqueCol = uniqueColForTable !== undefined && ciEquals(uniqueColForTable, dbColName);
       if (isUnqueCol) {
         if (!isAggregatedFromMultipleTables) // if its not aggregated, the tooltip in of the id will be the exact same as card, so we use simpler ownerIdRenderer
           return [textRenderer(colName), ownIdRenderer(value, dbTableName, dbColName, schemaAndConnection.connection.nqName, dbSchemaName)];

@@ -1,5 +1,27 @@
 # Usage Analysis changelog
 
+## 2.5.0 (2026-03-20)
+
+### Features
+
+* GROK-18787: Click Tracking:
+  * Added Clicks tab
+  * Added tab control for Click Analysis and Specific Clicks
+  * Added elements inspect
+* [#3213](https://github.com/datagrok-ai/public/issues/3213): Introduced Projects tab
+* Improved query performance, load time, and projects tab
+* Reports: Added descending ordering by creation date in widget
+* Reports: Truncated long text in widget
+* Improved ticket loading with bulk method and background processing
+* Decreased bundle size by removing unnecessary test library usages
+* [#3604](https://github.com/datagrok-ai/public/issues/3604): Migrated tags to roles
+
+### Bug Fixes
+
+* GROK-19855: Reporting app now loads reports when opened by URL with report number
+* GROK-19523: AppTreeBrowser decorator now finds the app properly
+* GROK-19504: Invalid datagrok-api imports corrected
+
 ## 2.4.2 (2025-09-26)
 
 * Test Track: Added advanced test case for visual query

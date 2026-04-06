@@ -1,5 +1,6 @@
 // @ts-ignore
 import archiver from 'archiver-promise';
+import crypto from 'crypto';
 import fs from 'fs';
 // @ts-ignore
 import fetch from 'node-fetch';
@@ -13,8 +14,9 @@ import {Indexable} from '../utils/utils';
 import {loadPackages} from '../utils/test-utils';
 import * as color from '../utils/color-utils';
 import {check} from './check';
+import {generateCeleryArtifacts} from '../utils/python-celery-gen';
 
-const {exec} = require('child_process');
+const {exec, execSync} = require('child_process');
 
 const grokDir = path.join(os.homedir(), '.grok');
 const confPath = path.join(grokDir, 'config.yaml');
@@ -29,24 +31,390 @@ const packageFiles = [
 ];
 let config: utils.Config;
 
-export async function processPackage(debug: boolean, rebuild: boolean, host: string, devKey: string, packageName: any, dropDb: boolean, suffix?: string, hostAlias?: string) {
-  // Get the server timestamps
+const BLEEDING_EDGE_TAG = 'bleeding-edge';
+
+interface DockerImageInfo {
+  imageName: string;
+  imageTag: string;
+  dirName: string;
+  fullLocalName: string;
+}
+
+interface DockerImageResult {
+  image: string | null;
+  fallback: boolean;
+  requestedVersion?: string;
+}
+
+function discoverDockerfiles(packageName: string, version: string, debug: boolean): DockerImageInfo[] {
+  const dockerfilesDir = path.join(curDir, 'dockerfiles');
+  if (!fs.existsSync(dockerfilesDir))
+    return [];
+
+  const results: DockerImageInfo[] = [];
+  const entries = fs.readdirSync(dockerfilesDir, {withFileTypes: true});
+  for (const entry of entries) {
+    if (!entry.isDirectory())
+      continue;
+    const dockerfilePath = path.join(dockerfilesDir, entry.name, 'Dockerfile');
+    if (!fs.existsSync(dockerfilePath))
+      continue;
+    const cleanName = utils.removeScope(packageName).toLowerCase();
+    const imageName = `${cleanName}-${entry.name.toLowerCase()}`;
+    const imageTag = version;
+    results.push({
+      imageName,
+      imageTag,
+      dirName: entry.name,
+      fullLocalName: `${imageName}:${imageTag}`,
+    });
+  }
+  return results;
+}
+
+function dockerCommand(args: string): string {
+  return execSync(`docker ${args}`, {encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe']}).trim();
+}
+
+function localImageExists(fullName: string, checkPlatform: boolean = true): boolean {
+  try {
+    const output = dockerCommand(`images --format "{{.Repository}}:{{.Tag}}"`);
+    if (!output.split('\n').some((line: string) => line.trim() === fullName))
+      return false;
+    if (checkPlatform) {
+      // Verify the image is linux/amd64 — ARM images won't run on Datagrok servers
+      const inspect = dockerCommand(`inspect --format "{{.Os}}/{{.Architecture}}" ${fullName}`);
+      if (inspect.trim() !== 'linux/amd64') {
+        color.warn(`Local image ${fullName} is ${inspect.trim()}, not linux/amd64 — treating as not found`);
+        return false;
+      }
+    }
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function dockerLogin(registry: string, devKey: string): boolean {
+  try {
+    dockerCommand(`login ${registry} -u any -p ${devKey}`);
+    return true;
+  } catch (e: any) {
+    color.warn(`Docker login to ${registry} failed: ${e.message || e}`);
+    return false;
+  }
+}
+
+function dockerTag(source: string, target: string): boolean {
+  try {
+    dockerCommand(`tag ${source} ${target}`);
+    return true;
+  } catch (e: any) {
+    color.error(`Failed to tag ${source} as ${target}: ${e.message || e}`);
+    return false;
+  }
+}
+
+function dockerPush(image: string): boolean {
+  try {
+    execSync(`docker push ${image}`, {encoding: 'utf-8', stdio: 'inherit'});
+    return true;
+  } catch (e: any) {
+    color.error(`Failed to push ${image}: ${e.message || e}`);
+    return false;
+  }
+}
+
+function isLocalhostRegistry(registry: string): boolean {
+  return registry.startsWith('localhost') || registry.startsWith('127.0.0.1');
+}
+
+function dockerRemove(imageName: string): boolean {
+  try {
+    dockerCommand(`rmi ${imageName}`);
+    return true;
+  }
+  catch {
+    return false;
+  }
+}
+
+function dockerBuild(imageName: string, dockerfilePath: string, context: string, usePlatform: boolean = true): boolean {
+  try {
+    const platformFlag = usePlatform ? '--platform linux/amd64 ' : '';
+    color.log(`Building Docker image ${imageName}${usePlatform ? ' (platform: linux/amd64)' : ''}...`);
+    execSync(`docker build ${platformFlag}-t ${imageName} -f ${dockerfilePath} ${context}`, {
+      encoding: 'utf-8',
+      stdio: 'inherit',
+    });
+    return true;
+  } catch (e: any) {
+    color.error(`Failed to build ${imageName}: ${e.message || e}`);
+    return false;
+  }
+}
+
+function calculateFolderHash(dirPath: string): string {
+  const hash = crypto.createHash('sha256');
+  const entries = listRecursive(dirPath, '');
+  entries.sort((a, b) => a.relPath < b.relPath ? -1 : a.relPath > b.relPath ? 1 : 0);
+  for (const entry of entries) {
+    if (entry.isDir) {
+      color.log(`  Hash entry: dir:${entry.relPath}:`);
+      hash.update(`dir:${entry.relPath}:`);
+    }
+    else {
+      // Normalize CRLF to LF to match server-side storage
+      const raw = fs.readFileSync(entry.fullPath);
+      const content = raw.includes(0x0d) && !raw.includes(0x00)
+        ? Buffer.from(raw.toString('utf8').replace(/\r\n/g, '\n'), 'utf8')
+        : raw;
+      color.log(`  Hash entry: file:${entry.relPath}: (${content.length} bytes)`);
+      hash.update(`file:${entry.relPath}:`);
+      hash.update(content);
+    }
+  }
+  const result = hash.digest('hex');
+  color.log(`  Folder hash: ${result}`);
+  return result;
+}
+
+function listRecursive(basePath: string, rel: string): {relPath: string, fullPath: string, isDir: boolean}[] {
+  const results: {relPath: string, fullPath: string, isDir: boolean}[] = [];
+  const fullDir = rel ? path.join(basePath, rel) : basePath;
+  for (const entry of fs.readdirSync(fullDir, {withFileTypes: true})) {
+    const relPath = rel ? `${rel}/${entry.name}` : entry.name;
+    const fullPath = path.join(fullDir, entry.name);
+    if (entry.isDirectory()) {
+      results.push({relPath, fullPath, isDir: true});
+      results.push(...listRecursive(basePath, relPath));
+    }
+    else
+      results.push({relPath, fullPath, isDir: false});
+  }
+  return results;
+}
+
+async function getUserLogin(host: string, devKey: string): Promise<{login: string, token: string} | null> {
+  let loginResp;
+  try {
+    loginResp = await fetch(`${host}/users/login/dev/${devKey}`, {method: 'POST'});
+  } catch (e: any) {
+    color.warn(`Cannot reach server ${host}: ${e.message || e}`);
+    return null;
+  }
+  if (loginResp.status !== 200)
+    return null;
+  const loginData = await loginResp.json();
+  const token = loginData.token;
+  try {
+    const userResp = await fetch(`${host}/users/current`, {headers: {'Authorization': token}});
+    if (userResp.status !== 200)
+      return null;
+    const userData = await userResp.json();
+    return {login: userData.login, token};
+  } catch (e: any) {
+    return null;
+  }
+}
+
+interface FallbackResult {
+  found: {version: string, image: string, hashMatch?: boolean} | null;
+  serverError: string | null;
+}
+
+async function resolveLatestCompatible(host: string, devKey: string, dockerName: string, version?: string, contentHash?: string): Promise<FallbackResult> {
+  const userInfo = await getUserLogin(host, devKey);
+  if (!userInfo)
+    return {found: null, serverError: `Authentication failed. Check your developer key.`};
+
+  try {
+    let url = `${host}/docker/images/${encodeURIComponent(dockerName)}/latest-compatible`;
+    const params: string[] = [];
+    if (version)
+      params.push(`version=${encodeURIComponent(version)}`);
+    if (contentHash)
+      params.push(`contentHash=${encodeURIComponent(contentHash)}`);
+    if (params.length > 0)
+      url += '?' + params.join('&');
+    const resp = await fetch(url, {headers: {'Authorization': userInfo.token}});
+    if (resp.status === 200)
+      return {found: await resp.json(), serverError: null};
+    if (resp.status === 404)
+      return {found: null, serverError: null};
+    return {found: null, serverError: `Unexpected response (HTTP ${resp.status}) from latest-compatible endpoint`};
+  } catch (e: any) {
+    return {found: null, serverError: `Failed to query latest-compatible: ${e.message || e}`};
+  }
+}
+
+async function processDockerImages(
+  packageName: string,
+  version: string,
+  registry: string | undefined,
+  devKey: string,
+  host: string,
+  rebuildDocker: boolean,
+  zip: any,
+  localTimestamps: Indexable,
+  debug: boolean,
+  skipDockerRebuild: boolean = false,
+): Promise<void> {
+  const dockerImages = discoverDockerfiles(packageName, version, debug);
+  if (dockerImages.length === 0)
+    return;
+
+  color.log(`Found ${dockerImages.length} Dockerfile(s)`);
+
+  if (registry)
+    dockerLogin(registry, devKey);
+
+  const needsPlatform = !!registry && !isLocalhostRegistry(registry);
+
+  for (const img of dockerImages) {
+    color.info(`Processing docker image ${img.fullLocalName}...`);
+    let result: DockerImageResult;
+    const dockerfileDir = path.join('dockerfiles', img.dirName);
+    const dockerfilePath = path.join(dockerfileDir, 'Dockerfile');
+    const contentHash = calculateFolderHash(path.join(curDir, dockerfileDir));
+
+    // In release mode, append short content hash to tag for cache-busting
+    const shortHash = contentHash.substring(0, 8);
+    const registryTag = debug ? img.imageTag : `${img.imageTag}.${shortHash}`;
+    const remoteFullName = `${img.imageName}:${registryTag}`;
+
+    const buildAndPush = (): DockerImageResult | null => {
+      if (dockerBuild(img.fullLocalName, dockerfilePath, dockerfileDir, needsPlatform)) {
+        if (registry) {
+          const remoteTag = `${registry}/datagrok/${remoteFullName}`;
+          dockerTag(img.fullLocalName, remoteTag);
+        }
+        color.success(`Built and tagged ${img.fullLocalName}`);
+        return pushImage(img.imageName, registryTag, registry);
+      }
+      return null;
+    };
+
+    if (rebuildDocker) {
+      // Delete old images before rebuilding
+      dockerRemove(img.fullLocalName);
+      if (registry)
+        dockerRemove(`${registry}/datagrok/${remoteFullName}`);
+      result = buildAndPush() ?? await fallbackImage(img, host, devKey, registry, version, contentHash);
+    }
+    else {
+      // Look for registry-qualified image first, then unqualified
+      let foundLocalName: string | null = null;
+      if (registry) {
+        const registryQualified = `${registry}/datagrok/${remoteFullName}`;
+        if (localImageExists(registryQualified, needsPlatform))
+          foundLocalName = registryQualified;
+      }
+      if (!foundLocalName && localImageExists(img.fullLocalName, needsPlatform))
+        foundLocalName = img.fullLocalName;
+
+      if (foundLocalName) {
+        color.success(`Found local image ${foundLocalName}`);
+        if (registry) {
+          const remoteTag = `${registry}/datagrok/${remoteFullName}`;
+          if (foundLocalName !== remoteTag)
+            dockerTag(foundLocalName, remoteTag);
+        }
+        result = pushImage(img.imageName, registryTag, registry);
+      }
+      else {
+        color.warn(`Local image not found. Expected: ${img.fullLocalName}`);
+        color.log(`  Build it with: docker build -t ${img.fullLocalName} -f ${dockerfilePath} ${dockerfileDir}`);
+        const fallback = await fallbackImage(img, host, devKey, registry, version, contentHash);
+        if (fallback.serverError) {
+          color.error(`Cannot resolve fallback: ${fallback.serverError}`);
+          result = {image: null, fallback: true, requestedVersion: registryTag};
+        }
+        else if (fallback.image && fallback.hashMatch === true) {
+          result = fallback;
+          color.success(`Falling back to ${fallback.image} (dockerfile unchanged)`);
+        }
+        else if (fallback.image && fallback.hashMatch === false && !skipDockerRebuild) {
+          color.warn(`Dockerfile folder has changed. Rebuilding image...`);
+          result = buildAndPush() ?? {image: fallback.image, fallback: true, requestedVersion: registryTag};
+          if (!result || result.fallback)
+            color.warn(`Build failed. Falling back to ${fallback.image} (hash mismatch)`);
+        }
+        else {
+          // No fallback and no local image — must build
+          color.warn(`No fallback available. Building ${img.fullLocalName}...`);
+          const built = buildAndPush();
+          if (built)
+            result = built;
+          else {
+            result = {image: null, fallback: true, requestedVersion: registryTag};
+            color.error(`Failed to build ${img.fullLocalName}. No container will be available.`);
+          }
+        }
+      }
+    }
+
+    const imageJsonPath = path.join('dockerfiles', img.dirName, 'image.json');
+    zip.append(JSON.stringify(result, null, 2), {name: imageJsonPath});
+    localTimestamps[imageJsonPath.replace(/\\/g, '/')] = new Date().toUTCString();
+    color.log(`Added ${imageJsonPath}`);
+  }
+}
+
+function pushImage(imageName: string, tag: string, registry: string | undefined): DockerImageResult {
+  const canonicalImage = `datagrok/${imageName}:${tag}`;
+  if (registry) {
+    const remoteTag = `${registry}/${canonicalImage}`;
+    // Image should already be tagged from build or retag step
+    if (dockerPush(remoteTag))
+      return {image: canonicalImage, fallback: false};
+    color.warn(`Push failed, image tagged locally only: ${remoteTag}`);
+    return {image: canonicalImage, fallback: false};
+  }
+  color.warn('No registry configured. Image tagged locally only.');
+  return {image: canonicalImage, fallback: false};
+}
+
+interface FallbackImageResult extends DockerImageResult {
+  serverError?: string;
+  hashMatch?: boolean;
+}
+
+async function fallbackImage(
+  img: DockerImageInfo,
+  host: string,
+  devKey: string,
+  registry: string | undefined,
+  version?: string,
+  contentHash?: string,
+): Promise<FallbackImageResult> {
+  const {found, serverError} = await resolveLatestCompatible(host, devKey, img.imageName, version, contentHash);
+  if (serverError)
+    return {image: null, fallback: true, requestedVersion: img.imageTag, serverError};
+  if (found)
+    return {image: found.image, fallback: true, requestedVersion: img.imageTag, hashMatch: found.hashMatch};
+  return {image: null, fallback: true, requestedVersion: img.imageTag};
+}
+
+export async function processPackage(debug: boolean, rebuild: boolean, host: string, devKey: string, packageName: any, dropDb: boolean, suffix?: string, hostAlias?: string, registry?: string, rebuildDocker?: boolean, skipDockerRebuild?: boolean) {
+  // Validate server connectivity and dev key
   let timestamps: Indexable = {};
   let url = `${host}/packages/dev/${devKey}/${packageName}`;
-  if (debug) {
-    try {
-      timestamps = await (await fetch(url + '/timestamps')).json();
-      if (timestamps['#type'] === 'ApiError') {
-        color.error(timestamps.message);
-        return 1;
-      }
-    } catch (error) {
-      if (utils.isConnectivityError(error))
-        color.error(`Server is possibly offline: ${host}`);
-      if (color.isVerbose())
-        console.error(error);
+  try {
+    const checkResp = await fetch(url + '/timestamps');
+    const checkData = await checkResp.json();
+    if (checkData['#type'] === 'ApiError') {
+      color.error(checkData.message);
       return 1;
     }
+    if (debug)
+      timestamps = checkData;
+  } catch (error) {
+    if (utils.isConnectivityError(error))
+      color.error(`Server is possibly offline: ${host}`);
+    if (color.isVerbose())
+      console.error(error);
+    return 1;
   }
 
   const zip = archiver('zip', {store: false});
@@ -147,6 +515,18 @@ export async function processPackage(debug: boolean, rebuild: boolean, host: str
     return 1;
   }
 
+  // Generate Celery Docker artifacts from python/ if present
+  generateCeleryArtifacts(curDir);
+
+  // Process Docker images and inject image.json into the ZIP
+  let dockerVersion = json.version;
+  if (debug) {
+    const userInfo = await getUserLogin(host, devKey);
+    if (userInfo)
+      dockerVersion = userInfo.login;
+  }
+  await processDockerImages(packageName, dockerVersion, registry, devKey, host, rebuildDocker ?? false, zip, localTimestamps, debug, skipDockerRebuild ?? false);
+
   zip.append(JSON.stringify(localTimestamps), {name: 'timestamps.json'});
 
   // Upload
@@ -228,8 +608,9 @@ export async function publish(args: PublishArgs) {
       await utils.runScript(`grok link`, curDir);
       await utils.runScript(`npm run build`, curDir);
     }
-    await publishPackage(args);
+    return await publishPackage(args);
   }
+  return true;
 }
 
 async function publishPackage(args: PublishArgs) {
@@ -258,16 +639,22 @@ async function publishPackage(args: PublishArgs) {
   if (nArgs === 2) host = args['_'][1];
   let key = '';
   let url = '';
+  let registry: string | undefined;
 
   // The host can be passed either as a URL or an alias
   try {
     url = new URL(host).href;
     if (url.endsWith('/')) url = url.slice(0, -1);
-    if (url in urls) key = config['servers'][urls[url]]['key'];
+    if (url in urls) {
+      const alias = urls[url];
+      key = config['servers'][alias]['key'];
+      registry = config['servers'][alias]['registry'];
+    }
   } catch (error) {
     if (!(host in config.servers)) return color.error(`Unknown server alias. Please add it to ${confPath}`);
     url = config['servers'][host]['url'];
     key = config['servers'][host]['key'];
+    registry = config['servers'][host]['registry'];
   }
 
   // Update the developer key
@@ -298,7 +685,7 @@ async function publishPackage(args: PublishArgs) {
           args.suffix = stdout.toString().substring(0, 8);
       });
       await utils.delay(100);
-      code = await processPackage(!args.release, Boolean(args.rebuild), url, key, packageName, args.dropDb ?? false, args.suffix, host);
+      code = await processPackage(!args.release, Boolean(args.rebuild), url, key, packageName, args.dropDb ?? false, args.suffix, host, registry, args['rebuild-docker'], args['skip-docker-rebuild']);
     } catch (error) {
       console.error(error);
       code = 1;
@@ -315,6 +702,8 @@ interface PublishArgs {
   build?: boolean,
   ['skip-check']?: boolean,
   rebuild?: boolean,
+  ['rebuild-docker']?: boolean,
+  ['skip-docker-rebuild']?: boolean,
   debug?: boolean,
   release?: boolean,
   key?: string,

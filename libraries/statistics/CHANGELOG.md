@@ -1,5 +1,14 @@
 # statistics changelog
 
+## 1.12.2 (2026-03-26)
+
+* MPO: Add profile versioning
+
+## 1.12.1 (2026-03-19)
+
+* MPO: Added resize support for the line editor
+* EDA: Fixed MPO line editor lookup issue in newer statistics library versions
+
 ## 1.4.0 (2024-08-23)
 
 ### Features

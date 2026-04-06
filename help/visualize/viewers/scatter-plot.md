@@ -102,13 +102,11 @@ on the context panel. To hide the equation, uncheck "Show Regression Line Equati
 
 ## Formula lines
 
-A scatterplot can show reference lines that represent formulas or equations.
-These lines are used to emphasize specific areas on the chart or data. Common
-examples include a regression line, value bands, and so on.
+Add reference lines to highlight trends, thresholds, or regions—such as
+regression lines or value bands.
 
-To show a custom formula line, right-click a scatterplot, then choose **Tools** > **Formula Lines...** 
-This action opens a **Formula Lines** dialog. Here, enter
-your formula and configure the line settings. Your formula should refer to the
+To add one, right-click the scatterplot and select **Tools** > **Formula Lines...**.
+Enter your formula and configure the line settings. Your formula should refer to the
 columns on the **X** and **Y** axes. The syntax for the formula is similar to
 that used to [Add New Column](../../transform/add-new-column.md).
 
@@ -120,6 +118,28 @@ width="800px"/>
 You can [add formula lines programmatically](../../develop/how-to/viewers/show-formula-lines.md)
  
 :::
+
+## Annotation regions
+
+Annotation regions allow you to highlight areas of interest and annotate data. Like formula lines, they can be applied either to the current viewer or to the entire dataframe and appear in any viewer with matching axes.
+
+Annotation regions support overlapping areas and data selection, and behave consistently with log scales, inverted axes, axis swapping, and other axis transformations.
+
+### Adding annotation regions
+
+Right-click a viewer and select **Tools > Formula Lines…**, then click **ADD NEW** and choose one of the following:
+
+- **Region - Formula Lines**: Define the region by entering two formulas that set the upper and lower boundaries.
+- **Region - Draw Rectangle**: Click and drag on the viewer to draw a rectangular region.
+- **Region - Draw Lasso**: Click points or drag freely to draw a polygonal (lasso) region.
+- **Annotation Regions History**:  Select one of the previously created annotation regions from the history menu.
+
+For **Draw Rectangle** and **Draw Lasso** regions, the viewer enters drawing mode automatically,allowing you to draw directly on the viewer within the **Formula Lines** dialog.
+Alternatively, you can draw a region directly on the viewer by right-clicking and selecting **Tools > Draw Annotation Region**.
+
+To customize a region, provide a description and configure visual properties such as fill color, outline, and transparency.
+
+![Annotation Regions](img/annotation-regions.gif)
 
 ## Tooltip
 
@@ -301,7 +321,7 @@ Youtube")](https://www.youtube.com/watch?v=7MBXWzdC0-I&t=214s)
 | Show Pearson Correlation | boolean |  |
 | Show Mean Absolute Error | boolean |  |
 | Show Root Mean Square Error | boolean |  |
-| Regression Per Category | boolean |  |
+| Regression Per Category | boolean | Supports up to 20 categories. Otherwise, a common regression line is shown. |
 | Show Dataframe Formula Lines | boolean | Control the visibility of dataframe-originated formula lines. Edit formula lines by right-clicking and selecting Tools \| Formula Lines from the popup menu. Requires the PowerPack plugin. |
 | Show Viewer Formula Lines | boolean | Control the visibility of dataframe-originated formula lines. Edit formula lines by right-clicking and selecting Tools \| Formula Lines from the popup menu. Requires the PowerPack plugin. |
 | **Selection** | | |
@@ -343,6 +363,7 @@ Youtube")](https://www.youtube.com/watch?v=7MBXWzdC0-I&t=214s)
 | Show Labels | visibilitymode |  |
 | Data Values | string | Controls whether columns on X and Y axes are displayed in tooltip * Do not add: they are not shown * Data values only: only they are shown * Merge: standard behavior |
 | Row Tooltip | string | Newline-separated list of column names to be used in a tooltip. Requires *showTooltip* to be enabled. |
+| Tooltip Delay | number | Delay in milliseconds before showing row tooltip |
 | Row Group Tooltip | string |  |
 | **Description** | | |
 | Show Title | boolean |  |

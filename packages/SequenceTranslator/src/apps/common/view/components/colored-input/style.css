@@ -1,6 +1,8 @@
 .st-colored-text-input > textarea {
   width: 100%;
-  -webkit-text-fill-color: transparent;
+  color: transparent !important;
+  caret-color: var(--grey-6);
+  -webkit-text-fill-color: transparent !important;
   background-color: transparent;
   position: relative;
   z-index: 1;

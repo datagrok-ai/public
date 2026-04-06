@@ -1,0 +1,17 @@
+reaction,description
+CO>>COC,Single step: methylation
+CC(=O)O.N>>CC(=O)N,Single step: amide bond formation
+CBr.O>>CO,Single step: nucleophilic substitution
+CBr.c1ccccc1B(O)O>>Cc1ccccc1,Single step: Suzuki coupling
+CC(=O)O.Cl>>CC(=O)Cl>>CC(=O)Cl.N>>CC(=O)N,Two steps: acid to acid chloride then amide
+CO.Cl>>CCl>>CCl.N>>CN,Two steps: chlorination then amination
+cBr.B(O)(O)O>>cB(O)O>>cB(O)O.cBr>>cc,Two steps: borylation then Suzuki coupling
+c1ccccc1Br.B(O)(O)O>>c1ccccc1B(O)O>>c1ccccc1B(O)O.cBr>>c1ccccc1c>>c1ccccc1c.C(=O)Cl>>c1ccccc1cC(=O),Three steps: borylation then Suzuki then acylation
+CC(=O)O.CCO>>CC(=O)OCC,Single step: esterification
+CC(=O)O.CCO>>CC(=O)OCC>>CC(=O)OCC.N>>CC(=O)N,Two steps: esterification then aminolysis
+O=[N+]([O-])c1ccccc1>>Nc1ccccc1>>CC(=O)Nc1ccccc1, Paracetamol Synthesis: Nitrobenzene >> Aniline >> Paracetamol
+CCBr>>CC[Mg]Br>>CCC(C)O[Mg]Br>>CCC(C)O, Grignard → Alcohol: Ethyl bromide >> Grignard reagent >> Alkoxide intermediate >> Alcohol
+CC=O.CC=O>>CC(O)CC=O>>CC=CC=O>>CC=CCO,  Aldol Condensation → Allylic Alcohol: Acetaldehyde (×2) >> β-hydroxy aldehyde >> α,β-unsaturated aldehyde >> Allylic alcohol
+c1ccccc1>>O=[N+]([O-])c1ccccc1>>Nc1ccccc1>>[N+](#N)c1ccccc1>>Oc1ccc(N=Nc2ccccc2)cc1, Benzene → Azo Dye: Benzene >> Nitrobenzene >> Aniline >> Diazonium >> Azo dye
+Oc1ccccc1C(=O)O.CC(=O)OC(C)=O>>CC(=O)Oc1ccccc1C(=O)O>>Oc1ccccc1C(=O)O.CC(=O)O, Aspirin Synthesis + Hydrolysis check: alicylic acid + Acetic anhydride >> Aspirin >> (hydrolysis back) Salicylic acid + Acetic acid
+

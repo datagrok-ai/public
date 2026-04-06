@@ -26,7 +26,7 @@ cluster. This results in a partitioning of the data space into _Voronoi cells_.
 ## Notes
 
 * Works only with numerical data
-* Previously added scatterplot gets reused if possible, otherwise a new one is open
+* A previously added scatterplot gets reused if possible, otherwise a new one opens
 
 See also:
 

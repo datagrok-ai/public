@@ -1,0 +1,7 @@
+name: env_conda_extras
+channels:
+  - conda-forge
+dependencies:
+  - python=3.11
+  - scipy
+  - scikit-learn

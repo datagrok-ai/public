@@ -20,6 +20,8 @@ category('detectors', () => {
     expect(col1.semType, FitConstants.FIT_SEM_TYPE);
     expect(col2.semType, FitConstants.FIT_SEM_TYPE);
     expect(col3.semType, FitConstants.FIT_SEM_TYPE);
+    // Native JSON format should have no converter tag
+    expect(col1.getTag(FitConstants.TAG_CURVE_FORMAT), null);
   });
 
   test('detectXMLCurveChart', async () => {
@@ -31,5 +33,41 @@ category('detectors', () => {
 
     expect(col.semType, FitConstants.FIT_SEM_TYPE);
     expect(col.tags[FitConstants.TAG_FIT_CHART_FORMAT], FitConstants.TAG_FIT_CHART_FORMAT_3DX);
+    expect(col.getTag(FitConstants.TAG_CURVE_FORMAT), '3dx');
+  });
+
+  test('detectCompactDoseResponse', async () => {
+    const testCsv = `compactDR
+"{""rdt"":""2025-05-31 00:00:00.0"",""mnr"":-4.28,""mxr"":109.134,""yu"":""%"",""hs"":-1.5498,""poi"":0.0064758,""xu"":""uM"",""ctp"":""dose-response"",""p"":[[0.001,3],[0.003,4],[0.01,7],[0.03,15],[0.1,35],[0.3,65],[1,85],[3,98],[10,105]]}"
+"{""rdt"":""2025-06-01 00:00:00.0"",""mnr"":2.1,""mxr"":95.5,""yu"":""%"",""hs"":-1.2,""poi"":0.015,""xu"":""uM"",""ctp"":""dose-response"",""p"":[[0.001,5],[0.003,6],[0.01,10],[0.03,20],[0.1,45],[0.3,70],[1,88],[3,94],[10,96]]}"`;
+    const df = DG.DataFrame.fromCsv(testCsv);
+    const col = df.columns.byName('compactDR');
+    await grok.data.detectSemanticTypes(df);
+
+    expect(col.semType, FitConstants.FIT_SEM_TYPE);
+    expect(col.getTag(FitConstants.TAG_CURVE_FORMAT), 'compact-dr');
+  });
+
+  test('detectPzfxCurveChart', async () => {
+    const pzfxData = `<?xml version="1.0" encoding="UTF-8"?>
+<GraphPadPrismFile xmlns="http://graphpad.com/prism/Prism.htm" PrismXMLVersion="5.00">
+  <Table ID="Table0" XFormat="numbers" TableType="XY">
+    <Title>Test</Title>
+    <XColumn Width="81" Decimals="0" Subcolumns="1">
+      <Title>X</Title>
+      <Subcolumn><d>1</d><d>2</d><d>3</d></Subcolumn>
+    </XColumn>
+    <YColumn Width="81" Decimals="0" Subcolumns="1">
+      <Title>Y</Title>
+      <Subcolumn><d>10</d><d>20</d><d>30</d></Subcolumn>
+    </YColumn>
+  </Table>
+</GraphPadPrismFile>`;
+    const df = DG.DataFrame.fromColumns([DG.Column.fromStrings('pzfx', [pzfxData])]);
+    const col = df.columns.byName('pzfx');
+    await grok.data.detectSemanticTypes(df);
+
+    expect(col.semType, FitConstants.FIT_SEM_TYPE);
+    expect(col.getTag(FitConstants.TAG_CURVE_FORMAT), 'pzfx');
   });
 });

@@ -2,7 +2,7 @@
 title: "Trellis plot"
 ---
 
-Trellis plot is useful for finding the structure and patterns in complex data. A trellis plot is a layout of smaller
+A trellis plot is useful for finding structure and patterns in complex data. It is a layout of smaller
 charts in a grid with consistent scales. Each smaller chart represents rows that belong to a corresponding category. The
 grid layout looks similar to a garden trellis, hence the name trellis plot.
 
@@ -41,7 +41,7 @@ Each inner viewer can have independent axis bounds. Use the **Global Scale** opt
 When **Show Range Sliders** is enabled, interactive sliders appear on the inner viewer axes (available when axes are visible). These sliders allow you to:
 
 - Adjust the axis range for viewing specific data intervals
-- When **Global Scale** is enabled, move the range slider on one viewer simultaneously adjusts the visible bounds for all other viewers, providing synchronized navigation across all inner viewers
+- When **Global Scale** is enabled, moving the range slider on one viewer simultaneously adjusts the visible bounds for all other viewers, providing synchronized navigation across all inner viewers
 
 ![](img/trellis-inner-axes.gif)
 

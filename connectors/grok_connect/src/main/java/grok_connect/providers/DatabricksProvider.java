@@ -87,8 +87,14 @@ public class DatabricksProvider extends JdbcDataProvider {
             properties.setProperty("AuthMech", "11");
             properties.setProperty("Auth_Flow", "1");
         }
+        else if (FEDERATED_SSO.equals(method)) {
+            String token = (String) conn.credentials.parameters.get("#token");
+            properties.setProperty("AuthMech", "11");
+            properties.setProperty("Auth_Flow", "0");
+            setIfNotNull(properties, "Auth_AccessToken", token);
+        }
         else {
-            String token = (String) (method.equals(FEDERATED_SSO) ? conn.credentials.parameters.get("#token") : conn.credentials.parameters.get("token"));
+            String token = (String) conn.credentials.parameters.get("token");
             properties.setProperty("AuthMech", "3");
             properties.setProperty(DbCredentials.UID, "token");
             setIfNotNull(properties, DbCredentials.PWD, token);

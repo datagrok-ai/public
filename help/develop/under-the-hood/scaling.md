@@ -116,17 +116,15 @@ data analysis, interactive visualizations, and machine learning.
 
 ### Visualizations
 
-While some popular charting libraries like D3 are great and do produce nice-looking results, we are hitting their limits
-quite soon once we start working with sizable datasets. First of all, it is not feasible to keep more than 10,000
-objects in the browser's DOM tree. Second, since they were not designed for working with big datasets, even the amount
-of memory they allocate is sizable (usually, the data needs to be in JSON format, which is suboptimal).
+Popular charting libraries like D3 produce appealing results but struggle with
+large datasets. The browser's DOM cannot hold more than about 10,000 objects,
+and JSON-based data formats consume excessive memory.
 
-To address that, we had to bite the bullet and implement several
+To solve these limitations, we built several
 [high-performance visualizations](#viewers)
-from scratch. All performance-critical viewers use immediate-mode canvas-based rendering, thus solving the DOM issue.
-Moreover, they use our high-performance data engine. The data is not only efficiently stored, but viewers allocate no
-additional memory since they work directly with the data engine. Of course, that required a lot of work and meticulous
-engineering, but the result is definitely worth it.
+from scratch. All performance-critical viewers use immediate-mode canvas-based
+rendering, eliminating the DOM bottleneck. They work directly with the
+high-performance data engine, allocating no additional memory.
 
 #### Viewers
 

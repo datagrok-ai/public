@@ -2,12 +2,14 @@
 title: "Tags"
 ---
 
-Most of the objects in Datagrok can be annotated with metadata (key-value pairs). The metadata could be set manually;
-additionally, some of it gets assigned automatically. Some keys affect the way an object (such as a column) interacts
-with the platform; other have no effect at all, except that you can search objects by metadata.
+You can annotate most Datagrok objects with metadata (key-value pairs). You set
+some metadata manually, and Datagrok assigns some automatically. Some keys affect
+how an object (such as a column) interacts with the platform; others have no
+effect except that you can search objects by metadata.
 
-Below are some of the standard tags related to tables or columns. To edit column's metadata, right-click on it and
-select "Properties..." (or press F2 in the grid).
+The following sections describe standard tags for tables and columns. To edit a
+column's metadata, right-click the column header and select **Properties...**
+(or press **F2** in the grid).
 
 ## Quality
 
@@ -118,7 +120,7 @@ Applicable to tables. Contains comma-separated list of column names to be used a
 ## .row.group.tooltip
 
 JSON-serialized settings of the viewer that is used to visualize a group of rows on a tooltip. It is shown when user
-moves the cursor over the area that represents multiple rows (such a a histogram bin, or a pie chart pie). Applicable to
+moves the cursor over the area that represents multiple rows (such as a histogram bin, or a pie chart pie). Applicable to
 tables.
 
 ## .semantic-detection-duration

@@ -5,7 +5,7 @@
     "name": "Davit Rizhinashvili",
     "email": "drizhinashvili@datagrok.ai"
   },
-  "version": "2.26.0",
+  "version": "2.26.7",
   "description": "Bioinformatics support (import/export of sequences, conversion, visualization, analysis). [See more](https://github.com/datagrok-ai/public/blob/master/packages/Bio/README.md) for details.",
   "repository": {
     "type": "git",
@@ -44,10 +44,10 @@
   ],
   "dependencies": {
     "@biowasm/aioli": "^3.1.0",
-    "@datagrok-libraries/bio": "^5.63.0",
+    "@datagrok-libraries/bio": "^5.63.6",
     "@datagrok-libraries/chem-meta": "^1.2.9",
     "@datagrok-libraries/math": "^1.2.6",
-    "@datagrok-libraries/ml": "^6.10.9",
+    "@datagrok-libraries/ml": "^6.10.11",
     "@datagrok-libraries/test": "^1.1.0",
     "@datagrok-libraries/tutorials": "^1.7.4",
     "@datagrok-libraries/utils": "^4.6.9",
@@ -68,7 +68,7 @@
   "devDependencies": {
     "@datagrok-libraries/helm-web-editor": "^1.1.16",
     "@datagrok-libraries/js-draw-lite": "^0.0.10",
-    "@datagrok/chem": "^1.15.0",
+    "@datagrok/chem": "^1.17.1",
     "@datagrok/dendrogram": "^1.2.33",
     "@datagrok/eda": "^1.4.13",
     "@datagrok/helm": "^2.13.1",
@@ -77,7 +77,7 @@
     "@types/wu": "^2.1.44",
     "@typescript-eslint/eslint-plugin": "^8.8.1",
     "@typescript-eslint/parser": "^8.8.1",
-    "datagrok-tools": "^5.1.5",
+    "datagrok-tools": "^5.1.9",
     "eslint": "^8.57.1",
     "eslint-config-google": "^0.14.0",
     "eslint-plugin-rxjs": "^5.0.3",

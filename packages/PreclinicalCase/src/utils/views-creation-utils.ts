@@ -15,8 +15,8 @@ export type StudyTableViewParams = {
   onTableViewAddedFunc?: (tv: DG.TableView) => void;
 }
 
-export function createTableView(studyId: string, viewName: string, 
-  createTableViewFunc: (studyId: string) => StudyTableViewParams): DG.TableView {
+export function createTableView(studyId: string, viewName: string,
+  createTableViewFunc: (studyId: string) => StudyTableViewParams, helpUrl?: string): DG.TableView {
   const {df, onTableViewAddedFunc} = createTableViewFunc(studyId);
   const tableView = DG.TableView.create(df, false);
   if (onTableViewAddedFunc)
@@ -25,6 +25,8 @@ export function createTableView(studyId: string, viewName: string,
     .then(() => hideValidationColumns(tableView as DG.TableView))
     .catch(() => {});
   tableView.name = viewName;
+  if (helpUrl)
+    tableView.helpUrl = helpUrl;
 
   return tableView;
 }

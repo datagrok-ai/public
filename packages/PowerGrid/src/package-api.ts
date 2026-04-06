@@ -12,6 +12,10 @@ export namespace funcs {
     return await grok.functions.call('PowerGrid:BinaryImageCellRenderer', {});
   }
 
+  export async function colorCellRenderer(): Promise<any> {
+    return await grok.functions.call('PowerGrid:ColorCellRenderer', {});
+  }
+
   export async function hyperlinkCellRenderer(): Promise<any> {
     return await grok.functions.call('PowerGrid:HyperlinkCellRenderer', {});
   }
@@ -26,6 +30,10 @@ export namespace funcs {
 
   export async function starsCellRenderer(): Promise<any> {
     return await grok.functions.call('PowerGrid:StarsCellRenderer', {});
+  }
+
+  export async function svgCellRenderer(): Promise<any> {
+    return await grok.functions.call('PowerGrid:SvgCellRenderer', {});
   }
 
   export async function htmlTestCellRenderer(): Promise<any> {

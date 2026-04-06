@@ -112,9 +112,4 @@ category('Add new column', () => {
     await awaitCheck(() => dlg.gridPreview!.dataFrame.col('Abs(${age})') ? dlg.gridPreview!.dataFrame.get('Abs(${age})', 0) === 61 : false, 'incorrect preview data', 3000);
     await awaitCheck(() => dlg.gridPreview!.dataFrame.get('Abs(${age})', 9) === 26, 'incorrect preview data', 1000);
   });
-
-  after(async () => {
-    grok.shell.closeAll();
-    DG.Balloon.closeAll();
-  });
 }, {clear: false});

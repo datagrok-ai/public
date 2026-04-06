@@ -5,12 +5,12 @@ unlisted: true
 
 Google Map Viewer overlays latitude/longitude data from the corresponding table on top of the Google Map.
 
-By default, the map would pick up columns named "lon" / "lat", or "longitude" / "latitude". Open map settings to specify
-two columns that represent longitude and latitude. To control marker settings, click on the hamburger menu and select "
+By default, the map picks up columns named "lon" / "lat", or "longitude" / "latitude". Open map settings to specify
+two columns that represent longitude and latitude. To control marker settings, click the hamburger menu and select "
 Marker settings".
 
-In case the dataset contains geographical data (such as addresses), but does not contain longitude and latitude
-coordinates, you might want to extract coordinates using one of
+If the dataset contains geographical data (such as addresses) but does not contain longitude and latitude
+coordinates, you can extract coordinates using one of
 the [geographical functions](https://public.datagrok.ai/functions?q=%23geo), such as #\{cmd(AddressToCoordinates)}.
 
 ![Google Map](../../uploads/viewers/google-map.png "Google Map")

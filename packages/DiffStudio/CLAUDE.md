@@ -1,7 +1,5 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
-
 ## Overview
 
 **Diff Studio** is a Datagrok package that provides in-browser tools for solving initial value problems (IVP) for systems of ordinary differential equations (ODEs). It implements multiple numerical methods for solving both stiff and non-stiff ODEs directly in the browser, including the automatic stiffness-detecting LSODA method, Rosenbrock-Wanner implicit methods, Runge-Kutta explicit methods, and Adams-Bashforth multistep methods.
@@ -15,27 +13,6 @@ The package is accessible via **Apps > Compute > Diff Studio** in the Datagrok p
 - **CodeMirror 6** - Code editor for IVP formula editing
 - **@datagrok-libraries/test** - Testing utilities
 
-## Build Commands
-
-```bash
-# Standard build pipeline
-npm run build              # grok api && grok check --soft && webpack
-
-# Development/publishing
-npm run debug-odes         # webpack && grok publish (default server)
-npm run debug-odes-dev     # webpack && grok publish dev
-npm run debug-odes-local   # webpack && grok publish local
-npm run release-odes       # webpack && grok publish --release
-
-# Testing
-npm run test               # grok test (against default server)
-
-# Individual steps
-npm run build-odes         # webpack only
-grok api                   # Generate package.g.ts and package-api.ts
-grok check --soft          # Validate package
-```
-
 ## Architecture
 
 ### Core Components
@@ -46,7 +23,7 @@ grok check --soft          # Validate package
 - Manages templates, library examples, and user models
 - Integrates with sensitivity analysis and parameter fitting
 - File preview and browser integration
-- ~2500+ lines - the heart of the user interface
+- ~2300+ lines - the heart of the user interface
 
 **solver-tools.ts**
 - Thin wrapper around `diff-grok` methods (lsoda, mrt, ros3prw, ros34prw, rk3, rk4, rkdp, ab4, ab5)
@@ -67,8 +44,13 @@ grok check --soft          # Validate package
 - Manages model execution with Diff Studio UI
 - Handles dock layout ratios for inputs/graphs
 
+**utils.ts**
+- `error()` - Calculates max absolute deviation between DataFrames
+- `unusedFileName()` - Generates unused IVP file names
+
 **callbacks/** directory
 - `callback-base.ts` - Base callback interface
+- `callback-tools.ts` - Callback manager, creates callbacks based on solver options
 - `iter-checker-callback.ts` - Iteration limit checking
 - `time-checker-callback.ts` - Computation time limit checking
 
@@ -91,9 +73,11 @@ grok check --soft          # Validate package
 - Pollution (air pollution model, 25 reactions)
 
 **demo/** directory - Standalone model demonstrations:
+- `acid-production.ts` - Gluconic acid production model
 - `ball-flight.ts` - Ball trajectory simulation
-- `pk-pd.ts` - PK-PD simulation demo
 - `bioreactor.ts` - Controlled fab-arm exchange mechanism
+- `pk-pd.ts` - PK-PD simulation demo
+- `pollution.ts` - Air pollution model
 
 ### Files Structure
 
@@ -113,6 +97,7 @@ files/
     nimotuzumab.ivp
     bioreactor.ivp
     pollution.ivp
+    energy-n-control.ivp
   icons/              # Model icons
   ball-flight-trajectory.csv
 ```
@@ -164,9 +149,11 @@ Annotations (in `{...}`) control UI generation: `caption`, `category`, `min`, `m
 - `solveODE(problem: string)` - Parse and solve IVP from string
 
 **Model functions:**
+- `acidProduction()` - Gluconic acid production model
 - `ballFlight()` - Ball trajectory model
-- `pkPdNew()` - PK-PD model
 - `Bioreactor()` - Bioreactor model
+- `pkPdNew()` - PK-PD model
+- `pollution()` - Air pollution model
 - `runModel()` - Run model with Diff Studio UI
 
 **Utility functions:**
@@ -196,27 +183,14 @@ Tests are organized in `src/tests/`:
 **pipeline-tests.ts**
 - End-to-end pipeline tests
 
-Run specific test categories:
-```bash
-grok test --category "Correctness"
-grok test --category "Performance"
-grok test --test "MRT"
-grok test --gui              # Visual debugging
-```
+**demo-models-tests.ts**
+- Tests for demo model functions
 
-## Development Workflow
+**parser-tests.ts**
+- Tests for IVP parser
 
-1. **Edit IVP format parser** - modify `scripting-tools.ts`
-2. **Change UI behavior** - modify `app.ts` (DiffStudio class)
-3. **Adjust solver integration** - modify `solver-tools.ts`
-4. **Add templates/examples** - add to `templates.ts`, `use-cases.ts`, or `files/`
-5. **Update model demos** - modify files in `demo/`
-
-After changes:
-```bash
-npm run build        # Build and validate
-npm run debug-odes   # Publish to test server
-```
+**test-utils.ts**
+- Shared test utilities
 
 ## Numerical Methods
 

@@ -556,6 +556,7 @@ export interface IDartApi {
   grok_Shell_Get_Projects(): any;
   grok_Project_AddTableView(p: any, t: any): any;
   grok_ColorPicker(color: any, onChanged: any, colorDiv: any, onOk: any, onCancel: any): any;
+  grok_ColorPicker_Show(color: any, onChanged: any, onOk: any, onCancel: any): any;
   grok_CodeEditor(script: String, mode: String, placeholder: String, root: any): any;
   grok_TaskBarProgressIndicator_Create(name: String, cancelable: Bool, pausable: Bool, spinner: Bool): any;
   grok_TaskBarProgressIndicator_Close(pi: any): any;
@@ -635,6 +636,7 @@ export interface IDartApi {
   grok_ChoiceInput_Get_Items(input: any): any;
   grok_ChoiceInput_Set_Items(input: any, x: any): any;
   grok_RadioInput_Set_Items(input: any, x: any): any;
+  grok_MultiChoiceInput_Get_Items(input: any): any;
   grok_MultiChoiceInput_Set_Items(input: any, x: any): any;
   grok_TagsInput_Set_Allow_New(input: any, x: any): any;
   grok_TagsInput_Set_MultiValue(input: any, x: any): any;
@@ -700,6 +702,8 @@ export interface IDartApi {
   grok_Windows_Set_ShowSidebar(x: Bool): any;
   grok_Windows_Get_ShowToolbox(): any;
   grok_Windows_Set_ShowToolbox(x: Bool): any;
+  grok_Windows_Get_AutoShowToolbox(): any;
+  grok_Windows_Set_AutoShowToolbox(x: Bool): any;
   grok_Windows_Get_ShowFavorites(): any;
   grok_Windows_Set_ShowFavorites(x: Bool): any;
   grok_Windows_Get_ShowBrowse(): any;
@@ -722,6 +726,9 @@ export interface IDartApi {
   grok_Windows_Set_ShowHelp(x: Bool): any;
   grok_Windows_Get_ShowRibbon(): any;
   grok_Windows_Set_ShowRibbon(x: Bool): any;
+  grok_Windows_Get_ShowAI(): any;
+  grok_Windows_Set_ShowAI(x: Bool): any;
+  grok_Windows_Get_AI(): any;
   grok_FuncCall_Get_Editor(call: any, condensed: Bool, showTableSelectors: Bool): Promise<any>;
   grok_FuncCall_Build_Editor(call: any, root: any, condensed: Bool, showTableSelectors: Bool): Promise<any>;
   grok_FuncCall_GetOutputViews(c: any): any;
@@ -742,6 +749,7 @@ export interface IDartApi {
   grok_Meta_RenderCard(meta: any, x: any): any;
   grok_Meta_RenderProperties(meta: any, x: any): any;
   grok_Meta_RenderView(meta: any, x: any): any;
+  grok_Meta_RenderPreview(meta: any, x: any, params: any, path: String): any;
   grok_MarkupHandler_Register(regexp: String, description: String, renderFromMatches: any): any;
   grok_Route(url: String): any;
   grok_AddTableView(t: any, dockStyle: String, width: Num, preview: Bool): any;
@@ -1138,7 +1146,7 @@ export interface IDartApi {
   grok_DataFrame_ToCsv(t: any, options: any, grid: any): any;
   grok_DataFrame_GroupBy(t: any, colNames: any): any;
   grok_DataFrame_Unpivot(t: any, copyColumnNames: any, mergeColumnNames: any, categoryColumnName: String, valueColumnName: String): any;
-  grok_DataFrame_Clone(t: any, rowMask: any, columnIds: any, saveSelection: Bool): any;
+  grok_DataFrame_Clone(t: any, rowMask: any, columnIds: any, saveSelection: Bool, saveTags: Bool): any;
   grok_DataFrame_OnFilterChanged(t: any, f: any): any;
   grok_DataFrame_OnSelectionChanged(t: any, f: any): any;
   grok_DataFrame_OnDataChanged(t: any, f: any): any;
@@ -1756,6 +1764,7 @@ export interface IDartApi {
   grok_Test_GetTestDataGeneratorByType(type: String): any;
   grok_Reports_Get(num: Num): Promise<any>;
   grok_Reports_Find(id: String): Promise<any>;
+  grok_UserReport_FromJson(json: String): any;
   grok_UserReport_Id(report: any): any;
   grok_UserReport_IsResolved(report: any): any;
   grok_UserReport_JiraTicket(report: any): any;

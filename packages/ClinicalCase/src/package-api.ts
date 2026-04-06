@@ -18,16 +18,8 @@ export namespace funcs {
     return await grok.functions.call('ClinicalCase:ClinicalCaseApp', {});
   }
 
-  export async function preclinicalCaseApp(): Promise<DG.View> {
-    return await grok.functions.call('ClinicalCase:PreclinicalCaseApp', {});
-  }
-
   export async function clinicalCaseAppTreeBrowser(treeNode: any ): Promise<void> {
     return await grok.functions.call('ClinicalCase:ClinicalCaseAppTreeBrowser', { treeNode });
-  }
-
-  export async function preclinicalCaseAppTreeBrowser(treeNode: any ): Promise<void> {
-    return await grok.functions.call('ClinicalCase:PreclinicalCaseAppTreeBrowser', { treeNode });
   }
 
   /**

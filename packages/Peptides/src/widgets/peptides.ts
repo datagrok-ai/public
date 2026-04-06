@@ -12,6 +12,7 @@ import {ALIGNMENT, NOTATION, TAGS as bioTAGS} from '@datagrok-libraries/bio/src/
 import {ILogoSummaryTable, LogoSummaryTable} from '../viewers/logo-summary';
 import {MmDistanceFunctionsNames} from '@datagrok-libraries/ml/src/macromolecule-distance-functions';
 import {MCL_INPUTS} from './settings';
+import {createSequenceColumnInput, ISequenceColumnInput} from '@datagrok-libraries/bio/src/utils/sequence-column-input';
 //@ts-ignore
 import '../styles.css';
 export type DialogParameters = { host: HTMLElement, callback: () => Promise<boolean> };
@@ -22,10 +23,10 @@ export type DialogParameters = { host: HTMLElement, callback: () => Promise<bool
  * @param [col] - Peptides column
  * @return - UI host and analysis start callback
  */
-export function analyzePeptidesUI(df: DG.DataFrame, col?: DG.Column<string>): DialogParameters {
+export async function analyzePeptidesUI(df: DG.DataFrame, col?: DG.Column<string>): Promise<DialogParameters> {
   const mclOptions = new type.MCLSettings();
   const logoHost = ui.div();
-  let seqColInput: DG.InputBase | null = null;
+  let sequenceColInput: ISequenceColumnInput | null = null;
   if (typeof col === 'undefined') {
     // Building UI for starting analysis from dialog (top menu)
     const potentialCol = DG.Utils.firstOrNull(
@@ -36,7 +37,7 @@ export function analyzePeptidesUI(df: DG.DataFrame, col?: DG.Column<string>): Di
       grok.shell.info('Sequences column contains missing values. They will be ignored during analysis');
 
 
-    seqColInput = ui.input.column('Sequence', {table: df, value: potentialCol, onValueChanged: (value) => {
+    sequenceColInput = await createSequenceColumnInput('Sequence', {table: df, value: potentialCol, onValueChanged: (value) => {
       $(logoHost).empty().append(ui.wait(async () => {
         const viewer = await df.plot.fromType('WebLogo', {sequenceColumnName: value.name});
         viewer.root.style.setProperty('height', '130px');
@@ -45,7 +46,7 @@ export function analyzePeptidesUI(df: DG.DataFrame, col?: DG.Column<string>): Di
       if (value.stats.missingValueCount !== 0)
         grok.shell.info('Sequences column contains missing values. They will be ignored during analysis');
     }, filter: (col: DG.Column) => col.semType === DG.SEMTYPE.MACROMOLECULE, nullable: false});
-    seqColInput.setTooltip('Macromolecule column in FASTA, HELM or separated format');
+    sequenceColInput.inputBase.setTooltip('Macromolecule column in FASTA, HELM or separated format');
   }
 
   let funcs = DG.Func.find({package: 'Bio', name: 'webLogoViewer'});
@@ -117,8 +118,8 @@ export function analyzePeptidesUI(df: DG.DataFrame, col?: DG.Column<string>): Di
 
 
   const inputsList = [activityColumnChoice, activityScalingMethod, clustersColumnChoice, generateClustersInput];
-  if (seqColInput !== null)
-    inputsList.splice(0, 0, seqColInput);
+  if (sequenceColInput !== null)
+    inputsList.splice(0, 0, sequenceColInput.inputBase);
 
   // ### MCL INPUTS ###
   const similarityThresholdInput = ui.input.float(MCL_INPUTS.THRESHOLD, {
@@ -188,7 +189,7 @@ export function analyzePeptidesUI(df: DG.DataFrame, col?: DG.Column<string>): Di
   const bitsetChanged = df.filter.onChanged.subscribe(() => activityScalingMethodState());
 
   const startAnalysisCallback = async (): Promise<boolean> => {
-    const sequencesCol = col ?? seqColInput!.value;
+    const sequencesCol = col ?? sequenceColInput!.value;
     bitsetChanged.unsubscribe();
     if (sequencesCol) {
       const model = await startAnalysis(activityColumnChoice.value!, sequencesCol, clustersColumnChoice.value, df,
@@ -210,7 +211,7 @@ export function analyzePeptidesUI(df: DG.DataFrame, col?: DG.Column<string>): Di
   }
 
   $(logoHost).empty().append(ui.wait(async () => {
-    const viewer = await df.plot.fromType('WebLogo', {sequenceColumnName: col?.name ?? seqColInput!.value!.name});
+    const viewer = await df.plot.fromType('WebLogo', {sequenceColumnName: col?.name ?? sequenceColInput!.value!.name});
     viewer.root.style.setProperty('height', '130px');
     return viewer.root;
   }));
@@ -218,9 +219,9 @@ export function analyzePeptidesUI(df: DG.DataFrame, col?: DG.Column<string>): Di
   const mainHost = ui.divV([
     logoHost,
     ui.splitH([
-      ui.splitV(inputElements),
+      ui.splitV(inputElements, {style: {flex: '0 1 auto'}}),
       histogramHost,
-    ], {style: {height: bottomHeight, minWidth: '500px', maxWidth: '600px'}}),
+    ], {style: {height: bottomHeight, minWidth: '600px', maxWidth: '750px'}}),
     mclInputsHost,
   ]);
   return {host: mainHost, callback: startAnalysisCallback};

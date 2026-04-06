@@ -79,13 +79,6 @@ export class PackageFunctions {
     return await openApp(CDISC_STANDARD.SDTM);
   }
 
-  @grok.decorators.app({
-    'name': 'Preclinical Case',
-    'icon': '/img/preclinical_case_icon.png',
-  })
-  static async PreclinicalCaseApp(): Promise<DG.ViewBase | void> {
-    return await openApp(CDISC_STANDARD.SEND);
-  }
 
   @grok.decorators.appTreeBrowser({app: 'Clinical Case'})
   static async clinicalCaseAppTreeBrowser(treeNode: DG.TreeViewGroup) {
@@ -96,14 +89,6 @@ export class PackageFunctions {
     await cdiscAppTB(treeNode, CDISC_STANDARD.SDTM, studyAndView.study, studyAndView.viewName);
   }
 
-  @grok.decorators.appTreeBrowser({app: 'Preclinical Case'})
-  static async preclinicalCaseAppTreeBrowser(treeNode: DG.TreeViewGroup) {
-    const url = new URL(window.location.href);
-    const currentStudyAndViewPath = url.pathname.includes(`${PRECLINICAL_CASE_APP_PATH}`) ?
-      url.pathname.replace(`${PRECLINICAL_CASE_APP_PATH}`, `/${CDISC_STANDARD.SEND}`) : '';
-    const studyAndView = getCurrentStudyAndView(currentStudyAndViewPath);
-    await cdiscAppTB(treeNode, CDISC_STANDARD.SEND, studyAndView.study, studyAndView.viewName);
-  }
 
 
   @grok.decorators.func({
@@ -298,9 +283,8 @@ export const SUPPORTED_VIEWS: {[key: string]: string[]} = {
     VISITS_VIEW_NAME, STUDY_CONFIGURATIN_VIEW_NAME, VALIDATION_VIEW_NAME, QUESTIONNAIRES_VIEW_NAME,
     AE_BROWSER_VIEW_NAME],
 
-  [CDISC_STANDARD.SEND]: [SUMMARY_VIEW_NAME, TIMELINES_VIEW_NAME, LABORATORY_VIEW_NAME, ANIMAL_PROFILE_VIEW_NAME,
-    DISTRIBUTIONS_VIEW_NAME, VALIDATION_VIEW_NAME, MATRIX_TABLE_VIEW_NAME, MEASUREMENT_PROFILE_TABLE_VIEW_NAME,
-    MICROSCOPIC_FINDINGS_TABLE_VIEW_NAME, CONFIGURATION_VIEW_NAME],
+  [CDISC_STANDARD.SEND]: [SUMMARY_VIEW_NAME, VALIDATION_VIEW_NAME, MATRIX_TABLE_VIEW_NAME,
+    MEASUREMENT_PROFILE_TABLE_VIEW_NAME, MICROSCOPIC_FINDINGS_TABLE_VIEW_NAME, CONFIGURATION_VIEW_NAME],
 };
 
 export const VIEW_CREATE_FUNC: {[key: string]: (studyId: string, args?: any) => DG.ViewBase | ClinCaseTableView} = {

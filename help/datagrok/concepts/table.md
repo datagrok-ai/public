@@ -3,7 +3,7 @@ title: "Dataframe"
 sidebar_position: 1
 ---
 
-Table (also known as a dataframe) is a two-dimensional structure with named columns of different types. Supported types
+A table (also known as a dataframe) is a two-dimensional structure with named columns of different types. Supported types
 are: `string`, `bool`, `int`, `bigint`, `double`, `qnum`, `datetime`.
 
 Dataframes are visualized using the [grid](../../visualize/viewers/grid.md) viewer.
@@ -16,7 +16,7 @@ format, [semantic type](../../govern/catalog/semantic-types.md), tooltip content
 and so forth. 
 
 To view column properties, right-click a column header and select
-**Properties...** The [Context Panel](../navigation/panels/panels.md#context-panel) updates to shows the column's properties.
+**Properties...** The [Context Panel](../navigation/panels/panels.md#context-panel) updates to show the column's properties.
 
 ## Metadata
 

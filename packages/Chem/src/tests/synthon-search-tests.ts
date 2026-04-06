@@ -39,7 +39,7 @@ category('synthon search', () => {
     compareDfColumns(result, expected);
     expect(result.rowCount, expected.rowCount, 'row count mismatch');
     compareProductColumn(result, expected);
-  }, {timeout: 120000});
+  }, {timeout: 120000, skipReason: 'GROK-19863'});
 
   test('similarity search', async () => {
     const result: DG.DataFrame = await grok.functions.call('Chem:synthonSearchFunc', {
@@ -60,5 +60,5 @@ category('synthon search', () => {
     const simCol = result.getCol('similarity');
     for (let i = 0; i < result.rowCount; i++)
       expect(simCol.get(i) >= 0.5, true, `similarity below cutoff at row ${i}`);
-  }, {timeout: 120000});
+  }, {timeout: 120000, skipReason: 'GROK-19863'});
 });

@@ -1,12 +1,15 @@
-import { category, expect, expectArray, test } from '@datagrok-libraries/test/src/test';
+import { before, category, expect, expectArray, test } from '@datagrok-libraries/test/src/test';
 import * as grok from 'datagrok-api/grok';
 // import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 
-const demog = grok.data.demo.demog();
-
 category('Shell', () => {
+  let demog: DG.DataFrame;
+
+  before(async () => {
+    demog = grok.data.demo.demog();
+  });
   test('addTableView', async () => {
     const v = grok.shell.addTableView(demog);
     expect(grok.shell.v, v);

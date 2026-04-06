@@ -43,6 +43,7 @@ and built to support interactive exploration of vast amounts of scientific data.
 | Jump to first column                  | Home                            |
 | Jump to last column                   | End                             |
 | Prev / next selected row              | Ctrl + ↑↓                       |
+| Scroll horizontally                   | Shift+Scroll                    |
 | Show in full screen                   | Alt+F                           |
 |<h4>**Sort**</h4>||
 | Sort a column                          | Double-click column header      |
@@ -110,7 +111,7 @@ in the **Context Panel**.
 
 Subject to permissions, you can:
 
-* Change the column's properties (e.g., it's data type or [cell renderer](#cell-renderers))
+* Change the column's properties (e.g., its data type or [cell renderer](#cell-renderers))
 * Customize the column's appearance or behavior (e.g., change the cell's format, color-code values, pin rows, etc.) 
 * Specify who can edit a column. Users without edit permissions will receive a notification when attempting to edit a restricted column.
 
@@ -308,6 +309,43 @@ The `Tags` renderer is used to display comma-separated values from a string colu
 #### Stars
 
 The `Stars` cell type applies to the integer column, and lets you "rate" something with stars.
+
+#### SVG
+
+The `SVG` renderer displays SVG markup stored in string cells directly on the
+canvas. It is applied automatically when Datagrok detects that a column contains
+SVG strings (starting with `<svg` or an XML declaration followed by `<svg`). You
+can also apply it manually by setting the column renderer to `SVG`.
+
+The renderer converts each SVG string to a data-URL image, caches the result in
+a content-based LRU cache, and draws it on canvas via `drawImage`. Because
+identical SVG strings share a single cache entry, performance stays smooth even
+when hundreds of cells are visible. Double-click a cell to open a resizable
+preview.
+
+#### Color
+
+The `Color` renderer displays a filled color swatch in the cell instead of raw text. It supports
+all standard CSS color formats:
+
+| Format | Example |
+|--------|---------|
+| Hex (3-digit) | `#F00` |
+| Hex (6-digit) | `#FF5733` |
+| Hex (8-digit with alpha) | `#FF573380` |
+| RGB | `rgb(255, 87, 51)` |
+| RGBA | `rgba(255, 87, 51, 0.5)` |
+| HSL | `hsl(14, 100%, 60%)` |
+| HSLA | `hsla(14, 100%, 60%, 0.5)` |
+| Named CSS colors | `red`, `cornflowerblue` |
+
+The renderer is applied automatically when Datagrok detects that a string column contains
+color values. You can also apply it manually by setting the column renderer to `Color` in the
+**Context Panel** under **Renderer**.
+
+Hovering over a cell shows the raw color value in a tooltip. Empty cells and unrecognized
+values are shown as blank. The swatch is padded within the cell, scaling down gracefully
+for small cell sizes.
 
 ### Summary columns
 
@@ -616,16 +654,15 @@ To unpin rows, select the **Unpin** option from the **Pin** context menu.
 
 You can color code columns with these schemes: 
    
-* For categorical columns (`string` and `bool` data types), "categorical"
-* For numeric columns, "conditional" or "linear"
-* For `datetime` columns, "linear"
+* For categorical columns (`string` and `bool` data types), "categorical" or "linked"
+* For numeric columns, "conditional" or "linear" or "linked"
+* For `datetime` columns, "linear" or "linked"
 
-To color-code a column, right click its header and select the desired scheme
+To color code a column, right-click its header and select the desired scheme
 from the **Color Coding** submenu. This applies color to the
-column's background. To customize color-coding settings, click the column's
-header and adjust them in the **Context Panel** under **Colors**.
+column's background. To customize color-coding settings, right-click the column's header, choose **Edit** from the **Color Coding** submenu, and adjust the settings.
 
-![](img/grid-color-coding.gif)
+![Color Coding](img/grid-color-coding-new.gif)
 
 To copy color coding from one column to others, use the **Pick Up Coloring** and
 **Apply Coloring** commands from the column's **Color Coding** menu. These
@@ -683,7 +720,7 @@ or press Alt+C.
 | Show Default Popup Menu | boolean | Whether items applicable to all viewers (such as Pickup Style) should be shown in a popup menu. Also requires *Show Context Menu*. |
 | Allow Block Selection | boolean | Mouse drag on the data cells selects both rows and columns |
 | Allow Col Selection | boolean | Shift+click on a header to select a column Shift+mouse drag on the headers to select multiple columns Ctrl+click to invert selection Ctrl+Shift+click to deselect |
-| Allow Row Reordering | boolean | Mouse drag on the rows header selects rows Reorder rows by dragging them |
+| Allow Row Reordering | boolean | Drag any cell (except the row number) to reorder rows Drag the row number column to select rows |
 | Allow Sorting | boolean | Whether to sort when user double-clicks on the column header |
 | Allow Row Selection | boolean | Mouse drag on the rows headers selects rows Ctrl+click to invert selection Shift+mouse drag to select multiple rows Ctrl+Shift+mouse drag to unselect |
 | Allow Content Panning | boolean | Right-click and drag to pan content |

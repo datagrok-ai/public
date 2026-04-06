@@ -77,7 +77,7 @@ currentView = v
 
 ### Methods and extensions
 
-You can invoke any action by name, or, action can be called as method of variable with same type of first action
+You can invoke any action by name, or call the action as a method on a variable whose type matches the first action
 parameter:
 
 ```

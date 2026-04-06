@@ -44,8 +44,7 @@
     "debug-bionemo-test.datagrok.ai": "webpack && grok publish test.datagrok.ai",
     "release-bionemo-test.datagrok.ai": "webpack && grok publish test.datagrok.ai --release",
     "debug-bionemo-release-ec2.datagrok.ai": "webpack && grok publish release-ec2.datagrok.ai",
-    "release-bionemo-release-ec2.datagrok.ai": "webpack && grok publish release-ec2.datagrok.ai --release",
-    "test": "grok test"
+    "release-bionemo-release-ec2.datagrok.ai": "webpack && grok publish release-ec2.datagrok.ai --release"
   },
   "canEdit": [
     "Administrators"

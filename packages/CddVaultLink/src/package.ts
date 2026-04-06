@@ -349,8 +349,8 @@ export class PackageFunctions{
   })
   static async cDDVaultSearchAsync(
     @grok.decorators.param({'type':'int','options':{'nullable':true}})  vaultId: number,
-    @grok.decorators.param({'options':{'category':'Structure','nullable':true,'semType':'Molecule', 'description': 'SMILES; cxsmiles or mol string'}})   structure?: string,
-    @grok.decorators.param({'type':'string','options':{'category':'Structure','nullable':true,'choices': ['exact', 'similarity', 'substructure'], 'description': 'SMILES; cxsmiles or mol string'}})   structure_search_type?: CDDVaultSearchType,
+    @grok.decorators.param({'options':{'category':'Structure','nullable':true,'semType':'Molecule'}})   structure?: string,
+    @grok.decorators.param({'type':'string','options':{'category':'Structure','nullable':true,'choices': ['exact', 'similarity', 'substructure']}})   structure_search_type?: CDDVaultSearchType,
     @grok.decorators.param({'options':{'category':'Structure','nullable':true, 'description': 'A number between 0 and 1'}}) structure_similarity_threshold?: number,
     @grok.decorators.param({'type':'int','options':{'category':'Protocol','nullable':true, 'description': 'Protocol id'}})   protocol?: number,
     @grok.decorators.param({'type':'int','options':{'category':'Protocol','nullable':true, 'description': 'Specific run id'}})   run?: number): Promise<DG.DataFrame> {

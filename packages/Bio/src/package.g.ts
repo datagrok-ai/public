@@ -160,6 +160,16 @@ export function compositionAnalysisWidget(sequence: DG.SemanticValue) : any {
   return PackageFunctions.compositionAnalysisWidget(sequence);
 }
 
+//name: Monomer
+//tags: bio, panel
+//input: semantic_value monomerSv { semType: Monomer }
+//output: widget result
+//meta.domain: bio
+//meta.role: panel
+export function monomerInfoPanel(monomerSv: DG.SemanticValue) : any {
+  return PackageFunctions.monomerInfoPanel(monomerSv);
+}
+
 //name: MacromoleculeDifferenceCellRenderer
 //tags: cellRenderer
 //output: grid_cell_renderer result
@@ -244,6 +254,15 @@ export function manageAnnotations() : void {
   PackageFunctions.manageAnnotations();
 }
 
+//name: Sequence Column Input
+//description: Creates a new input for sequence columns with ability to extract a region
+//input: string name 
+//input: dynamic options 
+//output: dynamic result
+export function sequenceColumnInput(name: string, options: any) : any {
+  return PackageFunctions.sequenceColumnInput(name, options);
+}
+
 //name: Sequence Activity Cliffs
 //description: Detects pairs of molecules with similar structure and significant difference in any given property
 //input: dataframe table { description: Input data table }
@@ -259,6 +278,25 @@ export function manageAnnotations() : void {
 //editor: Bio:SeqActivityCliffsEditor
 export async function activityCliffs(table: DG.DataFrame, molecules: DG.Column<any>, activities: DG.Column, similarity: number, methodName: any, similarityMetric: any, preprocessingFunction: any, options?: any, demo?: boolean) : Promise<any> {
   return await PackageFunctions.activityCliffs(table, molecules, activities, similarity, methodName, similarityMetric, preprocessingFunction, options, demo);
+}
+
+//input: viewer sp 
+export async function seqActivityCliffsInitFunction(sp: any) : Promise<void> {
+  await PackageFunctions.seqActivityCliffsInitFunction(sp);
+}
+
+//input: dataframe table { description: Input data table }
+//input: column molecules { semType: Macromolecule }
+//input: column activities { type: numerical }
+//input: double similarity = 80 { description: Similarity cutoff }
+//input: string methodName 
+//input: string similarityMetric 
+//input: string options { optional: true }
+//input: bool isDemo { optional: true }
+//input: list<string> axesNames { optional: true }
+//meta.role: transform
+export async function seqActivityCliffsTransform(table: DG.DataFrame, molecules: DG.Column, activities: DG.Column, similarity: number, methodName: any, similarityMetric: any, options?: string, isDemo?: boolean, axesNames?: string[]) : Promise<void> {
+  await PackageFunctions.seqActivityCliffsTransform(table, molecules, activities, similarity, methodName, similarityMetric, options, isDemo, axesNames);
 }
 
 //name: Encode Sequences
@@ -300,10 +338,26 @@ export async function helmPreprocessingFunction(col: DG.Column<any>, _metric: an
 //input: object options { optional: true }
 //input: bool clusterEmbeddings = true { optional: true }
 //input: bool isDemo { optional: true }
+//output: viewer result
 //top-menu: Bio | Analyze | Sequence Space...
 //editor: Bio:SequenceSpaceEditor
 export async function sequenceSpaceTopMenu(table: DG.DataFrame, molecules: DG.Column, methodName: any, similarityMetric: any, plotEmbeddings: boolean, preprocessingFunction?: any, options?: any, clusterEmbeddings?: boolean, isDemo?: boolean) : Promise<any> {
   return await PackageFunctions.sequenceSpaceTopMenu(table, molecules, methodName, similarityMetric, plotEmbeddings, preprocessingFunction, options, clusterEmbeddings, isDemo);
+}
+
+//input: dataframe table 
+//input: column molecules { semType: Macromolecule }
+//input: string methodName 
+//input: string similarityMetric 
+//input: bool plotEmbeddings = true 
+//input: string options { optional: true }
+//input: bool clusterEmbeddings { optional: true }
+//input: list<string> embedColsNames { optional: true }
+//input: string clusterColName { optional: true }
+//output: viewer result
+//meta.role: transform
+export async function sequenceSpaceTransform(table: DG.DataFrame, molecules: DG.Column, methodName: any, similarityMetric: any, plotEmbeddings: boolean, options?: string, clusterEmbeddings?: boolean, embedColsNames?: string[], clusterColName?: string) : Promise<any> {
+  return await PackageFunctions.sequenceSpaceTransform(table, molecules, methodName, similarityMetric, plotEmbeddings, options, clusterEmbeddings, embedColsNames, clusterColName);
 }
 
 //name: Molecules to HELM
@@ -555,12 +609,13 @@ export async function manageMonomersView() : Promise<void> {
 
 //name: Manage Monomer Libraries
 //tags: app
+//input: string path { meta.url: true; optional: true }
 //output: view result
 //meta.role: app
 //meta.browsePath: Peptides
 //meta.icon: files/icons/monomers.png
-export async function manageMonomerLibrariesView() : Promise<any> {
-  return await PackageFunctions.manageMonomerLibrariesView();
+export async function manageMonomerLibrariesView(path?: string) : Promise<any> {
+  return await PackageFunctions.manageMonomerLibrariesView(path);
 }
 
 //name: Monomer Manager Tree Browser

@@ -183,6 +183,7 @@ export class MpoProfileEditor {
     }
 
     const editor = DesirabilityEditorFactory.create(prop, 300, 80, this.design);
+    editor.root.classList.add('statistics-mpo-editor-fill');
     this.rowSubs.get(rowId)?.unsubscribe();
     this.rowSubs.set(rowId, editor.onChanged.subscribe(() => this.emitChange()));
 
@@ -197,7 +198,7 @@ export class MpoProfileEditor {
     const controls = this.design ? this.buildRowControls(rowId) : null;
 
     row.append(
-      ui.divV([propertyCell, columnCell].filter(Boolean)),
+      ui.divV([propertyCell, columnCell].filter(Boolean), 'statistics-mpo-property-cell'),
       weightCell,
       ui.divH([editor.root, modeGear].filter(Boolean)),
     );
@@ -209,24 +210,23 @@ export class MpoProfileEditor {
   }
 
   private buildPropertyCell(rowId: string, name: string): HTMLElement | null {
-    if (!this.design)
-      return ui.divText(name, 'statistics-mpo-property-name');
-
-    if (!this.dataFrame) {
-      let currentName = name;
-
-      const propNameInp = ui.input.string('', {value: name, onValueChanged: (v) => {
-        if (!v || v === currentName)
-          return;
-        this.renameProperty(currentName, v);
-        currentName = v;
-      }});
-
-      ui.tooltip.bind(propNameInp.input, () => currentName);
-      return propNameInp.root;
+    if (this.dataFrame) {
+      const el = ui.divText(name);
+      ui.tooltip.bind(el, () => name);
+      return el;
     }
 
-    return null;
+    let currentName = name;
+
+    const propNameInp = ui.input.string('', {value: name, onValueChanged: (v) => {
+      if (!v || v === currentName)
+        return;
+      this.renameProperty(currentName, v);
+      currentName = v;
+    }});
+
+    ui.tooltip.bind(propNameInp.input, () => currentName);
+    return propNameInp.root;
   }
 
   private buildWeightCell(
@@ -234,20 +234,50 @@ export class MpoProfileEditor {
     prop: PropertyDesirability,
   ): HTMLElement {
     const name = this.getPropertyNameByRowId(rowId);
+    const children: HTMLElement[] = [];
+
     const weightInput = ui.input.float('', {value: prop.weight, min: 0, max: 1, format: '#0.000',
       onValueChanged: (v) => {
         if (name)
           this.mutateProperty(name, (p) => p.weight = Math.max(0, Math.min(1, v ?? 0)));
       },
     });
+    weightInput.root.classList.add('statistics-mpo-weight-input');
+    children.push(weightInput.root);
 
-    weightInput.root.classList.add(
-      'statistics-mpo-weight-input',
-      this.design ?
-        'statistics-mpo-weight-design' :
-        'statistics-mpo-weight-view',
-    );
-    return weightInput.root;
+    if (this.dataFrame) {
+      const numCols = this.getNumericalColumnNames();
+      let isColumn = !!prop.weightColumn && numCols.includes(prop.weightColumn);
+
+      const colInput = ui.input.choice('', {items: numCols, nullable: true, value: prop.weightColumn ?? '',
+        onValueChanged: (v) => {
+          if (name)
+            this.mutateProperty(name, (p) => p.weightColumn = v || undefined);
+        },
+      });
+
+      const syncToggle = () => {
+        weightInput.root.classList.toggle('statistics-mpo-hidden', isColumn);
+        colInput.root.classList.toggle('statistics-mpo-hidden', !isColumn);
+        toggle.classList.toggle('statistics-mpo-weight-toggle-active', isColumn);
+      };
+
+      const toggle = ui.iconFA('exchange-alt', () => {
+        isColumn = !isColumn;
+        syncToggle();
+        if (!isColumn && name)
+          this.mutateProperty(name, (p) => { delete p.weightColumn; });
+        else if (isColumn && name && colInput.value)
+          this.mutateProperty(name, (p) => p.weightColumn = colInput.value || undefined);
+      });
+      toggle.classList.add('statistics-mpo-weight-toggle');
+      ui.tooltip.bind(toggle, () => isColumn ? 'Switch to manual weight' : 'Use weight from column');
+      syncToggle();
+
+      children.push(colInput.root, toggle);
+    }
+
+    return ui.divH(children, 'statistics-mpo-weight-cell');
   }
 
   private buildColumnSelector(
@@ -283,6 +313,12 @@ export class MpoProfileEditor {
     return Array.from(this.dataFrame.columns)
       .filter((c) => !c.isCategorical || c.categories.length <= MAX_CATEGORICAL_CATEGORIES)
       .map((c) => c.name);
+  }
+
+  private getNumericalColumnNames(): string[] {
+    if (!this.dataFrame)
+      return [];
+    return Array.from(this.dataFrame.columns.numerical).map((c) => c.name);
   }
 
   private resolveColumn(name: string): DG.Column | null {
@@ -369,7 +405,9 @@ export class MpoProfileEditor {
       name,
       prop,
       (patch) => {
-        this.mutateProperty(name, (p) => Object.assign(p, patch));
+        const p = this.profile?.properties[name];
+        if (p)
+          Object.assign(p, patch);
         editor.redrawAll();
       },
       (newProp) => {

@@ -1,0 +1,230 @@
+/* eslint-disable max-len */
+import * as grok from 'datagrok-api/grok';
+import * as ui from 'datagrok-api/ui';
+import * as DG from 'datagrok-api/dg';
+import {_package} from '../../package';
+import {dartLike, fireAIAbortEvent} from '../../utils';
+import {ClaudeRuntimeClient} from '../../claude/runtime-client';
+
+export interface QueryMatchResult {
+  searchPattern: string;
+  parameters: Record<string, string>;
+  confidence: number;
+  suggestedConnection?: string | null;
+  reasoning?: string;
+}
+
+type PatternQueryMatchResult = {
+  searchPattern: string;
+  parameters: Record<string, string>;
+  confidence: number;
+  suggestedConnection?: string | null;
+  reasoning?: string;
+};
+
+export async function findBestMatchingQuery(
+  question: string,
+): Promise<QueryMatchResult | null> {
+  const schema = {
+    type: 'object',
+    properties: {
+      searchPattern: {type: 'string'},
+      parameters: {
+        type: 'array',
+        description: 'Array of parameter key-value pairs extracted from the search pattern.',
+        items: {
+          type: 'object',
+          properties: {
+            key: {type: 'string'},
+            value: {type: 'string'},
+          },
+          required: ['key', 'value'],
+          additionalProperties: false,
+        },
+      },
+      confidence: {type: 'number'},
+      suggestedConnection: {type: ['string', 'null']},
+      reasoning: {type: 'string'},
+    },
+    required: ['searchPattern', 'parameters', 'confidence', 'suggestedConnection', 'reasoning'],
+    additionalProperties: false,
+  } as const;
+
+  const tableQueriesSearchFunctions = DG.Func.find({meta: {searchPattern: null}, returnType: 'dataframe'})
+    .filter((f) => f.options['searchPattern']);
+
+  const searchPatterns = tableQueriesSearchFunctions.map((f) => f.options['searchPattern'] as string);
+  const descriptions = tableQueriesSearchFunctions.map((f) => f.description ?? 'No description');
+  const connectionIds = tableQueriesSearchFunctions.map((c) => (c instanceof DG.DataQuery) ? c.connection.id ?? 'unknown' : 'unknown');
+  const idSet = new Set(connectionIds.filter((id) => id !== 'unknown'));
+  const allConnections = await grok.dapi.connections.list();
+  const validConnections = allConnections.filter((conn) => idSet.has(conn.id));
+  const connections = connectionIds.map((id) => {
+    const conn = validConnections.find((c) => c.id === id);
+    return conn ? conn.nqName : 'unknown';
+  });
+
+  const systemPrompt = `
+You are a precise semantic query matcher with strict validation rules. Your goal is to match user requests to database queries ONLY when you are highly confident.
+
+CRITICAL RULES TO PREVENT HALLUCINATION:
+1. NEVER fabricate or guess information not present in the user's request
+2. ONLY match if the user request clearly relates to the query's purpose
+3. Be conservative with confidence scores - use 0.8+ only for clear matches
+4. Parameters MUST be explicitly mentioned or strongly implied in the user's request
+5. Connection names are critical - mismatched connections should significantly lower confidence
+6. If unsure between multiple patterns, choose the more specific one but lower the confidence
+
+CONFIDENCE SCORING GUIDE:
+- 0.9-1.0: Perfect semantic match, all parameters clear, connection aligns
+- 0.7-0.89: Good match but minor ambiguity in parameters or connection
+- 0.5-0.69: Weak match, significant uncertainty or missing context
+- Below 0.5: Poor match, should not be used
+
+YOUR TASK:
+
+STEP 1 — Evaluate each query pattern:
+  - Does the user's intent semantically match the query description?
+  - Are the required parameters explicitly or clearly implied in the user's request?
+  - Does the connection name (if not "unknown") match the user's context?
+  - If connection mismatches, reduce confidence significantly
+
+STEP 2 — Connection Inference (especially for LOW CONFIDENCE scenarios):
+  - Look for ANY clues in the user's request about which data source they might want
+  - This includes: explicit database/connection names, domain keywords, data types, or context
+  - Be LIBERAL with connection suggestions - it's better to suggest a connection than return null
+  - Even if confidence in pattern matching is low, try to infer the most likely connection
+  - Match connection names flexibly (e.g., "Northwind", "northwind db", "nw" could all map to Northwind)
+  - If multiple connections seem possible, choose the most likely one based on context
+  - Only return null for suggestedConnection if there's truly no indication of data source
+
+STEP 3 — Extract parameters:
+  - Identify parameters in format \${parameterName} from the selected pattern
+  - Extract corresponding values ONLY if explicitly stated or clearly implied
+  - Use empty string if a parameter cannot be determined
+  - Return as array of objects with 'key' (parameter name) and 'value' (extracted value) properties
+
+STEP 4 — Provide reasoning:
+  - In 1-2 sentences, explain why you chose this pattern and confidence level
+  - Mention any concerns or ambiguities
+
+OUTPUT REQUIREMENTS:
+  - Return ONLY valid JSON matching the exact schema
+  - NO markdown, NO backticks, NO code blocks, NO explanations outside JSON
+  - ALL required fields must be present: searchPattern, parameters, confidence, suggestedConnection, reasoning
+  - Confidence must be a number between 0 and 1
+  - suggestedConnection must be a string from the connections list or null
+`;
+
+  const userPrompt = `
+Available connections (nqNames):
+${Array.from(new Set(connections.filter((c) => c !== 'unknown'))).join(', ')}
+
+Available search patterns with metadata:
+${searchPatterns.map((p, i) => `
+Pattern #${i + 1}:
+  Description: ${descriptions[i] || 'No description provided'}
+  Connection: ${connections[i]}
+  Pattern: ${p}
+`).join('\n')}
+
+User request:
+"${question}"
+
+Analyze the user request and return a JSON object with:
+- searchPattern: the exact pattern string from above (or closest match if confidence is low)
+- parameters: array of objects with 'key' and 'value' properties for extracted parameter values
+- confidence: your confidence score (0 to 1)
+- suggestedConnection: infer the most likely connection from available list (be generous with inference); return null only if truly no clues exist
+- reasoning: brief explanation of your decision, including why you chose/didn't choose a connection
+`;
+
+  try {
+    const rawResult = await ClaudeRuntimeClient.getInstance().query(`${systemPrompt}\n\n${userPrompt}`, {outputSchema: schema});
+    const parametersRecord: Record<string, string> = {};
+    for (const param of rawResult.parameters)
+      parametersRecord[param.key] = param.value;
+
+    const result: QueryMatchResult = {
+      searchPattern: rawResult.searchPattern,
+      parameters: parametersRecord,
+      confidence: rawResult.confidence,
+      suggestedConnection: rawResult.suggestedConnection ?? null,
+      reasoning: rawResult.reasoning ?? 'No reasoning provided',
+    };
+
+    _package.logger.info(`Match found with confidence ${result.confidence}. Reasoning: ${result.reasoning}`);
+    if (result.suggestedConnection)
+      _package.logger.info(`Suggested connection: ${result.suggestedConnection}`);
+
+    return result;
+  } catch (error) {
+    _package.logger.error(`Error finding best function: ${error}`);
+    return null;
+  }
+}
+
+export async function tableQueriesFunctionsSearchLlm(s: string): Promise<DG.Widget> {
+  const tvWidgeFunc = DG.Func.find({name: 'getFuncTableViewWidget'})[0];
+  if (!tvWidgeFunc)
+    return DG.Widget.fromRoot(ui.divText('Power Pack plugin not installed'));
+  try {
+    const tableQueriesSearchFunctions = DG.Func.find({meta: {searchPattern: null}, returnType: 'dataframe'})
+      .filter((f) => f.options['searchPattern']);
+    const matches: PatternQueryMatchResult | null = JSON.parse(await grok.functions
+      .call('Grokky:findMatchingPatternQuery', {prompt: s}));
+
+    if (!matches)
+      return DG.Widget.fromRoot(ui.divText('Unable to process query. Please try rephrasing.'));
+
+    _package.logger.info(`Match result - Confidence: ${matches.confidence}, Reasoning: ${matches.reasoning || 'N/A'}`);
+
+    if (matches.confidence > 0.7 && matches.searchPattern && matches.parameters) {
+      console.log(`Function matched with high confidence ${matches.confidence}`);
+      const sf = tableQueriesSearchFunctions.find((f) => {
+        const pattern: string = removeTrailingQuotes(f.options['searchPattern']) ?? '';
+        return pattern === matches.searchPattern;
+      });
+
+      if (sf) {
+        const widget = await tvWidgeFunc.apply({func: sf, inputParams: matches.parameters});
+        return widget;
+      }
+      _package.logger.warning(`Pattern ${matches.searchPattern} not found in available functions`);
+    } else {
+      console.info(`Low confidence (${matches.confidence}). ${matches.reasoning || 'No suitable match found.'}`);
+
+      // If there's a suggested connection, provide helpful feedback
+      if (matches.suggestedConnection && matches.suggestedConnection.includes(':')) {
+        const nqNameSplit = matches.suggestedConnection.split(':');
+        const connection = await grok.dapi.connections.filter(`namespace = "${nqNameSplit[0]}:" and shortName = "${nqNameSplit[1]}"`).first();
+        if (!connection) {
+          return DG.Widget.fromRoot(ui.divText(
+            `Low confidence match. Your query seems related to connection "${matches.suggestedConnection}", ` +
+            `but the connection was not found. Please refine your query with more specific details.`
+          ));
+        }
+        return DG.Widget.fromRoot(ui.divText(
+          `I couldn't find an exact query for "${connection.name}". Open a query editor for this connection and use the AI assistant (Ctrl+I) to generate a custom query.`
+        ));
+      }
+
+      return DG.Widget.fromRoot(ui.divText(
+        'No matching query or connection found. Please try rephrasing your request or check available query patterns.'
+      ));
+    }
+  } catch (error) {
+    console.error('Error calling Grokky:findMatchingPatternQuery', error);
+    return DG.Widget.fromRoot(ui.divText(`Error during AI-powered table query search. Check console for details.`));
+  }
+  return DG.Widget.fromRoot(ui.divText('No matching query found via AI'));
+}
+
+function removeTrailingQuotes(s: string): string {
+  let ms = s;
+  if (s.startsWith('"') || s.startsWith('\''))
+    ms = ms.substring(1);
+  if (s.endsWith('"') || s.endsWith('\''))
+    ms = ms.substring(0, ms.length - 1);
+  return ms;
+}

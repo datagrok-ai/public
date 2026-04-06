@@ -1,11 +1,12 @@
 import * as grok from 'datagrok-api/grok';
+import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 
-import {DesirabilityProfile} from '@datagrok-libraries/statistics/src/mpo/mpo';
+import {CURRENT_MPO_VERSION, DesirabilityProfile, isDesirabilityProfile, migrateProfile} from '@datagrok-libraries/statistics/src/mpo/mpo';
 import {generateMpoFileName, getNextAvailable} from '@datagrok-libraries/statistics/src/mpo/utils';
 
 import {deleteMpoProfile, loadMpoProfiles, MPO_PROFILE_CHANGED_EVENT, MPO_PROFILE_DELETED_EVENT,
-  MPO_TEMPLATE_PATH, MpoProfileInfo} from './utils';
+  MPO_TEMPLATE_PATH, MpoProfileInfo, MpoSaveResult} from './utils';
 
 class MpoProfileManagerImpl {
   private profiles: MpoProfileInfo[] = [];
@@ -76,6 +77,40 @@ class MpoProfileManagerImpl {
       .show();
   }
 
+  async saveProfile(profile: DesirabilityProfile, existingFileName?: string | null): Promise<MpoSaveResult> {
+    await this.ensureLoaded();
+    const fileName = existingFileName ?? this.generateFileName(profile.name);
+
+    if (existingFileName && this.existingFileNames.has(existingFileName)) {
+      const confirmed = await this.confirmOverwrite(profile.name);
+      if (!confirmed)
+        return {saved: false, fileName};
+    }
+
+    const saved = await this.save(profile, fileName);
+    return {saved, fileName};
+  }
+
+  private confirmOverwrite(profileName: string): Promise<boolean> {
+    return new Promise((resolve) => {
+      let resolved = false;
+      const safeResolve = (value: boolean) => {
+        if (resolved)
+          return;
+        resolved = true;
+        dlg.close();
+        resolve(value);
+      };
+
+      const dlg = ui.dialog('Replace profile')
+        .add(ui.divText(`"${profileName}" already exists. Do you want to replace it?`))
+        .add(ui.divText('Replacing it will overwrite the current contents.'))
+        .addButton('Replace', () => safeResolve(true))
+        .onCancel(() => safeResolve(false))
+        .show();
+    });
+  }
+
   async save(profile: DesirabilityProfile, fileName: string): Promise<boolean> {
     try {
       await grok.dapi.files.writeAsText(`${MPO_TEMPLATE_PATH}/${fileName}`, JSON.stringify(profile));
@@ -87,6 +122,34 @@ class MpoProfileManagerImpl {
       grok.shell.error(`Failed to save profile: ${e instanceof Error ? e.message : e}`);
       return false;
     }
+  }
+
+  upload(): void {
+    DG.Utils.openFile({accept: '.json', open: async (file) => {
+      try {
+        const text = await file.text();
+        const parsed = JSON.parse(text);
+        if (!isDesirabilityProfile(parsed)) {
+          grok.shell.warning('Upload failed: not a valid MPO profile');
+          return;
+        }
+        if ((parsed.version ?? 0) > CURRENT_MPO_VERSION) {
+          grok.shell.warning('Upload failed: profile was created with a newer version of the application');
+          return;
+        }
+        migrateProfile(parsed);
+        if (!parsed.name)
+          parsed.name = file.name.replace(/\.json$/i, '');
+        await this.save(parsed, this.generateFileName(parsed.name));
+      } catch (e) {
+        grok.shell.warning('Upload failed: invalid JSON file');
+      }
+    }});
+  }
+
+  download(profile: MpoProfileInfo): void {
+    const {fileName, ...data} = profile;
+    DG.Utils.download(fileName, JSON.stringify(data, null, 2), 'application/json');
   }
 
   fireChanged(): void {

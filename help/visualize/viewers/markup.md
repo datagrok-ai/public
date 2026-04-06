@@ -3,7 +3,7 @@ title: "Markup viewer"
 ---
 
 Use this viewer to host any text, arbitrary HTML content, or [Markdown-formatted text](https://en.wikipedia.org/wiki/Markdown). In
-most casees, the viewer will auto-detect content type. Use the "mode" property to explicitly specify it.
+most cases, the viewer auto-detects the content type. Use the "mode" property to explicitly specify it.
 
 Properties:
 

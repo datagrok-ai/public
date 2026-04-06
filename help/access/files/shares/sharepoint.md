@@ -6,11 +6,11 @@ Provides access to [SharePoint](https://www.microsoft.com/en-us/microsoft-365/sh
 
 ## Application Settings
 
-Datagrok connects with SharePoint through Microsoft Entra ID, which requires a registered application in Entra ID. The application client ID and application secret should be copied from Entra ID to **Settings/Server/Connectors**.
+Datagrok connects to SharePoint through Microsoft Entra ID, which requires a registered application in Entra ID. Copy the application client ID and application secret from Entra ID to **Settings/Server/Connectors**.
 
 ## Configuration
 
-The connector needs to specify the **Domain**, which is a URL of a SharePoint instance. **Site** specifies which site under the SharePoint domain is used. Usually, it is the **root site**. In other cases, the site URL explicitly specifies the name in the format of `https://test.sharepoint.com/sites/test` instead of the domain `https://iekonstantinamelichev.sharepoint.com` as-is. **Drive** is the name of a document library that will be used as a file share.
+The connector requires a **Domain**, which is the URL of a SharePoint instance. **Site** specifies which site under the SharePoint domain to use. Usually, this is the **root site**. For other sites, the site URL explicitly specifies the name in the format `https://test.sharepoint.com/sites/test` instead of the domain `https://iekonstantinamelichev.sharepoint.com` as-is. **Drive** is the name of the document library to use as a file share.
 
 The SharePoint connector uses OAuth for authorization. When configuring the connection, click on the **"connect..."** link near the **Access token** field.
 

@@ -45,6 +45,7 @@ export class MpoProfileHandler extends DG.ObjectHandler<MpoProfileInfo> {
     super();
     this.registerParamFunc('Edit', (p: MpoProfileInfo) => MpoProfileHandler.edit(p));
     this.registerParamFunc('Clone', (p: MpoProfileInfo) => MpoProfileHandler.clone(p));
+    this.registerParamFunc('Download', (p: MpoProfileInfo) => MpoProfileManager.download(p));
     this.registerParamFunc('Delete', (p: MpoProfileInfo) => MpoProfileHandler.delete(p));
   }
 
@@ -52,12 +53,14 @@ export class MpoProfileHandler extends DG.ObjectHandler<MpoProfileInfo> {
     const editable = structuredClone(profile);
     const view = new MpoProfileCreateView(editable, false, profile.fileName);
     grok.shell.v = grok.shell.addView(view.view);
+    view.setupBreadcrumbs();
   }
 
   static clone(profile: MpoProfileInfo): void {
     const {profile: clonedProfile, fileName} = MpoProfileManager.prepareClone(profile);
     const view = new MpoProfileCreateView(clonedProfile, false, fileName);
     grok.shell.v = grok.shell.addView(view.view);
+    view.setupBreadcrumbs();
   }
 
   static delete(profile: MpoProfileInfo): void {

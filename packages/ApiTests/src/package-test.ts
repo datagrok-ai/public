@@ -49,6 +49,7 @@ import './grid/grid';
 import './grid/filterGroup';
 import './shell/events';
 import './grid/color-coding';
+import './grid/viewer-set-property';
 import './grid/multi-value-column';
 import './stats/stats';
 // import './bitset/bitset';

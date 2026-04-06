@@ -26,10 +26,6 @@ category('UI: Buttons', () => {
       onClick(value);
   });
 
-  after(async () => {
-    grok.shell.closeAll();
-  });
-
   function onClick(root: HTMLElement): void {
     v.append(root);
 

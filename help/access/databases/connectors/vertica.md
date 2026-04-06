@@ -3,7 +3,7 @@ title: "Vertica"
 ---
 
 Provides access to [Vertica](https://www.opentext.com/products/analytics-database) database using
-SQL queries via JDBC driver.
+SQL queries via a JDBC driver.
 
 ## Connection parameters
 

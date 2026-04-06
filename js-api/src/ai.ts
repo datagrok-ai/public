@@ -87,4 +87,8 @@ export const AI = {
 
         return entities.map((e: Entity) => toJs(e));
     },
+
+    async processPrompt(prompt: string): Promise<boolean> {
+        return !!(await api.grok_Shell_AI_Prompt(prompt));
+    },
 };

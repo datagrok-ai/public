@@ -7,7 +7,7 @@ This document explains how to create a package that is capable of running docker
 ## Overview
 
 You can add Docker container to your plugin, and use it from the plugin UI. 
-It can be  use a custom image or an image from Docker Hub. 
+It can use a custom image or an image from Docker Hub. 
 When a custom image is used, Datagrok takes care of building and running it automatically.
 
 Once a user publishes a package that includes a Docker image, Datagrok adds the image to the build queue and builds it. 
@@ -29,8 +29,8 @@ Before we start, get familiar with
 
 Now, let's create a folder `dockerfiles`. You should put there a Dockerfile with
 the commands that are needed to build a docker image and run the container.
-Follow all the best practices for writing dockerfiles in order to make them
-simple, small and efficient.
+Follow all the best practices for writing dockerfiles to make them
+simple, small, and efficient.
 
 Example of such
  [Dockerfile](https://github.com/datagrok-ai/public/blob/master/packages/Admetica/dockerfiles/Dockerfile)
@@ -87,8 +87,8 @@ that is located in the `Admetica` plugin.
 
 ## 3. Implement the function to get a response
 
-Make sure that application inside Docker container has embedded HTTP server that handles requests and the 
-listening port is [exposed](https://docs.docker.com/reference/dockerfile/#expose) in Dockerfile.
+Make sure that the application inside the Docker container has an embedded HTTP server that handles requests and the 
+listening port is [exposed](https://docs.docker.com/reference/dockerfile/#expose) in the Dockerfile.
 
 ### 3.1. Http request
 
@@ -109,8 +109,8 @@ async function requestAlignedObjects(id: string, body: PepseaBodyUnit[], method:
 ```
 
 Use `grok.dapi.dockerfiles.fetchProxy` for HTTPS requests. You should specify the `id` in order to make the request
-to the right container, `path` and `params` of the request. The method logic it totally aligned
-with [JavaScript Fetch API](https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API) and `params` is [RequestInit](https://developer.mozilla.org/en-US/docs/Web/API/RequestInit) object type.
+to the right container, `path` and `params` of the request. The method logic is fully aligned
+with the [JavaScript Fetch API](https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API) and `params` is [RequestInit](https://developer.mozilla.org/en-US/docs/Web/API/RequestInit) object type.
 
 To get `id` do:
 
@@ -120,9 +120,9 @@ const dockerfileId = (await grok.dapi.docker.dockerContainers.filter('pepsea').f
 
 ### 3.2. WebSocket connection
 
-To make WebSocket connection to Docker container, use `grok.dapi.docker.dockerContainers.webSocketProxy` method. 
-You should specify the `id` of container and `path`. You can also provide optional `timeout`. 
-Function `webSocketProxy` returns [WebSocket](https://developer.mozilla.org/en-US/docs/Web/API/WebSocket) when connection is ready.
+To make a WebSocket connection to a Docker container, use the `grok.dapi.docker.dockerContainers.webSocketProxy` method. 
+Specify the container `id` and `path`. You can also provide an optional `timeout`. 
+The `webSocketProxy` function returns a [WebSocket](https://developer.mozilla.org/en-US/docs/Web/API/WebSocket) when the connection is ready.
 
 #### Example
 

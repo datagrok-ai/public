@@ -7,24 +7,67 @@ Usage: grok <command>
 Datagrok's package management tool
 
 Commands:
-    add       Add an object template
-    api       Create wrapper functions
-    build     Build a package or multiple packages
-    check     Check package content (function signatures, etc.)
-    config    Create and manage config files
-    create    Create a package
-    init      Modify a package template
-    link      Link \`datagrok-api\` and libraries for local development
-    publish   Upload a package
-    test      Run package tests
-    testall      Run packages tests
-    migrate   Migrate legacy tags to meta.role
+    add         Add an object template
+    api         Create wrapper functions
+    build       Build a package or multiple packages
+    check       Check package content (function signatures, etc.)
+    claude      Launch Claude Code in a Datagrok dev container
+    config      Create and manage config files
+    create      Create a package
+    docker-gen  Generate Celery Docker artifacts from Python functions
+    init        Modify a package template
+    link        Link \`datagrok-api\` and libraries for local development
+    publish     Upload a package
+    report      Manage user error reports (fetch, resolve, create ticket)
+    run         Build, publish, and open in browser
+    test        Run package tests
+    testall     Run packages tests
+    migrate     Migrate legacy tags to meta.role
 
 To get help on a particular command, use:
     grok <command> --help
 
 Read more about the package development workflow:
 https://datagrok.ai/help/develop/develop
+`;
+
+const HELP_CLAUDE = `
+Usage: grok claude <project>              Start or reattach to a project
+       grok claude destroy <project>      Stop containers + remove worktree
+       grok claude destroy-all            Destroy all projects
+
+Launch Claude Code inside a Datagrok dev container. Creates a git worktree
+for the project, starts a full Datagrok stack (postgres, rabbitmq, grok_pipe,
+datagrok) and opens Claude Code in a tools-dev container.
+
+Version is auto-detected: bleeding-edge for the public repo,
+latest stable release (from Docker Hub) for other repos.
+
+Options:
+[--version <tag>] [--profile <name>] [--keep]
+[--port <N>] [--prompt <text>] [--in-place]
+[--grok-connect-version <tag>] [--grok-spawner-version <tag>]
+[--jkg-version <tag>] [--tools-dev-version <tag>]
+
+--version               Datagrok image version (default: bleeding-edge for public repo, latest otherwise)
+--profile               Compose profile: demo, scripting, full (default: none)
+--keep                  Don't stop containers on exit
+--port                  Datagrok host port (default: random available)
+--prompt                Pass initial prompt to Claude Code (non-interactive)
+--in-place              Use current directory instead of creating a git worktree
+--grok-connect-version  grok_connect image version (default: latest)
+--grok-spawner-version  grok_spawner image version (default: latest)
+--jkg-version           jupyter_kernel_gateway image version (default: latest)
+--tools-dev-version     tools-dev image version (default: latest)
+
+Examples:
+  grok claude GROK-12345                        Start working on a task
+  grok claude GROK-12345 --version 1.22.0       Use specific Datagrok version
+  grok claude GROK-12345 --profile full --keep   Start all services, keep running
+  grok claude GROK-12345 --prompt "fix the bug"  One-shot command
+  grok claude GROK-12345 --in-place              Work in current directory
+  grok claude destroy GROK-12345                 Tear down a task
+  grok claude destroy-all                        Tear down everything
 `;
 
 const HELP_ADD = `
@@ -84,13 +127,14 @@ Usage: grok config
 Create or update a configuration file
 
 Options:
-[--reset] [--server] [--alias] [-k | --key]
+[--reset] [--server] [--alias] [-k | --key] [--registry]
 
 --reset     Restore the default config file template
 --server    Use to add a server to the config (\`grok config add --alias alias --server url --key key\`)
 --alias     Use in conjunction with the \`server\` option to set the server name
 --key       Use in conjunction with the \`server\` option to set the developer key
 --default   Use in conjunction with the \`server\` option to set the added server as default
+--registry  Docker registry URL (default: registry.{server hostname})
 `;
 
 const HELP_CREATE = `
@@ -120,15 +164,17 @@ Uploads a package
 Checks for errors before publishing — the package won't be published if there are any.
 
 Options:
-[--all] [--refresh] [--link] [--build] [--release] [--skip-check] [-v | --verbose]
+[--all] [--refresh] [--link] [--build] [--release] [--rebuild-docker] [--skip-docker-rebuild] [--skip-check] [-v | --verbose]
 
---all             Publish all available packages (run in packages directory)
---refresh         Publish all available already loaded packages (run in packages directory)
---link            Link the package to local packages
---build           Builds the package
---release         Publish package as release version
---skip-check      Skip check stage
---verbose         Print detailed output
+--all                  Publish all available packages (run in packages directory)
+--refresh              Publish all available already loaded packages (run in packages directory)
+--link                 Link the package to local packages
+--build                Builds the package
+--release              Publish package as release version
+--rebuild-docker       Force rebuild Docker images locally before pushing to registry
+--skip-docker-rebuild  Skip auto-rebuild when Dockerfile folder has changed
+--skip-check           Skip check stage
+--verbose              Print detailed output
 
 Running \`grok publish\` is the same as running \`grok publish defaultHost --build --debug\`
 `;
@@ -235,6 +281,18 @@ Options:
 --all               Links all available packages(run in packages directory)
 `;
 
+const HELP_DOCKER_GEN = `
+Usage: grok docker-gen
+
+Generate Celery Docker artifacts from annotated Python functions in the python/ directory.
+Produces Dockerfile, tasks.yaml, and Celery entry point in dockerfiles/<name>/.
+
+Options:
+[-v | --verbose]
+
+--verbose         Print detailed output
+`;
+
 const HELP_MIGRATE = `
 Usage: grok migrate
 
@@ -276,16 +334,58 @@ Examples:
 // file and converting your scripts in the \`package.json\` file
 // `;
 
+const HELP_RUN = `
+Usage: grok run [host]
+
+Build, publish, and open the package in the browser.
+
+Runs \`grok build\`, publishes the package to the server, then opens the server in the default browser.
+
+Options:
+[-k | --key] [--release] [-v | --verbose]
+
+--key       Developer key (overrides config)
+--release   Publish as a release version (default: debug)
+--verbose   Print detailed output
+
+Examples:
+  grok run              Build, publish to default server, and open browser
+  grok run dev          Build, publish to 'dev' server alias, and open browser
+  grok run https://my.datagrok.ai/api --key abc123
+`;
+
+const HELP_REPORT = `
+Usage: grok report <subcommand> <instance> <id>
+
+Manage Datagrok user error reports
+
+Subcommands:
+    fetch    Download a report zip from a managed instance
+    resolve  Mark a report as resolved
+    ticket   Create a JIRA ticket for a report via the Datlas API
+
+Examples:
+  grok report fetch dev 1528         Download report #1528 from the 'dev' instance
+  grok report resolve dev 1528       Resolve report #1528 on the 'dev' instance
+  grok report ticket dev <report-uuid>   Create a JIRA ticket for a report
+
+The instance name must match a server alias in ~/.grok/config.yaml.
+`;
+
 export const help = {
   add: HELP_ADD,
   api: HELP_API,
   build: HELP_BUILD,
   check: HELP_CHECK,
+  claude: HELP_CLAUDE,
   config: HELP_CONFIG,
   create: HELP_CREATE,
+  'docker-gen': HELP_DOCKER_GEN,
   init: HELP_INIT,
   link: HELP_LINK,
   publish: HELP_PUBLISH,
+  report: HELP_REPORT,
+  run: HELP_RUN,
   test: HELP_TEST,
   testall: HELP_TESTALL,
   migrate: HELP_MIGRATE,

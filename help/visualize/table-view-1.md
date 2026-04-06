@@ -98,11 +98,10 @@ but can point to any table available in the current context.
 Options include `Filtered` (default), `All`, `Selected`, `SelectedOrCurrent`, 
 `FilteredSelected`, `MouseOverGroup`, `CurrentRow`, and `MouseOverRow`. 
 
-* **Filter** allows additional filtering of rows shown in the viewer using formulas with the `${COLUMN_NAME}` syntax.  
+* **Filter** allows additional filtering of rows shown in the viewer using [formula syntax](../transform/formula-syntax.md).
 Examples include:
-  * `${AGE} > 18`
-  * `${SEVERITY} == 'Medium'`
-  * `${RACE}.endsWith('sian')` or `${RACE} in ['Black', 'Asian', 'Other']` 
+  * `${AGE} > 18 && ${SEVERITY} == 'Medium'`
+  * `Contains(${RACE},'sian')` or `In(${RACE}, ['Black', 'Asian', 'Other'])` 
 
 ![viewer-property-panel](../datagrok/navigation/views/img/viewer-property-panel.gif)
 
@@ -461,8 +460,8 @@ Usage:
 | Popup: Show          | Toggle visibility of the property "x" |
 | Popup: Open as table | Add tables to workspace (tables in rows) |
 
-If a context menu is open when multiple columns are selected, user will be
-present with a choice to apply commands to either current table, or all selected
+If a context menu is open when multiple tables are selected, you are
+presented with a choice to apply commands to either the current table or all selected
 tables, including Append and Compare.
 
 ### Column Manager
@@ -486,9 +485,9 @@ Usage:
 | Right-click      | Show popup menu |
 | Popup: Add Stats | Show/hide statistics |
 
-If a context menu is open when multiple columns are selected, user will be
-present with a choice to apply commands to either current table, or all selected
-tables.
+If a context menu is open when multiple columns are selected, you are
+presented with a choice to apply commands to either the current column or all selected
+columns.
 
 ## Controls
 
@@ -507,9 +506,9 @@ Properties:
 | Property         | Description                                        |
 |------------------|----------------------------------------------------|
 | New name         | New column name                                    |
-| Visible          | Allows to hide column                              |
+| Visible          | Allows you to hide the column                      |
 | Is Color Coded   | Enable/Disable column color coding                 |
-| Show Value       | Allows to do not show values on color coded column |
+| Show Value       | Controls whether values are shown on a color-coded column |
 | Width            | Column width, in pixels                            |
 | Background Color | Background Color, 32 bit integer                   |
 | Decimal Places   | Decimal Places                                     |

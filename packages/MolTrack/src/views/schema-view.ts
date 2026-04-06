@@ -26,14 +26,20 @@ export class PropertySchemaView {
   }
 
   async init(): Promise<DG.View> {
-    const parsed: any = JSON.parse(await fetchSchema());
-    const propArray = parsed.properties ?? parsed;
+    const importButton = ui.bigButton('IMPORT', () => this.onImport());
+    this.view.setRibbonPanels([[this.saveButton, importButton]]);
 
-    this.grouped = this.groupByEntityType(propArray);
-    this.render();
-    this.view.setRibbonPanels([[this.saveButton]]);
+    ui.setUpdateIndicator(this.view.root, true, 'Loading schema...');
+    try {
+      const parsed: any = JSON.parse(await fetchSchema());
+      const propArray = parsed.properties ?? parsed;
 
-    this.initSubscriptions();
+      this.grouped = this.groupByEntityType(propArray);
+      this.render();
+      this.initSubscriptions();
+    } finally {
+      ui.setUpdateIndicator(this.view.root, false);
+    }
     return this.view;
   }
 
@@ -66,6 +72,31 @@ export class PropertySchemaView {
       this.disableInputsIn(editor.root);
 
     this.disableInputsIn(this.extraPropertiesDiv);
+  }
+
+  private onImport(): void {
+    DG.Utils.openFile({accept: '.json', open: (file) => this.importSchemaFile(file)});
+  }
+
+  private async importSchemaFile(file: File): Promise<void> {
+    ui.setUpdateIndicator(this.view.root, true, 'Importing schema...');
+    try {
+      const schema = await file.text();
+      await registerMolTrackProperties(schema);
+      grok.shell.info('Schema registered');
+
+      const parsed: any = JSON.parse(await fetchSchema());
+      const propArray = parsed.properties ?? parsed;
+      this.grouped = this.groupByEntityType(propArray);
+      this.editors = {};
+      this.render();
+      this.initSubscriptions();
+    } catch (e: any) {
+      grok.shell.error('Failed to import schema');
+      console.error(e);
+    } finally {
+      ui.setUpdateIndicator(this.view.root, false);
+    }
   }
 
   private async onSave(): Promise<void> {

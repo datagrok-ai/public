@@ -1,5 +1,31 @@
 # Bio changelog
 
+## 2.26.5 (2026-04-01)
+
+### Features
+
+* Added monomer canonicalization support
+
+### Bug Fixes
+
+* GROK-19928: Sequence space and Activity cliffs now correctly save and restore in datasync projects
+
+## 2.26.4 (2026-03-20)
+
+### Features
+
+* Liabilities: Added separator support
+* Sequence Difference Renderer: Added support for custom notations
+* Added draggable sequence column header
+* Improved explicit notation conversion and detection
+* Added sequence column input with region cutting
+
+### Bug Fixes
+
+* VD Regions viewer no longer shows errors
+* Custom difference columns are now correctly restored
+* Tag pickup for datasync projects now works correctly
+
 ## 2.26.0 (2026-03-04)
 
 * Antibodies support: Numbering schemes, highlighting, allignment, liabilities detection, extracting regions, and more.

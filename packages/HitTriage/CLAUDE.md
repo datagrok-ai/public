@@ -1,7 +1,5 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
-
 ## Overview
 
 **HitTriage** (`@datagrok/hit-triage`) is a Datagrok plugin for chemists to assess hit compound quality and manage
@@ -12,17 +10,6 @@ molecule campaigns. It bundles **three applications** in one package:
 - **PeptiHit** — Like Hit Design but for peptides (HELM notation). Converts sequences to atomic level via the Bio package.
 
 Category: **Cheminformatics**. Browse paths: `Chem` (Hit Triage, Hit Design), `Peptides` (PeptiHit).
-
-## Build Commands
-
-```bash
-npm install
-npm run build              # grok api && grok check --soft && webpack
-npm run lint               # eslint src --ext .ts
-npm run lint-fix
-npm run link-all           # npm link datagrok-api @datagrok-libraries/compute-utils @datagrok-libraries/utils
-npm run build-all          # Builds js-api → compute-utils → utils → this package
-```
 
 ## Architecture
 

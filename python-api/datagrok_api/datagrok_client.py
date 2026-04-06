@@ -1,8 +1,10 @@
 from datagrok_api.http_client import HttpClient
 from datagrok_api.resources.connections import ConnectionsClient
+from datagrok_api.resources.credentials import CredentialsClient
 from datagrok_api.resources.files import FilesClient
 from datagrok_api.resources.functions import FunctionsClient
 from datagrok_api.resources.groups import GroupsClient
+from datagrok_api.resources.packages import PackagesClient, PublishedPackagesClient
 from datagrok_api.resources.shares import SharesClient
 from datagrok_api.resources.tables import TablesClient
 from datagrok_api.resources.users import UsersClient
@@ -40,6 +42,12 @@ class DatagrokClient:
         Provides information about platform users.
     connections : ConnectionsClient
         Interact with DataConnections (e.g., Postgres, Snowflake, S3, etc.).
+    packages : PackagesClient
+        List and retrieve Datagrok packages.
+    published_packages : PublishedPackagesClient
+        List and retrieve published package versions.
+    credentials : CredentialsClient
+        Manage credentials for any entity (connections, packages, etc.).
 
     Examples
     --------
@@ -95,6 +103,9 @@ class DatagrokClient:
         self.shares = SharesClient(client=self._http)
         self.users = UsersClient(client=self._http)
         self.connections = ConnectionsClient(client=self._http)
+        self.packages = PackagesClient(client=self._http)
+        self.published_packages = PublishedPackagesClient(client=self._http)
+        self.credentials = CredentialsClient(client=self._http)
 
         
     def close(self):

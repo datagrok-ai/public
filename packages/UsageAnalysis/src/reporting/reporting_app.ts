@@ -29,40 +29,54 @@ export class ReportingApp {
       if (segments.length === 1)
         reportNumber = parseInt(segments[0]);
     }
-    let table: DG.DataFrame = await grok.dapi.reports.getReports(reportNumber);
+
+    const allReportsPromise = grok.dapi.reports.getReports();
+
+    if (reportNumber) {
+      try {
+        const singleTable = await grok.dapi.reports.getReports(reportNumber);
+        if (singleTable.rowCount > 0) {
+          const reportId = singleTable.getCol('id').get(0);
+          const report = await grok.dapi.reports.find(reportId);
+          if (report)
+            grok.shell.setCurrentObject(report, false);
+        }
+      }
+      catch (e) {
+        console.error(e);
+      }
+    }
+
+    let table: DG.DataFrame = await allReportsPromise;
     this.view.table = table;
+
+    if (reportNumber) {
+      const numberCol = table.getCol('number');
+      for (let i = 0; i < table.rowCount; i++) {
+        if (numberCol.get(i) === reportNumber) {
+          table.currentRowIdx = i;
+          break;
+        }
+      }
+    }
 
     await this.refresh(table, this.view!.grid);
     clearTimeout(indicatorTimer);
     ui.setUpdateIndicator(this.view.root, false);
-    if (reportNumber) {
-      const progress = DG.TaskBarProgressIndicator.create('Loading reports...');
-      try {
-        const reports = await grok.dapi.reports.getReports();
-        reports.rows.removeWhere((r) => r.get('number') === reportNumber);
-        const columns = reports.columns.toList();
-        for (const col of columns) {
-          if (!table.col(col.name))
-            table.columns.add(DG.Column.fromType(col.type, col.name, table.rowCount))
-        }
-        table.appendMerge(reports);
-        await this.refresh(table, this.view!.grid);
-        setTimeout(async () => {
-          const length = table.rowCount;
-          for (let i = 0; i < length; i++) {
-            if (this.view?.grid.cell('number', i).cell.value == reportNumber) {
-              this.view?.grid.scrollToCell('date', i);
-              break;
-            }
-          }
-        }, 200);
-      } catch (e) {
-        console.error(e);
-      } finally {
-        progress.close();
-      }
-    }
 
+    if (reportNumber) {
+      setTimeout(async () => {
+        const length = table.rowCount;
+        for (let i = 0; i < length; i++) {
+          if (this.view?.grid.cell('number', i).cell.value == reportNumber) {
+            table.currentRowIdx = this.view.grid.cell('number', i).cell.rowIndex;
+            this.view?.grid.scrollToCell('date', i);
+            await this.showPropertyPanel(table);
+            break;
+          }
+        }
+      }, 200);
+    }
   }
 
   async refresh(table: DG.DataFrame, grid: DG.Grid) {

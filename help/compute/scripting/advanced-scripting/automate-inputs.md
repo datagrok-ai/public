@@ -16,10 +16,10 @@ Use parameter suggestions to help users enter a correct value. For instance, whe
 sense to dynamically query a database for values starting with the already entered text, and suggest to auto-complete
 the value.
 
-Suggestions are functions that take one string argument, and return a list of strings to be suggested to user.
+Suggestions are functions that take one string argument and return a list of strings to be suggested to the user.
 Suggestions work only for string parameters.
 
-The following example helps user enter a country name by dynamically retrieving a list of names from a web service:
+The following example helps the user enter a country name by dynamically retrieving a list of names from a web service:
 
 ```mdx-code-block
 <Tabs>
@@ -127,9 +127,9 @@ grok.functions.register({
 
 ## Validate inputs
 
-Validators check whether the value falls in the expected range, and provide visual cue if it does not. To add a
-validator to a parameter, provide a comma-separated list of functions that will be invoked each time a value is changed.
-A null indicates that the value is valid, anything else indicates an error which gets shown to the user.
+Validators check whether the value falls in the expected range and provide a visual cue if it does not. To add a
+validator to a parameter, provide a comma-separated list of functions that are invoked each time a value changes.
+A null indicates that the value is valid. Anything else indicates an error, which gets shown to the user.
 
 A validator is a function that accepts one parameter of any type and returns a string. Choice providers are applicable
 only to string parameters.

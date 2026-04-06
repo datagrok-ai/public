@@ -379,7 +379,7 @@ export class PackageFunctions {
     meta: {
       supportedSemTypes: 'Text',
       supportedDistanceFunctions: 'Vector Cosine, Euclidean, Manhattan',
-      role: 'dimRedPreprocessingFunction',
+      role: 'dim-red-preprocessing-function',
     },
     name: 'Sentence Embeddings',
     outputs: [{type: 'object', name: 'result'}],

@@ -7,6 +7,7 @@ export interface ToolInputs {
   Grep: {pattern?: string; path?: string};
   WebSearch: {query?: string};
   WebFetch: {url?: string};
+  AskUserQuestion: {questions?: {question?: string}[]};
 }
 
 export interface McpInputs {
@@ -16,6 +17,10 @@ export interface McpInputs {
   list_files: {path?: string};
   download_file: {path?: string};
   upload_file: {path?: string};
+  index_codebase: {path?: string};
+  search_code: {query?: string};
+  get_indexing_status: {path?: string};
+  clear_index: {path?: string};
 }
 
 export type ToolName = keyof ToolInputs;
@@ -27,11 +32,28 @@ export interface UserMessage {
   message: string;
   apiKey?: string;
   mcpServerUrl?: string;
+  outputSchema?: object;
+  systemPromptMode?: 'datagrok' | 'bash' | 'none';
 }
+
+export interface AbortMessage {
+  type: 'abort';
+  sessionId: string;
+}
+
+export interface InputResponseMessage {
+  type: 'input_response';
+  sessionId: string;
+  value: any;
+}
+
+export type IncomingMessage = UserMessage | AbortMessage | InputResponseMessage;
 
 export type OutgoingMessage =
   | {type: 'chunk'; sessionId: string; content: string}
   | {type: 'tool_activity'; sessionId: string; summary: string}
   | {type: 'tool_result'; sessionId: string; content: string}
-  | {type: 'final'; sessionId: string; content: string}
-  | {type: 'error'; sessionId: string; message: string};
+  | {type: 'final'; sessionId: string; content: string; structured_output?: any}
+  | {type: 'error'; sessionId: string; message: string}
+  | {type: 'aborted'; sessionId: string}
+  | {type: 'input_request'; sessionId: string; toolName: string; input: any};

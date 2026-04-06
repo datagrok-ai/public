@@ -72,6 +72,64 @@ class ChemPackageDetectors extends DG.Package {
       grok.functions.call('Chem:detectSmiles', {col: col, min: minUnique}).then(() => {});
   }
 
+  static likelyReactionNames = ['reaction', 'rxn'];
+
+  // Check if a string looks like a reaction SMILES/SMARTS or RXN block.
+  // Supports four formats:
+  //   "reactants>>products"           — standard reaction SMILES
+  //   "reactants>agents>products"      — SMIRKS with agent/reagent field
+  //   "A>>B>>C>>D"                     — multi-step reaction chain
+  //   "$RXN..."                        — MDL RXN format (molblock-based)
+  static isLikelyReaction(s) {
+    // RXN format: structured block starting with $RXN
+    if (s.trimStart().startsWith('$RXN')) return true;
+
+    // Standard/multi-step: contains ">>"
+    if (s.includes('>>')) {
+      const idx = s.indexOf('>>');
+      const left = s.substring(0, idx);
+      const rightFull = s.substring(idx + 2);
+      // For multi-step, validate just the first product group
+      const right = rightFull.split('>>')[0];
+      if (left.length === 0 || right.length === 0) return false;
+      // Validate the last reactant and first product molecule
+      const lastReactant = left.split('.').pop();
+      const firstProduct = right.split('.')[0];
+      return lastReactant.length > 0 && firstProduct.length > 0 &&
+        ChemPackageDetectors.likelyValidSmiles(lastReactant) &&
+        ChemPackageDetectors.likelyValidSmiles(firstProduct);
+    }
+
+    // SMIRKS format: "reactants>agents>products" (exactly two single ">")
+    const parts = s.split('>');
+    if (parts.length === 3 && parts[0].length > 0 && parts[2].length > 0) {
+      const lastReactant = parts[0].split('.').pop();
+      const firstProduct = parts[2].split('.')[0];
+      return lastReactant.length > 0 && firstProduct.length > 0 &&
+        ChemPackageDetectors.likelyValidSmiles(lastReactant) &&
+        ChemPackageDetectors.likelyValidSmiles(firstProduct);
+    }
+
+    return false;
+  }
+
+  //name: detectReactions
+  //meta.role: semTypeDetector
+  //input: column col
+  //output: string semType
+  detectReactions(col) {
+    const lowerName = col.name.toLowerCase();
+    const likelyName = ChemPackageDetectors.likelyReactionNames.some((n) => lowerName.includes(n));
+    const minUnique = likelyName ? 1 : 2;
+
+    if (DG.Detector.sampleCategories(col, ChemPackageDetectors.isLikelyReaction, minUnique, 10, 0.8)) {
+      col.semType = DG.SEMTYPE.CHEMICAL_REACTION;
+      col.meta.cellRenderer = 'ChemicalReaction';
+      return DG.SEMTYPE.CHEMICAL_REACTION;
+    }
+    return null;
+  }
+
   //meta.role: semTypeDetector
   //input: column col
   //output: string semType

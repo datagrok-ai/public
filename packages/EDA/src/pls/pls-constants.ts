@@ -17,8 +17,10 @@ export enum ERROR_MSG {
   ENOUGH = 'Not enough of features',
   COMP_LIN_PLS = 'Components count must be less than the number of features',
   COMP_QUA_PLS = 'Too large components count for the quadratic PLS regression',
-  COMPONENTS = 'Components count must be greater than 1',
+  COMP_ROWS = 'Components count must not exceed the number of rows',
+  COMPONENTS = 'Components count must be at least 1',
   INV_INP = 'Invalid inputs',
+  NULL_COMPS = 'Components count is not specified',
 }
 
 /** Widget titles */
@@ -44,6 +46,7 @@ export enum TITLE {
   BROWSE = 'Browse',
   ANALYSIS = 'Features Analysis',
   QUADRATIC = 'Quadratic',
+  BIAS = 'bias',
 }
 
 /** Tooltips */
@@ -99,6 +102,10 @@ export const LINE_WIDTH = 1;
 export const X_COORD = 200;
 export const Y_COORD = 200;
 export const DELAY = 2000;
+
+export const MAX_ROWS_IN_PREDICTION_TOOLTIP = 20;
+
+export const NUMS_AFTER_COMMA = 3;
 
 /** Curves colors */
 export enum COLOR {

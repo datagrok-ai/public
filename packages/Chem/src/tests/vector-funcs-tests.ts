@@ -56,11 +56,6 @@ category('vector functions', () => {
         await testVectorFunc('Chem:getProperties(${smiles}, [\'LogP\'])', 'LogP', [0, 9],
             [2.939000129699707, -0.6422999501228333]);
     });
-
-    after(async () => {
-        grok.shell.closeAll();
-        DG.Balloon.closeAll();
-    });
 });
 
 export async function testVectorFunc(formula: string, colName: string, idxsToCheck: number[],

@@ -1,5 +1,6 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
+import * as ui from 'datagrok-api/ui';
 
 import {
   DEFAULT_AGGREGATION,
@@ -8,6 +9,7 @@ import {
   PropertyDesirability,
   WeightedAggregation,
   createDefaultNumerical,
+  migrateProfile,
 } from '@datagrok-libraries/statistics/src/mpo/mpo';
 
 export {MPO_PROFILE_CHANGED_EVENT, MPO_PROFILE_DELETED_EVENT} from '@datagrok-libraries/statistics/src/mpo/utils';
@@ -15,6 +17,8 @@ export {MPO_PROFILE_CHANGED_EVENT, MPO_PROFILE_DELETED_EVENT} from '@datagrok-li
 export type MpoProfileInfo = DesirabilityProfile & {
   fileName: string;
 };
+
+export type MpoSaveResult = {saved: boolean; fileName: string};
 
 export enum MpoPathMode {
   List = 'list',
@@ -24,6 +28,7 @@ export enum MpoPathMode {
 
 export const MPO_TEMPLATE_PATH = 'System:AppData/Chem/mpo';
 export const MPO_PATH = 'MPOProfiles';
+export const MPO_PROFILES_NAME = 'MPO Profiles';
 export const MAX_MPO_PROPERTIES = 20;
 
 export async function loadMpoProfiles(): Promise<MpoProfileInfo[]> {
@@ -33,10 +38,11 @@ export async function loadMpoProfiles(): Promise<MpoProfileInfo[]> {
   for (const file of files) {
     try {
       const text = await grok.dapi.files.readAsText(`${MPO_TEMPLATE_PATH}/${file.name}`);
-      const content = JSON.parse(text) as DesirabilityProfile;
+      const content = migrateProfile(JSON.parse(text) as DesirabilityProfile);
 
       profiles.push({
         type: DESIRABILITY_PROFILE_TYPE,
+        version: content.version,
         fileName: file.name,
         name: content.name ?? file.name.replace(/\.json$/i, ''),
         description: content.description ?? '',
@@ -62,6 +68,7 @@ export async function computeMpo(
   aggregation?: WeightedAggregation,
   silent: boolean = false,
   processed: boolean = false,
+  createDesirabilityColumns: boolean = false,
 ): Promise<string[]> {
   const mappedProperties: Record<string, PropertyDesirability> = {};
   for (const [propName, prop] of Object.entries(profile.properties)) {
@@ -87,11 +94,10 @@ export async function computeMpo(
 
   const result = call.getOutputParamValue() as DG.Column[];
 
-  // Temporary fix until proper support for list<column> is implemented
-  const colList = DG.DataFrame.fromColumns(result).columns;
   await DG.Func.find({package: 'Chem', name: 'mpoCalculate'})[0].prepare({
-    df, columns: colList, profileName, aggregation: resolvedAggregation,
+    df, columns: result, profileName, aggregation: resolvedAggregation, createDesirabilityColumns,
   }).call(undefined, undefined, {processed});
+
   return df.col(profileName) ? [profileName] : [];
 }
 
@@ -204,4 +210,31 @@ export function deepEqual<T>(current: T, original: T): boolean {
       return false;
   }
   return true;
+}
+
+export function setupMpoBreadcrumbs(view: DG.ViewBase, lastSegment: string): void {
+  const breadcrumbs = ui.breadcrumbs(['Home', MPO_PROFILES_NAME, lastSegment]);
+
+  breadcrumbs.onPathClick.subscribe((path) => {
+    const clicked = path[path.length - 1];
+    if (clicked === lastSegment)
+      return;
+    if (clicked === MPO_PROFILES_NAME) {
+      const listView = Array.from(grok.shell.views).find((v) => v.name === MPO_PROFILES_NAME);
+      if (listView)
+        grok.shell.v = listView;
+    }
+  });
+
+  const homeEl = breadcrumbs.root.firstElementChild;
+  if (homeEl) {
+    const homeIcon = ui.iconFA('home', () => grok.shell.v = DG.View.createByType(DG.VIEW_TYPE.HOME));
+    homeEl.replaceWith(homeIcon);
+  }
+
+  const viewNameRoot = view.ribbonMenu.root.parentElement?.getElementsByClassName('d4-ribbon-name')[0];
+  if (viewNameRoot) {
+    viewNameRoot.textContent = '';
+    viewNameRoot.appendChild(breadcrumbs.root);
+  }
 }

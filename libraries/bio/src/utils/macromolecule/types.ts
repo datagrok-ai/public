@@ -55,6 +55,25 @@ export interface ISeqSplitted {
   get gapOriginal(): string;
 }
 
+/**
+ * Extracts displayable monomer symbol(s) from a raw position value.
+ * Used by the Monomer cell renderer when a notation provider needs custom
+ * interpretation of split-to-monomer position values.
+ *
+ * For example, a Parabilis position `[VHL1379]*dLys` contains two monomers
+ * (`VHL1379` and `dLys`). The canonicalizer separates them with
+ * {@link MONOMER_MOTIF_SPLITTER} so the renderer can display/tooltip each one.
+ */
+export interface IMonomerCanonicalizer {
+  /** Convert a raw position value to a displayable monomer string.
+   *  If the position contains multiple monomers, join them with
+   *  {@link MONOMER_MOTIF_SPLITTER} (` , `). */
+  canonicalize(original: string): string;
+
+  /** Returns true if the raw position value represents a gap in this notation. */
+  isGap(original: string): boolean;
+}
+
 export interface INotationProvider {
   get defaultGapOriginal(): string;
 
@@ -67,6 +86,12 @@ export interface INotationProvider {
   getHelm(seq: string, options: any): string;
 
   createCellRendererBack(gridCol: DG.GridColumn | null, tableCol: DG.Column<string>): CellRendererBackBase<string>;
+
+  /** nqName of a registered function that returns an {@link IMonomerCanonicalizer} instance.
+   *  When set, split-to-monomers will tag Monomer columns with this function name so the
+   *  monomer cell renderer can resolve display symbols from raw position values.
+   *  Return null/undefined if no custom canonicalization is needed. */
+  readonly monomerCanonicalizerFuncName?: string | null;
 }
 
 export abstract class NotationProviderBase {

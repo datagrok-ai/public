@@ -75,7 +75,18 @@ queries via a JDBC driver.
 * Aggregation query
 * Connection test
 
+## Authentication
+
+Snowflake supports three authentication methods:
+
+| Method                   | Use case                                                                    |
+|--------------------------|-----------------------------------------------------------------------------|
+| **Username/Password**    | Basic authentication with Snowflake credentials                             |
+| **Username/Private key** | RSA key pair authentication                                                 |
+| **OAuth (JWT)**          | Per-user identity via signed JWT tokens ([details](snowflake-oauth-jwt.md)) |
+
 See also:
 
 * [Data connection](../../access.md#data-connection)
+* [Snowflake OAuth (JWT) authentication](snowflake-oauth-jwt.md)
 * [Snowflake](https://www.snowflake.com/en/)

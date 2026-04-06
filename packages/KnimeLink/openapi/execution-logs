@@ -1,0 +1,520 @@
+openapi: 3.0.2
+info:
+  title: knime-hub-execution-log-service
+  description: |-
+    OpenAPI Spec for the knime-hub-execution-log-service.
+  version: 1.3.0
+servers:
+  - url: http://localhost:8080/
+    description: development
+tags:
+  - name: chunks
+    description: Chunk endpoints.
+  - name: logs
+    description: Log endpoints.
+paths:
+  /chunks/{executionContextID}/{executorID}:
+    post:
+      tags:
+        - chunks
+      summary: Post log-chunks for (from) the Executor.
+      description: | 
+        Post log-chunks for (from) the Executor with the ID `executorID` in the Execution Context with the ID `executionContextID`. 
+        
+        Note, the body must be a newline-delimited JSON (`application/x-ndjson`) stream of log lines. For example:
+        
+        ```json
+          {"log": "foo"}
+          {"log": "bar"}
+        ```
+
+        (The example given by Swagger is incorrect.)
+      security:
+        - basicAuth: [ ]
+      parameters:
+        - $ref: '#/components/parameters/executionContextID'
+        - $ref: '#/components/parameters/executorID'
+        - $ref: '#/components/parameters/xRequestID'
+        - $ref: '#/components/parameters/xCorrelationID'
+      requestBody:
+        required: true
+        content:
+          application/x-ndjson:
+            schema:
+              type: string
+              example: "log lines"
+      responses:
+        '201':
+          $ref: '#/components/responses/201'
+        '400':
+          $ref: '#/components/responses/400'
+        '401':
+          $ref: '#/components/responses/401'
+        '403':
+          $ref: '#/components/responses/403'
+        '413':
+          $ref: '#/components/responses/413'
+        '500':
+          $ref: '#/components/responses/500'
+        '503':
+          $ref: '#/components/responses/503'
+  /logs/{executionContextID}/{executorID}:
+    get:
+      tags:
+        - logs
+      summary: Get log messages for (from) the Executor.
+      description: |
+        Get log messages for (from) the Executor with the ID `executorID` in the Execution Context with the ID `executionContextID`. 
+          
+        Note, the response will be a newline-delimited JSON (`application/x-ndjson`) stream of log messages. For example:
+        
+        ```json
+        {"log": "foo"}
+        {"log": "bar"}
+        ```
+      
+        (The example given by Swagger is incorrect.)
+      security:
+          - authHeader: [ ]
+          - authCookie: [ ]
+      parameters:
+          - $ref: '#/components/parameters/executionContextID'
+          - $ref: '#/components/parameters/executorID'
+          - $ref: '#/components/parameters/xRequestID'
+          - $ref: '#/components/parameters/xCorrelationID'
+      responses:
+        '200':
+          description: OK
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/xRequestID'
+            X-Correlation-Id:
+              $ref: '#/components/headers/xCorrelationID'
+          content:
+            application/x-ndjson:
+              schema:
+                type: string
+                example: "log lines"
+        '400':
+          $ref: '#/components/responses/400'
+        '401':
+          $ref: '#/components/responses/401'
+        '404':
+          $ref: '#/components/responses/404'
+        '500':
+          $ref: '#/components/responses/500'
+        '503':
+          $ref: '#/components/responses/503'
+    head:
+      tags:
+        - logs
+      summary: Check existence of log messages for an Executor.
+      description: |
+        Check if log messages exist for the Executor with the ID `executorID` in the Execution Context with the ID `executionContextID`.
+        This endpoint verifies authentication and whether logs are available for the specified executor, returning a `200` status if successful.
+      security:
+          - authHeader: [ ]
+          - authCookie: [ ]
+      parameters:
+          - $ref: '#/components/parameters/executionContextID'
+          - $ref: '#/components/parameters/executorID'
+          - $ref: '#/components/parameters/xRequestID'
+          - $ref: '#/components/parameters/xCorrelationID'
+      responses:
+        '200':
+          description: Log messages exist and authentication successful.
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/xRequestID'
+            X-Correlation-Id:
+              $ref: '#/components/headers/xCorrelationID'
+        '400':
+          $ref: '#/components/responses/400'
+        '401':
+          $ref: '#/components/responses/401'
+        '404':
+          $ref: '#/components/responses/404'
+        '500':
+          $ref: '#/components/responses/500'
+        '503':
+          $ref: '#/components/responses/503'
+  /logs/{executionContextID}:
+    get:
+      tags:
+        - logs
+      summary: Get log messages for (from) all Executors of an Execution Context.
+      description: |
+        Get log messages for (from) all Executors of the Execution Context with the ID `executionContextID`.
+        Optionally filter logs by modification time using a start time parameter.
+      security:
+        - authHeader: [ ]
+        - authCookie: [ ]
+      parameters:
+        - $ref: '#/components/parameters/executionContextID'
+        - $ref: '#/components/parameters/startTime'
+        - $ref: '#/components/parameters/xRequestID'
+        - $ref: '#/components/parameters/xCorrelationID'
+      responses:
+        '200':
+          description: OK
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/xRequestID'
+            X-Correlation-Id:
+              $ref: '#/components/headers/xCorrelationID'
+            Content-Disposition:
+              schema:
+                type: string
+                description: Name of ZIP file.
+                example: "attachment; filename=\"logs-68da422e-e301-43c3-bdbe-d288f7c60b52_2024-09-16-11-32-05.zip\""
+          content:
+            application/zip:
+              schema:
+                type: string
+                format: binary
+        '400':
+          $ref: '#/components/responses/400'
+        '401':
+          $ref: '#/components/responses/401'
+        '404':
+          $ref: '#/components/responses/404'
+        '500':
+          $ref: '#/components/responses/500'
+        '503':
+          $ref: '#/components/responses/503'
+    head:
+      tags:
+        - logs
+      summary: Check existence of log messages for an Execution Context.
+      description: |
+        Check if log messages exist for the Execution Context with the ID `executionContextID`.
+        This endpoint verifies authentication and whether logs are available, returning a `200` status if successful.
+      security:
+        - authHeader: [ ]
+        - authCookie: [ ]
+      parameters:
+        - $ref: '#/components/parameters/executionContextID'
+        - $ref: '#/components/parameters/startTime'
+        - $ref: '#/components/parameters/xRequestID'
+        - $ref: '#/components/parameters/xCorrelationID'
+      responses:
+        '200':
+          description: Log messages exist and authentication successful.
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/xRequestID'
+            X-Correlation-Id:
+              $ref: '#/components/headers/xCorrelationID'
+        '400':
+          $ref: '#/components/responses/400'
+        '401':
+          $ref: '#/components/responses/401'
+        '404':
+          $ref: '#/components/responses/404'
+        '500':
+          $ref: '#/components/responses/500'
+        '503':
+          $ref: '#/components/responses/503'
+  /logs:
+    get:
+      tags:
+        - logs
+      summary: Get log messages for (from) all Executors of all Execution Context.
+      description: |
+        Get log messages for (from) all Executors of all Execution Context.
+        Optionally filter logs by modification time using a start time parameter.
+      security:
+        - authHeader: [ ]
+        - authCookie: [ ]
+      parameters:
+        - $ref: '#/components/parameters/startTime'
+        - $ref: '#/components/parameters/xRequestID'
+        - $ref: '#/components/parameters/xCorrelationID'
+      responses:
+        '200':
+          description: OK
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/xRequestID'
+            X-Correlation-Id:
+              $ref: '#/components/headers/xCorrelationID'
+            Content-Disposition:
+              schema:
+                type: string
+                description: Name of ZIP file.
+                example: "attachment; filename=\"logs_2024-09-16-11-30-12.zip\""
+          content:
+            application/zip:
+              schema:
+                type: string
+                format: binary
+        '400':
+          $ref: '#/components/responses/400'
+        '401':
+          $ref: '#/components/responses/401'
+        '404':
+          $ref: '#/components/responses/404'
+        '500':
+          $ref: '#/components/responses/500'
+        '503':
+          $ref: '#/components/responses/503'
+    head:
+      tags:
+        - logs
+      summary: Check existence of log messages for all Execution Contexts.
+      description: |
+        Check if log messages exist for all Execution Contexts.
+        This endpoint verifies authentication and the availability of logs across all execution contexts, returning a `200` status if successful.
+      security:
+        - authHeader: [ ]
+        - authCookie: [ ]
+      parameters:
+        - $ref: '#/components/parameters/startTime'
+        - $ref: '#/components/parameters/xRequestID'
+        - $ref: '#/components/parameters/xCorrelationID'
+      responses:
+        '200':
+          description: Log messages exist and authentication successful.
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/xRequestID'
+            X-Correlation-Id:
+              $ref: '#/components/headers/xCorrelationID'
+        '400':
+          $ref: '#/components/responses/400'
+        '401':
+          $ref: '#/components/responses/401'
+        '404':
+          $ref: '#/components/responses/404'
+        '500':
+          $ref: '#/components/responses/500'
+        '503':
+          $ref: '#/components/responses/503'
+
+# See: https://support.smartbear.com/swaggerhub/docs/domains/oas3-domain-example.html
+components:
+  schemas:
+    jsonError:
+      type: object
+      required:
+        - error
+      properties:
+        error:
+          type: string
+      example:
+        error: "Bad Request"
+    xRequestID:
+      type: string
+      format: uuid
+      example: 8b6bdb96-f585-4eef-8654-5077902d9f29
+    xCorrelationID:
+      type: string
+      format: uuid
+      example: 8b6bdb96-f585-4eef-8654-5077902d9f17
+    executionContextID:
+      type: string
+      format: uuid
+      description: The execution context ID.
+      example: 68da422e-e301-43c3-bdbe-d288f7c60b52
+    executorID:
+      type: string
+      format: uuid
+      description: The executor ID.
+      example: 11111111-1111-1111-1111-111111111111
+  parameters:
+    xRequestID:
+      in: header
+      name: X-Request-Id
+      schema:
+        $ref: '#/components/schemas/xRequestID'
+    xCorrelationID:
+      in: header
+      name: X-Correlation-Id
+      schema:
+        $ref: '#/components/schemas/xCorrelationID'
+    executionContextID:
+      in: path
+      required: true
+      name: executionContextID
+      schema:
+        $ref: '#/components/schemas/executionContextID'
+    executorID:
+      in: path
+      required: true
+      name: executorID
+      schema:
+          $ref: '#/components/schemas/executorID'
+    startTime:
+      in: query
+      required: false
+      name: start
+      description: |
+        Only include logs modified after this time (RFC3339 format).
+        Note that returned log files may still contain entries from before this time.
+      schema:
+        type: string
+        format: date-time
+      example: "2024-09-16T10:00:00Z"
+  responses:
+    '200':
+      description: OK
+      headers:
+        X-Request-Id:
+          $ref: '#/components/headers/xRequestID'
+        X-Correlation-Id:
+          $ref: '#/components/headers/xCorrelationID'
+    '201':
+      description: OK
+      headers:
+        X-Request-Id:
+          $ref: '#/components/headers/xRequestID'
+        X-Correlation-Id:
+          $ref: '#/components/headers/xCorrelationID'
+    '204':
+      description: No Content
+      headers:
+        X-Request-Id:
+          $ref: '#/components/headers/xRequestID'
+        X-Correlation-Id:
+          $ref: '#/components/headers/xCorrelationID'
+    '400':
+      description: Bad Request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/jsonError'
+          example:
+            error: "Bad Request"
+      headers:
+        X-Request-Id:
+          $ref: '#/components/headers/xRequestID'
+        X-Correlation-Id:
+          $ref: '#/components/headers/xCorrelationID'
+    '401':
+      description: Unauthorized
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/jsonError'
+          example:
+            error: "Unauthorized"
+      headers:
+        X-Request-Id:
+          $ref: '#/components/headers/xRequestID'
+        X-Correlation-Id:
+          $ref: '#/components/headers/xCorrelationID'
+    '403':
+      description: Forbidden
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/jsonError'
+          example:
+            error: "Forbidden"
+      headers:
+        X-Request-Id:
+          $ref: '#/components/headers/xRequestID'
+        X-Correlation-Id:
+          $ref: '#/components/headers/xCorrelationID'
+    '404':
+      description: Not Found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/jsonError'
+          example:
+            error: "Not Found"
+      headers:
+        X-Request-Id:
+          $ref: '#/components/headers/xRequestID'
+        X-Correlation-Id:
+          $ref: '#/components/headers/xCorrelationID'
+    '409':
+      description: Conflict
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/jsonError'
+          example:
+            error: "Conflict"
+      headers:
+        X-Request-Id:
+          $ref: '#/components/headers/xRequestID'
+        X-Correlation-Id:
+          $ref: '#/components/headers/xCorrelationID'
+    '413':
+      description: Request Entity Too Large
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/jsonError'
+          example:
+            error: "Request Entity Too Large"
+      headers:
+        X-Request-Id:
+          $ref: '#/components/headers/xRequestID'
+        X-Correlation-Id:
+          $ref: '#/components/headers/xCorrelationID'
+    '500':
+      description: Internal Server Error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/jsonError'
+          example:
+            error: "Internal Server Error"
+      headers:
+        X-Request-Id:
+          $ref: '#/components/headers/xRequestID'
+        X-Correlation-Id:
+          $ref: '#/components/headers/xCorrelationID'
+    '503':
+      description: Service Unavailable
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/jsonError'
+          example:
+            error: "Internal Server Error"
+      headers:
+        X-Request-Id:
+          $ref: '#/components/headers/xRequestID'
+        X-Correlation-Id:
+          $ref: '#/components/headers/xCorrelationID'
+        Content-Type:
+          $ref: '#/components/headers/contentType'
+        X-Content-Type-Options:
+          $ref: '#/components/headers/xContentTypeOptions'
+  headers:
+    xRequestID:
+      description: The X-Request-Id.
+      schema:
+        $ref: '#/components/schemas/xRequestID'
+    xCorrelationID:
+      description: The X-Correlation-Id
+      schema:
+        $ref: '#/components/schemas/xCorrelationID'
+    contentType:
+      description: The Content-Type
+      schema:
+        type: string
+      example: text/plain
+    xContentTypeOptions:
+      description: The X-Content-Type-Options
+      schema:
+        type: string
+      example: nosniff
+  securitySchemes:
+    authHeader:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT token
+    authCookie:
+      type: apiKey
+      description: Cookie containing JWT token
+      in: cookie
+      name: knime_hub_auth
+    basicAuth:
+      type: http
+      scheme: basic

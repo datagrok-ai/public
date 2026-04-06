@@ -1,22 +1,10 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
-
 ## Overview
 
 **Plates** (`@datagrok/plates`) is a Datagrok plugin for **assay plate** management — ingestion, storage, analysis, and visualization of 96-, 384-, and 1536-well experimental plates. It supports importing plates from CSV, Excel, and proprietary instrument formats, persisting plate data to a PostgreSQL database (`plts` schema), running pluggable analyses (DRC, Dose-Ratio, qPCR), and rendering plates as interactive heatmap widgets.
 
 Category: **Visualizations**. Contains a full CRUD app accessible via `Apps | Plates`.
-
-## Build Commands
-
-```bash
-npm install
-npm run build              # grok api && grok check --soft && webpack
-npm run test               # grok test
-npm run build-all          # Builds js-api → utils → statistics → this package
-npm run link-all           # Links datagrok-api, @datagrok-libraries/utils, @datagrok-libraries/statistics
-```
 
 ## Key Dependencies
 

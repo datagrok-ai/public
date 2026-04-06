@@ -11,8 +11,8 @@ import {
 } from '@datagrok-libraries/test/src/test';
 
 category('Docker', () => {
-  const containerOnDemandName: string = 'Cvmtests-docker-test1';
-  const containerSimple: string = 'Cvmtests-docker-test2';
+  const containerOnDemandName: string = 'Cvmtests-cvmtests-docker-test1';
+  const containerSimple: string = 'Cvmtests-cvmtests-docker-test2';
   const incorrectId: string = '00000000-0000-0000-0000-000000000000';
 
   before(async () => {

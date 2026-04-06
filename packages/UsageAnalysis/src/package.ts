@@ -16,6 +16,7 @@ import {ServiceLogsApp} from './service_logs/service_logs';
 import {TestGridCellHandler} from './handlers/test-grid-cell-handler';
 import {initTestStickyMeta} from './test-analysis/sticky-meta-initialization';
 import {TestDashboardWidget} from './viewers/ua-test-dashboard-viewer';
+import {ClickEventsWidget} from './widgets/click-events-widget';
 
 export const _package = new DG.Package();
 export let _properties: any;
@@ -431,6 +432,14 @@ export class PackageFunctions {
   })
   static testDashboardsViewer(): TestDashboardWidget {
     return new TestDashboardWidget();
+  }
+
+  @grok.decorators.func({
+    meta: {inspectorPanel: 'true'},
+    name: 'Click Events',
+  })
+  static _specificClicksPanel(): DG.Widget {
+    return new ClickEventsWidget();
   }
 
   @grok.decorators.autostart()

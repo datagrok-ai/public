@@ -2,7 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import {category, expect, expectObject, test} from '@datagrok-libraries/test/src/test';
 
 category('Packages: Docker', () => {
-  const containerName: string = 'Apitests-docker-test1';
+  const containerName: string = 'Apitests-apitests-docker-test1';
 
   test('Get response', async () => {
     const container = await grok.dapi.docker.dockerContainers.filter(containerName).first();

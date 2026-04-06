@@ -5,6 +5,7 @@
 }
 
 #tt-tree {
+  flex-shrink: 1;
   width: 100%;
   overflow-y: scroll;
   height: inherit;

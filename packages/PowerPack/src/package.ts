@@ -392,8 +392,9 @@ export class PackageFunctions {
   @grok.decorators.func({
     meta: {role: 'transform'}
   })
-  static async runEnrichment(conn: DG.DataConnection, schema: string, table: string, column: string, name: string, df: DG.DataFrame, db: string): Promise<void> {
-    return runEnrichmentFromConfig(conn, schema, table, column, name, df, db);
+  static async runEnrichment(conn: DG.DataConnection, schema: string, table: string, column: string, name: string, df: DG.DataFrame, db: string,
+      @grok.decorators.param({'options': {'optional': true}}) localColumn?: string): Promise<void> {
+    return runEnrichmentFromConfig(conn, schema, table, column, name, df, db, localColumn ?? null);
   }
 }
 
@@ -405,19 +406,21 @@ export function addNewColumnDialog(call: DG.FuncCall | null = null): AddNewColum
 }
 
 grok.events.onContextMenu.subscribe((args) => {
-  const src = args.args.context;
-  let menu;
-  if (src instanceof DG.ScatterPlotViewer ||
-      (src instanceof DG.Viewer && src.getOptions()['type'] == DG.VIEWER.LINE_CHART))
+  const src = args.args.context instanceof DG.Viewer ? args.args.context : null;
+  if (!src)
+    return;
+
+  let menu: DG.Menu | null = null;
+  const viewersToSetMenu = [DG.VIEWER.SCATTER_PLOT, DG.VIEWER.LINE_CHART];
+  if (viewersToSetMenu.includes(src.type as DG.VIEWER))
     menu = args.args.menu.find('Tools');
+  else if (src.type === DG.VIEWER.TRELLIS_PLOT) {
+    const viewerType = src.getOptions().look['viewerType'];
+    if (viewersToSetMenu.includes(viewerType as DG.VIEWER))
+      menu = args.args.menu.find(viewerType).find('Tools');
+  }
 
-  if (src instanceof DG.Viewer && src.getOptions()['type'] == DG.VIEWER.TRELLIS_PLOT &&
-      src.getOptions().look['viewerType'] == DG.VIEWER.SCATTER_PLOT)
-    menu = args.args.menu.find(DG.VIEWER.SCATTER_PLOT).find('Tools');
-
-  menu?.item('Formula Lines...', () => {
-    PackageFunctions.formulaLinesDialog(src);
-  });
+  menu?.item('Formula Lines...', () => PackageFunctions.formulaLinesDialog(src));
 });
 
 function _viewerGallery(view: DG.ViewBase): void {

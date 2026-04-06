@@ -18,6 +18,8 @@ export type DimRedUiOptions = {
   fastRowCount?: number,
   scatterPlotName?: string,
   tableView?: DG.TableView,
+  embedColsNames?: string[],
+  clusterColName?: string,
 }
 
 export function getEmbeddingColsNames(df: DG.DataFrame) {
@@ -58,7 +60,7 @@ export async function multiColReduceDimensionality(table: DG.DataFrame, columns:
       `Initializing ${uiOptions.scatterPlotName ?? 'dimensionality reduction'} ...`);
     let scatterPlot: DG.ScatterPlotViewer | undefined = undefined;
     try {
-      const embedColsNames = getEmbeddingColsNames(table);
+      const embedColsNames = uiOptions.embedColsNames ?? getEmbeddingColsNames(table);
       function progressFunc(_nEpoch: number, epochsLength: number, embeddings: number[][]) {
         let embedXCol: DG.Column | null = null;
         let embedYCol: DG.Column | null = null;
@@ -168,7 +170,7 @@ export async function multiColReduceDimensionality(table: DG.DataFrame, columns:
         try {
           const clusterRes = await getDbscanWorker(res[0], res[1],
             dimRedOptions.dbScanEpsilon ?? 0.01, dimRedOptions.dbScanMinPts ?? 4);
-          const clusterColName = table.columns.getUnusedName('Cluster (DBSCAN)');
+          const clusterColName = uiOptions.clusterColName ?? table.columns.getUnusedName('Cluster (DBSCAN)');
           const clusterCol = table.columns.addNewString(clusterColName);
           clusterCol.init((i) => clusterRes[i].toString());
           if (scatterPlot)

@@ -1,5 +1,9 @@
 # Lib Tests changelog
 
+## 1.8.0 (2025-03-19)
+
+- Release for 1.27.0
+
 ## 1.7.8 (2025-07-28)
 
 - Release for 1.26.0

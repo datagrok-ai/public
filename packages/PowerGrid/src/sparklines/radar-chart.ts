@@ -107,7 +107,8 @@ export class RadarChartCellRender extends DG.GridCellRenderer {
     for (let i = 0; i < cols.length; i++) {
       if (!cols[i].isNone(row)) {
         const point = p(i, 1);
-        DG.Paint.marker(g, DG.MARKER_TYPE.CIRCLE, point.x, point.y, DG.Color.gray, 1);
+        const w = Math.min(box.width, box.height);
+        DG.Paint.marker(g, DG.MARKER_TYPE.CIRCLE, point.x, point.y, DG.Color.gray, w > 30 ? 1 : w / 30);
       }
     }
 

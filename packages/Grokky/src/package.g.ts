@@ -1,11 +1,13 @@
 import {PackageFunctions} from './package';
 import * as DG from 'datagrok-api/dg';
 
+//tags: init
 //meta.role: init
 export async function init() : Promise<void> {
   await PackageFunctions.init();
 }
 
+//tags: autostart
 //meta.role: autostart
 export function autostart() : void {
   PackageFunctions.autostart();
@@ -18,7 +20,7 @@ export function combinedLLMSearchProvider() : any {
 }
 
 //name: Help
-//description: Get answers from DeepGROK AI assistant based on Datagrok documentation and public code.
+//description: Get answers from AI assistant based on Datagrok documentation and public code.
 //input: string prompt 
 //output: widget result
 //meta.role: aiSearchProvider
@@ -47,47 +49,12 @@ export async function llmSearchQueryProvider(prompt: string) : Promise<any> {
   return await PackageFunctions.llmSearchQueryProvider(prompt);
 }
 
-//input: string model 
-//input: string systemPrompt 
-//input: string prompt 
-//input: dynamic schema 
-//output: string result
-//meta.cache: all
-//meta.cache.invalidateOn: 0 0 1 * *
-export async function askAIGeneralCached(model: string, systemPrompt: string, prompt: string, schema?: any) : Promise<string> {
-  return await PackageFunctions.askAIGeneralCached(model, systemPrompt, prompt, schema);
-}
-
-//input: string question 
-//output: string result
-//meta.cache: all
-//meta.cache.invalidateOn: 0 0 1 * *
-export async function ask(question: string) : Promise<string> {
-  return await PackageFunctions.ask(question);
-}
-
-//input: string userGoal 
-//output: string result
-//meta.cache: all
-//meta.cache.invalidateOn: 0 0 1 * *
-export async function getExecutionPlan(userGoal: string) : Promise<string> {
-  return await PackageFunctions.getExecutionPlan(userGoal);
-}
-
 //input: string prompt 
 //output: string result
 //meta.cache: all
 //meta.cache.invalidateOn: 0 0 1 * *
 export async function findMatchingPatternQuery(prompt: string) : Promise<string> {
   return await PackageFunctions.findMatchingPatternQuery(prompt);
-}
-
-//input: string prompt 
-//output: string result
-//meta.cache: all
-//meta.cache.invalidateOn: 0 0 1 * *
-export async function askDocumentationCached(prompt: string) : Promise<string> {
-  return await PackageFunctions.askDocumentationCached(prompt);
 }
 
 //input: view view 
@@ -102,16 +69,6 @@ export async function setupAIQueryEditor(view: DG.ViewBase, connectionID: string
 //input: string dbName { choices: ["biologics","chembl"] }
 export async function moveMetaToDB(dbName: string) : Promise<void> {
   await PackageFunctions.moveMetaToDB(dbName);
-}
-
-//name: setupVectorStore
-export async function setupVectorStore() : Promise<void> {
-  await PackageFunctions.setupVectorStore();
-}
-
-//name: searchForSomething
-export async function searchForSomething() : Promise<void> {
-  await PackageFunctions.searchForSomething();
 }
 
 //name: indexDatabaseSchema

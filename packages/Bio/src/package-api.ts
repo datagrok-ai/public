@@ -121,6 +121,10 @@ export namespace funcs {
     return await grok.functions.call('Bio:CompositionAnalysisWidget', { sequence });
   }
 
+  export async function monomerInfoPanel(monomerSv: any ): Promise<any> {
+    return await grok.functions.call('Bio:MonomerInfoPanel', { monomerSv });
+  }
+
   export async function macromoleculeDifferenceCellRenderer(): Promise<any> {
     return await grok.functions.call('Bio:MacromoleculeDifferenceCellRenderer', {});
   }
@@ -179,10 +183,25 @@ export namespace funcs {
   }
 
   /**
+  Creates a new input for sequence columns with ability to extract a region
+  */
+  export async function sequenceColumnInput(name: string , options: any ): Promise<any> {
+    return await grok.functions.call('Bio:SequenceColumnInput', { name, options });
+  }
+
+  /**
   Detects pairs of molecules with similar structure and significant difference in any given property
   */
   export async function activityCliffs(table: DG.DataFrame , molecules: string , activities: DG.Column , similarity: number , methodName: string , similarityMetric: string , preprocessingFunction: any , options?: any , demo?: boolean ): Promise<void> {
     return await grok.functions.call('Bio:ActivityCliffs', { table, molecules, activities, similarity, methodName, similarityMetric, preprocessingFunction, options, demo });
+  }
+
+  export async function seqActivityCliffsInitFunction(sp: any ): Promise<void> {
+    return await grok.functions.call('Bio:SeqActivityCliffsInitFunction', { sp });
+  }
+
+  export async function seqActivityCliffsTransform(table: DG.DataFrame , molecules: DG.Column , activities: DG.Column , similarity: number , methodName: string , similarityMetric: string , options?: string , isDemo?: boolean , axesNames?: any ): Promise<void> {
+    return await grok.functions.call('Bio:SeqActivityCliffsTransform', { table, molecules, activities, similarity, methodName, similarityMetric, options, isDemo, axesNames });
   }
 
   export async function macromoleculePreprocessingFunction(col: DG.Column , metric: string , gapOpen?: number , gapExtend?: number , fingerprintType?: string ): Promise<any> {
@@ -196,8 +215,12 @@ export namespace funcs {
   /**
   Creates 2D sequence space with projected sequences by pairwise distance
   */
-  export async function sequenceSpaceTopMenu(table: DG.DataFrame , molecules: DG.Column , methodName: string , similarityMetric: string , plotEmbeddings: boolean , preprocessingFunction?: any , options?: any , clusterEmbeddings?: boolean , isDemo?: boolean ): Promise<void> {
+  export async function sequenceSpaceTopMenu(table: DG.DataFrame , molecules: DG.Column , methodName: string , similarityMetric: string , plotEmbeddings: boolean , preprocessingFunction?: any , options?: any , clusterEmbeddings?: boolean , isDemo?: boolean ): Promise<any> {
     return await grok.functions.call('Bio:SequenceSpaceTopMenu', { table, molecules, methodName, similarityMetric, plotEmbeddings, preprocessingFunction, options, clusterEmbeddings, isDemo });
+  }
+
+  export async function sequenceSpaceTransform(table: DG.DataFrame , molecules: DG.Column , methodName: string , similarityMetric: string , plotEmbeddings: boolean , options?: string , clusterEmbeddings?: boolean , embedColsNames?: any , clusterColName?: string ): Promise<any> {
+    return await grok.functions.call('Bio:SequenceSpaceTransform', { table, molecules, methodName, similarityMetric, plotEmbeddings, options, clusterEmbeddings, embedColsNames, clusterColName });
   }
 
   /**
@@ -361,8 +384,8 @@ export namespace funcs {
     return await grok.functions.call('Bio:ManageMonomersView', {});
   }
 
-  export async function manageMonomerLibrariesView(): Promise<DG.View> {
-    return await grok.functions.call('Bio:ManageMonomerLibrariesView', {});
+  export async function manageMonomerLibrariesView(path?: string ): Promise<DG.View> {
+    return await grok.functions.call('Bio:ManageMonomerLibrariesView', { path });
   }
 
   export async function manageMonomerLibrariesViewTreeBrowser(treeNode: any ): Promise<void> {

@@ -28,9 +28,4 @@ category('App', () => {
       await awaitCheck(() => view.root.children.length > 0, `"${tab}" failed to initialize`, 30000);
     });
   }
-
-  after(async () => {
-    grok.shell.closeAll();
-    DG.Balloon.closeAll();
-  });
 }, {clear: false, timeout: 60000});

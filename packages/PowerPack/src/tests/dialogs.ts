@@ -20,11 +20,6 @@ category('Dialogs', () => {
     const dlg = new FormulaLinesDialog(df);
     await awaitCheck(() => isDialogPresent(dlg.dialog.title));
   });
-
-  after(async () => {
-    grok.shell.closeAll();
-    DG.Balloon.closeAll();
-  });
 }, {clear: false});
 
 export function expectTyped(actual: any, expected: any) {

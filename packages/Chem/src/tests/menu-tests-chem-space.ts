@@ -61,11 +61,6 @@ category('top menu chem space', async () => {
       'cannot find warning balloon', 5000);
     } finally {DG.Balloon.closeAll();}
   });
-
-  after(async () => {
-    grok.shell.closeAll();
-    DG.Balloon.closeAll();
-  });
 });
 
 async function _testChemSpaceReturnsResult(df: DG.DataFrame, col: string) {

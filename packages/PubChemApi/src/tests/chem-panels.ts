@@ -41,11 +41,6 @@ category('UI info panel', () => {
     (document.querySelector('.fa-chevron-square-up') as HTMLElement)?.click();
     grok.shell.o = ui.div();
   });
-
-
-  after(async () => {
-    grok.shell.closeAll();
-  });
 });
 
 async function awaitPanel(pp: HTMLElement, name: string, ms: number = 5000): Promise<void> {

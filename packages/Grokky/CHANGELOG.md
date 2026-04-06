@@ -1,25 +1,25 @@
-# ChatGPT changelog
+# Grokky changelog
 
 ## 1.0.4 (2026-02-01)
 
-* GPT: Azure compatible client
+* Grokky: Azure compatible client
 * AI: Made a namespace, made a nested config, improved namings
 * Got rid of "latest" versions
-* GPT: Refactor to Vercel AI
+* Grokky: Refactor to Vercel AI
 
 ## 1.0.1 (2025-12-18)
 
-* ChatGPT: Move stuff to proxy
+* Grokky: Move stuff to proxy
 
 ## 1.0.0 (2025-12-17)
 
 ### Features
 
-* ChatGpt: Invoking function and chains of functions
-* ChatGPT: Fuzzy matching
+* Grokky: Invoking function and chains of functions
+* Grokky: Fuzzy matching
 * AI: Powersearch Search AI features
-* ChatGPT: Add structured output and reuse Gemini session to avoid recreating on each call
-* ChatGPT: AI sql
+* Grokky: Add structured output and reuse Gemini session to avoid recreating on each call
+* Grokky: AI sql
 
 ### Bug fixes
 

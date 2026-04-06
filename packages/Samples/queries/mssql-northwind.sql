@@ -1,41 +1,41 @@
 --name: MSSQLAll
 --connection: MSSQLNorthwind
---test: expect(Samples:MSSQLAll().rowCount, 830) // cat: queries
+--test: expect(MSSQLAll().rowCount, 830) // cat: queries
 select * from orders;
 --end
 
 --name: MSSQLByInt
 --connection: MSSQLNorthwind
 --input: int orderid = 10
---test: expect(Samples:MSSQLByInt(1).rowCount, 1) // cat: queries
+--test: expect(MSSQLByInt(1).rowCount, 1) // cat: queries
 select * from orders where orderid = @orderid;
 --end
 
 --name: MSSQLByStringPatternInt
 --connection: MSSQLNorthwind
 --input: string shipVia = '>2' {pattern: int}
---test: expect(Samples:MSSQLByStringPatternInt('>2').rowCount, 255) // cat: queries
+--test: expect(MSSQLByStringPatternInt('>2').rowCount, 255) // cat: queries
 SELECT * FROM orders WHERE @shipVia(shipVia);
 --end
 
 --name: MSSQLByDouble
 --connection: MSSQLNorthwind
 --input: double freight = 100.1
---test: expect(Samples:MSSQLByDouble(100.1).rowCount, 187) // cat: queries
+--test: expect(MSSQLByDouble(100.1).rowCount, 187) // cat: queries
 SELECT * FROM orders WHERE freight >= @freight;
 --end
 
 --name: MSSQLByStringChoices
 --connection: MSSQLNorthwind
 --input: string shipCountry = 'France' {choices: ["France", "Germany", "USA", "Finland"]}
---test: expect(Samples:MSSQLByStringChoices('France').rowCount, 77) // cat: queries
+--test: expect(MSSQLByStringChoices('France').rowCount, 77) // cat: queries
 SELECT * FROM orders WHERE shipCountry = @shipCountry;
 --end
 
 --name: MSSQLByStringPatternString
 --connection: MSSQLNorthwind
 --input: string shipCity = 'contains ran' {pattern: string}
---test: expect(Samples:MSSQLByStringPatternString('contains ran').rowCount, 33) // cat: queries
+--test: expect(MSSQLByStringPatternString('contains ran').rowCount, 33) // cat: queries
 SELECT * FROM orders WHERE @shipCity(shipCity);
 --end
 

@@ -194,10 +194,12 @@ export type PipelineConfigurationBase<P> = {
   forceNavigate?: boolean;
   customExports?: CustomExport[];
   disableHistory?: boolean;
+  disableDefaultExport?: boolean;
   approversGroup?: string; // not used rn
 };
 
 export type NestedItemContext = {
+  disableUIControlls?: boolean;
   disableUIAdding?: boolean;
   disableUIRemoving?: boolean;
   disableUIDragging?: boolean;

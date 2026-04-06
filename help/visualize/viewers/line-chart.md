@@ -40,6 +40,11 @@ To configure a custom aggregated tooltip, go to **Context menu > Tooltip > Edit*
 
 ![](img/line-chart-aggregated-tooltip.gif)
 
+## Tools
+
+- **Formula lines**: Add reference lines or bands defined by mathematical formulas to analyze trends and thresholds. See [Scatterplot: Formula lines](scatter-plot.md#formula-lines) for details.
+- **Annotation regions**: Highlight and annotate areas of interest on the chart using rectangular, lasso, or formula-based regions. See [Scatterplot: Annotation regions](scatter-plot.md#annotation-regions) for details.
+
 ## Statistical Process Control
 
 Line chart includes comprehensive Statistical Process Control (SPC) capabilities for monitoring process behavior:
@@ -137,29 +142,32 @@ Toggle each component on/off independently in the **Context Panel** to focus on 
 | Marker Size | number |  |
 | Marker Opacity | number |  |
 | Show Markers | visibilitymode | A boolean column that determines whether to show markers. |
+| Markers Size Column Name | string |  |
+| Markers Size Aggr Type | string |  |
 | Markers Visibility Column Name | string |  |
 | **Selection** | | |
 | Show Current Row Line | boolean | Show vertical line reflecting the position of the current row See also *Current Line Color* |
 | Show Mouse Over Category | boolean | Determines whether the line is highlighted when you hover over the corresponding category. Example: Split by = SEX and you hover over the Male category in the filter. |
 | Show Mouse Over Row Line | boolean | Show vertical line reflecting the position of the mouse-over row See also *Mouse Over Line Color* |
 | **Statistical process control** | | |
-| Show Statical Process Control | boolean | Shows/hides upper and lower control limits, and [Western Electric rules](https://sentient.cloud/what-are-western-electric-rules-2/). |
+| Show Statistical Process Control | boolean | Shows/hides upper and lower control limits, and [Western Electric rules](https://sentient.cloud/what-are-western-electric-rules-2/). |
 | Show Control Limits | boolean | Shows/hides upper and lower control limits. |
 | Show Sigma1 | boolean |  |
 | Show Sigma2 | boolean |  |
 | Show Average | boolean |  |
 | Lower Control Limit | number |  |
 | Upper Control Limit | number |  |
-| Show Outlier | boolean | Rile 1: One point is more than 3 standard deviations from the mean. When sample(s) is grossly out of control. |
+| Show Outlier | boolean | Rule 1: One point is more than 3 standard deviations from the mean. When sample(s) is grossly out of control. |
 | Show Bias | boolean | Rule 2: Nine (or more) points in a row are on the same side of the mean. Some prolonged bias exists. |
 | Show Consistent Trend | boolean | Rule 3: Six (or more) points in a row are continually increasing (or decreasing). When a trend exists. |
 | Show Oscillation | boolean | Rule 4: Fourteen (or more) points in a row alternate in direction, increasing then decreasing. This much oscillation is beyond noise. Note that the rule is considered with directionality only. The position of the mean and the size of the standard deviation have no bearing. |
-| Show Medium Shift | boolean | Rule 5:Two (or three) out of the three points in a row are more than 2 standard deviations from the mean in the same direction. There is a medium tendency for samples to be mediumly out of control. The side of the mean for the third point is unspecified. |
-| Show Sustained Shift | boolean | Rule 6: Four (or five) out of five points in a row are more than 1 standard deviation from the mean in the same direction. There is strong tendency for samples to be slightly out of control. The side of the mean for the fifth point is unspecified. |
+| Show Medium Shift | boolean | Rule 5: Two (or three) out of the three points in a row are more than 2 standard deviations from the mean in the same direction. There is a medium tendency for samples to be moderately out of control. The side of the mean for the third point is unspecified. |
+| Show Sustained Shift | boolean | Rule 6: Four (or five) out of five points in a row are more than 1 standard deviation from the mean in the same direction. There is a strong tendency for samples to be slightly out of control. The side of the mean for the fifth point is unspecified. |
 | Show Suppressed Variation | boolean | Rule 7: Fifteen points in a row are all within 1 standard deviation of the mean on either side of the mean. With 1 standard deviation, greater variation would be expected. |
 | **Misc** | | |
 | Axes Use Column Format | boolean | Use column format for axis labels, where possible |
 | Show Aggr Type Selector | boolean |  |
+| Show Mouse Over Row Group | boolean | Determines whether the points and lines are highlighted when you hover over a row group in another viewer. |
 | **Style** | | |
 | Auto Layout | boolean |  |
 | Segments Font | string |  |

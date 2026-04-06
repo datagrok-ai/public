@@ -4,7 +4,7 @@ title: "Teradata"
 
 Provides access to
 [Teradata](https://www.teradata.com/resources/datasheets/teradata-database) database using
-SQL queries via JDBC driver.
+SQL queries via a JDBC driver.
 
 ## Connection parameters
 

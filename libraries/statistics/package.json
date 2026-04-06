@@ -4,7 +4,7 @@
     "access": "public"
   },
   "friendlyName": "statistics",
-  "version": "1.10.0",
+  "version": "1.12.3",
   "description": "Statistics utilities",
   "author": {
     "name": "Dmytro Kovalyov",
@@ -14,7 +14,7 @@
     "@datagrok-libraries/utils": "^4.5.7",
     "@types/seedrandom": "^3.0.8",
     "cash-dom": "^8.0.0",
-    "datagrok-api": "../../js-api",
+    "datagrok-api": "^1.27.0",
     "dayjs": "^1.11.7",
     "jstat": "^1.9.6",
     "konva": "^9.3.20",

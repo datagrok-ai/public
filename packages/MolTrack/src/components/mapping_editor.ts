@@ -107,7 +107,7 @@ export function renderMappingEditor(
           onMap(prop.name, v);
           const issues = validateMapping(prop, v, df);
           updateStatusCell(statusCell, issues);
-        } else if (mappedSource) {
+        } else {
           onUndo(prop.name);
           ui.empty(statusCell);
         }

@@ -5,14 +5,10 @@ import {delay, Test, TestContext, awaitCheck} from '@datagrok-libraries/test/src
 import {initComputeApi} from '@datagrok-libraries/compute-api';
 import {c} from './package';
 import '../css/styles.css';
+import {merge} from 'rxjs';
 
 interface ITestManagerUI {
   testsTree: DG.TreeViewNode;
-  runButton: HTMLButtonElement;
-  runAllButton: HTMLButtonElement;
-  debugButton: DG.InputBase<boolean>;
-  benchmarkButton: DG.InputBase<boolean>;
-  runSkippedButton: DG.InputBase<boolean>;
   ribbonPanelDiv: HTMLDivElement;
 }
 
@@ -79,11 +75,12 @@ export class TestManager extends DG.ViewBase {
   selectedNode: DG.TreeViewGroup | DG.TreeViewNode;
   nodeDict: { [id: string]: any } = {};
   runSkippedMode = false;
+  keepViewsOpen = false;
   tree: DG.TreeViewGroup;
   ribbonPanelDiv = undefined;
   dockLeft?: boolean;
   detailsTable: HTMLTableElement | undefined;
-  searchInput: DG.InputBase = ui.input.search('');
+  searchInput: DG.InputBase = ui.input.search('', {elementOptions: {style: {marginLeft: '6px'}}});
   packagePromises: Map<string, Promise<any>> = new Map<string, Promise<any>>();
   packNodes: any[][] = [];
   isSearchIniting = false;
@@ -107,18 +104,13 @@ export class TestManager extends DG.ViewBase {
       pathSegments = pathSegments.map((it) => it ? it.replace(/%20/g, ' ') : undefined);
     }
 
-    // we need to init Compute package here, before loading any of
-    // compute model packages, since theirs top level might implicitly
-    // depend on Compute provided globals
-    try {
-      await initComputeApi();
-    } catch (e) {
-      console.error(e);
-    }
+    // we need to init Compute package before loading any compute model packages,
+    // but don't block tree generation — fire and forget
+    initComputeApi().catch((e) => console.error(e));
 
     let searchInvoked = false;
-    this.searchInput.onChanged.subscribe(async (value) => {
-      if (value.length > 0) {
+    DG.debounce(merge(this.searchInput.onChanged, this.searchInput.onInput), 300).subscribe(async (_) => {
+      if (this.searchInput.value.length > 0) {
         this.searchEvent();
         searchInvoked = true;
       } else if (searchInvoked) {
@@ -145,6 +137,7 @@ export class TestManager extends DG.ViewBase {
     this.testManagerView.path = APP_PREFIX;
     this.testManagerView.temp['ignoreCloseAll'] = true;
     this.ribbonPanelDiv = testUIElements.ribbonPanelDiv;
+    this.testManagerView.root.style.overflow = 'hidden';
     this.testManagerView.append(ui.div(this.searchInput.root, {style: {maxHeight: '30px', minHeight: '30px'}}));
     this.testManagerView.append(testUIElements.ribbonPanelDiv);
     this.testManagerView.append(testUIElements.testsTree.root);
@@ -165,21 +158,22 @@ export class TestManager extends DG.ViewBase {
 
   async collectPackageTests(packageNode: DG.TreeViewGroup, f: any, testFromUrl?: ITestFromUrl): Promise<void> {
     let resultPromise: Promise<void>;
+    const coreOnly: boolean = f.package.name === 'Core';
 
     if (!this.packagePromises.has(f.package.name)) {
-      this.packagePromises[f.package.name] = new Promise<void>(async (resolve) => {
+      this.packagePromises.set(f.package.name, new Promise<void>(async (resolve) => {
         const selectedPackage = this.packagesTests.find((pt) => pt.name === f.package.name);
-        if (this.testFunctions.filter((it) => it.package.name === f.package.name).length !== 0 &&
+        if ((coreOnly || this.testFunctions.filter((it) => it.package.name === f.package.name).length !== 0) &&
           selectedPackage.categories === null && selectedPackage.check === false) {
           selectedPackage.check = true;
-          await f.package.load({file: f.options.file});
-          const testModule = f.package.getModule(f.options.file);
-          if (!testModule)
-            console.error(`Error getting tests from '${f.package.name}/${f.options.file}' module.`);
           const allPackageTests = await f.package.getTests(true);
           const packageTestsFinal: { [cat: string]: ICategory } = {};
           if (allPackageTests) {
             Object.keys(allPackageTests).forEach((cat) => {
+              if (coreOnly && !cat.startsWith('Core'))
+                return;
+              if (!coreOnly && cat.startsWith('Core'))
+                return;
               const isAllTestsEnabledBenchmarkMode = allPackageTests[cat].benchmarks;
               const tests: IPackageTest[] = allPackageTests[cat].tests.map((t) => {
                 if (t.options.isEnabledBenchmarkMode === undefined) {
@@ -187,10 +181,11 @@ export class TestManager extends DG.ViewBase {
                     t.options = {};
                   t.options.isEnabledBenchmarkMode = isAllTestsEnabledBenchmarkMode || false;
                 }
-                const result = {test: t, packageName: f.package.name};
+                const result = {test: t, packageName: f._callPackageName ?? f.package.name};
                 return result;
               });
-              const subcats = cat.split(':');
+              const effectiveCat = coreOnly && cat.startsWith('Core: ') ? cat.slice(6) : cat;
+              const subcats = effectiveCat.split(':');
               let subcatsFromUrl = [];
               if (testFromUrl && testFromUrl.catName)
                 subcatsFromUrl = testFromUrl.catName.split(':');
@@ -228,10 +223,10 @@ export class TestManager extends DG.ViewBase {
           }
         }
         resolve();
-      });
+      }));
     }
 
-    await this.packagePromises[f.package.name];
+    await this.packagePromises.get(f.package.name);
 
     return resultPromise;
   }
@@ -270,18 +265,20 @@ export class TestManager extends DG.ViewBase {
     return category.totalTests;
   }
 
-  async createTestManagerUI(testFromUrl: ITestFromUrl): Promise<ITestManagerUI> {
-    this.tree = ui.tree();
-    this.tree.root.classList.add('test-manager');
-    this.tree.onSelectedNodeChanged.subscribe((res) => {
-      this.selectedNode = res;
-    });
-    this.tree.root.style.width = '100%';
-    this.tree.root.onkeyup = (e) => {
-      if (e.key === 'Enter')
-        this.runTestsForSelectedNode();
-    };
-    for (const pack of this.testFunctions) {
+  async populateTree(targetTree: DG.TreeViewGroup, testFromUrl?: ITestFromUrl): Promise<void> {
+    const devToolsPack = this.testFunctions.find((p) => p.package.name === 'DevTools');
+    const packs = devToolsPack ? [...this.testFunctions, {
+      package: {
+        name: 'Core', friendlyName: 'Core',
+        load: (opts: any) => devToolsPack.package.load(opts),
+        getModule: (file: string) => devToolsPack.package.getModule(file),
+        getTests: (b: boolean) => devToolsPack.package.getTests(b),
+      },
+      options: devToolsPack.options,
+      _callPackageName: devToolsPack.package.name,
+    }].sort((a, b) => a.package.friendlyName.localeCompare(b.package.friendlyName)) : this.testFunctions;
+
+    for (const pack of packs) {
       const testPassed = ui.div();
       this.packagesTests.push({
         name: pack.package.name,
@@ -291,13 +288,9 @@ export class TestManager extends DG.ViewBase {
         resultDiv: testPassed,
         check: false,
       });
-      const packNode = this.tree.group(pack.package.friendlyName,
-        null, testFromUrl && pack.package.name === testFromUrl.packName);
+      const packNode = targetTree.group(pack.package.friendlyName,
+        null, testFromUrl != null && pack.package.name === testFromUrl.packName);
       this.setRunTestsMenuAndLabelClick(packNode, pack, NODE_TYPE.PACKAGE);
-      if (testFromUrl && testFromUrl.packName === pack.package.name) {
-        this.selectedNode = packNode;
-        await this.collectPackageTests(packNode, pack, testFromUrl);
-      }
       packNode.root.children[0].appendChild(testPassed);
       packNode.onNodeExpanding.subscribe(() => {
         if (this.isSearchIniting && !this.packagePromises.has(packNode.text))
@@ -306,14 +299,35 @@ export class TestManager extends DG.ViewBase {
         packNode.root.children[0].appendChild(ui.loader());
         this.collectPackageTests(packNode, pack).then((_) => packNode.root.children[0].lastChild.remove());
       });
+      if (testFromUrl && testFromUrl.packName === pack.package.name) {
+        this.selectedNode = packNode;
+        // Don't await — show the tree immediately
+        packNode.root.children[0].appendChild(ui.loader());
+        this.collectPackageTests(packNode, pack, testFromUrl)
+          .then(() => packNode.root.children[0].lastChild.remove());
+      }
       this.packNodes.push([pack, packNode]);
     }
+  }
 
-    const {runAll, run, debug, benchmark, runSkipped} = this.createButtons();
-    const {runAll: runAll1, run: run1, debug: debug1,
-      benchmark: benchmark1, runSkipped: runSkipped1} = this.createButtons();
+  async createTestManagerUI(testFromUrl: ITestFromUrl): Promise<ITestManagerUI> {
+    this.tree = ui.tree();
+    this.tree.root.classList.add('test-manager');
+    this.tree.onSelectedNodeChanged.subscribe((res) => {
+      this.selectedNode = res;
+    });
+    this.tree.root.style.width = '100%';
+    this.tree.root.style.flexShrink = '1';
+    this.tree.root.style.minHeight = '0';
+    this.tree.root.onkeyup = (e) => {
+      if (e.key === 'Enter')
+        this.runTestsForSelectedNode();
+    };
+    await this.populateTree(this.tree, testFromUrl);
 
-    const ribbonPanelDiv = ui.divH([runAll1, run1, debug1.root, benchmark1.root, runSkipped1.root],
+    const {runAll, run, settings} = this.createButtons();
+
+    const ribbonPanelDiv = ui.divH([runAll, run, settings],
       {
         style: {
           minHeight: '50px', maxHeight: '50px', alignItems: 'Center',
@@ -322,53 +336,50 @@ export class TestManager extends DG.ViewBase {
       });
     ribbonPanelDiv.classList.add('test');
 
-    return {
-      runAllButton: runAll, runButton: run, testsTree: this.tree,
-      debugButton: debug, benchmarkButton: benchmark, runSkippedButton: runSkipped, ribbonPanelDiv: ribbonPanelDiv,
-    };
+    return {testsTree: this.tree, ribbonPanelDiv};
   }
 
-  createButtons(): {
-    runAll: HTMLButtonElement,
-    run: HTMLButtonElement,
-    debug: DG.InputBase<boolean>,
-    benchmark: DG.InputBase<boolean>,
-    runSkipped: DG.InputBase<boolean>
-    } {
-    const runTestsButton = ui.button('Run', async () => {
-      this.runTestsForSelectedNode();
-    }, 'Run selected');
-
-    const runAllButton = ui.bigButton('Run All', async () => {
+  createButtons(): {runAll: HTMLButtonElement, run: HTMLButtonElement, settings: HTMLButtonElement} {
+    const runAll = ui.button([ui.iconFA('forward'), ' Run All'], async () => {
       const nodes = this.tree.items;
       for (const node of nodes) {
         this.selectedNode = node;
         await this.runTestsForSelectedNode();
       }
-    });
-    runTestsButton.classList.add('ui-btn-outline');
+    }, 'Run all tests');
 
-    const debugButton = ui.input.bool('Debug', 
-      {value: DG.Test.isInDebug, onValueChanged: () => {DG.Test.isInDebug = debugButton.value;}});
-    debugButton.classList.add('tm-button');
+    const run = ui.button([ui.iconFA('play'), ' Run'], async () => {
+      this.runTestsForSelectedNode();
+    }, 'Run selected');
 
-    const benchmarkButton = ui.input.bool('Benchmark', {
-      onValueChanged: (value) => {
-        DG.Test.isInBenchmark = value;
-      },
-    });
-    benchmarkButton.classList.add('tm-button');
+    const settings = ui.button(ui.iconFA('cog'), () => {
+      const menu = DG.Menu.popup();
+      menu.closeOnClick = false;
+      const refresh = () => {
+        menu.clear();
+        menu
+          .item(`${DG.Test.isInDebug ? '✓ ' : ''}Debug`, () => {
+            DG.Test.isInDebug = !DG.Test.isInDebug;
+            refresh();
+          })
+          .item(`${DG.Test.isInBenchmark ? '✓ ' : ''}Benchmark`, () => {
+            DG.Test.isInBenchmark = !DG.Test.isInBenchmark;
+            refresh();
+          })
+          .item(`${this.runSkippedMode ? '✓ ' : ''}Run skipped`, () => {
+            this.runSkippedMode = !this.runSkippedMode;
+            refresh();
+          })
+          .item(`${this.keepViewsOpen ? '✓ ' : ''}Keep views open`, () => {
+            this.keepViewsOpen = !this.keepViewsOpen;
+            refresh();
+          });
+      };
+      refresh();
+      menu.show();
+    }, 'Options');
 
-    const runSkippedButton = ui.input.bool('Run skipped', {
-      value: this.runSkippedMode,
-      onValueChanged: () => {this.runSkippedMode = !this.runSkippedMode;},
-    });
-    runSkippedButton.classList.add('tm-button');
-
-    return {
-      runAll: runAllButton, run: runTestsButton, debug: debugButton,
-      benchmark: benchmarkButton, runSkipped: runSkippedButton,
-    };
+    return {runAll, run, settings};
   }
 
   async runTestsForSelectedNode(): Promise<void> {
@@ -487,7 +498,7 @@ export class TestManager extends DG.ViewBase {
         `${t.packageName}:test`, {
           'category': t.test.category,
           'test': t.test.name,
-          'testContext': new TestContext(false),
+          'testContext': Object.assign(new TestContext(false), {closeAll: !this.keepViewsOpen}),
         });
       if (res.getCol('result').type !== 'string')
         res.changeColumnType('result', 'string');
@@ -539,9 +550,11 @@ export class TestManager extends DG.ViewBase {
 
   async runAllTests(node: DG.TreeViewGroup | DG.TreeViewNode, tests: any,
     nodeType: NODE_TYPE, force?: boolean): Promise<void> {
-    this.testManagerView.path = this.getPath(tests, nodeType);
+    const currentPath = this.getPath(tests, nodeType);
+    if (this.testManagerView)
+      this.testManagerView.path = currentPath;
     let catsValuesSorted: ICategory[];
-    localStorage.setItem('TMState', this.testManagerView.path);
+    localStorage.setItem('TMState', currentPath);
     switch (nodeType) {
     case NODE_TYPE.PACKAGE: {
       const progressBar = DG.TaskBarProgressIndicator.create(tests.package.name);
@@ -798,7 +811,7 @@ export class TestManager extends DG.ViewBase {
 
   private searchEvent() {
     if (!this.isSearchIniting) {
-      if (this.testFunctions.length === this.packagePromises.values.length)
+      if (this.testFunctions.length === this.packagePromises.size)
         this.searchTreeItems(this.searchInput.value);
 
       else {
@@ -812,19 +825,24 @@ export class TestManager extends DG.ViewBase {
   }
 
   private async loadAllPackages(): Promise<void> {
-    for (const packNode of this.packNodes)
-      packNode[1].root.children[0].appendChild(ui.loader());
-
-
     for (const packNode of this.packNodes) {
-      await this.collectPackageTests(packNode[1], packNode[0]);
-      packNode[1].root.children[0].lastChild.remove();
-      if (this.searchInput.value.length > 0)
-        this.searchTreeItems(this.searchInput.value);
+      packNode[1].root.dataset.loading = 'true';
+      packNode[1].root.children[0].appendChild(ui.loader());
+    }
+
+    const concurrency = 15;
+    for (let i = 0; i < this.packNodes.length; i += concurrency) {
+      await Promise.all(this.packNodes.slice(i, i + concurrency).map(async (packNode) => {
+        await this.collectPackageTests(packNode[1], packNode[0]);
+        packNode[1].root.children[0].lastChild.remove();
+        delete packNode[1].root.dataset.loading;
+        if (this.searchInput.value.length > 0)
+          this.searchTreeItems(this.searchInput.value);
+      }));
     }
   }
 
-  private async searchTreeItems(stringToSearch: string) {
+  private searchTreeItems(stringToSearch: string) {
     const dom = this.tree.root.getElementsByClassName('d4-tree-view-node');
     const regExpToSearch = new RegExp(stringToSearch.toLowerCase());
     const listToShow: HTMLElement[] = [];
@@ -839,7 +857,7 @@ export class TestManager extends DG.ViewBase {
       if (foundFunc) {
         listToShow[listToShow.length] = (item);
         item.classList.remove('hidden');
-      } else
+      } else if (!item.closest('[data-loading]'))
         item.classList.add('hidden');
     }
 

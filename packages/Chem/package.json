@@ -2,7 +2,7 @@
   "name": "@datagrok/chem",
   "friendlyName": "Chem",
   "fullName": "Chem",
-  "version": "1.16.13",
+  "version": "1.17.4",
   "author": {
     "name": "Maria Dolotova",
     "email": "mdolotova@datagrok.ai"
@@ -40,14 +40,15 @@
   "dependencies": {
     "@datagrok-libraries/chem-meta": "^1.2.10",
     "@datagrok-libraries/math": "^1.2.7",
-    "@datagrok-libraries/ml": "6.10.9",
-    "@datagrok-libraries/statistics": "../../libraries/statistics",
-    "@datagrok-libraries/tutorials": "^1.7.3",
+    "@datagrok-libraries/ml": "^6.10.11",
+    "@datagrok-libraries/statistics": "^1.12.2",
+    "@datagrok-libraries/tutorials": "^1.7.6",
     "@datagrok-libraries/utils": "^4.6.14",
+    "@datagrok-libraries/gridext": "^1.5.4",
     "@types/pako": "^2.0.3",
     "@webgpu/types": "^0.1.40",
     "cash-dom": "^8.1.5",
-    "datagrok-api": "../../js-api",
+    "datagrok-api": "^1.27.0",
     "dayjs": "^1.11.13",
     "file-loader": "^6.2.0",
     "jszip": "3.10.1",

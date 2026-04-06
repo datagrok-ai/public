@@ -8,6 +8,42 @@ import {createSubjectProfileView} from './subject-profile-view';
 import {StudyTableViewParams} from '../utils/views-creation-utils';
 import {restoreBrowsePanelOnRemoval} from '../utils/utils';
 
+function parseIso8601DurationToDays(duration: string): number | null {
+  const m = duration.match(/^P(?:(\d+)W)?(?:(\d+)D)?$/);
+  if (!m)
+    return null;
+  return (m[1] ? parseInt(m[1]) * 7 : 0) + (m[2] ? parseInt(m[2]) : 0);
+}
+
+function getRecoveryStartDay(studyId: string): number | null {
+  const study = studies[studyId];
+  const dosingStr = study.config.other?.['Dosing Duration'];
+  if (dosingStr) {
+    const dosingDays = parseIso8601DurationToDays(dosingStr);
+    if (dosingDays !== null)
+      return dosingDays + 1;
+  }
+  const te = study.domains.te;
+  if (te) {
+    const elementCol = te.col('ELEMENT');
+    const testrlCol = te.col('TESTRL');
+    if (elementCol && testrlCol) {
+      for (let i = 0; i < te.rowCount; i++) {
+        const element = elementCol.get(i);
+        if (element && element.toLowerCase().includes('recovery')) {
+          const testrl = testrlCol.get(i);
+          if (testrl) {
+            const days = parseIso8601DurationToDays(testrl);
+            if (days !== null)
+              return days;
+          }
+        }
+      }
+    }
+  }
+  return null;
+}
+
 export function createMeasurementProfileTableView(studyId: string): StudyTableViewParams {
   let resDf = createAllMeasurementsDf(studyId);
 
@@ -24,6 +60,17 @@ export function createMeasurementProfileTableView(studyId: string): StudyTableVi
 
   (resDf as DG.DataFrame).name = 'Measurements';
   (resDf as DG.DataFrame).rows.filter((row) => row.test == (resDf as DG.DataFrame).get('test', 0));
+
+  const recoveryStartDay = getRecoveryStartDay(studyId);
+  if (recoveryStartDay !== null) {
+    resDf.meta.formulaLines.addLine({
+      formula: `\${visit_day} = ${recoveryStartDay}`,
+      color: '#C83C3C',
+      width: 1.5,
+      style: 'dashed',
+      title: 'Recovery start',
+    });
+  }
 
   const armCol = resDf.col(PLANNED_TRT_ARM);
   const subjectCol = resDf.col(SUBJECT_ID);
@@ -166,19 +213,38 @@ export function createMeasurementProfileTableView(studyId: string): StudyTableVi
         updateArmFilter();
     });
 
+    const hasChange = tableView.dataFrame.col('change') !== null;
     const hasPctChange = tableView.dataFrame.col('pct_change') !== null;
+    const valueItems = ['Absolute'];
+    if (hasChange)
+      valueItems.push('Change from baseline');
+    if (hasPctChange)
+      valueItems.push('% change from baseline');
     const valueType = ui.input.choice('Value', {
-      items: hasPctChange ? ['Absolute', '% change from baseline'] : ['Absolute'],
+      items: valueItems,
       value: 'Absolute',
       onValueChanged: () => {
-        const yCol = valueType.value === '% change from baseline' ? 'pct_change' : 'result';
+        const yCol = valueType.value === '% change from baseline' ? 'pct_change' :
+          valueType.value === 'Change from baseline' ? 'change' : 'result';
         trellisPlot?.setOptions({
           innerViewerLook: {yColumnNames: [yCol]},
         });
       },
     });
 
-    tableView.setRibbonPanels([[valueType.root, splitBy.root, colorBy.root, legendDiv]]);
+    const showRecoveryLineInput = recoveryStartDay !== null
+      ? ui.input.bool('Recovery line', {value: true, onValueChanged: (value) => {
+          const lines = resDf.meta.formulaLines.items;
+          const idx = lines.findIndex((l) => l.title === 'Recovery start');
+          if (idx >= 0)
+            resDf.meta.formulaLines.updateAt(idx, {...lines[idx], visible: value});
+        }})
+      : null;
+
+    const ribbonItems = [valueType.root, splitBy.root, colorBy.root, legendDiv];
+    if (showRecoveryLineInput)
+      ribbonItems.push(showRecoveryLineInput.root);
+    tableView.setRibbonPanels([ribbonItems]);
 
     trellisPlot = await DG.Viewer.fromType(DG.VIEWER.TRELLIS_PLOT, tableView.dataFrame, {
       xColumnNames: [SEX],
@@ -188,6 +254,7 @@ export function createMeasurementProfileTableView(studyId: string): StudyTableVi
         showXAxis: true,
         aggrType: DG.STATS.AVG,
         splitColumnNames: [PLANNED_TRT_ARM],
+        showDataframeFormulaLines: true,
       },
     });
 

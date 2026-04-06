@@ -3,7 +3,7 @@ title: "MariaDB"
 ---
 
 Provides access to [MariaDB](https://mariadb.org/) database using SQL queries
-via JDBC driver.
+via a JDBC driver.
 
 ## Connection parameters
 

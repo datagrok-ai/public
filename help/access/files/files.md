@@ -69,10 +69,8 @@ When connecting to _public buckets_ in AWS S3, always check the **Anonymous** ch
 
 :::
 
-Once you have established a connection to a folder in your file system, the
-folder appears in the **File Manager** under the corresponding data source. This
-connection is referred to as a _file share_. You can view the files and
-subfolders within the _file share_ by expanding it.
+A connected folder appears in **File Manager** as a _file share_.
+Expand it to browse its files and subfolders.
 
 :::note
 
@@ -227,7 +225,7 @@ and renders the structure graphically.
 
 The [Context Panel](../../datagrok/navigation/panels/panels.md#context-panel)
 provides additional information about a selected file or folder, and the ability
-to execute conext actions. For example, when you click a CSV file, the **Context
+to execute context actions. For example, when you click a CSV file, the **Context
 Panel** updates to show the file's metadata, available context actions, and
 other relevant information. If you subsequently click any of the dataframe's
 columns in the **Preview**, the **Context Panel** will update to display
@@ -263,7 +261,7 @@ displays the augmented file preview and the number of detected cell segments.
 Similarly to [database queries](../databases/databases.md#creating-dynamic-dashboards-for-query-results),
 you can create and publish dashboards with a file as a data source. This file
 is re-read each time a dashboard is open (see also [caching](#caching)), providing you
-up-to-data data.
+up-to-date data.
 
 To create a dashboard with a file as a data source:
 
@@ -283,7 +281,7 @@ To share a folder, right-click on it, select "Share folder", specify users or gr
 and the privilege (View / Edit). Once the folder is shared, it appears in the recipient's 
 **Files** tree under Browse.
 
-The specified privilege allows the grantee do the following:
+The privilege level determines what the recipient can do:
 
 * _Can view_: View, open, and download. 
 * _Can edit_: Everything under "view", plus rename, edit, delete, and reshare

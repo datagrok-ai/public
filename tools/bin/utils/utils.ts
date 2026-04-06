@@ -279,7 +279,8 @@ export interface Config {
   servers: {
     [alias: string]: {
       url: string,
-      key: string
+      key: string,
+      registry?: string
     }
   },
   default: string,
@@ -304,7 +305,7 @@ export async function runScript(script: string, path: string, verbose: boolean =
 
   } catch (error: any) {
     const output = [error.stdout, error.stderr].filter(Boolean).join('\n');
-    throw new Error(output);
+    throw new Error(output || `Command failed: ${script} (exit code ${error.code ?? 'unknown'})`);
   }
 }
 

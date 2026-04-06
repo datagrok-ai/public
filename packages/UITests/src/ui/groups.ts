@@ -111,8 +111,4 @@ category('UI: Groups', () => {
     const cancel = diag.querySelectorAll('[class="ui-btn ui-btn-ok"]')[1] as HTMLElement;
     cancel.click();
   });
-
-  after(async () => {
-    grok.shell.closeAll();
-  });
 }, {clear: false});

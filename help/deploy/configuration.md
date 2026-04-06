@@ -87,7 +87,7 @@ Datagrok supports several deployment schemas which can be configured using `GROK
 
 ## Overriding Datlas Configuration with Environment Variables
 
-In addition to supplying the full JSON, you can override *ndividual values using environment variables. This is useful when deploying in containerized or cloud environments where injecting single parameters is easier than rebuilding the entire configuration object.
+In addition to supplying the full JSON, you can override individual values using environment variables. This is useful when deploying in containerized or cloud environments where injecting single parameters is easier than rebuilding the entire configuration object.
 
 ### Naming Convention
 

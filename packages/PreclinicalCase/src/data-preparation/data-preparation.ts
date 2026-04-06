@@ -41,12 +41,12 @@ export function calculateLBBaselineColumns(lbDomain: DG.DataFrame): void {
   if (!subjectIdCol || !labDayCol || !labTestCol || !labResNCol)
     return;
 
-  const baselineColName = 'LB_BASELINE';
-  const chgColName = 'LB_CHG';
-  const pctChgColName = 'LB_PCT_CHG';
-  const maxPostValueColName = 'MAX_POST_VALUE';
-  const minPctChgColName = 'MIN_PCT_CHG';
-  const maxPctChgColName = 'MAX_PCT_CHG';
+  const baselineColName = 'LB_BASELINE'; // baseline result value at earliest study day per subject+test(+category)
+  const chgColName = 'LB_CHG'; // change from baseline: current - baseline
+  const pctChgColName = 'LB_PCT_CHG'; // percent change from baseline: 100 * (current - baseline) / baseline
+  const maxPostValueColName = 'MAX_POST_VALUE'; // max result across all post-baseline visits per subject+test
+  const minPctChgColName = 'MIN_PCT_CHG'; // min percent change across post-baseline visits (largest decrease)
+  const maxPctChgColName = 'MAX_PCT_CHG'; // max percent change across post-baseline visits (largest increase)
 
   const removeColIfExists = (colName: string) => {
     if (lbDomain.col(colName))
@@ -342,14 +342,14 @@ export function calculateLBControlColumns(
 export function createAllMeasurementsDf(studyId: string): DG.DataFrame | null {
   //body weight gain measurements should be analyaed separately, since BGENDY should be considered intead of BGDY and
   //each body gain weight record corresponds to different time periods, for instance:
-  //USUBJID,BGSTRESN,BGDY,BGENDY
-//PC201708-4115,24,1,29
-//PC201708-4115,57,1,92
-//PC201708-4115,108,1,106
-//PC201708-4115,14,29,57
-//PC201708-4115,27,57,85
-//PC201708-4115,-7,85,92
-//PC201708-4115,51,92,106
+//USUBJID,       BGSTRESN,   BGDY,   BGENDY
+//PC201708-4115,    24,       1,       29
+//PC201708-4115,    57,       1,       92
+//PC201708-4115,    108,      1,       106
+//PC201708-4115,    14,       29,      57
+//PC201708-4115,    27,       57,      85
+//PC201708-4115,    -7,       85,      92
+//PC201708-4115,    51,       92,      106
   const excludeFromMeasurements = 'bg';
   let resDf: DG.DataFrame | null = null;
   for (const it of studies[studyId].domains.all()) {
@@ -441,6 +441,7 @@ function calculateBaselineColumns(df: DG.DataFrame): void {
   // Priority 1: rows where BLFL = "Y" (per SENDIG, the sponsor-defined baseline flag)
   // Priority 2: row with earliest study day (fallback when BLFL is not populated)
   const baselineMap: {[key: string]: number} = {};
+  const baselineDayMap: {[key: string]: number} = {};
   const fallbackMap: {[key: string]: {value: number, day: number}} = {};
 
   for (let i = 0; i < df.rowCount; i++) {
@@ -452,6 +453,8 @@ function calculateBaselineColumns(df: DG.DataFrame): void {
 
     if (blflCol && !blflCol.isNone(i) && blflCol.get(i) === 'Y') {
       baselineMap[key] = value;
+      if (!dayCol.isNone(i))
+        baselineDayMap[key] = dayCol.get(i);
       continue;
     }
 
@@ -464,8 +467,10 @@ function calculateBaselineColumns(df: DG.DataFrame): void {
 
   // Apply fallback for keys without explicit BLFL
   for (const key of Object.keys(fallbackMap)) {
-    if (!baselineMap.hasOwnProperty(key))
+    if (!baselineMap.hasOwnProperty(key)) {
       baselineMap[key] = fallbackMap[key].value;
+      baselineDayMap[key] = fallbackMap[key].day;
+    }
   }
 
   const getKey = (i: number): string | null => {
@@ -488,12 +493,63 @@ function calculateBaselineColumns(df: DG.DataFrame): void {
     return resultCol.get(i) - baselineCol.get(i);
   });
 
-  df.columns.addNewFloat('pct_change').init((i) => {
+  const pctChangeCol = df.columns.addNewFloat('pct_change');
+  pctChangeCol.init((i) => {
     if (resultCol.isNone(i) || baselineCol.isNone(i))
       return null;
     const bl = baselineCol.get(i);
     if (bl === 0)
       return null;
     return 100 * (resultCol.get(i) - bl) / bl;
+  });
+
+  const postBaselineData: {[key: string]: {maxValue: number | null, minPctChg: number | null, maxPctChg: number | null}} = {};
+  for (let i = 0; i < df.rowCount; i++) {
+    const key = getKey(i);
+    if (!key || resultCol.isNone(i) || dayCol.isNone(i))
+      continue;
+
+    const blDay = baselineDayMap[key];
+    if (blDay === undefined || dayCol.get(i) <= blDay)
+      continue;
+
+    const value = resultCol.get(i);
+    const pctChg = !pctChangeCol.isNone(i) ? pctChangeCol.get(i) : null;
+
+    if (!postBaselineData[key]) {
+      postBaselineData[key] = {maxValue: value, minPctChg: pctChg, maxPctChg: pctChg};
+    }
+    else {
+      const data = postBaselineData[key];
+      if (value > (data.maxValue ?? -Infinity))
+        data.maxValue = value;
+      if (pctChg !== null) {
+        if (data.minPctChg === null || pctChg < data.minPctChg)
+          data.minPctChg = pctChg;
+        if (data.maxPctChg === null || pctChg > data.maxPctChg)
+          data.maxPctChg = pctChg;
+      }
+    }
+  }
+
+  df.columns.addNewFloat('max_post_value').init((i) => {
+    const key = getKey(i);
+    if (!key)
+      return null;
+    return postBaselineData[key]?.maxValue ?? null;
+  });
+
+  df.columns.addNewFloat('min_pct_change').init((i) => {
+    const key = getKey(i);
+    if (!key)
+      return null;
+    return postBaselineData[key]?.minPctChg ?? null;
+  });
+
+  df.columns.addNewFloat('max_pct_change').init((i) => {
+    const key = getKey(i);
+    if (!key)
+      return null;
+    return postBaselineData[key]?.maxPctChg ?? null;
   });
 }

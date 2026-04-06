@@ -176,11 +176,6 @@ category('top menu similarity/diversity', () => {
   test('diversitySearchViewerOpen', async () => {
     await _testDiversitySearchViewerOpen();
   });
-
-  after(async () => {
-    grok.shell.closeAll();
-    DG.Balloon.closeAll();
-  });
 });
 
 export async function _testFindSimilar(findSimilarFunction: (...args: any) => Promise<DG.DataFrame | null>,

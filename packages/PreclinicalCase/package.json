@@ -8,9 +8,9 @@
   },
   "description": "PreclinicalCase package",
   "dependencies": {
-    "@datagrok-libraries/utils": "../../libraries/utils",
+    "@datagrok-libraries/utils": "^4.7.0",
     "@datagrok-libraries/gridext": "^1.5.3",
-    "datagrok-api": "../../js-api",
+    "datagrok-api": "^1.27.0",
     "rxjs": "^6.5.5",
     "x2js": "^3.4.4",
     "dayjs": "^1.11.13",

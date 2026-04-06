@@ -198,10 +198,6 @@ M  END
     expect(['smiles', 'Core', 'R1', 'r-groups-highlight_0', 'isMatch']
       .every((it) => sampleTable.columns.names().includes(it)), true);
   });
-
-  after(async () => {
-    grok.shell.closeAll();
-  });
 });
 
 const sampleTable = DG.DataFrame.fromCsv(`smiles

@@ -439,7 +439,7 @@ export namespace chem {
     createClearSketcherButton(canvas: HTMLCanvasElement): HTMLButtonElement {
       const clearButton = ui.button('Clear', () => {
         this.setMolecule('');
-        if (!this.sketcher) {
+        if (!this.sketcher || this.sketcher.isDetached) {
           this.onChanged.next(null);
         }
         this.updateExtSketcherContent();

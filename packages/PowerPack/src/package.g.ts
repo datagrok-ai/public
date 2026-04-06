@@ -139,7 +139,8 @@ export async function xlsxFileHandler(bytes: Uint8Array, sheetName?: string) : P
 //input: string name 
 //input: dataframe df 
 //input: string db 
+//input: string localColumn { optional: true }
 //meta.role: transform
-export async function runEnrichment(conn: any, schema: string, table: string, column: string, name: string, df: DG.DataFrame, db: string) : Promise<void> {
-  await PackageFunctions.runEnrichment(conn, schema, table, column, name, df, db);
+export async function runEnrichment(conn: any, schema: string, table: string, column: string, name: string, df: DG.DataFrame, db: string, localColumn?: string) : Promise<void> {
+  await PackageFunctions.runEnrichment(conn, schema, table, column, name, df, db, localColumn);
 }

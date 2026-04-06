@@ -523,8 +523,9 @@ export class Pmpo {
     const descrNames = descrStatsTable.col(DESCR_TITLE)!.toList();
     const weightsRaw = descrStatsTable.col(WEIGHT_TITLE)!.getRawData();
     const props = desirabilityProfile.properties;
+    const names: string[] = Object.keys(props);
 
-    for (const name of Object.keys(props))
+    for (const name of names)
       weightsRaw[descrNames.indexOf(name)] = props[name].weight;
 
     // Set HTML elements
@@ -536,20 +537,16 @@ export class Pmpo {
     if (rootsCol == null)
       return;
 
-    const rows = rootsCol.querySelectorAll('div.d4-flex-row.ui-div');
+    const rows = rootsCol.querySelectorAll('div.d4-flex-row.ui-div.statistics-mpo-row');
 
-    rows.forEach((row) => {
-      const children = row.children;
-      if (children.length < 2) // expecting descriptor name, weight & profile
+    rows.forEach((row, idx) => {
+      const editor = row.querySelector('.statistics-mpo-line-editor') as HTMLElement;
+      if (!editor)
         return;
 
-      const descrDivChildren = (children[0] as HTMLElement).children;
-      if (descrDivChildren.length < 1) // expecting 1 div with descriptor name
-        return;
-
-      const descrName = (descrDivChildren[0] as HTMLElement).innerText;
-
-      this.desirabilityProfileRoots.set(descrName, children[2] as HTMLElement);
+      editor.style.width = '100%';
+      editor.style.height = '100%';
+      this.desirabilityProfileRoots.set(names[idx], editor);
     });
   } // updateDesirabilityProfileData
 

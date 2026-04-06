@@ -23,9 +23,9 @@ A Datagrok dataframe reminds of functionally similar structures in
 [Python](https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.html) and
 [R](https://www.rdocumentation.org/packages/base/versions/3.6.2/topics/data.frame).
 
-In comparison, Datagrok implementation is considerably optimized. While it isn't possible to control the browser
-entirely, Datagrok in-memory engine is designed in such way that all data-related operations, such as aggregations or
-statistical computations, are performed efficiently on modern machines.
+In comparison, the Datagrok implementation is considerably optimized. While you can't control the browser
+entirely, the Datagrok in-memory engine is designed so that all data-related operations, such as aggregations or
+statistical computations, run efficiently on modern machines.
 
 Here are a few of unique dataframe design features:
 
@@ -59,16 +59,16 @@ Every column has:
 `.tags` play key role in platform extensibility, allowing to introduce custom behavior and new data types.
 
 [//]: # (TODO: Add link to 'adding rows')
-A column which is already constructed, either by an [initialization from a list][117], or being part of some dataframe
-from its creation, isn't a subject to changing its length, if taken standalone. This is due to its memory-optimized
-nature. However, the columns length is changed with adding rows to the embodying dataframe.
+A column that is already constructed, either by [initialization from a list][117] or as part of a dataframe
+from its creation, cannot change its length on its own. This is due to its memory-optimized
+nature. However, the column's length changes when you add rows to the containing dataframe.
 
 #### Semantic type
 
 A property `.semType` is a string value representing a tag which associates a column data with a logical type.
 
-An underlying raw data type of a molecule or a peptide is usually just a `string`. Semantic typing allows expanding the
-platform with such logical types recognition and understanding with a help of 3-rd party Datagrok packages. For
+The underlying raw data type of a molecule or a peptide is usually just a `string`. Semantic typing lets you expand the
+platform with logical type recognition and understanding through third-party Datagrok packages. For
 example, [Chem][112] package adds visualizing and handling molecules, including [detecting][111] that a `string`
 column is of type `Molecule`, computing molecular fingerprints, searching for substructures, ranking by similarity.
 
@@ -286,10 +286,10 @@ packing/unpacking. The qualifier part is valued to one of: `1` (`LESS`), `2` (`E
 way, `QNums` are compared using regular floating point number comparison.
 
 [//]: # (TODO: Add link to '`DG.Qnum` class')
-There is no special internal data type, as the values are 64-bit IEEE754 floats. In most cases the isn't need to check
-whether the value is qualified or not, since the result for the most operations (rendering, using for visualization,
-arithmetic operations) will be the same. However, in cases it does matter the programmer has to keep track of whether
-the values are qualified, and pack/unpack accordingly. This is achieved with `DG.Qnum` class containing helper methods:
+There is no special internal data type, as the values are 64-bit IEEE754 floats. In most cases, you don't need to check
+whether the value is qualified, since the result for most operations (rendering, visualization,
+arithmetic) will be the same. However, when it does matter, you must track whether
+the values are qualified and pack/unpack accordingly. This is achieved with `DG.Qnum` class containing helper methods:
 
 ```javascript
 let col = DG.Column.qnum('col', 3);
@@ -319,10 +319,10 @@ Run `Stats` example: [Link][129].
 
 ### Numerical and categorical columns
 
-Currently, columns of types `BOOL` and `STRING` are considered as categorical, s.t. they represent values from a
-discrete set. Columns of types `INT` and `FLOAT` are considered as numerical, s.t. they represent values from a
-continuous set. Later, this will be adjusted s.t. whether column is categorical or numerical will be automatically
-detected based on its content analysis.
+Currently, columns of types `BOOL` and `STRING` are considered categorical, meaning they represent values from a
+discrete set. Columns of types `INT` and `FLOAT` are considered numerical, meaning they represent values from a
+continuous set. In the future, whether a column is categorical or numerical will be automatically
+detected based on content analysis.
 
 This property mostly affects the way columns are treated in the UI. For instance, this property affects how
 [color coding][124] works.

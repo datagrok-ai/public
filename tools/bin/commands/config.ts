@@ -14,6 +14,18 @@ const confTemplate = yaml.load(fs.readFileSync(confTemplateDir, {encoding: 'utf-
 const grokDir = path.join(os.homedir(), '.grok');
 const confPath = path.join(grokDir, 'config.yaml');
 
+function defaultRegistry(url: string): string {
+  try {
+    const hostname = new URL(url).hostname;
+    if (hostname === 'localhost' || /^[\d.]+$/.test(hostname) || hostname === '::1')
+      return '';
+    return `registry.${hostname}`;
+  }
+  catch (e) {
+    return '';
+  }
+}
+
 function validateKey(key: string) {
   if (!key || /^([A-Za-z\d-])+$/.test(key)) 
     return true;
@@ -36,7 +48,7 @@ function generateKeyQ(server: string, url: string): Indexable {
   return question;
 }
 
-async function addNewServer(config: Config) {
+async function addNewServer(config: Config, askRegistry: boolean = false) {
   while (true) {
     const addServer = (await inquirer.prompt({
       name: 'add-server',
@@ -58,7 +70,19 @@ async function addNewServer(config: Config) {
       }))['server-url'];
 
       const key = (await inquirer.prompt(generateKeyQ(name, url)) as Indexable)[name];
-      config.servers[name] = {url, key};
+      const entry: {url: string, key: string, registry?: string} = {url, key};
+      if (askRegistry) {
+        const regDefault = defaultRegistry(url);
+        const reg = (await inquirer.prompt({
+          name: 'registry',
+          type: 'input',
+          message: `Docker registry for ${name}:`,
+          default: regDefault || undefined,
+        }))['registry'] || '';
+        if (reg)
+          entry.registry = reg;
+      }
+      config.servers[name] = entry;
     } else 
       break;
     
@@ -67,9 +91,11 @@ async function addNewServer(config: Config) {
 
 export function config(args: ConfigArgs) {
   const nOptions = Object.keys(args).length - 1;
-  const interactiveMode = args['_'].length === 1 && (nOptions < 1 || nOptions === 1 && args.reset);
+  const askRegistry = args.registry != null;
+  const interactiveMode = args['_'].length === 1 && (nOptions < 1 ||
+    nOptions === 1 && (args.reset || askRegistry) || nOptions === 2 && args.reset && askRegistry);
   const hasAddServerCommand = args['_'].length === 2 && args['_'][1] === 'add' &&
-    args.server && args.key && args.k && args.alias && (nOptions === 4 || nOptions === 5 && args.default);
+    args.server && args.key && args.k && args.alias && (nOptions >= 4 && nOptions <= 6);
   if (!interactiveMode && !hasAddServerCommand) return false;
 
   if (!fs.existsSync(grokDir)) 
@@ -87,7 +113,13 @@ export function config(args: ConfigArgs) {
       color.error('URL parsing error. Please, provide a valid server URL.');
       return false;
     }
-    config.servers[args.alias!] = {url: args.server!, key: args.key!};
+    const server: {url: string, key: string, registry?: string} = {url: args.server!, key: args.key!};
+    if (args.registry != null) {
+      const registry = typeof args.registry === 'string' ? args.registry : defaultRegistry(args.server!);
+      if (registry)
+        server.registry = registry;
+    }
+    config.servers[args.alias!] = server;
     color.success(`Successfully added the server to ${confPath}.`);
     console.log(`Use this command to deploy packages: grok publish ${args.alias!}`);
     if (args.default) 
@@ -120,8 +152,21 @@ export function config(args: ConfigArgs) {
           question.default = config['servers'][server]['key'];
           const devKey: Indexable = await inquirer.prompt(question);
           config['servers'][server]['key'] = devKey[server];
+          if (askRegistry) {
+            const regDefault = config['servers'][server]['registry'] || defaultRegistry(url);
+            const reg = (await inquirer.prompt({
+              name: 'registry',
+              type: 'input',
+              message: `Docker registry for ${server}:`,
+              default: regDefault || undefined,
+            }))['registry'] || '';
+            if (reg)
+              config['servers'][server]['registry'] = reg;
+            else
+              delete config['servers'][server]['registry'];
+          }
         }
-        await addNewServer(config);
+        await addNewServer(config, askRegistry);
         const defaultServer = await inquirer.prompt({
           name: 'default-server',
           type: 'input',
@@ -156,4 +201,5 @@ interface ConfigArgs {
   server?: string,
   key?: string,
   k?: string,
+  registry?: string,
 }

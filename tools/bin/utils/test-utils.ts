@@ -91,9 +91,15 @@ export function getDevKey(hostKey: string): { url: string, key: string } {
   return {url, key};
 }
 
+function appendUrlParams(url: string, extraParams?: string): string {
+  if (!extraParams) return url;
+  return url + (url.includes('?') ? '&' : '?') + extraParams;
+}
+
 export async function getBrowserPage(
-  puppeteer: PuppeteerNode, 
-  params: any = defaultLaunchParameters): Promise<{ browser: Browser, page: Page }> {
+  puppeteer: PuppeteerNode,
+  params: any = defaultLaunchParameters,
+  urlParams?: string): Promise<{ browser: Browser, page: Page }> {
   let url: string = process.env.HOST ?? '';
   const cfg = getDevKey(url);
   url = cfg.url;
@@ -131,7 +137,7 @@ export async function getBrowserPage(
   await page.evaluate((token: string) => {
     window.localStorage.setItem('auth', token);
   }, token);
-  await page.goto(url);
+  await page.goto(appendUrlParams(url, urlParams));
   try {
     //    await page.waitForSelector('.grok-preloader', { timeout: 1800000 });
     await page.waitForFunction(() => document.querySelector('.grok-preloader') == null, {timeout: 3600000});
@@ -204,12 +210,18 @@ export async function loadPackage(
 ): Promise<void> {
   if (skipPublish != true) {
     process.stdout.write(`Building and publishing ${dirName}...`);
-    await utils.runScript(`npm install`, packageDir);
-    if (linkPackage)
-      await utils.runScript(`grok link`, packageDir);
-    if (skipBuild != true)
-      await utils.runScript(`npm run build`, packageDir);
-    await utils.runScript(`grok publish ${hostString}${release ? ' --release' : ''}`, packageDir);
+    try {
+      await utils.runScript(`npm install`, packageDir);
+      if (linkPackage)
+        await utils.runScript(`grok link`, packageDir);
+      if (skipBuild != true)
+        await utils.runScript(`npm run build`, packageDir);
+      await utils.runScript(`grok publish ${hostString}${release ? ' --release' : ''}`, packageDir);
+    }
+    catch (e: any) {
+      process.stdout.write(' FAILED\n');
+      throw e;
+    }
     process.stdout.write(` success!\n`);
   }
 }
@@ -388,9 +400,9 @@ export function printBrowsersResult(browserResult: ResultObject, verbose: boolea
         }
       }
     }
-    console.log('Passed amount:  ' + browserResult?.passedAmount);
-    console.log('Skipped amount: ' + browserResult?.skippedAmount);
-    console.log('Failed amount:  ' + browserResult?.failedAmount);
+    console.log('Passed tests:  ' + (browserResult?.passedAmount ?? 0));
+    console.log('Skipped tests: ' + (browserResult?.skippedAmount ?? 0));
+    console.log('Failed tests:  ' + (browserResult?.failedAmount ?? 0));
   }
 
   if (browserResult.failed) {
@@ -450,10 +462,13 @@ async function runTests(testParams: { package: any, params: any }): Promise<any>
                 testCallParams.returnOnFail = testParams.params.returnOnFail;
         }
 
+        const testFuncName = testParams.package + ':test';
         const df: DG.DataFrame = await (<any>window).grok.functions.call(
-            testParams.package + ':test',
+            testFuncName,
             Object.keys(testCallParams).length > 0 ? testCallParams : undefined
         );
+        if (df == null)
+            throw new Error(`${testFuncName} returned null instead of a DataFrame. Check that the test function exists and returns a valid result.`);
         if (!df.getCol('flaking')) {
             const flakingCol = (<any>window).DG.Column.fromType((<any>window).DG.COLUMN_TYPE.BOOL, 'flaking', df.rowCount);
             df.columns.add(flakingCol);
@@ -506,8 +521,21 @@ async function runTests(testParams: { package: any, params: any }): Promise<any>
             // df: resultDF?.toJson()
         };
     } catch (e) {
-        console.log(`DEBUG: runTests: IN CATCH: ERROR: ${e}`);
-        return {failed: true, retrySupported: false, error: `${e}, ${await (<any>window).DG.Logger.translateStackTrace((e as any).stack)}`}
+        let stack = '';
+        try { stack = await (<any>window).DG.Logger.translateStackTrace((e as any).stack); }
+        catch (_) { stack = (e as any).stack ?? ''; }
+        return {
+          failed: true,
+          retrySupported: false,
+          verbosePassed: verbosePassed,
+          verboseSkipped: verboseSkipped,
+          verboseFailed: verboseFailed,
+          passedAmount: countPassed,
+          skippedAmount: countSkipped,
+          failedAmount: countFailed,
+          csv: '',
+          error: `${e}` + (stack ? `, ${stack}` : ''),
+        };
     }
 
     /*
@@ -666,7 +694,7 @@ export async function runBrowser(
       // Remove old console listeners before refresh to avoid stale state references
       page.removeAllListeners('console');
 
-      await page.goto(webUrl);
+      await page.goto(appendUrlParams(webUrl, browserOptions.urlParams));
       try {
         await page.waitForFunction(() => document.querySelector('.grok-preloader') == null, {timeout: 3600000});
       } catch (error) {
@@ -679,7 +707,7 @@ export async function runBrowser(
       }, defaultLaunchParameters);
       if (browserOptions.gui)
         params['headless'] = false;
-      const out = await getBrowserPage(puppeteer, params);
+      const out = await getBrowserPage(puppeteer, params, browserOptions.urlParams);
       browser = out.browser;
       page = out.page;
       webUrl = await getWebUrlFromPage(page);
@@ -893,12 +921,11 @@ export async function runBrowser(
               verbosePassed: '',
               verboseSkipped: '',
               verboseFailed: '',
-              error: JSON.stringify(e),
+              error: (e?.message ?? '') + (e?.stack ? '\n' + e.stack : '') || JSON.stringify(e),
               passedAmount: 0,
               skippedAmount: 0,
               failedAmount: 1,
               csv: '',
-              df: undefined,
             });
           });
 
@@ -991,7 +1018,7 @@ export interface BrowserOptions {
   path?: string, catchUnhandled?: boolean, core?: boolean,
   report?: boolean, record?: boolean, verbose?: boolean, benchmark?: boolean, platform?: boolean, category?: string, test?: string,
   stressTest?: boolean, gui?: boolean, stopOnTimeout?: boolean, reproduce?: boolean, ciCd?: boolean, debug?: boolean,
-  skipToCategory?: string, skipToTest?: string, keepBrowserOpen?: boolean
+  skipToCategory?: string, skipToTest?: string, keepBrowserOpen?: boolean, urlParams?: string
 }
 
 export type ResultObject = {

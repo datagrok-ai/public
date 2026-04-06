@@ -181,10 +181,12 @@ export async function getActivityCliffs(df: DG.DataFrame, seqCol: DG.Column,
   df.temp[TEMPS.cliffsDfGrid] = linesDfGrid;
 
   const listCliffsLink = ui.button(`${linesRes.linesDf.rowCount} cliffs`, () => {
-    const viewerExists = wu(view.viewers).some((v) => v.dataFrame.name === `${CLIFFS_DF_NAME}${activityCliffsIdx}`);
-    if (demo && !viewerExists) // Ensure the grid viewer is added only once if not already present in the demo app
-      view.addViewer(linesDfGrid);
-    view.dockManager.dock(linesDfGrid, 'down', null, 'Activity cliffs', cliffsDockRatio ?? 0.2);
+    if (!linesDfGrid.root.isConnected) {
+      const viewerExists = wu(view.viewers).some((v: DG.Viewer) => v.dataFrame.name === `${CLIFFS_DF_NAME}${activityCliffsIdx}`);
+      if (demo && !viewerExists) // Ensure the grid viewer is added only once if not already present in the demo app
+        view.addViewer(linesDfGrid);
+      view.dockManager.dock(linesDfGrid, 'down', null, 'Activity cliffs', cliffsDockRatio ?? 0.2);
+    }
   });
   listCliffsLink.classList.add('scatter_plot_link', 'cliffs_grid');
 
@@ -213,9 +215,8 @@ export async function getActivityCliffs(df: DG.DataFrame, seqCol: DG.Column,
   });
 
   df.onRowsFiltering.subscribe(() => {
-    if (filterCliffsButton.value) {
+    if (filterCliffsButton.value)
       df.filter.and(cliffsMetrics.cliffsBitSet);
-    }
   });
 
 
@@ -379,7 +380,7 @@ export async function runActivityCliffs(sp: DG.ScatterPlotViewer, df: DG.DataFra
   // eslint-disable-next-line prefer-const
   let acc: DG.Accordion;
   let clickedSp = false;
-  const view = grok.shell.tv?.dataFrame === df ? grok.shell.tv : grok.shell.getTableView(df.name)
+  const view = grok.shell.tv?.dataFrame === df ? grok.shell.tv : grok.shell.getTableView(df.name);
 
   let sparseMatrixRes: SparseMatrixResult | null = null;
   if (seqSpaceOptions.useWebGPU) {
@@ -427,17 +428,17 @@ export async function runActivityCliffs(sp: DG.ScatterPlotViewer, df: DG.DataFra
       linesGrid.col(LINES_DF_LINE_IND_COL_NAME)!.visible = false;
     df.temp[TEMPS.cliffsDfGrid] = linesDfGrid;
     return linesGrid;
-  }
+  };
 
   let linesDfGrid: DG.Grid | null = null;
   const listCliffsLink = ui.button(`${linesRes.linesDf.rowCount} cliffs`, () => {
     //open cliffs grid in case it was closed or not opened yet
     if (!linesDfGrid?.dataFrame) {
       linesDfGrid = createLinesGrid();
-    const viewerExists = wu(view.viewers).some((v) => v.dataFrame.name === `${CLIFFS_DF_NAME}${activityCliffsIdx}`);
-    if (demo && !viewerExists) // Ensure the grid viewer is added only once if not already present in the demo app
-      view.addViewer(linesDfGrid);
-    view.dockManager.dock(linesDfGrid, 'down', undefined, 'Activity cliffs', cliffsDockRatio ?? 0.2);
+      const viewerExists = wu(view.viewers).some((v) => v.dataFrame.name === `${CLIFFS_DF_NAME}${activityCliffsIdx}`);
+      if (demo && !viewerExists) // Ensure the grid viewer is added only once if not already present in the demo app
+        view.addViewer(linesDfGrid);
+      view.dockManager.dock(linesDfGrid, 'down', undefined, 'Activity cliffs', cliffsDockRatio ?? 0.2);
     }
   });
   listCliffsLink.classList.add('scatter_plot_link', 'cliffs_grid');
@@ -468,9 +469,8 @@ export async function runActivityCliffs(sp: DG.ScatterPlotViewer, df: DG.DataFra
 
 
   df.onRowsFiltering.subscribe(() => {
-    if (filterCliffsButton.value) {
+    if (filterCliffsButton.value)
       df.filter.and(cliffsMetrics.cliffsBitSet);
-    }
   });
 
 

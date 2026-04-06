@@ -424,6 +424,7 @@ export interface IBoxPlotSettings {
 
   whiskerLineWidth: number;
 
+  /// Width of interquartile line, if **Auto Layout** is enabled, it will be scaled when violins are too narrow.
   interquartileLineWidth: number;
 
   whiskerWidthRatio: number;
@@ -1062,8 +1063,8 @@ export interface IGridSettings {
   /// Ctrl+Shift+click to deselect
   allowColSelection: boolean;
 
-  /// Mouse drag on the rows header selects rows
-  /// Reorder rows by dragging them
+  /// Drag any cell (except the row number) to reorder rows
+  /// Drag the row number column to select rows
   allowRowReordering: boolean;
 
   /// Whether to sort when user double-clicks on the column header
@@ -1640,6 +1641,11 @@ export interface ILineChartSettings {
   /// A boolean column that determines whether to show markers.
   showMarkers: keyof typeof VisibilityMode;
 
+  markersSize: string;
+  markersSizeColumnName: string;
+
+  markersSizeAggrType: string;
+
   markersVisibility: string;
   markersVisibilityColumnName: string;
 
@@ -1705,6 +1711,9 @@ export interface ILineChartSettings {
   axesUseColumnFormat: boolean;
 
   showAggrTypeSelector: boolean;
+
+  /// Determines whether the points and lines are highlighted when you hover over a row group in another viewer.
+  showMouseOverRowGroup: boolean;
 
   /// Marker type for showing the distribution of the aggregated values
   /// when multiple values have the same X value
@@ -2949,6 +2958,7 @@ export interface IScatterPlotSettings {
 
   showRootMeanSquareError: boolean;
 
+  /// Supports up to 20 categories. Otherwise, a common regression line is shown.
   regressionPerCategory: boolean;
 
   /// Control the visibility of dataframe-originated formula lines.
@@ -3051,6 +3061,9 @@ export interface IScatterPlotSettings {
   /// Newline-separated list of column names to be used in a tooltip.
   /// Requires *showTooltip* to be enabled.
   rowTooltip: string;
+
+  /// Delay in milliseconds before showing row tooltip
+  tooltipDelay: number;
 
   rowGroupTooltip: string;
 

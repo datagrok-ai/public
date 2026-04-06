@@ -3,8 +3,12 @@
   "friendlyName": "Grokky",
   "version": "1.0.4",
   "description": "Grokky AI assistant for Datagrok",
-  "author": "oserhiienko@datagrok.ai",
+  "author": {
+    "name": "Oleksandra Serhiienko",
+    "email": "oserhiienko@datagrok.ai"
+  },
   "dependencies": {
+    "@ai-sdk/amazon-bedrock": "^4.0.77",
     "@ai-sdk/anthropic": "^3.0.31",
     "@ai-sdk/openai": "^3.0.23",
     "@ai-sdk/provider": "^3.0.6",
@@ -15,7 +19,7 @@
     "@types/dom-chromium-ai": "^0.0.10",
     "ai": "^6.0.62",
     "cash-dom": "^8.1.5",
-    "datagrok-api": "../../js-api",
+    "datagrok-api": "^1.27.0",
     "dayjs": "^1.11.19",
     "openai": "^6.16.0"
   },
@@ -58,55 +62,6 @@
   },
   "sources": [
     "css/ai.css"
-  ],
-  "properties": [
-    {
-      "name": "vectorStoreId",
-      "propertyType": "string",
-      "description": "Vector Store ID with Datagrok documentation",
-      "defaultValue": "",
-      "nullable": true
-    },
-    {
-      "name": "defaultFastModel",
-      "propertyType": "string",
-      "description": "Fast Model name for simple tasks. This must match the model names supported by OpenAI or name of deployed model.",
-      "defaultValue": "gpt-4o-mini",
-      "nullable": false
-    },
-    {
-      "name": "defaultDeepResearchModel",
-      "propertyType": "string",
-      "description": "Deep Research Model name for complex tasks. This must match the model names supported by OpenAI or name of deployed model.",
-      "defaultValue": "gpt-5.2",
-      "nullable": false
-    },
-    {
-      "name": "defaultCodingModel",
-      "propertyType": "string",
-      "description": "Coding Model name for code generation tasks. This must match the model names supported by OpenAI or name of deployed model.",
-      "defaultValue": "gpt-5.1-codex-max",
-      "nullable": false
-    },
-    {
-      "name": "APIName",
-      "propertyType": "string",
-      "description": "OpenAI API endpoint. Responses or Chat completions API can be used.",
-      "defaultValue": "OpenAI Chat Completions",
-      "nullable": false,
-      "choices": [
-        "OpenAI Chat Completions",
-        "OpenAI Responses",
-        "Antropic Messages"
-      ]
-    },
-    {
-      "name": "apiVersion",
-      "propertyType": "string",
-      "description": "API version for OpenAI endpoint. v1 or v2.",
-      "defaultValue": "v1",
-      "nullable": true
-    }
   ],
   "overrides": {
     "datagrok-api": "$datagrok-api"

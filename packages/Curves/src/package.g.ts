@@ -31,8 +31,8 @@ export async function curveFitDemo() : Promise<void> {
 }
 
 //meta.role: init
-export function _initCurves() : void {
-  PackageFunctions._initCurves();
+export async function _initCurves() : Promise<void> {
+  await PackageFunctions._initCurves();
 }
 
 //input: dataframe df 
@@ -85,4 +85,44 @@ export function addStatisticsColumn(table: DG.DataFrame, colName: string, propNa
 //meta.role: transform
 export function addAggrStatisticsColumn(table: DG.DataFrame, colName: string, propName: string, aggrType: string) : any {
   return PackageFunctions.addAggrStatisticsColumn(table, colName, propName, aggrType);
+}
+
+//description: Returns XML 3DX curve converter function
+//output: dynamic result
+//meta.role: curveConverter
+//meta.curveFormat: 3dx
+export function convertXmlCurveToJsonFunc() : any {
+  return PackageFunctions.convertXmlCurveToJsonFunc();
+}
+
+//description: Returns compact dose-response JSON converter function
+//output: dynamic result
+//meta.role: curveConverter
+//meta.curveFormat: compact-dr
+export function convertCompactDrToJsonFunc() : any {
+  return PackageFunctions.convertCompactDrToJsonFunc();
+}
+
+//description: Returns PZFX curve converter function
+//output: dynamic result
+//meta.role: curveConverter
+//meta.curveFormat: pzfx
+export function convertPzfxToJsonFunc() : any {
+  return PackageFunctions.convertPzfxToJsonFunc();
+}
+
+//input: file file 
+//output: view result
+//meta.role: fileViewer
+//meta.fileViewer: pzfx
+export async function previewPzfx(file: DG.FileInfo) : Promise<any> {
+  return await PackageFunctions.previewPzfx(file);
+}
+
+//input: list bytes 
+//output: list<dataframe> result
+//meta.role: fileHandler
+//meta.ext: pzfx
+export function pzfxFileHandler(bytes: Uint8Array) : any {
+  return PackageFunctions.pzfxFileHandler(bytes);
 }

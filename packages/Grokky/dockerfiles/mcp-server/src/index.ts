@@ -132,6 +132,204 @@ function createServer(): McpServer {
     () => runTool('whoami', {}, () => api.getCurrentUser()),
   );
 
+  // --- Projects ---
+
+  server.tool(
+    'list_projects', 'List projects with optional smart filter',
+    {filter: z.string().optional().describe('Smart search filter')},
+    ({filter}) => runTool('list_projects', {filter}, () => api.listProjects(filter)),
+  );
+
+  server.tool(
+    'get_project', 'Get detailed information about a project',
+    {id: z.string().describe('Project ID')},
+    ({id}) => runTool('get_project', {id}, () => api.getProject(id)),
+  );
+
+  server.tool(
+    'create_project', 'Create a new project',
+    {
+      name: z.string().describe('Project name'),
+      description: z.string().optional().describe('Project description'),
+    },
+    ({name, description}) => runTool('create_project', {name},
+      () => api.createProject(name, description)),
+  );
+
+  server.tool(
+    'delete_project', 'Delete a project',
+    {id: z.string().describe('Project ID')},
+    ({id}) => runTool('delete_project', {id}, () => api.deleteProject(id)),
+  );
+
+  server.tool(
+    'search_project', 'Search for a project by name',
+    {name: z.string().describe('Project name to search for')},
+    ({name}) => runTool('search_project', {name}, () => api.searchProject(name)),
+  );
+
+  server.tool(
+    'list_recent_projects', 'List recently accessed projects', {},
+    () => runTool('list_recent_projects', {}, () => api.listRecentProjects()),
+  );
+
+  // --- Spaces ---
+
+  server.tool(
+    'list_spaces', 'List root spaces with optional smart filter',
+    {filter: z.string().optional().describe('Smart search filter')},
+    ({filter}) => runTool('list_spaces', {filter}, () => api.listSpaces(filter)),
+  );
+
+  server.tool(
+    'get_space', 'Get detailed information about a space',
+    {id: z.string().describe('Space ID')},
+    ({id}) => runTool('get_space', {id}, () => api.getSpace(id)),
+  );
+
+  server.tool(
+    'create_space', 'Create a new root space',
+    {name: z.string().describe('Space name')},
+    ({name}) => runTool('create_space', {name}, () => api.createRootSpace(name)),
+  );
+
+  server.tool(
+    'delete_space', 'Delete a space',
+    {id: z.string().describe('Space ID')},
+    ({id}) => runTool('delete_space', {id}, () => api.deleteSpace(id)),
+  );
+
+  server.tool(
+    'create_subspace', 'Create a subspace within a space',
+    {
+      spaceId: z.string().describe('Parent space ID'),
+      name: z.string().describe('Subspace name'),
+      link: z.boolean().optional().describe('Create as a link reference instead of owned child'),
+    },
+    ({spaceId, name, link}) => runTool('create_subspace', {spaceId, name},
+      () => api.createSubspace(spaceId, name, link)),
+  );
+
+  server.tool(
+    'list_space_children', 'List children of a space (subspaces, entities, etc.)',
+    {
+      spaceId: z.string().describe('Space ID'),
+      types: z.string().optional()
+        .describe('Comma-separated entity types to filter (e.g. "Script,DataQuery,Project")'),
+      includeLinked: z.boolean().optional().describe('Include linked (non-owned) children'),
+    },
+    ({spaceId, types, includeLinked}) => runTool('list_space_children', {spaceId, types},
+      () => api.listSpaceChildren(spaceId, types, includeLinked)),
+  );
+
+  server.tool(
+    'add_entity_to_space', 'Add an entity (script, query, connection, etc.) to a space',
+    {
+      spaceId: z.string().describe('Space ID'),
+      entityId: z.string().describe('Entity ID to add'),
+      link: z.boolean().optional().describe('Add as a link reference instead of owned child'),
+    },
+    ({spaceId, entityId, link}) => runTool('add_entity_to_space', {spaceId, entityId},
+      () => api.addEntityToSpace(spaceId, entityId, link)),
+  );
+
+  server.tool(
+    'remove_entity_from_space', 'Remove an entity from a space',
+    {
+      spaceId: z.string().describe('Space ID'),
+      entityId: z.string().describe('Entity ID to remove'),
+    },
+    ({spaceId, entityId}) => runTool('remove_entity_from_space', {spaceId, entityId},
+      () => api.removeEntityFromSpace(spaceId, entityId)),
+  );
+
+  server.tool(
+    'read_space_file', 'Read a file from space storage',
+    {
+      spaceId: z.string().describe('Space ID'),
+      path: z.string().describe('File path within the space'),
+    },
+    ({spaceId, path}) => runTool('read_space_file', {spaceId, path},
+      () => api.readSpaceFile(spaceId, path)),
+  );
+
+  server.tool(
+    'write_space_file', 'Write a file to space storage',
+    {
+      spaceId: z.string().describe('Space ID'),
+      path: z.string().describe('File path within the space'),
+      content: z.string().describe('File content to write'),
+    },
+    ({spaceId, path, content}) => runTool('write_space_file', {spaceId, path},
+      () => api.writeSpaceFile(spaceId, path, content)),
+  );
+
+  server.tool(
+    'delete_space_file', 'Delete a file from space storage',
+    {
+      spaceId: z.string().describe('Space ID'),
+      path: z.string().describe('File path within the space'),
+    },
+    ({spaceId, path}) => runTool('delete_space_file', {spaceId, path},
+      () => api.deleteSpaceFile(spaceId, path)),
+  );
+
+  // Database introspection tools — registered for discoverability.
+  // Execution is intercepted by the Claude runtime and forwarded to the browser client
+  // where SQLGenerationContext handles them with full Datagrok API access.
+
+  server.tool(
+    'db_list_catalogs',
+    'Returns the names of all database catalogs available on this connection. Use this if you need to explore data across different catalogs.',
+    {},
+    () => formatResult('This tool is executed client-side. If you see this message, the runtime interception is not configured.'),
+  );
+
+  server.tool(
+    'db_list_schemas',
+    'Returns the names of all schemas in the specified catalog.',
+    {catalogName: z.string().describe('Name of the catalog to list schemas from')},
+    () => formatResult('This tool is executed client-side.'),
+  );
+
+  server.tool(
+    'db_list_tables',
+    'Returns the list of all table names along with their descriptions/comments. Use this to understand what data is available.',
+    {
+      schemaName: z.string().describe('Name of the schema to list tables from'),
+      catalogName: z.string().describe('Name of the catalog containing the schema'),
+    },
+    () => formatResult('This tool is executed client-side.'),
+  );
+
+  server.tool(
+    'db_describe_tables',
+    'Get detailed information about specific table(s) including all columns, their types, semantic types, comments, value ranges, and category values. Essential for understanding what data is in each table.',
+    {
+      tables: z.array(z.string()).describe('List of table names to describe. Use schema.table format (e.g. public.tableName) or catalog.schema.table format for cross-catalog queries.'),
+    },
+    () => formatResult('This tool is executed client-side.'),
+  );
+
+  server.tool(
+    'db_list_joins',
+    'Lists all foreign key relationships (joins) that involve the specified table(s). CRITICAL: Use this before writing any JOIN clause to verify the relationship exists.',
+    {
+      tables: z.array(z.string()).describe('List of table names to find joins for. Use schema.table or catalog.schema.table format.'),
+    },
+    () => formatResult('This tool is executed client-side.'),
+  );
+
+  server.tool(
+    'db_try_sql',
+    'Execute an SQL query to test it. Returns row count and column names (limited to 10 rows). Use this to validate your query before providing the final answer. If row count is 0, the query might be wrong or the data might genuinely be absent. TRY NOT TO USE ORDER BY in YOUR TEST QUERIES on large tables unless absolutely necessary.',
+    {
+      sql: z.string().describe('The SQL query to test (will be automatically limited to 10 rows)'),
+      description: z.string().describe('Short description of what this SQL is trying to achieve in markdown format. This will be put in ui for user context.'),
+    },
+    () => formatResult('This tool is executed client-side.'),
+  );
+
   return server;
 }
 

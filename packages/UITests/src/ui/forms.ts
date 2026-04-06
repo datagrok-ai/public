@@ -76,8 +76,4 @@ category('UI: Forms from props', () => {
     expect(allUnitsExist, true);
   });
   */
-
-  after(async () => {
-    grok.shell.closeAll();
-  });
 }, {clear: false, owner: 'dkovalyov@datagrok.ai'});

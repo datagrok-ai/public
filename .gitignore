@@ -92,6 +92,7 @@ tools/.cache/
 .history
 
 tmpclaude-*-cwd
+CLAUDE.local.md
 
 test-console-output-?.log
 test-record-?.mp4

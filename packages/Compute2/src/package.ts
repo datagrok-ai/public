@@ -10,7 +10,7 @@ import {FormTestApp as FormAppInstance} from './apps/FormTestApp';
 import {HistoryTestApp as HistoryAppInstance} from './apps/HistoryTestApp';
 import {TreeWizardApp as TreeWizardAppInstance} from './apps/TreeWizardApp';
 import {RFVApp} from './apps/RFVApp';
-import {PipelineConfiguration} from '@datagrok-libraries/compute-utils';
+import {PipelineConfiguration, CustomFunctionView as CustomFunctionViewInst} from '@datagrok-libraries/compute-utils';
 import './tailwind.css';
 import {CustomFunctionView} from '@datagrok-libraries/compute-utils/function-views/src/custom-function-view';
 import {HistoryApp} from './apps/HistoryApp';
@@ -26,6 +26,9 @@ import {ModelCatalogView,
   setModelCatalogEventHandlers,
   setModelCatalogHandler} from '@datagrok-libraries/compute-utils/model-catalog';
 import dayjs from 'dayjs';
+
+// for compute-api pakage
+export const CFV = CustomFunctionViewInst;
 
 declare global {
   var initialURLHandled: boolean;

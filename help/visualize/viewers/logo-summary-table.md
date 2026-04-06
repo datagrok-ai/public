@@ -33,7 +33,7 @@ The Logo Summary Table follows Datagrok's standard selection pattern:
 | Shift+Click      | Add Cluster to selection      |
 | Ctrl+Shift+Click | Deselect Cluster              |
 
-Hovering over cluster cell will show tooltip with distribution and statistics of the cluster and highlight corresponding
+Hovering over a cluster cell shows a tooltip with distribution and statistics of the cluster and highlights corresponding
 points on other viewers.
 
 [Logo Summary Table](./img/LST.gif)

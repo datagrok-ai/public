@@ -101,8 +101,4 @@ category('Viewers: 3D Scatter Plot', () => {
     if (scatterPlot3D!.props.colorColumnName != 'sex')
       throw 'Color column has not been deserialized'; 
   }); 
-  after(async () => {
-    grok.shell.closeAll();
-    // await grok.dapi.projects.delete(await grok.dapi.projects.filter('Test project with 3 D Scatter Plot').first());
-  }); 
 }, { owner: 'dkovalyov@datagrok.ai' });

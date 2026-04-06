@@ -80,8 +80,4 @@ category('UI: Tab control', () => {
     tabs.currentPane = tabs.panes[1];
     expect(check, false, 'onBeforeTabChanged event error')
   });
-
-  after(async () => {
-    grok.shell.closeAll();
-  });
 }, {clear: false});

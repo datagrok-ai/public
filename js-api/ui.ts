@@ -28,7 +28,7 @@ import {
   DropDownOptions,
   TypeAhead,
   TypeAheadConfig,
-  ChoiceInput, InputForm, CodeInput, CodeConfig, MarkdownInput, MarkdownConfig,
+  ChoiceInput, MultiChoiceInput, InputForm, CodeInput, CodeConfig, MarkdownInput, MarkdownConfig,
 } from './src/widgets';
 import {toDart, toJs} from './src/wrappers';
 import {Functions} from './src/functions';
@@ -1010,8 +1010,8 @@ export namespace input {
     return _create(d4.InputType.Choice, name, options) as ChoiceInput<T>;
   }
 
-  export function multiChoice<T>(name: string, options?: IMultiChoiceInputInitOptions<T>): InputBase<T[] | null> {
-    return _create(d4.InputType.MultiChoice, name, options);
+  export function multiChoice<T>(name: string, options?: IMultiChoiceInputInitOptions<T>): MultiChoiceInput<T> {
+    return _create(d4.InputType.MultiChoice, name, options) as MultiChoiceInput<T>;
   }
 
   export function string(name: string, options?: IStringInputInitOptions<string>): InputBase<string> {
@@ -1107,7 +1107,6 @@ export namespace input {
     //put tags into items (for backward compatibility)
     if (config?.tags && !config.items)
         config.items = config.tags as any[];
-    const tagsBaseInput = _create(d4.InputType.Tags, name, config);
     return _create(d4.InputType.Tags, name, config);  
   }
 
@@ -1127,8 +1126,16 @@ export function inputsRow(name: string, inputs: InputBase[]): HTMLElement {
   return d;
 }
 
+/** Creates a color picker bound to {@link colorDiv}: clicking the element opens the picker,
+ * and its background updates live to preview the selected color. */
 export function colorPicker(color: number, onChanged: (color: number) => void, colorDiv: HTMLElement, onOk: Function | null, onCancel: Function | null = null): HTMLElement {
   return api.grok_ColorPicker(color, onChanged, colorDiv, onOk, onCancel);
+}
+
+/** Opens a standalone color picker modal immediately, without a trigger element.
+ * Use when there is no persistent UI element to bind to (e.g. editing a canvas-rendered grid cell). */
+export function showColorPicker(color: number, onChanged: (color: number) => void, onOk: Function | null = null, onCancel: Function | null = null): void {
+  api.grok_ColorPicker_Show(color, onChanged, onOk, onCancel);
 }
 
 export function patternsInput(colors: { [key: string]: string }): HTMLElement {
@@ -1550,7 +1557,7 @@ let _objectHandlerSubject = new rxjs.Subject<ObjectHandlerResolutionArgs>();
  *
  * Example: {@link https://public.datagrok.ai/js/samples/ui/handlers/handlers} */
 export class ObjectHandler<T = any> {
-
+  dart: any;
   /** Type of the object that this meta handles. */
   get type(): string {
     throw 'Not defined.';
@@ -1632,8 +1639,10 @@ export class ObjectHandler<T = any> {
   }
 
   /** Renders preview list for the item. */
-  renderPreview(x: T, context: any = null): View {
-    return View.create();
+  async renderPreview(x: T, params?: any, path?: string): Promise<View> {
+    if (!this.dart)
+      return View.create();
+    return toJs(await api.grok_Meta_RenderPreview(this.dart, x, params, path));
   }
 
   /** Renders view for the item. */
@@ -1712,7 +1721,6 @@ export class ObjectHandler<T = any> {
 }
 
 export class EntityMetaDartProxy extends ObjectHandler {
-  dart: any;
 
   constructor(d: any) {
     super();
@@ -1728,7 +1736,7 @@ export class EntityMetaDartProxy extends ObjectHandler {
   renderTooltip(x: any, context: any = null): HTMLDivElement { return api.grok_Meta_RenderTooltip(this.dart, x); }
   renderCard(x: any, context: any = null): HTMLDivElement { return api.grok_Meta_RenderCard(this.dart, x); }
   renderProperties(x: any, context: any = null): HTMLDivElement { return api.grok_Meta_RenderProperties(this.dart, x); }
-  renderView(x: any, context: any = null): HTMLDivElement { return api.grok_Meta_RenderProperties(this.dart, x); }
+  renderView(x: any, context: any = null): HTMLDivElement { return api.grok_Meta_RenderView(this.dart, x); }
 }
 
 /**

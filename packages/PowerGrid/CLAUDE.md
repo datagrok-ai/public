@@ -1,7 +1,5 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
-
 ## Overview
 
 PowerGrid is a Datagrok plugin that extends the platform's grid (spreadsheet) with custom cell renderers,
@@ -32,6 +30,7 @@ canvas drawing. Registered with `meta.role: 'cellRenderer'` and a unique `meta.c
 | `hyperlink-cell-renderer.ts`    | `Hyperlink`                  | Clickable URL links                                       |
 | `multi-choice-cell-renderer.ts` | `MultiChoice`                | Checkbox multi-select (uses `column.meta.choices`)        |
 | `tags-cell-renderer.ts`         | `Tags`                       | Tag/badge rendering with auto-splitting on `,`            |
+| `svg-cell-renderer.ts`          | `SVG`                        | Renders SVG markup on canvas with content-based LRU cache |
 | `test-cell-renderer.ts`         | `testUnitsKg`/`testUnitsTon` | Demo renderers using `columnTags` for tag-based detection |
 
 ### Sparklines (`src/sparklines/`)
@@ -77,7 +76,6 @@ The `addPinnedColumn()` function is exposed as a package function.
 
 ### Tests (`src/tests/`)
 
-- `pinned-column-tests.ts` — Pinned column functionality
 - `webgpu-tests.ts` — WebGPU rendering benchmarks
 
 ## Key Patterns

@@ -1,23 +1,10 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
-
 ## Overview
 
 **Helm** (`@datagrok/helm`) is a Datagrok plugin providing full support for **HELM notation** (Hierarchical Editing Language for Macromolecules) — importing, detecting, rendering, editing, and conversion. It wraps the Pistoia HELM Web Editor and Scilligence JSDraw2 libraries, integrating them into the Datagrok platform with custom cell renderers, input widgets, and monomer library management.
 
 Category: **Bioinformatics**.
-
-## Build Commands
-
-```bash
-npm install
-npm run build              # grok api && grok check --soft && webpack
-npm run test               # grok test
-npm run lint               # eslint src --ext .ts
-npm run lint-fix
-npm run build-all          # Builds chem-meta → js-api → utils → bio → this package
-```
 
 ## Architecture
 

@@ -286,7 +286,7 @@ export const getRunsDfFromList = async (
         // Workaround for https://reddata.atlassian.net/browse/GROK-15286
         .init((idx) =>
           (<any>window).grok_DayJs_To_DateTime(getStartedOrNull(newRuns[idx]) ?
-            newRuns[idx].started.utc(true): dayjs.unix(newRuns[idx].options['createdOn'])),
+            (<any>newRuns[idx].started).utc(true): dayjs.unix(newRuns[idx].options['createdOn'])),
         );
     }
 

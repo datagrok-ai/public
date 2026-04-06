@@ -1,0 +1,123 @@
+.knime-workflow-view {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  width: 100%;
+}
+
+.knime-input-form {
+  flex: 0 0 auto;
+  padding: 8px;
+  overflow-y: auto;
+}
+
+.knime-results {
+  flex: 1 1 auto;
+  overflow: hidden;
+  min-height: 200px;
+}
+
+.knime-run-button {
+  margin: 8px;
+}
+
+.knime-progress {
+  padding: 8px;
+  color: var(--grey-4);
+}
+
+.knime-error {
+  padding: 8px;
+  color: var(--red-2);
+}
+
+.knime-variables {
+  padding: 8px;
+}
+
+.knime-variables table {
+  border-collapse: collapse;
+  width: 100%;
+}
+
+.knime-variables td, .knime-variables th {
+  border: 1px solid var(--grey-2);
+  padding: 4px 8px;
+  text-align: left;
+}
+
+.knime-data-app {
+  padding: 8px;
+}
+
+.knime-data-app-iframe {
+  width: 100%;
+  flex: 1 1 auto;
+  min-height: 400px;
+  border: 1px solid var(--grey-2);
+  border-radius: 4px;
+}
+
+.knime-info-icon {
+  color: var(--grey-3)!important;
+  margin-left: 4px;
+  cursor: help!important;;
+  font-size: 12px;
+  order: 2;
+}
+
+.knime-info-icon:hover {
+  color: var(--blue-1);
+}
+
+.d4-accordion-pane-header .knime-info-icon {
+  margin-left: 6px;
+}
+
+.knime-schema-table {
+  border-collapse: collapse;
+  margin-top: 4px;
+  font-size: 12px;
+}
+
+.knime-schema-table td, .knime-schema-table th {
+  border: 1px solid var(--grey-2);
+  padding: 2px 6px;
+  text-align: left;
+}
+
+.knime-workflow-preview {
+  padding: 12px;
+  overflow: auto;
+}
+
+.knime-preview-header {
+  margin: 0 0 8px 0;
+  font-size: 14px;
+  color: var(--grey-5);
+}
+
+.knime-workflow-svg-container {
+  min-height: 100px;
+  position: relative;
+}
+
+img.knime-workflow-svg {
+  width: 100%;
+  height: auto;
+  border: 1px solid var(--grey-2);
+  border-radius: 4px;
+  background: white;
+}
+
+.knime-file-output {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px;
+}
+
+.knime-file-output i {
+  color: var(--blue-1);
+  font-size: 16px;
+}

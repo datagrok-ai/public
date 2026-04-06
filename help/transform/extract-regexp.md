@@ -4,7 +4,7 @@ title: "Extract RegExp"
 
 Matches the specified regular expression against the content of the specified column.
 
-To split column regular expression groups are used. Groups are added as new columns.
+To split the column, regular expression groups are used. Groups are added as new columns.
 
 ## Example
 
@@ -27,7 +27,7 @@ Result:
 To learn more about regular expressions, please visit
 [https://www.regular-expressions.info](https://www.regular-expressions.info).
 
-Click on the _keyboard_arrow_down_ icon in order to access the following commands:
+Click the _keyboard_arrow_down_ icon to access the following commands:
 
 * Filter Matching
 * Filter Not Matching

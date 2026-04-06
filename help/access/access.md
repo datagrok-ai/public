@@ -61,9 +61,9 @@ To see all available data source connections, on the **Sidebar**, select **Manag
 
 A data connection is an [entity](../datagrok/concepts/objects.md), which means it can be shared, assigned permissions, annotated, and more.
 
-For instructions on how to add a supported data source, set credentials, share, and manage it from the UI, see documentation for each data source type.
-
-For instructions on how to add a supported data source, set credentials, share, and manage it programmatically, see [developer's documentation](../develop/how-to/db/access-data.md#connections).
+For instructions on adding data sources, setting credentials, sharing, and management:
+* **From the UI**: See documentation for each data source type.
+* **Programmatically**: See the [developer's documentation](../develop/how-to/db/access-data.md#connections).
 
 For specific details on the configuration required, see each individual connector's documentation page in the Connectors directory.
 

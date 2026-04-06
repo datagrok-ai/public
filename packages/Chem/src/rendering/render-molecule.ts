@@ -53,15 +53,15 @@ export function renderMolecule(
     e.preventDefault();
     e.stopImmediatePropagation();
     showMoleculeMenu(molStr);
-  }
-  moleculeHost.onclick = (e: MouseEvent) => {
+  };
+  moleculeHost.onclick = (_e: MouseEvent) => {
     const isInContextPanel = moleculeHost.closest('.grok-prop-panel');
     if (!isInContextPanel)
-      grok.shell.o = DG.SemanticValue.fromValueType(molStr, DG.SEMTYPE.MOLECULE);  
-  }
-  moleculeHost.ondblclick = (e: MouseEvent) => {
+      grok.shell.o = DG.SemanticValue.fromValueType(molStr, DG.SEMTYPE.MOLECULE);
+  };
+  moleculeHost.ondblclick = (_e: MouseEvent) => {
     grok.shell.o = DG.SemanticValue.fromValueType(molStr, DG.SEMTYPE.MOLECULE);
-  }
+  };
   div.append(moleculeHost);
 
   return div;

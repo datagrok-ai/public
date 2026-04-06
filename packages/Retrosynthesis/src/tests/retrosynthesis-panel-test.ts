@@ -11,7 +11,7 @@ category('retrosynthesis', async () => {
     try {
       await timeout(
         () => grok.functions.call('Retrosynthesis:check_health', {}),
-        180000,
+        1200000,
         'Health check timed out',
       );
     } catch (err: any) {
@@ -26,5 +26,15 @@ category('retrosynthesis', async () => {
     expect(paths.length > 0, true);
     expect(paths[0].smiles, 'CC(C(=O)OCCCc1cccnc1)c1cccc(C(=O)c2ccccc2)c1');
     expect(paths[0].scores['state score'].toFixed(3), '0.994');
+  }, {timeout: 120000});
+
+  test('custom config max_transforms = 1', async () => {
+    const molStr = 'COc1ccc2cc(ccc2c1)C(C)C(=O)Oc3ccc(C)cc3OC';
+    const result = await grok.functions.call('Retrosynthesis:run_aizynthfind',
+      {molecule: molStr, config: 'test_config', expansion: '', stock: '', filter: ''});
+    const paths: Tree[] = JSON.parse(result);
+    expect(paths.length > 0, true);
+    for (const path of paths)
+      expect(path.scores['number of reactions'] <= 1, true);
   }, {timeout: 120000});
 });

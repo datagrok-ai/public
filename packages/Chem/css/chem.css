@@ -180,6 +180,16 @@
   -webkit-text-stroke-color: #784d24;
 }
 
+.chem-orphans-folder-icon {
+  font-size: 66px;
+  color: hsla(0, 0%, 0%, 0) !important;
+}
+
+.chem-orphans-folder-host {
+  align-items: center;
+  justify-content: center;
+}
+
 .d4-update-shadow {
   background-color: white;
   opacity: 1.0;
@@ -1059,7 +1069,7 @@
   color: var(--grey-5);
 }
 
-.chem-mpo-create-profile-button {
+.chem-mpo-action-button {
   display: block !important;
   text-align: start;
   margin-left: 0 !important;
@@ -1095,10 +1105,11 @@
   font-size: 18px;
   font-weight: 600;
   flex: 0 0 auto;
+  outline: none;
 }
 
 .chem-profile-toolbar-wrap {
-  padding: 0 12px 8px;
+  padding: 0 0 8px;
   border-bottom: 1px solid var(--grey-2);
   flex: 0 0 auto;
 }
@@ -1108,12 +1119,27 @@
   align-self: flex-end;
 }
 
-.chem-profile-toolbar-wrap .ui-input-root > .ui-input-options {
-  border-bottom: none !important;
+.chem-profile-description {
+  color: var(--grey-4);
+  font-weight: normal;
+  font-style: italic;
+  outline: none;
+  margin-top: -8px;
+  margin-bottom: 12px;
+  max-width: 400px;
 }
-
-.chem-profile-toolbar-wrap .ui-input-root > .ui-input-options > .ui-input-description {
-  order: initial;
+.chem-profile-description.chem-placeholder::before {
+  content: 'Add description...';
+  opacity: 0.5;
+}
+.chem-profile-description.chem-placeholder:focus::before {
+  display: none;
+}
+.chem-profile-field-desc {
+  color: var(--grey-4);
+  font-size: 12px;
+  margin: 4px 0 8px;
+  font-style: italic;
 }
 
 .chem-profile-view-loading {

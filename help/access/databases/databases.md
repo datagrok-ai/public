@@ -685,7 +685,9 @@ You can also [publish enrichments](../../develop/how-to/packages/data-enrichment
 
 ## Database explorer
 
-The **Database Explorer** enables Datagrok to automatically detect and explore company-specific identifiers within relational databases. By linking identifier patterns to database columns, this library creates an intelligent exploration system that allows users to drill down through database relationships and discover all related data with a single click.
+The **Database Explorer** automatically detects company-specific identifiers
+(such as compound IDs or product codes) in your database. Click any identifier
+to drill down through related tables and see all associated data.
 
 ![DB-explorer](img/db-explorer.gif)
 

@@ -9,7 +9,7 @@ position of the vertex on the i-th axis corresponds to the i-th coordinate of th
 related to time series visualization, except that it is applied to data where the axes do not correspond to points in
 time, and therefore do not have a natural order. Therefore, different axis arrangements may be of interest.
 
-To change columns, set "Column Names" via the context panel. To rearrange columns, drag column name into the desired
+To change columns, set "Column Names" via the context panel. To rearrange columns, drag a column name to the desired
 location.
 
 > Developers: To add the viewer from the console, use:

@@ -48,14 +48,18 @@ def test_get_group(grok):
 
 
 def test_add_member(grok):
-    my_group = grok.groups.current()
     parent = Group(name=_unique_name(), description='parent group')
     parent = grok.groups.save(parent)
+    child = Group(name=_unique_name(), description='child group')
+    child = grok.groups.save(child)
     try:
-        result = grok.groups.add_member(parent, my_group)
+        result = grok.groups.add_member(parent, child)
         assert result.id == parent.id
+        members = grok.groups.get_members(parent)
+        assert any(m.id == child.id for m in members)
     finally:
         grok.groups.delete(parent)
+        grok.groups.delete(child)
 
 
 def test_get_members(grok):

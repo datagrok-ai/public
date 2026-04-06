@@ -431,6 +431,8 @@ export const FUNC_TYPES = {
 
   SEARCH_PROVIDER: 'searchProvider',
   NOTATION_REFINER: 'notationRefiner',
+
+  KNIME_WORKFLOW: 'knimeWorkflow',
 }
 
 
@@ -646,6 +648,12 @@ export const functionRoles: FuncRoleDescription[] = [
     description: 'Refines the biological sequence notation based on company specific rules',
     header: 'tags',
     signature: 'notationRefiner(column: Column, stats: any, separator: string): bool'
+  },
+  {
+    role: FUNC_TYPES.KNIME_WORKFLOW,
+    description: 'Executes a KNIME workflow via the KNIME Business Hub REST API and returns the results.',
+    header: 'tags',
+    signature: 'knimeWorkflow(...args): any'
   }
 ]
 
@@ -936,12 +944,17 @@ export enum EVENT_TYPE {
   // AI events
   AI_GENERATION_ABORT = 'd4-ai-generation-abort',
   AI_PANEL_TOGGLE = 'd4-ai-panel-toggle',
+  AI_BEFORE_USER_PROMPT = 'd4-ai-before-user-prompt',
+  AI_AFTER_USER_PROMPT = 'd4-ai-after-user-prompt',
 
   // Tree view events
   TREE_VIEW_NODE_ADDED = 'd4-tree-view-node-added',
 
   // Server events
   SERVER_MESSAGE = 'server-message',
+
+  // Shell events
+  PANELS_CHANGED = 'grok-panels-changed',
 }
 
 /**

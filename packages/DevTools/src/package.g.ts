@@ -33,6 +33,13 @@ export async function testManager() : Promise<void> {
   await PackageFunctions.testManager();
 }
 
+//input: dynamic treeNode 
+//meta.role: appTreeBrowser
+//meta.app: Test Manager
+export async function testManagerAppTreeBrowser(treeNode: any) : Promise<void> {
+  await PackageFunctions.testManagerAppTreeBrowser(treeNode);
+}
+
 //name: TestDetectors
 //top-menu: Tools | Dev | Test | Detectors...
 export function testDetectors() : void {
@@ -48,48 +55,4 @@ export async function TestDetectorsStandard() : Promise<void> {
 //output: dataframe result
 export async function testFunctions(scope: any) : Promise<any> {
   return await PackageFunctions.testFunctions(scope);
-}
-
-//input: column<int> col1 
-//input: column<string> col2 
-//input: column<double> col3 
-//input: list<string> out { optional: true }
-//output: dataframe result
-//meta.vectorFunc: true
-export async function testFunction(col1: DG.Column, col2: DG.Column, col3: DG.Column, out?: string[]) : Promise<any> {
-  return await PackageFunctions.testFunction(col1, col2, col3, out);
-}
-
-//input: dataframe data 
-//input: column<int> col1 
-//input: column<string> col2 
-//input: column<double> col3 
-//input: list<string> out { optional: true }
-//output: dataframe result { action: join(data) }
-//meta.vectorFunc: true
-export async function testFunctionJoin(data: DG.DataFrame, col1: DG.Column, col2: DG.Column, col3: DG.Column, out?: string[]) : Promise<any> {
-  return await PackageFunctions.testFunctionJoin(data, col1, col2, col3, out);
-}
-
-//input: dataframe data 
-//input: column_list columns 
-//input: list<string> out { optional: true }
-//output: dataframe result { action: join(data) }
-//meta.vectorFunc: true
-export async function testFunctionJoinColumnList(data: DG.DataFrame, columns: DG.ColumnList, out?: string[]) : Promise<any> {
-  return await PackageFunctions.testFunctionJoinColumnList(data, columns, out);
-}
-
-//input: dataframe data 
-//output: dataframe result { action: join(data) }
-//meta.vectorFunc: true
-export async function testFunctionNewJoinWithoutFormula(data: DG.DataFrame) : Promise<any> {
-  return await PackageFunctions.testFunctionNewJoinWithoutFormula(data);
-}
-
-//name: ExceptionFunc
-//input: int a 
-//output: int result
-export function exceptionFunc(a: number) : number {
-  return PackageFunctions.exceptionFunc(a);
 }

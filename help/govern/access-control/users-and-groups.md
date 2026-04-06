@@ -75,10 +75,9 @@ Only [Administrators](#group-types) with global permissions can add or remove us
 
 ### Disabling accounts
 
-To disable a user account, login as [administrator](#group-types), navigate
-to **Browse | Platform | Users**, right-click on the user, and select "Block".
-This will prevent user from logging in and using the platform, and this user 
-will not count towards the license. 
+To disable a user account, log in as [administrator](#group-types), go to
+**Browse** > **Platform** > **Users**, right-click the user, and select **Block**.
+The blocked user can't log in and won't count toward the license. 
 
 All assets that the user has created will continue to be available in the system.
 Administrators can [share](../../datagrok/navigation/basic-tasks/basic-tasks.md#share) 

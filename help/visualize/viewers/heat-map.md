@@ -2,7 +2,7 @@
 title: "Heatmap"
 ---
 
-Heatmap is a spreadsheet (grid) that contains colors instead of numbers and
+A heatmap is a spreadsheet (grid) that displays colors instead of numbers and
 strings. For numerical data, the higher values are colored red, and the lower
 ones appear blue. The central value is assigned a light color so that darker
 colors indicate a larger distance from the center. For categorical data, each

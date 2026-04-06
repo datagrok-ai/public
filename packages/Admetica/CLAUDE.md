@@ -1,20 +1,5 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
-
-## Build & Development Commands
-
-```bash
-npm run build          # Full build: grok api && grok check --soft && webpack
-npm run build-admetica # Webpack only (faster, skips API generation)
-npm run test           # Run tests via grok test
-npm run link-all       # Link local @datagrok-libraries/* dependencies for development
-```
-
-Publishing variants use `grok publish` to different environments:
-- `debug-admetica` / `release-admetica` — default server
-- `*-dev`, `*-local`, `*-local2` — dev/local environments
-
 ## Architecture
 
 Admetica is a Datagrok platform package for ADMET (Absorption, Distribution, Metabolism, Excretion, Toxicity) property prediction on molecules. It has a TypeScript frontend and a Python/Docker backend.
@@ -50,9 +35,3 @@ Tests are in `src/tests/admetica-tests.ts` using `@datagrok-libraries/test`. Cat
 
 Test entry point is `src/package-test.ts`.
 
-## Webpack & TypeScript Config
-
-- TypeScript: strict mode, ES6 target, ES2020 modules, decorators enabled.
-- ESLint: Google style guide, 120 char max line length, 2-space indent.
-- Webpack externals: `datagrok-api/*`, `openchemlib/full.js`, `rxjs`, `cash-dom`, `dayjs` are all external.
-- Two entry points: `package.ts` (main) and `package-test.ts` (tests).

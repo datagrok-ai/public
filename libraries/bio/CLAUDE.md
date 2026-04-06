@@ -1,23 +1,10 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
-
 ## Overview
 
 **@datagrok-libraries/bio** is the core shared library for all bioinformatics functionality in the Datagrok platform. It provides types, utilities, renderers, and service interfaces for working with macromolecules (peptides, DNA, RNA, HELM), 3D molecular structures (PDB/PDBQT/mmCIF), phylogenetic trees, and monomer libraries.
 
 This is a **library** (not a package) — it has no `package.ts`, no webpack, no platform registration. It is compiled with `tsc` to `.js`/`.d.ts` and consumed by multiple packages (`Bio`, `Helm`, `Peptides`, `BiostructureViewer`, `Dendrogram`, `HitTriage`, etc.).
-
-## Build Commands
-
-```bash
-npm install
-npm run build              # grok check --soft && tsc
-npm run build-all          # Builds chem-meta → js-api → gridext → utils → ml → this library
-npm run lint               # eslint "./src/**/*.ts"
-npm run lint-fix
-npm run link-all           # Links chem-meta, datagrok-api, gridext, utils, ml
-```
 
 ## Key Dependencies
 

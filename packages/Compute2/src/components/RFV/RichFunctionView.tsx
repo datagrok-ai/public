@@ -26,7 +26,8 @@ import {startWith, take, map} from 'rxjs/operators';
 import {useHelp} from '../../composables/use-help';
 import {useObservable} from '@vueuse/rxjs';
 import {_package} from '../../package-instance';
-import { getViewers } from '../../utils';
+import {getViewers} from '../../utils';
+
 
 interface ScalarsState {
   type: 'scalars',
@@ -44,6 +45,16 @@ interface DockSpawnConfigItem {
   'dock-spawn-dock-type'?: 'left' | 'right' | 'up' | 'down',
   'dock-spawn-dock-to'?: string,
   'dock-spawn-dock-ratio'?: number,
+}
+
+interface ExportDefinition {
+  name: string,
+  function: string,
+}
+
+interface ExportItem {
+  name: string,
+  handler: (arg?: any) => void,
 }
 
 type TabContent = Map<string, ScalarsState | DataFrameState>;
@@ -226,7 +237,7 @@ export const RichFunctionView = Vue.defineComponent({
     const visibleTabLabels = Vue.shallowRef([] as string[]);
     const activePanelTitle = Vue.shallowRef<string | undefined>(undefined);
     const dockSpawnConfig = Vue.shallowRef<Record<string, DockSpawnConfigItem>>({});
-    const customExports = Vue.ref<{name: string, function: string}[]>([]);
+    const customExports = Vue.ref<ExportDefinition[]>([]);
 
     const isSAenabled = Vue.ref(false);
     const isReportEnabled = Vue.ref(false);
@@ -303,7 +314,23 @@ export const RichFunctionView = Vue.defineComponent({
     }
 
     const exports = Vue.computed(() => {
-      return customExports.value.filter(x => x.function && x.name).map(x => ({...x, handler: () => reportHandler(x.function)}));
+      const activeExports: ExportItem[] = [];
+      if (isReportEnabled.value) {
+        const name = 'Default Excel';
+        const handler = async () => {
+          const viewers = await getViewers(currentCall.value, viewersHook.value, callMeta.value);
+          const [blob] = await richFunctionViewReport(
+            'Excel',
+            currentCall.value.func,
+            currentCall.value,
+            viewers,
+          );
+          DG.Utils.download(`${currentCall.value.func.nqName} - ${Utils.getStartedOrNull(currentCall.value) ?? 'Not completed'}.xlsx`, blob);
+        }
+        activeExports.push({name, handler});
+      }
+      activeExports.push(...customExports.value.filter(x => x.function && x.name).map(x => ({...x, handler: () => reportHandler(x.function)})));
+      return activeExports;
     });
 
     ////
@@ -404,8 +431,8 @@ export const RichFunctionView = Vue.defineComponent({
     const menuIconStyle = {width: '15px', display: 'inline-block', textAlign: 'center'};
 
     return () => (
-      Vue.withDirectives(<div class='w-full h-full flex'> { isReportEnabled.value && !isOutputOutdated.value && exports.value?.length > 0 &&
-        <RibbonMenu groupName='Step export' view={currentView.value}>
+      Vue.withDirectives(<div class='w-full h-full flex'> { !isOutputOutdated.value && exports.value?.length > 1 &&
+        <RibbonMenu groupName='Step exports' view={currentView.value}>
           {
             exports.value.map(({ name, handler }) =>
               <span onClick={handler}>
@@ -446,19 +473,10 @@ export const RichFunctionView = Vue.defineComponent({
           </span> }
         </RibbonMenu>
         <RibbonPanel view={currentView.value}>
-          { isReportEnabled.value && !isOutputOutdated.value && <IconFA
+          { !isOutputOutdated.value && exports.value?.length === 1 && <IconFA
             name='arrow-to-bottom'
-            onClick={async () => {
-              const viewers = await getViewers(currentCall.value, viewersHook.value, callMeta.value);
-              const [blob] = await richFunctionViewReport(
-                'Excel',
-                currentCall.value.func,
-                currentCall.value,
-                viewers,
-              );
-              DG.Utils.download(`${currentCall.value.func.nqName} - ${Utils.getStartedOrNull(currentCall.value) ?? 'Not completed'}.xlsx`, blob);
-            }}
-            tooltip='Generate standard report for the current step'
+            onClick={exports.value[0].handler}
+            tooltip='Generate report for the current step'
           /> }
           { isFittingEnabled.value && <IconImage
             name='fitting'

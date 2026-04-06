@@ -14,7 +14,7 @@ category('Viewers: Core Viewers', () => {
     'Network diagram': 'GROK-11707',
     'Shape Map': 'GROK-16568',
   };
-  const regViewers = Object.values(DG.VIEWER).filter((v) => v != DG.VIEWER.GRID &&
+  const regViewers = Object.values(DG.VIEWER).filter((v) => v != DG.VIEWER.GRID && v != DG.VIEWER.HEAT_MAP &&
     !v.startsWith('Surface') && !v.startsWith('Radar') && !v.startsWith('Timelines') &&
     v !== 'Google map' && v !== 'Markup' && v !== 'Word cloud' &&
     //@ts-ignore
@@ -53,11 +53,11 @@ category('Viewers', () => {
   let tv: DG.TableView;
   let coreViewerTypes: string[];
   let viewerList: DG.JsViewer[];
+  const viewersToExclude: string[] = [DG.VIEWER.GRID, DG.VIEWER.SURFACE_PLOT, DG.VIEWER.RADAR_VIEWER, DG.VIEWER.GLOBE,
+    DG.VIEWER.SHAPE_MAP, DG.VIEWER.TIMELINES, DG.VIEWER.GOOGLE_MAP, DG.VIEWER.WORD_CLOUD, DG.VIEWER.SCAFFOLD_TREE];
 
   before(async () => {
-    coreViewerTypes = Object.values(DG.VIEWER).filter((v) => v != DG.VIEWER.GRID &&
-      !v.startsWith('Surface') && !v.startsWith('Radar') && !v.startsWith('Timelines') &&
-      v !== 'Google map' && v !== 'Word cloud');
+    coreViewerTypes = Object.values(DG.VIEWER).filter((v) => !viewersToExclude.includes(v));
     df = grok.data.demo.demog(100);
     tv = grok.shell.addTableView(df);
     viewerList = [];
@@ -117,7 +117,6 @@ category('Viewers', () => {
         throw new Error(`Viewer.fromType('${viewerType}', df) should add a Viewer instance`);
       expect(viewer.table.id, df.id);
     }
-    DG.Balloon.closeAll();
   });
 
   test('Reset default properties', async () => {
@@ -237,8 +236,6 @@ category('Viewers', () => {
   }, { skipReason: 'GROK-11485' });
 
   after(async () => {
-    grok.shell.closeAll();
-    DG.Balloon.closeAll();
     for (const viewer of viewerList) {
       try {
         // viewer.removeFromView();

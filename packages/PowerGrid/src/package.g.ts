@@ -2,10 +2,12 @@ import {ScatterPlotCellRenderer} from './sparklines/scatter-plot';
 import {RawPNGRenderer} from './png-renderer';
 import {PackageFunctions} from './package';
 import {HtmlTestCellRenderer} from './cell-types/test-cell-renderer';
+import {SvgCellRenderer} from './cell-types/svg-cell-renderer';
 import {StarsCellRenderer} from './cell-types/stars-cell-renderer';
 import {MultiChoiceCellRenderer} from './cell-types/multi-choice-cell-renderer';
 import {ImageCellRenderer} from './cell-types/image-cell-renderer';
 import {HyperlinkCellRenderer} from './cell-types/hyperlink-cell-renderer';
+import {ColorCellRenderer} from './cell-types/color-cell-renderer';
 import {BinaryImageCellRenderer} from './cell-types/binary-image-cell-renderer';
 import * as DG from 'datagrok-api/dg';
 //name: binaryImageCellRenderer
@@ -15,6 +17,14 @@ import * as DG from 'datagrok-api/dg';
 //meta.cellType: BinaryImage
 export function _BinaryImageCellRenderer() {
   return new BinaryImageCellRenderer();
+}
+
+//name: Color
+//output: grid_cell_renderer renderer
+//meta.role: cellRenderer
+//meta.cellType: Color
+export function _ColorCellRenderer() {
+  return new ColorCellRenderer();
 }
 
 //name: hyperlinkCellRenderer
@@ -51,6 +61,15 @@ export function _MultiChoiceCellRenderer() {
 //meta.cellType: Stars
 export function _StarsCellRenderer() {
   return new StarsCellRenderer();
+}
+
+//name: svgCellRenderer
+//tags: cellRenderer
+//output: grid_cell_renderer renderer
+//meta.role: cellRenderer
+//meta.cellType: SVG
+export function _SvgCellRenderer() {
+  return new SvgCellRenderer();
 }
 
 //name: htestCellRenderer

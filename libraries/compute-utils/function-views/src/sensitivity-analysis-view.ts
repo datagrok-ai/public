@@ -176,7 +176,7 @@ export class SensitivityAnalysisView {
                 onValueChanged: (value) => ref.const.value = value,
               });
               inp.root.insertBefore(isChangingInputConst.root, inp.captionLabel);
-              inp.addPostfix(inputProp.options['units']);
+              //inp.addPostfix(inputProp.options['units']); // TODO: fix styles
               return inp;
             })(),
             value: getInputDefaultValue(inputProp),
@@ -189,7 +189,7 @@ export class SensitivityAnalysisView {
                   onValueChanged: (value) => (ref as SensitivityNumericStore).min.value = value,
                 });
                 inp.root.insertBefore(isChangingInputMin.root, inp.captionLabel);
-                inp.addPostfix(inputProp.options['units']);
+                //inp.addPostfix(inputProp.options['units']); // TODO: fix styles
                 return inp;
               })(),
             value: getInputValue(inputProp, 'min'),
@@ -201,7 +201,7 @@ export class SensitivityAnalysisView {
                   value: getInputValue(inputProp, 'max'),
                   onValueChanged: (value) => (ref as SensitivityNumericStore).max.value = value,
                 });
-              inp.addPostfix(inputProp.options['units']);
+              //inp.addPostfix(inputProp.options['units']); // TODO: fix styles
               return inp;
             })(),
             value: getInputValue(inputProp, 'max'),

@@ -423,12 +423,13 @@ Yes. Use [Forms](../../visualize/viewers/forms.md) viewer.
 
 ##### <b>Q: How does color coding work in Datagrok?</b>
 
-Datagrok supports several color coding modes applied at the [column](../../visualize/viewers/grid#columns) level, with colors automatically synchronized across viewers: 
+Datagrok supports several [color coding modes](../../visualize/viewers/grid#color-code-columns) applied at the column level, with colors automatically synchronized across viewers:
 * **Linear**: Maps numeric values to a color gradient. You can configure the color palette, min/max values, below/above min colors, and invert the scheme. Absolute Linear mode allows assigning exact colors to specific numeric values.
 * **Conditional**: Applies colors based on value ranges or rules. You can configure the rules dictionary (ranges or comparison operators) and choose whether to apply colors to text or background.
 * **Categorical**: Assigns colors to categorical values (strings, booleans). You can configure the category-to-color map, fallback color, and select the color scheme via UI or API.
+* **Linked**: Applies color coding based on values from another column, regardless of the data type of the target column. This allows visually correlating columns by reusing the color scheme of a reference column. By default, the first column is used as the reference; you can assign a different linked column in the color-coding settings.
 
- **Domain-specific color coding**: For chemical data analysis, the [Scaffold tree](https://datagrok.ai/help/datagrok/solutions/domains/chem/#scaffold-tree-analysis) assigns colors to scaffold structures that can be used as the color source in [scatterplot](../../visualize//viewers/scatter-plot.md). Scaffold colors follow inheritance rules where child nodes inherit parent colors unless explicitly overridden.
+**Domain-specific color coding**: For chemical data analysis, the [Scaffold tree](../solutions/domains/chem/chem.md#scaffold-tree-analysis) assigns colors to scaffold structures that can be used as the color source in [scatterplot](../../visualize//viewers/scatter-plot.md). Scaffold colors follow inheritance rules where child nodes inherit parent colors unless explicitly overridden.
 
 Color coding remains consistent across the [grid](../../visualize/viewers/grid.md) and all [viewers](../../visualize/viewers/viewers.md) that reference the same column. Color coding persists in saved [projects](../navigation/basic-tasks/basic-tasks.md#saving-a-dashboard) and [layouts](../../visualize/view-layout.md).
 

@@ -32,8 +32,4 @@ category('UI: Icons', () => {
   test('iconImage.root', async () => {
     checkHTMLElement('iconImage', iconImage, v, '.image-icon');
   });
-
-  after(async () => {
-    grok.shell.closeAll();
-  });
 }, {clear: false});

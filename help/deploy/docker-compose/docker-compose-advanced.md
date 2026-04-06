@@ -92,7 +92,7 @@ Minimal hardware requirements: 60 GB of free disk space, 4 CPUs, 8 GB RAM.
 
 :::note
 
-If you see the message `Datagrok server is unavaliable`, wait for approximately 1 minute for the server to start, and
+If you see the message `Datagrok server is unavailable`, wait for approximately 1 minute for the server to start, and
 then reload the page.
 
 :::

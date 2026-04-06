@@ -75,8 +75,4 @@ category('UI: Tags', () => {
     }), grok.dapi.connections, 'connection');
     await testTags(DG.Script.create('apitests'), grok.dapi.scripts, 'script');
   }, { timeout: 100000 });
-
-  after(async () => {
-    grok.shell.closeAll();
-  });
 }, { clear: false, owner: 'drizhinashvili@datagrok.ai' });

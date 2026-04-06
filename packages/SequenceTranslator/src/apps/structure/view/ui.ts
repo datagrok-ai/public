@@ -52,7 +52,6 @@ class StructureAppLayout {
     );
     this.moleculeImgDiv = ui.block([]);
     $(this.moleculeImgDiv).addClass('st-structure-mol-img');
-
     DG.debounce<string>(this.onInput, 300).subscribe(async () => {
       await this.updateMoleculeImg();
     });
@@ -74,7 +73,7 @@ class StructureAppLayout {
     const tableLayout = this.getTableInput(th);
     const boolInputsAndButton = this.getBoolInputsAndButton();
     await this.updateMoleculeImg();
-    const bottomDiv = ui.divH([boolInputsAndButton, this.moleculeImgDiv]);
+    const bottomDiv = ui.divH([this.moleculeImgDiv, boolInputsAndButton]);
     $(bottomDiv).addClass('st-structure-bottom');
 
     const layout = ui.divV([tableLayout, bottomDiv]);
@@ -186,13 +185,8 @@ class StructureAppLayout {
       const errStr = errorToConsole(err);
       console.error(errStr);
     }
-    // todo: compute relative numbers
-    const canvasWidth = 650;
-    const canvasHeight = 150;
     const molImgObj = new MoleculeImage(molfile);
-    await molImgObj.drawMolecule(this.moleculeImgDiv, canvasWidth, canvasHeight);
-    // should the canvas be returned from the above function?
-    $(this.moleculeImgDiv).find('canvas').css('float', 'inherit');
+    await molImgObj.drawMolecule(this.moleculeImgDiv, 650, 150);
   }
 }
 

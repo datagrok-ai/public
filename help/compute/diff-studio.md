@@ -216,7 +216,7 @@ Diff Studio automatically generates the UI, but you can use the following option
 
 * **Captions:**
 
-  * Define the desired captions for the input parameters. If no caption is provided, Diff Studio uses variable name
+  * Define the desired captions for the input parameters. If no caption is provided, Diff Studio uses the variable name
 
      ```python
      #argument: t
@@ -225,7 +225,7 @@ Diff Studio automatically generates the UI, but you can use the following option
        step = 0.01 {caption: Calculation step}
      ```
 
-  * `#output`: Caption column headers in the solution table. If no caption is provided, Diff Studio uses a variable name
+  * `#output`: Caption column headers in the solution table. If no caption is provided, Diff Studio uses the variable name
 
      ```python
      #output:
@@ -292,10 +292,19 @@ Diff Studio automatically generates the UI, but you can use the following option
 Use this syntax to define the ODE solver configuration and improve performance:
 
 * `#meta.solver`: Defines numerical solver settings:
-  * **Method**: Choose [Rosenbrock-Wanner](https://doi.org/10.1016/j.cam.2015.03.010) solver
-    * The ROS34PRw method (`ros34prw`, default)
-    * The ROS3PRw method (`ros3prw`)
-    * The modified Rosenbrock triple (`mrt`)
+  * **Method**: Choose from the following solvers:    
+    * Implicit methods (for stiff ODEs) - [Rosenbrock-Wanner](https://doi.org/10.1016/j.cam.2015.03.010) type:
+      * The ROS34PRw method (`ros34prw`, default)
+      * The ROS3PRw method (`ros3prw`)
+      * The modified Rosenbrock triple (`mrt`)
+    * Explicit methods (for non-stiff ODEs):
+      * The [Bogacki-Shampine](https://en.wikipedia.org/wiki/Bogacki%E2%80%93Shampine_method) 3(2) method (`rk3`)
+      * The [Runge-Kutta-Fehlberg](https://en.wikipedia.org/wiki/Runge%E2%80%93Kutta%E2%80%93Fehlberg_method) 4(5) method (`rk4`)
+      * The [Dormand-Prince](https://en.wikipedia.org/wiki/Dormand%E2%80%93Prince_method) 5(4) method (`rkdp`)
+      * The [Adams](https://en.wikipedia.org/wiki/Linear_multistep_method) multistep predictor-correctors methods of order 4 and 5 (`ab4`, `ab5`)
+    * Adaptive solvers:
+      * [LSODA](https://doi.org/10.1137/0904010) (`lsoda`) – automatic switching between Adams (non-stiff) and BDF (stiff)
+      * [CVODE](https://sundials.readthedocs.io/en/latest/cvode/index.html) (`cvode`) – variable-order Adams and BDF solver from the SUNDIALS suite  
   * **Performance limits**
     * `maxTimeMs`: computation time, in milliseconds (default: 5000ms)
     * `maxIterations`: iteration count for debugging
@@ -319,7 +328,7 @@ You can convert Diff Studio models to Datagrok scripts. This allows you to:
 
 Click the <i class="fas fa-layer-plus"></i> **Save to Model Hub** icon on the top panel to add your model to Model Hub:
 
- ![table-lookups](pics/diff-studio-model-hub.gif)
+ ![model-hub](pics/diff-studio-model-hub.gif)
 
 Export your model to JavaScript script:
 
@@ -335,7 +344,7 @@ Export your model to JavaScript script:
 
 ## Syntax reference
 
-Diff Studio lets you define model in a declarative form using simple syntax:
+Diff Studio lets you define a model in a declarative form using simple syntax:
 
 |Keyword|Specifies|Example|
 |-|-|-|

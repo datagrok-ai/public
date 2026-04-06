@@ -19,6 +19,7 @@ category('Packages: project isolation', () => {
     await safeDeletePackage('pkgisolationa');
     await safeDeletePackage('pkgisolationb');
     await cleanupProjects();
+    await cleanupDashboards();
   });
 
   async function publish(name: string, debug: boolean = false) {
@@ -44,6 +45,15 @@ category('Packages: project isolation', () => {
   async function cleanupProjects() {
     try {
       const projects = await grok.dapi.projects.filter('IsolationTestProject').list();
+      for (const p of projects)
+        await grok.dapi.projects.delete(p);
+    }
+    catch (_) {}
+  }
+
+  async function cleanupDashboards() {
+    try {
+      const projects = await grok.dapi.projects.filter('DashboardRelationTest').list();
       for (const p of projects)
         await grok.dapi.projects.delete(p);
     }
@@ -113,6 +123,54 @@ category('Packages: project isolation', () => {
     const v1EntityStolen = v2Ids.size === 1 && v2Ids.has(projectV1Id) && projectsAfterV2.length === 1;
     expect(v1EntityStolen, false,
       'New version should create its own project entity with remapped IDs, not steal from the previous version');
+  }, {timeout: 120000, owner: 'aparamonov@datagrok.ai'});
+
+  // When a new package version is published, dashboards that reference entities
+  // from the old version should automatically get relations to the new version's entities.
+  test('Dashboard: entity propagation across package versions', async () => {
+    await safeDeletePackage('pkgisolationa');
+    await cleanupProjects();
+    await cleanupDashboards();
+    await DG.delay(2000);
+
+    // Publish release version
+    await publish('pkgisolationa', false);
+
+    // Get a function entity from the package
+    const funcs = await grok.dapi.functions
+      .filter('package.shortName = "Pkgisolationa"').list();
+    expect(funcs.length >= 1, true,
+      `Expected at least 1 function from package, got ${funcs.length}`);
+    const funcV1 = funcs[0];
+
+    // Create a dashboard and add function as a link
+    const dashboard = DG.Project.create();
+    dashboard.name = 'DashboardRelationTest';
+    dashboard.addLink(funcV1);
+    const saved = await grok.dapi.projects.save(dashboard);
+
+    // Publish debug version (triggers _addProjectRelationsForPackageVersion)
+    await publish('pkgisolationa', true);
+
+    // Get all functions across all versions (including debug)
+    const allFuncs = await grok.dapi.functions
+      .filter('package.shortName = "Pkgisolationa"')
+      .allPackageVersions().list();
+
+    // Reload dashboard and check its links
+    const reloaded = await grok.dapi.projects.find(saved.id);
+    const linkedIds = new Set(reloaded.links.map((e: DG.Entity) => e.id));
+
+    // There should be a function from v2 with same bind_id in the dashboard
+    const v2Funcs = allFuncs.filter((f: DG.Func) => f.id !== funcV1.id);
+    expect(v2Funcs.length >= 1, true,
+      `Expected functions from debug version, got ${v2Funcs.length}`);
+    const hasV2Entity = v2Funcs.some((f: DG.Func) => linkedIds.has(f.id));
+    expect(hasV2Entity, true,
+      'Dashboard should contain entity from the new package version');
+
+    // Cleanup
+    await grok.dapi.projects.delete(reloaded);
   }, {timeout: 120000, owner: 'aparamonov@datagrok.ai'});
 }, {
   owner: 'aparamonov@datagrok.ai'

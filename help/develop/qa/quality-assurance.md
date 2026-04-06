@@ -128,7 +128,7 @@ Tracker](https://github.com/datagrok-ai/public/issues) for all externally
 reported issues. We recommend reporting issues in JIRA if you have access to it,
 but if you don't, use GitHub Tracker.
 
-Tracking the issues, we stay on
+By tracking the issues, we stay on
 top of the platform's current status, including critical issues, promised
 features, and upcoming changes. You can also track our latest updates in [Release notes](../../deploy/releases/release-history.md).
 

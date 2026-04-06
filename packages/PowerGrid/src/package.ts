@@ -5,6 +5,8 @@ import {_HyperlinkCellRenderer} from './package.g';
 import {_BinaryImageCellRenderer} from './package.g';
 import {_ImageCellRenderer} from './package.g';
 import {_StarsCellRenderer} from './package.g';
+import {_ColorCellRenderer} from './package.g';
+import {_SvgCellRenderer} from './package.g';
 /* Do not change these import lines to match external modules in webpack configuration */
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
@@ -23,8 +25,10 @@ import {FormsViewer} from '@datagrok-libraries/utils/src/viewers/forms-viewer';
 import {FormCellRenderer} from './forms/forms';
 import {scWebGPUPointHitTest, scWebGPURender} from './webgpu/scatterplot';
 import {getGPUDevice} from '@datagrok-libraries/math/src/webGPU/getGPUDevice';
-import {TagsCellRenderer} from './cell-types/tags-cell-renderer';
+import {TagsCellRenderer, TAGS_CELL_TYPE} from './cell-types/tags-cell-renderer';
 import {ConfidenceIntervalCellRenderer} from './cell-types/confidence-interval-cell-renderer';
+import {StarsCellRenderer} from './cell-types/stars-cell-renderer';
+// import {isValidColor} from './cell-types/color-cell-renderer';
 export * from './package.g';
 export const _package = new DG.Package();
 
@@ -155,6 +159,30 @@ export class PackageFunctions {
     static confidenceIntervalCellRenderer() {
       return new ConfidenceIntervalCellRenderer();
     }
+
+
+  // @grok.decorators.func({
+  //   description: 'Color',
+  //   meta: {role: 'cellEditor'},
+  // })
+  // static editColorCell(
+  //   @grok.decorators.param({type: 'grid_cell'}) cell: DG.GridCell): void {
+  //   const originalValue = cell.cell.isNone() ? null : cell.cell.valueString;
+  //   const current = cell.cell.valueString.trim();
+  //   const initialColor = current && isValidColor(current) ? DG.Color.fromHtml(current) : 0;
+  //   let picked = initialColor;
+  //   ui.showColorPicker(initialColor, (c) => {
+  //     picked = c;
+  //     cell.cell.value = DG.Color.toHtml(c);
+  //     cell.render();
+  //   }, () => {
+  //     cell.cell.value = DG.Color.toHtml(picked);
+  //     cell.render();
+  //   }, () => {
+  //     cell.cell.value = originalValue;
+  //     cell.render();
+  //   });
+  // }
 
 
   @grok.decorators.func({
@@ -294,6 +322,7 @@ export class PackageFunctions {
   static async _autoPowerGrid() {
     //PinnedUtils.registerPinnedColumns();
     DG.GridCellRenderer.register(new ScatterPlotCellRenderer());
+    DG.GridCellRenderer.register(new StarsCellRenderer());
 
     // handling column remove/rename in sparkline columns
     grok.events.onViewerAdded.subscribe((args) => {
@@ -310,7 +339,7 @@ export class PackageFunctions {
         for (let i = 1; i < grid.columns.length; i++) {
           const gridCol = grid.columns.byIndex(i)!;
           const sparklineSettings = getSparklineSettings(gridCol);
-          if (sparklineTypes.includes(gridCol.cellType) && sparklineSettings?.columnNames?.length > 0 &&
+          if ([...sparklineTypes, TAGS_CELL_TYPE].includes(gridCol.cellType) && sparklineSettings?.columnNames?.length > 0 &&
             columns.some((col) => sparklineSettings.columnNames.includes(col instanceof DG.Column ? col.name : col)))
             summaryCols[summaryCols.length] = gridCol;
         }
@@ -446,3 +475,5 @@ export {_HtmlTestCellRenderer};
 export {_ScatterPlotCellRenderer};
 export {_MultiChoiceCellRenderer};
 export {_StarsCellRenderer};
+export {_ColorCellRenderer};
+export {_SvgCellRenderer};

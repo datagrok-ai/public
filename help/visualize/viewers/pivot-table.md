@@ -12,7 +12,7 @@ To add the pivot viewer, click the **Top Menu**, click the **Add a viewer**
 
 To configure your pivot table, use these fields:
 * **Group by**: Choose one or more columns to group rows 
-* **Aggregate** Choose both
+* **Aggregate**: Choose both
    * An aggregation function (e.g., `sum`, `count`, `avg`)
    * A column to aggregate (e.g., `avg(AGE)`) 
 * **Pivot**: Select one or more columns whose unique values will become columns in the pivot table

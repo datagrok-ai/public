@@ -8,7 +8,6 @@ import {DartWidget, Menu, ToolboxPage, TreeViewGroup, Widget} from '../widgets';
 import {ColumnInfo, Entity, Script, TableInfo, ViewLayout, ViewInfo, Property, Func, DataQuery} from '../entities';
 import {toDart, toJs} from '../wrappers';
 import {_options} from '../utils';
-import {_toIterable} from '../utils_convert';
 import {MapProxy} from '../proxies';
 import {Subscription} from "rxjs";
 import {FuncCall} from "../functions";
@@ -623,9 +622,9 @@ export class TableView extends View {
   }
 
   /** Returns all viewers.
-   * @type {Iterable.<Viewer>} */
-  get viewers(): Iterable<Viewer> {
-    return _toIterable(api.grok_View_Get_Viewers(this.dart));
+   * Resulting array is cloned, so cache the result and do not call repeatedly in inner loops. */
+  get viewers(): Viewer[] {
+    return api.grok_View_Get_Viewers(this.dart);
   }
 
   get syncCurrentObject(): boolean { return api.grok_TableView_Get_SyncCurrentObject(this.dart); }

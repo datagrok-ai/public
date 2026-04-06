@@ -9,6 +9,7 @@ sidebar_position: 5
 |------|-------|------------|---------------|-------|
 |[Power Pack](https://github.com/datagrok-ai/public/tree/master/packages/PowerPack)| Platform | Recommended| Commonly used platform enhancements| Stable|
 | [Tutorials](https://github.com/datagrok-ai/public/tree/master/packages/Tutorials)| Resources |Recommended| App for learning Datagrok with interactive tutorials, Demo app| Stable |
+<!--|[Grokky](https://github.com/datagrok-ai/public/tree/master/packages/Grokky)| AI | Recommended| AI assistant for Datagrok with support for OpenAI, Anthropic, and Amazon Bedrock| Stable| -->    
 
 ## Access
 
@@ -64,7 +65,7 @@ sidebar_position: 5
 |Plugin <div style={{ width:140 }}></div> |Area <div style={{ width:130 }}></div>|  Tag <div style={{ width:110 }}></div> |Description <div style={{ width:315 }}></div> | Release|
 |------|-------|------------|----------------------|---|
 |[Dev Tools](https://github.com/datagrok-ai/public/tree/master/packages/DevTools)| DevTools |Recommended|Developer tools (TestManager, DevPanel, etc.)|Stable|
-|[API Samples](https://github.com/datagrok-ai/public/tree/master/packages/ApiSamples)| Resources |Recommended|Examples of Grok API|Stable|
+|[API Samples](https://github.com/datagrok-ai/public/tree/master/packages/ApiSamples)| Resources |Recommended|Examples of Datagrok API|Stable|
 
 ## Solutions
 
@@ -73,8 +74,8 @@ sidebar_position: 5
 |Plugin <div style={{ width:140 }}></div> |Area <div style={{ width:130 }}></div>|  Tag <div style={{ width:110 }}></div> |Description <div style={{ width:315 }}></div> | Release|
 |------|-------|-------------------|---------------|---|
 |[Chem](https://github.com/datagrok-ai/public/tree/master/packages/Chem) | General | Required| Cheminformatics support ([wiki](solutions/domains/chem/chem.md)).<br/>Comes with OpenChemLib sketcher | Stable|
+|[Ketcher Sketcher](https://github.com/datagrok-ai/public/tree/master/packages/KetcherSketcher) | Sketchers | Recommended| Integration with [Ketcher](https://lifescience.opensource.epam.com/ketcher/index.html) (Apache license, version 2.0) | Stable|
 |[Marvin](https://github.com/datagrok-ai/labs/tree/master/packages/Marvin) | Sketchers | Optional| Integration with Marvin JS (commercial 3rd party license) | Stable|
-|[Ketcher Sketcher](https://github.com/datagrok-ai/public/tree/master/packages/KetcherSketcher) | Sketchers | Optional| Integration with [Ketcher](https://lifescience.opensource.epam.com/ketcher/index.html) (Apache license, version 2.0) | Stable|
 |[Chem Draw Sketcher](https://github.com/datagrok-ai/labs/tree/master/packages/ChemDraw) | Sketchers | Optional| Integration with ChemDraw (commercial 3rd party license) | Stable|
 |[ChEMBL](https://github.com/datagrok-ai/public/tree/master/packages/Chembl) | Database search | Recommended| ChEMBL database for on-premise deployment | Stable|
 |[DrugBank](https://github.com/datagrok-ai/public/tree/master/packages/DrugBank) | Database search | Optional| Information on 11,300 drugs from [DrugBank](https://go.drugbank.com/)| Stable|
@@ -82,7 +83,7 @@ sidebar_position: 5
 |[PubChem](https://github.com/datagrok-ai/public/tree/master/packages/PubChemApi) | Database search | Optional| Webservice integration: [PubChem](https://pubchem.ncbi.nlm.nih.gov/) | Stable|
 |[Chemspace](https://github.com/datagrok-ai/public/tree/master/packages/Chemspace) | Database search | Optional| Webservice integration: [Chemspace](https://chem-space.com/)  |  Stable|
 |[SureChEMBL](https://github.com/datagrok-ai/public/tree/master/packages/SureChembl)| Database search | Optional| Performs searches through a locally deployed [SureChEMBL](https://www.surechembl.org) database | Beta|
-| [Docking](https://github.com/datagrok-ai/public/tree/master/packages/Docking)| Virtual screening | Optional |Let's you batch screen libraries against AutoDock-prepared targets with interactive visualization | Stable |
+| [Docking](https://github.com/datagrok-ai/public/tree/master/packages/Docking)| Virtual screening | Optional |Lets you batch screen libraries against AutoDock-prepared targets with interactive visualization | Stable |
 |[Hit Triage](https://github.com/datagrok-ai/public/tree/master/packages/HitTriage)| Virtual screening<br/>Hit to lead | Fit-for-purpose| Apps for virtual screening (Hit Triage) and hit design (Hit Design) | Stable|
 | [Retrosynthesis](https://github.com/datagrok-ai/public/tree/master/packages/Retrosynthesis)| Synthetic planning | Optional |Creates retrosynthesis paths for the selected molecule, built on top of [AiZynthFinder](https://github.com/MolecularAI/aizynthfinder) | Beta |
 | [CDD Vault Link](https://github.com/datagrok-ai/public/tree/master/packages/CddVaultLink)| Registration system integration | Optional |Provides integration with [CDD Vault](https://www.collaborativedrug.com/cdd-informatics-platform) registration system | Beta |
@@ -105,7 +106,7 @@ sidebar_position: 5
 |[Sequence Translator](https://github.com/datagrok-ai/public/tree/master/packages/SequenceTranslator) | Oligonucleotides  | Fit-for-purpose| App that converts oligonucleotides into various formats  |Stable|
 |[Oligo Batch Calculator](https://github.com/datagrok-ai/public/tree/master/packages/OligoBatchCalculator) | Oligonucleotides  | Fit-for-purpose| App that calculates oligonucleotide properties |Beta|
 | [Admetica](https://github.com/datagrok-ai/public/tree/master/packages/Admetica) | ADMET | Optional | App that lets you evaluate ADMET properties | Stable |
-| [Docking](https://github.com/datagrok-ai/public/tree/master/packages/Docking) | Docking | Optional | Integration with [Autodock GPU](https://catalog.ngc.nvidia.com/orgs/hpc/containers/autodock) that let's you run docking and analyze the results in Datagrok| Stable |
+| [Docking](https://github.com/datagrok-ai/public/tree/master/packages/Docking) | Docking | Optional | Integration with [Autodock GPU](https://catalog.ngc.nvidia.com/orgs/hpc/containers/autodock) that lets you run docking and analyze the results in Datagrok| Stable |
 | [BioNeMo](https://github.com/datagrok-ai/public/tree/master/packages/BioNeMo) | Protein structure prediction, docking | Fit-for-purpose | Integrates advanced models for protein structure prediction and molecular docking| Beta |
 
 ### NLP

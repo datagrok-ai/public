@@ -16,8 +16,7 @@ export type MissingValueConfig =
 
 type BasePropertyDesirability = {
   weight: number; /// 0-1
-  defaultScore?: number;
-  function?: TemplateFunction;
+  weightColumn?: string; /// optional column name to read per-row weights from (0-1)
   missingValues?: MissingValueConfig;
 }
 
@@ -71,10 +70,12 @@ export function migrateDesirability(raw: any): PropertyDesirability {
 }
 
 export const DESIRABILITY_PROFILE_TYPE = 'MPO Desirability Profile';
+export const CURRENT_MPO_VERSION = 1;
 
 /// A map of desirability lines with their weights
 export type DesirabilityProfile = {
   type: typeof DESIRABILITY_PROFILE_TYPE;
+  version?: number;
   name: string;
   description: string;
   aggregation?: WeightedAggregation;
@@ -83,6 +84,21 @@ export type DesirabilityProfile = {
 
 export function isDesirabilityProfile(x: any): x is DesirabilityProfile {
   return x != null && typeof x === 'object' && x.type === DESIRABILITY_PROFILE_TYPE;
+}
+
+export function migrateProfile(raw: DesirabilityProfile): DesirabilityProfile {
+  const version = raw.version ?? 0;
+  if (version >= CURRENT_MPO_VERSION)
+    return raw;
+
+  // v0 → v1: backfill functionType on properties
+  if (version < 1) {
+    for (const key in raw.properties)
+      raw.properties[key] = migrateDesirability(raw.properties[key]);
+    raw.version = CURRENT_MPO_VERSION;
+  }
+
+  return raw;
 }
 
 export const WEIGHTED_AGGREGATIONS = ['Average', 'Sum', 'Product', 'Geomean', 'Min', 'Max'] as const;
@@ -123,6 +139,11 @@ export function categoricalDesirabilityScore(
   return found?.desirability ?? null;
 }
 
+export type MpoResult = {
+  scoreColumn: DG.Column;
+  desirabilityColumns?: DG.Column[];
+}
+
 /** Calculates the multi parameter optimization score, 0-100, 100 is the maximum */
 export function mpo(
   dataFrame: DG.DataFrame,
@@ -130,18 +151,27 @@ export function mpo(
   profileName: string,
   aggregation: WeightedAggregation,
   isDifferent: boolean = false,
-): DG.Column {
+  createDesirabilityColumns: boolean = false,
+): MpoResult {
   if (columns.length === 0)
     throw new Error('No columns provided for MPO calculation.');
 
+  const rowCount = columns[0].length;
   const resultColumn = isDifferent ?
-    DG.Column.float(profileName, columns[0].length) :
-    (dataFrame.col(profileName) ?? DG.Column.float(profileName, columns[0].length));
+    DG.Column.float(profileName, rowCount) :
+    (dataFrame.col(profileName) ?? DG.Column.float(profileName, rowCount));
 
-  const desirabilityTemplates = columns.map((column) => {
+  const desirabilityTemplates: PropertyDesirability[] = [];
+  const weightColumns: (DG.Column | null)[] = [];
+  for (const column of columns) {
     const tag = column.getTag('desirabilityTemplate');
-    return migrateDesirability(JSON.parse(tag));
-  });
+    const d = migrateDesirability(JSON.parse(tag));
+    desirabilityTemplates.push(d);
+    weightColumns.push(d.weightColumn ? dataFrame.col(d.weightColumn) ?? null : null);
+  }
+
+  const desirabilityColumns = createDesirabilityColumns ?
+    columns.map((col) => DG.Column.float(`${col.name} (${profileName} desirability)`, rowCount)) : undefined;
 
   resultColumn.init((i) => {
     const scores: number[] = [];
@@ -170,8 +200,13 @@ export function mpo(
       if (score === null)
         return NaN;
 
+      if (createDesirabilityColumns)
+        desirabilityColumns![j].set(i, score, false);
+
       scores.push(score);
-      weights.push(desirability.weight);
+      const wCol = weightColumns[j];
+      const w = wCol && !wCol.isNone(i) ? Math.max(0, Math.min(1, wCol.get(i))) : desirability.weight;
+      weights.push(w);
     }
 
     if (scores.length === 0)
@@ -180,7 +215,7 @@ export function mpo(
     return aggregate(scores, weights, aggregation);
   });
 
-  return resultColumn;
+  return {scoreColumn: resultColumn, desirabilityColumns};
 }
 
 export function aggregate(scores: number[], weights: number[], aggregation: WeightedAggregation): number {

@@ -125,7 +125,7 @@ export class Db {
    * If {@link catalog} is specified, returns only the matching catalog.
    * For databases that don't support catalogs (e.g., MySQL, Oracle),
    * returns a single {@link DbInfo} with the name from the connection's db property,
-   * or '\<unknown database name\>' if not set. */
+   * or '<unknown database name>' if not set. */
   async getInfo(connection: DataConnection, catalog: string | null = null): Promise<DbInfo[]> {
     return grok.dapi.connections.getDatabaseInfo(connection, catalog);
   }

@@ -138,6 +138,9 @@ export class DBExplorer {
     if (!schemaRefBy[refTable])
       schemaRefBy[refTable] = {};
     schemaRefBy[refTable][refColumn] ??= [];
+    // there already might be this reference, so first check if such ref already exists
+    if (schemaRefBy[refTable][refColumn].find((r) => r.refTable === tableName && r.refColumn === columnName && r.refSchema === schemaName))
+      return;
     schemaRefBy[refTable][refColumn].push({refTable: tableName, refColumn: columnName, refSchema: schemaName});
   }
 
@@ -231,7 +234,7 @@ export class DBExplorer {
       config.customRenderers.forEach((r) => {
         const rendererFunc = getDefaultRendererByName(r.renderer);
         const checkFunc = (tableName: string, colName: string, _value: string | number) => {
-          return tableName === r.table && colName === r.column;
+          return tableName?.toLowerCase() === r.table?.toLowerCase() && colName?.toLowerCase() === r.column?.toLowerCase();
         };
         exp.addCustomRenderer(checkFunc, rendererFunc);
       });

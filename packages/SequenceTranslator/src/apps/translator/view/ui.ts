@@ -56,8 +56,6 @@ class TranslatorAppLayout {
       }
     });
 
-    $(this.formatChoiceInput.root.getElementsByTagName('select')[0]).css('width', '20%');
-
     this.sequenceInputBase = ui.input.textArea(
       '', {value: DEFAULT_AXOLABS_INPUT, onValueChanged: () => { this.onInput.next(); }}
     );
@@ -235,9 +233,13 @@ class TranslatorAppLayout {
   }
 
   private saveMolfile(): void {
-    const result = (new SequenceToMolfileConverter(this.sequence, false,
-      this.formatChoiceInput.value!)).convert() + '\n$$$$';
-    download(this.sequence + '.sdf', encodeURIComponent(result));
+    try {
+      const result = (new SequenceToMolfileConverter(this.sequence, false,
+        this.formatChoiceInput.value!)).convert() + '\n$$$$';
+      download(this.sequence + '.sdf', encodeURIComponent(result));
+    } catch (e: any) {
+      grok.shell.warning('Unable to save SDF: ' + e.message);
+    }
   }
 
   private copySmiles(): void {

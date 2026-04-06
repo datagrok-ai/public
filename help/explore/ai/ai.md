@@ -9,32 +9,36 @@ application development, and user experience across the entire platform.
 AI operates on top of Datagrok’s unified introspectable architecture, which exposes data, 
 functions, viewers, widgets, schemas, and UI state in a structured way. 
 This enables accurate natural-language control, automated workflows,
-permissions and governance, and context-aware assistance throughout the platform.
+permissions, governance, and context-aware assistance throughout the platform.
+
+Datagrok takes advantage of the existing AI ecosystem by connecting and using MCP servers
+and other external integrations in a managed way. At the same time, Datagrok also 
+exposes an MCP server that can be used by external orchestrator.
 
 ---
 
-## Overview
-
-AI in Datagrok spans multiple layers:
-
-- Smart Assistant 
-- AI-assisted querying and database exploration
-- AI-assisted visualizations
-- Context-aware suggestions, insights, and actions
-- Vibe-coded app generation
-- AI-driven UI navigation
-- Help and troubleshooting
-
----
-
-# Smart Assistant / NLP-driven UI
+# Smart Assistant
 
 The Smart Assistant enables users to interact with datasets, molecules, sequences, 
 viewers, dashboards, notebooks, and databases using natural language. It interprets user 
-intent and converts it into Datagrok operations.
+intent and converts it into Datagrok operations. Can be operated via voice input, 
+optimized for quick interactions and hands-free workflows, as well as for presentations.
 
-The assistant can be operated via voice input, optimized for quick interactions and 
-hands-free workflows, as well as for presentations.
+Widgets in Datagrok expose:
+- Applicable functions
+- Properties
+- Named events
+- Parent-child hierarchy
+
+AI uses this to understand the interface and execute commands such as:
+
+- “Zoom in on the scatter plot”
+- “Close the histogram”
+- “Color by age”
+
+The interpretation layer converts natural-language prompts into `Func()` objects for predictable, reviewable execution.
+
+![](ai-visualizations.gif)
 
 
 ## Natural-language queries
@@ -82,7 +86,7 @@ Semantic types (molecule, sequence, plate, ID, assay, gene) guide contextual sug
 - “Try clustering these compounds on similarity”
 - “Convert sequences to molecules and compute descriptors”
 
-## Auto-narrative insights
+## Auto-narrative insight
 
 For dashboards and result sets, AI generates textual insights:
 
@@ -98,6 +102,17 @@ For dashboards and result sets, AI generates textual insights:
 - Activity summaries
 - Plate analysis
 
+---
+
+# AI-assisted visualizations
+
+Visualize and transform data with natural language:
+
+- "Plot height by weight"
+- "Average weight by race and gender"
+- "Show me distribution of activity by compound"
+- "Show me the chemical space"
+- "Do the R-group analysis" 
 
 ---
 
@@ -113,7 +128,7 @@ You can register the identifier patterns using the regular expression
 where it comes from. Datagrok then would recognize these identifier everywhere (even within
 a sentence), and give you a way to drill down and see the associated information on that,
 automatically following the foreign keys defined in the database schema. This is a very
-powerful tool that lets users get the data with minimum setup. It's also integrated with 
+powerful tool that lets users get data with minimum setup. It is also integrated with 
 the smart assistant:
 
 ![](../../develop/how-to/db/chembl-search-everywhere.png)
@@ -122,7 +137,7 @@ Learn more
 - [User Group Meeting 19: Database Identifiers](https://youtu.be/4_NS3q7uvjs?t=2910)
 - For developers: [registering identifier patterns](https://datagrok.ai/help/develop/how-to/grid/register-identifiers)
 
-## 1. Parameterized SQL with metadata annotations
+## 2. Parameterized SQL with metadata annotations
 
 You can create curated SQL queries with:
 
@@ -134,20 +149,6 @@ You can create curated SQL queries with:
 AI maps user intent to the closest SQL template and fills parameters safely.
 
 ![](search-integrated-queries-1.png)
-
-## 2. Visual query builder
-
-The visual query builder benefits from AI through schema-aware suggestions:
-
-- Intelligent join recommendations
-- Column relevance ranking
-- Guided aggregations and pivots
-- Type-aware filters
-- Query metadata inspection
-
-The final result is always a clean, parameterized SQL query.
-
-![](../../access/databases/img/visual-query-editor.gif)
 
 ## 3. Fully AI-driven ad-hoc querying
 
@@ -217,49 +218,35 @@ I press SUBMIT the molecule should be registered in MolTrack.”
 
 ---
 
+# Context and Skills
+
+Describe the context and skills required to do a particular task, and associate it 
+with a particular Datagrok group or role. This will be used by agentic AI.
+
+For instance, for the "Chemists" group you might provide the knowledge of
+how to use the compound registration system, and what standard procedures
+or workflows to follow.
+
 # Agents
 
 Agents are long-running, context-aware processes that can:
 
 - Perform multi-step tasks
 - Monitor datasets
-- Trigger workflows
+- Trigger workflows and react to triggers
 - Collaborate with users through memory and iterative refinement
 
-They operate through the same unified function and context model.
+They operate through the same unified function and context model. A few ways to start them:
 
----
-
-# Driving the UI and Visualizations
-
-Widgets in Datagrok expose:
- Applicable functions
-- Properties
-- Named events
-- Parent-child hierarchy
-
-AI uses this to understand the interface and execute commands such as:
-
-- “Zoom in on the scatter plot”
-- “Close the histogram”
-- “Color by age”
-
-The interpretation layer converts natural-language prompts into `Func()` objects for predictable, reviewable execution.
-
-![](ai-visualizations.gif)
-
----
-
-# User Interface Integration
-
-AI capabilities are available through:
-
-- Global search
-- Voice-controlled search
-- “Visualize” button on tables
-- “AI Query” button on database connections
-- AI side panel (chat-style UI, similar to Cursor)
-- Context panels offering intelligent suggestions
+- **User-Initiated**: scientist types intent in natural language inside Datagrok; agent translates to precise tool calls
+  and returns results into the live session. Examples: SAR narrative from a grid selection, compound registration with
+  dedup, PK model fitting, retrosynthesis scouting.
+- **Event-Triggered**: agents watch data feeds. CRO delivers results → auto hit picking. Tox data exceeds threshold →
+  safety escalation. SEND dataset uploaded → FDA conformance validation. Inventory drops → procurement initiated. Zero
+  polling burden on scientists.
+- **Scheduled**: always-on intelligence. Weekly project briefs synthesized before Monday standup. Nightly competitive CI
+  scan of patents/trials/preprints. 6-hour EDC surveillance during active trials. Weekly model drift detection with
+  auto-retraining.
 
 ---
 
@@ -270,6 +257,7 @@ Datagrok uses a multi-tiered model strategy:
 - Regex-based intent parsing for fast, obvious cases
 - Client-side Gemini Nano for classification and triage
 - Server-side LLMs (ChatGPT, enterprise-provided models) for advanced reasoning
+- Agentic AI (Claude Code) for autonomous work
 
 Enterprise users can plug in their own model endpoints.
 
