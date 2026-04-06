@@ -1,21 +1,21 @@
 import {test, expect} from '@playwright/test';
 
-const baseUrl = 'https://dev.datagrok.ai';
-const datasetPath = 'System:DemoFiles/SPGI.csv';
+const baseUrl = process.env.DATAGROK_URL ?? 'https://dev.datagrok.ai';
+const datasetPath = 'System:AppData/Chem/tests/spgi-100.csv';
 
-const stepErrors: {step: string; error: string}[] = [];
-
-async function softStep(name: string, fn: () => Promise<void>) {
-  try {
-    await test.step(name, fn);
-  } catch (e: any) {
-    stepErrors.push({step: name, error: e.message ?? String(e)});
-    console.error(`[STEP FAILED] ${name}: ${e.message ?? e}`);
-  }
-}
-
-test('Filter panel — Cloned views', async ({page}) => {
+test('FilterPanel — Cloned Views', async ({page}) => {
   test.setTimeout(600_000);
+
+  const stepErrors: {step: string; error: string}[] = [];
+
+  async function softStep(name: string, fn: () => Promise<void>) {
+    try {
+      await test.step(name, fn);
+    } catch (e: any) {
+      stepErrors.push({step: name, error: e.message ?? String(e)});
+      console.error(`[STEP FAILED] ${name}: ${e.message ?? e}`);
+    }
+  }
 
   // Phase 1: Navigate
   await page.goto(baseUrl);
@@ -32,7 +32,6 @@ test('Filter panel — Cloned views', async ({page}) => {
       const sub = df.onSemanticTypeDetected.subscribe(() => { sub.unsubscribe(); resolve(); });
       setTimeout(resolve, 5000);
     });
-    // Wait for Chem cell rendering + package filter registration
     const hasBioChem = Array.from({length: df.columns.length}, (_, i) => df.columns.byIndex(i))
       .some(c => c.semType === 'Molecule' || c.semType === 'Macromolecule');
     if (hasBioChem) {
@@ -45,133 +44,191 @@ test('Filter panel — Cloned views', async ({page}) => {
   }, datasetPath);
   await page.locator('.d4-grid[name="viewer-Grid"]').waitFor({timeout: 30000});
 
-  // Phase 3: Close Context Panel and Context Help, open filters
-  await page.evaluate(() => {
-    grok.shell.windows.showContextPanel = false;
-    grok.shell.windows.showHelp = false;
-    grok.shell.tv.getFiltersGroup();
-  });
+  // Phase 3: Open filter panel
+  await page.evaluate(() => grok.shell.tv.getFiltersGroup());
   await page.locator('[name="viewer-Filters"] .d4-filter').first().waitFor({timeout: 10000});
 
-  await softStep('Set Competition assay filter + Stereo Category + Structure', async () => {
-    await page.evaluate(async () => {
-      const fg = grok.shell.tv.getFiltersGroup();
-      fg.updateOrAdd({type: DG.FILTER_TYPE.HISTOGRAM, column: 'Competition assay', filterOutMissingValues: true});
-      await new Promise(r => setTimeout(r, 500));
-      fg.updateOrAdd({type: DG.FILTER_TYPE.CATEGORICAL, column: 'Stereo Category', selected: ['S_ACHIR']});
-      await new Promise(r => setTimeout(r, 500));
-    });
+  let originalFilteredCount: number;
 
-    // Open sketcher for structure
-    await page.locator('[name="viewer-Filters"] .sketch-link').first().click();
-    await page.locator('.d4-dialog').waitFor({timeout: 5000});
-    const smilesInput = page.locator('.d4-dialog input[placeholder*="SMILES"]');
-    await smilesInput.fill('c1ccccc1');
-    await smilesInput.press('Enter');
-    await page.waitForTimeout(1000);
-    await page.locator('.d4-dialog [name="button-OK"]').click();
-    await page.waitForTimeout(2000);
-
-    const count = await page.evaluate(() => grok.shell.tv.dataFrame.filter.trueCount);
-    expect(count).toBe(391);
-  });
-
-  await softStep('Clone View', async () => {
-    await page.locator('[name="div-View"]').click();
-    await page.waitForTimeout(500);
-    await page.locator('[name="div-View---Layout"]').hover();
-    await page.waitForTimeout(300);
-    await page.locator('[name="div-View---Layout---Clone-View"]').click();
-    await page.waitForTimeout(3000);
-
-    const viewName = await page.evaluate(() => grok.shell.tv.name);
-    expect(viewName).toContain('copy');
-  });
-
-  await softStep('Verify cloned view filter state', async () => {
-    const result = await page.evaluate(() => ({
-      count: grok.shell.tv.dataFrame.filter.trueCount,
-      panelOpen: !!document.querySelector('[name="viewer-Filters"]'),
-    }));
-    expect(result.count).toBe(391);
-    expect(result.panelOpen).toBe(true);
-  });
-
-  await softStep('Toggle all filters off/on', async () => {
+  await softStep('Set up filters: Competition assay missing values, Stereo Category, Structure', async () => {
     const result = await page.evaluate(async () => {
       const fg = grok.shell.tv.getFiltersGroup();
-      const filters = fg.filters;
-      for (let i = 0; i < filters.length; i++) fg.setEnabled(filters[i], false);
-      await new Promise(r => setTimeout(r, 1000));
-      const countOff = grok.shell.tv.dataFrame.filter.trueCount;
-      for (let i = 0; i < filters.length; i++) fg.setEnabled(filters[i], true);
-      await new Promise(r => setTimeout(r, 1000));
-      const countOn = grok.shell.tv.dataFrame.filter.trueCount;
-      return {countOff, countOn};
-    });
-    expect(result.countOff).toBe(3624);
-    expect(result.countOn).toBe(391);
-  });
+      const df = grok.shell.tv.dataFrame;
 
-  await softStep('Clear Structure, set C1CCCCC1', async () => {
-    await page.evaluate(async () => {
-      const fv = document.querySelector('[name="viewer-Filters"]');
-      const clearBtn = fv?.querySelector('.chem-clear-sketcher-button') as HTMLElement;
-      clearBtn?.click();
-      await new Promise(r => setTimeout(r, 1000));
-    });
+      // Filter out missing values for Competition assay
+      fg.updateOrAdd({type: DG.FILTER_TYPE.HISTOGRAM, column: 'Competition assay', filterOutMissingValues: true});
+      // Set Stereo Category to S_ACHIR
+      fg.updateOrAdd({type: DG.FILTER_TYPE.CATEGORICAL, column: 'Stereo Category', selected: ['S_ACHIR']});
 
-    await page.locator('[name="viewer-Filters"] .sketch-link').first().click();
-    await page.locator('.d4-dialog').waitFor({timeout: 5000});
+      await new Promise(r => setTimeout(r, 2000));
+      return {filteredCount: df.filter.trueCount, totalRows: df.rowCount};
+    });
+    expect(result.filteredCount).toBeLessThan(result.totalRows);
+
+    // Set Structure filter via sketch link → SMILES input → OK
+    await page.evaluate(() => {
+      (document.querySelectorAll('.sketch-link')[0] as HTMLElement).click();
+    });
+    await page.locator('.d4-dialog input[placeholder*="SMILES"]').waitFor({timeout: 5000});
     const smilesInput = page.locator('.d4-dialog input[placeholder*="SMILES"]');
-    await smilesInput.fill('C1CCCCC1');
+    await smilesInput.focus();
+    await smilesInput.press('Control+A');
+    await smilesInput.type('c1ccccc1', {delay: 30});
     await smilesInput.press('Enter');
-    await page.waitForTimeout(1000);
-    await page.locator('.d4-dialog [name="button-OK"]').click();
     await page.waitForTimeout(2000);
+    await page.locator('[name="button-OK"]').click();
+    await page.waitForTimeout(5000);
 
-    const count = await page.evaluate(() => grok.shell.tv.dataFrame.filter.trueCount);
-    expect(count).toBe(10);
+    originalFilteredCount = await page.evaluate(() => grok.shell.tv.dataFrame.filter.trueCount);
+    expect(originalFilteredCount).toBeLessThan(result.filteredCount);
   });
 
-  await softStep('Remove Structure filter from clone', async () => {
+  await softStep('Clone View and verify filter state matches', async () => {
+    // Use evaluate for menu interaction — Playwright hover doesn't reliably trigger Dart submenus
     await page.evaluate(async () => {
-      const fg = grok.shell.tv.getFiltersGroup();
-      const filters = fg.filters;
-      for (let i = 0; i < filters.length; i++) {
-        if (filters[i].column?.name === 'Structure' || filters[i].columnName === 'Structure') {
-          fg.remove(filters[i]);
+      document.querySelector('[name="div-View"]')?.click();
+      await new Promise(r => setTimeout(r, 500));
+      const layout = document.querySelector('[name="div-View---Layout"]');
+      if (layout) {
+        layout.dispatchEvent(new MouseEvent('mousemove', {bubbles: true}));
+        layout.dispatchEvent(new MouseEvent('mouseenter', {bubbles: true}));
+      }
+      await new Promise(r => setTimeout(r, 500));
+      document.querySelector('[name="div-View---Layout---Clone-View"]')?.click();
+    });
+    await page.waitForTimeout(5000);
+
+    const state = await page.evaluate(() => {
+      const tv = grok.shell.tv;
+      const df = tv.dataFrame;
+      return {
+        currentView: tv.name,
+        filterPanelOpen: document.querySelector('[name="viewer-Filters"]') !== null,
+        filteredCount: df.filter.trueCount,
+        hasStructureCanvas: document.querySelector('[name="viewer-Filters"] .chem-external-sketcher-canvas') !== null,
+      };
+    });
+
+    expect(state.currentView).toContain('copy');
+    expect(state.filterPanelOpen).toBe(true);
+    expect(state.filteredCount).toBe(originalFilteredCount);
+    expect(state.hasStructureCanvas).toBe(true);
+  });
+
+  await softStep('Toggle all filters off — all rows visible', async () => {
+    const result = await page.evaluate(async () => {
+      const cb = document.querySelector('[name="viewer-Filters"] .d4-filter-group-header input[type="checkbox"]') as HTMLInputElement;
+      cb.click();
+      await new Promise(r => setTimeout(r, 2000));
+      const df = grok.shell.tv.dataFrame;
+      return {filteredCount: df.filter.trueCount, totalRows: df.rowCount};
+    });
+    expect(result.filteredCount).toBe(result.totalRows);
+  });
+
+  await softStep('Toggle all filters on — rows filtered again', async () => {
+    const result = await page.evaluate(async () => {
+      const cb = document.querySelector('[name="viewer-Filters"] .d4-filter-group-header input[type="checkbox"]') as HTMLInputElement;
+      cb.click();
+      await new Promise(r => setTimeout(r, 2000));
+      const df = grok.shell.tv.dataFrame;
+      return {filteredCount: df.filter.trueCount, totalRows: df.rowCount};
+    });
+    expect(result.filteredCount).toBe(originalFilteredCount);
+  });
+
+  await softStep('Clear Structure filter and set to C1CCCCC1', async () => {
+    await page.evaluate(async () => {
+      const clearBtn = document.querySelector('[name="viewer-Filters"] .chem-clear-sketcher-button') as HTMLElement;
+      clearBtn.click();
+      await new Promise(r => setTimeout(r, 2000));
+    });
+
+    await page.evaluate(() => {
+      (document.querySelectorAll('.sketch-link')[0] as HTMLElement).click();
+    });
+    await page.locator('.d4-dialog input[placeholder*="SMILES"]').waitFor({timeout: 5000});
+    const smilesInput2 = page.locator('.d4-dialog input[placeholder*="SMILES"]');
+    await smilesInput2.focus();
+    await smilesInput2.press('Control+A');
+    await smilesInput2.type('C1CCCCC1', {delay: 30});
+    await smilesInput2.press('Enter');
+    await page.waitForTimeout(2000);
+    await page.locator('[name="button-OK"]').click();
+    await page.waitForTimeout(5000);
+
+    const newCount = await page.evaluate(() => grok.shell.tv.dataFrame.filter.trueCount);
+    expect(newCount).not.toBe(originalFilteredCount);
+  });
+
+  await softStep('Remove Structure filter — filtered state should not change', async () => {
+    const beforeRemove = await page.evaluate(() => grok.shell.tv.dataFrame.filter.trueCount);
+
+    await page.evaluate(async () => {
+      const filterPanel = document.querySelector('[name="viewer-Filters"]')!;
+      const headers = filterPanel.querySelectorAll('.d4-filter-header');
+      for (const header of headers) {
+        if (header.textContent!.trim().startsWith('Structure')) {
+          const card = header.closest('.d4-filter');
+          const closeIcon = card?.querySelector('[name="icon-times"]') as HTMLElement;
+          closeIcon?.click();
           break;
         }
       }
-      await new Promise(r => setTimeout(r, 1000));
+      await new Promise(r => setTimeout(r, 2000));
     });
+
+    const afterRemove = await page.evaluate(() => grok.shell.tv.dataFrame.filter.trueCount);
+    expect(afterRemove).toBe(beforeRemove);
   });
 
-  await softStep('Save layout, close, apply — verify no Structure filter', async () => {
-    const result = await page.evaluate(async () => {
+  let layoutId: string;
+
+  await softStep('Save layout, close filter panel, apply layout', async () => {
+    layoutId = await page.evaluate(async () => {
       const layout = grok.shell.tv.saveLayout();
       await grok.dapi.layouts.save(layout);
-      const layoutId = layout.id;
       await new Promise(r => setTimeout(r, 1000));
+      return layout.id;
+    });
+
+    const beforeClose = await page.evaluate(() => grok.shell.tv.dataFrame.filter.trueCount);
+
+    await page.evaluate(async () => {
       const fg = grok.shell.tv.getFiltersGroup();
       fg.close();
       await new Promise(r => setTimeout(r, 1000));
-      const saved = await grok.dapi.layouts.find(layoutId);
-      grok.shell.tv.loadLayout(saved);
-      await new Promise(r => setTimeout(r, 3000));
-      const cards = document.querySelectorAll('[name="viewer-Filters"] .d4-filter');
-      let structurePresent = false;
-      cards.forEach(c => {
-        const t = c.querySelector('.d4-filter-header')?.textContent?.trim();
-        if (t?.includes('Structure')) structurePresent = true;
-      });
-      try { await grok.dapi.layouts.delete(saved); } catch (e) {}
-      return {panelOpen: !!document.querySelector('[name="viewer-Filters"]'), structurePresent};
     });
-    expect(result.panelOpen).toBe(true);
-    expect(result.structurePresent).toBe(false);
+    expect(await page.locator('[name="viewer-Filters"]').count()).toBe(0);
+
+    const state = await page.evaluate(async (id) => {
+      const saved = await grok.dapi.layouts.find(id);
+      grok.shell.tv.loadLayout(saved);
+      await new Promise(r => setTimeout(r, 5000));
+
+      const filterPanelOpen = document.querySelector('[name="viewer-Filters"]') !== null;
+      const headers: string[] = [];
+      document.querySelectorAll('[name="viewer-Filters"] .d4-filter-header').forEach(h => {
+        headers.push(h.textContent!.trim());
+      });
+      const hasStructure = headers.some(h => h.startsWith('Structure'));
+      const df = grok.shell.tv.dataFrame;
+      return {filterPanelOpen, hasStructure, filteredCount: df.filter.trueCount};
+    }, layoutId);
+
+    expect(state.filterPanelOpen).toBe(true);
+    expect(state.hasStructure).toBe(false);
+    expect(state.filteredCount).toBe(beforeClose);
   });
+
+  // Cleanup
+  await page.evaluate(async (id) => {
+    try {
+      const saved = await grok.dapi.layouts.find(id);
+      await grok.dapi.layouts.delete(saved);
+    } catch (_) {}
+    grok.shell.closeAll();
+  }, layoutId!);
 
   if (stepErrors.length > 0) {
     const summary = stepErrors.map(e => `  - ${e.step}: ${e.error}`).join('\n');

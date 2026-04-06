@@ -1,6 +1,5 @@
 
 1. Open spgi-100
-2. Close the Context Panel and the Context Help 
 3. Open the **Filter Panel**
 4. On the Filter Panel, navigate to Competition assay filter
 5. For Competition assay filter, click the filter menu icon > Missing values > Filter out missing values.
@@ -19,5 +18,5 @@
 ---
 {
 "order": 3,
-"datasets": ["System:DemoFiles/SPGI.csv"]
+"datasets": ["System:AppData/Chem/tests/spgi-100.csv"]
 }
