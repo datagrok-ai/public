@@ -339,16 +339,16 @@ export class TestManager extends DG.ViewBase {
     return {testsTree: this.tree, ribbonPanelDiv};
   }
 
-  createButtons(): {runAll: HTMLButtonElement, run: HTMLButtonElement, settings: HTMLButtonElement} {
-    const runAll = ui.button([ui.iconFA('forward'), ' Run All'], async () => {
-      const nodes = this.tree.items;
+  createButtons(includeText: boolean = true): {runAll: HTMLButtonElement, run: HTMLButtonElement, settings: HTMLButtonElement} {
+    const runAll = ui.button([ui.iconFA('forward'), includeText ? ' Run All' : ''], async () => {
+      const nodes = this.tree ? this.tree.items : this.packNodes.map(([, node]) => node);
       for (const node of nodes) {
         this.selectedNode = node;
         await this.runTestsForSelectedNode();
       }
     }, 'Run all tests');
 
-    const run = ui.button([ui.iconFA('play'), ' Run'], async () => {
+    const run = ui.button([ui.iconFA('play'), includeText ? ' Run' : ''], async () => {
       this.runTestsForSelectedNode();
     }, 'Run selected');
 
@@ -414,6 +414,7 @@ export class TestManager extends DG.ViewBase {
       e.stopPropagation();
     };
     node.captionLabel.onclick = () => {
+      this.selectedNode = node;
       grok.shell.o = this.getTestsInfoPanel(node, tests, nodeType);
     };
     if (nodeType === NODE_TYPE.TEST) {
