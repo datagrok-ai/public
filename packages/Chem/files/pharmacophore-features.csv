@@ -1,43 +1,43 @@
-feature_id,family,family_name,feature_name,smarts,color
-1,a,Aromatic,6-membered ring,a1aaaaa1,#4CAF50
-2,a,Aromatic,5-membered ring,a1aaaa1,#4CAF50
-3,D,Donor,Nitrogen donor,"[#7!H0&!$(N-[SX4](=O)(=O)[CX4](F)(F)F)]",#2196F3
-4,D,Donor,Oxygen donor,"[#8!H0&!$([OH][C,S,P]=O)]",#2196F3
-5,D,Donor,Sulfur donor,[#16!H0],#2196F3
-6,D,Donor,Charged N-H donor,[#7;+;!H0],#2196F3
-7,D,Donor,Acid O-H donor,[OX2H1][CX3]=[OX1],#2196F3
-8,A,Acceptor,Nitrogen acceptor,"[#7&!$([nX3])&!$([NX3]-*=[!#6])&!$([NX3]-[a])&!$([NX4])&!$(N=C([C,N])N)]",#E53935
-9,A,Acceptor,Oxygen acceptor,"[$([O])&!$([OX2](C)C=O)&!$(*(~a)~a)]",#E53935
-10,A,Acceptor,Fluorine acceptor,"[$([F;$(F-[#6])])]",#E53935
-11,A,Acceptor,Sulfur acceptor,"[$([SX2;H0;v2]),$([SX2;H1;+0]),$([S;-])]",#E53935
-12,A,Acceptor,Aromatic oxygen acceptor,[o+0],#E53935
-13,A,Acceptor,Nitrile nitrogen,"[NX1]#[CX2]",#E53935
-14,P,Positive,Tertiary amine,"[$([NX3]([CX4])([CX4,#1])[CX4,#1])&!$([NX3]-*=[!#6])]",#00BCD4
-15,P,Positive,Amidine,"[$([CX3](=N)(-N)[!N])](=N)-N",#00BCD4
-16,P,Positive,Guanidine,N=[CX3](N)-N,#00BCD4
-17,P,Positive,Cationic,"[$([+,+2,+3])&!$(*[-,-2,-3])]",#00BCD4
-18,P,Positive,Primary amine,"[$([NX3;H2;+0][CX4])&!$([NX3;H2](C)C=[O,N,S])]",#00BCD4
-19,P,Positive,Secondary amine,"[$([NX3;H1;+0]([CX4])[CX4])&!$([NX3;H1](C)(C)C=[O,N,S])]",#00BCD4
-20,P,Positive,Imidazole,c1c[nH]cn1,#00BCD4
-21,N,Negative,Tetrazole,c1nn[nH1]n1,#FF9800
-22,N,Negative,Sulfonate/Phosphonate,"[$([SX4,PX4](=O)(=O)[O-,OH])](=O)(=O)[O-,OH]",#FF9800
-23,N,Negative,Carboxylate/Sulfinate,"[$([CX3,SX3,PX3](=O)[O-,OH])](=O)[O-,OH]",#FF9800
-24,N,Negative,Anionic,"[$([-,-2,-3])&!$(*[+,+2,+3])]",#FF9800
-25,N,Negative,Sulfonamide,"[NR;H1,-1](-C(=O))-[SX4](=O)(=O)",#FF9800
-26,H,Hydrophobic,Aromatic 6-ring,a1aaaaa1,#FFEB3B
-27,H,Hydrophobic,Aromatic 5-ring,a1aaaa1,#FFEB3B
-28,H,Hydrophobic,Single halide/alkyl,"[$([CH3X4,CH2X3,CH1X2,F,Cl,Br,I])&!$(**[CH3X4,CH2X3,CH1X2,F,Cl,Br,I])]",#FFEB3B
-29,H,Hydrophobic,Paired halide/alkyl,"[$(*([CH3X4,CH2X3,CH1X2,F,Cl,Br,I])[CH3X4,CH2X3,CH1X2,F,Cl,Br,I])&!$(*([CH3X4,CH2X3,CH1X2,F,Cl,Br,I])([CH3X4,CH2X3,CH1X2,F,Cl,Br,I])[CH3X4,CH2X3,CH1X2,F,Cl,Br,I])]([CH3X4,CH2X3,CH1X2,F,Cl,Br,I])[CH3X4,CH2X3,CH1X2,F,Cl,Br,I]",#FFEB3B
-30,H,Hydrophobic,Branched halide/alkyl,"*([CH3X4,CH2X3,CH1X2,F,Cl,Br,I])([CH3X4,CH2X3,CH1X2,F,Cl,Br,I])[CH3X4,CH2X3,CH1X2,F,Cl,Br,I]",#FFEB3B
-31,H,Hydrophobic,3-membered C-ring,[C&r3]1~[C&r3]~[C&r3]1,#FFEB3B
-32,H,Hydrophobic,4-membered C-ring,[C&r4]1~[C&r4]~[C&r4]~[C&r4]1,#FFEB3B
-33,H,Hydrophobic,5-membered C-ring,[C&r5]1~[C&r5]~[C&r5]~[C&r5]~[C&r5]1,#FFEB3B
-34,H,Hydrophobic,6-membered C-ring,[C&r6]1~[C&r6]~[C&r6]~[C&r6]~[C&r6]~[C&r6]1,#FFEB3B
-35,H,Hydrophobic,7-membered C-ring,[C&r7]1~[C&r7]~[C&r7]~[C&r7]~[C&r7]~[C&r7]~[C&r7]1,#FFEB3B
-36,H,Hydrophobic,8-membered C-ring,[C&r8]1~[C&r8]~[C&r8]~[C&r8]~[C&r8]~[C&r8]~[C&r8]~[C&r8]1,#FFEB3B
-37,H,Hydrophobic,Short alkyl chain,"[CH2X4,CH1X3,CH0X2]~[CH3X4,CH2X3,CH1X2,F,Cl,Br,I]",#FFEB3B
-38,H,Hydrophobic,Medium alkyl chain,"[$([CH2X4,CH1X3,CH0X2]~[$([!#1]);!$([CH2X4,CH1X3,CH0X2])])]~[CH2X4,CH1X3,CH0X2]~[CH2X4,CH1X3,CH0X2]",#FFEB3B
-39,H,Hydrophobic,Long alkyl chain,"[$([CH2X4,CH1X3,CH0X2]~[CH2X4,CH1X3,CH0X2]~[$([CH2X4,CH1X3,CH0X2]~[$([!#1]);!$([CH2X4,CH1X3,CH0X2])])])]~[CH2X4,CH1X3,CH0X2]~[CH2X4,CH1X3,CH0X2]~[CH2X4,CH1X3,CH0X2]",#FFEB3B
-40,H,Hydrophobic,Thioether,"[$([S]~[#6])&!$(S~[!#6])]",#FFEB3B
-41,H,Hydrophobic,Standalone Br/I,"[Br,I;X1]",#FFEB3B
-42,X,Halogen Bond,Halogen bond donor,"[$([Cl,Br,I;X1]-[#6])]",#9C27B0
+feature_id,family,feature_name,smarts
+1,a,6-membered ring,a1aaaaa1
+2,a,5-membered ring,a1aaaa1
+3,D,Nitrogen donor,"[#7!H0&!$(N-[SX4](=O)(=O)[CX4](F)(F)F)]"
+4,D,Oxygen donor,"[#8!H0&!$([OH][C,S,P]=O)]"
+5,D,Sulfur donor,[#16!H0]
+6,D,Charged N-H donor,[#7;+;!H0]
+7,D,Acid O-H donor,[OX2H1][CX3]=[OX1]
+8,A,Nitrogen acceptor,"[#7&!$([nX3])&!$([NX3]-*=[!#6])&!$([NX3]-[a])&!$([NX4])&!$(N=C([C,N])N)&!$([#7;+])]"
+9,A,Oxygen acceptor,"[$([O])&!$([OX2](C)C=O)&!$(*(~a)~a)]"
+10,A,Fluorine acceptor,"[$([F;$(F-[#6])])]"
+11,A,Sulfur acceptor,"[$([SX2;H0;v2]),$([SX2;H1;+0]),$([S;-])]"
+12,A,Aromatic oxygen acceptor,[o+0]
+13,A,Nitrile nitrogen,"[NX1]#[CX2]"
+14,P,Tertiary amine,"[$([NX3]([CX4])([CX4,#1])[CX4,#1])&!$([NX3]-*=[!#6])]"
+15,P,Amidine,"[$([CX3](=N)(-N)[!N])](=N)-N"
+16,P,Guanidine,N=[CX3](N)-N
+17,P,Cationic,"[$([+,+2,+3])&!$(*[-,-2,-3])]"
+18,P,Primary amine,"[$([NX3;H2;+0][CX4])&!$([NX3;H2](C)C=[O,N,S])]"
+19,P,Secondary amine,"[$([NX3;H1;+0]([CX4])[CX4])&!$([NX3;H1](C)(C)C=[O,N,S])]"
+20,P,Imidazole,c1c[nH]cn1
+21,N,Tetrazole,c1nn[nH1]n1
+22,N,Sulfonate/Phosphonate,"[$([SX4,PX4](=O)(=O)[O-,OH])](=O)(=O)[O-,OH]"
+23,N,Carboxylate/Sulfinate,"[$([CX3,SX3,PX3](=O)[O-,OH])](=O)[O-,OH]"
+24,N,Anionic,"[$([-,-2,-3])&!$(*[+,+2,+3])]"
+25,N,Sulfonamide,"[NR;H1,-1](-C(=O))-[SX4](=O)(=O)"
+26,H,Aromatic 6-ring,a1aaaaa1
+27,H,Aromatic 5-ring,a1aaaa1
+28,H,Single halide/alkyl,"[$([CH3X4,CH2X3,CH1X2,F,Cl,Br,I])&!$(**[CH3X4,CH2X3,CH1X2,F,Cl,Br,I])]"
+29,H,Paired halide/alkyl,"[$(*([CH3X4,CH2X3,CH1X2,F,Cl,Br,I])[CH3X4,CH2X3,CH1X2,F,Cl,Br,I])&!$(*([CH3X4,CH2X3,CH1X2,F,Cl,Br,I])([CH3X4,CH2X3,CH1X2,F,Cl,Br,I])[CH3X4,CH2X3,CH1X2,F,Cl,Br,I])]([CH3X4,CH2X3,CH1X2,F,Cl,Br,I])[CH3X4,CH2X3,CH1X2,F,Cl,Br,I]"
+30,H,Branched halide/alkyl,"*([CH3X4,CH2X3,CH1X2,F,Cl,Br,I])([CH3X4,CH2X3,CH1X2,F,Cl,Br,I])[CH3X4,CH2X3,CH1X2,F,Cl,Br,I]"
+31,H,3-membered C-ring,[C&r3]1~[C&r3]~[C&r3]1
+32,H,4-membered C-ring,[C&r4]1~[C&r4]~[C&r4]~[C&r4]1
+33,H,5-membered C-ring,[C&r5]1~[C&r5]~[C&r5]~[C&r5]~[C&r5]1
+34,H,6-membered C-ring,[C&r6]1~[C&r6]~[C&r6]~[C&r6]~[C&r6]~[C&r6]1
+35,H,7-membered C-ring,[C&r7]1~[C&r7]~[C&r7]~[C&r7]~[C&r7]~[C&r7]~[C&r7]1
+36,H,8-membered C-ring,[C&r8]1~[C&r8]~[C&r8]~[C&r8]~[C&r8]~[C&r8]~[C&r8]~[C&r8]1
+37,H,Short alkyl chain,"[CH2X4,CH1X3,CH0X2]~[CH3X4,CH2X3,CH1X2,F,Cl,Br,I]"
+38,H,Medium alkyl chain,"[$([CH2X4,CH1X3,CH0X2]~[$([!#1]);!$([CH2X4,CH1X3,CH0X2])])]~[CH2X4,CH1X3,CH0X2]~[CH2X4,CH1X3,CH0X2]"
+39,H,Long alkyl chain,"[$([CH2X4,CH1X3,CH0X2]~[CH2X4,CH1X3,CH0X2]~[$([CH2X4,CH1X3,CH0X2]~[$([!#1]);!$([CH2X4,CH1X3,CH0X2])])])]~[CH2X4,CH1X3,CH0X2]~[CH2X4,CH1X3,CH0X2]~[CH2X4,CH1X3,CH0X2]"
+40,H,Thioether,"[SX2H0;$([S]([#6])[#6])]"
+41,H,Standalone Br/I,"[Br,I;X1]"
+42,X,Halogen bond donor,"[$([Cl,Br,I;X1]-[#6])]"

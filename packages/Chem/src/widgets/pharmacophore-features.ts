@@ -79,14 +79,15 @@ export async function getPharmacophoreFeatures(molecule: string): Promise<PharmF
 
     const smartsCol = featuresDf!.getCol('smarts');
     const familyCol = featuresDf!.getCol('family');
-    const familyNameCol = featuresDf!.getCol('family_name');
     const featureNameCol = featuresDf!.getCol('feature_name');
-    const colorCol = featuresDf!.getCol('color');
 
     for (let i = 0; i < smartsCol.length; i++) {
       const smarts = smartsCol.get(i);
       const subMol = _smartsMap.get(smarts);
       if (!subMol) continue;
+
+      const family = familyCol.get(i);
+      const info = family ? FAMILY_INFO[family] : undefined;
 
       try {
         const matchesJson = mol.get_substruct_matches(subMol);
@@ -100,11 +101,11 @@ export async function getPharmacophoreFeatures(molecule: string): Promise<PharmF
             if (atoms.length > 0) {
               matches.push({
                 index: i,
-                family: familyCol.get(i),
-                familyName: familyNameCol.get(i),
-                featureName: featureNameCol.get(i),
+                family: family!,
+                familyName: info?.name ?? family!,
+                featureName: featureNameCol.get(i)!,
                 smarts,
-                color: colorCol.get(i),
+                color: info?.color ?? '#999999',
                 atoms,
                 bonds,
               });
