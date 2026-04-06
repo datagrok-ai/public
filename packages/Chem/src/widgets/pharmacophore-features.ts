@@ -15,24 +15,14 @@ let featuresDf: DG.DataFrame | null = null;
 const _smartsMap: Map<string, RDMol> = new Map();
 let rdKitModule: RDModule | null = null;
 
-const FAMILY_COLORS: {[key: string]: string} = {
-  'D': '#2196F3', // Donor - blue
-  'A': '#E53935', // Acceptor - red
-  'H': '#FFEB3B', // Hydrophobic - yellow
-  'P': '#00BCD4', // Positive - turquoise
-  'N': '#FF9800', // Negative - orange
-  'a': '#4CAF50', // Aromatic - green
-  'X': '#9C27B0', // Halogen Bond - purple
-};
-
-const FAMILY_NAMES: {[key: string]: string} = {
-  'D': 'Donor',
-  'A': 'Acceptor',
-  'H': 'Hydrophobic',
-  'P': 'Positive',
-  'N': 'Negative',
-  'a': 'Aromatic',
-  'X': 'Halogen Bond',
+const FAMILY_INFO: {[key: string]: {name: string; color: string}} = {
+  'D': {name: 'Donor', color: '#2196F3'},
+  'A': {name: 'Acceptor', color: '#E53935'},
+  'H': {name: 'Hydrophobic', color: '#FFEB3B'},
+  'P': {name: 'Positive', color: '#00BCD4'},
+  'N': {name: 'Negative', color: '#FF9800'},
+  'a': {name: 'Aromatic', color: '#4CAF50'},
+  'X': {name: 'Halogen Bond', color: '#9C27B0'},
 };
 
 // Priority for overlapping atoms (higher = takes precedence)
@@ -169,12 +159,12 @@ function buildCombinedSubstruct(matches: PharmFeatureMatch[]): ISubstruct {
 }
 
 function createColorLegend(matchedFamilies: Set<string>): HTMLElement {
-  const items = Object.entries(FAMILY_NAMES)
+  const items = Object.entries(FAMILY_INFO)
     .filter(([letter]) => matchedFamilies.has(letter))
-    .map(([letter, name]) => {
+    .map(([letter, {name, color}]) => {
       const swatch = ui.div('', {style: {
         width: '12px', height: '12px', borderRadius: '2px',
-        backgroundColor: FAMILY_COLORS[letter], display: 'inline-block', marginRight: '6px',
+        backgroundColor: color, display: 'inline-block', marginRight: '6px',
       }});
       const label = ui.div(name, {style: {display: 'inline-block', fontSize: '11px'}});
       return ui.div([swatch, label], {style: {display: 'flex', alignItems: 'center', marginBottom: '2px'}});
@@ -254,9 +244,8 @@ export async function pharmacophoreFeaturesWidget(molecule: string): Promise<DG.
       featureMatchGroups.get(m.featureName)!.push(m);
     }
 
-    const familyName = FAMILY_NAMES[familyLetter];
+    const {name: familyName, color: headerColor} = FAMILY_INFO[familyLetter];
     const matchCount = familyMatches.length;
-    const headerColor = FAMILY_COLORS[familyLetter];
 
     const featureItems = [...featureMatchGroups.entries()].map(([featureName, featureMatches]) => {
       const match = featureMatches[0];
