@@ -2650,6 +2650,7 @@ export class PackageFunctions {
 
   @grok.decorators.func({
     meta: {role: 'transform'},
+    outputs: [{name: 'result', type: 'list<column>'}],
   })
   static mpoTransformFunction(
     df: DG.DataFrame,

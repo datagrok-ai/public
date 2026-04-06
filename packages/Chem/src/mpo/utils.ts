@@ -94,10 +94,8 @@ export async function computeMpo(
 
   const result = call.getOutputParamValue() as DG.Column[];
 
-  // Temporary fix until proper support for list<column> is implemented
-  const colList = DG.DataFrame.fromColumns(result).columns;
   await DG.Func.find({package: 'Chem', name: 'mpoCalculate'})[0].prepare({
-    df, columns: colList, profileName, aggregation: resolvedAggregation, createDesirabilityColumns,
+    df, columns: result, profileName, aggregation: resolvedAggregation, createDesirabilityColumns,
   }).call(undefined, undefined, {processed});
 
   return df.col(profileName) ? [profileName] : [];
