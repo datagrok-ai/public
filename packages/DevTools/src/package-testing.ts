@@ -546,6 +546,7 @@ export class TestManager extends DG.ViewBase {
     const currentPath = this.getPath(tests, nodeType);
     if (this.testManagerView)
       this.testManagerView.path = currentPath;
+    window.history.replaceState(null, '', `/apps/DevTools${currentPath}`);
     let catsValuesSorted: ICategory[];
     localStorage.setItem('TMState', currentPath);
     switch (nodeType) {
