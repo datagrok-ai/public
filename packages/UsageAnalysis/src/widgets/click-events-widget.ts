@@ -37,7 +37,7 @@ export class ClickEventsWidget extends DG.Widget {
     newUsersChoiceInput.root.style.display = 'none';
     const newUsersOnlyInput = ui.input.bool('New users only', {value: false});
     const eventTypeInput = ui.input.choice('Event type', {
-      items: ['Clicks', 'Dialogs', 'Inputs', 'Commands', 'All'],
+      items: ['Clicks', 'Menu clicks', 'Dialogs', 'Inputs', 'Commands', 'All'],
       value: 'Clicks',
     });
     const chronologyModeInput = ui.input.bool('Latest events', {value: false, tooltipText: 'Show individual events sorted by time, newest first'});
@@ -45,17 +45,19 @@ export class ClickEventsWidget extends DG.Widget {
 
     const eventTypeFilters: Record<string, string> = {
       'Clicks': 'eventType.name="click"',
+      'Menu clicks': 'eventType.name="menu click"',
       'Dialogs': 'eventType.name in ("dialog show","dialog ok","dialog close")',
       'Inputs': 'eventType.name="input"',
       'Commands': 'eventType.name="command"',
-      'All': 'eventType.name in ("click","dialog show","dialog ok","dialog close","input","command")',
+      'All': 'eventType.name in ("click","menu click","dialog show","dialog ok","dialog close","input","command","navigate")',
     };
     const eventTypeAuditTypes: Record<string, string[]> = {
       'Clicks': ['click'],
+      'Menu clicks': ['menu click'],
       'Dialogs': ['dialog show', 'dialog ok', 'dialog close'],
       'Inputs': ['input'],
       'Commands': ['command'],
-      'All': ['click', 'dialog show', 'dialog ok', 'dialog close', 'input', 'command'],
+      'All': ['click', 'menu click', 'dialog show', 'dialog ok', 'dialog close', 'input', 'command', 'navigate'],
     };
 
     const grid = DG.Viewer.grid(table);
@@ -193,7 +195,7 @@ export class ClickEventsWidget extends DG.Widget {
     };
     await setDefaultUser();
 
-    this.subs.push(DG.debounce(merge(userInput.onChanged, userInput.onInput, eventTypeInput.onChanged), 10).subscribe(async () => {
+    this.subs.push(DG.debounce(merge(userInput.onChanged, userInput.onInput), 10).subscribe(async () => {
       await updateValues();
       refresh();
     }));

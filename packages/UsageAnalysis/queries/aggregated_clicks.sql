@@ -10,6 +10,6 @@ SELECT
     COUNT(*) as count
 FROM events e
 JOIN event_types et ON e.event_type_id = et.id
-WHERE et.source = 'usage' AND et.friendly_name IN ('click', 'dialog show', 'dialog close', 'dialog ok', 'input', 'command')
+WHERE et.source = 'usage' AND et.friendly_name IN ('click', 'menu click', 'dialog show', 'dialog close', 'dialog ok', 'input', 'command', 'navigate')
 GROUP BY et.friendly_name, e.description
 ORDER BY count DESC
