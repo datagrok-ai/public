@@ -15,11 +15,10 @@ grok.shell.addTableView(df3);
  
 ```
 2. Go to the **SPGI** view, select 5 rows on the top of the table
-2. Switch to **SPGI-linked1** view - it should contain 9 filtered rows
-3. Switch to **SPGI-linked2** view
-3. Open the **Filter Panel**
-3. For the `link column 3` filter, select the `v ii` category
-3. Switch to **SPGI-linked1** view - it should contain 5 filtered rows
-4. Open the **Filter Panel** 
-4. For the `PAMPA Classification` filter, select the `Inconclusive` category - the number of the filtered rows should be 2
-
+3. Switch to **SPGI-linked1** view - it should contain 9 filtered rows
+4. Switch to **SPGI-linked2** view
+5. Open the **Filter Panel**
+6. For the `link column 3` filter, select the `v ii` category
+7. Switch to **SPGI-linked1** view - it should contain 5 filtered rows
+8. Open the **Filter Panel** 
+9. For the `PAMPA Classification` filter, select the `Inconclusive` category - the number of the filtered rows should be 2

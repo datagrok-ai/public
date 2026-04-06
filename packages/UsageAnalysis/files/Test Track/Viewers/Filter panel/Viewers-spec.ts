@@ -32,11 +32,23 @@ async function openSPGI(page: Page) {
   await page.evaluate(async () => {
     grok.shell.closeAll();
     const df = await grok.dapi.files.readCsv('System:DemoFiles/chem/SPGI.csv');
-    grok.shell.addTableView(df);
+    const tv = grok.shell.addTableView(df);
+    await new Promise(resolve => {
+      const sub = df.onSemanticTypeDetected.subscribe(() => { sub.unsubscribe(); resolve(); });
+      setTimeout(resolve, 5000);
+    });
+    // Wait for Chem cell rendering + package filter registration
+    const hasBioChem = Array.from({length: df.columns.length}, (_, i) => df.columns.byIndex(i))
+      .some(c => c.semType === 'Molecule' || c.semType === 'Macromolecule');
+    if (hasBioChem) {
+      for (let i = 0; i < 50; i++) {
+        if (document.querySelector('[name="viewer-Grid"] canvas')) break;
+        await new Promise(r => setTimeout(r, 200));
+      }
+      await new Promise(r => setTimeout(r, 5000));
+    }
   });
   await page.locator('[name="viewer-Grid"]').waitFor({timeout: 30000});
-  await expect.poll(() => page.evaluate(() => grok.shell.tv.dataFrame.rowCount), {timeout: 30000}).toBeGreaterThan(0);
-  await page.waitForTimeout(3000);
 }
 
 async function openFilterPanel(page: Page) {

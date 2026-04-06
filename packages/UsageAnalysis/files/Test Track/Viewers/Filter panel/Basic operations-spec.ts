@@ -39,7 +39,7 @@ test('Filter panel — Basic operations', async ({page}) => {
         if (document.querySelector('[name="viewer-Grid"] canvas')) break;
         await new Promise(r => setTimeout(r, 200));
       }
-      await new Promise(r => setTimeout(r, 3000));
+      await new Promise(r => setTimeout(r, 5000));
     }
   }, datasetPath);
   await page.locator('.d4-grid[name="viewer-Grid"]').waitFor({timeout: 30000});
