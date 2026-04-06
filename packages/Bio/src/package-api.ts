@@ -121,6 +121,10 @@ export namespace funcs {
     return await grok.functions.call('Bio:CompositionAnalysisWidget', { sequence });
   }
 
+  export async function monomerInfoPanel(monomerSv: any ): Promise<any> {
+    return await grok.functions.call('Bio:MonomerInfoPanel', { monomerSv });
+  }
+
   export async function macromoleculeDifferenceCellRenderer(): Promise<any> {
     return await grok.functions.call('Bio:MacromoleculeDifferenceCellRenderer', {});
   }
@@ -380,8 +384,8 @@ export namespace funcs {
     return await grok.functions.call('Bio:ManageMonomersView', {});
   }
 
-  export async function manageMonomerLibrariesView(): Promise<DG.View> {
-    return await grok.functions.call('Bio:ManageMonomerLibrariesView', {});
+  export async function manageMonomerLibrariesView(path?: string ): Promise<DG.View> {
+    return await grok.functions.call('Bio:ManageMonomerLibrariesView', { path });
   }
 
   export async function manageMonomerLibrariesViewTreeBrowser(treeNode: any ): Promise<void> {

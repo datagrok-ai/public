@@ -44,10 +44,12 @@ import {SequenceDiversityViewer} from './analysis/sequence-diversity-viewer';
 import {invalidateMols, MONOMERIC_COL_TAGS, SubstructureSearchDialog} from './substructure-search/substructure-search';
 import {convert} from './utils/convert';
 import {getMacromoleculeColumnPropertyPanel} from './widgets/representations';
+import {getMonomerInfoWidget} from './widgets/monomer-info-widget';
 import {saveAsFastaUI} from './utils/save-as-fasta';
 import {BioSubstructureFilter} from './widgets/bio-substructure-filter';
 import {WebLogoViewer} from './viewers/web-logo-viewer';
 import {MonomerLibManager} from './utils/monomer-lib/lib-manager';
+import {MonomerCollectionHandler} from './utils/monomer-lib/monomer-collection-handler';
 import {getMonomerLibraryManagerLink, showManageLibrariesDialog, showManageLibrariesView} from './utils/monomer-lib/library-file-manager/ui';
 import {demoBioSimDiv} from './demo/bio01-similarity-diversity';
 import {demoSeqSpace} from './demo/bio01a-hierarchical-clustering-and-sequence-space';
@@ -380,6 +382,15 @@ export class PackageFunctions {
   static compositionAnalysisWidget(
     @grok.decorators.param({options: {semType: 'Macromolecule'}}) sequence: DG.SemanticValue): DG.Widget {
     return getCompositionAnalysisWidget(sequence, _package.monomerLib, _package.seqHelper);
+  }
+
+  @grok.decorators.panel({name: 'Monomer',
+    tags: ['bio', 'panel'],
+    meta: {domain: 'bio'},
+  })
+  static monomerInfoPanel(
+    @grok.decorators.param({options: {semType: 'Monomer'}}) monomerSv: DG.SemanticValue): DG.Widget {
+    return getMonomerInfoWidget(monomerSv.value as string, _package.monomerLib);
   }
 
   @grok.decorators.func({
@@ -1309,8 +1320,12 @@ export class PackageFunctions {
     browsePath: 'Peptides',
     icon: 'files/icons/monomers.png',
   })
-  static async manageMonomerLibrariesView(): Promise<DG.View> {
-    return await showManageLibrariesView(false);
+  static async manageMonomerLibrariesView(
+    @grok.decorators.param({options: {metaUrl: true, optional: true}}) path?: string
+  ): Promise<DG.View> {
+    const res = await showManageLibrariesView(false);
+    res.parentCall = grok.functions.getCurrentCall();
+    return res;
   }
 
   // @grok.decorators.func({tags: ['monomer-lib-provider'], result: {type: 'object', name: 'result'}})
@@ -1327,7 +1342,8 @@ export class PackageFunctions {
       // eslint-disable-next-line rxjs/no-ignored-subscription, rxjs/no-async-subscribe
       libNode.onSelected.subscribe(async () => {
         const monomerManager = await MonomerManager.getInstance();
-        await monomerManager.getViewRoot(libName, true);
+        const res = await monomerManager.getViewRoot(libName, true);
+        res.parentCall = grok.functions.getCurrentCall();
         monomerManager.resetCurrentRowFollowing();
       });
     });
@@ -1666,6 +1682,9 @@ async function initBioInt() {
   //   palette[monomers[i]] = logPs[i] < avg ? '#4682B4' : '#DC143C';
 
   // hydrophobPalette = new SeqPaletteCustom(palette);
+
+  // Register object handlers
+  DG.ObjectHandler.register(new MonomerCollectionHandler());
 
   _package.logger.debug(`${logPrefix}, end`);
   handleSequenceHeaderRendering();

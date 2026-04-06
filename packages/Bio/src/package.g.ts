@@ -160,6 +160,16 @@ export function compositionAnalysisWidget(sequence: DG.SemanticValue) : any {
   return PackageFunctions.compositionAnalysisWidget(sequence);
 }
 
+//name: Monomer
+//tags: bio, panel
+//input: semantic_value monomerSv { semType: Monomer }
+//output: widget result
+//meta.domain: bio
+//meta.role: panel
+export function monomerInfoPanel(monomerSv: DG.SemanticValue) : any {
+  return PackageFunctions.monomerInfoPanel(monomerSv);
+}
+
 //name: MacromoleculeDifferenceCellRenderer
 //tags: cellRenderer
 //output: grid_cell_renderer result
@@ -599,12 +609,13 @@ export async function manageMonomersView() : Promise<void> {
 
 //name: Manage Monomer Libraries
 //tags: app
+//input: string path { meta.url: true; optional: true }
 //output: view result
 //meta.role: app
 //meta.browsePath: Peptides
 //meta.icon: files/icons/monomers.png
-export async function manageMonomerLibrariesView() : Promise<any> {
-  return await PackageFunctions.manageMonomerLibrariesView();
+export async function manageMonomerLibrariesView(path?: string) : Promise<any> {
+  return await PackageFunctions.manageMonomerLibrariesView(path);
 }
 
 //name: Monomer Manager Tree Browser
