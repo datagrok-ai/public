@@ -353,27 +353,20 @@ export class TestManager extends DG.ViewBase {
     }, 'Run selected');
 
     const settings = ui.button(ui.iconFA('cog'), () => {
+      const toggles = [
+        {label: 'Debug', get: () => DG.Test.isInDebug, set: (v: boolean) => {DG.Test.isInDebug = v;}},
+        {label: 'Benchmark', get: () => DG.Test.isInBenchmark, set: (v: boolean) => {DG.Test.isInBenchmark = v;}},
+        {label: 'Run skipped', get: () => this.runSkippedMode, set: (v: boolean) => {this.runSkippedMode = v;}},
+        {label: 'Keep views open', get: () => this.keepViewsOpen, set: (v: boolean) => {this.keepViewsOpen = v;}},
+      ];
       const menu = DG.Menu.popup();
       menu.closeOnClick = false;
       const refresh = () => {
         menu.clear();
-        menu
-          .item(`${DG.Test.isInDebug ? '✓ ' : ''}Debug`, () => {
-            DG.Test.isInDebug = !DG.Test.isInDebug;
-            refresh();
-          })
-          .item(`${DG.Test.isInBenchmark ? '✓ ' : ''}Benchmark`, () => {
-            DG.Test.isInBenchmark = !DG.Test.isInBenchmark;
-            refresh();
-          })
-          .item(`${this.runSkippedMode ? '✓ ' : ''}Run skipped`, () => {
-            this.runSkippedMode = !this.runSkippedMode;
-            refresh();
-          })
-          .item(`${this.keepViewsOpen ? '✓ ' : ''}Keep views open`, () => {
-            this.keepViewsOpen = !this.keepViewsOpen;
-            refresh();
-          });
+        menu.items(toggles, (t) => {
+          t.set(!t.get());
+          refresh();
+        }, {isChecked: (t) => t.get(), toString: (t) => t.label});
       };
       refresh();
       menu.show();
