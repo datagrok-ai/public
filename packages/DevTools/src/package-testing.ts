@@ -354,10 +354,10 @@ export class TestManager extends DG.ViewBase {
 
     const settings = ui.button(ui.iconFA('cog'), () => {
       const toggles = [
-        {label: 'Debug', get: () => DG.Test.isInDebug, set: (v: boolean) => {DG.Test.isInDebug = v;}},
-        {label: 'Benchmark', get: () => DG.Test.isInBenchmark, set: (v: boolean) => {DG.Test.isInBenchmark = v;}},
-        {label: 'Run skipped', get: () => this.runSkippedMode, set: (v: boolean) => {this.runSkippedMode = v;}},
-        {label: 'Keep views open', get: () => this.keepViewsOpen, set: (v: boolean) => {this.keepViewsOpen = v;}},
+        {label: 'Debug', tooltip: 'Trigger a debugger breakpoint at the start of each test', get: () => DG.Test.isInDebug, set: (v: boolean) => {DG.Test.isInDebug = v;}},
+        {label: 'Benchmark', tooltip: 'Run only tests marked as benchmarks; all other tests are skipped', get: () => DG.Test.isInBenchmark, set: (v: boolean) => {DG.Test.isInBenchmark = v;}},
+        {label: 'Run skipped', tooltip: 'Force-run tests that are normally skipped due to a skipReason', get: () => this.runSkippedMode, set: (v: boolean) => {this.runSkippedMode = v;}},
+        {label: 'Keep views open', tooltip: 'Do not close views and balloons after each test - lets you inspect the state they leave behind', get: () => this.keepViewsOpen, set: (v: boolean) => {this.keepViewsOpen = v;}},
       ];
       const menu = DG.Menu.popup();
       menu.closeOnClick = false;
@@ -366,7 +366,7 @@ export class TestManager extends DG.ViewBase {
         menu.items(toggles, (t) => {
           t.set(!t.get());
           refresh();
-        }, {isChecked: (t) => t.get(), toString: (t) => t.label});
+        }, {isChecked: (t) => t.get(), toString: (t) => t.label, getTooltip: (t) => t.tooltip});
       };
       refresh();
       menu.show();
