@@ -87,12 +87,14 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
     let queryCanonicalSmiles = '';
     if (queryMol !== null) {
       if (searchType === SubstructureSearchType.EXACT_MATCH) {
+        let tempMol: RDMol | null = null;
         try {
           //need to get canonical smiles from mol (not qmol) since qmol implicitly merges query hydrogens
-          const mol = this.getMolWithSmilesCheck(queryMolString);
-          queryCanonicalSmiles = mol ? this.getSmiles(mol, stereoAgnostic) : '';
-          mol?.delete();
-        } catch {}
+          tempMol = this.getMolWithSmilesCheck(queryMolString);
+          queryCanonicalSmiles = tempMol ? this.getSmiles(tempMol, stereoAgnostic) : '';
+        } catch {} finally {
+          tempMol?.delete();
+        }
       }
       const matches = await this.searchWithPatternFps(queryMol, molecules,
         searchType ?? SubstructureSearchType.CONTAINS, queryCanonicalSmiles, stereoAgnostic);
