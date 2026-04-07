@@ -69,6 +69,24 @@ export function _addColorsToBondsAndAtoms(mainSubstr: ISubstruct, color?: string
         mainSubstr.highlightBondColors[substrToTakeAtomsFrom.bonds[j]] = colorArr;
       }
     }
+    // Forward per-atom/per-bond labels and annotation notes from a temp
+    // substructure into the main one so providers can layer annotations
+    // (e.g. pKa values, R-group labels, contribution scores) on top of the
+    // existing highlight pipeline.
+    if (tempSubstr) {
+      if (tempSubstr.atomLabels) {
+        mainSubstr.atomLabels ??= {};
+        Object.assign(mainSubstr.atomLabels, tempSubstr.atomLabels);
+      }
+      if (tempSubstr.atomNotes) {
+        mainSubstr.atomNotes ??= {};
+        Object.assign(mainSubstr.atomNotes, tempSubstr.atomNotes);
+      }
+      if (tempSubstr.bondNotes) {
+        mainSubstr.bondNotes ??= {};
+        Object.assign(mainSubstr.bondNotes, tempSubstr.bondNotes);
+      }
+    }
   }
 }
 

@@ -128,8 +128,14 @@ export function drawRdKitMoleculeToOffscreenCanvas(
   const opts = createRenderingOpts({width: w, height: h});
 
   g?.clearRect(0, 0, w, h);
-  if (substruct)
+  if (substruct) {
+    // ISubstruct fields (atoms, bonds, highlightAtomColors, highlightBondColors,
+    // atomLabels, atomNotes, bondNotes) are forwarded directly into the RDKit
+    // MinimalLib details JSON. RDKit consumes the highlight* and atomLabels
+    // fields natively; atomNotes/bondNotes are forwarded for builds that
+    // support them and ignored otherwise.
     Object.assign(opts, substruct);
+  }
   const kekulize = molCtx.kekulize;
   if (!kekulize)
     Object.assign(opts, {kekulize});

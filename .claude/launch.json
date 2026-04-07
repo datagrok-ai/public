@@ -1,0 +1,17 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "chem-mockups",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["--yes", "serve", "-l", "4173", "packages/Chem/files/mockups"],
+      "port": 4173
+    },
+    {
+      "name": "docusaurus",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["--prefix", "docusaurus-static", "run", "start"],
+      "port": 3000
+    }
+  ]
+}

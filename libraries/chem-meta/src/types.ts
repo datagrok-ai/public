@@ -6,15 +6,33 @@ export interface ISubstruct {
   highlightAtomColors?: { [key: number]: number[] | null },
   highlightBondColors?: { [key: number]: number[] | null },
   alignByScaffold?: string,
+  /** Per-atom replacement labels (e.g. {0: 'X'}). Forwarded to RDKit MinimalLib
+   *  via the `atomLabels` field in the draw details JSON. Replaces the rendered
+   *  atom symbol for the given atom indices. */
+  atomLabels?: { [key: number]: string },
+  /** Per-atom annotation strings rendered next to atoms (e.g. pKa, partial
+   *  charge, similarity contribution). Picked up by SVG-overlay renderers and
+   *  by RDKit MinimalLib builds that support `atomNotes` in the details JSON. */
+  atomNotes?: { [key: number]: string },
+  /** Per-bond annotation strings rendered next to bonds. Same semantics as
+   *  atomNotes. */
+  bondNotes?: { [key: number]: string },
 }
 
 export function mergeSubstructs(substructs: ISubstruct[]): ISubstruct {
-  const res: ISubstruct = {atoms: [], bonds: [], highlightAtomColors: {}, highlightBondColors: {}};
+  const res: ISubstruct = {
+    atoms: [], bonds: [],
+    highlightAtomColors: {}, highlightBondColors: {},
+    atomLabels: {}, atomNotes: {}, bondNotes: {},
+  };
   for (const s of substructs) {
     res.atoms = [...res.atoms ?? [], ...s.atoms ?? []];
     res.bonds = [...res.bonds ?? [], ...s.bonds ?? []];
     res.highlightAtomColors = {...res.highlightAtomColors, ...s.highlightAtomColors};
     res.highlightBondColors = {...res.highlightBondColors, ...s.highlightBondColors};
+    res.atomLabels = {...res.atomLabels, ...s.atomLabels};
+    res.atomNotes = {...res.atomNotes, ...s.atomNotes};
+    res.bondNotes = {...res.bondNotes, ...s.bondNotes};
   }
   return res;
 }

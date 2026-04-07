@@ -1,0 +1,486 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Picker on Datagrok's bundled RDKit (2024.09.1pre)</title>
+<style>
+  :root {
+    --bg: #f6f7f9; --panel: #fff; --border: #d8dde4; --text: #1d2330;
+    --muted: #6b7280;
+    --acid: rgb(255, 153, 51); --base: rgb(102, 153, 255);
+    --kept: rgb(102, 204, 102); --pick: rgb(214, 80, 191);
+  }
+  html, body { margin: 0; padding: 0; background: var(--bg); color: var(--text);
+    font: 13px/1.4 -apple-system, Segoe UI, Roboto, sans-serif; }
+  header { padding: 14px 20px; border-bottom: 1px solid var(--border); background: var(--panel); }
+  header h1 { margin: 0; font-size: 16px; font-weight: 600; }
+  header p { margin: 4px 0 0; color: var(--muted); font-size: 12px; }
+  .badge { display: inline-block; background: #d1fae5; color: #065f46; font-weight: 600;
+    padding: 1px 7px; border-radius: 10px; font-size: 11px; margin-left: 6px; }
+  main { display: grid; grid-template-columns: 1fr 320px; gap: 16px; padding: 16px 20px; }
+  .card { background: var(--panel); border: 1px solid var(--border); border-radius: 6px;
+    padding: 12px 14px; }
+  .card h2 { margin: 0 0 8px; font-size: 13px; font-weight: 600; }
+  .card .sub { color: var(--muted); font-size: 11px; margin: 0 0 8px; }
+  .mol-host { position: relative; display: block; width: 100%; min-height: 280px;
+    user-select: none; -webkit-user-select: none; }
+  .mol-host svg { display: block; width: 100%; height: auto; }
+  .overlay-note { position: absolute; transform: translate(-50%, -110%);
+    font: 600 11px monospace; color: #1d2330; background: rgba(255,255,255,0.88);
+    padding: 1px 4px; border-radius: 3px; pointer-events: none; white-space: nowrap; }
+  .overlay-note.acid { color: #a14600; }
+  .overlay-note.base { color: #163e88; }
+  .overlay-note.kept { color: #1f6b1f; }
+  .drag-rect { position: absolute; border: 1px dashed #4a8;
+    background: rgba(102, 204, 102, 0.12); pointer-events: none; box-sizing: border-box; }
+  .lasso-overlay { position: absolute; left: 0; top: 0; width: 100%; height: 100%;
+    pointer-events: none; }
+  .mode-group { display: inline-flex; border: 1px solid var(--border); border-radius: 4px;
+    padding: 1px; background: white; }
+  .mode-group button { border: 0; padding: 4px 9px; font-size: 11px; cursor: pointer;
+    background: transparent; border-radius: 3px; color: var(--text); }
+  .mode-group button.on { background: #2664eb; color: white; }
+
+  aside h2 { margin: 0 0 10px; font-size: 13px; font-weight: 600; }
+  .controls label { display: block; margin: 6px 0; font-size: 12px; }
+  .swatch { display: inline-block; width: 9px; height: 9px; border-radius: 50%; vertical-align: -1px;
+    margin-right: 6px; }
+  .swatch.acid { background: var(--acid); }
+  .swatch.base { background: var(--base); }
+  .swatch.kept { background: var(--kept); }
+  .swatch.pick { background: var(--pick); }
+  .row { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
+  button { padding: 4px 10px; font-size: 12px; border: 1px solid var(--border);
+    background: white; border-radius: 4px; cursor: pointer; }
+  button:hover { background: #f0f1f3; }
+  button.primary { background: #2664eb; color: white; border-color: #2664eb; }
+  .picked-list { font: 11px monospace; background: #f3f4f6; padding: 6px 8px;
+    border-radius: 4px; min-height: 22px; word-break: break-all; margin-top: 6px; }
+  .hint { font-size: 11px; color: var(--muted); margin-top: 8px; line-height: 1.5; }
+  #status { font: 11px monospace; color: var(--muted); padding: 4px 8px; }
+  #status.ok { color: #065f46; }
+  #status.err { color: #a00; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Atom picker running on Datagrok's bundled RDKit
+      <span class="badge">2024.09.1pre</span></h1>
+  <p>This page loads the exact same <code>RDKit_minimal.js</code> +
+  <code>RDKit_minimal_1.2.23.wasm</code> shipped in <code>packages/Chem/src/</code>,
+  not the unpkg CDN. The picker code uses parsed-DOM <code>getAttribute('class')</code>
+  and <code>querySelector('[class*="atom-"]')</code>, which are quoting-agnostic — so the
+  single-quoted <code>class='atom-N'</code> annotations RDKit emits work fine.</p>
+  <p id="status">loading RDKit…</p>
+</header>
+
+<main>
+  <section class="card">
+    <h2>Cefdinir &nbsp;<span class="sub">PubChem CID 6915944</span></h2>
+    <div id="mol-host" class="mol-host"></div>
+  </section>
+
+  <aside class="card">
+    <h2>Selection mode</h2>
+    <div class="mode-group" id="mode-group">
+      <button data-mode="click" class="on">Click</button>
+      <button data-mode="box">Box</button>
+      <button data-mode="lasso">Lasso</button>
+    </div>
+    <h2 style="margin-top: 14px;">Highlight layers</h2>
+    <div class="controls">
+      <label><input type="checkbox" id="layer-acid" checked><span class="swatch acid"></span>Acidic pKa</label>
+      <label><input type="checkbox" id="layer-base" checked><span class="swatch base"></span>Basic pKa</label>
+      <label><input type="checkbox" id="layer-kept" checked><span class="swatch kept"></span>Preserved scaffold</label>
+      <label><input type="checkbox" id="layer-pick" checked><span class="swatch pick"></span>Picked atoms</label>
+    </div>
+    <h2 style="margin-top: 14px;">Picked</h2>
+    <div id="picked-list" class="picked-list">—</div>
+    <div class="row">
+      <button id="clear-pick">Clear</button>
+      <button id="invert-pick">Invert</button>
+      <button class="primary" id="apply">Use as scaffold →</button>
+    </div>
+    <p class="hint">
+      <b>Click</b> an atom to toggle. <b>Drag</b> across atoms to box-select.
+      <b>Shift+drag</b> to add. <b>Alt+drag</b> to remove.
+    </p>
+    <p class="hint">If clicks don't register, the regression is real.
+    If they do, Datagrok's RDKit version is fine and no upgrade is needed.</p>
+  </aside>
+</main>
+
+<script src="Datagrok_RDKit_minimal.js"></script>
+<script>
+'use strict';
+
+const SMILES = 'C(/N=C(\\C(=O)N[C@@H]1C(=O)N2[C@H]1SCC(=C2C(=O)O)C=C)c1csc(N)n1)O';
+
+const LAYERS_DATA = {
+  acid: { atoms: [16, 23], notes: { 16: '2.64', 23: '9.90' }, color: [1.0, 0.6, 0.2, 1.0] },
+  base: { atoms: [21],     notes: { 21: '3.22' },             color: [0.4, 0.6, 1.0, 1.0] },
+  kept: { atoms: [7, 8, 9, 10, 11, 12, 13, 14, 15], notes: {}, color: [0.5, 0.85, 0.5, 1.0] },
+  pick: { atoms: [], notes: {}, color: [0.85, 0.4, 0.75, 1.0] },
+};
+const LAYER_ORDER = ['acid', 'base', 'kept', 'pick'];
+
+const state = {
+  enabled: { acid: true, base: true, kept: true, pick: true },
+  mode: 'click',  // 'click' | 'box' | 'lasso'
+};
+let RDKit = null;
+
+// ---- the same picker code from molecule-part-selector.ts, simplified ------
+
+function buildSubstruct() {
+  const sub = { atoms: [], bonds: [], highlightAtomColors: {}, highlightBondColors: {}, atomNotes: {} };
+  for (const key of LAYER_ORDER) {
+    if (!state.enabled[key]) continue;
+    const layer = LAYERS_DATA[key];
+    for (const a of layer.atoms) {
+      sub.atoms.push(a);
+      sub.highlightAtomColors[a] = layer.color;
+    }
+    Object.assign(sub.atomNotes, layer.notes || {});
+  }
+  return sub;
+}
+
+// THIS IS THE CRITICAL FUNCTION — uses parsed DOM, quote-agnostic
+function extractAtomPositions(svgEl) {
+  const positions = new Map();
+
+  // 1) heteroatoms with text labels
+  for (const t of svgEl.querySelectorAll('text[class*="atom-"]')) {
+    const cls = t.getAttribute('class') || '';
+    const m = /(?:^|\s)atom-(\d+)/.exec(cls);
+    if (!m) continue;
+    const idx = parseInt(m[1], 10);
+    try {
+      const bb = t.getBBox();
+      positions.set(idx, { x: bb.x + bb.width / 2, y: bb.y + bb.height / 2 });
+    } catch {}
+  }
+
+  // 2) carbons — average bond endpoints
+  const bondEnds = new Map();
+  for (const p of svgEl.querySelectorAll('path[class*="bond-"]')) {
+    const cls = p.getAttribute('class') || '';
+    const ids = [];
+    const matches = cls.match(/atom-(\d+)/g) || [];
+    for (const mm of matches) {
+      const n = parseInt(mm.slice(5), 10);
+      if (!Number.isNaN(n)) ids.push(n);
+    }
+    if (ids.length !== 2) continue;
+    const d = p.getAttribute('d') || '';
+    const coords = [];
+    const re = /[ML]\s*([\-\d.]+)[\s,]+([\-\d.]+)/g;
+    let mm;
+    while ((mm = re.exec(d)) !== null)
+      coords.push({ x: parseFloat(mm[1]), y: parseFloat(mm[2]) });
+    if (coords.length < 2) continue;
+    if (!bondEnds.has(ids[0])) bondEnds.set(ids[0], []);
+    if (!bondEnds.has(ids[1])) bondEnds.set(ids[1], []);
+    bondEnds.get(ids[0]).push(coords[0]);
+    bondEnds.get(ids[1]).push(coords[coords.length - 1]);
+  }
+  for (const [idx, pts] of bondEnds.entries()) {
+    if (positions.has(idx)) continue;
+    const cx = pts.reduce((s, p) => s + p.x, 0) / pts.length;
+    const cy = pts.reduce((s, p) => s + p.y, 0) / pts.length;
+    positions.set(idx, { x: cx, y: cy });
+  }
+  return positions;
+}
+
+function getHostAtomPositions(host, svgEl) {
+  const svgPositions = extractAtomPositions(svgEl);
+  const vb = svgEl.viewBox && svgEl.viewBox.baseVal;
+  const svgRect = svgEl.getBoundingClientRect();
+  const hostRect = host.getBoundingClientRect();
+  const sx = vb && vb.width ? svgRect.width / vb.width : 1;
+  const sy = vb && vb.height ? svgRect.height / vb.height : 1;
+  const dx = (svgRect.left - hostRect.left) - (vb ? vb.x * sx : 0);
+  const dy = (svgRect.top - hostRect.top) - (vb ? vb.y * sy : 0);
+  const out = new Map();
+  for (const [idx, p] of svgPositions.entries())
+    out.set(idx, { x: dx + p.x * sx, y: dy + p.y * sy });
+  return out;
+}
+
+function render() {
+  const host = document.getElementById('mol-host');
+  const sub = buildSubstruct();
+
+  let mol;
+  try {
+    mol = RDKit.get_mol(SMILES);
+    const w = host.clientWidth || 480;
+    const h = 320;
+    const details = {
+      width: w, height: h,
+      atoms: sub.atoms, bonds: sub.bonds,
+      highlightAtomColors: sub.highlightAtomColors,
+      highlightBondColors: sub.highlightBondColors,
+      bondLineWidth: 1.0, multipleBondOffset: 0.18, baseFontSize: 0.6,
+    };
+    host.innerHTML = mol.get_svg_with_highlights(JSON.stringify(details));
+    const svgEl = host.querySelector('svg');
+    if (!svgEl) return;
+    overlayNotes(host, svgEl, sub);
+  } finally {
+    mol && mol.delete();
+  }
+
+  const list = document.getElementById('picked-list');
+  list.textContent = LAYERS_DATA.pick.atoms.length === 0
+    ? '—'
+    : '[' + [...LAYERS_DATA.pick.atoms].sort((a, b) => a - b).join(', ') + ']';
+}
+
+function overlayNotes(host, svgEl, sub) {
+  const positions = getHostAtomPositions(host, svgEl);
+  const noteKindFor = (idx) => {
+    if (LAYERS_DATA.acid.atoms.includes(idx)) return 'acid';
+    if (LAYERS_DATA.base.atoms.includes(idx)) return 'base';
+    return '';
+  };
+  for (const [idxStr, value] of Object.entries(sub.atomNotes)) {
+    const idx = parseInt(idxStr, 10);
+    const p = positions.get(idx);
+    if (!p) continue;
+    const note = document.createElement('div');
+    note.className = 'overlay-note ' + noteKindFor(idx);
+    note.textContent = value;
+    note.style.left = p.x + 'px';
+    note.style.top = p.y + 'px';
+    host.appendChild(note);
+  }
+}
+
+function findAtomFromTarget(target, host) {
+  let el = target;
+  while (el && el !== host && el.tagName !== 'svg') {
+    const cls = el.getAttribute && el.getAttribute('class');
+    const m = cls && /(?:^|\s)atom-(\d+)/.exec(cls);
+    if (m) return parseInt(m[1], 10);
+    el = el.parentNode;
+  }
+  return null;
+}
+
+// ray-casting point-in-polygon — works for any simple polygon, convex or not
+function pointInPolygon(x, y, poly) {
+  let inside = false;
+  for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
+    const xi = poly[i].x, yi = poly[i].y;
+    const xj = poly[j].x, yj = poly[j].y;
+    if (((yi > y) !== (yj > y)) && (x < (xj - xi) * (y - yi) / (yj - yi) + xi))
+      inside = !inside;
+  }
+  return inside;
+}
+
+function setupInteraction() {
+  const host = document.getElementById('mol-host');
+  const SVG_NS = 'http://www.w3.org/2000/svg';
+  const LASSO_MIN_STEP = 4;
+
+  let dragStart = null;
+  let dragRect = null;
+  let dragModifiers = null;
+  let suppressClick = false;
+
+  // lasso state
+  let lassoActive = false;
+  let lassoPoints = [];
+  let lassoSvg = null;
+  let lassoPath = null;
+
+  function createLassoOverlay() {
+    lassoSvg = document.createElementNS(SVG_NS, 'svg');
+    lassoSvg.setAttribute('class', 'lasso-overlay');
+    lassoPath = document.createElementNS(SVG_NS, 'path');
+    lassoPath.setAttribute('fill', 'rgba(102, 204, 102, 0.12)');
+    lassoPath.setAttribute('stroke', '#4a8');
+    lassoPath.setAttribute('stroke-width', '1.2');
+    lassoPath.setAttribute('stroke-dasharray', '4 3');
+    lassoSvg.appendChild(lassoPath);
+    host.appendChild(lassoSvg);
+  }
+  function updateLassoOverlay() {
+    if (!lassoPath || lassoPoints.length === 0) return;
+    let d = 'M ' + lassoPoints[0].x + ' ' + lassoPoints[0].y;
+    for (let i = 1; i < lassoPoints.length; i++)
+      d += ' L ' + lassoPoints[i].x + ' ' + lassoPoints[i].y;
+    if (lassoPoints.length > 2) d += ' Z';
+    lassoPath.setAttribute('d', d);
+  }
+  function destroyLassoOverlay() {
+    if (lassoSvg && lassoSvg.parentNode) lassoSvg.parentNode.removeChild(lassoSvg);
+    lassoSvg = null;
+    lassoPath = null;
+  }
+
+  host.addEventListener('click', (e) => {
+    if (suppressClick) { suppressClick = false; return; }
+    if (state.mode !== 'click') return;
+    const idx = findAtomFromTarget(e.target, host);
+    if (idx === null) return;
+    const arr = LAYERS_DATA.pick.atoms;
+    const i = arr.indexOf(idx);
+    if (i >= 0) arr.splice(i, 1); else arr.push(idx);
+    render();
+  });
+
+  host.addEventListener('mousedown', (e) => {
+    if (e.button !== 0) return;
+    if (state.mode === 'click') return;
+    if (findAtomFromTarget(e.target, host) !== null) return;
+    const r = host.getBoundingClientRect();
+    dragStart = { x: e.clientX - r.left, y: e.clientY - r.top };
+    dragModifiers = { shift: e.shiftKey, alt: e.altKey };
+
+    if (state.mode === 'box') {
+      dragRect = document.createElement('div');
+      dragRect.className = 'drag-rect';
+      dragRect.style.left = dragStart.x + 'px';
+      dragRect.style.top = dragStart.y + 'px';
+      host.appendChild(dragRect);
+    } else if (state.mode === 'lasso') {
+      lassoActive = true;
+      lassoPoints = [dragStart];
+      createLassoOverlay();
+      updateLassoOverlay();
+    }
+    e.preventDefault();
+  });
+
+  document.addEventListener('mousemove', (e) => {
+    if (!dragStart) return;
+    const r = host.getBoundingClientRect();
+    const cx = e.clientX - r.left, cy = e.clientY - r.top;
+
+    if (lassoActive) {
+      const last = lassoPoints[lassoPoints.length - 1];
+      if (Math.hypot(cx - last.x, cy - last.y) >= LASSO_MIN_STEP) {
+        lassoPoints.push({ x: cx, y: cy });
+        updateLassoOverlay();
+      }
+      return;
+    }
+
+    if (!dragRect) return;
+    const x = Math.min(dragStart.x, cx), y = Math.min(dragStart.y, cy);
+    dragRect.style.left = x + 'px';
+    dragRect.style.top = y + 'px';
+    dragRect.style.width = Math.abs(cx - dragStart.x) + 'px';
+    dragRect.style.height = Math.abs(cy - dragStart.y) + 'px';
+  });
+
+  document.addEventListener('mouseup', (e) => {
+    if (!dragStart) return;
+    const r = host.getBoundingClientRect();
+    const cx = e.clientX - r.left, cy = e.clientY - r.top;
+
+    let moved = false;
+    const svgEl = host.querySelector('svg');
+    const positions = svgEl ? getHostAtomPositions(host, svgEl) : new Map();
+    const arr = LAYERS_DATA.pick.atoms;
+
+    if (lassoActive) {
+      lassoPoints.push({ x: cx, y: cy });
+      // path length proxy: number of sample points × min step
+      moved = lassoPoints.length >= 3;
+      if (moved) {
+        if (!dragModifiers.shift && !dragModifiers.alt) arr.length = 0;
+        const set = new Set(arr);
+        for (const [idx, p] of positions.entries()) {
+          if (pointInPolygon(p.x, p.y, lassoPoints)) {
+            if (dragModifiers.alt) set.delete(idx); else set.add(idx);
+          }
+        }
+        LAYERS_DATA.pick.atoms = [...set];
+      }
+    } else if (dragRect) {
+      const x0 = Math.min(dragStart.x, cx), x1 = Math.max(dragStart.x, cx);
+      const y0 = Math.min(dragStart.y, cy), y1 = Math.max(dragStart.y, cy);
+      moved = Math.hypot(x1 - x0, y1 - y0) > 4;
+      if (moved) {
+        if (!dragModifiers.shift && !dragModifiers.alt) arr.length = 0;
+        const set = new Set(arr);
+        for (const [idx, p] of positions.entries()) {
+          if (p.x >= x0 && p.x <= x1 && p.y >= y0 && p.y <= y1) {
+            if (dragModifiers.alt) set.delete(idx); else set.add(idx);
+          }
+        }
+        LAYERS_DATA.pick.atoms = [...set];
+      }
+    }
+
+    if (moved) {
+      suppressClick = true;
+      setTimeout(() => { suppressClick = false; }, 0);
+    }
+    dragStart = null;
+    dragModifiers = null;
+    if (dragRect && dragRect.parentNode) dragRect.parentNode.removeChild(dragRect);
+    dragRect = null;
+    lassoActive = false;
+    lassoPoints = [];
+    destroyLassoOverlay();
+
+    if (moved) render();
+  });
+}
+
+function bind() {
+  for (const b of document.querySelectorAll('#mode-group button[data-mode]')) {
+    b.addEventListener('click', () => {
+      state.mode = b.dataset.mode;
+      for (const sib of b.parentNode.children)
+        sib.classList.toggle('on', sib === b);
+    });
+  }
+  for (const k of ['acid', 'base', 'kept', 'pick']) {
+    document.getElementById('layer-' + k).addEventListener('change', (e) => {
+      state.enabled[k] = e.target.checked;
+      render();
+    });
+  }
+  document.getElementById('clear-pick').addEventListener('click', () => {
+    LAYERS_DATA.pick.atoms.length = 0;
+    render();
+  });
+  document.getElementById('invert-pick').addEventListener('click', () => {
+    const picked = new Set(LAYERS_DATA.pick.atoms);
+    LAYERS_DATA.pick.atoms = LAYERS_DATA.kept.atoms.filter((a) => !picked.has(a));
+    render();
+  });
+  document.getElementById('apply').addEventListener('click', () => {
+    alert('Picked atoms (ISubstruct shape):\n\n' + JSON.stringify({
+      atoms: LAYERS_DATA.pick.atoms,
+      highlightAtomColors: Object.fromEntries(LAYERS_DATA.pick.atoms.map((a) => [a, LAYERS_DATA.pick.color])),
+    }, null, 2));
+  });
+  setupInteraction();
+}
+
+window.initRDKitModule({
+  locateFile: () => 'RDKit_minimal_1.2.23.wasm',
+}).then((rdkit) => {
+  RDKit = rdkit;
+  const status = document.getElementById('status');
+  status.textContent = '✓ RDKit ' + RDKit.version() + ' loaded — picker active';
+  status.classList.add('ok');
+  bind();
+  render();
+}).catch((err) => {
+  const status = document.getElementById('status');
+  status.textContent = '✗ RDKit failed: ' + err;
+  status.classList.add('err');
+});
+</script>
+</body>
+</html>
