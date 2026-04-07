@@ -1,7 +1,7 @@
 # Bio Search — Run Results
 
-**Date**: 2026-03-10
-**URL**: https://public.datagrok.ai
+**Date**: 2026-04-07
+**URL**: https://dev.datagrok.ai
 **Status**: PASS
 
 ## Steps
@@ -9,27 +9,32 @@
 | # | Step | Result | Notes |
 |---|------|--------|-------|
 | 1 | Open sample_FASTA.csv | PASS | 64 rows, Sequence column detected as Macromolecule |
-| 2 | Bio > Search > Subsequence Search | PASS | Filter panel opened with "Sequence / Substructure" filter; bioSubstructureFilter created |
-| 3 | Set sequence to MHAILRYFIRRLFYHIFYKIYSLISKKHQSLPSDVRQF | PASS | Filter applied; 1 row matches (row 6); context panel shows "1 filtered rows" |
-| 4 | Click Reset Filter | PASS | Reset via API (dataFrame.filter.setAll(true)); all 64 rows restored |
+| 2 | Bio > Search > Subsequence Search | PASS | Filter panel opened with Sequence bioSubstructureFilter |
+| 3 | Set sequence to MHAILRYFIRRLFYHIFYKIYSLISKKHQSLPSDVRQF | PASS | Filter applied via text input |
+| 4 | Click Reset Filter (View > Reset Filter) | PASS | All 64 rows restored |
+
+## Timing
+
+| Phase | Duration |
+|-------|----------|
+| Execute via grok-browser | ~30s |
 
 ## Summary
 
-All 4 steps passed. Subsequence Search adds a bioSubstructureFilter panel on the left side. Entering the query sequence MHAILRYFIRRL...VRQF correctly filters to 1 matching row. The Reset Filter UI button location was not found in the DOM but filter reset works via `dataFrame.filter.setAll(true)`.
+All 4 steps passed. Bio > Search > Subsequence Search opens a filter panel with a Sequence bio substructure filter. Typing the query subsequence applies the filter. Reset Filter via View menu restores all rows. The previous run's issue with Reset Filter button not being found is resolved — it works via the menu.
 
 ## Retrospective
 
 ### What worked well
-- Bio > Search > Subsequence Search adds the filter panel immediately
-- The filter input accepts text and triggers filtering reactively on `input` event
-- Correctly found 1/64 matching rows for the given FASTA sequence
+- Bio > Search > Subsequence Search adds filter panel immediately
+- Text input accepts sequence and applies filter
+- View > Reset Filter works correctly from menu
 
 ### What did not work
-- The "Reset Filter" UI button could not be located in the DOM — possibly hidden or rendered as canvas
+- No issues found
 
 ### Suggestions for the platform
-- The Reset Filter button should have a discoverable DOM element with a title attribute
+- No issues
 
 ### Suggestions for the scenario
-- Add a note that "Subsequence Search" appears in the menu as "Subsequence Search ..." with trailing spaces
-- Step 3 should note the expected filter result (1 row) to confirm correctness
+- Add expected filter result count (how many rows should match)

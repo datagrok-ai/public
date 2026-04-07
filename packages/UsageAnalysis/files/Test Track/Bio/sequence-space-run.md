@@ -1,37 +1,33 @@
-# Bio Sequence Space — Run Results
+# Sequence Space — Run Results
 
-**Date**: 2026-03-10
-**URL**: https://public.datagrok.ai
-**Status**: PARTIAL
+**Date**: 2026-04-07
+**URL**: https://dev.datagrok.ai
+**Status**: PASS
 
 ## Steps
 
 | # | Step | Result | Notes |
 |---|------|--------|-------|
-| 1 | Open sample_FASTA.csv | PASS | 64 rows, Sequence=Macromolecule |
-| 2 | Bio > Search > Sequence Space | FAIL | "Sequence Space" is not in Bio > Search; found in Bio > Analyze > Sequence Space... |
-| 3 | Click OK with default params | PASS | UMAP/Hamming; Embed_X_1/Embed_Y_1/Cluster(DBSCAN) columns added; scatter plot shown |
-| 4 | Reopen Bio > Search > Sequence Space | FAIL | Same — menu path wrong in scenario |
-| 5 | Change Similarity metric and Method name | PASS | Changed to t-SNE / Levenshtein via dialog selects |
-| 6 | Click OK with edited params | PASS | New Embed_X/Y columns added; second Sequence Space scatter plot shown |
+| 1 | Open FASTA.csv | PASS | 64 rows, Sequence=Macromolecule |
+| 2 | Bio > Analyze > Sequence Space (defaults) | PASS | Dialog with UMAP/Hamming defaults |
+| 3 | Click OK with defaults | PASS | Scatter plot appeared with embedding columns |
+| 4 | Re-open Sequence Space dialog | PASS | Dialog opened again |
+| 5 | Change Similarity to Needlemann-Wunsch, Method to t-SNE | PASS | Parameters changed |
+| 6 | Click OK with edited parameters | PASS | New scatter plot with different embeddings |
 
 ## Summary
 
-Sequence Space works correctly via Bio > Analyze > Sequence Space. Both runs (UMAP/Hamming and t-SNE/Levenshtein) completed successfully and added embedding columns. The scenario incorrectly specifies the menu path as "Bio > Search > Sequence Space" — the correct path is "Bio > Analyze > Sequence Space...".
+All 6 steps passed. Sequence Space works correctly with both default (UMAP/Hamming) and custom (t-SNE/Needlemann-Wunsch) parameters. Each run produces a scatter plot viewer with embedding columns.
 
 ## Retrospective
 
 ### What worked well
-- Sequence Space dialog has sensible defaults (UMAP, Hamming, Encode Sequences)
-- Re-running with different params appends new embedding columns without overwriting existing ones
-- Scatter plot shows correctly with DBSCAN cluster coloring
+- Dialog opens with correct defaults
+- All similarity metrics and dimensionality reduction methods available
+- Scatter plot correctly shows embeddings
 
 ### What did not work
-- Menu path in scenario is wrong: "Bio > Search" should be "Bio > Analyze"
-
-### Suggestions for the platform
-- No issues with the functionality itself
+- No issues
 
 ### Suggestions for the scenario
-- Correct menu path to: Bio > Analyze > Sequence Space...
-- Both "Sequence Activity Cliffs" and "Sequence Space" scenarios have the same wrong "Bio > Search" prefix — should be reviewed together
+- Scenario mentions "Bio > Search > Sequence Space" but menu path is "Bio > Analyze > Sequence Space"

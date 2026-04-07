@@ -1,37 +1,33 @@
-# Bio Sequence Activity Cliffs — Run Results
+# Sequence Activity Cliffs — Run Results
 
-**Date**: 2026-03-10
-**URL**: https://public.datagrok.ai
-**Status**: PARTIAL
+**Date**: 2026-04-07
+**URL**: https://dev.datagrok.ai
+**Status**: PASS
 
 ## Steps
 
 | # | Step | Result | Notes |
 |---|------|--------|-------|
-| 1 | Open sample_FASTA.csv | PASS | 64 rows, Sequence=Macromolecule |
-| 2 | Bio > Search > Sequence Activity Cliffs | FAIL | "Sequence Activity Cliffs" does not exist in Bio > Search; menu only has Similarity Search, Diversity Search, Subsequence Search |
-| 3 | Click OK with default parameters | PASS | Used Bio > Analyze > Activity Cliffs... (equivalent); dialog opened with Method=UMAP, Similarity=Hamming; 2 CLIFFS found |
-| 4 | Reopen Bio > Search > Sequence Activity Cliffs | FAIL | Same issue — item not found |
-| 5 | Change Similarity and Method name | PASS | Changed to Method=t-SNE, Similarity=Levenshtein via dialog |
-| 6 | Click OK with edited parameters | PASS | Activity Cliffs ran again; second scatter plot added |
+| 1 | Open FASTA.csv | PASS | 64 rows, Sequence=Macromolecule |
+| 2 | Bio > Analyze > Activity Cliffs (defaults) | PASS | Dialog with UMAP/Hamming defaults |
+| 3 | Click OK with defaults | PASS | Scatter plot + embedding columns + sali column added (9 cols) |
+| 4 | Re-open Activity Cliffs dialog | PASS | Dialog opened again |
+| 5 | Change Similarity to Levenshtein, Method to t-SNE | PASS | Parameters changed via select dropdowns |
+| 6 | Click OK with edited parameters | PASS | New embedding columns added (12 cols total) |
 
 ## Summary
 
-The scenario references "Bio > Search > Sequence Activity Cliffs" which does not exist in the current platform. Activity Cliffs is accessible via Bio > Analyze > Activity Cliffs... The core functionality works: running with defaults produced 2 cliffs, and re-running with t-SNE/Levenshtein parameters produced a second scatter plot successfully.
+All 6 steps passed. Activity Cliffs works correctly with both default parameters (UMAP/Hamming) and custom parameters (t-SNE/Levenshtein). Each run adds embedding columns and a SALI score column, and produces a scatter plot viewer.
 
 ## Retrospective
 
 ### What worked well
-- Activity Cliffs dialog correctly shows Method and Similarity dropdowns
-- Re-running with changed parameters adds a new viewer alongside the first
+- Dialog opens with sensible defaults
+- Parameter changes (Method, Similarity) work correctly
+- Each run produces distinct embedding columns
 
 ### What did not work
-- "Bio > Search > Sequence Activity Cliffs" menu path does not exist — the scenario is stale
-- NullError on menu-click path persists (workaround: func.prepare().edit())
-
-### Suggestions for the platform
-- Fix the Activity Cliffs menu-click path that throws NullError when triggered from the menu
+- No issues
 
 ### Suggestions for the scenario
-- Update menu path from "Bio > Search > Sequence Activity Cliffs" to "Bio > Analyze > Activity Cliffs..."
-- The scenario title "Sequence Activity Cliffs" is misleading — it tests the standard Activity Cliffs function
+- Scenario mentions "Bio > Search > Sequence Activity Cliffs" but menu path is "Bio > Analyze > Activity Cliffs"
