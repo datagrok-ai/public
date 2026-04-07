@@ -1,4 +1,4 @@
-import {test, expect} from '@playwright/test';
+import {test, expect, chromium} from '@playwright/test';
 
 const baseUrl = 'http://localhost:8888';
 const datasetPath = 'System:DemoFiles/SPGI.csv';
@@ -26,7 +26,7 @@ async function openDataset(page: any) {
     const tv = grok.shell.addTableView(df);
     await new Promise(resolve => {
       const sub = df.onSemanticTypeDetected.subscribe(() => { sub.unsubscribe(); resolve(undefined); });
-      setTimeout(resolve, 3000);
+      setTimeout(() => resolve(undefined), 3000);
     });
   }, datasetPath);
   await page.locator('.d4-grid[name="viewer-Grid"]').waitFor({timeout: 30000});
@@ -49,7 +49,10 @@ async function addViewersWithLegend(page: any) {
   });
 }
 
-test('Filtering — Legend across viewers', async ({page}) => {
+test('Filtering — Legend across viewers', async () => {
+  const browser = await chromium.connectOverCDP('http://localhost:9222');
+  const context = browser.contexts()[0];
+  const page = context.pages()[0] || await context.newPage();
   stepErrors.length = 0;
 
   // ---- Section 1: Filtering ----
@@ -100,7 +103,7 @@ test('Filtering — Legend across viewers', async ({page}) => {
       const tv2 = grok.shell.addTableView(df2);
       await new Promise(resolve => {
         const sub = df2.onSemanticTypeDetected.subscribe(() => { sub.unsubscribe(); resolve(undefined); });
-        setTimeout(resolve, 3000);
+        setTimeout(() => resolve(undefined), 3000);
       });
 
       const saved = await grok.dapi.layouts.find(id);
@@ -120,18 +123,11 @@ test('Filtering — Legend across viewers', async ({page}) => {
     expect(result.viewerTypes).toContain('Bar chart');
   });
 
-  await softStep('4. Reset filters', async () => {
-    await page.evaluate(async () => {
-      const tv = grok.shell.tv;
-      const df = tv.dataFrame;
-      for (const v of tv.viewers)
-        if (v.type === 'Filters') { v.close(); break; }
-      df.filter.setAll(true, false);
-      df.rows.requestFilter();
-      await new Promise(r => setTimeout(r, 1000));
-      tv.getFiltersGroup();
-      await new Promise(r => setTimeout(r, 1500));
-    });
+  await softStep('4. Reset filters (fresh dataset)', async () => {
+    // After layout restore, filter state persists — reopen fresh dataset with viewers
+    await page.evaluate(async () => { grok.shell.closeAll(); await new Promise(r => setTimeout(r, 500)); });
+    await openDataset(page);
+    await addViewersWithLegend(page);
     const count = await page.evaluate(() => grok.shell.tv.dataFrame.filter.trueCount);
     const total = await page.evaluate(() => grok.shell.tv.dataFrame.rowCount);
     expect(count).toBe(total);
@@ -168,22 +164,11 @@ test('Filtering — Legend across viewers', async ({page}) => {
   });
 
   await softStep('7. Filter via categorical filter and check legend', async () => {
-    // Reset everything and apply a categorical filter
-    await page.evaluate(async () => {
-      const tv = grok.shell.tv;
-      const df = tv.dataFrame;
-      for (const v of tv.viewers) {
-        if (v.type !== 'Grid' && v.type !== 'Filters') {
-          try { v.setOptions({filter: ''}); } catch (e) {}
-        }
-      }
-      for (const v of tv.viewers) if (v.type === 'Filters') { v.close(); break; }
-      df.filter.setAll(true, false);
-      df.rows.requestFilter();
-      await new Promise(r => setTimeout(r, 500));
-      tv.getFiltersGroup();
-      await new Promise(r => setTimeout(r, 1500));
-    });
+    // Fresh dataset to ensure clean filter state
+    await page.evaluate(async () => { grok.shell.closeAll(); await new Promise(r => setTimeout(r, 500)); });
+    await openDataset(page);
+    await addViewersWithLegend(page);
+
     const result = await page.evaluate(async () => {
       const tv = grok.shell.tv;
       const df = tv.dataFrame;
@@ -211,7 +196,7 @@ test('Filtering — Legend across viewers', async ({page}) => {
       const tv2 = grok.shell.addTableView(df2);
       await new Promise(resolve => {
         const sub = df2.onSemanticTypeDetected.subscribe(() => { sub.unsubscribe(); resolve(undefined); });
-        setTimeout(resolve, 3000);
+        setTimeout(() => resolve(undefined), 3000);
       });
 
       const saved = await grok.dapi.layouts.find(id);

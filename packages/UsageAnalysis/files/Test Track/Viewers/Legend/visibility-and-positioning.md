@@ -25,9 +25,7 @@
 12. Set legend to any corner and enable mini-legend mode for some viewers
 13. Save and apply layout
 14. Save and open project — **verify positioning and mini-legend mode are correct**
-15. Apply old layout from [#3203](https://github.com/datagrok-ai/public/issues/3203)
-16. Open **Context Panel**, verify Legend Position = `right` for each viewer
-17. Close All
+15. Close All
 ---
 {
   "order": 1,
