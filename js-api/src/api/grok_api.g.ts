@@ -298,6 +298,8 @@ export interface IDartApi {
   grok_WidgetDescriptor_Get_Description(d: any): any;
   grok_WidgetDescriptor_Get_Properties(d: any): any;
   grok_WidgetDescriptor_Get_Properties(d: any): any;
+  grok_WidgetDescriptor_Get_Events(d: any): any;
+  grok_Widget_GetWidgetStatus(w: any): any;
   grok_WidgetDescriptor_CreateIcon(d: any): any;
   grok_Viewer_GetViewerTypes(): any;
   grok_Viewer_Root(v: any): any;
@@ -1097,6 +1099,9 @@ export interface IDartApi {
   grok_EventData_Get_Args(e: any): any;
   grok_TypedEventArgs_Get_Type(args: any): any;
   grok_TypedEventArgs_Get_Data(args: any): any;
+  grok_EventType_Get_Name(e: any): any;
+  grok_EventType_Get_EventName(e: any): any;
+  grok_EventType_Get_Description(e: any): any;
   grok_ViewLayout_Set_ViewState(layout: any, state: String): any;
   grok_ViewLayout_Get_ViewState(layout: any): any;
   grok_ViewLayout_Set_UserDataValue(layout: any, key: String, data: String): any;

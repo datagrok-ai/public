@@ -238,6 +238,25 @@ export class StreamSubscription {
   cancel(): void { api.grok_Subscription_Cancel(this.dart); }
 }
 
+/** Descriptor for a named event that can be fired on an {@link EventBus}.
+ * Wraps a Dart `EventType<T>` instance. */
+export class EventType {
+  public dart: any;
+
+  constructor(dart: any) {
+    this.dart = dart;
+  }
+
+  /** Internal event identifier, e.g. `'d4-scatterplot-point-clicked'`. */
+  get name(): string { return api.grok_EventType_Get_Name(this.dart); }
+
+  /** UI-facing event name, e.g. `'OnPointClicked'`. */
+  get eventName(): string { return api.grok_EventType_Get_EventName(this.dart); }
+
+  /** Human-readable description of the event. */
+  get description(): string { return api.grok_EventType_Get_Description(this.dart); }
+}
+
 /** @see Event arguments. {@link args} contains event details.
  *  Sample: {@link https://public.datagrok.ai/js/samples/events/global-events}*/
 export class EventData<TArgs = any> {

@@ -191,6 +191,36 @@ export class ObjectPropertyBag {
 }
 
 
+/** Event type descriptor as returned by {@link IWidgetStatus.events}. */
+export interface IEventType {
+  name: string;
+  eventName: string;
+  description: string;
+}
+
+/** Bounding rectangle returned by {@link IWidgetStatus.hitAreas}. */
+export interface IRectBounds {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
+/**
+ * Runtime snapshot of a widget's structure, used by the automated testing system.
+ * Returned by {@link Widget.getWidgetStatus}.
+ */
+export interface IWidgetStatus {
+  /** Named UI parts: part name → root DOM Element. */
+  parts: { [name: string]: Element };
+  /** Named interactive regions: region name → bounding rectangle. */
+  hitAreas: { [name: string]: IRectBounds };
+  /** Keyboard shortcuts: key combo string → human-readable description. */
+  shortcuts: { [key: string]: string };
+  /** Events fired by this widget. */
+  events: IEventType[];
+}
+
 /** Base class for controls that have a visual root and a set of properties. */
 export class Widget<TSettings = any> {
 
@@ -328,6 +358,9 @@ export class Widget<TSettings = any> {
     return p.defaultValue;
   }
 
+  /** Returns the widget's runtime structure for automated testing and introspection. */
+  getWidgetStatus(): IWidgetStatus { return {parts: {}, hitAreas: {}, shortcuts: {}, events: []}; }
+
   /** Creates a new widget from the root element. */
   static fromRoot(root: HTMLElement): Widget {
     return new Widget(root);
@@ -337,7 +370,7 @@ export class Widget<TSettings = any> {
   // // @ts-ignore
   // static react(reactComponent: React.DOMElement<any, any> | Array<React.DOMElement<any, any>> | React.CElement<any, any> | Array<React.CElement<any, any>> | React.ReactElement | Array<React.ReactElement>): Widget {
   //   let widget = Widget.fromRoot(ui.div());
-  //   // @ts-ignore
+  //   // @ts-ignore=
   //   ReactDOM.render(reactComponent, widget.root);
   //   return widget;
   // }
@@ -356,6 +389,7 @@ export class DartWidget extends Widget {
   get root(): HTMLElement { return api.grok_Widget_Get_Root(this.dart); }
   getProperties(): Property[] { return toJs(api.grok_PropMixin_GetProperties(this.dart)); }
   getFunctions(): Func[] { return toJs(api.grok_Widget_GetFunctions(this.dart)); }
+  getWidgetStatus(): IWidgetStatus { return api.grok_Widget_GetWidgetStatus(this.dart); }
 }
 
 
