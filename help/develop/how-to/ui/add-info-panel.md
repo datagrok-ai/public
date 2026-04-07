@@ -224,7 +224,6 @@ See the following info pane (spectrogram-panel.grok) in action by opening (proje
 #description: Panel that contains graphics produced by the R script
 #language: grok
 #meta.role: panel
-#tags: dsp
 #input: column signal {type:numerical}
 #output: graphics pic
 #condition: "F3" == signal.name

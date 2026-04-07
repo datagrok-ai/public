@@ -349,7 +349,7 @@ The following code snippet defines a converter function that retrieves the SMILE
 --connection: Chembl
 --input: string id = "CHEMBL1185"
 --output: string smiles { semType: Molecule }
---meta.role: unit-test
+--tags: unit-test
 select canonical_smiles from compound_structures s
 join molecule_dictionary d on s.molregno = d.molregno
 where d.chembl_id = @id
