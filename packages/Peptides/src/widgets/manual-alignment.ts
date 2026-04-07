@@ -24,7 +24,7 @@ export function manualAlignmentWidget(alignedSequenceCol: DG.Column<string>, cur
     const affectedRowIndex = currentDf.currentRowIdx;
     alignedSequenceCol.set(affectedRowIndex, newSequence);
     for (let i = 0; i < splitSequence.length; i++) {
-      const part = splitSequence.getCanonical(i);
+      const part = splitSequence.getOriginal(i);
       if (currentDf.col(i.toString()) !== null)
         currentDf.set(i.toString(), affectedRowIndex, part);
     }

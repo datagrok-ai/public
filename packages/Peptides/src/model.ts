@@ -50,6 +50,7 @@ import {ITSNEOptions, IUMAPOptions}
 import {DimReductionMethods} from '@datagrok-libraries/ml/src/multi-column-dimensionality-reduction/types';
 import {AggregationColumns, MonomerPositionStats} from './utils/statistics';
 import {splitAlignedSequences} from '@datagrok-libraries/bio/src/utils/splitter';
+import {MONOMER_CANONICALIZER_FUNC_TAG} from '@datagrok-libraries/bio/src/utils/macromolecule/consts';
 import {getDbscanWorker} from '@datagrok-libraries/math';
 import {DistanceAggregationMethods} from '@datagrok-libraries/ml/src/distance-matrix/types';
 import {ClusterMaxActivityViewer, IClusterMaxActivity} from './viewers/cluster-max-activity-viewer';
@@ -748,9 +749,14 @@ export class PeptidesModel {
     const positionColumns = splitSeqDf.columns.names();
     if (positionColumns.every((colName) => cols.contains(colName))) {
       positionColumns.forEach((colName) => {
-        this.df.col(colName)!.setTag(C.TAGS.ANALYSIS_COL, `${true}`);
-        this.df.col(colName)!.setTag(C.TAGS.POSITION_COL, `${true}`);
-        CR.setMonomerRenderer(this.df.col(colName)!, this.alphabet);
+        const col = this.df.col(colName)!;
+        col.setTag(C.TAGS.ANALYSIS_COL, `${true}`);
+        col.setTag(C.TAGS.POSITION_COL, `${true}`);
+        // Propagate canonicalizer tag from split columns if present
+        const canonTag = splitSeqDf.getCol(colName).getTag(MONOMER_CANONICALIZER_FUNC_TAG);
+        if (canonTag)
+          col.setTag(MONOMER_CANONICALIZER_FUNC_TAG, canonTag);
+        CR.setMonomerRenderer(col, this.alphabet);
       });
     } else {
       for (const colName of positionColumns) {
@@ -763,6 +769,10 @@ export class PeptidesModel {
         col = cols.addNew(newCol.name, newCol.type).init((i) => newColCat[newColData[i]]);
         col.setTag(C.TAGS.ANALYSIS_COL, `${true}`);
         col.setTag(C.TAGS.POSITION_COL, `${true}`);
+        // Propagate canonicalizer tag from split columns if present
+        const canonTag = newCol.getTag(MONOMER_CANONICALIZER_FUNC_TAG);
+        if (canonTag)
+          col.setTag(MONOMER_CANONICALIZER_FUNC_TAG, canonTag);
         CR.setMonomerRenderer(col, this.alphabet);
       }
     }
