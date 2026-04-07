@@ -9,7 +9,7 @@ export" menu:
 
 ![Save as SDF](file-exporter.gif "Save as SDF")
 
-To write an exporter function, add a `fileExporter` tag to its annotation. Make sure to specify the description: it will
+To write an exporter function, add a `fileExporter` role to its annotation. Make sure to specify the description: it will
 be used as the menu entry, e.g.,
 `As ${fileExtension}`. Unlike file viewers, exporters don't need an extension-specific tag, you start with an open
 table, modify it, and let the user download the converted version. Let's have a look at a function from the
@@ -19,7 +19,7 @@ package that exports a dataframe in a special file format for chemical data:
 ```js
 //name: saveAsSdf
 //description: Save as SDF
-//tags: fileExporter
+//meta.role: fileExporter
 saveAsSdf() {
   let table = grok.shell.t;
   let structureColumn = table.columns.bySemType('Molecule');

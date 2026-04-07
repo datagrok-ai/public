@@ -263,7 +263,7 @@ in your package code:
 export const _package = new DG.Package();
 
 //name: Main Application
-//tags: app
+//meta.role: app
 export function app() {
   _package.logger.debug('MainApplication started');
   grok.shell.info(_package.name);
