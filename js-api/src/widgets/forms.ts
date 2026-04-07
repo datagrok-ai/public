@@ -227,6 +227,12 @@ export class InputForm extends DartWrapper {
 
   getInput(propertyName: string): InputBase { return toJs(api.grok_InputForm_GetInput(this.dart, propertyName)); }
 
+  /** Shows the input with the specified property name. If the input's category was hidden because all its inputs were hidden, it becomes visible again. */
+  showInput(propertyName: string): void { api.grok_InputForm_ShowInput(this.dart, propertyName); }
+
+  /** Hides the input with the specified property name. If all inputs in its category are now hidden, the category label is hidden as well. */
+  hideInput(propertyName: string): void { api.grok_InputForm_HideInput(this.dart, propertyName); }
+
   /** All inputs added to the form */
   get inputs(): InputBase[] {
     return api.grok_InputForm_GetInputs(this.dart);
