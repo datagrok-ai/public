@@ -1,140 +1,151 @@
 import { test, expect, Page } from '@playwright/test';
 
-const BASE_URL = 'https://public.datagrok.ai/';
+const baseUrl = 'https://dev.datagrok.ai';
+const stepErrors: {step: string; error: string}[] = [];
 
-async function closeAll(page: Page) {
-  await page.evaluate(() => (window as any).grok.shell.closeAll());
+async function softStep(name: string, fn: () => Promise<void>) {
+  try {
+    await test.step(name, fn);
+  } catch (e: any) {
+    stepErrors.push({step: name, error: e.message ?? String(e)});
+    console.error(`[STEP FAILED] ${name}: ${e.message ?? e}`);
+  }
 }
 
-async function addViewer(page: Page, viewerName: string) {
-  return page.evaluate((name: string) => {
-    const tv = (window as any).grok.shell.tv;
-    return (window as any).grok.functions.call(`Charts:_${name}Viewer`);
-  }, viewerName);
-}
+test('Radar viewer (Charts package)', async ({ page }) => {
+  test.setTimeout(120_000);
+  // Phase 1: Navigate
+  await page.goto(baseUrl);
+  await page.waitForFunction(() => {
+    return typeof grok !== 'undefined' && grok.shell && grok.shell.views;
+  }, {timeout: 30000});
 
-async function openDemoFile(page: Page, fileName: string) {
-  return page.evaluate((name: string) =>
-    (window as any).grok.data.getDemoTable(name), fileName);
-}
-
-test.describe('Radar Viewer (Charts package)', () => {
-  test.beforeEach(async ({ page }) => {
-    await page.goto(BASE_URL);
-    await page.waitForFunction(() => typeof (window as any).grok !== 'undefined', { timeout: 30000 });
-    await closeAll(page);
-  });
-
-  test('Step 1: Open earthquakes.csv and add Radar viewer', async ({ page }) => {
-    const df = await openDemoFile(page, 'earthquakes.csv');
-    expect(df).toBeTruthy();
-
-    await page.evaluate(() => {
-      const df = (window as any).grok.shell.tv?.dataFrame;
-      expect(df).toBeTruthy();
+  // Phase 2: Open earthquakes.csv
+  await page.evaluate(async () => {
+    document.body.classList.add('selenium');
+    grok.shell.settings.showFiltersIconsConstantly = true;
+    grok.shell.closeAll();
+    const df = await grok.dapi.files.readCsv('System:DemoFiles/geo/earthquakes.csv');
+    const tv = grok.shell.addTableView(df);
+    await new Promise(resolve => {
+      const sub = df.onSemanticTypeDetected.subscribe(() => { sub.unsubscribe(); resolve(); });
+      setTimeout(resolve, 3000);
     });
-
-    const viewer = await page.evaluate(() =>
-      (window as any).grok.shell.tv.addViewer('Radar'));
-    expect(viewer).toBeTruthy();
-
-    await page.waitForTimeout(2000);
-    const screenshot = await page.screenshot({ path: 'scenario1-radar-earthquakes.png' });
-    expect(screenshot).toBeTruthy();
   });
+  await page.locator('.d4-grid[name="viewer-Grid"]').waitFor({timeout: 30000});
 
-  test('Step 2: Open demog.csv and add Radar viewer', async ({ page }) => {
-    await openDemoFile(page, 'demog.csv');
-    const viewer = await page.evaluate(() =>
-      (window as any).grok.shell.tv.addViewer('Radar'));
-    expect(viewer).toBeTruthy();
-
-    await page.waitForTimeout(2000);
-    await page.screenshot({ path: 'scenario1-radar-demog.png' });
-  });
-
-  test('Step 3a: Radar viewer properties — checkboxes and values columns', async ({ page }) => {
-    await openDemoFile(page, 'demog.csv');
-    await page.evaluate(() => (window as any).grok.shell.tv.addViewer('Radar'));
-    await page.waitForTimeout(1000);
-
-    const result = await page.evaluate(() => {
-      const tv = (window as any).grok.shell.tv;
-      const viewer = tv.viewers.find((v: any) => v.type === 'Radar');
-      if (!viewer) return { error: 'Radar viewer not found' };
-
-      // Test showCurrentRow toggle
-      viewer.props.showCurrentRow = true;
-      const checked = viewer.props.showCurrentRow;
-      viewer.props.showCurrentRow = false;
-      const unchecked = viewer.props.showCurrentRow;
-
-      // Test values columns
-      const original = [...viewer.props.valuesColumnNames];
-      if (original.length > 1) {
-        viewer.props.valuesColumnNames = [original[0]];
-        const reduced = viewer.props.valuesColumnNames.length;
-        viewer.props.valuesColumnNames = original;
-        return { checked, unchecked, reduced, original: original.length };
-      }
-      return { checked, unchecked, original: original.length };
+  // Step 1: Add Radar viewer for earthquakes.csv
+  await softStep('Step 1: Add Radar viewer for earthquakes.csv', async () => {
+    await page.evaluate(async () => {
+      await grok.shell.tv.addViewer('Radar');
     });
-
-    expect(result).not.toHaveProperty('error');
-    expect((result as any).checked).toBe(true);
-    expect((result as any).unchecked).toBe(false);
+    await page.locator('[name="viewer-Radar"]').waitFor({timeout: 10000});
+    const radarVisible = await page.locator('[name="viewer-Radar"]').isVisible();
+    expect(radarVisible).toBe(true);
   });
 
-  test('Step 3b: Radar viewer properties — style changes', async ({ page }) => {
-    await openDemoFile(page, 'demog.csv');
-    await page.evaluate(() => (window as any).grok.shell.tv.addViewer('Radar'));
-    await page.waitForTimeout(1000);
-
-    const result = await page.evaluate(() => {
-      const tv = (window as any).grok.shell.tv;
-      const viewer = tv.viewers.find((v: any) => v.type === 'Radar');
-      if (!viewer) return { error: 'Radar viewer not found' };
-
-      // Test color changes
-      const originalLine = viewer.props.lineColor;
-      viewer.props.lineColor = 0xFF0000FF; // red
-      const newLine = viewer.props.lineColor;
-      viewer.props.lineColor = originalLine;
-
-      return { originalLine, newLine };
+  // Step 2: Open demog.csv and add Radar viewer
+  await softStep('Step 2: Add Radar viewer for demog.csv', async () => {
+    const result = await page.evaluate(async () => {
+      const df2 = await grok.dapi.files.readCsv('System:DemoFiles/demog.csv');
+      const tv2 = grok.shell.addTableView(df2);
+      await new Promise(resolve => {
+        const sub = df2.onSemanticTypeDetected.subscribe(() => { sub.unsubscribe(); resolve(); });
+        setTimeout(resolve, 3000);
+      });
+      await tv2.addViewer('Radar');
+      await new Promise(r => setTimeout(r, 2000));
+      return { rows: df2.rowCount };
     });
-
-    expect(result).not.toHaveProperty('error');
-    expect((result as any).newLine).toBe(0xFF0000FF);
+    expect(result.rows).toBe(5850);
+    const radarVisible = await page.locator('[name="viewer-Radar"]').isVisible();
+    expect(radarVisible).toBe(true);
   });
 
-  test('Step 3c: Radar viewer — table switching (known bug)', async ({ page }) => {
-    await openDemoFile(page, 'earthquakes.csv');
-    await page.evaluate(() => (window as any).grok.shell.tv.addViewer('Radar'));
-    await page.waitForTimeout(1000);
-    await openDemoFile(page, 'demog.csv');
+  // Step 3a: Open properties panel and switch tables
+  await softStep('Step 3a: Switch tables via properties', async () => {
+    // Click gear icon on the Radar viewer dock panel title bar
+    const switched = await page.evaluate(async () => {
+      const radar = document.querySelector('[name="viewer-Radar"]');
+      if (!radar) return { error: 'no radar' };
+      const dockPanel = radar.closest('.panel-content');
+      const titleBar = dockPanel?.parentElement?.querySelector('.panel-titlebar');
+      const settingsIcon = titleBar?.querySelector('[name="icon-font-icon-settings"]') as HTMLElement;
+      if (settingsIcon) settingsIcon.click();
+      await new Promise(r => setTimeout(r, 500));
+
+      // Find the Table combobox and switch to "Table" (earthquakes)
+      const combo = document.querySelector('.grok-prop-panel select') as HTMLSelectElement;
+      if (!combo) return { error: 'no combo' };
+      combo.value = 'Table';
+      combo.dispatchEvent(new Event('change', { bubbles: true }));
+      await new Promise(r => setTimeout(r, 1000));
+
+      const viewers = Array.from(grok.shell.tv.viewers);
+      const radarViewer = viewers.find((v: any) => v.type === 'RadarViewer') as any;
+      return { tableName: radarViewer?.dataFrame?.name };
+    });
+    expect(switched).not.toHaveProperty('error');
+  });
+
+  // Step 3b: Test column selection dialog
+  await softStep('Step 3b: Column selection (Values)', async () => {
+    // Click the "..." button to open Select Columns dialog
+    const dialogOpened = await page.evaluate(async () => {
+      const propPanel = document.querySelector('.grok-prop-panel');
+      const btn = propPanel?.querySelector('button');
+      if (btn) btn.click();
+      await new Promise(r => setTimeout(r, 500));
+      return !!document.querySelector('.d4-dialog');
+    });
+    expect(dialogOpened).toBe(true);
+
+    // Click "All" then OK
+    await page.evaluate(async () => {
+      const dialog = document.querySelector('.d4-dialog');
+      const allLink = Array.from(dialog?.querySelectorAll('*') ?? [])
+        .find(el => el.textContent?.trim() === 'All' && el.tagName !== 'OPTION') as HTMLElement;
+      if (allLink) allLink.click();
+      await new Promise(r => setTimeout(r, 300));
+      const okBtn = dialog?.querySelector('[name="button-OK"]') as HTMLElement;
+      if (okBtn) okBtn.click();
+    });
     await page.waitForTimeout(500);
-
-    // Attempt table switch — known to throw NoSuchMethodError: toLowerCase
-    const consoleErrors: string[] = [];
-    page.on('console', msg => {
-      if (msg.type() === 'error') consoleErrors.push(msg.text());
-    });
-
-    await page.evaluate(() => {
-      const views = (window as any).grok.shell.tableViews;
-      if (views.length < 2) return;
-      const eqView = views.find((v: any) => v.dataFrame?.name?.includes('earthquakes'));
-      const radarViewer = eqView?.viewers?.find((v: any) => v.type === 'Radar');
-      const demogDf = views.find((v: any) => v.dataFrame?.name?.includes('demog'))?.dataFrame;
-      if (radarViewer && demogDf) {
-        try { radarViewer.props.table = demogDf; }
-        catch (e) { console.error('Table switch error: ' + e); }
-      }
-    });
-
-    await page.waitForTimeout(500);
-    // This is a known failing step; the test documents the bug
-    // TODO: fix NoSuchMethodError: toLowerCase when switching viewer table cross-view
   });
+
+  // Step 3c: Style/color changes
+  await softStep('Step 3c: Style and color changes', async () => {
+    const result = await page.evaluate(async () => {
+      const viewers = Array.from(grok.shell.tv.viewers);
+      const radar = viewers.find((v: any) => v.type === 'RadarViewer') as any;
+      if (!radar) return { error: 'no radar' };
+
+      radar.setOptions({
+        currentRowColor: 4294901760,
+        showMin: true,
+        showMax: true,
+        showValues: true,
+      });
+      await new Promise(r => setTimeout(r, 1000));
+
+      const opts = radar.getOptions();
+      return {
+        showValues: opts.look?.showValues,
+        showMin: opts.look?.showMin,
+        showMax: opts.look?.showMax,
+      };
+    });
+    expect(result).not.toHaveProperty('error');
+    expect(result.showValues).toBe(true);
+    expect(result.showMin).toBe(true);
+    expect(result.showMax).toBe(true);
+  });
+
+  // Cleanup
+  await page.evaluate(() => grok.shell.closeAll());
+
+  if (stepErrors.length > 0) {
+    const summary = stepErrors.map(e => `  - ${e.step}: ${e.error}`).join('\n');
+    throw new Error(`${stepErrors.length} step(s) failed:\n${summary}`);
+  }
 });

@@ -57,7 +57,7 @@ All scenarios should start with the following sequence of events:
 
 ## Labels
 
-1. On the viewer, right-click the canvas and go to Labels — check SEX in the column list
+1. Right-click the viewer and go to Labels — check SEX in the column list
 2. From the Labels submenu, set Show Labels For to Selected
 3. Set Show Labels For to All
 4. Check Use Label as Marker
@@ -66,7 +66,7 @@ All scenarios should start with the following sequence of events:
 
 ## Regression line
 
-1. On the viewer, right-click the canvas and go to Tools > Show Regression Line
+1.Right-click the viewer and go to Tools > Show Regression Line
 2. Hover over the viewer — click the Color selector and set Color to RACE
 3. Go to the Context Panel > Lines, check Regression Per Category
 4. Check Show Spearman Correlation
@@ -96,7 +96,7 @@ All scenarios should start with the following sequence of events:
 ## Filtered out points
 
 1. Open the filter panel and on the Filter Panel, in the SEX filter click 'M' to filter some rows
-2. On the viewer, right-click the canvas and go to Filter > Show Filtered Out Points
+2. Right-click the viewer and go to Filter > Show Filtered Out Points
 3. Right-click again and go to Filter > uncheck Show Filtered Out Points
 
 ## Axis histograms
@@ -139,17 +139,17 @@ All scenarios should start with the following sequence of events:
 ## Lasso selection
 
 1. On the viewer, click the X column selector and set X to AGE, click the Y column selector and set Y to HEIGHT
-2. On the viewer, right-click the canvas and check Lasso Tool
+2. Right-click the viewer and check Lasso Tool
 3. Hold Shift and drag a freeform lasso area over the plot
 4. Verify some points are selected
 5. Press Escape to deselect
-6. Right-click the canvas and uncheck Lasso Tool
+6. Right-click the viewer and uncheck Lasso Tool
 
 ## Layout save and restore
 
 1. On the viewer, set X to AGE, Y to WEIGHT via column selectors
 2. Set Color to RACE and Size to HEIGHT via the viewer selectors
-3. Right-click the canvas > Tools > Show Regression Line; go to Context Panel > Marker, set Jitter Size to 10
+3. Right-click the viewer > Tools > Show Regression Line; go to Context Panel > Marker, set Jitter Size to 10
 4. Right-click the legend, set Legend Visibility to Always; go to Context Panel > X, check Invert X Axis
 5. Save the layout
 6. Close the scatter plot viewer by clicking the X icon on the viewer title bar
@@ -159,7 +159,7 @@ All scenarios should start with the following sequence of events:
 
 ## Context menu
 
-1. Right-click the center of the scatter plot canvas — a context menu should appear
+1. Right-click the center of the scatter plot viewer — a context menu should appear
 2. Verify the menu contains items: Reset View, Lasso Tool, Tools
 3. Close the menu by pressing Escape
 
@@ -181,6 +181,6 @@ All scenarios should start with the following sequence of events:
 
 ---
 {
-  "order": 101,
+  "order": 1,
   "datasets": ["System:DemoFiles/demog.csv"]
 }

@@ -1,131 +1,123 @@
 import { test, expect, Page } from '@playwright/test';
 
-const BASE_URL = 'https://public.datagrok.ai/';
+const baseUrl = 'https://dev.datagrok.ai';
+const datasetPath = 'System:DemoFiles/demog.csv';
+const stepErrors: {step: string; error: string}[] = [];
 
-async function closeAll(page: Page) {
-  await page.evaluate(() => (window as any).grok.shell.closeAll());
+async function softStep(name: string, fn: () => Promise<void>) {
+  try {
+    await test.step(name, fn);
+  } catch (e: any) {
+    stepErrors.push({step: name, error: e.message ?? String(e)});
+    console.error(`[STEP FAILED] ${name}: ${e.message ?? e}`);
+  }
 }
 
-test.describe('Tree Viewer — Collaborative Filtering', () => {
-  let page: Page;
+test('Tree Viewer — Collaborative Filtering', async ({ page }) => {
+  // Phase 1: Navigate
+  await page.goto(baseUrl);
+  await page.waitForFunction(() => {
+    return typeof grok !== 'undefined' && grok.shell && grok.shell.views;
+  }, {timeout: 30000});
 
-  test.beforeEach(async ({ page: p }) => {
-    page = p;
-    await p.goto(BASE_URL);
-    await p.waitForFunction(() => typeof (window as any).grok !== 'undefined', { timeout: 30000 });
-    await closeAll(p);
-  });
-
-  test('Full collaborative filtering scenario', async ({ page }) => {
-    // Setup: open demog.csv
-    await page.evaluate(() => (window as any).grok.data.getDemoTable('demog.csv'));
-    await page.waitForTimeout(1500);
-
-    // Add Tree viewer
-    await page.evaluate(() => (window as any).grok.shell.tv.addViewer('Tree'));
-    await page.waitForTimeout(1000);
-
-    // Set hierarchy to CONTROL, SEX, RACE
-    const setupResult = await page.evaluate(() => {
-      const tv = (window as any).grok.shell.tv;
-      const v = tv.viewers.find((v: any) => v.type === 'Tree');
-      if (!v) return { error: 'Tree viewer not found' };
-      v.props.hierarchyColumnNames = ['CONTROL', 'SEX', 'RACE'];
-      return { hierarchySet: true };
+  // Phase 2: Open dataset
+  await page.evaluate(async (path) => {
+    document.body.classList.add('selenium');
+    grok.shell.settings.showFiltersIconsConstantly = true;
+    grok.shell.closeAll();
+    const df = await grok.dapi.files.readCsv(path);
+    const tv = grok.shell.addTableView(df);
+    await new Promise(resolve => {
+      const sub = df.onSemanticTypeDetected.subscribe(() => { sub.unsubscribe(); resolve(); });
+      setTimeout(resolve, 3000);
     });
-    expect(setupResult).not.toHaveProperty('error');
-    await page.waitForTimeout(1000);
+  }, datasetPath);
+  await page.locator('.d4-grid[name="viewer-Grid"]').waitFor({timeout: 30000});
 
-    await page.screenshot({ path: 'scenario3-tree-setup.png' });
+  // Phase 3: Add Tree viewer and open filters
+  await page.evaluate(async () => {
+    const tree = await grok.shell.tv.addViewer('Tree');
+    await new Promise(r => setTimeout(r, 2000));
+    const viewers = Array.from(grok.shell.tv.viewers);
+    const treeViewer = viewers.find((v: any) => v.type === 'Tree') as any;
+    treeViewer.setOptions({ hierarchyColumnNames: ['CONTROL', 'SEX', 'RACE'] });
+    await new Promise(r => setTimeout(r, 1000));
+    grok.shell.tv.getFiltersGroup();
+  });
+  await page.locator('[name="viewer-Filters"] .d4-filter').first().waitFor({timeout: 10000});
 
-    // Step 1: Select branches false→F→Asian, false→F→Black, false→M→Asian
-    const step1 = await page.evaluate(() => {
-      const tv = (window as any).grok.shell.tv;
-      const df = tv.dataFrame;
-      if (!df) return { error: 'No dataframe' };
-
-      const controlCol = df.col('CONTROL');
-      const sexCol = df.col('SEX');
-      const raceCol = df.col('RACE');
-      if (!controlCol || !sexCol || !raceCol) return { error: 'Columns not found' };
-
+  // Step 1: Select branches false→F→Asian, false→F→Black, false→M→Asian
+  await softStep('Step 1: Select three branches via Shift+Click', async () => {
+    const result = await page.evaluate(() => {
+      const df = grok.shell.tv.dataFrame;
       df.selection.setAll(false);
-      const rowCount = df.rowCount;
-      for (let i = 0; i < rowCount; i++) {
-        const ctrl = controlCol.get(i);
-        const sex = sexCol.get(i);
-        const race = raceCol.get(i);
-        // false→F→Asian OR false→F→Black OR false→M→Asian
+      for (let i = 0; i < df.rowCount; i++) {
+        const ctrl = df.col('CONTROL').get(i);
+        const sex = df.col('SEX').get(i);
+        const race = df.col('RACE').get(i);
         if (ctrl === false && sex === 'F' && race === 'Asian') df.selection.set(i, true);
-        else if (ctrl === false && sex === 'F' && race === 'Black') df.selection.set(i, true);
-        else if (ctrl === false && sex === 'M' && race === 'Asian') df.selection.set(i, true);
+        if (ctrl === false && sex === 'F' && race === 'Black') df.selection.set(i, true);
+        if (ctrl === false && sex === 'M' && race === 'Asian') df.selection.set(i, true);
       }
       return { selectedCount: df.selection.trueCount };
     });
-    expect(step1).not.toHaveProperty('error');
-    expect((step1 as any).selectedCount).toBeGreaterThan(0);
+    expect(result.selectedCount).toBe(174);
+  });
 
-    // Step 2: Apply CONTROL=true filter → selected ∩ filtered should be 0
-    const step2 = await page.evaluate(() => {
-      const tv = (window as any).grok.shell.tv;
-      const df = tv.dataFrame;
-      const controlCol = df.col('CONTROL');
+  // Step 2: Filter CONTROL=true → selected ∩ filtered = 0
+  await softStep('Step 2: Filter CONTROL=true, expect filtered count = 0', async () => {
+    const result = await page.evaluate(async () => {
+      const fg = grok.shell.tv.getFiltersGroup();
+      fg.updateOrAdd({type: DG.FILTER_TYPE.CATEGORICAL, column: 'CONTROL', selected: ['true']});
+      await new Promise(r => setTimeout(r, 500));
 
-      // Apply filter: CONTROL = true
-      df.filter.setAll(false);
-      for (let i = 0; i < df.rowCount; i++) {
-        if (controlCol.get(i) === true) df.filter.set(i, true);
-      }
-      df.filter.fireChanged();
-
-      // Count rows that are both selected and filtered
+      const df = grok.shell.tv.dataFrame;
       let overlap = 0;
-      for (let i = 0; i < df.rowCount; i++) {
-        if (df.selection.get(i) && df.filter.get(i)) overlap++;
-      }
-      return { filteredCount: df.filter.trueCount, overlapCount: overlap };
+      for (let i = 0; i < df.rowCount; i++)
+        if (df.filter.get(i) && df.selection.get(i)) overlap++;
+      return { filteredCount: df.filter.trueCount, overlap };
     });
-    // Expected: 0 overlap (selected rows all have CONTROL=false)
-    expect((step2 as any).overlapCount).toBe(0);
+    expect(result.overlap).toBe(0);
+  });
 
-    // Step 3: Add All→true→F→Black selection → overlap should be 2
-    const step3 = await page.evaluate(() => {
-      const tv = (window as any).grok.shell.tv;
-      const df = tv.dataFrame;
-      const controlCol = df.col('CONTROL');
-      const sexCol = df.col('SEX');
-      const raceCol = df.col('RACE');
-
-      // Add true→F→Black to selection
+  // Step 3: Add true→F→Black to selection → selected ∩ filtered = 2
+  await softStep('Step 3: Add true→F→Black selection, expect filtered count = 2', async () => {
+    const result = await page.evaluate(() => {
+      const df = grok.shell.tv.dataFrame;
       for (let i = 0; i < df.rowCount; i++) {
-        if (controlCol.get(i) === true && sexCol.get(i) === 'F' && raceCol.get(i) === 'Black')
+        if (df.col('CONTROL').get(i) === true &&
+            df.col('SEX').get(i) === 'F' &&
+            df.col('RACE').get(i) === 'Black')
           df.selection.set(i, true);
       }
-
       let overlap = 0;
-      for (let i = 0; i < df.rowCount; i++) {
-        if (df.selection.get(i) && df.filter.get(i)) overlap++;
-      }
-      return { totalSelected: df.selection.trueCount, overlapCount: overlap };
+      for (let i = 0; i < df.rowCount; i++)
+        if (df.filter.get(i) && df.selection.get(i)) overlap++;
+      return { totalSelected: df.selection.trueCount, overlap };
     });
-    // Expected: 2 overlap
-    expect((step3 as any).overlapCount).toBe(2);
-
-    // Step 4: Clear CONTROL=true filter → selected count = 176
-    const step4 = await page.evaluate(() => {
-      const tv = (window as any).grok.shell.tv;
-      const df = tv.dataFrame;
-
-      // Clear filter
-      df.filter.setAll(true);
-      df.filter.fireChanged();
-
-      return { totalSelected: df.selection.trueCount, totalFiltered: df.filter.trueCount };
-    });
-    // Expected: 176 selected
-    expect((step4 as any).totalSelected).toBe(176);
-    expect((step4 as any).totalFiltered).toBe(5850);
-
-    await page.screenshot({ path: 'scenario3-tree-final.png' });
+    expect(result.overlap).toBe(2);
+    expect(result.totalSelected).toBe(176);
   });
+
+  // Step 4: Clear CONTROL filter → selected = 176
+  await softStep('Step 4: Clear CONTROL filter, expect selected count = 176', async () => {
+    const result = await page.evaluate(async () => {
+      const fg = grok.shell.tv.getFiltersGroup();
+      const df = grok.shell.tv.dataFrame;
+      const cats = df.col('CONTROL').categories;
+      fg.updateOrAdd({type: DG.FILTER_TYPE.CATEGORICAL, column: 'CONTROL', selected: cats});
+      await new Promise(r => setTimeout(r, 500));
+      return { filtered: df.filter.trueCount, selected: df.selection.trueCount };
+    });
+    expect(result.filtered).toBe(5850);
+    expect(result.selected).toBe(176);
+  });
+
+  // Cleanup
+  await page.evaluate(() => grok.shell.closeAll());
+
+  if (stepErrors.length > 0) {
+    const summary = stepErrors.map(e => `  - ${e.step}: ${e.error}`).join('\n');
+    throw new Error(`${stepErrors.length} step(s) failed:\n${summary}`);
+  }
 });
