@@ -1,7 +1,7 @@
 const path = require('path');
 const packageName = path.parse(require('./package.json').name).name.toLowerCase().replace(/-/g, '');
 const FuncGeneratorPlugin = require('datagrok-tools/plugins/func-gen-plugin');
-const workingInDartium = false; // when working in Dartium, set this to true
+const workingInDartium = true; // when working in Dartium, set this to true
 
 module.exports = {
   cache: {

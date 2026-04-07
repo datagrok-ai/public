@@ -3,6 +3,8 @@
 ApiSamples is the canonical reference package for Datagrok API usage. It contains ~374 standalone JavaScript example
 scripts organized by API area, plus a test harness that runs each script automatically against a live Datagrok instance.
 
+Direct link to open samples tree: `${GROK_URL}/js?browse=samples`.
+
 ## Adding a New Script
 
 Scripts are plain `.js` files dropped into the appropriate subfolder under `scripts/`. They execute as top-level async
