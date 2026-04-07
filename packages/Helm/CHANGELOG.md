@@ -1,5 +1,22 @@
 # Helm changelog
 
+## 2.13.4 (2026-03-31)
+
+### Features
+
+* Added reverse compatibility support
+* Improved startup performance with dynamic imports for heavy dependencies
+* [#3604](https://github.com/datagrok-ai/public/issues/3604): Migrated function tags to roles
+
+### Bug Fixes
+
+* Gap symbol connections now correctly restore for complex and multi-connection cases
+* Async renderer no longer causes infinite queues
+
+## 2.13.1 (2025-10-31)
+
+Polifill for 1.25
+
 ## 2.13.0 (2025-10-29)
 
 * CHEMS and SMILES support in HELM

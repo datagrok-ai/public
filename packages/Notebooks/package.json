@@ -1,7 +1,7 @@
 {
   "name": "@datagrok/notebooks",
   "fullName": "Notebooks",
-  "version": "1.4.0",
+  "version": "1.5.0",
   "author": {
     "name": "Alexander Paramonov",
     "email": "aparamonov@datagrok.ai"
@@ -31,7 +31,8 @@
     "bufferutil": "^4.0.1",
     "datagrok-api": "^1.26.0",
     "es6-promise": "~4.2.8",
-    "utf-8-validate": "^5.0.2"
+    "utf-8-validate": "^5.0.2",
+    "@datagrok-libraries/test": "^1.1.0"
   },
   "devDependencies": {
     "@types/codemirror": "^0.0.76",
@@ -71,5 +72,8 @@
   "canView": [
     "All users"
   ],
-  "category": "Compute"
+  "category": "Compute",
+  "overrides": {
+    "datagrok-api": "$datagrok-api"
+  }
 }

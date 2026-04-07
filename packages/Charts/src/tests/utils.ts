@@ -1,6 +1,6 @@
 import * as DG from 'datagrok-api/dg';
 
-import {delay} from '@datagrok-libraries/utils/src/test';
+import {delay} from '@datagrok-libraries/test/src/test';
 
 
 export async function getOptions(viewer: DG.Viewer): Promise<Indexable> {

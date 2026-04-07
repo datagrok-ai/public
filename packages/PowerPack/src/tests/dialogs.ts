@@ -2,7 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import dayjs from 'dayjs';
 import {after, awaitCheck, before, category, expect, expectArray, expectFloat,
-  expectObject, isDialogPresent, test} from '@datagrok-libraries/utils/src/test';
+  expectObject, isDialogPresent, test} from '@datagrok-libraries/test/src/test';
 import {AddNewColumnDialog} from '../dialogs/add-new-column';
 import {FormulaLinesDialog} from '../dialogs/formula-lines';
 import {FUNC_TESTS} from './utils';
@@ -19,11 +19,6 @@ category('Dialogs', () => {
   test('FormulaLines', async () => {
     const dlg = new FormulaLinesDialog(df);
     await awaitCheck(() => isDialogPresent(dlg.dialog.title));
-  });
-
-  after(async () => {
-    grok.shell.closeAll();
-    DG.Balloon.closeAll();
   });
 }, {clear: false});
 

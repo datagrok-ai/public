@@ -139,7 +139,7 @@ You can also explore the vault data directly in the **Context Panel** (**Databas
 <Tabs>
 <TabItem value="molecules" label="Molecules" default>
 * Shows all molecules available in the selected vault
-* The **Id** column contains contains direct links to corresponding molecules in your vault
+* The **Id** column contains direct links to corresponding molecules in your vault
 <br/>
 ![Molecules tab](img/cdd_molecules.png)
 </TabItem>
@@ -198,7 +198,7 @@ The following info panes are shown by default for the current molecular column:
 <details>
 <summary>Info pane options</summary>
 
-Some info panes can customized. To reveal an info pane's available options, hover over it:
+Some info panes can be customized. To reveal an info pane's available options, hover over it:
 
 * View and/or edit the underlying script (click the **Script** icon).
 * Change parameters (click the **Parameter** icon).
@@ -217,7 +217,7 @@ Info panes can be extended with [functions](../../../concepts/functions/function
 
 :::
 
-Also Datagrok is capable of detecting and rendering mixtures. Mixtures should be in a [Mixfile](https://github.com/cdd/mixtures) format introduced by Collaborative Drug Discovery, Inc.
+Datagrok is also capable of detecting and rendering mixtures. Mixtures should be in a [Mixfile](https://github.com/cdd/mixtures) format introduced by Collaborative Drug Discovery, Inc.
 Mixfiles are automatically detected by Datagrok and the data is assigned with ChemicalMixture semantic type, allowing you to render mixtures of any complexity and retrieve detailed information through context panel.
 The main features are:
 
@@ -253,7 +253,7 @@ You can [add custom viewers](../../../../develop/how-to/viewers/develop-custom-v
 
 ### Chemical space
 
-Analyze chemical space using distance-based dimensionality reduction algorithms, such as [tSNE](https://scikit-learn.org/stable/modules/generated/sklearn.manifold.TSNE.html) and [UMAP](https://umap-learn.readthedocs.io/en/latest/). These algorithms use fingerprints to convert cross-similarities into 2D coordinates. This allows to visualize the similarities between molecular structures and identify clusters of similar molecules, outliers, or patterns that might be difficult to detect otherwise. The results are visualized on the interactive [scatterplot](../../../../visualize/viewers/scatter-plot.md).
+Analyze chemical space using distance-based dimensionality reduction algorithms, such as [tSNE](https://scikit-learn.org/stable/modules/generated/sklearn.manifold.TSNE.html) and [UMAP](https://umap-learn.readthedocs.io/en/latest/). These algorithms use fingerprints to convert cross-similarities into 2D coordinates. This lets you visualize the similarities between molecular structures and identify clusters of similar molecules, outliers, or patterns that might be difficult to detect otherwise. The results are visualized on the interactive [scatterplot](../../../../visualize/viewers/scatter-plot.md).
 
 ![chem-space](../../../../compute/chem-space.gif)
 
@@ -445,7 +445,7 @@ matches for your target molecule. You can also open the results in a separate [T
 :::note Developers
 
 To dynamically enrich compound IDs with linked data, 
-[register identifier patterns](../../../../develop/how-to/grid/register-identifiers.md) 
+[register identifier patterns](../../../../develop/how-to/db/register-identifiers.md) 
 (e.g., `CHEMBL\d+`). Once registered, the matching values:
 
 * are automatically detected and highlighted across the platform
@@ -466,28 +466,42 @@ R-group analysis decomposes a set of molecules into a core and R-groups (ligands
 consists of the scaffold and ligand attachment points represented by R-groups.
 R-group analysis runs in browser using RDKit JS library.
 
-![R-Group Analysis](img/new_r_group_analysis.gif)
+![R-Group Analysis](img/new-r-groups-analysis.gif)
 
 <details>
 <summary> How to use </summary>
 
-1. Go to **Chem** > **Analyze SAR** > **R-Groups Analysis...**
+<Tabs>
+<TabItem value="workflow" label="Workflow" default>
+
+1. Go to **Chem** > **Analyze** > **R-Groups Analysis...**
 A [sketcher](#sketching) opens.
 1. In the sketcher, specify the common core (scaffold) for the selected molecular column using one of these methods:
    * Draw or paste a scaffold in the sketcher. You can define core with custom enumerated R groups.
    * Click **MCS** to automatically identify the most common substructure.
-   * Click the **Gear** icon to adjust R group analysis parameters.
+1. Click the **Gear** icon to adjust R group analysis parameters.
 1. Click **OK** to execute. The R-group columns are added to the dataframe, along with a [trellis plot](../../../../visualize/viewers/trellis-plot.md) for visual exploration.
 
-R-groups are highlighted with different colorsin the initial molecules in dataframe. Molecules are automatically aligned by core. To filter molecules with R group present in each enumerated position use **isHeat** column.
+R-groups are highlighted with different colors in the initial molecules in grid. Molecules are automatically aligned by core. To filter molecules with R group present in each enumerated position use **isMatch** column.
 
 The trellis plot initially displays pie charts. To change the chart type, use the **Viewer** control in the top-left corner to select a different viewer.
 
 If you prefer not to use a trellis plot, close it or clear the **Visual analysis** checkbox
-during Step 2. You can manually add it later. You can also use other [chemical viewers](chemically-aware-viewers.md), like scatterplot, box plot, bar chart, and others.
+during Step 3. You can manually add it later. You can also use other [chemical viewers](chemically-aware-viewers.md), like scatterplot, box plot, bar chart, and others.
 
 Use **Replace latest** checkbox to remove previous analysis results when running the new one. Or check it to add new analysis results in addition to existing.
+</TabItem>
+<TabItem value="Match" label="Only match at R groups">
 
+You can restrict R-groups analysis to molecules that have actual substituents at the specified R-group positions:
+1. Define a core with labeled R-groups in the sketcher
+1. Click the **Gear** icon and enable **Only match at R groups**.
+Before running the analysis, the tool verifies that the core contains properly labeled R groups. The selected setting is saved automatically for future sessions.
+
+![Only match at R groups](img/match-r-groups.gif)
+
+</TabItem>
+</Tabs>
 </details>
 
 :::note developers
@@ -498,7 +512,7 @@ To run the r-group decomposition programmatically, see [this sample script](http
 
 ### Scaffold tree analysis
 
-The scaffold tree viewer viewer organizes molecules into a hierarchical tree
+The scaffold tree viewer organizes molecules into a hierarchical tree
 based on their scaffolds, making it easy to explore structure-activity
 relationships, filter datasets, and navigate chemical space.
 
@@ -522,7 +536,7 @@ Each node represents a scaffold. Nodes form a hierarchy where:
 * The root scaffold is the smallest common substructure
 * Child scaffolds contain their parent as a substructure
 * Each scaffold builds on the structure above it in the tree
-* Orphan nodes contains the parent scaffold but don't have any sibling scaffolds
+* Orphan nodes contain the parent scaffold but don't have any sibling scaffolds
 
 ![Scaffold tree anatomy](scaffold-tree-anatomy.png)
 
@@ -611,7 +625,7 @@ dataset column and the scaffold tree.
 * To assign new color, click the **Palette** icon. The color applies to the scaffold
   and all its child scaffolds unless they already have custom colors.
 * To override an inherited color, assign the new color. Custom node colors
-  takes precedence.
+  take precedence.
 
 ![scaffold-tree-coloring](scaffold-tree-coloring.gif)
 
@@ -739,8 +753,6 @@ visualizations, allowing you to:
 * Evaluate how specific chemical changes affect a compound's profile
 * Generate optimized molecules with predicted properties based on transformations data
 
-![MMP Demo](img/mmp-full.gif)
-
 <details>
 <summary>How to use</summary>
 
@@ -751,32 +763,61 @@ To run MMP analysis:
 2. In the dialog, configure the analysis by selecting:
     * **Table**: The dataset you want to analyze
     * **Molecules**: The column containing molecules
-    * **Activity**: The column(s) representing activity or property values
-    * **Fragment Cutoff**: The maximum allowed fragment size relative to the core
-3. Click OK. An MMP analysis is added to the view with four tabs:
+    * **Activities**: One or more numerical columns representing activity or
+    property values. For each activity, you can set:
+      * **Difference type**: _delta_ (x − y) or _ratio_ (x / y)
+      * **Scaling**: _none_, _log10_, or _−log10_ (log options are available only when all values are non-negative)
+    * **Cutoff**: The maximum allowed fragment size relative to the core (default 0.4)
+3. Click **OK**. An MMP analysis is added to the view with four tabs:
+
+When you first open the analysis, interactive **hints** guide you through the
+key features on each tab. Click **Next** to advance or **Do not show** to
+dismiss hints permanently.
+
+![Run MMP](img/mmp_start.gif)
 
 <Tabs>
-<TabItem value="substitutions" label="Substitutions" default> 
+<TabItem value="substitutions" label="Substitutions" default>
 
 The **Substitutions** tab has two interactive tables:
 
 1. **Fragments** table (upper): Shows all fragment substitutions found in your
-  dataset along with their frequency and mean change in activity or property. It
-  has two viewing modes:
-   * **All**: Shows all fragment pairs. Clicking a row here highlights molecules in
-your dataset that contain either fragment from a current substitution.
-   * **Current molecule**: Shows only fragment pairs relevant to the current molecule
-molecule in your dataset, enabling exploration of molecule-specific
-substitutions. The number of corresponding substitutions appears in the top-left
-corner.
+  dataset along with their frequency, mean change in activity, and pair counts
+  per activity. Mean activity columns use a compact in-cell visualization: each
+  cell displays the mean difference value overlaid on a set of lines connecting
+  individual "from" and "to" activity values for every pair in the substitution,
+  giving you an at-a-glance view of both the trend and the spread.
 
-1. **Molecule pairs** table (lower): Shows pairs of molecules and their property changes corresponding to the current
-   substitution in the **Fragments** table. Clicking a row here pins the molecule pair at the top of your
-   dataset and shows the details about the pair in the **Context Panel**. 
+   ![Compact activity visualization](img/mmp-activity-cells.png)
 
-To select multiple rows in any table, use **Ctrl+click**. To open a table in a separate view, click the **+** icon above the corresponding table.
+   It has two viewing modes:
+   * **All**: Shows all fragment pairs. Clicking a row highlights molecules in
+your dataset that contain either fragment from the current substitution.
+   * **Current molecule**: Shows only fragment pairs relevant to the currently
+selected molecule in your dataset, enabling exploration of molecule-specific
+substitutions.
 
- ![Substitutions tab](img/mmp-tab-substitutions.gif)
+   Use the **Follow current row** toggle to automatically filter the **Molecule
+   pairs** table based on the currently selected fragment pair.
+
+   ![MMP fragments modes](img/mmp_fragments_modes.gif)
+
+   Clicking a mean activity cell in the **Fragments** table opens a **parallel
+   coordinates plot** in the **Context Panel**, showing individual activity
+   values for all molecule pairs with that substitution.
+
+1. **Molecule pairs** table (lower): Shows pairs of molecules and their property
+   changes corresponding to the current substitution in the **Fragments** table.
+   Clicking a row pins the molecule pair at the top of your dataset and shows
+   the pair's details in the **Context Panel**, including all properties from the
+   source table with substructure highlighting of the changed fragments.
+
+   ![MMP molecule pairs navigation](img/mmp_molecule_pairs_navigation.gif)
+
+   ![MMP substitutions context panel](img/mmp_substitutions_context_panel.gif)
+
+To select multiple rows in any table, use **Ctrl+click**. Selecting rows
+propagates the selection to the corresponding molecules in the source dataset.
 
 </TabItem>
 <TabItem value="fragments" label="Fragments">
@@ -784,52 +825,69 @@ To select multiple rows in any table, use **Ctrl+click**. To open a table in a s
 The **Fragments** tab contains:
 
 1. [Trellis plot](../../../../visualize/viewers/trellis-plot.md): Shows
-identified fragments along the _x_ and _y_ axes, with property changes shown at
-their intersections. Click a cell to filter corresponding molecule pairs in the
-table below. Use the filter icon to refine results, or sort fragments by
-frequency or molecular weight using the sorting icons on the axes.
+identified fragments along the _x_ and _y_ axes, with bar charts at their
+intersections displaying mean activity changes (color-coded by activity with a
+legend above the plot). Click a cell to filter corresponding molecule pairs in
+the table below.
+
+   Use the toolbar above the trellis plot to:
+   * Click the **filter** icon to open a popup filter panel for refining which fragments are shown
+   * Click the **column selector** button to choose which activities to display in the trellis cells
+   * Click **sort** icons on each axis to sort fragments by _Frequency_, _Molecular weight_, or _None_ (ascending or descending)
 
 1. **Molecule pairs** table: Shows molecule pairs for the selected substitution
    and functions identically to the **Molecule pairs** table in the
    **Substitutions** tab.
 
-![Sort Fragments trellis plot](img/mmp-tab-fragments.gif)
+![Fragments trellis plot](img/mmp_tab_fragments.gif)
 
 
 </TabItem>
-<TabItem value="cliffs" label="Cliffs"> 
+<TabItem value="cliffs" label="Cliffs">
 
 The **Cliffs** tab includes:
 
-1. [Scatterplot](../../../../visualize/viewers/scatter-plot.md): Shows clusters
-of molecules with similar structures but significant differences in the activity
-or property. Arrows connecting molecules represent a property change, pointing
-toward the molecule with the higher value.
+1. [Scatterplot](../../../../visualize/viewers/scatter-plot.md): A 2D chemical
+space map where structurally similar molecules are positioned close together.
+Arrows connecting molecules represent matched molecular pairs, pointing toward
+the molecule with the higher activity value.
 
-1. **Molecule pairs** table: Shows molecule pairs for the selected substitution,
-identical to the table in the **Substitutions** tab. Clicking a row here zooms
-to that pair on the scatterplot and shows the pair's details in the **Context
-Panel**. Conversely, clicking an arrow on the scatterplot shows that pair in the
-table. Toggle the table's visibility with the **Show Pairs** checkbox above the
-scatterplot. 
+   **Activity filters** are overlaid on the scatterplot, providing per-activity controls:
+   * **Toggle** (checkbox): Show or hide lines for each activity
+   * **Color picker**: Customize the line color (changes are reflected on both the scatter plot and the trellis plot on the **Fragments** tab)
+   * **Cutoff slider**: Set the minimum activity difference threshold for displaying lines
 
-Use activity filters on the scatterplot to refine results in both views.
-![Filter Cliffs scatterplot](img/mmp-tab-cliffs.gif)
+   When the **Cliffs** tab is active, cutoff filters also apply to the source
+   dataset, showing only molecules involved in pairs above the threshold.
+
+1. **Molecule pairs** table: Shows molecule pairs filtered by the current cutoff
+settings. Clicking a row zooms to that pair on the scatterplot and shows the
+pair's details in the **Context Panel**. Conversely, clicking an arrow on the
+scatterplot selects that pair in the table. Toggle the table's visibility with
+the **Show Pairs** checkbox above the scatterplot.
+
+![Cliffs scatterplot](img/mmp_tab_cliffs.gif)
 
 </TabItem>
 <TabItem value="generation" label="Generation">
 
 The **Generation** tab uses transformation rules derived from your dataset
-to create and predict new molecules. For each molecule, the table shows:
+to predict optimized molecules. For each molecule and each selected activity, the
+most beneficial substitution is applied. The table shows:
 
-* Original and transformed molecules
-* Molecule status (existing or newly generated)
-* Maximum common substructure and the substituted fragment for this pair
-* Original and predicted property or activity values
+* **Structure**: The original molecule from the dataset
+* **Core**: The conserved molecular scaffold
+* **From** / **To**: The initial and substituted R-group fragments
+* **Predicted molecule**: The generated molecule after substitution
+* **Property type**: The activity being optimized
+* **Observed** / **Predicted**: Original and predicted activity values
+* **Δ activity**: The difference between predicted and observed values
+* **Prediction**: _True_ if the predicted molecule is new (not in the original dataset)
 
-The **Context Panel** shows a scatterplot comparing observed vs. predicted values based on your dataset molecules.
+The **Context Panel** shows per-activity **Observed vs. Predicted** scatter
+plots with regression lines and an identity line to assess model quality.
 
-![MMP Generations](img/mmp-generations.gif)
+![MMP Generations](img/mmp_tab_generations.gif)
 
 </TabItem>
 </Tabs>
@@ -953,7 +1011,18 @@ Medicinal chemistry is a balancing act: potency must rise while properties like 
 
   New numeric columns can be added for immediate charting and filtering such as physical chemical properties (Top menu: Chem → Calculate → Chemical Properties...) or ADME properties with the Admetica plugin (Top menu: Chem → Admetica → Calculate...). Custom properties, like Ligand Efficiency (LE) or Lipophilic Ligand Efficiency (LLE), can be calculated using the [Add New Column](../../../../transform/add-new-column.md) feature.  Viewers, like [parallel coordinates plot](../../../../visualize/viewers/pc-plot.md), [radar](../../../../visualize/viewers/radar.md) or [row-level pie bar charts](../../../../visualize/viewers/grid.md#summary-columns), are especially useful for examining the profile of properties.  
 
-* **Desirability/utility functions & composite scores.** Map each property to a 0–1 “desirability” curve, then combine (sum/mean/weighted) into a single score that encodes the team’s preferences. A well-known example that is included by default is CNS MPO from Pfizer, which combines six physicochemical properties into a 0–6 score and correlates with clinical CNS success. 
+* **Desirability/utility functions & composite scores.** Map each property to a 0–1 “desirability” curve, then combine (sum/mean/weighted) into a single score that encodes the team’s preferences. Desirability functions can be either drawn manually or constructed automatically from a labeled dataset using probabilistic MPO. A well-known example that is included by default is CNS MPO from Pfizer, which combines six physicochemical properties into a 0–6 score and correlates with clinical CNS success. 
+
+  <details>
+  <summary> Probabilistic MPO </summary>
+
+  Probabilistic MPO ([pMPO](https://pmc.ncbi.nlm.nih.gov/articles/PMC4716604/)) is a data-driven method for constructing desirability profiles from labeled datasets, in which statistically significant and non-redundant molecular descriptors are identified through significance testing and correlation filtering. It then combines these descriptors into weighted desirability functions, enabling robust multi-parameter optimization and compound ranking based on balanced property trade-offs.
+
+  Build a desirability profile using the interactive pMPO application available via `Chem -> Calculate -> Train pMPO...`:
+
+  ![Pareto front](mpo-probabilistic.png)
+
+  </details>
 
   Available from `Chem -> Calculate -> MPO Score...`:
 
@@ -1068,7 +1137,7 @@ You can use the `Chem: TwoComponentReaction` function to apply specified chemica
 1. Open the **Two Component Reaction** dialog by executing the `Chem: TwoComponentReaction` function in the **Console**. This opens a parameter input dialog.
 1. In the dialog:
    1. Select the reactants to use.
-   1. Enter reaction in the filed provided.
+   1. Enter a reaction in the field provided.
    1. Choose whether to combine the reactants from two sets, or sequentially, and whether to randomize, by checking or clearing the Matrix Expansion and Randomize checkboxes.
    1. Set other parameters, such as seed, the number of maximum random reactions.
    1. Click **OK** to execute.
@@ -1134,7 +1203,10 @@ For a full list of chemical scripts, along with details on their implementation 
 
 * [Cheminformatics tutorial](https://public.datagrok.ai/apps/tutorials/Tutorials/Cheminformatics/VirtualScreening)
 * [Demo app](https://public.datagrok.ai/apps/Tutorials/Demo)
-* Videos
+* Community:
+  * [Cheminformatics updates](https://community.datagrok.ai/t/cheminformatics-updates/457)
+* Videos:
   * [Cheminformatics](https://www.youtube.com/watch?v=k1NVdTRpYOM)
   * [Molecular similarity and diversity](https://www.youtube.com/watch?v=wCdzD64plEo)
+
 <!--* [Package help reference]-->

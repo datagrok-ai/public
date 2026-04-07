@@ -1,4 +1,3 @@
-//tags: DataFrame, modification
 // Different ways to edit table's content, filter, selection, and metadata.
 
 let demog = grok.data.demo.demog();

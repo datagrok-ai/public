@@ -13,7 +13,7 @@ import BrowserWindow from '@site/src/components/browser-window';
 Datagrok offers you a lot of options to enhance your scripting
 experience and let you concentrate on working with your data.
 
-Explore the following sections to earn how to:
+Explore the following sections to learn how to:
 
 * [Enhance input UI](enhance-input-ui.md)
 * [Use complex input/output data types](complex-input-output)

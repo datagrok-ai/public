@@ -22,9 +22,13 @@ import {
   SliderOptions,
   Breadcrumbs,
   DropDown,
+  DropDownMenuItems,
+  DropDownMenuBuilder,
+  DropDownListOptions,
+  DropDownOptions,
   TypeAhead,
   TypeAheadConfig,
-  TagsInput, ChoiceInput, InputForm, CodeInput, CodeConfig, MarkdownInput, TagsInputConfig, MarkdownConfig,
+  ChoiceInput, MultiChoiceInput, InputForm, CodeInput, CodeConfig, MarkdownInput, MarkdownConfig,
 } from './src/widgets';
 import {toDart, toJs} from './src/wrappers';
 import {Functions} from './src/functions';
@@ -33,7 +37,7 @@ import {__obs} from './src/events';
 import {HtmlUtils, _isDartium, _options, Utils} from './src/utils';
 import * as rxjs from 'rxjs';
 import {CanvasRenderer, GridCellRenderer, SemanticValue, Size} from './src/grid';
-import {Entity, FileInfo, Property, User} from './src/entities';
+import {Entity, FileInfo, Group, Property, User} from './src/entities';
 import { Column, DataFrame } from './src/dataframe';
 import dayjs from "dayjs";
 import { Wizard, WizardPage } from './src/ui/wizard';
@@ -99,21 +103,41 @@ export function remove(element: HTMLElement): void {
   element.remove();
 }
 
+/**
+ * Internal helper to set element inner text and return the element for chaining.
+ * Prefer using standard DOM APIs or ui.div/ui.span with content directly.
+ * @internal
+ */
 export function _innerText(x: HTMLElement, s: string): HTMLElement {
   x.innerText = s;
   return x;
 }
 
+/**
+ * Internal helper to add a CSS class and return the element for chaining.
+ * Prefer using ui.element() with className parameter or standard classList API.
+ * @internal
+ */
 export function _class(x: HTMLElement, s: string): HTMLElement {
   x.classList.add(s);
   return x;
 }
 
+/**
+ * Internal helper to set text color and return the element for chaining.
+ * Prefer using CSS classes for styling.
+ * @internal
+ */
 export function _color(x: HTMLElement, s: string): HTMLElement {
   x.style.color = s;
   return x;
 }
 
+/**
+ * Internal helper to set background color and return the element for chaining.
+ * Prefer using CSS classes for styling.
+ * @internal
+ */
 export function _backColor(x: HTMLElement, s: string): HTMLElement {
   x.style.backgroundColor = s;
   return x;
@@ -760,7 +784,7 @@ export namespace input {
 
   const optionsMap: {[key: string]: (input: InputBase, option: any) => void} = {
     value: (input, x) => input.value = input.inputType === d4.InputType.File ? toDart(x) :
-      [d4.InputType.Files, d4.InputType.Columns].includes(input.inputType) ? x.map((elem: FileInfo | Column) => toDart(elem)) : x,
+      [d4.InputType.Files, d4.InputType.Columns, d4.InputType.Tags].includes(input.inputType) ? x.map((elem: any) => toDart(elem)) : x,
     nullable: (input, x) => input.nullable = x, // finish it?
     property: (input, x) => input.property = x,
     tooltipText: (input, x) => input.setTooltip(x),
@@ -772,14 +796,24 @@ export namespace input {
     placeholder: (input, x) => (input.input as HTMLInputElement).placeholder = x,
     items: (input, x) => input.inputType === d4.InputType.Choice ? (input as ChoiceInput<typeof x>).items = x :
       input.inputType === d4.InputType.Table ? (input as ChoiceInput<typeof x>).items = x.map((elem: DataFrame) => toDart(elem)) :
-        input.inputType === d4.InputType.MultiChoice ? api.grok_MultiChoiceInput_Set_Items(input.dart, x) : api.grok_RadioInput_Set_Items(input.dart, x),
+        input.inputType === d4.InputType.MultiChoice ? api.grok_MultiChoiceInput_Set_Items(input.dart, x) :
+          [d4.InputType.User, d4.InputType.UserGroups, d4.InputType.Tags].includes(input.inputType) ? api.grok_TagsInput_Set_Suggestion_Items(input.dart, x.map((elem: any) => toDart(elem))) :
+            api.grok_RadioInput_Set_Items(input.dart, x),
     icon: (input, x) => api.grok_StringInput_AddIcon(input.dart, x),
     available: (input, x) => api.grok_ColumnsInput_ChangeAvailableColumns(input.dart, x),
     checked: (input, x) => api.grok_ColumnsInput_ChangeCheckedColumns(input.dart, x),
     additionalColumns: (input, x) => setInputAdditionalColumns(input, x),
     onAdditionalColumnsChanged: (input, x) => setInputAdditionalColumnsOnChanged(input, x),
+    additionalColumnProperties: (input, x) => setAdditionalColumnProperties(input, x),
     showSelectedColsOnTop: (input, x) => api.grok_ColumnsInput_SetShowSelectedColsOnTop(input.dart, x),
     showOnlyColorBox: (input, x) => api.grok_ColorInput_SetShowOnlyColorBox(input.dart, x),
+    allowNew: (input, x) => api.grok_TagsInput_Set_Allow_New(input.dart, x),
+    multiValue: (input, x) => api.grok_TagsInput_Set_MultiValue(input.dart, x),
+    acceptExtensions: (input, x) => api.grok_FilesInput_Set_AcceptExtensions(input.dart, x),
+    itemToString: (input, x) => api.grok_TagsInput_Set_ItemToString(input.dart, x),
+    getSuggestions:(input, x) => api.grok_TagsInput_Set_GetSuggestions(input.dart, x),
+    createTagLabel: (input, x) => api.grok_TagsInput_Set_CreateTagLabel(input.dart, x),
+    createNewItem: (input, x) => api.grok_TagsInput_Set_CreateNewItem(input.dart, x),
   };
 
   function setInputOptions(input: InputBase, inputType: d4.InputType, options?: IInputInitOptions, ignoreProp: boolean = false): void {
@@ -829,11 +863,24 @@ export namespace input {
     step?: number;
     showSlider?: boolean;
     showPlusMinus?: boolean;
+    format?: string;
   }
 
   export interface IChoiceInputInitOptions<T> extends IInputInitOptions<T> {
     items?: T[];
   }
+
+  export interface TagsInputConfig<T> extends IMultiChoiceInputInitOptions<T> {
+    items?: T[];
+    tags?: T[];
+    showButton?: boolean;
+    allowNew?: boolean;
+    multiValue?: boolean;
+    itemToString?: (item: T) => string;
+    getSuggestions?: (inputText: string) => Promise<T[]>;
+    createTagLabel?: (item: T) => Element;
+    createNewItem?: (inputText: string) => T;
+  };
 
   export interface IMultiChoiceInputInitOptions<T> extends Omit<IChoiceInputInitOptions<T>, 'value'> {
     value?: T[];
@@ -861,11 +908,16 @@ export namespace input {
     checked?: string[];
     additionalColumns?: { [key: string]: Column[] };
     onAdditionalColumnsChanged?: (additionalColumns: { [key: string]: Column[] }) => void;
+    additionalColumnProperties?: Property[];
     showSelectedColsOnTop?: boolean;
   }
 
   export interface IColorInputInitOptions<T> extends IInputInitOptions<T> {
     showOnlyColorBox?: boolean;
+  }
+
+  export interface IFilesInputInitOptions<T> extends IInputInitOptions<T> {
+    acceptExtensions?: string[];
   }
 
   /** Set the table specifically for the column input */
@@ -900,6 +952,10 @@ export namespace input {
         values[key] = values[key].map(toJs);
       onChange(values);
     }));
+  }
+
+  export function setAdditionalColumnProperties(input: InputBase, properties: Property[]): void {
+    api.grok_ColumnsInput_SetAdditionalColumnProperties(input.dart, properties.map((toDart)));
   }
 
   /** Creates input for the specified property, and optionally binds it to the specified object */
@@ -954,8 +1010,8 @@ export namespace input {
     return _create(d4.InputType.Choice, name, options) as ChoiceInput<T>;
   }
 
-  export function multiChoice<T>(name: string, options?: IMultiChoiceInputInitOptions<T>): InputBase<T[] | null> {
-    return _create(d4.InputType.MultiChoice, name, options);
+  export function multiChoice<T>(name: string, options?: IMultiChoiceInputInitOptions<T>): MultiChoiceInput<T> {
+    return _create(d4.InputType.MultiChoice, name, options) as MultiChoiceInput<T>;
   }
 
   export function string(name: string, options?: IStringInputInitOptions<string>): InputBase<string> {
@@ -990,7 +1046,7 @@ export namespace input {
     return _create(d4.InputType.File, name, options);
   }
 
-  export function files(name: string, options?: IInputInitOptions<FileInfo[]>): InputBase<FileInfo[] | null> {
+  export function files(name: string, options?: IFilesInputInitOptions<FileInfo[]>): InputBase<FileInfo[] | null> {
     return _create(d4.InputType.Files, name, options);
   }
 
@@ -1026,11 +1082,12 @@ export namespace input {
     return _create(d4.InputType.Radio, name, options);
   }
 
-  export function user(name: string, options?: IInputInitOptions<User[]>): InputBase<User[] | null> {
+  export function user(name: string, options?: TagsInputConfig<User[]>): InputBase<User[] | null> {
     return _create(d4.InputType.User, name, options);
   }
 
-  export function userGroups(name: string, options?: IInputInitOptions<User[]>): InputBase<User[] | null> {
+
+  export function userGroups(name: string, options?: TagsInputConfig<User[]>): InputBase<User[] | null> {
     return _create(d4.InputType.UserGroups, name, options);
   }
 
@@ -1046,8 +1103,11 @@ export namespace input {
     return new CodeInput(name, options);
   }
 
-  export function tags(name: string, config?: TagsInputConfig) {
-    return new TagsInput(name, config);
+  export function tags<T>(name: string, config?: TagsInputConfig<T>): InputBase<T | null> {
+    //put tags into items (for backward compatibility)
+    if (config?.tags && !config.items)
+        config.items = config.tags as any[];
+    return _create(d4.InputType.Tags, name, config);  
   }
 
   export async function markdownPreview(markdown: string): Promise<HTMLDivElement> {
@@ -1057,6 +1117,7 @@ export namespace input {
     markdownPreview.innerHTML = marked.parse(markdown ?? '');
     return markdownPreview;
   }
+
 }
 
 export function inputsRow(name: string, inputs: InputBase[]): HTMLElement {
@@ -1065,8 +1126,16 @@ export function inputsRow(name: string, inputs: InputBase[]): HTMLElement {
   return d;
 }
 
+/** Creates a color picker bound to {@link colorDiv}: clicking the element opens the picker,
+ * and its background updates live to preview the selected color. */
 export function colorPicker(color: number, onChanged: (color: number) => void, colorDiv: HTMLElement, onOk: Function | null, onCancel: Function | null = null): HTMLElement {
   return api.grok_ColorPicker(color, onChanged, colorDiv, onOk, onCancel);
+}
+
+/** Opens a standalone color picker modal immediately, without a trigger element.
+ * Use when there is no persistent UI element to bind to (e.g. editing a canvas-rendered grid cell). */
+export function showColorPicker(color: number, onChanged: (color: number) => void, onOk: Function | null = null, onCancel: Function | null = null): void {
+  api.grok_ColorPicker_Show(color, onChanged, onOk, onCancel);
 }
 
 export function patternsInput(colors: { [key: string]: string }): HTMLElement {
@@ -1488,7 +1557,7 @@ let _objectHandlerSubject = new rxjs.Subject<ObjectHandlerResolutionArgs>();
  *
  * Example: {@link https://public.datagrok.ai/js/samples/ui/handlers/handlers} */
 export class ObjectHandler<T = any> {
-
+  dart: any;
   /** Type of the object that this meta handles. */
   get type(): string {
     throw 'Not defined.';
@@ -1570,8 +1639,10 @@ export class ObjectHandler<T = any> {
   }
 
   /** Renders preview list for the item. */
-  renderPreview(x: T, context: any = null): View {
-    return View.create();
+  async renderPreview(x: T, params?: any, path?: string): Promise<View> {
+    if (!this.dart)
+      return View.create();
+    return toJs(await api.grok_Meta_RenderPreview(this.dart, x, params, path));
   }
 
   /** Renders view for the item. */
@@ -1650,7 +1721,6 @@ export class ObjectHandler<T = any> {
 }
 
 export class EntityMetaDartProxy extends ObjectHandler {
-  dart: any;
 
   constructor(d: any) {
     super();
@@ -1666,7 +1736,7 @@ export class EntityMetaDartProxy extends ObjectHandler {
   renderTooltip(x: any, context: any = null): HTMLDivElement { return api.grok_Meta_RenderTooltip(this.dart, x); }
   renderCard(x: any, context: any = null): HTMLDivElement { return api.grok_Meta_RenderCard(this.dart, x); }
   renderProperties(x: any, context: any = null): HTMLDivElement { return api.grok_Meta_RenderProperties(this.dart, x); }
-  renderView(x: any, context: any = null): HTMLDivElement { return api.grok_Meta_RenderProperties(this.dart, x); }
+  renderView(x: any, context: any = null): HTMLDivElement { return api.grok_Meta_RenderView(this.dart, x); }
 }
 
 /**
@@ -2133,10 +2203,47 @@ export function breadcrumbs(path: string[]): Breadcrumbs {
 }
 
 /**
- * Example: {@link https://public.datagrok.ai/js/samples/ui/components/combo-popup}
+ * Creates a dropdown component. The most common use case is a menu dropdown.
+ *
+ * @example Menu dropdown (recommended):
+ * ui.dropDown('Actions', {
+ *   'Add': () => grok.shell.info('add'),
+ *   'Edit': () => grok.shell.info('edit'),
+ *   'More': {
+ *     'Option 1': () => {},
+ *     'Option 2': () => {},
+ *   }
+ * });
+ *
+ * @example List dropdown:
+ * ui.dropDown('Items', ['Item 1', 'Item 2', 'Item 3'], {
+ *   onItemClick: (item) => grok.shell.info(item)
+ * });
+ *
+ * @example Custom content dropdown:
+ * ui.dropDown('Custom', () => ui.div('Any content here'));
+ *
+ * Example: {@link https://public.datagrok.ai/js/samples/ui/components/drop-down}
  */
-export function dropDown(label: string | Element, createElement: () => HTMLElement): DropDown {
-  return new DropDown(label, createElement);
+export function dropDown(label: string | Element, items: DropDownMenuItems, options?: DropDownOptions): DropDown;
+export function dropDown(label: string | Element, builder: DropDownMenuBuilder, options?: DropDownOptions): DropDown;
+export function dropDown(label: string | Element, items: string[], listOptions?: DropDownListOptions, options?: DropDownOptions): DropDown;
+export function dropDown(label: string | Element, createElement: () => HTMLElement, options?: DropDownOptions): DropDown;
+export function dropDown(
+  label: string | Element,
+  content: DropDownMenuItems | DropDownMenuBuilder | string[] | (() => HTMLElement),
+  optionsOrListOptions?: DropDownOptions | DropDownListOptions,
+  options?: DropDownOptions
+): DropDown {
+  if (Array.isArray(content))
+    return DropDown.list(label, content, optionsOrListOptions as DropDownListOptions, options);
+
+  // Function with 1 parameter (menu) -> menu builder, function with 0 parameters -> custom content
+  if (typeof content === 'function')
+    return content.length === 1 ? DropDown.menu(label, content as DropDownMenuBuilder, optionsOrListOptions as DropDownOptions) :
+      DropDown.custom(label, content as () => HTMLElement, optionsOrListOptions as DropDownOptions);
+
+  return DropDown.menu(label, content, optionsOrListOptions as DropDownOptions);
 }
 
 // export function makeInputTypeAhead(input: HTMLInputElement, config: TypeAheadConfig): void {

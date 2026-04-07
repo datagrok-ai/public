@@ -3,7 +3,7 @@
 #help-url: https://datagrok.ai/help/domains/chem/functions/reactions
 #language: python
 #sample: chem/reactants.csv
-#tags: demo, chem, rdkit
+#meta.domain: chem
 #input: dataframe data1 [First data table]
 #input: column reactants1 {type:categorical; semType: Molecule} [Reactants molecules first set, in SMILES format]
 #input: dataframe data2 [Second data table]

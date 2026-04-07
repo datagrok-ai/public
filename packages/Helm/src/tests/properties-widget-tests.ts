@@ -2,7 +2,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 
-import {after, before, category, expect, expectObject, test, timeout} from '@datagrok-libraries/utils/src/test';
+import {after, before, category, expect, expectObject, test, timeout} from '@datagrok-libraries/test/src/test';
 import {ALPHABET, NOTATION, TAGS as bioTAGS} from '@datagrok-libraries/bio/src/utils/macromolecule';
 import {
   getUserLibSettings, setUserLibSettings

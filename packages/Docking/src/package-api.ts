@@ -28,11 +28,15 @@ export namespace funcs {
     return await grok.functions.call('Docking:DockLigandCached', { jsonForm, containerId });
   }
 
+  export async function getAutodockResults(table: DG.DataFrame , ligands: DG.Column , target: string , poses: number ): Promise<DG.DataFrame> {
+    return await grok.functions.call('Docking:GetAutodockResults', { table, ligands, target, poses });
+  }
+
   /**
   Autodock plugin UI
   */
-  export async function runAutodock5(table: DG.DataFrame , ligands: any , target: string , poses: number ): Promise<void> {
-    return await grok.functions.call('Docking:RunAutodock5', { table, ligands, target, poses });
+  export async function runAutodock(table: DG.DataFrame , ligands: any , target: string , poses: number ): Promise<void> {
+    return await grok.functions.call('Docking:RunAutodock', { table, ligands, target, poses });
   }
 
   export async function isApplicableAutodock(molecule: string ): Promise<boolean> {

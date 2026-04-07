@@ -1,4 +1,4 @@
-import {before, category, expect, test} from '@datagrok-libraries/utils/src/test';
+import {before, category, expect, test} from '@datagrok-libraries/test/src/test';
 
 import * as sql from 'sql.js';
 

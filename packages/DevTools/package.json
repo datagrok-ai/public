@@ -1,10 +1,10 @@
 {
   "name": "@datagrok/dev-tools",
   "friendlyName": "Dev Tools",
-  "version": "1.6.4",
+  "version": "1.7.1",
   "author": {
-    "name": "Savenko Stanislav",
-    "email": "ppolovyi@datagrok.ai"
+    "name": "Dmytro Kovalyov",
+    "email": "dkovalyov@datagrok.ai"
   },
   "description": "Tools for the Datagrok developers (TestManager, DevPanel).",
   "repository": {
@@ -13,11 +13,15 @@
     "directory": "packages/DevTools"
   },
   "dependencies": {
+    "@datagrok-libraries/test": "^1.2.1",
     "@datagrok-libraries/compute-api": "^0.6.1",
     "@datagrok-libraries/utils": "^4.6.8",
     "codemirror": "^5.65.15",
-    "datagrok-api": "^1.26.0",
+    "datagrok-api": "^1.27.0",
     "rxjs": "^6.5.5"
+  },
+  "overrides": {
+    "datagrok-api": "$datagrok-api"
   },
   "devDependencies": {
     "@types/codemirror": "^5.60.5",
@@ -25,14 +29,14 @@
     "@typescript-eslint/parser": "^5.32.0",
     "cash-dom": "^8.1.0",
     "css-loader": "^5.2.4",
-    "datagrok-tools": "^4.14.55",
+    "datagrok-tools": "^5.0.0",
     "eslint": "^8.21.0",
     "eslint-config-google": "^0.14.0",
     "style-loader": "^2.0.0",
-    "ts-loader": "latest",
-    "typescript": "latest",
-    "webpack": "latest",
-    "webpack-cli": "latest"
+    "ts-loader": "^9.5.4",
+    "typescript": "^5.9.3",
+    "webpack": "^5.104.1",
+    "webpack-cli": "^6.0.1"
   },
   "scripts": {
     "link-api": "npm link datagrok-api",

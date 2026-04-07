@@ -45,6 +45,7 @@ export function createSigmoidPoints(length: number, step: number, pointsPerX: nu
 
 export function createDemoDataFrame(rowCount: number, chartsCount: number, chartsPerCell: number): DG.DataFrame {
   const df = DG.DataFrame.create(rowCount);
+  df.setTag(DG.Tags.Id, crypto.randomUUID());
   const seriesLength = 15;
   const step = 0.5;
 

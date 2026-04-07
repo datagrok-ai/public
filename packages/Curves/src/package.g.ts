@@ -3,8 +3,8 @@ import {MultiCurveViewer} from './fit/multi-curve-viewer';
 import {FitChartCellRenderer} from './fit/fit-renderer';
 import * as DG from 'datagrok-api/dg';
 //name: Fit
-//tags: cellRenderer
 //output: grid_cell_renderer renderer
+//meta.role: cellRenderer
 //meta.cellType: fit
 //meta.virtual: true
 export function _FitChartCellRenderer() {
@@ -13,8 +13,8 @@ export function _FitChartCellRenderer() {
 
 //name: MultiCurveViewer
 //description: A viewer that superimposes multiple in-cell curves on one chart
-//tags: viewer
 //output: viewer result
+//meta.role: viewer
 //meta.icon: icons/multi-curve-viewer.png
 //meta.trellisable: true
 export function _MultiCurveViewer() {
@@ -30,9 +30,9 @@ export async function curveFitDemo() : Promise<void> {
   await PackageFunctions.curveFitDemo();
 }
 
-//tags: init
-export function _initCurves() : void {
-  PackageFunctions._initCurves();
+//meta.role: init
+export async function _initCurves() : Promise<void> {
+  await PackageFunctions._initCurves();
 }
 
 //input: dataframe df 
@@ -65,24 +65,64 @@ export async function dataToCurvesTopMenu() {
   return await PackageFunctions.dataToCurvesTopMenu();
 }
 
-//tags: Transform
 //input: dataframe table 
 //input: string colName 
 //input: string propName 
 //input: int seriesNumber 
 //output: column result
 //meta.vectorFunc: true
+//meta.role: transform
 export function addStatisticsColumn(table: DG.DataFrame, colName: string, propName: string, seriesNumber: number) : any {
   return PackageFunctions.addStatisticsColumn(table, colName, propName, seriesNumber);
 }
 
-//tags: Transform
 //input: dataframe table 
 //input: string colName 
 //input: string propName 
 //input: string aggrType 
 //output: column result
 //meta.vectorFunc: true
+//meta.role: transform
 export function addAggrStatisticsColumn(table: DG.DataFrame, colName: string, propName: string, aggrType: string) : any {
   return PackageFunctions.addAggrStatisticsColumn(table, colName, propName, aggrType);
+}
+
+//description: Returns XML 3DX curve converter function
+//output: dynamic result
+//meta.role: curveConverter
+//meta.curveFormat: 3dx
+export function convertXmlCurveToJsonFunc() : any {
+  return PackageFunctions.convertXmlCurveToJsonFunc();
+}
+
+//description: Returns compact dose-response JSON converter function
+//output: dynamic result
+//meta.role: curveConverter
+//meta.curveFormat: compact-dr
+export function convertCompactDrToJsonFunc() : any {
+  return PackageFunctions.convertCompactDrToJsonFunc();
+}
+
+//description: Returns PZFX curve converter function
+//output: dynamic result
+//meta.role: curveConverter
+//meta.curveFormat: pzfx
+export function convertPzfxToJsonFunc() : any {
+  return PackageFunctions.convertPzfxToJsonFunc();
+}
+
+//input: file file 
+//output: view result
+//meta.role: fileViewer
+//meta.fileViewer: pzfx
+export async function previewPzfx(file: DG.FileInfo) : Promise<any> {
+  return await PackageFunctions.previewPzfx(file);
+}
+
+//input: list bytes 
+//output: list<dataframe> result
+//meta.role: fileHandler
+//meta.ext: pzfx
+export function pzfxFileHandler(bytes: Uint8Array) : any {
+  return PackageFunctions.pzfxFileHandler(bytes);
 }

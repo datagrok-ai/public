@@ -43,8 +43,8 @@ usage data.
 
 ## Integration
 
-From the ground up, Datagrok was designed to be easily extensible by customers. Extension points can be either server-
-or client- side, and can be developed in many languages. You can add new queryable data sources using Grok Data API,
+Datagrok is extensible by design. You can develop server-side or client-side
+extensions in many languages. You can add new queryable data sources using Grok Data API,
 build new viewers on top of Datagrok using Grok JS API, or develop custom applications on top of it.
 
 ## Administration

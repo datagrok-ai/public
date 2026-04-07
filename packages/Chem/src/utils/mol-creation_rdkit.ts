@@ -1,5 +1,6 @@
+/* eslint-disable max-len */
 import {RDModule, RDMol} from '@datagrok-libraries/chem-meta/src/rdkit-api';
-import {isMolBlock} from './chem-common';
+import {hasNewLines, isMolBlock} from './chem-common';
 import {MolfileHandler} from '@datagrok-libraries/chem-meta/src/parsing-utils/molfile-handler';
 
 export interface IMolContext {
@@ -25,6 +26,8 @@ export function _isSmarts(molString: string): boolean {
 
 export function getMolSafe(molString: string, details: object = {}, rdKitModule: RDModule,
   warnOff: boolean = true): IMolContext {
+  if (molString && !hasNewLines(molString) && molString.length > 5000)
+    return {mol: null, kekulize: true, isQMol: false, useMolBlockWedging: false}; // do not attempt to parse very long SMILES, will cause MOB.
   let isQMol = false;
   const kekulizeProp = (details as any).kekulize;
   let kekulize: boolean = typeof kekulizeProp === 'boolean' ? kekulizeProp : true;
@@ -58,6 +61,8 @@ export function getMolSafe(molString: string, details: object = {}, rdKitModule:
 
 export function getQueryMolSafe(queryMolString: string, queryMolBlockFailover: string,
   rdKitModule: RDModule): RDMol | null {
+  if (queryMolString && !hasNewLines(queryMolString) && queryMolString.length > 5000)
+    return null; // do not attempt to parse very long SMILES, will cause MOB.
   let queryMol = null;
 
   if (isMolBlock(queryMolString)) {
@@ -75,7 +80,7 @@ export function getQueryMolSafe(queryMolString: string, queryMolBlockFailover: s
       }
     }
   } else { // not a molblock
-     try {
+    try {
       queryMol = rdKitModule.get_qmol(queryMolString);
     } catch (e) { }
     if (queryMol !== null) {
@@ -91,9 +96,9 @@ export function getQueryMolSafe(queryMolString: string, queryMolBlockFailover: s
     } else { // failover to queryMolBlockFailover
       // possibly get rid of fall-over in future
       queryMol = getMolSafe(queryMolBlockFailover, {mergeQueryHs: true}, rdKitModule).mol;
-    } 
+    }
 
-   // queryMol = getMolSafe(queryMolString, {mergeQueryHs: true}, rdKitModule).mol;
+    // queryMol = getMolSafe(queryMolString, {mergeQueryHs: true}, rdKitModule).mol;
     //queryMol?.convert_to_aromatic_form();
   }
   return queryMol;

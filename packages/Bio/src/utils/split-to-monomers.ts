@@ -2,7 +2,6 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {delay} from '@datagrok-libraries/utils/src/test';
 import {checkInputColumnUI} from './check-input-column';
 import {splitAlignedSequences} from '@datagrok-libraries/bio/src/utils/splitter';
 import * as C from './constants';
@@ -17,7 +16,7 @@ export async function splitToMonomersUI(
 ): Promise<DG.DataFrame> {
   // Delay is required for initial function dialog to close before starting invalidating of molfiles.
   // Otherwise, dialog is freezing
-  await delay(10);
+  await DG.delay(10);
   if (!checkInputColumnUI(seqCol, 'Sequence space')) return table;
 
   const seqHelper = _package.seqHelper;

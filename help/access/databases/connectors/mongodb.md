@@ -2,7 +2,7 @@
 title: "MongoDB"
 ---
 
-Provides access to [Mongo](https://www.mongodb.com/) NoSQL database via JDBC driver.
+Provides access to [Mongo](https://www.mongodb.com/) NoSQL database via a JDBC driver.
 
 ## Connection parameters
 

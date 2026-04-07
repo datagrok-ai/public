@@ -7,7 +7,7 @@ import './docker/docker';
 import './files/files'
 // import './gui/dialogs'; To fix!
 
-import {runTests, tests, TestContext, initAutoTests as initTests } from '@datagrok-libraries/utils/src/test';
+import {runTests, tests, TestContext, initAutoTests as initTests } from '@datagrok-libraries/test/src/test';
 
 export const _package = new DG.Package();
 export {tests};

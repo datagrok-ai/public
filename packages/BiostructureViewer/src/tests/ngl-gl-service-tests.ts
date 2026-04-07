@@ -4,7 +4,7 @@ import * as DG from 'datagrok-api/dg';
 
 import {Subject} from 'rxjs';
 
-import {before, after, category, expect/*, expect*/, test, testEvent} from '@datagrok-libraries/utils/src/test';
+import {before, after, category, expect/*, expect*/, test, testEvent} from '@datagrok-libraries/test/src/test';
 import {
   NglGlServiceBase, getNglGlService, NglGlProps, NglGlAux
 } from '@datagrok-libraries/bio/src/viewers/ngl-gl-service';

@@ -7,9 +7,9 @@ enterprise. Data is one of the core assets for an enterprise, making data manage
 help reduce the manual effort required to developed meaningful information and insight of business data, as well as
 significantly enhance data quality._
 
-One of the Datagrok's goals is to provide the relevant information to the user whenever they need it. In many cases,
-that involves presenting additional augmented data without the explicit request. Here are few examples of the platform
-going an extra mile, and delivering these simple insights:
+One of Datagrok's goals is to surface relevant information whenever you need it.
+In many cases, this means presenting augmented data automatically. Here are a few
+examples:
 
 * Showing quick data summary in the column tooltip
   * Histogram
@@ -66,11 +66,11 @@ how to contribute to the public repository of scientific functions.
 
 Datagrok allows you to easily detect and handle specific patterns in text across the platform. For example, you can configure Datagrok to recognize CHEMBL identifiers (a common format used in chemical databases) and retrieve relevant information, such as compound structures, to display in tooltips or [info panes](../../datagrok/navigation/panels/info-panels.md).
 
-![CHEMBL_IDS](../../develop/how-to/grid/chembl-hover.png)
+![CHEMBL_IDS](../../develop/how-to/db/chembl-hover.png)
 
-To register an identifier pattern and handler, follow the instructions provided [here](../../develop/how-to/grid/register-identifiers.md). Once set up, Datagrok will automatically detect, highlight and handle the identifiers in text. You can also search for the identifiers using the "Search Everywhere" feature, and Datagrok will display the relevant information in the search results.
+To register an identifier pattern and handler, follow the instructions provided [here](../../develop/how-to/db/register-identifiers.md). Once set up, Datagrok will automatically detect, highlight and handle the identifiers in text. You can also search for the identifiers using the "Search Everywhere" feature, and Datagrok will display the relevant information in the search results.
 
-![CHEMBL_IDS](../../develop/how-to/grid/chembl-search-everywhere.png)
+![CHEMBL_IDS](../../develop/how-to/db/chembl-search-everywhere.png)
 
 
 See also:

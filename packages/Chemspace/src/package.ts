@@ -4,7 +4,6 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {COUNTRY_CODES} from './country-codes';
 import {ChemspacePriceColumns, ChemspaceOffer, ChemspacePricesTableItem, ChemspaceResult} from './model';
-import {delay} from '@datagrok-libraries/utils/src/test';
 
 export * from './package.g';
 
@@ -98,12 +97,10 @@ export class PackageFunctions {
 
 
   @grok.decorators.panel({
-    'tags': [
-      'widgets',
-    ],
     'name': 'Databases | Chemspace',
     'description': 'Chemspace Samples',
     'condition': 'true',
+    meta: {role: 'widgets'},
   })
   static async samplesPanel(
     @grok.decorators.param({'options': {'semType': 'Molecule'}}) smiles: string): Promise<DG.Widget> {
@@ -158,12 +155,10 @@ export class PackageFunctions {
   }
 
   @grok.decorators.panel({
-    'tags': [
-      'widgets',
-    ],
     'name': 'Chemspace Prices',
     'description': 'Chemspace Prices',
     'condition': 'true',
+    meta: {role: 'widgets'},
   })
   static async pricesPanel(
     @grok.decorators.param({'options': {'semType': 'chemspace-id'}}) id: string): Promise<DG.Widget> {
@@ -398,7 +393,7 @@ export class PackageFunctions {
           while (response.status === 429 && totalAttempts > 0) {
             totalAttempts--;
             attemptsCount++;
-            await delay(delayMs * attemptsCount);
+            await DG.delay(delayMs * attemptsCount);
             await rerunRequest();
           }
         } else

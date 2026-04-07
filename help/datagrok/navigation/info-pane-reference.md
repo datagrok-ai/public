@@ -116,7 +116,7 @@ packages, which we recommend for installation.
 
 ##### Databases
 
-Depending on the plugins installed, allows to search by substructure and/or similarity.
+Depending on the installed plugins, you can search by substructure and/or similarity.
 
 | Info pane <div style={{ width:640 }}></div> |Semantic type <div style={{ width:120 }}></div>|Required plugin <div style={{ width:120 }}></div>|
 |-----|-----------|---|
@@ -148,7 +148,7 @@ Depending on the plugins installed, allows to search by substructure and/or simi
 
 #### Molecular properties of macromolecule
 
-This pane is automatically populated with the molecule that is generated. It provides a quick way to inspect the molecular properties of the macromolecule. Works for macromolecules with up to 50 monomers.
+This pane is automatically populated with the generated molecule. It provides a quick way to inspect the molecular properties of the macromolecule. Works for macromolecules with up to 50 monomers.
 
 | Info pane <div style={{ width:640 }}></div> | Semantic type <div style={{ width:120 }}></div> | Required plugin <div style={{ width:120 }}></div>|
 |-----------|---------------|----------------|
@@ -159,7 +159,7 @@ This pane is automatically populated with the molecule that is generated. It pro
 
 ###### Databases
 
-Depending on the plugins installed, allows to search by substructure and/or similarity.
+Depending on the installed plugins, you can search by substructure and/or similarity.
 
 | Info pane <div style={{ width:640 }}></div> |Semantic type <div style={{ width:120 }}></div>|Required plugin <div style={{ width:120 }}></div>|
 |--------|-----------|-----|

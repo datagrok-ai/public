@@ -2,14 +2,16 @@ import {PackageFunctions} from './package';
 import * as DG from 'datagrok-api/dg';
 
 //name: Benchling
-//tags: app
 //output: view result
+//meta.role: app
 //meta.browsePath: Chem
 export async function benchlingLinkApp() : Promise<any> {
   return await PackageFunctions.benchlingLinkApp();
 }
 
 //input: dynamic treeNode 
+//meta.role: appTreeBrowser
+//meta.app: Benchling
 export async function benchlingLinkAppTreeBrowser(treeNode: any) : Promise<void> {
   await PackageFunctions.benchlingLinkAppTreeBrowser(treeNode);
 }

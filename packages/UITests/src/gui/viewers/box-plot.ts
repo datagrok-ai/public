@@ -3,7 +3,7 @@ import * as grok from 'datagrok-api/grok';
 // import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {after, before, category, test, awaitCheck} from '@datagrok-libraries/utils/src/test';
+import {after, before, category, test, awaitCheck} from '@datagrok-libraries/test/src/test';
 import {isViewerPresent, uploadProject, findViewer} from '../gui-utils';
 
   
@@ -98,7 +98,6 @@ category('Viewers: Box Plot', () => {
   }); 
 
   after(async () => {
-    grok.shell.closeAll();
     await grok.dapi.projects.delete(await grok.dapi.projects.filter('Test project with Box Plot').first());
   });
 }, { owner: 'dkovalyov@datagrok.ai' });

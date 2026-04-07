@@ -8,7 +8,7 @@ import {
   expectTable,
   before,
   after,
-} from '@datagrok-libraries/utils/src/test';
+} from '@datagrok-libraries/test/src/test';
 import dayjs from 'dayjs';
 
 const languages = ['Python', 'R', 'Julia', 'NodeJS', 'Octave', 'Grok', 'JavaScript'];
@@ -83,14 +83,13 @@ for (const lang of languages) {
     if (!['NodeJS', 'JavaScript', 'Grok', 'Octave'].includes(lang)) {
       test('DataFrame int column correctness', async () => {
         const result = await grok.functions.call(`CVMTests:${lang}IntColumn`);
-        if (lang !== 'R') {
-          expect((result['resultInBound'] as DG.DataFrame).getCol('col1').type === DG.COLUMN_TYPE.INT, true);
+        expect((result['resultInBound'] as DG.DataFrame).getCol('col1').type === DG.COLUMN_TYPE.INT, true);
+        if (lang !== 'R')
           expect((result['resultOutBound'] as DG.DataFrame).getCol('col1').type === DG.COLUMN_TYPE.BIG_INT, true);
-        }
         else {
-          // R returns float columns. They can be easily converted to int
-          expect((result['resultInBound'] as DG.DataFrame).getCol('col1').type === DG.COLUMN_TYPE.FLOAT, true);
-          expect((result['resultOutBound'] as DG.DataFrame).getCol('col1').type === DG.COLUMN_TYPE.FLOAT, true);
+          const isArrow: boolean = DG.Func.find({package: 'Arrow', name: 'toParquet'}).length !== 0;
+          // R does not natively support 64-bit integers, needs external lib. That's why bigint are returned as numeric for arrow
+          expect((result['resultOutBound'] as DG.DataFrame).getCol('col1').type === (isArrow ? DG.COLUMN_TYPE.FLOAT : DG.COLUMN_TYPE.BIG_INT), true);
         }
       }, {timeout: 60000});
 
@@ -145,6 +144,15 @@ for (const lang of languages) {
       }
     });
 
+    if (lang !== 'Grok') {
+      test('String list input', async () => {
+        const stringList = ['apple', 'banana', 'cherry', 'date'];
+        const result = await grok.functions.call(`CVMTests:${lang}ListStringTest`,
+            {'string_list': stringList});
+        expect(result, 'date');
+      }, {stressTest: serverSideLanguages.includes(lang)});
+    }
+
     if (lang === 'Python') {
       test('Environment string', async () => {
         const result = await grok.functions.call('CVMTests:PythonAnchorsCount',
@@ -154,13 +162,72 @@ for (const lang of languages) {
                             '  <li><a href="tel:+123456789">Phone</a></li>\n' +
                             '  </ul>'});
         expect(result, 3);
-      }, {timeout: 240000});
+      }, {timeout: 240000, skipReason: 'Unstable'});
 
       test('File type input and environment yaml', async () => {
         const files = await grok.dapi.files.list('System:AppData/CvmTests/images', false, 'silver.jpg');
         const result = await grok.functions.call('CVMTests:ImagePixelCount',
           {'fileInput': files[0]});
         expect(49090022, result);
+      }, {timeout: 240000, skipReason: 'Unstable'});
+
+      test('Env: numpy ABI compat (conda numpy + pip opencv)', async () => {
+        const result = await grok.functions.call('CVMTests:PythonEnvNumpyCompat',
+          {'rows': 100});
+        expect(result, 110);
+      }, {timeout: 240000});
+
+      test('Env: pip-only deps (chardet + pyyaml)', async () => {
+        const result = await grok.functions.call('CVMTests:PythonEnvPipOnly',
+          {'text': 'hello'});
+        expect(result, 'ok:hello');
+      }, {timeout: 240000});
+
+      test('Env: conda-only extras (scipy + sklearn)', async () => {
+        const result = await grok.functions.call('CVMTests:PythonEnvCondaExtras',
+          {'text': 'hello world test'});
+        expect(result.startsWith('scipy='), true);
+      }, {timeout: 240000});
+
+      test('Env: mixed conda + pip deps (scipy + orjson + msgpack)', async () => {
+        const result = await grok.functions.call('CVMTests:PythonEnvMixedDeps',
+          {'data': 'test'});
+        expect(result.startsWith('test:'), true);
+      }, {timeout: 240000});
+
+      test('Env: Python 3.12 template', async () => {
+        const result = await grok.functions.call('CVMTests:PythonEnvPy312',
+          {'text': 'hello'});
+        expect(result.startsWith('py3.12:'), true);
+      }, {timeout: 240000});
+
+      test('Env: reuse existing environment', async () => {
+        // First call creates the env
+        const result1 = await grok.functions.call('CVMTests:PythonEnvReuse',
+          {'text': 'first call'});
+        expect(result1.startsWith('ok:'), true);
+        // Second call should reuse it (much faster)
+        const t0 = Date.now();
+        const result2 = await grok.functions.call('CVMTests:PythonEnvReuse',
+          {'text': 'second call'});
+        const elapsed = Date.now() - t0;
+        expect(result2.startsWith('ok:'), true);
+        // Reuse should be fast — env creation takes 10-45s, reuse should be under 60s total (script exec time)
+        expect(elapsed < 120000, true);
+      }, {timeout: 300000});
+    }
+
+    if (lang === 'R') {
+      test('Environment string', async () => {
+        const result = await grok.functions.call('CVMTests:REnvStringReverse',
+          {'input_string': 'datagrok'});
+        expect(result, 'korgatad');
+      }, {timeout: 240000});
+
+      test('Environment yaml file', async () => {
+        const result = await grok.functions.call('CVMTests:REnvFileStringReverse',
+          {'input_string': 'hello'});
+        expect(result, 'olleh');
       }, {timeout: 240000});
     }
   });

@@ -13,4 +13,5 @@ export enum WORKER_CALL {
   MOST_COMMON_STRUCTURE = 'mostCommonStructure',
   R_GROUP_ANALYSIS = 'rGroupAnalysis',
   BEAUTIFY_MOLS = 'beautifyMols',
+  GET_COORDGEN_COORDS = 'getCoordGenCoords',
 }

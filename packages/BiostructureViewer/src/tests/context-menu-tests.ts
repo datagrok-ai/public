@@ -4,7 +4,7 @@ import * as DG from 'datagrok-api/dg';
 
 import $ from 'cash-dom';
 
-import {category, test, after, before, expect, delay, testEvent} from '@datagrok-libraries/utils/src/test';
+import {category, test, after, before, expect, delay, testEvent} from '@datagrok-libraries/test/src/test';
 import {errInfo} from '@datagrok-libraries/bio/src/utils/err-info';
 import {BiostructureViewerWindowType} from '../utils/context-menu';
 

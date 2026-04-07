@@ -1,7 +1,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
-import {after, before, category, expect, test} from '@datagrok-libraries/utils/src/test';
+import {after, before, category, expect, test} from '@datagrok-libraries/test/src/test';
 import {Subscription} from 'rxjs';
 import {getOptions} from './utils';
 
@@ -24,7 +24,7 @@ category('Radar', () => {
 
   test('Creation', async () => {
     const viewer = DG.Viewer.fromType(TYPE, df);
-    expect(viewer instanceof DG.JsViewer, true);
+    expect(viewer instanceof DG.Viewer, true);
     expect(viewer.type, TYPE);
     expect(viewer.table.id, df.id);
   });
@@ -39,7 +39,7 @@ category('Radar', () => {
       max: '95',
       showCurrentRow: true,
       showMouseOverRow: true,
-      showMouseOverRowGroup: true, 
+      showMouseOverRowGroup: true,
       showTooltip: true,
       colorColumnName: null,
       backgroundMinColor: 0xFFBB845D,
@@ -51,6 +51,7 @@ category('Radar', () => {
       showMax: false,
       showValues: false,
       valuesColumnNames: ['AGE', 'COUNTRYID'],
+      legendVisibility: 'Auto',
     };
     expect(JSON.stringify(standardOptions), JSON.stringify(await getOptions(viewer)));
   });

@@ -20,7 +20,6 @@ import grok_connect.resultset.ResultSetManager;
 import grok_connect.utils.GrokConnectException;
 import grok_connect.utils.PatternMatcher;
 import grok_connect.utils.PatternMatcherResult;
-import grok_connect.utils.Property;
 import serialization.Types;
 
 public class Neo4jDataProvider extends JdbcDataProvider {
@@ -80,7 +79,7 @@ public class Neo4jDataProvider extends JdbcDataProvider {
         PatternMatcherResult result = new PatternMatcherResult();
         String type = "string";
         String formatQuery = "(toLower(%s) %s toLower(@%s))";
-        String value = (matcher.values.get(0)).toLowerCase();
+        String value = ((String) matcher.values.get(0)).toLowerCase();
         switch (matcher.op) {
             case PatternMatcher.EQUALS:
                 result.setQuery(String.format(formatQuery, matcher.colName, "=", paramName));

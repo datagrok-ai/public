@@ -4,6 +4,6 @@
 
 let matcher = DG.ValueMatcher.numerical('> 30');
 
-grok.shell.info(matcher.operator);            // '>'
-grok.shell.info(matcher.match(40));     // true
-grok.shell.info(matcher.validate(20));  // "> 30" does not match "20"
+grok.shell.info(matcher.operator); // '>'
+grok.shell.info(matcher.match(40)); // true
+grok.shell.info(matcher.validate(20)); // "> 30" does not match "20"

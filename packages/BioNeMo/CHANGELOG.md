@@ -1,5 +1,9 @@
 # Bionemo changelog
 
+## 1.3.1 (2025-04-01)
+
+* GROK-18813: Top menu | Docking: Provide consistent naming for menu and dialog
+
 ## 1.2.0 (2025-03-14)
 
 ### Features

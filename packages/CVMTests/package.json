@@ -1,7 +1,7 @@
 {
   "name": "@datagrok/cvm-tests",
   "friendlyName": "CVM Tests",
-  "version": "1.4.3",
+  "version": "1.5.0",
   "author": {
     "name": "Pavlo Polovyi",
     "email": "ppolovyi@datagrok.ai"
@@ -9,15 +9,21 @@
   "servicePackage": true,
   "description": "Automated CVM tests",
   "dependencies": {
-    "@datagrok-libraries/utils": "^4.6.8",
-    "cash-dom": "^8.1.5",
-    "datagrok-api": "^1.26.0",
-    "dayjs": "^1.11.13"
+    "@datagrok-libraries/test": "^1.1.0",
+    "cash-dom": "^8.1.1",
+    "datagrok-api": "^1.27.0",
+    "dayjs": "^1.11.10",
+    "rxjs": "^6.6.7",
+    "ws": "^8.19.0",
+    "wu": "^2.1.0"
+  },
+  "overrides": {
+    "datagrok-api": "$datagrok-api"
   },
   "devDependencies": {
     "@typescript-eslint/eslint-plugin": "^8.8.1",
     "@typescript-eslint/parser": "^8.8.1",
-    "datagrok-tools": "^4.14.55",
+    "datagrok-tools": "^5.0.0",
     "eslint": "^8.57.1",
     "eslint-config-google": "^0.14.0",
     "ts-loader": "^9.5.1",
@@ -32,7 +38,7 @@
     "build-cvmtests": "webpack",
     "build": "grok api && grok check --soft && webpack",
     "debug-cvmtests-dev": "webpack && grok publish dev",
-    "release-cvmtests-dev": "webpack && grok publish dev --release",
+    "release-cvmtests-dev": "webpack && grok publish localhost --release",
     "debug-cvmtests-public": "webpack && grok publish public",
     "release-cvmtests-public": "webpack && grok publish public --release",
     "debug-cvmtests-release": "webpack && grok publish release",
@@ -41,7 +47,8 @@
     "release-cvmtests-test": "webpack && grok publish test --release",
     "lint": "eslint src --ext .ts",
     "lint-fix": "eslint src --ext .ts --fix",
-    "test": "grok test"
+    "test": "grok test --host localhost --skip-build --skip-publish",
+    "stress-test-pipe": "node scripts/grok_pipe_stress_test.js"
   },
   "canEdit": [
     "Administrators"

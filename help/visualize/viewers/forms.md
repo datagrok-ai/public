@@ -26,7 +26,7 @@ The viewer also works together with the grid:
 
 ![Forms viewer](img/forms.gif)
 
-To reorder the fields in Forms viewer, go to Froms viewer settings, open Fileds option and just drag-n-drop corresponding fields in the ‘Select columns…’ dialog.
+To reorder the fields in the Forms viewer, go to Forms viewer settings, open the Fields option, and drag-and-drop corresponding fields in the "Select columns..." dialog.
 
 ![Forms viewer](img/reorder_fields_in_forms_viewer.gif)
 
@@ -47,3 +47,8 @@ or use the **Sort by** setting (**Context Panel > Data**). A “↓” symbol ap
 to indicate sorting in descending order. Double-click again to sort ascending. The next double-click resets sorting.
 
 ![Forms viewer sorting](img/forms-sorting.gif)
+
+See also:
+* [Viewers](../viewers/viewers.md)
+* [Table View](../table-view-1.md)
+* [Community: Visualization-related updates](https://community.datagrok.ai/t/visualization-related-updates/521)

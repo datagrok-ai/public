@@ -14,7 +14,6 @@ import {NglGlServiceBase} from '@datagrok-libraries/bio/src/viewers/ngl-gl-servi
 import {IBiostructureViewer} from '@datagrok-libraries/bio/src/viewers/molstar-viewer';
 import {IBiotrackViewer} from '@datagrok-libraries/bio/src/viewers/biotrack';
 import {BiostructureDataJson} from '@datagrok-libraries/bio/src/pdb/types';
-import {delay} from '@datagrok-libraries/utils/src/test';
 
 import {byData, byId, MolstarViewer} from './viewers/molstar-viewer';
 import {SaguaroViewer} from './viewers/saguaro-viewer';
@@ -25,6 +24,8 @@ import {NglViewer} from './viewers/ngl-viewer';
 import {NglViewerApp} from './apps/ngl-viewer-app';
 import {PdbHelper, PdbResDataFrame} from './utils/pdb-helper';
 import {nglWidgetUI} from './viewers/ngl-ui';
+import {pdbInfoWidget} from './utils/pdb-info';
+import {pdbFileInfoWidget} from './utils/pdb-file-info';
 import {dockingDemoApp} from './demo/docking';
 import {biostructureInGridApp} from './demo/biostructure-in-grid';
 import {BiotrackViewerApp} from './apps/biotrack-viewer-app';
@@ -57,8 +58,7 @@ export class PackageFunctions {
 
   @grok.decorators.func({
     name: 'pdbCellRenderer',
-    tags: ['cellRenderer'],
-    meta: {cellType: 'Molecule3D', columnTags: 'quality=Molecule3D'},
+    meta: {cellType: 'Molecule3D', columnTags: 'quality=Molecule3D', role: 'cellRenderer'},
     outputs: [{type: 'grid_cell_renderer', name: 'result'}]
   })
   static Molecule3dCellRenderer(): PdbGridCellRenderer {
@@ -67,9 +67,9 @@ export class PackageFunctions {
 
   @grok.decorators.func({
     name: 'chemCellRenderer',
-    tags: ['cellRenderer', 'cellRenderer-PDB_ID'],
     meta: {
-      cellType: 'PDB_ID'
+      cellType: 'PDB_ID',
+      role: 'cellRenderer'
     },
     outputs: [{type: 'grid_cell_renderer', name: 'result'}]
   })
@@ -219,6 +219,15 @@ export class PackageFunctions {
     return nglWidgetUI(pdbId);
   }
 
+  @grok.decorators.panel({
+    name: 'PDB Information',
+  })
+  static async pdbInfoPanel(
+    @grok.decorators.param({options: {semType: 'PDB_ID'}}) pdbId: string
+  ): Promise<DG.Widget> {
+    return await pdbInfoWidget(pdbId);
+  }
+
   // -- Test apps --
 
   @grok.decorators.func({description: 'Example app for NGL drawing in grid cells'})
@@ -315,11 +324,11 @@ export class PackageFunctions {
   @grok.decorators.panel({
     name: 'NGL',
     description: '3D structure viewer for large biological molecules (proteins, DNA, and RNA)',
-    tags: ['viewer'],
     outputs: [{type: 'viewer', name: 'result'}],
     meta: {
       keywords: 'PDB, Biostructure',
-      icon: 'files/icons/ngl-viewer.svg'
+      icon: 'files/icons/ngl-viewer.svg',
+      role: 'viewer'
     }
   })
   static nglViewer(): DG.JsViewer & INglViewer {
@@ -329,11 +338,11 @@ export class PackageFunctions {
   @grok.decorators.panel({
     name: 'Biostructure',
     description: '3D structure molstar RCSB viewer for large biological molecules (proteins, DNA, and RNA)',
-    tags: ['viewer'],
     outputs: [{type: 'viewer', name: 'result'}],
     meta: {
       keywords: 'Molstar, PDB',
-      icon: 'files/icons/biostructure-viewer.svg'
+      icon: 'files/icons/biostructure-viewer.svg',
+      role: 'viewer'
     }
   })
   static molstarViewer(): DG.JsViewer & IBiostructureViewer {
@@ -343,11 +352,11 @@ export class PackageFunctions {
   @grok.decorators.panel({
     name: 'Biotrack',
     description: 'structure polymer annotation tracks',
-    tags: ['viewer'],
     outputs: [{type: 'viewer', name: 'result'}],
     meta: {
       keywords: 'PDB, track',
       showInGallery: 'false',
+      role: 'viewer'
     }
   })
   static saguaroViewer(): DG.JsViewer & IBiotrackViewer {
@@ -562,7 +571,7 @@ export class PackageFunctions {
         if (progress - lastProgress >= 0.01) {
           pi.update(100 * progress, 'demoFix1 parsing ...');
           lastProgress = progress;
-          await delay(0);
+          await DG.delay(0);
         }
       }
 
@@ -621,7 +630,7 @@ export class PackageFunctions {
         if (progress - lastProgress >= 0.01) {
           pi.update(100 * progress, 'demoFix3 pdbqt -> mol ...');
           lastProgress = progress;
-          await delay(0);
+          await DG.delay(0);
         }
       }
 
@@ -733,7 +742,7 @@ export class PackageFunctions {
 
   @grok.decorators.panel({
     name: '3D Structure',
-    tags: ['bio', 'widgets'],
+    meta: {role: 'widgets', domain: 'bio'},
   })
   static structure3D(
     @grok.decorators.param({options: {semType: 'Molecule3D'}}) molecule: DG.SemanticValue
@@ -754,6 +763,15 @@ export class PackageFunctions {
       }
     });
     return widget;
+  }
+
+  @grok.decorators.panel({
+    name: 'PDB Information',
+  })
+  static pdbFileInfoPanel(
+    @grok.decorators.param({options: {semType: 'Molecule3D'}}) molecule: DG.SemanticValue
+  ): DG.Widget {
+    return pdbFileInfoWidget(molecule.value);
   }
 
   @grok.decorators.func({

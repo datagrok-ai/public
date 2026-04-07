@@ -6,7 +6,7 @@ import wu from 'wu';
 
 /* eslint-disable max-len */
 import {ISeqHelper} from '@datagrok-libraries/bio/src/utils/seq-helper';
-import {INotationProvider, ISeqSplitted, SeqSplittedBase, SplitterFunc} from '@datagrok-libraries/bio/src/utils/macromolecule/types';
+import {INotationProvider, ISeqSplitted, NotationProviderBase, SeqSplittedBase, SplitterFunc} from '@datagrok-libraries/bio/src/utils/macromolecule/types';
 import {getSplitterWithSeparator} from '@datagrok-libraries/bio/src/utils/macromolecule';
 import {GAP_SYMBOL, GapOriginals, NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule/consts';
 import {CellRendererBackBase} from '@datagrok-libraries/bio/src/utils/cell-renderer-back-base';
@@ -22,16 +22,22 @@ import {CyclizedCellRendererBack} from './cell-renderer-cyclized';
 
 /* eslint-enable max-len */
 
-export class CyclizedNotationProvider implements INotationProvider {
+export class CyclizedNotationProvider extends NotationProviderBase implements INotationProvider {
   private readonly separatorSplitter: SplitterFunc;
   public readonly splitter: SplitterFunc;
 
+  static override get notationName(): string { return 'Harmonized Sequence'; }
+  static override get implementsFromHelm(): boolean { return false; }
+  static override convertFromHelm(helm: string, options: any): string {
+    throw new Error('converting from helm not supported yet');
+  }
   get defaultGapOriginal(): string { return ''; }
 
   constructor(
     public readonly separator: string,
     protected readonly helmHelper: IHelmHelper
   ) {
+    super();
     this.separatorSplitter = getSplitterWithSeparator(this.separator);
     this.splitter = this._splitter.bind(this);
   }

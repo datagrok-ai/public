@@ -83,12 +83,36 @@ export class PackageFunctions{
   }
 
   @grok.decorators.func({
-    'tags': [
-      'HitTriageFunction'
-    ],
+    name: 'getAutodockResults',
+    meta: {vectorFunc: 'true'},
+    outputs: [{name: 'result', type: 'dataframe', options: {action: 'join(table)'}}],
+  })
+  static async getAutodockResults(
+    table: DG.DataFrame,
+    @grok.decorators.param({options: {semType: 'Molecule'}}) ligands: DG.Column,
+    target: string,
+    poses: number
+  ): Promise<DG.DataFrame> {
+    const data = await prepareAutoDockData(target, table, ligands.name, poses);
+    if (!data)
+      return DG.DataFrame.create();
+
+    const app = new AutoDockApp();
+    const autodockResults = await app.init(data);
+    if (!autodockResults)
+      return DG.DataFrame.create();
+
+    formatColumns(autodockResults);
+    const processedResults = processAutodockResults(autodockResults, table);
+    await grok.data.detectSemanticTypes(processedResults);
+    return processedResults;
+  }
+
+  @grok.decorators.func({
     'top-menu': 'Chem | Docking | AutoDock...',
     'name': 'AutoDock',
-    'description': 'Autodock plugin UI'
+    'description': 'Autodock plugin UI',
+    meta: {role: 'hitTriageFunction'},
   })
   static async runAutodock(
     @grok.decorators.param({options: {description: '\'Input data table\''}}) table: DG.DataFrame,
@@ -100,19 +124,10 @@ export class PackageFunctions{
     const desirableWidth = 100;
     const pi = DG.TaskBarProgressIndicator.create('AutoDock load data ...');
     try {
-      const data = await prepareAutoDockData(target, table, ligands.name, poses);
-      if (!data)
-        return;
+      await grok.functions.call('Docking:getAutodockResults', { table, ligands, target, poses });
 
-      const app = new AutoDockApp();
-      const autodockResults = await app.init(data);
-      if (!autodockResults)
+      if (!BINDING_ENERGY_COL_UNUSED || !POSE_COL_UNUSED)
         return;
-
-      formatColumns(autodockResults);
-      const processedResults = processAutodockResults(autodockResults, table);
-      for (let col of processedResults.columns)
-        table.columns.add(col);
 
       const {grid} = grok.shell.getTableView(table.name);
 
@@ -148,12 +163,9 @@ export class PackageFunctions{
   }
 
   @grok.decorators.panel({
-    'tags': [
-      'chem',
-      'widgets'
-    ],
     'name': 'AutoDock',
-    'condition': 'Docking:isApplicableAutodock(molecule)'
+    'condition': 'Docking:isApplicableAutodock(molecule)',
+    meta: {role: 'widgets', domain: 'chem'},
   })
   static async autodockWidget(
     @grok.decorators.param({'options':{'semType':'Molecule3D'}}) molecule: DG.SemanticValue): Promise<DG.Widget<any> | null> {
@@ -218,7 +230,7 @@ export class PackageFunctions{
 
   @grok.decorators.panel({
     'name': 'Biology | AutoDock',
-    'tags': ['widgets']
+    meta: {role: 'widgets'},
   })
   static async autodockPanel(
     @grok.decorators.param({'options':{'semType':'Molecule'}}) smiles: DG.SemanticValue): Promise<DG.Widget> {

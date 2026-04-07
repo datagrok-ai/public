@@ -13,6 +13,14 @@ export class UsageType {
 
   static USER_REPORT_POSTED = 'user report posted';
 
+  static INPUT = 'input';
+
+  static NAVIGATE = 'navigate';
+
+  static DRAG_START = 'dragstart';
+
+  static DROP = 'drop';
+
 }
 export class GridCellStyleEx {
   public dart: any;
@@ -176,7 +184,11 @@ export class InputType {
 
   static MultiChoice = 'MultiChoice';
 
+  static Tags = 'Tags';
+
   static Table = 'Table';
+
+  static TablesMultiChoice = 'TablesMultiChoice';
 
   static Molecule = 'Molecule';
 

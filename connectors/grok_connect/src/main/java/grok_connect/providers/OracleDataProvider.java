@@ -18,7 +18,6 @@ import grok_connect.resultset.OracleResultSetManager;
 import grok_connect.resultset.ResultSetManager;
 import grok_connect.table_query.AggrFunctionInfo;
 import grok_connect.table_query.Stats;
-import grok_connect.utils.GrokConnectException;
 import grok_connect.utils.Prop;
 import grok_connect.utils.Property;
 import oracle.jdbc.OracleResultSet;
@@ -243,7 +242,7 @@ public class OracleDataProvider extends JdbcDataProvider {
     }
 
     @Override
-    public String getCommentsQuery(DataConnection connection) throws GrokConnectException {
+    public String getCommentsQuery(DataConnection connection) {
         return "--input: string schema\n" +
                 "SELECT\n" +
                 "    tc.owner AS table_schema,\n" +

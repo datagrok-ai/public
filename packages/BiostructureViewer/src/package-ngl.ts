@@ -9,21 +9,24 @@ import {previewNgl} from './viewers/view-preview';
 export const _package = new DG.Package();
 
 //eslint-disable-next-line max-len
-//tags: fileViewer, fileViewer-mol, fileViewer-mol2, fileViewer-cif, fileViewer-mcif, fileViewer-mmcif, fileViewer-gro, fileViewer-pdb, fileViewer-ent, fileViewer-pqr, fileViewer-mmtf, fileViewer-mtl, fileViewer-sdf, fileViewer-sd
+//meta.role: fileViewer
+//meta.fileViewer: mol,mol2,cif,mcif,mmcif,grok,pdb,ent,pqr,mmtf,mtl,sdf,sd
 //input: file file
 //output: view v
 export function nglStructureViewer(file: any) {
   return previewNgl(file);
 }
 
-//tags: fileViewer, fileViewer-ply, fileViewer-obj
+//meta.role: fileViewer
+//meta.fileViewer: ply,obj
 //input: file file
 //output: view v
 export function nglSurfaceViewer(file: any) {
   return previewNgl(file);
 }
 
-//tags: fileViewer, fileViewer-prmtop, fileViewer-parm7, fileViewer-psf, fileViewer-top
+//meta.role: fileViewer
+//meta.fileViewer: prmtop,parm7,psf,top
 //input: file file
 //output: view v
 export function nglTopologyViewer(file: any) {
@@ -31,7 +34,8 @@ export function nglTopologyViewer(file: any) {
 }
 
 //eslint-disable-next-line max-len
-//tags: fileViewer, fileViewer-dsn6, fileViewer-brix, fileViewer-cube, fileViewer-cub, fileViewer-dx, fileViewer-dxbin, fileViewer-xplor, fileViewer-cns, fileViewer-mrc, fileViewer-map, fileViewer-ccp4
+//meta.role: fileViewer
+//meta.fileViewer: dsn6,brix,cube,cub,dx,dxbin,xplor,cns,mrc,map,ccp4
 //input: file file
 //output: view v
 export function nglDensityViewer(file: any) {

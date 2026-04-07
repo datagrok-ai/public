@@ -1,15 +1,13 @@
+/* eslint-disable max-len */
 /* eslint-disable valid-jsdoc */
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {EditorSelection, EditorState, Extension, StateEffectType} from '@codemirror/state';
-import {DecorationSet, EditorView, ViewUpdate, hoverTooltip, keymap} from '@codemirror/view';
-import {Completion, CompletionContext, CompletionResult,
-  autocompletion, startCompletion} from '@codemirror/autocomplete';
-import {StateEffect, StateField} from '@codemirror/state';
-import {Decoration} from '@codemirror/view';
-import {minimalSetup} from 'codemirror';
-import {bracketMatching} from '@codemirror/language';
+import type {EditorSelection, EditorState, Extension, StateEffectType} from '@codemirror/state';
+import type {DecorationSet, EditorView, ViewUpdate} from '@codemirror/view';
+import type {Completion, CompletionContext, CompletionResult} from '@codemirror/autocomplete';
+import type {StateEffect, StateField} from '@codemirror/state';
+import type {Decoration} from '@codemirror/view';
 import {Subject} from 'rxjs';
 
 /**
@@ -140,6 +138,8 @@ export class AddNewColumnDialog {
   uiFunctions?: HTMLDivElement;
   uiDialog?: DG.Dialog;
   codeMirror?: EditorView;
+  private _EditorSelection!: (typeof import('@codemirror/state'))['EditorSelection'];
+  private _hoverTooltip!: (typeof import('@codemirror/view'))['hoverTooltip'];
   codeMirrorDiv = ui.div('', {style: {border: 'dotted 1px var(--grey-3)'}});
   errorDiv = ui.div('', 'cm-errort-div cm-hint-div');
   hintDiv = ui.div('', 'cm-hint-div');
@@ -167,6 +167,10 @@ export class AddNewColumnDialog {
   colTypeWidget = '';
   autocompleteOpened = false;
 
+  private get isFilterFormulaEditor(): boolean {
+    return this.call.aux['filterFormulaEditor'] == true;
+  }
+
   constructor(call: DG.FuncCall, widget?: DG.Widget) {
     this.codeMirrorDiv.classList.add(this.widget ? 'add-new-column-widget-cm-div' : 'add-new-column-dialog-cm-div');
     this.call = call;
@@ -185,8 +189,10 @@ export class AddNewColumnDialog {
     if (widget)
       this.widget = widget;
     else {
-      this.dialogTitle = this.edit ? this.editColumnTitle : this.addColumnTitle;
+      this.dialogTitle = this.isFilterFormulaEditor ?
+        'Edit Formula' : (this.edit ? this.editColumnTitle : this.addColumnTitle);
       this.uiDialog = ui.dialog({title: this.dialogTitle, helpUrl: this.helpUrl});
+      this.uiDialog.root.classList.add('add-new-column-dialog-root');
     }
 
     if (this.sourceDf) {
@@ -216,6 +222,14 @@ export class AddNewColumnDialog {
       this.uiDialog!
         .add(this.inputName)
         .add(this.inputType);
+
+      if (this.isFilterFormulaEditor) {
+        // if the editor is created for editing viewer filter formula, we do not need name and type inputs, and they must be fixed
+        this.inputName!.root.style.display = 'none';
+        this.inputType!.root.style.display = 'none';
+        this.inputName!.value = 'Filter Formula'; // does not matter, not used anywhere
+        this.inputType!.value = DG.COLUMN_TYPE.BOOL; // needs to be bool only to assist with validation
+      }
 
       this.uiDialog!
         .add(await this.initUiLayout())
@@ -261,7 +275,7 @@ export class AddNewColumnDialog {
       };
     }
 
-    this.codeMirror = this.initCodeMirror();
+    this.codeMirror = await this.initCodeMirror();
     this.codeMirrorDiv.addEventListener('keydown', (e: KeyboardEvent) => {
       //do not close the dialog when autocompleting using Enter button
       if (e.code === 'Enter' && this.autocompleteEnter) {
@@ -387,7 +401,7 @@ export class AddNewColumnDialog {
       this.call.getParamValue('type') : defaultChoice, items: this.supportedTypes});
     control.onInput.subscribe(async () => {
       this.changedType = true;
-      await this.updatePreview(this.codeMirror!.state.doc.toString(), false)
+      await this.updatePreview(this.codeMirror!.state.doc.toString(), false);
     });
     control.setTooltip(this.tooltips['type']);
 
@@ -400,7 +414,15 @@ export class AddNewColumnDialog {
   }
 
 
-  initCodeMirror(): EditorView {
+  async initCodeMirror(): Promise<EditorView> {
+    const {EditorView, keymap, hoverTooltip, Decoration} = await import('@codemirror/view');
+    const {EditorState, EditorSelection, StateEffect, StateField} = await import('@codemirror/state');
+    const {autocompletion, startCompletion} = await import('@codemirror/autocomplete');
+    const {minimalSetup} = await import('codemirror');
+    const {bracketMatching} = await import('@codemirror/language');
+    this._EditorSelection = EditorSelection;
+    this._hoverTooltip = hoverTooltip;
+
     this.codeMirrorDiv!.onclick = () => {
       cm.focus();
     };
@@ -694,7 +716,7 @@ export class AddNewColumnDialog {
     const re = /".*?"|'.*?'/gm;
     let match = null;
     const quotesSelection: {from: number, to: number}[] = [];
-    const intervalsWithoutQuotes: [number, number][]= [];
+    const intervalsWithoutQuotes: [number, number][] = [];
     let counter = 0;
     while ((match = re.exec(formula)) != null) {
       if (!counter && match.index > 0)
@@ -978,7 +1000,7 @@ export class AddNewColumnDialog {
 
   hoverTooltipCustom(packageFunctionsParams: { [key: string]: FuncInfo },
     coreFunctionsParams: { [key: string]: FuncInfo }): Extension {
-    return hoverTooltip((view: EditorView, pos: number, side: number) => {
+    return this._hoverTooltip((view: EditorView, pos: number, side: number) => {
       const res = this.getFunctionNameAtPosition(view, pos, side, packageFunctionsParams, coreFunctionsParams);
       if (!res || !res.signature)
         return null;
@@ -1009,8 +1031,8 @@ export class AddNewColumnDialog {
       firstParamEnd = closeParenthesisIdx;
     setTimeout(() => this.codeMirror!.focus(), 100);
     this.codeMirror!.dispatch({
-      selection: EditorSelection.create([
-        EditorSelection.range(openParenthesis + 1, firstParamEnd),
+      selection: this._EditorSelection.create([
+        this._EditorSelection.range(openParenthesis + 1, firstParamEnd),
       ]),
     });
   }
@@ -1159,7 +1181,7 @@ export class AddNewColumnDialog {
     }
 
     this.changedType = false;
-    
+
     //in case name was changed in nameInput, do not recalculate preview
     if (changeName) {
       if (!this.error)
@@ -1401,7 +1423,7 @@ export class AddNewColumnDialog {
       .toList().filter((v, i) => selectedIndexes.includes(i));
     let types: string[] = [];
     let semTypes: string[] = [];
-    selectedColumns.forEach((v) => {types.push(v.type), semTypes.push(v.semType);});
+    selectedColumns.forEach((v) => { types.push(v.type), semTypes.push(v.semType); });
     types = types.filter((v, i, a) => a.indexOf(v) === i);
     semTypes = semTypes.filter((v, i, a) => a.indexOf(v) === i && v != null);
     return [types, semTypes];
@@ -1415,7 +1437,8 @@ export class AddNewColumnDialog {
         const name = this.widget ? this.call!.getParamValue('name') : this.inputName!.value;
         const type = this.widget ? this.call.getParamValue('type') : this.getSelectedType()[0];
         const treatAsString = this.widget ? this.call.getParamValue('treatAsString') : this.getSelectedType()[1];
-        await colToUpdate.applyFormula(this.codeMirror!.state.doc.toString().trim(), type, treatAsString);
+        const expression = this.codeMirror!.state.doc.toString();
+        await colToUpdate.applyFormula(treatAsString ? expression : expression.trim(), type, treatAsString);
         if (name !== colToUpdate.name)
           colToUpdate.name = this.sourceDf?.columns.getUnusedName(name) ?? name;
         grok.shell.o = colToUpdate;
@@ -1425,13 +1448,16 @@ export class AddNewColumnDialog {
       if (!this.call.getParamValue('table'))
         this.call.setParamValue('table', this.sourceDf);
       this.call.setParamValue('name', this.edit ? this.inputName!.value : this.getResultColumnName().unusedName);
-      this.call.setParamValue('expression', this.codeMirror!.state.doc.toString().trim());
+      const expression = this.codeMirror!.state.doc.toString();
+      this.call.setParamValue('expression', this.getSelectedType()[1] ? expression : expression.trim());
       this.call.setParamValue('type', this.getSelectedType()[0]);
       this.call.setParamValue('treatAsString', this.getSelectedType()[1]);
       if (!this.edit)
         this.call.setParamValue('subscribeOnChanges', true);
       await this.call.call(false, undefined, {processed: false});
     }
+    if (this.sourceDf)
+      grok.data.detectSemanticTypes(this.sourceDf);
   }
 
   /** Closes Add New Column Dialog Window. */
@@ -1485,7 +1511,16 @@ export class AddNewColumnDialog {
         filter = !word.text.endsWith(':');
       } else if (word.text.includes('$') || word.text.includes('${') || word.text.includes('$[')) {
         const dollarIdx = word.text.lastIndexOf('$');
-        const openingSym = word.text.includes('$[') ? '[' : '{';
+        //check if there is a function before dollar sign (only in case index > 2: function name at least one letter and an opening brace) and if it is an aggregation function which requires square braces
+        let openingSym = '{';
+        if (context.view && index > 1) {
+          const funcName = this.getFunctionNameAtPosition(context.view!, index - 2, -1, this.packageFunctionsParams,
+            this.coreFunctionsParams, true)?.funcName;
+          const isAggr = funcName ?
+            Object.entries(DG.AGG).map(([key, value]) => value).includes(funcName!.toLocaleLowerCase() as DG.AGG) : false;
+          if (isAggr)
+            openingSym = '[';
+        }
         const closingSym = openingSym === '{' ? '}' : ']';
         const openingBracketIdx = word.text.indexOf(openingSym) > dollarIdx ? word.text.indexOf(openingSym) : -1;
         const closingBracket = context.state.doc.length > word.text.length ?
@@ -1549,7 +1584,7 @@ export class AddNewColumnDialog {
               this.sourceDf?.col((ip as DG.FuncCallParam).value.inputs['field'])?.type ?? 'null' :
               Object.keys((ip as DG.FuncCallParam).value.outputParams).length > 0 ?
                 // eslint-disable-next-line max-len
-                (ip as DG.FuncCallParam).value.outputParams[Object.keys((ip as DG.FuncCallParam).value.outputParams)[0]].property.propertyType :'null' :
+                (ip as DG.FuncCallParam).value.outputParams[Object.keys((ip as DG.FuncCallParam).value.outputParams)[0]].property.propertyType : 'null' :
             this.getValueType((ip as DG.FuncCallParam).value);
         }
         if (outType == '') {
@@ -1563,7 +1598,7 @@ export class AddNewColumnDialog {
   }
 
   getOutputParamType(first: string, second: string) {
-    const isNullParam = (param: string) => param == 'null' || param == 'undefined'|| param == null;
+    const isNullParam = (param: string) => param == 'null' || param == 'undefined' || param == null;
     if (isNullParam(first))
       return !isNullParam(second) ? second : DG.TYPE.STRING;
     else {

@@ -155,8 +155,7 @@ Here's Andrew running the client-side Lotka-Volterra Model on the underpowered N
 
 ## Models
 
-The **model** is some custom solution 
-used to analyze data and predict the behavior of some real system.
+A **model** analyzes data and predicts real-world system behavior.
 Datagrok provides you extensive capabilities to develop and run custom models 
 using the broad capabilities of the Datagrok platform. 
 

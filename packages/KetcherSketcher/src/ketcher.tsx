@@ -10,7 +10,7 @@ import {Ketcher} from 'ketcher-core';
 import 'ketcher-react/dist/index.css';
 import '../css/editor.css';
 import {chem} from 'datagrok-api/grok';
-import {KETCHER_MOLV2000, KETCHER_MOLV3000, KETCHER_OPTIONS, KETCHER_USER_STORAGE, KETCHER_WINDOW_OBJECT} from './constants';
+import {KETCHER_MOLV2000, KETCHER_MOLV3000, KETCHER_WINDOW_OBJECT} from './constants';
 
 let sketcherId = 0;
 
@@ -21,6 +21,7 @@ export class KetcherSketcher extends grok.chem.SketcherBase {
   _smarts: string | null = null;
   _sketcher: Ketcher | null = null;
   ketcherHost: HTMLDivElement;
+  reactRoot: ReactDOM.Root | null = null;
 
   constructor() {
     super();
@@ -47,10 +48,9 @@ export class KetcherSketcher extends grok.chem.SketcherBase {
         //     this._sketcher?.editor.setOptions(opts);
         //   }
         // });
-        //@ts-ignore
-        window[KETCHER_WINDOW_OBJECT] = ketcher;
         this.setMoleculeFromHost();
         (this._sketcher.editor as any).subscribe('change', async (_: any) => {
+          this.explicitMol = null;
           try {
             this._smiles = await this._sketcher!.getSmiles();
           } catch { //in case we are working with smarts - getSmiles() will fail with exception
@@ -66,8 +66,8 @@ export class KetcherSketcher extends grok.chem.SketcherBase {
     this.ketcherHost = ui.div([], 'ketcher-host');
 
     const component = React.createElement(Editor, props, null);
-    const root = ReactDOM.createRoot(this.ketcherHost);
-    root.render(component);
+    this.reactRoot = ReactDOM.createRoot(this.ketcherHost);
+    this.reactRoot.render(component);
 
     this.root.appendChild(this.ketcherHost);
   }
@@ -85,6 +85,8 @@ export class KetcherSketcher extends grok.chem.SketcherBase {
   }
 
   get smiles() {
+    if (this.explicitMol?.notation === 'smiles')
+      return this.explicitMol.value;
     return this._smiles === null ?
       this._molV2000 !== null ? DG.chem.convert(this._molV2000, DG.chem.Notation.MolBlock, DG.chem.Notation.Smiles) :
         this._molV3000 !== null ? DG.chem.convert(this._molV3000, DG.chem.Notation.V3KMolBlock, DG.chem.Notation.Smiles) :
@@ -97,9 +99,12 @@ export class KetcherSketcher extends grok.chem.SketcherBase {
     this._molV3000 = null;
     this._smarts = null;
     this.setKetcherMolecule(smiles);
+    this.explicitMol = {notation: 'smiles', value: smiles};
   }
 
   get molFile() {
+    if (this.explicitMol?.notation === 'molblock')
+      return this.explicitMol.value;
     return this._molV2000 === null ?
       this._molV3000 !== null ? DG.chem.convert(this._molV3000, DG.chem.Notation.V3KMolBlock, DG.chem.Notation.MolBlock) :
         this._smiles !== null ? DG.chem.convert(this._smiles, DG.chem.Notation.Smiles, DG.chem.Notation.MolBlock) :
@@ -112,9 +117,12 @@ export class KetcherSketcher extends grok.chem.SketcherBase {
     this._smarts = null;
     this._smiles = null;
     this.setKetcherMolecule(molfile);
+    this.explicitMol = {notation: 'molblock', value: molfile};
   }
 
   get molV3000() {
+    if (this.explicitMol?.notation === 'molblockV3000')
+      return this.explicitMol.value;
     return this._molV3000 === null ?
       this._molV2000 !== null ? DG.chem.convert(this._molV2000, DG.chem.Notation.MolBlock, DG.chem.Notation.V3KMolBlock) :
         this._smiles !== null ? DG.chem.convert(this._smiles, DG.chem.Notation.Smiles, DG.chem.Notation.V3KMolBlock) :
@@ -127,6 +135,7 @@ export class KetcherSketcher extends grok.chem.SketcherBase {
     this._smarts = null;
     this._smiles = null;
     this.setKetcherMolecule(molfile);
+    this.explicitMol = {notation: 'molblockV3000', value: molfile};
   }
 
   async getSmarts(): Promise<string> {
@@ -180,6 +189,8 @@ export class KetcherSketcher extends grok.chem.SketcherBase {
 
   detach() {
     // grok.dapi.userDataStorage.postValue(KETCHER_OPTIONS, KETCHER_USER_STORAGE, JSON.stringify(this._sketcher?.editor.options()), true);
+    this.reactRoot?.unmount();
+    this.reactRoot = null;
     super.detach();
   }
 }

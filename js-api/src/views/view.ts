@@ -5,10 +5,9 @@ import {FilterGroup, ScatterPlotViewer, Viewer} from '../viewer';
 import {DockManager, DockNode} from '../docking';
 import {Grid} from '../grid';
 import {DartWidget, Menu, ToolboxPage, TreeViewGroup, Widget} from '../widgets';
-import {ColumnInfo, Entity, Script, TableInfo, ViewLayout, ViewInfo, Property, Func} from '../entities';
+import {ColumnInfo, Entity, Script, TableInfo, ViewLayout, ViewInfo, Property, Func, DataQuery} from '../entities';
 import {toDart, toJs} from '../wrappers';
 import {_options} from '../utils';
-import {_toIterable} from '../utils_convert';
 import {MapProxy} from '../proxies';
 import {Subscription} from "rxjs";
 import {FuncCall} from "../functions";
@@ -44,7 +43,7 @@ const api: IDartApi = (typeof window !== 'undefined' ? window : global.window) a
  * Subclass ViewBase to implement a Datagrok view in JavaScript.
  * */
 export class ViewBase extends Widget {
-  dart: any;
+  declare dart: any;
   subs: Subscription[];
   private _helpUrl: string | null = null;
   private _closing: boolean;
@@ -623,9 +622,9 @@ export class TableView extends View {
   }
 
   /** Returns all viewers.
-   * @type {Iterable.<Viewer>} */
-  get viewers(): Iterable<Viewer> {
-    return _toIterable(api.grok_View_Get_Viewers(this.dart));
+   * Resulting array is cloned, so cache the result and do not call repeatedly in inner loops. */
+  get viewers(): Viewer[] {
+    return api.grok_View_Get_Viewers(this.dart);
   }
 
   get syncCurrentObject(): boolean { return api.grok_TableView_Get_SyncCurrentObject(this.dart); }
@@ -661,8 +660,24 @@ export class ScriptView extends View {
   static create(script: Script): ScriptView {
     return new ScriptView(api.grok_ScriptView(script.dart));
   }
+
+  public get code(): string {
+    return api.grok_ScriptView_Get_Code(this.dart);
+  }
+  public set code(s: string) {
+    api.grok_ScriptView_Set_Code(this.dart, s);
+  }
 }
 
+export class DataQueryView extends View {
+  constructor(dart: any) {
+    super(dart);
+  }
+
+  static create(query: DataQuery): DataQueryView {
+    return new DataQueryView(api.grok_DataQueryView(query.dart));
+  }
+}
 
 export class DockView extends View {
   constructor(dart: any) {

@@ -1,7 +1,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
-import { awaitCheck, delay } from '@datagrok-libraries/utils/src/test';
+import {awaitCheck} from '@datagrok-libraries/utils/src/test';
 import { getRevvityLibraries } from './libraries';
 import { filterProperties, getPropertiesForLibAndEntityType, initializeFilters, runSearchQuery, SAVED_SEARCH_STORAGE } from './search-utils';
 import { getCompoundTypeByViewName, getViewNameByCompoundType } from './utils';
@@ -195,7 +195,7 @@ export async function createViewFromPreDefinedQuery(treeNode: DG.TreeViewGroup, 
 
   const df = DG.DataFrame.create();
   const tv = grok.shell.addTablePreview(df);
-  const icon = ui.iconImage('', `${_package.webRoot}img/revvity.png`);
+  // const icon = ui.iconImage('', `${_package.webRoot}img/revvity.png`);
   //tv.setIcon(icon); TODO!!! Uncomment when setIcon method is available in js-api
 
   openedView = tv;

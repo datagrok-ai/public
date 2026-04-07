@@ -5,8 +5,7 @@ format: mdx
 unlisted: true
 ---
 
-Datagrok provides a flexible window management system, where windows
-could be either dragged out and positioned manually, or set up automatically.
+Datagrok provides a flexible window management system. You can either drag windows out and position them manually or set them up automatically.
 
 ![](img/table-view-add-viewers-dock.gif)
 
@@ -17,7 +16,7 @@ See also `View.dockNode`
 
 ## Nested docking
 
-Some of the views contain a nested docking manager, which allows to manage
-windows within that particular view (they cannot be undocked and docked on
-a top level, or within a different view). See `dockManager` property of the
+Some views contain a nested docking manager that lets you manage
+windows within that particular view. These windows cannot be undocked and docked at
+the top level or within a different view. See `dockManager` property of the
 View class.

@@ -51,7 +51,8 @@ export function welcomeView(): DG.View | undefined {
   view.root.appendChild(viewHost);
   view.root.classList.add('power-pack-welcome-view');
 
-  const widgetFunctions = DG.Func.find({tags: ['dashboard'], returnType: 'widget'});
+  const widgetFunctions = DG.Func.find({meta: {role: DG.FUNC_TYPES.DASHBOARD}, returnType: 'widget'});
+  widgetFunctions.sort((a, b) => (a.options['order'] ?? 100) - (b.options['order'] ?? 100));
   const widgetHosts: {[index: string]: HTMLElement} = {};
   const settings: UserWidgetsSettings = getSettings();
 

@@ -87,7 +87,31 @@ boxes that select columns.
 
 Grid is a special viewer. To learn about how to change its appearance or settings, see [Grid](viewers/grid.md).
 
+#### Common viewer properties
+
+**Table**, **Row Source**, and **Filter** are common for most viewers, defining the source and subset of data to display: 
+
+* **Table** specifies which table to display, defaults to the current **Table View** 
+but can point to any table available in the current context. 
+
+* **Row Source** determines which rows from the table are shown in the viewer. 
+Options include `Filtered` (default), `All`, `Selected`, `SelectedOrCurrent`, 
+`FilteredSelected`, `MouseOverGroup`, `CurrentRow`, and `MouseOverRow`. 
+
+* **Filter** allows additional filtering of rows shown in the viewer using [formula syntax](../transform/formula-syntax.md).
+Examples include:
+  * `${AGE} > 18 && ${SEVERITY} == 'Medium'`
+  * `Contains(${RACE},'sian')` or `In(${RACE}, ['Black', 'Asian', 'Other'])` 
+
 ![viewer-property-panel](../datagrok/navigation/views/img/viewer-property-panel.gif)
+
+#### Viewer coloring
+
+Core viewers like [scatterplot](viewers/scatter-plot.md), [box plot](viewers/box-plot.md), and [PC plot](viewers/pc-plot.md) support color-coding data based on a column. The coloring behavior depends on the data type of the color column:
+
+**Categorical columns:** When the color column is categorical, the viewer displays a legend showing each category with its assigned color. You can change the color of any category by clicking on the color swatch in the legend or through the grid context menu. If the column has more categories than the supported limit (100), the viewer uses the categorical color scheme defined in the viewer's properties or context menu instead of showing individual legend items.
+
+**Numerical columns:** For numerical color columns, the viewer uses a linear color scheme by default to represent the value range. If a custom linear color scheme is defined for the column in the grid, the viewer uses that instead. When conditional coloring is applied to a numerical column, the viewer displays range bins as categorical legend items, allowing you to customize individual bin colors via the legend color picker.
 
 ### Tooltips
 
@@ -402,11 +426,22 @@ To embed:
 
 <img src={EmbedViewerDialog} width="450"/>
 
+## Viewer controls font
+
+Many viewers allow you to customize fonts for different elements to match your presentation style. **Controls Font** is used for control elements like column selectors, combo boxes, and other UI controls on the viewer. **Axis Font** is used for axis labels and tick marks in chart viewers. Individual viewers may also provide additional font properties for specialized elements such as labels, formulas, annotations, and statistics.
+
+To customize fonts, access the viewer's **Context Panel** and look for font properties in the **Style** section or use context menu.
+
+![](viewers/img/viewers-font.gif)
+
+## Viewer coloring
+<!-- TODO: Write about coloring -->
+
 ## Utilities
 
 ### Table Manager
 
-Table Manager (<kpd>Alt + T</kpd>), contains a list of currently
+Table Manager (<kbd>Alt + T</kbd>), contains a list of currently
 open tables. Use it to navigate between
 tables, select them, or perform batch actions. It also allows to view metadata
 on multiple tables in a tabular format.
@@ -425,9 +460,9 @@ Usage:
 | Popup: Show          | Toggle visibility of the property "x" |
 | Popup: Open as table | Add tables to workspace (tables in rows) |
 
-If a context menu is open when multiple columns are selected, user will be
-present with a choice to apply commands to either current table, or all selected
-tables.
+If a context menu is open when multiple tables are selected, you are
+presented with a choice to apply commands to either the current table or all selected
+tables, including Append and Compare.
 
 ### Column Manager
 
@@ -450,9 +485,9 @@ Usage:
 | Right-click      | Show popup menu |
 | Popup: Add Stats | Show/hide statistics |
 
-If a context menu is open when multiple columns are selected, user will be
-present with a choice to apply commands to either current table, or all selected
-tables.
+If a context menu is open when multiple columns are selected, you are
+presented with a choice to apply commands to either the current column or all selected
+columns.
 
 ## Controls
 
@@ -471,9 +506,9 @@ Properties:
 | Property         | Description                                        |
 |------------------|----------------------------------------------------|
 | New name         | New column name                                    |
-| Visible          | Allows to hide column                              |
+| Visible          | Allows you to hide the column                      |
 | Is Color Coded   | Enable/Disable column color coding                 |
-| Show Value       | Allows to do not show values on color coded column |
+| Show Value       | Controls whether values are shown on a color-coded column |
 | Width            | Column width, in pixels                            |
 | Background Color | Background Color, 32 bit integer                   |
 | Decimal Places   | Decimal Places                                     |

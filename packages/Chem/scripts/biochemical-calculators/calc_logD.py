@@ -6,7 +6,6 @@
 #input: dataframe table
 #input: column molecules {caption: Molecules column}
 #input: double pH = 7.4 {caption: pH}
-#tags: Transform
 #meta.method_info.author: Datagrok Hybrid Method
 #meta.method_info.year: 2024
 #meta.method_info.package: https://github.com/datagrok-ai/public
@@ -46,7 +45,7 @@ def calculate_logd(mol_str: str, pH: float, index: int) -> float:
         # Use the pH input parameter in the calculation
         sum_acids = sum(10**(pH - pka) for pka in acidic_pkas)
         sum_bases = sum(10**(pka - pH) for pka in basic_pkas)
-        
+
         # logD equation for acids and bases
         denominator = 1.0 + sum_acids + sum_bases
 

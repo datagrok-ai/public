@@ -8,7 +8,9 @@ title: "Conversion functions"
 - [DateParse](#dateparse)
 - [ParseQnum](#parseqnum)
 - [Qnum](#qnum)
+- [QnumToDouble](#qnumtodouble)
 - [QnumToString](#qnumtostring)
+- [Qualifier](#qualifier)
 - [TimeSpanParse](#timespanparse)
 - [ToString](#tostring)
 
@@ -59,12 +61,30 @@ Qnum(2, "<")
 Qnum(3, ">")
 ```
 
+## QnumToDouble
+
+`QnumToDouble(`x`)`: Converts a qualified number to a double precision floating point value.
+
+```javascript
+QnumToDouble(Qnum(1.5, "<"))  // 1.5
+```
+
 ## QnumToString
 
 `QnumToString(`x`)`: Converts a qualified number to a string representation.
 
 ```javascript
 QnumToString(Qnum(1.5, "<"))  // <1.50
+```
+
+## Qualifier
+
+Qualifier(`x`)`: Returns the qualifier character from a qualified number.
+
+```javascript
+Qualifier(Qnum(1.5, "<"))  // "<"
+Qualifier(Qnum(1.5, ">"))  // ">"
+Qualifier(Qnum(1.5, "="))  // "="
 ```
 
 ## TimeSpanParse

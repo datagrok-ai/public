@@ -18,13 +18,8 @@ import {PlateTemplateHandler} from './plates/objects/plate-template-handler';
 import * as api from './package-api';
 import {PlateWidget} from './plate/plate-widget/plate-widget';
 import {DrcAnalysis} from './plate/analyses/drc/drc-analysis';
+import {autoDetectDrcMappings} from './plate/analyses/drc/utils';
 export const _package = new DG.Package();
-
-
-//tags: autostart
-export async function autostart(): Promise<void> {
-  await PackageFunctions.createDummyPlateData();
-}
 
 
 export class PackageFunctions {
@@ -45,7 +40,7 @@ export class PackageFunctions {
 
     const plates = await api.queries.getPlatesCount();
     if (plates == 0) {
-      grok.shell.info('Populating plates with dummy data, might take a minute or two...')
+      grok.shell.info('Populating plates with dummy data, might take a minute or two...');
       await __createDummyPlateData();
     }
   }
@@ -152,14 +147,13 @@ static async importPlateXlsx(fileContent: Uint8Array): Promise<any[]> {
   const plate = await PackageFunctions.parseExcelPlate(fileContent);
 
   const plateWidget = PlateWidget.fromPlate(plate);
-  const initialMappings = PackageFunctions.autoDetectDrcMappings(plate);
+  const initialMappings = autoDetectDrcMappings(plate);
   const drcAnalysis = new DrcAnalysis();
   const analysisView = drcAnalysis.createView(
     plate,
     plateWidget,
     initialMappings,
     (target: string, source: string) => {
-      // Handle mapping changes
       initialMappings.set(target, source);
     },
     (target: string) => {
@@ -170,7 +164,7 @@ static async importPlateXlsx(fileContent: Uint8Array): Promise<any[]> {
   const container = ui.divV([
     plateWidget.root,
     analysisView
-  ], 'xlsx-plate-container');
+  ], 'xlsx-plate-container assay-plates-file-preview');
 
   view.root.appendChild(container);
   view.name = 'Plate';
@@ -178,28 +172,6 @@ static async importPlateXlsx(fileContent: Uint8Array): Promise<any[]> {
   return [];
 }
 
-// this is a basic solution to make the demo files work. Perhaps this should be a Plate-specific registry of bespoke "heuristics" in the future.
-private static autoDetectDrcMappings(plate: Plate): Map<string, string> {
-  const mappings = new Map<string, string>();
-  const columnNames = plate.data.columns.names();
-
-  const detect = (target: string, candidates: string[]) => {
-    const lower = columnNames.map((c) => c.toLowerCase());
-    for (const cand of candidates) {
-      const idx = lower.findIndex((name) => name.includes(cand));
-      if (idx !== -1) {
-        mappings.set(target, columnNames[idx]);
-        break;
-      }
-    }
-  };
-
-  detect('Activity', ['activity', 'response', 'readout', 'value', 'signal', 'raw data']);
-  detect('Concentration', ['concentration', 'conc', 'dose', 'concentrations']);
-  detect('SampleID', ['sample', 'compound', 'id', 'name', 'layout', 'plate layout']);
-
-  return mappings;
-}
 
 @grok.decorators.fileViewer({name: 'viewPlateXlsx', fileViewer: 'xlsx', fileViewerCheck: 'Plates:checkExcelIsPlate'})
 static async previewPlateXlsx(file: DG.FileInfo): Promise<DG.View> {
@@ -209,7 +181,7 @@ static async previewPlateXlsx(file: DG.FileInfo): Promise<DG.View> {
 
   const plateWidget = PlateWidget.fromPlate(plate);
 
-  const initialMappings = PackageFunctions.autoDetectDrcMappings(plate);
+  const initialMappings = autoDetectDrcMappings(plate);
 
   // Create DRC analysis
   const drcAnalysis = new DrcAnalysis();
@@ -251,18 +223,18 @@ static async checkCsvIsPlate(file: DG.FileInfo): Promise<boolean> {
 
 
   @grok.decorators.func()
-  static checkFileIsPlate(content: string): boolean {
-    if (content.length > 1_000_000)
-      return false;
-    return PlateReader.getReader(content) != null;
-  }
+static checkFileIsPlate(content: string): boolean {
+  if (content.length > 1_000_000)
+    return false;
+  return PlateReader.getReader(content) != null;
+}
 
   @grok.decorators.app({name: 'Plates'})
   static platesApp(): DG.View {
     return platesAppView();
   }
 
-  @grok.decorators.func()
+  @grok.decorators.appTreeBrowser({app: 'Plates'})
   static async platesAppTreeBrowser(treeNode: DG.TreeViewGroup) : Promise<void> {
     await initPlatesAppTree(treeNode);
   }

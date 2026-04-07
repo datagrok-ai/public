@@ -33,7 +33,12 @@ class FuncParam:
     
     @classmethod
     def from_dict(cls, data: dict) -> 'FuncParam':
-        return cls(name=data.get("name"), type=PropertyType(data.get("propertyType")), is_input=data.get("isInput", True))
+        prop_type = data.get("propertyType")
+        try:
+            prop_type = PropertyType(prop_type)
+        except ValueError:
+            pass
+        return cls(name=data.get("name"), type=prop_type, is_input=data.get("isInput", True))
 
 class Func(NamedModel):
     """
@@ -137,9 +142,16 @@ class Func(NamedModel):
             return subclass
         return decorator   
     
+    _type_to_source = {
+        "Script": "script",
+        "DataQuery": "data-query",
+    }
+
     @classmethod
     def from_dict(cls, data: dict) -> "Func":
         source = data.get("source")
+        if source is None:
+            source = Func._type_to_source.get(data.get("#type"))
         subclass = Func._registry.get(source, cls)
         return subclass._from_dict(data)
     

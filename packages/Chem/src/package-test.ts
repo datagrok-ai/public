@@ -1,5 +1,5 @@
 import * as DG from 'datagrok-api/dg';
-import {runTests, TestContext, tests, initAutoTests as initTests} from '@datagrok-libraries/utils/src/test';
+import {runTests, TestContext, tests, initAutoTests as initTests} from '@datagrok-libraries/test/src/test';
 
 import './tests/calculate';
 import './tests/menu-tests-chem-space';
@@ -20,6 +20,7 @@ import './tests/detector-tests';
 import './tests/api-based-tests';
 import './tests/notation-converter-tests';
 import './tests/screening-tools';
+import './tests/pharmacophore-features-tests';
 
 import './tests/save-as-sdf-tests';
 import './tests/substructure-filter-tests';
@@ -34,6 +35,7 @@ import './tests/clone-layout-tests';
 import './tests/mmpa-tests';
 import './tests/chemprop-tests';
 import './tests/vector-funcs-tests';
+import './tests/synthon-search-tests';
 
 import './tests/viewers';
 

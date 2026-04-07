@@ -1,17 +1,23 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
-import * as ui from 'datagrok-api/ui';
-import {AE_BROWSER_VIEW_NAME, TIMELINES_VIEW_NAME, VALIDATION_VIEW_NAME} from '../constants/view-names-constants';
+import {AE_BROWSER_VIEW_NAME, MATRIX_TABLE_VIEW_NAME, MEASUREMENT_PROFILE_TABLE_VIEW_NAME,
+  MICROSCOPIC_FINDINGS_TABLE_VIEW_NAME, TIMELINES_VIEW_NAME,
+  VALIDATION_VIEW_NAME} from '../constants/view-names-constants';
 import * as sdtmCols from '../constants/columns-constants';
 import {AE_START_DAY_FIELD} from '../views-config';
 import {AEBrowserHelper} from '../helpers/ae-browser-helper';
 import {ValidationHelper} from '../helpers/validation-helper';
 import {c} from '../package';
-import {createValidationErrorsDiv, getRequiredColumnsByView, setupValidationErrorColumns, setupValidationErrorIndicators} from './views-validation-utils';
-import {updateDivInnerHTML} from './utils';
+import {createValidationErrorsDiv, getRequiredColumnsByView} from './views-validation-utils';
+import {hideValidationColumns, updateDivInnerHTML} from './utils';
 import {ClinCaseTableView} from './types';
 import {studies} from './app-utils';
-import {ValidationResult} from '../types/validation-result';
+import {createValidationView} from '../views/validation-table-view';
+import {createMatrixTableView} from '../views/matrix-table-view';
+import {createMeasurementProfileTableView} from '../views/measurement-profile-table-view';
+import {awaitCheck} from '@datagrok-libraries/test/src/test';
+import {createMICrossDomainView} from '../views/mi-cross-domain-analysis';
+
 
 export function createAEBrowserHelper(studyId: string): any {
   const aeBrowserDf = studies[studyId].domains.ae.clone();
@@ -29,98 +35,6 @@ export function createAEBrowserHelper(studyId: string): any {
   });
   return {helper: aeBrowserHelper, df: aeBrowserDf};
 }
-
-export function createValidationView(studyId: string): any {
-  if (!studies[studyId].validated) {
-    grok.shell.warning('Validation in progress...');
-    studies[studyId].validationCompleted.subscribe(() => {
-      grok.shell.info(`Validation for study ${studyId} completed`);
-    });
-    return;
-  }
-
-  const validationResults: ValidationResult = studies[studyId].validationResults;
-
-  if (!validationResults) {
-    grok.shell.error('No validation results available');
-    return;
-  }
-  const issueDetailsDf = DG.DataFrame.fromObjects(validationResults.Issue_Details);
-  const issueSummaryDf = DG.DataFrame.fromObjects(validationResults.Issue_Summary);
-
-  grok.data.linkTables(issueSummaryDf, issueDetailsDf,
-    ['dataset', 'core_id'], ['dataset', 'core_id'],
-    [DG.SYNC_TYPE.CURRENT_ROW_TO_FILTER]);
-
-  // tv.dockManager.dock(issueDetailsDf.plot.grid(), 'right');
-  const errorsGridDiv = ui.div();
-
-  let dockNode: DG.DockNode | null = null;
-
-  issueSummaryDf.onCurrentRowChanged.subscribe(() => {
-    ui.empty(errorsGridDiv);
-    let header = '';
-    if (issueSummaryDf.currentRowIdx === -1)
-      return;
-    if (!dockNode)
-      dockNode = grok.shell.tv.dockManager.dock(errorsGridDiv, 'down');
-    let grid: DG.Grid | null = null;
-    //a general rule violated - show row from issueDetailsDf
-    const firstIssueDetailsIdx = issueDetailsDf.filter.findNext(-1, true);
-    if (issueDetailsDf.filter.trueCount === 1 &&
-      validationResults.Issue_Details[firstIssueDetailsIdx].row === '') {
-      grid = issueDetailsDf.plot.grid();
-      header = 'Issue details';
-    }
-    else { //collect data from corresponding domain
-      const domain: string = issueSummaryDf.get('dataset', issueSummaryDf.currentRowIdx);
-      const domainWithoutExtension = domain.replace('.xpt', '').replace('.csv', '');
-      const domainDf: DG.DataFrame = studies[studyId].domains[domainWithoutExtension];
-      if (domainDf) {
-        //check if the violated rule related to metadata (variables in rules do not contain domain variables)
-        const colNames = domainDf.columns.names().map((it) => it.toLowerCase());
-        const ruleContainsDomainCols = validationResults.Issue_Details[firstIssueDetailsIdx].variables
-          .filter((it) => colNames.includes(it.toLowerCase())).length;
-        if (!ruleContainsDomainCols) {
-          grid = issueDetailsDf.plot.grid();
-          header = 'Issue details';
-        }
-        else {
-          let columnName = '';
-          //find the first variable name to scroll grid to corresponding column
-          for (let i = 0; i < validationResults.Issue_Details[firstIssueDetailsIdx].variables.length; i++) {
-            if (validationResults.Issue_Details[firstIssueDetailsIdx].values[i].toLowerCase() !== 'not in dataset') {
-              columnName = validationResults.Issue_Details[firstIssueDetailsIdx].variables[i];
-              break;
-            }
-          }
-          if (!domainDf.col('~row'))
-            domainDf.columns.addNewInt('~row').init((i) => i + 1);
-
-          domainDf.filter.setAll(false);
-          for (let i = 0; i < issueDetailsDf.rowCount; i++) {
-            if (issueDetailsDf.filter.get(i)) {
-              const idx = issueDetailsDf.get('row', i) - 1;
-              domainDf.filter.set(idx, true);
-            }
-          }
-          grid = domainDf.plot.grid();
-          header = domain;
-          setupValidationErrorColumns(domainDf);
-          setupValidationErrorIndicators(grid, domainDf, issueSummaryDf.get('core_id', issueSummaryDf.currentRowIdx));
-          if (domainDf.col(columnName))
-            grid.scrollToCell(columnName, 0);
-        }
-      }
-    }
-    grid.root.prepend(ui.h1(header, {style: {margin: '0px 0px 10px 10px'}}));
-    grid.root.style.width = '100%';
-    grid.root.style.height = '95%';
-    errorsGridDiv.append(grid.root);
-  });
-  return {df: issueSummaryDf};
-}
-
 
 export function addView(view: DG.ViewBase): DG.ViewBase {
   view.box = true;
@@ -146,15 +60,22 @@ export function createTableView(
   domainsAndColsToCheck: any,
   viewName: string,
   helpUrl: string,
-  createViewHelper: (studyId: string, params: any) => any,
+  createViewHelper: (studyId: string, params: any) => {df: DG.DataFrame, helper?: any,
+    onTableViewAddedFunc?: (tv: DG.TableView) => Promise<any>},
   paramsForHelper?: any) {
   let tableView: DG.TableView | DG.View;
   let viewHelper;
   const validator = new ValidationHelper(domainsAndColsToCheck, studyId);
   if (validator.validate()) {
-    const {helper, df} = createViewHelper(studyId, paramsForHelper);
+    const {helper, df, onTableViewAddedFunc} = createViewHelper(studyId, paramsForHelper);
     tableView = DG.TableView.create(df, false);
     viewHelper = helper;
+    if (onTableViewAddedFunc)
+      onTableViewAddedFunc(tableView as DG.TableView);
+    //wait for grid to become available to set validation columns invisible
+    awaitCheck(() => (tableView as DG.TableView).grid !== null, `${viewName} hasn't been added`, 10000)
+      .then(() => hideValidationColumns(tableView as DG.TableView))
+      .catch(() => {});
   } else {
     tableView = DG.View.create();
     updateDivInnerHTML(tableView.root, createValidationErrorsDiv(validator.missingDomains,
@@ -176,5 +97,14 @@ export const TABLE_VIEWS_META = {
   },
   [VALIDATION_VIEW_NAME]: {
     createViewHelper: createValidationView,
+  },
+  [MATRIX_TABLE_VIEW_NAME]: {
+    createViewHelper: createMatrixTableView,
+  },
+  [MEASUREMENT_PROFILE_TABLE_VIEW_NAME]: {
+    createViewHelper: createMeasurementProfileTableView,
+  },
+  [MICROSCOPIC_FINDINGS_TABLE_VIEW_NAME]: {
+    createViewHelper: createMICrossDomainView,
   },
 };

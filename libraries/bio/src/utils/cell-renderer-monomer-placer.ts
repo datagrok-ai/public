@@ -14,6 +14,7 @@ import {getMonomerLibHelper} from '../types/monomer-library';
 import {errInfo} from './err-info';
 import {DrawStyle, printLeftOrCentered, TAGS as mmcrTAGS, PrintOptions} from './cell-renderer';
 import {MmcrTemps, rendererSettingsChangedState, tempTAGS} from './cell-renderer-consts';
+import {AnnotationRenderer} from './cell-renderer-annotations';
 import {IMonomerLibBase} from '../types/monomer-library';
 import {HelmTypes} from '../helm/consts';
 import {ISeqMonomer} from '../helm/types';
@@ -96,6 +97,15 @@ export class MonomerPlacer extends CellRendererBackBase<string> {
   private seqHelper!: ISeqHelper;
 
   private sysMonomerLib: IMonomerLibBase | null = null;
+
+  /** Lazily created annotation renderer — null cost when no annotations exist. */
+  private _annotationRenderer: AnnotationRenderer | null = null;
+
+  private getAnnotationRenderer(): AnnotationRenderer | null {
+    if (!this._annotationRenderer)
+      this._annotationRenderer = new AnnotationRenderer(this.tableCol);
+    return this._annotationRenderer.hasAnnotations() ? this._annotationRenderer : null;
+  }
 
   /** View is required to subscribe and handle for data frame changes */
   constructor(
@@ -360,7 +370,7 @@ export class MonomerPlacer extends CellRendererBackBase<string> {
     const logPrefix = `${this.toLog()}.getCellMonomerLengthsForSeq()`;
     // this.logger.debug(`${logPrefix}, start`);
 
-    if (this._monomerLengthList === null)
+    if (this._monomerLengthList == null)
       this._monomerLengthList = new Array(this.tableCol.length).fill(null);
 
     const visibleSeqStart = this.positionShift;
@@ -371,7 +381,7 @@ export class MonomerPlacer extends CellRendererBackBase<string> {
     const visibleSeqEnd: number = Math.min(maxVisibleSeqLength, seqSS.length);
 
     let res: number[] = this._monomerLengthList[rowIdx];
-    if (res === null || res.length != visibleSeqEnd - visibleSeqStart) {
+    if (res == null || res.length != visibleSeqEnd - visibleSeqStart) {
       res = this._monomerLengthList[rowIdx] = new Array<number>(seqSS.length);
 
       let seqWidth: number = 0;
@@ -391,7 +401,7 @@ export class MonomerPlacer extends CellRendererBackBase<string> {
   private getCellMonomerLengthsForSeqMsa(): number[] {
     const logPrefix = `${this.toLog()}.getCellMonomerLengthsForSeqMsa()`;
     // this.logger.debug(`${logPrefix}, start`);
-    if (this._monomerLengthList === null)
+    if (this._monomerLengthList == null)
       this._monomerLengthList = new Array(1).fill(null);
     this._monomerLengthList[0] ??= new Array(0);
     const res = this._monomerLengthList[0];
@@ -551,6 +561,8 @@ export class MonomerPlacer extends CellRendererBackBase<string> {
 
       const shouldUseMultiLine = this.shouldUseMultilineRendering(tableCol);
 
+      const annotRenderer = this.getAnnotationRenderer();
+
       if (shouldUseMultiLine) {
         const currentCellBounds: IMonomerLayoutData[] = [];
         const layout = this.calculateMultiLineLayoutDynamic(g, w, h, subParts, positionShift, maxLengthOfMonomer);
@@ -597,6 +609,9 @@ export class MonomerPlacer extends CellRendererBackBase<string> {
               sequencePosition: monomerIndex,
             });
 
+            if (annotRenderer)
+              annotRenderer.drawPositionBackground(g, elementX, lineY, element.width + 2, layout.lineHeight, monomerIndex, gridCell.tableRowIndex!);
+
             printLeftOrCentered(g, monomer.om, elementX, lineY, element.width, layout.lineHeight, {
               color: color,
               isMultiLineContext: true,
@@ -617,6 +632,15 @@ export class MonomerPlacer extends CellRendererBackBase<string> {
         const minMonomerWidth = this.props.separatorWidth + 1 * this.props.fontCharWidth;
         const visibleSeqLength = Math.min(subParts.length, Math.ceil(w / (minMonomerWidth)) + positionShift);
 
+        // Pre-compute text bottom y for annotation underlines (text is vertically centered)
+        let textBottomY: number | undefined;
+        if (annotRenderer) {
+          const metrics = g.measureText('M');
+          const textHeight = metrics.fontBoundingBoxAscent + metrics.fontBoundingBoxDescent;
+          const dy = h / 2 - textHeight / 2 + 1;
+          textBottomY = y + dy + textHeight;
+        }
+
         for (let posIdx: number = positionShift; posIdx < visibleSeqLength; ++posIdx) {
           const om: string = posIdx < subParts.length ? subParts.getOriginal(posIdx) : sh.defaultGapOriginal;
           const cm: string = posIdx < subParts.length ? subParts.getCanonical(posIdx) : sh.defaultGapOriginal;
@@ -629,6 +653,19 @@ export class MonomerPlacer extends CellRendererBackBase<string> {
           // here, the first index of disjointSeqStarts is always 0, so we check from position 1, and also, next index
           // will show where the next disjoint sequence starts, so we check posIdx + 1
           const drawnSeparator = (subParts?.graphInfo?.disjointSeqStarts?.indexOf(posIdx + 1) ?? 0) > 0 ? '|' : separator;
+
+          // Draw annotation background before the monomer text
+          if (annotRenderer && gridCell.tableRowIndex != null) {
+            const wordIdx = posIdx - positionShift;
+            const placeX = (maxLengthWordsSum[wordIdx] ?? 0) - (maxLengthWordsSum[0] ?? 0);
+            const nextPlaceX = wordIdx + 1 < maxLengthWordsSum.length ?
+              (maxLengthWordsSum[wordIdx + 1] ?? 0) - (maxLengthWordsSum[0] ?? 0) : placeX + this.props.fontCharWidth;
+            const monomerW = nextPlaceX - placeX;
+            annotRenderer.drawPositionBackground(
+              g, x + this.padding + this._leftThreeDotsPadding + placeX, y, monomerW, h,
+              posIdx, gridCell.tableRowIndex, textBottomY,
+            );
+          }
 
           const opts: Partial<PrintOptions> = {
             color: color, pivot: 0, left: true, transparencyRate: 0.0,
@@ -715,6 +752,22 @@ export class MonomerPlacer extends CellRendererBackBase<string> {
         })();
       }
       tooltipElements.push(monomerDiv);
+
+      // Append annotation info to tooltip
+      const annotR = this.getAnnotationRenderer();
+      if (annotR) {
+        const annotInfo = annotR.getTooltipInfo(left + positionShift, gridCell.tableRowIndex!);
+        if (annotInfo.length > 0) {
+          const sep = document.createElement('hr');
+          sep.style.margin = '4px 0';
+          sep.style.border = 'none';
+          sep.style.borderTop = '1px solid #ccc';
+          tooltipElements.push(sep);
+          for (const line of annotInfo)
+            tooltipElements.push(ui.divText(line, {style: {fontSize: '12px', marginBottom: '2px'}}));
+        }
+      }
+
       ui.tooltip.show(ui.divV(tooltipElements), e.x + 16, e.y + 16);
 
       execMonomerHoverLinks(gridCell, seqMonomer);

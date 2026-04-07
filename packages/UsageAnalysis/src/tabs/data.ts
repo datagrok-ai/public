@@ -13,7 +13,7 @@ import {TopConnectionsViewer} from '../drilldown_viewers/data/top-connection-vie
 export class DataView extends UaView {
   static viewName = 'Data';
 
-  constructor(uaToolbox: UaToolbox) {
+  constructor(uaToolbox?: UaToolbox) {
     super(uaToolbox);
   }
 

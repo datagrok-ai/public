@@ -11,7 +11,7 @@ automatically in the **Context Panel** when you select a molecule or mixture in 
 |Descriptors |The following descriptors are shown by default: FractionCSP3, HeavyAtomCount, NHOHCount.<br/> To calculate other descriptors, click the **SELECT** button and choose from the list. The info pane updates accordingly|
 | Properties | Shows molecular properties, such as formula, molecular weight, LogP, and others |
 | Retrosynthesis | Shows the most efficient synthetic pathways and commercially available starting materials for your target molecules (based on [AiZynthFinder](https://github.com/MolecularAI/aizynthfinder)) |
-| Databases | Depending on the plugins installed, allows to search by substructure or similarity in databases like ChEMBL, Chemspace, DrugBank, PubChem, as well as the Enamine store catalog |
+| Databases | Depending on the installed plugins, lets you search by substructure or similarity in databases like ChEMBL, Chemspace, DrugBank, PubChem, as well as the Enamine store catalog |
 | CDD Vault | Shows vault data for the current molecule |
 | SureChEMBL | Shows patent information for target molecule based on similarity or substructure search |
 | AutoDock | Displays docking results for molecules that have undergone AutoDock analysis |

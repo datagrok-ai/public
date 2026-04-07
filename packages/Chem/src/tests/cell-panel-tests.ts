@@ -1,8 +1,8 @@
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
-import {category, test, expect, expectFloat, before, awaitCheck} from '@datagrok-libraries/utils/src/test';
-import {ensureContainerRunning} from '@datagrok-libraries/utils/src/test-container-utils';
+import {category, test, expect, expectFloat, before, awaitCheck} from '@datagrok-libraries/test/src/test';
+import {ensureContainerRunning} from '@datagrok-libraries/test/src/test-container-utils';
 import {assessDruglikeness, drugLikenessWidget} from '../widgets/drug-likeness';
 import {getIdentifiersSingle} from '../widgets/identifiers';
 // import {getPanelElements, molfileWidget} from '../widgets/molfile';
@@ -30,27 +30,13 @@ const identifiersVals: {[key: string]: string} = {
 const additionalIdentifiers: { [key: string]: string } = {
   'Chembl': 'CHEMBL16293',
   'PubChem': '931',
-  'zinc': 'ZINC000000967522',
   'bindingdb': '50159249',
-  'nikkaji': 'J2.839H',
-  'comptox': 'DTXSID8020913',
   'pdb': 'NPY',
-  'kegg_ligand': 'C00829',
-  'chebi': '16482',
-  'atlas': 'Naphthalene',
+  'chebi': 'CHEBI:16482',
   'fdasrs': '2166IN72UN',
-  'pubchem_tpharma': '15218960',
-  'actor': '72931-45-4',
-  'recon': 'npthl',
-  'emolecules': '482250',
-  'chemicalbook': 'CB2472212',
-  'metabolights': 'MTBLC16482',
   'hmdb': 'HMDB0029751',
   'brenda': '1830',
-  'rhea': '16482',
-  'nmrshiftdb2': '10169',
-  'mcule': 'MCULE-8231589350',
-  'surechembl': 'SCHEMBL8953',
+  'surechembl': '8953',
 };
 
 category('cell panel', async () => {

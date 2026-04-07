@@ -125,7 +125,7 @@ function checkMonomersAndOpenWebEditor(cell: DG.GridCell, value?: string, units?
 }
 
 export class PackageFunctions {
-  @grok.decorators.init()
+  @grok.decorators.init({tags: ['init']})
   static async initHelm(): Promise<void> {
     if (initHelmPromise === null)
       initHelmPromise = initHelmInt();
@@ -142,11 +142,12 @@ export class PackageFunctions {
   }
 
   @grok.decorators.func({
-    'tags': ['cellRenderer'],
     'meta': {
       'columnTags': 'quality=Macromolecule, units=helm',
-      'cellType': 'helm'
+      'cellType': 'helm',
+      'role': 'cellRenderer'
     },
+    'tags': ['cellRenderer'],
     'outputs': [{name: 'result', type: 'grid_cell_renderer'}]
   })
   static helmCellRenderer(): DG.GridCellRenderer {
@@ -158,7 +159,10 @@ export class PackageFunctions {
 
 
   @grok.decorators.func({
-    'meta': {'columnTags': 'quality=Macromolecule, units=helm'},
+    'meta': {
+      'columnTags': 'quality=Macromolecule, units=helm',
+      'role': 'cellEditor'
+    },
     'tags': ['cellEditor'],
     'description': 'Macromolecule'
   })
@@ -193,12 +197,9 @@ export class PackageFunctions {
 
 
   @grok.decorators.panel({
-    'tags': [
-      'bio',
-      'helm',
-      'widgets'
-    ],
-    'name': 'Properties'
+    'name': 'Properties',
+    'meta': {role: 'widgets', domain: 'bio'},
+    'tags': ['panel', 'widgets', 'bio']
   })
   static propertiesWidget(
     @grok.decorators.param({'options': {'semType': 'Macromolecule'}}) sequence: DG.SemanticValue): DG.Widget {
@@ -218,7 +219,8 @@ export class PackageFunctions {
   @grok.decorators.func({
     'meta': {
       'propertyType': 'string',
-      'semType': 'Macromolecule'
+      'semType': 'Macromolecule',
+      'role': 'valueEditor'
     },
     'tags': ['valueEditor'],
     'outputs': [{'type': 'object', 'name': 'result'}]

@@ -15,7 +15,7 @@ import '../css/sens-analysis.css';
 import {CARD_VIEW_TYPE} from '../../shared-utils/consts';
 import {DOCK_RATIO, FIRST_ROW_IDX, LAST_ROW_IDX, ROW_HEIGHT, STARTING_HELP} from './variance-based-analysis/constants';
 import {getLookupChoiceInput} from './shared/lookup-tools';
-import {getCategoryWidget} from './fitting/fitting-utils';
+import {getCategoryWidget, getRowIndex} from './fitting/fitting-utils';
 
 import {DiffGrok} from './fitting-view';
 import {GridAnalysis} from './variance-based-analysis/grid-sensitivity-analysis';
@@ -176,7 +176,7 @@ export class SensitivityAnalysisView {
                 onValueChanged: (value) => ref.const.value = value,
               });
               inp.root.insertBefore(isChangingInputConst.root, inp.captionLabel);
-              inp.addPostfix(inputProp.options['units']);
+              //inp.addPostfix(inputProp.options['units']); // TODO: fix styles
               return inp;
             })(),
             value: getInputDefaultValue(inputProp),
@@ -189,7 +189,7 @@ export class SensitivityAnalysisView {
                   onValueChanged: (value) => (ref as SensitivityNumericStore).min.value = value,
                 });
                 inp.root.insertBefore(isChangingInputMin.root, inp.captionLabel);
-                inp.addPostfix(inputProp.options['units']);
+                //inp.addPostfix(inputProp.options['units']); // TODO: fix styles
                 return inp;
               })(),
             value: getInputValue(inputProp, 'min'),
@@ -201,7 +201,7 @@ export class SensitivityAnalysisView {
                   value: getInputValue(inputProp, 'max'),
                   onValueChanged: (value) => (ref as SensitivityNumericStore).max.value = value,
                 });
-              inp.addPostfix(inputProp.options['units']);
+              //inp.addPostfix(inputProp.options['units']); // TODO: fix styles
               return inp;
             })(),
             value: getInputValue(inputProp, 'max'),
@@ -1011,7 +1011,7 @@ export class SensitivityAnalysisView {
         if ((cell === null) || (cell === undefined) || (funcInputs === undefined))
           return;
 
-        const selectedInput = funcInputs[cell.tableRowIndex ?? 0];
+        const selectedInput = funcInputs[getRowIndex(cell)];
         const funcCall = this.func.prepare(selectedInput);
         const selectedRun = await funcCall.call(undefined, undefined, {processed: true, report: false});
 
@@ -1170,7 +1170,7 @@ export class SensitivityAnalysisView {
         if ((cell === null) || (cell === undefined) || (funcInputs === undefined))
           return;
 
-        const selectedInput = funcInputs[cell.tableRowIndex ?? 0];
+        const selectedInput = funcInputs[getRowIndex(cell)];
         const funcCall = this.func.prepare(selectedInput);
         const selectedRun = await funcCall.call(undefined, undefined, {processed: true, report: false});
 
@@ -1352,7 +1352,7 @@ export class SensitivityAnalysisView {
         if ((cell === null) || (cell === undefined) || (funcInputs === undefined))
           return;
 
-        const selectedInput = funcInputs[cell.tableRowIndex ?? 0];
+        const selectedInput = funcInputs[getRowIndex(cell)];
         const funcCall = this.func.prepare(selectedInput);
         const selectedRun = await funcCall.call(undefined, undefined, {processed: true, report: false});
 

@@ -4,7 +4,6 @@ import * as DG from 'datagrok-api/dg';
 
 
 import {_package} from '../package';
-import {delay} from '@datagrok-libraries/utils/src/test';
 
 type IDetectorReport = { categoriesSample: any[], rejectReason: string };
 
@@ -31,7 +30,7 @@ export async function detectMacromoleculeProbeDo(
       if ((progress - progressLast) >= 0.1) {
         progressLast = progress;
         pi.update(100 * progress, `detectMacromolecule probe ${failCount}/${i}/${probeCount} ...`);
-        await delay(0);
+        await DG.delay(0);
       }
     }
     if (failCount > 0)

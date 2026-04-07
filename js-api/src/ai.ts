@@ -4,57 +4,54 @@ import { Entity } from './entities';
 
 const api: IDartApi = (typeof window !== 'undefined' ? window : global.window) as any;
 
-export class AiPlugin {
-    /**
-     * Base URL of the Datagrok OpenAI proxy endpoint.
-     *
-     * All OpenAI-compatible API requests made through Datagrok should be sent
-     * to this URL. The proxy forwards requests to the configured AI provider and
-     * injects the correct authorization token.
-     */
-    get openAiProxyUrl(): string {
-        return api.grok_Dapi_OpenAI_Proxy();
-    }
+export interface AIConfigBase {
+    provider: string;
+    configured: boolean;
+    indexEntities: boolean;
+}
 
-    /**
-     * Authentication token for requests sent to the Datagrok OpenAI proxy.
-     *
-     * This value is the **Datagrok access token of the currently logged-in user**.
-     * It is used to authenticate the request with the Datagrok server.
-     *
-     * When a request is forwarded to the configured AI provider, Datagrok
-     * **replaces this token with the server-configured OpenAI (or compatible)
-     * API token** before sending the request to the external provider.
-     *
-     * Client code should always use this token when calling [openAiProxyUrl]
-     * and should not supply a provider-specific API key directly.
-     */
-    get openAiProxyToken(): string {
-        return api.grok_Dapi_Get_Token();
-    }
+export interface OpenAIConfig extends AIConfigBase {
+    provider: 'openai';
+}
 
-    /**
-     * Indicates whether an OpenAI-compatible AI provider is configured
-     * on the Datagrok server.
-     *
-     * Returns `true` if the administrator has configured an AI provider
-     * (for example, OpenAI or Azure OpenAI) and the platform is ready to
-     * accept embedding or completion requests.
-     */
-    get openAiConfigured(): boolean {
-        return api.grok_AI_OpenAiConfigured();
-    }
+export interface AzureOpenAIConfig extends AIConfigBase {
+    provider: 'azure';
+    apiMode: 'openai_compat' | 'legacy';
+    apiVersion?: string;
+    modelToDeployment?: Record<string, string>;
+}
 
+export type AIConfig = OpenAIConfig | AzureOpenAIConfig;
+
+/**
+ * Datagrok AI integration entry point.
+ */
+export const AI = {
     /**
-     * Indicates whether AI-based entity indexing is enabled.
-     *
-     * When enabled, Datagrok maintains vector embeddings for supported
-     * entities (projects, packages, connections, etc.), allowing semantic
-     * search via [searchEntities].
+     * Configuration sub-namespace for AI provider settings.
      */
-    get entityIndexingEnabled(): boolean {
-        return api.grok_AI_EntityIndexingEnabled();
-    }
+    config: {
+        get current(): AIConfig {
+            return api.grok_AI_Config();
+        },
+
+        get configured(): boolean {
+            return this.current.configured;
+        },
+
+        get indexEntities(): boolean {
+            const c = this.current;
+            return c.configured && c.indexEntities;
+        },
+
+        get proxyUrl(): string {
+            return api.grok_Dapi_OpenAI_Proxy();
+        },
+
+        get proxyToken(): string {
+            return api.grok_Dapi_Get_Token();
+        },
+    },
 
     /**
      * Performs a semantic search over indexed Datagrok entities.
@@ -71,8 +68,8 @@ export class AiPlugin {
      * @param threshold Similarity threshold in the range (0, 1).
      *   Higher values require closer (more similar) matches.
      * @param limit Maximum number of entities to return.
-     * @param types Optional list of entity type IDs to restrict the search. If omitted or empty, all
-     *   entity types are considered.
+     * @param types Optional list of entity types to restrict the search. If omitted or empty, all
+     *   entity types are considered. Use {@link Entity#entityType} to get type name.
      *
      * @returns A list of entities ordered by descending similarity
      *   (1.0 = perfect match).
@@ -89,5 +86,9 @@ export class AiPlugin {
             await api.grok_AI_SearchEntities(text, threshold, limit, types ?? null);
 
         return entities.map((e: Entity) => toJs(e));
-    }
-}
+    },
+
+    async processPrompt(prompt: string): Promise<boolean> {
+        return !!(await api.grok_Shell_AI_Prompt(prompt));
+    },
+};

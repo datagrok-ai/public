@@ -2,7 +2,7 @@
 title: "ClickHouse"
 ---
 
-Provides access to the [ClickHouse](https://clickhouse.com/clickhouse) database using SQL queries via JDBC driver.
+Provides access to the [ClickHouse](https://clickhouse.com/clickhouse) database using SQL queries via a JDBC driver.
 
 ## Connection parameters
 

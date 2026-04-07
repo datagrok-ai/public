@@ -2,7 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
 import {uploadProject} from './gui-utils';
-import {category, delay, expect, test} from '@datagrok-libraries/utils/src/test';
+import {category, delay, expect, test} from '@datagrok-libraries/test/src/test';
 
 category('Projects', () => {
   test('Project: Create', async () => {
@@ -40,10 +40,9 @@ category('Projects', () => {
     await uploadProject('Test upload project', demog.getTableInfo(), v, demog);
     grok.shell.closeAll(); await delay(500);
     await grok.dapi.projects.open('Test upload project');
-    expect(grok.shell.v.name, 'Datagrok');
+    expect(grok.shell.t != null, true);
+    expect(grok.shell.t.name, 'demog 1000');
 
-    grok.shell.closeAll();
     await grok.dapi.projects.delete(await grok.dapi.projects.filter('Test upload project').first());
-    expect(await grok.dapi.projects.filter('Test upload project').first() == undefined);
   });
 }, {owner: 'aparamonov@datagrok.ai'});

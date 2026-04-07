@@ -1,15 +1,15 @@
 import * as grok from 'datagrok-api/grok';
-import {category, expect, expectObject, test} from '@datagrok-libraries/utils/src/test';
+import {category, expect, expectObject, test} from '@datagrok-libraries/test/src/test';
 
 category('Packages: Docker', () => {
-  const containerName: string = 'Apitests-docker-test1';
+  const containerName: string = 'Apitests-apitests-docker-test1';
 
   test('Get response', async () => {
     const container = await grok.dapi.docker.dockerContainers.filter(containerName).first();
     if (container.status !== 'started' && container.status !== 'checking')
       await grok.dapi.docker.dockerContainers.run(container.id, true);
     await testResponse(container.id);
-  }, {timeout: 30000});
+  }, {timeout: 5000});
 
   test('Get build logs', async () => {
     const image = await grok.dapi.docker.dockerImages.filter(containerName).first();
@@ -24,7 +24,7 @@ category('Packages: Docker', () => {
     const logs = await grok.dapi.docker.dockerContainers.getContainerLogs(container.id);
     expect(!logs || logs.length === 0, false);
   });
-}, { owner: 'ppolovyi@datagrok.ai'});
+}, { owner: 'ppolovyi@datagrok.ai', timeout: 5000});
 
 async function testResponse(containerId: string): Promise<void> {
   const path = '/square?number=4';

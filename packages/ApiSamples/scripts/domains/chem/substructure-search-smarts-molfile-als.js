@@ -1,9 +1,9 @@
 // An example of using substructure search with SMARTS pattern,
 // encoded through an ALS parameter block of a MolFile
 
-let t = await grok.data.getDemoTable("chem/smiles.csv");
+let t = await grok.data.getDemoTable('chem/smiles.csv');
 let bs = await grok.chem.searchSubstructure(
-  t.col("canonical_smiles"),
+  t.col('canonical_smiles'),
   `
   MJ201900\n
   6  6  1  0  0  0  0  0  0  0999 V2000

@@ -1,4 +1,4 @@
-import { before, category, delay, expect, expectArray, test } from '@datagrok-libraries/utils/src/test';
+import { before, category, delay, expect, expectArray, test } from '@datagrok-libraries/test/src/test';
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
@@ -8,7 +8,7 @@ category('Events', () => {
         let subscriptionPassed = false;
         let tv = grok.shell.addTableView(grok.data.demo.demog())
         let barChart = tv.barChart();
-        let subscription = barChart.onContextMenu.subscribe(menu => subscriptionPassed = true);
+        let subscription = barChart.onContextMenu.subscribe((menu : DG.Menu) => subscriptionPassed = true);
         const rightClickEvent = new MouseEvent("contextmenu", {
             bubbles: true,
             cancelable: true,
@@ -23,7 +23,7 @@ category('Events', () => {
 
     test('onEvent', async () => {
         let subscriptionPassed = false;
-        let subscription = grok.events.onCustomEvent("test").subscribe((e) => { subscriptionPassed = true; });
+        let subscription = grok.events.onCustomEvent("test").subscribe((e: any) => { subscriptionPassed = true; });
         grok.events.fireCustomEvent("test", null);
         await delay(500);
         subscription.unsubscribe();
@@ -32,7 +32,7 @@ category('Events', () => {
 
     test('onCustomEvent/fireCustomEvent', async () => {
         let subscriptionPassed = false;
-        let subscription = grok.events.onCustomEvent("test").subscribe((e) => { subscriptionPassed = true; });
+        let subscription = grok.events.onCustomEvent("test").subscribe((e: any) => { subscriptionPassed = true; });
         grok.events.fireCustomEvent("test", null);
         await delay(500);
         subscription.unsubscribe();
@@ -56,6 +56,17 @@ category('Events', () => {
         await delay(500);
         subscription.unsubscribe();
         expect(subscriptionPassed, true);
+    });
+
+    test('onPanelVisibilityChanged', async () => {
+        let fired = false;
+        const initial = grok.shell.windows.showStatusBar;
+        let subscription = grok.shell.windows.onPanelVisibilityChanged.subscribe(() => { fired = true; });
+        grok.shell.windows.showStatusBar = !initial;
+        await delay(500);
+        subscription.unsubscribe();
+        grok.shell.windows.showStatusBar = initial;
+        expect(fired, true);
     });
 
     test('debounce', async () => {

@@ -84,7 +84,7 @@ Hit Design allows users to define custom compute and submit functions, and these
 
 ### Compute Functions
 
-Compute functions are used to calculate molecular properties. For example, mass, solubility, mutagenicity, partial charges, toxicity risks, etc. By default, Hit design will include compute functions from `Chem` package, which are molecular descriptors, Structural alerts, Toxicity risks and Chemical properties. Users can add additional compute functions by tagging them with `HitDesignFunction` tag and writing them in normal datagrok style. The First two inputs of these functions should be `Dataframe` `table` and `Column` `molecule`, and rest can be any other input. Function should perform a certain task, modify the dataframe in desired way and return the modified dataframe. For example, we can create a function that retrieves the `Chembl` mol registration number by smiles string:
+Compute functions are used to calculate molecular properties. For example, mass, solubility, mutagenicity, partial charges, toxicity risks, etc. By default, Hit design will include compute functions from `Chem` package, which are molecular descriptors, Structural alerts, Toxicity risks and Chemical properties. Users can add additional compute functions by tagging them with `HitDesignerFunction` tag and writing them in normal datagrok style. The First two inputs of these functions should be `Dataframe` `table` and `Column` `molecule`, and rest can be any other input. Function should perform a certain task, modify the dataframe in desired way and return the modified dataframe. For example, we can create a function that retrieves the `Chembl` mol registration number by smiles string:
 
 ```
 //name: Chembl molregno

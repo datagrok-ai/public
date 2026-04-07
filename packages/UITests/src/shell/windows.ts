@@ -1,4 +1,4 @@
-import {category, delay, test} from '@datagrok-libraries/utils/src/test';
+import {category, delay, test} from '@datagrok-libraries/test/src/test';
 import * as grok from 'datagrok-api/grok';
 // import * as ui from 'datagrok-api/ui';
 // import * as DG from 'datagrok-api/dg';
@@ -19,7 +19,7 @@ category('Shell: Windows', () => {
   test('ShowRibbon', async () => {
     grok.shell.windows.simpleMode = true;
     try {
-      await checkSwitch('showRibbon', '.d4-ribbon');
+      await checkSwitch('showRibbon', '.d4-app-root.d4-show-ribbon');
     } finally {
       grok.shell.windows.simpleMode = false;
     }
@@ -31,7 +31,7 @@ category('Shell: Windows', () => {
     await checkSwitch('showTables', '.grok-tables-manager');
   });
   test('ShowToolbox', async ()=> {
-    await checkSwitch('showToolbox', '.d4-app-root:not(.d4-toolbox-auto)');
+    await checkSwitch('showToolbox', '.layout-toolbox');
   });
   test('ShowVariables', async () => {
     await checkSwitch('showVariables', '.grok-view-variables.grok-variables-pane');
@@ -55,6 +55,7 @@ function checkElementVisible(selector: string, exists: boolean = true): void {
 async function checkSwitch(sw: string, selector: string) {
   const state = (<any>grok.shell.windows)[sw];
   try {
+    (<any>grok.shell.windows)[sw] = false; // init change state
     (<any>grok.shell.windows)[sw] = true;
     checkElementVisible(selector);
     (<any>grok.shell.windows)[sw] = false;

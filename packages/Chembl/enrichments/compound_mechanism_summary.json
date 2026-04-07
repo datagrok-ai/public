@@ -1,0 +1,22 @@
+{
+  "name": "Add identity",
+  "connection": "Chembl:Chembl",
+  "keySchema": "public",
+  "keyTable": "drug_mechanism",
+  "keyColumn": "molregno",
+  "fields": [
+    "public.drug_mechanism.molregno",
+    "public.molecule_dictionary.chembl_id",
+    "public.molecule_dictionary.pref_name",
+    "public.molecule_dictionary.max_phase"
+  ],
+  "joins": [
+    {
+      "leftTableName": "public.drug_mechanism",
+      "rightTableName": "public.molecule_dictionary",
+      "joinType": "left",
+      "leftTableKeys": ["molregno"],
+      "rightTableKeys": ["molregno"]
+    }
+  ]
+}

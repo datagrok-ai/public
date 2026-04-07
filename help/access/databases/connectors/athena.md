@@ -75,7 +75,7 @@ service using SQL queries via a JDBC driver.
 
 ## Usage example: link csv files from s3 with athena
 
-Simple steps to link csv files with Athena and get results in Datagrok:
+Follow these steps to link CSV files with Athena and get results in Datagrok:
 
 1. Upload CSVs to an S3 bucket. Note that Athena looks into S3 folder, not file, so if CSVs have different structure,
    they should be located in separate folders. For example:
@@ -94,8 +94,8 @@ Simple steps to link csv files with Athena and get results in Datagrok:
    s3://athena-northwind/results/
    ```
 
-3. Create table in [Athena console](https://console.aws.amazon.com/athena). UI builds SQL query for creating table in
-   Athena. Following example for Northwind "products.csv":
+3. Create a table in [Athena console](https://console.aws.amazon.com/athena). The UI builds the SQL query for creating a table in
+   Athena. Here is an example for Northwind "products.csv":
 
    ```
    CREATE EXTERNAL TABLE IF NOT EXISTS northwind.products (
@@ -137,8 +137,8 @@ Simple steps to link csv files with Athena and get results in Datagrok:
    * Secret Key: `<secret>`
 
      Notes:
-      * VPC Endpoint is optional. If not specified, then canonical endpoint - "`athena.[Region].amazonaws.com:443`" will be used
-      * Do not forget "/" at "S3 Output Location" parameter end
+      * VPC Endpoint is optional. If not specified, the canonical endpoint "`athena.[Region].amazonaws.com:443`" is used
+      * Include a trailing "/" in the "S3 Output Location" parameter
 
 5. Create a [data query](../../access.md#data-query) under the new connection. For example:
 

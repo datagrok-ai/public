@@ -60,6 +60,9 @@ Some parameters are specific to script language and/or technology:
   * `condition`: GrokScript condition that gets evaluated to decide whether to show the panel for the object
 * Query
   * `connection`: Name of the db connection that the query should use
+* Scheduling (server-based functions only)
+  * `schedule`: [Cron expression](https://en.wikipedia.org/wiki/Cron) for automatic execution (e.g., `0 8 * * *` for daily at 8am)
+  * `schedule.runAs`: Group or role for execution context. You must be a member of the specified group. See [Scheduling](functions.md#scheduling).
 
 To add additional parameters, use the `meta.` prefix. They can be used for dynamically searching for
 the functions of interest.
@@ -305,7 +308,9 @@ To learn more, see [search patterns](../../../visualize/table-view-1.md#search-p
 ### Choices
 
 Use `choices` to make input a combo box, and restrict the selection to the defined set of values. 
-You can define `choices` using a comma-separated list of values, a name of another function (such as query), 
+You can define `choices` using a comma-separated list of values, 
+a CSV file,
+a name of another function (such as query), 
 or by writing an actual SQL query.
 
 <details> 
@@ -321,6 +326,10 @@ or by writing an actual SQL query.
 
 ![img_2.png](single-choice-input.png)
 
+When you provide as input a multi-column CSV file, 
+Datagrok uses the first column for the list of values. 
+
+
 </div> 
 </details>
 
@@ -335,7 +344,22 @@ this example:
 --input: list<string> company {choices: Query("SELECT DISTINCT company from research_companies")}
 ```
 
+To specify initial values for a multiple choice, use a JavaScript array:
+
+```sql
+--input: list<string> shipCountries = ["France", "Germany"] {choices: ['France', 'Italy', 'Germany']}
+```
+
 ![img_1.png](multiple-choice-input.png)
+
+:::caution Limited support for scripts
+
+Multi-value choices are now supported only in `JavaScript`.
+The multi-choice support for `Python` and `R`
+is planned for the next releases.
+
+:::
+
 
 </div> 
 </details>
@@ -541,7 +565,6 @@ FROM target_dictionary td
 
 </div></details>
 
-
 ### Function inputs
 
 To reuse other "helper" functions along with their editors for your top-level function, specify 
@@ -650,6 +673,73 @@ If the function has the `meta.vectorFunc: true` annotation, Datagrok automatical
 
 This allows you to create multiple derived columns (for example, several computed chemical descriptors) from one
 unified expression — all from the familiar **Add new column** interface.
+
+### Joining results to input tables
+
+When a function computes new columns, you often want those results added directly to the source table rather than
+returned separately. The `action: join(tableName)` annotation automates this — the function's output is automatically
+joined to the specified input table parameter.
+
+The annotation works with different output types:
+
+* **`column`** — a single computed column is added to the table.
+* **`column_list`** — multiple columns are added to the table.
+* **`dataframe`** — all columns from the returned dataframe are added to the table.
+
+#### Example: Murcko scaffolds (Python)
+
+The [Murcko Scaffolds](https://datagrok.ai/help/domains/chem/functions/murcko-scaffolds) function from the Chem package
+extracts molecular scaffolds and joins them to the input table:
+
+```python
+#name: Murcko Scaffolds
+#description: Generation of Murcko scaffolds from a molecule
+#input: dataframe data [Input data table]
+#input: column smiles {type:categorical; semType: Molecule} [Molecules, in SMILES format]
+#output: dataframe scaffolds {action:join(data); semType: Molecule} [Murcko scaffolds]
+```
+
+When this function runs, the resulting `scaffolds` column is automatically added to the `data` table.
+
+#### Example: TypeScript with different output types
+
+The annotation works with `column`, `column_list`, and `dataframe` outputs:
+
+```ts
+//name: addProcessedColumn
+//input: dataframe data
+//input: column col
+//output: column res {action:join(data)}
+export function addProcessedColumn(data: DG.DataFrame, col: DG.Column): DG.Column {
+  return DG.Column.string('processed', data.rowCount).init((i) => `${col.get(i)}_processed`);
+}
+```
+
+#### TypeScript decorator syntax
+
+Using decorators, you can specify the action in the outputs array:
+
+```ts
+@grok.decorators.func({
+  outputs: [{name: 'res', type: 'dataframe', options: {action: 'join(data)'}}],
+})
+static async getChemspacePrices(
+  data: DG.DataFrame,
+  @grok.decorators.param({type: 'column<string>', options: {semType: 'chemspace-id'}}) idsColumn: DG.Column,
+  shipToCountry: string
+): Promise<DG.DataFrame> {
+  // Fetch prices and return as dataframe - columns are joined to data
+}
+```
+
+#### Formula tagging and persistence
+
+Columns joined via `action: join` behave like calculated columns:
+
+* They are tagged with the formula that created them.
+* When source data changes, they recalculate automatically.
+* The formula is preserved in **DataSync projects**, ensuring reproducibility when reopening.
+* **Layouts** containing these columns restore correctly when applied to new data.
 
 ### Input types
 
@@ -901,6 +991,47 @@ This tells the platform to render dummyEditor from the DevTools package as the e
 The purpose of the editor is solely to edit function parameters.
 
 ---
+
+## Annotating output dataframes with tags
+
+Datagrok functions can annotate **output dataframes** with tags using the `meta` section of the output parameter annotation. This allows function authors to attach semantic information to the resulting table and its columns, such as database provenance, molecule handling hints, or custom metadata.
+
+> **Note:** This mechanism applies **only** to output parameters of type `dataframe`.
+
+Annotations are defined directly in the function signature using the `meta` section of the output parameter:
+```javascript 
+//output: dataframe {meta: {...}}
+```
+The `meta` object can contain both dataframe-level and column-level tags:
+
+- **Dataframe-level tags**  
+  Any entry in the `meta` object whose key does **not** match a column name, and whose value is **not** a JSON object, is treated as metadata for the dataframe itself. These key–value pairs are written directly to the dataframe metadata (table tags).
+
+  Example:
+```javascript 
+//output: dataframe {meta: {".data-connection": "System:Datagrok"}}
+```
+  This sets a dataframe-level tag:
+
+  - `.data-connection = "System:Datagrok"`
+
+- **Column-level tags**  
+  If a key in the `meta` object matches a column name and its value **is** a JSON object, that object is interpreted as metadata for the corresponding column. All nested key–value pairs are applied as column tags.
+
+  Example:
+```javascript 
+//output: dataframe {meta: {"mol": {"DbTable": "structures", "DbSchema": "public", "DbColumn": "mol"}}}
+```
+  This applies the following tags to the `mol` column:
+
+  - `DbTable = "structures"`
+  - `DbSchema = "public"`
+  - `DbColumn = "mol"`
+
+Dataframe-level and column-level metadata can be combined within a single `meta` block:
+```javascript 
+//output: dataframe {meta: {".data-connection": "System:Datagrok", "mol": {"DbTable": "structures", "DbSchema": "public", "DbColumn": "mol"}}}
+```
 
 ## Examples
 

@@ -1,8 +1,8 @@
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 
-import {category, test, before, after, awaitCheck} from '@datagrok-libraries/utils/src/test';
-import {ensureContainerRunning} from '@datagrok-libraries/utils/src/test-container-utils';
+import {category, test, before, after, awaitCheck} from '@datagrok-libraries/test/src/test';
+import {ensureContainerRunning} from '@datagrok-libraries/test/src/test-container-utils';
 import {_package} from '../package-test';
 import * as chemCommonRdKit from '../utils/chem-common-rdkit';
 import { CONTAINER_TIMEOUT} from './utils';
@@ -55,11 +55,6 @@ category('vector functions', () => {
     test('getProperties', async () => {
         await testVectorFunc('Chem:getProperties(${smiles}, [\'LogP\'])', 'LogP', [0, 9],
             [2.939000129699707, -0.6422999501228333]);
-    });
-
-    after(async () => {
-        grok.shell.closeAll();
-        DG.Balloon.closeAll();
     });
 });
 

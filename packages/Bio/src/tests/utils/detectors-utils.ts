@@ -2,7 +2,7 @@ import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 
 import {ALIGNMENT, NOTATION, TAGS as bioTAGS} from '@datagrok-libraries/bio/src/utils/macromolecule';
-import {expect} from '@datagrok-libraries/utils/src/test';
+import {expect} from '@datagrok-libraries/test/src/test';
 import {ISeqHelper} from '@datagrok-libraries/bio/src/utils/seq-helper';
 
 export type DetectorTestData = { [testName: string]: { csv: string, neg?: string[], pos?: { [colName: string]: PosCol } } };

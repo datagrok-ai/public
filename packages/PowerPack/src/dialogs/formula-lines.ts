@@ -1,6 +1,5 @@
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {delay} from '@datagrok-libraries/utils/src/test';
 
 /** Formula Line types */
 const enum ITEM_TYPE {
@@ -70,7 +69,7 @@ function getItemTypeByCaption(caption: string): string {
     case ITEM_CAPTION.HORZ_BAND:
     case ITEM_CAPTION.VERT_BAND: return ITEM_TYPE.BAND;
 
-    default: throw 'Unknown item caption.';
+    default: throw new Error('Unknown item caption.');
   }
 }
 
@@ -316,7 +315,7 @@ class Table {
       }
 
       if (itemIdx !== -1) {
-        delay(1).then((_) => {
+        DG.delay(1).then((_) => {
           this.currentItemIdx = itemIdx;
         });
       }
@@ -506,7 +505,7 @@ class Preview {
     if (src instanceof DG.DataFrame)
       this.dataFrame = src;
     else if (src instanceof DG.Viewer) {
-      if (src.getOptions()['type'] === DG.VIEWER.LINE_CHART) {
+      if (src.type === DG.VIEWER.LINE_CHART) {
         const viewer = new DG.LineChartViewer(src.dart);
         this.dataFrame = new DG.DataFrame(viewer.activeFrame!);
         this.originalDataFrame = src.dataFrame;
@@ -514,7 +513,7 @@ class Preview {
         const yCol = this.dataFrame.columns.toList()
           .find((col) => col.isNumerical && col.name !== src.props.xColumnName && yCols.some((n) => col.name.includes(n)));
         this.srcAxes = {x: src.props.xColumnName, xMap: src.props.xMap, y: yCol === undefined ? src.props.xColumnName : yCol.name};
-      } else if (src.getOptions()['type'] === DG.VIEWER.TRELLIS_PLOT) {
+      } else if (src.type === DG.VIEWER.TRELLIS_PLOT) {
         this.dataFrame = src.dataFrame!;
         const innerLook = src.getOptions()['look']['innerViewerLook'];
         this.srcAxes = {y: innerLook['yColumnName'], x: innerLook['xColumnName'], yMap: innerLook['yMap'], xMap: innerLook['xMap']};
@@ -523,32 +522,43 @@ class Preview {
         this.srcAxes = {y: src.props.yColumnName, x: src.props.xColumnName, yMap: src.props.yMap, xMap: src.props.xMap};
       }
     } else
-      throw 'Host is not DataFrame or Viewer.';
+      throw new Error('Host is not DataFrame or Viewer.');
 
-    if (src instanceof DG.Viewer && src.getOptions()['type'] === DG.VIEWER.LINE_CHART)
-      this.viewer = DG.Viewer.lineChart(this.dataFrame, {
-        yAxisType: src.props.yAxisType,
-        xAxisType: src.props.xAxisType,
-        splitColumnNames: src.props.splitColumnNames,
-        invertXAxis: src.props.invertXAxis,
-        showLabels: 'Never',
-        showDataframeFormulaLines: false,
-        showViewerFormulaLines: true,
-        showDataframeAnnotationRegions: false,
-        showViewerAnnotationRegions: true,
-        showContextMenu: false,
-        axesFollowFilter: false,
-        axisFont: '11px Arial',
-        legendVisibility: DG.VisibilityMode.Never,
-        xAxisHeight: 25,
-      });
+    const isViewer = src instanceof DG.Viewer;
+    const isTrellis = isViewer && src.type === DG.VIEWER.TRELLIS_PLOT;
+    if (isViewer && (src.type === DG.VIEWER.LINE_CHART ||
+      src.type === DG.VIEWER.TRELLIS_PLOT && src.getOptions().look['viewerType'] === DG.VIEWER.LINE_CHART)) {
+        const look = isTrellis ? src.getOptions().look['innerViewerLook'] : src.getOptions().look;
+        this.viewer = DG.Viewer.lineChart(this.dataFrame, {
+          yColumnNames: look.yColumnNames?.length ? [look.yColumnNames[0]] : [],
+          yAxisType: look.yAxisType,
+          xAxisType: look.xAxisType,
+          splitColumnNames: look.splitColumnNames,
+          invertXAxis: look.invertXAxis,
+          showLabels: 'Never',
+          showDataframeFormulaLines: false,
+          showViewerFormulaLines: true,
+          showDataframeAnnotationRegions: false,
+          showViewerAnnotationRegions: true,
+          showContextMenu: false,
+          axesFollowFilter: false,
+          axisFont: 'normal normal 11px "Arial"',
+          legendVisibility: DG.VisibilityMode.Never,
+          xAxisHeight: 25,
+        });
+      }
     else {
+      const look = isViewer ? (isTrellis ? src.getOptions().look['innerViewerLook'] : src.getOptions().look) : null;
       this.viewer = DG.Viewer.scatterPlot(this.dataFrame, {
-        ...(src as DG.ScatterPlotViewer).props,
-        yAxisType: src instanceof DG.Viewer && src.getOptions()['type'] === DG.VIEWER.SCATTER_PLOT ? src.props.yAxisType : 'linear',
-        xAxisType: src instanceof DG.Viewer && src.getOptions()['type'] === DG.VIEWER.SCATTER_PLOT ? src.props.xAxisType : 'linear',
-        invertXAxis: src instanceof DG.Viewer && src.getOptions()['type'] === DG.VIEWER.SCATTER_PLOT ? src.props.invertXAxis : false,
-        invertYAxis: src instanceof DG.Viewer && src.getOptions()['type'] === DG.VIEWER.SCATTER_PLOT ? src.props.invertYAxis : false,
+        ...(look ?? {}),
+        showXAxis: true,
+        showYAxis: true,
+        showXSelector: true,
+        showYSelector: true,
+        yAxisType: isViewer ? look.yAxisType : 'linear',
+        xAxisType: isViewer ? look.xAxisType : 'linear',
+        invertXAxis: isViewer ? look.invertXAxis : false,
+        invertYAxis: isViewer ? look.invertYAxis : false,
         showDataframeFormulaLines: false,
         showViewerFormulaLines: true,
         showDataframeAnnotationRegions: false,
@@ -561,7 +571,7 @@ class Preview {
         showMouseOverPoint: false,
         showCurrentPoint: false,
         zoomAndFilter: 'no action',
-        axisFont: '11px Arial',
+        axisFont: 'normal normal 11px "Arial"',
         legendVisibility: DG.VisibilityMode.Never,
         xAxisHeight: 25,
       });
@@ -638,9 +648,9 @@ class Preview {
  */
 class Editor {
   public get root(): HTMLElement { return this.form; }
+  public columnInput: DG.InputBase<DG.Column | null> | undefined;
 
   private form: HTMLElement;
-  private columnInput: DG.InputBase<DG.Column | null> | undefined;
 
   /** The title must be accessible from other inputs, because it may depend on the formula */
   private ibTitle?: DG.InputBase;
@@ -769,7 +779,7 @@ class Editor {
         const oldFormula = item.formula!;
         item.formula = value;
         const resultOk = this.onItemChangedAction(itemIdx, true);
-        this.setFormulaValidationResult(resultOk, value, ibFormula);
+        this.setFormulaValidationResult(resultOk, value, ibFormula, item.type === ITEM_TYPE.BAND);
         this.setTitleIfEmpty(oldFormula, item.formula);
       }});
 
@@ -953,17 +963,47 @@ class Editor {
     return ui.divH([ibHeader.root]);
   }
 
-  private setFormulaValidationResult(resultOk: boolean, value: string, ibHeader: DG.InputBase<string>): void {
+  private setFormulaValidationResult(resultOk: boolean, value: string, ibHeader: DG.InputBase<string>, isBand: boolean = false): void {
     const elHeader = ibHeader.input as HTMLInputElement;
-    elHeader.classList.toggle('d4-forced-invalid', !resultOk);
-    if (!resultOk) {
-      const splitValues = value?.split('=');
-      if (splitValues?.length > 1 && (!splitValues[0].includes('${') || !splitValues[1].includes('${')))
-        ibHeader.setTooltip('Line formula should contain columns from both sides of the "=" sign');
-    }
-    else
-      ibHeader.setTooltip('');
+    const validateValue = (): string => {
+      if (isBand)
+        return resultOk ? '' : 'Invalid formula syntax';
 
+      // Must contain exactly one '='
+      const parts = value.split('=');
+      if (parts.length !== 2)
+        return 'Line formula should be in format: ${x or y column} = expression';
+
+      const [lhsRaw, rhsRaw] = parts.map(p => p.trim());
+
+      // LHS must be exactly one ${...}
+      const lhsMatch = /^\$\{([^}]+)\}$/.exec(lhsRaw);
+      if (!lhsMatch)
+        return 'Left side must be a single column in format ${column}';
+
+      const lhsColumn = lhsMatch[1].trim();
+
+      // Extract all ${...} on RHS
+      const rhsColumnRegex = /\$\{([^}]+)\}/g;
+      const rhsColumns: string[] = [];
+
+      let match;
+      while ((match = rhsColumnRegex.exec(rhsRaw)) !== null) {
+        rhsColumns.push(match[1].trim());
+      }
+
+      // If RHS references the same column → invalid
+      if (rhsColumns.includes(lhsColumn))
+        return 'Line formula should contain different columns on both sides of the "=" sign';
+
+      // Expression syntax validation comes last
+      return resultOk ? '' : 'Invalid formula syntax';
+    };
+    
+    const validationTooltip = validateValue();
+    resultOk = resultOk && validationTooltip === '';
+    ibHeader.setTooltip(validationTooltip);
+    elHeader.classList.toggle('d4-forced-invalid', !resultOk);
     this.onFormulaValidation(resultOk);
   }
 
@@ -1043,26 +1083,22 @@ class Editor {
 
   private setPointsValidationResult(resultOk: boolean, value: string, ibPoints: DG.InputBase<string>): void {
     const elPoints = ibPoints.input as HTMLInputElement;
-    elPoints.classList.toggle('d4-forced-invalid', !resultOk);
-    if (!resultOk) {
-      try {
-        const parsed = JSON.parse(`[${value}]`);
-        if (Array.isArray(parsed)) {
-          const validPoints = parsed.filter((p) => Array.isArray(p) && p.length === 2 && typeof p[0] === 'number' && typeof p[1] === 'number');
-          if (validPoints.length < 3) {
-            ibPoints.setTooltip('Area must have at least 3 points');
-          } else {
-            ibPoints.setTooltip('Points should be a list of [x, y] pairs, e.g., [1, 2], [3, 4]');
-          }
-        } else {
-          ibPoints.setTooltip('Points should be a list of [x, y] pairs, e.g., [1, 2], [3, 4]');
-        }
-      } catch {
-        ibPoints.setTooltip('Invalid JSON format for points');
-      }
-    } else {
-      ibPoints.setTooltip('');
+    const tooltipWarning = 'Points should be a list of [x, y] number pairs, e.g., [1, 2], [3, 4]';
+    const validateValue = (): string => {
+      if (resultOk)
+        return '';
+      
+      const parsed = JSON.parse(`[${value}]`);
+      return Array.isArray(parsed) && parsed.length < 3 ? 'Area must have at least 3 points' : tooltipWarning;
+    };
+    
+    try {
+      ibPoints.setTooltip(validateValue());
+    } catch {
+      ibPoints.setTooltip(tooltipWarning);
     }
+
+    elPoints.classList.toggle('d4-forced-invalid', !resultOk);
     this.onFormulaValidation(resultOk);
   }
 
@@ -1476,21 +1512,41 @@ export class FormulaLinesDialog {
 
     this.dialog.sub(this.preview.viewer.onPropertyValueChanged.subscribe((typeArgs) => {
       const currentItem = this.currentTable?.currentItem;
-      if (!this.editor || this.editor.inputColumn2Changing || !this.preview?.viewer || currentItem?.type !== ITEM_TYPE.BAND)
+      if (!this.editor || this.editor.inputColumn2Changing || !this.preview?.viewer ||
+        !currentItem || (currentItem.type !== ITEM_TYPE.BAND && currentItem.type !== ITEM_TYPE.LINE))
         return;
 
-      const band = currentItem as DG.FormulaLine;
       const { property } = typeArgs.args as unknown as { property: DG.Property };
       if (!['xColumnName', 'yColumnName', 'yColumnNames'].includes(property.name))
         return;
-      
-      const isHorz = band.orientation === ITEM_ORIENTATION.HORIZONTAL;
-      if (isHorz && property.name === 'xColumnName') {
-        band.column2 = this.preview.axisCols.x.name;
-        this.editor.update(this.currentTable.currentItemIdx, true);
-      } else if (!isHorz && (property.name === 'yColumnName' || property.name === 'yColumnNames')) {
-        band.column2 = this.preview.axisCols.y.name;
-        this.editor.update(this.currentTable.currentItemIdx, true);
+
+      const item = currentItem as DG.FormulaLine;
+      const isHorz = item.orientation === ITEM_ORIENTATION.HORIZONTAL;
+
+      if (currentItem.type === ITEM_TYPE.BAND) {
+        if (isHorz && property.name === 'xColumnName') {
+          item.column2 = this.preview.axisCols.x.name;
+          this.editor.update(this.currentTable.currentItemIdx, true);
+        } else if (!isHorz && (property.name === 'yColumnName' || property.name === 'yColumnNames')) {
+          item.column2 = this.preview.axisCols.y.name;
+          this.editor.update(this.currentTable.currentItemIdx, true);
+        }
+      } else if (currentItem.type === ITEM_TYPE.LINE) {
+        const meta = DG.FormulaLinesHelper.getMeta(item);
+        if (!meta.argName) {
+          const newCol = isHorz
+            ? (property.name === 'yColumnName' || property.name === 'yColumnNames') ? this.preview.axisCols.y.name : null
+            : property.name === 'xColumnName' ? this.preview.axisCols.x.name : null;
+          if (newCol) {
+            this.editor.inputColumn2Changing = true;
+            item.formula = '${' + newCol + '} = ' + (meta.expression ?? '0');
+            const col = this.preview.dataFrame.col(newCol);
+            if (this.editor.columnInput && col)
+              this.editor.columnInput.value = col;
+            this.preview.update(this.currentTable.currentItemIdx, true);
+            this.editor.inputColumn2Changing = false;
+          }
+        }
       }
     }));
   }

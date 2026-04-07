@@ -1,10 +1,10 @@
 {
   "name": "@datagrok/samples",
   "friendlyName": "Samples",
-  "version": "1.4.2",
+  "version": "1.5.0",
   "author": {
-    "name": "Savenko Stanislav",
-    "email": "ssavenko@datagrok.ai"
+    "name": "Dmytro Kovalyov",
+    "email": "dkovalyov@datagrok.ai"
   },
   "description": "*Samples* contains sample [data connectors](https://datagrok.ai/help/access/databases/connectors/) and demonstrates [scripting](https://datagrok.ai/help/compute/scripting) and [notebooks](https://datagrok.ai/help/compute/jupyter-notebook) functionality.",
   "repository": {
@@ -13,18 +13,18 @@
     "directory": "packages/Samples"
   },
   "dependencies": {
-    "@datagrok-libraries/utils": "^4.6.5",
-    "datagrok-api": "^1.26.0",
+    "datagrok-api": "^1.27.0",
     "rxjs": "^6.5.5",
     "ts-loader": "^9.5.1",
-    "typescript": "^5.6.3"
+    "typescript": "^5.6.3",
+    "@datagrok-libraries/test": "^1.1.0"
   },
   "devDependencies": {
     "@datagrok/api-tests": "^1.9.0",
     "@datagrok/dendrogram": "^1.2.33",
     "@typescript-eslint/eslint-plugin": "^5.32.0",
     "@typescript-eslint/parser": "^5.32.0",
-    "datagrok-tools": "^4.14.55",
+    "datagrok-tools": "^5.0.0",
     "eslint": "^8.21.0",
     "eslint-config-google": "^0.14.0",
     "webpack": "^5.95.0",
@@ -52,5 +52,8 @@
   "canEdit": [
     "Administators",
     "Administrators"
-  ]
+  ],
+  "overrides": {
+    "datagrok-api": "$datagrok-api"
+  }
 }

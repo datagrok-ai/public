@@ -5,7 +5,7 @@ import {RDKitCellRenderer} from './rdkit-cell-renderer';
 import {tableFromMap} from 'datagrok-api/ui';
 import {RDModule} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 import {addStructureFields, Mixfile, MixfileComponent, STRUCTURE_FIELDS} from '../utils/mixfile';
-import {trimText} from '@datagrok-libraries/gridext/src/utils/TextUtils';
+import * as TextUtils from '@datagrok-libraries/gridext/src/utils/TextUtils';
 
 export interface Component {
   x: number;
@@ -93,7 +93,7 @@ export class MixtureCellRenderer extends RDKitCellRenderer {
       g.fillStyle = '#222';
       g.textAlign = 'center';
       // Trim annotation to fit width
-      const trimmed = trimText(annotation, g, compW - 4);
+      const trimmed = TextUtils.trimText(annotation, g, compW - 4);
       g.fillText(trimmed, curX + compW / 2, minY + (molH ?? compH) + compH * annotationFrac * 0.7);
       g.restore();
     }
@@ -132,7 +132,7 @@ export class MixtureCellRenderer extends RDKitCellRenderer {
       g.textBaseline = 'middle';
       const text = comp.name || 'Component';
       // Trim name to fit width
-      const trimmed = trimText(text, g, w - 4);
+      const trimmed = TextUtils.trimText(text, g, w - 4);
       g.fillText(trimmed, x + w / 2, y + molH / 2);
       g.restore();
     }

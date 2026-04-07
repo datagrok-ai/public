@@ -1,0 +1,23 @@
+{
+  "name": "Add target",
+  "connection": "Chembl:Chembl",
+  "keySchema": "public",
+  "keyTable": "drug_mechanism",
+  "keyColumn": "tid",
+  "fields": [
+    "public.drug_mechanism.tid",
+    "public.target_dictionary.chembl_id",
+    "public.target_dictionary.pref_name",
+    "public.target_dictionary.target_type",
+    "public.target_dictionary.organism"
+  ],
+  "joins": [
+    {
+      "leftTableName": "public.drug_mechanism",
+      "rightTableName": "public.target_dictionary",
+      "joinType": "left",
+      "leftTableKeys": ["tid"],
+      "rightTableKeys": ["tid"]
+    }
+  ]
+}

@@ -4,7 +4,7 @@ title: "Math functions"
 
 This type of function includes math, trigonometric, and logic functions.
 
-As parameters of the function, you can pass numeric scalars, numeric functions, [math constants](constants.md), boolean
+As parameters of the function, you can pass numeric scalars, numeric functions, [math constants](../formula-syntax.md#constants), boolean
 scalars, boolean functions, or a column name. To pass a column cell, you can use the syntax `${columnName}`. Other ways
 to use parameters: `true`
 , `false`, `PI`, `E` etc.

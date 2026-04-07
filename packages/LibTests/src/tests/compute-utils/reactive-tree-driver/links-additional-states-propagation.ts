@@ -1,5 +1,5 @@
 import * as DG from 'datagrok-api/dg';
-import {category, test, before} from '@datagrok-libraries/utils/src/test';
+import {category, test, before} from '@datagrok-libraries/test/src/test';
 import {PipelineConfiguration} from '@datagrok-libraries/compute-utils';
 import {getProcessedConfig} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/config-processing-utils';
 import {expectDeepEqual} from '@datagrok-libraries/utils/src/expect';

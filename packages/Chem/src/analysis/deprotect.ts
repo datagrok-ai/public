@@ -4,6 +4,7 @@ import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import {Observable, Subject} from 'rxjs';
+import {hasNewLines} from '../utils/chem-common';
 
 function correctRGroups(smiles: string): string {
   const elementRGroupRegex = /\[R[1-9]\]/g;
@@ -37,11 +38,6 @@ function radicalToRgroupForm(smiles: string): string {
   });
 }
 
-// export function deprotectEditor(funcCall: DG.FuncCall): DG.Widget {
-//     const
-
-
-// }
 const defaultFramgment = 'O=C(N[*:1])OCC1c2ccccc2-c2ccccc21';
 export class DeprotectEditor extends DG.FuncCallEditor {
   tableInput: DG.InputBase<DG.DataFrame | null>;
@@ -142,6 +138,8 @@ export function addDeprotectedColumn(table: DG.DataFrame, molColumn: DG.Column, 
       let mol: RDMol | null = null;
       let rctns: RDReactionResult | null = null;
       try {
+        if (molSmiles && !hasNewLines(molSmiles) && molSmiles.length > 5000)
+          return molSmiles; // do not attempt to parse very long SMILES, will cause MOB.
         mol = rdModule.get_mol(molSmiles);
         if (!mol)
           return molSmiles;

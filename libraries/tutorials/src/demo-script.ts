@@ -2,7 +2,6 @@ import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
 
-import {delay} from '@datagrok-libraries/utils/src/test';
 
 
 /** Type for {@link DemoScript} step */
@@ -58,6 +57,7 @@ export class DemoScript {
   private _closeBtn: HTMLButtonElement = ui.button(ui.iconFA('chevron-left'), () => this._closeDock(), 'Back to demo');
 
   private _path?: string;
+  private _preDemoView: DG.View | null = null;
   DEMO_PATH: string = 'apps/Tutorials/Demo';
 
   private _setBreadcrumbsInViewName(): void {
@@ -184,7 +184,7 @@ export class DemoScript {
   }
 
   private _setViewParams() {
-    if (grok.shell.v) {
+    if (grok.shell.v && grok.shell.v !== this._preDemoView) {
       grok.shell.v.name = this.name;
       grok.shell.v.path = `${this.DEMO_PATH}/${(this._path ?? '').replaceAll(' ', '-')}`;
       this._setBreadcrumbsInViewName();
@@ -222,7 +222,7 @@ export class DemoScript {
     this._scrollTo(this._root, currentStep.offsetTop - this._mainHeader.offsetHeight);
     if (this._isAutomatic) {
       await this._countdown(entry as HTMLElement, entryIndicator as HTMLElement, stepDelay);
-      await delay(stepDelay);
+      await DG.delay(stepDelay);
     }
 
     const newEntryIndicator = ui.iconFA('check');
@@ -236,6 +236,7 @@ export class DemoScript {
     this._isStepProcessed = false;
 
     if (this._currentStep === this.stepNumber) {
+      this._restartBtn.disabled = false;
       this._isAutomatic ? this._stopStartBtn.replaceWith(this._restartBtn) :
         this._nextStepBtn.replaceWith(this._restartBtn);
       return;
@@ -334,6 +335,7 @@ export class DemoScript {
 
   /** Restarts the script */
   private async _restartScript(): Promise<void> {
+    this._restartBtn.disabled = true;
     grok.shell.dockManager.close(this._node!);
     this._clearRoot();
     this._setInitParams();
@@ -399,12 +401,10 @@ export class DemoScript {
 
   /** Starts the demo script */
   async start(): Promise<void> {
-    this._initRoot();
-    if (grok.shell.v.name === this.name) {
+    if (grok.shell.v?.name === this.name)
       grok.shell.v.close();
-      this._node = grok.shell.dockManager.dock(this._root, DG.DOCK_TYPE.FILL,
-        grok.shell.dockManager.findNode(grok.shell.browsePanel.root), this.name);
-    }
+    this._preDemoView = grok.shell.v as DG.View | null;
+    this._initRoot();
 
     if (this._isAutomatic) {
       await this._startScript();

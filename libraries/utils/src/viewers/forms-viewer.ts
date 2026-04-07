@@ -154,6 +154,8 @@ export class FormsViewer extends DG.JsViewer {
   onTableAttached() {
     if (this.fieldsColumnNames === null)
       this.setFieldsColumnNames(this.dataFrame.columns.names());
+    if (this.dataFrame.columns.bySemType('fit') != null && this.rendererSize === 'small')
+      this.rendererSize = 'normal';
 
     const sub = (stream: Observable<unknown>, action: Function) => {
       this.subs.push(DG.debounce(stream, 50).subscribe((_) => action()));

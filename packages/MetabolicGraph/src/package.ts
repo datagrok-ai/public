@@ -7,7 +7,7 @@ import map from './maps/E_coli_Core_metabolism_map.json';
 import model from './maps/E_coli_core_cobra.json';
 import type {MapData, CobraModelData, SettingsType} from '../escher_src/src/ts/types';
 import type {BuilderType, BuilderConstructor} from '../escher_src/src/Builder';
-import { modelFromJsonData } from './FBA/cobraSolver';
+import { modelFromJsonData } from './FBA/cobra-model';
 import { WorkerCobraSolver } from './cobra';
 import { sampleReactionsWasm } from './cobra/sampler-wrapper';
 
@@ -22,7 +22,7 @@ declare global {
 }
 
 //name: MetabolicGraph
-//tags: app
+//meta.role: app
 //meta.icon: files/icons/metabolic.png
 //description: Metabolic graph application
 //input: string path {meta.url: true; optional: true}
@@ -74,7 +74,7 @@ export function metabolicGraphApp(path?: string, filter?: string): DG.ViewBase {
 }
 
 //name: EscherFileViewer
-//tags: fileViewer
+//meta.role: fileViewer
 //meta.fileViewer: json
 //meta.fileViewerCheck: Metabolicgraph:escherFileViewerCheck
 //input: file file

@@ -6,7 +6,7 @@ import {Subject} from 'rxjs';
 
 import {
   category, expect, test, awaitCheck, delay, testEvent, before, after
-} from '@datagrok-libraries/utils/src/test';
+} from '@datagrok-libraries/test/src/test';
 import {getHelmHelper} from '@datagrok-libraries/bio/src/helm/helm-helper';
 import {
   getHelmService, HelmServiceBase, HelmAux, HelmProps

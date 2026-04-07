@@ -29,11 +29,10 @@ parts - client and server. However, the way these parts work and connect is quit
 
 ## Design philosophy
 
-A traditional approach to building such a system would be to commit to widely used technology such as JavaScript, select
-a bunch of widely used libraries and frameworks, including a UI framework, a visualization library, a serialization
-library, and a dozen of other ones, and plumb it all together. While the result would be somewhat predictable, it will
-also inevitably be mediocre due to all the compromises this path implies. You cannot build a fighter jet with a steam
-engine, random Lego parts, and a lot of duct tape.
+A traditional approach would be to pick popular libraries — a UI framework, a
+visualization library, a serialization library — and integrate them. While
+predictable, this approach produces mediocre results because of the inherent
+compromises. You cannot build a fighter jet from random Lego parts and duct tape.
 
 Our firm belief, backed by 20 years of experience in developing analytical solutions and data analysis platforms, is
 that we need a clean break for such an ambitious project. Before building high-level features, we need to dive as deep
@@ -80,14 +79,14 @@ creating new data pipelines, models dynamically and building viewers, plugins, a
 
 ### Compute Engine
 
-To extend already massive functionality, we created a compute engine for performing on-server computations. Compute
-engine lets the user easily [invoke scripts](../../compute/scripting/scripting.mdx) written in languages such as R or Python and
-expose them to the Datagrok ecosystem as functions. Also, it utilizes a few different backends
-for [predictive modeling](../../learn/learn.md) while providing users the same look and feel. To create
-and share documents that contain live code, equations, visualizations, and narrative text, we added
-[Jupyter Notebook](../../compute/jupyter-notebook.md) features to compute server. Datagrok allows efficiently creating,
-editing, importing, linking, and applying Notebooks into tables. To scale computations, spin out multiple instances of
-some component, and our load balancer will take care of dispatching computations.
+The compute engine runs server-side computations. You can
+[invoke scripts](../../compute/scripting/scripting.mdx) written in R, Python, and
+other languages and expose them to the Datagrok ecosystem as functions. It supports
+multiple backends for [predictive modeling](../../learn/learn.md) with a consistent
+interface. [Jupyter Notebook](../../compute/jupyter-notebook.md) integration lets
+you create and share documents with live code, equations, visualizations, and
+narrative text. To scale, spin up multiple instances of a component — the load
+balancer dispatches computations automatically.
 
 ## Useful links
 

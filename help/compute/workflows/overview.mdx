@@ -8,7 +8,7 @@ terms and concepts.
 
 ## Main terms
 
-Before starting to work with workflows, we need to define several terms:
+Before working with workflows, familiarize yourself with these terms:
 * **Node** - any Datagrok script.
   * Node input: data that the step consumes
   * Node output: data that the step produces
@@ -25,8 +25,8 @@ Before starting to work with workflows, we need to define several terms:
   Controller has methods to get inputs and assign outputs.
 * **Action**: Similar to links, but triggers only by clicking a UI button.
 * **FuncCall**: a result of executing a data query, script, or any other function.
-  From the user point of view, funccall is the one invocation of a script, containing the script code,
-  input and output.
+  From the user's point of view, a FuncCall is one invocation of a script, containing the script code,
+  input, and output.
   The description is available [here](../../datagrok/concepts/functions/function-call.md)
 
 
@@ -41,9 +41,9 @@ Also, a user can save the current workflow state and load it later.
 
 ### Links
 
-**Links** are connections that are either pass data directly from a source
-script IO to target or do some transformations via a TypeScript function
-called link handler.
+**Links** are connections that either pass data directly from a source
+script IO to a target or apply transformations via a TypeScript function
+called a link handler.
 There are multiple types of links;
 some of them use source scripts inputs/outputs to pass data to a virtual target,
 which is not stored in a script io.

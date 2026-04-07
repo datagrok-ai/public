@@ -149,19 +149,26 @@ export class PackageFunctions {
     @grok.decorators.param({options: {'meta.url': true, 'optional': true}}) path?: string,
     @grok.decorators.param({options: {'optional': true}}) filter?: string): DG.ViewBase {
     const pathSegments = (!path || path === '') ? [] : path.split('/');
-    const demoView = new DemoView();
-    if (pathSegments.length > 0) {
+    const hasPath = pathSegments.length > 0;
+    const demoView = new DemoView(!hasPath);
+    if (hasPath) {
       const pathElements = pathSegments.map((elem) => elem.replaceAll('-', ' '));
       const node = demoView.tree.items.find((node) => {
         const nodeText = node.text.replaceAll('-', ' ');
         return nodeText === pathElements[pathElements.length - 1];
       })?.root;
+      const closeSub = grok.events.onCurrentViewChanged.subscribe(() => {
+        if (grok.shell.v?.root !== demoView.root) {
+          closeSub.unsubscribe();
+          demoView.close();
+        }
+      });
       node?.click();
     }
     return demoView;
   }
 
-  @grok.decorators.func()
+  @grok.decorators.appTreeBrowser({app: 'Demo'})
   static async demoAppTreeBrowser(treeNode: DG.TreeViewGroup) : Promise<void> {
     new DemoView(false);
   }

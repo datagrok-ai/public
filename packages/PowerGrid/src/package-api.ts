@@ -12,6 +12,10 @@ export namespace funcs {
     return await grok.functions.call('PowerGrid:BinaryImageCellRenderer', {});
   }
 
+  export async function colorCellRenderer(): Promise<any> {
+    return await grok.functions.call('PowerGrid:ColorCellRenderer', {});
+  }
+
   export async function hyperlinkCellRenderer(): Promise<any> {
     return await grok.functions.call('PowerGrid:HyperlinkCellRenderer', {});
   }
@@ -24,8 +28,12 @@ export namespace funcs {
     return await grok.functions.call('PowerGrid:MultiChoiceCellRenderer', {});
   }
 
-  export async function tagsCellRenderer(): Promise<any> {
-    return await grok.functions.call('PowerGrid:TagsCellRenderer', {});
+  export async function starsCellRenderer(): Promise<any> {
+    return await grok.functions.call('PowerGrid:StarsCellRenderer', {});
+  }
+
+  export async function svgCellRenderer(): Promise<any> {
+    return await grok.functions.call('PowerGrid:SvgCellRenderer', {});
   }
 
   export async function htmlTestCellRenderer(): Promise<any> {
@@ -56,6 +64,14 @@ export namespace funcs {
     return await grok.functions.call('PowerGrid:SmartFormCellRenderer', {});
   }
 
+  export async function tagsCellRenderer(): Promise<any> {
+    return await grok.functions.call('PowerGrid:TagsCellRenderer', {});
+  }
+
+  export async function confidenceIntervalCellRenderer(): Promise<any> {
+    return await grok.functions.call('PowerGrid:ConfidenceIntervalCellRenderer', {});
+  }
+
   /**
   Adds a sparkline column for the selected columns
   */
@@ -78,12 +94,12 @@ export namespace funcs {
     return await grok.functions.call('PowerGrid:TestUnitsTonCellRenderer', {});
   }
 
-  export async function addPinnedColumn(gridCol: any ): Promise<any> {
-    return await grok.functions.call('PowerGrid:AddPinnedColumn', { gridCol });
-  }
-
   export async function demoTestUnitsCellRenderer(): Promise<void> {
     return await grok.functions.call('PowerGrid:DemoTestUnitsCellRenderer', {});
+  }
+
+  export async function addPinnedColumn(gridCol: any ): Promise<any> {
+    return await grok.functions.call('PowerGrid:AddPinnedColumn', { gridCol });
   }
 
   export async function autoPowerGrid(): Promise<void> {

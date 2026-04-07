@@ -1,0 +1,60 @@
+{
+  "name": "@datagrok/flow",
+  "friendlyName": "Flow",
+  "version": "0.0.1",
+  "description": "Flow package",
+  "author": {
+    "name": "Davit Rizhinashvili",
+    "email": "drizhinashvili@datagrok.ai"
+  },
+  "dependencies": {
+    "@datagrok-libraries/utils": "^4.6.5",
+    "cash-dom": "^8.1.5",
+    "datagrok-api": "^1.27.0",
+    "dayjs": "^1.11.13",
+    "litegraph.js": "^0.7.18"
+  },
+  "devDependencies": {
+    "css-loader": "^7.1.4",
+    "datagrok-tools": "^5.1.5",
+    "style-loader": "^4.0.0",
+    "ts-loader": "latest",
+    "typescript": "latest",
+    "webpack": "^5.95.0",
+    "webpack-cli": "^5.1.4",
+    "@typescript-eslint/eslint-plugin": "^8.8.1",
+    "@typescript-eslint/parser": "^8.8.1",
+    "eslint": "^8.57.1",
+    "eslint-config-google": "^0.14.0"
+  },
+  "scripts": {
+    "debug-funcflow": "webpack && grok publish",
+    "release-funcflow": "webpack && grok publish --release",
+    "build-funcflow": "webpack",
+    "build": "grok api && grok check --soft && webpack",
+    "test": "grok test",
+    "debug-funcflow-dev": "webpack && grok publish dev",
+    "release-funcflow-dev": "webpack && grok publish dev --release",
+    "debug-funcflow-local": "webpack && grok publish local",
+    "release-funcflow-local": "webpack && grok publish local --release",
+    "debug-funcflow-localhost": "webpack && grok publish localhost",
+    "release-funcflow-localhost": "webpack && grok publish localhost --release",
+    "debug-funcflow-release": "webpack && grok publish release",
+    "release-funcflow-release": "webpack && grok publish release --release",
+    "debug-funcflow-test": "webpack && grok publish test",
+    "release-funcflow-test": "webpack && grok publish test --release",
+    "debug-funcflow-parabilisProd": "webpack && grok publish parabilisProd",
+    "release-funcflow-parabilisProd": "webpack && grok publish parabilisProd --release"
+  },
+  "canEdit": [
+    "Developers"
+  ],
+  "canView": [
+    "All users"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/datagrok-ai/public.git",
+    "directory": "packages/funcflow"
+  }
+}

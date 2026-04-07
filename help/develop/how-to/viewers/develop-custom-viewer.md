@@ -12,7 +12,7 @@ interactive. Both options support data filtering and selection.
 
 Typically, development starts with [package](../../develop.md#packages) creation. Packages are convenient units for
 distributing content within the platform. Using them you can extend Datagrok with your widgets, applications, plugins,
-and more. Besides, scripting viewers must be part of a package in order to run their code in a separate environment.
+and more. Besides, scripting viewers must be part of a package to run their code in a separate environment.
 
 Table of contents
 
@@ -276,7 +276,7 @@ class AwesomeViewer extends DG.JsViewer {
 Sometimes it is better to double-check if the given data can possibly be rendered, just as with the
 `onTableAttached` method, however, here we skip this step for simplicity.
 
-The methods used for value aggregation and iteration over the dataframe deserve a subject of their own, so do examine
+The methods used for value aggregation and iteration over the dataframe deserve separate coverage. Examine
 these code snippets to gain a better understanding:
 [aggregation](https://public.datagrok.ai/js/samples/data-frame/aggregation)
 , [comparative performance](https://public.datagrok.ai/js/samples/data-frame/performance) of different approaches to

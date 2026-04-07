@@ -5,6 +5,7 @@ import * as DG from 'datagrok-api/dg';
 import {CellRendererBackBase} from '../cell-renderer-back-base';
 import {ISeqHandler} from './seq-handler';
 import {PolymerType} from '../../helm/types';
+import {NOTATION_PROVIDER_CONSTRUCTOR_ROLE} from './consts';
 
 export type SeqSplittedBase = ArrayLike<string> & Iterable<string>;
 
@@ -54,6 +55,25 @@ export interface ISeqSplitted {
   get gapOriginal(): string;
 }
 
+/**
+ * Extracts displayable monomer symbol(s) from a raw position value.
+ * Used by the Monomer cell renderer when a notation provider needs custom
+ * interpretation of split-to-monomer position values.
+ *
+ * For example, a Parabilis position `[VHL1379]*dLys` contains two monomers
+ * (`VHL1379` and `dLys`). The canonicalizer separates them with
+ * {@link MONOMER_MOTIF_SPLITTER} so the renderer can display/tooltip each one.
+ */
+export interface IMonomerCanonicalizer {
+  /** Convert a raw position value to a displayable monomer string.
+   *  If the position contains multiple monomers, join them with
+   *  {@link MONOMER_MOTIF_SPLITTER} (` , `). */
+  canonicalize(original: string): string;
+
+  /** Returns true if the raw position value represents a gap in this notation. */
+  isGap(original: string): boolean;
+}
+
 export interface INotationProvider {
   get defaultGapOriginal(): string;
 
@@ -66,6 +86,40 @@ export interface INotationProvider {
   getHelm(seq: string, options: any): string;
 
   createCellRendererBack(gridCol: DG.GridColumn | null, tableCol: DG.Column<string>): CellRendererBackBase<string>;
+
+  /** nqName of a registered function that returns an {@link IMonomerCanonicalizer} instance.
+   *  When set, split-to-monomers will tag Monomer columns with this function name so the
+   *  monomer cell renderer can resolve display symbols from raw position values.
+   *  Return null/undefined if no custom canonicalization is needed. */
+  readonly monomerCanonicalizerFuncName?: string | null;
+}
+
+export abstract class NotationProviderBase {
+  /** Name of the custom notation */
+  static get notationName(): string {
+    return 'Custom';
+  };
+
+  /** flag to let bio know if this provider implements method for converting helm to it */
+  static get implementsFromHelm(): boolean {
+    return false;
+  };
+
+  /** Method for converting HELM to this notation */
+  static convertFromHelm(helm: string, options: any): string {
+    throw new Error(`Method convertFromHelm not implemented for this notation provider`);
+  };
+
+  static async getProviderConstructors(): Promise<typeof NotationProviderBase[]> {
+    // this is terrible, I know, but otherwise this gets put in webworkers and fails due to DG resolution)))
+    // @ts-ignore
+    if (window?.DG) {
+      // @ts-ignore
+      const constFuncs: any[] = window.DG.Func.find({meta: {role: NOTATION_PROVIDER_CONSTRUCTOR_ROLE}});
+      return Promise.all(constFuncs.map((f) => f.apply({})));
+    }
+    return [];
+  }
 }
 
 export type SeqColStats = { freq: MonomerFreqs, sameLength: boolean }

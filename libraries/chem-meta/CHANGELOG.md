@@ -1,5 +1,13 @@
 # chem-meta changelog
 
+## 1.2.11 (2026-04-06)
+
+Updated get_smiles() with details
+
+## 1.2.10 (2026-01-05)
+
+Updated ChemTemps constants
+
 ## 1.2.8 (2024-11-01)
 
 ### New features

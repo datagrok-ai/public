@@ -688,6 +688,9 @@ export class GridColumn<TData = any> {
     return api.grok_GridColumn_Get_Idx(this.dart);
   }
 
+  pin(): void {api.grok_Grid_pinColumns(api.grok_GridColumn_Get_Grid(this.dart), [this.dart]); }
+  unpin(): void {api.grok_Grid_unpinColumns(api.grok_GridColumn_Get_Grid(this.dart), [this.dart]); }
+
   /** @returns {string} Column name. */
   get name(): string { return api.grok_GridColumn_Get_Name(this.dart); }
   set name(x: string) { api.grok_GridColumn_Set_Name(this.dart, x); }
@@ -1442,7 +1445,6 @@ export class ColumnGrid extends Widget {
 
   get dfColumns(): DataFrame { return toJs(api.grok_ColumnGrid_Get_DfColumns(this.dart)); }
   get dfSource(): DataFrame { return toJs(api.grok_ColumnGrid_Get_DfSource(this.dart)); }
-  get gridSource(): Grid { return toJs(api.grok_ColumnGrid_Get_GridSource(this.dart)); }
   get grid(): Grid { return toJs(api.grok_ColumnGrid_Get_Grid(this.dart)); }
   get nameCol(): Column { return toJs(api.grok_ColumnGrid_Get_NameCol(this.dart)); }
   get typeNameCol(): Column { return toJs(api.grok_ColumnGrid_Get_TypeNameCol(this.dart)); }
@@ -1467,9 +1469,9 @@ export class ColumnGrid extends Widget {
   initTypeColoring(): void { api.grok_ColumnGrid_InitTypeColoring(this.dart); }
   initColumnTooltips(): void { api.grok_ColumnGrid_InitColumnTooltips(this.dart); }
   initColumnDragDrop(): void { api.grok_ColumnGrid_InitColumnDragDrop(this.dart); }
-  init(dfSource: DataFrame, gridSource?: Grid, filter?: (c: Column) => boolean,
+  init(dfSource: DataFrame, filter?: (c: Column) => boolean,
     syncSelections?: boolean, order?: Column[], addServiceColumns?: boolean): void {
-    api.grok_ColumnGrid_Init(this.dart, dfSource.dart, gridSource?.dart, filter,
+    api.grok_ColumnGrid_Init(this.dart, dfSource.dart, filter,
       syncSelections ?? true, order?.map((c) => c.dart), addServiceColumns ?? false);
   }
   initColumnSelector(dfSource: DataFrame, checkAll?: boolean, filter?: (c: Column) => boolean): void {

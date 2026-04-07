@@ -1,5 +1,21 @@
 # compute-utils changelog
 
+## 1.45.2 (2026-03-19)
+
+- dayjs typings fix
+
+## 1.45.1 (2026-03-19)
+
+- 1.27 platform support
+
+## 1.44.13 (2026-02-24)
+
+- Fixed grid cell bug in Fitting and Sensitivity Analysis
+
+## 1.44.12 (2026-02-19)
+
+- Workflows export customization options
+
 ## 1.44.11 (2025-11-20)
 
 - Workflows navigation related improvements

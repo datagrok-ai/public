@@ -2,11 +2,11 @@
 title: "Anonymize data"
 ---
 
-Sometimes, a need arises to prepare a dataset that conveys an idea of the structure in the data along with the patterns
-in it, but does not contain the real data points. This is what 'Anonymize Data' functionality is for.
+Sometimes you need to prepare a dataset that conveys the data structure and patterns
+but does not contain the real data points. This is what the "Anonymize Data" feature is for.
 
-The data in the selected columns gets replaced with the anonymized values. The new value depends on the column type, as
-well as on the old value:
+The data in the selected columns gets replaced with anonymized values. The new value depends on the column type and
+the old value:
 
 * **Categorical.** If the categories are defined for the specified column, the value is replaced with a random category.
   Otherwise, the value is replaced with the synthetic category (such as '

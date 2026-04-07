@@ -1,7 +1,7 @@
 import type * as _DG from 'datagrok-api/dg';
 declare let DG: typeof _DG;
 
-import { category, test, awaitCheck } from '@datagrok-libraries/utils/src/test';
+import { category, test, awaitCheck } from '@datagrok-libraries/test/src/test';
 
 category('Dapi: vector scripts and functions', async () => {
 

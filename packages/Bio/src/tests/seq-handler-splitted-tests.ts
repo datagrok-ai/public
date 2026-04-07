@@ -3,7 +3,7 @@ import * as DG from 'datagrok-api/dg';
 
 import wu from 'wu';
 
-import {before, category, expect, expectArray, test} from '@datagrok-libraries/utils/src/test';
+import {before, category, expect, expectArray, test} from '@datagrok-libraries/test/src/test';
 import {ISeqHelper, getSeqHelper} from '@datagrok-libraries/bio/src/utils/seq-helper';
 import {NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';
 import {GapOriginals} from '@datagrok-libraries/bio/src/utils/macromolecule/consts';

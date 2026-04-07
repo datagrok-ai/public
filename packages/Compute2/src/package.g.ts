@@ -1,31 +1,54 @@
 import {PackageFunctions} from './package';
 import * as DG from 'datagrok-api/dg';
 
-//tags: init
+//meta.role: init
 export async function init() : Promise<void> {
   await PackageFunctions.init();
 }
 
+//name: renderRestPanel
+//input: func func 
+//output: widget result
+export async function renderPanel(func: any) : Promise<any> {
+  return await PackageFunctions.renderPanel(func);
+}
+
+//name: Model Hub
+//output: view result
+//meta.role: app
+//meta.browsePath: Compute
+export function modelCatalog() {
+  return PackageFunctions.modelCatalog();
+}
+
+//input: dynamic treeNode 
+//input: view browseView 
+//meta.role:  
+//meta.app:  
+export function modelCatalogTreeBrowser(treeNode: any, browseView: DG.ViewBase) : void {
+  PackageFunctions.modelCatalogTreeBrowser(treeNode, browseView);
+}
+
 //name: Custom Function View Editor
-//tags: editor
 //input: funccall call 
 //output: view result
+//meta.role: editor
 export async function CustomFunctionViewEditor(call: DG.FuncCall) : Promise<any> {
   return await PackageFunctions.CustomFunctionViewEditor(call);
 }
 
 //name: Rich Function View Editor
-//tags: editor
 //input: funccall call 
 //output: view result
+//meta.role: editor
 export async function RichFunctionViewEditor(call: DG.FuncCall) : Promise<any> {
   return await PackageFunctions.RichFunctionViewEditor(call);
 }
 
 //name: Tree Wizard Editor
-//tags: editor
 //input: funccall call 
 //output: view result
+//meta.role: editor
 export async function TreeWizardEditor(call: DG.FuncCall) : Promise<any> {
   return await PackageFunctions.TreeWizardEditor(call);
 }
@@ -44,22 +67,21 @@ export async function RunOptimizer(params: any) {
   return await PackageFunctions.RunOptimizer(params);
 }
 
-//tags: test, vue
+//name: ViewerTestApp
 export async function ViewerTestApp() : Promise<void> {
   await PackageFunctions.ViewerTestApp();
 }
 
-//tags: test, vue
+//name: FormTestApp
 export async function FormTestApp() : Promise<void> {
   await PackageFunctions.FormTestApp();
 }
 
-//tags: test, vue
+//name: HistoryTestApp
 export async function HistoryTestApp() : Promise<void> {
   await PackageFunctions.HistoryTestApp();
 }
 
-//tags: test, compute2
 //input: object params 
 //output: object result
 //editor: Compute2:TreeWizardEditor
@@ -67,7 +89,6 @@ export async function MockPipeline1(params: any) {
   return await PackageFunctions.MockPipeline1(params);
 }
 
-//tags: test, compute2
 //input: object params 
 //output: object result
 //editor: Compute2:TreeWizardEditor
@@ -110,8 +131,30 @@ export async function TestDF1(df: DG.DataFrame) : Promise<any> {
 }
 
 //name: Custom View (Compute 2 Test)
-//tags: test, compute2
 //editor: Compute2:CustomFunctionViewEditor
 export async function TestCustomView() : Promise<void> {
   await PackageFunctions.TestCustomView();
+}
+
+//description: Test for optimization: multiple scalars output
+//input: double x1 = 1 { caption: param1; min: -3; max: 3 }
+//input: double x2 = -1 { caption: param2; min: -3; max: 3 }
+//input: dataframe y { caption: table }
+//input: bool bool 
+//output: int integer
+//output: double float1
+//output: double float2
+//output: dataframe table1 { viewer: Line chart(block:60) | Grid(block:40) }
+//output: dataframe table2 { viewer: Line chart(block:60) | Grid(block:40) }
+//meta.features: {"fitting": true, "sens-analysis": true}
+//meta.runOnOpen: true
+//meta.runOnInput: true
+//editor: Compute2:RichFunctionViewEditor
+export function fitTestFunc(x1: number, x2: number, y: DG.DataFrame, bool: boolean) {
+  return PackageFunctions.fitTestFunc(x1, x2, y, bool);
+}
+
+//description: Test for optimization: multiple scalars output
+export async function testFittingOutputs() : Promise<void> {
+  await PackageFunctions.testFittingOutputs();
 }

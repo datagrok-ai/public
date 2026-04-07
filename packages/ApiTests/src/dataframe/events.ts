@@ -2,7 +2,7 @@ import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 
 import {hashDataFrame} from '@datagrok-libraries/utils/src/dataframe-utils';
-import {category, expect, test, expectArray} from '@datagrok-libraries/utils/src/test';
+import {category, expect, test, expectArray} from '@datagrok-libraries/test/src/test';
 import dayjs from 'dayjs';
 
 category('DataFrame', () => {

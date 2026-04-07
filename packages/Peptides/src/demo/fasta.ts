@@ -7,7 +7,6 @@ import * as C from '../utils/constants';
 import {scaleActivity} from '../utils/misc';
 import {ALIGNMENT, ALPHABET, NOTATION, TAGS as bioTAGS} from '@datagrok-libraries/bio/src/utils/macromolecule';
 import {PeptidesModel} from '../model';
-import {awaitCheck, delay} from '@datagrok-libraries/utils/src/test';
 import {MCLSettings} from '../utils/types';
 
 export async function macromoleculeSarFastaDemoUI(): Promise<void> {
@@ -19,7 +18,7 @@ export async function macromoleculeSarFastaDemoUI(): Promise<void> {
   if (!simpleTable.id)
     simpleTable.id = `Simple-peptides-analysis-table-id-${Math.random()}-${Date.now()}`;
   const view = grok.shell.addTableView(simpleTable);
-  await delay(50);
+  await DG.delay(50);
   const grid = view.grid;
   await new Promise((res) => {
     let timer: any = null;

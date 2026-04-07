@@ -1,7 +1,6 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import CodeMirror from 'codemirror';
 import {BehaviorSubject} from 'rxjs';
 import {
   COMMON_TAG_NAMES,
@@ -26,12 +25,6 @@ import {
   optionTags,
   tooltipMessage
 } from './const';
-import 'codemirror/mode/javascript/javascript';
-import 'codemirror/mode/python/python';
-import 'codemirror/mode/octave/octave';
-import 'codemirror/mode/r/r';
-import 'codemirror/mode/julia/julia';
-import 'codemirror/mode/sql/sql.js';
 import '../../css/styles.css';
 import {applyCodeMirror} from "../utils/code-mirror-check";
 
@@ -384,6 +377,15 @@ async function openFse(v: DG.View, functionCode: string) {
   });
 
   const codeArea = ui.input.textArea('', {value: ''});
+  const [CodeMirror] = await Promise.all([
+    import('codemirror').then((m) => m.default),
+    import('codemirror/mode/javascript/javascript'),
+    import('codemirror/mode/python/python'),
+    import('codemirror/mode/octave/octave'),
+    import('codemirror/mode/r/r'),
+    import('codemirror/mode/julia/julia'),
+    import('codemirror/mode/sql/sql.js'),
+  ]);
   const myCM = CodeMirror.fromTextArea((codeArea.input as HTMLTextAreaElement), { mode: highlightModeByLang[language] });
   const uiArea = await inputScriptCopy.prepare().getEditor();
   const codePanel = ui.panel([codeArea.root]);

@@ -1,4 +1,4 @@
-import {after, before, category, test} from '@datagrok-libraries/utils/src/test';
+import {after, before, category, test} from '@datagrok-libraries/test/src/test';
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
@@ -24,10 +24,6 @@ category('UI: Buttons', () => {
   test('button.click', async () => {
     for (const value of Object.values(buttons))
       onClick(value);
-  });
-
-  after(async () => {
-    grok.shell.closeAll();
   });
 
   function onClick(root: HTMLElement): void {

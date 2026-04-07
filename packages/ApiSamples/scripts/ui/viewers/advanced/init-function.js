@@ -18,4 +18,4 @@ grok.functions.register({
 
 grok.shell
   .addTableView(grok.data.demo.demog())
-  .scatterPlot({ initializationFunction: 'initScatterSquare' });
+  .scatterPlot({initializationFunction: 'initScatterSquare'});

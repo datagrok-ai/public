@@ -3,7 +3,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {ALIGNMENT, ALPHABET, NOTATION, TAGS as bioTAGS} from '@datagrok-libraries/bio/src/utils/macromolecule';
-import {expect} from '@datagrok-libraries/utils/src/test';
+import {expect} from '@datagrok-libraries/test/src/test';
 
 import {awaitGrid} from '../utils';
 

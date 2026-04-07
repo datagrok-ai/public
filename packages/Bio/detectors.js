@@ -146,7 +146,9 @@ class BioPackageDetectors extends DG.Package {
   /** Detector MUST NOT be async, causes error:
    *  Concurrent modification during iteration: Instance of 'JSArray<Column>'.
    */
+  //meta.role: semTypeDetector
   //tags: semTypeDetector
+  //meta.skipTest: GROK-17630
   //input: column col
   //output: string semType
   detectMacromolecule(col) {
@@ -433,7 +435,7 @@ class BioPackageDetectors extends DG.Package {
         return symbol;
       for (let cI = 1; cI < symbolLen - 1; ++cI) {
         const c = symbol[cI];
-        if (this.forbiddenMulticharMiddle.includes(c))
+        if (this.forbiddenMulticharAll.includes(c))
           return symbol;
       }
       if (symbol.match(/^\d+\W+.*/))
@@ -630,6 +632,7 @@ class BioPackageDetectors extends DG.Package {
   // -- autostart --
 
   //name: autostart
+  //meta.role: autostart
   //tags: autostart
   //description: Bio bootstrap
   autostart() {

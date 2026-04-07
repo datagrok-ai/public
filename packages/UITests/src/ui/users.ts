@@ -1,4 +1,4 @@
-import { after, before, category, expect, test, awaitCheck, delay } from '@datagrok-libraries/utils/src/test';
+import { after, before, category, expect, test, awaitCheck, delay } from '@datagrok-libraries/test/src/test';
 import * as grok from 'datagrok-api/grok';
 //import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
@@ -6,8 +6,7 @@ import * as DG from 'datagrok-api/dg';
 
 category('UI: Users', () => {
   before(async () => {
-    const mng: DG.TabPane = grok.shell.sidebar.getPane('Browse');
-    mng.header.click();
+    grok.shell.windows.showBrowse = true;
     await delay(1000);
     let platform: any;
     await awaitCheck(() => {
@@ -21,10 +20,6 @@ category('UI: Users', () => {
       .find((el) => el.textContent === 'Users') as HTMLElement;
     groups.click();
     await delay(500);
-
-    let userToDelete = await grok.dapi.users.filter('login = "newlogin"').first();;
-    if (userToDelete)
-      grok.dapi.users.delete(userToDelete);
   });
 
   /*
@@ -66,12 +61,11 @@ category('UI: Users', () => {
 
   test('actions.addUser', async () => {
     const user = DG.User.create();
-    user.login = 'newlogin';
+    user.login = crypto.randomUUID();
     user.status = DG.USER_STATUS.STATUS_NEW;
     user.firstName = 'new';
     user.lastName = 'user';
     await grok.dapi.users.save(user);
-    await grok.dapi.users.delete(user);
   });
 
   test('actions.addServiceUser', async () => {
@@ -100,8 +94,7 @@ category('UI: Users', () => {
     }, 'cannot load all users', 3000);
     const user = document.querySelector('.grok-gallery-grid')!.children[0] as HTMLElement;
     grok.shell.windows.showProperties = true;
-    const regex = new RegExp('Groups', 'g');
-    console.log('usr click')
+    const regex = new RegExp('Member of', 'g');
     user.click();
     await delay(100);
     await awaitCheck(() => {
@@ -112,13 +105,9 @@ category('UI: Users', () => {
     const userInfo = document.querySelector('.grok-entity-prop-panel') as HTMLElement;
     const pict = userInfo.querySelector('.grok-user-profile-picture');
     const desc = userInfo.innerText;
-    const b = (pict !== null) && desc.includes('Groups') && desc.includes('Joined');
+    const b = (pict !== null) && desc.includes('Member of') && desc.includes('Roles');
     expect(b, true);
   }, { timeout: 100000 });
-
-  after(async () => {
-    grok.shell.closeAll();
-  });
 
   async function showDialog(label: string) {
     const cng = Array.from(document.querySelectorAll('.ui-btn'))

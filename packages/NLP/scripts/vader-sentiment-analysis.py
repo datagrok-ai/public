@@ -5,7 +5,6 @@
 #input: column col {type: string} [Name of a text column where sentiments are expressed]
 #output: dataframe polarity {action: join(data)} [Column with distribution of polarity on the scale from -1 to 1]
 #output: dataframe sentiment {action: join(data)} [Column with the polarity interpretation]
-#tags: nlp
 #sample: tweets.csv
 #reference: https://github.com/cjhutto/vaderSentiment
 

@@ -4,7 +4,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {take} from 'rxjs/operators';
 import {ModelCatalogView} from './model-catalog-view';
-import {ModelHandler} from './model-handler';
+import {ModelHandler, MODEL_FILTER, isModel} from './model-handler';
 
 export interface ModelCatalogConfig {
   segment: string,
@@ -56,10 +56,10 @@ export function setModelCatalogEventHandlers(options: ModelCatalogConfig) {
   });
 
   grok.functions.onBeforeRunAction.subscribe((fc) => {
-    if (fc.func.hasTag('model')) {
+    if (isModel(fc.func)) {
       const view = findOrCreateViewWithCore(options);
       ViewClass.bindModel(view!, fc);
-    } else if (fc.inputs?.['call']?.func instanceof DG.Func && fc.inputs['call'].func.hasTag('model')) {
+    } else if (isModel(fc?.inputs?.['call']?.func)) {
       const view = findOrCreateViewWithCore(options);
       ViewClass.bindModel(view!, fc.inputs['call']);
     }
@@ -140,7 +140,7 @@ async function handleInitialUri(segment: string) {
   if (catlogUriSegmentIdx > 0) {
     if (catlogUriSegmentIdx + 1 < startPathSegments.length) {
       const shortName = startPathSegments[catlogUriSegmentIdx + 1];
-      const lst = await grok.dapi.functions.filter(`shortName = "${shortName}" and #model`).list();
+      const lst = await grok.dapi.functions.filter(`shortName = "${shortName}" and ${MODEL_FILTER}`).list();
       if (lst.length == 1) {
         const func = lst[0];
         const userGroups = await ModelHandler.getUserGroups();
@@ -157,7 +157,7 @@ async function handleInitialUri(segment: string) {
 export async function makeModelTreeBrowser(treeNode: DG.TreeViewGroup) {
   const NO_CATEGORY = 'Uncategorized' as const;
 
-  const modelList = await grok.dapi.functions.filter('(#model)').list();
+  const modelList = await grok.dapi.functions.filter(MODEL_FILTER).list();
   const departments = modelList.reduce((acc, model) => {
     if (model.options.department)
       acc.add(model.options.department);
@@ -213,7 +213,7 @@ export async function makeModelTreeBrowser(treeNode: DG.TreeViewGroup) {
 
         const processNode = process !== NO_CATEGORY ? hlNode.getOrCreateGroup(process, null, false): hlNode;
         processNode.onNodeExpanding.pipe(take(1)).subscribe(() => {
-          const modelRule = `(#model)`;
+          const modelRule = MODEL_FILTER;
           const depRules = department === NO_CATEGORY ? `(options.department = null)`: `(options.department in ("${department}"))`;
           const hlProcessRules = hlProcess === NO_CATEGORY ? `(options.HL_process = null)`: `(options.HL_process in ("${hlProcess}"))`;
           const processRules = process === NO_CATEGORY ? `(options.process = null)`: `(options.process in ("${process}"))`;

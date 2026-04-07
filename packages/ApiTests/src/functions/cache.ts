@@ -1,22 +1,22 @@
 /* eslint-disable */
-import {before, category, delay, expect, expectArray, test} from '@datagrok-libraries/utils/src/test';
+import {before, category, delay, expect, expectArray, test} from '@datagrok-libraries/test/src/test';
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import {check} from './utils';
 import {expectTable} from '../package';
 import dayjs from "dayjs";
 
-const demogHeavy = grok.data.demo.demog(5000000); // 90mb
-const demogMiddle = grok.data.demo.demog(1100000); // 20mb
-const demogLite = grok.data.demo.demog();
+let demogHeavy: DG.DataFrame | null = null;
+let demogMiddle: DG.DataFrame | null = null;
+let demogLite: DG.DataFrame | null = null;
 
 const demog = registerFunc('dataframe test_demog(string type)', (type: string) => {
   if (type === 'h')
-    return demogHeavy;
+    return demogHeavy ??= grok.data.demo.demog(5000000);
   else if (type === 'm')
-    return demogMiddle;
+    return demogMiddle ??= grok.data.demo.demog(1100000);
   else
-    return demogLite;
+    return demogLite ??= grok.data.demo.demog();
 }, false, '0 0 23 * *');
 
 /** Creates a function that returns the parameter */

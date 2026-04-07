@@ -41,8 +41,8 @@ export function molecularWeight(sequence: string, additionalWeightsObj?: any) : 
 }
 
 //name: Oligo Batch Calculator
-//tags: app
 //meta.browsePath: Peptides | Oligo Toolkit
+//meta.role: app
 export async function OligoBatchCalculatorApp() : Promise<void> {
   await PackageFunctions.OligoBatchCalculatorApp();
 }

@@ -2,7 +2,7 @@
 title: "Batch edit"
 ---
 
-Allows to view or edit specified attributes for the specified subsets of rows in the current table. If all of the values
+Lets you view or edit specified attributes for specified subsets of rows in the current table. If all values
 in the column are the same, that value is shown in the corresponding field.
 
 Use the "Rows" combo box to choose the subset of rows to edit:

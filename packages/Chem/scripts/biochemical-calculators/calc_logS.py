@@ -4,7 +4,7 @@
 #environment: channels: [conda-forge, defaults], dependencies: [python=3.8, scikit-learn=0.23.2, numpy=1.19.5, pandas=1.3.5, rdkit, {pip: [mordred, xgboost]}]
 #input: dataframe table
 #input: column molecules {caption: Molecules column}
-#tags: Transform
+#meta.role: transform
 #meta.method_info.author: Kjell Jorner, et al.
 #meta.method_info.year: 2021
 #meta.method_info.package: AqSolPred
@@ -19,11 +19,14 @@ from rdkit import Chem
 from mordred import Calculator, descriptors
 import grok.dapi.packages as packages
 
+"""
+WARNING
+-------
 
-#! WARNING: This script currently fails to create the environment due to a timeout error when resolving conda dependencies.
-#! WARNING: This is most likely due to a very particular and old version of scikit-learn (0.23.2) that was used to encode the models that the AqSolPred_Predictor class uses.
-#! WARNING: The plan is to eventually recreate these models in datagrok idiom or at the very least use the dockerized version of this prediction method instead of inline environment.
-
+This script currently fails to create the environment due to a timeout error when resolving conda dependencies.
+This is most likely due to a very particular and old version of scikit-learn (0.23.2) that was used to encode the models that the AqSolPred_Predictor class uses.
+The plan is to eventually recreate these models in datagrok idiom or at the very least use the dockerized version of this prediction method instead of inline environment.
+"""
 
 class AqSolPred_Predictor:
     """

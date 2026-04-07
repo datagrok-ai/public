@@ -232,9 +232,7 @@ consider:
 
 ## Development
 
-A JavaScript package runs inside the Datagrok platform, which makes the development and debugging experience different
-compared to the more traditional web applications. Essentially, the packages are developed locally, but the platform
-runs remotely. To enable the best possible experience for developers, we established a workflow where the package is
+You develop packages locally, but they run inside the remote Datagrok platform. To enable the best possible experience for developers, we established a workflow where the package is
 uploaded to the remote server at startup, and then gets served from the server. By associating local JavaScript files
 with the remote sources in your favorite IDE, it is possible to hide the complexity of that scenario. For instance, you
 can set breakpoints, do step-by-step execution and generally debug the program in the regular way. Of course, you can
@@ -265,9 +263,8 @@ the `scripts` section in the `package.json` file.
 
 ### Managing dependencies
 
-During the development of your plugin, your new code might start depending on new unreleased features 
-in the core, libraries, or other plugins. Our tooling supports all these cases, but you have to properly
-annotate the nature of the dependencies:
+Your plugin may depend on unreleased features in the core, libraries, or other
+plugins. Our tooling handles this, but you must annotate the dependencies:
 
 * **Dependency on the new code in the libraries**. Modify the package.json file in your plugin, and change
 the library path to the relative path of the corresponding library, like that:
@@ -283,6 +280,15 @@ the library path to the relative path of the corresponding library, like that:
   
   CI-CD will automatically increment package version of the library, and publish
   the plugin.
+
+  :::warning Important for Public Release
+
+  Check the dependencies of the library you are linking to! If the library (e.g., `utils`) depends on the local
+API (`"datagrok-api": "../../js-api"`), your package will **not** be deployed to the public environment. The CI/CD
+pipeline interprets this transitive dependency as a requirement for the unreleased core platform. To ensure your package
+auto-updates on public, the libraries it uses must reference a published version of `datagrok-api`, not the local path.
+  
+  :::
   
 * **Dependency on the latest JS API**: Update the package.json like that:
   ```
@@ -438,6 +444,14 @@ through command line:
 ```js
 grok publish <url> -k <dev-key>
 ```
+
+#### Troubleshooting Public Releases
+
+If you committed a version increment to `master` but the package was not updated on the public environment:
+
+* **Check Transitive Dependencies**: Verify if any libraries you depend on (e.g., `@datagrok-libraries/utils`) are
+currently linked to the local API source (`../../js-api`). If a library forces a dependency on the local API, the build
+system assumes the package requires unreleased core features and prevents deployment to the stable public environment.
 
 ### Sharing
 

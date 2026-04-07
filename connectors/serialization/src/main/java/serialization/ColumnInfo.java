@@ -1,10 +1,7 @@
 package serialization;
 
-import java.util.*;
 import com.google.gson.annotations.SerializedName;
 
-
-/// Represents [Column] metadata.
 public class ColumnInfo {
     @SerializedName("#type")
     public String _type;
@@ -14,9 +11,9 @@ public class ColumnInfo {
     public String name;
     public String type;
 
-    public ColumnInfo(Column c) {
+    public ColumnInfo(Column<?> c) {
         _type = "ColumnInfo";
-        name = c.name;
+        name = c.getName();
         type = c.getType();
     }
 }

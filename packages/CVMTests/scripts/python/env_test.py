@@ -1,7 +1,7 @@
 #name: Python Anchors Count
 #description: anchors count in html
 #language: python
-#environment: channels: [conda-forge, defaults], dependencies: [python=3.7, pip=22.1.2, {pip: [beautifulsoup4,]}]
+#environment: channels: [conda-forge, defaults], dependencies: [python=3.9, pip, {pip: [beautifulsoup4,]}]
 #input: string html
 #output: int count
 

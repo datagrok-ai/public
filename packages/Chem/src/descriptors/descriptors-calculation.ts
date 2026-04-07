@@ -73,7 +73,7 @@ export function getDescriptorsSingle(smiles: string): DG.Widget {
       update();
     });
   });
-  selectButton.style.marginTop = '20px';
+  selectButton.classList.add('chem-descriptors-select-btn');
 
   const update = () => {
     removeChildren(result);
@@ -175,7 +175,7 @@ function openDescriptorsDialog(selected: any, onOK: onOk, dataFrame?: DG.DataFra
   const items: DG.TreeViewNode[] = [];
   const selectedDescriptors: { [_: string]: string } = {};
 
-  const countLabel = ui.label('0 checked');
+  const countLabel = ui.label(`${selected.length} checked`);
   countLabel.style.marginLeft = '24px';
   countLabel.style.display = 'inline-flex';
 

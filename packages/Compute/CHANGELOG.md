@@ -1,5 +1,11 @@
 # Compute changelog
 
+## 1.45.0 (2026-03-19)
+
+- Mark as a leagacy package
+- ModelHub is moved to Compute2
+- Fitting and SA are moved to Compute2
+
 ## 1.44.6 (2025-11-20)
 
 - Update deps

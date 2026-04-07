@@ -1,6 +1,6 @@
 # Phylocanvas.gl
 
-[_Phylocanvas.gl_](https://www.phylocanvas.gl/) is a WebLG based viewer enhanced to scale to hundreds of thousands
+[_Phylocanvas.gl_](https://www.phylocanvas.gl/) is a WebGL-based viewer enhanced to scale to hundreds of thousands
 of leaves.
 
 ## Tree Types

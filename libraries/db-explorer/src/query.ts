@@ -30,10 +30,20 @@ export async function queryDB(
   const startCharCode = 98; // ascii b
   const [nbs, nbe] = getConnectionNameBrackets(connection);
 
-  const applicableJoins = joinOptions.filter((opt) => opt.fromTable === tableName);
+  const applicableJoins = joinOptions.filter((opt) => opt.fromTable.toLowerCase() === tableName.toLowerCase() && (!opt.fromSchema || opt.fromSchema.toLowerCase() === schemaName.toLowerCase()));
 
   const tableAliases = applicableJoins.map((_, i) => String.fromCharCode(startCharCode + i));
   const colNamesToTablesMap: {[colName: string]: string} = {};
+  const colNamesToSchemasMap: {[colName: string]: string} = {};
+  const ciMapGet = (map: {[k: string]: string}, key: string): string | undefined => {
+    if (map[key] !== undefined) return map[key];
+    const lk = key.toLowerCase();
+    for (const k of Object.keys(map)) {
+      if (k.toLowerCase() === lk)
+        return map[k];
+    }
+    return undefined;
+  };
   const otherCols =
     applicableJoins
       .map((opt, i) => {
@@ -44,9 +54,11 @@ export async function queryDB(
           const parts = col.split(/ as /i);
           if (parts.length > 1) {
             colNamesToTablesMap[parts[1].trim()] = opt.tableName;
+            colNamesToSchemasMap[parts[1].trim()] = opt.onSchema ?? schemaName;
             return `${alias}.${nbs}${parts[0].trim()}${nbe} as ${nbs}${parts[1].trim()}${nbe}`;
           }
           colNamesToTablesMap[col] = opt.tableName;
+          colNamesToSchemasMap[col] = opt.onSchema ?? schemaName;
           return `${alias}.${nbs}${col}${nbe}`;
         }).join(', ');
       })
@@ -54,16 +66,9 @@ export async function queryDB(
   const joinStr = applicableJoins
     .map((opt, i) => {
       const alias = tableAliases[i];
-      return `left join ${nbs}${schemaName}${nbe}.${nbs}${opt.tableName}${nbe} ${alias} on a.${nbs}${opt.columnName}${nbe} = ${alias}.${nbs}${opt.onColumn}${nbe}`;
+      return `left join ${nbs}${opt.onSchema ?? schemaName}${nbe}.${nbs}${opt.tableName}${nbe} ${alias} on a.${nbs}${opt.columnName}${nbe} = ${alias}.${nbs}${opt.onColumn}${nbe}`;
     })
     .join(' ');
-  // let qb = connection.buildQuery(`"${schemaName}".${tableName}`).selectAll();
-  // applicableJoins.forEach((opt, i) => {
-  //   const alias = tableAliases[i];
-  //   qb = qb.leftJoin(`${schemaName}.${opt.tableName}`, [opt.columnName], [opt.onColumn], alias);
-  // });
-  // qb = qb.where(match, ` = ${matchValueStr}`);
-  // console.log(qb.build().query);
   const isExampleQuery = match === '' && matchValue === ''; // used for setup editor, will not happen otherwise if not intentionally
 
   const q = connection.query(
@@ -87,19 +92,19 @@ export async function queryDB(
     const colName = col.name?.trim();
     if (!colName)
       continue; // should not happen
-    col.setTag(DG.Tags.DbSchema, schemaName);
+    col.setTag(DG.Tags.DbSchema, ciMapGet(colNamesToSchemasMap, colName) ?? schemaName);
     const existingTableTag = col.getTag(DG.Tags.DbTable);
     if (!!existingTableTag && existingTableTag !== 'null') {
       // do nothing, the table is already set
       continue;
     }
-    const tableForCol = colNamesToTablesMap[colName];
+    const tableForCol = ciMapGet(colNamesToTablesMap, colName);
     if (tableForCol) {
       col.setTag(DG.Tags.DbTable, tableForCol);
     } else if (applicableJoins
       .some(
         (tn) => /\(\d\)$/.test(colName) ||
-          (colName.startsWith(tn.tableName) && colName.length > tn.tableName.length + 1 && tn.select.includes(colName.substring(tn.tableName.length + 1)))
+          (colName.toLowerCase().startsWith(tn.tableName.toLowerCase()) && colName.length > tn.tableName.length + 1 && tn.select.some((s) => s.toLowerCase() === colName.substring(tn.tableName.length + 1).toLowerCase()))
       )
     ) {
       // not sure in this case, but try to avoid setting wrong table

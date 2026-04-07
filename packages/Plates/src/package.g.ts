@@ -9,31 +9,31 @@ export async function assayPlatesDemo() : Promise<void> {
   await PackageFunctions.assayPlatesDemo();
 }
 
-//tags: init
-export function _initPlates() : void {
-  PackageFunctions._initPlates();
+//meta.role: init
+export async function _initPlates() : Promise<void> {
+  await PackageFunctions._initPlates();
 }
 
-//tags: folderViewer
 //input: file folder 
 //input: list<file> files 
 //output: dynamic result
+//meta.role: folderViewer
 export async function platesFolderPreview(folder: DG.FileInfo, files: DG.FileInfo[]) {
   return await PackageFunctions.platesFolderPreview(folder, files);
 }
 
-//tags: fileViewer
 //input: file file 
 //output: view result
+//meta.role: fileViewer
 //meta.fileViewer: txt
 //meta.fileViewerCheck: Plates:checkFileIsPlate
 export function previewPlate(file: DG.FileInfo) : any {
   return PackageFunctions.previewPlate(file);
 }
 
-//tags: file-handler
 //input: string fileContent 
 //output: list<dataframe> result
+//meta.role: fileHandler
 //meta.ext: txt
 //meta.fileViewerCheck: Plates:checkFileIsPlate
 export async function importPlate(fileContent: string) : Promise<any> {
@@ -47,8 +47,8 @@ export async function checkExcelIsPlate(content: Uint8Array) : Promise<boolean> 
   return await PackageFunctions.checkExcelIsPlate(content);
 }
 
-//tags: file-handler
 //input: blob fileContent 
+//meta.role: fileHandler
 //meta.ext: xlsx
 //meta.fileViewerCheck: Plates:checkExcelIsPlate
 export async function importPlateXlsx(fileContent: Uint8Array) : Promise<any> {
@@ -56,9 +56,9 @@ export async function importPlateXlsx(fileContent: Uint8Array) : Promise<any> {
 }
 
 //name: viewPlateXlsx
-//tags: fileViewer
 //input: file file 
 //output: view result
+//meta.role: fileViewer
 //meta.fileViewer: xlsx
 //meta.fileViewerCheck: Plates:checkExcelIsPlate
 export async function previewPlateXlsx(file: DG.FileInfo) : Promise<any> {
@@ -79,13 +79,15 @@ export function checkFileIsPlate(content: string) : boolean {
 }
 
 //name: Plates
-//tags: app
 //output: view result
+//meta.role: app
 export function platesApp() : any {
   return PackageFunctions.platesApp();
 }
 
 //input: dynamic treeNode 
+//meta.role: appTreeBrowser
+//meta.app: Plates
 export async function platesAppTreeBrowser(treeNode: any) : Promise<void> {
   await PackageFunctions.platesAppTreeBrowser(treeNode);
 }
@@ -100,14 +102,9 @@ export async function getPlateByBarcode(barcode: string) : Promise<any> {
 export async function createDummyPlateData() : Promise<void> {
   await PackageFunctions.createDummyPlateData();
 }
-
-//tags: init
-export async function _init() : Promise<void> {
-  await PackageFunctions._init();
-}
 //name: PlateGridCellRenderer
-//tags: cellRenderer
 //output: grid_cell_renderer renderer
+//meta.role: cellRenderer
 //meta.cellType: Plate
 export function _PlateGridCellRenderer() {
   return new PlateGridCellRenderer();

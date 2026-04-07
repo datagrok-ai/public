@@ -3,7 +3,7 @@ import * as grok from 'datagrok-api/grok';
 import {readDataframe, _testSearchSubstructure, _testSearchSubstructureAllParameters,
   _testSearchSubstructureSARSmall,
   checkBitSetIndices} from './utils';
-import {before, category, test} from '@datagrok-libraries/utils/src/test';
+import {before, category, test} from '@datagrok-libraries/test/src/test';
 import {_package} from '../package-test';
 import * as chemCommonRdKit from '../utils/chem-common-rdkit';
 import {FILTER_TYPES, chemSubstructureSearchLibrary} from '../chem-searches';
@@ -259,6 +259,41 @@ category('substructure search: search types', () => {
 
 });
 
+category('substructure search: stereo agnostic', () => {
+
+  before(async () => {
+    if (!chemCommonRdKit.moduleInitialized) {
+      chemCommonRdKit.setRdKitWebRoot(_package.webRoot);
+      await chemCommonRdKit.initRdKitModuleLocal();
+    }
+  });
+
+  test('tetrahedral_stereo', async () => {
+    // Query R-fluoroethanol -> should match R, S, and flat (indices 0, 1, 2)
+    await testStereoAgnosticSearch('C[C@@H](O)F', [0, 1, 2]);
+  });
+
+  test('cis_trans_stereo', async () => {
+    // Query trans-chlorofluoroethene -> should match trans, cis, and flat (indices 3, 4, 5)
+    await testStereoAgnosticSearch('F/C=C/Cl', [3, 4, 5]);
+  });
+
+  test('multiple_stereocenters', async () => {
+    // Query trans-cyclohexane-1,4-diol -> should match trans, cis, and flat (indices 6, 7, 8)
+    await testStereoAgnosticSearch('O[C@@H]1CC[C@H](O)CC1', [6, 7, 8]);
+  });
+
+  test('complex_stereo_glucose', async () => {
+    // Query D-glucose -> should match D-glucose, L-glucose, and flat (indices 9, 10, 11)
+    await testStereoAgnosticSearch('C([C@H]1[C@@H]([C@@H]([C@H]([C@H](O1)O)O)O)O)O', [9, 10, 11]);
+  });
+
+  test('flat_query', async () => {
+    // Query without stereo -> should still match all stereoisomers (indices 0, 1, 2)
+    await testStereoAgnosticSearch('CC(O)F', [0, 1, 2]);
+  });
+});
+
 
 async function performanceTestWithConsoleLog(molCol: DG.Column, query: string) {
   const startTime = performance.now();
@@ -272,9 +307,17 @@ async function performanceTestWithConsoleLog(molCol: DG.Column, query: string) {
 }
 
 async function testSearchType(query: string, searchType: SubstructureSearchType, trueIndices: number[],
-  fp?: Fingerprint, similarity?: number) {
+  fp?: Fingerprint, similarity?: number, stereoAgnostic?: boolean) {
   const df = await readDataframe('tests/test_search_types.csv');
-  const res = await chemSubstructureSearchLibrary(df.col('canonical_smiles')!, query, '', FILTER_TYPES.substructure, false, true, searchType, similarity, fp);
+  const res = await chemSubstructureSearchLibrary(df.col('canonical_smiles')!, query, '', FILTER_TYPES.substructure, false, true, searchType, similarity, fp, stereoAgnostic);
+  const bitset = DG.BitSet.fromBytes(res.buffer.buffer, df.rowCount);
+  checkBitSetIndices(bitset, trueIndices);
+}
+
+async function testStereoAgnosticSearch(query: string, trueIndices: number[]) {
+  const df = await readDataframe('stereo-agnostic-test.csv');
+  const res = await chemSubstructureSearchLibrary(df.col('smiles')!, query, '', FILTER_TYPES.substructure, false, true,
+    SubstructureSearchType.EXACT_MATCH, undefined, undefined, true);
   const bitset = DG.BitSet.fromBytes(res.buffer.buffer, df.rowCount);
   checkBitSetIndices(bitset, trueIndices);
 }

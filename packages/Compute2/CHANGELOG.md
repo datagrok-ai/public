@@ -1,5 +1,14 @@
 # Compute2 changelog
 
+## 1.4.0 (2026-03-19)
+
+- 1.27 platform support
+- More export improvements
+
+## 1.3.22 (2026-02-19)
+
+- Workflows export customization options
+
 ## 1.3.21 (2025-11-24)
 
 - Show workflow help button in ribbon panel as well

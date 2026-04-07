@@ -8,7 +8,8 @@ SELECT org.name AS organism, org.identifier as organism_identifier, at.name AS a
     ar.result_value, ar.units, seq.sequence AS antibody_sequence, seq.identifier as sequence_identifier,
     seq.name AS antibody_name, adc.name as adc_name, adc.identifier as adc_identifier, adc.glyph AS glyph,
     d.name AS drug_name, d.identifier as drug_identifier, d.smiles AS drug_smiles,
-    l.identifier as linker_identifier, l.linker_type, l.linker_molecule_smiles, l.linker_sequence, l.linker_type
+    l.identifier as linker_identifier, l.linker_type, l.linker_molecule_smiles, l.linker_sequence,
+    org.id as orgID, at.id as assay_type_id, seq.id as seqId, ar.id as assay_res_id, adc.id as adc_id, d.id as drug_id
 FROM biologics.assay_results ar
 LEFT JOIN biologics.assay_types at ON ar.assay_id = at.id
 LEFT JOIN biologics.target_organisms org ON ar.target_organism_id = org.id

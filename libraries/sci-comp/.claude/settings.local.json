@@ -1,0 +1,19 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx eslint:*)",
+      "Bash(npx tsx:*)",
+      "Bash(npx jest:*)",
+      "Bash(npm test:*)",
+      "Bash(npx ts-node:*)",
+      "Bash(npm run:*)",
+      "Edit(/.claude/skills/add-optimizer/**)",
+      "Read(//c/Users/vmaka/Datagrok/public/.claude/skills/implement-interactive-scientific-application-from-spec/references/reference/**)",
+      "WebFetch(domain:en.wikipedia.org)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code} %{url_effective}\\\\n\" -L \"https://en.wikipedia.org/wiki/Test_functions_for_optimization\" \"https://en.wikipedia.org/wiki/Rosenbrock_function\" \"https://en.wikipedia.org/wiki/Himmelblau%27s_function\" \"https://en.wikipedia.org/wiki/Rastrigin_function\" \"https://en.wikipedia.org/wiki/Ackley_function\" \"https://en.wikipedia.org/wiki/Griewank_function\" \"https://en.wikipedia.org/wiki/Styblinski%E2%80%93Tang_function\")"
+    ],
+    "additionalDirectories": [
+      "c:\\Users\\vmaka\\Datagrok\\public\\libraries\\sci-comp\\.claude\\skills"
+    ]
+  }
+}

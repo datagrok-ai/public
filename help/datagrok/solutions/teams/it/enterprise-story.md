@@ -25,7 +25,7 @@ lost. Quite often, the most common technology denominator is an Excel file passe
 
 ## Solution
 
-In order to address all of these issues, we developed Datagrok, a unique, next-generation data platform. Out-of-the-box,
+To address all of these issues, we developed Datagrok, a unique, next-generation data platform. Out-of-the-box,
 it offers the most popular common data-related functionality (storage, ingestion, transformation, analysis,
 visualization, publishing, reporting, predicting, etc). It does it in a centralized, coherent manner, with all parts
 based on the same solid infrastructure, similar design and usage patterns, and complete audit trail.
@@ -46,7 +46,7 @@ applications, and a lot more.
 ### Data retrieval and governance
 
 If your organization already has ten different databases, the last thing you want is another, all-encompassing database.
-Instead, Grok serves as an intelligence layer, and seamlessly and efficiently works with all the popular
+Instead, Datagrok serves as an intelligence layer and seamlessly works with all popular
 databases (30+ connectors). Connections and queries are centrally managed and are subject to our role-based privilege
 management system. Queries can be used as functions in scripts. All objects can be annotated with user-defined metadata.
 Built-in data provenance is used for tools like data lineage, or impact analysis. Database schemas can be visually
@@ -86,12 +86,12 @@ functions that are available in any other context (for instance, an ETL or a cus
 A number of popular techniques are available out-of-the box as interactive tools: multivariate analysis, missing value
 imputation, clustering, and PCA/PLS.
 
-Moreover, predictive modeling is a first-class citizen in the Grok ecosystem, which makes it easy even for non-technical
+Moreover, predictive modeling is a first-class citizen in the Datagrok ecosystem, which makes it easy even for non-technical
 users to train, assess, apply, or share predictive models. We support popular model building backends, including H2O and
 OpenCPU, as well as custom models developed in any supported languages.
 
-Model deployment is another hot topic nowadays; in order to extract value from the model, it has to be used by the right
-people in the right contexts. Again, since the platform is used for data browsing and exploration, we have multiple
+Model deployment is another hot topic nowadays. To extract value from the model, the right
+people must use it in the right contexts. Again, since the platform is used for data browsing and exploration, we have multiple
 options available, such as explicitly running models against the datasets (including automatic model suggestions), data
 augmentation, or using models in custom applications.
 
@@ -116,9 +116,9 @@ molecule-related information panels will show up when user clicks on a molecule 
 
 ### Application development
 
-The platform provides all necessary building blocks for developing modern data-driven solutions, and a way for a
+The platform provides all necessary building blocks for developing modern data-driven solutions, and a way for
 non-developer users to put it all together. However, in terms of power and flexibility, nothing compares to developing
-applications using the tools and languages native the for the environment, which in our case is JavaScript.
+applications using the tools and languages native the for the environment, which in this case is JavaScript.
 
 Datagrok exposes a powerful JavaScript API that lets you control anything within the platform, and a standard way to
 develop, debug, and publish your custom code. It is possible to extend and enrich the platform in many ways, including

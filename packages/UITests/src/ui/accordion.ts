@@ -1,4 +1,4 @@
-import {after, before, category, test} from '@datagrok-libraries/utils/src/test';
+import {after, before, category, test} from '@datagrok-libraries/test/src/test';
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
@@ -45,13 +45,8 @@ category('UI: Accordion', () => {
   });
 
   test('accordion.removePane', async () => {
-    debugger
     acc.removePane(acc.getPane('New pane3'));
     if (acc.getPane('New pane3') != undefined)
       throw new Error('getPane error');
-  });
-
-  after(async () => {
-    grok.shell.closeAll();
   });
 }, {clear: false , owner: 'aparamonov@datagrok.ai' });

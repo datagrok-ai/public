@@ -20,19 +20,12 @@ public class SerializationTest {
     @Test
     public void testSerialization() throws IOException, InterruptedException {
         Column[] columns = new Column[6];
-        columns[0] = new FloatColumn(new Float[] {1.0F, 2.0F, 3.0F, 4.0F});
-        columns[1] = new IntColumn(new Integer[] {1, 2, 3, 4});
-        columns[2] = new StringColumn(new String[] {"A", "B", "C", "D"});
-        columns[3] = new BoolColumn(new Boolean[] {true, false, true, false});
-        columns[4] = new DateTimeColumn(new Double[] {1099511627776000.0, 2099511627777000.0, FloatColumn.None, FloatColumn.None});
-        columns[5] = new BigIntColumn(new String[] {"1234567890", "2345678901", "3456789012", "4567890123"});
-
-        columns[0].name = "double";
-        columns[1].name = "int";
-        columns[2].name = "string";
-        columns[3].name = "bool";
-        columns[4].name = "datetime";
-        columns[5].name = "bigint";
+        columns[0] = new FloatColumn("double", new Float[] {1.0F, 2.0F, 3.0F, 4.0F});
+        columns[1] = new IntColumn("int", new Integer[] {1, 2, 3, 4});
+        columns[2] = new StringColumn("string", new String[] {"A", "B", "C", "D"});
+        columns[3] = new BoolColumn("bool", new Boolean[] {true, false, true, false});
+        columns[4] = new DateTimeColumn("datetime", new Double[] {1099511627776000.0, 2099511627777000.0, FloatColumn.None, FloatColumn.None});
+        columns[5] = new BigIntColumn("bigint", new String[] {"1234567890", "2345678901", "3456789012", "4567890123"});
 
         DataFrame df = new DataFrame();
         df.addColumns(columns);

@@ -12,7 +12,7 @@ This feature is in Beta
 
 :::
 
-You can tag anything in Datagrok with custom metadata ("sticky meta"). This sticky meta can serve different purposes. For example, you can annotate a molecule or add arbitrary information about your users. The information about tagged objects and associated metadata are stored in a [Postgres database](../../develop/under-the-hood/infrastructure.md#1-core-components) and seamlessly integrated across the platform, including searching and filtering capabilities based on metadata parameters.
+You can tag anything in Datagrok with custom metadata ("sticky meta"). Sticky meta can serve different purposes. For example, you can annotate a molecule or add arbitrary information about your users. The tagged objects and associated metadata are stored in a [Postgres database](../../develop/under-the-hood/infrastructure.md#1-core-components) and seamlessly integrated across the platform, including searching and filtering based on metadata parameters.
 
 ## Configuring metadata
 
@@ -74,7 +74,7 @@ To add metadata to a data point, click it and enter the details in the **Context
 
 Sticky columns are marked by a blue circle in the header. You can add or edit metadata directly in these columns. To add metadata to multiple objects at once, use the [batch edit](../../transform/batch-edit.md) option.
 
-Sticky columns in a dataframe act like standard columns. For example, you can use them to filter data, visualize information using viewers, and so on. However, sticky columns are unique because they link directly to the metadata database. This means removing a sticky column from a dataset doesn't delete its metadata. What's more, metadata updates anywhere on the platform are shared instantly across contexts. For example, commenting on a molecule in a sticky column instantly updates the molecule's tooltip, and other users can see your comment in their datasets too.
+Sticky columns in a dataframe act like standard columns. For example, you can use them to filter data or visualize information using viewers. However, sticky columns are unique because they link directly to the metadata database. Removing a sticky column from a dataset doesn't delete its metadata. Metadata updates anywhere on the platform are shared instantly across contexts. For example, commenting on a molecule in a sticky column instantly updates the molecule's tooltip, and other users can see your comment in their datasets too.
 
 ## Security and governance
 

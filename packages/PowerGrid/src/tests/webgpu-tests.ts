@@ -1,7 +1,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
-import {awaitCheck, category, expect, expectArray, test, testEvent} from '@datagrok-libraries/utils/src/test';
+import {awaitCheck, category, expect, expectArray, test, testEvent} from '@datagrok-libraries/test/src/test';
 import {getGPUDevice} from '@datagrok-libraries/math/src/webGPU/getGPUDevice';
 
 const sizes = [10000, 1000000, 10000000];
@@ -9,8 +9,8 @@ const types = ['dot', 'circle'];
 const consecutiveLaunches = 3;
 
 category('webgpu', async () => {
-  const render = DG.Func.find({tags: ['scWebGPURender']})[0];
-  const hitTest = DG.Func.find({tags: ['scWebGPUPointHitTest']})[0];
+  const render = DG.Func.byName('_scWebGPURender');
+  const hitTest = DG.Func.byName('_scWebGPUPointHitTest');
   const gpuDevice = await getGPUDevice();
 
   types.forEach((t) => {

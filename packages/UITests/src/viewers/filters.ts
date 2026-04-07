@@ -2,7 +2,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
-import { category, test, awaitCheck, expectArray, before, after, delay } from '@datagrok-libraries/utils/src/test';
+import { category, test, awaitCheck, expectArray, before, after, delay } from '@datagrok-libraries/test/src/test';
 import $ from 'cash-dom';
 
 category('Viewers: Filters', () => {
@@ -83,10 +83,6 @@ category('Viewers: Filters: Collaborative filtering', () => {
     tv.resetLayout();
     await delay(1000);
   }, {skipReason: 'GROK-16405'});
-
-  after(async () => {
-    grok.shell.closeAll();
-  });
 
   // FILTERS
 

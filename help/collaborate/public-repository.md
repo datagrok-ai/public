@@ -35,7 +35,7 @@ and [contributor's guide](https://github.com/datagrok-ai/public/blob/master/CONT
 
 ## Academia
 
-Datagrok grants free license to academic institutions to use it in any context, either research or educational.
+Datagrok grants a free license to academic institutions to use it in any context, either research or educational.
 Moreover, publishing scientific methods as Datagrok packages provides a number of unique benefits that are specifically
 important to academia:
 

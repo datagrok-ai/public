@@ -54,6 +54,7 @@ public abstract class JdbcDataProvider extends DataProvider {
         return props;
     }
 
+    @SuppressWarnings("unchecked")
     public Properties getJdbcProperties(DataConnection conn) {
         java.util.Properties props = new Properties();
         if (conn.parameters.containsKey("jdbcProperties") && this.descriptor.jdbcPropertiesTemplate != null) {
@@ -94,7 +95,7 @@ public abstract class JdbcDataProvider extends DataProvider {
     }
 
     public void testConnection(DataConnection conn) throws GrokConnectException {
-        try (Connection connection = getConnection(conn)) {
+        try (Connection ignored = getConnection(conn)) {
             // just open and close the connection
         } catch (SQLException e) {
             throw new GrokConnectException(e);
@@ -118,6 +119,27 @@ public abstract class JdbcDataProvider extends DataProvider {
         queryRun.func.connection = connection;
 
         return execute(queryRun);
+    }
+
+    public DataFrame getCatalogs(DataConnection connection) throws GrokConnectException {
+        try (Connection db = getConnection(connection)) {
+            return readCatalogsFromMetadata(db);
+        } catch (SQLException e) {
+            throw new GrokConnectException(e);
+        }
+    }
+
+    protected DataFrame readCatalogsFromMetadata(Connection connection) throws SQLException {
+        DataFrame result = DataFrame.fromColumns(new StringColumn("catalog_name"));
+        try (ResultSet rs = connection.getMetaData().getCatalogs()) {
+            List<String> catalogs = new ArrayList<>();
+            while (rs.next())
+                catalogs.add(rs.getString("TABLE_CAT"));
+            Collections.sort(catalogs);
+            for (String catalog : catalogs)
+                result.addRow(catalog);
+        }
+        return result;
     }
 
     public String getCommentsQuery(DataConnection connection) throws GrokConnectException {
@@ -558,6 +580,10 @@ public abstract class JdbcDataProvider extends DataProvider {
             result.query = "(" + matcher.colName + " = @" + paramName + ")";
             result.params.add(new FuncParam(Types.BIG_INT, paramName, matcher.values.stream().findFirst().orElse(null)));
         }
+        else if (matcher.op.equals(PatternMatcher.IN) || matcher.op.equals(PatternMatcher.NOT_IN)) {
+            String names = paramToNamesString(paramName, matcher, "bigint", result);
+            result.query = getInQuery(matcher, names);
+        }
         else
             result.query = "(1 = 1)";
         return result;
@@ -574,10 +600,10 @@ public abstract class JdbcDataProvider extends DataProvider {
 
         String type = "string";
         String _query = "(LOWER(" + matcher.colName + ") LIKE @" + paramName + ")";
-        List<String> values = matcher.values;
+        List<Object> values = matcher.values;
         String value = null;
         if (values.size() > 0)
-            value = values.get(0).toLowerCase();
+            value = ((String) values.get(0)).toLowerCase();
 
         switch (matcher.op) {
             case PatternMatcher.EQUALS:
@@ -695,11 +721,19 @@ public abstract class JdbcDataProvider extends DataProvider {
         return "datetime('" + param.value.toString() + "')";
     }
 
-    public static java.util.Properties defaultConnectionProperties(DataConnection conn) {
+    public java.util.Properties defaultConnectionProperties(DataConnection conn) {
         java.util.Properties properties = new java.util.Properties();
         if (conn.credentials != null) {
-            setIfNotNull(properties, "user", conn.credentials.getLogin());
-            setIfNotNull(properties, "password", conn.credentials.getPassword());
+            String method = (String) conn.credentials.parameters.get("#chosen-auth-method");
+            boolean includeLogin = method == null || descriptor == null
+                    || descriptor.credentialsTemplate == null
+                    || descriptor.credentialsTemplate.stream()
+                        .filter(p -> p.name.equals(DbCredentials.LOGIN))
+                        .anyMatch(p -> p.category != null && p.category.contains(method));
+            if (includeLogin) {
+                setIfNotNull(properties, "user", conn.credentials.getLogin());
+                setIfNotNull(properties, "password", conn.credentials.getPassword());
+            }
         }
         return properties;
     }

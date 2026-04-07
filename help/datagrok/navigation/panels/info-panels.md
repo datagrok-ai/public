@@ -308,7 +308,7 @@ predictions = ExtractColumns(table, ["outcome"])
 Info pane scripts can use all features of the Datagrok platform, including predictive modeling capabilities. The
 following script would do the following behind the scenes when user clicks on a row that contains store address:
 
-* convert address to to demographic statistics (~50 features such as median income, age, etc)
+* convert address to demographic statistics (~50 features such as median income, age, etc)
 * using extracted statistics, predict yearly sales of a franchise store if it opens at that address
 
 ```

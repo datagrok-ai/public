@@ -15,7 +15,7 @@ import * as Utils from '@datagrok-libraries/compute-utils/shared-utils/utils';
 import {History} from '../History/History';
 import {ConsistencyInfo, FuncCallStateInfo} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/StateTreeNodes';
 import {FittingView, TargetDescription} from '@datagrok-libraries/compute-utils/function-views/src/fitting-view';
-import {dfToViewerMapping, richFunctionViewReport, SensitivityAnalysisView} from '@datagrok-libraries/compute-utils';
+import {richFunctionViewReport, SensitivityAnalysisView} from '@datagrok-libraries/compute-utils';
 import {RangeDescription} from '@datagrok-libraries/compute-utils/function-views/src/sensitivity-analysis-view';
 import {ScalarsPanel, ScalarState} from './ScalarsPanel';
 import {BehaviorSubject} from 'rxjs';
@@ -26,6 +26,8 @@ import {startWith, take, map} from 'rxjs/operators';
 import {useHelp} from '../../composables/use-help';
 import {useObservable} from '@vueuse/rxjs';
 import {_package} from '../../package-instance';
+import {getViewers} from '../../utils';
+
 
 interface ScalarsState {
   type: 'scalars',
@@ -43,6 +45,16 @@ interface DockSpawnConfigItem {
   'dock-spawn-dock-type'?: 'left' | 'right' | 'up' | 'down',
   'dock-spawn-dock-to'?: string,
   'dock-spawn-dock-ratio'?: number,
+}
+
+interface ExportDefinition {
+  name: string,
+  function: string,
+}
+
+interface ExportItem {
+  name: string,
+  handler: (arg?: any) => void,
 }
 
 type TabContent = Map<string, ScalarsState | DataFrameState>;
@@ -81,7 +93,6 @@ const getScalarContent = (funcCall: DG.FuncCall, prop: DG.Property) => {
 };
 
 const tabToProperties = (fc: DG.FuncCall) => {
-  const func = fc.func;
   const tabsToProps = getEmptyTabToProperties();
 
   const processDf = (dfProp: DG.Property, isOutput: boolean) => {
@@ -110,23 +121,23 @@ const tabToProperties = (fc: DG.FuncCall) => {
     return;
   };
 
-  func.inputs.forEach((inputProp) => {
-    if (inputProp.propertyType === DG.TYPE.DATA_FRAME) processDf(inputProp, false);
+  [...fc.inputParams.values()].forEach(({ property }) => {
+    if (property.propertyType === DG.TYPE.DATA_FRAME) processDf(property, false);
   });
 
-  func.outputs.forEach((outputProp) => {
-    if (outputProp.propertyType === DG.TYPE.DATA_FRAME) {
-      processDf(outputProp, true);
+  [...fc.outputParams.values()].forEach(({property}) => {
+    if (property.propertyType === DG.TYPE.DATA_FRAME) {
+      processDf(property, true);
       return;
     }
-    const category = outputProp.category === 'Misc' ? 'Output': outputProp.category;
+    const category = property.category === 'Misc' ? 'Output': property.category;
 
     const categoryProps = tabsToProps.outputs.get(category);
-    const content = getScalarContent(fc, outputProp);
+    const content = getScalarContent(fc, property);
     if (!content)
       return;
     const [rawValue, formattedValue, units] = content;
-    const scalarProp = {name: outputProp.name, friendlyName: outputProp.caption || outputProp.name, rawValue, formattedValue, units};
+    const scalarProp = {name: property.name, friendlyName: property.caption || property.name, rawValue, formattedValue, units};
     if (categoryProps && categoryProps.type === 'scalars')
       categoryProps.scalarsData.push(scalarProp);
     else
@@ -205,12 +216,13 @@ export const RichFunctionView = Vue.defineComponent({
       changeHelpFunc,
     } = useHelp();
 
+    const viewersHook = Vue.toRef(props, 'viewersHook');
+    const callMeta = Vue.toRef(props, 'callMeta');
+
     const currentCall = Vue.computed(() => Vue.markRaw(props.funcCall));
     const currentView = Vue.computed(() => Vue.markRaw(props.view));
     const currentUuid = Vue.computed(() => props.uuid);
     const isFormValid = Vue.ref(false);
-
-    const callMeta = Vue.computed(() => props.callMeta);
 
     const isOutputOutdated = Vue.computed(() => props.callState?.isOutputOutdated);
     const isRunning = Vue.computed(() => props.callState?.isRunning);
@@ -225,6 +237,7 @@ export const RichFunctionView = Vue.defineComponent({
     const visibleTabLabels = Vue.shallowRef([] as string[]);
     const activePanelTitle = Vue.shallowRef<string | undefined>(undefined);
     const dockSpawnConfig = Vue.shallowRef<Record<string, DockSpawnConfigItem>>({});
+    const customExports = Vue.ref<ExportDefinition[]>([]);
 
     const isSAenabled = Vue.ref(false);
     const isReportEnabled = Vue.ref(false);
@@ -247,9 +260,10 @@ export const RichFunctionView = Vue.defineComponent({
     // FuncCall related
     ////
 
+
     const {setViewerRef} = useViewersHook(
-      Vue.toRef(props, 'viewersHook'),
-      Vue.toRef(props, 'callMeta'),
+      viewersHook,
+      callMeta,
       currentCall,
     );
 
@@ -266,6 +280,7 @@ export const RichFunctionView = Vue.defineComponent({
       isFittingEnabled.value = Utils.getFeature(features, 'fitting', false);
       allowRerun.value = Utils.getFeature(features, 'rerun', false);
       runLabel.value = Utils.getRunLabel(call.func) ?? 'Run';
+      customExports.value = Utils.getCustomExports(call.func);
       dockSpawnConfig.value = Utils.getDockSpawnConfig(call.func);
     }, {immediate: true});
 
@@ -287,6 +302,36 @@ export const RichFunctionView = Vue.defineComponent({
     }, {immediate: true});
 
     const showRun = Vue.computed(() => props.showRunButton && (isOutputOutdated.value || allowRerun.value));
+
+    const reportHandler = async (nqName: string) => {
+      await DG.Func.byName(nqName).apply({
+        startDownload: true,
+        funcCall: currentCall.value,
+        validationState: validationState.value,
+        consistencyState: consistencyState.value,
+        isOutputOutdated: isOutputOutdated.value,
+      });
+    }
+
+    const exports = Vue.computed(() => {
+      const activeExports: ExportItem[] = [];
+      if (isReportEnabled.value) {
+        const name = 'Default Excel';
+        const handler = async () => {
+          const viewers = await getViewers(currentCall.value, viewersHook.value, callMeta.value);
+          const [blob] = await richFunctionViewReport(
+            'Excel',
+            currentCall.value.func,
+            currentCall.value,
+            viewers,
+          );
+          DG.Utils.download(`${currentCall.value.func.nqName} - ${Utils.getStartedOrNull(currentCall.value) ?? 'Not completed'}.xlsx`, blob);
+        }
+        activeExports.push({name, handler});
+      }
+      activeExports.push(...customExports.value.filter(x => x.function && x.name).map(x => ({...x, handler: () => reportHandler(x.function)})));
+      return activeExports;
+    });
 
     ////
     // DockManager related
@@ -386,7 +431,16 @@ export const RichFunctionView = Vue.defineComponent({
     const menuIconStyle = {width: '15px', display: 'inline-block', textAlign: 'center'};
 
     return () => (
-      Vue.withDirectives(<div class='w-full h-full flex'>
+      Vue.withDirectives(<div class='w-full h-full flex'> { !isOutputOutdated.value && exports.value?.length > 1 &&
+        <RibbonMenu groupName='Step exports' view={currentView.value}>
+          {
+            exports.value.map(({ name, handler }) =>
+              <span onClick={handler}>
+                <div> {name} </div>
+              </span>
+            )
+          }
+        </RibbonMenu> }
         <RibbonMenu groupName='Panels' view={currentView.value}>
           <span
             onClick={() => formHidden.value = !formHidden.value}
@@ -419,19 +473,11 @@ export const RichFunctionView = Vue.defineComponent({
           </span> }
         </RibbonMenu>
         <RibbonPanel view={currentView.value}>
-          { isReportEnabled.value && !isOutputOutdated.value && <IconFA
+          { !isOutputOutdated.value && exports.value?.length === 1 && <IconFA
             name='arrow-to-bottom'
-            onClick={async () => {
-              const [blob] = await richFunctionViewReport(
-                'Excel',
-                currentCall.value.func,
-                currentCall.value,
-                dfToViewerMapping(currentCall.value),
-              );
-              DG.Utils.download(`${currentCall.value.func.nqName} - ${Utils.getStartedOrNull(currentCall.value) ?? 'Not completed'}.xlsx`, blob);
-            }}
-            tooltip='Generate standard report for the current step'
-          />}
+            onClick={exports.value[0].handler}
+            tooltip='Generate report for the current step'
+          /> }
           { isFittingEnabled.value && <IconImage
             name='fitting'
             path={`${_package.webRoot}files/icons/icon-chart-dots.svg`}

@@ -22,7 +22,7 @@ import {
   findNextStep,
   findNextSubStep,
   findNodeWithPathByUuid, findPrevStep, findTreeNodeByPath,
-  findTreeNodeParrent, hasInconsistencies, hasSubtreeFixableInconsistencies,
+  findTreeNodeParrent, getRelevantGlobalActions, getViewers, hasInconsistencies, hasSubtreeFixableInconsistencies,
   reportTree,
 } from '../../utils';
 import {useReactiveTreeDriver} from '../../composables/use-reactive-tree-driver';
@@ -30,7 +30,10 @@ import {take} from 'rxjs/operators';
 import {EditRunMetadataDialog} from '@datagrok-libraries/compute-utils/shared-components/src/history-dialogs';
 import {PipelineInstanceConfig} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineInstance';
 import {setHelpService} from '../../composables/use-help';
-import {reportFuncCallExcel} from '@datagrok-libraries/compute-utils';
+import {CustomExport, ExportCbInput, ViewersHook} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineConfiguration';
+import * as Utils from '@datagrok-libraries/compute-utils/shared-utils/utils';
+import {richFunctionViewReport} from '@datagrok-libraries/compute-utils';
+import {BehaviorSubject} from 'rxjs';
 
 const DEVELOPERS_GROUP = 'Developers';
 
@@ -58,7 +61,7 @@ export const TreeWizard = Vue.defineComponent({
       required: true,
     },
     view: {
-      type: DG.ViewBase,
+      type: DG.View,
       required: true,
     },
   },
@@ -281,6 +284,9 @@ export const TreeWizard = Vue.defineComponent({
     });
 
     Vue.watch([currentMetaCallData, hasNotSavedEdits], ([metadata, hasNotSavedEdits]) => {
+      if (props.view && !props.view.isPinned && hasNotSavedEdits) {
+        props.view.pin();
+      }
       if (!metadata || hasNotSavedEdits) {
         searchParams.id = undefined;
         setViewName(modelName.value);
@@ -364,14 +370,89 @@ export const TreeWizard = Vue.defineComponent({
     }, {immediate: true});
 
     ////
-    // chosen step state
+    // export
     ////
 
     const exports = Vue.computed(() => {
       if (!treeState.value || isFuncCallState(treeState.value))
         return [];
-      return [{id: 'default', friendlyName: 'Default Excel', handler: () => reportTree(treeState.value, currentMetaCallData.value, hasNotSavedEdits.value)}, ...(treeState.value.customExports ?? [])];
+      const activeExports: CustomExport[] = [];
+      if (!treeState.value.disableDefaultExport) {
+        const defaultExport: CustomExport = {
+          id: 'default',
+          friendlyName: 'Default Excel',
+          handler: () => reportTree({
+            startDownload: true,
+            treeState: treeState.value!,
+            meta: currentMetaCallData.value,
+            callInfoStates: states.calls,
+            metaStates: states.meta,
+            validationStates: states.validations,
+            consistencyStates: states.consistency,
+            descriptions: states.descriptions,
+            hasNotSavedEdits: hasNotSavedEdits.value
+          })
+        };
+        activeExports.push(defaultExport);
+      }
+      activeExports.push(...(treeState.value.customExports ?? []));
+      return activeExports;
     });
+
+    const exportHandler = async (exportData: CustomExport) => {
+      if (!treeState.value)
+        return
+      const utils = {
+        reportFuncCallExcel: async (fc: DG.FuncCall, uuid: string, viewersHook?: ViewersHook, metaState?: Record<string, BehaviorSubject<any>>) => {
+          const viewers = await getViewers(fc, viewersHook, metaState);
+          return richFunctionViewReport(
+            'Excel',
+            fc.func,
+            fc,
+            viewers,
+            states.validations?.[uuid],
+            states.consistency?.[uuid],
+          );
+        },
+        reportStateExcel: async (state: PipelineState, cb?: (input: ExportCbInput) => Promise<void>) => {
+          return reportTree({
+            startDownload: false,
+            treeState: state,
+            meta: currentMetaCallData.value,
+            callInfoStates: states.calls,
+            metaStates: states.meta,
+            validationStates: states.validations,
+            consistencyStates: states.consistency,
+            descriptions: states.descriptions,
+            hasNotSavedEdits: hasNotSavedEdits.value,
+            cb,
+          });
+        },
+        getFuncCallCustomExports: (fc: DG.FuncCall) => {
+          return Utils.getCustomExports(fc.func).map(x => x.name);
+        },
+        runFuncCallCustomExport: async (fc: DG.FuncCall, uuid: string, exportName: string) => {
+          const exports =  Utils.getCustomExports(fc.func);
+          const item = exports.find(x => x.name === exportName);
+          if (!item)
+            throw new Error(`No export named ${exportName} is defined for ${fc.func.nqName}`);
+          const res = await DG.Func.byName(fc.func.nqName).apply({
+            startDownload: false,
+            funcCall: fc,
+            validationState: states.validations?.[uuid],
+            consistencyState: states.consistency?.[uuid],
+            isOutputOutdated: states.calls?.[uuid]?.isOutputOutdated,
+            runError: states.calls?.[uuid]?.runError,
+          });
+          return res;
+        },
+      };
+      return exportData.handler(treeState.value!, utils);
+    }
+
+    ////
+    // chosen step state
+    ////
 
     const chosenStepState = Vue.computed(() => chosenStep.value?.state);
 
@@ -405,9 +486,14 @@ export const TreeWizard = Vue.defineComponent({
     });
 
     const menuActions = Vue.computed(() => {
-      return chosenStepState.value?.actions?.reduce((acc, action) => {
+      if (!treeState.value || !chosenStepUuid.value)
+        return {};
+      const globalActions = getRelevantGlobalActions(treeState.value, chosenStepUuid.value);
+      const currentStepActions = chosenStepState.value?.actions?.filter(action => action.position === 'menu') ?? [];
+      const actions = [...globalActions, ...currentStepActions];
+      return actions.reduce((acc, action) => {
         const menuCategory = action.menuCategory ?? 'Actions';
-        if (action.position === 'menu') {
+        if (action.position === 'menu' || action.position === 'globalmenu') {
           if (acc[menuCategory])
             acc[menuCategory].push(action);
           else
@@ -548,11 +634,9 @@ export const TreeWizard = Vue.defineComponent({
         {isTreeReady.value && isTreeReportable.value &&
           <RibbonMenu groupName='Export' view={currentView.value}>
             {
-              exports.value.map(({id, friendlyName, handler}) =>
-                <span onClick={() => (treeState.value) ?
-                  handler(treeState.value, {reportFuncCallExcel: reportFuncCallExcel}) :
-                  null}>
-                  <div> {friendlyName ?? id} </div>
+              exports.value.map((exportData) =>
+                <span onClick={() => exportHandler(exportData)}>
+                  <div> {exportData.friendlyName ?? exportData.id} </div>
                 </span>,
               )
             }
@@ -742,7 +826,6 @@ export const TreeWizard = Vue.defineComponent({
               state={chosenStepState.value}
               uuid={chosenStepUuid.value}
               isRoot={isRootChoosen.value}
-              menuActions={menuActions.value}
               buttonActions={buttonActions.value}
               onActionRequested={runActionWithConfirmation}
               dock-spawn-title='Step sequence review'

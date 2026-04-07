@@ -14,6 +14,10 @@ import {
 import {GridCellElement, LabelElement, Scene} from './scene';
 
 type ColumnNamesVisibility = 'Auto' | 'Always' | 'Never';
+enum BoolColumnMode {
+  Checkbox = 'Checkbox',
+  Tags = 'Tags',
+}
 
 const markers: string[] = [
   DG.MARKER_TYPE.CIRCLE,
@@ -30,6 +34,7 @@ const markers: string[] = [
 
 interface FormSettings extends SummarySettingsBase {
   showColumnNames: ColumnNamesVisibility;
+  boolColumnMode?: BoolColumnMode;
 }
 
 function getSettings(gc: DG.GridColumn): FormSettings {
@@ -44,14 +49,16 @@ let scene: Scene;
 
 /** Returns approximate length in characters of the longest value in the column. */
 function getMaxValueWidth(column: DG.Column): number {
-  if (column.type === DG.TYPE.INT)
+  if (column.type === DG.TYPE.BOOL)
+    return 30;
+  else if (column.type === DG.TYPE.INT)
     return column.max.toString().length * 8;
   else if (column.type === DG.TYPE.FLOAT || column.type === DG.TYPE.QNUM)
     return 50;
   else if (column.type === DG.TYPE.STRING) {
     const values = column.categories;
     if (values.length < 50)
-      return Math.min(...values.map((v) => v.length));
+      return Math.max(...values.map((v) => v ? v.length : 0)) * 8;
     return 100;
   }
   return 100;
@@ -104,26 +111,40 @@ export class FormCellRenderer extends DG.GridCellRenderer {
     }
 
     cols = cols.filter((c) => c.semType !== DG.SEMTYPE.MOLECULE);
+    const boolMode = settings.boolColumnMode ?? BoolColumnMode.Checkbox;
+    if (boolMode === BoolColumnMode.Tags)
+      cols = cols.filter((c) => c.type !== DG.TYPE.BOOL || c.get(row) === true);
 
     const isTwoColumn = b.width > 350 && (b.height / cols.length) < 30;
     const numLayoutCols = isTwoColumn ? 2 : 1;
-    const rowsPerCol = Math.ceil(cols.length / numLayoutCols);
+    const rowsPerCol = Math.max(1, Math.ceil(cols.length / numLayoutCols));
 
     const colHeight = Math.min(26, b.height / rowsPerCol);
     const fontSize = Math.min(Math.max(colHeight * 0.6, 10), 14);
     const font = `${fontSize.toFixed(1)}px Roboto, Roboto Local`;
     g.font = font;
 
-    const maxValueWidth = Math.min(100, Math.max(...cols.map((c) => getMaxValueWidth(c) * (fontSize / 11))));
-    const maxNameWidth = Math.min(200, Math.max(...cols.map((c) => g.measureText(c.name).width)));
-
     const effectiveWidth = b.width / numLayoutCols;
+    const maxAllowedValueWidth = effectiveWidth * 0.55;
+    const calculatedValueWidth = cols.length > 0 ? Math.max(...cols.map((c) => {
+      if (c.type === DG.TYPE.BOOL && boolMode === BoolColumnMode.Tags)
+        return g.measureText(c.name).width;
+      return getMaxValueWidth(c) * (fontSize / 11);
+    })) : 0;
+    const finalValueWidth = Math.min(100, Math.min(calculatedValueWidth, maxAllowedValueWidth));
+    const maxNameWidth = cols.length > 0 ? Math.max(...cols.map((c) => {
+      if (c.type === DG.TYPE.BOOL && boolMode === BoolColumnMode.Tags)
+        return 0;
+      return g.measureText(c.name).width;
+    })) : 0;
+
     const showColumnNames = settings.showColumnNames == 'Always' ||
-      ((settings.showColumnNames ?? 'Auto') == 'Auto' && effectiveWidth - maxValueWidth > 30); // as long as there is small space for names
-    const columnNamesWidth = showColumnNames ? Math.max(Math.min(maxNameWidth + 10, effectiveWidth - maxValueWidth), 0) : 0;
+      ((settings.showColumnNames ?? 'Auto') == 'Auto' && effectiveWidth - finalValueWidth > 30); // as long as there is small space for names
+    const columnNamesWidth = showColumnNames ? Math.max(Math.min(maxNameWidth + 10, effectiveWidth - finalValueWidth), 0) : 0;
 
     const totalFormHeight = rowsPerCol * colHeight;
     const verticalMargin = Math.max(0, (b.height - totalFormHeight) / 2);
+
     for (let i = 0; i < cols.length; i++) {
       const col = cols[i];
       const cell = gridCell.grid.cell(col.name, gridCell.gridRow);
@@ -140,23 +161,35 @@ export class FormCellRenderer extends DG.GridCellRenderer {
         const xOffset = b.x + (layoutColIndex * effectiveWidth);
         const yOffset = b.y + verticalMargin + (layoutRowIndex * colHeight);
 
-        // render in a column
-        const r = new DG.Rect(
-          Math.ceil(xOffset),
-          Math.ceil(yOffset),
-          Math.ceil(effectiveWidth),
-          Math.ceil(colHeight)
-        );
-        if (showColumnNames)
-          scene.elements.push(new LabelElement(r.getLeft(columnNamesWidth), fontSize * 0.6, col.name,
-            {horzAlign: 'right', color: 'lightgrey', font: font}));
+        const intX = Math.ceil(xOffset);
+        const intY = Math.ceil(yOffset);
+        const intH = Math.ceil(colHeight);
 
-        const leftMargin = r.width >= 20 ? 5 : 0;
+        const isBoolTag = col.type === DG.TYPE.BOOL && boolMode === BoolColumnMode.Tags;
+        if (showColumnNames && !isBoolTag) {
+          const labelRect = new DG.Rect(intX, intY, columnNamesWidth, intH);
+          scene.elements.push(new LabelElement(labelRect, fontSize * 0.6, col.name,
+            {horzAlign: 'right', color: 'lightgrey', font: font}));
+        }
+
+        const leftMargin = columnNamesWidth > 0 ? 5 : 0;
         cell.style.marker = markers[i % markers.length];
         cell.style.horzAlign = 'left';
         cell.style.marginLeft = 0;
         cell.style.font = font;
-        scene.elements.push(new GridCellElement(r.cutLeft(columnNamesWidth + leftMargin), cell));
+
+        const valueX = intX + columnNamesWidth + leftMargin;
+        if (isBoolTag) {
+          const tagRect = new DG.Rect(intX + 5, intY, effectiveWidth - 5, intH);
+          const tagText = `✓ ${col.name}`;
+          scene.elements.push(new LabelElement(tagRect, fontSize * 0.6, tagText,
+            {horzAlign: 'left', color: 'gray', font: font}));
+        } else {
+          let valueRect = new DG.Rect(valueX, intY, finalValueWidth, intH);
+          if (col.type === DG.TYPE.BOOL)
+            valueRect = new DG.Rect(valueX, intY - 5, 20, intH);
+          scene.elements.push(new GridCellElement(valueRect, cell));
+        }
       }
     }
 
@@ -171,8 +204,12 @@ export class FormCellRenderer extends DG.GridCellRenderer {
   }
 
   makeBestScene(gridCell: DG.GridCell): Scene {
+    const df = gridCell.grid.dataFrame;
     const height = getSettings(gridCell.gridColumn).columnNames
-      .map((name) => gridCell.tableColumn?.semType === DG.SEMTYPE.MOLECULE ? 150 : 20)
+      .map((name) => {
+        const col = df.columns.byName(name);
+        return col?.semType === DG.SEMTYPE.MOLECULE ? 150 : 20;
+      })
       //.map(name => gridCell.grid.cell(name, gridCell.gridRow).renderer.getDefaultSize(gridCell.gridColumn).height)
       .reduce((sum, height) => sum! + height!, 0)!;
     return FormCellRenderer
@@ -206,9 +243,14 @@ export class FormCellRenderer extends DG.GridCellRenderer {
 
     return ui.inputs([
       ...createBaseInputs(gc, settings, true),
-      ui.input.choice('Show column names', {value: settings.showColumnNames ?? 'Auto', items: ['Auto', 'Always', 'Never'],
+      ui.input.choice('Show Column Names', {value: settings.showColumnNames ?? 'Auto', items: ['Auto', 'Always', 'Never'],
         onValueChanged: (value) => {
           settings.showColumnNames = value as ColumnNamesVisibility;
+          gc.grid.invalidate();
+        }}),
+      ui.input.choice('Render Boolean Columns', {value: settings.boolColumnMode ?? BoolColumnMode.Checkbox, items: [BoolColumnMode.Checkbox, BoolColumnMode.Tags],
+        onValueChanged: (value) => {
+          settings.boolColumnMode = value as BoolColumnMode;
           gc.grid.invalidate();
         }})
     ]);

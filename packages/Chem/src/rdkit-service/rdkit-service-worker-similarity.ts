@@ -62,8 +62,10 @@ export class RdKitServiceWorkerSimilarity extends RdKitServiceWorkerBase {
               fps[i] = rdMol.get_pattern_fp_as_uint8array();
               break;
             case Fingerprint.Morgan:
-              if (!rdMol.is_qmol)
+              if (!rdMol.is_qmol) {
+                rdMol.remove_hs_in_place(); // hydrogens can cause identical molecules to have different fingerprints
                 fps[i] = rdMol.get_morgan_fp_as_uint8array(morganFpParams!);
+              }
               break;
             case Fingerprint.AtomPair:
               fps[i] = rdMol.get_atom_pair_fp_as_uint8array();

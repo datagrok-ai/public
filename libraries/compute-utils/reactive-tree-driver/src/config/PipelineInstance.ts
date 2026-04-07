@@ -114,6 +114,7 @@ export type PipelineInstanceRuntimeData = {
   approversGroup: string | undefined;
   disableHistory: boolean;
   customExports: CustomExport[] | undefined;
+  disableDefaultExport?: boolean;
   structureCheckResults?: ValidationResult | undefined;
   forceNavigate: boolean;
 }

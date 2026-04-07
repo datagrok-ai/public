@@ -1,6 +1,6 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
-import { before, category, expect, test } from '@datagrok-libraries/utils/src/test';
+import { before, category, expect, test } from '@datagrok-libraries/test/src/test';
 
 
 export function hasTag(colTags: string[], colTagValue: string): boolean {
@@ -16,10 +16,11 @@ export function hasTag(colTags: string[], colTagValue: string): boolean {
 
 category('Grid', () => {
   let grid: DG.Grid;
-  const demog = grok.data.demo.demog(100);
-  demog.columns.byName('study').name = '~study';
+  let demog: DG.DataFrame;
 
   before(async () => {
+    demog = grok.data.demo.demog(100);
+    demog.columns.byName('study').name = '~study';
     grid = demog.plot.grid();
   });
 

@@ -4,7 +4,7 @@ import './text-functions';
 import './logical-functions';
 import './conversion-functions';
 import './stats-functions';
-import {category, test, expect, expectExceptionAsync} from '@datagrok-libraries/utils/src/test';
+import {category, test, expect, expectExceptionAsync} from '@datagrok-libraries/test/src/test';
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 

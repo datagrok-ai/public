@@ -80,12 +80,11 @@ public class MySqlDataProvider extends JdbcDataProvider {
 
     @Override
     public DataFrame getSchemas(DataConnection connection) throws QueryCancelledByUser, GrokConnectException {
-        String db = connection.getDb();
-        StringColumn column = new StringColumn(new String[]{db});
-        column.name = "TABLE_SCHEMA";
-        DataFrame dataFrame = new DataFrame();
-        dataFrame.addColumn(column);
-        return dataFrame;
+        FuncCall queryRun = new FuncCall();
+        queryRun.func = new DataQuery();
+        queryRun.func.query = "SELECT schema_name AS table_schema FROM information_schema.schemata ORDER BY schema_name";
+        queryRun.func.connection = connection;
+        return execute(queryRun);
     }
     @Override
     public String getSchemaSql(String db, String schema, String table, boolean includeKeyInfo) {
@@ -217,7 +216,7 @@ public class MySqlDataProvider extends JdbcDataProvider {
     }
 
     @Override
-    public String getCommentsQuery(DataConnection connection) throws GrokConnectException {
+    public String getCommentsQuery(DataConnection connection) {
         return "--input: string schema\n" +
                 "(\n" +
                 "    SELECT\n" +

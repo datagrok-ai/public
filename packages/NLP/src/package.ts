@@ -15,7 +15,6 @@ import {CLOSEST_COUNT, DELIMETER, POLAR_FREQ, TINY} from './stemming-tools/const
 import {SentenceSimilarityViewer} from './utils/sentence-similarity-viewer';
 
 import '../css/stemming-search.css';
-import {delay} from '@datagrok-libraries/utils/src/test';
 import {DimReductionMethods} from '@datagrok-libraries/ml/src/multi-column-dimensionality-reduction/types';
 import {VectorMetricsNames} from '@datagrok-libraries/ml/src/typed-metrics';
 import {DistanceAggregationMethods} from '@datagrok-libraries/ml/src/distance-matrix/types';
@@ -227,7 +226,7 @@ export class PackageFunctions {
     const table = grok.shell.t;
     const textCols = table?.columns?.bySemTypeAll('Text');
     if (!table || !textCols || textCols.length === 0) {
-      grok.shell.warning('Please open table with text columns');
+      grok.shell.warning('Import a dataset containing String columns');
       return;
     }
     const colInput = ui.input.column('Text Column', {table: table, value: textCols[0], filter: (col) => col.semType === 'Text'});
@@ -380,8 +379,8 @@ export class PackageFunctions {
     meta: {
       supportedSemTypes: 'Text',
       supportedDistanceFunctions: 'Vector Cosine, Euclidean, Manhattan',
+      role: 'dim-red-preprocessing-function',
     },
-    tags: ['dim-red-preprocessing-function'],
     name: 'Sentence Embeddings',
     outputs: [{type: 'object', name: 'result'}],
   })
@@ -421,7 +420,7 @@ export class PackageFunctions {
       } catch (e) {
         // not an admin
       }
-      await delay(5000);
+      await DG.delay(5000);
     }
 
     // do a warmup fetch to avoid errors
@@ -461,9 +460,8 @@ export class PackageFunctions {
   }
 
   @grok.decorators.func({
-    tags: ['viewer'],
     name: 'Sentence Similarity Search',
-    meta: {showInGallery: 'false'},
+    meta: {showInGallery: 'false', role: 'viewer'},
     outputs: [{type: 'viewer', name: 'result'}],
   })
   static sentenceSearchViewer() : DG.Viewer {

@@ -4,7 +4,7 @@ import * as DG from 'datagrok-api/dg';
 
 import $ from 'cash-dom';
 
-import {awaitCheck, category, test, testViewer} from '@datagrok-libraries/utils/src/test';
+import {awaitCheck, category, test, testViewer} from '@datagrok-libraries/test/src/test';
 import {ITreeHelper} from '@datagrok-libraries/bio/src/trees/tree-helper';
 import {NodeType} from '@datagrok-libraries/bio/src/trees';
 import {parseNewick} from '@datagrok-libraries/bio/src/trees/phylocanvas';

@@ -1,5 +1,9 @@
 # Biostructure Viewer changelog
 
+## 1.4.4 (2025-11-11)
+
+* GROK-13650: DemoFiles: Bio: Some ngl formats are broken
+
 ## 1.4.3 (2025-09-16)
 
 * Fix caching for PdbGridCellRenderer

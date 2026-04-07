@@ -28,7 +28,7 @@ export function inspectSeries(series: FitSeries, fitFunctionName: FitFunctionTyp
   }), false);
   const df = DG.DataFrame.fromColumns([curveCol]);
   df.name = seriesName;
-  df.id = randomizeTableId();
+  df.setTag(DG.Tags.Id, crypto.randomUUID());
   curveCol.semType = 'fit';
   curveCol.tags[DG.Tags.CellRenderer] = 'fit';
   const grid = DG.Viewer.grid(df);

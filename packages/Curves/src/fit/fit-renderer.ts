@@ -20,8 +20,8 @@ import {
   LogOptions, getDataPoints,
 } from '@datagrok-libraries/statistics/src/fit/fit-data';
 
-import {convertXMLToIFitChartData} from './fit-parser';
 import {FitConstants} from '@datagrok-libraries/statistics/src/fit/const';
+import {parseCellValue, isNativeFormat} from './curve-converter';
 import {
   renderAxesLabels,
   renderConfidenceIntervals, renderConnectDots,
@@ -155,8 +155,7 @@ function getChartData(tableCell: DG.Cell): IFitChartData {
     cellValue = cellValue.replaceAll('|', '');
   const column = tableCell.column;
   const cellChartData: IFitChartData = column ? (column.type === DG.TYPE.STRING ?
-    (column.getTag(FitConstants.TAG_FIT_CHART_FORMAT) === FitConstants.TAG_FIT_CHART_FORMAT_3DX ?
-      convertXMLToIFitChartData(cellValue) : JSON.parse(cellValue ?? '{}') ?? {}) :
+    parseCellValue(cellValue, column) :
     createDefaultChartData()) : JSON.parse(cellValue ?? '{}') ?? {};
 
   const columnChartOptions = tableCell.column ? getColumnChartOptions(tableCell.column) : {};
@@ -260,8 +259,8 @@ export function substituteZeroes(data: IFitChartData): void {
 
 export function setOutlier(gridCell: DG.GridCell, p: IFitPoint, seriesIdx: number, pointIdx: number, _data?: IFitChartData) {
   p.outlier = !p.outlier;
-  // temporarily works only for JSON structure
-  if (gridCell.cell.column.getTag(FitConstants.TAG_FIT_CHART_FORMAT) !== FitConstants.TAG_FIT_CHART_FORMAT_3DX) {
+  // outlier toggling works only for native JSON format (no converter)
+  if (isNativeFormat(gridCell.cell.column)) {
     const gridCellValue = JSON.parse(gridCell.cell.value) as IFitChartData;
     gridCellValue.series![seriesIdx].points[pointIdx].outlier = p.outlier;
     gridCell.cell.column.set(gridCell.cell.rowIndex, JSON.stringify(gridCellValue), true);
@@ -276,8 +275,7 @@ export function setOutlier(gridCell: DG.GridCell, p: IFitPoint, seriesIdx: numbe
   }
   const columns = gridCell.grid.dataFrame.columns.byTags({'.sourceColumn': gridCell.cell.column.name});
   if (columns) {
-    _data ??= gridCell.cell.column.getTag(FitConstants.TAG_FIT_CHART_FORMAT) === FitConstants.TAG_FIT_CHART_FORMAT_3DX ?
-      convertXMLToIFitChartData(gridCell.cell.value) : getOrCreateParsedChartData(gridCell.cell);
+    _data ??= getOrCreateParsedChartData(gridCell.cell);
     for (const column of columns) {
       const chartLogOptions: LogOptions = {logX: _data.chartOptions?.logX, logY: _data.chartOptions?.logY};
       const stats = column.tags['.seriesAggregation'] !== null ?
@@ -305,6 +303,7 @@ export function inspectCurve(gridCell: DG.GridCell, size?: Partial<DG.Size>, rer
   const dlg = ui.dialog({title: 'Edit chart'})
     .add(gridCellWidget.root)
     .show({resizable: true, width: size?.width ?? 500, height: size?.height ?? 430});
+  dlg.getButton('CANCEL').textContent = 'Close';
   if (rerenderOnChange)
     dlg.sub(merge(gridCell.grid.dataFrame.onDataChanged, gridCell.grid.dataFrame.onMetadataChanged).subscribe(() => gridCellWidget.render()));
 }
@@ -337,11 +336,10 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
   }
 
   onClick(gridCell: DG.GridCell, e: MouseEvent): void {
-    if (!gridCell.cell.value)
+    if (!gridCell.cell.value || !gridCell.cell.column)
       return;
 
-    const data = gridCell.cell.column.getTag(FitConstants.TAG_FIT_CHART_FORMAT) === FitConstants.TAG_FIT_CHART_FORMAT_3DX ?
-      convertXMLToIFitChartData(gridCell.cell.value) : getOrCreateParsedChartData(gridCell.cell, false);
+    const data = getOrCreateParsedChartData(gridCell.cell, false);
 
     for (const [message, condition] of Object.entries(FitConstants.CONDITION_MAP)) {
       if (condition(data.series)) {
@@ -375,7 +373,9 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
   }
 
   onDoubleClick(gridCell: DG.GridCell, _e: MouseEvent): void {
-    inspectCurve(gridCell);
+    inspectCurve(gridCell, undefined, true);
+    _e.preventDefault();
+    _e.stopPropagation();
   }
 
   areAxesShown(screenBounds: DG.Rect): boolean {
@@ -493,8 +493,7 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
       return;
 
     const isRenderedOnGrid = gridCell?.grid && gridCell?.grid.dart && g.canvas === gridCell?.grid?.canvas; // only use cache for grid, because there is no guarantee that rowIdx will be correct for other places
-    const data = gridCell.cell.column?.getTag(FitConstants.TAG_FIT_CHART_FORMAT) === FitConstants.TAG_FIT_CHART_FORMAT_3DX ?
-      convertXMLToIFitChartData(gridCell.cell.value) : getOrCreateParsedChartData(gridCell.cell, isRenderedOnGrid);
+    const data = getOrCreateParsedChartData(gridCell.cell, isRenderedOnGrid);
     const screenBounds = FitChartCellRenderer.inflateScreenBounds(new DG.Rect(x, y, w, h));
 
     for (const [_message, condition] of Object.entries(FitConstants.CONDITION_MAP)) {
@@ -535,10 +534,7 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
       ui.tooltip.show(content, e.x, e.y);
     }
 
-    // TODO: add caching
-    const data = gridCell.cell.column?.getTag(FitConstants.TAG_FIT_CHART_FORMAT) === FitConstants.TAG_FIT_CHART_FORMAT_3DX ?
-      convertXMLToIFitChartData(gridCell.cell.value) :
-      getOrCreateParsedChartData(gridCell?.cell);
+    const data = getOrCreateParsedChartData(gridCell?.cell);
 
     if (screenBounds.width >= FitConstants.MIN_POINTS_AND_STATS_VISIBILITY_PX_WIDTH &&
       screenBounds.height >= FitConstants.MIN_POINTS_AND_STATS_VISIBILITY_PX_HEIGHT) {

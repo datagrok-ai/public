@@ -2,7 +2,7 @@
 title: "MS SQL"
 ---
 
-Provides access to [Microsoft SQL](https://www.microsoft.com/en-us/sql-server) database using SQL queries via JDBC
+Provides access to [Microsoft SQL](https://www.microsoft.com/en-us/sql-server) database using SQL queries via a JDBC
 driver.
 
 ## Connection parameters

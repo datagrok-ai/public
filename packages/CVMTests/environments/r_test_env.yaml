@@ -1,0 +1,5 @@
+name: r_test_env
+channels:
+  - conda-forge
+dependencies:
+  - r-stringi

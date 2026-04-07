@@ -8,6 +8,32 @@ interface ISeriesData {
   outlier: boolean[];
 }
 
+/**
+ * Auto-detects DRC column mappings from plate column names using heuristics.
+ * Matches are case-insensitive substring matches, checked in priority order.
+ */
+export function autoDetectDrcMappings(plate: Plate): Map<string, string> {
+  const mappings = new Map<string, string>();
+  const columnNames = plate.data.columns.names();
+
+  const detect = (target: string, candidates: string[]) => {
+    const lower = columnNames.map((c) => c.toLowerCase());
+    for (const cand of candidates) {
+      const idx = lower.findIndex((name) => name.includes(cand));
+      if (idx !== -1) {
+        mappings.set(target, columnNames[idx]);
+        break;
+      }
+    }
+  };
+
+  detect('Activity', ['activity', 'response', 'readout', 'value', 'signal', 'raw data', 'raw_data']);
+  detect('Concentration', ['concentration', 'conc', 'dose']);
+  detect('SampleID', ['sample', 'compound', 'layout', 'plate layout', 'plate_layout', 'sampleid', 'sample_id']);
+
+  return mappings;
+}
+
 export function getDoseResponseSeries(plate: Plate, options?: IPlateWellFilter & {
   concentration?: string;
   value?: string;

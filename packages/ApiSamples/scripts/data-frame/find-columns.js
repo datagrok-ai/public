@@ -1,4 +1,3 @@
-//tags: Column, access
 // Gets columns by type or tags
 
 let demog = grok.data.demo.demog();

@@ -3,7 +3,7 @@ title: "Access"
 ---
 
 Provides access to [Microsoft Access](https://en.wikipedia.org/wiki/Microsoft_Access)
-DB file using SQL queries via JDBC driver. The file should be stored in Datagrok's file share for Access DBs.
+DB file using SQL queries via a JDBC driver. The file should be stored in a Datagrok file share for Access DBs.
 
 ## Connection parameters
 

@@ -59,7 +59,7 @@ This metadata allows the platform to expose the function in the UI and JS API.
 
 ### `requirements.in`
 
-List of pip dependencies for your app:
+List of Python dependencies for your app (installed via [uv](https://docs.astral.sh/uv/)):
 
 ```text
 numpy
@@ -69,15 +69,15 @@ scikit-learn
 
 ### `environment.yaml`
 
-Valid [Conda](https://docs.conda.io/projects/conda/en/latest/user-guide/tasks/manage-environments.html) if you want to use miniconda as your package manager.
+Valid [Conda](https://docs.conda.io/projects/conda/en/latest/user-guide/tasks/manage-environments.html) environment file if you need conda-managed packages (e.g., native libraries like `rdkit`, `pytorch`). Pip-level dependencies within the environment are installed via [uv](https://docs.astral.sh/uv/).
 
 ```text
 name: my-simple-app
 channels:
-  - defaults
+  - conda-forge
 dependencies:
   - python=3.11
-  - pip
+  - numpy
 ```
 
 ### `container.json`
@@ -138,7 +138,7 @@ The platform will:
 ## Troubleshooting
 
 * **Task not showing up?** Check function annotations for correct formatting
-* **Dependency error?** Validate your `requirements.in` by running `pip install -r requirements.in` locally
+* **Dependency error?** Validate your `requirements.in` by running `uv pip install -r requirements.in` locally
 * **Performance issues?** Tune `cpu` and `memory` in `container.json`
 
 ---

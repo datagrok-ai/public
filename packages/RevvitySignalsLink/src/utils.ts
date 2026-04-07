@@ -5,12 +5,12 @@ import * as ui from 'datagrok-api/ui';
 import { getRevvityUsers, getUserStringIdById } from './users';
 import { queryEntityById, RevvityApiResponse, RevvityData, RevvityUser, search } from './revvity-api';
 
-import { awaitCheck } from '@datagrok-libraries/utils/src/test';
+import {awaitCheck} from '@datagrok-libraries/utils/src/test';
 import { compoundTypeAndViewNameMapping, ENTITY_FIELDS_TO_EXCLUDE, FIELDS_SECTION_NAME, FIELDS_TO_EXCLUDE_FROM_CORPORATE_ID_WIDGET, FIELDS_TO_EXCLUDE_FROM_WIDGET, FIRST_COL_NAMES, LAST_COL_NAMES, MOL_COL_NAME, MOLECULAR_FORMULA_FIELD_NAME, NAME, PARAMS_KEY, QUERY_KEY, STORAGE_NAME, SUBMITTER_FIELD_NAME, TABS_TO_EXCLUDE_FROM_WIDGET, TAGS_TO_EXCLUDE, USER_FIELDS } from './constants';
 import { getRevvityLibraries } from './libraries';
 import { u2 } from '@datagrok-libraries/utils/src/u2';
 import { _package } from './package';
-import { currentQueryBuilderConfig, filterProperties, runSearchQuery } from './search-utils';
+import { currentQueryBuilderConfig, filterProperties, getPropertiesForLibAndEntityType, runSearchQuery } from './search-utils';
 import { funcs } from './package-api';
 import { ComplexCondition, Operators } from '@datagrok-libraries/utils/src/query-builder/query-builder';
 import { openedView, updateView } from './view-utils';
@@ -402,11 +402,13 @@ export function createRevvityWidgetByCorporateId(response: RevvityApiResponse, i
 export async function transformData(data: Record<string, any>[], libId: string, entityType: string): Promise<DG.DataFrame> {
   if (!data.length)
     return DG.DataFrame.create();
+
+  const props = await getPropertiesForLibAndEntityType(libId, entityType);
+  
   const users = await getRevvityUsers();
   const columnsData: {[key: string]: {type: string, data: any[]}} = {};
   const createCol = (key: string, counter: number) => {
     //find column type
-    const props = filterProperties[`${libId}|${entityType}`];
     const prop = props.filter((it) => it.name === key);
     if (!columnsData[key]) {
       columnsData[key] = { type: prop.length ? prop[0].type : DG.TYPE.STRING, data: [] };

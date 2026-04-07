@@ -14,7 +14,7 @@ import wu from 'wu';
 import {Observable, Subject, Unsubscribable} from 'rxjs';
 
 import {TAGS as bioTAGS, NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';
-import {delay, testEvent} from '@datagrok-libraries/utils/src/test';
+import {testEvent} from '@datagrok-libraries/utils/src/test';
 import {IRenderer} from '@datagrok-libraries/bio/src/types/renderer';
 import {ILogger} from '@datagrok-libraries/bio/src/utils/logger';
 import {PromiseSyncer} from '@datagrok-libraries/bio/src/utils/syncer';
@@ -269,7 +269,7 @@ export class BioSubstructureFilter extends DG.Filter implements IRenderer {
   async awaitRendered(timeout: number = 10000): Promise<void> {
     const callLog = `awaitRendered( ${timeout} )`;
     const logPrefix = `${this.filterToLog()}.${callLog}`;
-    await delay(10);
+    await DG.delay(10);
     await testEvent(this.onRendered, () => {
       this.logger.debug(`${logPrefix}, ` + '_onRendered event caught');
     }, () => {

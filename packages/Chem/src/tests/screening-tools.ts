@@ -2,7 +2,7 @@ import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 // import * as ui from 'datagrok-api/ui';
 
-import {category, test, before, after, expect, expectArray, awaitCheck, delay} from '@datagrok-libraries/utils/src/test';
+import {category, test, before, after, expect, expectArray, awaitCheck, delay} from '@datagrok-libraries/test/src/test';
 import {_package} from '../package-test';
 import * as chemCommonRdKit from '../utils/chem-common-rdkit';
 import {RuleSet, runStructuralAlertsDetection} from '../panels/structural-alerts';
@@ -75,15 +75,10 @@ category('screening tools', () => {
       '1480010COc1ccc2cc(ccc2c1)C(C)C(=O)OC|CCc3cccnc300040203710400.272729992866516126340');
     tv.close();
   });
-
-  after(async () => {
-    grok.shell.closeAll();
-    DG.Balloon.closeAll();
-  });
 });
 
 
-// To do: move to separate Benchmarks category
+/* To do: move to separate Benchmarks category*/
 category('screening tools: benchmarks', () => {
   before(async () => {
     if (!chemCommonRdKit.moduleInitialized) {

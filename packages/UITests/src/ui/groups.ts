@@ -1,4 +1,4 @@
-import {after, before, category, expect, test, awaitCheck, delay} from '@datagrok-libraries/utils/src/test';
+import {after, before, category, expect, test, awaitCheck, delay} from '@datagrok-libraries/test/src/test';
 import * as grok from 'datagrok-api/grok';
 //import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
@@ -6,8 +6,7 @@ import * as DG from 'datagrok-api/dg';
 
 category('UI: Groups', () => {
   before(async () => {
-    const mng: DG.TabPane = grok.shell.sidebar.getPane('Browse');
-    mng.header.click();
+    grok.shell.windows.showBrowse = true;
     let platform: any;
     await awaitCheck(() => {
       platform = Array.from(document.querySelectorAll('div.d4-tree-view-node'))
@@ -19,9 +18,9 @@ category('UI: Groups', () => {
     await delay(100);
     const groups = Array.from(document.querySelectorAll('div.d4-tree-view-item-label'))
       .find((el) => el.textContent === 'Groups') as HTMLElement;
-    groups.click(); 
+    groups.click();
   });
- 
+
   /*
   test('filters.all', async () => {
     const grapi = await grok.dapi.groups
@@ -111,9 +110,5 @@ category('UI: Groups', () => {
     const diag = document.querySelector('.d4-dialog') as HTMLElement;
     const cancel = diag.querySelectorAll('[class="ui-btn ui-btn-ok"]')[1] as HTMLElement;
     cancel.click();
-  });
-
-  after(async () => {
-    grok.shell.closeAll();
   });
 }, {clear: false});

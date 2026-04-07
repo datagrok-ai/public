@@ -2,7 +2,7 @@
 import * as DG from 'datagrok-api/dg';
 // import * as ui from 'datagrok-api/ui';
 
-// todo: import common constants from to-atomic-level
+/* todo: import common constants from to-atomic-level */
 const V3K_HEADER_FIRST_LINE = '\nDatagrok macromolecule handler\n\n';
 const V3K_HEADER_SECOND_LINE = '  0  0  0  0  0  0            999 V3000\n';
 const V3K_BEGIN_CTAB_BLOCK = 'M  V30 BEGIN CTAB\n';
@@ -117,7 +117,7 @@ class TriposToMolfileConverter {
   }
 
   /** Returns 'true' if there is a next Tripos molecule to parse */
-  // todo: delete as unnecessary
+  /* todo: delete as unnecessary */
   public next(): boolean {
     return this.getNextMolIdx() !== -1;
   }

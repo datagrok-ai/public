@@ -19,14 +19,16 @@ function addWidgetToTree(widget, parentGroup) {
       propNode.item(p.name);
   }
 
-  if (widget.children)
+  if (widget.children) {
     for (const child of widget.children)
       addWidgetToTree(child, group);
+  }
 }
 
 const tree = DG.TreeViewGroup.tree();
-for (const widget of DG.Widget.getAll())
+for (const widget of DG.Widget.getAll()) {
   if (widget.parent == null)
     addWidgetToTree(widget, tree);
+}
 
-tree.root
+tree.root;

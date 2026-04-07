@@ -10,22 +10,20 @@ import * as ui from 'datagrok-api/ui';
 import {FitGridCellHandler, calculateSeriesStats, getChartDataAggrStats} from './fit/fit-grid-cell-handler';
 import {getOrCreateParsedChartData, substituteZeroes} from './fit/fit-renderer';
 import {curveDemo} from './fit/fit-demo';
-import {convertXMLToIFitChartData} from './fit/fit-parser';
+import {convertXmlCurveToJson} from './fit/converters/xml-converter';
+import {convertCompactDrToJson} from './fit/converters/compact-dr-converter';
+import {convertPzfxToJson} from './fit/converters/pzfx-converter';
+import {registerCurveConverter, initExternalConverters} from './fit/curve-converter';
 import {LogOptions} from '@datagrok-libraries/statistics/src/fit/fit-data';
 import {FitStatistics} from '@datagrok-libraries/statistics/src/fit/fit-curve';
-import {FitConstants} from '@datagrok-libraries/statistics/src/fit/const';
 
 // import {PlateWidget} from './plate/plate-widget';
 
 import * as api from './package-api';
 import {convertDataToCurves, dataToCurvesUI} from './fit/data-to-curves';
+import {parsePzfxXml, pzfxTableToFitChartData, pzfxToFitDataFrame, pzfxTableToDataFrame} from './formats/pzfx/pzfx-parser';
 
 export const _package = new DG.Package();
-
-
-// //tags: autostart
-// export async function autostart(): Promise<void> {
-// }
 
 
 const SOURCE_COLUMN_TAG = '.sourceColumn';
@@ -65,8 +63,14 @@ export class PackageFunctions {
   // }
 
   @grok.decorators.init()
-  static _initCurves(): void {
+  static async _initCurves(): Promise<void> {
     DG.ObjectHandler.register(new FitGridCellHandler());
+    // Register local converters by format name (avoids circular dependency with DG.Func.find)
+    registerCurveConverter('3dx', convertXmlCurveToJson);
+    registerCurveConverter('compact-dr', convertCompactDrToJson);
+    registerCurveConverter('pzfx', convertPzfxToJson);
+    // Discover converters from external packages (skips already-registered local ones)
+    await initExternalConverters();
   }
 
   @grok.decorators.func()
@@ -108,7 +112,7 @@ export class PackageFunctions {
     dataToCurvesUI();
   }
 
-  @grok.decorators.func({meta: {vectorFunc: 'true'}, tags: ['Transform']})
+  @grok.decorators.func({meta: {vectorFunc: 'true', role: 'transform'}})
   static addStatisticsColumn(table: DG.DataFrame, colName: string, propName: string, @grok.decorators.param({type: 'int'}) seriesNumber: number): DG.Column {
     const df = table;
     const col = df.col(colName)!;
@@ -128,8 +132,7 @@ export class PackageFunctions {
         const cell = df.cell(i, sourceColName);
         if (!cell || !cell.value)
           return null;
-        const chartData = cell.column.getTag(FitConstants.TAG_FIT_CHART_FORMAT) === FitConstants.TAG_FIT_CHART_FORMAT_3DX ?
-          convertXMLToIFitChartData(cell.value) : getOrCreateParsedChartData(cell, true); // false because there is no dataframe
+        const chartData = getOrCreateParsedChartData(cell, true);
         if (chartData.series![seriesNumber] === undefined || chartData.series![seriesNumber].points.every((p) => p.outlier))
           return null;
         if (chartData.chartOptions?.allowXZeroes && chartData.chartOptions?.logX &&
@@ -144,7 +147,7 @@ export class PackageFunctions {
     return column;
   }
 
-  @grok.decorators.func({meta: {vectorFunc: 'true'}, tags: ['Transform']})
+  @grok.decorators.func({meta: {vectorFunc: 'true', role: 'transform'}})
   static addAggrStatisticsColumn(table: DG.DataFrame, colName: string, propName: string, aggrType: string): DG.Column {
     const df = table;
     const col = df.col(colName)!;
@@ -159,9 +162,7 @@ export class PackageFunctions {
         const cell = df.cell(i, colName);
         if (!cell || !cell.value)
           return null;
-        const chartData =
-          cell.column.getTag(FitConstants.TAG_FIT_CHART_FORMAT) === FitConstants.TAG_FIT_CHART_FORMAT_3DX ?
-            convertXMLToIFitChartData(cell.value) : getOrCreateParsedChartData(cell);
+        const chartData = getOrCreateParsedChartData(cell);
         if (chartData.series?.every((series) => series.points.every((p) => p.outlier)))
           return null;
         if (chartData.chartOptions?.allowXZeroes && chartData.chartOptions?.logX &&
@@ -172,5 +173,61 @@ export class PackageFunctions {
       });
     df.columns.insert(column, df.columns.names().indexOf(colName) + 1);
     return column;
+  }
+
+  @grok.decorators.func({description: 'Returns XML 3DX curve converter function', meta: {role: 'curveConverter', curveFormat: '3dx'}})
+  static convertXmlCurveToJsonFunc(): (value: string) => string {
+    return convertXmlCurveToJson;
+  }
+
+  @grok.decorators.func({description: 'Returns compact dose-response JSON converter function', meta: {role: 'curveConverter', curveFormat: 'compact-dr'}})
+  static convertCompactDrToJsonFunc(): (value: string) => string {
+    return convertCompactDrToJson;
+  }
+
+  @grok.decorators.func({description: 'Returns PZFX curve converter function', meta: {role: 'curveConverter', curveFormat: 'pzfx'}})
+  static convertPzfxToJsonFunc(): (value: string) => string {
+    return convertPzfxToJson;
+  }
+
+  @grok.decorators.fileViewer({fileViewer: 'pzfx'})
+  static async previewPzfx(file: DG.FileInfo): Promise<DG.View> {
+    const view = DG.View.create();
+    view.name = file.name;
+
+    const text = await file.readAsString();
+    const tables = parsePzfxXml(text);
+    const xyTables = tables.filter((t) => t.tableType === 'XY');
+
+    if (xyTables.length === 0) {
+      const nonXyDfs = tables.map(pzfxTableToDataFrame);
+      for (const df of nonXyDfs)
+        view.append(DG.Viewer.grid(df).root);
+      return view;
+    }
+
+    const df = pzfxToFitDataFrame(xyTables);
+    const grid = DG.Viewer.grid(df);
+    grid.root.style.width = '100%';
+    grid.root.style.height = '100%';
+    view.append(grid.root);
+
+    return view;
+  }
+
+  @grok.decorators.fileHandler({ext: 'pzfx'})
+  static pzfxFileHandler(@grok.decorators.param({type: 'list'}) bytes: Uint8Array): DG.DataFrame[] {
+    const text = new TextDecoder().decode(new Uint8Array(bytes));
+    const tables = parsePzfxXml(text);
+    const results: DG.DataFrame[] = [];
+
+    const xyTables = tables.filter((t) => t.tableType === 'XY');
+    if (xyTables.length > 0)
+      results.push(pzfxToFitDataFrame(xyTables));
+
+    for (const table of tables.filter((t) => t.tableType !== 'XY'))
+      results.push(pzfxTableToDataFrame(table));
+
+    return results;
   }
 }

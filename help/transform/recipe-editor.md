@@ -2,7 +2,7 @@
 title: "Recipe Editor"
 ---
 
-Recipe editor lets you define data transformations. A Recipe can be used as a post-run steps for data queries.
+Recipe editor lets you define data transformations. A recipe can be used as post-run steps for data queries.
 
 ## Recipe structure
 
@@ -38,7 +38,7 @@ You can manually edit steps parameters.
 
 ## Navigation
 
-Click to step to view recipe step results
+Click a step to view its results
 
 ![Transform query](../uploads/gifs/query-transform-3a.gif "Transform Query")
 

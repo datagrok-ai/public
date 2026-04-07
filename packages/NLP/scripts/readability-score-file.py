@@ -1,7 +1,7 @@
 #name: Text Statistics
 #description: Check how easy your text is to understand
 #language: python
-#tags: nlp, panel
+#meta.role: panel
 #input: file file {semType: text} [Given text]
 #output: string language {semType: lang} [Detected language]
 #output: string words [Number of words]

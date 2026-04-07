@@ -47,7 +47,7 @@ services:
           "adminDevKey": "admin",
           "isolatesCount": 2,
           "connectorsSettings": {
-            "dataframeParsingMode":"New Process",
+            "dataframeParsingMode":"New Thread",
             "externalDataFrameCompress":true,
             "grokConnectHost":"grok_connect",
             "grokConnectPort":1234,
@@ -145,7 +145,7 @@ services:
     profiles: [ "all", "cvm", "scripting", "jupyter_kernel_gateway", "jkg" ]
 
   db:
-    image: postgres:12.20
+    image: pgvector/pgvector:pg17
     container_name: db_dev
     environment:
       POSTGRES_USER: postgres

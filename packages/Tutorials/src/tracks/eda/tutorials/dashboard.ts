@@ -4,7 +4,6 @@ import $ from 'cash-dom';
 import { filter } from 'rxjs/operators';
 import { Tutorial, TutorialPrerequisites } from '@datagrok-libraries/tutorials/src/tutorial';
 import { interval, Observable} from 'rxjs';
-import { delay } from '@datagrok-libraries/utils/src/test';
 import { waitForElementClick } from './utils';
 
 export class DashboardTutorial extends Tutorial {
@@ -126,7 +125,7 @@ export class DashboardTutorial extends Tutorial {
 
     const projectName = 'Coffee sales dashboard';
     const projectDlg = await this.openDialog('Save a project', 'Save project', projectPaneHints, uploadProjectInfo);
-    await delay(1000);
+    await DG.delay(1000);
     const projectNameHint = $(projectDlg.root).find('.ui-input-editor#name')[0];
 
     await this.action(`Set the project name to "${projectName}"`, interval(2000).pipe(filter(() => projectName ===
@@ -146,7 +145,7 @@ export class DashboardTutorial extends Tutorial {
     const closeProjectDescription = 'You can close the project by right-clicking on the sidebar and clicking "Close all"';
     await this.action('Close the project', grok.events.onProjectClosed.pipe(filter((p: DG.Project) => p.friendlyName === projectName)), null, closeProjectDescription);
 
-    await delay(1000);
+    await DG.delay(1000);
     const dashboardsLabel = $('div.d4-tree-view-item-label').filter((idx, el) => (el.textContent ?? '')?.startsWith('Dashboards'))[0]!;
 
     await this.action('Open browse and click on Dashboards', waitForElementClick(dashboardsLabel), dashboardsLabel);
@@ -154,7 +153,7 @@ export class DashboardTutorial extends Tutorial {
     await this.action('Find and open your project',
       grok.events.onProjectOpened.pipe(filter((p: DG.Project) => p.friendlyName === projectName)));
     this.showToolbox();
-    await delay(1000);
+    await DG.delay(1000);
 
     await this.textInpAction($('.d4-toolbox')[1]!, 'Set State to LA', 'State', 'LA');
 

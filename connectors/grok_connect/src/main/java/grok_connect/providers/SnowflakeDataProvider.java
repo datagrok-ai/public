@@ -37,6 +37,7 @@ public class SnowflakeDataProvider extends JdbcDataProvider {
     private static final List<String> AVAILABLE_CLOUDS =
             Collections.unmodifiableList(Arrays.asList("aws", "azure", "gcp", "privatelink"));
     private static final String RSA_METHOD = "Username/Private key";
+    private static final String OAUTH_JWT = "OAuth (JWT)";
 
     public SnowflakeDataProvider() {
         init();
@@ -75,13 +76,26 @@ public class SnowflakeDataProvider extends JdbcDataProvider {
             SnowflakeBasicDataSource ds = getDataSource(conn);
             return ConnectionPool.getConnection(ds, getDataSourceKey(conn, ds));
         }
+        else if (OAUTH_JWT.equals(method)) {
+            try {
+                Class.forName(driverClassName);
+            }
+            catch (ClassNotFoundException e) {
+                throw new GrokConnectException(e);
+            }
+            Properties properties = getProperties(conn);
+            String token = (String) conn.credentials.parameters.get("#token");
+            properties.setProperty("authenticator", "oauth");
+            properties.setProperty("token", token);
+            return java.sql.DriverManager.getConnection(getConnectionString(conn), properties);
+        }
         else
             return ConnectionPool.getConnection(getConnectionString(conn), getProperties(conn), driverClassName);
     }
 
     @Override
     public String getSchemasSql(String db) {
-        return "SELECT DISTINCT table_schema FROM information_schema.columns;";
+        return "SELECT DISTINCT table_schema FROM information_schema.columns ORDER BY table_schema;";
     }
 
     @Override
@@ -93,7 +107,7 @@ public class SnowflakeDataProvider extends JdbcDataProvider {
                 isEmptyDb ? "" : String.format(" LOWER(c.table_catalog) = LOWER('%s')", db),
                 isEmptySchema ? "" : String.format("%s c.table_schema = '%s'", isEmptyDb ? "" : " AND", schema),
                 isEmptyTable ? "" : String.format("%s c.table_name = '%s'", isEmptyDb && isEmptySchema ? "" : " AND", table));
-        return String.format("SELECT c.table_schema as table_schema, c.table_name as table_name, c.column_name as column_name, "
+        return String.format("SELECT c.table_catalog as table_catalog, c.table_schema as table_schema, c.table_name as table_name, c.column_name as column_name, "
                         + "c.data_type as data_type, "
                         + "case t.table_type when 'VIEW' then 1 else 0 end as is_view FROM information_schema.columns c "
                         + "JOIN information_schema.tables t ON t.table_name = c.table_name AND t.table_schema = c.table_schema AND LOWER(t.table_catalog) = LOWER(c.table_catalog)%s " +
@@ -139,6 +153,7 @@ public class SnowflakeDataProvider extends JdbcDataProvider {
         descriptor.type = TYPE;
         descriptor.description = DESCRIPTION;
         descriptor.canBrowseSchema = CAN_BROWSE_SCHEMA;
+        descriptor.supportCatalogs = true;
         descriptor.defaultSchema = DEFAULT_SCHEMA;
         Property cloudProviders = new Property(Property.STRING_TYPE, DbCredentials.CLOUD);
         cloudProviders.choices = AVAILABLE_CLOUDS;
@@ -155,6 +170,8 @@ public class SnowflakeDataProvider extends JdbcDataProvider {
         descriptor.credentialsTemplate = DbCredentials.getDbCredentialsTemplate();
         descriptor.credentialsTemplate.add(new Property(Property.STRING_TYPE, DbCredentials.PRIVATE_KEY, null, RSA_METHOD, new Prop("rsa"), ".pem,.der"));
         descriptor.credentialsTemplate.add(new Property(Property.STRING_TYPE, "passPhrase", "Passphrase for decrypting private key.", RSA_METHOD, new Prop("password")));
+        descriptor.credentialsTemplate.add(new Property(Property.STRING_TYPE, "jwtSigningKey", "Private key for signing JWT tokens. The matching public key must be configured in Snowflake's External OAuth integration.", OAUTH_JWT, new Prop("rsa"), ".pem,.der"));
+        descriptor.credentialsTemplate.add(new Property(Property.STRING_TYPE, "jwtAudience", "Audience claim for JWT tokens. Must match EXTERNAL_OAUTH_AUDIENCE_LIST in Snowflake.", OAUTH_JWT));
         descriptor.credentialsTemplate.stream().filter(p -> p.name.equals(DbCredentials.LOGIN)).forEach(p -> p.category = "Username/Password," + RSA_METHOD);
         descriptor.nameBrackets = "\"";
 

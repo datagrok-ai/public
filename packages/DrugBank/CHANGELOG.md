@@ -1,5 +1,9 @@
 # DrugBank changelog
 
+## 1.2.0 (2025-03-29)
+
+Refactoring
+
 ## 1.1.1 (2025-02-25)
 
 Refactoring

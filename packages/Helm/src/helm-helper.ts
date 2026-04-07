@@ -387,46 +387,87 @@ export class HelmHelper implements IHelmHelper {
     for (let aI: number = mol.atoms.length - 1; aI >= 0; --aI) {
       const a = mol.atoms[aI];
       if (a.elem === HELM_GAP_SYMBOL /* '*' - original */) {
-        const leftBondList: { aI: number, bI: number }[] = [];
-        const rightBondList: { aI: number, bI: number }[] = [];
+        // Collect all bonds connected to this gap atom, tracking which side the gap is on
+        const connectedBonds: { bI: number, gapSide: 1 | 2 }[] = [];
         for (let bI: number = mol.bonds.length - 1; bI >= 0; --bI) {
           const b = mol.bonds[bI];
-          if (b.a1 !== a && b.a2 === a) leftBondList.push({aI, bI});
-          if (b.a1 === a && b.a2 !== a) rightBondList.push({aI, bI});
+          if (b.a1 === a) connectedBonds.push({bI, gapSide: 1}); // gap is a1
+          else if (b.a2 === a) connectedBonds.push({bI, gapSide: 2}); // gap is a2
         }
-        if (leftBondList.length > 1 || rightBondList.length > 1)
-          throw new HelmNotSupportedError(`Removing a gap monomer #${aI} with more than two bonds is unsupported.`);
 
-        const lb = leftBondList[0];
-        const rb = rightBondList[0];
-        if (lb && !rb) {
-          mol.bonds.splice(lb.bI, 1);
-          mol.atoms.splice(lb.aI, 1);
-        } else if (!lb && rb) {
-          const rb = rightBondList[0];
-          mol.bonds.splice(rb.bI, 1);
-          mol.atoms.splice(rb.aI, 1);
-        } else {
-          if (lb.aI !== rb.aI)
-            throw new Error('Something is really wrong here.');
-
-          // is not enough, breaks the simple polymer
-          //mol.delAtom(a, true);
-
-          const leftBond = mol.bonds[lb.bI];
-          const rightBond = mol.bonds[rb.bI];
-          const a2 = leftBond.a2 = rightBond.a2; // right atom
-          leftBond.r2 = rightBond.r2;
-          leftBond.apo2 = rightBond.apo2;
-
-          if (a2.bonds)
-            throw new Error('Bond list of the atom is not corrected.');
-          // a2.bonds!.splice(a2.bonds!.indexOf(rightBond), 1); // remove the right bond from links of the right atom
-          // a2.bonds!.push(leftBond); // put the left bond to links of the right atom
-
-          mol.bonds.splice(rb.bI, 1); // remove right bond
-          mol.atoms.splice(lb.aI, 1);
+        if (connectedBonds.length > 2) {
+          throw new HelmNotSupportedError(
+            `Removing gap monomer #${aI} with ${connectedBonds.length} bonds is unsupported (max 2).`);
         }
+
+        // Separate into backbone bonds (R1/R2) and other bonds (R3+ cross-polymer)
+        // A backbone bond connects to the gap's R1 or R2 attachment point
+        let backboneR1Bond: { bI: number, gapSide: 1 | 2 } | null = null; // bond using gap's R1
+        let backboneR2Bond: { bI: number, gapSide: 1 | 2 } | null = null; // bond using gap's R2
+        const otherBonds: number[] = []; // bond indices to just remove
+
+        for (const cb of connectedBonds) {
+          const bond = mol.bonds[cb.bI];
+          // The R-group on the gap's side tells us which attachment point is used
+          const gapR = cb.gapSide === 1 ? bond.r1 : bond.r2;
+          const gapRNum = typeof gapR === 'string' ? parseInt(gapR.replace(/\D/g, '')) : gapR;
+          if (gapRNum === 1)
+            backboneR1Bond = cb;
+          else if (gapRNum === 2)
+            backboneR2Bond = cb;
+          else
+            otherBonds.push(cb.bI);
+        }
+
+        // Remove other (non-backbone) bonds first (iterate in reverse to keep indices valid)
+        otherBonds.sort((a, b) => b - a);
+        for (const bI of otherBonds)
+          mol.bonds.splice(bI, 1);
+
+        // Recalculate bond indices after splice (otherBonds were removed)
+        // We need to adjust backboneR1Bond/R2Bond indices
+        const adjustIdx = (origBi: number): number => {
+          let adj = origBi;
+          for (const removedBi of otherBonds)
+            if (removedBi < origBi) adj--;
+          return adj;
+        };
+
+        const r1 = backboneR1Bond ? {...backboneR1Bond, bI: adjustIdx(backboneR1Bond.bI)} : null;
+        const r2 = backboneR2Bond ? {...backboneR2Bond, bI: adjustIdx(backboneR2Bond.bI)} : null;
+
+        if (r1 && r2) {
+          // Re-link: the neighbor on the R1 side connects directly to the neighbor on the R2 side
+          const r1Bond = mol.bonds[r1.bI];
+          const r2Bond = mol.bonds[r2.bI];
+          // The "other" atom (not the gap) on each bond
+          const r1Neighbor = r1.gapSide === 1 ? r1Bond.a2 : r1Bond.a1;
+          const r2Neighbor = r2.gapSide === 1 ? r2Bond.a2 : r2Bond.a1;
+          const r1NeighborR = r1.gapSide === 1 ? r1Bond.r2 : r1Bond.r1;
+          const r1NeighborApo = r1.gapSide === 1 ? r1Bond.apo2 : r1Bond.apo1;
+          const r2NeighborR = r2.gapSide === 1 ? r2Bond.r2 : r2Bond.r1;
+          const r2NeighborApo = r2.gapSide === 1 ? r2Bond.apo2 : r2Bond.apo1;
+
+          // Rewrite the R1 bond to connect r1Neighbor ↔ r2Neighbor directly
+          r1Bond.a1 = r1Neighbor;
+          r1Bond.r1 = r1NeighborR;
+          r1Bond.apo1 = r1NeighborApo;
+          r1Bond.a2 = r2Neighbor;
+          r1Bond.r2 = r2NeighborR;
+          r1Bond.apo2 = r2NeighborApo;
+
+          // Remove the R2 bond (no longer needed)
+          mol.bonds.splice(r2.bI, 1);
+        } else if (r1 && !r2) {
+          // Gap at the end (only R1 bond) — just remove
+          mol.bonds.splice(r1.bI, 1);
+        } else if (!r1 && r2) {
+          // Gap at the start (only R2 bond) — just remove
+          mol.bonds.splice(r2.bI, 1);
+        }
+        // else: isolated gap, no backbone bonds — just remove atom
+
+        mol.atoms.splice(aI, 1);
       }
     }
 

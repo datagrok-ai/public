@@ -3,7 +3,7 @@ import * as grok from 'datagrok-api/grok';
 
 import {_package} from '../package-test';
 import {readDataframe} from './utils';
-import {before, after, expect, category, test, awaitCheck} from '@datagrok-libraries/utils/src/test';
+import {before, after, expect, category, test, awaitCheck} from '@datagrok-libraries/test/src/test';
 import {chemSpace, runChemSpace} from '../analysis/chem-space';
 import * as chemCommonRdKit from '../utils/chem-common-rdkit';
 import {getSimilaritiesMarix, getSimilaritiesMarixFromDistances} from '../utils/similarity-utils';
@@ -56,15 +56,10 @@ category('top menu chem space', async () => {
     try {
       await awaitCheck(() => {
         return document.querySelector(`.${MALFORMED_DATA_WARNING_CLASS}`)?.innerHTML ===
-        '2 molecules with indexes 31,41 are possibly malformed and are not included in analysis';
+        '3 molecules with indexes 14,31,41 are possibly malformed and are not included in analysis';
       },
       'cannot find warning balloon', 5000);
     } finally {DG.Balloon.closeAll();}
-  });
-
-  after(async () => {
-    grok.shell.closeAll();
-    DG.Balloon.closeAll();
   });
 });
 

@@ -8,7 +8,7 @@ import {
   expect,
   expectArray,
   assure,
-} from '@datagrok-libraries/utils/src/test';
+} from '@datagrok-libraries/test/src/test';
 import {DistanceMatrix} from '@datagrok-libraries/ml/src/distance-matrix';
 import {mapToFixed} from './utils/array-utils';
 

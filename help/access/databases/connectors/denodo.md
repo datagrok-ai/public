@@ -3,7 +3,7 @@ title: "Denodo"
 ---
 
 Provides access to [Denodo](https://www.denodo.com/) database virtualization
-platform via JDBC driver.
+platform via a JDBC driver.
 
 ## Connection parameters
 

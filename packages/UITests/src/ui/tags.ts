@@ -1,4 +1,4 @@
-import { after, before, category, expect, test, awaitCheck, delay } from '@datagrok-libraries/utils/src/test';
+import { after, before, category, expect, test, awaitCheck, delay } from '@datagrok-libraries/test/src/test';
 import * as grok from 'datagrok-api/grok';
 //import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
@@ -17,8 +17,7 @@ category('UI: Tags', () => {
   let v1: DG.View;
 
   before(async () => {
-    const mng: DG.TabPane = grok.shell.sidebar.getPane('Browse');
-    mng.header.click();
+    grok.shell.windows.showBrowse = true;
     let groups: any;
     await delay(1000);
     await awaitCheck(() => {
@@ -76,8 +75,4 @@ category('UI: Tags', () => {
     }), grok.dapi.connections, 'connection');
     await testTags(DG.Script.create('apitests'), grok.dapi.scripts, 'script');
   }, { timeout: 100000 });
-
-  after(async () => {
-    grok.shell.closeAll();
-  });
 }, { clear: false, owner: 'drizhinashvili@datagrok.ai' });

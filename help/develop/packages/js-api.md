@@ -3,7 +3,7 @@ title: "JavaScript API"
 
 ---
 
-[Datagrok JS API](https://datagrok.ai/api/js/api) allows to control all aspects of the Datagrok platform. The API can be
+[Datagrok JS API](https://datagrok.ai/api/js/api) lets you control all aspects of the Datagrok platform. The API can be
 used either from ad-hoc [scripts](../../compute/scripting/scripting.mdx) (`Functions | Scripts | New JavaScript Script`)
 or from [packages](../develop.md#packages).
 
@@ -182,8 +182,8 @@ Code snippets:
 ## Events
 
 We are exposing events coming out of the platform as a stream via the
-[Rx.JS](https://rxjs.dev/) library that makes it easy to compose asynchronous or callback-based code. The API makes easy
-to subscribe to either global, or instance-related events:
+[Rx.JS](https://rxjs.dev/) library that makes it easy to compose asynchronous or callback-based code. The API makes it easy
+to subscribe to either global or instance-related events:
 
 ```javascript
    // global event when user changes the current project

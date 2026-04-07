@@ -80,10 +80,10 @@ or as suggested models on the [Context Panel](../datagrok/navigation/panels/pane
 
 ## Deployment
 
-By itself, building a good model typically does not have a lot of value, but sharing the gained knowledge does. Even if
-the purpose of the model is to increase knowledge of the data, the knowledge gained will need to be organized and
-presented in a way that the customer can use it. Depending on the data and on the requirements, the results could be
-presented as a data table, a report, an interactive visualization, or something else.
+Building a model is only valuable when you share the results. Even if the model's
+purpose is to deepen understanding of the data, findings must be organized and
+presented so that stakeholders can act on them — as a data table, a report, an
+interactive visualization, or another format.
 
 [![Predictive Modeling](../uploads/youtube/predictive_modeling_youtube.png "Open on Youtube")](https://www.youtube.com/watch?v=tVwpRB8fikQ&t=1141s&ab_channel=Datagrok)
 

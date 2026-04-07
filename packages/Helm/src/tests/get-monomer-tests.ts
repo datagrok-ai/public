@@ -6,7 +6,7 @@ import wu from 'wu';
 
 import {
   after, before, category, delay, expect, test, expectArray, testEvent, expectFloat, timeout
-} from '@datagrok-libraries/utils/src/test';
+} from '@datagrok-libraries/test/src/test';
 import {getHelmHelper, getMonomerHandleArgs} from '@datagrok-libraries/bio/src/helm/helm-helper';
 import {errInfo} from '@datagrok-libraries/bio/src/utils/err-info';
 import {Atom, HelmType, IJsAtom, GetMonomerFunc, HelmAtom} from '@datagrok-libraries/bio/src/helm/types';

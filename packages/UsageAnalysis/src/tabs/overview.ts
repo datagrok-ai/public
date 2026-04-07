@@ -12,7 +12,7 @@ import {UaFilter} from '../filter';
 export class OverviewView extends UaView {
   expanded: {[key: string]: boolean} = {f: true, l: true};
 
-  constructor(uaToolbox: UaToolbox) {
+  constructor(uaToolbox?: UaToolbox) {
     super(uaToolbox);
     this.name = 'Overview';
   }

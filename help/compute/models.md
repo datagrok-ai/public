@@ -40,7 +40,7 @@ The [Fermentation](https://public.datagrok.ai/file/System.AppData/DiffStudio/lib
 
 ### PK
 
-[Pharmacokinetics](https://en.wikipedia.org/wiki/Pharmacokinetics) (PK) studies how the body absorbs, distributes, metabolizes, and excretes drugs over time. The [PK](https://public.datagrok.ai/file/System.AppData/DiffStudio/library/pk.ivp) example simulates this process. It demonstrates the numerical [method](diff-studio.md#solver-configuration) choice and show how to prevent long computations.
+[Pharmacokinetics](https://en.wikipedia.org/wiki/Pharmacokinetics) (PK) studies how the body absorbs, distributes, metabolizes, and excretes drugs over time. The [PK](https://public.datagrok.ai/file/System.AppData/DiffStudio/library/pk.ivp) example simulates this process. It demonstrates how to choose a numerical [method](diff-studio.md#solver-configuration) and prevent long computations.
 
 ![add-to-workspace](pics/diff-studio-pk.png)
 
@@ -79,3 +79,4 @@ See also
 * [Compute](compute.md)
 * [Parameter optimization](function-analysis.md#parameter-optimization)
 * [Sensitivity analysis](function-analysis.md#sensitivity-analysis)
+* [Community](https://community.datagrok.ai/t/solving-differential-equations/878)

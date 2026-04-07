@@ -65,6 +65,12 @@ public class HiveDataProvider extends JdbcDataProvider {
 
     @Override
     public Connection getConnection(DataConnection conn) throws SQLException, GrokConnectException {
+        try {
+            Class.forName(driverClassName);
+        }
+        catch (ClassNotFoundException e) {
+            throw new GrokConnectException("JDBC driver not found: " + driverClassName, e);
+        }
         return DriverManager.getConnection(getConnectionString(conn), getProperties(conn));
     }
 
@@ -73,8 +79,7 @@ public class HiveDataProvider extends JdbcDataProvider {
         try (Connection dbConnection = getConnection(connection);
              ResultSet schemas = dbConnection.getMetaData().getSchemas()) {
             DataFrame result = new DataFrame();
-            Column tableSchemaColumn = new StringColumn();
-            tableSchemaColumn.name = "table_schema";
+            Column<?> tableSchemaColumn = new StringColumn("table_schema");
             result.addColumn(tableSchemaColumn);
             while (schemas.next())
                 result.addRow(schemas.getString(1));

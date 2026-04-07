@@ -36,8 +36,7 @@ export const PICK_COLUMN_NAME = 'Pick' as const;
 export abstract class HistoryInputBase<T = DG.FuncCall> extends DG.InputBase<T | null> {
   /**
    * Emitted when parictular historical run is chosen
-   * @deprecated. Use {@link onInput} or {@link onChanged} instead
-   * */
+   **/
   public onHistoricalRunChosen = new BehaviorSubject<DG.FuncCall | null>(null);
 
   // Toggle to force historical runs udpate
@@ -153,7 +152,7 @@ export abstract class HistoryInputBase<T = DG.FuncCall> extends DG.InputBase<T |
       (this._historyDialog.getButton('OK') as HTMLButtonElement).disabled = !chosen;
     });
 
-    this._historyList.onRunsDfChanged.pipe(filter((newDf) => newDf.rowCount > 0), take(1)).subscribe((newDf) => {
+    this._historyList.onRunsDfChanged.pipe(filter((newDf) => newDf.rowCount > 0), take(1)).subscribe(() => {
       this.setCurrentRow();
     });
   }
@@ -167,7 +166,7 @@ export abstract class HistoryInputBase<T = DG.FuncCall> extends DG.InputBase<T |
       if (chosen) {
         // If DFs loading was skipped when the list was loaded, then we should load it now
         if (this.options?.skipDfsOnInit ?? true)
-          chosen = await historyUtils.loadRun(chosen.id, false);
+          chosen = await historyUtils.loadRun(chosen.id);
 
         this.setValue(chosen);
       }

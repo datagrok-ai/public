@@ -1,4 +1,4 @@
-import {after, before, category, expect, test} from '@datagrok-libraries/utils/src/test';
+import {after, before, category, expect, test} from '@datagrok-libraries/test/src/test';
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
@@ -49,9 +49,5 @@ category('UI: Range slider', () => {
     } finally {
       range.setValues(minRange, maxRange, min, max);
     }
-  });
-
-  after(async () => {
-    grok.shell.closeAll();
   });
 }, {clear: false});

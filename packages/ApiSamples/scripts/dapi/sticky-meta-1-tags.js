@@ -1,5 +1,4 @@
 //name: sticky-meta-1-tags
-//tags: demo
 //language: javascript
 
 // uniqueName ensures that created sticky meta configuration will be unique.
@@ -49,6 +48,6 @@ testDf.columns.byName('experiment').setTag('source', experimentTag);
 const metaDataframe = await grok.dapi.stickyMeta.getAllValues(schema, testDf.columns.byName('experiment'));
 
 // Show the result
-for (var col of metaDataframe.columns)
+for (const col of metaDataframe.columns)
   testDf.columns.add(col);
 grok.shell.addTableView(testDf);

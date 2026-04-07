@@ -27,6 +27,14 @@ export const ScopeLabels: Record<string, Scope> = {
   'Assay Results': Scope.ASSAY_RESULTS,
 };
 
+export const ScopeToEntityType: Record<Scope, string> = {
+  [Scope.COMPOUNDS]: 'compound',
+  [Scope.BATCHES]: 'batch',
+  [Scope.ASSAYS]: 'assay',
+  [Scope.ASSAY_RUNS]: 'assay_run',
+  [Scope.ASSAY_RESULTS]: 'assay_result',
+};
+
 export const ScopeLabelsReduced: Record<string, Scope> = {
   'Compounds': Scope.COMPOUNDS,
   'Batches': Scope.BATCHES,

@@ -97,6 +97,9 @@ interface Preventable {
 interface MSAHeaderState {
   isDragging: boolean;
   dragStartX: number;
+  dragMode: 'none' | 'slider' | 'header';
+  dragStartWindowPosition: number;
+  dragOccurred: boolean;
 }
 
 // Track visibility configuration
@@ -593,6 +596,7 @@ const LAYOUT_CONSTANTS = {
   TOP_PADDING: 5,
   DEFAULT_TRACK_HEIGHT: 45,
   MIN_TRACK_HEIGHT: 35,
+  ANNOTATION_TRACK_HEIGHT: 20,
 } as const;
 
 // STRICT HEIGHT THRESHOLDS - All pixel-perfect and deterministic
@@ -666,7 +670,7 @@ export class MSAScrollingHeader {
     this.eventElement.style.position = 'absolute';
     this.config.canvas.parentElement?.appendChild(this.eventElement);
 
-    this.state = {isDragging: false, dragStartX: 0};
+    this.state = {isDragging: false, dragStartX: 0, dragMode: 'none', dragStartWindowPosition: 1, dragOccurred: false};
     this.setupEventListeners();
     this.init();
   }
@@ -675,6 +679,7 @@ export class MSAScrollingHeader {
     const currentHeight = this.config.headerHeight;
     const webLogoTrack = this.getTrack('weblogo');
     const conservationTrack = this.getTrack('conservation');
+    const annotationTrack = this.getTrack('annotations');
 
     // Reset all tracks
     this.tracks.forEach((track) => {
@@ -688,33 +693,44 @@ export class MSAScrollingHeader {
       return;
     }
 
-    if (currentHeight < HEIGHT_THRESHOLDS.WITH_WEBLOGO()) {
-      // 58px - 106px: Title only, no tracks
+    // Annotation track: compact (20px), shown whenever it exists and there's title space.
+    // It was only added to the tracks map when it had regions, so existence implies data.
+    let annotationSpace = 0;
+    if (annotationTrack) {
+      annotationTrack.setVisible(true);
+      annotationTrack.setHeight(LAYOUT_CONSTANTS.ANNOTATION_TRACK_HEIGHT);
+      annotationSpace = LAYOUT_CONSTANTS.ANNOTATION_TRACK_HEIGHT + LAYOUT_CONSTANTS.TRACK_GAP;
+    }
+
+    // Adjust thresholds for the space consumed by the annotation track
+    const weblogoThreshold = HEIGHT_THRESHOLDS.WITH_WEBLOGO() + annotationSpace;
+    const bothThreshold = HEIGHT_THRESHOLDS.WITH_BOTH() + annotationSpace;
+
+    if (currentHeight < weblogoThreshold) {
+      // Not enough room for WebLogo — annotation track only (if present)
       return;
     }
 
-    if (currentHeight < HEIGHT_THRESHOLDS.WITH_BOTH()) {
-      // 107px - 155px: WebLogo only
+    if (currentHeight < bothThreshold) {
+      // Room for WebLogo (+ annotations if present)
       if (webLogoTrack) {
         webLogoTrack.setVisible(true);
-        // Scale WebLogo with extra space
-        const extraSpace = currentHeight - HEIGHT_THRESHOLDS.WITH_WEBLOGO();
+        const extraSpace = currentHeight - weblogoThreshold;
         webLogoTrack.setHeight(LAYOUT_CONSTANTS.DEFAULT_TRACK_HEIGHT + extraSpace);
       }
       return;
     }
 
-    // 156px+: Both tracks
+    // Room for all tracks
     if (webLogoTrack)
       webLogoTrack.setVisible(true);
 
     if (conservationTrack)
       conservationTrack.setVisible(true);
 
-
     // Distribute extra space to WebLogo
-    if (webLogoTrack && currentHeight > HEIGHT_THRESHOLDS.WITH_BOTH()) {
-      const extraSpace = currentHeight - HEIGHT_THRESHOLDS.WITH_BOTH();
+    if (webLogoTrack && currentHeight > bothThreshold) {
+      const extraSpace = currentHeight - bothThreshold;
       webLogoTrack.setHeight(LAYOUT_CONSTANTS.DEFAULT_TRACK_HEIGHT + extraSpace);
     }
 
@@ -727,10 +743,10 @@ export class MSAScrollingHeader {
       });
 
       // But auto-hide if height is insufficient regardless of user preference
-      if (currentHeight < HEIGHT_THRESHOLDS.WITH_WEBLOGO() && webLogoTrack)
+      if (currentHeight < weblogoThreshold && webLogoTrack)
         webLogoTrack.setVisible(false);
 
-      if (currentHeight < HEIGHT_THRESHOLDS.WITH_BOTH() && conservationTrack)
+      if (currentHeight < bothThreshold && conservationTrack)
         conservationTrack.setVisible(false);
     }
   }
@@ -744,9 +760,11 @@ export class MSAScrollingHeader {
 
     const conservationTrack = this.getTrack<MSAHeaderTrack>('conservation');
     const webLogoTrack = this.getTrack<MSAHeaderTrack>('weblogo');
+    const annotationTrack = this.getTrack<MSAHeaderTrack>('annotations');
 
     const conservationVisible = conservationTrack?.isVisible() ?? false;
     const webLogoVisible = webLogoTrack?.isVisible() ?? false;
+    const annotationVisible = annotationTrack?.isVisible() ?? false;
 
     const buttonHeight = 14;
     const buttonGap = 4;
@@ -758,9 +776,9 @@ export class MSAScrollingHeader {
       (LAYOUT_CONSTANTS.TITLE_HEIGHT - buttonHeight) / 2 : // Center in title area
       2; // Or just 2px from top if no title
 
-
-    // Show individual track buttons only if not both are visible
-    if (!(conservationVisible && webLogoVisible)) {
+    // Show buttons for hidden tracks so users can toggle them on
+    const allMainVisible = conservationVisible && webLogoVisible;
+    if (!allMainVisible) {
       if (!conservationVisible && conservationTrack) {
         buttonX -= buttonWidth;
         this.drawTrackButton('conservation', 'Conservation', buttonX, buttonY, buttonWidth, buttonHeight);
@@ -770,7 +788,13 @@ export class MSAScrollingHeader {
       if (!webLogoVisible && webLogoTrack) {
         buttonX -= buttonWidth;
         this.drawTrackButton('weblogo', 'WebLogo', buttonX, buttonY, buttonWidth, buttonHeight);
+        buttonX -= buttonGap;
       }
+    }
+
+    if (!annotationVisible && annotationTrack) {
+      buttonX -= buttonWidth;
+      this.drawTrackButton('annotations', 'Annotations', buttonX, buttonY, buttonWidth, buttonHeight);
     }
   }
 
@@ -816,37 +840,45 @@ export class MSAScrollingHeader {
   }
 
   private snapToTrackHeight(trackId: string): void {
+    // Calculate annotation space — the annotation track is always shown if present
+    const annotationTrack = this.getTrack('annotations');
+    const annotationSpace = annotationTrack
+      ? LAYOUT_CONSTANTS.ANNOTATION_TRACK_HEIGHT + LAYOUT_CONSTANTS.TRACK_GAP : 0;
+
     let targetHeight: number;
 
-    if (trackId === 'weblogo')
-      targetHeight = HEIGHT_THRESHOLDS.WITH_WEBLOGO();
+    if (trackId === 'annotations') {
+      // Just ensure title + annotation height
+      targetHeight = HEIGHT_THRESHOLDS.WITH_TITLE() + annotationSpace;
+    } else if (trackId === 'weblogo')
+      targetHeight = HEIGHT_THRESHOLDS.WITH_WEBLOGO() + annotationSpace;
     else if (trackId === 'conservation')
-      targetHeight = HEIGHT_THRESHOLDS.WITH_BOTH();
+      targetHeight = HEIGHT_THRESHOLDS.WITH_BOTH() + annotationSpace;
     else
       return;
-
 
     // Set user preference
     if (!this.userSelectedTracks) {
       this.userSelectedTracks = {};
       this.tracks.forEach((track, id) => {
-        this.userSelectedTracks![id] = false; // Start with all hidden
+        // Annotation track defaults to visible (compact, always-on); others start hidden
+        this.userSelectedTracks![id] = id === 'annotations';
       });
     }
 
     // Enable the requested track and any dependencies
-    if (trackId === 'conservation') {
+    if (trackId === 'annotations') {
+      this.userSelectedTracks['annotations'] = true;
+    } else if (trackId === 'conservation') {
       this.userSelectedTracks['weblogo'] = true; // Conservation requires WebLogo
       this.userSelectedTracks['conservation'] = true;
-    } else if (trackId === 'weblogo')
+    } else if (trackId === 'weblogo') {
       this.userSelectedTracks['weblogo'] = true;
-      // Don't change conservation setting
-
+    }
 
     // Snap to exact height
     if (this.config.onHeaderHeightChange)
       this.config.onHeaderHeightChange(targetHeight);
-
 
     window.requestAnimationFrame(() => this.redraw());
   }
@@ -854,9 +886,13 @@ export class MSAScrollingHeader {
   private resetToAutoMode(): void {
     this.userSelectedTracks = null;
 
-    // Calculate automatic initial height
+    // Calculate automatic initial height, accounting for annotation track
+    const annotationTrack = this.getTrack('annotations');
+    const annotationSpace = annotationTrack
+      ? LAYOUT_CONSTANTS.ANNOTATION_TRACK_HEIGHT + LAYOUT_CONSTANTS.TRACK_GAP : 0;
     const hasMultipleSequences = this.tracks.size > 0;
-    const initialHeight = hasMultipleSequences ? HEIGHT_THRESHOLDS.WITH_BOTH() : HEIGHT_THRESHOLDS.BASE;
+    const initialHeight = hasMultipleSequences
+      ? HEIGHT_THRESHOLDS.WITH_BOTH() + annotationSpace : HEIGHT_THRESHOLDS.BASE;
 
     if (this.config.onHeaderHeightChange)
       this.config.onHeaderHeightChange(initialHeight);
@@ -951,18 +987,15 @@ export class MSAScrollingHeader {
       return;
     }
 
-    // Find hovered track working backwards from dotted cells
+    // Find hovered track working backwards from dotted cells (same order as drawing)
     let hoveredTrackId: string | null = null;
     let trackRelativeY = 0;
 
     const visibleTracks: Array<{id: string, track: MSAHeaderTrack}> = [];
-    const webLogoTrack = this.getTrack<MSAHeaderTrack>('weblogo');
-    if (webLogoTrack && webLogoTrack.isVisible())
-      visibleTracks.push({id: 'weblogo', track: webLogoTrack});
-
-    const conservationTrack = this.getTrack<MSAHeaderTrack>('conservation');
-    if (conservationTrack && conservationTrack.isVisible())
-      visibleTracks.push({id: 'conservation', track: conservationTrack});
+    this.tracks.forEach((track, id) => {
+      if (track.isVisible())
+        visibleTracks.push({id, track});
+    });
 
     let currentY = tracksEndY;
     for (const {id, track} of visibleTracks) {
@@ -1024,7 +1057,7 @@ export class MSAScrollingHeader {
       }
     }
 
-    if (!hoveredTrackId || !currentHoverMonomer) {
+    if (!hoveredTrackId) {
       this.hideTooltip();
       this.clearHoverStates();
     }
@@ -1077,15 +1110,12 @@ export class MSAScrollingHeader {
     const tracksEndY = dottedCellsTop - LAYOUT_CONSTANTS.TRACK_GAP;
     const visibleTrackPositions: { y: number, height: number }[] = [];
 
-    // Draw tracks working backwards from dotted cells
+    // Draw tracks working backwards from dotted cells (insertion order: annotations → weblogo → conservation)
     const visibleTracks: Array<{id: string, track: MSAHeaderTrack}> = [];
-    const webLogoTrack = this.getTrack<MSAHeaderTrack>('weblogo');
-    if (webLogoTrack && webLogoTrack.isVisible())
-      visibleTracks.push({id: 'weblogo', track: webLogoTrack});
-
-    const conservationTrack = this.getTrack<MSAHeaderTrack>('conservation');
-    if (conservationTrack && conservationTrack.isVisible())
-      visibleTracks.push({id: 'conservation', track: conservationTrack});
+    this.tracks.forEach((track, id) => {
+      if (track.isVisible())
+        visibleTracks.push({id, track});
+    });
 
     let currentY = tracksEndY;
     for (const {track} of visibleTracks) {
@@ -1281,9 +1311,10 @@ export class MSAScrollingHeader {
     this.eventElement.addEventListener('mousemove', (e) => {
       if (!this.isValid) return;
 
-      if (this.isInSliderDraggableArea(e)) this.eventElement.style.cursor = 'grab';
+      if (this.state.isDragging && this.state.dragMode === 'header') this.eventElement.style.cursor = 'grabbing';
+      else if (this.isInSliderDraggableArea(e)) this.eventElement.style.cursor = 'grab';
       else if (this.isInSliderArea(e)) this.eventElement.style.cursor = 'pointer';
-      else if (this.isInHeaderArea(e)) this.eventElement.style.cursor = 'pointer';
+      else if (this.isInHeaderArea(e)) this.eventElement.style.cursor = 'grab';
       else this.eventElement.style.cursor = 'default';
     });
 
@@ -1299,6 +1330,7 @@ export class MSAScrollingHeader {
   }
 
   private handleSelectionClick(e: MouseEvent): void {
+    if (this.state.dragOccurred) return;
     if (!this.isValid || !this.dataFrame || !this.seqColumn || !this.seqHandler) return;
 
     const {x, y} = this.getCoords(e);
@@ -1428,11 +1460,20 @@ export class MSAScrollingHeader {
 
   private handleMouseDown(e: MouseEvent): void {
     if (!this.isValid) return;
-    const {x} = this.getCoords(e);
+    const {x, y} = this.getCoords(e);
     if (this.isInSliderDraggableArea(e)) {
       this.state.isDragging = true;
+      this.state.dragMode = 'slider';
       this.state.dragStartX = x;
       this.handleSliderDrag(x);
+      e.preventDefault();
+      e.stopPropagation();
+      e.stopImmediatePropagation();
+    } else if (this.isInHeaderArea(e) && !this.isInSliderArea(e)) {
+      this.state.isDragging = true;
+      this.state.dragMode = 'header';
+      this.state.dragStartX = x;
+      this.state.dragStartWindowPosition = this.config.windowStartPosition;
       e.preventDefault();
       e.stopPropagation();
       e.stopImmediatePropagation();
@@ -1465,7 +1506,22 @@ export class MSAScrollingHeader {
     const rect = this.canvas!.getBoundingClientRect();
     const x = e.clientX - rect.left - this.config.x;
 
-    this.handleSliderDrag(x);
+    this.state.dragOccurred = true;
+
+    if (this.state.dragMode === 'slider') {
+      this.handleSliderDrag(x);
+    } else if (this.state.dragMode === 'header') {
+      const deltaX = x - this.state.dragStartX;
+      const deltaPositions = Math.round(deltaX / this.config.positionWidth);
+      const visiblePositions = Math.floor(this.config.width / this.config.positionWidth);
+      const maxStart = this.config.totalPositions - visiblePositions + 1;
+      this.config.windowStartPosition = Math.max(1, Math.min(maxStart,
+        this.state.dragStartWindowPosition - deltaPositions));
+
+      if (typeof this.config.onPositionChange === 'function')
+        this.config.onPositionChange(this.config.currentPosition, this.getWindowRange());
+    }
+
     e.preventDefault();
     e.stopPropagation();
     e.stopImmediatePropagation();
@@ -1512,6 +1568,10 @@ export class MSAScrollingHeader {
 
   private handleMouseUp(): void {
     this.state.isDragging = false;
+    this.state.dragMode = 'none';
+    // Reset dragOccurred asynchronously so click handlers (which fire after mouseup) can still see it
+    if (this.state.dragOccurred)
+      setTimeout(() => { this.state.dragOccurred = false; }, 0);
   }
 
   private handleSliderDrag(x: number): void {
@@ -1541,6 +1601,7 @@ export class MSAScrollingHeader {
   }
 
   private handleClick(e: MouseEvent): void {
+    if (this.state.dragOccurred) return;
     if (!this.isValid) return;
 
     const absoluteX = e.clientX - this.canvas!.getBoundingClientRect().left;
@@ -1555,8 +1616,11 @@ export class MSAScrollingHeader {
       return;
     }
 
-    if (this.isInsideColumnHeaderArea(x, y))
+    if (this.isInsideColumnHeaderArea(x, y)) {
+      if (this.seqColumn)
+        grok.shell.o = this.seqColumn;
       return;
+    }
 
     const sliderTop = this.config.headerHeight - LAYOUT_CONSTANTS.SLIDER_HEIGHT;
 

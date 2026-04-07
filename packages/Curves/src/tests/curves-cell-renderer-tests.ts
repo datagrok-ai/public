@@ -5,7 +5,7 @@ import * as ui from 'datagrok-api/ui';
 
 import wu from 'wu';
 import {createSigmoidPoints, createDemoDataFrame} from '../fit/fit-demo';
-import {category, test, delay} from '@datagrok-libraries/utils/src/test';
+import {category, test, delay} from '@datagrok-libraries/test/src/test';
 import {FitChartCellRenderer} from '../fit/fit-renderer';
 import {IFitChartData} from '@datagrok-libraries/statistics/src/fit/fit-curve';
 import {FitConstants} from '@datagrok-libraries/statistics/src/fit/const';

@@ -1,6 +1,8 @@
-// Atom manipulations
-// Original example: http://www.cheminfo.org/Chemistry/Cheminformatics/OpenChemLib_js/index.html
-// For more details, visit https://github.com/cheminfo/openchemlib-js
+/**
+ * Atom manipulations
+ * Original example: http://www.cheminfo.org/Chemistry/Cheminformatics/OpenChemLib_js/index.html
+ * For more details, visit https://github.com/cheminfo/openchemlib-js
+ */
 
 let v = grok.shell.newView('atoms');
 let smiles = 'c1(ccc2N=C(C)N(C(=O)c2c1)c3ccc(OC)cc3)NC(=S)Nc4ccccc4';

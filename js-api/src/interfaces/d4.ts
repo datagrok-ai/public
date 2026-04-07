@@ -5,10 +5,6 @@ export interface IBarChartSettings {
   /// Determines the rows shown on the scatter plot.
   rowSource: keyof typeof RowSet;
 
-  /// Formula that filters out rows to show.
-  /// Example: "${AGE} > 20 or ${WEIGHT / 2) > 100"
-  filter: string;
-
   /// Determines what happens when you click on a bar.
   onClick: keyof typeof RowGroupAction;
 
@@ -37,6 +33,10 @@ export interface IBarChartSettings {
 
   axisType: keyof typeof AxisType;
 
+  valueMin: number;
+
+  valueMax: number;
+
   showValueAxis: boolean;
 
   showValueSelector: boolean;
@@ -58,6 +58,7 @@ export interface IBarChartSettings {
 
   /// A categorical column to further split data on.
   /// Each category would become a part of the bar resulting from *Split*.
+  /// Shows stacked bars only when *Value Aggr Type* is additive.
   stack: string;
   stackColumnName: string;
 
@@ -98,6 +99,8 @@ export interface IBarChartSettings {
 
   showValueAxisLine: boolean;
 
+  showCategoryZeroBaseline: boolean;
+
   barBorderLineMouseOverWidth: number;
 
   barBorderLineWidth: number;
@@ -113,6 +116,10 @@ export interface IBarChartSettings {
   axisFont: string;
 
   minTextHeight: number;
+
+  /// When enabled, shows hatched areas and arrows on bars
+  /// that are clipped by the value axis range.
+  showClippedBarIndicators: boolean;
 
   backColor: number;
 
@@ -149,6 +156,13 @@ export interface IBarChartSettings {
   legendVisibility: keyof typeof VisibilityMode;
 
   legendPosition: keyof typeof FlexAutoPosition;
+
+  /// Formula that filters out rows to show.
+  /// Examples:
+  ///   ${AGE} > 20 or ${WEIGHT / 2)} > 100,
+  ///   ${SEVERITY} == 'Medium',
+  ///   ${RACE}.endsWith('sian')
+  filter: string;
 
   /// Viewer controls elements font.
   controlsFont: string;
@@ -281,6 +295,10 @@ export interface IBoxPlotSettings {
 
   showValueSelector: boolean;
 
+  /// If checked, focuses on filtered points (on value axis) as the filter changes.
+  /// If current value column is filtered, zoom is not applied.
+  zoomValuesByFilter: boolean;
+
   /// Include plots, which are empty or have null values.
   showEmptyCategories: boolean;
 
@@ -389,6 +407,8 @@ export interface IBoxPlotSettings {
 
   viewport: string;
 
+  allowColorSynchronization: boolean;
+
   autoLayout: boolean;
 
   /// When checked, both categories from **Category 1** and **Category 2** columns are shown ignoring axis size adjustments.
@@ -404,6 +424,7 @@ export interface IBoxPlotSettings {
 
   whiskerLineWidth: number;
 
+  /// Width of interquartile line, if **Auto Layout** is enabled, it will be scaled when violins are too narrow.
   interquartileLineWidth: number;
 
   whiskerWidthRatio: number;
@@ -451,8 +472,8 @@ export interface IBoxPlotSettings {
 
   /// Formula that filters out rows to show.
   /// Examples:
-  ///   ${AGE} > 20 or ${WEIGHT / 2) > 100
-  ///   ${SEVERITY} == 'Medium'
+  ///   ${AGE} > 20 or ${WEIGHT / 2)} > 100,
+  ///   ${SEVERITY} == 'Medium',
   ///   ${RACE}.endsWith('sian')
   filter: string;
 
@@ -523,8 +544,8 @@ export interface ICalendarSettings {
 
   /// Formula that filters out rows to show.
   /// Examples:
-  ///   ${AGE} > 20 or ${WEIGHT / 2) > 100
-  ///   ${SEVERITY} == 'Medium'
+  ///   ${AGE} > 20 or ${WEIGHT / 2)} > 100,
+  ///   ${SEVERITY} == 'Medium',
   ///   ${RACE}.endsWith('sian')
   filter: string;
 
@@ -625,8 +646,8 @@ export interface IConfusionMatrixSettings {
 
   /// Formula that filters out rows to show.
   /// Examples:
-  ///   ${AGE} > 20 or ${WEIGHT / 2) > 100
-  ///   ${SEVERITY} == 'Medium'
+  ///   ${AGE} > 20 or ${WEIGHT / 2)} > 100,
+  ///   ${SEVERITY} == 'Medium',
   ///   ${RACE}.endsWith('sian')
   filter: string;
 
@@ -696,8 +717,8 @@ export interface ICorrelationPlotSettings {
 
   /// Formula that filters out rows to show.
   /// Examples:
-  ///   ${AGE} > 20 or ${WEIGHT / 2) > 100
-  ///   ${SEVERITY} == 'Medium'
+  ///   ${AGE} > 20 or ${WEIGHT / 2)} > 100,
+  ///   ${SEVERITY} == 'Medium',
   ///   ${RACE}.endsWith('sian')
   filter: string;
 
@@ -777,6 +798,14 @@ export interface IDensityPlotSettings {
 
   showYSelector: boolean;
 
+  xMin: number;
+
+  yMin: number;
+
+  xMax: number;
+
+  yMax: number;
+
   bins: number;
 
   allowZoom: boolean;
@@ -787,13 +816,15 @@ export interface IDensityPlotSettings {
 
   backColor: number;
 
+  viewport: string;
+
   /// Determines the rows shown on the plot.
   rowSource: keyof typeof RowSet;
 
   /// Formula that filters out rows to show.
   /// Examples:
-  ///   ${AGE} > 20 or ${WEIGHT / 2) > 100
-  ///   ${SEVERITY} == 'Medium'
+  ///   ${AGE} > 20 or ${WEIGHT / 2)} > 100,
+  ///   ${SEVERITY} == 'Medium',
   ///   ${RACE}.endsWith('sian')
   filter: string;
 
@@ -980,6 +1011,9 @@ export interface IGridSettings {
 
   showColumnLabels: boolean;
 
+  /// When checked, friendly name gets shown underneath the column name.
+  showFriendlyName: boolean;
+
   /// Column header height. If not specified, it is calculated automatically.
   /// See also *Col Labels Orientation*, *Horz Col Labels Height*
   colHeaderHeight: number;
@@ -1029,8 +1063,8 @@ export interface IGridSettings {
   /// Ctrl+Shift+click to deselect
   allowColSelection: boolean;
 
-  /// Mouse drag on the rows header selects rows
-  /// Reorder rows by dragging them
+  /// Drag any cell (except the row number) to reorder rows
+  /// Drag the row number column to select rows
   allowRowReordering: boolean;
 
   /// Whether to sort when user double-clicks on the column header
@@ -1216,8 +1250,8 @@ export interface IGridSettings {
 
   /// Formula that filters out rows to show.
   /// Examples:
-  ///   ${AGE} > 20 or ${WEIGHT / 2) > 100
-  ///   ${SEVERITY} == 'Medium'
+  ///   ${AGE} > 20 or ${WEIGHT / 2)} > 100,
+  ///   ${SEVERITY} == 'Medium',
   ///   ${RACE}.endsWith('sian')
   filter: string;
 
@@ -1327,8 +1361,15 @@ export interface IHistogramSettings {
   /// Show bin selector in the left top panel when the mouse is over the histogram
   showBinSelector: boolean;
 
+  ///Show bin values on top of the bars
+  showValues: boolean;
+
   /// Number of bins on the histogram
   bins: number;
+
+  valueMin: number;
+
+  valueMax: number;
 
   /// A categorical column to split data on (each bar represents a category)
   split: string;
@@ -1389,6 +1430,9 @@ export interface IHistogramSettings {
   /// Only applicable when *spline* is true and *split* is empty
   fillSpline: boolean;
 
+  /// Shows distribution lines for each stack or spline category in the histogram (see also **Split** and  **Split Stack**).
+  showDistributionLines: boolean;
+
   showColumnSelector: boolean;
 
   showSplitSelector: boolean;
@@ -1425,9 +1469,13 @@ export interface IHistogramSettings {
 
   selectedBinsColor: number;
 
+  valuesColor: number;
+
   filteredOutColor: number;
 
   showCharts: boolean;
+
+  viewport: string;
 
   marginLeft: number;
 
@@ -1452,8 +1500,8 @@ export interface IHistogramSettings {
 
   /// Formula that filters out rows to show.
   /// Examples:
-  ///   ${AGE} > 20 or ${WEIGHT / 2) > 100
-  ///   ${SEVERITY} == 'Medium'
+  ///   ${AGE} > 20 or ${WEIGHT / 2)} > 100,
+  ///   ${SEVERITY} == 'Medium',
   ///   ${RACE}.endsWith('sian')
   filter: string;
 
@@ -1533,6 +1581,8 @@ export interface ILineChartSettings {
 
   showXSelector: boolean;
 
+  showVerticalGridLines: boolean;
+
   xAxisLabelOrientation: string;
 
   xAxisTickmarksMode: keyof typeof AxisTickmarksMode;
@@ -1554,6 +1604,8 @@ export interface ILineChartSettings {
   showYAxis: boolean;
 
   yGlobalScale: boolean;
+
+  showHorizontalGridLines: boolean;
 
   /// Axis title to be shown on the left axis in multi-axis mode
   yAxisTitle: string;
@@ -1584,8 +1636,15 @@ export interface ILineChartSettings {
 
   markerSize: number;
 
+  markerOpacity: number;
+
   /// A boolean column that determines whether to show markers.
   showMarkers: keyof typeof VisibilityMode;
+
+  markersSize: string;
+  markersSizeColumnName: string;
+
+  markersSizeAggrType: string;
 
   markersVisibility: string;
   markersVisibilityColumnName: string;
@@ -1653,6 +1712,9 @@ export interface ILineChartSettings {
 
   showAggrTypeSelector: boolean;
 
+  /// Determines whether the points and lines are highlighted when you hover over a row group in another viewer.
+  showMouseOverRowGroup: boolean;
+
   /// Marker type for showing the distribution of the aggregated values
   /// when multiple values have the same X value
   whiskersType: string;
@@ -1667,6 +1729,8 @@ export interface ILineChartSettings {
   segmentsFont: string;
 
   lineWidth: number;
+
+  whiskerWidth: number;
 
   lineTransparency: number;
 
@@ -1703,6 +1767,8 @@ export interface ILineChartSettings {
   mouseOverLineColor: number;
 
   currentLineColor: number;
+
+  gridLineColor: number;
 
   selectedRowsColor: number;
 
@@ -1776,6 +1842,8 @@ export interface ILineChartSettings {
 
   outerChartMarginBottom: number;
 
+  viewport: string;
+
   formulaLines: string;
 
   /// Control the visibility of dataframe-originated formula lines.
@@ -1799,8 +1867,8 @@ export interface ILineChartSettings {
 
   /// Formula that filters out rows to show.
   /// Examples:
-  ///   ${AGE} > 20 or ${WEIGHT / 2) > 100
-  ///   ${SEVERITY} == 'Medium'
+  ///   ${AGE} > 20 or ${WEIGHT / 2)} > 100,
+  ///   ${SEVERITY} == 'Medium',
   ///   ${RACE}.endsWith('sian')
   filter: string;
 
@@ -1897,8 +1965,8 @@ export interface IMapViewerSettings {
 
   /// Formula that filters out rows to show.
   /// Examples:
-  ///   ${AGE} > 20 or ${WEIGHT / 2) > 100
-  ///   ${SEVERITY} == 'Medium'
+  ///   ${AGE} > 20 or ${WEIGHT / 2)} > 100,
+  ///   ${SEVERITY} == 'Medium',
   ///   ${RACE}.endsWith('sian')
   filter: string;
 
@@ -2015,8 +2083,8 @@ export interface IMatrixPlotSettings {
 
   /// Formula that filters out rows to show.
   /// Examples:
-  ///   ${AGE} > 20 or ${WEIGHT / 2) > 100
-  ///   ${SEVERITY} == 'Medium'
+  ///   ${AGE} > 20 or ${WEIGHT / 2)} > 100,
+  ///   ${SEVERITY} == 'Medium',
   ///   ${RACE}.endsWith('sian')
   filter: string;
 
@@ -2356,8 +2424,8 @@ export interface IPcPlotSettings {
 
   /// Formula that filters out rows to show.
   /// Examples:
-  ///   ${AGE} > 20 or ${WEIGHT / 2) > 100
-  ///   ${SEVERITY} == 'Medium'
+  ///   ${AGE} > 20 or ${WEIGHT / 2)} > 100,
+  ///   ${SEVERITY} == 'Medium',
   ///   ${RACE}.endsWith('sian')
   filter: string;
 
@@ -2444,9 +2512,14 @@ export interface IPieChartSettings {
 
   missingValueColor: number;
 
-  showInnerPercent: boolean;
+  /// Show the label (text or image) inside the pie.
+  showLabel: boolean;
 
-  showInnerLabel: boolean;
+  /// Show the percent value inside the pie.
+  showPercentage: boolean;
+
+  /// Show the number of values inside the pie.
+  showValue: boolean;
 
   showColumnSelector: boolean;
 
@@ -2475,8 +2548,8 @@ export interface IPieChartSettings {
 
   /// Formula that filters out rows to show.
   /// Examples:
-  ///   ${AGE} > 20 or ${WEIGHT / 2) > 100
-  ///   ${SEVERITY} == 'Medium'
+  ///   ${AGE} > 20 or ${WEIGHT / 2)} > 100,
+  ///   ${SEVERITY} == 'Medium',
   ///   ${RACE}.endsWith('sian')
   filter: string;
 
@@ -2542,8 +2615,8 @@ export interface IPivotViewerSettings {
 
   /// Formula that filters out rows to show.
   /// Examples:
-  ///   ${AGE} > 20 or ${WEIGHT / 2) > 100
-  ///   ${SEVERITY} == 'Medium'
+  ///   ${AGE} > 20 or ${WEIGHT / 2)} > 100,
+  ///   ${SEVERITY} == 'Medium',
   ///   ${RACE}.endsWith('sian')
   filter: string;
 
@@ -2588,6 +2661,8 @@ export interface IPointsViewerSettings {
 
   /// Additional columns to display in the tooltip
   tooltipColumnNames: Array<string>;
+
+  colorScheme: Array<number>;
 
   allowDynamicMenus: boolean;
 
@@ -2639,8 +2714,8 @@ export interface IRocCurveSettings {
 
   /// Formula that filters out rows to show.
   /// Examples:
-  ///   ${AGE} > 20 or ${WEIGHT / 2) > 100
-  ///   ${SEVERITY} == 'Medium'
+  ///   ${AGE} > 20 or ${WEIGHT / 2)} > 100,
+  ///   ${SEVERITY} == 'Medium',
   ///   ${RACE}.endsWith('sian')
   filter: string;
 
@@ -2739,6 +2814,15 @@ export interface IScatterPlotSettings {
 
   showYSelector: boolean;
 
+  /// Shows a distribution histogram along the X axis (at the top)
+  showXHistogram: boolean;
+
+  /// Shows a distribution histogram along the Y axis (on the right)
+  showYHistogram: boolean;
+
+  /// Number of bins for axis histograms
+  histogramBins: number;
+
   /// Point lower bound for x axis whiskers. Selecting it disables *X Whisker Range*.
   xWhiskerMin: string;
   xWhiskerMinColumnName: string;
@@ -2827,6 +2911,10 @@ export interface IScatterPlotSettings {
   linesOrder: string;
   linesOrderColumnName: string;
 
+  /// When defined, lines are split into separate series by this categorical column instead of the color column.
+  linesBy: string;
+  linesByColumnName: string;
+
   /// Defines the width of the lines connecting the markers. See **Lines Width**.
   linesWidth: number;
 
@@ -2870,6 +2958,7 @@ export interface IScatterPlotSettings {
 
   showRootMeanSquareError: boolean;
 
+  /// Supports up to 20 categories. Otherwise, a common regression line is shown.
   regressionPerCategory: boolean;
 
   /// Control the visibility of dataframe-originated formula lines.
@@ -2891,6 +2980,14 @@ export interface IScatterPlotSettings {
   /// Highlight 'mouse-over' rows (such as the ones that fall into a histogram bin that
   /// the mouse is currently hovering over).
   showMouseOverRowGroup: boolean;
+
+  /// When true, selected markers are highlighted using the selected rows color.
+  /// When false, selected markers use their regular color coding.
+  showSelectedRows: boolean;
+
+  /// When true, clicking on the background (no point hit) clears the current selection.
+  /// Set to false to preserve the selection when accidentally clicking outside of the markers.
+  resetSelectionOnBackgroundClick: boolean;
 
   /// Shows tickmarks and labels for minimum and maximum value on each axis.
   showMinMaxTickmarks: boolean;
@@ -2965,6 +3062,9 @@ export interface IScatterPlotSettings {
   /// Requires *showTooltip* to be enabled.
   rowTooltip: string;
 
+  /// Delay in milliseconds before showing row tooltip
+  tooltipDelay: number;
+
   rowGroupTooltip: string;
 
   /// If true, *X Axis Height* and *Y Axis Width* are calculated automatically to fit the required precision.
@@ -2996,8 +3096,8 @@ export interface IScatterPlotSettings {
 
   /// Formula that filters out rows to show.
   /// Examples:
-  ///   ${AGE} > 20 or ${WEIGHT / 2) > 100
-  ///   ${SEVERITY} == 'Medium'
+  ///   ${AGE} > 20 or ${WEIGHT / 2)} > 100,
+  ///   ${SEVERITY} == 'Medium',
   ///   ${RACE}.endsWith('sian')
   filter: string;
 
@@ -3106,8 +3206,8 @@ export interface IScatterPlot3dSettings {
 
   /// Formula that filters out rows to show.
   /// Examples:
-  ///   ${AGE} > 20 or ${WEIGHT / 2) > 100
-  ///   ${SEVERITY} == 'Medium'
+  ///   ${AGE} > 20 or ${WEIGHT / 2)} > 100,
+  ///   ${SEVERITY} == 'Medium',
   ///   ${RACE}.endsWith('sian')
   filter: string;
 
@@ -3209,8 +3309,8 @@ export interface IStatsViewerSettings {
 
   /// Formula that filters out rows to show.
   /// Examples:
-  ///   ${AGE} > 20 or ${WEIGHT / 2) > 100
-  ///   ${SEVERITY} == 'Medium'
+  ///   ${AGE} > 20 or ${WEIGHT / 2)} > 100,
+  ///   ${SEVERITY} == 'Medium',
   ///   ${RACE}.endsWith('sian')
   filter: string;
 
@@ -3338,17 +3438,13 @@ export interface ITileViewerSettings {
 
   /// Formula that filters out rows to show.
   /// Examples:
-  ///   ${AGE} > 20 or ${WEIGHT / 2) > 100
-  ///   ${SEVERITY} == 'Medium'
+  ///   ${AGE} > 20 or ${WEIGHT / 2)} > 100,
+  ///   ${SEVERITY} == 'Medium',
   ///   ${RACE}.endsWith('sian')
   filter: string;
 
   allowDynamicMenus: boolean;
 
-  // Properties common for all viewers
-  // todo: use code generation
-  // Properties common for all viewers
-  // todo: use code generation
   // Properties common for all viewers
   // todo: use code generation
   showContextMenu: boolean;
@@ -3361,27 +3457,15 @@ export interface ITileViewerSettings {
 
   /// Viewer description that gets shown at the *Descriptor Position*.
   /// Markup is supported.
-  /// Viewer description that gets shown at the *Descriptor Position*.
-  /// Markup is supported.
-  /// Viewer description that gets shown at the *Descriptor Position*.
-  /// Markup is supported.
   description: string;
 
-  /// Help to be shown when user clicks on the '?' icon on top.
-  /// Could either be in markdown, or a URL (starting with '/' or 'http').
-  /// Help to be shown when user clicks on the '?' icon on top.
-  /// Could either be in markdown, or a URL (starting with '/' or 'http').
   /// Help to be shown when user clicks on the '?' icon on top.
   /// Could either be in markdown, or a URL (starting with '/' or 'http').
   help: string;
 
   /// Namespace-qualified function that gets executed when a viewer is initialized
-  /// Namespace-qualified function that gets executed when a viewer is initialized
-  /// Namespace-qualified function that gets executed when a viewer is initialized
   initializationFunction: string;
 
-  /// JavaScript that gets executed after a viewer is initialized and added to the TableView
-  /// JavaScript that gets executed after a viewer is initialized and added to the TableView
   /// JavaScript that gets executed after a viewer is initialized and added to the TableView
   onInitializedScript: string;
 
@@ -3423,8 +3507,8 @@ export interface ITreeMapSettings {
 
   /// Formula that filters out rows to show.
   /// Examples:
-  ///   ${AGE} > 20 or ${WEIGHT / 2) > 100
-  ///   ${SEVERITY} == 'Medium'
+  ///   ${AGE} > 20 or ${WEIGHT / 2)} > 100,
+  ///   ${SEVERITY} == 'Medium',
   ///   ${RACE}.endsWith('sian')
   filter: string;
 
@@ -3483,17 +3567,25 @@ export interface ITrellisPlotSettings {
 
   innerViewerLooks: {[index: string]: any};
 
-  globalScale: boolean;
-
   showGridlines: string;
 
   showXSelectors: boolean;
 
   showYSelectors: boolean;
 
+  /// Shows horizontal axis for each inner viewer row.
+  /// Depending on selected inner viewer, axis may be hidden automatically.
   showXAxes: keyof typeof VisibilityMode;
 
+  /// Shows vertical axis for each inner viewer column.
+  /// Depending on selected inner viewer, axis may be hidden automatically.
   showYAxes: keyof typeof VisibilityMode;
+
+  /// If checked, all inner viewers use the same axis scales.
+  globalScale: boolean;
+
+  /// Shows range sliders for inner viewer axis. Available only if corresponding axes (X or Y) are shown.
+  showRangeSliders: boolean;
 
   showXLabels: boolean;
 
@@ -3516,6 +3608,8 @@ export interface ITrellisPlotSettings {
 
   backColor: number;
 
+  viewport: string;
+
   legendVisibility: keyof typeof VisibilityMode;
 
   legendPosition: keyof typeof FlexAutoPosition;
@@ -3525,8 +3619,8 @@ export interface ITrellisPlotSettings {
 
   /// Formula that filters out rows to show.
   /// Examples:
-  ///   ${AGE} > 20 or ${WEIGHT / 2) > 100
-  ///   ${SEVERITY} == 'Medium'
+  ///   ${AGE} > 20 or ${WEIGHT / 2)} > 100,
+  ///   ${SEVERITY} == 'Medium',
   ///   ${RACE}.endsWith('sian')
   filter: string;
 

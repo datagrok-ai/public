@@ -431,7 +431,7 @@ div.ui-box > div.power-pack-activity-widget-content.ui-div.ui-panel {
     min-height: 70px;
 }
 
-.dlg-add-new-column{
+.add-new-column-dialog-root > .d4-dialog-contents {
     flex-direction: row;
     overflow: hidden;
     max-width: 100%
@@ -696,4 +696,298 @@ body.dartium .power-pack-widgets-host.ui-div {
 
 .d4-dialog-header-hidden {
     display: none;
+}
+
+.power-pack-enrichment-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 6px 8px;
+    border-radius: 4px;
+}
+
+.power-pack-enrichment-row:hover {
+    background: var(--grey-1);
+}
+
+.power-pack-enrichment-actions {
+    display: flex;
+    gap: 8px;
+    opacity: 0;
+}
+
+.power-pack-enrichment-row:hover .power-pack-enrichment-actions {
+    opacity: 1;
+}
+
+.power-pack-enrichment-actions .fa-times {
+    color: var(--grey-4);
+}
+
+.power-pack-enrichment-actions .fa-times:hover {
+    color: var(--red-3);
+}
+
+/* Add enrichment button */
+.power-pack-enrich-add {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+
+    margin-top: 8px;
+    margin-left: 12px;
+    padding: 4px 6px;
+
+    background: none;               /* ← remove pill */
+    border: none;
+    border-radius: 4px;
+
+    color: var(--grey-4);            /* slightly stronger */
+    font-size: 12px;
+    font-weight: 500;
+
+    cursor: pointer;
+}
+
+.power-pack-enrich-add:hover {
+    color: var(--blue-1);
+    background: var(--grey-1);       /* subtle hover only */
+    text-decoration: none;
+}
+
+.power-pack-enrich-add i {
+    font-size: 12px;
+    opacity: 1;
+}
+
+.power-pack-enrich-add span {
+    opacity: 0.85;
+}
+
+.power-pack-enrich-info {
+    font-size: 12px;
+    color: var(--grey-4);
+    padding: 6px 8px;
+    margin: 4px 0;
+}
+
+.power-pack-enrich-empty {
+    margin-left: 16px;
+    margin-top: 6px;
+}
+
+.power-pack-enrich-empty-title {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--grey-6);
+    margin-bottom: 2px;
+}
+
+.power-pack-enrich-empty-sub {
+    font-size: 12px;
+    color: var(--grey-4);
+    margin-bottom: 6px;
+}
+
+.power-pack-enrich-via {
+    font-size: 11px;
+    color: var(--grey-4);
+    font-style: italic;
+    margin-left: 4px;
+    pointer-events: none;
+    white-space: nowrap;
+    align-self: baseline;
+}
+
+
+/** Cron Input */
+
+.pp-cron-root {
+    display: flex;
+    flex-direction: column;
+    position: relative;
+}
+
+.pp-cron-main-row {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.pp-cron-preset-select {
+    flex: 1;
+    height: 28px;
+    padding: 0 20px 0 4px;
+    border: none;
+    border-bottom: 1px solid var(--grey-2);
+    border-radius: 0;
+    font-size: 13px;
+    color: var(--grey-6);
+    background: transparent url('/images/chevron.svg') no-repeat right 55%;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    outline: none;
+}
+
+.pp-cron-preset-select:focus {
+    border-bottom-color: var(--blue-1);
+}
+
+.pp-cron-toggle {
+    cursor: pointer;
+    color: var(--grey-3);
+    font-size: 12px;
+    padding: 4px;
+    transition: color 0.15s;
+}
+
+.pp-cron-toggle:hover {
+    color: var(--grey-5);
+}
+
+.pp-cron-toggle.pp-cron-toggle-active {
+    color: var(--blue-1);
+}
+
+.pp-cron-info {
+    font-size: 11px;
+    color: var(--grey-4);
+    min-height: 14px;
+    padding: 2px 4px 0;
+    line-height: 1.3;
+}
+
+.pp-cron-info.pp-cron-info-error {
+    color: var(--red-3);
+}
+
+.pp-cron-advanced {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    position: absolute;
+    top: 100%;
+    right: 0;
+    z-index: 100;
+    width: 360px;
+    padding: 14px 16px 12px;
+    margin-top: 8px;
+    background: var(--white, #fff);
+    border: 1px solid var(--grey-2);
+    border-radius: 6px;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12), 0 2px 6px rgba(0, 0, 0, 0.06);
+    opacity: 1;
+    transition: opacity 0.15s ease;
+}
+
+.pp-cron-advanced::before {
+    content: '';
+    position: absolute;
+    top: -6px;
+    right: 4px;
+    width: 10px;
+    height: 10px;
+    background: var(--white, #fff);
+    border-left: 1px solid var(--grey-2);
+    border-top: 1px solid var(--grey-2);
+    transform: rotate(45deg);
+}
+
+.pp-cron-advanced.pp-cron-collapsed {
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+}
+
+.pp-cron-fields-row {
+    display: flex;
+    gap: 4px;
+}
+
+.pp-cron-field {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-width: 0;
+}
+
+.pp-cron-field-label {
+    font-size: 10px;
+    color: var(--grey-4);
+    margin-bottom: 1px;
+    text-align: center;
+}
+
+.pp-cron-field-input {
+    width: 100%;
+    height: 24px;
+    padding: 0 2px;
+    border: none;
+    border-bottom: 1px solid var(--grey-2);
+    border-radius: 0;
+    font-size: 12px;
+    text-align: center;
+    font-family: monospace;
+    color: var(--grey-6);
+    background: transparent;
+    box-sizing: border-box;
+    outline: none;
+}
+
+.pp-cron-field-input:focus {
+    border-bottom-color: var(--blue-1);
+}
+
+.pp-cron-raw-row {
+    margin-top: 2px;
+    padding: 6px 8px;
+    background: var(--grey-1);
+    border-radius: 3px;
+}
+
+.pp-cron-raw-input {
+    width: 100%;
+    height: 22px;
+    padding: 0;
+    border: none;
+    font-size: 13px;
+    font-family: 'Roboto Mono', 'SF Mono', 'Consolas', monospace;
+    letter-spacing: 0.5px;
+    color: var(--grey-6);
+    background: transparent;
+    outline: none;
+    box-sizing: border-box;
+}
+
+.pp-cron-raw-input:focus {
+    color: var(--blue-1);
+}
+
+.pp-cron-description {
+    font-size: 11px;
+    color: var(--grey-5);
+    font-style: italic;
+    min-height: 14px;
+    line-height: 1.3;
+}
+
+.pp-cron-dow-hint {
+    font-size: 9px;
+    color: var(--grey-4);
+    text-align: center;
+    min-height: 12px;
+    margin-top: 1px;
+}
+
+.pp-cron-invalid {
+    border-bottom: 1px solid var(--red-3) !important;
+}
+
+.pp-cron-raw-input.pp-cron-invalid {
+    border-bottom: none !important;
+    color: var(--red-3);
+}
+
+.pp-cron-raw-row:has(.pp-cron-invalid) {
+    background: rgba(235, 103, 103, 0.08);
 }

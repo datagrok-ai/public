@@ -6,7 +6,6 @@ import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 
 import {ColumnInputOptions} from '@datagrok-libraries/utils/src/type-declarations';
-import {delay} from '@datagrok-libraries/utils/src/test';
 import {ALPHABET, NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';
 import {ISeqHelper} from '@datagrok-libraries/bio/src/utils/seq-helper';
 
@@ -82,7 +81,7 @@ export async function multipleSequenceAlignmentUI(
         table: table, value: seqCol, onValueChanged: async (value: DG.Column<any>) => {
           if (!value || value.semType !== DG.SEMTYPE.MACROMOLECULE) {
             okBtn.disabled = true;
-            await delay(0); // to
+            await DG.delay(0); // to
             colInput.value = prevSeqCol as DG.Column<string>;
             return;
           }

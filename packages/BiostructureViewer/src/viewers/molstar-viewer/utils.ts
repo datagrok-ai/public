@@ -22,7 +22,7 @@ import {defaults, molecule3dFileExtensions} from './consts';
 import {parseAndVisualsData} from './molstar-viewer-open';
 import {PluginCommands} from 'molstar/lib/mol-plugin/commands';
 import {PluginLayoutControlsDisplay, PluginLayoutStateProps} from 'molstar/lib/mol-plugin/layout';
-import {delay, testEvent} from '@datagrok-libraries/utils/src/test';
+import {testEvent} from '@datagrok-libraries/utils/src/test';
 import {_package} from '../../package';
 
 /** Creates viewer, ensures to complete creation awaiting first render */
@@ -53,7 +53,7 @@ export async function createRcsbViewer(
 export async function disposeRcsbViewer(viewer: RcsbViewer, container: HTMLElement): Promise<void> {
   await viewer.clear(); // alternative free
   viewer.plugin.dispose();
-  await delay(2000);
+  await DG.delay(2000);
   $(container).empty();
 }
 
@@ -144,7 +144,8 @@ export function previewMolstarUI(file: DG.FileInfo): { view: DG.View, loadingPro
     throw new Error(`Unsupported format: ${file.extension}`);
   }
 
-  const view = DG.View.create({name: 'Molstar preview'});
+  const view = DG.View.create();
+  view.name = file.name;
   let viewer: RcsbViewer;
   const subs: Unsubscribable[] = [];
   subs.push(ui.onSizeChanged(view.root).subscribe((value: any) => {

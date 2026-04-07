@@ -10,7 +10,7 @@ import TabItem from '@theme/TabItem';
 import BrowserWindow from '@site/src/components/browser-window';
 ```
 
-You can call a script from external source via REST API endpoint.
+You can call a script from an external source via a REST API endpoint.
 Calling a script requires:
 - input values,
 - authentication token

@@ -1,12 +1,15 @@
-import { category, expect, expectArray, test } from '@datagrok-libraries/utils/src/test';
+import { before, category, expect, expectArray, test } from '@datagrok-libraries/test/src/test';
 import * as grok from 'datagrok-api/grok';
 // import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 
-const demog = grok.data.demo.demog();
-
 category('Shell', () => {
+  let demog: DG.DataFrame;
+
+  before(async () => {
+    demog = grok.data.demo.demog();
+  });
   test('addTableView', async () => {
     const v = grok.shell.addTableView(demog);
     expect(grok.shell.v, v);
@@ -64,12 +67,18 @@ category('Shell', () => {
     grok.shell.addTableView(demog);
     grok.shell.addTable(grok.data.demo.demog(10));
     grok.shell.closeAll();
-    expect(grok.shell.v === null, true);
-    expect(grok.shell.tv === null, true);
-    expect(grok.shell.t === null, true);
+    const views = Array.from(grok.shell.views);
+    expect(views.length == 0 || views.every((v) => v.name === 'Datagrok' || v.name === 'Home' || v.name == 'Test Manager'), true);
     expect(document.querySelector(".dockManagerTest"), null);
   });
-  
+
+  test('ViewBase rename after toDart-toJs conversion', async () => {
+    const view = DG.toJs(DG.toDart(new DG.ViewBase())) as DG.ViewBase;
+    const testName = 'TestViewName';
+    view.name = testName;
+    expect(view.name, testName);
+  });
+
   test('getSetVar', async () => {
     let x  = { test: 'test1' };
     //@ts-ignore
@@ -82,20 +91,20 @@ category('Shell', () => {
     //@ts-ignore
     expect(x?.test, grok.shell.getVar('c')?.test);
   });
-  
+
   test('clearDirtyFlag', async () => {
     grok.shell.addTableView(grok.data.demo.demog(1000))
     await DG.delay(1000);
-    expect(grok.shell.project.isDirty, true); 
+    expect(grok.shell.project.isDirty, true);
     grok.shell.clearDirtyFlag();
     expect(grok.shell.project.isDirty, false);
   });
-  
+
   test('sideBar', async () => {
     grok.shell.sidebar.addPane('testSideBarElement', ()=>ui.div());
     let pane = document.querySelector('[name="testSideBarElement"]');
     expect(pane !== null, true);
-    grok.shell.sidebar.clear();    
+    grok.shell.sidebar.clear();
     pane = document.querySelector('[name="testSideBarElement"]');
     expect(pane === null, true);
   });

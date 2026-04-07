@@ -10,9 +10,9 @@ import TabItem from '@theme/TabItem';
 import BrowserWindow from '@site/src/components/browser-window';
 ```
 
-You may customize the script view using additional GUI-related options.
+You can customize the script view using additional GUI-related options.
 Most of them are hints to improve the interface for your scripts.
-You should list options in curly braces in corresponding header lines.
+List options in curly braces in the corresponding header lines.
 The order of the hints makes no difference. All options are optional.
 
 
@@ -22,7 +22,7 @@ You can add a custom caption for an input parameter.
 Proper caption helps the user to understand the meaning of the parameter.
 Caption will be rendered in the script input form.
 
-Additinally, you can add a hint. To do that, place the hint text in the square brackets
+Additionally, you can add a hint. To do that, place the hint text in square brackets
 after the parameter annotation.
 
 ```mdx-code-block
@@ -110,3 +110,34 @@ You can group script inputs into categories using the `category` tag.
 </TabItem>
 </Tabs>
 ```
+
+## Choices
+
+Datagrok natively supports the `choices` capability for primitive input types.
+You can use it to pass one value from a pre-populated list or a list of selected values to the script.
+
+```mdx-code-block
+<Tabs>
+<TabItem value="single" label="Single choice" default>
+```
+
+![Single Choices example](../../../datagrok/concepts/functions/single-choice-input.png)
+
+```mdx-code-block
+</TabItem>
+<TabItem value="multiple" label="Multiple choices" default>
+```
+
+![Multiple Choices example](../../../datagrok/concepts/functions/multiple-choice-input.png)
+
+```mdx-code-block
+</TabItem>
+</Tabs>
+```
+
+You can define choices using a list of fixed values,  
+a CSV file,
+a name of another function,
+or a direct SQL query.
+For details, visit the page 
+[Function annotations](../../../datagrok/concepts/functions/func-params-annotation.md#choices).

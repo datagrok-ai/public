@@ -2,7 +2,6 @@ import * as DG from 'datagrok-api/dg';
 import { queryStructureById } from './revvity-api';
 import { ComplexCondition, Operators } from '@datagrok-libraries/utils/src/query-builder/query-builder';
 import { SignalsSearchQuery } from './signals-search-query';
-import { delay } from '@datagrok-libraries/utils/src/test';
 import { funcs } from './package-api';
 
 export const assetsQuery = {
@@ -202,7 +201,7 @@ export async function addMoleculeStructures(moleculeIds: string[], molCol: DG.Co
             if (batchIndex < batches.length - 1) {
                 if (pb.canceled)
                     break;
-                await delay(1000);
+                await DG.delay(1000);
             }
         }
     } catch (e: any) {

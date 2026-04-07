@@ -1,7 +1,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import {after, awaitCheck, before, category, expect,
-  isDialogPresent, test} from '@datagrok-libraries/utils/src/test';
+  isDialogPresent, test} from '@datagrok-libraries/test/src/test';
 import {AddNewColumnDialog} from '../dialogs/add-new-column';
 import {FUNC_HINTS, FUNC_TESTS, FUNC_VALIDATION} from './utils';
 import { expectTyped } from './dialogs';
@@ -21,6 +21,7 @@ category('Add new column', () => {
     for (const f of funcs) {
       const call = DG.Func.find({ name: 'AddNewColumn' })[0].prepare({'table': df});
       const dlg = new AddNewColumnDialog(call);
+      await awaitCheck(() => dlg.codeMirror != null, 'cannot load CodeMirror', 5000);
       await awaitCheck(() => isDialogPresent(dlg.addColumnTitle));
       for (const [expression, result] of Object.entries(FUNC_TESTS[f.name])) {
         const columnName = df.columns.getUnusedName(expression);
@@ -49,6 +50,7 @@ category('Add new column', () => {
   test('validation', async () => {
     const call = DG.Func.find({ name: 'AddNewColumn' })[0].prepare({'table': df});
     const dlg = new AddNewColumnDialog(call);
+    await awaitCheck(() => dlg.codeMirror != null, 'cannot load CodeMirror', 5000);
     await awaitCheck(() => isDialogPresent(dlg.addColumnTitle));
     for (const f of Object.keys(FUNC_VALIDATION)) {
         dlg.codeMirror!.dispatch({
@@ -66,6 +68,7 @@ category('Add new column', () => {
   test('hints', async () => {
     const call = DG.Func.find({ name: 'AddNewColumn' })[0].prepare({'table': df});
     const dlg = new AddNewColumnDialog(call);
+    await awaitCheck(() => dlg.codeMirror != null, 'cannot load CodeMirror', 5000);
     await awaitCheck(() => isDialogPresent(dlg.addColumnTitle));
     for (const f of Object.keys(FUNC_HINTS)) {
       dlg.codeMirror!.dispatch({
@@ -92,8 +95,9 @@ category('Add new column', () => {
       });
       await awaitCheck(() => dlg.codeMirror!.state.doc.toString() === '', 'code mirror has\'t been cleared');
     }
-    const call = DG.Func.find({ name: 'AddNewColumn' })[0].prepare({'table': df});      
+    const call = DG.Func.find({ name: 'AddNewColumn' })[0].prepare({'table': df});
     const dlg = new AddNewColumnDialog(call);
+    await awaitCheck(() => dlg.codeMirror != null, 'cannot load CodeMirror', 5000);
     await awaitCheck(() => isDialogPresent(dlg.addColumnTitle));
     const absFuncLink = dlg.widgetFunctions?.root.querySelector('[name="span-Abs"]') as HTMLElement;
     //check function is added on click
@@ -107,10 +111,5 @@ category('Add new column', () => {
     await awaitCheck(() => dlg.codeMirror!.state.doc.toString() === 'Abs(${age})', 'expression has\'t been set', 3000);
     await awaitCheck(() => dlg.gridPreview!.dataFrame.col('Abs(${age})') ? dlg.gridPreview!.dataFrame.get('Abs(${age})', 0) === 61 : false, 'incorrect preview data', 3000);
     await awaitCheck(() => dlg.gridPreview!.dataFrame.get('Abs(${age})', 9) === 26, 'incorrect preview data', 1000);
-  });
-
-  after(async () => {
-    grok.shell.closeAll();
-    DG.Balloon.closeAll();
   });
 }, {clear: false});

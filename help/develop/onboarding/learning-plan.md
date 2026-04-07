@@ -65,8 +65,8 @@ The goal for today is to gain experience with the platform by learning about its
    1. Read documentation:
       1. [Functions](../../datagrok/concepts/functions/functions.md)
       1. [Parameter annotation](../../datagrok/concepts/functions/func-params-annotation.md)
-      1. See the list of supported [constants](../../transform/functions/constants.md) and
-         [operators](../../transform/functions/operators.md). Explore the groups of functions in the table of contents
+      1. See the list of supported [constants](../../transform/formula-syntax.md#constants) and
+         [operators](../../transform/formula-syntax.md#operators). Explore the groups of functions in the table of contents
          (statistical, math, text, conversion, etc.).
    1. Browse the [Functions](https://public.datagrok.ai/functions) view and filter functions by tags (`#stats`, `#math`,
       `#text`, `#conversion`, etc.). Run simple functions, e.g., `Abs`, `Add` or `And`, from the context panel and the

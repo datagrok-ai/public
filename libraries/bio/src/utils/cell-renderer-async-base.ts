@@ -53,6 +53,7 @@ export abstract class RenderServiceBase<TProps extends PropsBase, TAux> {
     protected _errorCount: number = 0,
     protected readonly errorLimit: number = 3,
     protected readonly taskTimout: number = 1000,
+    protected readonly maxQueueSize: number = 100,
   ) {
     this._queue = [];
     this._queueDict = {};
@@ -95,9 +96,20 @@ export abstract class RenderServiceBase<TProps extends PropsBase, TAux> {
     }
 
     this.logger.debug(`${logPrefix}, _queue.push(), ` + `key: ${key?.toString()}`);
-    if (consumerId === null)
+    if (consumerId == null)
       consumerId = ++this.consumerCounter;
     this._queue.push({consumerId, key, task, tryCount, dt: window.performance.now()});
+
+    // Purge off-screen tasks when queue grows too large (e.g. during fast scrolling)
+    if (this._queue.length > this.maxQueueSize) {
+      for (let i = this._queue.length - 2; i >= 0; i--) { // skip the just-pushed item
+        const item = this._queue[i];
+        if (item.task.isPriority && !item.task.isPriority()) {
+          if (item.key !== undefined) delete this._queueDict[item.key];
+          this._queue.splice(i, 1);
+        }
+      }
+    }
 
     if (!this._busy) {
       this._sweepToggle(this._busy = true);
@@ -173,6 +185,14 @@ export abstract class RenderServiceBase<TProps extends PropsBase, TAux> {
       this.logger.debug(`${logPrefix}, ` + `key: ${key.toString()}`);
       delete this._queueDict[key];
     }
+
+    // Skip tasks that are no longer visible (e.g. user scrolled past during fast scrolling)
+    if (task.isPriority && !task.isPriority()) {
+      this.logger.debug(`${logPrefix}, skip off-screen task, key: ${key?.toString()}`);
+      finallyProcessQueue('off-screen');
+      return;
+    }
+
     if (tryCount > this.retryLimit) {
       this.logger.warning(`${logPrefix}, skip task, ` +
         ` key: ${key?.toString()}, tryCount: ${tryCount}`);
@@ -235,7 +255,7 @@ export abstract class RenderServiceBase<TProps extends PropsBase, TAux> {
       if ((nowDt - dt) > this.taskTimout) {
         // stalled task
         this.logger.warning(`${logPrefix}, remove task key = ${key?.toString()}`);
-        this._queue.splice(qI);
+        this._queue.splice(qI, 1);
         delete this._queueDict[key!];
         ++swept;
       }
@@ -248,13 +268,13 @@ export abstract class RenderServiceBase<TProps extends PropsBase, TAux> {
 
   private _sweepToggle(busy: boolean): boolean {
     const logPrefix: string = `${this.toLog()}._sweepToggle( busy = ${busy} )`;
-    if (busy && this._sweeperHandle !== null) {
-      this.logger.debug(`${logPrefix}, disable queue sweeper`);
+    if (!busy && this._sweeperHandle !== null) {
+      this.logger.debug(`${logPrefix}, disable queue sweeper (idle)`);
       window.clearInterval(this._sweeperHandle);
       this._sweeperHandle = null;
     }
-    if (!busy && this._sweeperHandle === null) {
-      this.logger.debug(`${logPrefix}, enable queue sweeper`);
+    if (busy && this._sweeperHandle == null) {
+      this.logger.debug(`${logPrefix}, enable queue sweeper (busy)`);
       this._sweeperHandle = window.setInterval(() => { this._sweepQueue(); }, 500);
     }
     return busy;
@@ -372,7 +392,6 @@ export abstract class CellRendererBackAsyncBase<TProps extends PropsBase, TAux>
           this.getRenderTaskProps(gridCell, backColor, gridCellWidth, gridCellHeight),
           /* onAfterRender */(cellCanvas: HTMLCanvasElement, aux: TAux) => {
             this.storeAux(gridCell, aux);
-            g.save();
             try {
               this.logger.debug('PdbRenderer.render() onAfterRender() ' + `rowIdx = ${rowIdx}`);
               let cellCanvasCtx = cellCanvas.getContext('2d')!;
@@ -384,12 +403,25 @@ export abstract class CellRendererBackAsyncBase<TProps extends PropsBase, TAux>
               }
 
               const cellCanvasData = cellCanvasCtx.getImageData(0, 0, cellCanvas.width, cellCanvas.height);
-              this.renderCellImageData(g, new DG.Rect(x, y, w, h), gridCell, cellCanvasData);
 
               if (this.cacheEnabled)
                 this.imageCache.set(cellValue, cellCanvasData);
+
+              // Only draw to grid if cell is still visible; otherwise just cache and invalidate
+              const stillVisible = !this.gridCol || !gridCell.grid ||
+                ((gridCell.grid.vertScroll.min - 1) <= gridCell.gridRow &&
+                  gridCell.gridRow <= gridCell.grid.vertScroll.max);
+              if (stillVisible) {
+                g.save();
+                try {
+                  this.renderCellImageData(g, new DG.Rect(x, y, w, h), gridCell, cellCanvasData);
+                } finally {
+                  g.restore();
+                }
+              } else {
+                this.invalidateGrid();
+              }
             } finally {
-              g.restore();
               this.taskQueueMap.delete(cellValue);
               if (this.taskQueueMap.size === 0)
                 this._onRendered.next();

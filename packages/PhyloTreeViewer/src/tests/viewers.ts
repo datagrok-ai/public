@@ -3,7 +3,7 @@ import * as DG from 'datagrok-api/dg';
 //import * as ui from 'datagrok-api/ui';  await _package.files.readAsText(name);
 
 import {_package} from '../package-test';
-import {before, category, test, testViewer} from '@datagrok-libraries/utils/src/test';
+import {before, category, test, testViewer} from '@datagrok-libraries/test/src/test';
 import {getTreeHelper, ITreeHelper} from '@datagrok-libraries/bio/src/trees/tree-helper';
 
 
@@ -14,7 +14,7 @@ category('Viewers', () => {
     treeHelper = await getTreeHelper();
   });
 
-  const viewers = DG.Func.find({package: 'PhyloTreeViewer', tags: ['viewer']}).map((f) => f.friendlyName);
+  const viewers = DG.Func.find({package: 'PhyloTreeViewer', meta: {role: DG.FUNC_TYPES.VIEWER}}).map((f) => f.friendlyName);
   for (const v of viewers) {
     test(v, async () => {
       await testViewer(v, await (async () => {

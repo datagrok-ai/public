@@ -1,7 +1,7 @@
 import type * as _grok from 'datagrok-api/grok';
 declare let grok: typeof _grok;
 
-import {category, test} from '@datagrok-libraries/utils/src/test';
+import {category, test} from '@datagrok-libraries/test/src/test';
 
 category('Dapi: users', () => {
   test('current', async () => {

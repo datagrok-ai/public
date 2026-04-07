@@ -1,5 +1,20 @@
 # tutorials changelog
 
+## 1.7.5 (2026-03-06)
+
+### Features
+
+* Achievement badges support
+
+### Bug Fixes
+
+* Demo script: fixed multiple panels opening on restart and TypeError when current view is null (GROK-19821)
+* Click tracking: fixed Unknown logs in some cases (GROK-18787)
+
+### Improvements
+
+* Decreased bundle size by removing unnecessary usages of test library
+
 ## 1.3.13 (2024-08-07)
 
 ### Features

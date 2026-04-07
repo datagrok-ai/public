@@ -1,7 +1,6 @@
 #name: Revvity ETL
 #description: ETL process for Revvity Signals data - exports libraries, processes CSV files, and prepares data for MolTrack
 #language: python
-#tags: etl, revvity, bulk-export
 #output: dataframe result [Processed dataframe with all libraries combined]
 
 import pandas as pd

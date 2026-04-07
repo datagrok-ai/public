@@ -7,7 +7,7 @@
 //input: double x0 = 0 [Initial conditions for rate of convective motion - i.e. how fast the rolls are rotating]
 //input: double y0 = 1 [Initial conditions for temperature difference between the ascending and descending currents]
 //input: double z0 = 1.05 [Initial conditions for distortion (from linearity) of the vertical temperature profile]
-//output: dataframe df {caption: Lorenz attractor; viewer: 3d Scatter plot())}
+//output: dataframe df {caption: Lorenz attractor; viewer: 3d Scatter plot()}
 //editor: Compute:RichFunctionViewEditor
 //meta.runOnOpen: true
 //meta.runOnInput: true

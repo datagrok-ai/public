@@ -7,6 +7,7 @@ export function info() : void {
 }
 
 //tags: init
+//meta.role: init
 export async function init() : Promise<void> {
   await PackageFunctions.init();
 }
@@ -43,6 +44,7 @@ export async function PCA(table: DG.DataFrame, features: DG.ColumnList, componen
 //input: double epsilon = 0.01 { description: Minimum distance between two points to be considered as in the same neighborhood. }
 //input: int minimumPoints = 5 { description: Minimum number of points to form a dense region. }
 //meta.defaultPostProcessingFunction: true
+//meta.role: dim-red-postprocessing-function
 export async function dbscanPostProcessingFunction(col1: DG.Column, col2: DG.Column, epsilon: number, minimumPoints: number) : Promise<void> {
   await PackageFunctions.dbscanPostProcessingFunction(col1, col2, epsilon, minimumPoints);
 }
@@ -54,6 +56,7 @@ export async function dbscanPostProcessingFunction(col1: DG.Column, col2: DG.Col
 //output: object result
 //meta.supportedTypes: int,float,double,qnum
 //meta.supportedDistanceFunctions: Difference
+//meta.role: dim-red-preprocessing-function
 export function numberPreprocessingFunction(col: DG.Column, _metric: string) {
   return PackageFunctions.numberPreprocessingFunction(col, _metric);
 }
@@ -65,6 +68,7 @@ export function numberPreprocessingFunction(col: DG.Column, _metric: string) {
 //output: object result
 //meta.supportedTypes: string
 //meta.supportedDistanceFunctions: One-Hot,Levenshtein,Hamming
+//meta.role: dim-red-preprocessing-function
 export function stringPreprocessingFunction(col: DG.Column, _metric: string) {
   return PackageFunctions.stringPreprocessingFunction(col, _metric);
 }
@@ -77,6 +81,7 @@ export async function reduceDimensionality() : Promise<void> {
 
 //tags: editor
 //input: funccall call 
+//meta.role: editor
 export function GetMCLEditor(call: DG.FuncCall) : void {
   PackageFunctions.GetMCLEditor(call);
 }
@@ -105,6 +110,7 @@ export async function MCLClustering(df: DG.DataFrame, cols: DG.Column[], metrics
 //tags: viewer
 //output: viewer result
 //meta.showInGallery: false
+//meta.role: viewer
 export function markovClusteringViewer() : any {
   return PackageFunctions.markovClusteringViewer();
 }
@@ -535,6 +541,25 @@ export function paretoFront() : void {
 //tags: viewer
 //output: viewer result
 //meta.icon: icons/pareto-front-viewer.svg
+//meta.role: viewer
 export function paretoFrontViewer() : any {
   return PackageFunctions.paretoFrontViewer();
+}
+
+//description: Train probabilistic multi-parameter optimization (pMPO) model
+export function trainPmpo() : void {
+  PackageFunctions.trainPmpo();
+}
+
+//input: view view 
+//output: object result
+export function getPmpoAppItems(view: any) : any {
+  return PackageFunctions.getPmpoAppItems(view);
+}
+
+//description: Generates syntethetic dataset oriented on the pMPO modeling
+//input: int samples 
+//output: dataframe Synthetic
+export async function generatePmpoDataset(samples: number) : Promise<any> {
+  return await PackageFunctions.generatePmpoDataset(samples);
 }

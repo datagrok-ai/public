@@ -1,0 +1,23 @@
+{
+  "name": "customer details",
+  "connection": "Dbtests:PostgresTest",
+  "keySchema": "public",
+  "keyTable": "customers",
+  "keyColumn": "customerid",
+  "fields": [
+    "public.customers.customerid",
+    "public.customers.companyname",
+    "public.customers.contactname",
+    "public.customers.city",
+    "public.customers.country"
+  ],
+  "joins": [
+    {
+      "leftTableName": "public.customers",
+      "rightTableName": "public.orders",
+      "joinType": "left",
+      "leftTableKeys": ["customerid"],
+      "rightTableKeys": ["customerid"]
+    }
+  ]
+}

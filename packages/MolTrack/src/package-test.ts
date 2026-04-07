@@ -1,4 +1,4 @@
-import {runTests, tests, TestContext, initAutoTests as initTests} from '@datagrok-libraries/utils/src/test';
+import {runTests, tests, TestContext, initAutoTests as initTests} from '@datagrok-libraries/test/src/test';
 import * as DG from 'datagrok-api/dg';
 
 export const _package = new DG.Package();

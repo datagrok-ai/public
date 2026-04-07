@@ -44,18 +44,38 @@ export class SeqHandler implements ISeqHandler {
   private _refinerPromise: Promise<void> = Promise.resolve();
   public get refinerPromise(): Promise<void> { return this._refinerPromise; }
 
+  private runInnerDetector() {
+    if (!this._column.temp['seqHandlerDetectorRun']) {
+      this._column.temp['seqHandlerDetectorRun'] = true;
+      const detectorFunc = DG.Func.find({name: 'detectMacromolecule', meta: {role: 'semTypeDetector'}})[0];
+      if (detectorFunc)
+        detectorFunc.applySync({col: this._column});
+    }
+  }
+
   protected constructor(col: DG.Column<string>,
     private readonly seqHelper: SeqHelper,
   ) {
     if (col.type !== DG.TYPE.STRING)
       throw new Error(`Unexpected column type '${col.type}', must be '${DG.TYPE.STRING}'.`);
     this._column = col;
-    const units: string | null = this._column.meta.units;
-    if (!units)
-      throw new Error('Units are not specified in column');
+    let units: string | null = this._column.meta.units;
+    if (!units) {
+      // it may be from layout that the macromolecule semtype is set but every other tag is missing, so we manually run detectors
+      this.runInnerDetector();
+      units = this._column.meta.units;
+      if (!units)
+        throw new Error('Units are not specified in column');
+    }
     this._units = units!;
 
     this._notation = this.getNotation();
+    if ([NOTATION.BILN, NOTATION.CUSTOM, NOTATION.SEPARATOR].includes(this._notation) && !this.column.getTag(TAGS.separator)) {
+      this.runInnerDetector();
+      if (!this.column.getTag(TAGS.separator))
+        throw new Error(`Separator tag '${TAGS.separator}' is not set for notation '${this._notation}'.`);
+    }
+
     if (this.isCustom() || this.isBiln()) {
       // this.column.temp[SeqTemps.notationProvider] must be set at detector stage
       this.notationProvider = this.column.temp[SeqTemps.notationProvider] ?? null;
@@ -149,8 +169,7 @@ export class SeqHandler implements ISeqHandler {
 
     const stats = getStats(categoriesSample, 3, (s) => s.split(this.separator!));
     let invalidateRequired = false;
-
-    const refinerList = DG.Func.find({tags: ['notationRefiner']});
+    const refinerList = DG.Func.find({meta: {role: 'notationRefiner'}});
 
     for (const refineFuncFind of refinerList) {
       try {
@@ -176,14 +195,14 @@ export class SeqHandler implements ISeqHandler {
   public static setTags(uh: SeqHandler): void {
     const units = uh.column.meta.units as NOTATION;
 
-    if ([NOTATION.FASTA, NOTATION.SEPARATOR].includes(units)) {
+    if ([NOTATION.FASTA, NOTATION.SEPARATOR, NOTATION.BILN].includes(units)) {
       // Empty monomer alphabet is allowed, only if alphabet tag is annotated
       if (!uh.column.getTag(TAGS.alphabet) && Object.keys(uh.stats.freq).length === 0)
         throw new Error('Alphabet is empty and not annotated.');
 
       let aligned = uh.column.getTag(TAGS.aligned);
       if (aligned == null) {
-        aligned = uh.stats.sameLength ? ALIGNMENT.SEQ_MSA : ALIGNMENT.SEQ;
+        aligned = uh.stats.sameLength || uh.column.categories.slice(0, 5).filter((a) => !!a).every((a) => a.length > 100) ? ALIGNMENT.SEQ_MSA : ALIGNMENT.SEQ;
         uh.column.setTag(TAGS.aligned, aligned);
       }
 
@@ -773,14 +792,25 @@ export class SeqHandler implements ISeqHandler {
   public convert(tgtNotation: NOTATION, tgtSeparator?: string): DG.Column<string> {
     // Get joiner from the source column units handler (this) knowing about the source sequence.
     // For example, converting DNA Helm to fasta requires removing the r(X)p decoration.
-    const joiner: JoinerFunc = this.getJoiner({notation: tgtNotation, separator: tgtSeparator});
-    const newColumn = this.getNewColumn(tgtNotation, tgtSeparator);
-    // assign the values to the newly created empty column
-    newColumn.init((rowIdx: number) => {
-      const srcSS = this.getSplitted(rowIdx);
-      return joiner(srcSS);
-    });
-    return newColumn;
+    if (!this.isCustom() || tgtNotation !== NOTATION.HELM) {
+      const joiner: JoinerFunc = this.getJoiner({notation: tgtNotation, separator: tgtSeparator});
+      const newColumn = this.getNewColumn(tgtNotation, tgtSeparator);
+      // assign the values to the newly created empty column
+      newColumn.init((rowIdx: number) => {
+        const srcSS = this.getSplitted(rowIdx);
+        return joiner(srcSS);
+      });
+      return newColumn;
+    } else {
+      if (!this.notationProvider || !this.notationProvider.getHelm)
+        throw new Error('Notation provider with getHelm function is required for custom notation conversion.');
+      const newColumn = this.getNewColumn(tgtNotation, tgtSeparator);
+      newColumn.init((rowIdx: number) => {
+        const srcSeq = this.column.get(rowIdx);
+        return this.notationProvider!.getHelm(srcSeq, {});
+      });
+      return newColumn;
+    }
   }
 
   /**
@@ -932,6 +962,8 @@ export class SeqHandler implements ISeqHandler {
 
   private convertToHelm(src: string): string {
     if (this.notation == NOTATION.HELM) return src;
+    if (this.isCustom() && this.notationProvider?.getHelm)
+      return this.notationProvider.getHelm(src, {});
 
     const wrappers = this.getHelmWrappers();
 

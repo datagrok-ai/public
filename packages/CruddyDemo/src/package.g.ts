@@ -1,13 +1,13 @@
 import {PackageFunctions} from './package';
 import * as DG from 'datagrok-api/dg';
 
-//tags: app
+//meta.role: app
 //meta.browsePath: Dev
 export function northwindDemo() : void {
   PackageFunctions.northwindDemo();
 }
 
-//tags: app
+//meta.role: app
 export function chemblDemo() : void {
   PackageFunctions.chemblDemo();
 }

@@ -8,7 +8,5 @@ public interface ColumnManager<T> {
 
     boolean isApplicable(ColumnMeta columnMeta);
 
-    Column getColumn();
-
-    Column getColumn(int initColumnSize);
+    Column<?> getColumn(String name, int initColumnSize);
 }

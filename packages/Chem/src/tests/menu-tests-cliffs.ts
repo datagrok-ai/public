@@ -3,7 +3,7 @@ import * as grok from 'datagrok-api/grok';
 import {_package} from '../package-test';
 import {readDataframe} from './utils';
 import * as chemCommonRdKit from '../utils/chem-common-rdkit';
-import {before, after, expect, category, test, awaitCheck, delay} from '@datagrok-libraries/utils/src/test';
+import {before, after, expect, category, test, awaitCheck, delay} from '@datagrok-libraries/test/src/test';
 import {BitArrayMetricsNames} from '@datagrok-libraries/ml/src/typed-metrics';
 import {getActivityCliffs} from '@datagrok-libraries/ml/src/viewers/activity-cliffs';
 import {createPropPanelElement, createTooltipElement} from '../analysis/activity-cliffs';
@@ -46,9 +46,11 @@ category('top menu activity cliffs', async () => {
     await _testActivityCliffsOpen(await readDataframe('tests/Test_smiles_malformed.csv'),
       'canonical_smiles', 'FractionCSP3', 80, 24);
     try {
-      await awaitCheck(() => document.querySelector(`.${MALFORMED_DATA_WARNING_CLASS}`)?.innerHTML ===
-        '2 molecules with indexes 31,41 are possibly malformed and are not included in analysis',
-      'cannot find warning balloon', 5000);
+      await awaitCheck(() => {
+        console.log(document.querySelector(`.${MALFORMED_DATA_WARNING_CLASS}`)?.innerHTML);
+        return document.querySelector(`.${MALFORMED_DATA_WARNING_CLASS}`)?.innerHTML ===
+        '3 molecules with indexes 14,31,41 are possibly malformed and are not included in analysis';
+      }, 'cannot find warning balloon', 5000);
     } finally {
       grok.shell.closeAll();
       DG.Balloon.closeAll();
@@ -57,11 +59,6 @@ category('top menu activity cliffs', async () => {
 
   test('activityCliffs_layout', async () => {
     await _testActivityCliffsOpen(await readDataframe('tests/spgi-100.csv'), 'Structure', 'Chemical Space X', 80, 1);
-  });
-
-  after(async () => {
-    grok.shell.closeAll();
-    DG.Balloon.closeAll();
   });
 });
 

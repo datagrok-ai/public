@@ -167,8 +167,8 @@ export class ActivityDashboardWidget extends DG.Widget {
       randomTip = todayItemListFromType.length > 0 ? todayItemListFromType[Math.floor(seededRandom(weekSeed) * todayItemListFromType.length)] : '';
 
     let tipIdx = 0;
-    const demoApp = DG.Func.find({tags: ['app'], package: 'Tutorials', name: 'demoApp'})[0];
-    const tutorialsApp = DG.Func.find({tags: ['app'], package: 'Tutorials', name: 'trackOverview'})[0];
+    const demoApp = DG.Func.find({meta: {role: DG.FUNC_TYPES.APP}, package: 'Tutorials', name: 'demoApp'})[0];
+    const tutorialsApp = DG.Func.find({meta: {role: DG.FUNC_TYPES.APP}, package: 'Tutorials', name: 'trackOverview'})[0];
 
     const createTip = (newRandomTip: DG.Func | string) => {
       const tip = ui.divText('', 'power-pack-activity-widget-spotlight-tip');
@@ -206,10 +206,16 @@ export class ActivityDashboardWidget extends DG.Widget {
     console.time('ActivityDashboardWidget.initSpotlightData');
     const notificationsDataSource: DG.NotificationsDataSource = grok.dapi.users.notifications.forCurrentUser()
       .by(ActivityDashboardWidget.SPOTLIGHT_ITEMS_LENGTH) as DG.NotificationsDataSource;
-    console.time('ActivityDashboardWidget.notificationsAndMostRecentEntities');
-    const [notifications, mostRecentEntitiesDf]: [DG.UserNotification[], DG.DataFrame] = await Promise.all([notificationsDataSource.list({pageSize: 20}),
-      queries.mostRecentEntities(DG.User.current().id)]);
-    console.timeEnd('ActivityDashboardWidget.notificationsAndMostRecentEntities');
+
+    // Both start in parallel
+    console.time('ActivityDashboardWidget.notifications');
+    console.time('ActivityDashboardWidget.mostRecentEntities');
+    const notificationsPromise = notificationsDataSource.list({pageSize: 20});
+    const mostRecentEntitiesDfPromise = queries.mostRecentEntities(DG.User.current().id);
+
+    // Process notifications as soon as they arrive while SQL may still be running
+    const notifications = await notificationsPromise;
+    console.timeEnd('ActivityDashboardWidget.notifications');
 
     this.recentNotifications = notifications
       .filter((n) => !n.isRead || n.createdAt?.isAfter(this.cutoffDate))
@@ -228,6 +234,17 @@ export class ActivityDashboardWidget extends DG.Widget {
     });
     this.sharedNotifications = sharedCandidates;
 
+    // Start shared entity fetch while SQL query may still be running
+    const sharedIds = Array.from(new Set<string>([...sharedUserIds, ...sharedEntityIds]));
+    console.time('ActivityDashboardWidget.getSharedEntities');
+    const sharedEntitiesPromise: Promise<DG.Entity[]> = sharedIds.length > 0 ? grok.dapi.getEntities(sharedIds).then((r) => {
+      console.timeEnd('ActivityDashboardWidget.getSharedEntities');
+      return r;
+    }) : Promise.resolve([] as DG.Entity[]);
+
+    const mostRecentEntitiesDf = await mostRecentEntitiesDfPromise;
+    console.timeEnd('ActivityDashboardWidget.mostRecentEntities');
+
     const recentEntityIdCol = mostRecentEntitiesDf?.col('id')!;
     const lastEventTimeCol = mostRecentEntitiesDf?.col('last_event_time')!;
     const recentEntityIds = new Array(recentEntityIdCol?.length ?? 0);
@@ -235,11 +252,14 @@ export class ActivityDashboardWidget extends DG.Widget {
       for (let i = 0; i < recentEntityIdCol.length; i++)
         recentEntityIds[i] = recentEntityIdCol.get(i);
 
-    const uniqueIds = Array.from(new Set<string>([...sharedUserIds, ...sharedEntityIds, ...recentEntityIds]));
-    console.time('ActivityDashboardWidget.getEntitiesByIds');
-    const allEntities = await grok.dapi.getEntities(uniqueIds);
-    console.timeEnd('ActivityDashboardWidget.getEntitiesByIds');
+    // Fetch recent entities; shared entity fetch may already be resolved by now
+    console.time('ActivityDashboardWidget.getRecentEntities');
+    const recentEntitiesPromise: Promise<DG.Entity[]> = recentEntityIds.length > 0 ?
+      grok.dapi.getEntities(recentEntityIds) : Promise.resolve([] as DG.Entity[]);
+    const [sharedEntities, recentEntities] = await Promise.all([sharedEntitiesPromise, recentEntitiesPromise]);
+    console.timeEnd('ActivityDashboardWidget.getRecentEntities');
 
+    const allEntities = [...sharedEntities, ...recentEntities];
     const byIdMap = new Map(allEntities.filter((e) => e != null).map((e) => [e.id, e]));
 
     this.sharedUsers = [];
@@ -264,7 +284,8 @@ export class ActivityDashboardWidget extends DG.Widget {
         ent instanceof DG.UserReport || ent instanceof DG.TableInfo || (ent instanceof DG.Func && !(ent instanceof DG.Script ||
         ent instanceof DG.DataQuery || ent instanceof DG.DataJob)) || ent instanceof DG.ViewInfo || ent instanceof DG.DataConnection || ent == null ||
         //@ts-ignore
-        (ent instanceof DG.Project && (!ent.isDashboard || ent.isPackage)) || (ent.hasOwnProperty('npmScope') && ent['npmScope'] == 'datagrok')) && lastEventTimeCol && lastEventTimeCol.get(i)) {
+        (ent instanceof DG.Project && (!ent.isDashboard || ent.isPackage)) || (ent.hasOwnProperty('npmScope') && ent['npmScope'] == 'datagrok')) &&
+        lastEventTimeCol && lastEventTimeCol.get(i) && ent.friendlyName != null && ent.friendlyName != '') {
         this.recentEntities.push(ent);
         this.recentEntityTimes.push(lastEventTimeCol.get(i));
       }
@@ -393,8 +414,8 @@ export class ActivityDashboardWidget extends DG.Widget {
 
   async getNewUserInfoColumns(): Promise<HTMLDivElement> {
     const root = ui.divH([], 'power-pack-activity-widget-spotlight-root');
-    const tutorialsApp = DG.Func.find({tags: ['app'], package: 'Tutorials', name: 'trackOverview'})[0];
-    const demoApp = DG.Func.find({tags: ['app'], package: 'Tutorials', name: 'demoApp'})[0];
+    const tutorialsApp = DG.Func.find({meta: {role: DG.FUNC_TYPES.APP}, package: 'Tutorials', name: 'trackOverview'})[0];
+    const demoApp = DG.Func.find({meta: {role: DG.FUNC_TYPES.APP}, package: 'Tutorials', name: 'demoApp'})[0];
     if (!tutorialsApp || !demoApp)
       return root;
     const appHandler = DG.ObjectHandler.forEntity(demoApp);

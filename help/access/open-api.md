@@ -32,7 +32,9 @@ If you can't find a Swagger JSON/YAML file link, inspect the API service's [Swag
 
 ### Parameters
 
-Swagger format allows defining parameters both within individual paths and at the file level, with an option to use them in other paths. Datagrok effectively works with both approaches (or their combination) for both the standard Swagger attributes and any custom parameters that you add.
+Swagger lets you define parameters within individual paths or at the file level,
+and reference file-level parameters in specific paths. Datagrok supports both
+approaches for standard and custom parameters.
 
 For example, consider the following AirNow YAML file, where the `date` parameter is defined within the path, and the remaining parameters are placed to `parameters:` section at the file level:
 

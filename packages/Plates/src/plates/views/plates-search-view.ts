@@ -25,7 +25,7 @@ function getSearchForm(
   getUniqueValues: (prop: any) => string[]
 ): { root: HTMLElement, templateForm: DG.InputForm, otherForm: DG.InputForm } {
   const createInput = (prop: PlateProperty): PropInput | null => {
-    let input: PropInput | null = null;
+    let input: DG.InputBase | null = null;
 
     if (prop.choices && prop.choices.length > 0) {
       let choicesList: string[];
@@ -38,25 +38,25 @@ function getSearchForm(
       } else {
         choicesList = prop.choices;
       }
-      input = ui.input.multiChoice(prop.name, {items: choicesList}) as PropInput;
+      input = ui.input.multiChoice(prop.name, {items: choicesList});
     } else if (prop.type === DG.TYPE.STRING) {
       const uniqueValues = getUniqueValues(prop);
       if (uniqueValues.length > 0)
-        input = ui.input.multiChoice(prop.name, {items: uniqueValues}) as PropInput;
+        input = ui.input.multiChoice(prop.name, {items: uniqueValues});
       else
-        input = ui.input.string(prop.name) as PropInput;
+        input = ui.input.string(prop.name);
     } else if (prop.type === DG.TYPE.FLOAT || prop.type === DG.TYPE.INT) {
-      input = ui.input.string(prop.name) as PropInput;
+      input = ui.input.string(prop.name);
       input.addValidator((s) => NumericMatcher.parse(s) ? null : 'Invalid numerical criteria. Example: ">10"');
     } else if (prop.type === DG.TYPE.BOOL) {
-      input = ui.input.bool(prop.name) as PropInput;
+      input = ui.input.bool(prop.name);
     }
 
-    if (input)
-      input.prop = prop;
-
-
-    return input;
+    if (!input)
+      return null;
+    const propInput = input as PropInput;
+    propInput.prop = prop;
+    return propInput;
   };
 
   const templatePropNames = new Set(templateProperties.map((p) => p.name));
@@ -313,7 +313,9 @@ function getSearchView(viewName: string,
   mainView.root.appendChild(splitter);
 
   setTemplate(plateTemplates[0]);
-  refreshAnalysisUI();
+  setTimeout(() => {
+    refreshAnalysisUI();
+  }, 1500);
   return mainView;
 }
 

@@ -1,7 +1,7 @@
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 
-import {category, test, expect, awaitCheck, delay} from '@datagrok-libraries/utils/src/test';
+import {category, test, expect, awaitCheck, delay} from '@datagrok-libraries/test/src/test';
 import {SequenceSimilarityViewer} from '../analysis/sequence-similarity-viewer';
 import {SequenceDiversityViewer} from '../analysis/sequence-diversity-viewer';
 

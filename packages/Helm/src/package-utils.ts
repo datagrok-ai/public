@@ -5,7 +5,8 @@ import * as DG from 'datagrok-api/dg';
 
 import {Unsubscribable} from 'rxjs';
 
-import {delay, timeout} from '@datagrok-libraries/utils/src/test';
+import {timeout} from '@datagrok-libraries/utils/src/test';
+
 import {errorToConsole} from '@datagrok-libraries/utils/src/to-console';
 import {errInfo} from '@datagrok-libraries/bio/src/utils/err-info';
 import {
@@ -152,7 +153,7 @@ export async function initHelmLoadAndPatchDojo(): Promise<void> {
             `Loading Helm Web Editor ${dojoProgress}/${dojoTargetList.length}`);
           _package.logger.debug(`${logPrefix}, dojo loading ... ` +
             `${dojoNotReadyList.map((m) => `'${m}'`).join(',')} ...`);
-          await delay(100);
+          await DG.delay(100);
         }
         _package.logger.debug(`${logPrefix}, dojo ready all modules`);
       }, 60000, 'timeout dojox.gfx.svg');

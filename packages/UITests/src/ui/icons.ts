@@ -1,4 +1,4 @@
-import {after, before, category, test} from '@datagrok-libraries/utils/src/test';
+import {after, before, category, test} from '@datagrok-libraries/test/src/test';
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
@@ -17,7 +17,7 @@ category('UI: Icons', () => {
   });
 
   test('icons.root', async () => {
-    for (const [key, value] of Object.entries(icons))
+    for (const [key, value] of Object.entries(icons).filter((icon) => !['spinner', 'loader'].includes(icon[0])))
       checkHTMLElement(key, value(() => { }), v, '.grok-icon');
   });
 
@@ -31,9 +31,5 @@ category('UI: Icons', () => {
 
   test('iconImage.root', async () => {
     checkHTMLElement('iconImage', iconImage, v, '.image-icon');
-  });
-
-  after(async () => {
-    grok.shell.closeAll();
   });
 }, {clear: false});

@@ -107,8 +107,7 @@ public class CassandraDataProvider extends JdbcDataProvider {
     public DataFrame getSchemas(DataConnection connection) throws QueryCancelledByUser, GrokConnectException {
         String db = connection.get(DbCredentials.KEYSPACE);
         if (GrokConnectUtil.isNotEmpty(db)) {
-            StringColumn column = new StringColumn(new String[]{db});
-            column.name = "TABLE_SCHEMA";
+            StringColumn column = new StringColumn("TABLE_SCHEMA", new String[]{db});
             DataFrame dataFrame = new DataFrame();
             dataFrame.addColumn(column);
             return dataFrame;
@@ -143,10 +142,10 @@ public class CassandraDataProvider extends JdbcDataProvider {
         PatternMatcherResult result = new PatternMatcherResult();
         String type = "string";
         String _query = matcher.colName +  " LIKE @" + paramName;
-        List<String> values = matcher.values;
+        List<Object> values = matcher.values;
         String value = null;
         if (values.size() > 0)
-            value = values.get(0).toLowerCase();
+            value = ((String) values.get(0)).toLowerCase();
 
         switch (matcher.op) {
             case PatternMatcher.EQUALS:

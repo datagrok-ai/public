@@ -15,7 +15,19 @@ import {HelmType} from '@datagrok-libraries/bio/src/helm/types';
 import {drawMoleculeDifferenceOnCanvas} from '../utils/cell-renderer';
 import {invalidateMols, MONOMERIC_COL_TAGS} from '../substructure-search/substructure-search';
 
+import {MmDistanceFunctionsNames} from '@datagrok-libraries/ml/src/macromolecule-distance-functions';
+import {BitArrayMetrics} from '@datagrok-libraries/ml/src/typed-metrics';
+
 import {_package} from '../package';
+
+export type SeqActivityCliffsParams = {
+  seqColName: string,
+  activityColName: string,
+  similarityMetric: MmDistanceFunctionsNames | BitArrayMetrics,
+  similarity: number,
+  options: any,
+  isDemo?: boolean,
+}
 
 export async function getDistances(col: DG.Column, seq: string): Promise<Array<number>> {
   const stringArray = col.toList();

@@ -1,13 +1,7 @@
 package grok_connect.providers.utils;
 
-import serialization.BoolColumn;
 import serialization.Column;
 import serialization.DataFrame;
-import serialization.DateTimeColumn;
-import serialization.FloatColumn;
-import serialization.IntColumn;
-import serialization.StringColumn;
-import serialization.Types;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -15,77 +9,55 @@ import java.util.stream.Collectors;
 public class DataFrameComparator {
     public boolean isDataFramesEqual(DataFrame that, DataFrame other) {
         return that.getClass().equals(other.getClass())
-                && that.rowCount.equals(other.rowCount) && isColumnsEqual(that.columns, other.columns);
-
+                && that.rowCount.equals(other.rowCount) && isColumnsEqual(that.getColumns(), other.getColumns());
     }
 
     public boolean isDataFramesEqualUnOrdered(DataFrame that, DataFrame other) {
         return that.getClass().equals(other.getClass())
-                && that.rowCount.equals(other.rowCount) && isColumnsEqualUnOrdered(that.columns, other.columns);
-
+                && that.rowCount.equals(other.rowCount) && isColumnsEqualUnOrdered(that.getColumns(), other.getColumns());
     }
 
-    public boolean isColumnsEqualUnOrdered(List<Column> columns, List<Column> columns1) {
-        if (columns.size() != columns1.size()) {
+    public boolean isColumnsEqualUnOrdered(List<Column<?>> columns, List<Column<?>> columns1) {
+        if (columns.size() != columns1.size())
             return false;
-        }
-        for (Column column: columns) {
-            List<Column> filtered = columns1.stream()
-                    .filter(col -> col.name.equals(column.name))
+        for (Column<?> column: columns) {
+            List<Column<?>> filtered = columns1.stream()
+                    .filter(col -> col.getName().equals(column.getName()))
                     .collect(Collectors.toList());
-            if (filtered.size() == 0) {
+            if (filtered.size() == 0)
                 return false;
-            }
-            Column compared = filtered.get(0);
-            if (!isTwoColumnsEqual(column, compared)) {
+            if (!isTwoColumnsEqual(column, filtered.get(0)))
                 return false;
-            }
         }
         return true;
     }
 
-    public boolean isColumnsEqual(List<Column> columns, List<Column> columns1) {
-        if (columns.size() != columns1.size()) {
+    public boolean isColumnsEqual(List<Column<?>> columns, List<Column<?>> columns1) {
+        if (columns.size() != columns1.size())
             return false;
-        }
-        for (int i = 0; i < columns.size(); i++) {
-            Column column = columns.get(i);
-            Column column1 = columns1.get(i);
-            if (!isTwoColumnsEqual(column, column1)) {
+        for (int i = 0; i < columns.size(); i++)
+            if (!isTwoColumnsEqual(columns.get(i), columns1.get(i)))
                 return false;
-            }
-        }
         return true;
     }
 
     public boolean isTwoColumnsEqual(Column<?> column, Column<?> column1) {
-        if (!column.getType().equals(column1.getType())) {
+        if (!column.getType().equals(column1.getType()))
             return false;
-        }
-        switch (column.getType()) {
-            case Types.STRING:
-            case Types.BIG_INT:
-                StringColumn sc = (StringColumn) column;
-                StringColumn sc1 = (StringColumn) column1;
-                return sc.name.equals(sc1.name) && Arrays.equals(sc.getData(), sc1.getData());
-            case Types.INT:
-                IntColumn ic = (IntColumn) column;
-                IntColumn ic1 = (IntColumn) column1;
-                return ic.name.equals(ic1.name) && Arrays.equals(ic.getData(), ic1.getData());
-            case Types.FLOAT:
-                FloatColumn fc = (FloatColumn) column;
-                FloatColumn fc1 = (FloatColumn) column1;
-                return fc.name.equals(fc1.name) && Arrays.equals(fc.getData(), fc1.getData());
-            case Types.DATE_TIME:
-                DateTimeColumn dtc = (DateTimeColumn) column;
-                DateTimeColumn dtc1 = (DateTimeColumn) column1;
-                return dtc.name.equals(dtc1.name) && Arrays.equals(dtc.getData(), dtc1.getData());
-            case Types.BOOL:
-                BoolColumn bc = (BoolColumn) column;
-                BoolColumn bc1 = (BoolColumn) column1;
-                return bc.name.equals(bc1.name) && Arrays.equals(bc.getData(), bc1.getData());
-            default:
-                return false;
-        }
+        if (!column.getName().equals(column1.getName()))
+            return false;
+        return arraysEqual(column.toArray(), column1.toArray());
+    }
+
+    private boolean arraysEqual(Object a, Object b) {
+        if (a instanceof int[] && b instanceof int[])
+            return Arrays.equals((int[]) a, (int[]) b);
+        if (a instanceof float[] && b instanceof float[])
+            return Arrays.equals((float[]) a, (float[]) b);
+        if (a instanceof double[] && b instanceof double[])
+            return Arrays.equals((double[]) a, (double[]) b);
+        if (a instanceof Object[] && b instanceof Object[])
+            return Arrays.deepEquals((Object[]) a, (Object[]) b);
+        return false;
     }
 }

@@ -17,12 +17,16 @@ import {TreeMapView} from './views/tree-map-view';
 import {MedicalHistoryView} from './views/medical-history-view';
 import {VisitsView} from './views/visits-view';
 import {StudyConfigurationView} from './views/study-config-view';
+import {ConfigurationView} from './views/configuration-view';
 import {ADVERSE_EVENTS_VIEW_NAME, AE_BROWSER_VIEW_NAME, AE_RISK_ASSESSMENT_VIEW_NAME,
   ANIMAL_PROFILE_VIEW_NAME,
-  CORRELATIONS_VIEW_NAME, DISTRIBUTIONS_VIEW_NAME, LABORATORY_VIEW_NAME, MEDICAL_HISTORY_VIEW_NAME,
-  PATIENT_PROFILE_VIEW_NAME, QUESTIONNAIRES_VIEW_NAME, STUDY_CONFIGURATIN_VIEW_NAME, SUMMARY_VIEW_NAME,
-  SURVIVAL_ANALYSIS_VIEW_NAME, TIMELINES_VIEW_NAME, TIME_PROFILE_VIEW_NAME, TREE_MAP_VIEW_NAME,
-  VALIDATION_VIEW_NAME, VISITS_VIEW_NAME} from './constants/view-names-constants';
+  CORRELATIONS_VIEW_NAME, DISTRIBUTIONS_VIEW_NAME, LABORATORY_VIEW_NAME, MATRIX_TABLE_VIEW_NAME,
+  MEDICAL_HISTORY_VIEW_NAME, PATIENT_PROFILE_VIEW_NAME, QUESTIONNAIRES_VIEW_NAME, STUDY_CONFIGURATIN_VIEW_NAME,
+  CONFIGURATION_VIEW_NAME, SUMMARY_VIEW_NAME, SURVIVAL_ANALYSIS_VIEW_NAME, TIMELINES_VIEW_NAME,
+  MEASUREMENT_PROFILE_TABLE_VIEW_NAME,
+  TIME_PROFILE_VIEW_NAME, TREE_MAP_VIEW_NAME,
+  VALIDATION_VIEW_NAME, VISITS_VIEW_NAME,
+  MICROSCOPIC_FINDINGS_TABLE_VIEW_NAME} from './constants/view-names-constants';
 import {createClinCaseTableView} from './utils/views-creation-utils';
 //import {CohortView} from './views/cohort-view';
 import {QuestionnaiesView} from './views/questionnaires-view';
@@ -59,8 +63,8 @@ function getCurrentStudyAndView(path: string): CurrentStudyAndView {
   if (path) {
     const pathSegments = path.split('/');
     currentStandard = pathSegments[1];
-    currentStudy = pathSegments.length > 1 ? pathSegments[2] : '';
-    currentViewName = pathSegments.length > 2 ? pathSegments[3] : SUMMARY_VIEW_NAME;
+    currentStudy = pathSegments.length > 2 ? decodeURI(pathSegments[2]) : '';
+    currentViewName = pathSegments.length > 3 ? decodeURI(pathSegments[3]) : SUMMARY_VIEW_NAME;
   }
   return {study: currentStudy, viewName: currentViewName, standard: currentStandard};
 }
@@ -75,31 +79,16 @@ export class PackageFunctions {
     return await openApp(CDISC_STANDARD.SDTM);
   }
 
-  @grok.decorators.app({
-    'name': 'Preclinical Case',
-    'icon': '/img/preclinical_case_icon.png',
-  })
-  static async PreclinicalCaseApp(): Promise<DG.ViewBase | void> {
-    return await openApp(CDISC_STANDARD.SEND);
-  }
 
-  @grok.decorators.func()
+  @grok.decorators.appTreeBrowser({app: 'Clinical Case'})
   static async clinicalCaseAppTreeBrowser(treeNode: DG.TreeViewGroup) {
     const url = new URL(window.location.href);
     const currentStudyAndViewPath = url.pathname.includes(`${CLINICAL_CASE_APP_PATH}`) ?
-      url.pathname.replace(`${CLINICAL_CASE_APP_PATH}`, ``) : '';
+      url.pathname.replace(`${CLINICAL_CASE_APP_PATH}`, `/${CDISC_STANDARD.SDTM}`) : '';
     const studyAndView = getCurrentStudyAndView(currentStudyAndViewPath);
     await cdiscAppTB(treeNode, CDISC_STANDARD.SDTM, studyAndView.study, studyAndView.viewName);
   }
 
-  @grok.decorators.func()
-  static async preclinicalCaseAppTreeBrowser(treeNode: DG.TreeViewGroup) {
-    const url = new URL(window.location.href);
-    const currentStudyAndViewPath = url.pathname.includes(`${PRECLINICAL_CASE_APP_PATH}`) ?
-      url.pathname.replace(`${PRECLINICAL_CASE_APP_PATH}`, ``) : '';
-    const studyAndView = getCurrentStudyAndView(currentStudyAndViewPath);
-    await cdiscAppTB(treeNode, CDISC_STANDARD.SEND, studyAndView.study, studyAndView.viewName);
-  }
 
 
   @grok.decorators.func({
@@ -294,9 +283,8 @@ export const SUPPORTED_VIEWS: {[key: string]: string[]} = {
     VISITS_VIEW_NAME, STUDY_CONFIGURATIN_VIEW_NAME, VALIDATION_VIEW_NAME, QUESTIONNAIRES_VIEW_NAME,
     AE_BROWSER_VIEW_NAME],
 
-  [CDISC_STANDARD.SEND]: [SUMMARY_VIEW_NAME, TIMELINES_VIEW_NAME, LABORATORY_VIEW_NAME, ANIMAL_PROFILE_VIEW_NAME,
-    DISTRIBUTIONS_VIEW_NAME, CORRELATIONS_VIEW_NAME, TIME_PROFILE_VIEW_NAME, STUDY_CONFIGURATIN_VIEW_NAME,
-    VALIDATION_VIEW_NAME],
+  [CDISC_STANDARD.SEND]: [SUMMARY_VIEW_NAME, VALIDATION_VIEW_NAME, MATRIX_TABLE_VIEW_NAME,
+    MEASUREMENT_PROFILE_TABLE_VIEW_NAME, MICROSCOPIC_FINDINGS_TABLE_VIEW_NAME, CONFIGURATION_VIEW_NAME],
 };
 
 export const VIEW_CREATE_FUNC: {[key: string]: (studyId: string, args?: any) => DG.ViewBase | ClinCaseTableView} = {
@@ -318,9 +306,15 @@ export const VIEW_CREATE_FUNC: {[key: string]: (studyId: string, args?: any) => 
   [VISITS_VIEW_NAME]: (studyId) => new VisitsView(VISITS_VIEW_NAME, studyId),
   [STUDY_CONFIGURATIN_VIEW_NAME]: (studyId, addView?: boolean) =>
     new StudyConfigurationView(STUDY_CONFIGURATIN_VIEW_NAME, studyId, addView),
+  [CONFIGURATION_VIEW_NAME]: (studyId) => new ConfigurationView(CONFIGURATION_VIEW_NAME, studyId),
   [VALIDATION_VIEW_NAME]: (studyId) => createClinCaseTableView(studyId, VALIDATION_VIEW_NAME),
   [QUESTIONNAIRES_VIEW_NAME]: (studyId) => new QuestionnaiesView(QUESTIONNAIRES_VIEW_NAME, studyId),
   [AE_BROWSER_VIEW_NAME]: (studyId, viewName) => createClinCaseTableView(studyId, viewName),
+  [MATRIX_TABLE_VIEW_NAME]: (studyId) => createClinCaseTableView(studyId, MATRIX_TABLE_VIEW_NAME),
+  [MEASUREMENT_PROFILE_TABLE_VIEW_NAME]: (studyId) =>
+    createClinCaseTableView(studyId, MEASUREMENT_PROFILE_TABLE_VIEW_NAME),
+  [MICROSCOPIC_FINDINGS_TABLE_VIEW_NAME]: (studyId) =>
+    createClinCaseTableView(studyId, MICROSCOPIC_FINDINGS_TABLE_VIEW_NAME),
 };
 
 

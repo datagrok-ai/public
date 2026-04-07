@@ -86,6 +86,16 @@ export abstract class GridTreeRendererBase<TNode extends MarkupNodeType> extends
 
     // @ts-ignore // for wheelDelta property
     const delta = 5 * e.wheelDelta / -168;
+
+    if (e.ctrlKey || e.metaKey) {
+      // Zooming
+      // const oldZoomFactor = this.zoomFactor;
+      this.xZoomFactor -= delta * 0.2;
+      // console.log(delta);
+      this.xZoomFactor = Math.min(Math.max(1, this.xZoomFactor), 100);
+      this.gridOnChanged();
+      return;
+    }
     //TODO: Use RangeSlider.scrollBy() method
     //this.grid.vertScroll.scrollBy(delta);
     this.grid.vertScroll.scrollTo(this.grid.vertScroll.min + delta);

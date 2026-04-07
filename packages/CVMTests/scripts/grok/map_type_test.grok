@@ -5,5 +5,5 @@
 #input: string unique_key
 #output: map output_map
 
-input_map[unique_key] = 'Datagrok'
+input_map.set(unique_key, 'Datagrok')
 output_map = input_map

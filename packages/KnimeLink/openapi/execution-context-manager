@@ -1,0 +1,166 @@
+openapi: 3.0.2
+info:
+  title: knime-hub-execution-context-manager
+  version: 1.1.0
+
+servers:
+  - url: /execution-status
+    description: Default execution context manager service
+
+paths:
+  /execution-contexts/{uuid}:
+    get:
+      tags:
+        - Execution Contexts
+      summary: Returns the status of the execution context.
+      parameters:
+        - name: uuid
+          in: path
+          description: The context's ID.
+          required: true
+          schema:
+            type: string
+            format: uuid
+            example: c151cdc8-b864-441f-9fce-a6e4a30afc0d
+      responses:
+        '200':
+          description: The execution context status has successfully been retrieved.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StatusResponse'
+        '400':
+          description: The context ID is not a valid UUID.
+        '401':
+          description: The calling user is not authorized.
+        '403':
+          description: The calling user does not have the rights to view the status.
+        '404':
+          description: The execution context is unknown.
+        '500':
+          description: An internal error occurred.
+  /execution-contexts/{uuid}/start:
+    put:
+      tags:
+        - Execution Contexts
+      summary: Starts the execution context.
+      parameters:
+        - name: uuid
+          in: path
+          description: The context's ID.
+          required: true
+          schema:
+            type: string
+            format: uuid
+            example: c151cdc8-b864-441f-9fce-a6e4a30afc0d
+      responses:
+        '200':
+          description: The execution context has been started.
+        '400':
+          description: The context ID is not a valid UUID.
+        '401':
+          description: The calling user is not authorized.
+        '403':
+          description: The calling user does not have the rights to edit the status of the execution context.
+        '404':
+          description: The execution context is unknown.
+        '409':
+          description: The execution context was already running.
+        '500':
+          description: An internal error occurred.
+  /execution-contexts/{uuid}/stop:
+    put:
+      tags:
+        - Execution Contexts
+      summary: Stops the execution context.
+      parameters:
+        - name: uuid
+          in: path
+          description: The context's ID.
+          required: true
+          schema:
+            type: string
+            format: uuid
+            example: c151cdc8-b864-441f-9fce-a6e4a30afc0d
+        - name: force
+          in: query
+          description: >-
+            Whether the context should forcibly be stopped.
+          schema:
+            type: boolean
+            default: false
+      responses:
+        '200':
+          description: The execution context has been stopped.
+        '400':
+          description: Bad Request.
+        '401':
+          description: The calling user is not authorized.
+        '403':
+          description: The calling user does not have the rights to edit the status of the execution context.
+        '404':
+          description: The execution context is unknown.
+        '409':
+          description: The execution context was already stopped.
+        '500':
+          description: An internal error occurred.
+  /execution-contexts/{uuid}/stop/cancel:
+    put:
+      tags:
+        - Execution Contexts
+      summary: Cancels shutdown process of an execution context.
+      parameters:
+        - name: uuid
+          in: path
+          description: The context's ID.
+          required: true
+          schema:
+            type: string
+            format: uuid
+            example: c151cdc8-b864-441f-9fce-a6e4a30afc0d
+        - name: force
+          in: query
+          description: >-
+            Whether the context should forcibly be stopped.
+          schema:
+            type: boolean
+            default: false
+      responses:
+        '200':
+          description: The execution context shutdown has been canceled.
+        '400':
+          description: Bad Request.
+        '401':
+          description: The calling user is not authorized.
+        '403':
+          description: The calling user does not have the rights to edit the status of the execution context.
+        '404':
+          description: The execution context is unknown.
+        '409':
+          description: The execution context was not in the process of shutting down.
+        '500':
+          description: An internal error occurred.
+components:
+  schemas:
+    StatusResponse:
+      type: object
+      required:
+        - status
+      properties:
+        status:
+          type: string
+          enum: [Running, Starting up, Shutting down, Stopped, Updating, At full capacity, Processing]
+        executors:
+          type: array
+          items: { $ref: '#/components/schemas/Executor' }
+    Executor:
+      type: object
+      required: [executorId, name]
+      properties:
+        executorId: { type: string, format: uuid }
+        agentId: { type: string, format: uuid }
+        name: { type: string }
+        isRemote: { type: boolean }
+        status:
+          type: string
+          enum: [Starting up, Running, At full capacity, Shutting down, Offline]

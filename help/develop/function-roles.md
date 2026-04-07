@@ -70,11 +70,11 @@ See also [autostart](#autostart).
 
 ## Autostart
 
-`autostart` function get invoked at platform startup. It starts immediately if it is tagged
+`autostart` functions get invoked at platform startup. It starts immediately if it is tagged
 as `meta.autostartImmediate: true`, otherwise it starts three seconds later.
 
-Use the `meta.autostartImmediate: true` mode is good to subscribe to global events, change some default settings, or
-change the UI right at the platform start. The default mode is good for preloading popular big packages (for instance,
+The `meta.autostartImmediate: true` mode is good for subscribing to global events, changing default settings, or
+modifying the UI right at platform start. The default mode is good for preloading popular big packages (for instance,
 Chem package preloads to eliminate the delays when a user opens a file with molecules). Keep in mind that some packages
 are big, and unless the `autostart` function resides in the `detectors.js` file, the whole content of the package gets
 loaded, so use this option wisely.
@@ -128,7 +128,7 @@ extension, which is derived from the `fileViewer-<extension>` tag.
 
 ## File exporters
 
-A file exporter is a function used for loading data from the platform. It is annotated with the `#fileExporter` role.
+A file exporter is a function used for exporting data from the platform. It is annotated with the `#fileExporter` role.
 Exporters reside in the platform's top menu "export" section.
 
 *Details:* [How to create file exporters](how-to/files/file-exporters.md)

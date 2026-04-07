@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<GraphPadPrismFile xmlns="http://graphpad.com/prism/Prism.htm" PrismXMLVersion="5.00">
+  <Created>
+    <OriginalVersion CreatedByProgram="GraphPad Prism" CreatedByVersion="9.0.0.0" />
+  </Created>
+  <TableSequence>
+    <Ref ID="Table0" Selected="1" />
+    <Ref ID="Table1" />
+  </TableSequence>
+  <Table ID="Table0" XFormat="numbers" YFormat="replicates" Replicates="1" TableType="XY" EVFormat="AsteriskAfterNumber">
+    <Title>Inhibition Curve</Title>
+    <XColumn Width="81" Decimals="2" Subcolumns="1">
+      <Title>Drug Concentration (M)</Title>
+      <Subcolumn>
+        <d>1e-9</d>
+        <d>1e-8</d>
+        <d>1e-7</d>
+        <d>1e-6</d>
+        <d>1e-5</d>
+        <d>1e-4</d>
+      </Subcolumn>
+    </XColumn>
+    <YColumn Width="81" Decimals="1" Subcolumns="1">
+      <Title>% Inhibition</Title>
+      <Subcolumn>
+        <d>5.2</d>
+        <d>12.8</d>
+        <d>48.5</d>
+        <d>82.3</d>
+        <d>95.1</d>
+        <d>98.7</d>
+      </Subcolumn>
+    </YColumn>
+  </Table>
+  <Table ID="Table1" XFormat="none" TableType="OneWay" EVFormat="AsteriskAfterNumber">
+    <Title>Summary Statistics</Title>
+    <RowTitlesColumn Width="100">
+      <Subcolumn>
+        <d>IC50 (nM)</d>
+        <d>Hill Slope</d>
+        <d>Top (%)</d>
+        <d>Bottom (%)</d>
+      </Subcolumn>
+    </RowTitlesColumn>
+    <YColumn Width="100" Decimals="2" Subcolumns="1">
+      <Title>Drug A</Title>
+      <Subcolumn>
+        <d>95.3</d>
+        <d>1.2</d>
+        <d>99.5</d>
+        <d>2.1</d>
+      </Subcolumn>
+    </YColumn>
+    <YColumn Width="100" Decimals="2" Subcolumns="1">
+      <Title>Drug B</Title>
+      <Subcolumn>
+        <d>312.7</d>
+        <d>0.85</d>
+        <d>94.2</d>
+        <d>1.8</d>
+      </Subcolumn>
+    </YColumn>
+  </Table>
+</GraphPadPrismFile>

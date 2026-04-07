@@ -1,0 +1,32 @@
+import * as DG from 'datagrok-api/dg';
+
+import {Subject} from 'rxjs';
+
+import {PropertyDesirability, isNumerical} from '../mpo';
+import {MpoCategoricalEditor} from './mpo-categorical-editor';
+import {MpoDesirabilityLineEditor} from './mpo-line-editor';
+
+export interface DesirabilityEditor<T = any> {
+  supportsModeDialog: boolean;
+  root: HTMLElement;
+  onChanged: Subject<T>;
+  redrawAll(): void;
+  resize?(width: number, height: number): void;
+  setRange?(min: number, max: number): void;
+  setColumn?(col: DG.Column | null): void;
+}
+
+export class DesirabilityEditorFactory {
+  static create(
+    prop: PropertyDesirability,
+    width = 300,
+    height = 80,
+    design = false,
+  ): DesirabilityEditor {
+    if (isNumerical(prop))
+      return new MpoDesirabilityLineEditor(prop, width, height);
+
+    return new MpoCategoricalEditor(prop, design, false);
+  }
+}
+

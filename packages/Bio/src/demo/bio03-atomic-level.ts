@@ -4,7 +4,6 @@ import * as DG from 'datagrok-api/dg';
 import {_package, PackageFunctions} from '../package';
 import {handleError} from './utils';
 import {DemoScript} from '@datagrok-libraries/tutorials/src/demo-script';
-import {delay} from '@datagrok-libraries/utils/src/test';
 import {adjustGridcolAfterRender} from '../utils/ui-utils';
 
 export async function demoToAtomicLevel(): Promise<void> {
@@ -63,7 +62,7 @@ export async function demoBio03UI(): Promise<void> {
         dlg = ui.dialog()
           .add(sketcher)
           .show();
-        await delay(3000);
+        await DG.delay(3000);
         dlg.close();
       }, {
         description: 'Display atomic level structure within a sketcher.',

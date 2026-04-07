@@ -1,4 +1,4 @@
-import { after, before, category, expect, expectArray, test } from '@datagrok-libraries/utils/src/test';
+import { after, before, category, expect, expectArray, test } from '@datagrok-libraries/test/src/test';
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
@@ -119,10 +119,6 @@ category('UI: Inputs', () => {
     t.value = 0.3;
     expect(input.value, '0.3000');
     v.close();
-  });
-
-  after(async () => {
-    grok.shell.closeAll();
   });
 
   function readonly(name: string, input: DG.InputBase, selector: string): void {
@@ -252,10 +248,6 @@ category('UI: Choice input', () => {
     select.value = '';
     expect(select.value, '');
   });
-
-  after(async () => {
-    grok.shell.closeAll();
-  });
 }, {owner: 'dkovalyov@datagrok.ai'});
 
 category('UI: Choice input new', () => {
@@ -344,10 +336,6 @@ category('UI: Choice input new', () => {
     select.value = '';
     expect(select.value, '');
   });
-
-  after(async () => {
-    grok.shell.closeAll();
-  });
 }, {owner: 'dkovalyov@datagrok.ai'});
 
 category('UI: Table input new', () => {
@@ -372,9 +360,5 @@ category('UI: Table input new', () => {
 
     const selector = view.root.querySelector('select.ui-input-editor') as HTMLSelectElement;
     expect(selector.item(0)?.textContent, 'demog 10');
-  });
-
-  after(async () => {
-    grok.shell.closeAll();
   });
 }, {owner: 'dkovalyov@datagrok.ai'});

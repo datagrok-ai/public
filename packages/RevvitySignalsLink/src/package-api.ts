@@ -7,6 +7,15 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
 
+export namespace scripts {
+  /**
+  ETL process for Revvity Signals data - exports libraries, processes CSV files, and prepares data for MolTrack
+  */
+  export async function revvityETL(): Promise<DG.DataFrame> {
+    return await grok.functions.call('RevvitySignalsLink:RevvityETL', {});
+  }
+}
+
 export namespace funcs {
   export async function init(): Promise<void> {
     return await grok.functions.call('RevvitySignalsLink:Init', {});

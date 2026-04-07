@@ -2,7 +2,7 @@
 title: "Trellis plot"
 ---
 
-Trellis plot is useful for finding the structure and patterns in complex data. A trellis plot is a layout of smaller
+A trellis plot is useful for finding structure and patterns in complex data. It is a layout of smaller
 charts in a grid with consistent scales. Each smaller chart represents rows that belong to a corresponding category. The
 grid layout looks similar to a garden trellis, hence the name trellis plot.
 
@@ -31,9 +31,73 @@ chemical structures after performing [R-Group Analysis](../../datagrok/solutions
 
 ![R-Group Analysis](../../uploads/chem/r-group-analysis.png "R-Group Analysis")
 
+## Axes
+
+Each inner viewer can have independent axis bounds. Use the **Global Scale** option to synchronize axes across all inner viewers:
+
+- **Unchecked** (default): Each inner viewer has its own axis bounds based on its data. Use the inner axes range sliders to adjust the viewport for individual viewers.
+- **Checked**: All inner viewers use the same axis bounds calculated from the selected axis columns. This makes it easier to compare values across categories.
+
+When **Show Range Sliders** is enabled, interactive sliders appear on the inner viewer axes (available when axes are visible). These sliders allow you to:
+
+- Adjust the axis range for viewing specific data intervals
+- When **Global Scale** is enabled, moving the range slider on one viewer simultaneously adjusts the visible bounds for all other viewers, providing synchronized navigation across all inner viewers
+
+![](img/trellis-inner-axes.gif)
+
 ## Videos
 
 [![Trellis Plot](../../uploads/youtube/visualizations2.png "Open on Youtube")](https://www.youtube.com/watch?v=7MBXWzdC0-I&t=1560s)
+
+
+## Properties
+
+| Property | Type | Description |
+|----------|------|-------------|
+| **General** | | |
+| X Column Names | list |  |
+| Y Column Names | list |  |
+| Allow Viewer Full Screen | boolean | if false, full screen icon will not be shown on inner viewer hover |
+| Y Labels Orientation | textorientation |  |
+| X Labels Orientation | textorientation |  |
+| Category Label Font | string |  |
+| Inner Viewer Look | lookandfeel |  |
+| Show Gridlines | string |  |
+| Show X Selectors | boolean |  |
+| Show Y Selectors | boolean |  |
+| Show X Labels | boolean |  |
+| Show Y Labels | boolean |  |
+| Show Control Panel | boolean |  |
+| Sync Mouse Over Row | boolean |  |
+| On Click | string | Action to be performed when you click on a trellis cell |
+| Pack Categories | boolean |  |
+| Use Tiled View | boolean |  |
+| Tiles Per Row | number |  |
+| Back Color | number |  |
+| Legend Visibility | visibilitymode |  |
+| Legend Position | flexautoposition |  |
+| Row Source | string | Determines the rows shown on the plot. |
+| Allow Dynamic Menus | boolean |  |
+| Show Context Menu | boolean | Properties common for all viewers todo: use code generation |
+| Title | string |  |
+| Description | string | Viewer description that gets shown at the *Descriptor Position*. Markup is supported. |
+| Help | string | Help to be shown when user clicks on the ''?'' icon on top. Could either be in markdown, or a URL (starting with ''/'' or ''http''). |
+| Description Position | flexposition |  |
+| Description Visibility Mode | visibilitymode |  |
+| **Axes** | | |
+| Show X Axes | visibilitymode | Shows horizontal axis for each inner viewer row. Depending on selected inner viewer, axis may be hidden automatically. |
+| Show Y Axes | visibilitymode | Shows vertical axis for each inner viewer column. Depending on selected inner viewer, axis may be hidden automatically. |
+| Global Scale | boolean | If checked, all inner viewers use the same axis scales. |
+| Show Range Sliders | boolean | Shows range sliders for inner viewer axis. Available only if corresponding axes (X or Y) are shown. |
+| **Style** | | |
+| Auto Layout | boolean |  |
+| Controls Font | string | Viewer controls elements font. |
+| **Data** | | |
+| Filter | string | Formula that filters out rows to show. Examples: `${AGE}` > 20 or `${WEIGHT / 2)}` > 100, `${SEVERITY}` == ''Medium'', `${RACE}`.endsWith(''sian'') |
+| Table | string |  |
+| **Description** | | |
+| Show Title | boolean |  |
+
 
 See also:
 
@@ -41,3 +105,4 @@ See also:
 * [Table view](../table-view-1.md)
 * [R-Group analysis](../../datagrok/solutions/domains/chem/chem.md#r-groups-analysis)
 * [JS API: Trellis plot](https://public.datagrok.ai/js/samples/ui/viewers/types/trellis-plot)
+* [Community: Visualization-related updates](https://community.datagrok.ai/t/visualization-related-updates/521)

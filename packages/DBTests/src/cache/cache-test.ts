@@ -1,7 +1,9 @@
-import {after, before, category, delay, expect, test} from '@datagrok-libraries/utils/src/test';
+import {after, before, category, delay, expect, test} from '@datagrok-libraries/test/src/test';
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import dayjs from 'dayjs';
+import utc from 'dayjs/plugin/utc';
+dayjs.extend(utc);
 import {getDataQueryTime} from '../benchmarks/benchmark';
 
 category('Client cache', () => {
@@ -69,7 +71,7 @@ async function invalidationCacheTest(dataQuery: string): Promise<void> {
   const funcCall1 = await func.prepare().call();
   const firstExecutionTime = Date.now() - start;
   await delay(500);
-  funcCall1.started = dayjs().subtract(5, 'day');
+  funcCall1.started = dayjs().subtract(5, 'day') as any;
   await grok.dapi.functions.calls.save(funcCall1);
   await delay(500);
   const secondExecutionTime = await getDataQueryTime(dataQuery);

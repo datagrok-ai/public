@@ -260,8 +260,8 @@ before returning (required for compatibility)
 * */
 export async function chemSubstructureSearchLibrary(
   molStringsColumn: DG.Column, molString: string, molBlockFailover: string, filterType = FILTER_TYPES.substructure,
-  columnIsCanonicalSmiles = false, awaitAll = true, searchType = SubstructureSearchType.CONTAINS, similarityCutOff = 0.8,
-  fp = Fingerprint.Morgan): Promise<BitArray> {
+  columnIsCanonicalSmiles = false, awaitAll = true, searchType = SubstructureSearchType.CONTAINS,
+  similarityCutOff = 0.8, fp = Fingerprint.Morgan, stereoAgnostic = false): Promise<BitArray> {
   const searchKey = `${molStringsColumn?.dataFrame?.name ?? ''}-${molStringsColumn?.name ?? ''}`;
   const currentSearch = `${molBlockFailover}_${searchType}_${similarityCutOff}_${fp}`;
   currentSearchSmiles[filterType][searchKey] = currentSearch;
@@ -271,7 +271,8 @@ export async function chemSubstructureSearchLibrary(
   const terminateEventName = getTerminateEventName(molStringsColumn.dataFrame?.name ?? '', molStringsColumn.name);
   if (currentSearchSmiles[filterType][searchKey] !== currentSearch && filterType !== FILTER_TYPES.scaffold) {
     _package.logger.debug(`in chemSubstructureSearchLibrary, ending critical section without search: ${currentSearch}`);
-    grok.events.fireCustomEvent(terminateEventName, getSearchQueryAndType(molBlockFailover, searchType, fp, similarityCutOff));
+    grok.events.fireCustomEvent(terminateEventName, getSearchQueryAndType(molBlockFailover, searchType, fp,
+      similarityCutOff, stereoAgnostic));
     chemEndCriticalSection();
     _package.logger.debug(`in chemSubstructureSearchLibrary, ended critical section: ${currentSearch}`);
     return new BitArray(molStringsColumn.length);
@@ -316,23 +317,26 @@ export async function chemSubstructureSearchLibrary(
       },
     };
     let numOfCalculatedFpBatches = 0;
-    const updateNumOfCalculatedFpBatches = () => { 
-      numOfCalculatedFpBatches++; 
-    }  
+    const updateNumOfCalculatedFpBatches = () => {
+      numOfCalculatedFpBatches++;
+    };
     const subFuncs = await rdKitService.
       searchSubstructureWithFps(molString, molBlockFailover, result, updateFilterFunc,
-        molStringsColumn.toList(), !columnIsCanonicalSmiles, searchType, similarityCutOff, fp, updateNumOfCalculatedFpBatches);   
+        molStringsColumn.toList(), !columnIsCanonicalSmiles, searchType, similarityCutOff,
+        fp, updateNumOfCalculatedFpBatches,
+        stereoAgnostic);
     const saveProcessedColumns = () => {
       try {
-        //save procecced columns only in case at least one fp batch has been calculated. Otherwise, we just used existing data and do not need to save
+        //save procecced columns only in case at least one fp batch has been calculated.
+        // Otherwise, we just used existing data and do not need to save
         if (numOfCalculatedFpBatches) {
           !columnIsCanonicalSmiles ?
-          saveColumns(molStringsColumn, [result.fpsRes!.fps, result.fpsRes!.smiles!],
-            [fpType, canonicalSmilesColName], [DG.COLUMN_TYPE.BYTE_ARRAY, DG.COLUMN_TYPE.STRING]):
-          saveColumns(molStringsColumn, [result.fpsRes!.fps], [fpType], [DG.COLUMN_TYPE.BYTE_ARRAY]);
+            saveColumns(molStringsColumn, [result.fpsRes!.fps, result.fpsRes!.smiles!],
+              [fpType, canonicalSmilesColName], [DG.COLUMN_TYPE.BYTE_ARRAY, DG.COLUMN_TYPE.STRING]):
+            saveColumns(molStringsColumn, [result.fpsRes!.fps], [fpType], [DG.COLUMN_TYPE.BYTE_ARRAY]);
           _package.logger.debug(`in chemSubstructureSearchLibrary, saveProcessedColumns: ${currentSearch}`);
         }
-      } catch(e: any) {
+      } catch (e: any) {
         _package.logger.debug(e);
       } finally {
         _package.logger.debug(`in chemSubstructureSearchLibrary, ending critical section: ${currentSearch}`);
@@ -341,9 +345,10 @@ export async function chemSubstructureSearchLibrary(
       }
     };
     const fireFinishEvents = () => {
-      _package.logger.debug(`in chemSubstructureSearchLibrary, fireFinishEvents: ${getSearchQueryAndType(molBlockFailover, searchType, fp, similarityCutOff)}`);
+      _package.logger.debug(`in chemSubstructureSearchLibrary, fireFinishEvents: ${getSearchQueryAndType(molBlockFailover, searchType, fp, similarityCutOff, stereoAgnostic)}`);
       grok.events.fireCustomEvent(searchProgressEventName, 100);
-      grok.events.fireCustomEvent(terminateEventName, getSearchQueryAndType(molBlockFailover, searchType, fp, similarityCutOff));
+      grok.events.fireCustomEvent(terminateEventName, getSearchQueryAndType(molBlockFailover, searchType, fp,
+        similarityCutOff,stereoAgnostic));
       saveProcessedColumns();
     };
     if (awaitAll) {
@@ -351,8 +356,9 @@ export async function chemSubstructureSearchLibrary(
       fireFinishEvents();
     } else {
       const sub = grok.events.onCustomEvent(terminateEventName).subscribe(async (molAndSearchType: string) => {
-        _package.logger.debug(`in chemSubstructureSearchLibrary, terminate event handler, ${molAndSearchType} ****** ${getSearchQueryAndType(molBlockFailover, searchType, fp, similarityCutOff)}`);
-        if (molAndSearchType === getSearchQueryAndType(molBlockFailover, searchType, fp, similarityCutOff)) {
+        _package.logger.debug(`in chemSubstructureSearchLibrary, terminate event handler, ${molAndSearchType} ****** ${getSearchQueryAndType(molBlockFailover, searchType, fp, similarityCutOff, stereoAgnostic)}`);
+        if (molAndSearchType ===
+            getSearchQueryAndType(molBlockFailover, searchType, fp, similarityCutOff, stereoAgnostic)) {
           await rdKitService.setTerminateFlag(true);
           subFuncs!.setTerminateFlag();
           await Promise.allSettled(subFuncs.promises);
@@ -383,6 +389,7 @@ export async function chemSubstructureSearchLibrary(
 
 export function getRDKitFpAsUint8Array(mol: RDMol, fingerprint: Fingerprint): Uint8Array {
   if (fingerprint == Fingerprint.Morgan) {
+    mol.remove_hs_in_place(); // hydrogens can cause identical molecules to have different fingerprints
     return mol.get_morgan_fp_as_uint8array(JSON.stringify({
       radius: defaultMorganFpRadius,
       nBits: defaultMorganFpLength,

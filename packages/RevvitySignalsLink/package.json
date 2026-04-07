@@ -12,14 +12,15 @@
     "cash-dom": "^8.1.5",
     "dayjs": "^1.11.13",
     "@datagrok-libraries/utils": "^4.6.8",
-    "rxjs": "^6.5.5"
+    "rxjs": "^6.5.5",
+    "@datagrok-libraries/test": "^1.1.0"
   },
   "devDependencies": {
-    "datagrok-tools": "^4.14.55",
+    "datagrok-tools": "^5.0.0",
     "webpack": "^5.95.0",
     "webpack-cli": "^5.1.4",
-    "ts-loader": "latest",
-    "typescript": "latest",
+    "ts-loader": "^9.5.4",
+    "typescript": "^5.9.3",
     "style-loader": "^4.0.0",
     "css-loader": "^7.1.2"
   },
@@ -53,5 +54,8 @@
     "type": "git",
     "url": "https://github.com/datagrok-ai/public.git",
     "directory": "packages/RevvitySignalsLink"
+  },
+  "overrides": {
+    "datagrok-api": "$datagrok-api"
   }
 }

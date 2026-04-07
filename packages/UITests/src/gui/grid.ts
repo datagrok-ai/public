@@ -1,7 +1,7 @@
 import * as grok from 'datagrok-api/grok';
 // import * as DG from 'datagrok-api/dg';
 
-import { category, delay, test, awaitCheck, before } from '@datagrok-libraries/utils/src/test';
+import { category, delay, test, awaitCheck, before } from '@datagrok-libraries/test/src/test';
 import {getHTMLElementbyInnerText, showToolbox} from './gui-utils';
 import { checkDialog } from './gui-utils';
 
@@ -48,7 +48,7 @@ category('GUI: Grid', () => {
     const demog = grok.data.demo.demog(100);
     const v = grok.shell.addTableView(demog);
     await awaitCheck(() => grok.shell.v == v);
-    grok.shell.topMenu.find('Select').find('Random...').click();
+    grok.shell.topMenu.find('Select').find('Random Rows...').click();
     await awaitCheck(() => checkDialog('Select Random Rows'));
 
     const input25 = Array.from(document.querySelectorAll('.d4-link-label'))
@@ -97,7 +97,7 @@ category('GUI: Grid', () => {
     await awaitCheck(() => document.querySelector('canvas') !== null, 'cannot load table', 2000);
 
     await awaitCheck(() => grok.shell.topMenu.find('Select') != null, 'cannot find Select in top menu', 1000);
-    grok.shell.topMenu.find('Select').find('Random...').click();
+    grok.shell.topMenu.find('Select').find('Random Rows...').click();
     await awaitCheck(() => checkDialog('Select Random Rows'), 'cannot find dialog', 1500);
 
     await awaitCheck(() => Array.from(document.querySelectorAll('.d4-accordion-title'))

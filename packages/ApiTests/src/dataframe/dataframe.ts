@@ -1,7 +1,7 @@
 import * as DG from 'datagrok-api/dg';
 // import * as grok from 'datagrok-api/grok';
 
-import {category, expect, expectArray, test, expectTable, expectFloat} from '@datagrok-libraries/utils/src/test';
+import {category, expect, expectArray, test, expectTable, expectFloat} from '@datagrok-libraries/test/src/test';
 
 const createDf = (): DG.DataFrame => {
   const df = DG.DataFrame.create(2);
@@ -262,11 +262,61 @@ category('DataFrame: Column', () => {
     expectArray(col.getCategoryOrder(), ['Canada', 'France', 'USA', 'Mexico']);
   });
 
-  test('getRawData | setRawData', async () => {
+  test('getRawData | setRawData (int)', async () => {
     const col = DG.Column.int('col', 3);
     col.setRawData(Int32Array.from([1, 2, 3]));
     expectArray(col.getRawData(), [1, 2, 3]);
-  }, {skipReason:'GROK-16406'});
+  });
+
+  test('getRawData | setRawData (float)', async () => {
+    const col = DG.Column.float('col', 3);
+    col.setRawData(Float32Array.from([1.5, 2.5, 3.5]));
+    expectArray(col.getRawData(), [1.5, 2.5, 3.5]);
+  });
+
+  test('getRawData | setRawData (datetime)', async () => {
+    const col = DG.Column.dateTime('col', 3);
+    const us = [
+      new Date(2020, 0, 1).valueOf() * 1000,
+      new Date(2021, 5, 15).valueOf() * 1000,
+      new Date(2022, 11, 31).valueOf() * 1000,
+    ];
+    col.setRawData(Float64Array.from(us));
+    expectArray(col.getRawData(), us);
+  });
+
+  test('getRawData | setRawData (bool)', async () => {
+    const col = DG.Column.bool('col', 3);
+    col.set(0, true);
+    col.set(1, false);
+    col.set(2, true);
+    const raw = col.getRawData();
+    expect(raw instanceof Uint32Array, true);
+    col.setRawData(raw);
+    expect(col.get(0), true);
+    expect(col.get(1), false);
+    expect(col.get(2), true);
+  });
+
+  test('getRawData | setRawData (qnum)', async () => {
+    const col = DG.Column.fromType(DG.TYPE.QNUM, 'col', 3);
+    col.setRawData(Float64Array.from([1.0, 2.0, 3.0]));
+    const raw = col.getRawData();
+    expect(raw instanceof Float64Array, true);
+    expect(raw[0], 1.0);
+    expect(raw[1], 2.0);
+    expect(raw[2], 3.0);
+  });
+
+  test('getRawData | setRawData (string)', async () => {
+    const col = DG.Column.fromStrings('col', ['A', 'B', 'C']);
+    const raw = col.getRawData();
+    expect(raw instanceof Int32Array, true);
+    col.setRawData(raw);
+    expect(col.get(0), 'A');
+    expect(col.get(1), 'B');
+    expect(col.get(2), 'C');
+  });
 
   test('getSortedOrder', async () => {
     expectArray(COL1.getSortedOrder(), [1, 2, 3, 0]);
@@ -288,7 +338,7 @@ category('DataFrame: Column', () => {
 
   test('init', async () => {
     const col = DG.Column.int('col', 5);
-    col.init((i) => i + 1);
+    col.init((i: number) => i + 1);
     expectArray(col.toList(), [1, 2, 3, 4, 5]);
   });
 
@@ -332,7 +382,7 @@ category('DataFrame: Column', () => {
 
   test('bool', async () => {
     const col = DG.Column.bool('col', 3);
-    col.init((_) => true);
+    col.init((_: number) => true);
     expect(col.type, 'bool');
     expectArray(col.toList(), [true, true, true]);
   });
@@ -344,13 +394,13 @@ category('DataFrame: Column', () => {
 
   test('dateTime', async () => {
     const col = DG.Column.dateTime('col', 3);
-    col.init((_) => Date.now());
+    col.init((_: number) => Date.now());
     expect(col.type, 'datetime');
   });
 
   test('float', async () => {
     const col = DG.Column.float('col', 3);
-    col.init((_) => 1.1);
+    col.init((_: any) => 1.1);
     expect(col.type, 'double');
     expectFloat(col.get(0) ?? 0, 1.1);
   });
@@ -388,7 +438,7 @@ category('DataFrame: Column', () => {
 
   test('int', async () => {
     const col = DG.Column.int('col', 3);
-    col.init((_) => 1);
+    col.init((_: any) => 1);
     expect(col.get(1), 1);
   });
 
@@ -410,7 +460,7 @@ category('DataFrame: Column', () => {
 
   test('string', async () => {
     const col = DG.Column.string('col', 3);
-    col.init((_) => 'val');
+    col.init((_: any) => 'val');
     expect(col.get(0), 'val');
   });
 }, {owner: 'aparamonov@datagrok.ai'});

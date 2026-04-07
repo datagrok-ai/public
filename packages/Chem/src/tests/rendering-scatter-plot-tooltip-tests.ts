@@ -5,7 +5,7 @@ import * as DG from 'datagrok-api/dg';
 import $ from 'cash-dom';
 import {fromEvent} from 'rxjs';
 
-import {before, after, category, expect, test, expectArray, testEvent, delay} from '@datagrok-libraries/utils/src/test';
+import {before, after, category, expect, test, expectArray, testEvent, delay} from '@datagrok-libraries/test/src/test';
 
 import {_package} from '../package-test';
 

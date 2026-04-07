@@ -11,6 +11,7 @@ import * as ui from '../ui';
 import {SemanticValue} from './grid';
 import $ from 'cash-dom';
 import { FuncCall } from '../dg';
+import {FUNC_TYPES} from './const';
 import '../css/styles.css';
 import { MolfileHandler } from "@datagrok-libraries/chem-meta/src/parsing-utils/molfile-handler";
 import {IDartApi} from "./api/grok_api.g";
@@ -49,6 +50,8 @@ export namespace chem {
 
   export enum Notation {
     Smiles = 'smiles',
+    CxSmiles = 'cxsmiles', // extended smiles
+    CxSmarts = 'cxsmarts', // extended smarts
     Smarts = 'smarts',
     MolBlock = 'molblock', // molblock V2000
     V3KMolBlock = 'v3Kmolblock', // molblock V3000
@@ -68,7 +71,6 @@ export namespace chem {
 
   /** A common interface that all sketchers should implement */
   export abstract class SketcherBase extends Widget {
-
     onChanged: Subject<any> = new Subject<any>();
     host?: Sketcher;
     _name: string = '';
@@ -76,6 +78,12 @@ export namespace chem {
     constructor() {
       super(ui.box());
     }
+
+    /**
+     * This field is used in cases when smiles is set from column but actually molblock is set to keep same coordinates.
+     * When this happens and user copies over the smiles from sketche, the sketcher returns transformed smiles.
+    */
+    explicitMol?: {notation: 'smiles' | 'molblock' | 'molblockV3000'; value: string} | null = null;
 
     /** SMILES representation of the molecule */
     abstract get smiles(): string;
@@ -378,7 +386,7 @@ export namespace chem {
     }
 
     createSketcher() {
-      this.sketcherFunctions = Func.find({ tags: ['moleculeSketcher'] });
+      this.sketcherFunctions = Func.find({meta: {role: FUNC_TYPES.MOLECULE_SKETCHER}});
       this.setExternalModeForSubstrFilter();
       if (this._mode === SKETCHER_MODE.INPLACE)
         this.root.appendChild(this.createInplaceModeSketcher());
@@ -431,7 +439,7 @@ export namespace chem {
     createClearSketcherButton(canvas: HTMLCanvasElement): HTMLButtonElement {
       const clearButton = ui.button('Clear', () => {
         this.setMolecule('');
-        if (!this.sketcher) {
+        if (!this.sketcher || this.sketcher.isDetached) {
           this.onChanged.next(null);
         }
         this.updateExtSketcherContent();
@@ -500,7 +508,7 @@ export namespace chem {
 
       if (extractors == null) {
         try {
-          extractors = Func.find({meta: {role: 'converter'}}).filter(it => it.outputs.filter(o => o.semType == SEMTYPE.MOLECULE).length);
+          extractors = Func.find({meta: {role: FUNC_TYPES.CONVERTER}}).filter(it => it.outputs.filter(o => o.semType == SEMTYPE.MOLECULE).length);
         } catch {
           extractors = [];
         }
@@ -754,7 +762,6 @@ export namespace chem {
    * @param {Column} column - Column with molecules to search
    * @param {string} pattern - Pattern, either one of which RDKit supports
    * @param settings
-   * @returns {Promise<BitSet>}
    * */
   export async function searchSubstructure(column: Column, pattern: string = '', settings: {
     molBlockFailover?: string;
@@ -774,7 +781,6 @@ export namespace chem {
    * @param {DataFrame} table - Table.
    * @param {string} column - Column name with molecules to analyze.
    * @param {string} core - Core molecule.
-   * @returns {Promise<DataFrame>}
    * */
   export async function rGroup(table: DataFrame, column: string, core: string): Promise<DataFrame> {
     return await grok.functions.call('Chem:FindRGroups', {
@@ -787,7 +793,6 @@ export namespace chem {
    * See example: {@link https://public.datagrok.ai/js/samples/domains/chem/mcs}
    * @async
    * @param {Column} column - Column with SMILES to analyze.
-   * @returns {Promise<string>}
    * */
   export async function mcs(table: DataFrame, column: string, returnSmarts: boolean = false,
     exactAtomSearch = true, exactBondSearch = true): Promise<string> {
@@ -808,7 +813,6 @@ export namespace chem {
    * @param {DataFrame} table - Table.
    * @param {string} column - Column name with SMILES to calculate descriptors for.
    * @param {string[]} descriptors - RDKit descriptors to calculate.
-   * @returns {Promise<DataFrame>}
    * */
   export async function descriptors(table: DataFrame, column: string, descriptors: string[]): Promise<DataFrame> {
     await grok.functions.call('Chem:chemDescriptors', {'table': table,
@@ -828,10 +832,7 @@ export namespace chem {
    * Renders a molecule to SVG
    * See example: {@link https://public.datagrok.ai/js/samples/domains/chem/mol-rendering}
    * @param {string} smiles - accepts smiles/molfile format
-   * @param {number} width
-   * @param {number} height
    * @param {object} options - OCL.IMoleculeToSVGOptions
-   * @returns {HTMLDivElement}
    * */
   export function svgMol(
     smiles: string, width: number = 300, height: number = 200,
@@ -840,6 +841,9 @@ export namespace chem {
     let root = document.createElement('div');
     // @ts-ignore
     import('openchemlib/full.js').then((OCL) => {
+      const isMolFile = smiles.includes('M  END');
+      if (!isMolFile && smiles.length > 5000)
+        return;
       let m = smiles.includes('M  END') ? OCL.Molecule.fromMolfile(smiles) : OCL.Molecule.fromSmiles(smiles);
       root.innerHTML = m.toSVG(width, height, undefined, options);
     });
@@ -876,7 +880,6 @@ export namespace chem {
    * Sketches Molecule sketcher.
    * @param {function} onChangedCallback - a function that accepts (smiles, molfile)
    * @param {string} smiles Initial molecule
-   * @returns {HTMLElement}
    * */
   export function sketcher(onChangedCallback: Function, smiles: string = ''): HTMLElement {
     return api.grok_Chem_Sketcher(onChangedCallback, smiles);

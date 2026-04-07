@@ -16,6 +16,7 @@ import {ServiceLogsApp} from './service_logs/service_logs';
 import {TestGridCellHandler} from './handlers/test-grid-cell-handler';
 import {initTestStickyMeta} from './test-analysis/sticky-meta-initialization';
 import {TestDashboardWidget} from './viewers/ua-test-dashboard-viewer';
+import {ClickEventsWidget} from './widgets/click-events-widget';
 
 export const _package = new DG.Package();
 export let _properties: any;
@@ -99,16 +100,17 @@ export class PackageFunctions {
     'browsePath': 'Admin',
     'name': 'Usage Analysis',
   })
-  static async usageAnalysisApp(
+  static usageAnalysisApp(
     @grok.decorators.param({'options': {'optional': true, 'meta.url': true}}) path?: string,
     @grok.decorators.param({'options': {'optional': true}}) date?: string,
     @grok.decorators.param({'options': {'optional': true}}) groups?: string,
     @grok.decorators.param({'options': {'optional': true}}) packages?: string,
     @grok.decorators.param({'options': {'optional': true}}) tags?: string,
     @grok.decorators.param({'options': {'optional': true}}) categories?: string,
-    @grok.decorators.param({'options': {'optional': true}}) projects?: string): Promise<DG.ViewBase | null> {
+    @grok.decorators.param({'options': {'optional': true}}) projects?: string): DG.ViewBase | null {
     const handler = new ViewHandler();
-    await handler.init(date, groups, packages, tags, categories, projects, path);
+    handler.view.parentCall = grok.functions.getCurrentCall();
+    handler.init(date, groups, packages, tags, categories, projects, path);
     return handler.view;
   }
 
@@ -342,7 +344,7 @@ export class PackageFunctions {
   }
 
 
-  @grok.decorators.func()
+  @grok.decorators.appTreeBrowser({app: 'Service Logs'})
   static async serviceLogsAppTreeBrowser(treeNode: DG.TreeViewGroup) {
     const loaderDiv = ui.div([], {style: {width: '50px', height: '24px', position: 'relative'}});
     loaderDiv.innerHTML = `<div class="grok-loader"><div></div><div></div><div></div><div></div></div>`;
@@ -385,7 +387,7 @@ export class PackageFunctions {
     }
   }
 
-  @grok.decorators.func()
+  @grok.decorators.appTreeBrowser({app: 'Reports'})
   static async reportsAppTreeBrowser(treeNode: DG.TreeViewGroup) {
     await treeNode.group('Reports', null, false).loadSources(grok.dapi.reports.by(10));
     await treeNode.group('Rules', null, false).loadSources(grok.dapi.rules.include('actions,actions.assignee').by(10));
@@ -420,10 +422,7 @@ export class PackageFunctions {
 
 
   @grok.decorators.func({
-    'tags': [
-      'viewer',
-    ],
-    'meta': {showInGallery: 'false'},
+    'meta': {showInGallery: 'false', role: 'viewer'},
     'outputs': [
       {
         type: 'viewer',
@@ -433,6 +432,14 @@ export class PackageFunctions {
   })
   static testDashboardsViewer(): TestDashboardWidget {
     return new TestDashboardWidget();
+  }
+
+  @grok.decorators.func({
+    meta: {inspectorPanel: 'true'},
+    name: 'Click Events',
+  })
+  static _specificClicksPanel(): DG.Widget {
+    return new ClickEventsWidget();
   }
 
   @grok.decorators.autostart()

@@ -4,7 +4,7 @@ import * as ui from 'datagrok-api/ui';
 
 import {chem} from 'datagrok-api/grok';
 import Sketcher = chem.Sketcher;
-import {category, expect, test, before, after, testEvent, delay, awaitCheck} from '@datagrok-libraries/utils/src/test';
+import {category, expect, test, before, after, testEvent, delay, awaitCheck} from '@datagrok-libraries/test/src/test';
 import {malformedMolblock, molV2000, molV3000} from './utils';
 
 
@@ -14,7 +14,7 @@ category('sketcher testing', () => {
 
   before(async () => {
     rdkitModule = await grok.functions.call('Chem:getRdKitModule');
-    funcs = DG.Func.find({tags: ['moleculeSketcher']});
+    funcs = DG.Func.find({meta: {role: DG.FUNC_TYPES.MOLECULE_SKETCHER}});
     await sketchersWarmUp(funcs);
     grok.shell.closeAll();
   });
@@ -53,10 +53,6 @@ category('sketcher testing', () => {
 
   test('malformed input', async () => {
     await testMolblock(rdkitModule, funcs, 'V2000', false, true);
-  });
-
-  after(async () => {
-    grok.shell.closeAll();
   });
 });
 
@@ -107,7 +103,7 @@ const validationFunc = (s: string) => {
   funcCall.callSync();
   const res = funcCall.getOutputParamValue();
   return res;
-}
+};
 
 async function testSmiles(rdkitModule: any, funcs: DG.Func[], input?: boolean, malformed?: boolean) {
   const mol = rdkitModule.get_mol(exampleSmiles);
@@ -123,13 +119,13 @@ async function testSmiles(rdkitModule: any, funcs: DG.Func[], input?: boolean, m
         s.molInput.value = exampleSmiles;
         s.molInput.dispatchEvent(new KeyboardEvent('keydown', {key: 'Enter'}));
       }, 1000);
-    } else 
-    setTimeout(() => s.setSmiles(exampleSmiles), 1000);
+    } else
+      setTimeout(() => s.setSmiles(exampleSmiles), 1000);
     if (malformed) {
       await awaitCheck(() => {
         const elements = d.root.getElementsByClassName('chem-invalid-molecule-warning');
         return elements.length > 0 && elements[0].children.length > 0 && elements[0].children[0].textContent === 'Malformed molecule';
-      }, 'error div has not been created', 10000, 500);    
+      }, 'error div has not been created', 10000, 500);
     } else {
       await awaitCheck(() => {
         const resMolblock = input ? s.getMolFile() : s.getSmiles();
@@ -160,16 +156,16 @@ async function testMolblock(rdkitModule: any, funcs: DG.Func[], ver: string, inp
         s.molInput.value = molfile;
         s.molInput.dispatchEvent(evt);
       }, 1000);
-    } else 
+    } else
       setTimeout(() => s.setMolFile(malformed ? malformedMolblock : molfile), 1000);
     if (malformed) {
       await awaitCheck(() => {
         const elements = d.root.getElementsByClassName('chem-invalid-molecule-warning');
         return elements.length > 0 && elements[0].children.length > 0 && elements[0].children[0].textContent === 'Malformed molecule';
-      }, 'error div has not been created', 10000, 500);     
+      }, 'error div has not been created', 10000, 500);
     } else {
       await awaitCheck(() => {
-        const resMolblock =  s.getMolFile();;
+        const resMolblock = s.getMolFile(); ;
         return compareTwoMols(rdkitModule, mol, resMolblock);
       }, 'mols are not equal', 3000);
     }
@@ -190,7 +186,7 @@ async function testInchi(rdkitModule: any, funcs: DG.Func[]) {
     s.molInput.value = exampleInchi;
     s.molInput.dispatchEvent(new KeyboardEvent('keydown', {key: 'Enter'}));
     await awaitCheck(() => {
-      const resMolblock =  s.getMolFile();
+      const resMolblock = s.getMolFile();
       return compareTwoMols(rdkitModule, mol, resMolblock);
     }, 'mols are not equal', 3000);
     d.close();

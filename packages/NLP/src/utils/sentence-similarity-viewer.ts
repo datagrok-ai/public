@@ -132,7 +132,7 @@ export class SentenceSimilarityViewer extends SearchBaseViewer {
   async getEmbeddings(): Promise<Float32Array[]> {
     if (!this.embeddings || this.targetColumnName !== this.prevTargetColumnName)
       this.embeddings = await getEmbeddings(this.targetColumn!.toList());
-    return this.embeddings;
+    return this.embeddings!;
   }
 
   private async compute() {

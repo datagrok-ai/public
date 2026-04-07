@@ -13,7 +13,7 @@ export class DBExplorerObjectHandler extends DG.ObjectHandler {
   }
   private renderer: DBExplorerRenderer;
   isApplicable(x: any): boolean {
-    return x instanceof DBValueObject && this.connectionNqName !== null && x.connectionNqName === this.connectionNqName && x.schemaName === this.schemaName;
+    return x && x.name === DB_EXPLORER_OBJ_HANDLER_TYPE && this.connectionNqName !== null && x.connectionNqName === this.connectionNqName && x.schemaName === this.schemaName;
   }
 
   constructor(
@@ -52,6 +52,7 @@ export class DBExplorerObjectHandler extends DG.ObjectHandler {
   renderInnerCard(x: DBValueObject) {
     return ui.wait(async () => {
       return await this.renderer.renderTable(
+        x.schemaName,
         x.table,
         x.column,
         this.options.valueConverter(x.value ?? ''),
@@ -71,30 +72,30 @@ export class DBExplorerObjectHandler extends DG.ObjectHandler {
     return this.renderInnerCard(x);
   }
 
-  renderInnerProperties(tableName: string, x: DBValueObject, paneName: string) {
+  renderInnerProperties(schemaName: string, tableName: string, x: DBValueObject, paneName: string) {
     const acc = ui.accordion(tableName);
     acc.addPane(paneName, () => this.renderInnerCard(x), true);
     this.renderer
-      .getTable(tableName, x.column, this.options.valueConverter(x.value ?? ''), this.options.joinOptions)
+      .getTable(schemaName, tableName, x.column, this.options.valueConverter(x.value ?? ''), this.options.joinOptions)
       .then((df) => {
-        this.renderer.renderAssociations(acc, this.schemaInfoPromise, tableName, df);
+        this.renderer.renderAssociations(acc, this.schemaInfoPromise, schemaName, tableName, df);
       });
     return acc;
   }
 
   /** Use this from outside to render single rows from the dataframe */
-  renderPropertiesFromDfRow(tableRow: DG.Row, dbTableName: string): HTMLElement {
+  renderPropertiesFromDfRow(tableRow: DG.Row, dfSchemaName: string, dbTableName: string): HTMLElement {
     const bs = DG.BitSet.create(tableRow.table.rowCount);
     bs.set(tableRow.idx, true);
     const df = tableRow.table.clone(bs);
     const acc = ui.accordion(dbTableName);
-    acc.addPane('Properties', () => ui.wait(async () => this.renderer.renderDataFrame(df, dbTableName, {keepEmptyValues: true, skipCustomSelected: true})), true);
-    this.renderer.renderAssociations(acc, this.schemaInfoPromise, dbTableName, df);
+    acc.addPane('Properties', () => ui.wait(async () => this.renderer.renderDataFrame(df, dfSchemaName, dbTableName, {keepEmptyValues: true, skipCustomSelected: true})), true);
+    this.renderer.renderAssociations(acc, this.schemaInfoPromise, dfSchemaName, dbTableName, df);
     return acc.root;
   }
 
   renderProperties(x: DBValueObject, _context?: any): HTMLElement {
-    const acc = this.renderInnerProperties(x.table, x, this.options.valueConverter(x.value ?? '').toString());
+    const acc = this.renderInnerProperties(x.schemaName, x.table, x, this.options.valueConverter(x.value ?? '').toString());
     if (x.semValue) {
       const origAcc = ui.panels.infoPanel(x.semValue);
       origAcc.context = x.semValue;

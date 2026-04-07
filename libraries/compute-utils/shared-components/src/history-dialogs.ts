@@ -3,7 +3,6 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {Subject, fromEvent} from 'rxjs';
 import {ItemMetadata} from '../../reactive-tree-driver/src/view/ViewCommunication';
-import {take} from 'rxjs/operators';
 
 type EditOptions = {
   title?: string,

@@ -1,5 +1,9 @@
 # Dev Tools changelog
 
+## 1.6.4 (2025-10-16)
+
+* Core: Projects: Fixed data-sync projects from scripts fail
+
 ## 1.5.1 (2025-27-01)
 
 ### Bug fixes

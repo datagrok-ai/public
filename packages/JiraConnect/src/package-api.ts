@@ -35,4 +35,8 @@ export namespace funcs {
   export async function getJiraTicketsByFilter(filter: any ): Promise<any> {
     return await grok.functions.call('JiraConnect:GetJiraTicketsByFilter', { filter });
   }
+
+  export async function getJiraTicketsBulk(issueIdsOrKeys: any , fields: any , expand: any ): Promise<any> {
+    return await grok.functions.call('JiraConnect:GetJiraTicketsBulk', { issueIdsOrKeys, fields, expand });
+  }
 }

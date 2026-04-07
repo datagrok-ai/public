@@ -2,7 +2,7 @@ import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 
 import {category, expect, expectFloat, expectArray, test, delay,
-  before, after, awaitCheck, testEvent} from '@datagrok-libraries/utils/src/test';
+  before, after, awaitCheck, testEvent} from '@datagrok-libraries/test/src/test';
 import {_package} from '../package-test';
 import {Fingerprint} from '../utils/chem-common';
 import {createTableView, readDataframe, molV2000, molV3000} from './utils';
@@ -89,11 +89,11 @@ category('top menu similarity/diversity', () => {
     await testEvent(viewer.renderCompleted, () => {}, () => {}, 5000);
     try {
       await awaitCheck(() => document.querySelector('.d4-balloon-content')?.children[0].children[0].innerHTML ===
-        '2 molecules with indexes 31,41 are possibly malformed and are not included in analysis',
+        '3 molecules with indexes 14,31,41 are possibly malformed and are not included in analysis',
       'cannot find warning balloon', 2000);
-      expectArray(viewer.scores!.toList(), [1, 0.4333333373069763, 0.32894736528396606,
-        0.2957746386528015, 0.234375, 0.23076923191547394, 0.2222222238779068, 0.2222222238779068,
-        0.20253165066242218, 0.2023809552192688, 0.18309858441352844, 0.1818181872367859]);
+      expectArray(viewer.scores!.toList(), [1, 0.4333333373069763, 0.32894736528396606, 0.234375, 0.23076923191547394,
+        0.2222222238779068, 0.2222222238779068, 0.20253165066242218, 0.2023809552192688, 0.18309858441352844,
+        0.1818181872367859, 0.1649484485387802]);
     } finally {
       tv.close();
       DG.Balloon.closeAll();
@@ -165,7 +165,7 @@ category('top menu similarity/diversity', () => {
     try {
       await awaitCheck(() => viewer.renderMolIds.length === 12, `Molecules haven't been rendered`, 10000);
       await awaitCheck(() => document.querySelector('.d4-balloon-content')?.children[0].children[0].innerHTML ===
-        '2 molecules with indexes 31,41 are possibly malformed and are not included in analysis',
+        '3 molecules with indexes 14,31,41 are possibly malformed and are not included in analysis',
       'cannot find warning balloon', 1000);
     } finally {
       tv.close();
@@ -175,11 +175,6 @@ category('top menu similarity/diversity', () => {
 
   test('diversitySearchViewerOpen', async () => {
     await _testDiversitySearchViewerOpen();
-  });
-
-  after(async () => {
-    grok.shell.closeAll();
-    DG.Balloon.closeAll();
   });
 });
 

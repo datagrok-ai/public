@@ -109,7 +109,8 @@ export interface IFunctionRegistrationData {
   tags?: string;        // comma-separated tags
   isAsync?: boolean;    // whether is can be called synchronously
   namespace?: string;
-  options?: {[key: string]: string}
+  options?: {[key: string]: string};
+  outputs?: {name: string, type: string, semType?: string}[];
 }
 
 
@@ -341,9 +342,7 @@ export class FuncCall extends Entity {
 
   get debugLogger(): Logger { return new Logger(undefined, {dartLogger: api.grok_FuncCall_Get_DebugLogger(this.dart)}); }
 
-  /** Returns function call parameter value
-   * @param {string} name
-   * @returns {object} */
+  /** Returns function call parameter value */
   getParamValue(name: string): any {
     return toJs(api.grok_FuncCall_Get_Param_Value(this.dart, name));
   }

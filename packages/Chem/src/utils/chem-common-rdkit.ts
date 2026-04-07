@@ -6,7 +6,7 @@ import {convertToRDKit} from '../analysis/r-group-analysis';
 import rdKitLibVersion from '../rdkit_lib_version';
 //@ts-ignore
 import initRDKitModule from '../RDKit_minimal.js';
-import {isMolBlock} from './chem-common';
+import {hasNewLines, isMolBlock} from './chem-common';
 import $ from 'cash-dom';
 import {RDModule, RDMol, RDReaction} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 import {ISubstruct} from '@datagrok-libraries/chem-meta/src/types';
@@ -106,7 +106,8 @@ function createRenderingOpts(addSettings: {[key: string]: any}): {[key: string]:
 }
 
 export function drawRdKitMoleculeToOffscreenCanvas(
-  molCtx: IMolContext, w: number, h: number, offscreenCanvas: OffscreenCanvas, substruct: Object | null) {
+  molCtx: IMolContext, w: number, h: number, offscreenCanvas: OffscreenCanvas, substruct: Object | null,
+  renderingOptions: {[key: string]: any} = {}): void {
   const g = offscreenCanvas.getContext('2d', {willReadFrequently: true}) as OffscreenCanvasRenderingContext2D;
   const rdKitMol: RDMol | null = molCtx.mol;
   if (rdKitMol === null) {
@@ -138,6 +139,8 @@ export function drawRdKitMoleculeToOffscreenCanvas(
   const addChiralHs = false;
   if (useMolBlockWedging)
     Object.assign(opts, {useMolBlockWedging, wedgeBonds, addChiralHs});
+  if (renderingOptions)
+    Object.assign(opts, renderingOptions);
 
   try {
     rdKitMol.draw_to_canvas_with_highlights((offscreenCanvas as unknown) as HTMLCanvasElement, JSON.stringify(opts));
@@ -151,7 +154,7 @@ export function drawRdKitMoleculeToOffscreenCanvas(
 
 export function drawRdKitReactionToOffscreenCanvas(
   rdKitReaction: RDReaction, w: number, h: number, offscreenCanvas: OffscreenCanvas) {
-  const opts = createRenderingOpts({width: Math.floor(w), height: Math.floor(h)});
+  const opts = createRenderingOpts({width: Math.floor(w), height: Math.floor(h), fixedScale: undefined});
   const g = offscreenCanvas.getContext('2d', {willReadFrequently: true});
   g?.clearRect(0, 0, w, h);
   rdKitReaction.draw_to_canvas_with_highlights((offscreenCanvas as unknown) as HTMLCanvasElement, JSON.stringify(opts));
@@ -159,7 +162,8 @@ export function drawRdKitReactionToOffscreenCanvas(
 
 export function drawMoleculeToCanvas(x: number, y: number, w: number, h: number,
   onscreenCanvas: HTMLCanvasElement, molString: string, scaffoldMolString: string | null = null,
-  options = {normalizeDepiction: true, straightenDepiction: true}, scaffoldStruct: ISubstruct | null = null) {
+  options = {normalizeDepiction: true, straightenDepiction: true}, scaffoldStruct: ISubstruct | null = null,
+  renderingOptions?: {[key: string]: any}): void {
   if (!w || !h) {
     console.error('Width and height cannot be zero.');
     return;
@@ -219,7 +223,7 @@ export function drawMoleculeToCanvas(x: number, y: number, w: number, h: number,
       }
       substruct = JSON.parse(substructJson);
     }
-    drawRdKitMoleculeToOffscreenCanvas(molCtx, nW, nH, offscreenCanvas, substruct);
+    drawRdKitMoleculeToOffscreenCanvas(molCtx, nW, nH, offscreenCanvas, substruct, renderingOptions);
     const image = offscreenCanvas!.getContext('2d')!.getImageData(0, 0, nW, nH);
     const context = onscreenCanvas.getContext('2d')!;
     context.putImageData(image, x, y);
@@ -239,6 +243,8 @@ export function checkMolEqualSmiles(mol1: any, molfile2: string): boolean {
 export function checkMoleculeValid(molecule: string): any {
   let mol;
   try {
+    if (!hasNewLines(molecule) && molecule?.length > 5000)
+      return null;
     mol = getRdKitModule().get_mol(molecule);
   } catch (e: any) {
     mol?.delete();

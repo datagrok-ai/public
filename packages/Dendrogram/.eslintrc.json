@@ -1,7 +1,7 @@
 {
   "env": {
     "browser": true,
-    "es2020": true
+    "es6": true
   },
   "extends": ["google"],
   "parser": "@typescript-eslint/parser",
@@ -11,7 +11,7 @@
   },
   "plugins": ["@typescript-eslint"],
   "rules": {
-    "indent": ["error", 2],
+    "indent": ["error", 2, { "SwitchCase": 1 }],
     "max-len": ["error", 120],
     "no-unused-vars": "off",
     "@typescript-eslint/no-unused-vars": [
@@ -19,38 +19,21 @@
       { "varsIgnorePattern": "^(_|ui$|grok$|DG$)", "argsIgnorePattern": "^_" }
     ],
     "require-jsdoc": "off",
-    "valid-jsdoc": "warn",
+    "valid-jsdoc": "off",
     "spaced-comment": "off",
     "linebreak-style": "off",
     "curly": ["error", "multi-or-nest", "consistent"],
-    "brace-style": [
+    "brace-style": ["error", "1tbs", { "allowSingleLine": true }],
+    "block-spacing": [2, "always"],
+    "comma-dangle": [
       "error",
-      "1tbs",
       {
-        "allowSingleLine": true
+        "arrays": "only-multiline",
+        "functions": "never",
+        "objects": "only-multiline",
+        "imports": "only-multiline"
       }
     ],
-    "block-spacing": [2, "always"],
-    "comma-dangle": "off",
-    "comma-spacing": "error",
-    "comma-style": "error",
-    "guard-for-in": "off",
-    "space-infix-ops": "error",
-    "@typescript-eslint/space-infix-ops": "error",
-    "arrow-spacing": ["error", { "before": true, "after": true }],
-    "key-spacing": ["error", { "beforeColon": false, "afterColon": true }],
-    "@typescript-eslint/type-annotation-spacing": [
-      "error",
-      {
-        "before": false,
-        "after": true,
-        "overrides": {
-          "arrow": {
-            "before": true,
-            "after": true
-          }
-        }
-      }
-    ]
+    "guard-for-in": "off"
   }
 }

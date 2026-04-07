@@ -1,5 +1,110 @@
 # Chem changelog
 
+## v.next
+
+* Fixed crash in checkCurrentView when table is opened in Files preview without a registered TableView
+
+## 1.17.4 (2026-03-30)
+
+* [#3708](https://github.com/datagrok-ai/public/issues/3708): Chem: Chemical space: Add tags on columns with embeddings
+
+## 1.17.3 (2026-03-26)
+
+* Improved reaction renderer supporting smiles reactions.
+
+## 1.17.2 (2026-03-23)
+
+RDKit render: Render without fixed scaling if rendered outside the global context (for single values like in custom tooltips).
+
+## 1.17.1 (2026-03-17)
+
+* GROK-19867: Chem: Alignment setting (Scaffold column) is not saved to the data-sync project
+
+## 1.17.0 (2026-03-13)
+
+* Chem: MPO: Fix desirability label positioning and rename templates to profiles
+* Chem: MPO: Use name derived from the profile
+* Chem: MPO: Use mapped columns in calculation
+* [#3497](https://github.com/datagrok-ai/public/pull/3624): Chem: MPO: Implement profile management
+* Chem: MMP: Fixed broken pairs grid filtration (by current molecule) after switching from Transfromations tab in demo
+* GROK-19543: Chem: MMP: Cliffs: broken color icon location
+* Chem: MPO: Use line min/max as defaults when not defined in profile
+* GROK-19575: Chem | Descriptors: Broken count for selection
+* GROK-19569: Chem | MPO: "Add as column" is stuck in updating
+* [#3645](https://github.com/datagrok-ai/public/pull/3645): Chem: MPO: Improvements
+* GROK-19576: Chem | Descriptors: Disable modification of selected descriptors when added as a column from the panel
+* [#3650](https://github.com/datagrok-ai/public/pull/3650): Chem: MPO: Improvements
+* GROK-19623: Chem: MPO: Profiles list: Truncate long descriptions
+* Chem: Move Generate Conformers to Calculate
+* GROK-19620: Chem: MPO: Saving cloned profile replaces parent profile
+* GROK-19621: MPO: 'Edit MPO profile' tab including profile`s name
+* GROK-19624: Chem | MPO: Deleting a profile should update browse tree without manual refresh
+* Chem: MPO: Ensure the OK button only applies changes (not saving to file)
+* Chem: MPO: Highlight matching profiles in the profiles input to give users a quick overview of suitable options
+* Chem: MPO: Disable OK button when profile is incompatible or mapping is missing
+* Chem: MPO: Avoid showing balloons when previewing results
+* GROK-19629: Chem: MPO: Enable actions on Browse view
+* GROK-19632: Chem: MPO: error on saving profile
+* GROK-19627: Chem: MPO: Multiple times cloned profile case
+* GROK-19641: Chem: MPO: Close opened/previewed profiles after their deleting from the browse
+* Chem: Add pMPO-generated profile to the Chem folder for demo usage
+* Chem: MPO: Display warning in dialog footer
+* Chem: MPO: Use ObjectHandler for context menu actions and profile preview in the context panel
+* Chem: Explicit smiles setting for sketchers
+* Chem: MPO: Align option values in the profiles input
+* Chem: Add BitBIRCH clustering for O(N) incremental molecule clustering
+* Chem: Bitbirch worker
+* Chem: Removing explicit Hs for morgan FPS
+* Chem: Smiles length limit
+* [#3658](https://github.com/datagrok-ai/public/pull/3658): Chem: Scaffold Tree: Add support for custom labels
+* Chem: MPO: Fix description column showing clickable cursor without expand behaviour
+* Chem: MPO: Fix issue where clicking a profile in the list does not open it in the context panel
+* Chem: MPO: Update match emoji and fix best/worst score interactivity
+* Chem: Synthon search
+* Chem: Scaffold Tree: Support for custom labels (fixes)
+* Chem: MPO: Fix issue with Desirability profile detection
+* Chem: MPO: Align ui between pMPO and MPO dialogs
+* Chem: MPO: Add fallback color section to settings dialog
+* Chem: MPO: Prevent context panel from switching the current object when clicks originate from histogram or scores viewers
+* Chem: MPO: Add UI hints
+* GROK-18490: Chem: MMP: molecule pairs: improve data rendering in context panel
+* Chem: Get mol details
+* Chem: MPO: Display profile names in the dialog instead of filenames to avoid confusion (in the app we use profile names)
+* Chem: Reaction toolkit: Initial UI
+* GROK-19715: Chem: MMP: Fragments: correspond empty trellis plot with molecule pairs list
+* Chem: Improved reactions editor and app views
+* Chem: MPO: Make aggregation to be part of the profile
+* Chem: MPO: Remove hints and add descriptive text in front of the input
+* Chem: MPO: Fix issues with routing
+* Chem: MPO: Fix recalculation and data sync issues
+* Chem: Chemprop: Fix docker container discovery
+* [#3681](https://github.com/datagrok-ai/public/pull/3681): Chem: MPO: Improvements to the “Create Profile” view
+* Chem: MPO: Improve profile creation flow in the dialog
+* Chem: MPO: Fix crash when selecting a profile with no matching columns
+* GROK-19837: Chem: MMP Demo: clicking on "/\ hERG_pIC50" in Fragments causes errors
+* GROK-19838: Chem: Scaffold Tree: Folder style overlaps
+* Chem: MPO: Vertical form layout with descriptions under labels
+* Chem: MPO: Prevent default override when saving from the MPO dialog
+* Chem: MPO: Add profile import and export
+* Chem: MPO: Add breadcrumbs for navigation
+* Chem: MPO: Move Save button to ribbon and fix dialog opening in design mode by default
+* Chem: MPO: Rename “probabilistic” to “data-driven” and rearrange the viewers
+* Chem: MPO: Add checkbox for adding the radar plot to the grid
+* Chem: MPO: Add reset button and fix onChanged not firing for gaussian and sigmoid on change
+
+## 1.16.14 (2026-01-05)
+
+* Chem: Rendering: Introduce an option to disable post–R-group analysis highlighting
+
+## 1.16.13 (2025-12-23)
+
+* Butina clustering: Expose Python implementation to top-menu
+
+## 1.16.12 (2025-12-22)
+
+* GROK-18406: Chem | Scaffold Tree: Disallow multiple filters on the same column
+* Chem: Detector: Extend valid smiles characters to support additional symbols
+
 ## 1.16.11 (2025-12-09)
 
 * Add kekulize option to molecule notation conversion functions

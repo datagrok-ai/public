@@ -1,10 +1,10 @@
 import type * as _grok from 'datagrok-api/grok';
 declare let grok: typeof _grok;
 
-import {category, expect, test, expectExceptionAsync} from '@datagrok-libraries/utils/src/test';
+import {category, expect, test, expectExceptionAsync} from '@datagrok-libraries/test/src/test';
 // import * as ui from 'datagrok-api/ui';
 // import * as DG from 'datagrok-api/dg';
-import {_package} from 'package-test';
+import {_package} from '../package-test';
 
 category('Dapi: packages', () => {
   test('list', async () => {
@@ -21,7 +21,7 @@ category('Dapi: packages', () => {
 
   test('webRoot content', async () => {
     const apiTestsPackage = await grok.dapi.packages.find(_package.id);
-    expect(apiTestsPackage.webRoot, _package.webRoot);
+    expect(apiTestsPackage.webRoot + '/', _package.webRoot);
   });
 
   test('readCsv error', async () => {

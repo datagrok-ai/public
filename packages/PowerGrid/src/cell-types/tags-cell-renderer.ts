@@ -4,6 +4,8 @@ import * as ui from "datagrok-api/ui";
 import {names} from '../sparklines/shared';
 
 
+export const TAGS_CELL_TYPE = 'Tags';
+
 export interface TagsColumnSettings {
   columnNames: string[];
 }
@@ -14,18 +16,14 @@ function measure(g: CanvasRenderingContext2D, tag: string): number {
   return _measures[tag] ??= g.measureText(tag).width;
 }
 
-@grok.decorators.cellRenderer({
-  name: 'Tags',
-  cellType: 'Tags',
-})
 /**
  * Renders a comma-separated string value as checkboxes with options retrieved
  * from the column's `.choices` tag.
  * */
 export class TagsCellRenderer extends DG.GridCellRenderer {
-  get name() { return 'Tags'; }
+  get name() { return TAGS_CELL_TYPE; }
 
-  get cellType() { return 'Tags'; }
+  get cellType() { return TAGS_CELL_TYPE; }
 
   render(
     g: CanvasRenderingContext2D,
@@ -38,7 +36,8 @@ export class TagsCellRenderer extends DG.GridCellRenderer {
 
     const settings = this.getSettings(gridCell.gridColumn);
     const values: string[]
-      = settings ? settings.columnNames.filter((colName) => gridCell.tableRow?.get(colName))
+      = settings ? settings.columnNames.filter((colName) =>
+        gridCell.tableRow?.table.col(colName) != null && gridCell.tableRow?.get(colName))
       : gridCell.cell.valueString.split(',').map((s) => s.trim());
 
     let cx = 2;
@@ -92,9 +91,13 @@ export class TagsCellRenderer extends DG.GridCellRenderer {
     if (gridColumn.column)
       return undefined;
 
-    return gridColumn?.settings?.columnNames !== undefined
-      ? gridColumn.settings
-      : gridColumn.settings = {
+    // backwards compat: migrate old flat settings format to nested under cell type key
+    if (gridColumn.settings?.columnNames != undefined && gridColumn.settings[TAGS_CELL_TYPE] == undefined)
+      gridColumn.settings = {[TAGS_CELL_TYPE]: {columnNames: gridColumn.settings.columnNames}};
+
+    return gridColumn?.settings?.[TAGS_CELL_TYPE]?.columnNames !== undefined
+      ? gridColumn.settings[TAGS_CELL_TYPE]
+      : (gridColumn.settings ??= {})[TAGS_CELL_TYPE] = {
         columnNames: [...gridColumn.grid.dataFrame.columns.boolean].map((c) => c.name)
       };
   }

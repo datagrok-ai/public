@@ -9,10 +9,11 @@ import {NEWICK_EMPTY} from '@datagrok-libraries/bio/src/trees/consts';
 import {DistanceMatrix, DistanceMatrixService} from '@datagrok-libraries/ml/src/distance-matrix';
 import {ITreeHelper} from '@datagrok-libraries/bio/src/trees/tree-helper';
 import {ClusterMatrix} from '@datagrok-libraries/bio/src/trees';
-import {SeqHandler} from '@datagrok-libraries/bio/src/utils/seq-handler';
 import {MmDistanceFunctionsNames} from '@datagrok-libraries/ml/src/macromolecule-distance-functions';
 import {NumberMetricsNames} from '@datagrok-libraries/ml/src/typed-metrics';
 import {IntArrayMetricsNames} from '@datagrok-libraries/ml/src/typed-metrics/consts';
+import { _package } from '../package';
+import { getSeqHelper } from '@datagrok-libraries/bio/src/utils/seq-helper';
 
 type DataNodeDict = { [nodeName: string]: number };
 
@@ -100,14 +101,14 @@ export class TreeHelper implements ITreeHelper {
       if (isLeaf) {
         return ([] as string[]).concat(
           node.name,
-          node.hasOwnProperty('branch_length') ? `:${node.branch_length}` : [],
+          node.hasOwnProperty('branch_length') ? `:${node.branch_length}` : []
         ).join('');
       } else {
         const childrenText = node.children!.map((childNode) => toNewickInt(childNode)).join(',');
         return ([] as string[]).concat(
           `(${childrenText})`,
           node.name,
-          node.hasOwnProperty('branch_length') ? `:${node.branch_length}` : [],
+          node.hasOwnProperty('branch_length') ? `:${node.branch_length}` : []
         ).join('');
       }
     }
@@ -231,7 +232,7 @@ export class TreeHelper implements ITreeHelper {
    * @param {number}currentHeight - current height of node
    * @return {NodeType} - cutted tree of clusters as lists of leafs*/
   treeCutAsTree(
-    node: NodeType, cutHeight: number, keepShorts?: boolean, currentHeight?: number,
+    node: NodeType, cutHeight: number, keepShorts?: boolean, currentHeight?: number
   ): NodeType | null {
     const nodeBranchHeight = node.branch_length ?? 0;
     const currentHeightV: number = currentHeight ?? 0;
@@ -271,7 +272,7 @@ export class TreeHelper implements ITreeHelper {
    */
   setGridOrder(
     tree: NodeType | null, grid: DG.Grid, leafColName?: string,
-    removeMissingDataRows: boolean = false,
+    removeMissingDataRows: boolean = false
   ): [NodeType, string[]] {
     console.debug('Dendrogram.setGridOrder() start');
 
@@ -362,7 +363,7 @@ export class TreeHelper implements ITreeHelper {
   }
 
   markClusters(
-    tree: NodeCuttedType, dataDf: DG.DataFrame, leafColName: string | null, clusterColName: string, na?: any,
+    tree: NodeCuttedType, dataDf: DG.DataFrame, leafColName: string | null, clusterColName: string, na?: any
   ): void {
     const naValue = na ?? null;
     const clusterCol: DG.Column = dataDf.getCol(clusterColName);
@@ -409,7 +410,7 @@ export class TreeHelper implements ITreeHelper {
    * @param {any}na - Value of nulls*/
   cutTreeToGrid(
     node: NodeType, cutHeight: number, dataDf: DG.DataFrame,
-    leafColName: string, clusterColName: string, na?: any,
+    leafColName: string, clusterColName: string, na?: any
   ): void {
     const clusterList: NodeType[] = this.treeCutAsLeaves(node, cutHeight, 0);
 
@@ -496,14 +497,15 @@ export class TreeHelper implements ITreeHelper {
   }
 
   async encodeSequences(seqs: DG.Column): Promise<string[]> {
-    const ncSh = SeqHandler.forColumn(seqs);
+    const seqHelper = await getSeqHelper();
+    const ncSh = seqHelper.getSeqHandler(seqs);
     const seqList = seqs.toList();
     const seqColLength = seqList.length;
     let charCodeCounter = 36;
     const charCodeMap = new Map<string, string>();
     for (let rowIdx = 0; rowIdx < seqColLength; rowIdx++) {
       const seq = seqList[rowIdx];
-      if (seqList[rowIdx] === null || seqs.isNone(rowIdx)) {
+      if (seq == null || seqs.isNone(rowIdx)) {
         seqList[rowIdx] = null;
         continue;
       }
@@ -522,7 +524,7 @@ export class TreeHelper implements ITreeHelper {
   }
 
   async calcDistanceMatrix(
-    df: DG.DataFrame, colNames: string[], method: DistanceMetric = DistanceMetric.Euclidean,
+    df: DG.DataFrame, colNames: string[], method: DistanceMetric = DistanceMetric.Euclidean
   ) {
     // Output distance matrix. reusing it saves a lot of memory
     let out: DistanceMatrix | null = null;
@@ -557,13 +559,13 @@ export class TreeHelper implements ITreeHelper {
         let newMat: DistanceMatrix | null = new DistanceMatrix(values);
         newMat.normalize();
         switch (method) {
-        case DistanceMetric.Manhattan: {
-          out.add(newMat);
-          break;
-        }
-        default:
-          newMat.square();
-          out.add(newMat);
+          case DistanceMetric.Manhattan: {
+            out.add(newMat);
+            break;
+          }
+          default:
+            newMat.square();
+            out.add(newMat);
         }
         // remove reference
         newMat = null;

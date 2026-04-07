@@ -354,11 +354,9 @@ export class PackageFunctions{
       'scriptHandler.templateScript': '#name: Template\\n#description: Calculates number of cells in the table\\n#language: pyodide\\n#sample: cars.csv\\n#input: dataframe table [Data table]\\n#output: int count [Number of cells in table]\\n\\ncount = table.shape[0] * table.shape[1]',
       'scriptHandler.codeEditorMode': 'python',
       'scriptHandler.vectorizationFunction': 'Pyodide:makeVectorCode',
-      'icon': 'files/pyodide.png'
+      'icon': 'files/pyodide.png',
+      'role': 'scriptHandler',
     },
-    'tags': [
-      'scriptHandler'
-    ]
   })
   static async pyodideLanguageHandler(
     scriptCall: DG.FuncCall): Promise<void> {

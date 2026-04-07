@@ -2,7 +2,7 @@ import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
-import {before, category, expect, test} from '@datagrok-libraries/utils/src/test';
+import {before, category, expect, test} from '@datagrok-libraries/test/src/test';
 import {getAutoDockService, GridSize, IAutoDockService} from '@datagrok-libraries/bio/src/pdb/auto-dock-service';
 import {BiostructureData} from '@datagrok-libraries/bio/src/pdb/types';
 import {errInfo} from '@datagrok-libraries/bio/src/utils/err-info';
@@ -10,7 +10,7 @@ import {errInfo} from '@datagrok-libraries/bio/src/utils/err-info';
 import {_package} from '../package-test';
 import {buildDefaultAutodockGpf} from '../utils/auto-dock-service';
 import { fetchWrapper } from '@datagrok-libraries/utils/src/fetch-utils';
-import {ensureContainerRunning} from '@datagrok-libraries/utils/src/test-container-utils';
+import {ensureContainerRunning} from '@datagrok-libraries/test/src/test-container-utils';
 
 export const CONTAINER_TIMEOUT = 300000;
 

@@ -211,6 +211,8 @@ export class PackageFunctions {
     @grok.decorators.param({'options': {'semType': 'Molecule'}}) molecule: string,
     @grok.decorators.param({'type': 'int'}) limit: number): Promise<DG.DataFrame | null> {
     try {
+      if (!grok.chem.isMolBlock(molecule) && molecule?.length > 5000)
+        throw new Error('SMILES string longer than 5000 characters not supported');
       const mol = (await grok.functions.call('Chem:getRdKitModule')).get_mol(molecule);
       const smarts = mol.get_smarts();
       mol?.delete();
@@ -235,6 +237,8 @@ export class PackageFunctions {
     @grok.decorators.param({'type': 'int'}) limit: number,
       similarityThreshold?: number): Promise<DG.DataFrame | null> {
     try {
+      if (!grok.chem.isMolBlock(molecule) && molecule?.length > 5000)
+        throw new Error('SMILES string longer than 5000 characters not supported');
       const mol = (await grok.functions.call('Chem:getRdKitModule')).get_mol(molecule);
       const smiles = mol.get_smiles();
       mol?.delete();
@@ -249,11 +253,9 @@ export class PackageFunctions {
 
 
   @grok.decorators.panel({
-    'tags': [
-      'widgets',
-    ],
     'name': 'Databases | SureChEMBL | Substructure Search',
     'condition': 'true',
+    meta: {role: 'widgets'},
   })
   static sureChemblSubstructureSearchWidget(
     @grok.decorators.param({'options': {'semType': 'Molecule'}}) molecule: string): DG.Widget {
@@ -262,12 +264,9 @@ export class PackageFunctions {
 
 
   @grok.decorators.func({
-    'tags': [
-      'panel',
-      'widgets',
-    ],
     'name': 'Databases | SureChEMBL | Similarity Search',
     'condition': 'true',
+    meta: {role: 'panel,widgets'},
   })
   static sureChemblSimilaritySearchWidget(
     @grok.decorators.param({'options': {'semType': 'Molecule'}}) molecule: string): DG.Widget {

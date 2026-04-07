@@ -3,7 +3,7 @@ import * as ui from 'datagrok-api/ui';
 import {
   getSettingsBase, SummarySettingsBase, createTooltip, distance, Hit,
   SparklineType, isSummarySettingsBase, SummaryColumnColoringType, createBaseInputs, getRenderColor, getScaledNumber,
-  NormalizationType, getSparklinesContextPanel
+  scaleSettings, NormalizationType, getSparklinesContextPanel
 } from './shared';
 
 
@@ -107,16 +107,14 @@ export class RadarChartCellRender extends DG.GridCellRenderer {
     for (let i = 0; i < cols.length; i++) {
       if (!cols[i].isNone(row)) {
         const point = p(i, 1);
-        DG.Paint.marker(g, DG.MARKER_TYPE.CIRCLE, point.x, point.y, DG.Color.gray, 1);
+        const w = Math.min(box.width, box.height);
+        DG.Paint.marker(g, DG.MARKER_TYPE.CIRCLE, point.x, point.y, DG.Color.gray, w > 30 ? 1 : w / 30);
       }
     }
 
     const path = it.range(cols.length).map((i) => {
       const value = !cols[i].isNone(row) ?
-        getScaledNumber(cols, row, cols[i], {
-          normalization: settings.normalization,
-          invertScale: settings.invertColumnNames?.includes(cols[i].name),
-        }) :
+        getScaledNumber(cols, row, cols[i], scaleSettings(settings, cols[i])) :
         0;
       return p(i, value);
     });
@@ -137,10 +135,9 @@ export class RadarChartCellRender extends DG.GridCellRenderer {
     }
     it.range(cols.length).map(function(i) {
       if (!cols[i].isNone(row)) {
-        const scaledNumber = getScaledNumber(cols, row, cols[i], {
-          normalization: settings.normalization,
-          invertScale: settings.invertColumnNames?.includes(cols[i].name),
-        });
+        const scaledNumber = getScaledNumber(cols, row, cols[i],
+          scaleSettings(settings, cols[i]),
+        );
         const point = p(i, scaledNumber);
         DG.Paint.marker(g, DG.MARKER_TYPE.CIRCLE, point.x, point.y,
           getRenderColor(settings, DG.Color.fromHtml('#1E90FF'), {column: cols[i], colIdx: i, rowIdx: row}), 3);

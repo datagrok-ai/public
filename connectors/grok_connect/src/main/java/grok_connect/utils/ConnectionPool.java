@@ -11,13 +11,19 @@ import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.SQLTransientConnectionException;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 public class ConnectionPool {
     private static final Logger LOGGER = LoggerFactory.getLogger(ConnectionPool.class);
     private static final Map<String, HikariDataSource> connectionPool = new ConcurrentHashMap<>();
+    private static final Object driverLoadLock = new Object();
+    private static volatile boolean evictionStarted = false;
 
     public static Connection getConnection(String url, java.util.Properties properties, String driverClassName)
             throws GrokConnectException {
@@ -26,7 +32,7 @@ public class ConnectionPool {
             throw new GrokConnectException("Connection parameters are null");
         String key = url + properties + driverClassName;
         try {
-            HikariDataSource ds = connectionPool.computeIfAbsent(key, k -> getDataSource(url, properties, driverClassName));
+            HikariDataSource ds = getOrCreateDataSource(key, url, properties, driverClassName);
             return ds.getConnection();
         } catch (HikariPool.PoolInitializationException | SQLTransientConnectionException e) {
             HikariDataSource pool = connectionPool.remove(key);
@@ -45,19 +51,45 @@ public class ConnectionPool {
         if (dataSource == null || GrokConnectUtil.isEmpty(key))
             throw new GrokConnectException("Connection parameters are null");
         try {
-            HikariDataSource ds = connectionPool.computeIfAbsent(key, k -> getDataSource(dataSource));
+            HikariDataSource ds = getOrCreateDataSource(key, dataSource);
             return ds.getConnection();
         } catch (HikariPool.PoolInitializationException | SQLTransientConnectionException e) {
-            if (connectionPool.containsKey(key)) {
-                HikariDataSource pool = connectionPool.remove(key);
-                if (pool != null)
-                    pool.close();
-            }
+            HikariDataSource pool = connectionPool.remove(key);
+            if (pool != null)
+                pool.close();
             Throwable cause = e.getCause();
             throw new GrokConnectException(cause != null ? cause : e);
         } catch (SQLException e) {
             throw new GrokConnectException(e);
         }
+    }
+
+    private static HikariDataSource getOrCreateDataSource(String key, String url, Properties properties, String driverClassName) {
+        startEvictionIfNeeded();
+        HikariDataSource ds = connectionPool.get(key);
+        if (ds != null)
+            return ds;
+        HikariDataSource newDs = getDataSource(url, properties, driverClassName);
+        HikariDataSource existing = connectionPool.putIfAbsent(key, newDs);
+        if (existing != null) {
+            newDs.close();
+            return existing;
+        }
+        return newDs;
+    }
+
+    private static HikariDataSource getOrCreateDataSource(String key, DataSource dataSource) {
+        startEvictionIfNeeded();
+        HikariDataSource ds = connectionPool.get(key);
+        if (ds != null)
+            return ds;
+        HikariDataSource newDs = getDataSource(dataSource);
+        HikariDataSource existing = connectionPool.putIfAbsent(key, newDs);
+        if (existing != null) {
+            newDs.close();
+            return existing;
+        }
+        return newDs;
     }
 
     private static HikariDataSource getDataSource(DataSource dataSource) {
@@ -73,6 +105,7 @@ public class ConnectionPool {
         config.setMinimumIdle(0);
         config.setIdleTimeout(SettingsManager.getInstance().getSettings().connectionPoolIdleTimeout);
         config.setLeakDetectionThreshold(60 * 1000);
+        config.setInitializationFailTimeout(-1);
 
         return new HikariDataSource(config);
     }
@@ -100,12 +133,55 @@ public class ConnectionPool {
         HikariConfig config = new HikariConfig();
         config.setPoolName(poolName);
         config.setJdbcUrl(url);
-        config.setDriverClassName(driverClassName);
+        synchronized (driverLoadLock) {
+            config.setDriverClassName(driverClassName);
+        }
         config.setDataSourceProperties(properties);
         config.setMaximumPoolSize(SettingsManager.getInstance().getSettings().connectionPoolMaximumPoolSize);
         config.setMinimumIdle(0);
         config.setIdleTimeout(SettingsManager.getInstance().getSettings().connectionPoolIdleTimeout);
         config.setLeakDetectionThreshold(60 * 1000);
+        config.setInitializationFailTimeout(-1);
         return new HikariDataSource(config);
+    }
+
+    private static void startEvictionIfNeeded() {
+        if (evictionStarted)
+            return;
+        synchronized (ConnectionPool.class) {
+            if (evictionStarted)
+                return;
+            long rateMs = SettingsManager.getInstance().getSettings().connectionPoolTimerRate;
+            ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor(r -> {
+                Thread t = new Thread(r, "ConnectionPool-Evictor");
+                t.setDaemon(true);
+                return t;
+            });
+            scheduler.scheduleAtFixedRate(ConnectionPool::evictIdlePools, rateMs, rateMs, TimeUnit.MILLISECONDS);
+            evictionStarted = true;
+        }
+    }
+
+    private static void evictIdlePools() {
+        Iterator<Map.Entry<String, HikariDataSource>> it = connectionPool.entrySet().iterator();
+        while (it.hasNext()) {
+            Map.Entry<String, HikariDataSource> entry = it.next();
+            HikariDataSource ds = entry.getValue();
+            try {
+                if (ds.isClosed()) {
+                    it.remove();
+                    continue;
+                }
+                com.zaxxer.hikari.HikariPoolMXBean pool = ds.getHikariPoolMXBean();
+                if (pool != null && pool.getIdleConnections() == 0 && pool.getActiveConnections() == 0) {
+                    LOGGER.info("Evicting idle pool: {}", ds.getPoolName());
+                    it.remove();
+                    ds.close();
+                }
+            }
+            catch (Exception e) {
+                LOGGER.warn("Error evicting pool: {}", ds.getPoolName(), e);
+            }
+        }
     }
 }

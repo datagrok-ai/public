@@ -2,11 +2,11 @@
 import {FILTER_TYPE, TYPE, VIEWER, ViewerPropertyType, ViewerType} from "./const";
 import {BitSet, DataFrame} from "./dataframe.js";
 import {Property, IProperty} from "./entities";
-import {Menu, ObjectPropertyBag, Widget, Filter, TypedEventArgs} from "./widgets";
+import {IWidgetStatus, IRectBounds, Menu, ObjectPropertyBag, Widget, Filter, TypedEventArgs} from "./widgets";
 import {_toJson} from "./utils_convert";
 import {MapProxy} from "./proxies";
 import {toJs, toDart} from "./wrappers";
-import {__obs, EventData, StreamSubscription} from "./events";
+import {__obs, EventData, EventType, StreamSubscription} from "./events";
 import * as rxjs from "rxjs";
 import {Subscription} from 'rxjs';
 import {filter, map} from 'rxjs/operators';
@@ -54,6 +54,9 @@ export class WidgetDescriptor {
   /** Widget properties */
   get properties(): Property[] { return this._props ??= api.grok_WidgetDescriptor_Get_Properties(this.dart); }
 
+  /** Events fired by this widget. */
+  get events(): EventType[] { return (api.grok_WidgetDescriptor_Get_Events(this.dart) as any[]).map((e) => new EventType(e)); }
+
   /** Creates an icon for that widget. */
   createIcon(): Element { return api.grok_WidgetDescriptor_CreateIcon(this.dart); }
 }
@@ -78,24 +81,26 @@ export class Viewer<TSettings = any> extends Widget<TSettings> {
 
   public tags: any;
   private _meta: ViewerMetaHelper | undefined;
-  private _filter: BitSet | null = null;
 
   /** @constructs Viewer */
   constructor(dart: any, root?: HTMLElement) {
     super(root ?? api.grok_Viewer_Root(dart));
     this.initDartObject(dart);
   }
-
+  // only for JsViewer
+  private _filter: BitSet | null = null;
   /** combined filter of the viewer */
   get filter(): BitSet {
-    return this._filter ??= this.dart ? toJs(api.grok_Viewer_Get_Filter(this.dart)) : BitSet.create(0);
+    return this._filter ?? this.dart ? toJs(api.grok_Viewer_Get_Filter(this.dart)) : BitSet.create(0);
   }
   set filter(f: BitSet) {
     this._filter = f;
   }
-
   /** Descriptor of this widget. */
   get descriptor(): WidgetDescriptor { return api.grok_Viewer_Get_Descriptor(this.dart); }
+
+  /** Returns the widget's runtime structure for automated testing and introspection. */
+  getWidgetStatus(): IWidgetStatus { return api.grok_Widget_GetWidgetStatus(this.dart); }
 
   get onDataEvent(): rxjs.Observable<ViewerEvent> { return this.onEvent('d4-data-event'); }
   get onTooltipCreated(): rxjs.Observable<ViewerEvent> { return this.onEvent('d4-data-event').pipe(filter((e) => e.type == 'd4-tooltip')); }

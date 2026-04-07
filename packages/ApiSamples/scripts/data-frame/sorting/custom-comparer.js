@@ -4,7 +4,7 @@
 let column = DG.Column.fromList(DG.TYPE.STRING, 'months', ['Feb', 'Jan', 'May', 'Mar']);
 
 // Define and set a custom value comparer that is used for sorting later
-let months = { Jan: 1, Feb: 2, Mar: 3, Apr: 4, May: 5 };
+let months = {Jan: 1, Feb: 2, Mar: 3, Apr: 4, May: 5};
 column.valueComparer = (s1, s2) => months[s1] - months[s2];
 
 // It is possible to get the sorted order if needed

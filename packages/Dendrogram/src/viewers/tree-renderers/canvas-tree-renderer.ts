@@ -9,7 +9,7 @@ import {TreeHelper} from '../../utils/tree-helper';
 import {errorToConsole} from '@datagrok-libraries/utils/src/to-console';
 
 function canvasToTreePoint<TNode extends MarkupNodeType>(
-  canvasPoint: DG.Point, canvas: HTMLCanvasElement, placer: RectangleTreePlacer<TNode>,
+  canvasPoint: DG.Point, canvas: HTMLCanvasElement, placer: RectangleTreePlacer<TNode>
 ): DG.Point {
   const canvasWidth = canvas.clientWidth - placer.padding.left - placer.padding.right;
   const res: DG.Point = new DG.Point(
@@ -19,11 +19,11 @@ function canvasToTreePoint<TNode extends MarkupNodeType>(
 }
 
 function treeToCanvasPoint<TNode extends MarkupNodeType>(
-  treePoint: DG.Point, canvas: HTMLCanvasElement, placer: RectangleTreePlacer<TNode>,
+  treePoint: DG.Point, canvas: HTMLCanvasElement, placer: RectangleTreePlacer<TNode>, xZoomFactor = 1
 ): DG.Point {
   const canvasWidth = canvas.clientWidth - placer.padding.left - placer.padding.right;
   const res: DG.Point = new DG.Point(
-    placer.padding.left + canvasWidth * treePoint.x / placer.totalLength,
+    placer.padding.left + (canvasWidth * treePoint.x / placer.totalLength) * xZoomFactor - (canvasWidth * (xZoomFactor - 1)),
     canvas.clientHeight * (treePoint.y - placer.top) / placer.height);
   return res;
 }
@@ -41,9 +41,21 @@ export class CanvasTreeRenderer<TNode extends MarkupNodeType>
   protected readonly initialPos: { top: number, bottom: number };
   protected _mainStyler: ITreeStyler<TNode>;
   protected _mainStylerOnChangedSub!: rxjs.Unsubscribable;
+  protected xZoomFactor: number = 1;
+  protected get xZoomNorm(): number { return Math.min(Math.max(Math.floor(this.xZoomFactor * 4) / 4, 1), 100); }
+  public updateXZoom(newZoom: number) {
+    this.xZoomFactor = newZoom;
+    this.render('updateXZoom()');
+  }
 
   get mainStyler(): ITreeStyler<TNode> {
     return this._mainStyler;
+  }
+
+  public treeXToCanvasX(treeX: number): number {
+    if (!this.canvas) throw new Error('CanvasTreeRenderer.treeXToCanvasX(): canvas is not attached');
+    return treeToCanvasPoint(
+      new DG.Point(treeX, 0), this.canvas, this.placer, this.xZoomNorm).x;
   }
 
   set mainStyler(value: ITreeStyler<TNode>) {
@@ -61,7 +73,7 @@ export class CanvasTreeRenderer<TNode extends MarkupNodeType>
   constructor(
     treeRoot: TNode | null, placer: RectangleTreePlacer<TNode>,
     mainStyler: ITreeStyler<TNode>, lightStyler: ITreeStyler<TNode>,
-    currentStyler: ITreeStyler<TNode>, mouseOverStyler: ITreeStyler<TNode>, selectionStyler: ITreeStyler<TNode>,
+    currentStyler: ITreeStyler<TNode>, mouseOverStyler: ITreeStyler<TNode>, selectionStyler: ITreeStyler<TNode>
   ) {
     super(treeRoot);
 
@@ -96,10 +108,15 @@ export class CanvasTreeRenderer<TNode extends MarkupNodeType>
     const plotWidth: number = this.canvas.width - dpr * (this.placer.padding.left + this.placer.padding.right);
     const plotHeight: number = this.canvas.height;
     const placerHeight: number = this.placer.bottom - this.placer.top;
-    const lengthRatio: number = plotWidth / this.placer.totalLength; // px/[length unit]
+    // @ts-ignore
+    const sc = this.xZoomNorm;
+    const lengthRatio: number = (plotWidth * sc) / this.placer.totalLength; // px/[length unit]
     const stepRatio: number = plotHeight / placerHeight; // px/[step unit, row]
 
     ctx.save();
+    ctx.fillStyle = '#FFFFFF';
+    ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+    ctx.translate(-(sc - 1) * plotWidth, 0);
     try {
       if (this.treeRoot) {
         (function clearNodeDesc(node: TNode) { // function name for recursive call
@@ -109,9 +126,6 @@ export class CanvasTreeRenderer<TNode extends MarkupNodeType>
             clearNodeDesc(childNode as TNode);
         })(this.treeRoot);
       }
-
-      ctx.fillStyle = '#FFFFFF';
-      ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
 
       // // large red diagonal cross
       // ctx.beginPath();
@@ -138,7 +152,7 @@ export class CanvasTreeRenderer<TNode extends MarkupNodeType>
           {
             ctx: ctx, firstRowIndex: this.placer.top, lastRowIndex: this.placer.bottom,
             leftPadding: this.placer.padding.left, lengthRatio: lengthRatio, stepRatio: stepRatio,
-            totalLength: this.placer.totalLength, styler: styler,
+            totalLength: this.placer.totalLength, styler: styler, xZoomFactor: sc,
           },
           this.treeRoot, 0, [...selectionTraceList]);
 
@@ -147,7 +161,7 @@ export class CanvasTreeRenderer<TNode extends MarkupNodeType>
             {
               ctx: ctx, firstRowIndex: this.placer.top, lastRowIndex: this.placer.bottom,
               leftPadding: this.placer.padding.left, lengthRatio: lengthRatio, stepRatio: stepRatio,
-              styler: this.selectionStyler, totalLength: this.placer.totalLength,
+              styler: this.selectionStyler, totalLength: this.placer.totalLength, xZoomFactor: sc,
             },
             selection.node, selection.nodeHeight, []);
         }
@@ -158,7 +172,7 @@ export class CanvasTreeRenderer<TNode extends MarkupNodeType>
             {
               ctx: ctx, firstRowIndex: this.placer.top, lastRowIndex: this.placer.bottom,
               leftPadding: this.placer.padding.left, lengthRatio: lengthRatio, stepRatio: stepRatio,
-              totalLength: this.placer.totalLength, styler: invisibleStyler,
+              totalLength: this.placer.totalLength, styler: invisibleStyler, xZoomFactor: sc,
             },
             this.treeRoot, 0, [...currentTraceList]);
 
@@ -177,7 +191,7 @@ export class CanvasTreeRenderer<TNode extends MarkupNodeType>
             {
               ctx: ctx, firstRowIndex: this.placer.top, lastRowIndex: this.placer.bottom,
               leftPadding: this.placer.padding.left, lengthRatio: lengthRatio, stepRatio: stepRatio,
-              totalLength: this.placer.totalLength, styler: invisibleStyler,
+              totalLength: this.placer.totalLength, styler: invisibleStyler, xZoomFactor: sc,
             },
             this.treeRoot, 0, [...mouseOverTraceList]);
 
@@ -186,7 +200,7 @@ export class CanvasTreeRenderer<TNode extends MarkupNodeType>
             {
               ctx: ctx, firstRowIndex: this.placer.top, lastRowIndex: this.placer.bottom,
               leftPadding: this.placer.padding.left, lengthRatio: lengthRatio, stepRatio: stepRatio,
-              totalLength: this.placer.totalLength, styler: this.mouseOverStyler,
+              totalLength: this.placer.totalLength, styler: this.mouseOverStyler, xZoomFactor: sc,
             },
             this.mouseOver.node, this.mouseOver.nodeHeight, []);
         }
@@ -265,7 +279,8 @@ export class CanvasTreeRenderer<TNode extends MarkupNodeType>
   }
 
   public onResetZoom() {
-    this.placer.update(this.initialPos);
+    this.xZoomFactor = 1;
+    // this.placer.update(this.initialPos);
     this.render('onResetZoom()');
   }
 
@@ -289,8 +304,9 @@ export class CanvasTreeRenderer<TNode extends MarkupNodeType>
 
   protected canvasOnMouseDown(e: MouseEvent): void {
     if (!this.view || !this.canvas) return;
+    const actualX = e.offsetX;
 
-    const pos = canvasToTreePoint(new DG.Point(e.offsetX, e.offsetY), this.canvas, this.placer);
+    const pos = canvasToTreePoint(new DG.Point(actualX, e.offsetY), this.canvas, this.placer);
     this.mouseDragging = {pos: pos, top: this.placer.top, bottom: this.placer.bottom};
   }
 
@@ -300,8 +316,9 @@ export class CanvasTreeRenderer<TNode extends MarkupNodeType>
 
   protected canvasOnMouseMove(e: MouseEvent): void {
     if (!this.view || !this.canvas) return;
+    const actualX = e.offsetX; //+ (this.xZoomFactor - 1) * (this.canvas.clientWidth);
 
-    const canvasPoint = new DG.Point(e.offsetX, e.offsetY);
+    const canvasPoint = new DG.Point(actualX, e.offsetY);
 
     const md = this.mouseDragging;
     if (md) {
@@ -316,8 +333,12 @@ export class CanvasTreeRenderer<TNode extends MarkupNodeType>
       // console.debug('CanvasTreeRender.onMouseMove() --- getNode() ---');
       this.mouseOver = !this.treeRoot ? null : this.placer.getNode(
         this.treeRoot, canvasPoint, this._mainStyler.lineWidth, this._mainStyler.nodeSize,
-        (canvasP: DG.Point): DG.Point => {
-          return treeToCanvasPoint(canvasP, this.canvas!, this.placer);
+        (treeP: DG.Point): DG.Point => {
+          const r = treeToCanvasPoint(treeP, this.canvas!, this.placer, this.xZoomNorm);
+          // console.log('treeP:', treeP);
+          // console.log('r:', r);
+          return new DG.Point(r.x, r.y);
+          // return r;
         });
 
       this._mainStyler.fireTooltipShow(this.mouseOver ? this.mouseOver.node : null, e);

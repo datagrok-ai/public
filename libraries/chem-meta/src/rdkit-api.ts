@@ -38,7 +38,10 @@ export interface RDMol {
   is_valid(): boolean;
   has_coords(): number;
 
-  get_smiles(): string;
+  // details: JSON with doIsomericSmiles: bool, doKekule: bool, canonical: bool, cleanStereo: bool,
+  //   allBondsExplicit: bool, allHsExplicit: bool, doRandom: bool, rootedAtAtom: int,
+  //   includeDativeBonds: bool, ignoreAtomMapNumbers: bool
+  get_smiles(details?: string): string;
   get_cxsmiles(): string;
   get_smarts(): string;
   get_cxsmarts(): string;
@@ -173,7 +176,8 @@ export interface RDSubstructLibrary {
   get_trusted_smiles(i: number): string;
   add_trusted_smiles_and_pattern_fp(smiles: string, patternFp: Uint8Array): number;
   get_pattern_fp_as_uint8array(i: number): Uint8Array;
-  get_matches_as_uint32array(qmol: RDMol, useChirality?: boolean, numThreads?: number, maxResults?: number): Uint32Array;
+  get_matches_as_uint32array(qmol: RDMol, useChirality?: boolean, numThreads?: number,
+    maxResults?: number): Uint32Array;
   get_mol(i: number): RDMol;
   get_matches(qmol: RDMol, useChirality?: boolean, numThreads?: number, maxResults?: number): string;
   count_matches(qmol: RDMol, useChirality?: boolean, numThreads?: number): number;

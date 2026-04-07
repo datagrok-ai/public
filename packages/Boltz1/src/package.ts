@@ -34,7 +34,9 @@ export class PackageFunctions {
 
   @grok.decorators.func({
     name: 'Boltz',
-    'top-menu': 'Bio | Folding | Boltz...'
+    'top-menu': 'Bio | Folding | Boltz...',
+    meta: {vectorFunc: 'true'},
+    outputs: [{name: 'result', type: 'dataframe', options: {action: 'join(table)'}}],
   })
   static async folding(
     table: DG.DataFrame,
@@ -45,7 +47,9 @@ export class PackageFunctions {
 
   @grok.decorators.func({
     name: 'Boltz',
-    'top-menu': 'Chem | Docking | Boltz...'
+    'top-menu': 'Chem | Docking | Boltz...',
+    meta: {vectorFunc: 'true'},
+    outputs: [{name: 'result', type: 'dataframe', options: {action: 'join(table)'}}],
   })
   static async docking(
     table: DG.DataFrame,
@@ -57,11 +61,11 @@ export class PackageFunctions {
 
   @grok.decorators.panel({
     name: 'Boltz-1',
-    tags: ['chem', 'widgets'],
     outputs: [
       {name: 'result', type: 'widget'},
     ],
     condition: 'Boltz1:isApplicableBoltz(molecule)',
+    meta: {role: 'widgets', domain: 'chem'},
   })
   static async boltzWidget(
     @grok.decorators.param({options: {semType: 'Molecule3D'}}) molecule: DG.SemanticValue,

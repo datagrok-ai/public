@@ -4,7 +4,7 @@
 
 function getFirstOfCol(col) {
   if (col)
-    return col.categories.filter(x => x != '')[0];
+    return col.categories.filter(x => x !== '')[0];
   return '';
 }
 
@@ -50,7 +50,7 @@ async function postprocess() {
 
   function generateCommonValueFormula(operation, suffix, value) {
     let res = '';
-    if (builds.length == 1)
+    if (builds.length === 1)
       return '${' + builds[0] + suffix + value;
     for (let i = 0; i + 2 < builds.length; i++)
       res += operation + '(${' + builds[i] + suffix + value + ',';
@@ -63,7 +63,7 @@ async function postprocess() {
   await pivot.columns.addNewCalculated('failing', `if (IsEmpty(\${1 concat unique(status)}), ${generateCommonValueFormula("Or", ' concat unique(status)}', '== "failed"')}, \${1 concat unique(status)} == "failed")`, 'bool');
   await pivot.columns.addNewCalculated('flaking', generateCommonValueFormula("Or", ' first(flaking)}', '== true'), 'bool');
   let schemas = await grok.dapi.stickyMeta.getSchemas();
-  let schema = schemas.filter((schema) => schema.name == 'Autotests').at(0);
+  let schema = schemas.filter((schema) => schema.name === 'Autotests').at(0);
   let meta = await grok.dapi.stickyMeta.getAllValues(schema, pivot.columns.byName('test'));
   pivot.columns.add(meta.col('ignore?'));
   pivot.columns.add(meta.col('ignoreReason'));
@@ -156,12 +156,34 @@ async function postprocess() {
 
  return pivot;
 }
-let out = null;
-if (result.rowCount == 0)  {
+let out;
+if (result.rowCount === 0)  {
   out = DG.DataFrame.fromColumns([
-    DG.Column.fromType('string', 'test', 1),
-    DG.Column.fromType('string', 'owner', 1)
+    DG.Column.fromStrings('test', []),
+    DG.Column.fromStrings('owner', []),
+    DG.Column.fromType(DG.COLUMN_TYPE.BOOL, 'needs_attention', 0),
+    DG.Column.fromType(DG.COLUMN_TYPE.BOOL, 'stable', 0),
+    DG.Column.fromType(DG.COLUMN_TYPE.BOOL, 'failing', 0),
+    DG.Column.fromType(DG.COLUMN_TYPE.BOOL, 'flaking', 0),
+    DG.Column.fromStrings('1', []),
+    DG.Column.fromStrings('2', []),
+    DG.Column.fromStrings('3', []),
+    DG.Column.fromType(DG.COLUMN_TYPE.FLOAT, '1 duration', 0),
+    DG.Column.fromType(DG.COLUMN_TYPE.FLOAT, '2 duration', 0),
+    DG.Column.fromType(DG.COLUMN_TYPE.FLOAT, '3 duration', 0),
+    DG.Column.fromStrings('1 result', []),
+    DG.Column.fromStrings('2 result', []),
+    DG.Column.fromStrings('3 result', []),
+    DG.Column.fromType(DG.COLUMN_TYPE.BOOL, 'ignore?', 0),
+    DG.Column.fromStrings('ignoreReason', []),
+    DG.Column.fromStrings('lastResolved', []),
+    DG.Column.fromStrings('ignore status', []),
+    DG.Column.fromStrings('1 tickets status', []),
   ]);
+  out.columns.byName('test').semType = 'autotest';
+  out.columns.byName('owner').semType = 'User';
+  out.columns.byName('owner').setTag('cell.renderer', 'User');
+  out.name = '0. Tests Dashboard';
 }
 else
     out = await postprocess();

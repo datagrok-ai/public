@@ -9,7 +9,7 @@ To add tests for Datagrok's JS API:
 3. Import the required utilities (refer to other tests as an example):
 
    ```js
-   import { category, expect, test } from '@datagrok-libraries/utils/src/test';
+   import { category, expect, test } from '@datagrok-libraries/test/src/test';
    ```
 
 4. Write some tests

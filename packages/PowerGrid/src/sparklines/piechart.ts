@@ -12,7 +12,7 @@ import {
   SparklineType,
   SummaryColumnColoringType,
   SummarySettingsBase,
-  NormalizationType, getScaledNumber, getSparklinesContextPanel,
+  NormalizationType, getScaledNumber, scaleSettings, getSparklinesContextPanel
 } from './shared';
 import {VlaaiVisManager} from '../utils/vlaaivis-manager';
 
@@ -40,7 +40,7 @@ export interface PieChartSettings extends SummarySettingsBase {
   sectors?: {
       lowerBound: number;
       upperBound: number;
-      sectors: Sector[];  // Use the Sector interface here
+      sectors: Sector[]; // Use the Sector interface here
       values: string | null;
   };
 }
@@ -128,12 +128,14 @@ function onHit(gridCell: DG.GridCell, e: MouseEvent): Hit {
   if (settings.style == PieChartStyle.Radius && !settings.sectors) {
     activeColumn = Math.floor((angle * cols.length) / (2 * Math.PI));
     if (cols[activeColumn] !== null) {
-      const scaledNumber = getScaledNumber(cols, row, cols[activeColumn], {normalization: settings.normalization});
+      const scaledNumber = getScaledNumber(cols, row, cols[activeColumn],
+        scaleSettings(settings, cols[activeColumn])
+      );
       r = scaledNumber * (gridCell.bounds.width - 4) / 2;
       r = Math.max(r, minRadius);
     }
   } else if (settings.sectors) {
-    const { sectors } = settings.sectors;
+    const {sectors} = settings.sectors;
     let currentAngle = 0;
     const totalSectorWeight = sectors.reduce((acc, sector) => acc + calculateSectorWeight(sector), 0);
     for (const sector of sectors) {
@@ -227,7 +229,9 @@ export class PieChartCellRenderer extends DG.GridCellRenderer {
         if (cols[i] === null || row === -1 || cols[i].isNone(row))
           continue;
 
-        const scaledNumber = getScaledNumber(cols, row, cols[i], {normalization: settings.normalization});
+        const scaledNumber = getScaledNumber(cols, row, cols[i],
+          scaleSettings(settings, cols[i])
+        );
         let r = scaledNumber * box.width / 2;
         r = Math.max(r, minRadius);
         g.beginPath();
@@ -236,13 +240,13 @@ export class PieChartCellRenderer extends DG.GridCellRenderer {
           2 * Math.PI * i / cols.length, 2 * Math.PI * (i + 1) / cols.length);
         g.closePath();
 
-        g.fillStyle = DG.Color.toRgb(getRenderColor(settings, DG.Color.blue,{column: cols[i], colIdx: i, rowIdx: row}));
+        g.fillStyle = DG.Color.toRgb(getRenderColor(settings, DG.Color.blue, {column: cols[i], colIdx: i, rowIdx: row}));
         g.fill();
         g.strokeStyle = DG.Color.toRgb(DG.Color.lightGray);
         g.stroke();
       }
     } else if (settings.sectors) {
-      const { lowerBound, upperBound, sectors, values } = settings.sectors;
+      const {lowerBound, upperBound, sectors, values} = settings.sectors;
       cols = values ? Array.from(DG.DataFrame.fromCsv(values).columns) : cols;
       row = values ? 0 : row;
       sectors.sort((a, b) => calculateSectorWeight(b) - calculateSectorWeight(a));
@@ -284,7 +288,7 @@ export class PieChartCellRenderer extends DG.GridCellRenderer {
         g.arc(box.midX, box.midY, r, currentAngle, endAngle);
         g.closePath();
 
-        g.fillStyle = DG.Color.toRgb(getRenderColor(settings, DG.Color.blue,{column: cols[i], colIdx: i, rowIdx: row}));
+        g.fillStyle = DG.Color.toRgb(getRenderColor(settings, DG.Color.blue, {column: cols[i], colIdx: i, rowIdx: row}));
         g.fill();
         g.strokeStyle = DG.Color.toRgb(DG.Color.lightGray);
         g.stroke();
@@ -304,9 +308,9 @@ export class PieChartCellRenderer extends DG.GridCellRenderer {
         onValueChanged: (value) => {
           settings.style = value;
           ui.empty(elementsDiv);
-          if (value === PieChartStyle.Vlaaivis)
+          if (value === PieChartStyle.Vlaaivis) {
             elementsDiv.appendChild(new VlaaiVisManager(settings, gc).createTreeGroup());
-          else {
+          } else {
             delete settings.sectors;
             gc.grid.invalidate();
           }
@@ -322,7 +326,7 @@ export class PieChartCellRenderer extends DG.GridCellRenderer {
   }
 
   hasContextValue(gridCell: DG.GridCell): boolean { return true; }
-  async getContextValue (gridCell: DG.GridCell): Promise<any> {
+  async getContextValue(gridCell: DG.GridCell): Promise<any> {
     return getSparklinesContextPanel(gridCell, getSettings(gridCell.gridColumn).columnNames);
   }
 }

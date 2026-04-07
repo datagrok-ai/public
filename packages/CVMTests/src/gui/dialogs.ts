@@ -1,4 +1,4 @@
-import {before, after, awaitCheck, category, test, delay} from '@datagrok-libraries/utils/src/test';
+import {before, after, awaitCheck, category, test, delay} from '@datagrok-libraries/test/src/test';
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import {isColumnPresent, isViewerPresent, isDialogPresent, returnDialog,

@@ -1,7 +1,7 @@
 import * as grok from 'datagrok-api/grok';
+import * as DG from 'datagrok-api/dg';
 
 import {anyObject, getSmiles, paramsType, pubChemIdType, pubChemSearchType, urlParamsFromObject} from './utils';
-import {delay} from '@datagrok-libraries/utils/src/test';
 import {pubChemPug, pubChemRest} from './tests/const';
 
 export async function similaritySearch(
@@ -66,7 +66,7 @@ export async function _getListById(
   let json: anyObject;
   let maxRequests = 10;
   do {
-    await delay(100);
+    await DG.delay(100);
     maxRequests--;
     const response = await grok.dapi.fetchProxy(url);
     json = await response.json();

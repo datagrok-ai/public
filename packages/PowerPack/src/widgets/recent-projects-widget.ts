@@ -2,9 +2,8 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 import {div} from 'datagrok-api/ui';
-import {IDartApi} from 'datagrok-api/src/api/grok_api.g';
 
-const api: IDartApi = <any>window;
+const api: any = <any>window;
 
 export class RecentProjectsWidget extends DG.Widget {
   get type(): string {

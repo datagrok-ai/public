@@ -99,8 +99,8 @@ export namespace funcs {
   /**
   Controlled fab-arm exchange mechanism simulation
   */
-  export async function bioreactor(): Promise<void> {
-    return await grok.functions.call('DiffStudio:Bioreactor', {});
+  export async function bioreactorNew(): Promise<void> {
+    return await grok.functions.call('DiffStudio:BioreactorNew', {});
   }
 
   /**
@@ -108,6 +108,20 @@ export namespace funcs {
   */
   export async function demoBioreactor(): Promise<any> {
     return await grok.functions.call('DiffStudio:DemoBioreactor', {});
+  }
+
+  /**
+  Gluconic acid (GA) production by Aspergillus niger modeling
+  */
+  export async function acidProduction(): Promise<void> {
+    return await grok.functions.call('DiffStudio:AcidProduction', {});
+  }
+
+  /**
+  The chemical reaction part of the air pollution model developed at The Dutch National Institute of Public Health and Environmental Protection
+  */
+  export async function pollution(): Promise<void> {
+    return await grok.functions.call('DiffStudio:Pollution', {});
   }
 
   /**

@@ -1,4 +1,4 @@
-import {after, before, category, expect, test} from '@datagrok-libraries/utils/src/test';
+import {after, before, category, expect, test} from '@datagrok-libraries/test/src/test';
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
@@ -79,9 +79,5 @@ category('UI: Tab control', () => {
     tabs.onBeforeTabChanged.subscribe((_)=> {check=false;});
     tabs.currentPane = tabs.panes[1];
     expect(check, false, 'onBeforeTabChanged event error')
-  });
-
-  after(async () => {
-    grok.shell.closeAll();
   });
 }, {clear: false});

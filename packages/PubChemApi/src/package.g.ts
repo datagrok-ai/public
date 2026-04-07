@@ -2,25 +2,25 @@ import {PackageFunctions} from './package';
 import * as DG from 'datagrok-api/dg';
 
 //name: Databases | PubChem | Substructure Search
-//tags: panel, widgets
 //input: string molString { semType: Molecule }
 //output: widget result
+//meta.role: widgets,panel
 export async function pubChemSubstructureSearchPanel(molString: string) : Promise<any> {
   return await PackageFunctions.pubChemSubstructureSearchPanel(molString);
 }
 
 //name: Databases | PubChem | Similarity Search
-//tags: panel, widgets
 //input: string molString { semType: Molecule }
 //output: widget result
+//meta.role: widgets,panel
 export async function pubChemSimilaritySearchPanel(molString: string) : Promise<any> {
   return await PackageFunctions.pubChemSimilaritySearchPanel(molString);
 }
 
 //name: Databases | PubChem | Identity Search
-//tags: panel, widgets
 //input: string molString { semType: Molecule }
 //output: widget result
+//meta.role: widgets,panel
 export async function pubChemIdentitySearch(molString: string) : Promise<any> {
   return await PackageFunctions.pubChemIdentitySearch(molString);
 }

@@ -102,13 +102,11 @@ on the context panel. To hide the equation, uncheck "Show Regression Line Equati
 
 ## Formula lines
 
-A scatterplot can show reference lines that represent formulas or equations.
-These lines are used to emphasize specific areas on the chart or data. Common
-examples include a regression line, value bands, and so on.
+Add reference lines to highlight trends, thresholds, or regions—such as
+regression lines or value bands.
 
-To show a custom formula line, right-click a scatterplot, then choose **Tools** > **Formula Lines...** 
-This action opens a **Formula Lines** dialog. Here, enter
-your formula and configure the line settings. Your formula should refer to the
+To add one, right-click the scatterplot and select **Tools** > **Formula Lines...**.
+Enter your formula and configure the line settings. Your formula should refer to the
 columns on the **X** and **Y** axes. The syntax for the formula is similar to
 that used to [Add New Column](../../transform/add-new-column.md).
 
@@ -117,9 +115,31 @@ width="800px"/>
 
 :::note developers
 
-You can [add formula lines programmatically](https://datagrok.ai/help/develop/how-to/show-formula-lines).
-
+You can [add formula lines programmatically](../../develop/how-to/viewers/show-formula-lines.md)
+ 
 :::
+
+## Annotation regions
+
+Annotation regions allow you to highlight areas of interest and annotate data. Like formula lines, they can be applied either to the current viewer or to the entire dataframe and appear in any viewer with matching axes.
+
+Annotation regions support overlapping areas and data selection, and behave consistently with log scales, inverted axes, axis swapping, and other axis transformations.
+
+### Adding annotation regions
+
+Right-click a viewer and select **Tools > Formula Lines…**, then click **ADD NEW** and choose one of the following:
+
+- **Region - Formula Lines**: Define the region by entering two formulas that set the upper and lower boundaries.
+- **Region - Draw Rectangle**: Click and drag on the viewer to draw a rectangular region.
+- **Region - Draw Lasso**: Click points or drag freely to draw a polygonal (lasso) region.
+- **Annotation Regions History**:  Select one of the previously created annotation regions from the history menu.
+
+For **Draw Rectangle** and **Draw Lasso** regions, the viewer enters drawing mode automatically,allowing you to draw directly on the viewer within the **Formula Lines** dialog.
+Alternatively, you can draw a region directly on the viewer by right-clicking and selecting **Tools > Draw Annotation Region**.
+
+To customize a region, provide a description and configure visual properties such as fill color, outline, and transparency.
+
+![Annotation Regions](img/annotation-regions.gif)
 
 ## Tooltip
 
@@ -200,6 +220,155 @@ This feature is currently in beta. To enable it, check **Settings** > **Beta** >
 [![ScatterPlot](../../uploads/youtube/visualizations2.png "Open on
 Youtube")](https://www.youtube.com/watch?v=7MBXWzdC0-I&t=214s)
 
+
+## Properties
+
+| Property | Type | Description |
+|----------|------|-------------|
+| **Data** | | |
+| Filter Out Invalid | boolean | Invalid are null values and not positive numbers if axis is logarithmic. |
+| Show Filtered Out Points | boolean | When true, filtered out points are rendered using *Filtered Out Rows Color*. |
+| Axes Follow Filter | boolean | When true, scatter plot will zoom to an area defined by the range filters for X and Y columns, even if *Zoom And Filter* property is not set to Zoom by Filter. |
+| Zoom And Filter | string | Determines the relationship between table filter and scatter plot area: * No action: they are disconnected * Filter by zoom: scatter plot acts as a filter; as you zoom in, points get filtered out * Zoom by filter: scatter plot focuses on the filtered points as the filter changes * Pack and zoom by filter: removes filtered out categories and focuses on the filtered points as the filter changes. |
+| Filter | string | Formula that filters out rows to show. Examples: `${AGE}` > 20 or `${WEIGHT / 2)}` > 100, `${SEVERITY}` == ''Medium'', `${RACE}`.endsWith(''sian'') |
+| Table | string |  |
+| **X** | | |
+| X Column Name | string | A column to use on the X axis. Could be numerical or categorical. |
+| X Map | string | Time unit map function for x column (applicable to dates only). |
+| X Axis Type | string |  |
+| Invert X Axis | boolean |  |
+| X Min | number |  |
+| X Max | number |  |
+| Show Vertical Grid Lines | boolean |  |
+| Show X Axis | boolean |  |
+| Show X Selector | boolean |  |
+| X Whisker Min Column Name | string | Point lower bound for x axis whiskers. Selecting it disables *X Whisker Range*. |
+| X Whisker Max Column Name | string | Point upper bound for x axis whiskers. Selecting it disables *X Whisker Range*. |
+| X Whisker Range Column Name | string | Point range for x axis whiskers. Applied only if *X Whisker Min* and *X Whisker Max* are not set. |
+| X Axis Label Orientation | string |  |
+| **Y** | | |
+| Y Column Name | string | A column to use on the Y axis. Could be numerical or categorical. |
+| Y Map | string | Time unit map function for y column (applicable to dates only). |
+| Y Axis Type | string |  |
+| Invert Y Axis | boolean |  |
+| Y Min | number |  |
+| Y Max | number |  |
+| Show Horizontal Grid Lines | boolean |  |
+| Show Y Axis | boolean |  |
+| Show Y Selector | boolean |  |
+| Y Whisker Min Column Name | string | Point lower bound for y axis whiskers. Selecting it disables *Y Whisker Range*. |
+| Y Whisker Max Column Name | string | Point upper bound for y axis whiskers. Selecting it disables *Y Whisker Range*. |
+| Y Whisker Range Column Name | string | Point range for y axis whiskers. Applied only if *Y Whisker Min* and *Y Whisker Max* are not set. |
+| **Axes** | | |
+| Show X Histogram | boolean | Shows a distribution histogram along the X axis (at the top) |
+| Show Y Histogram | boolean | Shows a distribution histogram along the Y axis (on the right) |
+| Histogram Bins | number | Number of bins for axis histograms |
+| **Color** | | |
+| Color Column Name | string | A column to be used for color-coding. Could be numerical or categorical. If not set, *Filtered Rows Color* is used for markers that pass the filter. Color palettes could defined either for columns in the column context panel, or via *Linear Color Scheme* and *Categorical Color Scheme* properties. |
+| Color Map | string | Categorical coloring time unit map function (applicable to dates only). |
+| Show Color Selector | boolean |  |
+| Color Axis Type | string |  |
+| Invert Color Scheme | boolean |  |
+| Color Min | number |  |
+| Color Max | number |  |
+| **Size** | | |
+| Size Column Name | string | A numerical column to use for size-coding markers. See also *Marker Min Size* and *Marker Max Size*. |
+| Show Size Selector | boolean |  |
+| **Marker** | | |
+| Markers Column Name | string | A categorical column that determines the shape of the markers. |
+| Markers Map | string | Marker category time unit map function (applicable to dates only). |
+| Marker Type | string |  |
+| Marker Default Size | number | By default - automatic sizing based on current dataframe |
+| Marker Opacity | number |  |
+| Jitter Size | number | Randomly shift (x, y) marker position up to the *Jitter Size* pixels. Useful when multiple points fall on the same exact position. If *Jitter Size Y* is defined, then *Jitter Size* shifts x only. |
+| Jitter Size Y | number | Randomly shift y marker position up to the *Jitter Size Y* pixels. |
+| Marker Draw Border | boolean |  |
+| Marker Border Width | number |  |
+| Marker Min Size | number |  |
+| Marker Max Size | number |  |
+| **General** | | |
+| Lines Order Column Name | string | When defined, a line would be drawn for each series (defined by the categorical color column) using the order specified by Lines Order |
+| Lines By Column Name | string | When defined, lines are split into separate series by this categorical column instead of the color column. |
+| Lines Width | number | Defines the width of the lines connecting the markers. See **Lines Width**. |
+| Show Min Max Tickmarks | boolean | Shows tickmarks and labels for minimum and maximum value on each axis. |
+| Show Drop Lines | boolean | Shows exact X and Y coordinates for the mouse cursor. |
+| Mouse Drag | string |  |
+| Lasso Tool | boolean | When true, lasso area selector is used instead of the rectangular one. Toggle this option by pressing L. |
+| Allow Zoom | boolean |  |
+| Legend Visibility | visibilitymode |  |
+| Legend Position | flexautoposition |  |
+| Row Source | string | Determines the rows shown on the plot. |
+| Allow Dynamic Menus | boolean |  |
+| Show Context Menu | boolean | Properties common for all viewers todo: use code generation |
+| Title | string |  |
+| Description | string | Viewer description that gets shown at the *Descriptor Position*. Markup is supported. |
+| Help | string | Help to be shown when user clicks on the ''?'' icon on top. Could either be in markdown, or a URL (starting with ''/'' or ''http''). |
+| Description Position | flexposition |  |
+| Description Visibility Mode | visibilitymode |  |
+| **Labels** | | |
+| Label Column Names | list | Label columns to show next to the markers. |
+| Show Labels For | string | Determines the rows shown on the scatter plot. |
+| Display Labels | visibilitymode | Determines how to show marker label: * Always - show labels for all visible markers * Auto - show labels only for markers where enough space is available * Never - show no labels. |
+| Show Label Named Columns | visibilitymode | Determines whether to show column names next to label values. |
+| Use Label As Marker | boolean | If checked, display a label content as marker. |
+| Label Color As Marker | boolean | To display labels separately or as markers (works for non-text labels). |
+| Label As Marker Size | number | Marker size in which label is inscribed. |
+| Label Content Size | number | Label inner content size. |
+| **Lines** | | |
+| Show Regression Line | boolean | Regression line visibility (toggle by pressing R) |
+| Show Regression Line Equation | boolean |  |
+| Show Spearman Correlation | boolean |  |
+| Show Pearson Correlation | boolean |  |
+| Show Mean Absolute Error | boolean |  |
+| Show Root Mean Square Error | boolean |  |
+| Regression Per Category | boolean | Supports up to 20 categories. Otherwise, a common regression line is shown. |
+| Show Dataframe Formula Lines | boolean | Control the visibility of dataframe-originated formula lines. Edit formula lines by right-clicking and selecting Tools \| Formula Lines from the popup menu. Requires the PowerPack plugin. |
+| Show Viewer Formula Lines | boolean | Control the visibility of dataframe-originated formula lines. Edit formula lines by right-clicking and selecting Tools \| Formula Lines from the popup menu. Requires the PowerPack plugin. |
+| **Selection** | | |
+| Show Current Point | boolean | Controls the indication of the current row |
+| Show Mouse Over Point | boolean | Controls the indication of the mouse-over row |
+| Show Mouse Over Row Group | boolean | Highlight ''mouse-over'' rows (such as the ones that fall into a histogram bin that the mouse is currently hovering over). |
+| Show Selected Rows | boolean | When true, selected markers are highlighted using the selected rows color. When false, selected markers use their regular color coding. |
+| Reset Selection On Background Click | boolean | When true, clicking on the background (no point hit) clears the current selection. Set to false to preserve the selection when accidentally clicking outside of the markers. |
+| **Style** | | |
+| Auto Layout | boolean |  |
+| Back Color | number |  |
+| Filtered Rows Color | number |  |
+| Filtered Out Rows Color | number |  |
+| Selected Rows Color | number |  |
+| Missing Value Color | number |  |
+| Label Color | number |  |
+| Axis Line Color | number |  |
+| Axis Text Color | number |  |
+| Grid Line Color | number |  |
+| Regression Line Color | number |  |
+| Whisker Color | number |  |
+| Regression Line Transparency | number |  |
+| Linear Color Scheme | list |  |
+| Categorical Color Scheme | list |  |
+| Axes Use Column Format | boolean | Determines whether the axes should follow the non-precision-related format (such as money) set for the corresponding column. |
+| Auto Axis Size | boolean | If true, *X Axis Height* and *Y Axis Width* are calculated automatically to fit the required precision. If false, the specified *X Axis Height* and *Y Axis Width* properties are used. |
+| X Axis Height | number | Requires *Auto Axis Size* to be turned off. |
+| Y Axis Width | number | Requires *Auto Axis Size* to be turned off. |
+| Axis Font | string |  |
+| Label Font | string |  |
+| Formula Font | string |  |
+| Annotation Font | string |  |
+| Controls Font | string | Viewer controls elements font. |
+| **Annotation regions** | | |
+| Show Viewer Annotation Regions | boolean |  |
+| Show Dataframe Annotation Regions | boolean |  |
+| **Tooltip** | | |
+| Show Tooltip | string | Controls scatter plot tooltip visibility |
+| Show Labels | visibilitymode |  |
+| Data Values | string | Controls whether columns on X and Y axes are displayed in tooltip * Do not add: they are not shown * Data values only: only they are shown * Merge: standard behavior |
+| Row Tooltip | string | Newline-separated list of column names to be used in a tooltip. Requires *showTooltip* to be enabled. |
+| Tooltip Delay | number | Delay in milliseconds before showing row tooltip |
+| Row Group Tooltip | string |  |
+| **Description** | | |
+| Show Title | boolean |  |
+
+
 See also:
 
 * [3D Scatterplot](3d-scatter-plot.md)
@@ -207,3 +376,6 @@ See also:
 * [Viewers](viewers.md)
 * [Table view](../table-view-1.md)
 * [JS API: Scatterplot](https://public.datagrok.ai/js/samples/ui/viewers/types/scatter-plot)
+* Community:
+    * [Scatterplot updates](https://community.datagrok.ai/t/scatterplot-updates/625)
+    * [Visualization-related updates](https://community.datagrok.ai/t/visualization-related-updates/521)

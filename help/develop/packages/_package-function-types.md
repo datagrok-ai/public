@@ -67,7 +67,7 @@ and `autostart`. A function with the `#init` role gets invoked when the package 
 time any of the functions in the package is called. It is guaranteed that the `#init` function is invoked _once_ before
 the execution of the rest of the code and will not be re-executed on subsequent calls.
 
-An `autostart` function is similar to the the `init` function, but is called at the platform startup, not necessarily
+An `autostart` function is similar to the `init` function, but is called at the platform startup, not necessarily
 when a package function is invoked. Another difference between `#autostart`
 and `#init` is that when you call a regular function from the package, there's no guarantee that its code will wait
 until the `autostart` completes. Another caveat is that the whole package will get initialized along with `autostart`,

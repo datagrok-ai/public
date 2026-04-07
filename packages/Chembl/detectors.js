@@ -8,7 +8,7 @@ class ChemblPackageDetectors extends DG.Package {
       return DG.SemanticValue.fromValueType(s, 'CHEMBL_ID');
   }
 
-  //tags: semTypeDetector
+  //meta.role: semTypeDetector
   //input: column col
   //output: string semType
   detectMolRegNo(col) {

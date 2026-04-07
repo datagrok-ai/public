@@ -1,5 +1,5 @@
 /* eslint-disable max-lines-per-function */
-import {category, test, expect, before, delay, awaitCheck} from '@datagrok-libraries/utils/src/test';
+import {category, test, expect, before, delay, awaitCheck} from '@datagrok-libraries/test/src/test';
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
@@ -548,6 +548,7 @@ category('clone and layout tests', async () => {
     const layoutCloned = await saveLayout(tvCloned);
     await changeFilterBeforeApplyLayout(tvCloned, 'Core', molFileForCloneTest3, df, 3);
     //apply layout from cloned view to initial view
+    await switchToView(tvInitial);
     await applyLayout(tvInitial, layoutCloned, df, 5);
   });
 
@@ -622,6 +623,7 @@ category('clone and layout tests', async () => {
     await switchToView(tvCloned);
     const layoutCloned = await saveLayout(tvCloned);
     await changeFilterBeforeApplyLayout(tvCloned, 'Core', molFileForCloneTest3, df, 3);
+    await switchToView(tvInitial);
     await applyLayout(tvInitial, layoutCloned, df, 5);
     await checkFilterSynchronized(filter1_1, 'C1CCCCC1');
   });
@@ -647,6 +649,7 @@ category('clone and layout tests', async () => {
     await switchToView(tvCloned);
     const layoutCloned = await saveLayout(tvCloned);
     await changeFilterBeforeApplyLayout(tvCloned, 'Core', molFileForCloneTest3, df, 3);
+    await switchToView(tvInitial);
     await applyLayout(tvInitial, layoutCloned, df, 5);
     await checkFilterSynchronized(filter1_1, 'C1CCCCC1');
   });
@@ -672,6 +675,7 @@ category('clone and layout tests', async () => {
     await switchToView(tvCloned);
     const layoutCloned = await saveLayout(tvCloned);
     await changeFilterBeforeApplyLayout(tvCloned, 'Core', molFileForCloneTest3, df, 3);
+    await switchToView(tvInitial);
     await applyLayout(tvInitial, layoutCloned, df, 5);
     await checkFilterSynchronized(filter1_1, 'C1CCCCC1');
   });
@@ -895,7 +899,10 @@ async function applyLayout(tv: DG.TableView, layout: DG.ViewLayout, df: DG.DataF
   //apply saved layout
   tv.loadLayout(layout);
   //waiting for layout to be applied
-  await awaitCheck(() => df.filter.trueCount === trueCount, 'layout hasn\'t been applied', 3000);
+  await awaitCheck(() => {
+    console.log(df.filter.trueCount);
+    return df.filter.trueCount === trueCount;
+  }, 'layout hasn\'t been applied', 3000);
 }
 
 async function closeView(tv: DG.TableView) {

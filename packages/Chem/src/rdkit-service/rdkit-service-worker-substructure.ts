@@ -5,7 +5,7 @@ import {IMolContext, getMolSafe, getQueryMolSafe} from '../utils/mol-creation_rd
 import BitArray from '@datagrok-libraries/utils/src/bit-array';
 import {RuleId} from '../panels/structural-alerts';
 import {SubstructureSearchType} from '../constants';
-import {stringArrayToMolList} from '../utils/chem-common';
+import {hasNewLines, stringArrayToMolList} from '../utils/chem-common';
 import {ISubstruct} from '@datagrok-libraries/chem-meta/src/types';
 
 export enum MolNotation {
@@ -14,6 +14,8 @@ export enum MolNotation {
   MolBlock = 'molblock', // molblock V2000
   V3KMolBlock = 'v3Kmolblock', // molblock V3000
   Unknown = 'unknown',
+  CxSmiles = 'cxsmiles', // extended smiles
+  CxSmarts = 'cxsmarts', // extended smarts
 }
 
 export interface IRGroupAnalysisResult {
@@ -70,8 +72,14 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
     return numMalformed;
   }
 
+  private getSmiles(mol: RDMol, stereoAgnostic?: boolean): string {
+    return stereoAgnostic ?
+      mol.get_smiles(JSON.stringify({doIsomericSmiles: false})) :
+      mol.get_smiles();
+  }
+
   async searchSubstructure(queryMolString: string, queryMolBlockFailover: string, molecules?: string[],
-    searchType?: SubstructureSearchType): Promise<Uint32Array> {
+    searchType?: SubstructureSearchType, stereoAgnostic?: boolean): Promise<Uint32Array> {
     if (!molecules)
       throw new Error('Chem | Molecules for substructure serach haven\'t been provided');
 
@@ -79,23 +87,33 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
     let queryCanonicalSmiles = '';
     if (queryMol !== null) {
       if (searchType === SubstructureSearchType.EXACT_MATCH) {
+        let tempMol: RDMol | null = null;
         try {
-          queryCanonicalSmiles = queryMol.get_smiles();
           //need to get canonical smiles from mol (not qmol) since qmol implicitly merges query hydrogens
-          queryCanonicalSmiles = this._rdKitModule.get_mol(queryMolString).get_smiles();
-        } catch {}
+          tempMol = this.getMolWithSmilesCheck(queryMolString);
+          queryCanonicalSmiles = tempMol ? this.getSmiles(tempMol, stereoAgnostic) : '';
+        } catch {} finally {
+          tempMol?.delete();
+        }
       }
       const matches = await this.searchWithPatternFps(queryMol, molecules,
-        searchType ?? SubstructureSearchType.CONTAINS, queryCanonicalSmiles);
+        searchType ?? SubstructureSearchType.CONTAINS, queryCanonicalSmiles, stereoAgnostic);
       queryMol.delete();
       return matches;
     } else
       throw new Error('Chem | Search pattern cannot be set');
   }
 
+  getMolWithSmilesCheck(molString: string, details?: any): RDMol | null {
+    // hasNewLines should be faster, as M END checked by isMolBlock is usually at the end
+    if (molString && !hasNewLines(molString) && molString.length > 5000)
+      return null; // do not attempt to parse very long SMILES, will cause MOB. P.s. passing undefined details fails rdkit
+    return details ? this._rdKitModule.get_mol(molString, details) : this._rdKitModule.get_mol(molString);
+  }
+
 
   async searchWithPatternFps(queryMol: RDMol, molecules: string[], searchType: SubstructureSearchType,
-    queryCanonicalSmiles: string): Promise<Uint32Array> {
+    queryCanonicalSmiles: string, stereoAgnostic?: boolean): Promise<Uint32Array> {
     const matches = new BitArray(molecules.length);
     if (this._requestTerminated)
       return matches.buffer;
@@ -110,18 +128,20 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
       if (this._requestTerminated)
         return matches.buffer;
 
-      if (queryCanonicalSmiles)
+      if (queryCanonicalSmiles && !stereoAgnostic)
         matches.setFast(i, molecules[i] === queryCanonicalSmiles);
       else {
         let mol: RDMol | null = null;
         let isCached = false;
         try {
           const cachedMol = this._molsCache?.get(molecules[i]);
-          mol = cachedMol ?? this._rdKitModule.get_mol(molecules[i], details);
+          mol = cachedMol ?? this.getMolWithSmilesCheck(molecules[i], details)!;
           if (cachedMol || this.addToCache(mol))
             isCached = true;
           if (mol) {
-            if (this.searchBySearchType(mol, queryMol, searchType))
+            if (stereoAgnostic)
+              matches.setFast(i, this.getSmiles(mol, true) === queryCanonicalSmiles);
+            else if (this.searchBySearchType(mol, queryMol, searchType))
               matches.setFast(i, true);
           }
         } catch {
@@ -160,6 +180,47 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
         mol?.delete();
       this._rdKitMols = null;
     }
+  }
+
+  async getCoordGenCoords(molecules: string[]): Promise<string[]> {
+    if (!molecules || this._requestTerminated)
+      return [];
+    // no need to cache these
+    const results = new Array<string>(molecules.length).fill('');
+    for (let i = 0; i < molecules!.length; ++i) {
+      if (i % this._terminationCheckDelay === 0)
+        await new Promise((r) => setTimeout(r, 0));
+      if (this._requestTerminated)
+        return results;
+      const item = molecules[i];
+      if (!item) {
+        results[i] = '';
+        continue;
+      }
+      let isInCache = false;
+      let rdMol = this._molsCache?.get(molecules[i]);
+      if (!rdMol) {
+        const mol: IMolContext = getMolSafe(item, {}, this._rdKitModule);
+        rdMol = mol?.mol;
+        if (rdMol)
+          rdMol.is_qmol = mol?.isQMol;
+      } else
+        isInCache = true;
+
+      if (rdMol) {
+        try {
+          results[i] = rdMol.get_new_coords(true);
+        } catch {
+          // nothing to do, fp is already null
+        } finally {
+          if (!isInCache) {
+            //do not delete mol in case it is in cache
+            rdMol?.delete();
+          }
+        }
+      }
+    }
+    return results;
   }
 
   async beautifyMoleculesV3K(molecules: string[]) {
@@ -255,6 +316,12 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
             break;
           case MolNotation.Smarts:
             results[i] = rdMol.get_smarts();
+            break;
+          case MolNotation.CxSmiles:
+            results[i] = rdMol.get_cxsmiles();
+            break;
+          case MolNotation.CxSmarts:
+            results[i] = rdMol.get_cxsmarts();
             break;
           default:
             results[i] = 'Unknown notation: ' + targetNotation;
@@ -359,7 +426,7 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
       mols = stringArrayToMolList(molecules, this._rdKitModule);
       try {
         core = coreIsQMol ? this._rdKitModule.get_qmol(coreMolecule) :
-          this._rdKitModule.get_mol(coreMolecule, JSON.stringify({
+          this.getMolWithSmilesCheck(coreMolecule, JSON.stringify({
             makeDummiesQueries: true,
             mappedDummiesAreRGroups: true,
           }));
@@ -441,7 +508,9 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
     for (let i = 0; i < size; i++) {
       let mol;
       try {
-        mol = this._rdKitModule.get_mol(molecules[i]);
+        mol = this.getMolWithSmilesCheck(molecules[i]);
+        if (!mol)
+          continue;
         smiles[i] = mol.get_smiles();
         if (mol) {
           const res = mol.get_mmpa_frags(1, 1, 20);

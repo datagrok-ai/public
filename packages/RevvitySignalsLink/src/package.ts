@@ -31,12 +31,12 @@ export type RevvityConfig = {
 let config: RevvityConfig = { libraries: undefined };
 
 
-//tags: init
+//meta.role: init
 export function init() {
   registerRevvityIdsFormats();
 }
 
-//tags: app
+//meta.role: app
 //name: Revvity Signals
 //input: string path { meta.url: true; optional: true }
 //output: view v
@@ -338,7 +338,7 @@ export async function getStructureById(id: string): Promise<string> {
 
 
 //name: Revvity Signals
-//tags: panel, widgets
+//meta.role: widgets,panel
 //input: semantic_value id { semType: revvity-id }
 //output: widget result
 export async function entityTreeWidget(idSemValue: DG.SemanticValue<string>): Promise<DG.Widget> {
@@ -357,7 +357,7 @@ export async function entityTreeWidget(idSemValue: DG.SemanticValue<string>): Pr
 }
 
 //name: Revvity Signals
-//tags: panel, widgets
+//meta.role: widgets,panel
 //input: semantic_value id { semType: revvity-label }
 //output: widget result
 export async function revvityLabelWidget(idSemValue: DG.SemanticValue<string>): Promise<DG.Widget> {

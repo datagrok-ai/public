@@ -39,7 +39,7 @@ You can modify the Sequence Variability Map Viewer by changing the following pro
 
     ### Invariant Map
 
-    - **Value**: Activity column to be used for invarian map.
+    - **Value**: Activity column to be used for invariant map.
     - **Value Aggregation**: Aggregation function to be applied to the activity column.
     - **Color**: Color column to be used for invariant map, defaults to activity column.
     - **Color Aggregation**: Aggregation function to be applied to the color column.

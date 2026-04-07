@@ -1,0 +1,16 @@
+# Developer keys
+upload.keys.json
+
+# Dependency directories
+node_modules/
+
+# IDEs
+.vscode/*
+.idea/
+*.code-workspace
+.history/
+
+# Test artifacts
+test-record.mp4
+test-report.csv
+test-console-output.log

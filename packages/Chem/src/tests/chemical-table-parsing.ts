@@ -1,4 +1,4 @@
-import {category, expectArray, test, before} from '@datagrok-libraries/utils/src/test';
+import {category, expectArray, test, before} from '@datagrok-libraries/test/src/test';
 
 import {loadFileAsText} from './utils';
 import {MolfileHandler} from '@datagrok-libraries/chem-meta/src/parsing-utils/molfile-handler';

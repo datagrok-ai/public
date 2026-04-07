@@ -1,4 +1,4 @@
-// Analysis of Variances (ANOVA): computations
+// Analysis of Variances (ANOVA) - computations
 
 /* REFERENCES
 

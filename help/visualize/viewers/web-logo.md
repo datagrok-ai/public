@@ -15,7 +15,7 @@ You must specify the tag `semType` with value `AminoacidsMultipleAlignment` or
 select the palette for monomers' colors.
 
 You can customize the look of the viewer with properties. Properties `startPosition` and `endPosition`
-allow to display multiple alignment partially. If property `startPosition` (`endPosition`)
+let you display multiple alignment partially. If property `startPosition` (`endPosition`)
 is not specified, then the Logo will be plotted from the first (till the last) position of sequences.
 
 ## General
@@ -40,8 +40,8 @@ is not specified, then the Logo will be plotted from the first (till the last) p
 | Background Color      | white                      | Background color of WebLogo canvas                                                                                                                     |
 | Position Height       | Entropy                    | Monomer-Position height mode. Entropy of 100%(full height)                                                                                             |
 | Position Width        | 20                         | Width of position in WebLogo. If "Fit Area" is enabled, width will be calculated to fit horizontal space                                               |
-| Vertical Alignment    | middle                     | Vertical elignment of weblogo                                                                                                                          |
-| Horizontal Alignment  | center                     | Horizontal elignment of weblogo                                                                                                                        |
+| Vertical Alignment    | middle                     | Vertical alignment of weblogo                                                                                                                          |
+| Horizontal Alignment  | center                     | Horizontal alignment of weblogo                                                                                                                        |
 | Fix Width             | false                      | Fix the width of webLogo without adaptive changes                                                                                                      |
 | Fit Area              | true                       | Fit WebLogo to the horizontal space. Calculates position width as maximum between provided width value and value needed to fit whole horizontal space. |
 | Min Height            | 25                         | Minimum height of WebLogo                                                                                                                              |

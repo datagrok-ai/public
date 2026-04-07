@@ -9,9 +9,8 @@ import {getMCS} from '../utils/most-common-subs';
 import {IRGroupAnalysisResult} from '../rdkit-service/rdkit-service-worker-substructure';
 import {getRdKitService} from '../utils/chem-common-rdkit';
 import {_convertMolNotation} from '../utils/convert-notation-utils';
-import {SCAFFOLD_COL} from '../constants';
-import {delay} from '@datagrok-libraries/utils/src/test';
-import {hexToPercentRgb} from '../utils/chem-common';
+import {SCAFFOLD_COL, SCAFFOLD_COL_SYNC, setSyncTag} from '../constants';
+import {hasNewLines, hexToPercentRgb} from '../utils/chem-common';
 import {getQueryMolSafe} from '../utils/mol-creation_rdkit';
 import {MolfileHandler} from '@datagrok-libraries/chem-meta/src/parsing-utils/molfile-handler';
 import {RDMol} from '@datagrok-libraries/chem-meta/src/rdkit-api';
@@ -67,8 +66,6 @@ const matchingStrategies: RGroupMatchingStrategy[] = [
   RGroupMatchingStrategy.GA,
   RGroupMatchingStrategy.NoSymmetrization,
 ];
-
-//const alignments: RGroupAlignment[] = [RGroupAlignment.MCS, RGroupAlignment.NoAlignment, RGroupAlignment.None];
 
 const latestAnalysisCols: { [key: string]: string[] } = {};
 const latestTrellisPlot: { [key: string]: DG.Viewer | null } = {};
@@ -172,7 +169,7 @@ export function rGroupAnalysis(col: DG.Column): void {
       try {
         if (replaceLatest.value) {
           removeLatestAnalysis(col);
-          await delay(50);
+          await DG.delay(50);
         }
         const smarts = await sketcher.getSmarts();
         const funcCall = await DG.Func.find({name: 'rGroupDecomposition'})[0].prepare({
@@ -285,6 +282,8 @@ export async function rGroupDecomp(col: DG.Column, params: RGroupParams): Promis
             let mol: RDMol | null = null;
             if (molStr) {
               try {
+                if (!hasNewLines(molStr) && molStr.length > 5000)
+                  continue; // do not attempt to parse very long SMILES, will cause MOB.
                 mol = rdkit.get_mol(molStr); //try to get mol. In case fail - try to get qmol
                 if (!mol)
                   mol = rdkit.get_qmol(molStr);
@@ -301,7 +300,7 @@ export async function rGroupDecomp(col: DG.Column, params: RGroupParams): Promis
         let rColName = '';
         if (resCol.name === 'Core') {
           rColName = corePrefixIdx ? `${resCol.name}_${corePrefixIdx}` : resCol.name;
-          col.tags[SCAFFOLD_COL] = rColName;
+          setSyncTag(col, SCAFFOLD_COL_SYNC, SCAFFOLD_COL, rColName);
         } else {
           rColName = rGroupPrefixIdx ? `${resCol.name.replace('R', params.rGroupName)}_${rGroupPrefixIdx}` :
             resCol.name.replace('R', params.rGroupName);
@@ -318,6 +317,7 @@ export async function rGroupDecomp(col: DG.Column, params: RGroupParams): Promis
         col.dataFrame.columns.add(highlightCol);
         latestAnalysisCols[col.dataFrame.name].push(highlightCol.name);
         col.temp[ChemTemps.SUBSTRUCT_COL] = highlightCol.name;
+        col.temp[ChemTemps.SUBSTRUCT_BACKUP_COL] = highlightCol.name;
       }
       //create boolean column for match/non match
       const matchCol = DG.Column
@@ -401,6 +401,8 @@ export async function rGroupsPython(col: DG.Column<string>, core: string, prefix
       for (let i = 0; i < resCol.length; i++) {
         const molStr = resCol.get(i);
         try {
+          if (molStr && !hasNewLines(molStr) && molStr.length > 5000)
+            continue; // do not attempt to parse very long SMILES, will cause MOB.
           const mol = module.get_mol(molStr);
           molsArray[i] = mol.get_molblock().replace('ISO', 'RGP');
           mol.delete();

@@ -1,7 +1,7 @@
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 
-import {runTests, tests, TestContext, test as _test, category, initAutoTests as initTests } from '@datagrok-libraries/utils/src/test';
+import {runTests, tests, TestContext, test as _test, category, initAutoTests as initTests } from '@datagrok-libraries/test/src/test';
 import './connections/queries-test';
 import './sync/data-sync-test';
 import './benchmarks/benchmark';
@@ -18,10 +18,15 @@ export {tests};
 //input: string test {optional: true}
 //input: object testContext {optional: true}
 //input: bool stressTest {optional: true}
+//input: string skipToCategory {optional: true}
+//input: string skipToTest {optional: true}
+//input: bool returnOnFail {optional: true}
 //output: dataframe result
-export async function test(category: string, test: string, testContext: TestContext, stressTest?: boolean): Promise<DG.DataFrame> {
-  const data = await runTests({category, test, testContext, stressTest});
-  return DG.DataFrame.fromObjects(data)!;
+export async function test(category: string, test: string, testContext: TestContext, stressTest?: boolean,
+                           skipToCategory?: string, skipToTest?: string, returnOnFail?: boolean): Promise<DG.DataFrame> {
+    console.log(category, test, testContext, stressTest, skipToCategory, skipToTest, returnOnFail);
+    const data = await runTests({ category, test, testContext, stressTest, skipToCategory, skipToTest, returnOnFail });
+    return DG.DataFrame.fromObjects(data)!;
 }
 
 //name: testConnections

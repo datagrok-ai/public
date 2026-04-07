@@ -1,5 +1,9 @@
 # Sequence Translator changelog
 
+## 1.10.5 (2025-12-11)
+
+* PT-Synthetic: Fix missing molfile handler errors
+
 ## 1.10.3 (2025-11-03)
 
 * Fix synthetic rule application for multiple instances when r group numbering is reversed

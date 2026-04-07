@@ -2,9 +2,10 @@
 title: "Semantic types"
 ---
 
-Unlike Excel, table columns in Datagrok are strongly-typed, meaning all cells are of one of the predefined data
-types (`string`, `int`, `bigint`, `qnum`, `double`, `datetime`, `bool`). In addition to that, a column might also have
-semantic type associated with it. Semantic type identifies the meaning of the data. For instance, a column could be of
+Unlike Excel, table columns in Datagrok are strongly-typed, meaning all cells use
+one of the predefined data types (`string`, `int`, `bigint`, `qnum`, `double`,
+`datetime`, `bool`). A column can also have a _semantic type_ that identifies the
+meaning of its data. For instance, a column could be of
 the data type "string", but the semantic type would be "country".
 
 Semantic types are used in several ways:
@@ -68,7 +69,8 @@ Out of the box, the following semantic types are automatically detected based on
 | Longitude               | `Longitude`        | -                      |
 | **Specialized types**    |                 |                        |
 | Curve data              | `fit`              | [Curves](https://github.com/datagrok-ai/public/tree/master/packages/Curves)                 |
-| PNG images               | `rawPng`           | [Curves](https://github.com/datagrok-ai/public/tree/master/packages/Curves)                 |
+| PNG images               | `rawPng`           | [Power Grid](https://github.com/datagrok-ai/public/tree/master/packages/PowerGrid)                 |
+| SVG images               | `SVG`              | [Power Grid](https://github.com/datagrok-ai/public/tree/master/packages/PowerGrid)                 |
 <!--| Chemical reaction       | 'ChemicalReaction' | [Chem](https://github.com/datagrok-ai/public/tree/master/packages/Chem)                   |-->
 
 ## Custom semantic types

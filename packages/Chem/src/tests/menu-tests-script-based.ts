@@ -2,7 +2,7 @@ import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 // import * as ui from 'datagrok-api/ui';
 
-import {category, before, expect, test} from '@datagrok-libraries/utils/src/test';
+import {category, before, expect, test} from '@datagrok-libraries/test/src/test';
 import {molV2000, molV3000, readDataframe} from './utils';
 
 

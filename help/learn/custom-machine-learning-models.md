@@ -18,10 +18,9 @@ Custom models can be configured in several ways:
 
 For examples and a detailed setup, see the [Samples package](https://github.com/datagrok-ai/public/tree/master/packages/Samples/dockerfiles/) and the [Celery Python functions documentation](https://datagrok.ai/help/develop/how-to/packages/python-functions).
 
-Custom model functionality is implemented as a two-step process using train and apply functions. Train function is used
-to build/train a model based on provided features and a target variable. The trained model is then stored as an object
-inside a given directory. Apply function receives previously saved model and applies it to provided feature columns. The
-resulting predictions are returned in a form of a single column in a dataframe.
+Custom model functionality is a two-step process using train and apply functions. The train function builds/trains a model based on provided features and a target variable. The trained model is then stored as an object
+inside a given directory. The apply function receives the previously saved model and applies it to provided feature columns. The
+resulting predictions are returned as a single column in a dataframe.
 
 Custom models utilize [predictive model](learn.md) interface alongside other out-of-the-box solutions.
 Once implemented, custom models can be chosen from the list of model engines.

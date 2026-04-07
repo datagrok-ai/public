@@ -2,7 +2,7 @@ import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 import {_package} from '../package-test';
 
-import {delay} from '@datagrok-libraries/utils/src/test';
+import {delay} from '@datagrok-libraries/test/src/test';
 
 export async function loadFileAsText(name: string): Promise<string> {
   return await _package.files.readAsText(name);
@@ -102,8 +102,9 @@ export async function uploadProject(projectName: string, tableInfo: DG.TableInfo
   const project = DG.Project.create();
   project.name = projectName;
   project.addChild(tableInfo);
-  project.addChild(view.saveLayout());
-  await grok.dapi.layouts.save(view.saveLayout());
+  const layout = view.saveLayout();
+  project.addChild(layout);
+  await grok.dapi.layouts.save(layout);
   await grok.dapi.tables.uploadDataFrame(df);
   await grok.dapi.tables.save(tableInfo);
   await grok.dapi.projects.save(project);

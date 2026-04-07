@@ -46,7 +46,8 @@ function setNullForEmptyAndMalformedData(matrix: Matrix, idx: number) {
 export async function runChemSpace(table: DG.DataFrame, molecules: DG.Column, methodName: DimReductionMethods,
   similarityMetric: BitArrayMetrics = BitArrayMetricsNames.Tanimoto, plotEmbeddings: boolean,
   options?: (IUMAPOptions | ITSNEOptions) & Options, preprocessingFunction?: DG.Func,
-  clusterEmbeddings?: boolean, tableView?: DG.TableView): Promise<DG.Viewer | undefined> {
+  clusterEmbeddings?: boolean, tableView?: DG.TableView,
+  embedColsNames?: string[], clusterColName?: string): Promise<DG.Viewer | undefined> {
   if (!preprocessingFunction)
     preprocessingFunction = DG.Func.find({name: 'getFingerprints', package: 'Chem'})[0];
   options ??= {};
@@ -59,6 +60,8 @@ export async function runChemSpace(table: DG.DataFrame, molecules: DG.Column, me
       scatterPlotName: 'Chemical space',
       bypassLargeDataWarning: options?.[BYPASS_LARGE_DATA_WARNING],
       tableView: tableView,
+      embedColsNames: embedColsNames,
+      clusterColName: clusterColName,
     });
   return res;
 }

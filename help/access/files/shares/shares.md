@@ -2,11 +2,11 @@
 title: "Supported shares"
 ---
 
- Much like connectors, supported shares are integral components that enable
-seamless interaction with various data sources. Datagrok currently supports a
-range of shares from cloud storage platforms like Azure Blob and CoreWeave to
+Much like connectors, supported shares enable
+interaction with various data sources. Datagrok currently supports a
+range of shares, from cloud storage platforms like Azure Blob and CoreWeave to
 file-sharing services such as Dropbox and Git repositories. The supported shares
-with their specific parameters are the following:
+with their specific parameters are:
 
 | Data Source                      |   Login | Password | Other Parameters                                       |
 |----------------------------------|--------|------|-----|

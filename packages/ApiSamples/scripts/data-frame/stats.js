@@ -20,5 +20,5 @@ for (let col of demog.columns.toList()) {
     q1: col.stats.q1,
     q2: col.stats.q2,
     q3: col.stats.q3
-  }))
+  }));
 }

@@ -1,12 +1,11 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
-import { before, awaitCheck, category, test, delay, expect } from '@datagrok-libraries/utils/src/test';
+import { before, awaitCheck, category, test, delay, expect } from '@datagrok-libraries/test/src/test';
 import {
   isColumnPresent, isViewerPresent, isDialogPresent, returnDialog,
   setDialogInputValue, checkDialog, checkViewer
 } from './gui-utils';
-import { wait } from 'datagrok-api/ui';
 
 
 category('GUI: Dialogs', () => {
@@ -41,7 +40,7 @@ category('GUI: Dialogs', () => {
       const okButton = Array.from(document.querySelectorAll('.ui-btn.ui-btn-ok.add-workspace-btn'))
         .find((el) => el.textContent === 'ADD') as HTMLElement;
       okButton.click();
-      await awaitCheck(() => grok.shell.v.name.toLowerCase() === 'result', 'Aggregation table was not created', 5000);
+      await awaitCheck(() => grok.shell.v.name.toLowerCase() === `${df.name} aggregation`, 'Aggregation table was not created', 5000);
       grok.shell.v.close();
     } finally {
       grok.shell.windows.showColumns = false;
@@ -140,10 +139,10 @@ category('GUI: Dialogs', () => {
     v = grok.shell.addTableView(demog);
     await awaitCheck(() => document.querySelector('canvas') !== null, 'cannot load table', 3000);
     grok.shell.topMenu.find('Data').find('Split Column...').click();
-    await awaitCheck(() => checkDialog('Text to columns'), 'Dialog is not open', 1000);
-    setDialogInputValue('Text to columns', 'Split by', ' ');
+    await awaitCheck(() => checkDialog('Split Column'), 'Dialog is not open', 1000);
+    setDialogInputValue('Split Column', 'Split by', ' ');
     await delay(100);
-    setDialogInputValue('Text to columns', 'Prefix', 'TestCol');
+    setDialogInputValue('Split Column', 'Prefix', 'TestCol');
     await delay(100);
     const okButton = Array.from(document.querySelectorAll('.ui-btn.ui-btn-ok'))
       .find((el) => el.textContent === 'OK') as HTMLElement;

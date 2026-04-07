@@ -1,7 +1,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
-import {after, before, category, expect, expectArray, test} from '@datagrok-libraries/utils/src/test';
+import {after, before, category, expect, expectArray, test} from '@datagrok-libraries/test/src/test';
 import {getOptions} from './utils';
 import { Subscription } from 'rxjs';
 
@@ -19,7 +19,7 @@ category('TreeViewer', () => {
 
   test('Creation', async () => {
     const viewer = DG.Viewer.fromType(TYPE, df);
-    expect(viewer instanceof DG.JsViewer, true);
+    expect(viewer instanceof DG.Viewer, true);
     expect(viewer.type, TYPE);
     expect(viewer.table.id, df.id);
   });

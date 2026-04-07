@@ -2,98 +2,90 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
-import {vaidateAEDomain, vaidateDMDomain} from './sdtm-validation/services/validation-service';
-import {createValidationDataFrame} from './sdtm-validation/validation-utils';
-import {SITE_ID, STUDY_ID} from './constants/columns-constants';
-import {addVisitDayFromTvDomain, createEventStartEndDaysCol} from './data-preparation/data-preparation';
+import {COL_HAS_ERRORS_POSTFIX, DOMAIN, ERRORS_POSTFIX, HAS_VALIDATION_ERRORS_COL,
+  SITE_ID, STUDY_ID, SUBJECT_ID, VIOLATED_RULES_COL} from './constants/columns-constants';
+import {addVisitDayFromTvDomain, createEventStartEndDaysCol,
+  calculateLBBaselineColumns} from './data-preparation/data-preparation';
 import {createFilters, removeExtension} from './utils/utils';
-import {createErrorsByDomainMap} from './utils/views-validation-utils';
 import {CDISC_STANDARD, ClinStudyConfig} from './utils/types';
 import {ClinicalCaseViewsConfig} from './views-config';
 import {SUMMARY_VIEW_NAME} from './constants/view-names-constants';
 import {funcs} from './package-api';
 import {Subject} from 'rxjs';
 import {ValidationResult, IssueDetail} from './types/validation-result';
+import {COLUMN_FROM_DM_TAG} from './constants/constants';
 
 export class ClinicalDomains {
   // Domains listed in alphabetical order
-  ae: DG.DataFrame = null; // Adverse Events (SDTM-IG v3.4, Clinical)
-  ag: DG.DataFrame = null; // Additional Genetic Tests (Custom/Extension, Genomics)
-  apce: DG.DataFrame = null; // Associated Persons Clinical Events (SDTM-IG v3.4, Associated Persons)
-  apcm: DG.DataFrame = null; // Associated Persons Concomitant Medications (SDTM-IG v3.4, Associated Persons)
-  apeg: DG.DataFrame = null; // Associated Persons Electrocardiograms (SDTM-IG v3.4, Associated Persons)
-  aplb: DG.DataFrame = null; // Associated Persons Laboratory Tests (SDTM-IG v3.4, Associated Persons)
-  apmh: DG.DataFrame = null; // Associated Persons Medical History (SDTM-IG v3.4, Associated Persons)
-  apvs: DG.DataFrame = null; // Associated Persons Vital Signs (SDTM-IG v3.4, Associated Persons)
-  bg: DG.DataFrame = null; // Background Genetics (SEND-IG v3.2, SEND)
-  bw: DG.DataFrame = null; // Body Weights (SEND-IG v3.2, SEND)
-  ce: DG.DataFrame = null; // Clinical Events (SDTM-IG v3.4, Clinical)
-  cg: DG.DataFrame = null; // Cardiovascular System Findings (SEND-IG v3.2, SEND)
-  cl: DG.DataFrame = null; // Clinical Observations (SEND-IG v3.2, SEND)
-  cm: DG.DataFrame = null; // Concomitant Medications (SDTM-IG v3.4, Clinical)
-  co: DG.DataFrame = null; // Comments (SDTM-IG v3.4, Special Purpose)
-  cv: DG.DataFrame = null; // Cardiovascular System Findings (SEND-IG v3.2, SEND)
-  da: DG.DataFrame = null; // Drug Accountability (SDTM-IG v3.4, Clinical)
-  dd: DG.DataFrame = null; // Death Details (SDTM-IG v3.4, Clinical)
-  dm: DG.DataFrame = null; // Demographics (SDTM-IG v3.4, Special Purpose)
-  ds: DG.DataFrame = null; // Disposition (SDTM-IG v3.4, Clinical)
-  dv: DG.DataFrame = null; // Protocol Deviations (SDTM-IG v3.4, Clinical)
-  ec: DG.DataFrame = null; // Exposure as Collected (SDTM-IG v3.4, Clinical)
-  eg: DG.DataFrame = null; // Electrocardiograms (SDTM-IG v3.4, Clinical)
-  ex: DG.DataFrame = null; // Exposure (SDTM-IG v3.4, Clinical)
-  ey: DG.DataFrame = null; // Eye Examinations (SEND-IG v3.2, SEND)
-  fa: DG.DataFrame = null; // Findings About (SDTM-IG v3.4, Clinical)
-  ft: DG.DataFrame = null; // Functional Tests (SDTM-IG v3.4, Clinical)
-  fw: DG.DataFrame = null; // Food and Water Consumption (SEND-IG v3.2, SEND)
-  gf: DG.DataFrame = null; // Genetic Features (SDTM v2.0, Genomics)
-  ho: DG.DataFrame = null; // Healthcare Encounters (SDTM-IG v3.4, Clinical)
-  hp: DG.DataFrame = null; // Hematology Findings (SEND-IG v3.2, SEND)
-  ie: DG.DataFrame = null; // Inclusion/Exclusion Criteria Not Met (SDTM-IG v3.4, Clinical)
-  ig: DG.DataFrame = null; // In-Life Gestational Findings (SEND-IG v3.2, SEND)
-  is: DG.DataFrame = null; // Immunogenicity Specimen Assessments (SDTM-IG v3.4, Clinical)
-  la: DG.DataFrame = null; // Laboratory Findings (SEND-IG v3.2, SEND)
-  lb: DG.DataFrame = null; // Laboratory Test Results (SDTM-IG v3.4, Clinical)
-  ma: DG.DataFrame = null; // Macropathology Findings (SEND-IG v3.2, SEND)
-  mb: DG.DataFrame = null; // Microbiology Findings (SDTM-IG v3.4, Clinical)
-  mh: DG.DataFrame = null; // Medical History (SDTM-IG v3.4, Clinical)
-  mi: DG.DataFrame = null; // Microbiology Findings (SEND-IG v3.2, SEND)
-  mk: DG.DataFrame = null; // Microscopic Findings (SEND-IG v3.2, SEND)
-  ml: DG.DataFrame = null; // Morphology/Localization (Custom/Extension, Genomics)
-  mo: DG.DataFrame = null; // Morphology Findings (SEND-IG v3.2, SEND)
-  ms: DG.DataFrame = null; // Microbiology Susceptibility (SDTM-IG v3.4, Clinical)
-  nc: DG.DataFrame = null; // Neurobehavioral/Cognitive Findings (SEND-IG v3.2, SEND)
-  nv: DG.DataFrame = null; // Nervous System Findings (SEND-IG v3.2, SEND)
-  oe: DG.DataFrame = null; // Objective Evidence (SDTM-IG v3.4, Clinical)
-  om: DG.DataFrame = null; // Organ Measurements (SEND-IG v3.2, SEND)
-  pc: DG.DataFrame = null; // Pharmacogenetics/Genomics (SDTM-IG v3.4, Clinical)
-  pm: DG.DataFrame = null; // Pharmacometrics
-  pe: DG.DataFrame = null; // Physical Examination (SDTM-IG v3.4, Clinical)
-  po: DG.DataFrame = null; // Physical Observations (SEND-IG v3.2, SEND)
-  pp: DG.DataFrame = null; // Pharmacokinetic Parameters (SDTM-IG v3.4, Clinical)
-  pr: DG.DataFrame = null; // Procedures (SDTM-IG v3.4, Clinical)
-  qs: DG.DataFrame = null; // Questionnaires (SDTM-IG v3.4, Clinical)
-  re: DG.DataFrame = null; // Reproductive System Findings (SEND-IG v3.2, SEND)
-  relrec: DG.DataFrame = null; // Related Records (SDTM-IG v3.4, Special Purpose)
-  rp: DG.DataFrame = null; // Reproductive System Findings (SDTM-IG v3.4, Clinical)
-  rs: DG.DataFrame = null; // Disease Response/Clinical Classification (SDTM-IG v3.4, Clinical)
-  sc: DG.DataFrame = null; // Subject Characteristics (SDTM-IG v3.4, Clinical)
-  se: DG.DataFrame = null; // Subject Elements (SDTM-IG v3.4, Special Purpose)
-  sm: DG.DataFrame = null; // Subject Milestones (SDTM-IG v3.4, Special Purpose)
-  sr: DG.DataFrame = null; // Short-Term Routine Observations (SEND-IG v3.2, SEND)
-  su: DG.DataFrame = null; // Substance Use (SDTM-IG v3.4, Clinical)
-  sv: DG.DataFrame = null; // Subject Visits (SDTM-IG v3.4, Special Purpose)
-  ta: DG.DataFrame = null; // Trial Arms (SDTM-IG v3.4, Trial Design)
-  td: DG.DataFrame = null; // Trial Disease Assessments (SDTM-IG v3.4, Trial Design)
-  te: DG.DataFrame = null; // Trial Elements (SDTM-IG v3.4, Trial Design)
-  ti: DG.DataFrame = null; // Trial Inclusion/Exclusion Criteria (SDTM-IG v3.4, Trial Design)
-  tm: DG.DataFrame = null; // Trial Disease Milestones (SDTM-IG v3.4, Trial Design)
-  tr: DG.DataFrame = null; // Tumor/Lesion Results (SDTM-IG v3.4, Clinical)
-  ts: DG.DataFrame = null; // Trial Summary (SDTM-IG v3.4, Trial Design)
-  tu: DG.DataFrame = null; // Tumor/Lesion Identification (SDTM-IG v3.4, Clinical)
-  tv: DG.DataFrame = null; // Trial Visits (SDTM-IG v3.4, Trial Design)
-  tx: DG.DataFrame = null; // SEND Trial Summary (SEND-IG v3.2, SEND)
-  ur: DG.DataFrame = null; // Urinalysis Findings (Custom/Extension, Clinical)
-  vs: DG.DataFrame = null; // Vital Signs (SDTM-IG v3.4, Clinical)
+  ae: DG.DataFrame = null; // AE – Adverse Events (SDTM-IG v3.4; limited use in SEND)
+  ag: DG.DataFrame = null; // AG – Additional Genetic Tests (SEND-IG, Genomics)
+  apce: DG.DataFrame = null; // APCE – Associated Persons Clinical Events (SDTM-IG v3.4)
+  apcm: DG.DataFrame = null; // APCM – Associated Persons Concomitant Medications (SDTM-IG v3.4)
+  apeg: DG.DataFrame = null; // APEG – Associated Persons ECG (SDTM-IG v3.4)
+  aplb: DG.DataFrame = null; // APLB – Associated Persons Laboratory Tests (SDTM-IG v3.4)
+  apmh: DG.DataFrame = null; // APMH – Associated Persons Medical History (SDTM-IG v3.4)
+  apvs: DG.DataFrame = null; // APVS – Associated Persons Vital Signs (SDTM-IG v3.4)
+  bg: DG.DataFrame = null; // BG – Background Genetics (SEND-IG, SEND-only)
+  bw: DG.DataFrame = null; // BW – Body Weights (SEND-IG, SEND-only)
+  ce: DG.DataFrame = null; // CE – Clinical Events (SDTM-IG v3.4)
+  cl: DG.DataFrame = null; // CL – Clinical Observations (SEND-IG, SEND-only)
+  cm: DG.DataFrame = null; // CM – Concomitant Medications (SDTM-IG v3.4)
+  co: DG.DataFrame = null; // CO – Comments (SDTM & SEND, Special Purpose)
+  da: DG.DataFrame = null; // DA – Drug Accountability (SDTM-IG v3.4; not used in SEND)
+  dd: DG.DataFrame = null; // DD – Death Details (SDTM-IG v3.4)
+  dm: DG.DataFrame = null; // DM – Demographics (SDTM & SEND)
+  ds: DG.DataFrame = null; // DS – Disposition (SDTM-IG v3.4)
+  dv: DG.DataFrame = null; // DV – Protocol Deviations (SDTM-IG v3.4)
+  ec: DG.DataFrame = null; // EC – Exposure as Collected (SDTM & SEND)
+  eg: DG.DataFrame = null; // EG – Electrocardiograms (SDTM & SEND)
+  ex: DG.DataFrame = null; // EX – Exposure (SDTM & SEND)
+  ey: DG.DataFrame = null; // EY – Eye Examinations (SEND-IG, SEND-only)
+  fa: DG.DataFrame = null; // FA – Findings About (SDTM-IG v3.4; not used in SEND)
+  ft: DG.DataFrame = null; // FT – Functional Tests (SDTM-IG v3.4)
+  fw: DG.DataFrame = null; // FW – Food and Water Consumption (SEND-IG, SEND-only)
+  gf: DG.DataFrame = null; // GF – Genetic Features (SDTM Genomics v2.0)
+  ho: DG.DataFrame = null; // HO – Healthcare Encounters (SDTM-IG v3.4; not used in SEND)
+  ie: DG.DataFrame = null; // IE – Inclusion/Exclusion Criteria Not Met (SDTM-IG v3.4)
+  ig: DG.DataFrame = null; // IG – In-Life Gestational Findings (SEND-IG, SEND-only)
+  is: DG.DataFrame = null; // IS – Immunogenicity Specimen Assessments (SDTM-IG v3.4)
+  lb: DG.DataFrame = null; // LB – Laboratory Test Results (SDTM & SEND)
+  ma: DG.DataFrame = null; // MA – Macroscopic Findings (SEND-IG, SEND-only)
+  mb: DG.DataFrame = null; // MB – Microbiology Findings (SDTM-IG v3.4)
+  mh: DG.DataFrame = null; // MH – Medical History (SDTM-IG v3.4; rarely sponsor-defined in SEND)
+  mi: DG.DataFrame = null; // MI – SDTM: Microbiology Findings | SEND: Microscopic Findings (⚠ semantic conflict)
+  ml: DG.DataFrame = null; // ML – Morphology / Localization (SEND Genomics extension)
+  ms: DG.DataFrame = null; // MS – Microbiology Susceptibility (SDTM-IG v3.4)
+  nc: DG.DataFrame = null; // NC – Neurobehavioral Findings (SEND-IG, SEND-only)
+  oe: DG.DataFrame = null; // OE – Objective Evidence (SDTM-IG v3.4)
+  om: DG.DataFrame = null; // OM – Organ Measurements (SEND-IG, SEND-only)
+  pc: DG.DataFrame = null; // PC – Pharmacokinetic Concentrations (SDTM & SEND)
+  pe: DG.DataFrame = null; // PE – Physical Examination (SDTM-IG v3.4; not used in SEND)
+  pm: DG.DataFrame = null; // PM – SEND: Palpable Masses | SDTM: Pharmacometrics (⚠ semantic conflict)
+  po: DG.DataFrame = null; // PO – Physical Observations (SEND-IG, SEND-only)
+  pp: DG.DataFrame = null; // PP – Pharmacokinetic Parameters (SDTM & SEND)
+  pr: DG.DataFrame = null; // PR – Procedures (SDTM-IG v3.4)
+  qs: DG.DataFrame = null; // QS – Questionnaires (SDTM-IG v3.4)
+  relrec: DG.DataFrame = null; // RELREC – Related Records (SDTM & SEND)
+  rp: DG.DataFrame = null; // RP – Reproductive Findings (SDTM-IG v3.4)
+  rs: DG.DataFrame = null; // RS – Disease Response / Clinical Classification (SDTM Oncology; not used in SEND)
+  sc: DG.DataFrame = null; // SC – Subject Characteristics (SDTM-IG v3.4)
+  se: DG.DataFrame = null; // SE – Subject Elements (SDTM-IG v3.4)
+  sm: DG.DataFrame = null; // SM – Subject Milestones (SDTM-IG v3.4)
+  sr: DG.DataFrame = null; // SR – Short-Term Routine Observations (SEND-IG, SEND-only)
+  su: DG.DataFrame = null; // SU – Substance Use (SDTM-IG v3.4)
+  sv: DG.DataFrame = null; // SV – Subject Visits (SDTM-IG v3.4)
+  ta: DG.DataFrame = null; // TA – Trial Arms (SDTM-IG v3.4; not used in SEND)
+  td: DG.DataFrame = null; // TD – Trial Disease Assessments (SDTM-IG v3.4)
+  te: DG.DataFrame = null; // TE – Trial Elements (SDTM-IG v3.4)
+  tf: DG.DataFrame = null; // TF – Tumor Findings (SEND-IG, SEND-only)
+  ti: DG.DataFrame = null; // TI – Trial Inclusion/Exclusion Criteria (SDTM-IG v3.4)
+  tm: DG.DataFrame = null; // TM – Trial Disease Milestones (SDTM-IG v3.4)
+  tr: DG.DataFrame = null; // TR – Tumor/Lesion Results (SDTM Oncology; not used in SEND)
+  ts: DG.DataFrame = null; // TS – Trial Summary (SDTM-IG v3.4)
+  tu: DG.DataFrame = null; // TU – Tumor/Lesion Identification (SDTM Oncology; not used in SEND)
+  tv: DG.DataFrame = null; // TV – Trial Visits (SDTM-IG v3.4)
+  tx: DG.DataFrame = null; // TX – SEND Trial Summary (SEND-IG, SEND-only)
+  vs: DG.DataFrame = null; // VS – Vital Signs (SDTM & SEND)
   supp: DG.DataFrame[] = [];
 
   all(): DG.DataFrame[] {
@@ -121,6 +113,8 @@ export class ClinicalStudy {
   currentViewName: string = SUMMARY_VIEW_NAME;
   validationCompleted = new Subject<boolean>();
   private validationColumnsSubscriptionSet = false;
+  changeViewToSummary = true;
+  treatmentAndControlConfig: {treatment: string, control: string}[] = [];
 
   constructor(config: ClinStudyConfig) {
     this.config = config;
@@ -152,27 +146,53 @@ export class ClinicalStudy {
 
 
   private process(): void {
-    if (!this.subjSitesCountsProcessed)
-      this.processSitesAndSubjectCount();
-    createEventStartEndDaysCol(this.studyId);
-    addVisitDayFromTvDomain(this.studyId);
-    if (this.domains.dm) {
-      this.dmFilters = createFilters(this.domains.dm);
-      this.domains.dm.onFilterChanged.subscribe(() => {
-      });
-      grok.shell.topMenu
-        .group('Cohort')
-        .item('Filter', () => {
-          const dialog = ui.dialog({title: ''})
-            .add(ui.div(this.dmFilters.root))
-          //@ts-ignore
-            .onOK(() => {})
-            .show();
-          dialog.root.addEventListener('mouseenter', (event) => {
-            this.dmFilters.root.removeAttribute('data-widget');
-          });
+    if (this.config.standard === CDISC_STANDARD.SDTM) {
+      if (!this.subjSitesCountsProcessed)
+        this.processSitesAndSubjectCount();
+      createEventStartEndDaysCol(this.studyId);
+      addVisitDayFromTvDomain(this.studyId);
+      if (this.domains.dm) {
+        this.dmFilters = createFilters(this.domains.dm);
+        this.domains.dm.onFilterChanged.subscribe(() => {
         });
+        grok.shell.topMenu
+          .group('Cohort')
+          .item('Filter', () => {
+            const dialog = ui.dialog({title: ''})
+              .add(ui.div(this.dmFilters.root))
+            //@ts-ignore
+              .onOK(() => {})
+              .show();
+            dialog.root.addEventListener('mouseenter', (event) => {
+              this.dmFilters.root.removeAttribute('data-widget');
+            });
+          });
+      }
     }
+    this.domains.all().forEach((it) => {
+      if (it.name !== 'dm' && it.columns.names().includes(SUBJECT_ID)) {
+        const savedName = it.name;
+        const columnsFromDm = this.domains.dm.columns.names().filter((it) => it !== DOMAIN);
+        for (const colName of it.columns.names()) {
+          const colIdx = columnsFromDm.findIndex((it) => it === colName);
+          if (colIdx !== -1)
+            columnsFromDm.splice(colIdx, 1);
+        }
+        grok.data.joinTables(it, this.domains.dm, [SUBJECT_ID], [SUBJECT_ID], null,
+          columnsFromDm, DG.JOIN_TYPE.LEFT, true);
+        it.name = savedName;
+        for (const col of columnsFromDm)
+          it.col(col)!.setTag(COLUMN_FROM_DM_TAG, 'true');
+      }
+      for (const col of it.columns.names()) {
+        if (this.config.fieldsDefinitions && this.config.fieldsDefinitions[col])
+          it.col(col)!.setTag('Description', this.config.fieldsDefinitions[col]);
+      }
+    });
+
+    // Calculate LB baseline and post-baseline columns if LB domain exists
+    if (this.domains.lb)
+      calculateLBBaselineColumns(this.domains.lb);
   }
 
 
@@ -280,17 +300,8 @@ export class ClinicalStudy {
     };
 
     // Process each domain and add columns
-    for (const domainName of Object.keys(this.domains)) {
-      const domain = this.domains[domainName];
-      if (!domain || !domainName || (Array.isArray(domain) && !domain.length))
-        continue;
-      if (domainName !== 'supp')
-        addValidationColumns(domainName, domain);
-      else {
-        for (const suppDomain of domain)
-          addValidationColumns(domainName, suppDomain);
-      }
-    }
+    for (const domain of this.domains.all())
+      addValidationColumns(domain.name, domain);
   }
 
   /**
@@ -303,10 +314,10 @@ export class ClinicalStudy {
     issuesByRow: {[row: number]: IssueDetail[]},
   ): void {
     // Create boolean column for validation errors
-    const hasErrorsCol = domain.columns.addNewBool('HasValidationErrors');
+    const hasErrorsCol = domain.columns.addNewBool(HAS_VALIDATION_ERRORS_COL);
 
     // Create string column for violated rules (stored as JSON array of IssueDetail objects)
-    const violatedRulesCol = domain.columns.addNewString('ViolatedRules');
+    const violatedRulesCol = domain.columns.addNewString(VIOLATED_RULES_COL);
     violatedRulesCol.semType = 'sdisc-rule-violation';
 
 
@@ -317,11 +328,11 @@ export class ClinicalStudy {
     // Helper function to create columns for a variable if they don't exist
     const ensureVariableColumns = (variable: string): void => {
       if (!variableErrorColumns[variable] && domain.col(variable)) {
-        const hasErrorsColName = `${variable}_hasErrors`;
+        const hasErrorsColName = `${variable}${COL_HAS_ERRORS_POSTFIX}`;
         const hasErrorsCol = domain.columns.addNewBool(hasErrorsColName);
         variableHasErrorsColumns[variable] = hasErrorsCol;
 
-        const errorColName = `${variable}_errors`;
+        const errorColName = `${variable}${ERRORS_POSTFIX}`;
         const errorCol = domain.columns.addNewString(errorColName);
         variableErrorColumns[variable] = errorCol;
       }
@@ -345,6 +356,10 @@ export class ClinicalStudy {
           // Iterate through variables and values arrays
           for (let varIndex = 0; varIndex < issue.variables.length; varIndex++) {
             const variable = issue.variables[varIndex];
+
+            if (domain.col(variable)?.getTag(COLUMN_FROM_DM_TAG))
+              continue;
+
             const value = varIndex < issue.values.length ? issue.values[varIndex] : '';
 
             // Create columns for this variable if they don't exist

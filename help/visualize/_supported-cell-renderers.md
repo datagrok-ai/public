@@ -11,5 +11,6 @@ You can visualize data within a [grid](viewers/grid.md) cell using a [cell rende
 | Choices |[img]|---| `cell.renderer`: MultiChoice<br/><br/>`.choices`: Comma separated values, e.g., ["1","2","3"] | Manual|
 | `Fit`|||`quality`: fit<br/>`.fit`{"chartOptions":{"logX":false,"logY":false,"allowXZeroes":true},"seriesOptions":{"fitFunction":"sigmoid","errorModel":"constant","clickToToggle":false,"showFitLine":true,"showPoints":"points","showCurveConfidenceInterval":false,"markerType":"circle","lineStyle":"solid","pointColor":"#1f77b4","outlierColor":"#ff0000","fitLineColor":"#1f77b4"}}: |Auto|
 | ImageURL|||||
+| SVG ||Renders SVG markup on canvas| `cell.renderer`: SVG | Auto |
 
 

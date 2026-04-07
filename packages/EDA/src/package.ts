@@ -36,8 +36,12 @@ import {SoftmaxClassifier} from './softmax-classifier';
 
 import {initXgboost} from '../wasm/xgbooster';
 import {XGBooster} from './xgbooster';
+
 import {ParetoOptimizer} from './pareto-optimization/pareto-optimizer';
 import {ParetoFrontViewer} from './pareto-optimization/pareto-front-viewer';
+
+import {Pmpo} from './probabilistic-scoring/prob-scoring';
+import {getSynteticPmpoData} from './probabilistic-scoring/data-generator';
 
 export const _package = new DG.Package();
 export * from './package.g';
@@ -51,7 +55,7 @@ export class PackageFunctions {
   }
 
 
-  @grok.decorators.init({})
+  @grok.decorators.init({tags: ['init']})
   static async init(): Promise<void> {
     await _initEDAAPI();
     await initXgboost();
@@ -113,13 +117,9 @@ export class PackageFunctions {
 
 
   @grok.decorators.func({
-    'meta': {
-      'defaultPostProcessingFunction': 'true',
-    },
-    'tags': [
-      'dim-red-postprocessing-function',
-    ],
+    'meta': {'defaultPostProcessingFunction': 'true', 'role': 'dim-red-postprocessing-function'},
     'name': 'DBSCAN clustering',
+    'tags': ['dim-red-postprocessing-function'],
   })
   static async dbscanPostProcessingFunction(
     col1: DG.Column,
@@ -148,9 +148,10 @@ export class PackageFunctions {
     'meta': {
       'supportedTypes': 'int,float,double,qnum',
       'supportedDistanceFunctions': 'Difference',
+      'role': 'dim-red-preprocessing-function',
     },
-    'tags': ['dim-red-preprocessing-function'],
     'name': 'None (number)',
+    'tags': ['dim-red-preprocessing-function'],
     'outputs': [{name: 'result', type: 'object'}],
   })
   static numberPreprocessingFunction(
@@ -166,6 +167,7 @@ export class PackageFunctions {
     'meta': {
       'supportedTypes': 'string',
       'supportedDistanceFunctions': 'One-Hot,Levenshtein,Hamming',
+      'role': 'dim-red-preprocessing-function',
     },
     'tags': ['dim-red-preprocessing-function'],
     'name': 'None (string)',
@@ -222,7 +224,7 @@ export class PackageFunctions {
   }
 
 
-  @grok.decorators.editor()
+  @grok.decorators.editor({tags: ['editor']})
   static GetMCLEditor(
     call: DG.FuncCall): void {
     try {
@@ -289,10 +291,8 @@ export class PackageFunctions {
 
   @grok.decorators.func({
     'outputs': [{'name': 'result', 'type': 'viewer'}],
-    'tags': [
-      'viewer',
-    ],
-    'meta': {showInGallery: 'false'},
+    'meta': {showInGallery: 'false', role: 'viewer'},
+    'tags': ['viewer'],
     'name': 'MCL',
     'description': 'Markov clustering viewer',
   })
@@ -984,11 +984,52 @@ export class PackageFunctions {
   @grok.decorators.func({
     'name': 'Pareto front',
     'description': 'Pareto front viewer',
-    'tags': ['viewer'],
     'outputs': [{'name': 'result', 'type': 'viewer'}],
-    'meta': {'icon': 'icons/pareto-front-viewer.svg'},
+    'meta': {'icon': 'icons/pareto-front-viewer.svg', 'role': 'viewer'},
+    'tags': ['viewer'],
   })
   static paretoFrontViewer(): DG.Viewer {
     return new ParetoFrontViewer();
   }
+
+  @grok.decorators.func({
+    'name': 'trainPmpo',
+    'description': 'Train probabilistic multi-parameter optimization (pMPO) model',
+  })
+  static trainPmpo(): void {
+    const df = grok.shell.t;
+    if (df === null) {
+      grok.shell.warning('No dataframe is opened');
+      return;
+    }
+
+    if (!Pmpo.isTableValid(df))
+      return;
+
+    const pMPO = new Pmpo(df);
+    pMPO.runTrainingApp();
+  }
+
+  @grok.decorators.func({'name': 'getPmpoAppItems', 'outputs': [{name: 'result', type: 'object'}]})
+  static getPmpoAppItems(@grok.decorators.param({type: 'view'}) view: DG.TableView): any | null {
+    const df = view.dataFrame;
+    if (!Pmpo.isTableValid(df))
+      return null;
+
+    const pMPO = new Pmpo(df, view);
+
+    return pMPO.getPmpoAppItems();
+  }
+
+  @grok.decorators.func({
+    'name': 'generatePmpoDataset',
+    'description': 'Generates syntethetic dataset oriented on the pMPO modeling',
+    'outputs': [{name: 'Synthetic', type: 'dataframe'}],
+  })
+  static async generatePmpoDataset(@grok.decorators.param({'type': 'int'}) samples: number): Promise<DG.DataFrame> {
+    const df = await getSynteticPmpoData(samples, false);
+    df.name = 'Synthetic';
+    return df;
+  }
+
 }

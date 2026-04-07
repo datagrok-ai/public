@@ -180,6 +180,16 @@
   -webkit-text-stroke-color: #784d24;
 }
 
+.chem-orphans-folder-icon {
+  font-size: 66px;
+  color: hsla(0, 0%, 0%, 0) !important;
+}
+
+.chem-orphans-folder-host {
+  align-items: center;
+  justify-content: center;
+}
+
 .d4-update-shadow {
   background-color: white;
   opacity: 1.0;
@@ -435,6 +445,53 @@
   margin-left: -40px;
 }
 
+.chem-scaffold-tree-label-input.ui-input-root {
+  margin: -8px 0 0 0 !important;
+  padding: 0 !important;
+  max-width: 100%;
+  min-height: 0 !important;
+  height: auto !important;
+  background: transparent !important;
+  background-color: transparent !important;
+}
+
+.chem-scaffold-tree-label-input.ui-input-root > label {
+  display: none !important;
+}
+
+.chem-scaffold-tree-label-input .ui-input-editor,
+.chem-scaffold-tree-label-input input {
+  font-size: 11px !important;
+  line-height: 14px !important;
+  height: 16px !important;
+  min-height: 0 !important;
+  padding: 0 2px !important;
+  margin: 0 !important;
+  border: none !important;
+  border-bottom: 1px solid transparent !important;
+  background: transparent !important;
+  background-color: transparent !important;
+  color: var(--grey-6) !important;
+  outline: none !important;
+  text-align: right;
+  box-sizing: border-box;
+  box-shadow: none !important;
+}
+
+.chem-scaffold-tree-label-input .ui-input-editor:focus,
+.chem-scaffold-tree-label-input input:focus {
+  border-bottom: 1px solid var(--blue-1) !important;
+}
+
+.chem-scaffold-tree-label-input .ui-input-editor::placeholder {
+  color: var(--grey-3);
+  font-style: italic;
+}
+
+.chem-scaffold-tree-label-hidden {
+  display: none !important;
+}
+
 .chem-drug-likeness-widget-score-div, .chem-toxicity-widget-risk-row {
   display: flex;
   align-items: center;
@@ -672,6 +729,10 @@
   border-bottom: none!important;
 }
 
+.mmpa-color-input .ui-input-options .d4-color-bar{
+  margin-bottom: 1px!important;
+}
+
 .mmpa-slider-roots {
   position: absolute;
   z-index: 1;
@@ -686,15 +747,19 @@
 .mmpa-slider-input > .ui-input-label {
   min-width: 80px;
   max-width: 80px;
-  margin-right: 0px !important;
+  margin-right: 0px!important;
+  justify-content: left!important;
+  margin-top: 4px!important;
 }
 
 .mmpa-slider-input > .ui-input-editor {
   width: 70px;
+  padding-bottom: 5px!important;
 }
 
 .mmpa-slider-input > .ui-input-options {
   width: 45px;
+  padding-bottom: 5px;
 }
 
 .mmp-pairs-grid-cliffs-tab.cliffs-closed {
@@ -707,7 +772,7 @@
 
 .mmpa-bool-input {
   padding-left: 5px;
-  margin-top: 8px;
+  margin-top: 4px;
 }
 
 .mmpa-scroll-icon {
@@ -969,4 +1034,206 @@
 
 .chem-mixture-widget-add-table-to-workspace {
   color: #2083d5!important;
+}
+
+.chem-mpo-description {
+  max-width: 300px;
+  white-space: normal;
+  word-break: break-word;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+}
+
+.chem-mpo-description-expandable {
+  cursor: pointer;
+}
+
+.chem-mpo-description.expanded {
+  display: block;
+  overflow: visible;
+}
+
+.chem-mpo-d-none {
+  display: none!important;
+}
+
+.chem-mpo-histogram-compact .d4-histogram {
+  height: 180px;
+  max-height: 180px;
+}
+
+.chem-mpo-profiles-table {
+  width: fit-content;
+  color: var(--grey-5);
+}
+
+.chem-mpo-action-button {
+  display: block !important;
+  text-align: start;
+  margin-left: 0 !important;
+}
+
+.chem-mpo-dialog-manage-button {
+  margin: inherit !important;
+  margin-top: 10px !important;
+}
+
+.chem-mpo-profile-actions {
+  gap: 10px;
+  align-items: center;
+}
+
+.chem-mpo-scores-viewer {
+  display: flex !important;
+  flex-direction: column;
+  width: 100% !important;
+  height: 100% !important;
+}
+
+.chem-profile-view {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+}
+
+.chem-profile-header {
+  font-size: 18px;
+  font-weight: 600;
+  flex: 0 0 auto;
+  outline: none;
+}
+
+.chem-profile-toolbar-wrap {
+  padding: 0 0 8px;
+  border-bottom: 1px solid var(--grey-2);
+  flex: 0 0 auto;
+}
+
+.chem-profile-toolbar-wrap > .ui-btn {
+  width: 80px;
+  align-self: flex-end;
+}
+
+.chem-profile-description {
+  color: var(--grey-4);
+  font-weight: normal;
+  font-style: italic;
+  outline: none;
+  margin-top: -8px;
+  margin-bottom: 12px;
+  max-width: 400px;
+}
+.chem-profile-description.chem-placeholder::before {
+  content: 'Add description...';
+  opacity: 0.5;
+}
+.chem-profile-description.chem-placeholder:focus::before {
+  display: none;
+}
+.chem-profile-field-desc {
+  color: var(--grey-4);
+  font-size: 12px;
+  margin: 4px 0 8px;
+  font-style: italic;
+}
+
+.chem-profile-view-loading {
+  visibility: hidden;
+}
+
+.chem-profile-editor-container {
+  flex: 1 1 0;
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  overflow: auto;
+}
+
+.chem-data-grid-container {
+  flex: 1 1 0;
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.chem-data-grid {
+  flex: 1 1 0;
+  width: 100% !important;
+  height: 100% !important;
+  min-width: 0;
+  min-height: 0;
+}
+
+.chem-editor-panel {
+  flex: 1 1 65%;
+  min-width: 0;
+  min-height: 0;
+  height: 100%;
+}
+
+.chem-grid-panel {
+  flex: 1 1 35%;
+  min-width: 0;
+  min-height: 0;
+  height: 100%;
+}
+
+.chem-view-split {
+  flex: 1 1 0;
+  width: 100% !important;
+  height: 100% !important;
+  min-width: 0;
+  min-height: 0;
+}
+
+.chem-mpo-actions-button {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: transparent;
+  font-size: 18px;
+  line-height: 28px;
+  cursor: pointer;
+  transition: background 0.2s ease, border-color 0.2s ease;
+}
+
+.chem-mpo-actions-button:hover {
+  background: rgba(0, 0, 0, 0.05);
+  border-color: rgba(0, 0, 0, 0.12);
+}
+
+.chem-mpo-actions-button:active {
+  background: rgba(0, 0, 0, 0.08);
+}
+
+.chem-mpo-error-message {
+  color: #c00;
+  padding: 12px;
+  font-weight: 600;
+}
+
+.chem-mpo-footer-warning {
+  color: #805125;
+  flex: 1;
+  text-align: center;
+}
+
+.chem-descriptors-select-btn {
+  margin-top: 20px;
+}
+
+.d4-grid .chem-descriptors-select-btn {
+  display: none;
 }

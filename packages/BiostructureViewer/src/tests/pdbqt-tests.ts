@@ -4,7 +4,7 @@ import * as ui from 'datagrok-api/ui';
 
 import * as ngl from 'NGL';
 
-import {category, expect, expectArray/*, expect*/, expectObject, test} from '@datagrok-libraries/utils/src/test';
+import {category, expect, expectArray/*, expect*/, expectObject, test} from '@datagrok-libraries/test/src/test';
 import {Molecule3DUnitsHandler} from '@datagrok-libraries/bio/src/molecule-3d';
 import {errInfo} from '@datagrok-libraries/bio/src/utils/err-info';
 import {IPdbAtomBase, IPdbqtAtomBase} from '@datagrok-libraries/bio/src/pdb/format/types';

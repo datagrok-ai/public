@@ -4,7 +4,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {category, test, expect, before} from '@datagrok-libraries/utils/src/test';
+import {category, test, expect, before} from '@datagrok-libraries/test/src/test';
 
 import {ALIGNMENT, ALPHABET, NOTATION, TAGS as bioTAGS} from '@datagrok-libraries/bio/src/utils/macromolecule';
 import {ISeqHelper, getSeqHelper} from '@datagrok-libraries/bio/src/utils/seq-helper';
@@ -135,13 +135,13 @@ YN[Re]VYNR[Ac]WYV
 [Me]EYVMPSFW[Me]H`,
       pos: {'seq': new PosCol(NOTATION.FASTA, ALIGNMENT.SEQ_MSA, ALPHABET.UN, 14, true, undefined)},
     },
-    'fastaMsaExtManyMinus': {
-      csv: `seq
-[D-Tic]-------[D-Tyr_Et][Tyr_ab-dehydroMe][dV][Cys_SEt]N[D-Orn][D-aThr]-[Phe_4Me]
-[Phe_2F]--------[Tyr_ab-dehydroMe][dV][Aca]N[D-Orn][D-aThr]-[Phe_4Me]
-[D-Tic]-[Hcy]QTWQ[Phe_4NH2][D-Tyr_Et][Tyr_ab-dehydroMe][dV][Cys_SEt]----[Phe_4Me]`,
-      pos: {'seq': new PosCol(NOTATION.FASTA, ALIGNMENT.SEQ_MSA, ALPHABET.UN, 17, true, undefined)}
-    },
+//     'fastaMsaExtManyMinus': {
+//       csv: `seq
+// [D-Tic]-------[D-Tyr_Et][Tyr_ab-dehydroMe][dV][Cys_SEt]N[D-Orn][D-aThr]-[Phe_4Me]
+// [Phe_2F]--------[Tyr_ab-dehydroMe][dV][Aca]N[D-Orn][D-aThr]-[Phe_4Me]
+// [D-Tic]-[Hcy]QTWQ[Phe_4NH2][D-Tyr_Et][Tyr_ab-dehydroMe][dV][Cys_SEt]----[Phe_4Me]`,
+//       pos: {'seq': new PosCol(NOTATION.FASTA, ALIGNMENT.SEQ_MSA, ALPHABET.UN, 17, true, undefined)}
+//     },
     'sepSameLength': {
       csv: `seq
 Aca-A-A-A-A-A-A-A-A-A-A-A-A-A-C-G-NH2

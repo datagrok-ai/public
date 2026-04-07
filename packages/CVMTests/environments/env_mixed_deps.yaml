@@ -1,0 +1,9 @@
+name: env_mixed_deps
+channels:
+  - conda-forge
+dependencies:
+  - python=3.11
+  - scipy
+  - pip:
+      - orjson
+      - msgpack

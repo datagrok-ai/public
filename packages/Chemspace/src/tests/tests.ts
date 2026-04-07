@@ -1,5 +1,5 @@
 import * as grok from 'datagrok-api/grok';
-import {test, category, awaitCheck} from '@datagrok-libraries/utils/src/test';
+import {test, category, awaitCheck} from '@datagrok-libraries/test/src/test';
 import {app, pricesPanel, samplesPanel} from '../package';
 
 category('Chemspace', () => {
@@ -16,13 +16,13 @@ category('Chemspace', () => {
     const similarPaneHeader = widget.root.querySelector('[name="div-section--Similar"]') as HTMLElement;
     similarPaneHeader.click();
     const similarPane = widget.root.querySelector('[d4-title="Similar"]') as HTMLElement;
-    await awaitCheck(() => similarPane.getElementsByClassName('chem-mol-box').length === 9,
-      `Expected 9 similar molecules, got ${similarPane.getElementsByClassName('chem-mol-box').length}`, 30000);
+    await awaitCheck(() => similarPane.getElementsByClassName('chem-mol-box').length === 10,
+      `Expected 10 similar molecules, got ${similarPane.getElementsByClassName('chem-mol-box').length}`, 30000);
     const subPaneHeader = widget.root.querySelector('[name="div-section--Substructure"]') as HTMLElement;
     subPaneHeader.click();
     const subPane = widget.root.querySelector('[d4-title="Substructure"]') as HTMLElement;
     await awaitCheck(() => subPane.getElementsByClassName('chem-mol-box').length === 10,
-      `Expected 9 molecules with substructure, got ${subPane.getElementsByClassName('chem-mol-box').length}`, 30000);
+      `Expected 10 molecules with substructure, got ${subPane.getElementsByClassName('chem-mol-box').length}`, 30000);
 
   }, { timeout: 60000});
 

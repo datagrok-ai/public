@@ -6,7 +6,6 @@ import {Tutorial, TutorialPrerequisites} from '@datagrok-libraries/tutorials/src
 import {Observable, combineLatest, interval} from 'rxjs';
 import $, {Cash} from 'cash-dom';
 import { _package } from '../../../package';
-import { delay } from '@datagrok-libraries/utils/src/test';
 
 
 export class RGroupsAnalysisTutorial extends Tutorial {
@@ -168,7 +167,7 @@ export class RGroupsAnalysisTutorial extends Tutorial {
     await this.action('In the pane, hover over line charts to see dictibutions', new Observable((subscriber: any) => {
       const onMousemove = async () => {
         if ($('.d4-tooltip').css('display') === 'block') {
-          await delay(1000);
+          await DG.delay(1000);
           subscriber.next(true);
           document.getElementsByClassName('d4-accordion-pane-content d4-pane-distributions expanded')[0]!.removeEventListener('mousemove', onMousemove);
         }

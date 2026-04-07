@@ -1,5 +1,22 @@
 # ChEMBL changelog
 
+## 1.4.12 (2026-03-16)
+
+* Chembl: Add descriptions to all queries
+* Chembl: Fix validation
+* Chembl: Enrichments: Added samples
+* GROK-19836: UI: Demo: Chem: Database Queries: Structure is cut
+
+## 1.4.11 (2025-01-06)
+
+* Migrated tags to roles
+* Add descriptions to all queries
+* Fix validation
+
+## 1.4.10 (2025-12-31)
+
+* Update db-explorer library version
+
 ## 1.4.7 (2025-12-11)
 
 * In place registration of regexp detectors for semantic types in DBExplorer integration

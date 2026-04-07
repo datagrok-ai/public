@@ -3,7 +3,7 @@ import type * as _DG from 'datagrok-api/dg';
 declare let grok: typeof _grok, DG: typeof _DG;
 
 //@ts-ignore
-import {assure, before, category, expect, test} from '@datagrok-libraries/utils/src/test';
+import {assure, before, category, expect, test} from '@datagrok-libraries/test/src/test';
 
 category('Dapi: sticky meta', () => { 
   let schema: _DG.Schema;

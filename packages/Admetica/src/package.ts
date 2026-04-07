@@ -29,7 +29,8 @@ export class PackageFunctions {
 
   @grok.decorators.panel({
     name: 'Biology | Admetica',
-    tags: ['chem', 'widgets']})
+    meta: {role: 'widgets', domain: 'chem'},
+  })
   static async admeticaWidget(
     @grok.decorators.param({ name: 'smiles', options: { semType: 'Molecule' }}) semValue: DG.SemanticValue): Promise<DG.Widget<any>> {
     const smiles = await grok.functions.call('Chem:convertMolNotation',
@@ -46,7 +47,9 @@ export class PackageFunctions {
       .map((model: Model) => model.name);
   }
 
-  @grok.decorators.func({ name: 'AdmeticaHT', tags: ['HitTriageFunction'] })
+  @grok.decorators.func({ name: 'AdmeticaHT',
+    meta: {role: 'hitTriageFunction'},
+  })
   static async admeticaHT(
     table: DG.DataFrame,
     @grok.decorators.param({ options: { semType: 'Molecule' } }) molecules: DG.Column,
@@ -104,29 +107,34 @@ export class PackageFunctions {
   @grok.decorators.func({
     name: 'getAdmeProperties',
     meta: {vectorFunc: 'true'},
+    outputs: [{name: 'result', type: 'dataframe', options: {action: 'join(table)'}}],
   })
   static async getAdmeProperties(
+    table: DG.DataFrame,
     @grok.decorators.param({ options: { semType: 'Molecule' } }) molecules: DG.Column,
-    @grok.decorators.param({ type: 'list<string>', optional: true }) props?: string[],
+    @grok.decorators.param({type: 'list<string>', options: { optional: true }}) props?: string[],
   ): Promise<DG.DataFrame> {
+    const isMolblock = molecules.meta.units === DG.UNITS.Molecule.MOLBLOCK ||
+      (!molecules.meta.units && DG.Detector.sampleCategories(molecules, (s) => s.includes('M  END'), 1));
+
     const values = new Array(molecules.length + 1);
     values[0] = molecules.name;
     for (let i = 0; i < molecules.length; i++) {
       const value = molecules.get(i);
-      values[i + 1] = molecules.meta.units === DG.UNITS.Molecule.MOLBLOCK ? `"${value}"` : value;
+      values[i + 1] = isMolblock ? `"${value}"` : value;
     }
     const csv = values.join('\n');
 
     // If no properties specified, use all available models
     const models = (props ?? await this.getModels()).join(',');
-    let admeticaResults = await grok.functions.call('Admetica:run_admetica', {
+    const call = await DG.Func.find({package: 'Admetica', name: 'run_admetica'})[0].prepare({
       csv: csv,
       models: models,
       raiseException: false,
-    });
+    }).call(undefined, undefined, {processed: false});
 
-    admeticaResults = await convertLD50(admeticaResults, molecules);
-    return admeticaResults;
+    const callResult = call.getOutputParamValue() as DG.DataFrame;
+    return await convertLD50(callResult, molecules);
   }
 
   @grok.decorators.func({
@@ -136,11 +144,12 @@ export class PackageFunctions {
   static async getAdmePropertiesSingle(
     @grok.decorators.param({ options: { semType: 'Molecule' } }) molecule: string,
   ): Promise<DG.DataFrame> {
-    return await PackageFunctions.getAdmeProperties(DG.Column.fromStrings('Molecule', [molecule]));
+    const col = DG.Column.fromStrings('Molecule', [molecule]);
+    return await PackageFunctions.getAdmeProperties(DG.DataFrame.fromColumns([col]), col);
   }
 
   @grok.decorators.app({name: 'Admetica', meta: {icon: 'images/vlaaivis.png', browsePath: 'Chem'}})
-  static async admeticaApp(): Promise<DG.ViewBase | null> {
+  static async runAdmeticaApplication(): Promise<DG.ViewBase | null> {
     const parent = grok.functions.getCurrentCall();
     return await initializeAdmeticaApp(true, parent);
   }

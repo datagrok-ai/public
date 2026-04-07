@@ -124,12 +124,12 @@ export async function getSmiles(molString: string): Promise<string> {
 
 export class PackageFunctions {
   @grok.decorators.func({
-    'tags': ['widgets'],
-    'name': 'ChEMBL Search Widget'
-    })
+    'name': 'ChEMBL Search Widget',
+    'meta': {role: 'widgets'},
+  })
   static async chemblSearchWidget(
-    @grok.decorators.param({'options':{'semType':'Molecule'}}) mol: string,
-    @grok.decorators.param({'name':'searchType', 'type':'string'}) substructure: boolean = false,
+    @grok.decorators.param({'options': {'semType': 'Molecule'}}) mol: string,
+    @grok.decorators.param({'name': 'searchType', 'type': 'string'}) substructure: boolean = false,
   ): Promise<DG.Widget> {
     try {
       mol = await getSmiles(mol);
@@ -187,24 +187,24 @@ export class PackageFunctions {
   }
 
   @grok.decorators.panel({
-    'tags': ['widgets'],
     'name': 'Databases | ChEMBL | Substructure Search API',
-    'condition': 'true'
-    })
+    'condition': 'true',
+    'meta': {role: 'widgets'},
+  })
   static async chemblSubstructureSearchPanel(
-    @grok.decorators.param({'options':{'semType':'Molecule'}}) mol: string,
+    @grok.decorators.param({'options': {'semType': 'Molecule'}}) mol: string,
   ): Promise<DG.Widget> {
     return mol ? PackageFunctions.chemblSearchWidget(mol, true) : new DG.Widget(ui.divText('SMILES is empty'));
   }
 
 
   @grok.decorators.panel({
-    'tags': ['widgets'],
     'name': 'Databases | ChEMBL | Similarity Search API',
-    'condition': 'true'
-    })
+    'condition': 'true',
+    'meta': {role: 'widgets'},
+  })
   static async chemblSimilaritySearchPanel(
-    @grok.decorators.param({'options':{'semType':'Molecule'}}) mol: string,
+    @grok.decorators.param({'options': {'semType': 'Molecule'}}) mol: string,
   ): Promise<DG.Widget> {
     return mol ? PackageFunctions.chemblSearchWidget(mol) : new DG.Widget(ui.divText('SMILES is empty'));
   }
@@ -219,7 +219,7 @@ export class PackageFunctions {
     return response.status !== 200 || json.error ? [] : json;
   }
 
-  @grok.decorators.func({'name':'Chembl Get by Id'})
+  @grok.decorators.func({'name': 'Chembl Get by Id'})
   static async getById(id: string): Promise<DG.DataFrame> {
     if (!id.toLowerCase().startsWith('chembl'))
       id = `CHEMBL${id}`;

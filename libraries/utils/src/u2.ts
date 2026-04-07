@@ -27,12 +27,17 @@ export namespace u2 {
     learnMoreUrl?: string;
     appTitle?: string;
     appSubTitle?: string;
-    bottomLine?: boolean; 
+    bottomLine?: boolean;
+    iconSize?: number;
   }
 
   export function appHeader(header: IAppInfo): HTMLElement {
     const icon = ui.iconImage('', header.iconPath);
     $(icon).addClass('ui-app-header-icon').css('margin-right', '20px');
+    if (header.iconSize) {
+      icon.style.width = `${header.iconSize}px`;
+      icon.style.height = `${header.iconSize}px`;
+    }
     const appHeaderDiv = panels.horz([]);
     if (header.appTitle) {
       appHeaderDiv.classList.add('u2-app-header-with-name');

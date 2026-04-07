@@ -1,10 +1,12 @@
-import {_TagsCellRenderer} from './package.g';
 import {_MultiChoiceCellRenderer} from './package.g';
 import {_ScatterPlotCellRenderer} from './package.g';
 import {_HtmlTestCellRenderer} from './package.g';
 import {_HyperlinkCellRenderer} from './package.g';
 import {_BinaryImageCellRenderer} from './package.g';
 import {_ImageCellRenderer} from './package.g';
+import {_StarsCellRenderer} from './package.g';
+import {_ColorCellRenderer} from './package.g';
+import {_SvgCellRenderer} from './package.g';
 /* Do not change these import lines to match external modules in webpack configuration */
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
@@ -19,12 +21,14 @@ import {PieChartCellRenderer} from './sparklines/piechart';
 import {RadarChartCellRender} from './sparklines/radar-chart';
 import {ScatterPlotCellRenderer} from './sparklines/scatter-plot';
 import {names, SparklineType, sparklineTypes, SummarySettingsBase} from './sparklines/shared';
-import * as PinnedUtils from '@datagrok-libraries/gridext/src/pinned/PinnedUtils';
-import {PinnedColumn} from '@datagrok-libraries/gridext/src/pinned/PinnedColumn';
 import {FormsViewer} from '@datagrok-libraries/utils/src/viewers/forms-viewer';
 import {FormCellRenderer} from './forms/forms';
 import {scWebGPUPointHitTest, scWebGPURender} from './webgpu/scatterplot';
 import {getGPUDevice} from '@datagrok-libraries/math/src/webGPU/getGPUDevice';
+import {TagsCellRenderer, TAGS_CELL_TYPE} from './cell-types/tags-cell-renderer';
+import {ConfidenceIntervalCellRenderer} from './cell-types/confidence-interval-cell-renderer';
+import {StarsCellRenderer} from './cell-types/stars-cell-renderer';
+// import {isValidColor} from './cell-types/color-cell-renderer';
 export * from './package.g';
 export const _package = new DG.Package();
 
@@ -35,7 +39,8 @@ export class PackageFunctions {
   @grok.decorators.func({
     meta: {
       gridChart: 'true',
-      cellType: 'bar'
+      cellType: 'bar',
+      role: 'cellRenderer'
     },
     tags: ['cellRenderer'],
     outputs: [{type: 'grid_cell_renderer', name: 'result'}]
@@ -49,7 +54,8 @@ export class PackageFunctions {
     meta: {
       cellType: 'sparkline',
       gridChart: 'true',
-      virtual: 'true'
+      virtual: 'true',
+      role: 'cellRenderer'
     },
     tags: ['cellRenderer'],
     name: 'Sparklines',
@@ -64,7 +70,8 @@ export class PackageFunctions {
     meta: {
       cellType: 'barchart',
       gridChart: 'true',
-      virtual: 'true'
+      virtual: 'true',
+      role: 'cellRenderer'
     },
     tags: ['cellRenderer'],
     name: 'Bar Chart',
@@ -79,7 +86,8 @@ export class PackageFunctions {
     meta: {
       cellType: 'piechart',
       gridChart: 'true',
-      virtual: 'true'
+      virtual: 'true',
+      role: 'cellRenderer'
     },
     tags: ['cellRenderer'],
     name: 'Pie Chart',
@@ -94,7 +102,8 @@ export class PackageFunctions {
     meta: {
       cellType: 'radar',
       gridChart: 'true',
-      virtual: 'true'
+      virtual: 'true',
+      role: 'cellRenderer'
     },
     tags: ['cellRenderer'],
     name: 'Radar',
@@ -109,7 +118,8 @@ export class PackageFunctions {
     meta: {
       cellType: 'smartform',
       gridChart: 'true',
-      virtual: 'true'
+      virtual: 'true',
+      role: 'cellRenderer'
     },
     tags: ['cellRenderer'],
     name: 'Smart Form',
@@ -118,6 +128,61 @@ export class PackageFunctions {
   static smartFormCellRenderer() {
     return new FormCellRenderer();
   }
+
+    @grok.decorators.func({
+      meta: {
+        cellType: 'Tags',
+        gridChart: 'true',
+        virtual: 'true',
+        role: 'cellRenderer'
+      },
+      tags: ['cellRenderer'],
+      name: 'Tags',
+      outputs: [{type: 'grid_cell_renderer', name: 'result'}]
+    })
+  static tagsCellRenderer() {
+    return new TagsCellRenderer();
+  }
+
+
+  @grok.decorators.func({
+    meta: {
+      cellType: 'ConfidenceInterval',
+      gridChart: 'true',
+      virtual: 'true',
+      role: 'cellRenderer'
+    },
+    tags: ['cellRenderer'],
+    name: 'Confidence Interval',
+    outputs: [{type: 'grid_cell_renderer', name: 'result'}]
+  })
+    static confidenceIntervalCellRenderer() {
+      return new ConfidenceIntervalCellRenderer();
+    }
+
+
+  // @grok.decorators.func({
+  //   description: 'Color',
+  //   meta: {role: 'cellEditor'},
+  // })
+  // static editColorCell(
+  //   @grok.decorators.param({type: 'grid_cell'}) cell: DG.GridCell): void {
+  //   const originalValue = cell.cell.isNone() ? null : cell.cell.valueString;
+  //   const current = cell.cell.valueString.trim();
+  //   const initialColor = current && isValidColor(current) ? DG.Color.fromHtml(current) : 0;
+  //   let picked = initialColor;
+  //   ui.showColorPicker(initialColor, (c) => {
+  //     picked = c;
+  //     cell.cell.value = DG.Color.toHtml(c);
+  //     cell.render();
+  //   }, () => {
+  //     cell.cell.value = DG.Color.toHtml(picked);
+  //     cell.render();
+  //   }, () => {
+  //     cell.cell.value = originalValue;
+  //     cell.render();
+  //   });
+  // }
 
 
   @grok.decorators.func({
@@ -206,7 +271,8 @@ export class PackageFunctions {
   @grok.decorators.func({
     meta: {
       cellType: 'testUnitsKg',
-      columnTags: 'foo=bar,units=kg'
+      columnTags: 'foo=bar,units=kg',
+      role: 'cellRenderer'
     },
     tags: ['cellRenderer'],
     outputs: [{type: 'grid_cell_renderer', name: 'result'}]
@@ -219,20 +285,14 @@ export class PackageFunctions {
   @grok.decorators.func({
     meta: {
       cellType: 'testUnitsTon',
-      columnTags: 'foo=bar,units=ton'
+      columnTags: 'foo=bar,units=ton',
+      role: 'cellRenderer'
     },
     tags: ['cellRenderer'],
     outputs: [{type: 'grid_cell_renderer', name: 'result'}]
   })
   static testUnitsTonCellRenderer() {
     return new HtmlTestCellRenderer();
-  }
-
-
-  @grok.decorators.func({outputs: [{type: 'object', name: 'result'}]})
-  static addPinnedColumn(
-    @grok.decorators.param({'type': 'object'}) gridCol: DG.GridColumn) : PinnedColumn {
-    return PinnedUtils.addPinnedColumn(gridCol);
   }
 
 
@@ -250,11 +310,19 @@ export class PackageFunctions {
     grok.shell.info('Different renderers even though semantic types are the same');
   }
 
+  @grok.decorators.func({outputs: [{type: 'object', name: 'result'}]})
+  static addPinnedColumn(
+    @grok.decorators.param({'type': 'object'}) gridCol: DG.GridColumn) {
+    gridCol.pin();
+    return gridCol;
+  }
 
-  @grok.decorators.autostart()
+
+  @grok.decorators.autostart({tags: ['autostart']})
   static async _autoPowerGrid() {
-    PinnedUtils.registerPinnedColumns();
+    //PinnedUtils.registerPinnedColumns();
     DG.GridCellRenderer.register(new ScatterPlotCellRenderer());
+    DG.GridCellRenderer.register(new StarsCellRenderer());
 
     // handling column remove/rename in sparkline columns
     grok.events.onViewerAdded.subscribe((args) => {
@@ -264,13 +332,14 @@ export class PackageFunctions {
       const dataFrame = grid.dataFrame;
       if (!dataFrame)
         return;
-      const getSparklineSettings = (gridCol: DG.GridColumn) => (gridCol.settings ?? {})[gridCol.cellType] as SummarySettingsBase;
+      const getSparklineSettings =
+        (gridCol: DG.GridColumn) => (gridCol.settings ?? {})[gridCol.cellType] as SummarySettingsBase;
       const findSummaryCols = (columns: (string | DG.Column)[]) => {
         const summaryCols: DG.GridColumn[] = [];
         for (let i = 1; i < grid.columns.length; i++) {
           const gridCol = grid.columns.byIndex(i)!;
           const sparklineSettings = getSparklineSettings(gridCol);
-          if (sparklineTypes.includes(gridCol.cellType) && sparklineSettings?.columnNames?.length > 0 &&
+          if ([...sparklineTypes, TAGS_CELL_TYPE].includes(gridCol.cellType) && sparklineSettings?.columnNames?.length > 0 &&
             columns.some((col) => sparklineSettings.columnNames.includes(col instanceof DG.Column ? col.name : col)))
             summaryCols[summaryCols.length] = gridCol;
         }
@@ -292,7 +361,8 @@ export class PackageFunctions {
         const summaryCols = findSummaryCols([renamedArgs.oldName]);
         for (const summaryCol of summaryCols) {
           const sparklineSettings = getSparklineSettings(summaryCol);
-          sparklineSettings.columnNames[sparklineSettings.columnNames.indexOf(renamedArgs.oldName)] = renamedArgs.newName;
+          sparklineSettings.columnNames[sparklineSettings.columnNames.indexOf(renamedArgs.oldName)] =
+           renamedArgs.newName;
         }
       });
       const gridDetachedSub = grid.onDetached.subscribe(() => grid.detach());
@@ -311,6 +381,7 @@ export class PackageFunctions {
       icon: 'files/icons/formviewer.svg',
       viewerPosition: 'bottom',
       toolbox: 'true',
+      role: 'viewer'
     },
     tags: ['viewer'],
     name: 'Forms',
@@ -323,12 +394,10 @@ export class PackageFunctions {
 
 
   @grok.decorators.panel({
-    tags: [
-      'powergrid',
-      'widgets'
-    ],
     name: 'Content',
-    description: 'Image content'
+    description: 'Image content',
+    meta: {role: 'widgets'},
+    tags: ['widgets', 'panel']
   })
   static imgContent(
     @grok.decorators.param({'options': {'semType': 'ImageUrl'}}) imageUrl: string): DG.Widget {
@@ -356,9 +425,7 @@ export class PackageFunctions {
   }
 
 
-  @grok.decorators.func({
-    tags: ['scWebGPURender']
-  })
+  @grok.decorators.func()
   static async _scWebGPURender(
     sc: DG.ScatterPlotViewer,
     show: boolean) {
@@ -371,7 +438,6 @@ export class PackageFunctions {
 
 
   @grok.decorators.func({
-    tags: ['scWebGPUPointHitTest'],
     outputs: [{type: 'int', name: 'result'}]
   })
   static async _scWebGPUPointHitTest(
@@ -389,15 +455,13 @@ export class PackageFunctions {
   }
 
 
-  @grok.decorators.func({tags: ['isWebGPUAvailable']})
+  @grok.decorators.func()
   static isWebGPUAvailable() : boolean {
     return gpuDevice != null && !gpuErrorCounter;
   }
 
 
-  @grok.decorators.func({
-    tags: ['isWebGPURenderValid']
-  })
+  @grok.decorators.func()
   static isWebGPURenderValid(sc: DG.ScatterPlotViewer) : boolean {
     return sc.props.zoomAndFilter != 'pack and zoom by filter' &&
       !sc.props.markersColumnName &&// different markers not yet supported YET
@@ -410,4 +474,6 @@ export {_HyperlinkCellRenderer};
 export {_HtmlTestCellRenderer};
 export {_ScatterPlotCellRenderer};
 export {_MultiChoiceCellRenderer};
-export {_TagsCellRenderer};
+export {_StarsCellRenderer};
+export {_ColorCellRenderer};
+export {_SvgCellRenderer};

@@ -85,6 +85,16 @@ export const biologicsConfig: DBExplorerConfig = {
         'nonVariablePart': 'GROKEXP-',
         'regexpMarkup': 'GROKEXP-{d6}'
       }
+    },
+    'DG_BIOLOGICS_TARGET_ID': {
+      'table': 'targets',
+      'column': 'identifier',
+      'matchRegexp': 'GROKTGT-\\d{6}',
+      'regexpExample': {
+        'example': 'GROKTGT-000001',
+        'nonVariablePart': 'GROKTGT-',
+        'regexpMarkup': 'GROKTGT-{d6}'
+      }
     }
   },
   'joinOptions': [
@@ -108,10 +118,19 @@ export const biologicsConfig: DBExplorerConfig = {
       'tableName': 'assay_types',
       'onColumn': 'id',
       'select': ['name']
+    },
+    {
+      'fromTable': 'assay_results',
+      'columnName': 'target_id',
+      'tableName': 'targets',
+      'onColumn': 'id',
+      'select': ['name as target_name']
     }
   ],
   'headerNames': {
-    'smiles': 'Compound'
+    'linkers': 'linker_type',
+    'sequence_liabilities': 'liability_type',
+    'sequence_regions': 'region_type',
   },
   'uniqueColumns': {
     'adc': 'identifier',
@@ -122,6 +141,7 @@ export const biologicsConfig: DBExplorerConfig = {
     'purification_batches': 'identifier',
     'expression_batches': 'identifier',
     'peptides': 'identifier',
+    'targets': 'identifier',
   },
   'customSelectedColumns': {
     'adc': [

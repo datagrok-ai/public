@@ -4,7 +4,7 @@
 #input: string text {semType: text} [Statement where sentiments are expressed]
 #output: string sentiment [Detected sentiment]
 #output: double polarity [Polarity of expression]
-#tags: nlp, panel
+#meta.role: panel
 #reference: https://en.wikipedia.org/wiki/Sentiment_analysis
 
 from transformers import pipeline

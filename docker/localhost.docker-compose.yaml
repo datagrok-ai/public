@@ -49,7 +49,7 @@ services:
           "adminDevKey": "admin",
           "isolatesCount": 2,
           "connectorsSettings": {
-            "dataframeParsingMode":"New Process",
+            "dataframeParsingMode":"New Thread",
             "externalDataFrameCompress":true,
             "grokConnectHost":"grok_connect",
             "grokConnectPort":1234,

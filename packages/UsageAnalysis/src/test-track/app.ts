@@ -5,7 +5,6 @@ import dayjs from 'dayjs';
 
 import { colors, CRITICALFAIL, MINORFAIL, BLOCKFAIL, getIcon, getStatusIcon, PASSED, SKIPPED, Status, errorSeverityLevels, errorSeverityLevelJiraNames, TicketPriorityLevel as ticketPriorityLevel } from './utils';
 import { _package } from '../package';
-import { testViewer } from '@datagrok-libraries/utils/src/test';
 import { Subscription } from 'rxjs';
 import { testSchema } from '../test-analysis/sticky-meta-initialization';
 

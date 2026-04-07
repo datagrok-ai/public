@@ -6,7 +6,7 @@ import $ from 'cash-dom';
 let view: DG.TableView;
 let table: DG.DataFrame;
 
-const groupСomparisons = [
+const groupComparisons = [
   'Bar chart',
   'Radar',
   'Chord viewer',
@@ -71,6 +71,17 @@ const CHARTS_VIEWERS_TEST_DATA: {[key: string] : ViewersTestData} = {
   'Tree': {checkFunc: (table) => table.columns.toList().length >= 1, tooltip: 'Tree viewer needs at least 1 column'},
   'Word cloud': {checkFunc: (table) => table.columns.toList().filter((col) => col.type === DG.TYPE.STRING)
     .length >= 1, tooltip: 'Word cloud viewer needs at least 1 string column'},
+};
+
+const BIOCHEM_VIEWERS_TEST_DATA: {[key: string] : ViewersTestData} = {
+  'Chem Similarity Search': {checkFunc: (table) => table.columns.bySemType(DG.SEMTYPE.MOLECULE) !== null,
+    tooltip: 'Chem Similarity Search viewer needs at least 1 molecular column'},
+  'Chem Diversity Search': {checkFunc: (table) => table.columns.bySemType(DG.SEMTYPE.MOLECULE) !== null,
+    tooltip: 'Chem Diversity Search viewer needs at least 1 molecular column'},
+  'Sequence Similarity Search': {checkFunc: (table) => table.columns.bySemType(DG.SEMTYPE.MACROMOLECULE) !== null,
+    tooltip: 'Chem Similarity Search viewer needs at least 1 sequence column'},
+  'Sequence Diversity Search': {checkFunc: (table) => table.columns.bySemType(DG.SEMTYPE.MACROMOLECULE) !== null,
+    tooltip: 'Chem Diversity Search viewer needs at least 1 sequence column'},
 };
 
 const viewers: any = {};
@@ -168,13 +179,14 @@ export function viewersDialog(currentView: DG.TableView, currentTable: DG.DataFr
 
   getTotalViewer();
   setTabIndex(rootViewers);
-};
+}
+
 
 function getViewers(viewers: { [v: string]: { [k: string]: any } }, table: DG.DataFrame) {
   let viewerList = [];
 
   for (const value of Object.values(DG.CORE_VIEWER)) {
-    if (value !== 'Shape Map' && value !== DG.CORE_VIEWER.CONFUSION_MATRIX)
+    if (value !== 'Shape Map')
       viewerList.push(value);
   }
   viewerList.push('Column viewer');
@@ -194,7 +206,7 @@ function getViewers(viewers: { [v: string]: { [k: string]: any } }, table: DG.Da
         type: 'viewer',
       },
     });
-    if (groupСomparisons.includes(viewerList[i])) viewers[i]['group'] = 'Comparison';
+    if (groupComparisons.includes(viewerList[i])) viewers[i]['group'] = 'Comparison';
     else if (groupCorrelations.includes(viewerList[i])) viewers[i]['group'] = 'Correlation';
     else if (groupRelationships.includes(viewerList[i])) viewers[i]['group'] = 'Relationship';
     else if (groupTrends.includes(viewerList[i])) viewers[i]['group'] = 'Trend';
@@ -205,7 +217,7 @@ function getViewers(viewers: { [v: string]: { [k: string]: any } }, table: DG.Da
 
 function getJsViewers(jsViewers: { [v: string]: { [k: string]: any } }, table: DG.DataFrame) {
   const skip = ['TestViewerForProperties', 'OutliersSelectionViewer'];
-  const list = DG.Func.find({tags: ['viewer']}).filter((v) => !skip.includes(v.friendlyName));
+  const list = DG.Func.find({meta: {role: DG.FUNC_TYPES.VIEWER}}).filter((v) => !skip.includes(v.friendlyName));
   let i = 0;
   for (const v of list) {
     let isViewerEnabled = true;
@@ -217,7 +229,9 @@ function getJsViewers(jsViewers: { [v: string]: { [k: string]: any } }, table: D
       }
       else
         isViewerEnabled = false;
-    } else {
+    } else if ((v.package.name === 'Chem' || v.package.name === 'Bio') && BIOCHEM_VIEWERS_TEST_DATA[v.friendlyName])
+      isViewerEnabled = BIOCHEM_VIEWERS_TEST_DATA[v.friendlyName].checkFunc(table);
+    else {
       if (v.options['showInGallery'] === 'false')
         continue;
     }
@@ -226,7 +240,8 @@ function getJsViewers(jsViewers: { [v: string]: { [k: string]: any } }, table: D
         name: v.friendlyName,
         enabled: isViewerEnabled,
         tooltip: isViewerEnabled ? '' : CHARTS_VIEWERS_TEST_DATA[v.friendlyName] ?
-          CHARTS_VIEWERS_TEST_DATA[v.friendlyName].tooltip : 'Viewer cannot be created from viewer gallery',
+          CHARTS_VIEWERS_TEST_DATA[v.friendlyName].tooltip : BIOCHEM_VIEWERS_TEST_DATA[v.friendlyName] ?
+          BIOCHEM_VIEWERS_TEST_DATA[v.friendlyName].tooltip : 'Viewer cannot be created from viewer gallery',
         icon: (v.options['icon'] != undefined) ? `${v.package.webRoot.endsWith('/') ?
           v.package.webRoot : v.package.webRoot + '/'}${v.options['icon']}` : 'svg-project',
         description: v.description,
@@ -236,7 +251,7 @@ function getJsViewers(jsViewers: { [v: string]: { [k: string]: any } }, table: D
         type: 'js-viewer',
       },
     });
-    if (groupСomparisons.includes(v.friendlyName)) jsViewers[i]['group'] = 'Comparison';
+    if (groupComparisons.includes(v.friendlyName)) jsViewers[i]['group'] = 'Comparison';
     else if (groupCorrelations.includes(v.friendlyName)) jsViewers[i]['group'] = 'Correlation';
     else if (groupRelationships.includes(v.friendlyName)) jsViewers[i]['group'] = 'Relationship';
     else if (groupTrends.includes(v.friendlyName)) jsViewers[i]['group'] = 'Trend';

@@ -13,8 +13,8 @@ Click on the _keyboard_arrow_down_ icon to access the following commands:
 
 * Extract keys
 
-Click on the _history_ icon to choose parameters based on you previous actions. Note that only parameters applicable to
-the current dataset will be shown in the menu.
+Click the _history_ icon to choose parameters based on your previous actions. Note that only parameters applicable to
+the current dataset are shown in the menu.
 
 See also:
 

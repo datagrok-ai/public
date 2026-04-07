@@ -380,14 +380,14 @@ export class Utils {
       // df: resultDF?.toJson()
     };
   }
-  
+
   /**
    * Detects natural hierarchy in the list of categorical columns based on their values.
    * Mind that the function can be n^2 in the worst case scenario, although in most cases, it is quite fast
    * as it exits early if missmatch is found.
    * @param columns - List of columns to detect hierarchy in.
    * @param maxDepth - Maximum depth of the hierarchy to detect.
-   * @returns 
+   * @returns
    */
   static detectColumnHierarchy(columns: Column[], maxDepth: number = 3): string[] {
     return api.grok_Utils_DetectColumnHierarchy(columns.map((c) => c.dart), maxDepth);
@@ -721,6 +721,30 @@ export namespace Test {
 
   export async function testViewer(viewerType: ViewerType) {
     await api.grok_Test_RunViewerTest(viewerType);
+  }
+}
+
+export namespace ClickUtils {
+  /// Returns a DataFrame with aggregated click data.
+  /// `UsageAnalysis` package should be installed.
+  export async function getAggregatedClicks(): Promise<DataFrame> {
+    return await grok.data.query('UsageAnalysis:GetAggregatedClicks', {});
+  }
+
+  export function getFullPath(x: Element): string {
+    return api.grok_ClickUtils_GetFullPath(x);
+  }
+
+  export function getElementLoggingName(x: Element): string {
+    return api.grok_ClickUtils_GetElementLoggingName(x);
+  }
+
+  export function getClickElementDescription(x: Element): string {
+    return api.grok_ClickUtils_GetClickElementDescription(x);
+  }
+
+  export function sanitizeCssAttrValue(value: string): string {
+    return api.grok_ClickUtils_SanitizeCssAttrValue(value);
   }
 }
 

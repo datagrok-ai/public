@@ -1,5 +1,36 @@
 # Charts changelog
 
+## 1.7.0 (2026-03-20)
+
+### Features
+
+* Charts: Radar: Added legend
+
+### Bug Fixes
+
+* Charts: Timelines: Fixed legend color changes not reflected on chart
+* GROK-15543: Charts | Sunburst: Does not support collaborative filtering
+* GROK-18321: Charts | Tree viewer: Broken molecular label for radial layout
+
+## 1.6.2 (2026-02-06)
+
+### Features
+
+* Charts: Sankey: Add support for color-coding nodes and links
+
+### Bug Fixes
+
+* GROK-19376: Projects: errors for opening data with radar viewer
+* [3221](https://github.com/datagrok-ai/public/issues/3221): Charts | Tree: Add configuration to hide overlapping labels
+* GROK-19226: Charts | Tree: Failed to load saved layout with attached tree viewer
+* GROK-19095: Charts | Radar: Trigger the label formatter when resizing
+* GROK-19097, GROK-19098: Charts: Chord: Row Source works incorrectly for some values
+* GROK-17788: Globe viewer: Doesn't react on filtering when rowSource = Filter
+* GROK-13833: Charts | Chord: Should respond on selecting groups
+* GROK-18757: Charts: Radar: Improve column label visualization to prevent their cutting
+* GROK-19035: Charts | Timelines: Range slider breaks in some cases
+
+
 ## 1.6.0 (2025-07-28)
 
 ### Bug Fixes

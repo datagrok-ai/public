@@ -2,7 +2,7 @@
 title: "Creating a package"
 ---
 
-This documents explains how to create a simple package that contains an
+This document explains how to create a simple package that contains an
 [info panel](../ui/add-info-panel.md) displaying some simple statistics for a text in a selected grid cell.
 
 ## 1. Create a package
@@ -81,8 +81,8 @@ Now go to Datagrok and open any data file with string columns. This could be a `
 Find any text column, right-click on it, pick `Column Properties`, then add a tag: `quality : text`. This tag tells
 Datagrok that there is a plain text stored inside this column. Navigate to a text cell and find your freshly added panel
 with text stats on the right side of Datagrok UI. Note, that semantic type `text` of a column matches `{semType: text}`
-in function parameter declaration. Datagrok also can detect semantic types automatically, or with help
-of [Detectors](../functions/define-semantic-type-detectors.md) .
+in function parameter declaration. Datagrok can also detect semantic types automatically or with the help
+of [Detectors](../functions/define-semantic-type-detectors.md).
 
 We have completed the deployment. Let's navigate to `Manage | Packages` and find your package in the list. Note it has
 your name prefixed with a `v.`, which means it's only published for you. This is called a Debug mode. To make it

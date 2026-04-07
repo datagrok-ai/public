@@ -15,12 +15,8 @@ module.exports = {
     package: './src/package.ts',
   },
   resolve: {
-    extensions: ['.wasm', '.mjs', '.ts', '.json', '.js', '.tsx'],
-    plugins: [
-      new TsconfigPathsPlugin({
-        configFile: path.resolve(__dirname, 'tsconfig.json'),
-      }),
-    ],
+    symlinks: false,
+    extensions: ['.wasm', '.mjs', '.js', '.json', '.ts', '.tsx'],
   },
   module: {
     rules: [

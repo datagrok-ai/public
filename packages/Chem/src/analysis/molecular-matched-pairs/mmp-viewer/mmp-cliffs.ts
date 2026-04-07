@@ -90,12 +90,13 @@ export function fillPairInfo(mmpa: MMPA, pairIdx: number, pairsDf: DG.DataFrame,
   const fromIdx = pairsDf.get(MMP_NAMES.PAIRNUM_FROM, pairIdx);
   const toIdx = pairsDf.get(MMP_NAMES.PAIRNUM_TO, pairIdx);
 
-  const div = activityNum == undefined ? ui.divH([]) : ui.divV([]);
+  const div = activityNum == undefined ? ui.divH([], {style: {flexWrap: 'wrap'}}) : ui.divV([]);
   let moleculesDiv: HTMLDivElement | null = null;
   let contextPaneMolDivs: HTMLDivElement[] | null = null;
   if (activityNum == undefined) {
     contextPaneMolDivs = [ui.div(ui.divText(`Loading...`)), ui.div(ui.divText(`Loading...`))];
-    const headers = ui.divV([], 'chem-mmp-context-pane-headers');
+    const headers1 = ui.divV([], 'chem-mmp-context-pane-headers');
+    const headers2 = ui.divV([], 'chem-mmp-context-pane-headers');
     const mol1Div = ui.divV([]);
     const mol2Div = ui.divV([]);
     const grid = grok.shell.tableView(parentTable.name)?.grid;
@@ -103,22 +104,27 @@ export function fillPairInfo(mmpa: MMPA, pairIdx: number, pairsDf: DG.DataFrame,
       .filter((name) => !name.startsWith('~'));
     for (const colName of propertiesColumnsNames) {
       if (colName === molColName) {
-        const molColHeader = ui.div(ui.divText(colName, 'chem-mmp-context-pane-item'),
+        const molColHeader1 = ui.div(ui.divText(colName, 'chem-mmp-context-pane-item'),
           {style: {height: `${MOL_CANVAS_HEIGHT}px`}});
-        molColHeader.classList.add('chem-mmp-context-pane-mol-header');
-        headers.append(molColHeader);
+        molColHeader1.classList.add('chem-mmp-context-pane-mol-header');
+        headers1.append(molColHeader1);
+        const molColHeader2 = ui.div(ui.divText(colName, 'chem-mmp-context-pane-item'),
+          {style: {height: `${MOL_CANVAS_HEIGHT}px`}});
+        molColHeader2.classList.add('chem-mmp-context-pane-mol-header');
+        headers2.append(molColHeader2);
         mol1Div.append(contextPaneMolDivs[0]);
         mol2Div.append(contextPaneMolDivs[1]);
       } else {
         if (grid) {
-          headers.append(ui.divText(colName, 'chem-mmp-context-pane-item'));
+          headers1.append(ui.divText(colName, 'chem-mmp-context-pane-item'));
+          headers2.append(ui.divText(colName, 'chem-mmp-context-pane-item'));
           setContextPanelValue(colName, fromIdx, parentTable, grid, mol1Div);
           setContextPanelValue(colName, toIdx, parentTable, grid, mol2Div);
         } else
           grok.shell.error('Parent grid not found');
       }
     }
-    div.append(headers, mol1Div, mol2Div);
+    div.append(ui.divH([headers1, mol1Div]), ui.divH([headers2, mol2Div]));
   } else {
     $(div).css({'width': '100%', 'height': '100%'});
     moleculesDiv = ui.divH([]);

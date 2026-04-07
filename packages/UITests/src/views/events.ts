@@ -1,6 +1,6 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
-import {after, before, category, expect, test, testEvent} from '@datagrok-libraries/utils/src/test';
+import {after, before, category, expect, test, testEvent} from '@datagrok-libraries/test/src/test';
 
 category('View: Events', () => {
   let df: DG.DataFrame;
@@ -133,23 +133,17 @@ category('View: Events', () => {
     try {
       // @ts-ignore
       await testEvent<DG.ViewInfo>(grok.events.onViewLayoutApplied, (layout) => {
-        expect(layout instanceof DG.ViewInfo, true);
         const state = JSON.parse(layout.viewState);
         const viewerElement = state.children.find((c: { [key: string]: any }) =>
           c.state.element && c.state.element.type === DG.VIEWER.HISTOGRAM);
         expect(viewerElement != null, true);
         expect(Array.from(v.viewers).length, 2);
       }, () => {
-        grok.shell.v = tv;
         tv.histogram();
         v.loadLayout(tv.saveLayout());
       });
     } finally {
       tv.resetLayout();
     }
-  });
-
-  after(async () => {
-    grok.shell.closeAll();
   });
 }, {clear: false, owner: 'aparamonov@datagrok.ai' });

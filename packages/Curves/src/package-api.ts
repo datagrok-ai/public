@@ -55,7 +55,32 @@ export namespace funcs {
     return await grok.functions.call('Curves:AddAggrStatisticsColumn', { table, colName, propName, aggrType });
   }
 
-  export async function rawPNGRenderer(): Promise<any> {
-    return await grok.functions.call('Curves:RawPNGRenderer', {});
+  /**
+  Returns XML 3DX curve converter function
+  */
+  export async function convertXmlCurveToJsonFunc(): Promise<any> {
+    return await grok.functions.call('Curves:ConvertXmlCurveToJsonFunc', {});
+  }
+
+  /**
+  Returns compact dose-response JSON converter function
+  */
+  export async function convertCompactDrToJsonFunc(): Promise<any> {
+    return await grok.functions.call('Curves:ConvertCompactDrToJsonFunc', {});
+  }
+
+  /**
+  Returns PZFX curve converter function
+  */
+  export async function convertPzfxToJsonFunc(): Promise<any> {
+    return await grok.functions.call('Curves:ConvertPzfxToJsonFunc', {});
+  }
+
+  export async function previewPzfx(file: DG.FileInfo ): Promise<DG.View> {
+    return await grok.functions.call('Curves:PreviewPzfx', { file });
+  }
+
+  export async function pzfxFileHandler(bytes: any ): Promise<any> {
+    return await grok.functions.call('Curves:PzfxFileHandler', { bytes });
   }
 }

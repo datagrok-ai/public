@@ -1,4 +1,4 @@
-// Style-related context commands: https://datagrok.ai/help/visualize/viewers/#common-actions
+// Style-related context commands - https://datagrok.ai/help/visualize/viewers/#common-actions
 
 const df = grok.data.demo.demog();
 const view = grok.shell.addTableView(df);

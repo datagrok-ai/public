@@ -131,7 +131,7 @@ export function fromFeather(bytes: Uint8Array): DG.DataFrame | null {
         break;
       case arrow.Type.Bool:
         if (ArrayBuffer.isView(values))
-          columns.push(DG.Column.fromBitSet(name, DG.BitSet.fromBytes(values.buffer, table.numRows)));
+          columns.push(DG.Column.fromBitSet(name, DG.BitSet.fromBytes(values.buffer as ArrayBuffer, table.numRows)));
         else
           columns.push(DG.Column.fromList(DG.COLUMN_TYPE.BOOL as DG.ColumnType, name, values));
         break;

@@ -57,3 +57,4 @@ The sunburst will only reflect selections from other viewers when all data point
 
 * [Viewers](../viewers/viewers.md)
 * [Pie Chart](pie-chart.md)
+* [Community: Visualization-related updates](https://community.datagrok.ai/t/visualization-related-updates/521)

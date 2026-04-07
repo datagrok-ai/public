@@ -2,7 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import dayjs from 'dayjs';
 import {awaitCheck, before, category, expect, expectArray, expectFloat,
-  expectObject, isDialogPresent, test, delay} from '@datagrok-libraries/utils/src/test';
+  expectObject, isDialogPresent, test, delay} from '@datagrok-libraries/test/src/test';
 import {FUNC_TESTS} from '../functions/utils';
 
 category('DataFrame', () => {

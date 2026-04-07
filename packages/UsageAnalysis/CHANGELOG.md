@@ -1,11 +1,48 @@
 # Usage Analysis changelog
 
+## 2.5.0 (2026-03-20)
 
-# 2.3.2 (2025-03-24)
+### Features
+
+* GROK-18787: Click Tracking:
+  * Added Clicks tab
+  * Added tab control for Click Analysis and Specific Clicks
+  * Added elements inspect
+* [#3213](https://github.com/datagrok-ai/public/issues/3213): Introduced Projects tab
+* Improved query performance, load time, and projects tab
+* Reports: Added descending ordering by creation date in widget
+* Reports: Truncated long text in widget
+* Improved ticket loading with bulk method and background processing
+* Decreased bundle size by removing unnecessary test library usages
+* [#3604](https://github.com/datagrok-ai/public/issues/3604): Migrated tags to roles
+
+### Bug Fixes
+
+* GROK-19855: Reporting app now loads reports when opened by URL with report number
+* GROK-19523: AppTreeBrowser decorator now finds the app properly
+* GROK-19504: Invalid datagrok-api imports corrected
+
+## 2.4.2 (2025-09-26)
+
+* Test Track: Added advanced test case for visual query
+* Reports: Fixed not visible add rule button
+* TestTrack: Removed manual test that have autotest
+* GROK-18772: ManualTests Dashboard: Unable to parse string "Test Track:test" when trying to "Run" test
+* Test Track: updated and refined test cases for Projects (added Spaces)
+* Tests: Added warning about missing packages tests
+* Update Autocomplete.md
+* Update Formula Refreshing.md
+* GROK-17332: Removed unused queries
+* Table name change
+* Test Track: Line chart: Added context menu for test cases
+* GROK-18366 Usage analysis: Log: an error occurs when opening the tab
+* UsageAnalysis: Api: naming fixes
+
+## 2.3.2 (2025-03-24)
 
 * Tests Dashboards: improvements for gathering of benchmarks
 
-# 2.3.1 (2025-03-13)
+## 2.3.1 (2025-03-13)
 
 * Dependency: datagarok-api >= 1.24.0*
 
@@ -14,7 +51,7 @@
 * Tests Dashboards: improvements and bug fixes
 * Stress tests dashboards revisited 
 
-# 2.3.0 (2025-02-18)
+## 2.3.0 (2025-02-18)
 
 * Dependency: datagarok-api >= 1.24.0*
 
@@ -25,21 +62,21 @@
 * Improvements in usage queries and bug fixes
 * Tests Dashboard
 
-# 2.2.1 (2024-12-03)
+## 2.2.1 (2024-12-03)
 
 * Dependency: datagarok-api >= 1.22.0*
 
-## Features:
+### Features:
 
 * Added detector for tests tables
 * Updated test track business logic
 * Added test cases to Test Track app 
 
-# 2.2.0 (2024-10-24)
+## 2.2.0 (2024-10-24)
 
 * Dependency: datagarok-api >= 1.22.0*
 
-## Features:
+### Features:
 
 * Reporting: Better subscriptions handling
 * Service logs app: Application that gives possibility to see logs of different services within Datagrok infrastructure.

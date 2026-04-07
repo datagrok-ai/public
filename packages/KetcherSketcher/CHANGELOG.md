@@ -1,5 +1,18 @@
 # Ketcher Sketcher changelog
 
+## 2.4.1 (2026-03-18)
+
+* Updated ketcher libraries up to 3.12.0
+
+## 2.4.0 (2026-03-16)
+
+* [#3459](https://github.com/datagrok-ai/public/issues/3459): Ketcher: fix cropping sketcher on last grid column
+* Ketcher: OG Smiles handling
+
+## 2.3.0 (2025-03-29)
+
+* Standardized plugin name to title case in README and changelog
+
 ## 2.2.3 (2025-01-14)
 
 * Some additional styles fixes

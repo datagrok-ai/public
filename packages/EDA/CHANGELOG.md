@@ -1,5 +1,26 @@
 # EDA changelog
 
+## 1.5.1 (2026-03-27)
+
+Add formula for prediction in multivariate analysis
+
+## 1.5.0 (2026-03-13)
+
+Probabilistic Multi-Parameter Optimization (pMPO) - Enhancements
+
+* Added support for both numeric and categorical desirability columns
+* Introduced automatic parameter tuning for streamlined configuration
+* Added option to run pMPO without sigmoidal correction
+* New ROC curve and confusion matrix visualizations for model evaluation
+* Expanded correctness test coverage
+
+## 1.4.12 (2026-01-16)
+
+Implemented
+
+* Interactive app for training probabilistic multi-parameter optimization (pMPO) models
+* Export pMPO models to MPO desirability profiles
+
 ## 1.4.11 (2025-11-21)
 
 Implemented

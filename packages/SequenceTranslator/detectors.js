@@ -9,6 +9,7 @@
 
 class SequenceTranslatorPackageDetectors extends DG.Package {
   //name: autostart
+  //meta.role: autostart
   //tags: autostart
   //description: SequenceTranslator bootstrap
   autostart() {
@@ -56,7 +57,7 @@ class SequenceTranslatorPackageDetectors extends DG.Package {
     });
   }
 
-  // //tags: semTypeDetector
+  // //meta.role: semTypeDetector
   // //input: column col
   // //output: string semType
   // detectHarmonizedSequence(col) {
@@ -66,6 +67,7 @@ class SequenceTranslatorPackageDetectors extends DG.Package {
 
 
   //name: refineNotationProviderForHarmonizedSequence
+  //meta.role: notationRefiner
   //tags: notationRefiner
   //input: column col
   //input: object stats

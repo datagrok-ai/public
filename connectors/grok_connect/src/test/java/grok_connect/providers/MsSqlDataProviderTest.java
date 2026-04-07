@@ -43,6 +43,16 @@ class MsSqlDataProviderTest extends ContainerizedProviderBaseTest {
         System.out.println(container.getJdbcUrl());
     }
 
+    @DisplayName("Test of getCatalogs() method with correct DataConnection")
+    @Test
+    public void getCatalogs_ok() {
+        DataFrame actual = Assertions.assertDoesNotThrow(() -> provider.getCatalogs(connection));
+        Assertions.assertNotNull(actual);
+        Assertions.assertEquals(1, actual.getColumnCount());
+        Assertions.assertEquals("catalog_name", actual.getColumn(0).getName());
+        Assertions.assertTrue(actual.rowCount > 0);
+    }
+
     @DisplayName("Test of getSchemas() method with correct DataConnection")
     @ParameterizedTest(name = "CORRECT ARGUMENTS")
     @MethodSource("grok_connect.providers.arguments_provider.MsSqlObjectsMother#getSchemas_ok")
@@ -191,6 +201,6 @@ class MsSqlDataProviderTest extends ContainerizedProviderBaseTest {
 
     private void prepareDataFrame(DataFrame dataFrame) {
         // in order to save time reuse some common's
-        dataFrame.columns.removeIf(column -> column.name.equals("bool")); // mssql doesn't have boolean type
+        dataFrame.removeColumn("bool"); // mssql doesn't have boolean type
     }
 }

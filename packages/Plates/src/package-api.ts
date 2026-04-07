@@ -130,10 +130,6 @@ export namespace queries {
 }
 
 export namespace funcs {
-  export async function autostart(): Promise<void> {
-    return await grok.functions.call('Plates:Autostart', {});
-  }
-
   /**
   Assasy plates with concentration, layout and readout data
   */
@@ -197,10 +193,6 @@ export namespace funcs {
 
   export async function createDummyPlateData(): Promise<void> {
     return await grok.functions.call('Plates:CreateDummyPlateData', {});
-  }
-
-  export async function init(): Promise<void> {
-    return await grok.functions.call('Plates:Init', {});
   }
 
   export async function plateGridCellRenderer(): Promise<any> {

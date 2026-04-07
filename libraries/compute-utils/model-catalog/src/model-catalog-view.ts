@@ -1,7 +1,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {ModelHandler} from './model-handler';
+import {ModelHandler, MODEL_FILTER} from './model-handler';
 import wu from 'wu';
 import '../css/model-card.css';
 
@@ -42,12 +42,12 @@ export class ModelCatalogView extends DG.CustomCardView {
   constructor(
     viewName: string,
   ) {
-    super({dataSource: grok.dapi.functions, permanentFilter: '#model'});
+    super({dataSource: grok.dapi.functions, permanentFilter: MODEL_FILTER});
 
     this.root.classList.add('model-catalog-view');
     this.meta = new ModelHandler();
     this.name = viewName;
-    this.permanentFilter = '#model';
+    this.permanentFilter = MODEL_FILTER;
     this.renderMode = DG.RENDER_MODE.BRIEF;
 
     // Smth is wrong with custom methods after getting an instance via grok.shell.views

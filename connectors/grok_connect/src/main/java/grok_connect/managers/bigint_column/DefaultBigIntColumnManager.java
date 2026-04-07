@@ -37,12 +37,7 @@ public class DefaultBigIntColumnManager implements ColumnManager<String> {
     }
 
     @Override
-    public Column getColumn() {
-        return new BigIntColumn();
-    }
-
-    @Override
-    public Column getColumn(int initColumnSize) {
-        return new BigIntColumn(initColumnSize);
+    public Column<?> getColumn(String name, int initColumnSize) {
+        return new BigIntColumn(name, initColumnSize);
     }
 }

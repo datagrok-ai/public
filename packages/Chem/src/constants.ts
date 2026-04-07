@@ -1,4 +1,4 @@
-import { Fingerprint } from "./utils/chem-common";
+import {Fingerprint} from './utils/chem-common';
 
 export const V2000_ATOM_NAME_POS = 30;
 export const V2000_ATOM_NAME_LEN = 3;
@@ -33,16 +33,38 @@ export const getTerminateEventName =
   (tableName: string, colName: string) => `${TERMINATE_SEARCH}-${tableName}-${colName}`;
 export const getSearchProgressEventName =
   (tableName: string, colName: string) => `${SUBSTRUCTURE_SEARCH_PROGRESS}-${tableName}-${colName}`;
-export const getSearchQueryAndType = (molecule: string | null, type: string, fp: string, similarity: number) =>
-  molecule ? type !== SubstructureSearchType.IS_SIMILAR ? `${molecule}_${type}` : `${molecule}_${type}_${fp}_${similarity}` : '';
+export const getSearchQueryAndType = (molecule: string | null, type: string, fp: string, similarity: number,
+  stereoAgnostic = false) =>
+  molecule ? type !== SubstructureSearchType.IS_SIMILAR ?
+    `${molecule}_${type}${stereoAgnostic ? '_stereoAgnostic' : ''}` :
+    `${molecule}_${type}_${fp}_${similarity}` : '';
 export const FILTER_SCAFFOLD_TAG = 'chem-scaffold-filter';
 export const ALIGN_BY_SCAFFOLD_TAG = '.chem-scaffold-align'; // todo: Remove this tag in future, should be replaced with ALIGN_BY_SCAFFOLD_LAYOUT_PERSISTED_TAG
 export const ALIGN_BY_SCAFFOLD_LAYOUT_PERSISTED_TAG = '.%chem-scaffold-align';
+export const FIXED_SCALE_TAG = '.%chem-fixed-scale';
 export const HIGHLIGHT_BY_SCAFFOLD_TAG = '.%chem-scaffold-highlight';
 export const SCAFFOLD_COL = 'scaffold-col';
+export const SCAFFOLD_COL_SYNC = '%scaffold-col';
 export const PARENT_MOL_COL = 'parent-mol-col';
 export const HIGHLIGHT_BY_SCAFFOLD_COL = 'highlight-scaffold-col';
+export const HIGHLIGHT_BY_SCAFFOLD_COL_SYNC = '%highlight-scaffold-col';
 export const REGENERATE_COORDS = 'regenerate-coords';
+export const REGENERATE_COORDS_SYNC = '%regenerate-coords';
+
+/** Gets a synced (.%) tag with fallback to the old tag and temp. */
+export function getSyncTag(col: {tags: Record<string, string>,
+  temp?: Record<string, string>}, syncTag: string, tag: string): string | null {
+  return col.tags[syncTag] ?? col.tags[tag] ?? col.temp?.[tag] ?? null;
+}
+
+/** Sets the synced (.%) tag and removes the old one. */
+export function setSyncTag(col: {tags: Record<string, string>},
+  syncTag: string, tag: string, value: string | null): void {
+  col.tags[syncTag] = value!;
+  if (col.tags[tag])
+    delete col.tags[tag];
+}
+
 export const MALFORMED_DATA_WARNING_CLASS = 'malformed-data-warning';
 export enum SubstructureSearchType {
   EXACT_MATCH = 'Exact',
@@ -57,3 +79,6 @@ export const AVAILABLE_FPS = [Fingerprint.Morgan, Fingerprint.AtomPair, Fingerpr
   Fingerprint.RDKit, Fingerprint.TopologicalTorsion];
 export const SCAFFOLD_TREE_HIGHLIGHT = '.chem-scaffold-tree-highlight';
 export const CHEM_APPLY_FILTER_SYNC = '.chem-apply-filter-sync';
+
+export const CHEM_SPACE_EMBEDDING_COL = '.%chem-space-embedding-col';
+export const CHEM_SPACE_CLUSTER_COL = '.%chem-space-cluster-col';

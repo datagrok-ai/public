@@ -91,6 +91,13 @@ export namespace scripts {
   }
 
   /**
+  Returns the last element of a string list
+  */
+  export async function juliaListStringTest(string_list: any ): Promise<string> {
+    return await grok.functions.call('CVMTests:JuliaListStringTest', { string_list });
+  }
+
+  /**
   map input/output
   */
   export async function juliaMap(input_map: any , unique_key: string ): Promise<any> {
@@ -179,6 +186,13 @@ export namespace scripts {
   }
 
   /**
+  Returns the last element of a string list
+  */
+  export async function octaveListStringTest(string_list: any ): Promise<string> {
+    return await grok.functions.call('CVMTests:OctaveListStringTest', { string_list });
+  }
+
+  /**
   map input/output
   */
   export async function octaveMap(input_map: any , unique_key: string ): Promise<any> {
@@ -264,6 +278,48 @@ export namespace scripts {
   }
 
   /**
+  Environment with extra conda-only dependencies beyond base
+  */
+  export async function pythonEnvCondaExtras(text: string ): Promise<string> {
+    return await grok.functions.call('CVMTests:PythonEnvCondaExtras', { text });
+  }
+
+  /**
+  Environment with both conda extras and pip packages
+  */
+  export async function pythonEnvMixedDeps(data: string ): Promise<string> {
+    return await grok.functions.call('CVMTests:PythonEnvMixedDeps', { data });
+  }
+
+  /**
+  Verifies numpy ABI compatibility when pip packages depend on numpy
+  */
+  export async function pythonEnvNumpyCompat(rows: number ): Promise<number> {
+    return await grok.functions.call('CVMTests:PythonEnvNumpyCompat', { rows });
+  }
+
+  /**
+  Environment with pip-only extra dependencies
+  */
+  export async function pythonEnvPipOnly(text: string ): Promise<string> {
+    return await grok.functions.call('CVMTests:PythonEnvPipOnly', { text });
+  }
+
+  /**
+  Environment with Python 3.12 template
+  */
+  export async function pythonEnvPy312(text: string ): Promise<string> {
+    return await grok.functions.call('CVMTests:PythonEnvPy312', { text });
+  }
+
+  /**
+  Tests that existing environment is correctly detected and reused
+  */
+  export async function pythonEnvReuse(text: string ): Promise<string> {
+    return await grok.functions.call('CVMTests:PythonEnvReuse', { text });
+  }
+
+  /**
   anchors count in html
   */
   export async function pythonAnchorsCount(html: string ): Promise<number> {
@@ -303,6 +359,13 @@ export namespace scripts {
   */
   export async function pythonSimple(integer_input: number , double_input: number , bool_input: boolean , string_input: string ): Promise<{integer_output: number, double_output: number, bool_output: boolean, string_output: string}> {
     return await grok.functions.call('CVMTests:PythonSimple', { integer_input, double_input, bool_input, string_input });
+  }
+
+  /**
+  Returns the last element of a string list
+  */
+  export async function pythonListStringTest(string_list: any ): Promise<string> {
+    return await grok.functions.call('CVMTests:PythonListStringTest', { string_list });
   }
 
   /**
@@ -384,6 +447,20 @@ export namespace scripts {
   }
 
   /**
+  reverse a string using stringi from a custom env
+  */
+  export async function rEnvStringReverse(input_string: string ): Promise<string> {
+    return await grok.functions.call('CVMTests:REnvStringReverse', { input_string });
+  }
+
+  /**
+  reverse a string using stringi from a yaml env file
+  */
+  export async function rEnvFileStringReverse(input_string: string ): Promise<string> {
+    return await grok.functions.call('CVMTests:REnvFileStringReverse', { input_string });
+  }
+
+  /**
   file lines count
   */
   export async function rLinesCount(file: DG.FileInfo , header: boolean , separator: string , dec: string ): Promise<number> {
@@ -405,6 +482,20 @@ export namespace scripts {
   }
 
   /**
+  Returns the last element of a string list
+  */
+  export async function rListStringTest(string_list: any ): Promise<string> {
+    return await grok.functions.call('CVMTests:RListStringTest', { string_list });
+  }
+
+  /**
+  map input/output
+  */
+  export async function rMap(input_map: any , unique_key: string ): Promise<any> {
+    return await grok.functions.call('CVMTests:RMap', { input_map, unique_key });
+  }
+
+  /**
   df performance
   */
   export async function rSingleDf(df: DG.DataFrame ): Promise<DG.DataFrame> {
@@ -417,6 +508,10 @@ export namespace scripts {
 }
 
 export namespace funcs {
+  export async function getColumn(table: DG.DataFrame , columnName: string ): Promise<DG.Column> {
+    return await grok.functions.call('CVMTests:GetColumn', { table, columnName });
+  }
+
   export async function info(): Promise<void> {
     return await grok.functions.call('CVMTests:Info', {});
   }

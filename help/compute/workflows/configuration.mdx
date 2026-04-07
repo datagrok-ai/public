@@ -3,14 +3,14 @@ title: "Configuration"
 sidebar_position: 1
 ---
 
-In this section the configuration object is described in depth.
+This section describes the configuration object in depth.
 
 ### Workflow providers
 
-There is an example of a minimal workflow package setup
+An example of a minimal workflow package setup is available
 [here](examples).
-To register a workflow, a package
-function (called a provider), with at least these annotations is needed:
+To register a workflow, create a package
+function (called a provider) with at least these annotations:
 ```
 //tags: model
 //editor: Compute2:TreeWizardEditor
@@ -135,7 +135,7 @@ used in links the same way as scripts inputs/outputs.
 
 _Optional_
 
-A list of strings. The primary use case if for annotating that a
+A list of strings. The primary use case is for annotating that a
 step/workflow has a certain structural invariant, like the interface
 concept in programming. Could be matched in
 [links](./links-spec.mdx#tag-selectors).
@@ -162,7 +162,7 @@ buttons. By default non-empty workflows views will be skipped.
 
 _Optional_
 
-Disables workflow history, usefull for nested workflow with nqName set
+Disables workflow history, useful for nested workflows with nqName set
 to an empty function with a help file.
 
 #### `customExports`
@@ -170,15 +170,24 @@ to an empty function with a help file.
 _Optional_
 
 An array of items, with `id`, `friendlyName` and `handler`, used to
-defined custom exports for workflow data. Handler here is an async
-function that receives `PipelineState` and `ExportUtils` arguments.
+define custom exports for workflow data. Handler here is an async
+function that receives `PipelineState` and `ExportUtils`
+arguments. More information is available [here](#custom-exports)
+
+#### `disableDefaultExport`
+
+_Optional_
+
+Disables the default export, custom exports if provided still can be
+used.
+
 
 ### Static workflows
 
 #### `steps`
 
 Is an array of nested `PipelineConfiguration` items or [script
-node](#script-nodes) . Each item must have an unique
+node](#script-nodes) . Each item must have a unique
 id. This array defines an immutable sequence of steps, but if nested
 workflows are dynamic, those could be internally mutated.
 
@@ -187,7 +196,7 @@ workflows are dynamic, those could be internally mutated.
 #### `stepTypes`
 
 Is an array of nested `PipelineConfiguration` items or [script
-node](#script-nodes) . Each item must have an unique id. There are
+node](#script-nodes) . Each item must have a unique id. There are
 additional [options](#additional-steptypes-items-options) per each
 item. Users might add/remove/reorder items from this list during the
 workflow.
@@ -201,10 +210,9 @@ Is an array of initial steps. Each item is a reference to a
 
 ### Additional stepTypes items options
 
-For [dynamic workflows](#dynamic-workflows), the `stepTypes` array has additional
-options available that limit a user's ability to alter the
-workflow.
-If more validation logic is needed, a
+For [dynamic workflows](#dynamic-workflows), the `stepTypes` array has
+additional options available that limit a user's ability to alter the
+workflow.  If more validation logic is needed, a
 [structureCheck](#structurecheck) can be used.
 
 #### `disableUIAdding`
@@ -224,6 +232,12 @@ This dynamic item type cannot be removed from the UI.
 _Optional_
 
 This dynamic item type cannot be dragged from the UI.
+
+#### `disableUIControlls`
+
+_Optional_
+
+Disables all of the above.
 
 
 ### Script nodes
@@ -324,7 +338,7 @@ function.
 
 ### Workflow versioning
 
-There are might be multiple workflow versions available, so to allow a
+There may be multiple workflow versions available, so to allow a
 user to launch different workflow versions directly, the following
 [provider](#workflow-providers) function annotation could be used.
 
@@ -347,3 +361,44 @@ specific version workflow data is available.
 When creating a new workflow version, all dependent workflows that need to use
 the updated dependency must also release new versions.
 This ensures proper version compatibility across the workflow ecosystem.
+
+
+### Custom exports
+
+A custom export function receives two arguments
+
+* `treeState` of type `PipelineState`
+* `utils` of type `ExportUtils`
+
+Export utils contain 4 methods that could reuse standard existing
+export logic:
+
+* `reportFuncCallExcel` - creates a standard xlsx blob and exceljs
+  workbook for function call, returns [Blob, ExcelJS.Workbook].
+* `getFuncCallCustomExports` - returns a list of custom exports
+  defined specifically for a particular Func, returns string[].
+* `runFuncCallCustomExport` - runs a custom export defined on a Func
+  based on export name. Returns whatever a custom export returned.
+* `reportStateExcel` - creates a standard xlsx tree export, however
+  for each call an optional callback will be called (if
+  provided). Returns [Blob, Zippable, string], where 3rd is the name
+  of a file.
+
+
+The callback in `reportStateExcel` receives an object with the following
+fields:
+
+*  fc: `DG.FuncCall`
+*  wb: `ExcelJS.Workbook`
+*  archive: `Zippable`
+*  path: `string[]`
+*  fileName: `string`
+*  isOutputOutdated?: `boolean`
+*  runError?:` string`
+*  validation?: `Record<string, ValidationResult>`
+*  consistency?: `Record<string, ConsistencyInfo>`
+*  description?: `Record<string, string | string[]>`
+
+This allows to reuse most of the tree export logic, however individual
+exceljs workbooks could be customized or replaced/augmented with a
+different file.

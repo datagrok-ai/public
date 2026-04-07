@@ -19,14 +19,18 @@ export class RdKitServiceWorkerClient extends WorkerMessageBusClient {
     this.call(WORKER_CALL.INIT_MOLECULES_STRUCTURES, [molecules]);
 
   searchSubstructure =
-    async (query: string, queryMolBlockFailover: string, molecules: string[], searchType: SubstructureSearchType) =>
-      this.call(WORKER_CALL.SEARCH_SUBSTRUCTURE, [query, queryMolBlockFailover, molecules, searchType]);
+    async (query: string, queryMolBlockFailover: string, molecules: string[],
+      searchType: SubstructureSearchType, stereoAgnostic?: boolean) =>
+      this.call(WORKER_CALL.SEARCH_SUBSTRUCTURE, [query, queryMolBlockFailover, molecules, searchType, stereoAgnostic]);
 
   freeMoleculesStructures = async () =>
     this.call(WORKER_CALL.FREE_MOLECULES_STRUCTURES);
 
   getFingerprints = async (fingerprintType: Fingerprint, molecules?: string[], getCanonicalSmiles?: boolean) =>
     this.call(WORKER_CALL.GET_FINGERPRINTS, [fingerprintType, molecules, getCanonicalSmiles]);
+
+  getCoordGenCoords = async (molecules: string[]): Promise<string[]> =>
+    this.call(WORKER_CALL.GET_COORDGEN_COORDS, [molecules]);
 
   convertMolNotation = async (molecules: string[], targetNotation: string, kekulize = false) =>
     this.call(WORKER_CALL.CONVERT_MOL_NOTATION, [molecules, targetNotation, kekulize]);

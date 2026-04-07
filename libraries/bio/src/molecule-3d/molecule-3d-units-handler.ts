@@ -64,7 +64,7 @@ export class Molecule3DUnitsHandler extends UnitsHandlerBase<any, Molecule3DBase
     const resCol: DG.Column = DG.Column.fromType(DG.TYPE.STRING, this.column.name, colLength);
     for (let rowI = 0; rowI < colLength; ++rowI) {
       const srcVal = this.column.get(rowI);
-      const pdbVal = srcVal === null ? null : await convertToPdb(srcVal);
+      const pdbVal = !srcVal ? null : await convertToPdb(srcVal);
       resCol.set(rowI, pdbVal);
     }
     return resCol;

@@ -35,6 +35,9 @@ export enum TAGS {
   positionShift = '.positionShift',
   selectedPosition = '.selectedPosition',
   polymerTypeColumnName = '.polymerTypeColumnName',
+  annotations = '.annotations',
+  numberingScheme = '.numberingScheme',
+  annotationColumnName = '.annotationColumnName',
 }
 
 export {TAGS as BioTags};
@@ -76,3 +79,11 @@ export const GapOriginals: {
 };
 
 export const MONOMER_MOTIF_SPLITTER = ' , ';
+
+/** Tag on Monomer columns storing the nqName of a function that returns an IMonomerCanonicalizer.
+ *  The `.%` prefix ensures this tag is persisted with projects. */
+export const MONOMER_CANONICALIZER_FUNC_TAG = '.%monomer-canonicalizer-func';
+
+/** Column temp key for the cached IMonomerCanonicalizer instance */
+export const MONOMER_CANONICALIZER_TEMP = 'monomer-canonicalizer';
+export const NOTATION_PROVIDER_CONSTRUCTOR_ROLE = 'notationProviderConstructor';

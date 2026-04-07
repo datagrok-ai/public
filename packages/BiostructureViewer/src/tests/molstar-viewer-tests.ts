@@ -5,7 +5,7 @@ import * as DG from 'datagrok-api/dg';
 import $ from 'cash-dom';
 import wu from 'wu';
 
-import {awaitCheck, category, delay, expect, test, testEvent} from '@datagrok-libraries/utils/src/test';
+import {awaitCheck, category, delay, expect, test, testEvent} from '@datagrok-libraries/test/src/test';
 import {BiostructureData, BiostructureDataJson} from '@datagrok-libraries/bio/src/pdb/types';
 import {BiostructureProps, IBiostructureViewer} from '@datagrok-libraries/bio/src/viewers/molstar-viewer';
 

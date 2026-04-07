@@ -9,6 +9,17 @@
     padding-top: 3px;
 }
 
+.dendrogram-assign-clusters-bttn {
+    position: absolute;
+    top: 0px;
+    color: #9497a0;
+    left: 3px;
+    font-size: 14px;
+    z-index: 1000;
+    background-color: white;
+    padding-top: 5px;
+}
+
 .dendrogram-overlay{
     position: absolute;
     background-color: white;

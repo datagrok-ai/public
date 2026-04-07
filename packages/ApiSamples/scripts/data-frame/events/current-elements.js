@@ -1,4 +1,3 @@
-//tags: DataFrame, events
 // Selecting current row, column and cell
 
 let t = grok.data.testData('demog', 100);

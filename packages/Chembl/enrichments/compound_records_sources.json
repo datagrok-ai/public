@@ -1,0 +1,21 @@
+{
+  "name": "Add source info",
+  "connection": "Chembl:Chembl",
+  "keySchema": "public",
+  "keyTable": "compound_records",
+  "keyColumn": "src_id",
+  "fields": [
+    "public.compound_records.src_id",
+    "public.source.src_short_name",
+    "public.source.src_description"
+  ],
+  "joins": [
+    {
+      "leftTableName": "public.compound_records",
+      "rightTableName": "public.source",
+      "joinType": "left",
+      "leftTableKeys": ["src_id"],
+      "rightTableKeys": ["src_id"]
+    }
+  ]
+}

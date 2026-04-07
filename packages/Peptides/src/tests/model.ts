@@ -10,7 +10,7 @@ import {
   expect,
   expectFloat,
   test,
-} from '@datagrok-libraries/utils/src/test';
+} from '@datagrok-libraries/test/src/test';
 import {
   _package,
 } from '../package-test';

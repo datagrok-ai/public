@@ -15,7 +15,7 @@ class PowerPackPackageDetectors extends DG.Package {
     return false;
   }
 
-  //tags: semTypeDetector
+  //meta.role: semTypeDetector
   //input: column col
   //output: string semType
   //meta.skipTest: GROK-17759

@@ -4,8 +4,9 @@ title: "Join tables"
 
 Joins two tables, using the specified key columns.
 
-First, select two tables to join. After that, select key columns in both table; this establishes the way rows in the
-first column are mapped to the rows in the second column. Use 'Value Columns' section to specify the columns to join to
+First, select two tables to join. Then, select key columns in both tables. This
+establishes how rows in the first table map to rows in the second table.
+Use the **Value Columns** section to specify which columns to include in the
 result table.
 
 Use 'Preview' to check join result.
@@ -16,8 +17,8 @@ and some dissimilar data from tables.
 
 ![Join table types](../uploads/dialogs/join-tables-types.png "Join table types")
 
-'left' and 'right' join types can be performed in-place. Result will be stored in left selected table for
-'left' join type and in right for 'right' type.
+You can perform **left** and **right** joins in-place. A **left** join stores
+the result in the left table, and a **right** join stores it in the right table.
 
 'Key Columns' section contains not matched statistics (Number of not matched key rows / Total number of rows)
 for each table and values selection buttons:
@@ -26,7 +27,7 @@ for each table and values selection buttons:
 * Select all not matching rows in both tables
 * Clear selection.
 
-If no keys specified in 'Keys Columns' joining in performed by row indexes.
+If you don't specify key columns, the join is performed by row index.
 
 ## Videos
 

@@ -2,7 +2,6 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {delay} from '@datagrok-libraries/utils/src/test';
 import {TAGS as bioTAGS, NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';
 import {ISeqHelper} from '@datagrok-libraries/bio/src/utils/seq-helper';
 
@@ -154,7 +153,7 @@ export async function helmSubstructureSearch(
 export async function invalidateMols(col: DG.Column<string>, seqHelper: ISeqHelper, pattern: boolean): Promise<void> {
   const progressBar = DG.TaskBarProgressIndicator.create(`Invalidating molfiles for ${col.name}`);
   try {
-    await delay(10);
+    await DG.delay(10);
     const monomersDict = new Map();
     const monomericMolsCol = await getMonomericMols(col, seqHelper, pattern, monomersDict);
     col.temp[MONOMERIC_COL_TAGS.MONOMERIC_MOLS] = monomericMolsCol;

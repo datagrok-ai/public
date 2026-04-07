@@ -1,0 +1,22 @@
+{
+  "name": "Add molecular structures",
+  "connection": "Chembl:Chembl",
+  "keySchema": "public",
+  "keyTable": "molecule_dictionary",
+  "keyColumn": "chembl_id",
+  "fields": [
+    "public.molecule_dictionary.chembl_id",
+    "public.compound_structures.canonical_smiles",
+    "public.compound_structures.standard_inchi",
+    "public.compound_structures.standard_inchi_key"
+  ],
+  "joins": [
+    {
+      "leftTableName": "public.molecule_dictionary",
+      "rightTableName": "public.compound_structures",
+      "joinType": "left",
+      "leftTableKeys": ["molregno"],
+      "rightTableKeys": ["molregno"]
+    }
+  ]
+}

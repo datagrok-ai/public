@@ -6,7 +6,7 @@ import {
   category,
   test,
   expectArray,
-} from '@datagrok-libraries/utils/src/test';
+} from '@datagrok-libraries/test/src/test';
 import {mapToFixed} from './utils/array-utils';
 import {ITreeHelper} from '@datagrok-libraries/bio/src/trees/tree-helper';
 import {TreeHelper} from '../utils/tree-helper';

@@ -4,7 +4,7 @@ import * as DG from 'datagrok-api/dg';
 
 import $ from 'cash-dom';
 
-import {category, test, expect, expectObject, expectArray, awaitCheck} from '@datagrok-libraries/utils/src/test';
+import {category, test, expect, expectObject, expectArray, awaitCheck} from '@datagrok-libraries/test/src/test';
 import {DistanceMetric} from '@datagrok-libraries/bio/src/trees';
 import {DistanceMatrix} from '@datagrok-libraries/ml/src/distance-matrix';
 import {ClusterMatrix} from '@datagrok-libraries/bio/src/trees';

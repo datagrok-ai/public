@@ -3,9 +3,9 @@ import * as DG from 'datagrok-api/dg';
 
 //name: PhylocanvasGL
 //description: Phylogenetic tree visualization
-//tags: viewer
 //output: viewer result
 //meta.icon: files/icons/phylocanvasgl-viewer.svg
+//meta.role: viewer
 export function phylocanvasGlViewer() : any {
   return PackageFunctions.phylocanvasGlViewer();
 }

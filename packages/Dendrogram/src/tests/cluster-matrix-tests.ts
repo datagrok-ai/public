@@ -1,7 +1,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {category, test, expectObject} from '@datagrok-libraries/utils/src/test';
+import {category, test, expectObject} from '@datagrok-libraries/test/src/test';
 import {ClusterMatrix} from '@datagrok-libraries/bio/src/trees';
 import {NodeType} from '@datagrok-libraries/bio/src/trees';
 import {TreeHelper} from '../utils/tree-helper';

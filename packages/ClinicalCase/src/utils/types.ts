@@ -11,6 +11,7 @@ export type ClinStudyConfig = {
     endDate?: dayjs.Dayjs;
     other?: {[key: string]: string};
     standard?: CDISC_STANDARD;
+    fieldsDefinitions?: {[key: string]: string};
 }
 
 export enum CDISC_STANDARD {

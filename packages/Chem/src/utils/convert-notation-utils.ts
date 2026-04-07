@@ -2,6 +2,22 @@
 import * as DG from 'datagrok-api/dg';
 import {RDModule, RDMol} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 import MolNotation = DG.chem.Notation;
+// temporary polyfills for extended notations, remove these when js-api is updated. added to avoid local dependency
+// @ts-ignore
+MolNotation.CxSmarts = 'cxsmarts';
+// @ts-ignore
+MolNotation.CxSmiles = 'cxsmiles';
+
+
+// enum MolNotation {
+//   Smiles = 'smiles',
+//   Smarts = 'smarts',
+//   MolBlock = 'molblock', // molblock V2000
+//   V3KMolBlock = 'v3Kmolblock', // molblock V3000
+//   Unknown = 'unknown',
+//   CxSmiles = 'cxsmiles', // extended smiles
+//   CxSmarts = 'cxsmarts', // extended smarts
+// }
 
 // datagrok libraries dependencies
 import {errorToConsole} from '@datagrok-libraries/utils/src/to-console';
@@ -69,7 +85,11 @@ export function _convertMolNotation(
       if (targetNotation === MolNotation.V3KMolBlock)
         result = mol.get_v3Kmolblock();
       if (targetNotation === MolNotation.Smarts)
-        result = mol.get_smarts();
+        result = mol.get_smarts(); // @ts-ignore
+      if (targetNotation === MolNotation.CxSmiles)
+        result = mol.get_cxsmiles(); // @ts-ignore
+      if (targetNotation === MolNotation.CxSmarts)
+        result = mol.get_cxsmarts();
       // if (targetNotation === MolNotation.Inchi)
       //   return mol.get_inchi();
     }

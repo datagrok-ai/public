@@ -5,11 +5,12 @@ import * as grok from 'datagrok-api/grok';
 
 import {HIGHLIGHT_WIDTH, LINE_MAX_WIDTH, LINE_MIN_WIDTH, MAXIMUM_COLUMN_NUMBER, MAXIMUM_ROW_NUMBER, MAXIMUM_SERIES_NUMBER, MOUSE_OVER_GROUP_COLOR, RadarIndicator} from './constants';
 import {StringUtils} from '@datagrok-libraries/utils/src/string-utils';
-import { EChartViewer } from '../echart/echart-viewer';
+import {EChartViewer} from '../echart/echart-viewer';
+import {LegendHelper, VISIBILITY_MODE, VisibilityMode} from '../../utils/legend-utils';
+import {ERROR_CLASS, MessageHandler} from '../../utils/utils';
 import _ from 'lodash';
 
 import '../../../css/radar-viewer.css';
-import { ERROR_CLASS, MessageHandler } from '../../utils/utils';
 
 type MinimalIndicator = '1' | '5' | '10' | '25';
 type MaximumIndicator = '75' | '90' | '95' | '99';
@@ -22,8 +23,6 @@ const WARNING_CLASS = 'radar-warning';
   icon: 'icons/radar-viewer.svg',
 })
 export class RadarViewer extends EChartViewer {
-  get type(): string {return 'RadarViewer';}
-
   min: MinimalIndicator;
   max: MaximumIndicator;
   showCurrentRow: boolean;
@@ -42,6 +41,8 @@ export class RadarViewer extends EChartViewer {
   valuesColumnNames: string[];
   columns: DG.Column[] = [];
   title: string;
+  legendVisibility: VisibilityMode;
+  legendHelper: LegendHelper = new LegendHelper();
 
   private static _canvas: HTMLCanvasElement | null = null;
   private static _ctx: CanvasRenderingContext2D | null = null;
@@ -49,10 +50,10 @@ export class RadarViewer extends EChartViewer {
   constructor() {
     super();
     this.title = this.string('title', 'Radar');
-    this.min = <MinimalIndicator> this.string('min', '5', { choices: ['1', '5', '10', '25'],
-      description: 'Minimum percentile value (indicated as dark blue area)' });
-    this.max = <MaximumIndicator> this.string('max', '95', { choices: ['75', '90', '95', '99'],
-      description: 'Maximum percentile value (indicated as light blue area)' });
+    this.min = <MinimalIndicator> this.string('min', '5', {choices: ['1', '5', '10', '25'],
+      description: 'Minimum percentile value (indicated as dark blue area)'});
+    this.max = <MaximumIndicator> this.string('max', '95', {choices: ['75', '90', '95', '99'],
+      description: 'Maximum percentile value (indicated as light blue area)'});
     this.showCurrentRow = this.bool('showCurrentRow', true, {description: 'Hides max and min values', category: 'Selection'});
     this.showMouseOverRow = this.bool('showMouseOverRow', true, {category: 'Selection'});
     this.showMouseOverRowGroup = this.bool('showMouseOverRowGroup', true, {category: 'Selection'});
@@ -68,6 +69,9 @@ export class RadarViewer extends EChartViewer {
     this.showValues = this.bool('showValues', false);
     this.valuesColumnNames = this.addProperty('valuesColumnNames', DG.TYPE.COLUMN_LIST, null,
       {columnTypeFilter: DG.TYPE.NUMERICAL, category: 'Value'});
+    this.legendVisibility = <VisibilityMode> this.string('legendVisibility', VISIBILITY_MODE.AUTO,
+      {choices: Object.values(VISIBILITY_MODE)});
+    this.legendHelper.onCategoriesChanged = () => this.render();
 
     this.option = {
       animation: false,
@@ -196,6 +200,8 @@ export class RadarViewer extends EChartViewer {
 
   onTableAttached() {
     this.init();
+    this.root.appendChild(this.legendHelper.legendDiv);
+    this.updateLegend();
     this.filter = this.dataFrame.filter;
     this.valuesColumnNames = Array.from(this.dataFrame.columns.numerical)
       .map((c: DG.Column) => c.name).slice(0, MAXIMUM_COLUMN_NUMBER);
@@ -236,7 +242,18 @@ export class RadarViewer extends EChartViewer {
   public override onPropertyChanged(property: DG.Property) {
     if (property.name === 'table')
       this.updateTable();
+    if (property.name === 'colorColumnName' || property.name === 'legendVisibility')
+      this.updateLegend();
     this.render();
+  }
+
+  updateLegend(): void {
+    const colorColumn = this.dataFrame?.col(this.colorColumnName);
+    if (colorColumn) {
+      this.legendHelper.update(colorColumn);
+      this.legendHelper.switchVisibility(this.legendVisibility, colorColumn);
+    } else
+      this.legendHelper.hide();
   }
 
   getSeriesData(indexes?: number[]): void {
@@ -260,15 +277,23 @@ export class RadarViewer extends EChartViewer {
 
     this.updateCurrentRow();
     this.updateMouseOverRow();
-    this.option.legend.show = !(this.filter.length > 1);
+    this.option.legend.show = false;
     this.option.silent = !this.showTooltip;
   }
 
   createSeriesData(filter?: number[]): any[] {
     const seriesData = [];
+    const colorColumn = this.dataFrame.col(this.colorColumnName);
+    const selectedCategories = this.legendHelper.selectedCategories;
 
     for (let i = 0; i < this.filter.length && seriesData.length < MAXIMUM_ROW_NUMBER; i++) {
       if (!this.filter.get(i)) continue;
+
+      if (selectedCategories && colorColumn) {
+        const category = colorColumn.get(i);
+        if (!selectedCategories.includes(category))
+          continue;
+      }
 
       const value = this.columns.map((c) => {
         if (c.type === 'datetime')
@@ -277,7 +302,6 @@ export class RadarViewer extends EChartViewer {
         return numValue !== -2147483648 ? numValue : 0;
       });
 
-      const colorColumn = this.dataFrame.col(this.colorColumnName);
       const color = colorColumn ? DG.Color.getRowColor(colorColumn, i) : this.lineColor;
 
       seriesData.push({
@@ -376,7 +400,7 @@ export class RadarViewer extends EChartViewer {
 
   createRadarIndicator(c: DG.Column): RadarIndicator {
     const minimalVal = c.min < 0 ? (c.min + c.min * 0.1) : 0;
-    const indicator: RadarIndicator = { name: c.name };
+    const indicator: RadarIndicator = {name: c.name};
 
     if (c.type === 'datetime') {
       indicator.max = this.getYearFromDate(c.max);

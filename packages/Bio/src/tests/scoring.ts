@@ -4,7 +4,7 @@ import * as DG from 'datagrok-api/dg';
 
 import wu from 'wu';
 
-import {category, test, expectFloat, before, after, expect} from '@datagrok-libraries/utils/src/test';
+import {category, test, expectFloat, before, after, expect} from '@datagrok-libraries/test/src/test';
 import {NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';
 import {IMonomerLibHelper, getMonomerLibHelper} from '@datagrok-libraries/bio/src/types/monomer-library';
 

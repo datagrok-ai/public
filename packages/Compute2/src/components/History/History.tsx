@@ -131,11 +131,11 @@ export const History = Vue.defineComponent({
       try {
         if (!!editOptions.isFavorite !== isFavorite)
           await saveIsFavorite(funcCall, !!editOptions.isFavorite);
-        const fullCall = await historyUtils.loadRun(funcCall.id, false, false);
+        const fullCall = await historyUtils.shallowLoadRun(funcCall.id);
         if (editOptions.title) fullCall.options['title'] = editOptions.title;
         if (editOptions.description) fullCall.options['description'] = editOptions.description;
         if (editOptions.tags) fullCall.options['tags'] = editOptions.tags;
-        await historyUtils.saveRun(fullCall);
+        await historyUtils.updateRunMeta(fullCall);
         updateRun(fullCall);
       } catch (e: any) {
         grok.shell.error(e);
@@ -164,7 +164,7 @@ export const History = Vue.defineComponent({
 
     const deleteRun = async (id: string) => {
       try {
-        const loadedRun = await historyUtils.loadRun(id, true, false);
+        const loadedRun = await historyUtils.shallowLoadRun(id);
         await historyUtils.deleteRun(loadedRun);
         historicalRuns.value.delete(id);
         Vue.triggerRef(historicalRuns);
@@ -206,7 +206,7 @@ export const History = Vue.defineComponent({
       historicalRunsDf.value.rows.select(() => false);
       const chosenRun = getRunByIdx(historicalRunsDf.value.currentRowIdx);
       if (chosenRun) {
-        const run = await historyUtils.loadRun(chosenRun.id, false, false);
+        const run = await historyUtils.loadRun(chosenRun.id);
         emit('runChosen', run ? Vue.markRaw(run) : run);
       };
     });

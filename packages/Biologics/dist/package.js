@@ -3,11 +3,11 @@ var biologics;
 /******/ 	"use strict";
 /******/ 	var __webpack_modules__ = ({
 
-/***/ "../../libraries/db-explorer/src/db-explorer.ts":
-/*!******************************************************!*\
-  !*** ../../libraries/db-explorer/src/db-explorer.ts ***!
-  \******************************************************/
-/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+/***/ "./node_modules/@datagrok-libraries/db-explorer/src/db-explorer.js"
+/*!*************************************************************************!*\
+  !*** ./node_modules/@datagrok-libraries/db-explorer/src/db-explorer.js ***!
+  \*************************************************************************/
+(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
 
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
@@ -17,39 +17,54 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var datagrok_api_grok__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(datagrok_api_grok__WEBPACK_IMPORTED_MODULE_0__);
 /* harmony import */ var datagrok_api_dg__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! datagrok-api/dg */ "datagrok-api/dg");
 /* harmony import */ var datagrok_api_dg__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__webpack_require__.n(datagrok_api_dg__WEBPACK_IMPORTED_MODULE_1__);
-/* harmony import */ var _object_handlers__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./object-handlers */ "../../libraries/db-explorer/src/object-handlers.ts");
+/* harmony import */ var _object_handlers__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./object-handlers */ "./node_modules/@datagrok-libraries/db-explorer/src/object-handlers.js");
+/* harmony import */ var _renderer__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ./renderer */ "./node_modules/@datagrok-libraries/db-explorer/src/renderer.js");
+var __awaiter = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
 /* eslint-disable max-len */
 
 
 
+
 class DBExplorer {
-    connectionName;
-    schemaName;
-    nqName;
-    dataSourceName;
-    schemasLoaded = false;
-    connection = null;
-    references = {};
-    referencedBy = {};
-    _dbLoadPromise;
-    objHandlers = [];
-    loadingFailed = false;
     constructor(connectionName, schemaName, nqName, dataSourceName) {
         this.connectionName = connectionName;
         this.schemaName = schemaName;
         this.nqName = nqName;
         this.dataSourceName = dataSourceName;
-        const handler = new _object_handlers__WEBPACK_IMPORTED_MODULE_2__.DBExplorerObjectHandler({ valueConverter: (a) => a,
-            joinOptions: [] }, async () => {
-            return await this.dbSchema;
-        }, this.schemaName);
-        datagrok_api_dg__WEBPACK_IMPORTED_MODULE_1__.ObjectHandler.register(handler);
-        this.objHandlers.push(handler);
+        this.schemasLoaded = false;
+        this.connection = null;
+        this.references = {};
+        this.referencedBy = {};
+        this._dbLoadPromiseResolver = () => { };
+        this.objHandlers = [];
+        this.loadingFailed = false;
+        this._dbLoadingPromise = null;
+        // in order for other functionality to be able to await the _dbLoadPromise,
+        // we need to assign it to some promise and register resolver
+        this._dbLoadPromise = new Promise((resolve) => {
+            this._dbLoadPromiseResolver = resolve;
+        });
+        this.genericValueHandler = new _object_handlers__WEBPACK_IMPORTED_MODULE_2__.DBExplorerObjectHandler({ valueConverter: (a) => a,
+            joinOptions: [] }, () => __awaiter(this, void 0, void 0, function* () {
+            return yield this.dbSchema;
+        }), nqName !== null && nqName !== void 0 ? nqName : connectionName, this.schemaName);
+        datagrok_api_dg__WEBPACK_IMPORTED_MODULE_1__.ObjectHandler.register(this.genericValueHandler);
+        this.objHandlers.push(this.genericValueHandler);
     }
     get dbSchema() {
+        var _a;
         if (this.loadingFailed)
             return Promise.resolve(null);
-        this._dbLoadPromise ??= this.loadDbSchema();
+        // to make sure it is only loaded once
+        (_a = this._dbLoadingPromise) !== null && _a !== void 0 ? _a : (this._dbLoadingPromise = this.loadDbSchema());
         return this._dbLoadPromise
             .then(() => ({ schema: { references: this.references, referencedBy: this.referencedBy }, connection: this.connection }))
             .catch((e) => {
@@ -57,67 +72,103 @@ class DBExplorer {
             return null;
         });
     }
-    async loadDbSchema() {
-        try {
-            const connections = await datagrok_api_grok__WEBPACK_IMPORTED_MODULE_0__.dapi.connections.filter(`name="${this.connectionName}"`).list();
-            this.connection = connections.find((c) => (!this.nqName || c.nqName?.toLowerCase() === this.nqName.toLowerCase()) && (!this.dataSourceName || c.dataSource?.toLowerCase() === this.dataSourceName.toLowerCase())) ?? null;
-            if (this.connection == null) {
-                console.warn(`Connection ${this.connectionName} not found, Object handlers not registered`);
-                this.loadingFailed = true;
-                return;
-            }
-            const tables = await datagrok_api_grok__WEBPACK_IMPORTED_MODULE_0__.dapi.connections.getSchema(this.connection, this.schemaName);
-            if (!tables)
-                throw new Error(`Schema ${this.schemaName} not found`);
-            tables.forEach((table) => {
-                const tableName = table.friendlyName ?? table.name;
-                this.references[tableName] = {};
-                const t = this.references[tableName];
-                table.columns.forEach((column) => {
-                    const ref = column.referenceInfo;
-                    if (ref && ref.table && ref.column) {
-                        t[column.name] = { refTable: ref.table, refColumn: ref.column };
-                        if (!this.referencedBy[ref.table])
-                            this.referencedBy[ref.table] = {};
-                        if (!this.referencedBy[ref.table][ref.column])
-                            this.referencedBy[ref.table][ref.column] = [];
-                        this.referencedBy[ref.table][ref.column].push({ refTable: tableName, refColumn: column.name });
-                    }
-                });
-            });
-            this.schemasLoaded = true;
-        }
-        catch (_e) {
-            this.loadingFailed = true;
-            console.warn('Failed to load DB schema, Object handlers not registered');
-            console.error(_e);
-        }
-    }
-    async addCustomRelation(tableName, columnName, refTable, refColumn) {
-        if (!this.schemasLoaded) {
+    /**
+     * Note: this method is and should only be called once per instance
+     * also, it is called automatically when dbSchema is requested for the first time
+     * this method is lazy -- it starts loading only when someone requests it.
+     */
+    loadDbSchema() {
+        var _a, _b;
+        return __awaiter(this, void 0, void 0, function* () {
             try {
-                await this._dbLoadPromise;
+                const nqNameSplit = (_a = this.nqName) === null || _a === void 0 ? void 0 : _a.split(':');
+                const connections = (nqNameSplit === null || nqNameSplit === void 0 ? void 0 : nqNameSplit.length) === 2 ?
+                    yield datagrok_api_grok__WEBPACK_IMPORTED_MODULE_0__.dapi.connections.filter(`namespace = "${nqNameSplit[0]}:" and shortName = "${nqNameSplit[1]}"`).list() :
+                    yield datagrok_api_grok__WEBPACK_IMPORTED_MODULE_0__.dapi.connections.filter(`name="${this.connectionName}" or shortName = "${this.connectionName}"`).list();
+                this.connection = (_b = connections.find((c) => { var _a, _b; return (!this.nqName || ((_a = c.nqName) === null || _a === void 0 ? void 0 : _a.toLowerCase()) === this.nqName.toLowerCase()) && (!this.dataSourceName || ((_b = c.dataSource) === null || _b === void 0 ? void 0 : _b.toLowerCase()) === this.dataSourceName.toLowerCase()); })) !== null && _b !== void 0 ? _b : null;
+                if (this.connection == null) {
+                    console.warn(`Connection ${this.connectionName} not found, Object handlers not registered`);
+                    this.loadingFailed = true;
+                    return;
+                }
+                const tables = yield datagrok_api_grok__WEBPACK_IMPORTED_MODULE_0__.dapi.connections.getSchema(this.connection, this.schemaName);
+                if (!tables)
+                    throw new Error(`Schema ${this.schemaName} not found`);
+                // for implicit references, schema is always the primary one
+                this.references[this.schemaName] = {};
+                this.referencedBy[this.schemaName] = {};
+                const schemaRefs = this.references[this.schemaName];
+                const schemaRefBy = this.referencedBy[this.schemaName];
+                tables.forEach((table) => {
+                    var _a;
+                    const tableName = (_a = table.friendlyName) !== null && _a !== void 0 ? _a : table.name;
+                    schemaRefs[tableName] = {};
+                    const t = schemaRefs[tableName];
+                    table.columns.forEach((column) => {
+                        const ref = column.referenceInfo;
+                        if (ref && ref.table && ref.column) {
+                            t[column.name] = { refTable: ref.table, refColumn: ref.column, refSchema: this.schemaName };
+                            if (!schemaRefBy[ref.table])
+                                schemaRefBy[ref.table] = {};
+                            if (!schemaRefBy[ref.table][ref.column])
+                                schemaRefBy[ref.table][ref.column] = [];
+                            schemaRefBy[ref.table][ref.column].push({ refTable: tableName, refColumn: column.name, refSchema: this.schemaName });
+                        }
+                    });
+                });
+                this.schemasLoaded = true;
             }
             catch (_e) {
+                this.loadingFailed = true;
+                console.warn('Failed to load DB schema, Object handlers not registered');
                 console.error(_e);
             }
-        }
-        if (!this.schemasLoaded || !this.connection || !this.references || !this.referencedBy) {
-            console.warn('Failed to add custom relation, DB schema not loaded');
-            return;
-        }
-        if (!this.references[tableName])
-            this.references[tableName] = {};
-        this.references[tableName][columnName] = { refTable, refColumn };
-        if (!this.referencedBy[refTable])
-            this.referencedBy[refTable] = {};
-        this.referencedBy[refTable][refColumn] ??= [];
-        this.referencedBy[refTable][refColumn].push({ refTable: tableName, refColumn: columnName });
+            if (this.connection)
+                this.objHandlers.forEach((handler) => handler.connectionNqName = this.connection.nqName); // set for detection in isApplicable
+            this._dbLoadPromiseResolver();
+        });
+    }
+    addCustomRelation(tableName, columnName, refTable, refColumn, schemas) {
+        var _a, _b, _c;
+        var _d;
+        return __awaiter(this, void 0, void 0, function* () {
+            if (!this.schemasLoaded) {
+                try {
+                    yield this._dbLoadPromise;
+                }
+                catch (_e) {
+                    console.error(_e);
+                }
+            }
+            if (!this.schemasLoaded || !this.connection || !this.references || !this.referencedBy) {
+                console.warn('Failed to add custom relation, DB schema not loaded');
+                return;
+            }
+            const schemaName = (_a = schemas === null || schemas === void 0 ? void 0 : schemas.tableSchema) !== null && _a !== void 0 ? _a : this.schemaName;
+            const refSchemaName = (_b = schemas === null || schemas === void 0 ? void 0 : schemas.refTableSchema) !== null && _b !== void 0 ? _b : this.schemaName;
+            if (!this.references[schemaName])
+                this.references[schemaName] = {};
+            if (!this.referencedBy[refSchemaName])
+                this.referencedBy[refSchemaName] = {};
+            const schemaRefs = this.references[schemaName];
+            const schemaRefBy = this.referencedBy[refSchemaName];
+            if (!schemaRefs[tableName])
+                schemaRefs[tableName] = {};
+            schemaRefs[tableName][columnName] = { refTable, refColumn, refSchema: refSchemaName };
+            if (!schemaRefBy[refTable])
+                schemaRefBy[refTable] = {};
+            (_c = (_d = schemaRefBy[refTable])[refColumn]) !== null && _c !== void 0 ? _c : (_d[refColumn] = []);
+            schemaRefBy[refTable][refColumn].push({ refTable: tableName, refColumn: columnName, refSchema: schemaName });
+        });
     }
     addEntryPoint(semanticType, tableName, columnName, options) {
+        var _a;
         const schemaPromise = () => this.dbSchema;
-        const fullOpts = { ...{ valueConverter: (a) => a, joinOptions: [] }, ...(options ?? {}) };
-        const handler = new _object_handlers__WEBPACK_IMPORTED_MODULE_2__.SemValueObjectHandler(semanticType, tableName, columnName, fullOpts, schemaPromise, this.schemaName);
+        const fullOpts = Object.assign({ valueConverter: (a) => a, joinOptions: [] }, (options !== null && options !== void 0 ? options : {}));
+        const handler = new _object_handlers__WEBPACK_IMPORTED_MODULE_2__.SemValueObjectHandler(semanticType, tableName, columnName, fullOpts, schemaPromise, this.schemaName, (_a = this.nqName) !== null && _a !== void 0 ? _a : this.connectionName);
+        // if the matching regexp is also provided, register it
+        if (options === null || options === void 0 ? void 0 : options.matchRegexp)
+            datagrok_api_dg__WEBPACK_IMPORTED_MODULE_1__.SemanticValue.registerRegExpDetector(semanticType, options.matchRegexp);
         datagrok_api_dg__WEBPACK_IMPORTED_MODULE_1__.ObjectHandler.register(handler);
         this.objHandlers.push(handler);
         return this;
@@ -153,7 +204,7 @@ class DBExplorer {
     static initFromConfig(config) {
         const exp = new DBExplorer(config.connectionName, config.schemaName, config.nqName, config.dataSourceName);
         for (const [semType, entry] of Object.entries(config.entryPoints))
-            exp.addEntryPoint(semType, entry.table, entry.column, { regexpExample: entry.regexpExample });
+            exp.addEntryPoint(semType, entry.table, entry.column, { regexpExample: entry.regexpExample, matchRegexp: entry.matchRegexp });
         if (config.joinOptions)
             exp.addJoinOptions(config.joinOptions);
         if (config.headerNames)
@@ -162,33 +213,50 @@ class DBExplorer {
             exp.addUniqueColumns(config.uniqueColumns);
         if (config.customSelectedColumns)
             exp.addCustomSelectedColumns(config.customSelectedColumns);
+        if (config.explicitReferences) {
+            config.explicitReferences.forEach((ref) => {
+                exp.addCustomRelation(ref.table, ref.column, ref.refTable, ref.refColumn, { tableSchema: ref.schema, refTableSchema: ref.refSchema });
+            });
+        }
+        if (config.customRenderers) {
+            config.customRenderers.forEach((r) => {
+                const rendererFunc = (0,_renderer__WEBPACK_IMPORTED_MODULE_3__.getDefaultRendererByName)(r.renderer);
+                const checkFunc = (tableName, colName, _value) => {
+                    return tableName === r.table && colName === r.column;
+                };
+                exp.addCustomRenderer(checkFunc, rendererFunc);
+            });
+        }
         return exp;
     }
-    static async initFromConfigPath(_package, configPath = 'db-explorer/db-explorer-config.json') {
-        try {
-            const config = await _package.files.readAsText(configPath);
-            return DBExplorer.initFromConfig(JSON.parse(config));
-        }
-        catch (e) {
-            datagrok_api_grok__WEBPACK_IMPORTED_MODULE_0__.shell.error(`Failed to load db-explorer config from ${configPath}`);
-            console.error(e);
-        }
-        return null;
+    static initFromConfigPath(_package, configPath = 'db-explorer/db-explorer-config.json') {
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                const config = yield _package.files.readAsText(configPath);
+                return DBExplorer.initFromConfig(JSON.parse(config));
+            }
+            catch (e) {
+                datagrok_api_grok__WEBPACK_IMPORTED_MODULE_0__.shell.error(`Failed to load db-explorer config from ${configPath}`);
+                console.error(e);
+            }
+            return null;
+        });
     }
 }
+//# sourceMappingURL=db-explorer.js.map
 
+/***/ },
 
-/***/ }),
-
-/***/ "../../libraries/db-explorer/src/object-handlers.ts":
-/*!**********************************************************!*\
-  !*** ../../libraries/db-explorer/src/object-handlers.ts ***!
-  \**********************************************************/
-/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+/***/ "./node_modules/@datagrok-libraries/db-explorer/src/object-handlers.js"
+/*!*****************************************************************************!*\
+  !*** ./node_modules/@datagrok-libraries/db-explorer/src/object-handlers.js ***!
+  \*****************************************************************************/
+(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
 
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   DBExplorerObjectHandler: () => (/* binding */ DBExplorerObjectHandler),
+/* harmony export */   DB_EXPLORER_OBJ_HANDLER_TYPE: () => (/* binding */ DB_EXPLORER_OBJ_HANDLER_TYPE),
 /* harmony export */   SemValueObjectHandler: () => (/* binding */ SemValueObjectHandler)
 /* harmony export */ });
 /* harmony import */ var datagrok_api_grok__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! datagrok-api/grok */ "datagrok-api/grok");
@@ -197,28 +265,37 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var datagrok_api_ui__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__webpack_require__.n(datagrok_api_ui__WEBPACK_IMPORTED_MODULE_1__);
 /* harmony import */ var datagrok_api_dg__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! datagrok-api/dg */ "datagrok-api/dg");
 /* harmony import */ var datagrok_api_dg__WEBPACK_IMPORTED_MODULE_2___default = /*#__PURE__*/__webpack_require__.n(datagrok_api_dg__WEBPACK_IMPORTED_MODULE_2__);
-/* harmony import */ var _types__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ./types */ "../../libraries/db-explorer/src/types.ts");
-/* harmony import */ var _renderer__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ./renderer */ "../../libraries/db-explorer/src/renderer.ts");
+/* harmony import */ var _types__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ./types */ "./node_modules/@datagrok-libraries/db-explorer/src/types.js");
+/* harmony import */ var _renderer__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ./renderer */ "./node_modules/@datagrok-libraries/db-explorer/src/renderer.js");
+var __awaiter = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
 /* eslint-disable max-len */
 
 
 
 
 
+const DB_EXPLORER_OBJ_HANDLER_TYPE = 'db-explorer-value';
 class DBExplorerObjectHandler extends datagrok_api_dg__WEBPACK_IMPORTED_MODULE_2__.ObjectHandler {
-    options;
-    schemaInfoPromise;
     get type() {
-        return 'db-explorer-value';
+        return DB_EXPLORER_OBJ_HANDLER_TYPE;
     }
-    renderer;
     isApplicable(x) {
-        return x instanceof _types__WEBPACK_IMPORTED_MODULE_3__.DBValueObject;
+        return x && x.name === DB_EXPLORER_OBJ_HANDLER_TYPE && this.connectionNqName !== null && x.connectionNqName === this.connectionNqName && x.schemaName === this.schemaName;
     }
-    constructor(options, schemaInfoPromise, schemaName) {
+    constructor(options, schemaInfoPromise, connectionNqName, schemaName) {
         super();
         this.options = options;
         this.schemaInfoPromise = schemaInfoPromise;
+        this.connectionNqName = connectionNqName;
+        this.schemaName = schemaName;
         this.renderer = new _renderer__WEBPACK_IMPORTED_MODULE_4__.DBExplorerRenderer(schemaInfoPromise, schemaName, options);
     }
     addCustomRenderer(check, renderer) {
@@ -238,9 +315,10 @@ class DBExplorerObjectHandler extends datagrok_api_dg__WEBPACK_IMPORTED_MODULE_2
         this.renderer.addHeaderReplacers(replacers);
     }
     renderInnerCard(x) {
-        return datagrok_api_ui__WEBPACK_IMPORTED_MODULE_1__.wait(async () => {
-            return await this.renderer.renderTable(x.table, x.column, this.options.valueConverter(x.value ?? ''), this.options.joinOptions);
-        });
+        return datagrok_api_ui__WEBPACK_IMPORTED_MODULE_1__.wait(() => __awaiter(this, void 0, void 0, function* () {
+            var _a;
+            return yield this.renderer.renderTable(x.schemaName, x.table, x.column, this.options.valueConverter((_a = x.value) !== null && _a !== void 0 ? _a : ''), this.options.joinOptions);
+        }));
     }
     renderCard(x, _context) {
         const c = datagrok_api_ui__WEBPACK_IMPORTED_MODULE_1__.card(this.renderInnerCard(x));
@@ -251,153 +329,260 @@ class DBExplorerObjectHandler extends datagrok_api_dg__WEBPACK_IMPORTED_MODULE_2
     renderTooltip(x, _context) {
         return this.renderInnerCard(x);
     }
-    renderInnerProperties(tableName, x, paneName) {
+    renderInnerProperties(schemaName, tableName, x, paneName) {
+        var _a;
         const acc = datagrok_api_ui__WEBPACK_IMPORTED_MODULE_1__.accordion(tableName);
         acc.addPane(paneName, () => this.renderInnerCard(x), true);
         this.renderer
-            .getTable(tableName, x.column, this.options.valueConverter(x.value ?? ''), this.options.joinOptions)
+            .getTable(schemaName, tableName, x.column, this.options.valueConverter((_a = x.value) !== null && _a !== void 0 ? _a : ''), this.options.joinOptions)
             .then((df) => {
-            this.renderer.renderAssociations(acc, this.schemaInfoPromise, tableName, df);
+            this.renderer.renderAssociations(acc, this.schemaInfoPromise, schemaName, tableName, df);
         });
         return acc;
     }
+    /** Use this from outside to render single rows from the dataframe */
+    renderPropertiesFromDfRow(tableRow, dfSchemaName, dbTableName) {
+        const bs = datagrok_api_dg__WEBPACK_IMPORTED_MODULE_2__.BitSet.create(tableRow.table.rowCount);
+        bs.set(tableRow.idx, true);
+        const df = tableRow.table.clone(bs);
+        const acc = datagrok_api_ui__WEBPACK_IMPORTED_MODULE_1__.accordion(dbTableName);
+        acc.addPane('Properties', () => datagrok_api_ui__WEBPACK_IMPORTED_MODULE_1__.wait(() => __awaiter(this, void 0, void 0, function* () { return this.renderer.renderDataFrame(df, dfSchemaName, dbTableName, { keepEmptyValues: true, skipCustomSelected: true }); })), true);
+        this.renderer.renderAssociations(acc, this.schemaInfoPromise, dfSchemaName, dbTableName, df);
+        return acc.root;
+    }
     renderProperties(x, _context) {
-        const acc = this.renderInnerProperties(x.table, x, this.options.valueConverter(x.value ?? '').toString());
+        var _a;
+        const acc = this.renderInnerProperties(x.schemaName, x.table, x, this.options.valueConverter((_a = x.value) !== null && _a !== void 0 ? _a : '').toString());
         if (x.semValue) {
             const origAcc = datagrok_api_ui__WEBPACK_IMPORTED_MODULE_1__.panels.infoPanel(x.semValue);
             origAcc.context = x.semValue;
             if (x.semValue.semType)
                 x.semValue.tags[datagrok_api_dg__WEBPACK_IMPORTED_MODULE_2__.Tags.Quality] = x.semValue.semType;
-            origAcc?.end();
+            origAcc === null || origAcc === void 0 ? void 0 : origAcc.end();
             return datagrok_api_ui__WEBPACK_IMPORTED_MODULE_1__.divV([acc.root, origAcc.root]);
         }
         return acc.root;
     }
 }
 class SemValueObjectHandler extends DBExplorerObjectHandler {
-    semanticType;
-    tableName;
-    columnName;
     get type() {
         return this.semanticType;
     }
-    _rgExample = null;
     get regexpExample() {
         return this._rgExample;
     }
     isApplicable(x) {
         return x instanceof datagrok_api_dg__WEBPACK_IMPORTED_MODULE_2__.SemanticValue && x.semType == this.semanticType;
     }
-    constructor(semanticType, tableName, columnName, options, schemaInfoPromise, schemaName) {
-        super(options, schemaInfoPromise, schemaName);
+    get entryPoint() {
+        return { table: this.tableName, column: this.columnName };
+    }
+    constructor(semanticType, tableName, columnName, options, schemaInfoPromise, schemaName, connectionNqName) {
+        super(options, schemaInfoPromise, connectionNqName, schemaName);
         this.semanticType = semanticType;
         this.tableName = tableName;
         this.columnName = columnName;
+        this._rgExample = null;
         if (options && options.regexpExample && options.regexpExample.nonVariablePart && options.regexpExample.regexpMarkup)
             this._rgExample = options.regexpExample;
     }
     renderCard(x, context) {
-        return super.renderCard(new _types__WEBPACK_IMPORTED_MODULE_3__.DBValueObject(this.tableName, this.columnName, this.options.valueConverter(x.value ?? ''), x), context);
+        var _a;
+        return super.renderCard(new _types__WEBPACK_IMPORTED_MODULE_3__.DBValueObject(this.connectionNqName, this.schemaName, this.tableName, this.columnName, this.options.valueConverter((_a = x.value) !== null && _a !== void 0 ? _a : ''), x), context);
     }
     renderTooltip(x, context) {
-        return super.renderTooltip(new _types__WEBPACK_IMPORTED_MODULE_3__.DBValueObject(this.tableName, this.columnName, this.options.valueConverter(x.value ?? ''), x), context);
+        var _a;
+        return super.renderTooltip(new _types__WEBPACK_IMPORTED_MODULE_3__.DBValueObject(this.connectionNqName, this.schemaName, this.tableName, this.columnName, this.options.valueConverter((_a = x.value) !== null && _a !== void 0 ? _a : ''), x), context);
     }
     renderProperties(x, context) {
-        return super.renderProperties(new _types__WEBPACK_IMPORTED_MODULE_3__.DBValueObject(this.tableName, this.columnName, this.options.valueConverter(x.value ?? ''), x), context);
+        var _a;
+        return super.renderProperties(new _types__WEBPACK_IMPORTED_MODULE_3__.DBValueObject(this.connectionNqName, this.schemaName, this.tableName, this.columnName, this.options.valueConverter((_a = x.value) !== null && _a !== void 0 ? _a : ''), x), context);
     }
 }
+//# sourceMappingURL=object-handlers.js.map
 
+/***/ },
 
-/***/ }),
-
-/***/ "../../libraries/db-explorer/src/query.ts":
-/*!************************************************!*\
-  !*** ../../libraries/db-explorer/src/query.ts ***!
-  \************************************************/
-/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+/***/ "./node_modules/@datagrok-libraries/db-explorer/src/query.js"
+/*!*******************************************************************!*\
+  !*** ./node_modules/@datagrok-libraries/db-explorer/src/query.js ***!
+  \*******************************************************************/
+(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
 
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   getConnectionNameBrackets: () => (/* binding */ getConnectionNameBrackets),
 /* harmony export */   queryDB: () => (/* binding */ queryDB),
 /* harmony export */   queryDBMultiple: () => (/* binding */ queryDBMultiple)
 /* harmony export */ });
 /* harmony import */ var datagrok_api_dg__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! datagrok-api/dg */ "datagrok-api/dg");
 /* harmony import */ var datagrok_api_dg__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(datagrok_api_dg__WEBPACK_IMPORTED_MODULE_0__);
+var __awaiter = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+/* eslint-disable max-len */
 
-async function queryDB(connection, tableName, match, matchValue, schemaName, joinOptions = []) {
-    if (connection == null)
-        return datagrok_api_dg__WEBPACK_IMPORTED_MODULE_0__.DataFrame.create(0);
-    const matchValueStr = typeof matchValue === 'string' ? `'${matchValue}'` : matchValue;
-    const startCharCode = 98; // ascii b
-    const applicableJoins = joinOptions.filter((opt) => opt.fromTable === tableName);
-    const tableAliases = applicableJoins.map((_, i) => String.fromCharCode(startCharCode + i));
-    const otherCols = applicableJoins
-        .map((opt, i) => {
-        const alias = tableAliases[i];
-        return opt.select.map((col) => `${alias}.${col}`).join(', ');
-    })
-        .join(', ') + (applicableJoins.length > 0 ? ', ' : '');
-    const joinStr = applicableJoins
-        .map((opt, i) => {
-        const alias = tableAliases[i];
-        return `left join "${schemaName}".${opt.tableName} ${alias} on a.${opt.columnName} = ${alias}.${opt.onColumn}`;
-    })
-        .join(' ');
-    const q = connection.query('getDBValueInfo', `
+/**
+ *
+ * @param connection
+ * @param tableName
+ * @param match - Pass the @match and @matchValue as empty strings to get 1 random row (for example queries)
+ * @param matchValue
+ * @param schemaName
+ * @param joinOptions
+ * @param max1
+ * @returns
+ */
+function queryDB(connection, tableName, match, matchValue, schemaName, joinOptions = [], max1 = false) {
+    var _a, _b;
+    return __awaiter(this, void 0, void 0, function* () {
+        if (connection == null)
+            return datagrok_api_dg__WEBPACK_IMPORTED_MODULE_0__.DataFrame.create(0);
+        const matchValueStr = typeof matchValue === 'string' ? `'${matchValue}'` : matchValue;
+        const startCharCode = 98; // ascii b
+        const [nbs, nbe] = getConnectionNameBrackets(connection);
+        const applicableJoins = joinOptions.filter((opt) => opt.fromTable === tableName && (!opt.fromSchema || opt.fromSchema === schemaName));
+        const tableAliases = applicableJoins.map((_, i) => String.fromCharCode(startCharCode + i));
+        const colNamesToTablesMap = {};
+        const colNamesToSchemasMap = {};
+        const otherCols = applicableJoins
+            .map((opt, i) => {
+            const alias = tableAliases[i];
+            return opt.select.map((col) => {
+                var _a, _b;
+                // if the col is confugured with alias, make sure it has quotes
+                // split cace insensitive way
+                const parts = col.split(/ as /i);
+                if (parts.length > 1) {
+                    colNamesToTablesMap[parts[1].trim()] = opt.tableName;
+                    colNamesToSchemasMap[parts[1].trim()] = (_a = opt.onSchema) !== null && _a !== void 0 ? _a : schemaName;
+                    return `${alias}.${nbs}${parts[0].trim()}${nbe} as ${nbs}${parts[1].trim()}${nbe}`;
+                }
+                colNamesToTablesMap[col] = opt.tableName;
+                colNamesToSchemasMap[col] = (_b = opt.onSchema) !== null && _b !== void 0 ? _b : schemaName;
+                return `${alias}.${nbs}${col}${nbe}`;
+            }).join(', ');
+        })
+            .join(', ');
+        const joinStr = applicableJoins
+            .map((opt, i) => {
+            var _a;
+            const alias = tableAliases[i];
+            return `left join ${nbs}${(_a = opt.onSchema) !== null && _a !== void 0 ? _a : schemaName}${nbe}.${nbs}${opt.tableName}${nbe} ${alias} on a.${nbs}${opt.columnName}${nbe} = ${alias}.${nbs}${opt.onColumn}${nbe}`;
+        })
+            .join(' ');
+        const isExampleQuery = match === '' && matchValue === ''; // used for setup editor, will not happen otherwise if not intentionally
+        const q = connection.query('getDBValueInfo', `
         --name: getDBValueInfo
         --output: dataframe result
-        select ${otherCols} a.* 
-        from "${schemaName}".${tableName} a
+        select a.* ${(applicableJoins.length > 0 ? ',' : '')} ${otherCols} 
+        from ${nbs}${schemaName}${nbe}.${nbs}${tableName}${nbe} a
         ${joinStr}
-        where a.${match} = ${matchValueStr}
+        ${isExampleQuery ? '' : `where a.${match} = ${matchValueStr}`}
+        ${max1 || isExampleQuery ? 'limit 1' : ''}
     `);
-    return (await q.apply({})) ?? datagrok_api_dg__WEBPACK_IMPORTED_MODULE_0__.DataFrame.create(0);
+        const res = yield q.apply({});
+        if (!res || !res.rowCount)
+            return datagrok_api_dg__WEBPACK_IMPORTED_MODULE_0__.DataFrame.create(0);
+        // add correct tags for dbschema and dbTables.
+        for (const col of res.columns) {
+            const colName = (_a = col.name) === null || _a === void 0 ? void 0 : _a.trim();
+            if (!colName)
+                continue; // should not happen
+            col.setTag(datagrok_api_dg__WEBPACK_IMPORTED_MODULE_0__.Tags.DbSchema, (_b = colNamesToSchemasMap[colName]) !== null && _b !== void 0 ? _b : schemaName);
+            const existingTableTag = col.getTag(datagrok_api_dg__WEBPACK_IMPORTED_MODULE_0__.Tags.DbTable);
+            if (!!existingTableTag && existingTableTag !== 'null') {
+                // do nothing, the table is already set
+                continue;
+            }
+            const tableForCol = colNamesToTablesMap[colName];
+            if (tableForCol) {
+                col.setTag(datagrok_api_dg__WEBPACK_IMPORTED_MODULE_0__.Tags.DbTable, tableForCol);
+            }
+            else if (applicableJoins
+                .some((tn) => /\(\d\)$/.test(colName) ||
+                (colName.startsWith(tn.tableName) && colName.length > tn.tableName.length + 1 && tn.select.includes(colName.substring(tn.tableName.length + 1))))) {
+                // not sure in this case, but try to avoid setting wrong table
+                continue;
+            }
+            else {
+                col.setTag(datagrok_api_dg__WEBPACK_IMPORTED_MODULE_0__.Tags.DbTable, tableName); // main table, everything else should be there
+            }
+        }
+        return res !== null && res !== void 0 ? res : datagrok_api_dg__WEBPACK_IMPORTED_MODULE_0__.DataFrame.create(0);
+    });
 }
-async function queryDBMultiple(connection, tableName, match, matchValues) {
-    if (connection == null)
-        return datagrok_api_dg__WEBPACK_IMPORTED_MODULE_0__.DataFrame.create(0);
-    if ((matchValues?.length ?? 0) < 1)
-        return datagrok_api_dg__WEBPACK_IMPORTED_MODULE_0__.DataFrame.create(0);
-    // matchValues can be more than 1000, which is the limit for oracle and others
-    // we need to split it in chunks of 500, to be on the safe side
-    const chunkSize = 500;
-    let outDataFrame = null;
-    for (let i = 0; i < matchValues.length; i += chunkSize) {
-        const chunk = matchValues.slice(i, i + chunkSize);
-        const q = connection.query('getDBValueInfoMult', `
+function getConnectionNameBrackets(connection) {
+    var _a;
+    // in future - substitute with direct api call
+    const providerType = (_a = connection.dataSource) === null || _a === void 0 ? void 0 : _a.toLowerCase();
+    switch (providerType) {
+        case 'bigquery':
+        case 'databricks':
+        case 'mysql':
+            return ['`', '`'];
+        default:
+            return ['"', '"']; // most common
+    }
+}
+function queryDBMultiple(connection, tableName, match, matchValues) {
+    var _a;
+    return __awaiter(this, void 0, void 0, function* () {
+        if (connection == null)
+            return datagrok_api_dg__WEBPACK_IMPORTED_MODULE_0__.DataFrame.create(0);
+        if (((_a = matchValues === null || matchValues === void 0 ? void 0 : matchValues.length) !== null && _a !== void 0 ? _a : 0) < 1)
+            return datagrok_api_dg__WEBPACK_IMPORTED_MODULE_0__.DataFrame.create(0);
+        // matchValues can be more than 1000, which is the limit for oracle and others
+        // we need to split it in chunks of 500, to be on the safe side
+        const chunkSize = 500;
+        let outDataFrame = null;
+        for (let i = 0; i < matchValues.length; i += chunkSize) {
+            const chunk = matchValues.slice(i, i + chunkSize);
+            const q = connection.query('getDBValueInfoMult', `
             --name: getDBValueInfoMult
             --output: dataframe result
             select * from ${tableName} where ${match} in (${chunk.map((v) => `'${v}'`).join(',')})
         `);
-        const res = await q.apply({});
-        if (res) {
-            if (!outDataFrame)
-                outDataFrame = res;
-            else
-                outDataFrame.append(res, true);
+            const res = yield q.apply({});
+            if (res) {
+                if (!outDataFrame)
+                    outDataFrame = res;
+                else
+                    outDataFrame.append(res, true);
+            }
         }
-    }
-    return outDataFrame ?? datagrok_api_dg__WEBPACK_IMPORTED_MODULE_0__.DataFrame.create(0);
+        return outDataFrame !== null && outDataFrame !== void 0 ? outDataFrame : datagrok_api_dg__WEBPACK_IMPORTED_MODULE_0__.DataFrame.create(0);
+    });
 }
+//# sourceMappingURL=query.js.map
 
+/***/ },
 
-/***/ }),
-
-/***/ "../../libraries/db-explorer/src/renderer.ts":
-/*!***************************************************!*\
-  !*** ../../libraries/db-explorer/src/renderer.ts ***!
-  \***************************************************/
-/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+/***/ "./node_modules/@datagrok-libraries/db-explorer/src/renderer.js"
+/*!**********************************************************************!*\
+  !*** ./node_modules/@datagrok-libraries/db-explorer/src/renderer.js ***!
+  \**********************************************************************/
+(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
 
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   DBExplorerRenderer: () => (/* binding */ DBExplorerRenderer),
+/* harmony export */   ExampleExplorerRenderer: () => (/* binding */ ExampleExplorerRenderer),
 /* harmony export */   MAX_MULTIROW_VALUES: () => (/* binding */ MAX_MULTIROW_VALUES),
+/* harmony export */   getDefaultRendererByName: () => (/* binding */ getDefaultRendererByName),
 /* harmony export */   getLoaderDiv: () => (/* binding */ getLoaderDiv),
+/* harmony export */   helmRenderer: () => (/* binding */ helmRenderer),
 /* harmony export */   imageRenderer: () => (/* binding */ imageRenderer),
 /* harmony export */   moleculeRenderer: () => (/* binding */ moleculeRenderer),
 /* harmony export */   ownIdRenderer: () => (/* binding */ ownIdRenderer),
 /* harmony export */   rawImageRenderer: () => (/* binding */ rawImageRenderer),
+/* harmony export */   renderExampleCard: () => (/* binding */ renderExampleCard),
 /* harmony export */   textRenderer: () => (/* binding */ textRenderer)
 /* harmony export */ });
 /* harmony import */ var datagrok_api_grok__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! datagrok-api/grok */ "datagrok-api/grok");
@@ -406,8 +591,17 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var datagrok_api_ui__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__webpack_require__.n(datagrok_api_ui__WEBPACK_IMPORTED_MODULE_1__);
 /* harmony import */ var datagrok_api_dg__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! datagrok-api/dg */ "datagrok-api/dg");
 /* harmony import */ var datagrok_api_dg__WEBPACK_IMPORTED_MODULE_2___default = /*#__PURE__*/__webpack_require__.n(datagrok_api_dg__WEBPACK_IMPORTED_MODULE_2__);
-/* harmony import */ var _types__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ./types */ "../../libraries/db-explorer/src/types.ts");
-/* harmony import */ var _query__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ./query */ "../../libraries/db-explorer/src/query.ts");
+/* harmony import */ var _types__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ./types */ "./node_modules/@datagrok-libraries/db-explorer/src/types.js");
+/* harmony import */ var _query__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ./query */ "./node_modules/@datagrok-libraries/db-explorer/src/query.js");
+var __awaiter = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
 /* eslint-disable max-len */
 
 
@@ -425,7 +619,8 @@ function textRenderer(value, withTooltip = true) {
     // ability to copy
     const menu = datagrok_api_dg__WEBPACK_IMPORTED_MODULE_2__.Menu.popup();
     menu.item('Copy', () => {
-        navigator?.clipboard?.writeText(value.toString());
+        var _a;
+        (_a = navigator === null || navigator === void 0 ? void 0 : navigator.clipboard) === null || _a === void 0 ? void 0 : _a.writeText(value.toString());
     });
     nameHost.addEventListener('contextmenu', (e) => {
         e.preventDefault();
@@ -452,84 +647,108 @@ function imageRenderer(fullUrl, useProxy = true) {
     const loaderDiv = getLoaderDiv();
     const host = datagrok_api_ui__WEBPACK_IMPORTED_MODULE_1__.divH([nameHost, loaderDiv]);
     datagrok_api_ui__WEBPACK_IMPORTED_MODULE_1__.tooltip.bind(nameHost, 'Unable to get image');
-    async function replaceWithImage() {
-        try {
-            const qRes = useProxy ? await datagrok_api_grok__WEBPACK_IMPORTED_MODULE_0__.dapi.fetchProxy(fullUrl, {}) : await fetch(fullUrl);
-            if (!qRes)
-                throw new Error('');
-            const blob = await qRes.blob();
-            if (!blob)
-                throw new Error('');
-            const canvas = datagrok_api_ui__WEBPACK_IMPORTED_MODULE_1__.canvas(200, 200);
-            const ctx = canvas.getContext('2d');
-            if (!ctx)
-                throw new Error('');
-            const image = new Image();
-            image.onload = () => {
-                ctx.drawImage(image, 0, 0, 200, 200);
-            };
-            image.src = URL.createObjectURL(blob);
-            nameHost.remove();
-            host.appendChild(canvas);
-        }
-        catch (e) {
-            console.error(e);
-        }
-        finally {
-            loaderDiv.remove();
-        }
+    function replaceWithImage() {
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                const qRes = useProxy ? yield datagrok_api_grok__WEBPACK_IMPORTED_MODULE_0__.dapi.fetchProxy(fullUrl, {}) : yield fetch(fullUrl);
+                if (!qRes)
+                    throw new Error('');
+                const blob = yield qRes.blob();
+                if (!blob)
+                    throw new Error('');
+                const canvas = datagrok_api_ui__WEBPACK_IMPORTED_MODULE_1__.canvas(200, 200);
+                const ctx = canvas.getContext('2d');
+                if (!ctx)
+                    throw new Error('');
+                const image = new Image();
+                image.onload = () => {
+                    ctx.drawImage(image, 0, 0, 200, 200);
+                };
+                image.src = URL.createObjectURL(blob);
+                nameHost.remove();
+                host.appendChild(canvas);
+            }
+            catch (e) {
+                console.error(e);
+            }
+            finally {
+                loaderDiv.remove();
+            }
+        });
     }
     replaceWithImage();
     return host;
+}
+function helmRenderer(value) {
+    return datagrok_api_ui__WEBPACK_IMPORTED_MODULE_1__.wait(() => __awaiter(this, void 0, void 0, function* () {
+        //@ts-ignore
+        const helmInput = yield datagrok_api_ui__WEBPACK_IMPORTED_MODULE_1__.input.helmAsync('helm', {
+            editable: false,
+        });
+        helmInput.setStringValue(value);
+        yield datagrok_api_dg__WEBPACK_IMPORTED_MODULE_2__.delay(200); // wait for proper sizing
+        helmInput.getInput().addEventListener('click', () => {
+            datagrok_api_grok__WEBPACK_IMPORTED_MODULE_0__.shell.o = helmInput.getValue();
+        });
+        helmInput.getInput().addEventListener('dblclick', () => {
+            helmInput.showEditorDialog();
+        });
+        helmInput.getInput().style.width = '100%';
+        helmInput.getInput().style.setProperty('height', '300px', 'important');
+        return helmInput.getInput();
+    }));
 }
 function rawImageRenderer(rawImage) {
     const nameHost = textRenderer('image');
     const loaderDiv = getLoaderDiv();
     const host = datagrok_api_ui__WEBPACK_IMPORTED_MODULE_1__.divH([nameHost, loaderDiv]);
     datagrok_api_ui__WEBPACK_IMPORTED_MODULE_1__.tooltip.bind(nameHost, 'Unable to render image');
-    async function replaceWithImage() {
-        try {
-            if (!rawImage)
-                throw new Error('Empty image string');
-            const canvas = datagrok_api_ui__WEBPACK_IMPORTED_MODULE_1__.canvas(200, 200);
-            const ctx = canvas.getContext('2d');
-            if (!ctx)
-                throw new Error('');
-            const image = new Image();
-            image.onload = () => {
-                ctx.drawImage(image, 0, 0, 200, 200);
-            };
-            image.src = 'data:image/png;base64,' + rawImage;
-            nameHost.remove();
-            host.appendChild(canvas);
-        }
-        catch (e) {
-            console.error(e);
-        }
-        finally {
-            loaderDiv.remove();
-        }
+    function replaceWithImage() {
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                if (!rawImage)
+                    throw new Error('Empty image string');
+                const canvas = datagrok_api_ui__WEBPACK_IMPORTED_MODULE_1__.canvas(200, 200);
+                const ctx = canvas.getContext('2d');
+                if (!ctx)
+                    throw new Error('');
+                const image = new Image();
+                image.onload = () => {
+                    ctx.drawImage(image, 0, 0, 200, 200);
+                };
+                image.src = 'data:image/png;base64,' + rawImage;
+                nameHost.remove();
+                host.appendChild(canvas);
+            }
+            catch (e) {
+                console.error(e);
+            }
+            finally {
+                loaderDiv.remove();
+            }
+        });
     }
     replaceWithImage();
     return host;
 }
-function ownIdRenderer(id, tableName, colName) {
+function ownIdRenderer(id, tableName, colName, connectionNqName, schemaName) {
     const nameHost = textRenderer(id.toString(), false);
     nameHost.style.color = 'var(--blue-1)';
     nameHost.style.cursor = 'pointer';
     datagrok_api_ui__WEBPACK_IMPORTED_MODULE_1__.tooltip.bind(nameHost, 'Click to explore');
     nameHost.addEventListener('click', (e) => {
         e.stopImmediatePropagation();
-        datagrok_api_grok__WEBPACK_IMPORTED_MODULE_0__.shell.o = new _types__WEBPACK_IMPORTED_MODULE_3__.DBValueObject(tableName, colName, id);
+        datagrok_api_grok__WEBPACK_IMPORTED_MODULE_0__.shell.o = new _types__WEBPACK_IMPORTED_MODULE_3__.DBValueObject(connectionNqName, schemaName, tableName, colName, id);
     });
     return nameHost;
 }
 function removeEmptyCols(df) {
+    const dfClone = df.clone();
     df.columns.names().forEach((colName) => {
         if (!df.col(colName) || df.col(colName).isNone(0))
-            df.columns.remove(colName);
+            dfClone.columns.remove(colName);
     });
-    return df;
+    return dfClone;
 }
 function getLoaderDiv() {
     const div = datagrok_api_ui__WEBPACK_IMPORTED_MODULE_1__.div([], { style: { width: '50px', height: '24px', position: 'relative' } });
@@ -537,35 +756,49 @@ function getLoaderDiv() {
     return div;
 }
 class DBExplorerRenderer {
-    schemaInfoPromise;
-    schemaName;
-    entryPointOptions;
-    valueReplacers = [];
-    customRenderers = [];
-    headerReplacers = {};
-    uniqueColNames = {};
-    customSelectedColumns = {};
-    defaultHeaderReplacerColumns = ['name'];
     constructor(schemaInfoPromise, schemaName, entryPointOptions) {
         this.schemaInfoPromise = schemaInfoPromise;
         this.schemaName = schemaName;
         this.entryPointOptions = entryPointOptions;
+        this.valueReplacers = [];
+        this.customRenderers = [];
+        this.semtypeRenderers = [{
+                check: (col) => (col === null || col === void 0 ? void 0 : col.semType) === datagrok_api_dg__WEBPACK_IMPORTED_MODULE_2__.SEMTYPE.MOLECULE,
+                renderer: (value) => moleculeRenderer(value),
+            }, {
+                check: (col) => { var _a; return (col === null || col === void 0 ? void 0 : col.semType) === datagrok_api_dg__WEBPACK_IMPORTED_MODULE_2__.SEMTYPE.MACROMOLECULE && ((_a = col === null || col === void 0 ? void 0 : col.meta) === null || _a === void 0 ? void 0 : _a.units) === 'helm'; },
+                renderer: (value) => helmRenderer(value),
+            },
+            {
+                check: (col) => (col === null || col === void 0 ? void 0 : col.semType) === 'rawPng',
+                renderer: (value) => rawImageRenderer(value),
+            },
+            {
+                check: (col) => (col === null || col === void 0 ? void 0 : col.semType) === 'ImageUrl',
+                renderer: (value) => imageRenderer(value),
+            }
+        ];
+        this.headerReplacers = {};
+        this.uniqueColNames = {};
+        this.customSelectedColumns = {};
+        this.defaultHeaderReplacerColumns = ['name', 'type', 'standard_type'];
     }
     addHeaderReplacers(replacers) {
-        this.headerReplacers = { ...this.headerReplacers, ...replacers };
+        this.headerReplacers = Object.assign(Object.assign({}, this.headerReplacers), replacers);
     }
     addDefaultHeaderReplacerColumns(columns) {
         this.defaultHeaderReplacerColumns = [...this.defaultHeaderReplacerColumns, ...columns];
     }
+    /** schema qualified table names and corresponding column names */
     addCustomSelectedColumns(columns) {
         const columnSets = {};
         Object.entries(columns).forEach(([tableName, cols]) => {
             columnSets[tableName] = new Set(cols);
         });
-        this.customSelectedColumns = { ...this.customSelectedColumns, ...columnSets };
+        this.customSelectedColumns = Object.assign(Object.assign({}, this.customSelectedColumns), columnSets);
     }
     addUniqueColNames(cols) {
-        this.uniqueColNames = { ...this.uniqueColNames, ...cols };
+        this.uniqueColNames = Object.assign(Object.assign({}, this.uniqueColNames), cols);
     }
     addValueReplacer(check, replacer) {
         this.valueReplacers.push({ check, replacer });
@@ -573,7 +806,7 @@ class DBExplorerRenderer {
     addCustomRenderer(check, renderer) {
         this.customRenderers.push({ check, renderer });
     }
-    refIdRenderer(connection, id, tableName, colName) {
+    refIdRenderer(connection, id, schemaName, tableName, colName) {
         const loaderDiv = getLoaderDiv();
         const nameHost = textRenderer(id.toString(), false);
         const host = datagrok_api_ui__WEBPACK_IMPORTED_MODULE_1__.divH([nameHost, loaderDiv]);
@@ -581,8 +814,12 @@ class DBExplorerRenderer {
             loaderDiv.remove();
             datagrok_api_ui__WEBPACK_IMPORTED_MODULE_1__.tooltip.bind(nameHost, reason);
         }
+        if (id == null || id === '') {
+            unableToRetrieve('ID is empty');
+            return host;
+        }
         try {
-            (0,_query__WEBPACK_IMPORTED_MODULE_4__.queryDB)(connection, tableName, colName, id, this.schemaName, this.entryPointOptions.joinOptions)
+            (0,_query__WEBPACK_IMPORTED_MODULE_4__.queryDB)(connection, tableName, colName, id, schemaName, this.entryPointOptions.joinOptions)
                 .then((df) => {
                 if (df.rowCount == 0) {
                     unableToRetrieve();
@@ -592,13 +829,22 @@ class DBExplorerRenderer {
                 const replacer = this.valueReplacers.find((replacer) => replacer.check(tableName, colName, id));
                 if (replacer)
                     nameHost.textContent = replacer.replacer(clearedDF, id);
-                datagrok_api_ui__WEBPACK_IMPORTED_MODULE_1__.tooltip.bind(nameHost, () => datagrok_api_ui__WEBPACK_IMPORTED_MODULE_1__.wait(async () => await this.renderDataFrame(clearedDF, tableName)));
+                datagrok_api_ui__WEBPACK_IMPORTED_MODULE_1__.tooltip.bind(nameHost, () => datagrok_api_ui__WEBPACK_IMPORTED_MODULE_1__.wait(() => __awaiter(this, void 0, void 0, function* () { return yield this.renderDataFrame(clearedDF, schemaName, tableName); })));
                 nameHost.addEventListener('click', (e) => {
                     e.stopImmediatePropagation();
-                    datagrok_api_grok__WEBPACK_IMPORTED_MODULE_0__.shell.o = new _types__WEBPACK_IMPORTED_MODULE_3__.DBValueObject(tableName, colName, id);
+                    this.schemaInfoPromise().then((schemaAndConnection) => {
+                        if (schemaAndConnection && schemaAndConnection.connection && schemaAndConnection.schema)
+                            datagrok_api_grok__WEBPACK_IMPORTED_MODULE_0__.shell.setCurrentObject(new _types__WEBPACK_IMPORTED_MODULE_3__.DBValueObject(schemaAndConnection.connection.nqName, this.schemaName, tableName, colName, id), false, true);
+                    });
                 });
                 nameHost.style.color = 'var(--blue-1)';
                 nameHost.style.cursor = 'pointer';
+                // after the successful load, try to add meaningful names to the meaningless ids
+                const replaceCol = this.defaultHeaderReplacerColumns.find((col) => clearedDF.col(col) && !clearedDF.col(col).isNone(0));
+                if (replaceCol) {
+                    // add id (replacer)
+                    nameHost.textContent = `${id} (${clearedDF.col(replaceCol).getString(0)})`;
+                }
             })
                 .finally(() => {
                 loaderDiv.remove();
@@ -610,216 +856,426 @@ class DBExplorerRenderer {
         }
         return host;
     }
-    async getTable(tableName, match, matchValue, joinOptions = []) {
-        const schemaAndConnection = await this.schemaInfoPromise();
-        const res = await (0,_query__WEBPACK_IMPORTED_MODULE_4__.queryDB)(schemaAndConnection?.connection ?? null, tableName, match, matchValue, this.schemaName, joinOptions);
-        return res;
-    }
-    async renderMultiRowTable(tableName, match, matchValue, joinOptions = []) {
-        const df = await this.getTable(tableName, match, matchValue, joinOptions);
-        if (df.rowCount < 1)
-            return { root: datagrok_api_ui__WEBPACK_IMPORTED_MODULE_1__.divText('ID not found'), rowCount: 0 };
-        if (df.rowCount === 1)
-            return { root: this.renderDataFrame(df, tableName), rowCount: 1 };
-        const acc = datagrok_api_ui__WEBPACK_IMPORTED_MODULE_1__.accordion(`Multiple rows for ${tableName}`);
-        const dfMaxCount = Math.min(df.rowCount, 10);
-        const replaceColName = this.headerReplacers[tableName];
-        for (let i = 0; i < dfMaxCount; i++) {
-            let paneName = `Row ${i + 1}`;
-            if (replaceColName && df.col(replaceColName)?.get(i)) {
-                paneName = df.col(replaceColName).get(i).toString();
-            }
-            else {
-                const f = this.defaultHeaderReplacerColumns.find((col) => df.col(col) && df.col(col).get(i));
-                if (f)
-                    paneName = df.col(f).get(i).toString();
-            }
-            acc.addPane(paneName, () => {
-                const rowBitset = datagrok_api_dg__WEBPACK_IMPORTED_MODULE_2__.BitSet.create(df.rowCount);
-                rowBitset.set(i, true);
-                const rowDf = df.clone(rowBitset);
-                return datagrok_api_ui__WEBPACK_IMPORTED_MODULE_1__.wait(async () => await this.renderDataFrame(rowDf, tableName));
-            });
-        }
-        return { root: acc.root, rowCount: df.rowCount };
-    }
-    async renderTable(tableName, match, matchValue, joinOptions = []) {
-        const df = await this.getTable(tableName, match, matchValue, joinOptions);
-        if (df.rowCount < 1)
-            return datagrok_api_ui__WEBPACK_IMPORTED_MODULE_1__.divText('ID not found');
-        return this.renderDataFrame(df, tableName);
-    }
-    async renderDataFrame(df, tableName) {
-        const schemaAndConnection = await this.schemaInfoPromise();
-        if (!schemaAndConnection)
-            return datagrok_api_ui__WEBPACK_IMPORTED_MODULE_1__.divText('Schema information is not available');
-        const clearedDF = removeEmptyCols(df);
-        let entries = Object.entries(clearedDF.toJson()[0]);
-        if (this.customSelectedColumns[tableName]) {
-            entries = entries.filter(([key]) => this.customSelectedColumns[tableName].has(key));
-            // reorder entries according to customSelectedColumns if present
-            const cols = Array.from(this.customSelectedColumns[tableName]);
-            entries.sort((a, b) => {
-                return cols.indexOf(a[0]) - cols.indexOf(b[0]);
-            });
-        }
-        const mainTable = datagrok_api_ui__WEBPACK_IMPORTED_MODULE_1__.table(entries, (entry) => {
-            const key = entry[0];
-            const value = entry[1];
-            const cutomRenderer = this.customRenderers.find((renderer) => renderer.check(tableName, key, value));
-            if (cutomRenderer)
-                return [textRenderer(key), cutomRenderer.renderer(value, schemaAndConnection.connection)];
-            const refInfo = schemaAndConnection.schema.references?.[tableName]?.[key];
-            if (refInfo)
-                return [textRenderer(key), this.refIdRenderer(schemaAndConnection.connection, value, refInfo.refTable, refInfo.refColumn)];
-            const isUnqueCol = this.uniqueColNames[tableName] === key;
-            if (isUnqueCol)
-                return [textRenderer(key), ownIdRenderer(value, tableName, key)];
-            return [textRenderer(key), textRenderer(value)];
+    getTable(schemaName, tableName, match, matchValue, joinOptions = []) {
+        var _a;
+        return __awaiter(this, void 0, void 0, function* () {
+            const schemaAndConnection = yield this.schemaInfoPromise();
+            const res = yield (0,_query__WEBPACK_IMPORTED_MODULE_4__.queryDB)((_a = schemaAndConnection === null || schemaAndConnection === void 0 ? void 0 : schemaAndConnection.connection) !== null && _a !== void 0 ? _a : null, tableName, match, matchValue, schemaName, joinOptions);
+            return res;
         });
-        return datagrok_api_ui__WEBPACK_IMPORTED_MODULE_1__.divV([mainTable]);
     }
-    async renderAssociations(acc, schemaPromise, curTable, curDf) {
-        const schemaAndConnection = await schemaPromise();
-        if (!schemaAndConnection)
-            return;
-        const addAllAssociated = async (tableName, colName, value) => {
-            const pi = datagrok_api_dg__WEBPACK_IMPORTED_MODULE_2__.TaskBarProgressIndicator.create('Opening all associated entries');
-            try {
-                const assocDf = await this.getTable(tableName, colName, value, this.entryPointOptions.joinOptions);
-                if (assocDf) {
-                    if (assocDf.rowCount === 0) {
-                        datagrok_api_grok__WEBPACK_IMPORTED_MODULE_0__.shell.info(`No associated ${tableName} entries found`);
-                        return;
-                    }
-                    assocDf.name = `${tableName}`;
-                    datagrok_api_grok__WEBPACK_IMPORTED_MODULE_0__.shell.addTableView(assocDf);
+    renderMultiRowTable(schemaName, tableName, match, matchValue, joinOptions = []) {
+        var _a;
+        return __awaiter(this, void 0, void 0, function* () {
+            const df = yield this.getTable(schemaName, tableName, match, matchValue, joinOptions);
+            if (df.rowCount < 1)
+                return { root: datagrok_api_ui__WEBPACK_IMPORTED_MODULE_1__.divText('ID not found'), rowCount: 0 };
+            if (df.rowCount === 1)
+                return { root: this.renderDataFrame(df, schemaName, tableName), rowCount: 1 };
+            const acc = datagrok_api_ui__WEBPACK_IMPORTED_MODULE_1__.accordion(`Multiple rows for ${tableName}`);
+            const dfMaxCount = Math.min(df.rowCount, 10);
+            const replaceColName = this.headerReplacers[tableName];
+            for (let i = 0; i < dfMaxCount; i++) {
+                let paneName = `Row ${i + 1}`;
+                if (replaceColName && ((_a = df.col(replaceColName)) === null || _a === void 0 ? void 0 : _a.get(i))) {
+                    paneName = df.col(replaceColName).get(i).toString();
                 }
-            }
-            catch (e) {
-                console.error(e);
-                datagrok_api_grok__WEBPACK_IMPORTED_MODULE_0__.shell.error(`Failed to open associated ${tableName} entries`);
-            }
-            finally {
-                pi.close();
-            }
-        };
-        const addIconToPane = (pane, tableName, colName, value) => {
-            const icon = datagrok_api_ui__WEBPACK_IMPORTED_MODULE_1__.icons.add(() => { }, `Add all associated ${tableName} entries to workspace`);
-            // need separate event to avoid click on accordion pane
-            icon.addEventListener('click', (e) => {
-                e.stopImmediatePropagation();
-                e.preventDefault();
-                addAllAssociated(tableName, colName, value);
-            });
-            pane.root.getElementsByClassName('d4-accordion-pane-header')?.[0]?.appendChild(icon);
-        };
-        const attachOpenInWorkspaceMenu = (tableName, colName, value, pane) => {
-            const menu = datagrok_api_dg__WEBPACK_IMPORTED_MODULE_2__.Menu.popup();
-            menu.item(`Add all associated ${tableName} entries to workspace`, async () => {
-                addAllAssociated(tableName, colName, value);
-            });
-            pane.root.addEventListener('contextmenu', (e) => {
-                e.preventDefault();
-                setTimeout(() => menu.show());
-            });
-            addIconToPane(pane, tableName, colName, value);
-        };
-        const refTable = schemaAndConnection.schema.referencedBy[curTable];
-        if (!refTable || Object.keys(refTable).length == 0)
-            return;
-        const _linksPane = acc.addPane('Links', () => {
-            const linksAcc = datagrok_api_ui__WEBPACK_IMPORTED_MODULE_1__.accordion(`Links to ${curTable}`);
-            if ((curDf?.rowCount ?? 0) === 0)
-                return datagrok_api_ui__WEBPACK_IMPORTED_MODULE_1__.divText('No data');
-            Object.entries(refTable).forEach(([refedColumn, refInfo]) => {
-                const val = curDf.col(refedColumn)?.get(0);
-                if (!val)
-                    return;
-                const _pane = linksAcc.addPane(refedColumn, () => {
-                    const colAcc = datagrok_api_ui__WEBPACK_IMPORTED_MODULE_1__.accordion(`Links to ${curTable}_${refedColumn}`);
-                    // there can be cases when same column is referneced by two or more columns in other table.
-                    // example is chembl table molecule_hiearchy where all 3 columns are referencing to molregno
-                    // need to account for such cases
-                    const tableRefs = new Map();
-                    refInfo.forEach((ref) => {
-                        if (!tableRefs.has(ref.refTable))
-                            tableRefs.set(ref.refTable, []);
-                        tableRefs.get(ref.refTable).push(ref);
-                    });
-                    tableRefs.forEach((refInfos, refTable) => {
-                        const singleColPane = colAcc.addPane(refTable, () => {
-                            if (refInfos.length === 1) {
-                                return datagrok_api_ui__WEBPACK_IMPORTED_MODULE_1__.wait(async () => {
-                                    const res = await this.renderMultiRowTable(refInfos[0].refTable, refInfos[0].refColumn, val, this.entryPointOptions.joinOptions);
-                                    if (res.rowCount > MAX_MULTIROW_VALUES) {
-                                        singleColPane.name = `${singleColPane.name} (${MAX_MULTIROW_VALUES} / ${res.rowCount})`;
-                                        addIconToPane(singleColPane, refInfos[0].refTable, refInfos[0].refColumn, val);
-                                    }
-                                    return res.root;
-                                });
-                            }
-                            const multiTableAcc = datagrok_api_ui__WEBPACK_IMPORTED_MODULE_1__.accordion(`Multiple links to ${refTable}`);
-                            refInfos.forEach((ref) => {
-                                const colPane = multiTableAcc.addPane(ref.refColumn, () => {
-                                    return datagrok_api_ui__WEBPACK_IMPORTED_MODULE_1__.wait(async () => {
-                                        const res = await this.renderMultiRowTable(ref.refTable, ref.refColumn, val, this.entryPointOptions.joinOptions);
-                                        if (res.rowCount > MAX_MULTIROW_VALUES) {
-                                            colPane.name = `${singleColPane.name} (${MAX_MULTIROW_VALUES} / ${res.rowCount})`;
-                                            addIconToPane(colPane, ref.refTable, ref.refColumn, val);
-                                        }
-                                        return res.root;
-                                    });
-                                });
-                                attachOpenInWorkspaceMenu(ref.refTable, ref.refColumn, val, colPane);
-                            });
-                            return multiTableAcc.root;
-                        });
-                        if (refInfos.length === 1)
-                            attachOpenInWorkspaceMenu(refInfos[0].refTable, refInfos[0].refColumn, val, singleColPane);
-                    });
-                    return colAcc.root;
+                else {
+                    const f = this.defaultHeaderReplacerColumns.find((col) => df.col(col) && df.col(col).get(i));
+                    if (f)
+                        paneName = df.col(f).get(i).toString();
+                }
+                acc.addPane(paneName, () => {
+                    const rowBitset = datagrok_api_dg__WEBPACK_IMPORTED_MODULE_2__.BitSet.create(df.rowCount);
+                    rowBitset.set(i, true);
+                    const rowDf = df.clone(rowBitset);
+                    return datagrok_api_ui__WEBPACK_IMPORTED_MODULE_1__.wait(() => __awaiter(this, void 0, void 0, function* () { return yield this.renderDataFrame(rowDf, schemaName, tableName); }));
                 });
+            }
+            return { root: acc.root, rowCount: df.rowCount };
+        });
+    }
+    renderTable(schemaName, tableName, match, matchValue, joinOptions = []) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const df = yield this.getTable(schemaName, tableName, match, matchValue, joinOptions);
+            if (df.rowCount < 1)
+                return datagrok_api_ui__WEBPACK_IMPORTED_MODULE_1__.divText('ID not found');
+            return this.renderDataFrame(df, schemaName, tableName);
+        });
+    }
+    /**
+     * Renders dataframe as a card with all associated references clickable
+     * In cases where your table is aggregated from different db tables, you can pass columnTablesMap property to specify
+     * which column belongs to which table in the database schema
+     * @param df
+     * @param tableName
+     * @param options
+     * @returns
+     */
+    renderDataFrame(df, schemaName, tableName, options) {
+        var _a;
+        return __awaiter(this, void 0, void 0, function* () {
+            const schemaAndConnection = yield this.schemaInfoPromise();
+            if (!schemaAndConnection)
+                return datagrok_api_ui__WEBPACK_IMPORTED_MODULE_1__.divText('Schema information is not available');
+            if (df.rowCount === 0)
+                return datagrok_api_ui__WEBPACK_IMPORTED_MODULE_1__.divText('No data');
+            const clearedDF = (options === null || options === void 0 ? void 0 : options.keepEmptyValues) ? df : removeEmptyCols(df);
+            yield clearedDF.meta.detectSemanticTypes();
+            let entries = clearedDF.columns.names()
+                .map((colName) => [colName, clearedDF.col(colName).isNone(0) ? '' : clearedDF.col(colName).getString(0)]);
+            // reverse compatibility: first check schema qualified table name
+            const customSelectedColumnEntries = (_a = this.customSelectedColumns[`${schemaName}.${tableName}`]) !== null && _a !== void 0 ? _a : this.customSelectedColumns[tableName];
+            if (!(options === null || options === void 0 ? void 0 : options.skipCustomSelected) && customSelectedColumnEntries) {
+                entries = entries.filter(([key, _]) => customSelectedColumnEntries.has(key));
+                // reorder entries according to customSelectedColumns if present
+                const cols = Array.from(customSelectedColumnEntries);
+                entries.sort((a, b) => {
+                    return cols.indexOf(a[0]) - cols.indexOf(b[0]);
+                });
+            }
+            // similarly here, the column name in the df might not match the db column name if the df is a result of a query joining multiple tables
+            const dbColumnNames = {};
+            const dbColTableNames = {};
+            const dbColSchemaNames = {};
+            entries.forEach(([colName, _]) => {
+                const col = clearedDF.col(colName);
+                if (col === null || col === void 0 ? void 0 : col.getTag(datagrok_api_dg__WEBPACK_IMPORTED_MODULE_2__.Tags.DbColumn))
+                    dbColumnNames[colName] = col.getTag(datagrok_api_dg__WEBPACK_IMPORTED_MODULE_2__.Tags.DbColumn);
+                if (col === null || col === void 0 ? void 0 : col.getTag(datagrok_api_dg__WEBPACK_IMPORTED_MODULE_2__.Tags.DbTable))
+                    dbColTableNames[colName] = col.getTag(datagrok_api_dg__WEBPACK_IMPORTED_MODULE_2__.Tags.DbTable);
+                if (col === null || col === void 0 ? void 0 : col.getTag(datagrok_api_dg__WEBPACK_IMPORTED_MODULE_2__.Tags.DbSchema))
+                    dbColSchemaNames[colName] = col.getTag(datagrok_api_dg__WEBPACK_IMPORTED_MODULE_2__.Tags.DbSchema);
             });
-            return linksAcc.root;
+            const isAggregatedFromMultipleTables = Object.keys(dbColTableNames).some((colName) => dbColTableNames[colName] !== tableName);
+            const mainTable = datagrok_api_ui__WEBPACK_IMPORTED_MODULE_1__.table(entries, (entry) => {
+                var _a, _b, _c, _d, _e, _f, _g, _h, _j;
+                const colName = entry[0];
+                const dbColName = (_a = dbColumnNames[colName]) !== null && _a !== void 0 ? _a : colName;
+                const value = entry[1];
+                const dbTableName = (_b = dbColTableNames[colName]) !== null && _b !== void 0 ? _b : tableName; // here, it is mapped from the df column, not its db name
+                const dbSchemaName = (_c = dbColSchemaNames[colName]) !== null && _c !== void 0 ? _c : schemaName;
+                const cutomRenderer = this.customRenderers.find((renderer) => renderer.check(dbTableName, dbColName, value));
+                if (cutomRenderer)
+                    return [textRenderer(colName), cutomRenderer.renderer(value, schemaAndConnection.connection)];
+                // if its autodetected as a molecule or helm or something else in the future
+                const semTypeRenderer = this.semtypeRenderers.find((renderer) => {
+                    const col = clearedDF.col(colName);
+                    return renderer.check(col !== null && col !== void 0 ? col : undefined);
+                });
+                if (semTypeRenderer)
+                    return [textRenderer(colName), semTypeRenderer.renderer(value)];
+                const refInfo = (_f = (_e = (_d = schemaAndConnection.schema.references) === null || _d === void 0 ? void 0 : _d[dbSchemaName]) === null || _e === void 0 ? void 0 : _e[dbTableName]) === null || _f === void 0 ? void 0 : _f[dbColName];
+                if (refInfo)
+                    return [textRenderer(colName), this.refIdRenderer(schemaAndConnection.connection, value, refInfo.refSchema, refInfo.refTable, refInfo.refColumn)];
+                // if the given column is referenced by other tables, then also use refIdRenderer
+                const refedByInfo = (_j = (_h = (_g = schemaAndConnection.schema.referencedBy) === null || _g === void 0 ? void 0 : _g[dbSchemaName]) === null || _h === void 0 ? void 0 : _h[dbTableName]) === null || _j === void 0 ? void 0 : _j[dbColName];
+                if (refedByInfo && refedByInfo.length > 0)
+                    return [textRenderer(colName), this.refIdRenderer(schemaAndConnection.connection, value, dbSchemaName, dbTableName, dbColName)];
+                const isUnqueCol = this.uniqueColNames[dbTableName] === dbColName;
+                if (isUnqueCol) {
+                    if (!isAggregatedFromMultipleTables) // if its not aggregated, the tooltip in of the id will be the exact same as card, so we use simpler ownerIdRenderer
+                        return [textRenderer(colName), ownIdRenderer(value, dbTableName, dbColName, schemaAndConnection.connection.nqName, dbSchemaName)];
+                    return [textRenderer(colName), this.refIdRenderer(schemaAndConnection.connection, value, dbSchemaName, dbTableName, dbColName)]; // otherwise use refIdRenderer
+                }
+                return [textRenderer(colName), textRenderer(value)];
+            });
+            return datagrok_api_ui__WEBPACK_IMPORTED_MODULE_1__.divV([mainTable]);
+        });
+    }
+    renderAssociations(acc, schemaPromise, curSchema, curTable, curDf) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const schemaAndConnection = yield schemaPromise();
+            if (!schemaAndConnection)
+                return;
+            const addAllAssociated = (schemaName, tableName, colName, value) => __awaiter(this, void 0, void 0, function* () {
+                const pi = datagrok_api_dg__WEBPACK_IMPORTED_MODULE_2__.TaskBarProgressIndicator.create('Opening all associated entries');
+                try {
+                    const assocDf = yield this.getTable(schemaName, tableName, colName, value, this.entryPointOptions.joinOptions);
+                    if (assocDf) {
+                        if (assocDf.rowCount === 0) {
+                            datagrok_api_grok__WEBPACK_IMPORTED_MODULE_0__.shell.info(`No associated ${tableName} entries found`);
+                            return;
+                        }
+                        assocDf.name = `${tableName}`;
+                        datagrok_api_grok__WEBPACK_IMPORTED_MODULE_0__.shell.addTableView(assocDf);
+                    }
+                }
+                catch (e) {
+                    console.error(e);
+                    datagrok_api_grok__WEBPACK_IMPORTED_MODULE_0__.shell.error(`Failed to open associated ${tableName} entries`);
+                }
+                finally {
+                    pi.close();
+                }
+            });
+            const addIconToPane = (pane, schemaName, tableName, colName, value) => {
+                var _a, _b;
+                const icon = datagrok_api_ui__WEBPACK_IMPORTED_MODULE_1__.icons.add(() => { }, `Add all associated ${tableName} entries to workspace`);
+                // need separate event to avoid click on accordion pane
+                icon.addEventListener('click', (e) => {
+                    e.stopImmediatePropagation();
+                    e.preventDefault();
+                    addAllAssociated(schemaName, tableName, colName, value);
+                });
+                (_b = (_a = pane.root.getElementsByClassName('d4-accordion-pane-header')) === null || _a === void 0 ? void 0 : _a[0]) === null || _b === void 0 ? void 0 : _b.appendChild(icon);
+            };
+            const attachOpenInWorkspaceMenu = (schemaName, tableName, colName, value, pane) => {
+                const menu = datagrok_api_dg__WEBPACK_IMPORTED_MODULE_2__.Menu.popup();
+                menu.item(`Add all associated ${tableName} entries to workspace`, () => __awaiter(this, void 0, void 0, function* () {
+                    addAllAssociated(schemaName, tableName, colName, value);
+                }));
+                pane.root.addEventListener('contextmenu', (e) => {
+                    e.preventDefault();
+                    setTimeout(() => menu.show());
+                });
+                addIconToPane(pane, schemaName, tableName, colName, value);
+            };
+            // columns in the passed dataframe might be from different tables in the db schema (as a result of queries)
+            // or better yet, from different schemas :)
+            // depending on from where this dataFrame come from
+            /** List of column names as they appear in the dataframe, NOT the names in DB */
+            const colList = curDf.columns.names();
+            // set of all db table names (schema qualified) referenced in the current dataframe
+            const dbTableNameSet = new Set();
+            dbTableNameSet.add(`${curSchema}.${curTable}`);
+            // build map of actual column name to db column name. P.S. tableName here is the actual table name in db qualified by schema
+            const dbNameToActColNameMap = {};
+            colList.forEach((colName) => {
+                var _a, _b, _c;
+                const dbTableName = curDf.col(colName).getTag(datagrok_api_dg__WEBPACK_IMPORTED_MODULE_2__.Tags.DbTable);
+                const schema = (_a = curDf.col(colName).getTag(datagrok_api_dg__WEBPACK_IMPORTED_MODULE_2__.Tags.DbSchema)) !== null && _a !== void 0 ? _a : curSchema;
+                if (dbTableName)
+                    dbTableNameSet.add(`${schema}.${dbTableName}`);
+                const dbColName = curDf.col(colName).getTag(datagrok_api_dg__WEBPACK_IMPORTED_MODULE_2__.Tags.DbColumn);
+                if (dbColName) {
+                    const actTableName = dbTableName !== null && dbTableName !== void 0 ? dbTableName : curTable;
+                    const fullActTableName = `${schema}.${actTableName}`;
+                    if (!dbNameToActColNameMap[fullActTableName])
+                        dbNameToActColNameMap[fullActTableName] = {};
+                    dbNameToActColNameMap[fullActTableName][dbColName] = colName;
+                    // in some scenarios, there might be a column that references some other table, and this can cause it to not show up in referencedBy object
+                    // so we can add it manually here if it exists in references object
+                    // example is when we have molregno column in some other table, we need to account for the fact that it references to molregno in molecule_dictionary table
+                    // to easily fix this, we can simply add the db mapping of such columns
+                    const refInfo = (_c = (_b = schemaAndConnection.schema.references[schema]) === null || _b === void 0 ? void 0 : _b[actTableName]) === null || _c === void 0 ? void 0 : _c[dbColName];
+                    if (refInfo) {
+                        const tableKey = `${refInfo.refSchema}.${refInfo.refTable}`;
+                        if (!dbNameToActColNameMap[tableKey])
+                            dbNameToActColNameMap[tableKey] = {};
+                        dbNameToActColNameMap[tableKey][refInfo.refColumn] = colName;
+                        dbTableNameSet.add(tableKey);
+                    }
+                }
+            });
+            // all references to all tables referencing any of the db tables in the current dataframe
+            const refTables = Array.from(dbTableNameSet)
+                .map((schemaQualTable) => ({ schemaQualTable, schema: schemaQualTable.split('.')[0], table: schemaQualTable.split('.')[1] }))
+                .map((t) => {
+                var _a;
+                const obj = { schemaQualTable: t.schemaQualTable, refBys: (_a = schemaAndConnection.schema.referencedBy[t.schema]) === null || _a === void 0 ? void 0 : _a[t.table] };
+                return obj;
+            })
+                .filter((t) => t.refBys != null && Object.keys(t.refBys).length > 0);
+            if (refTables.length === 0)
+                return;
+            const _linksPane = acc.addPane('Links', () => {
+                var _a;
+                const linksAcc = datagrok_api_ui__WEBPACK_IMPORTED_MODULE_1__.accordion(`Links to ${curSchema}.${curTable}`);
+                if (((_a = curDf === null || curDf === void 0 ? void 0 : curDf.rowCount) !== null && _a !== void 0 ? _a : 0) === 0)
+                    return datagrok_api_ui__WEBPACK_IMPORTED_MODULE_1__.divText('No data');
+                refTables.forEach((ref) => {
+                    const prefix = `${ref.schemaQualTable}.`;
+                    Object.entries(ref.refBys).forEach(([refedColumn, refInfo]) => {
+                        var _a, _b;
+                        const tableColActName = (_a = dbNameToActColNameMap[ref.schemaQualTable][refedColumn]) !== null && _a !== void 0 ? _a : refedColumn;
+                        const val = (_b = curDf.col(tableColActName)) === null || _b === void 0 ? void 0 : _b.get(0);
+                        if (!val)
+                            return;
+                        const _pane = linksAcc.addPane(prefix + refedColumn, () => {
+                            const colAcc = datagrok_api_ui__WEBPACK_IMPORTED_MODULE_1__.accordion(`Links to ${ref.schemaQualTable}.${refedColumn}`);
+                            // there can be cases when same column is referneced by two or more columns in other table.
+                            // example is chembl table molecule_hiearchy where all 3 columns are referencing to molregno
+                            // need to account for such cases
+                            const tableRefs = new Map();
+                            refInfo.forEach((ref) => {
+                                const qualName = `${ref.refSchema}.${ref.refTable}`;
+                                if (!tableRefs.has(qualName))
+                                    tableRefs.set(qualName, []);
+                                tableRefs.get(qualName).push(ref);
+                            });
+                            tableRefs.forEach((refInfos, refTable) => {
+                                const singleColPane = colAcc.addPane(refTable, () => {
+                                    if (refInfos.length === 1) {
+                                        return datagrok_api_ui__WEBPACK_IMPORTED_MODULE_1__.wait(() => __awaiter(this, void 0, void 0, function* () {
+                                            const res = yield this.renderMultiRowTable(refInfos[0].refSchema, refInfos[0].refTable, refInfos[0].refColumn, val, this.entryPointOptions.joinOptions);
+                                            if (res.rowCount > MAX_MULTIROW_VALUES) {
+                                                singleColPane.name = `${singleColPane.name} (${MAX_MULTIROW_VALUES} / ${res.rowCount})`;
+                                                addIconToPane(singleColPane, refInfos[0].refSchema, refInfos[0].refTable, refInfos[0].refColumn, val);
+                                            }
+                                            return res.root;
+                                        }));
+                                    }
+                                    const multiTableAcc = datagrok_api_ui__WEBPACK_IMPORTED_MODULE_1__.accordion(`Multiple links to ${refTable}`);
+                                    refInfos.forEach((ref) => {
+                                        const colPane = multiTableAcc.addPane(ref.refColumn, () => {
+                                            return datagrok_api_ui__WEBPACK_IMPORTED_MODULE_1__.wait(() => __awaiter(this, void 0, void 0, function* () {
+                                                const res = yield this.renderMultiRowTable(ref.refSchema, ref.refTable, ref.refColumn, val, this.entryPointOptions.joinOptions);
+                                                if (res.rowCount > MAX_MULTIROW_VALUES) {
+                                                    colPane.name = `${singleColPane.name} (${MAX_MULTIROW_VALUES} / ${res.rowCount})`;
+                                                    addIconToPane(colPane, ref.refSchema, ref.refTable, ref.refColumn, val);
+                                                }
+                                                return res.root;
+                                            }));
+                                        });
+                                        attachOpenInWorkspaceMenu(ref.refSchema, ref.refTable, ref.refColumn, val, colPane);
+                                    });
+                                    return multiTableAcc.root;
+                                });
+                                if (refInfos.length === 1)
+                                    attachOpenInWorkspaceMenu(refInfos[0].refSchema, refInfos[0].refTable, refInfos[0].refColumn, val, singleColPane);
+                            });
+                            return colAcc.root;
+                        });
+                        const header = _pane.root.querySelector('.d4-accordion-pane-header');
+                        if (header)
+                            datagrok_api_ui__WEBPACK_IMPORTED_MODULE_1__.tooltip.bind(header, `Data contains ${refedColumn} column from ${ref.schemaQualTable} table. Expand to see all associated entries.`);
+                    });
+                });
+                return linksAcc.root;
+            });
+            const linksHeader = _linksPane.root.querySelector('.d4-accordion-pane-header');
+            if (linksHeader)
+                datagrok_api_ui__WEBPACK_IMPORTED_MODULE_1__.tooltip.bind(linksHeader, 'Expand to see entries from other tables referencing this entry');
         });
     }
 }
+class ExampleExplorerRenderer extends DBExplorerRenderer {
+    constructor(connection, shemaName, entryPointOptions) {
+        const cacheKey = `${connection.id}||${shemaName}`;
+        if (ExampleExplorerRenderer.schemaCache.has(cacheKey)) {
+            const schemaPromise = ExampleExplorerRenderer.schemaCache.get(cacheKey);
+            super(() => schemaPromise, shemaName, entryPointOptions);
+        }
+        else {
+            const schemaPromise = datagrok_api_grok__WEBPACK_IMPORTED_MODULE_0__.dapi.connections.getSchema(connection, shemaName).then((tables) => {
+                const references = {};
+                const referencedBy = {};
+                references[shemaName] = {};
+                const schemaRefs = references[shemaName];
+                referencedBy[shemaName] = {};
+                const schemaRefBy = referencedBy[shemaName];
+                tables.forEach((table) => {
+                    var _a;
+                    const tableName = (_a = table.friendlyName) !== null && _a !== void 0 ? _a : table.name;
+                    schemaRefs[tableName] = {};
+                    const t = schemaRefs[tableName];
+                    table.columns.forEach((column) => {
+                        const ref = column.referenceInfo;
+                        if (ref && ref.table && ref.column) {
+                            t[column.name] = { refTable: ref.table, refColumn: ref.column, refSchema: shemaName };
+                            if (!schemaRefBy[ref.table])
+                                schemaRefBy[ref.table] = {};
+                            if (!schemaRefBy[ref.table][ref.column])
+                                schemaRefBy[ref.table][ref.column] = [];
+                            schemaRefBy[ref.table][ref.column].push({ refTable: tableName, refColumn: column.name, refSchema: shemaName });
+                        }
+                    });
+                });
+                return {
+                    schema: { references, referencedBy },
+                    connection,
+                };
+            });
+            ExampleExplorerRenderer.schemaCache.set(cacheKey, schemaPromise);
+            super(() => schemaPromise, shemaName, entryPointOptions);
+        }
+    }
+    renderDataFrame(df, schemaName, tableName, _opts) {
+        const _super = Object.create(null, {
+            renderDataFrame: { get: () => super.renderDataFrame }
+        });
+        return __awaiter(this, void 0, void 0, function* () {
+            return _super.renderDataFrame.call(this, df, schemaName, tableName, { keepEmptyValues: true });
+        });
+    }
+    renderTable(schemaName, tableName, match, matchValue, joinOptions) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const schemaAndConnection = yield this.schemaInfoPromise();
+            if (!schemaAndConnection)
+                return datagrok_api_ui__WEBPACK_IMPORTED_MODULE_1__.divText('Schema information is not available');
+            const df = yield (0,_query__WEBPACK_IMPORTED_MODULE_4__.queryDB)(schemaAndConnection.connection, tableName, '', '', this.schemaName, joinOptions, true);
+            if (df.rowCount < 1)
+                return datagrok_api_ui__WEBPACK_IMPORTED_MODULE_1__.divText('ID not found');
+            return this.renderDataFrame(df, schemaName, tableName);
+        });
+    }
+}
+ExampleExplorerRenderer.schemaCache = new Map();
+function renderExampleCard(connection, schemaName, tableName, config) {
+    var _a, _b, _c;
+    const ex = new ExampleExplorerRenderer(connection, schemaName, { joinOptions: (_a = config.joinOptions) !== null && _a !== void 0 ? _a : [], valueConverter: (a) => a });
+    ex.addCustomSelectedColumns((_b = config.customSelectedColumns) !== null && _b !== void 0 ? _b : {});
+    ((_c = config.customRenderers) !== null && _c !== void 0 ? _c : []).forEach((cr) => ex.addCustomRenderer((t, c, _v) => t === cr.table && c === cr.column, (v) => getDefaultRendererByName(cr.renderer)(v)));
+    (config.uniqueColumns) && ex.addUniqueColNames(config.uniqueColumns);
+    (config.customSelectedColumns) && ex.addCustomSelectedColumns(config.customSelectedColumns);
+    const c = datagrok_api_ui__WEBPACK_IMPORTED_MODULE_1__.card(datagrok_api_ui__WEBPACK_IMPORTED_MODULE_1__.wait(() => __awaiter(this, void 0, void 0, function* () {
+        var _d;
+        return yield ex.renderTable(schemaName, tableName, '', '', (_d = config.joinOptions) !== null && _d !== void 0 ? _d : []);
+    })));
+    c.style.width = 'unset';
+    return c;
+}
+function getDefaultRendererByName(rendererName) {
+    switch (rendererName) {
+        case 'rawImage':
+            return (v) => rawImageRenderer(v);
+        case 'imageURL':
+            return (v) => imageRenderer(v, true);
+        case 'molecule':
+            return (v) => moleculeRenderer(v);
+        case 'helm':
+            return (v) => helmRenderer(v);
+        default:
+            return (v) => textRenderer(v, true);
+    }
+}
+//# sourceMappingURL=renderer.js.map
 
+/***/ },
 
-/***/ }),
-
-/***/ "../../libraries/db-explorer/src/types.ts":
-/*!************************************************!*\
-  !*** ../../libraries/db-explorer/src/types.ts ***!
-  \************************************************/
-/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+/***/ "./node_modules/@datagrok-libraries/db-explorer/src/types.js"
+/*!*******************************************************************!*\
+  !*** ./node_modules/@datagrok-libraries/db-explorer/src/types.js ***!
+  \*******************************************************************/
+(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
 
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   DBValueObject: () => (/* binding */ DBValueObject)
 /* harmony export */ });
+/* harmony import */ var _object_handlers__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./object-handlers */ "./node_modules/@datagrok-libraries/db-explorer/src/object-handlers.js");
+
 class DBValueObject {
-    table;
-    column;
-    value;
-    semValue;
-    constructor(table, column, value, semValue) {
+    constructor(connectionNqName, schemaName, table, column, value, semValue) {
+        this.connectionNqName = connectionNqName;
+        this.schemaName = schemaName;
         this.table = table;
         this.column = column;
         this.value = value;
         this.semValue = semValue;
+        this.name = _object_handlers__WEBPACK_IMPORTED_MODULE_0__.DB_EXPLORER_OBJ_HANDLER_TYPE;
     }
 }
+//# sourceMappingURL=types.js.map
 
+/***/ },
 
-/***/ }),
-
-/***/ "./src/config.ts":
+/***/ "./src/config.ts"
 /*!***********************!*\
   !*** ./src/config.ts ***!
   \***********************/
-/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
 
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
@@ -828,11 +1284,13 @@ __webpack_require__.r(__webpack_exports__);
 const biologicsConfig = {
     'connectionName': 'Biologics',
     'schemaName': 'biologics',
+    'nqName': 'Biologics:biologics',
     'dataSourceName': 'postgresDart',
     'entryPoints': {
         'DG_BIOLOGICS_DRUG_ID': {
             'table': 'drugs',
             'column': 'identifier',
+            'matchRegexp': 'GROKMOL-\\d{6}',
             'regexpExample': {
                 'example': 'GROKMOL-000001',
                 'nonVariablePart': 'GROKMOL-',
@@ -842,6 +1300,7 @@ const biologicsConfig = {
         'DG_BIOLOGICS_PEPTIDE_ID': {
             'table': 'peptides',
             'column': 'identifier',
+            'matchRegexp': 'GROKPEP-\\d{6}',
             'regexpExample': {
                 'example': 'GROKPEP-000001',
                 'nonVariablePart': 'GROKPEP-',
@@ -851,6 +1310,7 @@ const biologicsConfig = {
         'DG_BIOLOGICS_SEQUENCE_ID': {
             'table': 'sequences',
             'column': 'identifier',
+            'matchRegexp': 'GROKSEQ-\\d{6}',
             'regexpExample': {
                 'example': 'GROKSEQ-000001',
                 'nonVariablePart': 'GROKSEQ-',
@@ -860,6 +1320,7 @@ const biologicsConfig = {
         'DG_BIOLOGICS_LINKER_ID': {
             'table': 'linkers',
             'column': 'identifier',
+            'matchRegexp': 'GROKLINKER-\\d{6}',
             'regexpExample': {
                 'example': 'GROKLINKER-000001',
                 'nonVariablePart': 'GROKLINKER-',
@@ -869,6 +1330,7 @@ const biologicsConfig = {
         'DG_BIOLOGICS_ADC_ID': {
             'table': 'adc',
             'column': 'identifier',
+            'matchRegexp': 'GROKADC-\\d{6}',
             'regexpExample': {
                 'example': 'GROKADC-000001',
                 'nonVariablePart': 'GROKADC-',
@@ -878,6 +1340,7 @@ const biologicsConfig = {
         'DG_BIOLOGICS_ORGANISM_ID': {
             'table': 'target_organisms',
             'column': 'identifier',
+            'matchRegexp': 'GROKORG-\\d{6}',
             'regexpExample': {
                 'example': 'GROKORG-000001',
                 'nonVariablePart': 'GROKORG-',
@@ -887,6 +1350,7 @@ const biologicsConfig = {
         'DG_BIOLOGICS_PURIFICATION_ID': {
             'table': 'purification_batches',
             'column': 'identifier',
+            'matchRegexp': 'GROKPUR-\\d{6}',
             'regexpExample': {
                 'example': 'GROKPUR-000001',
                 'nonVariablePart': 'GROKPUR-',
@@ -896,6 +1360,7 @@ const biologicsConfig = {
         'DG_BIOLOGICS_EXPRESSION_ID': {
             'table': 'expression_batches',
             'column': 'identifier',
+            'matchRegexp': 'GROKEXP-\\d{6}',
             'regexpExample': {
                 'example': 'GROKEXP-000001',
                 'nonVariablePart': 'GROKEXP-',
@@ -927,7 +1392,7 @@ const biologicsConfig = {
         }
     ],
     'headerNames': {
-        'smiles': 'Compound'
+        'linkers': 'linker_type',
     },
     'uniqueColumns': {
         'adc': 'identifier',
@@ -959,13 +1424,13 @@ const biologicsConfig = {
 };
 
 
-/***/ }),
+/***/ },
 
-/***/ "./src/glyphs/glyphs.ts":
+/***/ "./src/glyphs/glyphs.ts"
 /*!******************************!*\
   !*** ./src/glyphs/glyphs.ts ***!
   \******************************/
-/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
 
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
@@ -979,13 +1444,13 @@ const glyphPool = [
 ];
 
 
-/***/ }),
+/***/ },
 
-/***/ "./src/helms.ts":
+/***/ "./src/helms.ts"
 /*!**********************!*\
   !*** ./src/helms.ts ***!
   \**********************/
-/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
 
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
@@ -1085,13 +1550,13 @@ const helms = ['PEPTIDE1{[dI].[Trp_Ome].[Asp_OMe].[D-Cit].[meG].[Phe_4NH2].[Phe_
     'PEPTIDE1{meI.hHis.Hcy.Q.T.W.Q.Phe_4NH2.D-Tyr_Et.Tyr_ab-dehydroMe.dV.pnG.N.Bmt.Phe_4Me}$$$$'];
 
 
-/***/ }),
+/***/ },
 
-/***/ "./src/randsmiles.ts":
+/***/ "./src/randsmiles.ts"
 /*!***************************!*\
   !*** ./src/randsmiles.ts ***!
   \***************************/
-/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
 
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
@@ -1100,37 +1565,37 @@ __webpack_require__.r(__webpack_exports__);
 const smi = ["CC(C(=O)OCCCc1cccnc1)c2cccc(c2)C(=O)c3ccccc3", "COc1ccc2cc(ccc2c1)C(C)C(=O)Oc3ccc(C)cc3OC", "COc1ccc2cc(ccc2c1)C(C)C(=O)OCCCc3cccnc3", "CC(C(=O)NCCS)c1cccc(c1)C(=O)c2ccccc2", "FC(F)(F)c1ccc(OC2CCNCC2)cc1", "CC(C)Cc1ccc(cc1)C(C)C(=O)N2CCCC2C(=O)OCCCc3ccccc3", "COc1ccc2c(c1)c(CC(=O)N3CCCC3C(=O)Oc4ccc(C)cc4OC)c(C)n2C(=O)c5ccc(Cl)cc5", "CC(C)Cc1ccc(cc1)C(C)C(=O)N2CCCC2C(=O)OCCO[N+](=O)[O-]", "CC(C)Cc1ccc(cc1)C(C)C(=O)N2CCCC2C(=O)OCCO", "CN1CCC(CC1)Oc2ccc(cc2)C(F)(F)F", "COc1cc(C)ccc1OC(=O)C(C)c2ccc(CC(C)C)cc2", "CC(C)Cc1ccc(cc1)C(C)C(=O)OCCCc2cccnc2", "COc1ccc(\\\\C=N\\\\NC(=N)N)c(Cl)c1OC", "Nc1ncnc2c1c(Br)cn2[C@@H]3OC[C@@H](O)[C@H]3O", "CNc1ncnc2c1c(I)cn2[C@@H]3O[C@H](C)[C@@H](O)[C@H]3O", "CN1CCC(O)(CC1)c2ccccc2", "OC(COc1ccccc1)CN2CCC(CC2)Oc3ccc(cc3)C(F)(F)F", "OC(COc1ccc(Cl)cc1)CN2CCC(CC2)Oc3ccc(cc3)C(F)(F)F", "OC(COc1ccc(Br)cc1)CN2CCC(CC2)Oc3ccc(cc3)C(F)(F)F", "COC(=O)c1ccccc1OCC(O)CN2CCC(CC2)Oc3ccc(cc3)C(F)(F)F", "CCC1(CC)CC(CCNC(=O)c2ccc(OC)cc2)OC1=O", "COc1ccc(cc1)N(Cc2ccccc2)Cc3ccc(OC)c(O)c3", "COc1ccc(cc1)N(Cc2ccc(Br)cc2)Cc3ccc(OC)c(O)c3", "COc1ccc(cc1)N(Cc2ccc(F)cc2)Cc3ccc(OC)c(O)c3", "COc1ccc(cc1)N(Cc2ccc(Cl)cc2)Cc3ccc(OC)c(O)c3", "CCCOC(=O)C1=C(C)NC(=C(C1c2csc(n2)c3ccc(Cl)cc3)C(=O)OCCC)C", "COc1ccc(CN(CCc2ccc(Br)cc2)Cc3ccc(Cl)cc3Cl)cc1O", "COc1ccc(CN(Cc2ccccc2)Cc3ccc(Br)cc3)cc1O", "COc1ccc(CN(CCc2ccccc2)Cc3ccccc3)cc1O", "COc1ccc(CCN(Cc2ccccc2)Cc3ccc(OC)c(O)c3)cc1", "COc1ccc2cc(ccc2c1)C(C)C(=O)N3CCCC3C(=O)OCCCc4cccnc4", "COc1ccc(CN(Cc2ccccc2)c3ccc(Br)cc3)cc1O", "COc1ccc(CN(Cc2ccccc2)c3cccc(Cl)c3)cc1O", "COc1ccc(CN(CCc2ccc(Br)cc2)Cc3ccccc3)cc1O", "COc1ccc(CN(CCc2ccc(OC)c(OC)c2)Cc3ccccc3)cc1O", "CC(C)OC(=O)C1=C(C)NC(=C(C1c2csc(n2)c3ccc(Cl)cc3)C(=O)OC(C)C)C", "COc1ccc(CCN(Cc2ccc(Br)cc2)Cc3ccc(OC)c(O)c3)cc1", "COc1ccc(CN(Cc2ccc(Br)cc2)c3ccc(Br)cc3)cc1O", "COc1ccc(CN(Cc2ccc(Br)cc2)c3cccc(Cl)c3)cc1O", "COc1ccc(CN(CCc2ccc(OC)c(OC)c2)Cc3ccc(Br)cc3)cc1O", "CCCN1OC(=CC1=O)C", "COc1ccc(CN(CCc2ccc(Br)cc2)Cc3ccc(F)cc3)cc1O", "COc1ccc(CN(CCc2ccc(Br)cc2)Cc3cccc(Cl)c3)cc1O", "COc1ccc(CN(CCc2ccc(Br)cc2)Cc3ccc(Cl)cc3)cc1O", "COc1ccc(CN(CCc2ccc(Br)cc2)Cc3ccc(Br)cc3)cc1O", "CC(C)(NC(=O)[C@H](Cc1ccc(O)cc1)NC(=O)[C@H](CCC(=O)O)NC(=O)[C@H](CCCNC(=N)N)NC(=O)[C@H](CCCNC(=N)N)NC(=O)[C@H](CCCCN)NC(=O)[C@H](CCCCN)NC(=O)[C@H](CCCNC(=N)N)NC(=O)CN)C(=O)N[C@@H](CC(=O)N)C(=O)O", "COc1ccc(CN(CCc2ccc(Br)cc2)Cc3ccc(C)cc3)cc1O", "COc1ccc(CN(CCc2ccc(Br)cc2)Cc3c(F)c(F)c(F)c(F)c3F)cc1O", "COc1ccc(CN(CCc2ccc(Br)cc2)Cc3ccc(Cl)c(Cl)c3)cc1O", "COc1ccc(CN(CCc2ccc(Br)cc2)Cc3ccc(cc3)C(C)(C)C)cc1O", "CC(C)COC(=O)C1=C(C)NC(=C(C1c2csc(n2)c3ccc(Cl)cc3)C(=O)OCC(C)C)C", "[I-].C[N+](C)(C)C[C@H]1CO[C@@H](O1)C(c2ccccc2)c3ccccc3", "CCC1(CC)CC(CNC(=O)c2ccc(Br)cc2)OC1=O", "CCC1(CC)CC(CO)OC1=O", "CCC1(CC)CC(CCNC(=O)c2ccc(Br)cc2)OC1=O", "CCC1(CC)CC(CCNC(=O)c2ccc(C)cc2)OC1=O", "CC1=C(C(C(=C(C)N1)C(=O)OC(C)(C)C)c2csc(n2)c3ccc(Cl)cc3)C(=O)OC(C)(C)C", "CCCCCCCC(=O)NCCC1CC(CC)(CC)C(=O)O1", "CC(=O)C(=O)c1cc2c(cn1)[nH]c3ccccc23", "COC(=O)C1=C(C)NC(=C(C1c2csc(n2)c3ccc(Cl)cc3)C(=O)OC)C", "CCOC(=O)C1=C(C)NC(=C(C1c2csc(n2)c3ccc(Cl)cc3)C(=O)OCC)C", "CC1=C(C(C(=C(C)N1)C(=O)OC2CCCC2)c3csc(n3)c4ccc(Cl)cc4)C(=O)OC5CCCC5", "CC1=C(C(C(=C(C)N1)C(=O)OC2CCCCC2)c3csc(n3)c4ccc(Cl)cc4)C(=O)OC5CCCCC5", "CC1=C(C(C(=C(C)N1)C(=O)OCc2ccccc2)c3csc(n3)c4ccc(Cl)cc4)C(=O)OCc5ccccc5", "CC1=C(C(C(=C(C)N1)C(=O)OCCc2ccccc2)c3csc(n3)c4ccc(Cl)cc4)C(=O)OCCc5ccccc5", "CC(OC(=O)C1=C(C)NC(=C(C1c2csc(n2)c3ccc(Cl)cc3)C(=O)OC(C)c4ccccc4)C)c5ccccc5", "CCOC(=O)C1=C(C)NC(=C(C1c2csc(n2)c3ccc(Cl)cc3)C(=O)OC)C", "COC(=O)C1=C(C)NC(=C(C1c2csc(n2)c3ccc(Cl)cc3)C(=O)OC4CCCCC4)C", "CCCOC(=O)C1=C(C)NC(=C(C1c2csc(n2)c3ccc(Cl)cc3)C(=O)OC)C", "CCCOC(=O)C1=C(C)NC(=C(C1c2csc(n2)c3ccc(Cl)cc3)C(=O)OCC)C", "COC(=O)C1=C(C)NC(=C(C1c2csc(n2)c3ccc(Cl)cc3)C(=O)OC(C)C)C", "CCOC(=O)C1=C(C)NC(=C(C1c2csc(n2)c3ccc(Cl)cc3)C(=O)OC(C)C)C", "COC(=O)C1=C(C)NC(=C(C1c2csc(n2)c3ccc(Cl)cc3)C(=O)OCC(C)C)C", "CCOC(=O)C1=C(C)NC(=C(C1c2csc(n2)c3ccc(Cl)cc3)C(=O)OCC(C)C)C", "COC(=O)C1=C(C)NC(=C(C1c2csc(n2)c3ccc(Cl)cc3)C(=O)OC(C)(C)C)C", "CCOC(=O)C1=C(C)NC(=C(C1c2csc(n2)c3ccc(Cl)cc3)C(=O)OC(C)(C)C)C", "COC(=O)C1=C(C)NC(=C(C1c2csc(n2)c3ccc(Cl)cc3)C(=O)OC4CCCC4)C", "CCOC(=O)C1=C(C)NC(=C(C1c2csc(n2)c3ccc(Cl)cc3)C(=O)OC4CCCC4)C", "COC(=O)C1=C(C)NC(=C(C1c2csc(n2)c3ccc(Cl)cc3)C(=O)OCc4ccccc4)C", "CCOC(=O)C1=C(C)NC(=C(C1c2csc(n2)c3ccc(Cl)cc3)C(=O)OCc4ccccc4)C", "COC(=O)C1=C(C)NC(=C(C1c2csc(n2)c3ccc(Cl)cc3)C(=O)OCCc4ccccc4)C", "CCOC(=O)C1=C(C)NC(=C(C1c2csc(n2)c3ccc(Cl)cc3)C(=O)OCCc4ccccc4)C", "COC(=O)C1=C(C)NC(=C(C1c2csc(n2)c3ccc(Cl)cc3)C(=O)OC(C)c4ccccc4)C", "CCCCCCCCCCCCCCCCC(CCCCCCCCCCCCCC)C(=O)OC[C@H]1O[C@H](O[C@H]2O[C@H](COC(=O)C(CCCCCCCCCCCCCC)CCCCCCCCCCCCCCCC)[C@@H](O)[C@H](O)[C@H]2O)[C@H](O)[C@@H](O)[C@@H]1O", "CCOC(=O)C1=C(C)NC(=C(C1c2csc(n2)c3ccc(Cl)cc3)C(=O)OC(C)c4ccccc4)C", "COC(=O)C1=C[C@@H](O)[C@@H](O)[C@H](C)C1", "Oc1ccc(cc1)[C@H]2CC(=O)c3c(O)cc(Oc4c(O)cc5O[C@H](CC(=O)c5c4O)c6ccc(O)cc6)cc3O2", "O=C(N\\\\N=C/1\\\\C(=O)Nc2ccccc12)NN3C(=O)c4ccccc4N=C3c5ccccc5", "COc1cc(\\\\C=N\\\\NC(=O)NN2C(=O)c3ccccc3N=C2c4ccccc4)ccc1O", "CC1(C)C2CCC1(C)\\\\C(=N/NC(=O)NN3C(=O)c4ccccc4N=C3c5ccccc5)\\\\C2", "O=C(NN=C(c1ccccc1)c2ccccc2)NN3C(=O)c4ccccc4N=C3c5ccccc5", "CCCCCCCCCCCCC(CCCCCCCCCCCC)C(=O)OC[C@H]1O[C@H](O[C@H]2O[C@H](COC(=O)C(CCCCCCCCCCCC)CCCCCCCCCCCC)[C@@H](O)[C@H](O)[C@H]2O)[C@H](O)[C@@H](O)[C@@H]1O", "CN(C)c1ccc(\\\\C=N\\\\NC(=O)NN2C(=O)c3ccccc3N=C2c4ccccc4)cc1", "COc1ccc2cc(\\\\C=N\\\\NC(=O)C3=C(O)c4ccccc4S(=O)(=O)N3C)c(Cl)nc2c1", "Fc1ccc(F)c(c1)C(=O)OCCCN2C(=O)c3ccccc3C2=O", "[O-][N+](=O)c1cc(ccc1Cl)C(=O)OCCCN2C(=O)c3ccccc3C2=O", "Fc1ccc(F)c(c1)C(=O)OCCN2C(=O)[C@@H]3CC=CC[C@@H]3C2=O", "[O-][N+](=O)c1cc(ccc1Cl)C(=O)OCCN2C(=O)[C@@H]3CC=CC[C@@H]3C2=O", "OC(COc1cccc(c1)C(F)(F)F)CN2CCC(CC2)Oc3ccc(cc3)C(F)(F)F", "Fc1ccc(F)c(c1)C(=O)OCCN2C(=O)[C@@H]3CCCC[C@@H]3C2=O", "[O-][N+](=O)c1cc(ccc1Cl)C(=O)OCCN2C(=O)[C@@H]3CCCC[C@@H]3C2=O", "[O-][N+](=O)c1cc(ccc1Cl)C(=O)OCCOc2ccc(Br)cc2", "[O-][N+](=O)c1ccc(OCCOC(=O)c2ccc(Cl)c(c2)[N+](=O)[O-])cc1", "Clc1ccc(cc1Cl)C(=O)OCCS(=O)(=O)c2ccccc2", "[O-][N+](=O)c1cc(ccc1Cl)C(=O)OCCc2c[nH]c3ccccc23", "Clc1ccc(cc1Cl)C(=O)OC2Cc3cccc4cccc2c34", "[O-][N+](=O)c1cc(ccc1Cl)C(=O)OC2Cc3cccc4cccc2c34", "Cc1cc(ccc1Br)C(=O)OC2Cc3cccc4cccc2c34", "Clc1ccc(cn1)C(=O)OCCN2C(=O)c3ccccc3C2=O", "Cc1oc(C)c(c1)C(=O)OCCN2C(=O)c3ccccc3C2=O", "CCC(C(=O)OCCN1C(=O)c2ccccc2C1=O)c3ccccc3", "O=C(OCCN1C(=O)c2ccccc2C1=O)c3ccc4ccccc4c3", "Fc1ccc(F)c(c1)C(=O)OCN2C(=O)c3ccccc3C2=O", "[O-][N+](=O)c1cc(ccc1Cl)C(=O)OCN2C(=O)c3ccccc3C2=O", "CC(COC(=O)c1cc(F)ccc1F)N2C(=O)c3ccccc3C2=O", "CC(CN1C(=O)c2ccccc2C1=O)OC(=O)c3cc(F)ccc3F", "CC(CN1C(=O)c2ccccc2C1=O)OC(=O)c3ccc(Cl)c(c3)[N+](=O)[O-]", "Cc1ccc2C(=O)N(CCOC(=O)c3cc(F)ccc3F)C(=O)c2c1", "Oc1ccc(Cl)cc1C(=O)\\\\C=C\\\\c2ccccc2Cl", "Cc1ccc2C(=O)N(CCOC(=O)c3ccc(Cl)c(c3)[N+](=O)[O-])C(=O)c2c1", "CC(C)(C)c1ccc2C(=O)N(CCOC(=O)c3cc(F)ccc3F)C(=O)c2c1", "Fc1cc(F)cc(c1)C(=O)OCCN2C(=O)c3ccccc3C2=O", "Clc1ccc(cc1Cl)C(=O)OCCN2C(=O)c3ccccc3C2=O", "COc1cc(C)ccc1OC(=O)C2CCCN2C(=O)C(C)c3cccc(c3)C(=O)c4ccccc4", "Clc1cc(Cl)cc(c1)C(=O)OCCN2C(=O)c3ccccc3C2=O", "[O-][N+](=O)c1ccc(C(=O)OCCN2C(=O)c3ccccc3C2=O)c(Cl)c1", "Cc1ccc(F)cc1C(=O)OCCN2C(=O)c3ccccc3C2=O", "Fc1ccc(cc1C(=O)OCCN2C(=O)c3ccccc3C2=O)C(F)(F)F", "COc1ccc2cc(ccc2c1)C(C)C(=O)OCC(OC(=O)C)C(OC(=O)C)C(OC(=O)C)C(OC(=O)C)\\\\C=N\\\\[C@@H](C(C)C)C(=O)O", "Fc1ccc(Cl)cc1C(=O)OCCN2C(=O)c3ccccc3C2=O", "[O-][N+](=O)c1ccc(F)c(c1)C(=O)OCCN2C(=O)c3ccccc3C2=O", "Fc1ccc(Cl)c(c1)C(=O)OCCN2C(=O)c3ccccc3C2=O", "[O-][N+](=O)c1ccc(Cl)c(c1)C(=O)OCCN2C(=O)c3ccccc3C2=O", "COc1ccc2cc(ccc2c1)C(C)C(=O)OCC(OC(=O)C)C(OC(=O)C)C(OC(=O)C)C(OC(=O)C)\\\\C=N\\\\[C@@H](CS)C(=O)O", "Fc1ccc(Br)c(c1)C(=O)OCCN2C(=O)c3ccccc3C2=O", "[O-][N+](=O)c1cc(ccc1Cl)C(=O)OCCN2C(=O)c3ccccc3C2=O", "Cc1cc(ccc1Br)C(=O)OCCN2C(=O)c3ccccc3C2=O", "Clc1ncccc1C(=O)OCCN2C(=O)c3ccccc3C2=O", "Cc1cccc(c1)C(=O)OCCN2C(=O)c3ccccc3C2=O", "CC1=Nc2ccccc2C(=O)N1NC(=O)Nc3ccc(Cl)cc3", "CC1=Nc2ccccc2C(=O)N1NC(=O)Nc3ccc(Br)cc3", "CC1=Nc2ccccc2C(=O)N1NC(=O)Nc3ccc(I)cc3", "CC1=Nc2ccccc2C(=O)N1NC(=O)Nc3ccc(cc3)[N+](=O)[O-]", "CC1=Nc2ccccc2C(=O)N1NC(=O)Nc3ccccc3C", "CC1=Nc2ccccc2C(=O)N1NC(=O)Nc3cccc(C)c3", "CC1=Nc2ccccc2C(=O)N1NC(=O)Nc3ccc(C)cc3", "CCc1ccc(NC(=O)NN2C(=Nc3ccccc3C2=O)C)cc1", "COc1ccc(NC(=O)NN2C(=Nc3ccccc3C2=O)C)cc1", "CCOc1ccc(NC(=O)NN2C(=Nc3ccccc3C2=O)C)cc1", "CC1=Nc2ccccc2C(=O)N1NC(=O)Nc3ccc(F)cc3", "COc1ccc2c(c1)c(CC(=O)Oc3cc(O)c4C(=O)C[C@H](Oc4c3)c5ccc(O)cc5)c(C)n2C(=O)c6ccc(Cl)cc6", "COc1ccc2c(c1)c(CC(=O)Oc3cc(O)c4C(=O)C[C@H](Oc4c3)c5ccc(OC)c(O)c5)c(C)n2C(=O)c6ccc(Cl)cc6", "COc1ccc2cc(ccc2c1)C(C)C(=O)OCC(OC(=O)C)C(OC(=O)C)C(OC(=O)C)C(OC(=O)C)\\\\C=N\\\\CC(=O)O", "COc1ccc2cc(ccc2c1)C(C)C(=O)OCC(OC(=O)C)C(OC(=O)C)C(OC(=O)C)C(OC(=O)C)\\\\C=N\\\\[C@@H](C)C(=O)O", "COc1ccc(cc1)C2=CS\\\\C(=N/NC(=O)c3ccc(O)cc3)\\\\N2c4ccc(OC)cc4OC", "COc1ccc2cc(ccc2c1)C(C)C(=O)OCC(OC(=O)C)C(OC(=O)C)C(OC(=O)C)C(OC(=O)C)\\\\C=N\\\\[C@@H](CC(C)C)C(=O)O", "COc1ccc2cc(ccc2c1)C(C)C(=O)OCC(OC(=O)C)C(OC(=O)C)C(OC(=O)C)C(OC(=O)C)\\\\C=N\\\\[C@@H]([C@@H](C)O)C(=O)O", "COc1ccc2cc(ccc2c1)C(C)C(=O)OCC(OC(=O)C)C(OC(=O)C)C(OC(=O)C)C(OC(=O)C)\\\\C=N\\\\[C@@H](Cc3ccccc3)C(=O)O", "COc1ccc2cc(ccc2c1)C(C)C(=O)OCC(OC(=O)C)C(OC(=O)C)C(OC(=O)C)C(OC(=O)C)\\\\C=N\\\\[C@@H](Cc3ccc(O)cc3)C(=O)O", "COc1ccc2cc(ccc2c1)C(C)C(=O)OCC(OC(=O)C)C(OC(=O)C)C(OC(=O)C)C(OC(=O)C)\\\\C=N\\\\[C@@H](Cc3cnc[nH]3)C(=O)O", "CCCCCCCCCCCCCCC(=O)N[C@@H](CCC(=O)O)C(=O)N[C@H]1CNC(=O)[C@@H]2CCCN2C(=O)[C@@H](NC(=O)[C@@H](NC(=O)CNC(=O)[C@H](CC(=O)O)NC(=O)CNC(=O)[C@H](CC(=O)O)NC(=O)CNC(=O)[C@@H]3CCCCN3C1=O)[C@@H](C)O)[C@H](C)CC", "COc1ccc2cc(ccc2c1)C(C)C(=O)OCC(OC(=O)C)C(OC(=O)C)C(OC(=O)C)C(OC(=O)C)\\\\C=N\\\\[C@@H](Cc3c[nH]c4ccccc34)C(=O)O", "COc1ccc2cc(ccc2c1)C(C)C(=O)OCC(OC(=O)C)C(OC(=O)C)C(OC(=O)C)C(OC(=O)C)\\\\C=N\\\\[C@@H](CC(=O)O)C(=O)O", "COc1ccc2cc(ccc2c1)C(C)C(=O)OCC(OC(=O)C)C(OC(=O)C)C(OC(=O)C)C(OC(=O)C)\\\\C=N\\\\[C@@H](CCC(=O)O)C(=O)O", "COc1ccc2cc(ccc2c1)C(C)C(=O)OCC(OC(=O)C)C(OC(=O)C)C(OC(=O)C)C(OC(=O)C)\\\\C=N\\\\[C@@H](CCCN)C(=O)O", "COc1ccc2cc(ccc2c1)C(C)C(=O)OCC(OC(=O)C)C(OC(=O)C)C(OC(=O)C)C(OC(=O)C)\\\\C=N\\\\[C@@H](Cc3ccc(O)c(O)c3)C(=O)O", "CCCCCCCCCCCCCC(CCCCCCCCCCCCC)C(=O)OC[C@H]1O[C@H](O[C@H]2O[C@H](COC(=O)C(CCCCCCCCCCCCC)CCCCCCCCCCCCC)[C@@H](O)[C@H](O)[C@H]2O)[C@H](O)[C@@H](O)[C@@H]1O", "Cc1ccc(cc1)C2=CS\\\\C(=N/NC(=O)c3ccc(O)cc3)\\\\N2c4c(C)cccc4C", "COc1ccc(N2\\\\C(=N\\\\NC(=O)c3ccc(O)cc3)\\\\SC=C2c4ccc(Cl)cc4)c(OC)c1", "Oc1ccc(cc1)C(=O)N\\\\N=C\\\\2/SC=C(N2c3ccc(Cl)cc3Cl)c4ccc(Cl)cc4", "COc1ccc(cc1)C2=NN(C(=O)c3ccc(O)cc3)C(=S)S2", "CCOC(=O)C1=C(C)N(CC(O)COc2ccc(\\\\C=N\\\\C(=S)Nc3ccc(OC)cc3)cc2)C(=S)NC1c4cccc(c4)[N+](=O)[O-]", "Oc1ccc(cc1)C(=O)N2N=C(SC2=S)c3ccc(O)cc3", "Oc1ccc(cc1)C(=O)N2N=C(SC2=S)c3c(Cl)cccc3Cl", "CCOC(=O)C1=C(C)N(CC(O)COc2ccc(\\\\C=N\\\\C(=S)Nc3ccccc3OC)cc2)C(=S)NC1c4ccccc4[N+](=O)[O-]", "CCOC(=O)C1=C(C)N(CC(O)COc2ccc(\\\\C=N\\\\C(=S)Nc3ccccc3OC)cc2)C(=S)NC1c4cccc(c4)[N+](=O)[O-]", "CCOC(=O)C1=C(C)N(CC(O)COc2ccc(\\\\C=N\\\\C(=S)Nc3ccc(OC)cc3)cc2)C(=S)NC1c4ccccc4[N+](=O)[O-]", "COc1ccc2cc(\\\\C=N\\\\NC(=O)C3=C(O)c4ccccc4S(=O)(=O)N3)c(Cl)nc2c1", "Fc1ccc(cc1)N2CCN(CCCCN3C(=O)C4=C(SCCS4)C3=O)CC2", "O=C1N(CCCCN2CCN(CC2)c3ccccn3)C(=O)C4=C1SCCS4", "O=C1N(CCCN2CCN(CC2)c3ccccn3)C(=O)C4=C1SCCS4", "Fc1ccc(cc1)N2CCN(CCCN3C(=O)C4=C(SCCS4)C3=O)CC2", "COc1ccc2cc(ccc2c1)C(C)C(=O)N3CCCC3C(=O)Oc4ccc(C)cc4OC", "O=C1N(CCCCN2CCN(CC2)c3ccccc3)C(=O)C4=C1SCCS4", "O=C1OC(=O)C2=C1SCCS2", "O=C1NC(=O)C2=C1SCCS2", "CN(C)CC(O)CN1C(=O)C2=C(SCCS2)C1=O", "CCN(CC)CC(O)CN1C(=O)C2=C(SCCS2)C1=O", "CC(C)(C)NCC(O)CN1C(=O)C2=C(SCCS2)C1=O", "C\\\\C=C(/C)\\\\O[C@H]1[C@H](O)[C@]2(COC(=O)C)[C@H](O)C[C@]3(C)C(=CC[C@@H]4[C@@]5(C)CCC(O[C@@H]6O[C@@H]([C@@H](O)[C@H](O[C@@H]7OC[C@H](O)[C@H](O)[C@H]7O[C@@H]8OC[C@@H](O)[C@H](O)[C@H]8O)[C@H]6O[C@]9(C)O[C@H](CO)[C@H](O)[C@H](O)[C@H]9O)C(=O)O)[C@@](C)(C=O)[C@@H]5CC[C@@]34C)[C@@H]2CC1(C)C", "OC(CN1CCCCC1)CN2C(=O)C3=C(SCCS3)C2=O", "CC1CCN(CC(O)CN2C(=O)C3=C(SCCS3)C2=O)CC1", "OC(CN1CCN(CC1)c2ccccc2)CN3C(=O)C4=C(SCCS4)C3=O", "OC(CN1CCN(CC1)c2ccc(F)cc2)CN3C(=O)C4=C(SCCS4)C3=O", "OC1=C(C(C2=C(O)c3ccccc3OC2=O)c4ccc5CC=CCc5c4)C(=O)Oc6ccccc16", "CCCCCCCCCCCCCCC(CCCCCCCCCCCCCC)C(=O)OC[C@H]1O[C@H](O[C@H]2O[C@H](COC(=O)C(CCCCCCCCCCCCCC)CCCCCCCCCCCCCC)[C@@H](O)[C@H](O)[C@H]2O)[C@H](O)[C@@H](O)[C@@H]1O", "OC(CN1CCN(CC1)c2ccccn2)CN3C(=O)C4=C(SCCS4)C3=O", "COc1ccccc1N2CCN(CC(O)CN3C(=O)C4=C(SCCS4)C3=O)CC2", "OC1=C(C(C2=C(O)c3ccccc3OC2=O)c4ccc(OCc5ccccc5)c(OCc6ccccc6)c4)C(=O)Oc7ccccc17", "OC1=C(C(C2=C(O)c3ccc(O)cc3OC2=O)c4ccc5CC=CCc5c4)C(=O)Oc6cc(O)ccc16", "OC1=C(C(C2=C(O)c3ccc(O)cc3OC2=O)c4ccc(CCc5ccccc5)cc4)C(=O)Oc6cc(O)ccc16", "CCCCCCCCCCCCCCCC(CCCCCCCCCCCCCCC)C(=O)OC[C@H]1O[C@H](O[C@H]2O[C@H](COC(=O)C(CCCCCCCCCCCCCCC)CCCCCCCCCCCCCCC)[C@@H](O)[C@H](O)[C@H]2O)[C@H](O)[C@@H](O)[C@@H]1O", "OC1=C(C(=O)Oc2ccccc12)c3ccccc3C4=C(O)c5ccccc5OC4=O", "OC1=C(C(=O)Oc2ccccc12)c3cccc(c3)C4=C(O)c5ccccc5OC4=O", "CCn1cc(C(=O)\\\\C=C(/O)\\\\C(=O)O)c2ccccc12", "CCn1cc(C(=O)\\\\C=C(/O)\\\\C(=O)O)c2cc3OCOc3cc12", "OC1=C(C(C2=C(O)c3ccccc3OC2=O)c4cnc5CC=CCc5c4)C(=O)Oc6ccccc16", "O=C(NN=C(c1ccccc1)c2ccccc2)c3ccncc3", "Brc1ccc(cc1)\\\\C(=N\\\\NC(=O)c2ccncc2)\\\\c3ccccc3", "Cc1ccc2cc(\\\\C=N\\\\NC(=O)C3=C(O)c4ccccc4S(=O)(=O)N3)c(Cl)nc2c1", "Cc1cccc2cc(\\\\C=N\\\\NC(=O)C3=C(O)c4ccccc4S(=O)(=O)N3)c(Cl)nc12", "COc1ccc2nc(Cl)c(\\\\C=N\\\\NC(=O)C3=C(O)c4ccccc4S(=O)(=O)N3)cc2c1", "Cc1ccc2nc(Cl)c(\\\\C=N\\\\NC(=O)C3=C(O)c4ccccc4S(=O)(=O)N3)cc2c1", "COC(=O)[C@]1(C)CCC[C@@]2(C)[C@H]1CC(=O)c3cc(c(Nc4ccc(OC)cc4)cc23)[N+](=O)[O-]", "CCCCCCCCCCCCCCCCC(CCCCCCCCCCCCCCCC)C(=O)OC[C@H]1O[C@H](O[C@H]2O[C@H](COC(=O)C(CCCCCCCCCCCCCCCC)CCCCCCCCCCCCCCCC)[C@@H](O)[C@H](O)[C@H]2O)[C@H](O)[C@@H](O)[C@@H]1O", "COC(=O)[C@]1(C)CCC[C@@]2(C)[C@H]1CC(=O)c3cc(c(Nc4ccc(C)cc4)cc23)[N+](=O)[O-]", "COC(=O)[C@]1(C)CCC[C@@]2(C)[C@H]1CC(=O)c3cc(c(Nc4ccccc4)cc23)[N+](=O)[O-]", "COC(=O)[C@]1(C)CCC[C@@]2(C)[C@H]1CC(=O)c3cc(c(NCCN)cc23)[N+](=O)[O-]", "COC(=O)[C@]1(C)CCC[C@@]2(C)[C@H]1CC(=O)c3cc(c(NCCO)cc23)[N+](=O)[O-]", "COC(=O)[C@]1(C)CCC[C@@]2(C)[C@H]1CC(=O)c3cc(c(NC(C)(C)C)cc23)[N+](=O)[O-]", "CCCCNc1cc2c(cc1[N+](=O)[O-])C(=O)C[C@H]3[C@@](C)(CCC[C@]23C)C(=O)OC", "COC(=O)[C@]1(C)CCC[C@@]2(C)[C@H]1CC(=O)c3cc(c(NC(C)C)cc23)[N+](=O)[O-]", "CCCNc1cc2c(cc1[N+](=O)[O-])C(=O)C[C@H]3[C@@](C)(CCC[C@]23C)C(=O)OC", "CCNc1cc2c(cc1[N+](=O)[O-])C(=O)C[C@H]3[C@@](C)(CCC[C@]23C)C(=O)OC", "CNc1cc2c(cc1[N+](=O)[O-])C(=O)C[C@H]3[C@@](C)(CCC[C@]23C)C(=O)OC", "COc1cc2CCN(C)[C@H]3Cc4ccc(O)c(c4)c5cc(C[C@H]6N(C)CCc7cc(OC)c(Oc(c1O)c23)cc67)ccc5OC", "OC(COc1ccc(cc1)C(F)(F)F)CN2CCC(CC2)Oc3ccc(cc3)C(F)(F)F", "COc1ccc2C[C@@H]3N(C)CCc4cc5Oc6c(OC)cc7CCN=C(Cc8ccc(Oc1c2)cc8)c7c6Oc5cc34", "C[C@H]1O[C@H](OC[C@H]2O[C@@H](Oc3cc(O)c4C(=O)C(=C(Oc4c3)c5ccc(O)cc5)O)[C@H](O[C@@H]6O[C@H](CO)[C@@H](O)[C@H](O)[C@H]6O)[C@@H](O)[C@@H]2O)[C@@H](O)[C@@H](O)[C@@H]1O", "C\\\\C=C\\\\1/CN2CC[C@@]34[C@@H]2C[C@@H]1[C@H](CO)[C@@H]3N(C(=O)C)c5ccccc45", "COC(=O)c1ccc(OCC(O)CN2CCC(CC2)Oc3ccc(cc3)C(F)(F)F)cc1", "COc1cccc(OCC(O)CN2CCC(CC2)Oc3ccc(cc3)C(F)(F)F)c1", "COc1ccc(OCC(O)CN2CCC(CC2)Oc3ccc(cc3)C(F)(F)F)cc1", "CC(=O)c1ccc(OCC(O)CN2CCC(CC2)Oc3ccc(cc3)C(F)(F)F)cc1", "CCC(=O)c1ccc(OCC(O)CN2CCC(CC2)Oc3ccc(cc3)C(F)(F)F)cc1", "CC(=O)Nc1ccc(OCC(O)CN2CCC(CC2)Oc3ccc(cc3)C(F)(F)F)cc1", "OC(COc1ccc(cc1)C#N)CN2CCC(CC2)Oc3ccc(cc3)C(F)(F)F", "CCCNCC#CC(=O)Nc1ccc2ncc(C#N)c(Nc3cccc(Br)c3)c2c1", "O=C1NC(=O)C(=CN2CCOCC2)C(=O)N1", "CC(C)NCC#CC(=O)Nc1ccc2ncc(C#N)c(Nc3cccc(Br)c3)c2c1", "CCC1(CC)CC(CCNC(=O)c2ccccc2)OC1=O", "CCC1(CC)CC(CCOC(=O)c2ccc(Br)cc2)OC1=O", "CCC(=O)NCCC1CC(CC)(CC)C(=O)O1", "CCC1(CC)CC(CCOC(=O)c2ccc(OC)cc2)OC1=O", "CCCCCCCCCCCCCCC[C@@H](O)[C@@H](CCCCCCCCCCCCCC)C(=O)OC[C@H]1O[C@H](O[C@H]2O[C@H](COC(=O)[C@H](CCCCCCCCCCCCCC)[C@H](O)CCCCCCCCCCCCCCC)[C@@H](O)[C@H](O)[C@H]2O)[C@H](O)[C@@H](O)[C@@H]1O", "CCC1(CC)CC(CCOC(=O)c2ccc(C)cc2)OC1=O", "CCC1(CC)CC(CCOC(=O)c2ccccc2)OC1=O", "CCC(=O)OCCC1CC(CC)(CC)C(=O)O1", "CCCCCCCC(=O)OCCC1CC(CC)(CC)C(=O)O1", "CCC1(CC)CC(COC(=O)c2ccc(Br)cc2)OC1=O", "CC(C)Cc1ccc(cc1)C(C)C2=NNC(=S)N2c3ccc(cc3)C(=O)NNC(=O)CO[N+](=O)[O-]", "CCC1(CC)CC(COC(=O)c2ccc(C)cc2)OC1=O", "CCC1(CC)CC(COC(=O)c2ccc(OC)cc2)OC1=O", "COc1ccc(cc1OC)C2OC(=O)C(=C2I)O", "CCC1(CC)CC(COC(=O)c2ccccc2)OC1=O", "CCCCCCCC(=O)OCC1CC(CC)(CC)C(=O)O1", "CCC(=O)OCC1CC(CC)(CC)C(=O)O1", "Nc1nc(Cl)c2c(ncn2Cc3cccc(CCl)c3)n1", "CCOC(=O)N1C(CC(=O)C)N(C(=O)OCC)c2ccccc12", "ClCc1ccc(Cn2cnc3ncnc(Cl)c23)cc1", "CCOC(=O)N1C(CC(=O)C)N(C(=O)OCC)c2cc(C)c(C)cc12", "CCOC(=O)N1C(CC(=O)c2ccccc2)N(C(=O)OCC)c3ccccc13", "CCOC(=O)N1C(CC(=O)c2ccccc2)N(C(=O)OCC)c3cc(C)c(C)cc13", "COc1ccc(cc1)C2C\\\\C(=N\\\\OCc3ccccc3)\\\\C(C)C(N2C)c4ccc(OC)cc4", "ClCc1ccc(Cn2cnc3nc(Cl)nc(Cl)c23)cc1", "CCOC(=O)N1C(CC(=O)c2ccc(O)cc2)N(C(=O)OCC)c3ccccc13", "CCOC(=O)N1C(CC(=O)c2ccc(OC)cc2)N(C(=O)OCC)c3cc(C)c(C)cc13", "CCOC(=O)N1C(CC(=O)Cc2ccccc2)N(C(=O)OCC)c3ccccc13", "CCOC(=O)N1C(CC(=O)\\\\C=C\\\\c2ccccc2)N(C(=O)OCC)c3cc(C)c(C)cc13", "ClCc1cccc(Cn2cnc3nc(Cl)nc(Cl)c23)c1", "C[C@H]1O[C@H](OC2=C(Oc3cc(O)cc(O)c3C2=O)c4ccc(O)c(O)c4)[C@@H](O)[C@@H](O)[C@@H]1O", "Nc1nc(Cl)c2c(ncn2Cc3ccc(CCl)cc3)n1", "ClCc1ccccc1Cn2cnc3c(Cl)ncnc23", "ClCc1ccccc1Cn2cnc3c(Cl)nc(Cl)nc23", "ClCc1cccc(Cn2cnc3c(Cl)ncnc23)c1", "ClCc1cccc(Cn2cnc3c(Cl)nc(Cl)nc23)c1", "ClCc1ccc(Cn2cnc3c(Cl)ncnc23)cc1", "ClCc1ccc(Cn2cnc3c(Cl)nc(Cl)nc23)cc1", "ClCc1ccccc1Cn2cnc3ncnc(Cl)c23", "ClCc1ccccc1Cn2cnc3nc(Cl)nc(Cl)c23", "Nc1nc(Cl)c2c(ncn2Cc3ccccc3CCl)n1", "ClCc1cccc(Cn2cnc3ncnc(Cl)c23)c1", "Cc1ccc(cc1)c2cc(nc(N)n2)c3ccccc3O", "Nc1nc(cc(n1)c2ccccc2O)c3ccc(F)cc3", "COc1ccc(cc1)c2cc(nc(N)n2)c3ccccc3O", "Nc1nc(cc(n1)c2ccccc2O)c3ccc(Cl)cc3", "C[C@]12CC[C@H]3[C@@H](CC=C4C[C@H](CC[C@]34C)OC(=O)Cc5ccccc5)[C@@H]1CC/C/2=N\\\\O", "Cc1cccc(c1)c2cc(nc(N)n2)c3ccccc3O", "CCn1c(cc2ccccc12)C(=O)\\\\C=C(/O)\\\\C(=O)O", "COc1cccc(c1)c2cc(nc(N)n2)c3ccccc3O", "Nc1nc(cc(n1)c2ccccc2O)c3cccc(Cl)c3", "COc1ccc(cc1OC)c2cc(nc(N)n2)c3ccccc3O", "Nc1nc(cc(n1)c2ccccc2O)c3occc3", "Cc1noc(n1)c2ccccn2", "Nc1nc(cc(n1)c2ccccc2O)c3cccs3", "CC1C(N(C)C(C/C/1=N/OCc2ccccc2)c3ccccc3)c4ccccc4", "CCC1C(N(C)C(C/C/1=N/OCc2ccccc2)c3ccccc3)c4ccccc4", "CC(C)C1C(N(C)C(C/C/1=N/OCc2ccccc2)c3ccccc3)c4ccccc4", "o1ncnc1c2cccnc2", "CC(C)CNCC(C)(C)N1C(=O)c2ccccc2C1=O", "CN1C(CC(=NOCc2ccccc2)CC1c3ccc(Cl)cc3)c4ccc(Cl)cc4", "CC1C(N(C)C(C/C/1=N/OCc2ccccc2)c3ccc(Cl)cc3)c4ccc(Cl)cc4", "CN1C(CC(=NOCc2ccccc2)CC1c3ccc(C)cc3)c4ccc(C)cc4", "CC1C(N(C)C(C/C/1=N/OCc2ccccc2)c3ccc(C)cc3)c4ccc(C)cc4", "COc1ccc(cc1)C2CC(=NOCc3ccccc3)CC(N2C)c4ccc(OC)cc4", "COc1ccc(cc1)C2CC(=NN2c3ccccc3)c4ccc(O)c(C)c4", "Cc1cc(ccc1O)C2=NN(C(C2)c3ccc(Cl)cc3)c4ccccc4", "CN(C)c1ccc(cc1)C2CC(=NN2c3ccccc3)c4ccc(O)c(C)c4", "Cc1cc(ccc1O)C2=NN(C(C2)c3ccccc3)c4ccccc4", "C[C@]12CC[C@H]3[C@@H](CC=C4C[C@H](CC[C@]34C)OC(=O)COc5ccccc5)[C@@H]1CC/C/2=N\\\\O", "COc1ccc(cc1OC)C2CC(=NN2c3ccccc3)c4ccc(O)c(C)c4", "COc1cc(cc(OC)c1OC)C2CC(=NN2c3ccccc3)c4ccc(O)c(C)c4", "Cc1cc(ccc1O)C2=NN(C(C2)c3ccc(F)cc3)c4ccccc4", "Cc1cc(ccc1O)C2=NN(C(C2)c3ccccc3Cl)c4ccccc4", "C\\\\C=C(/C)\\\\O[C@H]1[C@H](CO)[C@]2(C)[C@H](O)C[C@]3(C)C(=CC[C@@H]4[C@@]5(C)CCC(O[C@@H]6O[C@@H]([C@@H](O)[C@H](O[C@@H]7OC[C@H](O)[C@H](O)[C@H]7O[C@@H]8OC[C@@H](O)[C@H](O)[C@H]8O)[C@H]6O[C@]9(C)O[C@H](CO)[C@H](O)[C@H](O)[C@H]9O)C(=O)O)[C@@](C)(C=O)[C@@H]5CC[C@@]34C)[C@@H]2CC1(C)C", "Cc1cc(ccc1O)C2=NN(C(C2)c3c(Cl)cccc3Cl)c4ccccc4", "Cc1cc(ccc1O)C2=NN(C(C2)c3cccc(c3)[N+](=O)[O-])c4ccccc4", "Cc1cc(ccc1O)C2=NN(C(C2)c3occc3)c4ccccc4", "Clc1ccc(cc1)c2cc(C3=CC(=O)C=CC3=O)n(n2)c4ccccc4", "CC(C)(CO)NC=C1C(=O)NC(=O)NC1=O", "Cc1ccc(cc1)c2cc(C3=CC(=O)C=CC3=O)n(n2)c4ccc(cc4)S(=O)(=O)N", "NS(=O)(=O)c1ccc(cc1)n2nc(cc2C3=CC(=O)C=CC3=O)c4ccc(Cl)cc4", "CC(CO)(CO)Nc1nc2ccccc2[nH]1", "OCCN(Cc1nc2ccccc2[nH]1)c3nc4ccccc4[nH]3", "CC(CO)(CO)NCc1nc2ccccc2[nH]1", "CCOC(=O)N1CCN(CC1)C=C2C(=O)NC(=O)NC2=O", "OC(CNC1CCCCC1)CN2C(=O)c3ccccc3C2=O", "CC(CO)(CO)NCCCN1C(=O)c2ccccc2C1=O", "CC(C)(CO)N1C(=O)c2ccccc2C1=O", "CC(C)(CO)NCC(C)(C)N1C(=O)c2ccccc2C1=O", "COc1ccc(cc1)C(=O)O[C@H]2CC[C@]3(C)[C@H]4CC[C@@]5(C)[C@@H](CC/C/5=N\\\\O)[C@@H]4CC=C3C2", "Cc1c(CCc2ccccc2)oc3cccc(OCCNCc4cccnc4)c13", "Cc1c(oc2cccc(OCCNCc3cccnc3)c12)C(=O)Nc4ccccc4", "Cc1c(CSc2ccccc2)oc3cccc(OCCNCc4cccnc4)c13", "OC1=C(Br)C(OC1=O)c2ccccc2", "CCOC(=O)C1=C(C)N(CC(O)COc2ccc(\\\\C=N\\\\C(=S)Nc3ccc(Cl)cc3)cc2)C(=S)NC1c4ccccc4[N+](=O)[O-]", "CCOC(=O)c1oc2cccc(OCCNCc3cccnc3)c2c1C4CC4", "CCOC(=O)c1oc2cccc(OCCNCc3ccccc3)c2c1C", "CCOC(=O)c1oc2cccc(OCCNCc3cccnc3)c2c1C", "CCOC(=O)c1oc2cccc(OCCNCc3cccnc3)c2c1CC", "C[C@]12CC[C@H]3[C@@H](CC=C4C[C@H](CC[C@]34C)OC(=O)c5ccc(Cl)cc5)[C@@H]1CC/C/2=N\\\\O", "CCOC(=O)c1oc2cccc(OCCNCc3cccnc3)c2c1C(C)C", "CCOC(=O)c1oc2cccc(OCCNCc3cccnc3)c2c1", "CC(=O)c1nccn1c2oc3cccc(OCCNCc4cccnc4)c3c2C", "COCc1ccc2oc(cc2c1)c3oc4cccc(OCCNCc5cccnc5)c4c3C", "CCCCc1nc(Cl)c(C=O)n1CC(=O)c2ccccc2", "Cc1c(COc2ccccc2C#N)oc3cccc(OCCNCc4cccnc4)c13", "Cc1c(COc2ccccc2)oc3cccc(OCCNCc4cccnc4)c13", "Cc1c(COc2cccc(F)c2)oc3cccc(OCCNCc4cccnc4)c13", "Cc1c(COc2cccc(F)c2F)oc3cccc(OCCNCc4cccnc4)c13", "Cc1c(COc2ccccc2F)oc3cccc(OCCNCc4cccnc4)c13", "Cc1c(COc2ccc(F)c(F)c2F)oc3cccc(OCCNCc4cccnc4)c13", "Cc1c(COc2ccc(F)cc2F)oc3cccc(OCCNCc4cccnc4)c13", "Cc1c(COc2ccc(F)cc2)oc3cccc(OCCNCc4cccnc4)c13", "CCCCCCCCCCCCCCCC(=O)OCCCCCCOC(=O)CCCCCCCCCCCCCCC", "Cc1c(COc2ccc(Cl)cc2)oc3cccc(OCCNCc4cccnc4)c13", "Cc1c(COc2ccc(cc2)C#N)oc3cccc(OCCNCc4cccnc4)c13", "CCCCc1nc(Cl)c(C=O)n1Cc2c(C)onc2C", "CCCCc1nc(Cl)c(C=O)n1CC(=O)c2ccc(Cl)cc2", "CC1=C(C(C(=C(C)N1)C(=O)Nc2ccc(Cl)cc2)c3ccncc3)C(=O)Nc4ccc(Cl)cc4", "CCCCc1nc(Cl)c(C=O)n1Cc2ccc(cc2)c3ccccc3C(=O)OC", "CCCCc1nc(Cl)c(C=O)n1Cc2ccc(cc2)c3ccccc3C#N", "CCCCc1nc(Cl)c(C=O)n1Cc2ccc(cc2)[N+](=O)[O-]", "CCCCc1nc(Cl)c(C=O)n1Cc2cc3OCOc3cc2C", "CCCCc1nc(Cl)c(C=O)n1Cc2ccccc2", "CCCCc1nc(Cl)c(C=O)n1Cc2cc(OC)c(OC)cc2Br", "Fc1cccc(c1)C(=O)OCCN2C(=O)c3ccccc3C2=O", "Clc1cccc(c1)C(=O)OCCN2C(=O)c3ccccc3C2=O", "[O-][N+](=O)c1cccc(c1)C(=O)OCCN2C(=O)c3ccccc3C2=O", "CC(C)(C)c1ccc(cc1)C(=O)OCCN2C(=O)c3ccccc3C2=O", "CCCCCc1ccc(cc1)C(=O)OCCN2C(=O)c3ccccc3C2=O", "Brc1ccc(cc1)C(=O)OCCN2C(=O)c3ccccc3C2=O", "Fc1cccc(C(=O)OCCN2C(=O)c3ccccc3C2=O)c1F", "Fc1ccc(C(=O)OCCN2C(=O)c3ccccc3C2=O)c(F)c1", "Fc1ccc(F)c(c1)C(=O)OCCN2C(=O)c3ccccc3C2=O", "Fc1cccc(F)c1C(=O)OCCN2C(=O)c3ccccc3C2=O", "Fc1ccc(cc1F)C(=O)OCCN2C(=O)c3ccccc3C2=O", "Clc1ccccc1C(=O)OCCN2C(=O)c3ccccc3C2=O", "[O-][N+](=O)c1ccccc1C(=O)OCCN2C(=O)c3ccccc3C2=O", "CCCCCCCCCCCCCCCC(=O)OCC(CO[C@@H]1O[C@H](CO)[C@@H](O)[C@H](O)[C@H]1O)OC(=O)CCCCCCCCCCCCCCC", "COc1ccc(cc1)C2=NOC(C2CN3CCOCC3)c4c[nH]c5ccccc45", "Cc1ccc(cc1)C2=NOC(C2CN3CCOCC3)c4c[nH]c5ccccc45", "Clc1ccc(cc1)C2=NOC(C2CN3CCOCC3)c4c[nH]c5ccccc45", "C(C1C(ON=C1c2ccccc2)c3c[nH]c4ccccc34)N5CCOCC5", "CCCCCCCCCCCCNCC(=O)N[C@@H](CC(=O)N)C(=O)N[C@H]1CNC(=O)[C@@H]2CCCN2C(=O)[C@@H](NC(=O)[C@@H](NC(=O)CNC(=O)[C@H](CC(=O)O)NC(=O)CNC(=O)[C@H](CC(=O)O)NC(=O)CNC(=O)[C@@H]3CCCCN3C1=O)[C@@H](C)O)[C@H](C)CC", "COc1ccc(cc1)C2=NOC(C2CN3CCCCC3)c4c[nH]c5ccccc45", "Cc1ccc(cc1)C2=NOC(C2CN3CCCCC3)c4c[nH]c5ccccc45", "Clc1ccc(cc1)C2=NOC(C2CN3CCCCC3)c4c[nH]c5ccccc45", "C(C1C(ON=C1c2ccccc2)c3c[nH]c4ccccc34)N5CCCCC5", "CCCCCCCCCCCCCCC[C@@H](OC)[C@@H](CCCCCCCCCCCCCC)C(=O)OC[C@H]1O[C@H](O[C@H]2O[C@H](COC(=O)[C@H](CCCCCCCCCCCCCC)[C@@H](CCCCCCCCCCCCCCC)OC)[C@@H](O)[C@H](O)[C@H]2O)[C@H](O)[C@@H](O)[C@@H]1O", "COc1ccc(NC(=O)C2=C(C)NC(=O)NC2c3ccccc3)cc1", "COc1ccc(NC(=O)C2=C(C)NC(=S)NC2c3ccccc3)cc1", "COc1ccc(NC(=O)C2=C(C)NC(=O)NC2c3ccc(OC)cc3)cc1", "COc1ccc(NC(=O)C2=C(C)NC(=S)NC2c3ccc(OC)cc3)cc1", "Cc1ccc(cc1)C(=O)O[C@H]2CC[C@]3(C)[C@H]4CC[C@@]5(C)[C@@H](CC/C/5=N\\\\O)[C@@H]4CC=C3C2", "COc1ccc(NC(=O)C2=C(C)NC(=O)NC2c3occc3)cc1", "COc1ccc(NC(=O)C2=C(C)NC(=S)NC2c3occc3)cc1", "COc1ccc(NC(=O)C2=C(C)NC(=O)NC2c3ccccc3O)cc1", "COc1ccc(NC(=O)C2=C(C)NC(=S)NC2c3ccccc3O)cc1", "CCOC(=O)C1=C(C)N(CC(O)COc2ccc(\\\\C=N\\\\C(=S)Nc3ccc(cc3)C(=O)O)cc2)C(=S)NC1c4cccc(c4)[N+](=O)[O-]", "COc1ccc(NC(=O)C2=C(C)NC(=O)NC2C\\\\C=C\\\\c3ccccc3)cc1", "COc1ccc(NC(=O)C2=C(C)NC(=O)NC2c3cccc(c3)[N+](=O)[O-])cc1", "COc1ccc(NC(=O)C2=C(C)NC(=S)NC2c3cccc(c3)[N+](=O)[O-])cc1", "COc1ccc(NC(=O)C2=C(C)NC(=O)NC2c3ccc(O)c(OC)c3)cc1", "CCCCCCCCCCCCCCCCNC(=O)N[C@@H](CC(=O)N)C(=O)N[C@H]1CNC(=O)[C@@H]2CCCN2C(=O)[C@@H](NC(=O)[C@@H](NC(=O)CNC(=O)[C@H](CC(=O)O)NC(=O)CNC(=O)[C@H](CC(=O)O)NC(=O)CNC(=O)[C@@H]3CCCCN3C1=O)[C@@H](C)O)[C@H](C)CC", "COc1ccc(NC(=O)C2=C(C)NC(=O)NC2c3cccc(Cl)c3)cc1", "COc1ccc(NC(=O)C2=C(C)NC(=S)NC2c3cccc(Cl)c3)cc1", "COc1ccc(NC(=O)C2=C(C)NC(=O)NC2c3ccc(cc3)N(C)C)cc1", "COc1ccc(NC(=O)C2=C(C)NC(=S)NC2c3ccc(cc3)N(C)C)cc1", "CN1c2c(C)n(nc2c3ccccc3S1(=O)=O)c4ccc(cc4)C(=O)\\\\C=C\\\\c5ccc(Cl)cc5", "COc1ccc(NC(=O)C2=C(C)NC(=O)NC2c3ccncc3)cc1", "COc1ccc(NC(=O)C2=C(C)NC(=O)NC2)cc1", "CC1=C(C(C(=C(C)N1)C(=O)Nc2ccc(Cl)cc2)c3ccccc3)C(=O)Nc4ccc(Cl)cc4", "COc1ccc(cc1)C2C(=C(C)NC(=C2C(=O)Nc3ccc(Cl)cc3)C)C(=O)Nc4ccc(Cl)cc4", "CC1=C(C(C(=C(C)N1)C(=O)Nc2ccc(Cl)cc2)c3occc3)C(=O)Nc4ccc(Cl)cc4", "COc1cc(ccc1O)C2C(=C(C)NC(=C2C(=O)Nc3ccc(Cl)cc3)C)C(=O)Nc4ccc(Cl)cc4", "CC[C@@]1(C[C@H]2CN(CCc3c([nH]c4ccccc34)[C@@](C2)(C(=O)OC)c5cc6c(cc5OC)N(C)[C@H]7[C@](O)([C@H](OC(=O)C)[C@]8(CC)C=CCN9CC[C@]67[C@H]89)C(=O)OC)C1)NC(=S)Nc%10ccccc%10", "CCOC(=O)C1=C(C)N(CC(O)COc2ccc(\\\\C=N\\\\C(=S)Nc3ccc(Cl)cc3)cc2)C(=S)NC1c4cccc(c4)[N+](=O)[O-]", "Cc1ccc2[nH]c3c(CCc4c3nc5ccc(Cl)cc5c4c6ccccc6)c2c1", "Cc1cccc2c3CCc4c(nc5ccc(Cl)cc5c4c6ccccc6)c3[nH]c12", "CC(C)Cc1ccc(cc1)C(C)C2=NNC(=S)N2c3ccc(cc3)C(=O)NNC(=O)CCO[N+](=O)[O-]", "OC1=C(Oc2c(O)ccc(O)c2C1=O)c3ccc(O)c(O)c3", "Cc1ccc2c3CCc4c(nc5ccc(Cl)cc5c4c6ccccc6)c3[nH]c2c1", "CC(C)Cc1ccc(cc1)C(C)C2=NNC(=S)N2c3ccc(C(=O)NNC(=O)CCO[N+](=O)[O-])c(c3)C(=O)NNC(=O)CCO[N+](=O)[O-]", "CC(C)Cc1ccc(cc1)C(C)C2=NNC(=S)N2c3ccccc3CC(=O)NNC(=O)CCO[N+](=O)[O-]", "CC(C)Cc1ccc(cc1)C(C)C2=NNC(=S)N2c3ccccc3CC(=O)NNC(=O)CO[N+](=O)[O-]", "CC(C)Cc1ccc(cc1)C(C)C2=NNC(=S)N2c3ccc(C(=O)NNC(=O)CO[N+](=O)[O-])c(c3)C(=O)NNC(=O)CO[N+](=O)[O-]", "CC[C@@]1(C[C@H]2CN(CCc3c([nH]c4ccccc34)[C@@](C2)(C(=O)OC)c5cc6c(cc5OC)N(C)[C@H]7[C@](O)([C@H](OC(=O)C)[C@]8(CC)C=CCN9CC[C@]67[C@H]89)C(=O)OC)C1)NC(=S)NCCc%10ccc(F)cc%10", "C[C@]12CC[C@H]3[C@@H](CC=C4C[C@H](CC[C@]34C)OC(=O)CCl)[C@@H]1CC/C/2=N\\\\O", "C[C@]12CC[C@H]3[C@@H](CC=C4C[C@H](CC[C@]34C)OC(=O)c5ccccc5)[C@@H]1CC/C/2=N\\\\O", "C[C@]12CC[C@H]3[C@@H](CC=C4C[C@H](CC[C@]34C)OC(=O)c5ccc(cc5)[N+](=O)[O-])[C@@H]1CC/C/2=N\\\\O", "C[C@]12CC[C@H]3[C@@H](CC=C4C[C@H](CC[C@]34C)OC(=O)c5ccc(N)cc5)[C@@H]1CC/C/2=N\\\\O", "C[C@]12CC[C@H]3[C@@H](CC=C4C[C@H](CC[C@]34C)OC(=O)c5ccc(O)cc5)[C@@H]1CC/C/2=N\\\\O", "C[C@]12CC[C@H](O)CC1=CC[C@H]3[C@@H]4CC\\\\C(=N/O)\\\\[C@@]4(C)CC[C@H]23", "COc1ccc(cc1)c2nn(cc2C3OC(=O)C(=C3Br)O)c4ccccc4", "OC1=C(Br)C(OC1=O)c2cn(nc2c3ccc(Br)cc3)c4ccccc4", "Cc1nn(c(C)c1C2OC(=O)C(=C2Cl)O)c3ccccc3", "OC1=C(I)C(OC1=O)c2ccccc2", "OC1=C(I)C(OC1=O)c2ccc(Cl)cc2", "Oc1ccc(cn1)c2ccc3N=C(NCCN4CCOCC4)C(=O)N(CC5CCCCC5)c3n2", "Cc1nn(c(C)c1C2OC(=O)C(=C2I)O)c3ccccc3", "BrC1=C(OCC(=O)NCc2ccccc2)C(=O)OC1c3ccccc3", "Cl\\\\C(=C/c1ccc(Cl)cc1)\\\\C2=Nc3ccccc3NC2=O", "I\\\\C(=C/c1ccccc1)\\\\C2=Nc3ccccc3NC2=O", "Clc1ccc(\\\\C=C(/I)\\\\C2=Nc3ccccc3NC2=O)cc1", "Cc1nn(c(C)c1\\\\C=C(/I)\\\\C2=Nc3ccccc3NC2=O)c4ccccc4", "OC(=O)\\\\C(=C\\\\c1ccc(Cl)cc1)\\\\Br", "Cc1nn(c(C)c1\\\\C=C(/Br)\\\\C(=O)O)c2ccccc2", "OC(=O)\\\\C(=C\\\\c1cn(nc1c2ccc(Br)cc2)c3ccccc3)\\\\Br", "CN(CCC(Oc1ccc(cc1)C(F)(F)F)c2ccccc2)CC(O)COc3ccccc3C", "COc1ccccc1OCC(O)CN(C)CCC(Oc2ccc(cc2)C(F)(F)F)c3ccccc3", "OC(=O)C(=O)\\\\C=C\\\\c1cn(nc1c2ccccc2)c3ccccc3", "COc1ccc(cc1)c2nn(cc2\\\\C=C\\\\C(=O)C(=O)O)c3ccccc3", "OC(=O)C(=O)\\\\C=C\\\\c1cn(nc1c2ccc(Br)cc2)c3ccccc3", "Cn1c(cc2ccccc12)C(=O)\\\\C=C(/O)\\\\C(=O)O", "Cn1c(cc2cc3OCOc3cc12)C(=O)\\\\C=C(/O)\\\\C(=O)O", "CCn1c(cc2cc3OCOc3cc12)C(=O)\\\\C=C(/O)\\\\C(=O)O", "OC(=O)\\\\C(=C\\\\C(=O)c1cc2ccccc2n1Cc3ccccc3)\\\\O", "OC(=O)\\\\C(=C\\\\C(=O)c1cc2cc3OCOc3cc2n1Cc4ccccc4)\\\\O", "Cn1cc(C(=O)\\\\C=C(/O)\\\\C(=O)O)c2ccccc12", "Cn1cc(C(=O)\\\\C=C(/O)\\\\C(=O)O)c2cc3OCOc3cc12", "COc1cccc2cc(C3SC(=NN3C(=O)C)NC(=O)C)c(Cl)nc12", "COc1ccc2cc(C3SC(=NN3C(=O)C)NC(=O)C)c(Cl)nc2c1", "COc1cc2cc(C3SC(=NN3C(=O)C)NC(=O)C)c(Cl)nc2cc1OC", "CC(=O)NC1=NN(C(S1)c2cc3ccc(Cl)cc3nc2Cl)C(=O)C", "CCC(=O)c1ccc(OCC(O)CN(C)CCC(Oc2ccc(cc2)C(F)(F)F)c3ccccc3)cc1", "CC(=O)NC1=NN(C(S1)c2cc3cc(Br)ccc3nc2Cl)C(=O)C", "CC(=O)NC1=NN(C(S1)c2cc3cc(C)ccc3nc2Cl)C(=O)C", "COc1ccc2nc(Cl)c(cc2c1)C3SC(=NN3C(=O)C)NC(=O)C", "CC(=O)NC1=NN(C(S1)c2cc3ccc(C)cc3nc2Cl)C(=O)C", "Oc1ncc(cn1)c2ccc3N=C(NCC4CCOCC4)C(=O)N(CC5CCCCC5)c3n2", "C\\\\C=C\\\\1/CN2CC[C@@]34[C@@H]2C[C@@H]1[C@H]5CO[C@H]([C@@H]6[C@H]7C[C@@H]8N(CC[C@]89[C@H]6N(C(=O)C)c%10ccccc9%10)C/C/7=C\\\\C)N([C@H]35)c%11ccccc4%11", "CCc1ccc2c3[nH]c4ccccc4c3CC[n+]2c1", "CN1CCc2c([nH]c3ccccc23)[C@@H]1C[C@@H]4C[C@@H]5N(CCc6c5[nH]c7ccccc67)C[C@@H]4C=C.OC(=O)C(=O)O", "COc1cc2CCN(C)[C@@H]3Cc4ccc(O)c(c4)c5cc(C[C@@H]6N(C)CCc7cc8Oc1c(Oc8cc67)c23)ccc5OC", "C\\\\C=C/1\\\\CN2CCc3c([C@@H]2C[C@@H]1Cc4nccc5c6ccccc6[nH]c45)n(C)c7ccccc37", "CN(CCC(Oc1ccc(cc1)C(F)(F)F)c2ccccc2)CC(O)COc3ccc(cc3)C(F)(F)F", "O[C@@]12CCO[C@@]1(Nc3ccccc23)[C@H]4C[C@@H]5CCN4C[C@@H]5C=C", "O[C@H]1Cc2c(O)cc3O[C@@]4(Oc5cc(O)cc(O)c5[C@@H]([C@H]4O)c3c2O[C@@H]1c6cc(O)c(O)c(O)c6)c7ccc(O)cc7", "C\\\\C=C/1\\\\CN(C)CC[C@@]23[C@@H]4[C@H](CO[C@H](O)C(=O)N4c5ccccc25)[C@H]1CC3=O", "C\\\\C=C/1\\\\CN2CC[C@@]34[C@@H]2C[C@@H]1[C@@H](C=O)[C@@H]3N(C(=O)C)c5ccccc45", "COC(=O)C1=CO[C@@H](O[C@@H]2O[C@H](CO)[C@@H](O)[C@H](O)[C@H]2O)[C@H]3[C@@H]1C=C[C@]34OC(=O)C(=C4)C(O)c5ccc(O)c(OC)c5", "CC[C@@H]1CN2CC[C@@]34[C@@H]2C[C@@H]1[C@H]5CO[C@H]([C@@H]6[C@H]7C[C@@H]8N(CC[C@]89[C@H]6N(C(=O)C)c%10ccccc9%10)C/C/7=C/C)N([C@H]35)c%11ccccc4%11", "COc1cccc2[nH]c3[C@H](C[C@H]4C[C@@H]5N(CCc6c5[nH]c7ccccc67)C[C@@H]4C=C)NCCc3c12", "C[C@@H]1NC[C@]23CC[C@H]4[C@@H](CC=C5C[C@H](CC[C@]45C)N(C)C)[C@@H]2CC[C@H]13", "C[C@@H]1N=C[C@]23CC[C@H]4[C@@H](CC=C5C[C@@H](N)CC[C@]45C)[C@@H]2CC[C@H]13", "COCCc1c([nH]c2ccccc12)[C@@H]3C[C@@H]4CCN3C[C@@H]4C=C", "COc1ccc2nccc(C(=O)[C@H]3C[C@@H]4CCN3C[C@@H]4C=C)c2c1", "C\\\\C=C/1\\\\CN2CC[C@@]34[C@@H]2C[C@@H]1[C@H](C=O)[C@@H]3N(C(=O)C)c5ccccc45", "CN1CCc2c([nH]c3ccccc23)[C@@H]1C[C@H]4C[C@@H]5N(CC[C@@]56C(=O)Nc7cc(O)ccc67)C[C@@H]4C=C", "COc1cc2CCN(C)[C@H]3Cc4ccc(O)c(Oc5ccc(C[C@@H]6N(C)CCc7c(O)c(OC)c(OC)c(Oc1cc23)c67)cc5)c4", "COC(=O)C(CO)C1CC2c3[nH]c4ccccc4c3CC[N+]2(C)C/C/1=C/C", "O[C@H]1Cc2c(O)cc3O[C@@]4(Oc5c([C@@H]([C@H]4O)c3c2O[C@@H]1c6ccc(O)cc6)c(O)cc7O[C@@]8(Oc9cc(O)cc(O)c9[C@@H]([C@@H]8O)c57)c%10ccc(O)cc%10)c%11ccc(O)cc%11", "C[C@@H]1N=C[C@]23C[C@@H](O)[C@H]4[C@@H](CCC5=CC(=O)C=C[C@]45C)[C@@H]2CC[C@H]13", "CO[C@H]1OC[C@@H]2[C@H]3CC(=O)[C@]4(CCN(C)C/C/3=C\\\\C)[C@H]2N(C1=O)c5ccccc45", "CC[C@@H]1CN2CC[C@@]34[C@@H]2C[C@@H]1[C@H]5CO[C@H]([C@@H]6[C@H]7C[C@@H]8N(CC[C@]89[C@H]6N(C(=O)C)c%10c(O)cccc9%10)C[C@H]7CC)N([C@H]35)c%11ccccc4%11", "COc1cc2CCN(C)[C@@H]3Cc4ccc5Oc6c(Oc5c4)c(OC)cc7CCN(C)[C@@H](Cc8ccc(Oc(c1OC)c23)cc8)c67", "CN(CCC(Oc1ccc(cc1)C(F)(F)F)c2ccccc2)CC(O)COc3ccc(cc3)C(=O)C", "CN(CCC(Oc1ccc(cc1)C(F)(F)F)c2ccccc2)CC(O)COc3cccc(c3)C(F)(F)F", "CN(CCC(Oc1ccc(cc1)C(F)(F)F)c2ccccc2)CC(O)COc3ccc(NC(=O)C)cc3", "CN(CCC(Oc1ccc(cc1)C(F)(F)F)c2ccccc2)CC(O)COc3ccc(Br)cc3", "COc1ccc(OCC(O)CN(C)CCC(Oc2ccc(cc2)C(F)(F)F)c3ccccc3)cc1", "CN(CCC(Oc1ccc(cc1)C(F)(F)F)c2ccccc2)CC(O)COc3ccc(C=O)cc3", "CN(CCC(Oc1ccc(cc1)C(F)(F)F)c2ccccc2)CC(O)COc3ccc(Cl)cc3", "CCNc1ccc(OCC(O)CN(C)CCC(Oc2ccc(cc2)C(F)(F)F)c3ccccc3)cc1", "CN(CCC(Oc1ccc(cc1)C(F)(F)F)c2ccccc2)CC(O)COc3ccc4ccccc4c3", "CN(CCC(Oc1ccc(cc1)C(F)(F)F)c2ccccc2)CC(O)COc3ccc(cc3)C#N", "CN(CCC(Oc1ccc(cc1)C(F)(F)F)c2ccccc2)CC(O)COc3ccccc3", "CC(=O)NS(=O)(=O)c1ccc(cc1)n2nc(cc2C3=CC(=O)C=CC3=O)c4ccccc4", "Cc1nn(c(C)c1CC(=O)c2cc(O)ccc2O)c3ccc(Br)cc3", "COc1ccc(OC)c(c1)c2cc(nn2c3ccc(cc3)S(=O)(=O)N)c4ccc(Cl)cc4", "CC1=NN(C(=O)C1CC(=O)c2cc(O)ccc2O)c3ccc(Br)cc3", "Oc1ccc(O)c(c1)C(=O)CC2C(=O)NN(C2=O)c3ccc(Br)cc3", "COc1ccc(OC)c(c1)c2cc(nn2c3ccccc3)c4ccc(Cl)cc4", "COc1ccc(OC)c(c1)c2cc(nn2c3ccc(cc3)S(=O)(=O)N)c4ccccc4", "COc1ccc(OC)c(c1)c2cc(nn2c3ccc(cc3)S(=O)(=O)NC(=O)C)c4ccccc4", "COc1ccc(OC)c(c1)c2cc(nn2c3ccc(cc3)S(=O)(=O)NC(=O)C)c4ccc(Cl)cc4", "Oc1ccc(O)c(c1)c2cc(nn2c3ccccc3)c4ccccc4", "OC1(C(=O)Nc2ccc(Cl)cc12)C(F)(F)F", "Oc1ccc(O)c(c1)c2cc(nn2c3ccccc3)c4ccc(Cl)cc4", "CC(=O)N1C(=O)C(O)(c2cc(Cl)ccc12)C(F)(F)F", "NS(=O)(=O)c1ccc(cc1)n2nc(cc2c3cc(O)ccc3O)c4ccccc4", "NS(=O)(=O)c1ccc(cc1)n2nc(cc2c3cc(O)ccc3O)c4ccc(Cl)cc4", "CC(=O)NS(=O)(=O)c1ccc(cc1)n2nc(cc2c3cc(O)ccc3O)c4ccccc4", "CC(=O)NS(=O)(=O)c1ccc(cc1)n2nc(cc2c3cc(O)ccc3O)c4ccc(Cl)cc4", "CN1C(=O)C(O)(c2cc(Br)ccc12)C(F)(F)F", "CC(=O)N1C(=O)C(O)(c2cc(C)ccc12)C(F)(F)F", "[O-][N+](=O)c1cc2oc(nc2cc1Cl)C3CCCCC3", "CCOc1ccc(Cc2oc3ccc(cc3n2)[N+](=O)[O-])cc1", "Nc1ccc(cc1)c2oc3ccc(Cl)cc3n2", "Cc1ccc2[nH]c(Cc3ccc(Br)cc3)nc2c1", "Clc1ccc2[nH]c(CC3CCCCC3)nc2c1", "Fc1ccc(cc1)C(=O)Nc2ccc3oc(nc3c2)c4ccccc4", "CCc1ccc(cc1)c2oc3ccc(NC(=O)Cc4ccc(Br)cc4)cc3n2", "OC[C@@H](O)[C@@H](O[C@@H]1O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)[C@H](O)[C@@H](O)C(=O)N2CCN(CC2)c3ccc(cc3)c4c5C=Cc(n5)c(c6ccccc6)c7ccc([nH]7)c(c8ccccc8)c9ccc(n9)c(c%10C=Cc4[nH]%10)c%11ccccc%11", "Clc1ccc(CSc2nc(Cl)c(\\\\C=C\\\\3/SC(=O)N(Cc4ccc(Cl)cc4Cl)C3=O)s2)cc1", "Clc1nc(sc1\\\\C=C\\\\2/SC(=O)N(Cc3ccc(Br)cc3)C2=O)N4CCCCC4", "[O-][N+](=O)c1ccc(CN2C(=O)S\\\\C(=C/c3sc(nc3Cl)N4CCCCC4)\\\\C2=O)cc1", "Clc1ccc(CN2C(=O)S\\\\C(=C/c3sc(nc3Cl)N4CCCCC4)\\\\C2=O)c(Cl)c1", "Clc1ccc(CSc2nc(Cl)c(\\\\C=C\\\\3/SC(=O)N(Cc4ccccc4)C3=O)s2)cc1", "Fc1ccc(CN2C(=O)S\\\\C(=C/c3sc(SCc4ccc(Cl)cc4)nc3Cl)\\\\C2=O)cc1", "Clc1ccc(CSc2nc(Cl)c(\\\\C=C\\\\3/SC(=O)N(Cc4ccc(Cl)cc4)C3=O)s2)cc1", "Clc1ccc(CSc2nc(Cl)c(\\\\C=C\\\\3/SC(=O)N(Cc4ccc(Br)cc4)C3=O)s2)cc1", "[O-][N+](=O)c1ccc(CN2C(=O)S\\\\C(=C/c3sc(SCc4ccc(Cl)cc4)nc3Cl)\\\\C2=O)cc1", "Cc1noc(n1)c2cccnc2", "Clc1nc(sc1\\\\C=C\\\\2/SC(=O)N(Cc3ccccc3)C2=O)N4CCCCC4", "Fc1ccc(CN2C(=O)S\\\\C(=C/c3sc(nc3Cl)N4CCCCC4)\\\\C2=O)cc1", "Clc1ccc(CN2C(=O)S\\\\C(=C/c3sc(nc3Cl)N4CCCCC4)\\\\C2=O)cc1", "COc1cc(cc(OC)c1OC)[C@H]2[C@@H]3[C@H](COC3=O)[C@@H](OC(=O)c4ccncc4)c5cc6OCOc6cc25", "COc1cc(cc(OC)c1OC)[C@H]2[C@@H]3[C@H](COC3=O)[C@@H](OC(=O)c4cccnc4)c5cc6OCOc6cc25", "COc1cc(cc(OC)c1OC)[C@H]2[C@@H]3[C@H](COC3=O)[C@@H](OC(=O)c4ccccn4)c5cc6OCOc6cc25", "COc1cc(cc(OC)c1OC)[C@H]2[C@@H]3[C@H](COC3=O)[C@@H](OC(=O)c4cccnc4Cl)c5cc6OCOc6cc25", "COc1cc(cc(OC)c1OC)[C@H]2[C@@H]3[C@H](COC3=O)[C@@H](OC(=O)c4ccc(Cl)nc4)c5cc6OCOc6cc25", "COc1cc(cc(OC)c1OC)[C@H]2[C@@H]3[C@H](COC3=O)[C@@H](OC(=O)c4cncc(Br)c4)c5cc6OCOc6cc25", "COc1cc(cc(OC)c1O)[C@H]2[C@@H]3[C@H](COC3=O)[C@H](OC(=O)c4ccncc4)c5cc6OCOc6cc25", "COc1cc(cc(OC)c1O)[C@H]2[C@@H]3[C@H](COC3=O)[C@H](OC(=O)c4cccnc4)c5cc6OCOc6cc25", "COc1cc(cc(OC)c1O)[C@H]2[C@@H]3[C@H](COC3=O)[C@H](OC(=O)c4ccccn4)c5cc6OCOc6cc25", "COc1cc(cc(OC)c1O)[C@H]2[C@@H]3[C@H](COC3=O)[C@H](OC(=O)c4cccnc4Cl)c5cc6OCOc6cc25", "COc1cc(cc(OC)c1O)[C@H]2[C@@H]3[C@H](COC3=O)[C@H](OC(=O)c4ccc(Cl)nc4)c5cc6OCOc6cc25", "COc1cc(cc(OC)c1O)[C@H]2[C@@H]3[C@H](COC3=O)[C@H](OC(=O)c4cncc(Br)c4)c5cc6OCOc6cc25", "C[C@H]1OCC\\\\C(=C\\\\C(=O)OCC23CCC(=C[C@H]2O[C@@H]4C[C@@H](OC(=O)\\\\C=C/C=C/[C@H]1O)[C@@]3(C)[C@]45CO5)C)\\\\C", "C[C@@H]1OCC\\\\C(=C\\\\C(=O)OCC23CCC(=C[C@H]2O[C@@H]4C[C@@H](OC(=O)\\\\C=C/C=C/[C@H]1O)[C@@]3(C)[C@]45CO5)C)\\\\C", "C\\\\C=C(\\\\C)/O[C@H]1[C@H](O)[C@]2(CO)[C@@H](C[C@]3(C)C(=CC[C@@H]4[C@@]5(C)CCC(O[C@@H]6O[C@@H]([C@@H](O)[C@H](O[C@@H]7OC[C@H](O)[C@H](O)[C@H]7O[C@@H]8OC[C@@H](O)[C@H](O)[C@H]8O)[C@H]6O[C@]9(C)O[C@H](CO)[C@H](O)[C@H](O)[C@H]9O)C(=O)O)[C@@](C)(C=O)[C@@H]5CC[C@@]34C)[C@@H]2CC1(C)C)OC(=O)C", "CCN(CC)CCOC(=O)Cc1c(C)n(C(=O)c2ccc(Cl)cc2)c3ccc(OC)cc13", "COc1ccc2c(c1)c(CC(=O)OCCN3CCCC3)c(C)n2C(=O)c4ccc(Cl)cc4", "COc1ccc2c(c1)c(CC(=O)OCCN(C)C)c(C)n2C(=O)c3ccc(Cl)cc3", "Clc1ccc(CN2CCOCC2)cc1", "C(N1CCOCC1)c2ccc(cc2)c3ccccc3", "Cc1cccc(c1)C(=S)N2CCCCC2", "NCc1cnn(O)c1Br", "Brc1ccc(cc1)C(=S)N2CCOCC2", "S=C(NCCc1ccccc1)c2ccccc2", "Oc1ccc(cc1O)C(=S)NCCc2ccccc2", "COC(=O)c1ccc(cc1)C(=S)NCCc2ccccc2", "Brc1ccc(cc1)C(=S)NCCc2ccccc2", "Clc1ccc(cc1)C(=S)NCCc2ccccc2", "Clc1ccccc1C(=S)NCCc2ccccc2", "Clc1ccc(C(=S)NCCc2ccccc2)c(Cl)c1", "Clc1ccc(cc1Cl)C(=S)NCCc2ccccc2", "Fc1ccc(cc1)C(=S)NCCc2ccccc2", "S=C(Cc1ccc(cc1)c2ccccc2)NCCc3ccccc3", "Clc1ccccc1C(=O)N2CCOCC2", "Clc1ccc(cc1)C(=O)N2CCOCC2", "O=C(N1CCOCC1)c2ccc(cc2)c3ccccc3", "Clc1ccccc1CN2CCOCC2", "S=C(N1CCOCC1)c2ccccc2", "Clc1ccccc1C(=S)N2CCOCC2", "Clc1cccc(c1)C(=S)N2CCOCC2", "Clc1ccc(C(=S)N2CCOCC2)c(Cl)c1", "Clc1ccc(cc1Cl)C(=S)N2CCOCC2", "S=C(N1CCOCC1)c2ccc(cc2)C3CCCCC3", "[O-][N+](=O)c1cccc(c1)C(=S)N2CCOCC2", "Clc1ccccc1CC(=S)N2CCOCC2", "S=C(N1CCCCC1)c2ccccc2", "Cc1cc(C)c2nc(sc2c1)N3C(=O)c4ccccc4N=C3c5ccccc5", "C\\\\C(=N/NC(=O)c1ccc(F)cc1)\\\\c2ccncc2", "CCOc1cccc2sc(nc12)N3C(=O)c4ccccc4N=C3c5ccccc5", "Brc1cc(Br)c2N=C(N(C(=O)c2c1)c3nc4ccccc4s3)c5ccccc5", "COc1cccc2sc(nc12)N3C(=O)c4cc(Br)cc(Br)c4N=C3c5ccccc5", "COc1ccc2sc(nc2c1)N3C(=O)c4cc(Br)cc(Br)c4N=C3c5ccccc5", "COc1ccc2nc(sc2c1)N3C(=O)c4cc(Br)cc(Br)c4N=C3c5ccccc5", "Cc1cccc2sc(nc12)N3C(=O)c4cc(Br)cc(Br)c4N=C3c5ccccc5", "Cc1ccc2sc(nc2c1)N3C(=O)c4cc(Br)cc(Br)c4N=C3c5ccccc5", "Clc1ccc2sc(nc2c1)N3C(=O)c4cc(Br)cc(Br)c4N=C3c5ccccc5", "CCOc1ccc2nc(sc2c1)N3C(=O)c4cc(Br)cc(Br)c4N=C3c5ccccc5", "CCOc1ccc2sc(nc2c1)N3C(=O)c4cc(Br)cc(Br)c4N=C3c5ccccc5", "Brc1ccc2nc(sc2c1)N3C(=O)c4cc(Br)cc(Br)c4N=C3c5ccccc5", "[O-][N+](=O)c1ccc2nc(sc2c1)N3C(=O)c4cc(Br)cc(Br)c4N=C3c5ccccc5", "Cc1ccc(cc1)C2NC(C3CCCC2C3=NNC(=O)c4ccc(N)cc4)c5ccc(C)cc5", "Cc1cc(C)c2nc(sc2c1)N3C(=O)c4cc(Br)cc(Br)c4N=C3c5ccccc5", "CCOc1cccc2sc(nc12)N3C(=O)c4cc(Br)cc(Br)c4N=C3c5ccccc5", "COc1ccc2nc(sc2c1)N3C(=O)c4ccccc4N=C3c5ccccc5", "CC1=C(C(C(=C(C)N1)C(=O)Nc2ccc(Cl)cc2)c3ccccc3O)C(=O)Nc4ccc(Cl)cc4", "CCOc1ccc2nc(sc2c1)N3C(=O)c4ccccc4N=C3c5ccccc5", "CCOc1ccc2sc(nc2c1)N3C(=O)c4ccccc4N=C3c5ccccc5", "[O-][N+](=O)c1ccc2nc(sc2c1)N3C(=O)c4ccccc4N=C3c5ccccc5", "C\\\\C(=N/NC(=O)c1ccc(F)cc1)\\\\c2occc2", "CN(C)c1ccc(cc1)C2C(=C(C)NC(=C2C(=O)Nc3ccc(Cl)cc3)C)C(=O)Nc4ccc(Cl)cc4", "C\\\\C(=N/NC(=O)c1ccc(F)cc1)\\\\c2cccs2", "Fc1ccc(cc1)C(=O)N\\\\N=C\\\\c2c(Cl)cccc2Cl", "CC1=C(C(C(=C(C)N1)C(=O)Nc2ccc(Cl)cc2)c3cccc(Cl)c3)C(=O)Nc4ccc(Cl)cc4", "CC1=C(C(C\\\\C=C\\\\c2ccccc2)C(=C(C)N1)C(=O)Nc3ccc(Cl)cc3)C(=O)Nc4ccc(Cl)cc4", "CC1=C(CC(=C(C)N1)C(=O)Nc2ccc(Cl)cc2)C(=O)Nc3ccc(Cl)cc3", "OC1=C(Br)C(OC1=O)c2ccc(Cl)cc2", "Cc1nn(c(C)c1C2OC(=O)C(=C2Br)O)c3ccccc3", "OC1=C(Br)C(OC1=O)c2cn(nc2c3ccccc3)c4ccccc4", "CC(C)N(CCOc1cc(O)c2C(=O)C=C(Oc2c1)c3ccccc3)C(C)C", "Oc1cc(OCCNC2CCCCC2)cc3OC(=CC(=O)c13)c4ccccc4", "CC1(C)CC[C@@]2(CC[C@]3(C)C(=CC[C@@H]4[C@@]5(C)CC[C@H](Cc6ccccc6)C(C)(C)[C@@H]5CC[C@@]34C)[C@@H]2C1)C(=O)O", "Oc1cc(OCCN2CCOCC2)cc3OC(=CC(=O)c13)c4ccccc4", "Oc1cc(OCCN2CCN(CC2)c3ccccc3)cc4OC(=CC(=O)c14)c5ccccc5", "Oc1cc(OCCn2ccnc2)cc3OC(=CC(=O)c13)c4ccccc4", "Cc1nccn1CCOc2cc(O)c3C(=O)C=C(Oc3c2)c4ccccc4", "OCCNCCOc1cc(O)c2C(=O)C=C(Oc2c1)c3ccccc3", "OCCN(CCO)CCOc1cc(O)c2C(=O)C=C(Oc2c1)c3ccccc3", "Oc1cc(OCCNc2ccccc2)cc3OC(=CC(=O)c13)c4ccccc4", "CNCCOc1cc(O)c2C(=O)C=C(Oc2c1)c3ccccc3", "CC(C)NCCOc1cc(O)c2C(=O)C=C(Oc2c1)c3ccccc3", "Nc1ccc(cc1)C(=O)NN=C2C3CCCC2C(NC3c4ccccc4Cl)c5ccccc5Cl", "CCCCNCCOc1cc(O)c2C(=O)C=C(Oc2c1)c3ccccc3", "CC(C)(C)NCCOc1cc(O)c2C(=O)C=C(Oc2c1)c3ccccc3", "CN(C)CCOc1cc(O)c2C(=O)C=C(Oc2c1)c3ccccc3", "O=C1NC=NC2=C1C(c3ccccc3)c4ccc5cccnc5c4O2", "COc1ccc(cc1)C2NC(C3CCCC2C3=NNC(=O)c4ccc(N)cc4)c5ccc(OC)cc5", "NC1=NC(=O)NC2=C1C(c3ccccc3)c4ccccc4O2", "NC1=NC(=O)NC2=C1C(c3ccccc3)c4ccc(O)cc4O2", "NC1=NC(=O)NC2=C1C(c3ccccc3)c4ccc5ccccc5c4O2", "NC1=NC(=O)NC2=C1C(c3ccccc3)c4c(O2)ccc5ccccc45", "Oc1ccc2C(C3=C(Oc2c1)N=CNC3=O)c4ccccc4", "NC1=NC(=O)NC2=C1C(c3ccccc3)c4ccc5cccnc5c4O2", "NC1=NC(=S)NC2=C1C(c3ccccc3)c4ccccc4O2", "NC1=NC(=S)NC2=C1C(c3ccccc3)c4ccc(O)cc4O2", "NC1=NC(=S)NC2=C1C(c3ccccc3)c4ccc5ccccc5c4O2", "Nc1ccc(cc1)C(=O)NN=C2C3CCCC2C(NC3c4ccc(Br)cc4)c5ccc(Br)cc5", "NC1=NC(=S)NC2=C1C(c3ccccc3)c4c(O2)ccc5ccccc45", "NC1=NC(=S)NC2=C1C(c3ccccc3)c4ccc5cccnc5c4O2", "S=C1NC2=C(C(c3ccccc3)c4ccccc4O2)C(=S)N1", "Oc1ccc2C(C3=C(NC(=S)NC3=S)Oc2c1)c4ccccc4", "Nc1ccc(cc1)C(=O)NN=C2C3CCCC2C(NC3c4ccc(F)cc4)c5ccc(F)cc5", "S=C1NC2=C(C(c3ccccc3)c4ccc5ccccc5c4O2)C(=S)N1", "S=C1NC2=C(C(c3ccccc3)c4c(O2)ccc5ccccc45)C(=S)N1", "S=C1NC2=C(C(c3ccccc3)c4ccc5cccnc5c4O2)C(=S)N1", "O=C1NC=NC2=C1C(c3ccccc3)c4ccccc4O2", "Nc1ccc(cc1)C(=O)NN=C2C3CCCC2C(NC3c4ccc(Cl)cc4)c5ccc(Cl)cc5", "O=C1NC=NC2=C1C(c3ccccc3)c4ccc5ccccc5c4O2", "O=C1NC=NC2=C1C(c3ccccc3)c4c(O2)ccc5ccccc45", "CC(=O)[C@H]1CC[C@H]2[C@@H]3CC=C4C[C@H](CC[C@]4(C)[C@H]3CC[C@]12C)OC(=O)CCC(=O)O[C@@]5(CC[C@H]6[C@@H]7CCC8=Cc9oncc9C[C@]8(C)[C@H]7CC[C@]56C)C#C", "CC(=O)[C@H]1CC[C@H]2[C@@H]3CC=C4C[C@H](CC[C@]4(C)[C@H]3CC[C@]12C)OC(=O)CCC(=O)O[C@@]5(CC[C@H]6[C@@H]7CCC8=C(CNCCN)c9oncc9C[C@]8(C)[C@H]7CC[C@]56C)C#C", "Nc1ccc(cc1)C(=O)NN=C2C3CCCC2C(NC3c4ccccc4)c5ccccc5", "CC1(C)CC[C@@]2(CC[C@]3(C)C(=CC[C@@H]4[C@@]5(C)CC[C@H](Cc6ccccc6C(=O)O)C(C)(C)[C@@H]5CC[C@@]34C)[C@@H]2C1)C(=O)O", "CC1(C)CC[C@]2(CCCCC(=O)NC(Cc3ccccc3)C(=O)O)CC[C@]4(C)C(=CC[C@@H]5[C@@]6(C)CC[C@H](OCc7ccc(cc7)C(=O)O)C(C)(C)[C@@H]6CC[C@@]45C)[C@@H]2C1", "COc1ccc(CC(NC(=O)C[C@]23CCC(C)(C)C[C@H]2C4=CC[C@@H]5[C@@]6(C)CC[C@H](O)C(C)(C)[C@@H]6CC[C@@]5(C)[C@]4(C)CC3)C(=O)O)cc1OC", "COc1cccc2[nH]c3[C@@H](C[C@H]4C[C@@H]5N(CCc6c5[nH]c7ccccc67)C[C@@H]4C=C)NCCc3c12", "COc1cc(CC(NC(=O)C[C@]23CCC(C)(C)C[C@H]2C4=CC[C@@H]5[C@@]6(C)CC[C@H](O)C(C)(C)[C@@H]6CC[C@@]5(C)[C@]4(C)CC3)C(=O)O)cc(OC)c1", "Cc1ccccc1CC(NC(=O)C[C@]23CCC(C)(C)C[C@H]2C4=CC[C@@H]5[C@@]6(C)CC[C@H](O)C(C)(C)[C@@H]6CC[C@@]5(C)[C@]4(C)CC3)C(=O)O", "Cc1ccc(CC(NC(=O)C[C@]23CCC(C)(C)C[C@H]2C4=CC[C@@H]5[C@@]6(C)CC[C@H](O)C(C)(C)[C@@H]6CC[C@@]5(C)[C@]4(C)CC3)C(=O)O)cc1", "COc1ccccc1CC(NC(=O)C[C@]23CCC(C)(C)C[C@H]2C4=CC[C@@H]5[C@@]6(C)CC[C@H](O)C(C)(C)[C@@H]6CC[C@@]5(C)[C@]4(C)CC3)C(=O)O", "COc1cccc(CC(NC(=O)C[C@]23CCC(C)(C)C[C@H]2C4=CC[C@@H]5[C@@]6(C)CC[C@H](O)C(C)(C)[C@@H]6CC[C@@]5(C)[C@]4(C)CC3)C(=O)O)c1", "Cc1c(CN)cnn1O", "COc1ccc(CC(NC(=O)C[C@]23CCC(C)(C)C[C@H]2C4=CC[C@@H]5[C@@]6(C)CC[C@H](O)C(C)(C)[C@@H]6CC[C@@]5(C)[C@]4(C)CC3)C(=O)O)cc1", "CC1(C)CC[C@]2(CC(=O)NC(Cc3ccc4OCOc4c3)C(=O)O)CC[C@]5(C)C(=CC[C@@H]6[C@@]7(C)CC[C@H](O)C(C)(C)[C@@H]7CC[C@@]56C)[C@@H]2C1", "COc1cccc(CC(NC(=O)C[C@]23CCC(C)(C)C[C@H]2C4=CC[C@@H]5[C@@]6(C)CC[C@H](O)C(C)(C)[C@@H]6CC[C@@]5(C)[C@]4(C)CC3)C(=O)O)c1OC", "CC1(C)CC[C@@]2(CC[C@]3(C)C(=CC[C@@H]4[C@@]5(C)CC[C@H](O)C(C)(C)[C@@H]5CC[C@@]34C)[C@@H]2C1)C(=O)OCCCCCCCCCCCCC(=O)O", "CC[C@@H]1CN2CCc3c([nH]c4ccccc34)[C@H]2C[C@@H]1CCO", "C\\\\C=C/1\\\\CN2CC[C@@]34[C@@H]2C[C@@H]1[C@@H](CO)C3N(C(=O)C)c5ccccc45", "C\\\\C=C/1\\\\CN2CC[C@@]34[C@@H]2C[C@@H]1[C@@H](COC(=O)C)[C@@H]3N(C(=O)C)c5ccccc45", "C\\\\C=C(\\\\C)/C(=O)O[C@H]1[C@H]2[C@@H](C[C@@H](C)[C@@H]3C=CC(=O)[C@@]13C)OC(=O)[C@H]2C", "C[C@H]1N[C@@H](CCCCCCCCCCC(=O)C)CC[C@H]1O", "CC(C)(C)c1ccc(cc1)S(=O)(=O)N2CCN(CC2)C(c3ccccc3)c4ccccc4", "COc1cc2CCN(C)[C@H]3Cc4ccc(Oc5cc(C[C@@H]6NCCc7cc8Oc1c(Oc8cc67)c23)ccc5O)cc4", "CI.COc1cc2CCN(C)[C@H]3Cc4ccc(Oc5cc(C[C@@H]6N(C)CCc7cc8Oc1c(Oc8cc67)c23)ccc5O)cc4", "CN[C@H]1CC[C@]2(C)[C@H]3CC[C@]45C=N[C@@H](C)[C@H]4CC[C@H]5[C@@H]3CC=C2C1", "COc1cc2CCN(C)[C@H]3Cc4ccc(Oc5cc(C[C@H]6NCCc7cc(OC)c(Oc(c1O)c23)cc67)ccc5O)cc4", "CC[C@@H]1CN2CC[C@@]34[C@@H]2C[C@@H]1[C@H]5CO[C@H]([C@@H]6[C@H]7C[C@@H]8N(CC[C@]89[C@H]6N(C(=O)C)c%10ccccc9%10)C[C@H]7CC)N([C@H]35)c%11ccccc4%11", "CCCN(CC=C)C(=O)C(Cl)Cl", "O=C(CSc1nc2ccccc2s1)N\\\\N=C\\\\3/C(=O)Nc4ccccc34", "N(\\\\N=C\\\\c1ccc(Oc2ccccc2)cc1)c3nc4ccccc4s3", "[O-][N+](=O)c1ccc(Oc2ccc(\\\\C=N\\\\Nc3nc4ccccc4s3)cc2)cc1", "Cc1ccc(Oc2ccc(\\\\C=N\\\\Nc3nc4ccccc4s3)cc2)cc1", "CO[C@@H]1[C@H]2OC(C)(C)O[C@H]2O[C@@H]1[C@@H]3CC(=O)N(C(=O)N3c4occc4)c5ccc(cc5)C#N", "Clc1ccc(Oc2ccc(\\\\C=N\\\\Nc3nc4ccccc4s3)cc2)cc1", "Brc1ccc(Oc2ccc(\\\\C=N\\\\Nc3nc4ccccc4s3)cc2)cc1", "Fc1ccc(Oc2ccc(\\\\C=N\\\\Nc3nc4ccccc4s3)cc2)cc1", "Cc1cc(Oc2ccc(\\\\C=N\\\\Nc3nc4ccccc4s3)cc2)ccc1Cl", "Fc1ccc(CN(Cc2cccc(c2)C3=CC(=O)c4ccccc4O3)C(=O)\\\\C=C\\\\c5ccccc5)cc1", "N(\\\\N=C\\\\c1ccc(Oc2ccc3ccccc3c2)cc1)c4nc5ccccc5s4", "C1Oc2ccc(Oc3ccc(\\\\C=N\\\\Nc4nc5ccccc5s4)cc3)cc2O1", "O=C1Nc2ccccc2/C/1=N/Nc3nc4ccccc4s3", "O=C(CSc1nc2ccccc2s1)N\\\\N=C\\\\c3ccc(Oc4ccccc4)cc3", "[O-][N+](=O)c1ccc(Oc2ccc(\\\\C=N\\\\NC(=O)CSc3nc4ccccc4s3)cc2)cc1", "Cc1ccc(Oc2ccc(\\\\C=N\\\\NC(=O)CSc3nc4ccccc4s3)cc2)cc1", "Clc1ccc(Oc2ccc(\\\\C=N\\\\NC(=O)CSc3nc4ccccc4s3)cc2)cc1", "Brc1ccc(Oc2ccc(\\\\C=N\\\\NC(=O)CSc3nc4ccccc4s3)cc2)cc1", "Fc1ccc(Oc2ccc(\\\\C=N\\\\NC(=O)CSc3nc4ccccc4s3)cc2)cc1", "Cc1cc(Oc2ccc(\\\\C=N\\\\NC(=O)CSc3nc4ccccc4s3)cc2)ccc1Cl", "O=C(CSc1nc2ccccc2s1)N\\\\N=C\\\\c3ccc(Oc4ccc5ccccc5c4)cc3", "O=C(CSc1nc2ccccc2s1)N\\\\N=C\\\\c3ccc(Oc4ccc5OCOc5c4)cc3", "NNC(=O)COc1ccc2ccccc2c1", "O=C(COc1cccc2ccccc12)N\\\\N=C\\\\C=C\\\\c3ccccc3", "CO[C@@H]1[C@H]2OC(C)(C)O[C@H]2O[C@@H]1[C@@H]3CC(=O)N(C(=O)N3Cc4ccc(OC)cc4)c5cccc(c5)C(=O)C", "Oc1ccc2ccccc2c1\\\\C=N\\\\NC(=O)COc3cccc4ccccc34", "O=C(COc1cccc2ccccc12)N\\\\N=C\\\\c3c[nH]c4ccccc34", "C\\\\C(=N/NC(=O)COc1cccc2ccccc12)\\\\c3ccccc3", "C\\\\C(=N/NC(=O)COc1cccc2ccccc12)\\\\c3ccc(Cl)cc3", "CO[C@@H]1[C@H]2OC(C)(C)O[C@H]2O[C@@H]1[C@@H]3CC(=O)N(C(=O)N3Cc4ccccc4)c5cc(C)cc(C)c5", "C\\\\C(=N/NC(=O)COc1cccc2ccccc12)\\\\c3ccccc3Br", "C\\\\C(=N/NC(=O)COc1cccc2ccccc12)\\\\c3ccc(Br)cc3", "C\\\\C(=N/NC(=O)COc1cccc2ccccc12)\\\\c3ccc(cc3Br)C#N", "C\\\\C(=N/NC(=O)COc1cccc2ccccc12)\\\\c3cccc(c3)[N+](=O)[O-]", "CO[C@@H]1[C@H]2OC(C)(C)O[C@H]2O[C@@H]1[C@@H]3CC(=O)N(Cc4ccccc4)C(=O)N3Cc5ccccc5", "C\\\\C(=N/NC(=O)COc1cccc2ccccc12)\\\\c3ccc(cc3)[N+](=O)[O-]", "C\\\\C(=N/NC(=O)COc1cccc2ccccc12)\\\\c3ccccc3O", "C\\\\C(=N/NC(=O)COc1cccc2ccccc12)\\\\c3ccc(O)cc3", "C\\\\C(=N/NC(=O)COc1cccc2ccccc12)\\\\c3ccc(O)cc3O", "CO[C@@H]1[C@H]2OC(C)(C)O[C@H]2O[C@@H]1[C@@H]3CC(=O)N(C(=O)N3Cc4ccccc4)c5ccc(C)c(Cl)c5", "CC(C)OC(Cc1ccc(OCCc2noc(n2)C3CCCCC3)cc1)C(=O)O", "CC(C)Cc1ccc(cc1)c2onc(COc3ccc(CC(OC(C)C)C(=O)O)cc3)n2", "CC(C)C[C@@H]1N(C[C@H]2O[C@@H]3OC(C)(C)O[C@@H]3[C@H]2OCc4ccccc4)C(=O)N(C1=O)c5cccc(c5)C(=O)C", "CCCCc1ccc(cc1)N2C(=O)C[C@@H]([C@H]3O[C@@H]4OC(C)(C)O[C@@H]4[C@H]3OC)N(C2=O)c5occc5", "COc1ccc(CN2[C@@H](CC(=O)N(C2=O)c3ccc(cc3)C(=O)C)[C@H]4O[C@@H]5OC(C)(C)O[C@@H]5[C@H]4OCc6ccccc6)cc1", "CO[C@@H]1[C@H]2OC(C)(C)O[C@H]2O[C@@H]1[C@@H]3CC(=O)N(C(=O)N3c4occc4)c5cccc(c5)C(=O)C", "CO[C@@H]1[C@H]2OC(C)(C)O[C@H]2O[C@@H]1[C@@H]3CC(=O)N(C(=O)N3Cc4ccccc4O)c5cccc(c5)C(=O)C", "CO[C@@H]1[C@H]2OC(C)(C)O[C@H]2O[C@@H]1[C@@H]3CC(=O)N(Cc4ccccc4)C(=O)N3Cc5ccccc5O", "CO[C@@H]1[C@H]2OC(C)(C)O[C@H]2O[C@@H]1[C@@H]3CC(=O)N(C(=O)N3Cc4ccccc4O)c5ccc(C)c(Cl)c5", "CO[C@@H]1[C@H]2OC(C)(C)O[C@H]2O[C@@H]1[C@@H]3CC(=O)N(C(=O)N3Cc4ccccc4O)c5ccc(cc5)C#N", "CC1(C)O[C@H]2O[C@H]([C@@H]3CC(=O)N(C(=O)N3)c4ccc(Cl)cc4)[C@H](OCc5ccccc5)[C@H]2O1", "CO[C@H]1[C@H](O[C@@H]2OC(C)(C)O[C@H]12)[C@@H]3CC(=O)N(C(=O)N3)c4ccc(Cl)cc4", "CC(=O)c1ccc(cc1)N2C(=O)C[C@H](NC2=O)[C@H]3O[C@@H]4OC(C)(C)O[C@@H]4[C@H]3OCc5ccccc5", "CCCCCCCCCCCCCCCCNC(CC(=O)NO)[C@H]1O[C@@H]2OC(C)(C)O[C@@H]2[C@H]1OCc3ccccc3", "CC1(C)O[C@H]2O[C@H](C(CC(=O)NO)N3CCCCC3)[C@H](OCc4ccccc4)[C@H]2O1", "CCOC(=O)CC([C@H]1O[C@@H]2OC(C)(C)O[C@@H]2[C@H]1OC)N3CCC[C@H]3C(=O)OCC4c5ccccc5c6ccccc46", "CCOC(=O)CC([C@H]1O[C@@H]2OC(C)(C)O[C@@H]2[C@H]1OC)N3CCC[C@H]3C(=O)O", "Clc1ccc(CN(Cc2cccc(c2)C3=CC(=O)c4ccccc4O3)C(=O)\\\\C=C\\\\c5ccccc5)cc1", "CCOC(=O)CC(N[C@@H](C(C)C)C(=O)O)[C@H]1O[C@@H]2OC(C)(C)O[C@@H]2[C@H]1OC", "CCOC(=O)CC([C@H]1O[C@@H]2OC(C)(C)O[C@@H]2[C@H]1OC)N(Cc3ccccc3O)C(=O)Nc4cccc(c4)C(=O)C", "CCOC(=O)CC([C@H]1O[C@@H]2OC(C)(C)O[C@@H]2[C@H]1OC)N(Cc3ccccc3O)C(=O)NCc4ccccc4", "CCOC(=O)CC(NC(=O)Nc1ccccc1)[C@H]2O[C@@H]3OC(C)(C)O[C@@H]3[C@H]2OCc4ccccc4", "CCOC(=O)CC([C@H]1O[C@@H]2OC(C)(C)O[C@@H]2[C@H]1OCc3ccccc3)N(Cc4ccccc4)C(=O)NCc5ccccc5", "CN1c2c(C)n(nc2c3ccccc3S1(=O)=O)c4ccc(cc4)C(=O)\\\\C=C\\\\c5cccc(Cl)c5", "CCOC(=O)CC([C@H]1O[C@@H]2OC(C)(C)O[C@@H]2[C@H]1OC)N(CCC(C)CC(C)C)C(=O)NCc3ccccc3", "CCOC(=O)CC([C@H]1O[C@@H]2OC(C)(C)O[C@@H]2[C@H]1OCc3ccccc3)N(C(=O)Nc4ccc(Cl)cc4)c5occc5", "CCCCN(C(CC(=O)OCC)[C@H]1O[C@@H]2OC(C)(C)O[C@@H]2[C@H]1OC)C(=S)Nc3cccc(Cl)c3", "CCCCN(C(CC(=O)OCC)[C@H]1O[C@@H]2OC(C)(C)O[C@@H]2[C@H]1OC)C(=S)Nc3ccccc3Cl", "CO[C@H]1[C@H](O[C@@H]2OC(C)(C)O[C@H]12)[C@H](CC(=O)N)N(C3O[C@H]4OC(C)(C)O[C@H]4[C@@H]3OC)C(=O)Nc5ccc(C)c(Cl)c5", "CO[C@H]1[C@H](O[C@@H]2OC(C)(C)O[C@H]12)[C@H](CC(=O)N)N(C3O[C@H]4OC(C)(C)O[C@H]4[C@@H]3OC)C(=O)Nc5cccc(c5)C(=O)C", "CO[C@H]1[C@H](O[C@@H]2OC(C)(C)O[C@H]12)[C@H](CC(=O)N)N(C3O[C@H]4OC(C)(C)O[C@H]4[C@@H]3OC)C(=O)NCc5ccccc5", "Fc1ccc(cc1)c2cc3ccccc3[nH]2", "Clc1ccc(cc1Cl)c2cc3ccccc3[nH]2", "[O-][N+](=O)c1cc(c2[nH]c(cc2c1)c3ccccc3)[N+](=O)[O-]", "[O-][N+](=O)c1cc(ccc1Cl)c2cc3ccccc3[nH]2", "Fc1ccc(cc1)c2[nH]c3ccccc3c2C=O", "Clc1ccc(cc1)c2[nH]c3ccccc3c2C=O", "Nc1ccc(cc1)c2[nH]c3ccccc3c2C=O", "[O-][N+](=O)c1cc(ccc1Cl)c2[nH]c3ccccc3c2C=O", "Cc1ccc(cc1)c2cc(N)cc(c2)c3ccccc3", "Cc1ccc(cc1)c2cc(N)cc(c2)c3ccc(C)cc3", "Nc1cc(cc(c1)c2ccc(Cl)cc2)c3ccccc3", "Nc1cc(cc(c1)c2ccc(Cl)cc2)c3ccc(Cl)cc3", "CCOc1ccc(cc1)c2cc(N)cc(c2)c3ccccc3", "CCOc1ccc(cc1)c2cc(N)cc(c2)c3ccc(OCC)cc3", "COc1ccc(cc1)c2cc(N)cc(c2)c3ccccc3", "CSc1ccc(cc1)c2cc(N)cc(c2)c3ccccc3", "COC(=O)c1cc(Cl)nn1C", "CS(=O)(=O)c1ccc(cc1)c2cc(N)cc(c2)c3ccccc3", "Cc1c(CC(=O)O)cc(cc1c2ccccc2)c3ccccc3", "COc1ccccc1C(=O)N2C=C(C)N(C2=S)c3ccccc3", "COc1ccccc1C(=O)N2C=C(C)N(C2=S)c3ccccc3Cl", "COc1ccccc1C(=O)N2C=C(C)N(C2=S)c3cccc(Cl)c3", "COc1ccccc1C(=O)N2C=C(C)N(C2=S)c3ccc(Cl)cc3", "COc1ccccc1C(=O)N2C=C(C)N(C2=S)c3ccc(Br)cc3", "COc1ccccc1C(=O)N2C=C(C)N(C2=S)c3ccccc3C", "COc1ccccc1C(=O)N2C=C(C)N(C2=S)c3cccc(C)c3", "COc1ccccc1N2C(=CN(C(=O)c3ccccc3OC)C2=S)C", "COc1cccc(c1)N2C(=CN(C(=O)c3ccccc3OC)C2=S)C", "CC1=CN(C(=O)c2cccc(C)c2)C(=S)N1c3ccccc3Cl", "CC1=CN(C(=O)c2cccc(C)c2)C(=S)N1c3cccc(Cl)c3", "CC1=CN(C(=O)c2cccc(C)c2)C(=S)N1c3ccc(Cl)cc3", "CC1=CN(C(=O)c2cccc(C)c2)C(=S)N1c3ccc(Br)cc3", "CC1=CN(C(=O)c2cccc(C)c2)C(=S)N1c3ccccc3C", "CC1=CN(C(=O)c2cccc(C)c2)C(=S)N1c3cccc(C)c3", "COc1ccccc1N2C(=CN(C(=O)c3cccc(C)c3)C2=S)C", "COc1cccc(c1)N2C(=CN(C(=O)c3cccc(C)c3)C2=S)C", "CC1=CN(C(=O)c2ccc(C)cc2)C(=S)N1c3ccccc3", "CC1=CN(C(=O)c2ccc(C)cc2)C(=S)N1c3ccccc3Cl", "CC1=CN(C(=O)c2ccc(C)cc2)C(=S)N1c3cccc(Cl)c3", "CC1=CN(C(=O)c2ccc(C)cc2)C(=S)N1c3ccc(Cl)cc3", "CC1=CN(C(=O)c2ccc(C)cc2)C(=S)N1c3ccc(Br)cc3", "CC1=CN(C(=O)c2ccc(C)cc2)C(=S)N1c3ccccc3C", "CC1=CN(C(=O)c2ccc(C)cc2)C(=S)N1c3cccc(C)c3", "COc1ccccc1N2C(=CN(C(=O)c3ccc(C)cc3)C2=S)C", "COc1cccc(c1)N2C(=CN(C(=O)c3ccc(C)cc3)C2=S)C", "Clc1ccc(CNCc2cccc(c2)C3=CC(=O)c4ccccc4O3)cc1Cl", "O=C(\\\\C=C\\\\c1ccccc1)N(Cc2ccccc2)Cc3cccc(c3)C4=CC(=O)c5ccccc5O4", "Clc1ccc(CN(Cc2cccc(c2)C3=CC(=O)c4ccccc4O3)C(=O)\\\\C=C\\\\c5ccccc5)c(Cl)c1", "Clc1ccc(CN(Cc2cccc(c2)C3=CC(=O)c4ccccc4O3)C(=O)\\\\C=C\\\\c5ccccc5)cc1Cl", "O=C1C=C(Oc2ccccc12)c3cccc(CNCc4ccccc4)c3", "Fc1ccc(CNCc2cccc(c2)C3=CC(=O)c4ccccc4O3)cc1", "Clc1ccc(CNCc2cccc(c2)C3=CC(=O)c4ccccc4O3)cc1", "Clc1ccc(CNCc2cccc(c2)C3=CC(=O)c4ccccc4O3)c(Cl)c1", "CS(=O)(=O)N1CCN(CC1)C(c2ccccc2)c3ccccc3", "Cc1ccc(cc1)S(=O)(=O)N2CCN(CC2)C(c3ccccc3)c4ccccc4", "Clc1ccc(cc1)S(=O)(=O)N2CCN(CC2)C(c3ccccc3)c4ccccc4", "Sc1oc(nn1)c2cccc(Cl)c2", "Cc1onc(C)c1S(=O)(=O)N2CCN(CC2)C(c3ccccc3)c4ccccc4", "CCC1C(N(C(CC1=O)c2ccc(Cl)cc2)C(=O)CCl)c3ccc(Cl)cc3", "CC1C(N(C(C(C)C1=O)c2ccc(Cl)cc2)C(=O)CCl)c3ccc(Cl)cc3", "COc1ccc(cc1)C2CC(=O)C(C)C(N2C(=O)CCl)c3ccc(OC)cc3", "NC(Cc1occc1)C(=O)O", "COc1ccc(cc1)C2C(C)C(=O)C(C)C(N2C(=O)CCl)c3ccc(OC)cc3", "CC1C(N(C(CC1=O)c2ccc(C)cc2)C(=O)CCl)c3ccc(C)cc3", "CC1C(N(C(C(C)C1=O)c2ccc(C)cc2)C(=O)CCl)c3ccc(C)cc3", "ClCC(=O)N1C(CC(=O)CC1c2ccccc2)c3ccccc3", "[O-][N+](=O)c1ccccc1\\\\C=N\\\\N=C\\\\2/C[C@H](S[C@H](C2)c3ccccc3)c4ccccc4", "CC1C(N(C(CC1=O)c2ccccc2)C(=O)CCl)c3ccccc3", "CC(C)C1C(N(C(CC1=O)c2ccccc2)C(=O)CCl)c3ccccc3", "Fc1ccc(cc1)C(=O)N\\\\N=C\\\\c2cccc(Oc3ccccc3)c2", "Oc1c(Cl)cc(Cl)cc1\\\\C=N\\\\NC(=O)c2ccc(F)cc2", "Fc1ccc(cc1)C(=O)N\\\\N=C\\\\c2cc(Cl)cc(Cl)c2", "Fc1ccc(cc1)C(=O)N\\\\N=C\\\\c2ccc(Cl)cc2Cl", "CN(C)CCCOc1ccc(\\\\C=N\\\\NC(=O)c2ccc(F)cc2)cc1", "Fc1ccc(cc1)C(=O)N\\\\N=C\\\\c2cccc(F)c2", "C\\\\C(=N/NC(=O)c1ccc(F)cc1)\\\\c2ccc[nH]2", "C\\\\C(=N/NC(=O)c1ccc(F)cc1)\\\\c2ccc(Cl)s2", "COc1cc(ccc1O)C2CC(=NN2)C(=NNc3ccc(cc3)[N+](=O)[O-])C4=NNC(C4)c5ccc(O)c(OC)c5", "C\\\\C(=N/NC(=O)c1ccc(F)cc1)\\\\c2ccccc2", "C\\\\C(=N/NC(=O)c1ccc(F)cc1)\\\\c2ccc(Br)s2", "C\\\\C(=N/NC(=O)c1ccc(F)cc1)\\\\C=C", "CC\\\\C(=N/NC(=O)c1ccc(F)cc1)\\\\c2ccccc2", "Brc1ccccc1NC(=S)Nc2nc3c(ccc4ccccc34)s2", "COc1cc(\\\\C=C\\\\C(=O)\\\\C(=N/Nc2ccc(cc2)[N+](=O)[O-])\\\\C3=NC(=S)NC(C3)c4ccc(O)c(OC)c4)ccc1O", "Brc1ccc(NC(=S)Nc2nc3c(ccc4ccccc34)s2)cc1", "Clc1ccccc1NC(=S)Nc2nc3c(ccc4ccccc34)s2", "Clc1ccc(NC(=S)Nc2nc3c(ccc4ccccc34)s2)cc1", "[O-][N+](=O)c1ccccc1NC(=S)Nc2nc3c(ccc4ccccc34)s2", "COc1cc(ccc1O)C2ONC(=C2)C(=NNc3ccc(cc3)[N+](=O)[O-])C4=CC(ON4)c5ccc(O)c(OC)c5", "[O-][N+](=O)c1ccc(NC(=S)Nc2nc3c(ccc4ccccc34)s2)cc1", "Cc1ccccc1NC(=S)Nc2nc3c(ccc4ccccc34)s2", "Cc1ccc(NC(=S)Nc2nc3c(ccc4ccccc34)s2)cc1", "O=C(Nc1ccccc1)Nc2nc3c(ccc4ccccc34)s2", "S=C(Nc1ccccc1)Nc2nc3c(ccc4ccccc34)s2", "COc1ccc(NC(=O)Nc2nc3c(ccc4ccccc34)s2)cc1", "COc1ccccc1NC(=O)Nc2nc3c(ccc4ccccc34)s2", "COc1ccc(NC(=O)Nc2nc3c(ccc4ccccc34)s2)c(OC)c1", "COc1cc(NC(=O)Nc2nc3c(ccc4ccccc34)s2)cc(OC)c1OC", "Fc1cc2C(=O)C(=CN(C3CC3)c2cc1N4CCNCC4)c5oc(COc6ccccc6)nn5", "O=C(Nc1ccc(Oc2ccccc2)cc1)Nc3nc4c(ccc5ccccc45)s3", "Fc1ccccc1NC(=O)Nc2nc3c(ccc4ccccc34)s2", "Fc1ccc(NC(=O)Nc2nc3c(ccc4ccccc34)s2)cc1", "Brc1ccccc1NC(=O)Nc2nc3c(ccc4ccccc34)s2", "COc1cc(\\\\C=C\\\\C(=O)C(=NNc2ccc(Cl)cc2)C(=O)\\\\C=C\\\\c3ccc(O)c(OC)c3)ccc1O", "Brc1ccc(NC(=O)Nc2nc3c(ccc4ccccc34)s2)cc1", "Clc1ccccc1NC(=O)Nc2nc3c(ccc4ccccc34)s2", "Clc1ccc(NC(=O)Nc2nc3c(ccc4ccccc34)s2)cc1", "FC(F)(F)c1ccc(Cl)c(NC(=O)Nc2nc3c(ccc4ccccc34)s2)c1", "COc1cc(\\\\C=C\\\\C(=O)C(=NNc2ccc(cc2)[N+](=O)[O-])C(=O)\\\\C=C\\\\c3ccc(O)c(OC)c3)ccc1O", "[O-][N+](=O)c1ccccc1NC(=O)Nc2nc3c(ccc4ccccc34)s2", "[O-][N+](=O)c1ccc(NC(=O)Nc2nc3c(ccc4ccccc34)s2)cc1", "Cc1ccccc1NC(=O)Nc2nc3c(ccc4ccccc34)s2", "Cc1ccc(NC(=O)Nc2nc3c(ccc4ccccc34)s2)cc1", "COc1cc(\\\\C=C\\\\C(=O)\\\\C(=N/Nc2ccc(cc2)[N+](=O)[O-])\\\\C(=O)C(Br)C(Br)c3ccc(O)c(OC)c3)ccc1O", "COc1ccc(NC(=S)Nc2nc3c(ccc4ccccc34)s2)cc1", "COc1ccccc1NC(=S)Nc2nc3c(ccc4ccccc34)s2", "Fc1ccccc1NC(=S)Nc2nc3c(ccc4ccccc34)s2", "Fc1ccc(NC(=S)Nc2nc3c(ccc4ccccc34)s2)cc1", "CSc1ccc(\\\\C=C\\\\C(=O)c2ccc(F)cc2)cc1", "CSc1ccc(\\\\C=C\\\\C(=O)c2ccc(cc2)c3ccccc3)cc1", "CSc1ccc(\\\\C=C\\\\C(=O)c2cccs2)cc1", "CSc1ccc(\\\\C=C\\\\C(=O)c2ccc(Br)s2)cc1", "OC(=O)c1cc(nc2cc(ccc12)N3CCNCC3)c4ccccc4", "NS(=O)(=O)c1ccc(Nc2ccc3c(cc(nc3c2)c4ccccc4)C(=O)O)cc1", "NC(=O)Nc1ccc2c(cc(nc2c1)c3ccccc3)C(=O)O", "NC(=S)Nc1ccc2c(cc(nc2c1)c3ccccc3)C(=O)O", "OC(=O)c1cc(nc2cc(Nc3nccs3)ccc12)c4ccccc4", "COc1ccc(Nc2ccc3c(cc(nc3c2)c4ccccc4)C(=O)O)cc1", "COc1cc(ccc1O)C2CC(=NC(=S)N2)C(=NNc3ccc(cc3)[N+](=O)[O-])C4=NC(=S)NC(C4)c5ccc(O)c(OC)c5", "OC(=O)CNc1ccc2c(cc(nc2c1)c3ccccc3)C(=O)O", "OC(=O)c1cc(nc2cc(Nn3cnnc3)ccc12)c4ccccc4", "OC(=O)c1cc(nc2cc(Nc3ccncc3)ccc12)c4ccccc4", "OC(=O)c1cc(nc2cc(Cl)ccc12)c3ccccc3", "Cc1ccc(Nc2ccc3c(cc(nc3c2)c4ccccc4)C(=O)O)cc1", "OC(=O)c1cc(nc2cc(Nc3ccc(cc3)[N+](=O)[O-])ccc12)c4ccccc4", "OC(=O)c1cc(nc2cc(Nc3ccccc3)ccc12)c4ccccc4", "COc1ccc(NN=C(C(=O)\\\\C=C\\\\c2ccc(O)c(OC)c2)C(=O)\\\\C=C\\\\c3ccc(O)c(OC)c3)cc1", "COc1cc(\\\\C=C\\\\C(=O)C(=NNc2ccc(C)cc2)C(=O)\\\\C=C\\\\c3ccc(O)c(OC)c3)ccc1O", "COc1cc(\\\\C=C\\\\C(=O)C(=NNc2ccccc2)C(=O)\\\\C=C\\\\c3ccc(O)c(OC)c3)ccc1O", "CCN1C=C(C(=O)c2cc(F)c(cc12)N3CCNCC3)c4oc(nn4)c5ccccc5", "CCOC(=O)C(C(CC(=O)C(=NNc1ccc(Cl)cc1)C(=O)CC(C(C(=O)C)C(=O)OCC)c2ccc(O)c(OC)c2)c3ccc(O)c(OC)c3)C(=O)C", "COc1cc(\\\\C=C\\\\c2cc(\\\\C=C\\\\c3ccc(O)c(OC)c3)n(NN)n2)ccc1O", "COc1cc(\\\\C=C\\\\c2cc(\\\\C=C\\\\c3ccc(O)c(OC)c3)n(N=O)n2)ccc1O", "COc1cc(\\\\C=C\\\\c2cc(\\\\C=C\\\\c3ccc(O)c(OC)c3)n(n2)C(=O)CCl)ccc1O", "CC[C@H]1OC(=O)[C@H](C)[C@@H](O)[C@H](C)[C@@H](O[C@@H]2O[C@H](C)C[C@@H]([C@H]2O)N(C)C)[C@](C)(O)C[C@@H](C)CN(CCCNC(=O)[C@H]3[C@H](C)C[C@H]4[C@@H]5CCC6=CC(=O)C=C[C@]6(C)[C@@]5(F)[C@@H](O)C[C@]34C)[C@H](C)[C@@H](O)[C@]1(C)O", "COc1cc(\\\\C=C\\\\c2cc(\\\\C=C\\\\c3cc(OC)c(O)c(c3)N=Nc4ccc(Cl)cc4)[nH]n2)cc(N=Nc5ccc(Cl)cc5)c1O", "COc1cc(\\\\C=C\\\\c2cc(\\\\C=C\\\\c3cc(OC)c(O)c(c3)N=Nc4ccc(Cl)cc4)n(C=O)n2)cc(N=Nc5ccc(Cl)cc5)c1O", "COc1cc(\\\\C=C\\\\c2cc(\\\\C=C\\\\c3cc(OC)c(O)c(c3)N=Nc4ccc(Cl)cc4)n(CO)n2)cc(N=Nc5ccc(Cl)cc5)c1O", "CN(C)c1ccc(\\\\C=C\\\\C(=O)c2ccc(O)cc2O)cc1", "Oc1ccc(C(=O)\\\\C=C\\\\c2ccccc2[N+](=O)[O-])c(O)c1", "CCN(CC)C(=O)c1ccccc1N", "Oc1ccc(C(=O)\\\\C=C\\\\c2cccc(c2)[N+](=O)[O-])c(O)c1", "Cc1ccsc1c2nc3ccc4C(=O)c5ccccc5C(=O)c4c3[nH]2", "Cc1ccc(s1)c2nc3ccc4C(=O)c5ccccc5C(=O)c4c3[nH]2", "Cn1cccc1c2nc3ccc4C(=O)c5ccccc5C(=O)c4c3[nH]2", "Cn1cccc1c2nc3cc4nc5ccccc5nc4cc3[nH]2", "O=C1c2ccccc2C(=O)c3c1ccc4nc([nH]c34)c5ccc6ccccc6c5", "Oc1ccc2ccccc2c1c3nc4ccc5C(=O)c6ccccc6C(=O)c5c4[nH]3", "Cc1ccsc1c2nc3cc4nc5ccccc5nc4cc3[nH]2", "Cc1ccc(s1)c2nc3cc4nc5ccccc5nc4cc3[nH]2", "CCCCNC(=O)c1ccccc1N", "c1ccc2c(cccc2c1)c3nc4cc5nc6ccccc6nc5cc4[nH]3", "c1ccc2cc(ccc2c1)c3nc4cc5nc6ccccc6nc5cc4[nH]3", "Oc1ccc2ccccc2c1c3nc4cc5nc6ccccc6nc5cc4[nH]3", "Cc1ccsc1\\\\C=N/C(=N)Nc2nc3ccccc3[nH]2", "CO[C@H]1[C@H](O[C@@H]2OC(C)(C)O[C@H]12)[C@H](CC(=O)N)N(Cc3ccc(OC)cc3)C(=O)NCc4ccccc4", "Cc1ccc(\\\\C=N/C(=N)Nc2nc3ccccc3[nH]2)s1", "Cn1cccc1\\\\C=N\\\\C(=N)Nc2nc3ccccc3[nH]2", "N=C(Nc1nc2ccccc2[nH]1)\\\\N=C\\\\c3cccc4ccccc34", "N=C(Nc1nc2ccccc2[nH]1)\\\\N=C/c3ccc4ccccc4c3", "Oc1ccc2ccccc2c1\\\\C=N\\\\C(=N)Nc3nc4ccccc4[nH]3", "[Br-].[Br-].Clc1ccccc1N2CCN(CC2)C(=O)c3ccc[n+](Cc4ccc(C[n+]5cccc(c5)C(=O)N6CCN(CC6)c7ccccc7Cl)cc4)c3", "Cl.Clc1ccccc1N2CCN(CC2)C(=O)c3cccnc3", "Cl.O=C(N1CCN(CC1)c2ncccn2)c3cccnc3", "[Cl-].Clc1ccccc1N2CCN(CC2)C(=O)c3ccc[n+](Cc4ccccc4)c3", "[Br-].[Br-].O=C(N1CCN(CC1)c2ncccn2)c3ccc[n+](Cc4ccc(C[n+]5cccc(c5)C(=O)N6CCN(CC6)c7ncccn7)cc4)c3", "[Cl-].Fc1ccccc1C[n+]2cccc(c2)C(=O)N3CCN(CC3)c4ccccc4Cl", "[Cl-].Fc1ccc(C[n+]2cccc(c2)C(=O)N3CCN(CC3)c4ccccc4Cl)cc1", "[Br-].Clc1ccccc1N2CCN(CC2)C(=O)c3ccc[n+](Cc4ccc(Br)cc4)c3", "[Cl-].COc1cc(cc(OC)c1OC)C(=O)[n+]2cccc(c2)C(=O)N3CCN(CC3)c4ccccc4Cl", "CN(C)C(=O)c1ccccc1N", "[Br-].Brc1ccc(C[n+]2cccc(c2)C(=O)N3CCN(CC3)c4ncccn4)cc1", "Cl.Clc1ccccc1N2CCN(CC2)C(=O)C3CCCN(Cc4ccccc4)C3", "Cl.Fc1ccccc1CN2CCCC(C2)C(=O)N3CCN(CC3)c4ccccc4Cl", "Cl.Fc1ccc(CN2CCCC(C2)C(=O)N3CCN(CC3)c4ccccc4Cl)cc1", "Br.Clc1ccccc1N2CCN(CC2)C(=O)C3CCCN(Cc4ccc(Br)cc4)C3", "Br.[O-][N+](=O)c1ccc(CN2CCCC(C2)C(=O)N3CCN(CC3)c4ccccc4Cl)cc1", "Cl.Clc1ccccc1N2CCN(CC2)C(=O)C3CCCN(C3)C(=O)c4ccc(Br)cc4", "Br.Brc1ccc(CN2CCCC(C2)C(=O)N3CCN(CC3)c4ccccn4)cc1", "Cl.COc1cc(cc(OC)c1OC)C(=O)N2CCCC(C2)C(=O)N3CCN(CC3)c4ncccn4", "Br.Clc1ccccc1N2CCN(CC2)C(=O)C3CCCN(Cc4ccc(CN5CCCC(C5)C(=O)N6CCN(CC6)c7ccccc7Cl)cc4)C3", "Cl.Cl.O=C(C1CCCN(Cc2ccc(CN3CCCC(C3)C(=O)N4CCN(CC4)c5ncccn5)cc2)C1)N6CCN(CC6)c7ncccn7", "[Cl-].[Cl-].O=C(N1CCN(CC1)C(=O)c2ccc[n+](Cc3ccccc3)c2)c4ccc[n+](Cc5ccccc5)c4", "Cl.Cl.O=C(C1CCCN(Cc2ccccc2)C1)N3CCN(CC3)C(=O)C4CCCN(Cc5ccccc5)C4", "Clc1ccccc1C2=CC(=O)c3ccccc3O2", "Clc1cc(I)c2OC(=CC(=O)c2c1)c3ccccc3", "Cc1c(Cl)cc2C(=O)C=C(Oc2c1I)c3ccccc3", "Cc1c(Cl)cc2C(=O)C=C(Oc2c1I)c3ccc(Cl)cc3Cl", "Clc1ccc(C2=CC(=O)c3cc(Cl)cc(I)c3O2)c(Cl)c1", "CC1(C)CC[C@]2(CC(=O)NC(Cc3ccccc3)C(=O)O)CC[C@]4(C)C(=CC[C@@H]5[C@@]6(C)CC[C@H](O)C(C)(C)[C@@H]6CC[C@@]45C)[C@@H]2C1", "CC1(C)CC[C@]2(CC(=O)NC(Cc3cnc[nH]3)C(=O)O)CC[C@]4(C)C(=CC[C@@H]5[C@@]6(C)CC[C@H](O)C(C)(C)[C@@H]6CC[C@@]45C)[C@@H]2C1", "Fc1ccc(Cl)cc1I", "CC1(C)CC[C@]2(CC(=O)NC(CC3=CCc4ccccc34)C(=O)O)CC[C@]5(C)C(=CC[C@@H]6[C@@]7(C)CC[C@H](O)C(C)(C)[C@@H]7CC[C@@]56C)[C@@H]2C1", "CSCCC(NC(=O)C[C@]12CCC(C)(C)C[C@H]1C3=CC[C@@H]4[C@@]5(C)CC[C@H](O)C(C)(C)[C@@H]5CC[C@@]4(C)[C@]3(C)CC2)C(=O)O", "CC1(C)CC[C@]2(CC(=O)NC(Cc3ccccc3Cl)C(=O)O)CC[C@]4(C)C(=CC[C@@H]5[C@@]6(C)CC[C@H](O)C(C)(C)[C@@H]6CC[C@@]45C)[C@@H]2C1", "CC1(C)CC[C@]2(CC(=O)NC(Cc3cccc(Cl)c3)C(=O)O)CC[C@]4(C)C(=CC[C@@H]5[C@@]6(C)CC[C@H](O)C(C)(C)[C@@H]6CC[C@@]45C)[C@@H]2C1", "CC1(C)CC[C@]2(CC(=O)NC(Cc3ccc(Cl)cc3)C(=O)O)CC[C@]4(C)C(=CC[C@@H]5[C@@]6(C)CC[C@H](O)C(C)(C)[C@@H]6CC[C@@]45C)[C@@H]2C1", "Fc1cc(Cl)ccc1Cl", "CC1(C)CC[C@]2(CC(=O)NC(Cc3ccc(F)cc3)C(=O)O)CC[C@]4(C)C(=CC[C@@H]5[C@@]6(C)CC[C@H](O)C(C)(C)[C@@H]6CC[C@@]45C)[C@@H]2C1", "CC1(C)CC[C@]2(CC(=O)NC(Cc3ccc(cc3)[N+](=O)[O-])C(=O)O)CC[C@]4(C)C(=CC[C@@H]5[C@@]6(C)CC[C@H](O)C(C)(C)[C@@H]6CC[C@@]45C)[C@@H]2C1", "CC1(C)CC[C@@]2(CC[C@]3(C)C(=CC[C@@H]4[C@@]5(C)CC[C@H](O)C(C)(C)[C@@H]5CC[C@@]34C)[C@@H]2C1)C(=O)OCCC(=O)O", "CC1(C)CC[C@@]2(CC[C@]3(C)C(=CC[C@@H]4[C@@]5(C)CC[C@H](O)C(C)(C)[C@@H]5CC[C@@]34C)[C@@H]2C1)C(=O)OCCCCC(=O)O", "CC1(C)CC[C@@]2(CC[C@]3(C)C(=CC[C@@H]4[C@@]5(C)CC[C@H](O)C(C)(C)[C@@H]5CC[C@@]34C)[C@@H]2C1)C(=O)OCCCCCCC(=O)O", "COc1ccccc1NC(=O)c2ccccc2N", "CC1(C)CC[C@@]2(CC[C@]3(C)C(=CC[C@@H]4[C@@]5(C)CC[C@H](O)C(C)(C)[C@@H]5CC[C@@]34C)[C@@H]2C1)C(=O)OCCCCCCCCC(=O)O", "CC1(C)CC[C@@]2(CC[C@]3(C)C(=CC[C@@H]4[C@@]5(C)CC[C@H](O)C(C)(C)[C@@H]5CC[C@@]34C)[C@@H]2C1)C(=O)OCCCCCCCCCCC(=O)O", "CC1(C)CC[C@@]2(CC[C@]3(C)C(=CC[C@@H]4[C@@]5(C)CC[C@H](O)C(C)(C)[C@@H]5CC[C@@]34C)[C@@H]2C1)C(=O)NC(Cc6ccccc6)C(=O)O", "CC1(C)CC[C@@]2(CC[C@]3(C)C(=CC[C@@H]4[C@@]5(C)CC[C@H](O)C(C)(C)[C@@H]5CC[C@@]34C)[C@@H]2C1)C(=O)NC(CCC(=O)O)C(=O)O", "CC1=C(C(NC(=S)N1)c2cccc(c2)[N+](=O)[O-])C(=O)N(CCCl)CCCl", "Fc1cc(Cl)ccc1Br", "CN(C)c1ccc(cc1)C2NC(=O)NC(=C2C(=O)Nc3ccc(NC(=O)C)cc3)C", "CN(C)c1ccc(cc1)C2NC(=O)NC(=C2C(=O)NNC(=O)c3ccccc3O)C", "CN(C)c1ccc(cc1)C2NC(=S)NC(=C2C(=O)NNC(=O)c3ccccc3O)C", "CC1=C(C(NC(=O)N1)c2cccc(c2)[N+](=O)[O-])C(=O)NNC(=O)c3ccccc3O", "CC1=C(C(NC(=S)N1)c2cccc(c2)[N+](=O)[O-])C(=O)NNC(=O)c3ccccc3O", "COc1cc(cc(OC)c1OC)C2NC(=S)NC(=C2C(=O)NNC(=O)c3ccccc3O)C", "C\\\\C=C\\\\C(=O)NNC(=O)C1=C(C)NC(=S)NC1c2cccc(c2)[N+](=O)[O-]", "CC1=C(C(NC(=S)N1)c2cccc(c2)[N+](=O)[O-])C(=O)N(CCO)CCO", "CCCCN(CCCC)C(=O)c1ccccc1N", "Nc1ccccc1C(=O)Nc2ccc3ccccc3c2", "Nc1ccccc1C(=O)Oc2cccc3cccnc23", "CC(C)COC(=O)c1ccccc1N", "CCCCCCCOC(=O)c1ccccc1N", "CC(C)CCOC(=O)c1ccccc1N"];
 
 
-/***/ }),
+/***/ },
 
-/***/ "datagrok-api/dg":
+/***/ "datagrok-api/dg"
 /*!*********************!*\
   !*** external "DG" ***!
   \*********************/
-/***/ ((module) => {
+(module) {
 
 module.exports = DG;
 
-/***/ }),
+/***/ },
 
-/***/ "datagrok-api/grok":
+/***/ "datagrok-api/grok"
 /*!***********************!*\
   !*** external "grok" ***!
   \***********************/
-/***/ ((module) => {
+(module) {
 
 module.exports = grok;
 
-/***/ }),
+/***/ },
 
-/***/ "datagrok-api/ui":
+/***/ "datagrok-api/ui"
 /*!*********************!*\
   !*** external "ui" ***!
   \*********************/
-/***/ ((module) => {
+(module) {
 
 module.exports = ui;
 
-/***/ })
+/***/ }
 
 /******/ 	});
 /************************************************************************/
@@ -1143,6 +1608,12 @@ module.exports = ui;
 /******/ 		var cachedModule = __webpack_module_cache__[moduleId];
 /******/ 		if (cachedModule !== undefined) {
 /******/ 			return cachedModule.exports;
+/******/ 		}
+/******/ 		// Check if module exists (development only)
+/******/ 		if (__webpack_modules__[moduleId] === undefined) {
+/******/ 			var e = new Error("Cannot find module '" + moduleId + "'");
+/******/ 			e.code = 'MODULE_NOT_FOUND';
+/******/ 			throw e;
 /******/ 		}
 /******/ 		// Create a new module (and put it into the cache)
 /******/ 		var module = __webpack_module_cache__[moduleId] = {
@@ -1222,8 +1693,8 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var datagrok_api_dg__WEBPACK_IMPORTED_MODULE_2___default = /*#__PURE__*/__webpack_require__.n(datagrok_api_dg__WEBPACK_IMPORTED_MODULE_2__);
 /* harmony import */ var _randsmiles__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ./randsmiles */ "./src/randsmiles.ts");
 /* harmony import */ var _glyphs_glyphs__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ./glyphs/glyphs */ "./src/glyphs/glyphs.ts");
-/* harmony import */ var _datagrok_libraries_db_explorer_src_db_explorer__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! @datagrok-libraries/db-explorer/src/db-explorer */ "../../libraries/db-explorer/src/db-explorer.ts");
-/* harmony import */ var _datagrok_libraries_db_explorer_src_renderer__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! @datagrok-libraries/db-explorer/src/renderer */ "../../libraries/db-explorer/src/renderer.ts");
+/* harmony import */ var _datagrok_libraries_db_explorer_src_db_explorer__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! @datagrok-libraries/db-explorer/src/db-explorer */ "./node_modules/@datagrok-libraries/db-explorer/src/db-explorer.js");
+/* harmony import */ var _datagrok_libraries_db_explorer_src_renderer__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! @datagrok-libraries/db-explorer/src/renderer */ "./node_modules/@datagrok-libraries/db-explorer/src/renderer.js");
 /* harmony import */ var _config__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(/*! ./config */ "./src/config.ts");
 /* harmony import */ var _helms__WEBPACK_IMPORTED_MODULE_8__ = __webpack_require__(/*! ./helms */ "./src/helms.ts");
 /* eslint-disable max-lines-per-function */
@@ -1547,7 +2018,7 @@ async function populateAdcGlyphs(limit = 50) {
     return { updated: updates.length };
 }
 //name: autostartbiologics
-//tags: autostart
+//meta.role: autostart
 async function autostartBiologics() {
     function renderHelm(value) {
         return datagrok_api_ui__WEBPACK_IMPORTED_MODULE_1__.wait(async () => {

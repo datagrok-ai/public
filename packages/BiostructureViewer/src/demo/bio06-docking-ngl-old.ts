@@ -9,7 +9,6 @@ import {INglViewer} from '@datagrok-libraries/bio/src/viewers/ngl-gl-viewer';
 import {_package} from '../package';
 import {awaitGrid} from '../tests/utils';
 import {NglViewer} from '../viewers/ngl-viewer';
-import {delay} from '@datagrok-libraries/utils/src/test';
 
 const ligandsDataFn: string = 'samples/1bdq-obs-pred.sdf';
 const structureDataFn: string = 'samples/1bdq-wo-ligands.pdb';
@@ -100,7 +99,7 @@ export async function demoBio06UI(): Promise<void> {
 
         for (let rowI: number = 0; rowI < 5; rowI++) {
           df.mouseOverRowIdx = rowI;
-          await delay(300);
+          await DG.delay(300);
         }
       }, {
         description: `Display mouse overed ligands along the structure.`,

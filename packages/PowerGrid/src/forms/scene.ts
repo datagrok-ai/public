@@ -128,8 +128,13 @@ export class Scene extends Element {
   }
 
   toCanvas(): HTMLCanvasElement {
-    const canvas = ui.canvas(this.bounds.width, this.bounds.height);
-    this.render(canvas.getContext('2d')!);
+    const dpr = window.devicePixelRatio;
+    const canvas = ui.canvas(this.bounds.width * dpr, this.bounds.height * dpr);
+    canvas.style.width = `${this.bounds.width}px`;
+    canvas.style.height = `${this.bounds.height}px`;
+    const g = canvas.getContext('2d')!;
+    g.scale(dpr, dpr);
+    this.render(g);
     return canvas;
   }
 

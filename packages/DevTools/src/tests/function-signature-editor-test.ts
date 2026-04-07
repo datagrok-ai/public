@@ -1,7 +1,7 @@
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 // import * as ui from 'datagrok-api/ui';
-import { category, before, test, expect, awaitCheck, after, delay } from '@datagrok-libraries/utils/src/test';
+import { category, before, test, expect, awaitCheck, after, delay } from '@datagrok-libraries/test/src/test';
 
 category('FSE', () => {
   const script: DG.Script = DG.Script.create(`#name: Template
@@ -88,8 +88,4 @@ count = table.shape[0] * table.shape[1]`);
     await awaitCheck(() => !!currentView.root.querySelector('.CodeMirror.cm-s-default'),
       'Code button did not open view', 2000);
   }, {owner:'ppolovyi@datagrok.ai'});
-
-  after(async ()=>{
-    grok.shell.closeAll()
-  });
 });

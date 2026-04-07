@@ -98,12 +98,7 @@ public class DefaultStringColumnManager implements ColumnManager<String> {
     }
 
     @Override
-    public Column getColumn() {
-        return new StringColumn();
-    }
-
-    @Override
-    public Column getColumn(int initColumnSize) {
-        return new StringColumn(initColumnSize);
+    public Column<?> getColumn(String name, int initColumnSize) {
+        return new StringColumn(name, initColumnSize);
     }
 }

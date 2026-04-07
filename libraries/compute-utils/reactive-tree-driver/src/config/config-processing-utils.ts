@@ -1,11 +1,12 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {AbstractPipelineParallelConfiguration, AbstractPipelineSequentialConfiguration, AbstractPipelineStaticConfiguration, LoadedPipeline, DataActionConfiguraion, PipelineConfigurationInitial, PipelineConfigurationParallelInitial, PipelineConfigurationSequentialInitial, PipelineConfigurationStaticInitial, PipelineInitConfiguration, PipelineLinkConfigurationBase, PipelineMutationConfiguration, PipelineRefInitial, PipelineSelfRef, PipelineStepConfiguration, FuncCallActionConfiguration, PipelineReturnConfiguration} from './PipelineConfiguration';
+import {AbstractPipelineParallelConfiguration, AbstractPipelineSequentialConfiguration, AbstractPipelineStaticConfiguration, LoadedPipeline, DataActionConfiguraion, PipelineConfigurationInitial, PipelineConfigurationParallelInitial, PipelineConfigurationSequentialInitial, PipelineConfigurationStaticInitial, PipelineInitConfiguration, PipelineLinkConfigurationBase, PipelineMutationConfiguration, PipelineRefInitial, PipelineSelfRef, PipelineStepConfiguration, FuncCallActionConfiguration, PipelineReturnConfiguration, PipelineParallelItem, PipelineSequentialItem} from './PipelineConfiguration';
 import {ItemId, LinkSpecString, NqName} from '../data/common-types';
 import {callHandler} from '../utils';
 import {LinkIOParsed, parseLinkIO} from './LinkSpec';
 import wu from 'wu';
+import {getViewersHook} from '../../../shared-utils/utils';
 
 //
 // Internal config processing
@@ -90,6 +91,7 @@ async function configProcessing(
   } else if (isPipelineStaticInitial(conf)) {
     const pconf = processStaticConfig(conf);
     const steps = await Promise.all(conf.steps.map(async (step) => {
+      processUIFlags(step);
       const sconf = await configProcessing(step, loadedPipelines);
       return sconf;
     }));
@@ -98,6 +100,7 @@ async function configProcessing(
   } else if (isPipelineParallelInitial(conf)) {
     const pconf = processParallelConfig(conf);
     const stepTypes = await Promise.all(conf.stepTypes.map(async (item) => {
+      processUIFlags(item);
       const nconf = await configProcessing(item, loadedPipelines);
       return nconf;
     }));
@@ -106,6 +109,7 @@ async function configProcessing(
   } else if (isPipelineSequentialInitial(conf)) {
     const pconf = processSequentialConfig(conf);
     const stepTypes = await Promise.all(conf.stepTypes.map(async (item) => {
+      processUIFlags(item);
       const nconf = await configProcessing(item, loadedPipelines);
       return nconf;
     }));
@@ -119,6 +123,14 @@ async function configProcessing(
     return configProcessing(pconf, loadedPipelines);
   }
   throw new Error(`Pipeline configuration node type matching failed: ${conf}`);
+}
+
+function processUIFlags(item: PipelineParallelItem<LinkSpecString, never, PipelineRefInitial> | PipelineSequentialItem<LinkSpecString, never, PipelineRefInitial>) {
+  if (item.disableUIControlls) {
+    item.disableUIAdding = true;
+    item.disableUIDragging = true;
+    item.disableUIRemoving = true;
+  }
 }
 
 function processStaticConfig(conf: PipelineConfigurationStaticInitial) {
@@ -148,7 +160,14 @@ function processSequentialConfig(conf: PipelineConfigurationSequentialInitial) {
 async function processStepConfig(conf: PipelineStepConfiguration<LinkSpecString, never>) {
   const actions = processStepActions(conf.actions ?? []);
   const io = await getFuncCallIO(conf.nqName);
-  return {...conf, io, actions};
+  const func = DG.Func.byName(conf.nqName);
+  const viewersHookMakerName = getViewersHook(func);
+  let viewersHook = conf.viewersHook;
+  if (!viewersHook && viewersHookMakerName) {
+    const hookMaker = DG.Func.byName(viewersHookMakerName);
+    viewersHook = await hookMaker.apply();
+  }
+  return {...conf, viewersHook, io, actions};
 }
 
 async function getFuncCallIO(nqName: NqName): Promise<FuncCallIODescription[]> {

@@ -1,5 +1,17 @@
 # CDD Vault Link changelog
 
+## 1.1.0 (2026-03-16)
+
+### Bug fixes
+
+* GROK-19523: AppTreeBrowser decorator: Fixed behavior, so it finds the app properly, fixed usages
+
+## 1.0.5 (2025-12-24)
+
+### Bug fixes
+
+* GROK-18964 CDD Vault: Cannot get statistics for vault DataGrok test vault: Failed to fetch
+
 ## 1.0.4 (2025-05-28)
 
 * Some UI fixes

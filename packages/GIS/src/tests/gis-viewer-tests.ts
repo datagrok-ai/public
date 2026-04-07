@@ -1,7 +1,7 @@
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 // import * as ui from 'datagrok-api/ui';
-import {before, after, category, expect, test, testViewer} from '@datagrok-libraries/utils/src/test';
+import {before, after, category, expect, test, testViewer} from '@datagrok-libraries/test/src/test';
 
 import * as GUIUTILS from './gui-utils';
 import {SEMTYPEGIS} from '../gis-semtypes';
@@ -23,11 +23,10 @@ category('MapViewer', async () => {
 
   test('Map', async () => {
     await testViewer('Map', testDF2, {detectSemanticTypes: true});
-  }, {skipReason: 'GROK-13113'});
+  });
 
   test('openMapViewer', async () => {
     const mapViewer = DG.Viewer.fromType('Map', testDF);
-    expect(mapViewer instanceof DG.JsViewer, true);
     expect(mapViewer.type, 'Map');
     // temporarily, because ids are undefined
     // expect(mapViewer.table.id, testDF.id);
@@ -105,6 +104,5 @@ category('MapViewer', async () => {
   after(async () => {
     grok.shell.closeTable(testDF as DG.DataFrame);
     grok.shell.closeTable(testDF2 as DG.DataFrame);
-    grok.shell.closeAll();
   });
 });

@@ -51,7 +51,7 @@ export function getNucleotidesSequence(helmString: string, monomerLib: MonomerLi
   return nucleotides;
 }
 
-// todo: remove after refactoring as a workaround
+/* todo: remove after refactoring as a workaround */
 export function convert(
   sequence: string, sourceFormat: string, targetFormat: string, th: ITranslationHelper
 ): string | null {

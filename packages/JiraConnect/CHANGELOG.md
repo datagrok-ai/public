@@ -1,5 +1,9 @@
 # Jira Connect changelog
 
+## 1.2.3 (2025-08-28)
+
+Added ability to detect few tickets in one cell
+
 ## 1.1.3 (2025-05-28)
 
 Added api

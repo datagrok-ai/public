@@ -1,5 +1,15 @@
 # Clinical Case changelog
 
+## 1.4.0 (2026-03-16)
+
+* xpt file handler + linter fixes
+* GROK-19146: File input: Ability to select directory
+* Validation using CDISC core engine
+* Ability to show/hide validation errors
+* Import study view
+* Open domains from tree
+* Columns descriptions (extracted from define.xml)
+
 ## 1.3.3 (2025-10-20)
 
 * GROK-19038: Clinical case: Invalid argument error for study

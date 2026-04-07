@@ -120,6 +120,6 @@ module.exports = [
       filename: 'js-api.js',
       library: '[name]',
       libraryTarget: 'var',
-      path: path.resolve(__dirname, '../../xamgle/web/js/api'),
+      path: path.resolve(__dirname, '../../core/client/xamgle/web/js/api'),
     },
 }];
