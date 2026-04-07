@@ -873,15 +873,15 @@ export class AddNewColumnDialog {
       }
     }
 
-    const mappingMatch = (type: string, actualType: string) => VALIDATION_TYPES_MAPPING[type] &&
-      VALIDATION_TYPES_MAPPING[type].includes(actualType);
+    const mappingMatch = (type: string, actualType: string) => VALIDATION_TYPES_MAPPING[type.toLowerCase()] &&
+      VALIDATION_TYPES_MAPPING[type.toLowerCase()].includes(actualType.toLowerCase());
 
     //validate types for current function
     for (const property of funcCall.func.inputs) {
       //skip validation of dataframe parameter for vector functions
       if (funcCall.func.options['vectorFunc'] === 'true' && property.propertyType === DG.TYPE.DATA_FRAME)
         continue;
-      let actualInputType = actualInputParamTypes[property.name];
+      let actualInputType = actualInputParamTypes[property.name].toLowerCase();
       let actualSemType = actualInputSemTypes[property.name];
       const input = funcCall.inputs[property.name];
       //check for variables missing in the context
@@ -921,7 +921,7 @@ export class AddNewColumnDialog {
       //check for semType match
       if (property.semType && actualSemType && property.semType !== actualSemType)
         // eslint-disable-next-line max-len
-        return `Function ${funcCall.func.name} '${property.name}' param should be ${property.semType} type instead of ${actualSemType}`;
+        return `Function ${funcCall.func.name} '${property.name}' param should be ${property.semType} semantic type instead of ${actualSemType}`;
       //check column type
       if (property.propertyType === DG.TYPE.COLUMN) {
         if (funcCall.inputs[property.name].func?.name !== COLUMN_FUNCTION_NAME)
