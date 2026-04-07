@@ -390,7 +390,7 @@ export class PackageFunctions {
   })
   static monomerInfoPanel(
     @grok.decorators.param({options: {semType: 'Monomer'}}) monomerSv: DG.SemanticValue): DG.Widget {
-    return getMonomerInfoWidget(monomerSv.value as string, _package.monomerLib);
+    return getMonomerInfoWidget(monomerSv, _package.monomerLib);
   }
 
   @grok.decorators.func({
