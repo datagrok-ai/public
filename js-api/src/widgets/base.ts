@@ -4,7 +4,9 @@
  */
 
 import {toDart, toJs} from "../wrappers";
+import * as rxjs from "rxjs";
 import {Subscription} from "rxjs";
+import {observeStream} from "../events";
 import {Func, Property, IProperty} from "../entities";
 import {DataFrame} from "../dataframe";
 import {Type} from "../const";
@@ -219,6 +221,10 @@ export interface IWidgetStatus {
   shortcuts: { [key: string]: string };
   /** Events fired by this widget. */
   events: IEventType[];
+  /** Free-form description of the widget's current state. */
+  description: string | null;
+  /** Validation error message; null means the widget is in a valid state. */
+  error: string | null;
 }
 
 /** Base class for controls that have a visual root and a set of properties. */
@@ -358,8 +364,11 @@ export class Widget<TSettings = any> {
     return p.defaultValue;
   }
 
+  /** Observes events with the specified eventId. Override in subclasses to provide actual events. */
+  onEvent(eventId: string | null = null): rxjs.Observable<any> { return rxjs.EMPTY; }
+
   /** Returns the widget's runtime structure for automated testing and introspection. */
-  getWidgetStatus(): IWidgetStatus { return {parts: {}, hitAreas: {}, shortcuts: {}, events: []}; }
+  getWidgetStatus(): IWidgetStatus { return {parts: {}, hitAreas: {}, shortcuts: {}, events: [], description: null, error: null}; }
 
   /** Creates a new widget from the root element. */
   static fromRoot(root: HTMLElement): Widget {
@@ -390,6 +399,12 @@ export class DartWidget extends Widget {
   getProperties(): Property[] { return toJs(api.grok_PropMixin_GetProperties(this.dart)); }
   getFunctions(): Func[] { return toJs(api.grok_Widget_GetFunctions(this.dart)); }
   getWidgetStatus(): IWidgetStatus { return api.grok_Widget_GetWidgetStatus(this.dart); }
+
+  onEvent(eventId: string | null = null): rxjs.Observable<any> {
+    if (eventId === null)
+      return rxjs.EMPTY;
+    return observeStream(api.grok_Widget_OnEvent(this.dart, eventId));
+  }
 }
 
 

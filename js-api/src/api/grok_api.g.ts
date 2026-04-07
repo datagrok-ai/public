@@ -397,6 +397,7 @@ export interface IDartApi {
   grok_Widget_Get_Parent(widget: any): any;
   grok_Widget_Get_Children(widget: any): any;
   grok_Widget_GetFunctions(widget: any): any;
+  grok_Widget_OnEvent(widget: any, eventId: string): any;
   grok_DataFrame_ToCsv(t: any, options: any, grid: any): any;
   grok_DataFrame_ToCsvEx(t: any, options: any, grid: any): Promise<any>;
   grok_Column_GetColors(column: any): any;
