@@ -1,94 +1,186 @@
-1. Open SPGI, SPGI-linked1, SPGI-linked2.
-2. Go to **Tables > SPGI.**
-3. On the **Viewers tab,** click **Scatter plot.**
-4. On the scatterplot viewer, click the **Gear** icon. The **Context Panel** opens.
-5. Go to the **Data** info panel and check all the properties, including the following:
-    1. Tables switching (SPGI-linked1, SPGI-linked2, SPGI)
-    2. **Zoom and Filter** with different options:
-        - Check when zooming in and out
-        - Combine with changing range sliders
-        - Set high jitter values, pan the scatterplot and check the consistency of filtering and points visibility
-        - While jitter values are high, use some filtering and set **Zoom and Filter** to `zoom by filter` and `pack and zoom by filter`
-        - Check `pack and zoom by filter` with other settings
-    4. Save to Layout. Check
-    5. Set **Filter** to `${CAST Idea ID} <636500` , set color coding by Series, and set different options for **Legend Visibility** and **Legend Position**. Arbitrary change some other settings
-6. Go to the **X** and **Y** info panels and check all the properties, including the following:
-    1. For min and max values for the axes, use different and equal values (636000 and 638000 for the X axis)
-    2. Set the **Axis Type** to `logarithmic` (for numerical values)
-    3. Invert the axes
-    4. Save to Layout. Check
-7. Coloring:
-    1. Go to the grid.
-    2. Right-click the header of the CAST Idea ID column and select **Color coding > Linear, Edit**. In the dialog, change the color scheme and invert it.
-    3. Right-click the header of the Primary Series Name column and select **Color coding > Categorical**.
-    4. Right-click the header of the Chemical Space X column and select **Color coding > Conditional, Edit**. In the dialog, set the **Apply to** setting to `text`.
-    5. Go to the scatterplot viewer.
-    6. Check color coding when setting **Color** to Primary Series Name, and Chemical Space X, CAST Idea ID.
-    7. Go to the grid.
-    8. Right-click the header of the CAST Idea ID column and select **Color coding > Edit**. In the dialog, change the color scheme and invert it. The color scheme on the scatterplot should change too.
-    9. Save to Layout. Check.
-7. Size-coding:
-    1. Set **Size** to any numerical column.
-    1. Select some points using Ctrl+click, Shift+drag, Lasso tool (Shift+L).
-7. Markers:
-    1. One by one set **Markers** to categorical, structure and datetime columns.
-    1. For the datetime column set different **Markers Map** values - verify that the legend and plot remain consistent.
-    1. Change the **Jitter Size Y** value.
-    1. Select some points using Ctrl+click, Shift+drag, Lasso tool (Shift+L).
-    1. Change the **Jitter Size** value - **verify the selection** using Ctrl+click, Shift+drag, Lasso tool (Shift+L).
-    1. Reset **Jitter Size Y** value (while the Jitter Size value remains not 0)- **verify the selection** using Ctrl+click, Shift+drag, Lasso tool (Shift+L).
-    1. Randomly modify other settings in this section - check.
-9. Selection (and scatterplot-specific selection options like lasso):
-    1. On the scatterplot, use **Shift+Mouse Drag** to select points. Check the selection in the grid.
-    2. Check the **Misc** > **Mouse Drag** (`Pan` or `Select`) setting
-    3. Go to the **Misc** > **Lasso Tool** checkbox. Use it on the scatterplot. Check the selection in the grid.
-    4. Select some points. Use Ctrl+Shift+Drag for deselection.
-10. Tooltip:
-    1. Right-click the scatterplot and check all options on the **Tooltip** tab.
-    2. Save to Layout. Check
-    3. Go to Property Pane > Tooltip. Check all options.
-    4. Save to Layout. Check
-8. Legend, Title, Description:
-    1. Add a title and a description.
-    2. Change their position
-    3. Check the range sliders functionality
-    4. Save to Layout. Check
-11. Formula lines (dataframe lines, viewer-specific lines):
-    1. Right-click the scatterplot and select **Tools > Formula Lines.** A **Formula Lines** editor opens. Click the ADD NEW button and select every option from the menu.
-    2. Check the Viewer and Dataframe tabs (Viewer -- you see it only on the current viewer, DF -- All DF viewers)
-    3. Save to Layout. Check (only viewer formula lines are saved)
-    4. Delete created lines.
-12. Using structures as axes:
-    1. Set the X axis to Structure. Check the visibility of the structures.
-    2. Save to Layout. Check
-13. Interaction with the **Filter Panel**:
-    1. Go to **Tables** and click the **Filter** icon
-    2. Right-click a cell in the `Structure` column
-    3. Select **Current value > Use as filter** from the context menu. Check the **Filter Panel** and the scatterplot.
-    4. Change arbitrary settings on the **Filter Panel** and check the scatterplot interaction.
-    5. Save to Layout. Check
-14. Verify table filtering behavior with empty column on log scale axis in scatterplot
-* Open a dataset that includes at least one numerical column with no values (e.g., all entries in the column are null or NaN). For example, use fruits_.csv for the test.
-* Add a scatterplot viewer to the dataset. Set the scatter plot’s zoom and filter setting to "Filter by zoom." Select the empty numerical column for one of the axes (X or Y). Change the axis to a log scale.
-* Check the scatterplot: Since the axis is set to log scale and the column has no values, the scatterplot should display no data points.
-* Check Table Filtering: Examine the table after configuring the scatterplot. 
-Expected Result: The scatterplot should display no data points, but the table should remain unfiltered, displaying all original data rows. 
-15. Verify that scatterplot ignores negative and zero values when switching to the log scale ([#2456](https://github.com/datagrok-ai/public/issues/2456)):
-- Switch axes to the log scale
-- Try to set categorical axis to the X
-16. Color picker in legend. (Verify that the color picker in the legend of the Scatterplot works correctly, including opening, color changes, and maintaining previous selections across categories.)
-- Assign any column to the Color on the scatterplot to open legend. Check the color picker (an icon appears when you hover over the legend). 
-- Click the color picker icon. Main checks:
-  - **Open color picker**: Clicking the color picker icon opens the color picker dialog.  
-  *Verify this also works for the structure column.* 
-  - **Change category color**: In the color picker, select a new color for a category.  
-  **Expected result:** The category color updates in the legend and on the scatterplot. 
-  - **Cancel color change**: Reopen the color picker, choose a different color, then click **Cancel**.  
-  **Expected result:** The original color is restored, and no changes are applied. 
-  - **Preserve previous colors**: Use the color picker to select a new color for another category.  
-  **Expected result:** The color of the previously modified category remains unchanged.
+# Scatter plot tests (Playwright)
+
+All scenarios should start with the following sequence of events:
+1. Close all
+2. Open demog
+3. Add a scatter plot by clicking the Scatter Plot icon in the Toolbox > Viewers section
+
+## Changing axes
+
+1. On the viewer, click the X column selector and set X to AGE
+2. On the viewer, click the Y column selector and set Y to WEIGHT
+3. On the viewer, click the X column selector and set X to RACE
+4. On the viewer, click the X column selector and set X to STARTED
+5. On the viewer, click the X column selector and set X back to HEIGHT
+
+## Axis types and inversion
+
+1. On the viewer, click the X column selector and set X to AGE
+2. On the viewer, click the Y column selector and set Y to WEIGHT
+3. On the viewer, right-click the X Axis and select from the context menu X Axis Type > logarithmic
+4. From the context menu check the Invert X Axis checkbox
+5. On the viewer, right-click the Y Axis and select from the context menu Y Axis Type > logarithmic
+6. From the context menu check the Invert Y Axis checkbox
+7. Go to the Context Panel > X, uncheck Invert X Axis checkbox and set X Axis Type to linear
+8. Go to the Context Panel > Y, uncheck Invert Y Axis checkbox and set Y Axis Type to linear
+
+## Axis min/max
+
+1. On the viewer, click the X column selector and set X to AGE, click the Y column selector and set Y to HEIGHT
+2. Go to the Context Panel > X, set Min to 30, Max to 50
+3. Go to the Context Panel > Y, set Min to 150, Max to 180
+4. Clear all min/max values
+
+## Color coding
+
+1. Hover over the viewer — the Color selector appears — click it and set Color to SEX
+2. Click the Color selector and set Color to AGE
+3. Go to the Context Panel > Color, check Invert Color Scheme
+4. Uncheck Invert Color Scheme
+5. Click the Color selector on the viewer and select the empty first row to clear Color
+
+## Size coding
+
+1. Hover over the viewer — the Size selector appears — click it and set Size to WEIGHT
+2. Go to the Context Panel > Marker, set Marker Min Size to 2, set Marker Max Size to 40
+3. Click the Size selector on the viewer and select the empty first row to clear Size
+
+## Markers and jitter
+
+1. Go to the Context Panel > Marker and set Markers column to RACE
+2. Set Jitter Size to 20
+3. Set Jitter Size Y to 15
+4. Select the empty first row in the Markers column picker to clear it
+5. Set Marker Type to square
+6. Set Marker Type back to circle
+7. Set Jitter Size and Jitter Size Y back to 0
+
+## Labels
+
+1. On the viewer, right-click the canvas and go to Labels — check SEX in the column list
+2. From the Labels submenu, set Show Labels For to Selected
+3. Set Show Labels For to All
+4. Check Use Label as Marker
+5. Uncheck Use Label as Marker
+6. Uncheck SEX in the Labels column list to clear labels
+
+## Regression line
+
+1. On the viewer, right-click the canvas and go to Tools > Show Regression Line
+2. Hover over the viewer — click the Color selector and set Color to RACE
+3. Go to the Context Panel > Lines, check Regression Per Category
+4. Check Show Spearman Correlation
+5. Check Show Pearson Correlation
+6. Uncheck Show Regression Line Equation
+7. Press the R key to toggle regression line off
+
+## Legend
+
+1. Hover over the viewer — click the Color selector and set Color to RACE
+2. On the viewer, right-click the legend area and set Legend Visibility to Never
+3. Set Legend Visibility to Always
+4. Set Legend Position to Top
+5. Set Legend Position to Left
+6. Set Legend Position back to Right
+
+## Filter panel interaction
+
+1. Open the filter panel by clicking the Filters section in the Toolbox
+2. On the Filter Panel, in the RACE filter click 'Caucasian'
+3. Go to the Context Panel > Data, set Zoom and Filter to 'zoom by filter'
+4. On the Filter Panel, in the RACE filter click 'Asian'
+5. Go to the Context Panel > Data, set Zoom and Filter to 'no action'
+6. On the Filter Panel, in the RACE filter click 'Black'
+7. Go to the Context Panel > Data, set Zoom and Filter to 'filter by zoom'
+
+## Filtered out points
+
+1. Open the filter panel and on the Filter Panel, in the SEX filter click 'M' to filter some rows
+2. On the viewer, right-click the canvas and go to Filter > Show Filtered Out Points
+3. Right-click again and go to Filter > uncheck Show Filtered Out Points
+
+## Axis histograms
+
+1. Go to the Context Panel > Axes, check Show X Histogram
+2. Check Show Y Histogram
+3. Set Histogram Bins to 20
+4. Uncheck both Show X Histogram and Show Y Histogram
+
+## Grid lines and axes visibility
+
+1. On the viewer, right-click the X Axis and uncheck Show Vertical Grid Lines
+2. From the context menu uncheck Show X Axis
+3. On the viewer, right-click the Y Axis and uncheck Show Horizontal Grid Lines
+4. From the context menu uncheck Show Y Axis
+5. Right-click the X Axis and recheck Show Vertical Grid Lines and Show X Axis
+6. Right-click the Y Axis and recheck Show Horizontal Grid Lines and Show Y Axis
+
+## Mouse drag mode
+
+1. Go to the Context Panel > Misc, set Mouse Drag to Select
+2. Set Mouse Drag to Pan
+
+## Whiskers (error bars)
+
+1. Go to the Context Panel > X, set X Whisker Min to AGE, X Whisker Max to WEIGHT
+2. Go to the Context Panel > Y, set Y Whisker Min to HEIGHT, Y Whisker Max to WEIGHT
+3. Clear all whisker columns by selecting the empty first row in each picker
+
+## Rectangular selection
+
+1. On the viewer, click the X column selector and set X to AGE, click the Y column selector and set Y to HEIGHT
+2. Hold Shift and drag a rectangle over the center area of the plot
+3. Verify some points are selected
+4. Press Escape to deselect
+5. Hold Shift and drag a rectangle over a different area
+6. Verify some points are selected
+7. Press Escape to deselect
+
+## Lasso selection
+
+1. On the viewer, click the X column selector and set X to AGE, click the Y column selector and set Y to HEIGHT
+2. On the viewer, right-click the canvas and check Lasso Tool
+3. Hold Shift and drag a freeform lasso area over the plot
+4. Verify some points are selected
+5. Press Escape to deselect
+6. Right-click the canvas and uncheck Lasso Tool
+
+## Layout save and restore
+
+1. On the viewer, set X to AGE, Y to WEIGHT via column selectors
+2. Set Color to RACE and Size to HEIGHT via the viewer selectors
+3. Right-click the canvas > Tools > Show Regression Line; go to Context Panel > Marker, set Jitter Size to 10
+4. Right-click the legend, set Legend Visibility to Always; go to Context Panel > X, check Invert X Axis
+5. Save the layout
+6. Close the scatter plot viewer by clicking the X icon on the viewer title bar
+7. Apply the saved layout
+8. Verify all properties match the configuration from steps 1-4
+9. Delete the saved layout
+
+## Context menu
+
+1. Right-click the center of the scatter plot canvas — a context menu should appear
+2. Verify the menu contains items: Reset View, Lasso Tool, Tools
+3. Close the menu by pressing Escape
+
+## Log scale with negative and zero values
+
+1. On the viewer, click the X column selector and set X to AGE, click the Y column selector and set Y to HEIGHT
+2. Right-click the X Axis and set X Axis Type to logarithmic
+3. Right-click the Y Axis and set Y Axis Type to logarithmic
+4. On the viewer, click the X column selector and set X to RACE (categorical)
+5. Verify the scatter plot handles the categorical column on a logarithmic axis gracefully
+
+## Empty column on log scale
+
+1. Close all and open a dataset that contains an empty numerical column (or create a DataFrame with one)
+2. Add a scatter plot by clicking the Scatter Plot icon in the Toolbox
+3. On the viewer, click the X column selector and set it to the empty numerical column
+4. Right-click the X Axis and set X Axis Type to logarithmic
+5. Verify the table remains unfiltered
+
 ---
 {
-  "order": 2,
-  "datasets": ["System:DemoFiles/SPGI.csv"]
+  "order": 101,
+  "datasets": ["System:DemoFiles/demog.csv"]
 }
