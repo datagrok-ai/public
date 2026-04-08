@@ -3,7 +3,7 @@
   "name": "SureChembl",
   "friendlyName": "SureCHEMBLDocker",
   "parameters": {
-    "server": "${Surechembl-surechembl<DockerContainer>}",
+    "server": "${Surechembl<DockerContainer>}",
     "db": "surechembl",
     "cacheResults": true
   },
