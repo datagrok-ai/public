@@ -187,12 +187,13 @@ const config = {
             typesenseServerConfig: {
                 nodes: [
                     {
-                        host: 'typesense.datagrok.ai',
+                        host: 'datagrok.ai',
                         port: 443,
+                        path: '/typesense',
                         protocol: 'https',
                     }
                 ],
-                apiKey: 'jjq4uhJvQ9hqo7TcPTpDIKvn1EsoAb86',
+                apiKey: '23vmY72BpQAytsutm24pCUNJJXh2txjU',
             },
 
             // Optional: Typesense search parameters: https://typesense.org/docs/0.21.0/api/search.md#search-parameters
