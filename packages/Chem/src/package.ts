@@ -840,7 +840,7 @@ export class PackageFunctions {
     //workaround for functions which add viewers to tableView (can be run only on active table view)
     checkCurrentView(table);
     // after this check we are sure that tableView is active
-    const tv = grok.shell.tv;
+    let tv = grok.shell.tv;
     if (molecules.semType !== DG.SEMTYPE.MOLECULE) {
       grok.shell.error(`Column ${molecules.name} is not of Molecule semantic type`);
       return;
@@ -862,6 +862,8 @@ export class PackageFunctions {
     let res: DG.ScatterPlotViewer = funcCall.getOutputParamValue();
 
     if (plotEmbeddings) {
+      checkCurrentView(table);
+      tv = grok.shell.tv;
       res = tv.scatterPlot({x: embedColsNames[0], y: embedColsNames[1], title: 'Chemical space'});
       const description = `Molecules column: ${molecules.name}, method: ${methodName}, ${options ? `options: ${JSON.stringify(options)},` : ``} similarity: ${similarityMetric}`;
       res.setOptions({description: description, descriptionVisibilityMode: 'Never'});
@@ -971,13 +973,15 @@ export class PackageFunctions {
     }
     //workaround for functions which add viewers to tableView (can be run only on active table view)
     checkCurrentView(table);
-    const view = grok.shell.tv;
+    let view = grok.shell.tv;
     const funcCall = await DG.Func.find({name: 'runElementalAnalysis'})[0].prepare({
       table: table,
       molecules: molecules,
     }).call(undefined, undefined, {processed: false});
     const columnNames: string[] = funcCall.getOutputParamValue();
 
+    checkCurrentView(table);
+    view = grok.shell.tv;
     if (radarViewer) {
       let packageExists = checkPackage('Charts', 'radarViewerDemo');
       if (!packageExists) //for compatibility with previous versions of Charts
@@ -1143,6 +1147,7 @@ export class PackageFunctions {
         axesNames: axesNames,
       }).call(undefined, undefined, {processed: false});
 
+      checkCurrentView(table);
       const view = grok.shell.tv;
 
       const description = `Molecules: ${molecules.name}, activities: ${activities.name}, method: ${methodName}, ${options ? `options: ${JSON.stringify(options)},` : ``} similarity: ${similarityMetric}, similarity cutoff: ${similarity}`;

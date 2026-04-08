@@ -33,6 +33,7 @@ import {getRdKitModule} from '@datagrok-libraries/bio/src/chem/rdkit-module';
 import {ISeqHandler, SeqTemps} from '@datagrok-libraries/bio/src/utils/macromolecule/seq-handler';
 import {MmcrTemps} from '@datagrok-libraries/bio/src/utils/cell-renderer-consts';
 
+import {checkCurrentView} from '@datagrok-libraries/utils/src/view-utils';
 import {getMacromoleculeColumns} from './utils/ui-utils';
 import {MacromoleculeDifferenceCellRenderer, MacromoleculeSequenceCellRenderer,} from './utils/cell-renderer';
 import {VdRegionsViewer} from './viewers/vd-regions-viewer';
@@ -527,10 +528,7 @@ export class PackageFunctions {
     @grok.decorators.param({type: 'object', options: {optional: true}}) options?: (IUMAPOptions | ITSNEOptions) & Options,
     @grok.decorators.param({options: {optional: true}}) demo?: boolean): Promise<DG.Viewer | undefined> {
     //workaround for functions which add viewers to tableView (can be run only on active table view)
-    if (table.name !== grok.shell.tv.dataFrame.name) {
-      grok.shell.error(`Table ${table.name} is not a current table view`);
-      return;
-    }
+    checkCurrentView(table);
     if (!checkInputColumnUI(molecules, 'Activity Cliffs'))
       return;
 
@@ -556,6 +554,7 @@ export class PackageFunctions {
         axesNames: axesNames,
       }).call(undefined, undefined, {processed: false});
 
+      checkCurrentView(table);
       const view = grok.shell.tv;
 
       const description = `Molecules: ${molecules.name}, activities: ${activities.name}, method: ${methodName}, ${options ? `options: ${JSON.stringify(options)},` : ``} similarity: ${similarityMetric}, similarity cutoff: ${similarity}`;
@@ -733,10 +732,7 @@ export class PackageFunctions {
     @grok.decorators.param({options: {optional: true}}) isDemo?: boolean
   ): Promise<DG.ScatterPlotViewer | undefined> {
     //workaround for functions which add viewers to tableView (can be run only on active table view)
-    if (table.name !== grok.shell.tv.dataFrame.name) {
-      grok.shell.error(`Table ${table.name} is not a current table view`);
-      return;
-    }
+    checkCurrentView(table);
     if (!checkInputColumnUI(molecules, 'Sequence Space'))
       return;
     const clusterColName = table.columns.getUnusedName('Cluster (DBSCAN)');
@@ -755,6 +751,7 @@ export class PackageFunctions {
 
     let res: DG.ScatterPlotViewer | undefined;
     if (plotEmbeddings) {
+      checkCurrentView(table);
       const tv = grok.shell.tv;
       res = tv.scatterPlot({x: embedColsNames[0], y: embedColsNames[1], title: 'Sequence space'});
       const description = `Molecules column: ${molecules.name}, method: ${methodName}, ${options ? `options: ${JSON.stringify(options)},` : ``} similarity: ${similarityMetric}`;
