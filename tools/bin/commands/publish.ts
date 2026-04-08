@@ -335,6 +335,11 @@ async function processDockerImages(
           if (foundLocalName !== remoteTag)
             dockerTag(foundLocalName, remoteTag);
         }
+        else {
+          const canonicalTag = `datagrok/${remoteFullName}`;
+          dockerTag(foundLocalName, canonicalTag);
+          color.log(`  Tagged as ${canonicalTag}`);
+        }
         result = pushImage(img.imageName, registryTag, registry);
       }
       else {
@@ -390,7 +395,7 @@ function pushImage(imageName: string, tag: string, registry: string | undefined)
     color.warn(`Push failed, image tagged locally only: ${remoteTag}`);
     return {image: canonicalImage, fallback: false};
   }
-  color.warn('No registry configured. Image tagged locally only.');
+  color.warn(`No registry configured. Image tagged locally only. Run \`grok config --registry\` to configure.`);
   return {image: canonicalImage, fallback: false};
 }
 
