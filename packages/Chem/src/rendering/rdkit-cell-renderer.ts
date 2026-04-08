@@ -17,6 +17,7 @@ import {ISubstruct} from '@datagrok-libraries/chem-meta/src/types';
 import {
   ALIGN_BY_SCAFFOLD_LAYOUT_PERSISTED_TAG,
   ALIGN_BY_SCAFFOLD_TAG, FILTER_SCAFFOLD_TAG,
+  CHEM_ATOM_PICKER_TAG,
   FIXED_SCALE_TAG,
   HIGHLIGHT_BY_SCAFFOLD_COL, HIGHLIGHT_BY_SCAFFOLD_COL_SYNC,
   HIGHLIGHT_BY_SCAFFOLD_TAG, MIN_MOL_IMAGE_SIZE, PARENT_MOL_COL,
@@ -735,6 +736,15 @@ M  END
     if (!gridCell || !gridCell.tableColumn || gridCell.tableRowIndex == null ||
         gridCell.tableRowIndex < 0) return;
     if (gridCell.tableColumn.semType !== DG.SEMTYPE.MOLECULE) return;
+
+    // Gate the picker on a per-column opt-OUT tag. Enabled by default on
+    // every molecule column; a user can disable it for a specific column
+    // via the "Atom picker" checkbox in the column property panel, which
+    // writes `CHEM_ATOM_PICKER_TAG = 'false'`. An absent tag (or any
+    // non-'false' value) means enabled. Direct `col.tags[...]` access
+    // instead of `getTag()` because we observed that `getTag()` sometimes
+    // returns a stale value after a tag toggle.
+    if (gridCell.tableColumn.tags[CHEM_ATOM_PICKER_TAG] === 'false') return;
 
     const molString: string = gridCell.cell.value;
     if (!molString || DG.chem.Sketcher.isEmptyMolfile(molString)) return;

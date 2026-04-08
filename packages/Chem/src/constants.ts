@@ -43,6 +43,20 @@ export const ALIGN_BY_SCAFFOLD_TAG = '.chem-scaffold-align'; // todo: Remove thi
 export const ALIGN_BY_SCAFFOLD_LAYOUT_PERSISTED_TAG = '.%chem-scaffold-align';
 export const FIXED_SCALE_TAG = '.%chem-fixed-scale';
 export const HIGHLIGHT_BY_SCAFFOLD_TAG = '.%chem-scaffold-highlight';
+/** Controls the in-grid atom picker (drag to replace-select, Alt+drag to
+ *  add, Alt+click to toggle individual atoms). Enabled by default; set to
+ *  `'false'` to opt a column OUT:
+ *
+ *    col.tags[CHEM_ATOM_PICKER_TAG] = 'false';   // disable
+ *    col.tags[CHEM_ATOM_PICKER_TAG] = 'true';    // (default)
+ *
+ *  The cell renderer checks `!== 'false'`, so an absent tag means enabled.
+ *
+ *  Note: this is a plain (non-synced) tag rather than a `.%`-prefixed one,
+ *  because the picker toggle doesn't need to survive independently in
+ *  layouts and direct `col.tags[...]` access works more reliably across
+ *  toggle/re-toggle cycles than `setTag` on synced tag names. */
+export const CHEM_ATOM_PICKER_TAG = 'chem-atom-picker';
 export const SCAFFOLD_COL = 'scaffold-col';
 export const SCAFFOLD_COL_SYNC = '%scaffold-col';
 export const PARENT_MOL_COL = 'parent-mol-col';

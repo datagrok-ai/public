@@ -1,6 +1,6 @@
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {ALIGN_BY_SCAFFOLD_TAG, ALIGN_BY_SCAFFOLD_LAYOUT_PERSISTED_TAG, SCAFFOLD_COL,
+import {ALIGN_BY_SCAFFOLD_TAG, ALIGN_BY_SCAFFOLD_LAYOUT_PERSISTED_TAG, CHEM_ATOM_PICKER_TAG, SCAFFOLD_COL,
   SCAFFOLD_COL_SYNC, HIGHLIGHT_BY_SCAFFOLD_COL, HIGHLIGHT_BY_SCAFFOLD_COL_SYNC, REGENERATE_COORDS,
   REGENERATE_COORDS_SYNC, getSyncTag, setSyncTag} from '../constants';
 import {ChemTemps} from '@datagrok-libraries/chem-meta/src/consts';
@@ -79,6 +79,24 @@ export function getMolColumnPropertyPanel(col: DG.Column): DG.Widget {
     {value: col.tags[DG.TAGS.CELL_RENDERER] == DG.SEMTYPE.MOLECULE,
       onValueChanged: (value) => col.tags[DG.TAGS.CELL_RENDERER] = value ? DG.SEMTYPE.MOLECULE : DG.TYPE.STRING});
 
+  // In-grid atom picker — drag / Alt+drag / Alt+click on molecule cells to
+  // highlight parts of the structure. Enabled by default on every molecule
+  // column; unchecking sets CHEM_ATOM_PICKER_TAG = 'false' which the cell
+  // renderer checks at mousedown to skip picker handling.
+  //
+  // Use direct `col.tags[...]` access (not `setTag()` / `getTag()`) so the
+  // toggle survives re-enabling after a disable — `setTag` on some tag
+  // names was observed to leave a stale read-side value.
+  const atomPickerCheckbox = ui.input.bool('Atom picker',
+    {value: col.tags[CHEM_ATOM_PICKER_TAG] !== 'false',
+      onValueChanged: (value) => {
+        col.tags[CHEM_ATOM_PICKER_TAG] = value ? 'true' : 'false';
+        col.dataFrame?.fireValuesChanged();
+      }});
+  atomPickerCheckbox.setTooltip(
+    'Drag on a cell to select atoms. Alt+drag to add to the existing selection. ' +
+    'Alt+click on an atom to toggle it.');
+
   const rdKitInputs = ui.form([
     showStructures,
     scaffoldColumnChoice,
@@ -86,6 +104,7 @@ export function getMolColumnPropertyPanel(col: DG.Column): DG.Widget {
     ...(backupSubstructCol ? [highlightRGroupsCheckbox] : []),
     regenerateCoordsCheckbox,
     moleculeFilteringChoice,
+    atomPickerCheckbox,
   ]);
   const sketcher = new DG.chem.Sketcher(DG.chem.SKETCHER_MODE.EXTERNAL);
   sketcher.syncCurrentObject = false;
