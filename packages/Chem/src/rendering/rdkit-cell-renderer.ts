@@ -41,6 +41,17 @@ interface IMolRenderingInfo {
   molString: string;
 }
 
+/** Layout info needed to hit-test a molecule cell interactively. Computed
+ *  once per (molString, width, height) by rendering the molecule to SVG at
+ *  the cell's dimensions and parsing atom + bond class annotations. */
+interface CellInteractiveInfo {
+  /** Atom index → center position in cell-local CSS pixels. */
+  positions: Map<number, {x: number, y: number}>;
+  /** Bond index → pair of atom indices that the bond connects. Extracted
+   *  from RDKit SVG bond paths with classes like `bond-K atom-A atom-B`. */
+  bondAtoms: Map<number, [number, number]>;
+}
+
 export interface IColoredScaffold {
   molecule: string,
   color?: string,
@@ -138,11 +149,13 @@ M  END
   canvasReused: OffscreenCanvas;
 
   // ---- in-grid box picker state ------------------------------------------
-  /** Atom positions (in cell-local pixel coordinates) cached by
-   *  "molString|w|h" so successive drags on the same cell don't re-render to
-   *  SVG. Computed lazily on first mousedown in a cell. */
-  atomPositionsCache: DG.LruCache<string, Map<number, {x: number, y: number}>> =
-    new DG.LruCache<string, Map<number, {x: number, y: number}>>();
+  /** Per-cell interactive layout info, cached by "molString|w|h" so
+   *  successive drags on the same cell are O(1). Holds both atom positions
+   *  (for box hit-testing) and bond atom-pairs (for deriving which bonds
+   *  are "selected" as a consequence of the user's atom selection — a
+   *  bond is highlighted iff both of its atoms are in the picked set). */
+  atomPositionsCache: DG.LruCache<string, CellInteractiveInfo> =
+    new DG.LruCache<string, CellInteractiveInfo>();
   /** Drag state shared across the global mousemove/mouseup listeners.
    *  Null when no drag is active.
    *
@@ -177,6 +190,7 @@ M  END
      *  spreadsheet selection vocabulary, so the grid lets it through. */
     modifiers: {add: boolean};
     positions: Map<number, {x: number, y: number}>;
+    bondAtoms: Map<number, [number, number]>;
     overlay: HTMLDivElement;
     onMove: (e: MouseEvent) => void;
     onUp: (e: MouseEvent) => void;
@@ -737,14 +751,17 @@ M  END
         gridCell.tableRowIndex < 0) return;
     if (gridCell.tableColumn.semType !== DG.SEMTYPE.MOLECULE) return;
 
-    // Gate the picker on a per-column opt-OUT tag. Enabled by default on
-    // every molecule column; a user can disable it for a specific column
-    // via the "Atom picker" checkbox in the column property panel, which
-    // writes `CHEM_ATOM_PICKER_TAG = 'false'`. An absent tag (or any
-    // non-'false' value) means enabled. Direct `col.tags[...]` access
-    // instead of `getTag()` because we observed that `getTag()` sometimes
-    // returns a stale value after a tag toggle.
-    if (gridCell.tableColumn.tags[CHEM_ATOM_PICKER_TAG] === 'false') return;
+    // Gate the picker on a per-column opt-IN tag. DISABLED by default on
+    // every molecule column; a user must explicitly enable it via the
+    // "Interactive Atom Selection" checkbox in the column property panel,
+    // which writes `CHEM_ATOM_PICKER_TAG = 'true'`. We read via BOTH
+    // `col.tags[..]` and `col.getTag(..)` and take the first defined
+    // value, because Datagrok's two tag APIs sometimes disagree about
+    // what was last written for a given tag name.
+    const pickerTag =
+      (gridCell.tableColumn.tags as any)[CHEM_ATOM_PICKER_TAG] ??
+      gridCell.tableColumn.getTag(CHEM_ATOM_PICKER_TAG);
+    if (pickerTag !== 'true') return;
 
     const molString: string = gridCell.cell.value;
     if (!molString || DG.chem.Sketcher.isEmptyMolfile(molString)) return;
@@ -761,10 +778,13 @@ M  END
     if (pointerCellX < 0 || pointerCellY < 0 ||
         pointerCellX > bounds.width || pointerCellY > bounds.height) return;
 
-    // Lazily compute atom positions for this cell (keyed by molString and
-    // DPR-scaled dimensions so the cache lines up with what the canvas draws).
-    const positions = this._getCellAtomPositions(molString, bounds.width, bounds.height);
-    if (!positions || positions.size === 0) return;
+    // Lazily compute the cell's interactive layout info (atom positions
+    // and bond atom-pairs), keyed by molString and DPR-scaled dimensions
+    // so the cache lines up with what the canvas draws.
+    const cellInfo = this._getCellAtomPositions(molString, bounds.width, bounds.height);
+    if (!cellInfo || cellInfo.positions.size === 0) return;
+    const positions = cellInfo.positions;
+    const bondAtoms = cellInfo.bondAtoms;
 
     // Fixed-position overlay anchored at the mouse-down point.
     const overlay = document.createElement('div');
@@ -808,6 +828,7 @@ M  END
       // Alt → additive selection (adds boxed atoms instead of replacing).
       modifiers: {add: e.altKey},
       positions,
+      bondAtoms,
       overlay,
       onMove,
       onUp,
@@ -843,15 +864,20 @@ M  END
     d.overlay.style.width = Math.abs(d.curX - d.startX) + 'px';
     d.overlay.style.height = Math.abs(d.curY - d.startY) + 'px';
 
-    // Visual feedback: tint the overlay magenta when Alt is held mid-drag,
+    // Visual feedback: tint the overlay yellow when Alt is held mid-drag,
     // so the user can see the picker has recognised the modifier and will
-    // add (rather than replace) the existing selection.
+    // add (rather than replace) the existing selection. Yellow matches
+    // the pick color so the preview color is the color the atoms will
+    // take once released. A darker gold border keeps the dashed outline
+    // visible against the white cell background — a pure #FFFF00 border
+    // on white disappears.
     if (e.altKey) {
-      // additive — picked-atom magenta
-      d.overlay.style.borderColor = '#d650bf';
-      d.overlay.style.background = 'rgba(214, 80, 191, 0.18)';
+      // additive — gold border + translucent yellow fill, matching picks
+      d.overlay.style.borderColor = '#c9a400';
+      d.overlay.style.background = 'rgba(255, 255, 0, 0.25)';
     } else {
-      // replace — default green
+      // replace — default green (distinct from yellow so drag vs.
+      // applied state is immediately legible)
       d.overlay.style.borderColor = '#4a8';
       d.overlay.style.background = 'rgba(102, 204, 102, 0.15)';
     }
@@ -868,6 +894,7 @@ M  END
     const y1 = Math.max(d.startY, d.curY);
     const moved = Math.hypot(x1 - x0, y1 - y0) > 3;
     const positions = d.positions;
+    const bondAtoms = d.bondAtoms;
     const tableCol = d.tableCol;
     const rowIdx = d.rowIdx;
     const grid = d.grid;
@@ -889,7 +916,7 @@ M  END
       if (modifiers.add) {
         const nearest = this._findNearestAtom(positions, startX, startY);
         if (nearest !== null) {
-          this._toggleAtomInRow(tableCol, rowIdx, nearest);
+          this._toggleAtomInRow(tableCol, rowIdx, nearest, bondAtoms);
           grid.invalidate();
         }
       }
@@ -901,7 +928,7 @@ M  END
       if (p.x >= x0 && p.x <= x1 && p.y >= y0 && p.y <= y1)
         boxed.push(idx);
     }
-    this._updateRowSelection(tableCol, rowIdx, boxed, modifiers);
+    this._updateRowSelection(tableCol, rowIdx, boxed, modifiers, bondAtoms);
     grid.invalidate();
   }
 
@@ -930,8 +957,10 @@ M  END
 
   /** Toggles a single atom in a row's atom-picker selection. Adds the atom
    *  if it's not in the current selection, removes it if it is. Used by
-   *  Alt+click for one-atom-at-a-time fine-tuning. */
-  private _toggleAtomInRow(col: DG.Column, rowIdx: number, atomIdx: number): void {
+   *  Alt+click for one-atom-at-a-time fine-tuning. Also re-derives the
+   *  highlighted bonds from the new atom set using `bondAtoms`. */
+  private _toggleAtomInRow(col: DG.Column, rowIdx: number, atomIdx: number,
+    bondAtoms: Map<number, [number, number]>): void {
     type TaggedProvider = ISubstructProvider & {__atomPicker?: boolean, __rowIdx?: number, __atoms?: Set<number>};
     const existing = (col.temp[ChemTemps.SUBSTRUCT_PROVIDERS] ?? []) as TaggedProvider[];
     const prior = existing.find((p) => p.__atomPicker && p.__rowIdx === rowIdx);
@@ -939,14 +968,20 @@ M  END
     if (current.has(atomIdx)) current.delete(atomIdx);
     else current.add(atomIdx);
     // Build the fresh provider (same shape as _updateRowSelection writes).
-    const pickColor: number[] = [0.85, 0.4, 0.75, 1.0];
+    const pickColor: number[] = [1.0, 1.0, 0.0, 1.0]; // intense yellow #FFFF00
     const atomsArr = [...current];
     const highlightAtomColors: {[k: number]: number[]} = {};
     for (const a of atomsArr) highlightAtomColors[a] = pickColor;
+    const {bondsArr, highlightBondColors} =
+      RDKitCellRenderer._computeSelectedBonds(current, bondAtoms, pickColor);
     const provider: TaggedProvider = {
       getSubstruct: (ridx) => {
+        // Same tag check as _updateRowSelection so disabling the picker
+        // hides Alt+click toggled atoms too.
+        const tagVal = col.tags[CHEM_ATOM_PICKER_TAG] ?? col.getTag(CHEM_ATOM_PICKER_TAG);
+        if (tagVal === 'false') return undefined;
         if (ridx !== rowIdx) return undefined;
-        return {atoms: atomsArr, highlightAtomColors};
+        return {atoms: atomsArr, bonds: bondsArr, highlightAtomColors, highlightBondColors};
       },
     };
     provider.__atomPicker = true;
@@ -957,14 +992,40 @@ M  END
     addSubstructProvider(col.temp, provider);
   }
 
+  /** Given a set of selected atom indices and a bondAtoms map, returns the
+   *  bond indices where BOTH endpoint atoms are in the selection, and a
+   *  matching highlightBondColors map with every selected bond painted the
+   *  same color. Shared by _updateRowSelection and _toggleAtomInRow. */
+  private static _computeSelectedBonds(
+    atoms: Set<number>,
+    bondAtoms: Map<number, [number, number]>,
+    color: number[],
+  ): {bondsArr: number[], highlightBondColors: {[k: number]: number[]}} {
+    const bondsArr: number[] = [];
+    const highlightBondColors: {[k: number]: number[]} = {};
+    for (const [bondIdx, [a1, a2]] of bondAtoms.entries()) {
+      if (atoms.has(a1) && atoms.has(a2)) {
+        bondsArr.push(bondIdx);
+        highlightBondColors[bondIdx] = color;
+      }
+    }
+    return {bondsArr, highlightBondColors};
+  }
+
   /**
    * Merges the freshly boxed atoms into the row's current atom-picker selection
    * (replace / add / remove depending on modifiers) and writes a tagged
    * ISubstructProvider back onto the column's temp store. Providers are keyed
    * by row index, so picks on other rows survive untouched.
+   *
+   * The provider closes over `col` and checks `CHEM_ATOM_PICKER_TAG` at call
+   * time, so disabling the picker via the "Atom picker" column-property
+   * checkbox instantly hides all existing highlights for that column (the
+   * provider returns `undefined` while disabled). Re-enabling brings them
+   * back — the picks themselves are preserved in the provider's __atoms set.
    */
   private _updateRowSelection(col: DG.Column, rowIdx: number, boxed: number[],
-    modifiers: {add: boolean}): void {
+    modifiers: {add: boolean}, bondAtoms: Map<number, [number, number]>): void {
     type TaggedProvider = ISubstructProvider & {__atomPicker?: boolean, __rowIdx?: number, __atoms?: Set<number>};
     const existing = (col.temp[ChemTemps.SUBSTRUCT_PROVIDERS] ?? []) as TaggedProvider[];
     const prior = existing.find((p) => p.__atomPicker && p.__rowIdx === rowIdx);
@@ -975,16 +1036,33 @@ M  END
     if (!modifiers.add) current.clear();
     for (const a of boxed) current.add(a);
 
-    // Build the fresh provider
-    const pickColor: number[] = [0.85, 0.4, 0.75, 1.0]; // same magenta as the mockups
+    // Build the fresh provider. Intense yellow was chosen over magenta or
+    // green because green collides with Datagrok's row-selection tint
+    // (hard to tell "row is selected" apart from "atoms are picked") and
+    // pure yellow reads unambiguously as "highlighted region" on the
+    // white cell background — classic text-highlighter look.
+    const pickColor: number[] = [1.0, 1.0, 0.0, 1.0]; // intense yellow #FFFF00
     const atomsArr = [...current];
     const highlightAtomColors: {[k: number]: number[]} = {};
     for (const a of atomsArr) highlightAtomColors[a] = pickColor;
 
+    // Derive the bonds whose BOTH endpoints are in the current selection.
+    // Those get highlighted in the same magenta as the atoms, making the
+    // selected region read as a connected sub-molecule rather than a
+    // scatter of disconnected atoms.
+    const {bondsArr, highlightBondColors} =
+      RDKitCellRenderer._computeSelectedBonds(current, bondAtoms, pickColor);
+
     const provider: TaggedProvider = {
       getSubstruct: (ridx) => {
+        // Check the column tag at render time so disabling the atom picker
+        // via the column property checkbox instantly hides the highlights.
+        // Reading both the tag proxy and getTag() so either write path
+        // (col.tags[..] = v / col.setTag(..)) is honored.
+        const tagVal = col.tags[CHEM_ATOM_PICKER_TAG] ?? col.getTag(CHEM_ATOM_PICKER_TAG);
+        if (tagVal === 'false') return undefined;
         if (ridx !== rowIdx) return undefined;
-        return {atoms: atomsArr, highlightAtomColors};
+        return {atoms: atomsArr, bonds: bondsArr, highlightAtomColors, highlightBondColors};
       },
     };
     provider.__atomPicker = true;
@@ -1020,7 +1098,7 @@ M  END
    * events live in.
    */
   private _getCellAtomPositions(molString: string, cssWidth: number, cssHeight: number):
-      Map<number, {x: number, y: number}> | null {
+      CellInteractiveInfo | null {
     const dpr = window.devicePixelRatio || 1;
     const w = Math.round(cssWidth * dpr);
     const h = Math.round(cssHeight * dpr);
@@ -1071,14 +1149,16 @@ M  END
       try {
         const svgEl = host.querySelector('svg') as SVGSVGElement | null;
         if (!svgEl) return null;
-        const positionsDpr = this._extractAtomPositionsFromSvg(svgEl);
+        const extracted = this._extractAtomPositionsFromSvg(svgEl);
         // Convert from DPR-scaled SVG coordinates back to cell-local CSS
         // pixels so they can be compared against mouse event coordinates.
         const positions = new Map<number, {x: number, y: number}>();
-        for (const [idx, p] of positionsDpr.entries())
+        for (const [idx, p] of extracted.positions.entries())
           positions.set(idx, {x: p.x / dpr, y: p.y / dpr});
-        this.atomPositionsCache.set(key, positions);
-        return positions;
+        // Bond pairs are atom-index pairs — no coordinate scaling needed.
+        const info: CellInteractiveInfo = {positions, bondAtoms: extracted.bondAtoms};
+        this.atomPositionsCache.set(key, info);
+        return info;
       } finally {
         if (host.parentNode) host.parentNode.removeChild(host);
       }
@@ -1088,8 +1168,11 @@ M  END
   }
 
   private _extractAtomPositionsFromSvg(svgEl: SVGSVGElement):
-      Map<number, {x: number, y: number}> {
+      {positions: Map<number, {x: number, y: number}>, bondAtoms: Map<number, [number, number]>} {
     const positions = new Map<number, {x: number, y: number}>();
+    /** bond index → the two atom indices this bond connects. Populated
+     *  below from `class="bond-K atom-A atom-B"` on RDKit's bond paths. */
+    const bondAtoms = new Map<number, [number, number]>();
 
     // Text-labeled heteroatoms
     const texts = svgEl.querySelectorAll('text[class*="atom-"]');
@@ -1105,19 +1188,33 @@ M  END
       } catch {/* ignore */}
     }
 
-    // Carbons — average bond endpoints extracted from <path> d attributes
+    // Carbons — average bond endpoints extracted from <path> d attributes.
+    // Also populate bondAtoms as a side-effect so we don't need to re-walk
+    // the path list when the picker wants bond connectivity.
     const bondEnds = new Map<number, Array<{x: number, y: number}>>();
     const bondPaths = svgEl.querySelectorAll('path[class*="bond-"]');
     for (let i = 0; i < bondPaths.length; i++) {
       const p = bondPaths[i];
       const cls = p.getAttribute('class') || '';
-      const ids: number[] = [];
-      const matches = cls.match(/atom-(\d+)/g) || [];
-      for (const mm of matches) {
+      const atomIds: number[] = [];
+      const atomMatches = cls.match(/atom-(\d+)/g) || [];
+      for (const mm of atomMatches) {
         const n = parseInt(mm.slice(5), 10);
-        if (!Number.isNaN(n)) ids.push(n);
+        if (!Number.isNaN(n)) atomIds.push(n);
       }
-      if (ids.length !== 2) continue;
+      if (atomIds.length !== 2) continue;
+
+      // Record the bond-index → atom-pair mapping. RDKit emits multiple
+      // path segments per bond for aromatic/double/triple bonds (one
+      // segment per line), all sharing the same bond-K class — but
+      // `bondAtoms.set` is idempotent for the same key, so overwriting is
+      // harmless.
+      const bondMatch = /(?:^|\s)bond-(\d+)/.exec(cls);
+      if (bondMatch) {
+        const bondIdx = parseInt(bondMatch[1], 10);
+        bondAtoms.set(bondIdx, [atomIds[0], atomIds[1]]);
+      }
+
       const d = p.getAttribute('d') || '';
       const coords: Array<{x: number, y: number}> = [];
       const re = /[ML]\s*([\-\d.]+)[\s,]+([\-\d.]+)/g;
@@ -1125,10 +1222,10 @@ M  END
       while ((mm = re.exec(d)) !== null)
         coords.push({x: parseFloat(mm[1]), y: parseFloat(mm[2])});
       if (coords.length < 2) continue;
-      if (!bondEnds.has(ids[0])) bondEnds.set(ids[0], []);
-      if (!bondEnds.has(ids[1])) bondEnds.set(ids[1], []);
-      bondEnds.get(ids[0])!.push(coords[0]);
-      bondEnds.get(ids[1])!.push(coords[coords.length - 1]);
+      if (!bondEnds.has(atomIds[0])) bondEnds.set(atomIds[0], []);
+      if (!bondEnds.has(atomIds[1])) bondEnds.set(atomIds[1], []);
+      bondEnds.get(atomIds[0])!.push(coords[0]);
+      bondEnds.get(atomIds[1])!.push(coords[coords.length - 1]);
     }
     for (const [idx, pts] of bondEnds.entries()) {
       if (positions.has(idx)) continue;
@@ -1137,7 +1234,7 @@ M  END
       positions.set(idx, {x: cx, y: cy});
     }
 
-    return positions;
+    return {positions, bondAtoms};
   }
 }
 

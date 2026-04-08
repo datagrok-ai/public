@@ -1,3 +1,4 @@
+import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {ALIGN_BY_SCAFFOLD_TAG, ALIGN_BY_SCAFFOLD_LAYOUT_PERSISTED_TAG, CHEM_ATOM_PICKER_TAG, SCAFFOLD_COL,
@@ -80,19 +81,30 @@ export function getMolColumnPropertyPanel(col: DG.Column): DG.Widget {
       onValueChanged: (value) => col.tags[DG.TAGS.CELL_RENDERER] = value ? DG.SEMTYPE.MOLECULE : DG.TYPE.STRING});
 
   // In-grid atom picker — drag / Alt+drag / Alt+click on molecule cells to
-  // highlight parts of the structure. Enabled by default on every molecule
-  // column; unchecking sets CHEM_ATOM_PICKER_TAG = 'false' which the cell
-  // renderer checks at mousedown to skip picker handling.
+  // highlight parts of the structure. DISABLED by default on every
+  // molecule column; checking writes `chem-atom-picker = 'true'` which
+  // the cell renderer checks at mousedown to enable picker handling AND
+  // which the ISubstructProvider checks at render time to show the picks.
+  // Unchecking writes 'false' (or any other value); only the explicit
+  // string 'true' enables the picker.
   //
-  // Use direct `col.tags[...]` access (not `setTag()` / `getTag()`) so the
-  // toggle survives re-enabling after a disable — `setTag` on some tag
-  // names was observed to leave a stale read-side value.
-  const atomPickerCheckbox = ui.input.bool('Atom picker',
-    {value: col.tags[CHEM_ATOM_PICKER_TAG] !== 'false',
+  // We write via BOTH `col.tags[..]` assignment AND `col.setTag(..)`, and
+  // read via both on the renderer side. Datagrok's two tag APIs don't
+  // always agree about what was last written for a given tag name; using
+  // both leaves either read path correct.
+  const atomPickerCheckbox = ui.input.bool('Interactive Atom Selection',
+    {
+      value: ((col.tags as any)[CHEM_ATOM_PICKER_TAG] ??
+        col.getTag(CHEM_ATOM_PICKER_TAG)) === 'true',
       onValueChanged: (value) => {
-        col.tags[CHEM_ATOM_PICKER_TAG] = value ? 'true' : 'false';
-        col.dataFrame?.fireValuesChanged();
-      }});
+        const v = value ? 'true' : 'false';
+        (col.tags as any)[CHEM_ATOM_PICKER_TAG] = v;
+        col.setTag(CHEM_ATOM_PICKER_TAG, v);
+        // Force a grid repaint so highlights appear/disappear immediately
+        // and the renderer sees the new tag value on the next drag.
+        grok.shell.tv?.grid.invalidate();
+      },
+    });
   atomPickerCheckbox.setTooltip(
     'Drag on a cell to select atoms. Alt+drag to add to the existing selection. ' +
     'Alt+click on an atom to toggle it.');

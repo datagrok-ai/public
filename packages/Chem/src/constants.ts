@@ -44,13 +44,16 @@ export const ALIGN_BY_SCAFFOLD_LAYOUT_PERSISTED_TAG = '.%chem-scaffold-align';
 export const FIXED_SCALE_TAG = '.%chem-fixed-scale';
 export const HIGHLIGHT_BY_SCAFFOLD_TAG = '.%chem-scaffold-highlight';
 /** Controls the in-grid atom picker (drag to replace-select, Alt+drag to
- *  add, Alt+click to toggle individual atoms). Enabled by default; set to
- *  `'false'` to opt a column OUT:
+ *  add, Alt+click to toggle individual atoms). DISABLED by default; opt
+ *  in per column by setting the tag to the literal string `'true'`:
  *
- *    col.tags[CHEM_ATOM_PICKER_TAG] = 'false';   // disable
- *    col.tags[CHEM_ATOM_PICKER_TAG] = 'true';    // (default)
+ *    col.tags[CHEM_ATOM_PICKER_TAG] = 'true';    // enable
+ *    col.tags[CHEM_ATOM_PICKER_TAG] = 'false';   // disable (or any other value)
  *
- *  The cell renderer checks `!== 'false'`, so an absent tag means enabled.
+ *  The cell renderer checks `=== 'true'`, so an absent tag (or any other
+ *  value) means disabled. The "Interactive Atom Selection" checkbox in
+ *  the Chemistry → Rendering column property panel is the user-facing
+ *  toggle.
  *
  *  Note: this is a plain (non-synced) tag rather than a `.%`-prefixed one,
  *  because the picker toggle doesn't need to survive independently in
