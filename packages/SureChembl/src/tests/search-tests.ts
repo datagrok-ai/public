@@ -8,16 +8,16 @@ export const CONTAINER_TIMEOUT = 1200000;
 async function ensureContainerRunningDebug(containerName: string, timeout: number) {
   console.log(`[docker-debug] Looking for container '${containerName}'...`);
   const containers = await grok.dapi.docker.dockerContainers.filter(containerName).list();
-  console.log(`[docker-debug] Found ${containers.length} container(s): ${containers.map((c: any) => `${c.name}(${c.status}, image=${c.dockerImage})`).join(', ')}`);
+  console.log(`[docker-debug] Found ${containers.length} container(s): ${containers.map((c) => `${c.name}(${c.status})`).join(', ')}`);
 
-  const container = containers[0];
+  const container = containers[0] as any;
   if (!container)
     throw new Error(`Container '${containerName}' not found`);
 
   console.log(`[docker-debug] Container id=${container.id} name=${container.name} status=${container.status} image=${container.dockerImage} address=${container.address}`);
 
   const images = await grok.dapi.docker.dockerImages.filter(containerName).list();
-  console.log(`[docker-debug] Docker images matching '${containerName}': ${images.map((i: any) => `${i.name}(status=${i.status}, version=${i.version})`).join(', ')}`);
+  console.log(`[docker-debug] Docker images matching '${containerName}': ${images.map((i) => `${i.name}(status=${(i as any).status}, version=${(i as any).version})`).join(', ')}`);
 
   if (!(container.status.startsWith('started') || container.status.startsWith('checking'))) {
     console.log(`[docker-debug] Starting container ${container.name} (current status: ${container.status})...`);
@@ -28,7 +28,7 @@ async function ensureContainerRunningDebug(containerName: string, timeout: numbe
   const deadline = Date.now() + timeout;
   let pollCount = 0;
   while (Date.now() < deadline) {
-    const cont = await grok.dapi.docker.dockerContainers.find(container.id);
+    const cont = await grok.dapi.docker.dockerContainers.find(container.id) as any;
     pollCount++;
     if (pollCount <= 10 || pollCount % 10 === 0)
       console.log(`[docker-debug] Poll #${pollCount}: status=${cont.status} address=${cont.address}`);
