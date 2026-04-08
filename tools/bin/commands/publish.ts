@@ -69,6 +69,19 @@ function discoverDockerfiles(packageName: string, version: string, debug: boolea
       fullLocalName: `${imageName}:${imageTag}`,
     });
   }
+
+  // Handle Dockerfile directly in dockerfiles/ (single-container layout)
+  const rootDockerfile = path.join(dockerfilesDir, 'Dockerfile');
+  if (fs.existsSync(rootDockerfile)) {
+    const cleanName = utils.removeScope(packageName).toLowerCase();
+    results.push({
+      imageName: cleanName,
+      imageTag: version,
+      dirName: '.',
+      fullLocalName: `${cleanName}:${version}`,
+    });
+  }
+
   return results;
 }
 
