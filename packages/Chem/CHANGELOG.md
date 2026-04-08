@@ -3,6 +3,7 @@
 ## v.next
 
 * Fixed crash in checkCurrentView when table is opened in Files preview without a registered TableView
+* CLAUDE-5: Fixed unhandled error in removeDuplicates when molecule from Ketcher Sketcher is malformed
 
 ## 1.17.4 (2026-03-30)
 
