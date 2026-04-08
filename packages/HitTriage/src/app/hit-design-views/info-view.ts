@@ -9,7 +9,7 @@ import $ from 'cash-dom';
 import {CampaignGrouping, CampaignGroupingType, CampaignJsonName, CampaignTableColumns, DefaultCampaignTableInfoGetters, HitDesignCampaignIdKey, i18n} from '../consts';
 import {HitDesignCampaign, HitDesignTemplate} from '../types';
 import {addBreadCrumbsToRibbons, checkEditPermissions,
-  checkViewPermissions, getGroupedCampaigns, getSavedCampaignsGrouping, getSavedCampaignsSorting, getSavedCampaignTableColumns, modifyUrl, popRibbonPannels,
+  checkViewPermissions, getGroupedCampaigns, getSavedCampaignsGrouping, getSavedCampaignsSorting, getSavedCampaignTableColumns, loadTemplate, modifyUrl, popRibbonPannels,
   processGroupingTable,
   SavedCampaignsTableSorting,
   setSavedCampaignsGrouping,
@@ -197,7 +197,7 @@ export class HitDesignInfoView
         return;
       const templateName = templatesInput.value;
       const template: T = presetTemplate && presetTemplate.name === templateName ? presetTemplate :
-        JSON.parse(await _package.files.readAsText(`${this.app.appName}/templates/${templateName}.json`));
+        await loadTemplate<T>(`${this.app.appName}/templates/${templateName}.json`);
       selectedTemplate = template;
       const newCampaignAccordeon = await this.getNewCampaignAccordeon(template);
       $(containerDiv).empty();
@@ -274,8 +274,8 @@ export class HitDesignInfoView
       this.app.campaign = campaign;
     }
     // Load the template and modify it
-    const template: T = campaign.template ?? JSON.parse(
-      await _package.files.readAsText(`${this.app.appName}/templates/${campaign.templateName}.json`),
+    const template: T = (campaign.template as T) ?? await loadTemplate<T>(
+      `${this.app.appName}/templates/${campaign.templateName}.json`,
     );
     // modify the template with path to the campaign's precalculated table
     await this.app.setTemplate(template, campaignId!);

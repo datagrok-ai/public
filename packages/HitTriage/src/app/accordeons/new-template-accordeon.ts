@@ -11,7 +11,7 @@ import {chemFunctionsDialog} from '../dialogs/functions-dialog';
 import {ItemType, ItemsGrid} from '@datagrok-libraries/utils/src/items-grid';
 import {HitAppBase} from '../hit-app-base';
 import {getLayoutInput} from './layout-input';
-import {getFuncPackageNameSafe} from '../utils';
+import {getFuncPackageNameSafe, loadTemplate} from '../utils';
 
 
 export async function createTemplateAccordeon(app: HitAppBase<any>,
@@ -20,7 +20,7 @@ export async function createTemplateAccordeon(app: HitAppBase<any>,
   const availableTemplates = (await _package.files.list('Hit Triage/templates')).map((file) => file.name.slice(0, -5));
   const availableTemplateKeys: string[] = [];
   for (const tn of availableTemplates) {
-    const t: HitTriageTemplate = JSON.parse(await _package.files.readAsText(`Hit Triage/templates/${tn}.json`));
+    const t: HitTriageTemplate = await loadTemplate<HitTriageTemplate>(`Hit Triage/templates/${tn}.json`);
     availableTemplateKeys.push(t.key);
   }
 
