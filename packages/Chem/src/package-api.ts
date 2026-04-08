@@ -528,10 +528,6 @@ export namespace funcs {
     return await grok.functions.call('Chem:Toxicity', {smiles});
   }
 
-  export async function atomPicker(molecule: any ): Promise<any> {
-    return await grok.functions.call('Chem:AtomPicker', {molecule});
-  }
-
   /**
   Substructure search in synthon chemical space using RDKit SynthonSpaceSearch
   */

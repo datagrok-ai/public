@@ -675,15 +675,6 @@ export function toxicity(smiles: DG.SemanticValue) : any {
   return PackageFunctions.toxicity(smiles);
 }
 
-//name: Chemistry | Atom Picker
-//input: semantic_value molecule { semType: Molecule }
-//output: widget result
-//meta.role: widgets,panel
-//meta.domain: chem
-export function atomPicker(molecule: DG.SemanticValue) : any {
-  return PackageFunctions.atomPicker(molecule);
-}
-
 //name: Databases | Synthon Search | Substructure Search
 //description: Substructure search in synthon chemical space using RDKit SynthonSpaceSearch
 //input: string molecule { semType: Molecule }

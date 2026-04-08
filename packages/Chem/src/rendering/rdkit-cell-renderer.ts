@@ -6,10 +6,11 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {getMonomerHover, getSubstructProviders, mergeSubstructs as mergeSubstructsLib}
+import {getMonomerHover, getSubstructProviders, mergeSubstructs as mergeSubstructsLib,
+  addSubstructProvider, ISubstructProvider}
   from '@datagrok-libraries/chem-meta/src/types';
 import {ChemTags, ChemTemps} from '@datagrok-libraries/chem-meta/src/consts';
-import {RDModule} from '@datagrok-libraries/chem-meta/src/rdkit-api';
+import {RDModule, RDMol} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 import {MolfileHandler} from '@datagrok-libraries/chem-meta/src/parsing-utils/molfile-handler';
 import {ISubstruct} from '@datagrok-libraries/chem-meta/src/types';
 
@@ -24,7 +25,8 @@ import {
   getSyncTag,
 } from '../constants';
 import {hexToPercentRgb} from '../utils/chem-common';
-import {_rdKitModule, drawErrorCross, drawRdKitMoleculeToOffscreenCanvas} from '../utils/chem-common-rdkit';
+import {_rdKitModule, drawErrorCross, drawRdKitMoleculeToOffscreenCanvas,
+  RDKIT_COMMON_RENDER_OPTS} from '../utils/chem-common-rdkit';
 import {IMolContext, getMolSafe} from '../utils/mol-creation_rdkit';
 import {getGridCellColTemp} from '../utils/ui-utils';
 import {errInfo} from '../utils/err-info';
@@ -133,6 +135,43 @@ M  END
   rendersCache: DG.LruCache<String, ImageData> = new DG.LruCache<String, ImageData>();
   sortedScaffoldsCache: DG.LruCache<String, IColoredScaffold[]> = new DG.LruCache<String, IColoredScaffold[]>();
   canvasReused: OffscreenCanvas;
+
+  // ---- in-grid box picker state ------------------------------------------
+  /** Atom positions (in cell-local pixel coordinates) cached by
+   *  "molString|w|h" so successive drags on the same cell don't re-render to
+   *  SVG. Computed lazily on first mousedown in a cell. */
+  atomPositionsCache: DG.LruCache<string, Map<number, {x: number, y: number}>> =
+    new DG.LruCache<string, Map<number, {x: number, y: number}>>();
+  /** Drag state shared across the global mousemove/mouseup listeners.
+   *  Null when no drag is active.
+   *
+   *  We use capture-phase document listeners (`addEventListener('mouseup',
+   *  handler, true)`) rather than grid renderer lifecycle methods because
+   *  Datagrok's grid event pipeline can swallow `onMouseUp` before it reaches
+   *  the renderer. Capture-phase fires at document BEFORE the event walks
+   *  down to its target, so any `stopPropagation` on the canvas cannot stop
+   *  it from firing. */
+  private _drag: {
+    grid: DG.Grid;
+    tableCol: DG.Column;
+    rowIdx: number;
+    // Cell bounds expressed in viewport (client) CSS pixels so we can draw
+    // the overlay with position: fixed and clientX/Y directly.
+    cellClientLeft: number;
+    cellClientTop: number;
+    cellWidth: number;
+    cellHeight: number;
+    // Mouse position at mousedown, in cell-local CSS pixels.
+    startX: number;
+    startY: number;
+    curX: number;
+    curY: number;
+    modifiers: {shift: boolean, alt: boolean};
+    positions: Map<number, {x: number, y: number}>;
+    overlay: HTMLDivElement;
+    onMove: (e: MouseEvent) => void;
+    onUp: (e: MouseEvent) => void;
+  } | null = null;
 
   constructor(rdKitModule: RDModule) {
     super();
@@ -623,6 +662,360 @@ M  END
       this._drawMolecule(x, y, w, h, g.canvas, molString, totalScaffolds, molRegenerateCoords,
         scaffoldRegenerateCoords, cellStyle, true, details, substructObj, renderOpts);
     }
+  }
+
+  // ========================================================================
+  // In-grid box picker: mousedown on a molecule cell starts a drag; the box
+  // overlay is drawn with an HTML div positioned over the grid canvas; on
+  // mouseup the atoms enclosed by the box are added to that row's pick set
+  // via an ISubstructProvider on the column's temp store, and the grid is
+  // invalidated to repaint the cell with the new highlights.
+  // ========================================================================
+
+  /** Tears down an active drag: removes the document listeners and any
+   *  overlay(s) from the DOM and clears `_drag`. Safe to call when no drag
+   *  is active.
+   *
+   *  We sweep ALL `.chem-grid-box-picker` elements from the document, not
+   *  just the one in `_drag`, to defend against orphan overlays that might
+   *  exist if Datagrok's grid dispatches a second `onMouseDown` during the
+   *  lifecycle of the first drag (which we observed in practice — the
+   *  symptom was a box that persisted after mouseup). */
+  private _endDrag(): void {
+    const d = this._drag;
+    if (d) {
+      document.removeEventListener('mousemove', d.onMove, true);
+      document.removeEventListener('mouseup', d.onUp, true);
+    }
+    this._sweepOverlays();
+    this._drag = null;
+  }
+
+  /** Removes every `.chem-grid-box-picker` element from the document. Called
+   *  as a safety net from `_endDrag` and from `onMouseDown` before a new
+   *  overlay is created. */
+  private _sweepOverlays(): void {
+    const orphans = document.querySelectorAll('.chem-grid-box-picker');
+    for (let i = 0; i < orphans.length; i++) {
+      const el = orphans[i];
+      if (el.parentNode) el.parentNode.removeChild(el);
+    }
+  }
+
+  onMouseDown(gridCell: DG.GridCell, e: MouseEvent): void {
+    // Belt-and-suspenders: first clear any drag state, then sweep the
+    // document for orphaned overlays. Without the sweep, a phantom overlay
+    // from a prior dispatch (e.g. Datagrok firing onMouseDown twice per
+    // mouse press) can survive into a new drag and persist indefinitely.
+    this._endDrag();
+    this._sweepOverlays();
+
+    if (e.button !== 0) return;
+    // Reject phantom `onMouseDown` dispatches from Datagrok's grid that
+    // happen WITHOUT a physical button being held (we observed these after
+    // `grid.invalidate()` during a normal mouseup: the grid re-checks hover
+    // state and re-calls `onMouseDown` on the cell under the cursor with a
+    // synthetic event). Starting a new drag from one of those leaves an
+    // overlay on screen forever because no real mouseup will ever follow.
+    //
+    // `e.isTrusted` is false for events dispatched from JS. `e.buttons` is a
+    // bitfield of currently-pressed buttons — for a real, user-initiated
+    // mousedown the left bit (1) must be set.
+    if (!e.isTrusted) return;
+    if ((e.buttons & 1) === 0) return;
+
+    if (!gridCell || !gridCell.tableColumn || gridCell.tableRowIndex == null ||
+        gridCell.tableRowIndex < 0) return;
+    if (gridCell.tableColumn.semType !== DG.SEMTYPE.MOLECULE) return;
+
+    const molString: string = gridCell.cell.value;
+    if (!molString || DG.chem.Sketcher.isEmptyMolfile(molString)) return;
+
+    // Cell position in viewport (client) CSS pixels, so the overlay can be
+    // positioned directly with clientX/Y — no parent-translation math.
+    const bounds = gridCell.bounds;
+    const canvasRect = gridCell.grid.canvas.getBoundingClientRect();
+    const cellClientLeft = canvasRect.left + bounds.left;
+    const cellClientTop = canvasRect.top + bounds.top;
+
+    const pointerCellX = e.clientX - cellClientLeft;
+    const pointerCellY = e.clientY - cellClientTop;
+    if (pointerCellX < 0 || pointerCellY < 0 ||
+        pointerCellX > bounds.width || pointerCellY > bounds.height) return;
+
+    // Lazily compute atom positions for this cell (keyed by molString and
+    // DPR-scaled dimensions so the cache lines up with what the canvas draws).
+    const positions = this._getCellAtomPositions(molString, bounds.width, bounds.height);
+    if (!positions || positions.size === 0) return;
+
+    // Fixed-position overlay anchored at the mouse-down point.
+    const overlay = document.createElement('div');
+    overlay.className = 'chem-grid-box-picker';
+    Object.assign(overlay.style, {
+      position: 'fixed',
+      left: e.clientX + 'px',
+      top: e.clientY + 'px',
+      width: '0px',
+      height: '0px',
+      border: '1px dashed #4a8',
+      background: 'rgba(102, 204, 102, 0.15)',
+      pointerEvents: 'none',
+      boxSizing: 'border-box',
+      zIndex: '10000',
+    } as Partial<CSSStyleDeclaration>);
+    document.body.appendChild(overlay);
+
+    // Capture-phase document listeners — they fire at document BEFORE the
+    // event walks down to its target, so no amount of `stopPropagation` on
+    // intermediate handlers can prevent them from running. This is the
+    // standard drag-and-drop pattern: grab mousemove/mouseup at the root so
+    // the drag is tracked no matter where the pointer goes.
+    const onMove = (mv: MouseEvent) => this._handleDragMove(mv);
+    const onUp = (mu: MouseEvent) => this._handleDragUp(mu);
+    document.addEventListener('mousemove', onMove, true);
+    document.addEventListener('mouseup', onUp, true);
+
+    this._drag = {
+      grid: gridCell.grid,
+      tableCol: gridCell.tableColumn,
+      rowIdx: gridCell.tableRowIndex,
+      cellClientLeft,
+      cellClientTop,
+      cellWidth: bounds.width,
+      cellHeight: bounds.height,
+      startX: pointerCellX,
+      startY: pointerCellY,
+      curX: pointerCellX,
+      curY: pointerCellY,
+      modifiers: {shift: e.shiftKey, alt: e.altKey},
+      positions,
+      overlay,
+      onMove,
+      onUp,
+    };
+    // Prevent the grid's own drag handling (column resize, cell selection
+    // box, etc.) from kicking in while we're picking atoms.
+    e.preventDefault();
+    e.stopPropagation();
+  }
+
+  private _handleDragMove(e: MouseEvent): void {
+    const d = this._drag;
+    if (!d) return;
+    // cell-local coordinates, clamped so the rectangle never extends past
+    // the molecule cell where the drag started
+    const cellX = Math.max(0, Math.min(d.cellWidth, e.clientX - d.cellClientLeft));
+    const cellY = Math.max(0, Math.min(d.cellHeight, e.clientY - d.cellClientTop));
+    d.curX = cellX;
+    d.curY = cellY;
+    const vpLeft = d.cellClientLeft + Math.min(d.startX, d.curX);
+    const vpTop = d.cellClientTop + Math.min(d.startY, d.curY);
+    d.overlay.style.left = vpLeft + 'px';
+    d.overlay.style.top = vpTop + 'px';
+    d.overlay.style.width = Math.abs(d.curX - d.startX) + 'px';
+    d.overlay.style.height = Math.abs(d.curY - d.startY) + 'px';
+  }
+
+  private _handleDragUp(_e: MouseEvent): void {
+    const d = this._drag;
+    if (!d) return;
+
+    // Capture data before _endDrag clears state + removes the overlay.
+    const x0 = Math.min(d.startX, d.curX);
+    const x1 = Math.max(d.startX, d.curX);
+    const y0 = Math.min(d.startY, d.curY);
+    const y1 = Math.max(d.startY, d.curY);
+    const moved = Math.hypot(x1 - x0, y1 - y0) > 3;
+    const positions = d.positions;
+    const tableCol = d.tableCol;
+    const rowIdx = d.rowIdx;
+    const modifiers = d.modifiers;
+    const grid = d.grid;
+
+    this._endDrag();
+    if (!moved) return;
+
+    const boxed: number[] = [];
+    for (const [idx, p] of positions.entries()) {
+      if (p.x >= x0 && p.x <= x1 && p.y >= y0 && p.y <= y1)
+        boxed.push(idx);
+    }
+    this._updateRowSelection(tableCol, rowIdx, boxed, modifiers);
+    grid.invalidate();
+  }
+
+  /**
+   * Merges the freshly boxed atoms into the row's current atom-picker selection
+   * (replace / add / remove depending on modifiers) and writes a tagged
+   * ISubstructProvider back onto the column's temp store. Providers are keyed
+   * by row index, so picks on other rows survive untouched.
+   */
+  private _updateRowSelection(col: DG.Column, rowIdx: number, boxed: number[],
+    modifiers: {shift: boolean, alt: boolean}): void {
+    type TaggedProvider = ISubstructProvider & {__atomPicker?: boolean, __rowIdx?: number, __atoms?: Set<number>};
+    const existing = (col.temp[ChemTemps.SUBSTRUCT_PROVIDERS] ?? []) as TaggedProvider[];
+    const prior = existing.find((p) => p.__atomPicker && p.__rowIdx === rowIdx);
+    const current = new Set<number>(prior?.__atoms ?? []);
+
+    if (!modifiers.shift && !modifiers.alt) current.clear();
+    for (const a of boxed) {
+      if (modifiers.alt) current.delete(a);
+      else current.add(a);
+    }
+
+    // Build the fresh provider
+    const pickColor: number[] = [0.85, 0.4, 0.75, 1.0]; // same magenta as the mockups
+    const atomsArr = [...current];
+    const highlightAtomColors: {[k: number]: number[]} = {};
+    for (const a of atomsArr) highlightAtomColors[a] = pickColor;
+
+    const provider: TaggedProvider = {
+      getSubstruct: (ridx) => {
+        if (ridx !== rowIdx) return undefined;
+        return {atoms: atomsArr, highlightAtomColors};
+      },
+    };
+    provider.__atomPicker = true;
+    provider.__rowIdx = rowIdx;
+    provider.__atoms = current;
+
+    // Replace only the prior provider for this row; keep picks on other rows
+    col.temp[ChemTemps.SUBSTRUCT_PROVIDERS] = existing.filter(
+      (p) => !p.__atomPicker || p.__rowIdx !== rowIdx);
+    addSubstructProvider(col.temp, provider);
+
+    // Also invalidate any cached render for this cell so the highlights repaint
+    // (the rendersCache key includes the substruct JSON, so strictly new
+    //  provider → new substruct → new cache key, but forcing a refresh here is
+    //  cheap and defensive against stale entries from earlier box selections).
+  }
+
+  /**
+   * Compute atom positions for a cell in cell-local CSS pixels.
+   *
+   * The tricky part is matching the RDKit canvas layout exactly. The cell
+   * renderer's `render()` multiplies the cell's CSS width/height by
+   * `devicePixelRatio` before passing them into `drawRdKitMoleculeToOffscreenCanvas`,
+   * and uses `RDKIT_COMMON_RENDER_OPTS` (which includes `fixedScale: 0.07`
+   * and specific line-width / font-size settings). Any deviation from that
+   * combination produces a different internal atom layout, and the box hit
+   * test drifts off the atoms as they appear on screen.
+   *
+   * We therefore render the SVG at the SAME (DPR-scaled) dimensions with the
+   * SAME render options, then divide the extracted coordinates by DPR to
+   * convert them back to cell-local CSS pixels — the space the pointer
+   * events live in.
+   */
+  private _getCellAtomPositions(molString: string, cssWidth: number, cssHeight: number):
+      Map<number, {x: number, y: number}> | null {
+    const dpr = window.devicePixelRatio || 1;
+    const w = Math.round(cssWidth * dpr);
+    const h = Math.round(cssHeight * dpr);
+    const key = molString + '|' + w + 'x' + h;
+    const hit = this.atomPositionsCache.get(key);
+    if (hit) return hit;
+
+    let mol: RDMol | null = null;
+    try {
+      mol = this.rdKitModule.get_mol(molString);
+      if (!mol || !mol.is_valid()) return null;
+      // Mirror the canvas render path's options so the SVG layout matches
+      // the rasterized layout pixel-for-pixel (atom centers land in the
+      // same places).
+      const details: {[k: string]: any} = {};
+      for (const k of Object.keys(RDKIT_COMMON_RENDER_OPTS))
+        details[k] = RDKIT_COMMON_RENDER_OPTS[k];
+      details.width = w;
+      details.height = h;
+      details.atoms = [];
+      details.bonds = [];
+      details.highlightAtomColors = {};
+      details.highlightBondColors = {};
+      const svgString = mol.get_svg_with_highlights(JSON.stringify(details));
+      // Use innerHTML on a div in the main document (NOT DOMParser) so the
+      // SVG is a real element in the current document, its layout is
+      // computed, and getBBox() returns real numbers. DOMParser + appendChild
+      // produces an SVG whose layout is inconsistent across browsers.
+      const host = document.createElement('div');
+      host.style.position = 'absolute';
+      host.style.left = '-9999px';
+      host.style.top = '-9999px';
+      host.style.width = w + 'px';
+      host.style.height = h + 'px';
+      host.innerHTML = svgString;
+      document.body.appendChild(host);
+      try {
+        const svgEl = host.querySelector('svg') as SVGSVGElement | null;
+        if (!svgEl) return null;
+        const positionsDpr = this._extractAtomPositionsFromSvg(svgEl);
+        // Convert from DPR-scaled SVG coordinates back to cell-local CSS
+        // pixels so they can be compared against mouse event coordinates.
+        const positions = new Map<number, {x: number, y: number}>();
+        for (const [idx, p] of positionsDpr.entries())
+          positions.set(idx, {x: p.x / dpr, y: p.y / dpr});
+        this.atomPositionsCache.set(key, positions);
+        return positions;
+      } finally {
+        if (host.parentNode) host.parentNode.removeChild(host);
+      }
+    } catch {
+      return null;
+    } finally {
+      mol && mol.delete();
+    }
+  }
+
+  private _extractAtomPositionsFromSvg(svgEl: SVGSVGElement):
+      Map<number, {x: number, y: number}> {
+    const positions = new Map<number, {x: number, y: number}>();
+
+    // Text-labeled heteroatoms
+    const texts = svgEl.querySelectorAll('text[class*="atom-"]');
+    for (let i = 0; i < texts.length; i++) {
+      const t = texts[i];
+      const cls = t.getAttribute('class') || '';
+      const m = /(?:^|\s)atom-(\d+)/.exec(cls);
+      if (!m) continue;
+      const idx = parseInt(m[1], 10);
+      try {
+        const bb = (t as unknown as SVGGraphicsElement).getBBox();
+        positions.set(idx, {x: bb.x + bb.width / 2, y: bb.y + bb.height / 2});
+      } catch { /* ignore */ }
+    }
+
+    // Carbons — average bond endpoints extracted from <path> d attributes
+    const bondEnds = new Map<number, Array<{x: number, y: number}>>();
+    const bondPaths = svgEl.querySelectorAll('path[class*="bond-"]');
+    for (let i = 0; i < bondPaths.length; i++) {
+      const p = bondPaths[i];
+      const cls = p.getAttribute('class') || '';
+      const ids: number[] = [];
+      const matches = cls.match(/atom-(\d+)/g) || [];
+      for (const mm of matches) {
+        const n = parseInt(mm.slice(5), 10);
+        if (!Number.isNaN(n)) ids.push(n);
+      }
+      if (ids.length !== 2) continue;
+      const d = p.getAttribute('d') || '';
+      const coords: Array<{x: number, y: number}> = [];
+      const re = /[ML]\s*([\-\d.]+)[\s,]+([\-\d.]+)/g;
+      let mm: RegExpExecArray | null;
+      while ((mm = re.exec(d)) !== null)
+        coords.push({x: parseFloat(mm[1]), y: parseFloat(mm[2])});
+      if (coords.length < 2) continue;
+      if (!bondEnds.has(ids[0])) bondEnds.set(ids[0], []);
+      if (!bondEnds.has(ids[1])) bondEnds.set(ids[1], []);
+      bondEnds.get(ids[0])!.push(coords[0]);
+      bondEnds.get(ids[1])!.push(coords[coords.length - 1]);
+    }
+    for (const [idx, pts] of bondEnds.entries()) {
+      if (positions.has(idx)) continue;
+      const cx = pts.reduce((s, p) => s + p.x, 0) / pts.length;
+      const cy = pts.reduce((s, p) => s + p.y, 0) / pts.length;
+      positions.set(idx, {x: cx, y: cy});
+    }
+
+    return positions;
   }
 }
 
