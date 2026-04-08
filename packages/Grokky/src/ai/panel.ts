@@ -140,6 +140,8 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
   private _sessionId: string;
   private _contextSent = false;
   private _pendingInputResolve: ((value: AskUserResponse | null) => void) | null = null;
+  private _skillMenu: DG.Menu | null = null;
+  private _skillNames: string[] | null = null;
 
   get sessionId(): string { return this._sessionId; }
 
@@ -162,12 +164,18 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
       this.handleRun();
     });
     this.textArea.addEventListener('keydown', (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && this._skillMenu) {
+        this._skillMenu.hide();
+        this._skillMenu = null;
+        return;
+      }
       if (event.key === 'Enter' && (!event.ctrlKey && !event.metaKey)) {
         event.preventDefault();
         event.stopImmediatePropagation();
         this.handleRun();
       }
     });
+    this.textArea.addEventListener('input', () => this._updateSkillMenu());
     ui.tooltip.bind(this.runButton, () => this.runButtonTooltip, 'left');
     this.tryAgainButton = ui.icons.sync(() => this.tryAgain(), 'Try Again');
     this.historyButton = ui.iconFA('history', () => this.showHistory(), 'Chat History...');
@@ -646,6 +654,46 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
       prevMessages: this._messages,
       currentPrompt: inputs,
     });
+  }
+
+  // TODO: fetch dynamically from My files/agents/ once the file listing API is fixed
+  private _getSkillNames(): string[] {
+    if (!this._skillNames)
+      this._skillNames = ['write-script', 'analyze-data', 'build-dashboard'];
+    return this._skillNames;
+  }
+
+  private _updateSkillMenu(): void {
+    const text = this.textArea.value;
+    if (!text.startsWith('/') || text.includes('\n')) {
+      if (this._skillMenu) {
+        this._skillMenu.hide();
+        this._skillMenu = null;
+      }
+      return;
+    }
+    const prefix = text.slice(1).toLowerCase();
+    const names = this._getSkillNames();
+    const filtered = names.filter((n) => n.toLowerCase().startsWith(prefix));
+    if (!filtered.length) {
+      if (this._skillMenu) {
+        this._skillMenu.hide();
+        this._skillMenu = null;
+      }
+      return;
+    }
+    if (this._skillMenu)
+      this._skillMenu.hide();
+    this._skillMenu = DG.Menu.popup();
+    for (const name of filtered) {
+      this._skillMenu.item(name, () => {
+        this.textArea.value = `/${name} `;
+        this.textArea.focus();
+        this._skillMenu = null;
+      });
+    }
+    const rect = this.textAreaDiv.getBoundingClientRect();
+    this._skillMenu.show({x: rect.left, y: rect.bottom});
   }
 
   protected showContentIcons() {

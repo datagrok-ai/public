@@ -80,6 +80,17 @@ export class PackageFunctions {
       console.log('Grokky: package loaded event, triggering sync');
       ClaudeRuntimeClient.getInstance().syncUserFiles();
     });
+
+    // Listen for server-push notifications. When an entity is shared with
+    // the current user, the server sends a UserNotification via WebSocket.
+    // We trigger a sync so newly shared skill connections are picked up.
+    grok.events.onEvent('server-push').subscribe((entity: any) => {
+      const className = entity?.dart?.className ?? entity?.className ?? '';
+      grok.shell.info(`Server push: ${className} — ${entity?.text ?? entity?.name ?? ''}`);
+      console.log('Grokky: server-push event', entity, 'className:', className);
+      if (className === 'DG.UserNotification')
+        ClaudeRuntimeClient.getInstance().syncUserFiles();
+    });
   }
 
 

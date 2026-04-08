@@ -1,5 +1,6 @@
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
+import * as crypto from 'node:crypto';
 import AdmZip from 'adm-zip';
 import {runWithContext, request, requestBinary, downloadFile} from './shared-api-client';
 
@@ -26,6 +27,12 @@ const userFileCache = new Map<string, Map<string, string>>();
 // Per-user package metadata cache: packageName → updatedOn timestamp.
 // A package ZIP is only re-downloaded when its updatedOn changes.
 const packageTimestamps = new Map<string, Map<string, string>>();
+
+// Per-user shared skills cache: "connName/filePath" → updatedOn timestamp.
+const sharedSkillsCache = new Map<string, Map<string, string>>();
+
+// Connections we've already verified have the ai-skills tag.
+const taggedConnections = new Set<string>();
 
 // ── User ID extraction ──────────────────────────────────────────────────
 // Datagrok passes either a JWT (Bearer <token>) or a plain API key.
@@ -102,10 +109,17 @@ function safePath(base: string, relative: string): string {
 // the UI). We find it via the connections API and build the connector path
 // that the file download API expects (e.g. "System:Home").
 
+interface EntityTag {
+  id?: string;
+  tag: string;
+  type?: string | null;
+}
+
 interface ConnectionInfo {
   id: string;
   name: string;
   namespace?: string;
+  entityTags?: EntityTag[];
 }
 
 async function resolveHomeConnection(): Promise<{connId: string; connectorPath: string} | null> {
@@ -229,6 +243,119 @@ async function syncUserFilesIncremental(
   catch { /* agents dir may not exist yet */ }
 
   return downloaded;
+}
+
+// ── Connection tagging ──────────────────────────────────────────────────
+// Ensures the given connection has the "ai-skills" tag so that other users
+// can discover it when syncing shared skills. The tag is added once and
+// cached in memory to avoid repeated saves.
+const AI_SKILLS_TAG = 'ai-skills';
+
+async function ensureAiSkillsTag(connId: string): Promise<void> {
+  if (taggedConnections.has(connId))
+    return;
+  try {
+    const conn = await request<ConnectionInfo>('GET', `/public/v1/connections/${connId}`);
+    const tags = conn.entityTags ?? [];
+    if (tags.some((t) => t.tag === AI_SKILLS_TAG)) {
+      console.log(`shared-skills: connection ${connId} already tagged ${AI_SKILLS_TAG}`);
+      taggedConnections.add(connId);
+      return;
+    }
+    tags.push({id: crypto.randomUUID(), tag: AI_SKILLS_TAG});
+    conn.entityTags = tags;
+    await request('POST', '/public/v1/connections', conn);
+    taggedConnections.add(connId);
+    console.log(`shared-skills: tagged connection ${connId} with ${AI_SKILLS_TAG}`);
+  }
+  catch (e: any) {
+    console.warn(`shared-skills: failed to tag connection ${connId}:`, e.message);
+  }
+}
+
+// ── Shared skills sync ─────────────────────────────────────────────────
+// Discovers connections tagged with "ai-skills" (server-filtered) and
+// syncs their agents/ folders. Skips the user's own Home connection
+// (already synced separately). Files are stored as
+// agents/{connName}-{filename} to avoid collisions between sources.
+function connectorPath(conn: ConnectionInfo): string {
+  const ns = (conn.namespace ?? 'System:').replace(/:$/, '');
+  return `${ns}:${conn.name}`;
+}
+
+async function syncSharedSkills(userDir: string, homeConnId: string | null): Promise<void> {
+  console.log('shared-skills: discovering connections with ai-skills tag...');
+  const connections = await request<ConnectionInfo[]>(
+    'GET', `/public/v1/connections?tags=${AI_SKILLS_TAG}`,
+  );
+  if (!Array.isArray(connections) || !connections.length) {
+    console.log('shared-skills: no tagged connections found');
+    return;
+  }
+  console.log(`shared-skills: found ${connections.length} tagged connection(s)`);
+
+  const userId = path.basename(userDir);
+  if (!sharedSkillsCache.has(userId))
+    sharedSkillsCache.set(userId, new Map());
+  const cached = sharedSkillsCache.get(userId)!;
+
+  const agentsDir = path.join(userDir, 'agents');
+  const activeKeys = new Set<string>();
+
+  for (const conn of connections) {
+    if (conn.id === homeConnId) {
+      console.log(`shared-skills: skipping own Home connection ${conn.id}`);
+      continue;
+    }
+
+    const prefix = `shared-${conn.name}-`;
+    console.log(`shared-skills: syncing connection "${conn.name}" (${conn.id})`);
+
+    // List files at root — the shared connection itself is the skills folder,
+    // unlike Home where skills live under agents/.
+    const remoteFiles = await collectFiles(conn.id, '');
+    if (!remoteFiles.length) {
+      console.log(`shared-skills: no files in "${conn.name}"`);
+      continue;
+    }
+    console.log(`shared-skills: found ${remoteFiles.length} file(s) in "${conn.name}"`);
+
+    const cPath = connectorPath(conn);
+    for (const remote of remoteFiles) {
+      const cacheKey = `${conn.name}/${remote.path}`;
+      activeKeys.add(cacheKey);
+      if (cached.get(cacheKey) === remote.updatedOn)
+        continue;
+
+      const label = cached.has(cacheKey) ? 'updated' : 'new';
+      console.log(`shared-skills: downloading ${label} file ${cacheKey}`);
+      try {
+        const content = await downloadFile(cPath, remote.path) as string;
+        const fileName = remote.path.replace(/\//g, '-');
+        const dest = safePath(agentsDir, `${prefix}${fileName}`);
+        await fs.writeFile(dest, content);
+        cached.set(cacheKey, remote.updatedOn);
+      }
+      catch (e: any) {
+        console.warn(`shared-skills: failed to download ${cacheKey}:`, e.message);
+      }
+    }
+  }
+
+  // Clean up files from connections that are no longer shared or tagged
+  for (const [key] of cached) {
+    if (!activeKeys.has(key)) {
+      const [connName, ...rest] = key.split('/');
+      const fileName = rest.join('/').replace(/^agents\//, '').replace(/\//g, '-');
+      const localFile = path.join(agentsDir, `shared-${connName}-${fileName}`);
+      try {
+        await fs.rm(localFile, {force: true});
+        console.log(`shared-skills: removed stale file ${localFile}`);
+      }
+      catch { /* ignore */ }
+      cached.delete(key);
+    }
+  }
 }
 
 // ── Package agent file sync ─────────────────────────────────────────────
@@ -399,20 +526,26 @@ async function doSync(
     console.log('user-files: force sync — clearing all caches');
     userFileCache.delete(userId);
     packageTimestamps.delete(userId);
+    sharedSkillsCache.delete(userId);
   }
 
   await ensureUserDir(apiKey);
 
   // ── Sync user files from My files/agents/ ──
+  let homeConnId: string | null = null;
   await runWithContext({apiKey, apiUrl}, async () => {
     const home = await resolveHomeConnection();
     if (!home) {
       console.log('user-files: skipping user file sync (no Home connection)');
       return;
     }
+    homeConnId = home.connId;
     const downloaded = await syncUserFilesIncremental(dir, home.connId, home.connectorPath);
-    if (downloaded.length)
+    if (downloaded.length) {
       console.log(`user-files: synced ${downloaded.length} user file(s)`);
+      // Tag the Home connection so other users can discover shared skills
+      await ensureAiSkillsTag(home.connId);
+    }
     else
       console.log('user-files: all user files up-to-date');
   });
@@ -424,6 +557,16 @@ async function doSync(
     }
     catch (e: any) {
       console.warn('package-agents: sync failed:', e.message);
+    }
+  });
+
+  // ── Sync skills from shared connections ──
+  await runWithContext({apiKey, apiUrl}, async () => {
+    try {
+      await syncSharedSkills(dir, homeConnId);
+    }
+    catch (e: any) {
+      console.warn('shared-skills: sync failed:', e.message);
     }
   });
 
