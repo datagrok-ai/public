@@ -9,15 +9,15 @@
    * The colors on the legend match the colors on the viewer
    * Changing the column for Color (Marker, Split, Stack) setting changes the legend, respectively
    * You can adjust the legend size
-   * You can select multiple categories via **CTRL+click**
+   * You can **CTRL+click** on legend categories to filter in-viewer content (and "X" button to exclude it from filtered ones)
    * Check Color Picker:
-     - Visibility
-     - Cancel button behavior
-     - 'X' button behavior
-     - Ability to change color for empty values
+     - Hover on any legend item and then click on appeared color picker icon to open a color picker dialog
+     - "Cancel" button behavior
+     - "OK" button behavior
+     - Ability to change color for empty values (or "(no value)" category, switch legend column to Primary Series Name)
 5. Save and apply layout
 6. Right-click the legend, set **Visibility** = `always`, **Position** = `auto`
-7. Resize viewers — **verify the legend repositions optimally**
+7. Resize viewers using split bars — **verify the legend repositions optimally**
 8. Save and apply layout
 9. Right-click the legend, uncheck auto positioning, set **Visibility** = `auto`
 10. Gradually reduce viewer size — **verify the legend hides when too small**
