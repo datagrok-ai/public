@@ -35,6 +35,7 @@ const config = {
         [
             'docusaurus-plugin-typedoc',
             {
+                docsPath: './api',
                 entryPoints: ['../js-api/dg.ts', '../js-api/ui.ts', '../js-api/grok.ts'],
                 tsconfig: '../js-api/tsconfig.json',
                 readme: '../help/develop/packages/js-api.md',
