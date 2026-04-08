@@ -283,9 +283,8 @@ jobs:
         continue-on-error: true
         with:
           api-key: ${{ secrets.TYPESENSE_API_KEY }}
-          host: 'datagrok.ai'
+          host: 'typesense.datagrok.ai'
           port: '443'
-          path: '/typesense'
           protocol: 'https'
           config: docusaurus/docsearch.json
 
@@ -295,7 +294,7 @@ jobs:
 #        continue-on-error: true
 #        env:
 #          TYPESENSE_API_KEY: ${{ secrets.TYPESENSE_API_KEY }}
-#          TYPESENSE_HOST: 'datagrok.ai'
+#          TYPESENSE_HOST: 'typesense.datagrok.ai'
 #          TYPESENSE_PORT: '443'
 #          TYPESENSE_PROTOCOL: 'https'
 #          CONFIG: 'docusaurus/docsearch.json'
