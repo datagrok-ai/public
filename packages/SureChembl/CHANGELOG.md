@@ -1,6 +1,6 @@
 # SureChEMBL changelog
 
-## 1.1.3 (2026-03-16)
+## 1.1.3 (2026-04-08)
 
 * Chem: Smiles length limit
 
