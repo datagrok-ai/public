@@ -22,6 +22,7 @@ export class ClaudeRuntimeClient {
   public onError = new rxjs.Subject<ErrorEvent>();
   public onAborted = new rxjs.Subject<AbortedEvent>();
   public onInputRequest = new rxjs.Subject<InputRequestEvent>();
+  public onSyncStatus = new rxjs.Subject<{status: string; message?: string}>();
   public onClose = new rxjs.Subject<void>();
 
   private constructor() {}
@@ -98,6 +99,10 @@ export class ClaudeRuntimeClient {
       case 'input_request':
         this.onInputRequest.next({sessionId: data.sessionId, toolName: data.toolName, input: data.input});
         break;
+      case 'sync_status':
+        console.log('ClaudeRuntimeClient: sync status:', data.status, data.message ?? '');
+        this.onSyncStatus.next({status: data.status, message: data.message});
+        break;
       }
     };
 
@@ -120,6 +125,17 @@ export class ClaudeRuntimeClient {
       mcpServerUrl: this.mcpServerUrl,
       ...(options?.outputSchema ? {outputSchema: options.outputSchema} : {}),
       ...(options?.systemPromptMode ? {systemPromptMode: options.systemPromptMode} : {}),
+    }));
+  }
+
+  syncUserFiles(): void {
+    if (!this.ws || this.ws.readyState !== WebSocket.OPEN)
+      return;
+    console.log('ClaudeRuntimeClient: triggering user files sync');
+    this.ws.send(JSON.stringify({
+      type: 'sync_user_files',
+      apiKey: grok.dapi.token,
+      mcpServerUrl: this.mcpServerUrl,
     }));
   }
 
@@ -167,6 +183,7 @@ export class ClaudeRuntimeClient {
     this.onError.complete();
     this.onAborted.complete();
     this.onInputRequest.complete();
+    this.onSyncStatus.complete();
     this.onClose.complete();
     this.onChunk = new rxjs.Subject<ChunkEvent>();
     this.onToolActivity = new rxjs.Subject<ToolActivityEvent>();
@@ -175,6 +192,7 @@ export class ClaudeRuntimeClient {
     this.onError = new rxjs.Subject<ErrorEvent>();
     this.onAborted = new rxjs.Subject<AbortedEvent>();
     this.onInputRequest = new rxjs.Subject<InputRequestEvent>();
+    this.onSyncStatus = new rxjs.Subject<{status: string; message?: string}>();
     this.onClose = new rxjs.Subject<void>();
   }
 }

@@ -25,6 +25,18 @@ export class PackageFunctions {
     setupSearchUI();
     setupTableViewAIPanelUI();
     setupScriptsAIPanelUI();
+
+    try {
+      const exists = await grok.dapi.files.exists('System:My files/agents');
+      if (!exists) {
+        await grok.dapi.files.writeAsText('System:My files/agents/README.md',
+          'Place your personal knowledge files here. Claude will use them as context.');
+        console.log('Grokky: Created MyFiles/agents/ folder');
+      }
+    }
+    catch (e) {
+      console.warn('Grokky: Failed to create agents/ folder:', e);
+    }
   }
 
 
