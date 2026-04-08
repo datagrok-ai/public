@@ -1,42 +1,48 @@
 # R Group Analysis — Run Results
 
-**Date**: 2026-03-11
-**URL**: https://public.datagrok.ai
-**Status**: PARTIAL
+**Date**: 2026-04-08
+**URL**: https://dev.datagrok.ai
+**Status**: PASS
 
 ## Steps
 
-| # | Step | Result | Notes |
-|---|------|--------|-------|
-| 1 | Open sar_small dataset | PASS | Opened sar_small.csv: 200 rows, 27 columns |
-| 2 | Go to Chem > Analyze > R-groups analysis | PASS | Dialog opened with sketcher, MCS button, Exact atoms/bonds checkboxes, Molecules dropdown, Column prefix |
-| 3 | Click the MCS button | PASS | Common core structure calculated and displayed in sketcher (benzimidazole-like scaffold with NH and O) |
-| 4 | Click OK | PASS | R-Groups analysis completed. Grid shows 34 columns (7 new: Core_id, Core, R1-R4). Trellis plot displayed with R-group categories |
-| 5 | Run R-groups analysis again | SKIP | Not tested in this run |
-| 6 | Click MCS | SKIP | Not tested |
-| 7 | Uncheck Replace latest | SKIP | Not tested |
-| 8-10 | Replace latest checkbox tests | SKIP | Not tested |
-| 11 | Run without MCS, expect 'No core was provided' | SKIP | Not tested |
+| # | Step | Result | Time | Playwright | Notes |
+|---|------|--------|------|-------|-------|
+| 1 | Open sar_small.csv dataset | PASS | 8s | PASSED | 200 rows, 27 columns loaded |
+| 2 | Open Chem > Analyze > R-Groups Analysis | PASS | 2s | PASSED | Dialog opened with sketcher, MCS, options |
+| 3 | Click MCS button | PASS | 5s | PASSED | Core scaffold computed and displayed in sketcher |
+| 4 | Check Visual analysis checkbox | PASS | 1s | PASSED | Already checked by default |
+| 5 | Click OK — run with defaults | PASS | 10s | PASSED | Trellis plot appeared, columns increased to 34 (7 R-group cols added) |
+| 6 | Run again, click MCS, uncheck Replace latest | PASS | 8s | PASSED | Columns increased to 41 — second set of R-group columns added |
+| 7 | Run again, click MCS, check Replace latest | PASS | 8s | PASSED | Columns stay at 41 — latest columns replaced |
+| 8 | Run without MCS — expect error | PASS | 3s | PASSED | Balloon "No core was provided" appeared |
+
+## Timing
+
+| Phase | Duration |
+|-------|----------|
+| Execute via grok-browser | ~50s |
+| Spec file generation | ~3s |
+| Spec script execution | 1m 6s (PASSED) |
 
 ## Summary
 
-Successfully ran R-Groups Analysis on sar_small dataset. MCS calculation found the common core, and the analysis produced a trellis plot with R-group decomposition results. 4 steps passed, 7 skipped (steps 5-11 involve repeated runs with different settings). The core functionality works correctly.
+All R-Group Analysis steps passed on the dev server. MCS computation, Visual analysis with trellis plot, "Replace latest" behavior (both checked and unchecked), and error handling for missing core all work correctly.
 
 ## Retrospective
 
 ### What worked well
-- Opening Chem menu via mouse events dispatched to `.d4-menu-item` elements
-- MCS calculation completed in ~15 seconds
-- R-Groups Analysis produced correct results with trellis plot visualization
+- MCS computation is fast and produces correct core scaffold
+- Trellis plot with color-coded R-groups displayed correctly
+- "Replace latest" toggle works as expected — unchecked adds new columns, checked replaces
+- Error handling shows clear balloon message when no core is provided
 
 ### What did not work
-- Menu click required workaround (dispatching mouseenter + click events to parent `.d4-menu-item`)
-- MCS and OK clicks caused screenshot timeouts during computation (page was busy)
+- Nothing — all steps passed
 
 ### Suggestions for the platform
-- Add progress indicator during MCS calculation (the page appeared frozen during computation)
-- Provide a JS API for running R-Groups Analysis programmatically for test automation
+- None
 
 ### Suggestions for the scenario
-- Steps 5-11 test iterative functionality (Replace latest checkbox) — these should be in a separate scenario
-- Add expected column names for the R-group result columns
+- Step numbering has gaps (no step 8, jumps from 7 to 9)
+- Could clarify that Visual analysis checkbox is checked by default

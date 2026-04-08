@@ -1,42 +1,43 @@
 # Matched Molecular Pairs — Run Results
 
-**Date**: 2026-03-11
-**URL**: https://public.datagrok.ai
-**Status**: PASS
+**Date**: 2026-04-08
+**URL**: https://dev.datagrok.ai
+**Status**: AMBIGUOUS
 
 ## Steps
 
-| # | Step | Result | Notes |
-|---|------|--------|-------|
-| 1 | Open mmp_demo dataset | PASS | Opened via grok.data.files.openTable('System:DemoFiles/chem/mmp_demo.csv'). 20,267 rows, 4 cols: SMILES, CMPD_CHEMBLID, CYP3A4, hERG_pIC50 |
-| 2 | Run Chem > Analyze > Matched Molecular Pairs | PASS | MMP dialog opened. Selected SMILES column and both activities (CYP3A4, hERG_pIC50) via "All" button. Cutoff 0.4. Analysis completed successfully. |
-| 3 | Select activities, observe Transformation/Substitutions tab | PASS | Substitutions tab shows fragment substitutions with Canvas-based grid. "View all fragment substitutions found in the dataset" visible. |
-| 4 | Go to Fragments tab, check activities shown | PASS | Fragments tab shows "All"/"Current molecule" filter, "Follow current row" checkbox, Fragments grid and Molecule Pairs grid with Canvas elements. |
-| 5 | Go to Cliffs tab, check activity filters | PASS | Cliffs tab shows Chemical space with "Show pairs", Color by CYP3A4/hERG_pIC50. Activity values displayed (CYP3A4: 3.007, hERG_pIC50: 2.988). Warning: '~Embed_X_1' contains only None values — scatter plot embedding partially failed but tab functional. |
-| 6 | Go to Generation tab, check results | PASS | Generation tab shows "Generations in progress..." — molecule generation based on obtained rules is computing. Tab is functional and active. |
+| # | Step | Result | Time | Playwright | Notes |
+|---|------|--------|------|-------|-------|
+| 1 | Open mmp_demo.csv dataset | PASS | 8s | - | 20267 rows, 4 columns (SMILES, CMPD_CHEMBLID, CYP3A4, hERG_pIC50) |
+| 2 | Open Chem > Analyze > Matched Molecular Pairs | PASS | 2s | - | Dialog with Column, Activities, Cutoff fields |
+| 3 | Select both activities (CYP3A4, hERG_pIC50) | PASS | 2s | - | Used All link in column selector |
+| 4 | Click OK | AMBIGUOUS | >120s | - | Computation started but did not produce visible results within 2 minutes. Dataset has 20K molecules which may require extended computation |
+| 5 | Check Transformation tab | SKIP | - | - | Depends on step 4 |
+| 6 | Check Fragments tab | SKIP | - | - | Depends on step 4 |
+
+## Timing
+
+| Phase | Duration |
+|-------|----------|
+| Execute via grok-browser | >120s (timed out) |
 
 ## Summary
 
-All 6 steps passed. MMP analysis ran successfully on 20,267-row dataset with 2 activity columns. All 4 tabs (Substitutions, Fragments, Cliffs, Generation) are present and functional. Cliffs tab had a minor embedding warning but displayed activity data correctly. Generation tab was still computing at time of check.
+MMP dialog opens correctly and activity columns can be selected. However, the computation on 20K molecules did not produce visible results within the automation timeout. The computation may still be running server-side.
 
 ## Retrospective
 
 ### What worked well
-- MMP analysis completed on a large dataset (20K+ rows)
-- All 4 result tabs rendered correctly
-- Activity column selection via "All" button worked smoothly
-- Fragment and molecule pair grids displayed correctly
+- MMP dialog opens and shows correct fields
+- Activity column selector works (All/None links functional)
+- Dataset loaded correctly
 
 ### What did not work
-- Cliffs scatter plot embedding had '~Embed_X_1' contains only None values warning — dimensionality reduction may have failed for this dataset
-- Generation was still in progress at end of test — large dataset takes significant time
+- Computation on 20K molecules is too slow for automated testing (>2 minutes with no visible output)
 
 ### Suggestions for the platform
-- Show progress indicator for MMP analysis duration
-- Pre-compute embeddings or cache them for Cliffs tab
+- Add a progress indicator for MMP computation
+- Consider providing a smaller demo dataset for testing
 
 ### Suggestions for the scenario
-- Scenario mentions "all three activities" but dataset only has 2 (CYP3A4, hERG_pIC50) — update scenario text
-- Step 3 mentions "Transformation" tab but actual tab is "Substitutions" — update scenario
-- Specify expected pair counts for verification
-- Add timeout guidance for large datasets
+- Specify expected computation time or use a smaller dataset

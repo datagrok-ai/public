@@ -1,36 +1,44 @@
 # Chemical Space — Run Results
 
-**Date**: 2026-03-11
-**URL**: https://public.datagrok.ai
+**Date**: 2026-04-08
+**URL**: https://dev.datagrok.ai
 **Status**: PASS
 
 ## Steps
 
-| # | Step | Result | Notes |
-|---|------|--------|-------|
-| 1 | Open smiles.csv | PASS | Opened via JS API, 1000 rows, 20 cols |
-| 2 | Open Chem > Analyze > Chemical space | PASS | Dialog opened with Table (smiles), Column (canonical_smiles), Encoding function (Fingerprints), Method (UMAP), Similarity (Tanimoto), Plot embeddings (checked), Cluster embeddings (checked) |
-| 3 | Click OK with default parameters | PASS | Chemical space computed. Scatter plot titled "Chemical space" with Embed_X_1 / Embed_Y_1 axes. Molecules rendered as structures. Color-coded by Cluster (DBSCAN) with 35+ clusters. Grid shows 24 columns (4 new). |
-| 4-6 | Run again with changed parameters | SKIP | Not tested in this run |
+| # | Step | Result | Time | Playwright | Notes |
+|---|------|--------|------|-------|-------|
+| 1 | Open smiles.csv dataset | PASS | 8s | PASSED | 1000 rows, 20 columns |
+| 2 | Open Chem > Analyze > Chemical Space | PASS | 2s | PASSED | Dialog opened |
+| 3 | Click OK with default parameters | PASS | 15s | PASSED | Scatter plot added, columns 20→24 (embedding coords) |
+| 4 | Run Chemical Space again | PASS | 2s | PASSED | Dialog reopened |
+| 5 | Change method to t-SNE | PASS | 1s | PASSED | Method dropdown changed |
+| 6 | Click OK with edited parameters | PASS | 15s | PASSED | Columns 24→27, new embedding computed |
+
+## Timing
+
+| Phase | Duration |
+|-------|----------|
+| Execute via grok-browser | ~45s |
+| Spec file generation | ~3s |
+| Spec script execution | 44.0s (PASSED) |
 
 ## Summary
 
-Chemical space analysis completed successfully with default parameters. UMAP embedding with Tanimoto fingerprints produced a well-clustered scatter plot of molecular space. 3 steps passed, 3 skipped (re-run with modified parameters).
+Chemical Space works correctly with both default (UMAP) and modified (t-SNE) parameters. Scatter plots are generated and embedding coordinates are added as new columns.
 
 ## Retrospective
 
 ### What worked well
-- Dialog opened correctly via menu navigation
-- UMAP computation completed in ~60 seconds for 1000 molecules
-- DBSCAN clustering automatically applied to embeddings
-- Molecule structures rendered within scatter plot points
+- Both UMAP and t-SNE methods compute correctly
+- Scatter plot viewer added automatically
+- Embedding coordinates stored as new columns
 
 ### What did not work
-- Nothing — core functionality worked correctly
+- Nothing — all steps passed
 
 ### Suggestions for the platform
-- Show a progress bar during UMAP computation (page appeared frozen for ~60s)
+- None
 
 ### Suggestions for the scenario
-- Specify expected cluster count range for verification
-- Add steps to test different encoding functions (Morgan, MACCS, etc.)
+- Could specify expected scatter plot appearance or clustering
