@@ -104,13 +104,12 @@ const FuncCallParamMapProxy = new Proxy(class {
 
 
 export interface IFunctionRegistrationData {
-  signature: string;    // int foo(string bar)
+  signature: string;    // int foo(string bar) or ({int x, int y}) foo(string bar) for multiple outputs
   run: Function;
   tags?: string;        // comma-separated tags
   isAsync?: boolean;    // whether is can be called synchronously
   namespace?: string;
   options?: {[key: string]: string};
-  outputs?: {name: string, type: string, semType?: string}[];
 }
 
 
