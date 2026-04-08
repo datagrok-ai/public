@@ -89,6 +89,9 @@ import {getMCS} from './utils/most-common-subs';
 import JSZip from 'jszip';
 import {MolfileHandler} from '@datagrok-libraries/chem-meta/src/parsing-utils/molfile-handler';
 import {MolfileHandlerBase} from '@datagrok-libraries/chem-meta/src/parsing-utils/molfile-handler-base';
+import {addSubstructProvider, ISubstructProvider} from '@datagrok-libraries/chem-meta/src/types';
+import {ChemTemps} from '@datagrok-libraries/chem-meta/src/consts';
+import {createMoleculePartSelector} from './widgets/molecule-part-selector';
 import {fetchWrapper} from '@datagrok-libraries/utils/src/fetch-utils';
 import {CHEM_PROP_MAP} from './open-chem/ocl-service/calculations';
 import {oclMol} from './utils/chem-common-ocl';
@@ -1584,6 +1587,152 @@ export class PackageFunctions {
     return smiles && !DG.chem.Sketcher.isEmptyMolfile(smiles.value) ?
       _isSmarts(smiles.value) || isFragment(smiles.value) ? new DG.Widget(ui.divText(SMARTS_MOLECULE_MESSAGE)) :
         toxicityWidget(smiles) : new DG.Widget(ui.divText(EMPTY_MOLECULE_MESSAGE));
+  }
+
+  @grok.decorators.panel({
+    'name': 'Chemistry | Atom Picker',
+    'description': 'Interactively pick parts of the molecule (click, box-drag, lasso). ' +
+      'Selections are mirrored back into the source grid cell via the existing chem ' +
+      'highlight pipeline.',
+    'meta': {'role': 'widgets', 'domain': 'chem'},
+  })
+  static atomPicker(
+    @grok.decorators.param({options: {semType: 'Molecule'}}) molecule: DG.SemanticValue): DG.Widget {
+    if (!molecule || DG.chem.Sketcher.isEmptyMolfile(molecule.value))
+      return new DG.Widget(ui.divText(EMPTY_MOLECULE_MESSAGE));
+    if (_isSmarts(molecule.value) || isFragment(molecule.value))
+      return new DG.Widget(ui.divText(SMARTS_MOLECULE_MESSAGE));
+
+    // ---- restore prior selection for this row, if any ----------------------
+    // When the user re-opens the panel for a row they've already picked atoms
+    // on, we want to resume from where they left off — same atoms preselected,
+    // same highlights still in the grid (they never left the grid because we
+    // keep prior providers around, see below).
+    let initialSelection: number[] = [];
+    {
+      const cell = molecule.cell;
+      if (cell && cell.column && cell.row) {
+        const existing = (cell.column.temp[ChemTemps.SUBSTRUCT_PROVIDERS] ?? []) as
+          Array<ISubstructProvider & {__atomPicker?: boolean, __rowIdx?: number}>;
+        const prior = existing.find((p) => p.__atomPicker && p.__rowIdx === cell.row.idx);
+        if (prior) {
+          const sub = prior.getSubstruct(cell.row.idx);
+          initialSelection = sub?.atoms ?? [];
+        }
+      }
+    }
+
+    const selector = createMoleculePartSelector({
+      molecule: molecule.value,
+      width: 320,
+      height: 260,
+      mode: 'click',
+      initialSelection,
+    });
+
+    // ---- mode toggle (Click / Box / Lasso) ----------------------------------
+    const modes: Array<{label: string, value: 'click' | 'box' | 'lasso'}> = [
+      {label: 'Click', value: 'click'},
+      {label: 'Box', value: 'box'},
+      {label: 'Lasso', value: 'lasso'},
+    ];
+    const modeButtons: HTMLButtonElement[] = [];
+    const setMode = (m: 'click' | 'box' | 'lasso') => {
+      selector.setMode(m);
+      for (const b of modeButtons)
+        b.classList.toggle('chem-atom-picker-mode-on', b.dataset.mode === m);
+    };
+    for (const {label, value} of modes) {
+      const btn = ui.button(label, () => setMode(value));
+      btn.dataset.mode = value;
+      Object.assign(btn.style, {
+        padding: '3px 10px', fontSize: '11px', margin: '0',
+        border: '1px solid #d8dde4', borderRadius: '3px', background: 'white',
+        cursor: 'pointer', minWidth: '0',
+      });
+      modeButtons.push(btn);
+    }
+    // Active-mode style applied via classList
+    const styleEl = document.createElement('style');
+    styleEl.textContent = '.chem-atom-picker-mode-on { background: #2664eb !important; ' +
+      'color: white !important; border-color: #2664eb !important; }';
+    const modeBar = ui.divH(modeButtons, {style: {gap: '4px', marginBottom: '8px'}});
+    modeBar.appendChild(styleEl);
+    setMode('click');
+
+    // ---- picked-atoms display + clear button --------------------------------
+    const pickedDisplay = ui.divText('—');
+    Object.assign(pickedDisplay.style, {
+      font: '11px monospace', background: '#f3f4f6',
+      padding: '4px 6px', borderRadius: '3px',
+      minHeight: '18px', wordBreak: 'break-all', marginTop: '4px',
+      color: '#7b1773',
+    });
+
+    const clearBtn = ui.button('Clear selection', () => selector.clear());
+    Object.assign(clearBtn.style, {
+      padding: '3px 10px', fontSize: '11px', marginTop: '6px',
+    });
+
+    const pickedHeading = ui.divText('Picked atoms');
+    Object.assign(pickedHeading.style, {
+      font: '600 10px sans-serif', textTransform: 'uppercase',
+      color: '#6b7280', marginTop: '10px',
+    });
+
+    selector.onSelectionChanged.subscribe((atoms: number[]) => {
+      pickedDisplay.textContent = atoms.length === 0
+        ? '—'
+        : '[' + atoms.join(', ') + ']  (' + atoms.length + ')';
+    });
+
+    // ---- mirror selection into the source column ---------------------------
+    // Picks persist per row: opening the panel for row B does NOT clear row A's
+    // highlights. We only strip the prior atom-picker provider for THIS row
+    // (replacing it with the freshly-constructed selector that owns the
+    // restored initialSelection above). Atom-picker providers for other rows
+    // are left untouched, so their highlights survive across row switches.
+    // The user can clear a row's selection by opening that row's panel and
+    // pressing "Clear selection".
+    const cell = molecule.cell;
+    if (cell && cell.column && cell.row) {
+      const col = cell.column;
+      const rowIdx = cell.row.idx;
+      const provider = selector.asSubstructProvider(rowIdx) as
+        ISubstructProvider & {__atomPicker?: boolean, __rowIdx?: number};
+      provider.__atomPicker = true;
+      provider.__rowIdx = rowIdx;
+
+      const existing = (col.temp[ChemTemps.SUBSTRUCT_PROVIDERS] ?? []) as
+        Array<ISubstructProvider & {__atomPicker?: boolean, __rowIdx?: number}>;
+      col.temp[ChemTemps.SUBSTRUCT_PROVIDERS] = existing.filter(
+        (p) => !p.__atomPicker || p.__rowIdx !== rowIdx);
+
+      addSubstructProvider(col.temp, provider);
+      selector.onSelectionChanged.subscribe(() => {
+        grok.shell.tv?.grid.invalidate();
+      });
+    }
+
+    // ---- compose the widget root --------------------------------------------
+    const hint = ui.divText(
+      'Click an atom to toggle. Switch to Box or Lasso for multi-atom selection. ' +
+      'Selected atoms are highlighted in the source grid cell.');
+    Object.assign(hint.style, {
+      fontSize: '10px', color: '#6b7280',
+      marginTop: '8px', lineHeight: '1.4',
+    });
+
+    const root = ui.divV([
+      modeBar,
+      selector.root,
+      pickedHeading,
+      pickedDisplay,
+      clearBtn,
+      hint,
+    ]);
+
+    return new DG.Widget(root);
   }
 
   @grok.decorators.panel({

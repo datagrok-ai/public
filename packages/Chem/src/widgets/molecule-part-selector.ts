@@ -209,6 +209,10 @@ export class MoleculePartSelector {
     if (opts.initialSelection) {
       for (const a of opts.initialSelection)
         this._selection.add(a);
+      // Seed the BehaviorSubject so subscribers (e.g. a panel's "picked atoms"
+      // display) see the restored selection on their first emit, instead of
+      // the empty default the subject was constructed with.
+      this.onSelectionChanged.next(this.getSelection());
     }
 
     if (typeof ResizeObserver !== 'undefined') {
@@ -225,16 +229,16 @@ export class MoleculePartSelector {
   setMolecule(molecule: string): void {
     if (this._disposed) return;
     if (this._mol) {
-      try { this._mol.delete(); } catch { /* ignore */ }
+      try {this._mol.delete();} catch {/* ignore */}
       this._mol = null;
     }
     this._molecule = molecule;
     try {
       const mod = getRdKitModule();
       const m = mod.get_mol(molecule);
-      if (m && m.is_valid()) {
+      if (m && m.is_valid())
         this._mol = m;
-      } else {
+      else {
         m && m.delete();
         this._mol = null;
       }
@@ -272,9 +276,9 @@ export class MoleculePartSelector {
   /** Adds atoms to the selection (no-op for atoms already selected). */
   addToSelection(atoms: number[]): void {
     let changed = false;
-    for (const a of atoms) {
-      if (!this._selection.has(a)) { this._selection.add(a); changed = true; }
-    }
+    for (const a of atoms)
+      if (!this._selection.has(a)) {this._selection.add(a); changed = true;}
+
     if (changed) {
       this._notifySelection();
       this._scheduleRender();
@@ -284,9 +288,9 @@ export class MoleculePartSelector {
   /** Removes atoms from the selection. */
   removeFromSelection(atoms: number[]): void {
     let changed = false;
-    for (const a of atoms) {
+    for (const a of atoms)
       if (this._selection.delete(a)) changed = true;
-    }
+
     if (changed) {
       this._notifySelection();
       this._scheduleRender();
@@ -390,7 +394,7 @@ export class MoleculePartSelector {
       this._resizeObserver = null;
     }
     if (this._mol) {
-      try { this._mol.delete(); } catch { /* ignore */ }
+      try {this._mol.delete();} catch {/* ignore */}
       this._mol = null;
     }
     this.onSelectionChanged.complete();
@@ -556,7 +560,7 @@ export class MoleculePartSelector {
       try {
         const bb = (t as unknown as SVGGraphicsElement).getBBox();
         positions.set(idx, {x: bb.x + bb.width / 2, y: bb.y + bb.height / 2});
-      } catch { /* ignore */ }
+      } catch {/* ignore */}
     }
 
     // 3) carbons / unlabeled atoms — average bond endpoints from <path class="bond-K atom-A atom-B">.
@@ -629,7 +633,7 @@ export class MoleculePartSelector {
       this._suppressNextClick = false;
       return;
     }
-    if (this._mode !== 'click' && this._mode !== 'both') return;
+    if (this._mode !== 'click' && this._mode !== 'both' && this._mode !== 'all') return;
     const idx = this._findAtomFromTarget(e.target);
     if (idx === null) return;
     if (this._selection.has(idx)) this._selection.delete(idx);
@@ -644,11 +648,11 @@ export class MoleculePartSelector {
   private _dragKindForMouseDown(e: MouseEvent): 'box' | 'lasso' | null {
     const ctrlOrCmd = e.ctrlKey || e.metaKey;
     switch (this._mode) {
-      case 'box':   return 'box';
-      case 'lasso': return 'lasso';
-      case 'both':  return 'box';
-      case 'all':   return ctrlOrCmd ? 'lasso' : 'box';
-      default:      return null; // 'click' / 'none'
+    case 'box': return 'box';
+    case 'lasso': return 'lasso';
+    case 'both': return 'box';
+    case 'all': return ctrlOrCmd ? 'lasso' : 'box';
+    default: return null; // 'click' / 'none'
     }
   }
 
@@ -738,7 +742,7 @@ export class MoleculePartSelector {
     if (moved) {
       // suppress the synthetic click that follows the drag mouseup
       this._suppressNextClick = true;
-      setTimeout(() => { this._suppressNextClick = false; }, 0);
+      setTimeout(() => {this._suppressNextClick = false;}, 0);
     }
 
     this._dragStart = null;

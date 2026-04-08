@@ -6,7 +6,8 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {getMonomerHover, getSubstructProviders} from '@datagrok-libraries/chem-meta/src/types';
+import {getMonomerHover, getSubstructProviders, mergeSubstructs as mergeSubstructsLib}
+  from '@datagrok-libraries/chem-meta/src/types';
 import {ChemTags, ChemTemps} from '@datagrok-libraries/chem-meta/src/consts';
 import {RDModule} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 import {MolfileHandler} from '@datagrok-libraries/chem-meta/src/parsing-utils/molfile-handler';
@@ -662,11 +663,14 @@ function hasNonZeroZCoords(molfile: string, numAtoms: number): boolean {
 }
 
 function mergeSubstructs(substructList: (ISubstruct | undefined)[]): ISubstruct | undefined {
-  if (substructList.length === 0)
-    return undefined;
-  else if (substructList.length === 1)
-    return substructList[0];
-  else
-    throw new Error('Multiple substruct providers are not supported.');
-    // TODO: Average colors for atoms and bonds (or just merge lists)
+  // Filter out undefined entries from providers that don't apply to this row.
+  const defined = substructList.filter((s): s is ISubstruct => s !== undefined);
+  if (defined.length === 0) return undefined;
+  if (defined.length === 1) return defined[0];
+  // Multiple active providers — delegate to the chem-meta merge helper, which
+  // unions atoms / bonds / highlightAtomColors / highlightBondColors and the
+  // atomLabels / atomNotes / bondNotes annotation fields. Later providers
+  // override earlier ones on color collisions, matching the layered-highlight
+  // semantics used elsewhere in the renderer.
+  return mergeSubstructsLib(defined);
 }
