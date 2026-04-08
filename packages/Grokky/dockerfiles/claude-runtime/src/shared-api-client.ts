@@ -57,6 +57,22 @@ export async function request<T = unknown>(
   return res.text() as T;
 }
 
+export async function requestBinary(
+  method: string, path: string,
+): Promise<Buffer> {
+  const ctx = _ctx();
+  const url = `${ctx.apiUrl}/${path.replace(/^\//, '')}`;
+  const res = await fetch(url, {
+    method,
+    headers: {'Authorization': ctx.apiKey},
+  });
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`HTTP ${res.status}: ${text}`);
+  }
+  return Buffer.from(await res.arrayBuffer());
+}
+
 export async function listFiles(connector: string, path?: string): Promise<unknown[]> {
   const searchName = connector.includes(':') ? connector.split(':').pop()! : connector;
   const conns = await request<Connection[]>(

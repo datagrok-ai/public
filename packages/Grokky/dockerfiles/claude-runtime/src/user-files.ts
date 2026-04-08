@@ -1,11 +1,13 @@
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
-import {runWithContext, request, downloadFile} from './shared-api-client';
+import AdmZip from 'adm-zip';
+import {runWithContext, request, requestBinary, downloadFile} from './shared-api-client';
 
 const USERS_DIR = '/users';
 const WORKSPACE = process.env['CLAUDE_WORKSPACE'] || '/workspace';
 
 const syncedUsers = new Set<string>();
+const packageTimestamps = new Map<string, Map<string, string>>();
 
 function userIdFromKey(apiKey: string): string {
   try {
@@ -78,6 +80,100 @@ async function collectFiles(connId: string, dirPath: string): Promise<string[]> 
   return files;
 }
 
+interface PackageInfo {
+  id: string;
+  name: string;
+  updatedOn?: string;
+}
+
+let standardPackageNames: Set<string> | null = null;
+
+async function getStandardPackageNames(): Promise<Set<string>> {
+  if (standardPackageNames)
+    return standardPackageNames;
+  try {
+    const entries = await fs.readdir(path.join(WORKSPACE, 'packages'));
+    standardPackageNames = new Set(entries);
+  }
+  catch {
+    standardPackageNames = new Set();
+  }
+  return standardPackageNames;
+}
+
+async function syncPackageAgentFiles(userDir: string): Promise<void> {
+  const packages = await request<PackageInfo[]>('GET', '/packages/published/current');
+  if (!Array.isArray(packages) || !packages.length)
+    return;
+
+  const standard = await getStandardPackageNames();
+  const custom = packages.filter((p) => !standard.has(p.name));
+  if (!custom.length)
+    return;
+
+  const userId = path.basename(userDir);
+  if (!packageTimestamps.has(userId))
+    packageTimestamps.set(userId, new Map());
+  const cached = packageTimestamps.get(userId)!;
+
+  const agentsDir = path.join(userDir, 'agents');
+  const currentPackages = new Set<string>();
+
+  for (const pkg of custom) {
+    currentPackages.add(pkg.name);
+    const ts = pkg.updatedOn ?? '';
+    if (cached.get(pkg.name) === ts)
+      continue;
+
+    console.log(`package-agents: syncing ${pkg.name} (updated: ${ts})`);
+    try {
+      const buf = await requestBinary('GET', `/packages/published/${pkg.id}/zip`);
+      const zip = new AdmZip(buf);
+      const entries = zip.getEntries();
+      const agentEntries = entries.filter((e) =>
+        !e.isDirectory && e.entryName.startsWith('agents/'));
+
+      // Clean old files for this package
+      const prefix = `${pkg.name}-`;
+      try {
+        const existing = await fs.readdir(agentsDir);
+        for (const f of existing)
+          if (f.startsWith(prefix))
+            await fs.rm(path.join(agentsDir, f), {force: true});
+      }
+      catch { /* dir may not exist */ }
+
+      for (const entry of agentEntries) {
+        const rel = entry.entryName.replace(/^agents\//, '').replace(/\//g, '-');
+        const dest = path.join(agentsDir, `${pkg.name}-${rel}`);
+        await fs.writeFile(dest, entry.getData());
+      }
+      cached.set(pkg.name, ts);
+      if (agentEntries.length)
+        console.log(`package-agents: extracted ${agentEntries.length} file(s) from ${pkg.name}`);
+    }
+    catch (e: any) {
+      console.warn(`package-agents: failed to sync ${pkg.name}:`, e.message);
+    }
+  }
+
+  // Clean up files from removed packages
+  for (const [name] of cached) {
+    if (!currentPackages.has(name)) {
+      const prefix = `${name}-`;
+      try {
+        const existing = await fs.readdir(agentsDir);
+        for (const f of existing)
+          if (f.startsWith(prefix))
+            await fs.rm(path.join(agentsDir, f), {force: true});
+      }
+      catch { /* ignore */ }
+      cached.delete(name);
+      console.log(`package-agents: cleaned up files for removed package ${name}`);
+    }
+  }
+}
+
 async function listAgentFiles(userDir: string): Promise<string[]> {
   const agentsDir = path.join(userDir, 'agents');
   try {
@@ -145,7 +241,22 @@ export async function syncUserFiles(
     syncedUsers.add(apiKey);
     if (synced.length)
       console.log(`Synced ${synced.length} file(s) for user`);
+
+    // Clear package timestamp cache on force sync so packages get re-downloaded
+    if (force) {
+      const userId = path.basename(dir);
+      packageTimestamps.delete(userId);
+    }
   }
+
+  await runWithContext({apiKey, apiUrl}, async () => {
+    try {
+      await syncPackageAgentFiles(dir);
+    }
+    catch (e: any) {
+      console.warn('package-agents: sync failed:', e.message);
+    }
+  });
 
   const files = await listAgentFiles(dir);
   return {dir, files};
