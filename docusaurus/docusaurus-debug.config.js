@@ -43,15 +43,17 @@ const config = {
                 out: './js-api',
                 indexFormat: "table",
                 parametersFormat: "table",
-                propertiesFormat: "table",
+                interfacePropertiesFormat: "table",
+                classPropertiesFormat: "table",
+                typeAliasPropertiesFormat: "table",
                 enumMembersFormat: "table",
                 typeDeclarationFormat: "table",
                 expandParameters: false,
                 sanitizeComments: true,
                 sidebar: { pretty: true },
-                textContentMappings: {
-                    "title.indexPage": "JavaScript API",
-                    "title.memberPage": "{name}",
+                pageTitleTemplates: {
+                    index: "JavaScript API",
+                    member: "{name}",
                 },
                 plugin: ['typedoc-plugin-replace-text'],
                 replaceText: {
