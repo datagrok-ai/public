@@ -166,7 +166,15 @@ M  END
     startY: number;
     curX: number;
     curY: number;
-    modifiers: {shift: boolean, alt: boolean};
+    /** `add` = Alt held (additive — adds boxed atoms to existing selection
+     *  rather than replacing it).
+     *
+     *  Alt is the only modifier we can use: Datagrok's grid claims Shift+
+     *  Click for row range-select and Ctrl/Cmd+Click for row multi-select
+     *  (standard spreadsheet conventions), so neither modifier ever
+     *  dispatches `onMouseDown` to a cell renderer. Alt is not part of the
+     *  spreadsheet selection vocabulary, so the grid lets it through. */
+    modifiers: {add: boolean};
     positions: Map<number, {x: number, y: number}>;
     overlay: HTMLDivElement;
     onMove: (e: MouseEvent) => void;
@@ -787,7 +795,8 @@ M  END
       startY: pointerCellY,
       curX: pointerCellX,
       curY: pointerCellY,
-      modifiers: {shift: e.shiftKey, alt: e.altKey},
+      // Alt → additive selection (adds boxed atoms instead of replacing).
+      modifiers: {add: e.altKey},
       positions,
       overlay,
       onMove,
@@ -802,6 +811,15 @@ M  END
   private _handleDragMove(e: MouseEvent): void {
     const d = this._drag;
     if (!d) return;
+
+    // Track Alt state continuously throughout the drag. Reading `e.altKey`
+    // only at mousedown or only at mouseup is unreliable: at mousedown the
+    // user may not yet be holding Alt (they pressed it mid-drag); at
+    // mouseup the browser sometimes loses modifier state if a synthetic
+    // event is dispatched in the middle. The most reliable signal is
+    // whatever was tracked on the last mousemove sample.
+    d.modifiers.add = e.altKey;
+
     // cell-local coordinates, clamped so the rectangle never extends past
     // the molecule cell where the drag started
     const cellX = Math.max(0, Math.min(d.cellWidth, e.clientX - d.cellClientLeft));
@@ -814,9 +832,22 @@ M  END
     d.overlay.style.top = vpTop + 'px';
     d.overlay.style.width = Math.abs(d.curX - d.startX) + 'px';
     d.overlay.style.height = Math.abs(d.curY - d.startY) + 'px';
+
+    // Visual feedback: tint the overlay magenta when Alt is held mid-drag,
+    // so the user can see the picker has recognised the modifier and will
+    // add (rather than replace) the existing selection.
+    if (e.altKey) {
+      // additive — picked-atom magenta
+      d.overlay.style.borderColor = '#d650bf';
+      d.overlay.style.background = 'rgba(214, 80, 191, 0.18)';
+    } else {
+      // replace — default green
+      d.overlay.style.borderColor = '#4a8';
+      d.overlay.style.background = 'rgba(102, 204, 102, 0.15)';
+    }
   }
 
-  private _handleDragUp(_e: MouseEvent): void {
+  private _handleDragUp(e: MouseEvent): void {
     const d = this._drag;
     if (!d) return;
 
@@ -829,11 +860,31 @@ M  END
     const positions = d.positions;
     const tableCol = d.tableCol;
     const rowIdx = d.rowIdx;
-    const modifiers = d.modifiers;
     const grid = d.grid;
+    // Combine the latest tracked-during-mousemove modifier state with the
+    // mouseup event's own state. We OR them so Alt held at any recent
+    // moment wins — defends against the browser losing modifier state on
+    // the mouseup event itself.
+    const modifiers = {add: e.altKey || d.modifiers.add};
+    const startX = d.startX;
+    const startY = d.startY;
 
     this._endDrag();
-    if (!moved) return;
+
+    // Click (no significant movement). If Alt was held and the click was
+    // close to a specific atom, toggle that single atom — adds it if not
+    // already in the selection, removes it if it is. This is the
+    // fine-tuning complement to Alt+drag.
+    if (!moved) {
+      if (modifiers.add) {
+        const nearest = this._findNearestAtom(positions, startX, startY);
+        if (nearest !== null) {
+          this._toggleAtomInRow(tableCol, rowIdx, nearest);
+          grid.invalidate();
+        }
+      }
+      return;
+    }
 
     const boxed: number[] = [];
     for (const [idx, p] of positions.entries()) {
@@ -844,6 +895,58 @@ M  END
     grid.invalidate();
   }
 
+  /** Returns the index of the atom whose center is nearest to the click
+   *  point, but only if it falls within `CLICK_TOLERANCE_PX` (CSS pixels).
+   *  Returns null if the user clicked too far from any atom. */
+  private _findNearestAtom(
+    positions: Map<number, {x: number, y: number}>,
+    clickX: number, clickY: number,
+  ): number | null {
+    const CLICK_TOLERANCE_PX = 12;
+    const tolSq = CLICK_TOLERANCE_PX * CLICK_TOLERANCE_PX;
+    let nearestIdx: number | null = null;
+    let nearestDistSq = tolSq;
+    for (const [idx, p] of positions.entries()) {
+      const dx = p.x - clickX;
+      const dy = p.y - clickY;
+      const dsq = dx * dx + dy * dy;
+      if (dsq < nearestDistSq) {
+        nearestDistSq = dsq;
+        nearestIdx = idx;
+      }
+    }
+    return nearestIdx;
+  }
+
+  /** Toggles a single atom in a row's atom-picker selection. Adds the atom
+   *  if it's not in the current selection, removes it if it is. Used by
+   *  Alt+click for one-atom-at-a-time fine-tuning. */
+  private _toggleAtomInRow(col: DG.Column, rowIdx: number, atomIdx: number): void {
+    type TaggedProvider = ISubstructProvider & {__atomPicker?: boolean, __rowIdx?: number, __atoms?: Set<number>};
+    const existing = (col.temp[ChemTemps.SUBSTRUCT_PROVIDERS] ?? []) as TaggedProvider[];
+    const prior = existing.find((p) => p.__atomPicker && p.__rowIdx === rowIdx);
+    const current = new Set<number>(prior?.__atoms ?? []);
+    if (current.has(atomIdx)) current.delete(atomIdx);
+    else current.add(atomIdx);
+    // Build the fresh provider (same shape as _updateRowSelection writes).
+    const pickColor: number[] = [0.85, 0.4, 0.75, 1.0];
+    const atomsArr = [...current];
+    const highlightAtomColors: {[k: number]: number[]} = {};
+    for (const a of atomsArr) highlightAtomColors[a] = pickColor;
+    const provider: TaggedProvider = {
+      getSubstruct: (ridx) => {
+        if (ridx !== rowIdx) return undefined;
+        return {atoms: atomsArr, highlightAtomColors};
+      },
+    };
+    provider.__atomPicker = true;
+    provider.__rowIdx = rowIdx;
+    provider.__atoms = current;
+    col.temp[ChemTemps.SUBSTRUCT_PROVIDERS] = existing.filter(
+      (p) => !p.__atomPicker || p.__rowIdx !== rowIdx);
+    addSubstructProvider(col.temp, provider);
+  }
+
   /**
    * Merges the freshly boxed atoms into the row's current atom-picker selection
    * (replace / add / remove depending on modifiers) and writes a tagged
@@ -851,17 +954,16 @@ M  END
    * by row index, so picks on other rows survive untouched.
    */
   private _updateRowSelection(col: DG.Column, rowIdx: number, boxed: number[],
-    modifiers: {shift: boolean, alt: boolean}): void {
+    modifiers: {add: boolean}): void {
     type TaggedProvider = ISubstructProvider & {__atomPicker?: boolean, __rowIdx?: number, __atoms?: Set<number>};
     const existing = (col.temp[ChemTemps.SUBSTRUCT_PROVIDERS] ?? []) as TaggedProvider[];
     const prior = existing.find((p) => p.__atomPicker && p.__rowIdx === rowIdx);
     const current = new Set<number>(prior?.__atoms ?? []);
 
-    if (!modifiers.shift && !modifiers.alt) current.clear();
-    for (const a of boxed) {
-      if (modifiers.alt) current.delete(a);
-      else current.add(a);
-    }
+    // No modifier → replace existing selection with boxed atoms.
+    // Alt (add) → keep existing and union with boxed atoms.
+    if (!modifiers.add) current.clear();
+    for (const a of boxed) current.add(a);
 
     // Build the fresh provider
     const pickColor: number[] = [0.85, 0.4, 0.75, 1.0]; // same magenta as the mockups
@@ -893,17 +995,18 @@ M  END
   /**
    * Compute atom positions for a cell in cell-local CSS pixels.
    *
-   * The tricky part is matching the RDKit canvas layout exactly. The cell
-   * renderer's `render()` multiplies the cell's CSS width/height by
-   * `devicePixelRatio` before passing them into `drawRdKitMoleculeToOffscreenCanvas`,
-   * and uses `RDKIT_COMMON_RENDER_OPTS` (which includes `fixedScale: 0.07`
-   * and specific line-width / font-size settings). Any deviation from that
-   * combination produces a different internal atom layout, and the box hit
-   * test drifts off the atoms as they appear on screen.
+   * To guarantee the SVG layout matches the canvas-rasterized layout
+   * pixel-for-pixel, we use the SAME `IMolContext` the cell renderer uses
+   * (via `_fetchMol`). Calling `get_mol` directly here would create a
+   * different mol instance whose 2D coordinates may have been generated
+   * with different options (kekulization, mol-block wedging, etc.) — that
+   * was the source of the position drift the user reported.
    *
-   * We therefore render the SVG at the SAME (DPR-scaled) dimensions with the
-   * SAME render options, then divide the extracted coordinates by DPR to
-   * convert them back to cell-local CSS pixels — the space the pointer
+   * The cell renderer's `render()` multiplies cell CSS width/height by
+   * `devicePixelRatio` before drawing, and uses `RDKIT_COMMON_RENDER_OPTS`
+   * (which includes `fixedScale: 0.07`). We mirror the same DPR scaling
+   * and options here, then divide the extracted SVG coordinates back by
+   * DPR to convert them to cell-local CSS pixels — the space the pointer
    * events live in.
    */
   private _getCellAtomPositions(molString: string, cssWidth: number, cssHeight: number):
@@ -915,13 +1018,17 @@ M  END
     const hit = this.atomPositionsCache.get(key);
     if (hit) return hit;
 
-    let mol: RDMol | null = null;
     try {
-      mol = this.rdKitModule.get_mol(molString);
+      // Use the SAME cached molctx the renderer uses, so atom 2D coords
+      // match exactly. The mol is owned by molCache — DO NOT delete it.
+      const molRenderingInfo = this._fetchMol(molString, [], false, false, {}, false);
+      const mol = molRenderingInfo.molCtx.mol;
       if (!mol || !mol.is_valid()) return null;
-      // Mirror the canvas render path's options so the SVG layout matches
-      // the rasterized layout pixel-for-pixel (atom centers land in the
-      // same places).
+
+      // Mirror the canvas render path's options exactly. RDKit uses the
+      // same internal layout for both `draw_to_canvas_with_highlights`
+      // and `get_svg_with_highlights` when given identical opts on the
+      // same mol object.
       const details: {[k: string]: any} = {};
       for (const k of Object.keys(RDKIT_COMMON_RENDER_OPTS))
         details[k] = RDKIT_COMMON_RENDER_OPTS[k];
@@ -931,11 +1038,18 @@ M  END
       details.bonds = [];
       details.highlightAtomColors = {};
       details.highlightBondColors = {};
+      // Mirror the kekulize / molBlockWedging behaviour from
+      // drawRdKitMoleculeToOffscreenCanvas so the SVG layout cannot drift
+      // from the canvas layout because of these options.
+      if (!molRenderingInfo.molCtx.kekulize) details.kekulize = false;
+      if (molRenderingInfo.molCtx.useMolBlockWedging) {
+        details.useMolBlockWedging = true;
+        details.wedgeBonds = false;
+        details.addChiralHs = false;
+      }
+
       const svgString = mol.get_svg_with_highlights(JSON.stringify(details));
-      // Use innerHTML on a div in the main document (NOT DOMParser) so the
-      // SVG is a real element in the current document, its layout is
-      // computed, and getBBox() returns real numbers. DOMParser + appendChild
-      // produces an SVG whose layout is inconsistent across browsers.
+      // innerHTML on a real div in the main document so layout/getBBox work.
       const host = document.createElement('div');
       host.style.position = 'absolute';
       host.style.left = '-9999px';
@@ -960,8 +1074,6 @@ M  END
       }
     } catch {
       return null;
-    } finally {
-      mol && mol.delete();
     }
   }
 
@@ -980,7 +1092,7 @@ M  END
       try {
         const bb = (t as unknown as SVGGraphicsElement).getBBox();
         positions.set(idx, {x: bb.x + bb.width / 2, y: bb.y + bb.height / 2});
-      } catch { /* ignore */ }
+      } catch {/* ignore */}
     }
 
     // Carbons — average bond endpoints extracted from <path> d attributes
