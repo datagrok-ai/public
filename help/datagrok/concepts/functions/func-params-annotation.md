@@ -139,6 +139,7 @@ For all parameters:
 | postfix    | string | Field postfix                                                             |
 | units      | string | Value unit name                                                           |
 | nullable   | bool   | Makes it an [optional parameter](#initial-values-and-optional-parameters) |
+| category   | string | Groups the parameter under a named section in the function dialog. See [parameter groups](#parameter-groups). |
 
 For `dataframe` type:
 
@@ -207,6 +208,47 @@ WHERE lastName in (SELECT unnest(@employee))
 
 </div>
 </details>
+
+### Parameter groups
+
+Use `category` to group related parameters under a shared section header in the function dialog:
+
+```js
+//input: double learningRate {category: Hyperparameters}
+//input: double momentum {category: Hyperparameters}
+//input: int epochs {category: Training}
+```
+
+For functions with many parameter groups, use `meta.categoryGroups` to organize categories into a
+hierarchy of collapsible sections. The value is a JSON object where keys are section headers and
+values are lists of category names:
+
+```js
+//meta.categoryGroups: {"Model": ["Input Data", "Architecture"], "Training": ["Hyperparameters", "Optimizer"]}
+//input: dataframe data {category: Input Data}
+//input: int layers {category: Architecture}
+//input: double learningRate {category: Hyperparameters}
+//input: string optimizer {category: Optimizer}
+```
+
+This renders as:
+
+```
+▸ Model
+  ▸ Input Data
+    data
+  ▸ Architecture
+    layers
+▸ Training
+  ▸ Hyperparameters
+    learningRate
+  ▸ Optimizer
+    optimizer
+```
+
+When all parameters in a category are hidden programmatically (via `InputForm.hideInput`),
+the category header hides automatically. If all categories under a section header are hidden,
+that header hides too.
 
 ### Initial values and optional parameters
 
