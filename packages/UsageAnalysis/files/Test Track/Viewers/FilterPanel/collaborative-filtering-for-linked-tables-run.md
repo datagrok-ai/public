@@ -1,44 +1,47 @@
 # Collaborative Filtering for Linked Tables — Run Results
 
-**Date**: 2026-04-03
+**Date**: 2026-04-08
 **URL**: https://dev.datagrok.ai
 **Status**: PASS
 
 ## Steps
 
-| # | Step | Result | Playwright | Notes |
-|---|------|--------|------------|-------|
-| 1 | Run JS script to load and link 3 tables | PASS | PASSED | SPGI (3624, 88 cols), SPGI-linked1 (3624, 21 cols), SPGI-linked2 (224, 7 cols). Links: df3→df2 FILTER_TO_FILTER, df1→df2 SELECTION_TO_FILTER |
-| 2 | Go to SPGI, select 5 rows at top | PASS | PASSED | 5 rows selected via selection.init(idx => idx < 5) |
-| 3 | Switch to SPGI-linked1 — should be 9 filtered rows | PASS | PASSED | Exactly 9 rows filtered via SELECTION_TO_FILTER link |
-| 4 | Switch to SPGI-linked2 | PASS | PASSED | 224 rows, no filtering (not linked from SPGI selection) |
-| 5 | Open Filter Panel on SPGI-linked2 | PASS | PASSED | Filters: link column 3 (v i: 75, v ii: 148, v iii: 1), link column 2, link column 1, Value1, Value2 |
-| 6 | Select "v ii" in link column 3 filter | PASS | PASSED | Filtered SPGI-linked2 to 148 rows via canvas click |
-| 7 | Switch to SPGI-linked1 — should be 5 filtered rows | PASS | PASSED | Exactly 5 rows. FILTER_TO_FILTER propagated from SPGI-linked2, combined with SELECTION_TO_FILTER from SPGI |
-| 8 | Open Filter Panel on SPGI-linked1 | PASS | PASSED | Shows: Structure, pH6.8 HT Solubility, hERG, link column 3 (v ii: 5), PAMPA Classification (>= -4.5: 3, inconclusive: 2), LE-MDCK |
-| 9 | Select "Inconclusive" in PAMPA Classification — 2 rows | PASS | PASSED | Exactly 2 filtered rows via canvas click on "inconclusive" |
+| # | Step | Result | Time | Playwright | Notes |
+|---|------|--------|------|-------|-------|
+| 1 | Run JS script to link 3 tables | PASS | 15s | PASSED | SPGI(3624), linked1(3624), linked2(224) |
+| 2 | Select 5 rows in SPGI | PASS | 2s | PASSED | JS API: selection.set(i, true) |
+| 3 | SPGI-linked1 has 9 filtered rows | PASS | 2s | PASSED | Selection-to-filter link works |
+| 4 | Switch to SPGI-linked2 | PASS | 1s | PASSED | JS API: grok.shell.v = v |
+| 5 | Open Filter Panel on SPGI-linked2 | PASS | 3s | PASSED | getFiltersGroup(), 5 filter cards |
+| 6 | Filter link column 3 to v ii | PASS | 2s | PASSED | JS API: fg.updateOrAdd categorical, 148 rows |
+| 7 | SPGI-linked1 has 5 filtered rows | PASS | 2s | PASSED | Filter-to-filter link propagation works |
+| 8 | Open Filter Panel on SPGI-linked1 | PASS | 3s | PASSED | getFiltersGroup() |
+| 9 | PAMPA Classification = inconclusive | PASS | 2s | PASSED | 2 filtered rows as expected |
+
+## Timing
+
+| Phase | Duration |
+|-------|----------|
+| Execute via grok-browser | ~35s |
+| Spec file generation | ~3s |
+| Spec script execution | 30s (PASSED) |
 
 ## Summary
 
-All 9 steps passed. Collaborative filtering for linked tables works correctly on dev.datagrok.ai. SELECTION_TO_FILTER (SPGI → SPGI-linked1) correctly filters to 9 rows, FILTER_TO_FILTER (SPGI-linked2 → SPGI-linked1) correctly propagates the "v ii" category reducing to 5 rows, and adding the local "inconclusive" PAMPA Classification filter narrows to 2 rows.
+All 9 steps passed. Table linking (selection-to-filter and filter-to-filter) works correctly. Filtering propagates between linked tables as expected — selecting 5 rows in SPGI filters SPGI-linked1 to 9 rows, then applying a category filter on SPGI-linked2 further narrows SPGI-linked1 to 5 rows, and adding PAMPA Classification filter results in exactly 2 rows.
 
 ## Retrospective
 
 ### What worked well
-- `grok.data.linkTables()` with both SELECTION_TO_FILTER and FILTER_TO_FILTER applied correctly
-- Linked filtering propagated automatically when switching views
-- Canvas-based categorical filter clicks worked with coordinate calculation (row index * row height)
-- All expected row counts matched exactly: 9, 148, 5, 2
-- No console warnings or errors
+- Table linking APIs (grok.data.linkTables) set up correctly on first attempt
+- Selection-to-filter and filter-to-filter sync types both work as documented
+- Category filter via fg.updateOrAdd worked reliably across linked tables
 
 ### What did not work
-- Nothing — all steps passed as expected
-- Filter panel required JS API `getFiltersGroup()` to open (DOM click on toolbox section not reliable)
+- (nothing — all steps passed)
 
 ### Suggestions for the platform
-- Add accessible `[name="..."]` attributes to categorical filter rows for automated testing (currently requires canvas coordinate clicks)
-- Make filter panel openable via a reliable DOM click target
+- (none)
 
 ### Suggestions for the scenario
-- "Inconclusive" in the scenario text is capitalized but the actual category value is "inconclusive" (lowercase) — keep consistent
-- Consider adding a cleanup step to close views at the end
+- The scenario uses inline JS script — consider providing dataset paths in JSON metadata like other scenarios

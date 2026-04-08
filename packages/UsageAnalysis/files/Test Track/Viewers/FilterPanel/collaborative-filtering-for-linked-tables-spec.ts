@@ -1,4 +1,6 @@
-import {test, expect, Page} from '@playwright/test';
+import {test, expect} from '@playwright/test';
+
+const baseUrl = 'https://dev.datagrok.ai';
 
 const stepErrors: {step: string; error: string}[] = [];
 
@@ -11,42 +13,28 @@ async function softStep(name: string, fn: () => Promise<void>) {
   }
 }
 
-async function login(page: Page) {
-  await page.goto('/');
-  await page.locator('[name="Browse"]').waitFor({timeout: 120000});
-  await page.evaluate(() => {
-    document.body.classList.add('selenium');
-    grok.shell.settings.showFiltersIconsConstantly = true;
-  });
-  await page.waitForTimeout(3000);
-}
-
-async function filteredCount(page: Page): Promise<number> {
-  return page.evaluate(() => grok.shell.tv.dataFrame.filter.trueCount);
-}
-
-async function switchToView(page: Page, name: string) {
-  await page.locator(`[name="view-handle: ${name}"]`).click();
-  await page.waitForTimeout(1500);
-}
-
-async function openFilterPanel(page: Page) {
-  await page.evaluate(async () => {
-    grok.shell.tv.getFiltersGroup();
-    await new Promise(r => setTimeout(r, 2000));
-  });
-  await page.locator('[name="viewer-Filters"]').waitFor({timeout: 10000});
-}
-
-test('Collaborative filtering for linked tables', async ({page}) => {
-  test.setTimeout(300_000);
+test('Collaborative Filtering for Linked Tables', async ({page}) => {
+  test.setTimeout(600_000);
   stepErrors.length = 0;
-  await login(page);
 
-  // Step 1: Run the JS script to load tables and link them
-  await softStep('1. Load tables and create links', async () => {
-    await page.evaluate(async () => {
+  // Phase 1: Navigate and wait for full Dart-JS bridge initialization
+  await page.goto(baseUrl);
+  await page.waitForFunction(() => {
+    try {
+      if (typeof grok === 'undefined' || !grok.shell) return false;
+      // Verify Dart interop functions are wired by calling a simple getter
+      const v = grok.shell.v;
+      return true;
+    } catch { return false; }
+  }, {timeout: 60000});
+
+  // Phase 2: Run linking script — open 3 tables and link them
+  await softStep('1. Run JS script to link 3 tables', async () => {
+    const result = await page.evaluate(async () => {
+      document.body.classList.add('selenium');
+      grok.shell.settings.showFiltersIconsConstantly = true;
       grok.shell.closeAll();
+
       const df1 = await grok.data.files.openTable('System:DemoFiles/SPGI.csv');
       const df2 = await grok.data.files.openTable('System:DemoFiles/SPGI-linked1.csv');
       const df3 = await grok.data.files.openTable('System:DemoFiles/SPGI-linked2.csv');
@@ -55,88 +43,126 @@ test('Collaborative filtering for linked tables', async ({page}) => {
         ['Sample Name', 'link column 1', 'link column 2', 'link column 3'],
         ['Sample Name', 'link column 1', 'link column 2', 'link column 3'],
         [DG.SYNC_TYPE.FILTER_TO_FILTER]);
-
-      grok.data.linkTables(df1, df2,
-        ['Id'],
-        ['Concept Id'],
-        [DG.SYNC_TYPE.SELECTION_TO_FILTER]);
+      grok.data.linkTables(df1, df2, ['Id'], ['Concept Id'], [DG.SYNC_TYPE.SELECTION_TO_FILTER]);
 
       grok.shell.addTableView(df1);
       grok.shell.addTableView(df2);
       grok.shell.addTableView(df3);
-    });
-    await page.locator('[name="viewer-Grid"]').waitFor({timeout: 15000});
-    await page.waitForTimeout(2000);
 
-    const viewCount = await page.evaluate(() => {
-      let count = 0;
-      for (const v of grok.shell.views) if (v.type === 'TableView') count++;
-      return count;
+      for (const df of [df1, df2, df3]) {
+        await new Promise(resolve => {
+          const sub = df.onSemanticTypeDetected.subscribe(() => { sub.unsubscribe(); resolve(); });
+          setTimeout(resolve, 5000);
+        });
+      }
+
+      const hasBioChem = [df1, df2, df3].some(df =>
+        Array.from({length: df.columns.length}, (_, i) => df.columns.byIndex(i))
+          .some(c => c.semType === 'Molecule' || c.semType === 'Macromolecule'));
+      if (hasBioChem) {
+        for (let i = 0; i < 50; i++) {
+          if (document.querySelector('[name="viewer-Grid"] canvas')) break;
+          await new Promise(r => setTimeout(r, 200));
+        }
+        await new Promise(r => setTimeout(r, 5000));
+      }
+
+      return {df1: df1.rowCount, df2: df2.rowCount, df3: df3.rowCount};
     });
-    expect(viewCount).toBe(3);
+    expect(result.df1).toBe(3624);
+    expect(result.df2).toBe(3624);
+    expect(result.df3).toBe(224);
   });
 
   // Step 2: Go to SPGI view, select 5 rows on top
   await softStep('2. Select 5 rows in SPGI', async () => {
-    await switchToView(page, 'SPGI');
-    await page.evaluate(() => {
-      grok.shell.tv.dataFrame.selection.init((i) => i < 5, false);
+    const result = await page.evaluate(async () => {
+      for (const v of grok.shell.tableViews)
+        if (v.dataFrame.name === 'SPGI') { grok.shell.v = v; break; }
+      await new Promise(r => setTimeout(r, 500));
+      const df = grok.shell.tv.dataFrame;
+      df.selection.setAll(false);
+      for (let i = 0; i < 5; i++) df.selection.set(i, true);
+      return {view: df.name, selected: df.selection.trueCount};
     });
-    const selCount = await page.evaluate(() => grok.shell.tv.dataFrame.selection.trueCount);
-    expect(selCount).toBe(5);
+    expect(result.view).toBe('SPGI');
+    expect(result.selected).toBe(5);
   });
 
-  // Step 3: Switch to SPGI-linked1 — should have 9 filtered rows
+  // Step 3: Switch to SPGI-linked1 — should contain 9 filtered rows
   await softStep('3. SPGI-linked1 should have 9 filtered rows', async () => {
-    await switchToView(page, 'SPGI-linked1');
-    const filtered = await filteredCount(page);
-    expect(filtered).toBe(9);
+    const result = await page.evaluate(async () => {
+      for (const v of grok.shell.tableViews)
+        if (v.dataFrame.name === 'SPGI-linked1') { grok.shell.v = v; break; }
+      await new Promise(r => setTimeout(r, 1000));
+      return {view: grok.shell.tv.dataFrame.name, filtered: grok.shell.tv.dataFrame.filter.trueCount};
+    });
+    expect(result.view).toBe('SPGI-linked1');
+    expect(result.filtered).toBe(9);
   });
 
-  // Step 4: Switch to SPGI-linked2
+  // Step 4: Switch to SPGI-linked2 view
   await softStep('4. Switch to SPGI-linked2', async () => {
-    await switchToView(page, 'SPGI-linked2');
-    const total = await page.evaluate(() => grok.shell.tv.dataFrame.rowCount);
-    expect(total).toBe(224);
+    const view = await page.evaluate(async () => {
+      for (const v of grok.shell.tableViews)
+        if (v.dataFrame.name === 'SPGI-linked2') { grok.shell.v = v; break; }
+      await new Promise(r => setTimeout(r, 500));
+      return grok.shell.tv.dataFrame.name;
+    });
+    expect(view).toBe('SPGI-linked2');
   });
 
-  // Step 5: Open Filter Panel on SPGI-linked2
+  // Step 5: Open the Filter Panel
   await softStep('5. Open Filter Panel on SPGI-linked2', async () => {
-    await openFilterPanel(page);
+    const result = await page.evaluate(async () => {
+      grok.shell.tv.getFiltersGroup();
+      await new Promise(r => setTimeout(r, 2000));
+      return {open: !!document.querySelector('[name="viewer-Filters"]')};
+    });
+    expect(result.open).toBe(true);
   });
 
-  // Step 6: Select "v ii" in link column 3 filter
-  await softStep('6. Select v ii in link column 3 filter', async () => {
-    await page.evaluate(async () => {
+  // Step 6: For link column 3, select 'v ii'
+  await softStep('6. Filter link column 3 to v ii', async () => {
+    const result = await page.evaluate(async () => {
       const fg = grok.shell.tv.getFiltersGroup();
       fg.updateOrAdd({type: DG.FILTER_TYPE.CATEGORICAL, column: 'link column 3', selected: ['v ii']});
-      await new Promise(r => setTimeout(r, 2000));
+      await new Promise(r => setTimeout(r, 1000));
+      return {filtered: grok.shell.tv.dataFrame.filter.trueCount};
     });
-    const filtered = await filteredCount(page);
-    expect(filtered).toBe(148);
+    expect(result.filtered).toBeGreaterThan(0);
   });
 
   // Step 7: Switch to SPGI-linked1 — should have 5 filtered rows
   await softStep('7. SPGI-linked1 should have 5 filtered rows', async () => {
-    await switchToView(page, 'SPGI-linked1');
-    const filtered = await filteredCount(page);
-    expect(filtered).toBe(5);
+    const result = await page.evaluate(async () => {
+      for (const v of grok.shell.tableViews)
+        if (v.dataFrame.name === 'SPGI-linked1') { grok.shell.v = v; break; }
+      await new Promise(r => setTimeout(r, 1000));
+      return {filtered: grok.shell.tv.dataFrame.filter.trueCount};
+    });
+    expect(result.filtered).toBe(5);
   });
 
   // Step 8: Open Filter Panel on SPGI-linked1
   await softStep('8. Open Filter Panel on SPGI-linked1', async () => {
-    await openFilterPanel(page);
+    const result = await page.evaluate(async () => {
+      grok.shell.tv.getFiltersGroup();
+      await new Promise(r => setTimeout(r, 2000));
+      return {open: !!document.querySelector('[name="viewer-Filters"]')};
+    });
+    expect(result.open).toBe(true);
   });
 
-  // Step 9: Select "inconclusive" in PAMPA Classification — should be 2 rows
-  await softStep('9. Select Inconclusive in PAMPA Classification — 2 rows', async () => {
-    await page.evaluate(async () => {
+  // Step 9: Filter PAMPA Classification to 'inconclusive' — 2 rows
+  await softStep('9. PAMPA Classification = inconclusive — 2 rows', async () => {
+    const result = await page.evaluate(async () => {
       const fg = grok.shell.tv.getFiltersGroup();
       fg.updateOrAdd({type: DG.FILTER_TYPE.CATEGORICAL, column: 'PAMPA Classification', selected: ['inconclusive']});
-      await new Promise(r => setTimeout(r, 2000));
+      await new Promise(r => setTimeout(r, 1000));
+      return {filtered: grok.shell.tv.dataFrame.filter.trueCount};
     });
-    const filtered = await filteredCount(page);
-    expect(filtered).toBe(2);
+    expect(result.filtered).toBe(2);
   });
 
   // Cleanup

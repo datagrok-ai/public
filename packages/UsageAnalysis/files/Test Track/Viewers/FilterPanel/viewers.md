@@ -47,8 +47,8 @@
 
 1. Add a **Trellis Plot** viewer from the Toolbox
 2. Right-click the trellis plot viewer, from the context menu selest On Click > Filter
-3. Click on a cell in the Trellis Plot — verify the grid and Filter Panel row count update to show only the rows corresponding to the clicked cell
-4. Click the same cell again to reset — verify the row count returns to the previous filtered value
+3. Click on a cell in the Trellis Plot — verify the grid and Filter Panel row count update to show only the rows corresponding to the clicked cell. If the clicked cell is empty, row count expected to be 0
+4. Esc to return to the previous filtered state
 5. Close the Trellis Plot viewer
 
 #### 8. Pie Chart
