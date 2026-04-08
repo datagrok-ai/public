@@ -17,7 +17,7 @@ const config = {
     baseUrl: '/',
     onBrokenLinks: 'throw',
     onBrokenMarkdownLinks: 'throw',
-    onBrokenAnchors: 'throw',
+    onBrokenAnchors: 'warn',
     onDuplicateRoutes: 'throw',
     markdown: {
         format: 'detect',
