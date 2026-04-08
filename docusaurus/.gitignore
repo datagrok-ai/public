@@ -21,3 +21,4 @@ yarn-error.log*
 test-console-output.log
 /api/
 /js-api/
+js-api-readme.md
