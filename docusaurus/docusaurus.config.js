@@ -19,6 +19,9 @@ const config = {
     onBrokenMarkdownLinks: 'throw',
     onBrokenAnchors: 'throw',
     onDuplicateRoutes: 'throw',
+    markdown: {
+        format: 'detect',
+    },
     favicon: 'favicon/favicon.ico',
     staticDirectories: ['static'],
 
@@ -48,7 +51,7 @@ const config = {
                 docsPath: './api',
                 entryPoints: ['../js-api/dg.ts', '../js-api/ui.ts', '../js-api/grok.ts'],
                 tsconfig: '../js-api/tsconfig.json',
-                readme: '../help/develop/packages/js-api.md',
+                readme: './js-api-readme.md',
                 mergeReadme: true,
                 entryFileName: "index",
                 out: './api/js',
