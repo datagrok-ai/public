@@ -74,19 +74,20 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
 
   private getSmiles(mol: RDMol, stereoAgnostic?: boolean): string {
     return stereoAgnostic ?
-      mol.get_smiles(JSON.stringify({doIsomericSmiles: false})) :
+      mol.get_smiles('{"doIsomericSmiles":false}') :
       mol.get_smiles();
   }
 
   async searchSubstructure(queryMolString: string, queryMolBlockFailover: string, molecules?: string[],
-    searchType?: SubstructureSearchType, stereoAgnostic?: boolean): Promise<Uint32Array> {
+    searchType?: SubstructureSearchType): Promise<Uint32Array> {
     if (!molecules)
       throw new Error('Chem | Molecules for substructure serach haven\'t been provided');
 
+    const stereoAgnostic = searchType === SubstructureSearchType.STEREO_AGNOSTIC;
     const queryMol = getQueryMolSafe(queryMolString, queryMolBlockFailover, this._rdKitModule);
     let queryCanonicalSmiles = '';
     if (queryMol !== null) {
-      if (searchType === SubstructureSearchType.EXACT_MATCH) {
+      if (searchType === SubstructureSearchType.EXACT_MATCH || stereoAgnostic) {
         let tempMol: RDMol | null = null;
         try {
           //need to get canonical smiles from mol (not qmol) since qmol implicitly merges query hydrogens
@@ -97,7 +98,7 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
         }
       }
       const matches = await this.searchWithPatternFps(queryMol, molecules,
-        searchType ?? SubstructureSearchType.CONTAINS, queryCanonicalSmiles, stereoAgnostic);
+        searchType ?? SubstructureSearchType.CONTAINS, queryCanonicalSmiles);
       queryMol.delete();
       return matches;
     } else
@@ -113,7 +114,8 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
 
 
   async searchWithPatternFps(queryMol: RDMol, molecules: string[], searchType: SubstructureSearchType,
-    queryCanonicalSmiles: string, stereoAgnostic?: boolean): Promise<Uint32Array> {
+    queryCanonicalSmiles: string): Promise<Uint32Array> {
+    const stereoAgnostic = searchType === SubstructureSearchType.STEREO_AGNOSTIC;
     const matches = new BitArray(molecules.length);
     if (this._requestTerminated)
       return matches.buffer;

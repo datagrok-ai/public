@@ -33,11 +33,9 @@ export const getTerminateEventName =
   (tableName: string, colName: string) => `${TERMINATE_SEARCH}-${tableName}-${colName}`;
 export const getSearchProgressEventName =
   (tableName: string, colName: string) => `${SUBSTRUCTURE_SEARCH_PROGRESS}-${tableName}-${colName}`;
-export const getSearchQueryAndType = (molecule: string | null, type: string, fp: string, similarity: number,
-  stereoAgnostic = false) =>
+export const getSearchQueryAndType = (molecule: string | null, type: string, fp: string, similarity: number) =>
   molecule ? type !== SubstructureSearchType.IS_SIMILAR ?
-    `${molecule}_${type}${stereoAgnostic ? '_stereoAgnostic' : ''}` :
-    `${molecule}_${type}_${fp}_${similarity}` : '';
+    `${molecule}_${type}` : `${molecule}_${type}_${fp}_${similarity}` : '';
 export const FILTER_SCAFFOLD_TAG = 'chem-scaffold-filter';
 export const ALIGN_BY_SCAFFOLD_TAG = '.chem-scaffold-align'; // todo: Remove this tag in future, should be replaced with ALIGN_BY_SCAFFOLD_LAYOUT_PERSISTED_TAG
 export const ALIGN_BY_SCAFFOLD_LAYOUT_PERSISTED_TAG = '.%chem-scaffold-align';
@@ -68,6 +66,7 @@ export function setSyncTag(col: {tags: Record<string, string>},
 export const MALFORMED_DATA_WARNING_CLASS = 'malformed-data-warning';
 export enum SubstructureSearchType {
   EXACT_MATCH = 'Exact',
+  STEREO_AGNOSTIC = 'Stereo agnostic',
   CONTAINS = 'Contains',
   INCLUDED_IN = 'Included in',
   IS_SIMILAR = 'Similar',

@@ -260,8 +260,8 @@ before returning (required for compatibility)
 * */
 export async function chemSubstructureSearchLibrary(
   molStringsColumn: DG.Column, molString: string, molBlockFailover: string, filterType = FILTER_TYPES.substructure,
-  columnIsCanonicalSmiles = false, awaitAll = true, searchType = SubstructureSearchType.CONTAINS,
-  similarityCutOff = 0.8, fp = Fingerprint.Morgan, stereoAgnostic = false): Promise<BitArray> {
+  columnIsCanonicalSmiles = false, awaitAll = true, searchType = SubstructureSearchType.CONTAINS, similarityCutOff = 0.8,
+  fp = Fingerprint.Morgan): Promise<BitArray> {
   const searchKey = `${molStringsColumn?.dataFrame?.name ?? ''}-${molStringsColumn?.name ?? ''}`;
   const currentSearch = `${molBlockFailover}_${searchType}_${similarityCutOff}_${fp}`;
   currentSearchSmiles[filterType][searchKey] = currentSearch;
@@ -272,7 +272,7 @@ export async function chemSubstructureSearchLibrary(
   if (currentSearchSmiles[filterType][searchKey] !== currentSearch && filterType !== FILTER_TYPES.scaffold) {
     _package.logger.debug(`in chemSubstructureSearchLibrary, ending critical section without search: ${currentSearch}`);
     grok.events.fireCustomEvent(terminateEventName, getSearchQueryAndType(molBlockFailover, searchType, fp,
-      similarityCutOff, stereoAgnostic));
+      similarityCutOff));
     chemEndCriticalSection();
     _package.logger.debug(`in chemSubstructureSearchLibrary, ended critical section: ${currentSearch}`);
     return new BitArray(molStringsColumn.length);
@@ -322,9 +322,8 @@ export async function chemSubstructureSearchLibrary(
     };
     const subFuncs = await rdKitService.
       searchSubstructureWithFps(molString, molBlockFailover, result, updateFilterFunc,
-        molStringsColumn.toList(), !columnIsCanonicalSmiles, searchType, similarityCutOff,
-        fp, updateNumOfCalculatedFpBatches,
-        stereoAgnostic);
+        molStringsColumn.toList(), !columnIsCanonicalSmiles, searchType, similarityCutOff, fp,
+        updateNumOfCalculatedFpBatches);
     const saveProcessedColumns = () => {
       try {
         //save procecced columns only in case at least one fp batch has been calculated.
@@ -345,10 +344,10 @@ export async function chemSubstructureSearchLibrary(
       }
     };
     const fireFinishEvents = () => {
-      _package.logger.debug(`in chemSubstructureSearchLibrary, fireFinishEvents: ${getSearchQueryAndType(molBlockFailover, searchType, fp, similarityCutOff, stereoAgnostic)}`);
+      _package.logger.debug(`in chemSubstructureSearchLibrary, fireFinishEvents: ${getSearchQueryAndType(molBlockFailover, searchType, fp, similarityCutOff)}`);
       grok.events.fireCustomEvent(searchProgressEventName, 100);
       grok.events.fireCustomEvent(terminateEventName, getSearchQueryAndType(molBlockFailover, searchType, fp,
-        similarityCutOff,stereoAgnostic));
+        similarityCutOff));
       saveProcessedColumns();
     };
     if (awaitAll) {
@@ -356,9 +355,9 @@ export async function chemSubstructureSearchLibrary(
       fireFinishEvents();
     } else {
       const sub = grok.events.onCustomEvent(terminateEventName).subscribe(async (molAndSearchType: string) => {
-        _package.logger.debug(`in chemSubstructureSearchLibrary, terminate event handler, ${molAndSearchType} ****** ${getSearchQueryAndType(molBlockFailover, searchType, fp, similarityCutOff, stereoAgnostic)}`);
+        _package.logger.debug(`in chemSubstructureSearchLibrary, terminate event handler, ${molAndSearchType} ****** ${getSearchQueryAndType(molBlockFailover, searchType, fp, similarityCutOff)}`);
         if (molAndSearchType ===
-            getSearchQueryAndType(molBlockFailover, searchType, fp, similarityCutOff, stereoAgnostic)) {
+            getSearchQueryAndType(molBlockFailover, searchType, fp, similarityCutOff)) {
           await rdKitService.setTerminateFlag(true);
           subFuncs!.setTerminateFlag();
           await Promise.allSettled(subFuncs.promises);

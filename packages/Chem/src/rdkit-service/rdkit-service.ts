@@ -286,7 +286,7 @@ export class RdKitService {
   async searchSubstructureWithFps(query: string, queryMolBlockFailover: string, result: SubstructureSearchWithFpResult,
     progressFunc: (progress: number) => void, molecules: string[], createSmiles = false,
     searchType = SubstructureSearchType.CONTAINS, simCutOff = 0.8, fp = Fingerprint.Morgan,
-    afterBatchCalculated = () => {}, stereoAgnostic = false) {
+    afterBatchCalculated = () => {}) {
     const queryMol = searchType === SubstructureSearchType.IS_SIMILAR ? getMolSafe(query, {}, PackageFunctions.getRdKitModule()).mol :
       getQueryMolSafe(query, queryMolBlockFailover, PackageFunctions.getRdKitModule());
     const fpType = searchType === SubstructureSearchType.IS_SIMILAR ? fp : Fingerprint.Pattern;
@@ -357,7 +357,7 @@ export class RdKitService {
         // *********** DONE FILTERING using fingerprints if necessary
         // filter using substruct search on already prefiltered dataset
         const substructRes: Uint32Array = await this.parallelWorkers[workerIdx]
-          .searchSubstructure(query, queryMolBlockFailover, filteredMolecules!, searchType, stereoAgnostic);
+          .searchSubstructure(query, queryMolBlockFailover, filteredMolecules!, searchType);
 
         const matchesBitArray = BitArray.fromUint32Array(filteredMolecules.length, substructRes);
         if (searchType !== SubstructureSearchType.NOT_CONTAINS && searchType !== SubstructureSearchType.NOT_INCLUDED_IN)
