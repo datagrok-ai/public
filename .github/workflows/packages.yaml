@@ -449,7 +449,7 @@ jobs:
               count=0
               retries=5
               echo "Publishing $dep to ${{ steps.datagrok-image.outputs.alias }}..."
-              until grok publish ${{ steps.datagrok-image.outputs.alias }} --release; do
+              until grok publish ${{ steps.datagrok-image.outputs.alias }} --release --skip-docker-rebuild; do
                 exit=$?
                 wait=$((2 ** count))
                 count=$((count + 1))

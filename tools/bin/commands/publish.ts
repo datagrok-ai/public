@@ -302,6 +302,8 @@ async function processDockerImages(
           const remoteTag = `${registry}/datagrok/${remoteFullName}`;
           dockerTag(img.fullLocalName, remoteTag);
         }
+        else
+          dockerTag(img.fullLocalName, `datagrok/${remoteFullName}`);
         color.success(`Built and tagged ${img.fullLocalName}`);
         return pushImage(img.imageName, registryTag, registry);
       }
