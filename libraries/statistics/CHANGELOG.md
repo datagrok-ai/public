@@ -1,5 +1,13 @@
 # statistics changelog
 
+## 1.12.4 (2026-04-08)
+
+* MPO: Share compute function engine with HT
+
+## 1.12.3 (2026-04-02)
+
+* Statistics: Update fit consts
+
 ## 1.12.2 (2026-03-26)
 
 * MPO: Add profile versioning
