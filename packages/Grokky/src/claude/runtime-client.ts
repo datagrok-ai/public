@@ -15,6 +15,7 @@ export class ClaudeRuntimeClient {
   private containerId: string | null = null;
   private mcpServerUrl: string | null = null;
 
+
   public onChunk = new rxjs.Subject<ChunkEvent>();
   public onToolActivity = new rxjs.Subject<ToolActivityEvent>();
   public onToolResult = new rxjs.Subject<ToolResultEvent>();
@@ -128,11 +129,10 @@ export class ClaudeRuntimeClient {
     }));
   }
 
-  syncUserFiles(): void {
-    if (!this.ws || this.ws.readyState !== WebSocket.OPEN)
-      return;
+  async syncUserFiles(): Promise<void> {
+    await this.ensureConnected();
     console.log('ClaudeRuntimeClient: triggering user files sync');
-    this.ws.send(JSON.stringify({
+    this.ws!.send(JSON.stringify({
       type: 'sync_user_files',
       apiKey: grok.dapi.token,
       mcpServerUrl: this.mcpServerUrl,

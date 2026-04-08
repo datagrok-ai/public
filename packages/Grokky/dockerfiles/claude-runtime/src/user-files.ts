@@ -6,16 +6,46 @@ import {runWithContext, request, requestBinary, downloadFile} from './shared-api
 const USERS_DIR = '/users';
 const WORKSPACE = process.env['CLAUDE_WORKSPACE'] || '/workspace';
 
-const syncedUsers = new Set<string>();
+// ── Sync state ──────────────────────────────────────────────────────────
+// Guards against concurrent syncs for the same apiKey. When a sync is in
+// progress the promise is stored here; subsequent callers await it instead
+// of starting a second sync.
+const syncInFlight = new Map<string, Promise<{dir: string; files: string[]}>>();
+
+// Tracks which users have completed their initial sync. After the first
+// sync, subsequent messages just return the cached dir/file list. New
+// syncs only happen when triggered by events (file edit, package load)
+// or manual sync — all of which use force=true.
+const initialSyncDone = new Set<string>();
+
+// Per-user file metadata cache: relative path → updatedOn timestamp.
+// Used for incremental sync — only files whose remote timestamp differs
+// from the cached one are re-downloaded.
+const userFileCache = new Map<string, Map<string, string>>();
+
+// Per-user package metadata cache: packageName → updatedOn timestamp.
+// A package ZIP is only re-downloaded when its updatedOn changes.
 const packageTimestamps = new Map<string, Map<string, string>>();
 
+// ── User ID extraction ──────────────────────────────────────────────────
+// Datagrok passes either a JWT (Bearer <token>) or a plain API key.
+// We extract a stable user ID from the JWT payload so that each user gets
+// their own directory under /users/{userId}/.
 function userIdFromKey(apiKey: string): string {
   try {
     const token = apiKey.startsWith('Bearer ') ? apiKey.slice(7) : apiKey;
     const payload = JSON.parse(Buffer.from(token.split('.')[1], 'base64url').toString());
-    return payload.sub ?? payload.usr?.id ?? 'default';
+    const id = payload.sub ?? payload.usr?.id;
+    if (!id) {
+      console.warn('user-files: JWT has no sub/usr.id, falling back to "default"');
+      return 'default';
+    }
+    return id;
   }
   catch {
+    // Not a JWT — likely a plain API key. Use it directly if short enough,
+    // otherwise fall back to "default".
+    console.log('user-files: apiKey is not a JWT, using fallback user ID');
     return apiKey.length > 64 ? 'default' : apiKey;
   }
 }
@@ -24,20 +54,53 @@ function getUserDir(apiKey: string): string {
   return path.join(USERS_DIR, userIdFromKey(apiKey));
 }
 
+// ── Directory setup ─────────────────────────────────────────────────────
+// Creates the per-user directory structure:
+//   /users/{userId}/
+//   /users/{userId}/agents/           ← synced knowledge files
+//   /users/{userId}/workspace -> /workspace  ← symlink to the Datagrok repo
 async function ensureUserDir(apiKey: string): Promise<string> {
   const dir = getUserDir(apiKey);
   console.log(`user-files: ensuring user dir ${dir}`);
   await fs.mkdir(path.join(dir, 'agents'), {recursive: true});
+
+  // Create or validate the workspace symlink
   const link = path.join(dir, 'workspace');
   try {
-    await fs.symlink(WORKSPACE, link);
+    const target = await fs.readlink(link);
+    if (target !== WORKSPACE) {
+      console.warn(`user-files: symlink ${link} points to ${target} instead of ${WORKSPACE}, recreating`);
+      await fs.rm(link);
+      await fs.symlink(WORKSPACE, link);
+    }
   }
   catch (e: any) {
-    if (e.code !== 'EEXIST')
+    if (e.code === 'ENOENT') {
+      await fs.symlink(WORKSPACE, link);
+      console.log(`user-files: created workspace symlink ${link} -> ${WORKSPACE}`);
+    }
+    else
       throw e;
   }
   return dir;
 }
+
+// ── Path safety ─────────────────────────────────────────────────────────
+// Prevents path traversal attacks. A file path from the remote API could
+// contain "../" sequences that would escape the target directory.
+function safePath(base: string, relative: string): string {
+  const dest = path.join(base, relative);
+  const resolved = path.resolve(dest);
+  const resolvedBase = path.resolve(base);
+  if (!resolved.startsWith(resolvedBase + '/') && resolved !== resolvedBase)
+    throw new Error(`Path traversal blocked: ${relative}`);
+  return dest;
+}
+
+// ── My files connection resolution ──────────────────────────────────────
+// Every Datagrok user has a "Home" connection (displayed as "My files" in
+// the UI). We find it via the connections API and build the connector path
+// that the file download API expects (e.g. "System:Home").
 
 interface ConnectionInfo {
   id: string;
@@ -46,39 +109,132 @@ interface ConnectionInfo {
 }
 
 async function resolveHomeConnection(): Promise<{connId: string; connectorPath: string} | null> {
+  console.log('user-files: resolving Home connection...');
   const conns = await request<ConnectionInfo[]>('GET', '/public/v1/connections?text=My%20files');
   const home = conns.find((c) => c.name === 'Home');
-  if (!home)
+  if (!home) {
+    console.warn('user-files: Home connection not found among', conns.map((c) => c.name));
     return null;
+  }
   const ns = (home.namespace ?? 'System:').replace(/:$/, '');
-  return {connId: home.id, connectorPath: `${ns}:${home.name}`};
+  const connectorPath = `${ns}:${home.name}`;
+  console.log(`user-files: resolved Home connection id=${home.id}, path=${connectorPath}`);
+  return {connId: home.id, connectorPath};
 }
 
-async function collectFiles(connId: string, dirPath: string): Promise<string[]> {
+// ── Remote file listing ─────────────────────────────────────────────────
+// Recursively lists files under a directory in a Datagrok file connection.
+// Returns file metadata (relative path + updatedOn timestamp) for
+// incremental sync decisions.
+
+interface RemoteFileEntry {
+  path: string;       // relative path from the root dir, e.g. "subdir/file.md"
+  updatedOn: string;  // ISO timestamp from the server
+}
+
+async function collectFiles(connId: string, dirPath: string): Promise<RemoteFileEntry[]> {
   let entries: any[];
   try {
     const filePath = dirPath ? `${dirPath.replace(/^\//, '')}/` : '';
     entries = await request<any[]>('GET', `/connectors/connections/${connId}/files/${filePath}`);
   }
-  catch {
+  catch (e: any) {
+    console.warn(`user-files: failed to list ${dirPath}:`, e.message);
     return [];
   }
   if (!Array.isArray(entries))
     return [];
 
-  const files: string[] = [];
+  const files: RemoteFileEntry[] = [];
   for (const entry of entries) {
-    const name = entry.name ?? entry.fileName ?? '';
+    const name = entry.name ?? entry.friendlyName ?? entry.fileName ?? '';
     if (!name)
       continue;
     const rel = dirPath ? `${dirPath}/${name}` : name;
-    if (!entry.isFile)
+    if (!entry.isFile) {
+      console.log(`user-files: descending into directory ${rel}`);
       files.push(...await collectFiles(connId, rel));
-    else
-      files.push(rel);
+    }
+    else {
+      files.push({path: rel, updatedOn: entry.updatedOn ?? ''});
+    }
   }
   return files;
 }
+
+// ── Incremental user file sync ──────────────────────────────────────────
+// Compares remote file timestamps against a local cache and only
+// downloads files that are new or have changed. Removes local files that
+// no longer exist on the remote side.
+async function syncUserFilesIncremental(
+  userDir: string, connId: string, connectorPath: string,
+): Promise<string[]> {
+  const userId = path.basename(userDir);
+  if (!userFileCache.has(userId))
+    userFileCache.set(userId, new Map());
+  const cached = userFileCache.get(userId)!;
+
+  // Fetch the full remote file list with timestamps
+  const remoteFiles = await collectFiles(connId, 'agents');
+  console.log(`user-files: remote has ${remoteFiles.length} file(s) in agents/`);
+
+  const remoteSet = new Set<string>();
+  const downloaded: string[] = [];
+
+  // Download new or updated files
+  for (const remote of remoteFiles) {
+    remoteSet.add(remote.path);
+    const cachedTs = cached.get(remote.path);
+    if (cachedTs === remote.updatedOn) {
+      // File unchanged — skip download
+      continue;
+    }
+
+    const label = cachedTs ? 'updated' : 'new';
+    console.log(`user-files: downloading ${label} file ${remote.path} (remote ts=${remote.updatedOn}, cached ts=${cachedTs ?? 'none'})`);
+    try {
+      const content = await downloadFile(connectorPath, remote.path) as string;
+      const dest = safePath(userDir, remote.path);
+      await fs.mkdir(path.dirname(dest), {recursive: true});
+      await fs.writeFile(dest, content);
+      cached.set(remote.path, remote.updatedOn);
+      downloaded.push(remote.path.replace(/^agents\//, ''));
+    }
+    catch (e: any) {
+      console.warn(`user-files: failed to download ${remote.path}:`, e.message);
+    }
+  }
+
+  // Remove local files that were deleted on the remote side
+  const agentsDir = path.join(userDir, 'agents');
+  try {
+    const localEntries = await fs.readdir(agentsDir, {recursive: true});
+    for (const entry of localEntries) {
+      const entryStr = String(entry);
+      const fullPath = path.join(agentsDir, entryStr);
+      const stat = await fs.stat(fullPath);
+      if (!stat.isFile())
+        continue;
+      // Local files from user sync have paths like "agents/filename"
+      const remotePath = `agents/${entryStr}`;
+      // Only remove files that were synced from My files (not package files).
+      // Package files have the pattern "{PackageName}-{filename}".
+      if (!remoteSet.has(remotePath) && cached.has(remotePath)) {
+        console.log(`user-files: removing deleted file ${remotePath}`);
+        await fs.rm(fullPath, {force: true});
+        cached.delete(remotePath);
+      }
+    }
+  }
+  catch { /* agents dir may not exist yet */ }
+
+  return downloaded;
+}
+
+// ── Package agent file sync ─────────────────────────────────────────────
+// Downloads published Datagrok packages as ZIPs, extracts files from their
+// agents/ folders, and stores them as /users/{userId}/agents/{PkgName}-{file}.
+// Only re-downloads packages whose updatedOn timestamp has changed.
 
 interface PackageInfo {
   id: string;
@@ -86,30 +242,14 @@ interface PackageInfo {
   updatedOn?: string;
 }
 
-let standardPackageNames: Set<string> | null = null;
-
-async function getStandardPackageNames(): Promise<Set<string>> {
-  if (standardPackageNames)
-    return standardPackageNames;
-  try {
-    const entries = await fs.readdir(path.join(WORKSPACE, 'packages'));
-    standardPackageNames = new Set(entries);
-  }
-  catch {
-    standardPackageNames = new Set();
-  }
-  return standardPackageNames;
-}
-
 async function syncPackageAgentFiles(userDir: string): Promise<void> {
+  console.log('package-agents: fetching published packages...');
   const packages = await request<PackageInfo[]>('GET', '/packages/published/current');
-  if (!Array.isArray(packages) || !packages.length)
+  if (!Array.isArray(packages) || !packages.length) {
+    console.log('package-agents: no published packages found');
     return;
-
-  const standard = await getStandardPackageNames();
-  const custom = packages.filter((p) => !standard.has(p.name));
-  if (!custom.length)
-    return;
+  }
+  console.log(`package-agents: found ${packages.length} published package(s)`);
 
   const userId = path.basename(userDir);
   if (!packageTimestamps.has(userId))
@@ -119,61 +259,78 @@ async function syncPackageAgentFiles(userDir: string): Promise<void> {
   const agentsDir = path.join(userDir, 'agents');
   const currentPackages = new Set<string>();
 
-  for (const pkg of custom) {
+  for (const pkg of packages) {
     currentPackages.add(pkg.name);
     const ts = pkg.updatedOn ?? '';
-    if (cached.get(pkg.name) === ts)
+    if (cached.get(pkg.name) === ts) {
+      console.log(`package-agents: ${pkg.name} unchanged (ts=${ts}), skipping`);
       continue;
+    }
 
-    console.log(`package-agents: syncing ${pkg.name} (updated: ${ts})`);
+    console.log(`package-agents: syncing ${pkg.name} (remote ts=${ts}, cached ts=${cached.get(pkg.name) ?? 'none'})`);
     try {
       const buf = await requestBinary('GET', `/packages/published/${pkg.id}/zip`);
+      if (!buf || buf.length === 0) {
+        console.warn(`package-agents: empty ZIP for ${pkg.name}, skipping`);
+        continue;
+      }
+
       const zip = new AdmZip(buf);
       const entries = zip.getEntries();
       const agentEntries = entries.filter((e) =>
         !e.isDirectory && e.entryName.startsWith('agents/'));
 
-      // Clean old files for this package
+      if (!agentEntries.length) {
+        console.log(`package-agents: ${pkg.name} has no agents/ files`);
+        cached.set(pkg.name, ts);
+        continue;
+      }
+
+      // Clean old files for this package before extracting new ones
       const prefix = `${pkg.name}-`;
       try {
         const existing = await fs.readdir(agentsDir);
-        for (const f of existing)
-          if (f.startsWith(prefix))
-            await fs.rm(path.join(agentsDir, f), {force: true});
+        const removed = existing.filter((f) => f.startsWith(prefix));
+        for (const f of removed)
+          await fs.rm(path.join(agentsDir, f), {force: true});
+        if (removed.length)
+          console.log(`package-agents: removed ${removed.length} old file(s) for ${pkg.name}`);
       }
       catch { /* dir may not exist */ }
 
+      // Extract agent files, flattening subdirectory paths with "-"
       for (const entry of agentEntries) {
         const rel = entry.entryName.replace(/^agents\//, '').replace(/\//g, '-');
-        const dest = path.join(agentsDir, `${pkg.name}-${rel}`);
+        const dest = safePath(agentsDir, `${pkg.name}-${rel}`);
         await fs.writeFile(dest, entry.getData());
       }
       cached.set(pkg.name, ts);
-      if (agentEntries.length)
-        console.log(`package-agents: extracted ${agentEntries.length} file(s) from ${pkg.name}`);
+      console.log(`package-agents: extracted ${agentEntries.length} file(s) from ${pkg.name}`);
     }
     catch (e: any) {
       console.warn(`package-agents: failed to sync ${pkg.name}:`, e.message);
     }
   }
 
-  // Clean up files from removed packages
+  // Clean up files from packages that are no longer published
   for (const [name] of cached) {
     if (!currentPackages.has(name)) {
       const prefix = `${name}-`;
       try {
         const existing = await fs.readdir(agentsDir);
-        for (const f of existing)
-          if (f.startsWith(prefix))
-            await fs.rm(path.join(agentsDir, f), {force: true});
+        const removed = existing.filter((f) => f.startsWith(prefix));
+        for (const f of removed)
+          await fs.rm(path.join(agentsDir, f), {force: true});
+        if (removed.length)
+          console.log(`package-agents: cleaned up ${removed.length} file(s) for removed package ${name}`);
       }
       catch { /* ignore */ }
       cached.delete(name);
-      console.log(`package-agents: cleaned up files for removed package ${name}`);
     }
   }
 }
 
+// ── List agent files on disk ────────────────────────────────────────────
 async function listAgentFiles(userDir: string): Promise<string[]> {
   const agentsDir = path.join(userDir, 'agents');
   try {
@@ -185,6 +342,7 @@ async function listAgentFiles(userDir: string): Promise<string[]> {
       if (stat.isFile())
         files.push(String(entry));
     }
+    console.log(`user-files: listed ${files.length} agent file(s) on disk`);
     return files;
   }
   catch {
@@ -192,63 +350,74 @@ async function listAgentFiles(userDir: string): Promise<string[]> {
   }
 }
 
+// ── Main sync entry point ───────────────────────────────────────────────
+// Called on every user message from handleMessage(). On the first call it
+// performs a full sync; subsequent calls just return the cached dir and
+// file list without hitting the server. Actual re-syncs only happen when
+// triggered by events (file edit, package load, manual sync button) —
+// those come in via the sync_user_files WebSocket message with force=true.
 export async function syncUserFiles(
   apiUrl: string, apiKey: string, force?: boolean,
 ): Promise<{dir: string; files: string[]}> {
   const dir = getUserDir(apiKey);
 
-  if (!syncedUsers.has(apiKey) || force) {
-    console.log('user-files: starting sync...');
-    await ensureUserDir(apiKey);
-
-    const synced = await runWithContext({apiKey, apiUrl}, async () => {
-      const home = await resolveHomeConnection();
-      if (!home) {
-        console.log('user-files: Home connection not found');
-        return [];
-      }
-      console.log(`user-files: resolved connector path: ${home.connectorPath}`);
-
-      const files = await collectFiles(home.connId, 'agents');
-      console.log(`user-files: found ${files.length} file(s) in agents/`);
-      if (!files.length)
-        return [];
-
-      const agentsDir = path.join(dir, 'agents');
-      try {
-        const entries = await fs.readdir(agentsDir);
-        for (const entry of entries)
-          await fs.rm(path.join(agentsDir, entry), {recursive: true, force: true});
-      }
-      catch { /* dir may be empty */ }
-
-      const downloaded: string[] = [];
-      for (const filePath of files) {
-        try {
-          const content = await downloadFile(home.connectorPath, filePath) as string;
-          const dest = path.join(dir, filePath);
-          await fs.mkdir(path.dirname(dest), {recursive: true});
-          await fs.writeFile(dest, content);
-          downloaded.push(filePath.replace(/^agents\//, ''));
-        }
-        catch (e: any) {
-          console.warn(`Failed to download ${filePath}:`, e.message);
-        }
-      }
-      return downloaded;
-    });
-
-    syncedUsers.add(apiKey);
-    if (synced.length)
-      console.log(`Synced ${synced.length} file(s) for user`);
-
-    // Clear package timestamp cache on force sync so packages get re-downloaded
-    if (force) {
-      const userId = path.basename(dir);
-      packageTimestamps.delete(userId);
-    }
+  // Fast path: already synced and no force → just return current state
+  if (initialSyncDone.has(apiKey) && !force) {
+    console.log('user-files: already synced, returning cached state');
+    const files = await listAgentFiles(dir);
+    return {dir, files};
   }
 
+  // If a sync is already running for this key, wait for it
+  const existing = syncInFlight.get(apiKey);
+  if (existing && !force) {
+    console.log('user-files: sync already in flight, awaiting...');
+    return existing;
+  }
+
+  const promise = doSync(apiUrl, apiKey, force);
+  syncInFlight.set(apiKey, promise);
+  try {
+    return await promise;
+  }
+  finally {
+    // Only clear if this is still our promise (not replaced by a force sync)
+    if (syncInFlight.get(apiKey) === promise)
+      syncInFlight.delete(apiKey);
+  }
+}
+
+async function doSync(
+  apiUrl: string, apiKey: string, force?: boolean,
+): Promise<{dir: string; files: string[]}> {
+  const dir = getUserDir(apiKey);
+  const userId = path.basename(dir);
+  console.log(`user-files: starting sync for user ${userId} (force=${!!force})`);
+
+  // Clear caches on force sync so everything is re-checked against the server
+  if (force) {
+    console.log('user-files: force sync — clearing all caches');
+    userFileCache.delete(userId);
+    packageTimestamps.delete(userId);
+  }
+
+  await ensureUserDir(apiKey);
+
+  // ── Sync user files from My files/agents/ ──
+  await runWithContext({apiKey, apiUrl}, async () => {
+    const home = await resolveHomeConnection();
+    if (!home) {
+      console.log('user-files: skipping user file sync (no Home connection)');
+      return;
+    }
+    const downloaded = await syncUserFilesIncremental(dir, home.connId, home.connectorPath);
+    if (downloaded.length)
+      console.log(`user-files: synced ${downloaded.length} user file(s)`);
+    else
+      console.log('user-files: all user files up-to-date');
+  });
+
+  // ── Sync agent files from published packages ──
   await runWithContext({apiKey, apiUrl}, async () => {
     try {
       await syncPackageAgentFiles(dir);
@@ -258,6 +427,9 @@ export async function syncUserFiles(
     }
   });
 
+  initialSyncDone.add(apiKey);
+
   const files = await listAgentFiles(dir);
+  console.log(`user-files: sync complete — ${files.length} total agent file(s)`);
   return {dir, files};
 }

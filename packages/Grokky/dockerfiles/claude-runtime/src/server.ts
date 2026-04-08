@@ -89,16 +89,22 @@ Rules:
 - Add surrounding text before/after the block as needed for context.
 - Do NOT put entity info as plain text when a datagrok-entities block is appropriate.`;
 
+const MAX_AGENT_FILES_IN_PROMPT = 50;
+
 function buildSystemPrompt(mode?: string, agentFiles?: string[]): string {
   if (mode === 'bash') return BASH_EXEC_PROMPT;
   if (mode === 'none') return '';
   let prompt = DATAGROK_PROMPT;
   if (agentFiles && agentFiles.length > 0) {
+    const shown = agentFiles.slice(0, MAX_AGENT_FILES_IN_PROMPT);
+    const overflow = agentFiles.length - shown.length;
     prompt += `\n\n## User Knowledge Files\n\n` +
       `The user has personal knowledge files in the \`agents/\` directory. ` +
       `These contain domain-specific knowledge, instructions, or reference materials. ` +
       `When relevant to the user's question, read and use these files.\n\n` +
-      `Available files:\n` + agentFiles.map((f) => `- agents/${f}`).join('\n');
+      `Available files:\n` + shown.map((f) => `- agents/${f}`).join('\n');
+    if (overflow > 0)
+      prompt += `\n- ... and ${overflow} more file(s). Use Glob to discover them.`;
   }
   return prompt;
 }
