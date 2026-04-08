@@ -355,6 +355,10 @@ async function processDockerImages(
           if (!result || result.fallback)
             color.warn(`Build failed. Falling back to ${fallback.image} (hash mismatch)`);
         }
+        else if (skipDockerRebuild) {
+          color.warn(`No fallback available. Skipping docker build (--skip-docker-rebuild).`);
+          result = {image: null, fallback: true, requestedVersion: registryTag};
+        }
         else {
           // No fallback and no local image — must build
           color.warn(`No fallback available. Building ${img.fullLocalName}...`);
