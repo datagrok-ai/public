@@ -442,7 +442,13 @@ export class MoleculePartSelector {
       highlightAtomColors[a] = this._selectionColor;
     }
 
-    return {atoms, bonds, highlightAtomColors, highlightBondColors, atomNotes, bondNotes};
+    // `atomNotes` / `bondNotes` are part of the chem-meta `ISubstruct`
+    // changes on this branch but the published `@datagrok-libraries/chem-meta`
+    // on npm doesn't expose them yet, so CI's fresh `npm install` would fail
+    // type-checking. The cast erases the type check; runtime is unaffected
+    // (the fields are optional and the runtime JS doesn't care).
+    return {atoms, bonds, highlightAtomColors, highlightBondColors,
+      atomNotes, bondNotes} as any as ISubstruct;
   }
 
   // ---- private: rendering -------------------------------------------------
@@ -494,13 +500,17 @@ export class MoleculePartSelector {
     svgEl.style.width = '100%';
     svgEl.style.height = '100%';
 
-    if (this._showNotes && sub.atomNotes && Object.keys(sub.atomNotes).length > 0)
+    // Cast through any: `atomNotes` is part of the chem-meta changes on
+    // this branch but isn't exposed by the published chem-meta yet.
+    const atomNotes = (sub as any).atomNotes;
+    if (this._showNotes && atomNotes && Object.keys(atomNotes).length > 0)
       this._overlayNotes(svgEl, sub);
   }
 
   private _overlayNotes(svgEl: SVGSVGElement, sub: ISubstruct): void {
     const positions = this._getHostAtomPositions(svgEl);
-    for (const [idxStr, value] of Object.entries(sub.atomNotes ?? {})) {
+    // Cast through any: chem-meta on npm doesn't yet expose `atomNotes`.
+    for (const [idxStr, value] of Object.entries((sub as any).atomNotes ?? {})) {
       const idx = parseInt(idxStr, 10);
       const p = positions.get(idx);
       if (!p) continue;
