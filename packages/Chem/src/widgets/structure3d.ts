@@ -5,7 +5,8 @@ import {Chem} from '../scripts-api';
 import {getRdKitModule} from '../utils/chem-common-rdkit';
 import {_convertMolNotation} from '../utils/convert-notation-utils';
 import {MolfileHandler} from '@datagrok-libraries/chem-meta/src/parsing-utils/molfile-handler';
-import {CHEM_INTERACTIVE_SELECTION_EVENT} from '../rendering/rdkit-cell-renderer';
+import {CHEM_INTERACTIVE_SELECTION_EVENT} from '../constants';
+import {ChemTemps} from '@datagrok-libraries/chem-meta/src/consts';
 import type NGL from 'ngl';
 
 const WIDTH = 300;
@@ -66,6 +67,46 @@ export async function structure3dWidget(molecule: string): Promise<DG.Widget> {
       if (ap.element !== 'H')
         heavyAtomSerials.push(ap.serial);
     });
+
+    // ---- Restore existing picks when the widget is recreated -----------
+    // The NGL context-panel widget is destroyed and recreated every time
+    // the user clicks a different row. If the user previously picked atoms
+    // in the 2D grid for THIS row, the picks are still stored on the
+    // molecule column's temp store (via the ISubstructProvider). Read them
+    // and apply the highlight immediately so the 3D view stays in sync
+    // with the 2D grid, which does persist its highlights across row
+    // switches.
+    try {
+      const df = grok.shell.tv?.dataFrame;
+      const rowIdx = df?.currentRowIdx;
+      if (df && rowIdx !== undefined && rowIdx >= 0) {
+        const molCol = df.columns.toList().find(
+          (col: DG.Column) => col.semType === DG.SEMTYPE.MOLECULE);
+        if (molCol) {
+          const providers = ((molCol.temp as any)?.[ChemTemps.SUBSTRUCT_PROVIDERS] ?? []) as any[];
+          const picker = providers.find(
+            (p: any) => p.__atomPicker && p.__rowIdx === rowIdx);
+          if (picker?.__atoms?.size > 0) {
+            const atoms = [...picker.__atoms] as number[];
+            const serials = atoms
+              .filter((i) => i >= 0 && i < heavyAtomSerials.length)
+              .map((i) => heavyAtomSerials[i]);
+            if (serials.length > 0) {
+              const sele = '@' + serials.join(',');
+              highlightRepr = comp.addRepresentation('ball+stick', {
+                sele: sele,
+                colorScheme: 'uniform',
+                colorValue: 0xFFFF00,
+                radiusScale: 1.8,
+                opacity: 0.85,
+              });
+            }
+          }
+        }
+      }
+    } catch (err) {
+      console.error('structure3d: initial highlight restore failed', err);
+    }
   });
 
   // ---- 2D ↔ 3D bridge: interactive atom highlighting --------------------

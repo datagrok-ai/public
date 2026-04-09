@@ -56,6 +56,14 @@ export const HIGHLIGHT_BY_SCAFFOLD_TAG = '.%chem-scaffold-highlight';
  *  value) means disabled. The `.%` prefix makes the tag persist in saved
  *  projects and sync across layout variants. */
 export const CHEM_ATOM_PICKER_TAG = '.%chem-atom-picker';
+
+/** Custom event ID fired by the 2D atom picker after every selection change
+ *  and by the checkbox toggle. Subscribers (e.g. NGL 3D structure widget,
+ *  BiostructureViewer Molstar viewer) react by highlighting/clearing the
+ *  corresponding atoms in their 3D views.
+ *
+ *  Event args: `{column: DG.Column, rowIdx: number, atoms: number[]}` */
+export const CHEM_INTERACTIVE_SELECTION_EVENT = 'chem-interactive-selection-changed';
 export const SCAFFOLD_COL = 'scaffold-col';
 export const SCAFFOLD_COL_SYNC = '%scaffold-col';
 export const PARENT_MOL_COL = 'parent-mol-col';

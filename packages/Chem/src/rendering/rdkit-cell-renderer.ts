@@ -17,7 +17,7 @@ import {ISubstruct} from '@datagrok-libraries/chem-meta/src/types';
 import {
   ALIGN_BY_SCAFFOLD_LAYOUT_PERSISTED_TAG,
   ALIGN_BY_SCAFFOLD_TAG, FILTER_SCAFFOLD_TAG,
-  CHEM_ATOM_PICKER_TAG,
+  CHEM_ATOM_PICKER_TAG, CHEM_INTERACTIVE_SELECTION_EVENT,
   FIXED_SCALE_TAG,
   HIGHLIGHT_BY_SCAFFOLD_COL, HIGHLIGHT_BY_SCAFFOLD_COL_SYNC,
   HIGHLIGHT_BY_SCAFFOLD_TAG, MIN_MOL_IMAGE_SIZE, PARENT_MOL_COL,
@@ -60,13 +60,6 @@ export interface IColoredScaffold {
   align?: boolean,
   highlight?: boolean
 }
-
-/** Custom event ID for inter-package communication. Fired by the 2D atom
- *  picker after every selection change; subscribers (e.g. BiostructureViewer)
- *  can react by highlighting the corresponding atoms in a 3D viewer.
- *
- *  Event args: `{column: DG.Column, rowIdx: number, atoms: number[]}` */
-export const CHEM_INTERACTIVE_SELECTION_EVENT = 'chem-interactive-selection-changed';
 
 export interface IHighlightTagInfo {
   scaffolds?: IColoredScaffold[],
@@ -175,6 +168,17 @@ M  END
    *  bond is highlighted iff both of its atoms are in the picked set). */
   atomPositionsCache: DG.LruCache<string, CellInteractiveInfo> =
     new DG.LruCache<string, CellInteractiveInfo>();
+  /** Whether the single document-level mousedown listener has been
+   *  registered. We use ONE global listener (capture phase) instead of
+   *  per-canvas listeners because:
+   *  (a) Datagrok's grid stops dispatching `onMouseDown` after a table
+   *      switch, and
+   *  (b) the canvas from `g.canvas` (render context) is NOT the element
+   *      that receives mouse events — it's a rendering-only canvas.
+   *  The document listener catches ALL mousedowns, finds the active grid
+   *  via `grok.shell.tv.grid`, and hit-tests to determine if a molecule
+   *  cell was clicked. */
+  private _documentListenerAttached = false;
   /** Drag state shared across the global mousemove/mouseup listeners.
    *  Null when no drag is active.
    *
@@ -557,6 +561,16 @@ M  END
 
   render(g: any, x: number, y: number, w: number, h: number,
     gridCell: DG.GridCell, cellStyle: DG.GridCellStyle): void {
+    // Register a single document-level mousedown listener (once, on the
+    // first render). This replaces per-canvas listeners which failed
+    // because g.canvas is a rendering canvas, not the interactive one.
+    if (!this._documentListenerAttached) {
+      this._documentListenerAttached = true;
+      document.addEventListener('mousedown', (e: MouseEvent) => {
+        this._onDocumentMouseDown(e);
+      }, true); // capture phase — fires before anything can stopPropagation
+    }
+
     const molString = gridCell.cell.value;
     if (molString == null || molString === '')
       return;
@@ -744,39 +758,41 @@ M  END
     }
   }
 
-  onMouseDown(gridCell: DG.GridCell, e: MouseEvent): void {
-    // Belt-and-suspenders: first clear any drag state, then sweep the
-    // document for orphaned overlays. Without the sweep, a phantom overlay
-    // from a prior dispatch (e.g. Datagrok firing onMouseDown twice per
-    // mouse press) can survive into a new drag and persist indefinitely.
+  /** Global mousedown handler (capture phase on document). Finds the active
+   *  grid via `grok.shell.tv.grid`, hit-tests to determine which cell was
+   *  clicked, and starts a drag if it's a molecule cell with the picker
+   *  enabled. This replaces both the renderer's `onMouseDown` lifecycle
+   *  (which stops dispatching after a table switch) and per-canvas
+   *  listeners (which failed because the rendering canvas is not the
+   *  interactive canvas). */
+  private _onDocumentMouseDown(e: MouseEvent): void {
     this._endDrag();
     this._sweepOverlays();
 
     if (e.button !== 0) return;
-    // Reject phantom `onMouseDown` dispatches from Datagrok's grid that
-    // happen WITHOUT a physical button being held (we observed these after
-    // `grid.invalidate()` during a normal mouseup: the grid re-checks hover
-    // state and re-calls `onMouseDown` on the cell under the cursor with a
-    // synthetic event). Starting a new drag from one of those leaves an
-    // overlay on screen forever because no real mouseup will ever follow.
-    //
-    // `e.isTrusted` is false for events dispatched from JS. `e.buttons` is a
-    // bitfield of currently-pressed buttons — for a real, user-initiated
-    // mousedown the left bit (1) must be set.
-    if (!e.isTrusted) return;
     if ((e.buttons & 1) === 0) return;
 
+    // Get the current table view's grid. This is the grid the user is
+    // interacting with, regardless of which table was opened first.
+    const grid = grok.shell.tv?.grid;
+    if (!grid) return;
+
+    // Hit-test. We need grid-canvas-relative coordinates. `e.target` is
+    // the actual element that received the event — compute the offset
+    // from there. For a document listener, e.target is usually the grid's
+    // interactive overlay element.
+    const targetEl = e.target as HTMLElement;
+    if (!targetEl) return;
+    const targetRect = targetEl.getBoundingClientRect();
+    const localX = e.clientX - targetRect.left;
+    const localY = e.clientY - targetRect.top;
+
+    let gridCell: DG.GridCell | null = null;
+    try {gridCell = grid.hitTest(localX, localY);} catch {return;} // hitTest can throw if the grid is in a transitional state
     if (!gridCell || !gridCell.tableColumn || gridCell.tableRowIndex == null ||
         gridCell.tableRowIndex < 0) return;
     if (gridCell.tableColumn.semType !== DG.SEMTYPE.MOLECULE) return;
 
-    // Gate the picker on a per-column opt-IN tag. DISABLED by default on
-    // every molecule column; a user must explicitly enable it via the
-    // "Interactive Atom Selection" checkbox in the column property panel,
-    // which writes `CHEM_ATOM_PICKER_TAG = 'true'`. We read via BOTH
-    // `col.tags[..]` and `col.getTag(..)` and take the first defined
-    // value, because Datagrok's two tag APIs sometimes disagree about
-    // what was last written for a given tag name.
     const pickerTag =
       (gridCell.tableColumn.tags as any)[CHEM_ATOM_PICKER_TAG] ??
       gridCell.tableColumn.getTag(CHEM_ATOM_PICKER_TAG);
@@ -785,10 +801,9 @@ M  END
     const molString: string = gridCell.cell.value;
     if (!molString || DG.chem.Sketcher.isEmptyMolfile(molString)) return;
 
-    // Cell position in viewport (client) CSS pixels, so the overlay can be
-    // positioned directly with clientX/Y — no parent-translation math.
+    // Cell position in viewport (client) CSS pixels.
     const bounds = gridCell.bounds;
-    const canvasRect = gridCell.grid.canvas.getBoundingClientRect();
+    const canvasRect = targetRect;
     const cellClientLeft = canvasRect.left + bounds.left;
     const cellClientTop = canvasRect.top + bounds.top;
 
@@ -822,18 +837,14 @@ M  END
     } as Partial<CSSStyleDeclaration>);
     document.body.appendChild(overlay);
 
-    // Capture-phase document listeners — they fire at document BEFORE the
-    // event walks down to its target, so no amount of `stopPropagation` on
-    // intermediate handlers can prevent them from running. This is the
-    // standard drag-and-drop pattern: grab mousemove/mouseup at the root so
-    // the drag is tracked no matter where the pointer goes.
+    // Capture-phase document listeners for drag tracking.
     const onMove = (mv: MouseEvent) => this._handleDragMove(mv);
     const onUp = (mu: MouseEvent) => this._handleDragUp(mu);
     document.addEventListener('mousemove', onMove, true);
     document.addEventListener('mouseup', onUp, true);
 
     this._drag = {
-      grid: gridCell.grid,
+      grid: grid,
       tableCol: gridCell.tableColumn,
       rowIdx: gridCell.tableRowIndex,
       cellClientLeft,
@@ -844,7 +855,6 @@ M  END
       startY: pointerCellY,
       curX: pointerCellX,
       curY: pointerCellY,
-      // Alt → additive selection (adds boxed atoms instead of replacing).
       modifiers: {add: e.altKey},
       positions,
       bondAtoms,
@@ -852,8 +862,6 @@ M  END
       onMove,
       onUp,
     };
-    // Prevent the grid's own drag handling (column resize, cell selection
-    // box, etc.) from kicking in while we're picking atoms.
     e.preventDefault();
     e.stopPropagation();
   }

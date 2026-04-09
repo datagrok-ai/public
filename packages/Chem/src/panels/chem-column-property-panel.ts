@@ -1,7 +1,8 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {ALIGN_BY_SCAFFOLD_TAG, ALIGN_BY_SCAFFOLD_LAYOUT_PERSISTED_TAG, CHEM_ATOM_PICKER_TAG, SCAFFOLD_COL,
+import {ALIGN_BY_SCAFFOLD_TAG, ALIGN_BY_SCAFFOLD_LAYOUT_PERSISTED_TAG, CHEM_ATOM_PICKER_TAG,
+  CHEM_INTERACTIVE_SELECTION_EVENT, SCAFFOLD_COL,
   SCAFFOLD_COL_SYNC, HIGHLIGHT_BY_SCAFFOLD_COL, HIGHLIGHT_BY_SCAFFOLD_COL_SYNC, REGENERATE_COORDS,
   REGENERATE_COORDS_SYNC, getSyncTag, setSyncTag} from '../constants';
 import {ChemTemps} from '@datagrok-libraries/chem-meta/src/consts';
@@ -103,6 +104,27 @@ export function getMolColumnPropertyPanel(col: DG.Column): DG.Widget {
         // Force a grid repaint so highlights appear/disappear immediately
         // and the renderer sees the new tag value on the next drag.
         grok.shell.tv?.grid.invalidate();
+
+        // Notify the 3D viewers (NGL context panel, Molstar) so they
+        // show/hide their highlights in sync with the 2D grid toggle.
+        const df = col.dataFrame;
+        const rowIdx = df?.currentRowIdx ?? -1;
+        if (value && rowIdx >= 0) {
+          // Re-enabling: find existing picks for the current row and
+          // broadcast them so the 3D viewer restores the highlight.
+          const providers = ((col.temp as any)?.[ChemTemps.SUBSTRUCT_PROVIDERS] ?? []) as any[];
+          const picker = providers.find(
+            (p: any) => p.__atomPicker && p.__rowIdx === rowIdx);
+          const atoms = picker?.__atoms ? [...picker.__atoms] : [];
+          grok.events.fireCustomEvent(CHEM_INTERACTIVE_SELECTION_EVENT, {
+            column: col, rowIdx, atoms,
+          });
+        } else {
+          // Disabling: send an empty selection to clear 3D highlights.
+          grok.events.fireCustomEvent(CHEM_INTERACTIVE_SELECTION_EVENT, {
+            column: col, rowIdx, atoms: [],
+          });
+        }
       },
     });
   atomPickerCheckbox.setTooltip(
