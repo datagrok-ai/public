@@ -27,6 +27,7 @@ async function ensureContainerRunningDebug(containerName: string, timeout: numbe
 
   const deadline = Date.now() + timeout;
   let pollCount = 0;
+  let restartCount = 0;
   while (Date.now() < deadline) {
     const cont = await grok.dapi.docker.dockerContainers.find(container.id) as any;
     pollCount++;
@@ -36,10 +37,17 @@ async function ensureContainerRunningDebug(containerName: string, timeout: numbe
       console.log(`[docker-debug] Container ready after ${pollCount} polls`);
       return;
     }
-    if (cont.status === 'error') {
-      const logs = await grok.dapi.docker.getServiceLogs(cont.serviceName, 50).catch(() => 'no logs');
-      console.log(`[docker-debug] Container error. Logs: ${logs}`);
-      throw new Error(`Container ${containerName} failed with error. Logs: ${logs}`);
+    if (cont.status === 'error' || cont.status.includes('stopped')) {
+      if (restartCount < 3) {
+        restartCount++;
+        console.log(`[docker-debug] Container ${cont.status}, re-triggering start (attempt ${restartCount}/3)...`);
+        await grok.dapi.docker.dockerContainers.run(container.id, false);
+      }
+      else {
+        const logs = await grok.dapi.docker.getServiceLogs(cont.serviceName, 50).catch(() => 'no logs');
+        console.log(`[docker-debug] Container ${cont.status} after ${restartCount} restarts. Logs: ${logs}`);
+        throw new Error(`Container ${containerName} failed: ${cont.status}. Logs: ${logs}`);
+      }
     }
     await new Promise((r) => setTimeout(r, 5000));
   }
