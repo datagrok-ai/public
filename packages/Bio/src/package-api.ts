@@ -278,6 +278,13 @@ export namespace funcs {
   }
 
   /**
+  Aligns non-canonical peptide sequences using PepSeA Docker container (MAFFT)
+  */
+  export async function pepseaMsa(sequenceCol: DG.Column , method: string , gapOpen: number , gapExtend: number ): Promise<DG.Column> {
+    return await grok.functions.call('Bio:PepseaMsa', { sequenceCol, method, gapOpen, gapExtend });
+  }
+
+  /**
   Visualizes sequence composition on a WebLogo plot
   */
   export async function compositionAnalysis(): Promise<any> {

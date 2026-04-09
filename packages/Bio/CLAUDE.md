@@ -44,7 +44,7 @@ Other packages depend on these implementations: **Helm**, **Peptides**, **Biostr
 |---|---|---|
 | `Bio \| Analyze \| Activity Cliffs...` | `activityCliffs` | Detects sequence pairs with similar structure but significant activity difference |
 | `Bio \| Analyze \| Sequence Space...` | `sequenceSpaceTopMenu` | UMAP/tSNE 2D projection of sequences by pairwise distance |
-| `Bio \| Analyze \| MSA...` | `multipleSequenceAlignmentDialog` | Multiple sequence alignment via kalign (WASM) or PepSeA (Docker) |
+| `Bio \| Analyze \| MSA...` | `multipleSequenceAlignmentDialog` | Multiple sequence alignment via kalign (WASM) for canonical sequences, or dynamically discovered engines (e.g. PepSeA Docker) for non-canonical |
 | `Bio \| Analyze \| Composition` | `compositionAnalysis` | Docks a WebLogo viewer for sequence composition |
 | `Bio \| Transform \| Convert Sequence Notation...` | `convertDialog` | FASTA ↔ SEPARATOR ↔ HELM ↔ BILN conversion |
 | `Bio \| Transform \| To Atomic Level...` | `toAtomicLevel` | Converts sequences to V3000 molfiles |
@@ -177,9 +177,38 @@ Key methods: `detectSeparator()`, `detectAlphabet()`, `getAlphabetSimilarity()`,
 
 | File | Purpose |
 |---|---|
-| `multiple-sequence-alignment.ts` | `multipleSequenceAlignment()` — core MSA via **kalign** (WebAssembly/Aioli). Supports per-cluster alignment, gap penalties, selected-rows-only mode. |
-| `multiple-sequence-alignment-ui.ts` | `multipleSequenceAlignmentUI()` — MSA dialog with column selection, alignment method (kalign vs PepSeA), gap penalties |
-| `pepsea.ts` | `pepseaAlignSequences()` — MSA for HELM peptides via **PepSeA Docker container** (mafft/linsi/ginsi methods) |
+| `multiple-sequence-alignment.ts` | `runKalign()` — core MSA via **kalign** (WebAssembly/Aioli). Supports per-cluster alignment, gap penalties, selected-rows-only mode. Used for canonical sequences (DNA/RNA/PT). |
+| `multiple-sequence-alignment-ui.ts` | `multipleSequenceAlignmentUI()` — MSA dialog with column selection, mode switching (kalign for canonical, dynamically discovered engines for non-canonical), per-cluster alignment, selected-rows-only. |
+| `pepsea.ts` | `alignWithPepsea()` / `runPepsea()` — MSA for HELM peptides via **PepSeA Docker container** (mafft/linsi/ginsi methods). Registered as a `sequenceMSA` engine via `pepseaMsa()` in `package.ts`. |
+
+##### Adding a New MSA Engine
+
+Non-canonical MSA engines are discovered dynamically via `DG.Func.find({meta: {role: 'sequenceMSA'}})`.
+To add a new alignment engine (in this or any other package):
+
+1. Register a function with `meta.role: 'sequenceMSA'` and `outputs: [{name: 'result', type: 'column'}]`.
+2. The **first parameter** must be a `column` input with `semType: 'Macromolecule'` — the sequences to align.
+3. All **remaining parameters** are engine-specific configuration (method, gap penalties, etc.) and will be rendered automatically in the MSA dialog under "Alignment parameters".
+4. The function must **create and return** the aligned output column with appropriate metadata tags (`meta.units`, `semType`, `aligned`, `alphabet`, `separator`, etc.). Different engines can produce different output notations (e.g. PepSeA produces separator notation with `.` delimiter).
+5. The MSA dialog handles clustering and row selection — the engine function receives a single column to align.
+
+Example (decorator style):
+```typescript
+@grok.decorators.func({
+  name: 'My Aligner',
+  description: 'Custom MSA engine',
+  meta: {role: 'sequenceMSA'},
+  outputs: [{name: 'result', type: 'column'}],
+})
+static async myAligner(
+  @grok.decorators.param({type: 'column', options: {semType: 'Macromolecule'}}) sequenceCol: DG.Column<string>,
+  @grok.decorators.param({type: 'double'}) gapOpen: number = 1.0,
+): Promise<DG.Column<string>> {
+  // Align sequences, create result column with metadata tags, return it.
+}
+```
+
+See `pepseaMsa()` in `package.ts` and `alignWithPepsea()` in `pepsea.ts` for a complete reference implementation.
 
 #### Seq Helper — `src/utils/seq-helper/`
 
@@ -351,7 +380,8 @@ Test entry point: `src/package-test.ts` — imports all test files, exports `tes
 | Sequence space (UMAP/tSNE) | `src/analysis/sequence-space.ts` |
 | Similarity/diversity viewers | `src/analysis/sequence-similarity-viewer.ts` / `sequence-diversity-viewer.ts` |
 | MSA (kalign) | `src/utils/multiple-sequence-alignment.ts` |
-| MSA (PepSeA Docker) | `src/utils/pepsea.ts` |
+| MSA (PepSeA Docker) | `src/utils/pepsea.ts` + `pepseaMsa()` in `src/package.ts` |
+| Adding MSA engines | See "Adding a New MSA Engine" in Multiple Sequence Alignment section |
 | Notation conversion | `src/utils/convert.ts` |
 | Seq → molfile conversion | `src/utils/sequence-to-mol.ts` |
 | HELM → molfile pipeline | `src/utils/helm-to-molfile/converter/` |

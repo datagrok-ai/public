@@ -444,6 +444,18 @@ export async function alignSequences(sequenceCol: any, clustersCol: any, options
   return await PackageFunctions.alignSequences(sequenceCol, clustersCol, options);
 }
 
+//name: PepSeA
+//description: Aligns non-canonical peptide sequences using PepSeA Docker container (MAFFT)
+//input: column sequenceCol { semType: Macromolecule }
+//input: string method = 'mafft --auto' { choices: ["mafft --auto","mafft","linsi","ginsi","einsi","fftns","fftnsi","nwns","nwnsi"] }
+//input: double gapOpen = 1.53 
+//input: double gapExtend = 0 
+//output: column result
+//meta.role: sequenceMSA
+export async function pepseaMsa(sequenceCol: DG.Column<any>, method: string, gapOpen: number, gapExtend: number) : Promise<any> {
+  return await PackageFunctions.pepseaMsa(sequenceCol, method, gapOpen, gapExtend);
+}
+
 //name: Composition Analysis
 //description: Visualizes sequence composition on a WebLogo plot
 //output: viewer result

@@ -59,6 +59,7 @@ import {demoToAtomicLevel} from './demo/bio03-atomic-level';
 import {checkInputColumnUI} from './utils/check-input-column';
 import {MsaWarning} from './utils/multiple-sequence-alignment';
 import {multipleSequenceAlignmentUI} from './utils/multiple-sequence-alignment-ui';
+import {alignWithPepsea, pepseaMethods} from './utils/pepsea';
 import {WebLogoApp} from './apps/web-logo-app';
 import {SplitToMonomersFunctionEditor} from './function-edtiors/split-to-monomers-editor';
 import {splitToMonomersUI} from './utils/split-to-monomers';
@@ -973,6 +974,21 @@ export class PackageFunctions {
     @grok.decorators.param({type: 'object', options: {optional: true}}) options?: any
   ): Promise<DG.Column<string>> {
     return multipleSequenceAlignmentUI({col: sequenceCol, clustersCol: clustersCol, ...options}, _package.seqHelper);
+  }
+
+  @grok.decorators.func({
+    name: 'PepSeA',
+    description: 'Aligns non-canonical peptide sequences using PepSeA Docker container (MAFFT)',
+    meta: {role: 'sequenceMSA'},
+    outputs: [{name: 'result', type: 'column'}],
+  })
+  static async pepseaMsa(
+    @grok.decorators.param({type: 'column', options: {semType: 'Macromolecule'}}) sequenceCol: DG.Column<string>,
+    @grok.decorators.param({type: 'string', options: {choices: ['mafft --auto', 'mafft', 'linsi', 'ginsi', 'einsi', 'fftns', 'fftnsi', 'nwns', 'nwnsi'], initialValue: 'mafft --auto'}}) method: string = 'mafft --auto',
+    @grok.decorators.param({type: 'double', options: {initialValue: '1.53'}}) gapOpen: number = 1.53,
+    @grok.decorators.param({type: 'double', options: {initialValue: '0'}}) gapExtend: number = 0,
+  ): Promise<DG.Column<string>> {
+    return alignWithPepsea(sequenceCol, method, gapOpen, gapExtend);
   }
 
   @grok.decorators.func({
