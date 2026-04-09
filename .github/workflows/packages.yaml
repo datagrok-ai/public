@@ -363,10 +363,10 @@ jobs:
             DATAGROK_VERSION='latest'
           else
             DATAGROK_VERSION='bleeding-edge'
-            export GROK_SPAWNER_VERSION='bleeding-edge'
-            export GROK_JUPYTER_KERNEL_GATEWAY_VERSION='bleeding-edge'
           fi
           export DATAGROK_VERSION
+          export GROK_SPAWNER_VERSION="$DATAGROK_VERSION"
+          export GROK_JUPYTER_KERNEL_GATEWAY_VERSION="$DATAGROK_VERSION"
 
           # Skip initial setup in CI
           sed -i '/"dbServer": "database"/a\ \ \ \ \ \ \ \ \ \ "initialSetupCompleted": true,' docker/localhost.docker-compose.yaml
