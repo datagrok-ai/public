@@ -2296,11 +2296,12 @@ export class PackageFunctions {
     const view = grok.shell.tv as DG.TableView;
 
     const activityColsNames = [];
-    for (let i = 0; i < scalings.length; i++) {
-      if (scalings[i] === SCALING_METHODS.NONE)
+    for (let i = 0; i < activities.length; i++) {
+      const scaling = i < scalings.length ? scalings[i] : SCALING_METHODS.NONE;
+      if (scaling === SCALING_METHODS.NONE)
         activityColsNames.push(activities[i].name);
       else {
-        const scaledCol = scaleActivity(activities[i], scalings[i]);
+        const scaledCol = scaleActivity(activities[i], scaling);
         const name = grok.shell.tv.dataFrame.columns.getUnusedName(scaledCol.name);
         scaledCol.name = name;
         grok.shell.tv.dataFrame.columns.add(scaledCol);
@@ -2310,8 +2311,9 @@ export class PackageFunctions {
 
     const viewer = view.addViewer('Matched Molecular Pairs Analysis');
     viewer.setOptions({
-      moleculesColumnName: molecules.name, activities: activityColsNames, diffTypes: diffTypes,
-      scalings: scalings, fragmentCutoff,
+      moleculesColumnName: molecules.name, activities: activityColsNames,
+      diffTypes: diffTypes.slice(0, activities.length),
+      scalings: scalings.slice(0, activities.length), fragmentCutoff,
     });
     viewer.helpUrl = 'https://raw.githubusercontent.com/datagrok-ai/public/refs/heads/master/help/datagrok/solutions/domains/chem/chem.md#matched-molecular-pairs';
   }

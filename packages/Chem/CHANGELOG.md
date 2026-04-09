@@ -3,6 +3,7 @@
 ## v.next
 
 * Fixed crash in checkCurrentView when table is opened in Files preview without a registered TableView
+* GROK-19977: Fixed MMP analysis crash when activities and scalings arrays get out of sync
 
 ## 1.17.4 (2026-03-30)
 
