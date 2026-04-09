@@ -92,7 +92,7 @@ export function getMolColumnPropertyPanel(col: DG.Column): DG.Widget {
   // read via both on the renderer side. Datagrok's two tag APIs don't
   // always agree about what was last written for a given tag name; using
   // both leaves either read path correct.
-  const atomPickerCheckbox = ui.input.bool('Interactive Atom Selection',
+  const atomPickerCheckbox = ui.input.bool('Interactive Selection',
     {
       value: ((col.tags as any)[CHEM_ATOM_PICKER_TAG] ??
         col.getTag(CHEM_ATOM_PICKER_TAG)) === 'true',
