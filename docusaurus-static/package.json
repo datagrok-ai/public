@@ -20,15 +20,16 @@
     "@docusaurus/preset-classic": "canary",
     "@fortawesome/fontawesome-svg-core": "^6.5.2",
     "@fortawesome/free-brands-svg-icons": "^6.5.2",
-    "@fortawesome/free-solid-svg-icons": "^6.5.2",
     "@fortawesome/free-regular-svg-icons": "^6.5.2",
+    "@fortawesome/free-solid-svg-icons": "^6.5.2",
     "@fortawesome/react-fontawesome": "^0.2.0",
     "@mdx-js/react": "^3.0.1",
     "clsx": "^2.1.1",
     "markdown-to-jsx": "^7.1.9",
     "prism-react-renderer": "^2.3.1",
     "react": "^18.3.1",
-    "react-dom": "^18.3.1"
+    "react-dom": "^18.3.1",
+    "sharp": "^0.34.5"
   },
   "devDependencies": {
     "@docusaurus/logger": "canary",
@@ -37,12 +38,12 @@
     "@docusaurus/types": "canary",
     "@types/react": "^18.2.29",
     "docusaurus-plugin-typedoc": "^1.0.0",
+    "markdownlint-cli2": "^0.14.0",
     "typedoc": "^0.25.13",
     "typedoc-plugin-markdown": "^4.0.0",
     "typedoc-plugin-replace-text": "^3.3.0",
     "typescript": "~5.2.2",
-    "unist-util-visit": "^5.0.0",
-    "markdownlint-cli2": "^0.14.0"
+    "unist-util-visit": "^5.0.0"
   },
   "browserslist": {
     "production": [
