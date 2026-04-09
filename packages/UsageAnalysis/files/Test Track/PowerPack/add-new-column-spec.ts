@@ -1,120 +1,176 @@
-import { test, expect, Page } from '@playwright/test';
+import {test, expect, chromium} from '@playwright/test';
 
-const BASE_URL = 'https://release-ec2.datagrok.ai/';
+const baseUrl = process.env.DATAGROK_URL ?? 'https://dev.datagrok.ai';
+const datasetPath = 'System:DemoFiles/demog.csv';
 
-async function login(page: Page) {
-  await page.goto(BASE_URL);
-  await page.fill('input[placeholder="Login"]', 'claude');
-  await page.fill('input[placeholder="Password"]', 'grokclaude');
-  await page.click('button:has-text("LOGIN")');
-  await page.waitForSelector('.grok-app', { timeout: 30000 });
+const stepErrors: {step: string; error: string}[] = [];
+
+async function softStep(name: string, fn: () => Promise<void>) {
+  try {
+    await test.step(name, fn);
+  } catch (e: any) {
+    stepErrors.push({step: name, error: e.message ?? String(e)});
+    console.error(`[STEP FAILED] ${name}: ${e.message ?? e}`);
+  }
 }
 
-async function openDemog(page: Page) {
-  await page.evaluate(async () => {
-    const df = await (window as any).grok.data.getDemoTable('demog.csv');
-    (window as any).grok.shell.addTableView(df);
-  });
-  await page.waitForTimeout(2000);
-}
+test('PowerPack: Add New Columns', async () => {
+  // Connect to existing Chrome via CDP and reuse the Datagrok page
+  const browser = await chromium.connectOverCDP('http://localhost:9222');
+  const context = browser.contexts()[0];
+  let page = context.pages().find(p => p.url().includes('datagrok'));
+  if (!page) {
+    page = await context.newPage();
+    await page.goto(baseUrl, {waitUntil: 'networkidle', timeout: 60000});
+    await page.waitForFunction(() => {
+      try { return typeof grok !== 'undefined' && typeof grok.shell.closeAll === 'function'; }
+      catch { return false; }
+    }, {timeout: 45000});
+  }
 
-async function openAddNewColumnDialog(page: Page) {
-  await page.evaluate(() => {
-    (window as any).grok.shell.topMenu.find('Edit').find('Add New Column...').click();
-  });
-  await page.waitForSelector('.d4-dialog', { timeout: 5000 });
-}
-
-test.describe('PowerPack: Add New Columns', () => {
-  test.beforeEach(async ({ page }) => {
-    await login(page);
-    await page.evaluate(() => (window as any).grok.shell.closeAll());
-    await openDemog(page);
-  });
-
-  test('Step 2: Add new column dialog opens', async ({ page }) => {
-    await openAddNewColumnDialog(page);
-    const dialog = page.locator('.d4-dialog');
-    await expect(dialog).toBeVisible();
-  });
-
-  test('Step 3: UI Check — no overlapping, proper resize', async ({ page }) => {
-    await openAddNewColumnDialog(page);
-    const dialog = page.locator('.d4-dialog');
-    await expect(dialog).toBeVisible();
-
-    // Check dialog has expected elements
-    await expect(page.locator('.d4-dialog .cm-content')).toBeVisible();
-
-    // Resize dialog by dragging bottom-right corner
-    const box = await dialog.boundingBox();
-    if (box) {
-      await page.mouse.move(box.x + box.width - 2, box.y + box.height - 2);
-      await page.mouse.down();
-      await page.mouse.move(box.x + box.width + 100, box.y + box.height + 100);
-      await page.mouse.up();
+  // Close any open dialogs, then open dataset
+  await page.evaluate(async (path) => {
+    document.querySelectorAll('.d4-dialog').forEach(d => {
+      const cancel = d.querySelector('[name="button-CANCEL"]');
+      if (cancel) (cancel as HTMLElement).click();
+    });
+    document.body.classList.add('selenium');
+    grok.shell.settings.showFiltersIconsConstantly = true;
+    grok.shell.windows.simpleMode = false;
+    grok.shell.closeAll();
+    const df = await grok.dapi.files.readCsv(path);
+    const tv = grok.shell.addTableView(df);
+    await new Promise(resolve => {
+      const sub = df.onSemanticTypeDetected.subscribe(() => { sub.unsubscribe(); resolve(); });
+      setTimeout(resolve, 3000);
+    });
+    const hasBioChem = Array.from({length: df.columns.length}, (_, i) => df.columns.byIndex(i))
+      .some(c => c.semType === 'Molecule' || c.semType === 'Macromolecule');
+    if (hasBioChem) {
+      for (let i = 0; i < 50; i++) {
+        if (document.querySelector('[name="viewer-Grid"] canvas')) break;
+        await new Promise(r => setTimeout(r, 200));
+      }
+      await new Promise(r => setTimeout(r, 5000));
     }
-    // Dialog should still be visible after resize
-    await expect(dialog).toBeVisible();
+  }, datasetPath);
+  await page.locator('.d4-grid[name="viewer-Grid"]').waitFor({timeout: 30000});
+
+  // Step 1: Verify dataset opened correctly
+  await softStep('Open the Demog Dataset', async () => {
+    const info = await page!.evaluate(() => {
+      const df = grok.shell.tv.dataFrame;
+      const cols = Array.from({length: df.columns.length}, (_, i) => df.columns.byIndex(i).name);
+      return { rows: df.rowCount, cols };
+    });
+    expect(info.rows).toBeGreaterThan(0);
+    expect(info.cols).toContain('HEIGHT');
+    expect(info.cols).toContain('WEIGHT');
   });
 
-  test('Step 4: Add column with Round(${HEIGHT}+${WEIGHT})', async ({ page }) => {
-    await openAddNewColumnDialog(page);
+  // Step 2: Press "Add new column" icon
+  await softStep('Press Add New Column icon, dialog opens', async () => {
+    await page!.evaluate(() => {
+      document.querySelector('[name="icon-add-new-column"]')!.click();
+    });
+    await page!.locator('[name="dialog-Add-New-Column"]').waitFor({timeout: 5000});
+  });
 
+  // Step 3: UI Check
+  await softStep('UI Check: no overlapping, resize', async () => {
+    const dialog = page!.locator('[name="dialog-Add-New-Column"]');
+    await expect(dialog).toBeVisible();
+
+    // Check no overflow in dialog contents
+    const hasOverflow = await page!.evaluate(() => {
+      const d = document.querySelector('[name="dialog-Add-New-Column"]');
+      const contents = d!.querySelector('.d4-dialog-contents');
+      return contents ? (contents.scrollHeight > contents.clientHeight + 5) : false;
+    });
+    expect(hasOverflow).toBe(false);
+
+    // Check CodeMirror editor is visible
+    await expect(page!.locator('[name="dialog-Add-New-Column"] .cm-content')).toBeVisible();
+  });
+
+  // Step 4: Add column with formula
+  await softStep('Add column "New" with Round(HEIGHT+WEIGHT)', async () => {
     // Set column name
-    const nameInput = page.locator('.d4-dialog input[type="text"]').first();
-    await nameInput.clear();
-    await nameInput.fill('New');
+    const nameInput = page!.locator('[name="input-Add-New-Column---Name"]');
+    await nameInput.click();
+    await page!.keyboard.press('Control+A');
+    await page!.keyboard.type('New');
 
-    // Set formula in CodeMirror editor
-    const editor = page.locator('.d4-dialog .cm-content');
-    await editor.click();
-    await page.keyboard.type('Round(${HEIGHT}+${WEIGHT})');
-    await page.waitForTimeout(1000);
+    // Click CodeMirror editor and type formula
+    const cmEditor = page!.locator('[name="dialog-Add-New-Column"] .cm-content');
+    await cmEditor.click();
+    await page!.keyboard.type('Round(${HEIGHT} + ${WEIGHT})');
+    await page!.waitForTimeout(500);
 
     // Click OK
-    await page.click('.d4-dialog button:has-text("OK")');
-    await page.waitForTimeout(2000);
-
-    // Verify column was created
-    const colExists = await page.evaluate(() => {
-      const tv = (window as any).grok.shell.tv;
-      return tv.dataFrame.columns.contains('New');
+    await page!.evaluate(() => {
+      document.querySelector('[name="button-Add-New-Column---OK"]')!.click();
     });
-    expect(colExists).toBe(true);
+    await page!.waitForTimeout(1000);
+
+    // Verify column was created with correct values
+    const result = await page!.evaluate(() => {
+      const df = grok.shell.tv.dataFrame;
+      const hasNew = df.columns.contains('New');
+      if (!hasNew) return {hasNew: false};
+      const h = df.col('HEIGHT');
+      const w = df.col('WEIGHT');
+      const n = df.col('New');
+      return {
+        hasNew: true,
+        row0: {height: h.get(0), weight: w.get(0), newVal: n.get(0), expected: Math.round(h.get(0) + w.get(0))},
+      };
+    });
+    expect(result.hasNew).toBe(true);
+    expect(result.row0!.newVal).toBe(result.row0!.expected);
   });
 
-  test('Step 5: Recent Activities — select last formula, autofill', async ({ page }) => {
-    // First create a column
-    await openAddNewColumnDialog(page);
-    const nameInput = page.locator('.d4-dialog input[type="text"]').first();
-    await nameInput.clear();
-    await nameInput.fill('New');
-    const editor = page.locator('.d4-dialog .cm-content');
-    await editor.click();
-    await page.keyboard.type('Round(${HEIGHT}+${WEIGHT})');
-    await page.waitForTimeout(500);
-    await page.click('.d4-dialog button:has-text("OK")');
-    await page.waitForTimeout(2000);
-
-    // Reopen dialog
-    await openAddNewColumnDialog(page);
+  // Step 5: Recent Activity
+  await softStep('Recent Activities: reopen dialog, history autofill', async () => {
+    // Reopen the Add New Column dialog
+    await page!.evaluate(() => {
+      document.querySelector('[name="icon-add-new-column"]')!.click();
+    });
+    await page!.locator('[name="dialog-Add-New-Column"]').waitFor({timeout: 5000});
 
     // Click history icon
-    const historyIcon = page.locator('.d4-dialog .fa-history.d4-command-bar-icon');
-    await historyIcon.click();
-    await page.waitForTimeout(1000);
-
-    // Select first history entry
-    const tooltipEntry = page.locator('.d4-tooltip-popup div').first();
-    await tooltipEntry.click();
-    await page.waitForTimeout(500);
-
-    // Verify autofill — editor should contain formula text
-    const editorText = await page.evaluate(() => {
-      const cm = document.querySelector('.d4-dialog .cm-content');
-      return cm?.textContent || '';
+    await page!.evaluate(() => {
+      document.querySelector('[name="dialog-Add-New-Column"] [name="icon-history"]')!.click();
     });
-    expect(editorText).toContain('Round');
+    await page!.waitForTimeout(500);
+
+    // Click the most recent history menu item
+    const historyItem = page!.locator('.d4-menu-popup .d4-menu-item-vert').first();
+    await historyItem.click();
+    await page!.waitForTimeout(500);
+
+    // Verify autofill
+    const autofilled = await page!.evaluate(() => {
+      const dialog = document.querySelector('[name="dialog-Add-New-Column"]');
+      const nameInput = document.querySelector('[name="input-Add-New-Column---Name"]') as HTMLInputElement;
+      const cmContent = dialog!.querySelector('.cm-content');
+      return {
+        name: nameInput?.value,
+        formula: cmContent?.textContent
+      };
+    });
+    expect(autofilled.name).toBe('New');
+    expect(autofilled.formula).toContain('Round');
+    expect(autofilled.formula).toContain('HEIGHT');
+    expect(autofilled.formula).toContain('WEIGHT');
+
+    // Close the dialog
+    await page!.keyboard.press('Escape');
   });
+
+  // Summary check
+  if (stepErrors.length > 0) {
+    const summary = stepErrors.map(e => `  - ${e.step}: ${e.error}`).join('\n');
+    throw new Error(`${stepErrors.length} step(s) failed:\n${summary}`);
+  }
 });

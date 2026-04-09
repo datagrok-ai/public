@@ -1,36 +1,43 @@
-# EDA PLS — Run Results
+# PLS — Run Results
 
-**Date**: 2026-03-10
-**URL**: https://public.datagrok.ai
-**Status**: PARTIAL
+**Date**: 2026-04-09
+**URL**: https://dev.datagrok.ai
+**Status**: PASS
 
 ## Steps
 
-| # | Step | Result | Notes |
-|---|------|--------|-------|
-| 1 | Open cars.csv from Demo files | PASS | 30 rows, 17 cols loaded |
-| 2 | ML > Analyze > PLS... | PASS | Dialog opens via grok.functions.eval('Eda:PLS').prepare().edit(); fields: Table=cars, Features=(0), Predict=price, Names=model, Components=3 |
-| 3 | Select all features, Components=3, click OK | PASS | All 16 numerical features selected; PLS executed; console shows: Eda:PLS(...) → plsResults: [object Object] |
-| 4 | Verify PLS1, PLS2, PLS3 columns added | FAIL | PLS function returns an object (plsResults), does NOT add PLS1/PLS2/PLS3 columns to the table. Table still has 17 cols after execution |
+| # | Step | Result | Time | Playwright | Notes |
+|---|------|--------|------|------------|-------|
+| 1 | Open cars.csv dataset | PASS | 4s | PASSED | Opened via JS API, 30 rows, 17 columns |
+| 2 | Run PLS (ML > Analyze > PLS) | PASS | 3s | PASSED | Dialog opened via UI; Predict=price, Using=15 cols, Components=3 |
+| 3 | Click RUN | PASS | 2s | PASSED | PLS executed successfully |
+| 4 | Verify PLS1, PLS2, PLS3 columns added | PASS | 1s | PASSED | Three new columns added (17 → 20 cols): PLS1, PLS2, PLS3 |
+
+## Timing
+
+| Phase | Duration |
+|-------|----------|
+| Execute via grok-browser | 10s |
+| Spec file generation | 2s |
+| Spec script execution | 4s |
 
 ## Summary
 
-PLS dialog opens correctly with all expected fields (Features, Predict, Names, Components). The function executes successfully and returns a `plsResults` object. However, the scenario's expected result — "three new columns (PLS1, PLS2, PLS3) are added" — does not match actual behavior: the PLS function returns a results object and does not add score columns to the table.
+All 4 steps passed. PLS dialog opened with correct defaults (Predict=price, Using=15 numeric columns, Components=3). After clicking RUN, three new columns PLS1, PLS2, PLS3 were added to the dataset as expected. Note: the previous run on public.datagrok.ai (2026-03-10) reported FAIL for this step — this has been fixed on dev.
 
 ## Retrospective
 
 ### What worked well
-- PLS dialog has useful fields: Predict column, Names column, Components
-- Function executes without errors and returns a valid result object
+- PLS dialog auto-populated Predict=price and selected 15 numeric columns
+- Components defaulted to 3 (matching scenario requirement)
+- PLS1, PLS2, PLS3 columns correctly added to the table
+- Menu navigation (ML → Analyze → PLS) worked reliably
 
 ### What did not work
-- No PLS score columns (PLS1, PLS2, PLS3) are added to the table — scenario expected result is wrong
-- The plsResults object is shown in console as `[object Object]` — no visual output or viewers opened
+- Nothing — all steps passed
 
 ### Suggestions for the platform
-- PLS should either add score columns to the table (like PCA does) or open a dedicated results view with scores, loadings, and predictions
-- The result object should have a clear visual representation (scores plot, loadings plot, etc.)
+- No issues found
 
 ### Suggestions for the scenario
-- Expected result is incorrect: PLS does not add PLS1/PLS2/PLS3 columns. Update to reflect actual output (results object)
-- Scenario should clarify what output to verify — possibly check a Multivariate Analysis view or a separate PLS scores plot
+- Scenario is accurate and matches actual behavior on dev

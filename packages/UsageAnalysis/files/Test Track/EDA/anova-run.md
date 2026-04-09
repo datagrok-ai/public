@@ -1,40 +1,42 @@
-# EDA ANOVA — Run Results
+# ANOVA — Run Results
 
-**Date**: 2026-03-10
-**URL**: https://public.datagrok.ai
+**Date**: 2026-04-08
+**URL**: https://dev.datagrok.ai
 **Status**: PASS
 
 ## Steps
 
-| # | Step | Result | Notes |
-|---|------|--------|-------|
-| 1 | Open demog.csv from Demo files | PASS | 5850 rows, 11 cols (USUBJID, AGE, SEX, RACE, DIS_POP, HEIGHT, WEIGHT, ...) |
-| 2 | ML > Analyze > ANOVA | PASS | Dialog opens via Eda:anova(); Category=RACE (auto), Feature=AGE (auto), Alpha=0.05 |
-| 3 | Click RUN | PASS | Box plot opens immediately showing AGE distribution by RACE (Asian, Black, Caucasian, Other) |
-| 4 | Verify box plot | PASS | Box plot shows 4 categories with quartiles, whiskers, and individual data points |
-| 5 | Verify Analysis tab | PASS | Table shows: Source of variance / SS / DF; Between groups SS=848.48, Within groups SS=1069045.00, Total SS=1069893.38 |
-| 6 | Click F-test tab | PASS | Shows: Null Hypothesis (all group means equal), Alternative Hypothesis (at least one differs), Conclusion: "No significant differences detected", Learn more link |
+| # | Step | Result | Time | Playwright | Notes |
+|---|------|--------|------|------------|-------|
+| 1 | Open demog.csv dataset | PASS | 5s | PASSED | Opened via JS API, 5850 rows, 11 columns |
+| 2 | Run ANOVA (ML > Analyze > ANOVA) | PASS | 3s | PASSED | Menu navigation via UI clicks: ML → Analyze → ANOVA |
+| 3 | Click RUN, verify box plot + Analysis + F-test tabs | PASS | 4s | PASSED | Box plot with 4 RACE categories, Analysis and F-test tabs present, result: "RACE doesn't affect the AGE" |
+
+## Timing
+
+| Phase | Duration |
+|-------|----------|
+| Execute via grok-browser | 12s |
+| Spec file generation | 2s |
+| Spec script execution | 3s |
 
 ## Summary
 
-All steps passed. ANOVA dialog opens with good defaults (Category=RACE, Feature=AGE, Alpha=0.05). After clicking RUN, a box plot viewer appears with AGE distribution by race category. The Analysis tab shows the ANOVA table with SS and DF values. The F-test tab correctly interprets the results: no significant age difference across race groups in this dataset.
+All 3 steps passed successfully. The ANOVA dialog opened correctly with default parameters (Category=RACE, Feature=AGE, Alpha=0.05). After clicking RUN, the box plot, Analysis summary table, and F-test tab were all rendered without errors. The conclusion "RACE doesn't affect the AGE" was displayed on the box plot.
 
 ## Retrospective
 
 ### What worked well
-- Dialog auto-populates Category and Feature with reasonable defaults
-- Box plot shows all 4 racial categories clearly with individual data points overlaid
-- Analysis tab presents a clear ANOVA table
-- F-test tab gives a human-readable conclusion with hypothesis statements
-- No console errors during execution
+- Top menu navigation via UI clicks worked reliably — ML → Analyze → ANOVA submenu opened correctly
+- ANOVA dialog pre-populated sensible defaults (RACE, AGE, 0.05)
+- Results rendered quickly with all three expected components (box plot, Analysis tab, F-test tab)
 
 ### What did not work
-- Nothing — all steps passed cleanly
+- Nothing — all steps completed successfully
 
 ### Suggestions for the platform
-- No major issues found
+- The ANOVA result view could benefit from a named container (e.g., `[name="viewer-ANOVA"]`) for easier automation targeting
 
 ### Suggestions for the scenario
-- Scenario is concise and accurate
-- Could add expected values (e.g., p-value threshold, expected conclusion) to make verification more objective
-- Note that the dialog auto-selects Category=RACE and Feature=AGE — users don't need to configure manually for demog.csv
+- Step 3 could be more specific about what to verify in the Analysis and F-test tabs (e.g., expected columns, p-value range)
+- Consider adding a step to verify switching between Analysis and F-test tabs
