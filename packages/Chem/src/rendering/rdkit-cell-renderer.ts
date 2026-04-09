@@ -17,7 +17,7 @@ import {ISubstruct} from '@datagrok-libraries/chem-meta/src/types';
 import {
   ALIGN_BY_SCAFFOLD_LAYOUT_PERSISTED_TAG,
   ALIGN_BY_SCAFFOLD_TAG, FILTER_SCAFFOLD_TAG,
-  CHEM_ATOM_PICKER_TAG, CHEM_INTERACTIVE_SELECTION_EVENT,
+  CHEM_INTERACTIVE_SELECTION_EVENT,
   FIXED_SCALE_TAG,
   HIGHLIGHT_BY_SCAFFOLD_COL, HIGHLIGHT_BY_SCAFFOLD_COL_SYNC,
   HIGHLIGHT_BY_SCAFFOLD_TAG, MIN_MOL_IMAGE_SIZE, PARENT_MOL_COL,
@@ -31,6 +31,7 @@ import {_rdKitModule, drawErrorCross, drawRdKitMoleculeToOffscreenCanvas,
 import {IMolContext, getMolSafe} from '../utils/mol-creation_rdkit';
 import {getGridCellColTemp} from '../utils/ui-utils';
 import {errInfo} from '../utils/err-info';
+import {mapAtomIndices2Dto3D} from '../utils/atom-index-mapper';
 
 import {_package} from '../package';
 
@@ -188,36 +189,14 @@ M  END
    *  the renderer. Capture-phase fires at document BEFORE the event walks
    *  down to its target, so any `stopPropagation` on the canvas cannot stop
    *  it from firing. */
-  private _drag: {
-    grid: DG.Grid;
-    tableCol: DG.Column;
-    rowIdx: number;
-    // Cell bounds expressed in viewport (client) CSS pixels so we can draw
-    // the overlay with position: fixed and clientX/Y directly.
-    cellClientLeft: number;
-    cellClientTop: number;
-    cellWidth: number;
-    cellHeight: number;
-    // Mouse position at mousedown, in cell-local CSS pixels.
-    startX: number;
-    startY: number;
-    curX: number;
-    curY: number;
-    /** `add` = Alt held (additive — adds boxed atoms to existing selection
-     *  rather than replacing it).
-     *
-     *  Alt is the only modifier we can use: Datagrok's grid claims Shift+
-     *  Click for row range-select and Ctrl/Cmd+Click for row multi-select
-     *  (standard spreadsheet conventions), so neither modifier ever
-     *  dispatches `onMouseDown` to a cell renderer. Alt is not part of the
-     *  spreadsheet selection vocabulary, so the grid lets it through. */
-    modifiers: {add: boolean};
-    positions: Map<number, {x: number, y: number}>;
-    bondAtoms: Map<number, [number, number]>;
-    overlay: HTMLDivElement;
-    onMove: (e: MouseEvent) => void;
-    onUp: (e: MouseEvent) => void;
-  } | null = null;
+  /** Tracks the last atom processed by hover so we don't re-fire on
+   *  every mousemove pixel within the same atom's radius. */
+  private _lastHoveredAtom: {col: string, rowIdx: number, atomIdx: number} | null = null;
+  /** The currently previewed atom (hover without Alt). Shown alongside
+   *  the persistent selection but removed when the cursor moves away. */
+  private _previewAtomIdx: number | null = null;
+  /** The row the preview is on. */
+  private _previewRowIdx: number = -1;
 
   constructor(rdKitModule: RDModule) {
     super();
@@ -227,6 +206,27 @@ M  END
     this.molCache.onItemEvicted = function(obj: { [_: string]: any }) {
       obj.mol?.delete();
     };
+  }
+
+  // -- Interactive atom picker auto-detection --------------------------------
+
+  /** Cache for _isPickerActive to avoid scanning columns on every event. */
+  private _pickerActiveCache: {dfId: string, active: boolean} | null = null;
+
+  /** Returns true when the interactive atom picker should be active.
+   *  Auto-detects based on whether the DataFrame has associated
+   *  Molecule3D (docking poses) or HELM columns — no manual toggle needed. */
+  private _isPickerActive(col: DG.Column): boolean {
+    const df = col.dataFrame;
+    if (!df) return false;
+    if (this._pickerActiveCache?.dfId === df.id)
+      return this._pickerActiveCache.active;
+    const cols = df.columns.toList();
+    const active =
+      cols.some((c) => c.semType === DG.SEMTYPE.MOLECULE3D) ||
+      cols.some((c) => c.semType === (DG.SEMTYPE as any).MACROMOLECULE && (c.meta as any)?.units === 'helm');
+    this._pickerActiveCache = {dfId: df.id, active};
+    return active;
   }
 
   ensureCanvasSize(w: number, h: number): OffscreenCanvas {
@@ -561,14 +561,21 @@ M  END
 
   render(g: any, x: number, y: number, w: number, h: number,
     gridCell: DG.GridCell, cellStyle: DG.GridCellStyle): void {
-    // Register a single document-level mousedown listener (once, on the
-    // first render). This replaces per-canvas listeners which failed
-    // because g.canvas is a rendering canvas, not the interactive one.
+    // Register document-level listeners for the hover-paint atom picker.
+    // Alt+hover: "paint" atoms by moving the cursor over them while
+    // holding Alt. No click needed, so the grid never changes the
+    // current cell and the context panel (e.g. AutoDock) stays open.
     if (!this._documentListenerAttached) {
       this._documentListenerAttached = true;
+      document.addEventListener('mousemove', (e: MouseEvent) => {
+        this._onDocumentMouseMove(e);
+      });
       document.addEventListener('mousedown', (e: MouseEvent) => {
         this._onDocumentMouseDown(e);
-      }, true); // capture phase — fires before anything can stopPropagation
+      }, true);
+      document.addEventListener('keydown', (e: KeyboardEvent) => {
+        this._onDocumentKeyDown(e);
+      });
     }
 
     const molString = gridCell.cell.value;
@@ -728,28 +735,8 @@ M  END
   // invalidated to repaint the cell with the new highlights.
   // ========================================================================
 
-  /** Tears down an active drag: removes the document listeners and any
-   *  overlay(s) from the DOM and clears `_drag`. Safe to call when no drag
-   *  is active.
-   *
-   *  We sweep ALL `.chem-grid-box-picker` elements from the document, not
-   *  just the one in `_drag`, to defend against orphan overlays that might
-   *  exist if Datagrok's grid dispatches a second `onMouseDown` during the
-   *  lifecycle of the first drag (which we observed in practice — the
-   *  symptom was a box that persisted after mouseup). */
-  private _endDrag(): void {
-    const d = this._drag;
-    if (d) {
-      document.removeEventListener('mousemove', d.onMove, true);
-      document.removeEventListener('mouseup', d.onUp, true);
-    }
-    this._sweepOverlays();
-    this._drag = null;
-  }
-
-  /** Removes every `.chem-grid-box-picker` element from the document. Called
-   *  as a safety net from `_endDrag` and from `onMouseDown` before a new
-   *  overlay is created. */
+  /** Removes every `.chem-grid-box-picker` overlay element from the document.
+   *  Safety net for leftover overlays. */
   private _sweepOverlays(): void {
     const orphans = document.querySelectorAll('.chem-grid-box-picker');
     for (let i = 0; i < orphans.length; i++) {
@@ -765,198 +752,157 @@ M  END
    *  (which stops dispatching after a table switch) and per-canvas
    *  listeners (which failed because the rendering canvas is not the
    *  interactive canvas). */
-  private _onDocumentMouseDown(e: MouseEvent): void {
-    this._endDrag();
-    this._sweepOverlays();
+  // -- Hover-paint atom picker ------------------------------------------------
+  // Hold Alt and move the mouse over atoms in a SMILES cell to "paint" them
+  // into the selection. No click is needed, so the grid never changes the
+  // current cell and the context panel (e.g. AutoDock Molstar viewer) stays
+  // open. Alt+click on an already-selected atom removes it (toggle).
 
-    if (e.button !== 0) return;
-    if ((e.buttons & 1) === 0) return;
-
-    // Get the current table view's grid. This is the grid the user is
-    // interacting with, regardless of which table was opened first.
+  /** Resolves the molecule cell and atom under the cursor. Returns null
+   *  if the cursor isn't over a valid picker-active molecule cell atom. */
+  private _hitTestAtom(e: MouseEvent): {
+    grid: DG.Grid; gridCell: DG.GridCell; cellInfo: CellInteractiveInfo;
+    nearest: number; pointerCellX: number; pointerCellY: number;
+  } | null {
     const grid = grok.shell.tv?.grid;
-    if (!grid) return;
+    if (!grid) return null;
+    let gridRoot: HTMLElement | null = null;
+    try {gridRoot = grid.root;} catch {return null;}
+    if (!gridRoot) return null;
 
-    // Hit-test. We need grid-canvas-relative coordinates. `e.target` is
-    // the actual element that received the event — compute the offset
-    // from there. For a document listener, e.target is usually the grid's
-    // interactive overlay element.
-    const targetEl = e.target as HTMLElement;
-    if (!targetEl) return;
-    const targetRect = targetEl.getBoundingClientRect();
-    const localX = e.clientX - targetRect.left;
-    const localY = e.clientY - targetRect.top;
+    const gridRect = gridRoot.getBoundingClientRect();
+    const localX = e.clientX - gridRect.left;
+    const localY = e.clientY - gridRect.top;
+    if (localX < 0 || localY < 0 ||
+        localX > gridRect.width || localY > gridRect.height) return null;
 
     let gridCell: DG.GridCell | null = null;
-    try {gridCell = grid.hitTest(localX, localY);} catch {return;} // hitTest can throw if the grid is in a transitional state
-    if (!gridCell || !gridCell.tableColumn || gridCell.tableRowIndex == null ||
-        gridCell.tableRowIndex < 0) return;
-    if (gridCell.tableColumn.semType !== DG.SEMTYPE.MOLECULE) return;
-
-    const pickerTag =
-      (gridCell.tableColumn.tags as any)[CHEM_ATOM_PICKER_TAG] ??
-      gridCell.tableColumn.getTag(CHEM_ATOM_PICKER_TAG);
-    if (pickerTag !== 'true') return;
+    try {gridCell = grid.hitTest(localX, localY);} catch {return null;}
+    if (!gridCell?.tableColumn || gridCell.tableRowIndex == null ||
+        gridCell.tableRowIndex < 0) return null;
+    if (gridCell.tableColumn.semType !== DG.SEMTYPE.MOLECULE) return null;
+    if (!this._isPickerActive(gridCell.tableColumn)) return null;
 
     const molString: string = gridCell.cell.value;
-    if (!molString || DG.chem.Sketcher.isEmptyMolfile(molString)) return;
+    if (!molString || DG.chem.Sketcher.isEmptyMolfile(molString)) return null;
 
-    // Cell position in viewport (client) CSS pixels.
     const bounds = gridCell.bounds;
-    const canvasRect = targetRect;
-    const cellClientLeft = canvasRect.left + bounds.left;
-    const cellClientTop = canvasRect.top + bounds.top;
-
-    const pointerCellX = e.clientX - cellClientLeft;
-    const pointerCellY = e.clientY - cellClientTop;
+    const pointerCellX = e.clientX - (gridRect.left + bounds.left);
+    const pointerCellY = e.clientY - (gridRect.top + bounds.top);
     if (pointerCellX < 0 || pointerCellY < 0 ||
-        pointerCellX > bounds.width || pointerCellY > bounds.height) return;
+        pointerCellX > bounds.width || pointerCellY > bounds.height) return null;
 
-    // Lazily compute the cell's interactive layout info (atom positions
-    // and bond atom-pairs), keyed by molString and DPR-scaled dimensions
-    // so the cache lines up with what the canvas draws.
     const cellInfo = this._getCellAtomPositions(molString, bounds.width, bounds.height);
-    if (!cellInfo || cellInfo.positions.size === 0) return;
-    const positions = cellInfo.positions;
-    const bondAtoms = cellInfo.bondAtoms;
+    if (!cellInfo || cellInfo.positions.size === 0) return null;
 
-    // Fixed-position overlay anchored at the mouse-down point.
-    const overlay = document.createElement('div');
-    overlay.className = 'chem-grid-box-picker';
-    Object.assign(overlay.style, {
-      position: 'fixed',
-      left: e.clientX + 'px',
-      top: e.clientY + 'px',
-      width: '0px',
-      height: '0px',
-      border: '1px dashed #4a8',
-      background: 'rgba(102, 204, 102, 0.15)',
-      pointerEvents: 'none',
-      boxSizing: 'border-box',
-      zIndex: '10000',
-    } as Partial<CSSStyleDeclaration>);
-    document.body.appendChild(overlay);
+    const nearest = this._findNearestAtom(cellInfo.positions, pointerCellX, pointerCellY);
+    if (nearest === null) return null;
 
-    // Capture-phase document listeners for drag tracking.
-    const onMove = (mv: MouseEvent) => this._handleDragMove(mv);
-    const onUp = (mu: MouseEvent) => this._handleDragUp(mu);
-    document.addEventListener('mousemove', onMove, true);
-    document.addEventListener('mouseup', onUp, true);
-
-    this._drag = {
-      grid: grid,
-      tableCol: gridCell.tableColumn,
-      rowIdx: gridCell.tableRowIndex,
-      cellClientLeft,
-      cellClientTop,
-      cellWidth: bounds.width,
-      cellHeight: bounds.height,
-      startX: pointerCellX,
-      startY: pointerCellY,
-      curX: pointerCellX,
-      curY: pointerCellY,
-      modifiers: {add: e.altKey},
-      positions,
-      bondAtoms,
-      overlay,
-      onMove,
-      onUp,
-    };
-    e.preventDefault();
-    e.stopPropagation();
+    return {grid, gridCell, cellInfo, nearest, pointerCellX, pointerCellY};
   }
 
-  private _handleDragMove(e: MouseEvent): void {
-    const d = this._drag;
-    if (!d) return;
+  /**
+   * Mousemove handler — two modes:
+   *
+   * **Without Alt (preview):** highlights ONLY the single atom under the
+   * cursor. Moving to a different atom highlights that one instead. Moving
+   * away from all atoms clears the preview. No persistent selection.
+   *
+   * **With Alt (paint):** each atom the cursor passes over is ADDED to
+   * the persistent selection. The selection accumulates until cleared
+   * with Escape.
+   */
+  private _onDocumentMouseMove(e: MouseEvent): void {
+    // Only activate the picker when the current cell is a Molecule3D
+    // (docking pose) or HELM column. If the user clicked on SMILES,
+    // binding energy, or any other column, hovering does nothing.
+    const df = grok.shell.tv?.grid?.dataFrame;
+    if (df) {
+      const curCol = df.currentCol;
+      const is3D = curCol?.semType === DG.SEMTYPE.MOLECULE3D;
+      const isHelm = curCol?.semType === (DG.SEMTYPE as any).MACROMOLECULE &&
+        (curCol?.meta as any)?.units === 'helm';
+      if (!is3D && !isHelm) return;
+    }
 
-    // Track Alt state continuously throughout the drag. Reading `e.altKey`
-    // only at mousedown or only at mouseup is unreliable: at mousedown the
-    // user may not yet be holding Alt (they pressed it mid-drag); at
-    // mouseup the browser sometimes loses modifier state if a synthetic
-    // event is dispatched in the middle. The most reliable signal is
-    // whatever was tracked on the last mousemove sample.
-    d.modifiers.add = e.altKey;
+    const hit = this._hitTestAtom(e);
 
-    // cell-local coordinates, clamped so the rectangle never extends past
-    // the molecule cell where the drag started
-    const cellX = Math.max(0, Math.min(d.cellWidth, e.clientX - d.cellClientLeft));
-    const cellY = Math.max(0, Math.min(d.cellHeight, e.clientY - d.cellClientTop));
-    d.curX = cellX;
-    d.curY = cellY;
-    const vpLeft = d.cellClientLeft + Math.min(d.startX, d.curX);
-    const vpTop = d.cellClientTop + Math.min(d.startY, d.curY);
-    d.overlay.style.left = vpLeft + 'px';
-    d.overlay.style.top = vpTop + 'px';
-    d.overlay.style.width = Math.abs(d.curX - d.startX) + 'px';
-    d.overlay.style.height = Math.abs(d.curY - d.startY) + 'px';
-
-    // Visual feedback: tint the overlay yellow when Alt is held mid-drag,
-    // so the user can see the picker has recognised the modifier and will
-    // add (rather than replace) the existing selection. Yellow matches
-    // the pick color so the preview color is the color the atoms will
-    // take once released. A darker gold border keeps the dashed outline
-    // visible against the white cell background — a pure #FFFF00 border
-    // on white disappears.
     if (e.altKey) {
-      // additive — gold border + translucent yellow fill, matching picks
-      d.overlay.style.borderColor = '#c9a400';
-      d.overlay.style.background = 'rgba(255, 255, 0, 0.25)';
+      // ---- Alt+hover: PAINT mode (accumulative) --------------------------
+      // Clear any active preview atom first — paint mode takes over.
+      this._previewAtomIdx = null;
+
+      if (!hit) return;
+      const col = hit.gridCell.tableColumn!;
+      const colName = col.name;
+      const rowIdx = hit.gridCell.tableRowIndex!;
+
+      // Skip if same atom as last paint (avoid re-firing per pixel).
+      if (this._lastHoveredAtom &&
+          this._lastHoveredAtom.col === colName &&
+          this._lastHoveredAtom.rowIdx === rowIdx &&
+          this._lastHoveredAtom.atomIdx === hit.nearest) return;
+      this._lastHoveredAtom = {col: colName, rowIdx, atomIdx: hit.nearest};
+
+      // Add atom to persistent selection (only adds, never removes).
+      this._addAtomToRow(col, rowIdx, hit.nearest, hit.cellInfo.bondAtoms);
+      hit.grid.invalidate();
     } else {
-      // replace — default green (distinct from yellow so drag vs.
-      // applied state is immediately legible)
-      d.overlay.style.borderColor = '#4a8';
-      d.overlay.style.background = 'rgba(102, 204, 102, 0.15)';
+      // ---- No Alt: PREVIEW mode (persistent + one hovered atom) ----------
+      // Shows all persistently selected atoms PLUS the single hovered atom.
+      // Moving away clears the preview but keeps persistent atoms.
+      if (!hit) {
+        if (this._previewAtomIdx !== null)
+          this._removePreviewAtom();
+
+        this._lastHoveredAtom = null;
+        return;
+      }
+      const col = hit.gridCell.tableColumn!;
+      const colName = col.name;
+      const rowIdx = hit.gridCell.tableRowIndex!;
+
+      // Same atom — skip.
+      if (this._lastHoveredAtom &&
+          this._lastHoveredAtom.col === colName &&
+          this._lastHoveredAtom.rowIdx === rowIdx &&
+          this._lastHoveredAtom.atomIdx === hit.nearest) return;
+      this._lastHoveredAtom = {col: colName, rowIdx, atomIdx: hit.nearest};
+
+      // Show persistent selection + this one preview atom.
+      this._setPreviewAtom(col, rowIdx, hit.nearest, hit.cellInfo.bondAtoms);
+      hit.grid.invalidate();
     }
   }
 
-  private _handleDragUp(e: MouseEvent): void {
-    const d = this._drag;
-    if (!d) return;
+  /** Escape key clears the persistent Alt+hover selection. */
+  private _onDocumentKeyDown(e: KeyboardEvent): void {
+    if (e.key !== 'Escape') return;
+    const grid = grok.shell.tv?.grid;
+    if (!grid) return;
+    const df = grid.dataFrame;
+    if (!df) return;
+    const molCol = df.columns.toList().find(
+      (c: DG.Column) => c.semType === DG.SEMTYPE.MOLECULE && this._isPickerActive(c));
+    if (!molCol) return;
 
-    // Capture data before _endDrag clears state + removes the overlay.
-    const x0 = Math.min(d.startX, d.curX);
-    const x1 = Math.max(d.startX, d.curX);
-    const y0 = Math.min(d.startY, d.curY);
-    const y1 = Math.max(d.startY, d.curY);
-    const moved = Math.hypot(x1 - x0, y1 - y0) > 3;
-    const positions = d.positions;
-    const bondAtoms = d.bondAtoms;
-    const tableCol = d.tableCol;
-    const rowIdx = d.rowIdx;
-    const grid = d.grid;
-    // Combine the latest tracked-during-mousemove modifier state with the
-    // mouseup event's own state. We OR them so Alt held at any recent
-    // moment wins — defends against the browser losing modifier state on
-    // the mouseup event itself.
-    const modifiers = {add: e.altKey || d.modifiers.add};
-    const startX = d.startX;
-    const startY = d.startY;
-
-    this._endDrag();
-
-    // Click (no significant movement). If Alt was held and the click was
-    // close to a specific atom, toggle that single atom — adds it if not
-    // already in the selection, removes it if it is. This is the
-    // fine-tuning complement to Alt+drag.
-    if (!moved) {
-      if (modifiers.add) {
-        const nearest = this._findNearestAtom(positions, startX, startY);
-        if (nearest !== null) {
-          this._toggleAtomInRow(tableCol, rowIdx, nearest, bondAtoms);
-          grid.invalidate();
-        }
-      }
-      return;
-    }
-
-    const boxed: number[] = [];
-    for (const [idx, p] of positions.entries()) {
-      if (p.x >= x0 && p.x <= x1 && p.y >= y0 && p.y <= y1)
-        boxed.push(idx);
-    }
-    this._updateRowSelection(tableCol, rowIdx, boxed, modifiers, bondAtoms);
+    // Remove all atom-picker providers from the column.
+    type TaggedProvider = ISubstructProvider & {__atomPicker?: boolean};
+    const providers = (molCol.temp[ChemTemps.SUBSTRUCT_PROVIDERS] ?? []) as TaggedProvider[];
+    molCol.temp[ChemTemps.SUBSTRUCT_PROVIDERS] = providers.filter((p) => !p.__atomPicker);
+    this._lastHoveredAtom = null;
+    this._previewAtomIdx = null;
     grid.invalidate();
+
+    // Fire an empty selection event so 3D viewers clear their highlights.
+    grok.events.fireCustomEvent(CHEM_INTERACTIVE_SELECTION_EVENT, {
+      column: molCol, rowIdx: df.currentRowIdx, atoms: [],
+    });
+  }
+
+  /** Mousedown: kept minimal — only clears stale overlays. */
+  private _onDocumentMouseDown(e: MouseEvent): void {
+    this._sweepOverlays();
   }
 
   /** Returns the index of the atom whose center is nearest to the click
@@ -982,6 +928,94 @@ M  END
     return nearestIdx;
   }
 
+  /** Returns the persistent (Alt+painted) atoms for a given row. These
+   *  are the atoms stored in the provider's `__atoms` set. */
+  private _getPersistentAtoms(col: DG.Column, rowIdx: number): Set<number> {
+    type TaggedProvider = ISubstructProvider & {__atomPicker?: boolean, __rowIdx?: number, __atoms?: Set<number>};
+    const existing = (col.temp[ChemTemps.SUBSTRUCT_PROVIDERS] ?? []) as TaggedProvider[];
+    const prior = existing.find((p) => p.__atomPicker && p.__rowIdx === rowIdx);
+    return new Set<number>(prior?.__atoms ?? []);
+  }
+
+  /** Adds a single atom to the persistent selection (Alt+hover paint mode).
+   *  Unlike _toggleAtomInRow, this only ADDS — never removes. */
+  private _addAtomToRow(col: DG.Column, rowIdx: number, atomIdx: number,
+    bondAtoms: Map<number, [number, number]>): void {
+    const current = this._getPersistentAtoms(col, rowIdx);
+    if (current.has(atomIdx)) return; // already selected
+    current.add(atomIdx);
+    this._updateRowSelection(col, rowIdx, [...current], {add: true}, bondAtoms);
+  }
+
+  /** Sets the preview to show persistent atoms PLUS one hovered atom.
+   *  The hovered atom is tracked separately so it can be removed when
+   *  the cursor moves away without losing the persistent selection.
+   *
+   *  Important: we call _updateRowSelection to render the combined set,
+   *  then RESTORE `__atoms` to the persistent-only set so the preview
+   *  atom doesn't leak into the persistent storage. */
+  private _setPreviewAtom(col: DG.Column, rowIdx: number, atomIdx: number,
+    bondAtoms: Map<number, [number, number]>): void {
+    this._previewAtomIdx = atomIdx;
+    this._previewRowIdx = rowIdx;
+    const persistent = this._getPersistentAtoms(col, rowIdx);
+    const combined = new Set(persistent);
+    combined.add(atomIdx);
+    // Render the combined set visually.
+    this._updateRowSelection(col, rowIdx, [...combined], {add: true}, bondAtoms);
+    // Restore __atoms to persistent-only so _getPersistentAtoms stays correct.
+    type TaggedProvider = ISubstructProvider & {__atomPicker?: boolean, __rowIdx?: number, __atoms?: Set<number>};
+    const providers = (col.temp[ChemTemps.SUBSTRUCT_PROVIDERS] ?? []) as TaggedProvider[];
+    const prov = providers.find((p) => p.__atomPicker && p.__rowIdx === rowIdx);
+    if (prov) prov.__atoms = persistent;
+  }
+
+  /** Removes just the preview atom, restoring the display to only the
+   *  persistent (Alt+painted) selection. Also re-broadcasts the persistent
+   *  atoms after a delay so Molstar picks them up after any viewer rebuild
+   *  triggered by hover-row changes. */
+  private _removePreviewAtom(): void {
+    const prevAtom = this._previewAtomIdx;
+    const prevRow = this._previewRowIdx;
+    this._previewAtomIdx = null;
+    if (prevAtom === null) return;
+
+    const grid = grok.shell.tv?.grid;
+    if (!grid) return;
+    const df = grid.dataFrame;
+    if (!df) return;
+    const molCol = df.columns.toList().find(
+      (c: DG.Column) => c.semType === DG.SEMTYPE.MOLECULE && this._isPickerActive(c));
+    if (!molCol) return;
+
+    const persistent = this._getPersistentAtoms(molCol, prevRow);
+    if (persistent.size > 0) {
+      // Restore just the persistent atoms (re-derive bonds too).
+      const cellInfo = this._getCellAtomPositions(
+        molCol.get(prevRow), 100, 100);
+      const bondAtoms = cellInfo?.bondAtoms ?? new Map();
+      this._updateRowSelection(molCol, prevRow, [...persistent], {add: true}, bondAtoms);
+      // Re-broadcast after a delay so Molstar's viewer rebuild (triggered
+      // by hover-row change) finishes first and the replay can apply.
+      const atoms = [...persistent];
+      setTimeout(() => {
+        grok.events.fireCustomEvent(CHEM_INTERACTIVE_SELECTION_EVENT, {
+          column: molCol, rowIdx: prevRow, atoms,
+        });
+      }, 300);
+    } else {
+      // No persistent atoms — clear everything.
+      type TaggedProvider = ISubstructProvider & {__atomPicker?: boolean};
+      const providers = (molCol.temp[ChemTemps.SUBSTRUCT_PROVIDERS] ?? []) as TaggedProvider[];
+      molCol.temp[ChemTemps.SUBSTRUCT_PROVIDERS] = providers.filter(
+        (p) => !p.__atomPicker || (p as any).__rowIdx !== prevRow);
+      grok.events.fireCustomEvent(CHEM_INTERACTIVE_SELECTION_EVENT, {
+        column: molCol, rowIdx: prevRow, atoms: [],
+      });
+    }
+    grid.invalidate();
+  }
+
   /** Toggles a single atom in a row's atom-picker selection. Adds the atom
    *  if it's not in the current selection, removes it if it is. Used by
    *  Alt+click for one-atom-at-a-time fine-tuning. Also re-derives the
@@ -1003,10 +1037,7 @@ M  END
       RDKitCellRenderer._computeSelectedBonds(current, bondAtoms, pickColor);
     const provider: TaggedProvider = {
       getSubstruct: (ridx) => {
-        // Same tag check as _updateRowSelection so disabling the picker
-        // hides Alt+click toggled atoms too.
-        const tagVal = col.tags[CHEM_ATOM_PICKER_TAG] ?? col.getTag(CHEM_ATOM_PICKER_TAG);
-        if (tagVal === 'false') return undefined;
+        if (!this._isPickerActive(col)) return undefined;
         if (ridx !== rowIdx) return undefined;
         return {atoms: atomsArr, bonds: bondsArr, highlightAtomColors, highlightBondColors};
       },
@@ -1020,9 +1051,30 @@ M  END
 
     // Notify cross-package listeners (e.g. BiostructureViewer's 3D Molstar
     // viewer) about the updated selection so they can mirror the highlights.
-    grok.events.fireCustomEvent(CHEM_INTERACTIVE_SELECTION_EVENT, {
-      column: col, rowIdx, atoms: atomsArr,
-    });
+    // Include a 3D atom-index mapping if a MOLECULE3D column exists in the
+    // same dataframe (e.g. AutoDock poses). The mapping is computed via
+    // RDKit substructure match between the 2D SMILES and the 3D pose, so
+    // BiostructureViewer doesn't need to import RDKit or the mapper.
+    const eventArgs: any = {column: col, rowIdx, atoms: atomsArr};
+    try {
+      const df = col.dataFrame;
+      if (df) {
+        const mol3DCol = df.columns.toList().find(
+          (c: DG.Column) => c.semType === DG.SEMTYPE.MOLECULE3D);
+        if (mol3DCol && rowIdx >= 0) {
+          const smiles2D = col.get(rowIdx);
+          const pose3D = mol3DCol.get(rowIdx);
+          if (smiles2D && pose3D) {
+            const mapping = mapAtomIndices2Dto3D(this.rdKitModule, smiles2D, pose3D);
+            if (mapping) {
+              eventArgs.mapping3D = mapping;
+              eventArgs.mol3DColumnName = mol3DCol.name;
+            }
+          }
+        }
+      }
+    } catch {/* mapping failed — 3D viewers will fall back to direct index */}
+    grok.events.fireCustomEvent(CHEM_INTERACTIVE_SELECTION_EVENT, eventArgs);
   }
 
   /** Given a set of selected atom indices and a bondAtoms map, returns the
@@ -1051,11 +1103,10 @@ M  END
    * ISubstructProvider back onto the column's temp store. Providers are keyed
    * by row index, so picks on other rows survive untouched.
    *
-   * The provider closes over `col` and checks `CHEM_ATOM_PICKER_TAG` at call
-   * time, so disabling the picker via the "Atom picker" column-property
-   * checkbox instantly hides all existing highlights for that column (the
-   * provider returns `undefined` while disabled). Re-enabling brings them
-   * back — the picks themselves are preserved in the provider's __atoms set.
+   * The provider closes over `col` and checks `_isPickerActive()` at call
+   * time, so the highlights auto-hide when the DataFrame no longer has
+   * associated 3D/HELM columns. The picks themselves are preserved in the
+   * provider's __atoms set.
    */
   private _updateRowSelection(col: DG.Column, rowIdx: number, boxed: number[],
     modifiers: {add: boolean}, bondAtoms: Map<number, [number, number]>): void {
@@ -1088,12 +1139,7 @@ M  END
 
     const provider: TaggedProvider = {
       getSubstruct: (ridx) => {
-        // Check the column tag at render time so disabling the atom picker
-        // via the column property checkbox instantly hides the highlights.
-        // Reading both the tag proxy and getTag() so either write path
-        // (col.tags[..] = v / col.setTag(..)) is honored.
-        const tagVal = col.tags[CHEM_ATOM_PICKER_TAG] ?? col.getTag(CHEM_ATOM_PICKER_TAG);
-        if (tagVal === 'false') return undefined;
+        if (!this._isPickerActive(col)) return undefined;
         if (ridx !== rowIdx) return undefined;
         return {atoms: atomsArr, bonds: bondsArr, highlightAtomColors, highlightBondColors};
       },
@@ -1108,9 +1154,27 @@ M  END
     addSubstructProvider(col.temp, provider);
 
     // Notify cross-package listeners (same event as _updateRowSelection).
-    grok.events.fireCustomEvent(CHEM_INTERACTIVE_SELECTION_EVENT, {
-      column: col, rowIdx, atoms: atomsArr,
-    });
+    // Include 3D mapping if a MOLECULE3D column exists.
+    const eventArgs2: any = {column: col, rowIdx, atoms: atomsArr};
+    try {
+      const df = col.dataFrame;
+      if (df) {
+        const mol3DCol = df.columns.toList().find(
+          (c: DG.Column) => c.semType === DG.SEMTYPE.MOLECULE3D);
+        if (mol3DCol && rowIdx >= 0) {
+          const smiles2D = col.get(rowIdx);
+          const pose3D = mol3DCol.get(rowIdx);
+          if (smiles2D && pose3D) {
+            const mapping = mapAtomIndices2Dto3D(this.rdKitModule, smiles2D, pose3D);
+            if (mapping) {
+              eventArgs2.mapping3D = mapping;
+              eventArgs2.mol3DColumnName = mol3DCol.name;
+            }
+          }
+        }
+      }
+    } catch {/* mapping failed */}
+    grok.events.fireCustomEvent(CHEM_INTERACTIVE_SELECTION_EVENT, eventArgs2);
   }
 
   /**

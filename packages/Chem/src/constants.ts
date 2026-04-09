@@ -43,24 +43,11 @@ export const ALIGN_BY_SCAFFOLD_TAG = '.chem-scaffold-align'; // todo: Remove thi
 export const ALIGN_BY_SCAFFOLD_LAYOUT_PERSISTED_TAG = '.%chem-scaffold-align';
 export const FIXED_SCALE_TAG = '.%chem-fixed-scale';
 export const HIGHLIGHT_BY_SCAFFOLD_TAG = '.%chem-scaffold-highlight';
-/** Controls the in-grid interactive atom/bond picker (drag to replace-
- *  select, Alt+drag to add, Alt+click to toggle individual atoms; bonds
- *  between selected atoms are auto-highlighted). DISABLED by default;
- *  opt in per column via the "Interactive" checkbox in Chemistry →
- *  Rendering, or programmatically:
- *
- *    col.setTag(CHEM_ATOM_PICKER_TAG, 'true');   // enable
- *    col.setTag(CHEM_ATOM_PICKER_TAG, 'false');  // disable
- *
- *  The cell renderer checks `=== 'true'`, so an absent tag (or any other
- *  value) means disabled. The `.%` prefix makes the tag persist in saved
- *  projects and sync across layout variants. */
-export const CHEM_ATOM_PICKER_TAG = '.%chem-atom-picker';
-
-/** Custom event ID fired by the 2D atom picker after every selection change
- *  and by the checkbox toggle. Subscribers (e.g. NGL 3D structure widget,
- *  BiostructureViewer Molstar viewer) react by highlighting/clearing the
- *  corresponding atoms in their 3D views.
+/** Custom event ID fired by the 2D atom picker after every selection change.
+ *  Subscribers (e.g. NGL 3D structure widget, BiostructureViewer Molstar
+ *  viewer) react by highlighting/clearing the corresponding atoms in their
+ *  3D views. The picker auto-activates when the DataFrame has associated
+ *  Molecule3D (docking poses) or HELM columns.
  *
  *  Event args: `{column: DG.Column, rowIdx: number, atoms: number[]}` */
 export const CHEM_INTERACTIVE_SELECTION_EVENT = 'chem-interactive-selection-changed';

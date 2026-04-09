@@ -1,8 +1,8 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {ALIGN_BY_SCAFFOLD_TAG, ALIGN_BY_SCAFFOLD_LAYOUT_PERSISTED_TAG, CHEM_ATOM_PICKER_TAG,
-  CHEM_INTERACTIVE_SELECTION_EVENT, SCAFFOLD_COL,
+import {ALIGN_BY_SCAFFOLD_TAG, ALIGN_BY_SCAFFOLD_LAYOUT_PERSISTED_TAG,
+  SCAFFOLD_COL,
   SCAFFOLD_COL_SYNC, HIGHLIGHT_BY_SCAFFOLD_COL, HIGHLIGHT_BY_SCAFFOLD_COL_SYNC, REGENERATE_COORDS,
   REGENERATE_COORDS_SYNC, getSyncTag, setSyncTag} from '../constants';
 import {ChemTemps} from '@datagrok-libraries/chem-meta/src/consts';
@@ -88,49 +88,6 @@ export function getMolColumnPropertyPanel(col: DG.Column): DG.Widget {
   // which the ISubstructProvider checks at render time to show the picks.
   // Unchecking writes 'false' (or any other value); only the explicit
   // string 'true' enables the picker.
-  //
-  // We write via BOTH `col.tags[..]` assignment AND `col.setTag(..)`, and
-  // read via both on the renderer side. Datagrok's two tag APIs don't
-  // always agree about what was last written for a given tag name; using
-  // both leaves either read path correct.
-  const atomPickerCheckbox = ui.input.bool('Interactive Selection',
-    {
-      value: ((col.tags as any)[CHEM_ATOM_PICKER_TAG] ??
-        col.getTag(CHEM_ATOM_PICKER_TAG)) === 'true',
-      onValueChanged: (value) => {
-        const v = value ? 'true' : 'false';
-        (col.tags as any)[CHEM_ATOM_PICKER_TAG] = v;
-        col.setTag(CHEM_ATOM_PICKER_TAG, v);
-        // Force a grid repaint so highlights appear/disappear immediately
-        // and the renderer sees the new tag value on the next drag.
-        grok.shell.tv?.grid.invalidate();
-
-        // Notify the 3D viewers (NGL context panel, Molstar) so they
-        // show/hide their highlights in sync with the 2D grid toggle.
-        const df = col.dataFrame;
-        const rowIdx = df?.currentRowIdx ?? -1;
-        if (value && rowIdx >= 0) {
-          // Re-enabling: find existing picks for the current row and
-          // broadcast them so the 3D viewer restores the highlight.
-          const providers = ((col.temp as any)?.[ChemTemps.SUBSTRUCT_PROVIDERS] ?? []) as any[];
-          const picker = providers.find(
-            (p: any) => p.__atomPicker && p.__rowIdx === rowIdx);
-          const atoms = picker?.__atoms ? [...picker.__atoms] : [];
-          grok.events.fireCustomEvent(CHEM_INTERACTIVE_SELECTION_EVENT, {
-            column: col, rowIdx, atoms,
-          });
-        } else {
-          // Disabling: send an empty selection to clear 3D highlights.
-          grok.events.fireCustomEvent(CHEM_INTERACTIVE_SELECTION_EVENT, {
-            column: col, rowIdx, atoms: [],
-          });
-        }
-      },
-    });
-  atomPickerCheckbox.setTooltip(
-    'Drag on a cell to select atoms. Alt+drag to add to the existing selection. ' +
-    'Alt+click on an atom to toggle it.');
-
   const rdKitInputs = ui.form([
     showStructures,
     scaffoldColumnChoice,
@@ -138,7 +95,6 @@ export function getMolColumnPropertyPanel(col: DG.Column): DG.Widget {
     ...(backupSubstructCol ? [highlightRGroupsCheckbox] : []),
     regenerateCoordsCheckbox,
     moleculeFilteringChoice,
-    atomPickerCheckbox,
   ]);
   const sketcher = new DG.chem.Sketcher(DG.chem.SKETCHER_MODE.EXTERNAL);
   sketcher.syncCurrentObject = false;
