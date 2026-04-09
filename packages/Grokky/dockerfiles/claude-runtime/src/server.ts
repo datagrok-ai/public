@@ -423,10 +423,11 @@ app.get('/ws', upgradeWebSocket(() => {
         const mcpUrl = rewriteForDocker(data.mcpServerUrl || '');
         const apiUrl = apiUrlFromMcpUrl(mcpUrl);
         if (apiUrl && data.apiKey) {
+          const scope = data.scope || 'all';
           (async () => {
             try {
-              const result = await syncUserFiles(apiUrl, data.apiKey, true);
-              console.log(`sync_user_files: synced ${result.files.length} file(s)`);
+              const result = await syncUserFiles(apiUrl, data.apiKey, scope);
+              console.log(`sync_user_files: synced ${result.files.length} file(s) (scope=${scope})`);
               emit(sender, {type: 'sync_status', status: 'done'});
             }
             catch (e: any) {

@@ -129,13 +129,14 @@ export class ClaudeRuntimeClient {
     }));
   }
 
-  async syncUserFiles(): Promise<void> {
+  async syncUserFiles(scope: 'all' | 'user-files' | 'packages' | 'shared' = 'all'): Promise<void> {
     await this.ensureConnected();
-    console.log('ClaudeRuntimeClient: triggering user files sync');
+    console.log(`ClaudeRuntimeClient: triggering sync (scope=${scope})`);
     this.ws!.send(JSON.stringify({
       type: 'sync_user_files',
       apiKey: grok.dapi.token,
       mcpServerUrl: this.mcpServerUrl,
+      scope,
     }));
   }
 

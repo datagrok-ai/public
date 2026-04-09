@@ -16,7 +16,7 @@ const syncInFlight = new Map<string, Promise<{dir: string; files: string[]}>>();
 // Tracks which users have completed their initial sync. After the first
 // sync, subsequent messages just return the cached dir/file list. New
 // syncs only happen when triggered by events (file edit, package load)
-// or manual sync — all of which use force=true.
+// or manual sync — those specify a scope to re-sync only the relevant files.
 const initialSyncDone = new Set<string>();
 
 // Per-user file metadata cache: relative path → updatedOn timestamp.
@@ -198,13 +198,12 @@ async function syncUserFilesIncremental(
   for (const remote of remoteFiles) {
     remoteSet.add(remote.path);
     const cachedTs = cached.get(remote.path);
-    if (cachedTs === remote.updatedOn) {
-      // File unchanged — skip download
+    console.log(`user-files: checking ${remote.path} — remote ts=${remote.updatedOn || '<empty>'}, cached ts=${cachedTs ?? 'none'}, match=${cachedTs === remote.updatedOn}`);
+    if (cachedTs === remote.updatedOn)
       continue;
-    }
 
     const label = cachedTs ? 'updated' : 'new';
-    console.log(`user-files: downloading ${label} file ${remote.path} (remote ts=${remote.updatedOn}, cached ts=${cachedTs ?? 'none'})`);
+    console.log(`user-files: downloading ${label} file ${remote.path}`);
     try {
       const content = await downloadFile(connectorPath, remote.path) as string;
       const dest = safePath(userDir, remote.path);
@@ -450,19 +449,23 @@ async function listAgentFiles(userDir: string): Promise<string[]> {
   }
 }
 
+// Sync scopes — determines which category of files to re-sync.
+// 'all' syncs everything (used for initial sync and user messages).
+// Scoped syncs only run the relevant step, keeping other caches intact.
+export type SyncScope = 'all' | 'user-files' | 'packages' | 'shared';
+
 // ── Main sync entry point ───────────────────────────────────────────────
-// Called on every user message from handleMessage(). On the first call it
-// performs a full sync; subsequent calls just return the cached dir and
-// file list without hitting the server. Actual re-syncs only happen when
-// triggered by events (file edit, package load, manual sync button) —
-// those come in via the sync_user_files WebSocket message with force=true.
+// Called on every user message from handleMessage() with scope='all'.
+// Event-driven syncs from the browser specify a narrower scope so only
+// the relevant files are re-checked against the server.
+// All syncs are incremental — timestamps are always compared, never cleared.
 export async function syncUserFiles(
-  apiUrl: string, apiKey: string, force?: boolean,
+  apiUrl: string, apiKey: string, scope: SyncScope = 'all',
 ): Promise<{dir: string; files: string[]}> {
   const dir = getUserDir(apiKey);
 
-  // Fast path: already synced and no force → just return current state
-  if (initialSyncDone.has(apiKey) && !force) {
+  // Fast path: already synced and scope is 'all' (user message) → just return current state
+  if (initialSyncDone.has(apiKey) && scope === 'all') {
     console.log('user-files: already synced, returning cached state');
     const files = await listAgentFiles(dir);
     return {dir, files};
@@ -470,75 +473,80 @@ export async function syncUserFiles(
 
   // If a sync is already running for this key, wait for it
   const existing = syncInFlight.get(apiKey);
-  if (existing && !force) {
+  if (existing && scope === 'all') {
     console.log('user-files: sync already in flight, awaiting...');
     return existing;
   }
 
-  const promise = doSync(apiUrl, apiKey, force);
+  const promise = doSync(apiUrl, apiKey, scope);
   syncInFlight.set(apiKey, promise);
   try {
     return await promise;
   }
   finally {
-    // Only clear if this is still our promise (not replaced by a force sync)
     if (syncInFlight.get(apiKey) === promise)
       syncInFlight.delete(apiKey);
   }
 }
 
 async function doSync(
-  apiUrl: string, apiKey: string, force?: boolean,
+  apiUrl: string, apiKey: string, scope: SyncScope,
 ): Promise<{dir: string; files: string[]}> {
   const dir = getUserDir(apiKey);
   const userId = path.basename(dir);
-  console.log(`user-files: starting sync for user ${userId} (force=${!!force})`);
-
-  // Clear caches on force sync so everything is re-checked against the server
-  if (force) {
-    console.log('user-files: force sync — clearing all caches');
-    userFileCache.delete(userId);
-    packageTimestamps.delete(userId);
-    sharedSkillsCache.delete(userId);
-  }
+  console.log(`user-files: starting sync for user ${userId} (scope=${scope})`);
 
   await ensureUserDir(apiKey);
 
   // ── Sync user files from My files/agents/ ──
   let homeConnId: string | null = null;
-  await runWithContext({apiKey, apiUrl}, async () => {
-    const home = await resolveHomeConnection();
-    if (!home) {
-      console.log('user-files: skipping user file sync (no Home connection)');
-      return;
-    }
-    homeConnId = home.connId;
-    const downloaded = await syncUserFilesIncremental(dir, home.connId, home.connectorPath);
-    if (downloaded.length)
-      console.log(`user-files: synced ${downloaded.length} user file(s)`);
-    else
-      console.log('user-files: all user files up-to-date');
-  });
+  if (scope === 'all' || scope === 'user-files') {
+    await runWithContext({apiKey, apiUrl}, async () => {
+      const home = await resolveHomeConnection();
+      if (!home) {
+        console.log('user-files: skipping user file sync (no Home connection)');
+        return;
+      }
+      homeConnId = home.connId;
+      const downloaded = await syncUserFilesIncremental(dir, home.connId, home.connectorPath);
+      if (downloaded.length)
+        console.log(`user-files: synced ${downloaded.length} user file(s)`);
+      else
+        console.log('user-files: all user files up-to-date');
+    });
+  }
 
   // ── Sync agent files from published packages ──
-  await runWithContext({apiKey, apiUrl}, async () => {
-    try {
-      await syncPackageAgentFiles(dir);
-    }
-    catch (e: any) {
-      console.warn('package-agents: sync failed:', e.message);
-    }
-  });
+  if (scope === 'all' || scope === 'packages') {
+    await runWithContext({apiKey, apiUrl}, async () => {
+      try {
+        await syncPackageAgentFiles(dir);
+      }
+      catch (e: any) {
+        console.warn('package-agents: sync failed:', e.message);
+      }
+    });
+  }
 
   // ── Sync skills from shared connections ──
-  await runWithContext({apiKey, apiUrl}, async () => {
-    try {
-      await syncSharedSkills(dir, homeConnId);
+  if (scope === 'all' || scope === 'shared') {
+    // Need homeConnId to skip own connection — resolve if not already done
+    if (!homeConnId) {
+      await runWithContext({apiKey, apiUrl}, async () => {
+        const home = await resolveHomeConnection();
+        if (home)
+          homeConnId = home.connId;
+      });
     }
-    catch (e: any) {
-      console.warn('shared-skills: sync failed:', e.message);
-    }
-  });
+    await runWithContext({apiKey, apiUrl}, async () => {
+      try {
+        await syncSharedSkills(dir, homeConnId);
+      }
+      catch (e: any) {
+        console.warn('shared-skills: sync failed:', e.message);
+      }
+    });
+  }
 
   initialSyncDone.add(apiKey);
 

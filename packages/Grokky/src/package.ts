@@ -30,7 +30,7 @@ export class PackageFunctions {
     // Ensure the agents/ folder exists in My files and the Home connection
     // is tagged with "ai-skills" so other users can discover shared skills.
     try {
-      const conn = await grok.dapi.connections.filter('name = "Home"').first();
+      const conn = await grok.dapi.connections.filter('name = "My files"').first();
       if (conn) {
         const agentsPath = `${conn.nqName}/agents`;
         const exists = await grok.dapi.files.exists(agentsPath);
@@ -70,7 +70,7 @@ export class PackageFunctions {
       });
       if (match) {
         console.log(`Grokky: agents file event (op=${op}), triggering sync`);
-        ClaudeRuntimeClient.getInstance().syncUserFiles();
+        ClaudeRuntimeClient.getInstance().syncUserFiles('user-files');
       }
     });
 
@@ -79,7 +79,7 @@ export class PackageFunctions {
       const filePath = fi.fullPath ?? fi.path ?? '';
       if (filePath.includes('agents')) {
         console.log(`Grokky: agents file edited (${filePath}), triggering sync`);
-        ClaudeRuntimeClient.getInstance().syncUserFiles();
+        ClaudeRuntimeClient.getInstance().syncUserFiles('user-files');
       }
     });
 
@@ -87,18 +87,13 @@ export class PackageFunctions {
     // publishes and updates that arrive at this client).
     grok.events.onEvent(DG.EVENT_TYPE.PACKAGE_LOADED).subscribe(() => {
       console.log('Grokky: package loaded event, triggering sync');
-      ClaudeRuntimeClient.getInstance().syncUserFiles();
+      ClaudeRuntimeClient.getInstance().syncUserFiles('packages');
     });
 
-    // Listen for server-push notifications. When a connection is shared with
-    // the current user, trigger a sync so newly shared skill connections are picked up.
-    // The server formats sharing notifications as "shared a data connection:" in the text.
-    grok.events.onEvent('server-push').subscribe((entity: any) => {
-      const text: string = entity?.text ?? '';
-      console.log('Grokky: server-push event', entity);
-      if (text.includes('shared a data connection:'))
-        ClaudeRuntimeClient.getInstance().syncUserFiles();
-    });
+    // Poll for shared skill connections every 10 seconds.
+    setInterval(() => {
+      ClaudeRuntimeClient.getInstance().syncUserFiles('shared');
+    }, 10000);
   }
 
 
