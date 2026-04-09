@@ -61,6 +61,13 @@ export interface IColoredScaffold {
   highlight?: boolean
 }
 
+/** Custom event ID for inter-package communication. Fired by the 2D atom
+ *  picker after every selection change; subscribers (e.g. BiostructureViewer)
+ *  can react by highlighting the corresponding atoms in a 3D viewer.
+ *
+ *  Event args: `{column: DG.Column, rowIdx: number, atoms: number[]}` */
+export const CHEM_INTERACTIVE_SELECTION_EVENT = 'chem-interactive-selection-changed';
+
 export interface IHighlightTagInfo {
   scaffolds?: IColoredScaffold[],
   alighByFirstSubtruct: boolean,
@@ -1002,6 +1009,12 @@ M  END
     col.temp[ChemTemps.SUBSTRUCT_PROVIDERS] = existing.filter(
       (p) => !p.__atomPicker || p.__rowIdx !== rowIdx);
     addSubstructProvider(col.temp, provider);
+
+    // Notify cross-package listeners (e.g. BiostructureViewer's 3D Molstar
+    // viewer) about the updated selection so they can mirror the highlights.
+    grok.events.fireCustomEvent(CHEM_INTERACTIVE_SELECTION_EVENT, {
+      column: col, rowIdx, atoms: atomsArr,
+    });
   }
 
   /** Given a set of selected atom indices and a bondAtoms map, returns the
@@ -1086,10 +1099,10 @@ M  END
       (p) => !p.__atomPicker || p.__rowIdx !== rowIdx);
     addSubstructProvider(col.temp, provider);
 
-    // Also invalidate any cached render for this cell so the highlights repaint
-    // (the rendersCache key includes the substruct JSON, so strictly new
-    //  provider → new substruct → new cache key, but forcing a refresh here is
-    //  cheap and defensive against stale entries from earlier box selections).
+    // Notify cross-package listeners (same event as _updateRowSelection).
+    grok.events.fireCustomEvent(CHEM_INTERACTIVE_SELECTION_EVENT, {
+      column: col, rowIdx, atoms: atomsArr,
+    });
   }
 
   /**
