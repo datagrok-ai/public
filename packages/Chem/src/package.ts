@@ -101,7 +101,7 @@ import {scaleActivity} from './analysis/molecular-matched-pairs/mmp-viewer/mmpa-
 import {MixtureCellRenderer} from './rendering/mixture-cell-renderer';
 import {createComponentPane, createMixtureWidget, Mixfile} from './utils/mixfile';
 import {biochemicalPropertiesDialog} from './widgets/biochem-properties-widget';
-import {checkCurrentView} from './utils/ui-utils';
+import {checkCurrentView} from '@datagrok-libraries/utils/src/view-utils';
 import {isDesirabilityProfile, mpo, PropertyDesirability, WEIGHTED_AGGREGATIONS_LIST, WeightedAggregation} from '@datagrok-libraries/statistics/src/mpo/mpo';
 //@ts-ignore
 import '../css/chem.css';
