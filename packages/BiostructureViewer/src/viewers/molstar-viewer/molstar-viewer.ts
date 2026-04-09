@@ -3,24 +3,24 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
 // import {Viewer as rcsbViewer, ViewerProps as rcsbViewerProps} from '@rcsb/rcsb-molstar/src/viewer';
-import {Viewer as RcsbViewer, ViewerProps as RcsbViewerProps} from '@rcsb/rcsb-molstar/build/src/viewer';
+import { Viewer as RcsbViewer, ViewerProps as RcsbViewerProps } from '@rcsb/rcsb-molstar/build/src/viewer';
 
 import $ from 'cash-dom';
 import wu from 'wu';
-import {Observable, Subject, Unsubscribable} from 'rxjs';
+import { Observable, Subject, Unsubscribable } from 'rxjs';
 
-import {PluginContext} from 'molstar/lib/mol-plugin/context';
-import {PluginLayoutControlsDisplay, PluginLayoutStateProps} from 'molstar/lib/mol-plugin/layout';
-import {StructureComponentRef} from 'molstar/lib/mol-plugin-state/manager/structure/hierarchy-state';
-import {BuiltInTrajectoryFormat, TrajectoryFormatProvider} from 'molstar/lib/mol-plugin-state/formats/trajectory';
-import {PluginCommands} from 'molstar/lib/mol-plugin/commands';
-import {to_mmCIF} from 'molstar/lib/mol-model/structure/export/mmcif';
-import {utf8ByteCount, utf8Write} from 'molstar/lib/mol-io/common/utf8';
+import { PluginContext } from 'molstar/lib/mol-plugin/context';
+import { PluginLayoutControlsDisplay, PluginLayoutStateProps } from 'molstar/lib/mol-plugin/layout';
+import { StructureComponentRef } from 'molstar/lib/mol-plugin-state/manager/structure/hierarchy-state';
+import { BuiltInTrajectoryFormat, TrajectoryFormatProvider } from 'molstar/lib/mol-plugin-state/formats/trajectory';
+import { PluginCommands } from 'molstar/lib/mol-plugin/commands';
+import { to_mmCIF } from 'molstar/lib/mol-model/structure/export/mmcif';
+import { utf8ByteCount, utf8Write } from 'molstar/lib/mol-io/common/utf8';
 import { zip } from 'molstar/lib/mol-util/zip/zip';
 import { SyncRuntimeContext } from 'molstar/lib/mol-task/execution/synchronous';
 import { AssetManager } from 'molstar/lib/mol-util/assets';
 
-import {testEvent} from '@datagrok-libraries/utils/src/test';
+import { testEvent } from '@datagrok-libraries/utils/src/test';
 import {
   BiostructureData, BiostructureDataJson, BiostructureDataProviderFunc
 } from '@datagrok-libraries/bio/src/pdb/types';
@@ -30,25 +30,54 @@ import {
   RegionStateOptionsType,
   SimpleRegionStateOptionsType,
 } from '@datagrok-libraries/bio/src/viewers/molstar-viewer';
-import {TAGS as pdbTAGS} from '@datagrok-libraries/bio/src/pdb/index';
-import {Molecule3DUnits} from '@datagrok-libraries/bio/src/molecule-3d/molecule-3d-units-handler';
-import {IMolecule3DBrowser, Molecule3DData} from '@datagrok-libraries/bio/src/viewers/molecule3d';
-import {PromiseSyncer} from '@datagrok-libraries/bio/src/utils/syncer';
-import {ILogger} from '@datagrok-libraries/bio/src/utils/logger';
-import {getDataProviderList} from '@datagrok-libraries/bio/src/utils/data-provider';
-import {errInfo} from '@datagrok-libraries/bio/src/utils/err-info';
+import { TAGS as pdbTAGS } from '@datagrok-libraries/bio/src/pdb/index';
+import { Molecule3DUnits } from '@datagrok-libraries/bio/src/molecule-3d/molecule-3d-units-handler';
+import { IMolecule3DBrowser, Molecule3DData } from '@datagrok-libraries/bio/src/viewers/molecule3d';
+import { PromiseSyncer } from '@datagrok-libraries/bio/src/utils/syncer';
+import { ILogger } from '@datagrok-libraries/bio/src/utils/logger';
+import { getDataProviderList } from '@datagrok-libraries/bio/src/utils/data-provider';
+import { errInfo } from '@datagrok-libraries/bio/src/utils/err-info';
 
-import {addLigandOnStage, buildSplash, LigandData, parseAndVisualsData, removeVisualsData} from './molstar-viewer-open';
-import {defaults, molecule3dFileExtensions} from './consts';
-import {createRcsbViewer, disposeRcsbViewer} from './utils';
+import { addLigandOnStage, buildSplash, LigandData, parseAndVisualsData, removeVisualsData } from './molstar-viewer-open';
+import { defaults, molecule3dFileExtensions } from './consts';
+import { createRcsbViewer, disposeRcsbViewer } from './utils';
 
-import {_package} from '../../package';
+import { _package } from '../../package';
 import { convertWasm } from '../../conversion/wasm/converterWasm';
 import { StateObjectRef } from 'molstar/lib/mol-state';
 import { createStructureRepresentationParams } from 'molstar/lib/mol-plugin-state/helpers/structure-representation-params';
 import { StructureRepresentationRegistry } from 'molstar/lib/mol-repr/structure/registry';
 import { StateTransforms } from 'molstar/lib/mol-plugin-state/transforms';
 import { StateElements } from 'molstar/lib/examples/proteopedia-wrapper/helpers';
+import { MolScriptBuilder } from 'molstar/lib/mol-script/language/builder';
+import { Script } from 'molstar/lib/mol-script/script';
+import { Structure, StructureSelection, StructureElement } from 'molstar/lib/mol-model/structure';
+import { Color } from 'molstar/lib/mol-util/color';
+import {
+  setStructureOverpaint, clearStructureOverpaint,
+} from 'molstar/lib/mol-plugin-state/helpers/structure-overpaint';
+
+/**
+ * Per-row cache of atom selection events. Keyed by rowIdx so that
+ * highlights for different rows (current + hovered ligands) coexist.
+ * Registered at module load so events are captured even before any
+ * Molstar viewer is opened.
+ */
+const _globalSelectionCache = new Map<number, { atoms: number[], mapping3D?: any }>();
+
+// Register at module load — no lazy guard needed.
+grok.events.onCustomEvent('chem-interactive-selection-changed')
+  .subscribe((args: any) => {
+    const rowIdx = args?.rowIdx ?? -1;
+    const atoms = args?.atoms ?? [];
+    // eslint-disable-next-line no-console
+    console.log('[molstar-picker-global] caching selection event',
+      { atomsLen: atoms.length, rowIdx });
+    if (atoms.length > 0)
+      _globalSelectionCache.set(rowIdx, { atoms, mapping3D: args?.mapping3D ?? null });
+    else
+      _globalSelectionCache.delete(rowIdx);
+  });
 
 // TODO: find out which extensions are needed.
 /*const Extensions = {
@@ -204,79 +233,79 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
       description: 'JSON encoded object of BiostructureData type with data value Base64 encoded data',
     });
     this.pdb = this.string(PROPS.pdb, pdbDefault,
-      {category: PROPS_CATS.DATA, userEditable: false});
+      { category: PROPS_CATS.DATA, userEditable: false });
     this.pdbTag = this.string(PROPS.pdbTag, defaults.pdbTag,
-      {category: PROPS_CATS.DATA, choices: []});
+      { category: PROPS_CATS.DATA, choices: [] });
 
     this.biostructureIdColumnName = this.string(PROPS.biostructureIdColumnName, defaults.biostructureIdColumnName,
-      {category: PROPS_CATS.DATA});
+      { category: PROPS_CATS.DATA });
     this.biostructureDataProvider = this.string(PROPS.biostructureDataProvider, defaults.biostructureDataProvider,
-      {category: PROPS_CATS.DATA, /* fill choices in setData() */});
-    
+      { category: PROPS_CATS.DATA, /* fill choices in setData() */ });
+
     this.ligandColumnName = this.string(PROPS.ligandColumnName, defaults.ligandColumnName,
-      {category: PROPS_CATS.DATA});
+      { category: PROPS_CATS.DATA });
     // this.pdbProvider = this.string(PROPS.pdbProvider, defaults.pdbProvider,
     //   {category: PROPS_CATS.DATA});
     // this.emdbProvider = this.string(PROPS.emdbProvider, defaults.emdbProvider,
     //   {category: PROPS_CATS.DATA});
-    this.ligandValue = this.string(PROPS.ligandValue, null, {category: PROPS_CATS.DATA, userEditable: false});
+    this.ligandValue = this.string(PROPS.ligandValue, null, { category: PROPS_CATS.DATA, userEditable: false });
 
     // -- Layout --
     this.layoutIsExpanded = this.bool(PROPS.layoutIsExpanded, defaults.layoutIsExpanded,
-      {category: PROPS_CATS.LAYOUT});
+      { category: PROPS_CATS.LAYOUT });
     this.layoutShowControls = this.bool(PROPS.layoutShowControls, defaults.layoutShowControls,
-      {category: PROPS_CATS.LAYOUT});
+      { category: PROPS_CATS.LAYOUT });
     this.layoutRegionStateLeft = this.string(PROPS.layoutRegionStateLeft, defaults.layoutRegionStateLeft,
-      {category: PROPS_CATS.LAYOUT, choices: Object.values(RegionStateOptionsType)}) as RegionStateOptionsType;
+      { category: PROPS_CATS.LAYOUT, choices: Object.values(RegionStateOptionsType) }) as RegionStateOptionsType;
     this.layoutRegionStateTop = this.string(PROPS.layoutRegionStateTop, defaults.layoutRegionStateTop,
-      {category: PROPS_CATS.LAYOUT, choices: Object.values(SimpleRegionStateOptionsType)},
+      { category: PROPS_CATS.LAYOUT, choices: Object.values(SimpleRegionStateOptionsType) },
     ) as SimpleRegionStateOptionsType;
     this.layoutRegionStateRight = this.string(PROPS.layoutRegionStateRight, defaults.layoutRegionStateRight,
-      {category: PROPS_CATS.LAYOUT, choices: Object.values(SimpleRegionStateOptionsType)},
+      { category: PROPS_CATS.LAYOUT, choices: Object.values(SimpleRegionStateOptionsType) },
     ) as SimpleRegionStateOptionsType;
     this.layoutRegionStateBottom = this.string(PROPS.layoutRegionStateBottom, defaults.layoutRegionStateBottom,
-      {category: PROPS_CATS.LAYOUT, choices: Object.values(SimpleRegionStateOptionsType)},
+      { category: PROPS_CATS.LAYOUT, choices: Object.values(SimpleRegionStateOptionsType) },
     ) as SimpleRegionStateOptionsType;
     this.layoutControlsDisplay = this.string(PROPS.layoutControlsDisplay, defaults.layoutControlsDisplay,
-      {category: PROPS_CATS.LAYOUT, choices: Object.values(PluginLayoutControlsDisplayType)});
+      { category: PROPS_CATS.LAYOUT, choices: Object.values(PluginLayoutControlsDisplayType) });
 
     this.layoutShowRemoteState = this.bool(PROPS.layoutShowRemoteState, defaults.layoutShowRemoteState,
-      {category: PROPS_CATS.LAYOUT});
+      { category: PROPS_CATS.LAYOUT });
     this.layoutShowSequence = this.bool(PROPS.layoutShowSequence, defaults.layoutShowSequence,
-      {category: PROPS_CATS.LAYOUT});
+      { category: PROPS_CATS.LAYOUT });
     this.layoutShowLog = this.bool(PROPS.layoutShowLog, defaults.layoutShowLog,
-      {category: PROPS_CATS.LAYOUT});
+      { category: PROPS_CATS.LAYOUT });
     this.layoutShowLeftPanel = this.bool(PROPS.layoutShowLeftPanel, defaults.layoutShowLeftPanel,
-      {category: PROPS_CATS.LAYOUT});
+      { category: PROPS_CATS.LAYOUT });
     this.collapseLeftPanel = this.bool(PROPS.collapseLeftPanel, defaults.collapseLeftPanel,
-      {category: PROPS_CATS.LAYOUT});
+      { category: PROPS_CATS.LAYOUT });
     this.collapseRightPanel = this.bool(PROPS.collapseRightPanel, defaults.collapseRightPanel,
-      {category: PROPS_CATS.LAYOUT});
+      { category: PROPS_CATS.LAYOUT });
     this.viewportShowExpand = this.bool(PROPS.viewportShowExpand, defaults.viewportShowExpand,
-      {category: PROPS_CATS.LAYOUT});
+      { category: PROPS_CATS.LAYOUT });
     this.viewportShowControls = this.bool(PROPS.viewportShowControls, defaults.viewportShowControls,
-      {category: PROPS_CATS.LAYOUT});
+      { category: PROPS_CATS.LAYOUT });
 
     // -- Controls --
     this.showWelcomeToast = this.bool(PROPS.showWelcomeToast, defaults.showWelcomeToast,
-      {category: PROPS_CATS.CONTROLS});
+      { category: PROPS_CATS.CONTROLS });
     this.showImportControls = this.bool(PROPS.showImportControls, defaults.showImportControls,
-      {category: PROPS_CATS.CONTROLS});
+      { category: PROPS_CATS.CONTROLS });
 
     // -- Behaviour --
     this.showSelectedRowsLigands = this.bool(PROPS.showSelectedRowsLigands, false,
-      {category: PROPS_CATS.BEHAVIOUR});
+      { category: PROPS_CATS.BEHAVIOUR });
     this.showCurrentRowLigand = this.bool(PROPS.showCurrentRowLigand, true,
-      {category: PROPS_CATS.BEHAVIOUR});
+      { category: PROPS_CATS.BEHAVIOUR });
     this.showMouseOverRowLigand = this.bool(PROPS.showMouseOverRowLigand, true,
-      {category: PROPS_CATS.BEHAVIOUR});
+      { category: PROPS_CATS.BEHAVIOUR });
 
     // -- Style --
     this.representation = this.string(PROPS.representation, defaults.representation,
-      {category: PROPS_CATS.STYLE, choices: Object.keys(StructureRepresentationRegistry.BuiltIn)});
+      { category: PROPS_CATS.STYLE, choices: Object.keys(StructureRepresentationRegistry.BuiltIn) });
 
     // --
-    this.zoom = this.bool(PROPS.zoom, false, {userEditable: false});
+    this.zoom = this.bool(PROPS.zoom, false, { userEditable: false });
     this.root.style.textAlign = 'center';
 
     this.logger = _package.logger;
@@ -295,7 +324,7 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
 
   private _initButtonExpand() {
     const button = $('.msp-btn.msp-btn-icon.msp-btn-link-toggle-off');
-    button.on('click',  () => this.root.requestFullscreen());
+    button.on('click', () => this.root.requestFullscreen());
   }
 
   private async _initProps() {
@@ -392,7 +421,7 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
         // }
       }
       //eslint-disable-next-line new-cap
-      await PluginCommands.Layout.Update(plugin, {state: state});
+      await PluginCommands.Layout.Update(plugin, { state: state });
       this.logger.debug(`${logPrefix}.applyProperty(), end`);
     };
 
@@ -428,7 +457,7 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
         checkAndUpdate();
         break;
       }
-      
+
       case PROPS.showImportControls:
         break;
       case PROPS.layoutIsExpanded:
@@ -500,21 +529,21 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
     ui.tools.waitForElementInDom(this.root).then(() => this.initializeResizeHandling());
     this.logger.debug(`${logPrefix}, end`);
   }
-  
+
   initializeResizeHandling(): void {
     const dialogPanel = this.root.closest('.dialog-floating') as HTMLElement;
     const accPanel = this.root.closest('.d4-accordion-pane-content') as HTMLElement;
     const resizeTarget = dialogPanel || accPanel;
-    
+
     if (!resizeTarget) return;
-    
+
     const setDimensions = (element: HTMLElement | null, width: number, height: number) => {
       if (element) {
         element.style.width = `${width}px`;
         element.style.height = `${height}px`;
       }
     };
-    
+
     const resizeCanvasAndViewer = (width: number, height: number) => {
       const canvas = this.viewer?.plugin.canvas3dContext?.canvas;
       setDimensions(this.viewerDiv!, width, height);
@@ -523,7 +552,7 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
       this.viewer?.plugin.canvas3d?.handleResize();
       this.viewer?.plugin.handleResize();
     };
-    
+
     this.subs.push(ui.onSizeChanged(resizeTarget).subscribe(() => {
       const width = resizeTarget.clientWidth;
       const height = resizeTarget.clientHeight;
@@ -583,7 +612,7 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
     const _s = structures[0];
     const s = _s.transform?.cell.obj?.data ?? _s.cell.obj?.data;
     const cif = to_mmCIF(fileName, s!) as string;
-    
+
     if (format === 'cif')
       DG.Utils.download(`${fileName}.cif`, cif);
     else if (format === 'pdb') {
@@ -591,7 +620,7 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
       DG.Utils.download(`${fileName}.pdb`, pdb);
     }
   }
-  
+
   async _exportHierarchy(plugin: PluginContext, options?: { format?: 'cif' }) {
     const format = options?.format ?? 'cif';
     const { structures } = plugin.managers.structure.hierarchy.current;
@@ -616,7 +645,7 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
         this.logger.error(e);
       }
     }
-    
+
     var blob;
     if (files.length === 1)
       blob = new Blob([files[0][1] as BlobPart]), files[0][0];
@@ -675,7 +704,7 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
         if (this.dataFrame && this.dataFrame.tags.has(pdbTagName)) pdb = this.dataFrame.getTag(pdbTagName);
         if (this.pdb) pdb = this.pdb;
         if (pdb && pdb != pdbDefault)
-          this.dataEff = {binary: false, ext: 'pdb', data: pdb!};
+          this.dataEff = { binary: false, ext: 'pdb', data: pdb! };
         if (this.dataJson && this.dataJson !== BiostructureDataJson.empty) {
           this.dataEff = BiostructureDataJson.toData(this.dataJson);
         }
@@ -783,7 +812,7 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
           const fetchData = await this.biostructureDataProviderFunc!.prepare({ id }).call();
           return fetchData.getOutputParamValue() as string;
         })();
-      
+
       const dataEff = BiostructureDataJson.toData(dataString);
       const plugin = this.viewer!.plugin;
       await this.destroyViewLigands(0, callLog);
@@ -805,7 +834,7 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
     if (!this.viewerDiv) {
       this.viewerDiv = ui.div([], {
         classes: 'd4-molstar-viewer',
-        style: {width: '100%', height: '100%'},
+        style: { width: '100%', height: '100%' },
       });
       this.root.style.overflow = 'hidden'; /* Prevent blinking viewer size changed */
       this.root.appendChild(this.viewerDiv);
@@ -828,7 +857,7 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
     const isPdbColumn = this.biostructureIdColumnName
       ? this.dataFrame.getCol(this.biostructureIdColumnName).semType === DG.SEMTYPE.MOLECULE3D
       : false;
-      
+
     const hasValidDataProvider = this.biostructureDataProviderFunc && !isPdbColumn;
     if (this.dataFrame && (hasValidDataProvider || isPdbColumn)) {
       this.viewSubs.push(DG.debounce(this.dataFrame.onCurrentRowChanged, DebounceIntervals.currentRow).subscribe(
@@ -844,6 +873,26 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
       if (!(this.dataEff.ext in molecule3dFileExtensions))
         throw new Error(`Unsupported file extension '${this.dataEff.ext}'.`);
 
+      // Subscribe at instance level so we can apply highlights in real-time
+      // when the viewer IS alive. Works for BOTH the AutoDock Molstar panel
+      // and the 3D Structure Molstar panel. The module-level listener
+      // (registered at module load) handles caching for replay.
+      this.viewSubs.push(grok.events.onCustomEvent(
+        'chem-interactive-selection-changed').subscribe((args: any) => {
+          try {
+            if (args?.atoms?.length >= 0) {
+              // eslint-disable-next-line no-console
+              console.log('[molstar-picker] live highlight',
+                { atomsLen: args.atoms.length, rowIdx: args?.rowIdx });
+              // Apply highlights for ALL loaded ligands from the cache.
+              this.highlightAllLigandAtoms();
+            }
+          } catch (err: any) {
+            this.logger.error(
+              `chem-interactive-selection-changed handler failed: ${err?.message ?? err}`);
+          }
+        }));
+
       if (this.dataFrame && this.ligandColumnName) {
         this.viewSubs.push(this.dataFrame.onSelectionChanged.subscribe(
           this.dataFrameOnSelectionChanged.bind(this)));
@@ -853,7 +902,12 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
           this.dataFrameOnMouseOverRowChanged.bind(this)));
         this.viewSubs.push(DG.debounce(this.onRebuildViewLigandsRequest, DebounceIntervals.ligands).subscribe(
           this.onRebuildViewLigandsDebounced.bind(this)));
+
         await this.buildViewLigands(logIndent, callLog);
+      } else {
+        // Non-ligand viewer (e.g. "3D Structure" panel showing a single
+        // molecule). Replay any cached selection after the structure loads.
+        this._replayHighlightIfCached();
       }
     }
 
@@ -872,13 +926,13 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
       delete this.viewerDiv;
     }
 
-    const dataFileProp = DG.Property.fromOptions({name: 'dataFile', caption: 'Data file', type: 'file'});
+    const dataFileProp = DG.Property.fromOptions({ name: 'dataFile', caption: 'Data file', type: 'file' });
     const dataFileInput = DG.InputBase.forProperty(dataFileProp);
     dataFileInput.captionLabel.innerText = 'Data file';
     this.viewSubs.push(dataFileInput.onChanged.subscribe(async () => {
       const dataFi: DG.FileInfo = dataFileInput.value;
       const dataA: Uint8Array = dataFi.data ? dataFi.data /* User's file*/ : await dataFi.readAsBytes()/* Shares */;
-      const data: BiostructureData = {binary: true, ext: dataFi.extension, data: dataA};
+      const data: BiostructureData = { binary: true, ext: dataFi.extension, data: dataA };
       this.setOptions({
         [PROPS.dataJson]: BiostructureDataJson.fromData(data),
       });
@@ -886,7 +940,7 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
     }));
     this.splashDiv = ui.div(
       ui.divV([dataFileInput]/*, openBtn*/),
-      {classes: 'bsv-viewer-splash'} /* splash */);
+      { classes: 'bsv-viewer-splash' } /* splash */);
     this.root.appendChild(this.splashDiv);
     this.logger.debug(`${logPrefix}, end`);
   }
@@ -905,7 +959,7 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
         await components.commit();
       }
     });
-  }  
+  }
 
   private calcSize(logIndent: number, caller: string): void {
     const callLog = `calcSize( <- ${caller} )`;
@@ -975,7 +1029,7 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
 
   // -- Ligands routines --
 
-  public ligands: LigandMap = {selected: [], current: null, hovered: null};
+  public ligands: LigandMap = { selected: [], current: null, hovered: null };
 
   /** Unify get mol* component key/ref, not static for performance
    * @param {StructureComponentRef} comp
@@ -1029,7 +1083,7 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
     }
     // const ligandBlob: Blob = new Blob([ligandStr], {type: 'text/plain'});
     // return ligandBlob;
-    return {data: ligandValue, format: ligandFormat, rowIdx: rowIdx};
+    return { data: ligandValue, format: ligandFormat, rowIdx: rowIdx };
   }
 
   private rebuildViewLigands(logIndent: number, caller: string): void {
@@ -1072,16 +1126,16 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
 
     if (!this.viewer) throw new Error('The mol* viewer is not created'); // return; // There is not PDB data
     if (!this.dataFrame || !this.ligandColumnName || (this.dataFrame.col(this.ligandColumnName)?.semType !== DG.SEMTYPE.MOLECULE && this.dataFrame.col(this.ligandColumnName)?.semType !== DG.SEMTYPE.MOLECULE3D)) return;
-    const newLigands: LigandMap = {selected: [], current: null, hovered: null};
+    const newLigands: LigandMap = { selected: [], current: null, hovered: null };
     newLigands.selected = !this.showSelectedRowsLigands ? [] :
       wu(this.dataFrame.selection.getSelectedIndexes())
         .take(25)
-        .map((selRowIdx) => { return {rowIdx: selRowIdx, structureRefs: null}; })
+        .map((selRowIdx) => { return { rowIdx: selRowIdx, structureRefs: null }; })
         .toArray();
     newLigands.current = !this.showCurrentRowLigand ? null :
-      this.dataFrame.currentRowIdx >= 0 ? {rowIdx: this.dataFrame.currentRowIdx, structureRefs: null} : null;
+      this.dataFrame.currentRowIdx >= 0 ? { rowIdx: this.dataFrame.currentRowIdx, structureRefs: null } : null;
     newLigands.hovered = !this.showMouseOverRowLigand ? null :
-      this.dataFrame.mouseOverRowIdx >= 0 ? {rowIdx: this.dataFrame.mouseOverRowIdx, structureRefs: null} : null;
+      this.dataFrame.mouseOverRowIdx >= 0 ? { rowIdx: this.dataFrame.mouseOverRowIdx, structureRefs: null } : null;
 
     const plugin = this.viewer!.plugin;
     const ligandTaskList: (() => Promise<void>)[] = [];
@@ -1122,9 +1176,12 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
 
     // Because of the async nature of loading structures to .viewer, the .dataFrame property can be changed (to null).
     // So collect data from the .dataFrame synchronously and then add ligands to the .viewer with postponed sync.
-    await Promise.all(ligandTaskList.map(async (task) => {try {await task()} catch (e) {_package.logger.error(e);}})).then(() => {
+    await Promise.all(ligandTaskList.map(async (task) => { try { await task() } catch (e) { _package.logger.error(e); } })).then(() => {
       this.ligands = newLigands;
     });
+
+    // Replay the last interactive atom highlight after ligands are rebuilt.
+    this._replayHighlightIfCached();
 
     this.logger.debug(`${logPrefix}, end`);
   }
@@ -1164,6 +1221,285 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
 
   showStructure(data: Molecule3DData) {
     throw new Error('Not implemented');
+  }
+
+  /** Guard against concurrent async highlight updates. */
+  private _highlightInProgress = false;
+  /** Last received atom selection event args. Replayed after the viewer
+   *  rebuilds its ligands so the highlight persists across cell switches
+   *  (switching away destroys the viewer; switching back rebuilds it). */
+
+  // -- Interactive atom highlighting (2D ↔ 3D bridge) ----------------------
+
+  /** Replays highlights for all loaded ligands. Reads directly from the
+   *  SMILES column's temp providers (the source of truth) so highlights
+   *  appear automatically whenever Molstar rebuilds, without needing a
+   *  fresh selection event. */
+  private _replayHighlightIfCached(): void {
+    // eslint-disable-next-line no-console
+    console.log('[molstar-picker] scheduling replay after buildViewLigands');
+    setTimeout(() => {
+      // eslint-disable-next-line no-console
+      console.log('[molstar-picker] replay firing now');
+      this.highlightAllLigandAtoms();
+    }, 300);
+  }
+
+  /** Reads the highlighted atom indices for a given row from the SMILES
+   *  column's temp substruct providers. Returns empty array if none. */
+  private _getHighlightedAtomsFromColumn(rowIdx: number): number[] {
+    const df = this.dataFrame;
+    if (!df) return [];
+    // Find the molecule column (SMILES).
+    const molCol = df.columns.toList().find(
+      (c: DG.Column) => c.semType === DG.SEMTYPE.MOLECULE);
+    if (!molCol) return [];
+    // Read the atom-picker provider for this row from col.temp.
+    const providers = ((molCol.temp as any)?.['chem-substruct-providers'] ?? []) as any[];
+    const picker = providers.find(
+      (p: any) => p.__atomPicker && p.__rowIdx === rowIdx);
+    if (!picker?.__atoms || picker.__atoms.size === 0) return [];
+    return [...picker.__atoms] as number[];
+  }
+
+  /** Applies overpaint for ALL loaded ligands. Reads atom highlights
+   *  directly from the SMILES column's providers (source of truth),
+   *  falling back to the event cache. */
+  public async highlightAllLigandAtoms(): Promise<void> {
+    const plugin = this.viewer?.plugin;
+    if (!plugin) return;
+    // NOTE: no _highlightInProgress guard here — this method is the
+    // single entry point for applying highlights and must always run,
+    // even if a previous overpaint is mid-flight.
+
+    // eslint-disable-next-line no-console
+    console.log('[molstar-picker] highlightAllLigandAtoms called');
+
+    // Collect all loaded ligands with their rows and structure refs.
+    type LigandInfo = { rowIdx: number, structureRefs: string[] | null };
+    const loadedLigands: LigandInfo[] = [];
+    const lig = this.ligands;
+    if (lig) {
+      if (lig.current && lig.current.rowIdx >= 0)
+        loadedLigands.push(lig.current);
+      if (lig.hovered && lig.hovered.rowIdx >= 0)
+        loadedLigands.push(lig.hovered);
+      if (lig.selected) {
+        for (const sel of lig.selected)
+          if (sel.rowIdx >= 0) loadedLigands.push(sel);
+      }
+    }
+
+    // eslint-disable-next-line no-console
+    console.log('[molstar-picker] loaded ligands:',
+      loadedLigands.map((l) => ({ row: l.rowIdx, hasRefs: !!l.structureRefs })));
+
+    // Build a per-structure serial map. Each ligand structure gets ONLY
+    // the serials from its own row's selection — prevents row 1's serials
+    // from accidentally coloring atoms in row 2's molecule.
+    const structureSerialMap = new Map<Structure, number[]>();
+    let hasAny = false;
+
+    for (const ligand of loadedLigands) {
+      let atoms = this._getHighlightedAtomsFromColumn(ligand.rowIdx);
+      let mapping3D: any = null;
+
+      if (atoms.length === 0) {
+        const cached = _globalSelectionCache.get(ligand.rowIdx);
+        if (cached && cached.atoms.length > 0) {
+          atoms = cached.atoms;
+          mapping3D = cached.mapping3D;
+        }
+      }
+      if (atoms.length === 0) continue;
+
+      // Get this ligand's Molstar Structure object.
+      let structure: Structure | undefined;
+      if (ligand.structureRefs && ligand.structureRefs.length >= 4) {
+        const cell = plugin.state.data.cells.get(ligand.structureRefs[3]);
+        if (cell?.obj?.data) structure = cell.obj.data;
+      }
+      if (!structure) continue;
+
+      const serials = this._computeSerials(atoms, mapping3D, structure);
+      if (serials.length > 0) {
+        structureSerialMap.set(structure, serials);
+        hasAny = true;
+      }
+    }
+
+    // Apply overpaint — the loci getter checks which structure it's
+    // operating on and returns only that structure's row's serials.
+    const structures = plugin.managers.structure.hierarchy.current.structures;
+    if (!structures || structures.length === 0) return;
+    const allComponents = structures.flatMap((s: any) => s.components ?? []);
+    if (allComponents.length === 0) return;
+
+    await clearStructureOverpaint(plugin, allComponents);
+
+    if (hasAny) {
+      await setStructureOverpaint(
+        plugin,
+        allComponents,
+        Color(0xFFFF00),
+        async (structureData: Structure) => {
+          // Find serials for THIS specific structure.
+          const serials = structureSerialMap.get(structureData);
+          if (!serials || serials.length === 0) {
+            // Return an empty loci — no atoms to highlight for this structure.
+            return StructureElement.Loci.none(structureData);
+          }
+
+          const atomSet = MolScriptBuilder.set(...serials);
+          const query = MolScriptBuilder.struct.generator.atomGroups({
+            'atom-test': MolScriptBuilder.core.set.has([
+              atomSet,
+              MolScriptBuilder.ammp('id'),
+            ]),
+          });
+          const sel = Script.getStructureSelection(query, structureData);
+          return StructureSelection.toLociWithSourceUnits(sel);
+        },
+      );
+    }
+  }
+
+  /** Computes 3D atom serial numbers from 2D atom indices using the
+   *  heavy-atom mapping strategy. Used by highlightAllLigandAtoms. */
+  private _computeSerials(
+    atomIndices: number[],
+    mapping3D?: { mapping: number[], method: string } | null,
+    structure?: Structure,
+  ): number[] {
+    if (mapping3D?.mapping) {
+      return atomIndices
+        .map((i) => mapping3D.mapping[i])
+        .filter((idx) => idx >= 0)
+        .map((i) => i + 1);
+    }
+    if (structure) {
+      const heavySerials: number[] = [];
+      try {
+        for (const unit of structure.units) {
+          const { elements } = unit;
+          const atomicNumber = unit.model.atomicHierarchy.atoms.type_symbol;
+          for (let j = 0; j < elements.length; j++) {
+            const eI = elements[j];
+            const sym = atomicNumber.value(eI);
+            if (sym !== 'H' && sym !== 'D')
+              heavySerials.push(eI + 1);
+          }
+        }
+      } catch { /* fall through */ }
+      if (heavySerials.length > 0) {
+        return atomIndices
+          .filter((i) => i >= 0 && i < heavySerials.length)
+          .map((i) => heavySerials[i]);
+      }
+    }
+    // Fallback: naive index+1
+    return atomIndices.map((i) => i + 1);
+  }
+
+  /**
+   * Highlights specific atoms in the 3D Molstar view using overpaint.
+   *
+   * @param atomIndices  0-based atom indices from the 2D picker.
+   * @param mapping3D    Optional pre-computed mapping.
+   * @param precomputedSerials  If true, atomIndices are already 1-based
+   *                            serials (skip the 2D→3D mapping step).
+   */
+  public async highlightLigandAtoms(
+    atomIndices: number[],
+    mapping3D?: { mapping: number[], method: string } | null,
+    precomputedSerials?: boolean,
+  ): Promise<void> {
+    const plugin = this.viewer?.plugin;
+    if (!plugin) return;
+    if (this._highlightInProgress) return; // skip concurrent calls
+    this._highlightInProgress = true;
+
+    try {
+      // Find the current structure's components via the hierarchy manager.
+      // These are the StructureComponentRef objects that setStructureOverpaint
+      // needs to iterate and apply overpaint layers to.
+      const structures = plugin.managers.structure.hierarchy.current.structures;
+      if (!structures || structures.length === 0) return;
+
+      // Collect ALL components from all structures so overpaint covers everything.
+      const allComponents = structures.flatMap((s: any) => s.components ?? []);
+      if (allComponents.length === 0) return;
+
+      // Clear any previous overpaint first.
+      await clearStructureOverpaint(plugin, allComponents);
+
+      if (atomIndices.length === 0) return;
+
+      let mol3DSerials: number[];
+      if (precomputedSerials) {
+        // Already 1-based serials — use directly.
+        mol3DSerials = atomIndices;
+      } else {
+        // Compute serials from 2D atom indices.
+        let structure: Structure | undefined;
+        const currentLigand = this.ligands?.current;
+        if (currentLigand?.structureRefs && currentLigand.structureRefs.length >= 4) {
+          const structureRef = currentLigand.structureRefs[3];
+          const structureCell = plugin.state.data.cells.get(structureRef);
+          if (structureCell?.obj?.data)
+            structure = structureCell.obj.data;
+        }
+        if (!structure && structures.length > 0)
+          structure = structures[0]?.cell?.obj?.data;
+
+        mol3DSerials = this._computeSerials(atomIndices, mapping3D, structure);
+      }
+      if (mol3DSerials.length === 0) return;
+
+      // eslint-disable-next-line no-console
+      console.log('[molstar-picker] overpaint serials', mol3DSerials.slice(0, 10));
+
+      const serialSet = mol3DSerials;
+
+      // Apply yellow overpaint to matching atoms across all components.
+      await setStructureOverpaint(
+        plugin,
+        allComponents,
+        Color(0xFFFF00), // yellow
+        async (structureData: Structure) => {
+          // Build the query against the provided structure
+          const atomSet = MolScriptBuilder.set(...serialSet);
+          const query = MolScriptBuilder.struct.generator.atomGroups({
+            'atom-test': MolScriptBuilder.core.set.has([
+              atomSet,
+              MolScriptBuilder.ammp('id'),
+            ]),
+          });
+          const sel = Script.getStructureSelection(query, structureData);
+          return StructureSelection.toLociWithSourceUnits(sel);
+        },
+      );
+      // eslint-disable-next-line no-console
+      console.log('[molstar-picker] overpaint applied');
+    } catch (err: any) {
+      this.logger.error(
+        `highlightLigandAtoms failed: ${err?.message ?? err}`);
+    } finally { this._highlightInProgress = false; }
+  }
+
+  /**
+   * Clears any atom-level overpaint applied by {@link highlightLigandAtoms}.
+   */
+  public async clearLigandAtomHighlight(): Promise<void> {
+    const plugin = this.viewer?.plugin;
+    if (!plugin) return;
+    try {
+      const structures = plugin.managers.structure.hierarchy.current.structures;
+      if (!structures || structures.length === 0) return;
+      const allComponents = structures.flatMap((s: any) => s.components ?? []);
+      if (allComponents.length === 0) return;
+      await clearStructureOverpaint(plugin, allComponents);
+    } catch { /* viewer may be disposed */ }
   }
 }
 
