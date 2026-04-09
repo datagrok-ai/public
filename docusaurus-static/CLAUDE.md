@@ -1,44 +1,29 @@
-# docusaurus-static
+# Docusaurus-Static (Simplified Documentation Build)
 
-Docusaurus site that serves Datagrok's documentation and landing pages. Embedded in the platform — served at `/` and `/help/` inside a running Datagrok instance.
+A stripped-down Docusaurus configuration, likely used for wiki or standalone doc builds separate from the main docusaurus site.
 
-## Purpose
+## datagrok.ai Site Architecture
 
-- **`/help/*`** — documentation pulled from `../help/` (the `public/help/` markdown tree)
-- **`/`** — custom landing/marketing pages (Hero, Body, Careers, Team, etc.)
-- **Plugin release pages** — `generatePluginsPages.js` generates `plugins.json` from npm or local packages
+The datagrok.ai website consists of two independently deployed parts on a single EC2 instance behind nginx:
 
-## Key Directories
+1. **Landing** (Dart 1.x SPA) — marketing/corporate pages at `/`, `/company`, `/login`, `/solutions`, etc.
+    - Source: `landing/` (private repo root)
+    - Deployed by Jenkins → `/home/grok/landing/`
+2. **Docusaurus** (`public/docusaurus/`) — documentation and API reference at `/help/*`, `/api/*`
+    - Deployed by GitHub Actions → `/home/grok/docusaurus/`
 
-| Path               | Contents                                          |
-|--------------------|---------------------------------------------------|
-| `src/pages/`       | React pages (`index.tsx` = home, `new/`, `company/`) |
-| `src/components/`  | Shared React components (home, card, team, careers) |
-| `src/theme/`       | Docusaurus theme overrides (`MDXComponents.js`)   |
-| `src/css/`         | Global CSS (`custom.css` — no navbar/sidebar in embedded mode) |
-| `static/`          | Static assets (fonts, images, favicon)            |
-| `../help/`         | Markdown docs source (routed as `/help/`)         |
+Nginx routes decide which directory serves each URL path. The two deploys never overwrite each other.
 
-## Scripts
+For the full architecture, nginx routing rules, search (Typesense), CI/CD pipelines, and deployment details, see `landing/LANDING.md`.
 
-```bash
-npm run start    # generatePluginsPages.js create + docusaurus start
-npm run build    # generatePluginsPages.js create + docusaurus build
-npm run lint     # markdownlint-cli2-fix on help/**/*.{md,mdx}
-```
+## Key Files
 
-## generatePluginsPages.js
+| File                      | Purpose                                          |
+|---------------------------|--------------------------------------------------|
+| `docusaurus.config.js`    | Main config                                      |
+| `sidebar-empty.js`        | Empty sidebar (no auto-generated sidebar)        |
+| `generatePluginsPages.js` | Generates plugin release pages from CHANGELOG.md |
 
-Generates `../help/deploy/releases/plugins/plugins.json` and copies plugin CHANGELOGs into that folder.
+## Relation to Main Docusaurus
 
-- `node generatePluginsPages.js create` — creates `plugins.json` if missing (used at dev/build start)
-- `node generatePluginsPages.js latest` — reads local `../packages/*/package.json` for versions
-- `node generatePluginsPages.js` (default) — fetches all `@datagrok` packages from npm registry
-
-## docusaurus.config.js Notes
-
-- `onBrokenLinks/Anchors/MarkdownLinks` are all set to `'throw'` — broken links fail the build
-- Docs root is `../help`, base path is `/help`
-- Files matching `**/_*` are excluded from docs
-- Color mode switch is disabled (light-only)
-- Sidebar is hidden via CSS (embedded use case — sidebar navigation is external to this site)
+This is a lighter variant of `public/docusaurus/`. It uses a separate config and an empty sidebar, suggesting it serves a subset of the documentation or is used for a different build target (e.g., internal wiki). See the main `public/docusaurus/CLAUDE.md` for the full documentation site setup.
