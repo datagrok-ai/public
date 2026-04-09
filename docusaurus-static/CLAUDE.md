@@ -1,29 +1,12 @@
-# Docusaurus-Static (Simplified Documentation Build)
+# Docusaurus-Static — OBSOLETE
 
-A stripped-down Docusaurus configuration, likely used for wiki or standalone doc builds separate from the main docusaurus site.
+> **This directory is obsolete.** All work should be done in `public/docusaurus/` instead.
+> `docusaurus-static/` was previously used for experimental landing page work (Team page, company pages)
+> but is not wired into any CI/CD pipeline and changes here are never deployed to datagrok.ai.
 
-## datagrok.ai Site Architecture
+## Where to work instead
 
-The datagrok.ai website consists of two independently deployed parts on a single EC2 instance behind nginx:
+- **Team page, company pages, React components**: `public/docusaurus/src/`
+- **Documentation**: `public/docusaurus/` — deployed via GitHub Actions (`.github/workflows/docusaurus.yaml`) on push to `master`
 
-1. **Landing** (Dart 1.x SPA) — marketing/corporate pages at `/`, `/company`, `/login`, `/solutions`, etc.
-    - Source: `landing/` (private repo root)
-    - Deployed by Jenkins → `/home/grok/landing/`
-2. **Docusaurus** (`public/docusaurus/`) — documentation and API reference at `/help/*`, `/api/*`
-    - Deployed by GitHub Actions → `/home/grok/docusaurus/`
-
-Nginx routes decide which directory serves each URL path. The two deploys never overwrite each other.
-
-For the full architecture, nginx routing rules, search (Typesense), CI/CD pipelines, and deployment details, see `landing/LANDING.md`.
-
-## Key Files
-
-| File                      | Purpose                                          |
-|---------------------------|--------------------------------------------------|
-| `docusaurus.config.js`    | Main config                                      |
-| `sidebar-empty.js`        | Empty sidebar (no auto-generated sidebar)        |
-| `generatePluginsPages.js` | Generates plugin release pages from CHANGELOG.md |
-
-## Relation to Main Docusaurus
-
-This is a lighter variant of `public/docusaurus/`. It uses a separate config and an empty sidebar, suggesting it serves a subset of the documentation or is used for a different build target (e.g., internal wiki). See the main `public/docusaurus/CLAUDE.md` for the full documentation site setup.
+See `public/docusaurus/CLAUDE.md` and `landing/LANDING.md` for the full architecture.
