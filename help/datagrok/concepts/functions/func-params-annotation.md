@@ -246,9 +246,31 @@ This renders as:
     optimizer
 ```
 
-When all parameters in a category are hidden programmatically (via `InputForm.hideInput`),
-the category header hides automatically. If all categories under a section header are hidden,
-that header hides too.
+A group header category can also contain direct inputs alongside sub-groups. Assign an input the
+same category name as the group header, and it appears directly under that header before any
+sub-groups:
+
+```js
+//meta.categoryGroups: {"All Params": ["Group A", "Group B"]}
+//input: double a {category: Group A}
+//input: double b {category: Group A}
+//input: double c {category: Group B}
+//input: double d {category: Group B}
+//input: double e {category: All Params}
+```
+
+```
+▸ All Params
+  e
+  ▸ Group A
+    a, b
+  ▸ Group B
+    c, d
+```
+
+When all parameters in a category are hidden programmatically (via `input.visible = false`),
+the category header hides automatically. If all sub-categories under a section header are also
+hidden, that header hides too.
 
 ### Initial values and optional parameters
 
