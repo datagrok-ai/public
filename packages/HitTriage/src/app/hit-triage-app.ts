@@ -1,7 +1,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {HitTriageCampaign, IFunctionArgs,
+import {AppName, HitTriageCampaign, IFunctionArgs,
   HitTriageTemplate, HitTriageTemplateIngest, IngestType, HitTriageCampaignStatus,
   HitDesignTemplate} from './types';
 import {InfoView} from './hit-triage-views/info-view';
@@ -22,17 +22,17 @@ import '../../css/hit-triage.css';
 export class HitTriageApp extends HitAppBase<HitTriageTemplate> {
   multiView: DG.MultiView;
 
-  private _infoView: InfoView;
+  protected _infoView: InfoView;
   get infoView(): InfoView {return this._infoView;}
   private _pickView?: DG.TableView;
   private _submitView?: SubmitView;
 
   private _filterViewName = 'Hit Triage | Pick';
   private _friendlyName?: string;
-  private _campaignFilters?: {[key: string]: any}[];
-  private _campaignId?: string;
-  private _dfName?: string;
-  private _molColName?: string;
+  protected _campaignFilters?: {[key: string]: any}[];
+  protected _campaignId?: string;
+  protected _dfName?: string;
+  protected _molColName?: string;
   public _fileInputType?: IngestType;
 
   private _campaign?: HitTriageCampaign;
@@ -41,9 +41,10 @@ export class HitTriageApp extends HitAppBase<HitTriageTemplate> {
   private currentPickViewId?: string;
   private _pickViewPromise?: Promise<void> | null = null;
 
-  constructor(c: DG.FuncCall) {
-    super(c, 'Hit Triage');
-    this._infoView = new InfoView(this);
+  constructor(c: DG.FuncCall, appName: AppName = 'Hit Triage',
+    infoViewConstructor: (app: HitTriageApp) => InfoView = (app) => new InfoView(app)) {
+    super(c, appName);
+    this._infoView = infoViewConstructor(this);
     this.multiView = new DG.MultiView({viewFactories: {[this._infoView.name]: () => this._infoView}});
     this.multiView.tabs.onTabChanged.subscribe((_) => {
       if (this.multiView.currentView instanceof HitBaseView)
@@ -69,13 +70,19 @@ export class HitTriageApp extends HitAppBase<HitTriageTemplate> {
     return this.campaign?.template?.submit ?? this.template?.submit;
   }
 
+  /** Hook for subclasses to prepare the dataframe after semantic type detection
+   * but before molecule column detection and calculations. */
+  protected async prepareDataFrame(_template: HitTriageTemplate): Promise<void> {
+    // base implementation does nothing
+  }
+
   public async setTemplate(template: HitTriageTemplate, presetFilters?: {[key: string]: any}[],
     campaignId?: string, ingestProps?: HitTriageTemplateIngest, friendlyName?: string) {
     this._friendlyName = friendlyName ?? this._campaign?.friendlyName;
     this._pickView?.dataFrame && grok.shell.closeTable(this._pickView?.dataFrame);
     this._pickView = undefined;
     if (!campaignId) {
-      campaignId = await this.getNewCampaignName('Hit Triage/campaigns', template.key);
+      campaignId = await this.getNewCampaignName(`${this.appName}/campaigns`, template.key);
       modifyUrl(CampaignIdKey, campaignId);
     } else if (ingestProps) {
       this._fileInputType = ingestProps.type;
@@ -103,6 +110,7 @@ export class HitTriageApp extends HitAppBase<HitTriageTemplate> {
       });
     }
     await this.dataFrame.meta.detectSemanticTypes();
+    await this.prepareDataFrame(template);
     this._molColName = this.dataFrame.columns.bySemType(DG.SEMTYPE.MOLECULE)?.name ?? undefined;
     this._dfName = this.dataFrame.name ?? ingestProps?.query;
     this.dataFrame.name = this._dfName ?? this.dataFrame.name ?? 'Molecules';
@@ -140,7 +148,7 @@ export class HitTriageApp extends HitAppBase<HitTriageTemplate> {
     else
       this.hasEditPermission = true; // if the campaign is new, obviously the user can edit it
 
-    this._filterViewName = `Hit Triage | ${this._friendlyName ?? this._campaignId ?? 'Pick'}`;
+    this._filterViewName = `${this.appName} | ${this._friendlyName ?? this._campaignId ?? 'Pick'}`;
 
     const curView = grok.shell.v;
     const pickV = grok.shell.addView(this.pickView);
@@ -154,7 +162,7 @@ export class HitTriageApp extends HitAppBase<HitTriageTemplate> {
 
     setTimeout(() => {
       this._pickViewPromise && this._pickViewPromise.then(() => {
-        const {sub} = addBreadCrumbsToRibbons(newView, 'Hit Triage', breadcrumbLabel, () => {
+        const {sub} = addBreadCrumbsToRibbons(newView, this.appName, breadcrumbLabel, () => {
           grok.shell.v = curView;
           newView.close();
           sub.unsubscribe();
@@ -275,7 +283,7 @@ export class HitTriageApp extends HitAppBase<HitTriageTemplate> {
       this.dataFrame!.columns.addNewBool(HitSelectionColName).init(false);
 
     const view = DG.TableView.create(this.dataFrame!, false);
-    const ribbons = view.getRibbonPanels();
+    let ribbons = view.getRibbonPanels();
     const calculateRibbon = ui.iconFA('wrench', getComputeDialog, 'Calculate additional properties');
     const submitButton = ui.bigButton('Submit', () => {
       const dialogContent = this._submitView?.render();
@@ -299,6 +307,17 @@ export class HitTriageApp extends HitAppBase<HitTriageTemplate> {
       calculateRibbon,
       ...(this.hasEditPermission ? [permissionsButton] : []),
       ...(hasSubmit ? [] : [submitButton])]);
+    // remove project save button from the ribbon
+    ribbons.some((rg) => {
+      const saveBtnIdx = rg?.findIndex((r) => r?.textContent?.toLowerCase() === 'save') ?? -1;
+      if (saveBtnIdx !== -1) {
+        rg.splice(saveBtnIdx, 1);
+        return true;
+      }
+      return false;
+    });
+    // remove empty ribbon arrays
+    ribbons = ribbons.filter((r) => (r?.length ?? 0) > 0);
     view.setRibbonPanels(ribbons);
     view.name = this._filterViewName;
     setTimeout(async () => {
@@ -353,7 +372,7 @@ export class HitTriageApp extends HitAppBase<HitTriageTemplate> {
     const filters = this.filterSettings!;
     const templateName = this.template!.name;
     const enrichedDf = this.dataFrame!;
-    const campaignPrefix = `System:AppData/HitTriage/Hit Triage/campaigns/${campaignId}/`;
+    const campaignPrefix = `System:AppData/HitTriage/${this.appName}/campaigns/${campaignId}/`;
     const campaignName = campaignId ?? await saveCampaignDialog(campaignId);
     const columnSemTypes: {[_: string]: string} = {};
     enrichedDf.columns.toList().forEach((col) => columnSemTypes[col.name] = col.semType);
@@ -398,7 +417,7 @@ export class HitTriageApp extends HitAppBase<HitTriageTemplate> {
     const csvDf = DG.DataFrame.fromColumns(
       enrichedDf.columns.toList().filter((col) => !col.name.startsWith('~')),
     ).toCsv();
-    await _package.files.writeAsText(`Hit Triage/campaigns/${campaignId}/${CampaignTableName}`, csvDf);
+    await _package.files.writeAsText(`${this.appName}/campaigns/${campaignId}/${CampaignTableName}`, csvDf);
     const newLayout = this._pickView!.saveLayout();
     if (!newLayout)
       grok.shell.warning('Layout cound not be saved');

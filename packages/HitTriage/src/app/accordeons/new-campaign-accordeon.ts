@@ -7,11 +7,17 @@ import {CampaignFieldTypes, HitTriageTemplate, IngestType} from '../types';
 import * as C from '../consts';
 import '../../../css/hit-triage.css';
 
-type INewCampaignResult = {
+export type INewCampaignResult = {
     df: DG.DataFrame,
     type: IngestType,
     campaignProps: {[key: string]: any},
     friendlyName?: string,
+    extraData?: {[key: string]: any},
+}
+
+export type CampaignAccordeonOptions = {
+    extraFormElements?: HTMLElement[],
+    getExtraData?: () => {[key: string]: any},
 }
 
 type HitTriageCampaignAccordeon = {
@@ -25,7 +31,9 @@ type HitTriageCampaignAccordeon = {
  * @return {HitTriageCampaignAccordeon} Object containing root element, promise for the campaign result and cancel
  */
 export async function newCampaignAccordeon(template: HitTriageTemplate,
-  dataSourceFunctionsMap: {[key: string]: DG.Func | DG.DataQuery}): Promise<HitTriageCampaignAccordeon> {
+  dataSourceFunctionsMap: {[key: string]: DG.Func | DG.DataQuery},
+  dataSourceTag: string = C.HitTriageDataSourceTag,
+  options?: CampaignAccordeonOptions): Promise<HitTriageCampaignAccordeon> {
   const errorDiv = ui.divText('', {style: {color: 'red'}});
   // handling file input
   let fileDf: DG.DataFrame | null = null;
@@ -53,7 +61,7 @@ export async function newCampaignAccordeon(template: HitTriageTemplate,
   if (Object.keys(dataSourceFunctionsMap).length === 0) {
   // functions that have special tag and are applicable for data source. they should return a dataframe with molecules
     const dataSourceFunctions =
-      Array.from(new Set(DG.Func.find({meta: {role: C.HitTriageDataSourceTag}}).concat(DG.Func.find({tags: [C.HitTriageDataSourceTag]}))));
+      Array.from(new Set(DG.Func.find({meta: {role: dataSourceTag}}).concat(DG.Func.find({tags: [dataSourceTag]}))));
     // for display purposes we use friendly name of the function
     dataSourceFunctions.forEach((func) => {
       dataSourceFunctionsMap[func.friendlyName ?? func.name] = func;
@@ -109,6 +117,7 @@ export async function newCampaignAccordeon(template: HitTriageTemplate,
 
   const form = ui.div([
     campaignNameInput.root,
+    ...(options?.extraFormElements ?? []),
     dataInputsDiv,
     ...(campaignProps.length ? [campaignPropsForm] : [])]);
   const buttonsDiv = ui.buttonsInput([]); // div for create and cancel buttons
@@ -123,7 +132,8 @@ export async function newCampaignAccordeon(template: HitTriageTemplate,
         const df = fileDf;
         df.name = fileDf.name;
         const name = campaignNameInput.value?.trim() || undefined;
-        resolve({df, type: 'File', campaignProps: campaignPropsObject, friendlyName: name});
+        const extraData = options?.getExtraData?.();
+        resolve({df, type: 'File', campaignProps: campaignPropsObject, friendlyName: name, extraData});
       } else {
         const func = dataSourceFunctionsMap[dataSourceFunctionInput.value!];
         if (!func) {
@@ -136,7 +146,8 @@ export async function newCampaignAccordeon(template: HitTriageTemplate,
         });
         const df: DG.DataFrame = await func.apply(funcCallInputs);
         const name = campaignNameInput.value?.trim() || undefined;
-        resolve({df, type: 'Query', campaignProps: campaignPropsObject, friendlyName: name});
+        const extraData = options?.getExtraData?.();
+        resolve({df, type: 'Query', campaignProps: campaignPropsObject, friendlyName: name, extraData});
       };
     };
     const startCampaignButton = ui.bigButton(C.i18n.StartCampaign, () => onOkProxy());

@@ -78,4 +78,6 @@ export const HTDefaultCampaignTableInfoGetters = {
 
 export type HTCampaignTableColumns = keyof typeof HTDefaultCampaignTableInfoGetters | `campaignFields.${string}`;
 
+export const PepTriageDataSourceTag = 'pepTriageDataSource';
+
 export const HTFunctionOrderingLSKey = 'HTFunctionOrderingLS';

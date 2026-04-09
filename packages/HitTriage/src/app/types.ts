@@ -18,6 +18,7 @@ export type CampaignsType = {
     'Hit Triage': HitTriageCampaign,
     'Hit Design': HitDesignCampaign,
     'PeptiHit': HitDesignCampaign,
+    'PepTriage': HitTriageCampaign,
 }
 
 export type HitTriageTemplate = {
@@ -105,3 +106,10 @@ export type HitDesignCampaign = Omit<HitTriageCampaign, 'filters' | 'ingest'> & 
 
 // todo: probably add some more stuff
 export type PeptiHitTemplate = HitDesignTemplate & {toAtomiLevelProps?: {[key: string]: any}}
+
+// ##################### PEP TRIAGE TYPES #####################
+
+export type PepTriageTemplate = HitTriageTemplate & {
+    sequenceColumnName: string,
+    moleculeColumnName?: string,
+}
