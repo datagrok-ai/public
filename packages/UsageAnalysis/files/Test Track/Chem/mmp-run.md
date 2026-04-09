@@ -1,43 +1,48 @@
 # Matched Molecular Pairs — Run Results
 
-**Date**: 2026-04-08
+**Date**: 2026-04-09
 **URL**: https://dev.datagrok.ai
-**Status**: AMBIGUOUS
+**Status**: FAIL
 
 ## Steps
 
 | # | Step | Result | Time | Playwright | Notes |
-|---|------|--------|------|-------|-------|
-| 1 | Open mmp_demo.csv dataset | PASS | 8s | - | 20267 rows, 4 columns (SMILES, CMPD_CHEMBLID, CYP3A4, hERG_pIC50) |
-| 2 | Open Chem > Analyze > Matched Molecular Pairs | PASS | 2s | - | Dialog with Column, Activities, Cutoff fields |
-| 3 | Select both activities (CYP3A4, hERG_pIC50) | PASS | 2s | - | Used All link in column selector |
-| 4 | Click OK | AMBIGUOUS | >120s | - | Computation started but did not produce visible results within 2 minutes. Dataset has 20K molecules which may require extended computation |
-| 5 | Check Transformation tab | SKIP | - | - | Depends on step 4 |
-| 6 | Check Fragments tab | SKIP | - | - | Depends on step 4 |
+|---|------|--------|------|------------|-------|
+| 1 | Open mmp_demo.csv | PASS | 12s | N/A | 20,267 rows, 4 cols (SMILES, CMPD_CHEMBLID, CYP3A4, hERG_pIC50) |
+| 2 | Chem > Analyze > Matched Molecular Pairs | PASS | 3s | N/A | Dialog opened via `[name="div-Chem---Analyze---Matched-Molecular-Pairs..."]` |
+| 3 | Select two activities, press OK | FAIL | 90s | N/A | Activities selected (CYP3A4, hERG_pIC50), OK clicked; `TypeError: Cannot read properties of undefined (reading 'name')` at chem/src/package.ts:2301 in mmpAnalysis |
+| 4 | Go to Fragments tab | SKIP | 0s | N/A | MMP analysis crashed |
+| 5 | Go to Cliffs tab | SKIP | 0s | N/A | MMP analysis crashed |
+| 6 | Go to Generation tab | SKIP | 0s | N/A | MMP analysis crashed |
 
 ## Timing
 
 | Phase | Duration |
 |-------|----------|
-| Execute via grok-browser | >120s (timed out) |
+| Execute via grok-browser | 110s |
+| Spec file generation | 3s |
+| Spec script execution | N/A |
 
 ## Summary
 
-MMP dialog opens correctly and activity columns can be selected. However, the computation on 20K molecules did not produce visible results within the automation timeout. The computation may still be running server-side.
+Steps 1-2 passed (dataset opened, MMP dialog opened). Step 3 failed: the MMP analysis function crashed with a `TypeError: Cannot read properties of undefined (reading 'name')` in `chem/src/package.ts:2301` (function `mmpAnalysis`). Steps 4-6 were skipped as the analysis didn't produce any results. This appears to be a bug in the Chem package's MMP implementation.
 
 ## Retrospective
 
 ### What worked well
-- MMP dialog opens and shows correct fields
-- Activity column selector works (All/None links functional)
-- Dataset loaded correctly
+- Dataset opened correctly with molecule semType detection
+- MMP dialog opened successfully via menu navigation
+- Activities column selection dialog worked (selected 2 activities via "All" button)
 
 ### What did not work
-- Computation on 20K molecules is too slow for automated testing (>2 minutes with no visible output)
+- MMP analysis crashed with TypeError at chem/src/package.ts:2301 — likely a null reference when accessing a property name
+- The error was only visible in the browser console, not shown to the user in the UI
+- No progress indicator or error notification was shown
 
 ### Suggestions for the platform
-- Add a progress indicator for MMP computation
-- Consider providing a smaller demo dataset for testing
+- The MMP function should catch and display errors to the user instead of failing silently
+- The bug at chem/src/package.ts:2301 (null `.name` access) needs to be fixed
 
 ### Suggestions for the scenario
-- Specify expected computation time or use a smaller dataset
+- Add a note that this test depends on the Chem package's MMP feature being functional
+- Specify the expected number of results for the Transformation, Fragments, Cliffs, and Generation tabs

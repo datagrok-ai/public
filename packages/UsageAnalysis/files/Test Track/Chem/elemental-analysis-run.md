@@ -1,41 +1,43 @@
 # Elemental Analysis — Run Results
 
-**Date**: 2026-04-08
+**Date**: 2026-04-09
 **URL**: https://dev.datagrok.ai
-**Status**: PARTIAL
+**Status**: PASS
 
 ## Steps
 
 | # | Step | Result | Time | Playwright | Notes |
-|---|------|--------|------|-------|-------|
-| 1 | Open smiles.csv dataset | PASS | 8s | PASSED | 1000 rows, 20 columns |
-| 2 | Open Chem > Analyze > Elemental Analysis | PASS | 2s | PASSED | Dialog with Table, Molecules, Radar Viewer, Radar Grid |
-| 3 | Turn all checkboxes on and click OK | PASS | 10s | FAILED | Expected columns > 20, got 20. Columns not added — possibly no checkboxes found or computation didn't produce new columns |
+|---|------|--------|------|------------|-------|
+| 1 | Open smiles.csv | PASS | 12s | PASSED | `grok.dapi.files.readCsv('System:DemoFiles/chem/smiles.csv')`; 1000 rows, 20 cols; canonical_smiles semType=Molecule |
+| 2 | Chem > Analyze > Elemental Analysis dialog | PASS | 3s | PASSED | Menu nav via `[name="div-Chem---Analyze---Elemental-Analysis..."]`; dialog opened |
+| 3 | Turn all checkboxes on | PASS | 1s | PASSED | 2 checkboxes (Radar Viewer, Radar Grid) enabled via `cb.click()` |
+| 4 | Click OK | PASS | 10s | PASSED | 10 new columns added: H, C, N, O, F, S, Cl, Br, I, Molecule Charge; Radar viewer displayed |
 
 ## Timing
 
 | Phase | Duration |
 |-------|----------|
-| Execute via grok-browser | ~25s |
-| Spec file generation | ~3s |
-| Spec script execution | 20.9s (FAILED) |
+| Execute via grok-browser | 30s |
+| Spec file generation | 3s |
+| Spec script execution | 21s |
 
 ## Summary
 
-Elemental Analysis MCP run passed but Playwright spec failed. The spec expects columns > 20 after computation, but got exactly 20 — the dialog checkboxes may not have been toggled correctly via Playwright automation, or the Elemental Analysis computation did not add new columns in this run.
+All 4 steps passed. Elemental Analysis computed element counts (H, C, N, O, F, S, Cl, Br, I) and Molecule Charge for 1000 molecules. Both Radar Viewer and Radar Grid were enabled and displayed. The function completed in ~10 seconds.
 
 ## Retrospective
 
 ### What worked well
-- Elemental analysis computes quickly for 1000 molecules
-- Radar viewer renders nicely with element axes
-- Current row highlighted in green on radar chart
+- Chem menu navigation via `[name="div-Chem---Analyze---Elemental-Analysis..."]` worked with proper mouseover/mouseenter events for submenu expansion
+- Dialog checkboxes are standard `input[type="checkbox"]` — clickable via `cb.click()`
+- OK button found via `[name="button-OK"]`
+- All 10 elemental columns added correctly
 
 ### What did not work
-- Playwright spec: checkbox toggling via `querySelectorAll('input[type="checkbox"]')` may not find Datagrok custom checkboxes, or the computation needs more time than the 10s timeout
+- Nothing significant — this is a straightforward dialog-based workflow
 
 ### Suggestions for the platform
-- None
+- The Radar Viewer could show element symbols on axes for easier interpretation
 
 ### Suggestions for the scenario
-- None
+- Step 1 mentions "check on smiles, molV2000 and molV3000 formats" but only provides smiles.csv dataset — should add molV2000/V3000 test files or clarify that only smiles format is tested

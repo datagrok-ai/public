@@ -13,7 +13,7 @@ async function softStep(name: string, fn: () => Promise<void>) {
   }
 }
 
-test('Chem R-Group Analysis: sar_small, MCS, trellis plot, no-core balloon', async () => {
+test('Chem MMP: Open mmp_demo, run analysis, check tabs', async () => {
   const browser = await chromium.connectOverCDP('http://localhost:9222');
   const context = browser.contexts()[0];
   let page = context.pages().find(p => p.url().includes('datagrok'));
@@ -26,7 +26,7 @@ test('Chem R-Group Analysis: sar_small, MCS, trellis plot, no-core balloon', asy
     }, {timeout: 45000});
   }
 
-  // Setup: open sar_small.csv
+  // Setup: open mmp_demo.csv
   await page.evaluate(async () => {
     document.querySelectorAll('.d4-dialog').forEach(d => {
       const cancel = d.querySelector('[name="button-CANCEL"]');
@@ -36,7 +36,7 @@ test('Chem R-Group Analysis: sar_small, MCS, trellis plot, no-core balloon', asy
     document.body.classList.add('selenium');
     grok.shell.windows.simpleMode = false;
 
-    const df = await grok.dapi.files.readCsv('System:DemoFiles/chem/sar_small.csv');
+    const df = await grok.dapi.files.readCsv('System:DemoFiles/chem/mmp_demo.csv');
     const tv = grok.shell.addTableView(df);
     await new Promise(resolve => {
       const sub = df.onSemanticTypeDetected.subscribe(() => { sub.unsubscribe(); resolve(undefined); });
@@ -50,17 +50,16 @@ test('Chem R-Group Analysis: sar_small, MCS, trellis plot, no-core balloon', asy
   });
 
   // Step 1: Verify dataset
-  await softStep('Step 1: Open sar_small.csv', async () => {
+  await softStep('Step 1: Open mmp_demo.csv', async () => {
     const info = await page!.evaluate(() => ({
       rows: grok.shell.t?.rowCount,
       cols: grok.shell.t?.columns?.length,
     }));
-    expect(info.rows).toBe(200);
+    expect(info.rows).toBe(20267);
   });
 
-  // Steps 2-5: Open R-groups dialog, click MCS, click OK, verify trellis
-  await softStep('Steps 2-5: R-groups analysis with MCS', async () => {
-    // Open dialog
+  // Step 2: Open MMP dialog
+  await softStep('Step 2: Chem > Analyze > Matched Molecular Pairs', async () => {
     await page!.evaluate(async () => {
       const chem = document.querySelector('[name="div-Chem"]') as HTMLElement;
       if (chem) chem.click();
@@ -73,72 +72,57 @@ test('Chem R-Group Analysis: sar_small, MCS, trellis plot, no-core balloon', asy
         analyze.dispatchEvent(new MouseEvent('mousemove', {bubbles: true, clientX: rect.right - 5, clientY: rect.top + 5}));
       }
       await new Promise(r => setTimeout(r, 800));
-      const rg = document.querySelector('[name="div-Chem---Analyze---R-Groups-Analysis..."]') as HTMLElement;
-      if (rg) rg.click();
+      const mmp = document.querySelector('[name="div-Chem---Analyze---Matched-Molecular-Pairs..."]') as HTMLElement;
+      if (mmp) mmp.click();
       await new Promise(r => setTimeout(r, 3000));
     });
+    const dialogOpen = await page!.evaluate(() => !!document.querySelector('.d4-dialog'));
+    expect(dialogOpen).toBe(true);
+  });
 
-    // Click MCS
+  // Step 3: Select activities and run
+  await softStep('Step 3: Select activities, press OK', async () => {
+    // Click Activities selector, select All, OK
     await page!.evaluate(async () => {
-      const dialog = document.querySelector('.d4-dialog');
-      const mcsBtn = Array.from(dialog!.querySelectorAll('*')).find(el =>
-        el.textContent?.trim() === 'MCS' && el.children.length === 0 &&
-        (el as HTMLElement).getBoundingClientRect().width > 0
+      const dialog = document.querySelector('.d4-dialog')!;
+      const labels = dialog.querySelectorAll('label.ui-input-label span, .ui-label');
+      for (const label of labels) {
+        if (label.textContent?.trim() === 'Activities') {
+          const sel = label.closest('label')?.nextElementSibling;
+          if (sel) (sel as HTMLElement).click();
+          break;
+        }
+      }
+      await new Promise(r => setTimeout(r, 500));
+    });
+
+    await page!.evaluate(async () => {
+      const dialogs = document.querySelectorAll('.d4-dialog');
+      const inner = dialogs[dialogs.length - 1];
+      const allBtn = Array.from(inner.querySelectorAll('*')).find(el =>
+        el.textContent?.trim() === 'All' && el.children.length === 0
       );
-      if (mcsBtn) (mcsBtn as HTMLElement).click();
-      await new Promise(r => setTimeout(r, 5000));
+      if (allBtn) (allBtn as HTMLElement).click();
+      await new Promise(r => setTimeout(r, 300));
+      const okBtn = inner.querySelector('[name="button-OK"]') as HTMLElement;
+      if (okBtn) okBtn.click();
+      await new Promise(r => setTimeout(r, 1000));
     });
 
-    // Click OK
+    // Click OK on main dialog
     await page!.evaluate(async () => {
       const dialog = document.querySelector('.d4-dialog');
       const okBtn = dialog?.querySelector('[name="button-OK"]') as HTMLElement;
       if (okBtn) okBtn.click();
-      await new Promise(r => setTimeout(r, 15000));
+      await new Promise(r => setTimeout(r, 30000));
     });
 
-    // Verify trellis plot and R-group columns
-    const result = await page!.evaluate(() => {
-      const trellis = document.querySelectorAll('[name*="Trellis"], [name*="trellis"]').length;
-      const colNames = Array.from({length: grok.shell.t.columns.length},
-        (_, i) => grok.shell.t.columns.byIndex(i).name);
-      const rCols = colNames.filter(n => /^R\d+$/.test(n));
-      return {trellisCount: trellis, rGroupCols: rCols, totalCols: colNames.length};
-    });
-    expect(result.trellisCount).toBeGreaterThanOrEqual(1);
-    expect(result.rGroupCols.length).toBeGreaterThanOrEqual(2);
-  });
-
-  // Step 11: Run without MCS — expect "No core was provided"
-  await softStep('Step 11: Run without MCS — no core balloon', async () => {
-    await page!.evaluate(async () => {
-      const chem = document.querySelector('[name="div-Chem"]') as HTMLElement;
-      if (chem) chem.click();
-      await new Promise(r => setTimeout(r, 500));
-      const analyze = document.querySelector('[name="div-Chem---Analyze"]') as HTMLElement;
-      if (analyze) {
-        const rect = analyze.getBoundingClientRect();
-        analyze.dispatchEvent(new MouseEvent('mouseover', {bubbles: true, clientX: rect.left + 5, clientY: rect.top + 5}));
-        analyze.dispatchEvent(new MouseEvent('mouseenter', {bubbles: true}));
-        analyze.dispatchEvent(new MouseEvent('mousemove', {bubbles: true, clientX: rect.right - 5, clientY: rect.top + 5}));
-      }
-      await new Promise(r => setTimeout(r, 800));
-      const rg = document.querySelector('[name="div-Chem---Analyze---R-Groups-Analysis..."]') as HTMLElement;
-      if (rg) rg.click();
-      await new Promise(r => setTimeout(r, 2000));
-
-      // Click OK without MCS
-      const dialog = document.querySelector('.d4-dialog');
-      const okBtn = dialog?.querySelector('[name="button-OK"]') as HTMLElement;
-      if (okBtn) okBtn.click();
-      await new Promise(r => setTimeout(r, 3000));
-    });
-
-    const balloonFound = await page!.evaluate(() => {
-      const balloons = document.querySelectorAll('.d4-balloon-content, .d4-balloon');
-      return Array.from(balloons).some(b => b.textContent?.includes('No core'));
-    });
-    expect(balloonFound).toBe(true);
+    // Check for new views (MMP creates tabs)
+    const views = await page!.evaluate(() =>
+      Array.from(grok.shell.views).map(v => v.name)
+    );
+    // This may fail if MMP has a bug
+    expect(views.length).toBeGreaterThan(2);
   });
 
   // Cleanup

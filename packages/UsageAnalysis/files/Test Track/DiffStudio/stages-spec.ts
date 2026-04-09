@@ -1,82 +1,142 @@
-import { test, expect, Page } from '@playwright/test';
+import {test, expect, chromium} from '@playwright/test';
 
-const BASE_URL = 'https://public.datagrok.ai';
+const baseUrl = process.env.DATAGROK_URL ?? 'https://dev.datagrok.ai';
 
-test.describe('DiffStudio / Stages (Acid Production)', () => {
-  let page: Page;
+const stepErrors: {step: string; error: string}[] = [];
 
-  test.beforeAll(async ({ browser }) => {
-    page = await browser.newPage();
-    await page.goto(`${BASE_URL}/apps/DiffStudio`, { waitUntil: 'networkidle', timeout: 30000 });
-    await page.waitForTimeout(3000);
-  });
+async function softStep(name: string, fn: () => Promise<void>) {
+  try {
+    await test.step(name, fn);
+  } catch (e: any) {
+    stepErrors.push({step: name, error: e.message ?? String(e)});
+    console.error(`[STEP FAILED] ${name}: ${e.message ?? e}`);
+  }
+}
 
-  test.afterAll(async () => {
-    await page.close();
-  });
+test('DiffStudio Stages: Acid Production, Multiaxis, Facet, inputs, tooltips', async () => {
+  const browser = await chromium.connectOverCDP('http://localhost:9222');
+  const context = browser.contexts()[0];
+  let page = context.pages().find(p => p.url().includes('datagrok'));
+  if (!page) {
+    page = await context.newPage();
+    await page.goto(baseUrl, {waitUntil: 'networkidle', timeout: 60000});
+    await page.waitForFunction(() => {
+      try { return typeof grok !== 'undefined' && typeof grok.shell.closeAll === 'function'; }
+      catch { return false; }
+    }, {timeout: 45000});
+  }
 
-  test('Step 1: Load Acid Production model', async () => {
-    const result = await page.evaluate(async () => {
-      await (window as any).diffstudio.acidProduction();
-      return 'loaded';
+  // Setup
+  await page.evaluate(async () => {
+    document.querySelectorAll('.d4-dialog').forEach(d => {
+      const cancel = d.querySelector('[name="button-CANCEL"]');
+      if (cancel) (cancel as HTMLElement).click();
     });
-    expect(result).toBe('loaded');
-    await page.waitForTimeout(3000);
-
-    await expect(page.locator('text=Acid Production')).toBeVisible({ timeout: 10000 });
-    await expect(page.locator('text=Durations')).toBeVisible();
-    await expect(page.locator('text=Rows: 1,002')).toBeVisible({ timeout: 10000 });
+    grok.shell.closeAll();
+    document.body.classList.add('selenium');
+    grok.shell.windows.simpleMode = false;
   });
 
-  test('Step 2: Both Multiaxis and Facet tabs visible and updated', async () => {
-    await expect(page.locator('text=Multiaxis')).toBeVisible();
-    await expect(page.locator('text=Facet')).toBeVisible();
+  // Step 1: Open DiffStudio, load Acid Production
+  await softStep('Step 1: Open DiffStudio and load Acid Production', async () => {
+    await page!.evaluate(async () => {
+      await grok.functions.call('DiffStudio:runDiffStudio');
+      await new Promise(r => setTimeout(r, 3000));
 
-    // Charts should be visible
-    const canvasCount = await page.evaluate(() => document.querySelectorAll('canvas').length);
-    expect(canvasCount).toBeGreaterThanOrEqual(4);
+      const combo = document.querySelector('.diff-studio-ribbon-widget') as HTMLElement;
+      if (combo) combo.click();
+      await new Promise(r => setTimeout(r, 800));
+      let items = document.querySelectorAll('[role="menuitem"]');
+      const lib = Array.from(items).find(i => i.textContent?.trim().startsWith('Library'));
+      if (lib) (lib as HTMLElement).click();
+      await new Promise(r => setTimeout(r, 800));
+      items = document.querySelectorAll('[role="menuitem"]');
+      const acid = Array.from(items).find(i => i.textContent?.trim() === 'Acid production');
+      if (acid) (acid as HTMLElement).click();
+      await new Promise(r => setTimeout(r, 5000));
+    });
 
-    // Check data columns
-    await expect(page.locator('text=Columns: 6')).toBeVisible();
+    const info = await page!.evaluate(() => ({
+      name: grok.shell.tv?.name,
+      rows: grok.shell.tv?.dataFrame?.rowCount,
+      cols: grok.shell.tv?.dataFrame?.columns?.length,
+    }));
+    expect(info.cols).toBe(6);
+    expect(info.rows).toBeGreaterThan(0);
   });
 
-  test('Step 3: Modify 1-st stage duration; charts update in real time', async () => {
-    // Change 1-st stage from 60 to 40
-    await page.evaluate(() => {
-      const inputs = Array.from(document.querySelectorAll('input'));
-      const stageInput = inputs.find(i => i.value === '60');
-      if (stageInput) {
-        (stageInput as HTMLInputElement).value = '40';
-        stageInput.dispatchEvent(new Event('change', { bubbles: true }));
-        stageInput.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+  // Step 2: Check Multiaxis and Facet plots
+  await softStep('Step 2: Check Multiaxis and Facet plots', async () => {
+    const tabs = await page!.evaluate(() => {
+      const allEls = document.querySelectorAll('*');
+      const multiaxis = Array.from(allEls).find(el =>
+        el.textContent?.trim() === 'Multiaxis' && el.children.length === 0
+      );
+      const facet = Array.from(allEls).find(el =>
+        el.textContent?.trim() === 'Facet' && el.children.length === 0
+      );
+      return {multiaxis: !!multiaxis, facet: !!facet};
+    });
+    expect(tabs.multiaxis).toBe(true);
+    expect(tabs.facet).toBe(true);
+  });
+
+  // Step 3: Modify inputs, observe real-time changes
+  await softStep('Step 3: Modify inputs and observe changes', async () => {
+    const result = await page!.evaluate(async () => {
+      const stageInput = document.querySelector('input[name="input-1-st-stage"]') as HTMLInputElement;
+      if (!stageInput) return {error: 'input not found'};
+
+      const valueBefore = stageInput.value;
+      const nativeSetter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!;
+      nativeSetter.call(stageInput, '40');
+      stageInput.dispatchEvent(new Event('input', {bubbles: true}));
+      stageInput.dispatchEvent(new Event('change', {bubbles: true}));
+      stageInput.dispatchEvent(new KeyboardEvent('keydown', {key: 'Enter', code: 'Enter', bubbles: true}));
+      await new Promise(r => setTimeout(r, 3000));
+
+      return {valueBefore, valueAfter: stageInput.value};
+    });
+    expect(result.valueAfter).toBe('40');
+  });
+
+  // Step 4: Check tooltips on input hover
+  await softStep('Step 4: Check tooltips on input hover', async () => {
+    const tooltips = await page!.evaluate(async () => {
+      const labels = document.querySelectorAll('label.ui-label');
+      const results: {label: string; tooltip: string}[] = [];
+
+      for (const label of labels) {
+        const rect = label.getBoundingClientRect();
+        if (rect.width === 0) continue;
+        const text = label.textContent?.trim();
+        if (!text || text.length > 30) continue;
+
+        label.dispatchEvent(new MouseEvent('mouseover', {bubbles: true, clientX: rect.left + 5, clientY: rect.top + 5}));
+        label.dispatchEvent(new MouseEvent('mouseenter', {bubbles: true}));
+        await new Promise(r => setTimeout(r, 500));
+
+        const tooltip = document.querySelector('.d4-tooltip');
+        const tooltipText = tooltip?.textContent?.trim().substring(0, 80) || '';
+        if (tooltipText && tooltipText !== 'No inputs selected')
+          results.push({label: text.substring(0, 20), tooltip: tooltipText});
+
+        label.dispatchEvent(new MouseEvent('mouseout', {bubbles: true}));
+        label.dispatchEvent(new MouseEvent('mouseleave', {bubbles: true}));
+        await new Promise(r => setTimeout(r, 200));
+
+        if (results.length >= 3) break;
       }
+      return results;
     });
-    await page.waitForTimeout(1500);
-
-    // Verify input shows updated value
-    const stageVal = await page.evaluate(() => {
-      const inputs = Array.from(document.querySelectorAll('input'));
-      return inputs.find(i => i.value === '40')?.value;
-    });
-    expect(stageVal).toBe('40');
-
-    // Verify data is still loaded (charts updated without error)
-    await expect(page.locator('text=Rows: 1,002')).toBeVisible({ timeout: 5000 });
+    expect(tooltips.length).toBeGreaterThanOrEqual(1);
   });
 
-  test('Step 4: Tooltips are displayed for inputs', async () => {
-    // Trigger tooltip by hovering over inputs
-    await page.evaluate(() => {
-      const inputs = Array.from(document.querySelectorAll('input'));
-      inputs.forEach(inp => inp.dispatchEvent(new MouseEvent('mouseover', { bubbles: true })));
-    });
-    await page.waitForTimeout(500);
+  // Cleanup
+  await page.evaluate(() => grok.shell.closeAll());
 
-    // Check tooltip element exists (DiffStudio uses d4-tooltip class)
-    const tooltipExists = await page.evaluate(() => {
-      const tooltip = document.querySelector('.d4-tooltip');
-      return tooltip !== null;
-    });
-    expect(tooltipExists).toBe(true);
-  });
+  if (stepErrors.length > 0) {
+    const summary = stepErrors.map(e => `  - ${e.step}: ${e.error}`).join('\n');
+    throw new Error(`${stepErrors.length} step(s) failed:\n${summary}`);
+  }
 });

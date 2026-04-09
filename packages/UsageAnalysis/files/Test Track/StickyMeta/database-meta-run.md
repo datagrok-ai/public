@@ -1,53 +1,45 @@
 # Database meta — Run Results
 
-**Date**: 2026-03-11
-**URL**: https://public.datagrok.ai
+**Date**: 2026-04-09
+**URL**: https://dev.datagrok.ai
 **Status**: FAIL
 
 ## Steps
 
-**Database metadata display (CHEMBL)**
+| # | Step | Result | Time | Playwright | Notes |
+|---|------|--------|------|------------|-------|
+| 1 | Navigate to Browse > Databases > Postgres | PASS | 5s | N/A | Postgres connections listed: 13 connections including CHEMBL, NorthwindTest |
+| 2 | Click CHEMBL, check Context Panel | FAIL | 10s | N/A | Context Panel shows: Details, Queries (27), History (72), Sharing, Activity (6), Chats, Dev — NO "Database meta" section |
+| 3 | Fill database metadata | SKIP | 0s | N/A | Database meta panel not present |
+| 4 | Table metadata display | SKIP | 0s | N/A | Database meta panel not present |
+| 5 | Column metadata display | SKIP | 0s | N/A | Database meta panel not present |
 
-| # | Step | Result | Playwright | Notes |
-|---|------|--------|------------|-------|
-| 1 | Open Browse > Databases > Postgres > CHEMBL | PASS | PASSED | Navigated to Connections view; selected CHEMBL (Postgres); Context Panel shows Details, Queries, History, Sharing, Activity, Chats, Dev |
-| 2 | Observe Context Panel — expect "Database meta" section | FAIL | FAILED | No "Database meta" section present in Context Panel for CHEMBL connection. Known issues GROK-19427 and GROK-19429 may be related. Sections shown: Details, Queries27, History42, Sharing, Activity5, Chats, Dev |
-| 3 | Fill Comment and LLM Comment, click Save | SKIP | SKIP | Section not found |
-| 4 | Reload platform; reopen CHEMBL | SKIP | SKIP | No data to verify |
-| 5 | Clear metadata, save, reload | SKIP | SKIP | No data to verify |
+## Timing
 
-**Table metadata display (NorthwindTest)**
-
-| # | Step | Result | Playwright | Notes |
-|---|------|--------|------------|-------|
-| 1 | Open Browse > Databases > Postgres > NorthwindTest > Schemas > Public | SKIP | SKIP | NorthwindTest connection not present on public.datagrok.ai (confirmed in Connections test run) |
-| 2–5 | Fill/verify/clear table metadata | SKIP | SKIP | Prerequisite missing |
-
-**Column metadata display (NorthwindTest > categories > categoryid)**
-
-| # | Step | Result | Playwright | Notes |
-|---|------|--------|------------|-------|
-| 1–4 | Column metadata for NorthwindTest column | SKIP | SKIP | NorthwindTest not available on public.datagrok.ai |
+| Phase | Duration |
+|-------|----------|
+| Execute via grok-browser | 25s |
+| Spec file generation | 0s |
+| Spec script execution | N/A |
 
 ## Summary
 
-The "Database meta" section was not found in the Context Panel for the CHEMBL database connection on public.datagrok.ai. The CHEMBL connection is accessible and selectable, but no Database meta accordion section appears. The NorthwindTest connection is not present on public.datagrok.ai, making all table/column metadata steps untestable. The scenario is fully blocked.
+Step 1 passed: navigated to Databases > Postgres and found CHEMBL connection. Step 2 failed: the "Database meta" section does not appear in the Context Panel for the CHEMBL connection on dev. The Context Panel shows standard tabs (Details, Queries, History, Sharing, Activity, Chats, Dev) but no database metadata section. Steps 3-5 were all skipped. The Database meta feature may not be deployed or enabled on dev.
 
 ## Retrospective
 
 ### What worked well
-- CHEMBL connection is accessible and its context panel loads correctly
-- Other connection metadata (Details, Sharing, Activity) works correctly
+- Navigation to Browse > Databases > Postgres works correctly
+- CHEMBL, NorthwindTest connections are available (13 total Postgres connections)
+- Context Panel shows standard connection details
 
 ### What did not work
-- "Database meta" section absent from CHEMBL connection context panel — may be a plugin/package not loaded on public.datagrok.ai, or related to known issues GROK-19427/GROK-19429
-- NorthwindTest not available on public.datagrok.ai — all table/column metadata steps blocked
+- "Database meta" section not present in Context Panel for any connection
+- The feature may require a specific package or server configuration not available on dev
 
 ### Suggestions for the platform
-- The Database meta section should be visible on public.datagrok.ai for at least one accessible connection to make this scenario testable
-- Add a visible indicator when the db-db / db-schema metadata schemas are not configured for a connection
+- If Database meta is a feature in development, add a feature flag or version check
 
 ### Suggestions for the scenario
-- Note GROK-19427 and GROK-19429 known issues at the top as prerequisites to check before running
-- Replace NorthwindTest steps with a connection available on public.datagrok.ai (e.g., CHEMBL or Northwind)
-- Add a prerequisite note that the db-schema / db-table packages must be installed and configured
+- Add a prerequisite note about which server version supports Database meta
+- Reference known issues GROK-19427 and GROK-19429 may indicate the feature is still in active development

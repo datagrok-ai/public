@@ -1,63 +1,117 @@
-import { test, expect, Page } from '@playwright/test';
+import {test, expect, chromium} from '@playwright/test';
 
-const BASE_URL = 'https://public.datagrok.ai';
+const baseUrl = process.env.DATAGROK_URL ?? 'https://dev.datagrok.ai';
 
-// Prerequisite: Add and edit-spec.ts must have run (sticky metadata must exist on SPGI row 1)
-// NOTE: This spec is largely skipped due to prerequisite failure (TestSchema1 entity type not configured)
+const stepErrors: {step: string; error: string}[] = [];
 
-test.describe('Sticky Meta / Copy, clone, delete', () => {
-  let page: Page;
+async function softStep(name: string, fn: () => Promise<void>) {
+  try {
+    await test.step(name, fn);
+  } catch (e: any) {
+    stepErrors.push({step: name, error: e.message ?? String(e)});
+    console.error(`[STEP FAILED] ${name}: ${e.message ?? e}`);
+  }
+}
 
-  test.beforeAll(async ({ browser }) => {
-    page = await browser.newPage();
-    await page.goto(`${BASE_URL}/`, { waitUntil: 'networkidle', timeout: 30000 });
-    await page.waitForTimeout(3000);
+test('StickyMeta Copy/Clone/Delete: clone table, verify metadata preserved', async () => {
+  const browser = await chromium.connectOverCDP('http://localhost:9222');
+  const context = browser.contexts()[0];
+  let page = context.pages().find(p => p.url().includes('datagrok'));
+  if (!page) {
+    page = await context.newPage();
+    await page.goto(baseUrl, {waitUntil: 'networkidle', timeout: 60000});
+    await page.waitForFunction(() => {
+      try { return typeof grok !== 'undefined' && typeof grok.shell.closeAll === 'function'; }
+      catch { return false; }
+    }, {timeout: 45000});
+  }
+
+  // Setup: open SPGI.csv
+  await page.evaluate(async () => {
+    document.querySelectorAll('.d4-dialog').forEach(d => {
+      const cancel = d.querySelector('[name="button-CANCEL"]');
+      if (cancel) (cancel as HTMLElement).click();
+    });
+    grok.shell.closeAll();
+    document.body.classList.add('selenium');
+    grok.shell.windows.simpleMode = false;
+
+    const df = await grok.dapi.files.readCsv('System:DemoFiles/chem/SPGI.csv');
+    const tv = grok.shell.addTableView(df);
+    await new Promise(resolve => {
+      const sub = df.onSemanticTypeDetected.subscribe(() => { sub.unsubscribe(); resolve(undefined); });
+      setTimeout(resolve, 5000);
+    });
+    for (let i = 0; i < 50; i++) {
+      if (document.querySelector('[name="viewer-Grid"] canvas')) break;
+      await new Promise(r => setTimeout(r, 200));
+    }
+    await new Promise(r => setTimeout(r, 5000));
   });
 
-  test.afterAll(async () => {
-    await page.close();
+  // Step 1: Verify SPGI and Sticky meta schema
+  await softStep('Step 1: Open SPGI, verify Sticky meta schema', async () => {
+    await page!.evaluate(async () => {
+      const col = grok.shell.t.col('Structure');
+      grok.shell.o = col;
+      grok.shell.windows.showProperties = true;
+      await new Promise(r => setTimeout(r, 3000));
+      const panes = document.querySelectorAll('.d4-accordion-pane-header');
+      const stickyPane = Array.from(panes).find(p =>
+        p.textContent?.trim() === 'Sticky meta' && p.getBoundingClientRect().left > 400
+      );
+      if (stickyPane) (stickyPane as HTMLElement).click();
+      await new Promise(r => setTimeout(r, 2000));
+    });
+
+    const hasSchema = await page!.evaluate(() => {
+      const panes = document.querySelectorAll('.d4-accordion-pane-header');
+      const stickyPane = Array.from(panes).find(p =>
+        p.textContent?.trim() === 'Sticky meta' && p.getBoundingClientRect().left > 400
+      );
+      const content = stickyPane?.closest('.d4-accordion-pane')?.querySelector('.d4-accordion-pane-content');
+      return content?.textContent?.includes('TestSchema1') ?? false;
+    });
+    expect(hasSchema).toBe(true);
   });
 
-  test('Persistency: Metadata preserved after browser refresh', async () => {
-    // Open SPGI with metadata (requires prior setup)
-    await page.evaluate(async () => {
-      await grok.dapi.files.readAsText('System.DemoFiles/SPGI.csv').catch(() => null);
-    });
+  // Step 2: Clone table and verify metadata preserved
+  await softStep('Step 2: Clone table, verify metadata preserved', async () => {
+    const result = await page!.evaluate(async () => {
+      const df = grok.shell.t;
+      const cloned = df.clone();
+      const tv2 = grok.shell.addTableView(cloned);
+      await new Promise(r => setTimeout(r, 2000));
 
-    // Navigate to SPGI
-    await page.goto(`${BASE_URL}/files/System.DemoFiles?f=SPGI.csv&browse=files`, {
-      waitUntil: 'networkidle', timeout: 30000,
-    });
-    await page.waitForTimeout(3000);
+      // Check cloned view has Sticky meta
+      const col = cloned.col('Structure');
+      grok.shell.o = col;
+      grok.shell.windows.showProperties = true;
+      await new Promise(r => setTimeout(r, 3000));
 
-    // Open SPGI and select structure cell
-    await page.evaluate(async () => {
-      const spgi = Array.from(document.querySelectorAll('a, .d4-link, label, span'))
-        .find(el => el.textContent?.trim() === 'SPGI.csv');
-      spgi?.dispatchEvent(new MouseEvent('dblclick', { bubbles: true, cancelable: true }));
-      await new Promise(r => setTimeout(r, 5000));
-    });
+      const panes = document.querySelectorAll('.d4-accordion-pane-header');
+      const stickyPane = Array.from(panes).find(p =>
+        p.textContent?.trim() === 'Sticky meta' && p.getBoundingClientRect().left > 400
+      );
+      if (stickyPane) (stickyPane as HTMLElement).click();
+      await new Promise(r => setTimeout(r, 2000));
+      const content = stickyPane?.closest('.d4-accordion-pane')?.querySelector('.d4-accordion-pane-content');
 
-    // Check sticky meta section exists
-    await page.evaluate(() => {
-      const df = grok.shell.tv?.dataFrame;
-      if (df) {
-        df.currentRowIdx = 0;
-        df.currentCol = df.col('Structure');
-      }
+      return {
+        clonedCols: cloned.columns.length,
+        clonedRows: cloned.rowCount,
+        hasSchema: content?.textContent?.includes('TestSchema1') ?? false,
+      };
     });
-    await page.waitForTimeout(500);
-    await expect(page.locator('text=Sticky meta')).toBeVisible({ timeout: 5000 });
+    expect(result.clonedRows).toBe(3624);
+    expect(result.hasSchema).toBe(true);
   });
 
-  test('Delete metadata: Remove fields and verify absence', async () => {
-    // This test requires that metadata was previously set
-    // Since prerequisite failed, this is a placeholder test
-    const hasStickyMeta = await page.evaluate(() => {
-      return Array.from(document.querySelectorAll('.d4-accordion-pane-header'))
-        .some(h => h.textContent?.trim() === 'Sticky meta');
-    });
-    // If sticky meta exists, we can at least verify the panel is reachable
-    expect(hasStickyMeta).toBe(true);
-  });
+  // Cleanup
+  await page.evaluate(() => grok.shell.closeAll());
+
+  if (stepErrors.length > 0) {
+    const summary = stepErrors.map(e => `  - ${e.step}: ${e.error}`).join('\n');
+    throw new Error(`${stepErrors.length} step(s) failed:\n${summary}`);
+  }
 });

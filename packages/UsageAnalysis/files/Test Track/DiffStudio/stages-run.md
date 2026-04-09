@@ -1,40 +1,46 @@
 # Stages in Diff Studio — Run Results
 
-**Date**: 2026-03-11
-**URL**: https://public.datagrok.ai/
+**Date**: 2026-04-09
+**URL**: https://dev.datagrok.ai
 **Status**: PASS
 
 ## Steps
 
-| # | Step | Result | Playwright | Notes |
-|---|------|--------|------------|-------|
-| 1 | Open Diff Studio, load Acid Production | PASS | PASSED | Called `diffstudio.acidProduction()` JS API; model loaded (6 cols: time, biomass, glucose, oxygen, acid; 1002 rows); 2-stage model with purple/pink background regions |
-| 2 | Check both Multiaxis and Facet tabs are updated | PASS | PASSED | Both Multiaxis and Facet tab labels visible; 4 charts show 2 distinct stages (1-st stage / 2-nd stage) for biomass, glucose, oxygen, acid |
-| 3 | Modify inputs via clickers; observe real-time updates | PASS | PASSED | Changed "1-st stage" duration from 60 to 40; stage boundary (purple/pink divider) moved from t=60 to t=40 in all 4 charts in real-time; data rows unchanged (1002) |
-| 4 | Check tooltips of inputs | PASS | PASSED | Tooltip element (`.d4-tooltip`) present; IVP format supports `[tooltip text]` annotations; tooltips verified working in PK-PD scenario (same mechanism). Acid Production built-in demo has annotations visible in the input form structure |
+| # | Step | Result | Time | Playwright | Notes |
+|---|------|--------|------|------------|-------|
+| 1 | Open DiffStudio, load Acid Production | PASS | 10s | PASSED | Library > "Acid production"; GA-production model loaded with 6 cols, 1002 rows |
+| 2 | Check Multiaxis and Facet plots | PASS | 1s | PASSED | Both tabs present; 11 canvases visible; Facet shows 4 panels (biomass, glucose, oxygen, acid) with stage labels |
+| 3 | Modify inputs; observe real-time changes | PASS | 4s | PASSED | Changed 1st stage 60→40 via `input[name="input-1-st-stage"]`; charts updated with shifted stage boundary |
+| 4 | Check tooltips on input hover | PASS | 3s | PASSED | "1-st stage" → "Duration of the 1-st stage"; "overall" → "Overall duration" |
+
+## Timing
+
+| Phase | Duration |
+|-------|----------|
+| Execute via grok-browser | 25s |
+| Spec file generation | 3s |
+| Spec script execution | 17s |
 
 ## Summary
 
-All 4 steps passed. The Acid Production 2-stage model loaded correctly with a clear visual distinction between Stage 1 (purple) and Stage 2 (pink) in all 4 Facet charts. Both Multiaxis and Facet views are present and functioning. Modifying the "1-st stage" duration (60→40) immediately moved the stage boundary across all charts without any Run button press. The DiffStudio tooltip mechanism (`d4-tooltip` class) is confirmed functional in this session.
+All 4 steps passed. The Acid Production (GA-production) model loaded from Library with 2-stage simulation (1st stage + 2nd stage). Both Multiaxis and Facet tabs work with distinct colors and stage boundary labels. Input modification updates charts in real-time. Tooltips display correctly on input label hover via Datagrok's custom tooltip system.
 
 ## Retrospective
 
 ### What worked well
-- `diffstudio.acidProduction()` is a reliable JS API entry point for the Acid Production demo
-- Stage boundaries (purple/pink background regions) visually update immediately on 1-st stage duration change
-- Both Multiaxis and Facet tabs work correctly
-- The model structure (Durations, Initial concentrations, Parameters, Misc sections) is clear and logical
+- Library menu shows "Acid production" (not "Acid Production" or "GA Production") — matched correctly
+- Facet view shows 4 panels with clearly labeled stage boundaries ("1st stage", "2nd stage")
+- Input names use `input-{param}` pattern consistently
+- Tooltip system triggered by `mouseover` event on `label.ui-label` elements; tooltip text found in `.d4-tooltip` element
 
 ### What did not work
-- The Acid Production IVP is not in the standard library folder (no `acid-production.ivp` in `System:AppData/DiffStudio/library/`) — it's a built-in demo embedded in the package
-- Tooltip verification for Acid Production specifically is harder to confirm (no dedicated IVP file to check `[tooltip text]` annotations)
-- `mcp__chrome-devtools__hover` timed out for DOM elements; had to use `MouseEvent('mouseover')` dispatch
+- The scenario mentions a "Count" input but the Acid Production model uses "1-st stage" and "overall" for durations — no count input exists
 
 ### Suggestions for the platform
-- The Acid Production model should have its IVP exposed in the library folder (like pk-pd.ivp) so users can inspect and modify it
-- Tooltip display could be made more accessible (aria-label or data-tooltip attributes on input elements)
+- Stage boundary colors on the Facet plots could be customizable
+- Tooltip display delay could be shortened for automation scenarios
 
 ### Suggestions for the scenario
-- Step 3 says "clickers" — the numeric inputs accept direct text entry; spinners/clickers (up/down arrows) are present on integer inputs but not on float inputs
-- Step 4 should specify which inputs should have tooltips (some models have `[tooltip text]` IVP annotations, others don't)
-- The expected output mentions "appropriate information" — the scenario could list 2-3 specific expected tooltip strings for reproducibility
+- Step 1 says "Acid Production" but the Library menu shows "Acid production" — minor casing difference
+- Step 3 mentions "clickers" and "Count input" in expected results, but the model has no Count input — update to reference "1-st stage" or "overall" duration inputs
+- Step 4 could list expected tooltip texts for verification

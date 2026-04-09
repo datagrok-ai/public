@@ -13,7 +13,7 @@ async function softStep(name: string, fn: () => Promise<void>) {
   }
 }
 
-test('Chem Elemental Analysis: Open smiles.csv, run analysis with all options', async () => {
+test('Chem Similarity Search: Open, run search, modify properties', async () => {
   const browser = await chromium.connectOverCDP('http://localhost:9222');
   const context = browser.contexts()[0];
   let page = context.pages().find(p => p.url().includes('datagrok'));
@@ -49,71 +49,77 @@ test('Chem Elemental Analysis: Open smiles.csv, run analysis with all options', 
     await new Promise(r => setTimeout(r, 5000));
   });
 
-  // Step 1: Verify dataset loaded
+  // Step 1: Verify dataset
   await softStep('Step 1: Open smiles.csv', async () => {
     const info = await page!.evaluate(() => ({
       rows: grok.shell.t?.rowCount,
-      cols: grok.shell.t?.columns?.length,
     }));
     expect(info.rows).toBe(1000);
-    expect(info.cols).toBe(20);
   });
 
-  // Step 2: Open Chem > Analyze > Elemental Analysis dialog
-  await softStep('Step 2: Open Elemental Analysis dialog', async () => {
+  // Step 2: Run Similarity Search
+  await softStep('Step 2: Chem > Search > Similarity Search', async () => {
     await page!.evaluate(async () => {
       const chem = document.querySelector('[name="div-Chem"]') as HTMLElement;
       if (chem) chem.click();
       await new Promise(r => setTimeout(r, 500));
-
-      const analyze = document.querySelector('[name="div-Chem---Analyze"]') as HTMLElement;
-      if (analyze) {
-        const rect = analyze.getBoundingClientRect();
-        analyze.dispatchEvent(new MouseEvent('mouseover', {bubbles: true, clientX: rect.left + 5, clientY: rect.top + 5}));
-        analyze.dispatchEvent(new MouseEvent('mouseenter', {bubbles: true}));
-        analyze.dispatchEvent(new MouseEvent('mousemove', {bubbles: true, clientX: rect.right - 5, clientY: rect.top + 5}));
+      const search = document.querySelector('[name="div-Chem---Search"]') as HTMLElement;
+      if (search) {
+        const rect = search.getBoundingClientRect();
+        search.dispatchEvent(new MouseEvent('mouseover', {bubbles: true, clientX: rect.left + 5, clientY: rect.top + 5}));
+        search.dispatchEvent(new MouseEvent('mouseenter', {bubbles: true}));
+        search.dispatchEvent(new MouseEvent('mousemove', {bubbles: true, clientX: rect.right - 5, clientY: rect.top + 5}));
       }
       await new Promise(r => setTimeout(r, 800));
+      const sim = document.querySelector('[name="div-Chem---Search---Similarity-Search..."]') as HTMLElement;
+      if (sim) sim.click();
+      await new Promise(r => setTimeout(r, 5000));
+    });
 
-      const ea = document.querySelector('[name="div-Chem---Analyze---Elemental-Analysis..."]') as HTMLElement;
-      if (ea) ea.click();
+    const viewerFound = await page!.evaluate(() =>
+      !!document.querySelector('[name="viewer-Chem-Similarity-Search"]')
+    );
+    expect(viewerFound).toBe(true);
+  });
+
+  // Step 3-4: Test property modifications
+  await softStep('Steps 3-4: Modify properties without errors', async () => {
+    const results = await page!.evaluate(async () => {
+      const viewers = Array.from(grok.shell.tv.viewers);
+      const simViewer = viewers.find((v: any) => v.type?.includes('Similarity'));
+      if (!simViewer) return {error: 'viewer not found'};
+
+      const res: Record<string, boolean> = {};
+
+      // Test fingerprint change
+      simViewer.setOptions({fingerprint: 'Pattern'});
       await new Promise(r => setTimeout(r, 2000));
-    });
+      res.fingerprint = simViewer.getOptions().look?.fingerprint === 'Pattern';
 
-    const dialogOpen = await page!.evaluate(() => !!document.querySelector('.d4-dialog'));
-    expect(dialogOpen).toBe(true);
-  });
+      // Test limit change
+      simViewer.setOptions({limit: 5});
+      await new Promise(r => setTimeout(r, 2000));
+      res.limit = simViewer.getOptions().look?.limit === 5;
 
-  // Step 3: Turn all checkboxes on
-  await softStep('Step 3: Enable all checkboxes', async () => {
-    const result = await page!.evaluate(() => {
-      const dialog = document.querySelector('.d4-dialog');
-      if (!dialog) return {error: 'no dialog'};
-      const checkboxes = dialog.querySelectorAll('input[type="checkbox"]');
-      for (const cb of checkboxes) {
-        if (!(cb as HTMLInputElement).checked) (cb as HTMLElement).click();
-      }
-      return {checked: checkboxes.length};
-    });
-    expect(result.checked).toBeGreaterThanOrEqual(2);
-  });
+      // Test distance metric change
+      simViewer.setOptions({distanceMetric: 'Dice'});
+      await new Promise(r => setTimeout(r, 2000));
+      res.metric = simViewer.getOptions().look?.distanceMetric === 'Dice';
 
-  // Step 4: Click OK and verify results
-  await softStep('Step 4: Click OK and verify element columns added', async () => {
-    await page!.evaluate(async () => {
-      const okBtn = document.querySelector('.d4-dialog [name="button-OK"]') as HTMLElement;
-      if (okBtn) okBtn.click();
-      await new Promise(r => setTimeout(r, 10000));
-    });
+      // Test cutoff = 1
+      simViewer.setOptions({cutoff: 1.0});
+      await new Promise(r => setTimeout(r, 2000));
+      res.cutoff = simViewer.getOptions().look?.cutoff === 1;
 
-    const info = await page!.evaluate(() => {
-      const t = grok.shell.t;
-      const colNames = t ? Array.from({length: t.columns.length}, (_, i) => t.columns.byIndex(i).name) : [];
-      return {colCount: t?.columns?.length, hasH: colNames.includes('H'), hasC: colNames.includes('C')};
+      // Reset
+      simViewer.setOptions({fingerprint: 'Morgan', limit: 12, distanceMetric: 'Tanimoto', cutoff: 0.01});
+
+      return res;
     });
-    expect(info.colCount).toBeGreaterThan(20);
-    expect(info.hasH).toBe(true);
-    expect(info.hasC).toBe(true);
+    expect(results.fingerprint).toBe(true);
+    expect(results.limit).toBe(true);
+    expect(results.metric).toBe(true);
+    expect(results.cutoff).toBe(true);
   });
 
   // Cleanup
