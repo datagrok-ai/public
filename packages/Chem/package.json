@@ -65,7 +65,7 @@
     "@datagrok-libraries/test": "^1.1.0"
   },
   "devDependencies": {
-    "@datagrok/charts": "^1.4.0",
+    "@datagrok/charts": "^1.7.0",
     "@datagrok/power-grid": "^1.6.2",
     "@types/offscreencanvas": "^2019.7.3",
     "@types/wu": "^2.1.44",
