@@ -3,7 +3,10 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {Subscription} from 'rxjs';
-import {CampaignGrouping, CampaignGroupingType, CampaignJsonName, CampaignTableColumns, DefaultCampaignTableInfoGetters, HDCampaignsGroupingLSKey, HDCampaignsTableSortingLSKey, HDCampaignTableColumnsLSKey, HTFunctionOrderingLSKey, i18n} from './consts';
+import {CampaignGrouping, CampaignGroupingType, CampaignJsonName, CampaignTableColumns, DefaultCampaignTableInfoGetters,
+  HDCampaignsGroupingLSKey, HDCampaignsTableSortingLSKey, HDCampaignTableColumnsLSKey,
+  HTCampaignTableColumns, HTCampaignsGroupingLSKey, HTCampaignsTableSortingLSKey, HTCampaignTableColumnsLSKey, HTDefaultCampaignTableInfoGetters,
+  HTFunctionOrderingLSKey, i18n} from './consts';
 import {AppName, CampaignsType, HitDesignCampaign, HitTriageCampaign, TriagePermissions} from './types';
 import {_package} from '../package';
 
@@ -246,11 +249,15 @@ export function setSavedCampaignsSorting(value: SavedCampaignsTableSorting | nul
     localStorage.removeItem(HDCampaignsTableSortingLSKey);
 }
 
-export function sortCampaigns(campaigns: HitDesignCampaign[], sorting: SavedCampaignsTableSorting | null) {
+export function sortCampaigns<T extends HitDesignCampaign | HitTriageCampaign>(
+  campaigns: T[], sorting: {columnName: string, ascending: boolean} | null,
+  getters?: {[key: string]: (a: T) => string},
+) {
   if (!sorting)
     return;
-  const getter = sorting.columnName in DefaultCampaignTableInfoGetters ?
-    DefaultCampaignTableInfoGetters[sorting.columnName as keyof typeof DefaultCampaignTableInfoGetters] : (campaign: HitDesignCampaign) =>
+  const defaultGetters = (getters ?? DefaultCampaignTableInfoGetters) as {[key: string]: (a: T) => string};
+  const getter = sorting.columnName in defaultGetters ?
+    defaultGetters[sorting.columnName] : (campaign: T) =>
       campaign.campaignFields?.[sorting.columnName.replace('campaignFields.', '') ?? ''] ?? '';
   const vs: Map<HitDesignCampaign, any> = new Map();
   campaigns.forEach((c) => {
@@ -300,6 +307,53 @@ export function getSavedCampaignTableColumns(): CampaignTableColumns[] {
 
 export function setSavedCampaignTableColumns(columns: CampaignTableColumns[]) {
   setLocalStorageValue(HDCampaignTableColumnsLSKey, JSON.stringify(columns));
+}
+
+// ---- Hit Triage-specific localStorage wrappers ----
+
+export function getHTSavedCampaignsGrouping(): CampaignGroupingType {
+  return getLocalStorageValue<CampaignGroupingType>(HTCampaignsGroupingLSKey) ?? CampaignGrouping.None;
+}
+
+export function setHTSavedCampaignsGrouping(value: CampaignGroupingType) {
+  setLocalStorageValue(HTCampaignsGroupingLSKey, value);
+}
+
+export type HTSavedCampaignsTableSorting = {
+  columnName: HTCampaignTableColumns,
+  ascending: boolean,
+}
+
+export function getHTSavedCampaignsSorting(): HTSavedCampaignsTableSorting | null {
+  const sortingString = getLocalStorageValue<string>(HTCampaignsTableSortingLSKey);
+  if (!sortingString)
+    return null;
+  return JSON.parse(sortingString) as HTSavedCampaignsTableSorting;
+}
+
+export function setHTSavedCampaignsSorting(value: HTSavedCampaignsTableSorting | null) {
+  value ? setLocalStorageValue(HTCampaignsTableSortingLSKey, JSON.stringify(value)) :
+    localStorage.removeItem(HTCampaignsTableSortingLSKey);
+}
+
+export function getHTSavedCampaignTableColumns(): HTCampaignTableColumns[] {
+  const columnsString = getLocalStorageValue<string>(HTCampaignTableColumnsLSKey);
+  const defaultCols: HTCampaignTableColumns[] = ['Created', 'Author', 'Total', 'Selected', 'Status'];
+  if (!columnsString)
+    return defaultCols;
+  try {
+    const columnsP = JSON.parse(columnsString);
+    if (Array.isArray(columnsP) && columnsP.every((c) => typeof c === 'string'))
+      return columnsP as HTCampaignTableColumns[];
+    return defaultCols;
+  } catch (e) {
+    console.error('error parsing HT campaign table columns', e);
+    return defaultCols;
+  }
+}
+
+export function setHTSavedCampaignTableColumns(columns: HTCampaignTableColumns[]) {
+  setLocalStorageValue(HTCampaignTableColumnsLSKey, JSON.stringify(columns));
 }
 
 

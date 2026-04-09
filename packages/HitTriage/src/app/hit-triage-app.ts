@@ -27,7 +27,8 @@ export class HitTriageApp extends HitAppBase<HitTriageTemplate> {
   private _pickView?: DG.TableView;
   private _submitView?: SubmitView;
 
-  private _filterViewName = 'Hit triage | Pick';
+  private _filterViewName = 'Hit Triage | Pick';
+  private _friendlyName?: string;
   private _campaignFilters?: {[key: string]: any}[];
   private _campaignId?: string;
   private _dfName?: string;
@@ -69,7 +70,8 @@ export class HitTriageApp extends HitAppBase<HitTriageTemplate> {
   }
 
   public async setTemplate(template: HitTriageTemplate, presetFilters?: {[key: string]: any}[],
-    campaignId?: string, ingestProps?: HitTriageTemplateIngest) {
+    campaignId?: string, ingestProps?: HitTriageTemplateIngest, friendlyName?: string) {
+    this._friendlyName = friendlyName ?? this._campaign?.friendlyName;
     this._pickView?.dataFrame && grok.shell.closeTable(this._pickView?.dataFrame);
     this._pickView = undefined;
     if (!campaignId) {
@@ -138,6 +140,8 @@ export class HitTriageApp extends HitAppBase<HitTriageTemplate> {
     else
       this.hasEditPermission = true; // if the campaign is new, obviously the user can edit it
 
+    this._filterViewName = `Hit Triage | ${this._friendlyName ?? this._campaignId ?? 'Pick'}`;
+
     const curView = grok.shell.v;
     const pickV = grok.shell.addView(this.pickView);
     this.currentPickViewId = pickV.name;
@@ -146,10 +150,11 @@ export class HitTriageApp extends HitAppBase<HitTriageTemplate> {
     modifyUrl(CampaignIdKey, this._campaignId ?? this._campaign?.name ?? '');
 
     const newView = pickV;
+    const breadcrumbLabel = this._friendlyName ?? this._campaignId ?? 'Pick';
 
     setTimeout(() => {
       this._pickViewPromise && this._pickViewPromise.then(() => {
-        const {sub} = addBreadCrumbsToRibbons(newView, 'Hit Triage', 'Pick', () => {
+        const {sub} = addBreadCrumbsToRibbons(newView, 'Hit Triage', breadcrumbLabel, () => {
           grok.shell.v = curView;
           newView.close();
           sub.unsubscribe();
@@ -359,10 +364,11 @@ export class HitTriageApp extends HitAppBase<HitTriageTemplate> {
     // if its first time save author as current user, else keep the same
     const authorUserId = this.campaign?.authorUserId ?? grok.shell.user.id;
     const permissions = this.campaign?.permissions ?? defaultPermissions;
-
+    const authorName = authorUserId ? this.campaign?.authorUserFriendlyName ?? (await grok.dapi.users.find(authorUserId))?.friendlyName : undefined;
 
     const campaign: HitTriageCampaign = {
       name: campaignName,
+      friendlyName: this._friendlyName ?? this.campaign?.friendlyName,
       templateName,
       filters: filters ?? {},
       ingest: {
@@ -379,6 +385,8 @@ export class HitTriageApp extends HitAppBase<HitTriageTemplate> {
       template: this.template as HitDesignTemplate | undefined,
       columnTypes: colTypeMap,
       authorUserId,
+      authorUserFriendlyName: authorName,
+      lastModifiedUserName: grok.shell.user.friendlyName,
       permissions,
     };
 

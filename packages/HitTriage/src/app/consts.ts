@@ -1,4 +1,4 @@
-import type {HitDesignCampaign} from './types';
+import type {HitDesignCampaign, HitTriageCampaign} from './types';
 
 // Re-export shared compute-function constants from the statistics library
 export {funcTypeNames, HTScriptPrefix, HTQueryPrefix, ComputeQueryMolColName} from '@datagrok-libraries/statistics/src/compute-functions/consts';
@@ -60,5 +60,22 @@ export const DefaultCampaignTableInfoGetters = {
 } as const;
 
 export type CampaignTableColumns = keyof typeof DefaultCampaignTableInfoGetters | `campaignFields.${string}`;
+
+export const HTCampaignsGroupingLSKey = 'HTCampaignsGrouping';
+export const HTCampaignTableColumnsLSKey = 'HTCampaignTableColumns';
+export const HTCampaignsTableSortingLSKey = 'HTCampaignsTableSorting';
+
+export const HTDefaultCampaignTableInfoGetters = {
+  'Name': (info: HitTriageCampaign) => info.friendlyName ?? info.name,
+  'Code': (info: HitTriageCampaign) => info.name,
+  'Created': (info: HitTriageCampaign) => info.createDate,
+  'Author': (info: HitTriageCampaign) => info.authorUserFriendlyName ?? '',
+  'Last Modified by': (info: HitTriageCampaign) => info.lastModifiedUserName ?? '',
+  'Total': (info: HitTriageCampaign) => (info.rowCount ?? 0).toString(),
+  'Selected': (info: HitTriageCampaign) => (info.filteredRowCount ?? 0).toString(),
+  'Status': (info: HitTriageCampaign) => info.status,
+} as const;
+
+export type HTCampaignTableColumns = keyof typeof HTDefaultCampaignTableInfoGetters | `campaignFields.${string}`;
 
 export const HTFunctionOrderingLSKey = 'HTFunctionOrderingLS';

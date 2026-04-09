@@ -10,7 +10,8 @@ import '../../../css/hit-triage.css';
 type INewCampaignResult = {
     df: DG.DataFrame,
     type: IngestType,
-    campaignProps: {[key: string]: any}
+    campaignProps: {[key: string]: any},
+    friendlyName?: string,
 }
 
 type HitTriageCampaignAccordeon = {
@@ -82,6 +83,9 @@ export async function newCampaignAccordeon(template: HitTriageTemplate,
   functionInputDiv.style.display = 'none';
   const dataInputsDiv = ui.div([fileInputDiv, functionInputDiv]);
 
+  const campaignNameInput = ui.input.string('Campaign Name', {value: '', nullable: true});
+  campaignNameInput.setTooltip('Optional friendly name for the campaign');
+
   // campaign properties. each template might have number of additional fields that should
   // be filled by user for the campaign. they are cast into DG.Property objects and displayed as a form
   const campaignProps = template.campaignFields
@@ -104,6 +108,7 @@ export async function newCampaignAccordeon(template: HitTriageTemplate,
   }
 
   const form = ui.div([
+    campaignNameInput.root,
     dataInputsDiv,
     ...(campaignProps.length ? [campaignPropsForm] : [])]);
   const buttonsDiv = ui.buttonsInput([]); // div for create and cancel buttons
@@ -117,7 +122,8 @@ export async function newCampaignAccordeon(template: HitTriageTemplate,
         }
         const df = fileDf;
         df.name = fileDf.name;
-        resolve({df, type: 'File', campaignProps: campaignPropsObject});
+        const name = campaignNameInput.value?.trim() || undefined;
+        resolve({df, type: 'File', campaignProps: campaignPropsObject, friendlyName: name});
       } else {
         const func = dataSourceFunctionsMap[dataSourceFunctionInput.value!];
         if (!func) {
@@ -129,7 +135,8 @@ export async function newCampaignAccordeon(template: HitTriageTemplate,
           funcCallInputs[key] = value;
         });
         const df: DG.DataFrame = await func.apply(funcCallInputs);
-        resolve({df, type: 'Query', campaignProps: campaignPropsObject});
+        const name = campaignNameInput.value?.trim() || undefined;
+        resolve({df, type: 'Query', campaignProps: campaignPropsObject, friendlyName: name});
       };
     };
     const startCampaignButton = ui.bigButton(C.i18n.StartCampaign, () => onOkProxy());
