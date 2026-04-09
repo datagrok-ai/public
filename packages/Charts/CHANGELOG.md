@@ -1,5 +1,9 @@
 # Charts changelog
 
+## v.next
+
+* CLAUDE-31: Fixed Globe viewer crash when columns are removed from DataFrame
+
 ## 1.7.0 (2026-03-20)
 
 ### Features
