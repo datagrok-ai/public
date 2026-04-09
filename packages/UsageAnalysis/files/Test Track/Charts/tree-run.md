@@ -1,6 +1,6 @@
 # Tree Viewer — Run Results
 
-**Date**: 2026-04-07
+**Date**: 2026-04-09
 **URL**: https://dev.datagrok.ai
 **Status**: PASS
 
@@ -8,11 +8,11 @@
 
 | # | Step | Result | Time | Playwright | Notes |
 |---|------|--------|------|-------|-------|
-| Setup | Open demog.csv, add Tree viewer, set hierarchy CONTROL/SEX/RACE | PASS | 8s | PASSED | demog.csv opened (5,850 rows, 11 cols). Tree viewer added. Hierarchy set to CONTROL, SEX, RACE. Tree rendered: All → false/true → F/M → Asian/Black/Caucasian/Other. |
-| 1 | Select branches: false→F→Asian, false→F→Black, false→M→Asian | PASS | 3s | PASSED | 174 rows selected via DataFrame bitset API (Shift+Click not possible on ECharts canvas). |
-| 2 | Filter panel: CONTROL=true → Filtered count = 0 | PASS | 3s | PASSED | Filter set via fg.updateOrAdd. Filtered rows = 39. Selected ∩ Filtered = 0. Expected = 0 ✓ |
-| 3 | Add selection: All→true→F→Black → Filtered count = 2 | PASS | 2s | PASSED | Added 2 rows (CONTROL=true, SEX=F, RACE=Black). Total selection = 176. Selected ∩ Filtered = 2. Expected = 2 ✓ |
-| 4 | Clear CONTROL filter → Filtered count = 176 | PASS | 2s | PASSED | Filter cleared. All 5850 rows visible. Status bar: "Selected: 176". Expected = 176 ✓ |
+| 0 | Setup: Open demog.csv, add Tree viewer, set hierarchy | PASS | 8s | PASSED | Tree viewer added with CONTROL → SEX → RACE hierarchy, filter panel opened |
+| 1 | Select branches false→F→Asian, false→F→Black, false→M→Asian | PASS | 3s | PASSED | 174 rows selected via JS API (canvas-based tree nodes) |
+| 2 | Filter CONTROL=true, expect filtered count = 0 | PASS | 3s | PASSED | Filter applied via filter group. Overlap of selection and filter = 0 (all selected rows have CONTROL=false) |
+| 3 | Add true→F→Black to selection, expect filtered count = 2 | PASS | 3s | PASSED | 2 additional rows selected. Total selected = 176. Overlap with CONTROL=true filter = 2 |
+| 4 | Clear CONTROL filter, expect selected count = 176 | PASS | 3s | PASSED | Filter cleared. All 5850 rows visible. 176 rows remain selected |
 
 ## Timing
 
@@ -20,28 +20,29 @@
 |-------|----------|
 | Execute via grok-browser | 20s |
 | Spec file generation | 3s |
-| Spec script execution | FAILED — see below |
+| Spec script execution | 16.6s |
 
 ## Summary
 
-All 4 steps plus setup passed on dev server. Collaborative filtering works correctly: the Tree viewer selection and Filter panel interact as expected with exact counts 0 → 2 → 176. The Tree viewer is ECharts canvas-based, so branch selection was done via programmatic bitset API rather than Shift+Click.
+All 4 steps of the Tree viewer collaborative filtering scenario passed. The Tree viewer correctly maintains selection state across filter changes. Selection-filter intersection counts match all expected values (0, 2, 176). CONTROL column is boolean with only 39 true values out of 5850.
 
 ## Retrospective
 
 ### What worked well
-- Tree viewer renders correct hierarchy from CONTROL, SEX, RACE columns
-- Collaborative filtering between Tree viewer selection and Filter panel works correctly
-- The scenario's expected counts (0, 2, 176) are precise and verified exactly
-- Tree viewer highlights selected branches in orange
+- Tree viewer renders correctly with CONTROL → SEX → RACE hierarchy
+- Selection via DataFrame API accurately targets tree branches
+- Filter group `updateOrAdd` works reliably for categorical CONTROL filter
+- Selection persists correctly across filter changes
+- All expected counts match exactly: 174, 0, 2, 176
+- Playwright spec passes cleanly in 15.7s
 
 ### What did not work
-- **Playwright spec execution fails**: same init-timing issue as other Charts specs — `actionTimeout: 10_000` in config caps `waitForFunction`, and `grok.shell.settings` throws `grok_Get_Settings is not a function` before Dart bindings are ready
-- Shift+Click multi-selection on tree branches not possible via canvas automation — used programmatic bitset selection
+- Tree viewer is canvas-based — Shift+Click for branch selection cannot be automated via MCP, used JS API fallback
+- Manual row-by-row filter loop timed out on 5850 rows — used filter group API instead
 
 ### Suggestions for the platform
-- Expose tree branch selection API: `treeViewer.selectBranch(['false', 'F', 'Asian'])`
-- Add keyboard navigation for tree nodes
+- Expose Tree viewer node selection API for programmatic automation
 
 ### Suggestions for the scenario
-- Scenario is well-structured with clear expected counts — excellent for automation
-- Note that the filtering step uses the Filter panel, separate from the Tree viewer's own selection
+- The scenario says "Filtered count = 0" for step 2 — this means the intersection of selection and filter, not the total filtered count (which is 39). Clarify wording.
+- Note that CONTROL is a boolean column with only 39 true values
