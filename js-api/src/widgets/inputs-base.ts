@@ -95,6 +95,10 @@ export class InputBase<T = any> {
   get enabled(): boolean { return api.grok_InputBase_Get_Enabled(this.dart); }
   set enabled(v: boolean) { api.grok_InputBase_Set_Enabled(this.dart, v); }
 
+  /** Whether the input is visible. When set, also updates the visibility of its category header. */
+  get visible(): boolean { return api.grok_InputBase_Get_Visible(this.dart); }
+  set visible(v: boolean) { api.grok_InputBase_Set_Visible(this.dart, v); }
+
   /** Occurs when [value] is changed, either by user or programmatically. */
   get onChanged(): Observable<T> { return api.grok_InputBase_OnChanged(this.dart); }
 
