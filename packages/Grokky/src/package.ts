@@ -27,18 +27,27 @@ export class PackageFunctions {
     setupTableViewAIPanelUI();
     setupScriptsAIPanelUI();
 
-    // Ensure the agents/ folder exists in My files so users know where to
-    // put their personal knowledge files for Claude.
+    // Ensure the agents/ folder exists in My files and the Home connection
+    // is tagged with "ai-skills" so other users can discover shared skills.
     try {
-      const exists = await grok.dapi.files.exists('System:My files/agents');
-      if (!exists) {
-        await grok.dapi.files.writeAsText('System:My files/agents/README.md',
-          'Place your personal knowledge files here. Claude will use them as context.');
-        console.log('Grokky: created My files/agents/ folder');
+      const conn = await grok.dapi.connections.filter('name = "Home"').first();
+      if (conn) {
+        const agentsPath = `${conn.nqName}/agents`;
+        const exists = await grok.dapi.files.exists(agentsPath);
+        if (!exists) {
+          await grok.dapi.files.writeAsText(`${agentsPath}/README.md`,
+            'Place your personal knowledge files here. Claude will use them as context.');
+          console.log('Grokky: created agents/ folder');
+        }
+        if (!conn.hasTag('ai-skills')) {
+          conn.tag('ai-skills');
+          await grok.dapi.connections.save(conn);
+          console.log('Grokky: tagged Home connection with ai-skills');
+        }
       }
     }
     catch (e) {
-      console.warn('Grokky: failed to create agents/ folder:', e);
+      console.warn('Grokky: failed to set up agents/ folder:', e);
     }
 
     // Trigger a sync on any file operation (create, upload, delete, rename,
@@ -81,14 +90,13 @@ export class PackageFunctions {
       ClaudeRuntimeClient.getInstance().syncUserFiles();
     });
 
-    // Listen for server-push notifications. When an entity is shared with
-    // the current user, the server sends a UserNotification via WebSocket.
-    // We trigger a sync so newly shared skill connections are picked up.
+    // Listen for server-push notifications. When a connection is shared with
+    // the current user, trigger a sync so newly shared skill connections are picked up.
+    // The server formats sharing notifications as "shared a data connection:" in the text.
     grok.events.onEvent('server-push').subscribe((entity: any) => {
-      const className = entity?.dart?.className ?? entity?.className ?? '';
-      grok.shell.info(`Server push: ${className} — ${entity?.text ?? entity?.name ?? ''}`);
-      console.log('Grokky: server-push event', entity, 'className:', className);
-      if (className === 'DG.UserNotification')
+      const text: string = entity?.text ?? '';
+      console.log('Grokky: server-push event', entity);
+      if (text.includes('shared a data connection:'))
         ClaudeRuntimeClient.getInstance().syncUserFiles();
     });
   }

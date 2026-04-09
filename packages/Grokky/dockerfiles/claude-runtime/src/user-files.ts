@@ -32,7 +32,6 @@ const packageTimestamps = new Map<string, Map<string, string>>();
 const sharedSkillsCache = new Map<string, Map<string, string>>();
 
 // Connections we've already verified have the ai-skills tag.
-const taggedConnections = new Set<string>();
 
 // ── User ID extraction ──────────────────────────────────────────────────
 // Datagrok passes either a JWT (Bearer <token>) or a plain API key.
@@ -245,33 +244,7 @@ async function syncUserFilesIncremental(
   return downloaded;
 }
 
-// ── Connection tagging ──────────────────────────────────────────────────
-// Ensures the given connection has the "ai-skills" tag so that other users
-// can discover it when syncing shared skills. The tag is added once and
-// cached in memory to avoid repeated saves.
 const AI_SKILLS_TAG = 'ai-skills';
-
-async function ensureAiSkillsTag(connId: string): Promise<void> {
-  if (taggedConnections.has(connId))
-    return;
-  try {
-    const conn = await request<ConnectionInfo>('GET', `/public/v1/connections/${connId}`);
-    const tags = conn.entityTags ?? [];
-    if (tags.some((t) => t.tag === AI_SKILLS_TAG)) {
-      console.log(`shared-skills: connection ${connId} already tagged ${AI_SKILLS_TAG}`);
-      taggedConnections.add(connId);
-      return;
-    }
-    tags.push({id: crypto.randomUUID(), tag: AI_SKILLS_TAG});
-    conn.entityTags = tags;
-    await request('POST', '/public/v1/connections', conn);
-    taggedConnections.add(connId);
-    console.log(`shared-skills: tagged connection ${connId} with ${AI_SKILLS_TAG}`);
-  }
-  catch (e: any) {
-    console.warn(`shared-skills: failed to tag connection ${connId}:`, e.message);
-  }
-}
 
 // ── Shared skills sync ─────────────────────────────────────────────────
 // Discovers connections tagged with "ai-skills" (server-filtered) and
@@ -541,11 +514,8 @@ async function doSync(
     }
     homeConnId = home.connId;
     const downloaded = await syncUserFilesIncremental(dir, home.connId, home.connectorPath);
-    if (downloaded.length) {
+    if (downloaded.length)
       console.log(`user-files: synced ${downloaded.length} user file(s)`);
-      // Tag the Home connection so other users can discover shared skills
-      await ensureAiSkillsTag(home.connId);
-    }
     else
       console.log('user-files: all user files up-to-date');
   });
