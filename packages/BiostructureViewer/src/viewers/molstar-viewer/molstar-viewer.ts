@@ -3,24 +3,24 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
 // import {Viewer as rcsbViewer, ViewerProps as rcsbViewerProps} from '@rcsb/rcsb-molstar/src/viewer';
-import { Viewer as RcsbViewer, ViewerProps as RcsbViewerProps } from '@rcsb/rcsb-molstar/build/src/viewer';
+import {Viewer as RcsbViewer, ViewerProps as RcsbViewerProps} from '@rcsb/rcsb-molstar/build/src/viewer';
 
 import $ from 'cash-dom';
 import wu from 'wu';
-import { Observable, Subject, Unsubscribable } from 'rxjs';
+import {Observable, Subject, Unsubscribable} from 'rxjs';
 
-import { PluginContext } from 'molstar/lib/mol-plugin/context';
-import { PluginLayoutControlsDisplay, PluginLayoutStateProps } from 'molstar/lib/mol-plugin/layout';
-import { StructureComponentRef } from 'molstar/lib/mol-plugin-state/manager/structure/hierarchy-state';
-import { BuiltInTrajectoryFormat, TrajectoryFormatProvider } from 'molstar/lib/mol-plugin-state/formats/trajectory';
-import { PluginCommands } from 'molstar/lib/mol-plugin/commands';
-import { to_mmCIF } from 'molstar/lib/mol-model/structure/export/mmcif';
-import { utf8ByteCount, utf8Write } from 'molstar/lib/mol-io/common/utf8';
-import { zip } from 'molstar/lib/mol-util/zip/zip';
-import { SyncRuntimeContext } from 'molstar/lib/mol-task/execution/synchronous';
-import { AssetManager } from 'molstar/lib/mol-util/assets';
+import {PluginContext} from 'molstar/lib/mol-plugin/context';
+import {PluginLayoutControlsDisplay, PluginLayoutStateProps} from 'molstar/lib/mol-plugin/layout';
+import {StructureComponentRef} from 'molstar/lib/mol-plugin-state/manager/structure/hierarchy-state';
+import {BuiltInTrajectoryFormat, TrajectoryFormatProvider} from 'molstar/lib/mol-plugin-state/formats/trajectory';
+import {PluginCommands} from 'molstar/lib/mol-plugin/commands';
+import {to_mmCIF} from 'molstar/lib/mol-model/structure/export/mmcif';
+import {utf8ByteCount, utf8Write} from 'molstar/lib/mol-io/common/utf8';
+import {zip} from 'molstar/lib/mol-util/zip/zip';
+import {SyncRuntimeContext} from 'molstar/lib/mol-task/execution/synchronous';
+import {AssetManager} from 'molstar/lib/mol-util/assets';
 
-import { testEvent } from '@datagrok-libraries/utils/src/test';
+import {testEvent} from '@datagrok-libraries/utils/src/test';
 import {
   BiostructureData, BiostructureDataJson, BiostructureDataProviderFunc
 } from '@datagrok-libraries/bio/src/pdb/types';
@@ -30,29 +30,29 @@ import {
   RegionStateOptionsType,
   SimpleRegionStateOptionsType,
 } from '@datagrok-libraries/bio/src/viewers/molstar-viewer';
-import { TAGS as pdbTAGS } from '@datagrok-libraries/bio/src/pdb/index';
-import { Molecule3DUnits } from '@datagrok-libraries/bio/src/molecule-3d/molecule-3d-units-handler';
-import { IMolecule3DBrowser, Molecule3DData } from '@datagrok-libraries/bio/src/viewers/molecule3d';
-import { PromiseSyncer } from '@datagrok-libraries/bio/src/utils/syncer';
-import { ILogger } from '@datagrok-libraries/bio/src/utils/logger';
-import { getDataProviderList } from '@datagrok-libraries/bio/src/utils/data-provider';
-import { errInfo } from '@datagrok-libraries/bio/src/utils/err-info';
+import {TAGS as pdbTAGS} from '@datagrok-libraries/bio/src/pdb/index';
+import {Molecule3DUnits} from '@datagrok-libraries/bio/src/molecule-3d/molecule-3d-units-handler';
+import {IMolecule3DBrowser, Molecule3DData} from '@datagrok-libraries/bio/src/viewers/molecule3d';
+import {PromiseSyncer} from '@datagrok-libraries/bio/src/utils/syncer';
+import {ILogger} from '@datagrok-libraries/bio/src/utils/logger';
+import {getDataProviderList} from '@datagrok-libraries/bio/src/utils/data-provider';
+import {errInfo} from '@datagrok-libraries/bio/src/utils/err-info';
 
-import { addLigandOnStage, buildSplash, LigandData, parseAndVisualsData, removeVisualsData } from './molstar-viewer-open';
-import { defaults, molecule3dFileExtensions } from './consts';
-import { createRcsbViewer, disposeRcsbViewer } from './utils';
+import {addLigandOnStage, buildSplash, LigandData, parseAndVisualsData, removeVisualsData} from './molstar-viewer-open';
+import {defaults, molecule3dFileExtensions} from './consts';
+import {createRcsbViewer, disposeRcsbViewer} from './utils';
 
-import { _package } from '../../package';
-import { convertWasm } from '../../conversion/wasm/converterWasm';
-import { StateObjectRef } from 'molstar/lib/mol-state';
-import { createStructureRepresentationParams } from 'molstar/lib/mol-plugin-state/helpers/structure-representation-params';
-import { StructureRepresentationRegistry } from 'molstar/lib/mol-repr/structure/registry';
-import { StateTransforms } from 'molstar/lib/mol-plugin-state/transforms';
-import { StateElements } from 'molstar/lib/examples/proteopedia-wrapper/helpers';
-import { MolScriptBuilder } from 'molstar/lib/mol-script/language/builder';
-import { Script } from 'molstar/lib/mol-script/script';
-import { Structure, StructureSelection, StructureElement } from 'molstar/lib/mol-model/structure';
-import { Color } from 'molstar/lib/mol-util/color';
+import {_package} from '../../package';
+import {convertWasm} from '../../conversion/wasm/converterWasm';
+import {StateObjectRef} from 'molstar/lib/mol-state';
+import {createStructureRepresentationParams} from 'molstar/lib/mol-plugin-state/helpers/structure-representation-params';
+import {StructureRepresentationRegistry} from 'molstar/lib/mol-repr/structure/registry';
+import {StateTransforms} from 'molstar/lib/mol-plugin-state/transforms';
+import {StateElements} from 'molstar/lib/examples/proteopedia-wrapper/helpers';
+import {MolScriptBuilder} from 'molstar/lib/mol-script/language/builder';
+import {Script} from 'molstar/lib/mol-script/script';
+import {Structure, StructureSelection, StructureElement} from 'molstar/lib/mol-model/structure';
+import {Color} from 'molstar/lib/mol-util/color';
 import {
   setStructureOverpaint, clearStructureOverpaint,
 } from 'molstar/lib/mol-plugin-state/helpers/structure-overpaint';
@@ -72,9 +72,9 @@ grok.events.onCustomEvent('chem-interactive-selection-changed')
     const atoms = args?.atoms ?? [];
     // eslint-disable-next-line no-console
     console.log('[molstar-picker-global] caching selection event',
-      { atomsLen: atoms.length, rowIdx });
+      {atomsLen: atoms.length, rowIdx});
     if (atoms.length > 0)
-      _globalSelectionCache.set(rowIdx, { atoms, mapping3D: args?.mapping3D ?? null });
+      _globalSelectionCache.set(rowIdx, {atoms, mapping3D: args?.mapping3D ?? null});
     else
       _globalSelectionCache.delete(rowIdx);
   });
@@ -233,79 +233,79 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
       description: 'JSON encoded object of BiostructureData type with data value Base64 encoded data',
     });
     this.pdb = this.string(PROPS.pdb, pdbDefault,
-      { category: PROPS_CATS.DATA, userEditable: false });
+      {category: PROPS_CATS.DATA, userEditable: false});
     this.pdbTag = this.string(PROPS.pdbTag, defaults.pdbTag,
-      { category: PROPS_CATS.DATA, choices: [] });
+      {category: PROPS_CATS.DATA, choices: []});
 
     this.biostructureIdColumnName = this.string(PROPS.biostructureIdColumnName, defaults.biostructureIdColumnName,
-      { category: PROPS_CATS.DATA });
+      {category: PROPS_CATS.DATA});
     this.biostructureDataProvider = this.string(PROPS.biostructureDataProvider, defaults.biostructureDataProvider,
-      { category: PROPS_CATS.DATA, /* fill choices in setData() */ });
+      {category: PROPS_CATS.DATA, /* fill choices in setData() */});
 
     this.ligandColumnName = this.string(PROPS.ligandColumnName, defaults.ligandColumnName,
-      { category: PROPS_CATS.DATA });
+      {category: PROPS_CATS.DATA});
     // this.pdbProvider = this.string(PROPS.pdbProvider, defaults.pdbProvider,
     //   {category: PROPS_CATS.DATA});
     // this.emdbProvider = this.string(PROPS.emdbProvider, defaults.emdbProvider,
     //   {category: PROPS_CATS.DATA});
-    this.ligandValue = this.string(PROPS.ligandValue, null, { category: PROPS_CATS.DATA, userEditable: false });
+    this.ligandValue = this.string(PROPS.ligandValue, null, {category: PROPS_CATS.DATA, userEditable: false});
 
     // -- Layout --
     this.layoutIsExpanded = this.bool(PROPS.layoutIsExpanded, defaults.layoutIsExpanded,
-      { category: PROPS_CATS.LAYOUT });
+      {category: PROPS_CATS.LAYOUT});
     this.layoutShowControls = this.bool(PROPS.layoutShowControls, defaults.layoutShowControls,
-      { category: PROPS_CATS.LAYOUT });
+      {category: PROPS_CATS.LAYOUT});
     this.layoutRegionStateLeft = this.string(PROPS.layoutRegionStateLeft, defaults.layoutRegionStateLeft,
-      { category: PROPS_CATS.LAYOUT, choices: Object.values(RegionStateOptionsType) }) as RegionStateOptionsType;
+      {category: PROPS_CATS.LAYOUT, choices: Object.values(RegionStateOptionsType)}) as RegionStateOptionsType;
     this.layoutRegionStateTop = this.string(PROPS.layoutRegionStateTop, defaults.layoutRegionStateTop,
-      { category: PROPS_CATS.LAYOUT, choices: Object.values(SimpleRegionStateOptionsType) },
+      {category: PROPS_CATS.LAYOUT, choices: Object.values(SimpleRegionStateOptionsType)},
     ) as SimpleRegionStateOptionsType;
     this.layoutRegionStateRight = this.string(PROPS.layoutRegionStateRight, defaults.layoutRegionStateRight,
-      { category: PROPS_CATS.LAYOUT, choices: Object.values(SimpleRegionStateOptionsType) },
+      {category: PROPS_CATS.LAYOUT, choices: Object.values(SimpleRegionStateOptionsType)},
     ) as SimpleRegionStateOptionsType;
     this.layoutRegionStateBottom = this.string(PROPS.layoutRegionStateBottom, defaults.layoutRegionStateBottom,
-      { category: PROPS_CATS.LAYOUT, choices: Object.values(SimpleRegionStateOptionsType) },
+      {category: PROPS_CATS.LAYOUT, choices: Object.values(SimpleRegionStateOptionsType)},
     ) as SimpleRegionStateOptionsType;
     this.layoutControlsDisplay = this.string(PROPS.layoutControlsDisplay, defaults.layoutControlsDisplay,
-      { category: PROPS_CATS.LAYOUT, choices: Object.values(PluginLayoutControlsDisplayType) });
+      {category: PROPS_CATS.LAYOUT, choices: Object.values(PluginLayoutControlsDisplayType)});
 
     this.layoutShowRemoteState = this.bool(PROPS.layoutShowRemoteState, defaults.layoutShowRemoteState,
-      { category: PROPS_CATS.LAYOUT });
+      {category: PROPS_CATS.LAYOUT});
     this.layoutShowSequence = this.bool(PROPS.layoutShowSequence, defaults.layoutShowSequence,
-      { category: PROPS_CATS.LAYOUT });
+      {category: PROPS_CATS.LAYOUT});
     this.layoutShowLog = this.bool(PROPS.layoutShowLog, defaults.layoutShowLog,
-      { category: PROPS_CATS.LAYOUT });
+      {category: PROPS_CATS.LAYOUT});
     this.layoutShowLeftPanel = this.bool(PROPS.layoutShowLeftPanel, defaults.layoutShowLeftPanel,
-      { category: PROPS_CATS.LAYOUT });
+      {category: PROPS_CATS.LAYOUT});
     this.collapseLeftPanel = this.bool(PROPS.collapseLeftPanel, defaults.collapseLeftPanel,
-      { category: PROPS_CATS.LAYOUT });
+      {category: PROPS_CATS.LAYOUT});
     this.collapseRightPanel = this.bool(PROPS.collapseRightPanel, defaults.collapseRightPanel,
-      { category: PROPS_CATS.LAYOUT });
+      {category: PROPS_CATS.LAYOUT});
     this.viewportShowExpand = this.bool(PROPS.viewportShowExpand, defaults.viewportShowExpand,
-      { category: PROPS_CATS.LAYOUT });
+      {category: PROPS_CATS.LAYOUT});
     this.viewportShowControls = this.bool(PROPS.viewportShowControls, defaults.viewportShowControls,
-      { category: PROPS_CATS.LAYOUT });
+      {category: PROPS_CATS.LAYOUT});
 
     // -- Controls --
     this.showWelcomeToast = this.bool(PROPS.showWelcomeToast, defaults.showWelcomeToast,
-      { category: PROPS_CATS.CONTROLS });
+      {category: PROPS_CATS.CONTROLS});
     this.showImportControls = this.bool(PROPS.showImportControls, defaults.showImportControls,
-      { category: PROPS_CATS.CONTROLS });
+      {category: PROPS_CATS.CONTROLS});
 
     // -- Behaviour --
     this.showSelectedRowsLigands = this.bool(PROPS.showSelectedRowsLigands, false,
-      { category: PROPS_CATS.BEHAVIOUR });
+      {category: PROPS_CATS.BEHAVIOUR});
     this.showCurrentRowLigand = this.bool(PROPS.showCurrentRowLigand, true,
-      { category: PROPS_CATS.BEHAVIOUR });
+      {category: PROPS_CATS.BEHAVIOUR});
     this.showMouseOverRowLigand = this.bool(PROPS.showMouseOverRowLigand, true,
-      { category: PROPS_CATS.BEHAVIOUR });
+      {category: PROPS_CATS.BEHAVIOUR});
 
     // -- Style --
     this.representation = this.string(PROPS.representation, defaults.representation,
-      { category: PROPS_CATS.STYLE, choices: Object.keys(StructureRepresentationRegistry.BuiltIn) });
+      {category: PROPS_CATS.STYLE, choices: Object.keys(StructureRepresentationRegistry.BuiltIn)});
 
     // --
-    this.zoom = this.bool(PROPS.zoom, false, { userEditable: false });
+    this.zoom = this.bool(PROPS.zoom, false, {userEditable: false});
     this.root.style.textAlign = 'center';
 
     this.logger = _package.logger;
@@ -385,35 +385,35 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
       const plugin: PluginContext = this.viewer.plugin;
       const state: Partial<PluginLayoutStateProps> = {};
       switch (property.name) {
-        case PROPS.layoutShowLog: {
-          // PluginCommands.Layout.Update(plugin, );
-          const _k = 11;
-          break;
-        }
-        case PROPS.layoutShowControls: {
-          state.showControls = this.layoutShowControls;
-          break;
-        }
-        case PROPS.layoutIsExpanded: {
-          state.isExpanded = this.layoutIsExpanded;
-          break;
-        }
-        case PROPS.layoutRegionStateLeft:
-        case PROPS.layoutRegionStateTop:
-        case PROPS.layoutRegionStateRight:
-        case PROPS.layoutRegionStateBottom: {
-          state.regionState = {
-            left: this.layoutRegionStateLeft,
-            top: this.layoutRegionStateTop,
-            right: this.layoutRegionStateRight,
-            bottom: this.layoutRegionStateBottom,
-          };
-          break;
-        }
-        case PROPS.layoutControlsDisplay: {
-          state.controlsDisplay = this.layoutControlsDisplay as PluginLayoutControlsDisplay;
-          break;
-        }
+      case PROPS.layoutShowLog: {
+        // PluginCommands.Layout.Update(plugin, );
+        const _k = 11;
+        break;
+      }
+      case PROPS.layoutShowControls: {
+        state.showControls = this.layoutShowControls;
+        break;
+      }
+      case PROPS.layoutIsExpanded: {
+        state.isExpanded = this.layoutIsExpanded;
+        break;
+      }
+      case PROPS.layoutRegionStateLeft:
+      case PROPS.layoutRegionStateTop:
+      case PROPS.layoutRegionStateRight:
+      case PROPS.layoutRegionStateBottom: {
+        state.regionState = {
+          left: this.layoutRegionStateLeft,
+          top: this.layoutRegionStateTop,
+          right: this.layoutRegionStateRight,
+          bottom: this.layoutRegionStateBottom,
+        };
+        break;
+      }
+      case PROPS.layoutControlsDisplay: {
+        state.controlsDisplay = this.layoutControlsDisplay as PluginLayoutControlsDisplay;
+        break;
+      }
         // case PROPS.viewportShowExpand: {
         //   await PluginCommands.State.ToggleExpanded(plugin,
         //     {state: {isExpanded: this.viewportShowExpand}})
@@ -421,53 +421,53 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
         // }
       }
       //eslint-disable-next-line new-cap
-      await PluginCommands.Layout.Update(plugin, { state: state });
+      await PluginCommands.Layout.Update(plugin, {state: state});
       this.logger.debug(`${logPrefix}.applyProperty(), end`);
     };
 
     // Type checks
     switch (property.name) {
-      case PROPS.dataJson: {
-        if (typeof this.dataJson !== 'string')
-          throw new Error(`Property '${property.name}' value is of invalid type '${typeof this.dataJson}'.`);
-        break;
-      }
+    case PROPS.dataJson: {
+      if (typeof this.dataJson !== 'string')
+        throw new Error(`Property '${property.name}' value is of invalid type '${typeof this.dataJson}'.`);
+      break;
+    }
     }
 
     switch (property.name) {
-      case PROPS.biostructureDataProvider: {
-        // reset for setData
-        this.biostructureDataProviderFunc = null;
-        break;
-      }
-      case PROPS.pdb:
-      case PROPS.dataJson: {
-        // reset for setData
-        this.dataEff = null;
-        break;
-      }
+    case PROPS.biostructureDataProvider: {
+      // reset for setData
+      this.biostructureDataProviderFunc = null;
+      break;
+    }
+    case PROPS.pdb:
+    case PROPS.dataJson: {
+      // reset for setData
+      this.dataEff = null;
+      break;
+    }
 
-      case PROPS.representation: {
-        const checkAndUpdate = () => {
-          if (!this.setDataInProgress && this.viewer)
-            this.updateView(this.representation);
-          else
-            requestAnimationFrame(checkAndUpdate);
-        };
-        checkAndUpdate();
-        break;
-      }
+    case PROPS.representation: {
+      const checkAndUpdate = () => {
+        if (!this.setDataInProgress && this.viewer)
+          this.updateView(this.representation);
+        else
+          requestAnimationFrame(checkAndUpdate);
+      };
+      checkAndUpdate();
+      break;
+    }
 
-      case PROPS.showImportControls:
-        break;
-      case PROPS.layoutIsExpanded:
-        this.viewerProps[PROPS.layoutIsExpanded] = this.layoutIsExpanded;
-        break;
-      case PROPS.showSelectedRowsLigands:
-      case PROPS.showCurrentRowLigand:
-      case PROPS.showMouseOverRowLigand:
-        this.onRebuildViewLigandsRequest.next();
-        break;
+    case PROPS.showImportControls:
+      break;
+    case PROPS.layoutIsExpanded:
+      this.viewerProps[PROPS.layoutIsExpanded] = this.layoutIsExpanded;
+      break;
+    case PROPS.showSelectedRowsLigands:
+    case PROPS.showCurrentRowLigand:
+    case PROPS.showMouseOverRowLigand:
+      this.onRebuildViewLigandsRequest.next();
+      break;
     }
 
     const propName: string = property.name;
@@ -478,16 +478,16 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
     });
 
     switch (property.name) {
-      case PROPS.dataJson:
-      case PROPS.pdb:
-      case PROPS.pdbTag:
-      case PROPS.biostructureDataProvider:
-      case PROPS.biostructureIdColumnName:
-      case PROPS.ligandValue:
-      case PROPS.ligandColumnName: {
-        this.setData(logIndent + 1, callLog);
-        break;
-      }
+    case PROPS.dataJson:
+    case PROPS.pdb:
+    case PROPS.pdbTag:
+    case PROPS.biostructureDataProvider:
+    case PROPS.biostructureIdColumnName:
+    case PROPS.ligandValue:
+    case PROPS.ligandColumnName: {
+      this.setData(logIndent + 1, callLog);
+      break;
+    }
     }
     this.logger.debug(`${logPrefix}, end`);
   }
@@ -568,7 +568,7 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
 
       if (accPanel)
         resizeCanvasAndViewer(width, height);
-    }))
+    }));
   }
 
   override detach(): void {
@@ -608,7 +608,7 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
 
   async writeToFormat(format: 'cif' | 'pdb') {
     const fileName = 'file';
-    const { structures } = this.viewer!.plugin.managers.structure.hierarchy.current;
+    const {structures} = this.viewer!.plugin.managers.structure.hierarchy.current;
     const _s = structures[0];
     const s = _s.transform?.cell.obj?.data ?? _s.cell.obj?.data;
     const cif = to_mmCIF(fileName, s!) as string;
@@ -623,7 +623,7 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
 
   async _exportHierarchy(plugin: PluginContext, options?: { format?: 'cif' }) {
     const format = options?.format ?? 'cif';
-    const { structures } = plugin.managers.structure.hierarchy.current;
+    const {structures} = plugin.managers.structure.hierarchy.current;
     const files: [name: string, data: string | Uint8Array][] = [];
     const entryMap = new Map<string, number>();
     for (const _s of structures) {
@@ -631,13 +631,13 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
       if (!s) continue;
       const name = s.model.entryId || 'unnamed';
 
-      const fileName = entryMap.has(name)
-        ? `${name}_${entryMap.get(name)! + 1}.${format}`
-        : `${name}.${format}`;
+      const fileName = entryMap.has(name) ?
+        `${name}_${entryMap.get(name)! + 1}.${format}` :
+        `${name}.${format}`;
       entryMap.set(name, (entryMap.get(name) ?? 0) + 1);
 
       if (s.elementCount > 100000)
-        await new Promise(res => setTimeout(res, 50));
+        await new Promise((res) => setTimeout(res, 50));
 
       try {
         files.push([fileName, to_mmCIF(name, s)]);
@@ -646,7 +646,7 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
       }
     }
 
-    var blob;
+    let blob;
     if (files.length === 1)
       blob = new Blob([files[0][1] as BlobPart]), files[0][0];
     else if (files.length > 1) {
@@ -661,7 +661,7 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
         }
       }
       const assetManager = new AssetManager();
-      const ctx = { runtime: SyncRuntimeContext, assetManager };
+      const ctx = {runtime: SyncRuntimeContext, assetManager};
       const buffer = await zip(ctx.runtime, zipData);
       //@ts-ignore
       blob = new Blob([new Uint8Array(buffer, 0, buffer.byteLength)]);
@@ -704,10 +704,10 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
         if (this.dataFrame && this.dataFrame.tags.has(pdbTagName)) pdb = this.dataFrame.getTag(pdbTagName);
         if (this.pdb) pdb = this.pdb;
         if (pdb && pdb != pdbDefault)
-          this.dataEff = { binary: false, ext: 'pdb', data: pdb! };
-        if (this.dataJson && this.dataJson !== BiostructureDataJson.empty) {
+          this.dataEff = {binary: false, ext: 'pdb', data: pdb!};
+        if (this.dataJson && this.dataJson !== BiostructureDataJson.empty)
           this.dataEff = BiostructureDataJson.toData(this.dataJson);
-        }
+
         if (this.biostructureDataProvider) {
           if (!this.biostructureDataProviderFunc) {
             this.biostructureDataProviderFunc = this.biostructureDataProviderList
@@ -806,10 +806,10 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
     const splash = buildSplash(this.root, `Loading data of '${id}'.`);
     try {
       // while loading the next, the previous structure is covered by splash
-      const dataString = col.semType === DG.SEMTYPE.MOLECULE3D
-        ? BiostructureDataJson.fromData({ binary: false, data: id, ext: 'pdb' })
-        : await (async () => {
-          const fetchData = await this.biostructureDataProviderFunc!.prepare({ id }).call();
+      const dataString = col.semType === DG.SEMTYPE.MOLECULE3D ?
+        BiostructureDataJson.fromData({binary: false, data: id, ext: 'pdb'}) :
+        await (async () => {
+          const fetchData = await this.biostructureDataProviderFunc!.prepare({id}).call();
           return fetchData.getOutputParamValue() as string;
         })();
 
@@ -834,7 +834,7 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
     if (!this.viewerDiv) {
       this.viewerDiv = ui.div([], {
         classes: 'd4-molstar-viewer',
-        style: { width: '100%', height: '100%' },
+        style: {width: '100%', height: '100%'},
       });
       this.root.style.overflow = 'hidden'; /* Prevent blinking viewer size changed */
       this.root.appendChild(this.viewerDiv);
@@ -854,9 +854,9 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
 
     }));
 
-    const isPdbColumn = this.biostructureIdColumnName
-      ? this.dataFrame.getCol(this.biostructureIdColumnName).semType === DG.SEMTYPE.MOLECULE3D
-      : false;
+    const isPdbColumn = this.biostructureIdColumnName ?
+      this.dataFrame.getCol(this.biostructureIdColumnName).semType === DG.SEMTYPE.MOLECULE3D :
+      false;
 
     const hasValidDataProvider = this.biostructureDataProviderFunc && !isPdbColumn;
     if (this.dataFrame && (hasValidDataProvider || isPdbColumn)) {
@@ -879,19 +879,19 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
       // (registered at module load) handles caching for replay.
       this.viewSubs.push(grok.events.onCustomEvent(
         'chem-interactive-selection-changed').subscribe((args: any) => {
-          try {
-            if (args?.atoms?.length >= 0) {
-              // eslint-disable-next-line no-console
-              console.log('[molstar-picker] live highlight',
-                { atomsLen: args.atoms.length, rowIdx: args?.rowIdx });
-              // Apply highlights for ALL loaded ligands from the cache.
-              this.highlightAllLigandAtoms();
-            }
-          } catch (err: any) {
-            this.logger.error(
-              `chem-interactive-selection-changed handler failed: ${err?.message ?? err}`);
+        try {
+          if (args?.atoms?.length >= 0) {
+            // eslint-disable-next-line no-console
+            console.log('[molstar-picker] live highlight',
+              {atomsLen: args.atoms.length, rowIdx: args?.rowIdx});
+            // Apply highlights for ALL loaded ligands from the cache.
+            this.highlightAllLigandAtoms();
           }
-        }));
+        } catch (err: any) {
+          this.logger.error(
+            `chem-interactive-selection-changed handler failed: ${err?.message ?? err}`);
+        }
+      }));
 
       if (this.dataFrame && this.ligandColumnName) {
         this.viewSubs.push(this.dataFrame.onSelectionChanged.subscribe(
@@ -926,13 +926,13 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
       delete this.viewerDiv;
     }
 
-    const dataFileProp = DG.Property.fromOptions({ name: 'dataFile', caption: 'Data file', type: 'file' });
+    const dataFileProp = DG.Property.fromOptions({name: 'dataFile', caption: 'Data file', type: 'file'});
     const dataFileInput = DG.InputBase.forProperty(dataFileProp);
     dataFileInput.captionLabel.innerText = 'Data file';
     this.viewSubs.push(dataFileInput.onChanged.subscribe(async () => {
       const dataFi: DG.FileInfo = dataFileInput.value;
       const dataA: Uint8Array = dataFi.data ? dataFi.data /* User's file*/ : await dataFi.readAsBytes()/* Shares */;
-      const data: BiostructureData = { binary: true, ext: dataFi.extension, data: dataA };
+      const data: BiostructureData = {binary: true, ext: dataFi.extension, data: dataA};
       this.setOptions({
         [PROPS.dataJson]: BiostructureDataJson.fromData(data),
       });
@@ -940,7 +940,7 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
     }));
     this.splashDiv = ui.div(
       ui.divV([dataFileInput]/*, openBtn*/),
-      { classes: 'bsv-viewer-splash' } /* splash */);
+      {classes: 'bsv-viewer-splash'} /* splash */);
     this.root.appendChild(this.splashDiv);
     this.logger.debug(`${logPrefix}, end`);
   }
@@ -948,10 +948,10 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
   private async updateView(type: any) {
     const entries = this.viewer!.plugin.managers.structure.selection.entries;
     const state = this.viewer!.plugin.state;
-    entries.forEach(async ({ selection }, ref) => {
+    entries.forEach(async ({selection}, ref) => {
       const cell = StateObjectRef.resolveAndCheck(state!.data, ref);
       if (cell) {
-        const components = this.viewer!.plugin.build().to(cell)
+        const components = this.viewer!.plugin.build().to(cell);
         const repr = createStructureRepresentationParams(this.viewer!.plugin, void 0, {
           type: type
         });
@@ -1029,7 +1029,7 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
 
   // -- Ligands routines --
 
-  public ligands: LigandMap = { selected: [], current: null, hovered: null };
+  public ligands: LigandMap = {selected: [], current: null, hovered: null};
 
   /** Unify get mol* component key/ref, not static for performance
    * @param {StructureComponentRef} comp
@@ -1050,40 +1050,40 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
     let ligandValue: string;
     let ligandFormat: BuiltInTrajectoryFormat | TrajectoryFormatProvider;
     switch (ligandSemType) {
-      case DG.SEMTYPE.MOLECULE: {
-        switch (ligandUnits) {
-          default: {
-            ligandFormat = 'sdf';
-            ligandValue = ligandCellValue + '$$$$';
-          }
-        }
+    case DG.SEMTYPE.MOLECULE: {
+      switch (ligandUnits) {
+      default: {
+        ligandFormat = 'sdf';
+        ligandValue = ligandCellValue + '$$$$';
+      }
+      }
+      break;
+    }
+
+    case DG.SEMTYPE.MOLECULE3D: {
+      switch (ligandUnits) {
+      case Molecule3DUnits.pdb: {
+        ligandFormat = 'pdb';
+        ligandValue = ligandCellValue;
         break;
       }
-
-      case DG.SEMTYPE.MOLECULE3D: {
-        switch (ligandUnits) {
-          case Molecule3DUnits.pdb: {
-            ligandFormat = 'pdb';
-            ligandValue = ligandCellValue;
-            break;
-          }
-          case Molecule3DUnits.pdbqt: {
-            ligandFormat = 'pdbqt';
-            ligandValue = ligandCellValue;
-            break;
-          }
-          default:
-            throw new Error(`Unsupported units '${ligandUnits}' of '${DG.SEMTYPE.MOLECULE3D}' ligand.`);
-        }
+      case Molecule3DUnits.pdbqt: {
+        ligandFormat = 'pdbqt';
+        ligandValue = ligandCellValue;
         break;
       }
-
       default:
-        throw new Error(`Unsupported ligand semantic type '${ligandSemType}'.`);
+        throw new Error(`Unsupported units '${ligandUnits}' of '${DG.SEMTYPE.MOLECULE3D}' ligand.`);
+      }
+      break;
+    }
+
+    default:
+      throw new Error(`Unsupported ligand semantic type '${ligandSemType}'.`);
     }
     // const ligandBlob: Blob = new Blob([ligandStr], {type: 'text/plain'});
     // return ligandBlob;
-    return { data: ligandValue, format: ligandFormat, rowIdx: rowIdx };
+    return {data: ligandValue, format: ligandFormat, rowIdx: rowIdx};
   }
 
   private rebuildViewLigands(logIndent: number, caller: string): void {
@@ -1126,16 +1126,16 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
 
     if (!this.viewer) throw new Error('The mol* viewer is not created'); // return; // There is not PDB data
     if (!this.dataFrame || !this.ligandColumnName || (this.dataFrame.col(this.ligandColumnName)?.semType !== DG.SEMTYPE.MOLECULE && this.dataFrame.col(this.ligandColumnName)?.semType !== DG.SEMTYPE.MOLECULE3D)) return;
-    const newLigands: LigandMap = { selected: [], current: null, hovered: null };
+    const newLigands: LigandMap = {selected: [], current: null, hovered: null};
     newLigands.selected = !this.showSelectedRowsLigands ? [] :
       wu(this.dataFrame.selection.getSelectedIndexes())
         .take(25)
-        .map((selRowIdx) => { return { rowIdx: selRowIdx, structureRefs: null }; })
+        .map((selRowIdx) => { return {rowIdx: selRowIdx, structureRefs: null}; })
         .toArray();
     newLigands.current = !this.showCurrentRowLigand ? null :
-      this.dataFrame.currentRowIdx >= 0 ? { rowIdx: this.dataFrame.currentRowIdx, structureRefs: null } : null;
+      this.dataFrame.currentRowIdx >= 0 ? {rowIdx: this.dataFrame.currentRowIdx, structureRefs: null} : null;
     newLigands.hovered = !this.showMouseOverRowLigand ? null :
-      this.dataFrame.mouseOverRowIdx >= 0 ? { rowIdx: this.dataFrame.mouseOverRowIdx, structureRefs: null } : null;
+      this.dataFrame.mouseOverRowIdx >= 0 ? {rowIdx: this.dataFrame.mouseOverRowIdx, structureRefs: null} : null;
 
     const plugin = this.viewer!.plugin;
     const ligandTaskList: (() => Promise<void>)[] = [];
@@ -1176,7 +1176,7 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
 
     // Because of the async nature of loading structures to .viewer, the .dataFrame property can be changed (to null).
     // So collect data from the .dataFrame synchronously and then add ligands to the .viewer with postponed sync.
-    await Promise.all(ligandTaskList.map(async (task) => { try { await task() } catch (e) { _package.logger.error(e); } })).then(() => {
+    await Promise.all(ligandTaskList.map(async (task) => { try { await task(); } catch (e) { _package.logger.error(e); } })).then(() => {
       this.ligands = newLigands;
     });
 
@@ -1292,7 +1292,7 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
 
     // eslint-disable-next-line no-console
     console.log('[molstar-picker] loaded ligands:',
-      loadedLigands.map((l) => ({ row: l.rowIdx, hasRefs: !!l.structureRefs })));
+      loadedLigands.map((l) => ({row: l.rowIdx, hasRefs: !!l.structureRefs})));
 
     // Build a per-structure serial map. Each ligand structure gets ONLY
     // the serials from its own row's selection — prevents row 1's serials
@@ -1302,14 +1302,14 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
 
     for (const ligand of loadedLigands) {
       let atoms = this._getHighlightedAtomsFromColumn(ligand.rowIdx);
-      let mapping3D: any = null;
+      // Always read mapping3D from the global cache — the column temp
+      // providers store atoms but not the 2D→3D mapping.
+      const cached = _globalSelectionCache.get(ligand.rowIdx);
+      const mapping3D: any = cached?.mapping3D ?? null;
 
       if (atoms.length === 0) {
-        const cached = _globalSelectionCache.get(ligand.rowIdx);
-        if (cached && cached.atoms.length > 0) {
+        if (cached && cached.atoms.length > 0)
           atoms = cached.atoms;
-          mapping3D = cached.mapping3D;
-        }
       }
       if (atoms.length === 0) continue;
 
@@ -1368,20 +1368,33 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
    *  heavy-atom mapping strategy. Used by highlightAllLigandAtoms. */
   private _computeSerials(
     atomIndices: number[],
-    mapping3D?: { mapping: number[], method: string } | null,
+    mapping3D?: { mapping: number[], method: string, pdbSerials?: number[] } | null,
     structure?: Structure,
   ): number[] {
     if (mapping3D?.mapping) {
-      return atomIndices
+      const pdbSerials = (mapping3D as any).pdbSerials as number[] | undefined;
+      const serials = atomIndices
         .map((i) => mapping3D.mapping[i])
         .filter((idx) => idx >= 0)
-        .map((i) => i + 1);
+        .map((idx) => {
+          // If we have actual PDB serial numbers, use them.
+          // Otherwise fall back to 0-based index + 1.
+          if (pdbSerials && idx >= 0 && idx < pdbSerials.length)
+            return pdbSerials[idx];
+          return idx + 1;
+        });
+      // eslint-disable-next-line no-console
+      console.log('[molstar-picker] _computeSerials: using mapping3D (method:',
+        mapping3D.method, ') atoms:', atomIndices, '→ mapped3D:',
+        atomIndices.map((i) => mapping3D.mapping[i]),
+        '→ serials:', serials, 'hasPdbSerials:', !!pdbSerials);
+      return serials;
     }
     if (structure) {
       const heavySerials: number[] = [];
       try {
         for (const unit of structure.units) {
-          const { elements } = unit;
+          const {elements} = unit;
           const atomicNumber = unit.model.atomicHierarchy.atoms.type_symbol;
           for (let j = 0; j < elements.length; j++) {
             const eI = elements[j];
