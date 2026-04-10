@@ -12,7 +12,7 @@ WITH user_events AS (
 )
 SELECT
   en.id,
-  MAX(ue.event_time) AS last_event_time
+  EXTRACT(EPOCH FROM MAX(ue.event_time) AT TIME ZONE 'UTC') * 1000 AS last_event_time
 FROM user_events ue
 JOIN event_parameter_values v ON v.event_id = ue.id
 JOIN event_parameters p ON p.id = v.parameter_id

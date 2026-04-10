@@ -267,7 +267,7 @@ export class ActivityDashboardWidget extends DG.Widget {
         const time = timeCol.get(i);
         if (id && time) {
           ids.push(id);
-          timestampMap.set(id, time);
+          timestampMap.set(id, dayjs(time));
         }
       }
     }
