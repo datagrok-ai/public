@@ -132,6 +132,26 @@ export namespace queries {
     return await grok.data.query('DBTests:ClickHousePatternsAllParams', { first_name, id, bool, email, some_number, country, date });
   }
 
+  export async function databricksBenchSmall(): Promise<DG.DataFrame> {
+    return await grok.data.query('DBTests:DatabricksBenchSmall', {});
+  }
+
+  export async function databricksBenchMedium(): Promise<DG.DataFrame> {
+    return await grok.data.query('DBTests:DatabricksBenchMedium', {});
+  }
+
+  export async function databricksBenchLarge(): Promise<DG.DataFrame> {
+    return await grok.data.query('DBTests:DatabricksBenchLarge', {});
+  }
+
+  export async function databricksBenchCategorical(): Promise<DG.DataFrame> {
+    return await grok.data.query('DBTests:DatabricksBenchCategorical', {});
+  }
+
+  export async function databricksSelect1(): Promise<DG.DataFrame> {
+    return await grok.data.query('DBTests:DatabricksSelect1', {});
+  }
+
   export async function mariaDbDateTypes(): Promise<DG.DataFrame> {
     return await grok.data.query('DBTests:MariaDbDateTypes', {});
   }

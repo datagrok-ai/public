@@ -1,0 +1,18 @@
+{
+  "#type": "DataConnection",
+  "name": "DatabricksDBTests",
+  "friendlyName": "DatabricksDBTests",
+  "parameters": {
+    "workspaceURL": "dbc-52240d8b-a70a.cloud.databricks.com",
+    "httpPath": "/sql/1.0/warehouses/769f690b943edd7f",
+    "db": "workspace"
+  },
+  "credentials": {
+    "parameters": {
+      "#chosen-auth-method": "Personal Access Token",
+      "token": "${DATABRICKS_TOKEN}"
+    }
+  },
+  "dataSource": "Databricks",
+  "description": "Databricks benchmark tests"
+}

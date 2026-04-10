@@ -5,6 +5,7 @@ import {runTests, tests, TestContext, test as _test, category, initAutoTests as 
 import './connections/queries-test';
 import './sync/data-sync-test';
 import './benchmarks/benchmark';
+import './benchmarks/databricks-benchmark';
 import './cache/cache-test';
 import './connections/table-query-test';
 import './tests/categories';
