@@ -1152,8 +1152,13 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
         selectedLigand.structureRefs = await addLigandOnStage(plugin, selectedLigandData, color, this.zoom);
       });
     }
+    // When both current and hovered are loaded, always use distinct
+    // colors so the user can tell which pose belongs to which row.
+    const hasBothPoses = !!newLigands.current && !!newLigands.hovered;
     if (newLigands.current) {
-      const color = this.showSelectedRowsLigands ? DG.Color.currentRow : null;
+      const color = hasBothPoses || this.showSelectedRowsLigands ?
+        (DG.Color.currentRow || 0xFF8C00) : // dark orange fallback
+        null;
 
       const currentLigandData = this.getLigandStr(newLigands.current.rowIdx);
       const currentLigand = newLigands.current;
@@ -1162,10 +1167,9 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
       });
     }
     if (newLigands.hovered) {
-      // TODO: color hovered ligand
-      const color =
-        this.showSelectedRowsLigands || this.showCurrentRowLigand ?
-          DG.Color.mouseOverRows : null;
+      const color = hasBothPoses || this.showSelectedRowsLigands || this.showCurrentRowLigand ?
+        (DG.Color.mouseOverRows || 0x2196F3) : // blue fallback
+        null;
       const hoveredLigandData = this.getLigandStr(newLigands.hovered.rowIdx);
       const hoveredLigand = newLigands.hovered;
       ligandTaskList.push(async () => {
@@ -1241,8 +1245,64 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
     setTimeout(() => {
       // eslint-disable-next-line no-console
       console.log('[molstar-picker] replay firing now');
+      this._applyBaseColors();
       this.highlightAllLigandAtoms();
     }, 300);
+  }
+
+  /** Applies distinct base colors to loaded ligand structures so the user
+   *  can tell them apart. Called after ligands are built and on each
+   *  highlight update. Does NOT require any atom selection — runs
+   *  unconditionally when 2+ poses are loaded. */
+  private async _applyBaseColors(): Promise<void> {
+    const plugin = this.viewer?.plugin;
+    if (!plugin) return;
+
+    const loadedLigands: { rowIdx: number, structureRefs: string[] | null }[] = [];
+    const lig = this.ligands;
+    if (lig) {
+      if (lig.current?.rowIdx != null && lig.current.rowIdx >= 0)
+        loadedLigands.push(lig.current);
+      if (lig.hovered?.rowIdx != null && lig.hovered.rowIdx >= 0)
+        loadedLigands.push(lig.hovered);
+      if (lig.selected) {
+        for (const sel of lig.selected)
+          if (sel.rowIdx >= 0) loadedLigands.push(sel);
+      }
+    }
+    if (loadedLigands.length < 2) return;
+
+    const structures = plugin.managers.structure.hierarchy.current.structures;
+    if (!structures || structures.length === 0) return;
+    const allComponents = structures.flatMap((s: any) => s.components ?? []);
+    if (allComponents.length === 0) return;
+
+    // Determine current (selected) row — leave its pose in default colors.
+    // Only color the OTHER (comparison) pose in teal.
+    const currentRowIdx = this.dataFrame?.currentRowIdx ?? -1;
+
+    for (const ligand of loadedLigands) {
+      if (ligand.rowIdx === currentRowIdx) continue; // skip current row
+
+      let structure: Structure | undefined;
+      if (ligand.structureRefs && ligand.structureRefs.length >= 4) {
+        const cell = plugin.state.data.cells.get(ligand.structureRefs[3]);
+        if (cell?.obj?.data) structure = cell.obj.data;
+      }
+      if (!structure) continue;
+
+      const targetStructure = structure;
+      await setStructureOverpaint(
+        plugin, allComponents, Color(0x26A69A),
+        async (structureData: Structure) => {
+          if (structureData !== targetStructure)
+            return StructureElement.Loci.none(structureData);
+          const allAtoms = MolScriptBuilder.struct.generator.all();
+          const sel = Script.getStructureSelection(allAtoms, structureData);
+          return StructureSelection.toLociWithSourceUnits(sel);
+        },
+      );
+    }
   }
 
   /** Reads the highlighted atom indices for a given row from the SMILES
@@ -1328,28 +1388,24 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
       }
     }
 
-    // Apply overpaint — the loci getter checks which structure it's
-    // operating on and returns only that structure's row's serials.
     const structures = plugin.managers.structure.hierarchy.current.structures;
     if (!structures || structures.length === 0) return;
     const allComponents = structures.flatMap((s: any) => s.components ?? []);
     if (allComponents.length === 0) return;
 
+    // Clear previous overpaint, re-apply base colors, then highlight.
     await clearStructureOverpaint(plugin, allComponents);
+    await this._applyBaseColors();
 
+    // Highlight selected atoms on top in bright yellow.
+    // This overwrites the base color for just the selected atoms.
     if (hasAny) {
       await setStructureOverpaint(
-        plugin,
-        allComponents,
-        Color(0xFFFF00),
+        plugin, allComponents, Color(0xFFFF00),
         async (structureData: Structure) => {
-          // Find serials for THIS specific structure.
           const serials = structureSerialMap.get(structureData);
-          if (!serials || serials.length === 0) {
-            // Return an empty loci — no atoms to highlight for this structure.
+          if (!serials || serials.length === 0)
             return StructureElement.Loci.none(structureData);
-          }
-
           const atomSet = MolScriptBuilder.set(...serials);
           const query = MolScriptBuilder.struct.generator.atomGroups({
             'atom-test': MolScriptBuilder.core.set.has([
