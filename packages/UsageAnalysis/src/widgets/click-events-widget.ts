@@ -11,6 +11,8 @@ interface ClickRecord {
   time: dayjs.Dayjs;
 }
 
+const MAX_LOADED_EVENTS = 10_000;
+
 export class ClickEventsWidget extends DG.Widget {
   readonly ready: Promise<void>;
   pickModeCleanup: (() => void) | null = null;
@@ -218,6 +220,8 @@ export class ClickEventsWidget extends DG.Widget {
           const filter = `${eventFilter} && session.user.id in (${ids})${dateFilter ? ' && ' + dateFilter : ''}`;
           const logEventList = await grok.dapi.log
             .filter(filter)
+            .order('eventTime', false)
+            .by(MAX_LOADED_EVENTS)
             .list();
           let minTime: dayjs.Dayjs | null = null;
           let maxTime: dayjs.Dayjs | null = null;
