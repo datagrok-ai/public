@@ -1,33 +1,106 @@
-### Correlation plot
+# Correlation plot tests (Playwright)
 
-- Open the **SPGI dataset** by clicking the 'Star' icon in TestTrack (tooltip: Open test data).
-- Go to the Viewers tab and click **Correlation plot**.
-1. Adjust **column width**
-- Click and drag the edge of any column header to resize it.
-  - Column width adjusts smoothly without overlapping or cutting off the content.
-2. Change **column order**
-- Click and drag any column header left or right.
-  - Column order should update accordingly.
-3. Open Scatter Plot
-- Double-click any numeric cell in the Correlation Plot. A Scatter Plot viewer opens showing the selected data.
-4. Open as Table action
-- Right-click on any cell: Select **Open as Table**. A new table view opens with selected data.
-- Toggle Show Pearson R checkbox. Viewer updates accordingly based on the checkbox state.
-5. Context panel - Gear Icon
-- Click the gear icon in the viewer to open the context panel.
-- Modify Axis Visibility and Order
-  - In X or Y axis settings reorder columns and uncheck checkboxes to hide columns or rows.
-  - Viewer updates to reflect changes in order and visibility.
-6. Test other **properties**
-- Modify additional settings in the context panel (colors, grid lines, tooltips, etc.).
-  - All changes apply smoothly without errors. Viewer updates correctly.
-7. Test **Popup menu**
-- Right mouse click on the viewer > popup menu opens.
-  - Check all possible actions.
-  - Main attention to Grid > Order or Hide Columns dialog: column selecting / unselecting should not cause row names disappearing [#3492](https://github.com/datagrok-ai/public/issues/3492)
+All scenarios should start with the following sequence of events:
+1. Close all
+2. Open demog
+3. Add Correlation plot
+
+## Double-click and cell interaction
+
+1. Double-click an non-diagonal cell (e.g., AGE vs HEIGHT) -- a new scatter plot viewer opens
+2. Close the scatter plot
+3. On the Context Panel enable **Ignore Double Click**
+4. Double-click the same cell -- no scatter plot should open
+5. On the Context Panel disable **Ignore Double Click**
+6. Click an non-diagonal cell -- context panel updates to show correlation details for the selected pair
+
+## Column reordering
+
+1. Click the AGE column header and drag it to the right -- column order updates
+2. Right-click > **Columns** > **X Columns** -- reorder columns via the picker
+3. Right-click > **Columns** > **X Columns** -- uncheck a column to hide it
+4. Verify the viewer updates to reflect the new order and visibility
+
+## Column selection
+
+1. Right-click > **Columns** > **X Columns** -- deselect WEIGHT
+2. Verify WEIGHT column disappears from X axis
+3. Right-click > **Columns** > **X Columns** -- re-select WEIGHT
+4. Right-click > **Columns** > **Y Columns** -- deselect HEIGHT
+5. Verify HEIGHT row disappears from Y axis
+6. Right-click > **Columns** > **Y Columns** -- re-select HEIGHT
+
+## Correlation type and display options
+
+1. On the Context Panel verify **Correlation Type** default is Pearson
+2. On the Context Panel set **Correlation Type** to Spearman -- cell values update
+3. On the Context Panel set **Correlation Type** back to Pearson
+4. On the Context Panel verify **Show Pearson R** is enabled by default
+5. On the Context Panel disable **Show Pearson R** -- values disappear from cells
+6. On the Context Panel enable **Show Pearson R**
+7. On the Context Panel verify **Show Tooltip** is enabled by default
+8. On the Context Panel disable **Show Tooltip**
+9. On the Context Panel enable **Show Tooltip**
+10. On the Context Panel verify **Ignore Double Click** is disabled by default
+11. On the Context Panel enable **Ignore Double Click**
+12. On the Context Panel disable **Ignore Double Click**
+
+## Row source
+
+1. Select several rows in the grid
+2. On the Context Panel verify **Row Source** default is Filtered
+3. On the Context Panel set **Row Source** to Selected -- plot updates to show only selected rows
+4. On the Context Panel set **Row Source** to All
+5. On the Context Panel set **Row Source** back to Filtered
+
+## Style customization
+
+1. On the Context Panel > **Style** set **Default Cell Font** to a larger size
+2. Verify cell height increases to match the new font size
+3. On the Context Panel > **Style** set **Col Header Font** to bold larger size
+4. On the Context Panel set **Back Color** to a light gray
+
+## Title and description
+
+1. On the Context Panel > **Description** enable **Show Title**
+2. Set **Title** to "Correlation Analysis"
+3. Set **Description** to "Shows pairwise correlations"
+4. Set **Description Visibility Mode** to Always
+5. Change **Description Position** to Bottom
+6. Set **Description Visibility Mode** to Never
+
+## Context menu
+
+1. Right-click an off-diagonal cell -- menu should open
+2. Verify **Show Pearson R** toggle item is present
+3. Verify **Tooltip** submenu contains **Visible** and **Properties...**
+4. Verify **Columns** submenu contains **X Columns** and **Y Columns** pickers
+5. Close the menu
+6. Right-click a diagonal cell (histogram cell) -- verify menu still opens
+
+## Open as Table
+
+1. Right-click an non-diagonal cell and select **Open as Table**
+2. Verify a new table view opens with row/column pairs and correlation values
+
+## Viewer filter formula
+
+1. On the Context Panel > **Data** open **Filter**
+2. Set filter formula to `${AGE} > 40` -- correlation plot recalculates on filtered rows
+3. Clear filter formula
+
+## Layout persistence
+
+1. On the Context Panel set **Correlation Type** to Spearman
+2. On the Context Panel disable **Show Pearson R**
+3. Save layout via JS API
+4. Close the Correlation plot viewer
+5. Load saved layout via JS API -- verify Correlation Type is Spearman, Show Pearson R is disabled
+6. Delete saved layout
+
 
 ---
 {
-  "order": 19,
-  "datasets": ["System:DemoFiles/SPGI.csv"]
+  "order": 10,
+  "datasets": ["System:DemoFiles/demog.csv"]
 }

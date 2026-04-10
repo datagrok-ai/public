@@ -1,69 +1,61 @@
-# Box plot viewer — Run Results
+# Box plot tests (Playwright) — Run Results
 
-**Date**: 2026-04-06
-**URL**: http://localhost:8888
+**Date**: 2026-04-10
+**URL**: https://dev.datagrok.ai
 **Status**: PARTIAL
 
 ## Steps
 
-| # | Step | Result | Time | Playwright | Notes |
-|---|------|--------|------|------------|-------|
-| 1 | Open SPGI, SPGI-linked1, SPGI-linked2 | PASS | 5s | PASSED | All 3 datasets opened (3624, 3624, 224 rows). Tables renamed. |
-| 2 | Go to Tables > SPGI | PASS | 1s | PASSED | Switched to SPGI view by matching 3624 rows, 88 cols |
-| 3 | Click Box plot in Viewers tab | PASS | 2s | PASSED | Box plot added via `[name="icon-box-plot"]` click |
-| 4 | Click Gear icon — Property Pane opens | PASS | 1s | PASSED | Gear icon found in `.panel-titlebar` ancestor, not inside `[name="viewer-Box-plot"]` |
-| 5a | Tables switching (SPGI, linked2, linked1) | PASS | 3s | PASSED | Successfully switched `boxPlot.dataFrame` across all 3 tables |
-| 5b | Set Filter to ${Average Mass} > 225 | PASS | 2s | PASSED | Filter applied via `boxPlot.props.filter`, 120 filtered rows shown |
-| 5c | Set Color to Link Column 1 | PASS | 1s | PASSED | `markerColorColumnName` set to `link column 1` from linked table |
-| 5d | Change Bin Color Aggr Type | PASS | 1s | PASSED | Changed from `avg` to `med`, set `binColorColumnName` to `Average Mass` |
-| 5e | Save to Layout. Check | PASS | 5s | PASSED | All Data properties preserved: filter, markerColor, binColorAggr |
-| 6a | Change axes | PASS | 1s | PASSED | Value → Average Mass, Category → Series |
-| 6b | Invert Y Axis | PASS | 1s | PASSED | `invertYAxis` set to true, Y axis values go top-to-bottom |
-| 6c | Save to Layout. Check | PASS | 5s | PASSED | Axes and invertY preserved in layout |
-| 7a | Right-click box plot — context menu Tooltip | PASS | 2s | PASSED | Context menu has Tooltip section with Edit, Color Scheme, Use as Group Tooltip |
-| 7b | Property Pane > Tooltip. Save to Layout | PASS | 5s | PASSED | `showTooltip = "show custom tooltip"` preserved in layout |
-| 7c | Reset tooltip, Save to Layout | PASS | 5s | PASSED | `showTooltip = "inherit from table"` preserved in layout |
-| 8a | Set Color to Link Column 1 | PASS | 1s | PASSED | Same as 5c |
-| 8b | Change Bin Color Aggr Type | PASS | 1s | PASSED | Changed to `max` |
-| 8c | Save to Layout. Check. Close all. | PASS | 5s | PASSED | Coloring preserved, all views closed |
-| 9a | Open SPGI_v2, add Box Plot, adjust viewport | PASS | 4s | PASSED | Set valueMin=0, valueMax=10 |
-| 9b | Save project, reopen, verify viewport preserved | SKIP | - | N/A | Project save via API threw `ApiException`; tested via layout instead |
-| 9c | Save layout, reload, verify viewport NOT preserved | AMBIGUOUS | 6s | PASSED | Viewport IS preserved in layout (valueMin=0, valueMax=10 restored). Scenario says it should NOT be. |
+| # | Step | Result | Notes |
+|---|------|--------|-------|
+| 1 | Plot style: box vs violin — set Value=AGE, Cat1=RACE, switch violin, bins 50/500, IQR width 10, back to box | PASS | All property changes confirmed |
+| 2 | Two-level categories — Cat1=SEX, Cat2=RACE, toggle minor/all categories, clear Cat2 | PASS | All toggles work correctly |
+| 3 | Statistics display — verify defaults, enable all stats, disable showStatistics | PASS | showStatistics=true by default, all individual stats toggleable |
+| 4 | Markers — markerType=square, size=10, opacity=80, markersCol=RACE, sizeCol=WEIGHT, clear both | PASS | All marker properties set and cleared |
+| 5 | Marker and Bin color coding — markerColor AGE/RACE, colorAxisType log, invertColorScheme, binColor WEIGHT, aggrType min/max/med | PASS | All color properties work |
+| 6 | Value axis configuration — axisType log, invertYAxis, valueMin/Max 20/60, clear, reset to linear | PASS | All axis properties confirmed |
+| 7 | Zoom by filter with filter panel — zoomValuesByFilter default/toggle, AGE filter 40-70, reset | PASS | Filter reduced to 3697 rows, reset to 5850 |
+| 8 | Show empty categories — toggle off/on | PASS | Property toggles correctly |
+| 9 | Box plot components — toggle off all 6 (mean/median/upper/lower/inside/outside), re-enable all | PASS | All six toggles work |
+| 10 | Controls visibility — disable all 6 selectors/axes, re-enable all | PASS | All six controls toggleable |
+| 11 | Title and description — showTitle, title text, description text, visibility mode Always/Never, position Bottom | PASS | All description properties work |
+| 12 | Date category mapping — Cat1=STARTED, map=month/quarter, back to RACE | PASS | Date categorization works |
+| 13 | Style customization — whiskerLineWidth=4, whiskerWidthRatio 1.0/0.3, autoLayout off/on, axisUseColumnFormat off/on | PASS | All style properties confirmed |
+| 14 | Viewer filter formula — set `${AGE} > 40`, clear | PASS | Filter formula set and cleared |
+| 15 | P-value (t-test) — Cat1=SEX, toggle showPValue off/on, T key toggle off/on, Cat1=RACE for Alexander-Govern | PASS | T key correctly toggles p-value, all modes work |
+| 16 | Legend — markerColor=RACE, legendVisibility Never/Always, legendPosition RightTop/LeftBottom, clear color | PASS | Legend properties work correctly |
+| 17 | Layout save and restore — configure (WEIGHT/RACE/SEX/totalCount/violin), save, reopen, load, verify, delete | PASS | All properties preserved after layout load |
+| 18 | Visualization zoom (project and layout) — zoom via valueMin/Max, reset, project save, layout save/load | AMBIGUOUS | Zoom and reset work. Project save fails with "Unable to add entity" error on dev server. Layout DOES preserve zoom (valueMin=30, valueMax=60 after restore), but scenario expects zoom NOT preserved in layout — potential behavior discrepancy |
+| 19 | Data properties and table switching (spgi-100) — open both, switch table, set Value=Average Mass, Cat1=Series, filter, binColor=TPSA | PASS | Table switching and all properties work on spgi-100 |
 
 ## Timing
 
 | Phase | Duration |
 |-------|----------|
-| Execute via grok-browser | ~75s |
-| Spec file generation | ~5s |
-| Spec script execution | ~104s |
+| Execute via grok-browser | ~180s |
+| Spec file generation | existing spec reused |
+| Spec script execution | 47s (PASSED) |
 
 ## Summary
 
-Most Box Plot viewer functionality works correctly. Data properties (table switching, filter, color, bin color aggr type), axes (change columns, invert Y), tooltips (context menu, property pane), and coloring all pass and are correctly preserved in layouts. Step 9 (visualization zoom) could not fully test project save/restore due to an API exception, and the layout save behavior differs from the scenario expectation — viewport zoom IS preserved in layouts, while the scenario says it should NOT be.
+17 of 19 sections passed. Section 18 (Visualization zoom) is AMBIGUOUS: project save fails on dev server, and layout restore preserves zoom state contrary to scenario expectation. All box plot property manipulations, filter interactions, T-key toggle, layout save/restore, and table switching work correctly.
 
 ## Retrospective
 
 ### What worked well
-- All property-based viewer configuration works correctly
-- Layout save/restore reliably preserves all Box Plot settings
-- Table switching between linked tables works seamlessly
-- Context menu is comprehensive with all expected options
-- Linked table columns (e.g., `link column 1`) are accessible for color settings
+- All box plot properties are fully accessible and modifiable via JS API
+- Layout save/restore correctly preserves all viewer configuration
+- T key shortcut for p-value toggle works reliably
+- Table switching between demog and spgi-100 works seamlessly
 
 ### What did not work
-- **Project save via API** — `grok.dapi.projects.save()` threw `ApiException`. Could not test project-based viewport preservation.
-- **Range slider interaction** — Mouse event dispatch on range slider handles didn't trigger viewport zoom; had to use `props.valueMin/valueMax` directly.
-- **Gear icon location** — The gear icon is not inside `[name="viewer-Box-plot"]` but in the `.panel-titlebar` of the `.panel-base` ancestor. This differs from the reference docs.
+- Project save via `grok.dapi.projects.save()` fails with "Unable to add entity" error — likely a server-side or permissions issue on dev
+- Layout zoom preservation behavior differs from scenario expectation (layout DOES preserve valueMin/valueMax)
 
 ### Suggestions for the platform
-- Expose project save/restore in a simpler API for test automation
-- Consider making viewer title bar icons accessible within the `[name="viewer-*"]` container for simpler selector scoping
-- Range slider zoom events should be dispatchable programmatically for test automation
+- Investigate project save API error on dev server
+- Clarify whether layout should preserve viewport zoom (valueMin/valueMax) — current behavior preserves it
 
 ### Suggestions for the scenario
-- Step 1 says "Open SPGI, SPGI-linked1, SPGI-linked2" but doesn't mention linking the tables — add explicit linking step
-- Column name "Link Column 1" should match actual column name `link column 1` (case mismatch)
-- Step 9 references "SPGI_v2 dataset" which doesn't exist as a separate file — clarify if this is SPGI renamed
-- Step 9 says viewport should NOT be preserved in layout — verify this is still the expected behavior, as current implementation preserves it
-- Step 9 project save/restore instructions are vague — specify the API or UI method to use
+- Section 18: Clarify expected behavior for zoom preservation in layouts vs projects
+- Section 18: Consider splitting zoom/project/layout tests into separate sections for easier debugging
