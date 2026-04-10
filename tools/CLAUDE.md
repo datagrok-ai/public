@@ -28,6 +28,7 @@ The CLI uses a modular command pattern. Each command is a separate module that:
 - `test-all.ts` - Run tests across multiple packages
 - `stress-tests.ts` - Run stress tests (must be run from ApiTests package)
 - `api.ts` - Auto-generate TypeScript wrappers for scripts/queries
+- `server.ts` - Manage and inspect a running Datagrok server (`grok server` / `grok s`)
 - `link.ts` - Link libraries for plugin development
 - `claude.ts` - Launch a Dockerized dev environment with Datagrok + Claude Code
 - `migrate.ts` - Update legacy packages
@@ -219,6 +220,52 @@ Based on `node:22-bookworm-slim`. Pre-installed:
 | `full` | + grok_spawner, JKG, demo DBs |
 
 See `.devcontainer/PACKAGES_DEV.md` for detailed usage docs, architecture diagram, MCP plugin setup (Jira/GitHub), and troubleshooting.
+
+### `grok server` / `grok s` Command
+
+Use `grok s` to inspect and debug a running Datagrok server from the CLI — list entities,
+call functions, browse files, or hit any API endpoint. Reads config from `~/.grok/config.yaml`
+(same as `grok publish`). Use `--host <alias|url>` to target a specific server.
+
+```bash
+# List / inspect entities
+grok s users list
+grok s packages list --filter "MyPlugin"       # check if a plugin is published
+grok s connections list --output json
+grok s functions list --filter "Chem"          # find registered functions
+grok s connections get <id>
+grok s connections delete <id>
+
+# Call a server function
+grok s functions run 'Chem:smilesToMw("ccc")'
+grok s functions run 'Pkg:fn({a:5,b:22})'
+
+# Browse file storage
+grok s files list "System:AppData" -r          # list files recursively
+grok s files list "System:AppData/MyPlugin"
+
+# Hit any API endpoint directly
+grok s raw GET /api/users/current
+grok s raw GET /api/packages/dev/MyPlugin
+
+# Describe entity JSON schema
+grok s describe connections
+
+# Target a specific server
+grok s users list --host dev
+grok s users list --host "https://my.datagrok.ai/api"
+
+# Output formats: table (default), json, csv, quiet (IDs only)
+grok s packages list --output json
+grok s users list --output quiet | xargs ...   # pipe IDs
+```
+
+**Windows Git Bash:** prefix raw paths with `MSYS_NO_PATHCONV=1` to prevent POSIX→Windows
+path conversion: `MSYS_NO_PATHCONV=1 grok s raw GET /api/users/current`
+
+**Implementation:** `bin/commands/server.ts`, `bin/utils/node-dapi.ts` (Node.js REST client),
+`bin/utils/server-output.ts` (formatters). The Node.js dapi bypasses the Dart interop layer
+and calls `/public/v1/` endpoints directly — same approach as the Python CLI.
 
 ## Key Patterns and Conventions
 
