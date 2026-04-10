@@ -54,7 +54,7 @@ export class ClickEventsWidget extends DG.Widget {
     });
     const dateRangeInput = ui.input.choice('Date range', {
       items: ['Today', 'Last 7 days', 'Last 30 days', 'All time'],
-      value: 'Last 30 days',
+      value: 'Last 7 days',
       tooltipText: 'Time window for loading historical data',
     });
     const chronologyModeInput = ui.input.bool('Latest events', {value: false, tooltipText: 'Show individual events sorted by time, newest first'});
