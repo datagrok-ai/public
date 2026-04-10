@@ -24,5 +24,5 @@ WHERE p.type = 'entity_id'
                       'ColumnInfo')
 GROUP BY en.id
 ORDER BY last_event_time DESC
-LIMIT 30;
+LIMIT 16;
 --end

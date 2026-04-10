@@ -1,5 +1,9 @@
 # Power Pack changelog
 
+## 1.8.1 ()
+
+* Activity Dashboard: Reduced Spotlight tab load time by fetching entities server-side in parallel with SQL, and progressively rendering the Recent section
+
 ## 1.8.0 (2026-03-13)
 
 ### Features
