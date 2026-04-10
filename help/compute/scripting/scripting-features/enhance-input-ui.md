@@ -141,3 +141,37 @@ a name of another function,
 or a direct SQL query.
 For details, visit the page 
 [Function annotations](../../../datagrok/concepts/functions/func-params-annotation.md#choices).
+
+## "Visible" and "enabled" expressions
+
+You can control whether a script input is shown or editable by adding `visible` and `enabled`
+expressions to the parameter annotation. These expressions can depend on the values of other inputs.
+See more at the [Function annotations](../../../datagrok/concepts/functions/func-params-annotation.md) 
+page.
+
+
+```mdx-code-block
+<Tabs>
+<TabItem value="result" label="Result" default>
+```
+
+![](../../../datagrok/concepts/functions/param-visible-enabled-expressions.gif)
+
+```mdx-code-block
+</TabItem>
+<TabItem value="code" label="Code">
+```
+
+```javascript
+//input: string type = 'ICE' { choices: ['Electric', 'ICE'] }
+//input: int cylinders = 4 { visible: type == 'ICE' }
+//input: double tankVolume = 40 { visible: type == 'ICE'; units: liters }
+//input: bool tankExtension = false { visible: type == 'ICE'; enabled: tankVolume > 50 }
+//input: double batteryCapacity = 80 { visible: type == 'Electric'; units: kWh }
+```
+
+```mdx-code-block
+</TabItem>
+</Tabs>
+```
+
