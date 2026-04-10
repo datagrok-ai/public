@@ -143,7 +143,7 @@ async function handleFuncRun(dapi: NodeDapi, rest: string[], argv: any, output: 
   return true;
 }
 
-function parseFuncCall(expr: string): {name: string; params: Record<string, any>} {
+export function parseFuncCall(expr: string): {name: string; params: Record<string, any>} {
   const parenIdx = expr.indexOf('(');
   if (parenIdx === -1) return {name: expr, params: {}};
 

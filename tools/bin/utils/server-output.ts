@@ -28,7 +28,7 @@ export function printOutput(data: any, format: OutputFormat): void {
   }
 }
 
-function cellStr(v: any): string {
+export function cellStr(v: any): string {
   if (v === null || v === undefined) return '';
   if (typeof v === 'object') {
     if (v.name) return v.name;
@@ -71,11 +71,11 @@ function printCsv(rows: any[]): void {
     console.log(keys.map((k) => csvCell(cellStr(row[k]))).join(','));
 }
 
-function csvCell(s: string): string {
+export function csvCell(s: string): string {
   return s.includes(',') || s.includes('"') || s.includes('\n') ? `"${s.replace(/"/g, '""')}"` : s;
 }
 
-function getKeys(rows: any[]): string[] {
+export function getKeys(rows: any[]): string[] {
   const seen = new Set<string>();
   const keys: string[] = [];
   for (const row of rows)

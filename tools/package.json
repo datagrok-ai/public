@@ -32,7 +32,9 @@
     "prepublishOnly": "babel bin --extensions .ts -d bin",
     "babel": "babel bin --extensions .ts -d bin",
     "build": "babel bin --extensions .ts -d bin",
-    "debug-source-map": "babel bin --extensions .ts -d bin --source-maps true"
+    "debug-source-map": "babel bin --extensions .ts -d bin --source-maps true",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "bin": {
     "datagrok-upload": "./bin/_deprecated/upload.js",
@@ -76,6 +78,7 @@
     "eslint": "^8.56.0",
     "eslint-config-google": "^0.14.0",
     "typescript": "^5.3.3",
+    "vitest": "^3.2.4",
     "webpack": "^5.89.0",
     "webpack-cli": "^5.1.4"
   }
