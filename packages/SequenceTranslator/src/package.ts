@@ -3,7 +3,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {NOTATION, NOTATION_PROVIDER_CONSTRUCTOR_ROLE} from '@datagrok-libraries/bio/src/utils/macromolecule/consts';
+import {BioTags, NOTATION, NOTATION_PROVIDER_CONSTRUCTOR_ROLE} from '@datagrok-libraries/bio/src/utils/macromolecule/consts';
 import {SeqTemps} from '@datagrok-libraries/bio/src/utils/macromolecule/seq-handler';
 
 import {OligoToolkitPackage} from './apps/common/model/oligo-toolkit-package';
@@ -397,6 +397,8 @@ export class PackageFunctions {
     col.setTag('alphabet', 'UN');
     col.setTag('.alphabetIsMultichar', 'true');
     col.meta.units = NOTATION.CUSTOM;
+    if (separator && !col.tags[BioTags.separator])
+      col.tags[BioTags.separator] = separator;
     col.tags[PolyToolTags.dataRole] = 'template';
     col.temp[SeqTemps.notationProvider] = new CyclizedNotationProvider(separator, _package.helmHelper);
   }
