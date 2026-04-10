@@ -34,8 +34,10 @@ export class NodeApiClient {
     const res = await fetch(url, opts);
 
     if (!res.ok) {
+      // Read as text first to avoid "Body has already been read" when JSON.parse fails
+      const rawText = await res.text();
       let errBody: any;
-      try { errBody = await res.json(); } catch { errBody = {error: await res.text()}; }
+      try { errBody = JSON.parse(rawText); } catch { errBody = {error: rawText || `HTTP ${res.status}`}; }
       const err: NodeApiError = {
         error: errBody?.message ?? errBody?.error ?? `HTTP ${res.status}`,
         source: errBody?.source ?? 'Server',
@@ -107,8 +109,19 @@ export class NodeHttpDataSource<T = any> {
 export class NodeFuncsDataSource extends NodeHttpDataSource {
   async run(name: string, params?: Record<string, any>): Promise<any> {
     const normalizedName = name.replace(':', '.');
-    return this.client.post(`/public/v1/functions/${encodeURIComponent(normalizedName)}/call`, params ?? {});
+    const result = await this.client.post(`/public/v1/functions/${encodeURIComponent(normalizedName)}/call`, params ?? {});
+    // Datagrok returns HTTP 200 with an ApiError body when the function doesn't exist
+    const parsed = typeof result === 'string' ? tryParseJson(result) : result;
+    if (parsed?.['#type'] === 'ApiError') {
+      const err: NodeApiError = {error: parsed.message ?? 'Function call failed', errorCode: parsed.errorCode, stackTrace: parsed.stackTrace};
+      throw Object.assign(new Error(err.error), {apiError: err});
+    }
+    return result;
   }
+}
+
+function tryParseJson(s: string): any {
+  try { return JSON.parse(s); } catch { return null; }
 }
 
 export class NodeFilesDataSource {

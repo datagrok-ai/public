@@ -34,7 +34,9 @@
     "build": "babel bin --extensions .ts -d bin",
     "debug-source-map": "babel bin --extensions .ts -d bin --source-maps true",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "test:integration": "vitest run --config vitest.integration.config.ts",
+    "test:all": "vitest run && vitest run --config vitest.integration.config.ts"
   },
   "bin": {
     "datagrok-upload": "./bin/_deprecated/upload.js",
