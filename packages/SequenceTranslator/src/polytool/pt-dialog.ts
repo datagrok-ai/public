@@ -208,7 +208,14 @@ async function getPolyToolEnumerationChemDialog(cell?: DG.Cell): Promise<DG.Dial
     molInput.setMolFile(molfileValue);
 
     //const helmInput = helmHelper.createHelmInput('Macromolecule', {value: helmValue});
-    const screenLibraryInput = ui.input.choice('Library to use', {value: null, items: libList});
+    const screenLibraryInput = ui.input.choice('Library to use', {
+      value: libList.length ? libList[0] : null,
+      items: libList,
+      nullable: false,
+      onValueChanged: () => {
+        dialog.getButton('OK').disabled = screenLibraryInput.value === null;
+      }
+    });
 
     molInput.root.setAttribute('style', `min-width:250px!important;`);
     molInput.root.setAttribute('style', `max-width:250px!important;`);
@@ -268,6 +275,7 @@ async function getPolyToolEnumerationChemDialog(cell?: DG.Cell): Promise<DG.Dial
         molInput.setMolFile(x.mol);
         screenLibraryInput.value = x.screenLibrary;
       });
+    dialog.getButton('OK').disabled = screenLibraryInput.value === null;
     return dialog;
   } catch (err: any) {
     destroy();
