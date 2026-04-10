@@ -20,9 +20,7 @@ import {RDModule, RDMol} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 
 // -- PDB/PDBQT → Molblock converter -----------------------------------------
 
-/** Typical single-bond max distance per element pair (Å). */
-const BOND_DIST_MAX = 1.9; // covers C-C (1.54), C-N (1.47), C-O (1.43), C-S (1.82)
-const BOND_DIST_MIN = 0.5;
+// -- PDB/PDBQT → Molblock converter -----------------------------------------
 
 interface PdbAtom {
   serial: number;
@@ -30,71 +28,91 @@ interface PdbAtom {
   x: number; y: number; z: number;
 }
 
+/** Covalent radii (Å) for common organic elements. Sum of two radii + 0.4 Å
+ *  tolerance gives the max bonding distance for that pair. */
+const COVALENT_RADII: {[el: string]: number} = {
+  H: 0.31, D: 0.31, C: 0.76, N: 0.71, O: 0.66, F: 0.57,
+  P: 1.07, S: 1.05, Cl: 1.02, Br: 1.20, I: 1.39, Se: 1.20,
+  Si: 1.11, B: 0.84,
+};
+const BOND_TOLERANCE = 0.45;
+
 /** Parses ATOM/HETATM lines from PDB or PDBQT text. */
 function parsePdbAtoms(pdbText: string): PdbAtom[] {
   const atoms: PdbAtom[] = [];
   for (const line of pdbText.split('\n')) {
     const rec = line.substring(0, 6).trim();
     if (rec !== 'ATOM' && rec !== 'HETATM') continue;
-    // PDB format: cols 31-38 x, 39-46 y, 47-54 z, 77-78 element
+    // PDB serial number: columns 7-11 (1-indexed). This is what Molstar
+    // uses as the atom 'id' for overpaint queries.
+    const pdbSerial = parseInt(line.substring(6, 11).trim(), 10);
     const x = parseFloat(line.substring(30, 38));
     const y = parseFloat(line.substring(38, 46));
     const z = parseFloat(line.substring(46, 54));
     // Element symbol: columns 77-78 in standard PDB. For PDBQT, might
     // be in columns 77-78 or can be derived from atom name (cols 13-16).
     let element = line.length >= 78 ? line.substring(76, 78).trim() : '';
-    if (!element) {
-      // Derive from atom name (cols 13-16): strip digits, take first letter(s).
+    if (!element || /\d/.test(element)) {
+      // Derive from atom name (cols 13-16): strip digits, take letters.
       const atomName = line.substring(12, 16).trim();
-      element = atomName.replace(/[0-9]/g, '').substring(0, 2).trim();
-      if (element.length === 2)
+      element = atomName.replace(/[0-9]/g, '').trim();
+      // PDBQT may have types like "A" (aromatic C), "OA", "NA", "HD" etc.
+      // Normalize known PDBQT types.
+      const pdbqtMap: {[k: string]: string} = {
+        A: 'C', OA: 'O', NA: 'N', SA: 'S', HD: 'H', HS: 'H',
+      };
+      if (pdbqtMap[element]) element = pdbqtMap[element];
+      if (element.length >= 2)
         element = element[0].toUpperCase() + element[1].toLowerCase();
       else
         element = element.toUpperCase();
     }
     if (isNaN(x) || isNaN(y) || isNaN(z) || !element) continue;
-    atoms.push({serial: atoms.length + 1, element, x, y, z});
+    // Use the actual PDB serial if valid, otherwise fallback to sequential.
+    const serial = (!isNaN(pdbSerial) && pdbSerial > 0) ? pdbSerial : atoms.length + 1;
+    atoms.push({serial, element, x, y, z});
   }
   return atoms;
 }
 
-/** Infers bonds from interatomic distances. Returns [i, j] pairs (0-based). */
+/** Infers bonds from interatomic distances using covalent radii.
+ *  Returns [i, j] pairs (0-based). */
 function inferBonds(atoms: PdbAtom[]): [number, number][] {
   const bonds: [number, number][] = [];
+  const defaultR = 0.77; // default covalent radius for unknown elements
   for (let i = 0; i < atoms.length; i++) {
+    const ri = COVALENT_RADII[atoms[i].element] ?? defaultR;
     for (let j = i + 1; j < atoms.length; j++) {
+      const rj = COVALENT_RADII[atoms[j].element] ?? defaultR;
       const dx = atoms[i].x - atoms[j].x;
       const dy = atoms[i].y - atoms[j].y;
       const dz = atoms[i].z - atoms[j].z;
       const dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
-      if (dist >= BOND_DIST_MIN && dist <= BOND_DIST_MAX)
+      const maxDist = ri + rj + BOND_TOLERANCE;
+      if (dist > 0.4 && dist <= maxDist)
         bonds.push([i, j]);
     }
   }
   return bonds;
 }
 
-/** Converts PDB/PDBQT text to a V2000 molblock that RDKit can parse.
- *  Returns null if the text doesn't contain valid ATOM/HETATM records. */
-function pdbToMolblock(pdbText: string): string | null {
-  const atoms = parsePdbAtoms(pdbText);
+/** Builds a V2000 molblock from parsed PDB atoms.
+ *  Atom order is preserved so that molblock index i = PDB atom index i. */
+function pdbAtomsToMolblock(atoms: PdbAtom[]): string | null {
   if (atoms.length === 0) return null;
 
   const bonds = inferBonds(atoms);
 
-  // V2000 header
   const lines: string[] = [
-    '', // molecule name
-    '     RDKit          3D', // program/timestamp
-    '', // comment
+    '',
+    '     RDKit          3D',
+    '',
   ];
 
-  // Counts line: aaabbblllfffcccsssxxxrrrpppiiimmmvvvvvv
   const nAtoms = atoms.length.toString().padStart(3);
   const nBonds = bonds.length.toString().padStart(3);
   lines.push(`${nAtoms}${nBonds}  0  0  0  0  0  0  0  0999 V2000`);
 
-  // Atom block
   for (const a of atoms) {
     const xs = a.x.toFixed(4).padStart(10);
     const ys = a.y.toFixed(4).padStart(10);
@@ -103,7 +121,6 @@ function pdbToMolblock(pdbText: string): string | null {
     lines.push(`${xs}${ys}${zs} ${el} 0  0  0  0  0  0  0  0  0  0  0  0`);
   }
 
-  // Bond block
   for (const [i, j] of bonds) {
     const a1 = (i + 1).toString().padStart(3);
     const a2 = (j + 1).toString().padStart(3);
@@ -129,6 +146,10 @@ export interface AtomIndexMapping {
   method: 'substruct' | 'relaxed' | 'heavy-atom-order';
   /** Number of successfully mapped atoms. */
   mappedCount: number;
+  /** Optional: actual PDB serial numbers from the file (1-based).
+   *  If present, use pdbSerials[mapping[i]] instead of mapping[i]+1
+   *  to get the Molstar atom 'id'. */
+  pdbSerials?: number[];
 }
 
 /**
@@ -151,6 +172,12 @@ export function mapAtomIndices2Dto3D(
 ): AtomIndexMapping | null {
   let mol2D: RDMol | null = null;
   let mol3D: RDMol | null = null;
+  // Track whether mol3D was built from a PDB-derived molblock so we know
+  // that match indices correspond directly to PDB serial - 1.
+  let mol3DFromPdb = false;
+  // If we had to strip H from the 3D mol for sanitization, keep a map
+  // from the H-stripped index back to the original PDB index.
+  let heavyToPdbIdx: number[] | null = null;
 
   try {
     mol2D = rdkit.get_mol(smiles2D);
@@ -163,59 +190,132 @@ export function mapAtomIndices2Dto3D(
     if (!mol3D || !mol3D.is_valid()) {
       mol3D?.delete();
       mol3D = null;
-      const molblock = pdbToMolblock(mol3DStr);
-      if (molblock) {
-        mol3D = rdkit.get_mol(molblock, JSON.stringify({sanitize: true, removeHs: false}));
-        if (mol3D && !mol3D.is_valid()) {mol3D.delete(); mol3D = null;}
-        // Retry with removeHs if sanitization with H fails
-        if (!mol3D) {
-          mol3D = rdkit.get_mol(molblock, JSON.stringify({sanitize: true, removeHs: true}));
+      const pdbAtoms = parsePdbAtoms(mol3DStr);
+      if (pdbAtoms.length > 0) {
+        const molblock = pdbAtomsToMolblock(pdbAtoms);
+        // eslint-disable-next-line no-console
+        console.log('[atom-mapper] PDB atoms:', pdbAtoms.length,
+          'elements:', pdbAtoms.map((a) => a.element).join(','));
+        // eslint-disable-next-line no-console
+        console.log('[atom-mapper] generated molblock:\n' + molblock);
+        if (molblock) {
+          // Try without sanitization first — bond orders are all 1 which
+          // may trip sanitization for aromatic systems.
+          mol3D = rdkit.get_mol(molblock, JSON.stringify({sanitize: false, removeHs: false}));
           if (mol3D && !mol3D.is_valid()) {mol3D.delete(); mol3D = null;}
+          // eslint-disable-next-line no-console
+          console.log('[atom-mapper] mol3D from PDB (no sanitize):', mol3D ? 'valid' : 'null');
+
+          // If no-sanitize fails, try with sanitization.
+          if (!mol3D) {
+            mol3D = rdkit.get_mol(molblock, JSON.stringify({sanitize: true, removeHs: false}));
+            if (mol3D && !mol3D.is_valid()) {mol3D.delete(); mol3D = null;}
+            // eslint-disable-next-line no-console
+            console.log('[atom-mapper] mol3D from PDB (sanitize):', mol3D ? 'valid' : 'null');
+          }
+
+          // If sanitization fails with H, retry without H but keep a
+          // mapping from heavy-atom index back to the original PDB index.
+          if (!mol3D) {
+            heavyToPdbIdx = [];
+            for (let i = 0; i < pdbAtoms.length; i++) {
+              if (pdbAtoms[i].element !== 'H' && pdbAtoms[i].element !== 'D')
+                heavyToPdbIdx.push(i);
+            }
+            mol3D = rdkit.get_mol(molblock, JSON.stringify({sanitize: true, removeHs: true}));
+            if (mol3D && !mol3D.is_valid()) {mol3D.delete(); mol3D = null;}
+          }
+          if (mol3D) mol3DFromPdb = true;
         }
       }
     }
     if (!mol3D) return null;
 
-    // Tier 1: strict substructure match.
-    // Use 2D as query, 3D as target. The match result is an array where
-    // match[i] = the index in mol3D that corresponds to atom i in mol2D.
+    // eslint-disable-next-line no-console
+    console.log('[atom-mapper] mol2D atoms:', mol2D.get_num_atoms(),
+      'mol3D atoms:', mol3D.get_num_atoms(),
+      'fromPdb:', mol3DFromPdb, 'heavyMap:', !!heavyToPdbIdx);
+
+    // Helper: remap match indices back to PDB-serial-compatible indices.
+    // If we removed H, map back; otherwise indices are already correct.
+    const remapMatch = (match: number[]): number[] => {
+      if (!heavyToPdbIdx) return match;
+      return match.map((idx) =>
+        idx >= 0 && idx < heavyToPdbIdx!.length ? heavyToPdbIdx![idx] : -1);
+    };
+
+    // Build PDB serial lookup: pdbSerials[molblockIdx] = actual PDB serial.
+    // This is needed because the PDB file may have non-sequential serials.
+    const pdbSerials: number[] | undefined = mol3DFromPdb ?
+      parsePdbAtoms(mol3DStr).map((a) => a.serial) :
+      undefined;
+
+    // Tier 1: strict substructure match (works for SDF/molblock 3D files
+    // where bond orders are preserved).
     const strictMatch = trySubstructMatch(mol2D, mol3D);
     if (strictMatch) {
+      // eslint-disable-next-line no-console
+      console.log('[atom-mapper] Tier 1 (strict) succeeded:', strictMatch);
+      // eslint-disable-next-line no-console
+      console.log('[atom-mapper] Tier 1 (strict) succeeded:', strictMatch,
+        'pdbSerials:', pdbSerials);
       return {
-        mapping: strictMatch,
+        mapping: remapMatch(strictMatch),
         method: 'substruct',
         mappedCount: strictMatch.filter((x) => x >= 0).length,
+        pdbSerials,
       };
     }
 
-    // Tier 2: relaxed match — strip stereo, sanitize, retry.
-    // Handles protonation-state differences and minor canonicalization
-    // discrepancies.
-    const relaxedMatch = tryRelaxedMatch(rdkit, smiles2D, mol3DStr);
-    if (relaxedMatch) {
-      return {
-        mapping: relaxedMatch,
-        method: 'relaxed',
-        mappedCount: relaxedMatch.filter((x) => x >= 0).length,
-      };
+    // Tier 2: bond-order-agnostic match.
+    {
+      let mol2DFlat: RDMol | null = null;
+      try {
+        const mol2DBlock = mol2D.get_molblock();
+        const mol2DFlatBlock = flattenBondOrders(mol2DBlock);
+        mol2DFlat = rdkit.get_mol(mol2DFlatBlock, JSON.stringify({sanitize: false, removeHs: false}));
+        if (mol2DFlat?.is_valid()) {
+          const flatMatch = trySubstructMatch(mol2DFlat, mol3D);
+          if (flatMatch) {
+            // eslint-disable-next-line no-console
+            console.log('[atom-mapper] Tier 2 (bond-agnostic) succeeded:', flatMatch,
+              'pdbSerials:', pdbSerials);
+            return {
+              mapping: remapMatch(flatMatch),
+              method: 'substruct',
+              mappedCount: flatMatch.filter((x) => x >= 0).length,
+              pdbSerials,
+            };
+          }
+        }
+      } finally {mol2DFlat?.delete();}
     }
 
     // Tier 3: heavy-atom serial-order fallback.
-    // Assumes heavy atoms appear in the same order in 2D and 3D.
-    // This is wrong for PDBQT (branch-reordered) but better than nothing
-    // for simple PDB/SDF where atom order IS preserved.
-    const numHeavy2D = mol2D.get_num_atoms(true);
-    const numHeavy3D = mol3D.get_num_atoms(true);
+    const numHeavy2D = mol2D.get_num_atoms();
+    if (mol3DFromPdb) {
+      const pdbAtoms2 = parsePdbAtoms(mol3DStr);
+      const heavyIndices: number[] = [];
+      for (let i = 0; i < pdbAtoms2.length; i++) {
+        if (pdbAtoms2[i].element !== 'H' && pdbAtoms2[i].element !== 'D')
+          heavyIndices.push(i);
+      }
+      const n = Math.min(numHeavy2D, heavyIndices.length);
+      const fallback: number[] = [];
+      for (let i = 0; i < numHeavy2D; i++)
+        fallback.push(i < n ? heavyIndices[i] : -1);
+      return {mapping: fallback, method: 'heavy-atom-order', mappedCount: n, pdbSerials};
+    }
+
+    const numHeavy3D = mol3D.get_num_atoms();
     const n = Math.min(numHeavy2D, numHeavy3D);
     const fallback: number[] = [];
     for (let i = 0; i < numHeavy2D; i++)
       fallback.push(i < n ? i : -1);
-    return {
-      mapping: fallback,
-      method: 'heavy-atom-order',
-      mappedCount: n,
-    };
-  } catch {
+    return {mapping: fallback, method: 'heavy-atom-order', mappedCount: n};
+  } catch (err) {
+    // eslint-disable-next-line no-console
+    console.error('[atom-mapper] mapAtomIndices2Dto3D error:', err);
     return null;
   } finally {
     mol2D?.delete();
@@ -230,17 +330,24 @@ export function mapAtomIndices2Dto3D(
 function trySubstructMatch(mol2D: RDMol, mol3D: RDMol): number[] | null {
   try {
     const matchJson = mol3D.get_substruct_match(mol2D);
+    // eslint-disable-next-line no-console
+    console.log('[atom-mapper] substruct match raw:', matchJson);
     if (!matchJson) return null;
-    const match: number[] = JSON.parse(matchJson);
-    // get_substruct_match returns {atomIdx3D: atomIdx2D, ...} or an array
-    // depending on RDKit version. Handle both formats.
-    if (Array.isArray(match) && match.length > 0) {
-      // match[i] = index in mol3D for query atom i
+    const match = JSON.parse(matchJson);
+
+    // RDKit WASM returns different formats depending on version/options:
+    // Format 1: plain array [3, 5, 2, ...] — match[i] = 3D idx for query atom i
+    if (Array.isArray(match) && match.length > 0)
       return match;
-    }
-    // If it's an object, convert: keys = 3D indices, values = 2D indices
+
     if (typeof match === 'object' && !Array.isArray(match)) {
-      const numAtoms2D = mol2D.get_num_atoms(true);
+      // Format 2: {"atoms": [3, 5, 2, ...], "bonds": [...]}
+      // The "atoms" array is match[i] = 3D idx for query atom i.
+      if (Array.isArray(match.atoms) && match.atoms.length > 0)
+        return match.atoms;
+
+      // Format 3: {3DIdx: 2DIdx, ...} — invert to get 2D→3D mapping
+      const numAtoms2D = mol2D.get_num_atoms();
       const result: number[] = new Array(numAtoms2D).fill(-1);
       for (const [key3D, val2D] of Object.entries(match)) {
         const i2D = typeof val2D === 'number' ? val2D : parseInt(val2D as string, 10);
@@ -255,41 +362,25 @@ function trySubstructMatch(mol2D: RDMol, mol3D: RDMol): number[] | null {
   }
 }
 
-/**
- * Relaxed match: re-parse both molecules with sanitization, strip
- * stereochemistry, and retry substructure matching. Handles cases where
- * protonation changes or minor canonical differences block the strict
- * match.
- */
-function tryRelaxedMatch(
-  rdkit: RDModule,
-  smiles2D: string,
-  mol3DStr: string,
-): number[] | null {
-  let m2: RDMol | null = null;
-  let m3: RDMol | null = null;
-  try {
-    // Re-parse with relaxed options
-    m2 = rdkit.get_mol(smiles2D, JSON.stringify({sanitize: true, removeHs: true}));
-    if (!m2 || !m2.is_valid()) return null;
-    m3 = rdkit.get_mol(mol3DStr, JSON.stringify({sanitize: true, removeHs: true}));
-    if (!m3 || !m3.is_valid()) {
-      m3?.delete();
-      m3 = null;
-      // Try PDB/PDBQT → molblock conversion
-      const molblock = pdbToMolblock(mol3DStr);
-      if (molblock) {
-        m3 = rdkit.get_mol(molblock, JSON.stringify({sanitize: true, removeHs: true}));
-        if (m3 && !m3.is_valid()) {m3.delete(); m3 = null;}
-      }
-    }
-    if (!m3) return null;
+/** Replaces all bond types in a V2000 molblock with single bonds (type 1).
+ *  This makes the molecule "bond-order-agnostic" for substructure matching
+ *  against a 3D structure that has no bond-order information (e.g. PDB). */
+function flattenBondOrders(molblock: string): string {
+  const lines = molblock.split('\n');
+  // The counts line is at index 3. Parse atom count to know where bonds start.
+  if (lines.length < 5) return molblock;
+  const countsLine = lines[3];
+  const nAtoms = parseInt(countsLine.substring(0, 3).trim(), 10);
+  const nBonds = parseInt(countsLine.substring(3, 6).trim(), 10);
+  if (isNaN(nAtoms) || isNaN(nBonds)) return molblock;
 
-    return trySubstructMatch(m2, m3);
-  } catch {
-    return null;
-  } finally {
-    m2?.delete();
-    m3?.delete();
+  // Bond block starts at line 4 + nAtoms.
+  const bondStart = 4 + nAtoms;
+  for (let i = bondStart; i < bondStart + nBonds && i < lines.length; i++) {
+    const line = lines[i];
+    if (line.length < 9) continue;
+    // Bond type is at positions 6-8 (3 chars). Replace with "  1".
+    lines[i] = line.substring(0, 6) + '  1' + line.substring(9);
   }
+  return lines.join('\n');
 }

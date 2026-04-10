@@ -621,6 +621,25 @@ M  END
         molString, highlightInfo.scaffolds, false, false, cellStyle, highlightInfo.alighByFirstSubtruct, undefined, undefined, renderOpts);
     } else
       this.highlightByScaffoldCol(g, x, y, w, h, gridCell, cellStyle, colTemp, molString, highlightInfo.scaffolds, renderOpts);
+
+    // Pre-warm the atom-positions cache so hover highlighting responds
+    // instantly instead of blocking on first mousemove. _getCellAtomPositions
+    // takes CSS dimensions and internally scales by DPR to build the key.
+    if (this._isPickerActive(gridCell.cell.column)) {
+      const cssW = w / r;
+      const cssH = h / r;
+      // Mirror the cache-key logic from _getCellAtomPositions.
+      const dpr = window.devicePixelRatio || 1;
+      const cacheKey = molString + '|' + Math.round(cssW * dpr) + 'x' + Math.round(cssH * dpr);
+      if (!this.atomPositionsCache.has(cacheKey)) {
+        const mol = molString;
+        const cw = cssW;
+        const ch = cssH;
+        (typeof requestIdleCallback === 'function' ? requestIdleCallback : setTimeout)(
+          () => {this._getCellAtomPositions(mol, cw, ch);},
+        );
+      }
+    }
   }
 
   getHighlightTagInfo(colTemp: any, gridCell: DG.GridCell): IHighlightTagInfo {
