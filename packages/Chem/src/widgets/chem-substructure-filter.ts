@@ -475,15 +475,22 @@ export class SubstructureFilter extends DG.Filter {
     if (state.searchType && state.searchType !== this.searchType) {
       //for correct synchronization of similarity filters when cloning views, need to firts set cutoff and fp
       if (state.searchType === SubstructureSearchType.IS_SIMILAR) {
-        this.similarityCutOff = state.simCutOff;
-        this.fp = state.fp;
+        this.similarityCutOffSync = true;
+        this.similarityCutOffInput.value = state.simCutOff;
+        this.fpSync = true;
+        this.fpInput.value = state.fp;
       }
+      this.searchTypeSync = true;
       this.searchTypeInput.value = state.searchType;
     }
-    if (state.simCutOff && state.simCutOff !== this.similarityCutOff)
+    if (state.simCutOff && state.simCutOff !== this.similarityCutOffInput.value) {
+      this.similarityCutOffSync = true;
       this.similarityCutOffInput.value = state.simCutOff;
-    if (state.fp && state.fp !== this.fp)
+    }
+    if (state.fp && state.fp !== this.fpInput.value) {
+      this.fpSync = true;
       this.fpInput.value = state.fp;
+    }
 
     const that = this;
     /* columnIsFilteringByStructure variable is required to handle the following:
