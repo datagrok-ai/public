@@ -1293,12 +1293,19 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
 
       const targetStructure = structure;
       await setStructureOverpaint(
-        plugin, allComponents, Color(0x26A69A),
+        plugin, allComponents, Color(0x616161),
         async (structureData: Structure) => {
           if (structureData !== targetStructure)
             return StructureElement.Loci.none(structureData);
-          const allAtoms = MolScriptBuilder.struct.generator.all();
-          const sel = Script.getStructureSelection(allAtoms, structureData);
+          // Only color carbon atoms — leave N, O, S, etc. in their
+          // default element colors so heteroatoms stay recognizable.
+          const query = MolScriptBuilder.struct.generator.atomGroups({
+            'atom-test': MolScriptBuilder.core.rel.eq([
+              MolScriptBuilder.acp('elementSymbol'),
+              MolScriptBuilder.es('C'),
+            ]),
+          });
+          const sel = Script.getStructureSelection(query, structureData);
           return StructureSelection.toLociWithSourceUnits(sel);
         },
       );
@@ -1397,13 +1404,32 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
     await clearStructureOverpaint(plugin, allComponents);
     await this._applyBaseColors();
 
-    // Highlight selected atoms on top in bright yellow.
-    // This overwrites the base color for just the selected atoms.
+    // Highlight selected atoms on top.
+    // Current row's pose: yellow; comparison pose: orange.
     if (hasAny) {
-      await setStructureOverpaint(
-        plugin, allComponents, Color(0xFFFF00),
+      const currentRowIdx = this.dataFrame?.currentRowIdx ?? -1;
+
+      // Split serials by current vs comparison structure.
+      const currentSerials = new Map<Structure, number[]>();
+      const otherSerials = new Map<Structure, number[]>();
+      for (const ligand of loadedLigands) {
+        let structure: Structure | undefined;
+        if (ligand.structureRefs && ligand.structureRefs.length >= 4) {
+          const cell = plugin.state.data.cells.get(ligand.structureRefs[3]);
+          if (cell?.obj?.data) structure = cell.obj.data;
+        }
+        if (!structure) continue;
+        const serials = structureSerialMap.get(structure);
+        if (!serials || serials.length === 0) continue;
+        if (ligand.rowIdx === currentRowIdx)
+          currentSerials.set(structure, serials);
+        else
+          otherSerials.set(structure, serials);
+      }
+
+      const makeSerialGetter = (map: Map<Structure, number[]>) =>
         async (structureData: Structure) => {
-          const serials = structureSerialMap.get(structureData);
+          const serials = map.get(structureData);
           if (!serials || serials.length === 0)
             return StructureElement.Loci.none(structureData);
           const atomSet = MolScriptBuilder.set(...serials);
@@ -1415,8 +1441,18 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
           });
           const sel = Script.getStructureSelection(query, structureData);
           return StructureSelection.toLociWithSourceUnits(sel);
-        },
-      );
+        };
+
+      // Current row: yellow
+      if (currentSerials.size > 0) {
+        await setStructureOverpaint(
+          plugin, allComponents, Color(0xFFFF00), makeSerialGetter(currentSerials));
+      }
+      // Comparison row: orange
+      if (otherSerials.size > 0) {
+        await setStructureOverpaint(
+          plugin, allComponents, Color(0x00E676), makeSerialGetter(otherSerials));
+      }
     }
   }
 
