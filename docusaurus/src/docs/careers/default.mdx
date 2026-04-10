@@ -1,29 +1,30 @@
 <!-- markdownlint-disable first-line-h1 -->
 
-import {LayoutHeader, LayoutBody} from '@site/src/components/careers/index.jsx';
-import ScientificApplicationDeveloper from './scientific-application-developer.mdx';
-import EngineeringManager from './engineering-manager.mdx';
-import TechnicalAuthor from './technical-author.mdx';
-import SoftwareDeveloperforDrugDiscovery from './software-dev-dd.mdx';
-import SeniorDevOpsEngineerDataArchitect from './sr-devops-data-architect.mdx';
-import SeniorFrontEnd from './sr-frontend.mdx';
-import CustomerSuccessLead from './cs-lead.mdx';
-import SeniorTechnicalRecruiter from './sr-tech-recruiter.mdx';
+import {LayoutHeader} from '@site/src/components/careers/index.jsx';
+import PositionCard from '@site/src/components/careers/position.jsx';
+import {meta as MetaSrDevOps} from './sr-devops-data-architect.mdx';
+import {meta as MetaSoftwareDev} from './software-dev-dd.mdx';
+import {meta as MetaScientific} from './scientific-application-developer.mdx';
+import {meta as MetaEngManager} from './engineering-manager.mdx';
+import {meta as MetaCsLead} from './cs-lead.mdx';
+import {meta as MetaTechAuthor} from './technical-author.mdx';
+import {meta as MetaSrFrontend} from './sr-frontend.mdx';
+import {meta as MetaSrRecruiter} from './sr-tech-recruiter.mdx';
 
 export const meta = {
     title: 'Open roles',
-    description: 'If you are interested in Datagrok but don’t see a suitable role, please email hr@datagrok.ai',
+    description: 'If you are interested in Datagrok but don\'t see a suitable role, please email hr@datagrok.ai',
 }
 
 <LayoutHeader meta={meta}/>
 
 <div className="row py-5">
-    <SeniorDevOpsEngineerDataArchitect/>
-    <SoftwareDeveloperforDrugDiscovery/>
-    <ScientificApplicationDeveloper/>
-    <EngineeringManager/>
-    <CustomerSuccessLead/>
-    <TechnicalAuthor/>
-    <SeniorFrontEnd/>
-    <SeniorTechnicalRecruiter/>
+    <PositionCard meta={MetaSrDevOps}/>
+    <PositionCard meta={MetaSoftwareDev}/>
+    <PositionCard meta={MetaScientific}/>
+    <PositionCard meta={MetaEngManager}/>
+    <PositionCard meta={MetaCsLead}/>
+    <PositionCard meta={MetaTechAuthor}/>
+    <PositionCard meta={MetaSrFrontend}/>
+    <PositionCard meta={MetaSrRecruiter}/>
 </div>
