@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 const argv = require('minimist')(process.argv.slice(2), {
-  alias: {k: 'key', h: 'help', r: 'recursive', s: 'silent'},
+  alias: {k: 'key', h: 'help', r: 'recursive'},
   boolean: ['dartium'],
 });
 const help = require('./commands/help').help;
@@ -24,6 +24,8 @@ const commands = {
   testall: require('./commands/test-all').testAll,
   stresstest: require('./commands/stress-tests').stressTests,
   migrate: require('./commands/migrate').migrate,
+  server: require('./commands/server').server,
+  s: require('./commands/server').server,
 };
 
 const onPackageCommandNames = ['api', 'check', 'link', 'publish', 'test'];
