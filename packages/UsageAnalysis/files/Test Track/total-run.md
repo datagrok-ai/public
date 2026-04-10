@@ -5,6 +5,8 @@
 
 ## Folder Summary
 
+**Total**: 186 tests · Run: 136/186 (73%) · Playwright: 103/186 (55%) · Mean Spec Gen: 3.9s · Mean Spec Run: 26.5s
+
 | Folder | Tests | Run | Playwright | Status | Mean Spec Gen | Mean Spec Run |
 |--------|-------|-----|------------|--------|---------------|---------------|
 | Apps | 2 | 0/2 (0%) | 0/2 (0%) | NO DATA |  |  |
@@ -27,7 +29,6 @@
 | StickyMeta | 4 | 4/4 (100%) | 4/4 (100%) | PARTIAL | 2.2s | 15.0s |
 | Tooltips | 7 | 0/7 (0%) | 0/7 (0%) | NO DATA |  |  |
 | Viewers | 48 | 40/48 (83%) | 40/48 (83%) | PARTIAL | 5.4s | 30.7s |
-| **Total** | **186** | **136/186 (73%)** | **103/186 (55%)** | | **3.9s** | **26.5s** |
 
 ## All Tests
 
