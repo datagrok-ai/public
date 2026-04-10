@@ -70,13 +70,19 @@ grok.events.onCustomEvent('chem-interactive-selection-changed')
   .subscribe((args: any) => {
     const rowIdx = args?.rowIdx ?? -1;
     const atoms = args?.atoms ?? [];
+    const isPersistent = args?.persistent !== false; // default true for backward compat
     // eslint-disable-next-line no-console
     console.log('[molstar-picker-global] caching selection event',
-      {atomsLen: atoms.length, rowIdx});
-    if (atoms.length > 0)
-      _globalSelectionCache.set(rowIdx, {atoms, mapping3D: args?.mapping3D ?? null});
-    else
-      _globalSelectionCache.delete(rowIdx);
+      {atomsLen: atoms.length, rowIdx, persistent: isPersistent});
+    // Only update the cache for persistent (Alt+hover) events.
+    // Preview (normal hover) events are processed live but don't
+    // overwrite the cache — so replays always use the stable Alt set.
+    if (isPersistent) {
+      if (atoms.length > 0)
+        _globalSelectionCache.set(rowIdx, {atoms, mapping3D: args?.mapping3D ?? null});
+      else
+        _globalSelectionCache.delete(rowIdx);
+    }
   });
 
 // TODO: find out which extensions are needed.
@@ -883,9 +889,15 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
           if (args?.atoms?.length >= 0) {
             // eslint-disable-next-line no-console
             console.log('[molstar-picker] live highlight',
-              {atomsLen: args.atoms.length, rowIdx: args?.rowIdx});
-            // Apply highlights for ALL loaded ligands from the cache.
-            this.highlightAllLigandAtoms();
+              {atomsLen: args.atoms.length, rowIdx: args?.rowIdx,
+                persistent: args?.persistent});
+            // Pass the event's atoms + mapping directly so transient
+            // (preview) highlights work even though they're not cached.
+            this.highlightAllLigandAtoms({
+              rowIdx: args.rowIdx,
+              atoms: args.atoms,
+              mapping3D: args.mapping3D ?? null,
+            });
           }
         } catch (err: any) {
           this.logger.error(
@@ -1242,11 +1254,24 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
   private _replayHighlightIfCached(): void {
     // eslint-disable-next-line no-console
     console.log('[molstar-picker] scheduling replay after buildViewLigands');
-    setTimeout(() => {
+    setTimeout(async () => {
       // eslint-disable-next-line no-console
       console.log('[molstar-picker] replay firing now');
-      this._applyBaseColors();
-      this.highlightAllLigandAtoms();
+      // After a full rebuild, structures are fresh — clear any leftover
+      // overpaint state, then apply base colors and highlights cleanly.
+      try {
+        const plugin = this.viewer?.plugin;
+        if (plugin) {
+          const structures = plugin.managers.structure.hierarchy.current.structures;
+          if (structures?.length) {
+            const allComponents = structures.flatMap((s: any) => s.components ?? []);
+            if (allComponents.length > 0)
+              await clearStructureOverpaint(plugin, allComponents);
+          }
+        }
+      } catch { /* best-effort */ }
+      await this._applyBaseColors();
+      await this.highlightAllLigandAtoms();
     }, 300);
   }
 
@@ -1259,15 +1284,24 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
     if (!plugin) return;
 
     const loadedLigands: { rowIdx: number, structureRefs: string[] | null }[] = [];
+    const seenRows = new Set<number>();
     const lig = this.ligands;
     if (lig) {
-      if (lig.current?.rowIdx != null && lig.current.rowIdx >= 0)
+      if (lig.current?.rowIdx != null && lig.current.rowIdx >= 0 && !seenRows.has(lig.current.rowIdx)) {
         loadedLigands.push(lig.current);
-      if (lig.hovered?.rowIdx != null && lig.hovered.rowIdx >= 0)
+        seenRows.add(lig.current.rowIdx);
+      }
+      if (lig.hovered?.rowIdx != null && lig.hovered.rowIdx >= 0 && !seenRows.has(lig.hovered.rowIdx)) {
         loadedLigands.push(lig.hovered);
+        seenRows.add(lig.hovered.rowIdx);
+      }
       if (lig.selected) {
-        for (const sel of lig.selected)
-          if (sel.rowIdx >= 0) loadedLigands.push(sel);
+        for (const sel of lig.selected) {
+          if (sel.rowIdx >= 0 && !seenRows.has(sel.rowIdx)) {
+            loadedLigands.push(sel);
+            seenRows.add(sel.rowIdx);
+          }
+        }
       }
     }
     if (loadedLigands.length < 2) return;
@@ -1332,7 +1366,9 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
   /** Applies overpaint for ALL loaded ligands. Reads atom highlights
    *  directly from the SMILES column's providers (source of truth),
    *  falling back to the event cache. */
-  public async highlightAllLigandAtoms(): Promise<void> {
+  public async highlightAllLigandAtoms(
+    liveEvent?: { rowIdx: number, atoms: number[], mapping3D: any } | null,
+  ): Promise<void> {
     const plugin = this.viewer?.plugin;
     if (!plugin) return;
     // NOTE: no _highlightInProgress guard here — this method is the
@@ -1343,17 +1379,29 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
     console.log('[molstar-picker] highlightAllLigandAtoms called');
 
     // Collect all loaded ligands with their rows and structure refs.
+    // Deduplicate by rowIdx — if current and hovered point to the same
+    // row, only process it once (avoids applying the same mapping twice
+    // and prevents stale highlights when the hovered row changes).
     type LigandInfo = { rowIdx: number, structureRefs: string[] | null };
     const loadedLigands: LigandInfo[] = [];
+    const seenRows = new Set<number>();
     const lig = this.ligands;
     if (lig) {
-      if (lig.current && lig.current.rowIdx >= 0)
+      if (lig.current && lig.current.rowIdx >= 0 && !seenRows.has(lig.current.rowIdx)) {
         loadedLigands.push(lig.current);
-      if (lig.hovered && lig.hovered.rowIdx >= 0)
+        seenRows.add(lig.current.rowIdx);
+      }
+      if (lig.hovered && lig.hovered.rowIdx >= 0 && !seenRows.has(lig.hovered.rowIdx)) {
         loadedLigands.push(lig.hovered);
+        seenRows.add(lig.hovered.rowIdx);
+      }
       if (lig.selected) {
-        for (const sel of lig.selected)
-          if (sel.rowIdx >= 0) loadedLigands.push(sel);
+        for (const sel of lig.selected) {
+          if (sel.rowIdx >= 0 && !seenRows.has(sel.rowIdx)) {
+            loadedLigands.push(sel);
+            seenRows.add(sel.rowIdx);
+          }
+        }
       }
     }
 
@@ -1368,16 +1416,31 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
     let hasAny = false;
 
     for (const ligand of loadedLigands) {
-      let atoms = this._getHighlightedAtomsFromColumn(ligand.rowIdx);
-      // Always read mapping3D from the global cache — the column temp
-      // providers store atoms but not the 2D→3D mapping.
-      const cached = _globalSelectionCache.get(ligand.rowIdx);
-      const mapping3D: any = cached?.mapping3D ?? null;
+      let atoms: number[] = [];
+      let mapping3D: any = null;
 
-      if (atoms.length === 0) {
-        if (cached && cached.atoms.length > 0)
-          atoms = cached.atoms;
+      // Priority 1: live event data (includes preview atoms for immediate display).
+      if (liveEvent && liveEvent.rowIdx === ligand.rowIdx && liveEvent.atoms.length > 0) {
+        atoms = liveEvent.atoms;
+        mapping3D = liveEvent.mapping3D;
       }
+
+      // Priority 2: persistent cache (for replays after rebuild).
+      if (atoms.length === 0) {
+        const cached = _globalSelectionCache.get(ligand.rowIdx);
+        if (cached && cached.atoms.length > 0) {
+          atoms = cached.atoms;
+          mapping3D = cached.mapping3D;
+        }
+      }
+
+      // Priority 3: column temp providers (persistent atoms).
+      if (atoms.length === 0) {
+        atoms = this._getHighlightedAtomsFromColumn(ligand.rowIdx);
+        const cached = _globalSelectionCache.get(ligand.rowIdx);
+        mapping3D = cached?.mapping3D ?? null;
+      }
+
       if (atoms.length === 0) continue;
 
       // Get this ligand's Molstar Structure object.
@@ -1400,36 +1463,17 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
     const allComponents = structures.flatMap((s: any) => s.components ?? []);
     if (allComponents.length === 0) return;
 
-    // Clear previous overpaint, re-apply base colors, then highlight.
+    // Clear all overpaint, then reapply base colors + highlights in one
+    // sequence. This prevents stale yellow atoms from accumulating on the
+    // current row's pose (which has no base-color reset).
     await clearStructureOverpaint(plugin, allComponents);
     await this._applyBaseColors();
 
-    // Highlight selected atoms on top.
-    // Current row's pose: yellow; comparison pose: orange.
     if (hasAny) {
-      const currentRowIdx = this.dataFrame?.currentRowIdx ?? -1;
-
-      // Split serials by current vs comparison structure.
-      const currentSerials = new Map<Structure, number[]>();
-      const otherSerials = new Map<Structure, number[]>();
-      for (const ligand of loadedLigands) {
-        let structure: Structure | undefined;
-        if (ligand.structureRefs && ligand.structureRefs.length >= 4) {
-          const cell = plugin.state.data.cells.get(ligand.structureRefs[3]);
-          if (cell?.obj?.data) structure = cell.obj.data;
-        }
-        if (!structure) continue;
-        const serials = structureSerialMap.get(structure);
-        if (!serials || serials.length === 0) continue;
-        if (ligand.rowIdx === currentRowIdx)
-          currentSerials.set(structure, serials);
-        else
-          otherSerials.set(structure, serials);
-      }
-
-      const makeSerialGetter = (map: Map<Structure, number[]>) =>
+      await setStructureOverpaint(
+        plugin, allComponents, Color(0xFFFF00),
         async (structureData: Structure) => {
-          const serials = map.get(structureData);
+          const serials = structureSerialMap.get(structureData);
           if (!serials || serials.length === 0)
             return StructureElement.Loci.none(structureData);
           const atomSet = MolScriptBuilder.set(...serials);
@@ -1441,18 +1485,8 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
           });
           const sel = Script.getStructureSelection(query, structureData);
           return StructureSelection.toLociWithSourceUnits(sel);
-        };
-
-      // Current row: yellow
-      if (currentSerials.size > 0) {
-        await setStructureOverpaint(
-          plugin, allComponents, Color(0xFFFF00), makeSerialGetter(currentSerials));
-      }
-      // Comparison row: orange
-      if (otherSerials.size > 0) {
-        await setStructureOverpaint(
-          plugin, allComponents, Color(0x00E676), makeSerialGetter(otherSerials));
-      }
+        },
+      );
     }
   }
 
