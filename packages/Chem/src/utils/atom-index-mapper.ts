@@ -267,7 +267,43 @@ export function mapAtomIndices2Dto3D(
       };
     }
 
-    // Tier 2: bond-order-agnostic match.
+    // Tier 2a: SMARTS-based bond-order-agnostic match.
+    // Generate SMARTS from 2D mol, replace all bond operators with ~ (any),
+    // then match against the 3D mol. This preserves atom types, H counts,
+    // and ring info while ignoring bond orders — avoids the false symmetry
+    // that flattening all bonds to single creates (e.g., C=O vs C-OH).
+    {
+      let qmol: RDMol | null = null;
+      try {
+        const smarts2D = mol2D.get_smarts();
+        // Replace explicit bond symbols with ~ (any bond).
+        // SMARTS bond chars: - (single), = (double), # (triple), : (aromatic)
+        // Also handle @ in ring bonds — only replace standalone bond chars.
+        const smartsAnyBond = smarts2D.replace(/((?:\]|[A-Z]|[a-z]|\*))([=\-#:])((?:\[|[A-Z]|[a-z]|\*))/g, '$1~$3');
+        qmol = rdkit.get_qmol(smartsAnyBond);
+        if (qmol?.is_valid()) {
+          const smartsMatch = trySubstructMatch(qmol, mol3D);
+          if (smartsMatch) {
+            // eslint-disable-next-line no-console
+            console.log('[atom-mapper] Tier 2a (SMARTS) succeeded:', smartsMatch,
+              'pdbSerials:', pdbSerials);
+            return {
+              mapping: remapMatch(smartsMatch),
+              method: 'substruct',
+              mappedCount: smartsMatch.filter((x) => x >= 0).length,
+              pdbSerials,
+            };
+          }
+        }
+      } catch (e) {
+        // eslint-disable-next-line no-console
+        console.log('[atom-mapper] Tier 2a (SMARTS) failed:', e);
+      } finally {qmol?.delete();}
+    }
+
+    // Tier 2b: Flattened molblock fallback.
+    // Flatten all bond orders to 1 (single) and match. Less precise than
+    // SMARTS but works when SMARTS generation fails.
     {
       let mol2DFlat: RDMol | null = null;
       try {
@@ -278,7 +314,7 @@ export function mapAtomIndices2Dto3D(
           const flatMatch = trySubstructMatch(mol2DFlat, mol3D);
           if (flatMatch) {
             // eslint-disable-next-line no-console
-            console.log('[atom-mapper] Tier 2 (bond-agnostic) succeeded:', flatMatch,
+            console.log('[atom-mapper] Tier 2b (flat molblock) succeeded:', flatMatch,
               'pdbSerials:', pdbSerials);
             return {
               mapping: remapMatch(flatMatch),

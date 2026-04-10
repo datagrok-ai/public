@@ -980,8 +980,9 @@ M  END
     const persistent = this._getPersistentAtoms(col, rowIdx);
     const combined = new Set(persistent);
     combined.add(atomIdx);
-    // Render the combined set visually.
-    this._updateRowSelection(col, rowIdx, [...combined], {add: true}, bondAtoms);
+    // Render the combined set (persistent + preview) in both 2D and 3D.
+    // Mark as non-persistent so the 3D cache isn't overwritten.
+    this._updateRowSelection(col, rowIdx, [...combined], {add: true}, bondAtoms, true, false);
     // Restore __atoms to persistent-only so _getPersistentAtoms stays correct.
     type TaggedProvider = ISubstructProvider & {__atomPicker?: boolean, __rowIdx?: number, __atoms?: Set<number>};
     const providers = (col.temp[ChemTemps.SUBSTRUCT_PROVIDERS] ?? []) as TaggedProvider[];
@@ -1009,27 +1010,21 @@ M  END
 
     const persistent = this._getPersistentAtoms(molCol, prevRow);
     if (persistent.size > 0) {
-      // Restore just the persistent atoms (re-derive bonds too).
+      // Restore just the persistent atoms in 2D and 3D.
+      // Fire event as non-persistent so the cache keeps the stable Alt set.
       const cellInfo = this._getCellAtomPositions(
         molCol.get(prevRow), 100, 100);
       const bondAtoms = cellInfo?.bondAtoms ?? new Map();
-      this._updateRowSelection(molCol, prevRow, [...persistent], {add: true}, bondAtoms);
-      // Re-broadcast after a delay so Molstar's viewer rebuild (triggered
-      // by hover-row change) finishes first and the replay can apply.
-      const atoms = [...persistent];
-      setTimeout(() => {
-        grok.events.fireCustomEvent(CHEM_INTERACTIVE_SELECTION_EVENT, {
-          column: molCol, rowIdx: prevRow, atoms,
-        });
-      }, 300);
+      this._updateRowSelection(molCol, prevRow, [...persistent], {add: true}, bondAtoms, true, false);
     } else {
       // No persistent atoms — clear everything.
       type TaggedProvider = ISubstructProvider & {__atomPicker?: boolean};
       const providers = (molCol.temp[ChemTemps.SUBSTRUCT_PROVIDERS] ?? []) as TaggedProvider[];
       molCol.temp[ChemTemps.SUBSTRUCT_PROVIDERS] = providers.filter(
         (p) => !p.__atomPicker || (p as any).__rowIdx !== prevRow);
+      // Fire event to clear 3D highlights too (non-persistent).
       grok.events.fireCustomEvent(CHEM_INTERACTIVE_SELECTION_EVENT, {
-        column: molCol, rowIdx: prevRow, atoms: [],
+        column: molCol, rowIdx: prevRow, atoms: [], persistent: false,
       });
     }
     grid.invalidate();
@@ -1128,7 +1123,8 @@ M  END
    * provider's __atoms set.
    */
   private _updateRowSelection(col: DG.Column, rowIdx: number, boxed: number[],
-    modifiers: {add: boolean}, bondAtoms: Map<number, [number, number]>): void {
+    modifiers: {add: boolean}, bondAtoms: Map<number, [number, number]>,
+    fire3DEvent: boolean = true, persistent: boolean = true): void {
     type TaggedProvider = ISubstructProvider & {__atomPicker?: boolean, __rowIdx?: number, __atoms?: Set<number>};
     const existing = (col.temp[ChemTemps.SUBSTRUCT_PROVIDERS] ?? []) as TaggedProvider[];
     const prior = existing.find((p) => p.__atomPicker && p.__rowIdx === rowIdx);
@@ -1172,28 +1168,30 @@ M  END
       (p) => !p.__atomPicker || p.__rowIdx !== rowIdx);
     addSubstructProvider(col.temp, provider);
 
-    // Notify cross-package listeners (same event as _updateRowSelection).
-    // Include 3D mapping if a MOLECULE3D column exists.
-    const eventArgs2: any = {column: col, rowIdx, atoms: atomsArr};
-    try {
-      const df = col.dataFrame;
-      if (df) {
-        const mol3DCol = df.columns.toList().find(
-          (c: DG.Column) => c.semType === DG.SEMTYPE.MOLECULE3D);
-        if (mol3DCol && rowIdx >= 0) {
-          const smiles2D = col.get(rowIdx);
-          const pose3D = mol3DCol.get(rowIdx);
-          if (smiles2D && pose3D) {
-            const mapping = mapAtomIndices2Dto3D(this.rdKitModule, smiles2D, pose3D);
-            if (mapping) {
-              eventArgs2.mapping3D = mapping;
-              eventArgs2.mol3DColumnName = mol3DCol.name;
+    // Only fire the 3D event for persistent (Alt+hover) selections,
+    // not for preview-only highlights which are 2D-only and transient.
+    if (fire3DEvent) {
+      const eventArgs2: any = {column: col, rowIdx, atoms: atomsArr, persistent};
+      try {
+        const df = col.dataFrame;
+        if (df) {
+          const mol3DCol = df.columns.toList().find(
+            (c: DG.Column) => c.semType === DG.SEMTYPE.MOLECULE3D);
+          if (mol3DCol && rowIdx >= 0) {
+            const smiles2D = col.get(rowIdx);
+            const pose3D = mol3DCol.get(rowIdx);
+            if (smiles2D && pose3D) {
+              const mapping = mapAtomIndices2Dto3D(this.rdKitModule, smiles2D, pose3D);
+              if (mapping) {
+                eventArgs2.mapping3D = mapping;
+                eventArgs2.mol3DColumnName = mol3DCol.name;
+              }
             }
           }
         }
-      }
-    } catch {/* mapping failed */}
-    grok.events.fireCustomEvent(CHEM_INTERACTIVE_SELECTION_EVENT, eventArgs2);
+      } catch {/* mapping failed */}
+      grok.events.fireCustomEvent(CHEM_INTERACTIVE_SELECTION_EVENT, eventArgs2);
+    }
   }
 
   /**
