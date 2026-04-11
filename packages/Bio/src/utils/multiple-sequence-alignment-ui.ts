@@ -93,7 +93,7 @@ export async function multipleSequenceAlignmentUI(
         });
       }, 'Adjust alignment parameters such as penalties for opening and extending gaps');
       kalignParamsButton.classList.add('msa-params-button');
-      kalignParamsButton.prepend(ui.icons.settings(() => null));
+      kalignParamsButton.prepend(ui.icons.settings(() => null, 'Settings'));
 
       const kalignElements = [kalignParamsDiv, kalignParamsButton, kalignVersionDiv];
 
@@ -118,7 +118,7 @@ export async function multipleSequenceAlignmentUI(
         engineParamsDiv.hidden = !engineParamsDiv.hidden;
       }, 'Adjust engine-specific alignment parameters');
       engineParamsButton.classList.add('msa-params-button');
-      engineParamsButton.prepend(ui.icons.settings(() => null));
+      engineParamsButton.prepend(ui.icons.settings(() => null, 'Settings'));
 
       // "Include HELM" checkbox: shown when column has a notation provider with fromHelm
       const includeHelmInput = ui.input.bool('Include HELM', {value: true});

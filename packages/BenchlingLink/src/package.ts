@@ -125,7 +125,7 @@ export class PackageFunctions {
           const homeIcon = ui.iconFA('home', () => {
             grok.shell.v.close();
             grok.shell.v = DG.View.createByType(DG.VIEW_TYPE.HOME);
-          });
+          }, 'Home');
           breadcrumbs.root.firstElementChild!.replaceWith(homeIcon);
         }
         const viewNameRoot = grok.shell.v.ribbonMenu.root.parentElement?.getElementsByClassName('d4-ribbon-name')[0];

@@ -198,7 +198,7 @@ class LibraryControlsManager {
       updateLibrarySelectionStatus(libInput.value, libFileName);
     }});
     ui.tooltip.bind(libInput.root, `Include monomers from ${libFileName}`);
-    const deleteIcon = ui.iconFA('trash-alt', () => this.promptForLibraryDeletion(libFileName));
+    const deleteIcon = ui.iconFA('trash-alt', () => this.promptForLibraryDeletion(libFileName), 'Delete');
     const editIcon = ui.icons.edit(async () => {
       grok.shell.v = await (await MonomerManager.getInstance()).getViewRoot(libFileName);
     }, 'Edit monomer library');

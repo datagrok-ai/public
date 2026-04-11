@@ -308,7 +308,7 @@ export class OptimizationView {
       this.isOptimizationRunning = false;
       this.updateApplicabilityState();
     }
-  });
+  }, 'Run');
 
   private acceptIcon = ui.iconFA('ballot-check', async () => {
     const choiceItems = Array.from({length: this.currentFuncCalls.length}, (_, i) => i + 1);
@@ -328,7 +328,7 @@ export class OptimizationView {
     const chosenCall = this.currentFuncCalls[chosenItem-1];
     this.isFittingAccepted = true;
     this.acceptedFitting$.next(chosenCall);
-  });
+  }, 'Accept');
 
   private helpIcon = getHelpIcon();
 
@@ -374,7 +374,7 @@ export class OptimizationView {
   private fittingSettingsIcon = ui.iconFA('cog', () => {
     this.areSettingsInputsShown = !this.areSettingsInputsShown;
     this.updateMetSetInputs();
-  });
+  }, 'Settings');
 
   static async fromEmpty(
     func: DG.Func,

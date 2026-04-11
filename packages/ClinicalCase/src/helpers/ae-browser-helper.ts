@@ -191,7 +191,7 @@ export class AEBrowserHelper {
         });
       };
 
-      const addButton = ui.button(ui.icons.add(() => { }), () => {
+      const addButton = ui.button(ui.icons.add(() => { }, 'Add'), () => {
         const domainsMultiChoices = ui.input.multiChoice('', {
           value: this.selectedAdditionalDomains, items: this.additionalDomains,
         });

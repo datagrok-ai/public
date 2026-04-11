@@ -551,7 +551,7 @@ export function setBreadcrumbsInViewName(viewPath: string[], tree: DG.TreeViewGr
       const homeIcon = ui.iconFA('home', () => {
         grok.shell.v.close();
         grok.shell.v = DG.View.createByType(DG.VIEW_TYPE.HOME);
-      });
+      }, 'Home');
       breadcrumbs.root.firstElementChild!.replaceWith(homeIcon);
     }
     const viewNameRoot = usedView.ribbonMenu.root.parentElement?.getElementsByClassName('d4-ribbon-name')[0];

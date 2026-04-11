@@ -185,7 +185,7 @@ export class SubstructureFilter extends DG.Filter {
     this.optionsIcon = ui.icons.settings(() => {
       this.showOptions = !this.showOptions;
       this.renderShowOptionsDiv();
-    });
+    }, 'Settings');
     $(this.optionsIcon).addClass('chem-search-options-icon');
 
     this.sketcher.isSubstructureFilter = true;

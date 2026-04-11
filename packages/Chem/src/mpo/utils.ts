@@ -228,7 +228,7 @@ export function setupMpoBreadcrumbs(view: DG.ViewBase, lastSegment: string): voi
 
   const homeEl = breadcrumbs.root.firstElementChild;
   if (homeEl) {
-    const homeIcon = ui.iconFA('home', () => grok.shell.v = DG.View.createByType(DG.VIEW_TYPE.HOME));
+    const homeIcon = ui.iconFA('home', () => grok.shell.v = DG.View.createByType(DG.VIEW_TYPE.HOME), 'Home');
     homeEl.replaceWith(homeIcon);
   }
 

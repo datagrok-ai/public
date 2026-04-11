@@ -19,7 +19,7 @@ export class FileInput extends DG.InputBase<File | null> {
   private isValid = new BehaviorSubject<boolean>(true);
 
   private hiddenInput = document.createElement('input');
-  private icon = ui.iconFA('cloud-upload', () => this.hiddenInput.click());
+  private icon = ui.iconFA('cloud-upload', () => this.hiddenInput.click(), 'Upload');
 
   public get value() {
     return this.fileValue;

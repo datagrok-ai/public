@@ -795,7 +795,7 @@ export class QueryBuilder {
                 removeOrReplaceCondition(condition, parentCondition.conditions);
                 this.rebuildUI();
                 this.structureChanged.next(this.condition);
-            });
+            }, 'Delete');
             addDeleteIconsDiv.append(deleteCondition);
         }
 

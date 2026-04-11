@@ -278,8 +278,10 @@ export function iconImage(name: string, path: string,
   i.style.backgroundImage = `url(${path})`;
   if (handler !== null)
     i.addEventListener('click', handler);
-  if (tooltipMsg !== null)
+  if (tooltipMsg !== null) {
     tooltip.bind(i, tooltipMsg);
+    i.setAttribute('aria-label', tooltipMsg);
+  }
   return _options(i, options);
 }
 
@@ -302,8 +304,10 @@ export function iconSvg(name: string, handler: ((this: HTMLElement, ev: MouseEve
 
   if (handler !== null)
     i.addEventListener('click', handler);
-  if (tooltipMsg !== null)
+  if (tooltipMsg !== null) {
     tooltip.bind(i, tooltipMsg);
+    i.setAttribute('aria-label', tooltipMsg);
+  }
   return i;
 }
 
@@ -409,12 +413,12 @@ export function info(children: HTMLElement[] | HTMLElement | string, header: str
     if (divActual) divActual.style.display = 'block';
     close.style.display = 'block';
     show.style.display = 'none';
-  });
+  }, 'Show info');
   let close = iconFA('times', () => {
     if (divActual) divActual.style.display = 'none';
     close.style.display = 'none';
     show.style.display = reopenable ? 'block' : 'none';
-  });
+  }, 'Close');
   if (header !== null && header !== undefined) {
     divContent.push(h1(header));
   }
@@ -2406,7 +2410,7 @@ export namespace hints {
     const root = document.createElement('div');
     root.className = 'ui-hint-popup';
 
-    const closeBtn = iconFA('times', () => root.remove());
+    const closeBtn = iconFA('times', () => root.remove(), 'Close');
     closeBtn.style.cssText = `
       position: absolute;
       right: 10px;

@@ -231,7 +231,7 @@ export class FittingView {
         ui.showPopup(ui.div([ui.divText(popupHeader), varsGrid], {
           style: {maxWidth: '500px', maxHeight: '800px', overflowY: 'auto', userSelect: 'text', padding: '10px'},
         }), icon);
-      });
+      }, 'Help');
       boolInput.addOptions(icon);
       return boolInput;
     };
@@ -562,7 +562,7 @@ export class FittingView {
 
             ui.tooltip.bind(input.captionLabel, 'Column with values of the independent variable');
 
-            const infoIcon = ui.icons.info(() => alert('Hello!'));
+            const infoIcon = ui.icons.info(() => alert('Hello!'), 'Info');
             infoIcon.classList.add('sa-switch-input');
             input.nullable = false;
             input.addValidator(validator);
@@ -610,7 +610,7 @@ export class FittingView {
       this.isFittingRunning = false;
       this.updateApplicabilityState();
     }
-  });
+  }, 'Run');
 
   private acceptIcon = ui.iconFA('ballot-check', async () => {
     const choiceItems = Array.from({length: this.currentFuncCalls.length}, (_, i) => i + 1);
@@ -635,7 +635,7 @@ export class FittingView {
     this.isFittingAccepted = true;
     this.acceptedFitting$.next(chosenCall);
     this.baseView.close();
-  });
+  }, 'Accept');
 
   private helpIcon = getHelpIcon();
 

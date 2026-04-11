@@ -56,7 +56,7 @@ export class ConfigurationView extends DG.ViewBase {
 
     const controlsContainer = ui.divH([], {style: {marginTop: '10px', gap: '10px', alignItems: 'center'}});
 
-    const addRowButton = ui.button(ui.icons.add(() => {}), () => {
+    const addRowButton = ui.button(ui.icons.add(() => {}, 'Add'), () => {
       this.saveCurrentTableValues();
       this.addTableRow();
       this.refreshTable(tableContainer);

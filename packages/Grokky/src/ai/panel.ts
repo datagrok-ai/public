@@ -160,7 +160,7 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
         return;
       }
       this.handleRun();
-    });
+    }, 'Send');
     this.textArea.addEventListener('keydown', (event: KeyboardEvent) => {
       if (event.key === 'Enter' && (!event.ctrlKey && !event.metaKey)) {
         event.preventDefault();

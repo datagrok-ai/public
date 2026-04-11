@@ -1770,7 +1770,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     const thisViewer = this;
     const groupValue = group.value as ITreeNode;
     const notIcon = ui.iconFA('equals',
-      () => thisViewer.setNotBitOperation(group, !(group.value as ITreeNode).bitwiseNot));
+      () => thisViewer.setNotBitOperation(group, !(group.value as ITreeNode).bitwiseNot), 'Toggle');
 
     notIcon.onmouseenter = (e) => {
       const text = groupValue.bitwiseNot ?
@@ -1845,7 +1845,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
       chosenColor = groupValue.chosenColor!;
       this.setColorToHighlight(group, chosenColor, groupValue.colorOn);
       this.treeEncode = JSON.stringify(this.serializeTrees(this.tree));
-    });
+    }, 'Color');
 
     colorIcon.onmouseenter = (e) => {
       let text;
@@ -2428,7 +2428,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     this._bitOpInput.setTooltip('AND: all selected substructures match \n\r OR: any selected substructures match');
     this._bitOpInput.root.style.marginLeft = '20px';
     const iconHost = ui.box(ui.divH([
-      this._iconGenerate = this.allowGenerate !== false ? ui.iconFA('magic', () => this.generateTree()) : null,
+      this._iconGenerate = this.allowGenerate !== false ? ui.iconFA('magic', () => this.generateTree(), 'Generate') : null,
       this._iconAdd = ui.iconFA('plus', () => thisViewer.openAddSketcher(thisViewer.tree), 'Sketch scaffolds manually'),
       this._iconUpload = ui.iconFA('folder-open', () => this.loadTree(), 'Upload saved tree file'),
       ui.div([], 'd4-ribbon-separator'),

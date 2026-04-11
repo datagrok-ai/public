@@ -32,7 +32,7 @@ export class LatexViewer {
       await this.saveFile();
       this.isLatexCodeChanged = false;
     }
-  });
+  }, 'Save');
 
   private prevNode: Node | null = null;
 

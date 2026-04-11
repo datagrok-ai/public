@@ -280,7 +280,7 @@ export class MpoProfileEditor {
           this.mutateProperty(name, (p) => delete p.weightColumn);
         else if (isColumn && name && colInput.value)
           this.mutateProperty(name, (p) => p.weightColumn = colInput.value || undefined);
-      });
+      }, 'Toggle');
       toggle.classList.add('statistics-mpo-weight-toggle');
       ui.tooltip.bind(toggle, () => isColumn ? 'Switch to manual weight' : 'Use weight from column');
       syncToggle();
@@ -394,15 +394,15 @@ export class MpoProfileEditor {
       const colName = this.columnMapping[name];
       const col = colName ? this.dataFrame?.col(colName) ?? null : null;
       this.openModeDialog(name, rowId, prop, editor, col);
-    });
+    }, 'Settings');
 
     return gear;
   }
 
   private buildRowControls(rowId: string, prop: PropertyDesirability): HTMLElement {
     const compute = this.buildComputeIcon(prop);
-    const add = ui.icons.add(() => this.insertRowAfterRow(rowId));
-    const del = ui.icons.delete(() => this.deleteRow(rowId));
+    const add = ui.icons.add(() => this.insertRowAfterRow(rowId), 'Add');
+    const del = ui.icons.delete(() => this.deleteRow(rowId), 'Delete');
     return ui.divH([compute, add, del], 'statistics-mpo-control-buttons');
   }
 

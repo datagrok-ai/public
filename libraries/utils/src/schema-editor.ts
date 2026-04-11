@@ -114,13 +114,13 @@ export class PropertyTable<T = any> extends DG.Widget {
           this.data.items.splice(this.data.items.indexOf(item) + 1, 0, newItem);
           this.refresh();
           this.onItemAdded.next(newItem);
-        }));
+        }, 'Add'));
       if (this.data.allowRemove ?? false)
         elements.push(ui.iconFAB('times', () => {
           this.data.items.splice(this.data.items.indexOf(item), 1);
           this.refresh();
           this.onItemRemoved.next(item);
-        }));
+        }, 'Remove'));
       return elements;
     }
 

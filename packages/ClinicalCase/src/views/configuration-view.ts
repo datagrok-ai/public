@@ -55,7 +55,7 @@ export class ConfigurationView extends ClinicalCaseViewBase {
     const controlsContainer = ui.divH([], {style: {marginTop: '10px', gap: '10px', alignItems: 'center'}});
 
     // Plus icon button to add row
-    const addRowButton = ui.button(ui.icons.add(() => {}), () => {
+    const addRowButton = ui.button(ui.icons.add(() => {}, 'Add'), () => {
       // Save current values before adding new row
       this.saveCurrentTableValues();
       // Add row to bottom

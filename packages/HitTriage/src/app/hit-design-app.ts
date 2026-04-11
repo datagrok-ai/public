@@ -577,7 +577,7 @@ export class HitDesignApp<T extends HitDesignTemplate = HitDesignTemplate> exten
         const calculateRibbon = ui.iconFA('wrench', getComputeDialog, 'Calculate additional properties');
         const addNewRowButton = ui.icons.add(() => {this.dataFrame?.rows.addNew(null, true);}, 'Add new row');
         const applyLayoutButton = ui.iconSvg('view-layout', () => {this.applyTemplateLayout(view);}, `Apply template layout ${this.template?.localLayoutPath ? '(Loaded from mounted file storage)' : '(Static)'}`);
-        this._refreshCampaignIcon = ui.icons.sync(async () => {this.refreshCampaign();});
+        this._refreshCampaignIcon = ui.icons.sync(async () => {this.refreshCampaign();}, 'Refresh');
         ui.tooltip.bind(this._refreshCampaignIcon, () => this._refreshIconTooltip);
         const permissionsButton = ui.iconFA('share', async () => {
           await (new PermissionsDialog(this.campaign?.permissions)).show((res) => {

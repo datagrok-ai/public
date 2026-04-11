@@ -41,7 +41,7 @@ export async function setupGlobalDBExplorer() {
       const hasPermission = await grok.dapi.permissions.check(connection, 'Edit');
       if (!hasPermission)
         return; // remove in future according to what is decided
-      const itemElement = ui.divH([ui.iconFA('fingerprint', ()=>{}), ui.divText(`Identifiers - ${config.schemaName}`)],
+      const itemElement = ui.divH([ui.iconFA('fingerprint', ()=>{}, 'Fingerprint'), ui.divText(`Identifiers - ${config.schemaName}`)],
         {style: {gap: '6px', alignItems: 'center'}});
       ui.tooltip.bind(itemElement, `Configure identifiers for ${config.schemaName} schema...`);
       const tnItem = node.item(itemElement, new DBExplorerConfigWrapper(config));
@@ -460,7 +460,7 @@ function getEnrichDiv(col: DG.Column): HTMLElement {
 
       const enrichmentsRoot = getEnrichmentsDiv(conn, schema, mainTable.friendlyName, dbColName, dbName, df, fkRefs);
       const addEnrichBtn = document.createElement('button');
-      addEnrichBtn.append(ui.icons.add(() => {}), ui.span(['Add enrichment']));
+      addEnrichBtn.append(ui.icons.add(() => {}, 'Add'), ui.span(['Add enrichment']));
       addEnrichBtn.classList.add('power-pack-enrich-add');
       addEnrichBtn.onclick = () => showEnrichDialog(mainTable, df, dbColName, () => {
         enrichmentsRoot.replaceWith(getEnrichmentsDiv(conn!, schema, mainTable.friendlyName, dbColName, dbName, df, fkRefs));

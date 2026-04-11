@@ -179,7 +179,7 @@ async function openFse(v: DG.View, functionCode: string) {
       (prop) => menu.item(functionPropsLabels[prop.name as FUNC_PROPS_FIELD], () => onItemClick(prop)),
     );
 
-    const button = ui.button([ui.icons.add(() => { })], () => {
+    const button = ui.button([ui.icons.add(() => { }, 'Add')], () => {
       menu.show();
     }, 'Add property');
 
@@ -195,7 +195,7 @@ async function openFse(v: DG.View, functionCode: string) {
       refreshPreview();
     });
     (input.root as HTMLInputElement).placeholder = 'Enter your value...';
-    input.root.appendChild(ui.button(ui.icons.delete(() => { }), () => {
+    input.root.appendChild(ui.button(ui.icons.delete(() => { }, 'Delete'), () => {
       inputScriptCopy[prop.name] = prop.defaultValue;
       refreshPreview();
       input.root.remove();
