@@ -1,4 +1,5 @@
-import type {NodeApiError} from './node-dapi';
+/// Docs: [Grok Dapi](/docs/plans/grok-dapi/)
+import type {NodeApiError, BatchResponse} from './node-dapi';
 
 export type OutputFormat = 'table' | 'json' | 'csv' | 'quiet';
 
@@ -82,6 +83,45 @@ export function getKeys(rows: any[]): string[] {
     for (const k of Object.keys(row))
       if (!seen.has(k)) { seen.add(k); keys.push(k); }
   return keys.slice(0, 12);
+}
+
+export function printBatchOutput(response: BatchResponse, format: OutputFormat): void {
+  if (format === 'json') {
+    console.log(JSON.stringify(response, null, 2));
+    return;
+  }
+  if (format === 'quiet') {
+    const s = response.summary;
+    console.log(`${s.total} total: ${s.succeeded} succeeded, ${s.failed} failed, ${s.partial} partial, ${s.skipped} skipped`);
+    return;
+  }
+
+  // table and csv: print summary then per-op rows
+  const s = response.summary;
+  console.log(`Summary: ${s.total} total  ${s.succeeded} succeeded  ${s.failed} failed  ${s.partial} partial  ${s.skipped} skipped`);
+  if (!response.results.length) return;
+  console.log('');
+
+  const rows = response.results.map((r) => {
+    const brief: string = r.status === 'error'
+      ? (r.error?.error ?? 'error')
+      : r.status === 'skipped'
+        ? (r.reason ?? 'skipped')
+        : r.status === 'partial'
+          ? `${r.summary?.succeeded}/${r.summary?.total} succeeded`
+          : '';
+    return {id: r.id ?? '', action: r.action, status: r.status, detail: brief};
+  });
+
+  if (format === 'csv')
+    printCsv(rows);
+  else
+    printTable(rows);
+
+  // Write per-op errors to stderr
+  const errors = response.results.filter((r) => r.status === 'error');
+  if (errors.length)
+    process.stderr.write(JSON.stringify(errors.map((r) => ({id: r.id, action: r.action, error: r.error})), null, 2) + '\n');
 }
 
 export function printError(err: any): void {

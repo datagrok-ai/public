@@ -1,3 +1,34 @@
+/// Docs: [Grok Dapi](/docs/plans/grok-dapi/)
+
+export interface BatchOperation {
+  id?: string;
+  action: string;
+  params: Record<string, any> | Array<Record<string, any>>;
+  dependsOn?: Array<string | {id: string; allowPartial?: boolean}>;
+}
+
+export interface BatchRequest {
+  operations: BatchOperation[];
+  options?: {
+    concurrency?: number;
+    stopOnError?: boolean;
+    transaction?: boolean;
+  };
+}
+
+export interface BatchResponse {
+  summary: {total: number; succeeded: number; partial: number; failed: number; skipped: number};
+  results: Array<{
+    id?: string;
+    action: string;
+    status: 'success' | 'error' | 'skipped' | 'partial';
+    result?: any;
+    error?: {error: string; errorCode?: number};
+    reason?: string;
+    summary?: {total: number; succeeded: number; failed: number};
+    results?: Array<{index: number; status: string; result?: any; error?: any}>;
+  }>;
+}
 
 export interface NodeApiError {
   error: string;
@@ -184,6 +215,10 @@ export class NodeDapi {
     const ct = res.headers.get('content-type') ?? '';
     if (ct.includes('application/json')) return res.json();
     return res.text();
+  }
+
+  async batch(request: BatchRequest): Promise<BatchResponse> {
+    return this.client.post('/public/v1/batch', request);
   }
 
   async describe(entityType: string): Promise<any> {

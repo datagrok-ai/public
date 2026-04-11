@@ -1,6 +1,8 @@
-import {NodeDapi} from '../utils/node-dapi';
+/// Docs: [Grok Dapi](/docs/plans/grok-dapi/)
+import * as fs from 'fs';
+import {NodeDapi, BatchRequest, BatchOperation} from '../utils/node-dapi';
 import {createClient} from '../utils/server-client';
-import {printOutput, printError, OutputFormat} from '../utils/server-output';
+import {printOutput, printBatchOutput, printError, OutputFormat} from '../utils/server-output';
 
 const ENTITIES = ['users', 'groups', 'functions', 'connections', 'queries', 'scripts', 'packages', 'reports', 'files'];
 const VERBS = ['list', 'get', 'delete'];
@@ -33,6 +35,7 @@ export async function server(argv: any): Promise<boolean> {
   const dapi = new NodeDapi(client);
 
   try {
+    if (entity === 'batch') return handleBatch(dapi, argv, verb, rest, output);
     if (entity === 'raw') return handleRaw(dapi, verb, rest, output);
     if (entity === 'describe') return handleDescribe(dapi, verb ?? rest[0], output);
     if (entity === 'functions' && verb === 'run') return handleFuncRun(dapi, rest, argv, output);
@@ -143,6 +146,89 @@ async function handleFuncRun(dapi: NodeDapi, rest: string[], argv: any, output: 
   return true;
 }
 
+async function handleBatch(dapi: NodeDapi, argv: any, verb: string | undefined, rest: string[], output: OutputFormat): Promise<boolean> {
+  let request: BatchRequest;
+
+  if (verb?.endsWith('.json') && rest.length === 0) {
+    // grok s batch manifest.json
+    let raw: any;
+    try {
+      raw = JSON.parse(fs.readFileSync(verb, 'utf8'));
+    } catch (err: any) {
+      printError(new Error(`Cannot read manifest file '${verb}': ${err.message}`));
+      return false;
+    }
+    request = resolveManifestSources(raw);
+  } else if (verb && ENTITIES.includes(verb)) {
+    const batchVerb: string | undefined = rest[0];
+    if (!batchVerb) {
+      printError(new Error(`Usage: grok s batch ${verb} <verb> [args...]`));
+      return false;
+    }
+    if (argv.json) {
+      // grok s batch users create --json users.json
+      let paramsArray: any[];
+      try {
+        const raw = JSON.parse(fs.readFileSync(argv.json, 'utf8'));
+        paramsArray = Array.isArray(raw) ? raw : [raw];
+      } catch (err: any) {
+        printError(new Error(`Cannot read params file '${argv.json}': ${err.message}`));
+        return false;
+      }
+      request = buildInlineManifest(verb, batchVerb, paramsArray);
+    } else {
+      // grok s batch files delete path1 path2 ...
+      const batchArgs = rest.slice(1);
+      if (!batchArgs.length) {
+        printError(new Error(`Usage: grok s batch ${verb} ${batchVerb} <arg1> [arg2 ...]`));
+        return false;
+      }
+      request = buildInlineManifest(verb, batchVerb, batchArgs);
+    }
+  } else {
+    printError(new Error('Usage: grok s batch <entity> <verb> [args]\n       grok s batch <entity> <verb> --json params.json\n       grok s batch manifest.json'));
+    return false;
+  }
+
+  const result = await dapi.batch(request);
+  printBatchOutput(result, output);
+  return result.summary.failed === 0 && result.summary.partial === 0;
+}
+
+export function buildInlineManifest(entity: string, verb: string, args: any[]): BatchRequest {
+  const action = `${entity}.${verb}`;
+  let operations: BatchOperation[];
+
+  if (args.length > 0 && typeof args[0] === 'object') {
+    // Array of param objects (from --json array)
+    operations = args.map((p, i) => ({id: `op${i}`, action, params: p}));
+  } else {
+    // Array of string args — map to appropriate param key
+    const paramKey = entity === 'files' ? 'path' : 'id';
+    operations = (args as string[]).map((arg, i) => ({
+      id: `op${i}`,
+      action,
+      params: {[paramKey]: arg},
+    }));
+  }
+
+  return {operations};
+}
+
+export function resolveManifestSources(manifest: any): BatchRequest {
+  if (!manifest.operations) return manifest;
+  const operations = manifest.operations.map((op: any) => {
+    if (op.action === 'files.put' && op.params?.source) {
+      const sourcePath: string = op.params.source;
+      const content = fs.readFileSync(sourcePath).toString('base64');
+      const {source: _dropped, ...rest} = op.params;
+      return {...op, params: {...rest, content}};
+    }
+    return op;
+  });
+  return {...manifest, operations};
+}
+
 export function parseFuncCall(expr: string): {name: string; params: Record<string, any>} {
   const parenIdx = expr.indexOf('(');
   if (parenIdx === -1) return {name: expr, params: {}};
@@ -186,10 +272,13 @@ Verbs:
   delete    Delete an entity by ID
 
 Special commands:
-  grok s functions run <Name:func(args)>   Call a function
-  grok s files list [path] [-r]            List files (recursive with -r)
-  grok s raw <METHOD> <path>               Hit any API endpoint
-  grok s describe <entity-type>            Show entity JSON schema
+  grok s functions run <Name:func(args)>              Call a function
+  grok s files list [path] [-r]                       List files (recursive with -r)
+  grok s raw <METHOD> <path>                          Hit any API endpoint
+  grok s describe <entity-type>                       Show entity JSON schema
+  grok s batch <entity> <verb> arg1 [arg2 ...]        Batch operation (one round-trip)
+  grok s batch <entity> <verb> --json params.json     Batch from JSON array
+  grok s batch manifest.json                          Run a workflow manifest
 
 Options:
   --host <alias|url>    Server alias from config or full URL
@@ -198,7 +287,12 @@ Options:
   --limit <n>           Page size (default: 50)
   --offset <n>          Start offset (default: 0)
   -r, --recursive       Recursive (for files list)
-  --json <file>         Read function parameters from JSON file
+  --json <file>         Read function parameters or batch params from JSON file
+
+Batch manifest options (in manifest.json):
+  stopOnError           Stop on first failure (default: true)
+  transaction           Wrap DB ops in transaction (default: false)
+  concurrency           Accepted (always treated as 1)
 
 Examples:
   grok s users list
@@ -213,4 +307,8 @@ Examples:
   grok s describe connections
   grok s users list --host dev
   grok s users list --host "https://mygrok.com/api"
+  grok s batch files delete "System:AppData/old.txt" "System:AppData/tmp.txt"
+  grok s batch users create --json users.json
+  grok s batch manifest.json
+  grok s batch files delete "System:AppData/a" "System:AppData/b" --output json
 `;

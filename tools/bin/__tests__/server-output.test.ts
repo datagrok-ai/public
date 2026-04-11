@@ -1,5 +1,6 @@
-import {describe, it, expect} from 'vitest';
-import {cellStr, csvCell, getKeys} from '../utils/server-output';
+import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
+import {cellStr, csvCell, getKeys, printBatchOutput} from '../utils/server-output';
+import type {BatchResponse} from '../utils/node-dapi';
 
 describe('cellStr', () => {
   it('returns empty string for null', () => {
@@ -91,5 +92,42 @@ describe('getKeys', () => {
     const keys = getKeys([row]);
     expect(keys).toHaveLength(12);
     expect(keys).toEqual(Array.from({length: 12}, (_, i) => `k${i}`));
+  });
+});
+
+describe('printBatchOutput', () => {
+  let logLines: string[];
+  let errLines: string[];
+
+  beforeEach(() => {
+    logLines = [];
+    errLines = [];
+    vi.spyOn(console, 'log').mockImplementation((...args) => logLines.push(args.join(' ')));
+    vi.spyOn(process.stderr, 'write').mockImplementation((chunk) => { errLines.push(String(chunk)); return true; });
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('json: output is valid JSON equal to the full response', () => {
+    const resp: BatchResponse = {
+      summary: {total: 1, succeeded: 1, failed: 0, partial: 0, skipped: 0},
+      results: [{id: 'op0', action: 'users.delete', status: 'success'}],
+    };
+    printBatchOutput(resp, 'json');
+    expect(JSON.parse(logLines[0])).toEqual(resp);
+  });
+
+  it('table: failed operations are written to stderr as structured JSON', () => {
+    const resp: BatchResponse = {
+      summary: {total: 1, succeeded: 0, failed: 1, partial: 0, skipped: 0},
+      results: [{id: 'op0', action: 'users.delete', status: 'error', error: {error: 'Not found'}}],
+    };
+    printBatchOutput(resp, 'table');
+    expect(errLines.length).toBeGreaterThan(0);
+    const parsed = JSON.parse(errLines[0]);
+    expect(parsed[0].id).toBe('op0');
+    expect(parsed[0].error.error).toBe('Not found');
   });
 });
