@@ -178,6 +178,7 @@ export function mapAtomIndices2Dto3D(
   // If we had to strip H from the 3D mol for sanitization, keep a map
   // from the H-stripped index back to the original PDB index.
   let heavyToPdbIdx: number[] | null = null;
+  let pdbAtomsParsed: PdbAtom[] | null = null;
 
   try {
     mol2D = rdkit.get_mol(smiles2D);
@@ -190,12 +191,12 @@ export function mapAtomIndices2Dto3D(
     if (!mol3D || !mol3D.is_valid()) {
       mol3D?.delete();
       mol3D = null;
-      const pdbAtoms = parsePdbAtoms(mol3DStr);
-      if (pdbAtoms.length > 0) {
-        const molblock = pdbAtomsToMolblock(pdbAtoms);
+      pdbAtomsParsed = parsePdbAtoms(mol3DStr);
+      if (pdbAtomsParsed.length > 0) {
+        const molblock = pdbAtomsToMolblock(pdbAtomsParsed);
         // eslint-disable-next-line no-console
-        console.log('[atom-mapper] PDB atoms:', pdbAtoms.length,
-          'elements:', pdbAtoms.map((a) => a.element).join(','));
+        console.log('[atom-mapper] PDB atoms:', pdbAtomsParsed.length,
+          'elements:', pdbAtomsParsed.map((a) => a.element).join(','));
         // eslint-disable-next-line no-console
         console.log('[atom-mapper] generated molblock:\n' + molblock);
         if (molblock) {
@@ -218,8 +219,8 @@ export function mapAtomIndices2Dto3D(
           // mapping from heavy-atom index back to the original PDB index.
           if (!mol3D) {
             heavyToPdbIdx = [];
-            for (let i = 0; i < pdbAtoms.length; i++) {
-              if (pdbAtoms[i].element !== 'H' && pdbAtoms[i].element !== 'D')
+            for (let i = 0; i < pdbAtomsParsed.length; i++) {
+              if (pdbAtomsParsed[i].element !== 'H' && pdbAtomsParsed[i].element !== 'D')
                 heavyToPdbIdx.push(i);
             }
             mol3D = rdkit.get_mol(molblock, JSON.stringify({sanitize: true, removeHs: true}));
@@ -245,10 +246,9 @@ export function mapAtomIndices2Dto3D(
     };
 
     // Build PDB serial lookup: pdbSerials[molblockIdx] = actual PDB serial.
-    // This is needed because the PDB file may have non-sequential serials.
-    const pdbSerials: number[] | undefined = mol3DFromPdb ?
-      parsePdbAtoms(mol3DStr).map((a) => a.serial) :
-      undefined;
+    // Reuse pdbAtomsParsed from above (avoid re-parsing).
+    const pdbSerials: number[] | undefined = (mol3DFromPdb && pdbAtomsParsed) ?
+      pdbAtomsParsed.map((a) => a.serial) : undefined;
 
     // Tier 1: strict substructure match (works for SDF/molblock 3D files
     // where bond orders are preserved).
@@ -329,11 +329,10 @@ export function mapAtomIndices2Dto3D(
 
     // Tier 3: heavy-atom serial-order fallback.
     const numHeavy2D = mol2D.get_num_atoms();
-    if (mol3DFromPdb) {
-      const pdbAtoms2 = parsePdbAtoms(mol3DStr);
+    if (mol3DFromPdb && pdbAtomsParsed) {
       const heavyIndices: number[] = [];
-      for (let i = 0; i < pdbAtoms2.length; i++) {
-        if (pdbAtoms2[i].element !== 'H' && pdbAtoms2[i].element !== 'D')
+      for (let i = 0; i < pdbAtomsParsed.length; i++) {
+        if (pdbAtomsParsed[i].element !== 'H' && pdbAtomsParsed[i].element !== 'D')
           heavyIndices.push(i);
       }
       const n = Math.min(numHeavy2D, heavyIndices.length);
