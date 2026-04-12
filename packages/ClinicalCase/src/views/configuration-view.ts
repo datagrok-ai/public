@@ -61,8 +61,7 @@ export class ConfigurationView extends ClinicalCaseViewBase {
       // Add row to bottom
       this.addTableRow();
       this.refreshTable(tableContainer);
-    });
-    addRowButton.title = 'Add row';
+    }, 'Add row');
 
     // Apply button
     const applyButton = ui.button('Apply', () => {

@@ -189,7 +189,7 @@ class Table {
         this.currentItemIdx--;
 
       this.onItemChangedAction(this.currentItemIdx);
-    });
+    }, 'Delete');
     btn.style.textAlign = 'center';
     btn.style.height = '20px';
     return btn;

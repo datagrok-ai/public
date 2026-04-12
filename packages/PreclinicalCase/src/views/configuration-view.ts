@@ -60,8 +60,7 @@ export class ConfigurationView extends DG.ViewBase {
       this.saveCurrentTableValues();
       this.addTableRow();
       this.refreshTable(tableContainer);
-    });
-    addRowButton.title = 'Add row';
+    }, 'Add row');
 
     const applyButton = ui.button('Apply', () => {
       this.applyConfiguration();

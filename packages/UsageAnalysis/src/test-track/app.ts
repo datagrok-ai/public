@@ -394,7 +394,7 @@ export class TestTrack extends DG.ViewBase {
     if (!this.testingNames.includes(this.testingName))
       this.testingNames.push(this.testingName);
 
-    this.addTestingButton = ui.button(getIcon('plus', { style: 'fas' }), async () => { await this.showAddNewTestingDialog() });
+    this.addTestingButton = ui.button(getIcon('plus', { style: 'fas' }), async () => { await this.showAddNewTestingDialog() }, 'Add Testing');
     ui.tooltip.bind(this.addTestingButton, 'Add Testing');
     this.testingNameSelector = ui.input.choice('', {
       items: this.testingNames, value: this.testingName, nullable: false, onValueChanged: (e) => {

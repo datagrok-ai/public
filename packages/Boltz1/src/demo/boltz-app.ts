@@ -134,7 +134,7 @@ export class Boltz1AppView {
       div.remove();
       this.sequenceInputs.delete(uniqueName);
       this.pocketInputs.delete(uniqueName);
-    }, 'Delete'), () => {});
+    }, 'Delete'), () => {}, 'Delete');
 
     deleteButton.style.marginLeft = 'auto';
     titleDiv.append(deleteButton);

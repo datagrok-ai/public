@@ -204,7 +204,7 @@ export class AEBrowserHelper {
           })
         //@ts-ignore
           .show({centerAt: addButton});
-      });
+      }, 'Add domain');
       createAccordion();
 
       panelDiv.append(accae.root);
