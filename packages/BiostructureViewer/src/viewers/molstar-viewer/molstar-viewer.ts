@@ -1224,27 +1224,8 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
       this.ligands = newLigands;
     });
 
-    // Apply highlights directly after ligands are built. Use multiple
-    // delayed attempts because Molstar's applyPreset may need extra
-    // frames to finish rendering before overpaint can stick.
-    if (_globalSelectionCache.size > 0) {
-      const applyHighlights = async () => {
-        try {
-          const p = this.viewer?.plugin;
-          if (!p) return;
-          const structs = p.managers.structure.hierarchy.current.structures;
-          if (!structs?.length) return;
-          const comps = structs.flatMap((s: any) => s.components ?? []);
-          if (comps.length > 0)
-            await clearStructureOverpaint(p, comps);
-          await this._applyBaseColors();
-          await this.highlightAllLigandAtoms();
-        } catch { /* best-effort */ }
-      };
-      setTimeout(applyHighlights, 100);
-      setTimeout(applyHighlights, 500);
-      setTimeout(applyHighlights, 1500);
-    }
+    // Replay highlights after ligands are built (via syncer queue).
+    this._replayHighlightIfCached();
 
     this.logger.debug(`${logPrefix}, end`);
   }
